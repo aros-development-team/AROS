@@ -131,10 +131,10 @@ do                                                        \
 ({                                          \
     struct List *__l = (struct List *)(_l); \
                                             \
-    if (__l->lh_TailPred->ln_Pred)          \
-        REMOVE (__l->lh_TailPred);          \
-    else                                    \
-        (struct Node *)0;                   \
+    __l->lh_TailPred->ln_Pred    ?          \
+        REMOVE(__l->lh_TailPred) :          \
+        (struct Node *)0                    \
+    ;                                       \
 })
 
 #define ForeachNode(l,n)                       \
