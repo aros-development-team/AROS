@@ -51,8 +51,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *, MUIMasterBase)
 
-    struct Library *mb = cl->cl_Dispatcher.h_Data;
-
     /* CLF_INLIST tells us that this class is a builtin class */
     if (cl->cl_Flags & CLF_INLIST)
     {
@@ -61,14 +59,15 @@
         if (!FreeClass(cl))
         {
             /* If it was a builtin class, readd it to the list since freeing it failed */
-#warning The class should actually be inserted at the same place it was before: Implement ZUNE_InsertBuiltinClass()
             ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
 	    return FALSE;
 	}
+	/* If the class could be freed then also close muimaster.library to decrease the
+	   reference count.  */
+	else CloseLibrary(MUIMasterBase);
     }
-
-    CloseLibrary(mb);
+    else CloseLibrary((struct Library *)cl->cl_Dispatcher.h_Data);
 
     return TRUE;
 
