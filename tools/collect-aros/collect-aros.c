@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 
     ldargs[cnt+1] = NULL;
 
-    docommand(COLLECT2PATH, ldargs);
+    docommand(LINKERPATH, ldargs);
 
     command = joinstrings(NMPATH " ", output, NULL);
 
