@@ -21,9 +21,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library *base, register __a1 char *supername, register __a2 struct MUI_CustomClass *supermcc,register __d0 int datasize,register __a3 APTR dispatcher)
-#else
 	AROS_LH5(struct MUI_CustomClass *, MUI_CreateCustomClass,
 
 /*  SYNOPSIS */
@@ -35,7 +32,7 @@ __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 18, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

@@ -15,9 +15,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct TagItem *tagList)
-#else
 	AROS_LH2(BOOL, MUI_AslRequest,
 
 /*  SYNOPSIS */
@@ -26,7 +23,7 @@ __asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct Tag
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 9, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

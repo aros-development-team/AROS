@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r)
-#else
 	AROS_LH2(APTR, MUI_AddClipRegion,
 
 /*  SYNOPSIS */
@@ -29,7 +26,7 @@ __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register 
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 26, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

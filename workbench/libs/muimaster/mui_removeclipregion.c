@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_RemoveClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 APTR handle)
-#else
 	AROS_LH2(VOID, MUI_RemoveClipRegion,
 
 /*  SYNOPSIS */
@@ -29,7 +26,7 @@ __asm VOID MUI_RemoveClipRegion(register __a0 struct MUI_RenderInfo *mri, regist
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 27, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

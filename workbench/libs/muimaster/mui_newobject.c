@@ -16,9 +16,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct TagItem *tags)
-#else
 	AROS_LH2(Object *, MUI_NewObjectA,
 
 /*  SYNOPSIS */
@@ -27,7 +24,7 @@ __asm Object *MUI_NewObjectA(register __a0 char *classname,register __a1 struct 
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 5, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

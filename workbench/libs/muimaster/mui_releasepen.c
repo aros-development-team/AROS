@@ -18,10 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d0 LONG pen)
-
-#else
 	AROS_LH2(VOID, MUI_ReleasePen,
 
 /*  SYNOPSIS */
@@ -30,7 +26,7 @@ __asm VOID MUI_ReleasePen(register __a0 struct MUI_RenderInfo *mri, register __d
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 23, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

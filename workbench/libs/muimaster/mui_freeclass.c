@@ -14,9 +14,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_FreeClass(register __a0 struct IClass *classptr)
-#else
 	AROS_LH1(VOID, MUI_FreeClass,
 
 /*  SYNOPSIS */
@@ -24,7 +21,7 @@ __asm VOID MUI_FreeClass(register __a0 struct IClass *classptr)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 14, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

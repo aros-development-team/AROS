@@ -17,9 +17,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_RejectIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
-#else
 	AROS_LH2(VOID, MUI_RejectIDCMP,
 
 /*  SYNOPSIS */
@@ -28,7 +25,7 @@ __asm VOID MUI_RejectIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 16, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

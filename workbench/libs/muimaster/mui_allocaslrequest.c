@@ -15,9 +15,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm APTR MUI_AllocAslRequest(register __d0 unsigned long reqType, register __a0 struct TagItem *tagList)
-#else
 	AROS_LH2(APTR, MUI_AllocAslRequest,
 
 /*  SYNOPSIS */
@@ -26,7 +23,7 @@ __asm APTR MUI_AllocAslRequest(register __d0 unsigned long reqType, register __a
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 8, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

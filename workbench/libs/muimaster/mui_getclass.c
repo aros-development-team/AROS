@@ -72,9 +72,6 @@ static struct IClass *load_external_class(CONST_STRPTR classname, struct Library
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm struct IClass *MUI_GetClass(register __a0 char *classname)
-#else
 	AROS_LH1(struct IClass *, MUI_GetClass,
 
 /*  SYNOPSIS */
@@ -82,7 +79,7 @@ __asm struct IClass *MUI_GetClass(register __a0 char *classname)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 13, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

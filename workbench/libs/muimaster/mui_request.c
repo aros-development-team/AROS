@@ -49,9 +49,6 @@ AROS_UFH2S(void, len_func,
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register __d2 LONGBITS flags, register __a0 char *title, register __a1 char *gadgets, register __a2 char *format, register __a3 APTR params)
-#else
 	AROS_LH7(LONG, MUI_RequestA,
 
 /*  SYNOPSIS */
@@ -65,7 +62,7 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 7, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

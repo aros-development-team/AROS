@@ -13,16 +13,13 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm LONG MUI_Error(VOID)
-#else
 	AROS_LH0(LONG, MUI_Error,
 
 /*  SYNOPSIS */
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 11, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

@@ -21,9 +21,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register __d2 LONG top,register __d3 LONG width,register __d4 LONG height, register __d5 ULONG flags)
-#else
 	AROS_LH6(BOOL, MUI_Layout,
 
 /*  SYNOPSIS */
@@ -36,7 +33,7 @@ __asm BOOL MUI_Layout(register __a0 Object *obj,register __d1 LONG left,register
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 21, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc)
-#else
 	AROS_LH1(BOOL, MUI_DeleteCustomClass,
 
 /*  SYNOPSIS */
@@ -28,7 +25,7 @@ __asm BOOL MUI_DeleteCustomClass(register __a0 struct MUI_CustomClass *mcc)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 19, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

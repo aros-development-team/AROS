@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
-#else
 	AROS_LH2(VOID, MUI_Redraw,
 
 /*  SYNOPSIS */
@@ -29,7 +26,7 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 17, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS
