@@ -15,6 +15,83 @@ Old News
 <HR WIDTH="100%">
 <TABLE>
 
+<TR><TD VALIGN=TOP>12.02.2001</TD><TD>
+Sebastian Heutling fixed the seek() code in his filesystem and he
+implemented FSA_DISK_INFO.<P>
+
+Georg Steger fixed a lot of wrong types in the tools in C:
+(in AROS, you must pass an IPTR, not an ULONG if something can
+contain a pointer and an int). He also fixed the sequence of
+parameters for hooks in locale.library and implemented locale's
+replacement of Exec's RawDoFmt(). IPrefs now installs this
+patch. That made DirOpus crash, but he found and fixed that bug
+immediately. A global semaphore in IPrefs now protects the
+patches IPrefs installs so they are installed only once if
+IPrefs is started more than once. IPrefs will now patch utility.library
+locale sensitive replacements for string functions (Stricmp(),
+ToLower(), etc) and dos.library (DateToStr()). Filenames for
+languages now have their proper accents.<P>
+
+Johan Alfredsson continued his work on the notification code.<P>
+
+Sven Drieling summarized the m68k-emulator thread. When this works
+out, it might be possible to run Amiga code unmodified on AROS.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>08.02.2001</TD><TD>
+Georg Steger continued in his quest to improve all demos we have plus
+the code in AROS which is used by the demos. He also improved catalog loading
+and fixed a bug in diskfont.library (in libclose). Next, he added some
+mountlist entries for our new filesystem and began to work in IPrefs.<P>
+
+Sebastian Heutling fixed a bug in his FFS code.<P>
+
+Henning Kiel made his WiMP tool font sensitive.<P>
+
+Stefan Berger fix a bug in parallel and serial.device.<P>
+
+Johan Alfredsson improved a lot of code which is now used, because we
+have a filesystem (for example, C:Info shows now the volumes). Notification
+should now work with the RAM handler.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>05.02.2001</TD><TD>
+Georg Steger fixed a couple of bugs in the graphics.library (AreaFill)
+and improved locale a bit (if no language could be loaded, say that
+english, which is compiled in, is being used). He also improved some
+old demos from Fish disks and fixed some bugs in exec semaphores and
+c.lib/sscanf(). While improving the fish disk demos, he found a design
+fault in MathFFP (sometimes, ULONG is used and sometimes float).
+Lastly, he improved the bool gadgets, added support for the suomi
+language.<P>
+
+Stefan Berger helped to discover the MathFFP design fault.<P>
+
+Kjetil Svalastog Matheussen improved camd.library.<P>
+
+Michael Schulz improved the boot code for AROS i386/Native. The AROS
+kernel can now be upto 1.2MB (err, no, AROS doesn't need that much.
+It's just that we have no filesystem, yet, and therefore cannot
+load any libraries from disk, so for the time being, they must be
+compiled in :-)<P>
+
+Sebastian Heutling committed our first filesystem. Since we haven't
+got the sources for SFS as we hoped, our first filesystem is FFS.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>03.02.2001</TD><TD>
+Georg Steger added the country specific files for all countries
+which are supported by the AmigaOS and some more languages.
+In the last few days, he made also many demo programs from
+Aminet, Fish Disks and other sources work much better (or
+at all :-).<P>
+
+Stefan Berger finished GetLanguageSelection() in lowlevel.library.<P>
+
+Johan Alfredsson improved realtime.library and Swedish locale
+files.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>31.01.2001</TD><TD>
 Georg Steger improved CreateNewProc() and implemented the
 "open options" for console windows (AUTO/INACTIVE/NOSIZE/etc).
