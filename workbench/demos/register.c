@@ -10,7 +10,7 @@
 
 /****************************************************************************************/
 
-#define REGISTER_EXTRA_HEIGHT 6
+#define REGISTER_EXTRA_HEIGHT 4
 #define REGISTERITEM_EXTRA_WIDTH 8
 #define REGISTER_SPACE_LEFT 8
 #define REGISTER_SPACE_RIGHT 8
@@ -134,9 +134,9 @@ static void layoutregister(struct Register *reg, struct Screen *scr,
     reg->fontb = dri->dri_Font->tf_Baseline;
     
     reg->height = ((reg->fonth + REGISTER_EXTRA_HEIGHT) + 3) & ~3; /* Multiple of 4 */
-    reg->height += 3;
+    reg->height += 4;
     
-    reg->slopew = (reg->height - 3) / 2;
+    reg->slopew = (reg->height - 4) / 2;
     
     for(i = 0; i < reg->numitems; i++)
     {
@@ -203,16 +203,26 @@ static void renderregisteritem(struct RastPort *rp, struct Register *reg, WORD i
     Move(rp, x + ri->tx, y + ri->ty);
     Text(rp, ri->text, ri->textlen);
     
-    SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
-    WritePixel(rp, x + reg->slopew, y + 1);
-    Move(rp, x + reg->slopew / 2, y + 2 + reg->slopew - 1);
-    Draw(rp, x + reg->slopew - 1, y + 2);
-    RectFill(rp, x + reg->slopew + 1, y, x + ri->w - 1 - reg->slopew - 1, y);
+    /* upper / at left side */
     
+    SetAPen(rp, reg->dri->dri_Pens[SHINEPEN]);
+    WritePixel(rp, x + reg->slopew, y + 2);
+    Move(rp, x + reg->slopew / 2, y + 3 + reg->slopew - 1);
+    Draw(rp, x + reg->slopew - 1, y + 3);
+    
+    /* --- at top side */
+    
+    RectFill(rp, x + reg->slopew + 1, y + 1, x + reg->slopew + 2, y + 1);
+    RectFill(rp, x + reg->slopew + 3, y, x + ri->w - 1 - reg->slopew - 3, y);
+
     SetAPen(rp, reg->dri->dri_Pens[SHADOWPEN]);
-    WritePixel(rp, x + ri->w - 1 - reg->slopew, y + 1);
-    Move(rp, x + ri->w - 1 - reg->slopew + 1, y + 2);
-    Draw(rp, x + ri->w - 1 - reg->slopew / 2, y + 2 + reg->slopew - 1);
+    RectFill(rp, x + ri->w - 1 - reg->slopew - 2, y + 1, x + ri->w - 1 - reg->slopew - 1, y + 1);
+    
+    /* upper \ at right side */
+    
+    WritePixel(rp, x + ri->w - 1 - reg->slopew, y + 2);
+    Move(rp, x + ri->w - 1 - reg->slopew + 1, y + 3);
+    Draw(rp, x + ri->w - 1 - reg->slopew / 2, y + 3 + reg->slopew - 1);
     
     /* lower / at left side. */
     
