@@ -3,12 +3,14 @@ include $(TOP)/config/make.cfg
 
 FILES	   := gfxclass bmclass kbdclass mouseclass inputtask
 
-USER_INCLUDES := -I$(SYS_INCLUDES)
 %build_module_macro mmake=kernel-hidd-linux \
   modname=linux modtype=hidd \
   files=$(FILES) \
   conffile=lib.conf \
-  genfunctable=yes
+  genfunctable=yes \
+  cflags="$(HOST_CFLAGS) -I$(GENINCDIR) -D__AROS__" \
+  compiler=host
+
 
 # Install Linux specific hidd.prefs file
 #MM workbench-s-hiddprefs-linux-$(CPU) : workbench-s-setup
