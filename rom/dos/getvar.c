@@ -195,13 +195,14 @@
         if (0 == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))
         {
           int j = 0;
+          /* lets search for the first '\n' (if any) in the string and
+           * replace it by '\0'.  
+           */
           while ( (buffer[j] != '\n') && (j < size) )
             j++;
-          if (j == size)
-            size--;
-          else
+          if (j != size)
             size = j;
-          buffer[size]= 0x0; /* mark end of string */
+          buffer[size]= '\0'; /* mark end of string */
         }
         else
           if (GVF_BINARY_VAR == (flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM)))

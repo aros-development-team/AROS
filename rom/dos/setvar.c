@@ -12,6 +12,7 @@
 #include <proto/exec.h>
 #include <proto/utility.h>
 
+
 /*****************************************************************************
 
     NAME */
@@ -101,21 +102,25 @@
         {
           struct Process * pr = (struct Process *)FindTask(NULL);
           struct LocalVar * n = (struct LocalVar *)&((pr)->pr_LocalVars.mlh_Head);
-          
+
+          /* init the newly created structure */
           lv->lv_Node.ln_Type = flags;
           lv->lv_Node.ln_Name = (UBYTE *)lv + sizeof(struct LocalVar);
           CopyMem(name, lv->lv_Node.ln_Name, nameLen);
           lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
           
-          /* Insert the node into the list. */
-          while(n->lv_Node.ln_Succ != NULL)
+          /* Insert the node into the list, if there is one member in the list already. */
+          if ( pr->pr_LocalVars.mlh_TailPred   != 
+               (struct MinNode *)&(pr->pr_LocalVars.mlh_Head) )
           {
-            /* Is this node less than n? */
-            if( Stricmp(name, n->lv_Node.ln_Name) < 0)
-              break;
-            n = (struct LocalVar *)n->lv_Node.ln_Succ;
+            while(n->lv_Node.ln_Succ != NULL)
+            {
+              /* Is this node less than n? */
+              if( Stricmp(name, n->lv_Node.ln_Name) < 0)
+                break;
+              n = (struct LocalVar *)n->lv_Node.ln_Succ;
+            }
           }
-
           /* Ok, three cases:
              1- start of list, n == NULL ---> ok.
              2- middle of list, n == pred ---> ok.
@@ -170,7 +175,10 @@
       else
         return DOSFALSE;
 
-      if(flags & GVF_SAVE_VAR)
+      /* Let's see whether we're supposed to make a copy of this to
+       * envarc also... 
+       */
+      if(0 != (flags & GVF_SAVE_VAR))
       {
         CopyMem("ENVARC:", nameBuffer, 8);
         AddPart(nameBuffer, name, 384);
@@ -187,8 +195,6 @@
           Close(file);
         }
       }
-      else
-        return DOSFALSE;
 
     /* We created both, bye bye */
     return DOSTRUE;
