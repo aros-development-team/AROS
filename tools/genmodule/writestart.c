@@ -29,6 +29,13 @@ void writestart(void)
 	    "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
     );
+    if (modtype == DEVICE)
+    {
+	fprintf(out,
+		"#include <exec/io.h>\n"
+		"#include <exec/errors.h>\n"
+	);
+    }
     fprintf(out,
 	    "#include <exec/types.h>\n"
 	    "#include <exec/libraries.h>\n"
@@ -140,6 +147,8 @@ void writestart(void)
 		"DECLARESET(EXPUNGELIB)\n"
 		"DECLARESET(OPENLIB)\n"
 		"DECLARESET(CLOSELIB)\n"
+		"DECLARESET(OPENDEV)\n"
+		"DECLARESET(CLOSEDEV)\n"
 		"DECLARESET(SYSINIT)\n"
 		"\n"
 		"#ifdef SysBase\n"
@@ -201,38 +210,88 @@ void writestart(void)
 		"\n"
 	);
 
-	fprintf(out,
-		"AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
-		"    AROS_LHA (ULONG, version, D0),\n"
-		"    LIBBASETYPEPTR, lh, 1, %s\n"
-		")\n",
-		basename
-	);
-	fprintf(out,
-		"{\n"
-		"    AROS_LIBFUNC_INIT\n"
-		"\n"
-		"    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
-		"    {\n"
-		"        ((struct Library *)lh)->lib_OpenCnt++;\n"
-		"        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
-		"\n"
-		"        return lh;\n"
-		"    }\n"
-		"\n"
-		"    return NULL;\n"
-		"\n"
-		"    AROS_LIBFUNC_EXIT\n"
-		"}\n"
-		"\n"
-	);
+	if (modtype != DEVICE)
+	{
+	    fprintf(out,
+		    "AROS_LH1 (LIBBASETYPEPTR, GM_UNIQUENAME(OpenLib),\n"
+		    "    AROS_LHA (ULONG, version, D0),\n"
+		    "    LIBBASETYPEPTR, lh, 1, %s\n"
+		    ")\n",
+		    basename
+	    );
+	    fprintf(out,
+		    "{\n"
+		    "    AROS_LIBFUNC_INIT\n"
+		    "\n"
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh) )\n"
+		    "    {\n"
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "\n"
+		    "        return lh;\n"
+		    "    }\n"
+		    "\n"
+		    "    return NULL;\n"
+		    "\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n"
+		    "\n"
+	     );
+	}
+	else
+	{
+	    fprintf(out,
+		    "AROS_LH3 (void, GM_UNIQUENAME(OpenLib),\n"
+		    "    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		    "    AROS_LHA(ULONG, unitnum, D0),\n"
+		    "    AROS_LHA(ULONG, flags, D1),\n"
+		    "    LIBBASETYPEPTR, lh, 1, %s\n"
+		    ")\n",
+		    basename
+	    );
+	    fprintf(out,
+		    "{\n"
+		    "    AROS_LIBFUNC_INIT\n"
+		    "\n"
+		    "    if ( set_call_libfuncs(SETNAME(OPENLIB), 1, lh)\n"
+		    "         && set_call_devfuncs(SETNAME(OPENDEV), 1, ioreq, unitnum, flags, lh)\n"
+		    "    )\n"
+		    "    {\n"
+		    "        ((struct Library *)lh)->lib_OpenCnt++;\n"
+		    "        ((struct Library *)lh)->lib_Flags &= ~LIBF_DELEXP;\n"
+		    "\n"
+		    "        ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;\n"
+		    "    }\n"
+		    "    else\n"
+		    "    {\n"
+		    "        if (ioreq->io_Error >= 0)\n"
+		    "            ioreq->io_Error = IOERR_OPENFAIL;\n"
+		    "    }\n"
+		    "\n"
+		    "    return;\n"
+		    "\n"
+		    "    AROS_LIBFUNC_EXIT\n"
+		    "}\n"
+		    "\n"
+	    );
+	}
+
+	if (modtype != DEVICE)
+	    fprintf(out,
+		    "AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
+		    "    LIBBASETYPEPTR, lh, 2, %s\n"
+		    ")\n",
+		    basename
+	    );
+	else
+	    fprintf(out,
+		    "AROS_LH1(BPTR, GM_UNIQUENAME(CloseLib),\n"
+		    "    AROS_LHA(struct IORequest *, ioreq, A1),\n"
+		    "    LIBBASETYPEPTR, lh, 2, %s\n"
+		    ")\n",
+		    basename
+	    );
 	
-	fprintf(out,
-		"AROS_LH0 (BPTR, GM_UNIQUENAME(CloseLib),\n"
-		"    LIBBASETYPEPTR, lh, 2, %s\n"
-		")\n",
-		basename
-	);
 	fprintf(out,
 		"{\n"
 		"    AROS_LIBFUNC_INIT\n"
@@ -240,6 +299,10 @@ void writestart(void)
 		"    ((struct Library *)lh)->lib_OpenCnt--;\n"
 		"    set_call_libfuncs(SETNAME(CLOSELIB),-1,lh);\n"
 	);
+	if (modtype == DEVICE)
+	    fprintf(out,
+		    "    set_call_devfuncs(SETNAME(CLOSEDEV),-1,ioreq,0,0,lh);\n"
+	    );
 	if (!(options & OPTION_NOEXPUNGE))
 	    fprintf(out,
 		    "    if\n"
@@ -340,6 +403,8 @@ void writestart(void)
 		"DEFINESET(EXPUNGELIB)\n"
 		"DEFINESET(OPENLIB)\n"
 		"DEFINESET(CLOSELIB)\n"
+		"DEFINESET(OPENDEV)\n"
+		"DEFINESET(CLOSEDEV)\n"
 		"DEFINESET(SYSINIT)\n"
 		"\n"
 	);

@@ -29,6 +29,8 @@ int main(int argc, char **argv)
     	modtype = MUI;
     else if (strcmp(argv[2],"mcp")==0)
     	modtype = MCP;
+    else if (strcmp(argv[2], "device")==0)
+	modtype = DEVICE;
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
@@ -37,6 +39,8 @@ int main(int argc, char **argv)
 
     if (modtype == LIBRARY)
         firstlvo = 5;
+    else if (modtype == DEVICE)
+	firstlvo = 7;
     else if (modtype == MCC || modtype == MUI || modtype == MCP)
         firstlvo = 6;
    
@@ -62,13 +66,14 @@ int main(int argc, char **argv)
 
     readconfig();
     readref();
-    if (modtype == LIBRARY)
+    if (modtype == LIBRARY || modtype == DEVICE)
     {
         writeincproto(0);
         writeincclib(0);
         writeincdefines(0);
-        writeautoinit();
     }
+    if (modtype == LIBRARY)
+        writeautoinit();
     if (modtype == MCC || modtype == MUI || modtype == MCP)
     {
         writemccinit();
