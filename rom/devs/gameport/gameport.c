@@ -107,7 +107,7 @@ static void *const functable[] =
 
 static AttrBase HiddMouseAB = 0;
 
-static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase);
+static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase);
 static VOID mouseCallback(struct GameportBase *GPBase,
 			  struct pHidd_Mouse_Event *ev);
 AROS_UFP3S(VOID, gpSendQueuedEvents,
@@ -370,23 +370,31 @@ AROS_LH1(void, beginio,
 	
 	/* We queue the request if there are no events in the queue or if
 	   the unit didn't trig on the events thate were in the queue. */
-	if(gpUn->gpu_readPos == GPBase->gp_writePos || 
-	   !fillrequest(ioreq, GPBase))
+	   
+	Disable(); /* !! */
+	
+	if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	{
+	    request_queued = TRUE;
+	} else {
+	    BOOL trigged;
+	    
+	    fillrequest(ioreq, &trigged, GPBase);
+	    if (!trigged) request_queued = TRUE;
+	} 
+	if (request_queued)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
-	    request_queued = TRUE;
 	    
 	    D(bug("gpd: No mouse events, putting request in queue\n"));
 	    
-	    Disable();
 	    gpUn->gpu_flags |= GBUF_PENDING;
 	    AddTail((struct List *)&GPBase->gp_PendingQueue,
 		    (struct Node *)ioreq);
-	    Enable();
-	    
-	    break;
 	}
-		
+	
+	Enable();
+	
 	break;
 
 	
@@ -526,22 +534,29 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
 
     ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
-        D(bug("Replying msg\n"));
-	fillrequest(ioreq, GPBase);
-
-	Remove((struct Node *)ioreq);
- 	ReplyMsg((struct Message *)&ioreq->io_Message);
+        BOOL moreevents, trigged;
 	
-	gpUn->gpu_flags &= ~GBUF_PENDING;
+        D(bug("Replying msg\n"));
+	moreevents = fillrequest(ioreq, &trigged, GPBase);
+
+	if (trigged)
+	{
+	    Remove((struct Node *)ioreq);
+ 	    ReplyMsg((struct Message *)&ioreq->io_Message);
+	}
+	
+	if (!moreevents) break;
     }
+    
+    if (IsListEmpty(pendingList)) gpUn->gpu_flags &= ~GBUF_PENDING;
 }
 
 /* When this function is called, there *must* be at least one event ready for
    processing. It returns TRUE as long as there are more events to preocess */
 
-static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
+static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase)
 {
-    BOOL   trigged;
+    BOOL   moreevents = TRUE;
     BOOL   down, up;
     int    i;			     /* Loop variable */
     int    nEvents;                  /* Number of struct InputEvent that there
@@ -549,24 +564,23 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 					io_Data */
     struct InputEvent *event;        /* Temporary variable */
 
-    (void)trigged;		     /* Suppress warning */
-	
+    *trigged = FALSE;
+    
     /* Number of InputEvents we can store in io_Data */
     nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
     if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
     {
 	ioreq->io_Error = IOERR_BADLENGTH;
+	
 	D(bug("gpd: Bad length\n"));
 	return TRUE;
-    }
-    else
-    {
-	nEvents = 1;
     }
     
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
     
-    for(i = 0; i < nEvents; i++)
+    ioreq->io_Error = 0;
+    
+    for(i = 0; i < nEvents; ) /* no i++ here, this is done if event is to report */
     {
     	UWORD code;
 	WORD x;
@@ -624,11 +638,13 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 	   (ABS(gpUn->gpu_lastY - y) > gpUn->gpu_trigger.gpt_YDelta) ||
 	   (GPBase->gp_nTicks > gpUn->gpu_trigger.gpt_Timeout))
 	{
-	    if(trigged == TRUE)
+	    i++;
+	    
+	    if(*trigged == TRUE)
 		event = event->ie_NextEvent;
 
-	    trigged = TRUE;
-
+	    *trigged = TRUE;
+	    
 	    event->ie_Class = IECLASS_RAWMOUSE;
 	    event->ie_SubClass = 0;          /* Only port 0 for now */
 	    event->ie_Code = code;
@@ -648,7 +664,10 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
 	    
 	    /* No more keys in buffer? */
 	    if(gpUn->gpu_readPos == GPBase->gp_writePos)
-		break;
+	    {
+	        moreevents = FALSE;
+	        break;
+	    }
 	    
 	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
 				     + ALIGN(sizeof(struct InputEvent)));
@@ -656,7 +675,7 @@ static BOOL fillrequest(struct IORequest *ioreq, struct GameportBase *GPBase)
     }
     event->ie_NextEvent = NULL;
     
-    return trigged;
+    return moreevents;
 }
 
 static const char end = 0;
