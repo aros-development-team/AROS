@@ -3,7 +3,6 @@
 #include <toollib/error.h>
 #include "var.h"
 #include "parse.h"
-#include "expr.h"
 
 #define DEBUG_SET	0
 #define DEBUG_LEVEL	0
@@ -12,7 +11,7 @@ static List globals;
 static List functions;
 
 static String DefinedCB (const char ** args, int dummy, CBD data);
-static String ExprCB	(const char ** args, int dummy, CBD data);
+static String UpVarCB (const char ** args, int dummy, CBD data);
 
 static String
 DefinedCB (const char ** args, int dummy, CBD data)
@@ -27,48 +26,60 @@ DefinedCB (const char ** args, int dummy, CBD data)
 }
 
 static String
-ExprCB (const char ** args, int dummy, CBD data)
+UpVarCB (const char ** args, int dummy, CBD data)
 {
-    int rc, value;
-    char buffer[32];
+    VarLevel * level;
+    Var      * var;
 
     if (!args[0])
     {
-	PushError ("$expr(): Expecting one arg");
+	PushError ("$upvar(): Expecting one arg");
 	return NULL;
     }
 
-    rc = Expr_Parse (args[0], &value);
+    level = GetHead (&globals);
 
-    if (rc != T_OK)
+    if (!level)
+	return NULL;
+
+    for (level=GetNext(level); level; level=GetNext(level))
     {
-	PushError ("Error parsing expression %s", args[0]);
-	return NULL;
+	var = (Var *) FindNodeNC (&level->vars, args[0]);
+
+	if (var)
+	    return VS_New (var->value);
     }
 
-#ifdef HAVE_VSNPRINT
-    snprintf (buffer, sizeof (buffer), "%d", value);
-#else
-    sprintf (buffer, "%d", value);
-#endif
-
-    return VS_New (buffer);
+    PushError ("$upvar(): Can't find %s", args[0]);
+    return NULL;
 }
+
+static int init = 0;
 
 void
 Var_Init (void)
 {
+    if (init)
+	return;
+
+    init = 1;
+
     NewList (&globals);
     NewList (&functions);
 
     Func_Add ("defined", (CB) DefinedCB, NULL);
-    Func_Add ("expr", (CB) ExprCB, NULL);
+    Func_Add ("upvar", (CB) UpVarCB, NULL);
 }
 
 void
 Var_Exit (void)
 {
     VarLevel * level, * next;
+
+    if (!init)
+	return;
+
+    init = 0;
 
     ForeachNodeSafe (&globals, level, next)
     {
@@ -373,6 +384,12 @@ Var_Subst (const char * in)
 		ret = (String) CallCB (f->cb, argv, 0, f->cbd);
 
 		Func_FreeArgs (argv);
+
+		if (!ret)
+		{
+		    PushError ("Error in function %s (%s)", varname->buffer, args->buffer);
+		    return NULL;
+		}
 
 		VS_AppendString (result, ret->buffer);
 		VS_Delete (ret);
