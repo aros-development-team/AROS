@@ -6,7 +6,7 @@ SPECIAL_CFLAGS = -I/usr/include
 include $(TOP)/make.cfg
 
 FILES = intuition_init intuition_functable intui_x11 gadgets \
-	boolgadgets propgadgets
+	boolgadgets propgadgets imageclass
 FUNCTIONS = \
 	activatewindow \
 	addclass \
@@ -18,7 +18,9 @@ FUNCTIONS = \
 	disposeobject \
 	drawborder \
 	drawimage \
+	drawimagestate \
 	endrefresh \
+	eraseimage \
 	freeclass \
 	freescreendrawinfo \
 	getattr \
@@ -36,6 +38,7 @@ FUNCTIONS = \
 	openscreentaglist \
 	openwindow \
 	openwindowtaglist \
+	pointinimage \
 	printitext \
 	refreshgadgets \
 	refreshglist \
