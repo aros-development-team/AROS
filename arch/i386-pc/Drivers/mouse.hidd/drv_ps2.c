@@ -49,6 +49,14 @@ int mouse_ps2reset(struct mouse_data *);
 
 /****************************************************************************************/
 
+/* from Drivers/keyboard/kbd_common.c */
+
+#warning: it is probably better to get rid of calling functions from external module
+
+int kbd_read_data(void);
+
+/****************************************************************************************/
+
 int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
 {
     struct mouse_data *data = OOP_INST_DATA(cl, o);
