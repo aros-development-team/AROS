@@ -865,9 +865,9 @@ moreFlags |= (name); else moreFlags &= ~(name)
     else
     {
         ((struct IntWindow *)w)->ZipLeftEdge = nw.LeftEdge;
-        ((struct IntWindow *)w)->ZipTopEdge  = nw.TopEdge;
-        ((struct IntWindow *)w)->ZipWidth    = w->MinWidth;
-        ((struct IntWindow *)w)->ZipHeight   = w->MinHeight;
+        ((struct IntWindow *)w)->ZipTopEdge  = nw.TopEdge;	
+        ((struct IntWindow *)w)->ZipWidth    = (w->Width == w->MinWidth) ? w->MaxWidth : w->MinWidth;
+        ((struct IntWindow *)w)->ZipHeight   = (w->Height == w->MinHeight) ? w->MaxHeight : w->MinHeight;
         //  ((struct IntWindow *)w)->ZipWidth    = w->Width;
         //  ((struct IntWindow *)w)->ZipHeight   = w->Height;
     }
