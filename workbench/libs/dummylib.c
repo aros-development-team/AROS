@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 15:35:11  digulla
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:41:28  digulla
     Added standard header for all files
 
@@ -102,8 +105,8 @@ const struct inittable datatable=
 #undef O
 
 __AROS_LH2(struct dummybase *, init,
- __AROS_LA(struct dummybase *, dummybase, D0),
- __AROS_LA(BPTR,               segList,   A0),
+ __AROS_LHA(struct dummybase *, dummybase, D0),
+ __AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, SysBase, 0, dummy)
 {
     __AROS_FUNC_INIT
@@ -125,7 +128,7 @@ __AROS_LH2(struct dummybase *, init,
 #define SysBase dummybase->sysbase
 
 __AROS_LH1(struct dummybase *, open,
- __AROS_LA(ULONG, version, D0),
+ __AROS_LHA(ULONG, version, D0),
 	   struct dummybase *, dummybase, 1, dummy)
 {
     __AROS_FUNC_INIT
@@ -207,8 +210,8 @@ __AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
 }
 
 __AROS_LH2I(ULONG, add,
-    __AROS_LA(ULONG,a,D0),
-    __AROS_LA(ULONG,b,D1),
+    __AROS_LHA(ULONG,a,D0),
+    __AROS_LHA(ULONG,b,D1),
     struct dummybase *,dummybase,5,dummy)
 {
     __AROS_FUNC_INIT
@@ -217,8 +220,8 @@ __AROS_LH2I(ULONG, add,
 }
 
 __AROS_LH2I(ULONG, asl,
-    __AROS_LA(ULONG,a,D0),
-    __AROS_LA(ULONG,b,D1),
+    __AROS_LHA(ULONG,a,D0),
+    __AROS_LHA(ULONG,b,D1),
     struct dummybase *,dummybase,6,dummy)
 {
     __AROS_FUNC_INIT

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 15:35:12  digulla
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:41:28  digulla
     Added standard header for all files
 
@@ -23,10 +26,10 @@ struct dummybase
 };
 
 #define init(dummybase, segList) \
-__AROS_LC2(struct dummybase *, init, __AROS_LA(struct dummybase *, dummybase, D0), __AROS_LA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, dummy)
+__AROS_LC2(struct dummybase *, init, __AROS_LHA(struct dummybase *, dummybase, D0), __AROS_LHA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, dummy)
 
 #define open(version) \
-__AROS_LC1(struct dummybase *, open, __AROS_LA(ULONG, version, D0), struct dummybase *, dummybase, 1, dummy)
+__AROS_LC1(struct dummybase *, open, __AROS_LHA(ULONG, version, D0), struct dummybase *, dummybase, 1, dummy)
 
 #define close() \
 __AROS_LC0(BPTR, close, struct dummybase *, dummybase, 2, dummy)
@@ -38,10 +41,10 @@ __AROS_LC0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 __AROS_LC0(int, null, struct dummybase *, dummybase, 4, dummy)
 
 #define add(a, b) \
-__AROS_LC2(ULONG, add, __AROS_LA(ULONG,a,D0), __AROS_LA(ULONG,b,D1), struct dummybase *,dummybase,5,dummy)
+__AROS_LC2(ULONG, add, __AROS_LHA(ULONG,a,D0), __AROS_LHA(ULONG,b,D1), struct dummybase *,dummybase,5,dummy)
 
 #define asl(a, b) \
-__AROS_LC2(ULONG, asl, __AROS_LA(ULONG,a,D0), __AROS_LA(ULONG,b,D1), struct dummybase *,dummybase,6,dummy)
+__AROS_LC2(ULONG, asl, __AROS_LHA(ULONG,a,D0), __AROS_LHA(ULONG,b,D1), struct dummybase *,dummybase,6,dummy)
 
 #endif
 

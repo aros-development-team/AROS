@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 15:35:07  digulla
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:41:22  digulla
     Added standard header for all files
 
@@ -144,15 +147,15 @@ static LONG locate(struct filehandle **handle,STRPTR name,LONG mode,LONG protect
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
-        if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-           (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
-        {
-            fh->type=FHD_FILE;
-            fh->fd=(*handle)->fd;
-            fh->name="";
-            *handle=fh;
-            return 0;
-        }
+	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
+	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+	{
+	    fh->type=FHD_FILE;
+	    fh->fd=(*handle)->fd;
+	    fh->name="";
+	    *handle=fh;
+	    return 0;
+	}
 	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
 	if(fh->name!=NULL)
 	{
@@ -207,8 +210,8 @@ static LONG free_lock(struct filehandle *current)
 	    if(current->fd!=STDIN_FILENO&&current->fd!=STDOUT_FILENO&&
 	       current->fd!=STDERR_FILENO)
 	    {
-	        close(current->fd);
-	        free(current->name);
+		close(current->fd);
+		free(current->name);
 	    }
 	    break;
 	case FHD_DIRECTORY:
@@ -333,9 +336,9 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 	    ead->ed_Ticks=(st.st_ctime%60)*TICKS_PER_SECOND;
 	case ED_PROTECTION:
 	    ead->ed_Prot=(st.st_mode&S_IRUSR?FIBF_READ:0)|
-	    		 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
-	    		 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
-	    		 FIBF_SCRIPT|FIBF_DELETE;
+			 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
+			 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
+			 FIBF_SCRIPT|FIBF_DELETE;
 	case ED_SIZE:
 	    ead->ed_Size=st.st_size;
 	case ED_TYPE:
@@ -389,7 +392,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 	}
 	strcpy(name,fh->name);
 	if(*name)
-  	    strcat(name,"/");
+	    strcat(name,"/");
 	strcat(name,dir->d_name);
 	old=fh->name;
 	fh->name=name;
@@ -403,19 +406,19 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
     }
     if((!error||error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
     {
-        last->ed_Next=NULL;
+	last->ed_Next=NULL;
 	seekdir((DIR *)fh->fd,oldpos);
 	return 0;
     }
     if(!error)
-        error=ERROR_NO_MORE_ENTRIES;
+	error=ERROR_NO_MORE_ENTRIES;
     rewinddir((DIR *)fh->fd);
     return error;
 }
 
 __AROS_LH2(struct emulbase *, init,
- __AROS_LA(struct emulbase *, emulbase, D0),
- __AROS_LA(BPTR,              segList,   A0),
+ __AROS_LHA(struct emulbase *, emulbase, D0),
+ __AROS_LHA(BPTR,              segList,   A0),
 	   struct ExecBase *, sysBase, 0, emul_handler)
 {
     __AROS_FUNC_INIT
@@ -444,9 +447,9 @@ __AROS_LH2(struct emulbase *, init,
 }
 
 __AROS_LH3(void, open,
- __AROS_LA(struct IOFileSys *, iofs, A1),
- __AROS_LA(ULONG,              unitnum, D0),
- __AROS_LA(ULONG,              flags, D0),
+ __AROS_LHA(struct IOFileSys *, iofs, A1),
+ __AROS_LHA(ULONG,              unitnum, D0),
+ __AROS_LHA(ULONG,              flags, D0),
 	   struct emulbase *, emulbase, 1, emul_handler)
 {
     __AROS_FUNC_INIT
@@ -467,7 +470,7 @@ __AROS_LH3(void, open,
 }
 
 __AROS_LH1(BPTR, close,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+ __AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 2, emul_handler)
 {
     __AROS_FUNC_INIT
@@ -496,7 +499,7 @@ __AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
 }
 
 __AROS_LH1(void, beginio,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+ __AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 5, emul_handler)
 {
     __AROS_FUNC_INIT
@@ -516,18 +519,18 @@ __AROS_LH1(void, beginio,
 			 (char *)iofs->io_Args[0],
 			 iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
-		    
+
 	case FSA_CLOSE:
 	    error=free_lock((struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
-	    
+
 	case FSA_IS_INTERACTIVE:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
-	        iofs->io_Args[0]=isatty(fh->fd);
+		iofs->io_Args[0]=isatty(fh->fd);
 	    else
-	        iofs->io_Args[0]=0;
+		iofs->io_Args[0]=0;
 	    break;
 	}
 
@@ -536,8 +539,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-	        if(fh->fd==STDOUT_FILENO)
-	            fh->fd=STDIN_FILENO;
+		if(fh->fd==STDOUT_FILENO)
+		    fh->fd=STDIN_FILENO;
 		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -551,8 +554,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-	        if(fh->fd==STDIN_FILENO)
-	            fh->fd=STDOUT_FILENO;
+		if(fh->fd==STDIN_FILENO)
+		    fh->fd=STDOUT_FILENO;
 		iofs->io_Args[1]=write(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -560,7 +563,7 @@ __AROS_LH1(void, beginio,
 		error=ERROR_OBJECT_WRONG_TYPE;
 	    break;
 	}
-		    
+
 	case FSA_SEEK:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
@@ -585,7 +588,7 @@ __AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_EXAMINE_ALL:
-	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,	    
+	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
 			  (struct ExAllData *)iofs->io_Args[0],
 			  iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
@@ -594,7 +597,7 @@ __AROS_LH1(void, beginio,
 	    error=ERROR_NOT_IMPLEMENTED;
 	    break;
     }
-    
+
     /* Set error code */
     iofs->io_DosError=error;
 
@@ -606,16 +609,16 @@ __AROS_LH1(void, beginio,
     if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
     {
-        SysBase->ThisTask->tc_State=TS_READY;
-        Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-        Switch();
+	SysBase->ThisTask->tc_State=TS_READY;
+	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+	Switch();
     }
-    
+
     __AROS_FUNC_EXIT
 }
 
 __AROS_LH1(LONG, abortio,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+ __AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 6, emul_handler)
 {
     __AROS_FUNC_INIT
