@@ -74,8 +74,8 @@
 	    else
 	    {
 		/* Switches are allowed. Move the current task away. */
-		SysBase->ThisTask->tc_State=TS_READY;
-		Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+//		SysBase->ThisTask->tc_State=TS_READY;
+//		Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 		/* And force a rescedule. */
 		Reschedule(task);
@@ -91,7 +91,8 @@
 	Is the task receiving the signals waiting on them
 	(or on a exception) ?
     */
-    if(task->tc_State==TS_WAIT&&
+        
+    if((task->tc_State==TS_WAIT)&&
        (task->tc_SigRecvd&(task->tc_SigWait|task->tc_SigExcept)))
     {
 	/* Yes. Move him to the ready list. */
@@ -117,8 +118,8 @@
 		else
 		{
 		    /* Switches are allowed. Move the current task away. */
-		    SysBase->ThisTask->tc_State=TS_READY;
-		    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+		    //SysBase->ThisTask->tc_State=TS_READY;
+		    //Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 		    /* And force a rescedule. */
 		    Reschedule(task);
