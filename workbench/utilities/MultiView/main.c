@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -106,7 +106,9 @@ void Cleanup(STRPTR msg)
 	if (IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI)
 	{
 	    ShowMessage("MultiView", msg, MSG(MSG_OK));     
-	} else {
+	}
+	else
+	{
 	    printf("MultiView: %s\n", msg);
 	}
     }
@@ -456,7 +458,7 @@ static void KillGadgets(void)
     {
 	if (win) RemoveGadget(win, (struct Gadget *)gad[i]);
 	if (gad[i]) DisposeObject(gad[i]);
-	gad[i] = NULL;
+	gad[i] = 0;
     }
     
     for(i = 0; i < NUM_IMAGES;i++)
@@ -512,7 +514,9 @@ static void OpenDTO(void)
 				    TAG_DONE);
 	
 	D(bug("MultiView: NewDTObject returned %x\n", dto));                        
-    } else {
+    }
+    else
+    {
 	dto = NewDTObject(filename, ICA_TARGET      , (IPTR)model_obj,
 				    GA_ID           , 1000           ,
 				    DTA_TextAttr    , (IPTR)&textattr,
@@ -671,7 +675,9 @@ static void ScrollTo(UWORD dir, UWORD quali)
 	GetDTAttrs(dto, DTA_TopVert, &val, TAG_DONE);top = (LONG)val;
 	GetDTAttrs(dto, DTA_TotalVert, &val, TAG_DONE);total = (LONG)val;
 	GetDTAttrs(dto, DTA_VisibleVert, &val, TAG_DONE);visible = (LONG)val;
-    } else {
+    }
+    else
+    {
 	horiz = TRUE;
 	if (dir == CURSORLEFT) inc = FALSE; else inc = TRUE;
 	
@@ -685,9 +691,14 @@ static void ScrollTo(UWORD dir, UWORD quali)
     if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
     {
 	if (inc) top = total; else top = 0;
-    } else if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)) {
+    }
+    else
+    if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+    {
 	if (inc) top += visible - 1; else top -= visible - 1;
-    } else {
+    }
+    else
+    {
 	if (inc) top++; else top--;
     }
     
@@ -696,14 +707,31 @@ static void ScrollTo(UWORD dir, UWORD quali)
     
     if (top != oldtop)
     {
+    	struct Gadget *g;
+	
 	if (horiz)
 	{
-	    SetGadgetAttrs((struct Gadget *)gad[GAD_HORIZSCROLL], win, NULL, PGA_Top, top,
-									     TAG_DONE);
-	} else {
-	    SetGadgetAttrs((struct Gadget *)gad[GAD_VERTSCROLL], win, NULL, PGA_Top, top,
-									    TAG_DONE);
+	    g = (struct Gadget *)gad[GAD_HORIZSCROLL];
 	}
+	else
+	{
+	    g = (struct Gadget *)gad[GAD_VERTSCROLL];
+	}
+#if 0
+	SetGadgetAttrs(g, win, NULL, PGA_Top, top,
+				     TAG_DONE);
+#else
+    	{
+    	    struct TagItem tags[] =
+	    {
+		{PGA_Top    , top   },
+		{TAG_DONE	    }
+	    };
+
+	    DoGadgetMethod(g, win, NULL, OM_UPDATE, (IPTR)tags, NULL, 0);
+	}   
+#endif
+
     } /* if (top != oldtop) */
     
 }
@@ -819,7 +847,9 @@ static void HandleAll(void)
 			if (arrowticker)
 			{
 			    arrowticker--;
-			} else if (activearrowgad->Flags & GFLG_SELECTED) {
+			}
+			else if (activearrowgad->Flags & GFLG_SELECTED)
+			{
 			    ScrollTo(activearrowkind, 0);
 			}
 		    }
@@ -883,7 +913,9 @@ static void HandleAll(void)
 			    } /* switch(GTMENUITEM_USERDATA(item)) */
 			    
 			    men = item->NextSelect;
-			} else {
+			}
+			else
+			{
 			    men = MENUNULL;
 			}
 			
