@@ -56,6 +56,8 @@ IPrefs
 
 Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
 
+SetClock LOAD
+
 If EXISTS S:User-Startup
   Execute S:User-Startup
 EndIf
