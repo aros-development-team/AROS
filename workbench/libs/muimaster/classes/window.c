@@ -1733,7 +1733,7 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 			&& (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS))))
 	    {
 		D(bug("HandleRawkey: invoking on %p (ehn=%p) event=%p muikey=%p\n",
-		    ehn->ehn_Object, ehn, event, muikey));
+		      ehn->ehn_Object, ehn, event, muikey));
 		res = InvokeEventHandler(ehn, event, muikey);
 		D(bug("HandleRawkey: got res=%d\n", res));
 		if (res & MUI_EventHandlerRC_Eat)
@@ -1744,6 +1744,35 @@ static void HandleRawkey(Object *win, struct MUI_WindowData *data,
 		    break;
 	    }
 	} /* for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) */
+
+	// event not eaten by active object, try its parents
+	// this is to implement popup key in Popstring
+	if (active_object == data->wd_ActiveObject)
+	{
+	    Object *current_obj = active_object;
+
+	    while (current_obj != NULL)
+	    {
+		for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+		{
+		    ehn = (struct MUI_EventHandlerNode *)mn;
+
+		    if ((ehn->ehn_Object == current_obj) &&
+			(ehn->ehn_Events & IDCMP_RAWKEY))
+		    {
+			res = InvokeEventHandler(ehn, event, muikey);
+			if (res & MUI_EventHandlerRC_Eat)
+			    return;
+
+			/* Leave the loop if a different object has been activated */
+			if (active_object != data->wd_ActiveObject)
+			    break;
+		    }
+		}
+		current_obj = (Object *)XGET(current_obj, MUIA_Parent);
+	    } // while (current_obj != NULL)
+	}
+
 
     } /* if (active_object && !disabled) */
 
