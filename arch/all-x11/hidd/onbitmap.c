@@ -30,6 +30,9 @@
 
 #include <hidd/graphics.h>
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "x11gfx_intern.h"
 #include "x11.h"
 
@@ -68,8 +71,6 @@ static struct OOP_ABDescr attrbases[] =
 
 #include "bitmap_common.c"
 
-#define DEBUG 0
-#include <aros/debug.h>
  
 /* static void init_empty_cursor(Window w
 	, GC c

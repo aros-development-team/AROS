@@ -18,6 +18,8 @@ USER_INCLUDES := $(USER_INCLUDES) -I$(SYS_INCLUDES)
 
 OS_INCLUDES := -I$(GENINCDIR)
 
+CFLAGS2 = $(HOST_CFLAGS) $(USER_INCLUDES) $(OS_INCLUDES) -D__AROS__
+
 X11KEYMAPTABLE_FILE := $(DEVSDIR)/Keymaps/X11/keycode2rawkey.table
 
 FILES	   := x11 support x11gfx onbitmap offbitmap x11_init support x11kbd x11mouse
@@ -90,16 +92,16 @@ setup-x11keymaptable :
 	%mkdirs_q $(DEVSDIR)/Keymaps $(DEVSDIR)/Keymaps/X11
 		
 $(TOOLDIR)/makexkeytable: makexkeytable.c
-	$(CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
+	$(HOST_CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
-	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS)"
+	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS2)"
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 	
 $(OBJDIR)/xshm.o	: xshm.c
-	$(CC) $(COMMON_CFLAGS)  -c -I$(GENDIR)/include $(XSHM_INCLUDES) xshm.c -o $(OBJDIR)/xshm.o
+	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(XSHM_INCLUDES) (CFLAGS2)"
 	
 %libdefs_rule
 	
