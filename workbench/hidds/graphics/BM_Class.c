@@ -1294,21 +1294,8 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
     WORD    	    xMem = msg->x;   /* position in bitmap                       */
     WORD    	    yMem = msg->y - font->tf_Baseline;
     WORD    	    x, y, i;
+    ULONG           gp;
 
-    ULONG GetPixel(WORD x, WORD y)
-    {
-        ULONG offset = x / 8 + y * modulo;
-        UBYTE pixel  = 128 >> (x % 8);
-    
-        if(*(charPatternPtr + offset) & pixel)
-        {
-            return(1);
-        }
-        else
-        {
-            return(0);
-        }
-    }
 
     EnterFunc(bug("BitMap::DrawText()"));
 
@@ -1342,7 +1329,10 @@ static VOID bitmap_drawtext(OOP_Class *cl, OOP_Object *obj,
     
             for(fx = fx2; fx < fw + fx2; fx++)
             {
-                if(GetPixel(fx, fy)) HIDD_BM_DrawPixel(obj, msg->gc, x, y);
+                if(*(charPatternPtr + fx / 8 + fy * modulo) & (128 >> (fx % 8)))
+                {
+                    HIDD_BM_DrawPixel(obj, msg->gc, x, y);
+                }
                 x++;
             }
     
