@@ -21,6 +21,7 @@ END_FILE	:= $(LIBNAME)_endtag
 
 FUNCTIONS	:= \
 	addfont \
+	addvsprite \
 	allocbitmap \
 	allocraster \
 	andrectregion \
@@ -49,6 +50,7 @@ FUNCTIONS	:= \
 	gfxfree \
 	gfxlookup \
 	gfxnew \
+	initgels \
 	initview \
 	initvport \
 	initrastport \
@@ -62,6 +64,7 @@ FUNCTIONS	:= \
 	readpixel \
 	rectfill \
 	remfont \
+	remvsprite \
 	scrollraster \
 	setabpendrmd \
 	setapen \
