@@ -30,6 +30,7 @@
 #include <aros/debug.h>
 #else
 #include "mui.h"
+ULONG xget(Object *obj, Tag attr);
 #endif
 
 
@@ -215,14 +216,17 @@ Object *execute_wnd;
 Object *execute_command_string;
 
 /**************************************************************************
- Easily get attributes
+ Easily get attributes. (disabled for AmigaOS version because library is
+ a linking library for debugging reasons and contains already xget)
 **************************************************************************/
+#ifdef __AROS__
 ULONG xget(Object *obj, Tag attr)
 {
   ULONG storage;
   GetAttr(attr, obj, &storage);
   return storage;
 }
+#endif
 
 /**************************************************************************
  This is a custom class inheriting from the WindowClass.

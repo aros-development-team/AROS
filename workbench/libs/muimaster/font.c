@@ -9,6 +9,8 @@
 #include "font.h"
 #include "prefs.h"
 
+extern struct Library *MUIMasterBase;
+
 /* Returns a given text font, if necessary it opens the font.
  * Must be called after Area's MUIM_Setup.
  */

@@ -15,4 +15,13 @@
 #define const
 #endif
 
+#ifndef __AROS__
+#ifndef _AROS_TYPES_DEFINED
+typedef unsigned long IPTR;
+typedef long STACKLONG;
+typedef unsigned long STACKULONG;
+#define _AROS_TYPES_DEFINED
+#endif
+
+
 #endif

@@ -4,6 +4,7 @@ LIBCODE =
 SUPPORTOBJS = \
   objs/datatypescache.o \
   objs/dragndrop.o \
+  objs/font.o \
   objs/frame.o \
   objs/imspec.o \
   objs/imspec_vector.o \
@@ -141,6 +142,9 @@ objs/datatypescache.o: datatypescache.c
 
 objs/dragndrop.o: dragndrop.c
   sc $(CFLAGS) dragndrop.c objname=$@
+
+objs/font.o: frame.c
+  sc $(CFLAGS) font.c objname=$@
 
 objs/frame.o: frame.c
   sc $(CFLAGS) frame.c objname=$@
