@@ -35,7 +35,6 @@
 
 /* Some "example" hidd bitmaps */
 
-#define CLID_Hidd_PlanarBM "hidd.graphics.bitmap.planarbm"
 #define CLID_Hidd_ChunkyBM "hidd.graphics.bitmap.chunkybm"
 
 
@@ -328,28 +327,15 @@ enum {
     aoHidd_BitMap_Mode,          /* [ISG] The display mode of this bitmap      */
     aoHidd_BitMap_BytesPerPixel, /* [..G] Number of byter per pixel            */
     aoHidd_BitMap_Format,        /* [..G] Tell the format of the bitmap data   */
+    aoHidd_BitMap_AllocBuffer,   /* [I..] BOOL allocate buffer (default: TRUE) */
 #endif
     
     aoHidd_BitMap_BestSize,      /* [..G] Best size for depth                  */
     aoHidd_BitMap_LeftEdge,      /* [I.G] Left edge position of the bitmap     */
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap      */
     aoHidd_BitMap_ColorTab,      /* [ISG] Colormap of the bitmap               */
-    aoHidd_BitMap_AllocBuffer,   /* [I..] BOOL allocate buffer (default: TRUE) */
-
-#if 0    
-    aoHidd_BitMap_Foreground,          /* [.SG] Foreground color                   */
-    aoHidd_BitMap_Background,          /* [.SG] Background color                   */
-    aoHidd_BitMap_DrawMode,            /* [.SG] Draw mode                          */
-    aoHidd_BitMap_Font,                /* [.SG] Current font                       */
-    aoHidd_BitMap_ColorMask,           /* [.SG] Prevents some color bits from      */
-                                   /*       changing                           */
-    aoHidd_BitMap_LinePattern,         /* [.SG] Pattern for line drawing          */
-    aoHidd_BitMap_PlaneMask,           /* [.SG] Shape bitmap                       */
-
-    aoHidd_BitMap_GC,           /* [ISG]  bitmaps GC                       */
-    aoHidd_BitMap_ColorExpansionMode,	/* [ISG] Mode for color expansion operations */
-#endif    
     
+
     aoHidd_BitMap_Friend,	/* [I.G] Friend bitmap. The bitmap will be allocated so that it
     				   is optimized for blitting to this bitmap */
     
@@ -369,6 +355,7 @@ enum {
 #define aHidd_BitMap_Mode          (HiddBitMapAttrBase + aoHidd_BitMap_Mode)
 #define aHidd_BitMap_Format        (HiddBitMapAttrBase + aoHidd_BitMap_Format)
 #define aHidd_BitMap_BytesPerPixel (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerPixel)
+#define aHidd_BitMap_AllocBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_AllocBuffer)
 #endif
 
 #define aHidd_BitMap_BytesPerRow   (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerRow)
@@ -376,31 +363,8 @@ enum {
 #define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
 #define aHidd_BitMap_ColorTab      (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
-#define aHidd_BitMap_AllocBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_AllocBuffer)
-
-#if 0
-
-#define aHidd_BitMap_Foreground  (HiddBitMapAttrBase + aoHidd_BitMap_Foreground)
-#define aHidd_BitMap_Background  (HiddBitMapAttrBase + aoHidd_BitMap_Background)
-#define aHidd_BitMap_DrawMode    (HiddBitMapAttrBase + aoHidd_BitMap_DrawMode)
-#define aHidd_BitMap_Font        (HiddBitMapAttrBase + aoHidd_BitMap_Font)
-#define aHidd_BitMap_ColorMask   (HiddBitMapAttrBase + aoHidd_BitMap_ColorMask)
-#define aHidd_BitMap_LinePattern (HiddBitMapAttrBase + aoHidd_BitMap_LinePattern)
-#define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
-#define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
-#define aHidd_BitMap_ColorExpansionMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColorExpansionMode)
-
-
-#endif
-
 #define aHidd_BitMap_Friend		 (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
 
-
-
-/* BitMap formats */
-
-#define vHidd_BitMap_Format_Planar   0x1
-#define vHidd_BitMap_Format_Chunky   0x2
 
 
 /* messages for a bitmap */
@@ -830,6 +794,43 @@ enum {
 #define IS_PIXFMT_ATTR(attr, idx) \
 	( ( ( idx ) = (attr) - HiddPixFmtAttrBase) < num_Hidd_PixFmt_Attrs)
 
+
+
+/********** Planar bitmap *******************/
+
+#define CLID_Hidd_PlanarBM "hidd.graphics.bitmap.planarbm"
+#define IID_Hidd_PlanarBM  "hidd.graphics.bitmap.planarbm"
+
+#define HiddPlanarBMAttrBase __IHIDD_PlanarBM
+
+extern AttrBase HiddPlanarBMAttrBase;
+
+enum {
+
+    moHidd_PlanarBM_SetBitMap	/* AROS sepecific method */
+};
+
+struct pHidd_PlanarBM_SetBitMap
+{
+    MethodID mID;
+    struct BitMap *bitMap;
+};
+
+VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap);
+
+enum {
+    aoHidd_PlanarBM_AllocPlanes,	/* [I..] BOOL */
+    
+    num_Hidd_PlanarBM_Attrs
+};
+
+#define aHidd_PlanarBM_AllocPlanes	(HiddPlanarBMAttrBase + aoHidd_PlanarBM_AllocPlanes)
+#define aHidd_PlanarBM_		(HiddPlanarBMAttrBase + aoHidd_PlanarBM_)
+
+
+
+#define IS_PLANARBM_ATTR(attr, idx) \
+	( ( ( idx ) = (attr) - HiddPlanarBMAttrBase) < num_Hidd_PlanarBM_Attrs)
     
 #endif /* HIDD_GRAPHICS_H */
 

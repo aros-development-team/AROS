@@ -647,3 +647,18 @@ Object * HIDD_BM_SetPixelFormat(Object *obj, struct TagItem *pixFmtTags)
     
     return (Object *)DoMethod(obj, (Msg)&p);
 }
+
+
+/********* PlanarBM **********************************/
+VOID HIDD_PlanarBM_SetBitMap(Object *obj, struct BitMap *bitMap)
+{
+    static MethodID mid = 0;
+    struct pHidd_PlanarBM_SetBitMap p;
+    
+    if(!mid) mid = GetMethodID(IID_Hidd_PlanarBM, moHidd_PlanarBM_SetBitMap);
+        
+    p.mID = mid;
+    p.bitMap = bitMap;
+    
+    return (Object *)DoMethod(obj, (Msg)&p);
+}

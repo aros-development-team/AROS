@@ -4,9 +4,12 @@
 
 #include <exec/memory.h>
 #include <utility/tagitem.h>
+#include <graphics/gfx.h>
 #include <oop/oop.h>
 
 #include <hidd/graphics.h>
+
+#include <string.h>
 
 #include "graphics_intern.h"
 
@@ -18,13 +21,24 @@
 
 struct planarbm_data {
     UBYTE **planes;
+    ULONG planebuf_size;
     ULONG bytesperrow;
+    ULONG rows;
     UBYTE depth;
+    BOOL planes_alloced;
 };
 
 
-static AttrBase HiddBitMapAttrBase = 0;
-static AttrBase HiddGCAttrBase = 0;
+static AttrBase HiddBitMapAttrBase	= 0;
+static AttrBase HiddGCAttrBase		= 0;
+static AttrBase HiddPlanarBMAttrBase	= 0;
+
+static struct ABDescr attrbases[] = {
+    { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,		&HiddGCAttrBase		},
+    { IID_Hidd_PlanarBM,	&HiddPlanarBMAttrBase	},
+    { NULL, 0UL }
+};
 
 /*** PlanarBM::New ************************************************************/
 
@@ -34,8 +48,6 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     UBYTE alignoffset	= 15;
     UBYTE aligndiv	= 2;
-    
-
     BOOL ok = TRUE;    
     
     struct planarbm_data *data;
@@ -54,11 +66,17 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     GetAttr(o, aHidd_BitMap_Width,	&width);
     GetAttr(o, aHidd_BitMap_Height,	&height);
     
+    /* We cache some info */
     data->bytesperrow	  = (width + alignoffset) / aligndiv;
+    data->rows 		  = height;
+    data->depth		  = depth;
     
-    /* For efficiency, we cache the depth */
-    data->depth = depth;
+    data->planes_alloced = (BOOL)GetTagData(aHidd_PlanarBM_AllocPlanes, TRUE, msg->attrList);
     
+    if (!data->planes_alloced) {
+    	/* Nothing more to do */
+	return o;
+    }
     
     /* Allocate memory for plane array */
     data->planes = AllocVec(sizeof (UBYTE *) * depth, MEMF_ANY|MEMF_CLEAR);
@@ -68,6 +86,8 @@ static Object *planarbm_new(Class *cl, Object *o, struct pRoot_New *msg)
     {
     
 	UBYTE i;
+	
+	data->planebuf_size = depth;
 	
     	/* Allocate all the planes */
 	for ( i = 0; i < depth && ok; i ++)
@@ -105,12 +125,11 @@ static VOID planarbm_dispose(Class *cl, Object *o, Msg msg)
     {
     	for (i = 0; i < data->depth; i ++)
 	{
-		if (NULL != data->planes[i])
-		{
-			FreeVec(data->planes[i]);
-		}
+	    if (NULL != data->planes[i])
+	    {
+		FreeVec(data->planes[i]);
+	    }
 	}
-	
 	FreeVec(data->planes);
     }
     
@@ -185,6 +204,67 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 }
 
 
+/******* PlanarBM::SetBitMap ****************************************/
+BOOL planarbm_setbitmap(Class *cl, Object *o, struct pHidd_PlanarBM_SetBitMap *msg)
+{
+    struct planarbm_data *data;
+    struct BitMap *bm;
+    struct TagItem tags[] = {
+    	{ aHidd_BitMap_Depth,	0UL },
+	{ aHidd_BitMap_Width,	0UL },
+	{ aHidd_BitMap_Height,	0UL },
+	{ TAG_DONE, 0UL }
+    };
+	
+    ULONG i;
+    
+    data = INST_DATA(cl, o);
+    bm = msg->bitMap;
+    
+    if (data->planes_alloced) {
+    	kprintf(" !!!!! PlanarBM: Trying to set bitmap in one that allready has planes allocated\n");
+	return FALSE;
+    }
+    
+    /* Check if plane array allready allocated */
+    if (NULL != data->planes) {
+    	if (bm->Depth > data->planebuf_size) {
+	    FreeVec(data->planes);
+	    data->planes = NULL;
+	}
+    }
+    
+    if (NULL == data->planes) {
+	data->planes = AllocVec(sizeof (UBYTE *) * bm->Depth, MEMF_CLEAR);
+
+	if (NULL == data->planes)
+	     return FALSE;
+	     
+	data->planebuf_size = bm->Depth;
+
+    }
+    
+    /* Update the planes */
+    for (i = 0; i < data->planebuf_size; i ++) {
+    	if (i < bm->Depth) 
+   	    data->planes[i] = bm->Planes[i];
+	else
+	    data->planes[i] = NULL;
+    }
+
+    data->depth		= bm->Depth;
+    data->bytesperrow	= bm->BytesPerRow;
+    data->rows		= bm->Rows;
+    
+    tags[0].ti_Data = bm->Depth;
+    tags[1].ti_Data = bm->BytesPerRow * 8;
+    tags[2].ti_Data = bm->Rows;
+    SetAttrs(o, tags);
+	
+    return TRUE;    
+}
+
+
 /*** init_planarbmclass *********************************************************/
 
 #undef OOPBase
@@ -195,6 +275,8 @@ static ULONG planarbm_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixe
 
 #define NUM_ROOT_METHODS   2
 #define NUM_BITMAP_METHODS 2
+#define NUM_PLANARBM_METHODS 1
+
 
 Class *init_planarbmclass(struct class_static_data *csd)
 {
@@ -211,11 +293,18 @@ Class *init_planarbmclass(struct class_static_data *csd)
         {(IPTR (*)())planarbm_getpixel		, moHidd_BitMap_GetPixel	},
         {NULL, 0UL}
     };
+
+    struct MethodDescr planarbm_descr[NUM_BITMAP_METHODS + 1] =
+    {
+        {(IPTR (*)())planarbm_setbitmap		, moHidd_PlanarBM_SetBitMap	},
+        {NULL, 0UL}
+    };
     
     struct InterfaceDescr ifdescr[] =
     {
-        {root_descr,    IID_Root       , NUM_ROOT_METHODS},
-        {bitMap_descr,  IID_Hidd_BitMap, NUM_BITMAP_METHODS},
+        {root_descr,     IID_Root       , NUM_ROOT_METHODS	},
+        {bitMap_descr,	 IID_Hidd_BitMap, NUM_BITMAP_METHODS	},
+        {planarbm_descr, IID_Hidd_BitMap, NUM_PLANARBM_METHODS	},
         {NULL, NULL, 0}
     };
 
@@ -240,27 +329,18 @@ Class *init_planarbmclass(struct class_static_data *csd)
         if(cl)
         {
             D(bug("BitMap class ok\n"));
-            csd->planarbmclass = cl;
-            cl->UserData     = (APTR) csd;
             
             /* Get attrbase for the BitMap interface */
-            HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-	    HiddGCAttrBase = ObtainAttrBase(IID_Hidd_GC);
-            if(HiddBitMapAttrBase && HiddGCAttrBase)
+	    if (ObtainAttrBases(attrbases))
             {
+            	csd->planarbmclass = cl;
+            	cl->UserData     = (APTR) csd;
+		
                 AddClass(cl);
+		
+		return cl;
             }
-            else
-            {
-	    	if (HiddGCAttrBase)
-			ReleaseAttrBase(IID_Hidd_GC);
-			
-	    	if (HiddBitMapAttrBase)
-			ReleaseAttrBase(IID_Hidd_BitMap);
-			
-                free_planarbmclass(csd);
-                cl = NULL;
-            }
+	    DisposeObject((Object *)cl);
         }
     } /* if(MetaAttrBase) */
 
@@ -277,11 +357,12 @@ void free_planarbmclass(struct class_static_data *csd)
     if(csd)
     {
         RemoveClass(csd->planarbmclass);
-        if(csd->planarbmclass) DisposeObject((Object *) csd->planarbmclass);
+	
+	DisposeObject((Object *) csd->planarbmclass);
+	
         csd->planarbmclass = NULL;
-        if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-	if (HiddGCAttrBase) ReleaseAttrBase(IID_Hidd_GC);
     }
+    ReleaseAttrBases(attrbases);
 
     ReturnVoid("free_planarbmclass");
 }
