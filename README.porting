@@ -1,0 +1,52 @@
+
+WHAT IS THIS FILE
+-----------------
+
+This file describes how to port AROS to a new kind of hardware.
+
+HOW TO DO IT
+------------
+
+1. Select an identifying name for your CPU (eg. i386, m68k, hppa, sparc)
+    and add "-emul" (eg. i386-emul) if your port is to be running as
+    a "sub-OS" or "-native" (eg. m68k-native) if the port will be a
+    standalone OS.
+
+2. Select an identifying name for your system (eg. sgi, linux, amiga, etc).
+
+3. Edit "configure" and make it recognize your kind of hardware and adjust
+    the numerous variables as your system requires.
+
+    KERNEL - The kind of CPU you use (see 1.)
+    ARCH - Name of your system (see 2.)
+    SYS_CC - The name of your C compiler
+    COMMON_CFLAGS - options which should be handed to every call to the
+	    C compiler (eg. -g -Wall -O0 etc.)
+    ILDFLAGS - The flags you must give to the compiler when linking to
+	    prevent it to use any standard libraries or startup modules
+	    (for GCC the options are -nostartfiles -nostdlib -Xlinker -i).
+	    This is used to create AROS executables. These executables must
+	    not have any unresolved symbols and all references must be
+	    filled.
+    RANLIB - contains the name of your ranlib program. If you don't have
+	    one, specify "true" here (or the name of any other shell command
+	    which simply ignores all parameters and doesn't return an
+	    error code).
+
+3. Make a copy of i386-emul to $(KERNEL) and convert all assembler sources
+    from x86 to your CPU.
+
+4. Type make. If there any errors, write them down, then fix them and
+    continue with step 4.
+
+5. Go to bin/$(ARCH)/AROS and start "arosshell". Now you can type
+    some commands (eg. "dir all", "list" or "demowin"). If all works well,
+    you get a list of directories and files with "dir all" and "demowin"
+    opens a window with some gadgets and renderings with which you can
+    play. Typing "Esc" or clicking on "Exit" quits the demo. To stop the
+    arosshell, you must press ^C (Ctrl-C) since as a real OS there is
+    no way to stop nicely.
+
+6. If you had any problems, send me a list so future versions of AROS can
+    fix them.
+
