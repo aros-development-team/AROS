@@ -38,240 +38,19 @@
 #define REGISTER_BG ((IPTR) "7:V,00000000,92000000,91000000-00000000,82000000,81000000")
 #define LIST_BG     ((IPTR) "2:00000000,82000000,81000000")
 
+#define SETUP_INST_DATA struct AboutAROS_DATA *data = INST_DATA(CLASS, self)
+
 /*** Private methods ********************************************************/
 #define MUIM_AboutAROS_ShowLicense (TAG_USER | 0x20000000)
 
-struct AboutAROS_DATA;
+/*** Instance Data **********************************************************/
+struct AboutAROS_DATA
+{
+    Object *aad_Window;
+    APTR    aad_Pool;
+};
 
-STRPTR Section2Name(ULONG section);
-BOOL NamesToList
-(
-    Object *list, struct TagItem *tags, struct AboutAROS_DATA *data
-);
-
-ZUNE_CUSTOMCLASS_INLINE_4
-(
-    AboutAROS, NULL, MUIC_Application, NULL,
-    {
-        Object *aad_Window;
-        APTR    aad_Pool;
-    },
-
-    OM_NEW, struct opSet *,
-    ({
-         Object                *window,
-                               *licenseButton,
-                               *authorsList,
-                               *sponsorsList,
-                               *acknowledgementsList;
-
-         STRPTR                 pages[4]       = { NULL };
-         BOOL                   showLogotype;
-         BPTR                   lock;
-         APTR                   pool;
-
-         /* Allocate memory pool ------------------------------------------------*/
-         pool = CreatePool(MEMF_ANY, 4096, 4096);
-         if (pool == NULL) return NULL;
-
-         /* Check if the logotype is available ----------------------------------*/
-         if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
-         {
-             showLogotype = TRUE;
-             UnLock(lock);
-         }
-         else
-         {
-             showLogotype = FALSE;
-         }
-
-
-
-         /* Initialize page labels ----------------------------------------------*/
-         pages[0] = _(MSG_PAGE_AUTHORS);
-         pages[1] = _(MSG_PAGE_SPONSORS);
-         pages[2] = _(MSG_PAGE_ACKNOWLEDGEMENTS);
-
-         /* Create application and window objects -------------------------------*/
-         self = (Object *) DoSuperNewTags
-         (
-             CLASS, self, NULL,
-
-             MUIA_Application_Title, __(MSG_TITLE),
-
-             SubWindow, (IPTR) window = WindowObject,
-                 MUIA_Window_Title,    __(MSG_TITLE),
-                 MUIA_Window_Width,    MUIV_Window_Width_MinMax(0),
-                 MUIA_Window_NoMenus,  TRUE,
-                 MUIA_Window_Activate, TRUE,
-
-                 WindowContents, (IPTR) VGroup,
-                     InnerSpacing(0, 0),
-                     GroupSpacing(2),
-                     MUIA_Background, WINDOW_BG,
-
-                     Child, showLogotype
-                         ? (IPTR) ImageObject,
-                               MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE_IMAGE,
-                           End
-                         : (IPTR) TextObject,
-                               MUIA_Font,                 MUIV_Font_Fixed,
-                               MUIA_Text_PreParse, (IPTR) "\0333\033b\033c",
-                               MUIA_Text_Contents, (IPTR) LOGOTYPE_ASCII,
-                               MUIA_Weight,               0,
-                           End
-                         ,
-                     Child, (IPTR) VSpace(4),
-                     Child, (IPTR) HGroup,
-                         InnerSpacing(0,0),
-                         GroupSpacing(6),
-
-                         Child, (IPTR) HVSpace,
-                         Child, (IPTR) TextObject,
-                             MUIA_Font,                 MUIV_Font_Big,
-                             MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                             MUIA_Text_Contents,        __(MSG_BUILD_TYPE),
-                             MUIA_Weight,               0,
-                         End,
-                         Child, (IPTR) TextObject,
-                             MUIA_Font,                 MUIV_Font_Big,
-                             MUIA_Text_PreParse, (IPTR) "\0333\033b",
-                             MUIA_Text_Contents, (IPTR) DATE,
-                             MUIA_Weight,               0,
-                         End,
-                         Child, (IPTR) HVSpace,
-                     End,
-                     Child, (IPTR) VSpace(4),
-                     Child, (IPTR) TextObject,
-                         MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                         MUIA_Text_Contents,        __(MSG_COPYRIGHT),
-                     End,
-                     Child, (IPTR) HGroup,
-                         InnerSpacing(0,0),
-                         GroupSpacing(0),
-
-                         Child, (IPTR) HVSpace,
-                         Child, (IPTR) TextObject,
-                             MUIA_Text_PreParse, (IPTR) "\0333",
-                             MUIA_Text_Contents,        __(MSG_LICENSE_1),
-                             MUIA_Weight,               0,
-                         End,
-                         Child, (IPTR) TextObject,
-                             MUIA_Text_Contents, (IPTR) " ",
-                             MUIA_Weight,               0,
-                         End,
-                         Child, (IPTR) licenseButton = TextObject,
-                             MUIA_InputMode,            MUIV_InputMode_RelVerify,
-                             MUIA_Text_PreParse, (IPTR) "\0333\033u",
-                             MUIA_Text_Contents,        __(MSG_LICENSE_2),
-                             MUIA_Weight,        0,
-                         End,
-                         Child, (IPTR) TextObject,
-                             MUIA_Text_PreParse, (IPTR) "\0333",
-                             MUIA_Text_Contents,        __(MSG_LICENSE_3),
-                             MUIA_Weight,               0,
-                         End,
-                         Child, (IPTR) HVSpace,
-                     End,
-                     Child, (IPTR) TextObject,
-                         MUIA_Text_PreParse, (IPTR) "\0333\033c",
-                         MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
-                     End,
-                     Child, (IPTR) VSpace(4),
-                     Child, (IPTR) VGroup,
-                         InnerSpacing(4,4),
-
-                         Child, (IPTR) RegisterGroup(pages),
-                             MUIA_Background, REGISTER_BG,
-
-                             Child, (IPTR) ListviewObject,
-                                 MUIA_Listview_List, (IPTR) authorsList = ListObject,
-                                     TextFrame,
-                                     MUIA_Background, LIST_BG,
-                                 End,
-                             End,
-                             Child, (IPTR) ListviewObject,
-                                 MUIA_Listview_List, (IPTR) sponsorsList = ListObject,
-                                     TextFrame,
-                                     MUIA_Background, LIST_BG,
-                                 End,
-                             End,
-                             Child, (IPTR) ListviewObject,
-                                 MUIA_Listview_List, (IPTR) acknowledgementsList = ListObject,
-                                     TextFrame,
-                                     MUIA_Background, LIST_BG,
-                                 End,
-                             End,
-                         End,
-                     End,
-                 End,
-             End,
-
-             TAG_DONE
-         );
-
-         if (self == NULL) goto error;
-
-         data = INST_DATA(CLASS, self);
-         data->aad_Window = window;
-         data->aad_Pool   = pool;
-
-         /*-- Initialize lists --------------------------------------------------*/
-         NamesToList(authorsList, AUTHORS, data);
-         NamesToList(sponsorsList, SPONSORS, data);
-
-         DoMethod
-         (
-             acknowledgementsList, MUIM_List_Insert,
-             (IPTR) ACKNOWLEDGEMENTS, ACKNOWLEDGEMENTS_SIZE, MUIV_List_Insert_Top
-         );
-
-         /*-- Setup notifications -----------------------------------------------*/
-         DoMethod
-         (
-             window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-             (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
-         );
-
-         DoMethod
-         (
-             licenseButton, MUIM_Notify, MUIA_Pressed, FALSE,
-             (IPTR) self, 1, MUIM_AboutAROS_ShowLicense
-         );
-
-         return (IPTR) self;
-
-     error:
-
-         return NULL;
-    }),
-
-    OM_DISPOSE, Msg,
-    ({
-        if (data->aad_Pool != NULL) DeletePool(data->aad_Pool);
-
-        return DoSuperMethodA(CLASS, self, message);
-    }),
-
-    MUIM_Application_Execute, Msg,
-    ({
-         SET(data->aad_Window, MUIA_Window_Open, TRUE);
-         DoSuperMethodA(CLASS, self, message);
-         SET(data->aad_Window, MUIA_Window_Open, FALSE);
-
-         return NULL;
-    }),
-
-    MUIM_AboutAROS_ShowLicense, Msg,
-    ({
-         OpenWorkbenchObject("HELP:LICENSE", TAG_DONE);
-
-         return NULL;
-    })
-)
-
-
-/*** Utility functions ******************************************************/
+/*** Utility Functions ******************************************************/
 STRPTR Section2Name(ULONG section)
 {
     switch (section)
@@ -424,3 +203,226 @@ BOOL NamesToList
 
     return success;
 }
+
+/*** Methods ****************************************************************/
+Object *AboutAROS__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
+{
+    Object                *window,
+                          *licenseButton,
+                          *authorsList,
+                          *sponsorsList,
+                          *acknowledgementsList;
+
+    STRPTR                 pages[4]       = { NULL };
+    BOOL                   showLogotype;
+    BPTR                   lock;
+    APTR                   pool;
+
+    /* Allocate memory pool ------------------------------------------------*/
+    pool = CreatePool(MEMF_ANY, 4096, 4096);
+    if (pool == NULL) return NULL;
+
+    /* Check if the logotype is available ----------------------------------*/
+    if ((lock = Lock(LOGOTYPE_IMAGE, ACCESS_READ)) != NULL)
+    {
+        showLogotype = TRUE;
+        UnLock(lock);
+    }
+    else
+    {
+        showLogotype = FALSE;
+    }
+
+    /* Initialize page labels ----------------------------------------------*/
+    pages[0] = _(MSG_PAGE_AUTHORS);
+    pages[1] = _(MSG_PAGE_SPONSORS);
+    pages[2] = _(MSG_PAGE_ACKNOWLEDGEMENTS);
+
+    /* Create application and window objects -------------------------------*/
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
+
+        MUIA_Application_Title, __(MSG_TITLE),
+
+        SubWindow, (IPTR) window = WindowObject,
+            MUIA_Window_Title,    __(MSG_TITLE),
+            MUIA_Window_Width,    MUIV_Window_Width_MinMax(0),
+            MUIA_Window_NoMenus,  TRUE,
+            MUIA_Window_Activate, TRUE,
+
+            WindowContents, (IPTR) VGroup,
+                InnerSpacing(0, 0),
+                GroupSpacing(2),
+                MUIA_Background, WINDOW_BG,
+
+                Child, showLogotype
+                    ? (IPTR) ImageObject,
+                          MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE_IMAGE,
+                      End
+                    : (IPTR) TextObject,
+                          MUIA_Font,                 MUIV_Font_Fixed,
+                          MUIA_Text_PreParse, (IPTR) "\0333\033b\033c",
+                          MUIA_Text_Contents, (IPTR) LOGOTYPE_ASCII,
+                          MUIA_Weight,               0,
+                      End
+                    ,
+                Child, (IPTR) VSpace(4),
+                Child, (IPTR) HGroup,
+                    InnerSpacing(0,0),
+                    
+                    GroupSpacing(6),
+                    Child, (IPTR) HVSpace,
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents,        __(MSG_BUILD_TYPE),
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) TextObject,
+                        MUIA_Font,                 MUIV_Font_Big,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033b",
+                        MUIA_Text_Contents, (IPTR) DATE,
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) HVSpace,
+                End,
+                Child, (IPTR) VSpace(4),
+                Child, (IPTR) TextObject,
+                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                    MUIA_Text_Contents,        __(MSG_COPYRIGHT),
+                End,
+                Child, (IPTR) HGroup,
+                    InnerSpacing(0,0),
+                    GroupSpacing(0),
+
+                    Child, (IPTR) HVSpace,
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_PreParse, (IPTR) "\0333",
+                        MUIA_Text_Contents,        __(MSG_LICENSE_1),
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_Contents, (IPTR) " ",
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) licenseButton = TextObject,
+                        MUIA_InputMode,            MUIV_InputMode_RelVerify,
+                        MUIA_Text_PreParse, (IPTR) "\0333\033u",
+                        MUIA_Text_Contents,        __(MSG_LICENSE_2),
+                        MUIA_Weight,        0,
+                    End,
+                    Child, (IPTR) TextObject,
+                        MUIA_Text_PreParse, (IPTR) "\0333",
+                        MUIA_Text_Contents,        __(MSG_LICENSE_3),
+                        MUIA_Weight,               0,
+                    End,
+                    Child, (IPTR) HVSpace,
+                End,
+                Child, (IPTR) TextObject,
+                    MUIA_Text_PreParse, (IPTR) "\0333\033c",
+                    MUIA_Text_Contents,        __(MSG_MORE_INFORMATION),
+                End,
+                Child, (IPTR) VSpace(4),
+                Child, (IPTR) VGroup,
+                    InnerSpacing(4,4),
+
+                    Child, (IPTR) RegisterGroup(pages),
+                        MUIA_Background, REGISTER_BG,
+
+                        Child, (IPTR) ListviewObject,
+                            MUIA_Listview_List, (IPTR) authorsList = ListObject,
+                                TextFrame,
+                                MUIA_Background, LIST_BG,
+                            End,
+                        End,
+                        Child, (IPTR) ListviewObject,
+                            MUIA_Listview_List, (IPTR) sponsorsList = ListObject,
+                                TextFrame,
+                                MUIA_Background, LIST_BG,
+                            End,
+                        End,
+                        Child, (IPTR) ListviewObject,
+                            MUIA_Listview_List, (IPTR) acknowledgementsList = ListObject,
+                                TextFrame,
+                                MUIA_Background, LIST_BG,
+                            End,
+                        End,
+                    End,
+                End,
+            End,
+        End,
+
+        TAG_DONE
+    );
+
+    if (self != NULL)
+    {
+        SETUP_INST_DATA;
+        
+        data->aad_Window = window;
+        data->aad_Pool   = pool;
+
+        /*-- Initialize lists --------------------------------------------------*/
+        NamesToList(authorsList, AUTHORS, data);
+        NamesToList(sponsorsList, SPONSORS, data);
+    
+        DoMethod
+        (
+            acknowledgementsList, MUIM_List_Insert,
+            (IPTR) ACKNOWLEDGEMENTS, ACKNOWLEDGEMENTS_SIZE, MUIV_List_Insert_Top
+        );
+    
+        /*-- Setup notifications -----------------------------------------------*/
+        DoMethod
+        (
+            window, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+            (IPTR) self, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit
+        );
+    
+        DoMethod
+        (
+            licenseButton, MUIM_Notify, MUIA_Pressed, FALSE,
+            (IPTR) self, 1, MUIM_AboutAROS_ShowLicense
+        );
+    }
+    
+    return self;
+}
+
+IPTR AboutAROS__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+    
+    if (data->aad_Pool != NULL) DeletePool(data->aad_Pool);
+
+    return DoSuperMethodA(CLASS, self, message);
+}
+
+IPTR AboutAROS__MUIM_Application_Execute(Class *CLASS, Object *self, Msg message)
+{
+    SETUP_INST_DATA;
+    
+    SET(data->aad_Window, MUIA_Window_Open, TRUE);
+    DoSuperMethodA(CLASS, self, message);
+    SET(data->aad_Window, MUIA_Window_Open, FALSE);
+
+    return 0;
+}
+
+IPTR AboutAROS__MUIM_AboutAROS_ShowLicense(Class *CLASS, Object *self, Msg message)
+{
+    OpenWorkbenchObject("HELP:LICENSE", TAG_DONE);
+
+    return 0;
+}
+
+/*** Setup ******************************************************************/
+ZUNE_CUSTOMCLASS_4
+(
+    AboutAROS, NULL, MUIC_Application, NULL,
+    OM_NEW,                     struct opSet *,
+    OM_DISPOSE,                 Msg,
+    MUIM_Application_Execute,   Msg,
+    MUIM_AboutAROS_ShowLicense, Msg
+);
