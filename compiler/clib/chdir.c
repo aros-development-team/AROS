@@ -108,18 +108,17 @@ void __exit_chdir(void)
 {
     if( __startup_cd_changed )
     {
-        BPTR lock;
         TEXT buffer[256]; /* Longest string supported by SetCurrentDirName() */
-
+        
         if( NameFromLock( __startup_cd_lock, buffer, 256 ) )
         {
-	    const char *buf2 = __path_a2u(buffer);
-	    
-	    if (buf2)
-                SetCurrentDirName( buf2 );
+            SetCurrentDirName(buffer);
         }
+        
+            BPTR
         lock = CurrentDir( __startup_cd_lock );
-	UnLock( lock );
+
+        UnLock( lock );
     }
 }
 
