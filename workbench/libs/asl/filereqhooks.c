@@ -809,6 +809,13 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    nm[14].nm_Type = NM_IGNORE;
 	}
 
+	/* No Rename in drawersonly requesters */
+	
+	if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+	{
+	    nm[11].nm_Type = NM_IGNORE;
+	}
+	
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */
 	   

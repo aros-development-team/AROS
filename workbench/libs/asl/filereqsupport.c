@@ -142,6 +142,23 @@ void FRRefreshListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 /*****************************************************************************************/
 
+void FRFreeListviewNode(struct ASLLVFileReqNode *node, struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    WORD i;
+
+    for(i = 0; i < ASLLV_MAXCOLUMNS; i++)
+    {
+	if (node->text[i] && !(node->dontfreetext & (1 << i)))
+	{
+	    FreePooled(ld->ld_IntReq->ir_MemPool, node->text[i], strlen(node->text[i]) + 1);
+	}
+    }
+
+    FreePooled(ld->ld_IntReq->ir_MemPool, node, sizeof(struct ASLLVFileReqNode));
+} 
+
+/*****************************************************************************************/
+
 void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FRUserData 		*udata = (struct FRUserData *)ld->ld_UserData;	
@@ -164,17 +181,7 @@ void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     ForeachNodeSafe(&udata->ListviewList, node, succ)
     {
-        WORD i = 0;
-	
-	for(i = 0; i < ASLLV_MAXCOLUMNS; i++)
-	{
-	    if (node->text[i] && !(node->dontfreetext & (1 << i)))
-	    {
-	        FreePooled(ld->ld_IntReq->ir_MemPool, node->text[i],  strlen(node->text[i]) + 1);
-	    }
-        }
-	
-        FreePooled(ld->ld_IntReq->ir_MemPool, node, sizeof(struct ASLLVFileReqNode));
+        FRFreeListviewNode(node, ld, AslBase);
     }
     
     NEWLIST(&udata->ListviewList);
@@ -192,11 +199,15 @@ void FRReSortListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct TagItem 		set_tags [] =
     {
         {ASLLV_Labels	, NULL	},
+	{ASLLV_Top	, 0	},
 	{TAG_DONE		}
     };
+    IPTR			old_top;
     
     if (udata->Flags & FRFLG_SHOWING_VOLUMES) return;
 
+    GetAttr(ASLLV_Top, udata->Listview, &old_top);
+    
     SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
 	
     NEWLIST(&templist);
@@ -214,6 +225,7 @@ void FRReSortListview(struct LayoutData *ld, struct AslBase_intern *AslBase)
     }
     
     set_tags[0].ti_Data = (IPTR)&udata->ListviewList;
+    set_tags[1].ti_Data = old_top;
     
     SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);    
 }
@@ -946,10 +958,10 @@ void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		    		    
 		    SetGadgetAttrs((struct Gadget *)udata->Listview, ld->ld_Window, NULL, ASLLV_Active, -1,
 		    									  TAG_DONE);
-
+											  
 		    ForeachNode(&udata->ListviewList, node)
 		    {
-			if (node->node.ln_Name)
+			if (IS_MULTISEL(node) && node->node.ln_Name)
 			{
 			    if (MatchPatternNoCase(parsedpattern, node->node.ln_Name))
 			    {
@@ -985,7 +997,7 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
     {
-	name = VecPooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
+	name = name2 = VecPooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
     } else {
         GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name2);
 	
@@ -999,18 +1011,51 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     if (name) if (name[0])
     {
-	 struct EasyStruct es;
+	struct EasyStruct es;
 
-	 es.es_StructSize   = sizeof(es);
-	 es.es_Flags 	    = 0;
-	 es.es_Title 	    = ifreq->ifr_Delete_TitleText;
-	 es.es_TextFormat   = ifreq->ifr_Delete_Message;
-	 es.es_GadgetFormat = ifreq->ifr_Delete_OkayCancelText;
+	es.es_StructSize   = sizeof(es);
+	es.es_Flags 	   = 0;
+	es.es_Title 	   = ifreq->ifr_Delete_TitleText;
+	es.es_TextFormat   = ifreq->ifr_Delete_Message;
+	es.es_GadgetFormat = ifreq->ifr_Delete_OkayCancelText;
 
-	 if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1)
-	 {
-	     /* Delete it */
-	 }
+	if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1)
+	{
+	    if (DeleteFile(name) && !(udata->Flags & FRFLG_SHOWING_VOLUMES))
+	    {
+		struct ASLLVFileReqNode *node;
+	        struct TagItem 		set_tags[] =
+		{
+		    {ASLLV_Labels	, NULL	},
+		    {ASLLV_Top		, 0	},
+		    {TAG_DONE			}
+		};
+		IPTR			top;
+		
+		GetAttr(ASLLV_Top, udata->Listview, &top);		
+		SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+		
+		ForeachNode(&udata->ListviewList, node)
+		{
+		    if (node->node.ln_Name)
+		    {
+		        if (stricmp(node->node.ln_Name, name2) == 0)
+			{
+			    Remove(&node->node);
+			    FRFreeListviewNode(node, ld, AslBase);
+			    break;
+			}
+		    }
+		}
+		
+		set_tags[0].ti_Data = (IPTR)&udata->ListviewList;
+		set_tags[1].ti_Data = top;
+   		SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+
+		
+	    } /* if (DeleteFile(name) && !(udata->Flags & FRFLG_SHOWING_VOLUMES)) */
+
+	} /* if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1) */
 
     } /* if (name) if (name[0]) */
 
@@ -1021,28 +1066,125 @@ void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
     struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-			    	
-    REQ_String(ifreq->ifr_Create_TitleText,
-	       ifreq->ifr_Create_DefaultName, 
-	       ifreq->ifr_Create_OkayText,
-	       ifreq->ifr_Create_CancelText,
-	       ld,
-	       AslBase);
+    STRPTR		path, dirname;
+    BPTR		lock, lock2, olddir;
+    
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&path);
+    
+    lock = Lock(path, SHARED_LOCK);
+    if (lock)
+    {
+        olddir = CurrentDir(lock);
+	
+	if ((dirname = REQ_String(ifreq->ifr_Create_TitleText,
+				  ifreq->ifr_Create_DefaultName, 
+				  ifreq->ifr_Create_OkayText,
+				  ifreq->ifr_Create_CancelText,
+				  ld,
+				  AslBase)))
+	{
+	    if ((lock2 = CreateDir(dirname)))
+	    {		    
+		if (!(udata->Flags & FRFLG_SHOWING_VOLUMES))
+		{
+		    struct TagItem 	set_tags[] =
+		    {
+		        {ASLLV_Top	, 0	},
+			{TAG_DONE		}
+		    };
+		    IPTR 		top;
+
+		    GetAttr(ASLLV_Top, udata->Listview, &top);
+
+		    FRGetDirectory(path, ld, AslBase); 
+
+		    set_tags[0].ti_Data = top;
+		    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+		}
+
+		UnLock(lock2);
+		
+	    } /* if ((lock2 = CreateDir(dirname))) */
+
+            FreeVecPooled(dirname, AslBase);
+
+	}; /* if ((dirname = REQ_String(... */
+	    
+	CurrentDir(olddir);
+	UnLock(lock);
+	
+    } /* if (lock) */
+
 }
 
 /*****************************************************************************************/
 
 void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
     struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
-			    	
-    REQ_String(ifreq->ifr_Rename_TitleText,
-	       "", 
-	       ifreq->ifr_Rename_OkayText,
-	       ifreq->ifr_Rename_CancelText,
-	       ld,
-	       AslBase);
+    STRPTR		path, file, newname;
+    BPTR		lock, lock2, olddir;
+    
+    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY) return;
+    
+    GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&file);	
+    if (!file[0]) return;
+
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&path);
+    
+    lock = Lock(path, SHARED_LOCK);
+    if (lock)
+    {
+        olddir = CurrentDir(lock);
+	
+	lock2 = Lock(file, SHARED_LOCK);
+	if (lock2)
+	{
+	    UnLock(lock2);
+	    
+	    if ((newname = REQ_String(ifreq->ifr_Rename_TitleText,
+				      file, 
+				      ifreq->ifr_Rename_OkayText,
+				      ifreq->ifr_Rename_CancelText,
+				      ld,
+				      AslBase)))
+	    {
+	        if (Rename(file, newname))
+		{		    
+		    FRSetFile(newname, ld, AslBase);
+
+		    if (!(udata->Flags & FRFLG_SHOWING_VOLUMES))
+		    {
+			struct TagItem 	set_tags[] =
+			{
+		            {ASLLV_Top	, 0	},
+			    {TAG_DONE		}
+			};
+			IPTR 		top;
+
+			GetAttr(ASLLV_Top, udata->Listview, &top);
+
+			FRGetDirectory(path, ld, AslBase); 
+
+			set_tags[0].ti_Data = top;
+			SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
+		    }
+		    
+		} /* if (Rename(file, newname)) */
+		
+        	FreeVecPooled(newname, AslBase);
+		
+	    }; /* if ((newname = REQ_String(... */
+	    
+	} /* if (lock2) */
+	
+	CurrentDir(olddir);
+	UnLock(lock);
+	
+    } /* if (lock) */
 
 }
 

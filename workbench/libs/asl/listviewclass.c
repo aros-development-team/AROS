@@ -402,7 +402,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 
 		if (newtop != data->top)
 		{
-		    data->scroll = newtop - data->top;
+		    data->scroll = redraw ? 0 : newtop - data->top;
 	            data->top    = newtop;
 		    notify_top   = TRUE;
 	            redraw       = TRUE;
@@ -427,7 +427,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		{
 		    /* new_top already okay */ 
 
-		    data->scroll = newtop - data->top;
+		    data->scroll = redraw ? 0 : newtop - data->top;
 		    data->top    = newtop;
 		    notify_top   = TRUE;
 		    redraw	 = TRUE;
@@ -436,7 +436,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 		{
 		    newtop -= (data->visible - 1);
 		    
-		    data->scroll = newtop - data->top;
+		    data->scroll = redraw ? 0 : newtop - data->top;
 		    data->top    = newtop;
 		    notify_top   = TRUE;
 		    redraw 	 = TRUE;

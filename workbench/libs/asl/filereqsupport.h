@@ -26,6 +26,7 @@ BOOL FRNewPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBas
 BOOL FRAddPath(STRPTR path, struct LayoutData *ld, struct AslBase_intern *AslBase);
 BOOL FRParentPath(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRSetFile(STRPTR file, struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FRFreeListviewNode(struct ASLLVFileReqNode *node, struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRFreeListviewList(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRReSortListview(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct Gadget *gad, struct AslBase_intern *AslBase);

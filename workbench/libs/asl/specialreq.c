@@ -151,6 +151,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 		{GA_UserData		, (IPTR)ld				},
 		{STRINGA_MaxChars	, 256					},
 		{STRINGA_TextVal	, (IPTR)stringtext			},
+		{STRINGA_BufferPos	, strlen(stringtext)			},
 		{STRINGA_EditHook	, (IPTR)&edithook			},
 		{TAG_DONE							}
 	    };
@@ -214,7 +215,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 					    break;
 					    
 					case CANCEL_ID:
-					    doit = TRUE;
+					    quitme = TRUE;
 					    break;
 					    
 					case STRING_ID:
@@ -289,8 +290,7 @@ STRPTR REQ_String(STRPTR title, STRPTR stringtext, STRPTR oktext, STRPTR cancelt
 	if (cancelbutton) DisposeObject(cancelbutton);
 	
     } /**/
-    
-   
+       
     return retval;
     
 }
