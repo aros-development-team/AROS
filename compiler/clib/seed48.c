@@ -50,7 +50,7 @@ extern void __copy_x_to_buffer();
 {
   __copy_x_to_buffer();
 
-#if (AROS_BEG_ENDIAN == 0)
+#if (AROS_BIG_ENDIAN == 0)
   #define HIGH 4
   #define MIDDLE 2
   #define LOW 0
