@@ -54,21 +54,24 @@
     if (!glist)
 	return;
 
-    for (;nextgad;glist=nextgad)
+    for (;glist;glist = nextgad)
     {
 	nextgad = glist->NextGadget;
-	if ((glist->Flags & GTYP_GADTOOLS))
+	if ((glist->GadgetType & GTYP_GADTOOLS))
 	{
 	    if (!context_gadget_found)
 	    {
 	   	/* First GADTOOL gadget in list is context gadget */
 	        context_gadget_found = TRUE;
-		
 		FreeMem(glist,sizeof(struct GT_ContextGadget));
 	    }
 	    else
 	    {
-            	freeitext((struct GadToolsBase_intern *)GadToolsBase, glist->GadgetText);
+	        /* must check this, because arrowclass uses GA_LabelImage! */
+		if ((glist->Flags & GFLG_LABELMASK) == GFLG_LABELITEXT)
+		{		
+            	    freeitext((struct GadToolsBase_intern *)GadToolsBase, glist->GadgetText);
+		}
             	glist->GadgetText = NULL;
 	    	DisposeObject(glist);
 	    }
