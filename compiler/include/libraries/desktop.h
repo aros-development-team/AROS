@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef LIBRARIES_DESKTOP_H
 #define LIBRARIES_DESKTOP_H
 
@@ -23,7 +28,20 @@
 #define ICA_HorizScroller ICA_BASE+2
 #define ICA_ScrollToHoriz ICA_BASE+3
 #define ICA_ScrollToVert  ICA_BASE+4
+#define ICA_SelectedIcons ICA_BASE+6
 
+#define DOC_ICONOP   0x10000000
+#define DOC_WINDOWOP 0x20000000
+
+struct DesktopOperationItem
+{
+	ULONG doi_Code;
+	UBYTE *doi_Name;
+};
+
+// Tags for DoDesktopOperation()
+
+#define DDO_Target  TAG_USER+5002
 
 #endif /* LIBRARIES_DESKTOP_H */
 
