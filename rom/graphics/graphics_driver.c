@@ -170,17 +170,34 @@ BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 {
     struct gfx_driverdata *dd;
     
+    if (RP_BACKPOINTER(rp) == rp)
+    {
+    	if (rp->Flags & RPF_SELF_CLEANUP)
+	{
+	    if (RP_DRIVERDATA(rp)) return TRUE;
+	}
+    }
+    else
+    {
+    	/* We have detected a manually cloned rastport. Mark it as 'valid'
+	   (backpointer to itself) but with NULL driverdata and non-self
+	   cleanup */
+    	RP_DRIVERDATA(rp) = NULL;
+	rp->Flags &= ~RPF_SELF_CLEANUP;
+	RP_BACKPOINTER(rp) = rp;
+    }
+    
     ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    dd = GetDriverData(rp);
+    dd = RP_DRIVERDATA(rp);
     if (dd)
     {
-    	if (FindDriverData(dd, rp, GfxBase))
+    	if (!(rp->Flags & RPF_SELF_CLEANUP) && FindDriverData(dd, rp, GfxBase))
 	{
 	    dd->dd_LockCount++;
 	}
 	else
 	{
-	    SetDriverData(rp, NULL);
+	    RP_DRIVERDATA(rp) = NULL;
 	    dd = NULL;
 	}
     }
@@ -200,12 +217,11 @@ BOOL ObtainDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 	    {
    	    	dd->dd_RastPort = rp;
 		dd->dd_LockCount = 1;
-		dd->dd_NoAutoKill = FALSE;
 		
-    	    	SetDriverData(rp, dd);
+    	    	RP_DRIVERDATA(rp) = dd;
 	    	rp->Flags |= RPF_DRIVER_INITED;
 
-    	    	AddDriverDataToList(dd, GfxBase);
+    	    	if (!(rp->Flags & RPF_SELF_CLEANUP)) AddDriverDataToList(dd, GfxBase);
 		
 		if (rp->BitMap) SetABPenDrMd(rp, (UBYTE)rp->FgPen, (UBYTE)rp->BgPen, rp->DrawMode);
 	    }
@@ -228,33 +244,57 @@ void ReleaseDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
 {
     struct gfx_driverdata *dd = GetDriverData(rp);
     
-    /* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
-    dd->dd_LockCount--;
+    if (!(rp->Flags & RPF_SELF_CLEANUP))
+    {
+    	/* FIXME: stegerg 23 jan 2004: needs semprotection, too! */
+	/* CHECKME: stegerg 23 feb 2005: really?? */
+	
+    	dd->dd_LockCount--;
     
-//    if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
+    	// Don't do this:
+	//
+    	// if (!dd->dd_LockCount) KillDriverData(rp, GfxBase);
+	//
+	// some garbage collection should later hunt for dd's with
+	// 0 lockcount and possibly non-usage for a certain amount
+	// of time and get rid of them.
+    }
 }
 
 void KillDriverData(struct RastPort *rp, struct GfxBase *GfxBase)
-{
-    struct gfx_driverdata *dd;
-    
-    ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-    dd = GetDriverData(rp);
-    if (dd) dd = FindDriverData(dd, rp, GfxBase) ? dd : NULL;
-    if (dd)
+{    
+    if (RP_BACKPOINTER(rp) == rp)
     {
-    	struct shared_driverdata *sdd;
-    	
-	sdd = SDD(GfxBase);
+        struct gfx_driverdata *dd = NULL;
 
-    	HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
-	RemoveDriverDataFromList(dd, GfxBase);
-	FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
-	SetDriverData(rp, NULL);   	
-    }
+    	if (rp->Flags & RPF_SELF_CLEANUP)
+	{
+	    dd = RP_DRIVERDATA(rp);
+	}
+    	else
+    	{
+            ObtainSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    	    if (FindDriverData(RP_DRIVERDATA(rp), rp, GfxBase))
+	    {
+	    	dd = RP_DRIVERDATA(rp);
+	    	RemoveDriverDataFromList(dd, GfxBase);
+	    }
+    	    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
+    	}
     
-    ReleaseSemaphore(&PrivGBase(GfxBase)->driverdatasem);    
-        
+	if (dd)
+	{
+    	    struct shared_driverdata *sdd;
+
+	    sdd = SDD(GfxBase);
+
+    	    HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
+	    FreePooled(PrivGBase(GfxBase)->driverdatapool, dd, sizeof(*dd)); 
+	    RP_DRIVERDATA(rp) = NULL;
+	}
+    
+    }
+            
 }
 
 #else
@@ -316,8 +356,8 @@ void obsolete_DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 		
     sdd = SDD(GfxBase);
 
-    dd = (struct gfx_driverdata *) rp->longreserved[0];
-    rp->longreserved[0] = 0;
+    dd = RP_DRIVERDATA(rp);;
+    RP_DRIVERDATA(rp) = 0;
 
     HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
 
@@ -355,7 +395,7 @@ BOOL obsolete_CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 	    ** Make sure to clear driverdata pointer and flag
 	    ** in case InitDriverData fail
 	    */
-	    rp->longreserved[0] = 0;
+	    RP_DRIVERDATA(rp) = 0;
 	    rp->Flags &= ~RPF_DRIVER_INITED;
 
 	    dd = obsolete_InitDriverData(rp, GfxBase);

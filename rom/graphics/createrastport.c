@@ -64,16 +64,11 @@
     {
 	if (InitRastPort(newRP))
 	{
-	    if (OBTAIN_DRIVERDATA(newRP, GfxBase))
-	    {
-	    	struct gfx_driverdata *dd = GetDriverData(newRP);
-	    
-	    	dd->dd_NoAutoKill = TRUE;
-	    	
-	    	RELEASE_DRIVERDATA(newRP, GfxBase);
-		
-		ok = TRUE;
-	    }
+	    /* Mark the rastport as being cleaned up by the
+	       user itself later on (through FreeRastPort()).
+	       No need for garbage collection */
+	    newRP->Flags |= RPF_SELF_CLEANUP;
+	    ok = TRUE;
 	}
 	   
 	if (!ok)

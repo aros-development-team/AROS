@@ -9,6 +9,8 @@
 #include <graphics/rastport.h>
 #include <proto/exec.h>
 
+#include "gfxfuncsupport.h"
+
 static const struct RastPort defaultRastPort =
 {
     NULL, /* Layer */
@@ -91,7 +93,8 @@ static const struct RastPort defaultRastPort =
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     CopyMem ((UBYTE *)&defaultRastPort, rp, sizeof (struct RastPort));
-
+    RP_BACKPOINTER(rp) = rp; /* Mark rastport as valid (no manual clone) */
+    
     SetFont (rp, GfxBase->DefaultFont);
 
     return TRUE;
