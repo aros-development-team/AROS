@@ -301,10 +301,11 @@ IPTR SMEditor__MUIM_PrefsEditor_Use
 {
     #warning "FIXME: Closing the window here only works because we're lucky   "
     #warning "       and nothing needs to access anything that is put in the  "
-    #warning "       RasterInfo structure, which gets deallocated when closing"
+    #warning "       RenderInfo structure, which gets deallocated when closing"
     #warning "       the window. This needs to be fixed directly in the       "
     #warning "       PrefsEditor class.                                       "
-    set(_win(self), MUIA_Window_Open, FALSE);
+    if (muiRenderInfo(self) && _win(self))
+        set(_win(self), MUIA_Window_Open, FALSE);
 	    
     return DoSuperMethodA(CLASS, self, message);
 }
