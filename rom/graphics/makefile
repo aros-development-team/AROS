@@ -2,13 +2,15 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = closefont draw getapen getbpen getdrmd initrastport move \
+FILES = graphics_init graphics_functable driver_x11
+FUNCTIONS = \
+	closefont draw getapen getbpen getdrmd initrastport move \
 	openfont rectfill scrollraster setapen setbpen setdrmd \
 	setfont setrast text textlength writepixel
 
-all: setup $(OSGENDIR)/graphics_init.o $(OSGENDIR)/graphics_functable.o \
-	$(OSGENDIR)/driver_x11.o \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+all: setup \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -24,11 +26,11 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-graphics_functable.c : $(foreach f,$(FILES),$(f).c) \
+graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Graphics \
-	    $(foreach f,$(FILES),$(f).c)
+	    $^
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -37,4 +39,5 @@ $(OSGENDIR)/%.d: %.c
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
 

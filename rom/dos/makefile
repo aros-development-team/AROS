@@ -2,7 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
+FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname
+FUNCTIONS = \
 	adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	cli close createnewproc currentdir datetostr delay duplock exall    \
 	examine fgetc findarg finddosentry flush fputc fputs freeargs	    \
@@ -18,6 +19,7 @@ FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -29,11 +31,11 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-dos_functable.c : $(foreach f,$(FILES),$(f).c) \
+dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Dos \
-	    $(foreach f,$(FILES),$(f).c)
+	    $^
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -42,3 +44,5 @@ $(OSGENDIR)/%.d: %.c
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
+

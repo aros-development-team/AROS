@@ -2,15 +2,33 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = intuition_init intuition_functable intui_x11 \
-	addclass activatewindow closewindow disposeobject drawborder \
-	drawimage freeclass getattr makeclass modifyidcmp modifyprop \
-	newobjecta openwindow openwindowtaglist printitext \
-	refreshgadgets refreshglist removeclass setattrsa setwindowtitles \
+FILES = intuition_init intuition_functable intui_x11
+FUNCTIONS = \
+	addclass \
+	activatewindow \
+	closewindow \
+	disposeobject \
+	drawborder \
+	drawimage \
+	freeclass \
+	getattr \
+	makeclass \
+	modifyidcmp \
+	modifyprop \
+	newobjecta \
+	openwindow \
+	openwindowtaglist \
+	printitext \
+	refreshgadgets \
+	refreshglist \
+	removeclass \
+	setattrsa \
+	setwindowtitles \
 	sizewindow
 
 all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -26,11 +44,11 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-intuition_functable.c : $(foreach f,$(FILES),$(f).c) \
+intuition_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Intuition \
-	    $(foreach f,$(FILES),$(f).c)
+	    $^
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -39,4 +57,5 @@ $(OSGENDIR)/%.d: %.c
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+include $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).d)
 
