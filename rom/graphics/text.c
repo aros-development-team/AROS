@@ -7,7 +7,7 @@
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 
-LONG driver_Text (struct RastPort *, STRPTR, ULONG);
+LONG driver_Text (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -50,7 +50,7 @@ LONG driver_Text (struct RastPort *, STRPTR, ULONG);
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_Text (rp, string, count);
+    return driver_Text (rp, string, count, GfxBase);
 
     __AROS_FUNC_EXIT
 } /* Text */
