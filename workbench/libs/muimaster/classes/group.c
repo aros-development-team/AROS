@@ -1124,8 +1124,8 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
     {
 	data->saved_minwidth = msg->MinMaxInfo->MinWidth;
 	data->saved_minheight = msg->MinMaxInfo->MinHeight;
-	msg->MinMaxInfo->MinWidth = super_minwidth;
-	msg->MinMaxInfo->MinHeight = super_minheight;
+	msg->MinMaxInfo->MinWidth = super_minwidth + 2;
+	msg->MinMaxInfo->MinHeight = super_minheight + 2;
     }
     return 0;
 }
