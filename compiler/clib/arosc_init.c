@@ -209,7 +209,7 @@ int arosc_internalinit(void)
 {
     struct arosc_privdata *oldprivdata, *privdata;
     struct Process *me = (struct Process *)FindTask(NULL);
-    int res = 1;
+    int res = TRUE;
 
     privdata = oldprivdata = GetIntETask(me)->iet_acpd;
 
@@ -227,7 +227,7 @@ int arosc_internalinit(void)
         if (!privdata)
         {
             SetIoErr(ERROR_NO_FREE_STORE);
-            return RETURN_FAIL;
+            return FALSE;
         }
 
         D(bug("arosc_internalinit(): newprivdata = %p\n", privdata));
