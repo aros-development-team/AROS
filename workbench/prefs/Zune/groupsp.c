@@ -77,7 +77,9 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_GroupsPData d;
     
     obj = (Object *)DoSuperNew(cl, obj,
-        Child, ColGroup(2),
+			       MUIA_Group_SameWidth, TRUE,
+			       MUIA_Group_Columns, 2,
+/*          Child, ColGroup(2), */
 	    Child, ColGroup(2),
 		GroupFrameT("Title"),
 		    Child, HVSpace,
@@ -94,10 +96,11 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		       End,
 		    Child, HVSpace,
 		    Child, HVSpace,
-		End,
+			       End, /* Title */
 	    Child, HGroup,
 		GroupFrameT("Frame"),
 		Child, VGroup,
+		   MUIA_Group_VertSpacing, 1,
 		   Child, d.normal_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			       MUIA_Draggable, TRUE,
 			       MUIA_Window_Title, "Adjust Frame",
@@ -105,13 +108,14 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		   Child, MUI_MakeObject(MUIO_Label, "Normal", MUIO_Label_Centered),
 	           End,
        	       Child, VGroup,
+		   MUIA_Group_VertSpacing, 1,
 		   Child, d.virtual_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			       MUIA_Draggable, TRUE,
 			       MUIA_Window_Title, "Adjust Frame",
 			       End,
 		   Child, MUI_MakeObject(MUIO_Label, "Virtual", MUIO_Label_Centered),
 	           End,
-		End,
+							 End, /* Frame */
 	    Child, ColGroup(2),
 		GroupFrameT("Spacing"),
 	        Child, HVSpace,
@@ -122,29 +126,38 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		Child, (IPTR)d.spacing_vert_slider = MakeSpacingSlider(),
 	        Child, HVSpace,
 	        Child, HVSpace,
-		End,
-	    Child, ColGroup(3),
+							 End, /* Spacing */
+	    Child, HGroup,
 		GroupFrameT("Background"),
-		Child, d.background_framed_popimage =
+		Child, VGroup,
+		    MUIA_Group_VertSpacing, 1,
+		    Child, d.background_framed_popimage =
+		           NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			      MUIA_Draggable, TRUE,
+			      MUIA_Window_Title, "Adjust Background",
+			      End,
+		    Child, MUI_MakeObject(MUIO_Label, "Framed", MUIO_Label_Centered),
+		    End,
+		Child, VGroup,
+		    MUIA_Group_VertSpacing, 1,
+		    Child, d.background_page_popimage =
+		           NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			      MUIA_Draggable, TRUE,
+			      MUIA_Window_Title, "Adjust Background",
+			      End,
+		    Child, MUI_MakeObject(MUIO_Label, "Page", MUIO_Label_Centered),
+		    End,
+		Child, VGroup,
+		    MUIA_Group_VertSpacing, 1,
+		    Child, d.background_register_popimage =
 		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
 			      MUIA_Draggable, TRUE,
 			      MUIA_Window_Title, "Adjust Background",
 			      End,
-		Child, d.background_page_popimage =
-		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE,
-			      MUIA_Window_Title, "Adjust Background",
-			      End,
-		Child, d.background_register_popimage =
-		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE,
-			      MUIA_Window_Title, "Adjust Background",
-			      End,
-		Child, MakeLabel("Framed"),
-		Child, MakeLabel("Page"),
-		Child, MakeLabel("Register"),
-		End,
-	    End,
+		    Child, MUI_MakeObject(MUIO_Label, "Register", MUIO_Label_Centered),
+		    End,
+		End, /* Background */
+/*  	    End, */
     	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;

@@ -258,8 +258,8 @@ struct page_entry main_page_entries[] =
 /*      {"Info",NULL,NULL,NULL}, */
 /*      {"System",NULL,NULL,NULL}, */
     {"Windows",NULL,NULL,&_MUIP_Windows_desc},
-    {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
     {"Groups",NULL,NULL,&_MUIP_Groups_desc},
+    {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
     {NULL,NULL,NULL,NULL},
 };
 
