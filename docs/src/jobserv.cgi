@@ -11,7 +11,7 @@ if ($sock < 0)
 
 printf ("Content-type: text/html\n\n");
 
-debugenv (0, $argc, $argv);
+/* debugenv (0, $argc, $argv); */
 
 $query_string = getenv ("QUERY_STRING");
 $login = getenv ("REMOTE_USER");

@@ -14,7 +14,7 @@ $name = getUserName ($sock, $login);
 
 printf ("Content-type: text/html\n\n");
 
-debugenv(0,$argc,$argv);
+/* debugenv(0,$argc,$argv); */
 
 $jobids="";
 
