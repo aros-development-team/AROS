@@ -2,10 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.11  1996/09/17 18:41:18  digulla
+    Revision 1.12  1996/10/01 15:49:19  digulla
+    The memory is now of type CHIP instead of FAST because most software can live
+    	without FAST, but some cannot live without CHIP.
+
+    Revision 1.11  1996/09/17 18:41:18	digulla
     This file now contains a DOSBase for internal use in the OS only (and
-    	if you can, don't use it but open the dos.library on your own). I'll try
-    	to remove again, later.
+	if you can, don't use it but open the dos.library on your own). I'll try
+	to remove again, later.
 
     Revision 1.10  1996/09/17 16:17:02	digulla
     Moved CreateNewProc() in front of start of timer, because of crashes if
@@ -178,9 +182,9 @@ int main(int argc,char *argv[])
 	Prepare first MemHeader. I cannot use exec functions
 	here because exec is not yet up.
     */
-    mh.mh_Node.ln_Name="unknown memory type";
+    mh.mh_Node.ln_Name="chip memory"; /* Amiga has always chip, but maybe no fast */
     mh.mh_Node.ln_Pri =0;
-    mh.mh_Attributes  =MEMF_FAST|MEMF_PUBLIC; /* Public to my emulation */
+    mh.mh_Attributes  =MEMF_CHIP|MEMF_PUBLIC; /* Public to my emulation */
     mh.mh_First=(struct MemChunk *)
 		(((IPTR)memory+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1));
     mh.mh_First->mc_Next=NULL;
