@@ -595,10 +595,16 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 	
     }
 
-    if (ehn->ehn_Class)
-	res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
-    else
-	res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+    if (ehn->ehn_Flags & MUI_EHF_HANDLEINPUT)
+    {
+    	DoMethod(ehn->ehn_Object, MUIM_HandleInput, (IPTR)event, muikey);
+    } else
+    {
+	if (ehn->ehn_Class)
+	    res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+	else
+	    res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
+    }
     return res;
 }
 
@@ -678,11 +684,11 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     if (data->wd_DefaultObject && active_object != data->wd_DefaultObject)
     {
     	/* No, we only should do this if the object actually has requested this via RequestIDCMP()! */
-    	if (muikey != MUIKEY_NONE && (_flags(data->wd_DefaultObject) & MADF_CANDRAW))
-    	{
-	    DoMethod(data->wd_DefaultObject, MUIM_HandleInput, event, muikey);
-	    return;
-    	}
+//    	if (muikey != MUIKEY_NONE && (_flags(data->wd_DefaultObject) & MADF_CANDRAW))
+//    	{
+//	    DoMethod(data->wd_DefaultObject, MUIM_HandleInput, event, muikey);
+//	    return;
+//    	}
 
 	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
