@@ -77,11 +77,13 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
     APTR *	sp;
     ULONG *	retptr;
     ULONG	ret;
+    APTR 	oldReturnAddr;
 
     retptr = &ret;
 
     sp = (APTR *)(sss->stk_Upper);
-    oldSP = (APTR *)&DOSBase;	
+    oldSP = (APTR *)&DOSBase;
+    oldReturnAddr = proc->pr_ReturnAddr;
 
     /* Copy stack + locals + regs + everything */
     while( oldSP != (APTR *)&ret )
@@ -108,10 +110,12 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 		AROS_UFCA(STRPTR, argptr, A0),
 		AROS_UFCA(ULONG, argsize, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6),
-		&proc->pr_ReturnAddr
+		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
 	      );
 
     StackSwap(sss);
+
+    proc->pr_ReturnAddr = oldReturnAddr;
 
     return ret;
 }
