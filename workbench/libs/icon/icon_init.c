@@ -26,7 +26,7 @@ extern struct IconBase *AROS_SLIB_ENTRY(open,Icon)();
 extern BPTR AROS_SLIB_ENTRY(close,Icon)();
 extern BPTR AROS_SLIB_ENTRY(expunge,Icon)();
 extern int AROS_SLIB_ENTRY(null,Icon)();
-extern const char end;
+extern const char Icon_end;
 
 int entry(void)
 {
@@ -38,7 +38,7 @@ const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&end,
+    (APTR)&Icon_end,
     RTF_AUTOINIT,
     1,
     NT_LIBRARY,
@@ -68,7 +68,7 @@ struct inittable
     S_CPYO(4,1,W);
     S_CPYO(5,1,W);
     S_CPYO(6,1,L);
-    S_END (end);
+    S_END (Icon_end);
 };
 
 #define O(n) offsetof(struct IconBase,n)
@@ -154,6 +154,12 @@ AROS_LH0(BPTR, close, struct IconBase *, IconBase, 2, Icon)
     /* I have one fewer opener. */
     if(!--IconBase->library.lib_OpenCnt)
     {
+	if (DOSBase)
+	    CloseLibrary (DOSBase);
+
+	if (UtilityBase)
+	    CloseLibrary (UtilityBase);
+
 	/* Delayed expunge pending? */
 	if(IconBase->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
