@@ -6,10 +6,8 @@
 
 \begin{itemize}
 \item Download the sources as
-\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.tgz}
-(\fileinfo{$(TOP)/dist/AROSdev.tgz}) or
-\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.lha}
-(\fileinfo{$(TOP)/dist/AROSdev.lha}).
+\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-source.tgz}
+(\fileinfo{$(TOP)/../dist/AROS-source.tgz}).
 
 \item Unpack the source with
 

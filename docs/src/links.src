@@ -4,27 +4,35 @@
 \section{More Related}
 
 \begin{itemize}
-\item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} with
-contains the latest binary release for linux as
+\item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} which
+contains the latest binary release for Linux as
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.tgz}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386.tgz})
-\item \link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.lha}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386.lha})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.readme}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386.readme})
+\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-lx86-bin.tgz}
+(\fileinfo{$(TOP)/../dist/AROS-lx86-bin.tgz})
+\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-lx86-bin.readme}
+(\fileinfo{$(TOP)/../dist/AROS-lx86-bin.readme})
 \end{itemize}
-Also available is the latest beta as binary for linux as
+or the same for IBM compatible PCs (boots off a floppy disk)
 \begin{itemize}
-\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.tgz}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.tgz})
-\item and \link{lha}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.lha}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.lha})
-\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.readme}
-(\fileinfo{$(TOP)/dist/AROS-linux-i386-current.readme})
+\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-ibmpc-bin.tgz}
+(\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.tgz})
+\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-ibmpc-bin.readme}
+(\fileinfo{$(TOP)/../dist/AROS-ibmpc-bin.readme})
 \end{itemize}
-\begin{new}{13.7.1997}
-\end{new}
+or a copy of this WWW site for offline reading:
+\begin{itemize}
+\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-docs.tgz}
+(\fileinfo{$(TOP)/../dist/AROS-docs.tgz})
+\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-docs.readme}
+(\fileinfo{$(TOP)/../dist/AROS-docs.readme})
+\end{itemize}
+or the complete source
+\begin{itemize}
+\item \link{tar.gz}{ftp://aros.fh-konstanz.de/pub/aros/AROS-source.tgz}
+(\fileinfo{$(TOP)/../dist/AROS-source.tgz})
+\item and the \link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-source.readme}
+(\fileinfo{$(TOP)/../dist/AROS-source.readme})
+\end{itemize}
 
 \item AROS in
 \link{Germany (Main site)}{http://aros.fh-konstanz.de/aros/},
@@ -38,11 +46,6 @@ and a
 \link{binary for Amiga}{ftp://aros.fh-konstanz.de/pub/aros/AROS-crypt.lha}
 \end{new}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
-(Local copy of the
-\link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}
-(\fileinfo{~ftp/pub/aros/AROS-m68k-bin.lha}) and the
-\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.readme}
-(\fileinfo{~ftp/pub/aros/AROS-m68k-bin.readme}) and
 \item \link{AROS AutoDocs}{adoc_index.html}
 \item \link{The Amiga OS Resurrection Project Info Pages}
 {http://colombo.telis-sc.fr/AmigOS/} - The roots of AROS (down ?)
