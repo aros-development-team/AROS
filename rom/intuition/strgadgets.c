@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Code for AROS GTYP_STRGADGET.
@@ -307,6 +307,8 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
 
     struct DrawInfo *dri = GetScreenDrawInfo(win->WScreen);
     
+    SetFont(rp, dri->dri_Font);
+    
     if (gad->Flags & GFLG_STRINGEXTEND)
     {
     	struct StringExtend *strext;
@@ -340,18 +342,21 @@ STATIC VOID GetPensAndFont(struct Gadget *gad,
     	** we won't be here anymore.
     	*/
 
+#if 0
     	if ((gad->Flags & GFLG_SELECTED) == GFLG_SELECTED)
     	{
-    	    pens[STRTEXTPEN]	= dri->dri_Pens[HIGHLIGHTTEXTPEN];
-    	    pens[STRBACKPEN]	= dri->dri_Pens[SHINEPEN];
+    	    pens[STRTEXTPEN]	= dri->dri_Pens[TEXTPEN];
+    	    pens[STRBACKPEN]	= dri->dri_Pens[BACKGROUNDPEN];
 
 	}
 	else
 	{
+#endif
     	    pens[STRTEXTPEN]	= dri->dri_Pens[TEXTPEN];
     	    pens[STRBACKPEN]	= dri->dri_Pens[BACKGROUNDPEN];
+#if 0
 	}
-    	
+#endif
 
     }
     pens[CURSORPEN] = dri->dri_Pens[FILLPEN];
@@ -548,11 +553,21 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     
     CalcBBox(window, gad, &bbox);
 
+    {
+    	struct DrawInfo *dri;
+	
+	dri = GetScreenDrawInfo(window->WScreen);
+	SetFont(rp, dri->dri_Font);
+	FreeScreenDrawInfo(window->WScreen, dri);
+    }
+    
     if (gad->Flags & GFLG_STRINGEXTEND)
     {
     	struct StringExtend *strext = strinfo->Extension;
     	if (strext->Font)
-    	     SetFont(rp, strext->Font);
+	{
+    	    SetFont(rp, strext->Font);
+	}
     }
     
     /* If we are made active, save contents to undobuffer (if any exists) */
