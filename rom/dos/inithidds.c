@@ -217,13 +217,13 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 		goto end;
 	    }
 	    
-/*	    if (!init_device(mousename, "gameport.device", base))
+	    if (!init_device(mousename, "gameport.device", base))
 	    {
 	        kprintf("Could not init mouse hidd %s\n", mousename);
 		success = FALSE;
 		goto end;
 	    }
-*/
+
 end:
 	}
     
