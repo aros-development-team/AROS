@@ -2881,7 +2881,7 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj,
     /* Due to the lack of a better idea ... */
     if (muiAreaData(msg->ccnode->ehn_Object)->mad_Flags & MADF_CYCLECHAIN)
     {
-	struct ObjNode *node = AllocVecPooled(data->wd_MemoryPool, sizeof(struct ObjNode));
+	struct ObjNode *node = AllocPooled(data->wd_MemoryPool, sizeof(struct ObjNode));
 	if (node)
 	{
 	    node->obj = msg->ccnode->ehn_Object;
@@ -2906,7 +2906,7 @@ static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj,
     {
     	/* Remove from the chain list */
 	Remove((struct Node *)node);
-	FreeVecPooled(data->wd_MemoryPool, node);
+	FreePooled(data->wd_MemoryPool, node, sizeof(struct ObjNode));
     }
 
     return TRUE;
@@ -2977,7 +2977,7 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct IDNode *newnode;
 
-    newnode = AllocVecPooled(data->wd_MemoryPool, sizeof(struct IDNode));
+    newnode = AllocPooled(data->wd_MemoryPool, sizeof(struct IDNode));
     if (newnode)
     {
        int id;
@@ -3003,6 +3003,7 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
        Insert((struct List*)&data->wd_IDList, (struct Node*)&newnode->node, (struct Node*)mn);
        return (IPTR)id;
     }
+
     return 0;
 }
 
@@ -3020,7 +3021,7 @@ static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Wind
        if (msg->gadgetid == idn->id)
        {
            Remove((struct Node*)idn);
-           FreeVecPooled(data->wd_MemoryPool, idn);
+           FreePooled(data->wd_MemoryPool, idn, sizeof(struct IDNode));
            return 0;
        }
     }
