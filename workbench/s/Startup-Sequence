@@ -1,3 +1,4 @@
+setclock LOAD
 path SYS:Demos ADD QUIET
 mount RAM:
 mount NIL:
