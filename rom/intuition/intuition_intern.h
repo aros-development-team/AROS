@@ -2,7 +2,7 @@
 #define INTUITION_INTERN_H
 
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
 */
@@ -396,9 +396,10 @@ struct IntIntuitionBase
 #endif
 
     /* Put local shit here, invisible for the user */
+    BPTR                         SegList;
     struct GfxBase          	*GfxBase;
     struct Library          	*LayersBase;
-    struct ExecBase         	*SysBase;
+    struct ExecBase         	*ExecBase;
     struct UtilityBase      	*UtilBase;
     struct Library          	*KeymapBase;
     struct Library          	*DOSBase;
@@ -647,7 +648,7 @@ struct IntIntuiMessage
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase     	    	(GetPrivIBase(IntuitionBase)->SysBase)
+#define SysBase     	    	(GetPrivIBase(IntuitionBase)->ExecBase)
 
 #ifdef UtilityBase
 #undef UtilityBase

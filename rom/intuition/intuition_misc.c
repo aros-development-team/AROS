@@ -10,11 +10,8 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/intuition.h>
-#include <proto/dos.h>
 #include <proto/cybergraphics.h>
 #include <clib/macros.h>
-#include <dos/dos.h>
-#include <dos/datetime.h>
 #include <intuition/intuitionbase.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>

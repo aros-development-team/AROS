@@ -151,9 +151,19 @@ USER_INCLUDES := -I$(TOP)/rom/dos
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
 
-%build_module_macro mmake=kernel-intuition \
-  modname=intuition modtype=library \
-  funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf
+#MM kernel-intuition-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utlity-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-cgfx-includes \
+#MM     kernel-timer-includes \
+#MM     kernel-layers-includes \
+#MM     kernel-keymap-includes \
+#MM     kernel-input-includes \
+#MM     includes-copy
 
-%common
+%build_module mmake=kernel-intuition \
+  modname=intuition modtype=library \
+  files="intuition_init $(FUNCS) $(FILES)"
+
+

@@ -2,11 +2,10 @@
 #include <exec/io.h>
 #include <devices/input.h>
 #include <devices/inputevent.h>
-#include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 void dprintf(const char *, ...);
 
