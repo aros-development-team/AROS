@@ -32,6 +32,7 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
     struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
     int type = (int)msg[0];
     LONG val = (LONG)msg[1];
+
     switch (type)
     {
     	case	1: nnset(data->contents,MUIA_Virtgroup_Top, val); break;
@@ -80,8 +81,8 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 1, MUIV_TriggerValue);
     DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 2, MUIV_TriggerValue);
-    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
-    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
+//    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
+//    DoMethod(contents, MUIM_Notify, MUIA_Virtgroup_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
 
     return (ULONG)obj;
 }
