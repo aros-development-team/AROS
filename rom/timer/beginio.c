@@ -8,6 +8,7 @@
 #include "timer_intern.h"
 #include <exec/errors.h>
 #include <proto/exec.h>
+#include <aros/debug.h>
 
 static void addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
 
@@ -86,7 +87,7 @@ static void addToWaitList(struct TimerBase *, struct MinList *, struct timereque
 		case UNIT_WAITUNTIL:
 		    /* Firstly, check to see if request is for past */
 		    Disable();
-		    if( CmpTime(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
+		    if(CmpTime(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
 		    {
 			Enable();
 			timereq->tr_time.tv_secs = timereq->tr_time.tv_micro = 0;
@@ -163,17 +164,45 @@ addToWaitList(	struct TimerBase *TimerBase,
 {
     /* We are disabled, so we should take as little time as possible. */
     struct timerequest *tr;
+    BOOL added = FALSE;
 
     tr = (struct timerequest *)list->mlh_Head;
 
     while(tr->tr_node.io_Message.mn_Node.ln_Succ != NULL)
     {
-	/* If the time in the new request is less than the old request */
-	if(CmpTime(&tr->tr_time, &iotr->tr_time) > 0)
+	/* If the time in the new request is less than the next request */
+	if(CmpTime(&tr->tr_time, &iotr->tr_time) < 0)
 	{
-	    Insert((struct List *)list, (struct Node *)iotr, (struct Node *)tr);
+	    /* Add the node before the next request */
+	    Insert(
+		(struct List *)list,
+		(struct Node *)iotr,
+		tr->tr_node.io_Message.mn_Node.ln_Pred
+	    );		
+	    added = TRUE;
 	    break;
 	}
 	tr = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
     }
+
+    /*
+	This will catch the case of either an empty list, or request is
+	for after all other requests
+    */
+
+    if(!added)
+    	AddTail((struct List *)list, (struct Node *)iotr);
+
+#if DEBUG
+    {
+	int i = 0;
+	bug("Current list contents:\n");
+	ForeachNode(list, tr)
+	{
+	    bug("%ld: %ld.%ld\n", i,
+		    tr->tr_time.tv_secs, tr->tr_time.tv_micro);
+	    i++;
+	}
+    }
+#endif /* DEBUG */
 }

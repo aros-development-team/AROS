@@ -43,8 +43,6 @@ AROS_UFH4(ULONG, VBlankInt,
     FastAddTime(&TimerBase->tb_CurrentTime, &TimerBase->tb_VBlankTime);
     FastAddTime(&TimerBase->tb_Elapsed, &TimerBase->tb_VBlankTime);
 
-    /* XXX: We need to put the code to handle the wait lists here. */
-
     /*
 	Go through the "wait for x seconds" list and return requests
 	that have completed. A completed request is one whose time
@@ -59,11 +57,10 @@ AROS_UFH4(ULONG, VBlankInt,
 	  )
 	{
 	    /* This request has finished */
-	    next = (struct timerequest*)tr->tr_node.io_Message.mn_Node.ln_Succ;
+	    next = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
 	    Remove((struct Node *)tr);
 	    tr->tr_time.tv_secs = tr->tr_time.tv_micro = 0;
 	    tr->tr_node.io_Error = 0;
-	    kprintf("Finished with request!\n");
 	    ReplyMsg((struct Message *)tr);
 
 	    tr = next;
