@@ -5,10 +5,125 @@ import cStringIO
 ParseError = 'ParseError'
 
 class Parser:
+    """This is a class which can parse streams which contain XIL-conform
+    text. XIL-conform text looks like HTML:
+
+	this is the text <!--** a command **--!>
+	<!--** environment **--!>
+	This is the text inside the environment
+	<!--** /environment **--!>
+
+    Normal text is ignored by the parser. It reads anything upto the
+    first BEGIN (<!--** in the example above) and passes it verbatim to
+    the output. When a BEGIN is found, then the following text is parsed
+    as a "tag". The tag ends when END is found. Here are a few examples
+    of valid tags:
+
+	BEGIN commandname END
+	BEGINcommandnameEND
+	BEGIN
+	    commandname
+	END
+
+    Whitespace before and after the command name are ignored. You can
+    also pass arguments to the command:
+
+	BEGIN command arg1 END
+	BEGIN command arg1="this argument has a value" END
+	BEGIN command arg1="this is a multiline
+	    argument. All spaces and newlines are 
+	    preserved !" 
+	END
+	BEGIN
+	    command
+	    arg='''If you need " or ' in the arguments' value,
+		then you can use triple-ticks or triple-quotes'''
+	END
+	BEGIN
+	    command
+	    arg1='You can use BEGIN and END inside the string'
+	    arg2='You can have as many arguments as you want'
+	    arg3=IfYouDoNotHaveSpacesInTheArgument
+	    arg4=ThenYouCanOmitTheQuotes
+	    test='The argument can have any name'
+	    ***='The name must not contain whitespace or END.
+		Everything else is ok.'
+	END
+
+    A tag can also be an environment. The difference is that a command
+    has only arguments which an environment has arguments and text:
+
+	BEGIN env arg='Just like a normal command' END
+	This the text of the environment
+	BEGIN /env END
+
+    The text will be read and passed verbatim to the environment handler
+    (ie. the thing which is invoked when the environment is found).
+    Environments can nest:
+
+	BEGIN env END
+	    This text is inside the environment
+	    BEGIN env END
+		This text is inside an environment which is inside an
+		environment.
+	    BEGIN /env END
+	    After the inner env.
+	BEGIN /env END
+
+    The handler for 'env' will see this text:
+
+	This text is inside the environment
+	BEGIN env END
+	    This text is inside an environment which is inside an
+	    environment.
+	BEGIN /env END
+	After the inner env.
+
+    When the parser reads the text and finds a BEGIN, it will parse the
+    command/environment, parse the arguments and (if the tag is an
+    environment) it will also read the text for the environment. Then
+    it will call a handler for this tag. The handler gets these arguments:
+
+	- The parser which is reading the text
+	- The arguments which were found
+	- If the tag is an environment, then the handler will also
+	  get the text inside the environment.
+
+    Use the classes CmdHandler and EnvHandler below to create handlers.
+    Read on with the documentation of __init__().
+
+    This is the grammar:
+
+	document : document part
+
+	part : /* empty */
+	    | TEXT
+	    | command
+	    | environment
+
+	command : BEGIN NAME argument_list END
+
+	argument_list : argument_list argument
+
+	argument : /* empty */
+	    | NAME
+	    | NAME '=' value
+
+	value : NONWHITESPACE
+	    | STRINGDELIMITER TEXT STRINGDELIMITER
+
+	environment : command document end_command
+
+	end_command : BEGIN '/' NAME END
+    """
+
+    """The begin and end delimiters. If you want to change them, create
+    a new class which inherits from this class and overload these."""
     begin = '<!--**'
     end = '**--!>'
 
-    """The long versions must precede the short versions.
+    """This is a list of possible string delimiters.
+    The long versions must precede the short versions.
     Otherwise, the scanner will stop when the short version
     is found (ie. ''' will be read as the empty string and
     the beginning of another string)."""
@@ -19,7 +134,24 @@ class Parser:
 	new parser, it will read from rf and write the result to wf.
 	The handlers will be called for each tag in the input stream.
 	The startLine is used for error reports when a new parser is
-	create to parse the middle of a file."""
+	create to parse the middle of a file.
+	
+	handlers must be a dictionary with the names of the commands
+	and environments as key and the handler for the command/env.
+	as value:
+	
+	    {
+		'test': CmdHandler ('test'),
+		'env': EnvHandler ('env', '/env'),
+	    }
+
+	This will print every occurence of the tags with the
+	specified arguments (that is the default behavior of these
+	classes).
+	"""
+
+	# To speed up things a bit, I convert all strings into regular
+	# expressions and use the search() method.
 	self.beginRE = re.compile ('(' + re.escape (self.begin) + ')', re.IGNORECASE)
 	self.endRE = re.compile ('(' + re.escape (self.end) + ')', re.IGNORECASE)
 	self.rf, self.wf = rf, wf
@@ -30,10 +162,13 @@ class Parser:
 	for key, item in handlers.items ():
 	    self.handlers[string.upper (key)] = item
 
+	# This is a pattern which contains all possible string delimiters
 	self.strDelimPattern = re.compile ('(' 
 	    + string.join (self.stringdelimiters, '|')
 	    + ')'
 	)
+
+	# Some useful patterns to parse tags
 	self.wordPattern = re.compile ('[A-Z0-9-_/]+', re.IGNORECASE)
 	self.spacePattern = re.compile ('\s+')
 	self.optSpacePattern = re.compile ('\s*')
