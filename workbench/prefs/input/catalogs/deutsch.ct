@@ -1,0 +1,82 @@
+## version $VER: inputprefs.catalog 1.0 (15.10.2001)
+## codeset 0
+## language deutsch
+;
+MSG_CANT_OPEN_LIB
+Kann %s V%ld nicht öffnen!\n
+;
+MSG_CANT_LOCK_SCR
+Kann public Screen nicht locken!
+;
+MSG_CANT_GET_DRI
+Kann DrawInfo nicht ermitteln!
+;
+MSG_CANT_GET_VI
+Kann VisualInfo nicht ermitteln!
+;
+MSG_CANT_CREATE_GADGET
+Kann Gadgets nicht erzeugen!
+;
+MSG_CANT_CREATE_MENUS
+Kann Menus nicht erzeugen!
+;
+MSG_CANT_CREATE_WIN
+Kann Fenster nicht erzeugen!
+;
+MSG_WINTITLE
+Eingabe-Voreinsteller (Input)
+;
+MSG_MEN_PROJECT
+Projekt
+;
+MSG_MEN_PROJECT_OPEN
+O\0Öffnen ...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Speichern als ...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Beenden
+;
+MSG_MEN_EDIT
+Vorgaben
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Auf Vorgaben zurücksetzen
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Auf zuletzt gespeichertes
+;
+MSG_MEN_EDIT_RESTORE
+R\0Auf vorherigen Stand
+;
+MSG_MEN_SETTINGS
+Einstellungen
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Piktogramme erzeugen?
+;
+MSG_ASL_OPEN_TITLE
+Laden Eingabe-Vorgaben
+;
+MSG_ASL_SAVE_TITLE
+Speichern Eingabe-Vorgaben
+;
+MSG_OK
+Ok
+;
+MSG_GAD_SAVE
+Speichern
+;
+MSG_GAD_USE
+Benutzen
+;
+MSG_GAD_CANCEL
+Abbrechen
+;
+MSG_GAD_TAB_MOUSE
+Maus
+;
+MSG_GAD_TAB_KEYBOARD
+Tastatur
+;
