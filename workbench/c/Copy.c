@@ -409,8 +409,8 @@ struct CopyData
     ULONG       Flags;
     ULONG       BufferSize;
     STRPTR      Pattern;
-    ULONG       Destination;
-    ULONG       CurDest;  /* Current Destination */
+    BPTR        Destination;
+    BPTR        CurDest;  /* Current Destination */
     ULONG	DestPathSize;
     struct FileInfoBlock *Fib;
     UBYTE       Mode;
@@ -440,6 +440,8 @@ struct CopyData
 #define TEXT_ERR_INFINITE_LOOP  texts[21]
 #define TEXT_ERR_WILDCARD_DEST  texts[22]
 
+
+#warning: FIXME: string constness is wrong all over the place
 STRPTR texts[] =
 {
     "read",
@@ -467,19 +469,19 @@ STRPTR texts[] =
     "Wildcard destination invalid.\n",
 };
 
-LONG  CopyFile(ULONG, ULONG, ULONG);
+LONG  CopyFile(BPTR, BPTR, ULONG);
 void  DoWork(STRPTR, struct CopyData *);
 LONG  IsPattern(STRPTR); /* return 0 -> NOPATTERN, return -1 --> ERROR */
 LONG  KillFile(STRPTR, ULONG);
-LONG  LinkFile(ULONG, STRPTR, ULONG);
-ULONG OpenDestDir(STRPTR, struct CopyData *);
+LONG  LinkFile(BPTR, STRPTR, ULONG);
+BPTR  OpenDestDir(STRPTR, struct CopyData *);
 void  PatCopy(STRPTR, struct CopyData *);
 void  PrintName(STRPTR, ULONG, ULONG, ULONG);
 void  PrintNotDone(STRPTR, STRPTR, ULONG, ULONG);
 ULONG TestFileSys(STRPTR); /* returns value, when is a filesystem */
 void  SetData(STRPTR, struct CopyData *);
 LONG  TestDest(STRPTR, ULONG, struct CopyData *);
-ULONG TestLoop(ULONG, ULONG);
+ULONG TestLoop(BPTR, BPTR);
 
 #ifndef __AROS__
 struct DosLibrary *DOSBase = 0;
@@ -488,10 +490,12 @@ struct ExecBase *SysBase = 0;
 
 int __nocommandline;
 
-ULONG main(void)
+int main(void)
 {
     struct Process *task;
+#ifndef __AROS__
     struct DosLibrary *dosbase;
+#endif
     struct CopyData cd;
     
     /* test for WB and reply startup-message */
@@ -759,7 +763,8 @@ ULONG main(void)
 		}
 		else if (cd.Mode == COPYMODE_MAKEDIR)
 		{
-		    ULONG i;
+		    LONG i;
+		    BPTR dir;
 		    cd.RetVal2 = RETURN_OK;
 
 		    if (!args.silent)
@@ -786,9 +791,9 @@ ULONG main(void)
 			    }
 			}
 
-			if ((i = OpenDestDir(*args.from, &cd)))
+			if ((dir = OpenDestDir(*args.from, &cd)))
 			{
-			    UnLock(i);
+			    UnLock(dir);
 			    cd.Flags |= COPYFLAG_DONE;
 			}
 
@@ -799,7 +804,7 @@ ULONG main(void)
 		{
 		    if (cd.Mode == COPYMODE_COPY)
 		    {
-			ULONG in, out;
+			BPTR in, out;
 			
 			if ((in = Open(*args.from, MODE_OLDFILE)))
 			{
@@ -889,7 +894,7 @@ ULONG main(void)
 			    if (*path && !*(args.from+1) &&
 				!(i = IsPattern(*args.from)))
 			    {
-				ULONG lock;
+				BPTR lock;
 
 				/* is destination an existing directory */
 				if ((lock = Lock(args.to, SHARED_LOCK)))
@@ -1103,7 +1108,7 @@ void PatCopy(STRPTR name, struct CopyData *cd)
 	    }
 	    else if(APath->ap_Flags & APF_DIDDIR)
 	    {
-		ULONG i;
+		BPTR i;
 		
 		cd->Flags |= COPYFLAG_ENTERSECOND;
 		APath->ap_Flags &= ~APF_DIDDIR;
@@ -1215,9 +1220,10 @@ LONG KillFile(STRPTR name, ULONG doit)
 }
 
 
-ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
+BPTR OpenDestDir(STRPTR name, struct CopyData *cd)
 {
     LONG a, err = 0, cr = 0;
+    BPTR dir;
     STRPTR ptr = name;
     UBYTE as;
     
@@ -1226,7 +1232,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 	cd->Flags |= COPYFLAG_DESNOFILESYS;
 	CopyMem(name, cd->DestName, 1 + strlen(name));
 
-	return (ULONG)Lock("", SHARED_LOCK);
+	return Lock("", SHARED_LOCK);
     }
     
     while (!err && *ptr != 0)
@@ -1254,7 +1260,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 	}
 	else if (a != TESTDEST_DIR_OK)
 	{
-	    if ((a = CreateDir(name)))
+	    if ((dir = CreateDir(name)))
 	    {
 		++cr;
 		
@@ -1264,7 +1270,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 		    VPrintf("%s\n", (IPTR *)&TEXT_CREATED);
 		}
 
-		UnLock(a);
+		UnLock(dir);
 	    }
 	    else
 	    {
@@ -1298,7 +1304,7 @@ ULONG OpenDestDir(STRPTR name, struct CopyData *cd)
 	PrintNotDone(name, TEXT_CREATED, 1, 1);
     }
     
-    return (ULONG)Lock(name, SHARED_LOCK);
+    return Lock(name, SHARED_LOCK);
 }
 
 
@@ -1318,7 +1324,7 @@ void PrintName(STRPTR name, ULONG deep, ULONG dir, ULONG txt)
 	PutStr("...");
     }
     
-    VPrintf((dir ? TEXT_DIRECTORY : "%s"), (IPTR *)&name);
+    VPrintf((dir ? TEXT_DIRECTORY : (STRPTR)"%s"), (IPTR *)&name);
 
     if (txt)
     {
@@ -1368,7 +1374,7 @@ ULONG TestFileSys(STRPTR name)
 
 void DoWork(STRPTR name, struct CopyData *cd)
 {
-    ULONG pdir, lock = 0;
+    BPTR pdir, lock = NULL;
     STRPTR printerr = 0, printok = "";
     
 #if DEBUG
@@ -1401,7 +1407,8 @@ void DoWork(STRPTR name, struct CopyData *cd)
     
     if (cd->Flags & (COPYFLAG_SRCNOFILESYS|COPYFLAG_DESNOFILESYS))
     {
-	ULONG in, out, res = 0, kill = 1;
+	ULONG res = 0, kill = 1;
+	BPTR in, out;
 	STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 	
 #if DEBUG
@@ -1553,7 +1560,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 	}
 	else if (cd->Flags & COPYFLAG_ALL)
 	{
-	    ULONG i;
+	    BPTR i;
 	    
 	    i = cd->CurDest;
 	    cd->DestPathSize = 0;
@@ -1677,7 +1684,8 @@ void DoWork(STRPTR name, struct CopyData *cd)
 	}
 	else
 	{
-	    ULONG in, out, res = 0, h;
+	    ULONG res = 0, h;
+	    BPTR in, out;
 	    STRPTR txt = TEXT_OPENED_FOR_OUTPUT;
 	    
 	    if ((out = Open(cd->DestName, MODE_NEWFILE)))
@@ -1754,7 +1762,7 @@ void DoWork(STRPTR name, struct CopyData *cd)
 }
 
 
-LONG CopyFile(ULONG from, ULONG to, ULONG bufsize)
+LONG CopyFile(BPTR from, BPTR to, ULONG bufsize)
 {
     STRPTR buffer;
     LONG s, err = 0;
@@ -1781,7 +1789,7 @@ LONG CopyFile(ULONG from, ULONG to, ULONG bufsize)
 
 
 /* Softlink's path starts always with device name! f.e. "Ram Disk:T/..." */
-LONG LinkFile(ULONG from, STRPTR to, ULONG soft)
+LONG LinkFile(BPTR from, STRPTR to, ULONG soft)
 {
     if(soft)
     {
@@ -1789,7 +1797,7 @@ LONG LinkFile(ULONG from, STRPTR to, ULONG soft)
 
 	NameFromLock(from, name, FILEPATH_SIZE);
 
-	return MakeLink(to, (ULONG)name, LINK_SOFT);
+	return MakeLink(to, name, LINK_SOFT);
     }
     else
     {
@@ -1799,9 +1807,10 @@ LONG LinkFile(ULONG from, STRPTR to, ULONG soft)
 
 
 /* return 0 means no loop, return != 0 means loop found */
-ULONG TestLoop(ULONG srcdir, ULONG destdir)
+ULONG TestLoop(BPTR srcdir, BPTR destdir)
 {
-    ULONG par, lock, loop = 0;
+    ULONG loop = 0;
+    BPTR par, lock;
     
     lock = destdir;
     
@@ -1862,7 +1871,7 @@ void SetData(STRPTR name, struct CopyData *cd)
 LONG TestDest(STRPTR name, ULONG type, struct CopyData *cd)
 {
     LONG ret = TESTDEST_ERROR;
-    ULONG lock;
+    BPTR lock;
     
     if ((lock = Lock(name, SHARED_LOCK)))
     {
