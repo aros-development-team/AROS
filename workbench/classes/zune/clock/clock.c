@@ -16,7 +16,6 @@
 #include <proto/utility.h>
 #include <proto/timer.h>
 #include <proto/muimaster.h>
-#include <clib/alib_protos.h>
 
 #include <string.h>
 #include <stdio.h>
