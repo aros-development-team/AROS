@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-97 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: espanol.language description file.
-    Lang: english
+    Desc: Espanol.language description file.
+    Lang: English
 */
 
 /*  Language file for the Spanish language. */
@@ -281,7 +281,7 @@ static const STRPTR __spanish_strings[] =
     "Enero", "Febrero", "Marzo",
     "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre",
-    "Octubre", "Noviembre", "Dicembre",
+    "Octubre", "Noviembre", "Diciembre",
 
     /* Abbreviated months of the year */
     "ene", "feb", "mar", "abr", "may", "jun",
