@@ -29,8 +29,6 @@ struct RDArgs *readArgs;
 // Grab any shell arguments given by the user
 struct RDArgs *getArguments(void)
 {
-    struct RDArgs *rdargs = NULL;
-    
     memset(argArray, NULL, sizeof(argArray));
     
     return ReadArgs("FROM,EDIT/S,USE/S,SAVE/S", argArray, NULL);
@@ -41,8 +39,6 @@ struct RDArgs *getArguments(void)
 // (GUI) interactive basis? Request for comments! (petah)
 UBYTE processArguments(void)
 {
-    extern struct FontPrefs *fp_Current[3];
-
     if(!(readArgs = getArguments()))
         PrintFault(IoErr(), NULL);
 

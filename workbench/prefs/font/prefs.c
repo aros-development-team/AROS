@@ -116,8 +116,6 @@ void FontPrefs_Default(struct FontPrefs *fp[FP_COUNT])
 
 BOOL FP_Initialize(void)
 {
-    UBYTE i;
-
     iffHandle = NULL;   /* FIXME: ?? */
     
     FontPrefs_Clear(fp_Current);
@@ -130,7 +128,6 @@ BOOL FP_Initialize(void)
     
     FontPrefs_Default(fp_Original);
     FontPrefs_Copy(fp_Current, fp_Original);
-    
     
     return TRUE;
     
