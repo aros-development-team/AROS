@@ -68,7 +68,7 @@ const struct Resident Intuition_resident=
     (ULONG *)inittabl
 };
 
-static const char name[]="intuition.library";
+static const char name[]=INTUITIONNAME;
 
 static const char version[]="$VER: intuition.library 39.0 (12.8.96)\n\015";
 
