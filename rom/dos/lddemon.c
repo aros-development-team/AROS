@@ -16,6 +16,7 @@
 #include <exec/ports.h>
 #include <exec/lists.h>
 #include <exec/alerts.h>
+#include <exec/tasks.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
@@ -28,7 +29,11 @@
 #include "dos_intern.h"
 #include "libdefs.h"
 
+#include <string.h>
+
 #undef SysBase
+
+#define CHECK_DEPENDENCY 1
 
 /* Please leave them here! They are needed on Linux-M68K */
 struct Library * Dos_OpenLibrary();
@@ -205,6 +210,9 @@ struct LDObjectNode
     struct Node            ldon_Node;
     struct SignalSemaphore ldon_SigSem;
     ULONG                  ldon_AccessCount;
+#if CHECK_DEPENDENCY
+    struct Task           *ldon_FirstLocker;
+#endif
 };
 
 struct LDObjectNode *LDNewObjectNode(STRPTR name, struct DosLibrary *DOSBase)
@@ -223,6 +231,10 @@ struct LDObjectNode *LDNewObjectNode(STRPTR name, struct DosLibrary *DOSBase)
 	    ret->ldon_Node.ln_Name = dupname;
             InitSemaphore(&ret->ldon_SigSem);
 	    ret->ldon_AccessCount = 0;
+
+	    #if CHECK_DEPENDENCY
+	    ret->ldon_FirstLocker = FindTask(0);
+            #endif
 
 	    return ret;
         }
@@ -310,10 +322,31 @@ AROS_LH2(struct Library *, OpenLibrary,
 
         object->ldon_AccessCount += 1;
     }
+#if CHECK_DEPENDENCY
+    else
+    {
+	struct Task  *curtask = FindTask(0);
+	struct ETask *et      = GetETask(curtask);
+
+	D(bug("Checking for circular dependency\n"));
+	if (et)
+	{
+	    while (curtask && curtask != object->ldon_FirstLocker)
+     		curtask = et->et_Parent;
+
+	    if (curtask)
+	    {
+		D(bug("Circular dependency found!\n"));
+	        object = NULL;
+	    }
+        }
+    }
+#endif
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
     if (!object)
         return NULL;
+
 
     ObtainSemaphore(&object->ldon_SigSem);
 
@@ -435,6 +468,26 @@ AROS_LH4(BYTE, OpenDevice,
 	object->ldon_AccessCount += 1;
 
     }
+#if CHECK_DEPENDENCY
+    else
+    {
+	struct Task  *curtask = FindTask(0);
+	struct ETask *et      = GetETask(curtask);
+
+	D(bug("Checking for circular dependency\n"));
+	if (et)
+	{
+	    while (curtask && curtask != object->ldon_FirstLocker)
+     		curtask = et->et_Parent;
+
+	    if (curtask)
+	    {
+		D(bug("Circular dependency found!\n"));
+	        object = NULL;
+	    }
+        }
+    }
+#endif
     ReleaseSemaphore(&DOSBase->dl_LDObjectsListSigSem);
 
     if (!object)
