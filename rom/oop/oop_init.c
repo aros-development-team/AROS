@@ -6,7 +6,7 @@
     Lang: english
 */
 
-#define NUM_IDS 1000
+#define NUM_IDS 10
 
 #define AROS_ALMOST_COMPATIBLE
 #include <utility/utility.h>
@@ -21,8 +21,8 @@
 #include "hash.h"
 #undef SDEBUG
 #undef DEBUG
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 

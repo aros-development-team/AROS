@@ -139,6 +139,10 @@ kernel-oop-module-quick : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 kernel-oop-includes-quick : setup-includes includes-generate includes-copy 
 	$(NOP)
 
+#MM kernel-oop-linklib-quick : kernel-oop-$(ARCH)-$(CPU)
+kernel-oop-linklib-quick : show-flags $(LIB)
+	@$(NOP)
+
 # --- QUICK HACKS END ---
 
 

@@ -103,5 +103,5 @@ VOID RemoveBucket(struct  HashTable *ht, struct Bucket *b);
 ULONG CalcHashStr(struct HashTable *ht, IPTR id);
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id);
 
-
+VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase);
 #endif /* HASH_H */

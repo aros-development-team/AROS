@@ -68,7 +68,7 @@
     struct pRoot_New p;
     Object *o;
     
-    EnterFunc(bug("NewObjectA(classPtr=%p, classID=%s, tagList=%p)\n",
+    EnterFunc(bug("NewObject(classPtr=%p, classID=%s, tagList=%p)\n",
     		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
 		
     /* Class list is public, so we must avoid race conditions */
@@ -86,7 +86,7 @@
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
 
     if (!classPtr)
-	ReturnPtr ("NewObjectA[No classPtr]", Object *, NULL);
+	ReturnPtr ("NewObject[No classPtr]", Object *, NULL);
 
     /* Create a new instance */
     
@@ -95,6 +95,8 @@
     p.mID = GetMethodID(IID_Root, moRoot_New);
     p.attrList = tagList;
     
+/*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
+*/    
     D(bug("mid=%ld\n", p.mID));
 
     /* Call the New() method of the specified class */
@@ -105,7 +107,9 @@
     {
 	MD(classPtr)->objectcount --; /* Object creation failed, release lock */
     }
-    ReturnPtr ("NewObjectA", Object *, o);
+/*    print_table(GetOBase(OOPBase)->ob_IIDTable, GetOBase(OOPBase));
+*/    
+    ReturnPtr ("NewObject", Object *, o);
     
     
     AROS_LIBFUNC_EXIT

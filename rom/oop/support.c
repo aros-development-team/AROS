@@ -207,3 +207,22 @@ VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
     
     ReturnVoid ("ReleaseAttrBase");
 }
+
+/* Increase an idbucket's refcount, to lock it. 
+   Calling this function MUST ONLY be used for IFs
+   that are known to exist in the IID table
+*/
+VOID obtain_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase)
+{
+    struct iid_bucket *idb;
+    struct HashTable *iidtable = GetOBase(OOPBase)->ob_IIDTable;
+
+    ObtainSemaphore(&OOPBase->ob_IIDTableLock);
+    /* Has ID allready been mapped to a numeric ID ? */
+    idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interface_id, OOPBase);
+    /* Reduce interface bucket's refcount */
+    idb->refcount ++;
+    ReleaseSemaphore(&OOPBase->ob_IIDTableLock);
+    
+    return;
+}

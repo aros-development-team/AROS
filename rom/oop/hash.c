@@ -278,3 +278,29 @@ ULONG CalcHashStr(struct HashTable *ht, IPTR id)
 	
     return  (val & HashMask(ht));
 }
+
+
+
+/* Prints contents of a hastable */
+VOID print_table(struct HashTable *ht, struct IntOOPBase *OOPBase)
+{
+    ULONG idx;
+    
+    for (idx = 0; idx < HashSize(ht); idx ++)
+    {
+    	struct Bucket *b;
+	kprintf("idx %ld: ", idx);
+	for (b = ht->Table[idx]; b; b = b->Next)
+	{
+	    if (ht->Type == HT_INTEGER)
+	    	kprintf("%ld ", b->ID);
+	    else
+	    	kprintf("%s (%ld)", (STRPTR)b->ID, ((struct iid_bucket *)b)->refcount);
+	    
+	}
+	kprintf("\n");
+	
+    }
+    return;
+    
+}

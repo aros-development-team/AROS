@@ -64,11 +64,12 @@
     EnterFunc(bug("GetMethodID(interfaceID=%s, methodOffset=%ld)\n",
     	interfaceID, methodOffset));
     
-/* #warning doesn't handle failures. (Should throw exception)
+/* #warning doesn't handle failures. (Should throw exception of some kind)
 */
     idb = (struct iid_bucket *)iidtable->Lookup(iidtable, (IPTR)interfaceID, GetOBase(OOPBase));
     if (idb)
     {
+    	D(bug("Got mid %ld\n", mid));
         /* Should throw eception here if metodbase == -1UL */
         mid = idb->methodbase + methodOffset;
 

@@ -125,7 +125,7 @@ struct IFMethod *findmethod(Class *cl, STRPTR interface_id, ULONG method_offset)
 BOOL init_methodbase(STRPTR interface_id, ULONG methodbase, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 BOOL init_mi_methodbase(STRPTR interface_id, ULONG *methodbase_ptr, struct IntOOPBase *OOPBase);
 VOID release_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
-
+VOID obtain_idbucket(STRPTR interface_id, struct IntOOPBase *OOPBase);
 /*****************
 **  Structures  **
 *****************/

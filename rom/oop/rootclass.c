@@ -145,6 +145,7 @@ static Object *basemeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Let subclass create an initialize dispatch tables for the new class object*/
 	if (meta_allocdisptabs(o, (Class *)superptr, ifdescr))
 	{
+	    data->disptabs_inited = TRUE;
 	
 	    /* Copy the class' ID */
 	    D(bug("Allocating class ID\n"));
@@ -170,10 +171,10 @@ static Object *basemeta_new(Class *cl, Object *o, struct pRoot_New *msg)
 		D(bug("Copying class ID\n"));
 		/* Copy class ID */
 		strcpy(data->public.ClassNode.ln_Name, clid);
+		
 
     	    	ReturnPtr ("Meta::New", Object *, o);
 	    }
-	    meta_freedisptabs(o);
 	}
 
 	CoerceMethod((Class *)cl, o, (Msg)&dispose_mid);
@@ -196,10 +197,12 @@ static VOID basemeta_dispose(Class *cl, Object *o, Msg msg)
     if (data->public.ClassNode.ln_Name)
     	FreeVec(data->public.ClassNode.ln_Name);
 	
-    /* Release interfaces from global interfce table */
+    /* Release interfaces from global interface table */
     while (meta_iterateifs(o, &iterval, &interface_id, &num_methods))
     {
-    	release_idbucket(interface_id, GetOBase(OOPBase));
+    	/* Only release the interfaces that were new for the class */
+	if (!meta_getifinfo((Object *)MD(o)->superclass, interface_id, &num_methods))
+    	     release_idbucket(interface_id, GetOBase(OOPBase));
     }
     
 
