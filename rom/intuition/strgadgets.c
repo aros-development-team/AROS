@@ -44,6 +44,8 @@
 #define TABRAW		66  /* Raw     */
 #define RETURN		13  /* Vanilla */
 #define DELETE		127 /* Vanilla */
+#define HOMERAW		112 /* Raw     */
+#define ENDRAW		113 /* Raw     */
 
 /*****************************************************************************************/
 
@@ -372,7 +374,9 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 	
     EnterFunc(bug("HandleStrInput(gad=%p, ginfo=%p, ievent=%p)\n",
     	gad, ginfo, ievent));
-    	
+    
+    if ((ievent->ie_Class == IECLASS_TIMER)) return 0;
+	
     D(bug("Gadget text: %s\n", strinfo->Buffer));
     	
     if (!ginfo)
@@ -410,16 +414,24 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
 
     switch (ievent->ie_Class)
     {
-    case IECLASS_RAWMOUSE:
-    	if (ievent->ie_Code == SELECTDOWN)
-    	    command = SGH_CLICK;
-    	D(bug("hsi: RAWMOUSE event\n"));    	    
-    	break;
-    	    
-    case IECLASS_RAWKEY:
-    	command = SGH_KEY;
-    	D(bug("hsi: RAWKEY event\n"));    	    
-    	break;
+	case IECLASS_RAWMOUSE:
+    	    if (ievent->ie_Code == SELECTDOWN)
+    		command = SGH_CLICK;
+    	    D(bug("hsi: RAWMOUSE event\n"));    	    
+    	    break;
+
+	case IECLASS_RAWKEY:
+	    {
+	        UBYTE buf;
+		
+    		command = SGH_KEY;
+		if (1 == MapRawKey(sgw.IEvent, &buf, 1, strinfo->AltKeyMap))
+		{
+		    sgw.Code = (UWORD)buf;
+		}
+    		D(bug("hsi: RAWKEY event\n"));    	    
+	    }
+    	    break;
     }
     
     if (!command)
@@ -624,11 +636,8 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 {
 
     struct Gadget 	*gad;
-    struct StringInfo 	*strinfo;
-    
+    struct StringInfo 	*strinfo;    
     UBYTE 		letter;
-    UBYTE 		keybuf[KEYBUFSIZE];
-    LONG 		numchars;
     ULONG 		qual;
     
     EnterFunc(bug("DoSGHKey(sgw=%p)\n", sgw));
@@ -636,19 +645,13 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     gad = sgw->Gadget;
     strinfo = sgw->StringInfo;
 
-    numchars = MapRawKey(sgw->IEvent, keybuf, KEYBUFSIZE, NULL);
-
-    if (numchars == -1) return 1;
-     	   
     qual = sgw->IEvent->ie_Qualifier;
     
     D(bug("sghkey: converted %d to letter %d\n",sgw->IEvent->ie_Code,letter));
 
     sgw->EditOp = EO_NOOP;
     
-    /* RKRM say: key is vanilla key if it maps exactly to one char */
-    
-    if (numchars != 1)
+    if (sgw->Code == 0)
     {
     	/* RAW Keys */
 	
@@ -674,7 +677,8 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     	    }
 	}
-	else if ((letter == CURSORLEFT) && (qual & SHIFT))
+	else if ( ((letter == CURSORLEFT) && (qual & SHIFT)) ||
+		  (letter == HOMERAW) )
 	{
     	    if (sgw->BufferPos > 0)
     	    {
@@ -682,7 +686,8 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     		sgw->EditOp = EO_MOVECURSOR;
     	    }
 	}
-	else if ((letter == CURSORRIGHT) && (qual & SHIFT))
+	else if ( ((letter == CURSORRIGHT) && (qual & SHIFT)) ||
+		  (letter == ENDRAW) )
 	{
     	    if (sgw->BufferPos < sgw->NumChars)
     	    {
@@ -706,7 +711,6 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
         /* ANSI key but pressed together with right Amiga key */
 	
 	sgw->EditOp  = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
-	sgw->Code    = keybuf[0]; /* looks this is really correct (tested on Amiga) */
 	sgw->Actions = (SGA_USE|SGA_REUSE|SGA_END);
 	
     }
@@ -714,7 +718,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     {
         /* ANSI key */
 	
-	letter = keybuf[0];
+	letter = sgw->Code;
 	
 	if (letter == BACKSPACE)
 	{
@@ -762,13 +766,13 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 	{
     	    D(bug("sghkey: ENTER\n"));
     	    sgw->EditOp  = EO_ENTER;
+	    sgw->Code	 = 0;
     	    sgw->Actions = (SGA_USE|SGA_END);
 	}
 	else if (letter == TAB)
 	{
 	    D(bug("sghkey: TAB\n"));
 	    sgw->EditOp  = EO_SPECIAL; /* FIXME: ??? is this correct ??? */
-	    sgw->Code    = 9;
 	    sgw->Actions = (SGA_USE|SGA_NEXTACTIVE);
 	}
 	else
