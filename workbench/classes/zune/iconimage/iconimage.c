@@ -133,12 +133,15 @@ IPTR IconImage__MUIM_AskMinMax
         )
     )
     {
-        message->MinMaxInfo->MinWidth  += size.MaxX;
-        message->MinMaxInfo->MaxWidth  += size.MaxX;
-        message->MinMaxInfo->DefWidth  += size.MaxX;
-        message->MinMaxInfo->MinHeight += size.MaxY;
-        message->MinMaxInfo->MaxHeight += size.MaxY;
-        message->MinMaxInfo->DefHeight += size.MaxY;
+    	WORD w = size.MaxX - size.MinX + 1;
+	WORD h = size.MaxY - size.MinY + 1;
+	
+        message->MinMaxInfo->MinWidth  += w;
+        message->MinMaxInfo->MaxWidth  += w;
+        message->MinMaxInfo->DefWidth  += w;
+        message->MinMaxInfo->MinHeight += h;
+        message->MinMaxInfo->MaxHeight += h;
+        message->MinMaxInfo->DefHeight += h;
     }
 
     return rc;
