@@ -277,10 +277,10 @@ struct Grub_Options
 
 struct InstallC_UndoRecord
 {
-	struct MinNode	undo_Node;
-	ULONG	undo_method;
-	char	*undo_src;
-	char	*undo_dst;
+	struct Node		undo_Node;
+	ULONG			undo_method;
+	char			*undo_src;
+	char			*undo_dst;
 };
 
 struct optionstmp
