@@ -52,6 +52,7 @@
 
     /* Do it after the driver to allow it to inspect the previous value */
     rp->BgPen = pen;
+    rp->linpatcnt = 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetBPen */

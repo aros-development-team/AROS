@@ -50,6 +50,7 @@
     driver_SetAPen (rp, pen, GfxBase);
 
     rp->FgPen = pen;
+    rp->linpatcnt = 0;
 
     AROS_LIBFUNC_EXIT
 } /* SetAPen */
