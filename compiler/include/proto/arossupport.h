@@ -9,7 +9,7 @@
 #include <aros/system.h>
 #endif
 
-#include <clib/aros_protos.h>
+#include <clib/arossupport_protos.h>
 
 #if defined(_AMIGA) && defined(__GNUC__)
 /*#include <inline/arossupport.h>*/
