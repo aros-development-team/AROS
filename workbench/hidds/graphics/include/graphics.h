@@ -1068,7 +1068,7 @@ enum {
 #define CLID_Hidd_PlanarBM "hidd.graphics.bitmap.planarbm"
 #define IID_Hidd_PlanarBM  "hidd.graphics.bitmap.planarbm"
 
-#define HiddPlanarBMAttrBase __IHIDD_PlanarBM
+#define HiddPlanarBMAttrBase __IHidd_PlanarBM
 
 extern OOP_AttrBase HiddPlanarBMAttrBase;
 
@@ -1106,7 +1106,7 @@ enum {
 #define CLID_Hidd_ColorMap "hidd.graphics.colormap"
 #define IID_Hidd_ColorMap  "hidd.graphics.colormap"
 
-#define HiddColorMapAttrBase __IHIDD_ColorMap
+#define HiddColorMapAttrBase __IHidd_ColorMap
 
 extern OOP_AttrBase HiddColorMapAttrBase;
 
