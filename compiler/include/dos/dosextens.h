@@ -478,7 +478,7 @@ struct DevInfo
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     struct MsgPort * dvi_NoAROS1;
-#endIF
+#endif
     BPTR             dvi_Lock;
 
     BSTR dvi_Handler;    /* Device name for handler. */
