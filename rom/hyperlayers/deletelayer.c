@@ -154,7 +154,7 @@ kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
   
   UnlockLayers(l->LayerInfo);
 
-  _FreeLayer(l);
+  _FreeLayer(l, LayersBase);
 
   return TRUE;
   

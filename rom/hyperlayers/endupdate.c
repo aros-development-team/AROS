@@ -75,9 +75,10 @@
 				0,
                                 FALSE,
                                 TRUE,
-				FALSE);
+				FALSE,
+				LayersBase);
     else
-      _FreeClipRectListBM(l,l->ClipRect);
+      _FreeClipRectListBM(l,l->ClipRect, LayersBase);
   }
       
   l->ClipRect = l->cr2;

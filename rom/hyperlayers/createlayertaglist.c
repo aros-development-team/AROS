@@ -15,12 +15,16 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH4(struct Layer *, CreateLayerTagList,
+	AROS_LH8(struct Layer *, CreateLayerTagList,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Layer_Info *, li, A0),
 	AROS_LHA(struct BitMap     *, bm, A1),
-	AROS_LHA(LONG               , flags, D0),
+        AROS_LHA(LONG               , x0, D0),
+        AROS_LHA(LONG               , y0, D1),
+        AROS_LHA(LONG               , x1, D2),
+        AROS_LHA(LONG               , y1, D3),
+	AROS_LHA(LONG               , flags, D4),
 	AROS_LHA(struct TagItem    *, tagList, A2),
 
 /*  LOCATION */
@@ -32,6 +36,8 @@
     INPUTS
         li    - pointer to LayerInfo structure
         bm    - pointer to common bitmap
+	x0,y0 - upper left corner of the layer (in parent layer coords)
+	x1,y1 - lower right corner of the layer (in parent layer coords)
         flags - choose the type of layer by setting some flags
                 If it is to be a super bitmap layer then the tag
                 LA_SUPERBITMAP must be provided along with a 
@@ -59,8 +65,7 @@
                   LA_VISIBLE : FALSE if this layer is to be invisible.
                                Default value is TRUE
                   LA_SHAPE : The region of the layer that comprises its shape.
-                             This value must be provided. The region must
-                             be relative to the parent layer.
+                             This value is optional. The region must be relative to the layer.
                   
         
     RESULT
@@ -96,7 +101,7 @@
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
   struct RastPort * rp;
-  struct Region * layershape;
+  struct Region * layershape = NULL, *shape;
 
   while (TAG_DONE != tagList[i].ti_Tag)
   {
@@ -148,9 +153,6 @@
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
     return NULL;
     
-  if (!layershape)
-    return NULL;
-
   if (!parent)
     parent = li->check_lp;
 
@@ -161,39 +163,60 @@
    * do anything. I recognize the root layer if there
    * is no parent.
    */
-  if (parent)
-  {
-    _TranslateRect(&layershape->bounds, 
-                   parent->shape->bounds.MinX,
-                   parent->shape->bounds.MinY);
-  }
 
   if (infrontof && infrontof->priority > priority)
     return NULL;
     
   if (behind && behind->priority < priority)
     return NULL;
+  
+  /* First create the shape region relative to nothing, that is 0,0 origin */
+  
+  shape = NewRectRegion(0, 0, x1 - x0, y1 - y0);
+  if (!shape)
+    return NULL;
+    
+  if (layershape) if (!AndRegionRegion(layershape, shape))
+  {
+    DisposeRegion(shape);
+    return NULL;
+  }
 
+  if (parent)
+  {
+    /* Convert from parent layer relative coords to screen relative coords */
+    
+    x0 += parent->bounds.MinX;
+    y0 += parent->bounds.MinY;
+    x1 += parent->bounds.MinX;
+    y1 += parent->bounds.MinY;
+  }
+  
+  /* Make shape region relative to screen */
+  _TranslateRect(&shape->bounds, x0, y0);
+  
   l = AllocMem(sizeof(struct Layer), MEMF_CLEAR|MEMF_PUBLIC);
   rp = CreateRastPort();
+  
 
   if (l && rp)
   {
-    l->shape = layershape;
+    l->shape = shape;
+    l->shaperegion = layershape;
     l->rp = rp;
     
     rp->Layer = l;
     rp->BitMap = bm;
 
-    l->bounds.MinX = layershape->bounds.MinX;
-    l->bounds.MaxX = layershape->bounds.MaxX;
-    l->bounds.MinY = layershape->bounds.MinY;
-    l->bounds.MaxY = layershape->bounds.MaxY;
+    l->bounds.MinX = x0;
+    l->bounds.MaxX = x1;
+    l->bounds.MinY = y0;
+    l->bounds.MaxY = y1;
     
     l->Flags = (WORD) flags;
     l->LayerInfo = li;
-    l->Width  = layershape->bounds.MaxX - layershape->bounds.MinX + 1;
-    l->Height = layershape->bounds.MaxY - layershape->bounds.MinY + 1;
+    l->Width  = x1 - x0 + 1;
+    l->Height = y1 - y0 + 1;
     
     l->SuperBitMap = superbitmap;
     l->BackFill = hook;
@@ -336,7 +359,7 @@
      * Region is non existent.
      */
     if (!IS_ROOTLAYER(l))
-      _ShowLayer(l);
+      _ShowLayer(l, LayersBase);
   }
   else
     goto failexit;

@@ -97,7 +97,8 @@
   l->ClipRect = _CreateClipRectsFromRegion(visible_damage_region,
                                            l,
                                            FALSE,
-                                           damage_region);
+                                           damage_region,
+					   LayersBase);
 
   DisposeRegion(damage_region);
   DisposeRegion(visible_damage_region);

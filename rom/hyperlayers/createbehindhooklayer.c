@@ -88,20 +88,17 @@
   struct TagItem tagList[5] = {{LA_Priority    , 0},
                                {LA_Hook        , NULL},
                                {LA_SuperBitMap , NULL},
-                               {LA_Shape       , NULL},
-                               {TAG_DONE       , 0UL}};
+                                {TAG_DONE       , 0UL}};
 
   tagList[0].ti_Data = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ?
                        BACKDROPPRIORITY:
                        UPFRONTPRIORITY;
   tagList[1].ti_Data = (IPTR)hook;
   tagList[2].ti_Data = (IPTR)bm2;
-  tagList[3].ti_Data = (IPTR)NewRectRegion(x0,y0,x1,y1);
-  
-  if (!tagList[3].ti_Data) return NULL;
 
   return CreateLayerTagList(li,
                             bm,
+			    x0, y0, x1, y1,
                             flags,
                             &tagList[0]);
   

@@ -29,12 +29,14 @@ extern struct GfxBase * GfxBase;
 
 struct LIBBASETYPE
 {
-    struct Library   lb_LibNode;
+    struct Library   	    lb_LibNode;
 
-    BPTR	     lb_SegList;
+    BPTR	     	    lb_SegList;
     
-    struct Library * lb_GfxBase;
-    struct ExecBase *lb_SysBase;
+    struct Library  	    *lb_GfxBase;
+    struct ExecBase 	    *lb_SysBase;
+    struct SignalSemaphore  lb_MemLock;
+    APTR    	    	    lb_ClipRectPool;
 };
 
 struct LayerInfo_extra
