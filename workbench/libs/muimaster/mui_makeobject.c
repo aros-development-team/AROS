@@ -170,7 +170,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	    return MUI_NewObject(MUIC_Text,
 		MUIA_FramePhantomHoriz, TRUE,
-		MUIA_Text_HiChar, params[1] & 0xff,
+		(params[1] & 0xff)?MUIA_Text_HiChar:TAG_IGNORE, params[1] & 0xff,
+		(params[1] & 0xff)?TAG_IGNORE:MUIA_Text_HiCharIdx, '_',
 		MUIA_Text_Contents, params[0],
 		TAG_MORE, tags,
 		TAG_DONE);
@@ -193,6 +194,8 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 	case MUIO_Checkmark: /* STRPTR label */
 	{
 	    return MUI_NewObject(MUIC_Text, //Image
+		    ButtonFrame,
+		    MUIA_Weight,0,
 //	            MUIA_Image_Spec, MUII_CheckMark,
 		    MUIA_Text_Contents, "C",
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
