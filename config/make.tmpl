@@ -487,9 +487,6 @@ BD_OBJS$(BDID)      := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILE
 BD_DEPS$(BDID)      := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID))))
 
 BD_CFLAGS$(BDID)    := %(cflags)
-ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
-BD_CFLAGS$(BDID)    += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
-endif
 BD_DFLAGS$(BDID)    := %(dflags)
 BD_LDFLAGS$(BDID)   := %(ldflags)
 
@@ -568,10 +565,6 @@ endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
 
 BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -idirafter $(TOP)/$(CURDIR) -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-#Add extra flag if shared AROS C library is used
-ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
-BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
-endif
 ifeq (%(dflags),)
 BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
@@ -643,7 +636,7 @@ endif
 %(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
 
 #MM
-%(mmake)-clean :
+%(mmake)-clean ::
 	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
 	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
 	    $(BD_REFFILES$(BDID))\
@@ -822,10 +815,6 @@ else
 endif
 
 BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/libs -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-#Add extra flag if shared AROS C library is used
-ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
-BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
-endif
 ifeq (%(dflags),)
 BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
 else
@@ -885,7 +874,7 @@ endif
 %(mmake) : $(TMP_DEPS)
 
 #MM
-%(mmake)-clean :
+%(mmake)-clean ::
 	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
 	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
 	    $(BD_REFFILES$(BDID))\
@@ -1088,7 +1077,7 @@ BD_LINKLIB$(BDID)    := $(BD_LIBDIR$(BDID))/lib$(BD_LIBNAME$(BDID)).a
 %(mmake)-setup : setup-linklib$(BDID)
 
 #MM
-%(mmake)-clean :
+%(mmake)-clean ::
 	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID))
 
 %rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_LIBDIR$(BDID))" \
@@ -1148,7 +1137,7 @@ BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 	@$(FLEXCAT) %(description).cd %(include)=$(TOOLDIR)/C_h_orig.sd
 
 #MM
-%(mmake)-clean :
+%(mmake)-clean ::
 	$(RM) $(BD_OBJS$(BDID)) %(include)
 
 %end
@@ -2277,7 +2266,7 @@ clean ::
 %define make_prog_setup mmake=/A startup=$(AROS_LIB)/startup.o id=
 .PHONY : %(mmake) %(mmake)-clean %(mmake)-quick
 #MM
-%(mmake)-clean : clean
+%(mmake)-clean :: clean
 #MM
 %(mmake)-quick : %(mmake)
 
@@ -2358,31 +2347,8 @@ ifdef USE_ROMLIB
 endif
 
 ifdef USE_CLIB
-# uncomment this if you want to compile by default
-# against the shared version of the clib
-%(libs) := $(%(libs)) -larosc_shared
-%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
-
-# uncomment this if you want to compile by default
-# against the static version of the clib
-#%(libs) := $(%(libs)) -larosc
-#%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
-else
-    ifdef USE_CLIB_SHARED
-	%(libs) := $(%(libs)) -larosc_shared
-	%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
-    else
-	ifdef USE_CLIB_STATIC
-	    %(libs) := $(%(libs)) -larosc
-	    %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
-	else
-	    ifdef USE_CLIB_LIBRARY
-	        %(libs) := $(%(libs)) -larosc_shared
-		%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
-		%(lib_cflags) := $(%(lib_cflags)) -I$(TOP)/rom/exec -D_CLIB_LIBRARY_
-	    endif		
-	endif
-    endif
+%(libs) := $(%(libs)) -larosc
+%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 endif
 
 # m.lib MUST come after c.lib in it's various incarnations.
