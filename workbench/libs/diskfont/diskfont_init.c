@@ -5,6 +5,7 @@
     Desc: Diskfont initialization code.
     Lang: English.
 */
+
 #include "initstruct.h"
 #include "diskfont_intern.h"
 #include "libdefs.h"
@@ -15,7 +16,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#define DEBUG 1
 #include <aros/debug.h>
 
 struct inittable;
@@ -89,6 +89,7 @@ const struct inittable datatable=
 
 
 struct ExecBase * SysBase;
+struct Library *DOSBase;
 /* #undef O
 #undef SysBase */
 
@@ -98,14 +99,13 @@ AROS_LH2(struct DiskfontBase_intern *, init,
     struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
-    /* DO NOT CALL ANY FUNCTIONS BEFORE SysBase HAS BEEN SET !!! */
 
     /* This function is single-threaded by exec by calling Forbid. */
 
-    /* Store arguments */
     SysBase=sysBase;
 
     D(bug("Inside initfunc\n"));
+
     LIBBASE->seglist=segList;
 
     /* You would return NULL here if the init failed. */
@@ -131,7 +131,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     struct AFHookDescr hdescrdef[] =
     {
 	{AFF_MEMORY,	{{0L, 0L}, (void*)MemoryFontFunc, 0L, 0L}},
-	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc, 0L,     0L}},
+	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc, 0L,     0L}}
     };
 
 	UWORD idx;
