@@ -95,7 +95,7 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
     sss->stk_Pointer = sp;
 
-    D(bug("In RunProcess() %lx , %lx\n", (IPTR)entry, (IPTR)*entry));
+    D(bug("In RunProcess() entry=%lx, *entry=%lx\n", (IPTR)entry, (IPTR)*entry));
     StackSwap(sss);
 
     /* Call the function with the new stack */
@@ -110,12 +110,13 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 #error You need to write the AROS_UFC3R macro for your CPU
 #endif
 
-    *retptr = AROS_UFC3R(ULONG, entry,
-		AROS_UFCA(STRPTR, argptr, A0),
-		AROS_UFCA(ULONG, argsize, D0),
-		AROS_UFCA(struct ExecBase *, SysBase, A6),
-		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
-	      );
+	*retptr = entry(argptr,argsize,SysBase);
+//    *retptr = AROS_UFC3R(ULONG, entry,
+//		AROS_UFCA(STRPTR, argptr, A0),
+//		AROS_UFCA(ULONG, argsize, D0),
+//		AROS_UFCA(struct ExecBase *, SysBase, A6),
+//		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
+//	      );
 
     StackSwap(sss);
 
