@@ -227,6 +227,7 @@ clib00111;1;falemagn;Write write.
 clib00112;2;falemagn;Write gcvt.
 clib00113;2;hkiel;Write fgetpos.
 clib00114;2;falemagn;Write setenv.
+clib00115;2;hkiel;Write rename.
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask

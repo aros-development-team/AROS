@@ -88,6 +88,7 @@ FILES := \
 	read \
 	realloc \
 	remove \
+	rename \
 	rewind \
 	scanf \
 	seed48 \
