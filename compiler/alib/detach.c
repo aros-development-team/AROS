@@ -58,12 +58,13 @@
 #include <aros/asmcall.h>
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-asm("
-	.text
-
-	move.l	4.w,a6
-	bra	_detach_entry
-");
+asm
+(
+    ".text\n"
+    "\n"
+    "move.l      4.w,a6\n"
+    "bra         _detach_entry\n"
+);
 #endif
 
 AROS_UFP3(LONG, __startup_entry,

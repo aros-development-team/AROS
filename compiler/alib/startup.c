@@ -18,12 +18,13 @@
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
 #if 0
-asm("
-	.text
-
-	move.l	4.w,a6
-	bra	_entry
-");
+asm
+(
+    ".text\n"
+    "\n"
+    "move.l      4.w,a6\n"
+    "bra         _entry\n"
+);
 #endif
 #endif
 
