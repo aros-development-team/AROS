@@ -345,7 +345,10 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.list_refresh = GetConfigULong(obj, MUICFG_Listview_Refresh);
 
     /*---------- Strings ----------*/
-    /* all taken care of in frames and images */
+    data->prefs.string_bg_inactive = GetConfigString(obj, MUICFG_String_Background);
+    data->prefs.string_text_inactive = GetConfigString(obj, MUICFG_String_Text);
+    data->prefs.string_bg_active = GetConfigString(obj, MUICFG_String_ActiveBackground);
+    data->prefs.string_text_active = GetConfigString(obj, MUICFG_String_ActiveText);
 
     /*---------- Navigation ----------*/
 
