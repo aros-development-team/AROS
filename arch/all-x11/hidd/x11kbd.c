@@ -184,19 +184,19 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     APTR callbackdata = NULL;
     
     EnterFunc(bug("X11Kbd::New()\n"));
-    
+ 
     ObtainSemaphoreShared( &XSD(cl)->sema);
-    
+ 
     if (XSD(cl)->kbdhidd)
     	has_kbd_hidd = TRUE;
-	
+
     ReleaseSemaphore( &XSD(cl)->sema);
-    
+ 
     if (has_kbd_hidd) /* Cannot open twice */
     	ReturnPtr("X11Kbd::New", Object *, NULL); /* Should have some error code here */
 
-    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
     tstate = msg->attrList;
+    D(bug("tstate: %p, tag=%x\n", tstate, tstate->ti_Tag));	
     while ((tag = NextTagItem(&tstate)))
     {
 	ULONG idx;
@@ -228,7 +228,7 @@ static Object * x11kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (o)
     {
 	struct x11kbd_data *data = INST_DATA(cl, o);
-	data->kbd_callback = (VOID (*)())callback;
+	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
 	ObtainSemaphore( &XSD(cl)->sema);
