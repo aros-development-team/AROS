@@ -116,8 +116,8 @@ struct GfxBase
     struct SignalSemaphore * ActiViewCprSemaphore;
 
 /* Library Bases */
-    struct Library *UtilBase;
-    struct SysBase *ExecBase;
+    struct Library  *UtilBase;
+    struct ExecBase *ExecBase;
 
     BYTE  * bwshifts;
     UWORD * StrtFetchMasks;
