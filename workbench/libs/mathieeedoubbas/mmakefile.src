@@ -6,8 +6,8 @@ USER_INCLUDES	:= -I.
 MODNAME	    := mathieeedoubbas
 MODTYPE	    := library
 
-FILES	    :=
-ARCHIVE	    :=	mathieeedoubbas.arch
+FILES	    := ieeedpbas_fpu
+ARCHIVE	    := mathieeedoubbas.arch
 
 #MM- workbench-libs-mathieeedoubbas : setup includes \
 #MM	workbench-libs-mathieeedoubbas-module
