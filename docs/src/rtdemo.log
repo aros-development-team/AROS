@@ -1,0 +1,41 @@
+Workbench:> rtdemo
+Loading "rtdemo"...
+    Symbol at 0x08083190: entry
+    Section at 0x08083190 ... 0x08085387: .text
+    Section at 0x08085390 ... 0x0808660b: .rodata
+    Section at 0x08082330 ... 0x080823ef: .data
+Allocating 60 bytes of memory
+Bug 1: Forgetting about 60 bytes at 0x8066b38
+Got some 60 bytes at 0x8066b78
+Bug 2: Freeing 70 bytes at 0x8066b78
+RTFree: Size mismatch (Allocated=60, Check=70)
+    Free at rtdemo.c:49
+    AllocMem()'d at rtdemo.c:39
+    MemPtr=08066b78 Size=60 Flags=00000000
+Bug 3: Freeing 60 bytes at 0x4
+RTFree: Memory not found
+    Free at rtdemo.c:55
+    MemPtr=00000004 Size=60
+Bug 4: Forget to free 60 bytes at 0x8066e04
+Bug 5: Freeing 0x4
+RTFree: Memory not found
+    Free at rtdemo.c:65
+    MemPtr=00000004 Size=60
+Bug 6: OverWriting IntuitionBase (0x805c30c)
+RTFree: Library not found
+    Free at rtdemo.c:72
+    Base=00000017
+Show Bugs 1 and 2
+RTExit: Memory was not freed
+    AllocMem()'d at rtdemo.c:35
+    MemPtr=08066b38 Size=60 Flags=00000000
+RTExit: Memory was not freed
+    AllocMem()'d at rtdemo.c:39
+    MemPtr=08066b78 Size=60 Flags=00000000
+RTExit: Memory was not freed
+    AllocVec()'d at rtdemo.c:58
+    MemPtr=08066e04 Size=60 Flags=00000000
+RTExit: Library was not closed
+    Opened at rtdemo.c:67
+    Base=0805c30c Name=intuition.library Version=00000000
+Workbench:>
