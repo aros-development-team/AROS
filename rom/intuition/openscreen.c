@@ -341,17 +341,19 @@ static const ULONG coltab[] = {
 
     if (ok)
     {
-      /* Get a color map structure. Sufficient colors?? */
-      
-      if (NULL != (screen->Screen.ViewPort.ColorMap = GetColorMap(1 << ns.Depth)))
-      {
-        /* I should probably also call AttachPalExtra */
-        if (0 != AttachPalExtra(screen->Screen.ViewPort.ColorMap,
-                                &screen->Screen.ViewPort))
-          ok = FALSE;
-      }
-      else
-        ok = FALSE;
+	WORD numcolors = (ns.Depth <= 8) ? (1L << ns.Depth) : 256;
+
+	/* Get a color map structure. Sufficient colors?? */
+
+	if (NULL != (screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)))
+	{
+            /* I should probably also call AttachPalExtra */
+            if (0 != AttachPalExtra(screen->Screen.ViewPort.ColorMap,
+                                    &screen->Screen.ViewPort))
+                ok = FALSE;
+	}
+	else
+            ok = FALSE;
     }
  
     if (ok)
@@ -417,7 +419,8 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Version = DRI_VERSION;
 	screen->DInfo.dri_NumPens = NUMDRIPENS;
 	screen->DInfo.dri_Pens = screen->Pens;
-	screen->DInfo.dri_Depth = ns.Depth;
+	/* dri_Depth is 8 on hi/true color screens like in AmigaOS with picasso96/cybergraphx */
+	screen->DInfo.dri_Depth = (ns.Depth <= 8) ? ns.Depth : 8; 
 	screen->DInfo.dri_Resolution.X = 44;
 	screen->DInfo.dri_Resolution.Y = 44;
 	screen->DInfo.dri_Flags = 0;
