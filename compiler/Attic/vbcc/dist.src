@@ -2,4 +2,4 @@
 Makefile
 README
 mf.local
-vc.config
+*.config
