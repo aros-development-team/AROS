@@ -7142,7 +7142,7 @@ elif test "$debug" = "all" ; then
     for d in $all_debug_types; do
         export aros_${d}_debug="1"
     done
-    aros_debug="1"
+    aros_debug="yes"
 else
     debug=`echo $debug | sed s/,/\ /g`
     for d in $debug; do
@@ -7160,7 +7160,7 @@ echo "$as_me: error: unrecognized debug type \"$d\". Available types are: all no
 	fi
 	export aros_${d}_debug="1"
     done
-    aros_debug="1"
+    aros_debug="yes"
 fi
 
 echo "$as_me:$LINENO: result: \"$debug\"" >&5

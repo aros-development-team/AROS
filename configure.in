@@ -891,7 +891,7 @@ elif test "$debug" = "all" ; then
     for d in $all_debug_types; do
         export aros_${d}_debug="1"
     done
-    aros_debug="1"
+    aros_debug="yes"
 else
     debug=`echo $debug | sed s/,/\ /g`
     for d in $debug; do
@@ -907,7 +907,7 @@ else
 	fi
 	export aros_${d}_debug="1"
     done
-    aros_debug="1"
+    aros_debug="yes"
 fi
 
 AC_MSG_RESULT("$debug")
