@@ -103,7 +103,7 @@ BOOL init_hidds(struct ExecBase *sysBase, struct DosLibrary *dosBase)
 	}
 	else
 	{
-	    STRPTR libname;
+	    STRPTR libname = NULL;
 	    
 	    D(bug("hiddprefs file opened\n"));
 	    while (FGets(fh, buf, BUFSIZE))

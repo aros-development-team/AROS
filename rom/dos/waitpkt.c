@@ -115,7 +115,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 	{
 	    struct FileHandle *fh = (struct FileHandle *)packet->dp_Arg6;
 
-	    packet->dp_Res1 = MKBADDR(fh);
+	    packet->dp_Res1 = (IPTR)MKBADDR(fh);
 	    packet->dp_Res2 = iofs->io_DosError;
 
 	    if (iofs->io_DosError != 0)
@@ -151,14 +151,14 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
     case FSA_CLOSE:
 	packet->dp_Res1 = iofs->io_DosError == 0;
-	FreeDosObject(DOS_FILEHANDLE, packet->dp_Arg1);
+	FreeDosObject(DOS_FILEHANDLE, (APTR)packet->dp_Arg1);
 	break;
 
 
     case FSA_EXAMINE:
 	{
 	    /* Get supplied FileInfoBlock */
-	    struct FileInfoBlock *fib = (IPTR)BADDR(packet->dp_Arg2);
+	    struct FileInfoBlock *fib = (struct FileInfoBlock *)BADDR(packet->dp_Arg2);
 	    struct ExAllData     *ead = iofs->io_Union.io_EXAMINE.io_ead;
 
 	    packet->dp_Res1 = iofs->io_DosError == 0;
@@ -261,7 +261,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
 	    fh->fh_Unit   = iofs->IOFS.io_Unit;
 	    fh->fh_Device = iofs->IOFS.io_Device;
-	    packet->dp_Res1 = MKBADDR(fh);
+	    packet->dp_Res1 = (IPTR)MKBADDR(fh);
 	    break;
 	}
 

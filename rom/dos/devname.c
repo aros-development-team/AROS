@@ -35,7 +35,7 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
 	
 	if (!fh)
 	{
-	    *devptr = 0xBADC0DE;
+	    *devptr = (struct Device *)0xBADC0DE;
 	    return ERROR_DEVICE_NOT_MOUNTED;
 	}
 	else
@@ -57,7 +57,7 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
  	}
 	else
 	{
-	    *devptr = 0xBADC0DE;
+	    *devptr = (struct Device *)0xBADC0DE;
 	    return ERROR_DEVICE_NOT_MOUNTED;
 	}
    }
@@ -99,7 +99,7 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
  	}
 	else
 	{
-	    *devptr = 0xBADC0DE;
+	    *devptr = (struct Device *)0xBADC0DE;
 	    return ERROR_DEVICE_NOT_MOUNTED;
 	}
 

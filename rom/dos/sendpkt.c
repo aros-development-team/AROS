@@ -574,7 +574,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		    iofs->io_Union.io_CREATE_HARDLINK.io_OldFile = fh->fh_Unit;
 		}
 		
-		oldCurDir = CurrentDir(dp->dp_Arg1);
+		oldCurDir = CurrentDir((BPTR)dp->dp_Arg1);
 		DoNameAsynch(iofs, name, DOSBase);
 		CurrentDir(oldCurDir);
 	    }
@@ -630,7 +630,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    
 	case ACTION_REMOVE_NOTIFY:  // EndNotify()
 	    {
-		struct NotifyRequest *notify = BADDR(dp->dp_Arg1);
+		struct NotifyRequest *notify = (struct NotifyRequest *)BADDR(dp->dp_Arg1);
 
 		iofs->IOFS.io_Command = FSA_REMOVE_NOTIFY;
 		iofs->io_Union.io_NOTIFY.io_NotificationRequest = notify;
