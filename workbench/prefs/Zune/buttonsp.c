@@ -53,6 +53,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     MUIA_Group_SameHeight, TRUE,
                     
                     Child, VGroup,
+                        MUIA_HorizWeight, 0,
                         Child, HVSpace,
                         Child, MakeLabel("Background:"),
                         Child, HVSpace,
@@ -60,6 +61,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     Child, d.text_background_popimage = MakeBackgroundPopimage(),
         
                     Child, VGroup,
+                        MUIA_HorizWeight, 0,
                         Child, HVSpace,
                         Child, MakeLabel("Background in\npressed state:"),
                         Child, HVSpace,
