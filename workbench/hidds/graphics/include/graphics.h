@@ -483,6 +483,10 @@ enum
     moHidd_BitMap_CopyMemBox32,
     moHidd_BitMap_CopyLUTMemBox16,
     moHidd_BitMap_CopyLUTMemBox32,
+    moHidd_BitMap_PutMem32Image8,
+    moHidd_BitMap_PutMem32Image16,
+    moHidd_BitMap_GetMem32Image8,
+    moHidd_BitMap_GetMem32Image16,
     
     /* This method is used only by subclasses, I repeat:
     ONLY BY SUBCLASSES, to register available modes in the baseclass
@@ -754,6 +758,8 @@ struct pHidd_BitMap_ConvertPixels
     
 };
 
+/* Fill rect area in 8 bit memory chunky buffer with pixel */
+
 struct pHidd_BitMap_FillMemRect8
 {
     OOP_MethodID mID;
@@ -765,6 +771,8 @@ struct pHidd_BitMap_FillMemRect8
     ULONG   	 dstMod;
     UWORD   	 fill; 
 };
+
+/* Fill rect area in 16 bit memory chunky buffer with pixel */
 
 struct pHidd_BitMap_FillMemRect16
 {
@@ -778,6 +786,8 @@ struct pHidd_BitMap_FillMemRect16
     UWORD   	 fill; 
 };
 
+/* Fill rect area in 32 bit memory chunky buffer with pixel */
+
 struct pHidd_BitMap_FillMemRect32
 {
     OOP_MethodID mID;
@@ -790,6 +800,8 @@ struct pHidd_BitMap_FillMemRect32
     ULONG   	 fill; 
 };
 
+/* Invert rect area in 8 bit memory chunky buffer */
+
 struct pHidd_BitMap_InvertMemRect
 {
     OOP_MethodID mID;
@@ -800,6 +812,8 @@ struct pHidd_BitMap_InvertMemRect
     WORD    	 maxY;
     ULONG   	 dstMod;
 };
+
+/* copy src rect from 8 bit chunky memory buffer to dst rect in 8 bit chunky memory buffer */
 
 struct pHidd_BitMap_CopyMemBox8
 {
@@ -813,6 +827,8 @@ struct pHidd_BitMap_CopyMemBox8
     ULONG           dstMod;
 };
 
+/* copy src rect from 16 bit chunky memory buffer to dst rect in 16 bit chunky memory buffer */
+
 struct pHidd_BitMap_CopyMemBox16
 {
     OOP_MethodID    mID;
@@ -825,6 +841,8 @@ struct pHidd_BitMap_CopyMemBox16
     ULONG           dstMod;
 };
 
+/* copy src rect from 32 bit chunky memory buffer to dst rect in 32 bit chunky memory buffer */
+
 struct pHidd_BitMap_CopyMemBox32
 {
     OOP_MethodID    mID;
@@ -836,6 +854,10 @@ struct pHidd_BitMap_CopyMemBox32
     ULONG   	    srcMod;
     ULONG           dstMod;
 };
+
+/* copy src rect from 8 bit chunky memory buffer to
+   dst rect in 16 bit chunky memory buffer using
+   a HIDDT_PixelLUT lookup to convert from 8 --> 16*/
 
 struct pHidd_BitMap_CopyLUTMemBox16
 {
@@ -850,6 +872,10 @@ struct pHidd_BitMap_CopyLUTMemBox16
     HIDDT_PixelLUT  *pixlut;    
 };
 
+/* copy src rect from 8 bit chunky memory buffer to
+   dst rect in 32 bit chunky memory buffer using
+   a HIDDT_PixelLUT lookup to convert from 8 --> 32*/
+
 struct pHidd_BitMap_CopyLUTMemBox32
 {
     OOP_MethodID    mID;
@@ -861,6 +887,62 @@ struct pHidd_BitMap_CopyLUTMemBox32
     ULONG   	    srcMod;
     ULONG           dstMod;
     HIDDT_PixelLUT  *pixlut;    
+};
+
+/* copy a chunky 8 bit image buffer contained in a 32 bit chunky array
+   to dest 8 bit chunky memory buffer */
+
+struct pHidd_BitMap_PutMem32Image8
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    APTR	    dst;
+    WORD	    dstX, dstY;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
+};
+
+/* copy a chunky 16 bit image contained in a 32 bit chunky array
+   to dest 16 bit chunky memory buffer */
+
+struct pHidd_BitMap_PutMem32Image16
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    APTR	    dst;
+    WORD	    dstX, dstY;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
+};
+
+/* copy an area of a 8 bit chunky memory buffer into a
+   8 bit image which is organized as a 32 bit chunky array */
+
+struct pHidd_BitMap_GetMem32Image8
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD	    srcX, srcY;
+    APTR	    dst;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
+};
+
+/* copy an area of a 16 bit chunky memory buffer into a
+   16 bit image which is organized in a 32 bit chunky array */
+
+struct pHidd_BitMap_GetMem32Image16
+{
+    OOP_MethodID    mID;
+    APTR    	    src;
+    WORD	    srcX, srcY;
+    APTR	    dst;
+    UWORD	    width, height;
+    ULONG   	    srcMod;
+    ULONG   	    dstMod;
 };
 
 struct pHidd_BitMap_SetColorMap
@@ -1139,6 +1221,46 @@ VOID	HIDD_BM_CopyLUTMemBox32(OOP_Object *obj,
 				ULONG dstMod,
 				HIDDT_PixelLUT *pixlut);
 	
+VOID	HIDD_BM_PutMem32Image8(OOP_Object *obj,
+    	    	    	       APTR src,
+			       APTR dst,
+			       WORD dstX,
+			       WORD dstY,
+			       UWORD width,
+			       UWORD height,
+			       ULONG srcMod,
+			       ULONG dstMod);
+
+VOID	HIDD_BM_PutMem32Image16(OOP_Object *obj,
+    	    	    		APTR src,
+				APTR dst,
+				WORD dstX,
+				WORD dstY,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod);
+
+VOID	HIDD_BM_GetMem32Image8(OOP_Object *obj,
+    	    	    	       APTR src,
+			       WORD srcX,
+			       WORD srcY,
+			       APTR dst,
+			       UWORD width,
+			       UWORD height,
+			       ULONG srcMod,
+			       ULONG dstMod);
+
+VOID	HIDD_BM_GetMem32Image16(OOP_Object *obj,
+    	    	    		APTR src,
+				WORD srcX,
+				WORD srcY,
+				APTR dst,
+				UWORD width,
+				UWORD height,
+				ULONG srcMod,
+				ULONG dstMod);
+
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *o, OOP_Object *colorMap);
 
 BOOL HIDD_BM_ObtainDirectAccess(OOP_Object *o,
