@@ -300,12 +300,6 @@ void _DisposeRegionRectangleList
     struct GfxBase         *GfxBase
 );
 
-void _DisposeRegionRectangleExtChunk
-(
-    struct RegionRectangleExtChunk *Chunk,
-    struct GfxBase                 *GfxBase
-);
-
 struct RegionRectangle *_NewRegionRectangle
 (
     struct RegionRectangle **LastRectPtr,
@@ -318,6 +312,50 @@ BOOL _LinkRegionRectangleList
     struct RegionRectangle **dstptr,
     struct GfxBase          *GfxBase
 );
+
+#if REGIONS_USE_POOL
+#   define GFX_ALLOC(Size)                                \
+    ({                                                    \
+        APTR Mem;                                         \
+                                                          \
+        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);  \
+                                                          \
+        Mem = AllocPooled                                 \
+        (                                                 \
+            PrivGBase(GfxBase)->regionpool,               \
+            Size                                          \
+        );                                                \
+                                                          \
+        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem); \
+                                                          \
+        Mem;                                              \
+    })
+
+#    define GFX_FREE(Mem, Size)                           \
+     {                                                    \
+        APTR Mem;                                         \
+                                                          \
+        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);  \
+                                                          \
+        FreePooled                                        \
+        (                                                 \
+            PrivGBase(GfxBase)->regionpool,               \
+            Mem,                                          \
+            size                                          \
+        );                                                \
+                                                          \
+        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem); \
+     }
+#else
+#    define GFX_ALLOC(Size)     AllocMem(Size, MEMF_ANY)
+#    define GFX_FREE(Mem, Size) FreeMem(Mem, Size)
+#endif
+
+#define _NewRegionRectangleExtChunk() \
+    ((struct RegionRectangleExtChunk *)GFX_ALLOC(sizeof(struct RegionRectangleExtChunk)))
+
+#define _DisposeRegionRectangleExtChunk(_chunk) \
+    GFX_FREE(_chunk, sizeof(struct RegionRectangleExtChunk))
 
 #endif /* GRAPHICS_INTERN_H */
 

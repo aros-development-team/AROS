@@ -22,23 +22,138 @@
 
 #include <aros/debug.h>
 
+/* to test these functions under an unix-like os, like linux, compile this file this way:
 
-void _DisposeRegionRectangleExtChunk
+       gcc -o test intregions.c <optimization flags> -I<path to the AROS includes> -DLINTEST=1
+
+   and then do
+
+       time ./test
+
+   and tell me whether it's fast or not :))
+*/
+
+#if LINTEST
+#    include <stdlib.h>
+#    include <stdio.h>
+
+#    define DOTEST 1
+
+#    undef  _NewRegionRectangleExtChunk
+#    define _NewRegionRectangleExtChunk() malloc(sizeof(struct RegionRectangleExtChunk))
+
+#    undef  _DisposeRegionRectangleExtChunk
+#    define _DisposeRegionRectangleExtChunk(mem) free(mem)
+
+#    undef  NewRegion
+#    define NewRegion() malloc(sizeof(struct Region))
+
+#    undef  DisposeRegion
+#    define DisposeRegion(reg) free(reg)
+
+#    undef  InitRegion
+#    define InitRegion(reg)             \
+     {                                  \
+         (reg)->RegionRectangle = NULL; \
+     }
+
+#    undef  ClearRegion
+#    define ClearRegion(region)                                                                           \
+     {                                                                                                    \
+         if (region->RegionRectangle)                                                                     \
+         {                                                                                                \
+             struct RegionRectangleExtChunk *NextChunk;                                                   \
+                                                                                                          \
+             NextChunk = Chunk(region->RegionRectangle)->FirstChunk;                                      \
+                                                                                                          \
+             while(NextChunk)                                                                             \
+             {                                                                                            \
+                 struct RegionRectangleExtChunk *OldChunk = NextChunk;                                    \
+                                                                                                          \
+                 NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next; \
+                                                                                                          \
+                 if (NextChunk)                                                                           \
+                     NextChunk = Chunk(NextChunk->Rects);                                                 \
+                                                                                                          \
+                 _DisposeRegionRectangleExtChunk(OldChunk);                                               \
+	     }                                                                                            \
+                                                                                                          \
+             InitRegion(region);                                                                          \
+         }                                                                                                \
+     }
+
+#    ifndef __AROS__
+         static struct GfxBase *GfxBase;
+#        undef  kprintf
+#        define kprintf(format, x...) printf(format, ##x)
+#    endif
+#endif
+
+inline struct RegionRectangle *_NewRegionRectangle
 (
-    struct RegionRectangleExtChunk *Chunk,
-    struct GfxBase                 *GfxBase
+    struct RegionRectangle **LastRectPtr,
+    struct GfxBase *GfxBase
 )
 {
-    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+    struct RegionRectangleExt *RRE = RRE(*LastRectPtr);
 
-    FreePooled
-    (
-        PrivGBase(GfxBase)->regionpool,
-        Chunk,
-        sizeof(struct RegionRectangleExtChunk)
-    );
+    if (!RRE)
+    {
+        struct RegionRectangleExtChunk *Chunk;
 
-    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+        Chunk = _NewRegionRectangleExtChunk();
+
+        if (Chunk)
+            RRE = Chunk->Rects;
+
+        if (RRE)
+        {
+            RRE->Counter = 0;
+            RRE->RR.Prev = NULL;
+            RRE->RR.Next = NULL;
+
+            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+
+            Chunk->FirstChunk = Chunk;
+        }
+    }
+    else
+    if (RRE->Counter == SIZERECTBUF - 1)
+    {
+        struct RegionRectangleExtChunk *Chunk;
+
+        Chunk = _NewRegionRectangleExtChunk();
+
+        if (Chunk)
+        {
+            Chunk->FirstChunk = Chunk(RRE)->FirstChunk;
+            RRE = Chunk->Rects;
+        }
+        else
+            RRE = NULL;
+
+        if (RRE)
+        {
+            RRE->Counter = 0;
+            RRE->RR.Prev = *LastRectPtr;
+            RRE->RR.Next = NULL;
+            (*LastRectPtr)->Next = &RRE->RR;
+
+            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+        }
+    }
+    else
+    {
+	struct RegionRectangleExt *Prev = RRE++;
+
+        RRE->RR.Next    = NULL;
+        RRE->RR.Prev    = &Prev->RR;
+        Prev->RR.Next   = &RRE->RR;
+
+        RRE->Counter    = Prev->Counter + 1;
+    }
+
+    return *LastRectPtr = (struct RegionRectangle *)RRE;
 }
 
 
@@ -76,7 +191,7 @@ void _DisposeRegionRectangleList
 
         NextChunk = (struct RegionRectangleExtChunk *)NextChunk->Rects[SIZERECTBUF - 1].RR.Next;
 
-        _DisposeRegionRectangleExtChunk(OldChunk, GfxBase);
+        _DisposeRegionRectangleExtChunk(OldChunk);
     }
 }
 
@@ -115,98 +230,7 @@ BOOL _LinkRegionRectangleList
     return TRUE;
 }
 
-static inline struct RegionRectangleExtChunk *_NewRegionRectangleExtChunk
-(
-    struct GfxBase *GfxBase
-)
-{
-    struct RegionRectangleExtChunk *Chunk;
 
-    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-    Chunk = AllocPooled
-    (
-        PrivGBase(GfxBase)->regionpool,
-        sizeof(struct RegionRectangleExtChunk)
-    );
-
-    if (!Chunk)
-    {
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-        return NULL;
-    }
-
-    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-
-    return Chunk;
-}
-
-inline struct RegionRectangle *_NewRegionRectangle
-(
-    struct RegionRectangle **LastRectPtr,
-    struct GfxBase *GfxBase
-)
-{
-    struct RegionRectangleExt *RRE = RRE(*LastRectPtr);
-
-    if (!RRE)
-    {
-        struct RegionRectangleExtChunk *Chunk;
-
-        Chunk = _NewRegionRectangleExtChunk(GfxBase);
-
-        if (Chunk)
-            RRE = Chunk->Rects;
-
-        if (RRE)
-        {
-            RRE->Counter = 0;
-            RRE->RR.Prev = NULL;
-            RRE->RR.Next = NULL;
-
-            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
-
-            Chunk->FirstChunk = Chunk;
-        }
-    }
-    else
-    if (RRE->Counter == SIZERECTBUF - 1)
-    {
-        struct RegionRectangleExtChunk *Chunk;
-
-        Chunk = _NewRegionRectangleExtChunk(GfxBase);
-
-        if (Chunk)
-        {
-            Chunk->FirstChunk = Chunk(RRE)->FirstChunk;
-            RRE = Chunk->Rects;
-        }
-        else
-            RRE = NULL;
-
-        if (RRE)
-        {
-            RRE->Counter = 0;
-            RRE->RR.Prev = *LastRectPtr;
-            RRE->RR.Next = NULL;
-            (*LastRectPtr)->Next = &RRE->RR;
-
-            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
-        }
-    }
-    else
-    {
-	struct RegionRectangleExt *Prev = RRE++;
-
-        RRE->RR.Next    = NULL;
-        RRE->RR.Prev    = &Prev->RR;
-        Prev->RR.Next   = &RRE->RR;
-
-        RRE->Counter    = Prev->Counter + 1;
-    }
-
-    return *LastRectPtr = (struct RegionRectangle *)RRE;
-}
 
 #define Bounds(x) (&(x)->bounds)
 #define MinX(rr)   (Bounds(rr)->MinX)
@@ -281,10 +305,10 @@ if (curdst != lastdst)                                                     \
 {                                                                          \
     if (!lastdst)                                                          \
     {                                                                      \
-        DstBounds->MinY = MinY(&(Chunk(curdst)->FirstChunk->Rects[0].RR)); \
-        DstBounds->MinX = MinX(&(Chunk(curdst)->FirstChunk->Rects[0].RR)); \
-        DstBounds->MaxX = MaxX(curdst);                                    \
         firstlastdst = &Chunk(curdst)->FirstChunk->Rects[0].RR;            \
+        DstBounds->MinY = MinY(firstlastdst);                              \
+        DstBounds->MinX = MinX(firstlastdst);                              \
+        DstBounds->MaxX = MaxX(curdst);                                    \
     }                                                                      \
     else                                                                   \
     {                                                                      \
@@ -988,7 +1012,7 @@ static inline struct RegionRectangle * ShrinkBand
         NewFirst = Band;
 
     if (Chunk(NewFirst) != Chunk(LastBand))
-        _DisposeRegionRectangleExtChunk(Chunk(LastBand), GfxBase);
+        _DisposeRegionRectangleExtChunk(Chunk(LastBand));
 
 
     if (Band)
@@ -1268,8 +1292,12 @@ int main(void)
 {
     int i;
 
+    kprintf("-- 0 --\n");
+
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
+
+    kprintf("-- 1 --\n");
 
     for (i = 0; i < 10; i++)
     {
@@ -1279,6 +1307,7 @@ int main(void)
         _OrRectRegion(R1, &r, GfxBase);
     }
 
+    kprintf("-- 2 --\n");
     for (i = 0; i < 10; i++)
     {
         int u = i*20;
@@ -1287,9 +1316,10 @@ int main(void)
         _OrRectRegion(R2, &r, GfxBase);
     }
 
+    kprintf("-- 3 --\n");
     for (i = 0; i<100000; i++)
     {
-        XorRegionRegion(R2, R1);
+        _XorRegionRegion(R2, R1, GfxBase);
     }
 
     DisposeRegion(R2);
