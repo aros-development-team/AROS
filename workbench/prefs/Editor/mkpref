@@ -1,0 +1,50 @@
+.key exename/a
+.bra {
+.ket }
+
+set CPU    "68000"
+set CFLAGS "Optimize IDir=/ Define JANOPREF Ignore 100"
+set EXE    "SYS:Prefs/JanoPrefs"
+set CATDIR "//Catalogs/"
+
+If "{exename}" eq "help"
+   echo "Usage: MkPref <file> : compile preference tool, with good arguments"
+   echo "* 'MakePref all' recompile whole project"
+   echo "* 'MakePref exe' make linkage of all objects"
+   echo "* 'MakePref cat' rebuild catalogs files"
+Else
+	If "{exename}" eq "all"
+		; Do not use generated objects
+		copy /prefs.c "" QUIET
+		sc NoLink #?.c Prefs.c $CFLAGS CPU $CPU
+		sc Link #?.o ProgramName $EXE
+	Else
+		If "{exename}" eq "exe"
+			; Use previous generated objects
+			sc Link #?.o ProgramName $EXE
+		Else
+			If "{exename}" eq "cat"
+				; Build strings header
+				CatComp Catalogs/JanoPrefs.cd CFILE Prefs_Strings.h NOARRAY NOBLOCK NOCODE
+
+				; Build translated catalog
+				; Why this fucking command is badly expanded ????
+				; CatComp Catalogs/JanoPrefs.cd Catalogs/français.ct CATALOG ${CATDIR}français/JanoPrefs.catalog
+				CatComp Catalogs/JanoPrefs.cd Catalogs/français.ct CATALOG //Catalogs/français/JanoPrefs.catalog
+				CatComp Catalogs/JanoPrefs.cd Catalogs/deutsch.ct  CATALOG //Catalogs/deutsch/JanoPrefs.catalog
+				CatComp Catalogs/JanoPrefs.cd Catalogs/russian.ct  CATALOG //Catalogs/russian/JanoPrefs.catalog
+			Else
+				If EXISTS {exename}
+					If "{exename}" eq "prefs.c"
+						copy /prefs.c "" quiet
+					EndIf
+					; Source file in the same directory
+					sc $CFLAGS NoLink CPU $CPU {exename}
+				Else
+					; Source file share code with Jano
+					sc $CFLAGS NoLink CPU $CPU /{exename}
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+EndIf
