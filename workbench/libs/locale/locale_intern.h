@@ -46,6 +46,9 @@ struct IntLocale
     APTR                 il_LanguageFunctions[32];
 
     /* Need to put all sorts of crap here later. */
+    UBYTE   	    	LocaleName[30];
+    UBYTE   	    	LanguageName[30];
+    
     UBYTE		PreferredLanguages[10][30];
     UBYTE		DateTimeFormat[80];
     UBYTE		DateFormat[40];
