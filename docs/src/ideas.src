@@ -294,4 +294,59 @@ for it will fail.
 
 \end{new}
 
+\item
+\begin{new}{24.1.2000}
+Here are a few things that I saved as emails that could be done later.
+Some of them are quite old, and some well, aren't... iaint.
+
+\item
+By: Aaron Digulla
+Date: Fri, 23 Oct 1998
+Subject: [aros-dev] Shared libs/objects idea
+
+An idea just stuck me which *might* safe us a lot of trouble.
+
+We should separate the code from the interface. Code is here: The
+code for the ROM libraries and interface is here the Exec shared
+library interface.
+
+As you might remember, I dream about AROS as native emulation (ie.
+compile Amiga apps which run as native apps without arosshell).
+
+Most of the problems we have right now (eg. in the mmakefiles)
+come from the fact that we can't use the systems' own way to
+work with shared objects but that we try to emulate Exec's way.
+
+IMHO, it would be much better if we did this:
+
+exec becomes a plain exec.lib which contains normal functions.
+Then we create an interface for these normal functions and this
+interface can be accessed as exec.library. All we have to do now
+is to link the interface with the standard library. If we don't
+need the interface (eg. because we have a cool autoinit feature
+like the dynamic loader from Unix), we can omit it.
+
+This way, we could separate the amiga-specific parts of AROS
+much better from the portable parts. Also, it would be possible
+to create different interfaces much better. And the interface
+wouldn't be intermixed with the portable code as it is now.
+
+\item
+By: Aaron Digulla
+Date: Wed, 3 Mar 1999 10:25:09 +0100
+Subject: [aros-dev] Idea: Configuration Database
+
+Ok, since the topic has been brought up: Here is something which I'm
+missing in the current config DBs/registries:
+
+There should be a way to keep histories of configurations plus
+"commit logs". Basically, the whole config should work with CVS.
+That would make debugging much more simple (just throw anything
+out and when it works again, do a diff to see what has changed).
+It would also answer the question "why did I disable that" ?
+
+And with tags, you can name stable states of the config and
+switch between them.
+
+\end{new}
 \end{itemize}
