@@ -61,8 +61,8 @@
 
 /* Options */
 
-#define MENUS_AMIGALOOK  0
-#define MENUS_UNDERMOUSE 1
+#define MENUS_AMIGALOOK  1 /*0 for 3D, 1 for Black and White */
+#define MENUS_UNDERMOUSE 0 /*0 for normal menus, 1 for magic menus */
 #define FRAME_SIZE       0 /* 0 = 1:1 thin,  1 = 2:1 medres like AmigaOS,  2 = 1:1 thick */
 
 #define INTERNAL_BOOPSI  1
