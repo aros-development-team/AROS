@@ -48,6 +48,10 @@ DECLARESET(LIBS);
 
 */
 
+extern char *__argstr;
+extern ULONG __argsize;
+extern char **__argv;
+extern int  __argc;
 
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
@@ -57,187 +61,37 @@ AROS_UFH3(LONG, entry,
     AROS_UFHA(struct ExecBase *,sysbase,A6)
 )
 {
-    char * args = NULL,	** argv = NULL, * ptr = NULL;
-    int    argc, argmax;
-    LONG   namlen = 64;
-    int    done = 0;
     struct Process *myproc;
+
+    __argstr  = argstr;
+    __argsize = argsize;
 
     SysBase = *(struct ExecBase**)4UL;
 
     asm("finit");
 
-    if
-    (
-        (__startup_error = set_open_libraries(SETNAME(LIBS))) ||
-        (__startup_error = set_call_funcs(SETNAME(INIT), 1))
-    )
-    {
-	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries(SETNAME(LIBS));
-
-	return __startup_error;
-    }
-
     myproc = (struct Process *)FindTask(NULL);
 
     /* Do we have a CLI structure? */
-    if (myproc->pr_CLI)
+    if (!myproc->pr_CLI)
     {
-	/* Yes, started from the CLI */
-
-	if (argsize)
-	{
-	    /* Copy args into buffer */
-	    if (!(args = AllocMem(argsize+1, MEMF_ANY)))
-	    {
-		argv = NULL;
-		goto error;
-	    }
-
-	    ptr = args;
-	    while ((*ptr++ = *argstr++)) {}
-
-	    /* Find out how many arguments we have */
-	    for (argmax=1,ptr=args; *ptr; )
-	    {
-		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-		{
-		    /* Skip whitespace */
-		    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-			ptr ++;
-		}
-
-		if (*ptr == '"')
-		{
-		    /* "..." argument ? */
-		    argmax ++;
-		    ptr ++;
-
-		    /* Skip until next " */
-		    while (*ptr && *ptr != '"')
-			ptr ++;
-
-		    if (*ptr)
-			ptr ++;
-		}
-		else if (*ptr)
-		{
-		    argmax ++;
-
-		    while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-			ptr ++;
-		}
-	    }
-
-	    if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_CLEAR)) )
-		goto error;
-
-	    /* create argv */
-	    for (argc=1,ptr=args; *ptr; )
-	    {
-		if (*ptr == ' ' || *ptr == '\t' || *ptr == '\n')
-		{
-		    /* Skip whitespace */
-		    while (*ptr && (*ptr == ' ' || *ptr == '\t' || *ptr == '\n'))
-			ptr ++;
-		}
-
-		if (*ptr == '"')
-		{
-		    /* "..." argument ? */
-		    ptr ++;
-		    argv[argc++] = ptr;
-
-		    /* Skip until next " */
-		    while (*ptr && *ptr != '"')
-			ptr ++;
-
-		    /* Terminate argument */
-		    if (*ptr)
-			*ptr ++ = 0;
-		}
-		else if (*ptr)
-		{
-		    argv[argc++] = ptr;
-
-			while (*ptr && *ptr != ' ' && *ptr != '\t' && *ptr != '\n')
-			    ptr ++;
-
-		    /* Not at end of string ? Terminate arg */
-		    if (*ptr)
-			*ptr ++ = 0;
-		}
-	    }
-	}
-	else
-	{
-	    argmax = 1;
-	    argc = 1;
-	    if (!(argv = AllocMem (sizeof (char *), MEMF_ANY)))
-		goto error;
-	}
-
-	/*
-	 * get program name
-	 */
-	do {
-	    if (!(argv[0] = AllocVec(namlen, MEMF_ANY)))
-		goto error;
-
-	    if (!(GetProgramName(argv[0], namlen)))
-	    {
-		if (IoErr() == ERROR_LINE_TOO_LONG)
-		{
-		    namlen *= 2;
-		    FreeVec(argv[0]);
-		}
-		else
-		    goto error;
-	    }
-	    else
-		done = 1;
-	} while (!done);
-
-#if 0 /* Debug argument parsing */
-
-	kprintf("arg(%d)=\"%s\", argmax=%d, argc=%d\n", argsize, argstr, argmax, argc);
-	{
-	    int t;
-	    for (t=0; t<argc; t++)
-		kprintf("argv[%d] = \"%s\"\n", t, argv[t]);
-	}
-
-#endif
-
-    }
-    else
-    {
-
 	/* Workbench startup. Get WBenchMsg and pass it to main() */
 
 	WaitPort(&myproc->pr_MsgPort);
 	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
-	argv = (char **)WBenchMsg;
-	argsize = 0;
-	argc = 0;
+	__argv = (char **)WBenchMsg;
     }
 
-    /* Invoke main() */
-    if (!setjmp(__startup_jmp_buf))
-	__startup_error = main (argc, argv);
-
-error:
-    if (argsize)
+    if
+    (
+        !(__startup_error = set_open_libraries(SETNAME(LIBS))) &&
+        !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
+    )
     {
-	if (argv) {
-	    if (argv[0])
-		FreeVec(argv[0]);
-	   FreeMem(argv, sizeof (char *) * argmax);
-	}
+        /* Invoke main() */
+        if (!setjmp(__startup_jmp_buf))
+	    __startup_error = main (__argc, __argv);
 
-	if (args)
-	    FreeMem(args, argsize+1);
     }
 
     set_call_funcs(SETNAME(EXIT), -1);
@@ -255,11 +109,25 @@ error:
     return __startup_error;
 } /* entry */
 
+/* if the programmer hasn't defined a symbol with the name __nocommandline
+   then the code to handle the commandline will be included from the autoinit.lib
+*/
+extern void __nocommandline(void);
+static void (*__importcommandline) = &__nocommandline;
+
+/* pass these values to the command line handling function */
+char *__argstr;
+ULONG __argsize;
+
+/* the command line handling functions will pass these values back to us */
+char **__argv;
+int  __argc;
 
 struct ExecBase *SysBase;
 struct WBStartup *WBenchMsg;
 jmp_buf __startup_jmp_buf;
 LONG __startup_error;
+
 DEFINESET(INIT);
 DEFINESET(EXIT);
 DEFINESET(LIBS);
