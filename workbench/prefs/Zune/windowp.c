@@ -64,8 +64,6 @@ static CONST_STRPTR redraw_labels[] =
 };
 
 
-static Object *a, *b, *c;
-
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
@@ -141,11 +139,11 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		      Child, (IPTR) CLabel("Requester"),
 	              End,
 		   End,
-	        Child, (IPTR) a = ColGroup(4),
+	        Child, (IPTR) ColGroup(4),
                    GroupFrameT("Spacing"),
 			       MUIA_Group_Spacing, 2,
-			       Child, (IPTR) c = Label("L"),
-			       Child, (IPTR) b = d.spacing_left_slider = MakeSpacingSlider(),
+			       Child, (IPTR) Label("L"),
+			       Child, (IPTR) d.spacing_left_slider = MakeSpacingSlider(),
 			       Child, (IPTR) d.spacing_top_slider = MakeSpacingSlider(),
 			       Child, (IPTR) Label("T"),
 			       Child, (IPTR) Label("R"),
