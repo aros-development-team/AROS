@@ -1,16 +1,18 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Mount CLI command
-    Lang: english
+    Lang: English
 */
 
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include <dos/filehandler.h>
 #include <dos/rdargs.h>
+#include <dos/bptr.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 
@@ -49,9 +51,13 @@ LONG readfile(STRPTR name, STRPTR *mem, LONG *size)
 			rest-=sub;
 			buf+=sub;
 		    }
+
 		    FreeVec(*mem);
-		}else
+		}
+		else
+		{
 		    SetIoErr(ERROR_NO_FREE_STORE);
+		}
 	    }
 	}
 	Close(ml);
@@ -115,35 +121,98 @@ static void preparefile(STRPTR buf, LONG size)
 
 static LONG mountdevice(struct IOFileSys *iofs, STRPTR filesys, STRPTR device)
 {
-    struct DosList *entry;
+    struct FileSysStartupMsg *fssm;
+    struct DosList           *entry;
+
     LONG error;
-    entry=MakeDosEntry(device,DLT_DEVICE);
-    if(entry!=NULL)
+
+    fssm = AllocVec(sizeof(struct FileSysStartupMsg), MEMF_PUBLIC);
+
+    if (fssm != NULL)
     {
-	if(!OpenDevice(filesys,0,&iofs->IOFS,0))
+	ULONG length = strlen(filesys);
+	
+	/* +2 as 1 is for the possible BSTR length in the beginning and one
+	   for the trailing 0 byte which shall ALWAYS be there regardless
+	   of BSTR representation */
+	fssm->fssm_Device = (BSTR)AllocVec(length + 2,
+					   MEMF_PUBLIC | MEMF_CLEAR);
+	
+	if (fssm->fssm_Device != NULL)
 	{
-	    if(AddDosEntry(entry))
+	    int i;		/* Loop variable */
+	    
+	    /* This handling of BSTR:s is necessary for correct operation
+	       for all possible representations of BSTR:s. However,
+	       expansion.library seems to assume BSTR:s always has a
+	       size in the beginning (MakeDosNode()). Have to look into
+	       this further. /SDuvan */
+
+	    for (i = 0; i < length; i++)
 	    {
-		entry->dol_Unit  =iofs->IOFS.io_Unit;
-		entry->dol_Device=iofs->IOFS.io_Device;
-		/*
-		    Neither close the device nor free the DosEntry.
-		    Both will stay in the dos list as long as the
-		    device is mounted.
-		*/
-		return 0;
+		AROS_BSTR_putchar(fssm->fssm_Device, i, filesys[i]);
+	    }
+
+	    AROS_BSTR_setstrlen(fssm->fssm_Device, length);
+
+	    entry = MakeDosEntry(device, DLT_DEVICE);
+	    
+	    /* The FileSysStartupMsg is more or less deprecated in AROS.
+	       However, the Format command needs the information so it is
+	       initialized for now. /SDuvan */
+	    
+	    fssm->fssm_Unit = iofs->io_Union.io_OpenDevice.io_Unit;
+	    fssm->fssm_Environ = iofs->io_Union.io_OpenDevice.io_Environ;
+	    fssm->fssm_Flags = 0;
+	    
+	    entry->dol_misc.dol_handler.dol_Startup = fssm;
+
+	    if (entry != NULL)
+	    {
+		if (!OpenDevice(filesys, 0, &iofs->IOFS, 0))
+		{
+		    if (AddDosEntry(entry))
+		    {
+			entry->dol_Unit   = iofs->IOFS.io_Unit;
+			entry->dol_Device = iofs->IOFS.io_Device;
+			/*
+			  Neither close the device nor free the DosEntry.
+			  Both will stay in the dos list as long as the
+			  device is mounted.
+			*/
+			return 0;
+		    }
+		    else
+		    {
+			error = IoErr();
+		    }
+		}
+		else
+		{
+		    error = ERROR_OBJECT_NOT_FOUND;
+		}
+		
+		FreeDosEntry(entry);
 	    }
 	    else
-		error=IoErr();
+	    {
+		error = ERROR_NO_FREE_STORE;
+	    }
+
+	    FreeVec(fssm->fssm_Device);
 	}
 	else
-	    error=ERROR_OBJECT_NOT_FOUND;
-
-	FreeDosEntry(entry);
+	{
+	    error = ERROR_NO_FREE_STORE;
+	}
+	
+	FreeVec(fssm);
     }
     else
-	error=ERROR_NO_FREE_STORE;
-
+    {
+	error = ERROR_NO_FREE_STORE;
+    }
+	
     return error;
 }
 
