@@ -9,6 +9,8 @@
     Lang: english
 */
 
+#define __AROS_CLIB_TYPES_ONLY
+
 #include <exec/types.h>
 #include <exec/libraries.h>
 
