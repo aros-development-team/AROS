@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/01/07 12:29:08  digulla
+    Removed AROS_LVO_CALL*NR() macros
+
     Revision 1.7  1997/01/01 03:46:13  ldp
     Committed Amiga native (support) code
 
@@ -100,7 +103,7 @@
 	iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
 
 	/* Call Open vector. */
-	AROS_LVO_CALL3NR(
+	AROS_LVO_CALL3(void,
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(ULONG,unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
