@@ -907,7 +907,8 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 
 #include <proto/cybergraphics.h>
 
-struct wpa_render_data {
+struct wpa_render_data
+{
     UBYTE *array;
     HIDDT_StdPixFmt pixfmt;
     ULONG modulo;
@@ -943,6 +944,39 @@ static ULONG wpa_render(APTR wpar_data
     return width * height;
 }
 
+struct wpaa_render_data
+{
+    UBYTE *array;
+    ULONG modulo;
+};
+
+static ULONG wpaa_render(APTR wpaar_data
+	, LONG srcx, LONG srcy
+	, OOP_Object *dstbm_obj
+	, OOP_Object *dst_gc
+	, LONG x1, LONG y1, LONG x2, LONG y2
+	, struct GfxBase *GfxBase)
+{
+    struct wpaa_render_data *wpaard;
+    ULONG   	    	     width, height;
+    UBYTE   	    	    *array;
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+    
+    wpaard = (struct wpaa_render_data *)wpaar_data;
+    
+    array = wpaard->array + wpaard->modulo * srcy + 4 * srcx;
+    
+    HIDD_BM_PutAlphaImage(dstbm_obj
+    	, dst_gc, array
+	, wpaard->modulo
+	, x1, y1
+	, width, height
+    );
+    
+    return width * height;
+}
 
 struct rpa_render_data {
     UBYTE *array;
@@ -1385,6 +1419,44 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     rr.MaxY = desty + height - 1;
     
     pixwritten = do_render_func(rp, NULL, &rr, wpa_render, &wpard, FALSE, GfxBase);
+    
+    return pixwritten;
+}
+
+LONG driver_WritePixelArrayAlpha(APTR src, UWORD srcx, UWORD srcy
+	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
+	, UWORD width, UWORD height, ULONG globalalpha, struct Library *CyberGfxBase)
+{
+     
+    OOP_Object      	    *pf;
+    HIDDT_StdPixFmt 	    srcfmt_hidd = 0;
+    ULONG   	    	    start_offset, bppix;    
+    LONG    	    	    pixwritten = 0;    
+    struct wpaa_render_data wpaard;
+    struct Rectangle 	    rr;
+
+    /* This is cybergraphx. We only work wih HIDD bitmaps */
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArrayAlpha() !!!\n"));
+    	return 0;
+    }
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    /* Compute the start of the array */
+
+    start_offset = ((ULONG)srcy) * srcmod + srcx * 4;
+        
+    wpaard.array  = ((UBYTE *)src) + start_offset;
+    wpaard.modulo = srcmod;
+    
+    rr.MinX = destx;
+    rr.MinY = desty;
+    rr.MaxX = destx + width  - 1;
+    rr.MaxY = desty + height - 1;
+    
+    pixwritten = do_render_func(rp, NULL, &rr, wpaa_render, &wpaard, FALSE, GfxBase);
     
     return pixwritten;
 }
