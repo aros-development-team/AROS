@@ -239,8 +239,11 @@ int main(void)
     Object *context_menu;
     Object *popobject, *listview;
     Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
+    Object *country_radio[2];
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio",NULL};
+    static char **radio_entries1 = pages;
+    static char *radio_entries2[] = {"Paris","Pataya","London","New-York","Reykjavik",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -406,25 +409,39 @@ int main(void)
 			End,
 
 		    /* gauges */
-		    Child, VGroup,
-	                Child, VGroup, GroupFrame,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
-		            Child, ScaleObject, End,
-	                    End,
-	                Child, VGroup, GroupFrame,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
-		            Child, ScaleObject, End,
-	                    End,
-	                Child, VGroup, GroupFrame,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
-		            Child, ScaleObject, End,
+		    Child, HGroup,
+	                Child, VGroup,
+	                    Child, VGroup, GroupFrame,
+		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
+		                Child, ScaleObject, End,
+	                        End,
+	                    Child, VGroup, GroupFrame,
+		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
+		                Child, ScaleObject, End,
+	                        End,
+	                    Child, VGroup, GroupFrame,
+		                Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
+		                Child, ScaleObject, End,
+	                        End,
 	                    End,
 	                Child, HGroup,
 			    Child, HVSpace,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
-		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
+		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
+		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
+		            Child, GaugeObject, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
 			    Child, HVSpace,
+	                    End,
+		        End,
+
+		    /* radios */
+		    Child, HGroup,
+	                Child, VGroup, 
+		            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
+		            Child, country_radio[0] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
+	                    End,
+	                Child, HGroup,
+		            Child, RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries1, End,
+		            Child, country_radio[1] = RadioObject, GroupFrame, MUIA_Radio_Entries, radio_entries2, MUIA_Radio_Active, 1, End,
 	                    End,
 		        End,
 		   End,
@@ -504,6 +521,10 @@ int main(void)
 	DoMethod(list_add_child_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, add_child_function);
         DoMethod(list_remove_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 2, MUIM_List_Remove, MUIV_List_Remove_Active);
 	DoMethod(list_clear_button, MUIM_Notify, MUIA_Pressed, FALSE, list2, 1, MUIM_List_Clear);
+
+	/* radio */
+	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
+	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 

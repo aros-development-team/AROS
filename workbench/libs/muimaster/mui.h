@@ -456,6 +456,10 @@ struct MUI_PenSpec {
 #include "classes/scale.h"
 #endif
 
+#ifndef _MUI_CLASSES_RADIO_H
+#include "classes/radio.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/
