@@ -1,0 +1,323 @@
+
+### Help message and manual page ##############################################
+
+__END__
+
+=head1 NAME
+
+sfdc - Compile SFD files into someting useful
+
+=head1 SYNOPSIS
+
+sfdc [options] file1.sfd [file2.sfd ...]
+
+  Options:
+    --addvectors=TYPE       Add default functions
+    --gateprefix=PREFIX     Prefix for gatestub functions
+    --help -h               Show full help message and exit
+    --libarg=LOCATION       Where to pass the libbase
+    --libprefix=PREFIX      Prefix for library functions
+    --man                   Show full manual page and exit
+    --mode=MODE             What to do
+    --output=FILE -o FILE   Where to store the output
+    --quiet -q              Be quiet
+    --target=TARGET         Specifies the machine target
+    --version -v            Show version and exit
+
+=head1 OPTIONS
+
+=over 8
+
+
+=item B<--addvectors>
+
+This flag adds the standard library/device/BOOPSI functions to the
+list of function entries to process. Possible values are B<none>,
+B<library>, B<device> and B<boopsi>. The default is B<none>. Useful
+when generating gate stub functions.
+
+
+=item B<--gateprefix>
+
+Sets a function name prefix for the gate stub functions when
+generating gatestubs or gateproto files.
+
+
+=item B<--help>
+
+Show the full help message and exit.
+
+    
+=item B<--libarg>
+
+Specifies where to place the library base argument when generating
+gatestubs or gateproto and libproto files. Possible values are
+B<none>, B<first> and B<last>. The default is B<none>.
+
+
+=item B<--libprefix>
+
+Sets a function name prefix for the local library functions when
+generating gatestubs or libproto files.
+
+
+=item B<--man>
+
+Show the complete manual page and exit.
+
+
+=item B<--mode>
+
+Instructs F<sfdc> what to do. F<sfdc> can handle the
+following arguments:
+
+=over 4
+
+=item B<clib>
+
+Generate C prototypes to be placed in F<Include/clib/>.
+
+
+=item B<dump>
+
+Dumps all information gathered from the SFD file.
+
+
+=item B<fd>
+
+Generate an old-style FD file.
+
+    
+=item B<gateproto>
+
+Generate a prototype header file for library gate stubs. Useful for
+library and device developers.
+
+
+=item B<gatestubs>
+
+Generate library gate stubs. Useful for library and device developers.
+
+
+=item B<libproto>
+
+Generate a prototype header file for library functions. This is almost
+like B<clib>, but for internal use by library and device developers.
+
+
+=item B<lvo>
+
+Generate an assembler LVO include file.
+
+
+=item B<macros>
+
+Generate a header file containing F<gcc> specific preprocessor macros,
+similar to F<fd2inline>'s B<--new> switch. For AROS targets, it
+generates a file suitable to be placed in the F<Include/defines/>
+directory.
+
+    
+=item B<proto>
+
+Generate header file to be placed in F<Include/proto/> that includes
+the C prototypes as well as compiler-specific inlines or pragma files.
+
+
+=item B<pragmas>
+
+Generate a F<SAS/C>/F<LATTICE>/F<DICE> and F<Maxon C>/F<Storm
+C>/F<Aztec C> pragma file.
+
+
+=item B<stubs>
+
+Generate C library stubs suitable to be compiled and archived into
+F<libamiga.a>, F<libamigastubs.a> or
+F<libI<E<lt>moduleE<gt>>.a>. Using the B<%f> escape sequence in the
+B<--output> switch or a tool like F<splitasm.awk> strongly is
+recommended.
+
+=item B<verify>
+
+Just loads and parses the SFD file. This is the default.
+
+=back
+
+
+=item B<--output> 
+
+Specifies where the result will be stored. The following escape
+sequencies are allowed in the file name. If the sequence B<%f> is
+present in the name, a new file will be created for each function
+processed.
+
+=over 4
+
+=item B<%b>
+
+The library base variable name (C<DOSBase>, for example).
+
+=item B<%f>
+
+The current funcion name (C<Open>, for example).
+
+=item B<%l>
+
+The name of the library or device (F<dos.library>, for example).
+
+=item B<%n>
+
+The base name of the library or device (C<dos>, for example).
+
+=back
+
+If omitted, the result will be sent to the standard output instead of
+a file.
+
+=item B<--quiet>
+
+Be quiet.
+
+
+=item B<--target>
+
+Specifies the target when generating macros etc. The target names
+follow the GNU autoconf standard. Some possible values are listed
+below. The default is B<m68k-unknown-amigaos>.
+
+=over 4
+
+=item B<i?86-pc-aros>, B<i?86-linux-aros>, B<ppc-aros> ...
+
+AROS. Anything goes, as long as it ends in C<-aros>.
+
+
+=item B<i?86be-pc-amithlon>, B<i?86be-amithlon>
+
+Amithlon/big endian IA32.
+
+
+=item B<m68k-unknown-amigaos>, B<m68k-amigaos>
+
+Traditional AmigaOS/m68k.
+
+
+=item B<powerpc-unknown-morphos>, B<ppc-morphos>
+
+MorphOS/PowerPC.
+
+
+=back
+
+
+
+=item B<--version>
+
+Prints the version and exits.
+
+
+=back
+
+=head1 DESCRIPTION
+
+F<sfdc> is an open source replacement for Amiga, Inc.'s F<sfd> tool,
+distributed with B<NDK 3.9>. It is also an replacement for
+F<fd2inline> from GeekGadgets and the MorphOS team, later improved to
+death by Martin Blom. It's now a complete mess and needs a
+replacement. SFD files and F<sfdc> might to be a good start.
+
+For developers using F<gcc>, F<sfdc> aims to handle all your needs
+when it comes to libraries, devices, datatypes, BOOPSI classes or
+similar modules. F<sfdc> can also generate F<SAS/C>, F<DICE> and
+F<Storm C> files for end users of such modules.
+
+The basis for all work performed by F<sfdc> is the B<SFD> file, which
+contains all required information about the module and the functions
+provided. From this information, F<sfdc> can:
+
+=over 4
+
+=item *
+
+Generate an old-style B<FD> file for futher processing with other tools.
+
+
+=item *
+
+Generate a B<C prototype file>, such as those normally found in the
+F<Include/clib/> directory.
+
+
+=item *
+
+Generate F<gcc> B<inlines> (actually preprocessor macros) or
+B<pragmas> for direct library function calls (without going via
+library stubs).
+
+
+=item *
+
+Generate the F<Include/proto/> file, which includes the
+F<Include/clib/> file and either the inlines or pragmas.
+
+
+=item *
+
+Generate an B<assembler LVO> file, which contains the library offset
+of all functions in the library.
+
+
+=item *
+
+Generate B<C stubs>, which can be compiled and archived into a stub
+library.
+
+
+=item *
+
+Generate library B<gateway stubs>, which can be used as part of your
+module as glue between the module function table and your C functions.
+
+
+=back
+
+
+Additionally, F<sfdc> does all this for several Amiga-like operating
+systems: traditional B<AmigaOS>, native B<Amithlon>, B<AROS> and
+B<MorphOS>.
+
+F<sfdc> uses F<autoconf> style identifies for the operating systems,
+making it easy to generate the correct output. Just make sure
+F<configure.in> contains the B<AC_CANONICAL_SYSTEM> command and use
+B<@host@> in your F<Makefile.in>. Using F<autoconf> and F<sfdc>, it's
+easy to make for example a library that can be compiled or
+cross-compiiled for any of the mentioned architectures.
+
+
+=head1 RETURN VALUE
+
+Returns 0 on success and 10 on errors.
+
+
+=head1 NOTES
+
+Had I seen F<cvinclude.pl> before I started writing this program, I
+might still have been using fd/clib files. Or maybe not.
+
+=head1 AUTHOR
+
+Martin Blom <martin@blom.org>
+
+=head1 HISTORY
+
+=item B<1.0 (2003-07-27)>
+
+Initial release.
+
+
+=item B<1.1 (2003-12-22)>
+
+Added workaround for workbench.library (base name is "wb").
+Added AmigaOS 4 support.
+Added the --addvectors switch.
