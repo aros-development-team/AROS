@@ -36,7 +36,7 @@ LIBNAME  := dos
 ULIBNAME := Dos
 
 OSMODULE  := dos.library
-IMAGE_TYPES := aos aout elf elf_relexe
+IMAGE_TYPES := aos aout elf elf_aros
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
 	     filesystem_support match_misc newcliproc rootnode dosdoio\
 	     patternmatching internalseek internalflush \

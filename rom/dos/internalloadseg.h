@@ -13,7 +13,7 @@ BPTR InternalLoadSeg_ELF(BPTR file,
                          LONG * stack,
                          struct DosLibrary * DOSBase);
 
-BPTR InternalLoadSeg_ELF_relexe(BPTR file,
+BPTR InternalLoadSeg_ELF_AROS(BPTR file,
                          BPTR hunk_table,
                          LONG * FuncArray,
                          LONG * stack,
