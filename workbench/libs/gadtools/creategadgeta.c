@@ -172,6 +172,7 @@
             gad = makestring((struct GadToolsBase_intern *)GadToolsBase,
                          stdgadtags,
                          (struct VisualInfo *)ng->ng_VisualInfo,
+                         ng->ng_TextAttr,
                          taglist);
 	break;
 	
@@ -179,6 +180,15 @@
             gad = makeinteger((struct GadToolsBase_intern *)GadToolsBase,
                          stdgadtags,
                          (struct VisualInfo *)ng->ng_VisualInfo,
+                         ng->ng_TextAttr,
+                         taglist);
+	break;
+
+        case LISTVIEW_KIND:
+            gad = makelistview((struct GadToolsBase_intern *)GadToolsBase,
+                         stdgadtags,
+                         (struct VisualInfo *)ng->ng_VisualInfo,
+                         ng->ng_TextAttr,
                          taglist);
 	break;
         }

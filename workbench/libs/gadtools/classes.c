@@ -5,6 +5,10 @@
    Desc: Internal GadTools classes.
    Lang: English
  */
+ 
+#undef AROS_ALMOST_COMPATIBLE
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
@@ -21,7 +25,10 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 
+#include <string.h> /* memset() */
 
+
+#define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -783,30 +790,22 @@ AROS_UFH3(static IPTR, dispatch_sliderclass,
 
 /*************************** SCROLLER_KIND *****************************/
 
+#ifdef SDEBUG
+#   undef SDEBUG
+#endif
+#ifdef DEBUG
+#   undef DEBUG
+#endif
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
 struct ArrowData {
 	Object *arrowimage;
 	Object *frame;
 	Object *scroller;	
 };
 
-#undef GadToolsBase
-
-STATIC VOID notifypulse(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags,
-			struct GadToolsBase_intern *GadToolsBase)
-{			
-
-    struct TagItem ntags[] =
-    {
-    	{GTA_Arrow_Pulse,	1},
-    	{TAG_DONE,}
-    };
-    
-    DoSuperMethod(cl, o, OM_NOTIFY, ntags, ginfo, flags);
-    
-    return;
-}
-
-#define GadToolsBase ((struct GadToolsBase_intern *)(cl->cl_UserData))
 
 /*******************
 **  Arrow::New()  **
@@ -917,7 +916,10 @@ STATIC IPTR arrow_handleinput(Class *cl, Object *o, struct gpInput *msg)
     }    
     else if (ie->ie_Class == IECLASS_TIMER)
     {
-    	notifypulse(cl, o, msg->gpi_GInfo, OPUF_INTERIM, GadToolsBase);
+    	struct ArrowData *data = INST_DATA(cl, o);
+
+	GetAttr(PGA_Top, data->scroller, msg->gpi_Termination);
+	retval = GMR_INTERIMUPDATE;
     }
     ReturnInt ("Arrow::HandleInput", IPTR, retval);
 }
@@ -946,27 +948,9 @@ AROS_UFH3(static IPTR, dispatch_arrowclass,
     	    DisposeObject(data->arrowimage);
     	} break;
     
-    #define gpI(x)  ((struct gpInput *)msg)
-    case GM_GOACTIVE:
-    	retval = DoSuperMethodA(cl, o, msg);
-    	if (retval == GMR_MEACTIVE)
-    	{
-    	    notifypulse(cl, o, gpI(msg)->gpi_GInfo, OPUF_INTERIM, GadToolsBase);
-    	}
-    	break;
-    	
     case GM_HANDLEINPUT:
     	retval = arrow_handleinput(cl, o, (struct gpInput *)msg);
     	break;
-    
-    #define gpR(x)  ((struct gpRender *)msg)
-    case GM_RENDER: {
-    	D(bug("Arrow::Render()\n"));
-    	DoSuperMethodA(cl, o, msg);
-    		
-    	D(bug("Exit Arrow::Render\n"));
-
-    	} break;
 
     default:
 	retval = DoSuperMethodA(cl, o, msg);
@@ -983,9 +967,12 @@ struct ScrollerData
 {
     UBYTE dummy;
 };
+
 /**********************
 **  Scroller::Set()  **
 **********************/
+
+#define opU(x) ((struct opUpdate *)msg)
 IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
 {
     IPTR retval = 0UL;
@@ -1025,19 +1012,27 @@ IPTR scroller_set(Class * cl, Object * o, struct opSet * msg)
             	break;
             	
              case GTA_Scroller_Dec:
-            	if (tags[1].ti_Data > 0)
-            	{
-            	    ((ULONG)tags[1].ti_Data) --;
-            	    retval = 1UL;
-            	}
-            break;
+                /* buttong_class gives -GA_ID if mouse outside arrow */
+                if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
+                {
+            	    if (tags[1].ti_Data > 0)
+            	    {
+            	    	((ULONG)tags[1].ti_Data) --;
+            	    	retval = 1UL;
+            	    }
+                }
+                break;
             
             case GTA_Scroller_Inc:
-            	/* Check for top = total */
-            	if (tags[0].ti_Data - 1 > tags[1].ti_Data)
-            	{
-            	    ((ULONG)tags[1].ti_Data) ++;
-           	    retval = 1UL;
+                /* buttong_class gives - GA_ID if mouse outside arrow */
+                if ((tag->ti_Data > 0) && (opU(msg)->opu_Flags & OPUF_INTERIM))
+                {
+          	    /* Check for top = total */
+            	    if (tags[0].ti_Data - 1 > tags[1].ti_Data)
+            	    {
+            	    	((ULONG)tags[1].ti_Data) ++;
+           	    	retval = 1UL;
+            	    }
             	}
             	break;
             
@@ -1165,6 +1160,7 @@ struct StringData
 {
     LONG 	labelplace;
     Object	*frame;
+    struct TextFont *font;
 };
 /***********************
 **  String::SetNew()  **
@@ -1183,6 +1179,7 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     
     LONG labelplace = GV_LabelPlace_Left;
     struct DrawInfo *dri;
+    struct TextAttr *tattr = NULL;
     IPTR retval = 0UL;
 
     EnterFunc(bug("String::SetNew()\n"));    
@@ -1211,7 +1208,10 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	    case GA_DrawInfo:
     	    	dri = (struct DrawInfo *)tidata;
     	    	break;
-    	    
+    	    case GA_TextAttr:
+    	    	tattr = (struct TextAttr *)tidata;
+    	    	break;
+
     	}
     }
     
@@ -1238,18 +1238,33 @@ IPTR string_setnew(Class *cl, Object *o, struct opSet *msg)
     	fitags[2].ti_Data = (dri->dri_Resolution.X << 16) + dri->dri_Resolution.Y;
     	
     	data->labelplace = labelplace;
+    	data->frame = NULL;
+    	data->font  = NULL;
 
     	D(bug("Creating frame image"));
     	
     	data->frame = NewObjectA(NULL, FRAMEICLASS, fitags);
     	D(bug("Created frame image: %p", data->frame));
-
     	if (!data->frame)
     	{
     	    CoerceMethod(cl, (Object *)retval, OM_DISPOSE);
     	    
     	    retval = (IPTR)NULL;
     	}
+
+    	if (tattr)
+    	{
+    	    data->font = OpenFont(tattr);
+
+    	    if (data->font)
+    	    {
+    	    	struct TagItem sftags[] = {{STRINGA_Font, (IPTR)NULL}, {TAG_DONE, }};
+    	    	
+    	    	sftags[0].ti_Data = (IPTR)data->font;
+    	    	DoSuperMethod(cl, o, OM_SET, sftags, NULL);
+    	    }
+    	}
+
     }
     
     ReturnPtr ("String::SetNew", IPTR, retval);
@@ -1286,31 +1301,24 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
 	D(bug("Full redraw\n"));
 
 	/* center image position, we assume image top and left is 0 */
-	itags[0].ti_Data = G(o)->Width + 4;
+	itags[0].ti_Data = G(o)->Width + 6;
 	itags[1].ti_Data = G(o)->Height + 4;
 	
-	D(bug("Setting attrs on frame %p\n", data->frame));
 	SetAttrsA((Object *)data->frame, itags);
 	
-	D(bug("Image attrs set to (%d, %d, %d, %d)\n",
-		IM(data->frame)->LeftEdge, IM(data->frame)->TopEdge,
-		IM(data->frame)->Width, IM(data->frame)->Height));
 
-	x = G(o)->LeftEdge - 2; 
+	x = G(o)->LeftEdge - 3; 
 	y = G(o)->TopEdge - 2;
 	    
-	D(bug("Rendering image at (%d,%d)\n", x, y));
 	DrawImageState(msg->gpr_RPort,
 		(struct Image *)data->frame,
 		x, y,
 		((G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
 		msg->gpr_GInfo->gi_DrInfo);
    
-   	D(bug("Rendering label\n"));
    	/* render label */
    	renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->labelplace);
 
-   	D(bug("label rendered\n"));
    	
     } /* if (whole gadget should be redrawn) */
     
@@ -1340,6 +1348,8 @@ AROS_UFH3(static IPTR, dispatch_stringclass,
     	struct StringData *data = INST_DATA(cl, o);
     	if (data->frame)
     	    DisposeObject(data->frame);
+    	if (data->font)
+    	    CloseFont(data->font);
     } break;
 
     default:
@@ -1349,6 +1359,863 @@ AROS_UFH3(static IPTR, dispatch_stringclass,
 
     return retval;
 }
+/*************************** LISTVIEW_KIND *****************************/
+
+
+#ifdef SDEBUG
+#   undef SDEBUG
+#endif
+#ifdef DEBUG
+#   undef DEBUG
+#endif
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
+
+struct LVData
+{
+    LONG	ld_LabelPlace;
+    struct Hook *ld_CallBack;
+    struct List	*ld_Labels;
+    struct DrawInfo *ld_Dri;
+    struct TextFont *ld_Font;
+    Object	*ld_Frame;
+    Object	*ld_Scroller;
+    WORD	ld_Top;
+    WORD	ld_Selected;
+    WORD	ld_Spacing;
+    WORD	ld_ItemHeight;
+    
+    /* The number of first damaged entry, counting from first visible.
+    ** A value o -1 means "nothing has to be redrawn"
+    */
+    WORD	ld_FirstDamaged;
+    UWORD	ld_NumDamaged;
+
+    /* Number of entries the listview should scroll in GM_RENDER.
+    ** Negative valu means scroll up.
+    */
+    WORD	ld_ScrollEntries;
+    WORD	ld_NumEntries;
+
+    UBYTE	ld_Flags;
+};
+
+/* This one goes into cl->cl_UserData */
+struct StaticLVData
+{
+    struct GadToolsBase_intern	*ls_GadToolsBase;
+    struct Hook	ls_RenderHook;
+};
+
+/* Flags */
+#define LVFLG_READONLY		(1 << 0)
+#define LVFLG_FONT_OPENED	(1 << 1)
+
+
+/* The flags below are used for as a trick to easily select the right pens,
+** or the right hook draw states. The combinations of the flags can be used
+** as an index into the table. This saves me from a LOT of if-else statements.
+** As one can se, the 4 last ones is all LVR_NORMAL, cause it makes no sense
+** to mark entris selected or disabled in a readony listview.
+*/
+
+#define NORMAL		0
+#define SELECTED	(1 << 0)
+#define DISABLED	(1 << 1)
+#define READONLY	(1 << 2)
+
+#define TotalItemHeight(data) (data->ld_Spacing + data->ld_ItemHeight)
+
+const ULONG statetab[] = {
+    LVR_NORMAL, 	/* 0 NORMAL		*/
+    LVR_SELECTED,	/* 1 SELECTED		*/
+    LVR_NORMALDISABLED,	/* 2 NORMAL|DISABLED	*/ 
+    LVR_SELECTED, 	/* 3 SELECTED|DISABLED	*/ 
+    LVR_NORMAL,		/* 4 NORMAL|READONLY	*/
+    LVR_NORMAL,		/* 5 SELECTED|READONLY	*/
+    LVR_NORMAL,		/* 6 NORMAL|DISABLED|READONLY	*/
+    LVR_NORMAL		/* 7 SELECTED|DISABLED|READONLY	*/
+};
+
+#undef GadToolsBase
+#define GadToolsBase ((struct GadToolsBase_intern *)hook->h_Data)
+
+/******************
+**  RenderHook()  **
+******************/
+
+AROS_UFH3(IPTR, RenderHook,
+    AROS_UFHA(struct Hook *,            hook,     	A0),
+    AROS_UFHA(struct Node *,    	node,           A2),
+    AROS_UFHA(struct LVDrawMsg *,	msg,	        A1)
+)
+{
+    IPTR retval;
+    EnterFunc(bug("RenderHook: hook=%p, node=%sm msg=%p)\n",
+    	hook, node->ln_Name, msg));
+    
+    if (msg->lvdm_MethodID == LV_DRAW)
+    {
+    	struct DrawInfo *dri = msg->lvdm_DrawInfo;
+    	struct RastPort *rp  = msg->lvdm_RastPort;
+    	
+    	WORD min_x = msg->lvdm_Bounds.MinX;
+    	WORD min_y = msg->lvdm_Bounds.MinY;
+    	WORD max_x = msg->lvdm_Bounds.MaxX;
+    	WORD max_y = msg->lvdm_Bounds.MaxY;
+
+        UWORD erasepen = BACKGROUNDPEN;
+
+
+     	SetDrMd(rp, JAM1);
+     	    
+    	
+     	switch (msg->lvdm_State)
+     	{
+     	    case LVR_SELECTED:
+     	    case LVR_SELECTEDDISABLED:
+     	    	/* We must fill the backgound with FILLPEN */
+		erasepen = FILLPEN;
+
+		/* Fall through */
+		
+     	    case LVR_NORMAL:
+     	    case LVR_NORMALDISABLED: {
+
+    	    	WORD numfit;
+    	    	struct TextExtent te;
+    	    
+		SetAPen(rp, dri->dri_Pens[erasepen]);
+     	    	RectFill(rp, min_x, min_y, max_x, max_y);
+     	    	
+    	    	numfit = TextFit(rp, node->ln_Name, strlen(node->ln_Name),
+    	    		&te, NULL, 1, max_x - min_x + 1, max_y - min_y + 1);
+
+	    	SetAPen(rp, dri->dri_Pens[TEXTPEN]);
+	    	
+    	    	/* Render text */
+    	    	Move(rp, min_x, min_y + rp->Font->tf_Baseline);
+    	    	Text(rp, node->ln_Name, numfit);
+	    	
+     	    	
+     	    } break;
+     	    	
+     	    default:
+     	    	kprintf("!! LISTVIEW DRAWING STATE NOT SUPPORTED !!\n");
+     	    	break;
+     	
+     	}
+     	
+     	retval = LVCB_OK;
+     }
+     else
+     {
+     	retval = LVCB_UNKNOWN;
+     }
+     	
+     ReturnInt ("RenderHook", IPTR, retval);
+}
+
+#undef GadToolsBase
+
+/**********************
+**  RenderEntries()  **
+**********************/
+STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg, 
+	WORD entryoffset, UWORD numentries, struct GadToolsBase_intern *GadToolsBase)
+{
+
+    /* NOTE: entry is the the number ot the item to draw
+    ** counted from first visible
+    */
+    
+    struct LVData *data = INST_DATA(cl, o);
+    struct Node *node;
+    UWORD entry_count, totalitemheight;
+    WORD left, top, width;
+    struct LVDrawMsg drawmsg;
+    struct TextFont *oldfont;
+    
+    UBYTE state = 0;
+    
+    UWORD current_entry = 0;
+    
+    EnterFunc(bug("RenderEntries(msg=%p, entryoffset=%d, numentries=%d)\n",
+    	msg, entryoffset, numentries));
+    
+    oldfont = msg->gpr_RPort->Font;
+    SetFont(msg->gpr_RPort, data->ld_Font);
+    
+    totalitemheight = TotalItemHeight(data);
+    
+    left = G(o)->LeftEdge + LV_BORDER_X;
+    top  = G(o)->TopEdge + LV_BORDER_Y;
+    top += totalitemheight * entryoffset;
+    
+    width = G(o)->Width - LV_BORDER_X * 2;
+    
+    if (data->ld_CallBack)
+    {
+    	drawmsg.lvdm_MethodID = LV_DRAW;
+    	drawmsg.lvdm_RastPort = msg->gpr_RPort;
+    	drawmsg.lvdm_DrawInfo = data->ld_Dri;
+    	drawmsg.lvdm_Bounds.MinX  = left;
+    	drawmsg.lvdm_Bounds.MaxX  = left + width - 1;
+    	
+    }
+    
+    /* Update the state */
+    if (data->ld_Flags & LVFLG_READONLY)
+    	state |= READONLY;
+    	
+    if (G(o)->Flags & GFLG_DISABLED)
+    	state |= DISABLED;
+     
+    /* Find first entry to rerender */
+    entry_count = data->ld_Top + entryoffset;
+    for (node = data->ld_Labels->lh_Head; node->ln_Succ && entry_count; node = node->ln_Succ)
+    {
+    	entry_count --;
+    	current_entry ++;
+    }
+    	
+    /* Start rerndering entries */
+    D(bug("About to render %d nodes\n", numentries));
+    
+    
+    for ( ; node->ln_Succ && numentries; node = node->ln_Succ)
+    {
+    	ULONG retval;
+
+    	/* update state */
+    	if (current_entry == data->ld_Selected)
+    	    state |= SELECTED;
+    
+    	D(bug("Rendering entry %d: node %s\n", current_entry, node->ln_Name));
+
+    	/* Call custom render hook */
+    	    
+    	/* Here comes the nice part about the state mechanism ! */
+    	D(bug("Rendering in state %d\n", state));
+    	drawmsg.lvdm_State = statetab[state];
+    	    
+    	drawmsg.lvdm_Bounds.MinY = top;
+    	drawmsg.lvdm_Bounds.MaxY = top + data->ld_ItemHeight - 1;
+    	    
+    	retval = CallHookPkt( data->ld_CallBack, node, &drawmsg);
+    	
+    	numentries --;
+    	current_entry ++;
+    	top += totalitemheight;
+    	
+    	/* Reset SELECTED bit of state */
+    	state &= ~SELECTED;
+
+    }
+    
+    SetFont(msg->gpr_RPort, oldfont);
+    ReturnVoid("RenderEntries");
+}
+
+/********************
+**  NumItemsFit()  **
+********************/
+
+STATIC WORD NumItemsFit(Object *o, struct LVData *data)
+{
+    /* Returns the number of items that can possibly fit within the list */
+    UWORD numfit;
+    
+    EnterFunc(bug("NumItemsFit(o=%p, data=%p)\n",o, data));
+    D(bug("total spacing: %d\n", TotalItemHeight(data) ));
+    
+    numfit = (G(o)->Height - 2 * LV_BORDER_Y) / 
+    			TotalItemHeight(data);
+    	
+    ReturnInt ("NumItemsFit", UWORD, numfit);
+    
+}
+
+/*********************
+**  ShownEntries()  **
+*********************/
+
+STATIC WORD ShownEntries(Object *o, struct LVData *data)
+{
+    WORD numitemsfit;
+    WORD shown;
+
+    EnterFunc(bug("ShownEntries(o=%p, data=%p)\n", o, data));
+    
+    numitemsfit = NumItemsFit(o, data);
+    
+    shown = ((data->ld_NumEntries < numitemsfit) ? data->ld_NumEntries : numitemsfit);
+    
+    ReturnInt("ShownEntries", WORD, shown);
+}
+
+/***********************
+**  UpdateScroller()  **
+***********************/
+
+STATIC VOID UpdateScroller(Object *o, struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
+{
+    struct TagItem scrtags[] = 
+    {
+	{PGA_Top,		0L},
+	{PGA_Total,		0L},
+	{PGA_Visible, 	0L},
+	{TAG_DONE,}
+    };
+
+    EnterFunc(bug("UpdateScroller(data=%p, gi=%p\n", data, gi));
+
+	
+    scrtags[0].ti_Data = data->ld_Top;
+    scrtags[1].ti_Data = data->ld_NumEntries;
+    scrtags[2].ti_Data = ShownEntries(o, data);
+	
+    if (gi)
+    	SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
+    else
+    	SetAttrsA(data->ld_Scroller, scrtags);
+	
+    ReturnVoid("UpdateScroller");
+}
+
+/**********************
+**  ScrollEntries()  **
+**********************/
+
+STATIC VOID ScrollEntries(Object *o, struct LVData *data, WORD old_top, WORD new_top,
+	struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
+{
+    EnterFunc(bug("ScrollEntries(new_tio=%d, gi=%p)\n", new_top, gi));
+
+    /* Tries to scroll the listiew to the new top */
+    if (gi) /* Sanity check */
+    {
+    	UWORD abs_steps;
+    	ULONG redraw_type;
+    	struct RastPort *rp;
+    	
+    	data->ld_ScrollEntries = new_top - old_top;
+    	abs_steps = abs(data->ld_ScrollEntries);
+    	
+	/* We do a scroll only if less than half of the visible area
+	** is to be scrolled
+	*/
+    	
+    	if (abs_steps < (NumItemsFit(o, data) >> 1))
+    	{
+    	    redraw_type = GREDRAW_UPDATE;
+    	}
+    	else
+    	{
+    	    redraw_type = GREDRAW_REDRAW;
+    	    
+    	    data->ld_ScrollEntries = 0;
+    	    
+    	}
+    	
+    	
+    	if ( (rp = ObtainGIRPort(gi)) )
+    	{
+    	    DoMethod(o, GM_RENDER, gi, rp, redraw_type);
+    	    
+    	    ReleaseGIRPort(rp);
+    	}
+    	
+    }
+    	
+    ReturnVoid("ScrollEntries");
+}
+
+#define lvS(x) ((struct StaticLVData *)x)
+#define GadToolsBase ((struct GadToolsBase_intern *)lvS(cl->cl_UserData)->ls_GadToolsBase)
+
+
+
+/**********************
+**  Listview::Set()  **
+**********************/
+
+STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
+{
+    IPTR retval = 0UL;
+
+    struct TagItem *tag, *tstate;
+    struct LVData *data = INST_DATA(cl, o);
+    
+    BOOL labels_set = FALSE;
+    BOOL update_scroller = FALSE;
+    BOOL scroll_entries = FALSE;
+    WORD new_top, old_top;
+    
+    EnterFunc(bug("Listview::Set()\n"));
+
+    tstate = msg->ops_AttrList;
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+    	IPTR tidata = tag->ti_Data;
+    	
+	switch (tag->ti_Tag)
+	{
+	    case GTA_Listview_Scroller:	/* [IS] */
+	    	data->ld_Scroller = (Object *)tidata;
+	    	update_scroller = TRUE;
+	    	break;
+	    	
+	    case GTLV_Top:	/* [IS]	*/
+	    case GTLV_MakeVisible: /* [IS] */
+	    	old_top = data->ld_Top;
+	    	new_top = (WORD)tidata;
+	    	data->ld_Top = new_top;
+	    	
+	    	update_scroller = TRUE;
+	    	scroll_entries = TRUE;
+	    	
+	    	retval = 1UL;
+	    	break;
+
+	    case GTLV_Labels:	/* [IS] */
+	    	data->ld_Labels = (struct List *)tidata;
+	    	retval = 1UL;
+	    	labels_set = TRUE;
+    		update_scroller = TRUE;
+	    	break;
+	    	
+	    case GTLV_ReadOnly:	/* [I] */
+	    	if (tidata)
+	    	    data->ld_Flags |= LVFLG_READONLY;
+	    	else
+	    	    data->ld_Flags &= ~LVFLG_READONLY;
+	    	    
+	    	D(bug("Readonly: tidata=%d, flags=%d\n",
+	    		tidata, data->ld_Flags));
+	    	break;
+	    	
+	    case GTLV_Selected:	/* [IS] */
+	    	data->ld_Selected = (UWORD)tidata;
+	    	retval = 1UL;
+	    	break;
+	    	
+	    case LAYOUTA_Spacing:	/* [I] */
+	    	data->ld_Spacing = (UWORD)tidata;
+	    	break;
+	    	
+	    case GTLV_ItemHeight:	/* [I] */
+	    	data->ld_ItemHeight = (UWORD)tidata;
+	    	break;
+	    	
+	    case GTLV_CallBack:	/* [I] */
+	    	data->ld_CallBack = (struct Hook *)tidata;
+	    	break;
+	    	
+	    case GA_LabelPlace: /* [I] */
+	    	data->ld_LabelPlace = (LONG)tidata;
+	    	break;
+	    	
+	} /* switch (tag->ti_Tag) */
+
+    } /* while (more tags to iterate) */
+    
+    if (labels_set)
+    {
+    	struct Node *n;
+    	
+    	data->ld_NumEntries = 0;
+    	/* Update the labelcount */
+    	ForeachNode(data->ld_Labels, n)
+    	{
+    	    data->ld_NumEntries ++;
+    	}
+    	D(bug("Number of items added: %d\n", data->ld_NumEntries));
+    }
+    
+    if (update_scroller)
+    {
+    	/* IMPORTANT! If this is an OM_UPDATE, we should NOT redraw the
+	** set the scroller, as we the scroller has allready been updated
+    	*/
+    	if (msg->MethodID != OM_UPDATE)
+    	    UpdateScroller(o, data, msg->ops_GInfo, GadToolsBase);
+    }
+    
+    if (scroll_entries)
+    {
+    	ScrollEntries(o, data, old_top, new_top, msg->ops_GInfo, GadToolsBase);
+    }
+    
+
+    ReturnInt ("Listview::Set", IPTR, retval);
+}
+
+/**********************
+**  Listview::New()  **
+**********************/
+STATIC Object *listview_new(Class *cl, Object *o, struct opSet *msg)
+{
+    struct DrawInfo *dri;
+    
+
+    EnterFunc(bug("Lisview::New()\n"));
+
+    dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+    if (dri == NULL)
+    	ReturnPtr ("Listview::New", Object *, NULL);
+    	
+    D(bug("Got dri: %p, dri font=%p, size=%d\n", dri, dri->dri_Font, dri->dri_Font->tf_YSize));
+    
+    o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+
+    if (o != NULL)
+    {
+	struct LVData *data = INST_DATA(cl, o);
+	struct TextAttr *tattr;
+	
+	struct TagItem fitags[] =
+	{
+	    {IA_Width, 0UL},
+	    {IA_Height, 0UL},
+	    {IA_Resolution, 0UL},
+	    {IA_FrameType, FRAME_BUTTON},
+	    {TAG_DONE, 0UL}
+	};
+
+	memset(data, 0, sizeof (struct LVData));
+
+	/* Create a frame for the listview */
+    	data->ld_Frame = NewObjectA(NULL, FRAMEICLASS, fitags);
+    	if (!data->ld_Frame)
+    	{
+    	    CoerceMethod(cl, (Object *)o, OM_DISPOSE);
+    	    o = (IPTR)NULL;
+    	}
+    	else
+    	{
+	    data->ld_Dri = dri;
+
+	    /* Set some defaults */
+	    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, NULL, msg->ops_AttrList);
+	    if (tattr)
+	    {
+	    	data->ld_Font = OpenFont(tattr);
+	    	if (data->ld_Font)
+	    	{
+	    	    data->ld_Flags |= LVFLG_FONT_OPENED;
+	    	}
+	    }
+
+
+	    if (!data->ld_Font)
+	    	data->ld_Font = dri->dri_Font;
+	    
+	    data->ld_ItemHeight = data->ld_Font->tf_YSize;
+	    data->ld_LabelPlace = GV_LabelPlace_Above;
+	    data->ld_Spacing = LV_DEF_INTERNAL_SPACING;
+	    
+	    /* default render hook */
+	    data->ld_CallBack = 
+	    	&(((struct StaticLVData *)cl->cl_UserData)->ls_RenderHook);
+	
+	    listview_set(cl, o, msg);
+
+	} /* if (frame created) */
+
+    } /* if (object created) */
+
+    ReturnPtr ("Listview::New", Object *, o);
+}
+
+/**********************
+**  Listview::Get()  **
+**********************/
+STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
+{
+    IPTR retval = 1UL;
+    struct LVData *data;
+
+    data = INST_DATA(cl, o);
+
+    switch (msg->opg_AttrID)
+    {
+	case GTLV_Top:
+	    *(msg->opg_Storage) = (IPTR)data->ld_Top;
+	    break;
+
+	case GTLV_Selected:
+	    *(msg->opg_Storage) = (IPTR)data->ld_Selected;
+	    break;
+
+	case GTLV_Labels:
+	    *(msg->opg_Storage) = (IPTR)data->ld_Labels;
+	    break;
+
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
+    }
+    return (retval);
+}
+
+
+/*************************
+**  Lisview::Dispose()  **
+*************************/
+STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct LVData *data = INST_DATA(cl, o);
+
+    if (data->ld_Flags & LVFLG_FONT_OPENED)
+	CloseFont(data->ld_Font);
+
+}
+
+/**************************
+**  Lisview::GoActive()  **
+**************************/
+STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
+{
+    struct LVData *data = INST_DATA(cl, o);
+    UWORD clickpos;    
+    BOOL shown;
+    
+    EnterFunc(bug("Listview::GoActive()\n"));
+
+    if (!msg->gpi_IEvent) /* Not activated ny user ? */
+    	ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);    
+    	
+    if (data->ld_Flags & LVFLG_READONLY)
+    	ReturnInt("Listview::GoActive", IPTR, GMR_NOREUSE);
+    	
+    
+    /* How many entries are currently shown in the Gtlv ? */
+    shown = ShownEntries(o, data);
+
+    /* offset from top of listview of the entry clicked */
+    clickpos = (msg->gpi_Mouse.Y - (G(o)->TopEdge + LV_BORDER_Y)) / 
+    		TotalItemHeight(data);
+    if (clickpos < shown)
+    {
+    	if (clickpos + data->ld_Top != data->ld_Selected)
+    	{
+	    struct RastPort *rp;
+	    WORD oldpos = data->ld_Selected;
+	    data->ld_Selected = clickpos + data->ld_Top;
+
+	    *(msg->gpi_Termination) = data->ld_Selected;
+	    
+	    rp = ObtainGIRPort(msg->gpi_GInfo);
+	    if (rp)
+	    {
+	    	/* Rerender new active */
+	    	data->ld_FirstDamaged = clickpos;
+	    	data->ld_NumDamaged = 1;
+	    
+		DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+		
+		/* Rerender old active if it was shown in the listview */
+		if (    (oldpos >= data->ld_Top) 
+		     && (oldpos <= data->ld_Top + NumItemsFit(o, data)) )
+		{
+
+	    	    data->ld_FirstDamaged = oldpos - data->ld_Top;
+	    	    data->ld_NumDamaged = 1;
+
+		    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+		}
+
+		ReleaseGIRPort(rp);
+	    }
+
+	} /* if (click wasn't on old acive gadget) */
+
+    } /* if (entry is shown) */
+
+    ReturnInt ("Listview::GoActive", IPTR, GMR_NOREUSE);
+}
+
+
+/*************************
+**  Listview::Render()  **
+*************************/
+
+STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    struct LVData *data = INST_DATA(cl, o);
+    
+    EnterFunc(bug("Listview::Render()\n"));
+
+    switch (msg->gpr_Redraw)
+    {
+	case GREDRAW_REDRAW: {
+
+	    WORD x, y;
+	    struct TagItem itags[] =
+	    {
+	    	{IA_Width,	0L},
+	    	{IA_Height,	0L},
+	    	{TAG_DONE,}
+	    };
+	
+	    D(bug("GREDRAW_REDRAW\n"));
+
+	     /* Erase the old gadget imagery */
+	    SetAPen(msg->gpr_RPort, data->ld_Dri->dri_Pens[BACKGROUNDPEN]);
+
+
+	    RectFill(msg->gpr_RPort,
+		G(o)->LeftEdge,
+		G(o)->TopEdge,
+		G(o)->LeftEdge + G(o)->Width  - 1,
+		G(o)->TopEdge  + G(o)->Height - 1);
+
+	    RenderEntries(cl, o, msg,
+		0, ShownEntries(o, data),
+		GadToolsBase);
+		
+	    /* center image position, we assume image top and left is 0 */
+	    itags[0].ti_Data = G(o)->Width;
+	    itags[1].ti_Data = G(o)->Height;
+	
+	    SetAttrsA((Object *)data->ld_Frame, itags);
+	
+
+	    x = G(o)->LeftEdge; 
+	    y = G(o)->TopEdge;
+	    
+	    DrawImageState(msg->gpr_RPort,
+		(struct Image *)data->ld_Frame,
+		x, y,
+		((data->ld_Flags & LVFLG_READONLY) ? IDS_SELECTED : IDS_NORMAL),
+		msg->gpr_GInfo->gi_DrInfo);
+		
+	    /* Render gadget label */
+	    renderlabel(GadToolsBase, (struct Gadget *)o, msg->gpr_RPort, data->ld_LabelPlace);
+
+	} break;
+
+	case GREDRAW_UPDATE:
+
+	    D(bug("GREDRAW_UPDATE\n"));
+	
+	    /* Should we scroll the listview ? */
+	    if (data->ld_ScrollEntries)
+	    {
+	    	UWORD abs_steps, visible;
+		LONG dy;
+		
+	    	abs_steps = abs(data->ld_ScrollEntries);
+	    	visible = NumItemsFit(o, data);
+		
+		/* We make the assumption that the listview
+		** is alvays 'full'. If it isn't, the
+		** Scroll gadget won't be scrollable, and
+		** we won't receive any OM_UPDATEs.
+		*/
+
+		dy = data->ld_ScrollEntries * TotalItemHeight(data);
+		
+		D(bug("Scrolling delta y: %d\n", dy));
+
+
+		ScrollRaster(msg->gpr_RPort, 0, dy,
+			G(o)->LeftEdge + LV_BORDER_X,
+			G(o)->TopEdge  + LV_BORDER_Y,
+			G(o)->LeftEdge + G(o)->Width  - 1 - LV_BORDER_X,
+			G(o)->TopEdge  + G(o)->Height - 1 - LV_BORDER_Y);
+
+		data->ld_FirstDamaged = ((data->ld_ScrollEntries > 0) ?
+				visible - abs_steps : 0);
+
+		data->ld_NumDamaged = abs_steps;
+
+	    	data->ld_ScrollEntries = 0;
+	    	
+	    } /* If (we should do a scroll) */
+	    
+	    D(bug("Rerendering entries: first damaged=%d, num=%d\n",
+	    	data->ld_FirstDamaged, data->ld_NumDamaged));
+	    
+	    /* Redraw all damaged entries */
+	    if (data->ld_FirstDamaged != -1)
+	    {
+
+		RenderEntries(cl, o, msg,
+			data->ld_FirstDamaged, 
+			data->ld_NumDamaged,
+			GadToolsBase);
+
+	    }
+
+	    break; /* GREDRAW_UPDATE */
+
+    } /* switch (render mode) */
+
+    ReturnInt ("Listview::Render", IPTR, 1UL);
+}
+
+
+/*****************
+**  Dispatcher	**
+*****************/
+
+AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
+    AROS_UFHA(Class *,  cl,  A0),
+    AROS_UFHA(Object *, o,   A2),
+    AROS_UFHA(Msg,      msg, A1)
+)
+{
+    IPTR retval = 0UL;
+
+    switch(msg->MethodID)
+    {
+	case GM_RENDER:
+	    retval = listview_render(cl, o, (struct gpRender *)msg);
+	    break;
+
+	case GM_GOACTIVE:
+	    retval = listview_goactive(cl, o, (struct gpInput *)msg);
+	    break;
+
+	case OM_NEW:
+	    retval = (IPTR)listview_new(cl, o, (struct opSet *)msg);
+	    break;
+
+	case OM_UPDATE: {
+	
+	#define opS(x) ((struct opSet *)x)
+	LONG top;
+	top = GetTagData(GTLV_Top, 148, opS(msg)->ops_AttrList);
+	D(bug("Received OM_UPDATE: top=%d, attrs=%p, gi=%p\n",
+		top, opS(msg)->ops_AttrList, opS(msg)->ops_GInfo));
+	}
+	case OM_SET:
+
+	    retval = DoSuperMethodA(cl, o, msg);
+	    retval += (IPTR)listview_set(cl, o, (struct opSet *)msg);
+	    break;
+
+	case OM_GET:
+	    retval = (IPTR)listview_get(cl, o, (struct opGet *)msg);
+	    break;
+
+	case OM_DISPOSE:
+	    listview_dispose(cl, o, msg);
+	    break;
+
+	default:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    break;
+    } /* switch */
+
+    return (retval);
+}  /* dispatch_Gtlvclass */
+
+
+
 
 /*************************** Classes *****************************/
 
@@ -1470,3 +2337,46 @@ Class *makestringclass(struct GadToolsBase_intern * GadToolsBase)
 }
 
 
+Class *makelistviewclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    struct StaticLVData *ls;
+
+    if (GadToolsBase->listviewclass)
+	return GadToolsBase->listviewclass;
+	
+    ls = AllocMem(sizeof (struct StaticLVData), MEMF_ANY);
+    if (ls)
+    {
+   	Class *cl;
+   	
+   	cl = MakeClass(NULL, GADGETCLASS, NULL, sizeof(struct LVData), 0UL);
+   	if (cl)
+   	{
+    	    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_listviewclass);
+    	    cl->cl_Dispatcher.h_SubEntry = NULL;
+    	    
+    	    /* Initalize ststic hook */
+    	    ls->ls_GadToolsBase = GadToolsBase;
+    	    ls->ls_RenderHook.h_Entry = (APTR) AROS_ASMSYMNAME(RenderHook);
+    	    ls->ls_RenderHook.h_SubEntry = NULL;
+    	    ls->ls_RenderHook.h_Data = (APTR)GadToolsBase;
+
+    	    cl->cl_UserData = (IPTR) ls;
+
+    	    GadToolsBase->listviewclass = cl;
+    	    return (cl);
+    	}
+    	
+    	FreeMem(ls, sizeof (struct StaticLVData));
+    }
+
+    return (NULL);
+}
+
+VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase)
+{
+    FreeMem((APTR)cl->cl_UserData, sizeof (struct StaticLVData));
+    FreeClass(cl);
+    
+    return;
+}

@@ -59,6 +59,9 @@ Class *makesliderclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makescrollerclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makearrowclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makestringclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makelistviewclass(struct GadToolsBase_intern *GadToolsBase);
+/* Listview class has some data that must be freed */
+VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase);
 
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
 			  struct TagItem stdgadtags[],
@@ -72,11 +75,6 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
                          struct TagItem *taglist);
-struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
-		      struct TagItem stdgadtags[],
-		      struct VisualInfo *vi,
-		      struct TagItem *taglist);
-
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
@@ -114,13 +112,21 @@ struct Gadget *makescroller(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
 		      	  struct TagItem *taglist);
 
 struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 		      	  struct TagItem stdgadtags[],
 		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
 		      	  struct TagItem *taglist);
 
+struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
+		      	  struct TagItem stdgadtags[],
+		      	  struct VisualInfo *vi,
+		      	  struct TextAttr *tattr,
+		      	  struct TagItem *taglist);
+		      	  
 /* Tags for the private gadtool classes */
 #define GT_Dummy (TAG_USER)
 
@@ -131,6 +137,15 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
 #define GTA_Arrow_Scroller	(GT_Dummy + 5)
 #define GTA_Scroller_Dec	(GT_Dummy + 6)
 #define GTA_Scroller_Inc	(GT_Dummy + 7)
+#define GTA_Listview_Scroller	(GT_Dummy + 8)
+
+/* Some listview specific constants */
+#define LV_BORDER_X 4
+#define LV_BORDER_Y 3
+
+#define LV_DEF_INTERNAL_SPACING 0
+
+
 
 struct GadToolsBase_intern
 {
@@ -155,6 +170,7 @@ struct GadToolsBase_intern
     Class * scrollerclass;
     Class * arrowclass;
     Class * stringclass;
+    Class * listviewclass;
 
     /* Semaphore to protect the bevel object. */
     struct SignalSemaphore   bevelsema;
