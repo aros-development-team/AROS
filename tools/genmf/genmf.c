@@ -543,6 +543,8 @@ void replace_template (const char * string)
 
     if (!tmpl)
     {
+	/* Print no error for GNU Make patterns */
+	/* error ("Can't find template %s\n", argv[0]); */
 	fputs (string, stdout);
     }
     else
@@ -610,14 +612,14 @@ void replace_template (const char * string)
 		if (arg)
 		    fputs (arg->value, stdout);
 	    }
-	    else if (*ptr == '%' && (ptr == tmpl->body->value || ptr[-1] == '\n'))
+	    else if (*ptr == '%')
 	    {
 		/* nested template */
 		String * str = new_string ("");
 		char app[2];
 		app[1] = 0;
 
-		while (*ptr != '\n' && *ptr)
+		while (*ptr)
 		{
 		    if (*ptr == '%' && ptr[1] == '(' /*)*/)
 		    {
@@ -630,10 +632,10 @@ void replace_template (const char * string)
 			app[0] = *ptr++;
 			append_string (str, app);
 		    }
-		}
 
-		if (*ptr)
-		    ptr ++;
+		    if (*ptr == '\n')
+			break;
+		}
 
 		/* be careful ! This has side effects ! */
 		replace_template (str->value);
