@@ -1,7 +1,7 @@
 #ifndef GRAPHICS_INTERN_H
 #define GRAPHICS_INTERN_H
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal header file for graphics.library
@@ -78,9 +78,6 @@
 #define RELEASE_DRIVERDATA(rp,libbase)  
 #define KILL_DRIVERDATA(rp,libbase) 	
 #endif
-
-extern struct GfxBase * GfxBase;
-
 
 #define SIZERECTBUF 128
 
@@ -186,6 +183,7 @@ struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
 
+    BPTR                        seglist;
     struct Library  	    	*oopbase;
     struct Library  	    	*cybergfxbase;
     /* Driver data shared between all rastports (allocated once) */
