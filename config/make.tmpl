@@ -47,7 +47,7 @@
 	@if test -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 %end
 
-%define checkuds us=undefdsyms.list err=$(@F)-x.err
+%define checkuds us=undefdsyms.list err=$(@F)-x.err to=$@
 	@$(CHECKUDS) %(to) > %(us)
 	@if test -s %(us); then \
 	    cat %(us) >> %(err); \
