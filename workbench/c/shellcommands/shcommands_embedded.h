@@ -1,6 +1,11 @@
 #ifndef SHCOMMANDS_EMBEDDED_H
 #define SHCOMMANDS_EMBEDDED_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
