@@ -63,7 +63,7 @@
 
     D(bug("WhichLayer(li @ $%lx, x %ld, y %ld)\n", li, x, y));
 
-    LockLayers(li);
+    LockLayerInfo(li);
 
     for
     (
@@ -72,7 +72,7 @@
         l = l->back
     );
 
-    UnlockLayers(li);
+    UnlockLayerInfo(li);
 
     return l;
 
