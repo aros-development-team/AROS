@@ -145,7 +145,43 @@
             it. This only makes sense if the name is *not* an (absolute or 
             relative) path: that is, it must not contain any ':' or '/'.
         */
-        // FIXME
+        
+        if (strpbrk(name, '/:') == NULL)
+        {
+            struct CommandLineInterface *cli = Cli();
+            if (cli != NULL)
+            {
+                BPTR  lock = NULL, /* Lock on the executable file */
+                      cd   = NULL, /* Saved current directory */
+                     *paths;       /* Path list */
+                
+                /* Save current directory */
+                cd = CurrentDir(NULL);
+                CurrentDir(cd);
+               
+                /* Iterate over all paths in the path list */
+                for
+                (
+                    paths = (BPTR *) BADDR(cli->cli_CommandDir);
+                    lock == NULL && paths != NULL;
+                    paths = (BPTR *) BADDR(paths[0]) /* next path */
+                )
+                {
+                    CurrentDir(paths[1]);
+                    lock = Lock(name, SHARED_LOCK);
+                }
+                
+                if (lock != NULL)
+                {
+                    /* FIXME: Launch program */
+                    
+                    UnLock(lock);
+                }
+                
+                /* Restore current directory */
+                CurrentDir(cd); 
+            }
+        }
     }
 
 
