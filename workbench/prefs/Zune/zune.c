@@ -33,6 +33,7 @@
 #include "cyclesp.h"
 #include "slidersp.h"
 #include "scrollbarsp.h"
+#include "listviewsp.h"
 #include "zunestuff.h"
 
 struct Library *MUIMasterBase;
@@ -257,13 +258,14 @@ struct page_entry main_page_entries[] =
 {
 /*      {"Info",NULL,NULL,NULL}, */
 /*      {"System",NULL,NULL,NULL}, */
-    {"Windows",NULL,NULL,&_MUIP_Windows_desc},
-    {"Groups",NULL,NULL,&_MUIP_Groups_desc},
-    {"Buttons",NULL,NULL,&_MUIP_Buttons_desc},
-    {"Cycles",NULL,NULL,&_MUIP_Cycles_desc},
-    {"Sliders",NULL,NULL,&_MUIP_Sliders_desc},
-    {"Scrollbars",NULL,NULL,&_MUIP_Scrollbars_desc},
-    {NULL,NULL,NULL,NULL},
+    { "Windows",    NULL, NULL, &_MUIP_Windows_desc    },
+    { "Groups",     NULL, NULL, &_MUIP_Groups_desc     },
+    { "Buttons",    NULL, NULL, &_MUIP_Buttons_desc    },
+    { "Cycles",     NULL, NULL, &_MUIP_Cycles_desc     },
+    { "Sliders",    NULL, NULL, &_MUIP_Sliders_desc    },
+    { "Scrollbars", NULL, NULL, &_MUIP_Scrollbars_desc },
+    { "Listviews",  NULL, NULL, &_MUIP_Listviews_desc  },
+    { NULL,         NULL, NULL, NULL                   },
 };
 
 struct MUI_CustomClass *create_class(const struct __MUIBuiltinClass *desc)
