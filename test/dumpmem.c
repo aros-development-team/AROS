@@ -2,7 +2,7 @@
     Copyright © 1995-2004 The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Generic ACPI Parseing functions.
+    Desc: Memory Dump util functions.
     Lang: english
 */
 
