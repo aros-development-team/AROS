@@ -26,4 +26,12 @@
 typedef int ssize_t;
 #endif
 
+#ifdef __FreeBSD__
+#if !defined(_TIME_T) && !defined(__typedef_time_t)
+#define _TIME_T
+typedef long time_t;
+#endif
+#endif
+
 #endif /* _SYS_TYPES_H */
+
