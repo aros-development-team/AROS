@@ -385,7 +385,6 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 	struct TagItem frame_tags[] =
         {
             {IA_FrameType, FRAME_BUTTON 	    	    	    	},
-            {IA_EdgesOnly, TRUE 	    	    	    	    	},
             {IA_Width    , dims->gadgetwidth 	    	    	        },
             {IA_Height   , dims->fontheight + BUTTONBORDER_Y * 2 	},
             {TAG_DONE   	    	    	    	    	    	}
@@ -426,11 +425,15 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 			    {GA_Top 	 , dims->height -
 			     scr->WBorBottom - dims->fontheight -
 			     OUTERSPACING_Y - BUTTONBORDER_Y * 2	    	},
-			    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]   	    	},
 			    {GA_Image	 , (IPTR)gadgetframe	    	    	    	},
 			    {GA_RelVerify, TRUE     	    	    	    	    	},
 			    {TAG_DONE	    	    	    	    	    	    	}
 		    };
+    	    	struct TagItem gad2_tags[] =
+		{
+    			    {GA_Text	 , (IPTR)gadgetlabels[currentgadget]		},
+		    	    {TAG_DONE	    	    	    	    	    	    	}
+		};
 
 		thisgadget = NewObjectA(NULL, FRBUTTONCLASS, gad_tags);
 
@@ -443,6 +446,8 @@ static struct Gadget *buildsysreq_makegadgets(struct sysreqdims *dims,
 			intrequest_freegadgets(gadgetlist, IntuitionBase);
 			return NULL;
 		}
+
+    		SetAttrsA(thisgadget, gad2_tags);
 
 		if ((currentgadget + 1) != dims->gadgets)
 		{
