@@ -2,7 +2,7 @@
     (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Graphics function WaitBOVP()
+    Desc: Graphics function MrgCop()
     Lang: english
 */
 #include <graphics/view.h>
@@ -10,23 +10,23 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
-	AROS_LH1(void, WaitBOVP,
+        AROS_LH1(ULONG, MrgCop,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct View *, View, A1),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 67, Graphics)
+        struct GfxBase *, GfxBase, 35, Graphics)
 
 /*  FUNCTION
 
     INPUTS
-	vp - pointer to ViewPort structure
+        View -
 
     RESULT
-	None.
+        error -
 
     NOTES
 
@@ -40,13 +40,16 @@
 
     HISTORY
 
-*****************************************************************************/
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#warning TODO: Write graphics/WaitBOVP()
-    aros_print_not_implemented ("WaitBOVP");
+#warning TODO: Write graphics/MrgCop()
+    aros_print_not_implemented ("MrgCop");
+
+    return MCOP_NO_MEM;
 
     AROS_LIBFUNC_EXIT
-} /* WaitBOVP */
+} /* MrgCop */

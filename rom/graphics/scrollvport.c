@@ -2,7 +2,7 @@
     (C) 2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Graphics function WaitBOVP()
+    Desc: Graphics function ScrollVPort()
     Lang: english
 */
 #include <graphics/view.h>
@@ -10,23 +10,21 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
-	AROS_LH1(void, WaitBOVP,
+        AROS_LH1(void, ScrollVPort,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct ViewPort *, vp, A0),
+        AROS_LHA(struct ViewPort *, vp, A0),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 67, Graphics)
+        struct GfxBase *, GfxBase, 98, Graphics)
 
 /*  FUNCTION
 
     INPUTS
-	vp - pointer to ViewPort structure
 
     RESULT
-	None.
 
     NOTES
 
@@ -40,13 +38,14 @@
 
     HISTORY
 
-*****************************************************************************/
+
+******************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#warning TODO: Write graphics/WaitBOVP()
-    aros_print_not_implemented ("WaitBOVP");
+#warning TODO: Write graphics/ScrollVPort()
+    aros_print_not_implemented ("ScrollVPort");
 
     AROS_LIBFUNC_EXIT
-} /* WaitBOVP */
+} /* ScrollVPort */

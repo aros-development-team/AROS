@@ -55,6 +55,7 @@ FUNCTIONS := \
 	asksoftstyle \
 	attachpalextra \
 	attemptlocklayerrom \
+	bestmodeida \
 	bitmapscale \
 	bltbitmap \
 	bltbitmaprastport \
@@ -62,6 +63,7 @@ FUNCTIONS := \
 	bltmaskbitmaprastport \
 	bltpattern \
 	blttemplate \
+	changesprite \
 	cleareol \
 	clearrectregion \
 	clearregion \
@@ -69,6 +71,7 @@ FUNCTIONS := \
 	clipblit \
 	clonerastport \
 	closefont \
+	closemonitor \
 	cbump \
 	cmove \
 	copysbitmap \
@@ -83,6 +86,7 @@ FUNCTIONS := \
 	extendfont \
 	eraserect \
 	findcolor \
+	finddisplayinfo \
 	flood \
 	fontextent \
 	freebitmap \
@@ -99,6 +103,7 @@ FUNCTIONS := \
 	getbitmapattr \
 	getbpen \
 	getcolormap \
+	getdisplayinfodata \
 	getdrmd \
 	getgbuffers \
 	getrgb32 \
@@ -106,6 +111,7 @@ FUNCTIONS := \
 	getrpattrsa \
 	getoutlinepen \
 	getsprite \
+	getvpmodeid \
 	gfxassociate \
 	gfxfree \
 	gfxlookup \
@@ -122,12 +128,19 @@ FUNCTIONS := \
 	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
+	loadview \
 	locklayerrom \
+	makevport \
+	modenotavailable \
 	move \
+	movesprite \
+	mrgcop \
 	newregion \
+	nextdisplayinfo \
 	obtainpen \
 	obtainbestpena \
 	openfont \
+	openmonitor \
 	orrectregion \
 	orregionregion \
 	ownblitter \
@@ -145,6 +158,7 @@ FUNCTIONS := \
 	scalerdiv \
 	scrollraster \
 	scrollrasterbf \
+	scrollvport \
 	setabpendrmd \
 	setapen \
 	setbpen \
