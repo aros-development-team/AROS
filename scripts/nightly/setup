@@ -1,5 +1,5 @@
 # Import configuration
-source $SP/cfg/current
+source $SP/cfg/$CFG_NAME
 
 # Determine version
 VERSION=$(date -u +"%Y%m%d")

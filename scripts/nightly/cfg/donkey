@@ -1,3 +1,2 @@
-CFG_NAME="donkey"
 CFG_PACKAGES=(sources hosted i386-pc)
-CFG_I386_PC_MAKE_CONTRIB=yes
+CFG_CONTRIB_TYPE=i385-pc

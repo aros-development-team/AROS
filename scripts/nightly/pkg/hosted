@@ -27,7 +27,7 @@ cd      $ROOT
 delete  $BUILD_BASE/AROS
 resetl
 
-if [[ $CFG_HOSTED_BUILD_CONTRIB == "yes" ]]; then
+if [[ $CFG_CONTRIB_TYPE == "hosted" ]]; then
     printi "Creating AROS/"$HOST_CPU"-all contrib package..."
     PACKAGE=$BASENAME-$HOST_CPU-all-contrib
     ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2

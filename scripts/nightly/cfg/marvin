@@ -1,2 +1,2 @@
-CFG_NAME="marvin"
 CFG_PACKAGES=hosted
+CFG_CONTRIB_TYPE=none
