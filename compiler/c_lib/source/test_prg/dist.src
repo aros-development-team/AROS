@@ -1,5 +1,0 @@
-SCOPTIONS
-*.c
-*.info
-makefile.aros
-smakefile
