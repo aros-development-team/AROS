@@ -14,10 +14,6 @@ DIRS :=	$(INCDIR) $(GENINCDIR) \
 MACHINE_H := $(GENINCDIR)/aros/machine.h
 
 #MM
-includes-pp-m68k : $(INCFILES)
-	@$(NOP)
-
-#MM
 includes-pp-m68k : $(INCFILES) $(GENINCDIR)/sigcore.h
 	@$(NOP)
 
