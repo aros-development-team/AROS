@@ -14,48 +14,58 @@
 #define IEEESPCos(y) \
     AROS_LC1(LONG, IEEESPCos, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 7, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 7, Mathieeesingtrans)
 
 #define IEEESPCosh(y) \
     AROS_LC1(LONG, IEEESPCosh, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 11, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 11, Mathieeesingtrans)
+
+#define IEEESPExp(y) \
+    AROS_LC1(LONG, IEEESPExp, \
+    AROS_LCA(LONG, y, D0), \
+    struct Library *, MathIeeeSingTransBase, 13, Mathieeesingtrans)
 
 #define IEEESPLog(y) \
     AROS_LC1(LONG, IEEESPLog, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 14, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 14, Mathieeesingtrans)
 
 #define IEEESPLog10(y) \
     AROS_LC1(LONG, IEEESPLog10, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 21, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 21, Mathieeesingtrans)
 
 #define IEEESPPow(x, y) \
     AROS_LC2(LONG, IEEESPPow, \
     AROS_LCA(LONG, x, D1), \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 15, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 15, Mathieeesingtrans)
 
 #define IEEESPSin(y) \
     AROS_LC1(LONG, IEEESPSin, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 6, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 6, Mathieeesingtrans)
 
 #define IEEESPSinh(y) \
     AROS_LC1(LONG, IEEESPSinh, \
     AROS_LCA(LONG, y , D0), \
-    struct Library *, MathIeeeSingTransBase, 10, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 10, Mathieeesingtrans)
+
+#define IEEESPSqrt(y) \
+    AROS_LC1(LONG, IEEESPSqrt, \
+    AROS_LCA(LONG, y, D0), \
+    struct Library *, MathIeeeSingTransBase, 16, Mathieeesingtrans)
 
 #define IEEESPTan(y) \
     AROS_LC1(LONG, IEEESPTan, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 8, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 8, Mathieeesingtrans)
 
 #define IEEESPTanh(y) \
     AROS_LC1(LONG, IEEESPTanh, \
     AROS_LCA(LONG, y, D0), \
-    struct Library *, MathIeeeSingTransBase, 12, Mathieeesptrans)
+    struct Library *, MathIeeeSingTransBase, 12, Mathieeesingtrans)
 
 
 #endif /* DEFINES_MATHIEEESINGTRANS_H */

@@ -6,11 +6,6 @@ lib="`echo $Lib | gawk ' { print tolower($0); }'`"
 TOP="$2"
 shift ; shift
 
-case "$Lib" in
-    Mathieeespbas ) lib="mathieeesingbas" ;;
-    Mathieeesptrans ) lib="mathieeesingtrans" ;;
-esac
-
 mic="$TOP/scripts/moveifchanged"
 
 echo "Generating prototypes for $Lib..."
