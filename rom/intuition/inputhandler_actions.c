@@ -1,4 +1,14 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Responsible for executing deferred Intuition actions like
+          MoveWindow, SizeWindow, ActivateWindow, etc.
+    Lang: english
+*/
+
 #define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
+
 #include <proto/exec.h>
 #include <proto/boopsi.h>
 #include <proto/intuition.h>
@@ -444,7 +454,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 	BOOL remove_am = TRUE;
 	BOOL free_am = TRUE;
 	
-	if (MENUS_ACTIVE && (am->Code != AMCODE_CLOSEWINDOW))
+	if (MENUS_ACTIVE &&
+	    ((am->Code != AMCODE_CLOSEWINDOW) || (targetwindow == iihdata->MenuWindow)))
 	{
 	    remove_am = FALSE;
 	    free_am = FALSE;

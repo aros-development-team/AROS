@@ -1,3 +1,11 @@
+/*
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Header for Intuition's InputHandler
+    Lang: english
+*/
+
 #ifndef INPUTHANDLER_H
 #define INPUTHANDLER_H
 
@@ -17,11 +25,12 @@ struct IIHData
     struct MinList		GeneratedInputEventList;
     struct Gadget		*ActiveGadget;
     struct GadgetInfo		GadgetInfo;
-    struct InputEvent		*ActInputEvent; /* will be NULL outside Intuition's InputEvent handling loop */
+    struct InputEvent		*ActInputEvent; /* Will be NULL outside Intuition's InputEvent handling loop */
     struct InputEvent		*ReturnInputEvent;
     struct InputEvent		*GeneratedInputEvents;
     struct InputEvent		*ActGeneratedInputEvent;
     struct Task			*InputDeviceTask;
+    struct Window   	    	*MenuWindow; /* The window for which the menus are actually active (on screen) */
     APTR			InputEventMemPool;
     WORD			LastMouseX;
     WORD			LastMouseY;
