@@ -96,6 +96,7 @@ struct IntuitionBase *IntuitionBase;
 /* #undef O
 #undef SysBase */
 
+struct ExecBase * SysBase;
 
 AROS_LH2(struct LVBase_intern *, init,
     AROS_LHA(struct LVBase_intern *, LIBBASE, D0),

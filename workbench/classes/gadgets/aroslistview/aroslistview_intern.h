@@ -195,8 +195,14 @@ typedef struct IntuitionBase IntuiBase;
 
 #undef GfxBase
 #define GfxBase		LVB(AROSListviewBase)->gfxbase
+
+/* On Linux-M68k SysBase has to be global! */
+extern struct ExecBase * SysBase;
+
+/*
 #undef SysBase
 #define SysBase		LVB(AROSListviewBase)->sysbase
+*/
 #undef DOSBase
 #define DOSBase		LVB(AROSListviewBase)->dosbase
 

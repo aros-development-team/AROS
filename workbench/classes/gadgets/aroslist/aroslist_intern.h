@@ -100,8 +100,15 @@ typedef struct IntuitionBase IntuiBase;
 #define LB(b) ((struct ListBase_intern *)b)
 #undef UtilityBase
 #define UtilityBase 	LB(AROSListBase)->utilitybase
+
+/* On Linux-M68k SysBase has to be global! */
+extern struct ExecBase * SysBase;
+
+/*
 #undef SysBase
 #define SysBase		LB(AROSListBase)->sysbase
+*/
+
 #undef IntuitionBase
 #define IntuitionBase	LB(AROSListBase)->intuitionbase
 

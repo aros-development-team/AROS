@@ -92,6 +92,7 @@ const struct inittable datatable=
 /* #undef O
 #undef SysBase */
 
+struct ExecBase * SysBase;
 
 AROS_LH2(struct ListBase_intern *, init,
     AROS_LHA(struct ListBase_intern *, LIBBASE, D0),
