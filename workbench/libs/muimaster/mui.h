@@ -296,38 +296,24 @@ typedef struct {
 } MPenCouple;
 
 typedef enum {
-    PST_MUI,
-    PST_CMAP,
-    PST_RGB,
+    PST_MUI = 'm',
+    PST_CMAP = 'p',
+    PST_RGB = 'r',
 } PenSpecType;
 
-struct MUI_PenSpec {
-    union {
-	char buf[32]; /* constraint PenSpec size */
-	struct {
-	    PenSpecType ps_Type;
-	    union {
-		MPen     mui;   /* MUI pen number */
-		ULONG    cmap;  /* colormap entry */
-		struct {
-			  struct {
-			     UWORD red;
-			     UWORD green;
-			     UWORD blue;
-			     WORD pixel;
-			  } rgb;
-		    STRPTR   text;
-		} c;
-	    } v;
-	} s;
-    } u;
-};
+/* MUI_PenSpec is a an ascii spec like this:
 
-#define ps_penType u.s.ps_Type
-#define ps_rgbColor u.s.v.c.rgb
-#define ps_rgbText u.s.v.c.text
-#define ps_mui u.s.v.mui
-#define ps_cmap u.s.v.cmap
+   "m5"     	    	    	(mui pen #5)
+   "p123"   	    	    	(cmap entry #123)
+   "rFFFFFFFF,00000000,00000000 (rgb #FF0000)
+   
+   It needs to be like this, because for example nlist has
+   default penspecs in it's source encoded like above which
+   it directly passes to MUI_ObtainBestPen */
+   
+struct MUI_PenSpec {
+    UBYTE ps_buf[32];
+};
 
 #ifndef _MUI_FRAME_H
 #include "frame.h"
