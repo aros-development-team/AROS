@@ -1,0 +1,22 @@
+## version $VER: Installer.catalog 1.0 (14.9.2003)
+## language français
+## codeset 0
+;
+MSG_OK
+OK
+;
+MSG_CANCEL
+Annuler
+;
+MSG_MESSAGE
+Message
+;
+MSG_PROMPT
+Question
+;
+MSG_YES
+Oui
+;
+MSG_NO
+Non
+;
