@@ -39,13 +39,6 @@ struct MUI_ButtonsPData
     Object *imagebutton_popframe;
 };
 
-static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
-}
-
-#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-
 static Object*MakeSpacingSlider (void)
 {
     return MUI_MakeObject(MUIO_Slider, "", 0, 9);
@@ -61,35 +54,28 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	  Child, VGroup, /* Text Buttons */
 	    Child, ColGroup(2),
 		GroupFrameT("Text Buttons"),
+		MUIA_Group_SameHeight, TRUE,
 		Child, VGroup,
 			       Child, HVSpace,
 			       Child, MakeLabel("Frame:"),
 			       Child, HVSpace,
 			       End,
-		Child, d.button_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
-			       MUIA_Draggable, TRUE,
-			       MUIA_Window_Title, "Adjust Frame",
-			       End,
+		Child, d.button_popframe =  MakePopframe(),
+
 		Child, VGroup,
 			       Child, HVSpace,
 			       Child, MakeLabel("Background:"),
 			       Child, HVSpace,
 			       End,
-		Child, d.text_background_popimage =
-			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Draggable, TRUE,
-					 MUIA_Window_Title, "Adjust Background",
-					 End,
+		Child, d.text_background_popimage = MakeBackgroundPopimage(),
+
 		Child, VGroup,
 			       Child, HVSpace,
 			       Child, MakeLabel("Background in\npressed state:"),
 			       Child, HVSpace,
 			       End,
-		Child, d.text_selbackground_popimage =
-					 NewObject(CL_ImageClipboard->mcc_Class, NULL,
-						   MUIA_Draggable, TRUE,
-						   MUIA_Window_Title, "Adjust Background",
-						   End,
+		Child, d.text_selbackground_popimage = MakeBackgroundPopimage(),
+
 		Child, MakeLabel("Font:"),
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
@@ -112,8 +98,9 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		      Child, d.imagebutton_popframe =
 			 NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			   MUIA_Draggable, TRUE, 
+		           MUIA_CycleChain, 1,
 		           MUIA_MaxWidth, 28,
-			       MUIA_Window_Title, "Adjust Frame",
+			   MUIA_Window_Title, "Adjust Frame",
 		           End,
 	              Child, HVSpace,
 	 	      End,

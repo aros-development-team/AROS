@@ -13,6 +13,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#include "zunestuff.h"
+
 /****************************************************************
  Create a simple label
 *****************************************************************/
@@ -45,5 +47,29 @@ LONG xget(Object * obj, ULONG attr)
     LONG x = 0;
     get(obj, attr, &x);
     return x;
+}
+
+Object *MakeBackgroundPopimage(void)
+{
+    return NewObject(CL_ImageClipboard->mcc_Class, NULL,
+		     MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_Background,
+		     MUIA_Draggable, TRUE,
+		     MUIA_CycleChain, 1,
+		     MUIA_Window_Title, "Adjust Background",
+		     TAG_DONE);
+}
+
+Object *MakePopframe(void)
+{
+    return NewObject(CL_FrameClipboard->mcc_Class, NULL,
+		     MUIA_Draggable, TRUE,
+		     MUIA_CycleChain, 1,
+		     MUIA_Window_Title, "Adjust Frame",
+		     TAG_DONE);
+}
+
+ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
+{
+    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
