@@ -77,6 +77,10 @@ FUNCTIONS := \
 workbench-libs-iffparse : $(SLIB)
 	@$(NOP)
 
+#MM workbench-libs-iffparse-quick :
+workbench-libs-iffparse-quick : $(SLIB)
+	@$(NOP)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
