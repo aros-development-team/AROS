@@ -148,13 +148,13 @@ struct ReqToolsBase
              library names to fix the problem (e.g. rt_IntuitionBase). */
 
     /* The following library bases may be read and used by your program */
-    struct IntuitionBase 	*rt_IntuitionBase;
-    struct GfxBase 		*rt_GfxBase;
-    struct DosLibrary 		*rt_DOSBase;
+    struct IntuitionBase 	*IntuitionBase;
+    struct GfxBase 		*GfxBase;
+    struct DosLibrary 		*DOSBase;
     /* Next two library bases are only (and always) valid on Kickstart 2.0!
        (1.3 version of reqtools also initializes these when run on 2.0) */
-    struct Library 		*rt_GadToolsBase;
-    struct UtilityBase 		*rt_UtilityBase;
+    struct Library 		*GadToolsBase;
+    struct UtilityBase 		*UtilityBase;
 
     /* PRIVATE FIELDS, THESE WILL CHANGE FROM RELEASE TO RELEASE! */
 
