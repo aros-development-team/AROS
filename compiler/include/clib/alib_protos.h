@@ -14,6 +14,12 @@
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
+#endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
 /* #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
@@ -25,6 +31,9 @@
 #endif
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>
+#endif
+#ifndef LIBRARIES_GADTOOLS_H
+#   include <libraries/gadtools.h>
 #endif
 
 struct MsgPort;
