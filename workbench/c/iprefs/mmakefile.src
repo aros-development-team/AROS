@@ -9,6 +9,7 @@ FILES := main vars patches misc localeprefs fontprefs
 EXEDIR := $(AROS_C)
 EXE := $(EXEDIR)/IPrefs
 
+USE_DETACH := yes
 USE_AROSLIB := yes
 USE_CLIB := yes
 USE_AMIGALIB := yes
