@@ -1,62 +1,60 @@
-#   $Id$
-#
-#   Makefile for the C: Programs
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
 
 include $(TOP)/config/make.cfg
 
-FILES	:= \
-	AddBuffers \
-	AddDatatypes \
-	Avail \
-	Beep \
-	Break \
-	ChangeTaskPri \
-	CheckMem \
-	ConClip \
-	Copy \
-	CRList \
-	DamageList \
-	Date \
-	Delete \
-	DevList \
-	Dir \
-	Filenote \
-	Info \
-	Install \
-	install-i386-pc \
-	Join \
-	LeakWatch \
-	LibList \
-	List \
-	Lock \
-	MakeDir \
-	MakeLink \
-	Mount \
-	Protect \
-	Reboot \
-	Relabel \
-	Rename \
-	RequestChoice \
-	RequestFile \
-	ResList \
-	Search \
-	SetClock \
-	SetDate \
-	SetDefaultFont \
-	SetKeyboard \
-	SetLocale \
-	Sort \
-	StackSnoop \
-	TaskList \
-	Touch \
-	Type \
-	Version \
-	Wait \
-	Which
+FILES := \
+    AddBuffers \
+    AddDatatypes \
+    Avail \
+    Beep \
+    Break \
+    ChangeTaskPri \
+    CheckMem \
+    ConClip \
+    Copy \
+    CRList \
+    DamageList \
+    Date \
+    Delete \
+    DevList \
+    Dir \
+    Filenote \
+    Info \
+    Install \
+    install-i386-pc \
+    Join \
+    LeakWatch \
+    LibList \
+    List \
+    Lock \
+    MakeDir \
+    MakeLink \
+    Mount \
+    Protect \
+    Reboot \
+    Relabel \
+    Rename \
+    RequestChoice \
+    RequestFile \
+    ResList \
+    Search \
+    SetClock \
+    SetDate \
+    SetDefaultFont \
+    SetKeyboard \
+    SetLocale \
+    Sort \
+    StackSnoop \
+    TaskList \
+    Touch \
+    Type \
+    Version \
+    Wait \
+    Which
 
-
-# I'd like to move this into a rule, but it would be far too hard.
-EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
+EXEDIR := $(AROS_C)
+EXES   := $(foreach f,$(FILES), $(EXEDIR)/$(f))
 
 USER_CFLAGS := -I$(TOP)/rom/dos -O2 -fomit-frame-pointer
 
@@ -66,16 +64,19 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 
 #MM- workbench : workbench-c
+#MM- workbench-quick : workbench-c-quick
+
 #MM workbench-c : includes linklibs
 
 %make_prog_setup mmake=workbench-c
 
-workbench-c : setup $(EXES)
+workbench-c : setup $(EXES) $(EXEDIR)/Eval
 
-%make_prog_single dir=$(AROS_C)
+%make_prog_single dir=$(EXEDIR)
 
 $(OBJDIR)/evalParser.tab.c : evalParser.y
-	$(BISON) -o $@ $<
+	@$(ECHO) Generating $(notdir $@) from $<...
+	@$(BISON) -o $@ $<
 
 $(OBJDIR)/Eval.o : $(OBJDIR)/evalParser.tab.c Eval.c
 	%compile_q from=Eval.c opt="$(CFLAGS) -I$(OBJDIR)"
