@@ -27,7 +27,7 @@
 #
 
 BEGIN {
-    indir="include/clib/"
+    indir="apps/compiler/include/clib/"
     outdir=indir;
 
     basename=indir tolower(lib) "_protos."

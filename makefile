@@ -18,9 +18,7 @@ ifeq ($(FLAVOUR),native)
 SUBDIRS = config \
 	include clib exec
 else
-SUBDIRS = config \
-	include aros clib exec dos utility graphics intuition \
-	alib filesys libs devs c Demos
+SUBDIRS = config rom apps/compiler workbench apps
 endif
 
 # Extra files which should go in the developer dist
@@ -34,8 +32,6 @@ DIST_FILES = \
 	makefile \
 	README* \
 	CVS \
-	s/CVS \
-	s/Startup-Sequence \
 	scripts/CVS \
 	scripts/checkmem.awk \
 	scripts/cint2.awk \
@@ -48,7 +44,9 @@ DIST_FILES = \
 	scripts/purify \
 	scripts/purify.awk \
 	scripts/relpath \
-	scripts/stat.awk
+	scripts/stat.awk \
+	workbench/s/CVS \
+	workbench/s/Startup-Sequence
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -64,8 +62,7 @@ TESTS = $(TESTDIR)/tasktest \
 ifeq ($(FLAVOUR),native)
 all: setup subdirs
 else
-all : setup subdirs AmigaOS \
-	    $(BINDIR)/s/Startup-Sequence $(BINDIR)/arosshell
+all : setup subdirs AmigaOS $(BINDIR)/arosshell
 endif
 
 crypt : crypt.c
@@ -79,7 +76,7 @@ dist-dir : FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
 
 dist-tar : FORCE
-	cd bin/$(ARCH) ; \
+	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/AROSbin-$(VERSION).tgz ; \
 	    tar chvzf ../../dist/AROSbin-$(VERSION).tgz AROS
 	cd .. ; \
@@ -89,7 +86,7 @@ dist-tar : FORCE
 		$(shell cd ..; find AROS/include -name "*.h")
 
 dist-lha : FORCE
-	cd bin/$(ARCH) ; \
+	cd $(ARCHDIR) ; \
 	    $(RM) ../../dist/AROSbin-$(VERSION).lha ; \
 	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
 	cd .. ; \
@@ -108,7 +105,7 @@ setup :
 	    exit 10 ; \
 	else true ; fi
 	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
-	@if [ ! -d bin/$(ARCH) ]; then $(MKDIR) bin/$(ARCH) ; else true ; fi
+	@if [ ! -d $(ARCHDIR) ]; then $(MKDIR) $(ARCHDIR) ; else true ; fi
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
 	@if [ ! -d $(SDIR) ]; then $(MKDIR) $(SDIR) ; else true ; fi
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
@@ -119,6 +116,9 @@ setup :
 	@if [ ! -d $(GENDIR) ]; then $(MKDIR) $(GENDIR) ; else true ; fi
 	@if [ ! -d $(GENDIR)/test ]; then $(MKDIR) $(GENDIR)/test ; else true ; fi
 	@if [ ! -d $(GENDIR)/filesys ]; then $(MKDIR) $(GENDIR)/filesys ; else true ; fi
+	@cd apps/compiler/include ; \
+	$(MAKE) $(MFLAGS) TOP="../../.." CURDIR="$(CURDIR)/apps/compiler/include" \
+		all
 
 check : $(TESTS)
 	@for test in $(TESTS) ; do \
@@ -128,8 +128,12 @@ check : $(TESTS)
 clean:
 	$(RM) $(ARCHDIR) host.cfg
 	@for dir in $(SUBDIRS) ; do \
-	    ( echo "Cleaning in $$dir..." ; cd $$dir ; \
-	      $(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+	    ( echo "Cleaning in $$dir..." ;
+	      if [ "$$dir" = "apps/compiler" ]; then \
+		  top="../.." ; else top=".." ; \
+	      fi ; \
+	      cd $$dir ; \
+	      $(MAKE) $(MFLAGS) TOP="$$top" CURDIR="$(CURDIR)/$$dir" \
 	      clean ) ; \
 	done
 
@@ -139,8 +143,11 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $$dir..." ; \
+	    if [ "$$dir" = "apps/compiler" ]; then \
+		top="../.." ; else top=".." ; \
+	    fi ; \
 	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP=".." CURDIR="$(CURDIR)/$$dir" \
+		$(MAKE) $(MFLAGS) TOP="$$top" CURDIR="$(CURDIR)/$$dir" \
 		all ) ; \
 	    then echo -n ; else exit 1 ; fi ; \
 	done
@@ -155,38 +162,35 @@ $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
 	$(AR) $@ $?
 	$(RANLIB) $@
 
-$(SDIR)/Startup-Sequence : s/Startup-Sequence
-	$(CP) $^ $@
-
 # include/clib/exec_protos.h
 includes: \
-	    include/clib/dos_protos.h \
-	    include/clib/utility_protos.h \
-	    include/clib/graphics_protos.h \
-	    include/clib/intuition_protos.h \
-	    include/clib/console_protos.h
+	    apps/compiler/include/clib/dos_protos.h \
+	    apps/compiler/include/clib/utility_protos.h \
+	    apps/compiler/include/clib/graphics_protos.h \
+	    apps/compiler/include/clib/intuition_protos.h \
+	    apps/compiler/include/clib/console_protos.h
 
-include/clib/exec_protos.h: $(wildcard $(KERNEL)/*.s $(KERNEL)/*.c exec/*.c)
+apps/compiler/include/clib/exec_protos.h: $(wildcard $(KERNEL)/*.s $(KERNEL)/*.c exec/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Exec \
 	config/$(KERNEL)/*.s config/$(KERNEL)/*.c exec/*.c
 
-include/clib/dos_protos.h: $(wildcard dos/*.c)
+apps/compiler/include/clib/dos_protos.h: $(wildcard dos/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Dos \
 	dos/*.c
 
-include/clib/utility_protos.h: $(wildcard utility/*.c)
+apps/compiler/include/clib/utility_protos.h: $(wildcard utility/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Utility \
 	utility/*.c
 
-include/clib/graphics_protos.h: $(wildcard graphics/*.c)
+apps/compiler/include/clib/graphics_protos.h: $(wildcard graphics/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Graphics \
 	graphics/*.c
 
-include/clib/intuition_protos.h: $(wildcard intuition/*.c)
+apps/compiler/include/clib/intuition_protos.h: $(wildcard intuition/*.c)
 	gawk -f scripts/genprotos.h --assign lib=Intuition \
 	intuition/*.c
 
-include/clib/console_protos.h: devs/cdinputhandler.c devs/rawkeyconvert.c
+apps/compiler/include/clib/console_protos.h: devs/cdinputhandler.c devs/rawkeyconvert.c
 	gawk -f scripts/genprotos.h --assign lib=Console \
 	devs/cdinputhandler.c devs/rawkeyconvert.c
 

@@ -1,5 +1,5 @@
 # $Id$
-TOP=..
+TOP=../../..
 
 include $(TOP)/config/make.cfg
 

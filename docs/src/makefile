@@ -6,10 +6,11 @@ DEST=../html/
 FILES = background faq devinfo devinf_inside devinf_outside \
 	history links
 
-AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/exec/*.c \
-	$(TOP)/dos/*.c $(TOP)/intuition/*.c $(TOP)/graphics/*.c \
-	$(TOP)/utility/*.c $(TOP)/alib/*.c $(TOP)/aros/*.c \
-	$(TOP)/devs/*.c $(TOP)/clib/*.c)
+AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
+	$(TOP)/rom/dos/*.c $(TOP)/rom/intuition/*.c $(TOP)/rom/graphics/*.c \
+	$(TOP)/rom/utility/*.c $(TOP)/apps/compiler/alib/*.c \
+	$(TOP)/apps/compiler/aros/*.c \
+	$(TOP)/rom/devs/*.c $(TOP)/apps/compiler/clib/*.c)
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 

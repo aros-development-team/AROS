@@ -1,5 +1,5 @@
 # $Id$
-TOP=..
+TOP=../..
 
 SPECIAL_CFLAGS = -D__AROS
 
@@ -40,6 +40,7 @@ EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 all: setup $(EXES)
 
 setup :
+	echo "$(OBJDIR)"
 	@if [ ! -d $(EXEDIR) ]; then $(MKDIR) $(EXEDIR) ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 

@@ -1,5 +1,5 @@
 # $Id$
-TOP=..
+TOP=../..
 
 SPECIAL_CFLAGS = -D__AROS
 
@@ -46,8 +46,8 @@ $(EXEDIR)/forkbomb : forkbomb
 $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
-$(OBJDIR)/librarytest.o: librarytest.c $(TOP)/libs/dummylib_gcc.h
-	$(CC) $(APPCFLAGS) -I$(TOP)/libs -c $< -o $@
+$(OBJDIR)/librarytest.o: librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
+	$(CC) $(APPCFLAGS) -I$(TOP)/workbench/libs -c $< -o $@
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)

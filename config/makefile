@@ -2,9 +2,9 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=$(ARCH) $(KERNEL)
+SUBDIRS=$(KERNEL) $(ARCH)
 
-all:
+all: $(TOP)/apps/compiler/include/aros/config.h
 	@for dir in $(SUBDIRS) ; do \
 	    echo "Making all in $(CURDIR)/$$dir..." ; \
 	    if ( cd $$dir ; \
@@ -22,9 +22,8 @@ config: config.h
 	    then echo -n ; else exit 1 ; fi ; \
 	done
 
-config.h: $(TOP)/configure
-	sh $(TOP)/configure -h config.h
-	ln -sf ../../config/config.h $(TOP)/include/aros/config.h
+$(TOP)/apps/compiler/include/aros/config.h: $(TOP)/configure
+	sh $(TOP)/configure -h $(TOP)/apps/compiler/include/aros/config.h
 
 clean:
 	$(RM) ./machine
@@ -36,7 +35,7 @@ clean:
 	$(RM) host.cfg config.h
 
 machine:
-	$(CC) -I../include -o machine machine.c
+	$(CC) -I../apps/compiler/include -o machine machine.c
 	./machine
 
 

@@ -30,17 +30,17 @@ FILES = \
 	runprocess \
 	initcore
 
-all: setup $(TOP)/include/aros/machine.h machine.i \
+all: setup $(TOP)/apps/compiler/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
-$(TOP)/include/aros/machine.h:
-	$(TOP)/scripts/makelinks . $(TOP)/include/aros machine.h
+$(TOP)/apps/compiler/include/aros/machine.h: machine.h
+	cp machine.h $(TOP)/apps/compiler/include/aros
 
 clean:
-	$(RM) $(TOP)/include/aros/machine.h
+	$(RM) $(TOP)/apps/compiler/include/aros/machine.h
 
 config:
 	@echo "Configuring for a x86 CPU..."
@@ -57,7 +57,7 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c $(TOP)/include/aros/machine.h
+$(OSGENDIR)/%.d: %.c $(TOP)/apps/compiler/include/aros/machine.h
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 	@$(RM) $@
 	@touch $@

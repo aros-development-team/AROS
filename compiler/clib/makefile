@@ -1,5 +1,5 @@
 # $Id$
-TOP=..
+TOP=../../..
 
 USER_INCLUDES=-Iinclude
 
@@ -85,7 +85,7 @@ $(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 update-includes:
 	@echo "Updating ANSI C includes"
 	@cd include ; \
-	$(MAKE) $(MFLAGS) TOP="../.." CURDIR="$(CURDIR)/include" all
+	$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/include" all
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a

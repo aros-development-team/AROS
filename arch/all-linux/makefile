@@ -1,6 +1,6 @@
 TOP=../..
 
-USER_INCLUDES=-I$(TOP)/graphics -I$(TOP)/intuition
+USER_INCLUDES=-I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
 
 include $(TOP)/config/make.cfg
 
