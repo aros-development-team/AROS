@@ -15,19 +15,22 @@
 #endif
 
 #include <exec/tasks.h>
-#include <dos/dostags.h>
 #include <proto/exec.h>
 #include <clib/alib_protos.h>
 #include <proto/dos.h>
 
 #ifndef __AROS__
 /* The trick is over... */
-#undef timeval
+#    undef timeval
 #endif
 
 #ifndef  __typedef_STACKIPTR
 /* Normal AmigaOS environments don't have this defined */
 typedef ULONG STACKIPTR;
+#endif
+
+#ifndef AROS_STACKSIZE
+#    define AROS_STACKSIZE 4096
 #endif
 
 /* Give some prettier names to the standard signals */
@@ -77,7 +80,7 @@ int __nocommandline = 1;
 /* 
    define this to non-zero if you want the benchmark to end automatically
    when it realizes that there's no need to continue.
-   
+
    Beware that it can introduce some overhead (although very little).
 */
 #define SELF_TIMED_TEST 1
@@ -86,15 +89,8 @@ int main(void)
 {
     double elapsed = 0;
 
-    /*
-       Since I'm SO lazy, I'm using processes here, even if tasks would work too, 'cause
-       it's easier to create processes than tasks...
-
-       Ok ok... that's a lie, I could use CreateTask() from libamiga, but it seems to be
-       buggy under AROS?
-    */
-    task1 = (struct Task *)CreateNewProcTags(NP_Entry, (STACKIPTR)Task1Entry, TAG_DONE);
-    task2 = (struct Task *)CreateNewProcTags(NP_Entry, (STACKIPTR)Task2Entry, TAG_DONE);
+    task1 = CreateTask("Task 1", 0, Task1Entry, AROS_STACKSIZE);
+    task2 = CreateTask("Task 2", 0, Task2Entry, AROS_STACKSIZE);
 
     printf
     (
@@ -109,20 +105,20 @@ int main(void)
     Signal(task2, SIGF_START);
 
     #if SELF_TIMED_TEST
-    unsigned long i;
-    double oldratio = 0;
-
-    for (i=4;;i+=2)
     {
-        double ratio;
-        unsigned long int counter2 = counter;
+        unsigned long i;
+        double oldratio = 0;
 
-        Delay(200);
+        for (i=4;;i+=2)
+        {
+            double ratio;
+            Delay(200);
 
-        ratio = (double)i/counter2;
-        if ((ratio - oldratio) <= .000000001) break;
+            ratio = (double)i/counter;
+            if ((ratio - oldratio) <= .000000001) break;
 
-        oldratio = ratio;
+            oldratio = ratio;
+        }
     }
 
     #else
