@@ -35,6 +35,15 @@
 #include <libcore/compiler.h>
 #include <libcore/base.h>
 
+/* If the file with the #defines for this library is not "libdefs.h",
+    then you can redefine it. */
+#ifndef LC_LIBDEFS_FILE
+#   define LC_LIBDEFS_FILE "libdefs.h"
+#endif
+
+/* Include the file with the #defines for this library */
+#include LC_LIBDEFS_FILE
+
 #ifndef LC_LIBHEADERTYPEPTR
 #   define LC_LIBHEADERTYPEPTR	       struct LibHeader *
 #endif
@@ -59,14 +68,6 @@
 #ifndef LC_LIBBASESIZE
 #   define LC_LIBBASESIZE  sizeof (struct LibHeader)
 #endif
-/* If the file with the #defines for this library is not "libdefs.h",
-    then you can redefine it. */
-#ifndef LC_LIBDEFS_FILE
-#   define LC_LIBDEFS_FILE "libdefs.h"
-#endif
-
-/* Include the file with the #defines for this library */
-#include LC_LIBDEFS_FILE
 
 /* -----------------------------------------------------------------------
     entry:
