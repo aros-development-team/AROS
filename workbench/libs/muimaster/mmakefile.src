@@ -60,6 +60,7 @@ CLASSES := \
     window
 
 FILES := \
+    bubbleengine \
     datatypescache \
     dragndrop \
     font \
