@@ -1,5 +1,5 @@
+.cvsignore
 machine.c
 make.cfg
-makefile.src
-.cvsignore
 make.tmpl
+mmakefile.src

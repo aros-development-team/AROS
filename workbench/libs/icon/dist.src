@@ -1,4 +1,4 @@
 *.[ch]
-lib.conf
-makefile.src
 .cvsignore
+lib.conf
+mmakefile.src
