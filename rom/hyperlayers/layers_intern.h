@@ -23,6 +23,9 @@
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <graphics/gfxbase.h>
+
+#include "../graphics/intregions.h"
+
 /* ... ??? */
 
 LIBBASETYPE
