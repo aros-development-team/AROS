@@ -293,7 +293,14 @@
              {
                /* the part to become visible belongs to a simple layer,
                   I add that part to the damage list and clear the part. */
-               OrRectRegion(_L->DamageList, &_CR->bounds);
+               /* The damagelist is relative to the window instead of the
+                  screen! */
+               struct Rectangle R = _CR->bounds;
+               R.MinX -= _L->bounds.MinX;
+               R.MinY -= _L->bounds.MinY;
+               R.MaxX -= _L->bounds.MinX;
+               R.MaxY -= _L->bounds.MinY;
+               OrRectRegion(_L->DamageList, &R);
                _L->Flags |= LAYERREFRESH;
                BltBitMap(_L->rp->BitMap,
                          0,

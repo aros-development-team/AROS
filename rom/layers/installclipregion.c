@@ -62,10 +62,39 @@
   struct Region * OldRegion = l->ClipRegion;
   struct ClipRect * FirstCR; 
 
+
+  /* is there a clipregion currently installed? */
+  if (NULL != OldRegion)
+  { 
+    /* free all the ClipRects that make up this layer and
+       were created due to it being a clipregioned layer 
+     */
+    _FreeClipRectListBM(l,l->ClipRect);
+    
+    /* only reinstall the regular cliprects if there is no
+       new region given
+    */
+    if (NULL == region)
+    {
+      l->ClipRect = l->_cliprects;
+      l->_cliprects = NULL;
+      l->ClipRegion = NULL;
+      return;
+    }
+  }
+
+  /* if there's no new region to install then there's nothing else to do */
+  if (NULL == region)
+    return;
+
   /* First I cut down the region to the rectangle of the layer */
   l -> ClipRegion = region;
-
+    
   /* convert the region to a list of ClipRects */
+  /* backup the old cliprects */
+  l->_cliprects = l->ClipRect;
+
+  
 
   return OldRegion;
   

@@ -138,6 +138,7 @@
   {
     BOOL status;
     struct ClipRect * _CR = CR->Next;
+    
     if (NULL != CR->lobs)
     {
       /* 
@@ -156,6 +157,9 @@
          later on will be taken out further below with a call
          to ClearRectRegion(). These parts are restored from
          other layers which were hidden by that layer.
+      */
+      /* This damaglist is built relative to three screen!
+         Usually the damage list has to be relative to the layer
       */
       status = OrRectRegion(LD->DamageList, &CR->bounds);
       if (FALSE == status)
@@ -282,7 +286,13 @@
 	    }
 	    else
 	    {
-	      OrRectRegion(L_behind->DamageList, &CR->bounds);
+	      struct Rectangle Rect = CR->bounds;
+	      Rect.MinX -= L_behind->bounds.MinX;
+	      Rect.MinY -= L_behind->bounds.MinY;
+	      Rect.MaxX -= L_behind->bounds.MinX;
+	      Rect.MaxY -= L_behind->bounds.MinY;
+	      
+	      OrRectRegion(L_behind->DamageList, &Rect);
 	      /* this layer needs a refresh in that area */
 	      L_behind->Flags |= LAYERREFRESH;
 	      
@@ -303,6 +313,7 @@
                Take this ClipRect out of the damagelist so that
                this part will not be cleared later on. 
              */
+            /* This damagelist is relative to the screen!!! */
             ClearRectRegion(LD->DamageList, &CR->bounds);
           } /* if */
           else /* Ltmp != L_behind */
@@ -315,8 +326,16 @@
                part.
              */
             CR -> lobs = Ltmp;
+            
             if (0 != (L_behind->Flags & LAYERSIMPLE))
-              ClearRectRegion(L_behind->DamageList, &CR->bounds);
+            {
+              struct Rectangle Rect = CR->bounds;
+              Rect.MinX -= CR->bounds.MinX;
+              Rect.MinY -= CR->bounds.MinY;
+              Rect.MaxX -= CR->bounds.MinX;
+              Rect.MaxY -= CR->bounds.MinY;
+              ClearRectRegion(L_behind->DamageList, &Rect);
+            }
           }  
         } /* if */
         CR = CR->Next;

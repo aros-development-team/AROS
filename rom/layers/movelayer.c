@@ -233,12 +233,12 @@
     while (NULL != l_behind)
     {
       struct ClipRect * _CR = l_behind->ClipRect;
+      
       while (NULL != _CR)
       {
         if (_CR->lobs == l)
 	{
           _CR->lobs = l_tmp;
-          OrRectRegion(l_behind->DamageList, &_CR->bounds);
 	}
         _CR = _CR->Next;
       } /* while */
@@ -326,7 +326,8 @@
       {
         if (NULL != _CR->lobs)
         {
-          /* this part was hidden! */ 
+          /* this part was hidden! */
+          /* build the DamageList relative to the Screen> fix later*/
           OrRectRegion(l->DamageList, &_CR->bounds);
         } 
         _CR = _CR->Next;
@@ -350,11 +351,14 @@
         if (NULL == _CR->lobs)
         {
           /* this part is visible! Collect it! */
+          /* Region R is built relative to screen! */
           OrRectRegion(R, &_CR->bounds);
         }
         _CR = _CR->Next;
       }
       /* Determine the valid parts */
+
+      /* both regions are relative to the screen */      
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
 
@@ -388,10 +392,22 @@
            actually overlapping with. So I will erase the layer l's rectangle
            from that layer l_behind's damagelist so no mess happens on the
            screen */
-        ClearRectRegion(l_behind->DamageList, &l->bounds);
+        struct Rectangle Rect = l->bounds;
+        Rect.MinX -= l_behind->bounds.MinX;
+        Rect.MinY -= l_behind->bounds.MinY;
+        Rect.MaxX -= l_behind->bounds.MinX;
+        Rect.MaxY -= l_behind->bounds.MinY;
+        
+        ClearRectRegion(l_behind->DamageList, &Rect);
       }      
       l_behind = l_behind ->back;
     } /* while */
+
+    /* Make DamageList relative to the layer l */
+    l->DamageList->bounds.MinX -= l->bounds.MinX;
+    l->DamageList->bounds.MinY -= l->bounds.MinY;
+    l->DamageList->bounds.MaxX -= l->bounds.MinX;
+    l->DamageList->bounds.MaxY -= l->bounds.MinY;
 
     /* That's it folks! */
     CleanupLayers(LI);

@@ -81,10 +81,10 @@
         /* init. ClipRect */
         CR->Next = FirstCR;
         FirstCR  = CR;
-        CR->bounds.MinX = R->bounds.MinX + RR->bounds.MinX;
-        CR->bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX;
-        CR->bounds.MinY = R->bounds.MinY + RR->bounds.MinY;
-        CR->bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY;
+        CR->bounds.MinX = R->bounds.MinX + RR->bounds.MinX + l->bounds.MinX;
+        CR->bounds.MinY = R->bounds.MinY + RR->bounds.MinY + l->bounds.MinY;
+        CR->bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX + l->bounds.MinX;
+        CR->bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY + l->bounds.MinY;
         /* anything else? */
       }
       else

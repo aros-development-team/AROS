@@ -181,7 +181,12 @@
       else
       {
         /* a simple layer */
-        OrRectRegion(L->DamageList, &CR_old->bounds);
+        struct Rectangle Rect = CR_old->bounds;
+        Rect.MinX -= L->bounds.MinX;
+        Rect.MinY -= L->bounds.MinY;
+        Rect.MaxX -= L->bounds.MinX;
+        Rect.MaxY -= L->bounds.MinY;
+        OrRectRegion(L->DamageList, &Rect);
         L->Flags |= LAYERREFRESH;
 	
 	_CallLayerHook(L->BackFill,

@@ -254,9 +254,10 @@
         if (_CR->lobs == l)
 	{
           _CR->lobs = l_tmp;
-	}
+        }
         _CR = _CR->Next;
       } /* while */
+
       l_behind = l_behind ->back;
     } /* while */
 
@@ -418,6 +419,7 @@
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
+      BOOL madeRelative = FALSE;
       /* Walk through all the old layers cliprects and check whether they
          were visible. If a part was not visible then add it to the 
          new layers damagelist */
@@ -427,19 +429,18 @@
       {
         if (NULL != _CR->lobs)
         {
-          /* this part was hidden! 
-             !!!!  The porblem just is that it still might be
-             hidden and therefore should not really be in the damagelist at all. 
-             A comparison with the new layer could eliminate those cliprects.*/
+          /* build DamageList rel*ative to screen, fix it later */
           OrRectRegion(l->DamageList, &_CR->bounds);
         } 
         _CR = _CR->Next;
       }
+
       /* a necessary adjustment to the Damagelist's base coordinates! */
       l->DamageList->bounds.MinX += dx;
       l->DamageList->bounds.MinY += dy;
       l->DamageList->bounds.MaxX += dx;
       l->DamageList->bounds.MaxY += dy;
+
       l->Flags |= LAYERREFRESH;
       
       /* Comparison with layer at new position is absolutely necessary!! */
@@ -449,15 +450,14 @@
         /* is it visible at the new location? */
         if (NULL == _CR->lobs)
         {
-          /* this part was hidden! 
-             !!!!  The porblem just is that it still might be
-             hidden and therefore should not really be in the damagelist at all. 
-             A comparison with the new layer could eliminate those cliprects.*/
+          /* this part was hidden! */
+          /* Region R is built relative to the screen! */
           OrRectRegion(R, &_CR->bounds);
         } 
         _CR = _CR->Next;
       }
-      /* Determine the vlaid parts */
+      /* Determine the valid parts */
+      /* both regions are relative to screen! */
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
     }
@@ -488,7 +488,12 @@
            actually overlapping with. So I will erase the layer l's rectangle
            from that layer l_behind's damagelist so no mess happens on the
            screen */
-        ClearRectRegion(l_behind->DamageList, &l->bounds);
+        struct Rectangle Rect = l->bounds;
+        Rect.MinX -= l_behind->bounds.MinX;
+        Rect.MinY -= l_behind->bounds.MinY;
+        Rect.MaxX -= l_behind->bounds.MinX;
+        Rect.MaxY -= l_behind->bounds.MinY;
+        ClearRectRegion(l_behind->DamageList, &Rect);
       }      
       l_behind = l_behind ->back;
     } /* while */
@@ -634,7 +639,13 @@
       CR = CR->Next;
       }
     }
-   
+
+    /* DamageList is relative to screen -> fix it */
+    /* The DamageList exists in any case !!! */
+    l->DamageList->bounds.MinX -= l->bounds.MinX;   
+    l->DamageList->bounds.MinY -= l->bounds.MinY;   
+    l->DamageList->bounds.MaxX -= l->bounds.MinX;   
+    l->DamageList->bounds.MaxY -= l->bounds.MinY;   
 
     /* That's it folks! */
     CleanupLayers(LI);

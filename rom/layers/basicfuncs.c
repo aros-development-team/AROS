@@ -420,6 +420,40 @@ void _FreeClipRect(struct ClipRect   * CR,
 }
 
 /*
+ * Free a whole list of cliprects including the allocated bitmaps (if any)
+ */
+
+void _FreeClipRectListBM(struct Layer * L,
+                         struct ClipRect * CR)
+{
+  struct ClipRect * _CR = CR;
+  BOOL isSmart; 
+  if ((L->Flags & (LAYERSUPER|LAYERSMART)) == LAYERSMART)
+    isSmart = TRUE;
+  else
+    isSmart = FALSE;
+    
+  while (TRUE)
+  {
+    if (NULL != _CR->BitMap && TRUE == isSmart)
+    {
+      FreeBitMap(_CR->BitMap);
+      _CR->BitMap = NULL;
+    }
+    if (NULL != _CR->Next)
+      _CR = _CR->Next;
+    else
+      break;
+  }
+  /* _CR is the last ClipRect in the list. I concatenate the
+     currently preallocated list of ClipRects with that list. */
+  _CR->Next = L->SuperSaveClipRects;
+  
+  /* CR is the head of the ClipRect list now */
+  L->SuperSaveClipRects = CR;
+}
+
+/*
  * Allocate memory of a given size and enter it into the LayerInfo's
  * resource list.
  */

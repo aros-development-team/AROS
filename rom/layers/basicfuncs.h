@@ -9,6 +9,8 @@
 #include "layers_intern.h"
 #include <exec/types.h>
 #include <graphics/gfx.h>
+#include <graphics/clip.h>
+
 
 /*
  *  Sections:
@@ -95,7 +97,7 @@ struct ResourceNode * AddLayersResourceNode(struct Layer_Info * li);
 
 struct ClipRect * _AllocClipRect(struct Layer * L);
 void _FreeClipRect(struct ClipRect * CR, struct Layer * L);
-
+void _FreeClipRectList(struct Layer * L, struct ClipRect * CR);
 
 void FreeCRBitMap(struct ClipRect *   cr);
 

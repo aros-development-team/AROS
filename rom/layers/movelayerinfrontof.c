@@ -278,7 +278,13 @@ kprintf("This ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
            else
            {
              /* it's a simple layer*/
-             OrRectRegion(layer_to_move->DamageList, &CR->bounds);
+             struct Rectangle Rect = CR->bounds;
+             Rect.MinX -= layer_to_move->bounds.MinX; 
+             Rect.MinY -= layer_to_move->bounds.MinY; 
+             Rect.MaxX -= layer_to_move->bounds.MinX; 
+             Rect.MaxY -= layer_to_move->bounds.MinY; 
+             
+             OrRectRegion(layer_to_move->DamageList, &Rect);
              layer_to_move->Flags |= LAYERREFRESH;
              BltBitMap(layer_to_move->rp->BitMap,
                        0,
@@ -501,7 +507,12 @@ if (NULL == CR_tmp)
            else
            {
              /* it's a simple layer. */
-             OrRectRegion(layer_to_move->DamageList, &CR->bounds);
+             struct Rectangle Rect = CR->bounds;
+             Rect.MinX -= layer_to_move->bounds.MinX;
+             Rect.MinY -= layer_to_move->bounds.MinY;
+             Rect.MaxX -= layer_to_move->bounds.MinX;
+             Rect.MaxY -= layer_to_move->bounds.MinY;
+             OrRectRegion(layer_to_move->DamageList, &Rect);
              layer_to_move->Flags |= LAYERREFRESH;
              /* clear the whole area */
              BltBitMap(layer_to_move->rp->BitMap,

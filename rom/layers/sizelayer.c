@@ -142,6 +142,7 @@
     while (NULL != l_behind)
     {
       struct ClipRect * _CR = l_behind->ClipRect;
+
       while (NULL != _CR)
       {
         if (_CR->lobs == l)
@@ -150,6 +151,7 @@
 	}
         _CR = _CR->Next;
       } /* while */
+
       l_behind = l_behind ->back;
     } /* while */
 
@@ -304,7 +306,13 @@
            actually overlapping with. So I will erase the layer l's rectangle
            from that layer l_behind's damagelist so no mess happens on the
            screen */
-        ClearRectRegion(l_behind->DamageList, &l->bounds);
+        /* add a rectangle that is reltive to the window to the damage list */
+        struct Rectangle Rect = l->bounds;
+        Rect.MinX -= l_behind->bounds.MinX;
+        Rect.MinY -= l_behind->bounds.MinY;
+        Rect.MaxX -= l_behind->bounds.MinX;
+        Rect.MaxY -= l_behind->bounds.MinY;
+        ClearRectRegion(l_behind->DamageList, &Rect);
       }      
       l_behind = l_behind ->back;
     } /* while */
@@ -351,8 +359,9 @@
                              &bounds,
                              bounds.MinX,
                              bounds.MinY);
-	    
-
+	      /* Build the DamageList relative to the screen, 
+	         fix it later 
+	      */
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -384,6 +393,7 @@
 
             if (0 == (l->Flags & LAYERSUPER))
 	    {
+	      
 	      bounds.MinX = CR->bounds.MinX;
 	      bounds.MinY = DestY;
 	      bounds.MaxX = CR->bounds.MaxX;
@@ -397,6 +407,11 @@
                              bounds.MinX,
                              bounds.MinY);
               /* no superbitmap */
+
+	      /* 
+	         Build the DamageList relative to the screen, 
+	         fix it later 
+	      */
 
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
@@ -455,6 +470,13 @@
       }
     }
    
+    /* The DamageList was built relative to the screen -> fix that! */
+    /* DamageLIst exists in any case!!!! */
+    l->DamageList->bounds.MinX -= l->bounds.MinX;
+    l->DamageList->bounds.MinY -= l->bounds.MinY;
+    l->DamageList->bounds.MaxX -= l->bounds.MinX;
+    l->DamageList->bounds.MaxY -= l->bounds.MinY;
+    
     /* That's it folks! */
     CleanupLayers(LI);
 
