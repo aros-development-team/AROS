@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
+#include <utility/utility.h>
 #include <proto/exec.h>
 #include <proto/battclock.h>
 
@@ -82,6 +83,7 @@ AROS_UFH3(struct BattClockBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	BattClockBase->bb_Node.ln_Pri = 0;
 	BattClockBase->bb_Node.ln_Type = NT_RESOURCE;
 	BattClockBase->bb_Node.ln_Name = (STRPTR)name;
+        BattClockBase->bb_UtilBase = OpenLibrary("utility.library", 0);
 
 	MakeFunctions(BattClockBase, (APTR)LIBFUNCTABLE, NULL);
 	AddResource(BattClockBase);
