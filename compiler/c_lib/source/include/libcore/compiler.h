@@ -8,6 +8,10 @@
 **	(C) Copyright 1997 Andreas R. Kleinert
 **	All Rights Reserved.
 */
+/* This might define _AROS */
+#ifndef EXEC_TYPE_H
+#   include <exec/types.h>
+#endif
 
 /* Basically, Amiga C compilers must reach the goal to be
    as SAS/C compatible as possible. But on the other hand,
