@@ -259,11 +259,11 @@ struct ViewPort;
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase 		((struct ExecBase *)(GfxBase->ExecBase))
+#define SysBase 		(GfxBase->ExecBase)
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
-#define UtilityBase 		((struct Library *)(GfxBase->UtilBase))
+#define UtilityBase 		(GfxBase->UtilBase)
 
 /* Needed for close() */
 #define expunge()		AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
