@@ -24,6 +24,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "imspec.h"
 #include "textengine.h"
 
 extern struct Library *MUIMasterBase;
@@ -105,6 +106,11 @@ struct MUI_ListData
 
     struct MUI_EventHandlerNode ehn;
     int mouse_click; /* see below if mouse is hold down */
+
+    /* Cursor images */
+    struct MUI_ImageSpec *list_cursor;
+    struct MUI_ImageSpec *list_select;
+    struct MUI_ImageSpec *list_selcur;
 
     /* Render optimization */
     int update; /* 1 - update everything, 2 - redraw entry at update_pos */
@@ -677,6 +683,14 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     else data->title_height = 0;
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+
+    data->list_cursor = zune_image_spec_to_structure(MUII_ListCursor);
+    data->list_select = zune_image_spec_to_structure(MUII_ListSelect);
+    data->list_selcur = zune_image_spec_to_structure(MUII_ListSelCur);
+
+    zune_imspec_setup(&data->list_cursor, muiRenderInfo(obj));
+    zune_imspec_setup(&data->list_select, muiRenderInfo(obj));
+    zune_imspec_setup(&data->list_selcur, muiRenderInfo(obj));
     return 1;
 }
 
@@ -686,6 +700,14 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    zune_imspec_cleanup(&data->list_cursor, muiRenderInfo(obj));
+    zune_imspec_cleanup(&data->list_select, muiRenderInfo(obj));
+    zune_imspec_cleanup(&data->list_selcur, muiRenderInfo(obj));
+
+    zune_imspec_free(data->list_cursor); data->list_cursor = NULL;
+    zune_imspec_free(data->list_select); data->list_select = NULL;
+    zune_imspec_free(data->list_selcur); data->list_selcur = NULL;
 
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
     return DoSuperMethodA(cl, obj, (Msg) msg);
@@ -789,9 +811,9 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
         {
 	    if (entry_pos == data->entries_active)
 	    {
-		/* TODO: Correct background */
-		SetAPen(_rp(obj),_pens(obj)[MPEN_FILL]);
-		RectFill(_rp(obj),_mleft(obj),y,_mright(obj), y + data->entry_maxheight - 1);
+	    	zune_draw_image(muiRenderInfo(obj), data-> list_cursor,
+		    _mleft(obj),y,_mwidth(obj), data->entry_maxheight,
+		    0, y - data->entries_top_pixel,0);
 	    } else
 	    {
 		if ((msg->flags & MADF_DRAWUPDATE) && data->update == 2 && data->update_pos == entry_pos)
