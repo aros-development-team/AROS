@@ -63,12 +63,15 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 %end
 
 # Do something in all subdirs
-%define subdirs_q dirs=$(SUBDIRS) target=$(TARGET) curdir=$(CURDIR) mflags=$(MFLAGS)
+# This macro uses a trick: %(target) is evaluated *after* %(text), so one
+# can use %(target) in %(text).
+%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS)
 	@for dir in %(dirs) ; do \
-	    echo "Making %(target) in %(curdir)/$$dir..." ; \
+	    echo "%(text) in %(curdir)/$$dir..." ; \
 	    if test ! -e $$dir/makefile ; then \
+		echo "Generating makefile..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
-		--assign TOP="$(TOP)/.." \
+		--assign TOP="$(TOP)" \
 		$$dir/makefile.src > $$dir/makefile || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir ; \
@@ -99,9 +102,12 @@ endif
 	    --assign lib="%(lib)" %(from)
 %end
 
-# Include the dependency files and add some internal rules
-%define include_deps deps=$(DEPS)
-# Also check if the makefile itself must be remade
+# Common rules for all makefiles
+%define common
+# Check if the makefile itself must be remade
+clean ::
+	$(RM) makefile makefile.bak
+
 all : makefile
 
 # Remake makefile
@@ -112,6 +118,10 @@ makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
 	    $< > $@
 
+%end
+
+# Include the dependency files and add some internal rules
+%define include_deps deps=$(DEPS)/M
 # Include these files but only if the current target is neither
 # setup nor clean.
 ifneq ("$(TARGET)","clean")
@@ -119,4 +129,11 @@ ifneq ("$(TARGET)","setup")
 include %(deps)
 endif
 endif
+%end
+
+# rule to generate libdefs.h
+%define libdefs_rule
+libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
+	@echo "Generating $@..."
+	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
 %end
