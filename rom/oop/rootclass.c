@@ -310,10 +310,18 @@ static struct IFMethod *basemeta_iterateifs(
     
 }			
 
+#undef OOPBase
 
 /*******************************
 **  BaseMeta DoSuperMethod()  **
 *******************************/
+/* cl->USerData passed to DoSuperMethodA might be
+   a subclass of rootclass, which does not have
+   the OOPBase in cl->UserData, so instead we use the
+   meta's UserData (IFMeta or HIDDMeta class
+*/   
+   
+#define OOPBase ((struct IntOOPBase *)OCLASS(OCLASS(cl))->UserData)
 static IPTR basemeta_dosupermethod(Class *cl, Object *o, Msg msg)
 {
     ULONG method_offset = msg->MID & METHOD_MASK;
@@ -351,6 +359,9 @@ static IPTR basemeta_dosupermethod(Class *cl, Object *o, Msg msg)
     ReturnPtr ("basemeta_dosupermethod", IPTR, ifm->MethodFunc(ifm->mClass, o, msg));
 }
 
+#undef OOPBase
+
+#define OOPBase ((struct IntOOPBase *)(cl->UserData))
 /*******************************
 **  BaseMeta CoerceMethod()  **
 *******************************/
@@ -523,7 +534,7 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     BOOL success;
     ULONG mbase = 0UL;
     
-    EnterFunc(bug("init_rootvlass()\n"));
+    EnterFunc(bug("init_rootclass()\n"));
     
     rco = &(OOPBase->ob_RootClassObject);
     rootclass = &(rco->inst.data.public);
@@ -540,6 +551,9 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     rco->inst.data.public.DoSuperMethod	= basemeta_dosupermethod;
     rco->inst.data.public.CoerceMethod	= basemeta_coercemethod;
     rco->inst.data.public.DoMethod	= basemeta_domethod;
+    
+    D(bug("Root stuff: dosupermethod %p, coeremethod %p, domethod %p\n",
+	basemeta_dosupermethod, basemeta_coercemethod, basemeta_domethod));
     
     rco->inst.data.superclass		= NULL;
     rco->inst.data.subclasscount	= 0UL;

@@ -23,7 +23,7 @@
 #undef SDEBUG
 #undef DEBUG
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define UB(x) ((UBYTE *)x)
@@ -505,6 +505,7 @@ static IPTR HIDD_DoMethod(Object *o, Msg msg)
 static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg)
 {
     register struct IFMethod *ifm;
+    D(bug("HIDD_CoerceMethod()\n"));
     D(bug("cl=%s, mid=%ld\n", cl->ClassNode.ln_Name, msg->MID)); ifm = &((struct hiddmeta_inst *)cl)->data.methodtable[msg->MID];
     D(bug("ifm %p func %p, cl %p\n", ifm, ifm->MethodFunc, ifm->mClass)); return (ifm->MethodFunc(ifm->mClass, o, msg));
 }
@@ -514,6 +515,7 @@ static IPTR HIDD_CoerceMethod(Class *cl, Object *o, Msg msg)
 ************************/
 static IPTR HIDD_DoSuperMethod(Class *cl, Object *o, Msg msg)
 {
+    D(bug("HIDD_DoSuperMethod()\n"));
     cl = MD(cl)->superclass;
     IntCallMethod(cl, o, msg);
 }
