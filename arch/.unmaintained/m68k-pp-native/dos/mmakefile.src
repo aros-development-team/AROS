@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 OBJDIR := $(OSGENDIR)/dos
-OS_INCLUDES := -I$(GENINCDIR)
+OS_INCLUDES := -I$(INCDIR)
 CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
 AFLAGS2 :=
 TESTS :=
