@@ -55,27 +55,27 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  /* initilize the head's coordinates with the lowest possible values */
-  head -> OldY = 0x8000;
-  head -> OldX = 0x8000;
-  head -> Y    = 0x8000;
-  head -> X    = 0x8000;
+    /* initilize the head's coordinates with the lowest possible values */
+    head -> OldY = 0x8000;
+    head -> OldX = 0x8000;
+    head -> Y    = 0x8000;
+    head -> X    = 0x8000;
 
-  /* initilize the tail's coordinates with the highest possible values */
-  tail -> OldY = 0x7FFF;
-  tail -> OldX = 0x7FFF;
-  tail -> Y    = 0x7FFF;
-  tail -> X    = 0x7FFF;
+    /* initilize the tail's coordinates with the highest possible values */
+    tail -> OldY = 0x7FFF;
+    tail -> OldX = 0x7FFF;
+    tail -> Y    = 0x7FFF;
+    tail -> X    = 0x7FFF;
 
-  /* now link it to the gelsinfo and interconnect them */
-  GInfo -> gelHead = head;
-  GInfo -> gelTail = tail;
-  head -> NextVSprite = tail;
-  head -> ClearPath = tail;
-  tail -> PrevVSprite = head;
+    /* now link it to the gelsinfo and interconnect them */
+    GInfo -> gelHead = head;
+    GInfo -> gelTail = tail;
+    head -> NextVSprite = tail;
+    head -> ClearPath = tail;
+    tail -> PrevVSprite = head;
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* InitGels */

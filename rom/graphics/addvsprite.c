@@ -50,36 +50,36 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct VSprite * CurVSprite;
-  /* the Y-coordinate is most significant! */
-  LONG Koord = (((UWORD)vs->Y) << 16UL) + (UWORD)vs->X;
+    struct VSprite * CurVSprite;
+    /* the Y-coordinate is most significant! */
+    LONG Koord = JOIN_XY_COORDS(vs->X, vs->Y);
 
-  /* Reset the Flags for this VSprite and set OldX/Y */
-  vs -> Flags &= 0xFF;
-  vs -> OldY = vs -> Y;
-  vs -> OldX = vs -> X;
+    /* Reset the Flags for this VSprite and set OldX/Y */
+    vs -> Flags &= 0xFF;
+    vs -> OldY = vs -> Y;
+    vs -> OldX = vs -> X;
 
-  CurVSprite = rp->GelsInfo->gelHead;
+    CurVSprite = rp->GelsInfo->gelHead;
 
-  /* look for the appropriate place to insert the VSprite into the
-     list of VSprites which is connected to the GelsInfo which was
-     previously found in the rastport */
+    /* look for the appropriate place to insert the VSprite into the
+       list of VSprites which is connected to the GelsInfo which was
+       previously found in the rastport */
 
-  while ( ( ((UWORD)CurVSprite->NextVSprite->Y) << 16UL) +
-           (UWORD)CurVSprite->NextVSprite->X        < Koord)
-    CurVSprite = CurVSprite->NextVSprite;
+    while (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord)
+        CurVSprite = CurVSprite->NextVSprite;
 
-  /* insert the new VSprite *after* CurVSprite */
+    /* insert the new VSprite *after* CurVSprite */
 
-  CurVSprite -> NextVSprite -> PrevVSprite = vs;
-  vs -> NextVSprite = CurVSprite -> NextVSprite;
-  vs -> PrevVSprite = CurVSprite;
-  CurVSprite -> NextVSprite = vs;
+    CurVSprite -> NextVSprite -> PrevVSprite = vs;
+    vs -> NextVSprite = CurVSprite -> NextVSprite;
+    vs -> PrevVSprite = CurVSprite;
+    CurVSprite -> NextVSprite = vs;
 
-kprintf("\n\n======== added bob: prev = %x  next = %x\n\n", vs->PrevVSprite, vs->NextVSprite);
+    kprintf("\n\n======== added bob: prev = %x  next = %x\n\n", vs->PrevVSprite, vs->NextVSprite);
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* AddVSprite */

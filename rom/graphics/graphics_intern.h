@@ -38,43 +38,46 @@ extern struct GfxBase * GfxBase;
 
 struct GfxBase_intern
 {
-    struct GfxBase 	 gfxbase;
+    struct GfxBase 	 	gfxbase;
     
     /* Driver data shared between all rastports (allocated once) */
-    APTR		*shared_driverdata;
+    APTR			*shared_driverdata;
 
 
-#define TFE_HASHTABSIZE   16 /* This MUST be a power of two */
+#define TFE_HASHTABSIZE   	16 /* This MUST be a power of two */
 
-    struct tfe_hashnode   * tfe_hashtab[TFE_HASHTABSIZE];
-    struct SignalSemaphore  tfe_hashtab_sema;
+    struct tfe_hashnode   	* tfe_hashtab[TFE_HASHTABSIZE];
+    struct SignalSemaphore  	tfe_hashtab_sema;
 };
 
 /* Macros */
 
-#define WIDTH_TO_BYTES(width) ((( (width) - 1) >> 3) + 1)
-#define WIDTH_TO_WORDS(width) ((( (width) - 1) >> 4) + 1)
+#define WIDTH_TO_BYTES(width) 	((( (width) - 1) >> 3) + 1)
+#define WIDTH_TO_WORDS(width) 	((( (width) - 1) >> 4) + 1)
 
-#define XCOORD_TO_BYTEIDX( x ) (( x ) >> 3)
-#define XCOORD_TO_WORDIDX( x ) (( x ) >> 4)
+#define XCOORD_TO_BYTEIDX( x ) 	(( x ) >> 3)
+#define XCOORD_TO_WORDIDX( x ) 	(( x ) >> 4)
 
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-	( ((y) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
+				( ((y) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
 
 #define CHUNKY8_COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-	( ((y) * (bytes_per_row)) + (x) )
+				( ((y) * (bytes_per_row)) + (x) )
 		
-#define XCOORD_TO_MASK(x) (1L << (7 - ((x) & 0x07)))
+#define XCOORD_TO_MASK(x) 	(1L << (7 - ((x) & 0x07)))
 
+/* For vsprite sorting */
+
+#define JOIN_XY_COORDS(x,y)	(LONG)( ( ((UWORD)(y)) << 16) + ( ( ((UWORD)(x)) + 0x8000 ) & 0xFFFF ) ) 
 
 /* Defines */
-#define BMT_STANDARD	0x0000	/* Standard bitmap */
-#define BMT_RGB 	0x1234	/* RTG Bitmap. 24bit RGB chunky */
-#define BMT_RGBA	0x1238	/* RTG Bitmap. 32bit RGBA chunky */
-#define BMT_DRIVER	0x8000	/* Special RTG bitmap.
-				   Use this as an offset. */
+#define BMT_STANDARD		0x0000	/* Standard bitmap */
+#define BMT_RGB 		0x1234	/* RTG Bitmap. 24bit RGB chunky */
+#define BMT_RGBA		0x1238	/* RTG Bitmap. 32bit RGBA chunky */
+#define BMT_DRIVER		0x8000	/* Special RTG bitmap.
+				   	   Use this as an offset. */
 
-#define TFE(tfe) ((struct TextFontExtension*)tfe)
+#define TFE(tfe) 		((struct TextFontExtension*)tfe)
 
 /* Forward declaration */
 struct ViewPort;
@@ -82,15 +85,14 @@ struct ViewPort;
 #ifdef SysBase
 #undef SysBase
 #endif
-#define SysBase ((struct ExecBase *)(GfxBase->ExecBase))
+#define SysBase 		((struct ExecBase *)(GfxBase->ExecBase))
 #ifdef UtilityBase
 #undef UtilityBase
 #endif
-#define UtilityBase ((struct Library *)(GfxBase->UtilBase))
+#define UtilityBase 		((struct Library *)(GfxBase->UtilBase))
 
 /* Needed for close() */
-#define expunge() \
-    AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
+#define expunge()		AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
 
 /* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
 extern ULONG CalcHashIndex(ULONG n);

@@ -54,11 +54,11 @@
     struct VSprite * CorrectVSprite = rp -> GelsInfo -> gelHead;
     struct VSprite * CurVSprite = CorrectVSprite -> NextVSprite;
 
-    LONG Coord = ( ((UWORD)CorrectVSprite -> Y) << 16UL) + (UWORD)CorrectVSprite -> X;
+    LONG Coord = JOIN_XY_COORDS( CorrectVSprite -> X, CorrectVSprite -> Y );
 
     while ( NULL != CurVSprite )
     {
-	LONG NewCoord =  ( ((UWORD)CurVSprite -> Y) << 16UL) + (UWORD)CurVSprite -> X;
+	LONG NewCoord =  JOIN_XY_COORDS( CurVSprite -> X, CurVSprite -> Y );
 
 	if (Coord <= NewCoord)
 	{
@@ -83,8 +83,8 @@
 
 	    /* insert CurVSprite at some previous place */
 
-	    while ( NULL != tmpVSprite &&
-        	     ( ( ((UWORD)tmpVSprite -> Y) << 16UL) + (UWORD)tmpVSprite -> X) > NewCoord)
+	    while ( ( NULL != tmpVSprite ) &&
+	    	     ( JOIN_XY_COORDS(tmpVSprite -> X, tmpVSprite -> Y) > NewCoord ) )
         	tmpVSprite = tmpVSprite -> PrevVSprite;
 
 	    if (NULL == tmpVSprite)
@@ -102,7 +102,7 @@
         	CurVSprite->NextVSprite = tmpVSprite->NextVSprite;
 
         	if (NULL != tmpVSprite->NextVSprite)
-        	  tmpVSprite->NextVSprite->PrevVSprite = CurVSprite;
+        	   tmpVSprite->NextVSprite->PrevVSprite = CurVSprite;
 
         	tmpVSprite->NextVSprite = CurVSprite;
 	    }
