@@ -124,8 +124,9 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
                 (
                     MUIC_Imageadjust,
                     MUIA_CycleChain,              1,
-                    MUIA_Imageadjust_Spec, (IPTR) img_spec,
+                    MUIA_Imageadjust_Spec,        (IPTR) img_spec,
                     MUIA_Imageadjust_Type,        data->adjust_type,
+		    MUIA_Imageadjust_Originator,  (IPTR) obj,
                     TAG_DONE
                 )),
                 Child, (IPTR) HGroup,
@@ -154,19 +155,19 @@ IPTR Popimage__MUIM_Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 	    DoMethod
             (
                 ok_button, MUIM_Notify, MUIA_Pressed, FALSE, 
-                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) _app(obj), 5, MUIM_Application_PushMethod, 
                 (IPTR) obj, 2, MUIM_Popimage_CloseWindow, TRUE
             );
 	    DoMethod
             (
                 cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, 
-                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) _app(obj), 5, MUIM_Application_PushMethod, 
                 (IPTR) obj, 2, MUIM_Popimage_CloseWindow, FALSE
             );
 	    DoMethod
             (
                 data->wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-                (IPTR) _app(obj), 6, MUIM_Application_PushMethod, 
+                (IPTR) _app(obj), 5, MUIM_Application_PushMethod, 
                 (IPTR) obj, 2, MUIM_Popimage_CloseWindow, FALSE
             );
 	}
