@@ -58,12 +58,14 @@
     */
 
     /* Is messageport empty? */
-    while(port->mp_MsgList.lh_Head->ln_Succ==NULL)
+    while (IsListEmpty (&port->mp_MsgList))
+    {
 	/*
 	    Yes. Wait for the signal to arrive. Remember that signals may
 	    arrive without a message so check again.
 	*/
 	Wait(1<<port->mp_SigBit);
+    }
 
     /* Return the first node in the list. */
     return (struct Message *)port->mp_MsgList.lh_Head;
