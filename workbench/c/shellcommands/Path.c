@@ -4,78 +4,133 @@
 
     Desc:
     Lang:
+
+    BUGS:
+          Doesn't check whether an entry is already in the Path.
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+#include <dos_commanderrors.h>
 
 #include <aros/shcommands.h>
 
-AROS_SH5(Path, 41.1,
+AROS_SH7(Path, 45.2,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),
-AROS_SHA(BOOL, ,ADD,/S,FALSE),
-AROS_SHA(BOOL, ,SHOW,/S,TRUE),
+AROS_SHA(BOOL, ,ADD,/S,TRUE),
+AROS_SHA(BOOL, ,SHOW,/S,FALSE),
 AROS_SHA(BOOL, ,RESET,/S,FALSE),
-AROS_SHA(BOOL, ,QUIET,/S,FALSE))
+AROS_SHA(BOOL, ,REMOVE,/S,FALSE),
+AROS_SHA(BOOL, ,QUIET,/S,FALSE),
+AROS_SHA(BOOL, ,HEAD,/S,FALSE))
 {
     AROS_SHCOMMAND_INIT
 
-    UBYTE Buffer[4096];
-    IPTR parg[1];
+    typedef struct
+    {
+        BPTR next;
+        BPTR lock;
+    } PathEntry;
+
     STRPTR *names=SHArg(PATH);
-    BPTR *cur, *next;
-    struct CommandLineInterface *cli;
+    PathEntry *cur;
+    struct CommandLineInterface *cli = Cli();
 
     (void)Path_version;
 
-    cli=Cli();
+    #define PE(x) ((PathEntry *)(BADDR(x)))
+
+    if(!cli)
+    {
+        PrintFault(ERROR_SCRIPT_ONLY, "Path");
+
+        return RETURN_ERROR;
+    }
+
+    cur = (PathEntry *)&cli->cli_CommandDir;
+
     if (*names)
     {
-	/* Search last entry */
-	cur=&cli->cli_CommandDir;
-	while (cur[0])
-	    cur=(BPTR *)BADDR(cur[0]);
+        BPTR next;
 
-	while(*names!=NULL)
+        if (!SHArg(HEAD) && !SHArg(RESET))
+        {
+       	    /* Search last entry */
+            while (cur->next)
+                cur = PE(cur->next);
+        }
+
+        next = cur->next;
+
+        for (; *names; names++)
 	{
-	    next=(BPTR *)AllocVec(2*sizeof(BPTR),MEMF_ANY);
-	    next[1]=Lock(*names,SHARED_LOCK);
-	    if(!next[1])
-	    {
-		FreeVec(next);
-		break;
-	    }
-	    cur[0]=MKBADDR(next);
-	    cur=next;
-	    if(!SHArg(QUIET))
-		VPrintf("%s added.\n",(ULONG *)names);
-	    names++;
+            cur->next = MKBADDR(AllocVec(sizeof(PathEntry), MEMF_ANY));
+
+            if (cur->next)
+            {
+                PE(cur->next)->lock = Lock(*names, SHARED_LOCK);
+
+                if (!PE(cur->next)->lock)
+                {
+                    FreeVec(PE(cur->next));
+		    break;
+	        }
+
+                cur  = PE(cur->next);
+ 	    }
 	}
-	cur[0] = 0;
+
+        cur->next = next;
     }
     else
     {
+        SHArg(SHOW) = TRUE && !SHArg(RESET);
+    }
+
+    if (SHArg(RESET))
+    {
+        while (cur->next)
+        {
+	    BPTR next = PE(cur->next)->next;
+
+            UnLock(PE(cur->next)->lock);
+            FreeVec(PE(cur->next));
+            cur->next = next;
+        }
+    }
+
+    if (SHArg(SHOW))
+    {
+        UBYTE Buffer[2048];
+        IPTR parg[1];
 	BPTR l;
 
 	l = Lock ("", SHARED_LOCK);
 	if (l)
 	{
-	    NameFromLock (l, Buffer, sizeof (Buffer));
-	    parg[0] = (IPTR) Buffer;
-	    VPrintf ("Current Directory: %s\n", parg);
-	    UnLock (l);
+	    NameFromLock(l, Buffer, sizeof (Buffer));
+	    UnLock(l);
+
+            parg[0] = (IPTR)Buffer;
+     	    VPrintf("Current Directory: %s\n", parg);
 	}
 
-	cur=(BPTR *)BADDR(cli->cli_CommandDir);
-	while(cur)
+
+	for
+        (
+            cur = PE(cli->cli_CommandDir);
+            cur;
+	    cur = PE(cur->next)
+        )
 	{
-	    NameFromLock (cur[1], Buffer, sizeof (Buffer));
-	    parg[0] = (IPTR) Buffer;
-	    VPrintf ("%s\n", parg);
-	    cur=(BPTR *)BADDR(cur[0]);
+	    NameFromLock (cur->lock, Buffer, sizeof (Buffer));
+
+            parg[0] = (IPTR) Buffer;
+	    VPrintf("%s\n", parg);
 	}
-	VPrintf ("C:\n", NULL);
+
+        PutStr("C:\n");
     }
 
     return RETURN_OK;
