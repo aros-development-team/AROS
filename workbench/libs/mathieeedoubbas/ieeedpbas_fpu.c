@@ -6,6 +6,21 @@
 
 #undef double
 
+/*
+  Problem (ONLY on Linux/M68K with binary compatibility turned on):
+   In order to get binary compatibility with the original Amiga OS 
+   we have to return the value in D0/D1. This is NOT automatically
+   done by the compiler. The result would be returned in one of the
+   FPU registers instead. So we're using the trick with the QUADs.
+   See below. 
+*/
+#if UseRegisterArgs
+  #define RETURN_TYPE QUAD  /* For Linux/M68k & AmigaOS w/ bin. compat. */
+#else
+  #define RETURN_TYPE double /* for the rest */
+#endif
+
+
 AROS_LHQUAD1(LONG, FPU_IEEEDPFix,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
@@ -13,14 +28,18 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 5, MathIeeeDoubBas)
   return (LONG)y;
 } /* FPU_IEEEDPFix */
 
-AROS_LHQUAD1(QUAD, FPU_IEEEDPFlt,
+AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFlt,
 AROS_LHAQUAD(LONG, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 6, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   double d;
   QUAD * Res = (QUAD *)&d; /* this forces the returned value to be in D0/D1 */
   d = (double)y;
   return * Res;
+#else
+  return (double)y;
+#endif
 } /* FPU_IEEEDPFlt */
 
 AROS_LHQUAD2(LONG, FPU_IEEEDPCmp,
@@ -39,72 +58,96 @@ AROS_LHQUAD1(LONG, FPU_IEEEDPTst,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)
 {
-  if (y==0.0)
+  if (0.0 == y)
     return 0;
   if (y > 0)
     return 1;
   return -1;
 } /* FPU_IEEEDPTst */
 
-AROS_LHQUAD1(QUAD, FPU_IEEEDPAbs,
+AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPAbs,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
   y=abs(y);
   return * Res;
+#else
+  return abs(y);
+#endif
 } /* FPU_IEEEDPAbs */
 
-AROS_LHQUAD1(QUAD, FPU_IEEEDPNeg,
+AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPNeg,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 10, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
   y = -y;
   return * Res;
+#else
+  return -y;
+#endif
 } /* FPU_IEEEDPNeg */
 
-AROS_LHQUAD2(QUAD, FPU_IEEEDPAdd,
+AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPAdd,
 AROS_LHAQUAD(double, y, D0, D1),
 AROS_LHAQUAD(double, z, D2, D3),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 11, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
   y=y+z;
   return * Res;
+#else
+  return (y+z);
+#endif
 } /* FPU_IEEEDPAdd */
 
-AROS_LHQUAD2(QUAD, FPU_IEEEDPSub,
+AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPSub,
 AROS_LHAQUAD(double, y, D0, D1),
 AROS_LHAQUAD(double, z, D2, D3),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 12, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
   y=y-z;
   return * Res;
+#else
+  return (y-z);
+#endif
 } /* FPU_IEEEDPSub */
 
-AROS_LHQUAD2(QUAD, FPU_IEEEDPMul,
+AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPMul,
 AROS_LHAQUAD(double, y, D0, D1),
 AROS_LHAQUAD(double, z, D2, D3),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 13, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y;  /* this forces the returned value to be in D0/D1 */
   y=y*z;
   return * Res;
+#else
+  return (y*z);
+#endif
 } /* FPU_IEEEDPMul */
 
-AROS_LHQUAD2(QUAD, FPU_IEEEDPDiv,
+AROS_LHQUAD2(RETURN_TYPE, FPU_IEEEDPDiv,
 AROS_LHAQUAD(double, y, D0, D1),
 AROS_LHAQUAD(double, z, D2, D3),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 14, MathIeeeDoubBas)
 {
+#if UseRegisterArgs
   QUAD * Res = (QUAD *)&y; /* this forces the returned value to be in D0/D1 */
   y = y/z;
   return * Res;
+#else
+  return (y/z);
+#endif
 } /* FPU_IEEEDPDiv */
 
-AROS_LHQUAD1(QUAD, FPU_IEEEDPFloor,
+AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPFloor,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
 {
@@ -112,7 +155,7 @@ struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 15, MathIeeeDoubBas)
   return 0xbadc0deULL;
 } /* FPU_IEEEDPFloor */
 
-AROS_LHQUAD1(QUAD, FPU_IEEEDPCeil,
+AROS_LHQUAD1(RETURN_TYPE, FPU_IEEEDPCeil,
 AROS_LHAQUAD(double, y, D0, D1),
 struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 16, MathIeeeDoubBas)
 {
