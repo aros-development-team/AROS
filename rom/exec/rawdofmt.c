@@ -146,8 +146,9 @@
 	    if(*FormatString>='0'&&*FormatString<='9')
 	    {
 		do
+		{
 		    minwidth=minwidth*10+(*FormatString++-'0');
-		while(*FormatString>='0'&&*FormatString<='9');
+		} while(*FormatString>='0'&&*FormatString<='9');
 
 		/* Dot following width modifier? */
 		if(*FormatString=='.')
@@ -162,14 +163,16 @@
 			while(*FormatString>='0'&&*FormatString<='9');
 		    }
 		}
+#if 0 /* stegerg: ??? */
 		else
 		{
 		    /* No. It was in fact a maxwidth modifier */
 		    maxwidth=minwidth;
 		    minwidth=0;
 		}
+#endif
 	    }
-
+	
 	    /* 'l' modifier? (long argument) */
 	    if(*FormatString=='l')
 		larg=*FormatString++;
