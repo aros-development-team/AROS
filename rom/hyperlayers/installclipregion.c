@@ -60,101 +60,13 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Region * OldRegion;
-  BOOL updating = FALSE;
   
   LockLayer(0, l);
     
-  OldRegion = l->ClipRegion;
-
-  if ((OldRegion != NULL) || (region != NULL))
-  {
-    if (l->Flags & LAYERUPDATING)
-    {
-      /* InstallClipRegion does not work if the layer is in update state (BeginUpdate) */
-
-      updating = TRUE;
-      EndUpdate(l, FALSE);
-      
-      OldRegion = l->ClipRegion;
-    }
-
-    /* is there a clipregion currently installed? */
-    if (NULL != OldRegion)
-    { 
-      /*
-       *  Copy the contents of the region cliprects to the regular
-       *  cliprects if layer is a SMARTLAYER. Also free the list of 
-       *  region cliprects.
-       */
-      if (NULL != l->ClipRect)
-      {
-	if (IS_SMARTREFRESH(l))
-	  _CopyClipRectsToClipRects(l,
-	                            l->ClipRect,
-	                            l->_cliprects,
-	                            0,
-	                            FALSE,
-	                            TRUE);
-	else
-          _FreeClipRectListBM(l, l->ClipRect);
-      }
-
-      /* restore the regular ClipRects */
-      l->ClipRect = l->_cliprects;    
-
-    }
-
-    /* at this point the regular cliprects are in l->ClipRect in any case !*/
-
-    /* if there's no new region to install then there's not much to do */
-    l->ClipRegion = region;
-
-    if (NULL == region)
-      l->_cliprects = NULL;
-    else
-    {
-      struct Region r;
-      r.RegionRectangle = NULL; // min. initialization!
-
-      /* convert the region to a list of ClipRects */
-      /* backup the old cliprects */
-      l->_cliprects = l->ClipRect;
-
-      region->bounds.MinX += l->bounds.MinX;
-      region->bounds.MinY += l->bounds.MinY;
-      region->bounds.MaxX += l->bounds.MinX;
-      region->bounds.MaxY += l->bounds.MinY;
-
-      _SetRegion(region, &r);
-      AndRegionRegion(l->VisibleRegion, &r);
-
-      l->ClipRect = _CreateClipRectsFromRegion(&r,
-                                               l,
-                                               FALSE,
-                                               region);
-                                               
-      _CopyClipRectsToClipRects(l,
-                                l->_cliprects,
-                                l->ClipRect,
-                                0,
-                                FALSE,
-                                FALSE);
-
-      region->bounds.MinX -= l->bounds.MinX;
-      region->bounds.MinY -= l->bounds.MinY;
-      region->bounds.MaxX -= l->bounds.MinX;
-      region->bounds.MaxY -= l->bounds.MinY;
-
-      /* right now I am assuming that everything went alright */
-    }
-  
-    if (updating)
-      BeginUpdate(l);
-
-  } /* if ((OldRegion != NULL) || (region != NULL)) */
+  OldRegion = _InternalInstallClipRegion(l, region, 0, LayersBase);
   
   UnlockLayer(l);
-  
+
   return OldRegion;
 
   AROS_LIBFUNC_EXIT

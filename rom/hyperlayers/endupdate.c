@@ -73,7 +73,8 @@
                                 l->cr2,
                                 0,
                                 FALSE,
-                                TRUE);
+                                TRUE,
+				FALSE);
     else
       _FreeClipRectListBM(l,l->ClipRect);
   }

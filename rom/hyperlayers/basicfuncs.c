@@ -1063,8 +1063,8 @@ int _BackupPartsOfLayer(struct Layer * l,
    * area of the layer.
    */
 
-  clipregion = InstallClipRegion(l, NULL);  
-
+  clipregion = _InternalInstallClipRegion(l, NULL, 0, LayersBase);  
+  
   ClearRegionRegion(hide_region,l->VisibleRegion);
   _SetRegion(l->VisibleRegion, &r);
   AndRegionRegion(l->shape,&r);
@@ -1089,8 +1089,8 @@ int _BackupPartsOfLayer(struct Layer * l,
    * regular list of cliprects is still maintained.
    */
   if (clipregion)
-    InstallClipRegion(l, clipregion);
-
+    _InternalInstallClipRegion(l, clipregion, dx, LayersBase);
+    
   return TRUE;
 }
 
@@ -1399,10 +1399,109 @@ int _SetRegion(struct Region * src, struct Region * dest)
   
   while (NULL != rrd)
   {
-    struct Region * _rr = rrd->Next;
+    struct RegionRectangle * _rr = rrd->Next;
     DisposeRegionRectangle(rrd);
     rrd = _rr;
   }
   
   return TRUE;
+}
+
+struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region, WORD dx,
+    	    	    	    	    	  struct LayersBase *LayersBase)
+{
+  struct Region * OldRegion;
+  BOOL updating = FALSE;
+  OldRegion = l->ClipRegion;
+
+  if ((OldRegion != NULL) || (region != NULL))
+  {
+    if (l->Flags & LAYERUPDATING)
+    {
+      /* InstallClipRegion does not work if the layer is in update state (BeginUpdate) */
+
+      updating = TRUE;
+      EndUpdate(l, FALSE);
+      
+      OldRegion = l->ClipRegion;
+    }
+
+    /* is there a clipregion currently installed? */
+    if (NULL != OldRegion)
+    { 
+      /*
+       *  Copy the contents of the region cliprects to the regular
+       *  cliprects if layer is a SMARTLAYER. Also free the list of 
+       *  region cliprects.
+       */
+      if (NULL != l->ClipRect)
+      {
+	if (IS_SMARTREFRESH(l))
+	  _CopyClipRectsToClipRects(l,
+	                            l->ClipRect,
+	                            l->_cliprects,
+	                            dx,
+	                            FALSE,
+	                            TRUE,
+				    FALSE);
+	else
+          _FreeClipRectListBM(l, l->ClipRect);
+      }
+
+      /* restore the regular ClipRects */
+      l->ClipRect = l->_cliprects;    
+
+    }
+
+    /* at this point the regular cliprects are in l->ClipRect in any case !*/
+
+    /* if there's no new region to install then there's not much to do */
+    l->ClipRegion = region;
+
+    if (NULL == region)
+      l->_cliprects = NULL;
+    else
+    {
+      struct Region r;
+      r.RegionRectangle = NULL; // min. initialization!
+
+      /* convert the region to a list of ClipRects */
+      /* backup the old cliprects */
+      l->_cliprects = l->ClipRect;
+
+      region->bounds.MinX += l->bounds.MinX;
+      region->bounds.MinY += l->bounds.MinY;
+      region->bounds.MaxX += l->bounds.MinX;
+      region->bounds.MaxY += l->bounds.MinY;
+
+      _SetRegion(region, &r);
+      AndRegionRegion(l->VisibleRegion, &r);
+
+      l->ClipRect = _CreateClipRectsFromRegion(&r,
+                                               l,
+                                               FALSE,
+                                               region);
+                                               
+      _CopyClipRectsToClipRects(l,
+                                l->_cliprects,
+                                l->ClipRect,
+                                dx,
+                                FALSE,
+                                FALSE,
+				TRUE); /* stegerg: should be FALSE. but that does not work??? */
+
+      region->bounds.MinX -= l->bounds.MinX;
+      region->bounds.MinY -= l->bounds.MinY;
+      region->bounds.MaxX -= l->bounds.MinX;
+      region->bounds.MaxY -= l->bounds.MinY;
+
+      /* right now I am assuming that everything went alright */
+    }
+  
+    if (updating)
+      BeginUpdate(l);
+
+  } /* if ((OldRegion != NULL) || (region != NULL)) */
+  
+  return OldRegion;
 }

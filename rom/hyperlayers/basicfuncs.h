@@ -55,6 +55,7 @@ void _CallLayerHook(struct Hook * h,
 
 void SetLayerPriorities(struct Layer_Info * li);
 struct Layer * internal_WhichLayer(struct Layer * l, WORD x, WORD y);
+void _FreeLayer(struct Layer * l);
 
 /***************************************************************************/
 /*                               LAYERINFO                                 */
@@ -120,6 +121,13 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect );
 void CopyAndFreeClipRectsClipRects(struct Layer * L,
                                    struct ClipRect * srcCR,
                                    struct ClipRect * destCR);
+int _CopyClipRectsToClipRects(struct Layer * l,
+                              struct ClipRect * oldcr,
+                              struct ClipRect * newcr,
+                              int dx,
+                              int backupmode,
+                              int freelist,
+                              int addtodamagelist);
 void UninstallClipRegionClipRects(struct Layer_Info * LI);
 void InstallClipRegionClipRects(struct Layer_Info * LI);
 
@@ -168,3 +176,7 @@ struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Region *inverter);
 
 int _SetRegion(struct Region *, struct Region *);
+
+struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region, WORD dx,
+    	    	    	    	    	  struct LayersBase *LayersBase);
+
