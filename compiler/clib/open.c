@@ -5,6 +5,7 @@
     ANSI C function open().
 */
 
+#include <stdarg.h>
 #include "__open.h"
 
 /*****************************************************************************
@@ -16,7 +17,7 @@
 
 /*  SYNOPSIS */
 	const char * pathname,
-	int	     flags,
+	int	         flags,
 	...)
 
 /*  FUNCTION
@@ -79,6 +80,6 @@
 
 ******************************************************************************/
 {
-    return __open(__getfirstfd(0), pathname, flags, 644);
+    return __open(__getfirstfd(0), pathname, flags, 0644);
 } /* open */
 
