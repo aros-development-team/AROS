@@ -53,6 +53,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    BOOL retval = FALSE;
+
+#warning There should be some semaphore to protect this. But not the PubScreen semaphore!
+#warning Because we send a msg to Workbench task and wait for a reply!
+#warning Workbench task might then do something which needs PubScreen semaphore! Deadlock danger!
+
     /* If there is a Workbench process running, tell it to close it's windows. */
     if( GetPrivIBase(IntuitionBase)->WorkBenchMP != NULL ) {
         struct MsgPort      replymp;
@@ -84,14 +90,16 @@
     }
 
     /* Try to close the Workbench screen, if there is any. */
-    if( GetPrivIBase(IntuitionBase)->WorkBench != NULL ) {
-        if( CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench ) == TRUE ) {
+    if( GetPrivIBase(IntuitionBase)->WorkBench != NULL )
+    {
+        if( CloseScreen( GetPrivIBase(IntuitionBase)->WorkBench ) == TRUE )
+	{
             GetPrivIBase(IntuitionBase)->WorkBench = NULL;
-            return TRUE;
+            retval = TRUE;
         }
     }
-
-    return FALSE;
+    
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* CloseWorkBench */
