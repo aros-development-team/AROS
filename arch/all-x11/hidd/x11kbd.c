@@ -668,11 +668,46 @@ static void LoadKeyCode2RawKeyTable(struct x11_staticdata *xsd)
 	    bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
 	    havetable = TRUE;
 	} else {
-	    bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
+            bug("LoadKeyCode2RawKeyTable: Reading from \"%s\" failed!\n", filename);
 	}
         Close(fh);
     } else {
-        bug("LoadKeyCode2RawKeyTable: Could not open \"%s\"\n", filename);
+	bug("\nLoadKeyCode2RawKeyTable: Loading \"%s\" failed!\n"
+	    "\n"
+	    "This means that many/most/all keys on your keyboard won't work as you\n"
+	    "would expect in AROS. Therefore you should create this table by either\n"
+	    "using the default table:\n"
+	    "\n"
+	    "    mmake .default-x11keymaptable\n"
+	    "\n"
+	    "or generating your own one:\n"
+	    "\n"
+	    "    mmake .change-x11keymaptable\n"
+	    "\n"
+	    "The default keymaptable probably works with most PCs having a 105 key\n"
+	    "keyboard if you are using XFree86 as X Server (might also work with\n"
+	    "others). So try that one first!\n"
+	    "\n"
+	    "Since the keymap table will be deleted when you do a \"make clean\" you\n"
+	    "might want to make a backup of it. Then you will be able to restor it later:\n"
+	    "\n"
+	    "    mmake .backup-x11keymaptable\n"
+	    "    mmake .restore-x11keymaptable\n"
+	    "\n"
+	    "The keymap table will be backuped in your HOME directory.\n"
+	    "\n"
+	    "Note that the keymaptable only makes sure that your keyboard looks as\n"
+	    "much as possible like an Amiga keyboard to AROS. So with the keymaptable\n"
+	    "alone the keyboard will behave like an Amiga keyboard with American layout\n."
+	    "For other layouts you must activate the correct keymap file (which are in\n"
+	    "\"DEVS:Keymaps\") just like in AmigaOS. Actually AROS has only German,\n"
+	    "Italian and Swedish keymap files. You can activate them inside AROS by typing\n"
+	    "this in a AROS Shell or adding it to the AROS Startup-Sequence:\n"
+	    "\n"
+	    "    Setmap pc105_d\n"
+	    "    Setmap pc105_i\n"
+	    "    Setmap pc105_s\n"
+	    "\n", filename);
     }
 }
 
