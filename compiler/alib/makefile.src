@@ -17,11 +17,11 @@ STARTUP = $(LIBDIR)/startup.o
 FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
 	creategadget createmenus createport createstdio createtask	    \
 	deleteextio deleteport deletestdio deletetask dogadgetmethod	    \
-	domethod dosupermethod drawbevelbox easyrequest	fastrand	    \
-	fprintf getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry \
+	domethod dosupermethod drawbevelbox easyrequest fastrand	    \
+	getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry	    \
 	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
 	libdeletepool libfreepooled newlist newobject openscreentags	    \
-	openwindowtags printf rangerand setattrs setgadgetattrs		    \
+	openwindowtags rangerand setattrs setgadgetattrs		    \
 	setsuperattrs arosinquire
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
