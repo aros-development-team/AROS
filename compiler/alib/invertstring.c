@@ -99,7 +99,7 @@ extern struct Library *CxBase;
 		break;
 	    }
 
-	    if(InvertKeyMap(ansiCode, ie, km) == FALSE);
+	    if(InvertKeyMap(ansiCode, ie, km) == FALSE)
 	    {
 		FreeIEvents(first);
 		return NULL;
@@ -133,7 +133,7 @@ extern struct Library *CxBase;
 	    break;
 	    
 	default :
-	    if(InvertKeyMap(*str, ie, km) == FALSE);
+	    if(InvertKeyMap(*str, ie, km) == FALSE)
 	    {
 		FreeIEvents(first);
 		return NULL;
