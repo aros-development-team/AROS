@@ -17,7 +17,7 @@ static const char DefPal[];
 
 extern void SetVGAMode(char * Parameters);
 extern void SetVGAPal(char * Pal, char first, int count);
-extern unsigned char AROS_logo[];
+extern unsigned char AROS_planes[];
 extern void xputc(char chr,int num);
 
 static const char version[] = VERSION;
@@ -136,7 +136,7 @@ vgaHWPtr	pmode=&mode;
 		temp = inb(vgaIOBase + 0x0A); \
 	}
 
-int vgaBlankScreen(int on)
+int _vgaBlankScreen(int on)
 {
   unsigned char scrn;
 
@@ -157,9 +157,9 @@ int vgaBlankScreen(int on)
  * vgaSaveScreen -- blank the screen.
  */
 
-int vgaSaveScreen(int on)
+int _vgaSaveScreen(int on)
 {
-    vgaBlankScreen(on);
+    _vgaBlankScreen(on);
     return 1;
 }
 
@@ -294,11 +294,11 @@ void SetMode()
 	tmp = inb(vgaIOBase + 0x0A);		/* Reset flip-flop */
 	outb(0x3C0, 0x00);			/* Enables pallete access */
 
-	vgaSaveScreen(0);
+	_vgaSaveScreen(0);
 	outw(0x3CE,0x0003); /* GJA - don't rotate, write unmodified */
 	outw(0x3CE,0xFF08); /* GJA - write all bits in a byte */
 	outw(0x3CE,0x0001); /* GJA - all planes come from CPU */
-	vgaSaveScreen(1);
+	_vgaSaveScreen(1);
 	tmp = inb(vgaIOBase + 0x0A);			/* Reset flip-flop */
 	outb(0x3C0, 0x00);				/* Enables pallete access */
 	if (vgaIOBase == 0x3B0)

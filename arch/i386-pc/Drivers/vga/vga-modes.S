@@ -162,7 +162,8 @@ __svp_l:		movb	(%esi),%al
 			.globl	InitGfxAROS
 			.type	InitGfxAROS,@function
 			
-InitGfxAROS:		pushl	%ebp
+InitGfxAROS:
+		pushl	%ebp
 			movl	%esp,%ebp
 			pushl	%ebx
 			pushl	%ecx
@@ -199,7 +200,7 @@ InitGfxAROS:		pushl	%ebp
 			movl	$0x0001,%eax
 			outw	%ax,%dx
 
-			movl	$AROS_logo,%esi
+			movl	$AROS_planes,%esi
 			
 			movl	$0x3c4,%edx
 			movl	$0x0102,%eax
@@ -348,6 +349,11 @@ __pc_2:			movl	$0,c_x
 			outw	%ax,%dx
 			movl	$0x0001,%eax
 			outw	%ax,%dx
+			movl	$0x0005,%eax
+			outw	%ax,%dx
+			movl	$0x3c4,%edx
+			movl	$0x0f02,%eax
+			outw	%ax,%dx
 
 __pc_1:			popl	%ebx
 			popl	%edx
@@ -362,7 +368,8 @@ __pc_1:			popl	%ebx
 
 xc_x:	.long	0
 
-xputc:			pushl	%ebp
+xputc:
+		pushl	%ebp
 			movl	%esp,%ebp
 			pushl	%esi
 			pushl	%edi
@@ -371,6 +378,7 @@ xputc:			pushl	%ebp
 			pushl	%ebx
 
 			movl	12(%ebp),%edi
+
 			movl	8(%ebp),%eax
 			
 			cmpb	$10,%al
@@ -409,6 +417,17 @@ x__pc_lop:		movb	(%esi),%al
 			jne	x__pc_lop
 
 			incl	xc_x
+
+			movl	$0x3ce,%edx
+			movl	$0x0000,%eax
+			outw	%ax,%dx
+			movl	$0x0001,%eax
+			outw	%ax,%dx
+			movl	$0x0005,%eax
+			outw	%ax,%dx
+			movl	$0x3c4,%edx
+			movl	$0x0f02,%eax
+			outw	%ax,%dx
 
 xpc_ex:			popl	%ebx
 			popl	%edx
