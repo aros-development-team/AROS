@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2000/12/10 20:57:24  stegerg
+    strcmp returns 0 if the strings are identical
+
     Revision 1.11  2000/12/07 16:15:01  chodorowski
     Now automatically opens the Workbench screen if there is no default
     public screen or Workbench screen and the function was called with
@@ -150,7 +153,7 @@
 
     /* If no screen was found and the requested one was the Workbench screen or
      * the default public screen, open the Workbench screen and lock it. */
-    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ))) ) {
+    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ) == 0)) ) {
         OpenWorkBench();
 
         LockPubScreenList();
