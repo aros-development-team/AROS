@@ -14,7 +14,7 @@
 #include <proto/dos.h>
 #undef DEBUG
 #define DEBUG 1
-#include <aros/debug.h>
+#	include <aros/debug.h>
 #include "dos_intern.h"
 
 extern LONG Dos_Read();

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1998/01/05 21:06:43  hkiel
+    Added masquerade to #include <aros/debug.h> for cpak.
+
     Revision 1.9  1997/01/27 00:36:36  ldp
     Polish
 
@@ -51,7 +54,7 @@
 #   undef DEBUG
 #   define DEBUG 1
 #endif
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 /*****************************************************************************
 
