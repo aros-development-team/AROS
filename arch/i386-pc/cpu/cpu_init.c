@@ -107,7 +107,7 @@ AROS_UFH3(struct CPUBase *, AROS_SLIB_ENTRY(init,BASENAME),
             NEWLIST((struct List *)&(AvailCPUs->CPU_CPUList));
             AvailCPUs->CPU_Physical = 1;
 
-            InitSemaphore( &CPUBase->CPU_ListLock);
+            InitSemaphore( &CPUBase->CPUB_ListLock);
             kprintf(DEBUG_NAME_STR ": Initialised CPU List Semaphore\n");
         }
         else
