@@ -1,4 +1,4 @@
-GENOMDULE_SRCS := \
+GENMODULE_SRCS := \
     genmodule.c \
     fileread.c \
     readconfig.c \
