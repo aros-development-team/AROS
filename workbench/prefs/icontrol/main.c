@@ -54,7 +54,6 @@ libtable[] =
 
 /*********************************************************************************************/
 
-static struct Hook  	    	restorehook;
 static struct RDArgs        	*myargs;
 static IPTR                 	args[NUM_ARGS];
 
@@ -167,13 +166,6 @@ static void GetVisual(void)
 
 static void FreeVisual(void)
 {
-}
-
-/*********************************************************************************************/
-
-static void RestoreFunc(struct Hook *hook, Object *obj, APTR msg)
-{
-    RestorePrefs();   
 }
 
 /*********************************************************************************************/
