@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 REP_FILES   := cause disable enable preparecontext stackswap switch \
 		rawioinit rawputchar rawmaygetchar
 FILES	    := kernel $(REP_FILES)
-OBDIR	    := $(OSGENDIR)/exec
+OBJDIR	    := $(OSGENDIR)/exec
 ADD_OBJS    := $(foreach f,$(FILES),rom/exec/$(f))
 OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 
@@ -27,7 +27,6 @@ print-flags :
 #MM setup-exec-unix : setup-exec-unix-$(CPU)
 setup-exec-unix :
 	%mkdirs_q $(OBJDIR)
-	mkdir -p $(OBJDIR)
 	%add_objects $(ADD_OBJS)
 	%exclude_files	$(foreach f,$(REP_FILES),rom/exec/$(f))
 
