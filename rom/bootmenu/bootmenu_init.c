@@ -15,7 +15,7 @@
 #include <exec/resident.h>
 
 #include "bootmenu_intern.h"
-#include "driver.h"
+#include "menu.h"
 #include "libdefs.h"
 #include <libraries/bootmenu.h>
 
