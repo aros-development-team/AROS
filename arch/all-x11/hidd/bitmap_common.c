@@ -469,9 +469,31 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 	    );
 	} else {
 	    /* Do transparent blit */
-	    
-//	    kprintf(" XSCM\n");
 
+#define USE_STIPPLE
+
+#ifdef USE_STIPPLE	    
+//	    kprintf(" XSS\n");
+
+	    XSetStipple(data->display, data->gc, d);
+	    XSetTSOrigin(data->display
+	    	, data->gc
+		, msg->destX - msg->srcX
+		, msg->destY - msg->srcY
+	    );
+	    XSetFillStyle(data->display, data->gc, FillStippled);
+
+	    XFillRectangle(data->display
+	    	, DRAWABLE(data)
+		, data->gc
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+	    );
+	    
+	    XSetFillStyle(data->display, data->gc, FillSolid);
+
+#else
+//	    kprintf(" XSCM\n");
 	    XSetClipOrigin(data->display
 	    	, data->gc
 		, msg->destX - msg->srcX
@@ -489,6 +511,8 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 	    /* Reset clipmask and clip origin */
 	    XSetClipMask(data->display, data->gc, None);
 	    XSetClipOrigin(data->display, data->gc, 0, 0);
+
+#endif
 	}
     }
     else
