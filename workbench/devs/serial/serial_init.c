@@ -385,11 +385,11 @@ AROS_LH1(void, beginio,
       /* check the buffer for correct init size */
       if (MINBUFSIZE != SU->su_InBufLength)
       {
-        BYTE * oldBuffer = su_InputBuffer;
+        BYTE * oldBuffer = SU->su_InputBuffer;
         BYTE * newBuffer = (BYTE *)AllocMem(MINBUFSIZE ,MEMF_PUBLIC);
-        if (NULL != newbuffer)
+        if (NULL != newBuffer)
 	{
-          SU->SU_InputBuffer = newBuffer;
+          SU->su_InputBuffer = newBuffer;
           FreeMem(oldBuffer, SU->su_InBufLength);
           /* write new buffersize */
           SU->su_InBufLength = MINBUFSIZE;
@@ -444,16 +444,16 @@ AROS_LH1(void, beginio,
       if (0 != (SU->su_Status & STATUS_BUFFEROVERFLOW))
       {
         ioreq->io_Status |= IO_STATF_OVERRUN;
-        ioreq->io_Actual = 0;
+        ioreq->IOSer.io_Actual = 0;
       }
       else
       {
         /* pass back the number of unread input characters */
         int unread = SU->su_InputNextPos - SU->su_InputFirst;
         if (unread < 0)
-          ioreq->io_Actual = -unread;
+          ioreq->IOSer.io_Actual = -unread;
         else
-          ioreq->io_Actual = SU->su_InBufLength - unread;
+          ioreq->IOSer.io_Actual = SU->su_InBufLength - unread;
       }
 
     break;
