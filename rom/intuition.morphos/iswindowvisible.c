@@ -10,6 +10,7 @@
  
     NAME */
 #include <proto/intuition.h>
+#include <proto/layers.h>
 
 AROS_LH1(LONG, IsWindowVisible,
 
