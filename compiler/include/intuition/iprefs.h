@@ -13,7 +13,8 @@
 #   include <exec/types.h>
 #endif
 
-#define IPREFS_TYPE_ICONTROL 0
+#define IPREFS_TYPE_ICONTROL   0
+#define IPREFS_TYPE_SCREENMODE 1
 
 struct IScreenModePrefs
 {
