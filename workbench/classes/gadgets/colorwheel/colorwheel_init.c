@@ -48,9 +48,6 @@ struct IntuitionBase *IntuitionBase;
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
 
-struct ColorWheelBase *ColorWheelBase;
-struct ColorWheelBase **cwbptr = &ColorWheelBase;
-
 #define ColorWheelBase ((LIBBASETYPEPTR) lh)
 
 /***************************************************************************************************/
@@ -59,8 +56,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     D(bug("Inside initfunc of colorwheel.gadget\n"));
 
-    *cwbptr = lh;
-    
     if (!GfxBase)
     	GfxBase = (GraphicsBase *) OpenLibrary ("graphics.library", 37);
     if (!GfxBase)
