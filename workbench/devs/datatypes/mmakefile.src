@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(DEVSDIR)/DataTypes
-FILES 		:= FTXT PPM
+FILES 		:= FTXT PPM ILBM
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM- workbench-devs-complete : workbench-devs-datatypes
@@ -19,6 +19,6 @@ setup :
 	%mkdirs_q $(DTDIR)
 
 $(DTDIR)/% : %.dtd
-	@cd $(DTDIR) && $(CREATEDTDESC) $(TOP)/$(CURDIR)/$<
+	cd $(DTDIR) && $(CREATEDTDESC) $(TOP)/$(CURDIR)/$<
 	
 %common
