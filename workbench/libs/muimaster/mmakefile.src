@@ -19,6 +19,7 @@ CLASSES := \
     family \
     gauge \
     group \
+    iconlist \
     image \
     imageadjust \
     list \
@@ -45,9 +46,9 @@ CLASSES := \
     text \
     virtgroup \
     window
-	     
+
 CLASSFILES := $(foreach f, $(CLASSES), classes/$(f))
-     
+
 FILES := \
     support \
     textengine \

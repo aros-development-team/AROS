@@ -1,7 +1,7 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
+    Copyright © 2002, The AROS Development Team.
     All rights reserved.
-    
+
     $Id$
 */
 
@@ -13,6 +13,10 @@
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <workbench/icon.h>
+#ifdef _AROS
+#include <workbench/workbench.h>
+#warning workbench/workbench.h should be included also in workbench/icon.h
+#endif
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -25,6 +29,7 @@
 #include <proto/muimaster.h>
 #endif
 
+#define MYDEBUG
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -35,6 +40,15 @@ extern struct Library *MUIMasterBase;
 
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define MIN(a,b) (((a)<(b))?(a):(b))
+
+#ifndef NO_ICON_POSITION
+#define NO_ICON_POSITION (0x8000000) /* belongs to workbench/workbench.h */
+#endif
+
+#ifdef _AROS
+#define dol_Name dol_OldName /* This doesn't work really */
+#endif
+
 
 struct IconEntry
 {
@@ -350,7 +364,13 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	if (icon->dob && icon->x != NO_ICON_POSITION && icon->y != NO_ICON_POSITION)
 	{
 	    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
+
+#ifndef _AROS
 	    DrawIconState(_rp(obj),icon->dob,icon->label,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+#else
+	    DrawIconStateA(_rp(obj),icon->dob,icon->label,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+#endif
+
 	}
 	icon = Node_Next(icon);
     }
@@ -402,9 +422,17 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
-
+    
+#ifndef _AROS
     if (!(dob = GetIconTagList(msg->filename,TAG_DONE)))
 	return 0;
+#else
+    if (!(dob = GetDiskObjectNew(msg->filename)))
+    {
+	D(bug("Couldn't get the icon for %s\n",msg->filename));
+	return 0;
+    }
+#endif
 
     if (!(entry = AllocPooled(data->pool,sizeof(struct IconEntry))))
     {
@@ -576,7 +604,7 @@ static ULONG IconList_NextSelected(struct IClass *cl, Object *obj, struct MUIP_I
 	}
 	return 0;
     }
-    
+
 
     node = List_First(&data->icon_list); /* not really necessary but it avoids compiler warnings */
 
@@ -627,7 +655,12 @@ static ULONG IconList_CreateDragImage(struct IClass *cl, Object *obj, struct MUI
     	    InitRastPort(&temprp);
     	    temprp.BitMap = img->bm;
 
+#ifndef _AROS
 	    DrawIconState(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, TRUE, TAG_DONE);
+#else
+	    DrawIconStateA(&temprp,node->dob,NULL,0,0, node->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+#endif
+
     	}
 
     	img->touchx = msg->touchx;
@@ -783,18 +816,6 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 		if (!(DoMethod(obj,MUIM_IconList_Add,buf,filename,NULL /* udata */)))
 		{
 		}
-
-#if 0
-		dob = GetIconTagList(filename,TAG_DONE);
-		if (dob)
-		{
-	    	    if (!(DoMethod(obj,MUIM_IconList_Add,dob,filename,NULL/* udata */))) /* control of dob is given to super class */
-	    	    {
-	    	        /* The DiskObject couldn't be added so super class also has no control over it */
-	    	        FreeDiskObject(dob);
-	    	    }
-	    	}
-#endif
 	    }
 
 	    ead = ead->ed_Next;
@@ -816,7 +837,7 @@ static IPTR IconDrawerList_New(struct IClass *cl, Object *obj, struct opSet *msg
 {
     struct MUI_IconDrawerData   *data;
     struct TagItem  	    *tag, *tags;
-    
+
     obj = (Object *)DoSuperNew(cl, obj,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
@@ -894,7 +915,7 @@ static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *ms
 /**************************************************************************
  MUIM_IconList_Update
 **************************************************************************/
-ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDrawerList *msg)
+ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -905,6 +926,7 @@ ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDraw
     ReadIcons(cl,obj);
 
     MUI_Redraw(obj,MADF_DRAWOBJECT);
+    return 1;
 }
 
 #ifndef _AROS
@@ -924,7 +946,7 @@ AROS_UFH3S(IPTR,IconDrawerList_Dispatcher,
 	case OM_GET: return IconDrawerList_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_IconList_Update: return IconDrawerList_Update(cl,obj,(APTR)msg);
     }
-    
+
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -961,27 +983,38 @@ static struct NewDosList *DosList_Create(void)
 			while(( dl = NextDosEntry(dl, LDF_VOLUMES)))
 			{
 				STRPTR name;
+#ifndef _AROS
 				UBYTE *dosname = (UBYTE*)BADDR(dl->dol_Name);
 				LONG len = dosname[0];
+				dosname++;
+#else
+				UBYTE *dosname = dl->dol_DevName;
+				LONG len = strlen(dosname);
+#endif
 
 				if ((name = (STRPTR)AllocPooled(pool, len+1)))
 				{
 					struct NewDosNode *ndn;
 
 					name[len] = 0;
-					strncpy(name,&dosname[1],len);
+					strncpy(name,dosname,len);
 
 					if ((ndn = (struct NewDosNode*)AllocPooled(pool, sizeof(*ndn))))
 					{
 						ndn->name = name;
 						ndn->device = NULL;
+#ifndef _AROS
 						ndn->port = dl->dol_Task;
+#else
+						ndn->port = NULL;
+#endif
 						AddTail((struct List*)ndl,(struct Node*)ndn);
 					}
 				}
 			}
 			UnLockDosList(LDF_VOLUMES|LDF_READ);
 
+#ifndef _AROS
 			dl = LockDosList(LDF_DEVICES|LDF_READ);
 			while(( dl = NextDosEntry(dl, LDF_DEVICES)))
 			{
@@ -1012,6 +1045,7 @@ static struct NewDosList *DosList_Create(void)
 				}
 			}
 			UnLockDosList(LDF_DEVICES|LDF_READ);
+#endif
 
 			return ndl;
 		}
@@ -1060,7 +1094,7 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
 /**************************************************************************
  MUIM_IconList_Update
 **************************************************************************/
-ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDrawerList *msg)
+ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
     struct MUI_IconVolumeData *data = INST_DATA(cl, obj);
     struct IconEntry *node;
@@ -1084,6 +1118,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDraw
 		if (!(DoMethod(obj,MUIM_IconList_Add,buf,nd->name,NULL/* udata */)))
 		{
 		}
+
 	    }
 	    nd = Node_Next(nd);
 	}
@@ -1091,6 +1126,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconDraw
     }
 
     MUI_Redraw(obj,MADF_DRAWOBJECT);
+    return 1;
 }
 
 
@@ -1119,7 +1155,7 @@ const struct __MUIBuiltinClass _MUI_IconList_desc = {
     MUIC_IconList, 
     MUIC_Area, 
     sizeof(struct MUI_IconData), 
-    (void*)IconList_Dispatcher 
+    (void*)IconList_Dispatcher
 };
 
 const struct __MUIBuiltinClass _MUI_IconDrawerList_desc = { 
