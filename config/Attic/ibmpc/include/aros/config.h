@@ -1,9 +1,17 @@
-#ifndef _AROS_CONFIG_H
-#define _AROS_CONFIG_H
+#ifndef AROS_CONFIG_H
+#define AROS_CONFIG_H
 
 #define DEF_INITSEG	0x9800
 #define DEF_SYSSEG	0x0100
 #define DEF_SETUPSEG	0x9820
-#define DEF_SYSSIZE	0x0030 /* Size in sectors */
+#define DEF_SYSSIZE	200 /* kernel size in sectors */
 
-#endif
+#define AROS_FLAVOUR_NATIVE		1
+#define AROS_FLAVOUR_STANDALONE		2
+#define AROS_FLAVOUR_EMULATION		4
+#define AROS_FLAVOUR_LINKLIB		8
+#define AROS_FLAVOUR_BINCOMPAT		16
+
+#define AROS_FLAVOUR	AROS_FLAVOUR_STANDALONE
+
+#endif /* AROS_CONFIG_H */
