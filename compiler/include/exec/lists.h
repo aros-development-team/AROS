@@ -75,6 +75,10 @@ struct MinList
 #   define GetPred(n)       (void *)(((struct Node *)n)->ln_Pred->ln_Pred \
 				? ((struct Node *)n)->ln_Pred \
 				: (struct Node *)0)
+#   define ForeachNode(l,n) \
+	for (n=(void *)(((struct List *)(l))->lh_Head); \
+	    ((struct Node *)(n))->ln_Succ; \
+	    n=(void *)(((struct Node *)(n))->ln_Succ))
 #endif
 
 
