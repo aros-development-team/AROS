@@ -916,7 +916,6 @@ struct BlockCache *blockbuffer;
 		    error = 0;
 		    return ah->current.offset;
 		}
-
 		newoffset=ah->current.offset+offset;
 		block=ah->header_block;
 	}
@@ -925,6 +924,8 @@ struct BlockCache *blockbuffer;
 		newoffset=ah->filesize+offset;
 		block=ah->header_block;
 	}
+	else
+		return -1;
 	if (newoffset>=0)
 	{
 		size=BLOCK_SIZE(ah->volume);
