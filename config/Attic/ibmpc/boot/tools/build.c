@@ -37,7 +37,7 @@
 #include <linux/a.out.h>
 #include <linux/config.h>
 #include <errno.h>
-/* #include <asm/boot.h> */
+#include <asm/boot.h>
 
 #define MINIX_HEADER 32
 
