@@ -123,14 +123,11 @@
 	call the RTG driver.
     */
     
-    if (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
-	kprintf("FRIEND HIDD BITMAP\n");
-    
     if (
 	depth > 8
 	|| (flags & BMF_DISPLAYABLE)
 	|| (friend_bitmap && friend_bitmap->Pad != 0)
-//	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
+	|| (friend_bitmap && friend_bitmap->Flags & BMF_AROS_HIDD)
     )
     {
 	nbm = driver_AllocBitMap (sizex
