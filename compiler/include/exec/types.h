@@ -154,6 +154,11 @@
     typedef UBYTE * STRPTR;	/* Pointer to string (NULL terminated) */
 #endif
 
+#ifndef __typedef_CONST_STRPTR
+#   define __typedef_CONST_STRPTR
+    typedef const UBYTE * CONST_STRPTR;
+#endif
+
 #ifndef __typedef_TEXT
 #   define __typedef_TEXT
     typedef unsigned char TEXT;
