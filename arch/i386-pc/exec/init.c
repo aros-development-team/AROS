@@ -24,6 +24,7 @@
 #define AROS_USE_OOP
 #define AROS_ALMOST_COMPATIBLE 1
 
+#include <aros/config.h>
 #include <exec/io.h>
 #include <exec/types.h>
 #include <exec/nodes.h>
@@ -130,7 +131,10 @@ static const struct Resident *romtagList[] =
     &hiddserial_resident,	    /* ColdStart,   9    */
     &pciHidd_resident,              /* ColdStart,   9    */
     &Console_resident,              /* ColdStart,   5	 */
+#if !AROS_BOCHS_HACK
+    /* BOCHS doesn't like something in there: error "unsupported CMOS read, address = 0x701" */
     &TrackDisk_resident,	    /* ColdStart,   4    */	//Trackdisk		
+#endif
     &ide_resident,                  /* ColdStart,   4    */	//IDE device
 
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
@@ -265,6 +269,7 @@ int main()
 	Debug(0);
 
     #define ioStd(x) ((struct IOStdReq *)x)
+
     /* Small kbdhidd test */
     {
 	struct IORequest *io;
