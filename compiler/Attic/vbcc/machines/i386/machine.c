@@ -9,10 +9,22 @@ static char FILE_[]=__FILE__;
 
 /*  Commandline-flags the code-generator accepts		*/
 int g_flags[MAXGF]={VALFLAG,VALFLAG,0,0,
-		    0,0,0};
+		    0,0,0,0,
+		    0};
 char *g_flags_name[MAXGF]={"cpu","fpu","no-delayed-popping","const-in-data",
-			   "merge-constants","elf","longalign"};
+			   "merge-constants","elf","longalign","use-framepointer",
+			   "g"};
 union ppi g_flags_val[MAXGF];
+
+#define G_FLAG_CPU		(g_flags[0] & USEDFLAG)
+#define G_FLAG_FPU		(g_flags[1] & USEDFLAG)
+#define G_FLAG_NO_DELAY_POP	(g_flags[2] & USEDFLAG)
+#define G_FLAG_CONST_IN_DATA	(g_flags[3] & USEDFLAG)
+#define G_FLAG_MERGE_CONST	(g_flags[4] & USEDFLAG)
+#define G_FLAG_ELF		(g_flags[5] & USEDFLAG)
+#define G_FLAG_LONGALIGN	(g_flags[6] & USEDFLAG)
+#define G_FLAG_USE_FP		(g_flags[7] & USEDFLAG)
+#define G_FLAG_DEBUG		(g_flags[8] & USEDFLAG)
 
 /*  Alignment-requirements for all types in bytes.		*/
 zlong align[16];
@@ -83,7 +95,7 @@ static char *dct[]={"","byte","short","long","long","long","long","long","long"}
 static pushedsize,pushorder=2;
 static int fst[8];
 static int cxl,dil,sil;
-static char *idprefix="",*labprefix="l";
+static char *idprefix="_",*labprefix="l";
 
 static struct fpconstlist {
     struct fpconstlist *next;
@@ -95,7 +107,7 @@ static int addfpconst(struct obj *o,int t)
 {
     struct fpconstlist *p=firstfpc;
     t&=NQ;
-    if(g_flags[4]&USEDFLAG){
+    if(G_FLAG_MERGE_CONST){
 	for(p=firstfpc;p;p=p->next){
 	    if(t==p->typ){
 		eval_const(&p->val,t);
@@ -285,22 +297,24 @@ static int local_debug_line_count;
 static int local_debug_func_count;
 static char * debug_offset_func = NULL;
 
-void emitdebugline (FILE *f, int line)
+static void emitdebugline (FILE *f, int line)
 {
+  if(G_FLAG_DEBUG){
     if (debug_offset_func && line)
-    {
+      {
 	/*
-	    Tell GDB that a new line starts here.
+	  Tell GDB that a new line starts here.
 
-	    Format: 68,0,<line>,<offset>
+	  Format: 68,0,<line>,<offset>
 
-	    <line> is the current line number
-	    <offset> is the offset to the current function.
-	*/
-	fprintf (f, ".stabn 68,0,%d,.LM%d-%s\n", line, local_debug_line_count, debug_offset_func);
-	fprintf (f, ".LM%d:\n", local_debug_line_count);
+	  <line> is the current line number
+	  <offset> is the offset to the current function.
+	  */
+	fprintf (f, ".stabn 68,0,%d,%sM%d-%s\n", line, labprefix, local_debug_line_count, debug_offset_func);
+	fprintf (f, "%sM%d:\n", labprefix, local_debug_line_count);
 	local_debug_line_count ++;
     }
+  }
 }
 
 #ifndef PATH_MAX
@@ -336,9 +350,9 @@ void begin_file (FILE *f, char *name)
 
     /* Emit absolute path to source file and the filename with any
 	path the user gave to the frontend */
-    fprintf (f, "\t.stabs \"%s\",%d,0,0,.Ltext0\n", path, N_SO);
-    fprintf (f, "\t.stabs \"%s\",%d,0,0,.Ltext0\n", name, N_SO);
-    fprintf (f, ".text\n.Ltext0:\n");
+    fprintf (f, "\t.stabs \"%s\",%d,0,0,%stext0\n", path, N_SO, labprefix);
+    fprintf (f, "\t.stabs \"%s\",%d,0,0,%stext0\n", name, N_SO, labprefix);
+    fprintf (f, ".text\n%stext0:\n",labprefix);
     fprintf (f, "\t.stabs  \"vbcc_compiled.\", 0x3c, 0, 0, 0\n");
 
     /* Emit types. Format is:
@@ -347,56 +361,62 @@ void begin_file (FILE *f, char *name)
 
 	128,0,0,0 tells GDB this is a type definition
 	<name> is the name of the symbol.
-	<t#1> is the name of the type and it's number
+	<t#1> is the name of the type and its number
 	<r#2;min;max;> is a range. The min and max values are in the format
-		of the type #2. min and max values for this type can be
-		omitted.
+	       of the type #2. min and max values for this type can be
+	       omitted.
 	void is defined by <t#1=#1>.
-    */
+      */
     for (t=CHAR; t<=LONG; t++)
-    {
-	fprintf (f, ".stabs \"%s:t%d=r%d;%d;%d;\",%d,0,0,0\n", typname[t],t,t==CHAR ? CHAR:INT,
-	    t_min[t],t_max[t],N_LSYM);
-	fprintf (f, ".stabs \"unsigned %s:t%d=r%d;%d;%d;\",%d,0,0,0\n", typname[t],
-	    t|UNSIGNED, INT,
-	    t_min[t|UNSIGNED],t_max[t|UNSIGNED], N_LSYM);
-    }
+      {
+	fprintf (f, ".stabs \"%s:t%d=r%d;%ld;%ld;\",%d,0,0,0\n", typname[t],t,t==CHAR ? CHAR:INT,
+		 zl2l(t_min[t]),zl2l(t_max[t]),N_LSYM);
+	fprintf (f, ".stabs \"unsigned %s:t%d=r%d;%lu;%lu;\",%d,0,0,0\n", typname[t],
+		 t|UNSIGNED, INT,
+		 zul2ul(t_min[t|UNSIGNED]),zul2ul(t_max[t|UNSIGNED]), N_LSYM);
+      }
 
-    fprintf (f, ".stabs \"float:t%d=r%d;%d;0;\",%d,0,0,0\n",
-	FLOAT,INT,sizeof(float),N_LSYM);
-    fprintf (f, ".stabs \"double:t%d=r%d;%d;0;\",%d,0,0,0\n",
-	DOUBLE,INT,sizeof(double),N_LSYM);
+    fprintf (f, ".stabs \"float:t%d=r%d;%ld;0;\",%d,0,0,0\n",
+	     FLOAT,INT,zl2l(sizetab[FLOAT]),N_LSYM);
+    fprintf (f, ".stabs \"double:t%d=r%d;%ld;0;\",%d,0,0,0\n",
+	     DOUBLE,INT,zl2l(sizetab[DOUBLE]),N_LSYM);
     fprintf (f, ".stabs \"void:t%d=r%d\",%d,0,0,0\n",
-	VOID,VOID,N_LSYM);
+	     VOID,VOID,N_LSYM);
 
-/*
-    fprintf (f, ".stabs \"char:t2=r2;0;127;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"int:t1=r1;-2147483648;2147483647;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"long int:t3=r1;-2147483648;2147483647;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"unsigned int:t4=r1;0;-1;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"long unsigned int:t5=r1;0;-1;\",128,0,0,0\n");
-    fprintf (f, ".stabs \"void:t19=19\",128,0,0,0\n");
-*/
+
+    /*
+      fprintf (f, ".stabs \"char:t2=r2;0;127;\",128,0,0,0\n");
+      fprintf (f, ".stabs \"int:t1=r1;-2147483648;2147483647;\",128,0,0,0\n");
+      fprintf (f, ".stabs \"long int:t3=r1;-2147483648;2147483647;\",128,0,0,0\n");
+      fprintf (f, ".stabs \"unsigned int:t4=r1;0;-1;\",128,0,0,0\n");
+      fprintf (f, ".stabs \"long unsigned int:t5=r1;0;-1;\",128,0,0,0\n");
+      fprintf (f, ".stabs \"void:t19=19\",128,0,0,0\n");
+      */
 }
 
 static void debug_print_stab_type (FILE *f, struct Typ *typ)
 {
-    int t = typ->flags & NU;
+  int t = typ->flags & NU;
 
-    if (t <= VOID)
-	fprintf (f, "%d", t);
-    else if (t == ARRAY || t == POINTER)
+  if (t <= VOID)
+    fprintf (f, "%d", t);
+  else if (t == ARRAY || t == POINTER)
     {
-	fprintf (f, "%d=*", next_free_typeid++);
-	debug_print_stab_type (f, typ->next);
+      fprintf (f, "%d=*", next_free_typeid++);
+      debug_print_stab_type (f, typ->next);
     }
-    else
+  else if (t == ENUM)
     {
-	fprintf (stderr, "debug_print_stab_type() doesn't support type %s, yet\n",
-	    typname[t]);
-	raus();
+      /* TODO Emit type and possible values at startup */
+      fprintf (f, "%d", INT);
+    }
+  else
+    {
+      /* TODO Emit type and structure at startup. */
+      fprintf (f, "%d", VOID);
     }
 }
+
 
 static void function_top(FILE *f,struct Var *v,long offset)
 /*  erzeugt Funktionskopf			*/
@@ -407,31 +427,35 @@ static void function_top(FILE *f,struct Var *v,long offset)
     if(section!=CODE){fprintf(f,codename);section=CODE;}
 
     /*ADA*/
-    fprintf (f, "\t.align 16\n");
-    /* Tell GDB that a new function starts here.
+    if(G_FLAG_DEBUG){ /*vb*/
+      fprintf (f, "\t.align\t16\n");
+      /* Tell GDB that a new function starts here.
 
-	Format: "<name>:F<type>",36,0,<line>,<symname>
+	 Format: "<name>:F<type>",36,0,<line>,<symname>
 
-	<name> Is the name of the function
-	<type> is the return type (only the number as defined above, ie.
+	 <name> Is the name of the function
+	 <type> is the return type (only the number as defined above, ie.
 		if int is t1, then this is 1).
-	<line> The line in the source
-	<symname> The name of the symbol as it appears in the object file.
+	 <line> The line in the source
+	 <symname> The name of the symbol as it appears in the object file.
 
-	Right now, all functions return void.
-    */
-    fprintf (f, ".stabs \"%s:F", v->identifier);
-    debug_print_stab_type (f, v->vtyp->next);
-    fprintf (f, "\",%d,0,%d,%s%s\n", N_FUN, fline, idprefix,v->identifier);
+	 Right now, all functions return void.
+	 */
 
-    p=v->vtyp->exact;
-    for (i=0; i<p->count-1; i++)
-    {
-	fprintf (f, ".stabs \"%s:p", (*p->sl)[i].identifier);
-	debug_print_stab_type (f, (*p->sl)[i].styp);
-	/* TODO i*4+4 is a crude method to find the offset of a parameter on
-	    the stack */
-	fprintf (f, "\",%d,0,0,%d\n", N_PSYM, i*4+4);
+      fprintf (f, ".stabs \"%s:F", v->identifier);
+      debug_print_stab_type (f, v->vtyp->next);
+      fprintf (f, "\",%d,0,%d,%s%s\n", N_FUN, fline, idprefix,v->identifier);
+
+      p=v->vtyp->exact;
+      for (i=0; i<p->count; i++)
+	{
+	  if((*p->sl)[i].styp->flags==VOID) break;
+	  fprintf (f, ".stabs \"%s:p", (*p->sl)[i].identifier);
+	  debug_print_stab_type (f, (*p->sl)[i].styp);
+	  /* TODO i*4+4 is a crude method to find the offset of a parameter on
+	     the stack */
+	  fprintf (f, "\",%d,0,0,%d\n", N_PSYM, i*4+4);
+	}
     }
 
     if(v->storage_class==EXTERN) fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
@@ -446,12 +470,15 @@ static void function_top(FILE *f,struct Var *v,long offset)
 	    pushedsize+=4;
 	}
     }
-    if(offset) fprintf(f,"\tsubl\t$%ld,%%esp\n",offset);
 
-    /* Tell GDB that the code of the function starts here */
-    emitdebugline (f,fline);
-    local_debug_func_count ++;
-    fprintf (f, ".LBB%d:\n", local_debug_func_count);
+    if(offset) fprintf(f,"\tsubl\t$%ld,%%esp\n",offset);
+    if(G_FLAG_USE_FP) fprintf(f,"\tmovl\t%s,%s\n",regnames[sp],regnames[7]);
+    if(G_FLAG_DEBUG){
+      /* Tell GDB that the code of the function starts here */
+      emitdebugline (f,fline);
+      local_debug_func_count ++;
+      fprintf (f, "%sBB%d:\n", labprefix, local_debug_func_count);
+    }
 }
 static void function_bottom(FILE *f,struct Var *v,long offset)
 /*  erzeugt Funktionsende			*/
@@ -459,8 +486,10 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
     int i;
     forder(f);
 
-    emitdebugline (f,fline);
-    fprintf (f, ".LBE%d:\n", local_debug_func_count);
+    if(G_FLAG_DEBUG){
+      emitdebugline (f,fline);
+      fprintf (f, "%sBE%d:\n", labprefix, local_debug_func_count);
+    }
 
     if(offset) fprintf(f,"\taddl\t$%ld,%%esp\n",offset);
     for(i=sp-1;i>0;i--){
@@ -470,14 +499,12 @@ static void function_bottom(FILE *f,struct Var *v,long offset)
     }
     fprintf(f,"\tret\n");
 
-    fprintf (f, ".Lfe%d:\n\t.size\t%s,.Lfe%d-%s%s\n",
-	local_debug_func_count, v->identifier,
-	local_debug_func_count, idprefix,v->identifier);
-    /* Tell GDB the real size of the function */
-    fprintf (f, ".stabn 192,0,0,.LBB%d-%s%s\n",
-	local_debug_func_count, idprefix,v->identifier);
-    fprintf (f, ".stabn 224,0,0,.LBE%d-%s%s\n",
-	local_debug_func_count, idprefix,v->identifier);
+    if(G_FLAG_DEBUG){
+      fprintf (f, "%sfe%d:\n\t.size\t%s,%sfe%d-%s%s\n", labprefix, local_debug_func_count, v->identifier, labprefix, local_debug_func_count, idprefix,v->identifier);
+      /* Tell GDB the real size of the function */
+      fprintf (f, ".stabn 192,0,0,%sBB%d-%s%s\n",labprefix,local_debug_func_count, idprefix,v->identifier);
+      fprintf (f, ".stabn 224,0,0,%sBE%d-%s%s\n", labprefix, local_debug_func_count, idprefix,v->identifier);
+    }
 }
 static int is_const(struct Typ *t)
 /*  Tests if a type can be placed in the code-section.	*/
@@ -580,7 +607,7 @@ int init_cg(void)
     /*	because they are stored in the target's arithmetic.             */
     maxalign=l2zl(4L);
     char_bit=l2zl(8L);
-    if(g_flags[6]&USEDFLAG){
+    if(G_FLAG_LONGALIGN){
 	for(i=SHORT;i<16;i++) malign[i]=4;
     }
     for(i=0;i<16;i++){
@@ -612,11 +639,13 @@ int init_cg(void)
     /*	Reserve a few registers for use by the code-generator.	    */
     /*	We only reserve the stack-pointer here. 		    */
     regsa[sp]=1;
+    /*	If we are to use a framepointer also reserve %ebp.	    */
+    if(G_FLAG_USE_FP) regsa[7]=1;
     /*	We need at least one free slot in the flaoting point stack  */
     regsa[16]=1;regscratch[16]=0;
     /*	Use l%d as labels and _%s as identifiers by default. If     */
     /*	-elf is specified we use .l%d and %s instead.		    */
-    if(g_flags[5]&USEDFLAG) labprefix=".L"; else idprefix="_";
+    if(G_FLAG_ELF) {labprefix=".L";idprefix="";}
     return(1);
 }
 
@@ -708,8 +737,8 @@ void gen_var_head(FILE *f,struct Var *v)
     if(v->clist) constflag=is_const(v->vtyp);
     if(v->storage_class==STATIC){
 	if((v->vtyp->flags&NQ)==FUNKT) return;
-	if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+	if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
+	if(v->clist&&constflag&&G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
 	if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
 	if(section!=BSS) fprintf(f,"\t.align\t2\n%s%ld:\n",labprefix,zl2l(v->offset));
 	    else fprintf(f,"\t.lcomm\t%s%ld,",labprefix,zl2l(v->offset));
@@ -718,8 +747,8 @@ void gen_var_head(FILE *f,struct Var *v)
     if(v->storage_class==EXTERN){
 	fprintf(f,"\t.globl\t%s%s\n",idprefix,v->identifier);
 	if(v->flags&(DEFINED|TENTATIVE)){
-	    if(v->clist&&(!constflag||(g_flags[3]&USEDFLAG))&&section!=DATA){fprintf(f,dataname);section=DATA;}
-	    if(v->clist&&constflag&&!(g_flags[3]&USEDFLAG)&&section!=CODE){fprintf(f,codename);section=CODE;}
+	    if(v->clist&&(!constflag||G_FLAG_CONST_IN_DATA)&&section!=DATA){fprintf(f,dataname);section=DATA;}
+	    if(v->clist&&constflag&&G_FLAG_CONST_IN_DATA&&section!=CODE){fprintf(f,codename);section=CODE;}
 	    if(!v->clist&&section!=BSS){fprintf(f,bssname);section=BSS;}
 	    if(section!=BSS) fprintf(f,"\t.align\t2\n%s%s:\n",idprefix,v->identifier);
 		else fprintf(f,"\t.comm\t%s%s,",idprefix,v->identifier);
@@ -777,12 +806,12 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	c=p->code;t=p->typf;
 	if(c==NOP) continue;
 
-	/*ADA*/
-	if (lastline != p->line)
-	{
-	    emitdebugline(f,p->line);
-	    lastline = p->line;
-	}
+/*ADA*/
+if (lastline != p->line)
+{
+    emitdebugline(f,p->line);
+    lastline = p->line;
+}
 
 	if(c==SUBPFP) c=SUB;
 	if(c==SUBIFP) c=SUB;
@@ -1052,7 +1081,7 @@ void gen_code(FILE *f,struct IC *p,struct Var *v,zlong offset)
 	    if(!zleqto(l2zl(0L),p->q2.val.vlong)){
 		notpopped+=zl2l(p->q2.val.vlong);
 		dontpop-=zl2l(p->q2.val.vlong);
-		if(!(g_flags[2]&USEDFLAG)&&stackoffset==-notpopped){
+		if(!G_FLAG_NO_DELAY_POP&&stackoffset==-notpopped){
 		/*  Entfernen der Parameter verzoegern	*/
 		}else{
 		    fprintf(f,"\taddl\t$%ld,%%esp\n",zl2l(p->q2.val.vlong));

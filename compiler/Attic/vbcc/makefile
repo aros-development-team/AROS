@@ -1,6 +1,6 @@
 
-CC	= cc -g
-CFLAGS	= -I. -I$(OBJDIR)
+CC	= cc
+CFLAGS	= -g -I. -I$(OBJDIR)
 LDFLAGS = -lm
 
 OBJDIR = stage1
@@ -46,12 +46,9 @@ clean:
 
 .PHONY: stage1 stage2
 
-prepstage: $(OBJDIR)/machine.h $(OBJDIR)/machine.dt $(OBJDIR)/machine.c
+prepstage: $(OBJDIR)/machine.h $(OBJDIR)/machine.c
 
 $(OBJDIR)/machine.h : machines/$(TARGET)/machine.h
-	cp $< $@
-
-$(OBJDIR)/machine.dt : machines/$(TARGET)/machine.dt
 	cp $< $@
 
 $(OBJDIR)/machine.c : machines/$(TARGET)/machine.c
@@ -60,7 +57,7 @@ $(OBJDIR)/machine.c : machines/$(TARGET)/machine.c
 vbccs: $(BINDIR)/vbccs$(TARGET)
 
 $(BINDIR)/vc: frontend/vc.c
-	$(CC) frontend/vc.c -o $(BINDIR)/vc
+	$(CC) $(CFLAGS) frontend/vc.c -o $(BINDIR)/vc
 
 vcppobjs =  $(OBJDIR)/cpp.o $(OBJDIR)/eval.o $(OBJDIR)/getopt.o \
 	    $(OBJDIR)/hideset.o $(OBJDIR)/include.o \
@@ -71,34 +68,34 @@ $(BINDIR)/vcpp: $(vcppobjs)
 	$(CC) $(LDFLAGS) $(vcppobjs) -o $(BINDIR)/vcpp
 
 $(OBJDIR)/cpp.o: vcpp/cpp.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/cpp.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/cpp.c -o $@
 
 $(OBJDIR)/eval.o: vcpp/eval.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/eval.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/eval.c -o $@
 
 $(OBJDIR)/getopt.o: vcpp/getopt.c
-	$(CC) -c -Ivcpp vcpp/getopt.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/getopt.c -o $@
 
 $(OBJDIR)/hideset.o: vcpp/hideset.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/hideset.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/hideset.c -o $@
 
 $(OBJDIR)/include.o: vcpp/include.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/include.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/include.c -o $@
 
 $(OBJDIR)/lex.o: vcpp/lex.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/lex.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/lex.c -o $@
 
 $(OBJDIR)/macro.o: vcpp/macro.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/macro.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/macro.c -o $@
 
 $(OBJDIR)/nlist.o: vcpp/nlist.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/nlist.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/nlist.c -o $@
 
 $(OBJDIR)/tokens.o: vcpp/tokens.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/tokens.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/tokens.c -o $@
 
 $(OBJDIR)/unix.o: vcpp/unix.c vcpp/cpp.h
-	$(CC) -c -Ivcpp vcpp/unix.c -o $@
+	$(CC) $(CFLAGS) -c -Ivcpp vcpp/unix.c -o $@
 
 bobjects = $(OBJDIR)/main.o $(OBJDIR)/vars.o $(OBJDIR)/declaration.o \
 	   $(OBJDIR)/parse_expr.o $(OBJDIR)/type_expr.o $(OBJDIR)/ic.o \
