@@ -97,7 +97,7 @@ AROS_UFH3(LONG, __startup_entry,
     {
         if
         (
-            !(__startup_error = set_open_libraries(SysBase)) &&
+            !(__startup_error = set_open_libraries()) &&
             !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
         )
         {
@@ -117,7 +117,7 @@ AROS_UFH3(LONG, __startup_entry,
     }
 
     set_call_funcs(SETNAME(EXIT), -1);
-    set_close_libraries(SysBase);
+    set_close_libraries();
 
     /* Reply startup message to Workbench.
      * We Forbid() to avoid being UnLoadSeg()ed before we're really finished.

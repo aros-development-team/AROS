@@ -232,10 +232,6 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh);
 #   define __L_ExpungeLib(x)        /* eps */
 #endif
 
-#ifndef SysBase
-#   define SysBase	(LC_SYSBASE_FIELD(lh))
-#   define __LC_OWN_SYSBASE
-#endif
 
 #ifdef AROS_LC_SETFUNCS
 #include <aros/symbolsets.h>
@@ -247,6 +243,16 @@ DECLARESET(INITLIB)
 DECLARESET(EXPUNGELIB)
 DECLARESET(OPENLIB)
 DECLARESET(CLOSELIB)
+
+#ifdef SysBase
+#undef SysBase
+#endif
+struct ExecBase *SysBase;
+#else
+#ifndef SysBase
+#   define SysBase	(LC_SYSBASE_FIELD(lh))
+#   define __LC_OWN_SYSBASE
+#endif
 #endif
 
 /* -----------------------------------------------------------------------
@@ -274,7 +280,9 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 
 
 #ifdef AROS_LC_SETFUNCS
-    ok = !set_open_libraries(sysBase) && !set_call_funcs(SETNAME(INIT), 1);
+    SysBase = sysBase;
+
+    ok = !set_open_libraries() && !set_call_funcs(SETNAME(INIT), 1);
     if ( ok )
     {
 	/* ctors get called in inverse order than init funcs */
@@ -299,7 +307,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries(sysBase);
+	set_close_libraries();
 #endif
 
 	{
@@ -437,7 +445,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries(sysBase);
+	set_close_libraries();
 #endif
 
 	negsize  = LC_LIB_FIELD(lh).lib_NegSize;
