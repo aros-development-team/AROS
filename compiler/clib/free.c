@@ -12,7 +12,7 @@ extern APTR __startup_mempool;
 /*****************************************************************************
 
     NAME */
-#include <memory.h>
+#include <stdlib.h>
 
 	void free (
 

@@ -12,7 +12,7 @@
 
     NAME */
 #include <sys/types.h>
-#include <memory.h>
+#include <stdlib.h>
 
 	void * realloc (
 
