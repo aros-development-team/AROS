@@ -81,7 +81,7 @@
     }
 
     LockWorkbench();
-    ForeachNode(&aw->aw_DropZones, (struct Node *)dz)
+    ForeachNode(&aw->aw_DropZones, dz)
     {
 	if (dz == dropZone)
 	{

@@ -149,7 +149,7 @@ BOOL keyUsed(STRPTR key, struct WorkbenchBase *WorkbenchBase)
 
     LockWorkbench();
 
-    ForeachNode(&WorkbenchBase->wb_AppMenuItems, (struct Node *)ami)
+    ForeachNode(&WorkbenchBase->wb_AppMenuItems, ami)
     {
 	if (strlen(ami->ami_CommandKey) != 0 &&
 	    ami->ami_CommandKey[0] == key[0])
