@@ -136,6 +136,8 @@ BPTR LoadSeg_AOS(BPTR file)
 					      req);
 	if (hunktab[i].memory == NULL)
 	  ERROR(ERROR_NO_FREE_STORE);
+	if (i > 0)
+	  *(hunktab[i].memory) = MKBADDR(hunktab[i-1].memory);
 	hunktab[i].memory += sizeof(BPTR);
       }
       break;
@@ -210,8 +212,12 @@ BPTR LoadSeg_AOS(BPTR file)
       D(bug("HUNK_EXT not implemented\n"));
       ERROR(ERROR_BAD_HUNK);
     case HUNK_DEBUG:
-      D(bug("HUNK_DEBUG not implemented\n"));
-      ERROR(ERROR_BAD_HUNK);
+      if (read_block(file, &count, sizeof(count)))
+        goto end;
+      D(bug("HUNK_DEBUG (%x Bytes)\n",count));
+      if (Seek(file, count * 4, OFFSET_CURRENT ) < 0 )
+        goto end;
+      break;
     case HUNK_OVERLAY:
       D(bug("HUNK_OVERLAY not implemented\n"));
       ERROR(ERROR_BAD_HUNK);
