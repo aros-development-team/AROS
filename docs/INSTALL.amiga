@@ -1,5 +1,6 @@
 $Id$
 
+
                   Building AROS on the Amiga
                   ==========================
 
@@ -11,9 +12,9 @@ on the Amiga. Please address any comments and questions to
 1. System requirements
    -------------------
 
-   Please understand that AROS is a huge project, so developing
-   it requires a huge amount of resources. Minimum system
-   requirements:
+   Please understand that AROS is a huge project: developing
+   for it requires a considerable amount of resources.
+   Some minimum system requirements:
 
    a) A fast processor. Compiling AROS from scratch with a
       25MHz 68040 will take 1-2 hours.
@@ -22,11 +23,11 @@ on the Amiga. Please address any comments and questions to
       intermediate files and the generated binaries. This will
       probably increase in the future as the project grows.
 
-      Consider additional space (~15MB) for the GeekGadget
+      Consider some additional space (~15MB) for the GeekGadget
       tools if you don't have them already.
 
-   c) At least 16MB of RAM. GCC, make, sh and friends are
-      memory hungry.
+   c) At least 8MB of feee memory: gcc, make, sh and friends
+      are hogs.
 
 
 
