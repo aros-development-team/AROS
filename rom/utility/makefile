@@ -62,21 +62,23 @@ FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
 ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -larosc
 
-all: setup \
-	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(OSMODDIR)/utility.library
+all: setup $(OSMODDIR)/utility.library
+
+asm: all $(foreach f,$(FUNCTIONS),$(f).s)
 
 $(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 			     $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 			     $(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) \
+	$(CC) $(ILDFLAGS) -Xlinker -M \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o) \
 	$(LIBS) -o $@ 2>&1|tee utilitylib.err
 	@if test ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
 	@strip $@
+
+%.s: %.c
+	$(CC) -S $(CFLAGS) $< -c -o $@
 else
 all: setup \
 	$(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o)
@@ -97,6 +99,11 @@ utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
 	gawk -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib=Utility \
 	    $^
+
+$(OBJDIR)/utility_init.o: libdefs.h
+
+libdefs.h: lib.conf $(TOP)/scripts/genlibdefs.gawk
+	gawk -f $(TOP)/scripts/genlibdefs.gawk lib.conf > libdefs.h
 
 $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi

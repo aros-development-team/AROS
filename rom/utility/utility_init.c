@@ -17,13 +17,14 @@
 #include <proto/utility.h>
 
 #include "utility_intern.h"
+#include "libdefs.h"
 
 extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
-extern void *const Utility_functable[];
-struct UtilityBase *AROS_SLIB_ENTRY(init,Utility)();
-extern const char Utility_end;
+extern void *const FUNCTABLE[];
+struct LIBBASETYPE *INIT();
+extern const char END;
 
 extern ULONG AROS_SLIB_ENTRY(SMult32_020,Utility)();
 extern ULONG AROS_SLIB_ENTRY(UMult32_020,Utility)();
@@ -44,7 +45,7 @@ const struct Resident Utility_resident=
     (struct Resident *)&Utility_resident,
     (APTR)&Utility_end,
     RTF_AUTOINIT|RTF_COLDSTART,
-    41,
+    LIBVERSION,
     NT_LIBRARY,
     103,
     (STRPTR)name,
@@ -52,16 +53,16 @@ const struct Resident Utility_resident=
     (ULONG *)inittabl
 };
 
-const UBYTE name[]="utility.library";
+const UBYTE name[]=LIBNAME;
 
-const UBYTE version[]="$VER: AROS utility 41.10 (10.2.97)";
+const UBYTE version[]=VERSION;
 
 const APTR inittabl[4]=
 {
     (APTR)sizeof(struct IntUtilityBase),
-    (APTR)Utility_functable,
+    (APTR)FUNCTABLE,
     NULL,
-    &AROS_SLIB_ENTRY(init,Utility)
+    &INIT
 };
 
 static struct TagItem nstags[] =
@@ -81,42 +82,42 @@ static struct TagItem nstags[] =
 */
 
 #ifdef __GNUC__
-#define SysBase GetIntUtilityBase(UtilityBase)->ub_SysBase
+#define SysBase GetIntUtilityBase(LIBBASE)->ub_SysBase
 #else
 struct ExecBase *SysBase = 0L;
 #endif
 
-#define SetFunc(a,b) SetFunction((struct Library *)UtilityBase, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
+#define SetFunc(a,b) SetFunction((struct Library *)LIBBASETYPE, a * -LIB_VECTSIZE, AROS_SLIB_ENTRY(b,Utility))
 
-AROS_LH2(struct UtilityBase *, init,
-    AROS_LHA(struct UtilityBase *, UtilityBase, D0),
+AROS_LH2(struct LIBBASETYPE *, init,
+    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
     AROS_LHA(BPTR,               segList,   A0),
-    struct ExecBase *, sysBase, 0, Utility)
+    struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
     /* Store arguments */
-    GetIntUtilityBase(UtilityBase)->ub_SysBase=sysBase;
-    GetIntUtilityBase(UtilityBase)->ub_SegList=segList;
+    GetIntUtilityBase(LIBBASE)->ub_SysBase=sysBase;
+    GetIntUtilityBase(LIBBASE)->ub_SegList=segList;
 #ifdef _DCC
     SysBase = sysBase;
 #endif
 
     /* Set up UtilityBase */
-    UtilityBase->ub_LibNode.lib_Node.ln_Pri = 0;
-    UtilityBase->ub_LibNode.lib_Node.ln_Type = NT_LIBRARY;
+    LIBBASE->ub_LibNode.lib_Node.ln_Pri = 0;
+    LIBBASE->ub_LibNode.lib_Node.ln_Type = NT_LIBRARY;
     (const)UtilityBase->ub_LibNode.lib_Node.ln_Name = name;
-    UtilityBase->ub_LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
-    UtilityBase->ub_LibNode.lib_Version = 41;
-    UtilityBase->ub_LibNode.lib_Revision = 8;
-    (const)UtilityBase->ub_LibNode.lib_IdString = &version[6];
+    LIBBASE->ub_LibNode.lib_Flags = LIBF_SUMUSED | LIBF_CHANGED;
+    LIBBASE->ub_LibNode.lib_Version = LIBVERSION;
+    LIBBASE->ub_LibNode.lib_Revision = LIBREVISION;
+    (const)LIBBASE->ub_LibNode.lib_IdString = &version[6];
 
-    GetIntUtilityBase(UtilityBase)->ub_LastID = 0;
+    GetIntUtilityBase(LIBBASE)->ub_LastID = 0;
 
-    GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace =
+    GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace =
         AllocNamedObjectA("utility global name space", nstags);
 
-    if(GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace == NULL)
+    if(GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace == NULL)
     {
         Alert(AG_NoMemory | AO_UtilityLib);
     }
@@ -145,13 +146,13 @@ AROS_LH2(struct UtilityBase *, init,
 #endif
 
     /* You would return NULL if the init failed */
-    return UtilityBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct UtilityBase *, open,
+AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-           struct UtilityBase *, UtilityBase, 1, Utility)
+           struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -159,25 +160,25 @@ AROS_LH1(struct UtilityBase *, open,
     version=0;
 
     /* I have one more opener. */
-    UtilityBase->ub_LibNode.lib_OpenCnt++;
-    UtilityBase->ub_LibNode.lib_Flags&=~LIBF_DELEXP;
+    LIBBASE->ub_LibNode.lib_OpenCnt++;
+    LIBBASE->ub_LibNode.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
-    return UtilityBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, close,
-           struct UtilityBase *, UtilityBase, 2, Utility)
+           struct LIBBASETYPE *, LIBBASE, 2, Utility)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
-    if(!--UtilityBase->ub_LibNode.lib_OpenCnt)
+    if(!--LIBBASE->ub_LibNode.lib_OpenCnt)
     {
 #ifdef DISK_BASED
         /* Delayed expunge pending? */
-        if(UtilityBase->ub_LibNode.lib_Flags&LIBF_DELEXP)
+        if(LIBBASE->ub_LibNode.lib_Flags&LIBF_DELEXP)
             /* Then expunge the library */
             return expunge();
 #endif
@@ -187,31 +188,31 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-           struct UtilityBase *, UtilityBase, 3, Utility)
+           struct LIBBASETYPE *, LIBBASE, 3, Utility)
 {
     AROS_LIBFUNC_INIT
 
     BPTR ret;
 
     /* Test for openers. */
-    if(UtilityBase->ub_LibNode.lib_OpenCnt)
+    if(LIBBASE->ub_LibNode.lib_OpenCnt)
     {
         /* Set the delayed expunge flag and return. */
-        UtilityBase->ub_LibNode.lib_Flags|=LIBF_DELEXP;
+        LIBBASE->ub_LibNode.lib_Flags|=LIBF_DELEXP;
         return 0;
     }
 #ifdef DISK_BASED
-    FreeNamedObject(GetIntUtilityBase(UtilityBase)->ub_GlobalNameSpace);
+    FreeNamedObject(GetIntUtilityBase(LIBBASE)->ub_GlobalNameSpace);
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&UtilityBase->ub_LibNode.lib_Node);
+    Remove(&LIBBASE->ub_LibNode.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
-    ret=GetIntUtilityBase(UtilityBase)->ub_SegList;
+    ret=GetIntUtilityBase(LIBBASE)->ub_SegList;
 
     /* Free the memory. */
-    FreeMem((char *)UtilityBase-UtilityBase->ub_LibNode.lib_NegSize,
-            UtilityBase->ub_LibNode.lib_NegSize+UtilityBase->ub_LibNode.lib_PosSize);
+    FreeMem((char *)LIBBASE-LIBBASE->ub_LibNode.lib_NegSize,
+            LIBBASE->ub_LibNode.lib_NegSize+LIBBASE->ub_LibNode.lib_PosSize);
 #else
     ret = 0;
 #endif
@@ -221,7 +222,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-            struct UtilityBase *, UtilityBase, 4, Utility)
+            struct LIBBASETYPE *, LIBBASE, 4, Utility)
 {
     AROS_LIBFUNC_INIT
     return 0;
