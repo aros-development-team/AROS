@@ -160,19 +160,8 @@ IPTR ExecuteCommand__MUIM_Application_Execute
     
     SET(data->ecd_Window, MUIA_Window_Open, TRUE);
     SET(data->ecd_Window, MUIA_Window_ActiveObject, (IPTR) data->ecd_CommandString);
-    
-    while
-    ( 
-           DoMethod(self, MUIM_Application_NewInput, (IPTR) &signals) 
-        != MUIV_Application_ReturnID_Quit
-    )
-    {
-        if (signals)
-        {
-            signals = Wait(signals | SIGBREAKF_CTRL_C);
-            if (signals & SIGBREAKF_CTRL_C) break;
-        }
-    }
+
+    DoSuperMethodA(CLASS, self, message);
     
     SET(data->ecd_Window, MUIA_Window_Open, FALSE);
 
