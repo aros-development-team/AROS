@@ -153,9 +153,12 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 
 	    if (result != 0)
 	    {
+		kprintf("Error: Didn't find file\n");
 		return;
 	    }
 	    
+	    kprintf("Returned from DoNameAsynch()\n");
+
 	    break;
 	    
 	case ACTION_FINDOUTPUT:     // Open() MODE_NEWFILE [*]
@@ -450,9 +453,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		Flush(MKBADDR(fh));
 	    }
 
-	    iofs->IOFS.io_Command = FSA_OPEN;
-
-	    /* TODO: The file handle must be freed in WaitPkt()! */
+	    iofs->IOFS.io_Command = FSA_CLOSE;
 
 	    break;
 
@@ -602,6 +603,8 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 		    dp->dp_Type);
 	    return;
 	}
+
+	kprintf("Calling SendIO() with command %u\n", iofs->IOFS.io_Command);
 	
 	SendIO((struct IORequest *)iofs);
     }        
@@ -631,7 +634,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
     {
 	cur = me->pr_CurrentDir;
 	volname = NULL;
-	pathname = name+1;
+	pathname = name + 1;
     }
     else
     {
@@ -672,6 +675,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	{
 	    UnLockDosList(LDF_ALL | LDF_READ);
 	    FreeMem(volname, s1 - name);
+
 	    return ERROR_DEVICE_NOT_MOUNTED;
 	}
 	else if (dl->dol_Type == DLT_LATE)
@@ -679,11 +683,12 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 	    UnLockDosList(LDF_ALL | LDF_READ);
 
-	    if(lock != NULL)
+	    if (lock != NULL)
 	    {
 		AssignLock(volname, lock);
 		dl = LockDosList(LDF_ALL | LDF_READ);
 		dl = FindDosEntry(dl, volname, LDF_ALL);
+
 		if (dl == NULL)
 		{
 		    UnLockDosList(LDF_ALL | LDF_READ);
@@ -697,6 +702,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    else
 	    {
 		FreeMem(volname, s1 - name);
+
 		return IoErr();
 	    }
 	} 
@@ -714,6 +720,7 @@ LONG DoNameAsynch(struct IOFileSys *iofs, STRPTR name,
 	    {
 		UnLockDosList(LDF_ALL | LDF_READ);
 		FreeMem(volname, s1 - name);
+
 		return IoErr();
 	    }
 	}
