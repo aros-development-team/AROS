@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -130,7 +130,7 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	if (CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase)))
 	{
 	    struct NewWindow nw;
-    	    struct TagItem wintags[] =
+    	    struct TagItem   wintags[] =
 	    {
 	        {WA_CustomScreen	, (IPTR)ld->ld_Screen	}, /* stegerg: requesters should not use WA_PubScreen */
 		{WA_InnerWidth		, 0			},
@@ -139,8 +139,9 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		{WA_NewLookMenus    	, TRUE	    	    	},
 		{TAG_DONE					}
 	    };
-
-			
+    	    ULONG   	    idcmp;
+	    BOOL    	    privateidcmp;
+	    	
 	    memset(&nw, 0L, sizeof (struct NewWindow));
 			
 	    nw.Width	= (intreq->ir_Width > ld->ld_MinWidth) ? intreq->ir_Width : ld->ld_MinWidth;
@@ -175,17 +176,29 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 			   WFLG_SIZEGADGET | WFLG_SIZEBBOTTOM   | WFLG_SIMPLE_REFRESH |
 			   WFLG_ACTIVATE   | WFLG_NOCAREREFRESH;
 	    
-	    nw.IDCMPFlags= IDCMP_CLOSEWINDOW | IDCMP_GADGETUP      | IDCMP_MOUSEMOVE  |
-			   IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
-			   IDCMP_MENUPICK    | IDCMP_RAWKEY        | IDCMP_VANILLAKEY |
-			   IDCMP_MOUSEBUTTONS;
+	    idcmp = IDCMP_CLOSEWINDOW | IDCMP_GADGETUP      | IDCMP_MOUSEMOVE  |
+		    IDCMP_NEWSIZE     | IDCMP_REFRESHWINDOW | IDCMP_GADGETDOWN |
+		    IDCMP_MENUPICK    | IDCMP_RAWKEY        | IDCMP_VANILLAKEY |
+		    IDCMP_MOUSEBUTTONS;
 			
 	    wintags[1].ti_Data	= nw.Width;
 	    wintags[2].ti_Data	= nw.Height;
-						
-	    win = OpenWindowTagList(&nw,wintags);
+		
+	    privateidcmp = ((intreq->ir_Flags & IF_PRIVATEIDCMP) || (!intreq->ir_Window));	    
+	    if (privateidcmp)
+	    {
+	    	nw.IDCMPFlags = idcmp;
+	    }
+	    
+	    win = OpenWindowTagList(&nw, wintags);
 	    if (win)
 	    {
+	    	if (!privateidcmp)
+		{
+		    win->UserPort = intreq->ir_Window->UserPort;
+		    ModifyIDCMP(win, idcmp);
+		}
+		
 	    	ld->ld_Window = win;
 	    	
 	    	D(bug("Window opened\n", win->Width));

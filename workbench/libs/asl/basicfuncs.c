@@ -248,7 +248,16 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	}
 
 	if (ld->ld_Window)
-	    CloseWindow(ld->ld_Window);
+    	{
+	    if ((ld->ld_IntReq->ir_Flags & IF_PRIVATEIDCMP) || (!ld->ld_IntReq->ir_Window))
+	    {
+	    	CloseWindow(ld->ld_Window);
+	    }
+	    else
+	    {
+	    	CloseWindowSafely(ld->ld_Window, AslBase);
+	    }
+	}
 
 	D(bug("Window freed\n"));
 
