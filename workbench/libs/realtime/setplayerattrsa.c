@@ -124,7 +124,6 @@
 	    else
 	    {
 		struct Conductor *conductor;
-		APTR              lock;
 
 		lock = LockRealTime(RT_CONDUCTORS);
 		conductor = FindConductor((STRPTR)tag->ti_Data);
