@@ -22,6 +22,8 @@
 
 #include <string.h>
 
+STRPTR AllocateNameFromLock(BPTR lock);
+
 int main(int argc, char **argv)
 {
     if (argc == 0)
@@ -30,8 +32,8 @@ int main(int argc, char **argv)
         
         if (startup->sm_NumArgs == 2)
         {
-            BPTR   lock = startup->sm_ArgList[1].wa_Lock;
-            STRPTR name = startup->sm_ArgList[1].wa_Name;
+            BPTR   parent = startup->sm_ArgList[1].wa_Lock;
+            STRPTR name   = startup->sm_ArgList[1].wa_Name;
             
             if
             (
@@ -43,14 +45,52 @@ int main(int argc, char **argv)
                 ) == 1
             )
             {
-                BPTR cd = CurrentDir(lock);
-                TEXT buffer[512];
+                BPTR cd   = CurrentDir(parent);
+                BPTR lock = Lock(name, ACCESS_WRITE);
                 
-                DeleteFile(name); // FIXME: check error
-                NameFromLock(lock, buffer, 512);
-                strcat(buffer, name);
-                D(bug("telling wb to update %s\n", buffer));
-                UpdateWorkbenchObject(buffer, WBPROJECT, TAG_DONE);
+                if (lock != NULL)
+                {
+                    STRPTR buffer = AllocateNameFromLock(lock);
+                    
+                    UnLock(lock);
+                    
+                    if (buffer != NULL)
+                    {
+                        if (DeleteFile(name))
+                        {
+                            UpdateWorkbenchObject(buffer, WBPROJECT, TAG_DONE);
+                        }
+                        else
+                        {
+                            MUI_Request
+                            (
+                                NULL, NULL, 0,
+                                "Error", "OK",
+                                "Could not delete file."
+                            );
+                        }
+                    
+                        FreeVec(buffer);
+                    }
+                    else
+                    {
+                        MUI_Request
+                        (
+                            NULL, NULL, 0,
+                            "Error", "OK",
+                            "Could not allocate memory."
+                        );
+                    }
+                }
+                else
+                {
+                    MUI_Request
+                    (
+                        NULL, NULL, 0,
+                        "Error", "OK",
+                        "Could not lock file for deletion."
+                    );
+                }
                 
                 CurrentDir(cd);
             }
@@ -82,9 +122,58 @@ int main(int argc, char **argv)
     }
     else
     {
-        PutStr("Info: Must be started from Wanderer.\n");
+        PutStr("Error: Must be started from Wanderer.\n");
         return 40;
     }
 
     return 0;
+}
+
+STRPTR AllocateNameFromLock(BPTR lock)
+{
+    ULONG  length = 512;
+    STRPTR buffer = NULL;
+    BOOL   done   = FALSE;
+    
+    while (!done)
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        
+        buffer = AllocVec(length, MEMF_ANY);
+        if (buffer != NULL)
+        {
+            if (NameFromLock(lock, buffer, length))
+            {
+                done = TRUE;
+                break;
+            }
+            else
+            {
+                if (IoErr() == ERROR_LINE_TOO_LONG)
+                {
+                    length += 512;
+                    continue;
+                }
+                else
+                {
+                    break;
+                }                
+            }
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            break;
+        }
+    }
+    
+    if (done)
+    {
+        return buffer;
+    }
+    else
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        return NULL;
+    }
 }
