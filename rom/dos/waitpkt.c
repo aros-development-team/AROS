@@ -6,6 +6,9 @@
     Lang: English
 */
 
+#define  DEBUG 1
+#include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <dos/filesystem.h>
 #include <proto/exec.h>
@@ -115,6 +118,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_READ:
     case FSA_WRITE:
 	packet->dp_Res1 = (IPTR)iofs->io_Union.io_READ_WRITE.io_Length;
+	kprintf("Packet (%p) length = %u", packet, packet->dp_Res1);
 	packet->dp_Res2 = iofs->io_DosError;
 	break;
 
@@ -196,11 +200,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 		iofs->IOFS.io_Command);
 	break;
     }
-
-
-
-    
-    ReplyMsg(msg);
 
     return packet;
 }
