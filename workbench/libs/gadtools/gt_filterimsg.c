@@ -178,7 +178,6 @@
 			case SLIDER_KIND:
 			    contextgad->getattrtag = GTSL_Level;
 			    GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
-			    rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
 			    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 			    break;
 			
@@ -206,19 +205,10 @@
 			    {
 			    	/* scroller/slider gadget released,
 				   not one of the arrow gadgets */
-				
-			    	old_gadget_value = contextgad->gadget_value;
-				GetAttr(contextgad->getattrtag,
-					(Object *)gad,
-					&contextgad->gadget_value);
-				
-				if (old_gadget_value != contextgad->gadget_value)
-				{
-				    msg_only_for_gadtools = FALSE;
-				    
-			    	    rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
-				    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
-				}
+
+				msg_only_for_gadtools = FALSE;
+
+				rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 			    }
 			    break;
 
