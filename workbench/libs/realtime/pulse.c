@@ -1,4 +1,12 @@
 
+/*
+    (C) 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 /* HISTORY:  28.01.2001  SDuvan  --  Implemented */
 
 #define  AROS_ALMOST_COMPATIBLE
@@ -9,6 +17,7 @@
 #include <proto/realtime.h>
 #include <proto/utility.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 #include <exec/lists.h>
 #include <exec/tasks.h>
 #include <libraries/realtime.h>
