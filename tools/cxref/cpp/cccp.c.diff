@@ -1,236 +1,330 @@
-*** original/cccp.c	Sat Jan 19 15:17:47 2002
---- cccp.c	Sat Jan 19 15:17:00 2002
-***************
-*** 3,8 ****
---- 3,12 ----
-     Written by Paul Rubin, June 1986
-     Adapted to ANSI C, Richard Stallman, Jan 1987
-  
-+    Modified by Andrew M. Bishop to provide better input to
-+    C documentation program `cxref' 1995,1996.
-+    All AMB hacks are indicated as such in the code (grep AMB).
-+ 
-  This program is free software; you can redistribute it and/or modify it
-  under the terms of the GNU General Public License as published by the
-  Free Software Foundation; either version 2, or (at your option) any
-***************
-*** 70,75 ****
---- 74,80 ----
-  #include <signal.h>
-  
-  /* The following symbols should be autoconfigured:
-+ 	HAVE_ALLOCA_H - already in autoconfig.h, but not used, added by AMB
-  	HAVE_FCNTL_H
-  	HAVE_STDLIB_H
-  	HAVE_SYS_TIME_H
-***************
-*** 117,122 ****
---- 122,135 ----
-  # include <fcntl.h>
-  #endif
-  
-+ /* Start new include added by AMB */
-+ 
-+ #if HAVE_ALLOCA_H
-+ # include <alloca.h>
-+ #endif
-+ 
-+ /* End new include added by AMB */
-+ 
-  /* This defines "errno" properly for VMS, and gives us EACCES. */
-  #include <errno.h>
-  
-***************
-*** 406,411 ****
---- 419,434 ----
-  static enum {dump_none, dump_only, dump_names, dump_definitions}
-       dump_macros = dump_none;
-  
-+ /* Start new option added by AMB */
-+ 
-+ /* Nonzero means that the #include lines are to be passed through to
-+    output.
-+ */
-+ 
-+ static int dump_includes = 0;
-+ 
-+ /* End new option added by AMB */
-+ 
-  /* Nonzero means pass all #define and #undef directives which we actually
-     process through to the output stream.  This feature is used primarily
-     to allow cc1 to record the #defines and #undefs for the sake of
-***************
-*** 964,970 ****
-  /* Here is the actual list of #-directives, most-often-used first.  */
-  
-  static struct directive directive_table[] = {
-!   {  6, do_define, "define", T_DEFINE, 0, 1},
-    {  2, do_if, "if", T_IF},
-    {  5, do_xifdef, "ifdef", T_IFDEF},
-    {  6, do_xifdef, "ifndef", T_IFNDEF},
---- 987,993 ----
-  /* Here is the actual list of #-directives, most-often-used first.  */
-  
-  static struct directive directive_table[] = {
-!   {  6, do_define, "define", T_DEFINE, 0, 1, 1}, /* The last 1 is in future cccp.c added by AMB. */
-    {  2, do_if, "if", T_IF},
-    {  5, do_xifdef, "ifdef", T_IFDEF},
-    {  6, do_xifdef, "ifndef", T_IFNDEF},
-***************
-*** 1355,1360 ****
---- 1378,1386 ----
-    no_line_directives = 0;
-    no_trigraphs = 1;
-    dump_macros = dump_none;
-+ /* Start new option added by AMB */
-+   dump_includes = 0;
-+ /* End new option added by AMB */
-    no_output = 0;
-    cplusplus = 0;
-    cplusplus_comments = 1;
-***************
-*** 1666,1671 ****
---- 1692,1702 ----
-  	    case 'D':
-  	      dump_macros = dump_definitions;
-  	      break;
-+ /* Start new option added by AMB */
-+ 	    case 'I':
-+ 	      dump_includes = 1;
-+ 	      break;
-+ /* End new option added by AMB */
-  	    }
-  	  }
-  	}
-***************
-*** 3841,3850 ****
-  	    bp = ip->bufp;
-  	    /* No need to copy the directive because of a comment at the end;
-  	       just don't include the comment in the directive.  */
-! 	    if (bp == limit || *bp == '\n') {
-! 	      bp = obp;
-! 	      goto endloop1;
-  	    }
-  	    /* Don't remove the comments if -traditional.  */
-  	    if (! keep_comments)
-  	      copy_directive++;
---- 3872,3888 ----
-  	    bp = ip->bufp;
-  	    /* No need to copy the directive because of a comment at the end;
-  	       just don't include the comment in the directive.  */
-! /* Start of code from future cccp.c added by AMB */
-! 	    if (!put_out_comments) {
-! 	      U_CHAR *p;
-! 	      for (p = bp;  *p == ' ' || *p == '\t';  p++)
-! 		continue;
-! 	      if (*p == '\n') {
-! 		bp = obp;
-! 		goto endloop1;
-! 	      }
-  	    }
-+ /* End of code from future cccp.c added by AMB */
-  	    /* Don't remove the comments if -traditional.  */
-  	    if (! keep_comments)
-  	      copy_directive++;
-***************
-*** 3874,3880 ****
-  
-        /* If a directive should be copied through, and -E was given,
-  	 pass it through before removing comments.  */
-!       if (!no_output && kt->pass_thru && put_out_comments) {
-          int len;
-  
-  	/* Output directive name.  */
---- 3912,3921 ----
-  
-        /* If a directive should be copied through, and -E was given,
-  	 pass it through before removing comments.  */
-!       if (!no_output && put_out_comments &&
-! /* Start new option added by AMB */
-!           (kt->pass_thru || (kt->type == T_INCLUDE && dump_includes))) {
-! /* End new option added by AMB */
-          int len;
-  
-  	/* Output directive name.  */
-***************
-*** 4002,4007 ****
---- 4043,4052 ----
-  
-        if (!no_output && already_output == 0
-  	  && (kt->pass_thru
-+ /* Start new option added by AMB */
-+ 	      || (kt->type == T_INCLUDE
-+ 		  && dump_includes)
-+ /* End new option added by AMB */
-  	      || (kt->type == T_DEFINE
-  		  && (dump_macros == dump_names
-  		      || dump_macros == dump_definitions)))) {
-***************
-*** 4013,4019 ****
-          bcopy (kt->name, (char *) op->bufp, kt->length);
-          op->bufp += kt->length;
-  
-! 	if (kt->pass_thru || dump_macros == dump_definitions) {
-  	  /* Output arguments.  */
-  	  len = (cp - buf);
-  	  check_expand (op, len);
---- 4058,4068 ----
-          bcopy (kt->name, (char *) op->bufp, kt->length);
-          op->bufp += kt->length;
-  
-! 	if (kt->pass_thru || dump_macros == dump_definitions
-! /* Start new option added by AMB */
-!           || dump_includes
-! /* End new option added by AMB */
-!             ) {
-  	  /* Output arguments.  */
-  	  len = (cp - buf);
-  	  check_expand (op, len);
-***************
-*** 9826,9832 ****
-    U_CHAR *buf, *p, *q;
-  
-    /* Copy the entire option so we can modify it.  */
-!   buf = (U_CHAR *) alloca (strlen (str) + 1);
-    strcpy ((char *) buf, str);
-    /* Scan for any backslash-newline and remove it.  */
-    p = q = buf;
---- 9875,9881 ----
-    U_CHAR *buf, *p, *q;
-  
-    /* Copy the entire option so we can modify it.  */
-!   buf = (U_CHAR *) alloca (strlen (str) + 2); /* 1 added to alloca length by AMB */
-    strcpy ((char *) buf, str);
-    /* Scan for any backslash-newline and remove it.  */
-    p = q = buf;
-***************
-*** 9846,9855 ****
-    while (is_idchar[*++p])
-      ;
-    SKIP_WHITE_SPACE (p);
-!   if (! (*p == 0 || *p == '(')) {
-      error ("malformed option `%s %s'", option, str);
-      return;
-    }
-    
-    ip = &instack[++indepth];
-    ip->nominal_fname = ip->fname = "*Initialization*";
---- 9895,9912 ----
-    while (is_idchar[*++p])
-      ;
-    SKIP_WHITE_SPACE (p);
-!   if (! (*p == 0 || *p == '(' || *p == '=')) { /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB */
-      error ("malformed option `%s %s'", option, str);
-      return;
-    }
-+ 
-+ /* Start change added by AMB (handles gcc 3.x "-Afoo=bar") */
-+   if(*p=='=')
+--- original/cccp.c	2002-01-19 15:17:47.000000000 +0000
++++ cccp.c	2004-05-09 09:14:40.000000000 +0100
+@@ -3,6 +3,10 @@
+    Written by Paul Rubin, June 1986
+    Adapted to ANSI C, Richard Stallman, Jan 1987
+ 
++   Modified by Andrew M. Bishop to provide better input to
++   C documentation program `cxref' 1995,1996.
++   All AMB hacks are indicated as such in the code (grep AMB).
++
+ This program is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; either version 2, or (at your option) any
+@@ -70,6 +74,7 @@
+ #include <signal.h>
+ 
+ /* The following symbols should be autoconfigured:
++	HAVE_ALLOCA_H - already in autoconfig.h, but not used, added by AMB
+ 	HAVE_FCNTL_H
+ 	HAVE_STDLIB_H
+ 	HAVE_SYS_TIME_H
+@@ -117,6 +122,14 @@
+ # include <fcntl.h>
+ #endif
+ 
++/* Start new include added by AMB */
++
++#if HAVE_ALLOCA_H
++# include <alloca.h>
++#endif
++
++/* End new include added by AMB */
++
+ /* This defines "errno" properly for VMS, and gives us EACCES. */
+ #include <errno.h>
+ 
+@@ -406,6 +419,16 @@
+ static enum {dump_none, dump_only, dump_names, dump_definitions}
+      dump_macros = dump_none;
+ 
++/* Start new option added by AMB */
++
++/* Nonzero means that the #include lines are to be passed through to
++   output.
++*/
++
++static int dump_includes = 0;
++
++/* End new option added by AMB */
++
+ /* Nonzero means pass all #define and #undef directives which we actually
+    process through to the output stream.  This feature is used primarily
+    to allow cc1 to record the #defines and #undefs for the sake of
+@@ -655,6 +678,9 @@
+    include file directories.  */
+ static char *include_prefix;
+ 
++/* File to include that contains the gcc definitions for cxref - AMB */
++static char *cxref_cpp_defines=CXREF_CPP_DEFINES;
++
+ /* Global list of strings read in from precompiled files.  This list
+    is kept in the order the strings are read in, with new strings being
+    added at the end through stringlist_tailp.  We use this list to output
+@@ -964,7 +990,7 @@
+ /* Here is the actual list of #-directives, most-often-used first.  */
+ 
+ static struct directive directive_table[] = {
+-  {  6, do_define, "define", T_DEFINE, 0, 1},
++  {  6, do_define, "define", T_DEFINE, 0, 1, 1}, /* The last 1 is in future cccp.c added by AMB. */
+   {  2, do_if, "if", T_IF},
+   {  5, do_xifdef, "ifdef", T_IFDEF},
+   {  6, do_xifdef, "ifndef", T_IFNDEF},
+@@ -1355,6 +1381,9 @@
+   no_line_directives = 0;
+   no_trigraphs = 1;
+   dump_macros = dump_none;
++/* Start new option added by AMB */
++  dump_includes = 0;
++/* End new option added by AMB */
+   no_output = 0;
+   cplusplus = 0;
+   cplusplus_comments = 1;
+@@ -1508,6 +1537,17 @@
+ 	}
+ 	break;
+ 
++/* Start new option added by AMB */
++      case 'c':
++	if (!strcmp (argv[i], "-cxref-cpp-defines")) {
++	  if (i + 1 == argc)
++	    fatal ("Filename missing after `-cxref-cpp-defines' option");
++	  else
++	    cxref_cpp_defines = argv[i+1], i++;
++	}
++	break;
++/* End new option added by AMB */
++
+       case 'o':
+ 	if (out_fname != NULL)
+ 	  fatal ("Output filename specified twice");
+@@ -1666,6 +1706,11 @@
+ 	    case 'D':
+ 	      dump_macros = dump_definitions;
+ 	      break;
++/* Start new option added by AMB */
++	    case 'I':
++	      dump_includes = 1;
++	      break;
++/* End new option added by AMB */
+ 	    }
+ 	  }
+ 	}
+@@ -1846,6 +1891,66 @@
+      and option processing.  */
+   initialize_builtins (fp, &outbuf);
+ 
++  /* Setup the cxref paths and definitions from gcc - AMB */
++
++  {
++   int fd;
++   int st_mode;
++   long st_size;
++   char *buf,*p,*oldp;
++   char *include_dir1,*include_dir2,*include_dir3;
++   struct default_include *incp;
++
++   fd=open(cxref_cpp_defines, O_RDONLY, 0666);
++   if(fd==-1)
++      perror_with_name(cxref_cpp_defines);
++
++   if(file_size_and_mode(fd, &st_mode, &st_size)<0)
++      perror_with_name(cxref_cpp_defines);
++
++   if(!S_ISREG(st_mode))
++      perror_with_name(cxref_cpp_defines);
++
++   buf=(U_CHAR *)xmalloc(st_size+2);
++
++   if(safe_read(fd,buf,st_size)<0)
++      perror_with_name(cxref_cpp_defines);
++
++   p=oldp=buf;
++
++   while(*p && (*p!='\r' && *p!='\n')) p++;
++   while(*p && (*p=='\r' || *p=='\n')) *p++=0;
++   predefs=savestring(oldp); oldp=p;
++
++   while(*p && (*p!='\r' && *p!='\n')) p++;
++   while(*p && (*p=='\r' || *p=='\n')) *p++=0;
++   include_dir1=savestring(oldp); oldp=p;
++
++   while(*p && (*p!='\r' && *p!='\n')) p++;
++   while(*p && (*p=='\r' || *p=='\n')) *p++=0;
++   include_dir2=savestring(oldp); oldp=p;
++
++   while(*p && (*p!='\r' && *p!='\n')) p++;
++   while(*p && (*p=='\r' || *p=='\n')) *p++=0;
++   include_dir3=savestring(oldp); oldp=p;
++
++   for(incp=include_defaults;incp->fname;incp++)
 +     {
-+      *p='(';
-+      strcat(p,")");
++      if(!strcmp("INCLUDE_DIR1",incp->fname))
++         incp->fname=include_dir1;
++      if(!strcmp("INCLUDE_DIR2",incp->fname))
++         incp->fname=include_dir2;
++      if(!strcmp("INCLUDE_DIR3",incp->fname))
++         incp->fname=include_dir3;
 +     }
-+ /* End change added by AMB (handles gcc 3.x "-Afoo=bar") */
-    
-    ip = &instack[++indepth];
-    ip->nominal_fname = ip->fname = "*Initialization*";
++
++   lseek(fd,(int)(p-buf),SEEK_SET);
++
++   no_output++; no_record_file++;
++   finclude(fd,cxref_cpp_defines,&outbuf,0,NULL_PTR);
++   no_output--; no_record_file--;
++  }
++
+   /* Do standard #defines and assertions
+      that identify system and machine type.  */
+ 
+@@ -1881,14 +1986,15 @@
+ 	past_name = assertion;
+ 	/* Locate end of name.  */
+ 	while (*past_name && *past_name != ' '
+-	       && *past_name != '\t' && *past_name != '(')
++	       && *past_name != '\t' && *past_name != '(' && *past_name != '=') /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB */
+ 	  past_name++;
+ 	/* Locate `(' at start of value.  */
+ 	value = past_name;
+ 	while (*value && (*value == ' ' || *value == '\t'))
+ 	  value++;
+-	if (*value++ != '(')
++	if (*value != '(' && *value != '=') /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB */
+ 	  abort ();
++        value++;
+ 	while (*value && (*value == ' ' || *value == '\t'))
+ 	  value++;
+ 	past_value = value;
+@@ -1897,10 +2003,14 @@
+ 	       && *past_value != '\t' && *past_value != ')')
+ 	  past_value++;
+ 	termination = past_value;
++        /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB
+ 	while (*termination && (*termination == ' ' || *termination == '\t'))
+ 	  termination++;
+ 	if (*termination++ != ')')
+ 	  abort ();
++        */
++	if (*termination == ')') /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB */
++           termination++;
+ 	if (*termination && *termination != ' ' && *termination != '\t')
+ 	  abort ();
+ 	/* Temporarily null-terminate the value.  */
+@@ -3841,10 +3951,17 @@
+ 	    bp = ip->bufp;
+ 	    /* No need to copy the directive because of a comment at the end;
+ 	       just don't include the comment in the directive.  */
+-	    if (bp == limit || *bp == '\n') {
+-	      bp = obp;
+-	      goto endloop1;
++/* Start of code from future cccp.c added by AMB */
++	    if (!put_out_comments) {
++	      U_CHAR *p;
++	      for (p = bp;  *p == ' ' || *p == '\t';  p++)
++		continue;
++	      if (*p == '\n') {
++		bp = obp;
++		goto endloop1;
++	      }
+ 	    }
++/* End of code from future cccp.c added by AMB */
+ 	    /* Don't remove the comments if -traditional.  */
+ 	    if (! keep_comments)
+ 	      copy_directive++;
+@@ -3874,7 +3991,10 @@
+ 
+       /* If a directive should be copied through, and -E was given,
+ 	 pass it through before removing comments.  */
+-      if (!no_output && kt->pass_thru && put_out_comments) {
++      if (!no_output && put_out_comments &&
++/* Start new option added by AMB */
++          (kt->pass_thru || (kt->type == T_INCLUDE && dump_includes))) {
++/* End new option added by AMB */
+         int len;
+ 
+ 	/* Output directive name.  */
+@@ -4002,6 +4122,10 @@
+ 
+       if (!no_output && already_output == 0
+ 	  && (kt->pass_thru
++/* Start new option added by AMB */
++	      || (kt->type == T_INCLUDE
++		  && dump_includes)
++/* End new option added by AMB */
+ 	      || (kt->type == T_DEFINE
+ 		  && (dump_macros == dump_names
+ 		      || dump_macros == dump_definitions)))) {
+@@ -4013,7 +4137,11 @@
+         bcopy (kt->name, (char *) op->bufp, kt->length);
+         op->bufp += kt->length;
+ 
+-	if (kt->pass_thru || dump_macros == dump_definitions) {
++	if (kt->pass_thru || dump_macros == dump_definitions
++/* Start new option added by AMB */
++          || dump_includes
++/* End new option added by AMB */
++            ) {
+ 	  /* Output arguments.  */
+ 	  len = (cp - buf);
+ 	  check_expand (op, len);
+@@ -9601,6 +9729,7 @@
+   install ((U_CHAR *) "__FILE__", -1, T_FILE, NULL_PTR, -1);
+   install ((U_CHAR *) "__BASE_FILE__", -1, T_BASE_FILE, NULL_PTR, -1);
+   install ((U_CHAR *) "__INCLUDE_LEVEL__", -1, T_INCLUDE_LEVEL, NULL_PTR, -1);
++  /* Don't setup the standard #defines - AMB
+   install ((U_CHAR *) "__VERSION__", -1, T_VERSION, NULL_PTR, -1);
+ #ifndef NO_BUILTIN_SIZE_TYPE
+   install ((U_CHAR *) "__SIZE_TYPE__", -1, T_SIZE_TYPE, NULL_PTR, -1);
+@@ -9615,6 +9744,7 @@
+ 	   NULL_PTR, -1);
+   install ((U_CHAR *) "__IMMEDIATE_PREFIX__", -1, T_IMMEDIATE_PREFIX_TYPE,
+ 	   NULL_PTR, -1);
++  */
+   install ((U_CHAR *) "__TIME__", -1, T_TIME, NULL_PTR, -1);
+   if (!traditional) {
+     install ((U_CHAR *) "__STDC__", -1, T_CONST, "1", -1);
+@@ -9639,6 +9769,7 @@
+       pass_thru_directive (udirective, &udirective[strlen (directive)],
+ 			   outp, dp);
+ 
++      /* Don't setup the standard #defines - AMB
+       sprintf (directive, " __VERSION__ \"%s\"\n", version_string);
+       output_line_directive (inp, outp, 0, same_file);
+       pass_thru_directive (udirective, &udirective[strlen (directive)],
+@@ -9662,6 +9793,7 @@
+       output_line_directive (inp, outp, 0, same_file);
+       pass_thru_directive (udirective, &udirective[strlen (directive)],
+ 			   outp, dp);
++      */
+ 
+       sprintf (directive, " __DATE__ \"%s %2d %4d\"\n",
+ 	       monthnames[timebuf->tm_mon],
+@@ -9826,7 +9958,7 @@
+   U_CHAR *buf, *p, *q;
+ 
+   /* Copy the entire option so we can modify it.  */
+-  buf = (U_CHAR *) alloca (strlen (str) + 1);
++  buf = (U_CHAR *) alloca (strlen (str) + 2); /* 1 added to alloca length by AMB */
+   strcpy ((char *) buf, str);
+   /* Scan for any backslash-newline and remove it.  */
+   p = q = buf;
+@@ -9846,10 +9978,18 @@
+   while (is_idchar[*++p])
+     ;
+   SKIP_WHITE_SPACE (p);
+-  if (! (*p == 0 || *p == '(')) {
++  if (! (*p == 0 || *p == '(' || *p == '=')) { /* Allowed to use 'foo=bar' instead of 'foo(bar)' by AMB */
+     error ("malformed option `%s %s'", option, str);
+     return;
+   }
++
++/* Start change added by AMB (handles gcc 3.x "-Afoo=bar") */
++  if(*p=='=')
++    {
++     *p='(';
++     strcat(p,")");
++    }
++/* End change added by AMB (handles gcc 3.x "-Afoo=bar") */
+   
+   ip = &instack[++indepth];
+   ip->nominal_fname = ip->fname = "*Initialization*";
