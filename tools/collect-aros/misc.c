@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/param.h>
 #include <string.h>
 
@@ -50,3 +51,36 @@ void set_compiler_path(void)
 	}
     }
 }
+
+#ifndef _HAVE_LIBIBERTY_
+
+void *xmalloc(size_t size)
+{
+    void *ret = malloc(size);
+    if (ret == NULL)
+    {
+        fatal("xmalloc", strerror(errno));
+    }
+
+    return ret;
+}
+
+char *make_temp_file(char *suffix __attribute__((unused)))
+{
+    int fd;
+    /* If you're unlucky enough to not have libiberty available, you'll have
+       to live with temporary files in /tmp and no suffix; it's ok for our own
+       purposes,  */
+    char template[] = "/tmp/catmpXXXXXX";
+
+    fd = mkstemp(template);
+    if (fd == -1)
+        return NULL;
+
+    if (close(fd) != 0)
+        fatal("make_temp_file()/close()", strerror(errno));
+
+    return strdup(template);
+}
+
+#endif
