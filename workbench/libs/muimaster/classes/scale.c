@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <stdio.h>
 
@@ -21,13 +21,14 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 /*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ScaleData
+struct Scale_DATA
 {
     BOOL horiz;
     LONG label_height;
@@ -39,7 +40,7 @@ struct MUI_ScaleData
 **************************************************************************/
 static IPTR Scale_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ScaleData   *data;
+    struct Scale_DATA   *data;
     struct TagItem  	    *tag, *tags;
     
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -71,7 +72,7 @@ static IPTR Scale_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Scale_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ScaleData   *data;
+    struct Scale_DATA   *data;
     struct TagItem  	   *tag, *tags;
     int need_redraw = 0;
     
@@ -101,7 +102,7 @@ static IPTR Scale_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG  Scale_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 {
-    struct MUI_ScaleData *data = INST_DATA(cl, obj);
+    struct Scale_DATA *data = INST_DATA(cl, obj);
     ULONG *store = msg->opg_Storage;
     ULONG    tag = msg->opg_AttrID;
 
@@ -121,7 +122,7 @@ static ULONG  Scale_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_ScaleData *data = INST_DATA(cl,obj);
+    struct Scale_DATA *data = INST_DATA(cl,obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
@@ -146,7 +147,7 @@ static IPTR Scale_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 **************************************************************************/
 static IPTR Scale_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_ScaleData *data = INST_DATA(cl,obj);
+    struct Scale_DATA *data = INST_DATA(cl,obj);
     DoSuperMethodA(cl,obj,(Msg)msg);
 
     if (data->horiz)
@@ -169,7 +170,7 @@ static IPTR Scale_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 **************************************************************************/
 static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_ScaleData *data = INST_DATA(cl,obj);
+    struct Scale_DATA *data = INST_DATA(cl,obj);
     //ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -273,7 +274,7 @@ static IPTR Scale_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 0;
 }
 
-
+#if ZUNE_BUILTIN_SCALE
 BOOPSI_DISPATCHER(IPTR, Scale_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -289,13 +290,11 @@ BOOPSI_DISPATCHER(IPTR, Scale_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Scale_desc = { 
+const struct __MUIBuiltinClass _MUI_Scale_desc =
+{ 
     MUIC_Scale, 
     MUIC_Area, 
-    sizeof(struct MUI_ScaleData), 
+    sizeof(struct Scale_DATA), 
     (void*)Scale_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_SCALE */

@@ -112,6 +112,29 @@
 #   define ZUNE_POPPEN_DESC
 #endif
 
+#if ZUNE_BUILTIN_SCALE
+#   define ZUNE_SCALE_DESC (&_MUI_Scale_desc),
+#else
+#   define ZUNE_SCALE_DESC
+#endif
+
+#if ZUNE_BUILTIN_SCROLLGROUP
+#   define ZUNE_SCROLLGROUP_DESC (&_MUI_Scrollgroup_desc),
+#else
+#   define ZUNE_SCROLLGROUP_DESC
+#endif
+
+#if ZUNE_BUILTIN_SETTINGSGROUP
+#   define ZUNE_SETTINGSGROUP_DESC (&_MUI_Settingsgroup_desc),
+#else
+#   define ZUNE_SETTINGSGROUP_DESC
+#endif
+
+#if ZUNE_BUILTIN_VIRTGROUP
+#   define ZUNE_VIRTGROUP_DESC (&_MUI_Virtgroup_desc),
+#else
+#   define ZUNE_VIRTGROUP_DESC
+#endif
 
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
 BOOL DestroyClasses(struct Library *MUIMasterBase);

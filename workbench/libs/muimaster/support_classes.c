@@ -99,8 +99,8 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Menuitem_desc,
     &_MUI_Menu_desc,
     &_MUI_Menustrip_desc,
-    &_MUI_Virtgroup_desc,
-    &_MUI_Scrollgroup_desc,
+    ZUNE_VIRTGROUP_DESC
+    ZUNE_SCROLLGROUP_DESC
     &_MUI_Scrollbutton_desc,
     &_MUI_Semaphore_desc,
     &_MUI_Dataspace_desc,
@@ -115,10 +115,10 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Popobject_desc,
     ZUNE_GAUGE_DESC
     ZUNE_ABOUTMUI_DESC
-    &_MUI_Settingsgroup_desc,
+    ZUNE_SETTINGSGROUP_DESC
     ZUNE_IMAGEADJUST_DESC
     ZUNE_POPIMAGE_DESC
-    &_MUI_Scale_desc,
+    ZUNE_SCALE_DESC
     &_MUI_Radio_desc,
     &_MUI_IconList_desc,
     &_MUI_IconDrawerList_desc,

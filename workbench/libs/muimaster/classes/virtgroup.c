@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
@@ -19,10 +19,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_VirtgroupData
+struct Virtgroup_DATA
 {
    int dummy;
 };
@@ -32,13 +33,13 @@ struct MUI_VirtgroupData
 **************************************************************************/
 static ULONG Virtgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    //struct MUI_VirtgroupData *data;
+    //struct Virtgroup_DATA *data;
     //int i;
 
     return DoSuperNewTags(cl, obj, NULL, MUIA_Group_Virtual, TRUE, TAG_MORE, msg->ops_AttrList);
 }
 
-
+#if ZUNE_BUILTIN_VIRTGROUP
 BOOPSI_DISPATCHER(IPTR, Virtgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -48,12 +49,11 @@ BOOPSI_DISPATCHER(IPTR, Virtgroup_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Virtgroup_desc = { 
+const struct __MUIBuiltinClass _MUI_Virtgroup_desc =
+{ 
     MUIC_Virtgroup, 
     MUIC_Group, 
-    sizeof(struct MUI_VirtgroupData), 
+    sizeof(struct Virtgroup_DATA), 
     (void*)Virtgroup_Dispatcher 
 };
+#endif /* ZUNE_BUILTIN_VIRTGROUP */

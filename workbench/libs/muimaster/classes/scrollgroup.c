@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <exec/memory.h>
 #include <intuition/icclass.h>
@@ -19,10 +19,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_ScrollgroupData
+struct Scrollgroup_DATA
 {
     Object *contents;
     Object *vert, *horiz, *button;
@@ -35,7 +36,7 @@ AROS_UFH3(ULONG,Scrollgroup_Layout_Function,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(struct MUI_LayoutMsg *, lm,  A1))
 {
-    struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
+    struct Scrollgroup_DATA *data = (struct Scrollgroup_DATA *)hook->h_Data;
     switch (lm->lm_Type)
     {
 	case    MUILM_MINMAX:
@@ -149,7 +150,7 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 	AROS_UFHA(APTR, dummy, A2),
 	AROS_UFHA(void **, msg,  A1))
 {
-    struct MUI_ScrollgroupData *data = (struct MUI_ScrollgroupData *)hook->h_Data;
+    struct Scrollgroup_DATA *data = (struct Scrollgroup_DATA *)hook->h_Data;
     int type = (int)msg[0];
     LONG val = (LONG)msg[1];
 
@@ -179,7 +180,7 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
 **************************************************************************/
 static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_ScrollgroupData *data;
+    struct Scrollgroup_DATA *data;
     //struct TagItem *tags,*tag;
     Object *contents = (Object*)GetTagData(MUIA_Scrollgroup_Contents, NULL, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
@@ -232,7 +233,7 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Scrollgroup_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ScrollgroupData *data = INST_DATA(cl, obj);
+    struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
     mui_free(data->layout_hook);
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -242,7 +243,7 @@ static ULONG Scrollgroup_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static ULONG Scrollgroup_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
-    struct MUI_ScrollgroupData *data = INST_DATA(cl, obj);
+    struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
     LONG top,left,width,height;
 
     get(data->contents, MUIA_Virtgroup_Left, &left);
@@ -264,6 +265,7 @@ static ULONG Scrollgroup_Show(struct IClass *cl, Object *obj, struct MUIP_Show *
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
+#if ZUNE_BUILTIN_SCROLLGROUP
 BOOPSI_DISPATCHER(IPTR, Scrollgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -275,13 +277,11 @@ BOOPSI_DISPATCHER(IPTR, Scrollgroup_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Scrollgroup_desc = { 
+const struct __MUIBuiltinClass _MUI_Scrollgroup_desc =
+{ 
     MUIC_Scrollgroup, 
     MUIC_Group, 
-    sizeof(struct MUI_ScrollgroupData), 
+    sizeof(struct Scrollgroup_DATA), 
     (void*)Scrollgroup_Dispatcher 
 };
+#endif /* ZUNE_BUILTIN_SCROLLGROUP */

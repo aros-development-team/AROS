@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <graphics/gfx.h>
 #include <graphics/view.h>
@@ -17,10 +17,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_SettingsgroupData
+struct Settingsgroup_DATA
 {
     int dummy;
 };
@@ -69,7 +70,7 @@ static IPTR Settingsgroup_GadgetsToConfig(struct IClass *cl, Object *obj, struct
     return 0;
 }
 
-
+#if ZUNE_BUILTIN_SETTINGSGROUP
 BOOPSI_DISPATCHER(IPTR, Settingsgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -85,13 +86,11 @@ BOOPSI_DISPATCHER(IPTR, Settingsgroup_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Settingsgroup_desc = { 
+const struct __MUIBuiltinClass _MUI_Settingsgroup_desc =
+{ 
     MUIC_Settingsgroup,
     MUIC_Group, 
-    sizeof(struct MUI_SettingsgroupData), 
+    sizeof(struct Settingsgroup_DATA), 
     (void*)Settingsgroup_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_SETTINGSGROUP */
