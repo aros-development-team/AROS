@@ -47,8 +47,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/AbortPkt()
-    aros_print_not_implemented ("AbortPkt");
+    LONG res = AbortIO((struct IORequest*)pkt->dp_Arg7);
+
+#warning Still have to decide where to finally free the IORequest structure if this goes well
+    if (0 == res) 
+    {
+        FreeMem(pkt->dp_Arg7, sizeof(struct IOFileSys));
+        pkt->dp_Arg7 = NULL;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* AbortPkt */
