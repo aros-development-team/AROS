@@ -792,6 +792,7 @@ static void draw_text_line (gpointer l, gpointer d)
 void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 {
     struct RastPort *rp;
+    ULONG style = FS_NORMAL;
 
     ZTextLine *line_node;
     ZTextChunk *chunk_node;
@@ -815,6 +816,15 @@ void zune_text_draw (ZText *text, Object *obj, WORD left, WORD right, WORD top)
 	{
 	    if (chunk_node->str)
 	    {
+	    	ULONG newstyle = FS_NORMAL;
+
+		if (chunk_node->style & ZTC_STYLE_BOLD) newstyle |= FSF_BOLD;
+		if (newstyle != style)
+		{
+		    SetSoftStyle(rp, newstyle, AskSoftStyle(rp));
+		    style = newstyle;
+		}
+
 	    	Move(rp,x,top);
 	    	SetABPenDrMd(rp, _dri(obj)->dri_Pens[chunk_node->dripen],0,JAM1);
 
