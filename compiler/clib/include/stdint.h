@@ -8,31 +8,40 @@
     Standard fixed sized integral types.
 */
 
-#include <exec/types.h>			/* includes <aros/system.h> */
+#include <aros/cpu.h>
 
-typedef QUAD		int64_t;        /* 64-bit signed integer   */
-typedef UQUAD		uint64_t;	/* 64-bit unsigned integer */
-typedef LONG		int32_t;        /* 32-bit signed integer   */
-typedef ULONG		uint32_t;	/* 32-bit unsigned integer */
-typedef WORD		int16_t;        /* 16-bit signed integer   */
-typedef UWORD		uint16_t;	/* 16-bit unsigned integer */
-typedef BYTE		int8_t;         /* 8-bit signed integer    */
-typedef UBYTE		uint8_t;	/* 8-bit unsigned integer  */
+typedef signed AROS_64BIT_TYPE              int64_t;
+typedef unsigned AROS_64BIT_TYPE            uint64_t;
+typedef signed AROS_32BIT_TYPE              int32_t;
+typedef unsigned AROS_32BIT_TYPE            uint32_t;
+typedef signed AROS_16BIT_TYPE              int16_t;
+typedef unsigned AROS_16BIT_TYPE            uint16_t;
+typedef signed AROS_8BIT_TYPE               int8_t;
+typedef unsigned AROS_8BIT_TYPE             uint8_t;
 
-typedef SIPTR		intptr_t;	/* Integer or Pointer      */
-typedef IPTR		uintptr_t;	/* Unsigned integer or ptr */
+typedef signed AROS_INTPTR_TYPE             intptr_t;
+typedef unsigned AROS_INTPTR_TYPE           uintptr_t;
 
 /* Fast versions of these types */
-#if defined AROS_64BIT_TYPE
-typedef QUAD		int_fast64_t;
-typedef UQUAD		uint_fast64_t;
-#endif
-typedef LONG		int_fast32_t;
-typedef ULONG		uint_fast32_t;
-typedef WORD		int_fast16_t;
-typedef UWORD		uint_fast16_t;
-typedef BYTE		int_fast8_t;
-typedef UBYTE		uint_fast8_t;
+typedef signed AROS_64BIT_FASTTYPE          int_fast64_t;
+typedef unsigned AROS_64BIT_FASTTYPE        uint_fast64_t;
+typedef signed AROS_32BIT_FASTTYPE          int_fast32_t;
+typedef unsigned AROS_32BIT_FASTTYPE        uint_fast32_t;
+typedef signed AROS_16BIT_FASTTYPE          int_fast16_t;
+typedef unsigned AROS_16BIT_FASTTYPE        uint_fast16_t;
+typedef signed AROS_8BIT_FASTTYPE           int_fast8_t;
+typedef unsigned AROS_8BIT_FASTTYPE         uint_fast8_t;
+
+/* Minimum sized types */
+typedef signed AROS_64BIT_LEASTTYPE         int_least64_t;
+typedef unsigned AROS_64BIT_LEASTTYPE       uint_least64_t;
+typedef signed AROS_32BIT_LEASTTYPE         int_least32_t;
+typedef unsigned AROS_32BIT_LEASTTYPE       uint_least32_t;
+typedef signed AROS_16BIT_LEASTTYPE         int_least16_t;
+typedef unsigned AROS_16BIT_LEASTTYPE       uint_least16_t;
+typedef signed AROS_8BIT_LEASTTYPE          int_least8_t;
+typedef unsigned AROS_8BIT_LEASTTYPE        uint_least8_t;
+
 
 /*
     Use the AROS_LARGEST_TYPE to describe the intmax_t and uintmax_t
@@ -47,9 +56,6 @@ typedef ULONG	uintmax_t;
 
 /*
         TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-
-	    int_least_	    8, 16, 32, 64 _t
-	    uint_least_	    8, 16, 32, 64 _t
 
 #if defined __cplusplus && defined __STDC_LIMIT_MACROS
 	    INT<N>_MAX, INT<N>_MIN, UINT<N>_MAX

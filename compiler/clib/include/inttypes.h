@@ -8,8 +8,8 @@
     Standard fixed sized integral types.
 */
 
-#include <aros/system.h>	    /* for restrict */
-#include <aros/systypes.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
 #include <stdint.h>
 
 /*
@@ -40,9 +40,9 @@
 #endif
 */
 
-#ifdef	_AROS_WCHAR_T_
-typedef _AROS_WCHAR_T_	    wchar_t;
-#undef	_AROS_WCHAR_T_
+#ifndef __AROS_WCHAR_T_DECLARED
+#define __AROS_WCHAR_T_DECLARED
+typedef __wchar_t           wchar_t;
 #endif
 
 __BEGIN_DECLS

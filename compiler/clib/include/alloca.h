@@ -8,6 +8,7 @@
 #ifndef	_ALLOCA_H
 #define	_ALLOCA_H
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 
 

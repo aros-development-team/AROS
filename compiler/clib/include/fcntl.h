@@ -9,16 +9,17 @@
     Lang: english
 */
 
-#include <aros/systypes.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
 
-#ifdef	_AROS_PID_T_
-typedef _AROS_PID_T_	pid_t;
-#undef	_AROS_PID_T_
+#ifndef __AROS_PID_T_DECLARED
+#define __AROS_PID_T_DECLARED
+typedef __pid_t         pid_t;
 #endif
 
-#ifdef	_AROS_OFF_T_
-typedef _AROS_OFF_T_	off_t;
-#undef	_AROS_OFF_T_
+#ifndef __AROS_OFF_T_DECLARED
+#define __AROS_OFF_T_DECLARED
+typedef __off_t         off_t;
 #endif
 
 /* Flags for open */

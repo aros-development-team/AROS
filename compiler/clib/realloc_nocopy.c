@@ -3,7 +3,7 @@
     $Id$
 */
 
-#include <aros/machine.h>
+#include <aros/cpu.h>
 #include <proto/exec.h>
 
 /*****************************************************************************

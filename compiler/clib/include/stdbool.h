@@ -21,10 +21,10 @@
 #define bool				    _Bool
 #define	true				    1
 #define false				    0
-#define __bool_true_false_are_defined   1
+#define __bool_true_false_are_defined       1
 
-/* This is to make _Bool a real type if this isn't C99 */
-#if __STDC_VERSION__ < 199901L
+/* This is to make _Bool a real type if this isn't C99 or GCC v3+ */
+#if __STDC_VERSION__ < 199901L && (!defined __GNUC__ || __GNUC__ < 3)
 typedef int	_Bool;
 #endif
 

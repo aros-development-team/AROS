@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <aros/machine.h>
+#include <aros/cpu.h>
 #include <exec/libraries.h>
 
 #define SYSTEM_CALL(name) "" #name "" ,

@@ -8,9 +8,9 @@
     Based on SUSv2 with help from C99.
 */
 
-#include <aros/system.h>	    /* for restrict */
-#include <aros/systypes.h>	    /* includes <exec/types.h> */
+#include <sys/_types.h>
 #include <sys/_posix.h>
+#include <sys/cdefs.h>
 
 typedef void __sighandler_t (int);
 
@@ -41,9 +41,9 @@ typedef struct __sigset {
     unsigned int	__val[_SIG_WORDS];
 } sigset_t;
 
-#ifdef	_AROS_PID_T_
-typedef _AROS_PID_T_	pid_t;
-#undef	_AROS_PID_T_
+#ifndef __AROS_PID_T_DECLARED
+#define __AROS_PID_T_DECLARED
+typedef __pid_t         pid_t;
 #endif
 
 #endif /* !_ANSI_SOURCE */
@@ -190,7 +190,7 @@ typedef struct __siginfo
     int		    si_errno;	    /* errno value */
     int		    si_code;	    /* signal code */
     pid_t	    si_pid;	    /* sending process ID */
-    _AROS_UID_T_    si_uid;	    /* user ID of sending process XXX */
+    __uid_t         si_uid;	    /* user ID of sending process XXX */
     void *	    si_addr;	    /* address of faulting instruction */
     int		    si_status;	    /* exit value or signal */
     long	    si_band;	    /* band event for SIGPOLL */
@@ -221,9 +221,9 @@ struct sigaction
 
 #if !defined(_POSIX_SOURCE)
 
-#ifdef	_AROS_SIZE_T_
-typedef _AROS_SIZE_T_	size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t        size_t;
 #endif
 
 /* if SA_SIGINFO is set, use sa_sigaction rather than sa_handler */

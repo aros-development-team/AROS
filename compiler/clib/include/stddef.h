@@ -8,24 +8,24 @@
     Desc: ANSI-C header file stddef.h
     Lang: english
 */
-#include <aros/systypes.h>
+#include <sys/_types.h>
 
 /* This construction prevents these types from being multiply defined. */
 
 /* This is CPU dependant */
-#ifdef	_AROS_PTRDIFF_T_
-typedef _AROS_PTRDIFF_T_    ptrdiff_t;
-#undef	_AROS_PTRDIFF_T_
+#ifndef __AROS_PTRDIFF_T_DECLARED
+#define __AROS_PTRDIFF_T_DECLARED
+typedef __ptrdiff_t         ptrdiff_t;
 #endif
 
-#ifdef  _AROS_SIZE_T_
-typedef	_AROS_SIZE_T_	    size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t            size_t;
 #endif
 
-#ifdef	_AROS_WCHAR_T_
-typedef _AROS_WCHAR_T_	    wchar_t;
-#undef	_AROS_WCHAR_T_
+#ifndef __AROS_WCHAR_T_DECLARED
+#define __AROS_WCHAR_T_DECLARED
+typedef __wchar_t           wchar_t;
 #endif
 
 #ifndef NULL

@@ -9,21 +9,21 @@
     Lang: English
 */
 
-#include <aros/systypes.h>
+#include <sys/_types.h>
 #include <sys/_posix.h>
 
 /* It seems that also stdlib.h defines alloca() */
 #include <alloca.h>
 
 /* The following two types can be declared elsewhere */
-#ifdef	_AROS_SIZE_T_
-typedef _AROS_SIZE_T_	    size_t;
-#undef	_AROS_SIZE_T_
+#ifndef __AROS_SIZE_T_DECLARED
+#define __AROS_SIZE_T_DECLARED
+typedef __size_t            size_t;
 #endif
 
-#ifdef	_AROS_WCHAR_T_
-typedef	_AROS_WCHAR_T_	    wchar_t;
-#undef	_AROS_WCHAR_T_
+#ifndef __AROS_WCHAR_T_DECLARED
+#define __AROS_WCHAR_T_DECLARED
+typedef __wchar_t           wchar_t;
 #endif
 
 /* Types for div and ldiv */

@@ -9,11 +9,12 @@
     Lang: english
 */
 
-#include <aros/systypes.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
 
-#ifdef	_AROS_TIME_T_
-typedef	_AROS_TIME_T_	time_t;
-#undef	_AROS_TIME_T_
+#ifndef __AROS_TIME_T_DECLARED
+#define __AROS_TIME_T_DECLARED
+typedef __time_t        time_t;
 #endif
 
 struct utimbuf {

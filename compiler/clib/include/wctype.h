@@ -1,18 +1,23 @@
 #ifndef _WCTYPE_H_
 #define _WCTYPE_H_
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Standard C Library: Wide character classification and mapping.
     Introduced in ISO 8879:1999 ("C99").
 */
 
-#include <aros/systypes.h>
+#include <sys/_types.h>
 
-#ifdef	_AROS_WINT_T_
-typedef _AROS_WINT_T_ wint_t;
-#undef	_AROS_WINT_T_
+#ifndef __AROS_WCHAR_T_DECLARED
+#define __AROS_WCHAR_T_DECLARED
+typedef __wchar_t   wchar_t;
+#endif
+
+#ifndef __AROS_WINT_T_DECLARED
+#define __AROS_WINT_T_DECLARED
+typedef __wint_t    wint_t;
 #endif
 
 #ifndef WEOF
