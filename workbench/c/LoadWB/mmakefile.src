@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 FILES := LoadWB ExecuteCommand Desktop
 
 EXEDIR := $(AROS_C)
-EXE := $(EXEDIR)/LoadWB
+EXE := $(EXEDIR)/LoadWB.old
 
 USE_DETACH := yes
 USE_AROSLIB := yes
