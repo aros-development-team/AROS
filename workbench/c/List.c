@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: List the contents of a directory
@@ -642,6 +642,8 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
     
     if (0 == error)
     {
+    	ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+	
 	do
 	{
 	    /*
@@ -682,16 +684,23 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
 		dirs = 0;
 		nBlocks = 0;
 	    }
-	} while (0 == MatchNext(ap));
+	    
+	    error = MatchNext(ap);
+	    
+	} while (0 == error);
     }
     
     MatchEnd(ap);
     
     FreeVec(ap);
 
+    if (error == ERROR_BREAK) PrintFault(error, NULL);
+    
     printSummary(files, dirs, nBlocks, noHead);
 
-    return 0;
+    if (error == ERROR_NO_MORE_ENTRIES) error = 0;
+    
+    return error;
 }
 
 
@@ -894,12 +903,20 @@ int main(int argc, char **argv)
     } 
     else
     {
-	error = RETURN_FAIL;
+	error = IoErr();;
     }
 
     if (error != RETURN_OK)
     {
-	PrintFault(IoErr(), "List");
+	if (error == ERROR_BREAK)
+	{
+	    error = RETURN_WARN;
+	}
+	else
+	{
+	    PrintFault(error, "List");
+	    error = RETURN_FAIL;
+	}
     }
     
     if (parsedPattern != NULL)
