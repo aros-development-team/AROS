@@ -4,24 +4,14 @@
 #include <proto/locale.h>
 #include <aros/symbolsets.h>
 
-struct CatalogStr
-{
-    const ULONG cs_NUM;
-    struct Catalog ** const cs_CatalogPtr;
-    const char cs_STR[1];
-};
-
 #define CATALOG_BEGIN(catalog, version) \
     static struct Catalog *catalog ##_catalog; \
     static const ULONG catalog ## _catalog_version = version;
 
-#define CATALOG_STR(catalog, ID, str, num)     \
-    const struct                               \
-    {                                          \
-        const ULONG cs_NUM;                    \
-        struct Catalog * const *cs_CatalogPtr; \
-        const char cs_STR[sizeof(str)];        \
-    } ID ## _STR = { num, &catalog ## _catalog, str };
+#define CATALOG_STR(catalog, ID, str, num)                       \
+    AROS_MAKE_ALIAS(catalog ## _catalog, ID ## _CAT);            \
+    AROS_MAKE_ASM_SYM(AROS_CSYM_FROM_ASM_NAME(ID ## _NUM), num); \
+    const char ID ## _STR[] = str;                               
     
 #define CATALOG_END(catalog) \
     static int OpenCatalog_ ## catalog(void)               \
@@ -46,14 +36,16 @@ struct CatalogStr
     ADD2INIT(OpenCatalog_ ## catalog,  10);                \
     ADD2EXIT(CloseCatalog_ ## catalog, 10);              
 
-#define GetString(ID)                                                                   \
-({                                                                                      \
-    extern const struct CatalogStr ID ## _STR;                                          \
-                                                                                        \
-    LocaleBase != NULL ?                                                                \
-        GetCatalogStr(*ID ## _STR.cs_CatalogPtr, ID ## _STR.cs_NUM, ID ## _STR.cs_STR)  \
-    :                                                                                   \
-        (CONST_STRPTR)ID ## _STR.cs_STR;                                                      \
+#define GetString(ID)                                            \
+({                                                               \
+    extern const        char     ID ## _STR[];                   \
+    extern       struct Catalog *ID ## _CAT;                     \
+    extern              int      ID ## _NUM;                     \
+                                                                 \
+    LocaleBase != NULL ?                                         \
+        GetCatalogStr(ID ## _CAT, (IPTR)&ID ## _NUM, ID ## _STR) \
+    :                                                            \
+        (CONST_STRPTR)ID ## _STR;                                \
 })
 	
 #endif /* !_AROS_LOCALE_H */
