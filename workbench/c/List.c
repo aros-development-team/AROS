@@ -1,0 +1,257 @@
+/*
+    (C) 1995-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: List the contents of a directory
+    Lang: english
+*/
+#include <clib/macros.h>
+#include <exec/memory.h>
+#include <proto/exec.h>
+#include <dos/datetime.h>
+#include <dos/dos.h>
+#include <dos/exall.h>
+#include <dos/datetime.h>
+#include <proto/dos.h>
+#include <utility/tagitem.h>
+
+static const char version[] = "$VER: list 41.3 (4.10.1997)\n";
+
+
+#define TEMPLATE "DIR/M"
+#define ARG_DIR 0
+#define ARG_NUM 1
+
+
+
+int printdirheader(STRPTR dirname)
+{
+    struct DateTime dt;
+    char datestr[LEN_DATSTRING], dow[LEN_DATSTRING];
+    IPTR args[] = { (IPTR)dirname, (IPTR)dow, (IPTR)datestr };
+
+    DateStamp((struct DateStamp *)&dt);
+    dt.dat_Format = FORMAT_DEF;
+    dt.dat_Flags = 0;
+    dt.dat_StrDay = dow;
+    dt.dat_StrDate = datestr;
+    dt.dat_StrTime = NULL;
+    DateToStr(&dt);
+
+    if (VPrintf("Directory \"%s\" on %s %s:\n", args) < 0)
+        return RETURN_ERROR;
+
+    return RETURN_OK;
+}
+
+
+int printfiledata(STRPTR filename, BOOL dir, struct DateStamp *ds, ULONG protection, ULONG size, STRPTR filenote)
+{
+    int error = RETURN_OK;
+    IPTR argv[5];
+    UBYTE date[LEN_DATSTRING];
+    UBYTE time[LEN_DATSTRING];
+    struct DateTime dt;
+    char flags[8];
+    int i;
+
+    CopyMem(ds, &dt.dat_Stamp, sizeof(struct DateStamp));
+    dt.dat_Format  = FORMAT_DOS;
+    dt.dat_Flags   = DTF_SUBST;
+    dt.dat_StrDay  = NULL;
+    dt.dat_StrDate = date;
+    dt.dat_StrTime = time;
+    DateToStr(&dt); /* returns 0 if invalid */
+
+    for(i=0; i<7; i++)
+        if (!(protection & (1<<i)))
+            flags[6-i]="sparwed"[6-i];
+        else
+            flags[6-i]='-';
+    flags[7] = 0x00;
+
+    argv[0] = (IPTR)filename;
+    if (dir) {
+        argv[1] = (IPTR)flags;
+        argv[2] = (IPTR)date;
+        argv[3] = (IPTR)time;
+        if (VPrintf("%-25.s   <Dir> %7.s %-11.s %s\n", argv) < 0)
+            error = RETURN_ERROR;
+    } else {
+        argv[1] = size;
+        argv[2] = (IPTR)flags;
+        argv[3] = (IPTR)date;
+        argv[4] = (IPTR)time;
+        if (VPrintf("%-25.s %7.ld %7.s %-11.s %s\n", argv) < 0)
+            error = RETURN_ERROR;
+    }
+    if ((!error) && (filenote))
+        error = VPrintf(": %s\n", (IPTR *)&filenote);
+
+    return error;
+}
+
+
+/* print directory summary information */
+int printsummary(int files, int dirs, int blocks)
+{
+    int error = RETURN_OK;
+
+    if ((files == 0) && (dirs == 0))
+        if (VPrintf("Directory is empty\n", NULL) < 0)
+            error = RETURN_ERROR;
+    else {
+        if ((files)) {
+            if (VPrintf("%ld files - ", (IPTR *)&files) < 0)
+                error = RETURN_ERROR;
+        }
+        if ((dirs) && (!error)) {
+            if (VPrintf("%ld directories - ", (IPTR *)&dirs) < 0)
+                error = RETURN_ERROR;
+        }
+        if (!error) {
+            if (VPrintf("%ld blocks used\n", (IPTR *)&blocks) < 0)
+                error = RETURN_ERROR;
+        }
+    }
+
+    return error;
+}
+
+
+/* print information about all files in a directory */
+int scandir(BPTR dir)
+{
+    int error = RETURN_OK;
+    LONG files=0, dirs=0, blocks=0;
+    struct ExAllControl *eac;
+    struct ExAllData *ead;
+    static UBYTE buffer[4096];
+    BOOL loop;
+
+    eac = AllocDosObject(DOS_EXALLCONTROL,NULL);
+    if (eac) {
+        eac->eac_LastKey = 0;
+        do {
+            loop = ExAll(dir, (struct ExAllData *)buffer, sizeof(buffer), ED_COMMENT, eac);
+            if ((loop) || (IoErr() == ERROR_NO_MORE_ENTRIES)) {
+                if (eac->eac_Entries) {
+                    ead = (struct ExAllData *)buffer;
+                    do {
+                        int tmperror;
+                        struct DateStamp ds = {
+                            ead->ed_Days,
+                            ead->ed_Mins,
+                            ead->ed_Ticks
+                        };
+                        tmperror = printfiledata(ead->ed_Name,
+                                                 ead->ed_Type>=0?TRUE:FALSE,
+                                                 &ds,
+                                                 ead->ed_Prot,
+                                                 ead->ed_Size,
+                                                 ead->ed_Comment);
+                        error = MAX(error,tmperror);
+                        if (ead->ed_Type >= 0)
+                            dirs++;
+                        else {
+                            files++;
+                            blocks += ead->ed_Size;
+                        }
+                        ead = ead->ed_Next;
+                    } while (ead != NULL);
+                }
+            } else
+                error = RETURN_ERROR;
+        } while ((loop) && (!error));
+        FreeDosObject(DOS_EXALLCONTROL, eac);
+    } else {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        error = RETURN_FAIL;
+    }
+
+    if (!error)
+        printsummary(files, dirs, blocks);
+
+    return error;
+}
+
+
+int listfile(STRPTR filename)
+{
+    int error;
+    BPTR dir;
+    struct FileInfoBlock *fib;
+
+    dir = Lock(filename, SHARED_LOCK);
+    if (dir) {
+        fib = AllocDosObject(DOS_FIB, NULL);
+        if (fib) {
+            if (Examine(dir, fib)) {
+                if (fib->fib_DirEntryType >= 0) {
+                    error = printdirheader(filename);
+                    if (!error)
+                        error = scandir(dir);
+                } else {
+                    /* The lock is just an ordinary file. */
+                    STRPTR dirname;
+                    int dirlen = strlen(filename) + 1;
+                    dirname = AllocVec(dirlen, MEMF_ANY);
+                    if (dirname) {
+                        CopyMem(filename, dirname, dirlen);
+                        PathPart(dirname)[0] = 0x00;
+                        error = printdirheader(dirname);
+                        FreeVec(dirname);
+                        if (!error) {
+                            error = printfiledata(fib->fib_FileName, fib->fib_DirEntryType>=0?TRUE:FALSE, &fib->fib_Date, fib->fib_Protection, fib->fib_NumBlocks, fib->fib_Comment);
+                            if (!error)
+                                error = printsummary(1, 0, fib->fib_Size);
+                        }
+                    } else {
+                        SetIoErr(ERROR_NO_FREE_STORE);
+                        error = RETURN_FAIL;
+                    }
+                }
+            } else
+                error = RETURN_FAIL;
+            FreeDosObject(DOS_FIB, fib);
+        } else {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            error = RETURN_FAIL;
+        }
+        UnLock(dir);
+    } else
+        error = RETURN_FAIL;
+
+    return error;
+}
+
+
+int main (int argc, char **argv)
+{
+    IPTR args[ARG_NUM] = { NULL };
+    struct RDArgs *rda;
+    LONG error = RETURN_OK;
+    STRPTR *filelist;
+
+    rda = ReadArgs(TEMPLATE, args, NULL);
+    if (rda) {
+        filelist = (STRPTR *)args[ARG_DIR];
+        if ((filelist) && (filelist[0])) {
+            while ((*filelist) && (!error)) {
+                error = listfile(filelist[0]);
+                filelist++;
+                if (filelist[0])
+                    VPrintf("\n", NULL);
+            }
+        } else
+            /* No file to list given. Just list the current directory */
+            error = listfile("");
+	FreeArgs(rda);
+    } else
+	error=RETURN_FAIL;
+
+    if (error)
+	PrintFault(IoErr(),"List");
+
+    return error;
+}

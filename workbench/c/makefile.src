@@ -27,7 +27,6 @@ FILES = \
 	echo \
 	execute \
 	liblist \
-	list \
 	makedir \
 	mount \
 	newshell \
@@ -44,6 +43,7 @@ FILES = \
 	Filenote \
 	Get \
 	Getenv \
+	List \
 	Protect \
 	RequestChoice \
 	Set \
