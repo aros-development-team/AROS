@@ -462,7 +462,7 @@ STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 #define gpR(msg) ((struct gpRender *)msg)
 #define gpI(msg) ((struct gpInput  *)msg)
 
-AROS_UFH3(STATIC IPTR, dispatch_strgclass,
+AROS_UFH3S(IPTR, dispatch_strgclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

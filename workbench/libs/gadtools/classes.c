@@ -119,7 +119,7 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 }
 
 
-AROS_UFH3(static IPTR, dispatch_buttonclass,
+AROS_UFH3S(IPTR, dispatch_buttonclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -476,7 +476,7 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     ReturnVoid("Text::Render");
 }
 
-AROS_UFH3(static IPTR, dispatch_textclass,
+AROS_UFH3S(IPTR, dispatch_textclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -751,7 +751,7 @@ STATIC IPTR slider_handleinput(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt("Slider::HandleInput", IPTR, retval);
 }
 
-AROS_UFH3(static IPTR, dispatch_sliderclass,
+AROS_UFH3S(IPTR, dispatch_sliderclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -929,7 +929,7 @@ STATIC IPTR arrow_handleinput(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt ("Arrow::HandleInput", IPTR, retval);
 }
 
-AROS_UFH3(static IPTR, dispatch_arrowclass,
+AROS_UFH3S(IPTR, dispatch_arrowclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -1100,7 +1100,7 @@ STATIC IPTR scroller_handleinput(Class *cl, Object *o, struct gpInput *msg)
     ReturnInt("Scroller::HandleInput", IPTR, retval);
 }
 
-AROS_UFH3(static IPTR, dispatch_scrollerclass,
+AROS_UFH3S(IPTR, dispatch_scrollerclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -1330,7 +1330,7 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
     ReturnInt ("String::Render", IPTR, retval);
 }
 
-AROS_UFH3(static IPTR, dispatch_stringclass,
+AROS_UFH3S(IPTR, dispatch_stringclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, o, A2),
 	  AROS_UFHA(Msg, msg, A1)
@@ -2169,7 +2169,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 **  Dispatcher	**
 *****************/
 
-AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
+AROS_UFH3S(IPTR, dispatch_listviewclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

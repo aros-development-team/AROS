@@ -214,7 +214,7 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 }
 
 /********* Console class dispatcher **********************************/
-AROS_UFH3(static IPTR, dispatch_consoleclass,
+AROS_UFH3S(IPTR, dispatch_consoleclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

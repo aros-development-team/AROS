@@ -240,7 +240,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 }
 
 
-AROS_UFH3(static IPTR, dispatch_stdconclass,
+AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

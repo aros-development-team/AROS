@@ -747,7 +747,7 @@ STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 **  Dispatcher	**
 *****************/
 
-AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
+AROS_UFH3S(IPTR, dispatch_listviewclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

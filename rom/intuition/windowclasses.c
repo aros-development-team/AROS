@@ -184,7 +184,7 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 
 
-AROS_UFH3(static IPTR, dispatch_dragbarclass,
+AROS_UFH3S(IPTR, dispatch_dragbarclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)
@@ -335,7 +335,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
     return;
 }
 
-AROS_UFH3(static IPTR, dispatch_tbbclass,
+AROS_UFH3S(IPTR, dispatch_tbbclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

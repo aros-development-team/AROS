@@ -405,7 +405,7 @@ static ULONG hittest_gadgetclass(Class *cl, Object *o, struct gpHitTest *gpht)
 
 /* gadgetclass boopsi dispatcher
  */
-AROS_UFH3(static IPTR, dispatch_gadgetclass,
+AROS_UFH3S(IPTR, dispatch_gadgetclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

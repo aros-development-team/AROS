@@ -262,7 +262,7 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 }
 
 
-AROS_UFH3(static IPTR, dispatch_checkclass,
+AROS_UFH3S(IPTR, dispatch_checkclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1)

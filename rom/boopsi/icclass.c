@@ -45,7 +45,7 @@
 
 /* icclass boopsi dispatcher
  */
-AROS_UFH3(static IPTR, dispatch_icclass,
+AROS_UFH3S(IPTR, dispatch_icclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

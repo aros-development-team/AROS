@@ -575,7 +575,7 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
 
 /* paletteclass boopsi dispatcher
  */
-AROS_UFH3(STATIC IPTR, dispatch_paletteclass,
+AROS_UFH3S(IPTR, dispatch_paletteclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

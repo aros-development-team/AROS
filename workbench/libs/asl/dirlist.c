@@ -314,7 +314,7 @@ VOID dirlist_showparent(Class *cl, Object *o, struct AROSP_DirList_ShowParent *m
 **  Dispatcher  **
 *****************/
 
-AROS_UFH3(STATIC IPTR, dispatch_dirlistclass,
+AROS_UFH3S(IPTR, dispatch_dirlistclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

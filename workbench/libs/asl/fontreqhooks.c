@@ -44,24 +44,24 @@ STATIC BOOL InitFontList(Object *, struct AvailFontsHeader *,  struct AslBase_in
 STATIC BOOL GetSizeList(Object *, struct NameEntry *, struct AvailFontsHeader *,
 					struct AslBase_intern *);
 
-AROS_UFP3(STATIC VOID, NameDisplayHook,
+AROS_UFP3S(VOID, NameDisplayHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
     AROS_UFPA(STRPTR *,                 dharray,        A2),
     AROS_UFPA(struct NameEntry *,       ne,             A1)
 );
-AROS_UFP3(STATIC VOID, SizeDisplayHook,
+AROS_UFP3S(VOID, SizeDisplayHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
     AROS_UFPA(STRPTR *,                 dharray,        A2),
     AROS_UFPA(UWORD *,                  ysize,          A1)
 );
 
-AROS_UFP3(STATIC APTR, NameConstructHook,
+AROS_UFP3S(APTR, NameConstructHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
     AROS_UFPA(APTR,                     pool,           A2),
     AROS_UFPA(struct NameEntry *,       ne,             A1)
 );
 
-AROS_UFP3(STATIC VOID, NameDestructHook,
+AROS_UFP3S(VOID, NameDestructHook,
     AROS_UFPA(struct Hook *,            hook,           A0),
     AROS_UFPA(APTR,                     pool,           A2),
     AROS_UFPA(struct NameEntry *,       ne,             A1)
@@ -776,7 +776,7 @@ STATIC BOOL GetSizeList(Object          *sizelist,
 /**********************
 **  NameDisplayHook  **
 **********************/
-AROS_UFH3(STATIC VOID, NameDisplayHook,
+AROS_UFH3S(VOID, NameDisplayHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(STRPTR *,                 dharray,        A2),
     AROS_UFHA(struct NameEntry *,       ne,             A1)
@@ -790,7 +790,7 @@ AROS_UFH3(STATIC VOID, NameDisplayHook,
 /**********************
 **  SizeDisplayHook  **
 **********************/
-AROS_UFH3(STATIC VOID, SizeDisplayHook,
+AROS_UFH3S(VOID, SizeDisplayHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(STRPTR *,                 dharray,        A2),
     AROS_UFHA(UWORD *,                  ysize,          A1)
@@ -808,7 +808,7 @@ AROS_UFH3(STATIC VOID, SizeDisplayHook,
 /************************
 **  NameConstructHook  **
 ************************/
-AROS_UFH3(STATIC APTR, NameConstructHook,
+AROS_UFH3S(APTR, NameConstructHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(APTR,                     pool,           A2),
     AROS_UFHA(struct NameEntry *,       ne,             A1)
@@ -837,7 +837,7 @@ AROS_UFH3(STATIC APTR, NameConstructHook,
 **  NameDestructHook  **
 ***********************/
 
-AROS_UFH3(STATIC VOID, NameDestructHook,
+AROS_UFH3S(VOID, NameDestructHook,
     AROS_UFHA(struct Hook *,            hook,           A0),
     AROS_UFHA(APTR,                     pool,           A2),
     AROS_UFHA(struct NameEntry *,       ne,             A1)

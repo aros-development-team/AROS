@@ -357,7 +357,7 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
 #define NUM_ROOT_METHODS 2
 #define NUM_UNIXIO_METHODS 1
 
-AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
+AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
     AROS_UFHA(ULONG, dummy2, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)

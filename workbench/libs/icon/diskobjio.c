@@ -21,32 +21,32 @@
 #include <proto/arossupport.h>
 #include <proto/intuition.h>
 
-static AROS_UFP3(ULONG, ProcessDrawerData,
+AROS_UFP3S(ULONG, ProcessDrawerData,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFP3(ULONG, ProcessGadgetRender,
+AROS_UFP3S(ULONG, ProcessGadgetRender,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,    streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFP3(ULONG, ProcessSelectRender,
+AROS_UFP3S(ULONG, ProcessSelectRender,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFP3(ULONG, ProcessDefaultTool,
+AROS_UFP3S(ULONG, ProcessDefaultTool,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFP3(ULONG, ProcessToolTypes,
+AROS_UFP3S(ULONG, ProcessToolTypes,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFP3(ULONG, ProcessFlagPtr,
+AROS_UFP3S(ULONG, ProcessFlagPtr,
     AROS_UFPA(struct Hook *,   hook, A0),
     AROS_UFPA(struct Hook *,   streamhook, A2),
     AROS_UFPA(struct SDData *, data, A1)
@@ -239,7 +239,7 @@ kprintf ("dsh: Skip %d\n", ((struct BEIOM_Ignore *)msg)->Count);
 #undef DOSBase
 #define DOSBase     ((struct DOSLibrary *)(streamhook->h_Data))
 
-static AROS_UFH3(ULONG, ProcessDrawerData,
+AROS_UFH3S(ULONG, ProcessDrawerData,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -364,7 +364,7 @@ static void FreeImage (struct Image * image)
     FreeStruct (image, ImageDesc);
 } /* FreeImage */
 
-static AROS_UFH3(ULONG, ProcessGadgetRender,
+AROS_UFH3S(ULONG, ProcessGadgetRender,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -404,7 +404,7 @@ kprintf ("ProcessGadgetRender\n");
     return TRUE;
 } /* ProcessGadgetRender */
 
-static AROS_UFH3(ULONG, ProcessSelectRender,
+AROS_UFH3S(ULONG, ProcessSelectRender,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -447,7 +447,7 @@ kprintf ("ProcessSelectRender\n");
     return TRUE;
 } /* ProcessSelectRender */
 
-static AROS_UFH3(ULONG, ProcessFlagPtr,
+AROS_UFH3S(ULONG, ProcessFlagPtr,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -526,7 +526,7 @@ static int WriteIconString (struct Hook * streamhook, BPTR file, STRPTR str)
     return FWrite (file, str, len, 1) != EOF;
 } /* WriteIconString */
 
-static AROS_UFH3(ULONG, ProcessDefaultTool,
+AROS_UFH3S(ULONG, ProcessDefaultTool,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)
@@ -571,7 +571,7 @@ kprintf ("ProcessDefaultTool\n");
     return TRUE;
 } /* ProcessDefaultTool */
 
-static AROS_UFH3(ULONG, ProcessToolTypes,
+AROS_UFH3S(ULONG, ProcessToolTypes,
     AROS_UFHA(struct Hook *,   hook, A0),
     AROS_UFHA(struct Hook *,   streamhook, A2),
     AROS_UFHA(struct SDData *, data, A1)

@@ -167,7 +167,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 
 /* frbuttonclass boopsi dispatcher
  */
-AROS_UFH3(static IPTR, dispatch_frbuttonclass,
+AROS_UFH3S(IPTR, dispatch_frbuttonclass,
     AROS_UFHA(Class *,  cl,  A0),
     AROS_UFHA(Object *, o,   A2),
     AROS_UFHA(Msg,      msg, A1)

@@ -22,7 +22,7 @@
 #include <aros/asmcall.h>
 #include "intern.h"
 
-AROS_UFP3(static ULONG, rootDispatcher,
+AROS_UFP3S(ULONG, rootDispatcher,
     AROS_UFPA(Class *,  cl,  A0),
     AROS_UFPA(Object *, obj, A2),
     AROS_UFPA(Msg,      msg, A1)
@@ -49,7 +49,7 @@ Class rootclass =
 /*****i************************************************************************
 
     NAME */
-	AROS_UFH3(static IPTR, rootDispatcher,
+	AROS_UFH3S(IPTR, rootDispatcher,
 
 /*  SYNOPSIS */
 	AROS_UFHA(Class  *, cl,  A0),
