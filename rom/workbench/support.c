@@ -123,3 +123,48 @@ STRPTR __StrDup(CONST_STRPTR str, struct WorkbenchBase *WorkbenchBase)
     
     return dup;
 }
+
+BPTR __DuplicateSearchPath(BPTR list, struct WorkbenchBase *WorkbenchBase)
+{
+    BPTR *paths, *current = NULL, *previous = NULL, first = NULL;
+    
+    for
+    (
+        paths = (BPTR *) BADDR(list);
+        paths != NULL;
+        paths = (BPTR *) BADDR(paths[0]) /* next path */
+    )
+    { 
+        if ((current = (BPTR *) AllocVec(2 * sizeof(BPTR), MEMF_ANY)) != NULL)
+        {
+            current[0] = NULL;
+            current[1] = DupLock(paths[1]);
+            
+            if (previous != NULL) previous[0] = (BPTR) MKBADDR(current);
+            else                  first       = (BPTR) MKBADDR(current);
+            
+            previous = current;
+        }
+        else
+        {
+            break;
+        }
+    }
+    
+    return first;
+}
+
+VOID __FreeSearchPath(BPTR list, struct WorkbenchBase *WorkbenchBase)
+{
+    BPTR *current = BADDR(list);
+    
+    while (current != NULL)
+    {
+        BPTR *next = (BPTR *) BADDR(current[0]);
+        
+        UnLock(current[1]);
+        FreeVec(current);
+        
+        current = next;
+    }
+}
