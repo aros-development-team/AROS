@@ -121,7 +121,7 @@ struct NewGadget
 struct NewMenu
 {
     UBYTE  nm_Type;          /* see below */
-    BYTE   nm_Pad;
+//    BYTE   nm_Pad;
     STRPTR nm_Label;         /* may be a STRPTR or NM_BARLABEL (see below) */
     STRPTR nm_CommKey;
     UWORD  nm_Flags;         /* see below */
