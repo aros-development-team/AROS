@@ -15,6 +15,9 @@
 #   include <aros/libcall.h>
 #endif
 
+/*
+    Prototypes
+*/
 AROS_LP3(BOOL, AddFreeList,
     AROS_LPA(struct FreeList *, freelist, A0),
     AROS_LPA(APTR             , mem, A1),
