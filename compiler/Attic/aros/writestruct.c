@@ -11,6 +11,7 @@
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
 #include <aros/debug.h>
+#include <utility/hooks.h>
 
 struct WriteLevel
 {
@@ -255,6 +256,19 @@ struct WriteLevel
 		if (!WriteLong (fh, 0L))
 		    goto error;
 	    }
+
+	    break; }
+
+	case SDT_SPECIAL: {   /* Call user hook */
+	    struct Hook * hook;
+	    struct SDData data;
+
+	    data.sdd_Dest = ((APTR)(curr->s + IDESC));
+	    data.sdd_Mode = SDV_SPECIALMODE_WRITE;
+
+	    hook = (struct Hook *)IDESC;
+
+	    CallHookA (hook, fh, &data);
 
 	    break; }
 

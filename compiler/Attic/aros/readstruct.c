@@ -11,6 +11,7 @@
 #include <clib/dos_protos.h>
 #include <clib/exec_protos.h>
 #include <aros/debug.h>
+#include <utility/hooks.h>
 
 struct ReadLevel
 {
@@ -206,6 +207,8 @@ struct ReadLevel
 	    break; }
 
 	case SDT_IGNORE:     /* Ignore x bytes */
+	    Flush (fh);
+
 	    if (Seek (fh, IDESC, OFFSET_CURRENT) == EOF)
 		goto error;
 
@@ -247,6 +250,8 @@ struct ReadLevel
 	    value  = IDESC;
 	    count  = IDESC;
 
+	    Flush (fh);
+
 	    if (Seek (fh, count, OFFSET_CURRENT) == EOF)
 		goto error;
 
@@ -263,11 +268,26 @@ struct ReadLevel
 	    value = IDESC;
 	    count = IDESC;
 
+	    Flush (fh);
+
 	    if (Seek (fh, count<<2, OFFSET_CURRENT) == EOF)
 		goto error;
 
 	    while (count --)
 		*ulptr ++ = value;
+
+	    break; }
+
+	case SDT_SPECIAL: {   /* Call user hook */
+	    struct Hook * hook;
+	    struct SDData data;
+
+	    data.sdd_Dest = ((APTR)(curr->s + IDESC));
+	    data.sdd_Mode = SDV_SPECIALMODE_READ;
+
+	    hook = (struct Hook *)IDESC;
+
+	    CallHookA (hook, fh, &data);
 
 	    break; }
 
