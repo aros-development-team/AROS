@@ -19,10 +19,12 @@ SHARED_MATHIEEESINGBAS	= @aros_shared_default@
 SHARED_EXPANSION	= @aros_shared_default@
 SHARED_WORKBENCH	= @aros_shared_default@
 SHARED_BOOPSI		= @aros_shared_default@
-SHARED_AROS		= @aros_shared_default@
 SHARED_TIMER		= @aros_shared_default@
 SHARED_BATTCLOCK	= @aros_shared_default@
 SHARED_BOOT		= @aros_shared_default@
+SHARED_AROS		= @aros_shared_default@
+SHARED_OOP		= @aros_shared_default@
+SHARED_CGFX		= @aros_shared_default@
 
 # Include debugging information (so you can use gdb or similar)
 DEBUG = no
