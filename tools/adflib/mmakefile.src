@@ -24,8 +24,6 @@ FILES := \
 %make_linklib_setup mmake=linklibs-adf
 %make_linklib
 
-#MM- setup : includes-copy
-
 #MM
 includes-copy : $(INCDIR)/adflib.h \
 		$(INCDIR)/defendian.h \
