@@ -59,8 +59,11 @@
 	d += count-1;
 	s += count-1;
 
+#if 0 /* stegerg: I think this is the wrong way round (and even then buggy) */
 	mis = sizeof (long) - ((long)s & (sizeof (long) - 1));
-
+#else
+	mis = (long)s & (sizeof(long) - 1);
+#endif
 	if (mis > count)
 	    mis = count;
 
@@ -99,7 +102,16 @@
 		*dl-- = *sl--;
 	    }
 
+	    #if 0 /* stegerg: this is slower than */
 	    count -= longs * sizeof (long);
+	    #else /* this, which should also work (CopyMem does the same) */
+	    count &= (sizeof(long) - 1);
+	    #endif
+	    
+	    /* stegerg: the following 2 lines were missing */
+	    d = (char *)dl;
+	    s = (char *)sl;
+	    
 	}
 
 	low  = count & 7;
@@ -123,8 +135,11 @@
     }
     else
     {
+#if 0   /* stegerg: I think this is the wrong way round */
 	mis = (long)s & (sizeof (long) - 1);
-
+#else
+	mis = (sizeof(long) - 1) - (((long)s - 1) & (sizeof(long) - 1));
+#endif
 	if (mis > count)
 	    mis = count;
 
@@ -163,7 +178,15 @@
 		*dl++ = *sl++;
 	    }
 
+	    #if 0 /* stegerg: this is slower than */
 	    count -= longs * sizeof (long);
+	    #else /* this, which should also work (CopyMem does the same) */
+	    count &= (sizeof(long) - 1);
+	    #endif
+	    
+	    /* stegerg: the following 2 lines were missing */
+	    d = (char *)dl;
+	    s = (char *)sl;
 	}
 
 	low  = count & 7;
