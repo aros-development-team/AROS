@@ -65,6 +65,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
+    struct Process *me;
     struct FileHandle *ret;
     BPTR con = NULL, ast = NULL;
     LONG error;
@@ -73,7 +74,7 @@
     if (name == NULL) return NULL;
 
     /* Get pointer to process structure */
-    struct Process *me = (struct Process *)FindTask(NULL);
+    me = (struct Process *)FindTask(NULL);
 
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
