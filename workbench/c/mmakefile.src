@@ -67,8 +67,7 @@ FILES	:= \
 
 # I'd like to move this into a rule, but it would be far too hard.
 EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
-
-USER_CFLAGS := -I$(TOP)/rom/dos -O2 -fomit-frame-pointer
+USER_CFLAGS := -I$(TOP)/rom/dos
 
 USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
