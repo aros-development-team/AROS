@@ -46,10 +46,12 @@ FUNCTIONS := \
 	addgadget \
 	addglist \
 	allocremember \
+	allocscreenbuffer \
 	autorequest \
 	beginrefresh \
 	buildeasyrequestargs \
 	buildsysrequest \
+	changescreenbuffer \
 	changewindowbox \
 	cleardmrequest \
 	clearmenustrip \
@@ -72,6 +74,7 @@ FUNCTIONS := \
 	eraseimage \
 	freeclass \
 	freeremember \
+	freescreenbuffer \
 	freescreendrawinfo \
 	freesysrequest \
 	getattr \
@@ -118,6 +121,7 @@ FUNCTIONS := \
 	resetmenustrip \
 	rethinkdisplay \
 	screendepth \
+	screenposition \
 	screentoback \
 	screentofront \
 	setattrsa \
