@@ -1,4 +1,4 @@
 # $Id$
 
 # The kernel target points back to config/$(ARCH)/mmakefile:
-#MM- kernel : kernel-$(ARCH)
+#MM- kernel : kernel-$(ARCH)-$(CPU)

@@ -29,7 +29,7 @@ INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
-#MM- includes : setup-includes includes-$(ARCH)
+#MM- includes : setup-includes includes-$(ARCH)-$(CPU)
 #MM includes-copy : includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
