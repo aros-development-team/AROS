@@ -1,6 +1,7 @@
 AFD-COPYRIGHT
 AROS-Amiga.readme
 BUGS
+INSTALL
 README
 README.mp
 README.porting
@@ -8,10 +9,12 @@ _gdbinit
 arosfa.faq
 arosshell.c
 configure
+configure.in
 contents
 crypt.c
 make.defaults
 make.tmpl.doc
 mmake.config.in
 mmakefile
+setup
 tpl.c
