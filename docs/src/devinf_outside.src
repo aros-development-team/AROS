@@ -93,7 +93,7 @@ Contains the name of the Intuition library. You should use this in
 
 \end{description}
 
-\subsection{Resource Tracking (RT) *New*}
+\subsection{Resource Tracking (RT) *Updated*}
 
 Everyone talks about RT but what's it anyway ? RT means three things:
 
@@ -111,19 +111,21 @@ program crashed or because it exited without freeing them).
 \end{enumeration}
 
 The current implementation can do all three things but to enable it,
-you must make some modifications to your code.
+you must make some modifications to your code. The only disadvantage of
+the current implementation is that the resources won't be freed if the
+program crashes.
 
 \begin{enumeration}
 \item Add the following
-lines to your code. They should be the first thing seen by the compiler:
+lines to your code. It should be the first thing seen by the compiler:
 
 \begin{example}
 #define ENABLE_RT  1
-#include <aros/rt.h>
 \end{example}
 
-If you replace
-the |1| by |0|, then RT will be silently disabled.
+If you replace the |1| by |0|, then RT will be silently disabled.
+
+\item Add |#include <aros/rt.h>| after the last include from \filename{proto/}
 
 \item Add |RT_Init();| as the first command in |main()|.
 
