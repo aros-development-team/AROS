@@ -287,8 +287,9 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
 
  D(bug("ppm.datatype/OM_NEW: Screen 0x%lx\n", (unsigned long) scr));
 
- bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, scr->RastPort.BitMap);
 #if 0
+ bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, scr->RastPort.BitMap);
+#else
  bm=AllocBitMap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, BMF_CLEAR, NULL);
 #endif /* 0 */
  if(!bm)
@@ -371,7 +372,15 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
    ChunkyBuffer[j]=((RGBBuffer[j*3] & 0xE0)>>5) | ((RGBBuffer[j*3+1] & 0xE0)>>2) | (RGBBuffer[j*3+2] & 0xC0);
   }
 
+#ifdef _AROS
+  for(j=0;j<Width;j++)
+  {
+    SetAPen(&rp, ChunkyBuffer[j]);
+    WritePixel(&rp, j, i);
+  }
+#else
   WriteChunkyPixels(&rp, 0, i, Width-1, i, ChunkyBuffer, Width);
+#endif
  }
 
  D(bug("ppm.datatype/OM_NEW: C2P done\n"));
