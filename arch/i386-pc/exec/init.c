@@ -260,7 +260,7 @@ int main()
             MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
     }
 
-#warning There's some strange problem somewhere. I must add some
+#warning There is some strange problem somewhere. I must add some
 #warning bytes to the 4096, otherwise expansion.library gets
 #warning corrupted!?
        
