@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_CFLAGS   := -DMYDEBUG
 
-FILES := jpegclass libfunc
+FILES := jpegclass libfunc stubs
 FUNCS := obtainengine
 
 #MM- workbench-datatypes-complete: workbench-datatypes-jpeg
@@ -13,7 +13,7 @@ USER_CFLAGS := -DAROS_LC_SETFUNCS
 
 %build_module_macro mmake=workbench-datatypes-jpeg modname=jpeg \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="jpeg amiga arosc m"
+  uselibs="jpeg amiga rom m"
 
 $(MOD_DIR)/jpeg.readme : jpeg.readme
 	@$(CP) $< $@
