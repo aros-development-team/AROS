@@ -331,12 +331,19 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     
     int virt_offx = data->virt_offx, virt_offy = data->virt_offy;
 
-    retval = DoSuperMethodA(cl, obj, (Msg)msg);
-
-/* There are many ways to find out what tag items provided by set()
-** we do know. The best way should be using NextTagItem() and simply
-** browsing through the list.
-*/
+    /* There are many ways to find out what tag items provided by set()
+    ** we do know. The best way should be using NextTagItem() and simply
+    ** browsing through the list.
+    */
+    
+    /* Parse group attributes before calling DoSuperMethodA(),
+    ** otherwise if an app for example sets up a notification
+    ** on MUIA_Group_ActivePage which calls a hook, and then
+    ** the hook function calls get(obj, MUIA_Group_ActivePage),
+    ** it would get returned the old active page instead of the new
+    ** active page
+    */
+       
     while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
@@ -374,39 +381,55 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Virtgroup_Top:
 		virt_offy = tag->ti_Data;
 		break;
-		
-	    /* Attributes which are to be filtered out, so that they are ignored
-	       when OM_SET is passed to group's children */
-    	    case MUIA_HelpLine:
-	    case MUIA_HelpNode:
-    	    case MUIA_ObjectID:
-	    case MUIA_UserData:
-   
-    	    case MUIA_ContextMenu:
-    	    case MUIA_ContextMenuTrigger:
-    	    case MUIA_ControlChar:
-    	    case MUIA_CycleChain:
-    	    case MUIA_Draggable:
-    	    case MUIA_FillArea:
-    	    case MUIA_Frame:
-    	    case MUIA_FrameTitle:
-    	    case MUIA_HorizWeight:
-    	    case MUIA_Pressed:
-    	    case MUIA_Selected:
-    	    case MUIA_ShortHelp:
-    	    case MUIA_ShowMe:
-    	    case MUIA_VertWeight:
-    	    case MUIA_Weight:
-	    	tag->ti_Tag = TAG_IGNORE;
-		break;
-    
-	}
+	
+    	}
+	
     }
+    
+    retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
     /* seems to be the documented behaviour, however it should be slow! */
+
     if (forward)
+    {
+	/* Attributes which are to be filtered out, so that they are ignored
+	   when OM_SET is passed to group's children */
+
+	tags = msg->ops_AttrList;   
+	while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+	{
+	    switch (tag->ti_Tag)
+	    {    
+   		case MUIA_HelpLine:
+		case MUIA_HelpNode:
+    		case MUIA_ObjectID:
+		case MUIA_UserData:
+
+    		case MUIA_ContextMenu:
+    		case MUIA_ContextMenuTrigger:
+    		case MUIA_ControlChar:
+    		case MUIA_CycleChain:
+    		case MUIA_Draggable:
+    		case MUIA_FillArea:
+    		case MUIA_Frame:
+    		case MUIA_FrameTitle:
+    		case MUIA_HorizWeight:
+    		case MUIA_Pressed:
+    		case MUIA_Selected:
+    		case MUIA_ShortHelp:
+    		case MUIA_ShowMe:
+    		case MUIA_VertWeight:
+    		case MUIA_Weight:
+	    	    tag->ti_Tag = TAG_IGNORE;
+		    break;
+
+	    }
+	}
+
 	Group_DispatchMsg(cl, obj, (Msg)msg);
 
+    }
+    
     if (virt_offx != data->virt_offx || virt_offy != data->virt_offy)
     {
 	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
