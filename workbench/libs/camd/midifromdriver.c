@@ -39,8 +39,8 @@ void Receiver_SetError(
 					ObtainSemaphore(&mymidinode->receiversemaphore);
 						mymidinode->error |= errorcode;
 					ReleaseSemaphore(&mymidinode->receiversemaphore);
-					midilink=(struct MidiLink *)midilink->ml_Node.ln_Succ;
 				}
+				midilink=(struct MidiLink *)midilink->ml_Node.ln_Succ;
 			}
 		}
 
