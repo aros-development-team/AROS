@@ -2,11 +2,10 @@
 #define PREFS_PREFHDR_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: File format for preferences header.
-    Lang: english
+    File format for preferences header.
 */
 
 #ifndef EXEC_TYPES_H
@@ -22,11 +21,11 @@
 #define ID_PRHD     MAKE_ID('P','R','H','D')
 
 /*
-    Preferences header, must exist at the start of all preferences files.
+    Preferences header which must exist at the start of all preferences files.
     The ph_Type and ph_Flags are unused at the moment.
 */
 
-struct PrefHeader
+struct PrefHeader __attribute__((__packed__))
 {
     UBYTE   ph_Version;     /* The version of the PrefHeader data */
     UBYTE   ph_Type;        /* The type of the PrefHeader data */
@@ -36,6 +35,4 @@ struct PrefHeader
 #define PHV_AMIGAOS     0               /* Format from AmigaOS v36+ */
 #define PHV_CURRENT     PHV_AMIGAOS     /* The current version */
 
-/* ---------------------------------------------------------------------- */
-
-#endif
+#endif /* PREFS_PREFHDR_H */
