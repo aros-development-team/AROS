@@ -17,6 +17,7 @@ int IoErr2errno (int ioerr)
     {
 	case 0:
 	    return 0;
+
 	case ERROR_OBJECT_WRONG_TYPE:
 	    return EINVAL;
 
@@ -34,7 +35,23 @@ int IoErr2errno (int ioerr)
 
 	case ERROR_OBJECT_EXISTS:
 	    return EEXIST;
+
+	case ERROR_BUFFER_OVERFLOW:
+	    return ENOBUFS;
+
+	case ERROR_BREAK:
+	    return EINTR;
+
+	case ERROR_FILE_NOT_OBJECT:
+	case ERROR_NOT_EXECUTABLE:
+	    return ENOEXEC;
+
+	case ERROR_OBJECT_IN_USE:
+	    return EBUSY;
+
+	case ERROR_DIR_NOT_FOUND:
+	    return ENOTDIR;
     }
 
-    return MAX_ERRNO+1;
+    return MAX_ERRNO+ioerr;
 } /* IoErr2errno */
