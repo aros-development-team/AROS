@@ -11,7 +11,6 @@
 #include "graphics_intern.h"
 
 #include <sys/types.h>
-#include <signal.h>
 
 
 /*****************************************************************************
