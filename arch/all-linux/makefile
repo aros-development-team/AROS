@@ -6,7 +6,8 @@ USER_INCLUDES=-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
 
 include $(TOP)/config/make.cfg
 
-FILES = graphics_driver intuition_driver
+FILES = graphics_driver intuition_driver \
+	rawioinit rawmaygetchar rawputchar
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
