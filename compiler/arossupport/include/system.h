@@ -120,6 +120,13 @@
 #   define AROS_HAVE_LONG_LONG
 #endif
 
+#if defined(__INTEL_COMPILER)
+#   ifdef inline
+#       undef inline
+#   endif
+#   define inline
+#endif
+
 #if defined __STDC__ && __STDC_VERSION__ >= 199901L
 #   define AROS_HAVE_LONG_LONG
 #endif
