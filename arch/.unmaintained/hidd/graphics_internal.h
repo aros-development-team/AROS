@@ -13,8 +13,13 @@
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
 #endif
+#ifndef HIDD_GRAPHICS_H
+#   include <hidd/graphics.h>
+#endif
 
-typedef ObjectCache;
+
+HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
+UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
 VOID activatebm_callback(APTR data, Object *bmobj, BOOL activated);
 BOOL init_activescreen_stuff(struct GfxBase *GfxBase);
@@ -42,6 +47,16 @@ struct gfx_driverdata {
 
 #define OOPBase (SDD(GfxBase)->oopbase)
 
+typedef struct {
+    int just_for_type_checking;
+} ObjectCache;
+
+ObjectCache *create_object_cache(Class *classPtr, STRPTR classID, struct TagItem *createTags, struct GfxBase *GfxBase);
+VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase);
+Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase);
+VOID release_cache_object(ObjectCache *objectCache, Object *object, struct GfxBase *GfxBase);
+
+
 
 struct shared_driverdata
 {
@@ -54,17 +69,7 @@ struct shared_driverdata
     BOOL activescreen_inited;
     APTR dispinfo_db; /* Display info database */
     struct List *queried_modes; /* gfxmodes gotten from the hidd */
-    
-
 };
 
-/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
-   THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
-   HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
-   if it is a HIDD bitmap
-*/
-#define HIDD_BM_OBJ(bitmap)	  	((Object *)(bitmap)->Planes[0])
-#define HIDD_BM_COLMAP(bitmap)		((Object *)(bitmap)->Planes[2])
-#define HIDD_BM_GRAPHTYPE(bitmap)	   ((ULONG)(bitmap)->Planes[3])
-#define HIDD_BM_PIXTAB(bitmap)		((HIDDT_Pixel *)(bitmap)->Planes[4])
+#include "macros.h"
 #endif /* GRAPHICS_INTERNAL_H */

@@ -240,3 +240,469 @@ static VOID bltmask_amiga(struct bltmask_info *bmi
     ReturnVoid("bltmask_amiga");
     
 }
+
+static VOID hidd2amiga_fast(struct BitMap *hidd_bm
+	, LONG x_src , LONG y_src
+	, APTR dest_info
+	, LONG x_dest, LONG y_dest
+	, ULONG xsize, ULONG ysize
+	, VOID (*putbuf_hook)()
+)
+{
+
+    ULONG tocopy_w, tocopy_h;
+    
+    LONG pixels_left_to_process = xsize * ysize;
+    ULONG current_x, current_y, next_x, next_y;
+    
+#warning Src bitmap migh be user initialized so we should not use HIDD_BM_PIXTAB() below
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(hidd_bm) };
+    
+    Object *bm_obj;
+    
+    next_x = 0;
+    next_y = 0;
+    
+    bm_obj = OBTAIN_HIDD_BM(hidd_bm);
+    if (NULL == bm_obj)
+    	return;
+	
+LOCK_PIXBUF    
+
+    while (pixels_left_to_process)
+    {
+	
+	current_x = next_x;
+	current_y = next_y;
+	
+	if (NUMLUTPIX < xsize)
+	{
+	   /* buffer cant hold a single horizontal line, and must 
+	      divide each line into copies */
+	    tocopy_w = xsize - current_x;
+	    if (tocopy_w > NUMLUTPIX)
+	    {
+	        /* Not quite finished with current horizontal pixel line */
+	    	tocopy_w = NUMLUTPIX;
+		next_x += NUMLUTPIX;
+	    }
+	    else
+	    {	/* Start at a new line */
+	    
+	    	next_x = 0;
+		next_y ++;
+	    }
+	    tocopy_h = 1;
+	    
+    	}
+    	else
+    	{
+	    tocopy_h = MIN(NUMLUTPIX / xsize, ysize - current_y);
+	    tocopy_w = xsize;
+
+	    next_x = 0;
+	    next_y += tocopy_h;
+	    
+    	}
+	
+	
+	/* Get some more pixels from the HIDD */
+	HIDD_BM_GetImageLUT(bm_obj
+		, (UBYTE *)pixel_buf
+		, tocopy_w
+		, x_src + current_x
+		, y_src + current_y
+		, tocopy_w, tocopy_h
+		, &pixlut);
+
+
+	/*  Write pixels to the destination */
+	putbuf_hook(dest_info
+		, current_x + x_src
+		, current_y + y_src
+		, current_x + x_dest
+		, current_y + y_dest
+		, tocopy_w, tocopy_h
+		, (UBYTE *)pixel_buf
+		, bm_obj
+		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
+	);
+	
+	pixels_left_to_process -= (tocopy_w * tocopy_h);
+
+    }
+    
+ULOCK_PIXBUF
+
+    RELEASE_HIDD_BM(bm_obj, hidd_bm);
+    
+    return;
+    
+}
+
+
+struct blit_info
+{
+    struct BitMap *bitmap;
+    ULONG minterm;
+    ULONG planemask;
+    UBYTE bmdepth;
+    ULONG bmwidth;
+    
+};
+
+#define BI(x) ((struct blit_info *)x)
+static VOID bitmap_to_buf(APTR src_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, LONG width, LONG height
+	, ULONG *bufptr
+	, Object *dest_bm
+	, HIDDT_Pixel *coltab
+) /* destination HIDD bitmap */
+{
+
+    LONG y;
+    
+    /* Fill buffer with pixels from bitmap */
+    for (y = 0; y < height; y ++)
+    {
+	LONG x;
+	    
+	for (x = 0; x < width; x ++)
+	{
+	    UBYTE pen;
+	    
+	    pen = getbitmappixel(BI(src_info)->bitmap
+		, x + x_src
+		, y + y_src
+		, BI(src_info)->bmdepth
+		, BI(src_info)->planemask);
+		
+		
+		
+	    *bufptr ++ = (coltab != NULL) ? coltab[pen] : pen;
+//	    kprintf("(%d, %d) pen=%d buf=%d\n", x, y, pen, coltab[pen]);
+			
+
+	}
+	
+    }
+
+}
+
+
+static VOID buf_to_bitmap(APTR dest_info
+	, LONG x_src, LONG y_src
+	, LONG x_dest, LONG y_dest
+	, ULONG width, ULONG height
+	, UBYTE *bufptr
+	, Object *src_bm
+	, HIDDT_Pixel *coltab
+)
+{
+	
+    if (BI(dest_info)->minterm == 0x00C0)
+    {
+	LONG y;
+	for (y = 0; y < height; y ++)
+	{
+	    LONG x;
+	    for (x = 0; x < width; x ++)
+	    {
+		setbitmappixel(BI(dest_info)->bitmap
+		    	, x + x_dest
+			, y + y_dest
+			, *bufptr ++, BI(dest_info)->bmdepth, BI(dest_info)->planemask
+		);
+
+
+	    }
+		
+	}
+
+    }
+    else
+    {
+	LONG y;
+	    
+	for (y = 0; y < height; y ++)
+	{
+	    LONG x;
+		
+	    for (x = 0; x < width; x ++)
+	    {
+		ULONG src = *bufptr ++ , dest = 0;
+		ULONG minterm = BI(dest_info)->minterm;
+
+		/* Set the pixel using correct minterm */
+
+		dest = getbitmappixel(BI(dest_info)->bitmap
+			, x + x_dest
+			, y + y_dest
+			, BI(dest_info)->bmdepth
+			, BI(dest_info)->planemask
+		);
+
+#warning Do reverse coltab lookup	    	
+		if (minterm & 0x0010) dest  = ~src & ~dest;
+		if (minterm & 0x0020) dest |= ~src & dest;
+		if (minterm & 0x0040) dest |=  src & ~dest;
+		if (minterm & 0x0080) dest |= src & dest;
+		    
+		setbitmappixel(BI(dest_info)->bitmap
+			, x + x_dest
+			, y + y_dest
+			, dest, BI(dest_info)->bmdepth
+			, BI(dest_info)->planemask
+		);
+
+	    }
+		
+	}
+	    
+    }
+    return;
+
+}
+
+
+static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen);
+
+
+
+static VOID clipagainstbitmap(struct BitMap *bm, LONG *x1, LONG *y1, LONG *x2, LONG *y2, struct GfxBase *GfxBase)
+{
+    ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
+    ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+    
+    /* Clip against bitmap bounds  */
+	    
+    if (*x1 < 0)  *x1 = 0;
+    if (*y1 < 0)  *y1 = 0;
+
+    if (*x2 >= width)  *x2 = width  - 1;
+    if (*y2 >= height) *y2 = height - 1; 
+    
+    return;
+}
+
+
+static VOID setbitmappixel(struct BitMap *bm
+	, LONG x, LONG y
+	, ULONG pen
+	, UBYTE depth
+	, UBYTE plane_mask)
+{
+    UBYTE i;
+    ULONG idx;
+    UBYTE mask, clr_mask;
+    ULONG penmask;
+
+    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
+
+    mask = XCOORD_TO_MASK( x );
+    clr_mask = ~mask;
+    
+    penmask = 1;
+    for (i = 0; i < depth; i ++)
+    {
+
+	if ((1L << i) & plane_mask)
+	{
+            UBYTE *plane = bm->Planes[i];
+	
+	    if ((plane != NULL) && (plane != (PLANEPTR)-1))
+	    {
+		if ((penmask & pen) != 0)
+		    plane[idx] |=  mask;
+		else
+		    plane[idx] &=  clr_mask;
+            }
+
+	}
+	penmask <<= 1;
+	
+    }
+    return;
+}
+
+
+enum { SB_SINGLEMASK, SB_PREPOSTMASK, SB_FULL };
+static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
+{
+    LONG num_whole;
+    UBYTE sb_type;
+    
+    UBYTE plane;
+    UBYTE pre_pixels_to_set,
+    	  post_pixels_to_set,
+	  pre_and_post; /* number pixels to clear in pre and post byte */
+ 
+    UBYTE prebyte_mask, postbyte_mask;
+    
+/*    kprintf("x_start: %d, y_start: %d, xsize: %d, ysize: %d, pen: %d\n",
+    	x_start, y_start, xsize, ysize, pen);
+*/	
+
+    pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
+    post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
+    
+
+    pre_and_post = pre_pixels_to_set + post_pixels_to_set;
+    
+    if (pre_and_post > xsize)
+    {
+	UBYTE start_bit, stop_bit;
+	/* Check whether the pixels are kept within a byte */
+	sb_type = SB_SINGLEMASK;
+    	pre_pixels_to_set  = MIN(pre_pixels_to_set,  xsize);
+	
+	/* Mask out the needed bits */
+	start_bit =  7 - (x_start & 0x07) + 1;
+	stop_bit = 7 - ((x_start + xsize - 1) & 0x07);
+
+/* kprintf("start_bit: %d, stop_bit: %d\n", start_bit, stop_bit);
+*/	
+	prebyte_mask = ((1L << start_bit) - 1) - ((1L << stop_bit) - 1) ;
+/* kprintf("prebyte_mask: %d\n", prebyte_mask);
+
+kprintf("SB_SINGLE\n");
+*/
+    }
+    else if (pre_and_post == xsize)
+    {
+    	/* We have bytes within to neighbour pixels */
+	sb_type = SB_PREPOSTMASK;
+	prebyte_mask  = 0xFF >> (8 - pre_pixels_to_set);
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+    
+/* kprintf("SB_PREPOSTMASK\n");
+*/
+    }
+    else
+    {
+
+	/* Say we want to clear two pixels in last byte. We want the mask
+	MSB 00000011 LSB
+	*/
+	sb_type = SB_FULL;
+	prebyte_mask = 0xFF >> (8 - pre_pixels_to_set);
+    
+	/* Say we want to set two pixels in last byte. We want the mask
+	MSB 11000000 LSB
+	*/
+	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
+	
+        	/* We have at least one whole byte of pixels */
+	num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
+	num_whole >>= 3; /* number of bytes */
+	
+/* kprintf("SB_FULL\n");
+*/
+    }
+	
+/*
+kprintf("pre_pixels_to_set: %d, post_pixels_to_set: %d, numwhole: %d\n"
+	, pre_pixels_to_set, post_pixels_to_set, num_whole);
+    
+kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, postbyte_mask, num_whole);
+*/    
+    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
+    {
+    
+        LONG y;
+	UBYTE pixvals;
+	UBYTE prepixels_set, prepixels_clr;
+	UBYTE postpixels_set, postpixels_clr;
+    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + COORD_TO_BYTEIDX(x_start, y_start, bm->BytesPerRow);
+	
+	
+	/* Set or clear current bit of pixval ? */
+	if (pen & (1L << plane))
+	    pixvals = 0xFF;
+	else
+	    pixvals = 0x00;
+	
+	/* Set the pre and postpixels */
+	switch (sb_type)
+	{
+	    case SB_FULL:
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
+	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    LONG x;
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    for (x = 0; x < num_whole; x ++)
+		    {
+			*ptr ++ = pixvals;
+		    }
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_PREPOSTMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		postpixels_set = (pixvals & postbyte_mask);
+	
+
+		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
+		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Clear the last nonwhole byte */
+		    *ptr |= postpixels_set;
+		    *ptr ++ &= postpixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	    case SB_SINGLEMASK:
+	
+		prepixels_set  = (pixvals & prebyte_mask);
+		prepixels_clr  = (pixvals & prebyte_mask) | (~prebyte_mask);
+
+		for (y = 0; y < ysize; y ++)
+		{
+		    UBYTE *ptr = curbyte;
+	    
+		    *ptr |= prepixels_set;
+		    *ptr ++ &= prepixels_clr;
+	    
+		    /* Go to next line */
+		    curbyte += bm->BytesPerRow;
+		}
+		break;
+		
+	} /* switch() */
+    }
+    return;
+    
+}
+
+
+

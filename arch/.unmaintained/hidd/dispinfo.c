@@ -11,6 +11,8 @@
 #include <graphics/displayinfo.h>
 #include <graphics/monitor.h>
 
+#include <cybergraphx/cybergraphics.h>
+
 #include <oop/oop.h>
 
 #include <hidd/graphics.h>
@@ -251,12 +253,12 @@ const struct size_check {
     ULONG struct_size;
     STRPTR struct_name;
 } size_checks[] = {
-    { DTAG_DISP, sizeof(struct DisplayInfo),		"DisplayInfo"	},
-    { DTAG_DIMS, sizeof(struct DimensionInfo),		"DimensionInfo"	},
-    { DTAG_MNTR, sizeof(struct MonitorInfo),		"MonitorInfo"	},
-    { DTAG_NAME, sizeof(struct NameInfo), 		"NameInfo"	},
-    { DTAG_VEC,  sizeof(struct VecInfo), 		"VecInfo"	},
-    { PRIV_DTAG_QHDR,  sizeof(struct QueryHeader), 	"QueryHeader"	}
+    { DTAG_DISP,	sizeof(struct DisplayInfo),	"DisplayInfo"	},
+    { DTAG_DIMS,	sizeof(struct DimensionInfo),	"DimensionInfo"	},
+    { DTAG_MNTR,	sizeof(struct MonitorInfo),	"MonitorInfo"	},
+    { DTAG_NAME,	sizeof(struct NameInfo), 	"NameInfo"	},
+    { DTAG_VEC,		sizeof(struct VecInfo), 	"VecInfo"	},
+    { PRIV_DTAG_QHDR,	sizeof(struct QueryHeader), 	"QueryHeader"	}
     
 };
 
@@ -652,3 +654,342 @@ kprintf("BestModeIDA: checking mode %d, id %x, (%dx%dx%d)\n"
     return found_id;
 }
 
+
+
+#warning Implement Display mode attributes in the below function
+
+VOID driver_FreeCModeList(struct List *modeList, struct GfxBase *GfxBase)
+{
+    struct CyberModeNode *node, *safe;
+    
+    ForeachNodeSafe(modeList, node, safe) {
+	Remove((struct Node *)node);
+	FreeMem(node, sizeof (struct CyberModeNode));
+    }
+    
+    FreeMem(modeList, sizeof (struct List));
+}
+
+APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBase )
+{
+    struct TagItem *tag, *tstate;
+    
+    ULONG minwidth = 320;
+    ULONG maxwidth = 1600;
+    ULONG minheight = 240;
+    ULONG maxheight = 1200;
+    ULONG mindepth = 8;
+    ULONG maxdepth = 32;
+    
+    struct List *cybermlist = NULL;
+    struct displayinfo_db *db;
+    
+    Object *gfxhidd;
+    
+    ULONG gmno;
+    UWORD *cmodelarray = NULL;
+    
+    gfxhidd	= SDD(GfxBase)->gfxhidd;
+    db		= SDD(GfxBase)->dispinfo_db;
+    
+    for (tstate = taglist; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+	switch (tag->ti_Tag) {
+	    case CYBRMREQ_MinWidth:
+	    	minwidth = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_MaxWidth:
+	     	maxwidth = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_MinHeight:
+	    	minheight = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_MaxHeight:
+	    	maxheight = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_MinDepth:
+	    	mindepth = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_MaxDepth:
+	    	maxdepth = (ULONG)tag->ti_Data;
+		break;
+		
+	    case CYBRMREQ_CModelArray:
+	    	cmodelarray = (UWORD *)tag->ti_Data;
+		break;
+		
+	    default:
+	    	kprintf("!!! UNKNOWN TAG PASSED TO AllocCModeListTagList\n");
+		break;
+		
+	
+	} 	
+    }
+    
+    /* Allocate the exec list */
+    cybermlist = AllocMem(sizeof (struct List), MEMF_CLEAR);
+    if (NULL == cybermlist)
+    	return NULL;
+    
+    
+    /* Go through the displayinfo db looking for cgfx modes */
+	
+    NEWLIST(cybermlist);
+	    
+    for (gmno = 0; gmno < db->nummodes; gmno ++) {
+	    
+	struct CyberModeNode *cmnode;
+	UWORD *cyberpixfmts;
+	ULONG width, height;
+	ULONG numpfs;
+	Object *gm;
+	    
+	ULONG pfno;
+	
+	gm = db->dispitems[gmno].gfxmode;
+
+
+	GetAttr(gm, aHidd_GfxMode_Width,  &width);
+	GetAttr(gm, aHidd_GfxMode_Height, &height);
+	
+	if (	width < minwidth
+	     || width > maxwidth
+	     || height < minheight
+	     || height > maxheight) {
+	     
+	     continue;
+	}
+	GetAttr(gm, aHidd_GfxMode_NumPixFmts, &numpfs);
+	
+	for (pfno = 0; pfno < numpfs; pfno ++) {
+	    Object *pf;
+	    ULONG depth;
+	    
+	    pf = HIDD_GM_LookupPixFmt(gm, pfno);
+	
+	    /* Get the pxifmt info */
+	    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    
+	    if (depth < mindepth || depth > maxdepth)
+	    	continue;
+		
+	    /* Check whether the gfxmode is the correct pixel format */
+	    if (NULL != cmodelarray) {
+	    
+		HIDDT_StdPixFmt stdpf;
+		UWORD cyberpf;
+		BOOL found = FALSE;
+		/* Get the gfxmode pixelf format */
+		GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+		
+		cyberpf = hidd2cyber_pixfmt(stdpf, GfxBase);
+		if (cyberpf == (UWORD)-1)
+		    continue;	/* Unknown format */
+			
+		for (cyberpixfmts = cmodelarray; *cyberpixfmts; cyberpixfmts ++) {
+		    /* See if the stdpixfmt is present in the array */
+		    if (*cyberpixfmts == cyberpf) {
+			found = TRUE;
+			    break;
+		    }
+			
+		} /* for (each supplied pixelformat in the cmodelarray) */
+		    
+		if (!found)
+		    continue; /* PixFmt not wanted, just continue with next node */
+		
+	     } /* if (cmodelarray supplied in the taglist) */
+		
+	    /* Allocate a cybergfx modeinfo struct */
+	    
+	    cmnode = AllocMem(sizeof (struct CyberModeNode), MEMF_CLEAR);
+	    if (NULL == cmnode)
+		goto failexit;
+		
+		    
+		
+		
+	    cmnode->Width	= width;
+	    cmnode->Height	= height;
+	    cmnode->Depth	= depth;
+	    cmnode->DisplayTagList = NULL;
+	    
+	    snprintf( cmnode->ModeText
+		, DISPLAYNAMELEN
+		, "AROS: %dx%dx%d"
+		, width, height, depth
+	    );
+		
+	    /* Keep track of the node */
+	    AddTail(cybermlist, (struct Node *)cmnode);
+		
+	
+	} /* for (pixfmts in a gfxmode) */
+	
+    } /* for (gfxmodes in the dispinfo db) */
+
+    
+    return cybermlist;
+    
+failexit:
+
+    if (NULL != cybermlist)
+     	driver_FreeCModeList(cybermlist, GfxBase);
+    
+    return NULL;
+}
+
+
+
+
+
+ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
+{
+    struct TagItem *tag, *tstate;
+      
+    ULONG nominal_width, nominal_height, depth;
+    ULONG monitorid;
+    STRPTR boardname;
+    ULONG modeid;
+      
+    nominal_width	= 800;
+    nominal_height	= 600;
+    depth		= 8;
+    monitorid		= 0;
+    boardname		= "Blah";
+      
+    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    	switch (tag->ti_Tag) {
+	    case CYBRBIDTG_Depth:
+	    	depth = tag->ti_Data;
+	    	break;
+	
+	    case CYBRBIDTG_NominalWidth:
+	        nominal_width = tag->ti_Data;
+	    	break;
+
+	    case CYBRBIDTG_NominalHeight:
+	        nominal_height = tag->ti_Data;
+	    	break;
+
+	    case CYBRBIDTG_MonitorID:
+	        monitorid = tag->ti_Data;
+	    	break;
+
+	    case CYBRBIDTG_BoardName:
+	    	boardname = (STRPTR)tag->ti_Data;
+	    	break;
+		
+	    default:
+	    	kprintf("!!! UNKOWN ATTR PASSED TO BestCModeIDTagList(): %x !!!\n"
+			, tag->ti_Tag);
+		break;
+
+	} /* switch () */
+      
+    } /* for (each tag in the taglist) */
+    
+    if (depth < 8 )  {
+    
+    	/* No request for a cgfx mode */
+    	modeid = INVALID_ID;
+    
+    } else {
+	/* Get the best modeid */
+	struct TagItem modetags[] = {
+	    { BIDTAG_NominalWidth,	nominal_width	},
+	    { BIDTAG_NominalHeight,	nominal_height	},
+	    { BIDTAG_Depth,		depth		},
+	    { BIDTAG_MonitorID,		monitorid	},
+	    { TAG_DONE, 0UL }
+	};
+	
+	modeid = BestModeIDA(modetags);
+    }
+    
+    /* Use the data to select a mode */
+    return modeid;
+      
+}
+
+ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
+{
+    /* First lookup the pixfmt for the ID */
+    ULONG majoridx, minoridx;
+    ULONG retval;
+    ULONG depth;
+    
+    struct displayinfo_db *db;
+    Object *gm, *pf;
+    
+    db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
+    
+    majoridx = MAJORID2NUM(id);
+    minoridx = MINORID2NUM(id);
+    
+    retval = (ULONG)-1;
+    
+ObtainSemaphoreShared(&db->sema);
+
+    if (majoridx < db->nummodes)
+    	goto exit;
+
+    gm = db->dispitems[majoridx].gfxmode;
+    pf = HIDD_GM_LookupPixFmt(gm, minoridx);
+    if (NULL == pf)
+    	goto exit;
+    
+    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+    
+    if (depth < 8) {
+    	kprintf("!!! TRYING TO GET ATTR FROM NON-CGFX MODE IN GetCyberIDAttr() !!!\n");
+	retval = (ULONG)-1;
+    } else {
+    
+	switch (attribute) {
+	    case CYBRIDATTR_PIXFMT: {
+	    	HIDDT_StdPixFmt stdpf;
+		
+		GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+		
+		retval = hidd2cyber_pixfmt(stdpf, GfxBase);
+		if (-1 == retval) {
+		    kprintf("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");
+		}
+		
+	    	break; }
+	
+	    case CYBRIDATTR_DEPTH:
+	     	retval = depth;
+		break;
+		
+	
+	    case CYBRIDATTR_WIDTH:
+	    	GetAttr(gm, aHidd_GfxMode_Width, &retval);
+		break;
+		
+	    case CYBRIDATTR_HEIGHT:
+	    	GetAttr(gm, aHidd_GfxMode_Height, &retval);
+		break;
+		
+	    case CYBRIDATTR_BPPIX:
+	    	GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+		break;
+		
+	    default:
+	    	kprintf("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n"
+			, attribute);
+		retval = (ULONG)-1;
+		break;
+	    	
+    	
+	}
+    }
+exit:    
+ReleaseSemaphore(&db->sema);    
+    return retval;
+}

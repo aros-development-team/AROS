@@ -10,8 +10,8 @@
 
 #include <string.h>
 
-#include "graphics_intern.h"
 #include "graphics_internal.h"
+#include "graphics_intern.h"
 
 
 

@@ -94,7 +94,6 @@
 #define AROS_PALETTE_SIZE 256
 #define AROS_PALETTE_MEMSIZE (sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
 
-static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen);
 static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase);
 static LONG fillrect_pendrmd(struct RastPort *tp
 	, LONG x1, LONG y1
@@ -127,8 +126,6 @@ ULONG do_pixel_func(struct RastPort *rp
 	, APTR funcdata
 	, struct GfxBase *GfxBase);
 
-static HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
-static UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
 
 static BOOL int_bltbitmap(struct BitMap *srcBitMap, Object *srcbm_obj
 	, LONG xSrc, LONG ySrc
@@ -182,8 +179,9 @@ struct ABDescr attrbases[] = {
 };
 
 #endif
-#define PIXELBUF_SIZE 200000
-#define NUMPIX (PIXELBUF_SIZE / 4)
+
+#define NUMPIX 50000
+#define PIXELBUF_SIZE (NUMPIX * 4)
 
 #define NUMLUTPIX (PIXELBUF_SIZE)
 
@@ -294,8 +292,6 @@ BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     BOOL retval = TRUE;
     struct gfx_driverdata * dd, * old;
-    
-
     
     if (!rp)
     {
@@ -534,21 +530,6 @@ kprintf("ACTIVE_SCREEN_INITED: %d\n", SDD(GfxBase)->activescreen_inited);
 }
 
 
-static VOID clipagainstbitmap(struct BitMap *bm, LONG *x1, LONG *y1, LONG *x2, LONG *y2, struct GfxBase *GfxBase)
-{
-    ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
-    ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-    
-    /* Clip against bitmap bounds  */
-	    
-    if (*x1 < 0)  *x1 = 0;
-    if (*y1 < 0)  *y1 = 0;
-
-    if (*x2 >= width)  *x2 = width  - 1;
-    if (*y2 >= height) *y2 = height - 1; 
-    
-    return;
-}
 
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	ULONG drmd, struct GfxBase * GfxBase)
@@ -689,44 +670,6 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 
 
 
-static VOID setbitmappixel(struct BitMap *bm
-	, LONG x, LONG y
-	, ULONG pen
-	, UBYTE depth
-	, UBYTE plane_mask)
-{
-    UBYTE i;
-    ULONG idx;
-    UBYTE mask, clr_mask;
-    ULONG penmask;
-
-    idx = COORD_TO_BYTEIDX(x, y, bm->BytesPerRow);
-
-    mask = XCOORD_TO_MASK( x );
-    clr_mask = ~mask;
-    
-    penmask = 1;
-    for (i = 0; i < depth; i ++)
-    {
-
-	if ((1L << i) & plane_mask)
-	{
-            UBYTE *plane = bm->Planes[i];
-	
-	    if ((plane != NULL) && (plane != (PLANEPTR)-1))
-	    {
-		if ((penmask & pen) != 0)
-		    plane[idx] |=  mask;
-		else
-		    plane[idx] &=  clr_mask;
-            }
-
-	}
-	penmask <<= 1;
-	
-    }
-    return;
-}
 
 static ULONG getbitmappixel(struct BitMap *bm
 	, LONG x
@@ -765,184 +708,6 @@ static ULONG getbitmappixel(struct BitMap *bm
     }
     return pen;
 }
-
-
-enum { SB_SINGLEMASK, SB_PREPOSTMASK, SB_FULL };
-static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen)
-{
-    LONG num_whole;
-    UBYTE sb_type;
-    
-    UBYTE plane;
-    UBYTE pre_pixels_to_set,
-    	  post_pixels_to_set,
-	  pre_and_post; /* number pixels to clear in pre and post byte */
- 
-    UBYTE prebyte_mask, postbyte_mask;
-    
-/*    kprintf("x_start: %d, y_start: %d, xsize: %d, ysize: %d, pen: %d\n",
-    	x_start, y_start, xsize, ysize, pen);
-*/	
-
-    pre_pixels_to_set  = (7 - (x_start & 0x07)) + 1;
-    post_pixels_to_set = ((x_start + xsize - 1) & 0x07) + 1;
-    
-
-    pre_and_post = pre_pixels_to_set + post_pixels_to_set;
-    
-    if (pre_and_post > xsize)
-    {
-	UBYTE start_bit, stop_bit;
-	/* Check whether the pixels are kept within a byte */
-	sb_type = SB_SINGLEMASK;
-    	pre_pixels_to_set  = MIN(pre_pixels_to_set,  xsize);
-	
-	/* Mask out the needed bits */
-	start_bit =  7 - (x_start & 0x07) + 1;
-	stop_bit = 7 - ((x_start + xsize - 1) & 0x07);
-
-/* kprintf("start_bit: %d, stop_bit: %d\n", start_bit, stop_bit);
-*/	
-	prebyte_mask = ((1L << start_bit) - 1) - ((1L << stop_bit) - 1) ;
-/* kprintf("prebyte_mask: %d\n", prebyte_mask);
-
-kprintf("SB_SINGLE\n");
-*/
-    }
-    else if (pre_and_post == xsize)
-    {
-    	/* We have bytes within to neighbour pixels */
-	sb_type = SB_PREPOSTMASK;
-	prebyte_mask  = 0xFF >> (8 - pre_pixels_to_set);
-	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
-    
-/* kprintf("SB_PREPOSTMASK\n");
-*/
-    }
-    else
-    {
-
-	/* Say we want to clear two pixels in last byte. We want the mask
-	MSB 00000011 LSB
-	*/
-	sb_type = SB_FULL;
-	prebyte_mask = 0xFF >> (8 - pre_pixels_to_set);
-    
-	/* Say we want to set two pixels in last byte. We want the mask
-	MSB 11000000 LSB
-	*/
-	postbyte_mask = 0xFF << (8 - post_pixels_to_set);
-	
-        	/* We have at least one whole byte of pixels */
-	num_whole = xsize - pre_pixels_to_set - post_pixels_to_set;
-	num_whole >>= 3; /* number of bytes */
-	
-/* kprintf("SB_FULL\n");
-*/
-    }
-	
-/*
-kprintf("pre_pixels_to_set: %d, post_pixels_to_set: %d, numwhole: %d\n"
-	, pre_pixels_to_set, post_pixels_to_set, num_whole);
-    
-kprintf("prebyte_mask: %d, postbyte_mask: %d, numwhole: %d\n", prebyte_mask, postbyte_mask, num_whole);
-*/    
-    for (plane = 0; plane < GetBitMapAttr(bm, BMA_DEPTH); plane ++)
-    {
-    
-        LONG y;
-	UBYTE pixvals;
-	UBYTE prepixels_set, prepixels_clr;
-	UBYTE postpixels_set, postpixels_clr;
-    	UBYTE *curbyte = ((UBYTE *)bm->Planes[plane]) + COORD_TO_BYTEIDX(x_start, y_start, bm->BytesPerRow);
-	
-	
-	/* Set or clear current bit of pixval ? */
-	if (pen & (1L << plane))
-	    pixvals = 0xFF;
-	else
-	    pixvals = 0x00;
-	
-	/* Set the pre and postpixels */
-	switch (sb_type)
-	{
-	    case SB_FULL:
-		prepixels_set  = (pixvals & prebyte_mask);
-		postpixels_set = (pixvals & postbyte_mask);
-	
-
-		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
-		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    LONG x;
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    for (x = 0; x < num_whole; x ++)
-		    {
-			*ptr ++ = pixvals;
-		    }
-		    /* Clear the last nonwhole byte */
-		    *ptr |= postpixels_set;
-		    *ptr ++ &= postpixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	    case SB_PREPOSTMASK:
-	
-		prepixels_set  = (pixvals & prebyte_mask);
-		postpixels_set = (pixvals & postbyte_mask);
-	
-
-		prepixels_clr  = (pixvals & prebyte_mask)  | (~prebyte_mask);
-		postpixels_clr = (pixvals & postbyte_mask) | (~postbyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    /* Clear the last nonwhole byte */
-		    *ptr |= postpixels_set;
-		    *ptr ++ &= postpixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	    case SB_SINGLEMASK:
-	
-		prepixels_set  = (pixvals & prebyte_mask);
-		prepixels_clr  = (pixvals & prebyte_mask) | (~prebyte_mask);
-
-		for (y = 0; y < ysize; y ++)
-		{
-		    UBYTE *ptr = curbyte;
-	    
-		    *ptr |= prepixels_set;
-		    *ptr ++ &= prepixels_clr;
-	    
-		    /* Go to next line */
-		    curbyte += bm->BytesPerRow;
-		}
-		break;
-		
-	} /* switch() */
-    }
-    return;
-    
-}
-
 
 
 
@@ -2792,130 +2557,7 @@ for (i =0; i < 8; i ++)
 }
 
 
-struct blit_info
-{
-    struct BitMap *bitmap;
-    ULONG minterm;
-    ULONG planemask;
-    UBYTE bmdepth;
-    ULONG bmwidth;
-    
-};
 
-#define BI(x) ((struct blit_info *)x)
-static VOID bitmap_to_buf(APTR src_info
-	, LONG x_src, LONG y_src
-	, LONG x_dest, LONG y_dest
-	, LONG width, LONG height
-	, ULONG *bufptr
-	, Object *dest_bm
-	, HIDDT_Pixel *coltab
-) /* destination HIDD bitmap */
-{
-
-    LONG y;
-    
-    /* Fill buffer with pixels from bitmap */
-    for (y = 0; y < height; y ++)
-    {
-	LONG x;
-	    
-	for (x = 0; x < width; x ++)
-	{
-	    UBYTE pen;
-	    
-	    pen = getbitmappixel(BI(src_info)->bitmap
-		, x + x_src
-		, y + y_src
-		, BI(src_info)->bmdepth
-		, BI(src_info)->planemask);
-		
-		
-		
-	    *bufptr ++ = (coltab != NULL) ? coltab[pen] : pen;
-//	    kprintf("(%d, %d) pen=%d buf=%d\n", x, y, pen, coltab[pen]);
-			
-
-	}
-	
-    }
-
-}
-
-
-static VOID buf_to_bitmap(APTR dest_info
-	, LONG x_src, LONG y_src
-	, LONG x_dest, LONG y_dest
-	, ULONG width, ULONG height
-	, UBYTE *bufptr
-	, Object *src_bm
-	, HIDDT_Pixel *coltab
-)
-{
-	
-    if (BI(dest_info)->minterm ==  0x00C0)
-    {
-	LONG y;
-	for (y = 0; y < height; y ++)
-	{
-	    LONG x;
-	    for (x = 0; x < width; x ++)
-	    {
-		setbitmappixel(BI(dest_info)->bitmap
-		    	, x + x_dest
-			, y + y_dest
-			, *bufptr ++, BI(dest_info)->bmdepth, BI(dest_info)->planemask
-		);
-
-
-	    }
-		
-	}
-
-    }
-    else
-    {
-	LONG y;
-	    
-	for (y = 0; y < height; y ++)
-	{
-	    LONG x;
-		
-	    for (x = 0; x < width; x ++)
-	    {
-		ULONG src = *bufptr ++ , dest = 0;
-		ULONG minterm = BI(dest_info)->minterm;
-
-		/* Set the pixel using correct minterm */
-
-		dest = getbitmappixel(BI(dest_info)->bitmap
-			, x + x_dest
-			, y + y_dest
-			, BI(dest_info)->bmdepth
-			, BI(dest_info)->planemask
-		);
-
-#warning Do reverse coltab lookup	    	
-		if (minterm & 0x0010) dest  = ~src & ~dest;
-		if (minterm & 0x0020) dest |= ~src & dest;
-		if (minterm & 0x0040) dest |=  src & ~dest;
-		if (minterm & 0x0080) dest |= src & dest;
-		    
-		setbitmappixel(BI(dest_info)->bitmap
-			, x + x_dest
-			, y + y_dest
-			, dest, BI(dest_info)->bmdepth
-			, BI(dest_info)->planemask
-		);
-
-	    }
-		
-	}
-	    
-    }
-    return;
-
-}
 
 /* General functions for moving blocks of data to or from HIDDs, be it pixelarrays
   or bitmaps. They use a callback-function to get data from amiga/put data to amiga bitmaps/pixelarrays
@@ -3030,7 +2672,8 @@ ULOCK_PIXBUF
 }
 	
 
-static VOID hidd2amiga_fast(struct BitMap *hidd_bm
+
+static VOID hidd2buf_fast(struct BitMap *hidd_bm
 	, LONG x_src , LONG y_src
 	, APTR dest_info
 	, LONG x_dest, LONG y_dest
@@ -3045,7 +2688,6 @@ static VOID hidd2amiga_fast(struct BitMap *hidd_bm
     ULONG current_x, current_y, next_x, next_y;
     
 #warning Src bitmap migh be user initialized so we should not use HIDD_BM_PIXTAB() below
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(hidd_bm) };
     
     Object *bm_obj;
     
@@ -3064,16 +2706,16 @@ LOCK_PIXBUF
 	current_x = next_x;
 	current_y = next_y;
 	
-	if (NUMLUTPIX < xsize)
+	if (NUMPIX < xsize)
 	{
 	   /* buffer cant hold a single horizontal line, and must 
 	      divide each line into copies */
 	    tocopy_w = xsize - current_x;
-	    if (tocopy_w > NUMLUTPIX)
+	    if (tocopy_w > NUMPIX)
 	    {
 	        /* Not quite finished with current horizontal pixel line */
-	    	tocopy_w = NUMLUTPIX;
-		next_x += NUMLUTPIX;
+	    	tocopy_w = NUMPIX;
+		next_x += NUMPIX;
 	    }
 	    else
 	    {	/* Start at a new line */
@@ -3086,7 +2728,7 @@ LOCK_PIXBUF
     	}
     	else
     	{
-	    tocopy_h = MIN(NUMLUTPIX / xsize, ysize - current_y);
+	    tocopy_h = MIN(NUMPIX / xsize, ysize - current_y);
 	    tocopy_w = xsize;
 
 	    next_x = 0;
@@ -3096,13 +2738,13 @@ LOCK_PIXBUF
 	
 	
 	/* Get some more pixels from the HIDD */
-	HIDD_BM_GetImageLUT(bm_obj
+	HIDD_BM_GetImage(bm_obj
 		, (UBYTE *)pixel_buf
 		, tocopy_w
 		, x_src + current_x
 		, y_src + current_y
 		, tocopy_w, tocopy_h
-		, &pixlut);
+		, vHidd_PixFmt_Native32);
 
 
 	/*  Write pixels to the destination */
@@ -3112,7 +2754,7 @@ LOCK_PIXBUF
 		, current_x + x_dest
 		, current_y + y_dest
 		, tocopy_w, tocopy_h
-		, (UBYTE *)pixel_buf
+		, (HIDDT_Pixel *)pixel_buf
 		, bm_obj
 		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
 	);
@@ -3128,6 +2770,7 @@ ULOCK_PIXBUF
     return;
     
 }
+
 
 
 #define FLG_PALETTE		( 1L << vHidd_GT_Palette	)
@@ -4945,6 +4588,150 @@ static LONG pix_read(APTR pr_data
 }    
 
 
+struct extcol_render_data {
+    struct render_special_info rsi;
+    struct BitMap *destbm;
+    HIDDT_Pixel pixel;
+    
+};
+
+static VOID buf_to_extcol(struct extcol_render_data *ecrd
+	, LONG srcx, LONG srcy
+	, LONG dstx, LONG dsty
+	, ULONG width, ULONG height
+	, HIDDT_Pixel *pixbuf
+	, Object *bm_obj
+	, HIDDT_Pixel *pixtab)
+{
+    LONG y;
+    struct BitMap *bm;
+    bm = ecrd->destbm;
+    for (y = 0; y < height; y ++) {
+    	LONG x;
+	
+    	for (x = 0; x < width; x ++) {
+	    if (*pixbuf ++ == ecrd->pixel) {
+	    	
+	    	UBYTE *plane;
+		ULONG i;
+	    	/* Set the according bit in the bitmap */
+		for (i = 0; i < bm->Depth; i ++) {
+		    plane = bm->Planes[i];
+		    if (NULL != plane) {
+		    	UBYTE mask;
+			
+			plane += COORD_TO_BYTEIDX(x + dstx, y + dsty, bm->BytesPerRow);
+			mask = XCOORD_TO_MASK(x + dstx);
+			
+			/* Set the pixel */
+			*plane |= mask;
+		    
+		    } /* if (plane allocated) */
+		} /* for (plane) */
+	    } /* if (color match) */
+	} /* for (x) */
+    } /* for (y) */
+    
+    return;
+}
+	
+	
+
+static ULONG extcol_render(APTR funcdata
+	, LONG dstx, LONG dsty
+	, Object *dstbm_obj
+	, Object *dst_gc
+	, LONG x1, LONG y1, LONG x2, LONG y2
+	, struct GfxBase *GfxBase)
+{
+    /* Get the info from the hidd */
+    struct extcol_render_data *ecrd;
+     
+    ecrd = (struct extcol_render_data *)funcdata;
+     
+    hidd2buf_fast(ecrd->rsi.curbm
+     	, x1, y1
+	, (APTR)ecrd
+	, dstx, dsty
+	, x2 - x1 + 1
+	, y2 - y1 + 1
+	, buf_to_extcol
+    );
+		
+    return (x2 - x1 + 1) * (y2 - y1 + 1);
+}
+
+
+struct dm_message {
+    APTR memptr;
+    ULONG offsetx;
+    ULONG offsety;
+    ULONG xsize;
+    ULONG ysize;
+    UWORD bytesperrow;
+    UWORD bytesperpix;
+    UWORD colormodel;
+    
+};
+
+struct dm_render_data {
+    struct dm_message msg;
+    Object *pf;
+    struct Hook *hook;
+    struct RastPort *rp;
+    HIDDT_StdPixFmt stdpf;
+};
+
+
+static ULONG dm_render(APTR dmr_data
+	, LONG srcx, LONG srcy
+	, Object *dstbm_obj
+	, Object *dst_gc
+	, LONG x1, LONG y1, LONG x2, LONG y2
+	, struct GfxBase *GfxBase)
+{
+    struct dm_render_data *dmrd;
+    UBYTE *addr;
+    struct dm_message *msg;
+    ULONG bytesperpixel;
+    ULONG width, height;
+    
+    dmrd = (struct dm_render_data *)dmr_data;
+    
+    /* Get the baseadress from where to render */
+    
+    GetAttr(dstbm_obj, aHidd_BitMap_BaseAddress, (IPTR *)&addr);
+    if (NULL == addr) {
+#warning Fix this case with hidd2amiga_fast    
+    	kprintf("!!! BITMAP HIDD HAS NO BASEADRESS\n !!!");
+	return 0;
+    }
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;;
+    
+    msg = &dmrd->msg;
+    
+    msg->offsetx = x1;
+    msg->offsety = y1;
+    msg->xsize = width;
+    msg->ysize = height;
+#warning We should maybe use something else than the BytesPerLine method since we may have alignment
+    
+    msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+    
+    GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+    msg->bytesperpix = (UWORD)bytesperpixel;
+    
+    /* Colormodel allready set */
+    
+    /* Compute the adress for the start pixel */
+    msg->memptr = addr + (msg->bytesperrow * y1) + (bytesperpixel * x1);
+    
+    CallHookPkt(dmrd->hook, dmrd->rp, msg);
+    
+    return width * height;
+}
 
 #include "cybergraphics_intern.h"
 
@@ -5235,14 +5022,22 @@ LONG driver_FillPixelArray(struct RastPort *rp
     );
 }
 
-LONG driver_MovePixelArray(UWORD srcx, UWORD srcy, struct RastPort *rp
+ULONG driver_MovePixelArray(UWORD srcx, UWORD srcy, struct RastPort *rp
 	, UWORD destx, UWORD desty, UWORD width, UWORD height
 	, struct Library *CyberGfxBase)
 {
 
-    kprintf("driver_MovePixelArray() not implemented yet\n");
-    
-    return 0;
+    if (!CorrectDriverData(rp, GfxBase))
+    	return 0;
+
+    ClipBlit(rp
+		, srcx, srcy
+		, rp
+		, destx, desty
+		, width, height
+		, 0x00C0 /* Copy */
+    );
+    return width * height;
 }
 
 
@@ -5308,176 +5103,6 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     return pix;
 }
 
-
-#warning Implement Display mode attributes in the below function
-APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct Library *CyberGfxBase )
-{
-    struct List *hiddmlist;
-    struct TagItem *tag, *tstate;
-    
-    ULONG minwidth = 0;
-    ULONG maxwidth = 0xFFFFFFFF;
-    ULONG minheight = 0;
-    ULONG maxheight = 0xFFFFFFFF;
-    
-    struct List *cybermlist = NULL;
-    
-    Object *gfxhidd;
-    
-    /* GetModeInfo tags */
-    struct TagItem qgmtags[] =  {
-    	{ tHidd_GfxMode_MinWidth,	0x0 },
-	{ tHidd_GfxMode_MaxWidth,	0xFFFFFFFF },
-	{ tHidd_GfxMode_MinHeight,	0x0 },
-	{ tHidd_GfxMode_MaxHeight,	0xFFFFFFFF },
-	{ tHidd_GfxMode_PixFmts,	(IPTR)NULL },
-	{ TAG_DONE, 0UL }
-    };
-    
-    UWORD *cmodelarray = NULL;
-    
-    gfxhidd = SDD(GfxBase)->gfxhidd;
-    
-    for (tstate = taglist; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
-	switch (tag->ti_Tag) {
-	    case CYBRMREQ_MinWidth:
-	    	minwidth = (ULONG)tag->ti_Data;
-		break;
-		
-	    case CYBRMREQ_MaxWidth:
-	     	maxwidth = (ULONG)tag->ti_Data;
-		break;
-		
-	    case CYBRMREQ_MinHeight:
-	    	minheight = (ULONG)tag->ti_Data;
-		break;
-		
-	    case CYBRMREQ_MaxHeight:
-	    	maxheight = (ULONG)tag->ti_Data;
-		break;
-		
-	    case CYBRMREQ_CModelArray:
-	    	cmodelarray = (UWORD *)tag->ti_Data;
-		break;
-		
-	    default:
-	    	kprintf("!!! UNKNOWN TAG PASSED TO AllocCModeListTagList\n");
-		break;
-		
-	
-	} 	
-    }
-    
-    /* Build taglist for the QueryGfxModes call */
-    qgmtags[0].ti_Data = minwidth;
-    qgmtags[1].ti_Data = maxwidth;
-    qgmtags[2].ti_Data = minheight;
-    qgmtags[3].ti_Data = maxheight;
-    
-    /* Ask the HIDD for the modes */
-    hiddmlist = HIDD_Gfx_QueryGfxModes(gfxhidd, qgmtags);
-    
-    if (NULL != hiddmlist) {
-	
-	/* Allocate the exec list */
-	cybermlist = AllocMem(sizeof (struct List), MEMF_CLEAR);
-	if (NULL != cybermlist) {
-    	    struct ModeNode *hmnode;
-	    NEWLIST(cybermlist);
-	    /* Convert the modeinfo into an exec list */
-	
-	    /* NOTE: If HIDD_GfxGetModeInfo returned != NULL, it means
-	           we have at least one mode, ie. ine tHidd_GfxMode_Start/Stop pair
-	    */	    
-	    ForeachNode(hiddmlist, hmnode) {
-	    
-	    	struct CyberModeNode *cmnode;
-		
-		UWORD *cyberpixfmts;
-		ULONG width, height, depth;
-		
-		
-		/* Check whether the gfxmode is the correct pixel format */
-		if (NULL != cmodelarray) {
-		    HIDDT_StdPixFmt stdpf;
-		    UWORD cyberpf;
-		    BOOL found = FALSE;
-			/* Get the gfxmode pixelf format */
-		    GetAttr(hmnode->gfxMode, aHidd_PixFmt_StdPixFmt, &stdpf);
-		
-		    cyberpf = hidd2cyber_pixfmt(stdpf, GfxBase);
-		    if (cyberpf == (UWORD)-1)
-		    	continue;	/* Unknown format */
-			
-		    for (cyberpixfmts = cmodelarray; *cyberpixfmts; cyberpixfmts ++) {
-		    	/* See if the stdpixfmt is present in the array */
-			if (*cyberpixfmts == cyberpf) {
-			    found = TRUE;
-			    break;
-			}
-			
- 		    } /* for (each supplied pixelformat in the cmodelarray) */
-		    
-		    if (!found)
-		    	continue; /* PixFmt not wanted, just continue with next node */
-		
-		} /* if (cmodelarray supplied in the taglist) */
-		
-	    	/* Allocate a cybergfx modeinfo struct */
-	    
-	    	cmnode = AllocMem(sizeof (struct CyberModeNode), MEMF_CLEAR);
-	    	if (NULL == cmnode)
-		    goto failexit;
-		    
-		/* Get some info from the HIDD object */
-		
-		GetAttr(hmnode->gfxMode, aHidd_GfxMode_Width,  &width);
-		GetAttr(hmnode->gfxMode, aHidd_GfxMode_Height, &height);
-		GetAttr(hmnode->gfxMode, aHidd_PixFmt_Depth,   &depth);
-		
-		cmnode->Width	= width;
-		cmnode->Height	= height;
-		cmnode->Depth	= depth;
-		cmnode->DisplayTagList = NULL;
-		strncpy(cmnode->ModeText, "Blah", DISPLAYNAMELEN);
-		
-		/* Keep track of the node */
-		AddTail(cybermlist, (struct Node *)cmnode);
-		
-		/* Get a display ID for the mode */
-	
-	    } /* while (hidd modes to process( */
-	
-	} /* if (NULL != cybermlist) */
-	
-    	HIDD_Gfx_ReleaseGfxModes(gfxhidd, hiddmlist);
-    } /* if (NULL != hiddmlist) */
-
-    
-    return cybermlist;
-    
-failexit:
-    if (NULL != hiddmlist)
-     	HIDD_Gfx_ReleaseGfxModes(gfxhidd, hiddmlist);
-	
-    if (NULL != cybermlist)
-     	FreeCModeList(cybermlist);
-    
-    return NULL;
-}
-
-
-VOID driver_FreeCModeList(struct List *modeList, struct Library *CyberGfxBase)
-{
-    struct CyberModeNode *node, *safe;
-    
-    ForeachNodeSafe(modeList, node, safe) {
-	Remove((struct Node *)node);
-	FreeMem(node, sizeof (struct CyberModeNode));
-    }
-    
-    FreeMem(modeList, sizeof (struct List));
-}
 
 
 ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Library *CyberGfxBase)
@@ -5553,8 +5178,8 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	    break;
 	
 	default:
-	kprintf("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n");
-	break;
+	    kprintf("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n");
+	    break;
 	
 	
     } /* switch (attribute) */
@@ -5563,12 +5188,193 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 }
 
 
+VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct Library *CyberGfxBase)
+{
+    struct TagItem *tag, *tstate;
+    ULONG dpmslevel;
+    
+    struct TagItem htags[] = {
+	{ aHidd_Gfx_DPMSLevel,	0UL	},
+	{ TAG_DONE, 0UL }    
+    };
+    
+    BOOL dpms_found = FALSE;
+    
+    HIDDT_DPMSLevel hdpms;
+    
+    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); ) {
+    	switch (tag->ti_Tag) {
+	    case SETVC_DPMSLevel:
+	    	dpmslevel = tag->ti_Data;
+		dpms_found = TRUE;
+	    	break;
+	    
+	    default:
+	    	kprintf("!!! UNKNOWN TAG IN CVideoCtrlTagList(): %x !!!\n"
+			, tag->ti_Tag);
+		break;
+	    
+	} /* switch() */
+	
+    } /* for (each tagitem) */
+    
+   
+    if (dpms_found) {  
+    
+	/* Convert to hidd dpms level */
+	switch (dpmslevel) {
+	    case DPMS_ON:
+	    	hdpms = vHidd_Gfx_DPMSLevel_On;
+	    	break;
+
+	    case DPMS_STANDBY:
+	    	hdpms = vHidd_Gfx_DPMSLevel_Standby;
+	    	break;
+
+	    case DPMS_SUSPEND:
+	    	hdpms = vHidd_Gfx_DPMSLevel_Suspend;
+	    	break;
+
+	    case DPMS_OFF:
+	    	hdpms = vHidd_Gfx_DPMSLevel_Off;
+	    	break;
+	
+	    default:
+	    	kprintf("!!! UNKNOWN DPMS LEVEL IN CVideoCtrlTagList(): %x !!!\n"
+	    	    , dpmslevel);
+		    
+		dpms_found = FALSE;
+		break;
+	
+	}
+    }
+    
+    if (dpms_found) {
+	htags[0].ti_Data = hdpms;
+    } else {
+    	htags[0].ti_Tag = TAG_IGNORE;
+    }
+    
+    SetAttrs(SDD(GfxBase)->gfxhidd, htags);
+    
+    return;
+}
+
+
+ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
+	, ULONG color, ULONG srcx, ULONG srcy, ULONG width, ULONG height
+	, struct Library *CyberGfxBase)
+{
+    struct Rectangle rr;
+    LONG pixread = 0;
+    struct extcol_render_data ecrd;
+    Object *pf;
+    ULONG graphtype;
+    
+    if (!CorrectDriverData(rp, GfxBase))
+    	return FALSE;
+	
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	kprintf("!!! CALLING ExtractColor() ON NO-HIDD BITMAP !!!\n");
+	return FALSE;
+    }
+    
+    rr.MinX = srcx;
+    rr.MinY = srcy;
+    rr.MaxX = srcx + width  - 1;
+    rr.MaxY = srcy + height - 1;
+    
+    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), vHidd_PixFmt_Native32);
+    
+    GetAttr(pf, aHidd_PixFmt_GraphType, &graphtype);
+    
+    if (vHidd_GT_Palette == graphtype) {
+        ecrd.pixel = color;
+    } else {
+	HIDDT_Color col;
+	
+	col.alpha = (color >> 16) & 0x0000FF00;
+	col.red	  = (color >> 8 ) & 0x0000FF00;
+	col.green = color & 0x0000FF00;
+	col.blue  = (color << 8) & 0x0000FF00;
+	
+	ecrd.pixel = HIDD_BM_MapColor(HIDD_BM_OBJ(rp->BitMap), &col);
+    
+    }
+    
+    ecrd.destbm = bm;
+    
+    pixread = do_render_func(rp, NULL, &rr, extcol_render, NULL, TRUE, GfxBase);
+	
+    if (pixread != (width * height))
+    	return FALSE;
+	
+    return TRUE;
+}
+
+
+VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct TagItem *tags, struct Library *CyberGfxBase)
+{
+
+    struct dm_render_data dmrd;
+    struct Rectangle rr;
+    struct Layer *L;
+    
+    
+    if (!CorrectDriverData(rp, GfxBase))
+    	return;
+	
+	
+    if (!IS_HIDD_BM(rp->BitMap)) {
+    	kprintf("!!! NO HIDD BITMAP IN CALL TO DoCDrawMethodTagList() !!!\n");
+	return;
+    }
+
+    /* Get the bitmap std pixfmt */    
+    dmrd.pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(rp->BitMap), vHidd_PixFmt_Native);
+    GetAttr(dmrd.pf, aHidd_PixFmt_StdPixFmt, &dmrd.stdpf);
+    dmrd.msg.colormodel = hidd2cyber_pixfmt(dmrd.stdpf, GfxBase);
+    dmrd.hook = hook;
+    dmrd.rp = rp;
+    
+    if (((ULONG)-1) == dmrd.msg.colormodel) {
+    	kprintf("!!! UNKNOWN HIDD PIXFMT IN DoCDrawMethodTagList() !!!\n");
+	return;
+    }
+    
+    
+    L = rp->Layer;
+    
+
+    rr.MinX = 0;
+    rr.MinY = 0;
+    
+    if (NULL == L) {
+	rr.MaxX = GetBitMapAttr(rp->BitMap, BMA_WIDTH)  - 1;
+	rr.MaxY = GetBitMapAttr(rp->BitMap, BMA_HEIGHT) - 1;
+    } else {
+    	/* Lock the layer */
+	LockLayerRom(L);
+    
+    	rr.MaxX = rr.MinX + (L->bounds.MaxX - L->bounds.MinX) - 1;
+	rr.MaxY = rr.MinY + (L->bounds.MaxY - L->bounds.MinY) - 1;
+    }
+    
+    do_render_func(rp, NULL, &rr, dm_render, &dmrd, FALSE, GfxBase);
+    
+    if (NULL != L) {
+	UnlockLayerRom(L);
+    }
+    return;
+}
+
+
 /******************************************/
 /* Support stuff for cybergfx             */
 /******************************************/
 
 #undef GfxBase
-static UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
+UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 {
      UWORD cpf = (UWORD)-1;
      
@@ -5603,7 +5409,7 @@ static UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
      
 }
 
-static HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
+HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 {
     HIDDT_StdPixFmt stdpf = vHidd_PixFmt_Unknown;
 
@@ -5631,10 +5437,7 @@ static HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 	default:
 	    kprintf("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n");
 	    break;
-	
     }
-    
     return stdpf;
-    
 }
 

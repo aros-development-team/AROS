@@ -9,8 +9,12 @@
 
 #include <dos/dos.h>
 
+#include "macros.h"
+
 // #include <oop/oop.h>
-#include "graphics_internal.h"
+
+/* Hack: prevent hidd/graphics.h from beeing included */
+// #include "graphics_internal.h"
 
 
 VOID activescreen_taskentry();
