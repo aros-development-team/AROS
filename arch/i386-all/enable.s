@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/10/10 13:24:47  digulla
+#    Make timer work (Fleischer)
+#
 #    Revision 1.5  1996/09/11 16:54:26  digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
 #    	some systems name an external symbol "x" as "_x" and others as "x".
@@ -66,6 +69,7 @@ _Exec_Enable:
 	/* Decrement and test IDNestCnt */
 	decb	IDNestCnt(%edx)
 	jge	noswch
+	call	en
 
 	/* Is there a delayed switch pending and are taskswitches allowed? */
 	cmpb	$0,AttnResched(%edx)
@@ -83,4 +87,22 @@ _Exec_Enable:
 	/* Restore registers and return */
 noswch: popl	%eax
 	popl	%edx
+	ret
+
+.globl en
+	.type	en,@function
+en:
+	pushl %eax
+	pushl %ecx
+	pushl %edx
+	pushl $-1
+	pushl $0
+	leal 4(%esp),%eax
+	pushl %eax
+	pushl $1
+	call sigprocmask
+	addl $16,%esp
+	popl %edx
+	popl %ecx
+	popl %eax
 	ret

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/10/10 13:24:47  digulla
+#    Make timer work (Fleischer)
+#
 #    Revision 1.5  1996/09/11 16:54:26  digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
 #    	some systems name an external symbol "x" as "_x" and others as "x".
@@ -79,6 +82,9 @@ _Exec_Dispatch:
 	/* Get SysBase */
 	movl	32(%esp),%ecx
 
+	/* block all signals */
+	call	dis
+
 	/* Store sp */
 	movl	ThisTask(%ecx),%edx
 	movl	%esp,tc_SPReg(%edx)
@@ -117,7 +123,12 @@ noswch: movb	IDNestCnt(%ecx),%al
 	/* Get new sp */
 nolnch: movl	tc_SPReg(%edx),%esp
 
-	/* Except bit set? */
+	/* Unblock signals if necessary */
+	cmpb	$0,tc_IDNestCnt(%edx)
+	jge	noen
+	call	en
+
+noen:	/* Except bit set? */
 	testb	$TF_EXCEPT,tc_Flags(%edx)
 	je	noexpt
 
