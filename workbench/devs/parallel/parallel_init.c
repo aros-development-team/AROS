@@ -139,6 +139,8 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
 {
   AROS_USERFUNC_INIT
 
+  SysBase = sysBase;
+
   D(bug("parallel device: init\n"));
 
   pubParallelBase = ParallelDevice;
@@ -146,8 +148,6 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
   /* Store arguments */
   ParallelDevice->sysBase = sysBase;
   ParallelDevice->seglist = segList;
-
-  SysBase = sysBase;
     
   /* open the parallel hidd */
   if (NULL == ParallelDevice->ParallelHidd)
@@ -155,14 +155,27 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
     ParallelDevice->ParallelHidd = OpenLibrary("DRIVERS:parallel.hidd",0);
     D(bug("parallel.hidd base: 0x%x\n",ParallelDevice->ParallelHidd));
     
+    if (NULL == ParallelDevice->ParallelHidd)
+    	return NULL;
+	
     if (NULL == ParallelDevice->oopBase)
-      ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);
-    
-    if (NULL != ParallelDevice->ParallelHidd && 
-        NULL != ParallelDevice->oopBase)
+      ParallelDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);    
+    if (NULL == ParallelDevice->oopBase)
     {
-      ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
-      D(bug("parallelHidd Object: 0x%x\n",ParallelDevice->ParallelObject));
+    	CloseLibrary(ParallelDevice->ParallelHidd);
+	ParallelDevice->ParallelHidd = NULL;
+    	return NULL;
+    }
+	
+    ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
+	
+    if (NULL == ParallelDevice->ParallelObject)
+    {
+    	CloseLibrary(ParallelDevice->oopBase);
+	ParallelDevice->oopBase = NULL;
+	CloseLibrary(ParallelDevice->ParallelHidd);
+	ParallelDevice->ParallelHidd = NULL;
+      	return NULL;
     }
   }
     
@@ -228,7 +241,7 @@ AROS_LH3(void, open,
         PU->pu_Unit  = HIDD_Parallel_NewUnit(ParallelDevice->ParallelObject, unitnum);
         if (NULL != PU->pu_Unit)
         {
-          HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL, NULL, NULL);
+          HIDD_ParallelUnit_Init(PU->pu_Unit, RBF_InterruptHandler, NULL, WBE_InterruptHandler, NULL);
           ioreq->io_Device = (struct Device *)ParallelDevice;
           ioreq->io_Unit   = (struct Unit *)PU;  
           ParallelDevice->device.dd_Library.lib_OpenCnt ++;
@@ -516,6 +529,8 @@ AROS_LH1(void, beginio,
 	                                         stringlen);
 	  if (writtenbytes == stringlen)
 	    complete = TRUE;
+	  else
+	    PU->pu_WriteLength = stringlen-writtenbytes;
 	}
 	else
 	{
@@ -524,6 +539,8 @@ AROS_LH1(void, beginio,
                                                  ioreq->IOPar.io_Length);
           if (writtenbytes == ioreq->IOPar.io_Length)
             complete = TRUE;
+          else
+	    PU->pu_WriteLength = ioreq->IOPar.io_Length-writtenbytes;
         }
         /*
         ** A consistency check between the STATUS_WRITES_PENDING flag
@@ -554,6 +571,7 @@ AROS_LH1(void, beginio,
           ioreq->IOPar.io_Flags &= ~IOF_QUICK;
           PU->pu_ActiveWrite = (struct Message *)ioreq;
           PU->pu_Status |= STATUS_WRITES_PENDING;
+	  PU->pu_NextToWrite = writtenbytes;
         }
       }
       else
@@ -566,6 +584,7 @@ AROS_LH1(void, beginio,
         */
         PutMsg(&PU->pu_QWriteCommandPort,
                (struct Message *)ioreq);
+	PU->pu_Status |= STATUS_WRITES_PENDING;
         /* 
         ** As I am returning immediately I will tell that this
         ** could not be done QUICK   
@@ -590,6 +609,7 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case CMD_RESET:
+      Disable();
       /* All IORequests, including the active ones, are aborted */
 
       /* Abort the active IORequests */
@@ -606,6 +626,7 @@ AROS_LH1(void, beginio,
         ((struct IOStdReq *)PU->pu_ActiveWrite)->io_Error = IOERR_ABORTED;
         ReplyMsg(PU->pu_ActiveWrite);
       }
+      Enable();
 
     /*******************************************************************/
 
@@ -614,6 +635,8 @@ AROS_LH1(void, beginio,
       ** Clear all queued IO request for the given parallel unit except
       ** for the active ones.
        */
+      Disable();
+      
       while (TRUE)
       {
         struct IOStdReq * iopreq = 
@@ -635,6 +658,7 @@ AROS_LH1(void, beginio,
       }
       ioreq->IOPar.io_Error = 0;
 
+      Enable();
       /*
       ** The request could be completed immediately.
       ** Check if I have to reply the message
@@ -730,6 +754,8 @@ AROS_LH1(LONG, abortio,
   /*
   ** is it the active request?
   */
+  
+  Disable();
   if ((struct Message *)ioreq == PU->pu_ActiveRead)
   {
     /*
@@ -748,7 +774,8 @@ AROS_LH1(LONG, abortio,
     Remove(&ioreq->io_Message.mn_Node);
     ReplyMsg(&ioreq->io_Message);
   }
-
+  Enable();
+  
   return 0;
   AROS_LIBFUNC_EXIT
 }

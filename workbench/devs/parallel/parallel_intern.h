@@ -50,6 +50,7 @@ struct ParallelUnit * findUnit(struct parallelbase * ParallelDevice,
 
 
 ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
+ULONG WBE_InterruptHandler(ULONG unitum, APTR userdata);
 
 extern struct ExecBase * SysBase;
 
@@ -86,7 +87,9 @@ struct ParallelUnit
   
   struct MsgPort      pu_QWriteCommandPort;
   struct Message    * pu_ActiveWrite;
-
+  ULONG     	      pu_NextToWrite;  /* index in the buffer of next data to tx */
+  ULONG     	      pu_WriteLength;  /* Number of bytes left to tx */
+  
   ULONG               pu_UnitNum;
   ULONG               pu_Flags;    // copy of IOExtSer->io_SerFlags;
   ULONG               pu_Status;
