@@ -1,0 +1,14 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FUNCTIONS := smp checkcpu
+
+%build_module_macro mmake=kernel-cpu-pc-i386 \
+  modname=cpu modtype=resource \
+  funcs=$(FUNCTIONS)  \
+  conffile=lib.conf genincludes=yes
+
+#MM kernel-cpu-pc-i386 : includes
+#MM kernel-cpu-pc-i386-kobj : includes
+
+%common
