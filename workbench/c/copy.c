@@ -17,7 +17,7 @@
 /* #include <proto/aros.h> */
 #include <string.h>
 
-static const char version[] = "$VER: Copy 1.0 (4.10.1996)\n";
+static const char version[] = "$VER: copy 41.1 (4.10.1996)\n";
 
 UBYTE Buffer[4096];
 APTR mem;

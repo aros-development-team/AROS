@@ -17,7 +17,7 @@
 #include <proto/aros.h>
 #include <stdio.h>
 
-static const char version[] = "$VER: Version 1.1 (4.10.96)\n";
+static const char version[] = "$VER: version 41.2 (4.10.96)\n";
 
 UBYTE Buffer[256];
 UBYTE Name[64];

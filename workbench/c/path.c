@@ -1,24 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/27 00:22:37  ldp
-    Include proto instead of clib
-
-    Revision 1.6  1996/10/04 17:09:44  digulla
-    More readable way to access arguments
-
-    Revision 1.5  1996/10/04 14:35:41  digulla
-    Make "path x: ADD" work as expected. "path x:" works now, too
-
-    Revision 1.4  1996/09/17 16:43:01  digulla
-    Use general startup code
-
-    Revision 1.3  1996/09/13 17:52:11  digulla
-    Use IPTR
-
-    Revision 1.2  1996/08/01 17:40:45  digulla
-    Added standard header for all files
 
     Desc:
     Lang:
@@ -27,6 +9,8 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
+
+static const char version[] = "$VER: path 41.1 (14.3.1997)\n";
 
 UBYTE Buffer[4096];
 

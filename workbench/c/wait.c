@@ -1,21 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:22:38  ldp
-    Include proto instead of clib
-
-    Revision 1.5  1996/09/17 16:43:02  digulla
-    Use general startup code
-
-    Revision 1.4  1996/09/13 17:52:12  digulla
-    Use IPTR
-
-    Revision 1.3  1996/08/13 15:34:04  digulla
-    #include <exec/execbase.h> was missing
-
-    Revision 1.2  1996/08/01 17:40:46  digulla
-    Added standard header for all files
 
     Desc:
     Lang:
@@ -25,6 +10,8 @@
 #include <proto/exec.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
+
+static const char version[] = "$VER: wait 41.1 (14.3.1997)\n";
 
 int main (int argc, char ** argv)
 {

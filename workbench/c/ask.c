@@ -13,7 +13,7 @@
 #include <dos/dos.h>
 #include <proto/utility.h>
 
-static const char version[] = "$VER: Ask 1.1 (28.2.1997)\n";
+static const char version[] = "$VER: ask 41.2 (28.2.1997)\n";
 
 static struct UtilityBase *UtilityBase;
 

@@ -13,6 +13,8 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
+static const char version[] = "$VER: makedir 41.1 (14.3.1997)\n";
+
 int main (int argc, char ** argv)
 {
     STRPTR args[1]={ 0 };

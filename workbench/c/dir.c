@@ -19,7 +19,7 @@
 #include <memory.h>
 #include <aros/debug.h>
 
-static const char version[] = "$VER: Dir 1.9 (4.10.1996)\n";
+static const char version[] = "$VER: dir 41.10 (4.10.1996)\n";
 
 struct UtilityBase *UtilityBase;
 

@@ -12,7 +12,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: Why 1.1 (2.3.97)\n";
+static const char version[] = "$VER: why 41.2 (2.3.97)\n";
 
 int main()
 {

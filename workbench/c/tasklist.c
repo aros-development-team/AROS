@@ -14,6 +14,8 @@
 #include <proto/dos.h>
 #include <aros/machine.h>
 
+static const char version[] = "$VER: tasklist 41.1 (14.3.1997)\n";
+
 struct task
 {
     STRPTR name;

@@ -14,7 +14,7 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
-static const char version[] = "$VER: Mount 1.0 (19.2.1997)\n";
+static const char version[] = "$VER: mount 41.1 (19.2.1997)\n";
 
 static struct UtilityBase *UtilityBase;
 

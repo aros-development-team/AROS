@@ -15,7 +15,7 @@
 #define ARG_BUFFERS 1
 #define ARG_COUNT 2
 
-static const char version[] = "$VER: AddBuffers 1.0 (18.2.1997)\n";
+static const char version[] = "$VER: addbuffers 41.1 (18.2.1997)\n";
 
 int main (int argc, char ** argv)
 {

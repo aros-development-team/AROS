@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <aros/debug.h>
 
-static const char version[] = "$VER: Shell 1.0 (2.3.1997)\n";
+static const char version[] = "$VER: shell 41.1 (2.3.1997)\n";
 
 BPTR cLock;
 

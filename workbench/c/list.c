@@ -13,6 +13,8 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
+static const char version[] = "$VER: list 41.1 (14.3.1997)\n";
+
 int main (int argc, char ** arvg)
 {
     char *args[1]={ 0 };
