@@ -27,12 +27,13 @@ KOBJS := $(addprefix $(KOBJSDIR)/,$(addsuffix _library.o ,$(KLIBS)  )) \
 DEP_LIBS := \
 	$(LIBDIR)/libamiga.a \
 	$(LIBDIR)/libarossupport.a \
-	$(LIBDIR)/libhiddgraphicsstubs.a
+	$(LIBDIR)/libhiddgraphicsstubs.a \
+	$(LIBDIR)/libhiddstubs.a \
 
 
 
 LIBS :=	-L$(LIBDIR) \
-	-larossupport -lhiddgraphicsstubs -lamiga
+	-larossupport -lhiddgraphicsstubs -lhiddstubs -lamiga
 
 $(BINDIR)/aros: $(GENDIR)/aros.o $(DEP_LIBS) $(KOBJS)
 	$(HOST_CC) $(CFLAGS) -Dmain=submain $< $(KOBJS) $(LIBS) \
