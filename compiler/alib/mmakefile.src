@@ -90,6 +90,7 @@ FILES	:= \
     openworkbenchobject \
     printf \
     rangerand \
+    reallocvec \
     refreshdtobject \
     refreshdtobjects \
     releaseinfo \
