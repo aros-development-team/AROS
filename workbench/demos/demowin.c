@@ -5,6 +5,7 @@
     Desc: A short demo for the features of Intuition and Graphics
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE 1
 #define ENABLE_RT	1
 #define ENABLE_PURIFY	1
 
@@ -525,10 +526,12 @@ int main (int argc, char ** argv)
     int cont, draw;
     int prop;
 
+    RT_Init ();
+
     printf ("Welcome to the window demo of AROS\n");
 
     GfxBase=(struct GfxBase *)OpenLibrary(GRAPHICSNAME,39);
-    IntuitionBase=(struct IntuitionBase *)OpenLibrary("intuition.library",39);
+    IntuitionBase=(struct IntuitionBase *)OpenLibrary(INTUITIONNAME,39);
 
     if (!GfxBase)
     {
@@ -538,7 +541,7 @@ int main (int argc, char ** argv)
 
     if (!IntuitionBase)
     {
-	fprintf (stderr, "Couldn't open intuition.library\n");
+	fprintf (stderr, "Couldn't open %s\n", INTUITIONNAME);
 	goto end;
     }
 
@@ -958,6 +961,8 @@ end:
 
     if (IntuitionBase)
 	CloseLibrary ((struct Library *)IntuitionBase);
+
+    RT_Exit ();
 
     return 0;
 }
