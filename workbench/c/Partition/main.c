@@ -30,8 +30,11 @@ AROS_SH2
     AROS_SHCOMMAND_INIT
     
     struct Library         *PartitionBase = NULL;
-    struct PartitionHandle *root = NULL,
-                           *rdbp = NULL;
+    struct PartitionHandle *root    = NULL, /* root partition */
+                           *mbrp    = NULL, /* MBR partition */
+                           *rdbp    = NULL; /* RDB partition */
+    struct PartitionType    mbrtype = {{0x30},  1},
+                            rdbtype = {"DOS\1", 4};
     struct DosEnvec         tableDE,
                             partitionDE;
     struct DriveGeometry    tableDG;
@@ -75,21 +78,21 @@ AROS_SH2
 
     memset(&tableDG, 0, sizeof(struct DriveGeometry));
     
-    /* Step 1: Destroy the existing partitiontable, if any exists. */
+    /* Step 1: Destroy the existing partitiontable, if any exists */
     root = OpenRootPartition("ide.device", 0);
     DestroyPartitionTable(root);
     CloseRootPartition(root);
     
-    /* Step 2: Create a root RDB partition table. */
+    /* Step 2: Create a root MBR partition table */
     root = OpenRootPartition("ide.device", 0);
-    rc = CreatePartitionTable(root, PHPTT_RDB);
+    rc = CreatePartitionTable(root, PHPTT_MBR);
     if (rc != 0)
     {
         PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
         return RETURN_FAIL; /* FIXME: take care of allocated resources... */
     }
     
-    /* Step 3: Create a RDB partition in the table. */
+    /* Step 3: Create a partition in the MBR table */
     memset(&tableDE, 0, sizeof(struct DosEnvec));
     memset(&partitionDE, 0, sizeof(struct DosEnvec));
     
@@ -107,10 +110,58 @@ AROS_SH2
     CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
     
     partitionDE.de_SizeBlock      = tableDG.dg_SectorSize >> 2;
+    partitionDE.de_Reserved       = 2;
+    partitionDE.de_HighCyl        = tableDE.de_HighCyl;
+    partitionDE.de_LowCyl         = reserved 
+                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
+                                  + 1;
+    
+    D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
+    D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
+    D(bug("* table lowcyl = %ld\n", tableDE.de_LowCyl));
+    D(bug("* table reserved = %ld\n", reserved));
+        
+    mbrp = AddPartitionTags
+    (
+        root,
+        
+        PT_DOSENVEC, (IPTR) &partitionDE,
+        PT_TYPE,     (IPTR) &mbrtype,
+        PT_POSITION,        0,
+        PT_ACTIVE,          TRUE,
+        
+        TAG_DONE
+    );
+    
+    /* Step 4: Create RDB partition table inside MBR partition */
+    rc = CreatePartitionTable(mbrp, PHPTT_RDB);
+    if (rc != 0)
+    {
+        PutStr("*** ERROR: Creating partition table failed. Aborting.\n");
+        return RETURN_FAIL; /* FIXME: take care of allocated resources... */
+    }
+    
+    /* Step 5: Create a partition in the RDB table */
+    memset(&tableDE, 0, sizeof(struct DosEnvec));
+    memset(&partitionDE, 0, sizeof(struct DosEnvec));
+    
+    GetPartitionAttrsTags
+    (
+        mbrp, 
+        
+        PT_DOSENVEC, (IPTR) &tableDE, 
+        PT_GEOMETRY, (IPTR) &tableDG,
+        
+        TAG_DONE
+    );
+    GetPartitionTableAttrsTags(mbrp, PTT_RESERVED, (IPTR) &reserved, TAG_DONE);
+    
+    CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
+    
+    partitionDE.de_SizeBlock      = tableDG.dg_SectorSize >> 2;
     partitionDE.de_Surfaces       = tableDG.dg_Heads;
     partitionDE.de_BlocksPerTrack = tableDG.dg_TrackSectors;
     partitionDE.de_BufMemType     = tableDG.dg_BufMemType;
-       
     partitionDE.de_TableSize      = DE_DOSTYPE;
     partitionDE.de_Reserved       = 2;
     partitionDE.de_HighCyl        = tableDE.de_HighCyl;
@@ -120,8 +171,7 @@ AROS_SH2
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
-    partitionDE.de_DosType        = ID_FFS_DISK;
-    
+        
     D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
     D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
     D(bug("* table lowcyl = %ld\n", tableDE.de_LowCyl));
@@ -129,9 +179,10 @@ AROS_SH2
     
     rdbp = AddPartitionTags
     (
-        root,
+        mbrp,
         
         PT_DOSENVEC, (IPTR) &partitionDE,
+        PT_TYPE,     (IPTR) &rdbtype,
         PT_NAME,     (IPTR) "DH0",
         PT_BOOTABLE,        TRUE,
         PT_AUTOMOUNT,       TRUE,
@@ -139,6 +190,9 @@ AROS_SH2
         TAG_DONE
     );
     
+    /* Step 6: Save to disk and deallocate */
+    WritePartitionTable(mbrp);
+    ClosePartitionTable(mbrp);
     WritePartitionTable(root);
     ClosePartitionTable(root);
     CloseRootPartition(root);

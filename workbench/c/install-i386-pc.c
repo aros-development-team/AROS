@@ -629,7 +629,7 @@ BOOL setupMenu(BPTR fh)
         "default 0\n"
         "\n"
         "title AROS HD\n"
-        "root (hd0)\n"
+        "root (hd0,0)\n"
         "configfile /dh0/boot/grub/menu.lst\n";
     
     /* Get the filesize and reset the position */
