@@ -251,3 +251,15 @@ MSG_FKEY_MEN_PROJECT_QUIT
 Q\0Beenden
 ; Q\0Quit
 ;
+MSG_NOCAPSLOCK_CXNAME
+NoCapsLock
+; NoCapsLock
+;
+MSG_NOCAPSLOCK_CXTITLE
+Kein Caps Lock:
+; NoCapsLock:
+;
+MSG_NOCAPSLOCK_CXDESCR
+Deaktiviert CAPS LOCK Taste
+; Renders the CAPS LOCK key ineffective
+;
