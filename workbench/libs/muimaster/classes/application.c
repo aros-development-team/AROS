@@ -1287,6 +1287,26 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
+IPTR Application_Execute(Class *CLASS, Object *self, Msg message)
+{
+    ULONG signals = 0L;
+    
+    while
+    ( 
+           DoMethod(self, MUIM_Application_NewInput, (IPTR) &signals) 
+        != MUIV_Application_ReturnID_Quit
+    )
+    {
+        if (signals)
+        {
+            signals = Wait(signals | SIGBREAKF_CTRL_C);
+            if (signals & SIGBREAKF_CTRL_C) break;
+        }
+    }
+    
+    return NULL;
+}
+
 
 /*
  * The class dispatcher
@@ -1339,6 +1359,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	    return Application_OpenWindows(cl, obj, (APTR)msg);
 	case MUIM_Application_OpenConfigWindow:
 	    return Application_OpenConfigWindow(cl, obj, (APTR)msg);
+        case MUIM_Application_Execute:
+            return Application_Execute(cl, obj, msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
