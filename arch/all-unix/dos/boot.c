@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1997 AROS - The Amiga Research OS
-    $id: $
+    $Id$
 
     Desc: Boot your operating system.
     Lang: english

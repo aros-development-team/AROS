@@ -1,6 +1,6 @@
 /*
     Copyright (C) 1996-1997 AROS - The Amiga Research OS
-    $id: $
+    $Id$
 
     Desc: icclass implementation.
     Lang: english
