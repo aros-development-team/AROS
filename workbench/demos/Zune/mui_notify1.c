@@ -93,6 +93,11 @@ int main (void)
         get(obj, MUIA_ObjectID, &val);
         printf("id = %ld (should be 19) after notification\n", val);
 
+	set(obj, MUIA_ObjectID, 14);
+	set(obj, MUIA_UserData, 22);
+	get(obj, MUIA_ObjectID, &val);
+        printf("id = %ld (should be 14) after notification\n", val);
+
         MUI_DisposeObject(obj);
     }
 
