@@ -2874,6 +2874,76 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
     return retval;
 }
 
+/*************************** BarLabelClass *****************************/
+
+struct BarLabelData {
+    struct DrawInfo *dri;
+};
+
+AROS_UFH3S(IPTR, dispatch_barlabelclass,
+	  AROS_UFHA(Class *, cl, A0),
+	  AROS_UFHA(Object *, obj, A2),
+	  AROS_UFHA(Msg, msg, A1)
+)
+{
+    struct BarLabelData *data;
+    struct RastPort *rp;
+    struct TagItem *ti;
+    WORD x1, y1, x2, y2;
+    
+    IPTR retval = 0UL;
+
+    switch (msg->MethodID)
+    {
+        case OM_NEW:
+    	    obj = (Object *)DoSuperMethodA(cl, obj, msg);
+	    if (obj)
+	    {
+		data = INST_DATA(cl, obj);
+		data->dri = NULL;
+
+		retval = (IPTR)obj;
+	    }
+	    break;
+
+	case OM_SET:
+	    if ((ti = FindTagItem(SYSIA_DrawInfo, ((struct opSet *)msg)->ops_AttrList)))
+	    {
+	        data = INST_DATA(cl, obj);
+		
+		data->dri = (struct DrawInfo *)ti->ti_Data;
+	    }
+	    retval = DoSuperMethodA(cl, obj, msg);
+	    break;
+	    
+	case IM_DRAW:
+	    data = INST_DATA(cl, obj);
+	    
+	    if (data->dri)
+	    {
+		rp = ((struct impDraw *)msg)->imp_RPort;
+
+		SetDrMd(rp, JAM1);
+		SetAPen(rp, data->dri->dri_Pens[BARDETAILPEN]);
+
+		x1 = ((struct Image *)obj)->LeftEdge + ((struct impDraw *)msg)->imp_Offset.X;
+		y1 = ((struct Image *)obj)->TopEdge  + ((struct impDraw *)msg)->imp_Offset.Y;
+		x2 = x1 + ((struct Image *)obj)->Width  - 1;
+		y2 = y1 + ((struct Image *)obj)->Height - 1;
+
+		RectFill(rp, x1, y1, x2, y2);
+	    }
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, obj, msg);
+	    break;
+
+    } /* switch (msg->MethodID) */
+    
+    return retval;
+}
+
 /*************************** Classes *****************************/
 
 #undef GadToolsBase
@@ -3134,6 +3204,26 @@ Class *makepaletteclass(struct GadToolsBase_intern * GadToolsBase)
     cl->cl_UserData = (IPTR) GadToolsBase;
 
     GadToolsBase->paletteclass = cl;
+
+    return cl;
+}
+
+Class *makebarlabelclass(struct GadToolsBase_intern * GadToolsBase)
+{
+    Class *cl = NULL;
+
+    if (GadToolsBase->barlabelclass)
+	return GadToolsBase->barlabelclass;
+
+   cl = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct BarLabelData), 0UL);
+    if (!cl)
+	return NULL;
+	
+    cl->cl_Dispatcher.h_Entry = (APTR) AROS_ASMSYMNAME(dispatch_barlabelclass);
+    cl->cl_Dispatcher.h_SubEntry = NULL;
+    cl->cl_UserData = (IPTR) GadToolsBase;
+
+    GadToolsBase->barlabelclass = cl;
 
     return cl;
 }
