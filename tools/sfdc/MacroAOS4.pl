@@ -10,7 +10,10 @@ BEGIN {
 	my $proto  = shift;
 	my $class  = ref($proto) || $proto;
 	my $self   = $class->SUPER::new( @_ );
+	my $sfd    = $self->{SFD};
 	bless ($self, $class);
+	
+	$self->{CALLBASE} = "I$sfd->{BaseName}";
 	return $self;
     }
 
@@ -22,7 +25,7 @@ BEGIN {
 
 	if ($prototype->{type} eq 'function' ||
 	    $prototype->{type} eq 'varargs') {
-	    printf "	I$sfd->{BaseName}->$prototype->{funcname}(";
+	    printf "	(___base)->$prototype->{funcname}(";
 	}
 	else {
 	    $self->SUPER::function_start (@_);

@@ -75,7 +75,7 @@ BEGIN {
 
 	if ($$prototype{'type'} eq 'function') {
 	    if( !$prototype->{nb}) {
-		print "	$$sfd{'basetype'}, $self->{BASE}, ";
+		print "	$$sfd{'basetype'}, (___base), ";
 	    }
 	    else {
 		my $bt = "/* bt */";

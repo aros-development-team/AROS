@@ -18,6 +18,7 @@ BEGIN {
 	$self->{SFD}  = $params{'sfd'};
 	$self->{BASE} = "${$self->{SFD}}{'BASENAME'}_BASE_NAME";
 	$self->{BASE} =~ s/^([0-9])/_$1/;
+	$self->{CALLBASE} = $self->{BASE};
 	bless ($self, $class);
 	return $self;
     }
@@ -87,14 +88,29 @@ BEGIN {
     # Helper functions
     
     sub function_define {
-	my $self     = shift;
-	my %params   = @_;
+	my $self      = shift;
+	my %params    = @_;
 	my $prototype = $params{'prototype'};
-	my $sfd      = $self->{SFD};
+	my $sfd       = $self->{SFD};
 
-	print "#define $$prototype{'funcname'}(";
-	print join (', ', @{$$prototype{'___argnames'}});
-	print ") \\\n";
+	my $funcname  = $$prototype{'funcname'};
+	
+	my $argnames_ref  = $$prototype{'___argnames'};
+	my $argnames      = join (', ', @{$argnames_ref});
+	
+	my $argnames2;
+	my $argnames3 = join (', ', "___base", @{$argnames_ref});
+	
+	if ($$prototype{'type'} eq 'varargs') {
+	    my $argnames_size = scalar(@{$argnames_ref}); 
+	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref}[0..($argnames_size-2)], "__VA_ARGS__");
+	}
+	else {
+	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref});;
+	}
+		
+	print "#define $funcname($argnames) __${funcname}_WB($argnames2)\n";	
+	print "#define __${funcname}_WB($argnames3) \\\n";
     }
 
     sub function_start {
@@ -110,9 +126,9 @@ BEGIN {
 		my $first_stdargnum = $$prototype{'numargs'} - 2;
 		my $first_stdarg = $$prototype{'___argnames'}[$first_stdargnum];
 	    
-		printf "	({ULONG _%s[] = { $first_stdarg, __VA_ARGS__ }; ",
+		printf "	({APTR _%s[] = { $first_stdarg, __VA_ARGS__ }; ",
 		$prototype->{subtype} eq 'tagcall' ? "tags" : "message";
-		print "$$prototype{'real_funcname'}(";
+		print "__$$prototype{'real_funcname'}_WB((___base), ";
 	    }
 	    else {
 		print "	({ULONG _args[] = { __VA_ARGS__ }; ";
