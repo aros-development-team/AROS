@@ -6,4 +6,4 @@
 #include <libraries/partition.h>
 #include <aros/symbolsets.h>
 
-ADD2LIBS("partition.library", 1, LIBSET_PARTITION_PRI, struct Library *, PartitionBase, NULL, NULL);
+ADD2LIBS("partition.library", 1, LIBSET_USER_PRI, struct Library *, PartitionBase, NULL, NULL);
