@@ -179,7 +179,7 @@
 
 #if !defined AROS_IMPORT_ASM_SYM 
 #    define AROS_IMPORT_ASM_SYM(sym)          \
-         asm("\n.globl" __AROS_STR(sym) "\n")
+         asm("\n.globl " __AROS_STR(sym) "\n")
 #endif
 
 #endif /* AROS_SYSTEM_H */
