@@ -51,7 +51,7 @@ int main(void)
    	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "col",
 	    MUIA_Window_Activate, TRUE,
-    	    WindowContents, d = VGroup,
+    	    WindowContents, d = HGroup,
 		   GroupFrameT("Background"),
 			       Child, c = VGroup,
 		   Child, a = PopimageObject, End,
@@ -68,13 +68,10 @@ int main(void)
     if (app)
     {
 	ULONG sigs = 0;
-	ULONG hw;
-
 	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	set(wnd, MUIA_Window_Open, TRUE);
-	get(b, MUIA_HorizWeight, &hw);
-	
-	printf("%d[%p] %d[%p] (%d) %d[%p] %d\n", _maxwidth(a), a, _maxwidth(b), b, hw, _maxwidth(c), c, _maxwidth(d));
+
+	printf("%d[%p] %d[%p] %d[%p] %d\n", _maxwidth(a), a, _maxwidth(b), b, _maxwidth(c), c, _maxwidth(d));
 
 	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
 	{

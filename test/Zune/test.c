@@ -340,7 +340,7 @@ int main(void)
 	    MUIA_Window_Activate, TRUE,
 
     	    WindowContents, VGroup,
-    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", NoFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
+    	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
     	    	Child, popobject = PopobjectObject,
     	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
     	    	    MUIA_Popstring_Button, PopButton(MUII_PopUp),
@@ -358,17 +358,12 @@ int main(void)
 			End,
     	    	    End,
     	    	Child, RegisterGroup(pages),
-	MUIA_CycleChain, 1,
 //		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
-/*  	Child, ImageObject, ButtonFrame, MUIA_Image_Spec, "2:ffeeffee,eeeeeeee,cccccccc", End, */
-/*  	Child, ImageObject, GroupFrame, MUIA_Image_Spec, "5:Pencil.png", End, */
-/*  	Child, ImageObject, GroupFrame, MUIA_Image_Spec, "5:javalogo52x88.gif", End, */
-	Child, ImageObject, ButtonFrame, MUIA_Image_Spec, "3:france.iff", End,
 		        Child, ColGroup(2),
 			    GroupFrameT("A column group"),
-			    Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "R\33I[1:0]e\33I[3:ArrowLeft.mf0]p\33I[2:cfffffff,cfffffff,10000000]e\33I[5:MarbleDark]at", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, repeat_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Repeat", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
@@ -380,44 +375,9 @@ int main(void)
 		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),
 			    Child, DropTextObject, MUIA_Dropable, TRUE, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
+			    Child, TextObject, TextFrame, MUIA_Background, MUII_MARKHALFSHINE, MUIA_CycleChain, 1, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Pattern", End,
 			   End,
-			Child, MUI_NewObject(MUIC_Popimage, MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All, TAG_DONE),
-			Child, MUI_NewObject(MUIC_Image, ButtonFrame, MUIA_Image_Spec, "1:0", TAG_DONE),
-	Child, HGroup,
-            MUIA_InputMode, MUIV_InputMode_Immediate,
-    	    MUIA_Selected, TRUE,
-            MUIA_ShowSelState, FALSE,
-	    Child, (IPTR)ImageObject,
-    	        MUIA_Selected, TRUE,
-                MUIA_ShowSelState, FALSE,
-	        MUIA_Image_Spec, MUII_RadioButton,
-    		MUIA_Frame, MUIV_Frame_None,
-   	        End,
-	    Child, (IPTR)TextObject,
-                MUIA_ShowSelState, FALSE,
-	        MUIA_Text_Contents, "Paris",
-	        MUIA_Frame, MUIV_Frame_None,
-	        MUIA_Text_PreParse, (IPTR)"\33l",
-	        End,
-	End,
-	Child, HGroup,
-	    MUIA_InputMode, MUIV_InputMode_Immediate,
-/*              MUIA_ShowSelState, FALSE, */
-	    Child, ImageObject,
-                MUIA_ShowSelState, FALSE,
-	        MUIA_Image_FontMatch, TRUE,
-	        MUIA_Image_Spec, MUII_RadioButton,
-	        MUIA_Frame, MUIV_Frame_None,
-   	        End,
-	    Child, TextObject,
-                MUIA_ShowSelState, FALSE,
-	        MUIA_Text_Contents, "London",
-	        MUIA_Frame, MUIV_Frame_None,
-	        MUIA_Text_PreParse, "\33l",
-	        End,
-	End,
-
+			Child, MUI_NewObject(MUIC_Popimage, TAG_DONE),
 		       End,
 
 		    Child, VGroup,
@@ -597,8 +557,6 @@ Child, BalanceObject, End,
     if (app)
     {
 	ULONG sigs = 0;
-
-	set(quit_button, MUIA_Disabled, TRUE);
 
 	DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
