@@ -37,7 +37,8 @@ BOOT_TAR_FILES := \
 	Prefs/Font Prefs/Locale Prefs/ReqTools Prefs/Serial \
 	S \
 	System \
-	Tools \
+	Tools/Commodities Tools/Debug \
+	Tools/calculator Tools/WiMP Tools/HDToolBox \
 	Utilities/MultiView Utilities/More Utilities/Installer Utilities/test.script \
 	contrib/aminet/Format64
 
