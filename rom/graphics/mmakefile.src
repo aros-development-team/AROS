@@ -42,6 +42,7 @@ FUNCTIONS := \
 	addfont \
 	addvsprite \
 	allocbitmap \
+	allocdbufinfo \
 	allocraster \
 	andrectregion \
 	andregionregion \
@@ -56,8 +57,10 @@ FUNCTIONS := \
 	bltbitmaprastport \
 	bltclear \
 	blttemplate \
+	cleareol \
 	clearrectregion \
 	clearregion \
+	clearscreen \
 	clipblit \
 	clonerastport \
 	closefont \
@@ -76,6 +79,7 @@ FUNCTIONS := \
 	freecolormap \
 	freecoplist \
 	freecprlist \
+	freedbufinfo \
 	freegbuffers \
 	freeraster \
 	freerastport \
@@ -100,10 +104,10 @@ FUNCTIONS := \
 	initgels \
 	initgmasks \
 	initmasks \
-	inittmpras \
 	initview \
 	initvport \
 	initrastport \
+	inittmpras \
 	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
