@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -78,11 +78,11 @@
     /* Maybe we could use FindTagItem to initialize error and conductor
        first... */
 
-    if(player != NULL)
+    if (player != NULL)
     {
 	while ((tag = NextTagItem((const struct TagItem **)&tl)) != NULL)
 	{
-	    switch(tag->ti_Tag)
+	    switch (tag->ti_Tag)
 	    {
 	    case PLAYER_Name:
 		Put = (IPTR)player->pl_Link.ln_Name;
