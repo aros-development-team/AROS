@@ -87,16 +87,20 @@ int i,count;
 								args[2] = node->geometry.dg_TrackSectors;
 								EasyRequestArgs(0, &es, 0, args);
 							}
-							node->partition_changed = FALSE;
-							AddTail(&hd_list, &node->ln);
-							SetGadgetAttrsA
-								(
-									maingadgets[ID_MAIN_HARDDISK-ID_MAIN_FIRST_GADGET].gadget,
-									mainwin,
-									0,
-									hdtags
-								);
-							continue;
+							if (node->geometry.dg_DeviceType != DG_CDROM)
+							{
+								node->partition_changed = FALSE;
+								AddTail(&hd_list, &node->ln);
+								SetGadgetAttrsA
+									(
+										maingadgets[ID_MAIN_HARDDISK-ID_MAIN_FIRST_GADGET].gadget,
+										mainwin,
+										0,
+										hdtags
+									);
+								continue;
+							}
+							CloseDevice((struct IORequest *)&node->ioreq->iotd_Req);
 						}
 						FreeMem(node->ln.ln_Name, 100);
 					}
