@@ -1,11 +1,9 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for the colorwheel class
     Lang: English
-    
-    :ts=8
 */
 
 #include <exec/memory.h>

@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef AROSPALETTE_INTERN_H
 #define AROSPALETTE_INTERN_H
 
