@@ -219,7 +219,7 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
             cl = MakeClass(builtins[i]->name, superclid, supercl, builtins[i]->datasize, 0);
 	    if (cl)
             {
-#ifdef __MAXON__
+#if defined(__MAXON__) || defined(__amigaos4__)
                 cl->cl_Dispatcher.h_Entry    = builtins[i]->dispatcher;
 #else
                 cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
@@ -262,13 +262,7 @@ AROS_UFH3(IPTR, metaDispatcher,
 }
 
 #else
-#ifdef __MAXON__
-__asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-{
-	  /* We don't use a metaDispatcher */
-    return 0;
-}
-#else
+#ifdef __SASC
 __asm ULONG metaDispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 {
     __asm ULONG (*entry)(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg) =
