@@ -42,7 +42,7 @@ extern LONG __startup_error;
     970314 ldp: It will now work because of the asm-stub above.
 
     TODO: reset and initialise the FPU.
-          resident startup
+	  resident startup
 */
 AROS_UFH3(LONG, entry,
     AROS_UFHA(char *,argstr,A0),
@@ -59,90 +59,98 @@ AROS_UFH3(LONG, entry,
 
     SysBase=sysbase;
 
-    /* Copy args into buffer */
-    if (!(args = AllocMem (argsize+1, MEMF_ANY)) )
+    if (argsize)
     {
-	argv = NULL;
-	goto error;
+	/* Copy args into buffer */
+	if (!(args = AllocMem (argsize+1, MEMF_ANY)) )
+	{
+	    argv = NULL;
+	    goto error;
+	}
+
+	ptr = args;
+
+	while ((*ptr++ = *argstr++));
+
+	/* Find out how many arguments we have */
+	for (argmax=1,ptr=args; *ptr; )
+	{
+	    if (*ptr == ' ' || *ptr == '\t')
+	    {
+		/* Skip whitespace */
+		while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		    ptr ++;
+	    }
+
+	    if (*ptr == '"')
+	    {
+		/* "..." argument ? */
+		argmax ++;
+
+		ptr ++;
+
+		/* Skip until next " */
+		while (*ptr && *ptr != '"')
+		    ptr ++;
+
+		if (*ptr)
+		    ptr ++;
+	    }
+	    else if (*ptr)
+	    {
+		argmax ++;
+
+		while (*ptr && *ptr != ' ' && *ptr != '\t')
+		    ptr ++;
+	    }
+	}
+
+	if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_ANY)) )
+	{
+	    goto error;
+	}
+
+	/* Find out how many arguments we have */
+	for (argc=1,ptr=args; *ptr; )
+	{
+	    if (*ptr == ' ' || *ptr == '\t')
+	    {
+		/* Skip whitespace */
+		while (*ptr && (*ptr == ' ' || *ptr == '\t'))
+		    ptr ++;
+	    }
+
+	    if (*ptr == '"')
+	    {
+		/* "..." argument ? */
+		ptr ++;
+		argv[argc++] = ptr;
+
+		/* Skip until next " */
+		while (*ptr && *ptr != '"')
+		    ptr ++;
+
+		/* Terminate argument */
+		if (*ptr)
+		    *ptr ++ = 0;
+	    }
+	    else if (*ptr)
+	    {
+		argv[argc++] = ptr;
+
+		while (*ptr && *ptr != ' ' && *ptr != '\t')
+		    ptr ++;
+
+		/* Not at end of string ? Terminate arg */
+		if (*ptr)
+		    *ptr ++ = 0;
+	    }
+	}
     }
-
-    ptr = args;
-
-    while ((*ptr++ = *argstr++));
-
-    /* Find out how many arguments we have */
-    for (argmax=1,ptr=args; *ptr; )
+    else
     {
-	if (*ptr == ' ' || *ptr == '\t')
-	{
-	    /* Skip whitespace */
-	    while (*ptr && (*ptr == ' ' || *ptr == '\t'))
-		ptr ++;
-	}
-
-	if (*ptr == '"')
-	{
-	    /* "..." argument ? */
-	    argmax ++;
-
-	    ptr ++;
-
-	    /* Skip until next " */
-	    while (*ptr && *ptr != '"')
-		ptr ++;
-
-	    if (*ptr)
-		ptr ++;
-	}
-	else if (*ptr)
-	{
-	    argmax ++;
-
-	    while (*ptr && *ptr != ' ' && *ptr != '\t')
-		ptr ++;
-	}
-    }
-
-    if (!(argv = AllocMem (sizeof (char *) * argmax, MEMF_ANY)) )
-    {
-	goto error;
-    }
-
-    /* Find out how many arguments we have */
-    for (argc=1,ptr=args; *ptr; )
-    {
-	if (*ptr == ' ' || *ptr == '\t')
-	{
-	    /* Skip whitespace */
-	    while (*ptr && (*ptr == ' ' || *ptr == '\t'))
-		ptr ++;
-	}
-
-	if (*ptr == '"')
-	{
-	    /* "..." argument ? */
-	    ptr ++;
-	    argv[argc++] = ptr;
-
-	    /* Skip until next " */
-	    while (*ptr && *ptr != '"')
-		ptr ++;
-
-	    /* Terminate argument */
-	    if (*ptr)
-		*ptr ++ = 0;
-	}
-	else if (*ptr)
-	{
-	    argv[argc++] = ptr;
-
-	    while (*ptr && *ptr != ' ' && *ptr != '\t')
-		ptr ++;
-
-	    /* Not at end of string ? Terminate arg */
-	    if (*ptr)
-		*ptr ++ = 0;
-	}
+	argv = &args;
+	argc = 0;
     }
 
     DOSBase = (struct DosLibrary *)OpenLibrary (DOSNAME, 39);
@@ -169,12 +177,13 @@ for (t=0; t<argc; t++)
     }
 
 error:
-    if (args)
+    if (argsize)
     {
 	if (argv)
 	    FreeMem (argv, sizeof (char *) * argmax);
 
-	FreeMem (args, argsize+1);
+	if (args)
+	    FreeMem (args, argsize+1);
     }
 
     if (__startup_mempool)
