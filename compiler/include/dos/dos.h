@@ -9,7 +9,7 @@
 #endif
 
 /*
-    Replace BPTRs by simple APTRs for this machine. On Amiga with binary
+    Replace BPTRs by simple APTRs for some machines. On Amiga with binary
     compatibility, this would look like this:
 
     typedef ULONG BPTR;
@@ -83,7 +83,7 @@ struct FileInfoBlock
 #   define MAXINT		0x7FFFFFFF
 #endif
 #ifndef MININT
-#   define MININT		0x7FFFFFFF
+#   define MININT		0x80000000
 #endif
 
 #define OFFSET_BEGINNING	-1
