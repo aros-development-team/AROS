@@ -14,7 +14,7 @@ extern ULONG __OOPI_Root;
 
 /* Root class defs */
 
-#define GUID_Root "Root"	
+#define GUID_Root "Root"
 #define ROOTCLASS "rootclass"
 
 #define RootBase (__OOPI_Root)

@@ -12,9 +12,21 @@
 #   include <exec/types.h>
 #endif
 
-#ifndef UTILITY_TAGITEM_H
-#include <utility/tagitem.h>
+#ifndef EXEC_NODES_H
+#   include <exec/nodes.h>
 #endif
+
+#ifndef UTILITY_TAGITEM_H
+#   include <utility/tagitem.h>
+#endif
+
+typedef ULONG Object;
+
+typedef struct
+{
+    IPTR MethodID;
+} *Msg;
+
 
 typedef struct IClass
 {
@@ -26,16 +38,11 @@ typedef struct IClass
     ULONG InstOffset;
     ULONG InstSize;
     APTR UserData;
+    IPTR (*DoMethod)(Object *, Msg);
 
 } Class;
 
 
-
-typedef ULONG Object;
-typedef struct
-{
-    IPTR MethodID;
-} *Msg;
 
 struct _Object
 {
@@ -58,6 +65,9 @@ struct _Object
 
 #define OCLASS(obj) \
 	(_OBJECT(obj)->o_Class)
+
+
+#define DoMethod(o, msg) ( (OCLASS(o))->DoMethod((o), (msg)) )
 
 #define TagIdx(tag) ((tag) & METHOD_MASK)
 

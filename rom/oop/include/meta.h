@@ -26,6 +26,7 @@ enum {
     AIDX_Class_ID,
     AIDX_Class_SuperPtr,
     AIDX_Class_InstSize,
+    AIDX_Class_DoMethod,
     
     NUM_A_Class
 };
@@ -35,6 +36,6 @@ enum {
 #define A_Class_ID 		(MetaBase + AIDX_Class_ID)
 #define A_Class_SuperPtr	(MetaBase + AIDX_Class_SuperPtr)
 #define A_Class_InstSize	(MetaBase + AIDX_Class_InstSize)
-
+#define A_Class_DoMethod	(MetaBase + AIDX_Class_DoMethod)
 
 #endif /* OOP_META_H */
