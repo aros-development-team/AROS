@@ -3549,12 +3549,15 @@ static VOID pattern_to_buf(struct pattern_info *pi
     struct RastPort *rp;
     ULONG apen;
     ULONG bpen;
+    ULONG drmd;
     UBYTE *apt;
     LONG mask_x, mask_y;
     
     rp = pi->rp;
     apen = GetAPen(rp);
     bpen = GetBPen(rp);
+    drmd = GetDrMd(rp);
+    
     apt = (UBYTE *)rp->AreaPtrn;
     
     if (pi->mask)
@@ -3612,7 +3615,15 @@ static VOID pattern_to_buf(struct pattern_info *pi
 		   if (set_pixel)
 		   {
 		   	D(bug(" s"));
-		    	*buf = (coltab != NULL) ? coltab[pixval] : pixval;
+			if (drmd & COMPLEMENT)
+			{
+			    pixval = ~(*buf);
+			}
+			else
+			{
+			    pixval = (coltab != NULL) ? coltab[pixval] : pixval;
+			}
+		    	*buf = pixval;
 		   }
 		    
 		}
