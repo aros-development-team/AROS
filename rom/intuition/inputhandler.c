@@ -146,12 +146,26 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 	}
 	else
 	{
-	    /* Get coords relative to window */
-    	    gpht.gpht_Mouse.X = x - window->LeftEdge;
-    	    gpht.gpht_Mouse.Y = y - window->TopEdge;
+	    struct IBox ibox;
+	    WORD xrel, yrel;
 	    
-	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
-		break;
+	    /* Get coords relative to window */
+	    xrel = x - window->LeftEdge;
+	    yrel = y - window->TopEdge;
+	    
+	    GetGadgetIBox((Object *)gadget, gi, &ibox);
+	    
+	    if (   xrel >= ibox.Left
+	    	&& yrel >= ibox.Top
+		&& xrel < ibox.Left + ibox.Width 
+		&& yrel < ibox.Top  + ibox.Height )
+	    {
+		gpht.gpht_Mouse.X = xrel;
+		gpht.gpht_Mouse.Y = yrel;
+	    
+		if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
+		    break;
+	    }
 	}
     }
 
@@ -346,6 +360,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gadget->Flags ^= GFLG_SELECTED;
 			else
 			    gadget->Flags |= GFLG_SELECTED;
+			    
 
 			RefreshGList (gadget, w, NULL, 1);
 
@@ -354,6 +369,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    case GTYP_PROPGADGET:
 			HandlePropSelectDown(gadget, w, NULL, im->MouseX,
 					     im->MouseY, IntuitionBase);
+
+			
 			break;
 
 		    case GTYP_STRGADGET:
@@ -419,10 +436,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_Abort = 0;
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
+			    
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 
 			    gadget = NULL;
 			}
-
+			else
+			{
+			    /* Assure gadget is active */
+			    gadget->Activation |= GACT_ACTIVEGADGET;
+			}
+			    
 			break; }
 
 
@@ -481,6 +505,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    im->IAddress = gadget;
 			    ptr = "GADGETUP";
 			}
+			
 
 			gadget = NULL;
 			break;
@@ -528,8 +553,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_Abort = 0;
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
-
+			
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
+			}
+			else
+			{
+			    gadget->Activation |= GACT_ACTIVEGADGET;
 			}
 
 			break; }
@@ -598,9 +628,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
 
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
 
 			} /* if (retval != GMR_MEACTIVE) */
+			else
+			{
+			     gadget->Activation |= GACT_ACTIVEGADGET;
+			}
 
 		    } /* if (active gadget is a BOOPSI gad) */
 
@@ -663,9 +698,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
 
-
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
 			} /* if (retval != GMR_MEACTIVE) */
+			else
+			{
+			    gadget->Activation |= GACT_ACTIVEGADGET;
+			}
 
 		    } /* if (active gadget is a BOOPSI gad) */
 
@@ -768,11 +807,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_Abort = 0;
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
-
+			    
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
 			}
-
-
+			else
+			{
+			    gadget->Activation |= GACT_ACTIVEGADGET;
+			}
+			
 
 			break; }
 
@@ -888,9 +931,15 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			    gpgi.gpgi_Abort = 0;
 
 			    DoMethodA((Object *)gadget, (Msg)&gpgi);
-
+			    
+			    
+			    gadget->Activation &= ~GACT_ACTIVEGADGET;
 			    gadget = NULL;
 
+			}
+			else
+			{
+			    gadget->Activation |= GACT_ACTIVEGADGET;
 			}
 
 			break;}  /* case BOOPSI custom gadget type */
@@ -924,13 +973,76 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		ptr = "RAWKEY RELEASED";
 	    }
 	    break; /* case IECLASS_RAWKEY */
+	    
+	case IECLASS_TIMER:
+	    im->Class = IDCMP_INTUITICKS;
+	    ptr = "INTUITICK";
+	    
+	    if (gadget)
+	    {
+	        if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
+		{
+		    /* Pass the event to the active gadget */
+		    struct gpInput gpi;
+		    IPTR retval;
+		    ULONG termination;
+		     
+		    gpi.MethodID	    = GM_HANDLEINPUT;
+		    gpi.gpi_GInfo	    = gi;
+		    gpi.gpi_IEvent	    = ie;
+		    gpi.gpi_Termination = &termination;
+		    gpi.gpi_Mouse.X     = im->MouseX;
+		    gpi.gpi_Mouse.Y     = im->MouseY;
+		    gpi.gpi_TabletData  = NULL;
+
+		    retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+
+		    if (retval != GMR_MEACTIVE)
+		    {
+			struct gpGoInactive gpgi;
+
+			if (retval & GMR_REUSE)
+			    reuse_event = TRUE;
+
+			if (    (retval & GMR_VERIFY)
+			     && (gadget->Activation & GACT_RELVERIFY))
+			{
+			    im->Class = IDCMP_GADGETUP;
+			    im->IAddress = gadget;
+			    ptr	 = "GADGETUP";
+			    im->Code = termination & 0x0000FFFF;
+			}
+			else
+			{
+			    im->Class = 0; /* Swallow event */
+			}
+
+			gpgi.MethodID = GM_GOINACTIVE;
+			gpgi.gpgi_GInfo = gi;
+			gpgi.gpgi_Abort = 0;
+
+			DoMethodA((Object *)gadget, (Msg)&gpgi);
+			
+			
+			gadget->Activation &= ~GACT_ACTIVEGADGET;
+			gadget = NULL;
+		    }
+		    else
+		    {
+			gadget->Activation |= GACT_ACTIVEGADGET;
+		    }
+		}
+	    }
+	    
+	    
+	    break;
 
 	case IECLASS_ACTIVEWINDOW:
 	    im->Class = IDCMP_ACTIVEWINDOW;
 	    ptr = "ACTIVEWINDOW";
 	    break;
 
-	case IDCMP_INACTIVEWINDOW:
+	case IECLASS_INACTIVEWINDOW:
 	    im->Class = IDCMP_INACTIVEWINDOW;
 	    ptr = "INACTIVEWINDOW";
 	    break;
