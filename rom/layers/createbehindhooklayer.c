@@ -201,6 +201,8 @@
          L->front      = L_front;
       }
     }
+
+    UninstallClipRegionClipRects(li);
     
     /* 
       Now create all ClipRects of all Layers correctly.   
@@ -320,6 +322,8 @@
        once DoHookClipRects is there and a default backfill is implemented. 
        (basically the same code as above) 
      */
+
+    InstallClipRegionClipRects(li);
 
     UnlockLayers(li);
   } /* if (all memory is there) */  

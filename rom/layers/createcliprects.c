@@ -358,22 +358,22 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
           _CR -> lobs   = CR -> lobs;
         
           /* copy parts of/ the whole bitmap in case of a SMART LAYER */
-          if (TRUE == isSmart)
+          if (TRUE == isSmart && NULL != CR->BitMap)
           {
-            _CR->BitMap = AllocBitMap(_CR->bounds.MaxX - _CR->bounds.MinX + 1,
+            _CR->BitMap = AllocBitMap(_CR->bounds.MaxX - _CR->bounds.MinX + 1 + 15,
                                       _CR->bounds.MaxY - _CR->bounds.MinY + 1,
                                       GetBitMapAttr(CR->BitMap, BMA_DEPTH),
                                       0,
                                       CR->BitMap);
             if (NULL == _CR->BitMap)
               goto failexit;
-            
+
             BltBitMap(CR->BitMap,
-                      _CR->bounds.MinX - L->bounds.MinX + ( CR->bounds.MinX & 0x0F),
-                      _CR->bounds.MinY - L->bounds.MinY,
+                      _CR->bounds.MinX - CR->bounds.MinX + ( CR->bounds.MinX & 0x0F),
+                      _CR->bounds.MinY - CR->bounds.MinY,
                       _CR->BitMap,
-                      _CR->bounds.MinX - L->bounds.MinX + (_CR->bounds.MinX & 0x0F),
-                      _CR->bounds.MinY - L->bounds.MinY,
+                      _CR->bounds.MinX & 0x0F,
+                      0,
                       _CR->bounds.MaxX - _CR->bounds.MinX + 1,
                       _CR->bounds.MaxY - _CR->bounds.MinY + 1,
                       0x0c0,/* copy */

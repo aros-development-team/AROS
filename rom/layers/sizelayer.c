@@ -138,6 +138,8 @@
        have to change this pointer to l_tmp, so that everything still
        works fine later, especially the DeleteLayer() */
 
+    UninstallClipRegionClipRects(LI);
+
     l_behind = l_tmp->back;
     while (NULL != l_behind)
     {
@@ -479,6 +481,8 @@
     
     /* That's it folks! */
     CleanupLayers(LI);
+
+    InstallClipRegionClipRects(LI);
 
     /* Now everybody else may play with the layers again */
     UnlockLayers(LI);

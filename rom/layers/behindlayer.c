@@ -92,6 +92,8 @@
 
   SetLayerPriorities(LI);
 
+  UninstallClipRegionClipRects(LI);
+
   if (LI->top_layer == L)
   {
     CreateClipRectsTop(LI, FALSE);
@@ -355,6 +357,8 @@
   } /* while */
 
   CleanupLayers(LI);
+  
+  InstallClipRegionClipRects(LI);
 
   UnlockLayers(LI);
 

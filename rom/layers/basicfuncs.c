@@ -799,7 +799,6 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
 
 
 /* 
- * A function that may only be called for pure SMART layers!
  * When a clipregion is installed a secondary list of cliprects
  * exists that represents those parts where the paint operations may
  * be performed on.
@@ -814,6 +813,13 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
                                    struct ClipRect * destCR)
 {
   struct ClipRect * sCR = srcCR;
+  
+  if (LAYERSMART != (L->Flags & (LAYERSMART|LAYERSUPER)))
+  {
+    _FreeClipRectListBM(L, L->ClipRect);
+    return;
+  }
+  
   while (TRUE)
   {
     /* only copy from ClipRects that are hidden as the visible
@@ -831,7 +837,8 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
         if (! (sCR->bounds.MinX > dCR->bounds.MaxX ||
                sCR->bounds.MinY > dCR->bounds.MaxY ||
                sCR->bounds.MaxX < dCR->bounds.MinX ||
-               sCR->bounds.MaxY < dCR->bounds.MinY))
+               sCR->bounds.MaxY < dCR->bounds.MinY) &&
+               NULL != dCR->BitMap)
         { 
           /* these two overlap */
           int a;
@@ -874,7 +881,9 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
             
           a = width * height;
            
-          if (a == area)
+          if (a == area && 
+              dCR->bounds.MaxX - dCR->bounds.MinX + 1 == width &&
+              dCR->bounds.MaxY - dCR->bounds.MinY + 1 == height )
           {
             FreeBitMap(dCR->BitMap);
             dCR -> BitMap = sCR -> BitMap;
@@ -911,6 +920,45 @@ void CopyAndFreeClipRectsClipRects(struct Layer * L,
   sCR->Next = L->SuperSaveClipRects;
   L->SuperSaveClipRects = srcCR;
   
+}
+
+/* 
+** Uninstalls the ClipRegion ClipRects form all the layers that are
+** found, if they haven't alreay been uninstalled.
+*/
+
+void UninstallClipRegionClipRects(struct Layer_Info * LI)
+{
+  struct Layer * L = LI->top_layer;
+  while (NULL != L)
+  {
+    /* does this one have a ClipRegion and are the ClipRegion ClipRects 
+       still installed? 
+    */
+    if (NULL != L->ClipRegion && NULL != L->_cliprects)
+    {
+      CopyAndFreeClipRectsClipRects(L, L->ClipRect, L->_cliprects);
+      L->ClipRect = L->_cliprects;
+      L->_cliprects = NULL;
+    }
+    L = L->back;
+  }
+}
+
+void InstallClipRegionClipRects(struct Layer_Info * LI)
+{
+  struct Layer * L = LI->top_layer;
+  while (NULL != L)
+  {
+    /* does this one have a ClipRegion and no ClipRegion ClipRects installed ? 
+    */
+    if (NULL != L->ClipRegion && NULL == L->_cliprects)
+    {
+      L->_cliprects = L->ClipRect;
+      L->ClipRect = CopyClipRectsInRegion(L, L->_cliprects, L->ClipRegion);
+    }
+    L = L->back;
+  }
 }
 
 /*-----------------------------------END-----------------------------------*/

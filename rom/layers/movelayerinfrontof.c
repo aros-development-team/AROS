@@ -105,6 +105,8 @@
 
   SetLayerPriorities(LI);
 
+  UninstallClipRegionClipRects(LI);
+
   if (layer_to_move == LI->top_layer)
     CreateClipRectsTop(LI, FALSE);
 
@@ -141,9 +143,6 @@
   /* check whether we're moving further to the front or to the back */
   if (other_layer->priority > layer_to_move->priority)
   {
-/*
-kprintf("Moving a layer further to the front\n");
-*/
     /* 
        The layer_to_move goes further in the front, which
        means that visible parts stay visible and hidden
@@ -156,12 +155,6 @@ kprintf("Moving a layer further to the front\n");
        /* Has this ClipRect been hidden? */
        if (NULL != CR->lobs)
        {
-/*
-kprintf("Found a CR that is hidden! %d vs. %d\n",CR->lobs->priority,
-  other_layer->priority);
-kprintf("This ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
-   CR->bounds.MinX,CR->bounds.MaxX,CR->bounds.MinY,CR->bounds.MaxY);
-*/
          /* 
             It was hidden. Should it be visible now? HAVE to use 
             other_layer for priority comparison. 
@@ -312,11 +305,6 @@ if (NULL == CR_tmp)
             */
            while (NULL != L_tmp->back)
 	   {
-/*
-kprintf("     ClipRect: MinX: %d, MaxX: %d, MinY: %d, MaxY %d\n",
-   CR_tmp->bounds.MinX,CR_tmp->bounds.MaxX,
-   CR_tmp->bounds.MinY,CR_tmp->bounds.MaxY);
-*/ 
              L_tmp = internal_WhichLayer(L_tmp->back,
                                          CR->bounds.MinX,
                                          CR->bounds.MinY);
@@ -653,6 +641,8 @@ if (NULL == CR_tmp)
   }
 
   CleanupLayers(LI);
+
+  InstallClipRegionClipRects(LI);
  
   UnlockLayers(LI);
 

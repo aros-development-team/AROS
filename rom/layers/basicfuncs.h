@@ -119,5 +119,7 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect );
 void CopyAndFreeClipRectsClipRects(struct Layer * L,
                                    struct ClipRect * srcCR,
                                    struct ClipRect * destCR);
+void UninstallClipRegionClipRects(struct Layer_Info * LI);
+void InstallClipRegionClipRects(struct Layer_Info * LI);
 
 /*-----------------------------------END-----------------------------------*/

@@ -102,11 +102,23 @@
      this area has to be backed up prior to creating the layer at the
      new position.
    */
+
+  /* restore the regular ClipRects in case this one has a ClipRegion
+     (and a ClipRect list) installed
+   */
+
+  if (NULL != l->ClipRegion)
+  {
+    CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
+    l->ClipRect = l->_cliprects;
+    l->_cliprects = NULL;
+  }
   
   /*
     Is it a simple layer and will areas overlap with the layer at the new
     position?
   */
+
   
   if (0 != (l->Flags & LAYERSIMPLE))
   {
@@ -158,6 +170,14 @@
             {
               /* not enough memory!! */
               UnlockLayers(LI);
+              
+              /* if there's clipregion then try to get the clipregion
+                 cliprects back */
+              if (NULL != l->ClipRegion)
+              {
+                l->_cliprects = l->ClipRect;
+                l->ClipRect = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
+              }
               return FALSE;
             }
           }
@@ -228,6 +248,8 @@
        behind this layer and have an enty in lobs pointing to l. I
        have to change this pointer to l_tmp, so that everything still
        works fine later, especially the DeleteLayer() call. */
+
+    UninstallClipRegionClipRects(LI);
 
     l_behind = l_tmp->back;
     while (NULL != l_behind)
@@ -411,6 +433,9 @@
 
     /* That's it folks! */
     CleanupLayers(LI);
+    
+    InstallClipRegionClipRects(LI);
+    
     retVal = TRUE;
   } 
   else /* not enough memory */
@@ -419,6 +444,11 @@
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
     if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
+    if (NULL != l->ClipRegion)
+    {
+      l->_cliprects = l->ClipRect;
+      l->ClipRect   = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
+    }
     retVal = FALSE;
   }
 

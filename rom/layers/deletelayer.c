@@ -130,6 +130,8 @@
      me to refresh (clear) through at the end.
   */
 
+  UninstallClipRegionClipRects(LI);
+
   /* clear the region that is there */
   ClearRegion(LD->DamageList);
 
@@ -414,6 +416,7 @@
 
   FreeMem(LD, sizeof(struct Layer));
 
+  InstallClipRegionClipRects(LI);
   /* ok, I'm done */
   UnlockLayers(LI);
   return TRUE;

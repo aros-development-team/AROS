@@ -196,6 +196,8 @@
                  of layers that are to be hidden now. 
      */
     SetLayerPriorities(li);
+    UninstallClipRegionClipRects(li);
+    
     CreateClipRectsOther(L);
     /*
        And to keep consistency of the layers I have to split the layer 
@@ -212,6 +214,7 @@
       CreateClipRectsSelf(L->back, FALSE);
     else
       CreateClipRectsSelf(L, FALSE);
+ 
  
     /*
        Ok, all other layers were visited and pixels are backed up.
@@ -258,6 +261,8 @@
       }
       CR = CR->Next;
     }
+
+    InstallClipRegionClipRects(li);
 
     UnlockLayers(li);    
   }

@@ -64,7 +64,7 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer_Info * LI = L->LayerInfo;
-  struct ClipRect * CR_old = L->ClipRect;
+  struct ClipRect * CR_old;
 
   /* see whether this is already the most upfront layer of its kind */
   if (LI->top_layer == L || 
@@ -111,6 +111,16 @@
   /* and now I am the top_layer */
   LI->top_layer = L;
       
+  /* Check whether it has a clipregion installed */
+  if (NULL != L->ClipRegion)
+  {
+    CopyAndFreeClipRectsClipRects(L, L->ClipRect, L->_cliprects);
+    L->ClipRect = L->_cliprects;
+    L->_cliprects = NULL;
+  }
+  /* get the first one of the cliprects */
+  CR_old = L->ClipRect;
+
   /* get a new cliprect structure */
   L->ClipRect = _AllocClipRect(L);
 
@@ -209,6 +219,14 @@
 
   if (NULL != L->back)
     CreateClipRectsSelf(L->back, FALSE);
+
+  /* if there's a clipregion installed then create the cliprects */
+  if (NULL != L->ClipRegion)
+  {
+    /* backup the original cliprects */
+    L->_cliprects = L->ClipRect;
+    L->ClipRect = CopyClipRectsInRegion(L, L->_cliprects, L->ClipRegion);
+  }
 
   /* Here no layer needs to have its cliprect recombined */
 
