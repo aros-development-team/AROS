@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/10 13:11:01  digulla
+    There is no such symbol as DOSBase (Fleischer)
+
     Revision 1.4  1996/09/12 14:47:52  digulla
     More stack
 
@@ -18,7 +21,7 @@
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
 
-extern struct DosBase * DOSBase;
+extern struct DosLibrary *DOSBase;
 
 int main(void)
 {
