@@ -41,4 +41,10 @@
         because it doesn't look there and if you ever get
         an error like this, have a look into include first.
 </item>
+<item>
+    <dir>autoinit</dir>
+    The sources for autoinit.lib, a library that let's you forget
+    about the initialization of whatever you want, opening and
+    closing libraries included.
+</item>
 </contents>
