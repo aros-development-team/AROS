@@ -8,7 +8,7 @@ FILES := main locale support detach wanderer wandererprefs iconwindow
 #MM- workbench-system : workbench-system-wanderer
 #MM workbench-system-wanderer : workbench-system-wanderer-catalogs includes linklibs
 
-%build_prog mmake=workbench-system-wanderer-disabled \
+%build_prog mmake=workbench-system-wanderer \
     progname=Wanderer targetdir=$(AROS_WANDERER) files=$(FILES) \
     uselibs="mui arossupport amiga rom m" detach=yes
 
