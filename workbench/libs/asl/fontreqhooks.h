@@ -41,9 +41,21 @@ struct FOUserData
     struct List			NameListviewList;
     struct List     	    	SizeListviewList;
 
+    struct AvailFontsHeader 	*AFH;
+
     UWORD 			ButWidth;
     UWORD 			ButHeight;    
   
+};
+
+struct ASLLVFontReqNode
+{
+    struct Node 	node;
+    struct List     	SizeList;
+    UWORD   	    	NumSizes;
+    UBYTE   	    	Name[MAXFONTNAME + 2];
+    struct Node	    	SizeNode[0];
+    /* growing */
 };
 
 #define FOFLG_LAYOUTED (1 << 0)
