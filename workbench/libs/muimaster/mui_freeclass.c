@@ -49,12 +49,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *, MUIMasterBase)
 
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
     /* CLF_INLIST tells us that this class is a builtin class */
     if (cl->cl_Flags & CLF_INLIST)
     {
         Class *super = cl->cl_Super;
-
-        ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
 	ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
 
@@ -71,7 +71,11 @@
         ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     }
     else
+    {
+        ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
         CloseLibrary((struct Library *)cl->cl_Dispatcher.h_Data);
+    }
 
     AROS_LIBFUNC_EXIT
 
