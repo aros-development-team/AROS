@@ -16,6 +16,9 @@
 #include <utility/tagitem.h>
 #include <intuition/cghooks.h>
 #include <intuition/gadgetclass.h>
+#include <intuition/intuition.h>
+#include <intuition/screens.h>
+#include <devices/keymap.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -719,7 +722,7 @@ void intui_ProcessEvents (void)
 		    w->Width  = event.xconfigure.width;
 		    w->Height = event.xconfigure.height;
 
-		    im->Class = NEWSIZE;
+		    im->Class = IDCMP_NEWSIZE;
 		    ptr       = "NEWSIZE";
 		}
 
@@ -728,7 +731,7 @@ void intui_ProcessEvents (void)
 	    case ButtonPress: {
 		XButtonEvent * xb = &event.xbutton;
 
-		im->Class = MOUSEBUTTONS;
+		im->Class = IDCMP_MOUSEBUTTONS;
 		im->Qualifier = StateToQualifier (xb->state);
 		im->MouseX = xb->x;
 		im->MouseY = xb->y;
@@ -744,7 +747,7 @@ void intui_ProcessEvents (void)
 		    {
 			if (gadget->Activation & GACT_IMMEDIATE)
 			{
-			    im->Class = GADGETDOWN;
+			    im->Class = IDCMP_GADGETDOWN;
 			    im->IAddress = gadget;
 			    ptr       = "GADGETDOWN";
 			}
@@ -882,14 +885,14 @@ void intui_ProcessEvents (void)
 		    break;
 		}
 
-		if (im->Class == MOUSEBUTTONS)
+		if (im->Class == IDCMP_MOUSEBUTTONS)
 		    ptr = "MOUSEBUTTONS";
 	    } break;
 
 	    case ButtonRelease: {
 		XButtonEvent * xb = &event.xbutton;
 
-		im->Class = MOUSEBUTTONS;
+		im->Class = IDCMP_MOUSEBUTTONS;
 		im->Qualifier = StateToQualifier (xb->state);
 		im->MouseX = xb->x;
 		im->MouseY = xb->y;
@@ -906,7 +909,7 @@ void intui_ProcessEvents (void)
 
 			if (inside && (gadget->Activation & GACT_RELVERIFY))
 			{
-			    im->Class = GADGETUP;
+			    im->Class = IDCMP_GADGETUP;
 			    im->IAddress = gadget;
 			    ptr       = "GADGETDOWN";
 			}
@@ -990,7 +993,7 @@ void intui_ProcessEvents (void)
 		XKeyEvent * xk = &event.xkey;
 		ULONG result;
 
-		im->Class = RAWKEY;
+		im->Class = IDCMP_RAWKEY;
 		result = XKeyToAmigaCode(xk);
 		im->Code = xk->keycode;
 		im->Qualifier = result >> 16;
@@ -1002,7 +1005,7 @@ void intui_ProcessEvents (void)
 		XKeyEvent * xk = &event.xkey;
 		ULONG result;
 
-		im->Class = RAWKEY;
+		im->Class = IDCMP_RAWKEY;
 		result = XKeyToAmigaCode(xk);
 		im->Code = xk->keycode | 0x8000;
 		im->Qualifier = result >> 16;
@@ -1014,7 +1017,7 @@ void intui_ProcessEvents (void)
 		XMotionEvent * xm = &event.xmotion;
 
 		im->Code = IECODE_NOBUTTON;
-		im->Class = MOUSEMOVE;
+		im->Class = IDCMP_MOUSEMOVE;
 		im->Qualifier = StateToQualifier (xm->state);
 		im->MouseX = xm->x;
 		im->MouseY = xm->y;
@@ -1171,7 +1174,7 @@ void intui_ProcessEvents (void)
 	    case EnterNotify: {
 		XCrossingEvent * xc = &event.xcrossing;
 
-		im->Class = ACTIVEWINDOW;
+		im->Class = IDCMP_ACTIVEWINDOW;
 		im->MouseX = xc->x;
 		im->MouseY = xc->y;
 
@@ -1181,7 +1184,7 @@ void intui_ProcessEvents (void)
 	    case LeaveNotify: {
 		XCrossingEvent * xc = &event.xcrossing;
 
-		im->Class = ACTIVEWINDOW;
+		im->Class = IDCMP_ACTIVEWINDOW;
 		im->MouseX = xc->x;
 		im->MouseY = xc->y;
 
