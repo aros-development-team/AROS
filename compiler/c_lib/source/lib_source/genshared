@@ -145,7 +145,7 @@ case $mode in
         echo "#endif" >> $out.new
         echo >> $out.new
 	if [ -f headers.tmpl ]; then
-	    gawk '
+	    $AWK '
 	    $1 == "##begin" && $2 == "proto" { doprint=1; next; }
 	    $1 == "##end" && $2 == "proto" { doprint=0; next; }
 	     { if (doprint) print; }
