@@ -71,6 +71,9 @@
 		mymidinode->in_curr_get=mymidinode->in_start;
 	}
 
+	if(msg->mm_Status==0xf0)
+	  mymidinode->sysex_nextis0=FALSE;
+
 	mymidinode->lastreadstatus=msg->mm_Status;
 
 	return TRUE;
