@@ -48,17 +48,18 @@
 	10.12.1996 digulla created after libnix
 
 ******************************************************************************/
-{
+ {
     GETUSER;
 
-    if (fputs (str, stdout) == EOF)
+    if
+    (
+        fputs (str, stdout)  == EOF ||
+        fputs ("\n", stdout) == EOF ||
+        fflush (stdout)      == EOF
+    )
+    {
 	return EOF;
-
-    if (putc ('\n', stdout) == EOF)
-	return EOF;
-
-    if (fflush (stdout) == EOF)
-	return EOF;
+    }
 
     return 1;
 } /* puts */
