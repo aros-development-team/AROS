@@ -176,6 +176,30 @@ endif
 #------------------------------------------------------------------------------
 
 
+#-------------------------------------------------------------------------
+# Use cpak to generate the files functions.[ch]
+#
+%define rule_cpak files=/A dir=.
+
+%(dir)/functions.c %(dir)/functions.h : $(addsuffix .c,%(files))
+	%mkdir_q %(dir)
+	@$(CPAK) -d %(dir) %(files)
+%end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Rule to generate a functable
+#
+%define rule_genfunctable files=/A dir=. libdefs=libdefs.h
+
+%(dir)/functable.c : $(addsuffix .c,%(files)) $(BINDIR)/scripts/genfunctable.awk %(libdefs)
+	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
+	@$(AWK) -v file=%(libdefs) -f $(BINDIR)/scripts/genfunctable.awk $(addsuffix .c,%(files)) > $@
+%end
+#------------------------------------------------------------------------------
+
+
 #------------------------------------------------------------------------------
 # Generate a rule to compile a C source file to an object file and generate
 # the dependency file. Basename may contain a directory part, then the source
@@ -554,6 +578,197 @@ endif
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Build a module using the deprecated macro's to define the functions in the
+# library. Explanation of this macro is done in the developer's manual
+%define build_module_macro mmake=/A modname=/A modtype=/A \
+  conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
+  funcs=$(FUNCS) files= linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) \
+  linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK)
+  libdefsfile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
+
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes"
+
+.PHONY : setup-module$(BDID)
+
+ifeq (%(modname),)
+$(error using %build_module: modname may not be empty)
+endif
+ifeq (%(modtype),)
+$(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
+endif
+
+# assign and generate the local variables used in this macro
+BD_MODNAME$(BDID)    := %(modname)
+BD_MODTYPE$(BDID)    := %(modtype)
+BD_CONFFILE$(BDID)   := %(conffile)
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_OBJDIR$(BDID)     := %(objdir)
+
+BD_INITFILE$(BDID)   := %(initfile)
+BD_FUNCS$(BDID)      := %(funcs)
+BD_FILES$(BDID)      := %(files)
+BD_LIBFILES$(BDID)   := %(linklibfiles)
+BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
+
+BD_FUNCSRCS$(BDID)   := $(addsuffix .c,$(BD_FUNCS$(BDID)))
+BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
+BD_INITOBJ$(BDID)    := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_INITFILE$(BDID)))))
+USE_CPAK             ?= $(USE_CPAK_DEFAULT)
+ifeq (%(usecpak),yes)
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,functable functions $(notdir $(BD_FILES$(BDID)))))
+else
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,functable $(notdir $(BD_FILES$(BDID)) $(BD_FUNCS$(BDID)))))
+endif
+BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
+
+BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
+
+ifeq ($(BD_MODTYPE$(BDID)),library)
+BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+endif
+BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
+
+BD_CFLAGS$(BDID)     := %(cflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/libs -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+#Add extra flag if shared AROS C library is used
+ifneq ($(strip $(filter arosc_shared,%(uselibs))),)
+BD_CFLAGS$(BDID)     += -D_CLIB_LIBRARY_ -I$(TOP)/rom/exec
+endif
+ifeq (%(dflags),)
+BD_DFLAGS$(BDID)     := $(BD_CFLAGS$(BDID))
+else
+BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/libs -include $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+endif
+
+# Add additional files depending the module type
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library),)
+    $(error unhandled MODTYPE X %(modtype))
+endif
+ifeq ($(BD_MODTYPE$(BDID)),library)
+  BD_MODDIR$(BDID)       := $(AROS_LIBS)
+endif
+
+BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
+BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID))
+BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
+
+#MM %(mmake) : %(mmake)-setup
+#MM %(mmake)-includes : %(mmake)-setup
+
+#MM
+%(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID)) %(mmake)-includes
+
+#MM
+%(mmake)-clean :
+	@$(ECHO) "Cleaning up for module $(BD_MODNAME$(BDID))"
+	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID)) \
+	    $(BD_REFFILES$(BDID))\
+	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
+	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
+	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
+	    $(BD_LINKLIBFILES$(BDID)) $(BD_LINKLIBOBJS$(BDID)) $(BD_LIBDEFSINC$(BDID)) \
+	    $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h \
+	    $(BD_ENDFILE$(BDID)).c $(BD_ENDOBJ$(BDID))
+
+#MM
+%(mmake)-setup : setup-module$(BDID)
+
+#MM- includes-generate : %(mmake)-includes
+#MM- includes-copy : %(mmake)-includes
+
+#MM
+%(mmake)-includes : \
+  $(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h \
+  $(INCDIR)/defines/$(BD_MODNAME$(BDID)).h \
+  $(INCDIR)/inline/$(BD_MODNAME$(BDID)).h \
+  $(INCDIR)/proto/$(BD_MODNAME$(BDID)).h \
+  $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp
+  
+ifneq ($(dir $(BD_FILES$(BDID))),./)
+vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
+endif
+
+ifeq ($(TARGET),%(mmake)) # Avoid conflicting wildcard rules
+%rule_compile basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/functable targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/functions targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+endif
+
+BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
+
+# Some include files need to be generated before the .c can be parsed.
+ifeq ($(TARGET),%(mmake)) # Only for this target these deps are wanted
+$(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
+endif
+
+# Generation of the autogenerated .c and .h files.
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
+	@$(ECHO) "generating $@"
+	@$(ECHO) "#define LC_LIBDEFS_FILE \"$(notdir $(BD_LIBDEFSINC$(BDID)))\"" >$@
+
+%libdefs_rule conffile=$(BD_CONFFILE$(BDID)) dest=$(BD_LIBDEFSINC$(BDID))
+
+$(BD_ENDFILE$(BDID)).c :
+	@$(ECHO) "generating $@"
+	@$(ECHO) "#include <libcore/libtail.c>" >$@
+
+%rule_cpak files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID))
+
+%rule_genfunctable files=$(BD_FUNCS$(BDID)) dir=$(BD_OBJDIR$(BDID)) libdefs=$(BD_LIBDEFSINC$(BDID))
+
+# The module is linked from all the compiled .o files
+%rule_linkmodule module=$(BD_MODULE$(BDID)) objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID))" \
+		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)"
+
+BD_HEADER_DEPS$(BDID) := $(wildcard headers.tmpl) $(BD_LIBDEFSINC$(BDID)) \
+	    $(BD_FUNCSRCS$(BDID)) \
+	    $(SCRIPTDIR)/genshared $(SCRIPTDIR)/genclib.awk \
+	    $(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/geninline.awk
+
+# Regenerate the includes when some of the dependencies are changed
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp : $(BD_HEADER_DEPS$(BDID))
+	@$(SCRIPTDIR)/genshared -clib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+	@$(SCRIPTDIR)/genshared -defines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+	@$(SCRIPTDIR)/genshared -inline -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+	@$(SCRIPTDIR)/genshared -proto -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+	@$(TOUCH) $@
+
+# Generate includes the first time they are needed
+$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h :
+	@$(SCRIPTDIR)/genshared -clib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+
+$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h :
+	@$(SCRIPTDIR)/genshared -defines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+
+$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h :
+	@$(SCRIPTDIR)/genshared -inline -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+
+$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h :
+	@$(SCRIPTDIR)/genshared -proto -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
+
+# The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
+ifeq ($(BD_MODTYPE$(BDID)),library)
+%rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(INCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h
+%rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/defines/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/inline/$(BD_MODNAME$(BDID)).h
+#%rule_copy from=$(GENINCDIR)/pragmas/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/pragmas/$(BD_MODNAME$(BDID)).h
+%rule_copy from=$(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h to=$(INCDIR)/proto/$(BD_MODNAME$(BDID)).h
+endif
+
+# For a shared library also build a static link lib
+#ifeq ($(BD_MODTYPE$(BDID)),library)
+#%rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
+#endif
+
+%rule_makedirs dirs=$(BD_OBJDIR$(BDID)) setuptarget=setup-module$(BDID)
+
+%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+%end
+#------------------------------------------------------------------------------
 
 
 #------------------------------------------------------------------------------
@@ -916,7 +1131,7 @@ BDID := $(BDTARGETID)
 %define libdefs_rule conffile=lib.conf genlibdefstool=$(ARCHTOOL) dest=libdefs.h
 %(dest) : %(conffile) %(genlibdefstool)
 	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@%(genlibdefstool) -c
+	@%(genlibdefstool) -c -o $@ %(conffile)
 %end
 
 
