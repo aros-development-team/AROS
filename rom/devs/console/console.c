@@ -115,6 +115,7 @@ AROS_LH2(struct ConsoleBase *, init,
     
     NEWLIST(&ConsoleDevice->unitList);
     InitSemaphore(&ConsoleDevice->unitListLock);
+    InitSemaphore(&ConsoleDevice->consoleTaskLock);
     
     ConsoleDevice->device.dd_Library.lib_OpenCnt=1;
 
@@ -431,8 +432,36 @@ AROS_LH1(LONG, abortio,
 	   struct ConsoleBase *, ConsoleDevice, 6, Console)
 {
     AROS_LIBFUNC_INIT
-    /* Everything already done. */
-    return 0;
+    
+    LONG ret = -1;
+
+    ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
+    
+    /* The ioreq can either be in the ConsoleDevice->commandPort MsgPort,
+       or be in the ConsoleDevice->readRequests List, or be already done.
+       
+       In the first two cases ln_Type will be NT_MESSAGE (= it can be
+       aborted), in the last case ln_Type will be NT_REPLYMSG (cannot
+       abort, because already done)
+      
+       The consoleTaskLock Semaphore hopefully makes sure that there are no
+       other/"in-between" cases.
+       
+    */
+           
+    if (ioreq->io_Message.mn_Node.ln_Type != NT_REPLYMSG)
+    {
+        ioreq->io_Error = IOERR_ABORTED;
+	Remove(&ioreq->io_Message.mn_Node);
+	ReplyMsg(&ioreq->io_Message);
+	
+	ret = 0;
+    }
+    
+    ReleaseSemaphore(&ConsoleDevice->consoleTaskLock);
+
+    return ret;
+    
     AROS_LIBFUNC_EXIT
 }
 

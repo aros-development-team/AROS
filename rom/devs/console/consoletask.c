@@ -122,10 +122,12 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 	/* Anyone wanting to kill us ? */
 	if (wakeupsig & SIGBREAKF_CTRL_C)
 	{
-	    break;
-	    
+	    break;	    
 	}
-	else if (wakeupsig & inputsig)
+
+	ObtainSemaphore(&ConsoleDevice->consoleTaskLock);
+	
+	if (wakeupsig & inputsig)
 	{
 	    /* A message from the console device input handler */
 	    struct cdihMessage *cdihmsg;
@@ -208,8 +210,9 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 		
 	    } /* while ( (cdihmsg = (struct cdihMessage *)GetMsg(inputport)) ) */
 	    
-	}
-	else if (wakeupsig & commandsig)
+	} /* if (wakeupsig & inputsig) */
+	
+	if (wakeupsig & commandsig)
 	{
 	    /* We got a command from the outside. Investigate it */
 	    struct IOStdReq *req;
@@ -239,9 +242,13 @@ VOID consoleTaskEntry(struct coTaskParams *ctp)
 			kprintf("!!! THIS SHOULD NEVER HAPPEN !!!\n");
 			break;
 		}
-	    }
-	}
-	   
+		
+	    } /* while ((req = (struct IOStdReq *)GetMsg(ConsoleDevice->commandPort))) */
+	    
+	} /* if (wakeupsig & commandsig) */
+	
+	ReleaseSemaphore(&ConsoleDevice->consoleTaskLock);
+	
     } /* forever */
     
 #warning FIXME: Do cleanup here

@@ -242,6 +242,7 @@ struct ConsoleBase
     
     struct MinList unitList;
     struct SignalSemaphore unitListLock;
+    struct SignalSemaphore consoleTaskLock;
     
     struct Interrupt	*inputHandler;
     struct Task		*consoleTask;
