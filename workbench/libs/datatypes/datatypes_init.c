@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: initialize datatypes.library
@@ -224,7 +224,15 @@ AROS_LH0(BPTR, expunge,
     /* As I said above, we cannot remove ourselves. */
     DataTypesBase->dtb_LibNode.lib_Flags &= ~LIBF_DELEXP;
 
+#if 0
+    /* stegerg: if later someone else re-opens datatypes.library, then
+                the datatypes.class would have to be re-added with
+		AddClass in libopen() (if FreeClass returned FALSE,
+		where the class was not freed, but still removed),
+		or re-make the class (when FreeClass returned TRUE) */
+		
     TryRemoveClass((struct Library *)DataTypesBase);
+#endif
 
     return 0;
     AROS_LIBFUNC_EXIT
