@@ -63,8 +63,15 @@
 
     LONG res;
 
-    if (!overlap(R1->bounds, R2->bounds))
+    if
+    (
+        !R1->RegionRectangle             ||
+        !R2->RegionRectangle             ||
+        !overlap(R1->bounds, R2->bounds)
+    )
+    {
         return OrRegionRegion(R1, R2);
+    }
 
     InitRegion(&R3);
 
