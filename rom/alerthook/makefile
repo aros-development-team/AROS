@@ -16,7 +16,8 @@ ifeq ($(FLAVOUR),native)
 all: setup $(OSMODDIR)/alert.hook
 
 $(OSMODDIR)/alert.hook: $(OBJS)
-	$(CC) $(ILDFLAGS) $(OBJS) -Xlinker -M -o $@ 2>&1|tee alert.map
+	@$(ECHO) "Building $@ ..."
+	@$(CC) $(ILDFLAGS) $(OBJS) -Xlinker -M -o $@ 2>&1|tee alert.map
 	@if test ! -s alert.map ; then rm alert.map ; else true ; fi
 	@strip $@
 
@@ -35,12 +36,14 @@ setup :
 clean:
 
 $(OSGENDIR)/%.o: %.c
-	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	@$(ECHO) "Compiling $< ..."
+	@$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
+	@$(ECHO) "Makedepend $< ..."
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
+	@$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).d)
