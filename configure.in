@@ -413,6 +413,9 @@ aros_mungwall_debug="1"
 aros_stack_debug="1"
 aros_modules_debug="1"
 
+# Collect-aros stuff: "-i" to ignore missing symbols
+ignore_missing_symbols=""
+
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
 
@@ -675,7 +678,7 @@ case "$target_os" in
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
+		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NEEDS___MAIN -Dlinux"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
@@ -693,6 +696,7 @@ case "$target_os" in
 		aros_mungwall_debug="0"
 		aros_modules_debug="0"
 		gcc_target_cpu="mc68000"
+		ignore_missing_symbols="-i"
 		;;
 	   *)
 		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
@@ -1015,6 +1019,9 @@ AC_SUBST(aros_debug)
 AC_SUBST(aros_mungwall_debug)
 AC_SUBST(aros_stack_debug)
 AC_SUBST(aros_modules_debug)
+
+# Collect-aros stuff: "-i" to ignore missing symbols
+AC_SUBST(ignore_missing_symbols)
 
 # C compiler related
 AC_SUBST(gcc_target_cpu)
