@@ -32,7 +32,7 @@ FILES = basicfuncs
 # Asm files that have no C counterpart
 AFILES = basicasmfuncs
 
-# Guarantee that this will go at the end of the file:
+# Guarantee that this will go at the end of the library object:
 END_FILE = layers_endtag
 
 # ***** Not Native ***************
@@ -44,25 +44,28 @@ FILES = layers_init layers_functable layers_endtag basicfuncs
 endif
 
 FUNCTIONS = \
-	disposelayerinfo		\
-	dohookcliprects 		\
-	fattenlayerinfo 		\
-	initlayers			\
-	installclipregion		\
-	installlayerhook		\
-	installlayerinfohook		\
-	locklayer			\
-	locklayerinfo			\
-	locklayers			\
-	newlayerinfo			\
-	sortlayercr			\
-	swapbitsrastportcliprect	\
-	thinlayerinfo			\
-	unlocklayer			\
-	unlocklayerinfo 		\
-	unlocklayers			\
-	upfrontlayer			\
-	whichlayer
+	beginupdate
+
+#FUNCTIONS = \
+#	disposelayerinfo		\
+#	dohookcliprects 		\
+#	fattenlayerinfo 		\
+#	initlayers			\
+#	installclipregion		\
+#	installlayerhook		\
+#	installlayerinfohook		\
+#	locklayer			\
+#	locklayerinfo			\
+#	locklayers			\
+#	newlayerinfo			\
+#	sortlayercr			\
+#	swapbitsrastportcliprect	\
+#	thinlayerinfo			\
+#	unlocklayer			\
+#	unlocklayerinfo 		\
+#	unlocklayers			\
+#	upfrontlayer			\
+#	whichlayer
 
 # BEGIN_DESC{localmakevar}
 # \item{ASM_PATH} The path to the assembler sources

@@ -83,7 +83,7 @@ LONG tmp;
   /* tanh(-x) = -tanh(x) */
   Res = SPExp(fnum1 & (FFPMantisse_Mask + FFPExponent_Mask ));
   Res = SPDiv( SPAdd(Res, SPDiv(Res, one)),
-               SPAdd(Res, SPDiv(Res, one) | FFPSign_Mask )  );
+               SPAdd(Res, (ULONG)SPDiv(Res, one) | FFPSign_Mask )  );
 
   /* Result is zero */
   if (0 == Res )

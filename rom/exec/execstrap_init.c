@@ -7,7 +7,7 @@
 */
 
 #define DEBUG 0
-#define LMBSUPPORT 0
+#define LMBSUPPORT 1
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -424,7 +424,6 @@ const char end = 0;
  *  CopyMemQuick
  *  CacheClearE
  *  CacheControl
- *  ColdReboot
  *  StackSwap
  *  ChildFree
  *  ChildOrphan

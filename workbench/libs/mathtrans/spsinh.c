@@ -79,7 +79,7 @@ LONG tmp;
   tmp = (fnum1 & FFPExponent_Mask) - 0x41;
 
   if ( tmp <= 2  || (tmp == 3 && (fnum1 & FFPMantisse_Mask) < 0x90000000) )
-    Res = SPAdd(Res, (SPDiv(Res, one) | FFPSign_Mask ));
+    Res = SPAdd(Res, ((ULONG)SPDiv(Res, one) | FFPSign_Mask ));
 
   /* Res = Res / 2 */
   ((char)Res) --;
