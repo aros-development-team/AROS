@@ -41,6 +41,8 @@ enum {
     IDX_IRoot = 0,
     IDX_IMeta,
     IDX_IMethod,
+    IDX_IServer,
+    IDX_IProxy,
     NUM_Indexes
 };
 
@@ -67,7 +69,6 @@ struct IntClass
     ULONG HashMask;
     ULONG NumInterfaces;
     
-    APTR UserData;
 };
 
 
@@ -75,6 +76,8 @@ struct IntClass
 #define __OOPI_Root	(GetOBase(OOPBase)->ob_InternIDs[IDX_IRoot])
 #define __OOPI_Meta	(GetOBase(OOPBase)->ob_InternIDs[IDX_IMeta])
 #define __OOPI_Method	(GetOBase(OOPBase)->ob_InternIDs[IDX_IMethod])
+#define __OOPI_Server	(GetOBase(OOPBase)->ob_InternIDs[IDX_IServer])
+#define __OOPI_Proxy	(GetOBase(OOPBase)->ob_InternIDs[IDX_IProxy])
 
 struct IntOOPBase
 {
@@ -85,6 +88,10 @@ struct IntOOPBase
 
     struct SignalSemaphore	 ob_ClassListLock;
     struct MinList		 ob_ClassList;
+    
+    struct SignalSemaphore	 ob_ServerListLock;
+    struct MinList		 ob_ServerList;
+    
     struct IntClass 		 ob_RootClass;
     struct MetaInst
     {
@@ -93,7 +100,11 @@ struct IntOOPBase
 	struct IntClass InstanceData; /* Meta object's instance data */
     }
     			 	 ob_MetaClass;
+				 
     Class			 *ob_MethodClass;
+    Class			 *ob_ServerClass;
+    Class			 *ob_ProxyClass;
+    
     struct HashTable	       * ob_IDTable;
     ULONG			 ob_CurrentID;
     ULONG			 ob_InternIDs[NUM_Indexes];
@@ -114,6 +125,15 @@ VOID FreeDispatchTables(struct IntClass *cl, struct IntOOPBase *OOPBase);
 
 
 BOOL GetIDs(struct IDDescr *idDesr, struct IntOOPBase *OOPBase);
+
+IPTR LocalDoMethod(Object *, Msg);
+
+BOOL InitRootClass(struct IntOOPBase *OOPBase);
+BOOL InitMetaClass(struct IntOOPBase *OOPBase);
+
+Class *InitMethodClass(struct IntOOPBase *OOPBase);
+Class *InitServerClass(struct Library *OOPBase);
+Class *InitProxyClass(struct Library *OOPBase);
 
 /*****************
 **  Structures  **
@@ -145,6 +165,23 @@ struct IFMethod
 {
     IPTR (*MethodFunc)();
     Class *mClass;
+};
+
+
+/* Message struct used for sending object message structs across
+to another task */
+struct ProxyMsg
+{
+    struct Message pm_Message;
+    Msg		pm_ObjMsg;
+    IPTR	pm_RetVal;
+    Object	*pm_Object;
+};
+
+struct ServerNode
+{
+    struct Node sn_Node;
+    Object	*sn_Server;
 };
 
 #   define IntCallMethod(cl, o, msg) 					\

@@ -24,7 +24,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase GetOBase(((struct IntClass *)cl)->UserData)
+#define OOPBase GetOBase(((Class *)cl)->UserData)
 
 static struct IFMethod *FindMethod(struct IntClass *cl, ULONG mid);
 
@@ -150,6 +150,7 @@ Class *InitMethodClass(struct IntOOPBase *OOPBase)
     {
 	{(IPTR (*)())_Root_New,			MIDX_Root_New},
 	{(IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose},
+	{ NULL, 0UL }
     };
     
     struct InterfaceDescr ifdescr[] =
@@ -175,10 +176,8 @@ Class *InitMethodClass(struct IntOOPBase *OOPBase)
     cl = (Class *)NewObjectA(NULL, METACLASS, tags);
     if (cl)
     {
-        ((struct  IntClass *)cl)->UserData = OOPBase;
-        AddHead((struct List *)&OOPBase->ob_ClassList,
-		(struct Node *)cl);
-//    	AddClass(cl);
+        cl->UserData = OOPBase;
+    	AddClass(cl);
     }
     
     ReturnPtr ("InitMethodClass", Class *, cl);

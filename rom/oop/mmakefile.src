@@ -53,9 +53,11 @@ LIBNAME  := oop
 ULIBNAME := OOP
 
 OSMODULE  := oop.library
-FILES	  := support hash rootclass metaclass methodclass
-FUNCTIONS := newobjecta getid dosupermethoda domethoda coercemethoda \
-	disposeobject
+FILES	  := support hash rootclass metaclass methodclass method \
+	serverclass proxyclass
+	
+FUNCTIONS := newobjecta getid dosupermethoda coercemethoda \
+	disposeobject addclass removeclass addserver removeserver findserver
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during

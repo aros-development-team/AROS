@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Create a new OOP object
+    Desc: Add a class to the list of puvlic classes
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -16,13 +16,13 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, DisposeObject,
+	AROS_LH1(VOID, AddClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object  *, obj, A0),
+	AROS_LHA(Class  *, classPtr, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 10, OOP)
+	struct Library *, OOPBase, 8, OOP)
 
 /*  FUNCTION
 
@@ -49,20 +49,17 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    ULONG mid = M_Root_Dispose;
+    if (classPtr)
+    {
     
-    EnterFunc(bug("DisposeObject(classID=%s)\n",
-    		OCLASS(obj)->ClassNode.ln_Name));
-
-
-    D(bug("Reducing ObjectCount\n"));    		
-    ((struct IntClass *)OCLASS(obj))->ObjectCount --;
-		
-    D(bug("Calling DoMethodA\n"));    		
-    DoMethod(obj, (Msg)&mid);
-
-        
-    ReturnVoid("DisposeObject");
+    	ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
     
+    	AddTail((struct List *)&GetOBase(OOPBase)->ob_ClassList
+    		,(struct Node *)classPtr);
+    
+    	ReleaseSemaphore( & GetOBase(OOPBase)->ob_ClassListLock );
+    }
+    
+    return;
     AROS_LIBFUNC_EXIT
 } /* NewObjectA */

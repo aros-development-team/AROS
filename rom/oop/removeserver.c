@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Create a new OOP object
+    Desc: Add a class to the list of puvlic classes
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
@@ -16,13 +16,13 @@
     NAME */
 #include <proto/oop.h>
 
-	AROS_LH1(VOID, DisposeObject,
+	AROS_LH1(VOID, RemoveServer,
 
 /*  SYNOPSIS */
-	AROS_LHA(Object  *, obj, A0),
+	AROS_LHA(STRPTR, serverID, A0),
 
 /*  LOCATION */
-	struct Library *, OOPBase, 10, OOP)
+	struct Library *, OOPBase, 13, OOP)
 
 /*  FUNCTION
 
@@ -49,20 +49,25 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
-    ULONG mid = M_Root_Dispose;
+    if (serverID)
+    {
+    	struct Node *sn;
+	
+    	ObtainSemaphore( &GetOBase(OOPBase)->ob_ServerListLock );
+	sn = FindName((struct List *)&GetOBase(OOPBase)->ob_ServerList
+		,serverID);
+	
+	if (sn)
+	{
+	    Remove(sn);
+	    FreeVec(sn->ln_Name);
+	    
+	    FreeMem(sn, sizeof (struct ServerNode));
+	}
     
-    EnterFunc(bug("DisposeObject(classID=%s)\n",
-    		OCLASS(obj)->ClassNode.ln_Name));
-
-
-    D(bug("Reducing ObjectCount\n"));    		
-    ((struct IntClass *)OCLASS(obj))->ObjectCount --;
-		
-    D(bug("Calling DoMethodA\n"));    		
-    DoMethod(obj, (Msg)&mid);
-
-        
-    ReturnVoid("DisposeObject");
+    	ReleaseSemaphore( & GetOBase(OOPBase)->ob_ServerListLock );
+    }
     
+    return;
     AROS_LIBFUNC_EXIT
 } /* NewObjectA */

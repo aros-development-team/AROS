@@ -57,8 +57,8 @@
     struct P_Root_New p;
     Object *o;
     
-    EnterFunc(bug("NewObjectA(classPtr=%p, classID=%p, tagList=%p)\n",
-    		classPtr, classID, tagList));
+    EnterFunc(bug("NewObjectA(classPtr=%p, classID=%s, tagList=%p)\n",
+    		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
 
     ObtainSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
     
@@ -73,7 +73,7 @@
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
 
     if (!classPtr)
-	return (NULL);
+	ReturnPtr ("NewObjectA[No classPtr]", Object *, NULL);
 
     /* Create a new instance */
     

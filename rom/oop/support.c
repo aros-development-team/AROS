@@ -141,12 +141,12 @@ BOOL AllocDispatchTables(
 	    
 	    D(bug("Inserting methods\n"));
 
-	    for (i = 0; i < ifb->NumMethods; i ++)
+	    for (i = 0; ifDescr->MethodTable[i].MethodFunc; i ++)
 	    {
    	    	if (ifDescr->MethodTable[i].MethodFunc)
 	    	{
-	   	    ifb->MethodTable[i].MethodFunc = ifDescr->MethodTable[i].MethodFunc;
-	    	    ifb->MethodTable[i].mClass = (Class *)cl;
+	   	    ifb->MethodTable[ ifDescr->MethodTable[i].MethodIdx ].MethodFunc = ifDescr->MethodTable[i].MethodFunc;
+	    	    ifb->MethodTable[ ifDescr->MethodTable[i].MethodIdx ].mClass     = (Class *)cl;
 	    	}
 	    } /* for (each method in the interface) */
 	    
@@ -274,3 +274,4 @@ BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
     }
     return (TRUE);
 }
+

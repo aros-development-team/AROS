@@ -7,6 +7,7 @@
 */
 
 #include <proto/exec.h>
+#include <proto/oop.h>
 #include <exec/memory.h>
 #include <oop/oop.h>
 #include <oop/root.h>
@@ -20,7 +21,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase	(GetOBase(root_cl->UserData))
+#define OOPBase	(GetOBase(root_cl->PPart.UserData))
 
 /************************
 **  Rootclass methods  **
@@ -96,14 +97,15 @@ BOOL InitRootClass(struct IntOOPBase *OOPBase)
     	RootClass->PPart.ClassNode.ln_Name   	= ROOTCLASS;
 	RootClass->PPart.InstOffset 	 	= 0UL;
 	RootClass->PPart.InstSize   	 	= 0UL;
+	RootClass->PPart.DoMethod		= LocalDoMethod;
 	RootClass->SubClassCount 		= 0UL;
 	RootClass->ObjectCount	 		= 0UL;
 
 	RootClass->NumInterfaces 		= 1UL;
-	RootClass->UserData	 		= (APTR)OOPBase;
+	RootClass->PPart.UserData		= (APTR)OOPBase;
 	
-	AddHead((struct List *)&OOPBase->ob_ClassList,
-		(struct Node *)RootClass);
+	AddClass((Class *)RootClass);
+	
 	return (TRUE);
     }
     return (FALSE);

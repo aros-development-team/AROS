@@ -15,15 +15,16 @@
 #include <oop/root.h>
 #include <oop/meta.h>
 #include <oop/method.h>
+#include <oop/server.h>
+#include <oop/proxy.h>
 
 #include "intern.h"
 #include "libdefs.h"
 
 #include "hash.h"
 
-BOOL InitRootClass(struct IntOOPBase *OOPBase);
-BOOL InitMetaClass(struct IntOOPBase *OOPBase);
-Class *InitMethodClass(struct IntOOPBase *OOPBase);
+
+BOOL InitUtilityClasses(struct IntOOPBase *OOPBase);
 
 #ifdef SysBase
 #   undef SysBase
@@ -63,6 +64,7 @@ static void FreeAllClasses(struct Library *BOOPIBase)
 #endif
 */
 
+
 static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 {
 
@@ -71,12 +73,16 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 	{ GUID_Root,	&__OOPI_Root	},
 	{ GUID_Meta,	&__OOPI_Meta	},
 	{ GUID_Method,	&__OOPI_Method	},
+	{ GUID_Server,	&__OOPI_Server	},
+	{ GUID_Proxy,	&__OOPI_Proxy	},
 	{ NULL,	NULL }
     };
 
     NEWLIST(&GetOBase(LIBBASE)->ob_ClassList);
     InitSemaphore(&GetOBase(LIBBASE)->ob_ClassListLock);
 
+    NEWLIST(&GetOBase(LIBBASE)->ob_ServerList);
+    InitSemaphore(&GetOBase(LIBBASE)->ob_ServerListLock);
 
 	
     UtilityBase = OpenLibrary (UTILITYNAME, 0);
@@ -96,7 +102,8 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
 		        if ((GetOBase(OOPBase)->ob_MethodClass =
 					InitMethodClass((struct IntOOPBase *)OOPBase) ))
 			{
-	    	    	    return (TRUE);
+	    	    	    if (InitUtilityClasses((struct IntOOPBase *)OOPBase))
+			    	return (TRUE);
 			}
 		    }
 	    	}
@@ -108,5 +115,23 @@ static ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LIBBASETYPEPTR LIBBASE)
     
     return (FALSE);
     
+}
+
+/**************************
+** InitUtilityClasses()  **
+**************************/
+BOOL InitUtilityClasses(struct IntOOPBase *OOPBase)
+{
+    OOPBase->ob_ServerClass = InitServerClass((struct Library *)OOPBase);
+    if (OOPBase->ob_ServerClass)
+    {
+        OOPBase->ob_ProxyClass = InitProxyClass((struct Library *)OOPBase);
+	if (OOPBase->ob_ProxyClass)
+	{
+    	    return (TRUE);
+	}
+    }
+    
+    return (FALSE);
 }
 

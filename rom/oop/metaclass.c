@@ -25,7 +25,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase	(GetOBase(cl->UserData))
+#define OOPBase	(GetOBase(((Class *)cl)->UserData))
 
 /************************
 **  Metaclass methods  **
@@ -41,6 +41,7 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
     struct IntClass *superptr = NULL;
     struct TagItem *tag, *tstate;
     ULONG instsize = (ULONG)-1L;
+    IPTR (*domethod)(Object *, Msg) = NULL;
 
     EnterFunc(bug("Meta::New(cl=%s, msg = %p)\n",
     	cl->PPart.ClassNode.ln_Name, msg));
@@ -84,6 +85,9 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 	        instsize = (ULONG)tag->ti_Data;
 		break;
 		
+	    case AIDX_Class_DoMethod:
+	        domethod = (IPTR(*)(Object *, Msg))tag->ti_Data;
+		break;
 	    }
 	    
 	}
@@ -134,7 +138,11 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 		else
 		    data->PPart.InstOffset = 0UL;
 		    
+		if (!domethod)
+		    domethod = LocalDoMethod;
+		    
 		data->PPart.InstSize 	= instsize;
+		data->PPart.DoMethod	= domethod;
 	    	data->SubClassCount 	= 0UL;
 	    	data->ObjectCount	= 0UL;
 	    
@@ -183,7 +191,8 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase)
     struct MethodDescr root_mdescr[]=
     {
     	{ (IPTR (*)())_Root_New,		MIDX_Root_New		},
-    	{ (IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose	}
+    	{ (IPTR (*)())_Root_Dispose,		MIDX_Root_Dispose	},
+	{  NULL, 0UL }
     };
     
 
@@ -204,11 +213,12 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase)
     	MetaClass->PPart.ClassNode.ln_Name   	= METACLASS;
 	MetaClass->PPart.InstOffset 	= 0UL;
 	MetaClass->PPart.InstSize   	= sizeof (struct IntClass);
+	MetaClass->PPart.DoMethod	= LocalDoMethod;
 	MetaClass->SubClassCount 	= 0UL;
 	MetaClass->ObjectCount	 	= 0UL;
 
 	MetaClass->NumInterfaces 	= 2UL;
-	MetaClass->UserData	 	= (APTR)OOPBase;
+	MetaClass->PPart.UserData	= (APTR)OOPBase;
 	
 	/* The class of the meta object is the metaclass,
 	** so it is an instance of itself :-)
@@ -216,10 +226,9 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase)
 	OOPBase->ob_MetaClass.Class = (Class *)&(OOPBase->ob_MetaClass.InstanceData);
 	
 	
-	AddHead((struct List *)&OOPBase->ob_ClassList,
-		(struct Node *)MetaClass);
+	AddClass((Class *)MetaClass);
 	ReturnBool ("InitMetaClass", TRUE);
     }
-    ReturnBool ("InitMetaClass", TRUE);
+    ReturnBool ("InitMetaClass", FALSE);
 
 }
