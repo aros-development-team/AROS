@@ -1,0 +1,14 @@
+
+This directory only contains this README and the file Image. Copy
+Image to a disk using a raw-write program, eg.
+
+    Linux: dd if=Image of=/dev/fd0
+
+    Amiga: copy Image flat:df0
+
+or some other means, put the floppy in a IBM compatible PC and boot
+off it. You will see some startup messages and eventually a prompt.
+You won't be able to do much at this point (except typing some rom-wack
+commands) because this is just a proof of technology (= showing that
+it is possible).
+

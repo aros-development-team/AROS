@@ -85,7 +85,8 @@ if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
 	rm -rf AROS/bin/native-i386/AROS
 	mkdir -p AROS/bin/native-i386/AROS
 	cp AROS/bin/native-i386/gen/rom/boot/aros.bin AROS/bin/native-i386/AROS/Image
-	cp README.native-i386 AROS/bin/native-i386/AROS/
+	cp AROS/bin/native-i386/gen/rom/boot/aros.map AROS/bin/native-i386/AROS/Image.map
+	cp AROS/docs/README.native-i386 AROS/bin/native-i386/AROS/
 	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/native-i386/AROS
     fi
 fi
