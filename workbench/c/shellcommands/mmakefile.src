@@ -12,6 +12,7 @@ FILES	:= \
     EndIf \
     EndSkip \
     FailAt \
+    Fault \
     If \
     Lab \
     Prompt \
@@ -23,7 +24,7 @@ FILES	:= \
     Skip \
     Stack \
     Status \
-    Why 
+    Why
 
 # I'd like to move this into a rule, but it would be far too hard.
 EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
