@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -18,7 +18,7 @@ struct Catalog *catalog;
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
-STRPTR _(ULONG id)
+CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
@@ -52,5 +52,3 @@ void Locale_Deinitialize(void)
 {
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
-
-
