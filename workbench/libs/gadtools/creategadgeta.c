@@ -95,6 +95,10 @@
         gad = makebutton((struct GadToolsBase_intern *)GadToolsBase, 
             stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
         break;
+    case CHECKBOX_KIND:
+        gad = makecheckbox((struct GadToolsBase_intern *)GadToolsBase,
+            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
+        break;
     default:
         return NULL;
     }

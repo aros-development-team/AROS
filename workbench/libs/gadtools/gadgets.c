@@ -49,3 +49,33 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
         DisposeObject(frame);
     return gad;
 }
+
+
+struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
+                            struct TagItem stdgadtags[],
+			    struct VisualInfo *vi,
+                            struct TagItem *taglist)
+{
+    struct Gadget *gad;
+    struct Image *frame;
+
+    BOOL disabled;
+
+    disabled = GetTagData(GA_Disabled, FALSE, taglist);
+    frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
+        IA_Width, stdgadtags[TAG_Width].ti_Data,
+        IA_Height, stdgadtags[TAG_Height].ti_Data,
+        IA_Resolution, vi->vi_dri->dri_Resolution,
+	IA_FrameType, FRAME_BUTTON,
+        TAG_DONE);
+    if (!frame)
+        return NULL;
+    gad = (struct Gadget *)NewObject(NULL, GADGETCLASS,
+        GA_Image, frame,
+        GA_Disabled, disabled,
+        TAG_MORE, stdgadtags);
+    if (!gad)
+        DisposeObject(frame);
+    
+    return gad;
+}

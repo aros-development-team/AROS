@@ -36,10 +36,18 @@ struct VisualInfo;
 struct GadToolsBase_intern; /* prerefrence */
 
 /* Internal prototypes */
+void drawbevelsbyhand(struct GadToolsBase_intern *GadToolsBase,
+                      struct RastPort *rport,
+                      WORD left, WORD top, WORD width, WORD height,
+                      struct TagItem *taglist);
 struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
                           struct TagItem stdgadtags[],
 			  struct VisualInfo *vi,
                           struct TagItem *taglist);
+struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
+                            struct TagItem stdgadtags[],
+			    struct VisualInfo *vi,
+			    struct TagItem *taglist);
 
 struct GadToolsBase_intern
 {
