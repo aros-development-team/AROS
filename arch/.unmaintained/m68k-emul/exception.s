@@ -1,104 +1,87 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.1  1996/12/05 15:30:59  aros
-#    Patches by Geert Uytterhoeven integrated
-#
-#    Revision 1.6  1996/11/01 02:05:24  aros
-#    Motorola syntax (no more MIT)
-#
-#    Revision 1.5  1996/10/24 15:51:30  aros
-#    Use the official AROS macros over the __AROS versions.
-#
-#    Revision 1.4  1996/10/24 01:38:31  aros
-#    Include machine.i
-#
-#    Revision 1.3  1996/10/21 21:08:57  aros
-#    Changed AROS_LA to AROS_LHA
-#
-#    Revision 1.2  1996/08/01 17:41:35  digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-#*****************************************************************************
-#
-#   NAME
-#	AROS_LH0(void, Exception,
-#
-#   LOCATION
-#	struct ExecBase *, SysBase, 8, Exec)
-#
-#   FUNCTION
-#	Exception handler. This function is called by the dispatcher if a
-#	exception has to be delivered. It is called in Disable()d state
-#	(atomically) so that all Signals are still unchanged.
-#	TF_EXCEPT is still set and must be reset by this routine.
-#
-#   INPUTS
-#
-#   RESULT
-#
-#   NOTES
-#	This function has a context on its own and doesn't need to preserve
-#	any registers.
-#
-#	Internal exec function.
-#
-#   EXAMPLE
-#
-#   BUGS
-#
-#   SEE ALSO
-#
-#   INTERNALS
-#
-#   HISTORY
-#
-#******************************************************************************
+    Desc: Exec function Exception
+    Lang: english
+*/
 
-	.include "machine.i"
+/******************************************************************************
 
-	.text
-	.balign 16
-	.globl	_Exec_Exception
-	.type	_Exec_Exception,@function
+    NAME
+        AROS_LH0(void, Exception,
 
-_Exec_Exception:
-	# First clear task exception bit.
-	movel	%a6@(ThisTask),%a2
-	bclr	#TB_EXCEPT,%a2@(tc_Flags)
+    LOCATION
+        struct ExecBase *, SysBase, 8, Exec)
 
-	# If the exception is raised out of a Wait()
-	# IDNestCnt may be almost everything.
-	# Store nesting level and set it to a
-	# defined value 1 beyond -1.
-excusr: moveb	%a6@(IDNestCnt),%d2
-	clrb	%a6@(IDNestCnt)
+    FUNCTION
 
-exloop: # get signals causing the exception
-	# (do nothing if there are none)
-	movel	%a2@(tc_SigExcept),%d0
-	andl	%a2@(tc_SigRecvd),%d0
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+        #include "machine.i"
+
+        .text
+        .balign 16
+        .globl  AROS_SLIB_ENTRY(Exception,Exec)
+        .type   AROS_SLIB_ENTRY(Exception,Exec),@function
+AROS_SLIB_ENTRY(Exception,Exec):
+	linkw	%fp,#0
+	movem.l	%a2/%d2,-(%sp)
+	/* First clear task exception bit. */
+	move.l	8(%fp),%a0
+	move.l	ThisTask(%a0),%a2
+	bclr	#TB_EXCEPT,tc_Flags(%a2)
+
+	/* If the exception is raised out of Wait IDNestCnt may be >0 */
+	move.b	IDNestCnt(%a0),%d2
+	/* Set it to a defined value */
+	clr.b	IDNestCnt(%a0)
+
+exloop:	/* Get mask of signals causing the exception */
+	move.l	tc_SigExcept(%a2),%d0
+	and.l	tc_SigRecvd(%a2),%d0
 	beq	excend
 
-	# disable the signals
-	eorl	%d0,%a2@(tc_SigExcept)
-	eorl	%d0,%a2@(tc_SigRecvd)
+	/* Clear bits */
+	eor.l	%d0,tc_SigExcept(%a2)
+	eor.l	%d0,tc_SigRecvd(%a2)
 
-	# call the exception vector with interrupts enabled
-	movel	%a2@(tc_ExceptData),%a1
-	movel	%a2@(tc_ExceptCode),%a0
-	jsr	%a6@(Enable)
-	jsr	%a0@
-	jsr	%a6@(Disable)
+	/* Raise exception. Enable Interrupts */
+	move.l	tc_ExceptData(%a2),%a1
+	move.l	%a0,-(%sp)
+	jsr	Enable(%a0)
+	move.l	%a0,-(%sp)
+	move.l	%a1,-(%sp)
+	move.l	%d0,-(%sp)
+	move.l	tc_ExceptCode(%a2),%a1
+	jsr	(%a1)
+	move.l	%a0,-(%sp)
+	jsr	Disable(%a0)
+	add.w	#20,%sp
 
-	# reenable signals and look again
-	orl	%d0,%a2@(tc_SigExcept)
+	/* Re-use returned bits */
+	or.l	%d0,tc_SigExcept(%a2)
 	bra	exloop
 
-	# restore state of Disable() and return
-excend: moveb	%d2,%a6@(IDNestCnt)
+excend:	/* Restore IDNestCnt and return */
+	move.b	%d2,IDNestCnt(%a0)
+	movem.l	-8(%fp),%a2/%d2
+	unlk	%fp
 	rts
 
