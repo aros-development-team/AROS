@@ -360,12 +360,9 @@ static void MakeGadgets(void)
 
 static void MakeWin(void)
 {
-    /* SDuvan: Changed WA_Left and WA_Top as WA_Autoadjust is not implemented
-               and the window cannot be opened if it has coordinates beyond
-	       the screen. */
     win = OpenWindowTags(0,WA_PubScreen,scr,
-			 WA_Left,0,                 /* scr->MouseX, */
-			 WA_Top,0,                  /* scr->MouseY, */
+			 WA_Left,scr->MouseX,
+			 WA_Top,scr->MouseY,
 			 WA_InnerWidth,inner_winwidth,
 			 WA_InnerHeight,inner_winheight,
 			 WA_AutoAdjust,TRUE,
