@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/07/12 18:39:18  nlorentz
+    Bugfix
+
     Revision 1.7  1997/01/27 00:36:17  ldp
     Polish
 
@@ -107,7 +110,8 @@
 
     for(size=1;buffer!=NULL;size++)
     {
-	buffer->ed_Prot^=0xf;
+    if (data >= ED_PROTECTION)
+	    buffer->ed_Prot^=0xf;
 	buffer=buffer->ed_Next;
     }
     control->eac_Entries=size;
