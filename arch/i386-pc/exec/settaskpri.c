@@ -86,12 +86,12 @@
 	else
 	{
 	    /* Switches are allowed. Move the current task away. */
-	    SysBase->ThisTask->tc_State=TS_READY;
+//	    SysBase->ThisTask->tc_State=TS_READY;
 
 //	    task->tc_Node.ln_Pred->ln_Succ = task->tc_Node.ln_Succ;
 //    	    task->tc_Node.ln_Succ->ln_Pred = task->tc_Node.ln_Pred;
 
-	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+//	    Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
 
 	    /* And force a reschedule. */
 	    Reschedule(task);
