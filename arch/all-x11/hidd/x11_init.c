@@ -230,6 +230,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 			xsd->clipboard_atom  = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
     	    	    	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
     	    	    	xsd->clipboard_incr_atom = XInternAtom(xsd->display, "INCR", FALSE);
+    	    	    	xsd->clipboard_targets_atom = XInternAtom(xsd->display, "TARGETS", FALSE);
 			
     			xtp.parent = FindTask(NULL);
     			xtp.ok_signal	= SIGBREAKF_CTRL_E;
