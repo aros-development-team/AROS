@@ -1582,7 +1582,7 @@ setup ::
 
 %define copy_dir_recursive mmake=/A src=. dst=/A
 
-%(mmake)_FILES := $(shell find %(src) -path '*/CVS' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
+%(mmake)_FILES := $(shell cd %(src); find . -path '*/CVS' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
 %(mmake)_DIRS  := $(sort $(foreach f,$(%(mmake)_FILES),$(dir $(f))))
 
 define %(mmake)_mkdir
