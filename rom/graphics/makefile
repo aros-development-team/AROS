@@ -5,17 +5,21 @@ SPECIAL_CFLAGS=-I/usr/include
 
 include $(TOP)/config/make.cfg
 
-FILES = graphics_init graphics_functable
+FILES = graphics_init graphics_functable intregions
 FUNCTIONS = \
 	addfont \
 	allocbitmap \
 	allocraster \
+	andrectregion \
 	askfont \
 	bltbitmap \
+	clearrectregion \
+	clearregion \
 	clonerastport \
 	closefont \
 	createrastport \
 	deinitrastport \
+	disposeregion \
 	draw \
 	drawellipse \
 	eraserect \
@@ -30,7 +34,9 @@ FUNCTIONS = \
 	loadrgb32 \
 	loadrgb4 \
 	move \
+	newregion \
 	openfont \
+	orrectregion \
 	polydraw \
 	readpixel \
 	rectfill \
@@ -49,7 +55,8 @@ FUNCTIONS = \
 	textfit \
 	textlength \
 	waittof \
-	writepixel
+	writepixel \
+	xorrectregion
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
