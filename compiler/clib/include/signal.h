@@ -221,10 +221,8 @@ struct sigaction
 
 #if !defined(_POSIX_SOURCE)
 
-#ifndef __AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t        size_t;
-#endif
+#define __need_size_t
+#include <stddef.h>
 
 /* if SA_SIGINFO is set, use sa_sigaction rather than sa_handler */
 #define sa_sigaction	__sigaction_u.__sa_sigaction
