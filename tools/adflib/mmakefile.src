@@ -4,6 +4,12 @@ USER_INCLUDES := -I. -IGeneric
 
 LIB :=	adf
 
+ifeq ($(FLAVOUR),palmnative)
+
+FILES := 
+
+else
+
 FILES := \
 	adf_bitm \
 	adf_cache \
@@ -18,6 +24,8 @@ FILES := \
 	adf_salv \
 	adf_util \
 	Generic/adf_nativ
+
+endif
 
 #MM- linklibs : linklibs-adf
 #MM
