@@ -84,10 +84,12 @@ static ULONG pcidriver_RL(OOP_Class *cl, OOP_Object *o,
 {
     ULONG orig,temp;
     
+    Disable();
     orig=inl(PCI_AddressPort);
     outl(CFGADD(msg->bus, msg->dev, msg->sub, msg->reg),PCI_AddressPort);
     temp=inl(PCI_DataPort);
     outl(orig, PCI_AddressPort);
+    Enable();
 
     return temp;
 }
@@ -115,10 +117,12 @@ static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
 {
     ULONG orig;
     
+    Disable();
     orig=inl(PCI_AddressPort);
     outl(CFGADD(msg->bus, msg->dev, msg->sub, msg->reg),PCI_AddressPort);
     outl(msg->val,PCI_DataPort);
     outl(orig, PCI_AddressPort);
+    Enable();
 }
 
 /* Class initialization and destruction */
