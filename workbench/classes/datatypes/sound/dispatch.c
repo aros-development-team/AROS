@@ -3872,11 +3872,8 @@ void __interrupt SoundFunc( REG(a0, struct Hook *h),  REG(a2, struct AHIAudioCtr
 
 void PlayerProcAHI( void )
 {
-#ifndef __MAXON__
-#ifndef __AROS__
-#undef SysBase
+#if !defined(__MAXON__) && !defined(__AROS__)
 	struct Library			*SysBase = (*(struct Library **)4L);
-#endif
 	struct Library			*AHIBase = NULL;
 #endif
 	struct Process		*pr = (struct Process *) FindTask( NULL );
