@@ -20,7 +20,7 @@
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
-	AROS_LHA(STRPTR           , string, A0),
+	AROS_LHA(CONST_STRPTR     , string, A0),
 	AROS_LHA(ULONG            , count, D0),
 
 /*  LOCATION */
