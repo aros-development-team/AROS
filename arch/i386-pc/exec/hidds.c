@@ -166,6 +166,8 @@ void hidd_demo()
 	  }
 	}
 
+#if !AROS_BOCHS_HACK
+
 	if(win)
 	{
         	struct DriveGeometry MyDG;
@@ -226,6 +228,7 @@ void hidd_demo()
         	DeleteExtIO((struct IORequest *)MyIO);
         	DeleteMsgPort(trackport);
 	}
+#endif
 
 #if 0
 	if (IntuitionBase)
