@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 LIB	:= libinit
 FILES   := libinit
 
-#MM- linklibs: linklibs-autoinit
+#MM- linklibs: linklibs-libinit
 #MM linklibs-libinit : includes
 
 %make_linklib_setup mmake=linklibs-libinit
