@@ -37,4 +37,4 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 1.1 (08.01.97)";
+const char version[] = "$VER: AROS exec.strap 1.2 (02.02.97)";
