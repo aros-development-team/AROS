@@ -2,6 +2,9 @@
     Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  2001/07/15 20:11:48  falemagn
+    Implemented named pipes. Actually there are ONLY named pipes. The standard AmigaOS PIPE: can be implemented assigning PIPE: to PIPEFS:namedpipe. pipe() support is about to come
+
     Revision 1.2  2001/06/11 15:28:44  falemagn
     removed a bug. I tried to implement directory listing, but it came out to be more troubling that I expected. Anyway... listing is not mandatory, it serves its purpouses the way it is now. I'll look at it some other days.
 
@@ -18,15 +21,8 @@
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
+#include <dos/dosextens.h>
 #include <dos/dos.h>
-
-struct rootfsbase
-{
-    struct Device device;
-    struct ExecBase *sysbase;
-    struct DosLibrary *dosbase;
-    BPTR seglist;
-};
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct rootfsbase *, rootfsbase, 3, rootfs_handler)
