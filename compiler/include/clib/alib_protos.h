@@ -55,6 +55,12 @@ APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
 struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 
+struct IORequest * CreateExtIO (struct MsgPort * port, ULONG iosize);
+struct IOStdReq * CreateStdIO (struct MsgPort * port);
+void DeleteExtIO (struct IORequest * ioreq);
+void DeleteStdIO (struct IOStdReq * ioreq);
+
+/* AROS enhancements */
 BOOL ReadByte	 (BPTR fh, UBYTE  * dataptr);
 BOOL ReadWord	 (BPTR fh, UWORD  * dataptr);
 BOOL ReadLong	 (BPTR fh, ULONG  * dataptr);
