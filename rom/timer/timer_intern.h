@@ -35,11 +35,11 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
-#define TWL_COUNTVBL	0
-#define TWL_WAITVBL	1
-#define TWL_MICROHZ	2
-#define TWL_ECLOCK	3
-#define TWL_WAITECLOCK	4
+#define TL_VBLANK	0
+#define TL_WAITVBL	1
+#define TL_MICROHZ	2
+#define TL_ECLOCK	3
+#define TL_WAITECLOCK	4
 #define NUM_LISTS	5
 
 struct TimerBase
@@ -53,6 +53,7 @@ struct TimerBase
     struct IClass	*tb_TimerHIDD;
     ULONG		 tb_MiscFlags;		/* miscellaneous flags */
     struct timeval	 tb_CurrentTime;	/* system time */
+    struct timeval	 tb_Elapsed;		/* Elapsed Time for VBlank */
 
     /* This is required for the vertical blanking stuff */
     struct Interrupt	 tb_VBlankInt;
@@ -60,7 +61,7 @@ struct TimerBase
     struct timeval	 tb_VBlankTime;		/* vblank interval */
     
     /* Lists for waiting vblank, waituntil, microhz, eclock, waiteclock */
-    struct MinList	 tb_WaitLists[NUM_LISTS];
+    struct MinList	 tb_Lists[NUM_LISTS];
 };
 
 #define GetTimerBase(tb)	((struct TimerBase *)(tb))

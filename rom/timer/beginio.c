@@ -9,7 +9,9 @@
 #include <exec/errors.h>
 #include <proto/exec.h>
 
-/*****************************************************************************
+static void addToWaitList(struct TimerBase *, struct MinList *, struct timerequest *);
+
+/*****i***********************************************************************
 
     NAME */
 #include <devices/timer.h>
@@ -79,6 +81,52 @@
 	    break;
 
 	case TR_ADDREQUEST:
+	    switch(unitNum)
+	    {
+		case UNIT_WAITUNTIL:
+		    /* Firstly, check to see if request is for past */
+		    Disable();
+		    if( CmpTime(&TimerBase->tb_CurrentTime, &timereq->tr_time) <= 0)
+		    {
+			Enable();
+			timereq->tr_time.tv_secs = timereq->tr_time.tv_micro = 0;
+			timereq->tr_node.io_Error = 0;
+			replyit = TRUE;
+		    }
+		    else
+		    {
+			/* Ok, we add this to the list */
+			addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_WAITVBL], timereq);
+			Enable();
+			replyit = FALSE;
+			timereq->tr_node.io_Flags &= ~IOF_QUICK;
+		    }
+		    break;
+
+		case UNIT_VBLANK:
+		    /*
+			Adjust the time request to be relative to the
+			the elapsed time counter that we keep.
+		    */
+		    Disable();
+		    AddTime(&timereq->tr_time, &TimerBase->tb_Elapsed);
+		    
+		    /* Slot it into the list */
+		    addToWaitList(TimerBase, &TimerBase->tb_Lists[TL_VBLANK], timereq);
+		    Enable();
+		    timereq->tr_node.io_Flags &= ~IOF_QUICK;
+		    replyit = FALSE;
+		    break;
+
+		case UNIT_MICROHZ:
+		case UNIT_ECLOCK:
+		case UNIT_WAITECLOCK:
+		default:
+		    replyit = FALSE;
+		    timereq->tr_node.io_Error = IOERR_NOCMD;
+		    break;
+	    } /* switch(unitNum) */
+	    break;
 
 	case CMD_CLEAR:
 	case CMD_FLUSH:
@@ -107,3 +155,25 @@
 
     AROS_LIBFUNC_EXIT
 } /* BeginIO */
+
+static void 
+addToWaitList(	struct TimerBase *TimerBase,
+		struct MinList *list,
+		struct timerequest *iotr)
+{
+    /* We are disabled, so we should take as little time as possible. */
+    struct timerequest *tr;
+
+    tr = (struct timerequest *)list->mlh_Head;
+
+    while(tr->tr_node.io_Message.mn_Node.ln_Succ != NULL)
+    {
+	/* If the time in the new request is less than the old request */
+	if(CmpTime(&tr->tr_time, &iotr->tr_time) > 0)
+	{
+	    Insert((struct List *)list, (struct Node *)iotr, (struct Node *)tr);
+	    break;
+	}
+	tr = (struct timerequest *)tr->tr_node.io_Message.mn_Node.ln_Succ;
+    }
+}

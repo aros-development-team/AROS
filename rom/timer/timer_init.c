@@ -20,6 +20,8 @@
 #include <proto/exec.h>
 #include <proto/timer.h>
 
+#include <aros/debug.h>
+#undef kprintf
 #include <proto/arossupport.h>
 
 #include "timer_intern.h"
@@ -118,18 +120,20 @@ AROS_LH2(struct TimerBase *, init,
     TimerBase->tb_CurrentTime.tv_micro = 0;
     TimerBase->tb_VBlankTime.tv_secs = 0;
     TimerBase->tb_VBlankTime.tv_micro = 1000000 / SysBase->VBlankFrequency;
+    TimerBase->tb_Elapsed.tv_secs = 0;
+    TimerBase->tb_Elapsed.tv_micro = 0;
 
-    kprintf("Timer period: %ld secs, %ld micros\n",
-	TimerBase->tb_VBlankTime.tv_secs, TimerBase->tb_VBlankTime.tv_micro);
+    D(kprintf("Timer period: %ld secs, %ld micros\n",
+	TimerBase->tb_VBlankTime.tv_secs, TimerBase->tb_VBlankTime.tv_micro));
 
     TimerBase->tb_MiscFlags = TF_GO;
     
     /* Initialise the lists */
-    NEWLIST( &TimerBase->tb_WaitLists[0] );
-    NEWLIST( &TimerBase->tb_WaitLists[1] );
-    NEWLIST( &TimerBase->tb_WaitLists[2] );
-    NEWLIST( &TimerBase->tb_WaitLists[3] );
-    NEWLIST( &TimerBase->tb_WaitLists[4] );
+    NEWLIST( &TimerBase->tb_Lists[0] );
+    NEWLIST( &TimerBase->tb_Lists[1] );
+    NEWLIST( &TimerBase->tb_Lists[2] );
+    NEWLIST( &TimerBase->tb_Lists[3] );
+    NEWLIST( &TimerBase->tb_Lists[4] );
     
 #if 0
     /* Open the boopsi.library */
