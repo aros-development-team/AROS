@@ -372,9 +372,18 @@ int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase)
 {
     XSetWindowAttributes winattr;
+    
+/* nlorentz: It is now driver's responsibility to create window
+       rastport. See rom/intuition/openwindow.c for more info.
+    */
+    if (!(IW(w)->iw_Window.RPort = CreateRastPort()))
+    	return FALSE;
 
     if (!GetGC (IW(w)->iw_Window.RPort, GfxBase))
+    {
+        FreeRastPort(IW(w)->iw_Window.RPort);
 	return FALSE;
+    }
 
     winattr.event_mask = 0;
 
@@ -453,6 +462,11 @@ UX11
 LX11
 	XDestroyWindow (sysDisplay, IW(w)->iw_XWindow);
 UX11
+
+/* nlorentz: It is now driver's responsibility to create window
+       rastport. See rom/intuition/openwindow.c for more info.
+    */
+        FreeRastPort(IW(w)->iw_Window.RPort);
 	return FALSE;
     }
 LX11
@@ -480,6 +494,11 @@ LX11
 
     XSync (sysDisplay, FALSE);
 UX11
+/* nlorentz: It is now driver's responsibility to create window
+       rastport. See rom/intuition/openwindow.c for more info.
+    */
+    
+   FreeRastPort(IW(w)->iw_Window.RPort);
     SIGID ();
 }
 
@@ -748,6 +767,11 @@ UX11
     SIGID ();
 } /* intui_EndRefresh */
 
+void intui_RefreshWindowFrame(struct Window *w)
+{
+    /* No reason to do anything; the windowmanager takes care of this */
+    return;
+}
 
 /********************
 **  XETaskEntry()  **
