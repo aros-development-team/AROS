@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #ifndef __MATHFFP_INTERN_H__
 #define __MATHFFP_INTERN_H__
@@ -37,6 +34,8 @@
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
+
+#include <proto/exec.h>
 
 #define MATHFFPNAME     "mathffp.library"
 
@@ -81,4 +80,3 @@ struct MathBase
  AROS_LC0(BPTR, expunge, struct MathBase *, MathBase, 3, Mathffp)
 
 #endif /* __MATHFFP_INTERN_H__  */
-

@@ -1,21 +1,34 @@
-#    $Id$
+# $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.
+USER_INCLUDES := -I.
 
-MODNAME	    :=	mathffp
-MODTYPE	    :=	library
+MODNAME := mathffp
+MODTYPE := library
 
-FILES	:=
-ARCHIVE	:= mathffp.arch
+FILES   := 
+FUNCS   := \
+    spabs \
+    spadd \
+    spceil \
+    spcmp \
+    spdiv \
+    spfix \
+    spfloor \
+    spflt \
+    spmul \
+    spneg \
+    spsub \
+    sptst
 
 MAKE_SHLIB := $(SHARED_MATHFFP)
 
 #MM- kernel-mathffp : includes linklibs
 %make_module_setup mmake=kernel-mathffp
-%make_module_archtool
+%make_module_cpak
 %make_module mmake=kernel-mathffp
-%make_lib_incl_arch
+
+%make_lib_includes
 
 %common
 %include_deps

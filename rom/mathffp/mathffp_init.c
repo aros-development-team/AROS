@@ -1,12 +1,6 @@
-/* This file is derived from graphics_init with
-** all unnecessary stuff erased
-*/
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Mathffp library
-    Lang: english
 */
 #include <exec/resident.h>
 #include <proto/exec.h>
