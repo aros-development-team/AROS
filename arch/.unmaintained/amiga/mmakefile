@@ -6,7 +6,7 @@
 AROS-amiga :
 	@$(NOP)
 
-#MM kernel-amiga : kernel-exec kernel-aros kernel-utility kernel-alerthook-module
+#MM kernel-amiga : hidd-graphics kernel-hidd kernel-exec kernel-aros kernel-utility kernel-alerthook-module
 kernel-amiga :
 	@$(NOP)
 
@@ -27,7 +27,8 @@ workbench-classes-amiga :
 apps-amiga :
 	@$(NOP)
 
-#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga setup-layers-amiga
+#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga 
+#MM setup-amiga : setup-layers-amiga setup-hidd-graphics-amiga
 setup-amiga :
 	@$(NOP)
 
@@ -53,6 +54,18 @@ setup-layers-amiga :
 
 #MM layers-amiga : layers-amiga-$(CPU)
 layers-amiga :
+	@$(NOP)
+
+#MM setup-hidd-amiga : setup-hidd-amiga-$(CPU)
+setup-hidd-amiga :
+	@$(NOP)
+
+#MM hidd-amiga-$(CPU) : hidd-amiga-$(CPU)
+hidd-amiga :
+	@$(NOP)
+
+#MM setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
+setup-hidd-graphics-amiga :
 	@$(NOP)
 
 #MM check :
