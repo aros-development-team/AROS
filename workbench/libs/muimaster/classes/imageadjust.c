@@ -57,7 +57,7 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     int is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
-	     "%s:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+	     "%s:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
 	     is_tiled ? "8" : "7",
                  angle,
                  start_rgb->red,start_rgb->green,start_rgb->blue,
@@ -388,8 +388,8 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	    Child, (IPTR)FreeLabel("Colors:"),
 	    Child, (IPTR)HGroup,
 		Child, (IPTR)(gradient_start_poppen = PoppenObject,
-			      MUIA_Window_Title, "Start pen",
-			      MUIA_Pendisplay_Spec, (IPTR)"rbbbbbbbb,bbbbbbbb,bbbbbbbb", End),
+			      MUIA_Window_Title,    (IPTR) "Start pen",
+			      MUIA_Pendisplay_Spec, (IPTR) "rbbbbbbbb,bbbbbbbb,bbbbbbbb", End),
 	        Child, (IPTR)VCenter((gradient_swap_button = TextObject,
 			      ButtonFrame,
 			      MUIA_Background,               MUII_ButtonBack,
@@ -398,7 +398,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 			      MUIA_Weight, 0,
 			      End)),
 		Child, (IPTR)(gradient_end_poppen = PoppenObject,
-			      MUIA_Window_Title, "End pen",
+			      MUIA_Window_Title,    (IPTR) "End pen",
 			      MUIA_Pendisplay_Spec, (IPTR)"r55555555,55555555,55555555", End),
 		End,
 	    Child, (IPTR)FreeLabel("Preview:"),

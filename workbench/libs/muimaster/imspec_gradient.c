@@ -154,7 +154,7 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
 
     int r,t; /* some helper variables to short the code */
     int l,y,c,x;
-    int x1,y1; /* The intersection point */
+    int y1; /* The intersection point */
     int incr_y1; /* increment of y1 */
     int xs,ys,xw,yw;
     int xadd,ystart,yadd;
@@ -483,7 +483,7 @@ BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
 VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "7:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+    sprintf(buf, "7:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
                  spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
@@ -496,7 +496,7 @@ VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
 VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf)
 {
-    sprintf(buf, "8:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+    sprintf(buf, "8:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
                  spec->u.gradient.angle,
                  spec->u.gradient.start_rgb[0]*0x01010101,
                  spec->u.gradient.start_rgb[1]*0x01010101,
