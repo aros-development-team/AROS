@@ -6,6 +6,7 @@
 #include <clib/alib_protos.h>
 #include <proto/muimaster.h>
 
+#include <proto/intuition.h>
 #include <intuition/classusr.h>
 
 #include "muimaster_intern.h"

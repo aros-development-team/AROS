@@ -3,11 +3,13 @@
     $Id$
 */
 
+#include <proto/intuition.h>
 #include <intuition/classusr.h>
 #include <libraries/gadtools.h>
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
+#include <string.h>
 
 #ifdef HAVE_COOLIMAGES
 #include <libraries/coolimages.h>

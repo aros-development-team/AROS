@@ -3,6 +3,7 @@
     $Id$
 */
 
+#include <proto/intuition.h>
 #include <intuition/classusr.h>
 #include <clib/alib_protos.h>
 #include <proto/muimaster.h>
