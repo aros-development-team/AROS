@@ -139,9 +139,9 @@ static void makegads(void)
 					 
     if (!gradgad) cleanup("Can't create gradientslider gadget!");
     
-    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left		, 20,
+    wheelgad = (struct Gadget *)NewObject(0, "colorwheel.gadget", GA_Left		, 10,
     								  GA_Top		, 20,
-								  GA_RelWidth		, -80,
+								  GA_RelWidth		, -50,
 								  GA_RelHeight		, -40,
 								  GA_RelVerify		, TRUE,
 								  WHEEL_Screen		, (IPTR)scr,
@@ -167,8 +167,8 @@ static void makewin(void)
     win = OpenWindowTags(0, WA_PubScreen	, (IPTR)scr,
     			    WA_Left		, 10,
 			    WA_Top		, 20,
-			    WA_Width		, 240,
-			    WA_Height		, 200,
+			    WA_Width		, 200,
+			    WA_Height		, 190,
 			    WA_MinWidth		, 50,
 			    WA_MinHeight	, 50,
 			    WA_MaxWidth		, 4000,
