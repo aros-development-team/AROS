@@ -3,10 +3,15 @@
     $Id$
 */
 
+#ifndef DEBUG
+#define DEBUG 0
+#endif
+
 #include <exec/types.h>
 #include <devices/newstyle.h>
 #include <devices/trackdisk.h>
 #include <exec/errors.h>
+#include <exec/io.h>
 #include <hardware/custom.h>
 #include <hardware/intbits.h>
 
@@ -381,7 +386,7 @@ UWORD *cmdcheck;
 		volume->ioh.ioreq->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
 		if (DoIO((struct IORequest *)volume->ioh.ioreq)==IOERR_NOCMD)
 		{
-			D(bug("afs.handler: initVolume-NSD: device doesn't understand NSD-Query\n"));
+			D(bug("[afs] initVolume-NSD: device doesn't understand NSD-Query\n"));
 		}
 		else
 		{
@@ -391,13 +396,13 @@ UWORD *cmdcheck;
 					(volume->ioh.ioreq->iotd_Req.io_Actual!=nsdq.SizeAvailable)
 				)
 			{
-				D(bug("afs.handler: initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
+				D(bug("[afs] initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
 			}
 			else
 			{
-				D(bug("afs.handler: initVolume-NSD: using NSD commands\n"));
+				D(bug("[afs] initVolume-NSD: using NSD commands\n"));
 				if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
-					D(bug("afs.handler: initVolume-NSD: WARNING no trackdisk type\n"));
+					D(bug("[afs] initVolume-NSD: WARNING no trackdisk type\n"));
 				for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
 				{
 					if (*cmdcheck == NSCMD_TD_READ64)
@@ -413,13 +418,13 @@ UWORD *cmdcheck;
 						(volume->ioh.cmdread!=NSCMD_TD_READ64) ||
 						(volume->ioh.cmdwrite!=NSCMD_TD_WRITE64)
 					)
-					D(bug("afs.handler: initVolume-NSD: WARNING no READ64/WRITE64\n")); 
+					D(bug("[afs] initVolume-NSD: WARNING no READ64/WRITE64\n")); 
 			}
 		}
 	}
 	else
 	{
-			D(bug("afs.handler: initVolume-NSD: no need for NSD\n"));
+			D(bug("[afs] initVolume-NSD: no need for NSD\n"));
 	}
 }
 
@@ -453,7 +458,7 @@ ULONG retval;
 struct IOHandle *ioh = &volume->ioh;
 UQUAD offset;
 
-	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
+	D(bug("[afs]    readDisk: reading block %ld\n",start));
 	if (
 			((volume->startblock+start)<=volume->lastblock) &&
 			((volume->startblock+start+count-1)<=volume->lastblock)
