@@ -268,6 +268,11 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_CycleChain:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
 		break;
+
+	    case    MUIA_Disabled:
+		    set(obj,MUIA_Disabled,tag->ti_Data); /* So all members of a group will also get disabled */
+		    break;
+
 	    case MUIA_FillArea:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
 		break;
@@ -415,6 +420,8 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem             *tags  = msg->ops_AttrList;
     struct TagItem             *tag;
 
+    int change_disable = 0; /* Has the disable state changed? */
+
     while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
@@ -474,6 +481,22 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }   else _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
 		}
 		break;
+
+	    case    MUIA_Disabled:
+		    if (tag->ti_Data)
+		    {
+		    	if (!data->mad_DisableCount) change_disable = 1;
+		    	data->mad_DisableCount++;
+		    }   else 
+		    {
+		    	if (data->mad_DisableCount)
+		    	{
+			    data->mad_DisableCount--;
+			    if (!data->mad_DisableCount) change_disable = 1;
+			}
+		    }
+		    break;
+
 
 	    case MUIA_HorizWeight:
 		data->mad_HorizWeight = tag->ti_Data;
@@ -584,6 +607,11 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_CycleChain:
 	    STORE = ((data->mad_Flags & MADF_CYCLECHAIN) != 0);
 	    return(TRUE);
+
+	case    MUIA_Disabled:
+		STORE = !!data->mad_DisableCount; /* BOOLEAN */
+		break;
+
 	case MUIA_Font:
 	    STORE = (ULONG)data->mad_FontPreset;
 	    return(TRUE);
@@ -597,24 +625,25 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case    MUIA_InnerBottom:
 		if (data->mad_Flags & MADF_INNERBOTTOM) STORE = (ULONG)data->mad_HardIBottom;
 		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerBottom;
-	        break;
+		return 1;
 
 	case    MUIA_InnerLeft:
 		if (data->mad_Flags & MADF_INNERLEFT) STORE = (ULONG)data->mad_HardILeft;
 		else if (data->mad_Flags & MADF_FRAMEPHANTOM) STORE = 0;
 		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerLeft;
-		break;
+		return 1;
 
 	case    MUIA_InnerRight:
 		if (data->mad_Flags & MADF_INNERRIGHT) STORE = (ULONG)data->mad_HardIRight;
 		else if (data->mad_Flags & MADF_FRAMEPHANTOM) STORE = 0;
 		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerRight;
-		break;
+		return 1;
 
 	case	MUIA_InnerTop:
 		if (data->mad_Flags & MADF_INNERTOP) STORE = (ULONG)data->mad_HardITop;
 		else STORE = (ULONG)muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame].innerTop;
-		break;
+		return 1;
+
 
 	case MUIA_LeftEdge:
 	    STORE = (ULONG)_left(obj);
