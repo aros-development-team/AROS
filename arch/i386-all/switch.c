@@ -5,10 +5,14 @@
     Desc:
     Lang:
 */
+#include <exec/execbase.h>
+#include <exec/tasks.h>
+#include <proto/exec.h>
 
 /******************************************************************************
 
     NAME
+	#include <proto/exec.h>
 
 	AROS_LH0(void, Switch,
 
@@ -45,49 +49,13 @@
 
 ******************************************************************************/
 
-	#include "machine.i"
+void _Switch (struct ExecBase * SysBase)
+{
+    struct Task * task = SysBase->ThisTask; /* FindTask(NULL); */
 
-	.text
-	.balign 16
-	.globl	AROS_SLIB_ENTRY(Switch,Exec)
-	.type	AROS_SLIB_ENTRY(Switch,Exec),@function
-AROS_SLIB_ENTRY(Switch,Exec):
-	/* Make room for Dispatch() address. */
-	subl	$4,%esp
-
-	/* Preserve registers */
-	pushl	%eax
-	pushl	%ebx
-	pushl	%ecx
-	pushl	%edx
-
-	/* Get SysBase */
-	movl	24(%esp),%ebx
-
-	/* If current state is TS_RUN and TF_EXCEPT is 0... */
-	movl	ThisTask(%ebx),%ecx
-	movw	tc_Flags(%ecx),%eax
-	andb	$TF_EXCEPT,%al
-	cmpw	$TS_RUN*256,%ax
-	jne	disp
-
-	/* ...move task to the ready list */
-	movb	$TS_READY,tc_State(%ecx)
-	leal	Enqueue(%ebx),%edx
-	pushl	%ebx
-	pushl	%ecx
-	leal	TaskReady(%ebx),%eax
-	pushl	%eax
-	call	*%edx
-	addl	$12,%esp
-
-	/* Prepare dispatch */
-disp:	leal	Dispatch(%ebx),%eax
-	movl	%eax,16(%esp)
-
-	/* restore registers and dispatch */
-	popl	%edx
-	popl	%ecx
-	popl	%ebx
-	popl	%eax
-	ret
+    if (task->tc_State != TS_RUN && !(task->tc_Flags & TF_EXCEPT) )
+    {
+	task->tc_State = TS_READY;
+	Enqueue (&SysBase->TaskReady, (struct Node *)task);
+    }
+} /* _Switch */
