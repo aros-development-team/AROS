@@ -338,6 +338,7 @@ static IPTR IconList_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Dropable, TRUE,
+	MUIA_Font, MUIV_Font_Tiny,
     	TAG_MORE, msg->ops_AttrList);
     if (!obj) return FALSE;
 
@@ -514,6 +515,7 @@ static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 		      TAG_DONE);
     }
     
+    SetFont(_rp(obj), _font(obj));
     return rc;
 }
 
