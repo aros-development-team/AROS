@@ -64,7 +64,8 @@ char buffer;
   len = 0;
   do
   {
-    len += (count = fread(&buffer,1,1,fd));
+    count = fread(&buffer,1,1,fd);
+    len += count;
   } while(count!=0 && buffer!='\n');
   if(len==0 && count==0)
     return NULL;
