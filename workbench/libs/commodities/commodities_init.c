@@ -149,45 +149,61 @@ AROS_LH1(struct CommoditiesBase *, open,
     CxBase->cx_LibNode.lib_OpenCnt++;
     CxBase->cx_LibNode.lib_Flags &= ~LIBF_DELEXP;
     
-    if(CxBase->cx_UtilityBase == NULL)
+    if (CxBase->cx_UtilityBase == NULL)
+    {
 	CxBase->cx_UtilityBase = OpenLibrary(UTILITYNAME, 37);
-    if(CxBase->cx_UtilityBase == NULL)
+    }
+
+    if (CxBase->cx_UtilityBase == NULL)
+    {
 	return NULL;
+    }
     
-    if(CxBase->cx_KeyMapBase == NULL)
+    if (CxBase->cx_KeyMapBase == NULL)
+    {
 	CxBase->cx_KeyMapBase = OpenLibrary("keymap.library", 37);
-    if(CxBase->cx_KeyMapBase == NULL)
+    }
+
+    if (CxBase->cx_KeyMapBase == NULL)
+    {
 	return NULL;
+    }
     
     
-    if(CxBase->cx_TimerBase == NULL)
+    if (CxBase->cx_TimerBase == NULL)
     {
 	CxBase->cx_TimerMP.mp_Node.ln_Type = NT_MSGPORT;
 	CxBase->cx_TimerMP.mp_Flags = PA_IGNORE;
 	NEWLIST(&CxBase->cx_TimerMP.mp_MsgList);
-
+	
 	CxBase->cx_TimerIO.tr_node.io_Message.mn_ReplyPort = &CxBase->cx_TimerMP;
 	CxBase->cx_TimerIO.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
 	
-	if(OpenDevice(TIMERNAME, UNIT_VBLANK,
-		      (struct IORequest *)&CxBase->cx_TimerIO, 0) == 0)
+	if (OpenDevice(TIMERNAME, UNIT_VBLANK,
+		       (struct IORequest *)&CxBase->cx_TimerIO, 0) == 0)
+	{
 	    CxBase->cx_TimerBase = 
 		(struct Library *)(CxBase->cx_TimerIO.tr_node.io_Device);
+	}
     }
-    if(CxBase->cx_TimerBase == NULL)
-	return NULL;
 
-    if(CxBase->cx_LibNode.lib_OpenCnt == 1)
+    if (CxBase->cx_TimerBase == NULL)
+    {
+	return NULL;
+    }
+
+    if (CxBase->cx_LibNode.lib_OpenCnt == 1)
     {
 	D(bug("commodities_open: Setting up Zero object.\n"));
-    
+	
 	ok = InitCx((struct CommoditiesBase *)CxBase);
     }
     
-    if(!ok)
+    if (!ok)
     {
         D(bug("Error: Failed to initialize commodities.library.\n"));
 	ShutDownCx((struct CommoditiesBase *)CxBase);
+
 	return NULL;
     }
     
@@ -214,12 +230,15 @@ BOOL InitCx(struct CommoditiesBase *CxBase)
     
     zero = CreateCxObj(CX_ZERO, (IPTR)NULL, (IPTR)NULL);
     
-    if(zero == NULL)
+    if (zero == NULL)
+    {
 	return FALSE;
+    }
 
     /* Make sure this object goes LAST in the list */
     ((struct Node *)zero)->ln_Pri = -128;
     AddHead(&CxBase->cx_BrokerList, (struct Node *)zero);
+
     return TRUE;
 }
 

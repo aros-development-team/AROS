@@ -65,16 +65,28 @@
 {
     AROS_LIBFUNC_INIT
 
-LONG temp;
+    LONG temp;
 
-    if(co == NULL) return 0;
+    if (co == NULL)
+    {
+	return 0;
+    }
+
     temp = (co->co_Flags & COF_ACTIVE);
 
-    if(true) co->co_Flags |= COF_ACTIVE;
-    else co->co_Flags &= ~COF_ACTIVE;
+    if (true)
+    {
+	co->co_Flags |= COF_ACTIVE;
+    }
+    else
+    {
+	co->co_Flags &= ~COF_ACTIVE;
+    }
 
-    if(co->co_Node.ln_Type == CX_BROKER)
+    if (co->co_Node.ln_Type == CX_BROKER)
+    {
 	CxNotify(NULL, CXCMD_LIST_CHG);
+    }
 
     return temp;
 

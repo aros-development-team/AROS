@@ -93,40 +93,50 @@ extern struct InputEvent *cxIHandler();
     ObtainSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
 
     /* No duplicates allowed? */
-    if(nb->nb_Unique & NBU_UNIQUE)
+    if (nb->nb_Unique & NBU_UNIQUE)
     {
 	temp = (CxObj *)FindName(&GPB(CxBase)->cx_BrokerList, nb->nb_Name);
-
-	if(temp != NULL)
+	
+	if (temp != NULL)
 	{
 	    if(nb->nb_Unique & NBU_NOTIFY)
+	    {
 		CheckStatus(temp, CXCMD_UNIQUE, CxBase);
-
+	    }
+	    
 	    myerr = CBERR_DUP;
 	}
     }
-
-    if(myerr == CBERR_OK)
+    
+    if (myerr == CBERR_OK)
     {
-	if((co = CreateCxObj(CX_BROKER, (IPTR)nb, (IPTR)NULL)) != NULL)
+	if ((co = CreateCxObj(CX_BROKER, (IPTR)nb, (IPTR)NULL)) != NULL)
 	{
-	    if(co->co_Ext.co_BExt->bext_MsgPort != NULL)
+	    if (co->co_Ext.co_BExt->bext_MsgPort != NULL)
 	    {
-		if(!GPB(CxBase)->cx_Running)
+		if (!GPB(CxBase)->cx_Running)
 		{
-		    if(SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
+		    if (SetupIHandler((struct CommoditiesBase *)CxBase) == FALSE)
+		    {
 			goto sysErr;
+		    }
 		    else
+		    {
 			GPB(CxBase)->cx_Running = TRUE;
+		    }
 		}
 		else
+		{
 		    CxNotify(NULL, CXCMD_LIST_CHG);
+		}
 		
 		Enqueue(&GPB(CxBase)->cx_BrokerList, (struct Node *)co);
 		co->co_Flags |= COF_VALID;
 	    }
 	    else
+	    {
 		myerr = CBERR_VERSION;
+	    }
 	}
 	else
 	{
@@ -137,8 +147,10 @@ extern struct InputEvent *cxIHandler();
     
     ReleaseSemaphore(&GPB(CxBase)->cx_SignalSemaphore);
     
-    if(error != NULL)
+    if (error != NULL)
+    {
 	*error = myerr;
+    }
     
     return co;
     
@@ -159,8 +171,8 @@ BOOL SetupIHandler(struct CommoditiesBase *CxBase)
     CxBase->cx_IORequest.io_Message.mn_Length = sizeof(struct IOStdReq);
     CxBase->cx_IORequest.io_Message.mn_ReplyPort = &CxBase->cx_InputMP;
     
-    if(OpenDevice("input.device", 0,
-		  (struct IORequest *)&CxBase->cx_IORequest, 0) != 0)
+    if (OpenDevice("input.device", 0,
+		   (struct IORequest *)&CxBase->cx_IORequest, 0) != 0)
     {
 	// kprintf("Input.device didn't open\n");
 	return FALSE;

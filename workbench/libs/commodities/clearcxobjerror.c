@@ -57,8 +57,10 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(co != NULL)
+    if (co != NULL)
+    {
 	co->co_Error = 0;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* ClearCxObject */

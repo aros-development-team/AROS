@@ -67,42 +67,58 @@
     UWORD temp = 0;
     UWORD qual;
     
-    if(ix->ix_Class == IECLASS_NULL)
+    if (ix->ix_Class == IECLASS_NULL)
+    {
 	return TRUE;
+    }
     
-    if(event->ie_Class != ix->ix_Class)
+    if (event->ie_Class != ix->ix_Class)
+    {
 	return FALSE;
+    }
 
     //    kprintf("Code: ie %i ix: %i\n", event->ie_Code, ix->ix_Code);
     
-    if(((ix->ix_Code ^ event->ie_Code) & ix->ix_CodeMask) != 0)
-	return FALSE;
-    
-    if((qual = ix->ix_QualSame) != 0)
+    if (((ix->ix_Code ^ event->ie_Code) & ix->ix_CodeMask) != 0)
     {
-	if((qual & ~IXSYM_SHIFT) != 0)
+	return FALSE;
+    }
+    
+    if ((qual = ix->ix_QualSame) != 0)
+    {
+	if ((qual & ~IXSYM_SHIFT) != 0)
 	{
-	    if((event->ie_Qualifier & IXSYM_SHIFTMASK) != 0)
+	    if ((event->ie_Qualifier & IXSYM_SHIFTMASK) != 0)
+	    {
 		temp |= IXSYM_SHIFTMASK;
+	    }
 	}
 
-	if((qual & ~IXSYM_CAPS) != 0)
+	if ((qual & ~IXSYM_CAPS) != 0)
 	{
-	    if((event->ie_Qualifier & IXSYM_CAPSMASK) != 0)
+	    if ((event->ie_Qualifier & IXSYM_CAPSMASK) != 0)
+	    {
 		temp |= IXSYM_CAPSMASK;
+	    }
 	}
 
-	if((qual & ~IXSYM_ALT) != 0)
+	if ((qual & ~IXSYM_ALT) != 0)
 	{
-	    if((event->ie_Qualifier & IXSYM_ALTMASK) != 0)
+	    if ((event->ie_Qualifier & IXSYM_ALTMASK) != 0)
+	    {
 	        temp |= IXSYM_ALTMASK;
+	    }
 	}
     }
 
-    if(((temp ^ ix->ix_Qualifier) & ix->ix_QualMask) == 0)
+    if (((temp ^ ix->ix_Qualifier) & ix->ix_QualMask) == 0)
+    {
 	return TRUE;
+    }
     else
+    {
 	return FALSE;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* MatchIX */

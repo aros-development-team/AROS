@@ -71,8 +71,10 @@
     ULONG error;
     CxObj *co;
     
-    if(name == NULL)
+    if (name == NULL)
+    {
 	name = Exg;
+    }
     
     D(bug("Notifying %s\n", name));
     
@@ -95,15 +97,18 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase)
 {
     CxMsg *msg;
     
-    if(broker == NULL)
-	return -1;
-    
-    if(broker->co_Ext.co_BExt->bext_MsgPort == NULL)
+    if (broker == NULL)
     {
-	if(command == CXCMD_KILL && broker->co_Ext.co_BExt->bext_Task != NULL)
+	return -1;
+    }
+    
+    if (broker->co_Ext.co_BExt->bext_MsgPort == NULL)
+    {
+	if (command == CXCMD_KILL && broker->co_Ext.co_BExt->bext_Task != NULL)
 	{
 	    /* Tell the task to shut itself down */
 	    Signal(broker->co_Ext.co_BExt->bext_Task, SIGBREAKF_CTRL_E);
+
 	    return 0;
 	}
 	
@@ -112,8 +117,10 @@ ULONG CheckStatus(CxObj *broker, ULONG command, struct Library *CxBase)
     
     msg = (CxMsg *)AllocCxStructure(CX_MESSAGE, CXM_SINGLE, CxBase);
     
-    if(msg == NULL)
+    if (msg == NULL)
+    {
 	return -3;
+    }
     
     msg->cxm_ID = command;
     PutMsg(broker->co_Ext.co_BExt->bext_MsgPort, (struct Message *)msg);

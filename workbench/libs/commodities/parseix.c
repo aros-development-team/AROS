@@ -49,16 +49,16 @@ BOOL IsSeparator(char);
 
     INPUTS
 
-    desc  -  pointer to the string specifying the conditions and codes of
-             the InputXpression.
-    ix    -  pointer to an (uninitizlized) InputXpression structure that
-             will be filled according to 'desc'.
+    desc  --  pointer to the string specifying the conditions and codes of
+              the InputXpression.
+    ix    --  pointer to an (uninitizlized) InputXpression structure that
+              will be filled according to 'desc'.
 
     RESULT
 
-    0   -  Everything went OK.
-    -1  -  Tokens after end
-    -2  -  'desc' was NULL
+    0   --  Everything went OK.
+    -1  --  Tokens after end
+    -2  --  'desc' was NULL
 
     NOTES
 
@@ -84,6 +84,7 @@ BOOL IsSeparator(char);
     LONG val;
     BOOL dash, upstrdash = TRUE;
     BOOL upstroke = FALSE;
+
     struct InputEvent event;
     
     /* Set as standard if no class is specified in the description */
@@ -94,33 +95,40 @@ BOOL IsSeparator(char);
     ix->ix_QualMask = IX_NORMALQUALS & ~(IEQUALIFIER_INTERRUPT | IEQUALIFIER_MULTIBROADCAST);
     ix->ix_QualSame = 0;
     
-    if(desc == NULL)
+    if (desc == NULL)
     {
 	ix->ix_Code = 0xFFFF;
+
 	return -2;
     }
     
-    while(IsSeparator(*desc))
+    while (IsSeparator(*desc))
+    {
 	desc++;
+    }
     
     dash = FALSE;
     
-    if(pMatch(pix_Class, desc, &val, &dash, CxBase))
+    if (pMatch(pix_Class, desc, &val, &dash, CxBase))
     {
 	ix->ix_Class = val;
 	GetNext(&desc);
     }
     
-    while(1)
+    while (TRUE)
     {
 	dash = TRUE;
 	
-	if(pMatch(pix_IEvent, desc, &val, &dash, CxBase))
+	if (pMatch(pix_IEvent, desc, &val, &dash, CxBase))
 	{
-	    if(dash)
+	    if (dash)
+	    {
 		ix->ix_QualMask &= ~val;
+	    }
 	    else
+	    {
 		ix->ix_Qualifier |= val;
+	    }
 	    
 	    GetNext(&desc);
 	}
@@ -128,13 +136,13 @@ BOOL IsSeparator(char);
 	{
 	    dash = TRUE;
 	    
-	    if(pMatch(pix_Synonyms, desc, &val, &dash, CxBase))
+	    if (pMatch(pix_Synonyms, desc, &val, &dash, CxBase))
 	    {
 	        ix->ix_QualSame |= val;
 		
-		if(dash)
+		if (dash)
 		{
-		    switch(val)
+		    switch (val)
 		    {
 		    case IXSYM_SHIFT:
 			ix->ix_QualMask &= ~IXSYM_SHIFTMASK;
@@ -151,7 +159,7 @@ BOOL IsSeparator(char);
 		}
 		else
 		{
-		    switch(val)
+		    switch (val)
 		    {
 		    case IXSYM_SHIFT:
 			ix->ix_Qualifier |= IXSYM_SHIFTMASK;
@@ -170,11 +178,13 @@ BOOL IsSeparator(char);
 		GetNext(&desc);
 	    }
 	    else
+	    {
 		break;
+	    }
 	}
     }
     
-    if(pMatch(pix_Upstroke, desc, &val, &upstrdash, CxBase))
+    if (pMatch(pix_Upstroke, desc, &val, &upstrdash, CxBase))
     {
 	upstroke = TRUE;
 	GetNext(&desc);
@@ -182,34 +192,46 @@ BOOL IsSeparator(char);
     
     dash = FALSE;
     
-    if(pMatch(pix_Highmap, desc, &val, &dash, CxBase))
+    if (pMatch(pix_Highmap, desc, &val, &dash, CxBase))
     {
 	ix->ix_Code = val;
     }
     else
     {
-	if(*desc != '\0')
+	if (*desc != '\0')
 	{
-	    if(InvertKeyMap(*desc, &event, NULL))
+	    if (InvertKeyMap(*desc, &event, NULL))
+	    {
 		ix->ix_Code = event.ie_Code;
+	    }
 	}
     }
     
-    if(upstroke)
+    if (upstroke)
     {
-	if(upstrdash)
+	if (upstrdash)
+	{
 	    ix->ix_CodeMask &= ~IECODE_UP_PREFIX;
+	}
 	else
+	{
 	    ix->ix_Code |= IECODE_UP_PREFIX;
+	}
     }
     
-    while(!(IsSeparator(*desc)))
+    while (!(IsSeparator(*desc)))
+    {
 	desc++;
+    }
     
-    if(*desc == '\0')
+    if (*desc == '\0')
+    {
 	return 0;
+    }
     else
+    {
 	return -1;
+    }
     
     AROS_LIBFUNC_EXIT
 } /* ParseIX */
@@ -221,22 +243,25 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
     STRPTR nstr = string;
     int    i;
     
-    if(*dash)
+    if (*dash)
     {
-	if(*nstr == '-')
+	if (*nstr == '-')
 	{
 	    nstr++;
 	    *dash = TRUE;
 	}
 	else
+	{
 	    *dash = FALSE;
+	}
     }
     
-    for(i = 0; words[i].name != NULL; i++)
+    for (i = 0; words[i].name != NULL; i++)
     {
-	if(Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
+	if (Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
 	{
 	    *v = words[i].value;
+
 	    return TRUE;
 	}
     }
@@ -247,17 +272,21 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
 
 VOID GetNext(STRPTR *str)
 {
-    while(!(IsSeparator(**str)))
+    while (!(IsSeparator(**str)))
+    {
 	(*str)++;
+    }
     
-    while(IsSeparator(**str) && !(**str=='\0'))
+    while (IsSeparator(**str) && !(**str=='\0'))
+    {
 	(*str)++;
+    }
 }
 
 
 BOOL IsSeparator(char a)
 {
-    if (a==' ' || a=='\n' || a=='\t' || a==',' || a=='\0')
+    if (a == ' ' || a == '\n' || a == '\t' || a == ',' || a == '\0')
     {
 	return TRUE;
     }
