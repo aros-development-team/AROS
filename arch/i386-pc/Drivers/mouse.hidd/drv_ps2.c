@@ -8,10 +8,8 @@
 
 /****************************************************************************************/
 
+#include <asm/io.h>
 #include <asm/speaker.h>
-#undef inb
-#undef outb
-
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>

@@ -202,37 +202,10 @@ struct mouse_data
 
 /****************************************************************************************/
 
-static inline unsigned char inb(unsigned short port)
-{
-
-    unsigned char  _v; 
-
-    __asm__ __volatile__
-    ("inb %w1,%0"
-     : "=a" (_v)
-     : "Nd" (port)
-    );
-    
-    return _v; 
-} 
-
-/****************************************************************************************/
-
-static inline void outb(unsigned char value, unsigned short port)
-{
-    __asm__ __volatile__
-    ("outb %b0,%w1"
-     :
-     : "a" (value), "Nd" (port)
-    );
-}
-
-/****************************************************************************************/
-
-#define kbd_read_input() 	inb(KBD_DATA_REG)
-#define kbd_read_status() 	inb(KBD_STATUS_REG)
-#define kbd_write_output(val)	outb(val, KBD_DATA_REG)
-#define kbd_write_command(val) 	outb(val, KBD_CONTROL_REG)
+#define kbd_read_input() 	inb(0x60) //KBD_DATA_REG)
+#define kbd_read_status() 	inb(0x64) //KBD_STATUS_REG)
+#define kbd_write_output(val)	outb(val, 0x60) //KBD_DATA_REG)
+#define kbd_write_command(val) 	outb(val, 0x64) //KBD_CONTROL_REG)
 
 /****************************************************************************************/
 
