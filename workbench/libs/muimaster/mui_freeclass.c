@@ -55,23 +55,22 @@
 
     /* CLF_INLIST tells us that this class is a builtin class */
     if (cl->cl_Flags & CLF_INLIST)
+    {
         ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
 
-    if (!FreeClass(cl))
-    {
-        /* If it was a builtin class, readd it to the list since freeing it failed */
+        if (!FreeClass(cl))
+        {
+            /* If it was a builtin class, readd it to the list since freeing it failed */
 #warning The class should actually be inserted at the same place it was before: Implement ZUNE_InsertBuiltinClass()
-        if (cl->cl_Flags & CLF_INLIST)
             ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
-	return FALSE;
+	    return FALSE;
+	}
     }
-    else
-    {
-        CloseLibrary(mb);
 
-	return TRUE;
-    }
+    CloseLibrary(mb);
+
+    return TRUE;
 
     AROS_LIBFUNC_EXIT
 
