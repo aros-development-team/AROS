@@ -18,6 +18,7 @@
 #include "strgadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
 
+#undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>
 
@@ -164,17 +165,32 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     w = IntuitionBase->ActiveWindow;
     UnlockIBase(lock);
     
+    
     D(bug("Inside intuition inputhandler, active window=%p\n", w));
 
     for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
     {
-    	D(bug("iih: Handling event of class %d\n", ie->ie_Class));
+    	D(bug("iih: Handling event of class %d, code %d\n", ie->ie_Class, ie->ie_Code));
 	reuse_event = FALSE;
 	ptr = NULL;
+
+    /* If there is no active window, and this is not a SELECTDOWN,
+       mouse event, then exit because we do not have a window
+       to send events to. */
+        
+
+    	if (!w && !((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTDOWN)))
+    	{
+            D(bug("iih: No active window, skipping\n"));
+	    continue;
+    	}
+    
 
 	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage.
 	** If it was sent to an app, then we have to allocate a new IntuiMessage
 	*/
+	
+
 	if (!im)
 	{
 	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
@@ -229,6 +245,34 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
+		struct Window *new_w;
+		
+		D(bug("SELECTDOWN\n"));
+		
+		new_w = intui_FindActiveWindow(ie, IntuitionBase);
+		D(bug("iih:New active window: %p\n", new_w));
+		
+		if (!new_w)
+		{
+		    if (!w)
+		    	continue;
+		}
+		else
+		{
+		    if (new_w != w)
+		    {
+
+		        D(bug("Activating new window (title %s)\n", new_w->Title));
+			ActivateWindow(new_w);
+			D(bug("Window activated\n"));
+			w = new_w;
+			
+			/* Go to the top of the loop so we get calculated "gi" again */
+			reuse_event = TRUE;
+			continue;
+		    }
+		}
+
 
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
@@ -349,6 +393,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
 
+
+		D(bug("SELECTUP\n"));
 		if (gadget)
 		{
 		    int inside = InsideGadget(w,gadget, ie->ie_X, ie->ie_Y);
@@ -795,6 +841,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	if (ptr)
 	     D(bug("Msg=%s\n", ptr));
+	     
+D(bug("Window: %p\n", w));
 
 	 if (im->Class)
 	 {
@@ -810,8 +858,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    CloseWindow (w);
 		else
 		{
+		    D(bug("Putting msg to window %p\n"));
 		    PutMsg (w->UserPort, (struct Message *)im);
 		    im = NULL;
+		    D(bug("Msg put\n"));
 		}
 
 		UnlockIBase (lock);
