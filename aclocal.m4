@@ -5,7 +5,7 @@ dnl Search for a file, and place the result into the cache.
 dnl AROS_REQUIRED(name,var)
 dnl Checks if var is defined, and aborts otherwise
 AC_DEFUN(AROS_REQUIRED,
-[if test "$2" == ""; then
+[if test "$2" = ""; then
     AC_MSG_ERROR($1 is required to build AROS. Please install and run configure again.)
 fi])
 
