@@ -20,7 +20,7 @@
 extern InstallerPrefs preferences;
 extern int error, grace_exit;
 
-/* Internal funtion declarations */
+/* Internal function declarations */
 static void callback(char, char **);
 
 
