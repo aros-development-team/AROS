@@ -37,18 +37,14 @@ void CleanupLocale(void)
 
 /*********************************************************************************************/
 
-STRPTR MSG(ULONG id)
+CONST_STRPTR MSG(ULONG id)
 {
-    STRPTR retval;
-    
     if (catalog)
     {
-	retval = GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } else {
-	retval = CatCompArray[id].cca_Str;
+	return CatCompArray[id].cca_Str;
     }
-    
-    return retval;
 }
 
 /*********************************************************************************************/

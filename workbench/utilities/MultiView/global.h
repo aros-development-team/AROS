@@ -206,8 +206,8 @@ enum
 
 /* main.c */
 
-void OutputMessage(STRPTR msg);
-void Cleanup(STRPTR msg);
+void OutputMessage(CONST_STRPTR msg);
+void Cleanup(CONST_STRPTR msg);
 void AddDTOToWin(void);
 
 /* misc.c */
@@ -232,7 +232,7 @@ void DoZoom(WORD zoomer);
 
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
-STRPTR MSG(ULONG id);
+CONST_STRPTR MSG(ULONG id);
 
 /*********************************************************************************************/
 /*********************************************************************************************/

@@ -94,7 +94,7 @@ static void FitToWindow(void);
 
 /*********************************************************************************************/
 
-void OutputMessage(STRPTR msg)
+void OutputMessage(CONST_STRPTR msg)
 {
     struct EasyStruct es;
     
@@ -119,7 +119,7 @@ void OutputMessage(STRPTR msg)
 
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+void Cleanup(CONST_STRPTR msg)
 {
     OutputMessage(msg);
     
@@ -644,7 +644,7 @@ static void OpenDTO(void)
     strncpy(objnamebuffer, objname ? objname : filenamebuffer, 299);
     
     dt = NULL;
-    dto_subclass_gid = NULL;
+    dto_subclass_gid = 0;
     if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
     {
 	if (dt)
@@ -932,7 +932,8 @@ static void FitToWindow(void)
 static void HandleAll(void)
 {
     struct IntuiMessage *msg;
-    struct TagItem      *tstate, *tags, *tag;
+    const struct TagItem *tstate, *tags;
+    struct TagItem      *tag;
     struct MenuItem     *item;
     struct Gadget       *activearrowgad = NULL;
     WORD                arrowticker = 0, activearrowkind = 0;
@@ -964,7 +965,7 @@ static void HandleAll(void)
 			case 13: /* RETURN */
 			    if (dto_supports_activate_field) DoTrigger(STM_ACTIVATE_FIELD);
 			    else if (dto_supports_search) DoTrigger(STM_SEARCH);
-			    RefreshDTObjects (dto, win, NULL, NULL);
+			    RefreshDTObjects (dto, win, NULL, (IPTR) NULL);
 			    break;
 			    
 			case 9: /* TAB */
@@ -1279,7 +1280,7 @@ static void HandleAll(void)
 		    break;
 
 		case IDCMP_IDCMPUPDATE:
-		    tstate = tags = (struct TagItem *)msg->IAddress;
+		    tstate = tags = (const struct TagItem *) msg->IAddress;
 		    while ((tag = NextTagItem(&tstate)) != NULL)
 		    {
 			tidata = tag->ti_Data;
@@ -1291,7 +1292,7 @@ static void HandleAll(void)
 				if (tidata)
 				    SetWindowPointer (win, WA_BusyPointer, TRUE, TAG_DONE);
 				else
-				    SetWindowPointer (win, WA_Pointer, NULL, TAG_DONE);
+				    SetWindowPointer (win, WA_Pointer, (IPTR) NULL, TAG_DONE);
 				break;
 
 			    case DTA_Title:
@@ -1311,7 +1312,7 @@ static void HandleAll(void)
 			    case DTA_Sync:
 				/* Refresh the DataType object */
 				D(bug("Multiview: DTA_SYNC\n"));
-				RefreshDTObjects (dto, win, NULL, NULL);
+				RefreshDTObjects (dto, win, NULL, (IPTR) NULL);
 				break;
 
 			} /* switch (tag->ti_Tag) */
