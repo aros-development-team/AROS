@@ -137,6 +137,7 @@ SHARED	:= \
 	lseek \
 	malloc \
 	mktemp \
+	mktime \
 	mkdir \
 	mrand48 \
 	nrand48 \
