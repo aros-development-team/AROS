@@ -66,55 +66,60 @@ AROS_LH1(float, IEEESPLog,
 {
     AROS_LIBFUNC_INIT
     
-  LONG ld_M, Exponent, Mask = 0x40, i, Sign;
-  /* check for negative sign */
-  if ( y < 0)
-  {
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  /* check for argument == 0 or argument == +infinity */
-  if (0 == y || IEEESP_Pinfty == y)
-    return y;
-
-  /* convert the Exponent of the argument (y) to the ieeesp-format */
-  Exponent = ((y & IEEESPExponent_Mask) >> 23) - 0x7e ;
-
-  if (Exponent < 0 )
-  {
-    Exponent =-Exponent;
-    Sign = IEEESPSign_Mask;
-  }
-  else
-    Sign = 0;
-
-  /* find the number of the highest set bit in the exponent */
-  if (Exponent != 0)
-  {
-    i = 0;
-    while ( (Mask & Exponent) == 0)
+    LONG ld_M, Exponent, Mask = 0x40, i, Sign;
+    
+    /* check for negative sign */
+    if ( y < 0)
     {
-      i ++;
-      Mask >>= 1;
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
     }
-
-  Exponent <<= (17 + i);
-  Exponent &= IEEESPMantisse_Mask;
-  Exponent |= ((0x85 - i ) << 23);
-  Exponent |= Sign;
-  }
-
-  ld_M = intern_IEEESPLd( (struct MathIeeeSingTransBase *)
-                                                  MathIeeeSingTransBase,
-                          (y & IEEESPMantisse_Mask) | 0x3f000000 );
-
-  /*               ld M + E
-  ** log(fnum1) =  --------
-  **                 ld e
-  */
-
-  return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLde);
+    
+    /* check for argument == 0 or argument == +infinity */
+    if (0 == y || IEEESP_Pinfty == y) return y;
+    
+    /* convert the Exponent of the argument (y) to the ieeesp-format */
+    Exponent = ((y & IEEESPExponent_Mask) >> 23) - 0x7e ;
+    
+    if (Exponent < 0 )
+    {
+        Exponent =-Exponent;
+        Sign = IEEESPSign_Mask;
+    }
+    else
+    {
+        Sign = 0;
+    }
+    
+    /* find the number of the highest set bit in the exponent */
+    if (Exponent != 0)
+    {
+        i = 0;
+        while ( (Mask & Exponent) == 0)
+        {
+            i ++;
+            Mask >>= 1;
+        }
+        
+        Exponent <<= (17 + i);
+        Exponent &= IEEESPMantisse_Mask;
+        Exponent |= ((0x85 - i ) << 23);
+        Exponent |= Sign;
+    }
+    
+    ld_M = intern_IEEESPLd
+    ( 
+        (struct MathIeeeSingTransBase *) MathIeeeSingTransBase,
+        (y & IEEESPMantisse_Mask) | 0x3f000000
+    );
+    
+    /*               
+                      ld M + E
+        log(fnum1) =  --------
+                       ld e
+    */
+    
+    return IEEESPMul( IEEESPAdd(ld_M, Exponent), InvLde);
 
     AROS_LIBFUNC_EXIT
 }
