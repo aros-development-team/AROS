@@ -85,6 +85,8 @@
   AndRectRegion(damage_region, &l->bounds);
 
   visible_damage_region = AndRegionRegionND(l->VisibleRegion, damage_region);
+  AndRegionRegion(l->visibleshape, visible_damage_region);
+  
   if (l->shaperegion)
   {
     _TranslateRect(&visible_damage_region->bounds, -l->bounds.MinX, -l->bounds.MinY);

@@ -363,8 +363,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
    */
   if (!IS_EMPTYREGION(oldshape))
   {
-    if (lparent &&
-        (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
+    if (lparent && IS_ROOTLAYER(lparent))
       _BackFillRegion(l->parent, oldshape, TRUE, LayersBase);
   }
 
@@ -382,6 +381,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     
     if (dh > 0)
       OrRectRegion(&r, &recth);
+      
     _BackFillRegion(l, &r, TRUE, LayersBase);
   }
 
