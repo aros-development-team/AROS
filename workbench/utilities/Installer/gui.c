@@ -1082,14 +1082,14 @@ int finish = FALSE;
 			printf( "%s\n", GetPL( pl, _HELP ).arg[n] );
 		      }
 #endif /* DEBUG */
-		      morenmain( HELP_ON_ASKNUMBER, m, GetPL( pl, _HELP ).arg );
+		      morenmain( HELP_ON_ASKCHOICE, m, GetPL( pl, _HELP ).arg );
 		    }
 		    else
 		    {
 #ifdef DEBUG
-		      printf( "%s\n", get_var_arg( "@asknumber-help" ) );
+		      printf( "%s\n", get_var_arg( "@askchoice-help" ) );
 #endif /* DEBUG */
-		      moremain( HELP_ON_ASKNUMBER, get_var_arg( "@asknumber-help" ) );
+		      moremain( HELP_ON_ASKCHOICE, get_var_arg( "@askchoice-help" ) );
 		    }
 		    setgadgetdisable( SKIPGAD );
 		    break;

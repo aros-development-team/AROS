@@ -199,8 +199,8 @@ Arguments in [...] are optional.
           [( choices <yesstring> [<nostring>] )]
 )
   Asks the user to select yes or no unless user is NOVICE
-  (ie. @user-level = 0 ).
-  defaults to 0 = no
+  (ie. @user-level = 0 ). Returns 0 for "No" and 1 for "Yes".
+  Defaults to 0 = "No".
 
 
 ( asknumber [( help <string>... )]

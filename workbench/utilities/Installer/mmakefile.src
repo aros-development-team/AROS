@@ -5,7 +5,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main misc procedure parse variables gui locale more execute cleanup
+FILES := main misc procedure parse variables gui_zune locale execute cleanup
 
 EXEDIR := $(AROSDIR)/Utilities
 
@@ -16,7 +16,7 @@ EXEDIR := $(AROSDIR)/Utilities
 
 %build_prog mmake=workbench-utilities-installer \
     progname=Installer targetdir=$(EXEDIR) \
-    files=$(FILES) uselibs="arossupport amiga arosc m autoinit"
+    files=$(FILES) uselibs="arossupport amiga arosc m autoinit mui"
 
 
 SCRIPT := test.script

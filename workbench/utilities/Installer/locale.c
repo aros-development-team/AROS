@@ -35,14 +35,14 @@ BOOL Locale_Initialize(void)
 {
     if (LocaleBase != NULL)
     {
-        catalog = OpenCatalog
-        ( 
-            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
-        );
+	catalog = OpenCatalog
+	( 
+	    NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+	);
     }
     else
     {
-        catalog = NULL;
+	catalog = NULL;
     }
     
     return TRUE;
