@@ -166,8 +166,6 @@ AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
     }
   }
     
-  ParallelDevice->device.dd_Library.lib_OpenCnt=1;
-
   NEWLIST(&ParallelDevice->UnitList);
   return (ParallelDevice);
   AROS_USERFUNC_EXIT
@@ -197,10 +195,6 @@ AROS_LH3(void, open,
   }
 
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-
-  /* I have one more opener. */
-  ParallelDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-  ParallelDevice->device.dd_Library.lib_OpenCnt ++;
 
   /* In the list of available units look for the one with the same 
      UnitNumber as the given one  */
@@ -284,6 +278,12 @@ AROS_LH3(void, open,
       }
     }
   }
+
+  if (ioreq->io_Error == 0)
+  {
+      ParallelDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+      ParallelDevice->device.dd_Library.lib_OpenCnt ++;    
+  }
   
   return;
      
@@ -329,6 +329,19 @@ AROS_LH1(BPTR, close,
 
   /* Let any following attemps to use the device crash hard. */
   ioreq->io_Device=(struct Device *)-1;
+
+  ParallelDevice->device.dd_Library.lib_OpenCnt --;    
+  
+  if (ParallelDevice->device.dd_Library.lib_OpenCnt == 0)
+  {
+    if (ParallelDevice->device.dd_Library.lib_Flags & LIBF_DELEXP)
+    {
+    	#define expunge() \
+    	    AROS_LC0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
+
+      return expunge();
+    }
+  }
   
   return 0;
   AROS_LIBFUNC_EXIT
@@ -341,6 +354,14 @@ AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
 {
     AROS_LIBFUNC_INIT
 
+    BPTR ret = 0;
+
+    if (ParallelDevice->device.dd_Library.lib_OpenCnt)
+    {
+    	ParallelDevice->device.dd_Library.lib_Flags |= LIBF_DELEXP;
+	return 0;
+    }
+
     if (NULL != ParallelDevice->ParallelObject)
     {
       /*
@@ -352,9 +373,16 @@ AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
       ParallelDevice->ParallelObject = NULL;
     }
   
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    ParallelDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
-    return 0;
+    Remove(&ParallelDevice->device.dd_Library.lib_Node);
+    
+    ret = ParallelDevice->seglist;
+    
+    FreeMem((char *)ParallelDevice - ParallelDevice->device.dd_Library.lib_NegSize,
+    	    ParallelDevice->device.dd_Library.lib_NegSize +
+	    ParallelDevice->device.dd_Library.lib_PosSize);
+    
+    return ret;
+
     AROS_LIBFUNC_EXIT
 }
 
