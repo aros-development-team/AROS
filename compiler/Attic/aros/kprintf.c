@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/17 16:08:40  digulla
+    Bug: val always contained 1 or 0
+
     Revision 1.4  1996/08/30 16:56:46  digulla
     At last, it works :) *phew*
 
@@ -184,7 +187,7 @@ extern struct ExecBase * SysBase;
 		{
 		    lval = va_arg (args, LONG);
 
-		    val = lval ? 1 : 0;
+		    val = (lval < 0) ? -lval : lval;
 		}
 		else
 		{
