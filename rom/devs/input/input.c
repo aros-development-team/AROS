@@ -20,6 +20,7 @@
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #ifdef __GNUC__
 #    include "input_intern.h"
 #endif
@@ -117,12 +118,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct inputbase *, init,
- AROS_LHA(struct inputbase *, InputDevice, D0),
- AROS_LHA(BPTR,              segList,   A0),
-	   struct ExecBase *, sysBase, 0, Input)
+AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
+ AROS_UFHA(struct inputbase *,	InputDevice,	D0),
+ AROS_UFHA(BPTR,		segList,	A0),
+ AROS_UFHA(struct ExecBase *,	sysBase,	A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     InputDevice->sysBase = sysBase;
@@ -184,7 +186,7 @@ AROS_LH2(struct inputbase *, init,
 
     Alert(AT_DeadEnd | AG_NoMemory | AO_Unknown | AN_Unknown);
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -27,11 +27,11 @@ struct Errors
 
 static const UBYTE Alerthook_name[];
 static const UBYTE Alerthook_version[];
-#ifdef _DCC
-static ULONG AROS_SLIB_ENTRY(init,Alerthook)(__a6 struct ExecBase *);
-#else
-static ULONG AROS_SLIB_ENTRY(init,Alerthook)();
-#endif
+AROS_UFP3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
+    AROS_UFPA(void *,		    dummy1,  D0),
+    AROS_UFPA(BPTR,		    dummy2,  A0),
+    AROS_UFPA(struct ExecBase *,    SysBase, A6)
+);
 static const char Alerthook_end;
 
 STRPTR getGuruString(ULONG, STRPTR);
@@ -93,8 +93,10 @@ mystrcpy(STRPTR dest, STRPTR src, LONG len)
     return dest;
 }
 
-AROS_UFH1(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+AROS_UFH3(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
+    AROS_UFHA(void *,		    dummy1,  D0),
+    AROS_UFHA(BPTR,		    dummy2,  A0),
+    AROS_UFHA(struct ExecBase *,    SysBase, A6)
 )
 {
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)

@@ -22,6 +22,7 @@
 #include <proto/exec.h>
 #include <devices/timer.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #ifndef __MORPHOS__
 #include "initstruct.h"
@@ -147,13 +148,14 @@ struct CommoditiesBase *LIB_init(struct CommoditiesBase *CxBase, BPTR segList,
 				 struct ExecBase *sysBase)
 {
 #else
-AROS_LH2(struct CommoditiesBase *, init,
- AROS_LHA(struct CommoditiesBase *, CxBase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, Commodities)
+AROS_UFH3(struct CommoditiesBase *, AROS_SLIB_ENTRY(init,Commodities),
+ AROS_UFHA(struct CommoditiesBase *, CxBase, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 #endif
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -163,7 +165,7 @@ AROS_LH2(struct CommoditiesBase *, init,
 
     return CxBase;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 

@@ -194,12 +194,13 @@ extern ULONG SoftIntDispatch();
 #	define sysBase SysBase
 #endif
 
-AROS_LH2(LIBBASETYPEPTR, init,
-    AROS_LHA(ULONG, dummy, D0),
-    AROS_LHA(BPTR, segList, A0),
-    struct ExecBase *, sysBase, 0, BASENAME)
+AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Exec),
+    AROS_UFHA(ULONG, dummy, D0),
+    AROS_UFHA(BPTR, segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
 #ifndef AROS_CREATE_ROM
     SysBase = sysBase;
@@ -391,7 +392,7 @@ sysBase->VBlankFrequency = 50;
 
     /* There had better be some kind of task waiting to run. */
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 #ifdef sysBase

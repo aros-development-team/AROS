@@ -1471,12 +1471,13 @@ void parent_dir_post(struct emulbase *emulbase, char ** DirName)
 
 /************************ Library entry points ************************/
 
-AROS_LH2(struct emulbase *, init,
- AROS_LHA(struct emulbase *, emulbase, D0),
- AROS_LHA(BPTR,              segList,   A0),
-	   struct ExecBase *, sysBase, 0, emul_handler)
+AROS_UFH3(struct emulbase *, AROS_SLIB_ENTRY(init,emul_handler),
+ AROS_UFHA(struct emulbase *, emulbase, D0),
+ AROS_UFHA(BPTR,              segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     static const struct TagItem tags[] = {{ TAG_END, 0 }};
 
     /* Store arguments */
@@ -1515,7 +1516,7 @@ AROS_LH2(struct emulbase *, init,
 
     return NULL;
     
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /*********************************************************************************************/

@@ -9,6 +9,7 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <aros/symbolsets.h>
 #ifdef __GNUC__
 #   include "arosc_gcc.h"
@@ -70,12 +71,13 @@ const APTR inittabl[4]=
 DECLARESET(INIT);
 DECLARESET(EXIT);
 
-AROS_LH2(struct aroscbase *, init,
- AROS_LHA(struct aroscbase *, aroscbase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, arosc)
+AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
+ AROS_UFHA(struct aroscbase *, aroscbase, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *,  sysBase,   A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -87,7 +89,7 @@ AROS_LH2(struct aroscbase *, init,
 
     /* You would return NULL here if the init failed. */
     return aroscbase;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 struct ExecBase *SysBase;

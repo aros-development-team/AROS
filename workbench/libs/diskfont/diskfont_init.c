@@ -14,6 +14,7 @@
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 
 /****************************************************************************************/
@@ -131,13 +132,14 @@ struct Library *DOSBase;
 struct DiskfontBase_intern *LIB_init(struct DiskfontBase_intern *LIBBASE, BPTR segList, struct ExecBase *sysBase)
 {
 #else
-AROS_LH2(struct DiskfontBase_intern *, init,
-    AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
-    AROS_LHA(BPTR,               segList,   A0),
-    struct ExecBase *, sysBase, 0, BASENAME)
+AROS_UFH3(struct DiskfontBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
+    AROS_UFHA(struct DiskfontBase_intern *, LIBBASE, D0),
+    AROS_UFHA(BPTR,               segList,   A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 #endif
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -150,7 +152,7 @@ AROS_LH2(struct DiskfontBase_intern *, init,
     /* You would return NULL here if the init failed. */
     return LIBBASE;
     
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

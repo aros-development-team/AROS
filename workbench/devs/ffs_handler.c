@@ -23,6 +23,7 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <aros/machine.h>
 #include <aros/macros.h>
 #ifdef __GNUC__
@@ -271,12 +272,13 @@ struct ExecBase *SysBase;
 
 /****************************************************************************************/
 
-AROS_LH2(struct ffsbase *, init,
- AROS_LHA(struct ffsbase *, ffsbase, D0),
- AROS_LHA(BPTR,             segList,   A0),
-	   struct ExecBase *, sysbase, 0, ffsdev)
+AROS_UFH3(struct ffsbase *, AROS_SLIB_ENTRY(init,ffsdev),
+ AROS_UFHA(struct ffsbase *, ffsbase, D0),
+ AROS_UFHA(BPTR,             segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysbase,	A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -337,7 +339,7 @@ AROS_LH2(struct ffsbase *, init,
     } /* if(DOSBase!=NULL) */
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

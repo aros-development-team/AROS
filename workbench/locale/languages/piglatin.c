@@ -22,6 +22,7 @@
 
 #include <proto/exec.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include <aros/debug.h>
 
@@ -97,12 +98,13 @@ const APTR inittabl[4] =
 
 struct ExecBase *mySysBase;
 
-AROS_LH2(struct Language *, init,
-    AROS_LHA(struct Language *, language, D0),
-    AROS_LHA(BPTR,             segList, A0),
-    struct ExecBase *, SysBase, 0, language)
+AROS_UFH3(struct Language *, AROS_SLIB_ENTRY(init,language),
+    AROS_UFHA(struct Language *, language, D0),
+    AROS_UFHA(BPTR,             segList, A0),
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /*
 	You could just as easily do this bit as the InitResident()
@@ -127,7 +129,7 @@ AROS_LH2(struct Language *, init,
     bug("GetLangStr: Loaded at address %p\n", &AROS_SLIB_ENTRY(getlangstring,language));
     return language;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 #define SysBase language->sysbase

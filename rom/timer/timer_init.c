@@ -108,12 +108,13 @@ static const void * const functable[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct TimerBase *, init,
-    AROS_LHA(struct TimerBase *, TimerBase, D0),
-    AROS_LHA(BPTR,		 segList, A0),
-    struct ExecBase *, sysBase, 0, Timer)
+AROS_UFH3(struct TimerBase *, AROS_SLIB_ENTRY(init,Timer),
+    AROS_UFHA(struct TimerBase *,   TimerBase,	D0),
+    AROS_UFHA(BPTR,		    segList,	A0),
+    AROS_UFHA(struct ExecBase *,    sysBase,	A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments and setup devbase */
     TimerBase->tb_SysBase = sysBase;
@@ -168,7 +169,7 @@ AROS_LH2(struct TimerBase *, init,
 
     return TimerBase;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -114,12 +114,12 @@ extern const char ALIGNED LC_BUILDNAME(LibName)   [];
 extern const char ALIGNED LC_BUILDNAME(LibID)     [];
 extern const char ALIGNED LC_BUILDNAME(Copyright) [];
 
-AROS_LD2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
+AROS_UFP3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
     AROS_LDA(BPTR,                segList, A0),
-    struct ExecBase *, sysBase, 0, LibHeader
+    AROS_LDA(struct ExecBase *,	  sysBase, A6)
 );
-AROS_LD1 (BPTR, LC_BUILDNAME(ExpungeLib),
+AROS_LP1 (BPTR, LC_BUILDNAME(ExpungeLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
     struct ExecBase *, sysBase, 0, LibHeader
 );
@@ -164,7 +164,7 @@ const LC_BUILDNAME(InitTab) =
     LC_LIBBASESIZE,
     &LIBFUNCTABLE[0],
     &LC_BUILDNAME(DataTab),
-    (APTR) AROS_SLIB_ENTRY(LC_BUILDNAME(InitLib), LibHeader)
+    (APTR)LC_BUILDNAME(InitLib)
 };
 
 static struct DataTable 		   /* do not change */
@@ -246,12 +246,14 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh);
     (which open other libraries, that open other libraries, that...)
 ----------------------------------------------------------------------- */
 
-AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
-    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
-    AROS_LHA(BPTR,                segList, A0),
-    struct ExecBase *, sysBase, 0, LibHeader
+AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
+    AROS_UFHA(LC_LIBHEADERTYPEPTR,  lh,		D0),
+    AROS_UFHA(BPTR,		    segList,	A0),
+    AROS_UFHA(struct ExecBase *,    sysBase,	A6)
 )
 {
+    AROS_USERFUNC_INIT
+
     LC_SYSBASE_FIELD(lh) = sysBase;
     LC_SEGLIST_FIELD(lh) = segList;
 
@@ -277,6 +279,8 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 #else
     return (lh);
 #endif /* LC_NO_INITLIB */
+
+    AROS_USERFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------

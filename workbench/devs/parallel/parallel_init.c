@@ -29,6 +29,7 @@
 #include <hidd/parallel.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <exec/lists.h>
 #ifdef __GNUC__
 #    include "parallel_intern.h"
@@ -131,12 +132,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct parallelbase *, init,
- AROS_LHA(struct parallelbase *, ParallelDevice, D0),
- AROS_LHA(BPTR               , segList     , A0),
-	   struct ExecBase *, sysBase, 0, Parallel)
+AROS_UFH3(struct parallelbase *, AROS_SLIB_ENTRY(init,Parallel),
+ AROS_UFHA(struct parallelbase *, ParallelDevice, D0),
+ AROS_UFHA(BPTR               , segList     , A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_USERFUNC_INIT
 
   D(bug("parallel device: init\n"));
 
@@ -169,7 +171,7 @@ AROS_LH2(struct parallelbase *, init,
 
   NEWLIST(&ParallelDevice->UnitList);
   return (ParallelDevice);
-  AROS_LIBFUNC_EXIT
+  AROS_USERFUNC_EXIT
 }
 
 

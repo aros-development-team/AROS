@@ -141,13 +141,14 @@ const struct inittable datatable=
 #ifdef __MORPHOS__
 struct IFFParseBase_intern *LIB_init(struct IFFParseBase_intern *LIBBASE, BPTR segList, struct ExecBase *SysBase)
 #else
-AROS_LH2(struct IFFParseBase_intern *, init,
- AROS_LHA(struct IFFParseBase_intern *, LIBBASE, D0),
- AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, SysBase, 0, BASENAME)
+AROS_UFH3(struct IFFParseBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
+ AROS_UFHA(struct IFFParseBase_intern *, LIBBASE, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 #endif
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -168,7 +169,7 @@ AROS_LH2(struct IFFParseBase_intern *, init,
     return LIBBASE;
     
 #ifndef __MORPHOS__
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 #endif
 }
 

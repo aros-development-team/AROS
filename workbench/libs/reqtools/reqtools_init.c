@@ -130,12 +130,13 @@ const struct inittable datatable=
 
 /****************************************************************************************/
 
-AROS_LH2(struct ReqToolsBase *, init,
- AROS_LHA(struct ReqToolsBase *, RTBase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, ReqTools)
+AROS_UFH3(struct ReqToolsBase *, AROS_SLIB_ENTRY(init,ReqTools),
+ AROS_UFHA(struct ReqToolsBase *, RTBase, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     
     ReqToolsBase = (struct ReqToolsBase *)RTBase;
         
@@ -147,7 +148,7 @@ AROS_LH2(struct ReqToolsBase *, init,
     
     return (struct ReqToolsBase *)RTFuncs_Init(RTBase, segList);
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

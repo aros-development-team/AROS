@@ -115,12 +115,13 @@ const struct inittable datatable=
 #undef O
 
 
-AROS_LH2(struct internal_RealTimeBase *, init,
- AROS_LHA(struct internal_RealTimeBase *, RealTimeBase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, RealTime)
+AROS_UFH3(struct internal_RealTimeBase *, AROS_SLIB_ENTRY(init,RealTime),
+ AROS_UFHA(struct internal_RealTimeBase *, RealTimeBase, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     WORD   i;			/* Loop variable */
@@ -140,7 +141,7 @@ AROS_LH2(struct internal_RealTimeBase *, init,
 
     return RealTimeBase;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 

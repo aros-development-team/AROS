@@ -13,6 +13,7 @@
 #include <exec/resident.h>
 #include <aros/libcall.h>
 #include <exec/semaphores.h>
+#include <aros/asmcall.h>
 
 #include <proto/exec.h>
 
@@ -90,12 +91,13 @@ static void closelibs(struct DataTypesBase *DataTypesBase)
 }
 
 
-AROS_LH2(struct DataTypesBase *, init,
-    AROS_LHA(struct DataTypesBase *,  DataTypesBase, D0),
-    AROS_LHA(BPTR,                  segList, A0),
-    struct ExecBase *, sysBase, 0, DataTypes)
+AROS_UFH3(struct DataTypesBase *, AROS_SLIB_ENTRY(init,DataTypes),
+    AROS_UFHA(struct DataTypesBase *,  DataTypesBase, D0),
+    AROS_UFHA(BPTR,                  segList, A0),
+    AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     int i;
 
     DataTypesBase->dtb_SysBase = sysBase;
@@ -209,7 +211,7 @@ error:
 
     return NULL;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 

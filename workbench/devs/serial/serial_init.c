@@ -29,6 +29,7 @@
 #include <hidd/serial.h>
 #include <utility/tagitem.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <exec/lists.h>
 #ifdef __GNUC__
 #    include "serial_intern.h"
@@ -132,12 +133,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct serialbase *, init,
- AROS_LHA(struct serialbase *, SerialDevice, D0),
- AROS_LHA(BPTR               , segList     , A0),
-	   struct ExecBase *, sysBase, 0, Serial)
+AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
+ AROS_UFHA(struct serialbase *, SerialDevice, D0),
+ AROS_UFHA(BPTR               , segList     , A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-  AROS_LIBFUNC_INIT
+  AROS_USERFUNC_INIT
 
   D(bug("serial device: init\n"));
 
@@ -170,7 +172,7 @@ AROS_LH2(struct serialbase *, init,
 
   NEWLIST(&SerialDevice->UnitList);
   return (SerialDevice);
-  AROS_LIBFUNC_EXIT
+  AROS_USERFUNC_EXIT
 }
 
 

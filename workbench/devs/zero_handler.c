@@ -15,6 +15,7 @@
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include "zero_handler_gcc.h"
 
@@ -77,12 +78,13 @@ static void *const functable[]=
     (void *)-1
 };
 
-AROS_LH2(struct zerobase *, init,
- AROS_LHA(struct zerobase *, zerobase, D0),
- AROS_LHA(BPTR,             segList, A0),
-	   struct ExecBase *, sysBase, 0, zero_handler)
+AROS_UFH3(struct zerobase *, AROS_SLIB_ENTRY(init,zero_handler),
+ AROS_UFHA(struct zerobase *, zerobase, D0),
+ AROS_UFHA(BPTR,             segList, A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     zerobase->sysbase=sysBase;
@@ -92,7 +94,7 @@ AROS_LH2(struct zerobase *, init,
 	return zerobase;
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 AROS_LH3(void, open,

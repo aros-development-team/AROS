@@ -96,12 +96,13 @@ const UBYTE datatable = 0;
 
 /****************************************************************************************/
 
-AROS_LH2(struct fdskbase *, init, 
- AROS_LHA(struct fdskbase *, fdskbase, D0), 
- AROS_LHA(BPTR,             segList,   A0), 
-	   struct ExecBase *, sysbase, 0, fdsk)
+AROS_UFH3(struct fdskbase *, AROS_SLIB_ENTRY(init,fdsk),
+ AROS_UFHA(struct fdskbase *, fdskbase, D0),
+ AROS_UFHA(BPTR,             segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysbase,  A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     SysBase = sysbase;
@@ -126,7 +127,7 @@ AROS_LH2(struct fdskbase *, init,
     D(bug("fdsk_device: in libinit func. Returning NULL (failure) :-(\n"));
 
     return NULL;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

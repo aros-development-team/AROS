@@ -31,6 +31,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
+#include <aros/asmcall.h>
 
 #undef SDEBUG
 #undef DEBUG
@@ -85,7 +86,7 @@ const struct Resident con_handler_resident=
 
 static const char name[]="con-handler";
 
-static const char version[]="$VER: con-handler 41.1 (22.1.2000)\n";
+static const char version[]="$VER: con-handler 41.2 (03.3.2002)\n";
 
 static const APTR inittabl[4]=
 {
@@ -114,12 +115,12 @@ static const UBYTE datatable=0;
 
 /****************************************************************************************/
 
-AROS_LH2(struct conbase *, init,
-    AROS_LHA(struct conbase *, conbase, D0),
-    AROS_LHA(BPTR   	     , segList, A0),
-    struct ExecBase *, sysBase, 0, con_handler)
+AROS_UFH3(struct conbase *, AROS_SLIB_ENTRY(init,con_handler),
+    AROS_UFHA(struct conbase *,	    conbase, D0),
+    AROS_UFHA(BPTR,		    segList, A0),
+    AROS_UFHA(struct ExecBase *,    sysBase, A6))
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
  
     static const char *devnames[2] = { "CON", "RAW" };
     struct DeviceNode *dn;
@@ -197,7 +198,7 @@ AROS_LH2(struct conbase *, init,
 
     return NULL;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

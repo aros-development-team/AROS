@@ -140,12 +140,13 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-AROS_LH2(struct ClipboardBase *,  init,
- AROS_LHA(struct ClipboardBase *, CBBase, D0),
- AROS_LHA(BPTR,          segList, A0),
-	  struct ExecBase *, sysBase, 0, Clipboard)
+AROS_UFH3(struct ClipboardBase *,  AROS_SLIB_ENTRY(init,Clipboard),
+ AROS_UFHA(struct ClipboardBase *, CBBase, D0),
+ AROS_UFHA(BPTR,          segList, A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     /* Store arguments */
     CBBase->cb_sysBase = sysBase;
@@ -156,7 +157,7 @@ AROS_LH2(struct ClipboardBase *,  init,
     NEWLIST(&CBBase->cb_HookList);
 	
     return CBBase;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

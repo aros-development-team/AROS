@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 #include <devices/timer.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include "initstruct.h"
 #include <stddef.h>
@@ -100,12 +101,13 @@ const struct inittable datatable=
 #undef O
 
 
-AROS_LH2(struct NVBase *, init,
- AROS_LHA(struct NVBase *, nvBase, D0),
- AROS_LHA(BPTR,               segList,   A0),
-	   struct ExecBase *, sysBase, 0, Nonvolatile)
+AROS_UFH3(struct NVBase *, AROS_SLIB_ENTRY(init,Nonvolatile),
+ AROS_UFHA(struct NVBase *, nvBase, D0),
+ AROS_UFHA(BPTR,               segList,   A0),
+ AROS_UFHA(struct ExecBase *, sysBase, A6)
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -114,7 +116,7 @@ AROS_LH2(struct NVBase *, init,
 
     return nvBase;
 
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 
