@@ -533,8 +533,12 @@ AROS_UFH3(void, LDDemon,
     struct LDDMsg *ldd;
 
     /* Fix up the MsgPort, this isn't really a race. */
+
+#if 0 /* stegerg */
     DOSBase->dl_LDDemonPort->mp_SigBit = AllocSignal(-1);
     DOSBase->dl_LDDemonPort->mp_Flags = PA_SIGNAL;
+#endif
+
 
     for(;;)
     {
@@ -626,10 +630,29 @@ AROS_LH2(ULONG, Init,
     }
 
     /* Fix up the MsgPort */
+    
+#if 0 /* stegerg */
     DOSBase->dl_LDDemonPort->mp_Flags = 0;
+#endif
+
     DOSBase->dl_LDDemonPort->mp_SigTask = DOSBase->dl_LDDemonTask;
     FreeSignal(DOSBase->dl_LDDemonPort->mp_SigBit);    
 
+#if 1 /* stegerg */    
+    DOSBase->dl_LDDemonPort->mp_SigBit = 16;
+    
+    Disable();
+    if (DOSBase->dl_LDDemonTask->pr_Task.tc_SigAlloc & (1L << 16))
+    {
+    	Alert( AT_DeadEnd | AN_RAMLib | AG_ProcCreate );
+    }
+    DOSBase->dl_LDDemonTask->pr_Task.tc_SigAlloc  |= (1L << 16);
+    DOSBase->dl_LDDemonTask->pr_Task.tc_SigExcept &= ~(1L << 16);
+    DOSBase->dl_LDDemonTask->pr_Task.tc_SigWait   &= ~(1L << 16);
+    DOSBase->dl_LDDemonTask->pr_Task.tc_SigRecvd  &= ~(1L << 16);
+    Enable();
+#endif    
+    
     /* Then unlock the semaphore to allow other processes to run. */
     ReleaseSemaphore(&DOSBase->dl_LDSigSem);
 
