@@ -27,6 +27,7 @@
 #include "intuition_intern.h"
 #include "gadgets.h"
 #include "propgadgets.h"
+#include "boopsigadgets.h"
 
 static struct IntuitionBase * IntuiBase;
 
@@ -762,6 +763,10 @@ void intui_ProcessEvents (void)
 		    w->Height = event.xconfigure.height;
 
 		    im->Class = IDCMP_NEWSIZE;
+		    
+		    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+		    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+		    
 		    ptr       = "NEWSIZE";
 		}
 
@@ -826,11 +831,24 @@ void intui_ProcessEvents (void)
 			    gpi.gpi_TabletData	= NULL;
 
 			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			    
+			    D(bug("\tProcessing GADGETDOWN\n"));
 
-			    if (retval != GMR_MEACTIVE)
+			    if (retval & GMR_VERIFY)
 			    {
-				im->Class = 0L;
-				gadget = NULL;
+			        D(bug("GMR_VERIFY gotten\n"));
+			    	im->Class = IDCMP_GADGETUP;
+			    	im->IAddress = gadget;
+			    	ptr	 = "GADGETUP";
+			    	im->Code = termination & 0x0000FFFF;
+			    }
+			    else
+			    {
+			    	if (retval != GMR_MEACTIVE)
+			    	{
+				    im->Class = 0L;
+				    gadget = NULL;
+				}
 			    }
 
 			    break; }
@@ -914,6 +932,9 @@ void intui_ProcessEvents (void)
 
 			    if (retval & GMR_NOREUSE && !(retval & GMR_VERIFY))
 				im->Class = 0L; /* Swallow event */
+			    
+			    if (retval & GMR_VERIFY)
+			    	im->Code = termination & 0x0000FFFF;
 
 			    break; }
 
