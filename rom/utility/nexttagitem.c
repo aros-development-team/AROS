@@ -62,6 +62,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,UtilityBase)
 
+    if(!(*tagListPtr)) return NULL;
+
     while (TRUE)
     {
 	switch ((*tagListPtr)->ti_Tag)

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/02/14 21:19:42  ldp
+    Add extra checks for empty arguments
+
     Revision 1.6  1997/01/27 00:32:30  ldp
     Polish
 
@@ -60,6 +63,8 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
+
+    if(!tagList) return NULL;
 
     /* Loop over the whole list */
     for(;;)
