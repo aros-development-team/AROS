@@ -16,10 +16,6 @@
 #include <proto/commodities.h>
 #include <string.h>
 
-#ifndef  DEBUG
-#define  DEBUG 1
-#endif
-
 #include <aros/debug.h>
 
 VOID BrokerFunc(CxObj *, struct NewBroker *, struct Library *CxBase);
@@ -98,9 +94,6 @@ CxObj *co;
     co->co_Flags = COF_ACTIVE;
     co->co_Error = 0;
 
-    if(type == CX_BROKER)
-	co->co_Flags |= (UBYTE) ((struct NewBroker *)arg1)->nb_Flags;
-
     NEWLIST(&co->co_ObjList);
 
     switch(type)
@@ -163,12 +156,11 @@ VOID BrokerFunc(CxObj *co, struct NewBroker *nbrok, struct Library *CxBase)
     
     /* Brokers are created inactive */
     co->co_Flags &= ~COF_ACTIVE;
-    co->co_Node.ln_Name = co->co_Ext.co_BExt->bext_Name;
     co->co_Node.ln_Pri = nbrok->nb_Pri;
     
-    if(nbrok->nb_Version < NB_VERSION)
-	co->co_Ext.co_BExt->bext_MsgPort = NULL;
-    else 
-	co->co_Ext.co_BExt->bext_MsgPort = nbrok->nb_Port;
+    co->co_Ext.co_BExt->bext_MsgPort = nbrok->nb_Port;
+
+    co->co_Flags |= nbrok->nb_Flags;
+
 }
 

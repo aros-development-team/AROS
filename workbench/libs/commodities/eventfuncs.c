@@ -83,10 +83,23 @@ APTR AllocCxStructure(LONG type, LONG objtype, struct Library *CxBase)
 	tempObj = (CxObj *)AllocVec(sizeof(CxObj),
 				    MEMF_CLEAR | MEMF_PUBLIC);
 	if(Extensions[objtype] != 0)
+	{
 	    tempObj->co_Ext.co_FilterIX = AllocVec(Extensions[objtype],
 					           MEMF_CLEAR | MEMF_PUBLIC);
+
+	    if(tempObj->co_Ext.co_FilterIX == NULL)
+	    {
+		FreeVec(tempObj);
+		return NULL;
+	    }
+	}
 	
 	NEWLIST(&tempObj->co_ObjList);
+
+	/* This is done to make it easy for Exchange */
+	if(objtype == CX_BROKER)
+	    tempObj->co_Node.ln_Name = (char *)&tempObj->co_Ext.co_BExt->bext_Name;
+
 	temp = (APTR)tempObj;
 	break;
 	
