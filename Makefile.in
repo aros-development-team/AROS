@@ -161,7 +161,7 @@ $(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/make.opts:
 # targets which do not generate files or for which a file/directory exists
 .PHONY: default all makedirs tools docs clean arch-clean dist-clean install \
 	$(TOP)/bin/$(AROS_TARGET_ARCH)-$(AROS_TARGET_CPU)/gen/config/make.opts test \
-	test workbench rom compiler contrib sdk
+	kernel workbench rom compiler contrib sdk
 
 # Map MetaTargets to make targets : Call mmake with AROS.target
 # This does not allow to check for dependancies, so it is not suitable for
