@@ -22,6 +22,7 @@
 #define AROS_WORSTALIGN 	   4 /* Worst case alignment */
 
 #define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
+#define AROS_GET_DOSBASE	extern struct DosLibrary * DOSBase;
 
 /* ??? */
 #define SP_OFFSET 0
