@@ -83,10 +83,6 @@ static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->boopsi_minwidth = tag->ti_Data;
 		    break;
 
-	    case    MUIA_Boopsi_Object:
-		    data->boopsi_object = (Object*)tag->ti_Data;
-		    break;
-
 	    case    MUIA_Boopsi_Remember:
 		    {
 			struct TagItem *new_remember;
@@ -94,7 +90,7 @@ static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			{
 			    if (data->remember) CopyMem(data->remember, new_remember, sizeof(struct TagItem)*data->remember_len);
 			    new_remember[data->remember_len].ti_Tag = tag->ti_Data;
-			    FreeVec(data->remember);
+			    if (data->remember) FreeVec(data->remember);
 			    data->remember = new_remember;
 			    data->remember_len++;
 			}
@@ -142,9 +138,10 @@ static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+
     if (data->boopsi_taglist) FreeTagItems(data->boopsi_taglist);
-    DoSuperMethodA(cl,obj,msg);
-    return 0;
+    if (data->remember) FreeVec(data->remember);
+    return DoSuperMethodA(cl,obj,msg);
 }
 
 /**************************************************************************
@@ -183,10 +180,6 @@ static ULONG Boopsi_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case    MUIA_Boopsi_MinWidth:
 		    data->boopsi_minwidth = tag->ti_Data;
-		    break;
-
-	    case    MUIA_Boopsi_Object:
-		    data->boopsi_object = (Object*)tag->ti_Data;
 		    break;
 
 	    case    MUIA_Boopsi_TagDrawInfo:
@@ -451,7 +444,14 @@ AROS_UFH3S(IPTR,Boopsi_Dispatcher,
 	case MUIM_Draw: return Boopsi_Draw(cl, obj, (APTR)msg);
 	case MUIM_HandleEvent: return Boopsi_HandleEvent(cl, obj, (APTR)msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
+    {
+	struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+	if (((msg->MethodID >> 16) == ((TAG_USER >> 16) | 0x0042)) && data->boopsi_object)
+	{
+	    return DoMethodA(data->boopsi_object, msg);
+	}
+	return DoSuperMethodA(cl, obj, msg);
+    }
 }
 
 
