@@ -4,6 +4,8 @@
 \section{Project History}
 
 \begin{itemize}
+\item 15.3.1999 The user can now move Windows in AROS' screens 
+    around.
 \item 11.3.1999 Added a new 
     \link{status report}{other/status}.
 \item 7.1.1998 Updated FAQ: Read the status between AROS and Amiga Int/Inc.
@@ -20,8 +22,6 @@
 \item 23.10.1997 BOOPSI.library and HIDD.class have been committed.
 \item 17.10.1997 AROS has two new mailing lists: \shell{aros-gfx}
     and \shell{aros-user}.
-\item 15.10.1997 AROS has it's own domain now ! Use
-    \link{http://www.aros.org/}{http://www.aros.org/}
 \end{itemize}
 \end{new}
 
