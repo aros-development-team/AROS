@@ -58,10 +58,15 @@ static const void * const functable[] =
 };
 
 
+#ifdef SysBase
+#undef SysBase
+#endif
+//#define SysBase (*(APTR*)4L)
+
 AROS_UFH3(struct MiscBase *, AROS_SLIB_ENTRY(init, Misc),
     AROS_UFHA(ULONG,	dummy,	D0),
     AROS_UFHA(ULONG,	slist,	A0),
-    AROS_UFHA(struct ExecBase *, sysBase, A6)
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
     UWORD neg = AROS_ALIGN(LIB_VECTSIZE * 3);
@@ -73,7 +78,7 @@ AROS_UFH3(struct MiscBase *, AROS_SLIB_ENTRY(init, Misc),
 
     if( MiscBase )
     {
-	MiscBase->mb_SysBase = sysBase;
+	MiscBase->mb_SysBase = SysBase;
 	MiscBase->mb_Node.ln_Pri = 0;
 	MiscBase->mb_Node.ln_Type = NT_RESOURCE;
 	MiscBase->mb_Node.ln_Name = (STRPTR)name;
