@@ -44,7 +44,7 @@ responsibility is assumed.
 
 static const char version[] = "$VER: simpleimage 41.1 (14.3.1997)\n";
 
-#if defined __AROS__ && !defined(_AMIGA)
+#ifdef __AROS__
 #ifdef __chip
 #undef __chip
 #endif
