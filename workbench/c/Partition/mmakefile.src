@@ -1,0 +1,24 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES  := main 
+EXEDIR := $(AROS_C)
+EXE    := $(EXEDIR)/Partition
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+
+#MM- workbench-c : workbench-c-partition
+#MM workbench-c-partition : includes linklibs 
+
+%make_prog_setup mmake=workbench-c-partition
+
+workbench-c-partition : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
