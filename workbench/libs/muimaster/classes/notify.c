@@ -81,6 +81,7 @@ static const int __revision = 1;
 typedef struct NotifyNode {
     struct MinNode nn_Node;
     IPTR        nn_OldValue; /* save old attrib value to detect endless loop */
+    ULONG       nn_Created; /* is set to one after created, so the next set will cause a notify */
     ULONG       nn_TrigAttr;
     ULONG       nn_TrigVal;
     APTR        nn_DestObj;
@@ -96,6 +97,7 @@ static struct NotifyNode *CreateNNode (struct MUI_NotifyData *data, struct MUIP_
     if (!nnode) return NULL;
 
     nnode->nn_OldValue = oldval;
+    nnode->nn_Created = 1;
     nnode->nn_TrigAttr = msg->TrigAttr;
     nnode->nn_TrigVal  = msg->TrigVal;
     nnode->nn_DestObj  = msg->DestObj;
@@ -190,10 +192,11 @@ static void check_notify (NNode nnode, Object *obj, struct TagItem *tag, BOOL no
 	return;
       
     /* value changed since last set ? */
-    if (tag->ti_Data == nnode->nn_OldValue)
+    if (tag->ti_Data == nnode->nn_OldValue && !nnode->nn_Created)
 	return;
 
     nnode->nn_OldValue = tag->ti_Data;
+    nnode->nn_Created = 0;
 
     /* trigger notification for the new value ? */
 
