@@ -186,26 +186,44 @@
         case 0x83:
           /* Draw an Ellipse and fill it */
           /* see how the data are stored by the second entry */
-          if (0x00 == CurFlag[1])
-	  {
             /* I get cx,cy,cx+a,cy+b*/
+
             DrawEllipse(rp,CurVctr[0], 
                            CurVctr[1],
-                           CurVctr[2]-CurVctr[0],
-                           CurVctr[3]-CurVctr[1]);
-	  }
-          else if (0x02 == CurFlag[1])
-	       {
-                 /* I get -a+cx,-b+cy,cx+a,cy+b */
-                 DrawEllipse(rp,(CurVctr[0]+CurVctr[2])>>1,
-                                (CurVctr[1]+CurVctr[3])>>1,
-                                (CurVctr[2]-CurVctr[0])>>1,
-                                (CurVctr[3]-CurVctr[1])>>1 );
-	       }
+                           CurVctr[2],
+                           CurVctr[3]);
 
             /* area-fill the ellipse with the pattern given
                in rp->AreaPtrn , AreaPtSz */
-            /* !!!! missing !!! */
+            
+            bounds.MinX = CurVctr[0] - CurVctr[2];
+            bounds.MaxX = CurVctr[0] + CurVctr[2];
+            bounds.MinY = CurVctr[1] - CurVctr[3];
+            bounds.MaxY = CurVctr[1] + CurVctr[3];
+            BytesPerRow = bounds.MaxX - bounds.MinX + 1;
+            
+            if (0 != (BytesPerRow & 0x0f ))
+              BytesPerRow =((BytesPerRow >> 3) & 0xfffe )+ 2;
+            else
+              BytesPerRow = (BytesPerRow >> 3) & 0xfffe;
+              
+            areafillellipse(rp,
+                            CurVctr,
+                            BytesPerRow,
+                            GfxBase);
+              /* 
+                Blit the area fill pattern through the mask provided
+                by rp->TmpRas.
+              */
+            BltPattern(
+                   rp,
+                   rp->TmpRas->RasPtr,
+                   bounds.MinX,
+                   bounds.MinY,
+                   bounds.MaxX,
+                   bounds.MaxY,
+                   BytesPerRow
+                );
  
             CurVctr = &CurVctr[4];
             CurFlag = &CurFlag[2];

@@ -533,3 +533,86 @@ kprintf("at end!\n");
 
   return TRUE;
 }
+
+
+void areafillellipse(struct RastPort  * rp,
+                     UWORD            * CurVctr,
+                     UWORD              BytesPerRow,
+                     struct GfxBase *   GfxBase)
+{
+  /* the ellipse drawing algorithm is taken from DrawEllipse() */
+  LONG x = CurVctr[2], y = 0;   /* ellipse points */
+  
+  /* intermediate terms to speed up loop */
+  LONG t1 = CurVctr[2] * CurVctr[2], t2 = t1 << 1, t3 = t2 << 1;
+  LONG t4 = CurVctr[3] * CurVctr[3], t5 = t4 << 1, t6 = t5 << 1;
+  LONG t7 = CurVctr[2] * t5, t8 = t7 << 1, t9 = 0L;
+  LONG d1 = t2 - t7 + (t4 >> 1);  /* error terms */
+  LONG d2 = (t1 >> 1) - t8 + t5;
+  
+  BOOL MovedUp = FALSE;
+
+SetAPen(rp, 2);
+kprintf("Filling ellipse with center at (%d,%d) and radius in x: %d and in y: %d\n",
+                            CurVctr[0],CurVctr[1],CurVctr[2],CurVctr[3]);
+  
+  while (d2 < 0 && y < CurVctr[3])
+  {
+    /* draw 2 lines using symmetry */
+    if (x > 1)
+    {
+      Move(rp, CurVctr[0] + x - 1, CurVctr[1] + y);
+      Draw(rp, CurVctr[0] - x + 1, CurVctr[1] + y);
+      
+      Move(rp, CurVctr[0] + x - 1, CurVctr[1] - y);
+      Draw(rp, CurVctr[0] - x + 1, CurVctr[1] - y);
+    } 
+    
+    y++;            /* always move up here */
+    t9 = t9 + t3;
+    if (d1 < 0)     /* move straight up */
+    {
+      d1 = d1 + t9 + t2;
+      d2 = d2 + t9;
+    }
+    else
+    {
+      x--;
+      t8 = t8 - t6;
+      d1 = d1 + t9 + t2 - t8;
+      d2 = d2 + t9 + t5 - t8;
+    }
+  }
+  
+  do                /* rest of the right quadrant */
+  {
+    /* draw 2 lines using symmetry */
+   
+    x--;         /* always move left here */
+    t8 = t8 - t6;
+    if (d2 < 0)  /* move up and left */
+    { 
+      if (x > 1)
+      {
+        Move(rp, CurVctr[0] + x, CurVctr[1] + y);
+        Draw(rp, CurVctr[0] - x, CurVctr[1] + y);
+      
+        Move(rp, CurVctr[0] + x, CurVctr[1] - y);
+        Draw(rp, CurVctr[0] - x, CurVctr[1] - y);
+      }
+      else 
+        break; 
+
+      y ++;
+      t9 = t9 + t3;
+      d2 = d2 + t9 + t5 - t8;
+    } 
+    else        /* move straight left */
+    {
+      d2 = d2 + t5 - t8;
+    } 
+  } while ( x > 0 && y < CurVctr[3] );
+}
+
+
+
