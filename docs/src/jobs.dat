@@ -1034,8 +1034,8 @@ intuition00064;2;digulla;Write LockIBase
 intuition00065;2;digulla;Write UnlockIBase
 intuition00066;2;digulla;Write GetScreenData
 intuition00067;2;digulla;Write RefreshGList
-intuition00068;2;bergers;Write AddGList
-intuition00069;2;bergers;Write RemoveGList
+intuition00068;2;digulla;Write AddGList
+intuition00069;2;digulla;Write RemoveGList
 intuition00070;2;digulla;Write ActivateWindow
 intuition00071;2;nlorentz;Write RefreshWindowFrame
 intuition00072;1;nlorentz;Write ActivateGadget
