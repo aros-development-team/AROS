@@ -50,6 +50,7 @@
 ******************************************************************************/
 {
 #ifndef __DONT_USE_DEBUGMEM__
+    AROS_GET_SYSBASE
     struct MemHeader *mh;
     struct MemChunk  *mc;
 
