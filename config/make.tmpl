@@ -11,12 +11,11 @@
 #------------------------------------------------------------------------------
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
-%define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Compiling $(strip $(if $(filter /%,%(from)),%(from),\
-	%(path)$(patsubst %(path)/,,%(from))))..."
+%define compile_q cmd=$(TARGET_CC) opt=$(CFLAGS) from=$< to=$@
+	@$(ECHO) "Compiling $(notdir %(from))"
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(ECHO) "%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
@@ -28,6 +27,26 @@
 	fi
 %end
 #------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Assemble the file %(from) to %(to) with %(cmd) with the options in %(opt).
+%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@
+	@$(ECHO) "Assembling $(notdir %(from))..."
+	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
+	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+		$(ECHO) "$(notdir %(from)): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	    else \
+		$(NOP) ; \
+	    fi ; \
+	else \
+	    $(ECHO) "Assemble failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi
+%end
+#-------------------------------------------------------------------------
 
 
 #-------------------------------------------------------------------------
@@ -626,26 +645,6 @@ endif
 %end
 
 #------------------------------------------------------------------------------
-# Assemble the file %(from) to %(to) with %(cmd). Write any errors to %(err)
-# and use the options in %(opt).
-%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Assembling %(path)$(notdir %(from))..."
-	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
-	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-		$(ECHO) "%(path)$(notdir %(from)): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
-	    else \
-		$(NOP) ; \
-	    fi ; \
-	else \
-	    $(ECHO) "Assemble failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
-	fi
-%end
-
-
-#------------------------------------------------------------------------------
 %define link_q cmd=$(CC) opt=$(LDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
 	@$(ECHO) "Linking %(to)..."
 	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) $(COMPILER_LIBS) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
@@ -710,7 +709,7 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR)" path=""
+%compile_q opt="$(CFLAGS) -I$(OBJDIR)"
 
 $(OBJDIR)/functions.c : mmakefile.src $(foreach f,%(functions),$(f).c)
 	@$(CPAK) %(functions)
@@ -824,7 +823,7 @@ $(END_FILE).c : libdefs.h
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
 $(ENDFUNC) : $(END_FILE).c libdefs.h
-%compile_q path=""
+%compile_q
 
 $(END_FILE).d : $(END_FILE).c
 %mkdepend_q flags="$(MKDEPEND_CFLAGS) -I."
@@ -1498,7 +1497,7 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 %genlibincludesinline hasrt=%(hasrt)
 
 $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
-%compile_q opt="$(CFLAGS) -I$(OBJDIR) -I." path=""
+%compile_q opt="$(CFLAGS) -I$(OBJDIR) -I."
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
