@@ -90,10 +90,7 @@ void KillMenus(void)
 
 void SetMenuFlags(void)
 {
-    struct MenuItem *item;
-    
     if (win) ClearMenuStrip(win);
-    
     if (win) ResetMenuStrip(win, menus);
 }
 

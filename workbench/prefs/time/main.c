@@ -451,7 +451,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 	    }
 	    *cd2_member = number;
 	  
-	    sprintf(s, "%02d", number);
+	    sprintf(s, "%02ld", number);
   
 	    nnset(activetimestrobj, MUIA_String_Contents, s);
 	   
@@ -650,26 +650,26 @@ static void MakeGUI(void)
 	
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(saveobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
-    DoMethod(useobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, RETURNID_USE);
+    DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(saveobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
+    DoMethod(useobj, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR) app, 2, MUIM_Application_ReturnID, RETURNID_USE);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, app, 2, MUIM_CallHook, (IPTR)&restorehook);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, (IPTR) app, 2, MUIM_CallHook, (IPTR)&restorehook);
         
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, app, 3, MUIM_CallHook, (IPTR)&activehook, MUIV_TriggerValue);
-    DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
-    DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
-    DoMethod(yearaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 1);
-    DoMethod(yearsubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, -1);
-    DoMethod(timeaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 1);
-    DoMethod(timesubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, -1);
-    DoMethod(clockobj, MUIM_Notify, MUIA_Clock_Ticked, TRUE, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 0);
-    DoMethod(hourobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
-    DoMethod(minobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
-    DoMethod(secobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, (IPTR) app, 3, MUIM_CallHook, (IPTR)&activehook, MUIV_TriggerValue);
+    DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, (IPTR) calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
+    DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR) yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
+    DoMethod(yearaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR) yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 1);
+    DoMethod(yearsubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR) yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, -1);
+    DoMethod(timeaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 1);
+    DoMethod(timesubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, -1);
+    DoMethod(clockobj, MUIM_Notify, MUIA_Clock_Ticked, TRUE, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 0);
+    DoMethod(hourobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
+    DoMethod(minobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
+    DoMethod(secobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, (IPTR) clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
     
     set(calobj, MUIA_Calendar_Date, &clockdata);
     set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
@@ -696,7 +696,7 @@ static void HandleAll(void)
     
     for(;;)
     {
-    	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, &sigs);
+    	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, (IPTR) &sigs);
 
 	if ((returnid == MUIV_Application_ReturnID_Quit) ||
 	    (returnid == RETURNID_SAVE) || (returnid == RETURNID_USE)) break;

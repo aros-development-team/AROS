@@ -49,16 +49,16 @@ static LONG country_init(void)
 	    
 	    DoMethod(entry->dto, DTM_PROCLAYOUT, NULL, 1);
 	    
-	    GetDTAttrs(entry->dto, PDTA_DestBitMap, (IPTR *)&entry->flagbm, TAG_DONE);
+	    GetDTAttrs(entry->dto, PDTA_DestBitMap, (IPTR) &entry->flagbm, TAG_DONE);
 	    if (!entry->flagbm)
 	    {
-	    	GetDTAttrs(entry->dto, PDTA_BitMap, (IPTR *)&entry->flagbm, TAG_DONE);
+	    	GetDTAttrs(entry->dto, PDTA_BitMap, (IPTR) &entry->flagbm, TAG_DONE);
 	    }
 	    
-	    GetDTAttrs(entry->dto, DTA_NominalHoriz, &val, TAG_DONE);
+	    GetDTAttrs(entry->dto, DTA_NominalHoriz, (IPTR) &val, TAG_DONE);
 	    entry->flagw = (WORD)val;
 	    
-	    GetDTAttrs(entry->dto, DTA_NominalVert, &val, TAG_DONE);
+	    GetDTAttrs(entry->dto, DTA_NominalVert, (IPTR) &val, TAG_DONE);
 	    entry->flagh = (WORD)val;
 	    
 	    if (entry->flagbm)
