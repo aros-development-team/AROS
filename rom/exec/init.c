@@ -2,6 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/08/23 17:12:28  digulla
+    Added several new aros specific includes
+    We have now a console.device
+    The memory is allocated now and not part of the BSS so illegal accesses show
+    	up earlier now.
+    New global variable: AROSBase. Can be accesses from anywhere via
+    	SysBase->DebugData for now. Will be used for RT and Purify.
+    AROSBase.StdOut is a FILE*-handle for use in kprintf() but that doesn't
+    	seem to work in all cases
+
     Revision 1.5  1996/08/15 13:21:06  digulla
     A couple of comments
 
@@ -23,18 +33,22 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/devices.h>
+#include <clib/aros_protos.h>
 #include <clib/exec_protos.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <clib/dos_protos.h>
 #include <utility/tagitem.h>
+#include <aros/rt.h>
+#include <aros/arosbase.h>
 #include "memory.h"
 #include "machine.h"
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdio.h>
+#undef kprintf
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -47,10 +61,12 @@ extern const struct Resident Dos_resident;
 extern const struct Resident Graphics_resident;
 extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
+extern const struct Resident Console_resident;
 
 #define MEMSIZE 1024*1024
 static struct MemHeader mh;
-static UBYTE memory[MEMSIZE+MEMCHUNK_TOTAL-1];
+/* static UBYTE memory[MEMSIZE+MEMCHUNK_TOTAL]; */
+UBYTE * memory;
 
 #define NUMVECT 131
 
@@ -60,6 +76,7 @@ struct DosBase * DOSBase;
 #define STACKSIZE 4096
 
 static int returncode=20;
+static struct AROSBase AROSBase;
 
 void intui_ProcessXEvents (void);
 
@@ -107,9 +124,22 @@ static APTR allocmem(ULONG size)
 
 int main(int argc,char *argv[])
 {
+    ULONG * space;
+
     /* Put arguments into globals */
     gargc=argc;
     gargv=argv;
+
+    /* Leave a space of 4096 bytes before the memory */
+    space = malloc (4096);
+    memory = malloc (MEMSIZE+MEMCHUNK_TOTAL);
+
+    { /* erase space */
+	int size = 4096/sizeof(ULONG);
+
+	while (--size)
+	    *space ++ = 0xDEADBEEF;
+    }
 
     /*
 	Prepare first MemHeader. I cannot use exec functions
@@ -146,6 +176,9 @@ int main(int argc,char *argv[])
 #endif
 
 	SysBase->LibNode.lib_Node.ln_Name="exec.library";
+	SysBase->DebugData = &AROSBase;
+
+	AROSBase.kprintf = (void *)kprintf;
 
 	NEWLIST(&SysBase->MemList);
 	AddHead(&SysBase->MemList,&mh.mh_Node);
@@ -171,6 +204,7 @@ int main(int argc,char *argv[])
 	SysBase->TDNestCnt=0;
 	SysBase->AttnResched=0;
     }
+
     {
 	/* Add boot task */
 	struct Task *t;
@@ -229,6 +263,18 @@ int main(int argc,char *argv[])
     AddLibrary((struct Library *)InitResident((struct Resident *)&Graphics_resident,0));
     AddLibrary((struct Library *)InitResident((struct Resident *)&Intuition_resident,0));
 
+    {
+	struct consolebase
+	{
+	    struct Device device;
+	};
+
+	struct consolebase *conbase;
+
+	conbase=(struct consolebase *)InitResident((struct Resident *)&Console_resident,0);
+	AddDevice (&conbase->device);
+    }
+
     DOSBase = (struct DosBase *) OpenLibrary (DOSNAME, 39);
 
     if (!DOSBase)
@@ -278,12 +324,16 @@ int main(int argc,char *argv[])
 	fh_stdout->fh_Device=&emulbase->eb_device;
 	fh_stdout->fh_Unit  =emulbase->eb_stdout;
 
+	/* AROSBase.StdOut = MKBADDR(fh_stdout); */
+	AROSBase.StdOut = stderr;
+
 	/* Start Multitasking (not yet) * /
 	signal (SIGALRM, timer);
 	alarm (1); */
 
 	CreateNewProc(bootprocess);
     }
+
     RemTask(NULL); /* get rid of Boot task */
 
     /* Get compiler happy */
