@@ -8,11 +8,16 @@ include $(TOP)/config/make.cfg
 #MM linklibs-arosm-m68328
 #MM linklibs-arosm-m68k
 
-linklibs-$(LIB)-m68328: linklibs-$(LIB)-m68328
-linklibs-$(LIB)-m68000: linklibs-$(LIB)-m68000
-linklibs-$(LIB)-m68k: linklibs-$(LIB)-m68k
+linklibs-arosm-m68328: arosm-setup-link linklibs-arosm-m68328
+linklibs-arosm-m68000: arosm-setup-link linklibs-arosm-m68000
+linklibs-arosm-m68k: arosm-setup-link linklibs-arosm-m68k
 
-%build_linklib mmake=linklibs-arosm-m68000 libname=m files=dummy
-%build_linklib mmake=linklibs-arosm-m68k libname=m files=dummy
+%build_linklib mmake=linklibs-arosm-m68000 libname=arosm files=dummy
+%build_linklib mmake=linklibs-arosm-m68k libname=arosm files=dummy
+
+#MM
+arosm-setup-link :
+	@$(RM) $(AROSDIR)/lib/libm.a
+	@ln -s $(AROSDIR)/lib/libarosm.a $(AROSDIR)/lib/libm.a
 
 %common
