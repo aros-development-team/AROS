@@ -189,6 +189,17 @@ void appendsubitem(struct MenuItem * curitem,
 void freeitems(struct Menu * m);
 void freesubitems(struct MenuItem * mi);
 
+BOOL layoutmenuitems(struct MenuItem * menuitem,
+                     struct VisualInfo * vi,
+                     struct TagItem * taglist,
+                     struct GadToolsBase_intern * GadToolsBase);
+
+BOOL layoutsubitems(struct MenuItem * motheritem,
+                     struct VisualInfo * vi,
+                     struct TagItem * taglist,
+                     struct GadToolsBase_intern * GadToolsBase);
+
+
 struct GadToolsBase_intern
 {
     struct Library    library;
@@ -295,6 +306,14 @@ struct VisualInfo
 #define TAG_DrawInfo	8
 #define TAG_UserData	9
 #define TAG_Num        10
+
+
+#define TAG_Menu		0
+#define TAG_TextAttr		1
+#define TAG_NewLookMenus	2
+#define TAG_CheckMark		3
+#define TAG_AmigaKey		4
+#define TAG_FrontPen		5
 
 #define BORDERPROPSPACINGX 4
 #define BORDERPROPSPACINGY 4

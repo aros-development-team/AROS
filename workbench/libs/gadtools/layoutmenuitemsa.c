@@ -41,7 +41,7 @@
     BUGS
 
     SEE ALSO
-	GT_LayoutMenusA()
+	LayoutMenusA(), GetVisualInfoA()
 
     INTERNALS
 
@@ -49,10 +49,35 @@
 
 ***************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    return FALSE;
+  struct VisualInfo * vinfo = (struct VisualInfo *)vi;
 
-    AROS_LIBFUNC_EXIT
-} /* GT_LayoutMenuItemsA */
+  /*
+  ** Process all menu items and subitems
+  */
+  if (FALSE == layoutmenuitems(menuitem,
+                               vinfo,
+                               tagList,
+                               GTB(GadToolsBase)))
+      return FALSE;
+    
+    
+  while (NULL != menuitem)
+  {
+    if (NULL != menuitem->SubItem)
+    {
+      if (FALSE == layoutsubitems(menuitem,
+                                  vinfo,
+                                  tagList,
+                                  GTB(GadToolsBase)))
+        return FALSE;
+    }
+    menuitem = menuitem->NextItem;
+  }
+
+  return TRUE;  
+
+  AROS_LIBFUNC_EXIT
+} /* LayoutMenuItemsA */
