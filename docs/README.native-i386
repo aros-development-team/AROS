@@ -5,6 +5,10 @@ Image to a disk using a raw-write program, eg.
     Linux: dd if=Image of=/dev/fd0
 
     Amiga: copy Image flat:pc0
+    (Note: needs flathandler from Aminet)
+
+    DOS: rawrite Image
+    (Note: you must download rawrite, first)
 
 or some other means, put the floppy in a IBM compatible PC and boot
 off it. You will see some startup messages and eventually a prompt.
