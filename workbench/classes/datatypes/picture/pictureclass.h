@@ -21,7 +21,6 @@ struct Picture_Data
     struct Screen        *DestScreen;
     struct ColorRegister  ColMap[256];
     UBYTE                 ColTable[256];
-    UBYTE                 ColTable2[256];
     UWORD                 NumColors;
     UWORD                 NumAlloc;
     UBYTE                 SparseTable[256];

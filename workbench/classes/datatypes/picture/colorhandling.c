@@ -84,9 +84,10 @@ static const UBYTE defcolmap[] =
 BOOL ConvertTC2TC( struct Picture_Data *pd )
 {
     struct RastPort DestRP;
-    long success; //BOOL success;
+    long success;
 
-    D(bug("picture.datatype/ConvertTC2TC: TrueColor source/dest, PixelFormat %ld\n", pd->SrcPixelFormat));
+    D(bug("picture.datatype/ConvertTC2TC: TrueColor source/dest, no remapping required, PixelFormat %ld\n", pd->SrcPixelFormat));
+    CopyColTable( pd );
     InitRastPort( &DestRP );
     DestRP.BitMap = pd->DestBM;
     success = WritePixelArray( pd->SrcBuffer,
@@ -99,20 +100,19 @@ BOOL ConvertTC2TC( struct Picture_Data *pd )
 				pd->SrcWidth,
 				pd->SrcHeight,
 				pd->SrcPixelFormat);
-    D(bug("picture.datatype/ConvertTC2TC: success %ld\n", success));
 #ifdef __AROS__
     DeinitRastPort( &DestRP );
 #endif
-    return success;
+    return success ? TRUE : FALSE;
 }
 
 BOOL ConvertCM2TC( struct Picture_Data *pd )
 {
     struct RastPort DestRP;
-    BOOL success;
+    long success;
 
+    D(bug("picture.datatype/ConvertCM2TC: Colormapped source, TrueColor dest, no remapping required\n"));
     CopyColTable( pd );
-    D(bug("picture.datatype/ConvertCM2TC: Colormapped source, TrueColor dest\n"));
     InitRastPort( &DestRP );
     DestRP.BitMap = pd->DestBM;
     success = WriteLUTPixelArray( pd->SrcBuffer,
@@ -129,7 +129,7 @@ BOOL ConvertCM2TC( struct Picture_Data *pd )
 #ifdef __AROS__
     DeinitRastPort( &DestRP );
 #endif
-    return success;
+    return success ? TRUE : FALSE;
 }
 
 BOOL ConvertCM2CM( struct Picture_Data *pd )
@@ -139,13 +139,13 @@ BOOL ConvertCM2CM( struct Picture_Data *pd )
 
     if( pd->Remap )
     {
+	D(bug("picture.datatype/ConvertCM2CM: Colormapped source, Colormapped dest, remapping pens\n"));
 	success = RemapCM2CM( pd );
     }
     else
     {
-        D(bug("picture.datatype/ConvertCM2CM: Remapping disabled\n"));
-	CopyColTable( pd ); // ?
-	D(bug("picture.datatype/ConvertCM2CM: Colormapped source, Colormapped dest\n"));
+        D(bug("picture.datatype/ConvertCM2CM: Colormapped source, Colormapped dest, remapping disabled\n"));
+	CopyColTable( pd );
 	InitRastPort( &DestRP );
 	DestRP.BitMap = pd->DestBM;
 	WriteChunkyPixels( &DestRP,
@@ -167,6 +167,7 @@ BOOL ConvertTC2CM( struct Picture_Data *pd )
 {
     BOOL success;
 
+    D(bug("picture.datatype/ConvertCM2CM: Truecolor source, Colormapped dest, decreasing depth and remapping\n"));
     success = RemapTC2CM( pd );
     return success;
 }
@@ -186,7 +187,7 @@ BOOL AllocSrcBuffer( struct Picture_Data *pd, long width, long height, ULONG pix
     pd->SrcHeight = height;
     pd->SrcPixelFormat = pixelformat;
     pd->SrcPixelBytes = pixelbytes;
-    D(bug("picture.datatype/AllocSrcBuffer: Chunky source buffer allocated\n"));
+    D(bug("picture.datatype/AllocSrcBuffer: Chunky source buffer allocated, %ld bytes\n", (long)(pd->SrcWidthBytes * height)));
     return TRUE;
 }
 
@@ -202,7 +203,7 @@ static UBYTE * AllocLineBuffer( long width, long height, int pixelbytes )
 	D(bug("picture.datatype/AllocLineBuffer: Line buffer allocation failed !\n"));
 	return FALSE;
     }
-    D(bug("picture.datatype/AllocLineBuffer: Line buffer allocated\n"));
+    D(bug("picture.datatype/AllocLineBuffer: Line buffer allocated, %ld bytes\n", (long)(widthbytes * height)));
     return buffer;
 }
 
@@ -211,7 +212,6 @@ BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth )
     pd->DestBM = AllocBitMap( width,
 			      height,
 			      depth,
-//			      (BMF_INTERLEAVED | BMF_MINPLANES),
 			      BMF_MINPLANES,
 			      pd->UseFriendBM ? pd->DestScreen->RastPort.BitMap : NULL );
     if( !pd->DestBM )
@@ -289,6 +289,45 @@ static void CopyColTable( struct Picture_Data *pd )
 	colB = pd->DestColRegs[j] = pd->SrcColRegs[j];
 	j++;
 	pd->ColTableXRGB[i] = ((colR>>8) & 0x00ff0000) | ((colG>>16) & 0x0000ff00) | ((colB>>24) & 0x000000ff);
+    }
+}
+
+void InitGreyColTable( struct Picture_Data *pd )
+{
+    int i, cnt;
+    ULONG * colregs;
+
+    colregs = pd->SrcColRegs;
+    cnt = 0;
+    for( i=0; i<256; i++ )
+    {
+	colregs[cnt++] = i<<24;
+	colregs[cnt++] = i<<24;
+	colregs[cnt++] = i<<24;
+    }
+}
+
+void InitRGBColTable( struct Picture_Data *pd )
+{
+    int i, j, k, cnt;
+    ULONG * colregs;
+    ULONG Col7, Col3;
+
+    Col7 = 0xFFFFFFFF/7;
+    Col3 = 0xFFFFFFFF/3;
+    colregs = pd->SrcColRegs;
+    cnt = 0;
+    for( i=0; i<4; i++ ) /* blue */
+    {
+	for( j=0; j<8; j++ ) /* red */
+	{
+	    for( k=0; k<8; k++ ) /* green */
+	    {
+		colregs[cnt++] = j*Col7;
+		colregs[cnt++] = k*Col7;
+		colregs[cnt++] = i*Col3;
+	    }
+	}
     }
 }
 
@@ -388,7 +427,7 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 	int width16 = MOD16( GetBitMapAttr( pd->DestBM, BMA_WIDTH ) );
 	int height = GetBitMapAttr( pd->DestBM, BMA_HEIGHT );
 	UBYTE *maskptr;
-	ULONG maskwidth = width16 / 8;
+	int maskwidth = width16 / 8;
 	ULONG srcwidthadd = pd->SrcWidthBytes - srcwidth * pd->SrcPixelBytes;
 
 	if( !(maskptr = AllocVec( maskwidth * height, MEMF_ANY )) )
@@ -397,7 +436,7 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 	    return FALSE;
 	}
 	pd->MaskPlane = maskptr;
-	D(bug("picture.datatype/CreateMask: Mask allocated size %ld x %d\n", maskwidth, height));
+	D(bug("picture.datatype/CreateMask: Mask allocated size %d x %d bytes\n", maskwidth, height));
 	
 	for(y = 0; y < srcheight; y++)
 	{
@@ -418,6 +457,8 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 		    maskbyte = 0x00;
 		}
 	    }
+	    if( mask )
+		*maskx = maskbyte;
 	    maskptr += maskwidth;
 	    srcbuf += srcwidthadd;
 	}
@@ -436,7 +477,6 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
     ULONG *srccolregs, *destcolregs;
     ULONG Col7, Col3;
 
-    D(bug("picture.datatype/RemapTC2CM: alloc dest and init pens\n"));
     width = pd->SrcWidth;
     height = pd->SrcHeight;
 
@@ -446,7 +486,8 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
 	DestNumColors = pd->MaxDitherPens;
 
     /*
-     *  Create color tables, src is in "natural" order, dest is sorted by priority using a precalculated table;
+     *  Create color tables: src is (already present) in "natural" order,
+     *  dest is sorted by priority using a precalculated table;
      *  "natural" is bits: bbrr.rggg
      */
     Col7 = 0xFFFFFFFF/7;
@@ -572,7 +613,6 @@ static BOOL RemapTC2CM( struct Picture_Data *pd )
     #endif
 	FreeVec( (void *) linebuf );
     }
-    D(bug("picture.datatype/RemapTC2CM: done\n"));
     return TRUE;
 }
 
@@ -583,7 +623,6 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     int DestNumColors, NumColors;
     int i, j, index;
 
-    D(bug("picture.datatype/RemapCM2CM: alloc dest and init pens\n"));
     width = pd->SrcWidth;
     height = pd->SrcHeight;
 
@@ -598,9 +637,8 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     memset( pd->SparseTable, 0x0, 256 );		/* initialize Sparse table */
     pd->NumSparse = NumColors;
 
-    D(bug("picture.datatype/RemapCM2CM: sorting pens\n"));
     /*
-     *  Farben im Histogramm ausfuellen
+     *  Fill in histogram with source colors
      */
     index = 0;
     for(i=0; i<NumColors; i++)
@@ -612,7 +650,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     }
 
     /*
-     *  Farbanzahl im Histogramm ermitteln
+     *  Determine the number of colors in histogram
      */
     { 
 	UBYTE *sb = pd->SrcBuffer;
@@ -628,7 +666,7 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     }
     
     /*
-     *  Duplikate im Histogramm ausmerzen
+     *  Remove duplicate colors in histogram
      */
     for( i=0; i<NumColors-1; i++ )
     {
@@ -645,12 +683,12 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     }
 
     /*
-     *  Histogramm nach Haeufigkeit sortieren
+     *  Sort histogram by most used colors
      */
     qsort( (void *) TheHist, NumColors, sizeof(struct HistEntry), HistSort );
 
     /*
-     *  Es werden die DestNumColors meistvorhandenen Farben benutzt
+     *  Copy colors to dest, most used colors first
      */
     index = 0;
     for( i=0; i<DestNumColors; i++ )
@@ -661,14 +699,14 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
     }
 
     /*
-     *  Allocate Pens and create sparse table for remapping
+     *  Allocate Pens in this order and create sparse table for remapping
      */
     RemapPens( pd, NumColors, DestNumColors );
     
     /*
-     *  ChunkyBuffer remappen
+     *  Remap source buffer to dest Bitmap
      */
-    D(bug("picture.datatype/RemapCM2CM: remap chunky buffer\n"));
+    D(bug("picture.datatype/RemapCM2CM: remapping buffer to new pens\n"));
     { 
 	struct RastPort DestRP;
 	UBYTE *srcbuf = pd->SrcBuffer;
@@ -705,7 +743,6 @@ static BOOL RemapCM2CM( struct Picture_Data *pd )
 	FreeVec( (void *) linebuf );
     }
 
-    D(bug("picture.datatype/RemapCM2CM: done\n"));
     return TRUE;
 }
 
@@ -725,7 +762,7 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
     int pen;
 
     /*
-     *  Pens fuer DestColRegs (GRegs) obtainen
+     *  Obtain pens for DestColRegs (GRegs)
      */
     index = 0;
     for( i=0; i<DestNumColors; i++ )
@@ -746,7 +783,7 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
         (long)pd->NumColors, (long)DestNumColors, (long)pd->NumAlloc, (long)pd->DestDepth));
  
     /*
-     *  Die wirklichen Farben der Pens holen
+     *  Get Pen's real colors
      */
     for( i=0; i<DestNumColors; i++ )
     {
@@ -757,7 +794,7 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
     }
  
     /*
-     *  SparseTable nach der "Geringster Abstand" Methode bestimmen
+     *  Determine SparseTable by minimum distance method
      */
     index = 0;
     for( i=0; i<NumColors; i++ )
@@ -794,7 +831,8 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
 	    }
 	}
     }
-#if 1
+
+#if 0    /* optionally display resulting sparse table with color values for debugging */
     {
 	int sp;
 	D(bug("picture.datatype/RemapPens: sparse table: source col -> dest pen\n"));
@@ -810,6 +848,7 @@ static void RemapPens( struct Picture_Data *pd, int NumColors, int DestNumColors
 }
 
 /**************************************************************************************************/
+/* unused functions */
 
 #if 0
 unsigned int *MakeARGB(unsigned long *ColRegs, unsigned int Count)
