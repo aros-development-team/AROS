@@ -42,6 +42,10 @@
 
 *****************************************************************************/
 {
-    return AllocPooled(poolHeader,memSize);	
-    
+    AROS_USERFUNC_INIT
+
+    return AllocPooled(poolHeader,memSize);
+
+    AROS_USERFUNC_EXIT
+
 } /* AsmAllocPooled */

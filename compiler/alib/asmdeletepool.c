@@ -41,5 +41,7 @@
 
 *****************************************************************************/
 {
-    DeletePool(poolHeader);	
+    AROS_USERFUNC_INIT
+    DeletePool(poolHeader);
+    AROS_USERFUNC_EXIT
 } /* AsmDeletePool */

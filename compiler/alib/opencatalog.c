@@ -62,7 +62,6 @@ extern struct LocaleBase *LocaleBase;
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct LocaleBase *,LocaleBase)
 
     AROS_SLOWSTACKTAGS_PRE(tag1)
@@ -70,6 +69,4 @@ extern struct LocaleBase *LocaleBase;
     retval = OpenCatalogA(locale, name, AROS_SLOWSTACKTAGS_ARG(tag1));
 
     AROS_SLOWSTACKTAGS_POST
-
-    AROS_LIBFUNC_EXIT
 } /* OpenCatalog */

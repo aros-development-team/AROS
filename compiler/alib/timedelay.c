@@ -57,6 +57,8 @@
 
 ******************************************************************************/
 {
+    AROS_USERFUNC_INIT
+
     struct timerequest tr;
     struct MsgPort mp;
     UBYTE error = 0;
@@ -92,5 +94,7 @@
     }
 
     return error;
+
+    AROS_USERFUNC_EXIT
 
 } /* TimeDelay() */

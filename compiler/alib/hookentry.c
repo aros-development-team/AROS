@@ -54,7 +54,9 @@
 
 ******************************************************************************/
 {
+    AROS_USERFUNC_INIT
     return ((IPTR (*)(struct Hook *, APTR, APTR))(hook->h_SubEntry))
 			(hook, object, param);
+    AROS_USERFUNC_EXIT
 } /* HookEntry */
 
