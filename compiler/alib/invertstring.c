@@ -63,19 +63,29 @@ extern struct Library *CxBase;
 ******************************************************************************/
 {
     AROS_GET_SYSBASE_OK
-    struct InputEvent *ieChain;
+    
+    struct InputEvent *ieChain = NULL;
     struct InputEvent *ie;
-    struct InputEvent *first;
-    IX     *ix;
-    UBYTE   ansiCode;
-    UBYTE  *start;
-
-    ie = AllocMem(sizeof(struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
-    ieChain = NULL;
-    first = ie;
+    struct InputEvent *first = NULL;
+    UBYTE   	       ansiCode;
+    UBYTE   	      *start;
 
     while(*str != '\0')
     {
+    	ie = AllocMem(sizeof(struct InputEvent), MEMF_PUBLIC | MEMF_CLEAR);
+    	if (!ie)
+	{
+	    if (first) FreeIEvents(first);
+	    return NULL;
+	}
+	
+	if (!first) first = ie;
+	
+	if(ieChain != NULL)
+	    ieChain->ie_NextEvent = ie;	    
+	
+	ieChain = ie;
+	
 	ie->ie_Class = IECLASS_RAWKEY;
 	ie->ie_EventAddress = NULL;
 	
@@ -96,7 +106,9 @@ extern struct Library *CxBase;
 		ansiCode = '\\';
 		break;
 	    default  :
-#warning FIXME: What to do if "\x" comes?
+    	    	#warning FIXME: What to do if "\x" comes?	    	
+		/* stegerg: This? */
+		ansiCode = *str;
 		break;
 	    }
 
@@ -111,30 +123,30 @@ extern struct Library *CxBase;
 	case '<' :
 	    start = ++str;
 
-	    while(*(str++) != '>');
-	    
-	    *str = '\0';
-	    ix = AllocMem(sizeof(IX), MEMF_PUBLIC | MEMF_CLEAR);
-	    
-	    if(ParseIX(start, ix) < 0)
+	    while(*str && (*str != '>')) str++;
+	    	    
 	    {
-		FreeMem(ix, sizeof(IX));
-		FreeIEvents(first);
-		return NULL;
-	    }
+	    	IX ix = {0};
+    	    	LONG err;
+		
+	    	*str = '\0';	    
+		err = ParseIX(start, &ix);
+		*str++ = '>';
+		
+		if (err < 0)
+		{
+		    FreeIEvents(first);
+		    return NULL;
+		}
 
-	    ie->ie_Class     = ix->ix_Class;
-	    ie->ie_Code      = ix->ix_Code;
-	    ie->ie_Qualifier = ix->ix_Qualifier;
-	    
-	    FreeMem(ix, sizeof(IX));
-
-	    *str++ = '>';
-	    
+	    	ie->ie_Class     = ix.ix_Class;
+	    	ie->ie_Code      = ix.ix_Code;
+	    	ie->ie_Qualifier = ix.ix_Qualifier;
+    	    }
 	    break;
 	    
 	default :
-	    if(InvertKeyMap(*str, ie, km) == FALSE)
+	    if(InvertKeyMap(*str++, ie, km) == FALSE)
 	    {
 		FreeIEvents(first);
 		return NULL;
@@ -143,10 +155,6 @@ extern struct Library *CxBase;
 	    break;
 	}
 	
-	if(ieChain != NULL)
-	    ieChain->ie_NextEvent = ie;	    
-	
-	ieChain = ie;
     }
 
     return first;
