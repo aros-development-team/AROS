@@ -34,7 +34,7 @@ FUNCTIONS = \
 	layoutmenuitemsa \
 	layoutmenusa
 
-OBJDIR=$(GENDIR)/workbench/libs/gadtools
+OBJDIR=$(GENDIR)/$(CURDIR)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 

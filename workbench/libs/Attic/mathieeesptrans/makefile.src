@@ -15,7 +15,7 @@ endif
 
 LIBNAME = mathieeesingtrans
 
-OBJDIR=$(OSGENDIR)/$(LIBNAME)
+OBJDIR=$(GENDIR)/$(CURDIR)
 LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 %prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)

@@ -45,7 +45,7 @@ FUNCTIONS = \
 	putdefdiskobject \
 	putdiskobject
 
-OBJDIR=$(GENDIR)/workbench/libs/icon
+OBJDIR=$(GENDIR)/$(CURDIR)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 

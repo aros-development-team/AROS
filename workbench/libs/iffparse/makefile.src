@@ -76,7 +76,7 @@ FUNCTIONS = \
 	writechunkbytes \
 	writechunkrecords
 
-OBJDIR=$(GENDIR)/workbench/libs/iffparse
+OBJDIR=$(GENDIR)/$(CURDIR)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 

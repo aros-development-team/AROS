@@ -23,7 +23,7 @@ FUNCTIONS = \
 	disposefontcontents \
 	newscaleddiskfont
 
-OBJDIR=$(GENDIR)/workbench/libs/diskfont
+OBJDIR=$(GENDIR)/$(CURDIR)
 
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
