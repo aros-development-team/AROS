@@ -94,29 +94,36 @@ AROS_UFP2(BOOL, (*CompFunc),
 
     D(bug("SortLayerCR(layer @ $%lx, dx %ld, dy %ld)\n", layer, dx, dy));
 
-    if(dy == 0)
-	if(dx > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Right);
-	else
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Left);
-    else if(dx == 0)
-	if(dy > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Down);
-	else
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Up);
-    else
+    if(dy > 0)
     {
-	SortLayerCR(layer, 0, dy);
+	_SLCR_SortClipRects(layer, _SLCR_CompFunc_Down);
 
-	if(dx > 0 && dy > 0)
+	if (dx > 0)
 	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightDown);
-	else if(dx > 0 && dy < 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightUp);
-	else if(dx < 0 && dy > 0)
-	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftDown);
 	else
+	if (dx < 0)
+	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftDown);
+    }
+    else
+    if (dy < 0)
+    {
+	_SLCR_SortClipRects(layer, _SLCR_CompFunc_Up);
+
+	if (dx > 0)
+	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_RightUp);
+	else
+	if (dx < 0)
 	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_LeftUp);
     }
+    else
+    {
+	if (dx > 0)
+	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Right);
+	else
+	if (dx < 0)
+	    _SLCR_SortClipRects(layer, _SLCR_CompFunc_Left);
+    }
+
     AROS_LIBFUNC_EXIT
 } /* SortLayerCR */
 
