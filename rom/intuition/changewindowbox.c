@@ -52,8 +52,21 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-    intui_ChangeWindowBox (window, left, top, width, height);
+    
+    struct shortIntuiMessage * msg;
+    msg = AllocMem(sizeof (struct shortIntuiMessage), MEMF_CLEAR);
+    if (NULL != msg)
+    {
+    	msg->Class	= IDCMP_WBENCHMESSAGE;
+	msg->Code	= IMCODE_CHANGEWINDOWBOX;
+	msg->Window	= window;
+	msg->left	= left;
+	msg->top	= top;
+	msg->width	= width;
+	msg->height	= height;
+	
+	PutMsg(window->WindowPort, (struct Message *)msg);
+    }
 
     AROS_LIBFUNC_EXIT
 } /* ChangeWindowBox */
