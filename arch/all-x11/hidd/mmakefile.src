@@ -50,6 +50,32 @@ x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable $(X11KEYMAPTABLE_
 #MM change-x11keymaptable
 change-x11keymaptable : setup-x11keymaptable $(TOOLDIR)/makexkeytable
 	$(TOOLDIR)/makexkeytable -o $(X11KEYMAPTABLE_FILE)
+
+#MM default-x11keymaptable
+default-x11keymaptable : setup-x11keymaptable
+	@$(CP) def-x11-keycode2rawkey.table $(X11KEYMAPTABLE_FILE)
+
+#MM backup-x11keymaptable
+backup-x11keymaptable :
+	@$(IF) $(TEST) -f $(X11KEYMAPTABLE_FILE) ; then \
+	    $(CP) $(X11KEYMAPTABLE_FILE) ~/aros-x11-keycode2rawkey.table ; \
+	    $(ECHO) "" ; \
+	    $(ECHO) "Made backup of x11 keymaptable to \"~/aros-x11-keycode2rawkey.table\"" ; \
+	    $(ECHO) "" ; \
+	else \
+	    $(ECHO) "There is no x11 keymaptable existing (\"$(X11KEYMAPTABLE_FILE)\")!?" ; \
+	fi
+
+#MM restore-x11keymaptable
+restore-x11keymaptable : setup-x11keymaptable
+	@$(IF) $(TEST) -f ~/aros-x11-keycode2rawkey.table ; then \
+	    $(CP) ~/aros-x11-keycode2rawkey.table $(X11KEYMAPTABLE_FILE) ; \
+	    $(ECHO) "" ; \
+	    $(ECHO) "Restored x11 keymaptable from \"~/aros-x11-keycode2rawkey.table\"" ; \
+	    $(ECHO) "" ; \
+	else \
+	    $(ECHO) "There is no x11 keymaptable backup existing (\"~/aros-x11-keycode2rawkey.table\")!?" ; \
+	fi
 	
 $(X11KEYMAPTABLE_FILE) :
 	$(TOOLDIR)/makexkeytable -o $(X11KEYMAPTABLE_FILE)
