@@ -3,21 +3,23 @@ TOP=..
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=compiler
+SUBDIRS=
+TARGET=all
 
-all:
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
-	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		all ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
-	done
+all: subdirs
 
 clean:
+	@$(MAKE) $(MFLAGS) subdirs TARGET=clean
+
+setup:
+	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
+
+subdirs:
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
-	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		clean ) ; \
+	    echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+		TARGET=$(TARGET) $(TARGET) ) ; \
+	    then true ; else exit 1 ; fi ; \
 	done
 
