@@ -68,10 +68,10 @@ ULONG error,x,seconds[3]={4,1,2}, microseconds[3]={0,0,0};
 int allin = 3;
 char *position[]={"last","second","first"};
 
-if (TimerMP = CreatePort(0,0))
+if ((TimerMP = CreatePort(0,0)))
     {
-    if (TimerIO[0] = (struct timerequest *)
-                      CreateExtIO(TimerMP,sizeof(struct timerequest)) )
+    if ((TimerIO[0] = (struct timerequest *)
+                      CreateExtIO(TimerMP,sizeof(struct timerequest))))
         {
             /* Open the device once */
         if (!(error=OpenDevice( TIMERNAME, UNIT_VBLANK,(struct IORequest *) TimerIO[0], 0L)))
@@ -79,11 +79,11 @@ if (TimerMP = CreatePort(0,0))
             /* Set command to TR_ADDREQUEST */
             TimerIO[0]->tr_node.io_Command = TR_ADDREQUEST;
 
-            if (TimerIO[1]=(struct timerequest *)
-                    AllocMem(sizeof(struct timerequest),MEMF_PUBLIC | MEMF_CLEAR))
+            if ((TimerIO[1]=(struct timerequest *)
+                    AllocMem(sizeof(struct timerequest),MEMF_PUBLIC | MEMF_CLEAR)))
                 {
-                if (TimerIO[2]=(struct timerequest *)
-                       AllocMem(sizeof(struct timerequest),MEMF_PUBLIC | MEMF_CLEAR))
+                if ((TimerIO[2]=(struct timerequest *)
+                       AllocMem(sizeof(struct timerequest),MEMF_PUBLIC | MEMF_CLEAR)))
                     {
                     /* Copy fields from the request used to open the timer device */
                     *TimerIO[1] = *TimerIO[0];
