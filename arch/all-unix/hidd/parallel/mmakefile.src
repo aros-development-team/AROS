@@ -156,11 +156,11 @@ endif
 #MM- workbench-hidd-unix : hidd-parallel-unix-module
 
 	
-#MM hidd-parallel-unix-linklib : setup includes linklibs kernel-hidd-unix
+#MM hidd-parallel-unix-linklib : setup includes linklibs kernel-hidd-unix workbench-hidd-parallel-stubs
 hidd-parallel-unix-linklib : $(LIB) setup
 	@$(NOP)
 
-#MM hidd-parallel-unix-module : setup includes linklibs kernel-hidd-unix
+#MM hidd-parallel-unix-module : setup includes linklibs kernel-hidd-unix workbench-hidd-parallel-stubs
 hidd-parallel-unix-module : $(SLIB)
 	@$(NOP)
 
