@@ -82,12 +82,17 @@ struct MidiLink{
 
 	/* Private data may follow. (currently not, but..) */
 };
-
-#define sxf_Mode b[0]
-#define sxf_ID1 b[1]
-#define sxf_ID2 b[2]
-#define sxf_ID3 b[3]
-
+#ifdef AROS_BIG_ENDIAN
+#  define sxf_Mode b[3]
+#  define sxf_ID1 b[2]
+#  define sxf_ID2 b[1]
+#  define sxf_ID3 b[0]
+#else
+#  define sxf_Mode b[0]
+#  define sxf_ID1 b[1]
+#  define sxf_ID2 b[2]
+#  define sxf_ID3 b[3]
+#endif
 
 #define MLTYPE_Receiver 0
 #define MLTYPE_Sender 1
