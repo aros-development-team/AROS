@@ -9,7 +9,8 @@ FILES  := test      	    \
 	  gradient  	    \
 	  volumelist	    \
 	  dirlist   	    \
-	  numericbutton
+	  numericbutton     \
+	  poplist
 
 EXEDIR := $(AROSDIR)/test/Zune
 
