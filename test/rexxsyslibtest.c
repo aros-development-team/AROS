@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct Library *RexxSysBase;
+struct RxsLib *RexxSysBase;
 
 int main(void)
 {
   UBYTE *s;
   
-  RexxSysBase = OpenLibrary("rexxsyslib.library", 0);
+  RexxSysBase = (struct RxsLib *)OpenLibrary("rexxsyslib.library", 0);
   if (RexxSysBase == NULL)
   {
     puts("Error opening rexxsyslib.library");
@@ -34,7 +34,7 @@ int main(void)
   puts("Deleting Argstring");
   DeleteArgstring(s);
 
-  CloseLibrary(RexxSysBase);
+  CloseLibrary((struct Library *)RexxSysBase);
   exit(0);
 }
 	 
