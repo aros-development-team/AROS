@@ -94,6 +94,7 @@ FUNCTIONS	:= \
 	setcollision \
 	setdrmd \
 	setfont \
+	setmaxpen \
 	setoutlinepen \
 	setrast \
 	setrgb32 \
