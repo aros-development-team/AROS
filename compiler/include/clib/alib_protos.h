@@ -58,6 +58,7 @@ IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
 
 /* Exec support */
+VOID BeginIO (struct IORequest *ioReq);
 struct IORequest * CreateExtIO (struct MsgPort * port, ULONG iosize);
 struct IOStdReq * CreateStdIO (struct MsgPort * port);
 void DeleteExtIO (struct IORequest * ioreq);
