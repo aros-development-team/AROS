@@ -153,7 +153,7 @@ int main(void)
 
 	/* Parse arguments */
 	
-	read_args = ReadArgs(template, args, NULL);
+	read_args = ReadArgs((STRPTR)template, args, NULL);
 	
 	if(locale && read_args)
 	{
@@ -262,7 +262,7 @@ int main(void)
 				WriteChars(spaces, MARGIN + INDENT*indent + 
 					   DIR_MARGIN);
 				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
-				VPrintf("%s (dir)\n", &text);
+				VPrintf("%s (dir)\n", (IPTR *)&text);
 			    }
 
 			    if(args[ARG_ALL] || (anchor->ap_Flags & APF_DODIR))
@@ -305,13 +305,13 @@ int main(void)
 			    if(args[ARG_QUICK])
 			    {
 				PrintFullName(path_buffer, cut_off, anchor);
-				WriteChars(control_codes, 3);
+				WriteChars((STRPTR)control_codes, 3);
 			    }
 			    else if(!args[ARG_QUIET] && print_names)
 			    {
 				WriteChars(spaces, MARGIN + INDENT*indent);
 				text = (TEXT *)&(anchor->ap_Info.fib_FileName);
-				VPrintf("%s..\n", &text);
+				VPrintf("%s..\n", (IPTR *)&text);
 			    }
 			    
 			    found = FindString(anchor, args, pattern, locale,
@@ -345,7 +345,7 @@ int main(void)
 	    /* Clear line for next shell prompt */
 	    
 	    if(args[ARG_QUICK] && !args[ARG_FILE])
-		WriteChars(control_codes, 2);
+		WriteChars((STRPTR)control_codes, 2);
 	    
 	    MatchEnd(anchor);
 	    
@@ -543,7 +543,7 @@ BOOL FindString(struct AnchorPath *anchor, ULONG *args, TEXT *pattern,
 					*r='.';
 				}
 				
-				VPrintf("%s\n", &line);
+				VPrintf("%s\n", (IPTR *)&line);
 			    }
 			}
 			

@@ -385,9 +385,9 @@ int makekickver()
 
     /* Fill in struct parsedver. */
     ArosInquire(
-                AI_ArosVersion, &parsedver.version,
-                AI_ArosReleaseMinor, &parsedver.revision,
-                AI_ArosReleaseDate, &parsedver.days,
+                AI_ArosVersion, (ULONG)&parsedver.version,
+                AI_ArosReleaseMinor, (ULONG)&parsedver.revision,
+                AI_ArosReleaseDate, (ULONG)&parsedver.days,
                 TAG_DONE);
 
 #define KICKSTRLEN 5
