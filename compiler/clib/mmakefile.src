@@ -42,6 +42,7 @@ COMMON	:= \
 	setjmp \
 	stpblk \
 	stpcpy \
+	stpsym \
 	strcasecmp \
 	strcat \
 	strchr \
