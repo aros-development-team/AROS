@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -808,20 +808,20 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 		}
 
 #if 0	    
-		kprintf("groupid = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
-						cdt->DTH.dth_GroupID >> 16,
-						cdt->DTH.dth_GroupID >> 8,
-						cdt->DTH.dth_GroupID);
-		kprintf("     id = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
-						cdt->DTH.dth_ID >> 16,
-						cdt->DTH.dth_ID >> 8,
-						cdt->DTH.dth_ID);
-		kprintf("flags   = %x\n",	cdt->DTH.dth_Flags);
-		kprintf("pri     = %d\n",	cdt->DTH.dth_Priority);
-		kprintf("name = %s\n",		cdt->DTH.dth_Name);
-		kprintf("basename = %s\n",	cdt->DTH.dth_BaseName);
-		kprintf("pattern = %s\n",	cdt->DTH.dth_Pattern);
-		kprintf("masklen = %d\n",	cdt->DTH.dth_MaskLen);
+		kprintf("groupid  = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
+						 cdt->DTH.dth_GroupID >> 16,
+						 cdt->DTH.dth_GroupID >> 8,
+						 cdt->DTH.dth_GroupID);
+		kprintf("id       = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
+						 cdt->DTH.dth_ID >> 16,
+						 cdt->DTH.dth_ID >> 8,
+						 cdt->DTH.dth_ID);
+		kprintf("flags    = %x\n",	 cdt->DTH.dth_Flags);
+		kprintf("pri      = %d\n",	 cdt->DTH.dth_Priority);
+		kprintf("name     = %s\n",	 cdt->DTH.dth_Name);
+		kprintf("basename = %s\n",	 cdt->DTH.dth_BaseName);
+		kprintf("pattern  = %s\n",	 cdt->DTH.dth_Pattern);
+		kprintf("masklen  = %d\n",	 cdt->DTH.dth_MaskLen);
 #endif
 
 		NewList(&cdt->DT.dtn_ToolList);
