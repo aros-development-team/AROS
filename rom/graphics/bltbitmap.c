@@ -151,17 +151,29 @@ kprintf("Doing nonvisible blit %d,%d!",xSize,ySize);
 	}
 
 	/* Clip width and height for source and dest */
-	if (ySrc + ySize >= srcBitMap->Rows)
+	if (ySrc + ySize > srcBitMap->Rows)
+	{
+kprintf("bltbitmap: clipping 1\n");
 	    ySize = srcBitMap->Rows - ySrc;
+	}
 
-	if (yDest + ySize >= destBitMap->Rows)
+	if (yDest + ySize > destBitMap->Rows)
+	{
+kprintf("bltbitmap: clipping 2: %d>=%d\n",yDest+ySize,destBitMap->Rows);
 	    ySize = destBitMap->Rows - yDest;
+        }
 
 	if (xSrc + xSize >= wSrc)
+	{
+kprintf("bltbitmap: clipping 3\n");
 	    xSize = wSrc - xSrc;
-
+        }
+        
 	if (xDest + xSize >= wDest)
+	{
+kprintf("bltbitmap: clipping 4\n");
 	    xSize = wDest - xDest;
+        }
 
 	/* If the size is illegal or we need not copy anything, return */
 	if (ySize <= 0 || xSize <= 0 || !mask || !minterm)
