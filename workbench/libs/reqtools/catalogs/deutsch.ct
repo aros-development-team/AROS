@@ -15,15 +15,15 @@ MSG_OK
  _Ok
 ;
 MSG_CANCEL
-_Abbruch
+_Abbrechen
 ;
 MSG_OK_BAR_CANCEL
- _Ok |_Abbruch
+ _Ok |_Abbrechen
 ;
 ; *** EZRequester ***
 ;
 MSG_LAST_BAR_CANCEL
-_Letztes|_Abbruch
+_Letztes|_Abbrechen
 ;
 MSG_REQUEST
 Meldung
@@ -69,7 +69,7 @@ MSG_COPY
 _Kopieren
 ;
 MSG_SWAP
-_Wechseln
+_Vertauschen
 ;
 MSG_SPREAD
 _Verlauf
@@ -80,13 +80,13 @@ Rü_ckgängig
 ; ** 2.5 **
 ;
 MSG_COPY_TITLE
-Copy to...
+Kopieren nach...
 ;
 MSG_SWAP_TITLE
-Swap with...
+Vertauschen mit...
 ;
 MSG_SPREAD_TITLE
-Spread to...
+Verlauf nach...
 ;
 ; *** File Requester ***
 ;
@@ -115,10 +115,10 @@ MSG_CLEAR
 _Keine
 ;
 MSG_VOLUMES
-_Laufw.
+_Datenträger
 ;
 MSG_PARENT
-_Mutterv.
+_Übergeordnet
 ;
 MSG_PATTERN
 Mus_ter:
@@ -130,7 +130,7 @@ MSG_DOT_INFO
 ._info
 ;
 MSG_SELECTED
-Angewählt:
+Ausgewählt:
 ;
 MSG_FULL
 %ld%% voll
@@ -138,7 +138,7 @@ MSG_FULL
 ; *** Font Requester ***
 ;
 MSG_COULDNT_OPEN_FONT
-Kann Font nicht öffnen!
+Zeichensatz konnte nicht geöffnet werden!
 ;
 MSG_BOLD
 _Fett
@@ -147,12 +147,12 @@ MSG_ITALIC
 _Kursiv
 ;
 MSG_UNDERLINE
-_Unterstr.
+_Unterstrichen
 ;
 ; *** ScreenMode Requester ***
 ;
 MSG_DASH_INTERLACED
--Interlace
+-Interlaced
 ;
 MSG_DASH_HAM
 -HAM
@@ -164,10 +164,10 @@ MSG_REGULAR_SIZE
 Normale Abmessung
 ;
 MSG_TEXT_SIZE
-Text-Abmessung
+Textabmessung
 ;
 MSG_GFX_SIZE
-Grafik-Abmessung
+Grafikabmessung
 ;
 MSG_MAX_SIZE
 Maximale Abmessung
