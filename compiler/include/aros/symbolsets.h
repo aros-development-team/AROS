@@ -39,12 +39,12 @@ extern const void * SETNAME(set)[] __attribute__((weak));
 const void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
-	static typeof(symbol) * __aros_set_##_set##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) __unused = &symbol;
+	static const void *__aros_set_##_set##_##symbol __attribute__((__section__(".aros.set." #_set "." #pri))) __unused = (void *)&symbol;
 
-#define SETELEM(symbol, _set)                  \
-({                                             \
-    extern void *__aros_set_##_set##_##symbol; \
-    &__aros_set_##_set##_##symbol;             \
+#define SETELEM(symbol, _set)                        \
+({                                                   \
+    extern const void *__aros_set_##_set##_##symbol; \
+    &__aros_set_##_set##_##symbol;                   \
 })
 
 /*
@@ -109,7 +109,7 @@ AROS_IMPORT_ASM_SYM(__includelibrarieshandling);         \
                                                          \
 const ULONG bname##_version __attribute__((weak)) = ver; \
                                                          \
-struct libraryset libraryset_##bname =                   \
+const struct libraryset libraryset_##bname =             \
 {                                                        \
      name, &bname##_version, (void **)&bname             \
 };                                                       \
