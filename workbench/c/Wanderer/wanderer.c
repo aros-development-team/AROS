@@ -22,11 +22,11 @@
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#include <proto/workbench.h>
 
 #ifdef _AROS
 #include <libraries/mui.h>
 #include <proto/muimaster.h>
+#include <proto/workbench.h>
 #include <aros/debug.h>
 #else
 #include "mui.h"
@@ -385,7 +385,9 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
 
+#ifdef _AROS
     RegisterWorkbench(data->notify_port);
+#endif
 
     /* Setup two input handlers */
 
@@ -418,8 +420,9 @@ STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	 * successful */
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->timer_ihn);
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->notify_ihn);
-	
+#ifdef _AROS
 	UnregisterWorkbench(data->notify_port);
+#endif
 	data->notify_port = NULL;
     }
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
