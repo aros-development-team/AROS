@@ -424,7 +424,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     data->app_TrackingNode.tn_Application = obj;
-    Enqueue((struct List *)&MUIMB(MUIMasterBase)->Applications, (struct Node *)&data->app_TrackingNode);
+    AddTail((struct List *)&MUIMB(MUIMasterBase)->Applications, (struct Node*)&data->app_TrackingNode);
     data->app_is_TNode_in_list = TRUE;
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
 
