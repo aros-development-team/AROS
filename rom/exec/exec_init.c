@@ -57,7 +57,7 @@ const struct Resident Exec_resident =
     &GM_UNIQUENAME(init)
 };
 
-static const UBYTE name[] = NAME_STRING;
+static const UBYTE name[] = MOD_NAME_STRING;
 static const UBYTE version[] = VERSION_STRING;
 
 extern void debugmem(void);

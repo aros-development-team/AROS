@@ -76,7 +76,7 @@ AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, LIBBASE)
 	HIDD that deals with the vblank */
     LIBBASE->tb_VBlankInt.is_Node.ln_Pri = 0;
     LIBBASE->tb_VBlankInt.is_Node.ln_Type = NT_INTERRUPT;
-    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)NAME_STRING;
+    LIBBASE->tb_VBlankInt.is_Node.ln_Name = (STRPTR)MOD_NAME_STRING;
     LIBBASE->tb_VBlankInt.is_Code = (APTR)&VBlankInt;
     LIBBASE->tb_VBlankInt.is_Data = LIBBASE;
 
