@@ -8,7 +8,18 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 
 #MM- AROS-freebsd-i386 : AROS-freebsd
 #MM- setup-freebsd-i386 : setup-freebsd
+#MM- includes-freebsd-i386 : includes-copy
 #MM- kernel-freebsd-i386 : kernel-freebsd
+#MM- kernel-exec-freebsd-i386: kernel-exec-freebsd
+#MM- kernel-dos-freebsd-i386: kernel-dos-freebsd
+#MM- kernel-graphics-freebsd-i386: kernel-graphics-freebsd
+#MM- kernel-intuition-freebsd-i386: kernel-intution-freebsd
+#MM- kernel-hidd-freebsd-i386: kernel-hidd-freebsd
+#MM- kernel-utility-freebsd-i386: kernel-utility-freebsd
+#MM- kernel-battclock-freebsd-i386: kernel-battclock-freebsd
+#MM- workbench-freebsd-i386: workbench-freebsd
+#MM- contrib-freebsd-i386: contrib-freebsd
+
 
 #MM- AROS-freebsd : setup includes compiler kernel workbench \
 #MM 	demos games shell
