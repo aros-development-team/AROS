@@ -128,6 +128,9 @@ case "$host_os" in
     amiga*)
 	SORT=/gg/bin/sort
 	TEST=/gg/bin/test
+	UNIQ=/gg/bin/uniq
+	FOR=for
+	TOUCH=/gg/bin/touch
 	aros_common_aflags="-x assembler-with-cpp"
 	;;
     *)
@@ -191,7 +194,7 @@ case "$target_os" in
 	aros_flavour="nativecompat"
 	strip_prog=strip	# We actually strip binaries here
 
-	aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -fomit-frame-pointer"
+	aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -m68881 -fomit-frame-pointer -fbuiltin -ffreestanding"
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_common_aflags="-m68060 -x assembler-with-cpp"
 	;;
