@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Basic support functions for layers.library.
@@ -1287,47 +1287,64 @@ void _BackFillRegion(struct Layer * l,
 {
   struct RegionRectangle * RR;
 
+  RR = r->RegionRectangle;
+  if (NULL == RR) return;
+  
   if (TRUE == addtodamagelist)
   {
-    RR  = r->RegionRectangle;
-    /* check if a region is empty */
+    l->Flags |= LAYERREFRESH;
 
-    if (NULL != RR)
+#if 1
+     /* Region coords are screen relative, but damagelist coords are layer relative! */
+      
+    _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    OrRegionRegion(r, l->DamageList);
+    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);
+    
+#else
+    while (NULL != RR)
     {
-      l->Flags |= LAYERREFRESH;
-      while (NULL != RR)
-      {
-        struct Rectangle rect = RR->bounds;
+      struct Rectangle rect = RR->bounds;
 
 //kprintf("%s: adding to damagelist!\n",__FUNCTION__);
-      
-        /* Region coords are screen relative, but damagelist coords are layer relative! */
-      
-        _TranslateRect(&rect, 
-                       r->bounds.MinX - l->bounds.MinX,
-                       r->bounds.MinY - l->bounds.MinY);
+
+      /* Region coords are screen relative, but damagelist coords are layer relative! */
+
+      _TranslateRect(&rect, 
+                     r->bounds.MinX - l->bounds.MinX,
+                     r->bounds.MinY - l->bounds.MinY);
 #if 0
 kprintf("%s: Adding %d/%d-%d/%d to damagelist!\n",
-        __FUNCTION__,
-        rect.MinX,
-        rect.MinY,
-        rect.MaxX,
-        rect.MaxY
-        );
+      __FUNCTION__,
+      rect.MinX,
+      rect.MinY,
+      rect.MaxX,
+      rect.MaxY
+      );
 #endif
-        OrRectRegion(l->DamageList, &rect);
+      OrRectRegion(l->DamageList, &rect);
 
-        _TranslateRect(&rect, 
-                       -r->bounds.MinX + l->bounds.MinX,
-                       -r->bounds.MinY + l->bounds.MinY);
+      _TranslateRect(&rect, 
+                     -r->bounds.MinX + l->bounds.MinX,
+                     -r->bounds.MinY + l->bounds.MinY);
 
-        RR = RR->Next;
-      }
-    }
-  }
+      RR = RR->Next;
+      
+    } /* while (NULL != RR) */
+#endif
+    
+  } /* if (TRUE == addtodamagelist) */
 
   AndRegionRegion(l->VisibleRegion, r);
-
+  if (l->shaperegion)
+  {
+    /* shaperegion is layer relative, while r is screen relative */
+    
+    _TranslateRect(&r->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    AndRegionRegion(l->shaperegion, r);
+    _TranslateRect(&r->bounds, l->bounds.MinX, l->bounds.MinY);    
+  }
+  
   RR  = r->RegionRectangle;
   /* check if a region is empty */
   while (NULL != RR)
