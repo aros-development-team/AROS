@@ -144,10 +144,10 @@
 	xrel = L->bounds.MinX;
 	yrel = L->bounds.MinY;
 		
-	torender.MinX = rr.MinX + xrel;
-	torender.MinY = rr.MinY + yrel;
-	torender.MaxX = rr.MaxX + xrel;
-	torender.MaxY = rr.MaxY + yrel;
+	torender.MinX = rr.MinX + xrel - L->Scroll_X;
+	torender.MinY = rr.MinY + yrel - L->Scroll_Y;
+	torender.MaxX = rr.MaxX + xrel - L->Scroll_X;
+	torender.MaxY = rr.MaxY + yrel - L->Scroll_Y;
 		
 	CR = L->ClipRect;
 	
@@ -166,8 +166,8 @@
 		xoffset = intersect.MinX - torender.MinX;
 		yoffset = intersect.MinY - torender.MinY;
 		
-		layer_rel_x = intersect.MinX - L->bounds.MinX;
-		layer_rel_y = intersect.MinY - L->bounds.MinY;
+		layer_rel_x = intersect.MinX - xrel + L->Scroll_X;
+		layer_rel_y = intersect.MinY - yrel + L->Scroll_Y;
 					
 	        if (NULL == CR->lobs)
 		{		
@@ -181,10 +181,10 @@
 		    
 		    HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
 		    	, gc
-			, rp->cp_x + xrel
-			, rp->cp_y + yrel
-			, x + xrel
-			, y + yrel
+			, rp->cp_x + xrel - L->Scroll_X
+			, rp->cp_y + yrel - L->Scroll_Y
+			, x + xrel - L->Scroll_X
+			, y + yrel - L->Scroll_Y
 		    );
 		    
 		    HIDD_GC_UnsetClipRect(gc);
@@ -202,10 +202,6 @@
 		    else
 		    {
 		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
-			LONG layer_rel_x, layer_rel_y;
-
-			layer_rel_x = intersect.MinX - xrel;
-			layer_rel_y = intersect.MinY - yrel;
 			
 			bm_rel_minx = intersect.MinX - CR->bounds.MinX;
 			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
