@@ -34,6 +34,6 @@ USER_CFLAGS	:= -DAROS -DNO_ERRNO_H
 #MM
 arosz-setup-link :
 	@$(RM) $(AROSDIR)/lib/libz.a
-	@ln -s $(AROSDIR)/lib/libarosz.a $(AROSDIR)/lib/libz.a
+	@ln -s libarosz.a $(AROSDIR)/lib/libz.a
     
 %common
