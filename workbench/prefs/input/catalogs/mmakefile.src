@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-input-catalogs \
-                name=Input subdir=System/Preferences
+                name=Input subdir=System/Prefs

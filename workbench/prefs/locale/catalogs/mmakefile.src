@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-locale-catalogs \
-                name=Locale subdir=System/Preferences
+                name=Locale subdir=System/Prefs

@@ -4,4 +4,4 @@
 include $(TOP)/config/make.cfg
 
 %build_catalogs mmake=workbench-prefs-reqtools-catalogs \
-                name=ReqTools subdir=System/Preferences
+                name=ReqTools subdir=System/Prefs

@@ -3,5 +3,4 @@
 
 include $(TOP)/config/make.cfg
 
-%build_catalogs mmake=workbench-prefs-time-catalogs \
-                name=Time subdir=System/Preferences
+%build_catalogs mmake=workbench-prefs-time-catalogs name=Time subdir=System/Prefs

@@ -9,7 +9,7 @@
 #define CATCOMP_ARRAY
 #include "strings.h"
 
-#define CATALOG_NAME     "System/Preferences/Font.catalog"
+#define CATALOG_NAME     "System/Prefs/Font.catalog"
 #define CATALOG_VERSION  0
 
 /*** Variables **************************************************************/

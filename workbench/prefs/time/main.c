@@ -762,7 +762,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("System/Preferences/Time.catalog", 1);
+    InitLocale("System/Prefs/Time.catalog", 1);
     InitMenus();
     OpenLibs();
     OpenTimerDev();

@@ -197,7 +197,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("System/Preferences/IControl.catalog", 1);
+    InitLocale("System/Prefs/IControl.catalog", 1);
     InitMenus();
     OpenLibs();
     GetArguments();
