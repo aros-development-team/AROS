@@ -18,6 +18,7 @@
 #include <proto/oop.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
+#include <aros/machine.h>
 
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>
@@ -1181,8 +1182,13 @@ const HIDDT_PixelFormat stdpfs[] =
 {
     {   
 	  24, 24, 3
+#if AROS_BIG_ENDIAN	  
 	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000
 	, 8, 16, 24, 0
+#else
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000
+	, 24, 16, 8, 0
+#endif	
 	, 0, 0
 	, vHidd_StdPixFmt_RGB24
 	, PF_GRAPHTYPE(TrueColor, Chunky)
@@ -1195,14 +1201,24 @@ const HIDDT_PixelFormat stdpfs[] =
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  32, 32, 4
+#if AROS_BIG_ENDIAN
 	, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000
 	, 8, 16, 24, 0
+#else	
+	, 0x0000FF00, 0x00FF0000, 0xFF000000, 0x000000FF
+	, 16, 8, 0, 24
+#endif
 	, vHidd_StdPixFmt_ARGB32
 	, PF_GRAPHTYPE(TrueColor, Chunky)
     }, {
 	  32, 32, 4
+#if AROS_BIG_ENDIAN	  
 	, 0xFF000000, 0x00FF0000, 0x0000FF00, 0x000000FF
 	, 0, 8, 16, 24
+#else
+	, 0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000
+	, 24, 16, 8, 0
+#endif	
 	, 0, 0
 	, vHidd_StdPixFmt_RGBA32
 	, PF_GRAPHTYPE(TrueColor, Chunky)

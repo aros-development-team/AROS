@@ -1,5 +1,6 @@
 #include <hidd/graphics.h>
 #include "graphics_intern.h"
+#include <aros/machine.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -9,18 +10,28 @@
 	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
 
 
-
 #define GETPIX32(s, pix)	\
 	 pix = ( *((ULONG *)s) ++ );
 
+#if AROS_BIG_ENDIAN
 #define GETPIX24(s, pix) 	\
 	pix = (      ( ((UBYTE *)s)[0] << 16 )	\
 		   | ( ((UBYTE *)s)[1] << 8  )	\
 		   | ( ((UBYTE *)s)[2] )	);	\
 	((UBYTE *)s) += 3;
 
+#else
+#define GETPIX24(s, pix) 	\
+	pix = (      ( ((UBYTE *)s)[2] << 16 )	\
+		   | ( ((UBYTE *)s)[1] << 8  )	\
+		   | ( ((UBYTE *)s)[0] )	);	\
+	((UBYTE *)s) += 3;
+
+#endif
+
 #define GETPIX16(s, pix)	\
 	pix = *((UWORD *)s) ++;
+
 
 #define GETPIX8(s, pix)	\
 	pix = *((UBYTE *)s) ++;
@@ -43,19 +54,31 @@
 		default: kprintf("RUBBISH BYTES PER PIXEL IN GET_PAL_PIX()\n"); break;	\
 	}	\
 	pix = lut[pix];
-	
+
 #define PUTPIX32(d, pix)	\
 	*((ULONG *)d) ++ = pix;
-	
+
+//	kprintf("R: 0x%02x ", ((UBYTE *)d)[0]);		\
+//	kprintf("G: 0x%02x ", ((UBYTE *)d)[1]);		\
+//	kprintf("B: 0x%02x\n", ((UBYTE *)d)[2]);		\
+
+#if AROS_BIG_ENDIAN	
 #define PUTPIX24(d, pix)	\
 	((UBYTE *)d)[0] = (UBYTE)((pix >> 16) & 0x000000FF);	\
 	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF);	\
 	((UBYTE *)d)[2] = (UBYTE)( pix & 0x000000FF);	\
 	((UBYTE *)d) += 3;
+#else
+#define PUTPIX24(d, pix)	\
+	((UBYTE *)d)[2] = (UBYTE)((pix >> 16) & 0x000000FF);	\
+	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF);	\
+	((UBYTE *)d)[0] = (UBYTE)( pix & 0x000000FF);	\
+	((UBYTE *)d) += 3;
+
+#endif
 
 #define PUTPIX16(d, pix)	\
 	*((UWORD *)d) ++ = (UWORD)pix;
-	
 
 #define PUT_TRUE_PIX(d, pix, pf)			\
 	switch (pf->bytes_per_pixel) {			\
@@ -137,7 +160,9 @@ kprintf("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 		, srcpix & srcfmt->blue_mask
 		, SHIFT_PIX(srcpix & srcfmt->blue_mask, blue_diff)
 		, SHIFT_PIX(srcpix & srcfmt->blue_mask, blue_diff) & dstfmt->blue_mask);
+		
 #endif	    
+
 // kprintf("[ %p => %p ] \n", srcpix, dstpix);
 	    /* Write the pixel to the destination buffer */
 	    PUT_TRUE_PIX(d, dstpix, dstfmt);
