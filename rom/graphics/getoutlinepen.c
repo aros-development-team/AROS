@@ -46,7 +46,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return rp->AOlPen;
+    return (UBYTE)rp->AOlPen;
 
     AROS_LIBFUNC_EXIT
 } /* GetOutlinePen */

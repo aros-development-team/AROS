@@ -46,7 +46,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return rp->FgPen;
+    return (UBYTE)rp->FgPen;
 
     AROS_LIBFUNC_EXIT
 } /* GetAPen */
