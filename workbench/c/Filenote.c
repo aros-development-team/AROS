@@ -140,6 +140,7 @@ int main(int argc, char *argv[])
                                            (LONG)args[ARG_ALL],
                                            (LONG)args[ARG_QUIET]
                 );
+                FreeArgs(rda);
             }
             else
             {
@@ -147,8 +148,6 @@ int main(int argc, char *argv[])
 
                 Return_Value = RETURN_FAIL;
             }
-
-            FreeArgs(rda);
         }
         else
         {

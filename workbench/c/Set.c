@@ -177,7 +177,8 @@ int main(int argc, char *argv[])
         Return_Value = RETURN_ERROR;
     }
 
-    FreeArgs(rda);
+    if (rda)
+        FreeArgs(rda);
 
     return (Return_Value);
 

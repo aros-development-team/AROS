@@ -35,8 +35,9 @@ int main (int argc, char ** argv)
 	Delay (delay * 50L);
 
 end:
-    FreeArgs(rda);
+    if (rda)
+        FreeArgs(rda);
     if(error)
-	PrintFault(IoErr(),"Echo");
+	PrintFault(IoErr(),"Wait");
     return error;
 }

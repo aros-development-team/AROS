@@ -73,7 +73,7 @@ static const char version[] = "$VER: Get 41.1 (03.07.1997)\n";
 
 int main(int argc, char *argv[])
 {
-	struct RDArgs * rda;
+    struct RDArgs * rda;
     IPTR          * args[TOTAL_ARGS] = { NULL };
     int             Return_Value;
     LONG            Var_Length;
@@ -103,6 +103,7 @@ int main(int argc, char *argv[])
 
             Return_Value = RETURN_WARN;
         }
+	FreeArgs(rda);
     }
     else
     {
@@ -111,7 +112,6 @@ int main(int argc, char *argv[])
         Return_Value = RETURN_ERROR;
     }
 
-    FreeArgs(rda);
 
     return (Return_Value);
 

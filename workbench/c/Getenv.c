@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
 
             Return_Value = RETURN_WARN;
         }
+	FreeArgs(rda);
     }
     else
     {
@@ -109,8 +110,6 @@ int main(int argc, char *argv[])
 
         Return_Value = RETURN_ERROR;
     }
-
-    FreeArgs(rda);
 
     return (Return_Value);
 

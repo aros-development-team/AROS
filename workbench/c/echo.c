@@ -71,8 +71,14 @@ int main (int argc, char ** argv)
 end:
     if(args[4])
 	Close(out);
-    FreeArgs(rda);
+    if (rda)
+        FreeArgs(rda);
     if(error)
 	PrintFault(IoErr(),"Echo");
     return error;
 }
+
+
+
+
+

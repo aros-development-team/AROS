@@ -37,6 +37,7 @@ int main()
             }
         } else
             error = RETURN_FAIL;
+	FreeArgs(rda);
     } else
     {
         PrintFault(IoErr(), "Why");

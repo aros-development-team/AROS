@@ -131,12 +131,11 @@ int main(int argc, char *argv[])
                                             (STRPTR *)args[ARG_GADGETS],
                                             (STRPTR)args[ARG_PUBSCREEN]
             );
+	    FreeArgs(rda);
         } else {
             PrintFault(IoErr(), ERROR_HEADER);
             Return_Value = RETURN_FAIL;
         }
-
-        FreeArgs(rda);
 
         CloseLibrary((struct Library *)IntuitionBase);
     }
