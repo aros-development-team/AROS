@@ -97,11 +97,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->info)
     {
-#ifdef __AROS__
 	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
-#else
-	sprintf(data->buf, data->info, data->current);
-#endif
     } else data->buf[0] = 0;
 
 /*      D(bug("Gauge_New(0x%lx, %d)\n",obj,muiAreaData(obj)->mad_Frame)); */
@@ -203,11 +199,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	if (data->info)
 	{
-#ifdef __AROS__
-	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
-#else
-	sprintf(data->buf, data->info, data->current);
-#endif
+	    snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current);
 	} else data->buf[0] = 0;
     }
 
