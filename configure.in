@@ -303,8 +303,9 @@ aros_palm_debug_hack="0"
 # Debug stuff
 aros_mungwall_debug="1"
 aros_stack_debug="1"
+aros_modules_debug="1"
 
-# X11 Xshm 
+# X11 Xshm
 DO_XSHM_SUPPORT="1"
 
 
