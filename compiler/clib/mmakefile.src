@@ -235,7 +235,7 @@ $(LIB) : $(OBJS)
 	%mklib_q from=$(OBJS)
 
 $(SLIB) : $(SOBJS) $(SOBJDIR)/arosc_init.o $(SOBJDIR)/arosc_endtag.o
-	%link_q startup=$(SOBJDIR)/arosc_init.o from=$(SOBJS)  libs="$(filter-out -larosc, $(LIBS)) $(COMMONLIB)" end=$(SOBJDIR)/arosc_endtag.o
+	%link_q startup=$(SOBJDIR)/arosc_init.o opt=$(ILDFLAGS) from=$(SOBJS)  libs="$(filter-out -larosc, $(LIBS)) $(COMMONLIB)" end=$(SOBJDIR)/arosc_endtag.o
 
 $(STUBLIB) : $(STUBOBJS)
 	$(CP) $(COMMONLIB) $(STUBLIB)
