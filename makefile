@@ -12,7 +12,8 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
-SUBDIRS = $(KERNEL) aros exec dos utility filesys libs c
+SUBDIRS = $(KERNEL) aros exec dos utility graphics \
+	filesys libs c
 DIST_FILES = makefile arosshell.c README.CVS gendef.awk make.cfg \
 	configure
 
@@ -85,12 +86,14 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
-	    ( echo "Making all in $$dir..." ; cd $$dir ; \
-	    $(MAKE) $(MFLAGS) \
-		TOP=".." CURDIR="$(CURDIR)/$$dir" ARCH=$(ARCH) \
-		CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
-		RM="$(RM)" \
-		all ) ; \
+	    echo "Making all in $$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) \
+		    TOP=".." CURDIR="$(CURDIR)/$$dir" ARCH=$(ARCH) \
+		    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
+		    RM="$(RM)" \
+		    all ) ; \
+	    then echo -n ; else exit 1 ; fi \
 	done
 
 # I have to restart make here since not all files might be existing
