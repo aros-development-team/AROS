@@ -2195,7 +2195,7 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		if (newx != top)
 		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
 				      GA_ID, g->GadgetID,
-				      DTA_TopVert, newx,
+				      DTA_TopHoriz, newx,
 				      TAG_DONE);
 #else
  		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
