@@ -58,7 +58,7 @@ static ULONG Rectangle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 	MUIA_Font, MUIV_Font_Title,
-	TAG_MORE, msg->ops_AttrList);
+	TAG_MORE, (IPTR) msg->ops_AttrList);
 
     if (!obj)
 	return NULL;

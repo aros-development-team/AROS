@@ -43,7 +43,7 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_PropData *data;
     struct TagItem *tags,*tag;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL, TAG_MORE, msg->ops_AttrList);
+    obj = (Object *)DoSuperNewTags(cl, obj, NULL, TAG_MORE, (IPTR) msg->ops_AttrList);
     if (!obj)
 	return FALSE;
 
