@@ -133,17 +133,18 @@ dnl You should append to the variables here.
 case "$target_os" in
     linux*)
 	aros_arch="linux"
-	aros_flavour="emulation"
 	aros_common_cflags="-Wall -O0"
 	aros_ildflags="-nostartfiles -nostdlib -Xlinker -i"
 	case "$target_cpu" in
 	*m68k*)
+	    aros_flavour="emulcompat"
 	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -D__mc68000__ -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -Wl,-T,\$(TOP)/config/linux/m68k/script.so -o"
 	    aros_shell_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
 	    aros_cpu="m68k"
 	    ;;
 	*i?86*)
+	    aros_flavour="emulation"
 	    aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386 -D__linux__"
 	    aros_shared_ar="$aros_shared_ar -shared -o"
 	    aros_shell_ldflags="-Xlinker -rpath -Xlinker ./lib"
@@ -173,7 +174,7 @@ case "$target_os" in
     amiga*)
 	aros_arch="amiga"
 	aros_cpu="m68k"
-	aros_flavour="native"
+	aros_flavour="nativecompat"
 	strip_prog=strip	# We actually strip binaries here
 
 	aros_common_cflags="-Wall -Wno-uninitialized -O2 -m68020 -fomit-frame-pointer"
@@ -257,9 +258,11 @@ AC_SUBST(aros_gui_ccflags)
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
 emulation)	aros_flavour_uc="AROS_FLAVOUR_EMULATION" ;;
+emulcompat)	aros_flavour_uc="(AROS_FLAVOUR_EMULATION|AROS_FLAVOUR_BINCOMPAT)"
+		aros_flavour="emulation" ;;
 standalone)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE" ;;
 native) 	aros_flavour_uc="AROS_FLAVOUR_NATIVE" ;;
-nativecompat)	aros_flavour_uc="AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT"
+nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB" ;;
 esac
