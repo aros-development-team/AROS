@@ -19,7 +19,7 @@
 #    define AMIGANATIVETRICK            \
      asm("\t.text                  \n"  \
          "\tmove.l	4.w,a6     \n"  \
-	 "\tjra		_entry(pc) \n");
+	 "\tjra		__entry(pc) \n");
 #else
 #    define AMIGANATIVETRICK
 #endif
@@ -74,7 +74,7 @@ DECLARE_main(name);                                            \
 DECLARE_SysBase_global                                         \
 DECLARE_DOSBase_global                                         \
                                                                \
-AROS_UFH3(LONG, entry,                                         \
+AROS_UFH3(static LONG, _entry,                                 \
     AROS_UFHA(char *,argstr,A0),                               \
     AROS_UFHA(ULONG,argsize,D0),                               \
     AROS_UFHA(struct ExecBase *,sysBase,A6)                    \
