@@ -8,25 +8,19 @@ Currently method and attr offsets are constructed like
 this:
 
 method offs:
-<system>MIDX_<interface>_<method name>  (eg. MIDX_Timer_Start)
+mo<interface>_<method name>  (eg. moTimer_Start)
 
 attr offs:
-<system>AIDX_<interface>_<attrname>  (eg. AIDX_Timer_Elapsed)
+ao<interface>_<attrname>  (eg. aoTimer_Elapsed)
 
-However, this might lead to constructions
-like HIDDAIDX_GfxHIDD_Pen
-and HIDDMIDX_GfxHIDD_WritePixel
-which is a bit ugly, so IMO we should
-use the shortest possible prefix like this
+or moHidd_GC_SetPixel and aoHidd_GC_FgPen
 
-<system>MO_<interface>_<method name> (HIDDMO_GfxHHIDD_WritePixel)
-<system>AO_<interface>_<method name> (HIDDAO_GfxHIDD_Pen)
 
-I suggest classnames like this:
-CLID_<system>_<class name> (eg. CLID_HIDD_Gfx )
+Class should be like this:
+CLID_<system>_<class name> (eg. CLID_Hidd_Gfx )
 
 And interface IDs like this.
-IID_<system>_<interface name> (eg. IID_HIDD_Gfx )
+IID_<system>_<interface name> (eg. IID_Hidd_Gfx )
 
 Note that I'm here talking about
 the name of a macro. The interface ID string

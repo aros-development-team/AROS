@@ -9,7 +9,7 @@
 Methods:
 
 NAME
-	M_Root_New
+	mRoot_New
 	
 SYNOPSIS
 	See NewObjectA() doc.
@@ -21,20 +21,20 @@ FUNCTION
 ----------------------
 
 NAME
-	M_Root_Dispose
+	mRoot_Dispose
 	
 SYNOPSIS
 	See DisposeObject() doc.
 	
 FUNCTION
 	Used internally to dispose of an object previously
-	created using the M_Root_New method.			
+	created using the mRoot_New method.			
 		
 
 ----------------------
 
 NAME
-	M_Root_Set
+	mRoot_Set
 	
 SYNOPSIS
 	VOID Set(Object *object, ULONG attrID, IPTR val);
@@ -47,7 +47,7 @@ EXAMPLE
 		
 ----------------------
 NAME
-	M_Root_Get
+	mRoot_Get
 
 SYNOPSIS
 	VOID Get(Object *object, ULONG attrID, IPTR *storage);

@@ -1,15 +1,19 @@
 Classes are objects of metaclasses, so therefore
 classes are created with NewObjectA().
 
-As of now there are two different metaclasses available:
+As of now there are three different metaclasses available:
 
-IFMeta (ID:  CLID_IFMeta) and HIDDMeta (ID: CLID_HIDDMeta).
+CLID_MIMeta
+- Creates classes that supports multiple interfaces.
 
-The difference between them is that the IFMeta
-handles multiple interfaces, while the HIDDMeta doesn't,
-but it gains quite some speed.
-So IFMeta classes are more flexible, but HIDDMeta
-classes are faster, and should be used for the HIDDs.
+CLID_SIMeta
+- Creates classes that can only support single interfaces.
+Advantage is faster method invocation.
+(Method invocation doesn't require hashing).
+
+CLID_HiddMeta
+- Base metaclass for Hidds. Subclass of CLID_SIMeta.
+(HIDDs should be fast).
 
 How to create a class is best shown through an example.
 Here is a Timer class with two simple methods,
@@ -32,28 +36,32 @@ system simple.
 */   
 
 #define CLID_Timer	"timerclass"
-#define IID_Time	"I_timer"
+#define IID_Timer	"I_timer"
 
+
+/* Method offset for methods in the IID_Timer interface. */
 
 enum
 {
-    MO_Timer_Start	= 0,
-    MO_Timer_Stop,
+    moTimer_Start	= 0,
+    moTimer_Stop,
     
-    NUM_M_Timer	/* number of methods in the Timer interface */
+    Num_Timer_Methods	/* number of methods in the Timer interface */
     
 };
 
 
+/* Attribute offsets for attrs in the IID_Timer interface. */
+
 enum
 {
-    AO_Timer_Elapsed = 0,
+    aoTimer_Elapsed = 0,
     
-    NUM_A_Timer	/* number of attrs in the timer interface */
+    Num_Timer_Attrs	/* number of attrs in the timer interface */
 };
 
 
-/* instance data */
+/* private instance data */
 struct timer_data
 {
     struct timeval start_time;
@@ -91,8 +99,8 @@ Class *make_timerclass()
 
     struct MethodDescr methods[NUM_TIMER_METHODS + 1] =
     {
-	{(IPTR (*)())timer_start,		MO_Timer_Start},
-	{(IPTR (*)())timer_stop,		MO_Timer_Stop},
+	{(IPTR (*)())timer_start,		moTimer_Start},
+	{(IPTR (*)())timer_stop,		moTimer_Stop},
 	{NULL, 0UL} /* must be null-terminated */
 
     };
@@ -115,8 +123,8 @@ Class *make_timerclass()
     Class *tcl;
 
     
-    /* Make it a class of the HIDDMeta */
-    tcl = (Class *)NewObjectA(NULL, CLID_HIDDMeta, tags);
+    /* Make it a class of the SIMeta */
+    tcl = (Class *)NewObjectA(NULL, CLID_SIMeta, tags);
 
 
     if (tcl)
@@ -149,7 +157,7 @@ VOID Timer_Start(Object *timer)
 	   numeric method ID.
 	*/
 	
-    	mid = GetMethodID(IID_Timer, MO_Timer_Start);
+    	mid = GetMethodID(IID_Timer, moTimer_Start);
     }
 
     DoMethod(timer, (Msg)&mid);
@@ -163,3 +171,4 @@ This API is bound to change, as its not flexible enough
 
 Anyway, have a look at the unixio.hidd and hiddclass implementation
 for a bit more complex usage of this system.
+
