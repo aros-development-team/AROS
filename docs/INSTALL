@@ -34,7 +34,7 @@ Basic Installation of AROS-SOURCES
 
 3. Make sure you have all the necessary tools for compilation.
 
-	I.e. a c-compiler (gcc/egcs recommended), binutils, gawk, etc.
+	I.e. a C-compiler (gcc/egcs recommended), binutils, gawk, etc.
 
 
 4. Run "autoconf".
@@ -58,7 +58,7 @@ Basic Installation of AROS-SOURCES
 
 	  additional target:
 
-	  	--target=native-i386
+	  	--target=pc-i386
 
 	  AROS bootable from floppy disk.
 
@@ -68,12 +68,15 @@ Basic Installation of AROS-SOURCES
 
 6. Configure make.opts
 
-	AROS/make.defaults contains the default values for compilation.
-	Copy this file to AROS/make.opts and edit it to your needs.
+	AROS/bin/$arch-$cpu/gen/config/make.defaults (with $arch and
+	$cpu being your target specifications, eg. arch=pc cpu=i386)
+	contains the default values for compilation.
+	Copy this file to make.opts in the same directory and edit it
+	to your needs.
 	Options are documented in the default file.
 
-	target=native-i386 requires all SHARED_* options to set to "no".
-	This will be done automatically in AROS/make.defaults, don't
+	target=pc-i386 requires all SHARED_* options to set to "no".
+	This will be done automatically in make.defaults, don't
 	change it.
 
 
@@ -81,11 +84,28 @@ Basic Installation of AROS-SOURCES
 
 	Call the wrapper Makefile with 'make'
 
+	If you intend to compile for many targets in one source tree,
+	then you have to go through step 5 and 6 for each of your
+	targets.  You can add targets at any time you want.
+	The last target specified to "configure" is the default target.
+
+	To change the target, simply type
+	'TARGET_ARCH=$arch TARGET_CPU=$cpu make'
+	where arch and cpu are chosen as in step 6. If you build eg.
+	linux-i386 and freebsd-i386, then specifying only TARGET_ARCH
+	will suffice as the CPU stays the same.
+
+	Build for multiple host architectures (eg. when sharing the
+	sources over nfs on a heterogene network) is somewhat broken
+	now, but should work in future by specifying $HOST_ARCH and
+	$HOST_CPU if different from the one from which configure is
+	run.
+
 
 8. Install the package.
 
 	If you compiled AROS as an emulation then all binaries are
-	placed in AROS/bin/$(os)-$(cpu)/AROS. To start AROS 'cd' into
+	placed in AROS/bin/$arch-$cpu/AROS. To start AROS 'cd' into
 	this dir, type 'aros' and enjoy!
 
 	If you compiled AROS as stand alone (native), then do a
@@ -93,23 +113,26 @@ Basic Installation of AROS-SOURCES
 	Then leave the disk in /dev/fd0 (Drive A:), reboot your
 	machine and enjoy!
 
+
 9. Setting the correct keymap.
 
-    If you compiled AROS as an emulation, you might have noticed
-    that the keyboard maybe doesn't work as expected. Ie, you can't
-    input colons, slashes and other nice characters.
+	If you compiled AROS as an emulation, you might have noticed
+	that the keyboard maybe doesn't work as expected. Ie, you
+	can't input colons, slashes and other nice characters.
 
-    To remedy this, run 'make default-x11keymaptable'. This will install
-    the default keymaptable in DEVS:Keymaps/X11. If this does not work,
-    run 'make x11keymaptable'. This will open a window and ask you to press
-    all keys in a special order.
+	To remedy this, run 'make default-x11keymaptable'. This will
+	install the default keymaptable in DEVS:Keymaps/X11. If this
+	does not work, run 'make x11keymaptable'. This will open a
+	window and ask you to press all keys in a special order.
 
-    Now your keyboard should behave like an American/English keyboard.
-    If you have a different keyboard you have to load the AROS keymap,
-    using the 'SetKeyboard' program. If you have a Swedish keyboard, type
-    'SetKeyboard pc105_s' from the AROS Shell. If you have a German keyboard,
-    type 'SetKeyboard pc105_d', for an Italian keyboard 'SetKeyboard pc105_i'
-    or for a Norwegian keyboard 'SetKeyboard pc105_n'.
-    Only English, German, Italian, Swedish and Norwegian keyboards are
-    supported at the moment.
+	Now your keyboard should behave like an American/English
+	keyboard.  If you have a different keyboard you have to load
+	the AROS keymap, using the 'SetKeyboard' program. If you have
+	a Swedish keyboard, type 'SetKeyboard pc105_s' from the AROS
+	Shell. If you have a German keyboard, type 'SetKeyboard pc105_d',
+	for an Italian keyboard 'SetKeyboard pc105_i' or for a Norwegian
+	keyboard 'SetKeyboard pc105_n'.
+
+	Only English, German, Italian, Swedish and Norwegian keyboards
+	are supported at the moment.
 
