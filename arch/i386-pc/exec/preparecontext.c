@@ -24,14 +24,47 @@ static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     	    	    	    	    struct TagItem *tagList, struct ExecBase *SysBase)
 {
     ULONG *regs;
+    IPTR  *sp=(IPTR *)task->tc_SPReg;
+    IPTR args[8] = {0};
+    WORD numargs = 0;
 
-    UBYTE *sp=(UBYTE *)task->tc_SPReg;
+    while(tagList)
+    {
+    	switch(tagList->ti_Tag)
+	{
+	    case TAG_MORE:
+	    	tagList = (struct TagItem *)tagList->ti_Data;
+		continue;
+		
+	    case TAG_SKIP:
+	    	tagList += tagList->ti_Data;
+		break;
+		
+	    case TAG_DONE:
+	    	tagList = NULL;
+    	    	break;
+		
+	    #define HANDLEARG(x) \
+	    case TASKTAG_ARG ## x: \
+	    	args[x - 1] = (IPTR)tagList->ti_Data; \
+		if (x > numargs) numargs = x; \
+		break;
+		
+	    HANDLEARG(1)
+	    HANDLEARG(2)
+	    HANDLEARG(3)
+	    HANDLEARG(4)
+	    HANDLEARG(5)
+	    HANDLEARG(6)
+	    HANDLEARG(7)
+	    HANDLEARG(8)
+	    	
+	    #undef HANDLEARG
+	}
+	
+	if (tagList) tagList++;
+    }
 
-    /* Push fallBack address */
-
-    sp -= sizeof(APTR);
-    *(APTR*)sp = fallBack;
-    
     if (!(task->tc_Flags & TF_ETASK) )
         return NULL;
 
@@ -42,6 +75,19 @@ static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
 
     if (!(regs = (ULONG*)GetIntETask (task)->iet_Context))
         return NULL;
+
+    if (numargs)
+    {
+	while(numargs--)
+	{
+	    *--sp = args[numargs];
+	}
+    }
+
+    /* Push fallBack address */
+
+    *--sp = fallBack;
+    
 
     /* We have to prepare whole context right now so Dispatch()
      * would work propertly */
