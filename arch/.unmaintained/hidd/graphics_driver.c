@@ -999,7 +999,9 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
+           
           bm = CR -> BitMap;
+           
           Width = GetBitMapAttr(bm, BMA_WIDTH);
           /* Calculate the Width of the bitplane in bytes */
           if (Width & 0x07)
@@ -1007,13 +1009,23 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
           else
             Width = (Width >> 3);
            
-          Offset = CR->bounds.MinX & 0x0f;
-
+          if (0 == (L->Flags & LAYERSUPER))
+          { 
+            /* no superbitmap */
+            Offset = CR->bounds.MinX & 0x0f;
           
-          i = (y - (CR->bounds.MinY - YRel)) * Width + 
-             ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
+            i = (y - (CR->bounds.MinY - YRel)) * Width + 
+               ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
                 /* Offset: optimization for blitting!! */
-          Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+            Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+          }
+          else
+          {
+            /* with superbitmap */
+            i =  (y + L->Scroll_Y) * Width +
+                ((x + L->Scroll_X) >> 3);
+            Mask = 1 << (7 - ((x + L->Scroll_X) & 0x07));                 
+          }
           
         }       
         break;
@@ -1156,6 +1168,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
         LONG Offset;
         if (NULL == CR->lobs)
         {
+          /* this ClipRect is not hidden! */
           i = (y + YRel) * Width + 
              ((x + XRel) >> 3);
           Mask = 1 << (7-((x + XRel) & 0x07));
@@ -1173,10 +1186,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
           /* we have to draw into the BitMap of the ClipRect, which
              will be shown once the layer moves... 
            */
-          if ((L->Flags & LAYERSUPER) == 0)
-            bm = CR -> BitMap;
-          else
-            bm = L -> SuperBitMap;
+          bm = CR -> BitMap;
            
           Width = GetBitMapAttr(bm, BMA_WIDTH);
           /* Calculate the Width of the bitplane in bytes */
@@ -1196,11 +1206,11 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
             Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
           }
           else
-kprintf("!!!\n");
+          {
             /* with superbitmap */
-            i =  (y - L->Scroll_Y) * Width +
-                ((x - L->Scroll_X) >> 3);
-            Mask = 1 << (7 - (x - L->Scroll_X));                 
+            i = ((y + L->Scroll_Y) * Width) +
+                ((x + L->Scroll_X) >> 3);
+            Mask = 1 << (7 - ((x + L->Scroll_X) & 0x07));                 
           }
           
         }       

@@ -224,9 +224,9 @@ void deletelayer(void)
   scanf("%d", &i);
   if (layers[i]) 
   {
+    DeleteLayer(0, layers[i]);
     if (layers[i]->SuperBitMap)
       FreeBitMap(layers[i]->SuperBitMap);
-    DeleteLayer(0, layers[i]);
     printf("Deleted layer with id %d\n",i);
     layers[i] = NULL;
   } 
