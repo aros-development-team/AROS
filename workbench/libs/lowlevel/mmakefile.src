@@ -9,7 +9,19 @@ ULIBNAME	:= LowLevel
 FILES		:= 
 
 FUNCTIONS	:= \
-	readjoyport
+	addkbint \
+	addtimerint \
+	addvblankint \
+	elapsedtime \
+	getkey \
+	getlanguageselection \
+	querykeys \
+	readjoyport \
+	remkbint \
+	remtimerint \
+	remvblankint \
+	starttimerint \
+	stoptimerint
 
 
 %define_libs prelibs=-l$(LIBNAME)

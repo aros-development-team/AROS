@@ -15,13 +15,13 @@
 
     NAME */
 
-      AROS_LH1(ULONG, ReadJoyPort,
+      AROS_LH1(VOID, RemKBInt,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(ULONG, port, D0),
+      AROS_LHA(APTR, intHandle, A1),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 10, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 16, LowLevel)
 
 /*  NAME
  
@@ -42,10 +42,14 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LowLevelBase *, LowLevelBase)
 
-#warning TODO: Write lowlevel/ReadJoyPort()
-    aros_print_not_implemented ("lowlevel/ReadJoyPort");
+#warning TODO: Write lowlevel/RemKBInt()
+    aros_print_not_implemented ("lowlevel/RemKBInt");
 
-    return JP_TYPE_NOTAVAIL; // return failure until implemented
+    if (intHandle)
+    {
+    }
+
+    return;
 
   AROS_LIBFUNC_EXIT
-} /* ReadJoyPort */
+} /* RemKBInt */

@@ -15,13 +15,12 @@
 
     NAME */
 
-      AROS_LH1(ULONG, ReadJoyPort,
+      AROS_LH0(ULONG, GetLanguageSelection,
 
 /*  SYNOPSIS */ 
-      AROS_LHA(ULONG, port, D0),
 
 /*  LOCATION */
-      struct LowLevelBase *, LowLevelBase, 10, LowLevel)
+      struct LowLevelBase *, LowLevelBase, 11, LowLevel)
 
 /*  NAME
  
@@ -42,10 +41,10 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LowLevelBase *, LowLevelBase)
 
-#warning TODO: Write lowlevel/ReadJoyPort()
-    aros_print_not_implemented ("lowlevel/ReadJoyPort");
+#warning TODO: Write lowlevel/GetLanguageSelection()
+    aros_print_not_implemented ("lowlevel/GetLanguageSelection");
 
-    return JP_TYPE_NOTAVAIL; // return failure until implemented
+    return 0L; // return "no language has been selected" until implemented
 
   AROS_LIBFUNC_EXIT
-} /* ReadJoyPort */
+} /* GetLanguageSelection */
