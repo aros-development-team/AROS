@@ -67,6 +67,8 @@ struct MUI_StringData {
     ULONG  NewClick_Micro;
     WORD   MultiClick;
     
+    WORD   Columns;
+    
     struct MUI_EventHandlerNode ehn;
     struct MUI_PenSpec_intern inactive_text;
     struct MUI_PenSpec_intern active_text;
@@ -81,6 +83,8 @@ struct MUI_StringData {
 #define MSDF_LONELYEDITHOOK (1<<1)
 #define MSDF_MARKING	    (1<<2)
 #define MSDF_KEYMARKING	    (1<<3)
+#define MSDF_NOINPUT	    (1<<4)
+#define MSDF_STAYACTIVE     (1<<5)
 
 enum {
     NO_REASON = 0,
@@ -387,10 +391,12 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->msd_useSecret = FALSE;
     data->msd_Align = MUIV_String_Format_Left;
     data->BufferSize = 80;
+    data->Columns = -1;
+    
     Buffer_SetNewContents(data, ""); /* <-- isnt this pointless? */
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -407,7 +413,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
             case MUIA_String_Secret:
-		data->msd_useSecret = (BOOL *)tag->ti_Data;
+		data->msd_useSecret = (BOOL)tag->ti_Data;
 		break;
 
             case MUIA_String_Contents:
@@ -435,6 +441,19 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		if (data->BufferSize < 1)
 		    data->BufferSize = 1;
 		break;
+		
+	    case MUIA_String_Columns: /* BetterString */
+	    	data->Columns = (WORD)tag->ti_Data;
+		break;
+		
+	    case MUIA_String_NoInput: /* BetterString */
+		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_NOINPUT);
+		break;
+
+	    case MUIA_String_StayActive: /* BetterString */
+		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_STAYACTIVE);
+		break;
+	    	
 	}
     }
 
@@ -446,7 +465,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (NULL == data->Buffer)
     {
 	CoerceMethod(cl, obj, OM_DISPOSE);
-	return NULL;
+	return 0;
     }
 
     D(bug("String_New(%p)\n",obj));
@@ -489,7 +508,7 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem      *tags = msg->ops_AttrList;
     struct TagItem      *tag;
 
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -535,6 +554,19 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->msd_RedrawReason = MOVE_CURSOR;
 	    	MUI_Redraw(obj, MADF_DRAWUPDATE);
 		break;
+
+	    case MUIA_String_NoInput: /* BetterString */
+		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_NOINPUT);
+		break;
+
+	    case MUIA_String_StayActive: /* BetterString */
+		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_STAYACTIVE);
+		break;
+		
+	    case MUIA_String_SelectSize: /* BetterString */
+	    	#warning "TODO: Implement OM_SET(MUIA_String_SelectSize)!"
+	    	break;
+
 	}
     }
 
@@ -588,7 +620,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return 1;
 
 	case MUIA_String_AdvanceOnCR:
-	    STORE = data->msd_Flags & MSDF_ADVANCEONCR;
+	    STORE = (data->msd_Flags & MSDF_ADVANCEONCR) ? TRUE : FALSE;
 	    return 1;
 
 	case MUIA_String_BufferPos:
@@ -598,7 +630,38 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_String_DisplayPos:
 	    STORE = data->DispPos;
 	    return 1;
+	    
+    	case MUIA_String_NoInput: /* BetterString */
+	    STORE = (data->msd_Flags & MSDF_NOINPUT) ? TRUE : FALSE;
+	    return 1;
+	    
+	case MUIA_String_StayActive: /* BetterString */
+	    STORE = (data->msd_Flags & MSDF_STAYACTIVE) ? TRUE : FALSE;
+	    return 1;
+	
+	case MUIA_String_SelectSize: /* BetterString */
+	    if (data->msd_Flags & MSDF_MARKING)
+	    {
+	    	WORD markstart, markstop;
+		
+    	    	if (Buffer_GetMarkedRange(data, &markstart, &markstop))
+    	    	{
+		    LONG size = markstop - markstart;
+		    
+		    if (data->MarkPos < data->BufferPos) size = -size;
+		    
+		    STORE = (IPTR)size;
+		    
+		    return 1;
+		}
+		
+	    }
+
+	    STORE = 0;
+	    return 1;
+
     }
+    
     return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
 }
@@ -670,12 +733,23 @@ static IPTR String_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *
 **************************************************************************/
 static IPTR String_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
+    struct MUI_StringData *data = INST_DATA(cl, obj);
+
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize*4;
-    msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize*12;
-    msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
-
+    if (data->Columns >= 0)
+    {
+    	msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize * data->Columns;
+    	msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize * data->Columns;
+    	msg->MinMaxInfo->MaxWidth += _font(obj)->tf_XSize * data->Columns;
+    }
+    else
+    {
+    	msg->MinMaxInfo->MinWidth += _font(obj)->tf_XSize * 4;
+    	msg->MinMaxInfo->DefWidth += _font(obj)->tf_XSize * 12;
+    	msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    }
+    
     msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize;
     msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize;
     msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize;
@@ -1071,13 +1145,16 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 			    unsigned char code, UWORD qual)
 {
     struct MUI_StringData *data = (struct MUI_StringData*)INST_DATA(cl, obj);
-
+    BOOL doinput;
+    
     D(bug("String_HandleVanillakey: code=%d qual=%d\n", code, qual));
 
     if (0 == code)
 	return 0;
 
-    if (code == '\b') /* backspace */
+    doinput = (data->msd_Flags & MSDF_NOINPUT) ? FALSE : TRUE;
+    
+    if (doinput && (code == '\b')) /* backspace */
     {
 	if (Buffer_KillMarked(data))
 	{
@@ -1108,7 +1185,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 0;
     }
 
-    if (code == 21) // ctrl-u == NAK (like shift-bs)
+    if (doinput && (code == 21)) // ctrl-u == NAK (like shift-bs)
     {
 	if (Buffer_KillMarked(data))
 	{
@@ -1127,7 +1204,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 0;
     }
 
-    if (code == 127) /* del */
+    if (doinput && (code == 127)) /* del */
     {
     	if (!Buffer_KillMarked(data))
 	{
@@ -1152,7 +1229,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 1;
     }
 
-    if (code == 11) // ctrl-k == VT == \v (like shift-del)
+    if (doinput && (code == 11)) // ctrl-k == VT == \v (like shift-del)
     {
     	if (!Buffer_KillMarked(data))
 	{
@@ -1163,7 +1240,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 1;
     }
 
-    if (code == 24) /* ctrl x == ascii cancel */
+    if (doinput && (code == 24)) /* ctrl x == ascii cancel */
     {
     	if (!Buffer_KillMarked(data))
 	{
@@ -1198,7 +1275,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	{	    
 	    clipboard_write_text(&data->Buffer[markstart], markstop - markstart);
 	    
-	    if (ToLower(code) == 'x')
+	    if (doinput && (ToLower(code) == 'x'))
 	    {
 		Buffer_KillMarked(data);
 	    }
@@ -1212,7 +1289,7 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 0;
     }
 
-    if ((ToLower(code) == 'v') && (qual & IEQUALIFIER_RCOMMAND))
+    if (doinput && (ToLower(code) == 'v') && (qual & IEQUALIFIER_RCOMMAND))
     {
     	STRPTR text;
 	int    retval;
@@ -1243,12 +1320,14 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	    return 0;
     }
 
-    if (isprint(code))
+    if (doinput && isprint(code))
     {
     	Buffer_KillMarked(data);
-	Buffer_AddChar(data, code);
-	data->msd_RedrawReason = DO_ADDCHAR;
-	return 2;
+	if (Buffer_AddChar(data, code))
+	{
+	    data->msd_RedrawReason = DO_ADDCHAR;
+	    return 2;
+	}
     }
 
     data->msd_RedrawReason = DO_UNKNOWN;
@@ -1441,11 +1520,19 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 		UBYTE *buf = NULL;
 
 		get(obj, MUIA_String_Contents, (IPTR *)&buf);
-		
-		if (data->msd_Flags & MSDF_ADVANCEONCR)
+
+    	    	if (data->msd_Flags & MSDF_STAYACTIVE)
+		{
+		    /* Do not change active object */
+		}
+		else if (data->msd_Flags & MSDF_ADVANCEONCR)
+		{
 		    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
-		else
+		}
+		else if (!(data->msd_Flags & MSDF_STAYACTIVE))
+		{
 		    set(_win(obj), MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+		}
 		
 		set(obj, MUIA_String_Acknowledge, buf);
 	    } break;
@@ -1581,7 +1668,7 @@ static IPTR String_HandleEvent(struct IClass *cl, Object * obj,
 			
 			
 		    } /* is in object */
-		    else if (data->is_active) /* and click not on object */
+		    else if (data->is_active && !(data->msd_Flags & MSDF_STAYACTIVE)) /* and click not on object */
 		    {
 			data->is_active = FALSE;
 			set(obj, MUIA_Background,
@@ -1801,6 +1888,103 @@ static IPTR String_GoInactive(struct IClass * cl, Object * obj, Msg msg)
     return 0;
 }
 
+/**************************************************************************
+ MUIM_String_ClearSelected (BetterString)
+**************************************************************************/
+static IPTR String_ClearSelected(struct IClass * cl, Object * obj, struct MUIP_String_ClearSelected *msg)
+{
+    struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
+
+    //D(bug("String_ClearSelected %p\n", obj));
+
+    if (Buffer_KillMarked(data))
+    {
+    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+    
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_String_Insert (BetterString)
+**************************************************************************/
+static IPTR String_Insert(struct IClass * cl, Object * obj, struct MUIP_String_Insert *msg)
+{
+    struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
+    LONG pos;
+    ULONG old_bufferpos;
+    ULONG num_inserted = 0;
+    
+    //D(bug("String_Insert %p\n", obj));
+
+    switch((ULONG)msg->pos)
+    {
+    	case MUIV_String_Insert_StartOfString:
+	    pos = 0;
+	    break;
+	    
+	case MUIV_String_Insert_EndOfString:
+	    pos = data->NumChars;
+	    break;
+	    
+	case MUIV_String_Insert_BufferPos:
+	    pos = data->BufferPos;
+	    break;
+	
+	default:
+	    pos = msg->pos;
+	    break;
+    }
+	    
+    if ((pos < 0) || (pos > data->NumChars)) return 0;
+    
+    old_bufferpos = data->BufferPos;
+    data->BufferPos = pos;
+    
+    while(msg->text[num_inserted] && Buffer_AddChar(data, msg->text[num_inserted]))
+    {
+    	num_inserted++;
+    }
+    
+    if (num_inserted)
+    {
+    	if (old_bufferpos >= pos)
+	{
+	    data->BufferPos = old_bufferpos + num_inserted;
+	}
+	else
+	{
+	    data->BufferPos = old_bufferpos;
+	}
+	
+    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+    
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_String_FileNameStart (BetterString)
+**************************************************************************/
+static IPTR String_FileNameStart(struct IClass * cl, Object * obj, struct MUIP_String_FileNameStart *msg)
+{
+    struct MUI_StringData *data = (struct MUI_StringData*) INST_DATA(cl, obj);
+    STRPTR buf;
+    
+    //D(bug("String_FileNameStart %p\n", obj));
+
+    if (data->msd_useSecret)
+    {
+    	buf = data->SecBuffer;
+    }
+    else
+    {
+    	buf = data->Buffer;
+    }
+#warning "TODO: Implement String_FileNameStart correctly!"
+
+    return (IPTR)buf;
+}
 
 BOOPSI_DISPATCHER(IPTR, String_Dispatcher, cl, obj, msg)
 {
@@ -1819,6 +2003,9 @@ BOOPSI_DISPATCHER(IPTR, String_Dispatcher, cl, obj, msg)
 	case MUIM_GoActive: return String_GoActive(cl, obj, (APTR)msg);
 	case MUIM_GoInactive: return String_GoInactive(cl,obj,(APTR)msg);
 	case MUIM_HandleEvent: return String_HandleEvent(cl,obj,(APTR)msg);
+	case MUIM_String_ClearSelected: return String_ClearSelected(cl,obj,(APTR)msg); /* BetterString */
+	case MUIM_String_Insert: return String_Insert(cl,obj,(APTR)msg); /* BetterString */
+	case MUIM_String_FileNameStart: return String_FileNameStart(cl,obj,(APTR)msg); /* BetterString */
     }
 
     return DoSuperMethodA(cl, obj, msg);
