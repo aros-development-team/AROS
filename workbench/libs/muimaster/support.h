@@ -25,11 +25,10 @@
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
-#endif /* __AROS__ */
-
-#ifndef __AROS__
+#   define SAVEDS
+#else
 #   include "support_amigaos.h"
-#endif
+#endif 
 
 
 #define mui_alloc(x) AllocVec(x,MEMF_CLEAR)
