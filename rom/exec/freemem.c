@@ -1,42 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.12  1996/10/24 15:50:50  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.11  1996/10/19 17:07:26  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.10  1996/09/13 17:51:23  digulla
-    Use IPTR
-
-    Revision 1.9  1996/09/11 16:56:16  digulla
-    Move PurgeChunk() to aros.lib
-
-    Revision 1.8  1996/08/23 17:06:56  digulla
-    Began work on ressource tracking
-
-    Revision 1.7  1996/08/16 14:05:12  digulla
-    Added debug output
-
-    Revision 1.6  1996/08/15 14:42:15  digulla
-    Added comment
-
-    Revision 1.5  1996/08/15 13:19:02  digulla
-    First attempt to purge memory after free to make code crash which accesses
-    memory after a free but just that happens in RemTask().
-
-    Revision 1.4  1996/08/13 13:56:02  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:11  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Exec function FreeMem()
+    Lang: english
 */
 #include <exec/alerts.h>
 #include <exec/execbase.h>
