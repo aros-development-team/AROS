@@ -1,22 +1,25 @@
-#define NO_PPCINLINE_VARARGS
-#define NO_PPCINLINE_STDARG
+/*
+ * Based on source from ftmanager from MorphOS for their ft2.library
+ */
 #include <stdlib.h>
 #include <string.h>
 #include <dos/exall.h>
 #include <dos/dostags.h>
+#include <exec/memory.h>
+#define MUI_OBSOLETE
 #include <libraries/mui.h>
 #include <libraries/asl.h>
 #include <diskfont/diskfonttag.h>
 #include <diskfont/glyph.h>
 #include <diskfont/oterrors.h>
+#include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
 #include <proto/muimaster.h>
-#undef NO_PPCINLINE_STDARG
-#include <proto/ft2.h>
+#include <proto/freetype2.h>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -39,6 +42,7 @@
 #define OT_GlyphMap8Bit		(OT_Level1 | 0x108)
 
 #define OT_Spec1_FontFile	(OT_Spec1  | OT_Indirect)
+#define OT_Spec2_CodePage       (OT_Level1 | OT_Indirect | 0x102)
 #define OT_Spec3_AFMFile	(OT_Level1 | OT_Indirect | 0x103)
 #define OT_Spec4_Metric		(OT_Level1 | 0x104)
 #define OT_Spec5_BBox		(OT_Level1 | 0x105)
@@ -55,9 +59,7 @@
 #define METRIC_BMSIZE		6
 #endif
 
-#define UFHN(func)	((void*)&func##Gate)
-#define UFHA(t, a, r)	t a = (t)REG_##r
-#define UFH_END		}
+#define UFHN(func)	((IPTR (*)())&func)
 
 #define UFH2(rt, func, p1, p2) \
 	rt func(void); \
@@ -79,7 +81,6 @@
 /***********************************************************************/
 
 Object *app;
-struct Library *FT2Base;
 FT_Library ftlibrary;
 BPTR destdir;
 UWORD codepage[256];
@@ -131,7 +132,6 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 	struct BitMap *gray_bitmap = NULL;
 	int width, height;
 	int length = strlen(string);
-	int kerning;
 	int x, y, k;
 	int xmin, xmax, ymin, ymax;
 	int space_width, size, gray;
@@ -144,7 +144,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 		return 0;
 	}
 
-	engine = FT2OpenEngine();
+	engine = OpenEngine();
 	if (engine == NULL)
 	{
 		DEBUG_FONTBITMAP(dprintf("FontBitmap: no engine.\n"));
@@ -154,7 +154,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 	size = GetTagData(MUIA_FontBitmap_Size, 30, msg->ops_AttrList);
 	gray = GetTagData(MUIA_FontBitmap_Gray, FALSE, msg->ops_AttrList);
 
-	FT2SetInfo(engine,
+	SetInfo(engine,
 			OT_OTagList, (ULONG) otags,
 			OT_DeviceDPI, 72 | (72 << 16),
 			OT_PointHeight, size << 16,
@@ -185,13 +185,12 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 		if (previous)
 		{
 			ULONG kerning;
-			double t;
 
-			FT2SetInfo(engine,
+			SetInfo(engine,
 					OT_GlyphCode, previous,
 					OT_GlyphCode2, code,
 					TAG_END);
-			FT2ObtainInfo(engine,
+			ObtainInfo(engine,
 					OT_TextKernPair, (ULONG)&kerning,
 					TAG_END);
 
@@ -201,10 +200,10 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 		info[k].x = x;
 		info[k].y = y;
 
-		FT2SetInfo(engine,
+		SetInfo(engine,
 				OT_GlyphCode, code,
 				TAG_END);
-		FT2ObtainInfo(engine,
+		ObtainInfo(engine,
 				tag, (ULONG)&info[k].glyph,
 				TAG_END);
 
@@ -255,7 +254,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 				for (k = 0; k < length; ++k)
 				{
 					struct GlyphMap *g = info[k].glyph;
-					int x1, x2, y1, y2, w, h;
+					int x1, x2, y1, y2;
 					UBYTE *p;
 
 					if (!g)
@@ -460,7 +459,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 	{
 		if (info[k].glyph)
 		{
-			FT2ReleaseInfo(engine,
+			ReleaseInfo(engine,
 					tag, (ULONG)info[k].glyph,
 					TAG_END);
 		}
@@ -468,7 +467,7 @@ ULONG fbNew(Class *cl, Object *o, struct opSet *msg)
 
 	FreeVec(info);
 
-	FT2CloseEngine(engine);
+	CloseEngine(engine);
 
 	DEBUG_FONTBITMAP(dprintf("FontBitmap: created object 0x%lx.\n", o));
 
@@ -493,10 +492,10 @@ ULONG fbDispose(Class *cl, Object *o)
 	return DoSuperMethod(cl, o, OM_DISPOSE);
 }
 
-UFH3(ULONG, FontBitmapDispatch,
-		UFHA(Class *, cl, A0),
-		UFHA(Object *, o, A2),
-		UFHA(Msg, msg, A1))
+AROS_UFH3(ULONG, FontBitmapDispatch,
+		AROS_UFHA(Class *, cl, A0),
+		AROS_UFHA(Object *, o, A2),
+		AROS_UFHA(Msg, msg, A1))
 {
 	ULONG ret;
 
@@ -517,7 +516,7 @@ UFH3(ULONG, FontBitmapDispatch,
 
 	return ret;
 }
-UFH_END
+
 
 void CleanupFontBitmapClass(void)
 {
@@ -591,10 +590,10 @@ struct CycleToStringP
 	const UBYTE *Values;
 };
 
-UFH3(void, CycleToString,
-		UFHA(struct Hook *, hook, A0),
-		UFHA(Object *, cycle, A2),
-		UFHA(struct CycleToStringP *, p, A1))
+AROS_UFH3(void, CycleToString,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(Object *, cycle, A2),
+		AROS_UFHA(struct CycleToStringP *, p, A1))
 {
 	ULONG entry;
 	Object *str = p->String;
@@ -611,7 +610,7 @@ UFH3(void, CycleToString,
 				TAG_END);
 	}
 }
-UFH_END
+
 
 struct Hook CycleToStringHook = { {NULL, NULL}, UFHN(CycleToString) };
 
@@ -622,10 +621,10 @@ struct IntegerBoundsP
 	LONG Max;
 };
 
-UFH3(void, IntegerBounds,
-		UFHA(struct Hook *, hook, A0),
-		UFHA(Object *, obj, A2),
-		UFHA(struct IntegerBoundsP *, p, A1))
+AROS_UFH3(void, IntegerBounds,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(Object *, obj, A2),
+		AROS_UFHA(struct IntegerBoundsP *, p, A1))
 {
 	LONG t;
 	get(obj, MUIA_String_Integer, &t);
@@ -638,15 +637,15 @@ UFH3(void, IntegerBounds,
 		set(obj, MUIA_String_Integer, p->Max);
 	}
 }
-UFH_END
+
 
 struct Hook IntegerBoundsHook = { {NULL, NULL}, UFHN(IntegerBounds) };
 
 
-UFH3(void, Metric,
-		UFHA(struct Hook *, hook, A0),
-		UFHA(Object *, obj, A2),
-		UFHA(Object **, p, A1))
+AROS_UFH3(void, Metric,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(Object *, obj, A2),
+		AROS_UFHA(Object **, p, A1))
 {
 	ULONG t;
 	ULONG state;
@@ -659,7 +658,7 @@ UFH3(void, Metric,
 		set(p[k], MUIA_Disabled, state);
 	}
 }
-UFH_END
+
 
 struct Hook MetricHook = { {NULL, NULL}, UFHN(Metric) };
 
@@ -1204,7 +1203,7 @@ ULONG fiSetOTags(Class *cl, Object *o)
 
 	if (!IsDefaultCodePage())
 	{
-		tag->ti_Tag = OT_CodePage;
+		tag->ti_Tag = OT_Spec2_CodePage;
 		tag->ti_Data = (ULONG)codepage;
 		++tag;
 	}
@@ -1281,7 +1280,6 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 		struct TagItem *tag;
 		ULONG size, indirect_size;
 		UBYTE *buffer;
-		int k;
 		int num_sizes;
 
 		size = sizeof(tag->ti_Tag) + (fiSetOTags(cl, o) + 1) * sizeof(*tag);
@@ -1289,7 +1287,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 
 		for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
 		{
-			if (tag->ti_Tag == OT_CodePage)
+			if (tag->ti_Tag == OT_Spec2_CodePage)
 			{
 				indirect_size += 1;
 				indirect_size &= ~1;
@@ -1318,7 +1316,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 
 			for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
 			{
-				if (tag->ti_Tag == OT_CodePage)
+				if (tag->ti_Tag == OT_Spec2_CodePage)
 				{
 					offset += 1;
 					offset &= ~1;
@@ -1372,10 +1370,10 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 	return 1;
 }
 
-UFH3(ULONG, FontInfoDispatch,
-		UFHA(Class *, cl, A0),
-		UFHA(Object *, o, A2),
-		UFHA(Msg, msg, A1))
+AROS_UFH3(ULONG, FontInfoDispatch,
+		AROS_UFHA(Class *, cl, A0),
+		AROS_UFHA(Object *, o, A2),
+		AROS_UFHA(Msg, msg, A1))
 {
 	ULONG ret;
 
@@ -1406,7 +1404,7 @@ UFH3(ULONG, FontInfoDispatch,
 
 	return ret;
 }
-UFH_END
+
 
 void CleanupFontInfoClass(void)
 {
@@ -1521,10 +1519,10 @@ ULONG fwDispose(Class *cl, Object *o)
 	return DoSuperMethod(cl, o, OM_DISPOSE);
 }
 
-UFH3(ULONG, FontWindowDispatch,
-		UFHA(Class *, cl, A0),
-		UFHA(Object *, o, A2),
-		UFHA(Msg, msg, A1))
+AROS_UFH3(ULONG, FontWindowDispatch,
+		AROS_UFHA(Class *, cl, A0),
+		AROS_UFHA(Object *, o, A2),
+		AROS_UFHA(Msg, msg, A1))
 {
 	ULONG ret;
 
@@ -1545,7 +1543,7 @@ UFH3(ULONG, FontWindowDispatch,
 
 	return ret;
 }
-UFH_END
+
 
 void CleanupFontWindowClass(void)
 {
@@ -1599,9 +1597,9 @@ struct MUIS_FontList_Entry
 	STRPTR StyleName;
 };
 
-UFH2(APTR, flConstructFunc,
-		UFHA(APTR, pool, A2),
-		UFHA(struct MUIS_FontList_Entry *, entry, A1))
+AROS_UFH2(APTR, flConstructFunc,
+		AROS_UFHA(APTR, pool, A2),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
 	struct MUIS_FontList_Entry *new_entry;
 	size_t len1 = strlen(entry->FileName) + 1;
@@ -1624,13 +1622,13 @@ UFH2(APTR, flConstructFunc,
 
 	return new_entry;
 }
-UFH_END
+
 
 struct Hook flConstructHook = {{NULL, NULL}, UFHN(flConstructFunc) };
 
-UFH2(void, flDestructFunc,
-		UFHA(APTR, pool, A2),
-		UFHA(struct MUIS_FontList_Entry *, entry, A1))
+AROS_UFH2(void, flDestructFunc,
+		AROS_UFHA(APTR, pool, A2),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
 	size_t len1 = strlen(entry->FileName) + 1;
 	size_t len2 = strlen(entry->FamilyName) + 1;
@@ -1638,32 +1636,32 @@ UFH2(void, flDestructFunc,
 
 	FreePooled(pool, entry, sizeof(*entry) + len1 + len2 + len3);
 }
-UFH_END
+
 
 struct Hook flDestructHook = {{NULL, NULL}, UFHN(flDestructFunc) };
 
-UFH2(ULONG, flDisplayFunc,
-		UFHA(STRPTR *, array, A2),
-		UFHA(struct MUIS_FontList_Entry *, entry, A1))
+AROS_UFH2(ULONG, flDisplayFunc,
+		AROS_UFHA(STRPTR *, array, A2),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry, A1))
 {
 	array[0] = entry->FamilyName;
 	array[1] = entry->StyleName;
 	return 0;
 }
-UFH_END
+
 
 struct Hook flDisplayHook = {{NULL, NULL}, UFHN(flDisplayFunc) };
 
-UFH2(LONG, flCompareFunc,
-		UFHA(struct MUIS_FontList_Entry *, entry1, A1),
-		UFHA(struct MUIS_FontList_Entry *, entry2, A2))
+AROS_UFH2(LONG, flCompareFunc,
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry1, A1),
+		AROS_UFHA(struct MUIS_FontList_Entry *, entry2, A2))
 {
 	LONG ret = strcmp(entry1->FamilyName, entry2->FamilyName);
 	if (ret == 0)
 		ret = strcmp(entry1->StyleName, entry2->StyleName);
 	return ret;
 }
-UFH_END
+
 
 struct Hook flCompareHook = {{NULL, NULL}, UFHN(flCompareFunc) };
 
@@ -1742,9 +1740,17 @@ struct MUIP_FontList_AddDir
 	STRPTR DirName;
 };
 
-
-void ScanDirTask(struct ScanDirTaskInfo *info, Object *app, struct Task *parent, Object *fl)
+struct ScanDirTaskInfo *_pass_info;
+Object *_pass_app;
+struct Task *_pass_parent;
+Object *_pass_fl;
+			 
+void ScanDirTask(void)
 {
+    struct ScanDirTaskInfo *info = _pass_info;
+    Object *app = _pass_app;
+    struct Task *parent = _pass_parent;
+    Object *fl = _pass_fl;
 	BPTR lock;
 	struct ExAllControl *eac;
 	struct ExAllData *ead;
@@ -1752,7 +1758,9 @@ void ScanDirTask(struct ScanDirTaskInfo *info, Object *app, struct Task *parent,
 	BPTR olddir;
 	FT_Library ftlibrary;
 
-	DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
+	Signal(parent, SIGBREAKF_CTRL_F);
+
+    DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
 
 	if (FT_Init_FreeType(&ftlibrary) == 0)
 	{
@@ -1870,23 +1878,24 @@ ULONG flAddDir(Class *cl, Object *o, struct MUIP_FontList_AddDir *msg)
 		info->DirName = (STRPTR)(info + 1);
 		memcpy(info->DirName, msg->DirName, dirname_len);
 
+	        _pass_info = info;
+	        _pass_app = app;
+	        _pass_parent = FindTask(NULL);
+	        _pass_fl = o;
+	        Forbid();
 		info->Proc = CreateNewProcTags(
 				NP_Entry, ScanDirTask,
-				NP_CodeType, CODETYPE_PPC,
-				NP_PPC_Arg1, info,
-				NP_PPC_Arg2, app,
-				NP_PPC_Arg3, FindTask(NULL),
-				NP_PPC_Arg4, o,
 				TAG_END);
 		if (info->Proc)
 		{
-			Forbid();
 			ADDTAIL((APTR)&dat->ScanDirTasks, (APTR)info);
 			Permit();
 
+			Wait(SIGBREAKF_CTRL_F);
 			return TRUE;
 		}
-
+	    
+	        Permit();
 		FreeVec(info);
 	}
 
@@ -1908,10 +1917,10 @@ ULONG flAddEntry(Class *cl, Object *o, struct MUIP_FontList_AddEntry *msg)
 }
 
 
-UFH3(ULONG, FontListDispatch,
-		UFHA(Class *, cl, A0),
-		UFHA(Object *, o, A2),
-		UFHA(Msg, msg, A1))
+AROS_UFH3(ULONG, FontListDispatch,
+		AROS_UFHA(Class *, cl, A0),
+		AROS_UFHA(Object *, o, A2),
+		AROS_UFHA(Msg, msg, A1))
 {
 	ULONG ret;
 
@@ -1940,7 +1949,7 @@ UFH3(ULONG, FontListDispatch,
 
 	return ret;
 }
-UFH_END
+
 
 void CleanupFontListClass(void)
 {
@@ -1971,9 +1980,6 @@ void Cleanup(void)
 	CleanupFontInfoClass();
 	CleanupFontBitmapClass();
 
-	CloseLibrary(MUIMasterBase);
-	CloseLibrary(FT2Base);
-
 	FT_Done_Library(ftlibrary);
 
 	UnLock(destdir);
@@ -1987,20 +1993,6 @@ int Init(void)
 	if (error != 0)
 	{
 		DEBUG_MAIN(dprintf("Init_FreeType error %d\n", error));
-		return 0;
-	}
-
-	FT2Base = OpenLibrary("ft2.library", 0);
-	if (FT2Base == NULL)
-	{
-		printf("Can't open ft2.library", 0);
-		return 0;
-	}
-
-	MUIMasterBase = OpenLibrary(MUIMASTER_NAME, MUIMASTER_VMIN);
-	if (MUIMasterBase == NULL)
-	{
-		printf("Can't open muimaster.library.\n");
 		return 0;
 	}
 
@@ -2018,16 +2010,16 @@ int Init(void)
 	return 1;
 }
 
-UFH3(void, CloseWinFunc,
-		UFHA(struct Hook *, hook, A0),
-		UFHA(Object *, app, A2),
-		UFHA(Object **, winp, A1))
+AROS_UFH3(void, CloseWinFunc,
+		AROS_UFHA(struct Hook *, hook, A0),
+		AROS_UFHA(Object *, app, A2),
+		AROS_UFHA(Object **, winp, A1))
 {
 	set(*winp, MUIA_Window_Open, FALSE);
 	DoMethod(app, OM_REMMEMBER, *winp);
 	MUI_DisposeObject(*winp);
 }
-UFH_END
+
 
 void SetDefaultCodePage(void)
 {
