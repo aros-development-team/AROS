@@ -70,8 +70,8 @@ extern const struct Resident
     Gameport_resident,
     Keymap_resident,
     Input_resident,
-    Intuition_resident,
-    Console_resident,
+//    Intuition_resident,
+//    Console_resident,
     Mathffp_resident,
     Mathieeesingbas_resident,
     Workbench_resident;
@@ -99,8 +99,8 @@ static const struct Resident *romtagList[] =
     &Gameport_resident,			    /* ColdStart,   43	 */
     &Keymap_resident,			    /* ColdStart,   40	 */
     &Input_resident,			    /* ColdStart,   30	 */
-    &Intuition_resident,		    /* ColdStart,   10	 */
-    &Console_resident,			    /* ColdStart,   5	 */
+//    &Intuition_resident,		    /* ColdStart,   10	 */
+//    &Console_resident,			    /* ColdStart,   5	 */
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
     &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
