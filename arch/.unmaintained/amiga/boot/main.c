@@ -81,16 +81,11 @@ int main(int argc, char **argv)
 
     /*
 	The memory type MEMF_KICK has been added in V39 exec. Fall back to
-	MEMF_LOCAL if we are on an earlier version.
-
-	It used to fallback to MEMF_CHIP in versions < 41.3. It didn't know
-	about "ranger" memory. Programs like "FastExec" can make the fastmem
-	of type MEMF_LOCAL, thereby automatically loading AROS modules into
-	fastmem if run on kick < V39 and FastExec systems.
+	MEMF_CHIP if we are on an earlier version.
     */
     if(SysBase->LibNode.lib_Version < 39)
     {
-	memtype = MEMF_LOCAL;
+	memtype = MEMF_CHIP;
     } else
     {
 	memtype = MEMF_KICK;
