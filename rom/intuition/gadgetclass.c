@@ -156,6 +156,11 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		retval = 1UL;
 		break;
 
+    	    case GA_Next:
+    	    	EG(o)->NextGadget = (struct ExtGadget *)tidata;
+    	    	break;
+
+
 	    case GA_Previous:
 		if( (tidata != 0L) && (msg->MethodID == OM_NEW) )
 		{
@@ -208,21 +213,21 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		break;
 
 	    case GA_GZZGadget:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->GadgetType |= GTYP_GZZGADGET;
 		else
 		    EG(o)->GadgetType &= ~GTYP_GZZGADGET;
 		break;
 
 	    case GA_SysGadget:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->GadgetType |= GTYP_SYSGADGET;
 		else
 		    EG(o)->GadgetType &= ~GTYP_SYSGADGET;
 		break;
 
 	    case GA_Selected:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Flags |= GFLG_SELECTED;
 		else
 		    EG(o)->Flags &= ~GFLG_SELECTED;
@@ -230,7 +235,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		break;
 
 	    case GA_Disabled:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Flags |= GFLG_DISABLED;
 		else
 		    EG(o)->Flags &= ~GFLG_DISABLED;
@@ -238,70 +243,70 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		break;
 
 	    case GA_EndGadget:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_ENDGADGET;
 		else
 		    EG(o)->Activation &= ~GACT_ENDGADGET;
 		break;
 
 	    case GA_Immediate:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_IMMEDIATE;
 		else
 		    EG(o)->Activation &= ~GACT_IMMEDIATE;
 		break;
 
 	    case GA_RelVerify:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_RELVERIFY;
 		else
 		    EG(o)->Activation &= ~GACT_RELVERIFY;
 		break;
 
 	    case GA_FollowMouse:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_FOLLOWMOUSE;
 		else
 		    EG(o)->Activation &= ~GACT_FOLLOWMOUSE;
 		break;
 
 	    case GA_RightBorder:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_RIGHTBORDER;
 		else
 		    EG(o)->Activation &= ~GACT_RIGHTBORDER;
 		break;
 
 	    case GA_LeftBorder:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_LEFTBORDER;
 		else
 		    EG(o)->Activation &= ~GACT_LEFTBORDER;
 		break;
 
 	    case GA_TopBorder:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_TOPBORDER;
 		else
 		    EG(o)->Activation &= ~GACT_TOPBORDER;
 		break;
 
 	    case GA_BottomBorder:
-		if ( (BOOL)tidata != FALSE )
+		if ( tidata != FALSE )
 		    EG(o)->Activation |= GACT_BOTTOMBORDER;
 		else
 		    EG(o)->Activation &= ~GACT_BOTTOMBORDER;
 		break;
 
 	    case GA_ToggleSelect:
-		if ((BOOL)tidata)
+		if (tidata)
 		    EG(o)->Activation |= GACT_TOGGLESELECT;
 		else
 		    EG(o)->Activation &= ~GACT_TOGGLESELECT;
 		break;
 
 	    case GA_TabCycle:
-		if ((BOOL)tidata)
+		if (tidata)
 		    EG(o)->Flags |= GFLG_TABCYCLE;
 		else
 		    EG(o)->Flags &= ~GFLG_TABCYCLE;
@@ -392,11 +397,11 @@ static ULONG get_gadgetclass(Class *cl, Object *o, struct opGet *msg)
 	    break;
 
 	case GA_Selected:
-	    *msg->opg_Storage = (IPTR)((BOOL)(EG(o)->Flags & GFLG_SELECTED));
+	    *msg->opg_Storage = (IPTR)((EG(o)->Flags & GFLG_SELECTED) != 0);
 	    break;
 
 	case GA_Disabled:
-	    *msg->opg_Storage = (IPTR)((BOOL)(EG(o)->Flags & GFLG_DISABLED));
+	    *msg->opg_Storage = (IPTR)((EG(o)->Flags & GFLG_DISABLED) != 0);
 	    break;
 
 	case GA_ID:
@@ -493,7 +498,7 @@ AROS_UFH3S(IPTR, dispatch_gadgetclass,
 		*/
 		EG(retval)->Flags      = GFLG_EXTENDED;
 		EG(retval)->GadgetType = GTYP_CUSTOMGADGET;
-
+    	    	EG(retval)->MutualExclude = (LONG)&((Class *)o)->cl_Dispatcher;
 		/* Handle our special tags - overrides defaults */
 		set_gadgetclass(cl, (Object*)retval, (struct opSet *)msg);
 	    }
