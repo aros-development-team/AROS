@@ -24,9 +24,7 @@
 
 #include <libraries/mui.h>
 
-struct Library *MUIMasterBase;
-
-Object *app;
+Object *app=NULL;
 
 #define ARG_TEMPLATE	"LOCAL/S"
 #define ARG_LOCAL	0
@@ -35,10 +33,10 @@ Object *app;
 int main(void)
 {
     IPTR                    argarray[TOTAL_ARGS] = { NULL };
-    struct RDArgs           *args;
-    Object                  *LoginWin;
-    char                    *userName, *userPass, *loginMeth, *string;
-    struct SecurityBase     *SecurityBase;
+    struct RDArgs           *args=NULL;
+    Object                  *LoginWin=NULL;
+    char                    *userName=NULL, *userPass=NULL, *loginMeth=NULL, *string=NULL;
+    struct SecurityBase     *SecurityBase=NULL;
     int                     error = RETURN_ERROR;
 
     if ((!(DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 37)))||(!(SecurityBase = OpenLibrary("security.library", 0))))
@@ -48,9 +46,6 @@ int main(void)
     }
 
     args = ReadArgs( ARG_TEMPLATE, argarray, NULL);
-
-    MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
-
 
     if (argarray[ARG_LOCAL])
     {
