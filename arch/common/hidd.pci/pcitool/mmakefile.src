@@ -2,11 +2,14 @@
 
 include $(TOP)/config/make.cfg
 
-FILES = main
+FILES = main pciids support locale
 
 EXEDIR = $(AROSDIR)/Tools
 
-#MM- workbench-tools: workbench-tools-pcitool
+#MM- workbench-tools : workbench-tools-pcitool
+#MM workbench-tools-pcitool : includes symlinks \
+#MM workbench-tools-pcitool-catalogs
+
 
 %build_prog mmake=workbench-tools-pcitool \
     progname=PCITool targetdir=$(EXEDIR) \
