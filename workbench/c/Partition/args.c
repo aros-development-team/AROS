@@ -9,7 +9,7 @@
 #include "args.h"
 
 /*** Global Variables *******************************************************/
-STATIC CONST_STRPTR   TEMPLATE = "FORCE/K/S,QUIET/K/S";
+STATIC CONST_STRPTR   TEMPLATE = "DEVICE,UNIT/N,FORCE/K/S,QUIET/K/S";
 STATIC IPTR           args[COUNT];
 STATIC struct RDArgs *rdargs;
  
