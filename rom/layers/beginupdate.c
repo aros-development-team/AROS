@@ -61,27 +61,31 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   /* Convert the list of regionrectangles to a cliprect list */
-  struct Region * R = l -> DamageList;
+  struct Region * R;
   struct ClipRect * CR;
   struct ClipRect * FirstCR = NULL;
   struct RegionRectangle * RR;
 
   LockLayer(0, l);
 
-  if (l->_cliprects)
-    AndRegionRegion(l->ClipRect, l->DamageList);
+#if 0
+  /*
+  ** Only those parts of the damage list that are really visible right
+  ** now may be refreshed. There might be parts in the damage list that
+  ** belong to hidden cliprects.
+  */
+#endif
+  
+  R = l->DamageList;
 
   if (NULL != R)
   {
-
-kprintf("BeginUpdate: NULL!=R \n");
     RR = R->RegionRectangle;
     /* process all region rectangles */
     while (NULL != RR)
     {
       CR = _AllocClipRect(l);
 
-kprintf("CR: %p\n",CR);
       /* was allocation successful? */
       if (NULL != CR)
       {
@@ -104,8 +108,6 @@ kprintf("CR: %p\n",CR);
         CR = FirstCR;
         while (NULL != CR)
 	{
-kprintf("Error 1!\n");
-
           FirstCR = CR->Next;
           _FreeClipRect(CR, l);
           CR = FirstCR;
