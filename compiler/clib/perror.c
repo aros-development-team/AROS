@@ -43,10 +43,14 @@
 
 ******************************************************************************/
 {
-    if (string)
-    	printf("%s: ", string);
+    if (errno)
+    {
+        if (string)
+    	    printf("%s: ", string);
 
 #warning TODO: complete perror()
-    printf("Unknown error %d\n", errno);
-} /* fopen */
+        printf("Unknown error %d\n", errno);
+    }
+
+} /* perror */
 

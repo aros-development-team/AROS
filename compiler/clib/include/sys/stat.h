@@ -81,7 +81,11 @@ struct stat
 int mkdir(const char *path, mode_t mode);
 
 int stat(const char *path, struct stat *sb);
-int lstat(const char *path, struct stat *sb);
+/*
+    can this be implemented in AROS?
+   int lstat(const char *path, struct stat *sb);
+*/
+#define lstat stat
 int fstat(int fd, struct stat *sb);
 
 
