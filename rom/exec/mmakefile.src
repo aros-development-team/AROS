@@ -1,8 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# Use OS's own includes over the ones from AROS
-OS_INCLUDES := -I. -I$(GENINCDIR)
+# I need the private includes (for SIZEOF_ALL_REGISTERS)
+USER_CFLAGS := -I. -I$(GENINCDIR)
 
 LIBNAME  := exec
 ULIBNAME := Exec
