@@ -487,7 +487,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 		arosmb->flags |= MB_FLAGS_GFX;
 		arosmb->vbe_mode = mbinfo->vbe_mode;
 		memcpy((void *)&arosmb->vmi,(void *)mbinfo->vbe_mode_info,sizeof(struct vbe_mode));
-
+		memcpy((void *)&arosmb->vci,(void *)mbinfo->vbe_control_info,sizeof(struct vbe_controller));
             }
 	}
     }

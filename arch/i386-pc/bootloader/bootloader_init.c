@@ -146,6 +146,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    ULONG masks [] = { 0x01, 0x03, 0x07, 0x0f ,0x1f, 0x3f, 0x7f, 0xff };
 
 	    BootLoaderBase->Vesa.FrameBuffer = (APTR)mb->vmi.phys_base;
+	    BootLoaderBase->Vesa.FrameBufferSize = mb->vci.total_memory * 64;
 	    BootLoaderBase->Vesa.XSize = mb->vmi.x_resolution;
 	    BootLoaderBase->Vesa.YSize = mb->vmi.y_resolution;
 	    BootLoaderBase->Vesa.BytesPerLine = mb->vmi.bytes_per_scanline;
@@ -162,11 +163,13 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    BootLoaderBase->Flags |= MB_FLAGS_GFX;
 	    if (BootLoaderBase->Vesa.ModeNumber != 3)
 	    {
-	    	D(bug("[BootLdr] Init: Vesa mode %x @ 0x%08x type (%dx%dx%d)\n",
+	    	D(bug("[BootLdr] Init: Vesa mode %x type (%dx%dx%d)\n",
 				BootLoaderBase->Vesa.ModeNumber,
-				BootLoaderBase->Vesa.FrameBuffer,
 				BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
 				BootLoaderBase->Vesa.BitsPerPixel));
+		D(bug("[BootLdr] Init: Vesa FB at 0x%08x size %d kB\n",
+			    	BootLoaderBase->Vesa.FrameBuffer,
+				BootLoaderBase->Vesa.FrameBufferSize));
 	    }
 	    else
 	    {

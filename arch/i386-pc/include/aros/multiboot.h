@@ -65,6 +65,23 @@ struct mb_mmap {
 #define MMAP_TYPE_ACPINVS   4
 };
 
+/* VBE controller information */
+struct vbe_controller
+{
+    unsigned char signature[4];
+    unsigned short version;
+    unsigned long oem_string;
+    unsigned long capabilities;
+    unsigned long video_mode;
+    unsigned short total_memory;
+    unsigned short oem_software_rev;
+    unsigned long oem_vendor_name;
+    unsigned long oem_product_name;
+    unsigned long oem_product_rev;
+    unsigned char reserved[222];
+    unsigned char oem_data[256];
+} __attribute__ ((packed));
+
 /* VBE mode information.  */
 struct vbe_mode 
 { 
@@ -140,6 +157,7 @@ struct arosmb {
     char    cmdline[200];	    /* Commandline */
     UWORD   vbe_mode;		    /* VBE mode */
     struct vbe_mode vmi;            /* VBE mode information */
+    struct vbe_controller vci;      /* VBE controller information */
 };
 
 struct mb_drive {
