@@ -1002,7 +1002,7 @@ AROS_LH1(struct Screen *, OpenScreen,
         rp_inited = TRUE;
     }
 
-    screen->Screen.RastPort.BitMap = AllocScreenBitMap(modeid);
+    screen->Screen.RastPort.BitMap = screen->AllocatedBitmap = AllocScreenBitMap(modeid);
 
 #endif
     D(bug("got bitmap\n"));
