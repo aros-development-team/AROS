@@ -15,6 +15,7 @@
 
 #include "mui.h"
 #include "muimaster_intern.h"
+#include "support.h"
 #include "support_classes.h"
 
 /*****************************************************************************

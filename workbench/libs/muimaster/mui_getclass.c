@@ -16,6 +16,7 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
+#include "support_classes.h"
 
 static CONST_STRPTR searchpaths[] = {
     "PROGDIR:Zune/%s",
