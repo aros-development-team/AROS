@@ -77,10 +77,17 @@ HIDD permits that.
 
 \section{The HIDD Support API}
 
-\begin{code}
-/* Get a list with pointers to HIDD devices */
-ULONG HIDD_FindHIDD (struct TagItem *, Class ** hiddArray);
-\end{code}
+\begin{methods}
+\item{ULONG HIDD_FindHIDD (struct TagItem * tags, Class ** hiddArray)}
+Get a list of HIDDs with the specified attributes. The HIDDs must
+match all attribute/value pairs in |tags|. Note that this is a normal
+function and not a method.
+
+\item{ULONG HIDDM_Class_Get(struct TagItem * AttrList)} Use this
+method on the class on a HIDD to get the static attributes (eg.
+|HIDDA_Type|, |HIDDA_SubType|, etc).
+
+\end{methods}
 
 You can then use the HIDD API to query the devices for their infos. Use
 |FreeVec()| to dispose the array. |HIDDV_FindHIDD_All| as type gives
@@ -273,6 +280,33 @@ when the HIDD tells you that it doesn't like a certain tag in a
 taglist. When this happens, you can query this code to find out
 what the HIDD doesn't like about the tag.
 
+Note that you can supply this tag when you try to create or change
+attributes of a HIDD. If you do this, you must still pass a pointer to
+|LONG| to |NewObject()| or |SetAttrs()|. In case of an error, it will be
+filled with the error code.
+
+\item{HIDDA_Locking,ULONG,G} Tells which kinds of locking the HIDD
+supports. Can be read from the class and from an existing HIDD. The
+possible values are:
+
+\begin{description}
+\item{HIDDV_Lock_None} No locking is supported. Note that some HIDDs have a
+kind of hidden locking: They can't be created more than once. The second
+attempt to create such a HIDD will just fail with the error
+|HIDDV_Error_UniqueObject|. Also note that this can also mean that no
+locking is necessary.
+
+\item{HIDDV_Lock_Shared} Shared and exclusive locking are supported
+(several tasks can access the HIDD simultanously). This doesn't mean that
+it makes sense when several tasks access the HIDD at the same time, only
+that it is possible.
+
+\item{HIDDV_Lock_Exclusive} Only one task can access the HIDD at any one
+time. Note that a HIDD which can't exist more than once should not use this
+kind of locking but just fail on the second attempt to create it.
+
+\end{description}
+
 \end{taglist}
 
 \subsection{Common tags for all HIDD CPs}
@@ -296,51 +330,78 @@ CPs will also use this to talk to the application.
 
 \end{taglist}
 
-\subsection{Tags for some HIDDs}
+\subsection{Tags and methods for some HIDDs}
 
-\begin{taglist}
-\item{HIDDA_Shared,ULONG,ISG} Allow to share a HIDD with other
-applications or lock it for single use. This might be used in HIDDs like
-sound HIDDs, serial HIDDs, graphics HIDDs, etc. Not all HIDDs need to
-support shared access (see below).
+\begin{methods}
+\item{IPTR HIDDM_Lock(ULONG mode)} Try to get access to the HIDD if you
+opened it in shared mode. The values for |mode| are
+|HIDDV_Lock_Exclusive| and |HIDDV_Lock_Shared|. You can add the flag
+|HIDDV_Lock_Try|. |HIDDV_Lock_Exclusive| means that you want the
+HIDD for your own. If someone else has a lock on the HIDD, this will
+block unless |HIDDV_Lock_Try| is set. |HIDDV_Lock_Shared| will only
+block if no exclusive locks exist and |HIDDV_Lock_Try| is not set.
 
-Values for |HIDDA_Shared| are:
+If |HIDDV_Lock_Try| is not set, this will block until the HIDD can be
+locked as you wish.
 
-\begin{description}
-\item{HIDDV_Shared_Exclusive} Try to get the HIDD exclusively.
-If someone else has locked the HIDD exclusive or shared already,
-this will fail.
+The method will return |FALSE| if the lock could not be established. It
+will return something else if the lock could be established.
 
-\item{HIDDV_Shared_Shared} Try to share the HIDD with other
-apps. This will fail if someone else has already locked the
-HIDD exclusively.
+Note that some HIDDs don't support locking. Use |HIDDM_Class_Get()| to find
+out which do and which don't at runtime and read the documentation for the
+HIDDs.
 
-\item{HIDDV_Shared_NonExclusive} Use this mode if it doesn't matter if
-you can't get it. This might be used for apps which want to play sounds in
-the background when someone inserts a disk into the drive or similar. HIDDs
-accessed with this value set might loose access permissions while locked.
-Nevertheless applications without access permission may still perform
-methods on this object. These methods are discarded.
+\item{void HIDDM_Unlock(IPTR lock)} Unlock the HIDD. |lock| must contain what
+you got back from |HIDDM_Lock()|.
 
-\item{HIDDV_Shared_NotAvailable} This can only read back. If the
-attribute contains this value, the HIDD doesn't support sharing.
-
-\item{HIDDV_Shared_Lock} Some HIDDs can be shared but used only by one
-application at a time. An example might be the CPU. There is only one CPU
-but different applications might want to get it.
-
-If the HIDD supports this, you must set the attribute to
-|HIDDV_Shared_Shared| and when you want to get the HIDD, set the attribute
-to |HIDDV_Shared_Lock|. When this succeeds, whoever had the HIDD will loose
-control on the HIDD and you will get it. Some HIDDs will tell you when you
-lost control or will tell you when you are about to loose control and allow
-you to prevent that or clean up.
-
-\end{description}
-
-\end{taglist}
+\end{methods}
 
 \section{Sample HIDDs}
+
+\subsection{Alarm HIDD}
+
+The alarm HIDD allows to call a hook after a certain time.
+
+The type of an alarm HIDD is |HIDDV_Type_Alarm| and the names for
+alarm specific things is prefixed with |HIDD?_Alarm_|.
+
+Subtypes of this HIDD are |HIDDV_Type_Alarm_VB| (vertical blank interrupt),
+|HIDDV_Type_Alarm_Real| (real time clock).
+
+This kind of HIDD cannot be shared. If you try to create a second alarm HIDD
+of a specific class, you will get the error |HIDDV_Error_UniqueObject|.
+If you need shared access to this HIDD, use the \filename{timer.hidd}.
+
+\begin{methods}
+HIDDM_Alarm_TicksToTime(ULONG, struct tv *) Ticks are the smallest
+intervall an alarm HIDD can provide. This tells how long |n| ticks would
+last in real life.
+
+HIDDM_Alarm_TimeToTicks(struct tv *, ULONG ticks) How many ticks would a
+certain time be ?
+
+\end{methods}
+
+\begin{taglist}
+\item{HIDDA_Alarm_Time,struct tv *,ISG} This is the time for the next alarm.
+This implies single shot mode. The hook is called only once. The time is
+specified as absolute system time.
+
+\item{HIDDA_Alarm_Intervall,struct tv * intervall,ISG} This is the time for
+the next alarm.  This implies repeat mode. The hook is called every time
+after |intervall| has elapsed.
+
+\item{HIDDA_Alarm_Hook,struct Hook *,ISG} Call this function when the alarm
+comes.
+
+\item{HIDDA_Alarm_Active,BOOL,SG} (De-)Activate this alarm HIDD. When created,
+the alarm hidd is always inactive.
+
+\item{HIDDA_Alarm_Unit,ULONG,G} This is a tag of the class. It contains the
+unit number you must pass to the \filename{timer.hidd} if you want to
+access this alarm HIDD.
+
+\end{taglist}
 
 \subsection{Serial HIDD}
 
@@ -428,6 +489,8 @@ is calculated by the macro |HIDDQ_Keyboard_GetNumKeys(msg)|.
 \end{taglist}
 
 \subsection{Graphics HIDD}
+
+A graphics HIDD allows to
 
 The graphics HIDD supports the following methods:
 
