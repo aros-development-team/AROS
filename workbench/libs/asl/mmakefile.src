@@ -9,7 +9,8 @@ ULIBNAME	:= Asl
 FILES := functable basicfuncs \
 	 filereqhooks filereqsupport \
 	 modereqhooks modereqsupport \
-         fontreqhooks specialreq \
+         fontreqhooks fontreqsupport \
+	 specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
 	 gadgets coolimagedata 

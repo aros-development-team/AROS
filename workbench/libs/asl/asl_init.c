@@ -443,6 +443,11 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!LayersBase)
 	return(NULL);
 
+    if (!DiskfontBase)
+    	DiskfontBase = OpenLibrary("diskfont.library", 37);
+    if (!DiskfontBase)
+    	return(NULL);
+    
     if (!CyberGfxBase)
         CyberGfxBase = OpenLibrary("cybergraphics.library",0);
     /* We can live without cybergraphics.library so don't abort if opening fails */
@@ -556,6 +561,10 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	if (LIBBASE->aslcycleclass)
 	    FreeClass(LIBBASE->aslcycleclass);
 	LIBBASE->aslcycleclass = NULL;
+	
+	if (DiskfontBase)
+	    CloseLibrary(DiskfontBase);
+	DiskfontBase = NULL;
 	
 	if (GadToolsBase)
 	    CloseLibrary(GadToolsBase);

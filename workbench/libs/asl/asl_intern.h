@@ -330,6 +330,7 @@ struct AslBase_intern
     struct Library		*boopsibase;
     struct Library		*utilitybase;
     struct Library		*gadtoolsbase;
+    struct Library  	    	*diskfontbase;
     struct Library		*aroslistviewbase;
     struct Library		*aroslistbase;
 
@@ -468,6 +469,8 @@ typedef struct IntuitionBase IntuiBase;
 #define CyberGfxBase	ASLB(AslBase)->cybergfxbase
 
 #define LayersBase	ASLB(AslBase)->layersbase
+
+#define DiskfontBase	ASLB(AslBase)->diskfontbase
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase

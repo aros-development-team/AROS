@@ -492,7 +492,6 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
 BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct TextFont 	*font = NULL;
-    struct Library 	*DiskfontBase;
 
     struct TextAttr 	*usedattr;
 
@@ -509,55 +508,49 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	If not present, try to get the font preferences from ENV:Sys/font.prefs
 	If this fails, we fall back to topaz 8
     */
-    DiskfontBase = OpenLibrary("diskfont.library", 37);
 
-    if (DiskfontBase)
+    /* Is there a user supplied font */
+    usedattr = ld->ld_IntReq->ir_TextAttr;
+
+    if (usedattr)
     {
-	/* Is there a user supplied font */
-	usedattr = ld->ld_IntReq->ir_TextAttr;
+	font = OpenDiskFont (usedattr);
+    }
 
-	if (usedattr)
+    /* If no font has been opened yet, try the preferences one */
+    if (!font)
+    {
+	struct FontPrefs	*fprefs;
+
+	fprefs = GetFontPrefs(ASLB(AslBase));
+	if (fprefs)
 	{
-	    font = OpenDiskFont (usedattr);
-	}
+	    D(bug("Fontprefs found\n"));
 
-	/* If no font has been opened yet, try the preferences one */
-	if (!font)
-	{
-	    struct FontPrefs	*fprefs;
+	    D(bug("Name: %s, YSize :%d", fprefs->fp_TextAttr.ta_Name, fprefs->fp_TextAttr.ta_YSize));
 
-	    fprefs = GetFontPrefs(ASLB(AslBase));
-	    if (fprefs)
+	    usedattr = &(fprefs->fp_TextAttr);
+	    font = OpenDiskFont(usedattr);
+
+	    if (!font)
 	    {
-		D(bug("Fontprefs found\n"));
-
-		D(bug("Name: %s, YSize :%d", fprefs->fp_TextAttr.ta_Name, fprefs->fp_TextAttr.ta_YSize));
-
-		usedattr = &(fprefs->fp_TextAttr);
-		font = OpenDiskFont(usedattr);
-
-		if (!font)
-		{
-		    FreeFontPrefs(fprefs, ASLB(AslBase));
-		}
+		FreeFontPrefs(fprefs, ASLB(AslBase));
 	    }
 	}
+    }
 
-	/* Yet no font, try topaz 8 */
+    /* Yet no font, try topaz 8 */
 
-	if (!font)
-	{
-	    usedattr = &topaz8;
+    if (!font)
+    {
+	usedattr = &topaz8;
 
-	    /* Here we should really use OpenDiskFont, but
-	     * since AROS can't render diskfonts yet, we must use OpenFont()
-	     */
+	/* Here we should really use OpenDiskFont, but
+	 * since AROS can't render diskfonts yet, we must use OpenFont()
+	 */
 
-	    font = OpenFont(usedattr);
-	}
-
-	CloseLibrary(DiskfontBase);
-    } /* if (DiskfontBase) */
+	font = OpenFont(usedattr);
+    }
 
     if (font)
     {

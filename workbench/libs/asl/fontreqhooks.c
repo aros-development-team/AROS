@@ -272,6 +272,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     NEWLIST(&udata->NameListviewList);
     NEWLIST(&udata->SizeListviewList);
 
+    FOGetFonts(ld, AslBase);
+    
 //    error = SMGetModes(ld, AslBase);
 //    if (error) goto failure;
     
