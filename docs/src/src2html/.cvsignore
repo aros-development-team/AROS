@@ -2,4 +2,3 @@ gram.*
 scan.c
 *.o
 src2html
-exec.?
