@@ -99,6 +99,7 @@ int vkprintf (const UBYTE * fmt, va_list args)
 	if (*fmt == '%')
 	{
 	    int width = 0;
+	    int precision = 0;
 
 	    fmt ++;
 
@@ -112,8 +113,28 @@ int vkprintf (const UBYTE * fmt, va_list args)
 		fill = "        ";
 	    }
 
+	    if (*fmt == '*')
+	    {
+	        width = va_arg (args, int);
+		fmt++;
+	    }
+	    else
 	    if (isdigit (*fmt))
+	    {
 		width = atoi (fmt);
+	        while (isdigit(*fmt)) fmt++;
+	    }
+
+	    if (*fmt == '.') fmt++;
+
+	    if (*fmt == '*')
+	    {
+		precision = va_arg (args, int);
+		fmt++;
+	    }
+	    else
+	    if (isdigit (*fmt))
+		precision = atoi (fmt);
 
 	    while (isdigit(*fmt) || *fmt=='.' || *fmt=='-' || *fmt=='+')
 		fmt ++;
@@ -139,7 +160,10 @@ int vkprintf (const UBYTE * fmt, va_list args)
 		    ret ++;
 		}
 
-		len = strlen (str);
+		if (precision)
+		    len = precision;
+		else
+		    len = strlen (str);
 
 		RawPutChars (str, len);
 		ret += len;
