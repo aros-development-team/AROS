@@ -93,10 +93,6 @@ struct MUI_WindowData
     LONG           wd_ReqWidth;
     APTR           wd_RootObject;   /* unique child */
     ULONG          wd_Flags;        /* various status flags */
-    UWORD          wd_innerLeft;
-    UWORD          wd_innerRight;
-    UWORD          wd_innerTop;
-    UWORD          wd_innerBottom;
     struct MUI_ImageSpec_intern *wd_Background;
     ULONG          wd_DisabledKeys;
 
@@ -2003,43 +1999,45 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
  */
 static void window_minmax(Object *obj, struct MUI_WindowData *data)
 {
+    UWORD wd_innerLeft, wd_innerRight, wd_innerTop, wd_innerBottom;
+
     if (data->wd_CrtFlags & WFLG_BORDERLESS)
     {
-	data->wd_innerLeft   = 0;
-	data->wd_innerRight  = 0;
-	data->wd_innerTop    = 0;
-	data->wd_innerBottom = 0;
+	wd_innerLeft   = 0;
+	wd_innerRight  = 0;
+	wd_innerTop    = 0;
+	wd_innerBottom = 0;
     }
     else
     {
-	data->wd_innerLeft   = muiGlobalInfo(obj)->mgi_Prefs->window_inner_left;
-	data->wd_innerRight  = muiGlobalInfo(obj)->mgi_Prefs->window_inner_right;
-	data->wd_innerTop    = muiGlobalInfo(obj)->mgi_Prefs->window_inner_top;
-	data->wd_innerBottom = muiGlobalInfo(obj)->mgi_Prefs->window_inner_bottom;
+	wd_innerLeft   = muiGlobalInfo(obj)->mgi_Prefs->window_inner_left;
+	wd_innerRight  = muiGlobalInfo(obj)->mgi_Prefs->window_inner_right;
+	wd_innerTop    = muiGlobalInfo(obj)->mgi_Prefs->window_inner_top;
+	wd_innerBottom = muiGlobalInfo(obj)->mgi_Prefs->window_inner_bottom;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERLEFT))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERLEFT;
-    	muiAreaData(data->wd_RootObject)->mad_HardILeft = data->wd_innerLeft;
+    	muiAreaData(data->wd_RootObject)->mad_HardILeft = wd_innerLeft;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERTOP))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERTOP;
-    	muiAreaData(data->wd_RootObject)->mad_HardITop = data->wd_innerTop;
+    	muiAreaData(data->wd_RootObject)->mad_HardITop = wd_innerTop;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERRIGHT))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERRIGHT;
-    	muiAreaData(data->wd_RootObject)->mad_HardIRight = data->wd_innerRight;
+    	muiAreaData(data->wd_RootObject)->mad_HardIRight = wd_innerRight;
     }
 
     if (!(muiAreaData(data->wd_RootObject)->mad_Flags & MADF_INNERBOTTOM))
     {
 	muiAreaData(data->wd_RootObject)->mad_Flags |= MADF_INNERBOTTOM;
-    	muiAreaData(data->wd_RootObject)->mad_HardIBottom = data->wd_innerBottom;
+    	muiAreaData(data->wd_RootObject)->mad_HardIBottom = wd_innerBottom;
     }
 
     /* inquire about sizes */
