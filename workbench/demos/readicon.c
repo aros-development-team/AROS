@@ -86,7 +86,7 @@ void DoWindow (struct DiskObject * dobj)
 	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
 	{
 	    /* D("Got msg\n"); */
-	    printf("Got msg %x\n", im->Class);
+	    printf("Got msg %lx\n", im->Class);
 	    
 	    switch (im->Class)
 	    {
