@@ -33,5 +33,10 @@ typedef long time_t;
 #endif
 #endif
 
+#if !defined(__typedef_pid_t)
+#define __typedef_pid_t
+typedef int pid_t;
+#endif
+
 #endif /* _SYS_TYPES_H */
 
