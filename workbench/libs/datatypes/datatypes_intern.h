@@ -1,7 +1,7 @@
 #ifndef DATATYPES_INTERN_H
 #define DATATYPES_INTERN_H
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal datatypes.library definitions.
@@ -77,16 +77,16 @@ struct DataTypesList
 
 struct CompoundDatatype
 {
-	struct DataType	         DT;
-	ULONG	                 FlagLong;
-	ULONG	                 ParsePatSize;
-	UBYTE	                *ParsePatMem;
-	UBYTE	                *DTCDChunk;
-	ULONG		         DTCDSize;
-	BPTR		         SegList;
-	BOOL (*Function)(struct DTHookContext *dthc);
-	ULONG		         OpenCount;
-	struct DataTypeHeader	 DTH;
+    struct DataType  DT;
+    ULONG	     FlagLong;
+    ULONG	     ParsePatSize;
+    UBYTE	    *ParsePatMem;
+    UBYTE	    *DTCDChunk;
+    ULONG	     DTCDSize;
+    BPTR	     SegList;
+    BOOL (*Function)(struct DTHookContext *dthc);
+    ULONG	     OpenCount;
+    struct DataTypeHeader DTH;
 };
 
 #define CFLGB_PATTERN_UNUSED 0
@@ -156,6 +156,7 @@ struct DataTypesBase
     struct Library  *dtb_RexxSysBase;
     struct Library  *dtb_LocaleBase;
     struct Library  *dtb_IconBase;
+    struct Library  *dtb_WorkbenchBase;
     struct Catalog  *dtb_LibsCatalog;
     
     /* remember seglist */
@@ -242,6 +243,7 @@ typedef struct IntuitionBase IntuiBase;
 #define LocaleBase (GPB(DataTypesBase)->dtb_LocaleBase)
 #define GfxBase (GPB(DataTypesBase)->dtb_GfxBase)
 #define IconBase (GPB(DataTypesBase)->dtb_IconBase)
+#define WorkbenchBase (GPB(DataTypesBase)->dtb_WorkbenchBase)
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct DataTypesBase *, DataTypesBase, 3, DataTypes)

@@ -103,8 +103,19 @@ static BOOL openlibs(struct DataTypesBase *DataTypesBase)
     if(DataTypesBase->dtb_IconBase == NULL)
 	return FALSE;
 
+    if (DataTypesBase->dtb_WorkbenchBase == NULL)
+    {
+	DataTypesBase->dtb_IconBase = OpenLibrary("workbench.library", 37);
+    }
+
+    if (DataTypesBase->dtb_WorkbenchBase == NULL)
+    {
+	return FALSE;
+    }
+
     return TRUE;
 }
+
 
 static void closelibs(struct DataTypesBase *DataTypesBase)
 {
@@ -131,6 +142,11 @@ static void closelibs(struct DataTypesBase *DataTypesBase)
 
     if(DataTypesBase->dtb_IconBase != NULL)
 	CloseLibrary(DataTypesBase->dtb_IconBase);
+
+    if (DataTypesBase->dtb_WorkbenchBase != NULL)
+    {
+	CloseLibrary(DataTypesBase->dtb_WorkbenchBase);
+    }
 }
 
 
@@ -146,7 +162,7 @@ AROS_LH2(struct DataTypesBase *, init,
     __dt_GlobalSysBase = (struct Library *)sysBase;
     DataTypesBase->dtb_SegList = segList;
     
-    for(i = 0; i < SEM_MAX; i++)
+    for (i = 0; i < SEM_MAX; i++)
     {
 	InitSemaphore(&DataTypesBase->dtb_Semaphores[i]);
     }
@@ -163,7 +179,7 @@ AROS_LH1(struct DataTypesBase *, open,
 {
     AROS_LIBFUNC_INIT
 
-    /* keep compiler happy */
+    /* Keep the compiler happy */
     version = 0;
 
     /* We have to open some libraries. */
