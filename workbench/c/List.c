@@ -84,6 +84,7 @@
 #include <utility/tagitem.h>
 
 #include <stdio.h>
+#include <string.h>
 
 static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 
@@ -525,20 +526,27 @@ int listfile(STRPTR filename,
   struct AnchorPath ap;
   ULONG files = 0, dirs = 0, blocks = 0;
   ULONG error;
- 
+
+//kprintf("List: listfile(\"%s\")\n", filename);
+
   memset(&ap, 0x0, sizeof(struct AnchorPath));
   error = MatchFirst(filename, &ap);
 
-  if (0 == strcasecmp(ap.ap_Info.fib_FileName, filename))
+  /* explicitely named directory and not a pattern? --> enter dir */
+  
+  if (0 == error)
   {
-    if (ap.ap_Info.fib_DirEntryType >= 0)
+    if (!(ap.ap_Flags & APF_ITSWILD))
     {
-      error = printdirheader(filename, args);
-      ap.ap_Flags |= APF_DODIR;
-      MatchNext(&ap);
+      if (ap.ap_Info.fib_DirEntryType >= 0)
+      {
+	error = printdirheader(filename, args);
+	ap.ap_Flags |= APF_DODIR;
+	if (0 == error) error = MatchNext(&ap);
+      }
     }
   }
- 
+  
   if (0 == error)
   {
     do
