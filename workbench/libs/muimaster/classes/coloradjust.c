@@ -259,7 +259,7 @@ static IPTR Coloradjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		GRAD_KnobPixels     , 8,
 		PGA_Freedom 	    , LORIENT_VERT,
 		ICA_TARGET  	    , ICTARGET_IDCMP,
-		MUIA_FillArea	    , TRUE,
+		//MUIA_FillArea	    , TRUE,
 		End,
 	    End,
 	
