@@ -159,8 +159,9 @@ struct page_entry main_page_entries[] =
 #ifndef __AROS__
 __saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
 #else
-AROS_UFH2( void, hook_func_standard,
+AROS_UFH3( void, hook_func_standard,
     AROS_UFHA( struct Hook *, h,       A0 ),
+    AROS_UFHA( Object *, obj, A2),
     AROS_UFHA( ULONG *,       funcptr, A1 ))
 #endif
 {
