@@ -22,7 +22,7 @@
         AROS_LHA(int,    optlen,  D3),
 
 /*  LOCATION */
-        struct Library *, SocketBase, 16, BSDSocket)
+        struct Library *, SocketBase, 15, BSDSocket)
 
 /*  FUNCTION
 
