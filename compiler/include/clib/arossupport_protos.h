@@ -25,10 +25,11 @@
 #   include <utility/hooks.h>
 #endif
 
+#ifndef PROTO_EXEC_H
+#   include <proto/exec.h>
+#endif
+
 #ifdef DEBUG_FreeMem
-#   ifndef PROTO_EXEC_H
-#       include <proto/exec.h>
-#   endif
 #   if DEBUG_FreeMem
 #       undef FreeMem
 #       define FreeMem NastyFreeMem
@@ -37,8 +38,6 @@
 
 /* for va_list in kprintf() proto */
 #include <stdarg.h>
-
-extern struct ExecBase * Sysbase;
 
 /*
     Prototypes
