@@ -42,9 +42,47 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
-
-    aros_print_not_implemented ("FillRexxMsg");
-
+    STRPTR args[16];
+    char number[20];
+    ULONG i, j;
+    
+    for (i = 0; i < count; i++)
+    {
+	/* Is argument i an integer ? */
+	if (mask & (1<<i))
+	{
+	    /* Convert int to string */
+	    sprintf(number, "%ld", (LONG)msgptr->rm_Args[i]);
+	    args[i] = (STRPTR)CreateArgstring(number, strlen(number));
+	    
+	    /* Clean up if error in CreateArgstring */
+	    if (args[i] == NULL)
+	    {
+	        for (j = 0; j < i; j++)
+		    if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
+		ReturnBool("FillRexxMsg", FALSE);
+	    }
+	}
+	else
+	{
+	    /* CreateArgstring with null terminated string if pointer is not null */
+	    if (msgptr->rm_Args[i] == NULL) args[i] = NULL;
+	    else
+	    {
+		args[i] = (STRPTR)CreateArgstring(msgptr->rm_Args[i], strlen(msgptr->rm_Args[i]));
+	    
+		/* Clean up if error in CreateArgstring */
+		if (args[i] == NULL)
+		{
+		    for (j = 0; j < i; j++)
+		        if (args[j] != NULL) DeleteArgstring((UBYTE *)args[j]);
+		    ReturnBool("FillRexxMsg", FALSE);
+		}
+	    }
+	}
+    }
+    
+    CopyMem(args, msgptr->rm_Args, count * sizeof(STRPTR));
+    ReturnBool("FillRexxMsg", TRUE);
     AROS_LIBFUNC_EXIT
 } /* FillRexxMsg */

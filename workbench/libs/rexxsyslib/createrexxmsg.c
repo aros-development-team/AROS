@@ -6,6 +6,8 @@
     Lang: english
 */
 #include "rexxsyslib_intern.h"
+#include <stdio.h>
+#include <string.h>
 
 /*****************************************************************************
 
@@ -42,9 +44,17 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
+    struct RexxMsg *rm = AllocMem(sizeof(struct RexxMsg), MEMF_PUBLIC|MEMF_CLEAR);
 
-    aros_print_not_implemented ("CreateRexxMsg");
+    if (rm == NULL) ReturnPtr("CreateRexxMsg", struct RexxMsg *, NULL);
 
+    rm->rm_Node.mn_Node.ln_Type = NT_MESSAGE;
+    rm->rm_Node.mn_Node.ln_Name = RSBI(RexxSysBase)->rexxmsgid;
+    rm->rm_Node.mn_ReplyPort = port;
+    rm->rm_Node.mn_Length = sizeof(struct RexxMsg);
+    rm->rm_FileExt = (STRPTR)extension;
+    rm->rm_CommAddr = (STRPTR)host;
+    
+    ReturnPtr("CreateRexxMsg", struct RexxMsg *, rm);
     AROS_LIBFUNC_EXIT
 } /* CreateRexxMsg */

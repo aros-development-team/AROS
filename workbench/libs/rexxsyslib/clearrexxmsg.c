@@ -41,9 +41,13 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
-
-    aros_print_not_implemented ("ClearRexxMsg");
-
+    
+    ULONG i;
+    
+    for (i = 0; i < count; i++)
+        if (msgptr->rm_Args[i] != NULL)
+	    DeleteArgstring(msgptr->rm_Args[i]);
+    
+    ReturnVoid("ClearRexxMsg");
     AROS_LIBFUNC_EXIT
 } /* ClearRexxMsg */

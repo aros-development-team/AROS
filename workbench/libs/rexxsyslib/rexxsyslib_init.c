@@ -17,15 +17,19 @@
 #include "rexxsyslib_intern.h"
 #include "libdefs.h"
 
-/****************************************************************************************/
-
 #undef SysBase
 
-#define LC_NO_INITLIB
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 #define LC_NO_EXPUNGELIB
 
 #include <libcore/libheader.c>
 
-/****************************************************************************************/
+#define RexxSysBase ((struct RexxSysBase_intern *)lh)
+
+ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+{
+   RexxSysBase->rexxmsgid = "RexxMsgId";
+   return TRUE;
+}
+

@@ -40,9 +40,12 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,RexxSysBase)
+    
+    BOOL ok = FALSE;
+    char *name = ((struct Node *)msgptr)->ln_Name, *id = RSBI(RexxSysBase)->rexxmsgid;
 
-    aros_print_not_implemented ("IsRexxMsg");
-
+    if (name == id) ok = TRUE;
+  
+    ReturnBool("IsRexxMsg", ok);
     AROS_LIBFUNC_EXIT
 } /* IsRexxMsg */
