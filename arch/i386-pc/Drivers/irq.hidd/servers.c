@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <oop/oop.h>
 #include <aros/asmcall.h>
 #include <exec/types.h>
@@ -32,6 +35,11 @@
 
 void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *);
 
+struct irqServer irq5_int   = { global_server, "IRQ5"	    , NULL};
+struct irqServer irq7_int   = { global_server, "IRQ7"	    , NULL};
+struct irqServer irq9_int   = { global_server, "IRQ9"	    , NULL};
+struct irqServer irq10_int   = { global_server, "IRQ10"	    , NULL};
+struct irqServer irq11_int   = { global_server, "IRQ11"	    , NULL};
 struct irqServer timer_int  = { global_server, "timer"	    , NULL};
 struct irqServer kbd_int    = { global_server, "keyboard"   , NULL};
 struct irqServer com1_int   = { global_server, "serial 1"   , NULL};
@@ -86,13 +94,24 @@ void init_Servers(struct irq_staticdata *isd)
     ide0_int.is_UserData = isd;
     ide1_int.is_UserData = isd;
 
+    irq5_int.is_UserData = isd;
+    irq7_int.is_UserData = isd;
+    irq9_int.is_UserData = isd;
+    irq10_int.is_UserData = isd;
+    irq11_int.is_UserData = isd;
+
     irqSet(0, &timer_int);
     irqSet(1, &kbd_int);
     irqSet(2, &irq2);
     irqSet(3, &com2_int);
     irqSet(4, &com1_int);
+    irqSet(5, &irq5_int);
     irqSet(6, &floppy_int);
+    irqSet(7, &irq7_int);
     irqSet(8, &rtc_int);
+    irqSet(9, &irq9_int);
+    irqSet(10, &irq10_int);
+    irqSet(11, &irq11_int);
     irqSet(12, &mouse_int);
     irqSet(13, &irq13);
     irqSet(14, &ide0_int);
@@ -215,11 +234,14 @@ void global_server(int cpl, struct irq_staticdata *isd, struct pt_regs *regs)
     
     hwinfo.Error = 0;	/* No errorcode */
     hwinfo.sysBase = isd->sysbase;
-    
+
+    if (cpl == 11) { D(bug("IRQ%02d",cpl)); }
+
     /* Execute all installed handlers */
     ForeachNode(&isd->irqlist[cpl], handler)
     {
-	handler->h_Code(handler, &hwinfo);
+	if (handler->h_Code)
+	    handler->h_Code(handler, &hwinfo);
     }
 
     /* Leave the interrupt. */
