@@ -11,6 +11,7 @@
     NAME */
 #ifndef AROS_NO_SIGNAL_H
 #include <signal.h>
+#include <string.h>
 
 	int sigemptyset (
 

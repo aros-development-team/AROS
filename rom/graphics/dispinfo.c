@@ -26,6 +26,7 @@
 
 #include "graphics_intern.h"
 #include "graphics_internal.h"
+#include "gfxfuncsupport.h"
 #include "dispinfo.h"
 
 #define DEBUG 0

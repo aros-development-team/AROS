@@ -30,6 +30,7 @@
 #include "ffs_handler_gcc.h"
 #endif
 #include <stddef.h>
+#include <string.h>
 
 #define DEBUG 1
 #include <aros/debug.h>

@@ -15,6 +15,8 @@
 #include <X11/keysym.h>
 
 #include <string.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include <proto/oop.h>
 #include <proto/utility.h>

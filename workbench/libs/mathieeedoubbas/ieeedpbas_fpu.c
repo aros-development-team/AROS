@@ -7,6 +7,7 @@
 #include <exec/types.h>
 #include <proto/mathieeedoubbas.h>
 #include <math.h>
+#include <stdlib.h>
 #include "mathieeedoubbas_intern.h"
 
 #undef double

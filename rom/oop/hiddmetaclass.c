@@ -6,13 +6,14 @@
     Lang: english
 */
 
+#include <string.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
 
 #include <proto/oop.h>
 
-#include "intern.h"
 #include "intern.h"
 
 #undef SDEBUG

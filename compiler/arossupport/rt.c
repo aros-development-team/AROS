@@ -19,12 +19,12 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
 #include "etask.h"
 #endif
+#include <string.h>
 #include <exec/memory.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>

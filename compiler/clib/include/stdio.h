@@ -130,6 +130,8 @@ extern int __vcscan (void * data, int (*getc)(void *),
 
 extern char *tmpnam(char *name_buf);
 
+void perror(const char *);
+
 #define putc fputc
 #define getc fgetc
 #define getchar()   getc(stdin)

@@ -27,6 +27,7 @@
 #include <proto/utility.h>
 #include <aros/asmcall.h>
 #include <clib/boopsistubs.h>
+#include <string.h>
 
 #include "coolimages.h"
 

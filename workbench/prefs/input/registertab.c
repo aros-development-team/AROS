@@ -9,6 +9,8 @@
 #include "global.h"
 #include "registertab.h"
 
+#include <string.h>
+
 /****************************************************************************************/
 
 #define IMWIDTH(x)  (((struct Image *)(x))->Width)

@@ -16,6 +16,7 @@
 #include <X11/Xutil.h>
 
 #include <sys/signal.h>
+#include <string.h>
 
 #include <exec/libraries.h>
 #include <exec/types.h>

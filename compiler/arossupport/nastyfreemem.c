@@ -6,11 +6,14 @@
     Lang: english
 */
 
+#include <proto/exec.h>
 #include <aros/system.h>
 #include <aros/debug.h>
 #include <exec/execbase.h>
+
 #undef FreeMem /* Don't use any kind of macro here :) We want the real thing */
-#include <proto/exec.h>
+void FreeMem(void *, ULONG);
+
 
 extern struct ExecBase * SysBase;
 

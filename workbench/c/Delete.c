@@ -74,6 +74,7 @@
 #include <exec/memory.h>
 
 #include <stdio.h>
+#include <string.h>
 
 
 #define ARG_TEMPLATE    "FILE/M/A,ALL/S,QUIET/S,FORCE/S"

@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include <stdlib.h>
 
 /*****************************************************************************
 

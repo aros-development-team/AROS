@@ -20,10 +20,14 @@
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
+#include <proto/arossupport.h>
 #ifndef PROTO_MATHFFP_H
 #   include <proto/mathffp.h>
 #endif
 
+#ifndef EXEC_EXECBASE_H
+#   include <exec/execbase.h>
+#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -49,7 +53,7 @@ struct MathBase
 };
 
 #undef SysBase
-#define SysBase ((struct MathBase *)MathBase -> sysbase)
+#define SysBase (((struct MathBase *)MathBase) -> sysbase)
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */

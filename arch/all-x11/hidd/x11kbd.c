@@ -13,9 +13,13 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 
+#define timeval sys_timeval
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <X11/Xutil.h>
+
+#include <stdio.h>
+#undef timeval
 
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
@@ -30,8 +34,6 @@
 
 //#define DEBUG 1
 #include <aros/debug.h>
-
-#include <stdio.h>
 
 static UBYTE keycode2rawkey[256];
 static BOOL havetable;

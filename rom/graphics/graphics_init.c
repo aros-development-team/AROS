@@ -94,6 +94,7 @@ static const APTR inittabl[4]=
 #endif
 
 static struct TextAttr sysTA;
+BOOL InitROMFont(struct GfxBase *);
 
 AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Graphics),
  AROS_UFHA(LIBBASETYPEPTR,	LIBBASE,    D0),

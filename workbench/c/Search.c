@@ -70,6 +70,7 @@
 #include <dos/dos.h>
 #include <libraries/locale.h>
 
+#include <string.h>
 
 // *****  Layout and version parameters  ***********
 

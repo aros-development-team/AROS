@@ -8,6 +8,8 @@
 
 /****************************************************************************************/
 
+#include <string.h>
+
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <intuition/cghooks.h>
