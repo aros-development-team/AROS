@@ -1,95 +1,71 @@
-# $Id$
+#   $Id$
+#
+#   Generate the AROS support library, libarossupport.a
+#
 include $(TOP)/config/make.cfg
 
-OBJDIR		    := $(GENDIR)/compiler/arossupport
-FILES		    := \
-			_kprintf \
-			calcchecksum \
-			debugmem \
-			freestruct \
-			hexdump \
-			isdosentrya \
-			kprintf \
-			nastyfreemem \
-			purify \
-			rawputchars \
-			readbyte \
-			readdouble \
-			readfloat \
-			readlong \
-			readstring \
-			readstruct \
-			readword \
-			removeslist \
-			rt \
-			rt_exec \
-			rt_dos \
-			rt_intuition \
-			strrncasecmp \
-			writebyte \
-			writedouble \
-			writefloat \
-			writelong \
-			writestring \
-			writestruct \
-			writeword
-OBJS		    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS		    := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-LIB		    := $(LIBDIR)/libarossupport.a
+LIB :=	arossupport
+
+FILES	:= \
+    _kprintf \
+    calcchecksum \
+    debugmem \
+    freestruct \
+    hexdump \
+    isdosentrya \
+    kprintf \
+    nastyfreemem \
+    purify \
+    rawputchars \
+    readbyte \
+    readdouble \
+    readfloat \
+    readlong \
+    readstring \
+    readstruct \
+    readword \
+    removeslist \
+    rt \
+    rt_dos \
+    rt_exec \
+    rt_intuition \
+    strrncasecmp \
+    writebyte \
+    writedouble \
+    writefloat \
+    writelong \
+    writestring \
+    writestruct \
+    writeword
+
 INCLUDE_FILES	    := $(wildcard include/*.h)
-DEST_INCLUDE_FILES  := $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
-GEN_INCLUDE_FILES   := $(subst include,$(GENINCDIR)/aros,$(INCLUDE_FILES))
-CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
 
+#MM- linklibs: linklibs-arossupport
+#MM linklibs-arossupport : includes
+#MM includes-copy
 
-#MM linklibs : setup includes
-linklibs : $(LIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(INCDIR) $(LIBDIR)
-
-#MM
-includes-copy : $(DEST_INCLUDE_FILES) $(GEN_INCLUDE_FILES)
-	@$(NOP)
-
-#MM
-clean ::
-	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
-
-
-$(INCDIR)/aros/%.h: include/%.h
-	$(CP) $< $@
-
-$(GENINCDIR)/aros/%.h: include/%.h
-	$(CP) $< $@
-
-$(LIB) : $(OBJS)
-	%mklib_q
+%make_linklib_setup mmake=linklibs-arossupport
+%make_vpath
+%copy_includes path=aros
 
 # These files need special CFLAGS
+CFLAGS2 := $(CFLAGS) -I$(TOP)/rom/exec
 $(OBJDIR)/kprintf.o : kprintf.c
-	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
 
 $(OBJDIR)/rawputchars.o : rawputchars.c
-	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
 
 $(OBJDIR)/_kprintf.o : _kprintf.c
-	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
 
 $(OBJDIR)/rt%.o : rt%.c
-	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
 
 $(OBJDIR)/rt.o : rt.c
-	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
 
-# Default compile rule
-$(OBJDIR)/%.o : %.c
-	%compile_q
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q flags=$(CFLAGS2)
+%make_linklib dflags=$(CFLAGS2)
 
 %common
 %include_deps

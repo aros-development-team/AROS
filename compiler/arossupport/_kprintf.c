@@ -1,6 +1,13 @@
+/*
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Low-level debugging support.
+*/
 #include <exec/execbase.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>
+#include <stdarg.h>
 #include "exec_private.h"
 
 /* All I need is a global variable SysBase */
@@ -18,5 +25,9 @@ AROS_UFH2 (void, KPutChar,
 
 void KPrintF(STRPTR format, ...)
 {
-    RawDoFmt(format,&format+1,(VOID_FUNC)KPutChar,SysBase);
+    va_list args;
+
+    va_start(args, format);
+    RawDoFmt(format,args,(VOID_FUNC)KPutChar,SysBase);
+    va_end(args);
 }
