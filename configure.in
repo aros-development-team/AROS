@@ -835,6 +835,7 @@ aros_hostcfg_dir="bin/${aros_host_arch}-${aros_host_cpu}/gen/config"
 aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
+aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
 
 if test ! -d ${aros_inc_dir} ; then
     ${MKDIR} ${aros_inc_dir}
@@ -848,6 +849,9 @@ fi
 if test ! -d ${aros_targetcfg_dir} ; then
     ${MKDIR} ${aros_targetcfg_dir}
 fi
+if test ! -d ${aros_tools_dir} ; then
+    ${MKDIR} ${aros_tools_dir}
+fi
 
 cp config/config.h.in ${aros_inc_dir}
 cp config/config.h.in ${aros_geninc_dir}
@@ -855,14 +859,14 @@ cp config/host.cfg.in ${aros_hostcfg_dir}
 cp config/target.cfg.in ${aros_targetcfg_dir}
 cp config/make.defaults.in ${aros_targetcfg_dir}
 cp config/specs.in ${aros_targetcfg_dir}
-cp scripts/aros-gcc.in bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
+cp scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
 
 AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
 	${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg
 	mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs
-        bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc)
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc)
 
-chmod a+x bin/${aros_host_arch}-${aros_host_cpu}/tools/${aros_target_cpu}-${aros_target_arch}-aros-gcc
+chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags
