@@ -35,10 +35,10 @@ struct MinList
 
 #ifdef AROS_ALMOST_COMPATIBLE
 #   define NEWLIST(l)       (((struct List *)l)->lh_TailPred \
-				= (void *)(l), \
+				= (NodePtr)(l), \
 			    ((struct List *)l)->lh_Tail = 0, \
 			    ((struct List *)l)->lh_Head \
-				= (void *)\
+				= (NodePtr)\
 				    &(((struct List *)l)->lh_Tail))
 
 #   define ADDHEAD(l,n)     ((void)(\

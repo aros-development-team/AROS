@@ -38,7 +38,8 @@ class be_val
     /* Debugging */
     inline void print ()
     {
-	printf ("%08lx", static_cast<unsigned long> (ptr));
+      unsigned long *lp = (unsigned long *)((void *) &data);
+      printf ("%08lx", *lp);
     }
 #endif
 
@@ -61,6 +62,7 @@ class be_val
     const my_type& operator= (const value_type d)
     {
       *this = my_type (d);
+      return *this;
     }
     const my_type& operator++ () // pre increment operator
     {

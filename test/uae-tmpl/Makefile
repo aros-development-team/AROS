@@ -1,7 +1,6 @@
 
 CC	= c++
-# CCFLAGS	= -Wall -g -DDEBUG
-CCFLAGS	= -Wformat -g -DDEBUG
+CCFLAGS = -Wall -Wformat -g -DDEBUG
 
 all:
-	$(CC) $(CCFLAGS) test.c
+	$(CC) $(CCFLAGS) test.c -o test
