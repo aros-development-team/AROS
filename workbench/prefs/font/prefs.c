@@ -3,29 +3,85 @@
     $Id$
 */
 
-#include "global.h"
+#include <aros/macros.h>
+#include <dos/dos.h>
+#include <prefs/prefhdr.h>
+#include <prefs/font.h>
 
 #include <proto/iffparse.h>
-#include <prefs/prefhdr.h>
+#include <proto/dos.h>
 
-#include <aros/macros.h>
+#include <string.h>
+#include <stdio.h>
 
-/* This structure is AROS custom. Apperantly, Linux GCC aligns everything
-   larger than one byte in four byte boundaries - with the sole expection
-   of bytes themselves. Therefor, to maintain compatibility we define our
-   AROS Preferences headers byte by byte to keep it six (6) bytes instead
-   of eight (8) which would be the case if Linux GCC called the shots.
-   Thank you Georg Steger for pointing this out!
-*/
-struct FilePrefHeader
-{
- UBYTE ph_Version;
- UBYTE ph_Type;
- UBYTE ph_Flags[4];
-};
+#include "locale.h"
+#include "misc.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
+
+/*** Variables **************************************************************/
 struct IFFHandle *iffHandle;
+struct FontPrefs *fontPrefs[3];
 
+
+/*** Functions **************************************************************/
+/* Setup ********************************************************************/
+void initDefaultPrefs(struct FontPrefs **fontPrefsPtr)
+{
+    UBYTE a;
+
+    for(a = 0; a <= 2; a++)
+    {
+	fontPrefs[a]->fp_Type = a;	/* Is this 0, 1, 2 or 1, 2, 3? Look it up! */
+	fontPrefs[a]->fp_FrontPen = 0;	/* Is this (really) default? Look it up! */
+	fontPrefs[a]->fp_BackPen = 0;	/* Is this (really) default? Look it up! */
+	fontPrefs[a]->fp_DrawMode = 0;	/* Is this (really) default? Look it up! */
+
+	fontPrefs[a]->fp_TextAttr.ta_YSize = 8; /* Is this (really) default? Look it up! */
+	fontPrefs[a]->fp_TextAttr.ta_Style = FS_NORMAL;
+ 	fontPrefs[a]->fp_TextAttr.ta_Flags = FPB_DISKFONT; /* Is this (really) default? Look it up! */
+
+	strcpy(fontPrefs[a]->fp_Name, "topaz.font"); /* Is this (really) default? Check it up! */
+	fontPrefs[a]->fp_TextAttr.ta_Name = fontPrefs[a]->fp_Name;
+    }
+}
+
+BOOL Prefs_Initialize(void)
+{
+    UBYTE i;
+
+    for (i = 0; i <= 2; i++)
+    {
+        fontPrefs[i] = AllocMem
+        (
+            sizeof(struct FontPrefs), MEMF_ANY | MEMF_CLEAR
+        );
+        
+        if (fontPrefs[i] == NULL)
+        {
+	    return FALSE; /* FIXME: Some structures may have been allocated */
+        }
+    }
+    
+    initDefaultPrefs(fontPrefs);
+    
+    return TRUE;
+}
+
+void Prefs_Deinitialize(void)
+{
+    UBYTE i;
+    
+    for (i = 0; i <= 2; i++)
+    {
+        if (fontPrefs[i] != NULL) FreeMem(fontPrefs[i], sizeof(struct FontPrefs));
+    }
+    
+    if(iffHandle != NULL) FreeIFF(iffHandle);
+}
+
+/* Utility ******************************************************************/
 void convertEndian(struct FontPrefs *fontPrefs)
 {
     UBYTE a;
@@ -38,13 +94,15 @@ void convertEndian(struct FontPrefs *fontPrefs)
     fontPrefs->fp_TextAttr.ta_YSize = AROS_BE2WORD(fontPrefs->fp_TextAttr.ta_YSize);
 }
 
-BOOL writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
+/* Main *********************************************************************/
+BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
 {
-    //struct PrefHeader prefHeader; // Allocate this memory using AllocMem()!
-    BOOL errorCode = TRUE;
-    struct FilePrefHeader prefHeader; // TODO: Allocate this memory using AllocMem() instead!
-    UBYTE a = 0, b = 0;
-
+    BOOL              rc = TRUE;
+    UBYTE             a = 0, b = 0;
+    struct PrefHeader header; 
+    
+    memset(&header, 0, sizeof(struct PrefHeader));
+    
     if((iffHandle = AllocIFF()))
     {
 	if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_NEWFILE)))
@@ -55,15 +113,12 @@ BOOL writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
 	    {
 		PushChunk(iffHandle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN);
 
-		prefHeader.ph_Version = PHV_CURRENT;
-		prefHeader.ph_Type = NULL;
-
-		for(a = 0; a <= 3; a++)
-		    prefHeader.ph_Flags[a] = 0; /* Set to 0; see <prefs/prefhdr.h> */
+		header.ph_Version = PHV_CURRENT;
+		header.ph_Type = NULL;
 
 		PushChunk(iffHandle, ID_PREF, ID_PRHD, IFFSIZE_UNKNOWN); /* IFFSIZE_UNKNOWN? */
 
-		WriteChunkBytes(iffHandle, &prefHeader, sizeof(struct FilePrefHeader));
+		WriteChunkBytes(iffHandle, &header, sizeof(struct PrefHeader));
 
 		PopChunk(iffHandle);
 
@@ -93,14 +148,16 @@ BOOL writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
 	    }
 	    else
 	    {
-		displayError(getCatalog(catalogPtr, MSG_CANT_OPEN_STREAM));
-		errorCode = FALSE;
+		ShowError(MSG(MSG_CANT_OPEN_STREAM));
+		rc = FALSE;
 	    }
 	}
 	else
+        {
 	    // Unable to write - this is not run time critical; continue code flow
-	    displayError(getCatalog(catalogPtr, MSG_CANT_WRITE_PREFFILE));
-
+	    ShowError(MSG(MSG_CANT_WRITE_PREFFILE));
+        }
+        
 	// CloseIFF() in iffparse.library 39 accepts NULL, but earlier versions doesn't
 	if(iffHandle)
 	    CloseIFF(iffHandle);
@@ -111,16 +168,16 @@ BOOL writeIFF(UBYTE *fileName, struct FontPrefs **fontPrefs)
     else // AllocIFF()
     {
 	// Do something more here - if IFF allocation has failed, something isn't right
-	displayError(getCatalog(catalogPtr, MSG_CANT_ALLOCATE_IFFPTR));
-	errorCode = FALSE;
+        ShowError(MSG(MSG_CANT_ALLOCATE_IFFPTR));
+	rc = FALSE;
     }
 
     kprintf("Finished writing IFF file\n");
 
-    return(errorCode);
+    return rc;
 }
 
-BOOL readIFF(UBYTE *fileName, struct FontPrefs **readFontPrefs)
+BOOL LoadPrefs(CONST_STRPTR fileName, struct FontPrefs **readFontPrefs)
 {
     UBYTE a;
     LONG error;
@@ -130,7 +187,7 @@ BOOL readIFF(UBYTE *fileName, struct FontPrefs **readFontPrefs)
 
     if(!(iffHandle = AllocIFF()))
     {
-	displayError(getCatalog(catalogPtr, MSG_CANT_ALLOCATE_IFFPTR));
+        ShowError(MSG(MSG_CANT_ALLOCATE_IFFPTR));
 	return(FALSE);
     }
 
@@ -180,17 +237,19 @@ BOOL readIFF(UBYTE *fileName, struct FontPrefs **readFontPrefs)
 	    CloseIFF(iffHandle);
 	}
 	else
-	    displayError(getCatalog(catalogPtr, MSG_CANT_OPEN_STREAM));
-
+        {
+            ShowError(MSG(MSG_CANT_OPEN_STREAM));
+        }
+        
 	Close((BPTR)iffHandle->iff_Stream);
 
 	kprintf("Closed IFF file for reading!\n");
     }
     else
     {
-	displayError(getCatalog(catalogPtr, MSG_CANT_READ_PREFFILE));
+        ShowError(MSG(MSG_CANT_READ_PREFFILE));
 	CloseIFF(iffHandle);
     }
 
-    return(TRUE);
+    return TRUE;
 }

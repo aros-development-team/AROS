@@ -1,9 +1,26 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#include "global.h"
+#include <exec/types.h>
+#include <dos/dos.h>
+#include <prefs/font.h>
+
+#include <proto/dos.h>
+
+#include "prefs.h"
+#include "args.h"
+
+#define DEBUG 1
+#include <aros/debug.h>
+
+#define ARG_FROM 0
+#define ARG_EDIT 1
+#define ARG_USE 2
+#define ARG_SAVE 3
+#define ARG_PUBSCREEN 4
+#define NUM_ARGS 5
 
 IPTR argArray[NUM_ARGS];
 struct RDArgs *readArgs;
@@ -40,10 +57,10 @@ struct RDArgs * getArguments(void)
 	    }
 	}
 
-	return(tmpReadArgs);
+	return tmpReadArgs;
     }
     else
-	return(NULL);
+	return NULL;
 }
 
 // Deal with shell arguments. If failure, should we quit or not? If started
@@ -61,7 +78,7 @@ UBYTE processArguments(void)
 
     if(argArray[ARG_FROM])
     {
-	if(!(readIFF((UBYTE *)argArray[ARG_FROM], fontPrefs)))
+	if(!(LoadPrefs((CONST_STRPTR) argArray[ARG_FROM], fontPrefs)))
 	    return(APP_FAIL);
 
      /* If USE or SAVE is set, write the FROM file to ENV: and/or ENVARC: and then quit. Is this
@@ -72,11 +89,11 @@ UBYTE processArguments(void)
 
 	if(argArray[ARG_USE] || argArray[ARG_SAVE])
 	{
-	    if(!(writeIFF("ENV:sys/font.prefs", fontPrefs)))
+	    if(!(SavePrefs("ENV:sys/font.prefs", fontPrefs)))
 		return(APP_FAIL);
 
 	    if(argArray[ARG_SAVE])
-		if(!(writeIFF("ENVARC:sys/font.prefs", fontPrefs)))
+		if(!(SavePrefs("ENVARC:sys/font.prefs", fontPrefs)))
 		    return(APP_FAIL);
 
 	    // Don't launch the rest of the program, just exit
@@ -84,12 +101,12 @@ UBYTE processArguments(void)
 	}
     }
     else
-	if(!(readIFF("ENV:sys/font.prefs", fontPrefs)))
+	if(!(LoadPrefs("ENV:sys/font.prefs", fontPrefs)))
 	    return(APP_FAIL);
 
     // What is "EDIT" supposed to do? Look it up!
     if(argArray[ARG_EDIT])
 	kprintf("EDIT keyword set!\n");
 
-    return(APP_RUN);
+    return APP_RUN;
 }

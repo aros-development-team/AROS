@@ -1,4 +1,7 @@
 ;
+MSG_ERROR_CANT_CREATE_APPLICATION (//)
+Can't create application object.
+;
 MSG_CANT_OPEN_LIB (//)
 Can't open %s V%ld!
 ;
@@ -44,7 +47,7 @@ Can't allocate IFF handle!
 MSG_CANT_ALLOCATE_MEM (//)
 Can't allocate application memory (%s)!
 ;
-MSG_WINTITLE (//)
+MSG_WINDOW_TITLE (//)
 Font Preferences
 ;
 MSG_TAB_SETTINGS (//)
@@ -92,23 +95,12 @@ Save Font Preferences
 MSG_OK (//)
 Ok
 ;
-MSG_MX_WORKBENCH (//)
-Workbench
+MSG_ICONS (//)
+Icons:
 ;
-MSG_MX_SYSTEM (//)
-System
+MSG_SYSTEM (//)
+System:
 ;
-MSG_MX_SCREEN (//)
-Screen
+MSG_SCREEN (//)
+Screen:
 ;
-MSG_GAD_GET (//)
-Get...
-;
-MSG_GAD_SAVE (//)
-Save
-;
-MSG_GAD_USE (//)
-Use
-;
-MSG_GAD_CANCEL (//)
-Cancel
