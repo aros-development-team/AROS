@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/01/26 23:12:37  stegerg
+    console device inputhandler no longer sends maprawkey'ed
+    message with keys in a buffer inside the message, but
+    instead the inputevent.
+
     Revision 1.10  2000/01/17 23:38:40  stegerg
     added C_CURSOR_VISIBLE and C_CURSOR_INVISIBLE,
     which are detected but not implemented yet.
@@ -201,22 +206,13 @@ struct intConUnit
 /* Determining whether linefeed (LF==LF+CR) mode is on */
 #define CF_LF_MODE_ON		(1L << 2)
 
-/* Message passed from console input handler to console device task */
-#define MSGBUFSIZE 200
-
 struct cdihMessage
 {
     struct Message msg;
-    
     /* The unit that the user input should go to */
     Object	*unit;
-    
-    /* The input to pass to the user */
-    UBYTE 	inputBuf[MSGBUFSIZE];
-    
-    /* Number of bytes in the input buffer */
-    ULONG	numBytes;
-    
+
+    struct InputEvent ie;
 };
 
 /* Data passed to the console device input handler */
