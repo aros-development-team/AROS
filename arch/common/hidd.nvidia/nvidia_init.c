@@ -628,6 +628,10 @@ AROS_UFH3(void, Enumerator,
 
 	    D(bug("[NVidia] Chip architecture = %d\n", sd->Card.Architecture));
 
+	    /*-------- DO NOT CHANGE/REMOVE -------------*/
+	    bug("\003\n"); /* Tell vga text mode debug output to die */
+	    /*-------- DO NOT CHANGE/REMOVE -------------*/
+			    
 	    /*
 		Fix PCI device attributes (perhaps already set, but if the 
 		NVidia would be the second card in the system, it may stay
