@@ -6,7 +6,7 @@ LIB           := bz2
 INCLUDE_FILES := bzlib.h
 FILES         := blocksort huffman crctable randtable compress decompress bzlib
 
-USER_CFLAGS   := -DBZ_NO_STDIO
+USER_CFLAGS   := -DBZ_NO_STDIO -DBZ_NO_CLIB
 
 #MM- linklibs : linklibs-bz2
 #MM linklibs-bz2 : includes
