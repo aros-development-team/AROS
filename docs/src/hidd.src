@@ -490,7 +490,7 @@ message to this port. The message looks like this:
 typedef struct
 {
     struct Message ke_Message;
-    ULONG	   ke_Key[1];
+    ULONG          ke_Key[1];
 }
 HIDDT_Keyboard_Event;
 \end{code}
@@ -634,6 +634,18 @@ for drawing areas or drawing commands. Most graphics chips have
 a certain blocking size, ie. it doesn't matter if you copy 6 bits or
 30 but 33 is slow. The HIDD will return 32 in this case.
 
+\item{HIDDA_BitMap_LeftEdge,LONG,IG} Query or initialize the left edge
+position of a bitmap which is displayable. The position can be change
+with HIDDV_Graphics_Cmd_MoveBitMap. The value of the position is in
+HIDD units. Some graphics HIDDs support text mode, then this is in
+characters. But most of the time, this will be in screen or printer pixels.
+
+\item{HIDDA_BitMap_TopEdge,LONG,IG} Query or initialize the top edge
+position of a bitmap which is displayable. The position can be change with
+HIDDV_Graphics_Cmd_MoveBitMap. The value of the position is in
+HIDD units. Some graphics HIDDs support text mode, then this is in
+characters. But most of the time, this will be in screen or printer pixels.
+
 \end{taglist}
 
 \item{ULONG HIDDV_Graphics_Cmd_ShowBitMap (HIDDT_BitMap bm, BOOL wait)}
@@ -644,10 +656,15 @@ is made visible (ie. at the next |HIDDV_Graphics_Cmd_WaitTOF|).
 The call return whether bitmap is visible or not if |wait| is
 |FALSE| or |TRUE| otherwise.
 
-\item{ULONG HIDDV_Graphics_Cmd_MoveBitMap (HIDDT_BitMap bm, WORD
+\item{VOID HIDDV_Graphics_Cmd_MoveBitMap (HIDDT_BitMap bm, WORD
 horizontal, WORD vertical)} Move a visible bitmap around the screen.
 Positive values mean move to the left or down, negative values
 means right and up.
+If the horizontal and vertical variables you specify would move
+the bitmap beyond any restrictions then the bitmap is move
+only as far as possible. You can query the real position to which
+the bitmap was move with the HIDDA_BitMap_LeftEdge and
+HIDDA_BitMap_TopEdge attributes.
 
 \item{ULONG HIDDV_Graphics_Cmd_DepthArrangeBitMap (HIDDT_BitMap bm, ULONG
 mode, HIDDT_BitMap other)} Move a bitmap to the front or back of all
@@ -656,7 +673,7 @@ bitmaps or a specific bitmap. |mode| can be
 |HIDDV_Graphics_DepthArrange_ToBack|. If |other| is |!= NULL|, then the
 bitmap will be moved just in front or behind that bitmap. The |other| is
 |NULL|, then bitmap will be moved in front or behind all other bitmaps. If
-the bitmap was invsible, then |IDDV_Graphics_Cmd_ShowBitMap()| will
+the bitmap was invsible, then |HIDDV_Graphics_Cmd_ShowBitMap()| will
 implicitly be called.
 
 \item{void HIDDV_Graphics_Cmd_DeleteBitMap (HIDDT_BitMap bm)}
@@ -671,6 +688,8 @@ changed with the normal BOOPSI API.
 
 \item{void HIDDV_Graphics_Cmd_DeleteGC (HIDDT_GC gc)} Return a gc for
 reuse. You can also dispose the GC with |DisposeObject()|.
+The bitmap which is connected to this graphics context will not be
+deleted.
 
 \item{BOOL HIDDV_Graphics_Cmd_CopyArea (HIDDT_GC src, WORD
 srcX, WORD srcY, UWORD width, UWORD height, HIDDT_GC dest, WORD destX,
@@ -695,9 +714,19 @@ CopyArea of the graphics HIDD base class will be invoked which
 copies the bitmaps pixel by pixel with |HIDDV_Graphics_Cmd_GetPixel()|
 and |HIDDV_Graphics_Cmd_SetPixel()|.
 
-\item{BOOL HIDDV_Graphics_Cmd_SetPixel (HIDDT_GC gc, WORD x, WORD y)}
-Changes the pixel at (|x|,|y|) to the color stored in |gc|. This command is
+\item{BOOL HIDDV_Graphics_Cmd_WritePixelDirect (HIDDT_GC gc, WORD x, WORD y,
+ULONG val)} Set the pixel at (|x|,|y|) direct to |val| without making use
+of the gc attributes like colors, drawmode, colormask etc. This command is
 available in quick and normal mode.
+
+In quick mode, the pixel is always set, even if the coordinates are
+illegal, and it will always return 1 (but might crash the machine if
+the coordinates are invalid).
+
+\item{BOOL HIDDV_Graphics_Cmd_WritePixel (HIDDT_GC gc, WORD x, WORD y)}
+Changes the pixel at (|x|,|y|). The color of the pixel depends on
+the attributes of |gc|, eg. colors, drawmode, colormask etc. This
+command is available in quick and normal mode.
 
 If the command is executed in normal mode, the coordinates are checked. If
 the pixel could be set, the command will return 1 else 0.
@@ -706,7 +735,7 @@ In quick mode, the pixel is always set, even if the coordinates are
 illegal, and it will always return 1 (but might crash the machine if
 the coordinates are invalid).
 
-\item{ULONG HIDDV_Graphics_Cmd_GetPixel (HIDDT_GC gc, WORD x, WORD y)}
+\item{ULONG HIDDV_Graphics_Cmd_ReadPixel (HIDDT_GC gc, WORD x, WORD y)}
 Queries the color of the pixel at (|x|,|y|). This command is available in
 quick and normal mode. When executed in quick mode, the color will be
 returned as the physical value for that color in the format used by the
