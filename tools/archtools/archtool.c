@@ -878,13 +878,11 @@ struct libconf * lc = calloc (1, sizeof (struct libconf));
   {
     lc->libbase = malloc( (strlen(lc->basename)+5) * sizeof(char) );
     sprintf( lc->libbase, "%sBase", lc->basename );
-    lc->libbase[0] = toupper(lc->libbase[0]);
   }
   if( lc->libbasetype == NULL )
   {
     lc->libbasetype = malloc( (strlen(lc->libbase)+8) * sizeof(char) );
     sprintf( lc->libbasetype, "struct %s", lc->libbase );
-    lc->libbasetype[7] = toupper(lc->libbasetype[7]);
   }
   if( lc->libbasetypeptr == NULL )
   {
