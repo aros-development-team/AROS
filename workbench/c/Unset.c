@@ -56,108 +56,78 @@
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
-
-#define ARG_TEMPLATE    "NAME"
-#define ARG_NAME        0
-#define TOTAL_ARGS      1
+#include "shcommands.h"
 
 #define BUFFER_SIZE     160
 
-static const char version[] = "$VER: Unset 41.0 (27.07.1997)\n";
+static void GetNewString(STRPTR, STRPTR, LONG);
 
-void GetNewString(STRPTR, STRPTR, LONG);
-
-int __nocommandline = 1;
-
-int main(void)
+AROS_SH1(Unset, 41.0, 27.07.1997,
+AROS_SHA(,NAME,,NULL))
 {
-	struct RDArgs   * rda;
+    AROS_SHCOMMAND_INIT
+
     struct Process  * UnsetProc;
     struct LocalVar * UnsetNode;
-    IPTR            * args[TOTAL_ARGS] = { NULL };
     IPTR              OutArgs[3];
-    int               Return_Value;
-    BOOL              Success;
     LONG              VarLength;
     char              Buffer1[BUFFER_SIZE];
     char              Buffer2[BUFFER_SIZE];
 
-    Return_Value = RETURN_OK;
-
-    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-    if (rda)
+    if (SHArg(NAME) != NULL)
     {
-        if (args[ARG_NAME] != NULL)
-        {
-            /* Add the new local variable to the list.
-             */
-            Success = DeleteVar((STRPTR)args[ARG_NAME],
-                                GVF_LOCAL_ONLY
-            );
-            if (Success == FALSE)
-            {
-                PrintFault(IoErr(), "Unset");
-                Return_Value = RETURN_ERROR;
-            }
-        }
-        else
-        {
-            /* Display a list of local variables.
-             */
-            Forbid();
-            UnsetProc = (struct Process *)FindTask(NULL);
-            Permit();
+        /* Delete the local Var from the list.
+         */
 
-            if (UnsetProc != NULL)
-            {
-                ForeachNode((struct List *)&(UnsetProc->pr_LocalVars),
-                            (struct Node *)UnsetNode
-                )
-                {
-                    if (UnsetNode->lv_Node.ln_Type == LV_VAR)
-                    {
-                        /* Get a clean variable with no excess
-                         * characters.
-                         */
-                        VarLength = -1;
-                        VarLength = GetVar(UnsetNode->lv_Node.ln_Name,
-                                           &Buffer1[0],
-                                           BUFFER_SIZE,
-                                           GVF_LOCAL_ONLY
-                        );
-                        if (VarLength != -1)
-                        {
-                            GetNewString(&Buffer1[0],
-                                         &Buffer2[0],
-                                         VarLength
-                            );
+	 if (!DeleteVar((STRPTR)SHArg(NAME), GVF_LOCAL_ONLY))
+             SHReturn(RETURN_FAIL);
 
-                            Buffer2[VarLength] = NULL;
-
-                            OutArgs[0] = (IPTR)UnsetNode->lv_Node.ln_Name;
-                            OutArgs[1] = (IPTR)&Buffer2[0];
-                            OutArgs[2] = (IPTR)NULL;
-                            VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
-                        }
-                    }    
-                }
-            }
-        }
     }
     else
     {
-        PrintFault(IoErr(), "Unset");
+        /* Display a list of local variables.
+        */
+        UnsetProc = (struct Process *)FindTask(NULL);
 
-        Return_Value = RETURN_ERROR;
+        ForeachNode((struct List *)&(UnsetProc->pr_LocalVars),
+                    (struct Node *)UnsetNode
+        )
+        {
+            if (UnsetNode->lv_Node.ln_Type == LV_VAR)
+            {
+                /* Get a clean variable with no excess
+                 * characters.
+                 */
+                 VarLength = -1;
+                 VarLength = GetVar(UnsetNode->lv_Node.ln_Name,
+                                    &Buffer1[0],
+                                    BUFFER_SIZE,
+                                    GVF_LOCAL_ONLY
+                 );
+                 if (VarLength != -1)
+                 {
+                     GetNewString(&Buffer1[0],
+                                  &Buffer2[0],
+                                   VarLength
+                     );
+
+                     Buffer2[VarLength] = NULL;
+
+                     OutArgs[0] = (IPTR)UnsetNode->lv_Node.ln_Name;
+                     OutArgs[1] = (IPTR)&Buffer2[0];
+                     OutArgs[2] = (IPTR)NULL;
+                     VPrintf("%-20s\t%-20s\n", &OutArgs[0]);
+                 }
+            }
+       }
     }
 
-    if (rda) FreeArgs(rda);
+    SHReturn(RETURN_OK);
 
-    return (Return_Value);
-
+    AROS_SHCOMMAND_EXIT
 } /* main */
 
-void GetNewString(STRPTR s, STRPTR d, LONG l)
+static void GetNewString(STRPTR s, STRPTR d, LONG l)
 {
     int i;
     int j;
