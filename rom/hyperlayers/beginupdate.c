@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -70,29 +70,23 @@
 
   l->cr2 = l->ClipRect;
 
+  damage_region = CopyRegion(l->DamageList);
+  if (l->ClipRegion) AndRegionRegion(l->ClipRegion, damage_region);
+  
   /* The DamageList is in layer coords. So convert it to screen coords */
   
-  _TranslateRect(&l->DamageList->bounds, l->bounds.MinX, l->bounds.MinY);
+  _TranslateRect(&damage_region->bounds, l->bounds.MinX, l->bounds.MinY);
 
-  damage_region = CopyRegion(l->DamageList);
   AndRectRegion(damage_region, &l->bounds);
-
-  if (l->ClipRegion)
-  {
-     /* The ClipRegion is in layer coords. Instead of translating the
-        clip region, we do the inverse translation with the damage_region,
-	because of paranoia, that the clip region installed by an app might
-	at the same time be used for other things by the app, for example
-	as a clip region on a layer in another screen */
-	
-     _TranslateRect(&damage_region->bounds, -l->bounds.MinX, -l->bounds.MinY);
-     AndRegionRegion(l->ClipRegion, damage_region);
-     _TranslateRect(&damage_region->bounds, l->bounds.MinX, l->bounds.MinY);
-  }
 
   visible_damage_region = CopyRegion(damage_region);    
   AndRegionRegion(l->VisibleRegion, visible_damage_region);
-  
+  if (l->shaperegion)
+  {
+    _TranslateRect(&visible_damage_region->bounds, -l->bounds.MinX, -l->bounds.MinY);
+    AndRegionRegion(l->shaperegion, visible_damage_region);
+    _TranslateRect(&visible_damage_region->bounds, l->bounds.MinX, l->bounds.MinY);    
+  }
   
   l->ClipRect = _CreateClipRectsFromRegion(visible_damage_region,
                                            l,
@@ -100,13 +94,23 @@
                                            damage_region,
 					   LayersBase);
 
+  if (IS_SMARTREFRESH(l))
+  {
+      _CopyClipRectsToClipRects(l,
+                                l->cr2,
+                                l->ClipRect,
+                                0,
+				0,
+                                FALSE,
+                                FALSE,
+				FALSE,
+				LayersBase);
+
+  }
+  
   DisposeRegion(damage_region);
   DisposeRegion(visible_damage_region);
   
-  /* Convert DamageList back to layer coords */
-  
-  _TranslateRect(&l->DamageList->bounds, -l->bounds.MinX, -l->bounds.MinY);
-
   /*
   ** Must not set flag before InstallClipRegion!!! Keep this order!!!
   */
