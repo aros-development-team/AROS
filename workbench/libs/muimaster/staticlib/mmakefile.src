@@ -10,7 +10,8 @@ FILES := \
     mui_allocaslrequesttags \
 	mui_aslrequesttags \
 	mui_makeobject \
-    mui_newobject 
+    mui_newobject \
+    mui_request
 
 #MM- linklibs: linklibs-mui
 #MM linklibs-mui : includes
