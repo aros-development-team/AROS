@@ -92,7 +92,7 @@ struct PropGData
     formulas than those in the RKRM:L, but for 
     code simplicity I store them all.  */
     UWORD 		top, visible, total;
-    
+    UWORD   	    	flags;
     struct BBox 	*old_knobbox;
 };
 
@@ -103,6 +103,9 @@ struct PropGData
 #define SetGadgetType(gad, type) \
 	EG(gad)->GadgetType &= ~GTYP_GTYPEMASK; \
 	EG(gad)->GadgetType |= type;
+
+#define PRIVFLAG_NICERENDER 1
+#define PRIVFLAG_NICENOTIFY 2
 
 /****************************************************************************************/
 
@@ -160,8 +163,8 @@ static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     struct opUpdate notifymsg;
     struct TagItem  notifyattrs[3];
 
-    D(bug("NotifyTop(top=%d, final=%d)\n",
-	  top, final));
+    D(bug("PropGClass: NotifyTop(top=%d, final=%d)\n",
+	  data->top, final));
 
     notifyattrs[0].ti_Tag	= PGA_Top;
     notifyattrs[0].ti_Data 	= data->top;
@@ -190,19 +193,19 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     struct PropGData 	*data = (struct PropGData *)INST_DATA(cl, o);
     UWORD 		top, pot;
     
-    D(bug("UpdateTop()\n"));
+    D(bug("PropGClass: UpdateTop()\n"));
     
     pot = (data->propinfo.Flags & FREEVERT) ? data->propinfo.VertPot :
        					      data->propinfo.HorizPot;
     	    					      
     top = FindScrollerTop(data->total, data->visible, pot);
     
-    D(bug("Found scroller top: %d, old %d\n", top, data->top));
-    	    
+    D(bug("PropGClass: Found scroller top: %d, old %d\n", top, data->top));
+   	    
     /* PGA_Top changed by user ? */
     if (top != data->top)
     {
-    	D(bug("top != data->top, calling NotifyTop\n"));
+	D(bug("PropGClass: top != data->top, calling NotifyTop\n"));
 
 	data->top = top;	
       	NotifyTop(cl, o, gi, final);
@@ -225,12 +228,12 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     struct TagItem 	*tag, *tstate;
     struct PropGData 	*data;
     struct BBox		old_knobbox;
+    struct opSet    	method;
     UWORD		newtop;
     BOOL 		set_flag = FALSE;
     BOOL		was_disabled = FALSE;
     BOOL		full_redraw = FALSE;
     BOOL		old_knobbox_ok = FALSE;
-
     IPTR 		retval;
      
     data = INST_DATA(cl, o);
@@ -238,7 +241,10 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     
     was_disabled = (G(o)->Flags & GFLG_DISABLED) ? TRUE : FALSE;
     
-    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
+    method.MethodID = OM_SET;
+    method.ops_AttrList = msg->ops_AttrList;
+    method.ops_GInfo = msg->ops_GInfo;
+    retval = DoSuperMethodA(cl, o, (Msg)&method);
     
     if ( ((G(o)->Flags & GFLG_DISABLED) ? TRUE : FALSE) != was_disabled ) full_redraw = TRUE;
     
@@ -362,7 +368,10 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 	if (data->top != newtop)
 	{
 	    data->top = newtop;
-	    NotifyTop(cl, o, msg->ops_GInfo, TRUE);
+	    if (data->flags & PRIVFLAG_NICENOTIFY)
+	    {
+	    	NotifyTop(cl, o, msg->ops_GInfo, TRUE);
+	    }
     	}
 	 	
     	if (data->propinfo.Flags & FREEVERT)
@@ -389,16 +398,33 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 
 
     /* The two last tests below may be redundant */
-    if ((retval || full_redraw) && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
+    if ((retval || full_redraw) && (NULL != msg->ops_GInfo) &&
+        ((OCLASS(o) == cl) || (data->flags & PRIVFLAG_NICERENDER)))
     {
         struct RastPort *rp;
 	
 	rp = ObtainGIRPort(msg->ops_GInfo);
     	if (NULL != rp)
 	{
+	    struct gpRender method;
+	    
 	    data->old_knobbox = old_knobbox_ok ? &old_knobbox : 0;
-	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, full_redraw ? GREDRAW_REDRAW : GREDRAW_UPDATE);
+
+	    method.MethodID = GM_RENDER;
+	    method.gpr_GInfo = msg->ops_GInfo;
+	    method.gpr_RPort = rp;
+	    method.gpr_Redraw = full_redraw ? GREDRAW_REDRAW : GREDRAW_UPDATE;
+	    DoMethodA(o, (Msg)&method);
+	    
 	    ReleaseGIRPort(rp);
+	}
+	
+	if (!(data->flags & PRIVFLAG_NICERENDER))
+	{
+	    /* retval of 1 indicates that user needs to rerender gadget
+	       manually, while 0 means he does not need to do so */
+	       
+	    retval = 0;
 	}
     }
 
@@ -410,6 +436,8 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
 {
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
+
+    D(bug("PropGClass: new %p\n", o));
 
     if (o)
     {
@@ -428,10 +456,24 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
     	data->propinfo.Flags	= PROPNEWLOOK|AUTOKNOB|FREEVERT;
     	data->propinfo.VertPot	= 0;
     	data->propinfo.VertBody = MAXBODY;
+	data->propinfo.HorizPot	= 0;
+	data->propinfo.HorizBody = MAXBODY;
 	data->top     = 0;
 	data->visible = 1;
 	data->total   = 1;
-	   	
+	 
+	if (GetTagData(PGA_NotifyBehaviour, PG_BEHAVIOUR_COMPATIBLE, msg->ops_AttrList) == 
+	    PG_BEHAVIOUR_NICE)
+	{
+	    data->flags |= PRIVFLAG_NICENOTIFY;
+	}
+	
+	if (GetTagData(PGA_RenderBehaviour, PG_BEHAVIOUR_COMPATIBLE, msg->ops_AttrList) == 
+	    PG_BEHAVIOUR_NICE)
+	{
+	    data->flags |= PRIVFLAG_NICERENDER;
+	}
+	
     	/* Handle our special tags - overrides defaults */
    	set_propgclass(cl, o, msg);
 	    
@@ -577,7 +619,7 @@ static IPTR handleinput_propgclass(Class *cl, Object *o, struct gpInput *msg)
     	    	data->last_x = msg->gpi_Mouse.X;
     	    	data->last_y = msg->gpi_Mouse.Y;
 		
-		D(bug("Calling UpdateTop\n"));
+		D(bug("PropGClass: Calling UpdateTop\n"));
     	    	
     	    	/* Update PGA_Top. Interim update. */
     	    	UpdateTop(cl, o, msg->gpi_GInfo, FALSE);
