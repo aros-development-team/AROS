@@ -33,6 +33,13 @@ static const char * sysColName[] = {
 static long sysCMap[] = { 0, 0, 0, 0, };
 static unsigned long sysPlaneMask;
 
+struct ETextFont
+{
+    struct TextFont etf_Font;
+    XFontStruct     etf_XFS;
+};
+
+
 int driver_init (struct GfxBase * GfxBase)
 {
     char * displayName;
@@ -289,12 +296,18 @@ void driver_ScrollRaster (struct RastPort * rp, long dx, long dy,
 
 void driver_Text (struct RastPort * rp, char * string, long len)
 {
+    struct ETextFont * etf;
+
     if (rp->DrawMode & JAM2)
 	XDrawImageString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
 	    rp->cp_y, string, len);
     else
 	XDrawString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
 	    rp->cp_y, string, len);
+
+    etf = (struct ETextFont *)rp->Font;
+
+    rp->cp_x += XTextWidth (&etf->etf_XFS, string, len);
 }
 
 void driver_Move (struct RastPort * rp, long x, long y)
@@ -309,6 +322,12 @@ void driver_Draw (struct RastPort * rp, long x, long y)
 	    x, y);
 }
 
+void driver_WritePixel (struct RastPort * rp, long x, long y)
+{
+    XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
+	    x, y);
+}
+
 void driver_SetRast (struct RastPort * rp, unsigned long color)
 {
     XClearArea (sysDisplay, GetXWindow(rp),
@@ -316,12 +335,6 @@ void driver_SetRast (struct RastPort * rp, unsigned long color)
 	    1000, 1000,
 	    FALSE);
 }
-
-struct ETextFont
-{
-    struct TextFont etf_Font;
-    XFontStruct     etf_XFS;
-};
 
 void driver_SetFont (struct RastPort * rp, struct ETextFont * font)
 {
