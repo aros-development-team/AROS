@@ -4,11 +4,11 @@
 #MM- workbench : workbench-$(ARCH)
 
 #MM- workbench-complete : workbench-c \
+#MM	    workbench-hidds \
 #MM	    workbench-devs \
 #MM	    workbench-libs-complete \
 #MM	    workbench-classes-complete \
 #MM	    workbench-s	\
-#MM	    workbench-hidds \
 #MM	    workbench-locale \
 #MM	    workbench-fonts \
 #MM	    workbench-system \
