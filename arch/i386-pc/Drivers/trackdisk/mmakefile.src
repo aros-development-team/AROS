@@ -1,0 +1,49 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I$(TOP)/rom/devs
+
+DEVS    := $(DEVSDIR)/trackdisk.device
+FILES	:= trackdisk
+OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+LIB	:= $(LIBDIR)/libtrackdisk.a
+
+%define_libs
+
+#MM
+kernel-devs-$(ARCH)-$(CPU) : $(LIB)
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
+kernel-devs : show-flags $(DEVS)
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR)
+
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+
+$(DEVSDIR)/trackdisk.device : $(OSGENDIR)/trackdisk.o
+	%link_q startup=
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q
+
+trackdisk.s: trackdisk.c
+	%ctoasm_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
