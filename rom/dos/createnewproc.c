@@ -155,7 +155,7 @@ void internal_ChildFree(APTR tid);
 	ENOMEM_IF(cli == NULL);
 
 	oldpath = NULL;
-	cli->cli_DefaultStack = defaults[9].ti_Data >> 2;
+	cli->cli_DefaultStack = defaults[9].ti_Data / 2;
 
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
 	{
