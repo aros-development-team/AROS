@@ -708,17 +708,27 @@ void UninstallClipRegionClipRects(struct Layer_Info * LI)
  * This function MUST not manipulate hide_region!!!!
  */
 int _BackupPartsOfLayer(struct Layer * l, 
-                        struct Region * hide_region,
-                        struct BitMap * display_bm)
+                        struct Region * hide_region)
 {
   struct ClipRect * cr, * firstcr = NULL, * oldcr;
   struct RegionRectangle * rr;
   struct Region * r = NewRegion();
+  struct BitMap * display_bm = l->rp->BitMap; 
   int invisible = TRUE;
-  
+
+kprintf("\t %s: l=%p\n",
+        __FUNCTION__,
+        l);  
 #warning Write function to copy a region
+
+  OrRegionRegion(l->VisibleRegion, r);
+  ClearRegionRegion(hide_region,r);
+  AndRegionRegion(l->shape,r);
+  AndRegionRegion(l->parent,r);
+#if 0  
   OrRegionRegion(l->shape,r);
   AndRegionRegion(hide_region,r);
+#endif
   
   /*
    * From region r create cliprects
@@ -735,6 +745,14 @@ int _BackupPartsOfLayer(struct Layer * l,
       cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
       cr->lobs  = invisible;
       cr->Next  = firstcr;
+
+kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
+        __FUNCTION__,
+        cr->bounds.MinX,
+        cr->bounds.MinY,
+        cr->bounds.MaxX,
+        cr->bounds.MaxY,
+        invisible);
 
       firstcr = cr;
 
@@ -844,11 +862,11 @@ kprintf("Using bitmap of screen!\n");
 
             xDest = (_cr->bounds.MinX > oldcr->bounds.MinX) ?
                     0 :
-                    (oldcr->bounds.MinX - -cr->bounds.MinX);
+                    (oldcr->bounds.MinX - _cr->bounds.MinX);
 
             yDest = (_cr->bounds.MinY > oldcr->bounds.MinY) ?
                     0 :
-                    (oldcr->bounds.MinY - -cr->bounds.MinY);
+                    (oldcr->bounds.MinY - _cr->bounds.MinY);
             
             
             if (IS_SMARTREFRESH(l))
@@ -924,18 +942,31 @@ kprintf("!!!!!! %s %d backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
  * This function MUST not manipulate show_region!!!!
  */
 int _ShowPartsOfLayer(struct Layer * l, 
-                      struct Region * show_region,
-                      struct BitMap * display_bm)
+                      struct Region * show_region)
 {
   struct ClipRect * cr, * firstcr = NULL, * oldcr;
   struct RegionRectangle * rr;
   struct Region * r = NewRegion();
+  struct BitMap * display_bm = l->rp->BitMap;
   int invisible = FALSE;
   
+kprintf("%s called for %p\n",__FUNCTION__,l);
 #warning Write function to copy a region
   OrRegionRegion(show_region,r);
+  /*
+   * In addition to the show region the visible region
+   * if the layer also belongs to the visible
+   * part of the layer.
+   */
   OrRegionRegion(l->VisibleRegion,r);
+  /*
+   * Only the shape of the layer is valid!
+   */
   AndRegionRegion(l->shape,r);
+  /*
+   * Cut it to the area of the parent of this layer
+   */
+  AndRegionRegion(l->parent->shape,r);
   
   /*
    * From region r create cliprects
@@ -952,6 +983,13 @@ int _ShowPartsOfLayer(struct Layer * l,
       cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
       cr->lobs  = invisible;
       cr->Next  = firstcr;
+kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
+        __FUNCTION__,
+        cr->bounds.MinX,
+        cr->bounds.MinY,
+        cr->bounds.MaxX,
+        cr->bounds.MaxY,
+        invisible);
 
       firstcr = cr;
 
@@ -1123,6 +1161,7 @@ kprintf("!!!!!!backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
           }
           else
           {
+kprintf("%s: Showing a part of a backed up bitmap!\n",__FUNCTION__);
             if (NULL != oldcr->lobs)
             {
               LONG xSrc, xDest;
@@ -1175,6 +1214,12 @@ kprintf("!!!!!!backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
                          _cr->bounds.MinY :
                        oldcr->bounds.MinY;
 
+kprintf("\t\t%s: Show cliprect: %d/%d-%d/%d\n",
+        __FUNCTION__,
+        oldcr->bounds.MinX,
+        oldcr->bounds.MinY,
+        oldcr->bounds.MaxX,
+        oldcr->bounds.MaxY);
               BltBitMap(oldcr->BitMap,
                         xSrc,
                         ySrc,
@@ -1212,11 +1257,12 @@ kprintf("!!!!!!backing up: from %d/%d to %d/%d  width:%d, height: %d\n",
   return TRUE;
 }
 
-int _ShowLayer(struct Layer * l, struct BitMap * display_bm)
+int _ShowLayer(struct Layer * l)
 {
   struct Region * r = NewRegion();
   struct RegionRectangle * rr;
   struct ClipRect * prevcr = NULL;
+  struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
   if (NULL == r)
     return FALSE;
@@ -1241,6 +1287,13 @@ kprintf("\t\tinvisible: %d !!!!!!!!!!!!\n",invisible);
       cr->bounds.MaxX = rr->bounds.MaxX + r->bounds.MinX;
       cr->bounds.MaxY = rr->bounds.MaxY + r->bounds.MinY;
       cr->lobs = invisible;
+kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
+        __FUNCTION__,
+        cr->bounds.MinX,
+        cr->bounds.MinY,
+        cr->bounds.MaxX,
+        cr->bounds.MaxY,
+        invisible);
       
       if (prevcr)
         prevcr->Next = cr;
@@ -1275,9 +1328,9 @@ kprintf("\t\tClearing background! %d/%d-%d/%d\n",
           cr->BitMap = AllocBitMap(
              cr->bounds.MaxX - cr->bounds.MinX + 1,
              cr->bounds.MaxY - cr->bounds.MinY + 1,
-             display_bm->Depth,
+             bm->Depth,
              BMF_CLEAR,
-             display_bm);
+             bm);
         }
       }
       
@@ -1303,10 +1356,10 @@ int ClearRegionRegion(struct Region * rd, struct Region * r)
   while (rr) 
   {
     struct Rectangle rect;
-    rect.MinX = r->bounds.MinX + rr->bounds.MinX;   
-    rect.MinY = r->bounds.MinY + rr->bounds.MinY;   
-    rect.MaxX = r->bounds.MinX + rr->bounds.MaxX;   
-    rect.MaxY = r->bounds.MinY + rr->bounds.MaxY;   
+    rect.MinX = rd->bounds.MinX + rr->bounds.MinX;   
+    rect.MinY = rd->bounds.MinY + rr->bounds.MinY;   
+    rect.MaxX = rd->bounds.MinX + rr->bounds.MaxX;   
+    rect.MaxY = rd->bounds.MinY + rr->bounds.MaxY;   
     ClearRectRegion(r, &rect);
     rr = rr->Next;
   }
@@ -1324,4 +1377,25 @@ struct Layer * _FindFirstFamilyMember(struct Layer * l)
     _l = _l->front;
   }
   return lastgood;
+}
+
+void BackFillRegion(struct Layer * l, 
+                    struct Region * r)
+{
+  struct RegionRectangle * RR = r->RegionRectangle;
+  /* check if a region is empty */
+  while (NULL != RR)
+  {
+     RR->bounds.MinX += r->bounds.MinX;
+     RR->bounds.MinY += r->bounds.MinY;
+     RR->bounds.MaxX += r->bounds.MinX;
+     RR->bounds.MaxY += r->bounds.MinY;
+     _CallLayerHook(l->BackFill,
+            	    l->rp,
+            	    l,
+            	    &RR->bounds,
+            	    RR->bounds.MinX, 
+            	    RR->bounds.MinY);
+    RR = RR->Next;
+  }
 }

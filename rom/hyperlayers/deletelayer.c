@@ -68,9 +68,13 @@
    * all children must have been destroyed before.
    */
   if (l != _FindFirstFamilyMember(l))
+  {
+    kprintf("%s: There are still children around! Cannot destroy layer %p\n",
+            __FUNCTION__,
+            l);
     return FALSE;
-
- 
+  }
+  
   if (IS_VISIBLE(l))
   { 
     struct Region * show_region = NewRegion();
@@ -104,7 +108,10 @@
      */
     while ((NULL != _l) && !IS_EMPTYREGION(show_region))
     {
-      _ShowPartsOfLayer(_l, show_region, _l->rp->BitMap);
+      _ShowPartsOfLayer(_l, show_region);
+
+      if (_l == l->parent)
+        break;
       /*
        * The part that this layer is hiding I cannot make 
        * visible on the layers behind it. Therefore I
@@ -112,13 +119,21 @@
        */
       ClearRegionRegion(_l->shape, show_region);
       
-      if (_l == l->parent)
-        break;
         
       _l = _l->back;
     }
+    /*
+     * Whatever is left in the show_region is to be cleared
+     * with the backfill hook of the parent!
+     */
+    if (!IS_EMPTYREGION(show_region))
+      BackFillRegion(l->parent, show_region);
+    DisposeRegion(show_region);
   }
   
+  /*
+   * Free all cliprects.
+   */
   cr = l->ClipRect;
   while (cr)
   {

@@ -68,6 +68,8 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
+kprintf("%s called!\n",__FUNCTION__);
+
   return FALSE;
    
   AROS_LIBFUNC_EXIT

@@ -173,6 +173,8 @@ kprintf("%s entered!\n",__FUNCTION__);
     
     l->parent = parent;
 
+    LockLayers(li);
+
     if (infrontof || (NULL == behind))
     {
       if (NULL == infrontof)
@@ -239,7 +241,7 @@ kprintf("Creating a layer on top!\n");
         if (IS_VISIBLE(_l))
         {
 kprintf("\t\tbacking up parts of layer %p!\n",_l);
-          _BackupPartsOfLayer(_l, l->shape, bm);
+          _BackupPartsOfLayer(_l, l->shape);
         }
         _l = _l->back;
       }
@@ -249,13 +251,15 @@ kprintf("\t\tbacking up parts of layer %p!\n",_l);
        * This function creates the cliprects in the area
        * of the layer.
        */
-      _ShowLayer(l,bm);
+      _ShowLayer(l);
     }
   }
   else
     goto failexit;
 
-  kprintf("Leaving %s\n",__FUNCTION__);
+  kprintf("Leaving %s l=%p\n",__FUNCTION__,l);
+  
+  UnlockLayers(li);
   
   return l;
   

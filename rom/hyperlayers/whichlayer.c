@@ -66,9 +66,32 @@
   LockLayers(li);
 
   for(l = li->top_layer; l != NULL; l = l->back)
-    if(x >= l->bounds.MinX && x <= l->bounds.MaxX &&
-       y >= l->bounds.MinY && y <= l->bounds.MaxY)
-       break;
+    if(x >= l->shape->bounds.MinX && x <= l->shape->bounds.MaxX &&
+       y >= l->shape->bounds.MinY && y <= l->shape->bounds.MaxY)
+    {
+       struct RegionRectangle * rr = l->shape->RegionRectangle;
+       int found = FALSE;
+       int _x = x - l->shape->bounds.MinX;
+       int _y = y - l->shape->bounds.MinY;
+       /*
+        * If it is just a square the region is empty.
+        */
+       if (NULL == rr)
+         break;
+       while (rr)
+       {
+         if (_x >= rr->bounds.MinX && _x <= rr->bounds.MaxX &&
+             _y >= rr->bounds.MinY && _y <= rr->bounds.MaxY)
+         {
+           found = TRUE;
+           break;
+         }
+         rr = rr->Next;
+       }
+       
+       if (TRUE == found)
+         break;
+    }
 
   UnlockLayers(li);
 
