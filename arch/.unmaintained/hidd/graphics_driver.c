@@ -148,12 +148,12 @@ static LONG pix_write(APTR pr_data
 AttrBase HiddBitMapAttrBase	= 0;
 AttrBase HiddGCAttrBase		= 0;
 AttrBase HiddSyncAttrBase	= 0;
-AttrBase HiddPixFmtAttrBase	= 0; 
+static AttrBase HiddPixFmtAttrBase	= 0; 
 AttrBase HiddPlanarBMAttrBase	= 0; 
 AttrBase HiddGfxAttrBase	= 0; 
 AttrBase HiddFakeGfxHiddAttrBase	= 0;
 
-struct ABDescr attrbases[] = {
+static struct ABDescr attrbases[] = {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase	},
     { IID_Hidd_GC,		&HiddGCAttrBase		},
     { IID_Hidd_Sync,		&HiddSyncAttrBase	},
