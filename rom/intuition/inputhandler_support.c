@@ -72,31 +72,32 @@ void notify_mousemove_screensandwindows(WORD x,
 */
 void notify_newprefs(struct IntuitionBase * IntuitionBase)
 {
-  struct Screen * scr = IntuitionBase->FirstScreen;
-  while (NULL != scr)
-  {
-    /* 
-    ** Visit all windows of this screen
-    */
-    struct Window * win = scr->FirstWindow;
-    
-    while (NULL != win)
+    struct Screen * scr = IntuitionBase->FirstScreen;
+
+    while (NULL != scr)
     {
-      /*
-      ** Is this window interested?
-      */
-      if (0 != (win->IDCMPFlags & IDCMP_NEWPREFS))
-      {
-        fire_intuimessage(win,
-                          IDCMP_NEWPREFS,
-                          0,
-                          win,
-                          IntuitionBase);
-      }
-      win = win->NextWindow;
+	/* 
+	** Visit all windows of this screen
+	*/
+	struct Window * win = scr->FirstWindow;
+
+	while (NULL != win)
+	{
+	    /*
+	    ** Is this window interested?
+	    */
+	    if (0 != (win->IDCMPFlags & IDCMP_NEWPREFS))
+	    {
+        	ih_fire_intuimessage(win,
+                        	     IDCMP_NEWPREFS,
+                        	     0,
+                        	     win,
+                        	     IntuitionBase);
+	    }
+	    win = win->NextWindow;
+	}
+	scr = scr->NextScreen;
     }
-    scr = scr->NextScreen;
-  }
 }
 
 /*********************************************************************/
@@ -184,7 +185,154 @@ BOOL fire_intuimessage(struct Window *w,
     
     return result;
 }
-		       
+
+/*********************************************************************/
+
+/* use ih_fire_intuimessage if A) the inputevent because of which
+   you call this function might have to be eaten or modified
+   by Intuition or B) an inputevent might have to be created
+   by Intuition because of a deferred action.
+   
+   In any case this function may be called only from inside Intuition's
+   InputHandler!!!!!! */
+     
+BOOL ih_fire_intuimessage(struct Window * w,
+			  ULONG Class,
+			  UWORD Code,
+			  APTR IAddress,
+			  struct IntuitionBase *IntuitionBase)
+{
+    struct IIHData *iihd = (struct IIHData *)GetPrivIBase(IntuitionBase)->InputHandler->is_Data;
+    struct InputEvent *ie = iihd->ActInputEvent;
+    
+    BOOL result = fire_intuimessage(w, Class, Code, IAddress, IntuitionBase);
+    
+    if (result && ie)
+    {
+        /* was sent as IDCMP to window so eat inputevent */
+
+        ie->ie_Class = IECLASS_NULL;
+
+    } else if (ie && (ie->ie_Class != IECLASS_NULL) && !iihd->ActInputEventUsed) {
+
+	/* ih_fire_intuimessage was called from inside Intuition's event handling loop */
+	
+	iihd->ActInputEventUsed = TRUE;
+	
+        ie->ie_SubClass = 0;
+        ie->ie_Code = Code;
+	ie->ie_EventAddress = IAddress;
+	
+        switch(Class)
+	{
+	    case IDCMP_GADGETUP:
+	        /* Note: on the Amiga if a boopsi Gadget which is GA_Immediate
+		   and GA_RelVerify immediately in GM_GOACTIVE returns GMR_VERIFY,
+		   then this sends IDCMP_GADGETDOWN + IDCMP_GADGETUP. AROS does
+		   the same. But for changed inputevents (if window does not have this
+		   IDCMP Flags set) there will be only one IECLASS_GADGETDOWN
+		*/
+		
+	        ie->ie_Class = IECLASS_GADGETUP;
+		break;
+		
+	    case IDCMP_GADGETDOWN:
+	        ie->ie_Class = IECLASS_GADGETDOWN;
+		break;
+		
+	    case IDCMP_ACTIVEWINDOW:
+	    	ie->ie_Class = IECLASS_ACTIVEWINDOW;
+		break;
+		
+	    case IDCMP_INACTIVEWINDOW:
+	        ie->ie_Class = IECLASS_INACTIVEWINDOW;
+		break;
+				
+	    case IDCMP_MENUHELP:
+	        ie->ie_Class = IECLASS_MENUHELP;
+		break;
+		
+	    case IDCMP_MENUPICK:
+	        ie->ie_Class = IECLASS_MENULIST;
+		break;
+	
+	    case IDCMP_MOUSEBUTTONS:
+	    case IDCMP_MOUSEMOVE:
+	    case IDCMP_RAWKEY:
+	    case IDCMP_VANILLAKEY:
+	        break;
+		
+	    default:
+	        D(bug("ih_fireintuimessage: unexpected IDCMP (%x) for an inputevent-handling-fireintuimessage!\n", Class));
+	        break;
+		
+	}
+    } else if (!ie)
+    {
+         /* ih_fire_intuimessage was called from inside Intuition's defered action handling routines */
+
+	if ((ie = AllocInputEvent(iihd)))
+	{
+            switch(Class)
+	    {
+		case IDCMP_NEWSIZE:
+	            ie->ie_Class = IECLASS_SIZEWINDOW;
+		    break;
+
+		case IDCMP_CHANGEWINDOW:
+	            ie->ie_Class = IECLASS_CHANGEWINDOW;
+		    break;
+
+		case IDCMP_ACTIVEWINDOW:
+	            ie->ie_Class = IECLASS_ACTIVEWINDOW;
+		    break;
+
+		case IDCMP_INACTIVEWINDOW:
+		    ie->ie_Class = IECLASS_INACTIVEWINDOW;
+		    break;
+		    
+		case IDCMP_CLOSEWINDOW:
+		    ie->ie_Class = IECLASS_CLOSEWINDOW;
+		    break;
+		    
+		case IDCMP_GADGETUP:
+		    ie->ie_Class = IECLASS_GADGETUP;
+		    break;
+		    
+		case IDCMP_GADGETDOWN:
+		    ie->ie_Class = IECLASS_GADGETDOWN;
+		    break;
+		    
+		case IDCMP_REFRESHWINDOW:
+		    ie->ie_Class = IECLASS_REFRESHWINDOW;
+		    break;
+		    
+		case IDCMP_NEWPREFS:
+		    ie->ie_Class = IECLASS_NEWPREFS;
+		    break;
+
+		default:
+	            D(bug("ih_fireintuimessage: unexpected IDCMP (0x%X) for a deferred-action-fireintuimessage!\n", Class));
+		    break;
+		    
+	    } /* switch(Class) */
+	    
+	    ie->ie_Code 	= Code;
+	    ie->ie_Qualifier 	= iihd->ActQualifier;
+	    ie->ie_EventAddress = IAddress;
+	    CurrentTime(&ie->ie_TimeStamp.tv_secs, &ie->ie_TimeStamp.tv_micro);
+	    
+	    D(bug("ih_fireintuimessage: generated InputEvent. Class = 0x%X  Code = %d  EventAddress = 0x%X\n",
+	    	  ie->ie_Class,
+		  ie->ie_Code,
+		  ie->ie_EventAddress));
+	    
+	} /* if ((ie = AllocInputEvent(iihd))) */
+    }
+    
+    return result;
+}
+			  		       
 /*********************************************************************/
 
 /*************************
@@ -212,11 +360,11 @@ void NotifyDepthArrangement(struct Window *w,
 {
     if(w->MoreFlags & WMFLG_NOTIFYDEPTH)
     {
-        fire_intuimessage(w,
-	                  IDCMP_CHANGEWINDOW,
-			  CWCODE_DEPTH,
-			  0,
-			  IntuitionBase);
+        ih_fire_intuimessage(w,
+	                     IDCMP_CHANGEWINDOW,
+			     CWCODE_DEPTH,
+			     0,
+			     IntuitionBase);
     }    
 }
 
@@ -284,11 +432,11 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
 	if (    (retval & GMR_VERIFY)
 	     && (gadget->Activation & GACT_RELVERIFY))
 	{
-	    fire_intuimessage(gi->gi_Window,
-	    		      IDCMP_GADGETUP,
-			      termination & 0x0000FFFF,
-			      gadget,
-			      IntuitionBase);
+	    ih_fire_intuimessage(gi->gi_Window,
+	    		      	 IDCMP_GADGETUP,
+			      	 termination & 0x0000FFFF,
+			      	 gadget,
+			      	 IntuitionBase);
 	}
 
 	gpgi.MethodID = GM_GOINACTIVE;
@@ -324,6 +472,31 @@ struct Gadget *HandleCustomGadgetRetVal(IPTR retval, struct GadgetInfo *gi, stru
     }
     
     return gadget;
+}
+
+/****************
+**  DoGPInput  **
+****************/
+struct Gadget *DoGPInput(struct GadgetInfo *gi, struct Gadget *gadget,
+			 struct InputEvent *ie, STACKULONG methodid,
+			 BOOL *reuse_event, struct IntuitionBase *IntuitionBase)
+{
+    struct gpInput gpi;
+    IPTR retval;
+    ULONG termination;
+    
+    gpi.MethodID = methodid;
+    gpi.gpi_GInfo = gi;
+    gpi.gpi_IEvent = ie;
+    gpi.gpi_Termination = &termination;
+    gpi.gpi_TabletData = NULL;
+    SetGPIMouseCoords(&gpi, gadget);
+    
+    retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
+
+    return HandleCustomGadgetRetVal(retval, gi, gadget, termination,
+				    reuse_event, IntuitionBase);
+    
 }
 
 /*********************************************************************/
@@ -420,11 +593,11 @@ struct Gadget *DoActivateGadget(struct Window *win, struct Gadget *gad, struct I
 
     if (gad->Activation & GACT_IMMEDIATE)
     {
-	fire_intuimessage(win,
-			  IDCMP_GADGETDOWN,
-			  0,
-			  gad,
-			  IntuitionBase);
+	ih_fire_intuimessage(win,
+			     IDCMP_GADGETDOWN,
+			     0,
+			     gad,
+			     IntuitionBase);
     }
 
     PrepareGadgetInfo(gi, win->WScreen, win);
@@ -692,6 +865,47 @@ struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
 }
 
 /*********************************************************************/
+
+struct InputEvent *AllocInputEvent(struct IIHData *iihdata)
+{
+    struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
+    struct InputEvent *ie;
+    
+    ie = AllocPooled(iihdata->InputEventMemPool, sizeof(struct InputEvent));
+    if (ie)
+    {
+        if (iihdata->ActGeneratedInputEvent)
+	{
+	    iihdata->ActGeneratedInputEvent->ie_NextEvent = ie;
+	    iihdata->ActGeneratedInputEvent = ie;
+	} else {
+	    iihdata->GeneratedInputEvents = ie;
+	    iihdata->ActGeneratedInputEvent = ie;
+	}
+    }
+    
+    return ie;
+}
+
+void FreeGeneratedInputEvents(struct IIHData *iihdata)
+{
+    struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
+    struct InputEvent *ie, *nextie;
+    
+    ie = iihdata->GeneratedInputEvents;
+    while (ie)
+    {
+        nextie = ie->ie_NextEvent;
+	
+	FreePooled(iihdata->InputEventMemPool, ie, sizeof(struct InputEvent));
+	
+	ie = nextie;    
+    }
+    
+    iihdata->GeneratedInputEvents = NULL;
+    iihdata->ActGeneratedInputEvent = NULL;
+}
+
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
