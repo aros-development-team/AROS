@@ -71,12 +71,14 @@
 		          NULL);
 	} else {
 		struct BitMap * srcBM = srcRastPort->BitMap;
-		struct ClipRect * srcCR = srcLayer->ClipRect;
+		struct ClipRect * srcCR;
 		int area = xSize * ySize;
 		UBYTE useminterm = 0;
 		ULONG bltMask = 0xFFFFFFFF;
 
 		LockLayerRom(srcLayer);
+		srcCR = srcLayer->ClipRect;
+		
 		while (NULL != srcCR &&
 		       area > 0) {
 			/*
