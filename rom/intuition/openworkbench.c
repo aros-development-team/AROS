@@ -87,8 +87,8 @@ AROS_LH0(IPTR, OpenWorkBench,
 	
         struct TagItem screenTags[] =
         {   
-            { SA_Width,                width              }, /* 0 */
-            { SA_Height,               height             }, /* 1 */
+            { SA_Width,                0                  }, /* 0 */
+            { SA_Height,               0                  }, /* 1 */
             { SA_Depth,                depth              }, /* 2 */
 	    { SA_DisplayID,            0                  }, /* 3 */
             { SA_LikeWorkbench,        TRUE               }, /* 4 */
@@ -114,13 +114,28 @@ AROS_LH0(IPTR, OpenWorkBench,
 	    modeid     = BestModeIDA(modetags);
 	    disphandle = FindDisplayInfo(modeid);
 	}
-	bug("DISPHANDLE = %p\n", disphandle);
+	
 	if (disphandle)
+	{
+	    struct DimensionInfo dim;
+
+	    #define BOUND(min, val, max) \
+	        (((min) < (val)) ? (min) : ((max) > (val)) ? (max) : (val))
+            
+	    if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, 0))
+            {
+	        width  = BOUND(dim.MinRasterWidth,  width,  dim.MaxRasterWidth);
+		height = BOUND(dim.MinRasterHeight, height, dim.MaxRasterHeight);
+            }
 	    screenTags[3].ti_Data = modeid;
+        }
 	else
 	    screenTags[3].ti_Tag  = TAG_IGNORE;
 
-        DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
+	screenTags[0].ti_Data = width;
+        screenTags[1].ti_Data = height;
+        
+	DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 
         wbscreen = OpenScreenTagList(NULL, screenTags);
 
