@@ -29,10 +29,10 @@
 #include <string.h>
 
 /* Internal prototypes */
-AROS_UFH3(LONG, dosstreamhook,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(BPTR,            file, A2),
-    AROS_UFHA(ULONG *,         msg, A1)
+AROS_UFP3(LONG, dosstreamhook,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(BPTR,            file, A2),
+    AROS_UFPA(ULONG *,         msg, A1)
 );
 VOID	GetDefIconName (LONG, UBYTE *);
 UBYTE * WriteValue     (LONG, UBYTE *);

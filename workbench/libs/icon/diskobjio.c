@@ -21,35 +21,35 @@
 #include <proto/arossupport.h>
 #include <proto/intuition.h>
 
-static AROS_UFH3(ULONG, ProcessDrawerData,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessDrawerData,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFH3(ULONG, ProcessGadgetRender,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,    streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessGadgetRender,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,    streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFH3(ULONG, ProcessSelectRender,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessSelectRender,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFH3(ULONG, ProcessDefaultTool,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessDefaultTool,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFH3(ULONG, ProcessToolTypes,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessToolTypes,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
-static AROS_UFH3(ULONG, ProcessFlagPtr,
-    AROS_UFHA(struct Hook *,   hook, A0),
-    AROS_UFHA(struct Hook *,   streamhook, A2),
-    AROS_UFHA(struct SDData *, data, A1)
+static AROS_UFP3(ULONG, ProcessFlagPtr,
+    AROS_UFPA(struct Hook *,   hook, A0),
+    AROS_UFPA(struct Hook *,   streamhook, A2),
+    AROS_UFPA(struct SDData *, data, A1)
 );
 
 static const struct Hook ProcessDrawerDataHook =
