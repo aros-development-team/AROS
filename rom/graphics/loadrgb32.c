@@ -5,8 +5,9 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 #if DEBUG
 #undef THIS_FILE

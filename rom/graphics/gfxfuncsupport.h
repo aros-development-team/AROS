@@ -10,6 +10,8 @@
 
 /****************************************************************************************/
 
+#include <hidd/graphics.h>
+
 #define PEN_BITS    8
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)

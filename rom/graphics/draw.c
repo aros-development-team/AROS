@@ -7,12 +7,14 @@
 */
 
 #include <aros/debug.h>
+#include <clib/macros.h>
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 #include <proto/oop.h>
 #include "gfxfuncsupport.h"
 #include "graphics_intern.h"
 #include "intregions.h"
+#include <stdlib.h>
 
 /*****************************************************************************
 

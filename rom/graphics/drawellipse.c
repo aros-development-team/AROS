@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <aros/debug.h>
+#include <clib/macros.h>
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include "gfxfuncsupport.h"

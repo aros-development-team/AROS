@@ -5,12 +5,13 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
+	#include <proto/graphics.h>
 
 	AROS_LH3(void, LoadRGB4,
 

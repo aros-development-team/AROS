@@ -5,9 +5,11 @@
     Desc: Graphics function GetVPModeID()
     Lang: english
 */
+#include <aros/debug.h>
 #include <graphics/view.h>
 #include <graphics/modeid.h>
 #include <hidd/graphics.h>
+#include <proto/graphics.h>
 #include "dispinfo.h"
 
 /*****************************************************************************

@@ -5,9 +5,12 @@
     Desc: Graphics function EraseRect()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <aros/asmcall.h>
+#include <utility/hooks.h>
+#include <proto/oop.h>
 #include "gfxfuncsupport.h"
 
 struct layerhookmsg

@@ -5,6 +5,7 @@
     Desc: Graphics function InitView()
     Lang: english
 */
+#include <aros/debug.h>
 #include "graphics_intern.h"
 #include <graphics/view.h>
 #include <proto/exec.h>
