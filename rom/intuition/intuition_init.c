@@ -206,7 +206,7 @@ AROS_UFH3(LIBBASETYPEPTR, AROS_SLIB_ENTRY(init,Intuition),
   
     LoadDefaultPreferences(LIBBASE);
 
-    GetPrivIBase(LIBBASE)->MenuLook = MENULOOK_CLASSIC;
+    GetPrivIBase(LIBBASE)->MenuLook = MENULOOK_3D;
     GetPrivIBase(LIBBASE)->MenusUnderMouse = FALSE;
     GetPrivIBase(LIBBASE)->FrameSize = FRAMESIZE_THIN;
 
