@@ -277,28 +277,37 @@ int mouse_ps2reset(struct mouse_data *data)
     if (!kbd_detect_aux())
 	return 0;
 
-    kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
     /*
      * Unfortunatley on my computer these commands cause
-     * the mouse not to work at all. I hope that these
-     * lines can be left out and it still works on all other
-     * computers. Maybe we can emulate the same effect
-     * of these commands here with a preferences program
-     * and configuring the mouse driver. - Stefan
+     * the mouse not to work at all if they are issued
+     * in a different order. So please keep it that way.
+     * - Stefan
      */
-/*****************************************************
+
+    /*
+     * Turn interrupts off and the keyboard as well since the
+     * commands are all for the mouse.
+     */
+    kbd_write_cmd(AUX_INTS_OFF);
+    kbd_write_command_w(KBD_CTRLCMD_KBD_DISABLE);
+    
+    /* 
+     * The commands are for the mouse and nobody else.
+     */
+    kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
+    
+    /*
+     * Now the commands themselves.
+     */
     aux_write(KBD_OUTCMD_SET_RATE);
     aux_write(200);
     aux_write(KBD_OUTCMD_SET_RES);
     aux_write(3);
     aux_write(KBD_OUTCMD_SET_SCALE21);
-*****************************************************/
-    kbd_write_command(KBD_CTRLCMD_MOUSE_DISABLE);
-    kbd_write_cmd(AUX_INTS_OFF);
     
     /* Enable Aux device */
     
-    kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
+    kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);
     aux_write(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
 
