@@ -406,7 +406,15 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	/* Case 1: both bitmaps have the same depth - use Blit engine */
 	else if (bm_src->depth == bm_dst->depth)
 	{
+	    LOCK_MULTI_BITMAP
+	    LOCK_BITMAP_BM(bm_src)
+	    LOCK_BITMAP_BM(bm_dst)
+	    UNLOCK_MULTI_BITMAP
+	    
 	    LOCK_HW
+
+    	    sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
+    	    sd->gpu_busy = TRUE;
 	    
 	    NVSetRopSolid(sd, mode, ~0 << bm_src->depth);
 
@@ -446,13 +454,25 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    NVDmaNext(&sd->Card, (msg->height << 16) | (msg->width & 0xffff));
 	    
 	    NVDmaKickoff(&sd->Card);
-	    NVSync(sd);
+	    //NVSync(sd);
 
 	    UNLOCK_HW
+	    
+	    UNLOCK_BITMAP_BM(bm_src)
+	    UNLOCK_BITMAP_BM(bm_dst)
+	    
 	}
 	else /* Case 2: different bitmaps. use Stretch engine */
 	{
+	    LOCK_MULTI_BITMAP
+	    LOCK_BITMAP_BM(bm_src)
+	    LOCK_BITMAP_BM(bm_dst)
+	    UNLOCK_MULTI_BITMAP
+
 	    LOCK_HW
+
+    	    sd->Card.DMAKickoffCallback = NVDMAKickoffCallback;
+    	    sd->gpu_busy = TRUE;
 
 	    if ((bm_dst->surface_format != sd->surface_format) && bm_dst->depth != 15)
 	    {
@@ -531,9 +551,13 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 		NVDmaStart(&sd->Card, SURFACE_FORMAT, 1);
 		NVDmaNext(&sd->Card, SURFACE_FORMAT_DEPTH16);
 	    }
-	    NVSync(sd);
+	    //NVSync(sd);
 
 	    UNLOCK_HW
+
+	    UNLOCK_BITMAP_BM(bm_src)
+	    UNLOCK_BITMAP_BM(bm_dst)
+
 	}
 
 D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
