@@ -33,7 +33,7 @@
 #include "trackdisk_device.h"
 #include "trackdisk_hw.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #undef kprintf
@@ -282,7 +282,7 @@ AROS_LH2(struct TrackDiskBase *, init,
 	/* We only want 3.5" 1.44Mb drives */
 	if (((drives >> (4*i))&0x0f) == 4)
 	{
-	    D(bug("TD: Floppy %d is a 1.44Mb drive\n",i));
+	    kprintf("[Floppy] Unit %d is a 1.44Mb drive\n",i));
 	    TD_InitUnit(i,TDBase);
 	}
     }
@@ -666,7 +666,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 			    dir = (inb(FDC_DIR)>>7);
 			    if (dir == 0)
 			    {
-				D(bug("Floppy insertion detected\n"));
+				D(bug("[Floppy] Insertion detected\n"));
 				td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
 				tdu->tdu_DiskIn = TDU_DISK;
 				tdu->tdu_ChangeNum++;
@@ -688,7 +688,7 @@ void TD_DevTask(struct TrackDiskBase *tdb)
 				td_motoroff(tdu->tdu_UnitNum,tdb);
 				if (dir == 1)
 				{
-				    D(bug("Floppy removal detected\n"));
+				    D(bug("[Floppy] Removal detected\n"));
 				    /* Go to cylinder 0 */
 				    td_recalibrate(tdu->tdu_UnitNum,1,0,tdb);
 				    tdu->tdu_DiskIn = TDU_NODISK;
