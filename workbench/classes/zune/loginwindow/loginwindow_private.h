@@ -3,8 +3,6 @@
 
 /*
     Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    This file is part of the LoginWindow class, which is distributed under
-    the terms of version 2.1 of the GNU Lesser General Public License.
     
     $Id$
 */
@@ -32,7 +30,6 @@ struct LoginWindow_DATA
                     lwd_UserPass,
                     lwd_DoMethod;
     Object          *lwd_Method;
-    ;
 };
 
 #endif /* _PREFSWINDOW_PRIVATE_H_ */

@@ -3,8 +3,6 @@
 
 /*
     Copyright © 2003-2004, The AROS Development Team. All rights reserved.
-    This file is part of the LoginWindow class, which is distributed under
-    the terms of version 2.1 of the GNU Lesser General Public License.
     
     $Id$
 */
@@ -47,5 +45,9 @@
 
 #define LWA_RV_CANCEL                           MUIV_Application_ReturnID_Quit
 #define LWA_RV_OK                               !LWA_RV_CANCEL
+
+#define LWRV_CANCEL                             MUIV_Application_ReturnID_Quit
+#define LWRV_OK                                 !LWRV_CANCEL
+
 
 #endif /* ZUNE_PREFSWINDOW_H */
