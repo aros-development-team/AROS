@@ -632,10 +632,17 @@ ifeq (%(modtype),)
 $(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
 endif
 
+# assign and generate the local variables used in this macro
+BD_MODNAME$(BDID)    := %(modname)
+BD_MODTYPE$(BDID)    := %(modtype)
+BD_CONFFILE$(BDID)   := %(conffile)
+OBJDIR               ?= $(GENDIR)/$(CURDIR)
+BD_OBJDIR$(BDID)     := %(objdir)
+
 #Support for the dirty old mf.inc file
--include $(GENDIR)/$(CURDIR)/mf.inc
-ADD_OBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
-ADD_SOBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
+-include $(BD_OBJDIR$(BDID))/mf.inc
+ADD_OBJS := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
+ADD_SOBJS := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
 ifneq ($(ADDITIONAL_OBJS),)
 $(ADD_OBJS) :
 	@$(ECHO) Precompiled $@ does not exists
@@ -643,13 +650,6 @@ $(ADD_OBJS) :
 $(ADD_SOBJS): %.so : %.o
 	@$(CP) $< $@
 endif
-
-# assign and generate the local variables used in this macro
-BD_MODNAME$(BDID)    := %(modname)
-BD_MODTYPE$(BDID)    := %(modtype)
-BD_CONFFILE$(BDID)   := %(conffile)
-OBJDIR               ?= $(GENDIR)/$(CURDIR)
-BD_OBJDIR$(BDID)     := %(objdir)
 
 BD_INITFILE$(BDID)   := %(initfile)
 BD_FUNCS$(BDID)      := $(filter-out $(SUPPRESS_FILES),%(funcs))
@@ -661,7 +661,7 @@ else
 BD_ENDFILE$(BDID)    := 
 endif
 
-BD_FUNCSRCS$(BDID)   := $(addsuffix .c,$(BD_FUNCS$(BDID)))
+BD_FUNCSRCS$(BDID)   := $(addsuffix .c,%(funcs))
 BD_SRCS$(BDID)       := $(addsuffix .c,$(BD_FILES$(BDID)))
 BD_INITOBJ$(BDID)    := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_INITFILE$(BDID)))))
 USE_CPAK             ?= $(USE_CPAK_DEFAULT)
