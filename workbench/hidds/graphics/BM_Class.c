@@ -112,7 +112,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         memset(data, 0, sizeof(struct HIDDBitMapData));
         data->width       = 320;
         data->height      = 200;
-        data->depth       = 8;
+        data->prot.pixfmt.depth  = 8;
         data->displayable = FALSE;
         data->format      = vHidd_BitMap_Format_Planar;
         data->fg        = 1;        /* foreground color                        */
@@ -134,7 +134,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                 {
                     case aoHidd_BitMap_Width       : data->width       = tag->ti_Data; break;
                     case aoHidd_BitMap_Height      : data->height      = tag->ti_Data; break;
-                    case aoHidd_BitMap_Depth       : data->depth       = tag->ti_Data; break;
+                    case aoHidd_BitMap_Depth       : data->prot.pixfmt.depth       = tag->ti_Data; break;
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
 		    
@@ -197,7 +197,7 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
         {
             case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
             case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
-            case aoHidd_BitMap_Depth       : *msg->storage = data->depth; break;
+            case aoHidd_BitMap_Depth       : *msg->storage = data->prot.pixfmt.depth; break;
             case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
 	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
@@ -1414,7 +1414,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
             {
                 case aoHidd_BitMap_Width         : data->width         = tag->ti_Data; break;
                 case aoHidd_BitMap_Height        : data->height        = tag->ti_Data; break;
-                case aoHidd_BitMap_Depth         : data->depth         = tag->ti_Data; break;
+                case aoHidd_BitMap_Depth         : data->prot.pixfmt.depth         = tag->ti_Data; break;
                 case aoHidd_BitMap_Displayable   : data->displayable   = (BOOL) tag->ti_Data; break;
                 case aoHidd_BitMap_Format        : data->format        = tag->ti_Data; break;
                 case aoHidd_BitMap_BytesPerRow   : data->bytesPerRow   = tag->ti_Data; break;

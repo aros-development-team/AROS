@@ -24,9 +24,10 @@ struct HIDDGraphicsData
 
 struct HIDDBitMapData
 {
+    struct _hidd_bitmap_protected prot;
+    
     ULONG width;         /* width of the bitmap in pixel  */
     ULONG height;        /* height of the bitmap in pixel */
-    ULONG depth;         /* depth of the bitmap in        */
     BOOL  displayable;   /* bitmap displayable?           */
     ULONG format;        /* planar or chunky              */
     ULONG flags;         /* see hidd/graphic.h 'flags for */
@@ -36,8 +37,8 @@ struct HIDDBitMapData
     APTR  colorTab;      /* color table of the bitmap     */
     HIDDT_Color *coltab;
 
-    ULONG fg;        /* foreground color                                 */
-    ULONG bg;        /* background color                                 */
+    HIDDT_Pixel fg;        /* foreground color                                 */
+    HIDDT_Pixel bg;        /* background color                                 */
     ULONG drMode;    /* drawmode                                         */
     /* WARNING: type of font could be change */
     APTR  font;      /* current fonts                                    */
