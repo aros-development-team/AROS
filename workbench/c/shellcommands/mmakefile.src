@@ -1,0 +1,47 @@
+#   $Id$
+#
+#   Makefile for the C: Programs
+
+include $(TOP)/config/make.cfg
+
+FILES	:= \
+    Set \
+    Setenv \
+    Unset \
+    Unsetenv \
+    echo
+
+# I'd like to move this into a rule, but it would be far too hard.
+EXES := $(foreach f,$(FILES), $(AROS_C)/$(f))
+
+USER_CFLAGS := -I$(TOP)/rom/dos -O2 -fomit-frame-pointer
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB := yes
+USE_MLIB := yes
+USE_AROSLIB := yes
+
+#MM- workbench : workbench-c
+#MM workbench-c : includes linklibs
+
+%make_prog_setup mmake=workbench-c
+
+workbench-c : setup $(EXES)
+
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+$(AROS_C)/% : %.c
+	%link_q cmd=$(STATIC_LD) opt="$(CFLAGS) $(LDFLAGS)" startup=""
+#	%compile_q cmd=$(CC) opt="$(CFLAGS) $(USER_CFLAGS)"
+
+$(AROS_C)/% : $(DEPLIBS)
+
+
+setup ::
+	%mkdirs_q $(OBJDIR) $(AROS_C)
+
+clean ::
+	-@$(RM) $(OBJDIR)
+
+%common
+%include_deps
