@@ -350,6 +350,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    if (ztext)
 	    {
 	    	zune_text_get_bounds(ztext, obj);
+		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + (_mheight(obj) - ztext->height)/2);
 		zune_text_destroy(ztext);
 	    }
@@ -369,6 +370,7 @@ static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    if (ztext)
 	    {
 	    	zune_text_get_bounds(ztext, obj);
+		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 		zune_text_draw(ztext, obj, _mleft(obj),_mright(obj),_mtop(obj) + (_mheight(obj) - ztext->height)/2);
 		zune_text_destroy(ztext);
 	    }
