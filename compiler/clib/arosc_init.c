@@ -33,7 +33,7 @@ extern BPTR AROS_SLIB_ENTRY(expunge,arosc)();
 extern int AROS_SLIB_ENTRY(null,arosc)();
 extern const char arosc_end;
 
-extern struct ExecBase   *SysBase;
+struct ExecBase *SysBase = NULL;
 extern struct DosLibrary *DOSBase;
 
 int entry(void)
@@ -92,7 +92,6 @@ AROS_UFH3(struct aroscbase *, AROS_SLIB_ENTRY(init,arosc),
     AROS_USERFUNC_EXIT
 }
 
-struct ExecBase *SysBase;
 
 AROS_LH1(struct aroscbase *, open,
  AROS_LHA(ULONG, version, D0),
