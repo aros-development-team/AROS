@@ -1,16 +1,6 @@
 /*
-    Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.3  2001/07/15 20:11:48  falemagn
-    Implemented named pipes. Actually there are ONLY named pipes. The standard AmigaOS PIPE: can be implemented assigning PIPE: to PIPEFS:namedpipe. pipe() support is about to come
-
-    Revision 1.2  2001/06/11 15:28:44  falemagn
-    removed a bug. I tried to implement directory listing, but it came out to be more troubling that I expected. Anyway... listing is not mandatory, it serves its purpouses the way it is now. I'll look at it some other days.
-
-    Revision 1.1  2001/06/10 21:49:47  falemagn
-    A virtual filesystem that emulates the unixish root directory. Doesn't allow listing yet. It serves to emulate in a clean way the unix paths
-
 
     Desc: Header file for a virtual filesystem that emulates the unixish root dir
     Lang: English

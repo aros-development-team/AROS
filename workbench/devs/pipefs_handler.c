@@ -1,46 +1,8 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.19  2001/09/08 00:48:19  falemagn
-    It seems that EPIPE must not be returned when a reader closes its pipe's end before consuming all the writer's data
-
-    Revision 1.18  2001/09/04 17:39:02  falemagn
-    Supports AbortIO() now
-
-    Revision 1.17  2001/08/23 23:14:27  falemagn
-    Corrected a stupid bug that led to a crash if a pipe couldn't be found
-
-    Revision 1.16  2001/08/21 19:17:18  falemagn
-    Fixed the sheduling policy: before a reader/writer would have never let any other reader/writer read/write from/to the pipe until it had finished its job. Fixed now.
-
-    Revision 1.14  2001/08/16 16:18:24  falemagn
-    Implemented FSA_FILE_MODE. At the moment only handles FMF_NONBLOCK, in future it'll have to handle also FMF_RAW and the whole handler will have to be modified to be able to dispatch more requestes simultaneously. Implemented also a way to request unnamed pipes. They're not really unnamed, since you can see them, but they do the trick pretty well. Just open PIPEFS://unnamedpipe// with the mode you want, then CD to it and open "" with the mode you want as many times you want. Every opening of PIPEFS://unnamedpipe// will result in a NEW file opened (this is the only difference between this kind of pipe and the other ones). To be able to implement the ipe() funxtion it's been enough to open  PIPEFS://unnamedpipe// for reading, cd'ing to it, and then opening "" for writing
-
-    Revision 1.12  2001/07/16 19:22:41  falemagn
-    The FSA_CREATE_DIRECTORY actoon didn't return a valid filehandle: FIXED. Implemented deleting.
-
-    Revision 1.10  2001/07/16 15:21:32  falemagn
-    File types weren't reported correctly
-
-    Revision 1.4  2001/07/15 21:12:24  falemagn
-    Ooops... forgot to do merge with Stefan changes...
-
-    Revision 1.3  2001/07/15 20:52:23  falemagn
-    there was a silly bug. I fixed it, but it looks hacky... I think I'll have to look at it again. One of these days :)
-
-    Revision 1.2  2001/07/15 20:16:38  falemagn
-    Implemented named pipes. Actually there are ONLY named pipes. The standard AmigaOS PIPE: can be implemented assigning PIPE: to PIPEFS:namedpipe. pipe() support is about to come
-
-
-    Desc: A PIPE filesystems, in which named and unnamed pipes can be created.
-    Lang: English
-
-    History:
-
-    2001/07/14 falemagn created
-
 */
+
 #define AROS_ALMOST_COMPATIBLE
 
 #define DEBUG 0
