@@ -393,14 +393,14 @@ static void stddrawer_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG
     int bottom = top + height - 1;
     int x, y;
     
-    #define XX(x)   x * (width - 1) / 100
-    #define YY(y)   y * (height - 1) / 100
+    #define XX(x)   (x * (width - 1) / 100)
+    #define YY(y)   (y * (height - 1) / 100)
     #define YOFF    45
     #define XOFF    24
     
     for(y = 0; y < YY(YOFF); y++)
     {
-    	x = XX(XOFF) * y / (YY(YOFF) - 1);
+    	x = (YY(XOFF) > 1) ? XX(XOFF) * y / (YY(YOFF) - 1) : 1;
         SetAPen(rport, mri->mri_Pens[MPEN_SHINE]);
 	RectFill(rport, left + XX(XOFF) - x, top + y, right - XX(XOFF) + x, top + y);
     	SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
@@ -472,15 +472,15 @@ void disk_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, LONG
     int bottom = top + height - 1;
     int x, y;
     
-    #define XX(x)   x * (width - 1) / 100
-    #define YY(y)   y * (height - 1) / 100
+    #define XX(x)   (x * (width - 1) / 100)
+    #define YY(y)   (y * (height - 1) / 100)
     #define YOFF    29
     #define XOFF    25
     
     SetAPen(rport, mri->mri_Pens[MPEN_SHADOW]);
     for(y = 0; y < YY(YOFF); y++)
     {
-    	x = XX(XOFF) * y / (YY(YOFF) - 1);
+    	x = (YY(YOFF) > 1) ? XX(XOFF) * y / (YY(YOFF) - 1) : 1;
 	RectFill(rport, left, top + y, right - XX(XOFF) + x, top + y);
     }    
     RectFill(rport, left, top + YY(YOFF), right, bottom);
@@ -602,7 +602,7 @@ void tape_play_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
 
     for(x = 0; x < width; x++)
     {
-    	int y = half * x / (width - 1);
+    	int y = (width > 1) ?  half * x / (width - 1) : 1;
 	
 	RectFill(rport, left + width - 1 - x, top + half - y, left + width - 1 - x, top + half + y);
     }
@@ -617,7 +617,7 @@ void tape_playback_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG wi
 
     for(x = 0; x < width; x++)
     {
-    	int y = half * x / (width - 1);
+    	int y = (width > 1) ? half * x / (width - 1) : 1;
 	
 	RectFill(rport, left + x, top + half - y, left + x, top + half + y);
     }
@@ -711,7 +711,7 @@ void tape_up_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width, L
 
     for(y = 0; y < height; y++)
     {
-    	int x = half * y / (height - 1);
+    	int x = (height > 1) ? half * y / (height - 1) : 1;
 	
 	RectFill(rport, left + half - x, top + y, left + half + x, top + y);
     }
@@ -726,7 +726,7 @@ void tape_down_draw(struct MUI_RenderInfo *mri, LONG left, LONG top, LONG width,
 
     for(y = 0; y < height; y++)
     {
-    	int x = half * y / (height - 1);
+    	int x = (height > 1) ? half * y / (height - 1) : 1;
 	
 	RectFill(rport, left + half - x, top + height - 1 - y, left + half + x, top + height - 1 - y);
     }
