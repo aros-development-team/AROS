@@ -141,6 +141,7 @@ struct IntFontReq
     UBYTE		ifo_MaxBackPen;
 
     STRPTR		*ifo_ModeList;
+    STRPTR  	    	 ifo_SampleText;
     UBYTE		*ifo_FrontPens;
     UBYTE		*ifo_BackPens;
 
@@ -244,6 +245,8 @@ struct AslReqInfo
 #define IF_USER_POSTEXT  (1 << 2)
 #define IF_USER_NEGTEXT  (1 << 3)
 #define IF_POPTOFRONT	 (1 << 4)
+#define IF_POPPEDTOFRONT (1 << 5)
+#define IF_OPENINACTIVE  (1 << 6)
 
 #define GetIR(ir) ((struct IntReq *)ir)
 
