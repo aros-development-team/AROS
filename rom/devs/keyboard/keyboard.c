@@ -119,7 +119,7 @@ static void *const functable[] =
 
 static AttrBase HiddKbdAB = 0;
 
-VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode, ULONG mode);
+VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
 AROS_UFP3(VOID, sendQueuedEvents,
     AROS_UFPA(struct KeyboardBase *, KBBase, A1),
     AROS_UFPA(APTR, thisfunc, A1),
@@ -400,7 +400,7 @@ AROS_LH1(void, beginio,
    inited before DOS is up and running.
    The name of the HIDD class is in
    ioStd(rew)->io_Data. Note that maybe we should
-   receive a pointer to an allreay created HIDD object instead.
+   receive a pointer to an already created HIDD object instead.
    Also note that the below is just a temporary hack, should
    probably use IRQ HIDD instead to set the IRQ handler.
 */   
@@ -467,6 +467,11 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     
     for(i = 0; i < nEvents; i++)
     {
+	/* Update eventpointer -- this must be done here as I must set
+	   ie_NextEvent to NULL if there are no more keys in the buffer. */
+	if(i != 0)
+	    event = event->ie_NextEvent;
+
 	code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
 	
 	if(kbUn->kbu_readPos == KB_BUFFERSIZE)
@@ -523,6 +528,7 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	
 	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
 			      + ALIGN(sizeof(struct InputEvent)));
+
     }
 
     D(bug("Done writing events!"));
@@ -594,7 +600,7 @@ BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
 #endif
 
 
-VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode, ULONG mode)
+VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 {
     D(bug("keyCallBack(KBBase=%p, keyCode=%d, mode=%d)\n"
     		, KBBase, keyCode, mode));
