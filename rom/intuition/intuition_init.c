@@ -218,6 +218,20 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	    return NULL; /* don't close anything */
     }
     
+    if (!TimerBase)
+    {
+	if (!(TimerMP = CreateMsgPort()))
+	    return NULL; /* don't close anything */
+
+	if (!(TimerIO = (struct timerequest *)CreateIORequest(TimerMP, sizeof(struct timerequest))))
+	    return NULL; /* don't close anything */
+
+	if (OpenDevice(TIMERNAME,UNIT_VBLANK, (struct IORequest *)TimerIO,0))
+	    return NULL; /* don't close anything */
+
+	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
+    }
+    
     if (!GetPrivIBase(LIBBASE)->WorkBench)
     {
 	struct Screen * screen;

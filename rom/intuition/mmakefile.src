@@ -52,6 +52,7 @@ FUNCTIONS := \
 	clearmenustrip \
 	closescreen \
 	closewindow \
+	currenttime \
 	disposeobject \
 	dogadgetmethoda \
 	doubleclick \

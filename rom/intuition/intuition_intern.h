@@ -49,6 +49,9 @@ struct IntIntuitionBase
     struct UtilityBase	   * UtilBase;
     struct Library	   * BOOPSIBase;
     struct Library	   * KeymapBase;
+    struct Library	   * TimerBase;
+    struct MsgPort	   * TimerMP;
+    struct timerequest	   * TimerIO;
 
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
@@ -109,6 +112,18 @@ extern struct IntuitionBase * IntuitionBase;
 #undef KeymapBase
 #endif
 #define KeymapBase (GetPrivIBase(IntuitionBase)->KeymapBase)
+#ifdef TimerBase
+#undef TimerBase
+#endif
+#define TimerBase (GetPrivIBase(IntuitionBase)->TimerBase)
+#ifdef TimerMP
+#undef TimerMP
+#endif
+#define TimerMP (GetPrivIBase(IntuitionBase)->TimerMP)
+#ifdef TimerIO
+#undef TimerIO
+#endif
+#define TimerIO (GetPrivIBase(IntuitionBase)->TimerIO)
 #ifdef BOOPSIBase
 #undef BOOPSIBase
 #endif
