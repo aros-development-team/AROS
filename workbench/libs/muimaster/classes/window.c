@@ -22,6 +22,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#include <string.h>
+
 #define MUI_OBSOLETE /* for the obsolette menu stuff */
 
 #include "mui.h"
