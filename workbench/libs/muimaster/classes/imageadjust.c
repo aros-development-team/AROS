@@ -44,6 +44,8 @@ struct MUI_ImageadjustData
     ULONG last_vector_selected;
     struct Hook vector_select_hook;
 
+    Object *color_group;
+
     Object *external_list;
     struct Hook external_display_hook;
 
@@ -198,16 +200,21 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct MUI_ImageadjustData *da
 		break;
 
 	case	'2':
-		{
-		    ULONG r,g,b;
-	     	    s += 2;
-		    r = strtoul(s,&s, 16);
-		    s++;
-		    g = strtoul(s,&s, 16);
-		    s++;
-		    b = strtoul(s,&s, 16);
-//		    return get_color_image_spec(r,g,b);
-		}
+	    switch(data->adjust_type)
+	    {
+		case MUIV_Imageadjust_Type_All:
+		case MUIV_Imageadjust_Type_Image:
+		    nfset(obj, MUIA_Group_ActivePage, 2);
+		    break;
+		case MUIV_Imageadjust_Type_Background:
+		    nfset(obj, MUIA_Group_ActivePage, 1);
+		    break;
+		default:
+		    nfset(obj, MUIA_Group_ActivePage, 0);
+		    break;
+	    }
+	    D(bug("imageadjust: setting color to %s\n", s));
+	    set(data->color_group, MUIA_Penadjust_Spec, (IPTR)s+2);
 		break;
 
 	case	'5':
@@ -321,6 +328,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data = INST_DATA(cl, obj);
     data->adjust_type = adjust_type;
+    data->color_group = color_group;
 
     if (adjust_type != MUIV_Imageadjust_Type_Pen)
     {
@@ -457,7 +465,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	LONG pos[5];
     };
 
-    static struct pages titi[] = 
+    static struct pages pages_per_type[] = 
     {
 	{ MUIV_Imageadjust_Type_Pen, { 2, -1, -1, -1, -1} },
 	{ MUIV_Imageadjust_Type_Background, { 0, 2, 4, -1, -1} },
@@ -482,11 +490,11 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 		    
 		    for (i = 0; i < 4; i++)
 		    {
-			if (titi[i].type == data->adjust_type)
+			if (pages_per_type[i].type == data->adjust_type)
 			    break;
 		    }
 
-		    act = titi[i].pos[act];
+		    act = pages_per_type[i].pos[act];
 
 		    switch (act)
 		    {
@@ -509,6 +517,20 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 					strcpy(data->imagespec,"0:128");
 				}
 				break;
+
+			case 2:
+			{
+			    struct MUI_PenSpec *penspec;
+
+			    get(data->color_group, MUIA_Penadjust_Spec, (IPTR)&penspec);
+			    if (penspec)
+			    {
+				D(bug("imageadjust: penspec = %s\n", penspec));
+				if ((data->imagespec = AllocVec(strlen((STRPTR)penspec)+3, 0)))
+				    sprintf(data->imagespec, "2:%s", penspec);
+			    }
+			}
+			break;
 
 			case    4: /* Bitmap */
 				{
