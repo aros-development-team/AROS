@@ -76,6 +76,13 @@ extern int vsprintf (char * str, const char * format, va_list args);
 extern int snprintf (char * str, size_t n, const char * format, ...);
 extern int vsnprintf (char * str, size_t n, const char * format, va_list args);
 
+extern int scanf (const char * format, ...);
+extern int vscanf (const char * format, va_list args);
+extern int fscanf (FILE * fh, const char * format, ...);
+extern int vfscanf (FILE * fh, const char * format, va_list args);
+extern int sscanf (char * str, const char * format, ...);
+extern int vsscanf (char * str, const char * format, va_list args);
+
 extern int fseek (FILE * stream, long offset, int whence);
 extern long ftell (FILE * stream);
 extern void rewind (FILE * stream);
@@ -83,7 +90,10 @@ extern int fgetpos (FILE * stream, fpos_t * pos);
 extern int fsetpos (FILE * stream, fpos_t * pos);
 
 #ifdef AROS_ALMOST_COMPATIBLE
-extern int __vcformat (void * data, int (*uc)(int, void *),
+extern int __vcformat (void * data, int (*outc)(int, void *),
+			const char * format, va_list args);
+extern int __vcscan (void * data, int (*getc)(void *),
+			int (*ungetc)(int, void *),
 			const char * format, va_list args);
 #endif
 

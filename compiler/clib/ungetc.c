@@ -31,8 +31,8 @@
 		return this character. If you push back more than one
 		character, then they will be returned in reverse order.
 		The function gurantees that one character can be
-		pushed back but no more. The EOF character cannot be
-		pushed back.
+		pushed back but no more. It is possible to push the EOF
+		character back into the stream.
 	stream - Read from this stream
 
     RESULT
@@ -72,8 +72,8 @@
 	break;
     }
 
-    if (c == EOF)
-	return EOF;
+    if (c < -1)
+	c = (unsigned int)c;
 
     if (!UnGetC (fh, c))
     {

@@ -15,12 +15,12 @@
 #include <float.h>
 
 #ifndef BITSPERBYTE
-#define BITSPERBYTE 8
+#   define BITSPERBYTE 8
 #endif
 
 /* a little macro to make life easier */
 #define OUT(c)  do                           \
-		{ if((*uc)((c),data)==EOF)   \
+		{ if((*outc)((c),data)==EOF)   \
 		    return outcount;	     \
 		  outcount++;		     \
 		}while(0)
@@ -48,7 +48,7 @@ unsigned char *__decimalpoint = ".";
 
 /*  SYNOPSIS */
 	void	   * data,
-	int	  (* uc)(int, void *),
+	int	  (* outc)(int, void *),
 	const char * format,
 	va_list      args)
 
@@ -57,8 +57,8 @@ unsigned char *__decimalpoint = ".";
 	to print.
 
     INPUTS
-	data - This is passed to the usercallback uc
-	uc - Call this function for every character that should be
+	data - This is passed to the usercallback outc
+	outc - Call this function for every character that should be
 		emitted. The function should return EOF on error and
 		> 0 otherwise.
 	format - A printf() format string.

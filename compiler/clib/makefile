@@ -17,6 +17,7 @@ FILES = \
 	__ioerr2errno \
 	__stdio \
 	__vcformat \
+	__vcscan \
 	abort \
 	abs \
 	atoi \
@@ -39,6 +40,7 @@ FILES = \
 	fgets \
 	fopen \
 	fprintf \
+	fscanf \
 	fputc \
 	fputs \
 	fread \
@@ -58,8 +60,10 @@ FILES = \
 	rand \
 	read \
 	realloc \
+	scanf \
 	snprintf \
 	sprintf \
+	sscanf \
 	strcasecmp \
 	strcat \
 	strchr \
@@ -82,9 +86,12 @@ FILES = \
 	strtoul \
 	ungetc \
 	vfprintf \
+	vfscanf \
 	vprintf \
+	vscanf \
 	vsnprintf \
 	vsprintf \
+	vsscanf \
 	write
 
 ifneq ($(FLAVOUR),native)
@@ -100,7 +107,7 @@ make-dirs:
 	@if [ ! -d $(INCDIR)/sys ]; then $(MKDIR) $(INCDIR)/sys ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
-test: $(TESTDIR)/snprintf
+test: $(TESTDIR)/snprint
 
 $(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
