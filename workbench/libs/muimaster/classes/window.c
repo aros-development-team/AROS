@@ -595,15 +595,18 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     /* try ActiveObject */
     if (data->wd_ActiveObject)
     {
-	/* sba: I'm not sure if the active object also receives
-	** other events than the muikey stuff first. IMO not.
-	** Also which method should be used? MUIM_HandleInput or
+	struct ObjNode *act;
+
+	/* sba: 
+	** Which method should be used for muikeys? MUIM_HandleInput or
 	** MUIM_HandleEvent. Also note that there is a flag MUI_EHF_ALWAYSKEYS
 	** which probably means that all keys events are requested??
 	** For now MUIM_HandleEvent is used as this is currently implemented
 	** in Area class ;) although I guess it should be MUIM_HandleInput as this
 	** was earlier
 	*/
+
+	act = data->wd_ActiveObject;
 
 #if 0
 	if (muikey != MUIKEY_NONE)
@@ -617,12 +620,14 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if ((ehn->ehn_Object == data->wd_ActiveObject->obj) &&
-		(ehn->ehn_Events & mask))
+	    if ((ehn->ehn_Object == act->obj) && (ehn->ehn_Events & mask))
 	    {
 		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
+
+		/* Leave the loop if a differnt object has been activated */
+		if (act != data->wd_ActiveObject) break;
 	    }
 	}
     }
