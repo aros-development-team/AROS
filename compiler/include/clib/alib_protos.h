@@ -12,9 +12,6 @@
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef INTUITION_INTUITION_H
-#   include <intuition/intuition.h>
-#endif
 #ifndef INTUITION_CLASSUSR_H
 #   include <intuition/classusr.h>
 #endif
@@ -23,6 +20,13 @@
 #endif
 #ifndef LIBRARIES_COMMODITIES_H
 #   include <libraries/commodities.h>
+#endif
+#ifndef AROS_ASMCALL_H
+#   include <aros/asmcall.h>
+#endif
+/*
+#ifndef INTUITION_INTUITION_H
+#   include <intuition/intuition.h>
 #endif
 #ifndef DEVICES_INPUTEVENT_H
 #   include <devices/inputevemt.h>
@@ -38,9 +42,12 @@
 #	include <stdarg.h>
 #   endif
 #endif
-#ifndef AROS_ASMCALL_H
-#   include <aros/asmcall.h>
-#endif
+*/
+
+struct MsgPort;
+struct IORequest;
+struct Task;
+struct InputEvent;
 
 /*
     Prototypes
