@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Include Lib
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-development-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-development
 %build_icons mmake=themes-gorilla-icons-aros-development icons=$(ICONS) \
              dir=$(AROS_DEVELOPMENT)

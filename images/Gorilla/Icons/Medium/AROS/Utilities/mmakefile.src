@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Clock Installer More MultiView
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-utilities-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-utilities
 %build_icons mmake=themes-gorilla-icons-aros-utilities icons=$(ICONS) \
              dir=$(AROS_UTILITIES)

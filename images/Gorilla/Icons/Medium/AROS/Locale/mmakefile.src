@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Help Catalogs Flags Countries
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-locale-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-locale
 %build_icons mmake=themes-gorilla-icons-aros-locale icons=$(ICONS) \
              dir=$(AROS_LOCALE)

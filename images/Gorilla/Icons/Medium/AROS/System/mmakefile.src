@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := About FixFonts FTManager Themes
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-system-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-system
 %build_icons mmake=themes-gorilla-icons-aros-system icons=$(ICONS) \
              dir=$(AROS_SYSTEM)

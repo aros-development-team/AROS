@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Sashimi
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-tools-debug-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-tools-debug
 %build_icons mmake=themes-gorilla-icons-aros-tools-debug icons=$(ICONS) \
              dir=$(AROS_TOOLS)/Debug

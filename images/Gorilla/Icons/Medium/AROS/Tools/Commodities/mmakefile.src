@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := AutoPoint Blanker ClickToFront Exchange FKey NoCapsLock Opaque
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-tools-commodities-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-tools-commodities
 %build_icons mmake=themes-gorilla-icons-aros-tools-commodities icons=$(ICONS) \
              dir=$(AROS_TOOLS)/Commodities
