@@ -1,5 +1,0 @@
-Current problems:
-in dos/hidds.c:
-  OpenLibrary("display.hidd",0) does not get into the open function in
-Driver/display_init.c
-OpenLibrary("hidd.gfx.display",0) crashes the system.
