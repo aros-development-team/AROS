@@ -122,10 +122,10 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->depth       = 8;
         data->displayable = FALSE;
-        data->format      = vHIDD_BitMap_Format_Planar;
+        data->format      = vHidd_BitMap_Format_Planar;
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
-        data->drMode    = HIDDV_GC_DrawMode_Copy;    /* drawmode               */
+        data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
         data->font      = NULL;     /* current fonts                           */
         data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
         data->linePat   = ~0;       /* LinePattern                             */
@@ -174,7 +174,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         {
             /* bitmap is not displayable */
 
-            if(data->format & vHIDD_BitMap_Format_Chunky)
+            if(data->format & vHidd_BitMap_Format_Chunky)
             {
 
                 data->bytesPerPixel = (data->depth + 7) / 8;
@@ -258,7 +258,7 @@ static void bitmap_dispose(Class *cl, Object *obj, Msg *msg)
     if (data->buffer)
     {
         D(bug("Has buffer %p\n", data->buffer));
-	if(data->format & vHIDD_BitMap_Format_Planar)
+	if(data->format & vHidd_BitMap_Format_Planar)
 	{
 	    D(bug("Planar, depth=%d\n", data->depth));
             /* buffer is a pointer to an array of planepointer */

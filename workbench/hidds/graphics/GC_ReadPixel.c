@@ -39,7 +39,7 @@ ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg)
 
     EnterFunc(bug("BitMap::GetPixel() x: %i y: %i\n", msg->x, msg->y));
 
-    if(BM->format & vHIDD_BitMap_Format_Chunky)
+    if(BM->format & vHidd_BitMap_Format_Chunky)
     {
         /* bitmap in chunky format */
 

@@ -64,7 +64,7 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->bitMap    = bitMap;   /* bitmap to which this gc is connected    */
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
-        data->drMode    = HIDDV_GC_DrawMode_Copy;    /* drawmode               */
+        data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
         data->font      = NULL;     /* current fonts                           */
         data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
         data->linePat   = ~0;       /* LinePattern                             */

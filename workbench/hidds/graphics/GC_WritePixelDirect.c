@@ -38,7 +38,7 @@ VOID bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg)
 
     EnterFunc(bug("BitMap::WritePixelDirect()\n"));
 
-    if(BM->format & vHIDD_BitMap_Format_Chunky)
+    if(BM->format & vHidd_BitMap_Format_Chunky)
     /* bitmap in chunky-mode */
     {
         /* bitmap in chunky-mode */

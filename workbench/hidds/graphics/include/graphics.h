@@ -194,8 +194,8 @@ enum {
 
 /* BitMap formats */
 
-#define vHIDD_BitMap_Format_Planar   0x1
-#define vHIDD_BitMap_Format_Chunky   0x2
+#define vHidd_BitMap_Format_Planar   0x1
+#define vHidd_BitMap_Format_Chunky   0x2
 
 
 /* messages for a bitmap */
