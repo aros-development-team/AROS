@@ -10,6 +10,7 @@
 #include <proto/utility.h>
 #include <oop/oop.h>
 #include <hidd/graphics.h>
+#include <aros/atomic.h>
 #include <proto/arossupport.h>
 
 #include "graphics_intern.h"
@@ -135,8 +136,8 @@ static void FakeGfxHidd_ObtainSemaphore(struct SignalSemaphore *sigSem, BOOL urg
 	    request, so we must be the last to get the semaphore.
 	*/
 
-#warning This must be atomic!
-	me->tc_SigRecvd &= ~SIGF_SINGLE;
+    	#warning This must be atomic!
+	AROS_ATOMIC_ANDL(me->tc_SigRecvd, ~SIGF_SINGLE);
 	
 	if (urgent)
 	{
