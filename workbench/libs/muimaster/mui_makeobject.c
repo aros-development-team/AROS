@@ -28,7 +28,7 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
     {
     	if (newmenu[i].nm_Type == NM_TITLE)
     	{
-	    menu = MenuitemObject, MUIA_Menuitem_Title, newmenu[i].nm_Label, End;
+	    menu = MenuitemObject, MUIA_Menuitem_Title, newmenu[i].nm_Label, MUIA_UserData, newmenu[i].nm_UserData, End;
 	    if (menu) DoMethod(menustrip, MUIM_Family_AddTail, menu);
 	    menuitem = NULL;
 	} else
