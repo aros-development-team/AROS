@@ -319,7 +319,7 @@ gdt_d:
                 .word   0,0,0,0         /* empty descriptor */
 
 TSS_d:          .word   0x0067          /* TSS limit 15:00 */
-                .word   TSS             /* TSS base 15:00 */
+                .word   0               /* TSS base 15:00 */
                 .byte   00              /* TSS base 23:16 */
                 .byte   0x89            /* Available 32-bit TSS */
                 .byte   00              /* G + TSS Limit 19:16 */
