@@ -99,10 +99,15 @@
       else /* it's not the first command and the previous command wasn't AreaMove() */
       {
         /* ... otherwise close the polygon if necessary */
-        if ( areainfo->VctrPtr[-1] != areainfo->FirstY ||
-             areainfo->VctrPtr[-2] != areainfo->FirstX   )
+        if ( areainfo->FlagPtr[-1] != 0x02 &&
+            (areainfo->VctrPtr[-1] != areainfo->FirstY ||
+             areainfo->VctrPtr[-2] != areainfo->FirstX   ))
+	{
           if (-1 == AreaDraw(rp, areainfo->FirstX, areainfo->FirstY))
             return -1;
+        }
+        /* mark the previous polygon as closed */
+        areainfo->FlagPtr[-1] = 2;
 
         areainfo->FirstX = x;
         areainfo->FirstY = y;
