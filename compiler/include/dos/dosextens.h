@@ -360,8 +360,10 @@ struct FileHandle
 
 /* fh_Flags. The flags are AROS specific and therefore PRIVATE.. */
 #define FHF_WRITE (~0UL/2+1)
-#define FHF_BUF    1
-#define FHF_APPEND 2
+#define FHF_BUF     1
+#define FHF_APPEND  2
+#define FHF_LINEBUF 4
+#define FHF_NOBUF   8
 
 /* Structure of a lock, as returned by Lock() and similar functions. This
    structure is not used by AROS. Lock() also returns a struct FileHandle! */
