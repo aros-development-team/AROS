@@ -18,8 +18,8 @@ AC_PREREQ(2.53)
 AC_CONFIG_AUX_DIR(scripts/autoconf)
 
 # Check what host we are running on.
-# If a target is not suggested, we use this one.
-AC_CANONICAL_HOST
+#If a target is not suggested, we use this one.
+#AC_CANONICAL_HOSTmake
 
 # The AROS target is slightly different to the normal GNU style
 # format. We don't have the middle part, and we reverse the order
@@ -250,8 +250,22 @@ case "$host_os" in
 		;;
 	esac
         ;;
+   mingw32*)
+	aros_host_arch="mingw32"
+	aros_host_cc="$aros_host_cc $aros_host_cc_pipe"
+	case "$host_cpu" in
+	    *i?86*)
+		aros_host_cpu="i386"
+		;;
+	    *)
+		AC_MSG_WARN("Unknown CPU for host -- $host_cpu")
+		aros_host_cpu="$host_cpu"
+		;;
+	esac
+        ;;
+
     *)
-	AC_MSG_ERROR([Unsupported host architecture $host])
+	AC_MSG_ERROR([Unsupported host architecture $host_os])
 	;;
 esac
 
