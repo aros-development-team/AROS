@@ -48,7 +48,7 @@ $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
 	chmod a+r $@
 
 $(DEST)toc.html : $(SRCS) tochtml.gawk
-	@echo "Generating HTML Autodocs"
+	@echo "Generating HTML AutoDocs"
 	@gawk -f tochtml.gawk $(SRCS) > $@
 	chmod a+r $@
 
@@ -71,7 +71,8 @@ $(DEST)adoc_index.html: $(DEST)adoc_index.tmp adocpost.gawk adoc_header.html \
 	chmod a+r $@
 
 $(DEST)adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
-	gawk -f adoc2html.gawk $(AUTODOC_SRCS) > $@
+	@echo "Generating HTML AutoDoc Index"
+	@gawk -f adoc2html.gawk $(AUTODOC_SRCS) > $@
 	chmod -R a+r $(DEST)autodocs
 
 $(DEST)inc_index.html: $(INCLUDE_SRCS)
