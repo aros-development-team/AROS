@@ -313,8 +313,8 @@ BOOL planarbm_setbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_PlanarBM_SetB
     pftags[0].ti_Data = bm->Depth;	/* PixFmt_Depth */
     pftags[1].ti_Data = bm->Depth;	/* PixFmt_BitsPerPixel */
     
-    bmtags[0].ti_Data = bm->Depth;
-    bmtags[1].ti_Data = bm->BytesPerRow * 8;
+    bmtags[0].ti_Data = bm->BytesPerRow * 8;
+    bmtags[1].ti_Data = bm->Rows;
     bmtags[2].ti_Data = (IPTR)pftags;
     
     /* Call private bitmap method to update superclass */
