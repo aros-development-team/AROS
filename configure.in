@@ -531,7 +531,11 @@ AC_PATH_X
 HAVE_XSHM_SUPPORT=0
 if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
   AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
-  CFLAGS="-I $x_includes"
+  if test -z "$x_includes" ; then
+    CFLAGS=""
+  else
+    CFLAGS="-I $x_includes"
+  fi
   LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
   AC_TRY_LINK([
 #include <sys/types.h>
