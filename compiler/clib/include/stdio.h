@@ -28,6 +28,7 @@
 #ifndef BUFSIZ
 #   define BUFSIZ 1024
 #endif
+#define FILENAME_MAX 1024
 
 #ifndef __typedef_FILE
 #   define __typedef_FILE

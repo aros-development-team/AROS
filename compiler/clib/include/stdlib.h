@@ -12,6 +12,7 @@
 #   include <sys/types.h>
 #endif
 
+#define EXIT_SUCCESS	0 /* Success exit status */
 #define EXIT_FAILURE	1 /* Failing exit status */
 
 void __attribute__ ((noreturn)) exit (int code);
