@@ -31,7 +31,8 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     struct TagItem tags[5];
     ULONG resolution;
 
-    resolution = (vi->vi_dri->dri_Resolution.X<<16)+vi->vi_dri->dri_Resolution.Y;
+    resolution = (vi->vi_dri->dri_Resolution.X<<16) +
+                  vi->vi_dri->dri_Resolution.Y;
 
     tags[0].ti_Tag = IA_Width;
     tags[0].ti_Data = stdgadtags[TAG_Width].ti_Data;
@@ -56,6 +57,7 @@ struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
     tags[3].ti_Data = TRUE;
     tags[4].ti_Tag = TAG_MORE;
     tags[4].ti_Data = (IPTR)stdgadtags;
+    ((struct IntuiText *)stdgadtags[TAG_IText].ti_Data)->LeftEdge = 0;
     gad = (struct Gadget *)NewObjectA(NULL, FRBUTTONCLASS, tags);
     if (!gad)
         DisposeObject(frame);
@@ -71,10 +73,10 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
     struct Gadget *obj;
     Class *cl;
     struct TagItem tags[] = {
-	{GA_RelVerify, 1L},
-	{GA_Disabled, 0L},
-	{GTCB_Checked, 0L},
-	{TAG_DONE, 0L}
+	{GA_RelVerify, TRUE},
+	{GA_Disabled, FALSE},
+	{GTCB_Checked, FALSE},
+	{TAG_MORE, 0L}
     };
 
     cl = makecheckclass(GadToolsBase);
@@ -83,6 +85,7 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 
     tags[1].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[2].ti_Data = GetTagData(GTCB_Checked, FALSE, taglist);
+    tags[3].ti_Data = (IPTR)stdgadtags;
 
     if (!GetTagData(GTCB_Scaled, FALSE, taglist))
     {
