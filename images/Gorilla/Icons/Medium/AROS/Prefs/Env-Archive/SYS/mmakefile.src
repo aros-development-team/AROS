@@ -10,6 +10,7 @@ ICONS := \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
     def_XCF def_Sound def_Keymap def_DVD def_DataType
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-prefs-envarc-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-prefs-envarc
 %build_icons mmake=themes-gorilla-icons-aros-prefs-envarc icons=$(ICONS) \
              dir=$(AROS_ENVARC)/SYS 

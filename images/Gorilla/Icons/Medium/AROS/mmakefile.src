@@ -6,5 +6,6 @@ include $(TOP)/config/make.cfg
 ICONS := Devs Storage Locale Tools Utilities Development Libs Extras System \
          Fonts Prefs C S T Demos Tests
 
+#MM- themes-gorilla-icons-clean : themes-gorilla-icons-aros-clean
 #MM- themes-gorilla-icons : themes-gorilla-icons-aros
 %build_icons mmake=themes-gorilla-icons-aros icons=$(ICONS) dir=$(AROSDIR)

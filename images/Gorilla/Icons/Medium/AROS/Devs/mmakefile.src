@@ -5,6 +5,7 @@ include $(TOP)/config/make.cfg
 
 ICONS := Drivers Midi Keymaps DataTypes
 
+#MM- themes-gorilla-icons-aros-clean : themes-gorilla-icons-aros-devs-clean
 #MM- themes-gorilla-icons-aros : themes-gorilla-icons-aros-devs
 %build_icons mmake=themes-gorilla-icons-aros-devs icons=$(ICONS) \
              dir=$(AROS_DEVS)
