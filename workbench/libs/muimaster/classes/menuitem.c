@@ -14,6 +14,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -300,6 +302,52 @@ static ULONG Menuitem_Dispose(struct IClass *cl, Object *obj, Msg msg)
 }
 
 
+/**************************************************************************
+ MUIM_ConnectParent
+**************************************************************************/
+static ULONG Menuitem_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    D(bug("Menuitem_ConnectParent(%p) %s\n", obj, OCLASS(obj)->cl_ID));
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    muiNotifyData(obj)->mnd_ParentObject = msg->parent;
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
+    }
+    return TRUE;
+}
+
+/**************************************************************************
+ MUIM_DisconnectParent
+**************************************************************************/
+static ULONG Menuitem_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    D(bug("Menuitem_DisconnectParent(%p) %s\n", obj, OCLASS(obj)->cl_ID));
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethodA(child, (Msg)msg);
+    }
+    muiNotifyData(obj)->mnd_ParentObject = NULL;
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    return TRUE;
+}
+
 BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -308,7 +356,8 @@ BOOPSI_DISPATCHER(IPTR, Menuitem_Dispatcher, cl, obj, msg)
 	case OM_DISPOSE: return Menuitem_Dispose(cl, obj, msg);
 	case OM_SET: return Menuitem_Set(cl, obj, (struct opSet *) msg);
 	case OM_GET: return Menuitem_Get(cl, obj, (struct opGet *) msg);
-
+	case MUIM_ConnectParent: return Menuitem_ConnectParent(cl, obj, (APTR)msg);
+	case MUIM_DisconnectParent: return Menuitem_DisconnectParent(cl, obj, (APTR)msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }

@@ -13,6 +13,8 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 #include "muimaster_intern.h"
 #include "mui.h"
 
@@ -190,6 +192,7 @@ static ULONG Family_AddTail(struct IClass *cl, Object *obj, struct MUIP_Family_A
 
     if (msg->obj)
     {
+/*  	D(bug("Family_AddTail(%p): obj=%p\n", obj, msg->obj)); */
 	AddTail(&(data->childs), (struct Node *)_OBJECT(msg->obj));
 	return TRUE;
     }
@@ -227,6 +230,7 @@ static ULONG Family_Remove(struct IClass *cl, Object *obj,
 
     if (msg->obj)
     {
+/*  	D(bug("Family_Remove(%p): obj=%p\n", obj, msg->obj)); */
 	Remove((struct Node *)_OBJECT(msg->obj));
 	return TRUE;
     }
@@ -360,51 +364,6 @@ static ULONG Family_SetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_Set
     return FALSE;
 }
 
-/**************************************************************************
- MUIM_ConnectParent
-**************************************************************************/
-static ULONG Family_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
-{
-    //struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object               *cstate;
-    Object               *child;
-    struct MinList       *ChildList;
-
-    DoSuperMethodA(cl,obj,(Msg)msg);
-
-    muiNotifyData(obj)->mnd_ParentObject = msg->parent;
-
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
-    cstate = (Object *)ChildList->mlh_Head;
-    while ((child = NextObject(&cstate)))
-    {
-	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
-    }
-    return TRUE;
-}
-
-/**************************************************************************
- MUIM_DisconnectParent
-**************************************************************************/
-static ULONG Family_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
-{
-    //struct MUI_GroupData *data = INST_DATA(cl, obj);
-    Object               *cstate;
-    Object               *child;
-    struct MinList       *ChildList;
-
-    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
-    cstate = (Object *)ChildList->mlh_Head;
-    while ((child = NextObject(&cstate)))
-    {
-	DoMethodA(child, (Msg)msg);
-	_flags(child) &= ~MADF_INVIRTUALGROUP;
-    }
-    muiNotifyData(obj)->mnd_ParentObject = NULL;
-    DoSuperMethodA(cl,obj,(Msg)msg);
-    return TRUE;
-}
-
 
 BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 {
@@ -438,10 +397,6 @@ BOOPSI_DISPATCHER(IPTR, Family_Dispatcher, cl, obj, msg)
 	return(Family_SetUData(cl, obj, (APTR)msg));
     case MUIM_SetUDataOnce :
 	return(Family_SetUDataOnce(cl, obj, (APTR)msg));
-    case MUIM_ConnectParent:
-	return Family_ConnectParent(cl, obj, (APTR)msg);
-    case MUIM_DisconnectParent:
-	return Family_DisconnectParent(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
