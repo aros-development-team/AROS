@@ -152,6 +152,7 @@ SHARED	:= \
 	gcvt \
 	getcwd \
 	getenv \
+	getfsstat \
         getpid \
 	gettimeofday \
 	gmtime \
@@ -202,6 +203,7 @@ SHARED	:= \
 	sigemptyset \
 	sigfillset \
 	sigismember \
+	signal \
 	sigpending \
 	sigprocmask \
 	sigsuspend \

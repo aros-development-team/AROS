@@ -7,7 +7,9 @@
 
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/mount.h>
 
+#include <signal.h>
 #include <assert.h>
 #include <dirent.h>
 #include <fcntl.h>
