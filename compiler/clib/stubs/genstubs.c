@@ -29,7 +29,7 @@ void emitstub(int n)
 
     fprintf(f, STUBCODE,
 	       names[n], "aroscbase",
-	       &(__AROS_GETJUMPVEC(0, n+1)->vec));
+	       &(__AROS_GETJUMPVEC(0, n+1+LIB_RESERVED)->vec));
 
     fclose(f);
     free(fname);
