@@ -66,7 +66,7 @@
 	This loop is unrolled
     */
 
-    if( (theId[0] < 0x20) || (theId[1] > 0x7e))
+    if( (theId[0] < 0x20) || (theId[0] > 0x7e))
 	return (FALSE);
     if( (theId[1] < 0x20) || (theId[1] > 0x7e))
 	return (FALSE);
