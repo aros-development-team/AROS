@@ -38,7 +38,7 @@ static char *StrDup(char *x)
 {
     char *dup;
     if (!x) return NULL;
-    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC | MEMF_CLEAR);
     if (dup) CopyMem((x), dup, strlen(x) + 1);
     return dup;
 }
@@ -131,7 +131,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.imagespecs[MUII_Cycle] = "1:6";
     data->prefs.imagespecs[MUII_PopUp] = "1:7";
     data->prefs.imagespecs[MUII_PopFile] = "1:8";
-    data->prefs.imagespecs[MUII_PopDrawer] = "0:128";
+    data->prefs.imagespecs[MUII_PopDrawer] = "1:9";
     data->prefs.imagespecs[MUII_PropKnob] = "0:128";
     data->prefs.imagespecs[MUII_Drawer] = "0:128";
     data->prefs.imagespecs[MUII_HardDisk] = "0:128";
@@ -303,6 +303,50 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	else data->prefs.muikeys[i].ix_well = 0;
     }
 
+    /* Zune registers */
+    data->prefs.register_look = REGISTER_LOOK_TRADITIONAL;
+    data->prefs.register_truncate_titles = FALSE; /* loosers want full titles */
+
+    /* Buttons */
+    data->prefs.radiobutton_hspacing = 4;
+    data->prefs.radiobutton_vspacing = 2;
+
+    /* Cycles */
+    data->prefs.cycle_menu_position = CYCLE_MENU_POSITION_CENTERED;
+    data->prefs.cycle_menu_min_entries = 2;
+    data->prefs.cycle_menu_speed = 0;
+    data->prefs.cycle_menu_recessed_entries = TRUE;
+
+    /* Strings */
+    
+    /* Lists */
+    data->prefs.list_linespacing = 2;
+
+    /* Navigation */
+    data->prefs.dragndrop_left_button = FALSE;
+    data->prefs.dragndrop_left_modifier.readable_hotkey = StrDup("control");
+    data->prefs.dragndrop_middle_button = FALSE;
+    data->prefs.dragndrop_middle_modifier.readable_hotkey = StrDup("control");
+    data->prefs.dragndrop_autostart = -1;
+    data->prefs.dragndrop_look = DND_LOOK_GHOSTED_ON_BOX;
+    data->prefs.balancing_look = BALANCING_SHOW_FRAMES;
+
+    if (data->prefs.dragndrop_left_modifier.readable_hotkey)
+	data->prefs.dragndrop_left_modifier.ix_well = 
+	    !ParseIX(data->prefs.dragndrop_left_modifier.readable_hotkey,
+		     &data->prefs.dragndrop_left_modifier.ix);
+    else
+	data->prefs.dragndrop_left_modifier.ix_well = 0;
+
+    if (data->prefs.dragndrop_middle_modifier.readable_hotkey)
+	data->prefs.dragndrop_middle_modifier.ix_well = 
+	    !ParseIX(data->prefs.dragndrop_middle_modifier.readable_hotkey,
+		     &data->prefs.dragndrop_middle_modifier.ix);
+    else
+	data->prefs.dragndrop_middle_modifier.ix_well = 0;
+
+    /* Scrollbars */
+    data->prefs.sb_look = SB_LOOK_TOP;
 
     return (ULONG)obj;
 }
@@ -314,6 +358,11 @@ static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     int i;
+
+    if (data->prefs.dragndrop_left_modifier.readable_hotkey)
+	FreeVec(data->prefs.dragndrop_left_modifier.readable_hotkey);
+    if (data->prefs.dragndrop_middle_modifier.readable_hotkey)
+	FreeVec(data->prefs.dragndrop_middle_modifier.readable_hotkey);
 
     for (i = 0; i < MUIKEY_COUNT; i++)
     {
