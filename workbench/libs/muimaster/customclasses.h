@@ -19,7 +19,7 @@ BOOPSI_DISPATCHER(IPTR, name ## _Dispatcher, __class, __self, __msg)  \
             return DoSuperMethodA(__class, __self, __msg);            \
     }                                                                 \
                                                                       \
-    return NULL;                                                      \
+    return (IPTR) NULL;                                               \
 }                                                                     \
                                                                       \
 struct MUI_CustomClass * name ## _CLASS;                              \
