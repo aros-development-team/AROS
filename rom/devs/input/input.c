@@ -253,7 +253,7 @@ AROS_LH1(void, beginio,
     	break;
     	
     default:
-	error=ERROR_NOT_IMPLEMENTED;
+	error = IOERR_NOCMD;
 	break;
     }
     
@@ -261,6 +261,7 @@ AROS_LH1(void, beginio,
     {
         /* Mark IO request to be done non-quick */
     	ioreq->io_Flags &= ~IOF_QUICK;
+    	/* Send to input device task */
     	PutMsg(InputDevice->CommandPort, (struct Message *)ioreq);
     }
     else
@@ -269,19 +270,11 @@ AROS_LH1(void, beginio,
     	/* If the quick bit is not set but the IO request was done quick,
     	** reply the message to tell we're throgh
     	*/
+    	ioreq->io_Error = error;
    	if (!(ioreq->io_Flags & IOF_QUICK))
 	    ReplyMsg (&ioreq->io_Message);
     }
 
-    /* Trigger a rescedule every now and then */
-/*    if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
-       SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
-    {
-	SysBase->ThisTask->tc_State=TS_READY;
-	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-	Switch();
-    }
-*/    
     D(bug("id: Return from BeginIO()\n"));
 
     AROS_LIBFUNC_EXIT
