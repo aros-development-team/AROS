@@ -19,7 +19,7 @@ struct DateStamp ds;
 		blockbuffer->buffer[BLK_CHECKSUM]=0;
 		if (!blockbuffer->buffer[BLK_PARENT(volume)])
 			break;
-		blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume, blockbuffer->buffer));
+		blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
 		writeBlock(volume,blockbuffer);
 		blockbuffer=getBlock(volume, AROS_LONG2BE(blockbuffer->buffer[BLK_PARENT(volume)]));
 		if (!blockbuffer)
@@ -30,7 +30,7 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_DAYS(volume)]=AROS_LONG2BE(ds.ds_Days);
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume, blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock, blockbuffer->buffer));
 	writeBlock(volume,blockbuffer);
 	return 0;
 }

@@ -25,7 +25,7 @@ struct BlockCache *blockbuffer;
 		showText("Couldnt read bitmap block %d\nCount used blocks failed!",block);
 		return count;
 	}
-	if (!calcChkSum(volume, blockbuffer->buffer)) {
+	if (!calcChkSum(volume->SizeBlock, blockbuffer->buffer)) {
 		while (maxcount>=32) {
 			lg=AROS_BE2LONG(blockbuffer->buffer[i]);
 			if (!lg) {
@@ -117,7 +117,7 @@ ULONG i,blocks,maxinbitmap;
 	bitmapblock=getFreeCacheBlock(volume,volume->rootblock+1);
 	for (i=1;i<volume->SizeBlock;i++)
 		bitmapblock->buffer[i]=0xFFFFFFFF;								//all blocks are free
-	bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume,bitmapblock->buffer));
+	bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
 	blocks=volume->rootblock*2-volume->bootblocks;					//blocks to mark in bitmaps
 	maxinbitmap=(volume->SizeBlock-1)*32;			//max blocks marked in a bitmapblock
 	//first create bitmapblocks stored in rootblock
@@ -170,7 +170,7 @@ struct BlockCache *blockbuffer;
 		return DOSFALSE;
 	blockbuffer->buffer[BLK_BITMAP_VALID_FLAG(volume)]=flag;
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
 	writeBlock(volume, blockbuffer);
 	// in case of a concurrent access
 	blockbuffer->blocknum=0;
@@ -199,7 +199,7 @@ LONG validBitmap(struct Volume *volume) {
 
 	if (bitmapblock->flags & BCF_WRITE) {
 		bitmapblock->buffer[0]=0;
-		bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume,bitmapblock->buffer));
+		bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
 		writeBlock(volume, bitmapblock);
 		bitmapblock->flags &= ~BCF_WRITE;
 	}
@@ -231,7 +231,7 @@ ULONG bblock,togo,maxinbitmap;
 		bblock = block/maxinbitmap;	// in the bblock-th bitmap block is "block" marked
 		if (bitmapblock->flags & BCF_WRITE) {
 			bitmapblock->buffer[0]=0;
-			bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume,bitmapblock->buffer));
+			bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
 			writeBlock(volume, bitmapblock);
 			bitmapblock->flags &= ~BCF_WRITE;
 		}

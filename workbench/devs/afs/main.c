@@ -126,7 +126,7 @@ UWORD i;
 			blockbuffer->buffer[volume->SizeBlock-2]=0;
 			blockbuffer->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(ST_ROOT);
 			blockbuffer->buffer[BLK_CHECKSUM]=0;
-			blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,blockbuffer->buffer));
+			blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
 			writeBlock(volume,blockbuffer);
 			blockbuffer->flags &= ~BCF_USED;
 			invalidBitmap(volume);
@@ -155,7 +155,7 @@ struct DateStamp ds;
 	blockbuffer->buffer[BLK_VOLUME_MINS(volume)]=AROS_LONG2BE(ds.ds_Minute);
 	blockbuffer->buffer[BLK_VOLUME_TICKS(volume)]=AROS_LONG2BE(ds.ds_Tick);
 	blockbuffer->buffer[BLK_CHECKSUM]=0;
-	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,blockbuffer->buffer));
+	blockbuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,blockbuffer->buffer));
 	writeBlock(volume, blockbuffer);
 	initDeviceList(volume, blockbuffer);	// update devicelist info (name)
 	addDosVolume(volume);						// add new volume entry

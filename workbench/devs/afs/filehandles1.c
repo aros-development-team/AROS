@@ -44,7 +44,7 @@ ULONG key;
 		error=ERROR_UNKNOWN;
 		return 0;
 	}
-	if (calcChkSum(volume, blockbuffer->buffer)) {
+	if (calcChkSum(volume->SizeBlock, blockbuffer->buffer)) {
 		showError(ERR_CHECKSUM,blockbuffer->blocknum);
 		error=ERROR_UNKNOWN;
 		return 0;
@@ -65,7 +65,7 @@ ULONG key;
 			error=ERROR_UNKNOWN;
 			return 0;
 		}
-		if (calcChkSum(volume, blockbuffer->buffer)) {
+		if (calcChkSum(volume->SizeBlock, blockbuffer->buffer)) {
 			showError(ERR_CHECKSUM,blockbuffer->blocknum);
 			error=ERROR_UNKNOWN;
 			return 0;
@@ -110,20 +110,13 @@ UBYTE buffer[32];
 		error=ERROR_UNKNOWN;
 		return 0;
 	}
-	if (calcChkSum(dirah->volume, blockbuffer->buffer)) {
+	if (calcChkSum(dirah->volume->SizeBlock, blockbuffer->buffer)) {
 		showError(ERR_CHECKSUM,*block);
 		error=ERROR_UNKNOWN;
 		return 0;
 	}
 	if (AROS_BE2LONG(blockbuffer->buffer[BLK_PRIMARY_TYPE])!=T_SHORT) {
 		showError(ERR_BLOCKTYPE,*block);
-		error=ERROR_OBJECT_WRONG_TYPE;
-		return 0;
-	}
-	if ((AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_ROOT) &&
-		(AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_USERDIR) &&
-		(AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_LINKDIR))
-	{
 		error=ERROR_OBJECT_WRONG_TYPE;
 		return 0;
 	}
@@ -146,6 +139,13 @@ UBYTE buffer[32];
 		}
 		else
 		{
+			if ((AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_ROOT) &&
+			(AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_USERDIR) &&
+			(AROS_BE2LONG(blockbuffer->buffer[BLK_SECONDARY_TYPE(dirah->volume)])!=ST_LINKDIR))
+			{
+				error=ERROR_OBJECT_WRONG_TYPE;
+				return 0;
+			}
 			pos=buffer;
 			while ((*name) && (*name!='/'))
 			{
@@ -160,6 +160,7 @@ UBYTE buffer[32];
 				break;		//object not found or other error
 		}
 	}
+	D(bug("afs.handler:   findBlock: block=%ld\n",blockbuffer->blocknum));
 	return blockbuffer;
 }
 
@@ -383,7 +384,7 @@ void writeExtensionBlock(struct Volume *volume, struct BlockCache *extension, UL
 	extension->buffer[BLK_BLOCK_COUNT]=AROS_LONG2BE(BLK_TABLE_END(volume)-(filekey-1));
 	extension->buffer[BLK_EXTENSION(volume)]=AROS_LONG2BE(next);
 	extension->buffer[BLK_CHECKSUM]=0;
-	extension->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume,extension->buffer));
+	extension->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,extension->buffer));
 	writeBlock(volume,extension);
 }
 
@@ -448,7 +449,7 @@ ULONG destination;
 				}
 				databuffer->buffer[BLK_NEXT_DATA]=AROS_LONG2BE(block);
 				databuffer->buffer[BLK_CHECKSUM]=0;
-				databuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(ah->volume,databuffer->buffer));
+				databuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(ah->volume->SizeBlock,databuffer->buffer));
 				writeBlock(ah->volume,databuffer);
 			}
 			if (!(databuffer=getFreeCacheBlock(ah->volume,block))) {
@@ -483,7 +484,7 @@ ULONG destination;
 			databuffer->buffer[BLK_DATA_SIZE]=AROS_BE2LONG(databuffer->buffer[BLK_DATA_SIZE])+AROS_LONG2BE(size);
 			databuffer->buffer[BLK_NEXT_DATA]=0;
 			databuffer->buffer[BLK_CHECKSUM]=0;
-			databuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(ah->volume,databuffer->buffer));
+			databuffer->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(ah->volume->SizeBlock,databuffer->buffer));
 		}
 		writeBlock(ah->volume,databuffer);
 		length -= size;
@@ -575,6 +576,7 @@ struct BlockCache *blockbuffer;
 				block=0;
 		}
 		if (offset==0) {
+			error=0;
 			old=ah->current.offset;
 			ah->current.block=block;
 			ah->current.filekey=filekey;
