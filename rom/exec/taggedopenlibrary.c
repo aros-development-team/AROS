@@ -27,10 +27,10 @@ char *libnames[] =
 char *copyrights[] =
 {
     "AMIGA Replacement Operating System (AROS)",
-    "Copyright © 1996, 1997 ",
+    "Copyright © 1995-1997 ",
     "AROS - The Amiga Replacement OS  ",
     "© 1985-1996 ESCOM AG",
-    "ALPHA OS ",
+    "ALPHA RELEASE ",
     "exec.library",
     "exec 40.100 (12.12.96)\013\010"
 };
