@@ -472,7 +472,7 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
 
 	width = msg->width;
 
-	if ((phase = (long)s_start & 3L))
+	if ((phase = ((long)s_start & 3L)))
 	{
 	    phase = 4 - phase;
 	    if (phase > width) phase = width;
