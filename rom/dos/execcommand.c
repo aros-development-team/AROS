@@ -14,7 +14,7 @@
 */
 
 
-#  define  DEBUG  0
+#  define  DEBUG  1
 #  include <aros/debug.h>
 
 #include "dos_intern.h"
@@ -75,6 +75,7 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 	if(comStr == NULL)
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
+
 	    return FALSE;
 	}
 	
@@ -86,14 +87,17 @@ BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
 
     kprintf("Execcommand: Got commandline... %s\n", comStr);
 
-    /* TODO: Support segments */
     shellSeg = LoadSeg(shell);
     
+    tags[0].ti_Data = (IPTR)shellSeg;
+
     /* If this is a synchronous call, we set the process' windowptr
        to our own. */
     if(type != RUN_SYSTEM_ASYNCH)
+    {
 	tags[13].ti_Data = (IPTR)me->pr_WindowPtr;
-    
+    }    
+
     /* Clone tag items so we don't mess up the users memory when filtering
        It's OK if tl == NULL, as this is handled by CloneTagItems() */
     newTags = CloneTagItems(tl);
