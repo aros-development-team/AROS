@@ -925,7 +925,7 @@ static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct I
 	data->mad_ccn.ehn_Object = obj;
 	data->mad_ccn.ehn_Class = cl;
 	DoMethod(_win(obj), MUIM_Window_AddControlCharHandler, (IPTR)&data->mad_ccn);
-    }    
+    }
 }
 
 
@@ -959,7 +959,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	zune_imspec_setup(&data->mad_SelBack, muiRenderInfo(obj));
     }
 
-    if (data->mad_InputMode != MUIV_InputMode_None)
+    if (data->mad_InputMode != MUIV_InputMode_None || data->mad_ContextMenu)
     {
 	data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 	DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
@@ -1165,11 +1165,6 @@ static ULONG Area_DeleteShortHelp(struct IClass *cl, Object *obj, struct MUIP_De
     return TRUE;
 }
 
-static void
-handle_popupmenu(struct IClass *cl, Object *obj)
-{
-}
-
 /* either lmb or press key */
 static void handle_press(struct IClass *cl, Object *obj)
 {
@@ -1264,11 +1259,18 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	case    MENUDOWN:
 		if (in)
 		{
-//	            set(_win(obj), MUIA_Window_ActiveObject, obj);
-        	    handle_popupmenu(cl, obj);
+		    printf("Display Menu\n");
 	            return MUI_EventHandlerRC_Eat;
         	}
 	        break;
+
+	case    MENUUP:
+		if (data->mad_ContextMenuWindow)
+		{
+		    data->mad_ContextMenuWindow = NULL;
+	            return MUI_EventHandlerRC_Eat;
+		}
+		break;
     }
 
     return 0;
@@ -1327,7 +1329,7 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 
-    if (data->mad_InputMode == MUIV_InputMode_None) return 0;
+    if (data->mad_InputMode == MUIV_InputMode_None && !data->mad_ContextMenu) return 0;
 
     if (msg->muikey != MUIKEY_NONE)
     {
