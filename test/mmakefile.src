@@ -9,6 +9,7 @@ FILES := devicetest \
 	dosvartest \
 	exceptiontest \
 	filetest \
+	matchtest \
 	messagetest \
 	scantest \
 	semaphoretest \
