@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function ActivateGadget()
@@ -59,27 +59,39 @@
     
     if (gadget && (window || requester))
     {
-	if (((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) ||
-            ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
+    	if (!(gadget->Activation & GACT_ACTIVEGADGET))
 	{
-	    msg = AllocIntuiActionMsg(AMCODE_ACTIVATEGADGET, window, IntuitionBase);
-
-	    if (NULL != msg)
+	    if (((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) ||
+        	((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_STRGADGET))
 	    {
-		msg->iam_ActivateGadget.Gadget = gadget;
+		msg = AllocIntuiActionMsg(AMCODE_ACTIVATEGADGET, window, IntuitionBase);
 
-		SetSignal(0,SIGF_INTUITION);
-		SendIntuiActionMsg(msg, IntuitionBase);
-		Wait(SIGF_INTUITION);
+		if (NULL != msg)
+		{
+		    msg->iam_ActivateGadget.Gadget = gadget;
 
-		success = (BOOL)msg->Code;
+		    SetSignal(0,SIGF_INTUITION);
+		    SendIntuiActionMsg(msg, IntuitionBase);
+		    Wait(SIGF_INTUITION);
 
-		FreeIntuiActionMsg(msg, IntuitionBase);
-	    }   
+		    success = (BOOL)msg->Code;
+
+		    FreeIntuiActionMsg(msg, IntuitionBase);
+		    
+		}   
+		
+	    }
+	    
+	} /* if (!(gadget->Activation & GACT_ACTIVEGADGET)) */
+	else
+	{
+	    success = TRUE;
 	}
-    }
+	
+    } /* if (gadget && (window || requester)) */
     
     return success;
 
     AROS_LIBFUNC_EXIT
+    
 } /* ActivateGadget */
