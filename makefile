@@ -12,7 +12,7 @@ DEP_LIBS= $(LIBDIR)/libAmigaOS.a \
 LIBS=-L$(LIBDIR) \
 	$(GENDIR)/filesys/emul_handler.o -lAmigaOS -laros
 
-SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
+SUBDIRS = $(KERNEL) aros clib exec dos utility graphics intuition \
 	alib filesys libs devs c Demos
 DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
