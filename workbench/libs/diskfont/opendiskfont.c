@@ -82,18 +82,27 @@
     BOOL 			matchfound = FALSE;
 
     D(bug("OpenDiskFont(textAttr=%p)\n", textAttr));
+    D(bug("Name %s YSize %ld Style 0x%lx Flags 0x%lx\n",
+          textAttr->ta_Name,
+          textAttr->ta_YSize,
+          textAttr->ta_Style,
+          textAttr->ta_Flags));
 
     tf=OpenFont(textAttr);
-    if (tf) {
+    if (tf)
+    {
+      D(bug("openfont tf 0x%lx\n", tf));
       if (WeighTAMatch((struct TTextAttr *) textAttr, (struct TextAttr *)(((int)&tf->tf_YSize)-4), 
           ((struct TextFontExtension *)tf->tf_Extension)->tfe_Tags) != MAXFONTMATCHWEIGHT) 
       {
+	D(bug("weight is not right..search better font\n"));
         CloseFont(tf);
         tf=NULL;
       }
     }        
 
-    if (!tf) {
+    if (!tf)
+    {
     
       /* PerfectMatch info should be passed to hook */
    
@@ -108,11 +117,18 @@
   
   	hook = &(DFB(DiskfontBase)->hdescr[idx].ahd_Hook);
   
+	D(bug("fonthook[%ld] 0x%lx\n",idx,hook));
+  
   	/* Initalize the hook */
   	fhc.fhc_Command = FHC_ODF_INIT;
   
   	if ( !CallHookPkt(hook, &fhc, DFB(DiskfontBase) ))
+	{
+	    D(bug("Init failed\n"));
   	    continue; /* Go on with next hook */
+	}
+  
+	D(bug("try to match it\n"));
   
   	/* Ask the hook for info on a font */
   	fhc.fhc_Command = FHC_ODF_GETMATCHINFO;
@@ -123,10 +139,14 @@
   	    destattr->tta_Tags = 0;
   
   	    retval = CallHookPkt(hook, &fhc, DFB(DiskfontBase));
+	    D(bug("retval 0x%lx\n",retval));
   
   	    /* Error or finished scanning ? */
   	    if (!retval || (retval & FH_SCANFINISHED))
+	    {
+		D(bug("match failed\n"));
   		break;
+	    }
   
       	#if 0
   	    /* WeightTAMatch does not compare the fontnames, so we do it here */
@@ -137,7 +157,7 @@
   	    /* How well does this font match ? */
   	    new_match_weight = WeighTAMatch((struct TTextAttr *) textAttr, (struct TextAttr *)destattr, destattr->tta_Tags);
   
-  	    D(bug("New matchweight: %d", new_match_weight));					
+  	    D(bug("New matchweight: %d\n", new_match_weight));					
   
   	    /* Better match found ? */
   
@@ -157,6 +177,8 @@
   		    
   		    cleanup_fhc.fhc_Command  = FHC_ODF_CLEANUP;
   		    cleanup_fhc.fhc_UserData = bestmatch_userdata;
+
+		    D(bug("cleanup font\n"));
   		    CallHookPkt(bestmatch_hook, &cleanup_fhc, DFB(DiskfontBase) );
   		    
   		}
@@ -182,6 +204,8 @@
   	{
   	    /* Tell the hook to cleanup */
   	    fhc.fhc_Command = FHC_ODF_CLEANUP;
+
+	    D(bug("cleanup font\n"));
   	    CallHookPkt(hook, &fhc, DFB(DiskfontBase) );
   	}
   	else
@@ -198,17 +222,23 @@
       if (matchfound)
       {
   
+	D(bug("match found\n"));
   	/* Open the font */
   	fhc.fhc_Command     	    = FHC_ODF_OPENFONT;
   	fhc.fhc_UserData    	    = bestmatch_userdata;
       	fhc.fhc_ReqAttr     	    = (struct TTextAttr*)textAttr;
       	fhc.fhc_DestTAttr           = best_so_far;
   		
+	D(bug("open font\n"));
+
   	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
   	tf = fhc.fhc_TextFont;
   
+	D(bug("tf 0x%lx\n",tf));
+
       	if (tf)
   	{
+	    D(bug("extend font\n"));
   	    if (ExtendFont(tf, NULL))
   	    {
   		#warning CHECKME
@@ -223,6 +253,9 @@
       	/* cleanup only here, because of [1] */
   	 
   	fhc.fhc_Command = FHC_ODF_CLEANUP;
+
+	D(bug("cleanup font\n"));
+
   	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
   	
       }

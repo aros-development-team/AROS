@@ -32,7 +32,7 @@
 
 /****************************************************************************************/
 
-struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
+struct FontDescrHeader *ReadFontDescr(CONST_STRPTR filename, BOOL ProgdirFlag, struct DiskfontBase_intern *DiskfontBase)
 {
     struct FontDescrHeader  *fdh = 0;
     struct TTextAttr 	    *tattr;
@@ -105,7 +105,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     
     tattr = fdh->TAttrArray;
         
-    for (; numentries --; )
+    while (numentries--)
     {
         
         /* Read the fontname */
@@ -128,11 +128,15 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
 	   example FONTS:helvetica/15 */
 	   
     	{
-    	    STRPTR filepart = FilePart(filename);
+	    CONST_STRPTR filepart = FilePart(filename);
 	    LONG pathlen, len;
 	    
 	    pathlen = ((IPTR)filepart) - ((IPTR)filename);
+#ifdef PROGDIRFONTSDIR
+	    len = oldstrlen + (pathlen ? pathlen : (ProgdirFlag ? sizeof(PROGDIRFONTSDIR) : sizeof(FONTSDIR)));
+#else
     	    len = oldstrlen + (pathlen ? pathlen : sizeof(FONTSDIR));
+#endif
 	    
 	    if (!(tattr->tta_Name = AllocVec(len + 1, MEMF_ANY)))
 	    	goto failure;
@@ -144,9 +148,16 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
 	    }
 	    else
 	    {
+#ifdef PROGDIRFONTSDIR
+		if (ProgdirFlag)
+		    strcpy(tattr->tta_Name, PROGDIRFONTSDIR);
+		else
+#endif
 	    	strcpy(tattr->tta_Name, FONTSDIR);
 	    }
 	    strcat(tattr->tta_Name, strbuf);
+
+	    D(bug("ReadFontDescr: tta_Name \"%s\"\n", tattr->tta_Name));
 	}
        	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */
@@ -215,7 +226,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
 
         tattr ++;
         
-    } /* for (; numentries --; ) */
+    } /* while (numentries--) */
     
     Close(fh); fh = 0;
       

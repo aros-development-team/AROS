@@ -160,8 +160,16 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
     
     struct FontInfoNode *finode = 0;
     
+    struct Process *Self;
+    APTR OldWinPtr;
+
     D(bug("ReadCache(userflags=%d, filist=%p)\n", userflags, filist));
 
+    /* Hide possible requesters */
+
+    Self = (struct Process *) FindTask(NULL);
+    OldWinPtr = Self->pr_WindowPtr;
+    Self->pr_WindowPtr = (APTR) -1;
     
     /* Open the cache file */
     if (!(fh = Open(CACHE_FILE, MODE_OLDFILE)))
@@ -179,7 +187,7 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
     
     /* Read all the cache elements */
       
-    for (; numentries --; )
+    while (numentries--)
     {
 	finode = AllocFIN(filist, DFB(DiskfontBase) );
 	if (!finode)
@@ -235,16 +243,20 @@ BOOL ReadCache(ULONG userflags, struct MinList *filist, struct DiskfontBase_inte
 	    	    
 	} /* if ( !(finode->Flags & FDF_REUSETAGS) ) */
         
-    } /* for (; numentries--; ); */
+    } /* while (numentries--) */
     
     Close(fh);
     
+    Self->pr_WindowPtr = OldWinPtr;
+
     ReturnBool ("ReadCache", TRUE);
     
 rc_failure:
     if (fh)
         Close(fh);
         
+    Self->pr_WindowPtr = OldWinPtr;
+
     ReturnBool ("ReadCache", FALSE);
 }
 
@@ -263,10 +275,17 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
     
     struct DateStamp now;
     
+    struct Process *Self;
+    APTR OldWinPtr;
+
     D(bug("WriteCache(filist=%p)\n", filist));
 
-    /* Open the font file for writing */
+    /* Hide possible requesters */
+    Self = (struct Process *) FindTask(NULL);
+    OldWinPtr = Self->pr_WindowPtr;
+    Self->pr_WindowPtr = (APTR) -1;
     
+    /* Open the font file for writing */
     if (!(fh = Open(CACHE_FILE,MODE_NEWFILE)))
         goto wc_failure;
 
@@ -289,6 +308,9 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
     {
     	D(bug("\tWCache: Examining node %s\n", node->TAF.taf_Attr.tta_Name));
         /* Only write fonts residing on disk to the cache */
+
+#warning "FIXME: PROGDIR: fonts should not be saved to cache..."
+#warning "FIXME: Maybe fix it by not listing PROGDIR: fonts in the first place?"
         if ( node->TAF.taf_Type & AFF_DISK)
         {
             D(bug("\tWCache: Diskfont found\n"));
@@ -339,6 +361,8 @@ BOOL WriteCache(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase
         
     Close(fh);
     
+    Self->pr_WindowPtr = OldWinPtr;
+
     ReturnBool ("WriteCache", TRUE);
     
     
@@ -347,8 +371,11 @@ wc_failure:
     if (fh)
         Close(fh);
         
-    ReturnBool ("WriteCache", FALSE);
+    DeleteFile(CACHE_FILE);
 
+    Self->pr_WindowPtr = OldWinPtr;
+
+    ReturnBool ("WriteCache", FALSE);
 }
 
 /****************************************************************************************/
@@ -376,9 +403,17 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
     
     struct DateStamp cachedate;
     
+    struct Process *Self;
+    APTR OldWinPtr;
+
     D(bug("OKToReadCache(void)\n"));
 
-    if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0)
+    /* Hide possible requesters */
+    Self = (struct Process *) FindTask(NULL);
+    OldWinPtr = Self->pr_WindowPtr;
+    Self->pr_WindowPtr = (APTR) -1;
+
+    if ((fh = Open(CACHE_FILE, MODE_OLDFILE)))
     {
         if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, (void *)fh))
         {
@@ -403,7 +438,10 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
                       
                             /* Is cache older than fontsource ? */
                             if (CompareDates(&cachedate, &fontsourcedate) > 0)
+                            {
                                 cacheok = FALSE;
+                                break;
+                            }
                         }
 			
                     }
@@ -411,13 +449,17 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
                 } /* if (ReadDate(fh, &cachedate, DFB(DiskfontBase) )) */
 		
             } /* if (strcmp(idstr, CACHE_IDSTR) == 0) */
+
             FreeVec(idstr);
 	    
         } /* if (ReadString(&DFB(DiskfontBase)->dsh, &idstr, (void *)fh)) */
+
         Close(fh);
 	
     } /* if ((fh = Open(CACHE_FILE,MODE_OLDFILE)) != 0) */
     
+    Self->pr_WindowPtr = OldWinPtr;
+
     ReturnBool ("OKToReadCache", retval && cacheok);
 }
 

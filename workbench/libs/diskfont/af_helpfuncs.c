@@ -30,7 +30,7 @@ struct FontInfoNode *AllocFIN(struct MinList *filist, struct DiskfontBase_intern
 
     finode = AllocMem(sizeof (struct FontInfoNode), MEMF_ANY|MEMF_CLEAR);
     if (finode)
-	AddTail( (struct List*)filist, (struct Node*)finode );
+	ADDTAIL( (struct List*)filist, (struct Node*)finode );
 
     ReturnPtr("AllocFIN", struct FontInfoNode *, finode);
 }
@@ -47,7 +47,7 @@ VOID FreeFIN(struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBa
 {
 	D(bug( "FreeFIN(finode=%p)\n", finode ));
 	
-	Remove( (struct Node*)finode);	
+	REMOVE( (struct Node*)finode);
 	FreeMem(finode, sizeof (struct FontInfoNode) );
 	
 	ReturnVoid("FreeFIN");
