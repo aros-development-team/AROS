@@ -42,6 +42,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#warning CHECKME: LOCK_REFRESH macro. Might have to be changed to instead ObtainSem(GadgetLock) + LockLayers()
+#warning CHECKME: UNLOCK_REFRESH macro. Might have to be changed to instead ReleaseSem(GadgetLock) + UnlockLayers()
+
 #define LOCK_REFRESH(x)		ObtainSemaphore(&GetPrivScreen(x)->RefreshLock)
 #define UNLOCK_REFRESH(x)	ReleaseSemaphore(&GetPrivScreen(x)->RefreshLock)
 
@@ -389,11 +392,13 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 	MoveSizeLayer(targetlayer, pos_dx, pos_dy, size_dx, size_dy);
 
+    #if 0
 	if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
 	if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
 	if (w->ZipWidth    != ~0) w->ZipWidth    = OldWidth;
 	if (w->ZipHeight   != ~0) w->ZipHeight   = OldHeight;
-
+    #endif
+    
 	if (pos_dx || pos_dy) {
 		UpdateMouseCoords(targetwindow);
 		if (HAS_CHILDREN(targetwindow))
