@@ -453,7 +453,7 @@ bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
 crashes.
 
-BUG000065
+BUG000065 seems to be fixed
 bernie@aros.org
 AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
 the Workbench: directory).
@@ -485,22 +485,27 @@ Running contrib/Demos/Voxel/voxel without ./aros --memsize 16 gives
 "voxel:Object is of wrong type" instead of "voxel:Could not open object: Out of
 memory"
 
-BUG000071
+BUG000071 fixed
 sduvan@aros.org
 When putting a window over a console window that _partially covers the active
 text line vertically_, activating the console window and starting to type
 will shift the text written (pixel data) making the output garbled.
+The problem was caused by bugs in the X11 gfx hidd.
 
-BUG000072
+BUG000072 out of memory problem.
 sduvan@aros.org
 Using Opaque and moving windows around will sooner or later produce an error
     allocbitmap.c, 149: bad pointer: nbm = $0
 resulting in a Segmentation fault.
+Not really a bug, because this happens when AROS runs out of memory which,
+because of memory leaks, happened quite soon. It's probably layers.library
+which gets into trouble when some allocation failed.
 
-BUG000073
+BUG000073 fixed
 hkiel@aros.org
 "List C:" says "Directory is empty" :-(
 "List C" (from Workbench:) and "C:" plus "List" works...
+The problem was caused by badly implemented MatchFirst/MatchNext/MatchEnd.
 
 BUG000074
 hkiel@aros.org
