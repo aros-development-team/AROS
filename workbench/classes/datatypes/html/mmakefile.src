@@ -1,0 +1,13 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := htmlclass libfunc tables parse layout
+FUNCS := obtainengine
+
+#MM workbench-datatypes-html : includes linklibs
+
+%build_module_macro mmake=workbench-datatypes-html modname=html \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="arosc amiga"
+
+%common
