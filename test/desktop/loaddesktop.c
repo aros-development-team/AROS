@@ -150,7 +150,7 @@ int main(void)
                         GetAttr(AICA_SelectedIcons, iconCon, &subjects);
 
                         ostate=subjects->mlh_Head;
-                        while(member=NextObject(&ostate))
+                        while((member=NextObject(&ostate)))
                         {
                             args[0].ti_Tag=DDO_Target;
                             args[0].ti_Data=member;

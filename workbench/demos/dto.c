@@ -189,7 +189,7 @@ void main (int argc, char **argv)
 
 		    /* Open the window */
 
-		    if (win = OpenWindowTags (NULL,
+		    if ((win = OpenWindowTags (NULL,
 					      WA_InnerWidth,	nomwidth,
 					      WA_InnerHeight,	nomheight,
 					      WA_Title,		name,
@@ -207,7 +207,7 @@ void main (int argc, char **argv)
 					      WA_MinHeight,	50,
 					      WA_MaxWidth,	10000,
 					      WA_MaxHeight,	10000,
-					      TAG_DONE))
+					      TAG_DONE)))
 
 		    {
 
