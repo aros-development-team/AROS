@@ -155,6 +155,7 @@ UWORD i;
 		showError(afsbase, ERR_DOSENTRY);
 		return ERROR_UNKNOWN;
 	}
+	volume->lastaccess=volume->rootblock;	//for free block searching
 	return 0;
 }
 

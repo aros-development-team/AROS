@@ -95,10 +95,9 @@ struct BlockCache *entryblock;
 	return 0;
 }
 
-ULONG getNextExamineBlock(struct afsbase *afsbase, struct AfsHandle *ah, ULONG *key) {
+ULONG getNextExamineBlock(struct afsbase *afsbase, struct AfsHandle *ah, ULONG *key, ULONG *pos) {
 struct BlockCache *entryblock;
 UBYTE cstr[34];
-UWORD i;
 STRPTR string;
 
 	entryblock=getBlock(afsbase, ah->volume, *key);
@@ -106,21 +105,21 @@ STRPTR string;
 		return ERROR_UNKNOWN;
 	if (*key==ah->header_block)	// start examining entries in ah
 	{
-		i=BLK_TABLE_START;
+		*pos=BLK_TABLE_START;
 	}
 	else
 	{
 		if	(entryblock->buffer[BLK_HASHCHAIN(ah->volume)])	// do we have a entry chained ?
 		{
-			i=BLK_HASHCHAIN(ah->volume);
+			*pos=BLK_HASHCHAIN(ah->volume);
 		}
 		else
 		{
 			string=(STRPTR)((ULONG)entryblock->buffer+(BLK_FILENAME_START(ah->volume)*4));
 			CopyMem(string+1,cstr,string[0]);
 			cstr[string[0]]=0;
-			i=BLK_TABLE_START+getHashKey(cstr,ah->volume->SizeBlock-56,ah->volume->flags)+1;
-			if (i>BLK_TABLE_END(ah->volume))
+			*pos=BLK_TABLE_START+getHashKey(cstr,ah->volume->SizeBlock-56,ah->volume->flags)+1;
+			if (*pos>BLK_TABLE_END(ah->volume))
 				return ERROR_NO_MORE_ENTRIES;
 			entryblock=getBlock(afsbase, ah->volume, ah->header_block);
 			if (!entryblock)
@@ -131,14 +130,14 @@ STRPTR string;
 		which should be examined next
 		in the other cases it may point to NULL
 	*/
-	while (entryblock->buffer[i]==0)
+	while (entryblock->buffer[*pos]==0)
 	{
-		if (i==BLK_TABLE_END(ah->volume))
+		if (*pos==BLK_TABLE_END(ah->volume))
 			return ERROR_NO_MORE_ENTRIES;
-		i++;
+		*pos += 1;
 	}
 	// now i is on a valid position
-	*key=AROS_BE2LONG(entryblock->buffer[i]);
+	*key=AROS_BE2LONG(entryblock->buffer[*pos]);
 	return 0;
 }
 
@@ -152,17 +151,17 @@ ULONG error,i,block;
 	D(bug("afs.handler: examineAll(%ld,ead,%ld,%ld)\n",ah->header_block,size,mode));
 	if (mode>ED_OWNER)
 		return ERROR_BAD_NUMBER;
-	error=getNextExamineBlock(afsbase, ah,&ah->dirpos);
-	if (error)
-		return error;
 	headerblock=getBlock(afsbase, ah->volume, ah->header_block);
 	if (!headerblock)
 		return ERROR_UNKNOWN;
 	headerblock->flags |= BCF_USED;
 	if (AROS_BE2LONG(headerblock->buffer[BLK_SECONDARY_TYPE(ah->volume)])<0) // is it a file ?
 		return examineEAD(afsbase, ah->volume, ead, headerblock, size, mode);
+	error=getNextExamineBlock(afsbase, ah,&ah->dirpos,&i);
+	if (error)
+		return error;
 	last=ead;
-	for (i=BLK_TABLE_START;i<=BLK_TABLE_END(ah->volume);i++)
+	for (;i<=BLK_TABLE_END(ah->volume);i++)
 	{
 		if (headerblock->buffer[i])
 		{
@@ -197,12 +196,12 @@ struct BlockCache *entryblock;
 STRPTR string;
 ULONG filelistentries,datablocksize,datablocks;
 ULONG owner;
-ULONG error;
+ULONG error,filekey;
 
 	D(bug("afs.handler: examineNext(%ld,fib)\n",ah->header_block));
 	D(bug("afs.handler: examineNext: diskey=%ld\n",fib->fib_DiskKey));
 
-	error=getNextExamineBlock(afsbase, ah,&fib->fib_DiskKey);
+	error=getNextExamineBlock(afsbase, ah,&fib->fib_DiskKey,&filekey);
 	if (error)
 		return error;
 	// examine the block

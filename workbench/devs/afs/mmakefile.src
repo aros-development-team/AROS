@@ -21,10 +21,12 @@ FILES :=	arosdevice \
 OBJS := $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB := $(LIBDIR)/libafs.a
 
-#MM
+#MM workbench-devs: workbench-devs-afshandler
 workbench-devs: workbench-devs-afshandler
-#MM
+
+#MM workbench-devs-quick: workbench-devs-afshandler
 workbench-devs-quick: workbench-devs-afshandler
+
 #MM workbench-devs-afshandler:
 workbench-devs-afshandler: $(AFSHANDLER)
 

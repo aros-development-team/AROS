@@ -179,10 +179,11 @@ struct BlockCache *blockbuffer, *priorbuffer;
          0 if error
 *********************************************/
 struct BlockCache *linkNewBlock(struct afsbase *afsbase, struct Volume *volume, struct BlockCache *dir, struct BlockCache *file) {
-ULONG key;
+ULONG key,parent;
 char buffer[32];
 char *name;
 
+	file->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dir->blocknum);
 	D(bug("afs.handler: linkNewBlock: linking block %ld\n",file->blocknum));
 	name=(char *)((ULONG)file->buffer+(BLK_FILENAME_START(volume)*4));
 	CopyMem(name+1,buffer,name[0]);
@@ -200,7 +201,6 @@ char *name;
 	}
 	file->buffer[BLK_HASHCHAIN(volume)]=dir->buffer[key];
 	dir->buffer[key]=AROS_LONG2BE(file->blocknum);
-	file->buffer[BLK_PARENT(volume)]=AROS_LONG2BE(dir->blocknum);
 	file->buffer[BLK_CHECKSUM]=0;
 	file->buffer[BLK_CHECKSUM]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,file->buffer));
 	dir->buffer[BLK_CHECKSUM]=0;
@@ -325,8 +325,24 @@ struct DateStamp ds;
 ULONG i;
 
 	dirblock->flags |= BCF_USED;
-	if (!(newblock=getFreeCacheBlock(afsbase, volume,-1)))
-		return DOSFALSE;
+	if (!invalidBitmap(afsbase, volume)) {
+		dirblock->flags &= ~BCF_USED;
+		return 0;
+	}
+	i=allocBlock(afsbase, volume);
+	if (i==0) {
+		dirblock->flags &= ~BCF_USED;
+		validBitmap(afsbase, volume);
+		error=ERROR_DISK_FULL;
+		return 0;
+	}
+	if (!(newblock=getFreeCacheBlock(afsbase, volume,i)))
+	{
+		dirblock->flags &= ~BCF_USED;
+		validBitmap(afsbase, volume);
+		error=ERROR_UNKNOWN;
+		return 0;
+	}
 	newblock->flags |= BCF_USED;
 	newblock->buffer[BLK_PRIMARY_TYPE]=AROS_LONG2BE(T_SHORT);
 	for (i=BLK_BLOCK_COUNT;i<=BLK_COMMENT_END(volume);i++)
@@ -344,21 +360,6 @@ ULONG i;
 	newblock->buffer[BLK_EXTENSION(volume)]=0;
 	newblock->buffer[BLK_SECONDARY_TYPE(volume)]=AROS_LONG2BE(entrytype);
 	dirblock->flags |= BCF_USED;
-	if (!invalidBitmap(afsbase, volume)) {
-		newblock->flags &= ~BCF_USED;
-		dirblock->flags &= ~BCF_USED;
-		return DOSFALSE;
-	}
-	newblock->blocknum=allocBlock(afsbase, volume);
-	if (newblock->blocknum==0) {
-		newblock->flags &= ~BCF_USED;
-		newblock->acc_count=0;
-		newblock->volume=0;
-		dirblock->flags &= ~BCF_USED;
-		validBitmap(afsbase, volume);
-		error=ERROR_DISK_FULL;
-		return DOSFALSE;
-	}
 	newblock->buffer[BLK_OWN_KEY]=AROS_LONG2BE(newblock->blocknum);
 	if (!(dirblock=linkNewBlock(afsbase, volume,dirblock,newblock)))
 	{
@@ -368,13 +369,13 @@ ULONG i;
 		newblock->volume=0;
 		dirblock->flags &= ~BCF_USED;
 		validBitmap(afsbase, volume);
-		return DOSFALSE;
+		return 0;
 	}
 	writeBlock(afsbase, volume, newblock);		// if crash after this block not yet linked->block not written to disk, bitmap corrected
 	writeBlock(afsbase, volume, dirblock);		// consistent
-	newblock->flags &= ~BCF_USED;
 	dirblock->flags &= ~BCF_USED;
 	validBitmap(afsbase, volume);				// set bitmap valid
+	newblock->flags &= ~BCF_USED;
 	return newblock;
 }
 

@@ -435,11 +435,11 @@ ULONG destination;
 				writeExtensionBlock(afsbase, ah->volume,extensionbuffer,ah->current.filekey,block);
 				if (!block)
 					return writtenbytes;
-				ah->current.filekey=BLK_TABLE_END(ah->volume);
 				if (!(extensionbuffer=getFreeCacheBlock(afsbase, ah->volume,block)))
 					return writtenbytes;
 				newFileExtensionBlock(ah->volume,extensionbuffer, ah->header_block);
 			}
+			ah->current.filekey=BLK_TABLE_END(ah->volume);
 			extensionbuffer->flags |= BCF_USED;	//dont overwrite this cache block
 			ah->current.block=block;
 		}
