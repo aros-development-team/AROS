@@ -384,6 +384,61 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
                     } /* if (newseg) */
 		    
                 }
+
+		/*
+		 * check for last line
+		 */
+
+		D(bug("AsciiDataType_AsyncLayout: end textloop, anchor %ld\n",anchor));
+
+		if (buffer[anchor])
+		{
+			linefeed=TRUE;
+			D(bug("AsciiDataType_AsyncLayout: add last line <%s>\n",
+				&buffer[anchor]));
+			/* Allocate a new line segment from our memory pool */
+			if ((line = AllocPooled(data->Pool, sizeof(struct Line))))
+			{
+			    swidth = TextLength(&trp, &buffer[anchor], num);
+			    line->ln_Text = &buffer[anchor];
+			    line->ln_TextLen = num;
+			    line->ln_XOffset = offset;
+			    line->ln_YOffset = yoffset + font->tf_Baseline;
+			    line->ln_Width = swidth;
+			    line->ln_Height = font->tf_YSize;
+			    line->ln_Flags = (linefeed) ? LNF_LF : 0;
+			    line->ln_FgPen = fgpen;
+			    line->ln_BgPen = bgpen;
+			    line->ln_Style = style;
+			    line->ln_Data = NULL;
+
+			    linelength = line->ln_Width + line->ln_XOffset;
+			    if (linelength > max_linelength)
+			    {
+				max_linelength = linelength;
+			    }
+			    			    
+			    /* Add the line to the list */
+			    AddTail(linelist, (struct Node *) line);
+
+			    /* Increment the line count */
+			    if (linefeed)
+			    {
+				yoffset += font->tf_YSize;
+				offset = 0;
+				total++;
+			    }
+			    else
+			    {
+				/* Increment the offset */
+				offset += swidth;
+			    }
+			}
+			else
+			{
+			    abort = TRUE;
+			}
+		}
 		
             } /* if (wrap || gpl->gpl_Initial) */
             else
