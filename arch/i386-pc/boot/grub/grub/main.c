@@ -44,7 +44,7 @@ int use_curses = 0;
 int verbose = 0;
 int read_only = 0;
 int floppy_disks = 1;
-char *device_map_file = "/boot/grub/device.map";
+char *device_map_file = 0;
 static int default_boot_drive;
 static int default_install_partition;
 static char *default_config_file;

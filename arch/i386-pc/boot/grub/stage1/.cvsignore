@@ -1,4 +1,4 @@
-Makefile
-stage1.exec
-stage1
 .deps
+Makefile
+stage1
+stage1.exec

@@ -67,6 +67,7 @@ int
 fat_mount (void)
 {
   struct fat_bpb bpb;
+  __u32 magic, first_fat;
   
   /* Check partition type for harddisk */
   if (((current_drive & 0x80) || (current_slice != 0))
@@ -161,6 +162,31 @@ fat_mount (void)
  	  > FAT_SUPER->fat_length))
     return 0;
   
+  /* kbs: Media check on first FAT entry [ported from PUPA] */
+
+  if (!devread(FAT_SUPER->fat_offset, 0,
+               sizeof(first_fat), (char *)&first_fat))
+    return 0;
+
+  if (FAT_SUPER->fat_size == 8)
+    {
+      first_fat &= 0x0fffffff;
+      magic = 0x0fffff00;
+    }
+  else if (FAT_SUPER->fat_size == 4)
+    {
+      first_fat &= 0x0000ffff;
+      magic = 0xff00;
+    }
+  else
+    {
+      first_fat &= 0x00000fff;
+      magic = 0x0f00;
+    }
+
+  if (first_fat != (magic | bpb.media))
+    return 0;
+
   FAT_SUPER->cached_fat = - 2 * FAT_CACHE_SIZE;
   return 1;
 }

@@ -1,7 +1,7 @@
 /* device.c - Some helper functions for OS devices and BIOS drives */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 
 #ifdef __linux__
 # if !defined(__GLIBC__) || \
@@ -208,6 +209,9 @@ get_floppy_disk_name (char *name, int unit)
 #elif defined(__OpenBSD__)
   /* OpenBSD */
   sprintf (name, "/dev/rfd%dc", unit);
+#elif defined(__QNXNTO__)
+  /* QNX RTP */
+  sprintf (name, "/dev/fd%d", unit);
 #else
 # warning "BIOS floppy drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -245,6 +249,11 @@ get_ide_disk_name (char *name, int unit)
 #elif defined(__OpenBSD__)
   /* OpenBSD */
   sprintf (name, "/dev/rwd%dc", unit);
+#elif defined(__QNXNTO__)
+  /* QNX RTP */
+  /* Actually, QNX RTP doesn't distinguish IDE from SCSI, so this could
+     contain SCSI disks.  */
+  sprintf (name, "/dev/hd%d", unit);
 #else
 # warning "BIOS IDE drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -278,6 +287,11 @@ get_scsi_disk_name (char *name, int unit)
 #elif defined(__OpenBSD__)
   /* OpenBSD */
   sprintf (name, "/dev/rsd%dc", unit);
+#elif defined(__QNXNTO__)
+  /* QNX RTP */
+  /* QNX RTP doesn't distinguish SCSI from IDE, so it is better to
+     disable the detection of SCSI disks here.  */
+  *name = 0;
 #else
 # warning "BIOS SCSI drives cannot be guessed in your operating system."
   /* Set NAME to a bogus string.  */
@@ -301,6 +315,10 @@ check_device (const char *device)
   char buf[512];
   FILE *fp;
 
+  /* If DEVICE is empty, just return 1.  */
+  if (*device == 0)
+    return 1;
+  
   fp = fopen (device, "r");
   if (! fp)
     {
@@ -378,11 +396,20 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       fprintf (stderr, "%s:%d: error: %s\n", map_file, no, msg);
     }
   
+  static void show_warning (int no, const char *msg, ...)
+    {
+      va_list ap;
+      
+      va_start (ap, msg);
+      fprintf (stderr, "%s:%d: warning: ", map_file, no);
+      vfprintf (stderr, msg, ap);
+      va_end (ap);
+    }
+  
   /* If there is the device map file, use the data in it instead of
      probing devices.  */
   char buf[1024];		/* XXX */
   int line_number = 0;
-  int retval = 0;		/* default to failure */
   
   while (fgets (buf, sizeof (buf), fp))
     {
@@ -409,14 +436,14 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (*ptr != '(')
 	{
 	  show_error (line_number, "No open parenthesis found");
-	  continue;
+	  return 0;
 	}
       
       ptr++;
       if ((*ptr != 'f' && *ptr != 'h') || *(ptr + 1) != 'd')
 	{
 	  show_error (line_number, "Bad drive name");
-	  continue;
+	  return 0;
 	}
       
       if (*ptr == 'f')
@@ -424,9 +451,16 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       
       ptr += 2;
       drive = strtoul (ptr, &ptr, 10);
-      if (drive < 0 || drive > 8)
+      if (drive < 0)
 	{
 	  show_error (line_number, "Bad device number");
+	  return 0;
+	}
+      else if (drive > 8)
+	{
+	  show_warning (line_number,
+			"Ignoring %cd%d due to a BIOS limitation",
+			is_floppy ? 'f' : 'h', drive);
 	  continue;
 	}
       
@@ -436,7 +470,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (*ptr != ')')
 	{
 	  show_error (line_number, "No close parenthesis found");
-	  continue;
+	  return 0;
 	}
       
       ptr++;
@@ -447,7 +481,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (! *ptr)
 	{
 	  show_error (line_number, "No filename found");
-	  continue;
+	  return 0;
 	}
       
       /* Terminate the filename.  */
@@ -465,11 +499,9 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       
       map[drive] = strdup (ptr);
       assert (map[drive]);
-
-      retval = 1;	/* at least 1 drive configured successfully */
     }
   
-  return retval;
+  return 1;
 }
 
 /* Initialize the device map MAP. *MAP will be allocated from the heap

@@ -1,3 +1,265 @@
+2003-12-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/fsys_ext2fs.c (ext2_is_fast_symlink): New function.
+	(ext2fs_dir): Use ext2_is_fast_symlink to check if the current
+	inode is a fast or slow symlink. This change was required
+	because Linux now uses acl seriously (i.e. incompatibility).
+	Reported by Chris PeBenito <pebenito@gentoo.org> and Seemant
+	Kulleen <seemant@gentoo.org>
+
+2003-11-30  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* lib/device.c (read_device_map) (sho_warning): New internal
+	function.
+	(read_device_map): If DRIVE is greater than 8, emit a warning
+	and ignore the drive, rather than exiting abnormally.
+	Reported by Greg Newby <newby@arsc.edu>.
+
+2003-10-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Migrated to newer autotools. Also, don't install mkbimage
+	because its name is too general and it does not conform to the
+	GNU Coding Standards in some points.
+	
+	* util/Makefile.am (EXTRA_DIST): New variable.
+	(sbin_SCRIPTS): Removed mkbimage.
+	(noinst_SCRIPTS): Added mkbimage.
+
+	* stage1/Makefile.am (AM_ASFLAGS): Renamed to ...
+	(AM_CCASFLAGS): ... this.
+
+	* stage2/Makefile.am (pre_stage2_exec_ASFLAGS): Renamed to ...
+	(pre_stage2_exec_CCASFLAGS): ... this.
+	(start_exec_ASFLAGS): Renamed to ...
+	(start_exec_CCASFLAGS): ... this.
+	(e2fs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(e2fs_stage1_5_exec_CCASFLAGS): ... this.
+	(fat_stage1_5_exec_ASFLAGS): Renamed to ...
+	(fat_stage1_5_exec_CCASFLAGS): ... this.
+	(ffs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(ffs_stage1_5_exec_CCASFLAGS): ... this.
+	(minix_stage1_5_exec_ASFLAGS): Renamed to ...
+	(minix_stage1_5_exec_CCASFLAGS): ... this.
+	(reiserfs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(reiserfs_stage1_5_exec_CCASFLAGS): ... this.
+	(vstafs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(vstafs_stage1_5_exec_CCASFLAGS): ... this.
+	(jfs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(jfs_stage1_5_exec_CCASFLAGS): ... this.
+	(xfs_stage1_5_exec_ASFLAGS): Renamed to ...
+	(xfs_stage1_5_exec_CCASFLAGS): ... this.
+	(diskless_exec_ASFLAGS): Renamed to ...
+	(diskless_exec_CCASFLAGS): ... this.
+	(nbloader_exec_ASFLAGS): Renamed to ...
+	(nbloader_exec_CCASFLAGS): ... this.
+	(pxeloader_exec_ASFLAGS): Renamed to ...
+	(pxeloader_exec_CCASFLAGS): ... this.
+
+	* configure.in: Removed.
+	* configure.ac: New file. Mostly derived from configure.in.
+	
+2003-10-19  Yoshinori OKUJI  <okuji@enbug.org>
+
+	From KB Sriram <mail_kb@yahoo.com>:
+	* stage2/disk_io.c (set_device) [SUPPORT_NETBOOT]: Added support
+	for a completion of a network device.
+	(print_completions): Likewise.
+
+2003-10-10  Robert Millan  <robertmh@gnu.org>
+
+	* config.guess: Update from official source (CVS).
+	* config.sub: Likewise.
+
+2003-09-18  Robert Millan  <robertmh@gnu.org>
+
+	* docs/texinfo.tex: Update from ftp.gnu.org.
+
+2003-09-05  KB Sriram  <mail_kb@yahoo.com>
+
+	* stage2/fsys_fat.c: Fix missdetection of ext2fs as fatfs.
+
+2003-09-05  Robert Millan  <robertmh@gnu.org>
+
+	* docs/menu.lst (GNU/Linux): Add commented initrd command, which
+	is consistent with documentation.
+
+2003-09-01  Robert Millan  <robertmh@gnu.org>
+
+	* docs/menu.lst: Add NetBSD, OpenBSD, GNU/KFreeBSD and
+	GNU/KNetBSD.
+
+2003-08-13  Jason Thomas  <jason@intology.com.au>
+
+	* util/grub-install.in (resolve_symlink): New function to
+	resolve symlinks.
+	(find_device): Moved symlink code to new function.
+	Before we convert the install_device we attempt to resolve it if
+	its a symlink using the new function.
+	* util/mbchk.c (check_multiboot): The sense of an error message
+	was inverted.
+	Reported by Timothy Baldwin <T.E.Baldwin99@members.leeds.ac.uk>.
+
+2003-08-12  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c (read_tree_node): Fixed a typo; only
+	matters for very large fs when tree doesn't fit in cache.
+	(IH_KEY_OFFSET): Don't check for INFO->version.  There are
+	actually old version file systems that use new version items.
+	(IH_KEY_ISTYPE): Likewise.
+	(reiserfs_dir): Likewise.
+
+2003-08-09  Thierry Laronde  <tlaronde@polynum.org>
+
+	* util/mkbimage: New File. `mkbimage' depends on GRUB and
+	existed	elsewhere. It is now part of GRUB so that people can
+	fix/contribute.
+	* util/Makefile.am (sbin_SCRIPTS): Added script `mkbimage'
+
+2003-08-01  Jason Thomas  <jason@intology.com.au>
+
+	* util/grub-install.in: support --no-floppy
+	This allow users to specify the --no-floppy option which
+	is passed onto the grub shell, so it does not probe the floppy
+	drive. 
+	Patch from kesha@diedas.soften.ktu.lt
+
+2003-06-17  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c (reiserfs_mount): Clear the node cache.
+	This fixes a problem where files from other partitions appear at
+	the wrong partition.  Problem reported by Johan Regin.
+
+2003-05-04  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (partnew): Fixed the inconsistency between the
+	implementation and the documentation. The last argument is the
+	length instead of the ending address.
+	Reported by Daniel Farrell <s2108287@student.rmit.edu.au>.
+
+2003-03-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Adam Lackorzynski <adam@os.inf.tu-dresden.de>:
+	* stage2/shared.h (KEY_NPAGE): Changed to 0x5100.
+	(KEY_PPAGE): Changed to 0x4900.
+
+2003-03-19  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/boot.c (load_image): Check if DATA_LEN plus SECTOR_SIZE
+	is less than or equal to MULTIBOOT_SEARCH, instead of if
+	DATA_LEN is less than or equal to MULTIBOOT_SEARCH.
+	Reported by Neelkanth Natu <neelnatu@yahoo.com>.
+
+2003-03-10  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Andrew Walrond <andrew@walrond.org>:
+	* stage2/fsys_reiserfs.c (struct reiserfs_journal_header):
+	Remove an unnecessary ``long''.
+
+2003-03-10  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Tilmann Bubeck:
+	* stage2/builtins.c [SUPPORT_SERIAL] (terminfo_func): Unescape
+	arguments before copying them, and escape sequences before
+	printing them.
+	* stage2/terminfo.h (TERMINFO_LEN): Changed to 40.
+
+2003-02-20  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* util/grub-install.in (find_device): Fix the sed script.
+
+2003-02-17  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* lib/device.c (check_device): If DEVICE is empty, just return
+	1.
+	(get_scsi_disk_name) [__QNXNTO__]: Make NAME empty, because SCSI
+	disks are detected as IDE disks on QNX RTP.
+
+	From Taketo Kabe <kabe@sra-tohoku.co.jp>:
+	* lib/device.c (get_ide_disk_name) [__QNXNTO__]: Set NAME to
+	"/dev/hdX".
+	(get_floppy_disk_name) [__QNXNTO__]: Set NAME to "/dev/fdX".
+	* stage2/mb_info.h (struct AddrRangeDesc): Specified with the
+	attribute packed.
+	* stage2/shared.h (struct mmar_desc): Likewise.
+
+2003-01-29  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Ilguiz Latypov:
+	* configure.in: Fix a syntax error in a sed script.
+	* stage2/bios.c (get_diskinfo): PhoenixBIOS 4.0 Revision 6.0 
+	for ZF Micro might understand the greater buffer size for the
+	"get drive parameters" int 0x13 call in its own way.  
+	Supposedly the BIOS assumes even bigger space is available and
+	thus corrupts the stack.  This is why we specify the exactly 
+	necessary size of 0x42 bytes.
+
+2003-01-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Steven Dick <ssd.gnu@mmae.ucf.edu>:
+	* stage2/pc_slice.h (PC_SLICE_TYPE_DELL_UTIL): New macro.
+	(IS_PC_SLICE_TYPE_FAT): Recognize PC_SLIDE_TYPE_DELL_UTIL as
+	well.
+
+2003-01-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Karsten Scheibler <karsten.scheibler@student.uni-halle.de>:
+	* stage2/terminfo.c (term): Don't use a C99-style initializer.
+
+2003-01-16  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From H.J. Lu <hjl@gnu.org>:
+	* stage2/disk_io.c (part_start): Use unsigned long to support
+	large disks.
+	(part_length): Likewise.
+	* stage2/shared.h (part_start): Likewise.
+	(part_length): Likewise.
+
+2003-01-05  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* configure.in (CFLAGS): When the default CFLAGS is used,
+	eliminate -O2 and -g from CFLAGS, because Autoconf may
+	automatically set CFLAGS to them.
+
+2003-01-02  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Jeremy Katz:
+	* configure.in: Support building on x86_64 with gcc -m32.
+
+2003-01-02  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Jeremy Katz:
+	* stage2/fsys_ext2fs.c (ext2fs_dir): Initialize STR_CHK to shut
+	up GCC.
+	* stage2/fsys_minix.c (minix_dir): Likewise.
+
+2002-12-21  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/asm.S (gateA20): First, try a BIOS call (INT 15H,
+	AX=2400/2401). Use the keyboard controller, only if that failed.
+
+2002-12-11  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	Add a workaround for buggy BIOSes which don't pass boot drive
+	correctly. The idea is that GRUB forces the fixed disk flag
+	when booted from a hard disk. When BIOS loads GRUB directly,
+	the boot drive must be either of 0x00 and 0x80, so this should
+	work, if those BIOSes always pass zero to %dl. AFAIK, this
+	assumption is always correct.
+
+	* stage2/builtins.c (install_func): Store the fixed disk flag of
+	the destination drive in BOOT_DRIVE_MASK in Stage 1.
+
+	* stage1/stage1.h (STAGE1_BOOT_DRIVE_MASK): New macro.
+
+	* stage1/stage1.S (boot_drive_mask): New variable. It is or'ed
+	to %dl.
+
+2002-12-09  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/char_io.c (init_page): Change the software name from
+	"GRUB" to "GNU GRUB". This was inaccurate. Reported by Ciaran
+	O'Riordan <coriordan@compsoc.com>.
+
 2002-12-04  Yoshinori K. Okuji  <okuji@enbug.org>
 
 	* stage2/builtins.c (embed_func): When checking if the disk can

@@ -1,5 +1,5 @@
 dnl Configure script for GRUB.
-dnl Copyright 1999,2000,2001,2002 Free Software Foundation, Inc.
+dnl Copyright 1999,2000,2001,2002,2003 Free Software Foundation, Inc.
 
 dnl Permission to use, copy, modify and distribute this software and its
 dnl documentation is hereby granted, provided that both the copyright
@@ -12,15 +12,17 @@ dnl "AS IS" CONDITION.  THE FREE SOFTWARE FOUNDATION DISCLAIMS ANY
 dnl LIABILITY OF ANY KIND FOR ANY DAMAGES WHATSOEVER RESULTING FROM THE
 dnl USE OF THIS SOFTWARE.
 
-AC_INIT(stage2/stage2.c)
-AM_INIT_AUTOMAKE(grub, 0.93)
-AM_CONFIG_HEADER(config.h)
-AC_PREREQ(2.13)
+AC_PREREQ(2.57)
+AC_INIT([GRUB], [0.94], [bug-grub@gnu.org])
+AC_CONFIG_SRCDIR([stage2/stage2.c])
+AC_CONFIG_HEADER([config.h])
+AM_INIT_AUTOMAKE
 
 AC_CANONICAL_HOST
 
 case "$host_cpu" in
 i[[3456]]86) host_cpu=i386 ;;
+x86_64) host_cpu=x86_64 ;;
 *) AC_MSG_ERROR([unsupported CPU type]) ;;
 esac
 
@@ -44,6 +46,10 @@ if test "x$CFLAGS" = x; then
   default_CFLAGS=yes
 fi
 
+if test "x$host_cpu" = xx86_64; then
+  CFLAGS="-m32 $CFLAGS"
+fi
+
 #
 # Programs
 #
@@ -54,8 +60,8 @@ AC_PROG_CC
 _AM_DEPENDENCIES(CC)
 
 dnl Because recent automake complains about AS, set it here.
-AS="$CC"
-AC_SUBST(AS)
+CCAS="$CC"
+AC_SUBST(CCAS)
 
 AC_ARG_WITH(binutils,
   [  --with-binutils=DIR     search the directory DIR to find binutils])
@@ -72,7 +78,8 @@ fi
 # optimization flags
 if test "x$ac_cv_prog_gcc" = xyes; then
   if test "x$default_CFLAGS" = xyes; then
-    CFLAGS="-g"
+    # Autoconf may set CFLAGS to -O2 and/or -g. So eliminate them.
+    CFLAGS="`echo $CFLAGS | sed -e 's/-g//g' -e 's/-O[[0-9]]//g'` -g"
     # If the user specify the directory for binutils, add the option `-B'.
     if test "x$with_binutils" != x; then
       CFLAGS="-B$with_binutils/ $CFLAGS"
@@ -256,7 +263,7 @@ if test x"$enable_xfs" != xno; then
 fi
 
 AC_ARG_ENABLE(affs,
-  [  --disable-affs          disable Amiga FastFileSystem support in Stage 2])
+  [  --disable-affs          disable AFFS support in Stage 2])
 
 if test x"$enable_affs" != xno; then
   FSYS_CFLAGS="$FSYS_CFLAGS -DFSYS_AFFS=1"
@@ -626,13 +633,15 @@ AC_SUBST(NET_CFLAGS)
 AC_SUBST(NET_EXTRAFLAGS)
 AC_SUBST(NETBOOT_DRIVERS)
 
-dnl Because recent automake complains about ASFLAGS, set it here.
-ASFLAGS='$(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)'
-AC_SUBST(ASFLAGS)
+dnl Because recent automake complains about CCASFLAGS, set it here.
+CCASFLAGS='$(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(CPPFLAGS) $(CFLAGS)'
+AC_SUBST(CCASFLAGS)
 
 
 dnl Output.
-AC_OUTPUT([Makefile stage1/Makefile stage2/Makefile docs/Makefile \
-	lib/Makefile util/Makefile grub/Makefile \
-	netboot/Makefile util/grub-image util/grub-install \
-	util/grub-md5-crypt util/grub-terminfo])
+AC_CONFIG_FILES([Makefile stage1/Makefile stage2/Makefile \
+		 docs/Makefile lib/Makefile util/Makefile \
+		 grub/Makefile netboot/Makefile util/grub-image \
+		 util/grub-install util/grub-md5-crypt \
+		 util/grub-terminfo])
+AC_OUTPUT

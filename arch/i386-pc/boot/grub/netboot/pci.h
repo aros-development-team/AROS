@@ -129,7 +129,6 @@ __asm__ __volatile__("pushl %0 ; popfl": /* no output */ :"g" (x):"memory")
 #define PCI_DEVICE_ID_INTEL_82559ER	0x1209
 #define PCI_DEVICE_ID_INTEL_ID1029	0x1029
 #define PCI_DEVICE_ID_INTEL_ID1030	0x1030
-#define PCI_DEVICE_ID_INTEL_ICH3	0x1031
 #define PCI_DEVICE_ID_INTEL_82562	0x2449
 #define PCI_VENDOR_ID_AMD		0x1022
 #define PCI_DEVICE_ID_AMD_LANCE		0x2000

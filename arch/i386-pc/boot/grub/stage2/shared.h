@@ -1,7 +1,7 @@
 /* shared.h - definitions used in all GRUB-specific code */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -195,8 +195,6 @@ extern char *grub_scratch_mem;
 #define STAGE2_FORCE_LBA	0x11
 #define STAGE2_VER_STR_OFFS	0x12
 
-#define STAGE2_ONCEONLY_ENTRY   0x10000
-
 /* Stage 2 identifiers */
 #define STAGE2_ID_STAGE2		0
 #define STAGE2_ID_FFS_STAGE1_5		1
@@ -286,8 +284,8 @@ extern char *grub_scratch_mem;
 # define KEY_BACKSPACE   0x0008
 # define KEY_HOME        0x4700
 # define KEY_END         0x4F00
-# define KEY_NPAGE       0x4900
-# define KEY_PPAGE       0x5100
+# define KEY_NPAGE       0x5100
+# define KEY_PPAGE       0x4900
 # define A_NORMAL        0x7
 # define A_REVERSE       0x70
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -368,25 +366,6 @@ extern char *grub_scratch_mem;
 #endif /* WITHOUT_LIBC_STUBS */
 
 
-/* see typedef gfx_data_t below */
-#define gfx_ofs_ok			0x00
-#define gfx_ofs_mem_start		0x04
-#define gfx_ofs_mem_cur			0x08
-#define gfx_ofs_mem_max			0x0c
-#define gfx_ofs_code_seg		0x10
-#define gfx_ofs_jmp_table		0x14
-#define gfx_ofs_sys_cfg			0x44
-#define gfx_ofs_cmdline			0x4c
-#define gfx_ofs_cmdline_len		0x50
-#define gfx_ofs_menu_list		0x54
-#define gfx_ofs_menu_default_entry	0x58
-#define gfx_ofs_menu_entries		0x5c
-#define gfx_ofs_menu_entry_len		0x60
-#define gfx_ofs_args_list		0x64
-#define gfx_ofs_args_entry_len		0x68
-#define gfx_ofs_timeout			0x6c
-
-
 #ifndef ASM_FILE
 /*
  *  Below this should be ONLY defines and other constructs for C code.
@@ -396,7 +375,6 @@ extern char *grub_scratch_mem;
 
 #include "mb_header.h"
 #include "mb_info.h"
-extern unsigned long mb_header_flags;
 
 /* For the Linux/i386 boot protocol version 2.03.  */
 struct linux_kernel_header
@@ -437,7 +415,7 @@ struct mmar_desc
   unsigned long long addr;	/* Base address. */
   unsigned long long length;	/* Length in bytes. */
   unsigned long type;		/* Type of address range. */
-};
+} __attribute__ ((packed));
 
 /* VBE controller information.  */
 struct vbe_controller
@@ -606,39 +584,6 @@ extern int fallback_entry;
 extern int default_entry;
 extern int current_entryno;
 
-
-/*
- * graphics menu stuff
- *
- * Note: gfx_data and all data referred to in it must lie within a 64k area.
- */
-typedef struct {
-  unsigned ok;			/* set while we're in graphics mode */
-  unsigned mem_start, mem_cur, mem_max;
-  unsigned code_seg;		/* code segment of binary graphics code */
-  unsigned jmp_table[12];	/* link to graphics functions */
-  unsigned char sys_cfg[8];	/* sys_cfg[0]: identifies boot loader (grub == 2) */
-  char *cmdline;		/* command line returned by gfx_input() */
-  unsigned cmdline_len;		/* length of the above */
-  char *menu_list;		/* list of menu entries, each of fixed length (menu_entry_len) */
-  char *menu_default_entry;	/* the default entry */
-  unsigned menu_entries;	/* number of entries in menu_list */
-  unsigned menu_entry_len;	/* one entry */
-  char *args_list;		/* same structure as menu_list, menu_entries entries */
-  unsigned args_entry_len;	/* one entry */
-  unsigned timeout;		/* in seconds (0: no timeout) */
-} __attribute__ ((packed)) gfx_data_t;
-
-extern gfx_data_t *graphics_data;
-
-/* pointer to graphics image data */
-extern char graphics_file[64];
-
-int gfx_init(gfx_data_t *gfx_data);
-int gfx_done(gfx_data_t *gfx_data);
-int gfx_input(gfx_data_t *gfx_data, int *menu_entry);
-int gfx_setup_menu(gfx_data_t *gfx_data);
-
 /* The constants for password types.  */
 typedef enum
 {
@@ -695,8 +640,8 @@ struct geometry
   unsigned long flags;
 };
 
-extern long part_start;
-extern long part_length;
+extern unsigned long part_start;
+extern unsigned long part_length;
 
 extern int current_slice;
 
@@ -713,8 +658,6 @@ extern int filemax;
  */
 
 extern struct multiboot_info mbi;
-extern struct vbe_controller vbe_info_block;
-extern struct vbe_mode mode_info_block;
 extern unsigned long saved_drive;
 extern unsigned long saved_partition;
 #ifndef STAGE1_5
@@ -813,9 +756,6 @@ int get_vbe_mode_info (int mode_number, struct vbe_mode *mode);
 
 /* Set VBE mode.  */
 int set_vbe_mode (int mode_number);
-
-/* Convert 32-bit pointer to 16-bit segment:offset style pointer */
-#define VBE_FAR_PTR(p) (((p >> 16) << 4) + (p & 0xFFFF))
 
 /* Return the data area immediately following our code. */
 int get_code_end (void);

@@ -53,8 +53,8 @@ static struct jfs_info jfs;
 #define dtroot		((dtroot_t *)(&inode->di_btroot))
 
 static ldtentry_t de_always[2] = {
-	{1, -1, 2, {'.', '.'}, 0},
-	{1, -1, 1, {'.'}, 0}
+	{1, -1, 2, {'.', '.'}},
+	{1, -1, 1, {'.'}}
 };
 
 static int

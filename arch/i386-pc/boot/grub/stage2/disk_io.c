@@ -1,7 +1,7 @@
 /* disk_io.c - implement abstract BIOS disk input and output */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -111,8 +111,8 @@ static int block_file = 0;
 #endif /* NO_BLOCK_FILES */
 
 /* these are the translated numbers for the open partition */
-long part_start;
-long part_length;
+unsigned long part_start;
+unsigned long part_length;
 
 int current_slice;
 
@@ -952,8 +952,12 @@ set_device (char *device)
       if (*device != ',' && *device != ')')
 	{
 	  char ch = *device;
-
-	  if (*device == 'f' || *device == 'h' || *device == 'n')
+#ifdef SUPPORT_NETBOOT
+	  if (*device == 'f' || *device == 'h' ||
+	      (*device == 'n' && network_ready))
+#else
+	  if (*device == 'f' || *device == 'h')
+#endif /* SUPPORT_NETBOOT */
 	    {
 	      /* user has given '([fhn]', check for resp. add 'd' and
 		 let disk_choice handle what disks we have */
@@ -968,13 +972,20 @@ set_device (char *device)
 		return device + 2;
 	    }
 
-	  if ((*device == 'f' || *device == 'h' || *device == 'n')
+#ifdef SUPPORT_NETBOOT
+	  if ((*device == 'f' || *device == 'h' ||
+	       (*device == 'n' && network_ready))
+#else
+	  if ((*device == 'f' || *device == 'h')
+#endif /* SUPPORT_NETBOOT */
 	      && (device += 2, (*(device - 1) != 'd')))
 	    errnum = ERR_NUMBER_PARSING;
 
-	  if (ch == 'n')
+#ifdef SUPPORT_NETBOOT
+	  if (ch == 'n' && network_ready)
 	    current_drive = NETWORK_DRIVE;
 	  else
+#endif /* SUPPORT_NETBOOT */
 	    {
 	      safe_parse_maxint (&device, (int *) &current_drive);
 	      
@@ -1330,26 +1341,33 @@ print_completions (int is_filename, int is_completion)
 	      if (! is_completion)
 		grub_printf (" Possible disks are: ");
 
-	      for (i = (ptr && (*(ptr-2) == 'h' && *(ptr-1) == 'd') ? 1 : 0);
-		   i < (ptr && (*(ptr-2) == 'f' && *(ptr-1) == 'd') ? 1 : 2);
-		   i++)
+#ifdef SUPPORT_NETBOOT
+	      if (!ptr || *(ptr-1) != 'd' || *(ptr-2) != 'n')
+#endif /* SUPPORT_NETBOOT */
 		{
-		  for (j = 0; j < 8; j++)
+		  for (i = (ptr && (*(ptr-1) == 'd' && *(ptr-2) == 'h') ? 1:0);
+		       i < (ptr && (*(ptr-1) == 'd' && *(ptr-2) == 'f') ? 1:2);
+		       i++)
 		    {
-		      disk_no = (i * 0x80) + j;
-		      if ((disk_choice || disk_no == current_drive)
-			  && ! get_diskinfo (disk_no, &geom))
+		      for (j = 0; j < 8; j++)
 			{
-			  char dev_name[8];
+			  disk_no = (i * 0x80) + j;
+			  if ((disk_choice || disk_no == current_drive)
+			      && ! get_diskinfo (disk_no, &geom))
+			    {
+			      char dev_name[8];
 
-			  grub_sprintf (dev_name, "%cd%d", i ? 'h' : 'f', j);
-			  print_a_completion (dev_name);
+			      grub_sprintf (dev_name, "%cd%d", i ? 'h':'f', j);
+			      print_a_completion (dev_name);
+			    }
 			}
 		    }
 		}
-
 # ifdef SUPPORT_NETBOOT
-	      if (network_ready)
+	      if (network_ready &&
+		  (disk_choice || NETWORK_DRIVE == current_drive) &&
+		  (!ptr || *(ptr-1) == '(' ||
+		   (*(ptr-1) == 'd' && *(ptr-2) == 'n')))
 		print_a_completion ("nd");
 # endif /* SUPPORT_NETBOOT */
 

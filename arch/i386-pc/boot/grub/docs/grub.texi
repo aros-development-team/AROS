@@ -1831,7 +1831,6 @@ These commands can only be used in the menu:
 * default::                     Set the default entry
 * fallback::                    Set the fallback entry
 * hiddenmenu::                  Hide the menu interface
-* gfxmenu::                     Use graphical menu interface
 * timeout::                     Set the timeout
 * title::                       Start a menu entry
 @end menu
@@ -1860,15 +1859,6 @@ instead of waiting for the user to do anything, immediately start
 over using the @var{num} entry (same numbering as the @code{default}
 command (@pxref{default})). This obviously won't help if the machine was
 rebooted by a kernel that GRUB loaded.
-@end deffn
-
-
-@node gfxmenu
-@subsection gfxmenu
-
-@deffn Command gfxmenu file
-Use the graphical menu interface. The graphics data are taken from
-@var{file} and must be created using 'mkbootmsg' from the gfxboot package.
 @end deffn
 
 
@@ -2099,12 +2089,11 @@ it is disabled. If no argument is given, the state is toggled.
 @node partnew
 @subsection partnew
 
-@deffn Command partnew part type from to
+@deffn Command partnew part type from len
 Create a new primary partition. @var{part} is a partition specification
 in GRUB syntax (@pxref{Naming convention}); @var{type} is the partition
-type and must be a number in the range @code{0-0xff}; @var{from} and
-@var{to} are the starting and ending sectors, expressed as an absolute
-sector number.
+type and must be a number in the range @code{0-0xff}; @var{from} is
+the starting address and @var{to} is the length, both in sector units.
 @end deffn
 
 

@@ -33,11 +33,11 @@
 /* Current terminal capabilities. Default is "vt100".  */
 struct terminfo term =
   {
-    .name                "vt100",
-    .cursor_address      "\e[%i%p1%d;%p2%dH",
-    .clear_screen        "\e[H\e[J",
-    .enter_standout_mode "\e[7m",
-    .exit_standout_mode  "\e[m"
+    .name                = "vt100",
+    .cursor_address      = "\e[%i%p1%d;%p2%dH",
+    .clear_screen        = "\e[H\e[J",
+    .enter_standout_mode = "\e[7m",
+    .exit_standout_mode  = "\e[m"
   };
 
 /* A number of escape sequences are provided in the string valued

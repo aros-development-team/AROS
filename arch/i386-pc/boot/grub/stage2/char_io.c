@@ -243,7 +243,7 @@ init_page (void)
 {
   cls ();
 
-  printf ("\n    GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
+  grub_printf ("\n    GNU GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
 	  version_string, mbi.mem_lower, mbi.mem_upper);
 }
 

@@ -124,8 +124,6 @@ static struct pci_device pci_nic_list[] =
     "Intel Corporation 82559 InBusiness 10/100", 0, 0, 0, 0},
   { PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82562,
     "Intel EtherExpressPro100 82562EM", 0, 0, 0, 0},
-  { PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_ICH3,
-    "Intel EtherExpressPro100 ICH3", 0, 0, 0, 0},
 #endif
 #ifdef	INCLUDE_EPIC100
   { PCI_VENDOR_ID_SMC,		PCI_DEVICE_ID_SMC_EPIC100,

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2001  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2001, 2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -475,6 +475,14 @@ ext2fs_read (char *buf, int len)
 
 */
 
+static inline
+int ext2_is_fast_symlink (void)
+{
+  int ea_blocks;
+  ea_blocks = INODE->i_file_acl ? EXT2_BLOCK_SIZE (SUPERBLOCK) / DEV_BSIZE : 0;
+  return INODE->i_blocks == ea_blocks;
+}
+
 /* preconditions: ext2fs_mount already executed, therefore supblk in buffer
  *   known as SUPERBLOCK
  * returns: 0 if error, nonzero iff we were able to find the file successfully
@@ -491,7 +499,7 @@ ext2fs_dir (char *dirname)
   int group_desc;		/* fs pointer to that group */
   int desc;			/* index within that group */
   int ino_blk;			/* fs pointer of the inode's information */
-  int str_chk;			/* used to hold the results of a string compare */
+  int str_chk = 0;		/* used to hold the results of a string compare */
   struct ext2_group_desc *gdp;
   struct ext2_inode *raw_inode;	/* inode info corresponding to current_ino */
 
@@ -618,7 +626,7 @@ ext2fs_dir (char *dirname)
 	  linkbuf[filemax + len] = '\0';
 
 	  /* Read the symlink data. */
-	  if (INODE->i_blocks)
+	  if (! ext2_is_fast_symlink ())
 	    {
 	      /* Read the necessary blocks, and reset the file pointer. */
 	      len = grub_read (linkbuf, filemax);

@@ -1,7 +1,7 @@
 /* builtins.c - the GRUB builtin commands */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -62,8 +62,6 @@ int default_entry = 0;
 int fallback_entry = -1;
 /* The number of current entry.  */
 int current_entryno;
-/* graphics file */
-char graphics_file[64];
 /* The address for Multiboot command-line buffer.  */
 static char *mb_cmdline;
 /* The password.  */
@@ -240,7 +238,7 @@ boot_func (char *arg, int flags)
      not KERNEL_TYPE_NONE. Is this assumption is bad?  */
   if (kernel_type != KERNEL_TYPE_NONE)
     unset_int15_handler ();
-  
+
 #ifdef SUPPORT_NETBOOT
   /* Shut down the networking.  */
   cleanup_net ();
@@ -296,17 +294,6 @@ boot_func (char *arg, int flags)
 
     case KERNEL_TYPE_MULTIBOOT:
       /* Multiboot */
-
-      /* Switch to video mode */
-      if (mbi.vbe_mode != 0x03 &&
-         (set_vbe_mode (mbi.vbe_mode) != 0x004F ||
-          get_vbe_mode_info (mbi.vbe_mode & ~0x4000, &mode_info_block) != 0x004F))
-       {
-         /* fallback to text mode */
-         mbi.vbe_mode = 0x03;
-         set_vbe_mode(mbi.vbe_mode);
-       }
-
       multi_boot ((int) entry_addr, (int) &mbi);
       break;
 
@@ -388,11 +375,11 @@ cat_func (char *arg, int flags)
       /* Because running "cat" with a binary file can confuse the terminal,
 	 print only some characters as they are.  */
       if (grub_isspace (c) || (c >= ' ' && c <= '~'))
-    grub_putchar (c);
+	grub_putchar (c);
       else
 	grub_putchar ('?');
     }
-
+  
   grub_close ();
   return 0;
 }
@@ -772,19 +759,7 @@ static struct builtin builtin_debug =
 static int
 default_func (char *arg, int flags)
 {
-
 #ifndef SUPPORT_DISKLESS
-#ifndef GRUB_UTIL
-  /* Has a forced once-only default been specified? */
-  static int savedefault_helper(int);
-  if ((saved_entryno & STAGE2_ONCEONLY_ENTRY) != 0)
-    {
-      grub_timeout = 0;
-      default_entry = saved_entryno & ~STAGE2_ONCEONLY_ENTRY;
-      savedefault_helper(0);
-      return 0;
-    }
-#endif
   if (grub_strcmp (arg, "saved") == 0)
     {
       default_entry = saved_entryno;
@@ -1070,7 +1045,7 @@ embed_func (char *arg, int flags)
       char mbr[SECTOR_SIZE];
       char ezbios_check[2*SECTOR_SIZE];
       int i;
-
+      
       /* Open the partition.  */
       if (! open_partition ())
 	return 1;
@@ -1096,11 +1071,11 @@ embed_func (char *arg, int flags)
       /* Check if the disk can store the Stage 1.5.  */
       for (i = 0; i < 4; i++)
 	if (PC_SLICE_TYPE (mbr, i) && PC_SLICE_START (mbr, i) - 1 < size)
-	{
+	  {
 	    errnum = ERR_NO_DISK_SPACE;
-	  return 1;
-	}
-
+	    return 1;
+	  }
+      
       /* Check for EZ-BIOS signature. It should be in the third
        * sector, but due to remapping it can appear in the second, so
        * load and check both.  
@@ -1324,28 +1299,6 @@ static struct builtin builtin_fstest =
 };
 
 
-
-/* graphics */
-static int
-gfxmenu_func (char *arg, int flags)
-{
-  memmove(graphics_file, arg, sizeof graphics_file - 1);
-  graphics_file[sizeof graphics_file - 1] = 0;
-
-  return 0;
-}
- 
-static struct builtin builtin_gfxmenu =
-{
-  "gfxmenu",
-  gfxmenu_func,
-  BUILTIN_MENU | BUILTIN_HELP_LIST,
-  "gfxmenu FILE",
-  "Use the graphical menu from FILE."
-};
-
-
-
 /* geometry */
 static int
 geometry_func (char *arg, int flags)
@@ -1436,10 +1389,10 @@ static struct builtin builtin_geometry =
   BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "geometry DRIVE [CYLINDER HEAD SECTOR [TOTAL_SECTOR]]",
   "Print the information for a drive DRIVE. In the grub shell, you can"
-  "set the geometry of the drive arbitrarily. The number of the cylinders,"
+  " set the geometry of the drive arbitrarily. The number of the cylinders,"
   " the one of the heads, the one of the sectors and the one of the total"
   " sectors are set to CYLINDER, HEAD, SECTOR and TOTAL_SECTOR,"
-  "respectively. If you omit TOTAL_SECTOR, then it will be calculated based"
+  " respectively. If you omit TOTAL_SECTOR, then it will be calculated based"
   " on the C/H/S values automatically."
 };
 
@@ -1498,7 +1451,7 @@ help_func (char *arg, int flags)
 	     skip this.  */
 	  if (! ((*builtin)->flags & BUILTIN_CMDLINE))
 	    continue;
-
+	  
 	  /* If this doesn't need to be listed automatically and "--all"
 	     is not specified, skip this.  */
 	  if (! all && ! ((*builtin)->flags & BUILTIN_HELP_LIST))
@@ -1963,6 +1916,12 @@ install_func (char *arg, int flags)
 
   /* Set the "force LBA" flag.  */
   *((unsigned char *) (stage1_buffer + STAGE1_FORCE_LBA)) = is_force_lba;
+
+  /* Set the boot drive mask. This is a workaround for buggy BIOSes which
+     don't pass boot drive correctly. Instead, they pass 0x00 even when
+     booted from 0x80.  */
+  *((unsigned char *) (stage1_buffer + STAGE1_BOOT_DRIVE_MASK))
+    = (dest_drive & BIOS_FLAG_FIXED_DISK);
   
   /* Read the first sector of Stage 2.  */
   disk_read_hook = disk_read_savesect_func;
@@ -2408,7 +2367,7 @@ static struct builtin builtin_kernel =
   BUILTIN_CMDLINE | BUILTIN_HELP_LIST,
   "kernel [--no-mem-option] [--type=TYPE] FILE [ARG ...]",
   "Attempt to load the primary boot image from FILE. The rest of the"
-  "line is passed verbatim as the \"kernel command line\".  Any modules"
+  " line is passed verbatim as the \"kernel command line\".  Any modules"
   " must be reloaded after using this command. The option --type is used"
   " to suggest what type of kernel to be loaded. TYPE must be either of"
   " \"netbsd\", \"freebsd\", \"openbsd\", \"linux\", \"biglinux\" and"
@@ -3115,7 +3074,7 @@ print_root_device (void)
   current_drive = saved_drive;
   print_fsys_type ();
 }
-      
+
 static int
 real_root_func (char *arg, int attempt_mount)
 {
@@ -3138,8 +3097,8 @@ real_root_func (char *arg, int attempt_mount)
   /* Ignore ERR_FSYS_MOUNT.  */
   if (attempt_mount)
     {
-  if (! open_device () && errnum != ERR_FSYS_MOUNT)
-    return 1;
+      if (! open_device () && errnum != ERR_FSYS_MOUNT)
+	return 1;
     }
   else
     {
@@ -3152,7 +3111,7 @@ real_root_func (char *arg, int attempt_mount)
 	    return 1;
 	}
     }
-
+  
   /* Clear ERRNUM.  */
   errnum = 0;
   saved_partition = current_partition;
@@ -3160,18 +3119,18 @@ real_root_func (char *arg, int attempt_mount)
 
   if (attempt_mount)
     {
-  /* BSD and chainloading evil hacks !!  */
-  biasptr = skip_to (0, next);
-  safe_parse_maxint (&biasptr, &hdbias);
-  errnum = 0;
-  bootdev = set_bootdev (hdbias);
+      /* BSD and chainloading evil hacks !!  */
+      biasptr = skip_to (0, next);
+      safe_parse_maxint (&biasptr, &hdbias);
+      errnum = 0;
+      bootdev = set_bootdev (hdbias);
       if (errnum)
 	return 1;
-
-  /* Print the type of the filesystem.  */
-  print_fsys_type ();
+      
+      /* Print the type of the filesystem.  */
+      print_fsys_type ();
     }
-
+  
   return 0;
 }
 
@@ -3221,14 +3180,21 @@ static struct builtin builtin_rootnoverify =
 };
 
 
-
-#if !defined(SUPPORT_DISKLESS) && !defined(GRUB_UTIL)
-/* Write specified default entry number into stage2 file. */
+/* savedefault */
 static int
-savedefault_helper (int new_default)
+savedefault_func (char *arg, int flags)
 {
+#if !defined(SUPPORT_DISKLESS) && !defined(GRUB_UTIL)
   char buffer[512];
   int *entryno_ptr;
+  
+  /* This command is only useful when you boot an entry from the menu
+     interface.  */
+  if (! (flags & BUILTIN_SCRIPT))
+    {
+      errnum = ERR_UNRECOGNIZED;
+      return 1;
+    }
   
   /* Get the geometry of the boot drive (i.e. the disk which contains
      this stage2).  */
@@ -3255,10 +3221,10 @@ savedefault_helper (int new_default)
   entryno_ptr = (int *) (buffer + STAGE2_SAVED_ENTRYNO);
 
   /* Check if the saved entry number differs from current entry number.  */
-  if (*entryno_ptr != new_default)
+  if (*entryno_ptr != current_entryno)
     {
       /* Overwrite the saved entry number.  */
-      *entryno_ptr = new_default;
+      *entryno_ptr = current_entryno;
       
       /* Save the image in the disk.  */
       if (! rawwrite (boot_drive, install_second_sector, buffer))
@@ -3269,117 +3235,6 @@ savedefault_helper (int new_default)
     }
 
   return 0;
-}
-#endif
-
-#if !defined(SUPPORT_DISKLESS) && defined(GRUB_UTIL)
-/*
- * Full implementation of new `savedefault' for GRUB shell.
- * XXX This needs fixing for stage2 files which aren't accessible
- *     through a mounted filesystem.
- */
-static int
-savedefault_shell(char *arg, int flags)
-{
-  char *stage2_os_file = "/boot/grub/stage2"; /* Default filename */
-  FILE *fp;
-  char buffer[512];
-  int *entryno_ptr;
-  int new_default = 0;
-
-  while (1)
-    {
-      if (grub_memcmp ("--stage2=", arg, sizeof ("--stage2=") - 1) == 0)
-        {
-          stage2_os_file = arg + sizeof ("--stage2=") - 1;
-          arg = skip_to (0, arg);
-          nul_terminate (stage2_os_file);
-        }
-      else if (grub_memcmp ("--default=", arg, sizeof ("--default=") - 1) == 0)
-        {
-          char *p = arg + sizeof ("--default=") - 1;
-          if (! safe_parse_maxint (&p, &new_default))
-            return 1;
-          arg = skip_to (0, arg);
-        }
-      else if (grub_memcmp ("--once", arg, sizeof ("--once") - 1) == 0)
-        {
-          new_default |= STAGE2_ONCEONLY_ENTRY;
-          arg = skip_to (0, arg);
-        }
-      else
-        break;
-    }
-
-  if (! (fp = fopen(stage2_os_file, "r+")))
-    {
-      errnum = ERR_FILE_NOT_FOUND;
-      return 1;
-    }
-  
-  if (fseek (fp, SECTOR_SIZE, SEEK_SET) != 0)
-    {
-      fclose (fp);
-      errnum = ERR_BAD_VERSION;
-      return 1;
-    }
-  
-  if (fread (buffer, 1, SECTOR_SIZE, fp) != SECTOR_SIZE)
-    {
-      fclose (fp);
-      errnum = ERR_READ;
-      return 1;
-    }
-
-  /* Sanity check.  */
-  if (buffer[STAGE2_STAGE2_ID] != STAGE2_ID_STAGE2
-      || *((short *) (buffer + STAGE2_VER_MAJ_OFFS)) != COMPAT_VERSION)
-    {
-      errnum = ERR_BAD_VERSION;
-      return 1;
-    }
-  
-  entryno_ptr = (int *) (buffer + STAGE2_SAVED_ENTRYNO);
-  *entryno_ptr = new_default;
-
-  if (fseek (fp, SECTOR_SIZE, SEEK_SET) != 0)
-    {
-      fclose (fp);
-      errnum = ERR_BAD_VERSION;
-      return 1;
-    }
-  
-  if (fwrite (buffer, 1, SECTOR_SIZE, fp) != SECTOR_SIZE)
-    {
-      fclose (fp);
-      errnum = ERR_WRITE;
-      return 1;
-    }
-  
-  (void)fflush (fp);
-  fclose (fp);
-  return 0;
-}
-#endif
-
-/* savedefault */
-static int
-savedefault_func (char *arg, int flags)
-{
-#if !defined(SUPPORT_DISKLESS)
-#if !defined(GRUB_UTIL)
-  /* This command is only useful when you boot an entry from the menu
-     interface.  */
-  if (! (flags & BUILTIN_SCRIPT))
-    {
-      errnum = ERR_UNRECOGNIZED;
-      return 1;
-    }
-
-  return savedefault_helper(current_entryno);
-#else /* defined(GRUB_UTIL) */
-  return savedefault_shell(arg, flags);
-#endif
 #else /* ! SUPPORT_DISKLESS && ! GRUB_UTIL */
   errnum = ERR_UNRECOGNIZED;
   return 1;
@@ -3391,14 +3246,8 @@ static struct builtin builtin_savedefault =
   "savedefault",
   savedefault_func,
   BUILTIN_CMDLINE,
-#ifdef GRUB_UTIL
-  "savedefault [--stage2=STAGE2_FILE] [--default=DEFAULT] [--once]",
-  "Save DEFAULT as the default boot entry in STAGE2_FILE. If '--once'"
-  " is specified, the default is reset after the next reboot."
-#else
   "savedefault",
   "Save the current entry as the default boot entry."
-#endif
 };
 
 
@@ -3843,7 +3692,7 @@ setup_func (char *arg, int flags)
 
       return ret;
     }
-
+  
   /* Construct a device name in DEVICE.  */
   void sprint_device (int drive, int partition)
     {
@@ -4040,7 +3889,7 @@ setup_func (char *arg, int flags)
 #if 1
   /* Don't embed a drive number unnecessarily.  */
   grub_sprintf (cmd_arg, "%s%s%s%s %s%s %s p %s %s",
-		is_force_lba? "--force-lba" : "",
+		is_force_lba? "--force-lba " : "",
 		stage2_arg? stage2_arg : "",
 		stage2_arg? " " : "",
 		stage1,
@@ -4106,135 +3955,7 @@ static struct builtin builtin_setup =
   " to tell GRUB the file name under your OS."
 };
 
-static int
-setvbe_func (char *arg, int flags)
-{
-    int count = 1;
-    int mode = 0x03;
-    int width,height,depth;
-    unsigned short *mode_list;
-
-    if (! *arg)
-    {
-	errnum = ERR_BAD_ARGUMENT;
-	return 1;
-    }
-
-    if (*arg == '#')
-    {
-    	arg++;
-	if(!safe_parse_maxint(&arg, &mode))
-	    return 1;
-    }
-    else
-    {
-	if (! safe_parse_maxint (&arg, &width))
-	    return 1;
-	arg = skip_to(0,arg);
-	if (! safe_parse_maxint (&arg, &height))
-	    return 1;
-	arg = skip_to(0,arg);
-	if (! safe_parse_maxint (&arg, &depth))
-	    return 1;
-    
-        grub_printf("Scanning for a %dx%d %d deep vesa mode.\n",width,height,depth);
-
-    }
-    
-
-    if (! (mbi.flags & MB_INFO_VIDEO_INFO))
-    {
-	grub_printf (" VBE BIOS is not present.\n");
-	return 0;
-    }
-
-    /* Check the version.  */
-    if (vbe_info_block.version < 0x0200)
-    {
-	grub_printf (" VBE version %d.%d is not supported.\n",
-		(int) (vbe_info_block.version >> 8),
-		(int) (vbe_info_block.version & 0xFF));
-	return 0;
-    }
-
-    /* Print some information.  */
-    grub_printf (" VBE version %d.%d\n",
-	    (int) (vbe_info_block.version >> 8),
-	    (int) (vbe_info_block.version & 0xFF));
-
-    /* Iterate probing modes.  */
-    
-    if(mode == 0x03)
-    for (mode_list
-	    = (unsigned short *) VBE_FAR_PTR (vbe_info_block.video_mode);
-	    *mode_list != 0xFFFF;
-	    mode_list++)
-    {
-	if (get_vbe_mode_info (*mode_list, &mode_info_block) != 0x004F)
-	    continue;
-	
-	/* Skip this, if this is not supported or linear frame buffer
-	   mode is not support.  */
-	if ((mode_info_block.mode_attributes & 0x0081) != 0x0081)
-	    continue;
-
-	{
-	    if ((mode_info_block.x_resolution == width) &&
-		(mode_info_block.y_resolution == height))
-	    {
-		if ((depth == 15 || depth == 16)&&(mode_info_block.bits_per_pixel==15 || mode_info_block.bits_per_pixel == 16))
-		{
-		    mode = *mode_list;
-		    break;
-		}
-		if ((depth == 24 || depth == 32)&&(mode_info_block.bits_per_pixel==24 || mode_info_block.bits_per_pixel == 32))
-		{
-		    mode = *mode_list;
-		    break;
-		}
-		if (depth == mode_info_block.bits_per_pixel)
-		{
-		    mode = *mode_list;
-		    break;
-		}
-	    }
-	    
-	    count++;
-	}
-    }
-
-    if (mode == 0x03)
-	grub_printf ("No matching mode found.\n");
-    else
-    {
-    	int attributes = 0;
-	int bpl = 0;
-	int linear_bpl = 0;
-	
-    	if (get_vbe_mode_info (mode, &mode_info_block) == 0x004F)
-    	{
-	    attributes = mode_info_block.mode_attributes;
-	    bpl = mode_info_block.bytes_per_scanline;
-    	    linear_bpl = mode_info_block.linear_bytes_per_scanline;
-	}
-
-	mbi.vbe_mode = mode | 0x4000;
-	grub_printf("Kernel will start in Vesa mode 0x%x (attr %x  bpl %d  linear_bpl %d)\n", mbi.vbe_mode, attributes,
-	bpl, linear_bpl);
-    }
-    return 0;
-}
-
-static struct builtin builtin_setvbe =
-{
-  "setvbe",
-  setvbe_func,
-  BUILTIN_CMDLINE,
-  "setvbe [WIDTH HEIGHT DEPTH] [#MODE]",
-  "Manually select a VESA graphicsmode for the kernel."
-  "Used after loading the kernel image, but before booting"
-};
-
+
 #if defined(SUPPORT_SERIAL) || defined(SUPPORT_HERCULES)
 /* terminal */
 static int
@@ -4312,17 +4033,17 @@ terminal_func (char *arg, int flags)
 	  if (grub_strcmp (arg, term_table[i].name) == 0)
 	    {
 	      if (term_table[i].flags & TERM_NEED_INIT)
-	    {
+		{
 		  errnum = ERR_DEV_NEED_INIT;
-	      return 1;
-	    }
+		  return 1;
+		}
 	      
 	      if (default_term < 0)
 		default_term = i;
 
 	      term_bitmap |= (1 << i);
 	      break;
-	}
+	    }
 	}
 
       if (! term_table[i].name)
@@ -4339,7 +4060,7 @@ terminal_func (char *arg, int flags)
   if (term_bitmap & ~(1 << default_term))
     {
       int time1, time2 = -1;
-      
+
       /* XXX: Disable the pager.  */
       count_lines = -1;
       
@@ -4355,17 +4076,17 @@ terminal_func (char *arg, int flags)
 	  for (i = 0; term_table[i].name; i++)
 	    {
 	      if (term_bitmap & (1 << i))
-	    {
+		{
 		  if (term_table[i].checkkey () >= 0)
 		    {
 		      (void) term_table[i].getkey ();
 		      default_term = i;
-	      
+		      
 		      goto end;
 		    }
 		}
 	    }
-
+	  
 	  /* Prompt the user, once per sec.  */
 	  if ((time1 = getrtsecs ()) != time2 && time1 != 0xFF)
 	    {
@@ -4467,7 +4188,7 @@ terminfo_func (char *arg, int flags)
 	      
 	      if (! grub_memcmp (arg, name, len))
 		{
-		  grub_strcpy (options[i].var, arg + len);
+		  grub_strcpy (options[i].var, ti_unescape_string (arg + len));
 		  break;
 		}
 	    }
@@ -4494,11 +4215,16 @@ terminfo_func (char *arg, int flags)
       /* No option specifies printing out current settings.  */
       term = ti_get_term ();
 
-      grub_printf ("name=%s\n", term.name);
-      grub_printf ("cursor_address=%s\n", term.cursor_address);
-      grub_printf ("clear_screen=%s\n", term.clear_screen);
-      grub_printf ("enter_standout_mode=%s\n", term.enter_standout_mode);
-      grub_printf ("exit_standout_mode=%s\n", term.exit_standout_mode);
+      grub_printf ("name=%s\n",
+		   ti_escape_string (term.name));
+      grub_printf ("cursor_address=%s\n",
+		   ti_escape_string (term.cursor_address));
+      grub_printf ("clear_screen=%s\n",
+		   ti_escape_string (term.clear_screen));
+      grub_printf ("enter_standout_mode=%s\n",
+		   ti_escape_string (term.enter_standout_mode));
+      grub_printf ("exit_standout_mode=%s\n",
+		   ti_escape_string (term.exit_standout_mode));
     }
 
   return 0;
@@ -4607,7 +4333,7 @@ static struct builtin builtin_testload =
   " step is to try loading a kernel."
 };
 
-
+
 /* testvbe MODE */
 static int
 testvbe_func (char *arg, int flags)
@@ -4615,7 +4341,7 @@ testvbe_func (char *arg, int flags)
   int mode_number;
   struct vbe_controller controller;
   struct vbe_mode mode;
-
+  
   if (! *arg)
     {
       errnum = ERR_BAD_ARGUMENT;
@@ -4846,7 +4572,7 @@ vbeprobe_func (char *arg, int flags)
 
       return (seg << 4) + off;
     }
-
+  
   if (*arg)
     {
       if (! safe_parse_maxint (&arg, &mode_number))
@@ -4936,7 +4662,7 @@ static struct builtin builtin_vbeprobe =
   " the information about only the mode."
 };
   
-
+
 /* The table of builtin commands. Sorted in dictionary order.  */
 struct builtin *builtin_table[] =
 {
@@ -4968,7 +4694,6 @@ struct builtin *builtin_table[] =
   &builtin_find,
   &builtin_fstest,
   &builtin_geometry,
-  &builtin_gfxmenu,
   &builtin_halt,
   &builtin_help,
   &builtin_hiddenmenu,
@@ -5010,7 +4735,6 @@ struct builtin *builtin_table[] =
 #endif /* SUPPORT_SERIAL */
   &builtin_setkey,
   &builtin_setup,
-  &builtin_setvbe,
 #if defined(SUPPORT_SERIAL) || defined(SUPPORT_HERCULES)
   &builtin_terminal,
 #endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
