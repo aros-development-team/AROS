@@ -673,7 +673,8 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
         
         while (NULL != CR)
         {
-int found = FALSE;
+          int area = (CR->bounds.MaxX - CR->bounds.MinX + 1) *
+                     (CR->bounds.MaxY - CR->bounds.MinY + 1);
           if (NULL != CR->BitMap)
           {
             _CR = L->ClipRect;
@@ -687,52 +688,62 @@ int found = FALSE;
                     CR->bounds.MinY > _CR->bounds.MaxY ||
                     CR->bounds.MaxY < _CR->bounds.MinY    ))
               {
-                if (CR->bounds.MinX < _CR->bounds.MinX ||
-                    CR->bounds.MaxX > _CR->bounds.MaxX ||
-                    CR->bounds.MinY < _CR->bounds.MinY ||
-                    CR->bounds.MaxY > _CR->bounds.MaxY )
-                  kprintf("Something's wrong with the cliprects!\n");
-                if (NULL == _CR->BitMap)
+                ULONG srcX, srcY;
+                ULONG destX, destY;
+                ULONG width, height;
+                
+                width  = CR->bounds.MaxX - CR->bounds.MinX + 1;
+                height = CR->bounds.MaxY - CR->bounds.MinY + 1; 
+                
+                if (CR->bounds.MinX > _CR->bounds.MinX)
                 {
-                  kprintf("%s!! There's something wrong!\n",__FUNCTION__);
-                  break;
+                  srcX  = CR->bounds.MinX & 0x0f;
+                  destX = CR->bounds.MinX - _CR->bounds.MinX + (_CR->bounds.MinX & 0x0f);
                 }
                 else
                 {
-/*
-                  kprintf("Doing a blit to CR (%d,%d)-(%d,%d)!\n",
-                            _CR->bounds.MinX,_CR->bounds.MinY,
-                            _CR->bounds.MaxX,_CR->bounds.MaxY);
-                  kprintf("Doing a blit from CR (%d,%d)-(%d,%d)!\n",
-                            CR->bounds.MinX,CR->bounds.MinY,
-                            CR->bounds.MaxX,CR->bounds.MaxY);
-*/
-/*
-                  kprintf("%d, %d, %d, %d\n",
-                            CR->bounds.MinX - _CR->bounds.MinX,
-                            CR->bounds.MinY - _CR->bounds.MinY,
-                            CR->bounds.MaxX - _CR->bounds.MinX + 1,
-                            CR->bounds.MaxY - _CR->bounds.MinY + 1);
-*/
-                  BltBitMap(CR->BitMap,
-                            CR->bounds.MinX & 0x0f,
-                            0,
-                            _CR->BitMap,
-                            CR->bounds.MinX - _CR->bounds.MinX + (_CR->bounds.MinX & 0x0f),
-                            CR->bounds.MinY - _CR->bounds.MinY,
-                            CR->bounds.MaxX - _CR->bounds.MinX + 1,
-                            CR->bounds.MaxY - _CR->bounds.MinY + 1,
-                            0x0c0,/*copy  */
-                            0xff, 
-                            NULL); 
-found = TRUE;
+                  srcX   = _CR->bounds.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f);
+                  destX  = _CR->bounds.MinX & 0x0f;
+                  width -= (_CR->bounds.MinX - CR->bounds.MinX);
                 }
+                  
+                if (CR->bounds.MinY > _CR->bounds.MinY)
+                {
+                  srcY  = 0;
+                  destY = CR->bounds.MinY - _CR->bounds.MinY;                  
+                }
+                else
+                {
+                  srcY    = _CR->bounds.MinY - CR->bounds.MinY;
+                  destY   = 0; 
+                  height -= srcY;
+                }
+                  
+                if (CR->bounds.MaxX > _CR->bounds.MaxX)
+                  width  -= (CR->bounds.MaxX - _CR->bounds.MaxX);
                 
+                if (CR->bounds.MaxY > _CR->bounds.MaxY)
+                  height -= (CR->bounds.MaxY - _CR->bounds.MaxY);
+
+
+                BltBitMap(CR->BitMap,
+                          srcX,
+                          srcY,
+                          _CR->BitMap,
+                          destX,
+                          destY,
+                          width,
+                          height,
+                          0x0c0,/*copy  */
+                          0xff, 
+                          NULL); 
+                area -= width * height;
+                if (0 == area)
+                  break;
+                   
               }
               _CR = _CR->Next;
             }
-if (found == FALSE)
-  kprintf("!!!!! Something is wrong. Couldn't find bitmap!\n");  
             
             /* free the bitmap */
             FreeBitMap(CR->BitMap);
