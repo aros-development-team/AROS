@@ -99,7 +99,7 @@ extern void _aros_not_implemented (void);
 
 /* What to do with the library base in header, prototype and call */
 #define __AROS_LH_BASE(basetype,basename)   basetype basename __asm("a6")
-#define __AROS_LP_BASE(basetype,basename)   void *  __asm("a6")
+#define __AROS_LP_BASE(basetype,basename)   void * __asm("a6")
 #define __AROS_LC_BASE(basetype,basename)   basename
 
 /* How to transform an argument in header, prototype and call */
@@ -117,14 +117,6 @@ extern void _aros_not_implemented (void);
 #define __AROS_UFH_PREFIX   /* eps */
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
-
-/* Postfix for library function in header, prototype and call */
-#define __AROS_LH_POSTFIX    /* eps */
-#define __AROS_LP_POSTFIX    /* eps */
-#define __AROS_LC_POSTFIX    /* eps */
-#define __AROS_UFH_POSTFIX   /* eps */
-#define __AROS_UFP_POSTFIX   /* eps */
-#define __AROS_UFC_POSTFIX   /* eps */
 
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
