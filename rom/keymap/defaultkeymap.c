@@ -172,8 +172,9 @@ static UBYTE hikeymaptypes[] =
 
 #define STRING(x) (IPTR)x
 #define DEAD(x)	  (IPTR)x
+
 #define BYTES(b0, b1, b2, b3) \
-	(b3<<24)|(b2<<16)|(b1<<8)|(b0<<0)
+	(((UBYTE)b3)<<24) | (((UBYTE)b2)<<16) | (((UBYTE)b1)<<8) | (((UBYTE)b0)<<0)
 
 static IPTR lokeymap[] =
 {
