@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/11/16 01:18:18  aros
+    Fixed register usage (register used twice)
+
     Revision 1.1  1996/11/14 08:53:29  aros
     First attempt for a real fastfilesystem
     (only directoryscans for now)
@@ -116,7 +119,7 @@ LONG AROS_SLIB_ENTRY(entry,)();
 AROS_LH3(void, open,
  AROS_LHA(struct IOExtTD *, iotd, A1),
  AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D0),
+ AROS_LHA(ULONG,              flags, D1),
 	   struct fdskbase *, fdskbase, 1, fdsk)
 {
     AROS_LIBFUNC_INIT
