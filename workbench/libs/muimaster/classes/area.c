@@ -701,19 +701,15 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     D(bug("muimaster.library/area.c: Draw Area Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
-    if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
-    {
-	msg->flags &= ~MADF_DRAWOBJECT;
-	return 0;
-    }
-
     if (msg->flags & MADF_DRAWALL)
 	msg->flags |= MADF_DRAWOBJECT;
 
     if (!(msg->flags & MADF_DRAWOBJECT))
     {
 	/* dont draw bg/frame, let subclass redraw content only
-	 */
+	** Don't know if MUI handles it like this, or if it
+	** simply return without setting MADF_DRAWOBJECT
+	**/
 	if (msg->flags & MADF_DRAWUPDATE)
 	    msg->flags |= MADF_DRAWOBJECT;
 	return 0;
