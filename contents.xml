@@ -99,7 +99,7 @@
     This is the magic file which holds the whole thing together.
     It has the following rules:
 
-    <filtermakefile>$(TOP)/mmakefile,target</filtermakefile>
+    <filtermakefile>target</filtermakefile>
 </item>
 
 <item>
