@@ -24,12 +24,14 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-
 extern struct Library *MUIMasterBase;
 
 #include "muimaster_intern.h"
 #include "mui.h"
 #include "support.h"
+
+#define MYDEBUG 1
+#include "debug.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -46,16 +48,6 @@ static const int __revision = 1;
 /******************************************************************************/
 /******************************************************************************/
 
-struct MUIP_Group_ADDMEMBER {
-    ULONG    MethodID;
-    Object   *obj;
-};
-
-struct MUIP_Group_REMMEMBER {
-    ULONG    MethodID;
-    Object   *obj;
-};
-
 struct layout2d_elem {
     int min;
     int max;
@@ -63,11 +55,9 @@ struct layout2d_elem {
     int weight;
 };
 
-static ULONG
-Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg);
+static ULONG Group_DispatchMsg(struct IClass *cl, Object *obj, Msg msg);
 
-static void
-change_active_page (struct IClass *cl, Object *obj, LONG page)
+static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     LONG newpage;
@@ -102,26 +92,29 @@ change_active_page (struct IClass *cl, Object *obj, LONG page)
 }
 
 
-/*
- * Constructor
- */
-static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_NEW - Constructor
+**************************************************************************/
+static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data;
     struct TagItem *tags,*tag;
     BOOL   bad_childs = FALSE;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
-    if (!obj)
-	return 0;
+    if (!obj) return 0;
 
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
 
     data->family = MUI_NewObjectA(MUIC_Family, NULL);
     if (!data->family)
+    {
+    	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
+    }
 
+#warning FIXME: prefs
     data->horiz_spacing = 2; //__zprefs.group_hspacing;
     data->vert_spacing = 2; //__zprefs.group_vspacing;
     data->columns = 1;
@@ -133,15 +126,8 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	case MUIA_Group_Child:
-	    if (tag->ti_Data)
-	    {
-		DoMethod(data->family, MUIM_Family_AddTail, tag->ti_Data);
-		data->num_childs++;
-	    }
-	    else
-	    {
-		bad_childs = TRUE;
-	    }
+	    if (tag->ti_Data) DoMethod(obj, OM_ADDMEMBER, tag->ti_Data);
+	    else  bad_childs = TRUE;
 	    break;
 	case MUIA_Group_ActivePage:
 	    change_active_page(cl, obj, (LONG)tag->ti_Data);
@@ -192,27 +178,26 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
+    D(bug("muimaster.library/group.c: Group Object created at 0x%lx\n",obj));
+
     return (ULONG)obj;
 }
 
-/******************************************************************************/
-/* DISPOSE                                                                    */
-/******************************************************************************/
-
-static ULONG
-mDispose(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Group_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
 
-    MUI_DisposeObject(data->family);
+    if (data->family) MUI_DisposeObject(data->family);
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * OM_SET
- */
-static ULONG
-mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupData *data  = INST_DATA(cl, obj);
     struct TagItem       *tags  = msg->ops_AttrList;
@@ -263,12 +248,11 @@ mSet(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/******************************************************************************/
-/* GET                                                                        */
-/******************************************************************************/
 
-static ULONG
-mGet(struct IClass *cl, Object *obj, struct opGet *msg)
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 /* small macro to simplify return value storage */
 #define STORE *(msg->opg_Storage)
@@ -307,52 +291,49 @@ mGet(struct IClass *cl, Object *obj, struct opGet *msg)
     /* our handler didn't understand the attribute, we simply pass
     ** it to our superclass now
     */
-    return(DoSuperMethodA(cl, obj, (Msg) msg));
+    return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
 }
 
 
-/*
- * OM_ADDMEMBER
- */
-static ULONG
-mAddMember(struct IClass *cl, Object *obj,
-		struct MUIP_Group_ADDMEMBER *msg)
+/**************************************************************************
+ OM_ADDMEMBER
+**************************************************************************/
+static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    ULONG show = MUIM_Show;
+
+    D(bug("muimaster.library/area.c: Added member 0x%lx to 0x%lx\n",msg->opam_Object,obj));
+
 
     DoMethodA(data->family, (Msg)msg);
     data->num_childs++;
+
     /* if we are in an application tree, propagate pointers */
     if (muiNotifyData(obj)->mnd_GlobalInfo)
-	DoMethod(msg->obj, MUIM_ConnectParent, obj);
+	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
 
     if (_flags(obj) & MADF_SETUP)
-	DoMethod(msg->obj, MUIM_Setup, muiRenderInfo(obj));
+	DoMethod(msg->opam_Object, MUIM_Setup, muiRenderInfo(obj));
     if (_flags(obj) & MADF_CANDRAW)
-	DoMethodA(msg->obj, (Msg)&show);
+	DoMethod(msg->opam_Object, MUIM_Show);
 
     return TRUE;
 }
 
-
-static ULONG
-mRemMember(struct IClass *cl, Object *obj,
-		struct MUIP_Group_REMMEMBER *msg)
+/**************************************************************************
+ OM_REMMEMBER
+**************************************************************************/
+static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-    ULONG hide = MUIM_Hide;
-    ULONG cleanup = MUIM_Cleanup;
-    ULONG disconnect = MUIM_DisconnectParent;
 
     if (_flags(obj) & MADF_CANDRAW)
-	DoMethodA(msg->obj, (Msg)&hide);
+	DoMethod(msg->opam_Object, MUIM_Hide);
     if (_flags(obj) & MADF_SETUP)
-	DoMethodA(msg->obj, (Msg)&cleanup);
-
+	DoMethod(msg->opam_Object, MUIM_Cleanup);
     if (muiNotifyData(obj)->mnd_GlobalInfo)
-	DoMethodA(msg->obj, (Msg)&disconnect);
+	DoMethod(msg->opam_Object, MUIM_DisconnectParent);
 
     data->num_childs--;
     DoMethodA(data->family, (Msg)msg);
@@ -388,8 +369,7 @@ group_connect_childs (struct MUI_GroupData *data, Object *obj)
  * called by parent object between OM_NEW and MUIM_Setup,
  * init RenderInfo and GlobalInfo
  */
-static ULONG
-mConnectParent(struct IClass *cl, Object *obj,
+static ULONG mConnectParent(struct IClass *cl, Object *obj,
 		    struct MUIP_ConnectParent *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1030,8 +1010,7 @@ mAskMinMax(struct IClass *cl, Object *obj,
     ** Note: Errors during layout are not easy to handle for MUI.
     **       Better avoid them!
     */
-static void
-group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *children)
+static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *children)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object *cstate;
@@ -1647,17 +1626,17 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     switch (msg->MethodID)
     {
     case OM_NEW:
-	return mNew(cl, obj, (struct opSet *) msg);
+	return Group_New(cl, obj, (struct opSet *) msg);
     case OM_DISPOSE:
-	return mDispose(cl, obj, msg);
+	return Group_Dispose(cl, obj, msg);
     case OM_SET:
-	return mSet(cl, obj, (struct opSet *)msg);
+	return Group_Set(cl, obj, (struct opSet *)msg);
     case OM_GET:
-	return mGet(cl, obj, (struct opGet *)msg);
+	return Group_Get(cl, obj, (struct opGet *)msg);
     case OM_ADDMEMBER:
-	return mAddMember(cl, obj, (APTR)msg);
+	return Group_AddMember(cl, obj, (APTR)msg);
     case OM_REMMEMBER:
-	return mRemMember(cl, obj, (APTR)msg);
+	return Group_RemMember(cl, obj, (APTR)msg);
     case MUIM_AskMinMax :
 	return mAskMinMax(cl, obj, (APTR)msg);
     case MUIM_Group_ExitChange :

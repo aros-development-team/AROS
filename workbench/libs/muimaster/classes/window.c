@@ -26,10 +26,12 @@
 #include <proto/utility.h>
 #include <proto/graphics.h>
 
-#include "debug.h"
 #include "mui.h"
 #include "classes/window.h"
 #include "classes/area.h"
+
+#define MYDEBUG 1
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -802,12 +804,11 @@ static void window_select_dimensions (struct MUI_WindowData *data)
 			    data->wd_MinMax.MaxHeight);
 }
 
-/******************************************************************************/
-/* NEW                                                                        */
-/******************************************************************************/
 
-static ULONG
-mNew(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_NEW
+**************************************************************************/
+static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data;
     struct TagItem *tags,*tag;
@@ -913,16 +914,17 @@ mNew(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
+    D(bug("muimaster.library/window.c: Window Object created at 0x%lx\n",obj));
+
     return (ULONG)obj;
 }
 
-/******************************************************************************/
-/* DISPOSE                                                                    */
-/******************************************************************************/
-
-static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_WindowData *data      = INST_DATA(cl, obj);
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
 
     if ((data->wd_Flags & MUIWF_OPENED))
     {
@@ -933,12 +935,10 @@ static ULONG mDispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-
-
-/******************************************************************************/
-/* SET                                                                        */
-/******************************************************************************/
-static ULONG mSet(struct IClass *cl, Object *obj, struct opSet *msg)
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
     struct TagItem        *tags = msg->ops_AttrList;
@@ -1346,11 +1346,11 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	** sent a OM_NEW method.
 	*/
 	case OM_NEW:
-	    return(mNew(cl, obj, (struct opSet *) msg));
+	    return(Window_New(cl, obj, (struct opSet *) msg));
 	case OM_DISPOSE:
-	    return(mDispose(cl, obj, msg));
+	    return(Window_Dispose(cl, obj, msg));
 	case OM_SET:
-	    return(mSet(cl, obj, (struct opSet *)msg));
+	    return(Window_Set(cl, obj, (struct opSet *)msg));
 	case OM_GET:
 	    return(mGet(cl, obj, (struct opGet *)msg));
 	case MUIM_Window_AddEventHandler :
