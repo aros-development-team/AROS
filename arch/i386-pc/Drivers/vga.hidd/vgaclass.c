@@ -24,6 +24,7 @@
 #include <hardware/custom.h>
 
 #include <devices/inputevent.h>
+#include <string.h>
 
 #include "vga.h"
 #include "vgaclass.h"
