@@ -87,11 +87,12 @@ static ULONG  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 	  break;
 	case MUIA_Numeric_Value:
-	  data->value = CLAMP((LONG)tag->ti_Data, data->min, data->max);
+	  data->value = (LONG)tag->ti_Data;
 	  break;
 	}
     }
 
+    data->value = CLAMP(data->value, data->min, data->max);
     return (ULONG)obj;
 }
 
@@ -103,42 +104,50 @@ static ULONG Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
     struct TagItem *tags, *tag;
+    LONG oldval;
+    STRPTR oldfmt;
+
+    oldval = data->value;
+    oldfmt = data->format;
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Numeric_CheckAllSizes:
-	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_CHECKALLSIZES);
-	  break;
-	case MUIA_Numeric_Default:
-	  /* data->defvalue = CLAMP(tag->ti_Data, data->min, data->max); */
-	  data->defvalue = tag->ti_Data;
-	  break;
-	case MUIA_Numeric_Format:
-	  data->format = (STRPTR)tag->ti_Data;
-	  break;
-	case MUIA_Numeric_Max:
-	  data->max = tag->ti_Data;
-	  break;
-	case MUIA_Numeric_Min:
-	  data->min = tag->ti_Data;
-	  break;
-	case MUIA_Numeric_Reverse:
-	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVERSE);
-	  break;
-	case MUIA_Numeric_RevLeftRight:
-	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVLEFTRIGHT);
-	  break;
-	case MUIA_Numeric_RevUpDown:
-	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
-	  break;
-	case MUIA_Numeric_Value:
-	  data->value = CLAMP((LONG)tag->ti_Data, data->min, data->max);
-	  MUI_Redraw(obj, MADF_DRAWUPDATE);
-	  break;
+	    case MUIA_Numeric_CheckAllSizes:
+		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_CHECKALLSIZES);
+		break;
+	    case MUIA_Numeric_Default:
+		/* data->defvalue = CLAMP(tag->ti_Data, data->min, data->max); */
+		data->defvalue = tag->ti_Data;
+		break;
+	    case MUIA_Numeric_Format:
+		data->format = (STRPTR)tag->ti_Data;
+		break;
+	    case MUIA_Numeric_Max:
+		data->max = tag->ti_Data;
+		break;
+	    case MUIA_Numeric_Min:
+		data->min = tag->ti_Data;
+		break;
+	    case MUIA_Numeric_Reverse:
+		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVERSE);
+		break;
+	    case MUIA_Numeric_RevLeftRight:
+		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVLEFTRIGHT);
+		break;
+	    case MUIA_Numeric_RevUpDown:
+		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
+		break;
+	    case MUIA_Numeric_Value:
+		data->value = (LONG)tag->ti_Data;
+		break;
 	}
     }
+
+    data->value = CLAMP(data->value, data->min, data->max);
+    if (data->value != oldval || data->format != oldfmt)
+	MUI_Redraw(obj, MADF_DRAWUPDATE);
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -375,7 +384,8 @@ static ULONG  Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Num
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
     /* TODO: use RawDoFmt() and buffer overrun */
-    sprintf(data->buf, data->format, msg->value);
+    snprintf(data->buf, 49, data->format, msg->value);
+    data->buf[49] = 0;
     return (ULONG)data->buf;
 }
 
