@@ -54,7 +54,7 @@ struct MinNode *List_First(APTR list)
 
 /**************************************************************************************************/
 
-#if 0
+#if 1
 
 struct MinNode *List_Last(APTR list)
 {

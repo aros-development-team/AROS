@@ -28,11 +28,22 @@
 #include <proto/utility.h>
 #include <proto/iffparse.h>
 #include <proto/layers.h>
+#include "text_intern.h"
+
+#if defined(__AROS__) && !defined(__MORPHOS__)
+#include LC_LIBDEFS_FILE
+#else
+#include "libdefs.h"
+#endif
 
 #ifndef __AROS__
+#ifndef __MORPHOS__
 #include <libraries/reqtools.h>
 #include <proto/reqtools.h>
 #endif
+#endif
+
+#include <aros/libcall.h>
 
 #ifdef COMPILE_DATATYPE
 #include <proto/datatypes.h>
@@ -43,18 +54,30 @@
 #include "support.h"
 #include "textclass.h"
 
+#ifdef MORPHOS_AG_EXTENSION
+#include "agextension.h"
+#endif
+
 /* Define the following to enable the debug version */
 #define MYDEBUG
 #include "debug.h"
 
+#ifndef __varargs68k
+#define __varargs68k
+#endif
 
 #ifdef __AROS__
 #define NO_PRINTER 1
 #define NO_GMORE_SCROLLRASTER 1
 #else
 #define NO_PRINTER 0
-#define NO_GMORE_SCROLLRASTER 0
+#define NO_GMORE_SCROLLRASTER 1
 #endif
+
+/* 17 is reserved for help */
+#define STM_SEARCH 18
+#define STM_SEARCH_NEXT 19
+#define STM_SEARCH_PREV 20
 
 /* Some prototypes */
 static void CopyText(struct Text_Data *td);
@@ -94,8 +117,6 @@ static int GetLineStartX(struct Line *line)
     return 0;
 }
 
-#if 0
-/* not used? */
 /**************************************************************************
  Returns the x pos of the line start
 **************************************************************************/
@@ -110,7 +131,6 @@ static int GetLineCharX(struct Line *line)
   }
   return x;
 }
-#endif
 
 /**************************************************************************
 
@@ -227,6 +247,13 @@ static int InitText(struct Text_Data *td)
 
     /* the delimers */
     td->word_delim = "\t *-,()<>[];\"";
+
+#ifdef MORPHOS_AG_EXTENSION
+       td->links = -1;
+       td->shinepen  = 2;
+       td->shadowpen = 1;
+       td->marked_line = NULL;
+#endif
 
     /* If no font is set use the default (fixed) font */
     if (!td->attr.ta_Name)
@@ -383,7 +410,12 @@ static void DisposeText(struct Text_Data *td)
 static void DrawText(struct Text_Data *td, struct RastPort *rp)
 {
     struct Line *line = (struct Line *) List_First(&td->line_list);
+#ifdef MORPHOS_AG_EXTENSION
+       LONG fonty = td->vert_unit;
+       LONG abs_y_line = 0;
+#else
     LONG fonty = td->font->tf_YSize;
+#endif
     LONG baseline = td->font->tf_Baseline;
 
     LONG linenum = 0;
@@ -414,6 +446,13 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 
     if (!(new_region = NewRegion()))
 	return;
+
+#ifdef MORPHOS_AG_EXTENSION
+	PrepareAGExtension(td);
+	/* if sub-class setup wrong vert unit adjust here at least to font height */
+	if (fonty < td->font->tf_YSize)
+            fonty = td->font->tf_YSize;
+#endif
 
     if (td->use_vert_diff)
     {
@@ -453,7 +492,14 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 
     SetFont(rp, td->font);
 
-
+#ifdef MORPHOS_AG_EXTENSION
+	/* clear last marked line (render in non marked state) */
+	if (td->last_marked_line != NULL)
+	{
+            DrawLineBevel(td, rp, td->last_marked_line, TRUE);
+            td->last_marked_line = NULL;
+	}
+#endif
     D(bug("text.datatype/DrawText: Start Loop\n"));
 
     while (line)
@@ -477,6 +523,17 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 		    LONG x_text = line->ln_XOffset - td->horiz_top * td->horiz_unit;
 /*		    LONG width = td->width - x_text;*/
 
+#ifdef MORPHOS_AG_EXTENSION
+                    /* remember yoffset for rendering link boxes correctly */
+                    line->ln_YOffset = abs_y_line;
+                    /* clear possible link box rests */
+                    if (fonty > td->font->tf_YSize)
+                	EraseRect(rp, td->left + x_text, td->top + y_line + fonty-1,
+                                      td->left + td->width - 1, td->top + y_line + fonty-1);
+                    /* add some space to the link box */
+                    if (line->ln_Flags & LNF_LINK)
+                	x_text += AG_LINK_ADDWIDTH;
+#endif
 		    Move(rp, td->left + x_text, td->top + y_line + baseline);
 		    SetSoftStyle(rp, line->ln_Style, AskSoftStyle(rp));
 
@@ -571,11 +628,27 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 				}
 			    }
 
+#ifdef MORPHOS_AG_EXTENSION
+                            /* change the background color if the line is marked */
+                            {
+                                UBYTE bpen = line->ln_BgPen;
+                                if (line->ln_Flags & LNF_MARKED)
+                                    bpen = td->fillpen;
+                                SetABPenDrMd(rp, line->ln_FgPen, bpen, JAM2);
+                            }
+#else
+
 			    SetABPenDrMd(rp, line->ln_FgPen, line->ln_BgPen, JAM2);
+#endif
 			    Text(rp, text, len);
 			}
 		    } /* if(width > 0) */
 		} /* if(len > 0) */
+
+#ifdef MORPHOS_AG_EXTENSION
+                if (line->ln_Flags & LNF_LINK)
+                    DrawLineBevel(td, rp, line, FALSE);
+#endif
 
 		/* Clear the right of the line */
 		if (line->ln_Flags & LNF_LF)
@@ -609,6 +682,9 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 	{
 	    linenum++;
 	    curlinelen = 0;
+#ifdef MORPHOS_AG_EXTENSION
+            abs_y_line += fonty;
+#endif
 	} else
 	{
 	    curlinelen += line->ln_TextLen + 1;
@@ -639,7 +715,12 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
 static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marked)
 {
     struct Line *line = (struct Line *) List_First(&td->line_list);
+#ifdef MORPHOS_AG_EXTENSION
+        LONG fonty = td->vert_unit;
+        LONG abs_y_line = 0;
+#else
     LONG fonty = td->font->tf_YSize;
+#endif
     LONG baseline = td->font->tf_Baseline;
 
     LONG linenum = 0;
@@ -668,6 +749,13 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 
     if (!(new_region = NewRegion()))
 	return;
+
+#ifdef MORPHOS_AG_EXTENSION
+	PrepareAGExtension(td);
+	/* if sub-class setup wrong vert unit adjust here at least to font height */
+	if (fonty < td->font->tf_YSize)
+            fonty = td->font->tf_YSize;
+#endif
 
     rect.MinX = td->left;
     rect.MinY = td->top;
@@ -712,6 +800,16 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 		    LONG x_text = line->ln_XOffset - td->horiz_top * td->horiz_unit;
 /*		    LONG width = td->width - x_text;*/
 
+#ifdef MORPHOS_AG_EXTENSION
+                    /* remember yoffset for rendering link boxes correctly */
+                    line->ln_YOffset = abs_y_line;
+                    /* clear possible link box rests */
+                    if (fonty > td->font->tf_YSize)
+                	EraseRect(rp, td->left + x_text, td->top + y_line + fonty-1,
+                                      td->left + td->width - 1, td->top + y_line + fonty-1);
+                    if (line->ln_Flags & LNF_LINK)
+                	x_text += AG_LINK_ADDWIDTH;
+#endif
 		    Move(rp, td->left + x_text, td->top + y_line + baseline);
 		    SetSoftStyle(rp, line->ln_Style, AskSoftStyle(rp));
 
@@ -780,6 +878,11 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 		    }
 		} /* if(len > 0) */
 
+#ifdef MORPHOS_AG_EXTENSION
+        	if (line->ln_Flags & LNF_LINK)
+                    DrawLineBevel(td, rp, line, FALSE);
+#endif
+
 		/* Clear the right of the line */
 		if (line->ln_Flags & LNF_LF)
 		{
@@ -814,6 +917,9 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
 	{
 	    linenum++;
 	    curlinelen = 0;
+#ifdef MORPHOS_AG_EXTENSION
+            abs_y_line += fonty;
+#endif
 	} else
 	{
 	    curlinelen += line->ln_TextLen + 1;
@@ -838,7 +944,7 @@ static void ScrollYText(struct Text_Data *td, struct RastPort *rp)
     LONG addy = td->top;
     LONG maxx = td->left + td->width - 1;
     LONG maxy = td->top + td->vert_visible * td->vert_unit - 1;//;td->height - 1;
-    struct Hook *old_hook;
+    //struct Hook *old_hook;
 
 /*
 #ifdef 0 // is only called inside GM_RENDER
@@ -847,9 +953,9 @@ static void ScrollYText(struct Text_Data *td, struct RastPort *rp)
 */
     if (addy <= maxy)
     {
-	old_hook = InstallLayerHook (rp->Layer, LAYERS_NOBACKFILL);
+	//old_hook = InstallLayerHook (rp->Layer, LAYERS_NOBACKFILL);
 	ScrollRasterBF(rp, 0, td->vert_diff * td->vert_unit, addx, addy, maxx, maxy);
-	InstallLayerHook(rp->Layer,old_hook);
+	//InstallLayerHook(rp->Layer,old_hook);
     }
 
 /*
@@ -869,16 +975,16 @@ static void ScrollXText(struct Text_Data *td, struct RastPort *rp)
     LONG maxx = td->left + td->width - 1;
     LONG maxy = td->top + td->height - 1;
 
-    struct Hook *old_hook;
+    //struct Hook *old_hook;
 
 /*
 #ifdef 0
     LockLayerInfo(rp->Layer->LayerInfo);
 #endif
 */
-    old_hook = InstallLayerHook (rp->Layer, LAYERS_NOBACKFILL);
+    //old_hook = InstallLayerHook (rp->Layer, LAYERS_NOBACKFILL);
     ScrollRasterBF(rp, td->horiz_diff *  td->horiz_unit, 0, addx, addy, maxx, maxy);
-    InstallLayerHook(rp->Layer,old_hook);
+    //InstallLayerHook(rp->Layer,old_hook);
 
 /*
 #ifdef 0
@@ -999,7 +1105,10 @@ static void SetTopHorizText(struct Text_Data *td, struct RastPort *rp, LONG newx
  Returns the line at the specificed line number. The x coordinate will
  be adjusted.
 *************************** ***********************************************/
-static struct Line *NewFindLine(struct Text_Data *td, LONG x, LONG y, LONG *xpos, LONG *line_xpos)
+#ifndef MORPHOS_AG_EXTENSION
+static
+#endif
+struct Line *NewFindLine(struct Text_Data *td, LONG x, LONG y, LONG *xpos, LONG *line_xpos)
 {
     struct Line *line = (struct Line *) List_First(&td->line_list);
     LONG linenum = 0;
@@ -1057,13 +1166,23 @@ static struct Line *NewFindLine(struct Text_Data *td, LONG x, LONG y, LONG *xpos
  Returns the line at the specificed line number. The x coordinate will
  be adjusted to the beginning of a word.
 **************************************************************************/
+#ifdef MORPHOS_AG_EXTENSION
+static struct Line *NewFindWordBegin(struct Text_Data *td, LONG x, LONG y, LONG *xpos, LONG *lxpos)
+#else
 static struct Line *NewFindWordBegin(struct Text_Data *td, LONG x, LONG y, LONG *xpos)
+#endif
 {
     LONG line_xpos;
     struct Line *line = NewFindLine(td,x,y,xpos,&line_xpos);
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = 0;
+#endif
     if (!line) return NULL;
 
     if (line_xpos == -1) return line;
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = line_xpos;
+#endif
     if (stpchr(td->word_delim, line->ln_Text[line_xpos])) return line;
 
 
@@ -1078,6 +1197,7 @@ static struct Line *NewFindWordBegin(struct Text_Data *td, LONG x, LONG y, LONG 
     	    if (stpchr(td->word_delim, line->ln_Text[line_xpos]))
     	    {
     	    	(*xpos)++;
+                line_xpos++;
     	    	break;
     	    }
     	    if (line_xpos == 0) break;
@@ -1086,6 +1206,10 @@ static struct Line *NewFindWordBegin(struct Text_Data *td, LONG x, LONG y, LONG 
     	}
     }
 
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = line_xpos;
+#endif
+
     return line;
 }
 
@@ -1093,13 +1217,23 @@ static struct Line *NewFindWordBegin(struct Text_Data *td, LONG x, LONG y, LONG 
  Returns the line at the specificed line number. The x coordinate will
  be adjusted to the end of a word.
 **************************************************************************/
+#ifdef MORPHOS_AG_EXTENSION
+static struct Line *NewFindWordEnd(struct Text_Data *td, LONG x, LONG y, LONG *xpos, LONG *lxpos)
+#else
 static struct Line *NewFindWordEnd(struct Text_Data *td, LONG x, LONG y, LONG *xpos)
+#endif
 {
     LONG line_xpos;
     struct Line *line = NewFindLine(td,x,y,xpos,&line_xpos);
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = 0;
+#endif
     if (!line) return NULL;
 
     if (line_xpos == -1) return line;
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = line_xpos;
+#endif
     if (stpchr(td->word_delim, line->ln_Text[line_xpos])) return line;
 
     D(bug("end: %lc %ld %ld %ld\n",line->ln_Text[line_xpos],line->ln_Text[line_xpos],line_xpos,*xpos));
@@ -1119,7 +1253,9 @@ static struct Line *NewFindWordEnd(struct Text_Data *td, LONG x, LONG y, LONG *x
     	    line_xpos++;
     	}
     }
-
+#ifdef MORPHOS_AG_EXTENSION
+        *lxpos = line_xpos;
+#endif
     return line;
 }
 
@@ -1131,12 +1267,21 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
     LONG xcur;
 
     x += td->horiz_top * td->horiz_unit;
+#ifdef MORPHOS_AG_EXTENSION
+        y = y / td->vert_unit + td->vert_top;
+#else
     y = y / td->font->tf_YSize + td->vert_top;
+#endif
 
 //    D(bug("x:%ld y:%ld\n",x,y));
 
     if (x < 0) x = 0;
     if (y < 0) y = 0;
+
+#ifdef MORPHOS_AG_EXTENSION
+        if (HandleMouseLink(td, rp, x, y, code))
+            return 0;
+#endif
 
     if (code == SELECTDOWN)
     {
@@ -1159,9 +1304,23 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
 		LONG xstart;
 		LONG xend;
 
+#ifdef MORPHOS_AG_EXTENSION
+        	LONG txtstart, txtend;
+        	struct Line *newline = NewFindWordBegin(td, x, y, &xstart, &txtstart);
+        	NewFindWordEnd(td, x, y, &xend, &txtend);
+        	if (newline->ln_Text[txtstart] != '\0')
+        	{
+                    strcpy(td->word, "link ");
+                    strncpy(&td->word[5], &newline->ln_Text[txtstart], txtend-txtstart);
+                    td->word[5+txtend-txtstart] = 0;
+                    D(bug("%ld %ld %s\n", txtstart, txtend, td->word));
+                    TriggerWord(td, td->word);
+        	}
+#else
+ 
 		struct Line *newline = NewFindWordBegin(td, x, y, &xstart);
 		NewFindWordEnd(td, x, y, &xend);
-
+#endif
 		td->mark_x1 = xstart;
 		td->mark_y1 = y;
 		td->mark_line1 = newline;
@@ -1225,13 +1384,24 @@ static int HandleMouse(struct Text_Data *td, struct RastPort *rp, LONG x, LONG y
 		if ((td->mark_y1 == td->mark_y2 && td->mark_x1 > td->mark_x2) ||
 		    (td->mark_y1 > td->mark_y2))
 		{
-		    NewFindWordBegin(td, x, y, &xcur);
+#ifdef MORPHOS_AG_EXTENSION
+                    LONG tmp;
+                    NewFindWordBegin(td, x, y, &xcur, &tmp);
 		    D(bug("Wordbegin  %ld  %ld  %ld\n",x,y,xcur));
+#else
+                    NewFindWordBegin(td, x, y, &xcur);
+#endif
 		}
 		else
 		{
-		    NewFindWordEnd(td, x, y, &xcur);
+#ifdef MORPHOS_AG_EXTENSION
+                    LONG tmp;
+                    NewFindWordEnd(td, x, y, &xcur, &tmp);
 		    D(bug("Wordend  %ld  %ld  %ld\n",x,y,xcur));
+#else
+                    NewFindWordEnd(td, x, y, &xcur);
+#endif
+
 		}
 	    }
 	    else if (td->doubleclick == 2)
@@ -1370,7 +1540,6 @@ static void CopyTextNowIFF(struct Text_Data *td, struct IFFHandle *iff)
     struct Line *mark_line1, *mark_line2;
     LONG curlinelen = 0;
 
-    D(bug("  copytextnowiff\n"));
     PrepareMark(td, &mark_x1, &mark_y1, &mark_x2, &mark_y2, &mark_line1, &mark_line2);
     if (!mark_line1)
     {
@@ -1424,6 +1593,7 @@ static void CopyTextNowIFF(struct Text_Data *td, struct IFFHandle *iff)
 		    len = mark_x2 - curlinelen - 1;
 	        }
 	    }
+	    
 	    if (draw_rect && (GetLineStartX(line) != line->ln_XOffset))
 	        WriteChunkBytes(iff, "\t", 1);
 
@@ -1592,18 +1762,18 @@ static void CopyText(struct Text_Data *td)
 	    msg->cm_ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
 	    msg->cm_ExecMessage.mn_ReplyPort    = port;
 
-	    if
-            (
-                (
-                    p = CreateNewProcTags
-                    (
-                        NP_Entry,     (IPTR) CopyTextEntry,
-                        NP_StackSize,        10000,
-                        NP_Name,      (IPTR) "text.datatype copy process",
-                        TAG_DONE
-                    )
-                )
-            )
+#ifdef __MORPHOS__
+	    if ((p = CreateNewProcTags(NP_Entry,CopyTextEntry,
+									   NP_CodeType, MACHINE_PPC,
+	    			       NP_StackSize, 10000,
+	    			       NP_Name,"text.datatype copy process",
+				       TAG_DONE)))
+#else
+	    if ((p = CreateNewProcTags(NP_Entry,(IPTR)CopyTextEntry,
+	    			       NP_StackSize, 10000,
+	    			       NP_Name,(IPTR)"text.datatype copy process",
+				       TAG_DONE)))
+#endif
 	    {
 		PutMsg(&p->pr_MsgPort,&msg->cm_ExecMessage);
 		WaitPort(port);
@@ -1860,18 +2030,39 @@ const static ULONG supported_methods[] =
 
 const static struct DTMethod trigger_methods[] =
 {
-#ifndef __AROS__
   {"Search...","SEARCH",STM_SEARCH},
   {"Search next", "SEARCH_NEXT",STM_SEARCH_NEXT},
   {"Search previous", "SEARCH_PREV",STM_SEARCH_PREV},
-#endif
   {NULL,NULL,0}
 };
 
-STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+#ifdef __MORPHOS__
+#ifdef MORPHOS_AG_EXTENSION
+__varargs68k IPTR notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ...)
+#else
+static __varargs68k IPTR notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ...)
+#endif
 {
-    return DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags);
+va_list va;
+ULONG	result;
+	va_start(va,flags);
+
+	result = DoMethod(o, OM_NOTIFY, (struct TagItem*) va->overflow_arg_area, ginfo, flags);
+	va_end(va);
+
+	return(result);
 }
+#else
+
+#ifndef MORPHOS_AG_EXTENSION
+static
+#endif
+VARARGS IPTR notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
+{
+	return DoMethod(o, OM_NOTIFY, (IPTR)&tag1, (IPTR)ginfo, flags);
+}
+#endif
+
 
 #ifndef __AROS__
 
@@ -1941,10 +2132,18 @@ struct Process *CreateGetStringProcess(struct IClass *cl, Object *obj, struct Ga
 	    amsg->amm_ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
 	    amsg->amm_ExecMessage.mn_ReplyPort    = mport;
 	    td->search_ginfo = *gi;
+#ifdef __MORPHOS__
+	    if ((proc = CreateNewProcTags(NP_Entry,getstring_entry,
+										  NP_CodeType, MACHINE_PPC,
+	    				  NP_StackSize, 10000,
+	    				  NP_Name,"text.datatype getstring process",
+					  TAG_DONE)))
+#else
 	    if ((proc = CreateNewProcTags(NP_Entry,getstring_entry,
 	    				  NP_StackSize, 10000,
 	    				  NP_Name,"text.datatype getstring process",
 					  TAG_DONE)))
+#endif
 	    {
 		PutMsg(&proc->pr_MsgPort,&amsg->amm_ExecMessage);
 		WaitPort(mport);
@@ -1993,7 +2192,10 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 	    td->attr.ta_YSize = ta->ta_YSize;
 	}
 	InitText(td);
-
+#ifdef MORPHOS_AG_EXTENSION
+        /* remember our object pointer for internal use */
+        td->obj = (Object *) g;
+#endif
 	td->vert_unit = si->si_VertUnit = td->font->tf_YSize;
 	td->horiz_unit = si->si_HorizUnit = (td->font->tf_Flags & FPF_PROPORTIONAL) ? 1L : td->font->tf_XSize;
 
@@ -2210,7 +2412,15 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 		    top_vert = 0;
 
 		if (top_vert != td->vert_top)
+#ifdef MORPHOS_AG_EXTENSION
+                {
 		    new_top_vert = TRUE;
+                    td->ginfo = msg->ops_GInfo;
+                    CheckMarkedLink(td, top_vert);
+                }
+#else
+                    new_top_vert = TRUE;
+#endif
 	    }
 	    break;
 
@@ -2230,6 +2440,10 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 	    D(bug("text.datatype/DT_SetMethod: DTA_VisibleVert  %ld\n", ti->ti_Data));
 	    td->vert_visible = ti->ti_Data;
 	    redraw_all = TRUE;
+#ifdef MORPHOS_AG_EXTENSION
+            td->ginfo = NULL;
+            CheckMarkedLink(td, top_vert);
+#endif
 	    break;
 
 	case DTA_TotalVert:
@@ -2242,6 +2456,9 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 
 	case DTA_VertUnit:
 	    D(bug("text.datatype/DT_SetMethod: DTA_VertUnit  %ld\n", ti->ti_Data));
+#ifdef MORPHOS_AG_EXTENSION
+            td->vert_unit = ti->ti_Data;
+#endif
 	    break;
 
 	case DTA_VisibleHoriz:
@@ -2311,6 +2528,41 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 	DoMethod((Object *) g, GM_LAYOUT, msg->ops_GInfo, TRUE);
     }
 */
+#ifdef MORPHOS_AG_EXTENSION
+	/* adjust top values according to document and view dimension */
+	if (new_top_vert)
+	{
+	    LONG visible;
+	    LONG total;
+
+	    if(GetDTAttrs((Object *) g, 
+                          DTA_TotalVert, (ULONG) &total,
+			  DTA_VisibleVert, (ULONG) &visible,
+			  TAG_DONE) == 2)
+	    {
+		if(visible + top_vert > total)
+		    top_vert = total - visible;
+		if(top_vert < 0)
+		    top_vert = 0;
+	    }
+	}
+	if (new_top_horiz)
+	{
+	    LONG visible;
+	    LONG total;
+
+	    if(GetDTAttrs((Object *) g, 
+                          DTA_TotalHoriz, (ULONG) &total,
+			  DTA_VisibleHoriz, (ULONG) &visible,
+			  TAG_DONE) == 2)
+	    {
+		if(visible + top_horiz > total)
+		    top_horiz = total - visible;
+		if(top_horiz < 0)
+		    top_horiz = 0;
+	    }
+	}
+#endif
     if (redraw_all || (new_top_horiz && new_top_vert))
     {
 	td->update_type = 1;
@@ -2331,13 +2583,12 @@ STATIC ULONG DT_SetMethod(struct IClass * cl, struct Gadget * g, struct opSet * 
 
 	    if (new_top_vert)
 	    {
-		retval = 1;
+ 		retval = 1;
 		td->update_type = 3;
 		td->update_arg = top_vert;
 	    }
 	}
     }
-
 /*    retval += DoSuperMethodA(cl, (Object *) g, (Msg) msg);*/
     D(bug(" Set retval: %ld\n", retval));
     return retval;
@@ -2371,18 +2622,26 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 		return 0;
 	    }
 
+            D(bug("redraw %ld, update_type %ld, update_arg %ld\n", td->redraw, td->update_type, td->update_arg));
 	    if (td->redraw)
 	    {
 		/* The whole text should be redrawed */
 		td->redraw = 0;
 		redraw_type = GREDRAW_REDRAW;
 
+#ifdef MORPHOS_AG_EXTENSION
+                if (td->update_type == 2) td->horiz_top = td->update_arg;
+                else if (td->update_type == 3) td->vert_top = td->update_arg;
+#else
 		if (msg->gpr_Redraw == GREDRAW_UPDATE)
 		{
 		    if (td->update_type == 2) td->horiz_top = td->update_arg;
 		    else if (td->update_type == 3) td->vert_top = td->update_arg;
 		}
+#endif
 	    } else redraw_type = msg->gpr_Redraw;
+
+            D(bug("top vert %ld, %ld\n", td->vert_top, si->si_TopVert));
 
 	    td->left = domain->Left;
 	    td->top = domain->Top;
@@ -2393,13 +2652,13 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	    td->horiz_visible = vh;
 	    td->vert_visible = vv;
 
+	    /* why this??? somebody seems to set a new horiz_unit whitout using the tags */
+	    td->horiz_unit = si->si_HorizUnit;
+
 /*	    td->horiz_top = si->si_TopHoriz;
 	    td->horiz_visible = si->si_VisHoriz;
 	    td->vert_top = si->si_TopVert;
 	    td->vert_visible = si->si_VisVert;*/
-
-	    /* why this??? somebody seems to set a new horiz_unit whitout using the tags */
-	    td->horiz_unit = si->si_HorizUnit;
 
 	    if (redraw_type == GREDRAW_REDRAW)
 	    {
@@ -2482,7 +2741,11 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 	    }
 	}
 
+#ifdef MORPHOS_AG_EXTENSION
+        if (td->mouse_pressed && !td->link_pressed)
+#else
 	if (td->mouse_pressed)
+#endif
 	{
 	    LONG diff_x, diff_y;
 	    LONG x = msg->gpi_Mouse.X, y = msg->gpi_Mouse.Y;
@@ -2574,6 +2837,10 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
     {
 	struct RastPort *rp;
 	rp = ObtainGIRPort(msg->gpi_GInfo);
+#ifdef MORPHOS_AG_EXTENSION
+        /* remember object and gadgetinfo used by TriggerLink() */
+        td->ginfo = msg->gpi_GInfo;
+#endif
 
 	if (ievent->ie_Code == SELECTUP)
 	{
@@ -3038,17 +3305,24 @@ STATIC ULONG DT_Layout(struct IClass *cl, struct Gadget *g, struct gpLayout *msg
     {
     	td->fillpen = gi->gi_DrInfo->dri_Pens[FILLPEN];
     	td->filltextpen = gi->gi_DrInfo->dri_Pens[FILLTEXTPEN];
+#ifdef MORPHOS_AG_EXTENSION
+                /* remember shine and shadow pen for bevel rendering */
+                td->shinepen = gi->gi_DrInfo->dri_Pens[SHINEPEN];
+                td->shadowpen = gi->gi_DrInfo->dri_Pens[SHADOWPEN];
+#endif
     }
 
+#ifndef MORPHOS_AG_EXTENSION
     notifyAttrChanges((Object*)g, gi, 0,
 		      GA_ID, g->GadgetID,
 		      DTA_Busy, TRUE,
 		      TAG_DONE);
+#endif
 
    return DoSuperMethodA(cl, (Object*)g, (Msg) msg);
 }
 
-#ifdef __AROS__
+#if defined(__AROS__) || defined(__MORPHOS__)
 AROS_UFH3S(IPTR, DT_Dispatcher,
 	   AROS_UFHA(Class *, cl, A0),
 	   AROS_UFHA(Object *, o, A2),
@@ -3064,8 +3338,14 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
     switch (*msg)
     {
     case OM_NEW: D(bug("text.datatype: Dispatcher called (MethodID: OM_NEW)!\n"));
+#ifdef MORPHOS_AG_EXTENSION
+	retval = (ULONG) DT_NewMethod(cl, o, (struct opSet *) msg);
+	if (retval != (ULONG) NULL)
+	    DT_SetMethod(cl, (struct Gadget *) retval, (struct opSet *) msg);
+	return retval;
+#else
 	return (ULONG) DT_NewMethod(cl, o, (struct opSet *) msg);
-
+#endif
     case OM_DISPOSE: D(bug("text.datatype: Dispatcher called (MethodID: OM_DISPOSE)!\n"));
 	DT_DisposeMethod(cl, o, (Msg) msg);
 	break;
@@ -3178,7 +3458,14 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
 	}
 	break;
 #endif
-
+#ifdef MORPHOS_AG_EXTENSION
+	case DTM_TRIGGER:
+	{
+	    D(bug("text.datatype: Dispatcher called (MethodID: DTM_TRIGGER)!\n"));
+	    DT_AGTrigger(cl,o,(struct dtTrigger*)msg);
+	}
+	break;
+#endif
     case OM_NOTIFY:
 	    D(bug("text.datatype: Dispatcher called (MethodID: OM_NOTIFY)!\n"));
 	    return DoSuperMethodA(cl, o, (Msg) msg);
@@ -3245,19 +3532,21 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 
 
 
-struct IClass *DT_MakeClass(struct Library *textbase)
+struct IClass *DT_MakeClass(LIBBASETYPEPTR	LIBBASE)
 {
     struct IClass *cl = MakeClass("text.datatype", DATATYPESCLASS, NULL, sizeof(struct Text_Data), 0);
 
     if (cl)
     {
-#ifdef __AROS__
+#if defined(__AROS__) || defined(__MORPHOS__)
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
 #else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
+#ifndef __MORPHOS__
 	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-	cl->cl_UserData = (ULONG)textbase;	/* Required by datatypes */
+#endif
+	cl->cl_UserData = (ULONG)LIBBASE;	/* Required by datatypes */
     }
 
     return cl;

@@ -14,21 +14,17 @@
 
 #include <proto/exec.h>
 
+#include "text_intern.h"
 #include LC_LIBDEFS_FILE
 
 /***************************************************************************************************/
 
-struct ExecBase *sysbase;
-BPTR		SegList;
-
-/***************************************************************************************************/
-
 /* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   sysbase
-#define LC_SEGLIST_FIELD(lib)   SegList
+#define LC_SYSBASE_FIELD(lib)   (lib->sysbase)
+#define LC_SEGLIST_FIELD(lib)   (lib->seglist)
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (*(lib))
+#define LC_LIB_FIELD(lib)       (lib->library)
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
@@ -59,7 +55,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     ULONG result;
     
-    SysBase = sysbase;
+    //SysBase = sysbase;
     
     D(bug("Inside initfunc of text.datatype\n"));
 
