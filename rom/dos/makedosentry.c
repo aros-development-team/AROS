@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Creates an entry for the dos list.
@@ -28,10 +28,12 @@
 	be a device a volume or an assign node.
 
     INPUTS
-	name - pointer to name
-	type - type of list entry to create
+	name  --  pointer to name
+	type  --  type of list entry to create
 
     RESULT
+
+        The new device entry or NULL in case it couldn't be created.
 
     NOTES
 
@@ -41,11 +43,14 @@
 
     SEE ALSO
 
+    AddDosEntry(), RemDosEntry(), FindDosEntry(), LockDosList(),
+    NextDosEntry(), FreeDosEntry()
+
     INTERNALS
 
+    This call should be replaced by a value for AllocDosObject().
+
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
