@@ -17,7 +17,7 @@
 #include <proto/muimaster.h>
 #endif
 
-//#define MYDEBUG 1
+/*#define MYDEBUG 1*/
 #include "debug.h"
 
 #include "muimaster_intern.h"
@@ -486,8 +486,7 @@ static ULONG mGet(struct IClass *cl, Object *obj, struct opGet *msg)
     case MUIA_Application_Version:
 	STORE = (ULONG)data->app_Version;
 	return(TRUE);
-    case MUIA_Application_WindowList:
-	return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
+    case    MUIA_Application_WindowList: return GetAttr(MUIA_Family_List, data->app_WindowFamily, msg->opg_Storage);
     case MUIA_Application_Menustrip:
 	STORE = (ULONG)data->app_Menustrip;
 	return 1;
