@@ -22,7 +22,16 @@
 #define MS_Prog 0xc0
 #define MS_Ctrl 0xb0
 
+#define MS_StatBits  0xf0
 #define MS_ChanBits 0xf
+
+#define MS_QtrFrame 0xf1
+#define MS_SongPos  0xf2
+
+#define MS_Clock 0xf8
+#define MS_Start 0xfa
+#define MS_Continue 0xfb
+#define MS_Stop 0xfc
 
 #define MM_ResetCtrl 0x79
 #define MM_AllOff 0x7b
