@@ -36,6 +36,7 @@
 
 #define EM_386          3
 #define EM_68K          4
+#define EM_PPC         20
 #define EM_ARM         40
 
 #define R_386_NONE      0
@@ -45,6 +46,9 @@
 #define R_68k_NONE      0
 #define R_68K_32        1
 #define R_68K_PC32      4
+
+#define R_PPC_NONE      0
+#define R_PPC_ADDR32    1
 
 #define R_ARM_NONE      0
 #define R_ARM_PC24      1
@@ -261,6 +265,9 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
+        #elif defined(__ppc__) || defined(__powerpc__)
+	    eh->ident[EI_DATA] != ELFDATA2MSB ||
+	    eh->machine        != EM_PPC
         #elif defined(__arm__)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_ARM
@@ -278,6 +285,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2LSB));
 #elif defined (__mc68000__)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
+#elif defined(__ppc__) || defined(__powerpc__)
+        D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
 #elif defined (__arm__)
         D(bug("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],ELFDATA2MSB));
 #endif
@@ -286,6 +295,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_386));
 #elif defined(__mc68000__)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_68K));
+#elif defined(__ppc__) || defined(__powerpc__)
+        D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_PPC));
 #elif defined(__arm__)
         D(bug("[ELF Loader] machine    is %d - should be %d\n", eh->machine, EM_ARM));
 #endif
@@ -440,6 +451,14 @@ static int relocate
             case R_68k_NONE:
                 break;
 
+            #elif defined(__ppc__) || defined(__powerpc__)
+
+            case R_PPC_ADDR32:
+                *p += s;
+                break;
+            case R_PPC_NONE:
+                break;
+            
             #elif defined(__arm__)
 
             /*
@@ -547,6 +566,10 @@ BPTR InternalLoadSeg_ELF
             #elif defined(__mc68000__)
 
             sh[i].type == SHT_RELA &&
+
+            #elif defined(__ppc__) || defined(__powerpc__)
+
+            sh[i].type == SHT_REL &&
 
             #elif defined(__arm__)
             #warning Missing code for ARM            
