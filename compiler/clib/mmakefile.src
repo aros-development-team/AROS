@@ -132,6 +132,7 @@ FILES := \
 	strtok \
 	strtol \
 	strtoul \
+	system \
 	time \
 	truncate \
 	ungetc \
