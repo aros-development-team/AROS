@@ -2,7 +2,10 @@ BEGIN {
     maxlvo = 0;
     stderr="/dev/stderr";
 
-    file = "libdefs.h";
+    if (file == "")
+    {
+        file = "libdefs.h";
+    }
     libheader = 1;
 
     while ((getline < file) > 0)
@@ -31,7 +34,10 @@ BEGIN {
     print "#ifdef __MORPHOS__\n#include <exec/libraries.h>\n#include <aros/libcall.h>"
     print "#else\n#ifndef LIBCORE_COMPILER_H\n#   include <libcore/compiler.h>\n#endif\n#endif";
     print "#ifndef NULL\n#define NULL ((void *)0)\n#endif\n";
-    print "#include \"libdefs.h\"";
+    print "#ifndef LC_LIBDEFS_FILE";
+    print "#define LC_LIBDEFS_FILE \"libdefs.h\"";
+    print "#endif";
+    print "#include LC_LIBDEFS_FILE";
 
     f[1] = "open";
     f[2] = "close";

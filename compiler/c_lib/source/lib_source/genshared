@@ -42,6 +42,7 @@ prefix=.
 confdir=.
 output=""
 scriptdir=`dirname $0`
+libdefsfile=libdefs.h
 debug=0
 test=0
 hasrt=0
@@ -52,6 +53,10 @@ while [ $# -ne 0 ] ; do
             prefix="$2"
             shift
         ;;
+	-libdefsfile )
+	    libdefsfile="$2"
+	    shift
+	;;
         -output )
             output="$2"
             shift
@@ -181,7 +186,7 @@ case $mode in
         else
             out="$prefix/$outname"
         fi
-        $AWK -f $scriptdir/gendefines.awk $srcs > $out.new
+        $AWK -v file=$libdefsfile -f $scriptdir/gendefines.awk $srcs > $out.new
         $scriptdir/moveifchanged $out.new $out
     ;;
     clib )
@@ -196,7 +201,7 @@ case $mode in
         else
             out="$prefix/$outname"
         fi
-        $AWK -f $scriptdir/genclib.awk $srcs > $out.new
+        $AWK -v file=$libdefsfile -f $scriptdir/genclib.awk $srcs > $out.new
         $scriptdir/moveifchanged $out.new $out
     ;;
 #    pragma )
@@ -214,7 +219,7 @@ case $mode in
         else
             out="$prefix/$outname"
         fi
-        $AWK -f $scriptdir/geninline.awk $srcs > $out.new
+        $AWK -v file=$libdefsfile -f $scriptdir/geninline.awk $srcs > $out.new
         $scriptdir/moveifchanged $out.new $out
 
     ;;
