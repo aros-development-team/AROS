@@ -16,7 +16,7 @@ LINKLIBS	:= \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
 
-#MM boot-native-i386 : setup header-native-i386 Drivers-native \
+#MM boot-native-i386 : setup header-native-i386 \
 #MM		kernel-aros-linklib
 boot-native-i386 : setup $(OSGENDIR)/boot/bootsect $(OSGENDIR)/boot/setup \
 		    $(LIB)
@@ -44,7 +44,7 @@ $(OSGENDIR)/boot/bootsect : bootsect.S $(GENINCDIR)/aros/boot.h
 	$(LD86) -s -o $@ bootsect.o
 	$(RM) bootsect.s bootsect.o
 
-$(OSGENDIR)/boot/setup : setup.S video.S $(GENINCDIR)/aros/boot.h
+$(OSGENDIR)/boot/setup : setup.S $(GENINCDIR)/aros/boot.h
 	%mkdirs_q $(OBJDIR)
 	$(CC) $(OS_INCLUDES) -E -traditional $< -o setup.s
 	$(AS86) -o setup.o setup.s
@@ -66,15 +66,14 @@ $(OBJDIR)/%.d : %.c
 
 -include $(OSGENDIR)/boot/mf.inc
 
-#MM kernel-link-native : setup Drivers-native
+#MM kernel-link-native : setup
 kernel-link-native : $(OSGENDIR)/boot/kernel
 
 OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) \
 	$(OSGENDIR)/graphics/graphics_driver.o \
 	$(OSGENDIR)/graphics/objcache.o \
 	$(OSGENDIR)/graphics/dispinfo.o \
-	$(OSGENDIR)/graphics/fakegfxhidd.o \
-	$(OSGENDIR)/intuition/intuition_driver.o
+	$(OSGENDIR)/graphics/fakegfxhidd.o
 
 $(OSGENDIR)/boot/kernel : $(OBJS)
 	@$(LLINK) -o $(OSGENDIR)/boot/kernel.o \
