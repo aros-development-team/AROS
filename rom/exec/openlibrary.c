@@ -18,8 +18,8 @@
 	AROS_LH2(struct Library *, OpenLibrary,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, libName, A1),
-	AROS_LHA(ULONG,   version, D0),
+	AROS_LHA(const UBYTE *, libName, A1),
+	AROS_LHA(ULONG        , version, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 92, Exec)

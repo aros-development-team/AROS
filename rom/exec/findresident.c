@@ -16,7 +16,7 @@
 	AROS_LH1(struct Resident *, FindResident,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, name, A1),
+	AROS_LHA(const UBYTE *, name, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 16, Exec)
