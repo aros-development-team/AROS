@@ -1,3 +1,11 @@
+/* 
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002, The AROS Development Team.
+    All rights reserved.
+
+    $Id$
+*/
+
 /*
  * notify2.c : Test the MUI_Notify class, and show how to connect actions
  * to attributes changes.
