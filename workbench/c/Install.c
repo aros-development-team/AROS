@@ -19,6 +19,7 @@ struct Volume {
 	STRPTR drivename;
 	struct MsgPort *mp;
 	struct IOExtTD *iotd;
+	struct FileSysStartupMsg *fssm;
 	ULONG readcommand;
 	ULONG writecommand;
 	ULONG startblock;
@@ -145,11 +146,20 @@ UWORD i;
 	return first_block;
 }
 
-void installStageFiles(struct Volume *volume) {
+/*************************************
+ Name  : installStageFiles
+ Descr.: install stage1 and initialize stage2
+ Input : volume       - the volume to install on
+         use_mbr      - flag to use MBR
+         stage2_drive - the unit stage2 is located
+**************************************/
+void installStageFiles(struct Volume *volume, LONG use_mbr, UBYTE stage2_drive) {
 char stagename[256];
 struct FileInfoBlock fib;
 BPTR fh, fh2;
 ULONG block,retval;
+ULONG error=0;
+STRPTR errstr=NULL;
 
 	
 	strcpy(stagename, (char *)volume->drivename);
@@ -161,7 +171,7 @@ ULONG block,retval;
 		{
 			if (Read(fh, stage2_firstblock, 512) == 512)
 			{
-				if (volume->flags & VF_MOVE_BB)
+				if ((volume->flags & VF_MOVE_BB) && !use_mbr)
 				{
 					readwriteBlock
 						(
@@ -179,47 +189,95 @@ ULONG block,retval;
 						)
 					)
 				{
-					strcpy(stagename, (char *)volume->drivename);
-					strcat(stagename, "Boot/grub/stage1");
-					fh2 = Open(stagename, MODE_OLDFILE);
-					if (fh2)
+					if (Seek(fh, 0, OFFSET_BEGINNING)!=-1)
 					{
-						if (Read(fh2, volume->blockbuffer, 512) == 512)
+						if (Write(fh, stage2_firstblock, 512)==512)
 						{
-							volume->blockbuffer[17]=block;
-							retval = readwriteBlock
-								(
-									volume, 0,
-									volume->blockbuffer, 512, volume->writecommand
-								);
-							if (retval)
-								printf("WriteError %ld\n", retval);
+							strcpy(stagename, (char *)volume->drivename);
+							strcat(stagename, "Boot/grub/stage1");
+							fh2 = Open(stagename, MODE_OLDFILE);
+							if (fh2)
+							{
+								if (Read(fh2, volume->blockbuffer, 512) == 512)
+								{
+									volume->blockbuffer[17]=block;
+									retval = 0;
+									if (use_mbr)
+									{
+										volume->blockbuffer[17] += volume->startblock;
+										volume->startblock = 0;
+										retval = readwriteBlock
+											(
+												volume, 0,
+												stage2_firstblock, 512, volume->readcommand
+											);
+										/* copy BPB (BIOS Parameter Block)*/
+										CopyMem
+											(
+												(APTR)((char *)stage2_firstblock+0x3),
+												(APTR)((char *)volume->blockbuffer+0x3),
+												0x3B
+											);
+										/* copy partition table */
+										CopyMem
+											(
+												(APTR)((char *)stage2_firstblock+0x1BE),
+												(APTR)((char *)volume->blockbuffer+0x1BE),
+												0x40
+											);
+										/* store the drive num stage2 is stored on */
+										((char *)volume->blockbuffer)[0x40] = stage2_drive+0x80;
+									}
+									if (retval==0)
+									{
+										retval = readwriteBlock
+											(
+												volume, 0,
+												volume->blockbuffer, 512, volume->writecommand
+											);
+										if (retval)
+											printf("WriteError %ld\n", retval);
+									}
+									else
+										printf("WriteErrro %ld\n", retval);
+								}
+								else
+									error = IoErr();
+								Close(fh2);
+							}
 							else
 							{
-								if (Seek(fh, 0, OFFSET_BEGINNING)==-1)
-									PrintFault(IoErr(), NULL);
-								else
-								{
-									if (Write(fh, stage2_firstblock, 512)!=512)
-										PrintFault(IoErr(), NULL);
-								}
+								error = IoErr();
+								errstr = stagename;
 							}
 						}
-						Close(fh2);
+						else
+							error = IoErr();
 					}
 					else
-						PrintFault(IoErr(), stagename);
+						error = IoErr();
 				}
 			}
 			else
-				PrintFault(IoErr(), stagename);
+			{
+				error = IoErr();
+				errstr = stagename;
+			}
 		}
 		else
-			PrintFault(IoErr(), stagename);
+		{
+			error = IoErr();
+			errstr = stagename;
+		}
 		Close(fh);
 	}
 	else
-		PrintFault(IoErr(), stagename);
+	{
+		error = IoErr();
+		errstr = stagename;
+	}
+	if (error)
+		PrintFault(error, errstr);
 }
 
 void nsdCheck(struct Volume *volume) {
@@ -271,15 +329,16 @@ UWORD *cmdcheck;
 	}
 }
 
-struct Volume *initVolume(STRPTR drivename) {
+struct Volume *initVolume(STRPTR drivename, LONG use_mbr) {
 struct Volume *volume=0;
-struct DosList *dl;
 struct FileSysStartupMsg *fssm;
+struct DosList *dl;
 struct DosEnvec *de;
 struct DeviceNode *dn;
 char dname[32];
 UBYTE i;
-ULONG error,retval;
+ULONG error=0,retval;
+STRPTR errstr=NULL;
 
 	for (i=0;(drivename[i]) && (drivename[i]!=':');i++)
 		dname[i]=drivename[i];
@@ -294,104 +353,136 @@ ULONG error,retval;
 			if (IsFileSystem(drivename))
 			{
 				fssm = (struct FileSysStartupMsg *)BADDR(dn->dn_Startup);
-				volume = AllocVec(sizeof(struct Volume), MEMF_PUBLIC | MEMF_CLEAR);
-				if (volume)
+				if (use_mbr)
 				{
-					volume->drivename = drivename;
-					volume->mp = CreateMsgPort();
-					if (volume->mp)
+					if (strcmp(AROS_BSTR_ADDR(fssm->fssm_Device),"ide.device")!=0)
 					{
-						volume->iotd = (struct IOExtTD *)CreateIORequest(volume->mp, sizeof(struct IOExtTD));
-						if (volume->iotd)
+						error = ERROR_OBJECT_WRONG_TYPE;
+						errstr = AROS_BSTR_ADDR(fssm->fssm_Device);
+					}
+					else
+					{
+						if (fssm->fssm_Unit!=0)
 						{
-							de = fssm->fssm_Environ;
-							volume->SizeBlock = de->de_SizeBlock;
-							volume->blockbuffer = AllocVec(volume->SizeBlock*4, MEMF_PUBLIC | MEMF_CLEAR);
-							if (volume->blockbuffer)
+							error = ERROR_OBJECT_WRONG_TYPE;
+							errstr = "MBR can only be stored on the first HD";
+						}
+					}
+				}
+				if (error == 0)
+				{
+					volume = AllocVec(sizeof(struct Volume), MEMF_PUBLIC | MEMF_CLEAR);
+					if (volume)
+					{
+						volume->fssm = fssm;
+						volume->drivename = drivename;
+						volume->mp = CreateMsgPort();
+						if (volume->mp)
+						{
+							volume->iotd = (struct IOExtTD *)CreateIORequest(volume->mp, sizeof(struct IOExtTD));
+							if (volume->iotd)
 							{
-								if (
-										OpenDevice
-											(
-												AROS_BSTR_ADDR(fssm->fssm_Device),
-												fssm->fssm_Unit,
-												(struct IORequest *)&volume->iotd->iotd_Req,
-												fssm->fssm_Flags
-											)==0
-									)
+								de = volume->fssm->fssm_Environ;
+								volume->SizeBlock = de->de_SizeBlock;
+								volume->blockbuffer = AllocVec(volume->SizeBlock*4, MEMF_PUBLIC | MEMF_CLEAR);
+								if (volume->blockbuffer)
 								{
-									if (strcmp(AROS_BSTR_ADDR(fssm->fssm_Device), "trackdisk.device") == 0)
-										volume->flags |= VF_IS_TRACKDISK;
-									volume->startblock = 
-										de->de_LowCyl*
-										de->de_Surfaces*
-										de->de_BlocksPerTrack;
-									volume->countblock =
-										(
-											(
-												de->de_HighCyl-de->de_LowCyl+1
-											)*de->de_Surfaces*de->de_BlocksPerTrack
-										)-1+de->de_Reserved;
-									volume->readcommand = CMD_READ;
-									volume->writecommand = CMD_WRITE;
-									nsdCheck(volume);
-									retval = readwriteBlock
-										(
-											volume, 0,
-											volume->blockbuffer, 512, volume->readcommand
-										);
-									if (retval == 0)
-									{
-										if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)!=0x444F5300)
-										{
-											retval = readwriteBlock
+									if (
+											OpenDevice
 												(
-													volume, 1,
-													volume->blockbuffer, 512, volume->readcommand
-												);
-										}
-										else
-											volume->flags |= VF_MOVE_BB;
-										if (
-												((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300) &&
-												((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFF)>0)
-											)
+													AROS_BSTR_ADDR(volume->fssm->fssm_Device),
+													volume->fssm->fssm_Unit,
+													(struct IORequest *)&volume->iotd->iotd_Req,
+													volume->fssm->fssm_Flags
+												)==0
+										)
+									{
+										if (strcmp(AROS_BSTR_ADDR(volume->fssm->fssm_Device), "trackdisk.device") == 0)
+											volume->flags |= VF_IS_TRACKDISK;
+										volume->startblock = 
+											de->de_LowCyl*
+											de->de_Surfaces*
+											de->de_BlocksPerTrack;
+										volume->countblock =
+											(
+												(
+													de->de_HighCyl-de->de_LowCyl+1
+												)*de->de_Surfaces*de->de_BlocksPerTrack
+											)-1+de->de_Reserved;
+										volume->readcommand = CMD_READ;
+										volume->writecommand = CMD_WRITE;
+										nsdCheck(volume);
+										retval = readwriteBlock
+											(
+												volume, 0,
+												volume->blockbuffer, 512, volume->readcommand
+											);
+										if (retval == 0)
 										{
-											return volume;
+											if ((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)!=0x444F5300)
+											{
+												retval = readwriteBlock
+													(
+														volume, 1,
+														volume->blockbuffer, 512, volume->readcommand
+													);
+											}
+											else
+												volume->flags |= VF_MOVE_BB;
+											if (
+													((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFFFFFF00)==0x444F5300) &&
+													((AROS_BE2LONG(volume->blockbuffer[0]) & 0xFF)>0)
+												)
+											{
+												return volume;
+											}
+											else
+												error = ERROR_NOT_A_DOS_DISK;
 										}
 										else
-											error = ERROR_OBJECT_WRONG_TYPE;
+										{
+											error = ERROR_UNKNOWN;
+											errstr = "Read Error";
+										}
 									}
 									else
+									{
 										error = ERROR_UNKNOWN;
+										errstr = "OpenDevice() Error";
+									}
+									FreeVec(volume->blockbuffer);
 								}
 								else
-									error = ERROR_UNKNOWN;
-								FreeVec(volume->blockbuffer);
+									error = ERROR_NO_FREE_STORE;
 							}
 							else
 								error = ERROR_NO_FREE_STORE;
-						}
+							DeleteMsgPort(volume->mp);
+							}
 						else
 							error = ERROR_NO_FREE_STORE;
-						DeleteMsgPort(volume->mp);
+						FreeVec(volume);
+						volume = 0;
 					}
 					else
 						error = ERROR_NO_FREE_STORE;
-					FreeVec(volume);
-					volume = 0;
 				}
-				else
-					error = ERROR_NO_FREE_STORE;
 			}
 			else
 				error = IoErr();
 		}
 		else
+		{
 			error = ERROR_OBJECT_NOT_FOUND;
+			errstr = dname;
+		}
 	}
 	else
+	{
 		error = ERROR_UNKNOWN;
-	PrintFault(error, NULL);
+		errstr = "LockDosList Error";
+	}
+	PrintFault(error, errstr);
 	return 0;
 }
 
@@ -434,14 +525,14 @@ ULONG retval;
 }
 
 int main(void) {
-LONG myargs[4]={0,0,0,0};
+LONG myargs[5]={0,0,0,0,0};
 struct RDArgs *rdargs;
 struct Volume *volume;
 
-	rdargs = ReadArgs("DRIVE/A,NOBOOT/S,CHECK/S,FFS/S",myargs,NULL);
+	rdargs = ReadArgs("DRIVE/A,NOBOOT/S,CHECK/S,FFS/S,MBR/S",myargs,NULL);
 	if (rdargs)
 	{
-		volume = initVolume((STRPTR)myargs[0]);
+		volume = initVolume((STRPTR)myargs[0], myargs[4]);
 		if (volume)
 		{
 			if (myargs[1])
@@ -449,7 +540,7 @@ struct Volume *volume;
 			else if (myargs[2])
 				checkBootCode(volume);
 			else
-				installStageFiles(volume);
+				installStageFiles(volume, myargs[4], volume->fssm->fssm_Unit);
 			uninitVolume(volume);
 		}
 		FreeArgs(rdargs);
