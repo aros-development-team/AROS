@@ -34,6 +34,8 @@ IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
 		    struct Requester * req, ULONG MethodID, ...);
 ULONG SetAttrs (APTR obj, ULONG tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
+ULONG SetGadgetAttrs (struct Gadget * Gadget, struct Window * Window,
+		      struct Requester * Requester, ULONG tag1, ...);
 APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
 IPTR DoMethodA (Object * obj, Msg message);
 IPTR DoMethod (Object * obj, ULONG MethodID, ...);
@@ -276,6 +278,10 @@ AROS_LP3(APTR, NewObjectA,
     AROS_LPA(struct TagItem *, tagList, A2),
     struct IntuitionBase *, IntuitionBase, 106, Intuition)
 
+AROS_LP1(APTR, NextObject,
+    AROS_LPA(APTR, objectPtrPtr, A0),
+    struct IntuitionBase Ü, IntuitionBase, 111, Intuition)
+
 AROS_LP1(struct RastPort *, ObtainGIRPort,
     AROS_LPA(struct GadgetInfo *, gInfo, A0),
     struct IntuitionBase *, IntuitionBase, 93, Intuition)
@@ -416,6 +422,14 @@ AROS_LP2(void, UnlockPubScreen,
     AROS_LPA(UBYTE         *, name, A0),
     AROS_LPA(struct Screen *, screen, A1),
     struct IntuitionBase *, IntuitionBase, 86, Intuition)
+
+AROS_LP5(BOOL, WindowLimits,
+    AROS_LPA(struct Window *, Window, A0),
+    AROS_LPA(WORD,            MinWidth, D0),
+    AROS_LPA(WORD,            MinHeight, D1),
+    AROS_LPA(UWORD,           MaxWidth, D2),
+    AROS_LPA(UWORD,           MaxHeight, D3),
+    struct IntuitionBase *, IntuitionBase, 53, Intuition)
 
 AROS_LP1(void, WindowToBack,
     AROS_LPA(struct Window *, window, A0),

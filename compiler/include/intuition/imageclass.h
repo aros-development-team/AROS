@@ -50,6 +50,7 @@
 #define IA_Outline		(IA_Dummy + 0x14)
 #define IA_Recessed		(IA_Dummy + 0x15)
 #define IA_DoubleEmboss 	(IA_Dummy + 0x16)
+/* to specify that the interior of a frame should not be cleared */
 #define IA_EdgesOnly		(IA_Dummy + 0x17)
 
 /* SYSICLASS attributes */

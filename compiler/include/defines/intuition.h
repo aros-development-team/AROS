@@ -272,6 +272,11 @@
     AROS_LCA(struct TagItem *, tagList, A2), \
     struct IntuitionBase *, IntuitionBase, 106, Intuition)
 
+#define NextObject(objectPtrPtr) \
+    AROS_LC1(APTR, NextObject, \
+    AROS_LCA(APTR, objectPtrPtr, A0), \
+    struct IntuitionBase *, IntuitionBase, 111, Intuition)
+
 #define ObtainGIRPort(gInfo) \
     AROS_LC1(struct RastPort *, ObtainGIRPort, \
     AROS_LCA(struct GadgetInfo *, gInfo, A0), \
@@ -439,6 +444,15 @@
     AROS_LCA(UBYTE         *, name, A0), \
     AROS_LCA(struct Screen *, screen, A1), \
     struct IntuitionBase *, IntuitionBase, 86, Intuition)
+
+#define WindowLimits(Window, MinWidth, MinHeight, MaxWidth, MaxHeight) \
+    AROS_LC5(BOOL, WindowLimits, \
+    AROS_LCA(struct Window *, Window, A0), \
+    AROS_LCA(WORD,            MinWidth, D0), \
+    AROS_LCA(WORD,            MinHeight, D1), \
+    AROS_LCA(UWORD,           MaxWidth, D2), \
+    AROS_LCA(UWORD,           MaxHeight, D3), \
+    struct IntuitionBase *, IntuitionBase, 53, Intuition)
 
 #define WindowToBack(window) \
     AROS_LC1(void, WindowToBack, \

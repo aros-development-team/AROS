@@ -26,17 +26,29 @@
 
 /* Kinds for CreateGadgetA() */
 #define GENERIC_KIND  0
+/* normal button */
 #define BUTTON_KIND   1
+/* boolean gadget */
 #define CHECKBOX_KIND 2
+/* to enter numbers */
 #define INTEGER_KIND  3
+/* to list a bunch of entries */
 #define LISTVIEW_KIND 4
+/* mutually exclusive entry gadget */
 #define MX_KIND       5
+/* to show numbers */
 #define NUMBER_KIND   6
+/* like MX_KIND, but rendered differently */
 #define CYCLE_KIND    7
+/* to choose a color */
 #define PALETTE_KIND  8
+/* to select a value of a range of values */
 #define SCROLLER_KIND 9
+/* like SCROLLER_KIND, but with a fixed range */
 #define SLIDER_KIND   11
+/* to enter texts */
 #define STRING_KIND   12
+/* to show texts */
 #define TEXT_KIND     13
 #define NUM_KINDS     14
 
@@ -56,7 +68,9 @@ struct NewGadget
     APTR  ng_UserData;
 };
 
-/* ng_Flags */
+/* ng_Flags
+   The PLACETEXT flags specify where to put the label(s) of the gadget
+*/
 #define PLACETEXT_LEFT  (1L<<0)
 #define PLACETEXT_RIGHT (1L<<1)
 #define PLACETEXT_ABOVE (1L<<2)
