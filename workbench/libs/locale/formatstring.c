@@ -553,7 +553,13 @@ static const UBYTE HEXarray [] = "0123456789ABCDEF";
               if (!scanning)
               {
                 buffer = *(UBYTE **)(((IPTR)stream)+indices[arg_pos-1]);
-                buflen = strlen(buffer);
+                if (!buffer)
+                {
+                    buffer = "(null)";
+                    buflen = 7;
+                }
+                else
+                    buflen = strlen(buffer);
 
 #if !USE_GLOBALLIMIT
                 if (buflen > limit)
