@@ -1039,57 +1039,6 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 
 /****************************************************************************************/
 
-void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
-    	    	     LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize,
-		     ULONG *buf, struct BitMap *dest_bm)
-{
-    UBYTE   *srcptr;
-    LONG    x, y;
-
-    EnterFunc(bug("template_to_buf(%p, %d, %d, %d, %d, %p)\n"
-    			, ti, x_src, y_src, xsize, ysize, buf));
-			
-    /* Find the exact startbyte */
-    srcptr = ti->source + XCOORD_TO_BYTEIDX(x_src) + (ti->modulo * y_src);
-    
-    /* Find the exact startbit */
-    x_src &= 0x07;
-
-    for (y = 0; y < ysize; y ++)
-    {
-	UBYTE *byteptr = srcptr;
-
-    	for (x = 0; x < xsize; x ++)
-	{
-	    UBYTE mask = XCOORD_TO_MASK(x + x_src);
-	    BOOL is_set = ((*byteptr & mask) ? TRUE : FALSE);
-	    
-	    if (ti->invertsrc)
-	    {
-	    	is_set = ((is_set == TRUE) ? FALSE : TRUE);
-	    }
-	    
-	    if (is_set)
-		*buf = 1UL;
-	    else
-		*buf = 0UL;
-	    buf ++;
-
-	    /* Last pixel in this byte ? */
-	    if (((x + x_src) & 0x07) == 0x07)
-	    {
-	    	byteptr ++;
-	    }
-
-	}
-	srcptr += ti->modulo;
-    }
-
-    ReturnVoid("template_to_buf");
-}
-
-/****************************************************************************************/
-
 #define ENABLE_PROFILING   0
 #define USE_OLD_MoveRaster 0
 
