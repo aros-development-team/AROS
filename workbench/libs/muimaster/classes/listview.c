@@ -162,7 +162,11 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Group_Horiz, FALSE,
+	MUIA_InnerLeft,0,
+	MUIA_InnerRight,0,
 	Child, group = GroupObject,
+	    MUIA_InnerLeft,0,
+	    MUIA_InnerRight,0,
 	    MUIA_Group_LayoutHook, layout_hook,
 	    Child, list,
 	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,

@@ -446,6 +446,10 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    MUI_Redraw(obj, MADF_DRAWOBJECT);
 		    break;
 
+	    case    MUIA_FillArea:
+		    _handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
+		    break;
+
 	    case MUIA_ControlChar:
 		if (_flags(obj) & MADF_SETUP)
 		    cleanup_control_char(data, obj);
