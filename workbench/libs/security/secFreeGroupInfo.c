@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* (info) */
-	AROS_LHA(struct muGroupInfo *, info, A0),
+	AROS_LHA(struct secGroupInfo *, info, A0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 26, Security)

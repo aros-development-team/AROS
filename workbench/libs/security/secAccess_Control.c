@@ -19,7 +19,7 @@
 	/* (fs, task, owner, prot) */
 	AROS_LHA(ULONG, fs, A1),
 	AROS_LHA(APTR, task, A2),
-	AROS_LHA(struct muExtOwner *, owner, D1),
+	AROS_LHA(struct secExtOwner *, owner, D1),
 	AROS_LHA(ULONG, prot, D3),
 
 /*  LOCATION */

@@ -13,11 +13,11 @@
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(struct muExtOwner *, secUserInfo2ExtOwner,
+	AROS_LH1(struct secExtOwner *, secUserInfo2ExtOwner,
 
 /*  SYNOPSIS */
 	/* (info) */
-	AROS_LHA(struct muUserInfo *, info, A0),
+	AROS_LHA(struct secUserInfo *, info, A0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 24, Security)

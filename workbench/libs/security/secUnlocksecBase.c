@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* (muP) */
-	AROS_LHA(struct muPointers *, muP, D0),
+	AROS_LHA(struct secPointers *, muP, D0),
 
 /*  LOCATION */
 	struct Library *, SecurityBase, 38, Security)

@@ -17,7 +17,7 @@
 
 /*  SYNOPSIS */
 	/* (user, owner, taglist) */
-	AROS_LHA(struct muExtOwner *, user, D0),
+	AROS_LHA(struct secExtOwner *, user, D0),
 	AROS_LHA(ULONG, owner, D1),
 	AROS_LHA(struct TagItem *, taglist, A0),
 
