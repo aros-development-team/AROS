@@ -67,31 +67,35 @@
 	ULONG iosigf = 1<<iORequest->io_Message.mn_ReplyPort->mp_SigBit;
 	ULONG sigs = 0;
 
+
+loop:
 	while
 	(
-	    !(sigs & SIGBREAKF_CTRL_C)  ||
+	    !(sigs & SIGBREAKF_CTRL_C)  &&
+
 	    !(iORequest->io_Flags&IOF_QUICK) &&
 	    iORequest->io_Message.mn_Node.ln_Type==NT_MESSAGE
 	)
 	{
 	    sigs = Wait(iosigf | SIGBREAKF_CTRL_C);
+	}
 
-	    if(iORequest->io_Message.mn_Node.ln_Type==NT_REPLYMSG)
-            {
-	        /* Arbitrate for the message queue. */
-	        Disable();
+	if(iORequest->io_Message.mn_Node.ln_Type==NT_REPLYMSG)
+        {
+	    /* Arbitrate for the message queue. */
+	    Disable();
 
-	        /* Remove the message */
-	        Remove(&iORequest->io_Message.mn_Node);
-  	        Enable();
+	    /* Remove the message */
+	    Remove(&iORequest->io_Message.mn_Node);
+  	    Enable();
+	}
+	else
+	if (sigs & SIGBREAKF_CTRL_C)
+	{
+	    AbortIO(iORequest);
+	    sigs = 0;
 
-		break;
-	    }
-	    else
-	    if (sigs & SIGBREAKF_CTRL_C)
-	    {
-	        AbortIO(iORequest);
-  	    }
+	    goto loop;
 	}
     }
 
