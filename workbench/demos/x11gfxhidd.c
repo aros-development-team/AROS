@@ -22,7 +22,7 @@
 
 #include <aros/debug.h>
 
-#define USE_TWO_WINDOWS
+#define USE_TWO_WINDOWS_
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
@@ -70,16 +70,16 @@ int main(int argc, char **argv)
 
 #endif	       
 			/* Wait forever */
-			test_readpixel(w1);
+			// test_readpixel(w1);
+			SetAPen(w1->RPort, 3);
+			SetBPen(w1->RPort, 4);
+			test_blttemplate(w1);
 			handleevents(w1);
 
 #ifdef USE_TWO_WINDOWS		
 			CloseWindow(w2);
 		    }
-		    
 #endif		    
-
-
 		    CloseWindow(w1);
 		}
 		CloseScreen(screen);
@@ -102,7 +102,7 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
   printf("Opening window, screen=%p\n", screen);
   
   window = OpenWindowTags(NULL,
-			  WA_IDCMP, IDCMP_RAWKEY,
+			  WA_IDCMP, IDCMP_RAWKEY | IDCMP_CLOSEWINDOW,
 			  WA_Left,	x,
 			  WA_Top,	y,
                           WA_Width, 	w,
@@ -122,16 +122,49 @@ struct Window *openwindow(struct Screen *screen, LONG x, LONG y, LONG w, LONG h)
   
   return window;
 }
+
+
 struct Screen * openscreen(void)
 {
   struct Screen * screen;
+  UWORD pens[] = { ~0 };
+ULONG patterncoltab[] = { 
+    (16L << 16) + 0,	/* 16 colors, loaded at index 0 */
+    
+    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70	*/
+    0x00000000, 0x00000000, 0x00000000, /* Black	*/
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White	*/
+    0x66666666, 0x88888888, 0xBBBBBBBB, /* AMIGA Blue   */
+    
+    0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue		*/
+    0x00000000, 0xFFFFFFFF, 0x00000000, /* Green	*/
+    0xFFFFFFFF, 0x00000000, 0x00000000, /* Red		*/
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan		*/
+    
+    0x33333333, 0x33333333, 0x33333333, /* Pattern Col 1 */
+    0xcdcdcdcd, 0x6c6c6c6c, 0xc7c7c7c7, /* Pattern Col 2 */
+    0x8e8e8e8e, 0x85858585, 0x93939393, /* Pattern Col 3 */
+    0x22222222, 0x22222222, 0x22222222, /* Pattern Col 4 */
+    
+    0x77777777, 0x77777777, 0x77777777, /* Pattern Col 5 */
+    0x66666666, 0x66666666, 0x66666666, /* Pattern Col 6 */
+    0x55555555, 0x55555555, 0x55555555, /* Pattern Col 7 */
+    0x44444444, 0x44444444, 0x44444444, /* Pattern Col 8 */
+    
+    0L		/* Termination */
+};    
    
   printf("Opening screen\n");
   screen = OpenScreenTags(NULL,
                           SA_Width, 	640,
                           SA_Height, 	480,
+			  SA_Depth,	24,
+			  SA_Title,	"X11 gfx hidd demo",
+			  SA_Pens,	pens,
+			  
                           TAG_END);
 
+  LoadRGB32(&screen->ViewPort, patterncoltab);
 
 #if 0
    screen = LockPubScreen(NULL);
