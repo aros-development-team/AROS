@@ -3,45 +3,19 @@
     $Id$
 */
 
-#include <proto/alib.h>		// CreateGadget() and stuff
-#include <proto/exec.h>		// Wait()
-#include <proto/intuition.h>
-#include <proto/gadtools.h>
-#include <proto/graphics.h>
-
-#include <exec/memory.h>	// MEMF_#? flags
-#include <dos/dos.h>		// SIGBREAKF_CTRL_C
-#include <prefs/font.h>		// Structure declaration
-
-#include <libraries/gadtools.h>
-#include <libraries/locale.h>	// Struct Catalog
-
-#include <stdio.h>
-
 #include "global.h"
 
-#define CATCOMP_NUMBERS
-#include "fontprefs_strings.h"
+#include "string.h"		// strlen()
 
-// No need to declare library pointers? Look it up!
-//extern struct Library *GadToolsBase;
-//extern struct GfxBase *GfxBase;
+struct Gadget *textGadget;	// Pointer needed to update text gadget
 
-struct Gadget *textGadget;
-
-extern struct Menu * setupMenus(APTR, struct Catalog *);
-extern STRPTR aslOpenPrefs(void);
-extern STRPTR aslSavePrefs(void);
-extern BOOL getFont(struct FontPrefs *);
-extern void readIFF(UBYTE *, struct FontPrefs **);
-extern void writeIFF(UBYTE *, struct FontPrefs **);
-extern void initDefaultPrefs(struct FontPrefs **);
-extern STRPTR getCatalog(struct Catalog *, ULONG);
-
+// TODO: These variables shouldn't need to be global - do something about it (petah)
+UWORD extraXSpace = 0;	// TODO: Do we need to set this to NULL or will the compiler to it for us? (petah)
 UWORD offsetX[3];
-UWORD appWinWidth;	// Determinates the final window width. Not pretty - change this!
+UWORD offsetY = 0;	// TODO: Do we need to set this to NULL or will the compiler to it for us? (petah)
 
 static struct IBox zoomCoords;
+
 BYTE fontChoices[] = { MSG_MX_WORKBENCH, MSG_MX_SYSTEM, MSG_MX_SCREEN, NULL };
 BYTE buttonStrings[] = { MSG_GAD_SAVE, MSG_GAD_USE, MSG_GAD_CANCEL, NULL };
 
@@ -56,474 +30,547 @@ struct NewMenu windowMenus[] =
  { NM_ITEM,	(STRPTR)MSG_MEN_EDIT_DEFAULT },
  { NM_ITEM,	(STRPTR)MSG_MEN_EDIT_LASTSAVED },
  { NM_ITEM,	(STRPTR)MSG_MEN_EDIT_RESTORE },
- { NM_END } // Should we use a trailing comma here? Look it up!
+ { NM_END }	// TODO: Should we use a trailing comma here? (petah)
 };
 
-/* setupMenus() - expects an APTR VisualInfo pointer - returns a menu pointer
-   if successful, otherwise FALSE */
-struct Menu *setupMenus(APTR visualInfo, struct Catalog *catalogPtr)
+UWORD calcTextWidth(UBYTE *text, struct Screen *screenPtr, struct RastPort *rastPort)
 {
- struct Menu *menuPtr = NULL; // Menu pointer; better set it to NULL, just in case
- ULONG id;
+    struct RastPort tempRastPort;
+    struct DrawInfo *drawInfo;
+    UWORD width = 0;
 
- struct NewMenu *newMenuPtr = windowMenus;
+    if(rastPort)
+    {
+	width = TextLength(rastPort, text, strlen(text));
+    }
+    else
+    {
+	InitRastPort(&tempRastPort); // TODO: Error check please?
 
- while(newMenuPtr->nm_Type != NM_END)
- {
-  if(newMenuPtr->nm_Label != NM_BARLABEL)
-  {
-   id = (ULONG)newMenuPtr->nm_Label;
+	drawInfo = GetScreenDrawInfo(screenPtr); // TODO: Can't fail according to AmigaOS 3.1 Autodocs?
 
-   if(newMenuPtr->nm_Type == NM_TITLE)
-    newMenuPtr->nm_Label = getCatalog(catalogPtr, id);
-   else
-   {
-    newMenuPtr->nm_Label = getCatalog(catalogPtr, id) + 2; // CAUTION: Menus will be crippled if they lack keyboard shortcuts!
-    newMenuPtr->nm_CommKey = getCatalog(catalogPtr, id);
-    newMenuPtr->nm_UserData = id;
-   }
-  }
+	SetFont(&tempRastPort, drawInfo->dri_Font);
 
-  newMenuPtr++;
- }
+	width = TextLength(&tempRastPort, text, strlen(text));
 
- if((menuPtr = CreateMenus(windowMenus, TAG_END)))
- {
-  if(LayoutMenusA(menuPtr, visualInfo, TAG_END))
-   return(menuPtr);
-  else
-  {
-   printf("Unable to layout menus!\n");
-   FreeMenus(menuPtr);
-   return(FALSE);
-  }
- }
- else
- {
-  printf("Unable to create menus!\n");
-  return(FALSE);
- }
+	FreeScreenDrawInfo(screenPtr, drawInfo);
+    }
+
+    return(width);
 }
 
-void updateGUI(struct AppGUIData *appGUIData, UBYTE fontChoice)
+// Add gadgets to the settings tab
+void addGadgets()
 {
- extern struct FontPrefs *fontPrefs[3];  /* init.c */
-
- GT_SetGadgetAttrs(textGadget, appGUIData->agd_Window, NULL, GTTX_Text, fontPrefs[fontChoice]->fp_Name, TAG_DONE);
-/*
- printf("updateGUI | fontChoice is %d\n", fontChoice);
- printf("fontPrefs->fp_Name is >%s<\n", fontPrefs[fontChoice]->fp_Name);
- printf("fontPrefs->fp_TextAttr.ta_YSize is >%d<\n", fontPrefs[fontChoice]->fp_TextAttr.ta_YSize);
-*/
+    AddGList(appGUIData->agd_Window, appGUIData->agd_FirstGadget, 0, 3, NULL);
 }
 
-
-UWORD calcTextWidth(UBYTE *text, struct Screen *screenPtr)
+// Construct the preview image
+void addPreview()
 {
- struct RastPort tempRastPort;
- struct DrawInfo *drawInfo;
- UWORD width = 0;
+    extern struct FontPrefs *fontPrefs[3];
+    struct TextFont *bitmapFont, *oldFont;
+    struct ColorMap *colorMap = appGUIData->agd_Window->WScreen->ViewPort.ColorMap;
+    UBYTE a;
+    UWORD bevelOffsetX = 0, bevelOffsetY = 0, offsetX = 0, offsetY = 0, tempValue = 0, previewOffsetX[3]; // Real ugly, change this (petah)
+    LONG pen = 0;
 
- InitRastPort(&tempRastPort); // Error check please?
+    if(appGUIData->agd_RegisterTab->framewidth - GADGET_OUTER_SPACING * 2 > PREVIEW_WIDTH)
+	bevelOffsetX = (appGUIData->agd_RegisterTab->framewidth - PREVIEW_WIDTH - GADGET_OUTER_SPACING * 2) / 2;
 
- drawInfo = GetScreenDrawInfo(screenPtr); // Can't fail according to AmigaOS 3.1 Autodocs?
+    if(appGUIData->agd_RegisterTab->frameheight - appGUIData->agd_RegisterTab->height - GADGET_OUTER_SPACING * 2 > PREVIEW_HEIGHT)
+        bevelOffsetY = (appGUIData->agd_RegisterTab->framewidth - appGUIData->agd_RegisterTab->height - PREVIEW_HEIGHT -
+	    GADGET_OUTER_SPACING * 2) / 2; 
 
- SetFont(&tempRastPort, drawInfo->dri_Font);
+    DrawBevelBox(appGUIData->agd_Window->RPort,
+	appGUIData->agd_Window->WScreen->WBorLeft + WINDOW_OFFSET + GADGET_OUTER_SPACING + bevelOffsetX,
+	appGUIData->agd_Window->WScreen->WBorTop + WINDOW_OFFSET + GADGET_OUTER_SPACING + bevelOffsetY +
+		appGUIData->agd_Window->WScreen->Font->ta_YSize + 1 + appGUIData->agd_RegisterTab->height,
+ 	PREVIEW_WIDTH,
+	PREVIEW_HEIGHT,
+	GT_VisualInfo, appGUIData->agd_VisualInfo, GTBB_Recessed, TRUE,
+	TAG_END);
 
- width = TextLength(&tempRastPort, text, strlen(text));
+    // Extra feature of "Font" Preferences: Allocate a pen for the preview background (just for the looks)
+    // If ObtainBestPen() fails, it'll return -1. If this is the case, set pen to "0".
+    // Todo: Will this work on m68k systems? (petah)
+    // 0x91, 0x91, 0x9e = Blueish 0xea, 0xb8, 0x61 = Yellowish
+    if(-1 == (pen = ObtainBestPen(colorMap, 0xeaaaaaaa, 0xb8888888, 0x61111111, OBP_Precision, PRECISION_GUI, OBP_FailIfBad, FALSE, TAG_END)))
+	pen = 0;
 
- FreeScreenDrawInfo(screenPtr, drawInfo);
+    kprintf("Pen is %ld\n", pen);
+    SetAPen(appGUIData->agd_Window->RPort, pen);
 
- return(width);
+    RectFill(appGUIData->agd_Window->RPort,
+	appGUIData->agd_RegisterTab->left + 1 + GADGET_OUTER_SPACING + bevelOffsetX,
+	appGUIData->agd_RegisterTab->top + appGUIData->agd_RegisterTab->height + GADGET_OUTER_SPACING + 1 + bevelOffsetY,
+	appGUIData->agd_Window->WScreen->WBorLeft + WINDOW_OFFSET + GADGET_OUTER_SPACING + PREVIEW_WIDTH + bevelOffsetX - 2,
+	appGUIData->agd_Window->WScreen->Font->ta_YSize + 1 + WINDOW_OFFSET + GADGET_OUTER_SPACING + appGUIData->agd_RegisterTab->height +
+		+ GADGET_OUTER_SPACING + bevelOffsetY + PREVIEW_HEIGHT);
+
+    // Release pen (if we got one)
+    if(pen != 0)		
+	ReleasePen(colorMap, pen);
+
+    SetAPen(appGUIData->agd_Window->RPort, 1);
+
+    offsetX = offsetY = 0;
+
+    for(a = 0; a <= 2; a++)
+    {
+	if((bitmapFont = OpenDiskFont(&(fontPrefs[a]->fp_TextAttr))))
+	{
+	    SetFont(appGUIData->agd_Window->RPort, bitmapFont);
+
+	    previewOffsetX[a] = calcTextWidth(getCatalog(catalogPtr, a + MSG_MX_WORKBENCH), NULL, appGUIData->agd_Window->RPort);
+
+	    if(previewOffsetX[a] > offsetX)
+		offsetX = previewOffsetX[a];
+
+            if(tempValue > offsetY)
+		offsetY = tempValue;
+	}
+    }
+
+    // Figure out the offsetX and offsetY values for the font preview
+    offsetY = (PREVIEW_HEIGHT - tempValue) / 4 + bevelOffsetY;
+
+    for(a = 0; a <= 2; a++)
+	previewOffsetX[a] = ((PREVIEW_WIDTH - previewOffsetX[a]) / 2) + bevelOffsetX;
+
+    for(a = 0; a <= 2; a++)
+    {
+	if((bitmapFont = OpenFont(&(fontPrefs[a]->fp_TextAttr))))
+	{
+	    Move(appGUIData->agd_Window->RPort,
+		appGUIData->agd_Window->WScreen->WBorLeft + WINDOW_OFFSET + GADGET_OUTER_SPACING + previewOffsetX[a],
+		appGUIData->agd_Window->WScreen->WBorTop + WINDOW_OFFSET + GADGET_OUTER_SPACING +
+		appGUIData->agd_Window->WScreen->Font->ta_YSize + 1 + appGUIData->agd_RegisterTab->height + (offsetY * (a + 1)));
+
+	    oldFont = appGUIData->agd_Window->RPort->Font;
+
+	    SetFont(appGUIData->agd_Window->RPort, bitmapFont);
+
+	    Text(appGUIData->agd_Window->RPort, getCatalog(catalogPtr, a + MSG_MX_WORKBENCH),
+		strlen(getCatalog(catalogPtr, a + MSG_MX_WORKBENCH)));
+
+	    CloseFont(bitmapFont);
+	}
+    }
+
+    // Restore old font to RastPort
+    SetFont(appGUIData->agd_Window->RPort, oldFont);
 }
 
-UWORD preCalculateGUI(struct Screen *publicScreen, struct Catalog *catalogPtr)
+// Remove the gadgets from the settings tab
+void removeGadgets()
 {
- UBYTE a;
- UWORD width = 0, maxWidth = 0;
+    // Remove first three gadgets (MX, buttongadget and textgadget)
+    RemoveGList(appGUIData->agd_Window, appGUIData->agd_FirstGadget, 3);
+}
 
- // First step: The MX Gadget. Check what MX item is the widest.
- for(a = 0; a <= 2; a++)
- {
-  width = calcTextWidth(getCatalog(catalogPtr, fontChoices[a]), publicScreen);
+// Remove the preview tab (this function does nothing right now)
+void removePreview()
+{
+    kprintf("removePreview() - appGUIData->agd_RegisterTab->height = %d\n",
+    	appGUIData->agd_RegisterTab->height);
+}
 
-  if(width > maxWidth)
-   maxWidth = width;
- }
+// Allocate and initialize resources needed for registertab
+BOOL createRegisterTabs()
+{
+    if(!(appGUIData->agd_RegisterTab = AllocMem(sizeof(struct RegisterTab), (MEMF_ANY | MEMF_CLEAR))))
+    {
+	printf("Unable to allocate memory for registerTab!\n");
+	return(FALSE);
+    }
 
- offsetX[0] =  maxWidth + MX_WIDTH; // MX_WIDTH is the (static) width of the MX button glyph. Change this?
+    // TODO: Initializing several entries of an array can probably be done in a better way? (petah)
+    appGUIData->agd_RegisterTabItem[0].text = getCatalog(catalogPtr, MSG_TAB_SETTINGS); //titleSettings;
+    appGUIData->agd_RegisterTabItem[0].image = NULL;
 
- // Second step: The "Get" button + spacing to Text string gadget
- offsetX[1] = calcTextWidth(getCatalog(catalogPtr, MSG_GAD_GET), publicScreen) + GADGET_INNER_SPACING * 2 + GADGET_OUTER_SPACING * 2;   //offsetX[1] = calcTextWidth(GetCatalogStr(BUTTON_GET_STR), publicScreen) + GADGET_INNER_SPACING * 2 + GADGET_OUTER_SPACING * 2;
+    appGUIData->agd_RegisterTabItem[1].text = getCatalog(catalogPtr, MSG_TAB_PREVIEW); //titlePreview;
+    appGUIData->agd_RegisterTabItem[1].image = NULL;
 
- // Third step: The "Button row" Element.
- maxWidth = 0;
+    appGUIData->agd_RegisterTabItem[2].text = NULL; // NULL terminator
 
- for(a = 0; a <= 2; a++)
- {
-  width = calcTextWidth(getCatalog(catalogPtr, buttonStrings[a]), publicScreen);
+    InitRegisterTab(appGUIData->agd_RegisterTab, &(appGUIData->agd_RegisterTabItem[0]));
 
-  if(width > maxWidth)
-   maxWidth = width;
- }
+    LayoutRegisterTab(appGUIData->agd_RegisterTab, appGUIData->agd_Screen, appGUIData->agd_DrawInfo, TRUE); // "TRUE" sets the same tab width all over
 
- offsetX[2] = (maxWidth + GADGET_INNER_SPACING * 2) * 3 + (GADGET_OUTER_SPACING * 2) * 2;
+    return(TRUE);
+}
 
- maxWidth = 0;
+void freeRegisterTabs()
+{
+    kprintf("freeRegisterTab() called\n");
+    if(appGUIData->agd_RegisterTab)
+	FreeMem(appGUIData->agd_RegisterTab, sizeof(struct RegisterTab));
+    else
+	printf("WARNING: No memory for RegisterTab!\n"); // TODO: Fix this!
+}
 
- // Fourth step: See what element is the widest
- for(a = 0; a <= 2; a++)
-  if(offsetX[a] > maxWidth)
-   maxWidth = offsetX[a];
+// Deal with the registertab (remove/add contents to old/new page chosen by user)
+void processRegisterTab()
+{
+    // Check whether or not the user has actually requested to change registertabs
+    if(appGUIData->agd_OldActive != appGUIData->agd_RegisterTab->active)
+    {
+	// Remove/free any resources allocated by the previously used registertab frame
+	kprintf("appGUIData->agd_RegisterTab->active = %d\n", appGUIData->agd_RegisterTab->active);
+	kprintf("Calling removeGUIItems(%d)... ", appGUIData->agd_OldActive);
+	appGUIData->removeGUIItems[appGUIData->agd_OldActive](appGUIData);
+	kprintf("OK!\n\n");
 
- // Fifth step: Calculate and assign element offsets
- for(a = 0; a <= 2; a++)
-  if(offsetX[a] != maxWidth)
-   offsetX[a] = (maxWidth - offsetX[a]) / 2;
-  else
-   offsetX[a] = 0;
+	// Setup the proper drawing mode to erase the contents of the registertab frame
+	// Todo: Investigate the mode currently being used (petah)
+	SetDrMd(appGUIData->agd_Window->RPort, JAM1),
+	SetAPen(appGUIData->agd_Window->RPort, 0);
 
- return(maxWidth);
+	// Remove whatever has been rendered into the registertab frame. The one and two
+	// pixel offsets used below are compensations for the frame border width
+	RectFill(appGUIData->agd_Window->RPort,
+	    appGUIData->agd_RegisterTab->left + 1,
+	    appGUIData->agd_RegisterTab->top + appGUIData->agd_RegisterTab->height,
+	    appGUIData->agd_RegisterTab->left + appGUIData->agd_RegisterTab->framewidth - 2,
+	    appGUIData->agd_RegisterTab->top + appGUIData->agd_RegisterTab->height +
+		appGUIData->agd_RegisterTab->frameheight - 2);
+
+	// Set "agd_OldActive" to previously used registertab
+	appGUIData->agd_OldActive = appGUIData->agd_RegisterTab->active;
+
+	// Add/allocate any resources allocated by the previously used registertab frame
+	// WARNING: This is currently NOT set free by the code flow as of now! (petah)
+	kprintf("Calling addGUIItems(%d)... ", appGUIData->agd_RegisterTab->active);
+	appGUIData->addGUIItems[appGUIData->agd_RegisterTab->active](appGUIData);
+	kprintf("OK!\n\n");
+
+	// Refresh all gadgets ("-1"). Todo: What order should these calls be placed in? (petah)
+	RefreshGList(appGUIData->agd_Window->FirstGadget, appGUIData->agd_Window, NULL, -1);
+	GT_RefreshWindow(appGUIData->agd_Window, NULL);
+    }
+    else
+	kprintf("processRegisterTab() - no action taken!\n");
+
+}
+
+// setupMenus() - expects an APTR VisualInfo pointer - returns a menu pointer
+// if successful, otherwise FALSE
+struct Menu *setupMenus()
+{
+    struct Menu *menuPtr = NULL; // Menu pointer; better set it to NULL, just in case
+    ULONG id;
+
+    struct NewMenu *newMenuPtr = windowMenus;
+
+    while(newMenuPtr->nm_Type != NM_END)
+    {
+	if(newMenuPtr->nm_Label != NM_BARLABEL)
+	{
+	    id = (ULONG)newMenuPtr->nm_Label;
+
+	    if(newMenuPtr->nm_Type == NM_TITLE)
+		newMenuPtr->nm_Label = getCatalog(catalogPtr, id);
+	    else
+	    {
+		newMenuPtr->nm_Label = getCatalog(catalogPtr, id) + 2; // CAUTION: Menus will be crippled if they lack keyboard shortcuts!
+		newMenuPtr->nm_CommKey = getCatalog(catalogPtr, id);
+		newMenuPtr->nm_UserData = id;
+	    }
+	}
+
+	newMenuPtr++;
+    }
+
+    if((menuPtr = CreateMenus(windowMenus, TAG_END)))
+    {
+	if(LayoutMenusA(menuPtr, appGUIData->agd_VisualInfo, TAG_END))
+	    return(menuPtr);
+	else
+	{
+	    displayError(getCatalog(catalogPtr, MSG_CANT_LAYOUT_MENUS));
+	    FreeMenus(menuPtr);
+	    return(FALSE);
+	}
+    }
+    else
+    {
+	displayError(getCatalog(catalogPtr, MSG_CANT_CREATE_MENUS));
+	return(FALSE);
+    }
+}
+
+void updateGUI(UBYTE fontChoice)
+{
+    extern struct FontPrefs *fontPrefs[3];  // Declared in init.c
+    static UBYTE tmpString[64]; // TODO: "Static"? What if this buffer is exceeded? (petah)
+
+    sprintf(tmpString, "%s %d", fontPrefs[fontChoice]->fp_Name, fontPrefs[fontChoice]->fp_TextAttr.ta_YSize);
+
+    GT_SetGadgetAttrs(textGadget, appGUIData->agd_Window, NULL, GTTX_Text, tmpString, TAG_DONE);
+}
+
+UWORD preCalculateGUI(struct AppGUIData *appGUIData)
+{
+    UBYTE a;
+    UWORD width = 0, maxWidth = 0, frameHeight = 0;
+
+    // First step: The MX Gadget. Check what MX item is the widest.
+    for(a = 0; a <= 2; a++)
+    {
+	width = calcTextWidth(getCatalog(catalogPtr, fontChoices[a]), appGUIData->agd_Screen, NULL);
+
+	if(width > maxWidth)
+	    maxWidth = width;
+    }
+
+    offsetX[0] =  maxWidth + MX_WIDTH; // MX_WIDTH is the (static) width of the MX button glyph. Change this?
+
+    // Second step: The "Get" button + spacing to Text string gadget
+    offsetX[1] = calcTextWidth(getCatalog(catalogPtr, MSG_GAD_GET), appGUIData->agd_Screen, NULL) +
+	GADGET_INNER_SPACING * 2 + GADGET_OUTER_SPACING * 2;
+
+    // Third step: The "Button row" Element.
+    maxWidth = 0;
+
+    for(a = 0; a <= 2; a++)
+    {
+	width = calcTextWidth(getCatalog(catalogPtr, buttonStrings[a]), appGUIData->agd_Screen, NULL);
+
+	if(width > maxWidth)
+	    maxWidth = width;
+    }
+
+    offsetX[2] = (maxWidth + GADGET_INNER_SPACING * 2) * 3 + (GADGET_OUTER_SPACING * 2) * 2;
+
+    maxWidth = 0;
+
+    // Fourth step: See what element is the widest
+    for(a = 0; a <= 2; a++)
+	if(offsetX[a] > maxWidth)
+	    maxWidth = offsetX[a];
+
+    // Fifth step: Calculate and assign element offsets
+    for(a = 0; a <= 2; a++)
+	if(offsetX[a] != maxWidth)
+	    offsetX[a] = (maxWidth - offsetX[a]) / 2;
+	else
+	    offsetX[a] = 0;
+
+    // Sixth step: Check whether or not we need to add space to "maxWidth" if the "registertab" is too narrow
+    if(appGUIData->agd_RegisterTab->width > maxWidth)
+    {
+	// It appears as if 'C' can allocate new variables on the fly, just
+	// like this - that's pretty neat!
+	UWORD oldMaxWidth = maxWidth;
+
+	maxWidth = maxWidth + (appGUIData->agd_RegisterTab->width - maxWidth);
+
+	// Don't take offsetX[2] into account (Save, Use, Cancel-buttons) as these are independent of the RegisterTab layout!
+	for(a = 0; a <= 1; a++)
+         offsetX[a] += (maxWidth - oldMaxWidth) / 2;
+    }
+
+    // Seventh step: See if any extra space is needed between gadgets (on both axis)
+    frameHeight = GADGET_OUTER_SPACING + appGUIData->agd_Screen->Font->ta_YSize * 3 + 2 + GADGET_OUTER_SPACING * 2 +
+	appGUIData->agd_Screen->Font->ta_YSize + GADGET_INNER_SPACING * 2 + GADGET_OUTER_SPACING;
+
+    // If "frameHeight" is too narrow for the preview picture to fit, calculate an "offsetY" value.
+    // Note that we compare "frameHeight" with the PREVIEW_HEIGTH constant + two times the gadget outer
+    // spacing value as we need this extra space in the "Preview" registertab.
+    if(frameHeight < PREVIEW_HEIGHT + 2 * GADGET_OUTER_SPACING)
+    {
+	offsetY = (PREVIEW_HEIGHT + 2 * GADGET_OUTER_SPACING - frameHeight) / 2;
+	kprintf("offsetY = %ld", offsetY);
+    }
+    else
+	kprintf("Sorry, these are the values: %ld %ld", PREVIEW_HEIGHT + 2 * GADGET_OUTER_SPACING, frameHeight); 
+
+    if(maxWidth + 2 * GADGET_OUTER_SPACING < PREVIEW_HEIGHT + 2 * GADGET_OUTER_SPACING)
+    {
+	kprintf("\n\nWhatis %ld\n", PREVIEW_WIDTH + 2 * GADGET_OUTER_SPACING);
+	kprintf("Whatis %ld\n", maxWidth + 2 * GADGET_OUTER_SPACING);
+	extraXSpace = (PREVIEW_WIDTH + 2 * GADGET_OUTER_SPACING - (maxWidth + GADGET_OUTER_SPACING * 2)) / 2;
+	kprintf("test = %ld\n", ((206 - (maxWidth + 6)) / 2));
+	kprintf("extraXSpace = %ld\n", extraXSpace);
+
+	maxWidth += extraXSpace * 2;
+    }
+
+    kprintf("\nmaxWidth = %ld\n", maxWidth);
+
+    kprintf("frameHeight = %ld\n", frameHeight);
+
+    return(maxWidth);
 }
 
 // MX-Gadget, Button + Text, Color + Color, Button + Button + Button = 8 gadgets
 // setupGadgets() - if failure, this function returns FALSE
 //
-struct AppGUIData * createGadgets(struct Screen *publicScreen, APTR visualInfo, struct Catalog *catalogPtr)
+struct AppGUIData * createGadgets()
 {
- UBYTE a = 0;
- UWORD width = 0, maxWidth = 0;
- struct AppGUIData *appGUIData;
- struct Gadget *gList = NULL;   // Gadget list; better set it to NULL, just in case
- struct Gadget *gadget;
- struct NewGadget newGadget;
- static STRPTR mxStrings[4]; // Do we need to retain this array? Look it up!
+    UBYTE a = 0, b = 0;
+    UWORD width = 0, maxWidth = 0;
+    struct Gadget *gList = NULL;   // Gadget list; better set it to NULL, just in case
+    struct Gadget *gadget;
+    struct NewGadget newGadget;
+    static STRPTR mxStrings[4]; // TODO: Do we need to retain this array? Look it up!
 
- if(!(appGUIData = AllocMem(sizeof(struct AppGUIData), (MEMF_ANY | MEMF_CLEAR))))
- {
-  printf("Unable to allocate memory for AppGUIData!\n");
-  return(FALSE);
- }
+    for(a = 0; a <= 2; a++)
+	mxStrings[a] = getCatalog(catalogPtr, fontChoices[a]);
 
- for(a = 0; a <= 2; a++)
-  mxStrings[a] = getCatalog(catalogPtr, fontChoices[a]);
+    mxStrings[3] = NULL;
 
- mxStrings[3] = NULL;
+    appGUIData->agd_MaxWidth = preCalculateGUI(appGUIData);
 
- appGUIData->agd_MaxWidth = preCalculateGUI(publicScreen, catalogPtr);
-
- if((gadget = CreateContext(&gList)))
- {
-  // These Gadget structure members should be common for all gadgets:
-  newGadget.ng_TextAttr = publicScreen->Font;
-  newGadget.ng_VisualInfo = visualInfo;
-
-  // Create MX Gadget
-  newGadget.ng_GadgetID =	MX_CHOOSEFONT;
-  newGadget.ng_TopEdge =	WINDOW_OFFSET + publicScreen->WBorTop + publicScreen->Font->ta_YSize + 1;
-  newGadget.ng_LeftEdge = 	WINDOW_OFFSET + publicScreen->WBorLeft + offsetX[0];
-  newGadget.ng_Flags =		NULL;
-
-  if(!(gadget = CreateGadget(MX_KIND, gadget, &newGadget, GTMX_Labels, mxStrings, GTMX_Active, MX_INIT_ACTIVE, TAG_END)))
-   return(FALSE);
-
-  // Create Font "Get" button Gadget (offsetX disabled - we want this element as wide as the widest element)
-  newGadget.ng_GadgetID =	BUTTON_GETFONT;
-  newGadget.ng_TopEdge =	newGadget.ng_TopEdge + gadget->Height + GADGET_OUTER_SPACING * 2;
-  newGadget.ng_LeftEdge = 	WINDOW_OFFSET + publicScreen->WBorLeft/* + offsetX[1];*/;
-  newGadget.ng_Height = 	publicScreen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
-  newGadget.ng_Width =		calcTextWidth(getCatalog(catalogPtr, MSG_GAD_GET), publicScreen) + GADGET_INNER_SPACING * 2;   newGadget.ng_GadgetText =	getCatalog(catalogPtr, MSG_GAD_GET);
-  newGadget.ng_Flags =		NULL;
-
-  if(!(gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget, TAG_END)))
-   return(FALSE);
-
-  // Create Font Text Gadget (offsetX disabled - we want this element as wide as the widest element)
-  newGadget.ng_GadgetID =       GADGET_ID_TEXT;
-  newGadget.ng_LeftEdge =       WINDOW_OFFSET + publicScreen->WBorLeft + gadget->Width + GADGET_OUTER_SPACING * 2; /*+ offsetX[1];*/
-  newGadget.ng_Height =         publicScreen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
-  newGadget.ng_Width =          appGUIData->agd_MaxWidth - newGadget.ng_Width - GADGET_OUTER_SPACING * 2; // CHANGE THIS!!!
-  newGadget.ng_Flags =          NULL;
-
-  if(!(gadget = CreateGadget(TEXT_KIND, gadget, &newGadget, GTTX_Border, TRUE, TAG_END)))
-   return(FALSE);
-
-  // Right now, we need to save this pointer for updating its text later on
-  textGadget = gadget;
-
-/*
-  // Create Palette Gadget (foreground)
-
-  // Create Palette Gadget (background)
-*/
-
-  appGUIData->agd_BevelBoxOffset = newGadget.ng_TopEdge + newGadget.ng_Height + GADGET_OUTER_SPACING * 2;
-
-  // Create three buttons ("Save", "Use" and "Cancel") of the same width. Calculate the width first!
-
-  a = 0;
-
-  while(buttonStrings[a])
-  {
-   width = calcTextWidth(getCatalog(catalogPtr, buttonStrings[a]), publicScreen);
-
-   if(width > maxWidth)	// Nicer way of testing and assigning width data?
-    maxWidth = width;
-
-   a++;
-  }
-
-  // Common gadget data:
-  newGadget.ng_TopEdge =        newGadget.ng_TopEdge + gadget->Height + GADGET_OUTER_SPACING * 2;
-  newGadget.ng_Height =         publicScreen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
-  newGadget.ng_Width =          maxWidth + GADGET_INNER_SPACING * 2;
-  newGadget.ng_Flags =		NULL;
-
-  // Create three gadgets
-  for(a = 0; a <= 2; a++)
-  {
-   newGadget.ng_GadgetID =	a + BUTTON_SAVE;
-   newGadget.ng_LeftEdge =	WINDOW_OFFSET + publicScreen->WBorLeft + (newGadget.ng_Width * a) + (a * GADGET_OUTER_SPACING * 2) + offsetX[2];
-   newGadget.ng_GadgetText = 	getCatalog(catalogPtr, buttonStrings[a]);
-
-   if(!(gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget, TAG_END)))
-    return(FALSE);
-  }
-
- }
- else
- {
-  printf("CreateContext() failed!\n");
-  return(FALSE);
- }
-
- appGUIData->agd_MaxHeight = newGadget.ng_TopEdge + newGadget.ng_Height + WINDOW_OFFSET + publicScreen->WBorBottom;
- appGUIData->agd_GadgetList = gList;
-
- return(appGUIData);
-}
-
-struct AppGUIData * openAppWindow(struct Screen *publicScreen, struct AppGUIData *appGUIData, APTR drawInfo, struct Catalog *catalogPtr)
-{
- zoomCoords.Left = -1; // Starting with Intuition V39, -1 tells AmigaOS/AROS to keep the window X/Y coordinates
- zoomCoords.Top = -1;
- zoomCoords.Width = appGUIData->agd_MaxWidth + 2 * WINDOW_OFFSET + publicScreen->WBorLeft + publicScreen->WBorRight;
- zoomCoords.Height = publicScreen->WBorTop + publicScreen->Font->ta_YSize + 1;
-
- appGUIData->agd_Window = OpenWindowTags(NULL,	WA_Left,	10,	// Change this! (To what?)
-						WA_Top,		10,	// Change this! (To what?)
-						WA_Width,	appGUIData->agd_MaxWidth + 2 * WINDOW_OFFSET + publicScreen->WBorLeft + publicScreen->WBorRight,
-						WA_Height,	appGUIData->agd_MaxHeight,
-						WA_DragBar,	TRUE,
-						WA_CloseGadget,	TRUE,
-						WA_Zoom,	(IPTR)&zoomCoords,
-						WA_DepthGadget,	TRUE,
-						WA_Activate,	TRUE,
-						WA_Gadgets,	appGUIData->agd_GadgetList,
-						WA_Title,	getCatalog(catalogPtr, MSG_WINTITLE),
-						WA_PubScreen,	publicScreen,
-						WA_IDCMP,	IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_VANILLAKEY |
-								IDCMP_MENUPICK | BUTTONIDCMP | MXIDCMP,
-						TAG_END);
-
- if(appGUIData->agd_Window)
- {
-  UnlockPubScreen(NULL, publicScreen);	// The window itself now holds a lock on the screen
-
-  GT_RefreshWindow(appGUIData->agd_Window, NULL); // What does this do?
-
-  updateGUI(appGUIData, MX_INIT_ACTIVE);
-
-  // This is all crazy, alter the code flow!
-  if(!(appGUIData->agd_Menu = setupMenus(drawInfo, catalogPtr)))
-  {
-   printf("setupMenus() failed!\n");
-   return(NULL); // No menus, no application
-  }
-  else
-   SetMenuStrip(appGUIData->agd_Window, appGUIData->agd_Menu);
-
-  return(appGUIData);
- }
-
- return(NULL); // "else" statement left out to keep GCC quiet ("control reaches end of non-void function")
-}
-
-void inputLoop(struct AppGUIData *appGUIData)
-{
- ULONG signals, class;
- UWORD code, menuNumber;
- UBYTE fontChoice = 0; /* The BYTE holding what font we're editing right now */
- BOOL running = TRUE;
- STRPTR fileName;
- struct MenuItem *menuItem;
- struct IntuiMessage *intuiMessage;
- struct Gadget *gadget;
- extern struct FontPrefs *fontPrefs[3];  /* init.c */
-
- while(running)
- {
-  signals = Wait(1L << appGUIData->agd_Window->UserPort->mp_SigBit | SIGBREAKF_CTRL_C);
-
-  if(signals & (1L << appGUIData->agd_Window->UserPort->mp_SigBit))
-  {
-   // We got a IDCMP message, analyze it and take action
-
-   while(NULL != (intuiMessage = GT_GetIMsg(appGUIData->agd_Window->UserPort)))
-   {
-    class = intuiMessage->Class;
-    code = intuiMessage->Code;
-    menuNumber = intuiMessage->Code;
-    gadget = (struct Gadget *)intuiMessage->IAddress;
-
-    GT_ReplyIMsg(intuiMessage);
-
-    switch(class)
+    if((gadget = CreateContext(&gList)))
     {
-     case IDCMP_CLOSEWINDOW :
-      running = FALSE;
-     break;
+	// These Gadget structure members should be common for all gadgets:
+	newGadget.ng_TextAttr = appGUIData->agd_Screen->Font;
+	newGadget.ng_VisualInfo = appGUIData->agd_VisualInfo;
 
-     case IDCMP_VANILLAKEY :
-      switch(intuiMessage->Code)
-      {
-       case 27 : // User has pressed the escape key
-        running = FALSE;
-       break;
-      }
-     break;
+	// Create MX Gadget
+	newGadget.ng_GadgetID =	MX_CHOOSEFONT;
+	newGadget.ng_TopEdge =	WINDOW_OFFSET + GADGET_OUTER_SPACING + appGUIData->agd_Screen->WBorTop + appGUIData->agd_Screen->Font->ta_YSize + 1 + appGUIData->agd_RegisterTab->height + offsetY;
+	newGadget.ng_LeftEdge = WINDOW_OFFSET + GADGET_INNER_SPACING + appGUIData->agd_Screen->WBorLeft + offsetX[0] + extraXSpace;
+	newGadget.ng_Flags =	NULL;
 
-     case IDCMP_MENUPICK :
-      // Make sure to process every single menu choice made. RKRM: Libraries p. 176
-      while(menuNumber != MENUNULL)
-      {
-       menuItem = ItemAddress(appGUIData->agd_Menu, menuNumber);
+	if(!(gadget = CreateGadget(MX_KIND, gadget, &newGadget, GTMX_Labels, mxStrings, GTMX_Active, MX_INIT_ACTIVE, TAG_END)))
+	    return(FALSE);
 
-       printf("%d chosen!\n", (UBYTE)GTMENUITEM_USERDATA(menuItem));
+	appGUIData->agd_FirstGadget = gadget;
 
-       // The output from GTMENUITEM_USERDATA must be casted
-       switch((UBYTE)GTMENUITEM_USERDATA(menuItem))
-       {
-        case MSG_MEN_PROJECT_OPEN :
-         if((fileName = aslOpenPrefs()))
-         {
-          printf("reading %s...\n", fileName);
-          readIFF(fileName, fontPrefs);
-          updateGUI(appGUIData, fontChoice); /* For the moment, always update the GUI */
-         }
-        break;
+	// Create Font "Get" button Gadget (offsetX disabled - we want this element as wide as the widest element)
+	newGadget.ng_GadgetID =	BUTTON_GETFONT;
+	newGadget.ng_TopEdge =	newGadget.ng_TopEdge + gadget->Height + GADGET_OUTER_SPACING * 2 + offsetY;
+	newGadget.ng_LeftEdge = WINDOW_OFFSET + GADGET_INNER_SPACING + appGUIData->agd_Screen->WBorLeft;
+	newGadget.ng_Height = 	appGUIData->agd_Screen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
+	newGadget.ng_Width =	calcTextWidth(getCatalog(catalogPtr, MSG_GAD_GET), appGUIData->agd_Screen, NULL) + GADGET_INNER_SPACING * 2;
+	newGadget.ng_GadgetText = getCatalog(catalogPtr, MSG_GAD_GET);
+	newGadget.ng_Flags =	NULL;
 
-        case MSG_MEN_PROJECT_SAVEAS :
-         if((fileName = aslSavePrefs()))
-         {
-          printf("saving %s...\n", fileName);
-          writeIFF(fileName, fontPrefs);
-         }
-        break;
+	if(!(gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget, TAG_END)))
+	    return(FALSE);
 
-        case MSG_MEN_PROJECT_QUIT :
-         printf("Menu quit!\n");
-         running = FALSE;
-        break;
+	// Create Font Text Gadget (offsetX disabled - we want this element as wide as the widest element)
+	newGadget.ng_GadgetID =       GADGET_ID_TEXT;
+	newGadget.ng_LeftEdge =       WINDOW_OFFSET + GADGET_INNER_SPACING + appGUIData->agd_Screen->WBorLeft + gadget->Width + GADGET_OUTER_SPACING * 2;
+	newGadget.ng_Height =         appGUIData->agd_Screen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
+	newGadget.ng_Width =          appGUIData->agd_MaxWidth - newGadget.ng_Width - GADGET_OUTER_SPACING * 2; // CHANGE THIS!!!
+	newGadget.ng_Flags =          NULL;
 
-        case MSG_MEN_EDIT_DEFAULT :
-         printf("Menu defaults!\n");
-         initDefaultPrefs(fontPrefs);
-         updateGUI(appGUIData, fontChoice); /* For the moment, always update the GUI */
-        break;
+	if(!(gadget = CreateGadget(TEXT_KIND, gadget, &newGadget, GTTX_Border, TRUE, TAG_END)))
+	    return(FALSE);
 
-        case MSG_MEN_EDIT_LASTSAVED :
-         printf("Last saved!\n");
-         readIFF("ENVARC:sys/font.prefs", fontPrefs);
-         updateGUI(appGUIData, fontChoice); /* For the moment, always update the GUI */
-        break;
+	// Right now, we need to save this pointer for updating its text later on
+	textGadget = gadget;
 
-        case MSG_MEN_EDIT_RESTORE :
-         printf("Menu restore!\n");
-         readIFF("ENV:sys/font.prefs", fontPrefs);
-         updateGUI(appGUIData, fontChoice); /* For the moment, always update the GUI */
-        break;
+	appGUIData->agd_BevelBoxOffset = newGadget.ng_TopEdge + newGadget.ng_Height - appGUIData->agd_RegisterTab->height -
+	    (appGUIData->agd_Screen->WBorTop + appGUIData->agd_Screen->Font->ta_YSize + 1) - WINDOW_OFFSET + GADGET_OUTER_SPACING;
 
-        default :
-         printf("Warning: Unknown menu item!\n");
-        break;
-       }
+	// Create three buttons ("Save", "Use" and "Cancel") of the same width. Calculate the width first!
+	a = 0;
 
-       menuNumber = menuItem->NextSelect;
-      }
-     break;
+	while(buttonStrings[a])
+	{
+	    width = calcTextWidth(getCatalog(catalogPtr, buttonStrings[a]), appGUIData->agd_Screen, NULL);
 
-     case IDCMP_GADGETUP :
-      switch(gadget->GadgetID)
-      {
-       case BUTTON_GETFONT :
-        printf("getfont\n");
-        
-        if(getFont(fontPrefs[fontChoice]))
-         updateGUI(appGUIData, fontChoice);
-       break;
+	    if(width > maxWidth)	// Nicer way of testing and assigning width data?
+		maxWidth = width;
 
-       case BUTTON_SAVE :
-        printf("save\n");
-        writeIFF("ENV:sys/font.prefs", fontPrefs);
-        writeIFF("ENVARC:sys/font.prefs", fontPrefs);
-        running = FALSE;
-       break;
+	    a++;
+	}
 
-       case BUTTON_USE :
-        printf("use\n");
-        writeIFF("ENV:sys/font.prefs", fontPrefs);
-        running = FALSE;
-       break;
+	// Common gadget data:
+	newGadget.ng_TopEdge =	newGadget.ng_TopEdge + gadget->Height + GADGET_OUTER_SPACING * 2 + 1; // "+ 1" takes the register tab border into account
+	newGadget.ng_Height =	appGUIData->agd_Screen->Font->ta_YSize + GADGET_INNER_SPACING * 2;
+	newGadget.ng_Width =	maxWidth + GADGET_INNER_SPACING * 2;
+	newGadget.ng_Flags =	NULL;
 
-       case BUTTON_CANCEL :
-        printf("cancel\n");
-        running = FALSE;
-       break;
+	// Create three gadgets ("Save", "Use", "Cancel") of the same width.
+        // First, calculate how much space (stored in 'b') we can put between the gadgets!
 
-       default :
-        printf("Warning: Unknown button pressed!\n");
-       break;
-      }
-     break;
+	b = (appGUIData->agd_MaxWidth - (3 * newGadget.ng_Width)) / 2;
 
-     case IDCMP_GADGETDOWN : // This message applies for the "MX" gadget
-      printf("IDCMP_GADGETDOWN!\n");
+	for(a = 0; a <= 2; a++)
+	{
+	    newGadget.ng_GadgetID =	a + BUTTON_SAVE;
+	    newGadget.ng_LeftEdge =	WINDOW_OFFSET + appGUIData->agd_Screen->WBorLeft + (newGadget.ng_Width * a) + (b * a) + GADGET_OUTER_SPACING * a + offsetX[2];
+	    newGadget.ng_GadgetText = 	getCatalog(catalogPtr, buttonStrings[a]);
 
-      switch(gadget->GadgetID)
-      {
-       case MX_CHOOSEFONT :
-        if(code != fontChoice) /* No reason to update GUI if nothing has changed */
-        {
-         fontChoice = code;
-         updateGUI(appGUIData, fontChoice);
-        }
-       break;
+	    if(!(gadget = CreateGadget(BUTTON_KIND, gadget, &newGadget, TAG_END)))
+		return(FALSE);
+	}
 
-       default :
-        printf("Warning: Unknown kind of IDCMP_GADGETDOWN message!\n");
-       break;
-      }
-     break;
-
-     case IDCMP_REFRESHWINDOW :
-      printf("IDCMP_REFRESHWINDOW!\n");
-
-      GT_BeginRefresh(appGUIData->agd_Window);
-      GT_RefreshWindow(appGUIData->agd_Window, NULL); // Do we really need to call GT_RefreshWindow() after actually openening the window? Look it up!
-      GT_EndRefresh(appGUIData->agd_Window, TRUE);
-     break;
-
-     default :
-      printf("Unknown IDCMP message!\n");
-     break;
     }
-   }
-  }
-  if(signals & SIGBREAKF_CTRL_C)
-  {
-   printf("CTRL-C signal detected!\n");
-   running = FALSE;
-  }
- }
+    else
+    {
+	printf("CreateContext() failed!\n");
+	return(FALSE);
+    }
+
+    appGUIData->agd_MaxHeight = newGadget.ng_TopEdge + newGadget.ng_Height + WINDOW_OFFSET + appGUIData->agd_Screen->WBorBottom;
+    appGUIData->agd_GadgetList = gList;
+
+    return(appGUIData);
+}
+
+struct AppGUIData * openAppWindow()
+{
+    zoomCoords.Left = -1; // Starting with Intuition V39, -1 tells AmigaOS/AROS to keep the window X/Y coordinates while zoomed
+    zoomCoords.Top = -1;
+    zoomCoords.Width = appGUIData->agd_MaxWidth + 2 * WINDOW_OFFSET + appGUIData->agd_Screen->WBorLeft + appGUIData->agd_Screen->WBorRight + GADGET_OUTER_SPACING * 2;
+    zoomCoords.Height = appGUIData->agd_Screen->WBorTop + appGUIData->agd_Screen->Font->ta_YSize + 1;
+
+    kprintf("%d %d %d %d\n", zoomCoords.Left, zoomCoords.Top, zoomCoords.Width, zoomCoords.Height);
+
+    appGUIData->agd_Window = OpenWindowTags(NULL,
+    	WA_Left,	appGUIData->agd_Screen->MouseX,
+	WA_Top,		appGUIData->agd_Screen->MouseY,
+	WA_Width,	appGUIData->agd_MaxWidth + 2 * WINDOW_OFFSET + appGUIData->agd_Screen->WBorLeft + appGUIData->agd_Screen->WBorRight + GADGET_OUTER_SPACING * 2,
+	WA_Height,	appGUIData->agd_MaxHeight,
+	WA_DragBar,	TRUE,
+	WA_CloseGadget,	TRUE,
+	WA_Zoom,	(IPTR)&zoomCoords,
+	WA_DepthGadget,	TRUE,
+	WA_Activate,	TRUE,
+	WA_Gadgets,	appGUIData->agd_GadgetList,
+	WA_Title,	getCatalog(catalogPtr, MSG_WINTITLE),
+	WA_PubScreen,	appGUIData->agd_Screen,
+	WA_IDCMP,	IDCMP_CLOSEWINDOW | IDCMP_REFRESHWINDOW | IDCMP_VANILLAKEY |
+			IDCMP_MOUSEBUTTONS | IDCMP_MENUPICK | BUTTONIDCMP | MXIDCMP,
+	TAG_END);
+
+    if(appGUIData->agd_Window)
+    {
+	UnlockPubScreen(NULL, appGUIData->agd_Screen); // The window itself now holds a lock on the screen
+
+	kprintf("Window width = %ld\n", appGUIData->agd_Window->Width);
+
+	// Setup RegisterTab position and size
+	SetRegisterTabPos(appGUIData->agd_RegisterTab, appGUIData->agd_Screen->WBorLeft + WINDOW_OFFSET,
+            appGUIData->agd_Screen->WBorTop + appGUIData->agd_Screen->Font->ta_YSize + 1 + WINDOW_OFFSET);
+
+	SetRegisterTabFrameSize(appGUIData->agd_RegisterTab, appGUIData->agd_MaxWidth + GADGET_OUTER_SPACING * 2,
+	    appGUIData->agd_BevelBoxOffset);
+
+	kprintf("Real frameheight = %ld\n", appGUIData->agd_RegisterTab->frameheight);
+	kprintf("Real frameWidth = %ld", appGUIData->agd_RegisterTab->framewidth);
+
+	// Render the RegisterTab
+	RenderRegisterTab(appGUIData->agd_Window->RPort, appGUIData->agd_RegisterTab, TRUE);
+
+	GT_RefreshWindow(appGUIData->agd_Window, NULL); // TODO: What does this do? Look it up! (petah)
+
+	updateGUI(MX_INIT_ACTIVE);
+
+	if(!(appGUIData->agd_Menu = setupMenus()))
+	    return(NULL); // No menus, no application
+	else
+	    SetMenuStrip(appGUIData->agd_Window, appGUIData->agd_Menu);
+
+	return(appGUIData);
+    }
+
+    return(NULL); // "else" statement left out to keep GCC quiet ("control reaches end of non-void function")
 }

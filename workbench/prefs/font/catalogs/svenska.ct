@@ -1,11 +1,11 @@
-## version $VER: fontprefs.catalog 1.0 (26.9.2001)
+## version $VER: fontprefs.catalog 2.0 (13.1.2002)
 ## language svenska
 ## codeset 0
 ;
 ;
 MSG_CANT_OPEN_LIB
 Kan inte öppna %s V%ld!\n
-; Can't open %s V%ld!\n
+; Can't open %s V%ld!
 ;
 MSG_CANT_LOCK_SCR
 Kan inte låsa allmän skärm!
@@ -18,6 +18,10 @@ Kan inte skapa DrawInfo!
 MSG_CANT_GET_VI
 Kan inte skapa VisualInfo!
 ; Can't get VisualInfo!
+;
+MSG_CANT_LAYOUT_MENUS
+Kan inte lägga ut menyer!
+; Can't layout menus!
 ;
 MSG_CANT_CREATE_GADGET
 Kan inte skapa knappar!
@@ -34,6 +38,10 @@ Kan inte skapa fönster!
 MSG_CANT_CREATE_REQ
 Kan inte skapa filväljare!
 ; Can't open create filerequester!
+;
+MSG_CANT_CREATE_CONTEXT
+Kan inte skapa underlag för Gadtools!
+; Can't create context for Gadtools!
 ;
 MSG_CANT_OPEN_STREAM
 Kan inte öppna IFF-ström!
@@ -52,12 +60,20 @@ Kan inte allokera IFF-pekare!
 ; Can't allocate IFF handle!
 ;
 MSG_CANT_ALLOCATE_MEM
-Kan inte allokera programminne!
-; Can't allocate application memory!
+Kan inte allokera programminne! (%s)!
+; Can't allocate application memory (%s)!
 ;
 MSG_WINTITLE
 Typstilsinställningar
 ; Font Preferences
+;
+MSG_TAB_SETTINGS
+Inställningar
+; Settings
+;
+MSG_TAB_PREVIEW
+Förhandstitt
+; Preview
 ;
 MSG_MEN_PROJECT
 Projekt

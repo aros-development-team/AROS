@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main handleiff init asl args gui
+FILES 	    := main handleiff init asl args gui registertab inputloop
 EXEDIR      := $(AROSDIR)/Prefs
 EXE 	    := $(EXEDIR)/Font
 
