@@ -596,7 +596,7 @@ static ULONG mWriteString(struct IClass *cl, Object *obj, struct MUIP_WriteStrin
 **************************************************************************/
 static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
-    struct MUI_NotifyData *data = INST_DATA(cl, obj);
+    //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 
     /* Objects only have parents if they are inside a group or family object, no idea
     ** why MUIA_Parent belongs to the notify class then
@@ -611,7 +611,7 @@ static ULONG Notify_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
 **************************************************************************/
 static ULONG Notify_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
 {
-    struct MUI_NotifyData *data = INST_DATA(cl, obj);
+    //struct MUI_NotifyData *data = INST_DATA(cl, obj);
 /*    data->mnd_ParentObject = NULL;*/
     muiGlobalInfo(obj) = NULL;
     return 0;

@@ -446,7 +446,7 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	    }
 	    CloseDevice((struct IORequest *)data->app_TimerReq);
 	}
-	DeleteIORequest(data->app_TimerReq);
+	DeleteIORequest((struct IORequest *)data->app_TimerReq);
     }
     if (data->app_TimerPort)
 	DeleteMsgPort(data->app_TimerPort);
@@ -669,7 +669,7 @@ static ULONG Application_AddInputHandler(struct IClass *cl, Object *obj,
 **************************************************************************/
 static ULONG Application_RemInputHandler(struct IClass *cl, Object *obj, struct MUIP_Application_RemInputHandler *msg)
 {
-    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    //struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     if (msg->ihnode->ihn_Flags & MUIIHNF_TIMER)
     {
 	struct timerequest_ext *time_ext = (struct timerequest_ext*)msg->ihnode->ihn_Node.mln_Pred;
@@ -729,7 +729,7 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
     ULONG	   handler_mask = 0; /* the mask of the signal handlers */
     struct MinNode *mn;
 
-    struct MinNode ihn_Node;
+    //struct MinNode ihn_Node;
 
     signal = *msg->signal;
     

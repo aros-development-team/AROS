@@ -188,7 +188,7 @@ AROS_UFH3(ULONG,IconListview_Function,
 static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_IconListviewData *data;
-    struct TagItem *tags,*tag;
+    //struct TagItem *tags,*tag;
     Object *iconlist = (Object*)GetTagData(MUIA_IconListview_IconList, NULL, msg->ops_AttrList);
     Object *vert,*horiz,*button,*group;
 
@@ -237,10 +237,10 @@ static ULONG IconListview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->layout_hook = layout_hook;
     layout_hook->h_Data = data;
 
-    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 1, MUIV_TriggerValue);
-    DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 2, MUIV_TriggerValue);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Left, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 3, MUIV_TriggerValue);
-    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Top, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, 4, MUIV_TriggerValue);
+    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 1, MUIV_TriggerValue);
+    DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 2, MUIV_TriggerValue);
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Left, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 3, MUIV_TriggerValue);
+    DoMethod(iconlist, MUIM_Notify, MUIA_IconList_Top, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, 4, MUIV_TriggerValue);
 
     return (ULONG)obj;
 }

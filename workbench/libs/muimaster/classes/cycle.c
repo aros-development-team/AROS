@@ -131,7 +131,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    return NULL;
 	}
 	
-	DoMethod(pageobj, OM_ADDMEMBER, page);
+	DoMethod(pageobj, OM_ADDMEMBER, (IPTR)page);
     }
     data->entries_num = i;
 

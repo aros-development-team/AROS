@@ -53,7 +53,7 @@ AROS_UFH3(VOID,Close_Function,
 	set(obj,MUIA_Image_Spec,spec);
     }
 
-    DoMethod(_app(obj),OM_REMMEMBER,data->wnd);
+    DoMethod(_app(obj),OM_REMMEMBER,(IPTR)data->wnd);
     MUI_DisposeObject(data->wnd);
     data->wnd = NULL;
     data->imageadjust = NULL;
@@ -89,11 +89,11 @@ AROS_UFH3(VOID,Press_Function,
 
 	if (data->wnd)
 	{
-	    DoMethod(_app(obj),OM_ADDMEMBER,data->wnd);
+	    DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
 
-	    DoMethod(ok_button,MUIM_Notify,MUIA_Pressed,FALSE,_app(obj),6, MUIM_Application_PushMethod, obj, 3, MUIM_CallHook, &data->close_hook, 1);
-	    DoMethod(cancel_button,MUIM_Notify,MUIA_Pressed,FALSE,_app(obj),6, MUIM_Application_PushMethod, obj, 3 ,MUIM_CallHook,&data->close_hook,0);
-	    DoMethod(data->wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,_app(obj),6, MUIM_Application_PushMethod, obj, 3, MUIM_CallHook,&data->close_hook,0);
+	    DoMethod(ok_button,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->close_hook, 1);
+	    DoMethod(cancel_button,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3 ,MUIM_CallHook,(IPTR)&data->close_hook,0);
+	    DoMethod(data->wnd,MUIM_Notify,MUIA_Window_CloseRequest,TRUE,(IPTR)_app(obj),6, MUIM_Application_PushMethod, (IPTR)obj, 3, MUIM_CallHook,(IPTR)&data->close_hook,0);
 	}
     }
     if (data->wnd)
@@ -110,7 +110,7 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_PopimageData   *data;
     struct TagItem  	    *tag, *tags;
-    Object *image;
+    //Object *image;
 
     obj = (Object *)DoSuperNew(cl, obj,
 			ButtonFrame,
@@ -137,7 +137,7 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    DoMethod(obj,MUIM_Notify,MUIA_Pressed,FALSE,obj,2,MUIM_CallHook,&data->press_hook);
+    DoMethod(obj,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,2,MUIM_CallHook,(IPTR)&data->press_hook);
 
     return (IPTR)obj;
 }
@@ -157,7 +157,7 @@ STATIC IPTR Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 STATIC IPTR Popimage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    //struct MUI_PopimageData *data = INST_DATA(cl, obj);
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -174,7 +174,7 @@ STATIC IPTR Popimage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Popimage_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    //struct MUI_PopimageData *data = INST_DATA(cl, obj);
 
     switch (msg->opg_AttrID)
     {
@@ -194,7 +194,7 @@ static IPTR Popimage_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
     if (data->wnd)
     {
     	set(data->wnd,MUIA_Window_Open,FALSE);
-    	DoMethod(_app(obj),OM_REMMEMBER,data->wnd);
+    	DoMethod(_app(obj),OM_REMMEMBER,(IPTR)data->wnd);
     	MUI_DisposeObject(data->wnd);
     	data->wnd = NULL;
     }

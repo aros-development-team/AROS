@@ -60,7 +60,7 @@ AROS_UFH3(ULONG,Popobject_Open_Function,
 	    WindowContents,data->object,
 	    End;
 	if (!data->wnd) return 0;
-	DoMethod(_app(obj),OM_ADDMEMBER,data->wnd);
+	DoMethod(_app(obj),OM_ADDMEMBER,(IPTR)data->wnd);
     }
 
     if (data->strobj_hook)

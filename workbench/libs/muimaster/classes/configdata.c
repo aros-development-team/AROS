@@ -55,7 +55,7 @@ static void LoadPrefs(STRPTR filename, Object *obj)
     struct IFFHandle *iff;
     if ((iff = AllocIFF()))
     {
-	if ((iff->iff_Stream = Open(filename,MODE_OLDFILE)))
+	if ((iff->iff_Stream = (IPTR)Open(filename,MODE_OLDFILE)))
 	{
 	    InitIFFasDOS(iff);
 
@@ -67,12 +67,12 @@ static void LoadPrefs(STRPTR filename, Object *obj)
 		{
 		    struct ContextNode *cn;
 		    if (!(cn = CurrentChunk(iff))) continue;
-		    if (cn->cn_ID == MAKE_ID('M','U','I','C')) DoMethod(obj,MUIM_Dataspace_ReadIFF,iff);
+		    if (cn->cn_ID == MAKE_ID('M','U','I','C')) DoMethod(obj,MUIM_Dataspace_ReadIFF,(IPTR)iff);
 		}
 
 		CloseIFF(iff);
 	    }
-	    Close(iff->iff_Stream);
+	    Close((BPTR)iff->iff_Stream);
 	}
 	FreeIFF(iff);
     }
@@ -86,7 +86,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ConfigdataData *data;
     struct MUI_FrameSpec *frame;
     struct TagItem *tags,*tag;
-    APTR cdata;
+    //APTR cdata;
     int i;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
@@ -345,7 +345,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
+    //struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl,obj,msg);
     return NULL;
 }

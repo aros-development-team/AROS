@@ -425,7 +425,7 @@ static IPTR Bitmap_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 static IPTR Bitmap_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_BitmapData *data = INST_DATA(cl, obj);
+    //struct MUI_BitmapData *data = INST_DATA(cl, obj);
 
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
 	return FALSE;

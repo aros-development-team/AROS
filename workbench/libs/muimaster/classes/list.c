@@ -319,7 +319,7 @@ static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
     else entry_data = data->entries[entry_pos]->data;
 
     /* Get the display formation */
-    DoMethod(obj, MUIM_List_Display, entry_data, entry_pos, data->strings, data->preparses);
+    DoMethod(obj, MUIM_List_Display, (IPTR)entry_data, entry_pos, (IPTR)data->strings, (IPTR)data->preparses);
 }
 
 /**************************************************************************
@@ -519,7 +519,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	int i;
     	for (i=0;array[i];i++); /* Count the number of elements */
     	/* Insert them */
-    	DoMethod(obj, MUIM_List_Insert, array, i, MUIV_List_Insert_Top);
+    	DoMethod(obj, MUIM_List_Insert, (IPTR)array, i, MUIV_List_Insert_Top);
     }
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
@@ -740,7 +740,7 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->title) data->title_height = data->entries[ENTRY_TITLE]->height + 2;
     else data->title_height = 0;
 
-    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
     data->list_cursor = zune_image_spec_to_structure(MUII_ListCursor,obj);
     data->list_select = zune_image_spec_to_structure(MUII_ListSelect,obj);
@@ -767,7 +767,7 @@ static ULONG List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     zune_imspec_free(data->list_select); data->list_select = NULL;
     zune_imspec_free(data->list_selcur); data->list_selcur = NULL;
 
-    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -796,7 +796,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
     int col,x1,x2;
-    struct ListEntry *entry = data->entries[entry_pos];
+    //struct ListEntry *entry = data->entries[entry_pos];
 
     /* To be surem we don't draw anything if there is no title */
     if (entry_pos == ENTRY_TITLE && !data->title) return;
@@ -831,7 +831,8 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     int entry_pos,y;
     APTR clip;
     int start, end;
-
+    BOOL scroll_caused_damage = FALSE;
+    
     DoSuperMethodA(cl, obj, (Msg) msg);
 
     if (msg->flags & MADF_DRAWUPDATE)
@@ -874,7 +875,12 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	int top,bottom;
 	if (abs(diffy) < data->entries_visible)
 	{
+	    scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
+	    
 	    ScrollRaster(_rp(obj),0,diffy * data->entry_maxheight,_mleft(obj),y,_mright(obj),y + data->entry_maxheight * data->entries_visible);
+
+    	    scroll_caused_damage = scroll_caused_damage && (_rp(obj)->Layer->Flags & LAYERREFRESH) ? TRUE : FALSE;
+	    
 	    if (diffy > 0)
 	    {
 	    	start = end - diffy;
@@ -891,7 +897,7 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     for (entry_pos = start; entry_pos < end && entry_pos < data->entries_num; entry_pos++)
     {
-	struct ListEntry *entry = data->entries[entry_pos];
+	//struct ListEntry *entry = data->entries[entry_pos];
 
         if (!(msg->flags & MADF_DRAWUPDATE) ||
             ((msg->flags & MADF_DRAWUPDATE) && data->update == 1) ||
@@ -918,6 +924,25 @@ static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     MUI_RemoveClipping(muiRenderInfo(obj),clip);
 
     data->update = 0;
+
+    if (scroll_caused_damage)
+    {
+    	if (MUI_BeginRefresh(muiRenderInfo(obj), 0))
+	{
+	    /* Theoretically it might happen that more damage is caused
+	       after ScrollRaster. By something else, like window movement
+	       in front of our window. Therefore refresh root object of
+	       window, not just this object */
+	       
+	    Object *o;
+	    
+	    get(_win(obj),MUIA_Window_RootObject, (IPTR *)&o);	       
+	    MUI_Redraw(o, MADF_DRAWOBJECT);
+	    
+	    MUI_EndRefresh(muiRenderInfo(obj), 0);
+	}
+    }
+    
     return 0;
 }
 
@@ -939,7 +964,7 @@ static VOID List_MakeActive(struct IClass *cl, Object *obj, LONG relx, LONG rely
     if (new_act != data->entries_active && data->entries_num)
     {
     	LONG new_entries_first = data->entries_first;
-    	LONG old_act = data->entries_active;
+    	//LONG old_act = data->entries_active;
     	if (new_act < new_entries_first)
 	    new_entries_first = new_act;
 	if (new_act >= data->entries_first + data->entries_visible - 1)
@@ -990,9 +1015,9 @@ static ULONG List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 				}
 			    }
 
-			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
 			    return MUI_EventHandlerRC_Eat;
 			}
@@ -1000,9 +1025,9 @@ static ULONG List_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 		    {
 			if (msg->imsg->Code == SELECTUP && data->mouse_click)
 			{
-			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			    data->mouse_click = 0;
 			    return 0;
 			}
@@ -1031,7 +1056,7 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
     while (data->confirm_entries_num)
     {
     	struct ListEntry *lentry = data->entries[--data->confirm_entries_num];
-	DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
+	DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
 	FreeListEntry(data,lentry);
     }
     /* Should never fail when shrinking */
@@ -1134,7 +1159,7 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
     LONG pos,cur;
     LONG new_act;
     struct ListEntry *lentry;
-    int rem_count = 1;
+    //int rem_count = 1;
     int parents;
 
     if (!data->entries_num) return 0;
@@ -1172,7 +1197,7 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
 	new_act--; /* might become MUIV_List_Active_Off */
 
     lentry = data->entries[pos];
-    DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
+    DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
 
     parents = lentry->parents;
     cur = pos + 1;
@@ -1182,7 +1207,7 @@ static ULONG List_Remove(struct IClass *cl, Object *obj, struct MUIP_List_Remove
     {
 	lentry = data->entries[cur];
 	if (lentry->parents <= parents) break;
-	DoMethod(obj, MUIM_List_Destruct, lentry->data, data->pool);
+	DoMethod(obj, MUIM_List_Destruct, (IPTR)lentry->data, (IPTR)data->pool);
 	cur++;
     }
 
@@ -1272,7 +1297,7 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 	    }
 
 	    /* now call the construct method which returns us a pointer which we need to store */
-	    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, *toinsert, data->pool);
+	    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, (IPTR)*toinsert, (IPTR)data->pool);
 	    if (!lentry->data)
 	    {
 	    	FreeListEntry(data,lentry);
@@ -1328,7 +1353,7 @@ static ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert
 **************************************************************************/
 STATIC ULONG List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_InsertSingle *msg)
 {
-    return DoMethod(obj,MUIM_List_Insert, &msg->entry, 1, msg->pos);
+    return DoMethod(obj,MUIM_List_Insert, (IPTR)&msg->entry, 1, msg->pos);
 }
 
 /**************************************************************************
@@ -1381,7 +1406,7 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
 	return ~0;
     }
 
-    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, msg->entry, data->pool);
+    lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, (IPTR)msg->entry, (IPTR)data->pool);
     if (!lentry->data)
     {
 	RemoveListEntries(data, pos, 1);
@@ -1485,7 +1510,7 @@ STATIC ULONG List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Dest
 **************************************************************************/
 STATIC ULONG List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
 {
-    struct MUI_ListData *data = INST_DATA(cl, obj);
+    //struct MUI_ListData *data = INST_DATA(cl, obj);
     return NULL;
 }
 

@@ -81,8 +81,8 @@ static LONG Asl_Entry(void)
     ReplyMsg(&msg->msg);
 
     if (AslRequest(asl_req, tags))
-	DoMethod(app,MUIM_Application_PushMethod, pop, 2, MUIM_Popstring_Close, TRUE);
-    else DoMethod(app,MUIM_Application_PushMethod, pop, 2, MUIM_Popstring_Close, FALSE);
+	DoMethod(app,MUIM_Application_PushMethod, (IPTR)pop, 2, MUIM_Popstring_Close, TRUE);
+    else DoMethod(app,MUIM_Application_PushMethod, (IPTR)pop, 2, MUIM_Popstring_Close, FALSE);
 
     return 0;
 }
@@ -261,7 +261,11 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 
 		        /* Remove the .font extension */
 		        if ((font_ext = strstr(buf,".font"))) *font_ext = 0;
+		    #ifdef _AROS
+		        sprintf(num_buf,"%d",size);
+		    #else
 		        sprintf(num_buf,"%ld",size);
+		    #endif
 		        AddPart(buf,num_buf,len);
 		        set(string,MUIA_String_Contents,buf);
 		        FreeVec(buf);

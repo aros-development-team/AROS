@@ -211,10 +211,10 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	MUIA_Prop_Entries, entries,
 	TAG_DONE);
 
-    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, PROP_VERT_FIRST, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_FIRST, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_VISIBLE, MUIV_TriggerValue);
-    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime, obj, 4, MUIM_CallHook, &data->hook, LIST_VERT_ENTRIES, MUIV_TriggerValue);
+    DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, PROP_VERT_FIRST, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_First, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_FIRST, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Visible, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_VISIBLE, MUIV_TriggerValue);
+    DoMethod(list, MUIM_Notify, MUIA_List_VertProp_Entries, MUIV_EveryTime, (IPTR)obj, 4, MUIM_CallHook, (IPTR)&data->hook, LIST_VERT_ENTRIES, MUIV_TriggerValue);
 
     return (IPTR)obj;
 }
