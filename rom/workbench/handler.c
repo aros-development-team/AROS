@@ -28,13 +28,15 @@
 /* This is the main entry point for the Workbench Handler process. */
 
 void WorkbenchHandler( void ) {
-    struct WorkbenchBase *WorkbenchBase;
+    struct WorkbenchBase *WorkbenchBase = NULL;
 
-    struct MsgPort       *port;
+    struct MsgPort       *port =  NULL;
 
     ULONG                 openCount = 0;
     struct WBStartup     *incoming;
+#if 0
     struct WBStartup     *outgoing;
+#endif
 
     D(bug( "WBHandler: I'm alive! Alive I tell you!\n" ));
 
