@@ -45,6 +45,11 @@
     AROS_LCA(long, type, D0), \
     struct Library *, IconBase, 20, Icon)
 
+#define GetDiskObject(name) \
+    AROS_LC1(struct DiskObject *, GetDiskObject, \
+    AROS_LCA(UBYTE *, name, A0), \
+    struct Library *, IconBase, 13, Icon)
+
 #define GetDiskObjectNew(name) \
     AROS_LC1(struct DiskObject *, GetDiskObjectNew, \
     AROS_LCA(UBYTE *, name, A0), \
