@@ -1,5 +1,4 @@
 #ifndef HIDD_GRAPHICS_H
-
 #define HIDD_GRAPHICS_H
 
 /*
@@ -18,21 +17,24 @@
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
+#include <utility/tagitem.h>
 
-#define CLID_Hidd_Gfx       	"gfx.hidd"
-#define CLID_Hidd_BitMap	"bitmap.hidd"
 
-#define IID_Hidd_GC	"I_HiddGC"
-#define IID_Hidd_BitMap	"I_HiddBitMap"
+#define CLID_Hidd_Gfx           "gfx.hidd"
+#define CLID_Hidd_BitMap        "bitmap.hidd"
+
+#define IID_Hidd_Gfx    "I_GfxHidd"
+#define IID_Hidd_GC     "I_HiddGC"
+#define IID_Hidd_BitMap "I_HiddBitMap"
 
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
 
 
 /* Attrbases */
-#define HiddGCAttrBase 		__IHidd_GC
-#define HiddGfxAttrBase 	__IHidd_Gfx
-#define HiddBitMapAttrBase 	__IHidd_BitMap
+#define HiddGCAttrBase          __IHidd_GC
+#define HiddGfxAttrBase         __IHidd_Gfx
+#define HiddBitMapAttrBase      __IHidd_BitMap
 
 extern AttrBase HiddGCAttrBase;
 extern AttrBase HiddGfxAttrBase;
@@ -43,7 +45,6 @@ extern AttrBase HiddBitMapAttrBase;
 **  Gfx defs  **
 ***************/
 
-#define IID_Hidd_Gfx "I_GfxHidd"
 
     /* Method offsets */
 enum
@@ -58,7 +59,7 @@ enum
     /* Attr offsets */
 enum {
     /* Attributes for a bitmap */
-    aoHidd_BitMap_BitMap,        /* [..G] pointer to bitmap structure        */
+    aoHidd_BitMap_BitMap,  /* [..G] pointer to bitmap structure        */
     aoHidd_BitMap_Width,         /* [ISG] Bitmap with                        */
     aoHidd_BitMap_Height,        /* [ISG] Bitmap height                      */
     aoHidd_BitMap_Depth,         /* [I.G] Bitmap depth                       */
@@ -76,21 +77,32 @@ enum {
     num_Hidd_BitMap_Attrs
 };    
 
+#define aHidd_BitMap_BitMap        (HiddBitMapAttrBase + aoHidd_BitMap_BitMap)
+#define aHidd_BitMap_Width         (HiddBitMapAttrBase + aoHidd_BitMap_Width)
+#define aHidd_BitMap_Height        (HiddBitMapAttrBase + aoHidd_BitMap_Height)
+#define aHidd_BitMap_Depth         (HiddBitMapAttrBase + aoHidd_BitMap_Depth)
+#define aHidd_BitMap_Displayable   (HiddBitMapAttrBase + aoHidd_BitMap_Displayable)
+#define aHidd_BitMap_Visible       (HiddBitMapAttrBase + aoHidd_BitMap_Visible)
+#define aHidd_BitMap_Mode          (HiddBitMapAttrBase + aoHidd_BitMap_Mode)
+#define aHidd_BitMap_BaseAddress   (HiddBitMapAttrBase + aoHidd_BitMap_BaseAddress)
+#define aHidd_BitMap_Format        (HiddBitMapAttrBase + aoHidd_BitMap_Format)
+#define aHidd_BitMap_BytesPerRow   (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerRow)
+#define aHidd_BitMap_BytesPerPixel (HiddBitMapAttrBase + aoHidd_BitMap_BytesPerPixel)
+#define aHidd_BitMap_BestSize      (HiddBitMapAttrBase + aoHidd_BitMap_BestSize)
+#define aHidd_BitMap_LeftEdge      (HiddBitMapAttrBase + aoHidd_BitMap_LeftEdge)
+#define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
 
 
-#define aHidd_GC_BitMap (__IHidd_GC + aoHidd_GC_BitMap)
+/* BitMap formats */
+#define HIDDV_BitMap_Format_Planar   0x1
+#define HIDDV_BitMap_Format_Chunky   0x2
 
 
 /* Drawmodes for a graphics context */
 #define HIDDV_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
-#define HIDDV_GC_DrawMode_XOr  0x06 /* XOR                                  */
+#define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
 
 
-
-/* Flags for HIDD_Gfx_CreateBitMap */
-#define HIDD_Gfx_BitMap_Flags_Displayable 0x01
-#define HIDD_Gfx_BitMap_Flags_Planar      0x02
-#define HIDD_Gfx_BitMap_Flags_Chunky      0x04
 
 
 /* Messages */
@@ -129,14 +141,14 @@ struct hGfx_SpeeTest
 
 struct pHidd_Gfx_CreateGC
 {
-     MethodID	mID;
-     Object	*bitMap;
-     UWORD	gcType;
+     MethodID   mID;
+     Object     *bitMap;
+     UWORD      gcType;
 };
 struct pHidd_Gfx_DeleteGC
 {
-    MethodID	mID;
-    Object	*gc;
+    MethodID    mID;
+    Object      *gc;
 };
 enum { GCTYPE_QUICK, GCTYPE_CLIPPING };
 
@@ -171,26 +183,36 @@ enum
 enum
 {
     /* Attributes for a graphics context */
-    aoHidd_GC_UserData,          /* [.SG] User data                          */
-    aoHidd_GC_BitMap,            /* [I.G] Bitmap which this gc uses          */
-    aoHidd_GC_Foreground,        /* [.SG] Foreground color                   */
-    aoHidd_GC_Background,        /* [.SG] Background color                   */
-    aoHidd_GC_DrawMode,          /* [.SG] Draw mode                          */
-    aoHidd_GC_Font,              /* [.SG] Current font                       */
-    aoHidd_GC_ColorMask,         /* [.SG] Prevents some color bits from      */
-                                /*       changing                           */
-    aoHidd_GC_LinePattern,       /* [.SG] Pattern foor line drawing          */
-    aoHidd_GC_PlaneMask,          /* [.SG] Shape bitmap                       */
+    aoHidd_GC_UserData,            /* [.SG] User data                          */
+    aoHidd_GC_BitMap,              /* [I.G] Bitmap which this gc uses          */
+    aoHidd_GC_Foreground,          /* [.SG] Foreground color                   */
+    aoHidd_GC_Background,          /* [.SG] Background color                   */
+    aoHidd_GC_DrawMode,            /* [.SG] Draw mode                          */
+    aoHidd_GC_Font,                /* [.SG] Current font                       */
+    aoHidd_GC_ColorMask,           /* [.SG] Prevents some color bits from      */
+                                   /*       changing                           */
+    aoHidd_GC_LinePattern,         /* [.SG] Pattern foor line drawing          */
+    aoHidd_GC_PlaneMask,           /* [.SG] Shape bitmap                       */
     
     num_Hidd_GC_Attrs
 };
+
+#define aHidd_GC_UserData    (HiddGCAttrBase + aoHidd_GC_UserData)
+#define aHidd_GC_BitMap      (HiddGCAttrBase + aoHidd_GC_BitMap)
+#define aHidd_GC_Foreground  (HiddGCAttrBase + aoHidd_GC_Foreground)
+#define aHidd_GC_Background  (HiddGCAttrBase + aoHidd_GC_Background)
+#define aHidd_GC_DrawMode    (HiddGCAttrBase + aoHidd_GC_DrawMode)
+#define aHidd_GC_Font        (HiddGCAttrBase + aoHidd_GC_Font)
+#define aHidd_GC_ColorMask   (HiddGCAttrBase + aoHidd_GC_ColorMask)
+#define aHidd_GC_LinePattern (HiddGCAttrBase + aoHidd_GC_LinePattern)
+#define aHidd_GC_PlaneMask   (HiddGCAttrBase + aoHidd_GC_PlaneMask)
 
 
     /* Messages */
 struct pHidd_GC_DrawLine
 {
-    MethodID	mID;
-    WORD	x1 ,y1, x2, y2;
+    MethodID    mID;
+    WORD        x1 ,y1, x2, y2;
 };
 
 struct pHidd_GC_WritePixel
