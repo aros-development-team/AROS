@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.19  1999/10/13 21:07:47  stegerg
+    closemessage goes to deferedactionport now
+
     Revision 1.18  1999/08/20 16:26:21  SDuvan
     Added public screen capabilities
 
@@ -144,8 +147,7 @@
 
     msg = IW(window)->closeMessage;
     
-    msg->Class    	= IDCMP_WBENCHMESSAGE;
-    msg->Code     	= IMCODE_CLOSEWINDOW;
+    msg->Code     	= AMCODE_CLOSEWINDOW;
     msg->Window	  	= window;
     msg->closeTask	= FindTask(NULL);
     
@@ -153,7 +155,7 @@
        the Wait() the window is gone  */
     userport = window->UserPort;
 
-    PutMsg(window->WindowPort, (struct Message *)msg);
+    PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
     
 
     /* Obviously this should be done on the application's context.
