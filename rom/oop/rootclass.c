@@ -502,7 +502,7 @@ Object *root_new(Class *root_cl, Class *cl, struct pRoot_New *param)
     
     /* Allocate memory for the object */
     D(bug("Object size: %ld\n", MD(cl)->public.InstOffset + MD(cl)->instsize + sizeof (struct _Object)));
-    o = AllocVec(MD(cl)->public.InstOffset + MD(cl)->instsize + sizeof (struct _Object), MEMF_ANY);
+    o = AllocVec(MD(cl)->public.InstOffset + MD(cl)->instsize + sizeof (struct _Object), MEMF_ANY|MEMF_CLEAR);
     if (o)
     {
     	D(bug("Mem allocated: %p\n", o));
