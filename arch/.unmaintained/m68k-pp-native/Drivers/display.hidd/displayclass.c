@@ -29,7 +29,7 @@
 #include "displayclass.h"
 #include "bitmap.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define ONLY640
@@ -372,8 +372,8 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 
     mode = GC_DRMD(msg->gc);
 
-    EnterFunc(bug("DisplayGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
-    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+    EnterFunc(bug("DisplayGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d) mode=0x%x\n",
+    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height, mode));
 
 #define xsd XSD(cl)
 #warning Potential source for error: HiddDisplayBitMapAB define.	
@@ -436,10 +436,9 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 	    
 	    descending = TRUE;
 	}
-
         switch(mode)
 	{
-	    case vHidd_GC_DrawMode_Copy:
+	    case vHidd_GC_DrawMode_Copy /* 0x03 */:
 	    	if (!descending)
 		{
                     while (cnt--)
@@ -492,7 +491,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		}
 		break;
 		
-	    case vHidd_GC_DrawMode_And:
+	    case vHidd_GC_DrawMode_And /* 0x01 */:
 	    	if (!descending)
 		{
                     while (cnt--)
@@ -546,7 +545,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		
 		break;
 
-	    case vHidd_GC_DrawMode_Xor:
+	    case vHidd_GC_DrawMode_Xor /* 0x06 */:
 	    	if (!descending)
 		{
                     while (cnt--)
@@ -599,7 +598,8 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		}
 		break;
 	    	
-	    case vHidd_GC_DrawMode_Clear:
+	    case vHidd_GC_DrawMode_Clear /* 0x00 */:
+D(bug("Clearing!\n"));
 	    	if (!descending)
 		{		
                     while (cnt--)
@@ -648,7 +648,7 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		}
     	    	break;
 			    	
-	    case vHidd_GC_DrawMode_Invert:
+	    case vHidd_GC_DrawMode_Invert /* 0x0a */:
 	    	if (!descending)
 		{
                     while (cnt--)
@@ -703,7 +703,8 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		break;
 		
 	} /* switch(mode) */
-	
+
+#if 0	
 	if (ddata->disp)
 	{
     	    box.x1 = msg->destX;
@@ -713,11 +714,12 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
  
             ObtainSemaphore(&XSD(cl)->HW_acc);
 
-    	    DisplayRefreshArea(ddata, 1, &box);
+//    	    DisplayRefreshArea(ddata, 1, &box);
 
             ReleaseSemaphore(&XSD(cl)->HW_acc);
 
 	}
+#endif
     }
     ReturnVoid("DisplayGfx.BitMap::CopyBox");
 }
