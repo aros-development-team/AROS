@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/10 13:20:49  digulla
+    Use dol_DevName(STRPTR) instead of dol_Name(BSTR) (Fleischer)
+
     Revision 1.4  1996/09/11 12:58:46  digulla
     Determine the size of the name (M. Fleischer)
 
@@ -91,7 +94,7 @@
 
 	/* Check type and name */
 	if(flags&flagarray[dlist->dol_Type]&&
-	   !Strnicmp(name,dlist->dol_Name,size)&&!dlist->dol_Name[size])
+	   !Strnicmp(name,dlist->dol_DevName,size)&&!dlist->dol_DevName[size])
 	    return dlist;
     }
     __AROS_FUNC_EXIT

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/10 13:20:50  digulla
+    Use dol_DevName(STRPTR) instead of dol_Name(BSTR) (Fleischer)
+
     Revision 1.3  1996/08/13 13:52:49  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -76,7 +79,7 @@
 	    *s3++=s2-name>256?255:s2-name-1;
 
 	    CopyMem(name,s3,s2-name);
-	    dl->dol_Name=s3;
+	    dl->dol_DevName=s3;
 	    dl->dol_Type=type;
 	    return dl;
 	}
