@@ -5,7 +5,7 @@
     Desc:
     Lang: english
 */
-#define DEBUG 0
+#define DEBUG 2
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -236,13 +236,14 @@ int start(void)
     SetFunc( 67, RemLibrary);
     SetFunc( 68, OldOpenLibrary);
 #if 0
-    /* Guru 01 00 00 0f (AN_BadFreeAddr): */
+    /* Guru 01 00 00 0f (AN_BadFreeAddr). Kludge (see source) didn't help. */
     SetFunc( 69, CloseLibrary);
 #endif
     SetFunc( 71, SumLibrary);
     SetFunc( 72, AddDevice);
     SetFunc( 73, RemDevice);
     SetFunc( 74, OpenDevice);
+    SetFunc( 75, CloseDevice);
     SetFunc( 76, DoIO);
     SetFunc( 77, SendIO);
     SetFunc( 78, CheckIO);
@@ -285,6 +286,13 @@ int start(void)
 #endif
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
+#if 0
+    /* Guru 0100000f-> "DH0 Software Failure"-> 80000003 guru upon reset */
+    SetFunc(116, CreatePool);
+    SetFunc(117, DeletePool);
+    SetFunc(118, AllocPooled);
+    SetFunc(119, FreePooled);
+#endif
 #if 0 /* ZZZ */
     SetFunc(120, AttemptSemaphoreShared);
 #endif
@@ -348,7 +356,6 @@ const char end = 0;
  *  Signal
  *  AllocTrap
  *  FreeTrap
- *  CloseDevice
  *  RawIOInit
  *  RawMayGetChar
  *  RawPutChar
@@ -361,10 +368,6 @@ const char end = 0;
  *  CopyMemQuick
  *  CacheClearE
  *  CacheControl
- *  CreatePool
- *  DeletePool
- *  AllocPooled
- *  FreePooled
  *  ColdReboot
  *  StackSwap
  *  ChildFree
