@@ -45,10 +45,11 @@ struct ListEntry
     WORD parents; /* number of entries parent's, used for the list tree stuff */
 };
 
-#define LE_FLAG_LIST     (1<<0)  /* Entry is a list, possibly containing childs */
-#define LE_FLAG_CLOSED   (1<<1)  /* The entry (list) is closed (means that all childs are invisible) */
-#define LE_FLAG_VISIBLE  (1<<2)  /* The entry is visible */
-#define LE_FLAG_SELECTED (1<<3)  /* The entry is selected */
+#define LE_FLAG_PARENT      (1<<0)  /* Entry is a parent, possibly containing children */
+#define LE_FLAG_CLOSED      (1<<1)  /* The entry (parent) is closed (means that all children are invisible) */
+#define LE_FLAG_VISIBLE     (1<<2)  /* The entry is visible */
+#define LE_FLAG_SELECTED    (1<<3)  /* The entry is selected */
+#define LE_FLAG_HASCHILDREN (1<<4)  /* The entry really has children */
 
 struct ColumnInfo
 {
@@ -126,6 +127,10 @@ struct MUI_ListData
 
     /* list type */
     ULONG input; /* FALSE - readonly, otherwise TRUE */
+
+    /* tree stuff */
+    ULONG parent_space; /* full number of pixels a parent takes */
+    ULONG treecolumn;
 };
 
 #define MOUSE_CLICK_ENTRY 1 /* on entry clicked */ 
@@ -342,6 +347,8 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 	    if (text->height > data->entries[pos]->height) data->entries[pos]->height = text->height;
 	    data->entries[pos]->widths[j] = text->width;
 
+	    if (j == data->treecolumn) data->entries[pos]->widths[j] += data->entries[pos]->parents * data->parent_space;
+
 	    if (text->width > data->ci[j].entries_width)
 	    {
 	        /* This columns width is bigger than the other in the same columns, so we store this value */
@@ -519,6 +526,9 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
+
+    data->parent_space = 10;
+    data->treecolumn = 0;
 
     return (IPTR)obj;
 }
@@ -783,6 +793,8 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
     {
 	ZText *text;
 	x2 = x1 + data->ci[col].entries_width;
+
+	if (col == data->treecolumn) x1 += data->entries[entry_pos]->parents * data->parent_space;
 
 	if ((text = zune_text_new(data->strings[col],data->preparses[col], ZTEXT_ARG_NONE, NULL)))
 	{
@@ -1326,21 +1338,27 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
 	return ~0;
 
     if (!(lentry = AllocListEntry(data)))
+    {
+	RemoveListEntries(data, pos, 1);
 	return ~0;
+    }
 
     lentry->data = (APTR)DoMethod(obj, MUIM_List_Construct, msg->entry, data->pool);
     if (!lentry->data)
     {
+	RemoveListEntries(data, pos, 1);
     	FreeListEntry(data,lentry);
 	return ~0;
     }
 
+    /* Set the correct number of parants */
     if (msg->parent == MUIV_List_InsertSingleAsTree_Root)
 	lentry->parents = 0;
     else
-    {
-    	lentry->parents = data->entries[msg->parent]->parents + 1;
-    }
+ 	lentry->parents = data->entries[msg->parent]->parents + 1;
+
+    /* The parent is gets really a parent */
+    data->entries[msg->parent]->flags |= LE_FLAG_PARENT | LE_FLAG_HASCHILDREN;
 
     data->entries[pos] = lentry;
     data->confirm_entries_num++;

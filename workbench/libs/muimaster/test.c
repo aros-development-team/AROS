@@ -168,14 +168,18 @@ void save_function(void)
     }
 }
 
+static int id = 1;
+
 void add_function(void)
 {
-    static int id = 1;
     DoMethod(list2,MUIM_List_InsertSingle, id++, MUIV_List_Insert_Bottom);
 }
 
 void add_child_function(void)
 {
+    int act = xget(list2,MUIA_List_Active);
+
+    DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
 }
 
 /* The custom class */
