@@ -394,7 +394,7 @@ IPTR AboutWindow__MUIM_Window_Setup
             {
                 if (string == NULL)
                 {
-                    GET(_app(self), MUIA_Application_Title, (IPTR *) &string);
+                    GET(_app(self), MUIA_Application_Title, &string);
                 }
                 
                 if (string != NULL)
