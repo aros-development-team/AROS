@@ -81,15 +81,14 @@ extern const char ALIGNED LC_BUILDNAME(LibName)   [];
 extern const char ALIGNED LC_BUILDNAME(LibID)     [];
 extern const char ALIGNED LC_BUILDNAME(Copyright) [];
 
-LC_LIBHEADERTYPEPTR AROS_SLIB_ENTRY(LC_BUILDNAME(InitLib),LibHeader)
-(
-	LC_LIBHEADERTYPEPTR   lh,
-	BPTR		      segList,
-	struct ExecBase     * sysBase
+AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
+    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
+    AROS_LHA(BPTR,                segList, A0),
+    struct ExecBase *, sysBase, 0, LibHeader
 );
-BPTR AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader)
-(
-	LC_LIBHEADERTYPEPTR lh
+AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
+    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
+    struct ExecBase *, sysBase, 0, LibHeader
 );
 
 /* -------------------------------------------------------------------------
@@ -320,8 +319,9 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     semaphore mechanism but since expunging can't be done twice, one should
     avoid it here.
 ----------------------------------------------------------------------- */
-AROS_LH0 (BPTR, LC_BUILDNAME(ExpungeLib),
-    LC_LIBHEADERTYPEPTR, lh, 3, LibHeader
+AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
+    AROS_LHA(LC_LIBHEADERTYPEPTR, lh, D0),
+    struct ExecBase *, sysBase, 3, LibHeader
 )
 {
 #ifndef NOEXPUNGE
