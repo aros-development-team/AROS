@@ -443,17 +443,17 @@ typedef unsigned long (*ULONG_FUNC)();
 /* Call a library function which requires the libbase */
 #define AROS_LCQUAD1(t,n,a1,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
+    __AROS_LPAQUAD(a1),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
-    __AROS_LCA(a1),\
+    __AROS_LCAQUAD(a1),\
     __AROS_LC_BASE(bt,bn)))
 #define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
+    __AROS_LPAQUAD(a1),\
+    __AROS_LPAQUAD(a2),\
     __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
-    __AROS_LCA(a1),\
-    __AROS_LCA(a2),\
+    __AROS_LCAQUAD(a1),\
+    __AROS_LCAQUAD(a2),\
     __AROS_LC_BASE(bt,bn)))
 
 #define AROS_LC0(t,n,bt,bn,o,s) \
