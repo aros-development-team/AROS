@@ -7,7 +7,7 @@ FILES	:=  irq_init functable endtag irq
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native : 
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) irq.s
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) irq.s irq_init.s
 	%add_objects rom/boot/hidd.kernel.irq
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/hidd.kernel.irq.o
@@ -31,6 +31,9 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
 irq.s: irq.c
+	%ctoasm_q
+	
+irq_init.s: irq_init.c
 	%ctoasm_q
 	
 libdefs.h : lib.conf

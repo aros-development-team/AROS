@@ -338,8 +338,6 @@ asmlinkage void do_IRQ(struct pt_regs regs)
 	 */
 	int irq = regs.orig_eax & 0xff; /* subtle, see irq.h */
 
-//	kprintf("IRQ: do_IRQ%d\n",irq);
-
 	irq_desc[irq].count++;
 	irq_desc[irq].handler->handle(irq, &regs);
 }

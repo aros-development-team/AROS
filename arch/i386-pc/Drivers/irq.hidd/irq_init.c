@@ -13,6 +13,10 @@
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <utility/utility.h>
+#include <aros/asmcall.h>
+#include <exec/interrupts.h>
+#include <exec/execbase.h>
+#include <hardware/intbits.h>
 
 #include "irq.h"
 
@@ -50,13 +54,14 @@ struct irqbase
 #define DEBUG 1
 #include <aros/debug.h>
 
-void timer_handler(int cpl, void *dev_id, struct pt_regs *regs) { }
+void timer_handler(int cpl, void *dev_id, struct pt_regs *regs);
+void null_handler(int cpl, void *dev_id, struct pt_regs *regs) { }
 
 struct irqaction timer_int = { timer_handler, 0, 0, "timer", NULL, NULL};
-struct irqaction kbd_int = { timer_handler, 0, 0, "keyboard", NULL, NULL};
-struct irqaction rtc_int = { timer_handler, 0, 0, "rtc", NULL, NULL};
-struct irqaction ide0_int = { timer_handler, 0, 0, "ide0", NULL, NULL};
-struct irqaction ide1_int = { timer_handler, 0, 0, "ide1", NULL, NULL};
+struct irqaction kbd_int = { null_handler, 0, 0, "keyboard", NULL, NULL};
+struct irqaction rtc_int = { null_handler, 0, 0, "rtc", NULL, NULL};
+struct irqaction ide0_int = { null_handler, 0, 0, "ide0", NULL, NULL};
+struct irqaction ide1_int = { null_handler, 0, 0, "ide1", NULL, NULL};
 
 #undef SysBase
 
@@ -78,13 +83,14 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 	    if (isd->utilitybase)
 	    {
 		init_IRQ();
-		D(bug("    Adding timer interrupt\n"));
+		D(bug("     Adding timer interrupt\n"));
 		setup_x86_irq(0, &timer_int);
 		setup_x86_irq(1, &kbd_int);
 		setup_x86_irq(8, &rtc_int);
 		setup_x86_irq(14, &ide0_int);
 		setup_x86_irq(15, &ide1_int);
-		D(bug("    Init OK\n"));
+		D(bug("     Init OK\n"));
+		Enable();	/* Turn interrupts on */
 		return TRUE;
 	    }
 	    CloseLibrary(isd->oopbase);
@@ -92,4 +98,45 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 	FreeMem(isd, sizeof (struct irq_staticdata));
     }
     return FALSE;
+}
+
+#ifdef SysBase
+#undef SysBase
+#endif /* SysBase */
+#define SysBase (*(struct ExecBase **)4L)
+
+void timer_handler(int cpl, void *dev_id, struct pt_regs *regs)
+{
+    struct IntVector *iv;
+
+    /* Map the Unix signal to an Amiga signal. */
+    iv = &SysBase->IntVects[INTB_VERTB];
+
+    if (iv->iv_Code)
+    {
+	/*  Call it. I call with all these parameters for a reason.
+
+	    In my `Amiga ROM Kernel Reference Manual: Libraries and
+	    Devices' (the 1.3 version), interrupt servers are called
+	    with the following 5 parameters.
+
+	    D1 - Mask of INTENAR and INTREQR
+	    A0 - 0xDFF000 (base of custom chips)
+	    A1 - Interrupt Data
+	    A5 - Interrupt Code vector
+	    A6 - SysBase
+
+	    It is quite possible that some code uses all of these, so
+	    I must supply them here. Obviously I will dummy some of these
+	    though.
+	*/
+	AROS_UFC5(void, iv->iv_Code,
+	    AROS_UFCA(ULONG, 0, D1),
+	    AROS_UFCA(ULONG, 0, A0),
+	    AROS_UFCA(APTR, iv->iv_Data, A1),
+	    AROS_UFCA(APTR, iv->iv_Code, A5),
+	    AROS_UFCA(struct ExecBase *, SysBase, A6)
+	);
+    }
+    
 }
