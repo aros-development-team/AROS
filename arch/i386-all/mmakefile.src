@@ -9,10 +9,11 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(GENINCDIR)/jmpdefs.h
 
 # The dependancies here are for compiling geninc.c
-#MM includes-common-i386 : \
+#MM kernel-i386-machine_i : \
 #MM     kernel-exec-includes compiler-includes compiler-arossuport-includes
 
-includes-common-i386 : $(INCFILES) machine.i
+#MM
+includes-common-i386 : $(INCFILES)
 
 #MM
 kernel-i386-machine_i : machine.i
