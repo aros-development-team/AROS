@@ -3,28 +3,25 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME   := muimaster
-ULIBNAME  := MUIMaster
-BASENAME  := MUIMaster
-LIBPOST   := library
-DESTDIR   := $(SLIBDIR)
+MODNAME := muimaster
+MODTYPE := library
 
 CLASSES   := application \
     	     area \
+	     boopsi \
 	     family \
 	     group \
 	     notify \
 	     numeric \
+	     rectangle \
 	     slider \
 	     string \
 	     text \
-	     window \
-             rectangle
-	
+	     window
+	     
 CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
      
-FILES     := muimaster_init \
-    	     support \
+FILES     := support \
 	     textengine \
     	     frame \
 	     prefs \
@@ -32,7 +29,7 @@ FILES     := muimaster_init \
 	     dragndrop \
 	     $(CLASSFILES)
     	    
-FUNCTIONS := \
+FUNCS := \
 	mui_addclipping \
 	mui_addclipregion \
 	mui_allocaslrequest \
@@ -59,24 +56,17 @@ FUNCTIONS := \
 	mui_requestidcmp \
 	mui_seterror
 
-%define_libs prelibs=-l$(LIBNAME)
+USE_AMIGALIB := yes
+USE_MUILIB   := yes
+USE_CLIB_STATIC := yes
+USE_MLIB := yes
 
-%genlib_cpak
-
-#MM workbench-libs-muimaster : setup includes
-workbench-libs-muimaster : $(SLIB)
-	@$(NOP)
-
-#MM workbench-libs-muimaster-quick :
-workbench-libs-muimaster-quick : $(SLIB)
-	@$(NOP)
-
-#MM
-setup :
-	%mkdirs_q $(OBJDIR) $(OBJDIR)/classes $(LIBDIR) $(SLIBDIR)
-
-#MM
-clean ::
-	$(RM) $(OBJDIR) *.err libdefs.h mmakefile $(END_FILE).c $(LIB) $(SLIB)
+#MM- workbench-libs-muimaster : setup includes linklibs  \
+#MM	workbench-libs-muimaster-module
+%make_module_setup mmake=workbench-libs-muimaster
+%make_module_cpak
+%make_module mmake=workbench-libs-muimaster
+%make_lib_includes
 
 %common
+%include_deps
