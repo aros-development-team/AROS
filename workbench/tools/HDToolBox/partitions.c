@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <strings.h>
 #include <proto/exec.h>
+#include <proto/gadtools.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
 
-#include <aros/debug.h>
 #include <devices/trackdisk.h>
 #include <exec/memory.h>
 #include <utility/tagitem.h>
@@ -19,7 +19,10 @@
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
 #include "partitiontypes.h"
+#include "platform.h"
 #include "ptclass.h"
+
+#include "debug.h"
 
 extern struct TagItem pcpartitiontags[], pcpaddpartitiontags[],
 		pcpdeletepartitiontags[], pcpstartcyltags[], pcpendcyltags[],
@@ -42,32 +45,32 @@ void setPCPGadgetAttrs
 	pcpstartcyltags[0].ti_Data = TRUE;
 	pcpendcyltags[0].ti_Data = TRUE;
 	pcptotalcyltags[0].ti_Data = TRUE;
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ADD_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpaddpartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_DELETE_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpdeletepartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_EDIT_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpeditarospartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpstartcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpendcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcptotalcyltags
@@ -144,7 +147,7 @@ LONG flag;
 				AddTail(&table->pl, &pnode->ln);
 			pnode->ph = partition;
 			pnode->root = table;
-			SetGadgetAttrsA
+			GT_SetGadgetAttrsA
 			(
 				pcpgadgets[ID_PCP_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 				mainwin, 0, pcpartitiontags
@@ -183,7 +186,7 @@ void par_Init(struct Window *win, struct PartitionTableNode *table) {
 	findPartitions(win, table);
 	setPCPGadgetAttrs(win, table);
 	viewPartitionData(win, table, 0);
-	SetGadgetAttrs(ptgad, win, NULL, PTCT_PartitionTable, table, TAG_DONE);
+	GT_SetGadgetAttrs(ptgad, win, NULL, PTCT_PartitionTable, table, TAG_DONE);
 }
 
 void viewDosEnvecData
@@ -218,62 +221,62 @@ ULONG size;
 	pcpbootabletags[0].ti_Data = TRUE;
 	pcpbootpritags[0].ti_Data = TRUE;
 	pcpfilesystemtags[1].ti_Data = (STACKIPTR)"";
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ADD_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpaddpartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_DELETE_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpdeletepartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_EDIT_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpeditarospartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpstartcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpendcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcptotalcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_SIZE-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpsizetags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_NAME-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpnametags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_BOOTABLE-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpbootabletags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_BOOTPRI-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpbootpritags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_FILESYSTEM-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpfilesystemtags
 	);
-	SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, de, TAG_DONE);
+	GT_SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, de, TAG_DONE);
 }
 
 void viewPartitionData
@@ -336,67 +339,67 @@ ULONG disabled = pn ? FALSE : TRUE;
 	}
 	else
 		pcpfilesystemtags[1].ti_Data =  (STACKIPTR)str;
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ADD_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpaddpartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_DELETE_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpdeletepartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_EDIT_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpeditarospartitiontags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_STARTCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpstartcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_ENDCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpendcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_TOTALCYL-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcptotalcyltags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_SIZE-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpsizetags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_NAME-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpnametags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_BOOTABLE-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpbootabletags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_BOOTPRI-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpbootpritags
 	);
-	SetGadgetAttrsA
+	GT_SetGadgetAttrsA
 	(
 		pcpgadgets[ID_PCP_FILESYSTEM-ID_PCP_FIRST_GADGET].gadget,
 		mainwin,0,pcpfilesystemtags
 	);
-	SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, pn, TAG_DONE);
+	GT_SetGadgetAttrs(ptgad, mainwin, NULL, PTCT_Selected, pn, TAG_DONE);
 }
 
 void freePartitionNode(struct PartitionNode *pn) {
@@ -759,7 +762,7 @@ ULONG pos;
 			else
 				setPartitionName(pn);
 			Enqueue(&table->pl, &pn->ln);
-			SetGadgetAttrsA
+			GT_SetGadgetAttrsA
 			(
 				pcpgadgets[ID_PCP_PARTITION-ID_PCP_FIRST_GADGET].gadget,
 				mainwin, 0, pcpartitiontags

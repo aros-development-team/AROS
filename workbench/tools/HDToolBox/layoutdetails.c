@@ -5,10 +5,12 @@
 
 #include <exec/lists.h>
 #include <exec/nodes.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
 #include "gadgets.h"
+#include "platform.h"
 
 struct TagItem dettypelvtags[] =
 {

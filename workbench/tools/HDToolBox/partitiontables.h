@@ -46,6 +46,7 @@ void freePartitionTable(struct PartitionTableNode *);
 void freePartitionTableList(struct List *);
 void freeHDList(struct List *);
 void saveChanges(struct Window *, struct PartitionTableNode *);
+void mountPartitions(struct List *);
 
 #endif
 

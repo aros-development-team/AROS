@@ -3,11 +3,12 @@
     $Id$
 */
 
+#include <proto/alib.h>
+#include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
-#include <aros/asmcall.h>
 #include <intuition/cghooks.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
@@ -18,9 +19,10 @@
 #include "ptclass.h"
 #include "partitions.h"
 #include "partitiontables.h"
+#include "platform.h"
 
 #define DEBUG 1
-#include <aros/debug.h>
+#include "debug.h"
 
 #define G(a) ((struct Gadget *)a)
 
@@ -98,7 +100,7 @@ struct RastPort *rport;
 		retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
 	data = INST_DATA(cl, obj);
-	taglist = msg->ops_AttrList;
+	taglist = (struct TagItem *)msg->ops_AttrList;
 	while ((tag = NextTagItem((const struct TagItem **)&taglist)))
 	{
 		switch (tag->ti_Tag)
@@ -542,6 +544,11 @@ struct PTableData *data = INST_DATA(cl, obj);
 	return DoSuperMethodA(cl, obj, msg);
 }
 
+STATIC IPTR pt_hittest(Class *cl, Object *obj, struct gpHitTest *msg) {
+
+	return GMR_GADGETHIT;
+}
+
 AROS_UFH3S(IPTR, dispatch_ptclass,
 	  AROS_UFHA(Class *, cl, A0),
 	  AROS_UFHA(Object *, obj, A2),
@@ -550,6 +557,7 @@ AROS_UFH3S(IPTR, dispatch_ptclass,
 {
 	AROS_USERFUNC_INIT
 	IPTR retval;
+
 	switch (msg->MethodID)
 	{
 	case OM_NEW:
@@ -562,8 +570,10 @@ AROS_UFH3S(IPTR, dispatch_ptclass,
 		retval = pt_set(cl, obj, (struct opSet *)msg);
 		break;
 	case OM_GET:
-kprintf("get\n");
 		retval = pt_get(cl, obj, (struct opGet *)msg);
+		break;
+	case GM_HITTEST:
+		retval = pt_hittest(cl, obj, (struct gpHitTest *)msg);
 		break;
 	case GM_RENDER:
 		retval = pt_render(cl, obj, (struct gpRender *)msg);

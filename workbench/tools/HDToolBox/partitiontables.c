@@ -9,6 +9,7 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
+#include <proto/gadtools.h>
 #include <proto/intuition.h>
 #include <proto/partition.h>
 
@@ -23,9 +24,10 @@
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
 #include "partitiontypes.h"
+#include "platform.h"
 
 #define DEBUG 1
-#include <aros/debug.h>
+#include "debug.h"
 
 struct List hd_list;
 struct List pt_list;
@@ -131,7 +133,7 @@ UWORD num;
 			strcat(ptn->ln.ln_Name, "new subpartition");
 			NEWLIST(&ptn->pl);
 			Insert(&pt_list, &ptn->ln, &table->ln);
-			SetGadgetAttrsA
+			GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_HARDDISK-ID_MAIN_FIRST_GADGET].gadget,
 				0,
@@ -184,7 +186,7 @@ struct PartitionTableNode *ptn;
 			);
 			NEWLIST(&ptn->pl);
 			AddTail(&pt_list, &ptn->ln);
-			SetGadgetAttrsA
+			GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_HARDDISK-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,
@@ -318,32 +320,32 @@ struct PartitionTableNode *current_pt;
 		pdtags[0].ti_Data = part ? FALSE : TRUE;
 //		vdodtags[0].ti_Data = FALSE;
 		sctdtags[0].ti_Data = current_pt->flags & PNF_TABLE_CHANGED ? FALSE : TRUE;
-/*		SetGadgetAttrsA
+/*		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_CHANGE_DRIVE_TYPE-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,cdttags
 			);
-		SetGadgetAttrsA
+		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_MODIFY_BBL-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,mbbltags
 			);
-		SetGadgetAttrsA
+		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_LL_FORMAT-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,llftags
 			);*/
-		SetGadgetAttrsA
+		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_PARTITION_DRIVE-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,pdtags
 			);
-/*		SetGadgetAttrsA
+/*		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_VERIFY_DD-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,vdodtags
 			);*/
-		SetGadgetAttrsA
+		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,sctdtags
@@ -414,7 +416,7 @@ ULONG args[40];
 		WritePartitionTable(table->ph);
 		table->flags &= ~PNF_TABLE_CHANGED;
 		sctdtags[0].ti_Data = TRUE;
-		SetGadgetAttrsA
+		GT_SetGadgetAttrsA
 			(
 				maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
 				mainwin,0,sctdtags
@@ -452,7 +454,7 @@ struct DeviceNode *entry;
 		STRPTR devname;
 
 			fssm = (struct FileSysStartupMsg *)BADDR(entry->dn_Startup);
-			devname = AROS_BSTR_ADDR(BADDR(fssm->fssm_Device));
+			devname = AROS_BSTR_ADDR(fssm->fssm_Device);
 			if (
 					(fssm->fssm_Unit != table->hd->unit) ||
 					(
@@ -553,14 +555,16 @@ ULONG i;
 				dn = MakeDosNode(params);
 				if (dn)
 				{
-					dn->dn_OldName = AllocVec(strlen(name)+2, MEMF_PUBLIC);
+					dn->dn_OldName = MKBADDR(AllocVec(strlen(name)+2, MEMF_PUBLIC));
+#ifndef __AMIGAOS__
+					dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
+#endif
 					i = 0;
 					do
 					{
 						AROS_BSTR_putchar(dn->dn_OldName, i, name[i]);
 					} while (name[i++]);
 					AROS_BSTR_setstrlen(dn->dn_OldName, i-1);
-					dn->dn_NewName = AROS_BSTR_ADDR(dn->dn_OldName);
 					AddDosNode(nde->de_BootPri, ADNF_STARTPROC, dn);
 				}
 				else

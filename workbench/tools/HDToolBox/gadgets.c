@@ -9,12 +9,15 @@
 #include <proto/gadtools.h>
 #include <proto/utility.h>
 #include <exec/memory.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/screens.h>
 
 #include "gadgets.h"
 #include "hdtoolbox_support.h"
+#include "platform.h"
+#include "ptclass.h"
 
-#include <aros/debug.h>
+#include "debug.h"
 
 struct TextAttr tattr = {"topaz.font",8,0,0};
 
@@ -90,17 +93,16 @@ void clearWindow(struct Window *win) {
 }
 #endif
 
-#define TAG_Left		0
-#define TAG_Top 		1
-#define TAG_Width		2
-#define TAG_Height		3
-#define TAG_IText		4
-#define TAG_LabelPlace		5
-#define TAG_Previous		6
-#define TAG_ID			7
-#define TAG_DrawInfo		8
-#define TAG_UserData		9
-#define TAG_Num        		10
+#define TAG_Left     0
+#define TAG_Top      1
+#define TAG_Width    2
+#define TAG_Height   3
+#define TAG_IText    4
+#define TAG_Previous 5
+#define TAG_ID       6
+#define TAG_DrawInfo 7
+#define TAG_UserData 8
+#define TAG_Num      9
 
 struct Gadget *ptgad=0;
 struct DrawInfo *dri=0;
@@ -123,7 +125,7 @@ struct TagItem tags[]=
 	tags[1].ti_Data = TRUE; //GetTagData(GA_Immediate, FALSE, taglist);
 	tags[3].ti_Data = (IPTR) stdgadtags;
 	obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
-	return;
+	return obj;
 }
 
 struct Gadget *createPTGadget(struct DrawInfo *dri) {
@@ -134,7 +136,6 @@ struct TagItem stdgadtags[] =
 	{GA_Width	, 0L			},
 	{GA_Height	, 0L			},
 	{GA_IntuiText	, (IPTR)NULL		},
-	{GA_LabelPlace	, (IPTR)GV_LabelPlace_In},
 	{GA_Previous	, (IPTR)NULL		},
 	{GA_ID		, 0L			},
 	{GA_DrawInfo	, (IPTR)NULL		},

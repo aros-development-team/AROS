@@ -43,6 +43,6 @@ struct PartitionNode *addPartition(struct Window *, struct PartitionTableNode *,
 void deletePartition(struct Window *, struct PartitionNode *);
 void changeBootPri(struct Window *, struct PartitionNode *, LONG);
 void changeName(struct Window *, struct PartitionNode *, STRPTR);
-
+BOOL validValue(struct PartitionTableNode *, struct PartitionNode *, ULONG);
 #endif
 
