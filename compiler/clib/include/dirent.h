@@ -11,18 +11,15 @@
 
 #include <sys/types.h>
 
-#ifndef NULL
-#define NULL (void *)0
-#endif
-
 #ifndef NAME_MAX
 #define NAME_MAX 255
 #endif
 
 struct dirent
 {
+    ino_t   d_ino;
 #define	MAXNAMLEN NAME_MAX
-    char d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
+    char    d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
 };
 
 /* structure describing an open directory. */
@@ -34,6 +31,7 @@ typedef struct _dirdesc
    void   *priv;
 } DIR;
 
+__BEGIN_DECLS
 
 DIR *opendir (const char *name);
 struct dirent *readdir (DIR *dir);
@@ -48,5 +46,7 @@ int scandir (const char *dir, struct dirent ***namelist,
 
 int alphasort(const struct dirent **a, const struct dirent **b);
 ssize_t getdirentries(int fd, char *buf, size_t  nbytes, off_t *basep);
+
+__END_DECLS
 
 #endif /* !_DIRENT_H_ */
