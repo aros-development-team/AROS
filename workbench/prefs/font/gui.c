@@ -147,7 +147,7 @@ Object *makeMenuitem(CONST_STRPTR text)
 }
 
 /*** Methods ****************************************************************/
-IPTR FPWindow$OM_NEW
+IPTR FPWindow__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -234,7 +234,7 @@ error:
     return NULL;
 }
 
-IPTR FPWindow$MUIM_PreferencesWindow_Test
+IPTR FPWindow__MUIM_PreferencesWindow_Test
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -247,7 +247,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Test
     return NULL;
 }
 
-IPTR FPWindow$MUIM_PreferencesWindow_Revert
+IPTR FPWindow__MUIM_PreferencesWindow_Revert
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -260,7 +260,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Revert
     return NULL;
 }
 
-IPTR FPWindow$MUIM_PreferencesWindow_Save
+IPTR FPWindow__MUIM_PreferencesWindow_Save
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -276,7 +276,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Save
     return NULL;
 }
 
-IPTR FPWindow$MUIM_PreferencesWindow_Use
+IPTR FPWindow__MUIM_PreferencesWindow_Use
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -292,7 +292,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Use
     return NULL;
 }
 
-IPTR FPWindow$MUIM_PreferencesWindow_Cancel
+IPTR FPWindow__MUIM_PreferencesWindow_Cancel
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -305,7 +305,7 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
     return NULL;
 }
 
-IPTR FPWindow$MUIM_FPWindow_Import
+IPTR FPWindow__MUIM_FPWindow_Import
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -323,7 +323,7 @@ IPTR FPWindow$MUIM_FPWindow_Import
     return NULL;
 }
 
-IPTR FPWindow$MUIM_FPWindow_Export
+IPTR FPWindow__MUIM_FPWindow_Export
 (     
     Class *CLASS, Object *self, Msg message 
 )
@@ -347,28 +347,28 @@ BOOPSI_DISPATCHER(IPTR, FPWindow_Dispatcher, CLASS, self, message)
     switch (message->MethodID)
     {
         case OM_NEW: 
-            return FPWindow$OM_NEW(CLASS, self, (struct opSet *) message);
+            return FPWindow__OM_NEW(CLASS, self, (struct opSet *) message);
         
         case MUIM_PreferencesWindow_Test:   
-            return FPWindow$MUIM_PreferencesWindow_Test(CLASS, self, message);
+            return FPWindow__MUIM_PreferencesWindow_Test(CLASS, self, message);
         
         case MUIM_PreferencesWindow_Revert:
-            return FPWindow$MUIM_PreferencesWindow_Revert(CLASS, self, message);
+            return FPWindow__MUIM_PreferencesWindow_Revert(CLASS, self, message);
         
         case MUIM_PreferencesWindow_Save:
-            return FPWindow$MUIM_PreferencesWindow_Save(CLASS, self, message);
+            return FPWindow__MUIM_PreferencesWindow_Save(CLASS, self, message);
         
         case MUIM_PreferencesWindow_Use:
-            return FPWindow$MUIM_PreferencesWindow_Use(CLASS, self, message);
+            return FPWindow__MUIM_PreferencesWindow_Use(CLASS, self, message);
         
         case MUIM_PreferencesWindow_Cancel:
-            return FPWindow$MUIM_PreferencesWindow_Cancel(CLASS, self, message);
+            return FPWindow__MUIM_PreferencesWindow_Cancel(CLASS, self, message);
         
         case MUIM_FPWindow_Import:
-            return FPWindow$MUIM_FPWindow_Import(CLASS, self, message);
+            return FPWindow__MUIM_FPWindow_Import(CLASS, self, message);
         
         case MUIM_FPWindow_Export:
-            return FPWindow$MUIM_FPWindow_Export(CLASS, self, message);
+            return FPWindow__MUIM_FPWindow_Export(CLASS, self, message);
         
         default:     
             return DoSuperMethodA(CLASS, self, message);
