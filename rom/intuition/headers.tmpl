@@ -44,9 +44,6 @@
 #ifndef UTILITY_HOOKS_H
 #   include <utility/hooks.h>
 #endif
-#ifndef AROS_DEBUG_H
-#   include <aros/debug.h>
-#endif
 
 #ifndef IntuitionBase
 extern struct IntuitionBase * IntuitionBase;
@@ -96,11 +93,8 @@ IPTR DoSuperNewTags(Class *CLASS, Object *object, struct GadgetInfo *gadgetInfo,
 #       ifndef USE_BOOPSI_STUBS /* prevent name clashes */
 #           define DoMethodA(object, message)                                 \
             ({                                                                \
-                ASSERT_VALID_PTR((object));                                   \
                 (object) != NULL ?                                            \
                 ({                                                            \
-                    ASSERT_VALID_PTR(OCLASS((object)));                       \
-                    ASSERT_VALID_PTR((message));                              \
                     CALLHOOKPKT                                               \
                     (                                                         \
                         (struct Hook *) OCLASS((object)), (object), (message) \
