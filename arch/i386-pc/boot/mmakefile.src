@@ -125,12 +125,17 @@ $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
 #MM bootdisk-pc-i386 : software-pc-i386 workbench test
-bootdisk-pc-i386: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
-                  $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz $(BINDIR)/boot/grub/menu.lst \
-                  $(BINDIR)/boot/grub/menu.lst.DH0 install
-	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $(BOOT_DEST_DIR)/S/Startup-Sequence
-	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
-	@./install $(OSGENDIR)/boot/aros.bin
+bootdisk-pc-i386: $(OSGENDIR)/boot/aros.bin
+
+
+$(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg $(BOOT_DEST_DIR)/S/Startup-Sequence
+$(OSGENDIR)/boot/aros.bin: $(BOOT_DEST_DIR)/boot/aros-pc-i386.gz install
+$(OSGENDIR)/boot/aros.bin: $(BINDIR)/boot/grub/menu.lst $(BINDIR)/boot/grub/menu.lst.DH0
+	$(TOOLDIR)/createhdfile $@ floppy1440 $(BOOT_DEST_DIR)
+	./install $@
+
+$(BOOT_DEST_DIR)/S/Startup-Sequence:
+	@$(CP) $(TOP)/workbench/s/Startup-Sequence.DEMOFLOPPY $@
 
 install: install.c
 	@$(HOST_CC) install.c -o install
