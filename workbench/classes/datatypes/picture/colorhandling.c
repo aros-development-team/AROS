@@ -457,7 +457,7 @@ BOOL CreateMaskPlane( struct Picture_Data *pd )
 		    maskbyte = 0x00;
 		}
 	    }
-	    if( mask )
+	    if( mask != 0x80)
 		*maskx = maskbyte;
 	    maskptr += maskwidth;
 	    srcbuf += srcwidthadd;
