@@ -30,14 +30,19 @@ DIST_FILES = \
 	CVS \
 	s/CVS \
 	s/Startup-Sequence \
-	scripts/.cvsignore \
 	scripts/CVS \
+	scripts/checkmem.awk \
 	scripts/cint2.awk \
+	scripts/copyright.awk \
+	scripts/gendef.awk \
 	scripts/genprotos.h \
+	scripts/jobclient.awk \
 	scripts/makefunctable.awk \
+	scripts/makelinks \
 	scripts/purify \
-	scripts/purify.awk
-
+	scripts/purify.awk \
+	scripts/relpath \
+	scripts/stat.awk
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -65,15 +70,21 @@ dist-dir : FORCE
 
 dist-tar : FORCE
 	cd bin/$(ARCH) ; \
-	    tar chvvzf ../../dist/AROSbin-$(VERSION).tgz AROS
-	cd .. ; tar cvvzf AROS/dist/AROSdev-$(VERSION).tgz \
+	    $(RM) ../../dist/AROSbin-$(VERSION).tgz ; \
+	    tar chvzf ../../dist/AROSbin-$(VERSION).tgz AROS
+	cd .. ; \
+	    $(RM) AROS/dist/AROSdev-$(VERSION).tgz ; \
+	    tar cvzf AROS/dist/AROSdev-$(VERSION).tgz \
 		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
 		$(shell cd ..; find AROS/include -name "*.h")
 
 dist-lha : FORCE
 	cd bin/$(ARCH) ; \
+	    $(RM) ../../dist/AROSbin-$(VERSION).lha ; \
 	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
-	cd .. ; lha a AROS/dist/AROSdev-$(VERSION).lha \
+	cd .. ; \
+	    $(RM) AROS/dist/AROSdev-$(VERSION).lha ; \
+	    lha a AROS/dist/AROSdev-$(VERSION).lha \
 		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
 		$(shell cd ..; find AROS/include -name "*.h")
 
@@ -81,6 +92,11 @@ dist-lha : FORCE
 FORCE :
 
 setup :
+	@if [ ! -d amiga/include ]; then \
+	    echo "Missing AmigaOS includes. Please get a copy and put" ; \
+	    echo "them into amiga/include." ; \
+	    exit 10 ; \
+	else true ; fi
 	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
 	@if [ ! -d bin/$(ARCH) ]; then $(MKDIR) bin/$(ARCH) ; else true ; fi
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
