@@ -50,7 +50,8 @@ struct pHidd_Mouse_Event
 enum {
    vHidd_Mouse_Press,
    vHidd_Mouse_Release,
-   vHidd_Mouse_Motion
+   vHidd_Mouse_Motion,
+   vHidd_Mouse_WheelMotion
 };
 
 enum {
