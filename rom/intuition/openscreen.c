@@ -179,7 +179,7 @@ static const ULONG coltab[] = {
 	screen->Screen.WBorTop    = 7;  /* Amiga default is 2 */
 	screen->Screen.WBorLeft   = 4;
 	screen->Screen.WBorRight  = 4;
-	screen->Screen.WBorBottom = 5;  /* Amiga default is 2 */
+	screen->Screen.WBorBottom = 4;  /* Amiga default is 2 */
 
 
 	screen->Screen.Title = newScreen->DefaultTitle;
