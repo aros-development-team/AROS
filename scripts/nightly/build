@@ -80,6 +80,8 @@ if [ ! -z $succeeded ]; then
     mail_write ""
     mail_write "The following archives were created:"
     mail_write "$(ls -1 $ARCHIVE_BASE | grep -v logs)"
+    mail_write ""
+    mail_write "The archives can be downloaded from http://aros.sourceforge.net/snapshots.html."
 fi
 
 mail_send $ATTACH
