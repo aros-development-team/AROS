@@ -614,26 +614,10 @@ static ULONG mInputBuffered(struct IClass *cl, Object *obj,
     return TRUE;
 }
 
-/* Forward reference */
-static ULONG mNewInput(struct IClass *cl, Object *obj,
-          struct MUIP_Application_NewInput *msg);
-
-/*
- * MUIM_Application_Input : application main loop
- */
-static ULONG mInput(struct IClass *cl, Object *obj,
-       struct MUIP_Application_Input *msg)
-{
-    *msg->signal = 0;
-    return mNewInput(cl, obj, (APTR)msg);
-}
-
-
-/*
- * MUIM_Application_NewInput : application main loop
- */
-static ULONG mNewInput(struct IClass *cl, Object *obj,
-          struct MUIP_Application_NewInput *msg)
+/**************************************************************************
+ MUIM_Application_NewInput : application main loop
+**************************************************************************/
+static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Application_NewInput *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct RIDNode *rid;
@@ -725,6 +709,28 @@ static ULONG mNewInput(struct IClass *cl, Object *obj,
     return 0;
 }
 
+/**************************************************************************
+ MUIM_Application_Input : application main loop
+ This method shouldn't be used in new programm. As it polls all signals.
+**************************************************************************/
+static ULONG Application_Input(struct IClass *cl, Object *obj, struct MUIP_Application_Input *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+    ULONG signal = 0, handler_mask = 0;
+    struct MinNode *mn;
+
+    /* query the signal for the handlers */
+    for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+	struct MUI_InputHandlerNode *ihn;
+	ihn = (struct MUI_InputHandlerNode *)mn;
+	handler_mask |= ihn->ihn_Flags;
+    }
+
+    signal = (1L << (data->app_GlobalInfo.mgi_UserPort->mp_SigBit)) | handler_mask | (1L << data->app_TimerPort->mp_SigBit);
+    *msg->signal = signal;
+    return Application_NewInput(cl, obj, (APTR)msg);
+}
 
 /*
  * Add a method in the method FIFO. Will be executed in the next
@@ -873,12 +879,10 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
     case MUIM_Application_RemInputHandler: return Application_RemInputHandler(cl, obj, (APTR)msg);
     case MUIM_Application_Iconify :
 	return(mIconify(cl, obj, (APTR)msg));
-    case MUIM_Application_Input :
-	return(mInput(cl, obj, (APTR)msg));
+    case MUIM_Application_Input: return Application_Input(cl, obj, (APTR)msg);
     case MUIM_Application_InputBuffered :
 	return(mInputBuffered(cl, obj, (APTR)msg));
-    case MUIM_Application_NewInput :
-	return(mNewInput(cl, obj, (APTR)msg));
+    case MUIM_Application_NewInput: return Application_NewInput(cl, obj, (APTR)msg);
     case MUIM_Application_PushMethod :
 	return(mPushMethod(cl, obj, (APTR)msg));
     case MUIM_Application_ReturnID :
