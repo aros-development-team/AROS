@@ -83,10 +83,10 @@
     if (cnt == -1)
     {
 	errno = IoErr2errno (IoErr ());
-
-	cnt = -1;
+    }else
+    {
+	cnt = 0;
     }
 
     return cnt;
 } /* fseek */
-
