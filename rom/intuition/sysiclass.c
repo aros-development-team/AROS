@@ -1,10 +1,12 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Implementation of SYSICLASS
     Lang: english
 */
+
+/**************************************************************************************************/
 
 #include <exec/types.h>
 
@@ -438,7 +440,10 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
 	SetAPen(rport, data->dri->dri_Pens[BACKGROUNDPEN]);
 	RectFill(rport, left, top, right, bottom);
-	
+
+#if 0
+    	/* THICK MX IMAGE */
+		
 	SetAPen(rport, data->dri->dri_Pens[col1]);
 	RectFill(rport, left + 2, top, right - 3, top + 1);
 	RectFill(rport, left + 1, top + 2, left + 2, top + 3);
@@ -468,6 +473,44 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	        RectFill(rport, left, top, right, bottom);
 	    }
         }
+#else
+    	/* THIN MX IMAGE */
+	
+	SetAPen(rport, data->dri->dri_Pens[col1]);
+	RectFill(rport, left + 3, top, right - 3, top);
+	WritePixel(rport, left + 2, top + 1);
+	RectFill(rport, left + 1, top + 2, left + 1, top + 3);
+	RectFill(rport, left, top + 4, left, bottom - 4);
+	RectFill(rport, left + 1, bottom - 3, left + 1, bottom - 2);
+	WritePixel(rport, left + 2, bottom - 1);
+	
+	SetAPen(rport, data->dri->dri_Pens[col2]);
+	WritePixel(rport, right - 2, top + 1);
+	RectFill(rport, right - 1, top + 2, right - 1, top + 3);
+	RectFill(rport, right, top + 4, right, bottom - 4);
+	RectFill(rport, right - 1, bottom - 3, right - 1, bottom - 2);
+	WritePixel(rport, right - 2, bottom - 1);
+	RectFill(rport, left + 3, bottom, right - 3, bottom);
+	
+        if (selected)
+        {
+	    left += 3;right -= 3;width -= 6;
+	    top += 3;bottom -= 3;height -= 6;
+	    
+            SetAPen(rport, data->dri->dri_Pens[FILLPEN]);
+	    if ((width >= 5) && (height >= 5))
+	    {
+	    	RectFill(rport, left, top + 2, left, bottom - 2);
+		RectFill(rport, left + 1, top + 1, left + 1, bottom - 1);
+		RectFill(rport, left + 2, top, right - 2, bottom);
+		RectFill(rport, right - 1, top + 1, right - 1, bottom - 1);
+		RectFill(rport, right, top + 2, right, bottom - 2);
+ 	    } else {
+	        RectFill(rport, left, top, right, bottom);
+	    }
+        }
+	
+#endif
         break;
     }
     
@@ -1111,6 +1154,8 @@ AROS_UFH3S(IPTR, dispatch_sysiclass,
     return retval;
 }
 
+/**************************************************************************************************/
+
 #undef IntuitionBase
 
 /**************************************************************************************************/
@@ -1235,3 +1280,4 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 		 bottom);
 }
 
+/**************************************************************************************************/
