@@ -1,34 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1996/10/24 15:51:04  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.4  1996/10/01 15:50:58  digulla
-    Don't do Amiga specific things in the X11 driver
-    Don't expunge the library if it's in ROM (the user cannot open if again if
-    	this happens).
-    Fixed some bugs in expunge() which made "avail flush" crash.
-
-    Revision 1.3  1996/09/11 16:54:24  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.2  1996/08/13 14:00:53  digulla
-    Added calls to driver
-    Init local SysBase
-    Replaced AROS_LA with AROS_LHA
-
-    Revision 1.1  1996/08/12 14:27:50  digulla
-    Base of graphics library
-
-    Revision 1.2  1996/08/01 17:41:42  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Graphics library
+    Lang: english
 */
 #include <exec/resident.h>
 #include <clib/exec_protos.h>
