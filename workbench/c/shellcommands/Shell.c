@@ -74,14 +74,7 @@
 
  */
 
-/* This is 1, because it is at the moment handled here in the Shell itself.
-   Should it turn out that the correct place to do the CHANGE_SIGNAL is
-   newshell.c instead, change this define to 0 and in newshell.c set the
-   same define to 1. */
-
-#define DO_CHANGE_SIGNAL 1
-
-#define  DEBUG  1
+#define  DEBUG  0
 #include <aros/debug.h>
 
 #include <exec/memory.h>
@@ -111,10 +104,6 @@
 #include <aros/shcommands.h>
 
 #define SET_HOMEDIR 1
-
-#define  P(x)           /* Debug macro */
-#define  P2(x) 		/* Debug macro */
-
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
 
@@ -269,7 +258,7 @@ BOOL appendString(struct CSource *cs, STRPTR from, LONG size);
  *
  * Output:   BOOL  --  success/failure indicator
  */
-#define printFlush(format...) {PrintF(format); Flush(Output());}
+#define printFlush(format...) do {PrintF(format); Flush(Output());} while (0)
 
 /* Function: interact
  *
@@ -383,7 +372,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 
     LONG error = RETURN_OK;
 
-    P(kprintf("Executing shell\n"));
+    D(bug("Executing shell\n"));
 
     UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     if (!UtilityBase) return RETURN_FAIL;
@@ -405,19 +394,19 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
         
 	if(Redirection_init(&rd))
 	{
-	    P(kprintf("Running command %s\n", SHArg(COMMAND)));
+	    D(bug("Running command %s\n", SHArg(COMMAND)));
 	    error = checkLine(&rd, &cl);
 	    Redirection_release(&rd);
 	}
         
-	P(kprintf("Command done\n"));
+	D(bug("Command done\n"));
     }
     else
     {
         error = interact();
     }
     
-    P(kprintf("Exiting shell\n"));
+    D(bug("Exiting shell\n"));
 
     return error;
 
@@ -535,11 +524,11 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
     BOOL           result = FALSE;
 
-    P(kprintf("Calling convertLine(), line = %s\n", cl->line));
+    D(bug("Calling convertLine(), line = %s\n", cl->line));
 
     if(convertLine(&filtered, &cs, rd))
     {
-	P2(kprintf("Position %i\n", filtered.CS_CurChr));
+	D(bug("Position %i\n", filtered.CS_CurChr));
 
 	/* End string */
 	appendString(&filtered, "\n\0", 2);
@@ -562,11 +551,11 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	if(rd->haveOutRD)
 	{
-	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
+	    D(bug("Redirecting output to file %s\n", rd->outFileName));
 
 	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE);
 
-	    P(kprintf("Output stream opened\n"));
+	    D(bug("Output stream opened\n"));
 
 	    if(BADDR(rd->newOut) == NULL)
 	    {
@@ -601,7 +590,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
     	    SelectInput(rd->newIn);
 	}
 
-	P(kprintf("Calling executeLine()\n"));
+	D(bug("Calling executeLine()\n"));
 
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
@@ -679,7 +668,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
     while(TRUE)
     {
-	P(kprintf("Str: %s\n", cs->CS_Buffer+cs->CS_CurChr));
+	D(bug("Str: %s\n", cs->CS_Buffer+cs->CS_CurChr));
 
 	while(item == ' ' || item == '\t')
 	{
@@ -729,7 +718,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	        return FALSE;
 	    }
 
-	    P(kprintf("commannd = %S\n", &item+1));
+	    D(bug("commannd = %S\n", &item+1));
 
 	    if(rd->haveOutRD)
 	    {
@@ -769,7 +758,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    advance(1);
 	    result = ReadItem(rd->inFileName, FILENAME_LEN, cs);
 
-	    P(kprintf("Found input redirection\n"));
+	    D(bug("Found input redirection\n"));
 
 	    if(result == ITEM_ERROR || result == ITEM_NOTHING)
 		return FALSE;
@@ -793,7 +782,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		advance(1);
 		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
 
-		P(kprintf("Found append redirection\n"));
+		D(bug("Found append redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
 		    return FALSE;
@@ -808,7 +797,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
 
-		P(kprintf("Found output redirection\n"));
+		D(bug("Found output redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
 		    return FALSE;
@@ -824,7 +813,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    advance(1);
 	    result = ReadItem(avBuffer, sizeof(avBuffer), cs);
 
-	    P(kprintf("Found variable\n"));
+	    D(bug("Found variable\n"));
 
 	    if(result == ITEM_ERROR || ITEM_NOTHING)
 		return FALSE;
@@ -838,7 +827,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    {
 		struct CSource varCs = { varBuffer, sizeof(varBuffer), 0 };
 
-		P(kprintf("Real variable! Value = %s\n", varBuffer));
+		D(bug("Real variable! Value = %s\n", varBuffer));
 
 		if(convertLine(filtered, &varCs, rd) == FALSE)
 		    return FALSE;
@@ -847,7 +836,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		/* If this "variable" wasn't defined, we use the '$' as a
 		   regular character */
 	    {
-		P(kprintf("No real variable\n"));
+		D(bug("No real variable\n"));
 
 		if(!rd->haveCommand)
 		{
@@ -865,7 +854,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    /* This is a regular character -- that is, we have a command */
 	    if(!rd->haveCommand)
 	    {
-		P(kprintf("Found possible command\n"));
+		D(bug("Found possible command\n"));
 
     		getCommand(filtered, cs, rd);
 	    }
@@ -878,21 +867,21 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 		result = ReadItem(argBuffer, sizeof(argBuffer), cs);
 
-		// P(kprintf("Found possible argument\n"));
+		// D(bug("Found possible argument\n"));
 
 		if(result == ITEM_ERROR || ITEM_NOTHING)
 		    return FALSE;
 
 		appendString(filtered, from + size, cs->CS_CurChr - size);
 
-		P(kprintf("\n"));
+		D(bug("\n"));
 
-		P(kprintf("Found argument %s\n", argBuffer));
+		D(bug("Found argument %s\n", argBuffer));
 	    }
 	}
     }
 
-    P(kprintf("Exiting convertLine()\n"));
+    D(bug("Exiting convertLine()\n"));
 
     return TRUE;
 }
@@ -907,7 +896,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 
     rd->haveCommand = TRUE;
 
-    P(kprintf("Command found!\n"));
+    D(bug("Command found!\n"));
 
     result = ReadItem(rd->commandStr, COMMANDSTR_LEN, cs);
 
@@ -922,7 +911,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 
 	result = ReadItem(rd->commandStr, COMMANDSTR_LEN, &aliasCs);
 
-	P(kprintf("Found alias! value = %s\n", avBuffer));
+	D(bug("Found alias! value = %s\n", avBuffer));
 
 	if(result == ITEM_ERROR || result == ITEM_NOTHING)
 	    return FALSE;
@@ -935,7 +924,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
 	return convertLine(filtered, &aliasCs, rd);
     }
 
-    P(kprintf("Command = %s\n", rd->commandStr));
+    D(bug("Command = %s\n", rd->commandStr));
 
     return TRUE;
 }
@@ -955,14 +944,14 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
     {
 	letter = inputStream ? FGetC(inputStream) : EOF;
 
-	P2(kprintf("Read character %c (%d)\n", letter, letter));
+	D(bug("Read character %c (%d)\n", letter, letter));
 
 	/* -2 to skip test for boundary for terminating '\n\0' */
 	if(cl->position > (cl->size - 2))
 	{
 	    STRPTR newString = AllocVec(cl->size + __extendSize, MEMF_ANY);
 
-	    P2(kprintf("Allocated new buffer %p\n", newString));
+	    D(bug("Allocated new buffer %p\n", newString));
 
 	    if(cl->line  != NULL)
 		CopyMem(cl->line, newString, cl->size);
@@ -974,7 +963,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
 
 	if(letter == '\n' || letter == EOF)
 	{
-	    P2(kprintf("Found end of line\n"));
+	    D(bug("Found end of line\n"));
 	    break;
 	}
 
@@ -985,7 +974,7 @@ BOOL readLine(struct CommandLine *cl, BPTR inputStream)
     cl->line[cl->position++] = '\n';
     cl->line[cl->position++] = '\0';
 
-    P2(kprintf("commandline: %s\n", cl->line));
+    D(bug("commandline: %s\n", cl->line));
 
     if(letter == EOF)
 	return FALSE;
@@ -1091,7 +1080,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 
     ss->residentCommand = FALSE;
 
-    P(kprintf("Trying to load command1: %s\n", commandName));
+    D(bug("Trying to load command1: %s\n", commandName));
 
     oldCurDir = CurrentDir(NULL);
     CurrentDir(oldCurDir);
@@ -1167,7 +1156,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
   thinks that last Command was resident, and doesn't do an UnloadSeg...
 */
 
-    P(kprintf("Trying to load command: %s\nArguments: %s\n", command,
+    D(bug("Trying to load command: %s\nArguments: %s\n", command,
 	     commandArgs));
 
     module = loadCommand(command, &ss);
@@ -1180,9 +1169,11 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     {
 	struct Task *me = FindTask(NULL);
 	STRPTR oldtaskname = me->tc_Node.ln_Name;
+	BOOL  __debug_mem;
+	LONG mem_before;
 
 	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module;
-	P(kprintf("Command loaded!\n"));
+	D(bug("Command loaded!\n"));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
 	SetSignal(0, SIGBREAKF_CTRL_C);
@@ -1191,12 +1182,31 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
 	me->tc_Node.ln_Name = command;
 
+        __debug_mem = FindVar("__debug_mem", LV_VAR) != NULL;
+
+	if (__debug_mem)
+	{
+	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
+
+	    mem_before = AvailMem(MEMF_ANY);
+	    PrintF("Available total memory before command execution: %10ld\n", mem_before);
+	}
+
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
+	if (__debug_mem)
+	{
+	    LONG mem_after;
+	    FreeVec(AllocVec(~0ul/2, MEMF_ANY)); /* Flush memory */
+
+	    mem_after = AvailMem(MEMF_ANY);
+	    PrintF("Available total memory after command execution:  %10ld\n", mem_after);
+	    PrintF("Memory difference (before - after):              %10ld\n", mem_before - mem_after);
+	}
 
 	me->tc_Node.ln_Name = oldtaskname;
 
-	P(kprintf("Returned from command %s\n", command));
+	D(bug("Returned from command %s\n", command));
 	unloadCommand(module, &ss);
 
 	cli->cli_Result2 = IoErr();
@@ -1240,7 +1250,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
         }
     }
 
-    P(kprintf("Done with the command...\n"));
+    D(bug("Done with the command...\n"));
 
     return error;
 }
