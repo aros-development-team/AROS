@@ -285,7 +285,8 @@ static VOID __HandleLaunch_WB
         (
             NP_Seglist,     (IPTR) startup->sm_Segment,
             NP_Name,        (IPTR) name,
-            NP_StackSize,          WorkbenchBase->wb_DefaultStackSize // FIXME: should be read from icon
+            NP_StackSize,          WorkbenchBase->wb_DefaultStackSize, // FIXME: should be read from icon
+	    TAG_DONE
         );
                 
         if (process != NULL)
