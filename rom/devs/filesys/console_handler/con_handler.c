@@ -30,6 +30,8 @@
 #include <proto/intuition.h>
 #include <devices/conunit.h>
 
+#undef SDEBUG
+#undef DEBUG
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
@@ -286,8 +288,11 @@ AROS_LH2(struct conbase *, init,
 	   struct ExecBase *, sysBase, 0, con_handler)
 {
     AROS_LIBFUNC_INIT
-    
+ 
     struct DeviceNode *dn;
+    static char devnames[2][5] = { "\003CON", "\003RAW" };
+    int i;
+
 
     /* Store arguments */
     conbase->sysbase = sysBase;
@@ -306,38 +311,40 @@ AROS_LH2(struct conbase *, init,
 	       Qualifier */
 	       
 	    #warning InputDevice open hack. Hope this is not a problem since it is only used for PeekQualifier
+	    Forbid();
 	    conbase->inputbase = (struct Device *)FindName(&conbase->sysbase->DeviceList, "input.device");
+	    Permit();
 
-	    /* Install CON: handler into device list */
-    	    dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
-    	    if (dn)
-    	    {
-    	    	STRPTR s;
-	    	s = AllocVec(5, MEMF_PUBLIC);
-    	    	if (s)
-	    	{
-	    	    CopyMem("CON", &s[1], 3);
-	    	    s[4] = 0;
-	    	    *s = 3;
-	    	    dn->dn_Type		= DLT_DEVICE;
-	    	    dn->dn_Unit		= NULL;
-	    	    dn->dn_Device	= &conbase->device;
-	    	    dn->dn_Handler	= NULL;
-	    	    dn->dn_Startup	= NULL;
-	    	    dn->dn_OldName	= MKBADDR(s);
-	    	    dn->dn_NewName	= &s[1];
+	    /* Install CON: and RAW: handlers into device list
+	     *
+	     * KLUDGE: con-handler should create only one device node, depending on
+	     * the startup packet it gets. The mountlists for CON:/RAW: should be into dos.library bootstrap
+	     * routines.
+	     */
+	    for(i = 0; i < 2; i++)
+	    {
+		if((dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC)))
+		{
+		    dn->dn_Type		= DLT_DEVICE;
+		    dn->dn_Unit		= NULL;
+		    dn->dn_Device	= &conbase->device;
+		    dn->dn_Handler	= NULL;
+		    dn->dn_Startup	= NULL;
+		    dn->dn_OldName	= MKBADDR(devnames[i]);
+		    dn->dn_NewName	= &devnames[i][1];
 
-	    	    if (AddDosEntry((struct DosList *)dn))
+		    if (AddDosEntry((struct DosList *)dn))
 		    {
-	    	    	return conbase;
-	    	    }
-	    	    FreeVec(s);
-	    
+			if (i == 0)
+			    continue;
+
+			return conbase;
+		    }
+
+	   	    FreeMem(dn, sizeof (struct DeviceNode));
 	    	}
-	
-	   	FreeMem(dn, sizeof (struct DeviceNode));
 	    }
-	    
+
 	    CloseLibrary((struct Library *)conbase->intuibase);
  	
     	} /* if (intuition opened) */
