@@ -44,7 +44,10 @@ char * strtok (char * str, const char * sep);
 char * strtok_r (char * str, const char * sep, char ** last);
 char * stpcpy (char * dest, const char * src);
 
-int    strcoll (const char *s1, const char *s2);
+/* int    strcoll (const char *s1, const char *s2); */
+#warning Implement strcoll() properly.
+#define strcoll( s1, s2 ) strcmp( s1, s2 )
+
 size_t strxfrm (char * restrict s1, const char * restrict s2, size_t n);
 
 void * memchr (const void * dest, int c, size_t n);
