@@ -44,9 +44,10 @@ Basic Installation of AROS-SOURCES
 
 5. Run "./configure" with possible options:
 
-	* '--with-resolution=XRESxYRES'
-	  This is the resolution of the initial Workbench Screen.
-	  The default resolution is 800x600 for X11 and 640x480
+	* '--with-resolution=XRESxYRESxDEPTH'
+	  This is the resolution and depth in bits of the initial
+	  Workbench Screen.
+	  The default resolution is 800x600x8 for X11 and 640x480x4
 	  for native-i386 (std. VGA resolution).  This value will
 	  be cached.
 
@@ -107,5 +108,7 @@ Basic Installation of AROS-SOURCES
     If you have a different keyboard you have to load the AROS keymap,
     using the 'setmap' program. If you have a Swedish keyboard, type
     'setmap pc105_s' from the AROS Shell. If you have a German keyboard,
-    type 'setmap pc105_d'. Only English, German and Swedish keyboards
-    are supported at the moment.
+    type 'setmap pc105_d' or for an Italian keyboard 'setmap pc105_i'.
+    Only English, German, Italian and Swedish keyboards are supported
+    at the moment.
+
