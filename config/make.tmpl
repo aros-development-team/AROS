@@ -1942,10 +1942,11 @@ $(%(mmake)-%(subpackage)-package-basename).tar.bz2 :
     srcdir= package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
     aros_prefix=/GNU extraoptions= postconfigure= postinstall= 
 
-GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu 
+GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
 
 %fetch_and_build mmake="%(mmake)" package="%(package)" subpackage="%(subpackage)" version="%(version)" \
-    suffixes="%(suffixes)" srcdir="%(srcdir)" package_repo="%(package_repo) $(GNU_REPOSITORY)" \
+    suffixes="%(suffixes)" srcdir="%(srcdir)" \
+    package_repo="%(package_repo) $(GNU_REPOSITORY)/%(package)" \
     patch="%(patch)" patch_repo="%(patch_repo)" \
     prefix="%(prefix)" aros_prefix="%(aros_prefix)" extraoptions="%(extraoptions)" \
     postconfigure="%(postconfigure)" postinstall="%(postinstall)" nix=yes
