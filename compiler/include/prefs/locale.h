@@ -16,7 +16,7 @@
 #   include <libraries/iffparse.h>
 #endif
 
-#define ID_LCLE MAKE_ID('L','C','L','D')
+#define ID_LCLE MAKE_ID('L','C','L','E')
 #define ID_CTRY MAKE_ID('C','T','R','Y')
 
 struct CountryPrefs
