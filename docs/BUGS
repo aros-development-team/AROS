@@ -529,3 +529,10 @@ BUG000076
 sduvan@aros.org
 Drawing the colorwheel through a mask as explained by Georg in the file
 palettereq.c in workbench/libs/reqtools.
+
+BUG000077
+stefan.berger@att.net
+'Aros' only links correctly if layers library has a global variable
+GfxBase, otherwise GfxBase is undefined in graphics.library.
+Also see 'nm -u libgraphics.so'
+
