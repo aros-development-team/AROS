@@ -17,9 +17,9 @@ static const char version[] = "$VER: newshell 41.1 (14.3.1997)\n";
 
 int main (int argc, char ** argv)
 {
-    STRPTR args[2] = { "CON:", "S:Shell-Startup" };
+    STRPTR args[2] = { "CON:10/10/640/480/AROS-Shell/CLOSE", "S:Shell-Startup" };
     struct RDArgs  *rda;
-    BPTR            in, out, shell; /* lock */
+    BPTR            in, out, shell, lock;
     STRPTR          s1, s2, s3, buf;
     struct Process *process;
     LONG            error = RETURN_ERROR;
@@ -59,7 +59,7 @@ int main (int argc, char ** argv)
 		if(out)
 		{
 		    /* Clone output filehandle */
-/*		    
+		    
 		    lock=DupLockFromFH(out);
 		    if(lock)
 		    {
@@ -69,7 +69,7 @@ int main (int argc, char ** argv)
 		    }else
 			in=0;
 
-*/			
+			
 		    in = out;
 		    
 		    if(in)

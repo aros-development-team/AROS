@@ -420,7 +420,6 @@ LONG execute(STRPTR com)
     }
 
     seglist = loadseg(command);
-
     if(seglist)
     {
 	last = s2;
@@ -438,7 +437,6 @@ LONG execute(STRPTR com)
     } else if(infile == NULL && outfile == NULL)
     {
 	lock = Lock(command, SHARED_LOCK);
-
 	if(lock)
 	{
 	    fib = AllocDosObject(DOS_FIB, NULL);
