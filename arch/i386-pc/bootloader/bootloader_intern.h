@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Internal data structures for bootloader.resource
-    Lang: english
+    Internal data structures for bootloader.resource
 */
 
 #ifndef EXEC_TYPES_H

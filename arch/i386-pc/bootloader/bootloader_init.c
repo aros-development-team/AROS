@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Bootloader information initialisation.
-    Lang: english
+    Bootloader information initialisation.
 */
 
 #include <exec/types.h>
