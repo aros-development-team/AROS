@@ -182,7 +182,6 @@ OOP_Class *init_serialhiddclass (struct class_static_data *csd)
         {
             __IHidd_SerialUnitAB = OOP_ObtainAttrBase(IID_Hidd_SerialUnit);
             if (NULL != __IHidd_SerialUnitAB) {
-	    {
         	D(bug("SerialUnitClass ok\n"));
 
         	ok = TRUE;
