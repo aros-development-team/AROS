@@ -570,7 +570,7 @@ struct PartitionNode *pn;
 struct SpaceFind space[5]={{0,0},{0,0},{0,0},{0,0},{0,0}};
 int i,j,last=0;
 
-	*first=hdunit->geometry.dg_TrackSectors;
+	*first=hdunit->geometry.dg_CylSectors;
 #warning "When partioning visible let user select space"
 	pn = (struct PartitionNode *)plist->lh_Head;
 	while (pn->ln.ln_Succ)
