@@ -153,30 +153,33 @@
 
 #ifndef AROS_CSYM_FROM_ASM_NAME
 #   ifdef __ELF__
-#       define AROS_CSYM_FROM_ASM_NAME(n) #n
+#       define AROS_CSYM_FROM_ASM_NAME(n) n
 #   else
 #       error define AROS_CSYM_FROM_ASM_NAME for your architecture
 #   endif
 #endif
 
+#define ___AROS_STR(x) #x
+#define __AROS_STR(x) ___AROS_STR(x)
+
 /* Makes a 'new' symbol which occupies the same memory location as the 'old' symbol */
 #if !defined AROS_MAKE_ALIAS
 #   define AROS_MAKE_ALIAS(old, new) \
-        typeof(old) new __attribute__((__alias__(AROS_CSYM_FROM_ASM_NAME(old))))
+        typeof(old) new __attribute__((__alias__(__AROS_STR(AROS_CSYM_FROM_ASM_NAME(old)))))
 #endif
 
 /* define an asm symbol 'sym' with value 'value'
-   'value' has to be an asm constant, thus either an address number or
-   an asm symbol name, */
+   'value' has to be an asm constant, thus either an
+   address number or an asm symbol name, */
 #if !defined AROS_MAKE_ASM_SYM 
-#    define AROS_MAKE_ASM_SYM(sym, value)   \
-         asm("\n.globl " #sym "\n\t"        \
-             ".set " #sym ", " #value "\n")
+#    define AROS_MAKE_ASM_SYM(sym, value)                         \
+         asm("\n.globl " __AROS_STR(sym) "\n\t"                   \
+             ".set " __AROS_STR(sym) ", " __AROS_STR(value) "\n")
 #endif
 
 #if !defined AROS_IMPORT_ASM_SYM 
-#    define AROS_IMPORT_ASM_SYM(sym) \
-         asm("\n.globl" #sym "\n")
+#    define AROS_IMPORT_ASM_SYM(sym)          \
+         asm("\n.globl" __AROS_STR(sym) "\n")
 #endif
 
 #endif /* AROS_SYSTEM_H */
