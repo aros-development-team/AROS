@@ -45,8 +45,6 @@
 
 #include <dos.h>
 
-#define AROS_LONG2BE(x) (x)
-
 #ifndef PI
 #define PI 3.1415
 #endif
