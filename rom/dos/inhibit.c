@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #include "dos_intern.h"
@@ -16,8 +13,8 @@
 	AROS_LH2(LONG, Inhibit,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, name, D1),
-	AROS_LHA(LONG  , onoff, D2),
+	AROS_LHA(CONST_STRPTR, name,  D1),
+	AROS_LHA(LONG,         onoff, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 121, Dos)
