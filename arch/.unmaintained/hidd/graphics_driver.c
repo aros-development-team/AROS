@@ -887,8 +887,8 @@ LOCK_HIDD(CR->BitMap);
 		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
-				, intersect.MaxX - intersect.MinX + 1
-				, intersect.MaxY - intersect.MinY + 1
+				, intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
+				, intersect.MaxY - CR->bounds.MinY
 		    	);
 ULOCK_HIDD(CR->BitMap);			
 		    }
