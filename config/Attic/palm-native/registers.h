@@ -101,19 +101,27 @@
 #define IPR             0xfffff310
 #define ILCR            0xfffff314
 
-#define TCTL1		0xfffff600
+/*
+ * Port F: Turn LCD display on/off, ...
+ */
+#define PFDIR           0xfffff428
+#define PFDATA          0xfffff429
+#define PFPUEN          0xfffff42a
+#define PFSEL           0xfffff42b
+
+#define TCTL1           0xfffff600
 #define TPRER1          0xfffff602
 #define TCMP1           0xfffff604
 #define TCR1            0xfffff606
 #define TCN1            0xfffff608
 #define TSTAT1          0xfffff60a
 
-#define TCTL2		0xfffff610
-#define TPRER2          0xfffff612
-#define TCMP2           0xfffff614
-#define TCR2            0xfffff616
-#define TCN2            0xfffff618
-#define TSTAT2          0xfffff61a
+#define TCTL2           0xfffff60c
+#define TPRER2          0xfffff60e
+#define TCMP2           0xfffff610
+#define TCR2            0xfffff612
+#define TCN2            0xfffff614
+#define TSTAT2          0xfffff616
 
 #define USTCNT1		0xfffff900
 #define UBAUD1          0xfffff902
