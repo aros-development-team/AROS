@@ -809,7 +809,7 @@ void main(void)
     Object *about_item, *quit_item;
     Object *context_menu;
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Gauges",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -1008,8 +1008,22 @@ End,
 				End,
 			    End,
 		    	End,
-		    End,
 #endif
+/* gauges */ 
+		    Child, VGroup,
+
+		        Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
+		        Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
+		        Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
+	                Child, HGroup,
+	Child, HVSpace,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
+	Child, HVSpace,
+	                    End,
+		        End,
+		    End,
 		Child, RectangleObject,
 		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
 		    MUIA_Rectangle_HBar, TRUE,
