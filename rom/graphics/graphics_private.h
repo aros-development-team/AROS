@@ -32,4 +32,8 @@ AROS_LP1(BOOL, LateGfxInit,
     AROS_LPA(APTR, data, A0),
     struct GfxBase *, GfxBase, 181, Graphics)
 
+AROS_LP1(struct BitMap *, AllocScreenBitMap,
+    AROS_LPA(ULONG, modeid, D0),
+    struct GfxBase *, GfxBase, 182, Graphics)
+
 #endif /* _GRAPHICS_PRIVATE_H */

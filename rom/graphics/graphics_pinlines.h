@@ -21,4 +21,9 @@
 	APTR, data, a0, \
 	GFX_BASE_NAME )
 
+#define AllocScreenBitMap(modeid) \
+    LP1( , struct BitMap *, AllocScreenBitMap, \
+	ULONG, modeid, d0, \
+	GFX_BASE_NAME )
+	
 #endif _GFX_PINLINES_H

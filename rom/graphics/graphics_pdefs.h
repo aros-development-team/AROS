@@ -24,4 +24,9 @@
     AROS_LCA(APTR, data, A0), \
     struct GfxBase *, GfxBase, 181, Graphics)
 
+#define AllocScreenBitMap(modeid) \
+    AROS_LC1(struct BitMap *, AllocScreenBitMap, \
+    AROS_LCA(ULONG, modeid, D0), \
+    struct GfxBase *, GfxBase, 182, Graphics)
+
 #endif /* _GFX_PDEFS_H */

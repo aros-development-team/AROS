@@ -42,6 +42,7 @@ FUNCTIONS := \
 	addfont \
 	addvsprite \
 	allocbitmap \
+	allocscreenbitmap \
 	allocdbufinfo \
 	allocraster \
 	allocspritedataa \

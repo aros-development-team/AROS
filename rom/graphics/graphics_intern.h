@@ -116,7 +116,7 @@ void internal_ClipBlit(struct RastPort * srcRP,
 extern BOOL driver_LateGfxInit(APTR, struct GfxBase *GfxBase);
 
 extern struct BitMap * driver_AllocBitMap (ULONG, ULONG, ULONG, ULONG,
-			struct BitMap *, struct GfxBase *);
+			struct BitMap *, ULONG , struct GfxBase *);
 extern void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,
 			struct GfxBase * GfxBase);
 extern LONG driver_BltBitMap ( struct BitMap * srcBitMap, LONG xSrc,
@@ -216,6 +216,7 @@ extern DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBas
 extern ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase);
 extern ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase);
 extern ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase);
+extern struct BitMap *driver_AllocScreenBitMap(ULONG modeid, struct GfxBase *GfxBase);
 
 
 /* functions in support.c */
