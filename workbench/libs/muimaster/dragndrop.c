@@ -46,7 +46,7 @@ struct DiskObject *GetIconTags( CONST_STRPTR name, ... )
 
 #else
 
-#ifndef __AROS__
+#ifdef __SASC
 #define ASM __asm
 #else
 #define ASM

@@ -47,19 +47,25 @@
 
 #define AROS_LONG2BE(x) (x)
 
+#ifndef PI
+#define PI 3.1415
+#endif
+
 #ifndef M_PI
 #define M_PI PI
 #endif
 
 char *StrDup(const char *x);
-int snprintf(char *buf, int size, const char *fmt, ...);
-int strlcat(char *buf, char *src, int len);
+int snprintf(char *buf, size_t size, const char *fmt, ...);
+size_t strlcat(char *buf, const char *src, size_t len);
 Object *DoSuperNewTagList(struct IClass *cl, Object *obj,void *dummy, struct TagItem *tags);
 Object *DoSuperNewTags(struct IClass *cl, Object *obj, void *dummy,...);
 
 /*** AROS Exec extensions ***************************************************/
+#ifndef __amigaos4__
 APTR AllocVecPooled(APTR pool, ULONG size);
 VOID FreeVecPooled(APTR pool, APTR memory);
+#endif
 
 /*** AROS Intuition extensions **********************************************/
 #define DeinitRastPort(rp)      
@@ -67,13 +73,15 @@ VOID FreeVecPooled(APTR pool, APTR memory);
 #define FreeRastPort(rp)        
 
 /*** Miscellanous compiler supprot ******************************************/
-#ifdef __MAXON__
-#   define __asm
-#   define __inline
-#   define SAVEDS
-#   define const
-#else
-#   define SAVEDS __saveds
+#ifndef SAVEDS
+#   ifdef __MAXON__
+#       define __asm
+#       define __inline
+#       define SAVEDS
+#       define const
+#   else
+#       define SAVEDS __saveds
+#   endif
 #endif 
 
 /*** Miscellanous AROS macros ***********************************************/
@@ -93,6 +101,15 @@ VOID FreeVecPooled(APTR pool, APTR memory);
     typedef unsigned long STACKULONG;
     typedef void (*VOID_FUNC)();
 #endif /* __AROS_TYPES_DEFINED__ */
+
+/*** AROS list macros *******************************************************/
+#define ForeachNode(l,n)                       \
+for                                            \
+(                                              \
+    n=(void *)(((struct List *)(l))->lh_Head); \
+    ((struct Node *)(n))->ln_Succ;             \
+    n=(void *)(((struct Node *)(n))->ln_Succ)  \
+)
 
 /*** AROS register definitions **********************************************/
 #define __REG_D0 __d0
@@ -114,66 +131,77 @@ VOID FreeVecPooled(APTR pool, APTR memory);
 
 /*** AROS library function macros *******************************************/
 #define AROS_LH0(rt, fn, bt, bn, lvo, p) \
-    __asm rt fn (void)
+    ASM rt fn (void)
 #define AROS_LH1(rt, fn, a1, bt, bn, lvo, p) \
-    __asm rt fn (a1)
+    ASM rt fn (a1)
 #define AROS_LH2(rt, fn, a1, a2, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2)
+    ASM rt fn (a1, a2)
 #define AROS_LH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3)
+    ASM rt fn (a1, a2, a3)
 #define AROS_LH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3, a4)
+    ASM rt fn (a1, a2, a3, a4)
 #define AROS_LH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3, a4, a5)
+    ASM rt fn (a1, a2, a3, a4, a5)
 #define AROS_LH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6)
+    ASM rt fn (a1, a2, a3, a4, a5, a6)
 #define AROS_LH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6, a7)
+    ASM rt fn (a1, a2, a3, a4, a5, a6, a7)
 #define AROS_LH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
+    ASM rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_LHA(type, name, reg) register __REG_##reg type name
+#ifdef __SASC
+#   define AROS_LHA(type, name, reg) register __REG_##reg type name
+#else
+#   define AROS_LHA(type, name, reg) type name
+#endif
 
 /*** AROS user function macros **********************************************/
+#define AROS_USERFUNC_INIT
+#define AROS_USERFUNC_EXIT
+
 #define AROS_UFH0(rt, fn) \
-    __asm rt fn (void)
+    ASM rt fn (void)
 #define AROS_UFH1(rt, fn, a1) \
-    __asm rt fn (a1)
+    ASM rt fn (a1)
 #define AROS_UFH2(rt, fn, a1, a2) \
-    __asm rt fn (a1, a2)
+    ASM rt fn (a1, a2)
 #define AROS_UFH3(rt, fn, a1, a2, a3) \
-    __asm rt fn (a1, a2, a3)
+    ASM rt fn (a1, a2, a3)
 #define AROS_UFH4(rt, fn, a1, a2, a3, a4) \
-    __asm rt fn (a1, a2, a3, a4)
+    ASM rt fn (a1, a2, a3, a4)
 #define AROS_UFH5(rt, fn, a1, a2, a3, a4, a5) \
-    __asm rt fn (a1, a2, a3, a4, a5)
+    ASM rt fn (a1, a2, a3, a4, a5)
 #define AROS_UFH6(rt, fn, a1, a2, a3, a4, a5, a6) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6)
+    ASM rt fn (a1, a2, a3, a4, a5, a6)
 #define AROS_UFH7(rt, fn, a1, a2, a3, a4, a5, a6, a7) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6, a7)
+    ASM rt fn (a1, a2, a3, a4, a5, a6, a7)
 #define AROS_UFH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8) \
-    __asm rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
+    ASM rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
 #define AROS_UFH0S(rt, fn) \
-    __asm static rt fn (void)
+    ASM static rt fn (void)
 #define AROS_UFH1S(rt, fn, a1) \
-    __asm static rt fn (a1)
+    ASM static rt fn (a1)
 #define AROS_UFH2S(rt, fn, a1, a2) \
-    __asm static rt fn (a1, a2)
+    ASM static rt fn (a1, a2)
 #define AROS_UFH3S(rt, fn, a1, a2, a3) \
-    __asm static rt fn (a1, a2, a3)
+    ASM static rt fn (a1, a2, a3)
 #define AROS_UFH4S(rt, fn, a1, a2, a3, a4) \
-    __asm static rt fn (a1, a2, a3, a4)
+    ASM static rt fn (a1, a2, a3, a4)
 #define AROS_UFH5S(rt, fn, a1, a2, a3, a4, a5) \
-    __asm static rt fn (a1, a2, a3, a4, a5)
+    ASM static rt fn (a1, a2, a3, a4, a5)
 #define AROS_UFH6S(rt, fn, a1, a2, a3, a4, a5, a6) \
-    __asm static rt fn (a1, a2, a3, a4, a5, a6)
+    ASM static rt fn (a1, a2, a3, a4, a5, a6)
 #define AROS_UFH7S(rt, fn, a1, a2, a3, a4, a5, a6, a7) \
-    __asm static rt fn (a1, a2, a3, a4, a5, a6, a7)
+    ASM static rt fn (a1, a2, a3, a4, a5, a6, a7)
 #define AROS_UFH8S(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8) \
-    __asm static rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
+    ASM static rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
-#define AROS_UFHA(type, name, reg) register __REG_##reg type name
+#ifdef __SASC
+#   define AROS_UFHA(type, name, reg) register __REG_##reg type name
+#else
+#   define AROS_UFHA(type, name, reg) type name
+#endif
 
 #define AROS_UFP0 AROS_UFH0
 #define AROS_UFP1 AROS_UFH1
@@ -202,5 +230,6 @@ VOID FreeVecPooled(APTR pool, APTR memory);
         AROS_UFPA(Class  *, cl,  A0),\
         AROS_UFPA(Object *, obj, A2),\
         AROS_UFPA(Msg     , msg, A1))
+
 
 #endif /* _MUIMASTER_SUPPORT_AMIGAOS_H_ */

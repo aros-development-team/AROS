@@ -88,7 +88,7 @@
     mcc->mcc_Super  = super;
     mcc->mcc_Module = NULL; /* _zune_class_load() will set this */
 
-#ifdef __MAXON__
+#if defined(__MAXON__) || defined(__amigaos4__)
     cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatcher;
 #else
     cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
