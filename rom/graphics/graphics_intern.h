@@ -7,11 +7,19 @@
     Desc: Internal header file for graphics.library
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE 1
+
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif
 #ifndef EXEC_EXECBASE_H
 #   include <exec/execbase.h>
+#endif
+#ifndef EXEC_LISTS_H
+#   include <exec/lists.h>
+#endif
+#ifndef EXEC_NODES_H
+#   include <exec/nodes.h>
 #endif
 #ifndef GRAPHICS_GFXBASE_H
 #   include <graphics/gfxbase.h>
@@ -39,14 +47,33 @@
 
 #define REGIONS_USE_MEMPOOL 	1
 
+#define REGIONS_HAVE_RRPOOL     1 && REGIONS_USE_MEMPOOL
+
 extern struct GfxBase * GfxBase;
 
-/* Internal GFXBase struct */
 
+#define SIZERECTBUF 256
+
+struct RegionRectanglePool
+{
+    struct MinNode              Node;
+    struct MinList              List;
+    struct RegionRectangleExt  *RectArray;
+    ULONG                       NumFreeRects;
+};
+
+struct RegionRectangleExt
+{
+    struct RegionRectangle      RR;
+    struct RegionRectanglePool *Owner;
+};
+
+
+/* Internal GFXBase struct */
 struct GfxBase_intern
 {
     struct GfxBase 	 	gfxbase;
-    
+
     /* Driver data shared between all rastports (allocated once) */
     APTR			*shared_driverdata;
 
@@ -59,8 +86,13 @@ struct GfxBase_intern
 #if REGIONS_USE_MEMPOOL
     struct SignalSemaphore  	regionsem;
     APTR    	    	    	regionpool;
+#if !REGIONS_HAVE_RRPOOL
+    struct SignalSemaphore  	rrpoolsem;
+    struct MinList              rrpoollist;
+#endif
 #endif
 };
+
 
 /* Macros */
 
@@ -77,12 +109,12 @@ struct GfxBase_intern
 
 #define CHUNKY8_COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
 				( ( ((LONG)(y)) * (bytes_per_row)) + (x) )
-		
+
 #define XCOORD_TO_MASK(x) 	(1L << (7 - ((x) & 0x07)))
 
 /* For vsprite sorting */
 
-#define JOIN_XY_COORDS(x,y)	(LONG)( ( ((UWORD)(y)) << 16) + ( ( ((UWORD)(x)) + 0x8000 ) & 0xFFFF ) ) 
+#define JOIN_XY_COORDS(x,y)	(LONG)( ( ((UWORD)(y)) << 16) + ( ( ((UWORD)(x)) + 0x8000 ) & 0xFFFF ) )
 
 /* Defines */
 #define BMT_STANDARD		0x0000	/* Standard bitmap */
@@ -157,7 +189,7 @@ extern VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 		, ULONG minterm
 		, PLANEPTR bltMask
 		, struct GfxBase *GfxBase );
-		
+
 extern VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase);
 		
@@ -229,7 +261,7 @@ extern BOOL pattern_pen(struct RastPort *rp
 /* function for area opeartions */
 BOOL areafillpolygon(struct RastPort  * rp,
                      struct Rectangle * bounds, 
-                     UWORD              first_idx, 
+                     UWORD              first_idx,
                      UWORD              last_idx,
                      UWORD              bytesperrow,
                      struct GfxBase   * GfxBase);
@@ -271,23 +303,12 @@ VOID color_get(struct ColorMap *cm,
 #    define NewRegionRectangle()   AllocMem(sizeof(struct RegionRectangle), MEMF_CLEAR)
 #    define DisposeRegionRectangle(rr) FreeMem(rr, sizeof(struct RegionRectangle));
 #else
-#    define NewRegionRectangle()                                                          \
-     ({                                                                                   \
-        struct RegionRectangle *rr;                                                       \
-     										          \
-        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);				  \
-        rr = AllocPooled(PrivGBase(GfxBase)->regionpool, sizeof(struct RegionRectangle)); \
-        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);				  \
-                                                                                          \
-        rr;                                                                               \
-     })
-
-#    define  DisposeRegionRectangle(rr)                                                   \
-     {                                                                                   \
-         ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);                                 \
-         FreePooled(PrivGBase(GfxBase)->regionpool, rr, sizeof(struct RegionRectangle));  \
-         ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);                                \
-     }
+#    if REGIONS_HAVE_RRPOOL
+#        define NewRegionRectangle(listptr) _NewRegionRectangle(listptr, GfxBase)
+#    else
+#        define NewRegionRectangle() _NewRegionRectangle(GfxBase)
+#    endif
+#    define DisposeRegionRectangle(rr) _DisposeRegionRectangle(rr, GfxBase)
 #endif
 
 void _DisposeRegionRectangleList
@@ -296,15 +317,37 @@ void _DisposeRegionRectangleList
     struct GfxBase         *GfxBase
 );
 
+void _DisposeRegionRectangle
+(
+    struct RegionRectangle *regionrectangle,
+    struct GfxBase         *GfxBase
+);
+
+struct RegionRectangle *_NewRegionRectangle
+(
+#if REGIONS_HAVE_RRPOOL
+    struct MinList  **RectPoolListPtr,
+#endif
+    struct GfxBase  *GfxBase
+);
+
 BOOL _CopyRegionRectangleList
 (
     struct RegionRectangle  *src,
     struct RegionRectangle **dstptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList          **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 );
 
 #define DisposeRegionRectangleList(list)     _DisposeRegionRectangleList(list, GfxBase)
-#define CopyRegionRectangleList(src, dstptr) _CopyRegionRectangleList(src, dstptr, GfxBase)
+
+#if REGIONS_HAVE_RRPOOL
+#    define CopyRegionRectangleList(src, dstptr, listptr) _CopyRegionRectangleList(src, dstptr, listptr, GfxBase)
+#else
+#    define CopyRegionRectangleList(src, dstptr) _CopyRegionRectangleList(src, dstptr, GfxBase)
+#endif
 
 #endif /* GRAPHICS_INTERN_H */
 

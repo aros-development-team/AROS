@@ -19,6 +19,7 @@
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <exec/lists.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <graphics/regions.h>
@@ -115,6 +116,10 @@ AROS_LH2(LIBBASETYPEPTR, init,
     {
     	return NULL;
     }
+#if !REGIONS_HAVE_RRPOOL
+    InitSemaphore( &PrivGBase(GfxBase)->rrpoolsem);
+    NEWLIST(&PrivGBase(GfxBase)->rrpoollist);
+#endif
 #endif
 
     Disable();

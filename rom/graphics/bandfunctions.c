@@ -1,24 +1,98 @@
-#include <proto/graphics.h>
+#define AROS_ALMOST_COMPATIBLE
 
+#include <proto/graphics.h>
 #include <clib/macros.h>
+#include <exec/lists.h>
+#include <exec/nodes.h>
 
 #include "graphics_intern.h"
 #include "intregions.h"
 #include <stdlib.h>
 
 #ifdef LINUXTEST
-#    undef NewRegionRectangle
-#    define NewRegionRectangle() ((struct RegionRectangle *)calloc(1, sizeof(struct RegionRectangle)))
-
-#    undef DisposeRegionRectangle
-#    define DisposeRegionRectangle(x) free(x)
-
+#    define kprintf printf
      static struct GfxBase *GfxBase;
+#endif
+
+#if defined(LINUXTEST) || defined(EXPERIMENT)
 #    undef NewRegion
 #    define NewRegion() ((struct Region *)calloc(1, sizeof(struct Region)))
 #    undef DisposeRegion
 #    define DisposeRegion(x) free(x)
+#    undef NewRegionRectangle
+#    undef DisposeRegionRectangle
 #    undef DisposeRegionRectangleList
+
+
+
+static  struct RegionRectangle *NewRegionRectangle(void)
+{
+    static struct MinList PoolList =
+    {
+        (struct MinNode *)&PoolList.mlh_Tail,
+        NULL,
+        (struct MinNode *)&PoolList
+    };
+
+    struct RegionRectanglePool *Pool = (struct RegionRectanglePool *)GetHead(&PoolList);
+    struct RegionRectangleExt  *RRE;
+
+    if (!Pool || !Pool->NumFreeRects)
+    {
+	int i;
+
+        Pool = malloc(sizeof(struct RegionRectanglePool));
+
+        Pool->RectArray = malloc(SIZERECTBUF * sizeof(struct RegionRectangleExt));
+
+        NEWLIST(&Pool->List);
+
+        for (i = 0; i < SIZERECTBUF; i++)
+        {
+            ADDHEAD(&Pool->List, (struct Node *)&Pool->RectArray[i]);
+ 	}
+
+        Pool->NumFreeRects = SIZERECTBUF;
+
+        ADDHEAD(&PoolList, (struct Node *)Pool);
+    }
+
+    if (--Pool->NumFreeRects == 0)
+    {
+        REMOVE(Pool);
+        ADDTAIL(&PoolList, Pool);
+    }
+
+    RRE = (struct RegionRectangleExt *)GetTail(&Pool->List);
+    REMOVE(RRE);
+
+    RRE->RR.Prev = NULL;
+    RRE->RR.Next = NULL;
+    RRE->Owner   = Pool;
+
+    return (struct RegionRectangle *)RRE;
+}
+
+void DisposeRegionRectangle(struct RegionRectangle *RR)
+{
+    struct RegionRectangleExt  *RRE  = (struct RegionRectangleExt *)RR;
+    struct RegionRectanglePool *Pool = RRE->Owner;
+
+    Pool->NumFreeRects++;
+
+    if (Pool->NumFreeRects == SIZERECTBUF)
+    {
+        REMOVE((struct Node *)Pool);
+        free(Pool->RectArray);
+        free(Pool);
+    }
+    else
+    {
+	ADDTAIL(&Pool->List, RR);
+    }
+}
+
+
 void DisposeRegionRectangleList
 (
     struct RegionRectangle *regionrectangle
@@ -32,7 +106,7 @@ void DisposeRegionRectangleList
 	DisposeRegionRectangle(regionrectangle);
 	regionrectangle = next;
     }
-} 
+}
 
 #endif
 
@@ -67,18 +141,34 @@ void DisposeRegionRectangleList
     (prev) = rr;             \
 }
 
-#define NEWREG(first, rr)                  \
-{                                          \
-    rr = NewRegionRectangle();             \
-    if (!rr)                               \
-    {                                      \
-        DisposeRegionRectangleList(first); \
-        return FALSE;                      \
-    }                                      \
-                                           \
-    if (!first)                            \
-        first = rr;                        \
-}
+#if REGIONS_HAVE_RRPOOL
+#   define NEWREG(first, rr)                      \
+    {                                             \
+        rr = NewRegionRectangle(RectPoolListPtr); \
+        if (!rr)                                  \
+        {                                         \
+            DisposeRegionRectangleList(first);    \
+            return FALSE;                         \
+        }                                         \
+                                                  \
+        if (!first)                               \
+            first = rr;                           \
+    }
+
+#else
+#   define NEWREG(first, rr)                   \
+    {                                          \
+        rr = NewRegionRectangle();             \
+        if (!rr)                               \
+        {                                      \
+            DisposeRegionRectangleList(first); \
+            return FALSE;                      \
+        }                                      \
+                                               \
+        if (!first)                            \
+            first = rr;                        \
+    }
+#endif
 
 #define ADDRECT(first, prev, minx, maxx) \
 {                                       \
@@ -191,7 +281,7 @@ if (band)                                   \
 #    define DEBUG 1
 #endif
 
-#if DEBUG
+#if DEBUG || 1
 void dumprect(struct Rectangle *rec)
 {
     if (!rec)
@@ -264,6 +354,9 @@ BOOL _OrBandBand
     struct RegionRectangle **DstPtr,
     struct RegionRectangle **NextSrc1Ptr,
     struct RegionRectangle **NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 )
 {
@@ -317,6 +410,9 @@ BOOL _AndBandBand
     struct RegionRectangle **DstPtr,
     struct RegionRectangle **NextSrc1Ptr,
     struct RegionRectangle **NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 )
 {
@@ -386,6 +482,9 @@ BOOL _ClearBandBand
     struct RegionRectangle **DstPtr,
     struct RegionRectangle **NextSrc1Ptr,
     struct RegionRectangle **NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 )
 {
@@ -501,6 +600,9 @@ BOOL _XorBandBand
     struct RegionRectangle **DstPtr,
     struct RegionRectangle **NextSrc1Ptr,
     struct RegionRectangle **NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 )
 {
@@ -508,7 +610,15 @@ BOOL _XorBandBand
 
     BOOL res = FALSE;
 
-#if 1
+#if REGIONS_HAVE_RRPOOL
+    if (_ClearBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, RectPoolListPtr, GfxBase))
+    {
+        if (_ClearBandBand(OffX2, OffX1, MinY, MaxY, Src2, Src1, &Diff2, NextSrc2Ptr, NextSrc1Ptr, RectPoolListPtr, GfxBase))
+	{
+             res = _OrBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, RectPoolListPtr, GfxBase);
+        }
+    }
+#else
     if (_ClearBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, GfxBase))
     {
         if (_ClearBandBand(OffX2, OffX1, MinY, MaxY, Src2, Src1, &Diff2, NextSrc2Ptr, NextSrc1Ptr, GfxBase))
@@ -516,15 +626,8 @@ BOOL _XorBandBand
              res = _OrBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
         }
     }
-#else
-    if (_AndBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, GfxBase))
-    {
-        if (_OrBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff2, NextSrc1Ptr, NextSrc2Ptr, GfxBase))
-	{
-             res = _ClearBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
-        }
-    }
 #endif
+
     DisposeRegionRectangleList(Diff1);
     DisposeRegionRectangleList(Diff2);
 
@@ -542,6 +645,9 @@ typedef BOOL (*BandOperation)
     struct RegionRectangle **DstPtr,
     struct RegionRectangle **NextSrc1Ptr,
     struct RegionRectangle **NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 );
 
@@ -556,6 +662,9 @@ BOOL _DoOperationBandBand
     struct RegionRectangle  *Src2,
     struct RegionRectangle **DstPtr,
     struct Rectangle        *DstBounds,
+#if REGIONS_HAVE_RRPOOL
+    struct MinList         **RectPoolListPtr,
+#endif
     struct GfxBase          *GfxBase
 )
 {
@@ -615,7 +724,21 @@ BOOL _DoOperationBandBand
 	NextSrc1Ptr = (MaxY == MaxY(Src1) + OffY1) ? &Src1 : NULL;
 	NextSrc2Ptr = (MaxY == MaxY(Src2) + OffY2) ? &Src2 : NULL;
 
-        if (!Operation(OffX1, OffX2, MinY, MaxY, Band1, Band2, &Dst, NextSrc1Ptr, NextSrc2Ptr, GfxBase))
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                MinY, MaxY,
+                Band1, Band2,
+                &Dst,
+                NextSrc1Ptr, NextSrc2Ptr,
+#if REGIONS_HAVE_RRPOOL
+                RectPoolListPtr,
+#endif
+                GfxBase
+	    )
+        )
         {
             DisposeRegionRectangleList(first);
             DisposeRegionRectangleList(last);
@@ -643,7 +766,21 @@ BOOL _DoOperationBandBand
 
         NextSrc1Ptr = (void *)~0;
 
-        if (!Operation(OffX1, OffX2, TopY1, MaxY(Src1) + OffY1, Src1, NULL, &Dst, &Src1, NULL, GfxBase))
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                TopY1, MaxY(Src1) + OffY1,
+                Src1, NULL,
+                &Dst,
+                &Src1, NULL,
+#if REGIONS_HAVE_RRPOOL
+    	 	RectPoolListPtr,
+#endif
+                GfxBase
+            )
+        )
         {
             DisposeRegionRectangleList(first);
             DisposeRegionRectangleList(last);
@@ -660,7 +797,21 @@ BOOL _DoOperationBandBand
 
         NextSrc2Ptr = (void *)~0;
 
-        if (!Operation(OffX1, OffX2, TopY2, MaxY(Src2) + OffY2, NULL, Src2, &Dst, NULL, &Src2, GfxBase))
+        if
+        (
+            !Operation
+            (
+                OffX1, OffX2,
+                TopY2, MaxY(Src2) + OffY2,
+                NULL, Src2,
+                &Dst,
+                NULL, &Src2,
+#if REGIONS_HAVE_RRPOOL
+    	 	RectPoolListPtr,
+#endif
+                GfxBase
+            )
+        )
         {
             DisposeRegionRectangleList(first);
             DisposeRegionRectangleList(last);
@@ -701,6 +852,8 @@ BOOL _OrRegionRegion
 {
     struct Region R3;
 
+    InitRegion(&R3);
+
     if
     (
         _DoOperationBandBand
@@ -714,11 +867,14 @@ BOOL _OrRegionRegion
             R2->RegionRectangle,
             &R3.RegionRectangle,
             &R3.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &R3.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(R2->RegionRectangle);
+        ClearRegion(R2);
 
         *R2 = R3;
 
@@ -740,6 +896,8 @@ BOOL _OrRectRegion
     struct Region Res;
     struct RegionRectangle rr;
 
+    InitRegion(&Res);
+
     rr.bounds = *Rect;
     rr.Next   = NULL;
 
@@ -756,11 +914,14 @@ BOOL _OrRectRegion
             &rr,
             &Res.RegionRectangle,
             &Res.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &Res.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(Reg->RegionRectangle);
+	ClearRegion(Reg);
 
         *Reg = Res;
 
@@ -782,6 +943,8 @@ BOOL _XorRectRegion
     struct Region Res;
     struct RegionRectangle rr;
 
+    InitRegion(&Res);
+
     rr.bounds = *Rect;
     rr.Next   = NULL;
 
@@ -798,11 +961,14 @@ BOOL _XorRectRegion
             &rr,
             &Res.RegionRectangle,
             &Res.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &Res.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(Reg->RegionRectangle);
+        ClearRegion(Reg);
 
         *Reg = Res;
 
@@ -824,6 +990,8 @@ BOOL _ClearRectRegion
     struct Region Res;
     struct RegionRectangle rr;
 
+    InitRegion(&Res);
+
     rr.bounds = *Rect;
     rr.Next   = NULL;
 
@@ -840,11 +1008,14 @@ BOOL _ClearRectRegion
             Reg->RegionRectangle,
             &Res.RegionRectangle,
             &Res.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &Res.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(Reg->RegionRectangle);
+	ClearRegion(Reg);
 
         *Reg = Res;
 
@@ -1010,6 +1181,8 @@ BOOL _AndRegionRegion
 {
     struct Region R3;
 
+    InitRegion(&R3);
+
     if
     (
         _DoOperationBandBand
@@ -1023,11 +1196,14 @@ BOOL _AndRegionRegion
             R2->RegionRectangle,
             &R3.RegionRectangle,
             &R3.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &R3.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(R2->RegionRectangle);
+	ClearRegion(R2);
 
         *R2 = R3;
 
@@ -1048,6 +1224,8 @@ BOOL _ClearRegionRegion
 {
     struct Region R3;
 
+    InitRegion(&R3);
+
     if
     (
         _DoOperationBandBand
@@ -1061,11 +1239,14 @@ BOOL _ClearRegionRegion
             R2->RegionRectangle,
             &R3.RegionRectangle,
             &R3.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &R3.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(R2->RegionRectangle);
+	ClearRegion(R2);
 
         *R2 = R3;
 
@@ -1086,6 +1267,8 @@ BOOL _XorRegionRegion
 {
     struct Region R3;
 
+    InitRegion(&R3);
+
     if
     (
         _DoOperationBandBand
@@ -1099,11 +1282,14 @@ BOOL _XorRegionRegion
             R2->RegionRectangle,
             &R3.RegionRectangle,
             &R3.bounds,
+#if REGIONS_HAVE_RRPOOL
+            &R3.RectPoolList,
+#endif
             GfxBase
         )
     )
     {
-        DisposeRegionRectangleList(R2->RegionRectangle);
+	ClearRegion(R2);
 
         *R2 = R3;
 
@@ -1128,11 +1314,24 @@ int main(void)
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
-    _OrRectRegion(R1, &(struct Rectangle){10, 10, 30, 30}, GfxBase);
-    _OrRectRegion(R2, &(struct Rectangle){0, 0, 20, 20}, GfxBase);
-    _OrRectRegion(R2, &(struct Rectangle){22, 20, 40, 40}, GfxBase);
+    for (i = 0; i < 10; i++)
+    {
+        int l = i*20;
 
-    for (i = 0; i<1000000; i++)
+	struct Rectangle r = {l, 0, l+11, 201};
+        _OrRectRegion(R1, &r, GfxBase);
+    }
+
+
+    for (i = 0; i < 10; i++)
+    {
+        int u = i*20;
+
+	struct Rectangle r = {0, u, 201, u+11};
+        _OrRectRegion(R2, &r, GfxBase);
+    }
+
+    for (i = 0; i<100000; i++)
         _XorRegionRegion(R2, R1, GfxBase);
 
     DisposeRegion(R2);

@@ -79,7 +79,11 @@
     else
         addr = &dest->RegionRectangle;
 
+#if REGIONS_HAVE_RRPOOL
+    if (!CopyRegionRectangleList(rrs, addr, &dest->RectPoolList))
+#else
     if (!CopyRegionRectangleList(rrs, addr))
+#endif
         return FALSE;
 
     if (*addr)

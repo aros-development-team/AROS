@@ -38,18 +38,18 @@
     NOTES
 	This function does not exist in AmigaOS.
     	It does basically the same as:
-	
+
 	    struct Rectangle rect;
 	    struct Region *region;
-	    
+
 	    rect.MinX = MinX;
 	    rect.MinY = MinY;
 	    rect.MaxX = MaxX;
 	    rect.MaxY = MaxY;
-	    
+
 	    region = NewRegion();
 	    OrRectRegion(region, &rect);
-	    
+
     EXAMPLE
 
     BUGS
@@ -68,21 +68,26 @@
 
     struct Region   	    *region;
     struct RegionRectangle  *rr;
-    
+
     if ((region = NewRegion()))
     {
-    	if ((rr = NewRegionRectangle()))
+
+#if REGIONS_HAVE_RRPOOL
+        if ((rr = NewRegionRectangle(&region->RectPoolList)))
+#else
+        if ((rr = NewRegionRectangle()))
+#endif
 	{
 	    region->bounds.MinX = MinX;
 	    region->bounds.MinY = MinY;
 	    region->bounds.MaxX = MaxX;
 	    region->bounds.MaxY = MaxY;
-	    
+
 	    rr->bounds.MinX = 0;
 	    rr->bounds.MinY = 0;
 	    rr->bounds.MaxX = MaxX - MinX;
 	    rr->bounds.MaxY = MaxY - MinY;
-	    
+
 	    region->RegionRectangle = rr;
 	}
 	else
@@ -91,9 +96,9 @@
 	    region = NULL;
 	}
     }
-    
+
     return region;
-    
+
     AROS_LIBFUNC_EXIT
-    
+
 } /* NewRectRegion */
