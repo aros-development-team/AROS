@@ -4,6 +4,8 @@ include $(TOP)/make.cfg
 
 OBJDIR=$(GENDIR)/alib
 
+FILES=boopsi newobject setattrs openwindowtags openscreentags
+
 all: setup $(LIBDIR)/libamiga.a
 
 setup :
@@ -15,8 +17,6 @@ clean:
 $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
-
-FILES=boopsi newobject setattrs openwindowtags
 
 $(LIBDIR)/libamiga.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	$(AR) $@ $?
