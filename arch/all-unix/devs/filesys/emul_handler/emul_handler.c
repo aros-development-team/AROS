@@ -1647,7 +1647,8 @@ AROS_LH1(void, beginio,
 		}
 
 		error = Hidd_UnixIO_Wait(emulbase->unixio, fh->fd,
-					 vHidd_UnixIO_Read, NULL, NULL);
+					 vHidd_UnixIO_Read, NULL, NULL,
+					 SysBase);
 		
 		if (error == 0)
 		{
