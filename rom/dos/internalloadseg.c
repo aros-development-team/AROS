@@ -99,7 +99,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     /* Then try to load the different file formats */
     if (!segs)
     {
-      segs = InternalLoadSeg_AOS (fh, NULL, functionarray, NULL);
+      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as AmigaOS exe\n");
@@ -107,7 +107,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     }
     if (!segs)
     {
-      segs = InternalLoadSeg_ELF (fh, NULL, functionarray, NULL);
+      segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as ELF exe\n");
@@ -115,7 +115,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     }
     if (!segs)
     {
-      segs = InternalLoadSeg_AOUT (fh, NULL, functionarray, NULL);
+      segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL);
 #if DEBUG > 1
       if (segs)
         bug("Loaded as a.out exe\n");
