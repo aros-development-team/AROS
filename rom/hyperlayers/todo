@@ -8,7 +8,10 @@
    - in _ShowPartsOfLayer()
    - in _ShowLayer()
      - watch Scroll layer variable!!!
+- make _ShowPartsOfLayer call _CopyClipRectsToClipRects instead of
+  implementing the same routine again.
 - handling of errors: out of memory error!
+
 
 - optimization: if a layer is already completely hidden
                 there is no need to call _BackupPartsOfLayer() again.
