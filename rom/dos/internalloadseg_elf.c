@@ -118,7 +118,7 @@ struct relo
 {
     ULONG offset;   /* Address of the relocation relative to the section it refers to */
     ULONG info;     /* Type of the relocation */
-#ifdef __m68k__
+#ifdef __mc68000__
     LONG  addend;   /* Constant addend used to compute value */
 #endif
 };
@@ -252,7 +252,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
 
-        #elif defined(__m68k__)
+        #elif defined(__mc68000__)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
@@ -273,7 +273,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         kprintf("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],
         #if defined (__i386__)
             ELFDATA2LSB);
-        #elif defined(__m68k__)
+        #elif defined(__mc68000__)
             ELFDATA2MSB);
         #elif defined(__arm__)
             ELFDATA2MSB);
@@ -282,7 +282,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
         #if defined (__i386__)
             EM_386);
-        #elif defined(__m68k__)
+        #elif defined(__mc68000__)
             EM_68K);
         #elif defined(__arm__)
             EM_ARM);
@@ -392,7 +392,7 @@ static int relocate
             case R_386_NONE:
                 break;
 
-            #elif defined(__m68k__)
+            #elif defined(__mc68000__)
 
             case R_68K_32:
                 *p = s + rel->addend;
@@ -497,7 +497,7 @@ BPTR InternalLoadSeg_ELF
 
             sh[i].type == SHT_REL &&
 
-            #elif defined(__m68k__)
+            #elif defined(__mc68000__)
 
             sh[i].type == SHT_RELA &&
 
