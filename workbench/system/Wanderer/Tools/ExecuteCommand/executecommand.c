@@ -20,6 +20,8 @@
 #include <proto/muimaster.h>
 #include <proto/workbench.h>
 
+#include <stdio.h>
+
 #include "executecommand.h"
 #include "locale.h"
 #include "support.h"
@@ -254,10 +256,26 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
         /* Make sure that the commandline isn't just whitespace or NULL */
         if (command != NULL && command[strspn(command, " \t")] != '\0')
         {
-            if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
+            TEXT   buffer[1024];
             
-            // FIXME: localize output window title
-            console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+            if
+            (
+                sizeof(buffer) > snprintf
+                (
+                    buffer, sizeof(buffer), 
+                    "CON:////%s/CLOSE/AUTO/WAIT", _(MSG_CONSOLE_TITLE)
+                )
+            )
+            {
+                /* The string was not truncated */
+                console = Open(buffer, MODE_OLDFILE);
+            }
+            else
+            {
+                /* The string was truncated; fallback to english title */
+                console = Open("CON:////Command Output/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+            }
+            
             if (console != NULL)
             {
                 BPTR searchPath = NULL;
@@ -268,7 +286,9 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     WBCTRLA_DuplicateSearchPath, (IPTR) &searchPath,
                     TAG_DONE
                 );
-            
+                
+                if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
+                
                 if
                 (
                     SystemTags
@@ -303,13 +323,13 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     
                     Close(console);
                 }
+                
+                if (cd != NULL) CurrentDir(cd);
             }
             else
             {
                 // FIXME: error dialog
-            }
-            
-            if (cd != NULL) CurrentDir(cd);
+            }            
         }
     
         DoMethod(self, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
