@@ -6,7 +6,9 @@
 #   Lang: english
 #
 
-# This directory is not built like the other parts of AROS.
+# The files is in this directory build a stand-alone executable, used to
+# install AROS' modules in the system. These modules will become active
+# after a reset.
 
 TOP=../../..
 
