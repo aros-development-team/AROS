@@ -100,7 +100,7 @@ BEGIN {
 	
 	my $argnames2;
 	my $argnames3 = join (', ', "___base", @{$argnames_ref});
-	
+
 	if ($$prototype{'type'} eq 'varargs') {
 	    my $argnames_size = scalar(@{$argnames_ref}); 
 	    $argnames2 = join (', ', $self->{CALLBASE}, @{$argnames_ref}[0..($argnames_size-2)], "__VA_ARGS__");
@@ -131,9 +131,9 @@ BEGIN {
 		print "__$$prototype{'real_funcname'}_WB((___base), ";
 	    }
 	    else {
-		print "	({ULONG _args[] = { __VA_ARGS__ }; ";
+		print "	({APTR _args[] = { __VA_ARGS__ }; ";
 
-		print "$$prototype{'real_funcname'}(";
+		print "__$$prototype{'real_funcname'}_WB((___base), ";
 	    }
 	}
 	elsif ($prototype->{type} eq 'cfunction') {
