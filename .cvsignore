@@ -1,6 +1,5 @@
 Makefile
 bin
-configure
 config.cache
 *.log
 config.status
