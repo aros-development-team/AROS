@@ -10,6 +10,7 @@
 
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
+#include <dos/dosasl.h>
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
@@ -66,6 +67,7 @@ struct vfp
 
 LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase);
 LONG DevName(STRPTR name, struct Device **devptr, struct DosLibrary * DOSBase);
+BOOL writeFullPath(struct AnchorPath * AP);
 
 struct marker
 {
