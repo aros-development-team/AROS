@@ -1,17 +1,17 @@
 # $Id$
 #
-# Makefile for Mason's workbench icons
+# Makefile for some default workbench icons
 
 include $(TOP)/config/make.cfg
 
-ICONS     := def_Disk def_Drawer
+ICONS     := def_Project
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/Sys
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
-#MM- masonicons : masonworkbenchenvicons
+#MM- reezicons : reezworkbenchenvicons
 
 #MM
-masonworkbenchenvicons : setup $(ICONFILES)
+reezworkbenchenvicons : setup $(ICONFILES)
 	@$(NOP)
 	
 $(ICONDIR)/%.info : %.info.src %_N.png %_S.png
