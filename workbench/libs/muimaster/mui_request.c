@@ -95,10 +95,10 @@ AROS_UFH2S(void, len_func,
     if (!app)
     {
 	struct EasyStruct es;
-	es.es_StructSize = sizeof(struct EasyStruct);
-	es.es_Flags = 0;
-	es.es_Title = title;
-	es.es_TextFormat = format;
+	es.es_StructSize   = sizeof(struct EasyStruct);
+	es.es_Flags        = 0;
+	es.es_Title        = title;
+	es.es_TextFormat   = format;
 	es.es_GadgetFormat = gadgets;
 	return EasyRequestArgs(NULL,&es,NULL,params);
     }
