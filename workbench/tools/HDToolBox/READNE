@@ -1,0 +1,73 @@
+Main Window
+===========
+list of found partition tables including "sub partition tables".
+
+Partition Table Lister:
+	select the a partition table/entry
+	If the selected emtry doesn't contain a partition table a requester
+	pops up which asks for initialization of a new table. If you select
+	yes another window/requester will pop up, where you can specify what
+	partition table type to initialze/create.
+Partition Drive:
+	go to the partition window
+
+Save Changes to Drive:
+	save partition new table
+
+Partition Window
+================
+	Select a partition via the listview gadget or via the graphical
+	representation of the gadgets. Partitions are moveable via the graphical
+	representation.
+	 If you select an empty area the "Add" gadget will become
+	available to add the selected area as a new partition. If the partition
+	table has a limited number of partition a window/requeter may pop up
+	where you can specify the position of the partition within the partition
+	table. It does only pop up if there are more than one free entries.
+	 If you select a partition some more gadget become available depending
+	on the type of the partition table:
+		Delete   - delete selected partition
+		StartCyl - change the starting cylinder of the partition
+		EndCyl   - change the ending cylinder of the partition
+		TotalCyl - change the total number of cylinders of the partition
+		Name     - change the device name of the partition
+		Bootable - the device is bootable
+		Boot Pri - if the device is bootable, select the boot priority
+		Update Filesystems - update filesystems in the partition table
+		Edit     - go to a window where you can specify more Options
+
+Edit Window
+===========
+On the left:
+	Partition Table:
+		Select wether the current partition is a partition table
+		or not. If checked the partition will appear as a "sub partition table"
+		in the main screen. If you select it there you will be asked to create
+		a new partition table. If you quit HDToolBox without creating a table
+		HDToolBox won't show this "partition table" upon next start.
+	Type Listview:
+		Select the type of the partition.
+	Type String-Gadget:
+		Selet Type of partition either as a character constant or a "\" followed
+		by 1 to 3 digits to specify an immediate value or a mixed input of
+		both versions (like "DOS\1")
+	Block Size:
+		Select block size for the filesystem on the partition
+	Buffers:
+		Set number of buffers for the filesystem on the partition
+	Mask:
+		...
+	Max Transfer:
+		...
+	Automount:
+		...
+	Custom Bootcode:
+		...
+	Custom Bootblocks:
+		...
+	Reserved blocks at
+		Beginning:
+			...
+		End:
+			...
+
