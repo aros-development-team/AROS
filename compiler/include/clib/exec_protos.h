@@ -8,6 +8,10 @@
 #   include <aros/libcall.h>
 #endif
 
+#ifndef SysBase
+extern struct ExecBase * SysBase;
+#endif
+
 /*
     Prototypes
 */

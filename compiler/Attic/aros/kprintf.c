@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/17 18:07:18  digulla
+    DOSBase and SysBase are now declared in the respective header files.
+    The type of DOSBase is "struct DosLibrary *". Fixed everywhere
+
     Revision 1.5  1996/09/17 16:08:40  digulla
     Bug: val always contained 1 or 0
 
@@ -35,9 +39,6 @@
 #include <clib/aros_protos.h>
 #undef kprintf
 #include <unistd.h>
-
-extern struct DosBase  * DOSBase;
-extern struct ExecBase * SysBase;
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 

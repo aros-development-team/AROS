@@ -8,6 +8,10 @@
 #   include <dos/dos.h>
 #endif
 
+#ifndef DOSBase
+extern struct DosLibrary *DOSBase;
+#endif
+
 /*
     Prototypes
 */

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/17 18:07:20  digulla
+    DOSBase and SysBase are now declared in the respective header files.
+    The type of DOSBase is "struct DosLibrary *". Fixed everywhere
+
     Revision 1.7  1996/09/17 16:14:26  digulla
     OpenWindowTagList() needs Utility.library
 
@@ -57,7 +61,6 @@ static const APTR inittabl[4];
 static void *const Intuition_functable[];
 struct IntuitionBase *__AROS_SLIB_ENTRY(init,Intuition) ();
 extern const char Intuition_end;
-extern struct DosBase * DOSBase;
 
 extern int  intui_init (struct IntuitionBase *);
 extern int  intui_open (struct IntuitionBase *);
