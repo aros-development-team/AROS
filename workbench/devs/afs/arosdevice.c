@@ -12,6 +12,7 @@
 #include <aros/debug.h>
 
 #include "afshandler.h"
+#include "volumes.h"
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -145,11 +146,29 @@ AROS_LH3(void, open,
            struct afsbase *, afsbase, 1,afsdev)
 {
 	AROS_LIBFUNC_INIT
+	struct Volume *volume;
 
 	unitnum = flags = 0;
 	afsbase->device.dd_Library.lib_OpenCnt++;
 	afsbase->rport.mp_SigTask=FindTask(NULL);
-	iofs->IOFS.io_Command = -1;
+	volume = initVolume
+		(
+			afsbase,
+			iofs->IOFS.io_Device,
+			iofs->io_Union.io_OpenDevice.io_DeviceName,
+			iofs->io_Union.io_OpenDevice.io_Unit,
+			(struct DosEnvec *)iofs->io_Union.io_OpenDevice.io_Environ,
+			&iofs->io_DosError
+		);
+	if (volume)
+	{
+		iofs->IOFS.io_Unit = (struct Unit *)(&volume->ah);
+		iofs->IOFS.io_Device = &afsbase->device;
+		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+		iofs->IOFS.io_Error = 0;
+		return;
+	}
+/*	iofs->IOFS.io_Command = -1;
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);
 	(void)GetMsg(&afsbase->rport);
@@ -159,7 +178,7 @@ AROS_LH3(void, open,
 		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 		iofs->IOFS.io_Error = 0;
 		return;
-	}
+	}*/
 	afsbase->device.dd_Library.lib_OpenCnt--;
 	iofs->IOFS.io_Error = IOERR_OPENFAIL;
 	AROS_LIBFUNC_EXIT	
@@ -194,23 +213,34 @@ AROS_LH1(BPTR, close,
       struct afsbase *, afsbase, 2, afsdev)
 {
 	AROS_LIBFUNC_INIT
+	struct Volume *volume;
 
 	afsbase->rport.mp_SigTask=FindTask(NULL);
-	iofs->IOFS.io_Command = -2;
+/*	iofs->IOFS.io_Command = -2;
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);
 	(void)GetMsg(&afsbase->rport);
 	if (iofs->io_DosError)
 		return 0;				// there is still something to do on this volume
-	iofs->IOFS.io_Device=(struct Device *)-1;
-	if (!--afsbase->device.dd_Library.lib_OpenCnt)
+*/
+	volume = ((struct AfsHandle *)iofs->IOFS.io_Unit)->volume;
+	if (!volume->locklist)
 	{
-		/* Delayed expunge pending? */
-		if (afsbase->device.dd_Library.lib_Flags & LIBF_DELEXP)
+		uninitVolume(afsbase, volume);
+		iofs->IOFS.io_Device=(struct Device *)-1;
+		if (!--afsbase->device.dd_Library.lib_OpenCnt)
 		{
-			/* Then expunge the device */
-			return expunge();
+			/* Delayed expunge pending? */
+			if (afsbase->device.dd_Library.lib_Flags & LIBF_DELEXP)
+			{
+				/* Then expunge the device */
+				return expunge();
+			}
 		}
+	}
+	else
+	{
+		iofs->IOFS.io_Error = ERROR_OBJECT_IN_USE;
 	}
 	return 0;
 	AROS_LIBFUNC_EXIT

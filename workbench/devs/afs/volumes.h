@@ -31,7 +31,6 @@ struct Volume {
 
 	struct BlockCache *bitmapblock;	// last bitmap block used for marking
 	ULONG bstartblock;						// first block marked in "bitmapblock"
-	// the following vars are not really used yet
 	ULONG lastextensionblock;			// last used extensionblock (0=volume->bitmapblocks)
 	ULONG lastposition;					// last position in extensionblock
 	ULONG lastaccess;					// last marked block
@@ -40,7 +39,7 @@ struct Volume {
 	UBYTE flags;
 };
 
-struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *);
+struct Volume *initVolume(struct afsbase *, struct Device *, STRPTR, ULONG, struct DosEnvec *, ULONG *);
 void uninitVolume(struct afsbase *, struct Volume *);
 LONG newMedium(struct afsbase *, struct Volume *);
 LONG addDosVolume(struct afsbase *, struct Volume *, LONG);
