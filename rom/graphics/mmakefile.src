@@ -151,6 +151,7 @@ FUNCTIONS := \
 	textlength \
 	ucopperlistinit \
 	unlocklayerrom \
+	waitblit \
 	waittof \
 	weightamatch \
 	writechunkypixels \
