@@ -19,6 +19,7 @@ struct Numericbutton_DATA
     LONG    	    	    	 knob_val;
     LONG    	    	    	 max_text_width;
     LONG    	    	    	 text_height;
+    BOOL                         needs_to_recalculate_sizes;
 };
 
 #endif /* _NUMERICBUTTON_PRIVATE_H_ */
