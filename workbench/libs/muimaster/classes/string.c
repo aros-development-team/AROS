@@ -24,6 +24,11 @@ extern struct Library *MUIMasterBase;
 #define MYDEBUG 1
 #include "debug.h"
 
+struct MUI_StringData
+{
+    int dummy;
+};
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/

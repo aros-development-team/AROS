@@ -150,11 +150,13 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
     }
     
     {
-        struct TagItem *processTags = 
+        struct TagItem processTags[2] = 
         {
-            { NP_Entry, Asl_Entry },
-            { TAG_DONE            }
+            { NP_Entry, 0 },
+            { TAG_DONE, 0 }
         };
+
+	processTags[0].ti_Data = (IPTR)Asl_Entry;
 
         if (!(data->asl_proc = CreateNewProc( processTags )))
         {

@@ -21,6 +21,11 @@
 
 extern struct Library *MUIMasterBase;
 
+struct MUI_FamilyData
+{
+    struct List childs;
+};
+
 /*
  * Family class is the base class for objects that are able
  * to handle a list of children. This is e.g. the case for

@@ -21,6 +21,25 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+struct MUI_NumericData
+{
+    STRPTR format;
+    LONG   defvalue;
+    LONG   max;
+    LONG   min;
+    LONG   value;
+    ULONG  flags;
+    struct MUI_EventHandlerNode ehn;
+    char buf[50];
+};
+
+enum numeric_flags {
+    NUMERIC_REVERSE = (1<<0),
+    NUMERIC_REVLEFTRIGHT = (1<<1),
+    NUMERIC_REVUPDOWN = (1<<2),
+    NUMERIC_CHECKALLSIZES = (1<<3),
+};
+
 extern struct Library *MUIMasterBase;
 
 /**************************************************************************
