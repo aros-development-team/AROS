@@ -41,8 +41,8 @@ enum {
 struct pHidd_Mouse_Event
 {
     UWORD button;
-    UWORD x;
-    UWORD y;
+    WORD x;
+    WORD y;
     UWORD type; /* See below */
 };
 
