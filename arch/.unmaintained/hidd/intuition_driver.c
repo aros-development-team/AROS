@@ -231,7 +231,7 @@ void intui_RefreshWindowFrame(struct Window *w)
     Draw(rp, 0,  w->Height - 1);
     Draw(rp, 0, 0);
     
-    /* Refersh all the sytem gadgets */
+    /* Refresh all the sytem gadgets */
     
     for (i = 0; i < NUM_SYSGADS; i ++)
     {
@@ -272,19 +272,39 @@ void intui_MoveWindowInFrontOf(struct Window * window,
 
 void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
 {
+    MoveLayer(0L, window->WLayer, (LONG)dx, (LONG)dy);
+    window->LeftEdge += dx;
+    window->TopEdge += dy;
 
+// Output looks OK w/o Refresh
+//  RefreshWindowFrame(window);
 }
 
 void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
+    MoveSizeLayer(window->WLayer,
+    		  (x - window->TopEdge),
+    		  (y - window->LeftEdge),
+    		  (width - window->Width),
+    		  (height - window->Height) );
+    window->LeftEdge = x;
+    window->TopEdge = y;
+    window->Width = width;
+    window->Height = height;
 
+    RefreshWindowFrame(window);
 }
 
 
-void intui_SizeWindow (struct Window * win, long dx, long dy)
+void intui_SizeWindow (struct Window * window, long dx, long dy)
 {
+    SizeLayer(0L, window->WLayer, dx, dy);
+// The next lines would move the window 2*dx, 2*dy (in contrast to intui_MoveWindow)
+//    window->Width += dx;
+//    window->Height += dy;
 
+    RefreshWindowFrame(window);
 }
 
 void intui_WindowLimits (struct Window * win,
