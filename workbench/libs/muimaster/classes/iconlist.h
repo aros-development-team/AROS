@@ -32,6 +32,10 @@ struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry *
 
 /* IconList attrs */
 #define MUIA_IconList_DoubleClick         (TAG_USER|0x10427878) /* Zune: V1 ..g BOOL */
+#define MUIA_IconList_Left                (TAG_USER|0x10427879) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Top                 (TAG_USER|0x1042787a) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Width               (TAG_USER|0x1042787b) /* Zune: V1 ..G LONG */
+#define MUIA_IconList_Height              (TAG_USER|0x1042787c) /* Zune: V1 ..G LONG */
 
 /* used by MUIM_IconList_NextSelected */
 struct IconList_Entry

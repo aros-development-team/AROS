@@ -52,6 +52,7 @@ CLASSESOBJS= \
   objs/classes/gauge.o \
   objs/classes/group.o \
   objs/classes/iconlist.o \
+  objs/classes/iconlistview.o \
   objs/classes/image.o \
   objs/classes/imageadjust.o \
   objs/classes/list.o \
@@ -260,6 +261,9 @@ objs/classes/group.o: classes/group.c
 
 objs/classes/iconlist.o: classes/iconlist.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/iconlist.c objname=$@
+
+objs/classes/iconlistview.o: classes/iconlistview.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/iconlistview.c objname=$@
 
 objs/classes/image.o: classes/image.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/image.c objname=$@

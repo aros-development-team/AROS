@@ -100,6 +100,7 @@ struct MUI_IconData
     struct MinList icon_list; /* IconEntry */
     int view_x,view_y; /* the leftmost/upper coordinates of the view */
     int view_width,view_height; /* dimensions of the view (_mwidth(obj) and _mheight(obj)) */
+    int width,height; /* The whole width/height */
     int mouse_pressed;
 
     struct MUI_EventHandlerNode ehn;
@@ -289,6 +290,8 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case MUIA_IconList_Left: data->view_x = tag->ti_Data; MUI_Redraw(obj,MADF_DRAWOBJECT); break;
+	    case MUIA_IconList_Top: data->view_y = tag->ti_Data; MUI_Redraw(obj,MADF_DRAWOBJECT); break;
     	}
     }
 
@@ -306,6 +309,10 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 
     switch (msg->opg_AttrID)
     {
+	case MUIA_IconList_Left: STORE = data->view_x; return 1;
+	case MUIA_IconList_Top: STORE = data->view_y; return 1;
+	case MUIA_IconList_Width: STORE = data->width; return 1;
+	case MUIA_IconList_Height: STORE = data->height; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -450,8 +457,10 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     {
 	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
 	{
-	    int cur_x = data->view_x + 4;
-	    int cur_y = data->view_y + 4;
+	    struct Rectangle rect;
+
+	    int cur_x = data->view_x + 8;
+	    int cur_y = data->view_y + 8;
 	    int loops = 0;
 
 	    while (!IconList_CouldPlaceIcon(obj, data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
@@ -460,11 +469,14 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
 		{
 		    cur_x += 10;
-		    cur_y = data->view_y + 4;
+		    cur_y = data->view_y + 8;
 		}
 	    }
 	    icon->x = cur_x;
 	    icon->y = cur_y;
+
+	    if (icon->x + icon->width - data->view_x > data->width) data->width = icon->x + icon->width - data->view_x;
+	    if (icon->y + icon->height - data->view_y > data->height) data->height = icon->y + icon->height - data->view_y;
 	}
 	icon = Node_Next(icon);
     }
@@ -514,7 +526,7 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
     }
 
     data->first_selected = NULL;
-    data->view_x = data->view_y = 0;
+    data->view_x = data->view_y = data->width = data->height = 0;
 
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
@@ -583,10 +595,20 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 
     entry->x = dob->do_CurrentX;
     entry->y = dob->do_CurrentY;
-    entry->width = rect.MaxX - rect.MinX;
-    entry->height = rect.MaxY - rect.MinY;
-    if (entry->x < data->view_x && entry->x != NO_ICON_POSITION) data->view_x = entry->x;
-    if (entry->y < data->view_y && entry->y != NO_ICON_POSITION) data->view_y = entry->y;
+    entry->width = rect.MaxX - rect.MinX + 1;
+    entry->height = rect.MaxY - rect.MinY + 1;
+
+    if (entry->x != NO_ICON_POSITION)
+    {
+	if (entry->x < data->view_x) data->view_x = entry->x;
+	if (entry->x + entry->width - data->view_x > data->width) data->width = entry->x + entry->width - data->view_x;
+    }
+
+    if (entry->y != NO_ICON_POSITION)
+    {
+	if (entry->y < data->view_y) data->view_y = entry->y;
+	if (entry->y + entry->height - data->view_y > data->height) data->height = entry->y + entry->height - data->view_y;
+    }
     strcpy(entry->filename,msg->filename);
     AddTail((struct List*)&data->icon_list,(struct Node*)entry);
     return 1;
