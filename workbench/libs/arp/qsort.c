@@ -138,8 +138,8 @@ void DoQSort(ULONG baseptr,
     do 
     {
       LONG res = AROS_UFC2(ULONG, user_function,
-                   AROS_UFCA(void *, (baseptr + byte_size * (xindex-1)) , A0),
-                   AROS_UFCA(void *, (baseptr + byte_size *  xindex   ) , A1)
+                   AROS_UFCA(void *, (void *)(baseptr + byte_size * (xindex-1)) , A0),
+                   AROS_UFCA(void *, (void *)(baseptr + byte_size *  xindex   ) , A1)
                  );      
       if (0 != res)
       {
@@ -162,14 +162,14 @@ void DoQSort(ULONG baseptr,
       {
 	while (left <= right &&
                AROS_UFC2(ULONG, user_function,
-                 AROS_UFCA((void *),(baseptr + byte_size * xindex), A0),
-                 AROS_UFCA((void *),(baseptr + byte_size * left)  , A1)
+                 AROS_UFCA(void *,(void *)(baseptr + byte_size * xindex), A0),
+                 AROS_UFCA(void *,(void *)(baseptr + byte_size * left)  , A1)
                ) > 0)
           left++;
         while (right >= left && 
                AROS_UFC2(ULONG, user_function,
-                 AROS_UFCA((void *),(baseptr + byte_size * xindex), A0),
-                 AROS_UFCA((void *),(baseptr + byte_size * right) , A1)
+                 AROS_UFCA(void *,(void *)(baseptr + byte_size * xindex), A0),
+                 AROS_UFCA(void *,(void *)(baseptr + byte_size * right) , A1)
                ) <= 0)
           right--;
         if (left > right) break;
