@@ -1,0 +1,279 @@
+\section{One for all and all for one - CVS}
+
+\label{CVS}CVS is a software to maintain a database which contains the
+sources of a project one works on. The software offers a list of commands
+to merge the most recent version of the project with the local sources and
+to publish changes on has made over the Internet.
+
+\subsection{CVS on Un*x}
+
+If you have Linux or any other Un*x, then all you need is CVS 1.8 or better.
+If it's not already on your system (type \shell{cvs} to find out), fetch
+if from one of the many GNU mirrors and install it in your \filename{$HOME}.
+
+Then get the AROS developer archive from the AmiNET and compile
+\filename{crypt.c} (just say \shell{make crypt}. Think of a good password
+and use \filename{crypt} to encode it, like this:
+
+\begin{example}
+> make crypt
+> crypt my_password
+Encrypting my_password: cbEVHg0j9uNRs
+\end{example}
+
+Now skip the next section and read on in "How get access to the AROS CVS
+server".
+
+\subsection{CVS on Amiga}
+
+If you have an Amiga, you can participate, too. Just get the CVS from
+ADE, install it and get the demo for AmiTCP 4.0 (\filename{AmiTCP-demo-40.lha}
+in \filename{comm/tcp}) from AmiNET. You also must have
+\filename{ixemul.library} 45.0 (should come with ADE) and
+\filename{ixnet.library} in \filename{LIBS:}. Then you can create
+your password with \filename{crypt} out of the \filename{AROScrypt.lha}
+archive from AmiNET (in \filename{dev/misc}) like this:
+
+\begin{example}
+> run amitcp:amitcp
+[CLI 8]
+> crypt my_password
+Encrypting my_password: cbEVHg0j9uNRs
+\end{example}
+
+(you must have the directory where crypt is stored in, in your path or
+you must do this in the same directory where crypt is).
+
+\bold{CVS doesn't work with Miami.} Miami uses a different routine for
+encrypting data than Un*x and therefore passwords generated with Miami
+won't work. Sorry.
+
+\subsection{How to get access to the AROS CVS server}
+
+Mail the password you have created to me:
+\email{digulla@aros.fh-konstanz.de}. The subject must be
+\shell{Access to AROS CVS Server} and with this text in the mail:
+
+\begin{example}
+Please add <my_login, eg. digulla> <password, eg. cbEVHg0j9uNRs>
+\end{example}
+
+Don't forget to fill in the information :-)
+
+Wait until I confirm this. While you wait, look for CVS 1.8 or better if
+you haven't already done so.
+
+\subsection{Logging into the server}
+
+Before you can use any CVS commands, you must log into the server. To do this,
+use the CVS command "login":
+
+\begin{example}
+> cvs -d :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS login
+\end{example}
+
+where \shell{user} is your login, eg. digulla:
+
+\begin{example}
+> cvs -d :pserver:digulla@aros.fh-konstanz.de:/home/AROS/CVS login
+\end{example}
+
+This should ask you for your password. Type it in and if there is no error
+displayed, you are connected. If there is an error, try to omit the
+":pserver:". If this still doesn't work, double check for
+typos and if you really, really, really can't find anything, then you
+got my email.
+
+\begin{emph}
+It seems that the protocol for CVS has changed. Version of CVS
+upto 1.8.1 and earlier need not have ":pserver:" before the login name,
+but later versions require it. If you have problems to login, try to omit
+":pserver:" or prepend it. If CVS wants it, you will get an error reading
+"cvs login: can only use pserver method with `login' command".
+\end{emph}
+
+If the login has succeeded, then you can save you some typing by storing
+the argument to the \shell{-d} option in the environment
+variable \shell{CVSROOT}. Use
+
+\begin{example}
+setenv CVSROOT :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
+\end{example}
+
+on Amiga or if you have a C shell (csh) and
+
+\begin{example}
+export CVSROOT=:pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
+\end{example}
+
+for Bourne/Korn shells (bash, ksh).
+
+On Amiga, you can make this
+permanent by \shell{copy env:CVSROOT envarc:}, on Unix, you must add
+this to the shell's startup file (\filename{.cshrc}, \filename{.profile},
+\filename{.bashrc}, \filename{.tcshrc}, etc. Read the manual of your
+shell to find out). If you don't know what kind of shell you have,
+just try \shell{echo $SHELL} or \shell{echo $shell}. This should
+print the name of your shell.
+
+If you haven't set this variable, you must add \shell{-d ...}
+right after cvs in the following examples.
+
+Now you can use any CVS command to get a copy of all AROS sources, update
+your sources or commit the changes you made.
+
+\subsection{How to get a copy of all AROS sources}
+
+Use the CVS checkout command for this:
+
+\begin{example}
+> cvs checkout AROS
+\end{example}
+
+This will create a
+directory AROS and populate it with all sources.
+
+\subsection{How to update the sources}
+
+If you have some sources and just want to update them, you can use the
+CVS update command. Change to the AROS directory and do this:
+
+\begin{example}
+> cvs update
+\end{example}
+
+This should merge any changes that other users have made into your
+sources and create all new directories and files. If you
+and someone else has changed the same file, then CVS will try to merge
+the changes. That is, if he changed the first part and you the end of the
+file, CVS will do all the work for you. If there are changes which CVS
+can't resolve (eg. you said |x--;| and the other one |x=x-1;|), then
+CVS will put \bold{both} versions in the file. Search for \shell{<<<<}
+to find such problems.
+
+You should do this before any commit in case this happens. So before
+you commit, do an update, call \filename{make} if any changes were
+made, fix the problems and then commit.
+
+\subsection{Committing changes}
+
+If you have changed a file, then you of course want to share your
+work with the other guys. To do this, use the CVS commit command:
+
+\begin{example}
+> cvs commit
+\end{example}
+
+You can specify a list of files after the \shell{commit} or just do that in
+the AROS directory to commit all changes. CVS will then ask you what you
+did and send the changes to the CVS server for inclusion. Before you do
+that, you should always make an update (see the previous section) to avoid
+problems.
+
+\subsection{Creating new files and directories}
+
+You can also add new files or directories with the CVS add command:
+
+\begin{example}
+> cvs add file.c
+\end{example}
+
+or
+
+\begin{example}
+> cvs add dir
+\end{example}
+
+Note that \shell{cvs add dir/file} doesn't work. You can only add
+files in the current directory.
+
+\subsection{More infos about CVS}
+
+Well, CVS has man pages and info files and here is a nice
+\link{link}{http://www.loria.fr/~molli/cvs-index.html}.
+
+\section{The jobserver}
+
+\subsection{What is this ?}
+
+Well, it's more a task server. Its purpose is to allow multiple people to
+work at the same project at the same time without any two persons doing the
+same work twice. This is accomplished by the jobserver. It has a database
+with all tasks that are still to do, tasks that are currently under
+construction and tasks which are finished.
+
+\subsection{How does it work ?}
+
+Just send an EMail to
+
+\begin{example}
+aros@aros.fh-konstanz.de
+\end{example}
+
+with the \shell{Subject: jobserv} and in the body of the mail
+
+\begin{example}
+help
+\end{example}
+
+It will list all commands that jobserv currently understands. Note that
+this is an automated service so the subject must match. jobserv ignores all
+lines in an email that it doesn't understand and stops reading at the first
+\shell{end} or \shell{--} on a line of its own. jobserv will answer your EMails telling
+you what it did, what commands it did understand, which it did execute and
+which not and if not, why not. jobserv will also remember your EMail so
+others can see who added/requested/did which job - So don't worry you won't
+be credited for your work.
+
+\subsection{Some commands the jobserver understands}
+
+\begin{description}
+\item{add <id> <description>} Add a new job with the id <id> and the short text
+	    <description> as an explanation. <id> may contain any character
+	    except whitespace. Here is an example:
+
+\begin{example}
+add exec00001 Write AddHead
+\end{example}
+
+	    If the command was successful, the reply will tell you that a
+	    new job has been added to the database. If it wasn't
+	    successful, it will tell you why not (eg. because there is
+	    already a job with the same id).
+
+\item{req <id>} Allocate a task. This task will now be allocated by you. Your
+	    EMail will be stored with it so everyone can see who is working
+	    on that job and query you if you take too long or whatever.
+
+\item{done <id>} After you requested the job and finished it, you must tell
+	    jobserv that you're through.
+
+\item{show [free] [work] [done] [byme]} The most important command. It tells
+	    jobserv that you want to know what jobs are available and the
+	    like. All parameters are optional. "byme" is a flag which
+	    restricts the answer to jobs which match your EMail. The other
+	    flags are additive and restrict the reply to jobs which are
+	    still open, currently in progress or finished. So to see
+	    the jobs which were added and finished by you, use
+
+\begin{example}
+show free done byme
+\end{example}
+
+	    Note that jobserv doesn't remember that you added a task if
+	    someone else allocated it. The most useful variants will be:
+
+\begin{example}
+show free
+\end{example}
+
+	    which shows everything that's still open and
+
+\begin{example}
+show work byme
+\end{example}
+
+	    which shows what jobs you did allocate and haven't finished
+	    yet.
+\end{description}
+

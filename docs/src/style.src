@@ -1,0 +1,303 @@
+\section{Coding conventions}
+
+\subsection{General style}
+
+This code is used by many people and therefore you should keep some things
+in mind when you submit source code:
+
+\begin{itemize}
+\item Keep things simple
+\item Keep the source clean
+\item Always know what you are doing
+\item Tell what you are doing
+\end{itemize}
+
+\subsection{Comments}
+
+AROS uses some of the comments in the source to generate the documentation.
+Therefore it's neccessary to keep a certain format so the tools can find
+their information. Other comments are ignored but they should explain what
+you thought when you wrote the code. If you really can't think of an
+explanation, then don't write the code a second time like this:
+
+\begin{example}
+/* This adds 1 to t */
+t ++;
+\end{example}
+
+What we think of is this:
+
+\begin{example}
+/* Go on with next element */
+t ++;
+\end{example}
+
+\subsection{Function prototypes and headers}
+
+Every function in AROS must have a full ANSI C prototype. Prototypes should
+be collected in in one header per file if it is needed by only a few files
+(no need to recompile the whole project if you change a function which used
+only once), in one header per directory if it's a commonly used function in
+that directory or in one header per logical group (ie. one header for all
+functions in a library).
+
+The function header (ie. the comment before the function) must be of a
+special format because the AutoDocs are generated from it. Here is an
+example for it (from \filename{AROS/exec/addhead.c}):
+
+\begin{example}
+/*****************************************************************************
+
+    NAME */
+#include <exec/lists.h>
+#include <clib/exec_protos.h>
+
+	AROS_LH2I(void, AddHead,
+
+/*  SYNOPSIS */
+	AROS_LHA(struct List *, list, A0),
+	AROS_LHA(struct Node *, node, A1),
+
+/*  LOCATION */
+	struct ExecBase *, SysBase, 40, Exec)
+
+/*  FUNCTION
+	Insert Node node as the first node of the list.
+
+    INPUTS
+	list - The list to insert the node into
+	node - This node is to be inserted
+
+    RESULT
+	None.
+
+    NOTES
+
+    EXAMPLE
+	struct List * list;
+	struct Node * pred;
+
+	// Insert Node at top
+	AddHead (list, node);
+
+    BUGS
+
+    SEE ALSO
+	NewList(), AddTail(), Insert(), Remove(), RemHead(), RemTail(),
+	Enqueue()
+
+    INTERNALS
+
+    HISTORY
+	26-08-95    digulla created after EXEC-Routine
+	26-10-95    digulla adjusted to new calling scheme
+
+******************************************************************************/
+{
+\end{example}
+
+As you can see, comments are used to merge the function prototype and the
+header into one.
+
+\begin{description}
+\item{NAME} This field contains all neccessary prototypes to use the function
+from the user point of view and the name of the function in a |AROS_LH*()|
+macro (Library Header). These macros are used to make the same code work on
+different kind of hardwares. The name of the macro depends on the amount of
+parameters and whether the function needs the library base. |AddHead()|
+does not and therefore an "I" is appended to the macros name. If it need
+the library base (like |AddTask()|), then the "I" is omitted.
+
+If the function is not part of a shared library and it's arguments must be
+passed in certain registers (eg. callback hooks), you must use
+|AROS_UFH*()| macros (User Function Header) instead of |AROS_LH*()|. Append
+the number of arguments to this macro. Since it has never a base, the field
+LOCATION must be omitted and it's not neccessary to append the "I" to the
+macros name. An example for a callback hook |foo()| would be:
+
+\begin{example}
+AROS_UFH3(ULONG, foo,
+    AROS_UFHA(struct Hook, hook,  A0),
+    AROS_UFHA(APTR,        obj,   A2),
+    AROS_UFHA(APTR,        param, A1)
+)
+\end{example}
+
+(note that the registers need not have a particular order).
+
+If the function is not part of a shared library and it's arguments need not
+be in specific registers, you need no |AROS_*H*()| macros:
+
+\begin{example}
+/*****************************************************************************
+
+    NAME */
+#include <header.h>
+
+	int foo (
+
+/*  SYNOPSIS */
+	int a,
+	int b)
+
+/*  FUNCTION
+	blahblahblah.
+	...
+
+*****************************************************************************/
+\end{example}
+
+\item{SYNOPSIS} This field contains all arguments of the function one by
+one in |AROS_LHA()| macros (Library Header Argument). This macro makes sure
+the respective argument is put in the right CPU register when the function
+is called (if possible and neccessary). The first argument for the macro is
+the type of the parameter followed by the name of the parameter and the
+register the parameter is expected in. Valid names for registers are D0,
+D1, D2 upto D7 and A0 upto A6.
+
+If the function is not part of a library but the arguments must be passed
+to it in registers, then use |AROS_UFHA()| macros (User Function Header
+Argument) which take the same parameters as the |AROS_LHA()| macros. Don't
+forget the closing parenthese for the AROS_UFC
+
+If the function is not part of a library and the arguments need not be
+passed in registers, no macros are neccessary.
+
+\item{LOCATION} This field is neccessary for shared libraries only. It
+contains the last four parameters for the |AROS_LH*()| macro which are the
+type of the library, the name of the variable, in which the function
+expects the library base, the offset of the function in the jumptable (the
+first vector has 1 and the first vector which may be used by a function is
+5) and the name of the library.
+
+\item{FUNCTION} This field contains a description of the function.
+
+\item{INPUTS} This field contains a list of all parameters of the form
+"name - description" or "name, name, name - description". The description
+should tell what the parameter is and what values can be passed to it.
+There is no point in explaining the parameter twice in FUNCTION and here.
+If the function has no parameters, say "None." here.
+
+\item{RESULT} What the function passes back. This includes return values
+and values passed in arguments of the function. If the function may fail,
+you should explain what it returns on failure and why it might fail.
+
+\item{NOTES} Important things the user must know or take into account.
+
+\item{EXAMPLE} This field should contain a small or fully featured example.
+A good way to present an example is to write some code which tests the
+function, put it into |#ifdef TEST| somewhere in the file and put a
+"See below." here. If you need comments in the code, you have two ways for
+this. If you need only short one-line comments, use C++ style (|//
+comment|). Everything from the |//| to the end if the line is the comment.
+If you need more comment, then you can end the comment after the |EXAMPLE|
+and use |#ifdef EXAMPLE| to mask the example out:
+
+\begin{example}
+    EXAMPLE */
+#ifdef EXAMPLE
+	struct List * list;
+	struct Node * pred;
+
+	/* Insert Node at top of the list */
+	AddHead (list, node);
+#endif
+\end{example}
+
+Don't use |#ifdef EXAMPLE| if you have a fully featured example (ie. one
+which can be compiled without errors).
+
+\item{BUGS} This field contains a list of known bugs.
+
+\item{SEE ALSO} This field contains a list of other functions and documents
+which might be of interest. This includes function which you need to
+initialize, create or destroy an object necessary for this function,
+functions which do similar and opposite things on the main object.
+
+For example, |SetAttrs()| should contain functions here which can create,
+destroy and manipulate BOOPSI objects but not taglists.
+
+\item{INTERNALS} This field should contain information for other developers
+which are irrelevant to the user, for example an explanation of the
+algorithm of the function or dependencies.
+
+\item{HISTORY} This field should contain a brief history of changes.
+The format is date (DD-MM-YY), acronym (one word) and description.
+
+\end{description}
+
+\subsection{Formatting}
+
+Here is an example of how to format AROS code:
+
+\begin{example}
+{
+    /* a */
+    struct RastPort * rp;
+    int 	      a;
+
+    /* b */
+    rp = NULL;
+    a  = 1;
+
+    /* c */
+    if (a == 1)
+	printf ("Init worked\\n");
+
+    /* d */
+    if
+    (
+	!(rp = Get_a_pointer_to_the_RastPort
+	    (
+		some,
+		long,
+		arguments
+	    )
+	)
+    ||
+	a == 0
+    )
+    {
+	printf ("Something failed\\n");
+	return FAIL;
+    }
+
+    /* e */
+    a = printf ("My RastPort is %p, a=%d\\n"
+	, rp
+	, a
+    );
+
+    return OK;
+}
+\end{example}
+
+Look ugly, eh ? :-)
+
+Ok, here are the rules:
+
+\begin{itemize}
+\item If several lines contain similar code, put similar things below each
+other (see a and b);
+
+\item Put spaces between operands and operators
+
+\item Put braces {}, brackets [] and parenthese () below each other (d) if
+there is much code between. Brackets and parenthese may be in one line if
+the code between is small (c)
+
+\item Indent by 4 Spaces. Two indent levels may be abbreviated by one tab.
+
+\item If you have a function with many arguments (d, e) you should put the
+parenthese in lines of their own and each argument in one line (d) or put
+the first argument behind the opening parenthese (e) and each following
+argument in a line of its own with the comma in front. The closing
+parenthese is in a line of its own and aligned with the beginning of the
+expression (ie. the a and not the opening parenthese or the |printf()|).
+
+\item use a single blank line to separate logical blocks. Large comments
+should have a blank line before and after them, small comments should be
+put before the code they explain with only one blank line before them.
+
+\end{itemize}
+
