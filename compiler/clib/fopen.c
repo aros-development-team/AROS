@@ -78,10 +78,17 @@
     int fd;
     int openmode = __smode2oflags(mode);
 
-    fd = open(pathname, openmode, 644);
-    if (fd == -1)
+    if (openmode != -1)
+    {
+        fd = open(pathname, openmode, 644);
+        if (fd == -1)
+            return NULL;
+    
+        return fdopen(fd, NULL);
+    }
+    else
+    {
         return NULL;
-
-    return fdopen(fd, NULL);
+    }
 } /* fopen */
 
