@@ -72,6 +72,7 @@ FUNCTIONS	:= \
 	rectfill \
 	remfont \
 	remvsprite \
+	scalerdiv \
 	scrollraster \
 	setabpendrmd \
 	setapen \

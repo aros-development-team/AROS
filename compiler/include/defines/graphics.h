@@ -333,6 +333,13 @@
 	AROS_LCA(struct VSprite *, vs, A0), \
 	struct GfxBase *, GfxBase, 23, Graphics)
 
+#define ScalerDiv(factor, numerator, denominator) \
+	AROS_LC3(UWORD, ScalerDiv, \
+	AROS_LCA(UWORD, factor     , D0), \
+	AROS_LCA(UWORD, numerator  , D1), \
+	AROS_LCA(UWORD, denominator, D2), \
+	struct GfxBase *, GfxBase, 114, Graphics)
+
 #define ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax) \
 	AROS_LC7(void, ScrollRaster, \
 	AROS_LCA(struct RastPort *, rp, A1), \

@@ -242,6 +242,12 @@ AROS_LP3(void, Move,
 AROS_LP0(struct Region *, NewRegion,
 	struct GfxBase *, GfxBase, 86, Graphics)
 
+AROS_LP3(UWORD, ScalerDiv,
+	AROS_LPA(UWORD, factor, D0),
+	AROS_LPA(UWORD, numerator, D1),
+	AROS_LPA(UWORD, denominator, D2),
+	struct GfxBase *, GfxBase, 114, Graphics)
+
 AROS_LP1(struct TextFont *, OpenFont,
 	AROS_LPA(struct TextAttr *, textAttr, A0),
 	struct GfxBase *, GfxBase, 12, Graphics)
