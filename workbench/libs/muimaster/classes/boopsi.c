@@ -402,6 +402,7 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
 	return DoSuperMethodA(cl, obj, msg);
     }
 }
+BOOPSI_DISPATCHER_END
 
 #if ZUNE_BUILTIN_BOOPSI
 const struct __MUIBuiltinClass _MUI_Boopsi_desc = { 
