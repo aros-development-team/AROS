@@ -96,6 +96,10 @@
 #include <utility/tagitem.h>
 #endif
 
+#ifndef UTILITY_DATE_H
+#include <utility/date.h>
+#endif
+
 #ifndef LIBRARIES_LOCALE_H
 #include <libraries/locale.h>
 #endif
@@ -166,6 +170,10 @@
 #include <proto/muimaster.h>
 #endif
 
+#ifndef PROTO_TIMER_H
+#include <proto/timer.h>
+#endif
+
 /*********************************************************************************************/
 
 #include "vars.h"
@@ -186,12 +194,20 @@ void Cleanup(STRPTR msg);
 /* misc.c */
 
 void InitMenus(void);
+LONG NumMonthDays(struct ClockData *cd);
 
 /* locale.c */
 
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
 STRPTR MSG(ULONG id);
+
+/* prefs.c */
+
+void InitPrefs(BOOL use, BOOL save);
+BOOL SavePrefs(void);
+void RestorePrefs(void);
+
 
 /*********************************************************************************************/
 
