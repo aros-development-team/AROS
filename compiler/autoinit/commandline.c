@@ -159,6 +159,10 @@ int __initcommandline(void)
 void __exitcommandline(void)
 {
     AROS_GET_SYSBASE
+
+    if (WBenchMsg)
+        return;
+
     if (__argv) {
 	if (__argv[0])
 	    FreeVec(__argv[0]);
