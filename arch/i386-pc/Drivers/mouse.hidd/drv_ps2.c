@@ -114,6 +114,7 @@ int kbd_detect_aux()
     int retval = 0;
     
     kb_wait();
+	
     kbd_write_command(KBD_CTRLCMD_WRITE_AUX_OBUF);
     
     kb_wait();
@@ -291,6 +292,12 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
 int mouse_ps2reset(struct mouse_data *data)
 {
+    /* 
+     * The commands are for the mouse and nobody else.
+     */
+    
+    kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
+
     if (!kbd_detect_aux())
 	return 0;
 
@@ -307,11 +314,6 @@ int mouse_ps2reset(struct mouse_data *data)
      */
     kbd_write_cmd(AUX_INTS_OFF);
     kbd_write_command_w(KBD_CTRLCMD_KBD_DISABLE);
-    
-    /* 
-     * The commands are for the mouse and nobody else.
-     */
-    kbd_write_command_w(KBD_CTRLCMD_MOUSE_ENABLE);
     
     /*
      * Now the commands themselves.
