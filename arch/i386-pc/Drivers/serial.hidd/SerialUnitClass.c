@@ -715,8 +715,8 @@ static void common_serial_int_handler(HIDDT_IRQ_Handler *irq,
 		case UART_IIR_RDI:
 			if (csd->units[unitnum]) {
 				AROS_UFC3(void, serialunit_receive_data,
-				  AROS_UFCA(APTR               , csd->units[unitnum], A1,
-				  AROS_UFCA(APTR               , NULL   , A5,
+				  AROS_UFCA(APTR               , csd->units[unitnum], A1),
+				  AROS_UFCA(APTR               , NULL   , A5),
 				  AROS_UFCA(struct ExecBase *  , SysBase, A6));
 			}
 		break;
