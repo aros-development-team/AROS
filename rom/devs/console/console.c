@@ -192,22 +192,47 @@ AROS_UFH3(struct ConsoleBase *, AROS_SLIB_ENTRY(init,Console),
 	stack = AllocMem(COTASK_STACKSIZE, MEMF_PUBLIC);
 	if(stack != NULL)
 	{
+#if 1
+    	    struct TagItem tags[] =
+	    {
+	    	{TASKTAG_ARG1, (IPTR)ConsoleDevice  },
+		{TAG_DONE   	    	    	    }
+	    };
+	    
+	    task->tc_SPLower = stack;
+	    task->tc_SPUpper = (UBYTE *)stack + COTASK_STACKSIZE;
+    	#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET;
+    	#else
+	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET;
+    	#endif
+
+	    if(NewAddTask(task, consoleTaskEntry, NULL, tags) != NULL)
+	    {
+		return ConsoleDevice;
+		/* ALL OK */
+	    }
+	    
+#else
 	    task->tc_SPLower = stack;
 	    task->tc_SPUpper = (UBYTE *)stack + COTASK_STACKSIZE;
 
-#if AROS_STACK_GROWS_DOWNWARDS
+    	#if AROS_STACK_GROWS_DOWNWARDS
 	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
 	    ((APTR *)task->tc_SPUpper)[-1] = ConsoleDevice;
-#else
+    	#else
 	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
 	    ((APTR *)(task->tc_SPLower + SP_OFFSET))[0] = ConsoleDevice;
-#endif
+    	#endif
 
 	    if(AddTask(task, consoleTaskEntry, NULL) != NULL)
 	    {
 		return ConsoleDevice;
 		/* ALL OK */
 	    }
+
+#endif
+
 	    FreeMem(stack, COTASK_STACKSIZE);
 	}
 	FreeMem(task, sizeof(struct Task));

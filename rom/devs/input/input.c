@@ -187,21 +187,43 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
 	stack = AllocMem(IDTASK_STACKSIZE, MEMF_CLEAR|MEMF_PUBLIC);
 	if(stack != NULL)
 	{
+#if 1
+    	    struct TagItem tags[] =
+	    {
+	    	{TASKTAG_ARG1, (IPTR)InputDevice},
+		{TAG_DONE   	    	    	}
+	    };
+	    
 	    task->tc_SPLower = stack;
 	    task->tc_SPUpper = (UBYTE *)stack + IDTASK_STACKSIZE;
 
-#if AROS_STACK_GROWS_DOWNWARDS
+    	#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET;
+    	#else
+	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET;
+    	#endif
+
+	    if(NewAddTask(task, ProcessEvents, NULL, tags) != NULL)
+	    {
+		return InputDevice;
+	    }
+#else
+	    task->tc_SPLower = stack;
+	    task->tc_SPUpper = (UBYTE *)stack + IDTASK_STACKSIZE;
+
+    	#if AROS_STACK_GROWS_DOWNWARDS
 	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
 	    ((APTR *)task->tc_SPUpper)[-1] = InputDevice;
-#else
+    	#else
 	    task->tc_SPReg = (UBYTE *)task->tc_SPLower + SP_OFFSET + sizeof(APTR);
 	    ((APTR *)task->tc_SPLower)[0] = InputDevice;
-#endif
+    	#endif
 
 	    if(AddTask(task, ProcessEvents, NULL) != NULL)
 	    {
 		return InputDevice;
 	    }
+#endif
 	}
     }
 

@@ -119,22 +119,27 @@ struct Task *CreateMenuHandlerTask(APTR taskparams, struct IntuitionBase *Intuit
     	stack = AllocMem(MENUTASK_STACKSIZE, MEMF_PUBLIC);
     	if(stack != NULL)
     	{
-	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(BYTE *)stack + MENUTASK_STACKSIZE;
-
-#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-#else
-	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-	    *(APTR *)task->tc_SPLower = taskparams;
-#endif
-
-	    if(AddTask(task, DefaultMenuHandler, NULL) != NULL)
+	    struct TagItem tags[] =
 	    {
-	    	/* Everything went OK */
-	    	return (task);
-	    }	
+		{TASKTAG_ARG1, (IPTR)taskparams },
+		{TAG_DONE	    	    	}
+	    };
+
+	    task->tc_SPLower=stack;
+	    task->tc_SPUpper=(UBYTE *)stack + MENUTASK_STACKSIZE;
+
+    	#if AROS_STACK_GROWS_DOWNWARDS
+    	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
+    	#else
+            task->tc_SPReg=(UBYTE *)task->tc_SPLower+SP_OFFSET;
+    	#endif
+
+            if(NewAddTask(task, DefaultMenuHandler, NULL, tags) != NULL)
+            {
+                /* Everything went OK */
+                return (task);
+            }
+		
 	    FreeMem(stack, MENUTASK_STACKSIZE);
 	    
     	} /* if(stack != NULL) */

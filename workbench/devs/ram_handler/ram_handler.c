@@ -309,15 +309,19 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 
 		    if (stack != NULL)
 		    {
+		    	struct TagItem tasktags[] =
+			{
+			    {TASKTAG_ARG1, (IPTR)rambase},
+			    {TAG_DONE	    	    	}
+			};
+			
 			task->tc_SPLower = stack;
 			task->tc_SPUpper = (BYTE *)stack + AROS_STACKSIZE;
-#if AROS_STACK_GROWS_DOWNWARDS
-			task->tc_SPReg = (BYTE *)task->tc_SPUpper - SP_OFFSET - sizeof(APTR);
-			((APTR *)task->tc_SPUpper)[-1] = rambase;
-#else
-			task->tc_SPReg = (BYTE *)task->tc_SPLower - SP_OFFSET + sizeof(APTR);
-			*(APTR *)task->tc_SPLower = rambase;
-#endif
+    	    	    #if AROS_STACK_GROWS_DOWNWARDS
+			task->tc_SPReg = (BYTE *)task->tc_SPUpper - SP_OFFSET;
+   	    	    #else
+			task->tc_SPReg = (BYTE *)task->tc_SPLower + SP_OFFSET;
+   	    	    #endif
 
 			semaphore = (struct SignalSemaphore *)AllocMem(sizeof(struct SignalSemaphore),
 								       MEMF_PUBLIC | MEMF_CLEAR);
@@ -365,7 +369,7 @@ AROS_UFH3(struct rambase *, AROS_SLIB_ENTRY(init,ramdev),
 	    			        dn->dn_NewName  = AROS_BSTR_ADDR(dn->dn_OldName);
 
 				        if (AddDosEntry((struct DosList *)dn))
-				            if (AddTask(task, deventry, NULL) != NULL)
+				            if (NewAddTask(task, deventry, NULL, tasktags) != NULL)
 		    		                return rambase;
 	    			    }
 

@@ -725,21 +725,25 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
     	stack=AllocMem(XTASK_STACKSIZE, MEMF_PUBLIC);
     	if(stack != NULL)
     	{
+	    struct TagItem tags[] =
+	    {
+	    	 {TASKTAG_ARG1, (IPTR)params},
+		 {TAG_DONE  	    	    }
+	    };
+	    
 	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(BYTE *)stack + XTASK_STACKSIZE;
+	    task->tc_SPUpper=(UBYTE *)stack + XTASK_STACKSIZE;
 
-#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = params;
-#else
-	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-	    *(APTR *)task->tc_SPLower = params;
-#endif
+    	#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (UBYTE *)task->tc_SPUpper-SP_OFFSET;
+    	#else
+	    task->tc_SPReg = (UBYTE *)task->tc_SPLower+SP_OFFSET;
+    	#endif
 	    
 	    /* You have to clear signals first. */
 	    SetSignal(0, params->ok_signal | params->fail_signal);
 
-	    if(AddTask(task, x11task_entry, NULL) != NULL)
+	    if(NewAddTask(task, x11task_entry, NULL, tags) != NULL)
 	    {
 	    	/* Everything went OK. Wait for task to initialize */
 		ULONG sigset;
