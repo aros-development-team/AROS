@@ -117,7 +117,7 @@ $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
 	@touch $(DOCGENDIR)/run-src2html
 
-$(DOCGENDIR)/status.inc : stat2html.gawk
+$(DOCGENDIR)/status.inc : stat2html.gawk jobs.dat abbreviations.dat
 	@echo "Rebuilding status table..."
 	gawk -f stat2html.gawk > $@.new
 	$(MIC) $@.new $@
