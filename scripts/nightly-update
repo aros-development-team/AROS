@@ -50,8 +50,13 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
             
             dst="$DST/$(dirname $file)"
             mkdir -p $dst
-            mv -f "$file" $dst
-            mv -f "$file.md5" $dst
+	    if [ "${file:${#file}-4:4}" = ".xml" ]; then
+	        cl=${file:0:${#file}-4}
+	        xsltproc -o $dst/$(basename $cl).php /home/groups/a/ar/aros/scripts/cl2html.xslt $file
+	    else
+                mv -f "$file" $dst
+                mv -f "$file.md5" $dst
+	    fi
         else
             echo "! $file"
         fi
