@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Format a device.
-    Lang: English
+    Format a device.
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
@@ -18,9 +17,9 @@
 	AROS_LH3(BOOL, Format,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, devicename, D1),
-	AROS_LHA(STRPTR, volumename, D2),
-	AROS_LHA(ULONG,  dostype,    D3),
+	AROS_LHA(CONST_STRPTR, devicename, D1),
+	AROS_LHA(CONST_STRPTR, volumename, D2),
+	AROS_LHA(ULONG,        dostype,    D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 119, Dos)
