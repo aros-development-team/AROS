@@ -36,8 +36,8 @@
 extern void boot();
 
 BOOL init_hidds( struct ExecBase *, struct DosLibrary * );
-BOOL mount( struct DeviceNode *dn ); 
-BOOL isBootable( CONST_STRPTR deviceName );
+BOOL mount( struct DeviceNode *dn, struct DosLibrary * ); 
+BOOL isBootable( CONST_STRPTR deviceNam, struct DosLibrary * );
 
 AROS_UFH3(void, intBoot,
     AROS_UFHA(APTR, argString, A0),
@@ -92,7 +92,8 @@ AROS_UFH3(void, intBoot,
 	    from the list so DOS doesn't try to boot from it later. 
         */ 
 
-	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode ) )
+	if( !mount( (struct DeviceNode *) bootNode->bn_DeviceNode , 
+	            (struct DosLibrary *) DOSBase))
 	{
 	    REMOVE( bootNode );
 	}
@@ -111,7 +112,7 @@ AROS_UFH3(void, intBoot,
                 the list. 
             */
         
-            if( isBootable( deviceName ) )
+            if( isBootable( deviceName, (struct DosLibrary *)DOSBase ) )
             {
                 goto boot;
             }
@@ -240,7 +241,13 @@ void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
     }
 }
 
-BOOL mount( struct DeviceNode *dn ) 
+#ifdef SysBase
+#undef SysBase
+#endif
+
+#define SysBase (DOSBase->dl_SysBase)
+
+BOOL mount( struct DeviceNode *dn, struct DosLibrary * DOSBase ) 
 {
     struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
     struct IOFileSys         *iofs;
@@ -285,7 +292,13 @@ BOOL mount( struct DeviceNode *dn )
     return rc;
 }
 
-BOOL isBootable( CONST_STRPTR deviceName )
+#ifdef SysBase
+#undef SysBase
+#endif
+
+#define SysBase (DOSBase->dl_SysBase)
+
+BOOL isBootable( CONST_STRPTR deviceName, struct DosLibrary * DOSBase )
 {
     BOOL            result = FALSE;
     BPTR            lock;
@@ -326,3 +339,7 @@ cleanup:
     
     return result;
 }
+
+#ifdef SysBase
+#undef SysBase
+#endif

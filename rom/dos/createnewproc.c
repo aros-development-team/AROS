@@ -23,10 +23,10 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
 static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase);
 
-BOOL copyVars(struct Process *fromProcess, struct Process *toProcess);
+BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase);
 
-void internal_ChildWait(struct Task *task);
-void internal_ChildFree(APTR tid);
+void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase);
+void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
 #include <aros/debug.h>
 
@@ -371,7 +371,7 @@ void internal_ChildFree(APTR tid);
 
     if ((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
     {
-	BOOL res = copyVars(me, process);
+	BOOL res = copyVars(me, process, DOSBase);
 	
 	ENOMEM_IF(res == FALSE);
     }
@@ -388,7 +388,7 @@ void internal_ChildFree(APTR tid);
 	if (defaults[19].ti_Data)
 	{
 	    P(kprintf("Calling ChildWait()\n"));
-	    internal_ChildWait(FindTask(NULL));
+	    internal_ChildWait(FindTask(NULL), DOSBase);
 	    P(kprintf("Returned from ChildWait()\n"));
 	}
 
@@ -470,7 +470,7 @@ error:
 static void KillCurrentProcess(void)
 {
     /* I need the global here because there is no local way to get it */
-    extern struct DosLibrary *DOSBase;
+    extern struct DosLibrary * DOSBase;
     struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Call user defined exit function before shutting down. */
@@ -547,12 +547,14 @@ static void KillCurrentProcess(void)
 	P(kprintf("Calling ChildFree()\n"));
 
 	// ChildStatus(me);
-	internal_ChildFree(me);
+	internal_ChildFree(me, DOSBase);
     }
 
     removefromrootnode(me, DOSBase);
 
     RemTask(NULL);
+    
+    CloseLibrary((struct Library * )DOSBase);
 }
 
 
@@ -573,7 +575,7 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 }
 
 
-void internal_ChildWait(struct Task *task)
+void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 {
     task->tc_State = TS_WAIT;
     Reschedule(task);
@@ -581,7 +583,7 @@ void internal_ChildWait(struct Task *task)
 }
 
 
-void internal_ChildFree(APTR tid)
+void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
 {
     struct Task *task = (struct Task *)tid;
 
@@ -602,7 +604,7 @@ void internal_ChildFree(APTR tid)
 }
 
 
-BOOL copyVars(struct Process *fromProcess, struct Process *toProcess)
+BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct DosLibrary * DOSBase)
 {
     /* We must have variables to copy... */
     if (__is_process(fromProcess))
