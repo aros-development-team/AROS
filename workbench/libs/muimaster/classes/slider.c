@@ -30,7 +30,6 @@ struct MUI_SliderData
 {
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
-    struct ZuneFrameGfx *knob_frame;
     struct MUI_ImageSpec_intern *knob_bg;
     LONG knob_left;
     LONG knob_top;
@@ -38,6 +37,7 @@ struct MUI_SliderData
     LONG knob_height;
     LONG knob_click;
     LONG last_val;
+    LONG max_text_width;
     LONG state; /* When using mouse */
 };
 
@@ -109,6 +109,7 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *knob_frame;
     LONG min;
     LONG max;
     LONG val;
@@ -118,7 +119,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return FALSE;
 
-    data->knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
+    knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
     data->knob_bg = zune_imspec_setup(MUII_SliderKnob, muiRenderInfo(obj));
 
     InitRastPort(&rp);
@@ -145,8 +146,9 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	nw = TextLength(&rp,buf,strlen(buf));
 	if (nw > width) width = nw;
     }
-    data->knob_width  = width + 2 * data->knob_frame->xthickness + 2;
-    data->knob_height = _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+    data->max_text_width = width;
+    data->knob_width  = width + knob_frame->ileft + knob_frame->iright + 2;
+    data->knob_height = _font(obj)->tf_YSize + knob_frame->itop + knob_frame->ibottom;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 #ifdef __AROS__
@@ -237,11 +239,12 @@ static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 **************************************************************************/
 static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+    struct ZuneFrameGfx *knob_frame;
+    int knob_frame_state;
     LONG val;
     char *buf;
     int width;
-
-    struct MUI_SliderData *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -265,16 +268,22 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		     data->knob_left, data->knob_top, data->knob_width, data->knob_height,
 		     0, 0, 0);
 
-    data->knob_frame->draw[data->state](muiRenderInfo(obj), data->knob_left, data->knob_top, data->knob_width, data->knob_height);
-
-    get(obj, MUIA_Numeric_Value, &val);
+    knob_frame_state = muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].state;
+    if (data->state)
+	knob_frame_state ^= 1;
+    knob_frame = zune_zframe_get_with_state(
+	&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob], knob_frame_state);
+    knob_frame->draw(muiRenderInfo(obj), data->knob_left, data->knob_top, data->knob_width,
+		     data->knob_height);
 
     SetFont(_rp(obj),_font(obj));
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
+    get(obj, MUIA_Numeric_Value, &val);
     buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
     width = TextLength(_rp(obj),buf,strlen(buf));
     
-    Move(_rp(obj), data->knob_left + (data->knob_width - width)/2, data->knob_top + _font(obj)->tf_Baseline + data->knob_frame->ythickness);
+    Move(_rp(obj), data->knob_left + knob_frame->ileft + 1 + (data->max_text_width - width)/2,
+	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop);
     Text(_rp(obj), buf, strlen(buf));
 
     return TRUE;
