@@ -361,7 +361,7 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
 
     /* seems to be the documented behaviour, however it should be slow! */
-    if (!data->dont_forward_get)
+//    if (!data->dont_forward_get)
     {
 	Object               *cstate;
 	Object               *child;
@@ -2057,8 +2057,10 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 }
 
 /**************************************************************************
- MUIM_HandleEvent
+ MUIM_Notify - disabled now because previous Zune versions had a OM_GET
+ check in MUIM_Notify which is no longer the case
 **************************************************************************/
+#if 0
 STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -2099,6 +2101,10 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
 	AROS_UFHA(Object *, obj, A2),
 	AROS_UFHA(Msg     , msg, A1))
 #endif
+
+#endif
+
+BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -2139,7 +2145,10 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     case MUIM_Show: return Group_Show(cl, obj, (APTR)msg);
     case MUIM_Hide: return Group_Hide(cl, obj, (APTR)msg);
     case MUIM_HandleEvent: return Group_HandleEvent(cl,obj, (APTR)msg);
+#if 0
+    /* Disabled. See above */
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
+#endif
     case MUIM_CallHook: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
     case MUIM_DrawBackground: return DoSuperMethodA(cl, obj, (APTR)msg); /* Needs not to be forwarded */
 
