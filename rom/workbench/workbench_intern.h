@@ -46,9 +46,7 @@ struct WorkbenchBase
     struct Library         *wb_IntuitionBase;
     struct Library         *wb_IconBase;
     
-    struct MsgPort         *wb_HandlerPort;       /* The Workbench Handler's message port */
-    struct SignalSemaphore  wb_HandlerSemaphore;  /* Arbitrates initialization of the handler */
-    ULONG                   wb_HandlerError;      /* Handler error code if initialization fails */    
+    struct MsgPort          wb_HandlerPort;       /* The Workbench Handler's message port */
     
     struct MsgPort         *wb_AppPort;           /* The Workbench App's message port */
 
@@ -63,7 +61,7 @@ struct WorkbenchBase
     struct SignalSemaphore  wb_InitializationSemaphore; /* Arbitrates library initializtion */
     struct SignalSemaphore  wb_BaseSemaphore;           /* Arbitrates library base access */
     
-    BOOL                    wb_LibsOpened;        /* Are the libraries opened? */
+    BOOL                    wb_Initialized;        /* Has the library been intialized in libOpen? */
 };
 
 #define SysBase         (WorkbenchBase->wb_SysBase)

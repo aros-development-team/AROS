@@ -491,16 +491,6 @@ BOOL __WB_LaunchProgram
     struct WBStartup     *startup = NULL;
     struct LaunchMessage *message = NULL;
        
-    /*-- Start the handler, if necessary -----------------------------------*/
-    if (WorkbenchBase->wb_HandlerPort == NULL)
-    {
-        if (!StartHandler())
-        {
-            D(bug("workbench.library: WB_LaunchProgram: Failed to start handler\n"));
-            return FALSE;
-        }
-    }
-    
     /*-- Allocate memory for messages --------------------------------------*/
     startup = AllocMem(sizeof(struct WBStartup), MEMF_PUBLIC | MEMF_CLEAR);
     if (startup == NULL) 
@@ -534,7 +524,7 @@ BOOL __WB_LaunchProgram
     
     /* The handler will deallocate the memory! */
     D(bug("workbench.library: WB_LaunchProgram: Sending message\n"));
-    PutMsg(WorkbenchBase->wb_HandlerPort, MESSAGE(message));
+    PutMsg(&(WorkbenchBase->wb_HandlerPort), MESSAGE(message));
     
     D(bug("workbench.library: WB_LaunchProgram: Success\n"));
     
