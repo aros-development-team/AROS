@@ -25,19 +25,13 @@ The problem was that GetTail() didn't return NULL for an empty list.
 BUG000004
 klaus21@t-online.de
 The DosList structure found in AROS:include/dos/dosextens.h isn't
-compatible
-to the original (Amiga) one. The biggest problem: dol_Name is a STRPTR,
-but
-it should be a BSTR.
-(I wrote a program to show the currently mounted devices, and it took me
-some
-time to find out why I got those silly segfaults. BTW, the first
-DosList-entry has
-the name "(Null)", is this the list-head or does it have any special
-meaning (i.e.,
-is it a real device?)
+compatible to the original (Amiga) one. The biggest problem: dol_Name is a
+STRPTR, but it should be a BSTR. (I wrote a program to show the currently
+mounted devices, and it took me some time to find out why I got those silly
+segfaults. BTW, the first DosList-entry has the name "(Null)", is this the
+list-head or does it have any special meaning (i.e., is it a real device?)
 
-BUG000005
+BUG000005 fixed
 digulla@wi-pc44.fh-konstanz.de
 newshell crashes because
 Program received signal SIGSEGV, Segmentation fault.
@@ -69,3 +63,10 @@ forkbomb cannot be called from the shell (one has to cut&paste one of
 the lines of the script) and it runs only about 1000 times before it
 GURUs with AN_MemCorrupt (81000005). Does not happen every time, though :-/
 
+BUG000008
+digulla@wi-pc44.fh-konstanz.de
+AROS crashes after some time with a GURU Meditation 8100 000e
+Deadend/Exec/Stack appears to extend out of range
+Task: 0x80765e8 (Idle task)
+Either the problem is that the stack grows or the Task structure for the
+idle task gets corrupted. Might be connected to BUG000007.
