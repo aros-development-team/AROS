@@ -77,40 +77,41 @@
 	    if (!err)
 	    {
 
-	    /* We have now entried the chunk */
-	    GetIntIH(iff)->iff_CurrentState = IFFSTATE_COMPOSITE;
+		/* We have now entried the chunk */
+		GetIntIH(iff)->iff_CurrentState = IFFSTATE_COMPOSITE;
 
-	    cn = TopChunk(iff);
+		cn = TopChunk(iff);
 
-	    /* We must see if we have a IFF header ("FORM", "CAT" or "LIST") */
-	    if (GetIntCN(cn)->cn_Composite)
-	    {
-		/* Everything went OK */
-		/* Set the acess mode, and mark the stream as opened */
-		iff->iff_Flags |= (rwMode | IFFF_OPEN);
-		err = 0L;
+		/* We must see if we have a IFF header ("FORM", "CAT" or "LIST") */
+		if (GetIntCN(cn)->cn_Composite)
+		{
+		    /* Everything went OK */
+		    /* Set the acess mode, and mark the stream as opened */
+		    iff->iff_Flags |= (rwMode | IFFF_OPEN);
+		    err = 0L;
+		}
+		else
+		{
+		    err = IFFERR_NOTIFF;
+
+		    /* Pop the contextnode */
+		    PopContextNode(iff, IPB(IFFParseBase));
+		}
 	    }
 	    else
 	    {
-		err = IFFERR_NOTIFF;
+		if (err  == IFFERR_MANGLED)
+		    err = IFFERR_NOTIFF;
 
-		/* Pop the contextnode */
-		PopContextNode(iff);
+		/* Fail. We should send CLEANUP to the stream */
+		cmd.sc_Command = IFFCMD_CLEANUP;
+		err = CallHookPkt
+		(
+		    GetIntIH(iff)->iff_StreamHandler,
+		    iff,
+		    &cmd
+		);
 	    }
-	}
-	else
-	{
-	    if (err  == IFFERR_MANGLED)
-		err = IFFERR_NOTIFF;
-
-	    /* Fail. We should send CLEANUP to the stream */
-	    cmd.sc_Command = IFFCMD_CLEANUP;
-	    err = CallHookPkt
-	    (
-		GetIntIH(iff)->iff_StreamHandler,
-		iff,
-		&cmd
-	    );
 	}
 	else
 	    err = 0L;
