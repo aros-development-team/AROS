@@ -103,6 +103,7 @@ struct MUI_WindowData
     UWORD          wd_innerTop;
     UWORD          wd_innerBottom;
     struct MUI_ImageSpec *wd_Background;
+    ULONG          wd_DisabledKeys;
 
     Object *       wd_DragObject; /* the object which is being dragged */
     struct Window *wd_DropWindow; /* the destiantion window, for faster access */
@@ -1129,32 +1130,35 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	}
     }
 
-    /* nobody has eaten the message so we can try ourself */
-    switch (muikey)
+    if (!(data->wd_DisabledKeys & (1<<muikey)))
     {
-    	case	MUIKEY_PRESS:break;
-	case	MUIKEY_TOGGLE:break;
-	case	MUIKEY_UP:break;
-	case	MUIKEY_DOWN:break;
-	case	MUIKEY_PAGEUP:break;
-	case	MUIKEY_PAGEDOWN:break;
-	case	MUIKEY_TOP:break;
-	case	MUIKEY_BOTTOM:break;
-	case	MUIKEY_LEFT:break;
-	case	MUIKEY_RIGHT:break;
-	case	MUIKEY_WORDLEFT:break;
-	case	MUIKEY_WORDRIGHT:break;
-	case	MUIKEY_LINESTART:break;
-	case	MUIKEY_LINEEND:break;
-	case	MUIKEY_GADGET_NEXT:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
-	case	MUIKEY_GADGET_PREV:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
-	case	MUIKEY_GADGET_OFF:set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
-	case	MUIKEY_WINDOW_CLOSE:set(win, MUIA_Window_CloseRequest, TRUE);nnset(win, MUIA_Window_CloseRequest, FALSE);break;
-	case	MUIKEY_WINDOW_NEXT:break;
-	case	MUIKEY_WINDOW_PREV:break;
-	case	MUIKEY_HELP:break;
-	case	MUIKEY_POPUP:break;
-	default: break;
+	/* nobody has eaten the message so we can try ourself */
+	switch (muikey)
+	{
+	    case MUIKEY_PRESS: break;
+	    case MUIKEY_TOGGLE: break;
+	    case MUIKEY_UP: break;
+	    case MUIKEY_DOWN: break;
+	    case MUIKEY_PAGEUP: break;
+	    case MUIKEY_PAGEDOWN: break;
+	    case MUIKEY_TOP: break;
+	    case MUIKEY_BOTTOM: break;
+	    case MUIKEY_LEFT: break;
+	    case MUIKEY_RIGHT: break;
+	    case MUIKEY_WORDLEFT: break;
+	    case MUIKEY_WORDRIGHT: break;
+	    case MUIKEY_LINESTART: break;
+	    case MUIKEY_LINEEND: break;
+	    case MUIKEY_GADGET_NEXT: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
+	    case MUIKEY_GADGET_PREV: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
+	    case MUIKEY_GADGET_OFF: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
+	    case MUIKEY_WINDOW_CLOSE: set(win, MUIA_Window_CloseRequest, TRUE);nnset(win, MUIA_Window_CloseRequest, FALSE);break;
+	    case MUIKEY_WINDOW_NEXT: break;
+	    case MUIKEY_WINDOW_PREV: break;
+	    case MUIKEY_HELP: break;
+	    case MUIKEY_POPUP: break;
+	    default: break;
+	}
     }
 }
 
@@ -1410,6 +1414,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_AltDim.Height = MUIV_Window_AltHeight_MinMax(0);
     data->wd_X = MUIV_Window_LeftEdge_Centered;
     data->wd_Y = MUIV_Window_TopEdge_Centered;
+    data->wd_DisabledKeys = 0L;
 
     /* parse initial taglist */
 
@@ -1519,6 +1524,10 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	    case    MUIA_Window_UseRightBorderScroller:
 		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
+		    break;
+
+	    case    MUIA_Window_DisableKeys:
+		    data->wd_DisabledKeys = tag->ti_Data;
 		    break;
 	}
     }
@@ -1672,6 +1681,10 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Window_UseRightBorderScroller:
 		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
 		    break;
+
+	    case    MUIA_Window_DisableKeys:
+		    data->wd_DisabledKeys = tag->ti_Data;
+		    break;
 	}
     }
 
@@ -1706,6 +1719,9 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Window_DefaultObject:
 	    STORE = (ULONG)data->wd_DefaultObject;
 	    return(TRUE);
+	case MUIA_Window_DisableKeys:
+	    STORE = data->wd_DisabledKeys;
+	    break;
 	case MUIA_Window_Height:
 	    STORE = (ULONG)data->wd_Height;
 	    return(TRUE);
@@ -2314,6 +2330,15 @@ static IPTR Window_ToFront(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
+/**************************************************************************
+ MUIM_Window_ActionIconify
+**************************************************************************/
+static IPTR Window_ActionIconify(struct IClass *cl, Object *obj, Msg msg)
+{
+    set(_app(obj),MUIA_Application_Iconified,TRUE);
+    return 1;
+}
+
 /******************************************************************************/
 /******************************************************************************/
 
@@ -2353,6 +2378,7 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
 	case MUIM_Window_SetMenuState: return Window_SetMenuCheck(cl, obj, (APTR)msg);
 	case MUIM_Window_DrawBackground: return Window_DrawBackground(cl, obj, (APTR)msg);
 	case MUIM_Window_ToFront: return Window_ToFront(cl, obj, (APTR)msg);
+	case MUIM_Window_ActionIconify: return Window_ActionIconify(cl, obj, (APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
