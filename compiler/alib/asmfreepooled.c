@@ -18,9 +18,9 @@
 	AROS_UFH4(void, AsmFreePooled,
 
 /*  SYNOPSIS */
-	AROS_UFHA(APTR, poolHeader, A0),
-	AROS_UFHA(APTR, Memory    , A1),
-	AROS_UFHA(APTR, MemSize   , D0),
+	AROS_UFHA(APTR,  poolHeader, A0),
+	AROS_UFHA(APTR,  Memory    , A1),
+	AROS_UFHA(ULONG, MemSize   , D0),
 	AROS_UFHA(struct ExecBase *, SysBase, A6))
 
 /*  FUNCTION
