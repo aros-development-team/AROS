@@ -24,7 +24,7 @@
 
 #include <string.h>
 
-#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -74,9 +74,8 @@ static void UpdateState(Object *obj, struct MUI_PenadjustData *data)
 	    break;
 	    
     	case PST_RGB:
-	    nnset(data->coloradjobj, MUIA_Coloradjust_Red, data->intpenspec.p_rgb.red);
-	    nnset(data->coloradjobj, MUIA_Coloradjust_Green, data->intpenspec.p_rgb.green);
-	    nnset(data->coloradjobj, MUIA_Coloradjust_Blue, data->intpenspec.p_rgb.blue);
+	    SetAttrs(data->coloradjobj, MUIA_NoNotify, TRUE,
+		     MUIA_Coloradjust_RGB, &data->intpenspec.p_rgb, TAG_DONE);
 	    
 	    nnset(obj, MUIA_Group_ActivePage, 2);
 	    break;
@@ -89,7 +88,7 @@ static void InputFunc(struct Hook *hook, Object *obj, APTR msg)
     IPTR    	    	      val;
 
     get(obj, MUIA_Group_ActivePage, &val);
-    
+
     switch(val)
     {
     	case 0:
@@ -123,7 +122,7 @@ kprintf(" ## penspec now %s\n", &data->penspec);
 
 }
 
-static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, CONST_STRPTR entry)
+static IPTR MuipenDisplayFunc(struct Hook *hook, char **array, char *entry)
 {
     LONG line;
     static char buf[16];
@@ -165,7 +164,7 @@ static IPTR Penadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    MUIA_Numeric_Max, 127,
 	    End,  
 	Child, coloradjobj = ColoradjustObject,
-	    End,	      
+	    End,
 	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
