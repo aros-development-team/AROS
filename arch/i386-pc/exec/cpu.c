@@ -52,7 +52,7 @@ static LONG	CPU_cache_size;	/* CPU cache size */
 /*
  *	Generic CPUID function
  */
-extern inline void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx)
+extern void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx)
 {
 	__asm__("cpuid"
 		: "=a" (*eax),
