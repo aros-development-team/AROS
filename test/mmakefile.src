@@ -35,6 +35,7 @@ FILES := amiga2date \
     serialtest \
     unixio \
     librarytest \
+	opendiskfont \
 	partition \
 	pipe \
 	scantest \
