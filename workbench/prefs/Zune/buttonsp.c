@@ -49,8 +49,9 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         Child, HGroup,
             Child, VGroup, /* Text Buttons */
                 Child, ColGroup(2),
-	            MUIA_Group_SameHeight, TRUE,
                     GroupFrameT("General"),                    
+	            MUIA_Group_SameHeight, TRUE,
+	            MUIA_Group_VertSpacing, 2,
                     Child, FreeLabel("Background:"),
                     Child, d.text_background_popimage = MakeBackgroundPopimage(),
                     Child, FreeLabel("Background in\npressed state:"),
@@ -58,6 +59,7 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                     End,
                 Child, ColGroup(2),
                     GroupFrameT("Text Buttons"),
+	            MUIA_Group_VertSpacing, 2,
                     Child, FreeLabel("Frame:"),
                     Child, d.button_popframe = MakePopframe(),                  
                     Child, Label("Font:"),
