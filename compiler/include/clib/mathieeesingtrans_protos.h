@@ -31,6 +31,10 @@ AROS_LP1(LONG, IEEESPExp,
     AROS_LPA(LONG, y, D0),
     struct Library *, MathIeeeSingTransBase, 13, Mathieeesingtrans)
 
+AROS_LP1(LONG, IEEESPFieee,
+    AROS_LPA(LONG, y, D0),
+    struct Library *, MathIeeeSingTransBase, 18, Mathieeesingtrans)
+
 AROS_LP1(LONG, IEEESPLog,
     AROS_LPA(LONG, y, D0),
     struct Library *, MathIeeeSingTransBase, 14, Mathieeesingtrans)
@@ -52,10 +56,6 @@ AROS_LP1(LONG, IEEESPSinh,
     AROS_LPA(LONG, y , D0),
     struct Library *, MathIeeeSingTransBase, 10, Mathieeesingtrans)
 
-AROS_LP1(LONG, IEEESPSqrt,
-    AROS_LPA(LONG, y, D0),
-    struct Library *, MathIeeeSingTransBase, 16, Mathieeesingtrans)
-
 AROS_LP1(LONG, IEEESPTan,
     AROS_LPA(LONG, y, D0),
     struct Library *, MathIeeeSingTransBase, 8, Mathieeesingtrans)
@@ -64,5 +64,8 @@ AROS_LP1(LONG, IEEESPTanh,
     AROS_LPA(LONG, y, D0),
     struct Library *, MathIeeeSingTransBase, 12, Mathieeesingtrans)
 
+AROS_LP1(LONG, IEEESPTieee,
+    AROS_LPA(LONG, y, D0),
+    struct Library *, MathIeeeSingTransBase, 17, Mathieeesingtrans)
 
 #endif /* CLIB_MATHIEEESINGTRANS_PROTOS_H */

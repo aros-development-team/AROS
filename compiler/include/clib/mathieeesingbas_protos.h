@@ -1,5 +1,5 @@
-#ifndef CLIB_MATHIEEESPBAS_PROTOS_H
-#define CLIB_MATHIEEESPBAS_PROTOS_H
+#ifndef CLIB_MATHIEEESINGBAS_PROTOS_H
+#define CLIB_MATHIEEESINGBAS_PROTOS_H
 
 /*
     (C) 1997 AROS - The Amiga Replacement OS
@@ -73,4 +73,4 @@ AROS_LP1(LONG, IEEESPTst,
     struct MathIeeeSingBasBase *, MathIeeeSingBasBase, 8, Mathieeesingbas)
 
 
-#endif /* CLIB_MATHIEEESPBAS_PROTOS_H */
+#endif /* CLIB_MATHIEEESINGBAS_PROTOS_H */
