@@ -50,7 +50,10 @@ create-mf-inc-again :
 #MM	kernel-workbench-linklib           \
 #MM	kernel-keymap-linklib              \
 #MM	kernel-keyboard-linklib            \
-#MM	kernel-gameport-linklib kernel-input-linklib kernel-console-linklib \
+#MM	kernel-gameport-linklib            \
+#MM	kernel-input-linklib               \
+#MM	kernel-console-linklib             \
+#MM	kernel-fs-con                      \
 #MM	Drivers-pp-m68k
 
 ## kernel-boot-linklib seems broken
