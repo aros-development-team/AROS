@@ -303,8 +303,9 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
 	    OOP_GetAttr(sync, aHidd_Sync_Description, &sync_description);
 	    ni = (struct NameInfo *)buf;
-	    
-	    if (sync_description && sync_description[0] && IS_REAL_STDPIXFMT(stdpixfmt))
+
+	    if (sync_description && sync_description[0] &&
+	    	(IS_REAL_STDPIXFMT(stdpixfmt) || (stdpixfmt == vHidd_StdPixFmt_Unknown)))
 	    {
 	    	STRPTR pixfmt_name = "";
 		
