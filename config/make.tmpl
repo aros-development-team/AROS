@@ -654,7 +654,11 @@ BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
 
 ifeq ($(BD_FUNCS$(BDID)),)
-  BD_GENINCS$(BDID)  :=
+  ifeq ($(BD_ARCHFILE$(BDID)),)
+    BD_GENINCS$(BDID)  :=
+  else
+    BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+  endif    
 else
   ifneq ($(findstring $(BD_MODTYPE$(BDID)),library gadget),)
     BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
