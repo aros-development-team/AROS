@@ -1,13 +1,16 @@
 #ifndef _INSTALLER_H
 #define _INSTALLER_H
 
+#define INSTALLER_VERSION 43
+#define INSTALLER_REVISION 3
+
 #define DEBUG 1
 
 #ifdef LINUX
 #define FALSE	0
 #define TRUE	1
 #define IPTR	int
-#define PrintFault(x,y)	/* */
+#define PrintFault(x,y)	perror(y)
 #define IoErr()		/* */
 #endif /* LINUX */
 
@@ -39,6 +42,16 @@ typedef struct ScriptArg
 
 } ScriptArg;
 
+/* Error codes used for ( trap ... ) and onerror */
+#define NOERROR		0 /* no error occurred	*/
+#define USERABORT	1 /* user aborted	*/
+#define OUTOFMEMORY	2 /* out of memory	*/
+#define	SCRIPTERROR	3 /* error in script	*/
+#define DOSERROR	4 /* DOS error		*/
+#define	BADPARAMETER	5 /* bad parameter data	*/
+
+#define NUMERRORS	5 /* Number of error codes */
+
 typedef struct InstallerPrefs
 {
   char * transcriptfile;
@@ -46,6 +59,9 @@ typedef struct InstallerPrefs
   int debug;
   int welcome;
   int copyfail, copyflags;
+  ScriptArg onerror, *onerrorparent;
+  ScriptArg trap[NUMERRORS], *trapparent[NUMERRORS];
+  int defusrlevel;
 } InstallerPrefs;
 
 #define COPY_FAIL	1

@@ -2,16 +2,18 @@
 
 #include "Installer.h"
 #include "execute.h"
+#include "cmdlist.h"
 
 /* External variables */
 extern InstallerPrefs preferences;
+extern int error;
 
 /* External function prototypes */
 extern void cleanup();
 extern void end_malloc();
 extern void *get_variable( char * );
 extern char *get_var_arg( char * );
-extern int get_var_int( char * );
+extern int  get_var_int( char * );
 extern void set_variable( char *, char *, int );
 #ifdef DEBUG
 extern void dump_varlist();
@@ -20,9 +22,18 @@ extern ScriptArg *find_proc( char * );
 extern void show_abort( char * );
 extern void show_complete( int );
 extern void show_exit( char * );
-extern void show_welcome( char * );
 extern void show_working( char * );
 extern void final_report();
+extern int  request_bool( struct ParameterList * );
+extern int  request_number( struct ParameterList * );
+extern char *request_string( struct ParameterList * );
+extern int  request_choice( struct ParameterList * );
+extern char *request_dir( struct ParameterList * );
+extern char *request_disk( struct ParameterList * );
+extern char *request_file( struct ParameterList * );
+extern int  request_options( struct ParameterList * );
+extern void request_userlevel( char * );
+extern void traperr( char * );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -42,6 +53,11 @@ char * callbackstring = NULL, * globalstring = NULL;
 #endif /* !LINUX */
 
 
+/*
+  identify first arg with command and next ones as parameters to it
+  command has to be keyword or quoted string
+  parameters are converted as needed, <cmd> executed
+*/
 void execute_script( ScriptArg *commands, int level )
 {
 ScriptArg *current, *dummy = NULL;
@@ -68,12 +84,10 @@ void *params;
       }
       else
       {
-        if( current->arg != NULL )
-        {
-          cleanup();
-          printf( "Argument in list of commands!\n" );
-          exit(-1);
-        }
+        error = SCRIPTERROR;
+        traperr( "Argument in list of commands!\n" );
+        cleanup();
+        exit(-1);
       }
     }
     free( current->parent->arg );
@@ -81,12 +95,11 @@ void *params;
     current->parent->intval = current->intval;
     if( current->arg != NULL )
     {
-      current->parent->arg = malloc( strlen( current->arg ) + 1 );
+      current->parent->arg = strdup( current->arg );
       if( current->parent->arg == NULL )
       {
         end_malloc();
       }
-      strcpy( current->parent->arg, current->arg );
     }
   }
   else
@@ -101,7 +114,8 @@ void *params;
     switch( cmd_type )
     {
       case _UNKNOWN	: /* Unknown command */
-                          printf( "Unknown command <%s>\n", current->arg );
+                          error = SCRIPTERROR;
+                          traperr( "Unknown command !\n" );
                           cleanup();
                           exit(-1);
                           break;
@@ -110,7 +124,11 @@ void *params;
                           string = collect_strings( current->next, LINEFEED, level );
                           show_abort( string );
                           free( string );
-                          /* Execute onerrors		*/
+                          /* Execute onerrors */
+                          if( preferences.onerror.cmd != NULL )
+                          {
+                            execute_script( preferences.onerror.cmd, -99 );
+                          }
 #ifdef DEBUG
                           dump_varlist();
 #endif /* DEBUG */
@@ -169,8 +187,9 @@ void *params;
                               case _DIV :
                                 if( j == 0 )
                                 {
+                                  error = BADPARAMETER;
+                                  traperr( "Division by zero!\n" );
                                   cleanup();
-                                  printf( "Division by zero!\n" );
                                   exit(-1);
                                 }
                                 current->parent->intval = (int)( i / j );
@@ -210,14 +229,15 @@ void *params;
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "Two arguments required!\n" );
                             cleanup();
-                            printf( "ERROR!\n" );
                             exit(-1);
                           }
                           break;
 
       case _CAT		: /* Return concatenated strings */
-                          string = collect_strings( current->next, 0, level );
+                          string = collect_strings( current->next, '#', level );
                           /* Add surrounding quotes to string */
                           slen = strlen( string );
                           current->parent->arg = malloc( slen + 3 );
@@ -240,38 +260,14 @@ void *params;
                             {
                               execute_script( current->cmd, level + 1 );
                             }
-                            if( current->arg != NULL )
-                            {
-                              if( (current->arg)[0] == SQUOTE || (current->arg)[0] == DQUOTE )
-                              {
-                                /* Strip off quotes */
-                                clip = strip_quotes( current->arg );
-                                current->parent->intval = atoi( clip );
-                                free( clip );
-                              }
-                              else
-                              {
-                                clip = get_var_arg( current->arg );
-                                if( clip != NULL )
-                                {
-                                  current->parent->intval = atoi( clip );
-                                }
-                                else
-                                {
-                                  current->parent->intval = get_var_int( current->arg );
-                                }
-                              }
-                            }
-                            else
-                            {
-                              current->parent->intval = current->intval;
-                            }
+                            i = getint( current );
                           }
                           else
                           {
-                            current->parent->intval = 0;
+                            i = 0;
                           }
-                          show_complete( current->parent->intval );
+                          current->parent->intval = i;
+                          show_complete( i );
                           break;
 
       case _DEBUG	:
@@ -301,11 +297,12 @@ void *params;
                           parameter = get_parameters( current->next, level );
                           string = collect_strings( current->next, LINEFEED, level );
                           show_exit( string );
-                          if( parameter[ _QUIET - _PARAMETER -1 ].intval == 0 )
+                          if( GetPL( parameter, _QUIET ).intval == 0 )
                           {
                             final_report();
                           }
                           free( string );
+                          free( parameter );
 #ifdef DEBUG
                           dump_varlist();
 #endif /* DEBUG */
@@ -336,20 +333,20 @@ void *params;
                               current->parent->intval = current->intval;
                               if( current->arg != NULL )
                               {
-                                current->parent->arg = malloc( strlen( current->arg ) + 1 );
+                                current->parent->arg = strdup( current->arg );
                                 if( current->parent->arg == NULL )
                                 {
                                   end_malloc();
                                 }
-                                strcpy( current->parent->arg, current->arg );
                               }
                             }
                           }
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "No arguments given!\n" );
                             cleanup();
-                            printf( "No arguments given!\n" );
                             exit(-1);
                           }
                           break;
@@ -393,8 +390,9 @@ void *params;
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "No argument given!\n" );
                             cleanup();
-                            printf( "No argument given!\n" );
                             exit(-1);
                           }
                           break;
@@ -443,20 +441,20 @@ void *params;
                                 current->parent->intval = current->intval;
                                 if( current->arg != NULL )
                                 {
-                                  current->parent->arg = malloc( strlen( current->arg ) + 1 );
+                                  current->parent->arg = strdup( current->arg );
                                   if( current->parent->arg == NULL )
                                   {
                                     end_malloc();
                                   }
-                                  strcpy( current->parent->arg, current->arg );
                                 }
                               }
                             }
                           }
                           else
                           {
+                            error = SCRIPTERROR;
+                            traperr( "Two arguments required!\n" );
                             cleanup();
-                            printf( "ERROR!\n" );
                             exit(-1);
                           }
                           break;
@@ -473,8 +471,9 @@ void *params;
                                 /* There is a command instead of a varname */
 #warning FIXME: What to do if cmd but expected varname?
 #warning FIXME: Maybe do not allow varnames with quotes, too.
+                                error = BADPARAMETER;
+                                traperr( "Expected symbol, found function instead!\n" );
                                 cleanup();
-                                printf( "Expected symbol, found function instead!\n" );
                                 exit(-1);
                               }
                               else
@@ -521,12 +520,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             {
                               if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
                               {
-                                dummy->parent->arg = malloc( strlen(dummy->next->arg) + 1 );
+                                dummy->parent->arg = strdup(dummy->next->arg);
                                 if( dummy->parent->arg == NULL)
                                 {
                                   end_malloc();
                                 }
-                                strcpy( dummy->parent->arg, dummy->next->arg );
                               }
                               else
                               {
@@ -642,12 +640,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           printf( "String = <%s>\n", string );
 #endif /* DEBUG */
 #else /* !LINUX */
-                          string = malloc( strlen( clip ) + 1 );
+                          string = strdup( clip );
                           if( string == NULL )
                           {
                             end_malloc();
                           }
-                          strcpy( string, clip );
 #endif /* !LINUX */
                           /* Free temporary space */
                           free( clip );
@@ -667,7 +664,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             end_malloc();
                           }
                           clip[0] = DQUOTE;
-                          strcpy( (clip) + 1, string );
+                          strcpy( clip + 1, string );
                           clip[slen+1] = DQUOTE;
                           clip[slen+2] = 0;
                           free( string );
@@ -695,12 +692,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                                 clip = get_var_arg( current->arg );
                                 if( clip != NULL )
                                 {
-                                  string = malloc( strlen( clip ) + 1 );
+                                  string = strdup( clip );
                                   if( string == NULL )
                                   {
                                     end_malloc();
                                   }
-                                  strcpy( string, clip );
                                 }
                                 else
                                 {
@@ -732,8 +728,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             else
                             {
                               free( string );
+                              error = BADPARAMETER;
+                              traperr( "Negative argument to (substr)!\n" );
                               cleanup();
-                              printf( "Negative argument to %s!\n", "substr" );
                               exit(-1);
                             }
                             /* Get number of chars to copy */
@@ -756,6 +753,10 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                               j = slen;
                             }
                             clip = malloc( slen + 1 );
+                            if( clip == NULL )
+                            {
+                              end_malloc();
+                            }
                             strncpy( clip, ( string + i ), j );
                             clip[j] = 0;
                             free( string );
@@ -763,8 +764,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           }
                           else
                           {
+                            error = SCRIPTERROR;
+                            traperr( "Wrong number of arguments to (substr)!\n" );
                             cleanup();
-                            printf( "Wrong number of arguments to %s!\n", "substr" );
                             exit(-1);
                           }
                           break;
@@ -772,8 +774,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
       case _TIMES	: /* Multiply all arguments and return that value */
                           if( current->next == NULL )
                           {
+                            error = SCRIPTERROR;
+                            traperr( "No arguments to \"*\" operator!\n" );
                             cleanup();
-                            printf( "No arguments to \"*\" operator!\n" );
                             exit(-1);
                           }
                           current->parent->intval = 1;
@@ -836,12 +839,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                                 current->parent->intval = current->next->intval;
                                 if( current->next->arg != NULL )
                                 {
-                                  current->parent->arg = malloc( strlen( current->next->arg ) + 1 );
+                                  current->parent->arg = strdup( current->next->arg );
                                   if( current->parent->arg == NULL )
                                   {
                                     end_malloc();
                                   }
-                                  strcpy( current->parent->arg, current->next->arg );
                                 }
                               }
                             }
@@ -849,8 +851,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "Wrong number of arguments to (until)!\n" );
                             cleanup();
-                            printf( "Wrong number of arguments to %s!\n", "until" );
                             exit(-1);
                           }
                           break;
@@ -867,8 +870,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             if( i < _NOVICE || i > _EXPERT )
                             {
 #warning FIXME: add error message
+                              error = BADPARAMETER;
+                              traperr( "New user-level not in [Novice|Average|Expert] !\n" );
                               cleanup();
-                              printf( "New user-level not in [Novice|Average|Expert] !\n" );
                               exit(-1);
                             }
                             else
@@ -880,15 +884,16 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "No argument given!\n" );
                             cleanup();
-                            printf( "No argument given!\n" );
                             exit(-1);
                           }
                           break;
 
       case _WELCOME	: /* Display strings instead of "Welcome to the <APPNAME> App installation utility" */
                           string = collect_strings( current->next, SPACE, level );
-                          show_welcome( string );
+                          request_userlevel( string );
 
                           /* Set return value */
                           /* Add surrounding quotes to string */
@@ -932,12 +937,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                                 current->parent->intval = current->next->intval;
                                 if( current->next->arg != NULL )
                                 {
-                                  current->parent->arg = malloc( strlen( current->next->arg ) + 1 );
+                                  current->parent->arg = strdup( current->next->arg );
                                   if( current->parent->arg == NULL )
                                   {
                                     end_malloc();
                                   }
-                                  strcpy( current->parent->arg, current->next->arg );
                                 }
                               }
                             }
@@ -945,8 +949,9 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "No arguments given!\n" );
                             cleanup();
-                            printf( "No arguments given!\n" );
                             exit(-1);
                           }
                           break;
@@ -995,12 +1000,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
 #ifdef DEBUG
                                 printf( "VBlank = %s\n", clip );
 #endif /* DEBUG */
-                                current->parent->arg = malloc( strlen( clip ) + 1 );
+                                current->parent->arg = strdup( clip );
                                 if( current->parent->arg == NULL )
                                 {
                                   end_malloc();
                                 }
-                                strcpy( current->parent->arg, clip );
                                 free( clip );
                                 break;
 
@@ -1026,21 +1030,121 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           else
                           {
 #warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "No arguments given!\n" );
                             cleanup();
-                            printf( "No arguments given!\n" );
+                            exit(-1);
+                          }
+                          break;
+
+      case _ASKBOOL	: /* Ask user for a bool */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->intval = request_bool( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKNUMBER	: /* Ask user for a number */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->intval = request_number( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKSTRING	: /* Ask user for a String */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->arg = request_string( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKCHOICE	: /* Ask user to choose one item */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->intval = request_choice( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKDIR	: /* Ask user for a directory */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->arg = request_dir( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKDISK	: /* Ask user insert a disk */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->arg = request_disk( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKFILE	: /* Ask user for a file */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->arg = request_file( parameter );
+                          free( parameter );
+                          break;
+
+      case _ASKOPTIONS	: /* Ask user to choose multiple items */
+                          parameter = get_parameters( current->next, level );
+                          current->parent->intval = request_options( parameter );
+                          free( parameter );
+                          break;
+
+      case _ONERROR	: /* link onerror to preferences */
+                          current = current->next;
+                          /* reset parent of old onerror statement */
+                          dummy = preferences.onerror.cmd;
+                          while( dummy != NULL )
+                          {
+                            dummy->parent = preferences.onerrorparent;
+                            dummy = dummy->next;
+                          }
+                          /* set new onerror statement */
+                          preferences.onerror.cmd = current->cmd;
+                          preferences.onerrorparent = current;
+                          /* set new parent of new onerror statement */
+                          dummy = current->cmd;
+                          while( dummy != NULL )
+                          {
+                            dummy->parent = &(preferences.onerror);
+                            dummy = dummy->next;
+                          }
+                          break;
+
+      case _TRAP	: /* link trap to preferences */
+                          if( current->next != NULL  && current->next->cmd != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            i = getint( current ) - 1;
+                            current = current->next;
+                            /* reset parent of old trap statement */
+                            dummy = preferences.trap[i].cmd;
+                            while( dummy != NULL )
+                            {
+                              dummy->parent = preferences.trapparent[i];
+                              dummy = dummy->next;
+                            }
+                            /* set new onerror statement */
+                            preferences.trap[i].cmd = current->cmd;
+                            preferences.trapparent[i] = current;
+                            /* set new parent of new onerror statement */
+                            dummy = current->cmd;
+                            while( dummy != NULL )
+                            {
+                              dummy->parent = &(preferences.trap[i]);
+                              dummy = dummy->next;
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            error = SCRIPTERROR;
+                            traperr( "Two arguments required!\n" );
+                            cleanup();
                             exit(-1);
                           }
                           break;
 
       /* Here are all unimplemented commands */
-      case _ASKBOOL	:
-      case _ASKCHOICE	:
-      case _ASKDIR	:
-      case _ASKDISK	:
-      case _ASKFILE	:
-      case _ASKNUMBER	:
-      case _ASKOPTIONS	:
-      case _ASKSTRING	:
       case _COPYFILES	:
       case _COPYLIB	:
       case _DELETE	:
@@ -1060,7 +1164,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
       case _MAKEASSIGN	:
       case _MAKEDIR	:
       case _MESSAGE	:
-      case _ONERROR	:
       case _PATHONLY	:
       case _PATMATCH	:
       case _PROTECT	:
@@ -1071,7 +1174,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
       case _TACKON	:
       case _TEXTFILE	:
       case _TOOLTYPE	:
-      case _TRAP	:
                           printf( "Unimplemented command <%s>\n", current->arg );
                           break;
 
@@ -1081,12 +1183,11 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           current->parent->intval = dummy->intval;
                           if( dummy->arg != NULL )
                           {
-                            current->parent->arg = malloc( strlen( dummy->arg ) + 1 );
+                            current->parent->arg = strdup( dummy->arg );
                             if( current->parent->arg == NULL )
                             {
                               end_malloc();
                             }
-                            strcpy( current->parent->arg, dummy->arg );
                           }
                           break;
 
@@ -1095,6 +1196,40 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           /* as parameter to a function we have got an ignore=1 before */
                           if( current->parent->ignore == 0)
                           {
+                            /* Read in strings */
+                            parameter = malloc( sizeof( struct ParameterList ) );
+                            if( parameter == NULL )
+                            {
+                              end_malloc();
+                            }
+                            collect_stringargs( current, level, parameter );
+                            /* Store data in preferences */
+                            for( i = 0 ; i < parameter->intval ; i++ )
+                            {
+                              /* These are mutually exclusive */
+                    #warning FIXME: How are (fail-)strings interpreted in "delopts" ?
+                              if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+                              {
+                              }
+                              if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+                              {
+                              }
+                              if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+                              {
+                              }
+
+                              /* These may be combined in any way */
+                              if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+                              {
+                                preferences.copyflags &= ~COPY_ASKUSER;
+                              }
+                              if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+                              {
+                                preferences.copyflags &= ~COPY_ASKUSER;
+                              }
+                            }
+
+                            free( parameter );
                           }
                           break;
 
@@ -1102,6 +1237,45 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           /* as parameter to a function we have got an ignore=1 before */
                           if( current->parent->ignore == 0)
                           {
+                            /* Read in strings */
+                            parameter = malloc( sizeof( struct ParameterList ) );
+                            if( parameter == NULL )
+                            {
+                              end_malloc();
+                            }
+                            collect_stringargs( current, level, parameter );
+                            /* Store data in preferences */
+                            for( i = 0 ; i < parameter->intval ; i++ )
+                            {
+                              /* These are mutually exclusive */
+                              if( strcasecmp( parameter->arg[i], "fail" ) == 0 )
+                              {
+                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+                                preferences.copyfail |= COPY_FAIL;
+                              }
+                              if( strcasecmp( parameter->arg[i], "nofail" ) == 0 )
+                              {
+                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+                                preferences.copyfail |= COPY_NOFAIL;
+                              }
+                              if( strcasecmp( parameter->arg[i], "oknodelete" ) == 0 )
+                              {
+                                preferences.copyfail &= ~(COPY_FAIL | COPY_NOFAIL | COPY_OKNODELETE );
+                                preferences.copyfail |= COPY_OKNODELETE;
+                              }
+
+                              /* These may be combined in any way */
+                              if( strcasecmp( parameter->arg[i], "force" ) == 0 )
+                              {
+                                preferences.copyflags |= COPY_ASKUSER;
+                              }
+                              if( strcasecmp( parameter->arg[i], "askuser" ) == 0 )
+                              {
+                                preferences.copyflags |= COPY_ASKUSER;
+                              }
+                            }
+
+                            free( parameter );
                           }
                           break;
 
@@ -1231,7 +1405,10 @@ char *clip;
 return clip;
 }
 
-
+/*
+  Convert data entry to <int>
+  <string>s are atoi()'d, <cmd>s are *not* executed
+*/
 int getint( ScriptArg *argument )
 {
 int i;
@@ -1267,6 +1444,9 @@ char * clip;
 return i;
 }
 
+/*
+  Find out information on hardware
+*/
 int database_keyword( char *name )
 {
   if( strcasecmp( name, "vblank" ) == 0 )
@@ -1285,6 +1465,12 @@ int database_keyword( char *name )
 return _UNKNOWN;
 }
 
+/*
+  Concatenate all arguments as a string with separating character
+  if character is 0 strings are concatenated without separator
+  <int>s are converted to strings, <cmd>s are executed,
+  <parameter>s are not considered
+*/
 char *collect_strings( ScriptArg *current, char separator, int level )
 {
 char *string = NULL, *clip, *dummy;
@@ -1312,8 +1498,11 @@ int i;
           dummy = get_var_arg( current->arg );
           if( dummy != NULL )
           {
-            clip = malloc( strlen( dummy ) );
-            strcpy( clip, dummy );
+            clip = strdup( dummy );
+            if( clip == NULL )
+            {
+              end_malloc();
+            }
           }
           else
           {
@@ -1359,6 +1548,11 @@ int i;
 return string;
 }
 
+/*
+  args are scanned for known parameters
+  the used entry will be set and <int>s and <string>s read in ParameterList
+  intval contains number of <string>s
+*/
 struct ParameterList *get_parameters( ScriptArg *script, int level )
 {
 struct ParameterList *pl;
@@ -1373,10 +1567,10 @@ char *string, *clip;
   }
   while( script != NULL )
   {
-    current = script->cmd->next;
     /* Check if we have a command as argument */
-    if( script != NULL )
+    if( script->cmd != NULL )
     {
+      current = script->cmd->next;
       /* Check if we don't have a block as argument */
       if( script->cmd->arg != NULL )
       {
@@ -1385,11 +1579,11 @@ char *string, *clip;
         if( cmd > _PARAMETER && cmd <= ( _PARAMETER + NUMPARAMS ) )
         {
           /* This is a parameter */
-          pl[ cmd - _PARAMETER - 1 ].used = 1;
+          GetPL( pl, cmd ).used = 1;
           if( cmd > ( _PARAMETER + NUMARGPARAMS ) )
           {
             /* This is a boolean parameter */
-            pl[ cmd - _PARAMETER - 1 ].intval = 1;
+            GetPL( pl, cmd ).intval = 1;
           }
           else
           {
@@ -1411,7 +1605,7 @@ char *string, *clip;
               case _SETDEFAULTTOOL: /* $ */
               case _SETTOOLTYPE	: /* $ [$] */
               case _SOURCE	: /* $ */
-                                  collect_stringargs( current, level, &pl[ cmd - _PARAMETER - 1 ] );
+                                  collect_stringargs( current, level, &(GetPL( pl, cmd )) );
                                   break;
 
               case _CONFIRM	: /* ($->)# */
@@ -1458,10 +1652,12 @@ char *string, *clip;
                                   }
                                   if( i < _NOVICE || i > _EXPERT )
                                   {
-                                    printf( "Userlevel %d out of range!\n", i );
+                                    error = BADPARAMETER;
+                                    traperr( "Userlevel out of range!\n" );
+                                    cleanup();
                                     exit(-1);
                                   }
-                                  pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                  GetPL( pl, cmd ).intval = i;
                                   break;
 
               case _DEFAULT	: /* * */
@@ -1486,12 +1682,11 @@ char *string, *clip;
                                         clip = get_var_arg( current->arg );
                                         if( clip != NULL )
                                         {
-                                          string = malloc( strlen( clip ) + 1 );
+                                          string = strdup( clip );
                                           if( string == NULL )
                                           {
                                             end_malloc();
                                           }
-                                          strcpy( string, clip );
                                         }
                                         else
                                         {
@@ -1503,20 +1698,22 @@ char *string, *clip;
                                     {
                                       i = current->intval;
                                     }
-                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                    GetPL( pl, cmd ).intval = i;
                                     if( string != NULL )
                                     {
-                                      pl[ cmd - _PARAMETER - 1 ].arg = malloc( sizeof( char * ) );
-                                      if( pl[ cmd - _PARAMETER - 1 ].arg == NULL )
+                                      GetPL( pl, cmd ).arg = malloc( sizeof( char * ) );
+                                      if( GetPL( pl, cmd ).arg == NULL )
                                       {
                                         end_malloc();
                                       }
-                                      pl[ cmd - _PARAMETER - 1 ].arg[0] = string;
+                                      GetPL( pl, cmd ).arg[0] = string;
                                     }
                                   }
                                   else
                                   {
-                                    printf( "No argument to %s!\n", script->cmd->arg );
+                                    error = SCRIPTERROR;
+                                    traperr( "No argument to (default)!\n" );
+                                    cleanup();
                                     exit(-1);
                                   }
                                   break;
@@ -1556,7 +1753,7 @@ char *string, *clip;
                                     {
                                       i = current->intval;
                                     }
-                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                    GetPL( pl, cmd ).intval = i;
                                     current = current->next;
                                     if( current->cmd != NULL )
                                     {
@@ -1589,11 +1786,13 @@ char *string, *clip;
                                     {
                                       i = current->intval;
                                     }
-                                    pl[ cmd - _PARAMETER - 1 ].intval2 = i;
+                                    GetPL( pl, cmd ).intval2 = i;
                                   }
                                   else
                                   {
-                                    printf( "Not enough arguments to %s!\n", script->cmd->arg );
+                                    error = SCRIPTERROR;
+                                    traperr( "Not enough arguments to (range)!\n" );
+                                    cleanup();
                                     exit(-1);
                                   }
                                   break;
@@ -1633,11 +1832,13 @@ char *string, *clip;
                                     {
                                       i = current->intval;
                                     }
-                                    pl[ cmd - _PARAMETER - 1 ].intval = i;
+                                    GetPL( pl, cmd ).intval = i;
                                   }
                                   else
                                   {
-                                    printf( "No argument to %s!\n", script->cmd->arg );
+                                    error = SCRIPTERROR;
+                                    traperr( "No argument to (setstack)!\n" );
+                                    cleanup();
                                     exit(-1);
                                   }
                                   break;
@@ -1656,6 +1857,10 @@ char *string, *clip;
 return pl;
 }
 
+/*
+  read <string>s in ParameterList
+  <int>s are converted, <cmd>s executed
+*/
 void collect_stringargs( ScriptArg *current, int level, struct ParameterList *pl )
 {
 char *string, *clip, **mclip = NULL;
@@ -1685,12 +1890,11 @@ int j = 0;
         clip = get_var_arg( current->arg );
         if( clip != NULL )
         {
-          string = malloc( strlen( clip ) + 1 );
+          string = strdup( clip );
           if( string == NULL )
           {
             end_malloc();
           }
-          strcpy( string, clip );
         }
         else
         {
@@ -1700,12 +1904,11 @@ int j = 0;
             end_malloc();
           }
           sprintf( clip, "%d", get_var_int( current->arg ) );
-          string = (char *)malloc( strlen( clip ) + 1 );
+          string = strdup( clip );
           if( string == NULL)
           {
             end_malloc();
           }
-          strcpy( string, clip );
           free( clip );
         }
       }
@@ -1718,14 +1921,14 @@ int j = 0;
         end_malloc();
       }
       sprintf( clip, "%d", current->intval );
-      string = (char *)malloc( strlen( clip ) + 1 );
+      string = strdup( clip );
       if( string == NULL)
       {
         end_malloc();
       }
-      strcpy( string, clip );
       free( clip );
     }
+    mclip[j] = string;
     j++;
     current = current->next;
   }

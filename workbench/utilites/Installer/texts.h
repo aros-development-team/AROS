@@ -22,6 +22,7 @@ struct VariableList variables[] =
   {"@error-msg",	NULL,	0},
   {"@execute-dir",	NULL,	0},
   {"@icon",		NULL,	0},
+  {"@installer-version",NULL,	0},
   {"@ioerr",		NULL,	0},
   {"@language",		NULL,	0},
   {"@makedir-help",	NULL,	0},
@@ -31,7 +32,7 @@ struct VariableList variables[] =
   {"@user-level",	NULL,	0}
 };
 
-#define NUMDEFVAR 24
+#define NUMDEFVAR 25
 
 
 #endif /* _TEXTS_H */

@@ -146,4 +146,33 @@
   . string-only parameters get their strings read in
   . all other parameters get their values read in
 
+0026
+- (global) parameter "options" is ready "delopts" started
+- fixed bug in option's string-collection ( didn't save strings in array )
+- added text-gui for "asknumber"
+- added macro for ParameterList access
+- moved array with command-strings to new file cmdlist.h
+
+0027
+- use strdup() for string duplication now ;-)
+- set_procedure() has been called allocating space for a string
+  which is unnecessary
+- added text-gui for "askstring" "askbool"
+- "ask*" is only performed if @user-level > NOVICE
+- adjusted default definition of RANGE accodring to docs
+
+0028
+- added support for "onerror" command
+- execute onerror on user-abort
+- call traperr() before exiting after error
+- fixed behaviour of (welcome ...) and user-level requester
+- added text-gui for "askchoice"
+  ( prepared for "askoptions" "askdir" "askfile" "askdisk" )
+- fixed a bug in parse_file() which was introduced in 0027
+  ( didn't save procname )
+- removed error.h again...
+- added support for "trap" command
+- main allocated one ScriptArg too much for the program list,
+  we now remove it after parsing the file
+
 

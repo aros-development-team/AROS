@@ -53,12 +53,7 @@ int i;
       end_malloc();
     }
     usrprocs[i].procbody = cmd;
-    usrprocs[i].procname = malloc( strlen( name ) + 1 );
-    if( usrprocs[i].procname == NULL )
-    {
-      end_malloc();
-    }
-    strcpy( usrprocs[i].procname, name );
+    usrprocs[i].procname = name;
   }
 }
 

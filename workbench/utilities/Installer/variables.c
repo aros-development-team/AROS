@@ -4,10 +4,11 @@
 #include "texts.h"
 
 /* External variables */
+extern InstallerPrefs preferences;
 
 /* External function prototypes */
 extern void end_malloc();
-extern int request_userlevel();
+extern void request_userlevel( char * );
 
 /* Internal function prototypes */
 void *get_variable( char * );
@@ -134,27 +135,25 @@ struct VariableList *list;
 
   /* Change values in list */
 
-  /* Allocate memory and copy variable name if it does not exist yet */
+  /* Duplicate variable name if it does not exist yet */
   
   if( list[i].varsymbol == NULL )
   {
-    list[i].varsymbol = malloc( strlen(name) + 1 );
+    list[i].varsymbol = strdup( name );
     if( list[i].varsymbol == NULL )
     {
       end_malloc();
     }
-    strcpy( list[i].varsymbol, name );
   }
 
+  /* Duplicate variable text if existent */
   if( text != NULL )
   {
-    /* Allocate memory and copy variable text */
-    list[i].vartext = malloc( strlen(text) + 1 );
+    list[i].vartext = strdup( text );
     if( list[i].vartext == NULL )
     {
       end_malloc();
     }
-    strcpy( list[i].vartext, text );
   }
 
   /* Set integer value */
@@ -168,7 +167,12 @@ void set_preset_variables( )
   set_variable( "@app-name", "DemoApp", 0 );
   set_variable( "@abort-button", "Abort Install", 0 );
   set_variable( "@language", "english", 0 );
-  set_variable( "@user-level", NULL, request_userlevel() );
+  set_variable( "@installer-version", NULL, ( INSTALLER_VERSION << 16 ) + INSTALLER_REVISION );
+  set_variable( "@user-level", NULL, preferences.defusrlevel );
+  if( preferences.welcome == FALSE )
+  {
+    request_userlevel( NULL );
+  }
 }
 
 #ifdef DEBUG

@@ -34,7 +34,7 @@ extern void final_report();
 int main( int, char ** );
 
 
-char *filename;
+char *filename = NULL;
 FILE *inputfile;
 char buffer[MAXARGSIZE];
 int error = 0;
@@ -63,43 +63,54 @@ int nextarg, endoffile, count;
 #warning FIXME: evaluate args with RDArgs()
 #endif /* !LINUX */
 
-  preferences.welcome = FALSE;
-  preferences.transcriptstream = NULL;
-#ifdef DEBUG
-  preferences.transcriptfile = "test.transcript";
-  preferences.debug = TRUE;
-#else /* DEBUG */
-  preferences.transcriptfile = NULL;
-  preferences.debug = FALSE;
-#endif /* DEBUG */
-  preferences.copyfail = COPY_FAIL;
-    preferences.copyflags = 0;
-
-#warning FIXME: distinguish between cli/workbench invocation
-
-#warning FIXME: get real script name instead of static "test.script"
-  filename = malloc( 12 * sizeof(char) );
-  strcpy( filename, "test.script" );
-
-  /* Set variables which are not constant */
-  set_preset_variables();
-
-  if( get_var_int( "@user-level" ) == _NOVICE )
-  {
-    preferences.copyflags &= ~(COPY_ASKUSER & preferences.copyflags);
-  }
-  else
-  {
-    preferences.copyflags |= COPY_ASKUSER;
-  }
-
   /* open script file */
+#ifdef DEBUG
+#warning FIXME: get real script name instead of static "test.script"
+  free( filename );
+  filename = strdup( "test.script" );
+#endif /* DEBUG */
+
   inputfile = fopen( filename, "r" );
   if( inputfile == NULL )
   {
     PrintFault( IoErr(), "Installer" );
     exit(-1);
   }
+
+  preferences.welcome = FALSE;
+  preferences.transcriptstream = NULL;
+#ifdef DEBUG
+  preferences.transcriptfile = "install_log_file";
+  preferences.debug = TRUE;
+  preferences.defusrlevel = 0;
+#else /* DEBUG */
+  preferences.transcriptfile = (char *)args[ARG_LOGFILE];
+  if( strcasecmp( "novice", (char *)args[ARG_DEFUSER] ) == 0 )
+    preferences.defusrlevel = _NOVICE;
+  if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
+    preferences.defusrlevel = _AVERAGE;
+  if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
+    preferences.defusrlevel = _EXPERT;
+  preferences.debug = FALSE;
+#endif /* DEBUG */
+  preferences.copyfail = COPY_FAIL;
+  preferences.copyflags = 0;
+
+  preferences.onerror.cmd = NULL;
+  preferences.onerror.next = NULL;
+  preferences.onerror.parent = NULL;
+  preferences.onerrorparent = NULL;
+  for( count = 0 ; count < NUMERRORS ; count++ )
+  {
+    dummy = &(preferences.trap[count]);
+    dummy->cmd = NULL;
+    dummy->next = NULL;
+    dummy->parent = NULL;
+    preferences.trapparent[count] = NULL;
+  }
+
+#warning FIXME: distinguish between cli/workbench invocation
+
   line = 1;
 
   endoffile = FALSE;
@@ -182,7 +193,6 @@ int nextarg, endoffile, count;
 
           default	  : /* Plain text or closing bracket is not allowed */
                             fclose( inputfile );
-                            printf("!!!!!\n");
                             show_parseerror( line );
                             exit(-1);
                             break;
@@ -198,6 +208,18 @@ int nextarg, endoffile, count;
     } while( nextarg != TRUE && !endoffile );
   } while( !endoffile );
 
+  /* Okay, we (again) have allocated one ScriptArg too much, so get rid of it */
+  currentarg = script.cmd;
+  if( currentarg->next != NULL )
+  {
+    while( currentarg->next->next != NULL )
+    {
+      currentarg = currentarg->next;
+    }
+    free( currentarg->next );
+    currentarg->next = NULL;
+  }
+
   free( filename );
   fclose( inputfile );
 
@@ -212,13 +234,19 @@ int nextarg, endoffile, count;
     }
   }
 
-  /* execute parsed script */
-  if( preferences.welcome == FALSE )
+  /* Set variables which are not constant */
+  set_preset_variables();
+
+  if( get_var_int( "@user-level" ) == _NOVICE )
   {
-#ifdef DEBUG
-    printf( "Welcome to %s App installation utility.\n", (char *)get_variable( "@app-name" ) );
-#endif /* DEBUG */
+    preferences.copyflags &= ~(COPY_ASKUSER & preferences.copyflags);
   }
+  else
+  {
+    preferences.copyflags |= COPY_ASKUSER;
+  }
+
+  /* execute parsed script */
   execute_script( script.cmd, 0 );
 
   if( preferences.transcriptstream != NULL )

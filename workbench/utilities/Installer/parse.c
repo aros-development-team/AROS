@@ -12,6 +12,8 @@ extern InstallerPrefs preferences;
 extern void end_malloc();
 extern void set_procedure( char *, ScriptArg * );
 extern void show_parseerror( int );
+extern void cleanup();
+extern void parseerror( char *, int );
 
 /* Internal function prototypes */
 void parse_file( ScriptArg * );
@@ -23,7 +25,7 @@ void parse_file( ScriptArg *first )
 {
 ScriptArg *current;
 int count, i, ready;
-char *name;
+char *clip;
 
   ready = FALSE;
   current = first;
@@ -92,13 +94,14 @@ char *name;
                          else
                          {
                            /* This is an empty bracket */
-#warning FIXME: What to do if bracket is empty ?
+                           parseerror( "There is an empty bracket in line %d.\n", line );
+                           cleanup();
+                           exit(-1);
                          }
                          ready = TRUE;
                          break;
 
         default        : /* This is the real string */
-                         current->cmd = NULL;
                          i = 0;
                          if( buffer[0] == DQUOTE || buffer[0] == SQUOTE )
                          {
@@ -112,7 +115,8 @@ char *name;
                              i++;
                              if( i == MAXARGSIZE )
                              {
-                               printf("Argument length overflow!\n");
+                               parseerror( "Argument length overflow in line %d!\n" ,line );
+                               cleanup();
                                exit(-1);
                              }
                              count = fread( &buffer[i], 1, 1, inputfile );
@@ -138,7 +142,8 @@ char *name;
                            }
                            if( i == MAXARGSIZE )
                            {
-                             printf("Argument length overflow!\n");
+                             parseerror( "Argument length overflow in line %d!\n", line );
+                             cleanup();
                              exit(-1);
                            }
                            if( buffer[i] == SEMICOLON )
@@ -213,6 +218,12 @@ char *name;
                                                   {
                                                     line++;
                                                   }
+                                                  if( buffer[0] == RBRACK )
+                                                  {
+                                                    parseerror( "Procedure has no name in line %d!\n", line );
+                                                    cleanup();
+                                                    exit(-1);
+                                                  }
                                                 } while( isspace( buffer[0] ) && count != 0 );
                                                 if( buffer[0] == SEMICOLON && count != 0 )
                                                 {
@@ -236,7 +247,8 @@ char *name;
                                               } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
                                               if( i == MAXARGSIZE )
                                               {
-                                                printf("Argument length overflow!\n");
+                                                parseerror( "Argument length overflow in line %d!\n", line );
+                                                cleanup();
                                                 exit(-1);
                                               }
                                               if( buffer[i] == LINEFEED )
@@ -260,17 +272,25 @@ char *name;
                                               /* Exit if procedure has no name or name is string/digit or bracket follows */
                                               if( buffer[0] == LBRACK || buffer[0] == RBRACK || buffer[0] == SQUOTE || buffer[0] == DQUOTE )
                                               {
-                                                printf( "Invalid procedure name <%s>!\n", buffer );
+                                                clip = malloc( MAXARGSIZE );
+                                                if( clip == NULL )
+                                                {
+                                                  end_malloc();
+                                                }
+                                                sprintf( clip, "Invalid procedure name <%s> in line %cd!\n", buffer, '%' );
+                                                parseerror( clip, line );
+                                                free( clip );
+                                                cleanup();
+                                                exit(-1);
                                               }
-                                              name = malloc( strlen( buffer ) + 1 );
-                                              if( name == NULL )
+                                              clip = strdup( buffer );
+                                              if( clip == NULL )
                                               {
                                                 end_malloc();
                                               }
-                                              strcpy( name, buffer );
                                               /* Procedure body */
                                               parse_file( proc->cmd );
-                                              set_procedure( name, proc->cmd );
+                                              set_procedure( clip, proc->cmd );
                                               buffer[0] = 0;
                                               ready = TRUE;
                                             }
