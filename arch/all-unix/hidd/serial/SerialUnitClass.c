@@ -77,6 +77,8 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
   struct TagItem *tag, *tstate;
   ULONG unitnum = 0;
   
+  EnterFunc(bug("SerialUnit::New()\n"));
+
   tstate = msg->attrList;
   while ((tag = NextTagItem((const struct TagItem **)&tstate)))
   {
@@ -94,7 +96,6 @@ static Object *serialunit_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
   } /* while (tags to process) */
   
-  EnterFunc(bug("SerialUnit::New()\n"));
   D(bug("!!!!Request for unit number %d\n",unitnum));
 
   obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
@@ -211,7 +212,7 @@ exit:
 }
 
 /******* SerialUnit::Dispose() ***********************************/
-static Object *serialunit_dispose(Class *cl, Object *obj, struct pRoot_New *msg)
+static Object *serialunit_dispose(Class *cl, Object *obj, Msg msg)
 {
   struct HIDDSerialUnitData * data;
   EnterFunc(bug("SerialUnit::Dispose()\n"));
