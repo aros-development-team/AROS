@@ -7,7 +7,7 @@
 */
 
 /*******************************************************************************************/
-/* HTML TAGs */
+/* HTML Tags */
 enum Num_of_Tags
 {
 /* Structure */		TAG_html, TAG_head, TAG_title, TAG_body, TAG_comment,
@@ -35,6 +35,22 @@ typedef struct
 } tag_struct __attribute__((packed));
 
 extern tag_struct	List_of_Tags[MAX_Tags];
+
+/*******************************************************************************************/
+/* HTML Tag Attributes */
+enum Num_of_Attrs
+{
+	ATTR_href, ATTR_src, ATTR_alt,
+	MAX_Attrs
+};
+
+typedef struct
+{
+	string	name;
+	int	pad;
+} attr_struct __attribute__((packed));
+
+extern attr_struct	List_of_Attrs[MAX_Attrs];
 
 /*******************************************************************************************/
 /* Paragraphs */

@@ -56,7 +56,7 @@ int layout_do( page_struct *page, int winwidth, int *width, int *height )
 	D( printf("\n\n----------------------------------------------------\n\n"); )
 	D( printf("layout - page: %p title %p seglist %p\n", page, page->title, page->seglist); )
 	linelist_init( page->ldata );
-	D( printf("\033[1mPage title: %s\033[0m\n", page->title); )
+	D( if( page->title ) printf("\033[1mPage title: %s\033[0m\n", page->title); )
 	ldata->nowordwrap = FALSE;
 	ldata->xsize = winwidth;
 	ldata->xpos = 0;
@@ -80,41 +80,43 @@ void layout_free( page_struct *page )
 #if SHOW_SEGLIST
 static int show_seglist( seg_struct *seglistpos )
 {
-	int	i;
+	int	i, cnt;
 	u_char	cmd, last;
 	string	str;
 	int	len;
 
-	i = 1;
+	cnt = 0;
 	do
 	{
+		cnt++;
 		cmd = seglistpos->cmd & SEG_CMD_MASK;
 		last = seglistpos->cmd & SEG_CMD_LAST;
 		if( cmd == SEG_CMD_Next )
 		{
-			printf("%2d cmd %2d: %-10s %p -> %p\n", i, cmd, List_of_SegCmds[cmd], seglistpos, seglistpos->next);
+			printf("%2d cmd %2d: %-10s %8p -> %8p\n", cnt, cmd, List_of_SegCmds[cmd], seglistpos, seglistpos->next);
 			seglistpos = seglistpos->next;
 			continue;
 		}
 		else if( cmd == SEG_CMD_Sublist )
 		{
-			printf("%2d cmd %2d: %-10s %p -> %p <-\n", i, cmd, List_of_SegCmds[cmd], seglistpos, seglistpos->next);
+			printf("%2d cmd %2d: %-10s %8p -> %8p <-\n", cnt, cmd, List_of_SegCmds[cmd], seglistpos, seglistpos->next);
 			show_seglist( seglistpos->sublist );
 			continue;
 		}
 		else
 		{
-			printf("%2d cmd %2d: %-10s %p", i, cmd, List_of_SegCmds[cmd], seglistpos);
+			printf("%2d cmd %2d: %-10s %8p", cnt, cmd, List_of_SegCmds[cmd], seglistpos);
 			if( cmd == SEG_CMD_Text )
 			{
 				len = seglistpos->textlen;
 				str = seglistpos->textseg;
-				printf(" len=%2d: [%s]", len, str);
+				printf(" %8p len=%2d: [", str, len);
+				for(i=0; i<len; i++) printf("%c", str[i]);
+				printf("]");
 			}
 			printf("\n");
 		}
 		seglistpos++;
-		i++;
 	}
 	while( !last );
 	return 0;
@@ -126,7 +128,7 @@ static int show_seglist( seg_struct *seglistpos )
 
 static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *maxx, int *maxy )
 {
-	int		i;
+	int		cnt;
 	int		width, height, startx;
 	u_char		cmd, last;
 	string		str;
@@ -137,15 +139,17 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 	startx = 0;
 	ldata->fontheight = text_height( ldata );
 	ldata->styleflags.value = 0;
-	i = 1;
+	cnt = 0;
 	do
 	{
+		cnt++;
 		cmd = seglistpos->cmd & SEG_CMD_MASK;
 		last = seglistpos->cmd & SEG_CMD_LAST;
-//		D( printf("%2d: cmd %2d: %-10s seglistpos %p\n", i, cmd, List_of_SegCmds[cmd], seglistpos); )
+//		D( printf("%2d: cmd %2d: %-10s seglistpos %p\n", cnt, cmd, List_of_SegCmds[cmd], seglistpos); )
 		if( cmd == SEG_CMD_Next )
 		{
 			seglistpos = seglistpos->next;
+			continue;
 		}
 		else if( cmd == SEG_CMD_Sublist )
 		{
@@ -153,10 +157,11 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 			if( width > *maxx )
 				*maxx = width;
 			*maxy += height;
+			continue;
 		}
 		else if( cmd == SEG_CMD_Blockstart )
 		{
-			D( printf("%2d: ........................ maxx=%2d maxy=%2d\n", i, *maxx, *maxy); )
+			D( printf("%2d: ........................ maxx=%2d maxy=%2d\n", cnt, *maxx, *maxy); )
 		}
 		else if( cmd == SEG_CMD_Blockend )
 		{
@@ -167,7 +172,7 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 					*maxx = width;
 				*maxy += height;
 			}
-			D( printf("%2d: ^^^^^^^^^^^^^^^^^^^^^^^^ maxx=%2d maxy=%2d\n", i, *maxx, *maxy); )
+			D( printf("%2d: ^^^^^^^^^^^^^^^^^^^^^^^^ maxx=%2d maxy=%2d\n", cnt, *maxx, *maxy); )
 			new_line( ldata, startx, *maxy, &width, &height );
 			if( width > *maxx )
 				*maxx = width;
@@ -210,7 +215,7 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 			para_flags	pflags;
 			
 			pflags = seglistpos->paraflags;
-			D( printf("%2d: Paragraph flags %02x\n", i, pflags.value); )
+			D( printf("%2d: Paragraph flags %02x\n", cnt, pflags.value); )
 			if( pflags.fl.nowordwrap )
 				ldata->nowordwrap = TRUE;
 			else
@@ -220,7 +225,7 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 		{
 			ldata->styleflags = seglistpos->styleflags;
 			//ldata->fontheight = seglistpos->styleflags.fl.fontsize - 8;
-//			D( printf("%2d: Style %s%s%s%s Size %d\n", i, ts.bold?"bold ":"", ts.italics?"italics ":"",
+//			D( printf("%2d: Style %s%s%s%s Size %d\n", cnt, ts.bold?"bold ":"", ts.italics?"italics ":"",
 //				ts.underlined?"underlined ":"", ts.fixedwidth?"fixedwidth ":"", fontsize); )
 #if 0
 			{
@@ -271,10 +276,9 @@ static int layout_seglist( layout_struct *ldata, seg_struct *seglistpos, int *ma
 		}
 		else
 		{
-			D( printf("%2d: cmd %d\n", i, cmd); )
+			D( printf("%2d: cmd %d\n", cnt, cmd); )
 		}
 		seglistpos++;
-		i++;
 	}
 	while( !last );
 	return 0;
@@ -313,6 +317,9 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 	ypos = 0;
 	fontheight = ldata->fontheight;
 //	D( printf("[x=%d y=%d f=%d len=%d %s]", startx, starty, fontheight, len, str); )
+	xskip = 0;
+	charlen = 0;
+	charskip = 0;
 	while( len > 0 )
 	{
 		if( ldata->nowordwrap )
@@ -336,7 +343,7 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 			}
 			/* determine how many characters will fit in remaining line */
 			strlen = text_fit( ldata, str, len, &xstrsize, xsize - xpos );
-			if( strlen == len )
+			if( len == strlen )
 			{
 				/* jep, it fits in current line */
 				charlen = strlen;
@@ -345,19 +352,19 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 				linebreak = FALSE;
 				idx = 2;
 			}
-			else
+			else	/* len > strlen */
 			{
 				/* nope, we have to wrap words */
 				linebreak = TRUE;
 				nospace = TRUE;
-				for( i=strlen-1; i>0; i-- )
+				for( i=strlen; i>0; i-- )	/* include one more char, it might be a space */
 				{
 					/* search backwards for last space to detect end of last word */
 					if( str[i] == ' ' )
 					{
 						charlen = i;
 						charskip = i+1;
-						xstrsize = text_len( ldata, str, charlen ); //debug only
+						xstrsize = text_len( ldata, str, charlen ); /* for non-left-align and debug */
 						xskip = xstrsize;	/* this is bigger than neccessary,
 									   but small enough to fit xsize */
 						nospace = FALSE;
@@ -439,24 +446,26 @@ static int layout_text( layout_struct *ldata, string str, int len, int startx, i
 #ifndef __AROS__
 int text_len( layout_struct *ldata, string str, int strlen )
 {
-	return strlen;
+//	D( printf("text_len of %d\n", strlen); )
+	return strlen * FONTSIZE;
 }
 
 int text_height( layout_struct *ldata )
 {
-	return 1;
+	return FONTSIZE;
 }
 
 int text_fit( layout_struct *ldata, string str, int strlen, int *strsize, int maxwidth )
 {
-	int t;
+	int len;
 	
-	if( strlen > maxwidth )
-		t = maxwidth;
+//	D( printf("text_fit of %d into %d\n", strlen, maxwidth); )
+	if( strlen * FONTSIZE > maxwidth )
+		len = maxwidth / FONTSIZE;
 	else
-		t = strlen;
-	*strsize = t;
-	return t;
+		len = strlen;
+	*strsize = len * FONTSIZE;
+	return len;
 }
 #endif
 

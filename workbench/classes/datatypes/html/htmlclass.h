@@ -13,7 +13,7 @@ struct HtmlData
 	parse_struct	*pdata;
 	layout_struct	*ldata;
 	struct List	*linelist;
-	struct RastPort	rastport;
+	struct RastPort	*rastport;
 	struct TextFont	*font;
 	ULONG		style;
 	UBYTE		fgpen;

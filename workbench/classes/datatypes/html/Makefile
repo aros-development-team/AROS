@@ -1,7 +1,7 @@
 #   $Id$
 #   This Makefile creates a standalone application for debugging with console only
 
-CFLAGS	+= -Wall
+CFLAGS	+= -O -Wall
 
 OBJS = main.o tables.o parse.o layout.o
 

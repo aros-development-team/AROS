@@ -22,50 +22,51 @@ int main( int argc, char **argv )
 	int		filelen, bytes;
 	string		inbuf;
 	int		ret;
-	int		width, height;
+	int		width, height, xsize;
 	page_struct	*page;
 
-	if(argc != 2)
+	if(argc != 3)
 	{
-		printf("Usage: %s <html-doc>\n", argv[0]);
+		printf("Usage: %s <html-doc> <xsize>\n", argv[0]);
 		return 0;
 	}
 	infile = argv[1];
+	xsize = atoi( argv[2] );
 
 	infp = fopen( infile, "r" );
 	if( infp == NULL )
 	{
 		printf("Cannot open %s\n", infile);
-		return 0;
+		return 10;
 	}
 	fseek( infp, 0, SEEK_END );
 	filelen = ftell( infp );
 	fseek( infp, 0, SEEK_SET );
 	printf("File length: %d\n", filelen);
 	if( filelen <= 0 )
-		return ret;
+		return 10;
 
 	inbuf = malloc( filelen );
 	if( !inbuf )
-		return 0;
+		return 10;
 
 	bytes = fread(inbuf, 1, filelen, infp);
 	printf("Bytes read: %d\n", bytes);
 	if( bytes <= 0 )
-		return ret;
+		return 10;
 	
 	page = parse_init( NULL );
 	if( !page )
-		return ret;
+		return 10;
 	printf("parse_init done, page %p\n", page);
 	ret = parse_do( page, inbuf, bytes );
 	if( !ret )
 		return 10;
-	printf("parse done\n");
+	printf("parse_do done\n");
 	ret = parse_end( page );
 	if( !ret )
 		return 10;
-	printf("parse_exit done\n");
+	printf("parse_end done\n");
 
 	free( inbuf );
 
@@ -74,10 +75,10 @@ int main( int argc, char **argv )
 		return 10;
 	printf("layout_init done\n");
 
-	ret = layout_do( page, 30, &width, &height );
+	ret = layout_do( page, xsize, &width, &height );
 	if( !ret )
 		return 10;
-	printf("layout done\n");
+	printf("layout_do done\n");
 	printf("Result: width=%d height=%d\n", width, height);
 
 	layout_free( page );

@@ -8,6 +8,6 @@ FUNCS := obtainengine
 
 %build_module_macro mmake=workbench-datatypes-html modname=html \
   modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="arosc amiga"
+  uselibs="rom amiga"
 
 %common

@@ -6,7 +6,7 @@
     Desc: Structs for HTML parser with syntax checker
 */
 
-#define USE_WARN 0
+#define USE_WARN 1
 #define DEBUG_PARSE 1
 
 #ifndef WARN
@@ -25,33 +25,34 @@
 #endif
 #endif
 
-typedef void (*tagfunc)( void );
+typedef void (*tagfunc)( parse_struct *pdata );
 
 /*******************************************************************************************/
 /* Prototypes */
 
 /* Tag Open/Close */
-void		tag_html_open( void );
-void		tag_title_close( void );
-void		tag_comment( void );
-void		tag_h1_open( void );
-void		tag_h2_open( void );
-void		tag_p_open( void );
-void		tag_pre_open( void );
-void		tag_b_open( void );
-void		tag_big_open( void );
-void		tag_i_open( void );
-void		tag_small_open( void );
-void		tag_tt_open( void );
-void		tag_a_open( void );
-void		tag_br( void );
-void		tag_hr( void );
-void		tag_img( void );
+void		tag_html_open( parse_struct *pdata );
+void		tag_title_close( parse_struct *pdata );
+void		tag_comment( parse_struct *pdata );
+void		tag_h1_open( parse_struct *pdata );
+void		tag_h2_open( parse_struct *pdata );
+void		tag_p_open( parse_struct *pdata );
+void		tag_pre_open( parse_struct *pdata );
+void		tag_b_open( parse_struct *pdata );
+void		tag_big_open( parse_struct *pdata );
+void		tag_i_open( parse_struct *pdata );
+void		tag_small_open( parse_struct *pdata );
+void		tag_tt_open( parse_struct *pdata );
+void		tag_a_open( parse_struct *pdata );
+void		tag_br( parse_struct *pdata );
+void		tag_hr( parse_struct *pdata );
+void		tag_img( parse_struct *pdata );
 
 /*******************************************************************************************/
 
 #define STACKSIZE 100
-#define STRINGPOOLSIZE 10000
+#define STRINGPOOLSIZE 1024
+#define WARNPOOLSIZE 1024
 #define SEGLISTSIZE 100
 
 /*******************************************************************************************/
@@ -88,21 +89,19 @@ typedef struct
 /* Inline Functions */
 
 #define GETCHAR( c, ret )			\
-	if( !inbufbytes-- )			\
+	if( !pdata->inbufbytes-- )			\
 	{					\
 		D(printf("Buffer empty\n");)	\
 		ret;				\
 	}					\
-	c = *inbuf++;
+	c = *pdata->inbuf++;
 
 #define UNGETCHAR( c )				\
-	inbuf--;				\
-	inbufbytes++;
+	pdata->inbuf--;				\
+	pdata->inbufbytes++;
 
 #define PUTCHAR( c )				\
 	D( if( c ) printf("%c", c); )		\
-	if( strpoolpos < strpoolend )		\
-	{					\
-		*strpoolpos++ = c;		\
-	}
+	*strpos++ = c;				\
+	maxlen--;
 
