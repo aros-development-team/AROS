@@ -2,26 +2,25 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Change the attributes of a BOOPSI object
+    Desc: Set attributes in a specific class
     Lang: english
 */
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"
 
-extern struct IntuitionBase * IntuitionBase;
-
 /*****************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
-#include <clib/intuition_protos.h>
+#include <clib/alib_protos.h>
 
-	IPTR SetAttrs (
+	ULONG SetSuperAttrs (
 
 /*  SYNOPSIS */
-	APTR  object,
-	ULONG tag1,
+	Class *  class,
+	Object * object,
+	ULONG	 tag1,
 	...)
 
 /*  FUNCTION
@@ -29,6 +28,7 @@ extern struct IntuitionBase * IntuitionBase;
 	object interprets the new attributes depends on the class.
 
     INPUTS
+	class - Assume that the object is of this class.
 	object - Change the attributes of this object
 	tag1 - The first of a list of attribute/value-pairs. The last
 		attribute in this list must be TAG_END or TAG_DONE.
@@ -60,7 +60,18 @@ extern struct IntuitionBase * IntuitionBase;
 
 *****************************************************************************/
 {
+    struct opSet ops;
+
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = SetAttrsA (object, AROS_SLOWSTACKTAGS_ARG(tag1));
+
+    ops.MethodID     = OM_SET;
+    ops.ops_AttrList = AROS_SLOWSTACKTAGS_ARG(tag1);
+    ops.ops_GInfo    = NULL;
+
+    retval = DoSuperMethodA (class
+	, object
+	, (Msg)&ops
+    );
+
     AROS_SLOWSTACKTAGS_POST
-} /* SetAttrs */
+} /* SetSuperAttrs */

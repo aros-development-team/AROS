@@ -63,7 +63,7 @@ extern struct IntuitionBase * IntuitionBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKMETHODS_PRE(methodId)
-    DoGadgetMethodA (gad
+    retval = DoGadgetMethodA (gad
 	, win
 	, req
 	, AROS_SLOWSTACKMETHODS_ARG(methodId)

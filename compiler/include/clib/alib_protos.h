@@ -53,7 +53,7 @@ IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethodA (Class * cl, Object * obj, Msg msg);
 ULONG SetAttrs (Object * obj, ULONG tag1, ...);
-ULONG SetSuperAttrs (Object * obj, ULONG tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
 APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);

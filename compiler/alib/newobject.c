@@ -1,26 +1,12 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1996/11/28 10:40:30  aros
-    A couple of new functions in amiga.lib
 
-    Easier code to handle stacktags and stackmethods.
-
-    Revision 1.3  1996/11/25 10:53:18  aros
-    Allow stacktags on special CPUs
-
-    Revision 1.2  1996/09/17 18:05:45  digulla
-    Same names for same parameters
-
-    Revision 1.1  1996/08/28 17:52:29  digulla
-    First step to implement amiga.lib
-    BOOPSI Utility functions
-
-
-    Desc:
+    Desc: Create a new BOOPSI object
     Lang: english
 */
+#define AROS_TAGRETURNTYPE APTR
+
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"
@@ -82,6 +68,6 @@ extern struct IntuitionBase * IntuitionBase;
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    NewObjectA (classPtr, classID, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = NewObjectA (classPtr, classID, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* NewObject */

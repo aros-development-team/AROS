@@ -53,11 +53,14 @@ struct TagItem
     Some macros to make it easier to write functions which operate on
     stacktags on every CPU/compiler/hardware.
 */
+#ifndef AROS_TAGRETURNTYPE
+#   define AROS_TAGRETURNTYPE IPTR
+#endif
 #ifdef AROS_SLOWSTACKTAGS
 #   define AROS_SLOWSTACKTAGS_PRE(arg)                  \
-	ULONG		 retval;			\
-	va_list 	 args;				\
-	struct TagItem * tags;				\
+	AROS_TAGRETURNTYPE retval;			\
+	va_list 	   args;			\
+	struct TagItem	 * tags;			\
 							\
 	va_start (args, arg);                           \
 							\
@@ -69,15 +72,15 @@ struct TagItem
 	    FreeTagsFromStack (tags);                   \
 	}						\
 	else						\
-	    retval = 0L; /* fail :-/ */ 		\
+	    retval = (AROS_TAGRETURNTYPE)0L;            \
 							\
 	va_end (args);                                  \
 							\
 	return retval;
 #else
-#   define AROS_SLOWSTACKTAGS_PRE(arg) return
+#   define AROS_SLOWSTACKTAGS_PRE(arg) AROS_TAGRETURNTYPE retval;
 #   define AROS_SLOWSTACKTAGS_ARG(arg) ((struct TagItem *)&(arg))
-#   define AROS_SLOWSTACKTAGS_POST
+#   define AROS_SLOWSTACKTAGS_POST     return retval;
 #endif
 
 

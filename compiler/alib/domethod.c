@@ -58,7 +58,7 @@
 ULONG DoMethod (Object * obj, ULONG MethodID, ...)
 {
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
-    CallHookPkt ((struct Hook *)OCLASS(obj)
+    retval = CallHookPkt ((struct Hook *)OCLASS(obj)
 	, obj
 	, AROS_SLOWSTACKMETHODS_ARG(MethodID)
     );

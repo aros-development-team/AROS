@@ -60,7 +60,7 @@
 ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
-    CallHookPkt ((struct Hook *)cl->cl_Super
+    retval = CallHookPkt ((struct Hook *)cl->cl_Super
 	, obj
 	, AROS_SLOWSTACKMETHODS_ARG(MethodID)
     );

@@ -46,7 +46,7 @@
 ULONG CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...)
 {
     AROS_SLOWSTACKMETHODS_PRE(MethodID)
-    CallHookPkt ((struct Hook *)cl
+    retval = CallHookPkt ((struct Hook *)cl
 	, obj
 	, AROS_SLOWSTACKMETHODS_ARG(MethodID)
     );
