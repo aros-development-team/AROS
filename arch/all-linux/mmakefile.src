@@ -14,7 +14,7 @@ include $(TOP)/config/make.cfg
 
 #MM- kernel-linux : \
 #MM    kernel-unix \
-#MM    hidd-linux
+#MM    kernel-hidd-linux-kobj
 
 %rule_archalias mainmmake=kernel-exec arch=linux alias=unix
 %rule_archalias mainmmake=kernel-dos arch=linux alias=unix
@@ -29,5 +29,7 @@ include $(TOP)/config/make.cfg
 MM- check : check-exec-unix
 
 #MM- contrib-linux : contrib-complete
+
+#MM- workbench-linux : workbench-unix
 
 %common
