@@ -99,3 +99,12 @@ struct IntCatalog
 #define DOSBase     (((struct IntLocaleBase *)LocaleBase)->lb_DosBase)
 #define IFFParseBase (((struct IntLocaleBase *)LocaleBase)->lb_IFFParseBase)
 #define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
+
+
+/* Some internal functions */
+ULONG calendar_day(struct DateStamp * date);
+ULONG calendar_month(struct DateStamp * date);
+ULONG calendar_week(struct DateStamp *  date);
+ULONG calendar_weekmonday(struct DateStamp * date);
+ULONG calendar_weekday(struct DateStamp * date);
+ULONG calendar_year(struct DateStamp * date);

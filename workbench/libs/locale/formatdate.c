@@ -96,9 +96,7 @@ AROS_UFH3(VOID, rec_putCharFunc,
     ** A format description starts here?
     */
     if ('%' == fmtTemplate[template_pos])
-    {
       state = FOUND_FORMAT;
-    }
     
     switch (state)
     {
@@ -124,12 +122,15 @@ AROS_UFH3(VOID, rec_putCharFunc,
       case FOUND_FORMAT:
       {
         char  buf[256];
-//        char * buffer = &buf[0];
-        ULONG width;
-        BOOL printit = FALSE;
+        char * buffer = &buf[0];
+        ULONG width = 0;
+        BOOL printit = TRUE;
         ULONG hours;
         ULONG minutes;
         ULONG seconds;
+        ULONG day;
+        ULONG week;
+        ULONG year;
         int i;
         
         template_pos++;
@@ -137,15 +138,23 @@ AROS_UFH3(VOID, rec_putCharFunc,
         switch (fmtTemplate[template_pos])
         {
           case 'a':
+            buffer = GetLocaleStr(locale, calendar_weekday(date) + DAY_1);
+            width = strlen(buffer);
           break;
           
           case 'A':
+            buffer = GetLocaleStr(locale, calendar_weekday(date) + ABDAY_1);
+            width = strlen(buffer);
           break;
           
           case 'b':
+            buffer = GetLocaleStr(locale, calendar_month(date) + ABMON_1);
+            width = strlen(buffer);
           break;
           
           case 'B':
+            buffer = GetLocaleStr(locale ,calendar_month(date) + MON_1);
+            width = strlen(buffer);
           break;
           
           case 'c':
@@ -153,6 +162,7 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%a %b %d %H:%M:%S %Y", 
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'C':
@@ -160,9 +170,14 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%a %b %e %T %Z %Y", 
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'd':
+            day = calendar_day(date);
+            buf[0] = day / 10 + '0';
+            buf[1] = day % 10 + '0';
+            width = 2;
           break;
           
           case 'D':
@@ -170,13 +185,24 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%m/%d/%y", 
                        date,
                        &recursion_hook);
+            printit = FALSE;
 
           break;
           
           case 'e':
+            day = calendar_day(date);
+            if (day > 9)
+              buf[0] = day / 10 + '0';
+            else
+              buf[0] = ' ';
+              
+            buf[1] = day % 10 + '0';
+            width = 2;
           break;
           
           case 'h':
+            buffer = GetLocaleStr(locale, calendar_month(date) + ABMON_1);
+            width = strlen(buffer);
           break;
           
           case 'H': /* hour using 24-hour style with leading 0s */
@@ -186,8 +212,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
             buf[0]  = hours / 10 + '0';
             buf[1]  = hours % 10 + '0';
             width   = 2;
-            
-            printit = TRUE;
           }
           break;
           
@@ -203,7 +227,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
             buf[1]  = hours % 10 + '0';
 
             width = 2;
-            printit = TRUE;
           }
           break;
           
@@ -211,6 +234,10 @@ AROS_UFH3(VOID, rec_putCharFunc,
           break;
           
           case 'm':
+            day = calendar_month(date) + 1;
+            buf[0] = day / 10 + '0';
+            buf[1] = day % 10 + '0';
+            width = 2;
           break;
           
           case 'M':
@@ -220,7 +247,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
             buf[0] = minutes / 10 + '0';
             buf[1] = minutes % 10 + '0';
             width = 2;
-            printit = TRUE;
           }
           break;
           
@@ -228,7 +254,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
           {
             width = 1;
             buf[0] = '\n';
-            printit = TRUE;
           }
           break;
           
@@ -238,11 +263,14 @@ AROS_UFH3(VOID, rec_putCharFunc,
             if (hours > 12)
             {
               /* PM */
+              buffer = GetLocaleStr(locale, PM_STR);
             }
             else
             {
               /* AM */
+              buffer = GetLocaleStr(locale, AM_STR);
             }
+            width = strlen(buffer);
           }
           break;
           
@@ -259,7 +287,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
             buf[i++]  = hours % 10 + '0';
             
             width = i;
-            printit = TRUE;
           }
           break;
           
@@ -278,7 +305,6 @@ AROS_UFH3(VOID, rec_putCharFunc,
             
             width = i;
             
-            printit = TRUE; 
           break;
           
           case 'r':
@@ -286,6 +312,7 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%I:%M:%S %p", 
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'R':
@@ -293,25 +320,20 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%H:%M",
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'S':
-          {
             seconds = date->ds_Tick / 50;
             
             buf[0] = seconds / 10 + '0';
             buf[1] = seconds % 10 + '0';
             width = 2;
-            printit = TRUE;
-          }
           break;
           
           case 't':
-          {
             buf[0] = '\t';
             width = 1;
-            printit = TRUE;
-          }
           break;
           
           case 'T':
@@ -319,15 +341,39 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%H:%M:%S",
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'U':
+            i = 0;
+            week = calendar_week(date);
+            if (week > 9)
+            {
+              buf[0] = day / 10 + '0';
+              i = 1;
+            }
+              
+            buf[i++] = day % 10 + '0';
+            width = i;
           break;
           
           case 'w':
+            day = calendar_weekday(date);
+            buf[0] = day + '0';
+            width = 1;
           break;
           
           case 'W':
+            i = 0;
+            week = calendar_weekmonday(date);
+            if (week > 9)
+            {
+              buf[0] = day / 10 + '0';
+              i = 1;
+            }
+              
+            buf[i++] = day % 10 + '0';
+            width = i;
           break;
           
           case 'x':
@@ -335,6 +381,7 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%m/%d/%y",
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'X':
@@ -342,13 +389,41 @@ AROS_UFH3(VOID, rec_putCharFunc,
                        "%H:%M:%S",
                        date,
                        &recursion_hook);
+            printit = FALSE;
           break;
           
           case 'y':
+          {
+            buf[0] = buf[1] = '0';
+            year = calendar_year(date);
+            year = year % 1000;
+            year = year % 100;
+
+            buf[2] = year / 10 + '0';
+            year = year % 10;
+            buf[3] = year + '0';
+           
+            width = 4;
+          }
           break;
           
           case 'Y':
+          {
+            year = calendar_year(date);
+            buf[0] = year / 1000 + '0';
+            year = year % 1000;
+            buf[1] = year / 100 + '0';
+            year = year % 100;
+            buf[2] = year / 10 + '0';
+            year = year % 10;
+            buf[3] = year + '0';
+           
+            width = 4;
+          }          
           break;
+          
+          default: 
+            printit = FALSE;
         }
         
         if (TRUE == printit)
@@ -356,7 +431,7 @@ AROS_UFH3(VOID, rec_putCharFunc,
           for (i = 0; i < width; i++)
             AROS_UFC3(VOID, putCharFunc->h_Entry,
               AROS_UFCA(struct Hook *,   putCharFunc,                A0),
-              AROS_UFCA(char,            buf[i],                     A1),
+              AROS_UFCA(char,            buffer[i],                  A1),
               AROS_UFCA(struct Locale *, locale,                     A2)
             );
           
