@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -74,14 +74,13 @@
     
     if (window || requester)
     {
-	struct opSet *ops;
+	struct opSet ops;
 
-	if ((ops = AllocVec(sizeof(struct opSet), MEMF_PUBLIC | MEMF_CLEAR)) == NULL)
-	    return(0L);
-	ops->MethodID = OM_SET;
-	ops->ops_AttrList = tagList;
-	result = DoGadgetMethodA(gadget, window, requester, (Msg)ops);
-	FreeVec(ops);
+	ops.MethodID     = OM_SET;
+	ops.ops_AttrList = tagList;
+	ops.ops_GInfo	 = 0; /* Not really necessary as it will be filled in by DoGadgetMethodA */
+	
+	result = DoGadgetMethodA(gadget, window, requester, (Msg)&ops);
     }
     else
     {
