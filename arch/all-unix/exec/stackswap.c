@@ -15,7 +15,40 @@ static jmp_buf env;
 #   define PC(env)      ((APTR)(env[0].__pc))
 #endif
 
+#define DEBUG 0
+
 #ifdef TEST
+/*******************************************************
+********************************************************
+***						     ***
+***   Compile this with -DTEST to get a standalone   ***
+***   program to check if it works on your system.   ***
+***						     ***
+********************************************************
+*******************************************************/
+
+/* I use this command line to compile it:
+
+    gcc -DTEST -I/usr/include -I ../../bin/linux-i386/AROS/include/ \
+	    -g stackswap.c -o t
+
+    -DTEST
+	    Enable the special test code
+    -I/usr/include
+	    Use the system's includes over AROS' ones (AROS comes with some
+	    include files with the same names as the system ones).
+    -I../../bin/linux-i386/AROS/include/
+	    Specify the correct directory for your system (ie. replace
+	    "linux-i386" by your OS and CPU)
+    -g
+	    Include debug infos in the final executable
+    stackswap.c
+	    Compile this code
+    -o t
+	    Write the executable to "t".
+
+*/
+
 #   define PROTO_EXEC_H
 #   define EXEC_TASKS_H
 
@@ -27,6 +60,8 @@ static jmp_buf env;
 
 #   define Disable() /* eps */
 #   define Enable() /* eps */
+
+#   include <stdio.h>
 
 struct Task
 {
@@ -46,8 +81,12 @@ struct Task dummy;
 
 #   define FindTask(arg)    (!(arg) ? &dummy : NULL)
 
-struct ExecBase * SysBase = 0x0BAD0BAD;
+struct ExecBase * SysBase = (struct ExecBase *)0x0BAD0BAD;
 
+#endif
+
+#ifndef SP
+#error SP(env) undefined
 #endif
 
 /******************************************************************************
@@ -118,8 +157,10 @@ struct ExecBase * SysBase = 0x0BAD0BAD;
 
 	t = ((IPTR)FP(env) - (IPTR)oldSP)/sizeof(APTR) + 4;
 
+#if DEBUG
 #ifdef TEST
     printf ("%d elements\n", t);
+#endif
 #endif
 
 	newSP -= t; /* Make room for 20 elements */
@@ -246,11 +287,18 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 
 ULONG teststack[4096];
 
-void printstack (void)
+int count = 0;
+APTR stacks[5];
+
+void checkstack (void)
 {
     int addr;
 
+#if DEBUG
     printf ("addr=%p\n", &addr);
+#endif
+
+    stacks[count++] = &addr;
 }
 
 int main (int argc, char ** argv)
@@ -261,21 +309,28 @@ int main (int argc, char ** argv)
     sss.stk_Pointer = &teststack[sizeof(teststack) / sizeof(teststack[0])];
     sss.stk_Upper = (ULONG)sss.stk_Pointer;
 
+#if DEBUG
     printf ("teststack = %p\n", sss.stk_Pointer);
+#endif
 
-    printstack ();
-
-    StackSwap (&sss, SysBase);
-    printstack ();
+    checkstack ();
 
     StackSwap (&sss, SysBase);
-    printstack ();
+    checkstack ();
 
     StackSwap (&sss, SysBase);
-    printstack ();
+    checkstack ();
 
     StackSwap (&sss, SysBase);
-    printstack ();
+    checkstack ();
+
+    StackSwap (&sss, SysBase);
+    checkstack ();
+
+    if (stacks[0] != stacks[2] || stacks[1] != stacks[3] || stacks[2] != stacks[4])
+	printf ("Test failed!\n");
+    else
+	printf ("Test ok.\n");
 
     return 0;
 }
