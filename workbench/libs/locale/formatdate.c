@@ -195,6 +195,7 @@ ULONG dayspermonth[13] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 		
 	    case 'j':
 	        /* TODO */
+#warning Julian date not implemented.
 		_WriteString("unimplemented!", hook, locale);
 		break;
 		
@@ -250,8 +251,19 @@ ULONG dayspermonth[13] = {0,0,31,59,90,120,151,181,212,243,273,304,334};
 	        days = cData.mday + dayspermonth[cData.month]; 
 		
 		/* leap year ? */
-		if ((0 == cData.year % 4 && 2100 != cData.year)  && cData.month > 2)
-		  days++;
+		if (0 == (cData.year % 4) && cData.month > 2)
+		{
+		  /*
+		  ** 1700, 1800, 1900, 2100, 2200 re not leap years.
+		  ** 2000 is a leap year.
+		  ** -> if a year is divisible by 100 but not by 400 then
+		  ** it is not a leap year!
+		  */
+		  if (0 == (cData.year % 100) && 0 != (cData.year % 400))
+		    ;
+		  else
+		    days++;
+		}
 		
 		/* 
 		** If January 1st is a Monday then the first week

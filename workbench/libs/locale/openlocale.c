@@ -100,6 +100,7 @@ extern void InitLocale(
 	iff = AllocIFF();
 	if(iff == NULL)
 	{
+	    FreeMem(lp, sizeof(struct LocalePrefs));
 	    SetIoErr(ERROR_NO_FREE_STORE);
 	    return NULL;
 	}
@@ -107,6 +108,7 @@ extern void InitLocale(
 	iff->iff_Stream = (ULONG)Open(name, MODE_OLDFILE);
 	if(iff->iff_Stream == NULL)
 	{
+	    FreeMem(lp, sizeof(struct LocalePrefs));
 	    FreeIFF(iff);
 	    return NULL;
 	}

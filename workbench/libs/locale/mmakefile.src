@@ -35,7 +35,7 @@ LIBNAME  := locale
 ULIBNAME := Locale
 
 OSMODULE  := locale.library
-FILES     := defaultlocale english initlocale
+FILES     := defaultlocale english initlocale catalog_funcs
 FUNCTIONS := \
 	closecatalog closelocale convtolower convtoupper \
 	formatdate formatstring getcatalogstr getlocalestr \

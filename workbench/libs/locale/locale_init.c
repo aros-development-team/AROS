@@ -59,7 +59,7 @@ static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4] =
 {
-    (APTR)sizeof(struct LIBBASETYPE),
+    (APTR)sizeof(struct IntLocaleBase),
     (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
@@ -78,7 +78,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     struct IntLocale *def;
 
     SysBase = sysBase;
-
+  
     /* Do whatever static initialisation you need here */
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_LocaleLock);
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_CatalogLock);
