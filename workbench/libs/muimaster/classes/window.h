@@ -210,8 +210,6 @@ struct MUI_EventHandlerNode
 
 /* The folloing stuff is new for Zune, Private stuff might be changed in the future */
 
-
-#define MUIA_Window_NoBorder	           (MUIB_MUI|0x10429b79)
 #define MUIA_Window_WandererBackdrop	   (MUIB_MUI|0x10425c24)
 
 #define MUIM_Window_AddControlCharHandler  (MUIB_MUI|0x1042c34d) /* Zune: V1, PRIV don't use it! */
