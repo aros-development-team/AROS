@@ -85,6 +85,9 @@ struct MUI_GroupData
 #define GROUP_CHANGING    (1<<4)
 #define GROUP_PAGEMODE    (1<<5)
 #define GROUP_VIRTUAL     (1<<6)
+#define GROUP_HSPACING    (1<<7)
+#define GROUP_VSPACING    (1<<8)
+
 
 /* During minmax calculations objects with a weight of 0 shall
    be treated like they had identical min/def/max size, ie. fixed size.
@@ -232,6 +235,7 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Group_HorizSpacing:
+		    data->flags |= GROUP_HSPACING;
 		    data->horiz_spacing = tag->ti_Data;
 		    break;
 
@@ -262,11 +266,13 @@ static ULONG Group_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Group_Spacing:
+		    data->flags |= (GROUP_HSPACING | GROUP_VSPACING);
 		    data->horiz_spacing = tag->ti_Data;
 		    data->vert_spacing = tag->ti_Data;
 		    break;
 
 	    case    MUIA_Group_VertSpacing:
+		    data->flags |= GROUP_VSPACING;
 		    data->vert_spacing = tag->ti_Data;
 		    break;
 
@@ -360,6 +366,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		forward = tag->ti_Data;
 		break;
 	    case MUIA_Group_HorizSpacing:
+		data->flags |= GROUP_HSPACING;
 		data->horiz_spacing = tag->ti_Data;
 		break;
 	    case MUIA_Group_Rows:
@@ -368,10 +375,12 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		DoMethod(_win(obj), MUIM_Window_RecalcDisplay, (IPTR)obj);
 		break;
 	    case MUIA_Group_Spacing:
+		data->flags |= (GROUP_HSPACING | GROUP_VSPACING);
 		data->horiz_spacing = tag->ti_Data;
 		data->vert_spacing = tag->ti_Data;
 		break;
 	    case MUIA_Group_VertSpacing:
+		data->flags |= GROUP_VSPACING;
 		data->vert_spacing = tag->ti_Data;
 		break;
 	    case MUIA_Virtgroup_Left:
@@ -709,11 +718,10 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     ASSERT_VALID_PTR(muiGlobalInfo(obj));
 
-    if (data->horiz_spacing == -1)
+    if (!(data->flags & GROUP_HSPACING))
 	data->horiz_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_hspacing;
-    if (data->vert_spacing == -1)
+    if (!(data->flags & GROUP_VSPACING))
 	data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
-
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = cstate_copy = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
@@ -789,7 +797,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     APTR clip;
 
 /*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
-    D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj)));
+/*      D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj))); */
 
 #if REDUCE_FLICKER_TEST
     region = NewRegion();
@@ -836,8 +844,8 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
 #endif
 
-    D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n",
-	  obj, msg->flags, _flags(obj)));
+/*      D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n", */
+/*  	  obj, msg->flags, _flags(obj))); */
 
     if ((msg->flags & MADF_DRAWUPDATE) && data->update == 1)
     {
@@ -985,7 +993,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*  	    g_print("set back clip to (%d, %d, %d, %d)\n", */
 /*  		    group_rect.x, group_rect.y, group_rect.width, group_rect.height); */
     }
-    D(bug("Group_Draw(%p) end\n", obj));
+/*      D(bug("Group_Draw(%p) end\n", obj)); */
 
     if (data->flags & GROUP_VIRTUAL && region)
     {
