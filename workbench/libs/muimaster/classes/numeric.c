@@ -90,7 +90,7 @@ static ULONG  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 	  break;
 	case MUIA_Numeric_Value:
-	  data->value = CLAMP((ULONG)tag->ti_Data, data->min, data->max);
+	  data->value = CLAMP((LONG)tag->ti_Data, data->min, data->max);
 	  break;
 	}
     }
@@ -137,7 +137,7 @@ static ULONG Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 	  break;
 	case MUIA_Numeric_Value:
-	  data->value = CLAMP((ULONG)tag->ti_Data, data->min, data->max);
+	  data->value = CLAMP((LONG)tag->ti_Data, data->min, data->max);
 	  MUI_Redraw(obj, MADF_DRAWUPDATE);
 	  break;
 	}
@@ -315,8 +315,11 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
 
     val = min + msg->scale
 	* (max - min) / (DOUBLE)(msg->scalemax - msg->scalemin);
+
+    if (val >= 0.0) val += 0.5; else val -= 0.5;
     val = CLAMP(val, data->min, data->max);
-    return (ULONG)((LONG)(val + 0.5));
+    
+    return (ULONG)((LONG)val);
 }
 
 /**************************************************************************
