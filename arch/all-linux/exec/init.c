@@ -45,7 +45,8 @@ extern const struct Resident
     Dos_resident,
     LDDemon_resident,
     emul_handler_resident,
-    boot_resident;
+    boot_resident,
+    con_handler_resident;
 
 
 
@@ -79,6 +80,8 @@ static const struct Resident *romtagList[] =
     &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_resident,			    /* None,	   -120  */
     &LDDemon_resident,			    /* AfterDOS,   -125  */
+    &con_handler_resident,		    /* AfterDOS,   -126  */
+
     NULL
 };
 
