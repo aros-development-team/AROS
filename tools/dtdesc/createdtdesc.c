@@ -171,7 +171,7 @@ int HandleMask(struct DTDesc *TheDTDesc)
      
     default:
      DataPtr--;
-     i = strtol(DataPtr, &NewDataPtr, 0);
+     i = strtol(DataPtr, (char **)(&NewDataPtr), 0);
      if (DataPtr != NewDataPtr)
      {
       DataPtr = NewDataPtr;
