@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
