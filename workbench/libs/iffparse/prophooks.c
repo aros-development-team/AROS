@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Hook funtions needed for PropChunk().
-    Lang: English.
+    Hook funtions needed for PropChunk().
 */
 
 #include "iffparse_intern.h"
@@ -38,7 +37,7 @@ IPTR PropPurgeFunc
 
     DEBUG_PROPHOOKS(dprintf("PropPurgeFunc: return NULL\n"));
 
-    return (NULL);
+    return 0;
 }
 
 /****************************/

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Helpfuncs needed when iffparse is used for clipboard handling.
-    Lang: English.
+    Helpfuncs needed when iffparse is used for clipboard handling.
 */
 #include "iffparse_intern.h"
 #include <exec/io.h>
@@ -63,7 +62,7 @@ ULONG ClipStreamHandler
 )
 {
       #define CLIPSCANBUFSIZE 10000000 //500
-    LONG error = NULL;
+    LONG error = 0;
 
     /* Buffer neede for reading rest of clip in IFFCMD_CLEANUP. Eats some stack */
 //	UBYTE  buf[CLIPSCANBUFSIZE];

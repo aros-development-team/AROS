@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Hook functions neede for ColectionChunk() entry handlers.
-    Lang: English.
+    Hook functions neede for ColectionChunk() entry handlers.
 */
 
 #include "iffparse_intern.h"
@@ -48,7 +47,7 @@ ULONG CollectionPurgeFunc
     /* Free the local item itself */
     FreeLocalItem(lci);
 
-    return (NULL);
+    return 0;
 }
 
 
@@ -223,5 +222,5 @@ LONG CollectionFunc
     collitem->ci_Size = size;
 
 
-    return (NULL);
+    return 0;
 }

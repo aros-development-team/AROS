@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #define DEBUG 0
 #include <aros/debug.h>
@@ -124,7 +121,7 @@
 	    if (err)
 	    {
 		if (err == IFF_RETURN2CLIENT)
-		    err = NULL;
+		    err = 0;
 		done = TRUE;
 	    }
 
@@ -207,7 +204,7 @@
 	    if (err)
 	    {
 		if (err == IFF_RETURN2CLIENT)
-		    err = NULL;
+		    err = 0;
 
 
 		done = TRUE;

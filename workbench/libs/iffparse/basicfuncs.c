@@ -445,14 +445,9 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
     */
 
     struct IFFStreamCmd cmd;
-
-
     ULONG flags;
-
-    LONG retval = NULL;
-
+    LONG retval = 0;
     LONG err;
-
     UBYTE *seekbuf;
 
     D(bug("SeekStream(iff=%p offset=%d)\n", iff, offset));

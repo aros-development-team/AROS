@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include "iffparse_intern.h"
 
@@ -65,7 +62,8 @@
 	    return (err);
 	propArray = &propArray[2];
     }
-    return (NULL);
+    
+    return 0;
 
     AROS_LIBFUNC_EXIT
 } /* StopChunks */
