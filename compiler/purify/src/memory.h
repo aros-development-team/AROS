@@ -1,5 +1,5 @@
-#ifndef MALLOC_H /* must be MALLOC_H to avoid conflicts with <malloc.h> */
-#define MALLOC_H
+#ifndef _MEMORY_H
+#define _MEMORY_H
 
 #ifndef _POSINFO_H
 #   include "posinfo.h"
@@ -17,4 +17,4 @@ struct _PMemoryNode
 
 void Purify_MemoryExit (void);
 
-#endif /* MALLOC_H */
+#endif /* _MEMORY_H */
