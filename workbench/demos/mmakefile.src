@@ -18,7 +18,8 @@ ifeq ($(FLAVOUR),native)
 #
 
 FILES := gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
-	 mxgads oopdemo palettedemo readicon regiontest shadowborder sift strtest
+	 mxgads oopdemo palettedemo readicon regiontest shadowborder sift strtest \
+	 ooplib
 	 
 
 else
@@ -26,7 +27,7 @@ else
 FILES := compleximage demowin gtdemo helloworld inquire intuitext \
 	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio
+	 strtest unixio ooplib
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
