@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.20  2000/01/19 19:00:40  stegerg
+    moved intui_closewindow from intuition_driver.c to
+    here.
+
     Revision 1.19  1999/10/13 21:07:47  stegerg
     closemessage goes to deferedactionport now
 
@@ -247,7 +251,7 @@ VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBa
 
     
     /* Free memory for the window */
-    FreeMem (window, intui_GetWindowSize ());
+    FreeMem (window, sizeof(struct IntWindow));
     
     /* All done. signal caller task that it may proceed */
     Signal(msg->closeTask, SIGF_INTUITION);
@@ -255,4 +259,34 @@ VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBa
     return;
     
 } /* CloseWindow */
+
+
+/**********************************************************************************/
+
+
+void intui_CloseWindow (struct Window * w,
+	                struct IntuitionBase * IntuitionBase)
+{
+    disposesysgads(w, IntuitionBase);
+    if (0 == (w->Flags & WFLG_GIMMEZEROZERO))
+    {
+      /* not a GZZ window */
+      if (w->WLayer)
+      	DeleteLayer(0, w->WLayer);
+      DeinitRastPort(w->BorderRPort);
+      FreeMem(w->BorderRPort, sizeof(struct RastPort));
+    }
+    else
+    {
+      /* a GZZ window */
+      /* delete inner window */
+      if (NULL != w->WLayer)
+        DeleteLayer(0, w->WLayer);
+      
+      /* delete outer window */
+      if (NULL != w->BorderRPort && 
+          NULL != w->BorderRPort->Layer)
+        DeleteLayer(0, w->BorderRPort->Layer);      
+    }
+}
 
