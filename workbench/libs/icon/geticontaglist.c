@@ -3,13 +3,16 @@
     $Id$
 */
 
-#define DEBUG 1
-#include <aros/debug.h>
-
-#include <stdio.h>
 #include <workbench/icon.h>
+#include <stdio.h>
+#include <string.h>
 
 #include "icon_intern.h"
+#include "support.h"
+#include "support_builtin.h"
+
+#define DEBUG 1
+#   include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -53,6 +56,16 @@
     BOOL               failIfUnavailable = TRUE;
     LONG              *isDefaultIcon     = NULL;
     
+    BOOL               getPaletteMappedIcon = TRUE; // FIXME: not used
+    BOOL               remapIcon            = TRUE; // FIXME: not used
+    BOOL               generateImageMasks   = TRUE; // FIXME: not used
+    struct Screen     *screen               = NULL; // FIXME: not used
+    STRPTR             label                = NULL; // FIXME: not used
+    LONG              *errorCode            = NULL; // FIXME: not used
+    
+#   define SET_ISDEFAULTICON(value) (isDefaultIcon != NULL ? *isDefaultIcon = (value) : (value))
+#   define SET_ERRORCODE(value)     (errorCode     != NULL ? *errorCode     = (value) : (value))
+    
     /* Parse taglist -------------------------------------------------------*/
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -60,70 +73,91 @@
         {
             case ICONGETA_GetDefaultType:
                 defaultType = tag->ti_Data; 
+                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
                 break;
                 
             case ICONGETA_GetDefaultName:
                 defaultName = (STRPTR) tag->ti_Data; 
+                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
                 break;
                 
             case ICONGETA_FailIfUnavailable:
                 failIfUnavailable = tag->ti_Data;
+                tag->ti_Tag = TAG_IGNORE; /* avoid recursion */
                 break;
                 
             case ICONGETA_IsDefaultIcon:
                 isDefaultIcon  = (LONG *) tag->ti_Data;
-                *isDefaultIcon = FALSE;
-                // FIXME: implement
+                SET_ISDEFAULTICON(FALSE);
                 break;
                 
-                
             case ICONGETA_GetPaletteMappedIcon:
-                // FIXME: implement
+                getPaletteMappedIcon = tag->ti_Data;
                 break;
                 
             case ICONGETA_RemapIcon:
-                // FIXME: implement
+                remapIcon = tag->ti_Data;
                 break;
                 
             case ICONGETA_GenerateImageMasks:
-                // FIXME: implement
+                generateImageMasks = tag->ti_Data;
                 break;
                 
             case ICONGETA_Screen:
-                // FIXME: implement
+                screen = (struct Screen *) tag->ti_Data;
                 break;
             
             case ICONGETA_Label:
-                // FIXME: implement
+                label = (STRPTR) tag->ti_Data;
                 break;
                 
             case ICONA_ErrorCode:
-                // FIXME: implement
+                errorCode = (LONG *) tag->ti_Data;
+                SET_ERRORCODE(0);
                 break;
         }
     }
     
-
-   /* TODO: We use the old GetDiskObjectXXX() calls here,
-    * but it would be better if those functions use
-    * GetIconTagList() because this supersets all */
-
     if (defaultType != -1 || defaultName != NULL)
     {
-	if (isDefaultIcon != NULL) *isDefaultIcon = TRUE;
-        
-	if (defaultName)
+        if (defaultName != NULL)
 	{
-	    char buf[360];
-	    /* TODO: has aros snprintf()? */
-	    sprintf(buf,"ENV:Sys/def_%s",defaultName);
-	    icon = GetDiskObject(defaultName);
+            BPTR file = OpenDefaultIcon(defaultName, MODE_OLDFILE);
+            
+            if (file != NULL) icon = ReadIcon(file);
+            
+            SET_ISDEFAULTICON(TRUE);
 	}
 
-	if (!icon && defaultType != -1)
+	if (icon == NULL && defaultType != -1)
 	{
-	    icon = GetDefDiskObject(defaultType);
-	}
+            static const char * const defaultNames[] =
+            {
+                "Disk",         /* WBDISK    (1) */ 
+                "Drawer",       /* WBDRAWER  (2) */
+                "Tool",         /* WBTOOL    (3) */
+                "Project",      /* WBPROJECT (4) */
+                "Trashcan",     /* WBGARBAGE (5) */
+                "Device",       /* WBDEVICE  (6) */
+                "Kick",         /* WBKICK    (7) */
+                "AppIcon"       /* WBAPPICON (8) */
+            };
+            
+            if (defaultType >= 1 && defaultType <= 8)
+            {
+                icon = GetIconTags
+                (
+                    NULL,
+                    ICONGETA_GetDefaultName, (IPTR) defaultNames[defaultType - 1],
+                    TAG_MORE,                (IPTR) tags
+                );
+                
+                if (icon == NULL)
+                {
+                    icon = GetBuiltinIcon(defaultType);
+                }
+            }
+        }
     }
     else
     {
@@ -131,37 +165,18 @@
         
         if (file != NULL)
         {
-            struct DiskObject *temp = NULL;
-            
-            if (ReadStruct(&(LB(IconBase)->dsh), &temp, file, IconDesc))
-            {
-                // FIXME: consistency checks! (ie that WBDISK IS for a disk, WBDRAWER for a dir, WBTOOL for an executable)
-                /*
-                    Duplicate the disk object so it can be freed with 
-                    FreeDiskObject(). 
-                */
-                // FIXME: is there any way to avoid this?
-                icon = DupDiskObject
-                (
-                    temp,
-                    ICONDUPA_JustLoadedFromDisk, TRUE,
-                    TAG_DONE
-                );
-            }
-            
-            // FIXME: Read/FreeStruct seem a bit broken in memory handling
-            // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
-            FreeStruct(temp, IconDesc); 
+            icon = ReadIcon(file);
             CloseIcon(file);
         }
         else if (!failIfUnavailable)
         {
             // FIXME: integrate GetDiskObjectNew here
-            if (isDefaultIcon !=  NULL) *isDefaultIcon = TRUE;
+            SET_ISDEFAULTICON(TRUE);
+            
             icon = GetDiskObjectNew(name);
         }
     }
-
+    
     return icon;
 
     AROS_LIBFUNC_EXIT

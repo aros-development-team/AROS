@@ -6,19 +6,22 @@
 */
 
 #include <proto/dos.h>
+#include <string.h>
+#include <stdio.h>
 
 #include "icon_intern.h"
 #include "support.h"
 
 #define DEBUG 1
-#include <aros/debug.h>
+#   include <aros/debug.h>
 
+extern const IPTR IconDesc[];
 
 BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 {
     BPTR  file       = NULL;
     ULONG nameLength = strlen(name);
-    
+       
     if (name[nameLength - 1] == ':')
     {
         BPTR lock = Lock(name, ACCESS_READ);
@@ -60,6 +63,69 @@ BPTR __OpenIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
 BOOL __CloseIcon_WB(BPTR file, struct IconBase *IconBase)
 {
     return Close(file);
+}
+
+BPTR __OpenDefaultIcon_WB(CONST_STRPTR name, LONG mode, struct IconBase *IconBase)
+{
+    static const char * const paths[] = { "ENV:SYS", "ENVARC:SYS", NULL };
+    CONST_STRPTR              path    = NULL;
+    BPTR                      file    = NULL;
+    UBYTE                     i;
+    
+    /* Make sure it's a plain filename; paths are not allowed */
+    if (strpbrk(name, "/:") != NULL) return NULL;
+    
+    /* Attempt to open the icon from each path in turn */
+    for (i = 0, path = paths[i]; path != NULL; i++)
+    {
+        TEXT  buffer[256]; /* Filename buffer; should be more than large enough */
+        ULONG copied;      /* Number of bytes copied */
+        
+        copied = snprintf(buffer, sizeof(buffer), "%s/def_%s.info", path, name);
+        
+        if (copied < sizeof(buffer)) /* check for truncation */
+        {
+            if ((file = Open(buffer, mode)) != NULL)
+            {
+                break;
+            }
+        }
+    }
+    
+    return file;
+}
+
+BOOL __CloseDefaultIcon_WB(BPTR file, struct IconBase *IconBase)
+{
+    return Close(file);
+}
+
+struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
+{
+    struct DiskObject *temp = NULL, /* Temporary icon data */
+                      *icon = NULL; /* Final icon data */
+            
+    if (ReadStruct(&(LB(IconBase)->dsh), (APTR *) &temp, file, IconDesc))
+    {
+        // FIXME: consistency checks! (ie that WBDISK IS for a disk, WBDRAWER for a dir, WBTOOL for an executable)
+        /*
+            Duplicate the disk object so it can be freed with 
+            FreeDiskObject(). 
+        */
+        // FIXME: is there any way to avoid this?
+        icon = DupDiskObject
+        (
+            temp,
+            ICONDUPA_JustLoadedFromDisk, TRUE,
+            TAG_DONE
+        );
+    }
+    
+    // FIXME: Read/FreeStruct seem a bit broken in memory handling
+    // FIXME: shouldn't ReadStruct deallocate memory if it fails?!?!
+    FreeStruct(temp, IconDesc);
+
+    return icon;
 }
 
 
