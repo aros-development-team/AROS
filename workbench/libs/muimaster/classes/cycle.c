@@ -39,7 +39,7 @@ struct MUI_CycleData
     int cycle_width;
     int cycle_height;
 
-    struct MUI_ImageSpec *cycle_image;
+    Object *pageobj;
 
     struct MUI_EventHandlerNode ehn;
 
@@ -52,18 +52,27 @@ struct MUI_CycleData
 **************************************************************************/
 static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_CycleData   *data;
+    struct MUI_CycleData    *data;
     struct TagItem  	    *tag, *tags;
+    Object  	    	    *pageobj, *imgobj;
     int i;
 
     obj = (Object *)DoSuperNew(cl, obj,
-		ButtonFrame,
-		MUIA_InputMode, MUIV_InputMode_Toggle, /* so we can set MUIA_Selected which is quiet handy */
+		MUIA_InputMode, MUIV_InputMode_RelVerify,
+		MUIA_Group_Horiz, TRUE,
+		Child, imgobj = ImageObject,
+		    MUIA_Image_Spec, (IPTR)"6:17",
+		    End,
+		Child, pageobj = PageGroup,
+		    End,
 		TAG_MORE, msg->ops_AttrList);
+
     if (!obj) return FALSE;
 
     data = INST_DATA(cl, obj);
 
+    data->pageobj = pageobj;
+    
     /* parse initial taglist */
 
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -72,6 +81,10 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Cycle_Entries:
 		    data->entries = (const char**)tag->ti_Data;
+		    break;
+		    
+	    case    MUIA_Cycle_Active:
+	    	    data->entries_active = tag->ti_Data;
 		    break;
 	}
     }
@@ -84,10 +97,38 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     /* Count the number of entries */
-    for (i=0;data->entries[i];i++);
-
+    for (i=0;data->entries[i];i++)
+    {
+    	Object *page;
+	
+	page = TextObject,
+	    	    MUIA_Text_Contents, (IPTR)data->entries[i],
+		    MUIA_Text_PreParse, (IPTR)"\033c",
+		    End;
+		    
+    	if (!page)
+	{
+	    D(bug("Cycle_New: Could not create page object specified!\n"));
+	    CoerceMethod(cl,obj,OM_DISPOSE);
+	    return NULL;
+	}
+	
+	DoMethod(pageobj, OM_ADDMEMBER, page);
+    }
     data->entries_num = i;
 
+    if ((data->entries_active >= 0) && (data->entries_active < data->entries_num))
+    {
+    	set(pageobj, MUIA_Group_ActivePage, data->entries_active);
+    }
+    else
+    {
+    	data->entries_active = 0;
+    }
+    
+    DoMethod(imgobj, MUIM_Notify, MUIA_Pressed, FALSE,
+    	     (IPTR)obj, 3, MUIM_Set, MUIA_Cycle_Active, MUIV_Cycle_Active_Next);
+	     
     return (IPTR)obj;
 }
 
@@ -96,9 +137,10 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_CycleData *data;
+    struct MUI_CycleData    *data;
     struct TagItem  	    *tag, *tags;
-
+    LONG    	    	    l;
+    
     data = INST_DATA(cl, obj);
     
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
@@ -106,10 +148,23 @@ static IPTR Cycle_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	switch (tag->ti_Tag)
 	{
 	    case    MUIA_Cycle_Active:
-		    if (tag->ti_Data >= 0 && tag->ti_Data < data->entries_num)
+	    	    l = (LONG)tag->ti_Data;
+		    
+	    	    if (l == MUIV_Cycle_Active_Next)
 		    {
-			data->entries_active = tag->ti_Data;
-			MUI_Redraw(obj,MADF_DRAWOBJECT);
+		    	l = data->entries_active + 1;
+			if (l >= data->entries_num) l = 0;
+		    }
+		    else if (l == MUIV_Cycle_Active_Prev)
+		    {
+		    	l = data->entries_active - 1;
+			if (l < 0) l = data->entries_num - 1;
+		    }
+		    
+		    if (l >= 0 && l < data->entries_num)
+		    {
+			data->entries_active = l;
+			set(data->pageobj, MUIA_Group_ActivePage, data->entries_active);
 		    }
 		    break;
 	}
@@ -141,36 +196,11 @@ static IPTR Cycle_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 STATIC IPTR Cycle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_CycleData   *data;
-    struct RastPort rp;
-    int i,w = 0;
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg)))
 	return 0;
 
     data = INST_DATA(cl, obj);
-
-    if (!(data->cycle_image = zune_image_spec_to_structure(MUII_Cycle, obj)))
-    {
-	CoerceMethod(cl,obj,MUIM_Cleanup);
-	return 0;
-    }
-
-    zune_imspec_setup(&data->cycle_image, muiRenderInfo(obj));
-
-    InitRastPort(&rp);
-    SetFont(&rp,_font(obj));
-
-    for (i=0;i<data->entries_num;i++)
-    {
-	int nw = TextLength(&rp,data->entries[i],strlen(data->entries[i]));
-	if (nw > w) w = nw;
-    }
-
-    data->entries_width = w;
-    data->entries_height = _font(obj)->tf_YSize;
-
-    data->cycle_width = zune_imspec_get_minwidth(data->cycle_image);
-    data->cycle_height = zune_imspec_get_minheight(data->cycle_image);
 
     data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
     data->ehn.ehn_Priority = 1;
@@ -191,120 +221,16 @@ STATIC IPTR Cycle_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
-    zune_imspec_cleanup(&data->cycle_image, muiRenderInfo(obj));
-    zune_imspec_free(data->cycle_image);
-
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-STATIC IPTR Cycle_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
-{
-    struct MUI_CycleData *data = INST_DATA(cl, obj);
-    DoSuperMethodA(cl,obj,(Msg)msg);
-
-    msg->MinMaxInfo->MinWidth  += data->cycle_width + data->entries_width;
-    msg->MinMaxInfo->MinHeight += MAX(data->cycle_height,data->entries_height);
-
-    msg->MinMaxInfo->DefWidth  += data->cycle_width + data->entries_width;
-    msg->MinMaxInfo->DefHeight += MAX(data->cycle_height,data->entries_height);
-
-    msg->MinMaxInfo->MaxWidth  = MUI_MAXMAX;
-    msg->MinMaxInfo->MaxHeight += MAX(data->cycle_height,data->entries_height);
-
-    return 1;
-}
-
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-STATIC IPTR Cycle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
-{
-    struct MUI_CycleData *data = INST_DATA(cl, obj);
-    char *entry = data->entries[data->entries_active];
-    int width;
-
-    DoSuperMethodA(cl,obj,(Msg)msg);
-
-    SetFont(_rp(obj),_font(obj));
-
-    zune_draw_image(muiRenderInfo(obj), data->cycle_image,
-		 _mleft(obj), _mtop(obj), data->cycle_width, _mheight(obj),0,0,0);
-
-    width = TextLength(_rp(obj),entry,strlen(entry));
-    
-    SetAPen(_rp(obj),_pens(obj)[MPEN_TEXT]);
-    SetDrMd(_rp(obj),JAM1);
-    Move(_rp(obj),(_mleft(obj) + data->cycle_width) + (_mwidth(obj) - data->cycle_width - width)/2,_mtop(obj)+(_mheight(obj) - data->entries_height)/2+_font(obj)->tf_Baseline);
-    Text(_rp(obj),entry,strlen(entry));
-
-    return 1;
-}
 
 /**************************************************************************
  ...
 **************************************************************************/
 static ULONG Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct MUI_CycleData *data = INST_DATA(cl, obj);
-
-    if (msg->muikey != MUIKEY_NONE)
-    {
-	return 0;
-    }
-
-    if (msg->imsg)
-    {
-	switch (msg->imsg->Class)
-	{
-	    case    IDCMP_MOUSEBUTTONS:
-		    if ((msg->imsg->MouseX >= _left(obj)) && (msg->imsg->MouseX <= _right(obj)) &&
-			(msg->imsg->MouseY >= _top(obj)) && (msg->imsg->MouseY <= _bottom(obj)))
-		    {
-			if (msg->imsg->Code == SELECTDOWN)
-			{
-			    set(obj,MUIA_Selected,TRUE);
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			}
-			else
-			{
-			    ULONG sel;
-			    get(obj,MUIA_Selected, &sel);
-
-			    set(obj,MUIA_Selected,FALSE);
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-
-			    if (sel) set(obj,MUIA_Cycle_Active, (data->entries_active + 1) == data->entries_num ? 0 : (data->entries_active + 1));
-			}
-			return MUI_EventHandlerRC_Eat;
-		    }
-		    break;
-		    
-	    case    IDCMP_MOUSEMOVE:
-		    {
-			ULONG sel;
-			get(obj,MUIA_Selected, &sel);
-
-			if ((msg->imsg->MouseX >= _left(obj)) && (msg->imsg->MouseX <= _right(obj)) &&
-			    (msg->imsg->MouseY >= _top(obj)) && (msg->imsg->MouseY <= _bottom(obj)))
-			{
-			    if (!sel) set(obj,MUIA_Selected,TRUE);
-			} else
-			{
-			    if (sel) set(obj,MUIA_Selected,FALSE);
-			}
-			return MUI_EventHandlerRC_Eat;
-		    }
-		    break;
-	}
-    }
-    return 0;
+    return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
 
@@ -324,8 +250,6 @@ AROS_UFH3S(IPTR,Cycle_Dispatcher,
 	case OM_GET: return Cycle_Get(cl, obj, (struct opGet *)msg);
 	case MUIM_Setup: return Cycle_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Cycle_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Cycle_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Cycle_Draw(cl,obj,(APTR)msg);
 	case MUIM_HandleEvent: return Cycle_HandleEvent(cl,obj,(APTR)msg);
     }
 
