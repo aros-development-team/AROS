@@ -87,7 +87,7 @@
     if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
       yMax = (L->bounds.MaxY - L->bounds.MinY) ;
       
-    if (NULL != L->ClipRegion)
+    if (NULL != L->ClipRegion || LAYERSIMPLE == (L->Flags & LAYERSIMPLE))
       hasClipRegion = TRUE;
   }
   else
