@@ -105,10 +105,10 @@ STATIC IPTR Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 		Child, data->penadjust = PenadjustObject,
 		    MUIA_CycleChain, 1,
 		    MUIA_Penadjust_Spec, penspec,
-		    TAG_DONE),
+		    End,
 		Child, HGroup,
-		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
-		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
+		    Child, ok_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Ok"),
+		    Child, cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel"),
 		    End,
 		End,
 	    End;
