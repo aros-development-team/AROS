@@ -62,7 +62,7 @@ struct Resident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: AROS exec.strap 41.5 (14.2.97)";
+const char version[] = "$VER: exec.strap 41.5 (14.2.97)";
 
 int start(void)
 {
@@ -254,8 +254,8 @@ int start(void)
     SetFunc( 99, FindSemaphore);
 #if 0 /* YYY */
     SetFunc(100, AddSemaphore);
-    SetFunc(101, RemSemaphore);
 #endif
+    SetFunc(101, RemSemaphore);
     SetFunc(103, AddMemList);
     SetFunc(109, CreateIORequest);
     SetFunc(110, DeleteIORequest);
