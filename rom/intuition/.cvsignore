@@ -1,6 +1,6 @@
 intuition_functable.c
 intuition_endtag.c
 makefile
-.cvsignore
 libdefs.h
 mmakefile
+*.err

@@ -4,3 +4,5 @@
 makefile
 mmakefile
 makefile.bak
+libdefs.h
+exec_endtag.c

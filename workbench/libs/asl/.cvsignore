@@ -4,3 +4,4 @@ asl_functable.c
 asl_endtag.c
 *.map
 mmakefile
+*.err

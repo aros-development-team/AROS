@@ -2,3 +2,6 @@ makefile
 makefile.bak
 *.err
 *.map
+libdefs.h
+expansion_functable.c
+mmakefile

@@ -3,3 +3,4 @@ graphics_endtag.c
 libdefs.h
 makefile
 mmakefile
+*.err

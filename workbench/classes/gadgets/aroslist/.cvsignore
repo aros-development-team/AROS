@@ -3,3 +3,4 @@ aroslist_endtag.c
 aroslist_functable.c
 libdefs.h
 mmakefile
+*.err
