@@ -14,15 +14,15 @@ GENMODULE_SRCS := \
     writemccinit.c \
     writemccquery.c
 GENMODULE_INCS := genmodule.h fileread.h
-GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h
-
+GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \
+	       	  $(AROS_INCLUDES)/aros/machine.h
 GENLIBDEFS_SRCS := \
     genlibdefs.c \
     variables.c \
     fileread.c \
     readconfig.c \
     writeinclibdefs.c
-GENLIBDEFS_DEPS := $(GENLIBDEFS_SRCS) $(GENMODULE_INCS)
+GENLIBDEFS_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_SRCS) $(GENMODULE_INCS))
 
 GENMODULEDUMMY_SRCS := \
     genmoduledummy.c \
@@ -32,4 +32,4 @@ GENMODULEDUMMY_SRCS := \
     writeincproto.c \
     writeincclib.c \
     writeincdefines.c
-GENMODULEDUMMY_DEPS := $(GENMODULEDUMMY_SRCS) $(GENMODULE_INCS)
+GENMODULEDUMMY_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULEDUMMY_SRCS) $(GENMODULE_INCS))
