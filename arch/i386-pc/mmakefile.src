@@ -53,6 +53,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM	kernel-cgfx-module-pc-i386			\
 #MM	kernel-workbench-module-pc-i386			\
 #MM	kernel-filesys-pc-i386 \
+#MM	kernel-libs-module-pc-i386 \
 #MM	Drivers-pc-i386-pci			\
 #MM	Drivers-pc-i386-irq			\
 #MM	Drivers-pc-i386-kbd			\
@@ -84,6 +85,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-devs-module-pc-i386 : kernel-devs-pc-i386 kernel-devs workbench-fs-afs-linklib workbench-fs-nil-linklib workbench-fs-ram-linklib aminet-disk-cdrom-amicdrom-linklib
 #MM- kernel-intuition-module-pc-i386 : intuition-gfxhidd intuition-pc-i386 kernel-intuition-linklib
 #MM- kernel-cgfx-module-pc-i386 : kernel-cgfx-pc-i386 kernel-cgfx-linklib
+#MM- kernel-libs-module-pc-i386 :kernel-libs-pc-i386 workbench-libs-partition-linklib 
 
 #
 # Setup libraries
@@ -178,6 +180,10 @@ kernel-filesys-pc-i386 :
 #MM kernel-cgfx-pc-i386 :
 kernel-cgfx-pc-i386 :
 	%add_objects rom/boot/libcybergraphics
+
+#MM kernel-libs-pc-i386 :
+kernel-libs-pc-i386 :
+	%add_objects rom/boot/libpartition
 
 
 
