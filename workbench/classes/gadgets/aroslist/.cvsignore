@@ -2,7 +2,6 @@ aroslist_functable.c
 aroslist_endtag.c
 libdefs.h
 mmakefile
-*.err
 *.map
 *_end.c
 functable.c

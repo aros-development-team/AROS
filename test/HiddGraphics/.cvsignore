@@ -1,4 +1,3 @@
-*.err
 *.bak
 *.o
 mmakefile

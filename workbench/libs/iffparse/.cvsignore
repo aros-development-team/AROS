@@ -5,6 +5,5 @@ makefile
 iffparse_functable.c
 iffparse_endtag.c
 *.map
-*.err
 libdefs.h
 mmakefile

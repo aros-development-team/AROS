@@ -4,5 +4,4 @@ functions.[ch]
 libdefs.h
 makefile
 *.map
-*.err
 mmakefile

@@ -2,7 +2,6 @@ aroscheckbox_functable.c
 aroscheckbox_endtag.c
 libdefs.h
 mmakefile
-*.err
 *.map
 *_end.c
 functable.c

@@ -1,5 +1,4 @@
 libdefs.h
 endtag.c
 functable.c
-*.err
 mmakefile

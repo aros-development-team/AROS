@@ -2,7 +2,6 @@ aroslistview_functable.c
 aroslistview_endtag.c
 libdefs.h
 mmakefile
-*.err
 *.map
 *_end.c
 functable.c
