@@ -1,3 +1,5 @@
+$Id$
+
 Basic Installation of AROS-SOURCES
 ----------------------------------
 
@@ -20,7 +22,7 @@ Basic Installation of AROS-SOURCES
 3. Build all the necessary tools for compilation.
 	Get all non-AROS tools,
 	i.e. get a c-compiler (gcc recommended), binutils, gawk, etc.
-	Now compile AROS' tools:
+	Now compile AROS' tools. Either run "setup" or:
 
 	a) MetaMake, short mmake.
 		cd AROS/tools/MetaMake
@@ -45,10 +47,15 @@ Basic Installation of AROS-SOURCES
 
 	c) The function-packer, cpak.
 		This one should not be needed to be compiled first,
-		because it will be generated "on the fly" (if needed), 
+		because it will be generated "on the fly" (if needed),
 		but just to mention it, because it is used:
 		cd AROS/tools/cpak
 		make
+
+4. Run ./configure
+	Use ./configure --help for all possible options.
+	This will examine your system and create the necessary
+	files for the build.
 
 	That's it. And now for the most important step:
 
