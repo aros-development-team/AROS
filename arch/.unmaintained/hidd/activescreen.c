@@ -165,11 +165,20 @@ VOID activescreen_taskentry()
 		LockIBase(0UL);
 		
 		for (scr = IntuitionBase->FirstScreen; NULL != scr; scr = scr->NextScreen) {
+		
+		    /* Get the hidd object */
+		    if (msg->bmobj == HIDD_BM_OBJ(scr->RastPort.BitMap)) {
+		    
+			kprintf("Active screen found: %s\n", scr->Title);
 			
+			IntuitionBase->ActiveScreen = scr;
+		    
+		    }
 		}
 		
 		UnlockIBase(0UL);
 		
+		/* We do not reply the message, but instead free it here. */
 		FreeMem(msg, sizeof (*msg));
 		
 	    } else {

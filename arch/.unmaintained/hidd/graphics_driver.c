@@ -77,13 +77,6 @@
 
 #define BM_PIXEL(bitmap, pen) (IS_HIDD_BM(bitmap) ? HIDD_BM_PIXTAB(bitmap)[(pen)] : (pen))
 
-/* !!!! ONLY USE THE BELOW MACROS IF YOU ARE 100% SURE 
-   THAT IT IS A HIDD BITMAP AND NOT ONE THE USER
-   HAS CREATED BY HAND !!!. You can use IS_HIDD_BM(bitmap) to test
-   if it is a HIDD bitmap
-*/
-#define HIDD_BM_PIXTAB(bitmap) ((HIDDT_Pixel *)(bitmap)->Planes[2])
-#define HIDD_BM_OBJ(bitmap)	  ((Object *)(bitmap)->Planes[0])
 
 /* Minterms and GC drawmodes are in opposite order */
 #define MINTERM_TO_GCDRMD(minterm) 	\
@@ -122,7 +115,7 @@ ULONG do_render_func(struct RastPort *rp
 	, Point *src
 	, struct Rectangle *rr
 	, ULONG (*render_func)(APTR, LONG, LONG, Object *, Object *, LONG, LONG, LONG, LONG, struct GfxBase *)
-	, APTR fundata
+	, APTR funcdata
 	, BOOL get_special_info
 	, struct GfxBase *GfxBase);
 
@@ -1585,9 +1578,316 @@ failexit:
   
 }
 
+
+
+void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
+{
+    
+    struct Rectangle rr;
+    Object *gc;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return;
+	
+    gc = GetDriverData(rp)->dd_GC;
+
+    if (rp->cp_x > x) {
+	rr.MinX = x;
+	rr.MaxX = rp->cp_x;
+    } else {
+    	rr.MinX = rp->cp_x;
+	rr.MaxX = x;
+    }
+    
+    if (rp->cp_y > y) {
+	rr.MinY = y;
+	rr.MaxY = rp->cp_y;
+    } else {
+    	rr.MinY = rp->cp_y;
+	rr.MaxY = y;
+    }
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	Object *bm_obj;
+	
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return;
+	    
+	/* No need for clipping */
+	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
+	
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
+	    
+
+    }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle torender, intersect;
+	
+	torender.MinX = rr.MinX + xrel;
+	torender.MinY = rr.MinY + yrel;
+	torender.MaxX = rr.MaxX + xrel;
+	torender.MaxY = rr.MaxY + yrel;
+	
+	LockLayerRom(L);
+	
+	for (;NULL != CR; CR = CR->Next)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to rectfill ? */
+	    if (andrectrect(&CR->bounds, &torender, &intersect))
+	    {
+	    	LONG xoffset, yoffset;
+		LONG layer_rel_x, layer_rel_y;
+		
+		xoffset = intersect.MinX - torender.MinX;
+		yoffset = intersect.MinY - torender.MinY;
+		
+		layer_rel_x = intersect.MinX - L->bounds.MinX;
+		layer_rel_y = intersect.MinY - L->bounds.MinY;
+		
+		
+		
+	        if (NULL == CR->lobs)
+		{
+		
+		    /* Set clip rectangle */
+		    
+		    HIDD_GC_SetClipRect(gc
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    );
+		    
+		    HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+		    	, gc
+			, rp->cp_x + xrel
+			, rp->cp_y + yrel
+			, x + xrel
+			, y + yrel
+		    );
+		    
+		    HIDD_GC_UnsetClipRect(gc);
+		
+		
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
+			LONG layer_rel_x, layer_rel_y;
+			
+			layer_rel_x = intersect.MinX - xrel;
+			layer_rel_y = intersect.MinY - yrel;
+			
+			bm_rel_minx = intersect.MinX - CR->bounds.MinX;
+			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
+			bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
+			bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
+			
+		    	HIDD_GC_SetClipRect(gc
+		    		, bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny
+				, bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
+				, bm_rel_maxy
+			);
+			
+			HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+				, gc
+				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - rp->cp_y)
+				, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - y)
+			);
+				
+				
+			HIDD_GC_UnsetClipRect(gc);
+		    }
+		    
+		} /* if (CR->lobs == NULL) */
+		
+	    } /* if (cliprect intersects with area to render into) */
+	    
+	} /* for (each cliprect in the layer) */
+	
+        UnlockLayerRom(L);
+    } /* if (rp->Layer) */
+    return;
+}
+
 void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
+
+#if 0
+    struct Rectangle rr;
+    Object *gc;
+    struct Layer *L = rp->Layer;
+    struct BitMap *bm = rp->BitMap;
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return;
+	
+    gc = GetDriverData(rp)->dd_GC;
+    
+    rr.MinX = center_x - rx;
+    rr.MinY = center_y - ry;
+    rr.MaxX = center_x - rx;
+    rr.Maxy
+
+    
+    if (rp->cp_y > y) {
+	rr.MinY = y;
+	rr.MaxY = rp->cp_y;
+    } else {
+    	rr.MinY = rp->cp_y;
+	rr.MaxY = y;
+    }
+    
+    if (NULL == L)
+    {
+        /* No layer, probably a screen, but may be a user inited bitmap */
+	Object *bm_obj;
+	
+	bm_obj = OBTAIN_HIDD_BM(bm);
+	if (NULL == bm_obj)
+	    return;
+	    
+	/* No need for clipping */
+	HIDD_BM_DrawLine(bm_obj, gc, rp->cp_x, rp->cp_y, x, y);  
+	
+	
+	RELEASE_HIDD_BM(bm_obj, bm);
+	    
+
+    }
+    else
+    {
+        struct ClipRect *CR = L->ClipRect;
+	WORD xrel = L->bounds.MinX;
+        WORD yrel = L->bounds.MinY;
+	struct Rectangle torender, intersect;
+	
+	torender.MinX = rr.MinX + xrel;
+	torender.MinY = rr.MinY + yrel;
+	torender.MaxX = rr.MaxX + xrel;
+	torender.MaxY = rr.MaxY + yrel;
+	
+	LockLayerRom(L);
+	
+	for (;NULL != CR; CR = CR->Next)
+	{
+	    D(bug("Cliprect (%d, %d, %d, %d), lobs=%p\n",
+	    	CR->bounds.MinX, CR->bounds.MinY, CR->bounds.MaxX, CR->bounds.MaxY,
+		CR->lobs));
+		
+	    /* Does this cliprect intersect with area to rectfill ? */
+	    if (andrectrect(&CR->bounds, &torender, &intersect))
+	    {
+	    	LONG xoffset, yoffset;
+		LONG layer_rel_x, layer_rel_y;
+		
+		xoffset = intersect.MinX - torender.MinX;
+		yoffset = intersect.MinY - torender.MinY;
+		
+		layer_rel_x = intersect.MinX - L->bounds.MinX;
+		layer_rel_y = intersect.MinY - L->bounds.MinY;
+		
+		
+		
+	        if (NULL == CR->lobs)
+		{
+		
+		    /* Set clip rectangle */
+		    
+		    HIDD_GC_SetClipRect(gc
+		    	, intersect.MinX
+			, intersect.MinY
+			, intersect.MaxX
+			, intersect.MaxY
+		    );
+		    
+		    HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+		    	, gc
+			, rp->cp_x + xrel
+			, rp->cp_y + yrel
+			, x + xrel
+			, y + yrel
+		    );
+		    
+		    HIDD_GC_UnsetClipRect(gc);
+		
+		
+		}
+		else
+		{
+		    /* Render into offscreen cliprect bitmap */
+		    if (L->Flags & LAYERSIMPLE)
+		    	continue;
+		    else if (L->Flags & LAYERSUPER)
+		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
+		    else
+		    {
+		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
+			LONG layer_rel_x, layer_rel_y;
+			
+			layer_rel_x = intersect.MinX - xrel;
+			layer_rel_y = intersect.MinY - yrel;
+			
+			bm_rel_minx = intersect.MinX - CR->bounds.MinX;
+			bm_rel_miny = intersect.MinY - CR->bounds.MinY;
+			bm_rel_maxx = intersect.MaxX - CR->bounds.MinX;
+			bm_rel_maxy = intersect.MaxY - CR->bounds.MinY;
+			
+		    	HIDD_GC_SetClipRect(gc
+		    		, bm_rel_minx + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny
+				, bm_rel_maxx + ALIGN_OFFSET(CR->bounds.MinX) 
+				, bm_rel_maxy
+			);
+			
+			HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+				, gc
+				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - rp->cp_y)
+				, bm_rel_minx - (layer_rel_x - x) + ALIGN_OFFSET(CR->bounds.MinX)
+				, bm_rel_miny - (layer_rel_y - y)
+			);
+				
+				
+			HIDD_GC_UnsetClipRect(gc);
+		    }
+		    
+		} /* if (CR->lobs == NULL) */
+		
+	    } /* if (cliprect intersects with area to render into) */
+	    
+	} /* for (each cliprect in the layer) */
+	
+        UnlockLayerRom(L);
+    } /* if (rp->Layer) */
+    return;
+
+#else
 
     LONG   x = rx, y = 0;     /* ellipse points */
 
@@ -1648,8 +1948,8 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
         }
     } while (x >= 0);
 
-	
     ReturnVoid("driver_DrawEllipse");
+#endif	
 }
 
 struct bgf_render_data {
@@ -4375,6 +4675,7 @@ ULONG do_pixel_func(struct RastPort *rp
 	retval = render_func(funcdata, bm_obj, gc, x, y, GfxBase);
 	
 	RELEASE_HIDD_BM(bm_obj, bm);
+	
     } else {
         struct ClipRect *CR;
 	LONG absx, absy;
@@ -4551,7 +4852,7 @@ ULONG do_render_func(struct RastPort *rp
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
 		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("fillrect_pendrmd(): Superbitmap not handled yet\n");
+		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
 		    else
 		    {
 

@@ -152,8 +152,8 @@ Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBase)
     	struct cacheitem *ci;
 	
 	ci = &oc->cache[i];
-kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
-    	if (ci->obj != NULL) {
+/* kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
+*/    	if (ci->obj != NULL) {
 	    break;
 	} else {
 	    if (FALSE == ci->used) {
@@ -164,8 +164,8 @@ kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
 	}
     }
     
-kprintf("obj found in cache: %p\n", obj);    
-    if (NULL == obj) {
+/* kprintf("obj found in cache: %p\n", obj);    
+*/    if (NULL == obj) {
     	struct cacheitem *ci;
     	/* No object free, so we try to create a new one.
 	But first we see if the cache can hold it */
@@ -191,8 +191,8 @@ kprintf("obj found in cache: %p\n", obj);
 	}
 	
 	/* Try to create a new object */
-kprintf("Trying to create new object\n");
-	ci = &oc->cache[oc->num_objects];
+/* kprintf("Trying to create new object\n");
+*/	ci = &oc->cache[oc->num_objects];
 	
 	if (oc->class_id)
 	    ci->obj = NewObject(NULL, oc->class_id, oc->create_tags);
