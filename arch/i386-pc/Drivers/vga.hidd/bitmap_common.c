@@ -430,6 +430,7 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     struct bitmap_data *data = INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
     HIDDT_Pixel fg = GC_FG(msg->gc);
+    HIDDT_DrawMode mode = GC_DRMD(msg->gc);
     int i, phase, j;
 
     ULONG width = msg->maxX - msg->minX + 1;
@@ -437,15 +438,13 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     // start of video data
     unsigned char *s_start = data->VideoData +
                                  msg->minX + (msg->minY * data->width);
+				     
     // adder for each line
     ULONG s_add = data->width - width;
     ULONG cnt = msg->maxY - msg->minY + 1;
 
     EnterFunc(bug("VGAGfx.BitMap::FillRect(%d,%d,%d,%d)\n",
     	msg->minX, msg->minY, msg->maxX, msg->maxY));
-
-    fg |= ((char)fg) << 8;
-    fg |= ((short)fg) << 16;
 
     if ((phase = (long)s_start & 3L))
     {
@@ -454,26 +453,70 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
         width -= phase;
     }
 
-    while (cnt--)
+    switch(mode)
     {
-        i = width;
-        j = phase;
-	while (j--)
-        {
-            *(unsigned char*)s_start++ = (char)fg;
-        }
-	while (i >= 4)
-	{
-	    *((unsigned long*)s_start) = fg;
-	    s_start += 4;
-	    i -= 4;
-        }
-	while (i--)
-        {
-            *(unsigned char*)s_start++ = (char)fg;
-        }
-        s_start += s_add;
-    }
+        case vHidd_GC_DrawMode_Copy:
+	    fg |= ((char)fg) << 8;
+	    fg |= ((short)fg) << 16;
+
+	    while (cnt--)
+	    {
+        	i = width;
+        	j = phase;
+		while (j--)
+        	{		    
+        	    *(unsigned char*)s_start++ = (char)fg;
+        	}
+		while (i >= 4)
+		{
+		    *((unsigned long*)s_start) = fg;
+		    s_start += 4;
+		    i -= 4;
+        	}
+		while (i--)
+        	{
+        	    *(unsigned char*)s_start++ = (char)fg;
+        	}
+        	s_start += s_add;
+	    }
+	    break;
+	    
+	case vHidd_GC_DrawMode_Invert:
+	    while (cnt--)
+	    {
+	        unsigned char bg;
+		unsigned long bglong;
+		
+        	i = width;
+        	j = phase;
+		while (j--)
+        	{
+		    bg = *s_start;
+        	    *(unsigned char*)s_start++ = ~bg;
+        	}
+		while (i >= 4)
+		{
+		    bglong = *(unsigned long *)s_start;
+		    *((unsigned long*)s_start) = ~bglong;
+		    s_start += 4;
+		    i -= 4;
+        	}
+		while (i--)
+        	{
+		    bg = *s_start;
+        	    *(unsigned char*)s_start++ = ~bg;
+        	}
+        	s_start += s_add;
+	    }
+	    break;
+	    
+	default:
+	    DoSuperMethod(cl, o, (Msg)msg);
+	    break;
+	    
+    } /* switch(mode) */
+
+    
     if (data->disp)
     {
         box.x1 = msg->minX;
