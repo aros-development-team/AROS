@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/layers
 
 include $(TOP)/config/make.cfg
 
@@ -44,8 +45,8 @@ endif
 
 FUNCTIONS = \
 	disposelayerinfo		\
-	dohookcliprects			\
-	fattenlayerinfo			\
+	dohookcliprects 		\
+	fattenlayerinfo 		\
 	initlayers			\
 	installclipregion		\
 	installlayerhook		\
@@ -58,7 +59,7 @@ FUNCTIONS = \
 	swapbitsrastportcliprect	\
 	thinlayerinfo			\
 	unlocklayer			\
-	unlocklayerinfo			\
+	unlocklayerinfo 		\
 	unlocklayers			\
 	upfrontlayer			\
 	whichlayer

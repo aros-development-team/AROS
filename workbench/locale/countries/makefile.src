@@ -1,5 +1,6 @@
 # $Id$
 TOP=../../..
+CURDIR=workbench/countries
 
 include $(TOP)/config/make.cfg
 

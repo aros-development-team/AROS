@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=workbench/libs
 
 include $(TOP)/config/make.cfg
 

@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=workbench/libs/mathieeesptrans
 
 USER_INCLUDES = -I..
 

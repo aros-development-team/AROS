@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/exec
 
 include $(TOP)/config/make.cfg
 

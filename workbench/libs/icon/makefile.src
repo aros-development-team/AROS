@@ -1,5 +1,6 @@
 # $Id$
 TOP=../../..
+CURDIR=workbench/libs/icon
 
 USER_INCLUDES = -I..
 

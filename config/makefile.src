@@ -1,6 +1,6 @@
 # $Id$
-
 TOP=..
+CURDIR=config
 
 include $(TOP)/config/make.cfg
 

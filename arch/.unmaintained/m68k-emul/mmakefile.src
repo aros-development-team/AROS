@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=config/m68k-emul
 
 include $(TOP)/config/make.cfg
 

@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/mathffp
 
 include $(TOP)/config/make.cfg
 
@@ -19,7 +20,7 @@ LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable 
+FILES = $(LIBNAME)_functable
 
 END_FILE = $(LIBNAME)_endtag
 

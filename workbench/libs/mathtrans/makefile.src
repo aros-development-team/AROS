@@ -1,5 +1,6 @@
 # $Id$
 TOP=../../..
+CURDIR=workbench/libs/mathtrans
 
 USER_INCLUDES = -I..
 

@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/intuition
 
 include $(TOP)/config/make.cfg
 

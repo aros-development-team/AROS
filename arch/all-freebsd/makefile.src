@@ -1,6 +1,6 @@
 # $Id$
-
 TOP=../..
+CURDIR=config/freebsd
 
 USER_INCLUDES= \
 	-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition \
@@ -35,7 +35,7 @@ $(OSGENDIR)/%.d: %.c
 	%mkdepend_q flags=$(CFLAGS2)
 
 $(LINUXFILES): ../linux/$(LINUXFILES)
-	$(TOP)/scripts/makelinks ../linux . $@	
+	$(TOP)/scripts/makelinks ../linux . $@
 
 %common
 %include_deps

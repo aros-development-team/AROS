@@ -1,6 +1,6 @@
 # $Id$
-
 TOP=../..
+CURDIR=config/linux
 
 #	-I./pthreads/include
 USER_INCLUDES= \

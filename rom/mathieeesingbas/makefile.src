@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/mathieeesingbas
 
 include $(TOP)/config/make.cfg
 
@@ -19,23 +20,23 @@ LIB=$(LIBDIR)/lib$(LIBNAME).so
 
 INIT_FILE = $(LIBNAME)_init
 
-FILES = $(LIBNAME)_functable 
+FILES = $(LIBNAME)_functable
 
 END_FILE = $(LIBNAME)_endtag
 
 FUNCTIONS = \
-        ieeespabs \
-        ieeespadd \
-        ieeespceil \
-        ieeespcmp \
-        ieeespdiv \
-        ieeespfix \
-        ieeespfloor \
-        ieeespflt \
-        ieeespmul \
-        ieeespneg \
-        ieeespsub \
-        ieeesptst
+	ieeespabs \
+	ieeespadd \
+	ieeespceil \
+	ieeespcmp \
+	ieeespdiv \
+	ieeespfix \
+	ieeespfloor \
+	ieeespflt \
+	ieeespmul \
+	ieeespneg \
+	ieeespsub \
+	ieeesptst
 
 
 ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)

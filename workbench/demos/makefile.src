@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=workbench/demos
 
 SPECIAL_CFLAGS = -D__AROS -I$(TOP)/workbench/libs
 

@@ -1,5 +1,6 @@
 # $Id$
 TOP=../../..
+CURDIR=workbench/libs/gadtools
 
 USER_INCLUDES = -I..
 

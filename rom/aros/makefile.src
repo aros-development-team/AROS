@@ -1,5 +1,6 @@
 # $Id$
 TOP=../..
+CURDIR=rom/aros
 
 ifeq ("$(SHARED_AROS)","yes")
 SPECIAL_CFLAGS=$(SHARED_CFLAGS)
