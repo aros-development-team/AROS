@@ -301,6 +301,10 @@ int main()
 
     {
         struct IntuitionBase *IntuitionBase;
+        struct Window * win;
+        int x = 100;
+        int y = 100;
+
 
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
 	if (IntuitionBase)
@@ -312,7 +316,43 @@ int main()
 		{WA_Top,			100},
 		{WA_Title,	       (ULONG)text0},
 		{TAG_DONE,			  0}};
-	    OpenWindowTagList(0, tags);
+	    win = OpenWindowTagList(0, tags);
+	}
+
+        DrawEllipse(win->RPort,160,120,80,80);
+        DrawEllipse(win->RPort,185,90,15,15);
+        DrawEllipse(win->RPort,135,90,15,15);
+        
+        Move(win->RPort,125,140);
+        Draw(win->RPort,140,150);
+        Draw(win->RPort,180,150);
+        Draw(win->RPort,195,140);
+        	
+	if (win)
+	{
+	  while (x < 200)
+	  {
+	    MoveWindow(win,1,0);
+	    x++;
+	  }
+	  
+	  while (y < 200)
+	  {
+	    MoveWindow(win,0,1);
+	    y++;
+	  }
+	  
+	  while (x >= 100)
+	  {
+	    MoveWindow(win,-1,0);
+	    x--;
+	  }
+	  
+	  while (y >= 100)
+	  {
+	    MoveWindow(win,0,-1);
+	    y--;
+	  }
 	}
     }
     
