@@ -1,0 +1,44 @@
+.\" $Header$
+.\"
+.\"  C Cross Referencing & Documenting tool - Version 1.5g
+.\"
+.\"  Manual page for cxref-cpp-configure
+.\"
+.\"  Written by Andrew M. Bishop
+.\"
+.\"  This file Copyright 2004 Andrew M. Bishop
+.\"  It may be distributed under the GNU Public License, version 2, or
+.\"  any higher version.  See section COPYING of the GNU Public license
+.\"  for conditions under which this file may be redistributed.
+.\"
+.TH cxref-cpp-configure 1 "May 9, 2004"
+.SH NAME
+cxref-cpp-configure - A program to generate the cxref-cpp.defines file for cxref-cpp.
+
+.SH SYNOPSIS
+.B cxref-cpp-configure
+.I [-o output]
+.I cc
+
+.SH DESCRIPTION
+
+The cxref-cpp program will take on the personality of the installed version of
+gcc so that the gcc header files can be parsed.  This means that it includes the
+same default include directory paths and macro definitions.  The file that
+contains these definitions is called cxref-cpp.defines and is installed by the
+cxref-cpp-configure program.
+.LP
+
+.SH OPTIONS
+
+.TP
+.BR \-o output
+Specifies the name of the output file (default is to use the compiled in file
+name).
+.TP
+.BR cc
+The name of the C compiler executable that cxref-cpp should pretend to be.
+
+.SH SEE ALSO
+
+cxref(1), cxref-cpp(1)
