@@ -10,7 +10,6 @@ EXES        := $(FILES:%=$(EXEDIR)/%)
 USE_CLIB_SHARED := yes
 USE_AMIGALIB    := yes
 USE_MLIB        := yes
-USER_CFLAGS     := -O2 -fomit-frame-pointer
 
 #MM- test-benchmarks : test-benchmarks-graphics
 #MM- test-benchmarks-quick : test-benchmarks-graphics-quick
