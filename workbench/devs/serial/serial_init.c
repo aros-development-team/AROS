@@ -676,10 +676,12 @@ AROS_LH1(void, beginio,
 
     case CMD_CLEAR:
       /* Simply reset the input buffer pointer no matter what */
+      Disable();
       SU->su_InputNextPos = 0;
       SU->su_InputFirst = 0;
       SU->su_Status &= ~STATUS_BUFFEROVERFLOW;
       ioreq->IOSer.io_Error = 0;    
+      Enable();
       /*
       ** The request could be completed immediately.
       ** Check if I have to reply the message
@@ -691,8 +693,8 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case CMD_RESET:
+      Disable();
       /* All IORequests, including the active ones, are aborted */
-
       /* Abort the active IORequests */
       SU->su_Status &= ~(STATUS_READS_PENDING|STATUS_WRITES_PENDING);
 
@@ -729,6 +731,7 @@ AROS_LH1(void, beginio,
           /* Buffer could not be allocated */
 	}
       }
+      Enable();
       /* now fall through to CMD_FLUSH */
       
 
@@ -778,7 +781,9 @@ AROS_LH1(void, beginio,
       /*
        * Start the serial port IO. Tell the hidd to do that.
        */
+      Disable();
       HIDD_SerialUnit_Start(SU->su_Unit);
+      Enable();
       if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
         ReplyMsg(&ioreq->IOSer.io_Message);
       ioreq->IOSer.io_Flags |= IOF_QUICK;
@@ -789,7 +794,9 @@ AROS_LH1(void, beginio,
       /*
        * Stop any serial port IO going on. Tell the hidd to do that.
        */
+      Disable();
       HIDD_SerialUnit_Stop(SU->su_Unit);
+      Enable();
       if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
         ReplyMsg(&ioreq->IOSer.io_Message);
       ioreq->IOSer.io_Flags |= IOF_QUICK;
@@ -798,7 +805,7 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case SDCMD_QUERY:
-
+      Disable();
       /*
       ** set the io_Status to the status of the serial port
       */
@@ -819,6 +826,7 @@ AROS_LH1(void, beginio,
       }
 
       ioreq->IOSer.io_Error = 0; 
+      Enable();
       /*
       ** The request could be completed immediately.
       ** Check if I have to reply the message
@@ -833,7 +841,7 @@ AROS_LH1(void, beginio,
     case SDCMD_SETPARAMS:
         
       /* Change of buffer size for input buffer? */
-
+      Disable();
 
       if (ioreq->io_RBufLen >= MINBUFSIZE &&
           ioreq->io_RBufLen != SU->su_InBufLength)
@@ -928,6 +936,7 @@ AROS_LH1(void, beginio,
       }
       
       SU->su_CtlChar  = ioreq->io_CtlChar;
+      Enable();
 
       /*
       ** The request could be completed immediately.
@@ -940,6 +949,7 @@ AROS_LH1(void, beginio,
     /*******************************************************************/
 
     case SDCMD_BREAK:
+      Disable();
       if (0 != (ioreq->io_SerFlags & SERF_QUEUEDBRK))
       {
         /* might have to queue that request */
@@ -952,10 +962,10 @@ kprintf("%s: Queuing SDCMD_BREAK! This probably doesn't work correctly!\n");
           break;
         }
       }
-      
       /* Immediately execute this command */
       ioreq->IOSer.io_Error = HIDD_SerialUnit_SendBreak(SU->su_Unit, 
                                                         SU->su_BrkTime);
+      Enable();
 
       if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
         ReplyMsg(&ioreq->IOSer.io_Message);
