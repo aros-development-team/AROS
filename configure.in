@@ -393,7 +393,7 @@ aros_kernel_ldflags="-Wl,-rpath,./lib"
 aros_compiler_libs=
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
+aros_debug_cflags="-g -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
 aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
@@ -416,8 +416,20 @@ aros_modules_debug="1"
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
 
-# This is the target configuration switch.
+#-----------------------------------------------------------------------------
+AC_MSG_CHECKING([what optimization level to use])
+AC_ARG_WITH(optimization,[  --with-optimization=N   Use optimization level N [default=2]],optimization=$withval,optimization=unknown)
+if test "$optimization" = "unknown"; then
+    dnl default is -O2 for normal builds, -O0 for debug builds
+    aros_target_cflags="$aros_target_cflags -O2"
+    aros_debug_cflags="$aros_debug_cflags -O0
+else
+    aros_target_cflags="$aros_target_cflags -O$optimization"
+    aros_debug_cflags="$aros_debug_cflags -O$optimization"
+fi    
+#-----------------------------------------------------------------------------
 
+# This is the target configuration switch.
 case "$target_os" in
     linux*)
 	aros_target_arch="linux"
@@ -455,7 +467,7 @@ case "$target_os" in
 
     pc)
 	aros_target_arch="pc"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -DADEBUG=1 -DMDEBUG=1"
+	aros_target_cflags="$aros_target_cflags -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
 	case "$target_cpu" in
 	    *i?86*)
@@ -476,7 +488,7 @@ case "$target_os" in
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
+	aros_target_cflags="$aros_target_cflags -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
@@ -596,7 +608,7 @@ case "$target_os" in
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_shared_default="no"
 
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -fomit-frame-pointer -fbuiltin -ffreestanding"
+	aros_target_cflags="$aros_target_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
 	case "$target_cpu" in
 	    *m68k*)
@@ -663,7 +675,7 @@ case "$target_os" in
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="-Wall -Werror-implicit-function-declaration -fno-builtin -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
+		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
