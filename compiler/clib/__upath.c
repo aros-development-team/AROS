@@ -1,3 +1,4 @@
+
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
@@ -148,6 +149,9 @@ static void  __path_normalstuff_u2a(const char *path, char *buf);
         return NULL;
     }
 
+    if (!__doupath)
+        return apath;
+	
     while ((ch = *apath++))
     {
          if (ch == '/')
