@@ -4,26 +4,28 @@
 Lib="$1"
 lib="`echo $Lib | gawk ' { print tolower($0); }'`"
 TOP="$2"
+shift ; shift
+
+case "$Lib" in
+    Mathieeespbas ) lib="mathieeesingbas" ;;
+    Mathieeesptrans ) lib="mathieeesingtrans" ;;
+esac
+
 mic="$TOP/scripts/moveifchanged"
 
 echo "Generating prototypes for $Lib..."
 
 incdir="$TOP/compiler/include"
-basedir="$TOP/rom/$lib"
+#basedir="$TOP/rom/$lib"
+basedir=`dirname $1`
 clibdir="$incdir/clib"
 defdir="$incdir/defines"
-
-shift ; shift
 
 pubclib="$clibdir/${lib}_protos.h"
 pubdef="$defdir/$lib.h"
 
 case "$Lib" in
     "Console" ) basedir="$TOP/rom/devs" ;;
-    "Icon" ) basedir="$TOP/workbench/libs/icon" ;;
-    "IFFParse" ) basedir="$TOP/workbench/libs/iffparse" ;;
-    "Diskfont" ) basedir="$TOP/workbench/libs/diskfont" ;;
-    "Locale" ) basedir="$TOP/workbench/libs/locale" ;;
 esac
 
 privclib="$basedir/${lib}_private.h"
