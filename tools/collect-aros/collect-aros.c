@@ -153,7 +153,7 @@ char *ldscriptname = NULL;
 
 void exitfunc(void)
 {
-//    remove(ldscriptname);
+    remove(ldscriptname);
     remove(tempoutname);
 }
 
