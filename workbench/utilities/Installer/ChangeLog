@@ -47,7 +47,7 @@
 
 0012
 - prepared main() for ReadArgs()
-- realloc() can be used as malloc() -- shortenes code ;-)
+- realloc() can be used as malloc() -- shortens code ;-)
 - added collection of arguments for _STRING ( "..." ... ) to pass
   to RawDoFmt()
 - fixed a bug which caused parse_script() to have an empty ScriptArg at
@@ -69,7 +69,7 @@
   for stripped strings)
 
 0015
-- commands are now caseinsensitive
+- commands are now case insensitive
 - supplied debugging code for "working" "welcome" and "complete"
 - reduced code in variables.c
 - supplied final code for "transcript [string|var|cmd]..."
@@ -81,7 +81,7 @@
 - added demo/test script for written functions test.script_simple
 - added "+" and "and" handling
 - added function for stripping quotes off a string
-  ( to be more precise: strip off first and last chararcter )
+  ( to be more precise: strip off first and last character )
 - installer didn't recognize negative numbers :-( Fixed.
 
 0017
@@ -159,7 +159,7 @@
   which is unnecessary
 - added text-gui for "askstring" "askbool"
 - "ask*" is only performed if @user-level > NOVICE
-- adjusted default definition of RANGE accodring to docs
+- adjusted default definition of RANGE according to docs
 
 0028
 - added support for "onerror" command
@@ -254,7 +254,7 @@
 - some first Workbench init code
 - yet more intuition gui
 - preparation for pretend-to-install
-- added funtion for adding quotes to a string
+- added function for adding quotes to a string
 - added misc.c for useful functions (like adding or stripping quotes)
 - added MXGadget for askchoice
 - added code for Asl FileRequester
@@ -277,7 +277,7 @@
 0044
 - added pretend-to-install request gui
 - added gui for request_confirm(), lacks gui for help text
-- implemented (database "grapics-mem") and (database "total-mem")
+- implemented (database "graphics-mem") and (database "total-mem")
 - added variable doing_abort to work around the "abort in abort" BUG00003
 
 0045
@@ -343,7 +343,7 @@
 0055
 - small fix to make it run from Workbench again
 - added sources for test.script.info
-- removed obsolte parts from gui
+- removed obsolete parts from gui
 
 0056
 - added Locale support
