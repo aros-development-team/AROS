@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Allocate some memory
@@ -12,6 +12,7 @@
 #include <aros/rt.h>
 #include <aros/machine.h>
 #include <aros/macros.h>
+#include <aros/config.h>
 #include "memory.h"
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -75,7 +76,7 @@
     AROS_LIBFUNC_INIT
     struct Interrupt *lmh;
     APTR res = NULL;
-#if ENABLE_RT || MDEBUG
+#if ENABLE_RT || AROS_MUNGWALL_DEBUG
     ULONG origSize = byteSize;
 #endif
 
@@ -85,7 +86,7 @@
     if(!byteSize)
 	goto end;
 
-#if MDEBUG
+#if AROS_MUNGWALL_DEBUG
     /* Make room for safety walls around allocated block and an some more extra space
        for other interesting things, actually --> the size.
 
@@ -99,7 +100,7 @@
     */
 
     byteSize += MUNGWALL_SIZE * 2 + MEMCHUNK_TOTAL;
-#endif /* MDEBUG */
+#endif /* AROS_MUNGWALL_DEBUG */
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL */
     byteSize = AROS_ROUNDUP2(byteSize, MEMCHUNK_TOTAL);
@@ -291,7 +292,7 @@ end:
     RT_Add (RTT_MEMORY, res, origSize);
 #endif
 
-#if MDEBUG
+#if AROS_MUNGWALL_DEBUG
     if (res)
     {
         /* Save orig byteSize before wall (there is one MemChunk room before wall for such
@@ -315,9 +316,11 @@ end:
 	/* Initialize post-wall */
 	BUILD_WALL(res + origSize, 0xDB, MUNGWALL_SIZE + AROS_ROUNDUP2(origSize, MEMCHUNK_TOTAL) - origSize);
     }
-#endif /* MDEBUG */
+#endif /* AROS_MUNGWALL_DEBUG */
 
     ReturnPtr ("AllocMem", APTR, res);
+    
     AROS_LIBFUNC_EXIT
+    
 } /* AllocMem */
 

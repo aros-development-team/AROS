@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free memory allocated by AllocMem()
@@ -9,6 +9,7 @@
 #include <exec/execbase.h>
 #include <aros/machine.h>
 #include <aros/libcall.h>
+#include <aros/config.h>
 #include "memory.h"
 #include <aros/rt.h>
 #include <exec/memory.h>
@@ -71,7 +72,7 @@
     struct MemHeader *mh;
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
-#if MDEBUG
+#if AROS_MUNGWALL_DEBUG
     ULONG origsize = byteSize
 #endif
 
@@ -93,7 +94,7 @@
     /* Align the block as well (needed because of AllocAbs) */
     memoryBlock=(APTR)AROS_ROUNDDOWN2((IPTR)memoryBlock,MEMCHUNK_TOTAL);
 
-#if MDEBUG
+#if AROS_MUNGWALL_DEBUG
 	/* Add the size of mung walls and extra MemChunk room (for orig
 	allocsize)  around the block */
 	memoryBlock -= MUNGWALL_SIZE + MEMCHUNK_TOTAL;
@@ -102,7 +103,7 @@
 
     byteSize=AROS_ROUNDUP2(byteSize,MEMCHUNK_TOTAL);
 
-#if MDEBUG
+#if AROS_MUNGWALL_DEBUG
 	if (*(ULONG *)memoryBlock != origsize)
 	{
 	    struct Task *__t = FindTask(NULL);	\
