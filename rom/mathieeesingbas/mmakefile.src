@@ -1,21 +1,34 @@
 #    $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.
+USER_INCLUDES := -I.
 
-MODNAME	    :=	mathieeesingbas
-MODTYPE	    :=	library
+MODNAME    := mathieeesingbas
+MODTYPE    := library
 
-FILES	:=
-ARCHIVE	:= mathieeesingbas.arch
+FILES :=
+FUNCS := \
+    ieeespabs \
+    ieeespadd \
+    ieeespceil \
+    ieeespcmp \
+    ieeespdiv \
+    ieeespfix \
+    ieeespfloor \
+    ieeespflt \
+    ieeespmul \
+    ieeespneg \
+    ieeespsub \
+    ieeesptst
 
 MAKE_SHLIB := $(SHARED_MATHIEEESINGBAS)
 
 #MM- kernel-mathieeesing : includes linklibs
 %make_module_setup mmake=kernel-mathieeesingbas
-%make_module_archtool
+%make_module_cpak
 %make_module mmake=kernel-mathieeesingbas
-%make_lib_incl_arch
+
+%make_lib_includes
 
 %common
 %include_deps
