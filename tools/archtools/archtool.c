@@ -514,7 +514,7 @@ Parameter * newParameter (FILE * fh, int num, char ** header)
 
     par->node.name = strdup (header[num-2]);
     par->type = joinStrings (num-3, &header[1], " ");
-    printf ("Type %d %s\n", num-3, par->type);
+    // printf ("Type %d %s\n", num-3, par->type);
     NewList (&par->registers);
     par->description = readText (fh, "Parameter");
 
@@ -524,7 +524,7 @@ Parameter * newParameter (FILE * fh, int num, char ** header)
 	node->name = malloc (3);
 	strncpy (node->name, ptr, 2);
 	node->name[2] = 0;
-	printf ("Reg %s\n", node->name);
+	// printf ("Reg %s\n", node->name);
 	AddTail (&par->registers, node);
 	
 	ptr += 2;
