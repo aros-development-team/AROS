@@ -72,7 +72,7 @@ int __initcommandline(void)
 	    }
 	}
 
-	if (!(__argv = AllocMem (sizeof (char *) * __argmax, MEMF_CLEAR)) )
+	if (!(__argv = AllocMem (sizeof (char *) * (__argmax+1), MEMF_ANY | MEMF_CLEAR)) )
 	    return RETURN_FAIL;
 
 	/* create argv */
@@ -116,7 +116,7 @@ int __initcommandline(void)
     {
 	__argmax = 1;
 	__argc = 1;
-	if (!(__argv = AllocMem (sizeof (char *), MEMF_ANY)))
+	if (!(__argv = AllocMem (sizeof (char *)*2, MEMF_CLEAR | MEMF_ANY)))
 	    return RETURN_FAIL;
     }
 
@@ -166,7 +166,7 @@ void __exitcommandline(void)
     if (__argv) {
 	if (__argv[0])
 	    FreeVec(__argv[0]);
-	FreeMem(__argv, sizeof (char *) * __argmax);
+	FreeMem(__argv, sizeof (char *) * (__argmax+1));
     }
 
     if (__args)
