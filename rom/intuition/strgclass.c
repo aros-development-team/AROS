@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/boopsi.h>
+#include <proto/exec.h>
 #include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
@@ -33,13 +34,13 @@
 struct StrGData
 {
     struct StringInfo	StrInfo;
-    struct StringExtend	StrExtend;
+    struct StringExtend StrExtend;
     UBYTE		Flags;
 
 };
 
 #define SFLG_INACTIVE_SET	(1 << 0)
-#define SFLG_ACTIVE_SET		(1 << 1)
+#define SFLG_ACTIVE_SET 	(1 << 1)
 #define SFLG_BUFFER_ALLOCATED	(1 << 2)
 #define SFLG_WORKBUF_ALLOCATED	(1 << 3)
 #define SFLG_UNDOBUF_ALLOCATED	(1 << 4)
@@ -48,10 +49,10 @@ struct StrGData
 ** StrG::Set()  **
 *****************/
 #define SETFLAG(flagvar, boolvar, flag) \
-    if (boolvar)			\
-    	flagvar |= flag;		\
+    if (boolvar)                        \
+	flagvar |= flag;		\
     else				\
-    	flagvar &= ~flag;
+	flagvar &= ~flag;
 
 
 STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
@@ -59,125 +60,125 @@ STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
     IPTR retval = 0UL;
     struct TagItem *tag, *tstate;
     struct StrGData *data = INST_DATA(cl, o);
-    struct TagItem notify_tags[] = 
+    struct TagItem notify_tags[] =
     {
-    	{ 0UL, 		0UL},
-    	{ GA_ID,	EG(o)->GadgetID},
-    	{ TAG_END, }
+	{ 0UL,		0UL},
+	{ GA_ID,	EG(o)->GadgetID},
+	{ TAG_END, }
     };
-    
+
     for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
     {
-    	IPTR tidata = tag->ti_Data;
-    	BOOL notify = FALSE;
-    	
-    	switch (tag->ti_Tag)
-    	{
+	IPTR tidata = tag->ti_Data;
+	BOOL notify = FALSE;
 
-    	case STRINGA_LongVal:		/* [ISGNU] */
-     	    data->StrInfo.LongInt = (LONG)tidata;
-     	    EG(o)->Activation |= GACT_LONGINT;
-     	    retval = 1UL;
-     	    notify = TRUE;
-    	    break;
-    	    
-    	case STRINGA_TextVal:		/* [ISGNU] */
-    	    if (msg->MethodID != OM_NEW)
-    	    {
-	    	strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
-     	    	EG(o)->Activation &= ~GACT_LONGINT;
-     	    	retval = 1UL;
-     	    	notify = TRUE;
-     	    }
-    	    break;
+	switch (tag->ti_Tag)
+	{
 
-    	case STRINGA_MaxChars:		/* [I] */
-    	    data->StrInfo.MaxChars = (WORD)tidata;
-    	    break;
+	case STRINGA_LongVal:		/* [ISGNU] */
+	    data->StrInfo.LongInt = (LONG)tidata;
+	    EG(o)->Activation |= GACT_LONGINT;
+	    retval = 1UL;
+	    notify = TRUE;
+	    break;
 
-    	case STRINGA_Buffer:		/* [I] */
-    	    data->StrInfo.Buffer = (STRPTR)tidata;
-    	    break;
+	case STRINGA_TextVal:		/* [ISGNU] */
+	    if (msg->MethodID != OM_NEW)
+	    {
+		strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
+		EG(o)->Activation &= ~GACT_LONGINT;
+		retval = 1UL;
+		notify = TRUE;
+	    }
+	    break;
 
-    	case STRINGA_UndoBuffer:	/* [I] */
-    	    data->StrInfo.UndoBuffer = (STRPTR)tidata;
-    	    break;
+	case STRINGA_MaxChars:		/* [I] */
+	    data->StrInfo.MaxChars = (WORD)tidata;
+	    break;
 
-    	case STRINGA_WorkBuffer:	/* [I] */
-    	    data->StrExtend.WorkBuffer = (STRPTR)tidata;
-    	    break;
+	case STRINGA_Buffer:		/* [I] */
+	    data->StrInfo.Buffer = (STRPTR)tidata;
+	    break;
 
-    	case STRINGA_BufferPos:		/* [ISU] */
-    	    data->StrInfo.BufferPos = (WORD)tidata;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_UndoBuffer:	/* [I] */
+	    data->StrInfo.UndoBuffer = (STRPTR)tidata;
+	    break;
 
-    	case STRINGA_DispPos:		/* [ISU] */
-    	    data->StrInfo.DispPos = (WORD)tidata;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_WorkBuffer:	/* [I] */
+	    data->StrExtend.WorkBuffer = (STRPTR)tidata;
+	    break;
 
-    	case STRINGA_AltKeyMap:		/* [IS] */
-    	    data->StrInfo.AltKeyMap = (struct KeyMap *)tidata;
-    	    break;
+	case STRINGA_BufferPos: 	/* [ISU] */
+	    data->StrInfo.BufferPos = (WORD)tidata;
+	    retval = 1UL;
+	    break;
 
-    	case STRINGA_Font:		/* [IS] */
-    	    data->StrExtend.Font = (struct TextFont *)tidata;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_DispPos:		/* [ISU] */
+	    data->StrInfo.DispPos = (WORD)tidata;
+	    retval = 1UL;
+	    break;
 
-    	case STRINGA_Pens:		/* [IS] */
-    	    data->StrExtend.Pens[0] = ((LONG)tidata) & 0x0000FFFF;
-    	    data->StrExtend.Pens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_AltKeyMap: 	/* [IS] */
+	    data->StrInfo.AltKeyMap = (struct KeyMap *)tidata;
+	    break;
 
-    	case STRINGA_ActivePens:	/* [IS] */
-    	    data->StrExtend.ActivePens[0] = ((LONG)tidata) & 0x0000FFFF;
-    	    data->StrExtend.ActivePens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_Font:		/* [IS] */
+	    data->StrExtend.Font = (struct TextFont *)tidata;
+	    retval = 1UL;
+	    break;
 
-    	case STRINGA_EditHook:		/* [I] */
-    	    data->StrExtend.EditHook = (struct Hook *)tidata;
-    	    break;
-    	
-    	case STRINGA_EditModes:		/* [IS] */
-    	    data->StrExtend.InitialModes = (ULONG)tidata;
-    	    break;
+	case STRINGA_Pens:		/* [IS] */
+	    data->StrExtend.Pens[0] = ((LONG)tidata) & 0x0000FFFF;
+	    data->StrExtend.Pens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
+	    retval = 1UL;
+	    break;
 
-    	case STRINGA_ReplaceMode:	/* [IS] */
-    	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_REPLACE);
-    	    break;
+	case STRINGA_ActivePens:	/* [IS] */
+	    data->StrExtend.ActivePens[0] = ((LONG)tidata) & 0x0000FFFF;
+	    data->StrExtend.ActivePens[1] = (((LONG)tidata) & 0xFFFF0000) >> 16;
+	    retval = 1UL;
+	    break;
 
-    	case STRINGA_FixedFieldMode:	/* [IS] */
-    	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_FIXEDFIELD);
-    	    break;
-    	    
-    	case STRINGA_NoFilterMode:	/* [IS] */
-    	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_NOFILTER);
-    	    break;
+	case STRINGA_EditHook:		/* [I] */
+	    data->StrExtend.EditHook = (struct Hook *)tidata;
+	    break;
 
-    	case STRINGA_Justification:	/* [IS] */
-    	    EG(o)->Activation |= (UWORD)tidata;
-    	    retval = 1UL;
-    	    break;
+	case STRINGA_EditModes: 	/* [IS] */
+	    data->StrExtend.InitialModes = (ULONG)tidata;
+	    break;
 
-    	case STRINGA_ExitHelp:
-    	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_EXITHELP);
-    	    break;
+	case STRINGA_ReplaceMode:	/* [IS] */
+	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_REPLACE);
+	    break;
 
-    	    
-    	} /* switch (currently parsed tag) */
-    	
-    	if (notify)
-    	{
-    	    struct opUpdate nmsg = {OM_NOTIFY, notify_tags, msg->ops_GInfo, 0};
-    	    notify_tags[0].ti_Tag  = tag->ti_Tag;
-    	    notify_tags[0].ti_Data = tidata;
-    	    
+	case STRINGA_FixedFieldMode:	/* [IS] */
+	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_FIXEDFIELD);
+	    break;
+
+	case STRINGA_NoFilterMode:	/* [IS] */
+	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_NOFILTER);
+	    break;
+
+	case STRINGA_Justification:	/* [IS] */
+	    EG(o)->Activation |= (UWORD)tidata;
+	    retval = 1UL;
+	    break;
+
+	case STRINGA_ExitHelp:
+	    SETFLAG(data->StrExtend.InitialModes, (ULONG)tidata, SGM_EXITHELP);
+	    break;
+
+
+	} /* switch (currently parsed tag) */
+
+	if (notify)
+	{
+	    struct opUpdate nmsg = {OM_NOTIFY, notify_tags, msg->ops_GInfo, 0};
+	    notify_tags[0].ti_Tag  = tag->ti_Tag;
+	    notify_tags[0].ti_Data = tidata;
+
 	    DoSuperMethodA(cl, o, (Msg)&nmsg);
-    	} /* if (the currently parsed attr supports notification) */
+	} /* if (the currently parsed attr supports notification) */
     } /* for (each tag in taglist) */
     return (retval);
 } /* strg_set() */
@@ -190,26 +191,26 @@ STATIC IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
 {
     IPTR retval = 1UL;
     struct StrGData *data = INST_DATA(cl, o);
-    
+
     switch (msg->opg_AttrID)
     {
-    	case STRINGA_LongVal:	/* [ISGNU] */
-    	    if (EG(o)->Activation & GACT_LONGINT)
-    	    	*(msg->opg_Storage) = (IPTR)data->StrInfo.LongInt;
-    	    else
-    	    	*(msg->opg_Storage) = 0UL;
-    	    break;
-    	    
-    	case STRINGA_TextVal:	/* [ISGNU] */
-    	    if (!(EG(o)->Activation & GACT_LONGINT))
-    	    	*(msg->opg_Storage) = (IPTR)data->StrInfo.Buffer;
-    	    else
-    	    	*(msg->opg_Storage) = 0UL;
-    	    break;
-    	    
-    	default:
-    	    retval = DoSuperMethodA(cl, o, (Msg)msg);
-    	    break;
+	case STRINGA_LongVal:	/* [ISGNU] */
+	    if (EG(o)->Activation & GACT_LONGINT)
+		*(msg->opg_Storage) = (IPTR)data->StrInfo.LongInt;
+	    else
+		*(msg->opg_Storage) = 0UL;
+	    break;
+
+	case STRINGA_TextVal:	/* [ISGNU] */
+	    if (!(EG(o)->Activation & GACT_LONGINT))
+		*(msg->opg_Storage) = (IPTR)data->StrInfo.Buffer;
+	    else
+		*(msg->opg_Storage) = 0UL;
+	    break;
+
+	default:
+	    retval = DoSuperMethodA(cl, o, (Msg)msg);
+	    break;
     }
     return (retval);
 }
@@ -217,65 +218,65 @@ STATIC IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
 /******************
 **  StrG::New()  **
 ******************/
- 
+
 STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
 {
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
-    	WORD maxchars;
-    	STRPTR textval;
-    	
-    	struct StrGData *data = INST_DATA(cl, o);
-    	memset(data, 0, sizeof (struct StrGData));
-    	
-    	/* Set some defaults */
-    	data->StrInfo.MaxChars = 80;
-    	
-    	strg_set(cl, o, msg);
-    	
-    	/* If no buffers have been supplied, then allocate them */
-    	maxchars = data->StrInfo.MaxChars;
-    	if (!data->StrInfo.Buffer)
-    	{
-    	    data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
-    	    if (!data->StrInfo.Buffer)
-    	    	goto failure;
-    	    data->Flags |= SFLG_BUFFER_ALLOCATED;
-    	}
-    	if (!data->StrInfo.UndoBuffer)
-    	{
-    	    data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
-    	    if (!data->StrInfo.UndoBuffer)
-    	    	goto failure;
-    	    data->Flags |= SFLG_UNDOBUF_ALLOCATED;
-    	}
-    	if (!data->StrExtend.WorkBuffer)
-    	{
-    	    data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
-    	    if (!data->StrExtend.WorkBuffer)
-    	    	goto failure;
-    	    data->Flags |= SFLG_WORKBUF_ALLOCATED;
-    	}
-    	
-    	/* Get inital string contents */
-    	textval = (STRPTR)GetTagData(STRINGA_TextVal, NULL, msg->ops_AttrList);
-    	if (textval)
+	WORD maxchars;
+	STRPTR textval;
+
+	struct StrGData *data = INST_DATA(cl, o);
+	memset(data, 0, sizeof (struct StrGData));
+
+	/* Set some defaults */
+	data->StrInfo.MaxChars = 80;
+
+	strg_set(cl, o, msg);
+
+	/* If no buffers have been supplied, then allocate them */
+	maxchars = data->StrInfo.MaxChars;
+	if (!data->StrInfo.Buffer)
+	{
+	    data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    if (!data->StrInfo.Buffer)
+		goto failure;
+	    data->Flags |= SFLG_BUFFER_ALLOCATED;
+	}
+	if (!data->StrInfo.UndoBuffer)
+	{
+	    data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    if (!data->StrInfo.UndoBuffer)
+		goto failure;
+	    data->Flags |= SFLG_UNDOBUF_ALLOCATED;
+	}
+	if (!data->StrExtend.WorkBuffer)
+	{
+	    data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+	    if (!data->StrExtend.WorkBuffer)
+		goto failure;
+	    data->Flags |= SFLG_WORKBUF_ALLOCATED;
+	}
+
+	/* Get inital string contents */
+	textval = (STRPTR)GetTagData(STRINGA_TextVal, NULL, msg->ops_AttrList);
+	if (textval)
 	{
 	    strcpy(data->StrInfo.Buffer, textval);
 	    D(bug("strgclass:Initializing string gadget to value %s\n", textval));
-     	    EG(o)->Activation &= ~GACT_LONGINT;
-     	}
-    	
-    	EG(o)->SpecialInfo = &(data->StrInfo);
-    	EG(o)->Flags |= GFLG_STRINGEXTEND;
-    	data->StrInfo.Extension = &(data->StrExtend);
+	    EG(o)->Activation &= ~GACT_LONGINT;
+	}
+
+	EG(o)->SpecialInfo = &(data->StrInfo);
+	EG(o)->Flags |= GFLG_STRINGEXTEND;
+	data->StrInfo.Extension = &(data->StrExtend);
     }
     return (o);
-    
+
 failure:
     CoerceMethod(cl, o, OM_DISPOSE);
-    
+
     return (NULL);
 }
 
@@ -286,14 +287,14 @@ STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
 {
     struct StrGData *data = INST_DATA(cl, o);
     if ((data->StrInfo.Buffer) && (data->Flags & SFLG_BUFFER_ALLOCATED))
-    	FreeVec(data->StrInfo.Buffer);
+	FreeVec(data->StrInfo.Buffer);
 
     if ((data->StrInfo.UndoBuffer) && (data->Flags & SFLG_UNDOBUF_ALLOCATED))
-    	FreeVec(data->StrInfo.UndoBuffer);
+	FreeVec(data->StrInfo.UndoBuffer);
 
     if ((data->StrExtend.WorkBuffer) && (data->Flags & SFLG_WORKBUF_ALLOCATED))
-    	FreeVec(data->StrExtend.WorkBuffer);
-    	
+	FreeVec(data->StrExtend.WorkBuffer);
+
     return;
 }
 /*********************
@@ -303,31 +304,31 @@ STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
 STATIC VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct StrGData *data = INST_DATA(cl, o);
-    /* This is a kludge to set default values for 
+    /* This is a kludge to set default values for
     ** STRINGA_Pens and STRINGA_ActivePens attrs. These defaults may not
     ** be set during OM_NEW, because we then know nothing about
     ** our display environment
     */
     if (!(data->Flags & SFLG_INACTIVE_SET))
     {
-    	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-    	
-    	data->StrExtend.Pens[0] = pens[TEXTPEN];
-    	data->StrExtend.Pens[1] = pens[BACKGROUNDPEN];
+	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+
+	data->StrExtend.Pens[0] = pens[TEXTPEN];
+	data->StrExtend.Pens[1] = pens[BACKGROUNDPEN];
     }
 
     if (!(data->Flags & SFLG_ACTIVE_SET))
     {
-    	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-    	
-    	data->StrExtend.ActivePens[0] = pens[TEXTPEN];
-    	data->StrExtend.ActivePens[1] = pens[SHINEPEN];
+	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+
+	data->StrExtend.ActivePens[0] = pens[TEXTPEN];
+	data->StrExtend.ActivePens[1] = pens[SHINEPEN];
     }
-    
+
     UpdateStrGadget((struct Gadget *)o,
-    	   msg->gpr_GInfo->gi_Window,
-    	   IntuitionBase);
-    	   
+	   msg->gpr_GInfo->gi_Window,
+	   IntuitionBase);
+
     return;
 }
 
@@ -340,68 +341,68 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
     ULONG ret;
     IPTR retval = GMR_MEACTIVE;
-    
+
     UWORD imsgcode;
     struct InputEvent *ie = msg->gpi_IEvent;
-    
+
     if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-    	if (ie->ie_Code == SELECTDOWN)
-        {
-    	    struct IBox container;
-    
-    	    GetGadgetIBox(o, msg->gpi_GInfo, &container);
-    	
-    	    /* Click outside gadget ? */
-    	    if (    (ie->ie_X > container.Left + container.Width)
-    	     	 || (ie->ie_X < container.Left)
-    	     	 || (ie->ie_Y > container.Top  + container.Height)
-    	     	 || (ie->ie_Y < container.Top))
-    	     
-    	    {
-    	     	retval = GMR_REUSE;
-    	    }
-    	}
-    	/* Just to prevent a whole lot of MOUSE_MOVE messages being passed */
+	if (ie->ie_Code == SELECTDOWN)
+	{
+	    struct IBox container;
+
+	    GetGadgetIBox(o, msg->gpi_GInfo, &container);
+
+	    /* Click outside gadget ? */
+	    if (    (ie->ie_X > container.Left + container.Width)
+		 || (ie->ie_X < container.Left)
+		 || (ie->ie_Y > container.Top  + container.Height)
+		 || (ie->ie_Y < container.Top))
+
+	    {
+		retval = GMR_REUSE;
+	    }
+	}
+	/* Just to prevent a whole lot of MOUSE_MOVE messages being passed */
 	else if (ie->ie_Code == IECODE_NOBUTTON)
-    	{
-    	    return (retval);
-    	}    
+	{
+	    return (retval);
+	}
     }
-    
-    
+
+
     if (retval == GMR_MEACTIVE)
-    {    
-        
-        ret = HandleStrInput((struct Gadget *)o
-	    		,msg->gpi_GInfo
-	    		,ie
-	    		,&imsgcode
-	    		,IntuitionBase);
-	    		
-	    
-    	if (ret & (SGA_END|SGA_PREVACTIVE|SGA_NEXTACTIVE))
-    	{
+    {
+
+	ret = HandleStrInput((struct Gadget *)o
+			,msg->gpi_GInfo
+			,ie
+			,&imsgcode
+			,IntuitionBase);
+
+
+	if (ret & (SGA_END|SGA_PREVACTIVE|SGA_NEXTACTIVE))
+	{
 	    if (ret & SGA_REUSE)
-	    	retval = GMR_REUSE;
+		retval = GMR_REUSE;
 	    else
-	    	retval = GMR_NOREUSE;
-	    	    
+		retval = GMR_NOREUSE;
+
 	    if (ret & SGA_PREVACTIVE)
-	    	retval |= GMR_PREVACTIVE;
+		retval |= GMR_PREVACTIVE;
 	    else if (ret & SGA_NEXTACTIVE)
-	    	retval |= GMR_NEXTACTIVE;
-	    	    
+		retval |= GMR_NEXTACTIVE;
+
 	    retval |= GMR_VERIFY;
-		*(msg->gpi_Termination) = (LONG)imsgcode; 
-	
-    	}
-    	else
-    	{
+		*(msg->gpi_Termination) = (LONG)imsgcode;
+
+	}
+	else
+	{
 	     retval = GMR_MEACTIVE;
-    	}
+	}
     } /* if (retval hasn't allreay been set) */
-    
+
     return (retval);
 }
 
@@ -411,51 +412,51 @@ STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct RastPort *rp;
-    
+
     struct opUpdate nmsg;
     struct TagItem tags[2];
     struct StrGData *data = INST_DATA(cl, o);
-    
+
     EG(o)->Flags &= ~GFLG_SELECTED;
-    
+
     /* Rerender gadget in inactive state */
     rp = ObtainGIRPort(msg->gpgi_GInfo);
     if (rp)
     {
-    	DoMethod(o, GM_RENDER, msg->gpgi_GInfo, rp, GREDRAW_REDRAW);
-    	
-    	
-    	ReleaseGIRPort(rp);
+	DoMethod(o, GM_RENDER, msg->gpgi_GInfo, rp, GREDRAW_REDRAW);
+
+
+	ReleaseGIRPort(rp);
     }
-    
+
     /* Notify evt. change of string gadget contents */
 
     if (EG(o)->Activation & GACT_LONGINT)
     {
-    	tags[0].ti_Tag  = STRINGA_LongVal;
-    	tags[0].ti_Data = (IPTR)data->StrInfo.LongInt; 
+	tags[0].ti_Tag	= STRINGA_LongVal;
+	tags[0].ti_Data = (IPTR)data->StrInfo.LongInt;
     }
     else
     {
-    	tags[0].ti_Tag  = STRINGA_TextVal;
-    	tags[0].ti_Data = (IPTR)data->StrInfo.Buffer;
+	tags[0].ti_Tag	= STRINGA_TextVal;
+	tags[0].ti_Data = (IPTR)data->StrInfo.Buffer;
     }
-    
+
     tags[1].ti_Tag = TAG_END;
-    
+
     nmsg.MethodID	= OM_NOTIFY;
     nmsg.opu_AttrList	= tags;
     nmsg.opu_GInfo	= msg->gpgi_GInfo;
     nmsg.opu_Flags	= 0;
-    
+
     DoSuperMethodA(cl, o, (Msg)&nmsg);
-    
+
     return (0UL);
 }
 
 
 /*****************
-**  Dispatcher  **
+**  Dispatcher	**
 *****************/
 
 #define gpR(msg) ((struct gpRender *)msg)
@@ -471,18 +472,18 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 
     switch(msg->MethodID)
     {
-    	case GM_RENDER:
-    	    strg_render(cl, o, (struct gpRender *)msg);
-    	    break;
-	    
+	case GM_RENDER:
+	    strg_render(cl, o, (struct gpRender *)msg);
+	    break;
+
 	case GM_GOACTIVE:
-	    
+
 	    if (gpI(msg)->gpi_IEvent)
 	    {
-	    	UWORD imsgcode;
-	    	
-	    	HandleStrInput((struct Gadget *)o, gpI(msg)->gpi_GInfo,
-	    		gpI(msg)->gpi_IEvent, &imsgcode, IntuitionBase);
+		UWORD imsgcode;
+
+		HandleStrInput((struct Gadget *)o, gpI(msg)->gpi_GInfo,
+			gpI(msg)->gpi_IEvent, &imsgcode, IntuitionBase);
 
 	    }
 	    retval = GMR_MEACTIVE;
@@ -491,7 +492,7 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 	case GM_HANDLEINPUT:
 	    retval = strg_handleinput(cl, o, (struct gpInput *)msg);
 	    break;
-	    	    
+
 	case GM_GOINACTIVE:
 	    retval = strg_goinactive(cl, o, (struct gpGoInactive *)msg);
 	    break;
@@ -499,7 +500,7 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 	case OM_NEW:
 	    retval = (IPTR)strg_new(cl, o, (struct opSet *)msg);
 	    break;
-	
+
 	case OM_DISPOSE:
 	    strg_dispose(cl, o, msg);
 	    break;
@@ -516,16 +517,16 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 	     */
 	    if ( retval && ( msg->MethodID == OM_UPDATE ) && ( cl == OCLASS(o) ) )
 	    {
-	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-	    	if (gi)
-	    	{
+		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+		if (gi)
+		{
 		    struct RastPort *rp = ObtainGIRPort(gi);
 		    if (rp)
 		    {
-		    	DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
-		    	ReleaseGIRPort(rp);
+			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+			ReleaseGIRPort(rp);
 		    } /* if */
-	    	} /* if */
+		} /* if */
 	    } /* if */
 	    break;
 
