@@ -1,0 +1,216 @@
+/*
+    Copyright (C) 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: LocStrToDate - locale.library's private replacement
+    	  of dos.library/StrToDate function. IPrefs will install
+	  the patch.
+	  
+    Lang: english
+*/
+
+#include <exec/types.h>
+#include <proto/exec.h>
+#include <proto/locale.h>
+#include "locale_intern.h"
+#include <aros/asmcall.h>
+
+#include <string.h>
+
+extern struct LocaleBase *globallocalebase;
+
+AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(ULONG, donottouch, A2),
+    AROS_UFHA(struct Locale *, locale, A1))
+{
+    STRPTR *buf = (STRPTR *)hook->h_Data;
+    
+    return *(*buf)++;
+}
+
+ /*****************************************************************************
+
+    NAME */
+#include <proto/locale.h>
+
+	AROS_LH1(BOOL, LocStrToDate,
+
+/*  SYNOPSIS */
+	AROS_LHA(struct DateTime *, datetime, D1),
+
+/*  LOCATION */
+	struct LocaleBase *, LocaleBase, 37, Locale)
+
+/*  FUNCTION
+    	See dos.library/StrToDate
+	
+    INPUTS
+    	See dos.library/StrToDate
+
+    RESULT
+
+    NOTES
+    	This function is not called by apps directly. Instead dos.library/StrToDate
+	is patched to use this function. This means, that the LocaleBase parameter
+	above actually points to DOSBase!!! But I may not rename it, because then
+	no entry for this function is generated in the Locale functable by the
+	corresponding script!
+	
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	dos.library/StrToDate, locale.library/ParseDate.
+
+    INTERNALS
+
+    HISTORY
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    
+#define LocaleBase globallocalebase
+
+    struct Locale   *loc;
+    struct Hook     hook;    
+    STRPTR  	    buf, fstring;
+    LONG    	    days;
+    LONG    	    retval = DOSTRUE;
+    
+    hook.h_Entry = (HOOKFUNC)LocStrToDateGetCharFunc;
+    hook.h_Data = &buf;
+    
+    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+    
+    loc = (struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale;
+    
+    if (datetime->dat_StrDate)
+    {
+    	struct DateStamp curr;
+	
+	buf = datetime->dat_StrDate;
+
+	DateStamp(&curr);
+    	
+	if (!strncasecmp(buf, GetLocaleStr(loc, YESTERDAYSTR), strlen(GetLocaleStr(loc, YESTERDAYSTR))))
+	{
+	    datetime->dat_Stamp.ds_Days = curr.ds_Days - 1;
+	}
+	else if (!strnicmp(buf, GetLocaleStr(loc, TODAYSTR), strlen(GetLocaleStr(loc, TODAYSTR))))
+	{
+	    datetime->dat_Stamp.ds_Days = curr.ds_Days;
+	}
+	else if (!strncasecmp(buf, GetLocaleStr(loc, TOMORROWSTR), strlen(GetLocaleStr(loc, TOMORROWSTR))))
+	{
+	    datetime->dat_Stamp.ds_Days = curr.ds_Days + 1;
+	}
+	else
+	{
+	    WORD i;
+	    
+	    for(i = 0; i < 7; i++)
+	    {
+	    	if (!strncasecmp(buf, GetLocaleStr(loc, DAY_1 + i), strlen(GetLocaleStr(loc, DAY_1 + i))))
+		    break;
+	    }
+	    
+	    if (i != 7)
+	    {
+	    	days = curr.ds_Days;
+		
+		if ((days %7) == 0)
+		    days -= 7;
+		else
+		    days -= (days % 7);
+		    
+		days += i;
+		
+		if (datetime->dat_Flags & DTF_FUTURE)
+		    days += 7;
+		    
+		datetime->dat_Stamp.ds_Days = days;
+		    
+	    }
+	    else
+	    {
+
+   		switch(datetime->dat_Format)
+		{
+		    case FORMAT_INT:
+	    		fstring = "%y-%b-%d";
+			break;
+
+		    case FORMAT_USA:
+	    		fstring = "%m-%d-%y";
+			break;
+
+		    case FORMAT_CDN:
+	    		fstring = "%d-%m-%y";
+			break;
+
+		    case FORMAT_DEF:
+	    		fstring = loc->loc_ShortDateFormat;
+			break;
+
+		    default:
+	    		fstring = "%d-%b-%y";
+			break;
+
+		}
+		
+		if (ParseDate(loc, &curr, fstring, &hook))
+		{
+		    datetime->dat_Stamp.ds_Days = curr.ds_Days;
+    	    	}
+		else
+		{
+		    retval = FALSE;
+		}
+		
+	    }
+	    
+	}
+
+    } /* if (datetime->dat_StrDate) */
+	
+
+    if (retval && datetime->dat_StrTime)
+    {
+    	struct DateStamp ds;
+	
+    	buf = datetime->dat_StrTime;
+	
+ 	switch(datetime->dat_Format)
+	{
+	    case FORMAT_DEF:
+	    	fstring = loc->loc_ShortTimeFormat;
+		break;
+		
+	    default:
+	    	fstring = "%H:%M:%S";
+		break;
+	}
+   	
+    	if (ParseDate(loc, &ds, fstring, &hook))
+	{
+	    datetime->dat_Stamp.ds_Minute = ds.ds_Minute;
+	    datetime->dat_Stamp.ds_Tick   = ds.ds_Tick;
+	}
+	else
+	{
+	    retval = FALSE;
+	}
+    }
+        
+    ReleaseSemaphore(&IntLB(LocaleBase)->lb_LocaleLock);
+   
+    return retval;
+    
+    AROS_LIBFUNC_EXIT
+    
+} /* LocStrToDate */
+
+#undef LocaleBase

@@ -62,7 +62,7 @@ extern struct LocaleBase *globallocalebase;
 
 #define LocaleBase globallocalebase
 
-    return ConvToLower(IntLB(LocaleBase)->lb_CurrentLocale, character);
+    return ConvToLower((struct Locale *)IntLB(LocaleBase)->lb_CurrentLocale, character);
    
     AROS_LIBFUNC_EXIT
     
