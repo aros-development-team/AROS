@@ -1906,7 +1906,7 @@ GNU_PACKAGES := $(AROSDIR)/../GnuPackages
 %(mmake)-%(subpackage)-package-basename := \
     $(GNU_PACKAGES)/$(%(mmake)-%(subpackage)-archbase)-aros-bin.$(AROS_TARGET_CPU)
 
-% mmake=%(mmake)-%(subpackage) \
+%build_with_configure mmake=%(mmake)-%(subpackage) \
      srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-%(subpackage)-srcdir) \
      nix=yes prefix="$(%(mmake)-%(subpackage)-package-dir)" aros_prefix="%(aros_prefix)" \
      postconfigure="%(postconfigure)" postinstall="%(postinstall) %(mmake)-%(subpackage)-make-package" \
