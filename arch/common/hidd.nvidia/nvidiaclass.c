@@ -588,7 +588,9 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	    maxw = 32;
 	    maxh = 32;
 	}
-
+	
+	LOCK_HW
+	
 	for (y = 0; y < height; y++)
 	{
 	    for (x = 0; x < width; x++)
@@ -606,16 +608,21 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 			    ((color.green) & 0x00ff00)    |
 			    ((color.blue >> 8) & 0x0000ff);
 		    
-		    curimg[maxw*4+4] = pixel ? 0x50000000 : 0x00000000;
-		    *curimg++ = pixel;
+		    curimg[maxw*2+4] = pixel ? 0x50000000 : 0x00000000;
+		    if (*curimg != 0x50000000)
+			*curimg++ = pixel;
+		    else curimg++;
 		}
 	    }
 	    for (x=width; x < maxw; x++, curimg++)
 		if (*curimg!=0x50000000) *curimg = 0;
 	}
+	
 	for (y=height; y < maxh; y++)
 	    for (x=0; x < maxw; x++)
 		{ if (*curimg!=0x50000000) *curimg = 0; curimg++; }
+
+	UNLOCK_HW
     }
 
     TransformCursor(sd);
@@ -667,9 +674,12 @@ static void TransformCursor(struct staticdata *sd)
 	}
     }
 
-
+    LOCK_HW
+    
     for (i=0; i < dwords; i++)
 	sd->Card.CURSOR[i] = tmp[i];
+
+    UNLOCK_HW
 
     FreePooled(sd->memPool, tmp, 4*64*64);
 }
@@ -750,7 +760,9 @@ IPTR AllocBitmapArea(struct staticdata *sd, ULONG width, ULONG height,
 {
     IPTR result;
     
+    Forbid();
     result = (IPTR)Allocate(sd->CardMem, ((width * bpp + 63) & ~63) * height);
+    Permit();
 
     D(bug("[NVidia] AllocBitmapArea(%dx%d@%d) = %p\n",
 	width, height, bpp, result));
@@ -773,7 +785,9 @@ VOID FreeBitmapArea(struct staticdata *sd, IPTR bmp, ULONG width, ULONG height,
     D(bug("[NVidia] FreeBitmapArea(%p,%dx%d@%d)\n",
 	bmp, width, height, bpp));
 
+    Forbid();
     Deallocate(sd->CardMem, ptr, ((width * bpp + 63) & ~63) * height);
+    Permit();
 }
 
 
