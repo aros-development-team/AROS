@@ -7,6 +7,7 @@
 */
 #include "graphics_intern.h"
 #include "gfxfuncsupport.h"
+#include <proto/oop.h>
 
 /*****************************************************************************
 
@@ -64,24 +65,18 @@
 	    BltPattern(rp, NULL, xMin, yMin, xMax, yMax, 0);
 
 	}
-	else
+	else if (OBTAIN_DRIVERDATA(rp, GfxBase))
 	{
-	    struct BitMap   *bm = rp->BitMap;
 	    UBYTE   	    rp_drmd;
-
-	    HIDDT_Pixel     pix;
 	    HIDDT_DrawMode  drmd = 0;
-	    ULONG   	    pen;
+	    IPTR    	    pix;
 
 	    /* Get drawmode */
 	    rp_drmd = GetDrMd(rp);
 
-	    pen = (rp_drmd & INVERSVID ? GetBPen(rp) : GetAPen(rp));
-
-	    /* Get rectfill pixel */
-
-	    pix = BM_PIXEL(bm, pen);
-
+	    OOP_GetAttr(RP_DRIVERDATA(rp)->dd_GC,
+	    	    	((rp_drmd & INVERSVID) ? aHidd_GC_Background : aHidd_GC_Foreground),
+			&pix);
 
 	    if (rp_drmd & JAM2)
 	    {
@@ -98,6 +93,7 @@
 
 	    fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, pix, drmd, GfxBase);
 
+    	    RELEASE_DRIVERDATA(rp, GfxBase);
 	}
 	
     } /* if ((xMax >= xMin) && (yMax >= yMin)) */
