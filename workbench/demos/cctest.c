@@ -5,26 +5,40 @@
 
 static char s[256];
 
-void arrgh(double a, double b, double shouldbe_a, double shouldbe_b)
+#define FPU_TEST 1
+
+#if FPU_TEST
+#  define TYPE double
+#  define VAL1 1.0
+#  define VAL2 2.0
+#  define FORMAT_STRING "%f %f %f %f"
+#else
+#  define TYPE long
+#  define VAL1 1
+#  define VAL2 2
+#  define FORMAT_STRING "%d %d %d %d"
+#endif
+
+void arrgh(TYPE a, TYPE b, TYPE shouldbe_a, TYPE shouldbe_b)
 {
-    sprintf(s,"\n\n\n**************** FPU CONDITION CODES TERRIBLY WRONG ************ %f %f %f %f \n\n\n", a, b, shouldbe_a, shouldbe_b);
+    sprintf(s,"\n\n\n******* CONDITION CODES TERRIBLY WRONG ******* " FORMAT_STRING "\n\n\n", a, b, shouldbe_a, shouldbe_b);
     bug(s);
 }
 
 int main(void)
 {
-    double a, b;
+    TYPE a, b;
     
     for(;;)
     {
-	a = 1.0; b = 1.0;
-	if (!(a == b)) arrgh(a,b,1.0,1.0);
-	a = 2.0; b = 1.0;
-	if (!(a > b)) arrgh(a,b,2.0,1.0);
-	if (!(b < a)) arrgh(a,b,2.0,1.0);
-	if (!(b != a)) arrgh(a,b,2.0,1.0);
-	if (a == b) arrgh(a,b,2.0,1.0);
-	if (a <= b) arrgh(a,b,2.0,1.0);
+	a = VAL1; b = VAL1;
+	if (!(a == b)) arrgh(a,b,VAL1,VAL1);
+	a = VAL2; b = VAL1;
+	if (!(a > b)) arrgh(a,b,VAL2,VAL1);
+	if (!(b < a)) arrgh(a,b,VAL2,VAL1);
+	if (!(b != a)) arrgh(a,b,VAL2,VAL1);
+	if (a == b) arrgh(a,b,VAL2,VAL1);
+	if (a <= b) arrgh(a,b,VAL2,VAL1);
     }
     
     return 0;
