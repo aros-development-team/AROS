@@ -44,7 +44,7 @@ AROS_SET_LIBFUNC( Clock_Startup, LIBBASETYPE, LIBBASE )
     return TRUE;
 
 error:
-    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
     
     return FALSE;
@@ -52,8 +52,10 @@ error:
 
 AROS_SET_LIBFUNC( Clock_Shutdown, LIBBASETYPE, LIBBASE )
 {
-    if( TimerBase != NULL ) CloseDevice( TimerIO );
+    if( TimerBase != NULL ) CloseDevice( (struct IORequest *) TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
+
+    return TRUE;
 }
 
 ADD2INITLIB( Clock_Startup, 1 );
