@@ -52,18 +52,15 @@
     EXAMPLE
 
     BUGS
-    	Loadseg_AOS() which is internally used to load a font file
-    	from disk, does not handle address relocation for 64 bit CPUs
-    	yet. Will add a hack to support this.
 
     SEE ALSO
     	AvailFonts()
 
     INTERNALS
-
-    HISTORY
-	27-11-96    digulla automatically created from
-			    diskfont_lib.fd and clib/diskfont_protos.h
+	Internally now the WeighTAMatch function is used to find the best
+	font match. In OS 3.0 and above this graphics function is made
+	private to the library. So in the future maybe this function can
+	be replaced by a more flexible internal mechanism.
 
 *****************************************************************************/
 {
