@@ -59,6 +59,7 @@ struct PaletteData
     UBYTE	pd_ColorBackup;
     struct TextAttr *pd_TAttr;
     LONG	pd_LabelPlace;
+    Object	*pd_Frame;
     
 };
 
@@ -88,8 +89,8 @@ struct PaletteData
 UWORD GetPalettePen(struct PaletteData *, struct DrawInfo *, UWORD);
 UBYTE Colors2Depth(UWORD);
 
-VOID RenderFrame(struct RastPort *, struct IBox *, UWORD *, BOOL,
-		struct PaletteBase_intern *);
+VOID RenderFrame(struct PaletteData *, struct RastPort *, struct IBox *,
+		struct DrawInfo *, BOOL, struct PaletteBase_intern *);
 
 VOID RenderPalette(struct PaletteData *, struct DrawInfo *,
 	struct RastPort *, struct PaletteBase_intern *);
