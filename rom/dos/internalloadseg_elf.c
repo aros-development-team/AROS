@@ -389,7 +389,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     if (hunks[t].size)
     {
       /* use AllocMem instead of AllocVec here! */
-      hunks[t].memory = AllocMem (hunks[t].size + sizeof(ULONG) + sizeof(ULONG),
+      hunks[t].memory = AllocMem (hunks[t].size + sizeof(ULONG) + sizeof(BPTR),
                                   MEMF_CLEAR);
 
       if (hunks[t].memory == NULL)
