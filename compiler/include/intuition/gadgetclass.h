@@ -147,7 +147,7 @@
   /* [I..] (struct Gadget *) Currently not implemented. */
 #define GA_Next 	(GA_Dummy + 32)
 
-  /* [IS.] Some gadgets need a DrawInfo structure (see <intuition/screens.h>)
+  /* [I..] Some gadgets need a DrawInfo structure (see <intuition/screens.h>)
      to be able to perform correct rendering. Read the documentation of the
      subclasses to learn, which need this attribute. To be on the safe side,
      you can always supply it. */
@@ -182,10 +182,9 @@
 #define GA_TextAttr	 (GA_Dummy + 40)
   /* [] (BOOL) */
 #define GA_ReadOnly	 (GA_Dummy + 41)
-  /* [IS.] (LONG) Choose the placing of the label. GadgetClass does not support
+  /* [I..] (LONG) Choose the placing of the label. GadgetClass does not support
      this directly. Its subclasses have to take care of that. For possible
-     values see below. This attribute makes only sense with GA_Text and
-     GA_IntuiText. */
+     values see below. */
 #define GA_LabelPlace    (GA_Dummy + 42)
 
 
