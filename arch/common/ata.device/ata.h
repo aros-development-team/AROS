@@ -33,7 +33,7 @@
 #define MAX_UNIT    2
 #define MAX_BUS	    4
 #define STACK_SIZE  16384
-#define TASK_PRI    -10
+#define TASK_PRI    10
 
 extern UBYTE LIBEND;
 
