@@ -22,7 +22,7 @@
 
 #include "executecommand.h"
 #include "locale.h"
-
+#include "support.h"
           
 /*** Private methods ********************************************************/
 #define MUIM_ExecuteCommand_ExecuteCommand  (TAG_USER | 0x20000000)
@@ -35,6 +35,7 @@ struct ExecuteCommand_DATA
            *ecd_CommandString;
     BPTR    ecd_Parent;
     BOOL    ecd_UnlockParent;
+    BOOL    ecd_SaveCommand;
 };
 
 /*** Methods ****************************************************************/
@@ -49,6 +50,8 @@ IPTR ExecuteCommand__OM_NEW
     BPTR                        parent         = NULL;
     BOOL                        unlockParent   = FALSE;
     CONST_STRPTR                initial        = NULL;
+    BOOL                        freeInitial    = FALSE;
+    BOOL                        saveCommand    = FALSE;
     Object                     *window,
                                *commandString,
                                *executeButton,
@@ -80,8 +83,16 @@ IPTR ExecuteCommand__OM_NEW
     
     if (initial == NULL)
     {
-        // FIXME: retrieve last command used
-        initial = "";
+        if ((initial = GetENV("LastExecutedCommand")) != NULL)
+        {
+            freeInitial = TRUE;
+        }
+        else
+        {
+            initial = "";
+        }
+        
+        saveCommand = TRUE;
     }
     
     /* Create application and window objects -------------------------------*/
@@ -129,6 +140,10 @@ IPTR ExecuteCommand__OM_NEW
         TAG_DONE
     );
     
+    /* Not needed anymore */
+    if (freeInitial) FreeVec((APTR) initial); 
+    
+    /* Check if object creation succeeded */
     if (self == NULL) return NULL;
     
     /* Store instance data -------------------------------------------------*/
@@ -137,6 +152,7 @@ IPTR ExecuteCommand__OM_NEW
     data->ecd_CommandString = commandString;
     data->ecd_Parent        = parent;
     data->ecd_UnlockParent  = unlockParent;
+    data->ecd_SaveCommand   = saveCommand;
     
     /* Setup notifications -------------------------------------------------*/
     DoMethod
@@ -218,6 +234,8 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
         STRPTR command;
         
         GET(data->ecd_CommandString, MUIA_String_Contents, &command);
+        
+        if (data->ecd_SaveCommand) SetENV("LastExecutedCommand", command);
         
         /* Make sure that the commandline isn't just whitespace or NULL */
         if (command != NULL && command[strspn(command, " \t")] != '\0')
