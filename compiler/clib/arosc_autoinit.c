@@ -24,4 +24,4 @@ static AROS_SET_LIBFUNC(__arosc_libclose, struct Library *, aroscbase)
 ADD2OPENLIB(__arosc_libopen, 0);
 ADD2CLOSELIB(__arosc_libclose, 0);
 
-ADD2LIBS("arosc.library", 39, LIBSET_AROSC_PRI, struct Library *, aroscbase, NULL, NULL);
+ADD2LIBS("arosc.library", 39, struct Library *, aroscbase);
