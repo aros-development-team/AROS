@@ -2157,9 +2157,20 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 
 	if (td->mouse_pressed)
 	{
-	    LONG diff_y;
-	    LONG y = msg->gpi_Mouse.Y;
-	    LONG newy;
+	    LONG diff_x, diff_y;
+	    LONG x = msg->gpi_Mouse.X, y = msg->gpi_Mouse.Y;
+	    LONG newx, newy;
+
+ 	    if (x<0)
+ 		diff_x = x / td->font->tf_XSize;
+ 	    else
+ 	    {
+ 		if (x > td->width)
+ 		    diff_x = (x - td->width + td->font->tf_XSize) / td->font->tf_XSize;
+ 		else
+ 		    diff_x = 0;
+ 	    }
+ 
 
 	    if (y < 0)
 		diff_y = y / td->font->tf_YSize;
@@ -2170,6 +2181,35 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		else
 		    diff_y = 0;
 	    }
+
+ 	    if (diff_x)
+ 	    {
+#ifdef _AROS
+		IPTR val;
+		LONG top, total, visible;
+		
+		GetDTAttrs((Object *)g, DTA_TopHoriz, &val, TAG_DONE); top = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TotalHoriz, &val, TAG_DONE); total = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_VisibleHoriz, &val, TAG_DONE); visible = (LONG)val;
+
+		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
+
+		if (newx + visible > total) newx = total - visible;
+		if (newx < 0) newx = 0;
+		
+		if (newx != top)
+		    notifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+				      GA_ID, g->GadgetID,
+				      DTA_TopVert, newx,
+				      TAG_DONE);
+#else
+ 		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
+ 		notifyAttrChanges((Object *) g, ((struct gpLayout *) msg)->gpl_GInfo, NULL,
+ 				  GA_ID, g->GadgetID,
+ 				  DTA_TopHoriz, newx,
+  				  TAG_DONE);
+#endif
+  	    }
 
 	    if (diff_y)
 	    {
