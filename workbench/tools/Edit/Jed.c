@@ -312,10 +312,16 @@ void new_size(UBYTE Flags)
 /*** Scroll display according to right prop gadget ***/
 void scroll_disp(Project p, BOOL adjust)
 {
+#ifdef FARSCROLL
+	ULONG pos = ((struct PropInfo *)((struct Gadget*)Prop)->SpecialInfo)->VertPot *
+	            (p->max_lines - 1) / MAXPOT;
+
+	if(pos!=p->top_line)
+#else
 	ULONG pos = ((struct PropInfo *)((struct Gadget*)Prop)->SpecialInfo)->VertPot *
 	            (p->max_lines - gui.nbline) / MAXPOT;
-
 	if(p->max_lines>gui.nbline && pos!=p->top_line)
+#endif
 	{
 		if(p->ccp.select)
 			/* If selection mode is on, don't move cursor */
@@ -485,8 +491,9 @@ void scroll_ydelta(Project p, LONG y)
 {
 	LONG pos=p->top_line+y;
 	/* Clamp values to the boundary */
-#ifdef _AROS
-        if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
+
+#if defined(_AROS) && !defined(FARSCROLL)
+       if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
         if(pos<0) pos=0;
 #else
 	if(pos<0) pos=0;
@@ -507,7 +514,7 @@ BOOL autoscroll(Project p, WORD y)
 	LONG pos=p->top_line+y;
 	/* Clamp values to the boundary: */
 
-#ifdef _AROS
+#if defined(_AROS) && !defined(FARSCROLL)
 	if(pos>(LONG)p->max_lines-(LONG)gui.nbline) pos=p->max_lines-gui.nbline;
 	if(pos<0) pos=0;
 #else
