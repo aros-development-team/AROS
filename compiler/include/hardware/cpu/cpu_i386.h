@@ -10,7 +10,7 @@
 #define __AROS_CPU_i386_H__
 
 #ifndef __AROS_CPU_H__
-#   include <cpu/cpu.h>
+#   include <hardware/cpu/cpu.h>
 #endif
 
 struct i386_compat_intern       /* only applicable to i386 and compatible cpus.. one per cpu */
