@@ -141,8 +141,4 @@ AROS_UFH1(void, TBE_InterruptHandler,
      in this routine it will have to handle all of the
      installed and used UARTs.
    */
-  while(NULL != SU)
-  {
-  
-  } /* (NULL != SU) */
 }
