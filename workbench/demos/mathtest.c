@@ -11,6 +11,7 @@
 #include <proto/mathieeesingbas.h>
 #include <proto/mathieeesingtrans.h>
 #include <proto/mathieeedoubbas.h>
+#include <proto/mathieeedoubtrans.h>
 
 #include <stdio.h>
 
@@ -33,7 +34,6 @@ int main(int argc, char ** argv)
     LONG wanted;
     double double_res;
     QUAD * double_resptr = (QUAD *)&double_res;
-    QUAD MyQUAD;
 
     #define DEF_FFPOne		0x80000041UL
     #define DEF_FFPTwo		0x80000042UL
@@ -162,9 +162,24 @@ printf("two: %x <-> %x \n",SPTwo,*ptr);
     CHECK_DOUBLE(IEEEDPFlt, (2), DEF_DPTwo);
     CHECK_DOUBLE(IEEEDPAbs, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
     CHECK_DOUBLE(IEEEDPNeg, ((QUAD)DEF_DPMinusOne), (QUAD)DEF_DPOne);
-    //CHECK_DOUBLE(IEEEDPAdd, ((QUAD)DEF_DPOne,  (QUAD)DEF_DPOne), (QUAD)DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPAdd, ((QUAD)DEF_DPOne,  (QUAD)DEF_DPOne), (QUAD)DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPAdd, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(777777));
+    CHECK_DOUBLE(IEEEDPSub, (IEEEDPFlt(123456), IEEEDPFlt(654321)), IEEEDPFlt(-530865));
+    
     
     CloseLibrary(MathIeeeDoubBasBase);
+
+    if (!(MathIeeeDoubTransBase = OpenLibrary("mathieeedoubtrans.library", 0L)))
+    {
+	printf ("Couldn't open mathieeedoubtrans.library\n");
+	return (0);
+    }
+
+    CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(4)), DEF_DPTwo);
+    CHECK_DOUBLE(IEEEDPSqrt, (IEEEDPFlt(9)), IEEEDPFlt(3));
+
+    CloseLibrary(MathIeeeDoubTransBase);
+
 
     return (0);
 }
