@@ -230,7 +230,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 
     /* I have one more opener. */
     RTBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
-    RTBase->RealOpenCnt++;
+    RTBase->LibNode.lib_OpenCnt++;
 
     D(bug("reqtools.library: Inside libopen func. Returning success.\n"));
     
@@ -242,7 +242,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
     /* I have one fewer opener. */
-    RTBase->RealOpenCnt--;
+    RTBase->LibNode.lib_OpenCnt--;
     
     if((RTBase->LibNode.lib_Flags & LIBF_DELEXP) != 0)
     {
@@ -263,7 +263,7 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
     BPTR ret;
     
-    if(RTBase->RealOpenCnt != 0)
+    if(RTBase->library.lib_OpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
 	RTBase->LibNode.lib_Flags |= LIBF_DELEXP;
