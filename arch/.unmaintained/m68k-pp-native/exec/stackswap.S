@@ -49,12 +49,15 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 
 	// Here's how the stack looks right now
 	// 0(%sp) : Return Address
+#ifndef DoRegisterCalls
 	// 4(%sp) : pointer to StackSwap structure
+#endif
 
 	/* Preserve returnaddress and fix sp */
 	move.l	(%sp)+,%d1       // d1 contains return address
+#ifndef DoRegisterCalls
 	move.l	(%sp)+,%a0       // a0 holds param to this function
-
+#endif
 	                         // now the stack is 'clean'
 
 	move.l  %a6,-(%sp)       // save contents of %a6
@@ -113,8 +116,10 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	movem.l	(%sp)+,%d0/%a6       // restore orig. content of %a6 register
 	                             // restore return address to d0
 
+#ifndef DoRegisterCalls
 	move.l	#0,-(%sp)        // write fake parameter to this function
 	                         // onto stack
+#endif
 	/* Restore returnaddress and return */
 	move.l	%d0,-(%sp)       // return address onto stack 
 
