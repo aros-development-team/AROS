@@ -415,7 +415,24 @@ AROS_LH2(struct Library *, OpenLibrary,
 	    }
 	    else
 	       library = NULL;
+	}
+    }
 
+    if (library == NULL)
+    {
+    /*
+	the library is not on disk so
+	check Resident List
+    */
+    struct Resident *resident;
+	resident = FindResident(stripped_libname);
+	if (resident)
+	{
+	    if (resident->rt_Version >= version)
+	    {
+		if (InitResident(resident, NULL))
+		    library = ExecOpenLibrary(stripped_libname, version);
+	    }
 	}
     }
 
