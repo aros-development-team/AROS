@@ -47,7 +47,8 @@ setup-docs :
 	done
 	cd src2html ; make
 
-copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc $(DEST)license.html
+copy-files : $(DEST)rtdemo.log $(DEST)pubkey.asc $(DEST)license.html \
+	$(DEST)oldnews.html
 
 $(DEST)% : %
 	cp $< $@
