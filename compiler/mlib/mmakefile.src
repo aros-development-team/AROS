@@ -196,5 +196,9 @@ $(AROS_INCLUDES)/%.h : %.h
 linklibs-$(LIB)-hasfpu: setup $(LIBDIR)/lib$(LIB).a
 	@$(NOP)
 
+setup ::
+	@$(RM) $(AROSDIR)/lib/libm.a
+	@ln -s $(AROSDIR)/lib/libarosm.a $(AROSDIR)/lib/libm.a
+
 %common
 %include_deps
