@@ -14,6 +14,10 @@
 #include <math.h>
 #include <float.h>
 
+/* AROS doesn't need a special math lib -lm */
+#define isinf(v)    0   /* TODO */
+#define FULL_SPECIFIERS
+
 #ifndef BITSPERBYTE
 #   define BITSPERBYTE 8
 #endif
