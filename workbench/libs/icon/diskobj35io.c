@@ -8,6 +8,8 @@
 
 /****************************************************************************************/
 
+#include <datatypes/pictureclass.h>
+
 #include <proto/dos.h>
 #include <proto/alib.h>
 
@@ -167,7 +169,7 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     
     if (ic->Flags & IMAGE35F_HASPALETTE)
     {
-    	size += numcols * sizeof(ULONG);
+    	size += numcols * sizeof(struct ColorRegister);
     }
 
     if (ic->Flags & IMAGE35F_HASTRANSPARENTCOLOR)
@@ -193,9 +195,13 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 
     if (ic->Flags & IMAGE35F_HASPALETTE)
     {
+    	struct ColorRegister *dst;
+	
     	src += imgsize;
 	
 	imgpal = imgdata + imagew * imageh;
+	
+	dst = (struct ColorRegister *)imgpal;
 	
 	if (ic->PaletteFormat == 0)
 	{
@@ -207,26 +213,36 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
 		g = *src++;
 		b = *src++;
 		
-		*((ULONG *)src)++ = (r << 16) | (g << 8) | b;
+		dst->red   = r;
+		dst->green = g;
+		dst->blue  = b;
+		dst++;
 	    }
 	}
 	else
 	{
-	    ULONG i, r, g, b;
-	    UBYTE *dst;
-	    
 	    Decode35(src, imgpal, palsize, 8, 3 * numcols);
-	    
-	    src = imgpal + 3 * numcols;
-	    dst = imgpal + sizeof(ULONG) * numcols;
-	    
-	    for (i = 0; i < numcols; i++)
+	    	    
+	    if (sizeof(struct ColorRegister) != 3)
 	    {
-	    	b = *--src;
-		g = *--src;
-		r = *--src;
-		
-		*--((ULONG *)dst) = (r << 16) | (g << 8) | b;
+	    	struct ColorRegister 	*dst;
+	    	UWORD 	    	    	 i, r, g, b;
+	
+	    	src = imgpal + 3 * numcols;
+	    	dst = imgpal + sizeof(struct ColorRegister) * numcols;
+	    
+		for (i = 0; i < numcols; i++)
+		{
+	    	    b = *--src;
+		    g = *--src;
+		    r = *--src;
+
+		    dst--;
+
+		    dst->red = r;
+		    dst->green = g;
+		    dst->blue = b;
+		}
 	    }
 	}
 
@@ -240,7 +256,7 @@ STATIC BOOL ReadImage35(struct IFFHandle *iff, struct FileFaceChunk *fc,
     	imgmask = imgdata + imagew * imageh;
 	if (ic->Flags & IMAGE35F_HASPALETTE)
 	{
-	    imgmask += numcols * sizeof(ULONG);
+	    imgmask += numcols * sizeof(struct ColorRegister);
 	}
 	
 	memset(imgmask, 0xFF, RASSIZE(imagew, imageh));
