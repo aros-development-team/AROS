@@ -64,7 +64,8 @@ struct header
   struct IntCatalog * catalog = NULL;
   char * language;
   char * app_language;
-  char filename[256];
+#define FILENAMESIZE 256
+  char filename[FILENAMESIZE];
   ULONG version;
   
   if (NULL == locale)
@@ -106,23 +107,22 @@ struct header
       return NULL;
     }
 
-    strcpy(filename, "LOCALE:Catalogs/");
-    strcat(filename, language);
-    strcat(filename, "/");
-    strcat(filename, name);
+    strcpy(filename, "LOCALE:Catalogs");
+    AddPart(filename, language, FILENAMESIZE);
+    AddPart(filename, name    , FILENAMESIZE);
     iff->iff_Stream = (ULONG)Open(filename, MODE_OLDFILE);
 
 #if 0
     if (NULL == iff->iff_Stream)
     {
       /* try it in PROGDIR */
-      strcpy(filename, "PROGDIR:Catalogs/");  
-      strcat(filename, language);
-      strcat(filename, "/");
-      strcat(filename, name);
+      strcpy(filename, "PROGDIR:Catalogs");  
+      AddPart(filename, language, FILENAMESIZE);
+      AddPart(filename, name    , FILENAMESIZE);
       iff->iff_Stream = (ULONG)Open(filename, MODE_OLDFILE);
     }
 #endif
+#undef FILENAMESIZE
 
     if (NULL == iff->iff_Stream)
     {
