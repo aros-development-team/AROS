@@ -3,3 +3,4 @@ aroscheckbox_functable.c
 libdefs.h
 mmakefile
 *.err
+*.map

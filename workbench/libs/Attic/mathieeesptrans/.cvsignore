@@ -4,3 +4,4 @@ libdefs.h
 makefile
 mmakefile
 *.err
+*.map
