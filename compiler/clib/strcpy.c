@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/02 16:38:25  digulla
+    Use Prototypes
+
     Revision 1.3  1996/09/21 15:47:34  digulla
     Use Amiga types
 
@@ -12,6 +15,7 @@
     Lang:
 */
 #include <exec/types.h>
+#include <clib/aros_protos.h>
 
 UBYTE * StrCpy (UBYTE * dest, const UBYTE * src)
 {
