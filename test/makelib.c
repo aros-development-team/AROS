@@ -58,9 +58,13 @@ AROS_LH1(struct DummyBase *, LIB_open,
     AROS_LHA(ULONG, version, D0),
     struct DummyBase *, DummyBase, 1, Dummy)
 {
+    AROS_LIBFUNC_INIT
+
     DummyBase->library.lib_OpenCnt++;
     DummyBase->library.lib_Flags &= ~LIBF_DELEXP;
     return DummyBase;
+    
+    AROS_LIBFUNC_EXIT
 }
 
 /********/
