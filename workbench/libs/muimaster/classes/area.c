@@ -610,8 +610,8 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return(TRUE);
 
 	case    MUIA_Disabled:
-		STORE = !!data->mad_DisableCount; /* BOOLEAN */
-		break;
+	    STORE = !!data->mad_DisableCount; /* BOOLEAN */
+	    return(TRUE);
 
 	case MUIA_Font:
 	    STORE = (ULONG)data->mad_FontPreset;
