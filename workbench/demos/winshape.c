@@ -1,3 +1,4 @@
+
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
@@ -9,6 +10,7 @@
 #include <aros/debug.h>
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define WINWIDTH    	260
 #define WINHEIGHT   	260
@@ -24,6 +26,7 @@ struct Window	    	*win;
 struct RastPort     	*rp;
 struct Region	    	*shape;
 WORD	    	    	actshape;
+
 
 static void cleanup(char *msg)
 {
@@ -42,6 +45,7 @@ static void cleanup(char *msg)
 
     exit(0);
 }
+
 
 static void openlibs(void)
 {
@@ -62,11 +66,13 @@ static void openlibs(void)
    
 }
 
+
 static void getvisual(void)
 {
     if (!(scr = LockPubScreen(0))) cleanup("Can't lock pub screen!");
     if (!(dri = GetScreenDrawInfo(scr))) cleanup("Can't get drawinfo!");
 }
+
 
 static void makeshape(void)
 {
@@ -102,23 +108,24 @@ static void makeshape(void)
 
 }
 
+
 static void makewin(void)
 {
     UWORD pattern[] = {0x5555, 0xAAAA};
     struct TagItem win_tags[] =
     {
-    	{WA_Left    	, 0	    	    	    	    	},
-	{WA_Top     	, 0	    	    	    	    	},
-	{WA_Width   	, WINWIDTH  	    	    	    	},
-	{WA_Height  	, WINHEIGHT 	    	    	    	},
-	{WA_Title   	, (IPTR)"Irregular shaped window"   	},
-	{WA_CloseGadget , TRUE	    	    	    	    	},
-	{WA_DepthGadget , TRUE	    	    	    	    	},
-	{WA_DragBar 	, TRUE	    	    	    	    	},
-	{WA_IDCMP   	, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY  },
-	{WA_Activate	, TRUE	    	    	    	    	},
-	{WA_Shape   	, (IPTR)shape	    	    	    	},
-	{TAG_DONE   	    	    	    	    	    	}
+    	{ WA_Left    	, 0	    	    	    	    	},
+	{ WA_Top     	, 0	    	    	    	    	},
+	{ WA_Width   	, WINWIDTH  	    	    	    	},
+	{ WA_Height  	, WINHEIGHT 	    	    	    	},
+	{ WA_Title   	, (IPTR)"Irregular shaped window"   	},
+	{ WA_CloseGadget , TRUE	    	    	    	    	},
+	{ WA_DepthGadget , TRUE	    	    	    	    	},
+	{ WA_DragBar 	, TRUE	    	    	    	    	},
+	{ WA_IDCMP   	, IDCMP_CLOSEWINDOW | IDCMP_VANILLAKEY  },
+	{ WA_Activate	, TRUE	    	    	    	    	},
+	{ WA_Shape   	, (IPTR)shape	    	    	    	},
+	{ TAG_DONE   	    	    	    	    	    	}
     };
 
     win = OpenWindowTagList(0, win_tags);
@@ -157,15 +164,17 @@ static void handleall(void)
 {
     struct IntuiMessage *imsg;
     BOOL quitme = FALSE;
+
     struct TagItem taglist[] = {
         {LA_DESTWIDTH  , 0                              },
         {LA_DESTHEIGHT , 0                              },
         {TAG_END       , 0                              }
     };
     
-    while(!quitme)
+    while (!quitme)
     {
     	WaitPort(win->UserPort);
+
 	while ((imsg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
 	    switch (imsg->Class)
@@ -199,13 +208,15 @@ static void handleall(void)
                       default:
 		        actshape = 1 - actshape;
 		        ChangeWindowShape(win, (actshape ? NULL : shape), NULL);
-		      break;
+			break;
 		    }
 	    }
+
 	    ReplyMsg((struct Message *)imsg);
 	}
     }
 }
+
 
 int main(void)
 {
@@ -215,5 +226,6 @@ int main(void)
     makewin();
     handleall();
     cleanup(0);
+
     return 0;
 }
