@@ -8,6 +8,6 @@ SPECIAL_AFLAGS 	:= -I..
   arch=i386 \
   asmfiles="longjmp setjmp"
 
-#MM linklibs-clib-i386 : kenrel-i386-machine_i
+#MM linklibs-clib-i386 : kernel-i386-machine_i
 
 %common
