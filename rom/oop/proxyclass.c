@@ -127,6 +127,8 @@ static IPTR _Proxy_DoMethod(Object *o, Msg msg)
     /* Wait for server to reply */
     WaitPort(data->ReplyPort);
     
+    GetMsg(data->ReplyPort);
+    
     ReturnInt("Proxy_DoMethod", IPTR, data->Message->pm_RetVal);
 }
 
