@@ -18,7 +18,7 @@
 AROS_LH1(BOOL, FreeClass,
 
          /*  SYNOPSIS */
-         AROS_LHA(struct IClass *, classPtr, A0),
+         AROS_LHA(struct IClass *, iclass, A0),
 
          /*  LOCATION */
          struct IntuitionBase *, IntuitionBase, 119, Intuition)
@@ -41,14 +41,14 @@ AROS_LH1(BOOL, FreeClass,
     you might end up with a class which is partially freed.
  
     INPUTS
-    classPtr - The pointer you got from MakeClass().
+    iclass - The pointer you got from MakeClass().
  
     RESULT
     FALSE if the class couldn't be freed at this time. This can happen
     either if there are still objects from this class or if the class
     is used a SuperClass of at least another class.
  
-    TRUE if the class could be freed. You must not use classPtr after
+    TRUE if the class could be freed. You must not use iclass after
     that.
  
     NOTES
@@ -85,9 +85,9 @@ AROS_LH1(BOOL, FreeClass,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    BOOL retval = FALSE;
+    BOOL rv = FALSE;
     
-    SANITY_CHECKR(classPtr,FALSE)
+    SANITY_CHECKR(iclass,FALSE)
     
     ObtainSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
 
@@ -95,20 +95,21 @@ AROS_LH1(BOOL, FreeClass,
         Make sure no one creates another object from this class. For private
         classes, this call does nothing.
     */
-    RemoveClass(classPtr);
+    RemoveClass(iclass);
 
-    if (!classPtr->cl_SubclassCount && !classPtr->cl_ObjectCount)
+    if (iclass->cl_SubclassCount == 0 && iclass->cl_ObjectCount == 0)
     {
-        AROS_ATOMIC_DEC(classPtr->cl_Super->cl_SubclassCount);
+        AROS_ATOMIC_DEC(iclass->cl_Super->cl_SubclassCount);
         
-        FreeMem(classPtr, sizeof (Class));
-
-        retval = TRUE;
+        DeletePool(iclass->cl_MemoryPool); 
+        FreeMem(iclass, sizeof(Class));
+        
+        rv = TRUE;
     }
 
     ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->ClassListLock);
     
-    return retval;
+    return rv;
 
     AROS_LIBFUNC_EXIT
 } /* FreeClass() */

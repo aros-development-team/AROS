@@ -18,18 +18,20 @@
 /* The following structure is READ-ONLY */
 typedef struct IClass
 {
-    struct Hook     cl_Dispatcher;
-    ULONG           cl_Reserved;
-    struct IClass * cl_Super;         /* Super-Class */
-    ClassID         cl_ID;
-    UWORD           cl_InstOffset;
-    UWORD           cl_InstSize;
-    IPTR            cl_UserData;      /* application specific */
-    ULONG           cl_SubclassCount; /* # of direct suclasses */
-    ULONG           cl_ObjectCount;   /* # of objects, made from this class
-                                         must be 0, if the class is to be
-                                         deleted */
-    ULONG           cl_Flags;         /* see below */
+    struct Hook    cl_Dispatcher;
+    ULONG          cl_Reserved;
+    struct IClass *cl_Super;         /* Super-Class */
+    ClassID        cl_ID;
+    UWORD          cl_InstOffset;
+    UWORD          cl_InstSize;
+    IPTR           cl_UserData;      /* application specific */
+    ULONG          cl_SubclassCount; /* # of direct suclasses */
+    ULONG          cl_ObjectCount;   /* # of objects, made from this class
+                                        must be 0, if the class is to be
+                                        deleted */
+    ULONG          cl_Flags;         /* see below */
+    ULONG          cl_ObjectSize;    /* cl_InstOffset + cl_InstSize + sizeof(struct _Object) */
+    APTR           cl_MemoryPool;
 } Class;
 
 /* cl_Flags */
