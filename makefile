@@ -9,11 +9,12 @@ SPECIAL_CFLAGS = -Dmain=submain
 include $(TOP)/make.cfg
 
 DEP_LIBS=$(LIBDIR)/libkernel.a $(LIBDIR)/libexec.a $(LIBDIR)/libkernel.a \
-    $(LIBDIR)/libdos.a $(OBJDIR)/filesys/emul_handler.o $(LIBDIR)/libutility.a
+    $(LIBDIR)/libdos.a $(OBJDIR)/filesys/emul_handler.o \
+    $(LIBDIR)/libutility.a $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) -lkernel \
 	$(OBJDIR)/filesys/emul_handler.o \
-	-lutility -ldos -lexec -lkernel \
+	-lutility -ldos -lexec -laros -lkernel
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -45,7 +46,10 @@ setup :
 	$(CP) s $(BINDIR)
 	@touch setup
 
-test : $(TESTS)
+check : $(TESTS)
+	@for test in $(TESTS) ; do \
+	    echo "Running test `basename $$test`" ; $$test ; \
+	done
 
 clean:
 	$(RM) $(BINDIR) setup
@@ -64,7 +68,7 @@ apps:
 	    all
 
 subdirs:
-	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
+	@for dir in $(KERNEL) aros exec dos utility filesys libs ; do \
 	    ( echo "Entering $$dir..." ; cd $$dir ; \
 	    $(MAKE) $(MFLAGS) \
 		TOP=".." CURDIR="$(CURDIR)/$$dir" ARCH=$(ARCH) \
@@ -108,10 +112,10 @@ include/aros/config/gnuc/utility_defines.h: utility/*.c
 	gawk -f gendef.awk $^ >>$@
 	echo "#endif" >>$@
 
-$(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) $^ -c -o $@
-
 $(OBJDIR)/test/%.o: test/%.c
+	$(CC) $(CFLAGS) -I ./libs $^ -c -o $@
+
+$(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
 $(TESTDIR)/devicetest: $(OBJDIR)/test/devicetest.o $(OBJDIR)/test/dummydev.o $(DEP_LIBS)
