@@ -12,6 +12,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include "__errno.h"
 #include "__open.h"
 
 /*****************************************************************************

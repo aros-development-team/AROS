@@ -3,12 +3,14 @@
     $Id$
 
     Desc: ANSI C function getcwd()
-    Lang: english
+    Lang: English
 */
 
 #include <stdlib.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
+#include "__errno.h"
 #include <proto/exec.h>
 #include <proto/dos.h>
 
