@@ -26,7 +26,7 @@ extern int set_open_libraries(void);
 extern void set_close_libraries(void);
 
 
-#define SETNAME(set) __##set##_SET__
+#define SETNAME(set) __##set##_LIST__
 
 #define DECLARESET(set) \
 extern void * SETNAME(set)[] __attribute__((weak));
@@ -34,15 +34,18 @@ extern void * SETNAME(set)[] __attribute__((weak));
 #define DEFINESET(set) \
 void * SETNAME(set)[] __attribute__((weak))={0,0};
 
-#define ADD2SET(symbol, set, pri)\
-	const int __aros_set_##pri##_##set##_element_##symbol;
+#define ADD2SET(symbol, _set, pri)\
+	static const typeof(symbol) * symbol##_ptr __attribute__((section(".aros.set." #_set "." #pri))) = &symbol;
 
-#define ADD2INIT(symbol, pri)                                              \
-	ADD2SET(symbol, __INIT_SET__, pri)
+#define ADD2CTORS(symbol, pri)                                              \
+	static const typeof(symbol) * symbol##_ptr __attribute__((section(".ctors." #pri))) = &symbol;
 
-#define ADD2EXIT(symbol, pri)                                              \
-	ADD2SET(symbol, __EXIT_SET__, pri)
+#define ADD2DTORS(symbol, pri)                                              \
+	static const typeof(symbol) * symbol##_ptr __attribute__((section(".dtors." #pri))) = &symbol;
 
+/* Backward compatibility */
+#define ADD2INIT(symbol, pri) ADD2CTORS(symbol, pri)
+#define ADD2EXIT(symbol, pri) ADD2DTORS(symbol, pri)
 
 /*
   this macro generates the necessary symbols to open and close automatically
@@ -58,7 +61,7 @@ struct libraryset libraryset_##bname =                                       \
 {                                                                            \
      name, &bname##_version, &bname, postopenfunc, preclosefunc              \
 };                                                                           \
-ADD2SET(libraryset_##bname, __LIBS_SET__, pri)
+ADD2SET(libraryset_##bname, libs, pri)
 
 #define ASKFORLIBVERSION(bname, ver) \
 const ULONG bname##_version = ver
