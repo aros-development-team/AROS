@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1999/03/24 20:05:26  nlorentz
+    Handle window activation on input.devices context
+
     Revision 1.7  1998/10/20 16:45:50  hkiel
     Amiga Research OS
 
@@ -81,12 +84,54 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-    intui_ActivateWindow (window);
-
-    /* This comes _after_ intui_ActivateWindow() because the driver
-	might want to deactivate the old window first */
-    IntuitionBase->ActiveWindow = window;
+    
+    struct msgActivateWindow *msg;
+    
+    msg = AllocMem( sizeof (*msg), MEMF_PUBLIC);
+    if (msg)
+    {
+        msg->Class 	= IDCMP_WBENCHMESSAGE;
+	msg->Code  	= IMCODE_ACTIVATEWINDOW;
+	msg->Window	= window;
+	
+        PutMsg(window->WindowPort, (struct Message *)msg);
+	
+    }
+    
 
     AROS_LIBFUNC_EXIT
 } /* ActivateWindow */
+
+/* This is calles on the input.device's context */
+
+VOID int_activatewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
+{
+
+    ULONG lock;
+    struct Window *oldactive;
+
+    intui_ActivateWindow (window);
+
+
+    lock = LockIBase(0UL);
+    oldactive = IntuitionBase->ActiveWindow;
+    
+    
+    /* This comes _after_ intui_ActivateWindow() because the driver
+	might want to deactivate the old window first */
+
+	
+    IntuitionBase->ActiveWindow = window;
+    window->Flags |= WFLG_WINDOWACTIVE;
+
+    UnlockIBase(lock);
+    
+    if (oldactive)
+    {
+	oldactive->Flags &= ~WFLG_WINDOWACTIVE;
+	RefreshWindowFrame(oldactive);
+    }    
+    
+    RefreshWindowFrame(window);
+}
+
