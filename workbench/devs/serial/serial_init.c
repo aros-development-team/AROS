@@ -630,13 +630,13 @@ AROS_LH1(void, beginio,
 
       if (NULL != SU->su_ActiveRead)
       {
-        /* do I have to leave anything in the message ? */
+        ((struct IOStdReq *)SU->su_ActiveRead)->io_Error = IOERR_ABORTED;
         ReplyMsg(SU->su_ActiveRead);
       }
 
       if (NULL != SU->su_ActiveWrite)
       {
-        /* do I have to leave anything in the message ? */
+        ((struct IOStdReq *)SU->su_ActiveWrite)->io_Error = IOERR_ABORTED;
         ReplyMsg(SU->su_ActiveWrite);
       }
 
@@ -672,14 +672,14 @@ AROS_LH1(void, beginio,
       ** for the active ones.
        */
       Disable();
+
       while (TRUE)
       {
         struct IOStdReq * iosreq = 
                   (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
         if (NULL == iosreq)
           break;
-        /* What do I have to leave in the request to tell the user
-           that the request was not satisfied?? Anyhting at all? */
+        iosreq->io_Error = IOERR_ABORTED;
         ReplyMsg((struct Message *)iosreq);        
       }
 
@@ -689,8 +689,7 @@ AROS_LH1(void, beginio,
                   (struct IOStdReq *)GetMsg(&SU->su_QWriteCommandPort);
         if (NULL == iosreq)
           break;
-        /* What do I have to leave in the request to tell the user
-           that the request was not satisfied?? Anyhting at all? */
+        iosreq->io_Error = IOERR_ABORTED;
         ReplyMsg((struct Message *)iosreq);        
       }
       ioreq->IOSer.io_Error = 0;
@@ -738,8 +737,12 @@ AROS_LH1(void, beginio,
       /*
       ** set the io_Status to the status of the serial port
       */
-      // !!! missing code
+#if 1
+#warning Simply setting io_Status to 0!
       ioreq->io_Status = 0;
+#else
+      ioreq->io_Status = HIDD_SerialUnit_GetStatus(SU->su_Unit);
+#endif
 
       ioreq->IOSer.io_Error = 0; 
       /*

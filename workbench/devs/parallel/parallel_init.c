@@ -427,7 +427,7 @@ AROS_LH1(void, beginio,
       **  Let me see whether I can copy any data at all and
       **  whether nobody else is using this device now
        */
-      ioreq->IOPar.io_Actual = 0;      
+      ioreq->IOPar.io_Actual = 0;
 
       PU->pu_Status |= STATUS_READS_PENDING;
       D(bug("Queuing the read request.\n"));
@@ -559,13 +559,13 @@ AROS_LH1(void, beginio,
 
       if (NULL != PU->pu_ActiveRead)
       {
-        /* do I have to leave anything in the message ? */
+        ((struct IOStdReq *)PU->pu_ActiveRead)->io_Error = IOERR_ABORTED;
         ReplyMsg(PU->pu_ActiveRead);
       }
 
       if (NULL != PU->pu_ActiveWrite)
       {
-        /* do I have to leave anything in the message ? */
+        ((struct IOStdReq *)PU->pu_ActiveWrite)->io_Error = IOERR_ABORTED;
         ReplyMsg(PU->pu_ActiveWrite);
       }
 
@@ -582,8 +582,7 @@ AROS_LH1(void, beginio,
                   (struct IOStdReq *)GetMsg(&PU->pu_QReadCommandPort);
         if (NULL == iopreq)
           break;
-        /* What do I have to leave in the request to tell the user
-           that the request was not satisfied?? Anyhting at all? */
+        iopreq->io_Error = IOERR_ABORTED;
         ReplyMsg((struct Message *)iopreq);        
       }
 
@@ -593,8 +592,7 @@ AROS_LH1(void, beginio,
                   (struct IOStdReq *)GetMsg(&PU->pu_QWriteCommandPort);
         if (NULL == iopreq)
           break;
-        /* What do I have to leave in the request to tell the user
-           that the request was not satisfied?? Anyhting at all? */
+        iopreq->io_Error = IOERR_ABORTED;
         ReplyMsg((struct Message *)iopreq);        
       }
       ioreq->IOPar.io_Error = 0;
