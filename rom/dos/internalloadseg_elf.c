@@ -505,14 +505,14 @@ BPTR InternalLoadSeg_ELF
 
             sh[i].type == SHT_REL &&
 
-            #elif defined(__m68000__)
+            #elif defined(__mc68000__)
 
             sh[i].type == SHT_RELA &&
 
             #else
             #    error Your architecture is not supported
             #endif
-            
+
             sh[sh[i].info].addr
         )
         {
