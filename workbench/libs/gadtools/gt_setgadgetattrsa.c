@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <proto/intuition.h>
+#include <proto/utility.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
@@ -59,12 +60,46 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    if (win || req)
+    if ((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
     {
-        SetGadgetAttrsA(gad, win, req, tagList);
-    } else {
-        SetAttrsA((Object *)gad, tagList);
+	if (win || req)
+	{
+            SetGadgetAttrsA(gad, win, req, tagList);
+	}
+	else
+	{
+            SetAttrsA((Object *)gad, tagList);
+	}
     }
+    else
+    {
+    	/* must be GENERIC_KIND gadget */
+
+    	struct TagItem *tag, *tstate = tagList;
+	BOOL	    	redraw = FALSE;
+	
+	while((tag = NextTagItem(&tstate)))
+	{
+	    switch(tag->ti_Tag)
+	    {
+	    	case GA_Disabled:
+		    if (tag->ti_Data)
+		    {
+		    	gad->Flags |= GFLG_DISABLED;
+		    }
+		    else
+		    {
+		    	gad->Flags &= ~GFLG_DISABLED;
+		    }
+		    redraw = TRUE;
+		    break;
+	    }
+	    
+	}
+	
+	if (redraw && (win || req)) RefreshGList(gad, win, req, 1);
+    }
+    
     
     AROS_LIBFUNC_EXIT
     
