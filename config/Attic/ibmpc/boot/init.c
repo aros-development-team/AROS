@@ -21,9 +21,34 @@
 
 *****************************************************************************/
 
+#include "text.h"
+#include "logo.h"
+
+#define KERNEL_DATA (void *)0x98000
+void show_status(void)
+{
+unsigned char *p;
+int d;
+
+  p = KERNEL_DATA;
+  puts_fg("\nAROS detected Hardware\nProcessortype: 80");
+  d = p[0]-1;
+  puti_fg(d);
+  puts_fg("86\nAvailable Memory: ");
+  d = (p[3]<<8) + p[2];
+  puti_fg(d);
+  puts_fg("kB\n");
+
+}
+
 int main()
 {
+  char text[] = "Now booting AROS - The Amiga Replacement OS\n";
 
-    /* Nothing is done yet */
+  showlogo();
+  gotoxy(0,0);
+  puts_fg(text);
+  show_status();
 
+return 0;
 }

@@ -5,7 +5,7 @@
 #
 
 HPATH=../include
-CC=gcc -I$(HPATH)
+CC=gcc -I$(HPATH) -Wall
 CPP=$(CC) -E
 AS86=as86 -0 -a 
 LD86=ld86 -0
@@ -23,10 +23,16 @@ image: bootsect setup bin tools/build
 tools/build: tools/build.c
 	$(CC) -D__BFD__ -O2 $< -o $@
 
-bin: head.o init.o
-	$(LD) -o $@ head.o init.o
+bin: head.o text.o logo.o init.o
+	$(LD) -o $@ head.o text.o logo.o init.o
 	objcopy -O binary $@
-	rm -f head.o init.o
+	rm -f head.o init.o logo.o text.o
+
+text.o: text.c
+	$(CC) -c text.c
+
+logo.o: logo.c
+	$(CC) -c logo.c
 
 init.o: init.c
 	$(CC) -c init.c
