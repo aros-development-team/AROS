@@ -6,6 +6,8 @@
 #
 ARCH	:= @aros_arch@
 CPU	:= @aros_cpu@
+HOST_ARCH := @host_arch@
+HOST_CPU  := @host_cpu@
 FLAVOUR := @aros_flavour@
 SHELL	:= @aros_shell@
 GFXSYSTEM := @aros_gfxsystem@
@@ -29,7 +31,7 @@ GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CCFLAGS	:= @aros_gui_ccflags@
 SHELL_LDFLAGS	:= @aros_shell_ldflags@
 
-ARCHDIR  := $(TOP)/bin/$(ARCH)-$(CPU)
+ARCHDIR  := $(TOP)/bin/$(HOST_ARCH)-$(HOST_CPU)
 TOOLDIR  := $(ARCHDIR)/tools
 
 RANLIB	 := @RANLIB@

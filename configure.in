@@ -215,6 +215,40 @@ case "$target_os" in
 	;;
 esac
 
+
+dnl Now we simplify the host_os and host_cpu for the local tools when
+dnl cross-compiling or sharing the tree with different architectures.
+
+case "$host_os" in
+    linux*)
+	host_arch="linux"
+	case "$host_cpu" in
+	*m68k*)
+	    host_cpu="m68k"
+	    ;;
+	*i?86*)
+	    host_cpu="i386"
+	    ;;
+	*)
+	    echo "Unknown CPU for Linux --- $host_cpu"
+	    ;;
+	esac
+	;;
+
+    freebsd*)
+	host_arch="freebsd"
+	host_cpu="i386"
+	;;
+
+    amiga*)
+	host_arch="amiga"
+	host_cpu="m68k"
+	;;
+    *)
+	AC_MSG_ERROR([Unsupported target architecture '$host'])
+	;;
+esac
+
 dnl What gfxsystem to use
 
 echo "GFXHIDD: $aros_gfxhidd"
@@ -283,6 +317,8 @@ AC_SUBST(aros_cc)
 AC_SUBST(aros_as)
 AC_SUBST(aros_host_cc)
 AC_SUBST(aros_host_as)
+AC_SUBST(host_arch)
+AC_SUBST(host_cpu)
 AC_SUBST(aros_common_cflags)
 AC_SUBST(aros_common_aflags)
 AC_SUBST(aros_debug_cflags)
