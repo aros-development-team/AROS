@@ -208,6 +208,7 @@ const static struct def_ulval DefULValues[] =
     { MUICFG_Drag_Autostart_Length,   3 },
     { MUICFG_Drag_LeftButton,         TRUE },
     { MUICFG_Drag_MiddleButton,       FALSE },
+    { MUICFG_Register_TruncateTitles, FALSE },
     { 0, 0 },
 };
 
@@ -358,7 +359,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /*---------- registers ----------*/
 
     data->prefs.register_look = REGISTER_LOOK_TRADITIONAL;
-    data->prefs.register_truncate_titles = FALSE; /* loosers want full titles */
+    data->prefs.register_truncate_titles = GetConfigULong(obj, MUICFG_Register_TruncateTitles);
 
     /*---------- Buttons ----------*/
 
