@@ -127,7 +127,6 @@ struct MUI_WindowData
 #define MUIWF_OPENED          (1<<0) /* window currently opened */
 #define MUIWF_ICONIFIED       (1<<1) /* window currently iconified */
 #define MUIWF_ACTIVE          (1<<2) /* window currently active */
-#define MUIWF_CLOSEREQUESTED  (1<<3) /* when user hits close gadget */
 #define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
 #define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a message handler */
 #define MUIWF_CLOSEME         (1<<6) /* close the window after processing the message */
@@ -1257,7 +1256,6 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 	case IDCMP_CLOSEWINDOW:
 	    set(oWin, MUIA_Window_CloseRequest, TRUE);
-	    nnset(oWin, MUIA_Window_CloseRequest, FALSE); /* I'm not sure here but zune keeps track of old values inside notifyclass */
 	    break;
 
 	case IDCMP_MENUPICK:
@@ -1650,7 +1648,7 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	    case MUIKEY_GADGET_NEXT: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
 	    case MUIKEY_GADGET_PREV: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
 	    case MUIKEY_GADGET_OFF: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
-	    case MUIKEY_WINDOW_CLOSE: set(win, MUIA_Window_CloseRequest, TRUE);nnset(win, MUIA_Window_CloseRequest, FALSE);break;
+	    case MUIKEY_WINDOW_CLOSE: set(win, MUIA_Window_CloseRequest, TRUE);break;
 	    case MUIKEY_WINDOW_NEXT: break;
 	    case MUIKEY_WINDOW_PREV: break;
 	    case MUIKEY_HELP: break;
@@ -2209,9 +2207,6 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_ActiveObject:
 		window_set_active_object(data, obj, tag->ti_Data);
 		break;
-	    case MUIA_Window_CloseRequest:
-		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_CLOSEREQUESTED);
-		break;
 	    case MUIA_Window_DefaultObject:
 		data->wd_DefaultObject = (APTR)tag->ti_Data;
 		break;
@@ -2322,7 +2317,7 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    STORE = (ULONG)data->wd_ActiveObject;
 	    return 1;
 	case MUIA_Window_CloseRequest:
-	    STORE = (data->wd_Flags & MUIWF_CLOSEREQUESTED) ? TRUE : FALSE;
+	    STORE = FALSE;
 	    return(TRUE);
 	case MUIA_Window_DefaultObject:
 	    STORE = (ULONG)data->wd_DefaultObject;
