@@ -1295,6 +1295,10 @@ ifdef USE_ZLIB
 %(libs) := $(%(libs)) -larosz
 %(deps) := $(%(deps)) $(LIBDIR)/libarosz.a
 endif
+ifdef USE_EXPATLIB
+%(libs) := $(%(libs)) -lexpat
+%(deps) := $(%(deps)) $(LIBDIR)/libexpat.a
+endif
 ifdef USE_COOLIMAGESLIB
 %(libs) := $(%(libs)) -lcoolimages
 %(deps) := $(%(deps)) $(LIBDIR)/libcoolimages.a
