@@ -17,13 +17,13 @@
 
     NAME */
 #include <proto/layers.h>
-	AROS_LH3(struct Region *, ChangeLayerShape,
+	AROS_LH4(struct Region *, ChangeLayerShape,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Layer  *, l          , A0),
 	AROS_LHA(struct Region *, newshape   , A1),
 	AROS_LHA(void          *, callback   , A2),
-
+        AROS_LHA(void          *, arg        , A3),
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 41, Layers)
 
@@ -35,10 +35,11 @@
        called when the current layer's information is all backed up
        in ClipRects. The signature of the callback should look as follows:
            AROS_UFC4(struct Region *, callback,
-               AROS_UFCA(struct Region *   , newshape  , A0),
+               AROS_UFCA(struct Region *  ,  newshape  , A0),
                AROS_UFCA(struct Layer  *  , l          , A1),
                AROS_UFCA(struct ClipRect *, l->ClipRect, A2),
-               AROS_UFCA(struct Region *  , l->shape   , A3));
+               AROS_UFCA(struct Region *  , l->shape   , A3),
+               AROS_UFCA(void          *  , arg        , A4));
        
        THe first parameter contains the shape as passed to this function,
        which may be NULL in this case. The second parameter is the current
@@ -54,6 +55,8 @@
                   of the layer. May be NULL if callback is provided. 
        callback - pointer to a callback function. May be NULL if newshape
                   is given.
+       arg      - pointer to an arbitrary argument that will be passed
+                  to the callback function.
 
     RESULT
        Pointer to the previously installed region.
@@ -111,11 +114,12 @@
        * The user can manipulate the cliprects of the layer
        * l and can have a look at the current shape.
        */
-      l->shaperegion = AROS_UFC4(struct Region *, callback,
+      l->shaperegion = AROS_UFC5(struct Region *, callback,
                         AROS_UFCA(struct Region *   , newshape  , A0),
                         AROS_UFCA(struct Layer  *  , l          , A1),
                         AROS_UFCA(struct ClipRect *, l->ClipRect, A2),
-                        AROS_UFCA(struct Region *  , l->shape   , A3));
+                        AROS_UFCA(struct Region *  , l->shape   , A3),
+                        AROS_UFCA(void          *  , arg        , A4));
     }
     else
     {
