@@ -4,9 +4,9 @@
 AROS-linux :
 	@$(NOP)
 
-#MM kernel-linux : kernel-exec kernel-aros kernel-dos kernel-graphics kernel-intuition
+#MM kernel-linux : kernel-exec kernel-aros kernel-dos kernel-graphics kernel-intuition-linklib
 #MM kernel-linux : kernel-utility kernel-mathffp kernel-mathieeesingbas kernel-filesys
-#MM kernel-linux : kernel-devs
+#MM kernel-linux : kernel-devs kernel-boopsi-linklib kernel-hidd-linklib
 kernel-linux :
 	@$(NOP)
 
@@ -46,8 +46,8 @@ battclock-linux :
 graphics-linux :
 	@$(NOP)
 
-#MM intuition-linux : intuition-x11
-intuition-linux :
+#MM kernel-intuition-linux : intuition-x11
+kernel-intuition-linux :
 	@$(NOP)
 
 #MM check : check-exec-unix
