@@ -37,7 +37,7 @@ enum
 #define MUIA_Prop_FirstReal      (TAG_USER|0x004205dc) /* MUI: */
 #define MUIA_Prop_PropRelease    (TAG_USER|0x00429839) /* MUI: */
 #define MUIA_Prop_DeltaFactor    (TAG_USER|0x00427c5e) /* MUI:    is. LONG */
-#define MUIA_Prop_DoSmooth       (TAG_USER|0x804236ce) /* MUI: V4 i.. LONG */
+#define MUIA_Prop_DoSmooth       (TAG_USER|0x004236ce) /* MUI: V4 i.. LONG */
 
 extern const struct __MUIBuiltinClass _MUI_Prop_desc; /* PRIV */
 
