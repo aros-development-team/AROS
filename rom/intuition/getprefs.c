@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <intuition/preferences.h>
 
 /*****************************************************************************
 
@@ -53,7 +54,7 @@
   if (NULL != prefbuffer && 0 != size)
     memcpy(prefbuffer,
            GetPrivIBase(IntuitionBase)->ActivePreferences, 
-           size);
+           size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
 
   return (struct Preferences *)prefbuffer;
 
