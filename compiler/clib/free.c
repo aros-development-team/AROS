@@ -51,8 +51,7 @@ extern APTR __startup_mempool;
 
     if (memory && __startup_mempool)
     {
-	mem = (UBYTE *)memory;
-	mem -= ALLOCVEC_TOTAL;
+	mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
 	size = *((size_t *)mem);
 
 	FreePooled (__startup_mempool, mem, size);

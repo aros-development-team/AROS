@@ -62,12 +62,12 @@ extern APTR __startup_mempool;
     }
 
     /* Allocate the memory */
-    mem = AllocPooled (__startup_mempool, ALLOCVEC_TOTAL + size);
+    mem = AllocPooled (__startup_mempool, AROS_ALIGN(sizeof(size_t)) + size);
 
     if (mem)
     {
 	*((size_t *)mem) = size;
-	mem += ALLOCVEC_TOTAL;
+	mem += AROS_ALIGN(sizeof(size_t));
     }
 
     return mem;

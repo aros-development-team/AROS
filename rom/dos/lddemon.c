@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/23 14:13:43  aros
+    Use AROS_ALIGN() to align pointers
+
     Revision 1.6  1996/10/21 20:44:51  aros
     Changed d0 to D0
 
@@ -29,9 +32,6 @@
 #include <dos/dosextens.h>
 #include <clib/dos_protos.h>
 #include "dos_intern.h"
-
-#define ALLOCVEC_TOTAL \
-(DOUBLEALIGN>sizeof(ULONG)?DOUBLEALIGN:sizeof(ULONG))
 
 static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)
 {
@@ -70,9 +70,9 @@ static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
     BPTR seg=seglist;
     while(seg)
     {
-	STRPTR addr=(STRPTR)BADDR(seg)-ALLOCVEC_TOTAL;
+	STRPTR addr=(STRPTR)BADDR(seg)-AROS_ALIGN(sizeof(ULONG));
 	ULONG size=*(ULONG *)addr;
-	for(;size>=sizeof(struct Resident);size-=PTRALIGN,addr+=PTRALIGN)
+	for(;size>=sizeof(struct Resident);size-=AROS_PTRALIGN,addr+=AROS_PTRALIGN)
 	{
 	    struct Resident *res=(struct Resident *)addr;
 	    if(res->rt_MatchWord==RTC_MATCHWORD&&res->rt_MatchTag==res)

@@ -59,7 +59,7 @@
     if (!oldmem)
 	return malloc (size);
 
-    mem = (UBYTE *)oldmem - ALLOCVEC_TOTAL;
+    mem = (UBYTE *)oldmem - AROS_ALIGN(sizeof(size_t));
     oldsize = *((size_t *)mem);
 
     /* Reduce or enlarge the memory ? */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:13:44  aros
+    Use AROS_ALIGN() to align pointers
+
     Revision 1.5  1996/10/19 17:07:26  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -61,10 +64,10 @@
     __AROS_FUNC_INIT
 
     /* If there's nothing to free do nothing. */
-    if(memoryBlock!=NULL)
+    if (memoryBlock != NULL)
     {
-	*(UBYTE **)&memoryBlock-=ALLOCVEC_TOTAL;
-	FreeMem(memoryBlock,*(ULONG *)memoryBlock);
+	*(UBYTE **)&memoryBlock -= AROS_ALIGN(sizeof(ULONG));
+	FreeMem (memoryBlock, *((ULONG *)memoryBlock));
     }
     __AROS_FUNC_EXIT
 } /* FreeVec */

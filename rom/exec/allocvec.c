@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:13:43  aros
+    Use AROS_ALIGN() to align pointers
+
     Revision 1.5  1996/10/19 17:07:24  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -70,7 +73,7 @@
     UBYTE *ret;
 
     /* Add room for stored size. */
-    byteSize+=ALLOCVEC_TOTAL;
+    byteSize+=AROS_ALIGN(sizeof(ULONG));
 
     /* Get the memory. */
     ret=(UBYTE *)AllocMem(byteSize,requirements);
@@ -83,7 +86,7 @@
     *(ULONG *)ret=byteSize;
 
     /* return free space */
-    return ret+ALLOCVEC_TOTAL;
+    return ret+AROS_ALIGN(sizeof(ULONG));
     __AROS_FUNC_EXIT
 } /* AllocVec */
 
