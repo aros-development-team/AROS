@@ -62,8 +62,8 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
     struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
     struct MUI_RGBcolor *start_rgb; 
     struct MUI_RGBcolor *end_rgb;
-    int angle = XGET(data->gradient_angle_slider, MUIA_Numeric_Value);
-    int is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
+    LONG angle = XGET(data->gradient_angle_slider, MUIA_Numeric_Value);
+    LONG is_tiled = XGET(data->gradient_type_cycle, MUIA_Cycle_Active);
 
     start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen,
 					   MUIA_Pendisplay_RGBcolor);
@@ -71,7 +71,7 @@ static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
 					 MUIA_Pendisplay_RGBcolor);
 
     snprintf(data->gradient_imagespec,sizeof(data->gradient_imagespec),
-	     "%s:%d,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+	     "%s:%ld,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
 	     is_tiled ? "8" : "7",
                  angle,
                  start_rgb->red,start_rgb->green,start_rgb->blue,
