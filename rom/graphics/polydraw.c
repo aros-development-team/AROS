@@ -1,12 +1,11 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function PolyDraw()
     Lang: english
 */
 #include "graphics_intern.h"
-
-void driver_PolyDraw (struct RastPort *, long, WORD *, struct GfxBase *);
 
 /*****************************************************************************
 

@@ -1,7 +1,8 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$	 $Log
+
+    Desc: Graphics function GetOutlinePen()
     Lang: english
 */
 #include "graphics_intern.h"

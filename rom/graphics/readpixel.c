@@ -1,13 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function ReadPixel()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-ULONG driver_ReadPixel (struct RastPort *, long, long, struct GfxBase *);
 
 /*****************************************************************************
 

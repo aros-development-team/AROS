@@ -1,13 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function SetRast()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-void driver_SetRast (struct RastPort *, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 

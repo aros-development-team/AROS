@@ -1,15 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$	$Log
+
+    Desc: Graphics function ScrollRaster()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-extern void driver_ScrollRaster (struct RastPort *,
-	long, long, long, long, long, long,
-	struct GfxBase *);
 
 /*****************************************************************************
 

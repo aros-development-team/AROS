@@ -1,12 +1,11 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$	 $Log
-    Desc:
+
+    Desc: Graphics function TextLength()
     Lang: english
 */
 #include "graphics_intern.h"
-
-WORD driver_TextLength (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 

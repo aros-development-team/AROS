@@ -1,14 +1,13 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function SetFont()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
 #include <graphics/text.h>
-
-LONG driver_SetFont (struct RastPort *, struct TextFont *, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -17,7 +16,7 @@ LONG driver_SetFont (struct RastPort *, struct TextFont *, struct GfxBase *);
 	#include <graphics/text.h>
 	#include <clib/graphics_protos.h>
 
-	AROS_LH2(LONG, SetFont,
+	AROS_LH2(void, SetFont,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -51,7 +50,7 @@ LONG driver_SetFont (struct RastPort *, struct TextFont *, struct GfxBase *);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_SetFont (rp, textFont, GfxBase);
+    driver_SetFont (rp, textFont, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* SetFont */

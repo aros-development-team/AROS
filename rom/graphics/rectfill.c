@@ -1,14 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function RectFill()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-extern void driver_RectFill (struct RastPort *, long, long, long, long,
-			    struct GfxBase *);
 
 /*****************************************************************************
 

@@ -1,13 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$	$Log
+
+    Desc: Graphics function Text()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-LONG driver_Text (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 
 /*****************************************************************************
 
@@ -15,7 +14,7 @@ LONG driver_Text (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	AROS_LH3(LONG, Text,
+	AROS_LH3(void, Text,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -50,7 +49,7 @@ LONG driver_Text (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_Text (rp, string, count, GfxBase);
+    driver_Text (rp, string, count, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* Text */

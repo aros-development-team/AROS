@@ -1,14 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function DrawEllipse
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-LONG driver_DrawEllipse (struct RastPort *, long x, long y, long rx, long ry,
-			struct GfxBase *);
 
 /*****************************************************************************
 

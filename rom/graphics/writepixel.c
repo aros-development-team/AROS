@@ -1,13 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$	 $Log
-    Desc:
+
+    Desc: Graphics function WritePixel()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
-
-LONG driver_WritePixel (struct RastPort *, long, long, struct GfxBase *);
 
 /*****************************************************************************
 

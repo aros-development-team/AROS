@@ -1,13 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$	$Log
-    Desc:
+
+    Desc: Graphics function CloseFont()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/text.h>
-
-void driver_CloseFont (struct TextFont *, struct GfxBase *);
 
 /*****************************************************************************
 

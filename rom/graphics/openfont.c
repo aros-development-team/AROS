@@ -1,14 +1,12 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$    $Log
-    Desc:
+
+    Desc: Graphics function OpenFont()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/text.h>
-
-extern struct TextFont * driver_OpenFont (struct TextAttr *,
-	struct GfxBase *);
 
 /*****************************************************************************
 

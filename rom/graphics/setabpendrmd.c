@@ -1,13 +1,11 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
-    Desc:
+    $Id$	$Log
+
+    Desc: Graphics function SetABPenDrMd()
     Lang: english
 */
 #include "graphics_intern.h"
-
-extern void driver_SetABPenDrMd (struct RastPort *, ULONG, ULONG, ULONG,
-				struct GfxBase * GfxBase);
 
 /*****************************************************************************
 
