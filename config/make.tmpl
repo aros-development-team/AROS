@@ -405,7 +405,7 @@ $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
 # - targetdir: the directory to put the generated .ref file. By default the
 #   .ref file will be put in the same directory as the .c file.
 # - includefile: This file will be included at the head of the source file
-%define rule_ref basename=/A cflags=$(CFLAGS) targetdir= includefile=
+%define rule_ref basename=/A cflags=$(CFLAGS) targetdir= includefile= compiler=target
 
 ifeq (%(targetdir),)
 GENFILE_TMP := %(basename).ref
@@ -413,12 +413,22 @@ else
 GENFILE_TMP := %(targetdir)/$(notdir %(basename)).ref
 endif
 
+ifeq ($(filter %(compiler),target host),)
+$(error use of %rule_ref: compiler has to be 'host' or 'target')
+endif
+
+ifeq (%(compiler),target)
+$(GENFILE_TMP) : CC:=$(TARGET_CC)
+else
+$(GENFILE_TMP) : CC:=$(HOST_CC)
+endif
+
 $(GENFILE_TMP) : %(basename).c $(CXREF) %(includefile)
 	@$(ECHO) "Generating $(notdir $@)..."
 ifeq (%(includefile),)
-	@$(CXREF) -raw -CPP '$(TARGET_CC) %(cflags) -E -C -dD' $< >$@
+	@$(CXREF) -raw -CPP '$(CC) %(cflags) -E -C -dD' $< >$@
 else
-	@$(CXREF) -raw -CPP '$(TARGET_CC) %(cflags) -include %(includefile) -E -C -dD' $< >$@
+	@$(CXREF) -raw -CPP '$(CC) %(cflags) -include %(includefile) -E -C -dD' $< >$@
 endif
 
 %end
@@ -868,7 +878,7 @@ $(BD_OBJS$(BDID)) \
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 	@$(LD) -r -o $@ $^
 
-%include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
+%include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
