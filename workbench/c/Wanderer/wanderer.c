@@ -796,8 +796,8 @@ void icon_delete(void)
                         OpenWorkbenchObject
                         (
                             "WANDERER:Tools/Delete",
-                            WBOPENA_ArgLock, parent,
-                            WBOPENA_ArgName, FilePart(entry->filename),
+                            WBOPENA_ArgLock, (Tag)parent,
+                            WBOPENA_ArgName, (Tag)FilePart(entry->filename),
                             TAG_DONE
                         );
                         
