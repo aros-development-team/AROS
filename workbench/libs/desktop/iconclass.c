@@ -866,7 +866,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
                 MUIA_Text_Contents, buffer, 
             End;
             
-            /* FIXME: free buffer */
+            FreeVec(buffer);
         }
     }
 
