@@ -37,7 +37,7 @@ typedef LONG	Fixed32;
 
 Fixed32 FixSqrt( Fixed32 );
 Fixed32 FixSqrti(ULONG x);
-Fixed32 FixSinCos( Fixed32 theta, Fixed32 *sinus );
+//Fixed32 FixSinCos( Fixed32 theta, Fixed32 *sinus );
 Fixed32 FixAtan2( Fixed32, Fixed32 );
 
 /****************************************************************************/
@@ -45,40 +45,40 @@ Fixed32 FixAtan2( Fixed32, Fixed32 );
 __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 {
 #ifdef _AROS
-	return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
+    return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
 #else
-	
+
 #ifndef version060
 
-	__asm __volatile
-	("muls.l %1,%1:%0 \n\t"
-	 "move %1,%0 \n\t"
-	 "swap %0 "
-					 
-	  : "=d" (eins), "=d" (zwei)
-	  : "0" (eins), "1" (zwei)
-	);
+    __asm __volatile
+    ("muls.l %1,%1:%0 \n\t"
+     "move %1,%0 \n\t"
+     "swap %0 "
 
-	return eins;
+      : "=d" (eins), "=d" (zwei)
+      : "0" (eins), "1" (zwei)
+    );
+
+    return eins;
 
 #else
 #if 0
-	__asm __volatile
-	("fmove.l	%0,fp0 \n\t"
-	 "fmul.l	%2,fp0 \n\t"
-	 "fmul.s	#$37800000,fp0 \n\t"
+    __asm __volatile
+    ("fmove.l	%0,fp0 \n\t"
+     "fmul.l	%2,fp0 \n\t"
+     "fmul.s	#$37800000,fp0 \n\t"
 
-/*	 "fintrz.x	fp0,fp0 \n\t"*/
-	 "fmove.l	fp0,%0"
-					 
-	  : "=d" (eins)
-	  : "0" (eins), "d" (zwei)
-	  : "fp0"
-	);
+/*    "fintrz.x	fp0,fp0 \n\t"*/
+     "fmove.l	fp0,%0"
 
-	return eins;
+      : "=d" (eins)
+      : "0" (eins), "d" (zwei)
+      : "fp0"
+    );
+
+    return eins;
 #else
-	return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
+    return (Fixed32) ( (double) eins * (double) zwei * 0.0000152587890625 );
 #endif
 
 #endif /* version060 */
@@ -92,50 +92,70 @@ __inline static Fixed32 FixMul(Fixed32 eins,Fixed32 zwei)
 __inline static Fixed32 FixDiv(Fixed32 eins,Fixed32 zwei)
 {
 #ifdef _AROS
-	eins = (double) eins / (double) zwei * 65536.0;
+    eins = (double) eins / (double) zwei * 65536.0;
 #else
 	
 #ifndef version060
-	__asm __volatile
-	("swap      %0\n\t"
-	 "move.w    %0,d2\n\t"
-	 "ext.l		d2\n\t"
-	 "clr.w		%0\n\t"
-	 "divs.l	%1,d2:%0\n\t"
+    __asm __volatile
+    ("swap      %0\n\t"
+     "move.w    %0,d2\n\t"
+     "ext.l		d2\n\t"
+     "clr.w		%0\n\t"
+     "divs.l	%1,d2:%0\n\t"
 
      : "=d" (eins), "=d" (zwei)
      : "0" (eins), "1" (zwei)
      : "d2"
-	);
+    );
 #else
 #if 0
-	__asm __volatile
-	("fmove.l	%0,fp0 \n\t"
-	 "fdiv.l	%2,fp0 \n\t"
-	 "fmul.s	#$47800000,fp0 \n\t" 
+    __asm __volatile
+    ("fmove.l	%0,fp0 \n\t"
+     "fdiv.l	%2,fp0 \n\t"
+     "fmul.s	#$47800000,fp0 \n\t" 
 
-/*	 "fintrz.x  fp0 \n\t"*/
-	 "fmove.l	fp0,%0"
+/*   "fintrz.x  fp0 \n\t"*/
+     "fmove.l	fp0,%0"
 
-	 : "=d" (eins)
-	 : "0" (eins), "d" (zwei)
-	 : "fp0"
-	);
+     : "=d" (eins)
+     : "0" (eins), "d" (zwei)
+     : "fp0"
+    );
 #else
-	eins = (double) eins / (double) zwei * 65536.0;
+    eins = (double) eins / (double) zwei * 65536.0;
 #endif
 #endif /* version060 */
 
 #endif /* _AROS */
 
-	return eins;
+    return eins;
 }
 
 /****************************************************************************/
 
-__inline static Fixed32 FixSqr( Fixed32 a )
+__inline static LONG FixSqr( Fixed32 a )
 {
-	return FixMul( a, a );
+//  a = INT_TO_FIXED(a);
+//    return a * a;
+  return FixMul( a, a );
+}	
+
+/****************************************************************************/
+
+__inline static Fixed32 FixSinCos( Fixed32 theta, Fixed32 *sinus )
+{
+    #define MAX_TRIG	1024
+    extern Fixed32 SinCosTab[];
+  
+    theta = FIXED_TO_INT( FixMul( theta << 9, 20861 ) );
+    theta &= (MAX_TRIG - 1);
+    
+    *sinus = SinCosTab[theta];
+    
+    if( ( theta += 256 ) >= MAX_TRIG )
+	theta = theta - MAX_TRIG;
+		
+    return SinCosTab[theta];
 }	
 
 /****************************************************************************/

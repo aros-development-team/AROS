@@ -14,7 +14,10 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/colorwheel.h>
+#include <proto/layers.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
+
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/cghooks.h>
@@ -156,13 +159,6 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
     	
     	switch (tag->ti_Tag)
     	{
-	    case GA_Disabled:
-	    	if(disabled != tidata)
-	    	{	    		
-	            retval += 1UL;
-		}	
-		break;
-
 	    case WHEEL_Hue:
 	    	data->hsb.cw_Hue = (ULONG)tidata;
 		ConvertHSBToRGB(&data->hsb, &data->rgb);
@@ -221,6 +217,17 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
 		
 	    case WHEEL_GradientSlider:
 	    	data->gradobj = (Object *)tidata;
+		break;
+
+	    case GA_Disabled:
+	    	if(disabled != tidata)
+	    	{	    		
+	            retval += 1UL;
+		}	
+		break;
+
+	    case GA_BackFill:
+		data->backfill = (struct Hook *) tidata;
 		break;
 		
 	    default:
@@ -300,6 +307,28 @@ STATIC Object *colorwheel_new(Class *cl, Object *o, struct opSet *msg)
 	    data->maxpens  =           GetTagData(WHEEL_MaxPens       , 256	      , msg->ops_AttrList);
 	    
     	    colorwheel_set(cl, o, msg);
+#if 1
+	    {
+		struct Library *DOSBase;
+
+		if( ( DOSBase = OpenLibrary( "dos.library", 39L ) ) )
+    		{
+    	    	    TEXT	buf[64];
+
+    	    	    if( GetVar( "classes/gadgets/cw_maxpens", buf, sizeof( buf ), 0L ) > 0L )
+    	    	    {
+    	    		LONG pens;
+
+    	    		if( StrToLong( buf, &pens ) > 0L )
+    	    		{    	    	    	
+     	    	    	    data->maxpens = ( pens < 7 ) ? 7 : pens;
+    	    		}
+    	    	    }
+
+    	    	    CloseLibrary( DOSBase );	
+    		}    	    	
+    	    }	
+#endif    	    
     	    
     	    allocPens(data,ColorWheelBase);
     	    
@@ -380,6 +409,7 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     struct ColorWheelData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
     struct RastPort 		*rp = msg->gpr_RPort;
+    struct Hook			*hook;
     struct IBox			gbox;
     LONG			redraw = msg->gpr_Redraw;
     
@@ -392,6 +422,8 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     {
         redraw = GREDRAW_REDRAW;
     }
+
+    if( data->backfill ) hook = InstallLayerHook( rp->Layer, data->backfill );
     
     switch (redraw)
     {
@@ -409,8 +441,10 @@ STATIC VOID colorwheel_render(Class *cl, Object *o, struct gpRender *msg)
     
     if (EG(o)->Flags & GFLG_DISABLED)
     {
-    	DrawDisabledPattern(rp, &gbox, dri->dri_Pens[SHADOWPEN], ColorWheelBase);
+    	DrawDisabledPattern(data, rp, &gbox, ColorWheelBase);
     }
+
+    if( data->backfill ) InstallLayerHook( rp->Layer, hook );
         	
     ReturnVoid("ColorWheel::Render");
 }
@@ -430,7 +464,13 @@ STATIC VOID colorwheel_dispose(Class *cl, Object *o, Msg msg)
         
         if (data->mask)
         {        	
-            FreeVec( data->mask );
+#ifdef USE_ALLOCRASTER
+	    FreeRaster( data->mask,
+	      	GetBitMapAttr( data->bm, BMA_WIDTH ),
+    		GetBitMapAttr( data->bm, BMA_HEIGHT ) );
+#else
+	    FreeVec( data->mask );
+#endif
 	}	
         
 	FreeBitMap(data->bm);
@@ -455,6 +495,9 @@ STATIC IPTR colorwheel_hittest(Class *cl, Object *o, struct gpHitTest *msg)
     IPTR 			retval = 0UL;
 
     EnterFunc(bug("ColorWheel::HitTest()\n"));
+
+    if( EG(o)->Flags & GFLG_DISABLED )
+    	return 0UL;
     
     if (data->wheeldrawn)
     {
@@ -556,13 +599,13 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 			CalcWheelColor(mousex,
 				       mousey,
-				       #if FIXED_MATH
-					   data->wheelrx,
-					   data->wheelry,
-			   		   #else
+				    #if FIXED_MATH
+				       data->wheelrx,
+				       data->wheelry,
+			   	    #else
 				       (double)data->wheelrx,
 				       (double)data->wheelry, 
-				       #endif
+				    #endif
 				       &data->hsb.cw_Hue,
 				       &data->hsb.cw_Saturation);
 
@@ -593,6 +636,39 @@ STATIC IPTR colorwheel_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
 /***************************************************************************************************/
 
+STATIC IPTR colorwheel_domain(Class *cl, Object *o, struct gpDomain *msg)
+{
+    struct ColorWheelData *data = INST_DATA(cl, o);
+    UWORD		   width, height;
+
+    switch( msg->gpd_Which )
+    {
+    	case GDOMAIN_MINIMUM:
+	    width  = data->frame ? BORDERWHEELSPACINGX * 4 : BORDERWHEELSPACINGX * 2;	    
+	    height = data->frame ? BORDERWHEELSPACINGY * 4 : BORDERWHEELSPACINGY * 2;
+	    break;
+	
+	case GDOMAIN_NOMINAL:
+	    width  = data->frame ? BORDERWHEELSPACINGX * 12 : BORDERWHEELSPACINGX * 10;
+	    height = ( width * msg->gpd_GInfo->gi_DrInfo->dri_Resolution.X ) / msg->gpd_GInfo->gi_DrInfo->dri_Resolution.Y;
+	    break;
+	
+	case GDOMAIN_MAXIMUM:
+	    width  = 0x7fff;
+	    height = 0x7fff;
+	    break;
+    }
+    
+    msg->gpd_Domain.Left 	=
+    msg->gpd_Domain.Top  	= 0;
+    msg->gpd_Domain.Width	= width;
+    msg->gpd_Domain.Height 	= height;
+    
+    return 1L;
+}
+
+/***************************************************************************************************/
+
 #ifdef _AROS
 AROS_UFH3S(IPTR, dispatch_colorwheelclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -617,6 +693,11 @@ IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, M
 	    colorwheel_render(cl, o, (struct gpRender *)msg);
 	    break;
 	
+	case OM_SET:
+	case OM_UPDATE:
+	    retval = colorwheel_set(cl, o, (struct opSet *)msg);
+	    break;
+
 	case GM_HITTEST:
 	    retval = colorwheel_hittest(cl, o, (struct gpHitTest *)msg);
 	    break;
@@ -624,12 +705,15 @@ IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, M
 	case GM_GOACTIVE:
 	    retval = colorwheel_goactive(cl, o, (struct gpInput *)msg);
 	    break;
-	
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = colorwheel_set(cl, o, (struct opSet *)msg);
+
+	case OM_GET:
+	    retval = colorwheel_get(cl, o, (struct opGet *)msg);
 	    break;
-	    
+
+	case GM_DOMAIN:
+	    retval = colorwheel_domain(cl, o, (struct gpDomain *)msg);
+	    break;
+		    
 	case OM_NEW:
 	    retval = (IPTR)colorwheel_new(cl, o, (struct opSet *)msg);
 	    break;
@@ -637,11 +721,7 @@ IPTR dispatch_colorwheelclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, M
 	case OM_DISPOSE:
 	    colorwheel_dispose(cl, o, msg);
 	    break;
-	
-	case OM_GET:
-	    retval = colorwheel_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
+		    
 	default:
 	    retval = DoSuperMethodA(cl, o, (Msg)msg);
 	    break;

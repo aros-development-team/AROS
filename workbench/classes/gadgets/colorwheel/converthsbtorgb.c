@@ -52,6 +52,79 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, ColorWheelBase)
 
+#if FIXED_MATH
+    ULONG	 H, S, I, R, G, B;
+    UWORD	 f, w, q, t;
+
+    H = hsb->cw_Hue >> 16;
+    S = hsb->cw_Saturation >> 16;
+    I = hsb->cw_Brightness >> 16;
+
+    if (S == 0) S = 1;
+
+    if (H == 0xffff) H = 0;
+    
+    H = H * 6;    
+    f = H;
+    /*
+    if( I == 0xffff )
+    {    	
+	w = ~S;
+	q = ~((S * f)>>16);
+    	t = ~((S * (0xffff-f))>>16);
+    }
+    else*/
+    {
+    	w = ( I * (0xffff - S) ) >> 16;
+	q = ( I * (0xffff - ((S * f)>>16)) ) >> 16;
+    	t = ( I * (0xffff - ((S * (0xffff - f))>>16)))>>16;
+    }	
+
+    switch (FIXED_TO_INT(H))
+    {
+	case 0:
+            R = I;
+            G = t;
+            B = w;
+            break;
+	    
+	case 1:
+            R = q;
+            G = I;
+            B = w;
+            break;
+	    
+	case 2:
+            R = w;
+            G = I;
+            B = t;
+            break;
+	    
+	case 3:
+            R = w;
+            G = q;
+            B = I;
+            break;
+	    
+	case 4:
+            R = t;
+            G = w;
+            B = I;
+            break;
+	    
+	case 5:
+            R = I;
+            G = w;
+            B = q;
+            break;
+    } /* switch (i) */
+	
+	rgb->cw_Red   = R | ( R << 16 );
+	rgb->cw_Green = G | ( G << 16 );
+	rgb->cw_Blue  = B | ( B << 16 );
+
+#else /* FIXED_MATH */
+
 #if 1
 
     DOUBLE H, S, I, R, G, B, f, w, q, t;
@@ -155,6 +228,8 @@
     rgb->cw_Blue = (ULONG) rint (B * 0xFFFFFFFF);
 
 #endif
+
+#endif /* FIXED_MATH */
 
     AROS_LIBFUNC_EXIT
 

@@ -40,6 +40,7 @@
 #endif
 
 #define FIXED_MATH		0
+//#define USE_ALLOCRASTER
 
 #if FIXED_MATH
 #include "fixmath.h"
@@ -91,6 +92,7 @@ struct ColorWheelData
     struct RastPort		 trp;
     Object			*frame;
     LONG			*rgblinebuffer;
+    struct Hook     	    	*backfill;
     WORD 			rgblinebuffer_size;
     WORD			bmwidth;
     WORD			bmheight;
@@ -101,11 +103,10 @@ struct ColorWheelData
     WORD			knobsavex;
     WORD			knobsavey;
     BOOL			wheeldrawn;
-    WORD			pens_donated;
-    WORD			numpens;
-    WORD			range;
-    WORD			levels;
-    UBYTE			*pens;
+    UWORD			range;
+    UWORD			levels;
+    WORD    	    	    	pens[6*6*6];
+    BOOL    	    	    	gotpens;
 };
 
 struct ColorWheelBase_intern
@@ -137,7 +138,7 @@ VOID RenderWheel(struct ColorWheelData *data, struct RastPort *rp, struct IBox *
 VOID RenderKnob(struct ColorWheelData *data, struct RastPort *rp, struct IBox *gbox, BOOL update,
 		struct ColorWheelBase_intern *ColorWheelBase);
 VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox);
-void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
+void DrawDisabledPattern(struct ColorWheelData *data, struct RastPort *rport, struct IBox *gadbox,
 			 struct ColorWheelBase_intern *ColorWheelBase);
 void allocPens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
 void freePens( struct ColorWheelData *data, struct ColorWheelBase_intern *ColorWheelBase );
