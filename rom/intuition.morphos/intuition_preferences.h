@@ -12,12 +12,12 @@ struct Preferences IntuitionDefaultPreferences =
         0,      // BaudRate
 
         {
-            0,500000
+            0,40000
         }
         ,   // timeval KeyRptSpeed
 
         {
-            1,0
+            0,500000
         }
         ,   // timeval KeyRptDelay
 
