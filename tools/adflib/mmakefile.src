@@ -1,0 +1,45 @@
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I. -IGeneric
+
+LIB :=	adf
+
+FILES := \
+	adf_bitm \
+	adf_cache \
+	adf_dir \
+	adf_disk \
+	adf_dump \
+	adf_env \
+	adf_file \
+	adf_hd \
+	adf_link \
+	adf_raw \
+	adf_salv \
+	adf_util \
+	Generic/adf_nativ
+
+#MM- linklibs : linklibs-adf
+
+%make_linklib_setup mmake=linklibs-adf
+%make_linklib
+
+#MM- setup : includes-copy
+
+#MM
+includes-copy : $(INCDIR)/adflib.h \
+		$(INCDIR)/defendian.h \
+		$(INCDIR)/adf_blk.h \
+		$(INCDIR)/adf_defs.h \
+		$(INCDIR)/adf_err.h \
+		$(INCDIR)/adf_hd.h \
+		$(INCDIR)/adf_str.h
+
+$(INCDIR)/%.h : %.h
+	$(CP) $< $(INCDIR)
+
+$(INCDIR)/defendian.h : myconf.aros
+	@./myconf.aros >> $@
+
+%common
+%include_deps

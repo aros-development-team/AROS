@@ -1,0 +1,20 @@
+include $(TOP)/config/make.cfg
+
+FILES := createdtdesc
+EXES := $(AROSDIR)/Build/Tools/createdtdesc \
+	$(AROSDIR)/Build/Tools/examinedtdesc
+
+USE_CLIB_SHARED := yes
+PRELIBS := $(PRELIBS) -lc_iff
+
+#MM- build-tools : build-tools-dtdesc
+
+%make_prog_setup mmake=build-tools-dtdesc
+
+#MM
+build-tools-dtdesc : setup $(EXES)
+
+%make_prog_single dir=$(AROSDIR)/Build/Tools
+
+%common
+%include_deps

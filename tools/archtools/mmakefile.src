@@ -1,0 +1,18 @@
+include $(TOP)/config/make.cfg
+
+FILES := archtool
+EXES := $(AROSDIR)/Build/Tools/archtool
+
+USE_CLIB_SHARED := yes
+
+#MM- build-tools : build-tools-archtool
+
+%make_prog_setup mmake=build-tools-archtool
+
+#MM
+build-tools-archtool : setup $(EXES)
+
+%make_prog_single dir=$(AROSDIR)/Build/Tools
+
+%common
+%include_deps

@@ -1,0 +1,18 @@
+include $(TOP)/config/make.cfg
+
+FILES := flexcat
+EXES := $(AROSDIR)/Build/Tools/flexcat
+
+USE_CLIB_SHARED := yes
+
+#MM- build-tools : build-tools-flexcat
+
+%make_prog_setup mmake=build-tools-flexcat
+
+#MM
+build-tools-flexcat : setup $(EXES)
+
+%make_prog_single dir=$(AROSDIR)/Build/Tools
+
+%common
+%include_deps

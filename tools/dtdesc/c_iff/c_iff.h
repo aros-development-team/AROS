@@ -42,7 +42,7 @@
  *  Do you have a non-Unix, non-32-bit machine?
  *  Then make your own typedefs!
  */
-#if defined amiga || defined __PPC__
+#if defined amiga || defined __PPC__ || defined __AROS__
 typedef unsigned char  CARD8;
 typedef unsigned short CARD16;
 typedef unsigned int   CARD32;
