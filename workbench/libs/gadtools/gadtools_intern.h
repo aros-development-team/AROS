@@ -42,6 +42,9 @@
 #ifndef LIBRARIES_GADTOOLS_H
 #   include <libraries/gadtools.h>
 #endif
+#ifndef GADGETS_AROSMX_H
+#   include <gadgets/arosmx.h>
+#endif
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
@@ -196,6 +199,13 @@ struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 
 /****************************************************************************************/
 
+/* Private MX tags */
+
+#define GTMX_TickLabelPlace AROSMX_TickLabelPlace
+#define GTMX_TickHeight     AROSMX_TickHeight
+
+/****************************************************************************************/
+
 struct Menu * makemenutitle(struct NewMenu * newmenu,
                             struct TagItem * taglist);
 
@@ -239,9 +249,7 @@ struct GadToolsBase_intern
     struct Library		* layersbase;
     struct Library	 	* utilitybase;
 
-    struct Library		* aroscbbase;
     struct Library      	* aroscybase;
-    struct Library		* arosmxbase;
     struct Library		* arospabase;
 
     Class 			* buttonclass;
