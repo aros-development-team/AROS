@@ -39,7 +39,7 @@ BEGIN {
     if (maxlvo < 4)
 	maxlvo = 4;
 }
-/AROS_LH[0-9]/ {
+/AROS_LH(QUAD)?[0-9]/ {
     line=$0;
     sub(/[ \t]*$/,"",line);
     if (match(line,/[a-zA-Z0-9_]+,$/))
