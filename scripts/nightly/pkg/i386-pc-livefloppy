@@ -13,7 +13,7 @@ copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
-execute ./configure --target=pc-i386 --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="s -fno-defer-pop -mpreferred-stack-boundary=4"
+execute ./configure --target=pc-i386 --enable-build-type=nightly --enable-target-variant=tiny --with-optimization="-Os -fno-defer-pop -mpreferred-stack-boundary=4"
 make
 make    themes-gorilla-icons-aros-clean
 make    masonicons
