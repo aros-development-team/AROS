@@ -1,10 +1,12 @@
 <section title="Why is there no m68k emulator in AROS ?">
 
-<p>To make old Amiga programs run on AROS, we have begun to port UAE to
-AROS. AROS' version of UAE will probably be a bit slower then any other
+<p>To make old Amiga programs run on AROS, we have ported UAE to
+AROS. AROS' version of UAE will probably be a bit faster then any other
 UAE because AROS needs much less resources than any other OS (so UAE
-will simply run faster) plus we'll try to patch the kickstart ROM in UAE
-to call AROS functions which will give another small improvement.</p>
+will get more CPU) plus we'll try to patch the kickstart ROM in UAE
+to call AROS functions which will give another small improvement
+(of course, this only applies to the Native flavours of AROS
+and not the emulation flavours).</p>
 
 <p>But why don't we simply implement a virtual m68k CPU to run software
 directly on AROS, you ask. Well, the problem here is that m68k software
