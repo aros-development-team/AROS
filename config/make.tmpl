@@ -49,15 +49,34 @@
 #-------------------------------------------------------------------------
 
 
+#------------------------------------------------------------------------------
+# Link a specified number of objects to an executable
+%define link_q cmd=$(AROS_LD) opt=$(LDFLAGS) from=$< to=$@ libs=$(LIBS)
+	@$(ECHO) "Linking %(to)..."
+	@$(IF) %(cmd) %(opt) %(from) -o %(to) %(libs) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
+		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
+				$(ECHO) "%(to): %(cmd) %(opt) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
+				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
+	   	else \
+			$(NOP) ; \
+    		fi ; \
+	else \
+	    $(ECHO) "Link failed: %(cmd) %(opt) %(from) -o %(to) %(libs)" 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
+	    exit 1 ; \
+	fi; \
+	$(STRIP) %(to)
+%end
+
 #-------------------------------------------------------------------------
 # Link a module based upon a number of arguments and the standard $(LIBS)
 # and $(DEPLIBS) make variables.
 #
 %define link_module_q err="$(notdir $@).err" objs=/A endtag= module=$(MODULE) ldflags=$(LDFLAGS) libs=$(LIBS) objdir=$(OBJDIR)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@if $(STATIC_LD) $(STATIC_LDFLAGS) %(ldflags) \
+	@if $(AROS_LD) $(NOSTARTUP_LDFLAGS) %(ldflags) \
 	    $(GENMAP) %(objdir)/%(module).map \
-	    %(objs) %(libs) %(endtag) $(COMPILER_LIBS) \
+	    %(objs) %(libs) %(endtag) \
 	    -o $@ 2>&1 > %(objdir)/%(err); \
 	then \
 	    cat %(objdir)/%(err); \
@@ -315,25 +334,21 @@ endif
 %define rule_link_prog prog=/A objs=/A ldflags=$(LDFLAGS) uselibs= \
     usehostlibs= usestartup=yes detach=no nix=no
 
+TMP_EXTRA_LDFLAGS := 
 ifeq (%(nix),yes)
-    NIX := $(AROS_LIB)/nixmain.o
-else
-    NIX :=
+    TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
 endif
-
 ifeq (%(usestartup),no)
-%(prog) : STARTUP :=
-else
+    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+endif
 ifeq (%(detach),yes)
-%(prog) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o $(NIX)
-else
-%(prog) : STARTUP := $(AROS_LIB)/startup.o $(NIX)
+    TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
-endif
+%(prog) : EXTRA_LDFLAGS:=$(TMP_EXTRA_LDFLAGS)
 
 %(prog) : %(objs) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_q from="%(objs)" opt=%(ldflags) \
-	    libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit $(addprefix -l,%(usehostlibs))"
+	%link_q from="%(objs)" opt="%(ldflags) $(EXTRA_LDFLAGS)" \
+	    libs="$(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))"
 %end
 #------------------------------------------------------------------------------
 
@@ -345,20 +360,22 @@ endif
     objdir=$(GENDIR)/$(CURDIR) ldflags=$(LDFLAGS) uselibs= usehostlibs= \
     usestartup=yes detach=no
 
+TMP_EXTRA_LDFLAGS := 
+ifeq (%(nix),yes)
+    TMP_EXTRA_LDFLAGS += $(NIX_LDFLAGS)
+endif
 ifeq (%(usestartup),no)
-$(addprefix %(targetdir)/,%(progs)) : STARTUP :=
-else
+    TMP_EXTRA_LDFLAGS += $(NOSTARTUP_LDFLAGS)
+endif
 ifeq (%(detach),yes)
-$(addprefix %(targetdir)/,%(progs)) : STARTUP := $(AROS_LIB)/detach.o $(AROS_LIB)/startup.o
-else
-$(addprefix %(targetdir)/,%(progs)) : STARTUP := $(AROS_LIB)/startup.o
+    TMP_EXTRA_LDFLAGS += $(DETACH_LDFLAGS)
 endif
-endif
+$(addprefix %(targetdir)/,%(progs)) : EXTRA_LDFLAGS:=$(TMP_EXTRA_LDFLAGS)
 
 $(addprefix %(targetdir)/,%(progs)) : %(targetdir)/% : %(objdir)/%.o \
     $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
-	%link_q from=$< opt=%(ldflags) \
-	    libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit $(addprefix -l,%(usehostlibs))"
+	%link_q from=$< opt="%(ldflags) $(EXTRA_LDFLAGS)" \
+	    libs="$(addprefix -l,%(uselibs)) $(addprefix -l,%(usehostlibs))"
 %end
 #------------------------------------------------------------------------------
 
@@ -1522,24 +1539,6 @@ endif
 	@$(FOR) dir in %(dirs) ; do \
 	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
 	done
-%end
-
-#------------------------------------------------------------------------------
-%define link_q cmd=$(CC) opt=$(LDFLAGS) startup=$(STARTUP) from=$< to=$@ libs=$(LIBS) end=$()
-	@$(ECHO) "Linking %(to)..."
-	@$(IF) %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) $(COMPILER_LIBS) %(end) 2>&1 > $(GENDIR)/cerrors 2>&1 ; then \
-		$(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
-				$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" >> $(GENDIR)/errors ; \
-				$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
-	   	else \
-			$(NOP) ; \
-    		fi ; \
-	else \
-	    $(ECHO) "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) %(end)" 1>&2 ; \
-	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
-	    exit 1 ; \
-	fi; \
-	$(STRIP) %(to)
 %end
 
 #------------------------------------------------------------------------------
