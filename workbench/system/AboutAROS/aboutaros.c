@@ -99,10 +99,10 @@ IPTR AboutAROS__OM_NEW
                 
                 Child, showLogotype
                     ? (IPTR) ImageObject,
-                          MUIA_Image_Spec, (IPTR) "3:"LOGOTYPE,
+                          MUIA_Image_Spec, (IPTR)    "3:"LOGOTYPE,
                       End
                     : (IPTR) TextObject,
-                          MUIA_Font, MUIV_Font_Fixed,
+                          MUIA_Font,                 MUIV_Font_Fixed,
                           MUIA_Text_PreParse, (IPTR) "\0333\033b\033c",
                           MUIA_Text_Contents, (IPTR) LOGOTYPE_ASCII,
                           MUIA_Weight,               0,
