@@ -633,7 +633,7 @@ $(OBJDIR)/%.d : %.c
 %end
 
 %define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
-includes-generate : setup $(OBJDIR)/headers.stamp \
+includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
 			    $(INCDIR)/clib/%(name)_protos.h \
 			    $(INCDIR)/defines/%(name).h
 
