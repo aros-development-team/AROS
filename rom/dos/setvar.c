@@ -15,7 +15,6 @@
 #include <exec/lists.h>
 #include <string.h>
 
-
 /*****************************************************************************
 
     NAME */
@@ -179,7 +178,9 @@
 	    /* -1 as size means: buffer contains a null-terminated string*/
 	    if (-1 == size)
 	    {
-		lv->lv_Len = strlen(buffer) + 1;
+	        /* Do NOT add 1 byte to account for the NUL char, AmigaOS(R) doesn't
+		   do it that way.  */
+		lv->lv_Len = strlen(buffer);
 	    }
 	    else
 	    {
@@ -198,7 +199,7 @@
 	} /* set a local variable */
 	
 	/* Ok, try and set a global variable. */
-	if ((flags & GVF_LOCAL_ONLY) == 0)
+	if ((flags & GVF_LOCAL_ONLY) == 0) 
 	{
 	    BPTR file;
 	    /* as a standard: look for the file in ENV: if no path is
