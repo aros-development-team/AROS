@@ -37,6 +37,10 @@
 struct ExecBase * SysBase; /* global variable */
 struct GfxBase * GfxBase;
 
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
+
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
   SysBase = lh->lb_SysBase;
@@ -46,14 +50,31 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
   if (!lh->lb_ClipRectPool)
      lh->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
 
-  if (!lh->lb_ClipRectPool)
-     return FALSE;
-
   if (!GfxBase)
     GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
-    
-  if (!GfxBase)
+
+  if (NULL == lh->lb_UtilityBase)
+     lh->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
+  
+  if (!GfxBase || !lh->lb_UtilityBase || !lh->lb_ClipRectPool)
+  {
+    if (GfxBase)
+    {
+      CloseLibrary((struct Library *)GfxBase);
+      GfxBase = NULL;
+    }
+    if (lh->lb_UtilityBase)
+    {
+      CloseLibrary((struct Library *)lh->lb_UtilityBase);
+      lh->lb_UtilityBase = NULL;
+    }
+    if (lh->lb_ClipRectPool)
+    {
+      DeletePool(lh->lb_ClipRectPool);
+      lh->lb_ClipRectPool = NULL;
+    }
     return FALSE;
+  }
   
   return TRUE;    
 }
