@@ -288,7 +288,7 @@ BOOL areafillpolygon(struct RastPort  * rp,
   int i, c;
   UWORD StartEdge = 1;
   UWORD EndEdge = 1;
-  UWORD LastIndex;
+  WORD LastIndex;
   UWORD ymin;
   UWORD LastEdge = last_idx - first_idx + 1; // needed later on. Don't change!!
   struct AreaInfo * areainfo = rp->AreaInfo;
@@ -334,7 +334,7 @@ BOOL areafillpolygon(struct RastPort  * rp,
 */
     if (StartVctTbl[c+1] == StartVctTbl[c+3])
     { 
-//      kprintf("Found horiontal Line!!\n");
+//      kprintf("Found horizontal Line!!\n");
       c+=2;
       continue;
     }
