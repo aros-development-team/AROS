@@ -14,7 +14,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OOPBase ((struct IntOOPBase *)(OOP_OCLASS(OOP_OCLASS(o)))->UserData )
+#define OOPBase (OOP_OOPBASE(o))
 
 #define STATIC_MID static OOP_MethodID mid
 
