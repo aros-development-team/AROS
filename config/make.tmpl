@@ -1037,6 +1037,16 @@ $(OBJDIR)/%.d : %.c
 
 
 #------------------------------------------------------------------------------
+# Convert two png images to an Amiga icon file based on the description
+# file %(from), with outputfile going to %(to).
+%define makeicon2 from=$< to=$@ img1="$(basename $(basename $<))_N.png" img2="$(basename $(basename $<))_S.png"
+	@$(ECHO) "Creating icon %(to)..."
+	@$(PNGTOPNM) %(img1) | $(PPMTOILBM) >$(GENDIR)/genicon1.iff
+	@$(PNGTOPNM) %(img2) | $(PPMTOILBM) >$(GENDIR)/genicon2.iff
+	@$(ILBMTOICON) %(from) $(GENDIR)/genicon1.iff $(GENDIR)/genicon2.iff %(to)
+%end
+
+#------------------------------------------------------------------------------
 # NOTE: The following are all part of Iain's build changes, please don't use
 # or change anything below this line until you know what you are doing. This
 # is so that I don't conflict with the semantics of any of the above macros.
