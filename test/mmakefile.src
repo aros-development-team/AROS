@@ -46,6 +46,7 @@ FILES := amiga2date \
 	tasktest2 \
 	ExNext \
 	taskswitchbench \
+        taskswitchbench2 \
 	randtest \
 	enqueue \
 	semtorture \
