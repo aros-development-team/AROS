@@ -51,6 +51,8 @@ FUNCTIONS	:= \
 ALL_FILES	:= $(FILES)
 ALL_FUNCTIONS	:= $(FUNCTIONS)
 
+FUNCTABLE_SRCS  := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
+
 %prepare_replace rom/utility
 %filter_replace FUNCTIONS
 %filter_replace FILES
@@ -63,8 +65,36 @@ EXTRA_DEPLIBS := $(LIBDIR)/libarosc.a
 
 %genromlib
 
+# The following section builds a real "utility.library":
+
+# The options for the linker
+LINK_LIBS := -L$(LIBDIR) -lutility -larosc
+
+# The names of the linklibs this depends on
+LIBLIST := utility arosc
+
+# The filenames of the linklibs this depends on
+LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+# This will not put the endtag.o at the end of the lib, but must do for now.
+ENDFUNC := 
+
+$(OSMODDIR)/utility.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
+	@$(ECHO) "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LINK_LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.map
+	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
+	@strip $@
+
 #MM
-kernel-utility-$(ARCH)-$(CPU) : show-flags $(LIB)
+kernel-utility-amiga-$(CPU) : show-flags $(OSMODDIR)/utility.library
+	@$(NOP)
+
+#MM
+kernel-utility-linux-$(CPU) : show-flags $(LIB)
+	@$(NOP)
+
+#MM
+kernel-utility-freebsd-$(CPU) : show-flags $(LIB)
 	@$(NOP)
 
 # MetaMake targets
