@@ -61,7 +61,14 @@ AROS_LH3(ULONG, SetIPrefs,
         	length = sizeof(struct IIControlPrefs);
             CopyMem(data, &GetPrivIBase(IntuitionBase)->IControlPrefs, length);
             break;
-
+        
+	case IPREFS_TYPE_SCREENMODE:
+            DEBUG_SETIPREFS(bug("SetIPrefs: IP_SCREENMODE\n"));
+            if (length > sizeof(struct IScreenModePrefs))
+                length = sizeof(struct IScreenModePrefs);
+            CopyMem(data, &GetPrivIBase(IntuitionBase)->ScreenModePrefs, length);
+            break;
+	    
 	default:
             DEBUG_SETIPREFS(bug("SetIPrefs: Unknown Prefs Type\n"));
             Result = FALSE;
