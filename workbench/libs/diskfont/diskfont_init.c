@@ -25,6 +25,9 @@
 #include <aros/debug.h>
 
 /****************************************************************************************/
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
 
 struct inittable;
 extern const char name[];
@@ -58,7 +61,11 @@ const struct Resident resident=
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
+#ifdef __MORPHOS__
+    RTF_PPC |RTF_AUTOINIT,
+#else
     RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     -120,	/* priority */
@@ -75,10 +82,15 @@ const APTR inittabl[4]=
 {
     (APTR)sizeof(struct DiskfontBase_intern),
     (APTR)LIBFUNCTABLE,
+#ifdef __MORPHOS__
+    NULL,
+#else
     (APTR)&datatable,
+#endif
     &INIT
 };
 
+#ifndef __MORPHOS__
 struct inittable
 {
     S_CPYO(1,1,B);
@@ -102,7 +114,7 @@ const struct inittable datatable=
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };
-
+#endif
 /****************************************************************************************/
 
 struct ExecBase * SysBase;
@@ -115,10 +127,15 @@ struct Library *DOSBase;
 
 /****************************************************************************************/
 
+#ifdef __MORPHOS__
+struct DiskfontBase_intern *LIB_init(struct DiskfontBase_intern *LIBBASE, BPTR segList, struct ExecBase *sysBase)
+{
+#else
 AROS_LH2(struct DiskfontBase_intern *, init,
     AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
     AROS_LHA(BPTR,               segList,   A0),
     struct ExecBase *, sysBase, 0, BASENAME)
+#endif
 {
     AROS_LIBFUNC_INIT
 
@@ -157,8 +174,8 @@ AROS_LH1(struct DiskfontBase_intern *, open,
     /* Hook descriptions */
     struct AFHookDescr hdescrdef[] =
     {
-	{AFF_MEMORY	, {{0L, 0L}, (void*)MemoryFontFunc	, 0L, 0L}},
-	{AFF_DISK	, {{0L, 0L}, (void*)DiskFontFunc	, 0L, 0L}}
+	{AFF_MEMORY	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(MemoryFontFunc)	 , 0L, 0L}},
+	{AFF_DISK	, {{0L, 0L}, (void*)AROS_ASMSYMNAME(DiskFontFunc)	 , 0L, 0L}}
     };
 
 	UWORD idx;
@@ -190,7 +207,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	LIBBASE->hdescr[idx] = hdescrdef[idx];
     }
 
-    LIBBASE->dsh.h_Entry = (void *)dosstreamhook;
+    LIBBASE->dsh.h_Entry = (void *)AROS_ASMSYMNAME(dosstreamhook);
     LIBBASE->dsh.h_Data = DOSBase;
 
     /* I have one more opener. */
