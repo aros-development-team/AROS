@@ -16,7 +16,7 @@ LIB=$(LIBDIR)/libexec.a
 INITFUNC = execstrap_init
 
 # Other support files:
-FILES = 
+FILES =
 
 FUNCTIONS = \
 	initcode initstruct makelibrary makefunctions findresident	    \
@@ -46,33 +46,33 @@ OBJDIR=$(OSGENDIR)/exec
 ifeq ("$(SHARED_EXEC)","yes")
 LIB=$(LIBDIR)/libexec.so
 RMLIB=$(LIBDIR)/libexec.a
+AR=$(SHARED_AR)
+RANLIB=true
 else
 LIB=$(LIBDIR)/libexec.a
 RMLIB=$(LIBDIR)/libexec.so
 endif
-
-SHARED_AR=$(AR)
 
 FILES = init execfunctions
 
 FUNCTIONS = \
 	allocmem freemem addhead addtask remtask wait signal allocsignal    \
 	freesignal alert freeentry remove remhead enqueue addmemhandler     \
-	setexcept setsignal settaskpri findtask findname getmsg putmsg      \
-	replymsg addtail waitport allocate addport remport findport         \
+	setexcept setsignal settaskpri findtask findname getmsg putmsg	    \
+	replymsg addtail waitport allocate addport remport findport	    \
 	addmemlist createmsgport deletemsgport createiorequest deallocate   \
-	availmem deleteiorequest allocvec freevec allocabs allocentry       \
-	createpool deletepool allocpooled remmemhandler initstruct          \
-	initsemaphore attemptsemaphore obtainsemaphore                      \
-	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore       \
-	procure vacate addlibrary remlibrary makefunctions makelibrary      \
-	sumlibrary openlibrary closelibrary setfunction oldopenlibrary      \
-	copymemquick copymem freepooled remsemaphore addsemaphore           \
+	availmem deleteiorequest allocvec freevec allocabs allocentry	    \
+	createpool deletepool allocpooled remmemhandler initstruct	    \
+	initsemaphore attemptsemaphore obtainsemaphore			    \
+	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore	    \
+	procure vacate addlibrary remlibrary makefunctions makelibrary	    \
+	sumlibrary openlibrary closelibrary setfunction oldopenlibrary	    \
+	copymemquick copymem freepooled remsemaphore addsemaphore	    \
 	releasesemaphorelist obtainsemaphorelist typeofmem rawdofmt insert  \
 	remtail findsemaphore addresource remresource openresource adddevice\
 	remdevice opendevice closedevice doio sendio checkio abortio waitio \
 	initresident cause addintserver remintserver setintvector alloctrap \
-	childfree childorphan childstatus childwait coldreboot debug        \
+	childfree childorphan childstatus childwait coldreboot debug	    \
 	findresident freetrap initcode sumkickdata obtainquickvector
 
 # ***** END ***************
@@ -118,11 +118,6 @@ OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
-$(LIB): $(OBJS)
-	@echo "Recreating $@..."
-	$(SHARED_AR) $@ $(OBJS)
-	$(RM) $(RMLIB)
-
 # ***** END ***************
 endif
 
@@ -134,6 +129,12 @@ setup :
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
+
+$(LIB): $(OBJS)
+	@echo "Recreating $@..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
+	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c
 	@echo "Compiling $(CURDIR)/$<"
