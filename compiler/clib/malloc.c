@@ -5,6 +5,8 @@
     Desc: ANSI C function malloc()
     Lang: english
 */
+#include <errno.h>
+#include <dos/dos.h>
 #include <exec/memory.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
@@ -57,23 +59,15 @@ APTR __startup_mempool = NULL;
 
     ObtainSemaphore(&__startup_memsem);
 
-    /* Check if there is a pool already */
-    if (!__startup_mempool)
+    /* Allocate the memory */
+    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
+    if (mem)
     {
-	/* Create one if not */
-	__startup_mempool = CreatePool (MEMF_ANY, 4096L, 2000L);
+	*((size_t *)mem) = size;
+	mem += AROS_ALIGN(sizeof(size_t));
     }
-
-    if (__startup_mempool)
-    {
-	/* Allocate the memory */
-	mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
-	if (mem)
-	{
-	    *((size_t *)mem) = size;
-	    mem += AROS_ALIGN(sizeof(size_t));
-	}
-    }
+    else
+        errno = ENOMEM;
 
     ReleaseSemaphore(&__startup_memsem);
 
@@ -85,6 +79,9 @@ APTR __startup_mempool = NULL;
 void __init_memstuff(void)
 {
     InitSemaphore(&__startup_memsem);
+    __startup_mempool = CreatePool (MEMF_ANY, 4096L, 2000L);
+    if (!__startup_mempool)
+	exit(RETURN_FAIL);
 }
 
 

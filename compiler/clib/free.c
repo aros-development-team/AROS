@@ -53,8 +53,8 @@ extern APTR __startup_mempool;
     size_t size;
 
     ObtainSemaphore(&__startup_memsem);
-    
-    if (memory && __startup_mempool)
+
+    if (memory)
     {
 	mem = ((UBYTE *)memory) - AROS_ALIGN(sizeof(size_t));
 	size = *((size_t *)mem) + AROS_ALIGN(sizeof(size_t));
