@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Basic help functions needed by gadtools.library.
@@ -108,7 +108,7 @@ struct TextFont *preparefont(struct GadToolsBase_intern *GadToolsBase,
 	if (font)
 	{
 	    SetFont(rport, font);
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) !!! */
+	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;
     } else

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Support functions fro the palette class
@@ -330,7 +330,7 @@ struct TextFont *PrepareFont(struct RastPort *rport, struct IntuiText *itext,
 	if (font)
 	{
 	    SetFont(rport, font);
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) !!! */
+	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;
     } else

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: 
@@ -76,7 +76,7 @@
     ((struct Process *) ThisTask) -> pr_Result2 = fault;
   }  
   
-  /* exit(ReturnCode); !!!*/
+  /* exit(ReturnCode); FIXME */
   
   AROS_LIBFUNC_EXIT
 } /* ArpExit */

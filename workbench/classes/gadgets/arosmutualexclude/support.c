@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Support functions for AROSMutualExcludeClass.
@@ -44,7 +44,7 @@ struct TextFont *preparefont(struct MXBase_intern *AROSMutualExcludeBase,
 	if (font)
 	{
 	    SetFont(rport, font);
-	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) !!! */
+	    /* SetSoftStyle(rport, itext->ITextFont->ta_Style, 0xffffffff) FIXME */
 	} else
 	    font = rport->Font;
     } else
