@@ -8,6 +8,7 @@
 #include <proto/bootloader.h>
 #include <proto/utility.h>
 #include <aros/multiboot.h>
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -53,6 +54,12 @@
 	    if (BootLoaderBase->Flags & MB_FLAGS_CMDLINE)
 		return (APTR)&(BootLoaderBase->Args);
 	    break;
+	case BL_Drives:
+	    if (BootLoaderBase->Flags * MB_FLAGS_DRIVES)
+		return (APTR)&(BootLoaderBase->DriveInfo);
+	    break;
+	default:
+	    bug("[BootLdr] GetBootInfo: Unknown info requested\n");
     }
 
     return NULL;
