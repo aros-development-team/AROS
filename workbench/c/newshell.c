@@ -24,7 +24,7 @@ int main (int argc, char ** argv)
     struct Process *process;
     LONG            error = RETURN_ERROR;
 
-	PutStr("newshell\n");
+    PutStr("newshell\n");
 
     rda = ReadArgs("WINDOW,FROM", (IPTR *)args, NULL);
     if(rda != NULL)
@@ -64,44 +64,37 @@ int main (int argc, char ** argv)
 		    if(lock)
 		    {
 			in=OpenFromLock(lock);
-			if(!in)
-			    UnLock(lock);
-		    }else
-			in=0;
-
-			
-		    in = out;
-		    
-		    if(in)
-		    {
-			struct TagItem tags[]=
+			if(in)
 			{
-			    { NP_Arguments  , 0           },
-			    { NP_Input      , 0           },
-			    { NP_Output     , 0           },
-			    { NP_Error      , 0           },
-			    { NP_Seglist    , 0           },
-			    { NP_Cli        , 1           },
-			    { NP_CopyVars   , (IPTR)TRUE  },
-			    { NP_CloseOutput, (IPTR)FALSE }, /* Temporary! */
-			    { TAG_END       , 0           }
-			};
+			    struct TagItem tags[]=
+			    {
+				{ NP_Arguments  , 0           },
+				{ NP_Input      , 0           },
+				{ NP_Output     , 0           },
+				{ NP_Error      , 0           },
+				{ NP_Seglist    , 0           },
+				{ NP_Cli        , 1           },
+				{ NP_CopyVars   , (IPTR)TRUE  },
+				{ TAG_END       , 0           }
+			    };
 
-			tags[0].ti_Data = (IPTR)buf;
-			tags[1].ti_Data = (IPTR)in;
-			tags[2].ti_Data = (IPTR)out;
-			tags[4].ti_Data = (IPTR)shell;
+			    tags[0].ti_Data = (IPTR)buf;
+			    tags[1].ti_Data = (IPTR)in;
+			    tags[2].ti_Data = (IPTR)out;
+			    tags[4].ti_Data = (IPTR)shell;
 
-			process = CreateNewProc(tags);
+			    process = CreateNewProc(tags);
 
-			if(process != NULL)
-			{
-			    out = in = shell = NULL;
-			    error = 0;
+			    if(process != NULL)
+			    {
+				out = in = shell = NULL;
+				error = 0;
+			    }
+			    Close(in);
 			}
-/*			
-			Close(in);
-*/		    }
+			else
+			    UnLock(lock);
+		    }
 		    Close(out);
 		}
 		UnLoadSeg(shell);
