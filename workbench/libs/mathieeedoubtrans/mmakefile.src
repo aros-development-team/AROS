@@ -8,8 +8,8 @@ ULIBNAME	:= MathIeeeDoubTrans
 
 FILES		:= \
 	intern_ieeedpisodd \
-	intern_ieeedpld \
-	ieeedptrans_fpu
+	intern_ieeedpld
+#	ieeedptrans_fpu
 
 ARCHIVE		:= mathieeedoubtrans.arch
 
