@@ -93,7 +93,7 @@ $(TOOLDIR)/makexkeytable: makexkeytable.c
 	$(CC) $(GUI_CCFLAGS) -I$(GUI_INCDIR) $(GUI_LDFLAGS) -lX11 $< -o $@ 
 
 $(OBJDIR)/%.o : %.c
-	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+	%compile_q cmd=$(HOST_CC) opt="$(SHARED_CFLAGS) $(CFLAGS)"
 
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q

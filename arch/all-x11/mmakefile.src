@@ -1,15 +1,15 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OS_INCLUDES	:= -I$(GENINCDIR)
+OS_INCLUDES	:= -I$(GENINCDIR) -isystem $(GUI_INCDIR)
 GFX_INCLUDES	:= -I$(TOP)/rom/graphics
 INT_INCLUDES	:= -I$(TOP)/rom/intuition
 DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d \
 		   $(OSGENDIR)/intuition/intuition_driver.d
 
 # Need include path /usr/include before AROS includes for FreeBSD's stderr
-GFX_CFLAGS	:= $(SHARED_CFLAGS) $(GFX_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
-INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CCFLAGS)
+GFX_CFLAGS	:= $(SHARED_CFLAGS) $(GFX_INCLUDES) $(CFLAGS) $(GUI_CFLAGS)
+INT_CFLAGS	:= $(SHARED_CFLAGS) $(INT_INCLUDES) $(CFLAGS) $(GUI_CFLAGS)
 
 
 #MM
