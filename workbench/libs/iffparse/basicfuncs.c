@@ -26,8 +26,8 @@ LONG PushContextNode
 
     D(bug("PushContextNode(iff=%p, type=%c%c%c%c, id=%c%c%c%c, size=%d, scan=%d)\n",
 	iff,
-	type>>24,type>>16,type>>8,type,
-	id>>24,id>>16,id>>8,id,
+	dmkid(type),
+	dmkid(id),
 	size,
 	scan
     ));
@@ -81,15 +81,15 @@ VOID PopContextNode(struct IFFHandle* iff,
 
     struct IntContextNode *cn;
 
-    D(bug("PopContextNode(iff=%p)"));
+    D(bug("PopContextNode(iff=%p)\n", iff));
 
     cn = GetIntCN( TopChunk( iff ) );
 
     if (cn)
     {
 	D(bug("(%c%c%c%c, %c%c%c%c)\n",
-	    cn->CN.cn_Type>>24,cn->CN.cn_Type>>16,cn->CN.cn_Type>>8,cn->CN.cn_Type,
-	    cn->CN.cn_ID>>24,cn->CN.cn_ID>>16,cn->CN.cn_ID>>8,cn->CN.cn_ID
+	    dmkid(cn->CN.cn_Type),
+	    dmkid(cn->CN.cn_ID)
 	));
     }
     else
@@ -113,7 +113,6 @@ VOID PopContextNode(struct IFFHandle* iff,
 
     /*One less node on stack */
     iff->iff_Depth --;
-    return;
 }
 
 LONG ReadStreamLong (struct IFFHandle *iff,
@@ -127,7 +126,11 @@ LONG ReadStreamLong (struct IFFHandle *iff,
     UBYTE bytes[4];
 #endif
 
+    D(bug("ReadStreamLong(iff=%p valptr=%p)\n", iff, valptr));
+
     val = ReadStream (iff, bytes, sizeof(LONG), IFFParseBase);
+
+    D(bug("ReadStreamLong: val %ld\n", val));
 
     if (val < 0)
 	return val;
@@ -138,8 +141,11 @@ LONG ReadStreamLong (struct IFFHandle *iff,
     *(LONG *)valptr = bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
 #endif
 
+    D(bug("ReadStreamLong: *valptr 0x%08lx '%c%c%c%c'\n", *(LONG *) valptr, dmkid(*(LONG *) valptr)));
+
     return sizeof(LONG);
 } /* ReadStreamLong */
+
 
 LONG WriteStreamLong (struct IFFHandle *iff,
     APTR valptr,
@@ -158,7 +164,11 @@ LONG WriteStreamLong (struct IFFHandle *iff,
     bytes[3] = val;
 #endif
 
+    D(bug("WriteStreamLong(iff=%p valptr=%p)\n", iff, valptr));
+
     val = WriteStream (iff, bytes, sizeof(LONG), IFFParseBase);
+
+    D(bug("WriteStreamLong: val %ld\n", val));
 
     if (val < 0)
 	return val;
@@ -185,7 +195,7 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 
     /* Reads in the appropriate stuff from a chunk and makes a contextnode of it */
 
-	/* Read chunk ID */
+    /* Read chunk ID */
     bytesread = ReadStreamLong ( iff, &id, IFFParseBase );
 
     /* We may have an IFF Error */
@@ -207,10 +217,10 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 	if (bytesread < 0)
 	    ReturnInt ("GetChunkHeader",LONG,bytesread);
 
-	DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
-	    id>>24,id>>16,id>>8,id,
+	DB2(bug("  Found Chunk %c%c%c%c size=%d type %c%c%c%c\n",
+	    dmkid(id),
 	    size,
-	    type>>24,type>>16,type>>8,type
+	    dmkid(type)
 	));
 
 	/* Type is inside chunk so we had to add its size to the scancount. */
@@ -220,7 +230,7 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     {
 	type = 0L;
 	DB2(bug("  Found Chunk %c%c%c%c size=%d\n",
-	    id>>24,id>>16,id>>8,id,
+	    dmkid(id),
 	    size
 	));
     }
@@ -315,6 +325,8 @@ VOID PurgeLCI(struct LocalContextItem *lci,
 {
     /* Look in the RKM SetLocalItemPurge autodoc for explanation on that one below */
 
+    D(bug("PurgeLCI(lci=%p)\n", lci));
+
     Remove((struct Node*)lci);
     /* Has the user specified a Purge hook ? */
 
@@ -328,8 +340,6 @@ VOID PurgeLCI(struct LocalContextItem *lci,
 
     else
 	FreeLocalItem(lci);
-
-    return;
 }
 
 
@@ -350,6 +360,8 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
     /* For use with custom streams */
     struct IFFStreamCmd cmd;
 
+    D(bug("ReadStream(iff=%p buf=%p bytestoread=%d)\n", iff, buf, bytestoread));
+
     retval = bytestoread;
     if (bytestoread)
     {
@@ -369,6 +381,7 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
 	    retval = IFFERR_READ;
     }
 
+    D(bug("ReadStream: return %d\n", retval));
     return (retval);
 }
 
@@ -386,6 +399,8 @@ LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
     struct IFFStreamCmd cmd;
 
     /* Call the custom hook with a write command */
+
+    D(bug("WriteStream(iff=%p buf=%p bytestowrite=%d)\n", iff, buf, bytestowrite));
 
     retval = bytestowrite;
 
@@ -406,6 +421,7 @@ LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
 	    retval = IFFERR_WRITE;
     }
 
+    D(bug("WriteStream: return %d\n", retval));
     return (retval);
 }
 /***************/
@@ -438,6 +454,8 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
     LONG err;
 
     UBYTE *seekbuf;
+
+    D(bug("SeekStream(iff=%p offset=%d)\n", iff, offset));
 
     flags = iff->iff_Flags;
 
@@ -495,7 +513,7 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
 	cmd.sc_Command = IFFCMD_SEEK;
 	cmd.sc_NBytes	   = offset;
 
-	err =  CallHookPkt
+	err = CallHookPkt
 	(
 	    GetIntIH(iff)->iff_StreamHandler,
 	    iff,
@@ -506,6 +524,7 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
 	      retval = IFFERR_SEEK;
     }
 
+    D(bug("SeekStream: return %d\n", retval));
     return (retval);
 }
 
@@ -513,5 +532,3 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
 /********************/
 /* Buffering stuff  */
 /********************/
-
-

@@ -10,7 +10,7 @@
 
 #include <aros/debug.h>
 
-#define DEBUG_STREAM(x)
+#define DEBUG_STREAM(x)		;
 
 /***********************/
 /* Port initialization */
@@ -79,6 +79,9 @@ ULONG ClipStreamHandler
     switch (cmd->sc_Command)
     {
 	case IFFCMD_READ:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_READ...\n"));
+
 	    req->io_Command = CMD_READ;
 	    req->io_Data    = cmd->sc_Buf;
 	    req->io_Length  =  cmd->sc_NBytes;
@@ -88,6 +91,9 @@ ULONG ClipStreamHandler
 	    break;
 
 	case IFFCMD_WRITE:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_WRITE...\n"));
+
 	    req->io_Command = CMD_WRITE;
 	    req->io_Data    = cmd->sc_Buf;
 	    req->io_Length  =  cmd->sc_NBytes;
@@ -98,6 +104,8 @@ ULONG ClipStreamHandler
 
 	case IFFCMD_SEEK:
 
+	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_SEEK...\n"));
+
 	    req->io_Offset += cmd->sc_NBytes;
 
 	    if (req->io_Offset < 0)
@@ -106,12 +114,18 @@ ULONG ClipStreamHandler
 	    break;
 
 	case IFFCMD_INIT:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_INIT...\n"));
+
 	    /* Start reading and writing at offset 0 */
 	    req->io_ClipID = 0;
 	    req->io_Offset = 0;
 	    break;
 
 	case IFFCMD_CLEANUP:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("ClipStream: IFFCMD_CLEANUP...\n"));
+
 	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_READ)
 	    {
 		/* Read past end of clip if we are in read mode */

@@ -55,10 +55,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    DEBUG_SETLOCALEITEMPURGE(dprintf("SetLocalItemPurge: localItem %p purgeHook %p\n", localItem, purgeHook));
+
+    (void) IFFParseBase;
+
     /* Self - explaining */
     GetIntLCI(localItem)->lci_PurgeHook = purgeHook;
 
-    return;
+    DEBUG_SETLOCALEITEMPURGE(dprintf("SetLocalItemPurge: done\n"));
 
     AROS_LIBFUNC_EXIT
 } /* SetLocalItemPurge */

@@ -10,7 +10,7 @@
 #include <aros/debug.h>
 #include "iffparse_intern.h"
 
-#define DEBUG_GOODID(x)
+#define DEBUG_GOODID(x)		;
 
 /*****************************************************************************
 
@@ -56,6 +56,8 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
     UBYTE theId[4];
+
+    (void) IFFParseBase;
 
     theId[0] = id >> 24;
     theId[1] = id >> 16;

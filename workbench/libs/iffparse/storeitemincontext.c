@@ -60,6 +60,8 @@
 
     struct MinList *lcilist;
 
+    (void) iff;
+
     DEBUG_STOREITEMINCONTEXT(dprintf("StoreItemInContext: iff 0x%lx item 0x%lx context 0x%lx\n",
 			    iff, localItem, contextNode));
 

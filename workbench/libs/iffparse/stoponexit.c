@@ -56,14 +56,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    DEBUG_STOPONEXIT(dprintf("StopOnExit: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
-			    iff, type, &type, id, &id));
+    DEBUG_STOPONEXIT(dprintf("StopOnExit: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c)\n",
+			    iff, type, dmkid(type), id, dmkid(id)));
 
 #if DEBUG
     bug ("StopOnExit (iff=%p, type=%c%c%c%c, id=%c%c%c%c)\n",
 	iff,
-	type>>24, type>>16, type>>8, type,
-	id>>24, id>>16, id>>8, id
+	dmkid(type),
+	dmkid(id)
     );
 #endif
 

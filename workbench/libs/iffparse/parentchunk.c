@@ -55,6 +55,8 @@
 
     struct ContextNode *parentcn;
 
+    (void) IFFParseBase;
+
     /* Get the parent of this contextnode. The contextstack
       is simulated via AddHead/RemHead so we should use
       .mln_Succ to get the parent

@@ -66,6 +66,8 @@
     /* Number of bytes to write into the chunk */
     LONG bytestowrite;
 
+    DEBUG_WRITECHUNKRECORDS(dprintf("WriteChunkRecords: iff %p buf %p bytesPerRecord %ld numRecords %ld\n",
+                                    iff, buf, bytesPerRecord, numRecords));
 
     /* Calculate number of bytes to write */
     bytestowrite = bytesPerRecord * numRecords;
@@ -102,6 +104,7 @@
 	numRecords = (byteswritten / bytesPerRecord);
     }
 
+    DEBUG_WRITECHUNKRECORDS(dprintf("WriteChunkRecords: return %ld\n", numRecords));
     return (numRecords);
 
     AROS_LIBFUNC_EXIT

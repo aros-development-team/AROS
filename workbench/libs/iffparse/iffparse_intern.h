@@ -296,6 +296,26 @@ struct IFFParseBase_intern
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 
+//void	dprintf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
+void	dprintf(const char *, ...);
+
+
+#define DEBUG_ALLOCIFF(x)		;
+#define DEBUG_ALLOCLOCALITEM(x)		;
+#define DEBUG_ALLOCBUFFER(x)		;
+#define DEBUG_WRITETOBUFFER(x)		;
+#define DEBUG_SEEKBUFFER(x)		;
+#define DEBUG_BUFFERTOSTREAM(x)		;
+#define DEBUG_INITBUFFEREDSTREAM(x)	;
+#define DEBUG_EXITBUFFEREDSTREAM(x)	;
+#define DEBUG_BUFSTREAMHANDLER(x)	;
+#define DEBUG_DOSSTREAMHANDLER(x)	;
+#define DEBUG_READCHUNKRECORDS(x)	;
+#define DEBUG_WRITECHUNKRECORDS(x)	;
+#define DEBUG_INITIFFAS(x)		;
+#define DEBUG_INITIFF(x)		;
+#define DEBUG_SETLOCALEITEMPURGE(x)	;
+#define DEBUG_PROPHOOKS(x)		;
 
 #define DEBUG_COLLECTIONCHUNK(x)	;
 #define DEBUG_COLLECTIONCHUNKS(x)	;
@@ -313,5 +333,7 @@ AROS_LC0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 #define DEBUG_STOREITEMINCONTEXT(x)	;
 #define DEBUG_STORELOCALITEM(x)		;
 #define DEBUG_WRITECHUNKBYTES(x)	;
+
+#define dmkid(id) ((id) >> 24) & 0xff, ((id) >> 16) & 0xff, ((id) >> 8) & 0xff, (id) & 0xff
 
 #endif /* IFFPARSE_INTERN_H */

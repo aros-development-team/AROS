@@ -160,7 +160,9 @@ AROS_UFH3(struct IFFParseBase_intern *, AROS_SLIB_ENTRY(init,BASENAME),
 )
 #endif
 {
+#ifndef __MORPHOS__
     AROS_USERFUNC_INIT
+#endif
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -200,7 +202,7 @@ AROS_LH1(struct IFFParseBase_intern *, open,
     */
 
     /* Keep compiler happy */
-    version=0;
+    (void)version;
 
     if (!DOSBase)
 	DOSBase = OpenLibrary (DOSNAME, 39);

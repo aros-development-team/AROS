@@ -57,6 +57,8 @@
 
     struct ContextNode *cn;
 
+    (void) IFFParseBase;
+
     if (iff->iff_Depth)
 	cn = TopChunk(iff);
     else

@@ -59,21 +59,18 @@
 
     struct LocalContextItem *lci;
 
-    DEBUG_FINDPROP(dprintf("FindProp: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
-			    iff, type, &type, id, &id));
+    DEBUG_FINDPROP(dprintf("FindProp: iff 0x%lx type 0x%08lx (%c%c%c%c) id 0x%08lx (%c%c%c%c)\n",
+			    iff, type, dmkid(type), id, dmkid(id)));
 
-    if
-    (
-	!(lci = FindLocalItem
-	    (
+    if (!(lci = FindLocalItem(
 		iff,
 		type,
 		id,
-		IFFLCI_PROP
-	    )
-	)
-    )
-	return (NULL);
+		IFFLCI_PROP)))
+    {
+	DEBUG_FINDPROP(dprintf("FindProp: reuturn NULL\n"));
+	return NULL;
+    }
 
     /* The userdata of the found LCI is the StoredProperty */
 

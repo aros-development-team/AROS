@@ -69,7 +69,7 @@
     {
 	DB2(bug("   node=%p (%c%c%c%c)\n",
 	    node,
-	    node->cn_ID>>24, node->cn_ID>>16, node->cn_ID>>8, node->cn_ID
+	    dmkid(node->cn_ID)
 	));
 
 	/* If this node is a FORM or a LIST, then we have acorrect property */

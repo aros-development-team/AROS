@@ -52,9 +52,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    DEBUG_INITIFFAS(dprintf("InitIFFasClip: entry\n"));
+
     /* Initialize the DOS stream handler hook */
     /* Clipboard streams are ALWAYS random seekable */
     InitIFF(iff, IFFF_RSEEK, &(IPB(IFFParseBase)->cliphook));
+
+    DEBUG_INITIFFAS(dprintf("InitIFFasClip: done\n"));
 
     AROS_LIBFUNC_EXIT
 } /* InitIFFasClip */

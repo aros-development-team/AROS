@@ -19,6 +19,7 @@ struct BufferList *AllocBuffer(ULONG bufnodesize,
     struct BufferList *buflist;
     struct BufferNode *bufnode;
 
+    DEBUG_ALLOCBUFFER(dprintf("AllocBuffer: bufnodesize 0x%lx\n", bufnodesize));
 
     /* First allocate memory for the BufferList structure */
 
@@ -42,13 +43,15 @@ struct BufferList *AllocBuffer(ULONG bufnodesize,
 	    buflist->bl_BufferSize	=  0;
 	    buflist->bl_CurrentNodeNum	= 1;
 
+	    DEBUG_ALLOCBUFFER(dprintf("AllocBuffer: return %p\n", buflist));
 	    return (buflist);
 	}
 
 	FreeMem(buflist, sizeof (struct BufferList) );
     }
 
-    return (FALSE);
+    DEBUG_ALLOCBUFFER(dprintf("AllocBuffer: return NULL\n"));
+    return NULL;
 }
 
 
@@ -98,6 +101,8 @@ struct BufferNode *AllocBufferNode(struct BufferList *buflist,
 
     struct BufferNode *n;
 
+    DEBUG_ALLOCBUFFER(dprintf("AllocBufferNode: buflist %p\n", buflist));
+
     /* first allocate node */
     if ((n=(struct BufferNode*)AllocMem(sizeof(struct BufferNode),MEMF_ANY)))
     {
@@ -106,12 +111,15 @@ struct BufferNode *AllocBufferNode(struct BufferList *buflist,
 	{
 	    AddTail((struct List*)buflist,(struct Node*)n);
 
+	    DEBUG_ALLOCBUFFER(dprintf("AllocBufferNode: return %p\n", n));
 	    return (n);
 	}
 
 	FreeMem(n,sizeof(struct BufferNode));
     }
-    return (FALSE);
+
+    DEBUG_ALLOCBUFFER(dprintf("AllocBufferNode: return NULL\n"));
+    return NULL;
 }
 
 /********************/
@@ -143,6 +151,7 @@ LONG WriteToBuffer( struct BufferList *buflist, UBYTE *mem, LONG size,
     ULONG offset_into_bigbuf;
 
 
+    DEBUG_WRITETOBUFFER(dprintf("WriteToBuffer: buflist %p mem %p size %ld\n", buflist, mem, size));
 
     bytes2write = size;
 
@@ -191,10 +200,11 @@ LONG WriteToBuffer( struct BufferList *buflist, UBYTE *mem, LONG size,
 
 		/* Did the allocation succeed ? */
 		if (!bufnode)
+		{
 		    /* Return number of bytes written so far */
+		    DEBUG_WRITETOBUFFER(dprintf("WriteToBuffer: return %ld\n", (size - bytes2write)));
 		    return (size - bytes2write);
-
-
+		}
 	    }
 
 	}
@@ -231,7 +241,7 @@ LONG WriteToBuffer( struct BufferList *buflist, UBYTE *mem, LONG size,
 	 /* Update the size of the buffer */
 	 buflist->bl_BufferSize = offset_into_bigbuf;
 
-
+    DEBUG_WRITETOBUFFER(dprintf("WriteToBuffer: return %ld\n", size));
     return (size);
 }
 
@@ -260,6 +270,8 @@ BOOL SeekBuffer
     LONG offset_into_bigbuf,
 	  new_offset_into_bigbuf;
 
+    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: buflist %p offset %ld\n", buflist, offset));
+
     /* Get the size of the buffers */
     bufnodesize  = buflist->bl_BufferNodeSize;
     bufnode	 = buflist->bl_CurrentNode;
@@ -279,7 +291,10 @@ BOOL SeekBuffer
 
 	/* Are we trying to seek outside the bounds of the buffer */
 	if (new_offset_into_bigbuf > buflist->bl_BufferSize)
+	{
+	    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: return FALSE #1\n"));
 	    return (FALSE);
+	}
 
 	/* How much is there left to seek towards the end of the first buf ? */
 	left2seekinbuf	= bufnodesize - bufoffset;
@@ -293,8 +308,11 @@ BOOL SeekBuffer
 
 #if 0
 		if (!bufnode->bn_Node.mln_Succ)
+		{
 		    /* Oops !! No more buffers to seek in */
+		    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: return FALSE #2\n"));
 		    return (FALSE);
+		}
 #endif
 
 		offset -= left2seekinbuf;
@@ -327,7 +345,10 @@ BOOL SeekBuffer
 
 	/* Are we trying to seek outside the bounds of the buffer */
 	if (new_offset_into_bigbuf < 0)
+	{
+	    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: return FALSE #3\n"));
 	    return (FALSE);
+	}
 
 	/* For simplicity we take the absolute value of offset */
 	offset = abs(offset);
@@ -345,8 +366,11 @@ BOOL SeekBuffer
 
 #if 0
 		if (bufnode->bn_Node.mln_Pred == NULL )
+		{
 		    /* Oops !! No more buffers to seek in */
+		    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: return FALSE #4\n"));
 		    return (FALSE);
+		}
 #endif
 
 		offset -= left2seekinbuf;
@@ -379,8 +403,8 @@ BOOL SeekBuffer
     buflist->bl_CurrentOffset	 = bufoffset;
     buflist->bl_CurrentNodeNum	= bufnodenum;
 
+    DEBUG_SEEKBUFFER(dprintf("WriteToBuffer: return TRUE\n"));
     return (TRUE);
-
 }
 
 /******************/
@@ -414,6 +438,9 @@ BOOL BufferToStream
 	  bytes2write,
 	  numbytes;
 
+
+    DEBUG_BUFFERTOSTREAM(dprintf("BufferToStream: buflist %p iff %p\n", buflist, iff));
+
     numbytes = buflist->bl_BufferSize;
     /* For safety. Read at the function header. */
     GetIntIH(iff)->iff_BufferStartDepth = 0;
@@ -431,7 +458,11 @@ BOOL BufferToStream
 
 	    nextnode = (struct BufferNode*)node->bn_Node.mln_Succ;
 	    /* Check if there are enough buffers to write numbytesf */
-	    if (!nextnode) return (FALSE);;
+	    if (!nextnode)
+	    {
+		DEBUG_BUFFERTOSTREAM(dprintf("BufferToStream: return FALSE #1\n"));
+		return (FALSE);
+	    }
 
 
 	    bytes2write = buflist->bl_BufferNodeSize;
@@ -454,7 +485,11 @@ BOOL BufferToStream
 	);
 
 	/* Do we have a IFFERR_.. ? */
-	if (byteswritten < 0) return (FALSE);
+	if (byteswritten < 0)
+	{
+	    DEBUG_BUFFERTOSTREAM(dprintf("BufferToStream: return FALSE #2\n"));
+	    return (FALSE);
+	}
 
 
 	/* There is bytes2write less to write */
@@ -463,6 +498,7 @@ BOOL BufferToStream
     }
 
 
+    DEBUG_BUFFERTOSTREAM(dprintf("BufferToStream: return %ld\n", byteswritten));
     return (byteswritten);
 }
 
@@ -475,6 +511,8 @@ BOOL BufferToStream
 LONG  InitBufferedStream(struct IFFHandle *iff,
     struct IFFParseBase_intern * IFFParseBase)
 {
+    DEBUG_INITBUFFEREDSTREAM(dprintf("InitBufferedStream: iff %p\n", iff));
+
     if
     (
 	!(GetIntIH(iff)->iff_BufferStartDepth)
@@ -484,16 +522,11 @@ LONG  InitBufferedStream(struct IFFHandle *iff,
 	GetIntIH(iff)->iff_PreservedStream = iff->iff_Stream;
 
 	/* Allocate buffers that WriteStream can buffer its output to */
-	if
-	(
-	    !( iff->iff_Stream = (IPTR)AllocBuffer
-		(
-		    BUFFERNODESIZE,
-		    IFFParseBase
-		)
-	    )
-	)
-	      return (IFFERR_NOMEM);
+	if (!( iff->iff_Stream = (IPTR)AllocBuffer(BUFFERNODESIZE, IFFParseBase)))
+	{
+	    DEBUG_INITBUFFEREDSTREAM(dprintf("InitBufferedStream: return IFFERR_NOMEM\n"));
+	    return (IFFERR_NOMEM);
+	}
 
 	/* To inform WriteStream that it should buffer all input */
 	/* + 1 because we have not PushContextNode()ed yet */
@@ -513,7 +546,8 @@ LONG  InitBufferedStream(struct IFFHandle *iff,
 
     }
 
-    return (NULL);
+    DEBUG_INITBUFFEREDSTREAM(dprintf("InitBufferedStream: return 0\n"));
+    return 0;
 }
 
 LONG ExitBufferedStream(struct IFFHandle *iff,
@@ -529,6 +563,8 @@ LONG ExitBufferedStream(struct IFFHandle *iff,
     LONG err = 0;
 
     struct BufferList *buflist;
+
+    DEBUG_EXITBUFFEREDSTREAM(dprintf("ExitBufferedStream: iff %p\n", iff));
 
     /* Turn off buffering */
     GetIntIH(iff)->iff_BufferStartDepth = 0;
@@ -549,21 +585,16 @@ LONG ExitBufferedStream(struct IFFHandle *iff,
 
 
     /* Write all the buffers into the old stream */
-    if
-    (
-	!BufferToStream
-	(
-	    buflist,
-	    iff,
-	    IFFParseBase
-	)
-    )
+    if (!BufferToStream(buflist,
+	                iff,
+	                IFFParseBase))
+    {
 	err = IFFERR_WRITE;
-
-
+    }
 
     FreeBuffer(buflist, IFFParseBase);
 
+    DEBUG_EXITBUFFEREDSTREAM(dprintf("ExitBufferedStream: return %ld\n", err));
     return (err);
 }
 
@@ -583,20 +614,27 @@ ULONG BufStreamHandler
 
     LONG error = 0;
 
+    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: hook %p iff %p cmd %p\n", hook, iff, cmd));
+
     switch (cmd->sc_Command)
     {
 
 	case IFFCMD_READ:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: IFFCMD_READ...\n"));
 
 	    /* It should NEVER be needed to read a buffered stream.
 	      To output the buffered stream to the real stream,
 	      we have the routne BufferToStream which is MUCH more effective
 	    */
 
-	    error = TRUE;
+	    error = 1;
 	    break;
 
 	case IFFCMD_WRITE:
+
+	    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: IFFCMD_WRITE...\n"));
+
 	    error =
 	    (
 		WriteToBuffer
@@ -614,6 +652,8 @@ ULONG BufStreamHandler
 
 	case IFFCMD_SEEK:
 
+	    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: IFFCMD_SEEK...\n"));
+
 	    error =
 	    (!
 		SeekBuffer
@@ -628,11 +668,14 @@ ULONG BufStreamHandler
 	case IFFCMD_INIT:
 	case IFFCMD_CLEANUP:
 
-	    error = NULL;
+	    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: IFFCMD_INIT/IFFCMD_CLEANUP...\n"));
+
+	    error = 0;
 	    break;
 
     }
 
+    DEBUG_BUFSTREAMHANDLER(dprintf("BufStreamHandler: return %ld\n", error));
     return (error);
 }
 

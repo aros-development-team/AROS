@@ -64,6 +64,8 @@
 
     UBYTE *idbuf = (UBYTE*)&id;
 
+    (void) IFFParseBase;
+
 /* If CPU is little endian, then we must "rotate" when writing to the string */
 
 #if (AROS_BIG_ENDIAN == 0)

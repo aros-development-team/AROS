@@ -56,8 +56,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    DEBUG_INITIFFAS(dprintf("InitIFFasDOS: entry\n"));
+
     /* Initialize the DOS stream handler hook */
     InitIFF(iff, IFFF_RSEEK, &IPB(IFFParseBase)->doshook);
+
+    DEBUG_INITIFFAS(dprintf("InitIFFasDOS: done\n"));
 
     AROS_LIBFUNC_EXIT
 } /* InitIFFasDOS */

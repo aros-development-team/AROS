@@ -64,6 +64,8 @@
 	  lefttoread,
 	  bytesread;
 
+    DEBUG_READCHUNKRECORDS(dprintf("ReadChunkRecords: iff %p buf %p bytesPerRecord %ld numRecords %ld\n",
+                                   iff, buf, bytesPerRecord, numRecords));
 
     /* Get pointer to top contextnode */
     cn = TopChunk(iff);
@@ -106,6 +108,7 @@
 	cn->cn_Scan += bytesread;
     }
 
+    DEBUG_READCHUNKRECORDS(dprintf("ReadChunkRecords: return %ld\n", numRecords));
     return (numRecords);
 
     AROS_LIBFUNC_EXIT
