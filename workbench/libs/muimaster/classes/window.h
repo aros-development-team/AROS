@@ -156,6 +156,9 @@ struct  MUIP_Window_SetMenuState    {ULONG MethodID; ULONG MenuID; LONG stat;};
  Info about the display environment on which all Area Objects have a
  reference to it.
 **************************************************************************/
+
+#define MRI_RARRAY_SIZE 20
+
 struct MUI_RenderInfo
 {
     Object          *mri_WindowObject;  /* accessable inbetween MUIM_Setup/MUIM_Cleanup */
@@ -175,7 +178,7 @@ struct MUI_RenderInfo
     struct TextFont *mri_Fonts[-MUIV_Font_NegCount]; /* Opened text fonts, done by zune_get_font() */
 
     /* this is for AddClipping/AddClipRegion */
-    struct Region   *mri_rArray[10];
+    struct Region   *mri_rArray[MRI_RARRAY_SIZE];
     int              mri_rCount;
 
     struct Rectangle mri_ClipRect;

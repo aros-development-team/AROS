@@ -11,6 +11,8 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 
+#include "debug.h"
+
 /*****************************************************************************
 
     NAME */
@@ -56,7 +58,9 @@
     else
         l = mri->mri_RastPort->Layer;
 
-    if ((l == NULL) || (r == NULL) || (mri->mri_rCount == 10))
+    // if (mri->mri_rCount == MRI_RARRAY_SIZE) kprintf(" --------- mui_addclipregion clip overflow ---------------------\n");
+    
+    if ((l == NULL) || (r == NULL) || (mri->mri_rCount == MRI_RARRAY_SIZE))
     {
     	if (r) DisposeRegion(r);
         return (APTR)-1;
