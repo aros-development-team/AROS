@@ -62,7 +62,7 @@ struct NewGadget checkbox =
 
 struct NewGadget mxgad =
 {
-    210, 40, 0, 0,
+    210, 60, 0, 20,
     "Mutual Exclude (3)", NULL,
     ID_MX, PLACETEXT_ABOVE, NULL, NULL
 };
