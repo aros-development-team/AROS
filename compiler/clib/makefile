@@ -140,5 +140,12 @@ $(OBJDIR)/%.d: %.c
 	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
 ifneq ($(TARGET),clean)
+NODEPS:=yes
+endif
+ifneq ($(TARGET),setup)
+NODEPS:=yes
+endif
+
+ifndef NODEPS
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 endif
