@@ -29,6 +29,7 @@ struct PTFunctionTable {
 	LONG 		(*SetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
 	ULONG *	(*QueryPartitionTableAttrs)(struct Library *);
 	ULONG *	(*QueryPartitionAttrs)	(struct Library *);
+	ULONG    (*DestroyPartitionTable) (struct Library *, struct PartitionHandle *);
 };
 
 extern struct PTFunctionTable *PartitionSupport[];
@@ -40,7 +41,6 @@ LONG readBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 LONG PartitionWriteBlock(struct Library *, struct PartitionHandle *, ULONG, void *);
 struct TagItem *findTagItem(ULONG tag, struct TagItem *);
 void fillMem(BYTE *, LONG, BYTE);
-ULONG strlen(STRPTR);
 
 #define getGeometry PartitionGetGeometry
 #define writeBlock  PartitionWriteBlock

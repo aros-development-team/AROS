@@ -23,7 +23,8 @@ FUNCS := \
 	getpartitionattrs \
 	setpartitionattrs \
 	querypartitiontableattrs \
-	querypartitionattrs
+	querypartitionattrs \
+	destroypartitiontable
 
 CFILES := partitionami_init $(FILES) $(FUNCS)
 

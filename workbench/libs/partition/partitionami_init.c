@@ -22,7 +22,7 @@
 #define REVISION 0
 
 #define NAME_STRING    "partition.library"
-#define VERSION_STRING "$VER: partition 1.0 (04.04.2002)\r\n"
+#define VERSION_STRING "$VER: partition 1.0 (25.08.2002)\r\n"
 
 
 /****************************************************************************************/
@@ -135,20 +135,21 @@ SAVEDS ASM int libNull(REGPARAM(a6, struct PartitionBase *, PartitionBase)) {
     return 0;
 }
 
-extern void OpenRootPartition(void);
-extern void CloseRootPartition(void);
-extern void OpenPartitionTable(void);
-extern void ClosePartitionTable(void);
-extern void WritePartitionTable(void);
-extern void CreatePartitionTable(void);
-extern void AddPartition(void);
-extern void DeletePartition(void);
-extern void GetPartitionTableAttrs(void);
-extern void SetPartitionTableAttrs(void);
-extern void GetPartitionAttrs(void);
-extern void SetPartitionAttrs(void);
-extern void QueryPartitionTableAttrs(void);
-extern void QueryPartitionAttrs(void);
+extern void Partition_OpenRootPartition(void);
+extern void Partition_CloseRootPartition(void);
+extern void Partition_OpenPartitionTable(void);
+extern void Partition_ClosePartitionTable(void);
+extern void Partition_WritePartitionTable(void);
+extern void Partition_CreatePartitionTable(void);
+extern void Partition_AddPartition(void);
+extern void Partition_DeletePartition(void);
+extern void Partition_GetPartitionTableAttrs(void);
+extern void Partition_SetPartitionTableAttrs(void);
+extern void Partition_GetPartitionAttrs(void);
+extern void Partition_SetPartitionAttrs(void);
+extern void Partition_QueryPartitionTableAttrs(void);
+extern void Partition_QueryPartitionAttrs(void);
+extern void Partition_DestroyPartitionTable(void);
 
 
 void *const functable[]=
@@ -157,20 +158,21 @@ void *const functable[]=
 	libClose,
 	libExpunge,
 	libNull,
-	OpenRootPartition,     /* 5 */
-	CloseRootPartition,
-	OpenPartitionTable,
-	ClosePartitionTable,
-	WritePartitionTable,
-	CreatePartitionTable, /* 10 */
-	AddPartition,
-	DeletePartition,
-	GetPartitionTableAttrs,
-	SetPartitionTableAttrs,
-	GetPartitionAttrs,    /* 15 */
-	SetPartitionAttrs,
-	QueryPartitionTableAttrs,
-	QueryPartitionAttrs,
+	Partition_OpenRootPartition,     /* 5 */
+	Partition_CloseRootPartition,
+	Partition_OpenPartitionTable,
+	Partition_ClosePartitionTable,
+	Partition_WritePartitionTable,
+	Partition_CreatePartitionTable, /* 10 */
+	Partition_AddPartition,
+	Partition_DeletePartition,
+	Partition_GetPartitionTableAttrs,
+	Partition_SetPartitionTableAttrs,
+	Partition_GetPartitionAttrs,    /* 15 */
+	Partition_SetPartitionAttrs,
+	Partition_QueryPartitionTableAttrs,
+	Partition_QueryPartitionAttrs,
+	Partition_DestroyPartitionTable,
 	(void *)-1L
 };
 
