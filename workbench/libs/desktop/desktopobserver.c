@@ -181,7 +181,7 @@ IPTR desktopObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
         
             IA_DiskObject,  msg->wsr_ResultsArray[i].sr_DiskObject,
             IA_Label,       msg->wsr_ResultsArray[i].sr_Name,
-            IA_Desktop,     _presentation(obj),            
+            IA_Desktop,     _presentation(obj),
             // IA_Directory,   data->directory,
             MUIA_Draggable, TRUE,
             

@@ -98,8 +98,8 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
 
     iconcontainer = CreateDesktopObject
     (
-        CDO_IconContainer, 
-        
+        CDO_IconContainer,
+
         ICOA_Directory, newDir,
         AICA_Desktop,       desktop,
         ICA_VertScroller,  vert,
