@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Dir CLI command
@@ -19,7 +19,7 @@
 #include <memory.h>
 #include <aros/debug.h>
 
-static const char version[] = "$VER: dir 41.10 (4.10.1996)\n";
+static const char version[] = "$VER: dir 41.11 (26.10.1997)\n";
 
 struct UtilityBase *UtilityBase;
 
@@ -91,16 +91,15 @@ struct
     NULL,
     0
 };
-char path[1024];
 
-static LONG do_dir (void)
+static LONG do_dir (char *path)
 {
     BPTR dir;
     LONG loop;
     struct ExAllControl *eac;
     struct ExAllData *ead;
     static UBYTE buffer[4096];
-    LONG error=0;
+    LONG error=RETURN_OK;
     struct table dirs, files;
 
     dirs.entries = files.entries = NULL;
@@ -133,38 +132,25 @@ static LONG do_dir (void)
 			if (!AddEntry (ead->ed_Type > 0 ? &dirs : &files, ead->ed_Name))
 			{
 			    loop = 0;
-			    error=RETURN_ERROR;
-			    VPrintf ("out of memory\n", NULL);
+			    error=RETURN_FAIL;
+                            SetIoErr(ERROR_NO_FREE_STORE);
 			    break;
 			}
 
 			ead=ead->ed_Next;
 		    }while(ead!=NULL);
 		}
-	    }while(loop);
+	    }while((loop) && (error==RETURN_OK));
 	    FreeDosObject(DOS_EXALLCONTROL,eac);
 
 	    if (!error)
 	    {
 		if (dirs.num)
 		{
-		    char * ptr;
-		    int added_slash = 0;
-
 		    indent ++;
 
 		    qsort (dirs.entries, dirs.num, sizeof (char *),
 			compare_strings);
-
-		    ptr = path + strlen (path);
-
-		    if (*path && ptr[-1] != ':' && ptr[-1] != '/')
-		    {
-			*ptr ++ = '/';
-			*ptr = 0;
-
-			added_slash = 1;
-		    }
 
 		    for (t=0; t<dirs.num; t++)
 		    {
@@ -172,17 +158,37 @@ static LONG do_dir (void)
 
 			if (args.all)
 			{
-			    strcpy (ptr, dirs.entries[t]);
+                            char * newpath;
+                            int len, pathlen = strlen(path);
+                            len = pathlen + strlen(dirs.entries[t]) + 2;
 
-			    showline ("%-25.s <DIR>\n", argv);
-			    do_dir ();
+                            newpath = AllocVec(len, MEMF_ANY);
+                            if (newpath)
+                            {
+                                CopyMem(path, newpath, pathlen + 1);
+                                if (AddPart(newpath, dirs.entries[t], len))
+                                {
+                                    showline ("%-25.s <DIR>\n", argv);
+                                    error = do_dir (newpath);
+                                }
+                                else
+                                {
+                                    SetIoErr(ERROR_LINE_TOO_LONG);
+                                    error = RETURN_ERROR;
+                                }
+                                FreeVec(newpath);
+                            }
+                            else
+                            {
+                                SetIoErr(ERROR_NO_FREE_STORE);
+                                error = RETURN_FAIL;
+                            }
+                            if (error)
+                                break;
 			}
 			else
 			    showline ("    %-25.s <DIR>\n", argv);
 		    }
-
-		    if (added_slash)
-			ptr[-1] = 0;
 
 		    indent --;
 		}
@@ -228,10 +234,11 @@ static LONG do_dir (void)
 	}else
 	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	    error=RETURN_ERROR;
+	    error=RETURN_FAIL;
 	}
 	UnLock(dir);
-    }
+    } else
+        error = RETURN_FAIL;
 
     return error;
 }
@@ -246,18 +253,16 @@ int main (int argc, char ** argv)
     if (!UtilityBase)
 	return RETURN_ERROR;
 
-    rda=ReadArgs("Dir,OPT/K,ALL/S",(IPTR *)&args,NULL);
+    rda=ReadArgs("DIR,OPT/K,ALL/S",(IPTR *)&args,NULL);
     if(rda!=NULL)
     {
-	strcpy (path, args.dir!=NULL?args.dir:"");
-
-	error = do_dir ();
+	error = do_dir (args.dir!=NULL?args.dir:"");
 
 	FreeArgs(rda);
     }else
 	error=RETURN_FAIL;
     if(error)
-	PrintFault(IoErr(),"Dir");
+	PrintFault(IoErr(), NULL);
 
     CloseLibrary((struct Library *)UtilityBase);
 
