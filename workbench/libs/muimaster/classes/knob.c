@@ -102,6 +102,14 @@ IPTR Knob__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     
     if (obj)
     {
+    	struct Knob_DATA *data = INST_DATA(cl, obj);
+	
+	data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+	data->ehn.ehn_Priority = 0;
+	data->ehn.ehn_Flags    = 0;
+	data->ehn.ehn_Object   = obj;
+	data->ehn.ehn_Class    = cl;
+
     }
     
     return (IPTR)obj;
@@ -115,12 +123,16 @@ IPTR Knob__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
     if (retval)
     {
+    	struct Knob_DATA *data = INST_DATA(cl, obj);
     #if 0
 	InitRastPort(&rp);
 	SetFont(&rp,_font(obj));
 
     	DeinitRastPort(&rp);
     #endif
+    
+        DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+    
     }
     
     return retval;
@@ -128,8 +140,10 @@ IPTR Knob__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
 IPTR Knob__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    //struct Knob_DATA *data = INST_DATA(cl, obj);
+    struct Knob_DATA *data = INST_DATA(cl, obj);
     
+    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
@@ -360,6 +374,76 @@ IPTR Knob__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_HandleEvent
+**************************************************************************/
+IPTR Knob__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+{
+    struct Knob_DATA *data = INST_DATA(cl, obj);
+
+    if (!msg->imsg)
+    {
+    	return 0;
+    }
+    
+    switch(msg->imsg->Class)
+    {
+    	case IDCMP_MOUSEBUTTONS:
+	    switch(msg->imsg->Code)
+	    {
+	    	case SELECTDOWN:	
+		    if (_between(_left(obj), msg->imsg->MouseX, _right(obj)) &&
+	        	_between(_top(obj), msg->imsg->MouseY, _bottom(obj)))
+		    {
+   			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+
+		    }
+		    break;
+		   
+		case SELECTUP:
+		case MENUUP:
+		case MIDDLEUP:
+		default:
+    		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+		    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+		    break;
+		    
+		    
+	    } /* switch(msg->imsg->Code) */
+	    break;
+	    
+	case IDCMP_MOUSEMOVE:
+	    {
+	    	double angle;
+    	    	WORD x1, y1, x2, y2, cx, cy, dx, dy;
+    	    	IPTR val;
+			
+		x1 = _mleft(obj) + OUTERFRAME_X + BORDERSIZE_X;
+		x2 = _mright(obj) - OUTERFRAME_X - BORDERSIZE_X;
+		y1 = _mtop(obj) + OUTERFRAME_Y + BORDERSIZE_Y;
+		y2 = y1 + KNOB_HEIGHT - 1;
+    	    	cx = (x1 + x2) / 2;
+    	    	cy = (y1 + y2) / 2;
+		dx = msg->imsg->MouseX - cx;
+		dy = cy - msg->imsg->MouseY;
+		
+		angle = 180.0 - 45.0 + 180.0 * atan2((double)dx, (double)dy) / 3.14159265358979323846;
+		if (angle < 0.0) angle = 0.0; else if (angle > 270.0) angle = 270.0;
+		
+		val = DoMethod(obj, MUIM_Numeric_ScaleToValue, 0, 270, (LONG)angle);
+		set(obj, MUIA_Numeric_Value, val);
+
+	    }
+	    break;
+	    
+    } /* switch(msg->imsg->Class) */
+
+    return 0;
+}
+
 #if ZUNE_BUILTIN_KNOB
 BOOPSI_DISPATCHER(IPTR, Knob_Dispatcher, cl, obj, msg)
 {
@@ -370,6 +454,7 @@ BOOPSI_DISPATCHER(IPTR, Knob_Dispatcher, cl, obj, msg)
 	case MUIM_Cleanup: return Knob__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);		
 	case MUIM_AskMinMax: return Knob__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
 	case MUIM_Draw: return Knob__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
+	case MUIM_HandleEvent: return Knob__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
         default:     return DoSuperMethodA(cl, obj, msg);
     }
 }
