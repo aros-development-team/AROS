@@ -1028,7 +1028,7 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     OOP_Object *gc;
     
     Point src;
-    
+
     struct TagItem gc_tags[] = {
     	{ aHidd_GC_DrawMode,	0UL },
 	{ TAG_DONE, 0UL }
@@ -1084,7 +1084,6 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     struct Layer     *L       = rp->Layer;
     struct Rectangle  ScrollRect;
     struct Rectangle  Rect;
-    struct Region     R;
 
     if (!CorrectDriverData (rp, GfxBase))
 	return FALSE;
@@ -1118,7 +1117,8 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     }
     else
     {
-    	struct ClipRect  *CR, *LastHiddenCR = NULL;
+    	struct ClipRect *CR, *LastHiddenCR;
+        struct Region    R;
 
 	LockLayerRom(L);
 
@@ -1139,7 +1139,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 	SortLayerCR(L, dx, dy);
 	#undef LayersBase
 
-	for (CR = L->ClipRect; CR; CR = CR->Next)
+	for (LastHiddenCR = NULL, CR = L->ClipRect; CR; CR = CR->Next)
     	{
 	    CR->_p1 = LastHiddenCR;
 
@@ -1191,7 +1191,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 		   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
 		if (!CR->_p1 && !CR->lobs)
 		{
-		    /* there are no hidden/obscured rectangles in this layer, so everything is very simple */
+		    /* there are no hidden/obscured rectangles with which this recrtangle has to deal */
 		    BltBitMap(rp->BitMap,
                               Rect.MinX + dx,
         		      Rect.MinY + dy,
