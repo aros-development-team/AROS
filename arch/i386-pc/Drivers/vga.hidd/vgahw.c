@@ -292,10 +292,10 @@ int vgaInitMode(struct vgaModeDesc *mode, struct vgaHWRec *regs)
     */
     regs->CRTC[0]  = (mode->HTotal >> 3) - 5;
     regs->CRTC[1]  = (mode->HDisplay >> 3) - 1;
-//    regs->CRTC[2]  = (mode->HSyncStart >> 3) -1;
-//    regs->CRTC[3]  = ((mode->HSyncEnd >> 3) & 0x1F) | 0x80;
-    regs->CRTC[2]  = (mode->HDisplay >> 3) +1;
-    regs->CRTC[3]  = (((mode->HTotal >> 3)-1) & 0x1F) | 0x80;
+    regs->CRTC[2]  = (mode->HSyncStart >> 3) -1;
+    regs->CRTC[3]  = ((mode->HSyncEnd >> 3) & 0x1F) | 0x80;
+//    regs->CRTC[2]  = (mode->HDisplay >> 3) +2;
+//    regs->CRTC[3]  = (((mode->HTotal >> 3)-2) & 0x1F) | 0x80;
     i = (((mode->HSkew << 2) + 0x10) & ~0x1F);
     if (i < 0x80)
 	regs->CRTC[3] |= i;
