@@ -443,7 +443,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     {
 	if (data->wd_Menustrip)
 	{
-	    get(data->wd_Menustrip,MUIA_Menuitem_NewMenu,(IPTR *)&newmenu);
+	    get(data->wd_Menustrip,MUIA_Menuitem_NewMenu,&newmenu);
 	    if (newmenu)
 	    {
 		if ((menu = CreateMenusA(newmenu,NULL)))
@@ -1136,7 +1136,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
 		while ((child = NextObject(&cstate)))
 		{
 		    struct Window *wnd;
-		    get(child, MUIA_Window_Window,(IPTR*)&wnd);
+		    get(child, MUIA_Window_Window,&wnd);
 		    if (!wnd) continue;
 
 		    if (wnd->WLayer == layer)
@@ -1427,7 +1427,7 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 
 			    set(item_obj, MUIA_Menuitem_Trigger, (IPTR)item);
 
-			    get(oWin, MUIA_ApplicationObject, (IPTR *)&app);
+			    get(oWin, MUIA_ApplicationObject, &app);
 			    get(item_obj, MUIA_UserData, &udata);
 
 			    set(app, MUIA_Application_MenuAction, udata);

@@ -42,7 +42,7 @@ LONG PopscreenStrObjFunc(struct Hook *hook, Object *popup, Object *str)
     }	
     UnlockPubScreenList();
 
-    get(str, MUIA_String_Contents, (IPTR *)&strtext);
+    get(str, MUIA_String_Contents, &strtext);
     
     for(index = 0; ; index++)
     {

@@ -500,8 +500,8 @@ static void MakeGUI(void)
     
     set(wnd, MUIA_Window_Open, TRUE);
 
-    get(app, MUIA_Application_Broker, (IPTR *)&broker);  
-    get(app, MUIA_Application_BrokerPort, (IPTR *)&brokermp);  
+    get(app, MUIA_Application_Broker, &broker);  
+    get(app, MUIA_Application_BrokerPort, &brokermp);  
     
     if (!broker || !brokermp) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
 
@@ -636,7 +636,7 @@ void RethinkAction(void)
 	{
 	    STRPTR s;
 	    
-	    get(str, MUIA_String_Contents, (IPTR *)&s);
+	    get(str, MUIA_String_Contents, &s);
 	    
 	    strncpy(ki->param, s, sizeof(ki->param));
 	}
@@ -694,7 +694,7 @@ void StringToKey(void)
     DoMethod(list, MUIM_List_GetEntry, MUIV_List_GetEntry_Active, (IPTR)&ki);
     if (!ki) return;
     
-    get(liststr, MUIA_String_Contents, (IPTR *)&text);    
+    get(liststr, MUIA_String_Contents, &text);    
     strncpy(ki->descr, text, sizeof(ki->descr));
 
     DoMethod(list, MUIM_List_Redraw, MUIV_List_Redraw_Active);

@@ -390,7 +390,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
     struct ClockData *cd;
     UBYTE s[3];
 
-    get(obj, MUIA_Clock_Time, (IPTR *)&cd);
+    get(obj, MUIA_Clock_Time, &cd);
 
     if (*param == 0)
     {
@@ -433,7 +433,7 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 	    IPTR number = 0;
 	    
 	    set(obj, MUIA_Clock_Frozen, TRUE);
-	    get(obj, MUIA_Clock_Time, (IPTR *)&cd);
+	    get(obj, MUIA_Clock_Time, &cd);
 	    
 	    cd2 = *cd;
 	    
@@ -725,13 +725,13 @@ static void HandleAll(void)
 	    	struct ClockData cal_date, clock_time, *dateptr;
 		IPTR frozen = 0;
 		
-	    	get(calobj, MUIA_Calendar_Date, (IPTR *)&dateptr);
+	    	get(calobj, MUIA_Calendar_Date, &dateptr);
 		cal_date = *dateptr;
 		
-		get(clockobj, MUIA_Clock_Frozen, (IPTR *)&frozen);
+		get(clockobj, MUIA_Clock_Frozen, &frozen);
 		if (frozen)
 		{
-		    get(clockobj, MUIA_Clock_Time, (IPTR *)&dateptr);
+		    get(clockobj, MUIA_Clock_Time, &dateptr);
 		    clock_time = *dateptr;
 		}
 		else

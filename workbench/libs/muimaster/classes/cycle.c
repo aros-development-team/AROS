@@ -308,14 +308,14 @@ static void KillPopupWin(Object *obj, struct MUI_CycleData *data)
 	data->popbg = NULL;
     }
     
-    get(data->pageobj, MUIA_Group_ChildList, (IPTR *)&childlist);
+    get(data->pageobj, MUIA_Group_ChildList, &childlist);
 
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
     	ZText *text;
 	
-	get(child, MUIA_UserData, (IPTR *)&text);
+	get(child, MUIA_UserData, &text);
 	if (!text) break;
 	
 	zune_text_destroy(text);
@@ -340,7 +340,7 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
     ZText   	    *text;
     WORD    	     x1, y1, x2, y2, i = which;
     
-    get(data->pageobj, MUIA_Group_ChildList, (IPTR *)&childlist);
+    get(data->pageobj, MUIA_Group_ChildList, &childlist);
     cstate = (Object *)childlist->mlh_Head;
 
     while((child = NextObject(&cstate)) && i--)
@@ -349,7 +349,7 @@ static void RenderPopupItem(Object *obj, struct MUI_CycleData *data, WORD which)
    
     if (!child) return;
     
-    get(child, MUIA_UserData, (IPTR *)&text);
+    get(child, MUIA_UserData, &text);
     if (!text) return; /* paranoia */
     
     saverp = _rp(obj);
@@ -419,7 +419,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     data->popitemwidth = 0;
     data->popitemheight = 0;
     
-    get(data->pageobj, MUIA_Group_ChildList, (IPTR *)&childlist);
+    get(data->pageobj, MUIA_Group_ChildList, &childlist);
     cstate = (Object *)childlist->mlh_Head;
     while((child = NextObject(&cstate)))
     {
@@ -547,7 +547,7 @@ static BOOL MakePopupWin(Object *obj, struct MUI_CycleData *data)
     {
     	ZText *text;
 	
-	get(child, MUIA_UserData, (IPTR *)&text);
+	get(child, MUIA_UserData, &text);
 	
 	SetAPen(_rp(obj), _pens(obj)[MPEN_TEXT]);
 	if (text) /* paranoia */
