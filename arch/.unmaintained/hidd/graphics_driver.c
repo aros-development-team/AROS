@@ -3040,7 +3040,7 @@ LOCK_PIXBUF
 	
 	if (NUMPIX < xsize)
 	{
-	   /* buffer cant hold a single horizontal line, and must 
+	   /* buffer can't hold a single horizontal line, and must 
 	      divide each line into several copy-operations */
 	    tocopy_w = xsize - current_x;
 	    if (tocopy_w > NUMPIX)
@@ -3082,6 +3082,7 @@ LOCK_PIXBUF
 	
 	/* Put it to the HIDD */
 	D(bug("Putting box\n"));
+
 	HIDD_BM_PutImage(hidd_bm
 		, pixel_buf
 		, x_dest + current_x
@@ -4280,6 +4281,8 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
     	, xMin, yMin, xMax, yMax, byteCnt));
 	
+
+kprintf("Entering %s\n",__FUNCTION__);
 	
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("driver_BltPattern");
@@ -4365,11 +4368,20 @@ LOCK_HIDD(bm);
 		    
 		    pi.orig_xmin = xMin;
 		    pi.orig_ymin = yMin;
-		    
+
+kprintf("VISIBLE!\n");
+kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
+kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
+                                     intersect.MaxX, intersect.MaxY);		
+
+kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);
+
 		    amiga2hidd_fast( (APTR) &pi
-			, intersect.MinX, intersect.MinY
+		        , intersect.MinX - xrel
+		        , intersect.MinY - yrel
 			, BM_OBJ(bm)
-			, intersect.MinX, intersect.MinY
+			, intersect.MinX
+			, intersect.MinY
 			, intersect.MaxX - intersect.MinX + 1
 			, intersect.MaxY - intersect.MinY + 1
 			, pattern_to_buf
@@ -4384,20 +4396,26 @@ LOCK_HIDD(bm);
 		    else
 		    {
 
-LOCK_HIDD(CR->BitMap);			
+LOCK_HIDD(CR->BitMap);		
 
 			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
-			
+
+kprintf("INVISIBLE! CR->BitMap = %x\n",CR->BitMap);
+kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
+kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
+                                     intersect.MaxX, intersect.MaxY);
+
 		    	amiga2hidd_fast( (APTR) &pi
-				, intersect.MinX, intersect.MinY
+				, intersect.MinX - xrel
+				, intersect.MinY - yrel
 				, BM_OBJ(CR->BitMap)
 				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
-				  /* intersect.MinX, intersect.MinY */ 
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 				, pattern_to_buf
 			);
+
 ULOCK_HIDD(CR->BitMap);			
 			
 /*		    	bltpattern_amiga( &pi
