@@ -19,6 +19,8 @@
 #include <dos/dos.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+
 #include <clib/macros.h>
 
 #include "asl_intern.h"
@@ -50,6 +52,35 @@ static WORD FOCompareSizeNodes(struct IntFontReq *iforeq, struct Node *node1,
 
 /*****************************************************************************************/
 
+static int AVFCompare(struct AvailFonts *one, struct AvailFonts *two)
+{
+    int retval = strcmp(one->af_Attr.ta_Name, two->af_Attr.ta_Name);
+    
+    if (!retval) retval = ((int)one->af_Attr.ta_YSize) -
+    	    	    	  ((int)two->af_Attr.ta_YSize);
+			  
+    return retval; 
+}
+
+/*****************************************************************************************/
+
+static void SortAvailFonts(struct AvailFontsHeader *afh, struct AslBase_intern *AslBase)
+{
+    struct AvailFonts 	*avf;
+    WORD    	    	numentries;
+    
+    avf = (struct AvailFonts *)&afh[1];
+    numentries = afh->afh_NumEntries;
+    if (numentries < 2) return;
+    
+    qsort(avf,
+    	  numentries,
+	  sizeof(*avf),
+	  (int (*)(const void *, const void *))AVFCompare);	 
+}
+
+/*****************************************************************************************/
+
 LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	 *udata = (struct FOUserData *)ld->ld_UserData;	
@@ -77,6 +108,8 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     } while (udata->AFH && afshortage);
     
     if (!udata->AFH) return ERROR_NO_FREE_STORE;
+    
+    SortAvailFonts(udata->AFH, AslBase);
     
     avf = (struct AvailFonts *)&udata->AFH[1];
     
@@ -119,8 +152,9 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
 	if (fontnode)
 	{
-	    char *sp;
-	    WORD len;
+	    char  *sp;
+	    WORD  len;
+	    UWORD prevsize = 0;
 	    
 	    sp = strchr(avf_start->af_Attr.ta_Name, '.');
 	    if (sp)
@@ -146,11 +180,15 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {
 	    	UWORD size = avf_start->af_Attr.ta_YSize;
 		
+		if (size == prevsize) continue;
+		
 		if ((size < iforeq->ifo_MinHeight) ||
 		    (size > iforeq->ifo_MaxHeight)) continue;
 		    
 	    	fontnode->SizeNode[i2].ln_Name = (char *)(IPTR)size;
 	    	SortInNode(iforeq, &fontnode->SizeList, &fontnode->SizeNode[i2], (APTR)FOCompareSizeNodes, AslBase);
+
+    	    	prevsize = size;
 	    }
 
 	    SortInNode(iforeq, &udata->NameListviewList, &fontnode->node, (APTR)FOCompareFontNodes, AslBase);
