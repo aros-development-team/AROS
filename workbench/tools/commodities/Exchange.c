@@ -148,17 +148,17 @@ struct ExchangeState
 /* Libraries to open */
 struct LibTable
 {
- APTR	lT_Library;
- STRPTR	lT_Name;
- ULONG	lT_Version;
+    APTR	lT_Library;
+    STRPTR	lT_Name;
+    ULONG	lT_Version;
 }
 libTable[] =
 {
- { &IntuitionBase,	"intuition.library",	40L},
- { &GadToolsBase,	"gadtools.library",	40L},
- { &UtilityBase,	"utility.library",	40L},
- { &CxBase,		"commodities.library",	40L},
- { NULL }
+    { &IntuitionBase,	"intuition.library",	40L},
+    { &GadToolsBase,	"gadtools.library",	40L},
+    { &UtilityBase,	"utility.library",	40L},
+    { &CxBase,		"commodities.library",	40L},
+    { NULL }
 };
 
 /* Prototypes */
@@ -187,9 +187,9 @@ int main(int argc, char **argv)
     struct ExchangeState ec;
     int    retval = RETURN_OK;
 
-    if(getResources(&ec))
+    if (getResources(&ec))
     {
-	if(Cli() == NULL)
+	if (Cli() == NULL)
 	{
 	    /* We were called from Workbench */
 	    if (readWBArgs(argc, argv, &ec))
@@ -292,8 +292,10 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
     
     if (IconBase == NULL)
     {
-	sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB), "icon.library", 40L);
+	sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB),
+		"icon.library", 40L);
         showSimpleMessage(ec, tmpString);
+
 	return FALSE;
     }
     
@@ -317,10 +319,11 @@ BOOL readWBArgs(int argc, char **argv, struct ExchangeState *ec)
 
 static struct NewMenu nm[] =
 {
- { NM_TITLE,	(STRPTR)MSG_MEN_PROJECT },
- { NM_ITEM,	(STRPTR)MSG_MEN_PROJECT_QUIT },
- { NM_END } /* petah: Should we use a trailing comma here? Look it up! */
+    { NM_TITLE,	(STRPTR)MSG_MEN_PROJECT },
+    { NM_ITEM,	(STRPTR)MSG_MEN_PROJECT_QUIT },
+    { NM_END } /* petah: Should we use a trailing comma here? Look it up! */
 };
+
 
 BOOL getResources(struct ExchangeState *ec)
 {
@@ -329,34 +332,50 @@ BOOL getResources(struct ExchangeState *ec)
     LONG              topOffset;
     LONG    	      fontHeight;
     LONG    	      winHeight;
-    struct LibTable *tmpLibTable = libTable;
-    UBYTE	      tmpString[128]; /* petah: What if library name plus error message exceeds 128 bytes? */
+    struct LibTable  *tmpLibTable = libTable;
+    UBYTE	      tmpString[256];
 
     memset(ec, 0, sizeof(struct ExchangeState));
 
-    /* First, open necessary libraries - start with locale (for localized error messages thruout the program initialisation */
+    /* First, open necessary libraries - start with locale (for localized error
+       messages thruout the program initialisation */
 
-    if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
+    LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
+
+    if (LocaleBase != NULL)
     {
-	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support it yet */
-	ec->ec_catalog = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+	/* TODO: OC_BuiltInLanguage should be NULL, but AROS locale doesn't support
+	   it yet */
+	ec->ec_catalog = OpenCatalog(NULL, "Sys/Commodities.catalog",
+				     OC_BuiltInLanguage, "english", TAG_DONE);
 
-	if(ec->ec_catalog == NULL)
+	if (ec->ec_catalog == NULL)
+	{
 	    P(kprintf("OpenCatalog() failed!\n"));
+	}
     }
     else
-	P(kprintf("Warning: Can't open locale.library V40!\n"));
-
-    while(tmpLibTable->lT_Library)
     {
-	if(!((*(struct Library **)tmpLibTable->lT_Library = OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version))))
+	P(kprintf("Warning: Can't open locale.library V40!\n"));
+    }
+
+    while (tmpLibTable->lT_Library)
+    {
+	*(struct Library **)tmpLibTable->lT_Library = 
+	    OpenLibrary(tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+
+	if (tmpLibTable->lT_Library == NULL)
 	{
-	    sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB), tmpLibTable->lT_Name, tmpLibTable->lT_Version);
+	    sprintf(tmpString, getCatalog(ec->ec_catalog, MSG_CANT_OPEN_LIB),
+		    tmpLibTable->lT_Name, tmpLibTable->lT_Version);
 	    showSimpleMessage(ec, tmpString);
+
 	    return FALSE;
 	}
 	else
+	{
 	    P(kprintf("Library %s opened!\n", tmpLibTable->lT_Name));
+	}
 
 	tmpLibTable++;
     }    
@@ -480,6 +499,7 @@ BOOL getResources(struct ExchangeState *ec)
     if (ec->ec_window == NULL)
     {
 	showSimpleMessage(ec, getCatalog(ec->ec_catalog, MSG_CANT_CREATE_WIN));
+
 	return FALSE;
     }
 
@@ -731,50 +751,37 @@ void freeResources(struct ExchangeState *ec)
 {
     struct LibTable *tmpLibTable = libTable;
 
-    if(IntuitionBase)
+    if (IntuitionBase != NULL)
     {
-	if(ec->ec_window)
+	if (ec->ec_window != NULL)
 	{
 	    ClearMenuStrip(ec->ec_window);
 	    CloseWindow(ec->ec_window);
-
+	    
 	    P(kprintf("Closed window\n"));
 	}
     }
 
-    if(GadToolsBase)
+    if (GadToolsBase != NULL)
     {
         /* Passing NULL to these functions is safe! */
 	FreeMenus(ec->ec_menus);
 	FreeGadgets(ec->ec_context);
 	FreeVisualInfo(ec->ec_visualInfo);
-
+	
 	P(kprintf("Freed visualinfo\n"));
     }
 
-    if(CxBase)
+    if (CxBase != NULL)
     {
-	/* petah: Is it safe to pass NULL to FreeBrokerList()? */
-	if(&ec->ec_brokerList)
-	{
-	    FreeBrokerList(&ec->ec_brokerList);
-
-	    P(kprintf("Freed brokerlist\n"));
-	}
-
-	/* It's safe to pass NULL here, but because of the kprintf() we do it anyway */
- 	if(&ec->ec_broker)
-	{
-	    DeleteCxObjAll(ec->ec_broker);
-
-	    P(kprintf("Deleted broker\n"));
-	}
+	FreeBrokerList(&ec->ec_brokerList);
+	DeleteCxObjAll(ec->ec_broker);
     }
 
     // DeleteMsgPort(ec->hotkeyPort);
     DeleteMsgPort(ec->ec_msgPort);
 
-    if(LocaleBase)
+    if (LocaleBase != NULL)
     {
 	CloseCatalog(ec->ec_catalog);
 
@@ -783,9 +790,9 @@ void freeResources(struct ExchangeState *ec)
 	CloseLibrary((struct Library *)LocaleBase);
     }
 
-    while(tmpLibTable->lT_Name)	/* Check for name rather than pointer */
+    while (tmpLibTable->lT_Name)	/* Check for name rather than pointer */
     {
-	if((*(struct Library **)tmpLibTable->lT_Library))
+	if (tmpLibTable->lT_Library != NULL)
 	{
 	    CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
 	    P(kprintf("Closed %s!\n", tmpLibTable->lT_Name));
@@ -1124,6 +1131,7 @@ void setupMenus(struct Catalog *catalogPtr)
     }
 }
 
+
 void showSimpleMessage(struct ExchangeState *ec, STRPTR msgString)
 {
     struct EasyStruct easyStruct;
@@ -1134,7 +1142,7 @@ void showSimpleMessage(struct ExchangeState *ec, STRPTR msgString)
     easyStruct.es_TextFormat	= msgString;
     easyStruct.es_GadgetFormat	= getCatalog(ec->ec_catalog, MSG_OK);		
 
-    if(IntuitionBase && !((struct Process *)FindTask(NULL))->pr_CLI && ec->ec_window)
+    if (IntuitionBase != NULL && !Cli() && ec->ec_window)
     {
 	EasyRequestArgs(ec->ec_window, &easyStruct, NULL, NULL);
     }
