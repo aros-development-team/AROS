@@ -136,9 +136,9 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 # Add section with all necessary libs and dependencies for linking
 %define define_libs prelibs= postlibs= deplibs=
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc %(postlibs)
+LIBS = -L$(LIBDIR) %(prelibs) -larossupport -lamiga -larosc -larosm %(postlibs)
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
-	$(LIBDIR)/libarosc.a %(deplibs)
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a %(deplibs)
 %end
 
 # Do something in all subdirs

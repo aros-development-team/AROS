@@ -8,9 +8,9 @@ LOCALEDIR=$(BINDIR)/Locale
 LANGDIR=$(LOCALEDIR)/Languages
 
 # should be %define_libs, but we need to link without a startup file
-LIBS = -L$(LIBDIR) -larossupport -lamiga -larosc
+LIBS = -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
-	$(LIBDIR)/libarosc.a
+	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
 
 LANGUAGES=piglatin deutsch francais espanol nederlands polski
 

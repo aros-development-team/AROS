@@ -6,8 +6,8 @@ include $(TOP)/config/make.cfg
 OBJDIR=$(GENDIR)/workbench/locale/countries
 LOCALEDIR=$(BINDIR)/Locale
 COUNTRYDIR=$(LOCALEDIR)/Countries
-DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
-LIBS=-L$(LIBDIR) -lamiga -larosc
+DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
+LIBS=-L$(LIBDIR) -lamiga -larosc -larosm
 MAKECOUNTRY=$(OBJDIR)/makecountry
 
 COUNTRIES=australia deutschland great_britain nederland polska
