@@ -34,7 +34,7 @@ Assign KEYMAPS: DEVS:Keymaps
 Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
-Assign ENVARC:  AROS-Boot:Prefs/Env-Archive
+Assign ENVARC:  SYS:Prefs/Env-Archive
 ;Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
 
@@ -63,9 +63,8 @@ If EXISTS S:User-Startup
   Execute S:User-Startup
 EndIf
 
-LoadWB
-;NewShell CON:0/30/640/300/AROS-Shell/CLOSE
-;NewShell CON:160/300/640/300/AROS-Shell/CLOSE
+Echo "Starting file manager..."
+Run >NIL: LoadWB
 
 Execute S:Shell-Startup
 
