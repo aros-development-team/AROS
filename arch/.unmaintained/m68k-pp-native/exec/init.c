@@ -157,8 +157,8 @@ void main_init(void * memory, ULONG memSize)
 	struct ExecBase *SysBase = NULL;
 	ULONG * m68k_USP;
 	struct MemHeader *mh = NULL;
-	UWORD * ranges[] = {0x10c00000 , 0x10c00000 + 1024 * 1024,
-	                    -1};
+	UWORD * ranges[] = {(UWORD *)0x10c00000 , (UWORD *)0x10c00000 + (1024 * 1024),
+	                    (UWORD *)~0};
 
 	processor_init();
 	/*
@@ -211,7 +211,8 @@ void main_init(void * memory, ULONG memSize)
 	 * but I need to AllocAbs() it so nobody else will step on this
 	 * memory.
 	 */
-	if (NULL == AllocAbs(AROS_STACKSIZE, initial_ssp+sizeof(ULONG)-AROS_STACKSIZE)) {
+	if (NULL == AllocAbs(AROS_STACKSIZE, 
+	                     (APTR)(initial_ssp+sizeof(ULONG)-AROS_STACKSIZE))) {
 		D(bug("Alloc for SSP failed!\n"));
 	}
 	D(bug("SSP: %x\n",initial_ssp));
