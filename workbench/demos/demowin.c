@@ -39,7 +39,7 @@
 struct Library *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
-Object * image;
+Object * frame;
 
 void Refresh (struct RastPort * rp)
 {
@@ -92,8 +92,8 @@ void Refresh (struct RastPort * rp)
     Move (rp, 20, 350);
     Text (rp, "Press \"Complement\" to flip PropGadgets", 39);
 
-    if (image)
-	DrawImageState (rp, (struct Image *)image, 10, 10, IDS_NORMAL, NULL);
+    if (frame)
+	DoMethod (frame, IM_DRAW, rp, (WORD)10, (WORD)10, IDS_NORMAL, NULL);
 
     tend = 10;
     t = 0;
@@ -526,13 +526,14 @@ int main (int argc, char ** argv)
     DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
     DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
 
-    image = NewObject (NULL, IMAGECLASS
-	, SYSIA_Which, DOWNIMAGE
+    frame = NewObject (NULL, FRAMEICLASS
+	, IA_Width,  20
+	, IA_Height, 20
 	, TAG_END
     );
 
-    if (!image)
-	bug("Warning: Couldn't create image\n");
+    if (!frame)
+	bug("Warning: Couldn't create frame\n");
 
     cont = 1;
     draw = 0;
@@ -874,8 +875,8 @@ int main (int argc, char ** argv)
     CloseWindow (win);
 
 end:
-    if (image)
-	DisposeObject (image);
+    if (frame)
+	DisposeObject (frame);
 
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
