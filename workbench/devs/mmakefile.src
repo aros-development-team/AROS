@@ -26,14 +26,14 @@ include $(TOP)/config/make.cfg
 #MM- includes-generate : \
 #MM      workbench-devs-input-includes
 
-%build_module_macro mmake=workbench-devs-fdsk \
+%build_module mmake=workbench-devs-fdsk \
   modname=fdsk modtype=device \
-  initfile=fdsk_device \
+  files=fdsk_device \
   uselibs="arossupport amiga rom"
 
-%build_module_macro mmake=workbench-devs-ramdrive \
+%build_module mmake=workbench-devs-ramdrive \
   modname=ramdrive modtype=device \
-  initfile=ramdrive_device \
+  files=ramdrive_device \
   uselibs="arossupport amiga rom"
 
 %build_module_macro mmake=workbench-fs-pipefs \
