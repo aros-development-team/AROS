@@ -105,9 +105,17 @@ function emit_struct(tname)
        }
     }
 }
-/AROS_LH[0-9]/ { isprivate=0; }
-/AROS_PLH[0-9]/ { isprivate=1; }
-/AROS_LH(A|(QUAD)?[0-9])/ {
+
+#public function
+/AROS_LH[0-9]/ { isprivate = 0; ntagarg = 0;}
+
+#public function, do not attempt to emit inline tagcalls
+/AROS_NTLH[0-9]/ { isprivate = 0; ntagarg = -1; }
+
+#private function
+/AROS_PLH[0-9]/ { isprivate = 1; ntagarg = 0; }
+
+/AROS_(NT)?LH(A|(QUAD)?[0-9])/ {
     line=$0;
     isarg=match($0,/AROS_LHA/);
 
@@ -117,9 +125,8 @@ function emit_struct(tname)
     {
 	args="";
 	narg=0;
-        ntagarg=0
 
-        match(line,/\(.+,.+[^,]/);
+	match(line,/\(.+,.+[^,]/);
 	line=substr(line,RSTART+1,RLENGTH-1);
 	gsub(/[ \t]*,[ \t]*/,",",line);
 	split(line, a, ",");
