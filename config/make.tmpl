@@ -501,6 +501,14 @@ endif
 # This rule will try to "integrate" the produced files as much as possible in the AROS
 # build, for exampley by putting libraries in the standard library directory, includes
 # in the standard include directory, and so on. You can however override this behaviour.
+#
+# As a special "bonus" for you, the PROGDIR environment variable is defined to be %(bindir) (or
+# its deduced value) when running "make install", and "PROGDIR:" when running "make" alone; you
+# can use this feature to pass the configure script some more parameters whose value depends upon
+# the PROGDIR env var, so that the program gets all its stuff installed in the proper place when
+# building it, but when running it from inside AROS it can also find that stuff by simply opening
+# PROGDIR:, which it will do automatically if it uses the configuration parameters set when running
+# ./configure
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
     bindir= libdir= includedir= extraoptions= nix=no
@@ -511,18 +519,51 @@ endif
 
 #MM
 %(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-	@if ! $(MAKE) -q -C $(GENDIR)/$(CURDIR); then \
-	    $(MAKE) -C $(GENDIR)/$(CURDIR); \
+	@if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
+	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
 	    ret=$$?; \
 	    if [ $$ret -ne 0 ] ; then \
 	        exit $$ret; \
 	    fi; \
-	    $(MAKE) -C $(GENDIR)/$(CURDIR) install; \
+	    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) install; \
 	fi
 
 $(TOP)/$(CURDIR)/.files-touched:
 	@find . | xargs $(TOUCH) -r configure; \
 	$(ECHO) YES > $@
+
+ifeq (%(nix),yes)
+    %(mmake)-nix := -nix
+endif
+ifneq (%(bindir),)
+    %(mmake)-bindir := --bindir=%(bindir)
+    %(mmake)-PROGDIR := %(bindir)
+endif
+ifneq (%(includedir),)
+    %(mmake)-includedir := --includedir=%(includedir)
+endif
+ifneq (%(libdir),)
+    %(mmake)-libdir := --libdir=%(libdir)
+endif
+ifneq (%(prefix),)
+    %(mmake)-prefix := --prefix=%(prefix)
+else
+    %(mmake)-prefix := --prefix=$(CONTRIBDIR)
+    ifeq ($(%(mmake)-bindir),)
+        %(mmake)-bindir := --bindir=$(CONTRIBDIR)
+        %(mmake)-PROGDIR := $(CONTRIBDIR)
+    endif
+    ifeq ($(%(mmake)-libdir),)
+        %(mmake)-libdir := --libdir=$(LIBDIR)
+    endif
+    ifeq ($(%(mmake)-includedir),)
+        %(mmake)-includedir := --includedir=$(INCDIR)
+    endif
+endif
+
+ifeq ($(%(mmake)-PROGDIR),)
+    %(mmake)-PROGDIR := %(prefix)/bin
+endif
 
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
@@ -530,30 +571,19 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(RM) config.cache; \
 	    for AR2 in $(AR); do break; done; \
 	    for RANLIB2 in $(RANLIB); do break; done; \
-	    if [ "%(nix)" = "yes" ]; then nix=-nix; fi; \
-	    nix=; prefix=; bindir=; libdir=; includedir=; \
-	    if [ "%(bindir)" != "" ]; then bindir="--bindir=%(bindir)"; fi; \
-	    if [ "%(includedir)" != "" ]; then includedir="--includedir=%(includedir)"; fi; \
-	    if [ "%(libdir)" != "" ]; then libdir="--libdir=%(libdir)"; fi; \
-	    if [ "%(prefix)" != "" ]; then \
-	        prefix="--prefix=%(prefix)"; \
-	    else \
-	        prefix="--prefix=$(CONTRIBDIR)"; \
-		if [ "$$bindir" = "" ]; then bindir="--bindir=$(CONTRIBDIR)"; fi; \
-		if [ "$$includedir" = "" ]; then includedir="--includedir=$(INCDIR)"; fi; \
-		if [ "$$libdir" = "" ]; then libdir="--libdir=$(LIBDIR)"; fi; \
-	    fi; \
+	    PATH=$(TOOLDIR):$$PATH; \
 	    AR=$$AR2 RANLIB=$$RANLIB2 \
-	    CC="$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $$nix" \
+	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc $(%(mmake)-nix)" \
 	    CC_FOR_BUILD="$(HOST_CC)" \
-	    %(configure) $$prefix $$bindir $$libdir $$includedir %(extraoptions) \
+	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    $(%(mmake)-includedir) %(extraoptions) \
 	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros; \
 	$(ECHO) YES > $@
 	
 #MM
 %(mmake)-clean :
 	@if [ -e $(GENDIR)/$(CURDIR)/Makefile ]; then \
-	    $(MAKE) -C $(GENDIR)/$(CURDIR) uninstall; \
+	    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) uninstall; \
         fi
 	@$(RM) $(GENDIR)/$(CURDIR)
 %end
