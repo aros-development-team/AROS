@@ -42,6 +42,8 @@
 
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
+IPTR scroller_set(Class * cl, Object * o, struct opSet * msg);
+
 /*************************** BUTTON_KIND *****************************/
 
 struct ButtonData {
@@ -235,7 +237,8 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     IPTR retval = 0UL;
     struct TagItem *tag, *tstate;
     struct TextData *data = INST_DATA(cl, o);
-
+    struct RastPort *rport;
+    
     EnterFunc(bug("Text::Set()\n"));
     
     tstate = msg->ops_AttrList;
@@ -275,6 +278,7 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     	    	    data->toprint = tidata;
     	    	    D(bug("GTTX_Text: %s\n", tidata));
     	    	}
+		retval = 1UL;
     	    	break;
     	    
     	    case GTTX_Border:	/* [I]	*/
@@ -286,16 +290,18 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     	    	break;
     	    	
 
-    	    /* case GTTX_FrontPen:  [IS]	*/
+    	    /*case GTTX_FrontPen:  [IS]	*/
     	    case GTNM_FrontPen:	/* [IS]	*/
     	    	data->frontpen = (UBYTE)tidata;
     	    	D(bug("FrontPen: %d\n", tidata));
+		retval = 1UL;
     	    	break;
     	    	
-    	    /* case GTTX_BackPen:	 [IS]	*/
+    	    /* case GTTX_BackPen: [IS]	*/
     	    case GTNM_BackPen:	/* [IS]	*/
     	    	data->backpen = (UBYTE)tidata;
     	    	D(bug("BackPen: %d\n", tidata));
+		retval = 1UL;
     	    	break;
 
     	    /* case GTTX_Justification:	 [I] */
@@ -326,6 +332,16 @@ IPTR text_set(Class * cl, Object * o, struct opSet * msg)
     
     } /* while (iterate taglist) */
     
+    /* Redraw the gadget, if an attribute was changed and if this is the
+       objects' base-class. */
+    if ((retval) && (OCLASS(o) == cl)) {
+	rport = ObtainGIRPort(msg->ops_GInfo);
+	if (rport) {
+	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+	    ReleaseGIRPort(rport);
+	    retval = FALSE;
+	}
+    }
 
     ReturnInt ("Text::Set", IPTR, retval);
 }
@@ -458,7 +474,7 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     UBYTE textbuf[256], *str;
     struct TextData *data = INST_DATA(cl, o);
-    WORD left, top, width, height, numchars, tlength;
+    WORD left, left2, top, width, height, numchars, tlength;
     struct TextFont *oldfont;
     struct RastPort *rp = msg->gpr_RPort;
     
@@ -497,27 +513,31 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     	struct TextExtent te;
     	
     	/* See how many chars fits into the display area */
-    	numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, height);
+    	numchars = TextFit(rp, textbuf, numchars, &te, NULL, 1, width, G(o)->Height);
     }
     
     tlength = TextLength(rp, textbuf, numchars);
     
+    left2 = left;
     switch (data->justification)
     {
     	case GTJ_LEFT:
     	    break;
     	case GTJ_RIGHT:
-    	    left += (width - tlength);
+    	    left2 += (width - tlength);
     	    break;
     	case GTJ_CENTER:
-    	    left += ((width - tlength) / 2);
+    	    left2 += ((width - tlength) / 2);
     	    break;
     }
     
     /* Render text */
     D(bug("Rendering text of lenghth %d at (%d, %d)\n", numchars, left, top));
-    SetABPenDrMd(rp, pens[data->frontpen], pens[data->backpen], JAM2);
-    Move(rp, left, 
+    SetABPenDrMd(rp, pens[data->backpen], pens[data->backpen], JAM2);
+    RectFill(rp, left, top, left + width - 1, top + height - 1);
+    SetAPen(rp, pens[data->frontpen]);
+    
+    Move(rp, left2, 
     	top + ((height - data->font->tf_YSize) / 2) + data->font->tf_Baseline);
     Text(rp, textbuf, numchars);
     
