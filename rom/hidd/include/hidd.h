@@ -15,19 +15,14 @@
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
-#ifndef INTUITION_CLASSES_H
-#   include <intuition/classes.h>
-#endif
-#ifndef INTUITION_CLASSUSR_H
-#   include <intuition/classusr.h>
-#endif
 
 /* ---------------------------------------------------------------------
     Main HIDD Class Interface
    --------------------------------------------------------------------- */
 
 /* The name of the topmost HIDD class */
-#define HIDDCLASS "hiddclass"
+#define CLID_Hidd "hiddclass"
+#define IID_Hidd "I_Hidd"
 
 #ifndef __typedef_HIDD
 #   define __typedef_HIDD
@@ -39,26 +34,29 @@
     See the HIDD documentation for information on their use.
  */
 enum {
-    HIDDA_Base = (TAG_USER + 0x800000),
-    HIDDA_Type, 		/* [..G] (UWORD) Major type of HIDD */
-    HIDDA_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
-    HIDDA_Producer,		/* [..G] (ULONG) Product Developer */
-    HIDDA_Name, 		/* [..G] (STRPTR) Name of HIDD */
-    HIDDA_HardwareName, 	/* [..G] (STRPTR) Hardware description */
-    HIDDA_Active,		/* [ISG] (BOOL) Current active status */
-    HIDDA_Status,		/* [..G] (ULONG) Status change */
-    HIDDA_ErrorCode,		/* [..G] (ULONG) Error code */
-    HIDDA_Locking		/* [..G] (UBYTE) Type of locking supported */
+    HIDDAIDX_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
+    HIDDAIDX_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
+    HIDDAIDX_Producer,		/* [..G] (ULONG) Product Developer */
+    HIDDAIDX_Name, 		/* [..G] (STRPTR) Name of HIDD */
+    HIDDAIDX_HardwareName, 	/* [..G] (STRPTR) Hardware description */
+    HIDDAIDX_Active,		/* [ISG] (BOOL) Current active status */
+    HIDDAIDX_Status,		/* [..G] (ULONG) Status change */
+    HIDDAIDX_ErrorCode,		/* [..G] (ULONG) Error code */
+    HIDDAIDX_Locking,		/* [..G] (UBYTE) Type of locking supported */
+    
+    NUM_A_HIDD
 };
 
-/*
-    This flag is set on private attributes which external code should just
-    ignore. To define such tags, you can offset from HIDDA_PrivateBase.
-    Note that these tags are HIDD-specific; you should not try to apply
-    them on another HIDD than the one from which you got them.
-*/
-#define HIDDV_PrivateAttribute	0x40000000
-#define HIDDA_PrivateBase	(HIDDA_Base | HIDDV_PrivateAttribute)
+#define HIDDA_Type		(__HIDD_AttrBase + HIDDAIDX_Type	)
+#define HIDDA_SubType		(__HIDD_AttrBase + HIDDAIDX_SubType	)
+#define HIDDA_Producer		(__HIDD_AttrBase + HIDDAIDX_Producer	)
+#define HIDDA_Name		(__HIDD_AttrBase + HIDDAIDX_Name	)
+#define HIDDA_HardwareName	(__HIDD_AttrBase + HIDDAIDX_HardwareName)
+#define HIDDA_Active		(__HIDD_AttrBase + HIDDAIDX_Active	)
+#define HIDDA_Status		(__HIDD_AttrBase + HIDDAIDX_Status	)
+#define HIDDA_ErrorCode		(__HIDD_AttrBase + HIDDAIDX_ErrorCode	)
+#define HIDDA_Locking		(__HIDD_AttrBase + HIDDAIDX_Locking	)
+
 
 /* Values for the HIDD_Type Tag */
 #define HIDDV_Type_Any		-1	/* match any type */
@@ -85,18 +83,17 @@ enum {
 };
 
 enum {
-    HIDDM_Base = 0x80000,
-    HIDDM_Class_Get,		/* Get a value from a Class */
-    HIDDM_Class_MGet,		/* Get a number of values from a Class */
-    HIDDM_BeginIO,		/* Send a device like command */
-    HIDDM_AbortIO,		/* Abort a device like command */
+    HIDDMIDX_Class_Get,		/* Get a value from a Class */
+    HIDDMIDX_Class_MGet,		/* Get a number of values from a Class */
+    HIDDMIDX_BeginIO,		/* Send a device like command */
+    HIDDMIDX_AbortIO,		/* Abort a device like command */
 
-    HIDDM_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
-    HIDDM_Lock, 		/* Lock a HIDD */
-    HIDDM_Unlock,		/* UnLock a HIDD */
-    HIDDM_AddHIDD,		/* Add a subclass HIDD */
-    HIDDM_RemoveHIDD,		/* Remove a subclass HIDD */
-    HIDDM_FindHIDD		/* Find a suitable HIDD */
+    HIDDMIDX_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
+    HIDDMIDX_Lock, 		/* Lock a HIDD */
+    HIDDMIDX_Unlock,		/* UnLock a HIDD */
+    HIDDMIDX_AddHIDD,		/* Add a subclass HIDD */
+    HIDDMIDX_RemoveHIDD,	/* Remove a subclass HIDD */
+    HIDDMIDX_FindHIDD		/* Find a suitable HIDD */
 };
 
 /*
@@ -142,7 +139,7 @@ typedef struct hmLock
 typedef struct hmAdd
 {
     STACKULONG		MethodID;
-    Class		*hma_Class;
+    APTR 		*hma_Class;
 } hmAdd;
 
 /* Used for HIDDM_FindHIDD */

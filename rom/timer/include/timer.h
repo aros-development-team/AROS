@@ -40,26 +40,23 @@ typedef struct HIDDT_ClockVal
 
 /* Attributes for the Timer HIDD */
 enum {
-    HIDDA_TimerBase = HIDDA_Base + 0x02000,
-    HIDDA_Timer_MinPeriod,	/* [..G] (HIDDT_ClockVal *) Min period */
-    HIDDA_Timer_MaxPeriod,	/* [..G] (HIDDT_ClockVal *) Max period */
-    HIDDA_Timer_IsFixed,	/* [..G] (BOOL) Is this clock fixed */
-    HIDDA_Timer_IsClock,	/* [..G] (BOOL) Is this a clock-like timer */
-    HIDDA_Timer_IsAlarm,	/* [..G] (BOOL) Is this an alarm-like timer */
-    HIDDA_Timer_IsExternal,	/* [..G] (BOOL) This timer is external */
-    HIDDA_Timer_Mode,		/* [ISG] (ULONG) Current timer mode */
+    HIDDAIDX_Timer_MinPeriod,	/* [..G] (HIDDT_ClockVal *) Min period */
+    HIDDAIDX_Timer_MaxPeriod,	/* [..G] (HIDDT_ClockVal *) Max period */
+    HIDDAIDX_Timer_IsFixed,	/* [..G] (BOOL) Is this clock fixed */
+    HIDDAIDX_Timer_IsClock,	/* [..G] (BOOL) Is this a clock-like timer */
+    HIDDAIDX_Timer_IsAlarm,	/* [..G] (BOOL) Is this an alarm-like timer */
+    HIDDAIDX_Timer_IsExternal,	/* [..G] (BOOL) This timer is external */
+    HIDDAIDX_Timer_Mode,	/* [ISG] (ULONG) Current timer mode */
 
     /* Attributes for Clock like devices */
-    HIDDA_Timer_ClockBase = HIDDA_TimerBase + 0x100,
-    HIDDA_Timer_IsNonVolatile,	/* [..G] (BOOL) This clock is non-volatile */
+    HIDDAIDX_Timer_IsNonVolatile,	/* [..G] (BOOL) This clock is non-volatile */
 
     /* Attributes for Alarm like devices */
-    HIDDA_Timer_AlarmBase = HIDDA_TimerBase + 0x200,
-    HIDDA_Timer_CountMode,	/* [.SG] (ULONG) Current counting mode */
-    HIDDA_Timer_Hook,		/* [ISG] (struct Hook *) Callback hook */
-    HIDDA_Timer_SigTask,	/* [ISG] (struct Task *) Task to signal */
-    HIDDA_Timer_SigBit,		/* [ISG] (UBYTE) Signal bit to use */
-    HIDDA_Timer_SoftInt,	/* [ISG] (struct Interrupt *) Software Int */
+    HIDDAIDX_Timer_CountMode,	/* [.SG] (ULONG) Current counting mode */
+    HIDDAIDX_Timer_Hook,		/* [ISG] (struct Hook *) Callback hook */
+    HIDDAIDX_Timer_SigTask,	/* [ISG] (struct Task *) Task to signal */
+    HIDDAIDX_Timer_SigBit,		/* [ISG] (UBYTE) Signal bit to use */
+    HIDDAIDX_Timer_SoftInt,	/* [ISG] (struct Interrupt *) Software Int */
 };
 
 /* Values for HIDDA_Timer_Mode */
@@ -85,23 +82,22 @@ enum HIDDT_TimeFormat {
 /* Methods implemented by timers */
 enum
 {
-    HIDDM_TimerBase = 0x80200,
-    HIDDM_Timer_Reset,			/* Reset a timer */
-    HIDDM_Timer_Freeze,			/* Freeze a timer */
-    HIDDM_Timer_UnFreeze,		/* Unfreeze a timer */
-    HIDDM_Timer_ConvertTime,		/* Convert between time formats */
-    
-    HIDDM_Timer_ClockBase = 0x80240,
-    HIDDM_Timer_SetPeriod,		/* Set the period of a clock */
-    HIDDM_Timer_GetPeriod,		/* Get the period of a clock */
-    HIDDM_Timer_Set,			/* Set the value of a clock */
-    HIDDM_Timer_Get,			/* Get the value of a clock */
+    HIDDMIDX_Timer_Reset,			/* Reset a timer */
+    HIDDMIDX_Timer_Freeze,			/* Freeze a timer */
+    HIDDMIDX_Timer_UnFreeze,		/* Unfreeze a timer */
+    HIDDMIDX_Timer_ConvertTime,		/* Convert between time formats */
 
-    HIDDM_Timer_AlarmBase = 0x80280,
-    HIDDM_Timer_Start,			/* Start a timer running */
-    HIDDM_Timer_Stop,			/* Stop a timer running */
-    HIDDM_Timer_SetInterval,		/* Set the interval of the alarm */
-    HIDDM_Timer_GetInterval		/* Get the interval of the timer */
+    /* Clock related methods */
+    HIDDMIDX_Timer_SetPeriod,		/* Set the period of a clock */
+    HIDDMIDX_Timer_GetPeriod,		/* Get the period of a clock */
+    HIDDMIDX_Timer_Set,			/* Set the value of a clock */
+    HIDDMIDX_Timer_Get,			/* Get the value of a clock */
+
+    /* Alarm related methods */
+    HIDDMIDX_Timer_Start,		/* Start a timer running */
+    HIDDMIDX_Timer_Stop,		/* Stop a timer running */
+    HIDDMIDX_Timer_SetInterval,		/* Set the interval of the alarm */
+    HIDDMIDX_Timer_GetInterval		/* Get the interval of the timer */
 };
 
 /* Message for HIDDM_Timer_Convert */

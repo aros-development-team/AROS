@@ -33,7 +33,8 @@
 #include <libraries/configvars.h>
 #include <libraries/expansionbase.h>
 #include <aros/debug.h>
-#include <proto/boopsi.h>
+#include <proto/oop.h>
+#include <oop/oop.h>
 
 /* POSIX includes */
 #include <unistd.h>
@@ -1019,16 +1020,16 @@ AROS_LH2(struct emulbase *, init,
     emulbase->seglist=segList;
     emulbase->device.dd_Library.lib_OpenCnt=1;
 
-    BOOPSIBase = OpenLibrary (BOOPSINAME,0);
+    OOPBase = OpenLibrary ("oop.library",0);
 
-    if (!BOOPSIBase)
+    if (!OOPBase)
 	return NULL;
 
-    emulbase->unixio = NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
+    emulbase->unixio = NewObjectA (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
 
     if (!emulbase->unixio)
     {
-	CloseLibrary (BOOPSIBase);
+	CloseLibrary (OOPBase);
 	return NULL;
     }
 
@@ -1036,7 +1037,7 @@ AROS_LH2(struct emulbase *, init,
 	return emulbase;
 
     DisposeObject (emulbase->unixio);
-    CloseLibrary (BOOPSIBase);
+    CloseLibrary (OOPBase);
 
     return NULL;
     AROS_LIBFUNC_EXIT
@@ -1140,8 +1141,7 @@ AROS_LH1(void, beginio,
 		if (fh->fd==STDOUT_FILENO)
 		    fh->fd=STDIN_FILENO;
 
-		error = DoMethod (emulbase->unixio,
-		    HIDDM_WaitForIO, fh->fd, HIDDV_UnixIO_Read);
+		error = HIDD_UnixIO_Wait(emulbase->unixio, fh->fd, HIDDV_UnixIO_Read);
 
 		if (error == 0) {
 		    iofs->io_Union.io_READ.io_Length = read (fh->fd,iofs->io_Union.io_READ.io_Buffer,iofs->io_Union.io_READ.io_Length);

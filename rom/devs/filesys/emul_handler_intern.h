@@ -27,7 +27,7 @@ struct emulbase
     struct Unit       * stderr;
     struct ExecBase   * sysbase;
     struct DosLibrary * dosbase;
-    struct Library    * boopsibase;
+    struct Library    * oopbase;
     HIDD		unixio;
     BPTR seglist;
 };
@@ -40,10 +40,10 @@ struct emulbase
 #   undef DOSBase
 #endif
 #define DOSBase emulbase->dosbase
-#ifdef BOOPSIBase
-#   undef BOOPSIBase
+#ifdef OOPBase
+#   undef OOPBase
 #endif
-#define BOOPSIBase emulbase->boopsibase
+#define OOPBase emulbase->oopbase
 
 
 struct filehandle

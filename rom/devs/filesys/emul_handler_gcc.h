@@ -11,7 +11,7 @@
 #include <exec/execbase.h>
 #include <exec/devices.h>
 #include <dos/dos.h>
-#include <proto/boopsi.h>
+#include <proto/oop.h>
 #include <hidd/unixio.h>
 
 #include "emul_handler_intern.h"

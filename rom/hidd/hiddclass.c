@@ -15,18 +15,23 @@
 #include <exec/alerts.h>
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
-#include <intuition/classusr.h>
-#include <intuition/classes.h>
+#include <oop/oop.h>
+#include <oop/root.h>
+#include <oop/meta.h>
+#include <oop/hiddmeta.h>
 #include <hidd/hidd.h>
 
 #include <proto/exec.h>
-#include <proto/intuition.h>	/* for DoSuperMethodA() */
-#include <proto/boopsi.h>
+#include <proto/oop.h>
 #include <proto/utility.h>
 
 #ifdef _AROS
 #include <aros/asmcall.h>
 #endif /* _AROS */
+
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
 
 static const UBYTE name[];
 static const UBYTE version[];
@@ -46,7 +51,7 @@ const struct Resident HIDD_resident =
     RTF_COLDSTART,
     41,
     NT_UNKNOWN,
-    90, /* Has to be after BOOPSI */
+    90, /* Has to be after OOP */
     (UBYTE *)name,
     (UBYTE *)version,
     (APTR)&AROS_SLIB_ENTRY(init,HIDD)
@@ -56,6 +61,11 @@ static const UBYTE name[] = "hiddclass";
 static const UBYTE version[] = "hiddclass 41.1 (23.10.1997)\r\n";
 
 static const char unknown[] = "--unknown device--";
+
+
+static ULONG __HIDD_AttrBase;
+
+#define ISHIDDATTR(attr, idx) ((idx = attr - __HIDD_AttrBase) < NUM_A_HIDD)
 
 /************************************************************************/
 
@@ -76,41 +86,33 @@ struct HIDDData
 struct HCD
 {
     struct Library		*UtilityBase;
-    struct Library		*BOOPSIBase;
+    struct Library		*OOPBase;
     struct MinList		 hiddList;
     struct SignalSemaphore	 listLock;
 };
 
-#define BOOPSIBase	(((struct HCD *)cl->cl_UserData)->BOOPSIBase)
-#define UtilityBase	(((struct HCD *)cl->cl_UserData)->UtilityBase)
+#define OOPBase	(((struct HCD *)cl->UserData)->OOPBase)
+#define UtilityBase	(((struct HCD *)cl->UserData)->UtilityBase)
 
-/* This is the dispatcher for the root HIDD class. */
+/* Implementation of root HIDD class methods. */
+static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg);
 
-AROS_UFH3(static IPTR, dispatch_hiddclass,
-    AROS_UFHA(Class *,  cl,     A0),
-    AROS_UFHA(Object *, o,      A2),
-    AROS_UFHA(Msg,      msg,    A1)
-)
+
+/******************
+**  HIDD::New()  **
+******************/
+static Object *hidd_new(Class *cl, Object *o, struct P_Root_New *msg)
 {
-    IPTR retval = 0UL;
-    struct HIDDData *hd = NULL;
-
-    /* Don't try and get instance data if we don't have an object. */
-    if(    msg->MethodID != OM_NEW
-	&& msg->MethodID != HIDDM_Class_Get
-	&& msg->MethodID != HIDDM_Class_MGet
-      )
-	hd = INST_DATA(cl, o);
-
-    /* We now dispatch the actual methods */
-    switch(msg->MethodID)
+    EnterFunc(bug("HIDD::New(cl=%s)\n", cl->ClassNode.ln_Name));
+    D(bug("DoSuperMethod:%p\n", cl->DoSuperMethod));
+    o = (Object *)DoSuperMethod(cl, o, (Msg)msg);
+    if(o)
     {
-    case OM_NEW:
-	retval = DoSuperMethodA(cl, o, msg);
-	if(!retval)
-	    break;
-
-	hd = INST_DATA(cl, retval);
+    	struct HIDDData *hd;
+        struct TagItem *list = msg->AttrList;
+	struct P_Root_Set set_msg;
+	
+	hd = INST_DATA(cl, o);
 
 	/*  Initialise the HIDD class. These fields are publicly described
 	    as not being settable at Init time, however it is the only way to
@@ -122,6 +124,135 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	    tags by a TAG_MORE. This way you will prevent them from setting
 	    these values.
 	*/
+
+	hd->hd_Type 	= GetTagData(HIDDA_Type, 	0, list);
+	hd->hd_SubType 	= GetTagData(HIDDA_SubType, 	0, list);
+	hd->hd_Producer = GetTagData(HIDDA_Producer, 	0, list);
+	
+	hd->hd_Name 	= (STRPTR)GetTagData(HIDDA_Name, 	(IPTR)unknown,	list);
+	hd->hd_HWName 	= (STRPTR)GetTagData(HIDDA_HardwareName,(IPTR)unknown,	list);
+	
+	hd->hd_Status 	= GetTagData(HIDDA_Status, 	HIDDV_StatusUnknown, 	list);
+	hd->hd_Locking 	= GetTagData(HIDDA_Locking, 	HIDDV_LockShared, 	list);
+	hd->hd_ErrorCode= GetTagData(HIDDA_ErrorCode, 	0, list);
+
+	hd->hd_Active 	= TRUE; /* Set default, GetTagData() comes later */
+	
+	/* Use OM_SET to set the rest */
+
+
+	set_msg.AttrList = msg->AttrList;
+	hidd_set(cl, o, &set_msg);
+	
+	
+    }
+    
+    ReturnPtr("HIDD::New", Object *, o);
+}
+
+
+/******************
+**  HIDD::Set()  **
+******************/
+
+static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg)
+{
+
+    struct TagItem *tstate = msg->AttrList;
+    struct TagItem *tag;
+    struct HIDDData *hd = INST_DATA(cl, o);
+
+    while((tag = NextTagItem(&tstate)))
+    {
+    	ULONG idx;
+	
+    	if (ISHIDDATTR(tag->ti_Tag, idx))
+	{
+	    switch(idx)
+	    {
+		case HIDDAIDX_Active:
+	    	    hd->hd_Active = tag->ti_Data;
+	    	    break;
+		    
+	    }
+	}
+    }
+    return;
+}
+
+/******************
+**  HIDD::Get()  **
+******************/
+static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
+{
+    struct HIDDData *hd = INST_DATA(cl, o);
+    ULONG idx;
+    
+
+    if (ISHIDDATTR(msg->AttrID, idx))
+    {
+    	switch (idx)
+	{
+	case HIDDAIDX_Type:
+	    *msg->Storage = hd->hd_Type;
+	    break;
+
+	case HIDDAIDX_SubType:
+	    *msg->Storage = hd->hd_SubType;
+	    break;
+
+	case HIDDAIDX_Producer:
+	    *msg->Storage = hd->hd_Producer;
+	    break;
+
+	case HIDDAIDX_Name:
+	    *msg->Storage = (IPTR)hd->hd_Name;
+	    break;
+
+	case HIDDAIDX_HardwareName:
+	    *msg->Storage = (IPTR)hd->hd_HWName;
+	    break;
+
+	case HIDDAIDX_Active:
+	    *msg->Storage = hd->hd_Active;
+	    break;
+
+	case HIDDAIDX_Status:
+	    *msg->Storage = hd->hd_Status;
+	    break;
+
+	case HIDDAIDX_ErrorCode:
+	    *msg->Storage = hd->hd_ErrorCode;
+	    break;
+
+	case HIDDAIDX_Locking:
+	    *msg->Storage = hd->hd_Locking;
+	    break;
+	
+	}
+    }
+    
+    return;
+
+}
+
+
+/***********************************
+**  Unimplemented methods 
+*/
+
+
+
+
+/*    switch(msg->MethodID)
+    {
+    case OM_NEW:
+	retval = DoSuperMethodA(cl, o, msg);
+	if(!retval)
+	    break;
+
+	hd = INST_DATA(cl, retval);
+
 	if( hd != NULL)
 	{
 	    struct TagItem *list = ((struct opSet *)msg)->ops_AttrList;
@@ -130,13 +261,12 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	    hd->hd_Producer = GetTagData(HIDDA_Producer, 0, list);
 	    hd->hd_Name = (STRPTR)GetTagData(HIDDA_Name, (IPTR)unknown, list);
 	    hd->hd_HWName = (STRPTR)GetTagData(HIDDA_HardwareName, (IPTR)unknown, list);
-	    hd->hd_Active = TRUE; /* Set default, GetTagData() comes later */
+	    hd->hd_Active = TRUE; 
 	    hd->hd_Status = GetTagData(HIDDA_Status, HIDDV_StatusUnknown, list);
 	    hd->hd_ErrorCode = GetTagData(HIDDA_ErrorCode, 0, list);
 	    hd->hd_Locking = GetTagData(HIDDA_Locking, HIDDV_LockShared, list);
 	}
 
-	/* Fall through */
     case OM_SET:
     {
 	struct TagItem *tstate = ((struct opSet *)msg)->ops_AttrList;
@@ -154,8 +284,6 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	break;
     }
 
-    case OM_NOTIFY:
-	break;
 
     case OM_GET:
     {
@@ -196,8 +324,11 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	case HIDDA_Locking:
 	    *((struct opGet *)msg)->opg_Storage = hd->hd_Locking;
 	    break;
-	} /* switch(msg->opg_AttrID) */
-    } /* OM_GET */
+	}
+    }
+
+*/
+
 
     /* These are the "hiddclass" methods. */
 
@@ -208,20 +339,19 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 	get the information for these methods is from an object, but
 	we don't have any objects if this method is called.
     */
-    case HIDDM_Class_Get:
+/*    case HIDDM_Class_Get:
     case HIDDM_Class_MGet:
 	retval = 0;
 	break;
-
+*/
     /*	Yet to determine the semantics of these so we just let
 	them return 0 for now.
     */
-    case HIDDM_BeginIO:
+/*    case HIDDM_BeginIO:
     case HIDDM_AbortIO:
 	retval = 0;
 	break;
 
-    /* Return NULL for failure. */
     case HIDDM_LoadConfigPlugin:
     case HIDDM_Lock:
     case HIDDM_Unlock:
@@ -230,12 +360,12 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
 
     case HIDDM_AddHIDD:
     {
-	/* We add a class to the list of HIDD's */
+
 	Class *hc = ((hmAdd *)msg)->hma_Class;
 
 	if( (hc->cl_Flags & CLF_INLIST) == 0 )
 	{
-	    /* A class structure is really a MinNode */
+
 	    ObtainSemaphore(&((struct HCD *)cl->cl_UserData)->listLock);
 	    AddTail(
 		(struct List *)&((struct HCD *)cl->cl_UserData)->hiddList,
@@ -263,19 +393,20 @@ AROS_UFH3(static IPTR, dispatch_hiddclass,
     }
 
     case OM_DISPOSE:
-	/* We don't actually have anything to free - fall through. */
 
     default:
-	/* No idea, send it to the superclass */
 	retval = DoSuperMethodA(cl, o, msg);
-    } /* switch(msg->MethodID) */
+    }
 
     return retval;
 }
-
+*/
 /* This is the initialisation code for the HIDD class itself. */
-#undef BOOPSIBase
+#undef OOPBase
 #undef UtilityBase
+
+#define NUM_ROOT_METHODS 3
+#define NUM_HIDD_METHODS 0
 
 AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     AROS_UFHA(ULONG, dummy1, D0),
@@ -283,9 +414,34 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-    struct Library *BOOPSIBase;
-    struct IClass *cl;
+    struct Library *OOPBase;
+    Class *cl;
     struct HCD *hcd;
+    
+    
+    struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
+    {
+    	{ (IPTR (*)())hidd_new,		MIDX_Root_New		},
+    	{ (IPTR (*)())hidd_set,		MIDX_Root_Set		},
+    	{ (IPTR (*)())hidd_get,		MIDX_Root_Get		},
+    	{ NULL, 0UL }
+    };
+
+    
+    struct MethodDescr hidd_mdescr[NUM_HIDD_METHODS + 1] =
+    {
+    	{ NULL, 0UL }
+    };
+    
+    struct InterfaceDescr ifdescr[] =
+    {
+    	{root_mdescr, IID_Root, NUM_ROOT_METHODS},
+	{hidd_mdescr, IID_Hidd, NUM_HIDD_METHODS},
+	{NULL, NULL, 0UL}
+    
+    };
+    
+    
 
     /*
 	We map the memory into the shared memory space, because it is
@@ -304,8 +460,8 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     NEWLIST(&hcd->hiddList);
     InitSemaphore(&hcd->listLock);
 
-    BOOPSIBase = hcd->BOOPSIBase = OpenLibrary("boopsi.library", 0);
-    if(hcd->BOOPSIBase == NULL)
+    OOPBase = hcd->OOPBase = OpenLibrary("oop.library", 0);
+    if(hcd->OOPBase == NULL)
     {
 	FreeMem(hcd, sizeof(struct HCD));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
@@ -315,21 +471,40 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     hcd->UtilityBase = OpenLibrary("utility.library",0);
     if(hcd->UtilityBase == NULL)
     {
-	CloseLibrary(hcd->UtilityBase);
+	CloseLibrary(hcd->OOPBase);
 	FreeMem(hcd, sizeof(struct HCD));
 	Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_UtilityLib);
 	return NULL;
     }
 
     /* Create the class structure for the "hiddclass" */
-    if((cl = MakeClass(HIDDCLASS, ROOTCLASS, NULL, sizeof(struct HIDDData), 0)))
     {
-	cl->cl_Dispatcher.h_Entry = (APTR)dispatch_hiddclass;
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_Dispatcher.h_Data = cl;
-	cl->cl_UserData = (IPTR)hcd;
-
-	AddClass(cl);
+        ULONG __OOPI_Meta = GetAttrBase(IID_Meta);
+        struct TagItem tags[] =
+    	{
+            {A_Class_SuperID,		(IPTR)CLID_Root},
+	    {A_Class_InterfaceDescr,	(IPTR)ifdescr},
+	    {A_Class_ID,		(IPTR)CLID_Hidd},
+	    {A_Class_InstSize,		(IPTR)sizeof (struct HIDDData) },
+	    {TAG_DONE, 0UL}
+    	};
+    
+	cl = NewObjectA(NULL, CLID_HIDDMeta, tags);
+	if (cl == NULL)
+	{
+	    CloseLibrary(hcd->UtilityBase);
+	    CloseLibrary(hcd->OOPBase);
+	    FreeMem(hcd, sizeof(struct HCD));
+	    Alert(AT_DeadEnd | AG_OpenLib | AN_Unknown | AO_Unknown);
+	    return NULL;
+        }
+	
     }
-    return NULL;
+    
+    cl->UserData = hcd;
+    __HIDD_AttrBase = GetAttrBase(IID_Hidd);
+
+    AddClass(cl);
+
+    return TRUE;
 }

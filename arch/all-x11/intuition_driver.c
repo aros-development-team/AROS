@@ -23,29 +23,27 @@ void UnlockX11();
 #include <exec/alerts.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
-#include <intuition/cghooks.h>
-#include <intuition/gadgetclass.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
-#include <intuition/sghooks.h>
 #include <devices/keymap.h>
 #include <devices/input.h>
+
 #include <hidd/unixio.h>
+
 #include <proto/exec.h>
 #include <proto/intuition.h>
+
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
-#include "gadgets.h"
-#include "propgadgets.h"
-#include "boopsigadgets.h"
-#include "strgadgets.h"
 #undef GfxBase
 #include "graphics_internal.h"
 #define GfxBase _GfxBase
 
 static struct IntuitionBase * IntuiBase;
+
+static struct Library *OOPBase = NULL;
 
 extern Display * sysDisplay;
 extern long sysCMap[];
@@ -64,6 +62,7 @@ static int MySysErrorHandler (Display *);
 
 #define DEBUG	0
 #define DEBUG_ProcessXEvents 0
+#define DEBUG_OpenWindow 0
 
 #include <aros/debug.h>
 
@@ -92,7 +91,7 @@ static int MySysErrorHandler (Display *);
 #define XETASK_STACKSIZE	8192
 #define XETASK_PRIORITY		10
 #define XETASK_NAME		"X11 event task"
-STATIC struct Task *CreateX11EventTask(struct IntuitionBase *IntuitionBase);
+static struct Task *CreateX11EventTask(struct IntuitionBase *IntuitionBase);
 
 
 struct IntWindow
@@ -144,7 +143,8 @@ keytable[] =
     {XK_F8,		0x57, 0,		      "\2337~", "\23317~",0 },
     {XK_F9,		0x58, 0,		      "\2338~", "\23318~",0 },
     {XK_F10,		0x59, 0,		      "\2339~", "\23319~",0 },
-    
+
+/*    
     {XK_A,		0x20, 0,},
     {XK_B,		0x35, 0,},
     {XK_C,		0x33, 0,},
@@ -198,7 +198,7 @@ keytable[] =
     {XK_x,		0x32, 0,},
     {XK_y,		0x15, 0,},
     {XK_z,		0x31, 0,},
-    
+*/    
     {0, -1, 0, },
 };
 
@@ -246,6 +246,7 @@ static int MySysErrorHandler (Display * display)
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
+    
 
     if (!sysDisplay)
 	return False;
@@ -267,6 +268,14 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 int intui_open (struct IntuitionBase * IntuitionBase)
 {
     BOOL success = FALSE;
+    
+    /* Hack */
+    if (!OOPBase)
+    {
+    	OOPBase = OpenLibrary("oop.library", 0);
+    	if (!OOPBase)
+    	    return (FALSE);
+    }	    
     
     if (GetPrivIBase(IntuitionBase)->WorkBench)
     {
@@ -396,6 +405,7 @@ int intui_OpenWindow (struct Window * w,
 
     /* Always show me if the window has changed */
     winattr.event_mask |= StructureNotifyMask;
+    Diow(bug("Set newsize notify\n"));
 
     /* TODO IDCMP_SIZEVERIFY IDCMP_DELTAMOVE */
     winattr.cursor = sysCursor;
@@ -441,7 +451,7 @@ UX11
     
     SIGID ();
 
-    Diow(bug("Opening Window %p (X=%ld)\n", iw, IW(w)->iw_XWindow));
+    Diow(bug("Opening Window %p (X=%ld)\n", w, IW(w)->iw_XWindow));
 
     return 1;
 }
@@ -536,24 +546,30 @@ long XKeyToAmigaCode (XKeyEvent * xk)
     int count;
     long result;
     short t;
+    
+    D(bug("XKeyToAmigaCode()\n"));
 
     result = StateToQualifier (xk->state) << 16L;
 LX11
     xk->state = 0;
     count = XLookupString (xk, buffer, 10, &ks, NULL);
 UX11
+    D(bug("xktac: Event was decoded into %d chars\n", count));
     for (t=0; keytable[t].amiga != -1; t++)
     {
 	if (ks == keytable[t].keysym)
 	{
+	    D(bug("xktac: found in table\n"));
 	    result |= (keytable[t].amiga_qual << 16) | keytable[t].amiga;
-	    return (result);
+	    ReturnInt ("XKeyToAmigaCode", long, result);
 	}
     }
+    
+    D(bug("xktac: Passing X keycode\n", xk->keycode & 0xffff));
 
     result |= xk->keycode & 0xffff;
 
-    return (result);
+    ReturnInt ("XKeyToAmigaCode", long, result);
 } /* XKeyToAmigaCode */
 
 void intui_SizeWindow (struct Window * win, long dx, long dy)
@@ -601,6 +617,9 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
     XKeyEvent xk;
     char * ptr;
     int t;
+    
+    D(bug("intui_RawKeyConvert(ie=%p, buf=%p, size=%ld, km=%p)\n",
+    	ie, buf, size, km));
 
     ie->ie_Code &= 0x7fff;
 
@@ -608,6 +627,7 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
     {
 	if (ie->ie_Code == keytable[t].keycode)
 	{
+	    D(bug("irkc: Found in table at entry %d\n", t));
 	    if (ie->ie_Qualifier & SHIFT)
 		ptr = keytable[t].shifted;
 	    else
@@ -622,6 +642,8 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 	    goto ende;
 	}
     }
+    
+    D(bug("irkc: Converting X Keycode %d\n", ie->ie_Code));
 
     xk.keycode = ie->ie_Code;
     xk.display = sysDisplay;
@@ -656,8 +678,11 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 LX11
     t = XLookupString (&xk, buf, size, NULL, NULL);
 UX11
+    D(bug("Converted into %d keys\n", t));
     if (!*buf && t == 1) t = 0;
     if (!t) *buf = 0;
+    
+
 
 ende:
 /*
@@ -666,7 +691,7 @@ ende:
 	    (ubyte)*buf);
 */
 
-    return (t);
+    ReturnInt ("intui_RawKeyCnvert", LONG, t);
 } /* intui_RawKeyConvert */
 
 void intui_BeginRefresh (struct Window * win,
@@ -722,13 +747,12 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     struct IntWindow * iw;
     struct MsgPort   * inputmp;
     struct IOStdReq  * inputio;
-    static const struct TagItem tags[] = {{ TAG_END, 0 }};
     HIDD unixio;
     
     ULONG	       lock;
     int 	       ret;
     struct InputEvent stack_ie, *ie = &stack_ie;
-    
+  
     inputmp = CreateMsgPort();
     if (!inputmp)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
@@ -740,7 +764,7 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
     if ( 0 != OpenDevice("input.device", -1, (struct IORequest *)inputio, 0))
     	Alert(AT_DeadEnd | AG_OpenDev | AN_Unknown);
     	
-    unixio = (HIDD)NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
+    unixio = (HIDD)New_UnixIO(OOPBase);
     if (!unixio)
     	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
     	
@@ -761,8 +785,9 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
 	    Dipxe(bug("iWE: Waiting for input at %ld\n", ConnectionNumber (sysDisplay)));
 
 	    /* Wait for input to arrive */
-	    ret = DoMethod ((Object *)unixio, HIDDM_WaitForIO,
-			ConnectionNumber (sysDisplay), HIDDV_UnixIO_Read);
+	    ret = (int)HIDD_UnixIO_Wait(  unixio
+	    				, ConnectionNumber (sysDisplay)
+					, HIDDV_UnixIO_Read);
 			
 
 	    Dipxe(bug("iWE: Got input %ld\n", ret));
@@ -865,6 +890,7 @@ UX11
 		    break; }
 
 	        case ConfigureNotify:
+		    Dipxe(bug("Newsize\n"));
 		    if (w->Width != event.xconfigure.width ||
 			w->Height != event.xconfigure.height)
 		    {
@@ -872,7 +898,10 @@ UX11
 		    	w->Height = event.xconfigure.height;
 
 		    	ie->ie_Class = IECLASS_SIZEWINDOW;
+
+		    	Dipxe(bug("Really\n"));
 		    }
+		    
 		    break;
 
 	    	case ButtonPress: {
@@ -931,7 +960,7 @@ UX11
 		    ie->ie_Code = result & 0x0000FFFF;
 		    ie->ie_Qualifier = result >> 16;
 		    
-		    D(bug("xe: keypress: code=%04x, qual=%04x\n",
+		    Dipxe(bug("xe: keypress: code=%04x, qual=%04x\n",
 		    	ie->ie_Code, ie->ie_Qualifier));
 		    break; }
 
@@ -983,9 +1012,9 @@ UX11
     	} /* Until there is an event for AROS  */
     	
     	/* Send the event to input device for processing */
-    	D(bug("xe: Sending event of class %d\n", ie->ie_Class));
+    	Dipxe(bug("xe: Sending event of class %d\n", ie->ie_Class));
     	DoIO((struct IORequest *)inputio);
-    	D(bug("xe: Event sent\n"));
+    	Dipxe(bug("xe: Event sent\n"));
     	
     } /* Forever */
 
