@@ -258,14 +258,12 @@ BOOL AddClusterSender(
 					return FALSE;
 				}
 				driverdata->isOutOpen=TRUE;
-				D(bug("isOutOpen=TRUE\n"));
 			}
 		}
 		midilink=(struct MidiLink *)node;
 		midilink->ml_Location=cluster;
 	}
 
-	D(bug("enqueueing Sen cluster: %lx, node:%lx\n",cluster,node));
 	Enqueue(&cluster->mcl_Senders,node);
 	return TRUE;
 }

@@ -122,8 +122,6 @@ void EndReceiverProc(
 	struct DriverData *driverdata,
 	struct CamdBase *CamdBase
 ){
-	D(bug("closing %lx\n",driverdata));
-
 	Signal((struct Task *)driverdata->ReceiverProc,SIGBREAKF_CTRL_C);
 	while(driverdata->isReceiverProcessAlive==1) Delay(1);
 	FreeVec(driverdata->ReceiverProcName);

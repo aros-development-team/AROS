@@ -39,7 +39,6 @@ void UnlinkMidiLink(
 		if(type==NT_USER-MLTYPE_Receiver){
 			ReleaseSemaphore(&mycluster->semaphore);
 		}
-		D(bug("here3\n"));
 		LinkHasBeenRemovedFromCluster(cluster,CamdBase);
 	}
 

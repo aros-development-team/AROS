@@ -82,7 +82,7 @@
 	struct DriverData *driverdata=NULL;
 
 	ULONG *ErrorCode=(ULONG *)GetTagData(MLINK_ErrorCode,NULL,tags);
-	D(bug("setmidilink2\n"));
+
 	while((tag=NextTagItem(&tstate))){
 		switch(tag->ti_Tag){
 			case MLINK_Name:
@@ -155,18 +155,14 @@
 				break;
 		}
 	}
-	D(bug("setmidilink3\n"));
+
 	if(ret!=FALSE){
-	  D(bug("setmidilink4\n"));
 		clustername=(char *)GetTagData(MLINK_Location,NULL,tags);
-	D(bug("setmidilink5\n"));
 		if(clustername!=NULL){
 			ObtainSemaphore(CB(CamdBase)->CLSemaphore);
-	D(bug("setmidilink6\n"));
 				if(SetClusterForLink(midilink,clustername,ErrorCode,CamdBase)==FALSE){
 					ret=FALSE;
 				}
-	D(bug("setmidilink7\n"));
 			ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 		}
 	}

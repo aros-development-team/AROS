@@ -28,7 +28,6 @@ SAVEDS void CamdTimerProc(void){
 	ULONG sig;
 	int error;
 
-	D(bug("camdtimerproc_start\n"));
 	camdwaitsig=AllocSignal(-1);
 	if(camdwaitsig==-1){
 		camdwaitprocstatus=2;
@@ -41,10 +40,7 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
-	D(bug("camdtimerproc2\n"));
-
 	TimerMP=CreateMsgPort();
-	D(bug("camdtimerproc4\n"));
 	if(TimerMP==NULL){
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
@@ -52,10 +48,8 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
-	D(bug("camdtimerproc6\n"));
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
-	D(bug("camdtimerproc8\n"));
 	if(TimerIO==NULL){
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
@@ -67,8 +61,6 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO->tr_node.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 	TimerIO->tr_node.io_Message.mn_ReplyPort=TimerMP;
 	TimerIO->tr_node.io_Message.mn_Length=sizeof(struct timerequest);
-
-	D(bug("camdtimerproc11\n"));
 
 	/* No support for eclock in AROS. */
 #ifndef _AROS
@@ -92,7 +84,6 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
-	D(bug("camdtimerproc\n"));
 	ObtainSemaphore(&camdwaitsemaphore);
 
 	camdwaittask=FindTask(0L);
@@ -152,11 +143,7 @@ BOOL InitCamdTimer(void){
 	);
 	if(process==NULL) return FALSE;
 
-	D(bug("inittimer1, dosbase: %x\n",DOSBase));
-
 	while(camdwaitprocstatus==0) Delay(1);
-
-	D(bug("inittimer2, dosbase: %x\n",DOSBase));
 
 	if(camdwaitprocstatus==2) return FALSE;
 

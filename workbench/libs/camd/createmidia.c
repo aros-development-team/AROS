@@ -86,8 +86,6 @@
 		AddHead(&CB(CamdBase)->mymidinodes,&midinode->midinode.mi_Node);
 	ReleaseSemaphore(CB(CamdBase)->CLSemaphore);
 
-	D(bug("CreateMidiA okey"));
-
 	return (struct MidiNode *)midinode;
     AROS_LIBFUNC_EXIT
 
