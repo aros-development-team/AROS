@@ -2,11 +2,11 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc:
     Lang: english
 */
 #include <proto/exec.h>
 #include <dos/dosextens.h>
+
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -24,21 +24,18 @@
 	struct DosLibrary *, DOSBase, 158, Dos)
 
 /*  FUNCTION
+        This routine writes an unformatted string to the default output.  No 
+        newline is appended to the string and any error is returned.  This
+        routine is buffered.
 
     INPUTS
+        str   - Null-terminated string to be written to default output
 
     RESULT
-
-    NOTES
-
-    EXAMPLE
-
-    BUGS
+        error - 0 for success, -1 for any error.
 
     SEE ALSO
-	FGetC(), IoErr()
-
-    INTERNALS
+        FGetC(), IoErr()
 
 *****************************************************************************/
 {
@@ -47,11 +44,7 @@
 
     BPTR file=((struct Process *)FindTask(NULL))->pr_COS;
 
-    while(*string){
-        if(FPutC(file,*string++)<0)
-            return EOF; }
-            
-    return 0;
+    return(FPuts(file, string));
     
     AROS_LIBFUNC_EXIT
 } /* PutStr */
