@@ -82,7 +82,11 @@ void freelayers(void)
   for (i=0; i < 10; i++) 
   {
     if (NULL != layers[i])
+    {
+      if (layers[i]->SuperBitMap)
+        FreeBitMap(layers[i]->SuperBitMap);
       DeleteLayer(0, layers[i]);
+    }
   }
 }
 
@@ -292,6 +296,30 @@ void movelayer(void)
   {
     MoveLayer(0, layers[i], dx, dy);
     printf("Moved layer with id %d to new position.\n",i);
+  }
+  else
+  {
+    printf("No layer with id %d\n",i);
+  }
+}
+
+void movesizelayer(void)
+{
+  int i,dx,dy,dw,dh;
+  printf("Move and size layer with id: ");
+  scanf("%d",&i);
+  printf("delta x: ");
+  scanf("%d",&dx);
+  printf("delta y: ");
+  scanf("%d",&dy);
+  printf("delta width: ");
+  scanf("%d",&dw);
+  printf("delta height: ");
+  scanf("%d",&dh);
+  if (layers[i])
+  {
+    MoveSizeLayer(layers[i], dx, dy, dw, dh);
+    printf("Moved and sized layer with id %d.\n",i);
   }
   else
   {
@@ -894,7 +922,7 @@ void doall(void)
     {
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
-        printf("movelayer [ml]  motion [mot] \n");
+        printf("movelayer [ml] movesizelayer [msl] motion [mot] \n");
         printf("Frame [F]  DemoA DemoB DemoC\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
@@ -924,6 +952,10 @@ void doall(void)
     else if (!strcmp(buf, "movelayer") || !strcmp(buf, "ml")) 
     {
       movelayer();
+    }     
+    else if (!strcmp(buf, "movesizelayer") || !strcmp(buf, "msl")) 
+    {
+      movesizelayer();
     }     
     else if (!strcmp(buf, "motion") || !strcmp(buf, "mot")) 
     {
