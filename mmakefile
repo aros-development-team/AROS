@@ -17,7 +17,7 @@ shell : $(BINDIR)/arosshell
 	@$(NOP)
 
 #MM
-setup : 
+setup :
 	@$(RM) $(TOP)/errors
 	@$(FOR) dir in $(BINDIR) $(GENDIR) ; do \
 	    $(IF) [ ! -d $$dir ]; then \
@@ -27,7 +27,7 @@ setup :
 	done
 	@$(IF) [ ! -f $(BINDIR)/.gdbinit ]; then \
 	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
-	else true ; fi 
+	else true ; fi
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBS} Flags which are passed to the linker for executables.
@@ -245,7 +245,8 @@ dist-src :
 # END_DESC{target}
 #MM
 clean :
-	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log errors
+	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log \
+	    errors crypt
 
 # BEGIN_DESC{internaltarget}
 # \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
