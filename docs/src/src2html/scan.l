@@ -88,9 +88,11 @@ TEXT	    ([^\\\|{]|\n)+
 			yyerror("Can't open include file %s: %s",
 			    name, strerror (errno));
 
+		    printf ("Including %s...\n", name);
+
 		    while ((c = fgetc (fh)) != EOF)
 		    {
-			emit_char (c);
+			emit_char_always (c);
 		    }
 
 		    fclose (fh);
