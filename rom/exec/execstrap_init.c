@@ -6,6 +6,7 @@
     Lang: english
 */
 #define DEBUG 0
+#define LMBSUPPORT 1
 
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -13,7 +14,7 @@
 #include <exec/execbase.h>
 #include <proto/exec.h>
 
-#if DEBUG > 0
+#if LMBSUPPORT > 0
 #include <hardware/cia.h>
 #endif
 
@@ -89,7 +90,7 @@ struct SpecialResident resident =
 };
 
 const char name[] = "exec.strap";
-const char version[] = "$VER: exec.strap 41.9 (21.3.97)";
+const char version[] = "$VER: exec.strap 41.9 (21.3.1997)";
 
 /*
     Array of function slots to enable/disable. They are all set to 1 (enabled)
@@ -124,7 +125,7 @@ UBYTE dearray[] =
 
 int start(void)
 {
-#if DEBUG > 0
+#if LMBSUPPORT > 0
     UBYTE *ciapra = (void *)0xbfe001;
 #endif
     struct ExecBase *SysBase;
@@ -133,7 +134,7 @@ int start(void)
     SysBase = *(void **)4;
     cpuflags = SysBase->AttnFlags;
 
-#if DEBUG > 0
+#if LMBSUPPORT > 0
     if(!(*ciapra & CIAF_GAMEPORT0))
     {
 	D(bug("\nLMB pressed. Clearing reset vectors and resetting.\n\n"));
