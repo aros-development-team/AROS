@@ -13,7 +13,9 @@
 #ifndef EXEC_TASKS_H
 #   include <exec/tasks.h>
 #endif
-
+#ifndef EXEC_ALERTS_H
+#   include <exec/alerts.h>
+#endif
 
 #ifndef DEBUG
 #   define DEBUG 0
@@ -130,6 +132,12 @@
  *	ASSERT_VALID_PROCESS(p)
  *		Checks that the pointer <p> points to a valid Process
  *		structure and outputs a debug message otherwise.
+ *
+ *	KASSERT(x)
+ *		Do nothing if the expression <x> evalutates to a
+ *		non-zero value, output a debug message, and cause an
+ *		Alert() otherwise. This should only be used in kernel code.
+ *
  */
 #undef DBPRINTF
 #undef THIS_FILE
@@ -179,6 +187,12 @@
 	ASSERT((p)->pr_Task.tc_Node.ln_Type == NT_PROCESS);	\
 } while(0)
 
+#define KASSERT(x) do {						\
+	(x) ? 0 :						\
+	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
+	THIS_FILE, __LINE__, #x), Alert(AG_BadParm) );		\
+} while(0)
+
 #else /* !ADEBUG */
 
 #   define ASSERT(x)
@@ -186,6 +200,7 @@
 #   define ASSERT_VALID_PTR_OR_NULL(x)
 #   define ASSERT_VALID_TASK(t)
 #   define ASSERT_VALID_PROCESS(p)
+#   define KASSERT(x)
 
 #endif /* ADEBUG */
 
