@@ -27,6 +27,7 @@ utility_functable.c: $(foreach f,$(FILES),$(f).c) \
 	    $(foreach f,$(FILES),$(f).c)
 
 $(OSGENDIR)/%.d: %.c
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
