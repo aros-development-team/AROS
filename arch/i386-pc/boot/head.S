@@ -48,6 +48,9 @@
 #include <aros/config.h>
 #include <asm/segments.h>
 
+#define MBMagic 0x1badb002
+#define MBFlags 0x00010003
+
                 .globl  startup_32
 startup_32:
                 jmp     start	/* Skip header */
@@ -61,6 +64,17 @@ startup_32:
                 .byte	0
                 .ascii	"ALPHA "
                 .byte	0
+
+		/* Multiboot structure for GRUB */
+		.align	4
+MBHeader:	.long	MBMagic
+		.long	MBFlags
+		.long	-(MBMagic+MBFlags)
+		.long	MBHeader
+		.long	startup_32
+		.long	_edata
+		.long	_end
+		.long	start
 
                 .balign 16
 
