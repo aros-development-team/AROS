@@ -66,23 +66,19 @@
   if ( SS_GRAPHICS == node->xln_Subsystem &&
        NT_GRAPHICS == node->xln_Type)
   {
+    LONG * Hash = GfxBase -> hash_table;
+    ULONG Index = CalcHashIndex((ULONG)((struct ViewExtra *)node) -> View);
     /* take the element out of the hashlist, if it is in the
        hashlist  */
 
     /* if the element has a Successor */
     if (NULL != node -> xln_Succ)
       ((struct ExtendedNode *)(node -> xln_Succ)) -> xln_Pred = (struct Node *) (node -> xln_Pred);
-    /* if the element has a Predecessor */
-    if (NULL != node -> xln_Pred)
-      ((struct ExtendedNode *)(node -> xln_Pred)) -> xln_Succ = (struct Node *) (node -> xln_Succ);
-    /* if it doesn`t have a Predecessor it`s the first one in
-       this list */
-    else
-      {
-        LONG * Hash = GfxBase -> hash_table;
-        ULONG Index = CalcHashIndex((ULONG)((struct ViewExtra *)node) -> View);
-        Hash[Index] = NULL;
-      }
+
+    /* if the previous Element is not the hashlist itself */
+    /* (the same code works also if the previous entry is the hashlist ) */
+    ((struct ExtendedNode *)(node -> xln_Pred)) -> xln_Succ = (struct Node *) (node -> xln_Succ);
+
     FreeMem((void *) node, GfxNew_memsizes[node->xln_Subtype]);
   }
 } /* GfxFree */

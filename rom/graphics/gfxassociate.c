@@ -73,12 +73,13 @@
   */
 
   ((struct ViewExtra *)node) -> View = pointer;
-	Forbid();
-	  /* Insert the structure into a hash_list which is to be found
-	     in the gfxlibrary */
-	  if (NULL != Hash[Index])
-	    ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
-	  node -> xln_Succ = (struct Node *)Hash[Index];
-	  Hash[Index] = (LONG)node;
-	Permit();
+        Forbid();
+          /* Insert the structure into a hash_list which is to be found
+             in the gfxlibrary */
+          if (NULL != Hash[Index])
+            ((struct ExtendedNode *)Hash[Index]) -> xln_Pred = (struct Node *)node;
+          node -> xln_Succ = (struct Node *)Hash[Index];
+          node -> xln_Pred = (struct Node *)&Hash[Index];
+          Hash[Index] = (LONG)node;
+        Permit();
 } /* GfxAssociate */
