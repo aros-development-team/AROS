@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI C function bzero()
@@ -59,6 +59,8 @@
 	    *ulptr ++ = 0UL;
 	    len -= sizeof(ULONG);
 	}
+	
+	bptr = (UBYTE *)ulptr;
     }
 
     while (len --)
