@@ -10,5 +10,7 @@
 #MM	    workbench-s	\
 #MM	    workbench-hidds \
 #MM	    workbench-locale \
+#MM	    workbench-fonts \
+#MM	    workbench-system \
 #MM	    tools
 
