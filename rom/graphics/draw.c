@@ -31,7 +31,14 @@
     RESULT
 
     NOTES
-
+    	Not yet implemented:
+	
+	  - handle layer->Scroll_X/Scroll_Y.
+	  
+	  - handle FRST_DOT which indicates whether to draw
+	    or to don't draw first pixel of line. Important
+	    for COMPLEMENT drawmode.
+	
     EXAMPLE
 
     BUGS
@@ -84,14 +91,20 @@
     }
 
     {
-    	struct TagItem gctags[] =
-	{
-	    {aHidd_GC_LinePattern   , rp->LinePtrn  },
-	    {aHidd_GC_LinePatternCnt, rp->linpatcnt },
-	    {TAG_DONE	    	    	    	    }
-	};
+    	UWORD lineptrn = rp->LinePtrn;
 	
-	OOP_SetAttrs( gc, gctags);
+	if (rp->DrawMode & INVERSVID) lineptrn = ~lineptrn;
+	
+	{
+    	    struct TagItem gctags[] =
+	    {
+		{aHidd_GC_LinePattern   , lineptrn      },
+		{aHidd_GC_LinePatternCnt, rp->linpatcnt },
+		{TAG_DONE	    	    	    	}
+	    };
+
+	    OOP_SetAttrs( gc, gctags);
+    	}
     }
          
 	
