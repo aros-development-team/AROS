@@ -26,6 +26,13 @@ void chkabort(void) { return; }     /* really */
 
 struct Library *AslBase = NULL;
 
+struct TagItem fotags1[] =
+{
+    {ASLFO_TitleText	, (IPTR)"Also showing disk fonts"   },
+    {ASLFO_InitialFlags , 0 	    	    	    	    },
+    {TAG_DONE	    	    	    	    	    	    }
+};
+
 static void showrequester(char *msg, struct TagItem *tags)
 {
     struct FontRequester *freq;
@@ -47,6 +54,7 @@ int main(int argc, char **argv)
     if ((AslBase = OpenLibrary("asl.library", 37L)))
     {
 	showrequester("Default requester with no tags", NULL);
+	showrequester(NULL, fotags1);
 
 	CloseLibrary(AslBase);
     } else {
