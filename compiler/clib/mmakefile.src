@@ -179,6 +179,7 @@ SHARED	:= \
         getpwent \
         getpwnam \
         getpwuid \
+    getw \
 	gmtime \
 	isatty \
 	jrand48 \
@@ -207,6 +208,7 @@ SHARED	:= \
 	printf \
 	putenv \
 	puts \
+    putw \
 	qsort \
 	rand \
 	random \
