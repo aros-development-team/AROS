@@ -9,6 +9,7 @@ MODTYPE := library
 CLASSES   := application \
     	     area \
 	     boopsi \
+	     dataspace \
 	     family \
 	     group \
 	     menuitem \
