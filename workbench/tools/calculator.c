@@ -294,6 +294,7 @@ static void InitGUI(void)
 	ledheight +
 	INNER_SPACING_Y * 2;
     
+    DeInitRastPort(&temprp);
     strcpy(ledstring,"0");
 }
 
