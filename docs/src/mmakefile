@@ -251,22 +251,22 @@ devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 status.inc :
 	gawk -f stathtml.gawk > $@.new
 	@$(MIC) $@.new $@
-	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
+	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch background.src ; fi
 
 jobserv-free.inc :
 	./jobserv-showfree.cgi > $@.new
 	@$(MIC) $@.new $@
-	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
+	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
 
 jobserv-work.inc :
 	./jobserv-showwork.cgi > $@.new
 	@$(MIC) $@.new $@
-	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
+	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
 
 jobserv-done.inc :
 	./jobserv-showdone.cgi > $@.new
 	@$(MIC) $@.new $@
-	@if $(TEST) -e $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
+	@if $(TEST) -f $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
 
 .PHONY : status.inc jobserv-free.inc jobserv-work.inc jobserv-done.inc
 

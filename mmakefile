@@ -175,7 +175,7 @@ $(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
 #
 # END_DESC{internaltarget}
 checkerr :
-	@if $(TEST) -e $(TOP)/errors ; then \
+	@if $(TEST) -f $(TOP)/errors ; then \
 	    $(RM) $(TOP)/errors ; \
 	    $(ECHO) "There have been errors" ; \
 	    find . -name "*.err" -print ; \

@@ -17,7 +17,7 @@ symoffset="$2"
 sym="$3"
 hitaddr="$4"
 
-if [ ! -e "$module" ]; then
+if [ ! -f "$module" ]; then
     echo "$0: $module: no such file"
     exit 1
 fi

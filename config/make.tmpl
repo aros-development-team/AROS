@@ -147,8 +147,8 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 %define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile top=$(TOP)
 	@$(FOR) dir in %(dirs) ; do \
 	    $(ECHO) "%(text) in %(curdir)/$$dir..." ; \
-	    if $(TEST) -e $$dir/%(submf).src && \
-		{ $(TEST) ! -e $$dir/%(submf) \
+	    if $(TEST) -f $$dir/%(submf).src && \
+		{ $(TEST) ! -f $$dir/%(submf) \
 		-o $$dir/%(submf).src -nt $$dir/%(submf) \
 		-o %(top)/config/make.tmpl -nt $$dir/%(submf) ; } ; then \
 		$(ECHO) "Generating %(submf)..." ; \
