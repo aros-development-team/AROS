@@ -830,8 +830,10 @@ static Object *sizebutton_new(Class *cl, Object *o, struct opSet *msg)
 	ULONG dispose_mid = OM_DISPOSE;
 	struct DrawInfo *dri;
 	
-	memset(data, 0, sizeof (struct sizebutton_data));
-	
+	/*
+	  The instance object is cleared memory!
+	  memset(data, 0, sizeof (struct sizebutton_data));
+	*/
 	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
 	if (dri)
 	{
@@ -951,8 +953,10 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	ULONG dispose_mid = OM_DISPOSE;
 	struct DrawInfo *dri;
 	
-	memset(data, 0, sizeof (struct tbb_data));
-	
+	/*
+	  The instance object is cleared memory!
+	  memset(data, 0, sizeof (struct tbb_data));
+	*/
 	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
 	if (dri)
 	{

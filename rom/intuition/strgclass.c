@@ -228,7 +228,10 @@ STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
 	STRPTR textval;
 
 	struct StrGData *data = INST_DATA(cl, o);
-	memset(data, 0, sizeof (struct StrGData));
+	/*
+	  The instance object is cleared memory!
+	  memset(data, 0, sizeof (struct StrGData));
+	*/
 
 	/* Set some defaults */
 	data->StrInfo.MaxChars = 80;

@@ -457,7 +457,10 @@ AROS_UFH3S(IPTR, dispatch_gadgetclass,
 	if (retval)
 	{
 	    /* set some defaults */
-	    memset (EG(retval), 0, sizeof(struct GadgetData));
+	    /*
+	      The instance object is cleared memory!
+	      memset (EG(retval), 0, sizeof(struct GadgetData));
+	    */
 	    EG(retval)->Flags      = GFLG_EXTENDED;
 	    EG(retval)->GadgetType = GTYP_CUSTOMGADGET;
 

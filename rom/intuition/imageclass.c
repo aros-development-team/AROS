@@ -96,7 +96,10 @@ AROS_UFH3S(IPTR, dispatch_imageclass,
 		    This is how Intuition knows an image is a boopsi
 		    object!
 		*/
-		memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
+		/*
+		  The instance object is contains cleared memory!
+	 	  memset ((void *)retval, 0, (cl->cl_InstOffset + cl->cl_InstSize));
+		*/
 		IM(retval)->Depth = CUSTOMIMAGEDEPTH;
 	    }
 	}

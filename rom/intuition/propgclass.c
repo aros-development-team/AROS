@@ -331,7 +331,10 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
     	EG(o)->SpecialInfo = &(data->propinfo);
 	    	
    	/* Set some default values in the propinfo structure */
-	memset(&(data->propinfo), 0, sizeof (struct PropInfo));
+   	/*
+   	  The instance object is cleared memory!
+  	  memset(&(data->propinfo), 0, sizeof (struct PropInfo));
+  	*/
     	data->propinfo.Flags	= PROPNEWLOOK|AUTOKNOB|FREEVERT;
     	data->propinfo.VertPot	= MAXPOT;
     	data->propinfo.VertBody = 20000;
