@@ -146,7 +146,7 @@ struct MUI_DragImage
 struct MUI_AreaData
 {
     struct MUI_RenderInfo *mad_RenderInfo; /* RenderInfo for this object */
-    LONG               mad_FontPreset;     /* MUI font wanted -- PRIVATE */
+    LONG               mad_FontPreset;     /* MUI font wanted - private */
     struct TextFont   *mad_Font;           /* Font which is used to draw */
     struct MUI_MinMax  mad_MinMax;         /* min/max/default dimensions */
     struct IBox        mad_Box;            /* coordinates and dim of this object after layouted */
