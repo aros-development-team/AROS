@@ -223,17 +223,59 @@ void hexdumpfile(struct file *in, struct file *out)
     }
 }
 
-LONG dumpfile(struct file *in, struct file *out)
+void putlinenumber(struct file * out, unsigned short line)
 {
-    LONG c;
+  int i;
+  int x = 10000;
+  BOOL s = FALSE;
+
+  while (x)
+  {
+    if (line / x || s)
+    {
+      putc(out, line/x+'0');
+      line %= x;
+      s = TRUE;
+    }
+    else
+      putc(out, ' ');
+
+    x/=10;
+  }  
+  
+  putc(out, ' ');
+}
+
+LONG dumpfile(struct file *in, struct file *out, BOOL showline)
+{
+    LONG c, lastc = 0;
+    unsigned short line = 0;
+    
+    if (showline)
+      putlinenumber(out, ++line);
+    
     if(1/*IsInteractive(out->fd)*/)
 	for(;;)
 	{
 	    c=getc(in);
 	    if(c<0)
+	    {
+	        if (lastc!='\n')
+	          putc(out, '\n');
 		return 0;
+            }
+
+	    if (lastc=='\n' && showline)
+	      putlinenumber(out, ++line);
+
 	    if(putc(out,c)||(c=='\n'&&put(out)))
+	    {
+	        if (c!='\n')
+	          putc(out, '\n');
 		return 1;
+	    }
+	
+	    lastc = c;
 	}
 }
 
@@ -269,10 +311,9 @@ int main (int argc, char ** argv)
 		if(args[3] || (args[2] && (!strcmp((const char *)args[2], "h"))))
 		    hexdumpfile(in,out);
 		else if (args[4] || (args[2] && (!strcmp((const char *)args[2], "n"))))
-#warning TODO: option NUMBER not implemented
-		    VPrintf("Type: OPT N / NUMBER not implemented\n", NULL);
+		    dumpfile(in,out,TRUE);
 		else
-		    dumpfile(in,out);
+		    dumpfile(in,out,FALSE);
 		Close(in->fd);
 	    }else
 	    {
