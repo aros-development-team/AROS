@@ -8,10 +8,8 @@ FILES 	    := unpack package bzip2 file support
 EXEDIR      := $(AROS_C)
 EXE 	    := $(EXEDIR)/Unpack
 
-USE_AROSLIB     := yes
 USE_CLIB_STATIC := yes
-USE_AMIGALIB    := yes
-USE_MLIB        := yes
+#USE_AMIGALIB    := yes
 
 #MM workbench-c-unpack : includes linklibs 
 
