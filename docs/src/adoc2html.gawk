@@ -7,10 +7,10 @@ BEGIN {
     {
 	file=ARGV[t];
 	bn=basename(file);
-	printf ("%3d%% %-60s\r", t*100/ARGC, bn) >> stderr;
-	if (substr(bn,1,1)=="6")
-	    print "\n"file >> stderr;
-	fflush(stderr);
+#	 printf ("%3d%% %-60s\r", t*100/ARGC, bn) >> stderr;
+#	 if (substr(bn,1,1)=="6")
+#	     print "\n"file >> stderr;
+#	 fflush(stderr);
 
 	LIBS["clib"]="ANSI C linklib";
 	LIBS["alib"]="amiga.lib";
@@ -400,7 +400,7 @@ BEGIN {
 	close (file);
     }
 
-    printf ("\n") >> stderr;
+#    printf ("\n") >> stderr;
 }
 
 function basename(file) {

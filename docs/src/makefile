@@ -48,7 +48,8 @@ $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
 	chmod a+r $@
 
 $(DEST)toc.html : $(SRCS) tochtml.gawk
-	gawk -f tochtml.gawk $(SRCS) > $@
+	@echo "Generating HTML Autodocs"
+	@gawk -f tochtml.gawk $(SRCS) > $@
 	chmod a+r $@
 
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
