@@ -9,7 +9,7 @@
 #include <proto/arossupport.h>
 #include "icon_intern.h"
 
-//#define OUTPUT_DATA
+/*#define OUTPUT_DATA*/
 
 struct OldDrawerData
 {
