@@ -1,0 +1,60 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES		:= -I.
+OBJDIR			:= $(GENDIR)/compiler/zlib
+INCDIR			:= $(BINDIR)/include
+LIB			:= $(LIBDIR)/libarosz.a
+DEST_INCLUDE_FILES	:= $(INCDIR)/zconf.h $(INCDIR)/zlib.h $(INCDIR)/zutil.h
+ZLIBCFLAGS		:= $(TARGET_CFLAGS) -DAROS -DNO_ERRNO_H
+%define_libs
+
+FILES := \
+	adler32 \
+	compress \
+	crc32 \
+	gzio \
+	uncompr \
+	deflate \
+	trees \
+	zutil \
+	inflate \
+	infblock \
+	inftrees \
+	infcodes \
+	infutil \
+	inffast
+	
+OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+#MM linklibs : setup includes
+linklibs : $(LIB)
+	@$(NOP)
+
+#MM
+includes-copy : $(DEST_INCLUDE_FILES)
+	@$(NOP)
+	
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(INCDIR)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB)
+
+$(INCDIR)/%.h: %.h
+	$(CP) $< $@
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(SYS_CC) opt=$(ZLIBCFLAGS)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=$(ZLIBCFLAGS)
+
+%common
+%include_deps
