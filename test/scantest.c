@@ -47,7 +47,7 @@ void ReadAll(BPTR lock)
   FreeVec(FIB);
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   BPTR lock;
 
@@ -60,4 +60,6 @@ void main(int argc, char *argv[])
   }
   else
     printf("no such directory/assign!\n");
+
+    return 0;
 }

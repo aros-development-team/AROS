@@ -34,4 +34,6 @@ int main(void)
 	days++;
 	
     } while (days < 365 * 300); /* around 300 years */
+
+    return 0;
 }
