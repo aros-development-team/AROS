@@ -3,5 +3,6 @@ endtag.c
 libdefs.h
 *.s
 *.map
+*.err
 mmakefile
 functions.[ch]
