@@ -5,6 +5,7 @@
 #include <aros/oldprograms.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rastport.h> 
+#include <stdio.h>
 
 struct NewWindow MyWin =
   {
