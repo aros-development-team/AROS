@@ -17,7 +17,7 @@ all : $(MKFSAFFS)
 
 $(MKFSAFFS) : mkfsaffs.c
 	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@ $(ADFLIB)
+	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@ -L$(dir $(ADFLIB)) -ladf
 	@$(HOST_STRIP) $(MKFSAFFS)
 
 clean :
