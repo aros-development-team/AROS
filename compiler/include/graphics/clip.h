@@ -33,7 +33,11 @@ struct Layer
     struct RastPort  * rp;
     struct Rectangle   bounds;
 
+#if 1
+    struct Layer * parent;
+#else
     UBYTE reserved[4];
+#endif
     UWORD priority;
     UWORD Flags;
 
@@ -54,7 +58,13 @@ struct Layer
     struct SignalSemaphore   Lock;
     struct Hook            * BackFill;
 
+#if 1
+    struct Region * VisibleRegion;
+    struct Region * shape;
+    unsigned int nesting;
+#else
     ULONG reserved1;
+#endif
 
     struct Region * ClipRegion;
     struct Region * saveClipRects;
@@ -63,7 +73,12 @@ struct Layer
     WORD Height;
 
     UBYTE SuperSaveClipRectCounter;
+#if 1
+    UBYTE visible;
+    UBYTE reserved2[16];
+#else
     UBYTE reserved2[17];
+#endif
 
     struct Region * DamageList;
 };
@@ -98,4 +113,22 @@ cliprects */
 #define ALIGN_OFFSET(x) ((x) & 0x0F)
 
 
+#define LA_PRIORITY	100
+#define LA_HOOK		101
+#define LA_SUPERBITMAP	102
+#define LA_CHILDOF	103
+#define LA_INFRONTOF	104
+#define LA_BEHIND	105
+#define LA_VISIBLE	106
+#define LA_SHAPE	107
+
+#define ROOTPRIORITY		0
+#define BACKDROPPRIORITY	10
+#define UPFRONTPRIORITY		20
+
+#define IS_VISIBLE(l) (TRUE == l->visible)
+#define IS_EMPTYREGION(r) (NULL == r->RegionRectangle)
+
+
 #endif /* GRAPHICS_CLIP_H */
+
