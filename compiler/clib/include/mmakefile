@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-INCDIR		:= $(BINDIR)/include
+INCDIR		:= $(BINDIR)/Include
 INCLUDES	:= $(wildcard *.h sys/*.h)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 

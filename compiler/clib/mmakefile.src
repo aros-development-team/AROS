@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES	:= -Iinclude
 OBJDIR		:= $(GENDIR)/compiler/clib
-INCDIR		:= $(BINDIR)/include
+INCDIR		:= $(BINDIR)/Include
 LIB		:= $(LIBDIR)/libarosc.a
 
 %define_libs
