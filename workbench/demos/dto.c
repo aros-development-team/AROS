@@ -64,13 +64,11 @@ void PrintErrorMsg (ULONG errnum, STRPTR name)
 {
     UBYTE errbuff[80];
 
-kprintf("dto: printerrormsg errnum = %d\n", errnum);
-kprintf("dto: dtstring = %s\n", GetDTString(errnum));
-
     if (errnum >= DTERROR_UNKNOWN_DATATYPE)
 	sprintf (errbuff, GetDTString (errnum), name);
     else
 	Fault (errnum, NULL, errbuff, sizeof (errbuff));
+
     printf ("%s\nerror #%ld\n", errbuff, errnum);
 }
 
@@ -106,21 +104,17 @@ void main (int argc, char **argv)
     memset (options, 0, sizeof (options));
     if ((rdargs = ReadArgs (TEMPLATE, (LONG *)options, NULL)))
     {
-kprintf("dto 1\n");
 	/* Open DataTypes */
 	if ((DataTypesBase = OpenLibrary ("datatypes.library", 39)))
 	{
-kprintf("dto 2\n");
 	    /* Open the other libraries */
 	    IntuitionBase = (struct IntuitionBase *)OpenLibrary ("intuition.library", 39);
 	    GfxBase = (struct GfxBase *)OpenLibrary ("graphics.library", 39);
 	    UtilityBase = (struct UtilityBase *)OpenLibrary ("utility.library", 39);
-kprintf("dto 3\n");
 
 	    /* Get a DataType object */
 	    if ((dto = NewDTObject ((APTR) options[OPT_NAME], TAG_DONE, TAG_DONE)))
 	    {
-kprintf("dto 4\n");
 		/* Get information about the object */
 		if (GetDTAttrs (dto,
 				/* Get the name of the object */
@@ -134,7 +128,6 @@ kprintf("dto 4\n");
 				PDTA_ModeID,		&modeid,
 				TAG_DONE))
 		{
-kprintf("dto 5\n");
 
 		    /* Display any information we obtained */
 		    if (name)
@@ -146,7 +139,6 @@ kprintf("dto 5\n");
 		    /* Display the nominal size */
 		    printf ("nominal width %ld, height %ld\n", nomwidth, nomheight);
 		}
-kprintf("dto 6\n");
 
 		/* Ask the object what kind of environment it needs */
 		memset (&dtf, 0, sizeof (struct dtFrameBox));
@@ -155,7 +147,7 @@ kprintf("dto 6\n");
 		dtf.dtf_FrameInfo = &fri;
 		dtf.dtf_ContentsInfo = &fri;
 		dtf.dtf_SizeFrameInfo = sizeof (struct FrameInfo);
-kprintf("dto 7\n");
+
 		if (DoDTMethodA (dto, NULL, NULL, &dtf) && fri.fri_Dimensions.Depth)
 		{
 		    printf ("PropertyFlags : 0x%lx\n", fri.fri_PropertyFlags);
@@ -167,7 +159,6 @@ kprintf("dto 7\n");
 		    printf ("Depth         : %ld\n", (ULONG) fri.fri_Dimensions.Depth);
 		    printf ("Screen        : 0x%lx\n", fri.fri_Screen);
 		    printf ("ColorMap      : 0x%lx\n", fri.fri_ColorMap);
-kprintf("dto 8\n");
 
 		    if ((fri.fri_PropertyFlags & DIPF_IS_HAM) ||
 			(fri.fri_PropertyFlags & DIPF_IS_EXTRAHALFBRITE))
@@ -184,7 +175,6 @@ kprintf("dto 8\n");
 		}
 		else
 		    printf ("couldn't obtain environment information\n");
-kprintf("dto 9\n");
 
 		if (useScreen)
 		{
@@ -220,7 +210,7 @@ kprintf("dto 9\n");
 					      TAG_DONE))
 
 		    {
-kprintf("dto 10\n");
+
 			/* Set the dimensions of the DataType object. */
 			SetDTAttrs (dto, NULL, NULL,
 				    GA_Left,	win->BorderLeft,
@@ -229,15 +219,12 @@ kprintf("dto 10\n");
 				    GA_RelHeight,	- win->BorderTop - win->BorderBottom,
 				    ICA_TARGET,	ICTARGET_IDCMP,
 				    TAG_DONE);
-kprintf("dto 11\n");
 
 			/* Add the object to the window */
 			AddDTObject (win, NULL, dto, -1);
-kprintf("dto 12\n");
 
 			/* Refresh the DataType object */
 			RefreshDTObjects (dto, win, NULL, NULL);
-kprintf("dto 13\n");
 
 			/* Keep going until we're told to stop */
 			while (going)
@@ -309,14 +296,11 @@ kprintf("dto 13\n");
 			    }
 			}
 
-kprintf("dto: 96\n");    
 			/* Remove the object from the window */
 			RemoveDTObject (win, dto);
-kprintf("dto: 97\n");    
 
 			/* Close the window now */
 			CloseWindow (win);
-kprintf("dto: 98\n");    
 		    }
 		    else
 			printf ("couldn't open window\n");
@@ -326,15 +310,12 @@ kprintf("dto: 98\n");
 		}
 		else
 		    printf ("couldn't lock default public screen\n");
-kprintf("dto: 99\n");    
 
 		/* Dispose of the DataType object */
 		DisposeDTObject (dto);
 	    }
 	    else
 		PrintErrorMsg (IoErr (), (STRPTR) options[OPT_NAME]);
-
-kprintf("dto: 100\n");    
 
 	    /* Close the libraries */
 	    CloseLibrary ((struct Library *)UtilityBase);
