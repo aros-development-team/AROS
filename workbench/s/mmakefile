@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 # First try to install arch/cpu specific hidd.prefs
 #MM workbench-s : workbench-s-$(ARCH)-$(CPU) workbench-s-hiddprefs-$(ARCH)-$(CPU)
-workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs
+workbench-s : $(SDIR)/Startup-Sequence $(SDIR)/hidd.prefs $(SDIR)/Shell-Startup
 	@$(NOP)
 
 $(SDIR)/Startup-Sequence : Startup-Sequence
