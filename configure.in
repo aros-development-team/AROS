@@ -141,6 +141,7 @@ AROS_PROG(NOP,[true])
 AROS_PROG(LITE,[lite])
 AROS_PROG(PYTHON,[python])
 AROS_PROG(GNUPLOT,[gnuplot])
+AROS_PROG(CAT,[cat])
 
 FOR=for
 IF=if
@@ -219,14 +220,14 @@ case "$target_os" in
 	aros_target_arch="linux"
 	case "$target_cpu" in
 	    *m68k*)
-		aros_cpu="m68k"
+		aros_target_cpu="m68k"
 		aros_flavour="emulcompat"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
 		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
 		aros_kernel_ldflags="-Wl,-rpath,./lib,-T,\$(TOP)/config/linux/m68k/script.normal"
 		;;
 	    *i?86*)
-		aros_cpu="i386"
+		aros_target_cpu="i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
 		;;
@@ -436,7 +437,7 @@ fi
 # Sometimes, configure will not create config/config.h; in that case,
 # assume that it has not changed.
 if test -f config/config.h ; then
-    out=bin/$aros_target_arch-$arosi_target_cpu/AROS/include/aros/config.h
+    out=bin/$aros_target_arch-$aros_target_cpu/AROS/include/aros/config.h
     if cmp -s "$out" "config/config.h"; then
         echo "config/config.h is unchanged."
         rm $out
