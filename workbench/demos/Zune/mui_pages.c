@@ -3,35 +3,64 @@
 //#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#ifdef _AROS
 #include <proto/muimaster.h>
+#endif
 #include <clib/alib_protos.h>
 #include <stdio.h>
 
 #include <mui.h>
-#include <priv/Rectangle.h> /* This doesn't seem right... */
-#include <priv/muio.h>      /* Hmmmm... */
 
 struct Library       *MUIMasterBase;
+
+#ifndef _AROS
+
+/* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
+#include "muimaster_intern.h"
+
+int openmuimaster(void)
+{
+    static struct MUIMasterBase_intern MUIMasterBase_instance;
+    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
+
+    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
+    MUIMasterBase_instance.dosbase = OpenLibrary("dos.library",37);
+    MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
+    MUIMasterBase_instance.gfxbase = OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
+    MUIMasterBase_instance.intuibase = OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
+    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
+    __zune_prefs_init(&__zprefs);
+
+    return 1;
+}
+
+void closemuimaster(void)
+{
+}
+
+#else
+
+int openmuimaster(void)
+{
+    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+    return 0;
+}
+
+void closemuimaster(void)
+{
+    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+}
+
+#endif
 
 ULONG xget(Object *obj, Tag attr)
 {
   ULONG storage;
   GetAttr(attr, obj, &storage);
   return storage;
-}
-
-Object *MUI_NewObject(char const *className, ULONG tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = MUI_NewObjectA(className, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
-}
-
-Object *MUI_MakeObject(long type, ULONG tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = MUI_MakeObjectA(type, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
 }
 
 int main (int argc, char **argv)
@@ -43,8 +72,7 @@ int main (int argc, char **argv)
     Object *b[3];
     int i;
 
-    MUIMasterBase = OpenLibrary("muimaster.library", 0);
-    if (MUIMasterBase == NULL) return 20;
+    if (!openmuimaster()) return 20;
 
     app = ApplicationObject,
 	SubWindow, mainWin = WindowObject,
@@ -178,7 +206,7 @@ int main (int argc, char **argv)
 
 error:
 
-    CloseLibrary(MUIMasterBase);
+    closemuimaster();
 
     return 0;
 }

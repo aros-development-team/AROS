@@ -1,18 +1,20 @@
+
 #include <exec/types.h>
 //#include <libraries/mui.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#ifdef _AROS
 #include <proto/muimaster.h>
+#endif
+
 #include <clib/alib_protos.h>
 #include <stdio.h>
 
-#include <mui.h>
-#include <priv/muio.h>      /* FIXME: It can't be meant to work like this... */
-#include <priv/Rectangle.h> /* --"-- */
-#include <priv/macros.h>    /* --"-- */
+#include <mui.h> /* Should be somewhen libraries/mui.h */
 
 struct Library       *MUIMasterBase;
 
+#ifdef _AROS
 #warning FIXME: what is the solution for this?
 Object *MUI_NewObject(char const *className, ULONG tag1, ...)
 {
@@ -27,8 +29,52 @@ Object *MUI_MakeObject(long type, ULONG tag1, ...)
     retval = MUI_MakeObjectA(type, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 }
+#endif
 
 #define _U(s) (s)
+
+#ifndef _AROS
+
+/* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
+#include "muimaster_intern.h"
+
+int openmuimaster(void)
+{
+    static struct MUIMasterBase_intern MUIMasterBase_instance;
+    MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
+
+    MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
+    MUIMasterBase_instance.dosbase = OpenLibrary("dos.library",37);
+    MUIMasterBase_instance.utilitybase = OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
+    MUIMasterBase_instance.gfxbase = OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
+    MUIMasterBase_instance.intuibase = OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
+    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
+    __zune_prefs_init(&__zprefs);
+
+    return 1;
+}
+
+void closemuimaster(void)
+{
+}
+
+#else
+
+int openmuimaster(void)
+{
+    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0))) return 1;
+    return 0;
+}
+
+void closemuimaster(void)
+{
+    if (MUIMasterBase) CloseLibrary(MUIMasterBase);
+}
+
+#endif
 
 ULONG xget(Object *obj, Tag attr)
 {
@@ -37,18 +83,16 @@ ULONG xget(Object *obj, Tag attr)
   return storage;
 }
 
-Object *
-SimpleChainedButton (STRPTR label)
+Object *SimpleChainedButton (STRPTR label)
 {
     Object *obj;
 
-    obj = SimpleButton(label);
+    obj = MUI_MakeObject(MUIO_Button,label);
     set(obj, MUIA_CycleChain, TRUE);
     return obj;
 }
 
-Object *
-ChainedCheckmark (STRPTR label)
+Object *ChainedCheckmark (STRPTR label)
 {
     Object *obj;
 
@@ -56,7 +100,6 @@ ChainedCheckmark (STRPTR label)
     set(obj, MUIA_CycleChain, TRUE);
     return obj;
 }
-
 
 int main (int argc, char **argv)
 {
@@ -66,8 +109,7 @@ int main (int argc, char **argv)
     Object *radio2;
     int result = 0;
 
-    MUIMasterBase = OpenLibrary("muimaster.library", 0);
-    if (MUIMasterBase == NULL) return 20;
+    if (!(openmuimaster())) return 20;
 
     app = ApplicationObject,
 	SubWindow, mainWin = WindowObject,
@@ -75,11 +117,11 @@ int main (int argc, char **argv)
 	    WindowContents, VGroup,
 	        Child, MUI_MakeObject(MUIO_BarTitle, _U("MUIV_InputMode_RelVerify")),
                 Child, SimpleChainedButton("Hello world, \33u\33iyo\n"
-/*  "\33l\33iHello \33bworld\33n, yo\n" */
-/*  "\33iHello world, yo\n" */
-"_Hello \33uwo\0331r\33bl\33n\33ud\33n, \33iyo\n"
-/*  "\33cI \33ilove MUI\n" */
-"HelloH \33b\33ihello\33nH"),
+					   "\33l\33iHello \33bworld\33n, yo\n"
+					   "\33iHello world, yo\n"
+					   "_Hello \33uwo\0331r\33bl\33n\33ud\33n, \33iyo\n"
+					   "\33cI \33ilove MUI\n"
+					   "HelloH \33b\33ihello\33nH"),
 	        Child, MUI_MakeObject(MUIO_BarTitle, _U("MUIV_InputMode_Toggle")),
 /*                  Child, VSpace(0), */
 #warning FIXME: uncomment this when I have images
@@ -168,7 +210,6 @@ kprintf("*** dispose app...\n");
 
 error:
 
-    CloseLibrary(MUIMasterBase);
-
+    closemuimaster();
     return result;
 }
