@@ -105,8 +105,7 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
 #define ADD2LIBS(name, ver, btype, bname)                \
 btype bname;                                             \
                                                          \
-asm(".set __setincludelibrarieshandling_" #bname ","     \
-    AROS_ASMSYMNAME("__includelibrarieshandling"));      \
+AROS_IMPORT_ASM_SYM(__includelibrarieshandling)          \
                                                          \
 const ULONG bname##_version __attribute__((weak)) = ver; \
                                                          \
@@ -136,4 +135,11 @@ for                                                                          \
     pos += (direction >= 0) ? 1 : -1                                         \
 ) 
 
+/* You must use this macro in the part of your program which handles symbol sets, 
+   or else your program won't link when symbolsets are used.
+   This is so to ensure that symbolsets are properly handled and thus things get
+   properly initialized. */
+#define THIS_PROGRAM_HANDLES_SYMBOLSETS \
+    AROS_MAKE_ASM_SYM(__this_program_requires_symbol_sets_handling, 0);
+    
 #endif
