@@ -201,6 +201,11 @@ struct FileSysStartupMsg *fssm;
 			}
 			CloseRootPartition(pt);
 		}
+		else
+		{
+			/* amicdrom fails here because of not initialized libraries */
+			Enqueue(&ExpansionBase->MountList, bn);
+		}
 		CloseLibrary((struct Library *)PartitionBase);
 	}
 }
