@@ -27,6 +27,38 @@
 
 extern struct Library *MUIMasterBase;
 
+static struct MinNode *Node_Next(APTR node)
+{
+    if(node == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
+		return NULL;
+    return ((struct MinNode*)node)->mln_Succ;
+}
+
+static struct MinNode *Node_Prev(APTR node)
+{
+    if(node == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Pred == NULL) return NULL;
+    if(((struct MinNode*)node)->mln_Pred->mln_Pred == NULL)
+	return NULL;
+    return ((struct MinNode*)node)->mln_Pred;
+}
+
+static struct MinNode *List_First(APTR list)
+{
+    if( !((struct MinList*)list)->mlh_Head) return NULL;
+    if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
+    return ((struct MinList*)list)->mlh_Head;
+}
+
+static struct MinNode *List_Last(APTR list)
+{
+    if( !((struct MinList*)list)->mlh_TailPred) return NULL;
+    if(((struct MinList*)list)->mlh_TailPred->mln_Pred == NULL) return NULL;
+    return ((struct MinList*)list)->mlh_TailPred;
+}
+
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
 /* A bit of explanation:
@@ -230,13 +262,18 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT argbyte
 
     /* the other elements are done by other functions */
 
-    do
+    while (1)
     {
 	struct ZTextLine *ztl = zune_text_parse_line((STRPTR *)&buf, &zc, &argtype, arg);
 	if (ztl) AddTail((struct List*)&text->lines,(struct Node*)ztl);
 	else break;
-	if (*buf == '\n') buf++;
-    } while (*buf);
+	if (*buf == '\n')
+	{
+	    buf++;
+	    continue;
+	} 
+	if (!(*buf)) break;
+    }
 
     mui_free(dup_content);
     return text;
@@ -946,17 +983,20 @@ void zune_text_draw_cursor (ZText *text, Object *obj, WORD left, WORD right, WOR
 		style = newstyle;
 	    }
 
-	    if (!cursory && (cursorx <= strlen(str) && cursorx >= 0))
+	    if (!cursory && cursorx != -1)
 	    {
-	    	int offx = TextLength(_rp(obj),str,cursorx);
-	    	int cursor_width;
+	    	if (cursorx < strlen(str) && cursorx >= 0)
+		{
+	    	    int offx = TextLength(_rp(obj),str,cursorx);
+	    	    int cursor_width;
 
-		if (str[cursorx]) cursor_width = TextLength(_rp(obj),&str[cursorx],1);
-		else cursor_width = _font(obj)->tf_XSize;
+		    if (str[cursorx]) cursor_width = TextLength(_rp(obj),&str[cursorx],1);
+		    else cursor_width = _font(obj)->tf_XSize;
 
-		SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
-		RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
-		cursorx = -1;
+		    SetAPen(_rp(obj), _dri(obj)->dri_Pens[FILLPEN]);
+		    RectFill(_rp(obj), x + offx, top - _font(obj)->tf_Baseline, x + offx + cursor_width - 1, top - _font(obj)->tf_Baseline + _font(obj)->tf_YSize-1);
+		    cursorx = -1;
+		} else cursorx -= strlen(chunk_node->str);
 	    }
 	    
 	    Move(rp,x,top);
@@ -1184,5 +1224,63 @@ int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursor
     }
 
     return (text->xscroll != oldxscroll || text->yscroll != oldyscroll);
+}
+
+int zune_text_merge(ZText *text, Object *obj, int x, int y, ZText *tomerge)
+{
+    int i, offset, len;
+    ZTextLine *line, *line_tomerge;
+    ZTextChunk *chunk, *chunk_tomerge;
+    ZTextChunk *chunk_new;
+    struct MinList store;
+
+    if (!zune_text_get_char_pos(text, obj, x, y, &line, &chunk, &offset, &len)) return 0;
+    if (!(line_tomerge = (ZTextLine*)List_First(&tomerge->lines))) return 0;
+    if (!(chunk_new = mui_alloc_struct(struct ZTextChunk))) return 0;
+    memset(chunk_new,0,sizeof(struct ZTextChunk));
+
+    /* Split chunk at (x,y) into two */
+    if (!(chunk_new->str = mui_alloc(strlen(&chunk->str[len])+1)))
+    {
+	mui_free(chunk_new);
+	return 0;
+    }
+    strcpy(chunk_new->str,&chunk->str[len]);
+    chunk_new->dripen = chunk->dripen;
+    chunk->str[len] = 0; /* set new string end */
+
+    NewList((struct List*)&store);
+    AddTail((struct List*)&store,(struct Node*)chunk_new);
+
+    /* Append all following chunks at the newly created chunk */
+    chunk = (ZTextChunk*)Node_Next(chunk);
+    while (chunk)
+    {
+	ZTextChunk *chunk_next;
+	chunk_next = (ZTextChunk*)Node_Next(chunk);
+	Remove((struct Node*)chunk);
+	AddTail((struct List*)&store,(struct Node*)chunk);
+	chunk = chunk_next;
+    }
+
+    while ((chunk_tomerge = (ZTextChunk*)RemHead((struct List*)&line_tomerge->chunklist)))
+	AddTail((struct List*)&line->chunklist,(struct Node*)chunk_tomerge);
+
+    Remove((struct Node*)line_tomerge);
+
+    while ((line_tomerge = (ZTextLine*)RemHead((struct List*)&tomerge->lines)))
+    {
+	Insert((struct List*)&text->lines,(struct Node*)line_tomerge,(struct Node*)line);
+	line = line_tomerge;
+    }
+
+    while ((chunk = (ZTextChunk*)RemHead((struct List*)&store)))
+    {
+	AddTail((struct List*)&line->chunklist,(struct Node*)chunk);
+    }
+
+    zune_text_get_bounds(text,obj);
+
+    return 1;
 }
 

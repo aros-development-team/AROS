@@ -106,7 +106,11 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     if (data->info)
     {
+#ifdef _AROS
 	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
+#else
+	sprintf(data->buf, data->info, data->current/data->divide);
+#endif
     } else data->buf[0] = 0;
 
     D(bug("muimaster.library/gauge.c: Gauge Object created at 0x%lx\n",obj));
@@ -175,7 +179,11 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	if (data->info)
 	{
-	    snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
+#ifdef _AROS
+	snprintf(data->buf, GAUGE_BUFSIZE, data->info, data->current/data->divide);
+#else
+	sprintf(data->buf, data->info, data->current/data->divide);
+#endif
 	} else data->buf[0] = 0;
     }
 

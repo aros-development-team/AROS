@@ -26,6 +26,7 @@
 
 /* The following stuff in new for Zune */
 #define MUIA_Text_Editable    (TAG_USER|0x00420d8c)  /* Zune: V1 i.. BOOL */
+#define MUIA_Text_Multiline   (TAG_USER|0x00420d8d)  /* Zune: V1 i.. BOOL */
 
 extern const struct __MUIBuiltinClass _MUI_Text_desc; /* PRIV */
 
