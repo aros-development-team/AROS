@@ -270,6 +270,7 @@ BOOPSI_DISPATCHER(IPTR,IconListview_Dispatcher, cl, obj, msg)
     }
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_IconListview_desc =
 {

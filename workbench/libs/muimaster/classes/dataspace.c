@@ -318,6 +318,7 @@ BOOPSI_DISPATCHER(IPTR, Dataspace_Dispatcher, cl, obj, msg)
 
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 /*
  * Class descriptor.

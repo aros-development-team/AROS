@@ -548,6 +548,7 @@ BOOPSI_DISPATCHER(IPTR, Numeric_Dispatcher, cl, obj, msg)
 
     return DoSuperMethodA(cl, obj, msg);
 }
+BOOPSI_DISPATCHER_END
 
 
 /*

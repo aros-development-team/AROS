@@ -441,6 +441,7 @@ BOOPSI_DISPATCHER(IPTR, Prop_Dispatcher, cl, obj, msg)
 
     }
 }
+BOOPSI_DISPATCHER_END
 
 const struct __MUIBuiltinClass _MUI_Prop_desc =
 { 
