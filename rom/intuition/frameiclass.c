@@ -161,14 +161,7 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	/* set up our rendering pens */
 	if (msg->imp_DrInfo)
 	{
-	    /*
-		This test may not be necessary - and if that is the
-		case then this logic could be optimized a bit more.
-	    */
-	    if (msg->imp_DrInfo->dri_Pens)
-	    {
-		pens = msg->imp_DrInfo->dri_Pens;
-	    } /* if */
+	    pens = msg->imp_DrInfo->dri_Pens;
 
 	    /*
 		Fall back to mono color bevels if depth is only 1 bitplane.
