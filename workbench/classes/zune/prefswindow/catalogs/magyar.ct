@@ -1,0 +1,28 @@
+## version $VER: prefswindow.catalog 1.0 (25.01.2005)
+## language magyar
+## codeset 0
+;
+; Translated by Miklós Németh
+;
+;
+;
+MSG_TEST
+_Teszt
+; _Test
+;
+MSG_REVERT
+_Visszaállít
+; _Revert
+;
+MSG_SAVE
+_Ment
+; _Save
+;
+MSG_USE
+_Használ
+; _Use
+;
+MSG_CANCEL
+Mé_gsem
+; _Cancel
+;
