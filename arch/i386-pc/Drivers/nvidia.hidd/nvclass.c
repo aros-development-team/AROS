@@ -724,8 +724,9 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 		if (NSD(cl)->cx >= NSD(cl)->visible->width) NSD(cl)->cx = NSD(cl)->visible->width - 1;
 		if (NSD(cl)->cy >= NSD(cl)->visible->height) NSD(cl)->cy = NSD(cl)->visible->height - 1;
     }
-    
+ObtainSemaphore(&NSD(cl)->HW_acc);
 	*(NSD(cl)->riva.CURSORPOS) = ((NSD(cl)->cx & 0xFFFF) | (NSD(cl)->cy << 16));
+ReleaseSemaphore(&NSD(cl)->HW_acc);
     
     return TRUE;
 }
@@ -735,8 +736,10 @@ static BOOL gfxhidd_setcursorpos(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_
 
 static VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
 {
+ObtainSemaphore(&NSD(cl)->HW_acc);
 	*(NSD(cl)->riva.CURSORPOS) = ((NSD(cl)->cx & 0xFFFF) | (NSD(cl)->cy << 16));
 	NSD(cl)->riva.ShowHideCursor(&NSD(cl)->riva, msg->visible);
+ReleaseSemaphore(&NSD(cl)->HW_acc);
 	NSD(cl)->cvisible = msg->visible;
 }
 
@@ -783,6 +786,7 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 		OOP_GetAttr(sync, aHidd_Sync_VTotal,		&vtotal);
 				    
 	    /* Now, when the best display mode is chosen, we can build it */
+ObtainSemaphore(&NSD(cl)->HW_acc);
 		load_mode(NSD(cl), width, height, bpp, pixel, base,
 			hdisp, vdisp,
 			hstart, hend, htotal,
@@ -806,6 +810,8 @@ static OOP_Object *gfxhidd_show(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_S
 
 //		acc_SetClippingRectangle(NSD(cl), 0, 0, width, height);
 		acc_DisableClipping(NSD(cl));
+
+ReleaseSemaphore(&NSD(cl)->HW_acc);
 
 		fb = msg->bitMap;
 	}

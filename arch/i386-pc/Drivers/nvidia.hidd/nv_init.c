@@ -776,6 +776,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	if (nsd)
 	{
 		nsd->sysbase = SysBase;
+		InitSemaphore(&nsd->HW_acc);
 	
 		nsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 		if (nsd->oopbase)
