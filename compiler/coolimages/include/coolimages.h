@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -28,6 +28,8 @@
 #ifndef INTUITION_CLASSES_H
 #include <intuition/classes.h>
 #endif
+
+struct Library;
 
 /****************************************************************************************/
 
