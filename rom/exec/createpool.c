@@ -74,32 +74,47 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Pool *pool=NULL;
+    struct ProtectedPool *pool = NULL;
 
     /* puddleSize must not be smaller than threshSize */
-    if(puddleSize>=threshSize)
+    if(puddleSize >= threshSize)
     {
+    	LONG poolstruct_size;
+	
 	/* Round puddleSize up to be a multiple of MEMCHUNK_TOTAL. */
-	puddleSize=(puddleSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
+	puddleSize = (puddleSize + MEMCHUNK_TOTAL - 1) & ~(MEMCHUNK_TOTAL - 1);
 
 	/*
 	    Allocate memory for the Pool structure using the same requirements
 	    as for the whole pool (to make it shareable, residentable or
 	    whatever is needed).
 	*/
-	pool=(struct Pool *)AllocMem(sizeof(struct Pool),requirements);
-	if(pool!=NULL)
+	
+	poolstruct_size = (requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
+	    	    	    	    	    	    	        sizeof(struct Pool);
+							       
+	pool=(struct ProtectedPool *)AllocMem(poolstruct_size, requirements & ~MEMF_SEM_PROTECTED);
+	if(pool != NULL)
 	{
 	    /* Clear the lists */
-	    NEWLIST((struct List *)&pool->PuddleList);
-	    NEWLIST((struct List *)&pool->BlockList );
+	    NEWLIST((struct List *)&pool->pool.PuddleList);
+	    NEWLIST((struct List *)&pool->pool.BlockList );
 
 	    /* Set the rest */
-	    pool->Requirements=requirements;
-	    pool->PuddleSize  =puddleSize;
-	    pool->ThreshSize  =threshSize;
+	    pool->pool.Requirements = requirements;
+	    pool->pool.PuddleSize   = puddleSize;
+	    pool->pool.ThreshSize   = threshSize;
+	    
+	    if (requirements & MEMF_SEM_PROTECTED)
+	    {
+	    	InitSemaphore(&pool->sem);
+	    }
 	}
-    }
+	
+    } /* if(puddleSize >= threshSize) */
+    
     return pool;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* CreatePool */

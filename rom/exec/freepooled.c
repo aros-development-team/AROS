@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free memory allocated by AllocPooled().
@@ -54,15 +54,21 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    struct Pool *pool=(struct Pool *)poolHeader;
+    
+    struct ProtectedPool *pool = (struct ProtectedPool *)poolHeader;
 
+    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+    {
+    	ObtainSemaphore(&pool->sem);
+    }
+    
     /* If memSize is bigger than the ThreshSize it's allocated seperately. */
-    if(memSize>pool->ThreshSize)
+    if(memSize > pool->pool.ThreshSize)
     {
 	struct Block *bl;
 
 	/* Get pointer to header */
-	bl=(struct Block *)((UBYTE *)memory-BLOCK_TOTAL);
+	bl = (struct Block *)((UBYTE *)memory - BLOCK_TOTAL);
 
 	/* Remove it from the list */
 	Remove((struct Node *)&bl->Node);
@@ -75,37 +81,45 @@
 	}
 	
 	/* And Free the memory */
-	FreeMem(bl,bl->Size);
+	FreeMem(bl, bl->Size);
 
-    }else
+    }
+    else
     {
 	/* Look for the right MemHeader */
-	struct MemHeader *mh=(struct MemHeader *)pool->PuddleList.mlh_Head;
+	struct MemHeader *mh = (struct MemHeader *)pool->pool.PuddleList.mlh_Head;
 
 	for(;;)
 	{
 	    /* The memory must be between the two borders */
-	    if(memory>=mh->mh_Lower&&memory<mh->mh_Upper)
+	    if(memory >= mh->mh_Lower && memory < mh->mh_Upper)
 	    {
 		/* Found the MemHeader. Free the memory. */
-		Deallocate(mh,memory,memSize);
+		Deallocate(mh, memory, memSize);
 
 		/* Is this MemHeader completely free now? */
-		if(mh->mh_Free==pool->PuddleSize)
+		if(mh->mh_Free == pool->pool.PuddleSize)
 		{
 		    /* Yes. Remove it from the list. */
 		    Remove(&mh->mh_Node);
 
 		    /* And free it. */
-		    FreeMem(mh, pool->PuddleSize + MEMHEADER_TOTAL);
+		    FreeMem(mh, pool->pool.PuddleSize + MEMHEADER_TOTAL);
 		}
 		/* All done. */
 		break;
 	    }
 	    /* Try next MemHeader */
-	    mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
+	    mh = (struct MemHeader *)mh->mh_Node.ln_Succ;
 	}
     }
+
+    if (pool->pool.Requirements & MEMF_SEM_PROTECTED)
+    {
+    	ReleaseSemaphore(&pool->sem);
+    }
+ 
     AROS_LIBFUNC_EXIT
+    
 } /* FreePooled */
 
