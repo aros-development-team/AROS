@@ -36,7 +36,7 @@ extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern void switch_to_user_mode(void *, ULONG *, ULONG *);
 extern void Init_Hardware(void);
 extern void Init_IRQVectors(void);
-extern int main_init_cont(void);
+extern void main_init_cont(void);
 
 
 extern const struct Resident
