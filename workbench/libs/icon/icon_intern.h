@@ -174,6 +174,7 @@ VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase);
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
+BOOL WriteIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
 VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 
 /****************************************************************************************/
