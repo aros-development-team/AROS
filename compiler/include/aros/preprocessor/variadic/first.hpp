@@ -5,4 +5,4 @@
 #
 # define AROS_PP_VARIADIC_FIRST_I(a, ...) a
 #
-# endif 
+# endif
