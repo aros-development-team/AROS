@@ -701,6 +701,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 				UndrawDragNDrop(data->wd_dnd);
 				DoMethod(data->wd_DropObject, MUIM_DragFinish,data->wd_DragObject);
 				data->wd_DropObject = NULL;
+				i = 1;
 				break;
 
 			case    MUIV_DragReport_Continue: break;

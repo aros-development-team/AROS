@@ -30,8 +30,8 @@
 #include <aros/debug.h>
 #else
 #include "mui.h"
-struct Library *MUIMasterBase;
 #endif
+struct Library *MUIMasterBase;
 
 
 #ifndef _AROS
@@ -246,6 +246,8 @@ ULONG xget(Object *obj, Tag attr)
 #define MUIA_IconWindow_ActionHook   (TAG_USER+0x1631315) /* i.. */ /* Hook to call when some action happens */
 #define MUIA_IconWindow_IsBackdrop   (TAG_USER+0x1631316) /* isg */ /* is Backdrop window ? */
 
+#define MUIM_IconWindow_Open         (TAG_USER+0x12908f)
+
 /* private methods, should be not called from outside */
 #define MUIM_IconWindow_DoubleClicked (0x129090)
 
@@ -397,6 +399,14 @@ STATIC IPTR IconWindow_DoubleClicked(struct IClass *cl, Object *obj, Msg msg)
     return NULL; /* irrelevant */
 }
 
+STATIC IPTR IconWindow_Open(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    set(obj,MUIA_Window_Open,TRUE);
+    DoMethod(data->iconlist,MUIM_IconList_Update);
+    return 1;
+}
+
 /* Use this macro for dispatchers if you don't want #ifdefs */
 BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 {
@@ -405,6 +415,8 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 	case OM_NEW: return IconWindow_New(cl,obj,(struct opSet*)msg);
 	case OM_SET: return IconWindow_Set(cl,obj,(struct opSet*)msg);
 	case OM_GET: return IconWindow_Get(cl,obj,(struct opGet*)msg);
+
+	case MUIM_IconWindow_Open: return IconWindow_Open(cl,obj,(APTR)msg);
 
 	/* private methods */
 	case MUIM_IconWindow_DoubleClicked: return IconWindow_DoubleClicked(cl,obj,msg);
@@ -767,7 +779,7 @@ AROS_UFH3(void, hook_func_action,
 		DoMethod(app,OM_ADDMEMBER,drawerwnd);
 
 		/* And now open it */
-		set(drawerwnd,MUIA_Window_Open,TRUE);
+		DoMethod(drawerwnd, MUIM_IconWindow_Open);
 	    }
 	} else if (ent->type == ST_FILE)
 	{
@@ -878,7 +890,8 @@ int main(void)
         DoMethod(execute_cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
         DoMethod(execute_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
 
-	set(root_iconwnd,MUIA_Window_Open,TRUE);
+	/* And now open it */
+	DoMethod(root_iconwnd, MUIM_IconWindow_Open);
 
 #ifdef _AROS
 	DoDetach();
