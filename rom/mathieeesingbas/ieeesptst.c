@@ -48,23 +48,24 @@ AROS_LH1(LONG, IEEESPTst,
 {
     AROS_LIBFUNC_INIT
     
-  /* y is negative */
-  if (y < 0)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return -1;
-  }
+    /* y is negative */
+    if (y < 0)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return -1;
+    }
+    
+    /* fnum1 is zero */
+    if (0 == y)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return 0;
+    }
+    
+    /* fnum1 is positive */
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
-  /* fnum1 is zero */
-  if (0 == y)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return 0;
-  }
-
-  /* fnum1 is positive */
-  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-  return 1;
+    return 1;
 
     AROS_LIBFUNC_EXIT
 }

@@ -41,23 +41,27 @@ AROS_LH1(float, IEEESPNeg,
 {
     AROS_LIBFUNC_INIT
     
-  if (0 == y || 0x80000000 == y)
-  {
-    SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return (IEEESPSign_Mask ^ y);
-  }
-
-  /* flip sign-bit */
-  y ^= IEEESPSign_Mask;
-
-  if(y < 0)
-  /* result is negative */
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  else
-  /* result is positive */
-    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-
-  return y;
+    if (0 == y || 0x80000000 == y)
+    {
+        SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return (IEEESPSign_Mask ^ y);
+    }
+    
+    /* flip sign-bit */
+    y ^= IEEESPSign_Mask;
+    
+    if(y < 0)
+    {
+        /* result is negative */
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    else
+    {
+        /* result is positive */
+        SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    }
+    
+    return y;
 
     AROS_LIBFUNC_EXIT
 }

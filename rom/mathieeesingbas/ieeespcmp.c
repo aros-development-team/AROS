@@ -44,36 +44,36 @@ AROS_LH2(LONG, IEEESPCmp,
 {
     AROS_LIBFUNC_INIT
     
-  if (y == z)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 0;
-  }
-
-  if (y < 0 && z < 0)
-  {
-    if (-y > -z)
+    if (y == z)
     {
-      SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 1;
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 0;
+    }
+
+    if (y < 0 && z < 0)
+    {
+        if (-y > -z)
+        {
+            SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 1;
+        }
+        else
+        {
+            SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return -1;
+        }
+    }
+
+    if ((LONG)y < (LONG)z)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        return -1;
     }
     else
     {
-      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return -1;
+        SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
+        return 1;
     }
-  }
-
-  if ((LONG)y < (LONG)z)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    return -1;
-  }
-  else
-  {
-    SetSR(0,  Zero_Bit | Negative_Bit | Overflow_Bit);
-    return 1;
-  }
   
   AROS_LIBFUNC_EXIT
 }

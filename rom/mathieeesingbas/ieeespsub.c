@@ -41,7 +41,7 @@ AROS_LH2(float, IEEESPSub,
 {
     AROS_LIBFUNC_INIT
     
-  return IEEESPAdd(y, z ^ IEEESPSign_Mask);
+    return IEEESPAdd(y, z ^ IEEESPSign_Mask);
 
     AROS_LIBFUNC_EXIT
 }
