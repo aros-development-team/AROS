@@ -65,7 +65,7 @@
     WORD yoffset = 0;
 
     /* create new RegionRectangle */
-    if (!(nrect = AllocMem(sizeof(struct RegionRectangle), MEMF_ANY|MEMF_CLEAR)))
+    if (!(nrect = NewRegionRectangle()))
 	return FALSE;
     nrect->bounds = *rectangle;
 
@@ -74,7 +74,7 @@
 
 	/* clear the rectangle from the region */
 	if (!ClearRectRegion(region, rectangle)) {
-	    FreeMem(nrect, sizeof(struct RegionRectangle));
+	    DisposeRegionRectangle(nrect);
 	    return FALSE; /* out of memory */
 	}
     }

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function ClearRectRegion()
@@ -123,7 +123,7 @@
 		    }
 		} else {  /* out of memory */
 		    if (lastrects)
-			disposerrects(lastrects);
+			DisposeRegionRectangleList(lastrects);
 		    return FALSE;
 		}
 	    }  /* FOR() */
@@ -152,7 +152,7 @@
       return TRUE;
      
     if (region->RegionRectangle)
-	disposerrects(region->RegionRectangle);
+	DisposeRegionRectangleList(region->RegionRectangle);
     region->RegionRectangle = lastrects;
 
     return TRUE;

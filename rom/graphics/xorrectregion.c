@@ -60,12 +60,12 @@
     struct Region* intersection, *copy2;
     BOOL result = FALSE;
 
-    if ((intersection = copyregion(region, GfxBase))) {
-        if ((copy2 = copyregion(region, GfxBase))) {
+    if ((intersection = CopyRegion(region))) {
+        if ((copy2 = CopyRegion(region))) {
 	    AndRectRegion(intersection, rectangle);
 	    if (OrRectRegion(region, rectangle)) {
 		if (intersection->RegionRectangle) {
-		    if (!(result = clearregionregion(region, intersection, GfxBase))) {
+		    if (!(result = ClearRegionRegion(intersection, region))) {
 		        /* reinstall old RegionRectangles */
 			struct RegionRectangle* tmp = region->RegionRectangle;
 			region->RegionRectangle = copy2->RegionRectangle;
@@ -87,6 +87,7 @@
     return FALSE;
 
     AROS_LIBFUNC_EXIT
+    
 } /* XorRectRegion */
 
 

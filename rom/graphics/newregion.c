@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -54,15 +54,14 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Region* new = AllocMem(sizeof(struct Region), MEMF_ANY);
-    if (new) {
-	new->bounds.MinX = new->bounds.MaxX = 0;
-	new->bounds.MinY = new->bounds.MaxY = 0;
-	new->RegionRectangle = NULL;
-    }
+    struct Region *new = AllocMem(sizeof(struct Region), MEMF_ANY);
+ 
+    if (new) InitRegion(new);
+
     return new;
 
     AROS_LIBFUNC_EXIT
+    
 } /* NewRegion */
 
 

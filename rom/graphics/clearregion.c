@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function ClearRegion()
@@ -52,12 +52,13 @@
 {
     AROS_LIBFUNC_INIT
 
-    disposerrects(region->RegionRectangle);
-    region->RegionRectangle = NULL;
-    region->bounds.MinX = region->bounds.MaxX = 0;
-    region->bounds.MinY = region->bounds.MaxY = 0;
+    ASSERT_VALID_PTR(region);
+    
+    DisposeRegionRectangleList(region->RegionRectangle);
+    InitRegion(region);
 
     AROS_LIBFUNC_EXIT
+    
 } /* ClearRegion */
 
 

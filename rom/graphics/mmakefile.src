@@ -72,6 +72,7 @@ FUNCTIONS := \
 	changevpbitmap \
 	cleareol \
 	clearrectregion \
+	clearregionregion \
 	clearregion \
 	clearscreen \
 	clipblit \
@@ -80,12 +81,15 @@ FUNCTIONS := \
 	closemonitor \
 	cmove \
 	coercemode \
+	copyregion \
 	copysbitmap \
 	createrastport \
 	cwait \
 	deinitrastport \
 	disownblitter \
 	disposeregion \
+	disposeregionrectangle \
+	disposeregionrectanglelist \
 	docollision \
 	draw \
 	drawellipse \
@@ -131,6 +135,7 @@ FUNCTIONS := \
 	initgmasks \
 	initmasks \
 	initrastport \
+	initregion \
 	inittmpras \
 	initview \
 	initvport \
@@ -146,6 +151,7 @@ FUNCTIONS := \
 	movesprite \
 	mrgcop \
 	newregion \
+	newregionrectangle \
 	nextdisplayinfo \
 	obtainbestpena \
 	obtainpen \

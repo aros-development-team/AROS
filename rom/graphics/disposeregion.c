@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function DisposeRegion()
@@ -53,8 +53,11 @@
 {
     AROS_LIBFUNC_INIT
 
-    disposerrects(region->RegionRectangle);
+    ASSERT_VALID_PTR(region);
+    
+    DisposeRegionRectangleList(region->RegionRectangle);
     FreeMem(region, sizeof(struct Region));
 
     AROS_LIBFUNC_EXIT
+    
 } /* DisposeRegion */

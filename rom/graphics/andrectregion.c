@@ -76,7 +76,7 @@
 		break;
 	    else {  /* no intersection -> dispose current RegionRectangle */
 		rr2 = rr->Next;
-		FreeMem(rr, sizeof(struct RegionRectangle));
+		DisposeRegionRectangle(rr);
 	    }
 	}
 
@@ -115,7 +115,7 @@
 		    rr2 = rr->Next;			/* adjust  */
 		    rr->Prev->Next = rr2;		/* linked  */
 		    if (rr2) rr2->Prev = rr->Prev;	/* list    */
-		    FreeMem(rr, sizeof(struct RegionRectangle));
+		    DisposeRegionRectangle(rr);
 		}
 	    }
 
