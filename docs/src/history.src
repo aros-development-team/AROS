@@ -6,6 +6,14 @@
 NOTE: This is beta. If you want this code, then have a look at our
 \lref{Links}{Links}. See also the
 \lref{Section about CVS}{CVS}.
+
+The source is 6.5MB right now.
+
+\begin{itemize}
+\item New libs: layers, expansion
+\item New CLI tools
+\item Andreas Kleinert's CLib integrated
+\end{itemize}
 \end{new}
 
 \section{AROS 1.11}
