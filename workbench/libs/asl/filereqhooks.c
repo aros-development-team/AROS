@@ -975,10 +975,14 @@ STATIC VOID FRClickOnVolumes(struct LayoutData *ld, struct AslBase_intern *AslBa
     
     if (udata->Flags & FRFLG_SHOWING_VOLUMES)
     {
-	UBYTE *dir;
+        union
+	{
+	    UBYTE *dir;
+	    IPTR   baz;
+	} foo;
 
-	GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
-	FRGetDirectory(dir, ld, AslBase);
+	GetAttr(STRINGA_TextVal, udata->PathGad, &foo.baz);
+	FRGetDirectory(foo.dir, ld, AslBase);
     } else {
 	FRGetVolumes(ld, AslBase);
     }
