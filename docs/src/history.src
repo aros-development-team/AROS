@@ -1,9 +1,11 @@
 \chapter{History}
 
-\begin{new}{18.11.1997}
+\begin{new}{1.12.1997}
 \section{Project History}
 
 \begin{itemize}
+\item 1.12.1997 These pages are available as
+    \link{tar.gz archive}{ftp://wi-pc44.fh-konstanz.de/pub/aros/AROSdocs-current.tgz}
 \item 18.11.1997 Removed the source from our FTP server until Amiga
     Int./Inc. make a decision whether we can continue AROS or not
     and if we can under what conditions.
@@ -17,8 +19,6 @@
     \link{http://www.aros.org/}{http://www.aros.org/}
 \item 6.10.1997 AROS is now built with own make tool
 \item 2.10.1997 Got first running version of VBCC for i386
-\item 16.9.1997 First binary Amiga program ran on AROS on Linux/m68k
-\item 15.9.1997 Got asl.library
 \end{itemize}
 \end{new}
 
