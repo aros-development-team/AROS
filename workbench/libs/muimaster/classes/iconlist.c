@@ -24,6 +24,7 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/icon.h>
+#include <proto/layers.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -117,6 +118,8 @@ struct MUI_IconData
     ULONG last_secs;
     ULONG last_mics;
     struct IconEntry *last_selected;
+
+    struct IconList_Entry *drop_entry; /* the icon where the icons have been dropped */
 
     /* Render stuff */
 
@@ -342,6 +345,7 @@ static ULONG IconList_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_IconList_Top: STORE = data->view_y; return 1;
 	case MUIA_IconList_Width: STORE = data->width; return 1;
 	case MUIA_IconList_Height: STORE = data->height; return 1;
+	case MUIA_IconList_IconsDropped: STORE = (ULONG)data->drop_entry; return 1;
     }
 
     if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
@@ -356,8 +360,6 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 {
     struct MUI_IconData *data = INST_DATA(cl, obj);
     if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
-
-    DoMethod(obj,MUIM_IconList_Update);
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
 
@@ -877,6 +879,23 @@ static ULONG IconList_DeleteDragImage(struct IClass *cl, Object *obj, struct MUI
 static ULONG IconList_DragQuery(struct IClass *cl, Object *obj, struct MUIP_DragQuery *msg)
 {
     if (msg->obj == obj) return MUIV_DragQuery_Accept;
+    else
+    {
+	int is_iconlist = 0;
+	struct IClass *msg_cl = OCLASS(msg->obj);
+
+	while (msg_cl)
+	{
+	    if (msg_cl == cl)
+	    {
+	    	is_iconlist = 1;
+	    	break;
+	    }
+	    msg_cl = msg_cl->cl_Super;
+	}
+	if (is_iconlist) return MUIV_DragQuery_Accept;
+    }
+
     return MUIV_DragQuery_Refuse;
 }
 
@@ -895,19 +914,31 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 	    data->first_selected->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
 	    MUI_Redraw(obj,MADF_DRAWOBJECT);
 	}
+    } else
+    {
+    	data->drop_entry = NULL;
+    	set(obj, MUIA_IconList_IconsDropped, data->drop_entry); /* No notify */
     }
-
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-#ifndef _AROS
-__asm IPTR IconList_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,IconList_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+/**************************************************************************
+ MUIM_DragReport. Since MUI doesn't change the drop object if the dragged
+ object is moved above another window (while still in the bounds of the
+ orginal drop object) we must do it here manually to be compatible with
+ MUI. Maybe Zune should fix this bug somewhen.
+**************************************************************************/
+static ULONG IconList_DragReport(struct IClass *cl, Object *obj, struct MUIP_DragReport *msg)
+{
+    struct Window *wnd = _window(obj);
+    struct Layer *l;
+
+    l = WhichLayer(&wnd->WScreen->LayerInfo, wnd->LeftEdge + msg->x, wnd->TopEdge + msg->y);
+    if (l != wnd->WLayer) return MUIV_DragReport_Abort;
+    return MUIV_DragReport_Continue;
+}
+
+BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -924,6 +955,7 @@ AROS_UFH3S(IPTR,IconList_Dispatcher,
 	case MUIM_CreateDragImage: return IconList_CreateDragImage(cl,obj,(APTR)msg);
 	case MUIM_DeleteDragImage: return IconList_DeleteDragImage(cl,obj,(APTR)msg);
 	case MUIM_DragQuery: return IconList_DragQuery(cl,obj,(APTR)msg);
+	case MUIM_DragReport: return IconList_DragReport(cl,obj,(APTR)msg);
 	case MUIM_DragDrop: return IconList_DragDrop(cl,obj,(APTR)msg);
 
 	case MUIM_IconList_Update: return IconList_Update(cl,obj,(APTR)msg);
