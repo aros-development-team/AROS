@@ -32,6 +32,9 @@
 static Object *obtainconunit(struct ConsoleBase *ConsoleDevice);
 static VOID releaseconunit(Object *o, struct ConsoleBase *ConsoleDevice);
 
+/* Prototype necessary for Linux-M68k w/ bin. compat. */
+struct InputEvent * Console_CDInputHandler(struct InputEvent * events,
+                                           struct cdihData * cdihData);
 
 	AROS_LH2(struct InputEvent *, CDInputHandler,
 
