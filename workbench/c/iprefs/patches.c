@@ -1,5 +1,5 @@
 /*
-    (C) 2001 AROS - The Amiga Research OS
+    Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -32,6 +32,7 @@ static struct patchinfo
 }
 pi [] =
 {
+#if DO_LOCALE_PATCHES
     {LIB_EXEC	, 87 , LIB_LOCALE, 31}, /* RawDoFmt  */
     {LIB_UTILITY, 28 , LIB_LOCALE, 32}, /* Strnicmp  */
     {LIB_UTILITY, 27 , LIB_LOCALE, 33}, /* Stricmp   */
@@ -40,6 +41,7 @@ pi [] =
     {LIB_DOS	, 124, LIB_LOCALE, 36}, /* DateToStr */
     {LIB_DOS	, 125, LIB_LOCALE, 37}, /* StrToDate */
     {LIB_DOS	, 154, LIB_LOCALE, 38}, /* DosGetLocalizedString */
+#endif
     {NULL   	    	    	     }
 };
 
