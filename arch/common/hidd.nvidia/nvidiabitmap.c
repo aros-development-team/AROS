@@ -735,10 +735,11 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	ULONG			cemd;
 	ULONG			expand;
 	ULONG			skipleft = msg->srcX - (msg->srcX & ~31);
+	ULONG			mask = ~0 << bm->depth;
 	
 	cemd = GC_COLEXP(msg->gc);
-	bg   = GC_BG(msg->gc);
-	fg   = GC_FG(msg->gc);
+	bg   = GC_BG(msg->gc) | mask;
+	fg   = GC_FG(msg->gc) | mask;
 
 	ULONG bw = (msg->width + 31 + skipleft) & ~31;
 	ULONG x = msg->destX, y = msg->destY, w = msg->width, h = msg->height;
@@ -761,8 +762,18 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
         sd->dst_offset = bm->framebuffer;
 	
 	NVSetRopSolid(sd, GC_DRMD(msg->gc), ~0 << bm->depth);
-	
-	if (cemd & vHidd_GC_ColExp_Opaque)
+
+	if (cemd & vHidd_GC_ColExp_Transparent)
+	{
+	    NVDmaStart(&sd->Card, RECT_EXPAND_ONE_COLOR_CLIP, 5);
+	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
+	    NVDmaNext(&sd->Card, ((y + h) << 16) | ((x + w) & 0xffff));
+	    NVDmaNext(&sd->Card, fg);
+	    NVDmaNext(&sd->Card, (h << 16) | bw);
+	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
+	    expand = RECT_EXPAND_ONE_COLOR_DATA(0);
+	}
+	else
 	{
 	    NVDmaStart(&sd->Card, RECT_EXPAND_TWO_COLOR_CLIP, 7);
 	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
@@ -773,16 +784,6 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	    NVDmaNext(&sd->Card, (h << 16) | bw);
 	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
 	    expand = RECT_EXPAND_TWO_COLOR_DATA(0);
-	}
-	else
-	{
-	    NVDmaStart(&sd->Card, RECT_EXPAND_ONE_COLOR_CLIP, 5);
-	    NVDmaNext(&sd->Card, (y << 16) | ((x) & 0xffff));
-	    NVDmaNext(&sd->Card, ((y + h) << 16) | ((x + w) & 0xffff));
-	    NVDmaNext(&sd->Card, fg);
-	    NVDmaNext(&sd->Card, (h << 16) | bw);
-	    NVDmaNext(&sd->Card, (y << 16) | ((x-skipleft) & 0xffff));
-	    expand = RECT_EXPAND_ONE_COLOR_DATA(0);
 	}
 
 	ULONG i,j;
@@ -804,6 +805,7 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 	    }
 	}
 	else
+	{
 	    for (i = 0; i < h; i++)
 	    {
 		NVDmaStart(&sd->Card, expand, (bw >> 5));
@@ -814,6 +816,7 @@ static VOID bm__blitcolexp(OOP_Class *cl, OOP_Object *o,
 		}
 		ptr += planar->bytesperrow >> 2;
 	    }
+	}
 
 	NVDmaStart(&sd->Card, BLIT_POINT_SRC, 1);
 	NVDmaNext(&sd->Card, 0);
