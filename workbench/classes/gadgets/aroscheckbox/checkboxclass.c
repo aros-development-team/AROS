@@ -120,7 +120,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -153,7 +153,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 		
 	} /* switch (tag->ti_Tag) */
 	
-    } /* while ((tag = NextTagItem((const struct TagItem **)&taglist))) */
+    } /* while ((tag = NextTagItem(&taglist))) */
 
     if (G(obj)->Width == 0)
         G(obj)->Width = CHECKBOX_WIDTH;
@@ -168,7 +168,7 @@ IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport)
 	{
-	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
+	    DoMethod(obj, GM_RENDER, (IPTR)msg->ops_GInfo, (IPTR)rport, GREDRAW_UPDATE);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
 	}

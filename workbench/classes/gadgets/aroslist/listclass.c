@@ -68,7 +68,7 @@ STATIC IPTR list_set(Class *cl, Object *o,struct opSet *msg)
     tstate = msg->ops_AttrList;
     
     /* Set to 1 to signal visual changes */
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
     	switch (tag->ti_Tag)
     	{
@@ -121,7 +121,7 @@ STATIC IPTR list_new(Class *cl, Object *o, struct opSet *msg)
 	
 	/* Parse for some init only tags */
 	tstate = msg->ops_AttrList;
-	while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+	while ((tag = NextTagItem(&tstate)) != NULL)
 	{
 	    switch (tag->ti_Tag)
 	    {
