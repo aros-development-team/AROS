@@ -22,6 +22,8 @@ struct MUI_TextData {
 #define MTDF_HICHAR    (1<<3)
 #define MTDF_HICHARIDX (1<<4)
 #define MTDF_EDITABLE  (1<<5)
+#define MTDF_MULTILINE (1<<6)
+#define MTDF_ADVANCEONCR (1<<7)
 
 #ifdef _DCC
 extern char MUIC_Text[];

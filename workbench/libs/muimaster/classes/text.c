@@ -117,6 +117,9 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Text_Editable:
 	        _handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_EDITABLE);
 	        break;
+            case MUIA_String_AdvanceOnCR:
+            	_handle_bool_tag(data->mtd_Flags, tag->ti_Data, MTDF_ADVANCEONCR);
+            	break;
 	}
     }
 
@@ -453,16 +456,59 @@ static ULONG Text_GoInactive(struct IClass * cl, Object * o, Msg msg)
 }
 
 /**************************************************************************
- ...
+ Returns wheater object needs redrawing
 **************************************************************************/
-VOID Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
+int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 {
     struct MUI_TextData *data = (struct MUI_TextData*) INST_DATA(cl, obj);
     struct ZTextLine *line;
     struct ZTextChunk *chunk;
     int offx,len;
 
-    if (!code) return;
+    if (!code) return 0;
+
+    if (code == '\r')
+    {
+	if (!(data->mtd_Flags & MTDF_MULTILINE))
+	{
+	    set(obj,MUIA_String_Acknowledge,TRUE);
+	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
+	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
+	    return 0;
+	}
+	return 1;
+    }
+
+    if (code == '\b')
+    {
+    	if (data->xpos && zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
+    	{
+	    if (len)
+	    {
+		strcpy(&chunk->str[len-1],&chunk->str[len]);
+	    	data->xpos--;
+	    } else
+	    {
+	    	/* delete char of previous node ... */
+	    }
+    	}
+	return 1;
+    }
+
+    if (code == 127) /* del */
+    {
+	return 1;
+    }
+
+    if (code == '\t')
+    {
+	if (!(data->mtd_Flags & MTDF_MULTILINE))
+	{
+	    set(obj,MUIA_String_Acknowledge,TRUE);
+	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
+	    return 0;
+	}
+    }
 
     if (zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len))
     {
@@ -503,6 +549,7 @@ VOID Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    line->lwidth += char_width;
         }
     }
+    return 1;
 }
 
 
@@ -571,8 +618,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 					unsigned char code = ConvertKey(msg->imsg);
 					if (code)
 					{
-					    Text_HandleVanillakey(cl,obj,code);
-				            redraw = 1;
+					    redraw = Text_HandleVanillakey(cl,obj,code);
 				            retval = MUI_EventHandlerRC_Eat;
 				        }
 				    }

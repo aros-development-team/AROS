@@ -121,6 +121,7 @@ void main(void)
 		Child, StringObject,
 		    StringFrame,
 		    MUIA_CycleChain,1,
+		    MUIA_String_AdvanceOnCR, TRUE,
 		    End,
 
     	    	Child, SliderObject,
