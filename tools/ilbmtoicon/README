@@ -4,9 +4,19 @@ ilbmtoicon
   which will contain both old style (pre 3.5) image data and
   new style image data (IFF ICON attached at the end).
   
+  can also convert one or two png image files into a PNG icon
+  file (normal PNG image with an extra icOn chunk). If two
+  PNG images are specified, the resulting .info file will simply
+  result in both images being joined together.
+  
 usage
 
-  ilbmtoicon DESCRIPTIONFILE ILBMIMAGE1 [ILBMIMAGE2] outfile
+  ilbmtoicon DESCRIPTIONFILE IMAGE1 [IMAGE2] outfile
+  
+  If two images are specified, both must be of the same file
+  format, ie. PNG or ILBM. The image format determines whether
+  an Amiga style icon (ILBM) or a PNG style icon (PNG) will be
+  created.
   
 icondescription file
 
@@ -18,7 +28,9 @@ icondescription file
   
    TYPE = (DISK|DRAWER|TOOL|PROJECT|GARBAGE|DEVICE|KICK|APPICON)
    
-     Icon type. Optional. Default is TOOL.
+     Icon type. Optional. Default is TOOL. Not necessary/useless
+     when making a PNG icon, because there the icon type is not
+     stored, but guessed automatically when loaded by icon.library.
      
    DEFAULTTOOL = <string>
    
