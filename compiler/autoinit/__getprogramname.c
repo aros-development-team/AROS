@@ -14,11 +14,21 @@
 
 #include <workbench/startup.h>
 
-#include <string.h>
-
 /* Make the programs which don't link against the startup code happy */
 struct WBStartup *WBenchMsg __attribute__((weak)) = NULL;
 
+/* Unfortunately we can't rely on the libc's strlen here, since this is the last library
+   to be linked in the program.  */
+static ULONG strlen(char *str)
+{
+    char *ptr = str;
+    while (*ptr) ptr++;
+
+    return (IPTR)ptr - (IPTR)str;
+}
+
+/* Unfortunately we can't rely on the libamiga's StrDup here, since this is the last
+   library to be linked in the program.  */
 static char *StrDup(char *str)
 {
     STRPTR dup;
