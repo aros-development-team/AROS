@@ -297,6 +297,9 @@ aros_bochs_hack="0"
 aros_ide_driver="0"
 aros_serial_debug="0"
 
+# Palm native flavour stuff
+aros_palm_debug_hack="0"
+
 # Debug stuff
 aros_mungwall_debug="1"
 aros_stack_debug="1"
@@ -478,7 +481,7 @@ case "$target_os" in
 		aros_target_nm="m68k-linux-nm"
 		aros_target_objcopy="m68k-linux-objcopy"
 		aros_target_objdump="m68k-linux-objdump"
-		aros_target_cflags="-Wall -O2 -fomit-frame-pointer -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H"
+		aros_target_cflags="-Wall -fomit-frame-pointer -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 		aros_shared_default=no
@@ -489,7 +492,7 @@ case "$target_os" in
 		aros_static_aflags="-mc68000"
 		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -g -O2 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000"
+		aros_debug_cflags="-Wall -g -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
 		aros_debug_ldflags="-g"
 		aros_mungwall_debug="0"
@@ -609,6 +612,14 @@ if test "$serial_debug" = "yes" ; then
 fi
 AC_MSG_RESULT("$serial_debug")
 
+dnl See if the user wants the palm debug output hack for palm native flavour
+AC_MSG_CHECKING([if palm debug hack is enabled])
+AC_ARG_ENABLE(palm_debug_hack,[  --enable-palm-debug-hack   Enable palm debug output hack in palm native [default=no]],palm_debug_hack="yes",palm_debug_hack="no")
+if test "$palm_debug_hack" = "yes" ; then
+    aros_palm_debug_hack="1"
+fi
+AC_MSG_RESULT("$palm_debug_hack")
+
 dnl See if the user wants the mungwall debug to be enabled
 AC_MSG_CHECKING([if mungwall debug is enabled])
 AC_ARG_ENABLE(mungwall_debug,[  --enable-mungwall-debug Enable mungwall debug [default=yes]],mungwall_debug="$enableval",mungwall_debug="yes")
@@ -698,6 +709,9 @@ AC_SUBST(DO_XSHM_SUPPORT)
 AC_SUBST(aros_bochs_hack)
 AC_SUBST(aros_ide_driver)
 AC_SUBST(aros_serial_debug)
+
+# Palm native version related
+AC_SUBST(aros_palm_debug_hack)
 
 # Debug related
 AC_SUBST(aros_mungwall_debug)
