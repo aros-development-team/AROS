@@ -440,7 +440,7 @@ void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *As
 void FORestore(struct LayoutData *ld, STRPTR fontname, LONG fontsize, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
-    struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
+/*  struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;*/
     struct ASLLVFontReqNode *fontnode;
     struct TagItem  	    set_tags[] =
     {

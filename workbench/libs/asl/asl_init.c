@@ -26,9 +26,6 @@
 #define CATCOMP_NUMBERS
 #include "asl_strings.h"
 
-#include <gadgets/aroslist.h>
-#include <gadgets/aroslistview.h>
-
 #define INIT AROS_SLIB_ENTRY(init, Asl)
 
 #define DEBUG 0
@@ -239,10 +236,10 @@ const struct IntFontReq def_fontreq =
 	NULL,				/* MemPool		*/
 	2048,				/* MemPoolPuddle	*/
 	2048,				/* MemPoolThresh	*/
-	MSG_FILEREQ_TITLE,   	    	/* TitleID  	    	*/
-	"Open Font",			/* TitleText		*/
-	"Ok",				/* PositiveText		*/
-	"Cancel",			/* NegativeText		*/
+	MSG_FONTREQ_TITLE,   	    	/* TitleID  	    	*/
+	NULL,			    	/* TitleText		*/
+	NULL,				/* PositiveText		*/
+	NULL,			    	/* NegativeText		*/
 	-1, -1,				/* --> center on screen */
 	300, 300			/* Width/Height		*/
     },
