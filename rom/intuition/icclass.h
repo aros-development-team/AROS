@@ -6,7 +6,7 @@
     $Id$
 
     Desc: Externally visible data for ICClass
-    Lang: english
+    Lang: English
 */
 
 /* Both ICCLASS and GADGETCLASS need this data, so we make it visible. */
@@ -19,4 +19,4 @@ struct ICData
     ULONG		 ic_LoopCounter;
 };
 
-#endif _ICCLASS_H
+#endif /* _ICCLASS_H */

@@ -42,4 +42,4 @@ enum {
 
 #define IS_HIDDKBD_ATTR(attr, idx) IS_IF_ATTR(attr, idx, HiddKbdAB, num_Hidd_Kbd_Attrs)
 
-#endif HIDD_KEYBOARD_H
+#endif /* HIDD_KEYBOARD_H */
