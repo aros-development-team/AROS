@@ -8,7 +8,8 @@ FILES  := test      	    \
     	  virttest  	    \
 	  gradient  	    \
 	  volumelist	    \
-	  dirlist
+	  dirlist   	    \
+	  numericbutton
 
 EXEDIR := $(AROSDIR)/test/Zune
 
