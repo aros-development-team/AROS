@@ -1,7 +1,11 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.6  2001/10/18 12:11:05  stegerg
+    support for automatic semaphore protection in pools
+    (use MEMF_SEM_PROTECTED in CreatePool).
+
     Revision 1.5  1998/10/20 16:45:13  hkiel
     Amiga Research OS
 
@@ -23,7 +27,10 @@
 */
 #ifndef _MEMORY_H_
 #define _MEMORY_H_
+
 #include <exec/lists.h>
+#include <exec/semaphores.h>
+#include <exec/memory.h>
 #include <stddef.h>
 
 #define RTPOTx4(a)      ((a)>2?4:(a)>1?2:1)
@@ -52,13 +59,20 @@ AROS_WORSTALIGN:sizeof(struct MemChunk))
 #define MEMHEADER_TOTAL \
 ((sizeof(struct MemHeader)+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1))
 
-struct Pool /* Private Pool structure */
+/* Private Pool structure */
+struct Pool 
 {
     struct MinList PuddleList;
     struct MinList BlockList;
     ULONG Requirements;
     ULONG PuddleSize;
     ULONG ThreshSize;
+};
+
+struct ProtectedPool
+{
+    struct Pool     	   pool;
+    struct SignalSemaphore sem;
 };
 
 struct Block

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Delete a memory pool including all it's memory.
@@ -50,27 +50,35 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct Pool *pool=(struct Pool *)poolHeader;
+    struct Pool *pool = (struct Pool *)poolHeader;
 
     /* It is legal to DeletePool(NULL) */
-    if(pool!=NULL)
+    if(pool != NULL)
     {
-	void *p;
-	struct Block *bl;
-	ULONG size;
+	struct Block 	*bl;
+	void 	    	*p;
+	ULONG 	    	size;
 
 	/* Calculate the total size of a puddle including header. */
-	size=pool->PuddleSize+MEMHEADER_TOTAL;
+	size = pool->PuddleSize + MEMHEADER_TOTAL;
+	
 	/* Free the list of puddles */
-	while((p=RemHead((struct List *)&pool->PuddleList))!=NULL)
-	    FreeMem(p,size);
-
+	while((p = RemHead((struct List *)&pool->PuddleList)) !=NULL )
+	{
+	    FreeMem(p, size);
+    	}
+	
 	/* Free the list of single Blocks */
-	while((bl=(struct Block *)RemHead((struct List *)&pool->BlockList))!=NULL)
-	    FreeMem(bl,bl->Size);
-
-	FreeMem(pool,sizeof(struct Pool));
+	while((bl = (struct Block *)RemHead((struct List *)&pool->BlockList)) != NULL)
+	{
+	    FreeMem(bl, bl->Size);
+    	}
+	
+	FreeMem(pool, (pool->Requirements & MEMF_SEM_PROTECTED) ? sizeof(struct ProtectedPool) :
+	    	    	    	    	    	    	    	  sizeof(struct Pool));
     }
+    
     AROS_LIBFUNC_EXIT
+    
 } /* DeletePool */
 
