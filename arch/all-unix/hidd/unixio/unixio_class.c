@@ -152,13 +152,29 @@ static void WaitForIO (void)
     {
         if (IsListEmpty (&waitList))
 	{
-	    D(bug("wfio: Waiting for message for task %x\n",ud->ud_WaitForIO));
+	    D(bug("wfio: Waiting for message for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
 	    WaitPort (ud->ud_Port);
 	    D(bug("wfio: Got messages\n"));
 	}
         else
 	{
-	    D(bug("wfio: Waiting for message or signal for task %x\n",ud->ud_WaitForIO));
+#if 0	
+	kprintf("FLAGS FOR FDS: ");
+	ForeachNode (&waitList, msg) {
+	    int flags;
+	   
+	    flags = fcntl (msg->fd, F_GETFL);
+	    kprintf("fd %d: %d", msg->fd, flags);
+	    if (flags & FASYNC)
+	    	kprintf(" ASYNC SET, ");
+	    else
+	    	kprintf(" ASYNC NOT SET, ");
+	    }
+	    
+	    kprintf("\n");
+#endif		    
+		    
+	    D(bug("wfio: Waiting for message or signal for task %s\n",ud->ud_WaitForIO->tc_Node.ln_Name));
 	    rmask = Wait ((ULONG) 1 << ud->ud_Port -> mp_SigBit | SIGBREAKF_CTRL_C);
 	    if (rmask & SIGBREAKF_CTRL_C)
 	    {
@@ -277,7 +293,7 @@ static void WaitForIO (void)
 		{
 		    msg->result = 0;
 reply:
-		    D(bug("wfio: Reply: fd=%ld res=%ld replying to task %x on port %x\n", msg->fd, msg->result, ((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort));
+		    D(bug("wfio: Reply: fd=%ld res=%ld replying to task %s on port %x\n", msg->fd, msg->result, ((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort));
 /*
 kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags : 0x%0x)\n",((struct Task *)((struct Message *)msg)->mn_ReplyPort->mp_SigTask)->tc_Node.ln_Name,((struct Message *)msg)->mn_ReplyPort->mp_SigTask,((struct Message *)msg)->mn_ReplyPort,((struct Message *)msg)->mn_ReplyPort->mp_Flags);
 */
@@ -406,7 +422,13 @@ static IPTR unixio_asyncio(Class *cl, Object *o, struct uioMsgAsyncIO *msg)
 
     if (umsg)
     {
+    	/* nlorentz: What action should be taken on reply of this message
+	   should be the choice of the caller. (The caller might want
+	   a signal instead of a softint)
+	   
 	port->mp_Flags   = PA_SOFTINT;
+	
+	*/
 
 	umsg->Message.mn_ReplyPort = port;
 	umsg->fd   = ((struct uioMsg *)msg)->um_Filedesc;
@@ -658,6 +680,7 @@ IPTR Hidd_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode, APTR callback, APTR callbac
      p.um_Mode	   = mode;
      p.um_CallBack = callback;
      p.um_CallBackData = callbackdata;
+     
      
      return DoMethod((Object *)o, (Msg)&p);
 }
