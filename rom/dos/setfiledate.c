@@ -21,7 +21,7 @@
 	AROS_LH2(BOOL, SetFileDate,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR,             name, D1),
+	AROS_LHA(CONST_STRPTR,       name, D1),
 	AROS_LHA(struct DateStamp *, date, D2),
 
 /*  LOCATION */
