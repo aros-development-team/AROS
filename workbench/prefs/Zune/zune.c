@@ -5,6 +5,8 @@
     $Id$
 */
 
+#include <string.h>
+
 #include <libraries/asl.h>
 #include <libraries/mui.h>
 #include <prefs/prefhdr.h>
@@ -30,6 +32,14 @@ struct Library *MUIMasterBase;
 void load_prefs(char *filename);
 void save_prefs(char *filename);
 
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
 
 #ifndef _AROS
 
@@ -128,7 +138,28 @@ static void SavePrefs(STRPTR filename, Object *obj)
     struct IFFHandle *iff;
     if ((iff = AllocIFF()))
     {
-	if ((iff->iff_Stream = Open(filename,MODE_NEWFILE)))
+    	if (!(iff->iff_Stream = Open(filename,MODE_NEWFILE)))
+    	{
+    	    /* Try to Create the directory where the file is located */
+	    char *path = StrDup(filename);
+	    if (path)
+	    {
+	    	char *path_end = PathPart(path);
+	    	if (path_end != path)
+	    	{
+		    BPTR lock;
+		    *path_end = 0;
+		    if ((lock = CreateDir(filename)))
+		    {
+			UnLock(lock);
+			iff->iff_Stream = Open(filename,MODE_NEWFILE);
+		    }
+		}
+	    	FreeVec(path);
+	    }
+    	}
+
+	if (iff->iff_Stream)
 	{
 	    InitIFFasDOS(iff);
 
