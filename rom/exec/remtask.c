@@ -76,6 +76,14 @@
     */
     Forbid();
 
+    /* Remove() here, before freeing the MemEntry list. Because
+       the MemEntry list might contain the task struct itself! */
+           	    
+    if(task != SysBase->ThisTask)
+    {
+    	Remove(&task->tc_Node);    	
+    }
+
     /* Free all memory in the tc_MemEntry list. */
     while((mb=(struct MemList *)RemHead(&task->tc_MemEntry))!=NULL)
 	/* Free one MemList node */
@@ -140,9 +148,6 @@
 	Switch();
 	/* Does not return. */
     }
-    else
-	/* Good luck. Freeing other tasks is simple. */
-	Remove(&task->tc_Node);
 
     /* All done. */
     Enable();
