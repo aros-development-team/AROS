@@ -463,7 +463,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
-		aros_flavour="nativecompat"
+		aros_flavour="palmnative"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
 		aros_kernel_ldflags=""
 		aros_default_wbwidth=160
@@ -724,6 +724,8 @@ nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
 		aros_flavour="linklib" ;;
+palmnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
+		aros_flavour="palmnative" ;;
 esac
 
 if test -z "$aros_gui_basedir" ; then
