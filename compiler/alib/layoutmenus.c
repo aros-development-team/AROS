@@ -25,7 +25,7 @@ extern struct Library * GadToolsBase;
 /*  SYNOPSIS */
 	struct Menu * menu,
 	APTR          vi,
-	ULONG	      tag1,
+	Tag	      tag1,
 	...	      )
 
 /*  FUNCTION

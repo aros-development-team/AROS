@@ -25,7 +25,7 @@ extern struct Library * GadToolsBase;
 
 /*  SYNOPSIS */
 	struct Screen * screen,
-	ULONG		tag1,
+	Tag		tag1,
 	...		)
 
 /*  FUNCTION

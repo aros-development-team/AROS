@@ -28,7 +28,7 @@ extern struct Library * GadToolsBase;
 	struct Gadget    * gad,
 	struct Window    * win,
 	struct Requester * req,
-	ULONG		   tag1,
+	Tag		   tag1,
 	...		   )
 
 /*  FUNCTION
