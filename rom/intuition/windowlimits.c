@@ -2,6 +2,9 @@
     (C) 1997 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1998/01/08 21:12:13  hkiel
+    Added intui_WindowLimits().
+
     Revision 1.3  1997/12/29 21:18:41  hkiel
     Supplied WindowLimits() function with life.
 
@@ -83,6 +86,14 @@
 	window->MaxHeight = MaxHeight;
     else
 	retval = FALSE;
+
+    /* Now we have correct values for the limits, let's call the driver */
+    intui_WindowLimits (window
+	, window->MinWidth
+	, window->MinHeight
+	, window->MaxWidth
+	, window->MaxHeight
+    );
 
     return retval;
     AROS_LIBFUNC_EXIT

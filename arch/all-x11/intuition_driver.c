@@ -479,6 +479,27 @@ UX11
     SIGID ();
 }
 
+void intui_WindowLimits (struct Window * win,
+    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight)
+{
+/*
+    struct XSizeHints * hints;
+LX11
+    hints = XAllocSizeHints();
+    hints->flags += PMinSize|PMaxSize;
+    hints->min_width = (int)MinWidth;
+    hints->min_height = (int)MinHeight;
+    hints->max_width = (int)MaxWidth;
+    hints->max_height = (int)MaxHeight;
+
+    XSetWMNormalHints (sysDisplay
+	, ((struct IntWindow *)win)->iw_XWindow
+	, hints
+    );
+UX11
+*/
+}
+
 void intui_ActivateWindow (struct Window * win)
 {
 LX11

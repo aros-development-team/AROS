@@ -97,6 +97,12 @@ void intui_SizeWindow (struct Window * win, long dx, long dy)
     _aros_not_implemented();
 }
 
+void intui_WindowLimits (struct Window * win,
+    WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight)
+{
+    _aros_not_implemented();
+}
+
 void intui_ActivateWindow (struct Window * win)
 {
     _aros_not_implemented();
