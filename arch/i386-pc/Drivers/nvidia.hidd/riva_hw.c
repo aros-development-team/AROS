@@ -1986,6 +1986,8 @@ int RivaGetConfig
     chip->Bitmap = (RivaBitmap              *)&(chip->FIFO[0x0000A000/4]);
     chip->Line   = (RivaLine                *)&(chip->FIFO[0x0000C000/4]);
     chip->Tri03  = (RivaTexturedTriangle03  *)&(chip->FIFO[0x0000E000/4]);
+
+    chip->Rect   = (RivaRectangle           *)&(chip->FIFO[0x0000A000/4]);	// Michael !
     return (0);
 }
 

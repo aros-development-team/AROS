@@ -149,6 +149,8 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 
 			    NSD(cl)->visible = data;	/* Set created object as visible */
 
+				acc_DisableClipping(NSD(cl));
+
 				ReturnPtr("NVGfx.BitMap::New()", Object *, o);
 
 		    } /* if got data->VideoData */

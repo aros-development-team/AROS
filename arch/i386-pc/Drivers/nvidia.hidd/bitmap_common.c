@@ -17,22 +17,25 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
 {
     ULONG width, height;
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-	int multi = 1;
+    int multi = (data->bpp+1) / 8;
 
     OOP_GetAttr(o, aHidd_BitMap_Width,  &width);
     OOP_GetAttr(o, aHidd_BitMap_Height, &height);
 
-//	if (data == NSD(cl)->visible)
-//	{
-//		riva_rectfill(NSD(cl), 0, 0, width, height, GC_BG(msg->gc), vHidd_GC_DrawMode_Copy);
-//	}
-//	else
-	{
-		if (data->bpp > 16) multi = 4;
-		else if (data->bpp > 8) multi = 2;
+    if (data == NSD(cl)->visible)
+    {
+	new_fillRect(NSD(cl), 0, 0, width-1, height-1, GC_BG(msg->gc), vHidd_GC_DrawMode_Copy);
+    }
+    else
+    {
+	if (data->bpp > 16) multi = 4;
+	else if (data->bpp > 8) multi = 2;
     
-	    memset(data->VideoData, GC_BG(msg->gc), width*height*multi);
- 	}
+	memset(data->VideoData, GC_BG(msg->gc), width*height*multi);
+    }
+
+    Permit();
+
     return;
 }
 
@@ -93,17 +96,6 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
 
 	*((UBYTE*)(data->VideoData + msg->x + (msg->y * data->width))) = msg->pixel;
-
-	if (data == NSD(cl)->visible)
-	{
-		riva_setup_pat(NSD(cl), -1, -1, -1, -1);
-		riva_setup_clip(NSD(cl), 0, 0, data->width, data->height);
-		riva_rectfill(NSD(cl), 10, 20, 
-			20,
-			10,
-			1,
-			3);
-	}
 
     return;
 }
@@ -306,22 +298,20 @@ static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data =OOP_INST_DATA(cl, o);
+    int multi = (data->bpp+1) / 8;
 
     HIDDT_Pixel fg = GC_FG(msg->gc);
     HIDDT_DrawMode mode = GC_DRMD(msg->gc);
 
-//	if (data == NSD(cl)->visible)
-//	{
-//		riva_setup_pat(NSD(cl), -1, -1, -1, -1);
-//		riva_setup_clip(NSD(cl), 0, 0, data->width, data->height);
-//		riva_rectfill(NSD(cl), msg->minX, msg->minY, 
-//			msg->maxX - msg->minX + 1,
-//			msg->maxY - msg->minY + 1,
-//			fg,
-//			mode);
-//	}
-//	else
-	{
+    if (data == NSD(cl)->visible)
+    {
+	new_fillRect(NSD(cl),
+	    msg->minX, msg->minY,
+	    msg->maxX, msg->maxY,
+	    fg, mode);
+    }
+    else
+    {
 	    int i, phase, j;
 
 	    ULONG width = msg->maxX - msg->minX + 1;
@@ -408,18 +398,8 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 			    break;
 	    
 	    } /* switch(mode) */
-	}
-
-//	if (data == NSD(cl)->visible)
-//	{
-//		riva_setup_pat(NSD(cl), -1, -1, -1, -1);
-//		riva_setup_clip(NSD(cl), 0, 0, data->width, data->height);
-//		riva_rectfill(NSD(cl), 10, 20, 
-//			20,
-//			10,
-//			1,
-//			3);
-//	}
+    
+    }
 
     ReturnVoid("VGAGfx.BitMap::FillRect");
 }

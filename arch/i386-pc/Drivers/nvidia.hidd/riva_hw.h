@@ -410,6 +410,7 @@ typedef struct _riva_hw_inst
     RivaLine                *Line;
     RivaTexturedTriangle03  *Tri03;
     RivaTexturedTriangle05  *Tri05;
+    RivaRectangle	    *Rect;	// Michael!
 } RIVA_HW_INST;
 /*
  * Extended mode state information.
@@ -456,5 +457,10 @@ int RivaGetConfig(RIVA_HW_INST *);
 	(hwinst).FifoFreeCount = (hwinst).hwptr->FifoFree >> 2;        \
    (hwinst).FifoFreeCount -= (cnt);                                \
 }
-#endif /* __RIVA_HW_H__ */
 
+#define RIVA_BUSY(hwinst) \
+{ \
+   while ((hwinst).Busy(&(hwinst))); \
+}
+
+#endif /* __RIVA_HW_H__ */
