@@ -31,17 +31,17 @@ struct CountryEntry
 
 extern struct CountryPrefs
     australiaPrefs,
-    germanyPrefs,
+    deutschPrefs,
     greatBritainPrefs,
-    nederlandPrefs;
+    nederlandsPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
 struct CountryEntry CountryArray[] =
 {
     { "australia",          &australiaPrefs },
-    { "germany",            &germanyPrefs },
+    { "deutschland",        &deutschPrefs },
     { "great_britain",      &greatBritainPrefs },
-    { "nederland",          &nederlandPrefs },
+    { "nederlands", 	    &nederlandsPrefs },
     { NULL, NULL }
 };
 
@@ -63,8 +63,6 @@ char preamble[] =
 int doCountry(struct CountryPrefs *cp, STRPTR progname, STRPTR filename)
 {
     FILE *fp;
-
-    printf("Processing %s...\n", filename);
 
     fp = fopen(filename, "w");
     if(fp == NULL)

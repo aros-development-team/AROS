@@ -9,11 +9,11 @@ COUNTDIR=$(LOCALEDIR)/Countries
 DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
 
-COUNTRIES=australia germany great_britain nederland
+COUNTRIES=australia deutschland great_britain nederlands
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTDIR)/$(f).country)
 
-all: setup $(COUNTIFF)
+all: setup makecountry $(COUNTIFF)
 
 setup:
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR); else true; fi
@@ -23,7 +23,7 @@ setup:
 clean:
 	$(RM)   $(OBJDIR) *.err
 
-$(COUNTIFF): makecountry
+$(COUNTIFF): $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
 	./makecountry $(COUNTDIR)/ $(foreach f, $@, $(notdir $(basename $(f))))
 
 makecountry: $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)

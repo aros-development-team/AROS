@@ -12,7 +12,7 @@
 #include <prefs/locale.h>
 
 /* nederland.country: Lennard voor den Dag <ldp@worldonline.nl> */
-struct CountryPrefs nederlandPrefs =
+struct CountryPrefs nederlandsPrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },

@@ -2,7 +2,7 @@
     Copyright (C) 1997 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: Country data for Germany
+    Desc: Country data for Germany/Deutschland
     Lang:
 */
 
@@ -12,7 +12,7 @@
 #include <prefs/locale.h>
 
 /* germany.country: Sebastian Rittau, srittau@jroger.in-berlin.de */
-struct CountryPrefs germanyPrefs =
+struct CountryPrefs deutschPrefs =
 {
     /* Reserved */
     { 0, 0, 0, 0 },
