@@ -5,6 +5,8 @@
     Desc: Init of icon.library
     Lang: english
 */
+#define DEBUG 1
+
 #include <stddef.h>
 #include <exec/types.h>
 #include <exec/resident.h>
@@ -15,6 +17,9 @@
 #include "initstruct.h"
 #include "icon_intern.h"
 #include "libdefs.h"
+
+#include <aros/debug.h>
+#undef kprintf
 
 struct inittable;
 extern const char name[];
@@ -31,15 +36,15 @@ int entry(void)
     return -1;
 }
 
-const struct Resident resident=
+const struct Resident Icon_resident=
 {
     RTC_MATCHWORD,
-    (struct Resident *)&resident,
+    (struct Resident *)&Icon_resident,
     (APTR)&END,
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
-    0,
+    80,
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
@@ -76,7 +81,7 @@ const struct inittable datatable=
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
     { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
-    { { I_CPYO(1,W,O(library.lib_Revision    )), { 0 } } },
+    { { I_CPYO(1,W,O(library.lib_Revision    )), { LIBREVISION } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };

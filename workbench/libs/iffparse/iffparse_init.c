@@ -80,7 +80,7 @@ const struct inittable datatable=
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
     { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
-    { { I_CPYO(1,W,O(library.lib_Revision    )), { 0 } } },
+    { { I_CPYO(1,W,O(library.lib_Revision    )), { LIBREVISION } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };
