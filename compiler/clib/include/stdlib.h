@@ -128,7 +128,7 @@ char *getenv(const char *name);
 #if !defined(_ANSI_SOURCE) && !defined(_POSIX_SOURCE)
 int   putenv(const char *string);
 int   setenv(const char *name, const char *value, int overwrite);
-int   unsetenv(const char *name);
+void  unsetenv(const char *name);
 #endif
 
 /* Searching and sorting utilities */
