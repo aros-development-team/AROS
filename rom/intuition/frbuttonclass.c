@@ -97,16 +97,18 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	    if ((EG(o)->SelectRender != NULL) &&
 		(EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
 	    {
-		/* center image position, we assume image top and left is 0 */
-	        ULONG x = container.Left + ((container.Width / 2) -
-		    (IM(EG(o)->SelectRender)->Width / 2));
-		ULONG y = container.Top + ((container.Height / 2) -
-		    (IM(EG(o)->SelectRender)->Height / 2));
+                ULONG x, y;
 
+		/* center image position, we assume image top and left is 0 */
                 SetAttrs(EG(o)->SelectRender,
                          IA_Width, EG(o)->Width,
                          IA_Height, EG(o)->Height,
                          TAG_DONE);
+	        x = container.Left + (container.Width / 2) -
+		    (IM(EG(o)->SelectRender)->Width / 2);
+		y = container.Top + (container.Height / 2) -
+		    (IM(EG(o)->SelectRender)->Height / 2);
+
 		DrawImageState(rp,
 		    IM(EG(o)->SelectRender),
 		    x, y,
@@ -115,16 +117,18 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
 	    }
 	    else if ( EG(o)->GadgetRender != NULL ) /* render normal image */
 	    {
-	        /* center image position, we assume image top and left is 0 */
-	        ULONG x = container.Left + ((container.Width / 2) -
-		    (IM(EG(o)->GadgetRender)->Width / 2));
-		ULONG y = container.Top + ((container.Height / 2) -
-		    (IM(EG(o)->GadgetRender)->Height / 2));
+                ULONG x, y;
 
+	        /* center image position, we assume image top and left is 0 */
                 SetAttrs(EG(o)->GadgetRender,
                          IA_Width, EG(o)->Width,
                          IA_Height, EG(o)->Height,
                          TAG_DONE);
+	        x = container.Left + (container.Width / 2) -
+		    (IM(EG(o)->GadgetRender)->Width / 2);
+		y = container.Top + (container.Height / 2) -
+		    (IM(EG(o)->GadgetRender)->Height / 2);
+
 		DrawImageState(rp,
 		    IM(EG(o)->GadgetRender),
 		    x, y,
