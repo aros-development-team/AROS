@@ -174,8 +174,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 		MatchEnd(ap);
 		UnLockDosList(LDF_ALL | LDF_READ);
 		
-		PutStr(files[i]);
-		PutStr(" is a device and cannot be deleted\n");
+		Printf("%s is a device and cannot be deleted\n", files[i]);
 		
 		return RETURN_FAIL;
 	    }
@@ -236,8 +235,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	    {
 		if (!isDeletable(&ap->ap_Info))
 		{
-		    PutStr(ap->ap_Buf);
-		    PutStr("  Not Deleted");
+		    Printf("%s  Not Deleted", ap->ap_Buf);
 		    PrintFault(ERROR_DELETE_PROTECTED, "");
 
 		    if(!all)
@@ -252,8 +250,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	    /* Try to delete the file or directory */
 	    if (!DeleteFile(ap->ap_Buf))
 	    {
-		PutStr(ap->ap_Buf);
-		PutStr("  Not Deleted");
+		Printf("%s  Not Deleted", ap->ap_Buf);
 		PrintFault(IoErr(), "");
 		
 		/* If ALL is given as a parameter, we continue */
@@ -267,8 +264,7 @@ int doDelete(struct AnchorPath *ap, STRPTR *files, BOOL all, BOOL quiet,
 	    
 	    if (!quiet)
 	    {
-		PutStr(ap->ap_Buf);
-		PutStr("  Deleted\n");
+		Printf("%s  Deleted\n", ap->ap_Buf);
 	    }
 	}
     }

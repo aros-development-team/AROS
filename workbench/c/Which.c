@@ -280,14 +280,14 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 		    /* FIBF_EXECUTE is active low! */
 		    if(!(fib->fib_Protection & FIBF_EXECUTE))
 		    {
-			printf("%s\n", pathName);
+			Printf("%s\n", pathName);
 			found = TRUE;
 		    }
 		}
 		else
 		{
 		    /* Directories are always printed */
-		    printf("%s\n", pathName);
+		    Printf("%s\n", pathName);
 		    found = TRUE;
 		}
 
@@ -349,14 +349,14 @@ BOOL FindResidentCommand(STRPTR name)
 	
 	if(seg->seg_UC == CMD_INTERNAL)
 	{
-	    printf("INTERNAL %s\n", name);
+	    Printf("INTERNAL %s\n", name);
 	}
 	else if(seg->seg_UC == CMD_DISABLED)
 	{
-	    printf("INTERNAL %s ;(DISABLED)\n", name);
+	    Printf("INTERNAL %s ;(DISABLED)\n", name);
 	}
 	else
-	    printf("RES %s\n", name);
+	    Printf("RES %s\n", name);
     }
     
     return found;

@@ -97,11 +97,11 @@ int main(void)
 
 	if (result == -1)
 	{
-	    printf("%s has %ld buffers\n", drive, IoErr());
+	    Printf("%s has %ld buffers\n", drive, IoErr());
 	}
 	else if (result > 0)
 	{
-	    printf("%s has %ld buffers\n", drive, (LONG)result);
+	    Printf("%s has %ld buffers\n", drive, (LONG)result);
 	}
 	else
 	{

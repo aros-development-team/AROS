@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <memory.h>
 
-#include <stdio.h>
 
 
 /******************************************************************************
@@ -307,7 +306,7 @@ int main(int argc, char **argv)
 		    break;
 
 		default:
-		    printf("%c option ignored\n", *opt);
+		    Printf("%c option ignored\n", *opt);
 		    break;
 		}
 

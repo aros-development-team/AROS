@@ -78,8 +78,6 @@
 #include <dos/rdargs.h>
 #include <dos/dosasl.h>
 
-#include <stdio.h>
-
 enum { ARG_FILE = 0, ARG_WEEKDAY, ARG_DATE, ARG_TIME, ARG_ALL };
 
 int __nocommandline;

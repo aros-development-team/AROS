@@ -95,7 +95,6 @@
 #include  <dos/dos.h>
 #include  <dos/dosextens.h>
 #include  <dos/rdargs.h>
-#include  <dos/stdio.h>
 #include  <proto/dos.h>
 #include  <proto/exec.h>
 
@@ -178,7 +177,7 @@ int main(void)
 	    }
 	    else
 	    {
-		printf("Cannot open output file %s\n", toFile);
+		Printf("Cannot open output file %s\n", toFile);
 		FreeArgs(rda);
 
 		return RETURN_FAIL;
@@ -191,7 +190,7 @@ int main(void)
 	}
 	else
 	{
-	    printf("%i\n", g_result);
+	    Printf("%i\n", g_result);
 	}
 	
 	/* Reinstall output stream if we changed it */
@@ -230,11 +229,11 @@ void printLformat(STRPTR format, int value)
 	case '*':
 	    if (format[i] == 'n')
 	    {
-		printf("\n");
+		Printf("\n");
 	    }
 	    else
 	    {
-		printf("*");
+		Printf("*");
 	    }
 
 	    break;
@@ -246,26 +245,26 @@ void printLformat(STRPTR format, int value)
 	    {
             /* Hexadecimal display */
 	    case 'x':
-		printf("%x", value);
+		Printf("%x", value);
 		break;
 
 	    /* Octal display */
 	    case 'o':
-		printf("%o", value);
+		Printf("%o", value);
 		break;
 
             /* Integer display */
 	    case 'n':
-		printf("%i", value);
+		Printf("%i", value);
 		break;
 
 	    /* Character display */
 	    case 'c':
-		printf("%c", value);
+		Printf("%c", value);
 		break;
 
 	    case '%':
-		printf("%%");
+		Printf("%%");
 		break;
 
 		/* Stupid user writes "...%" */
@@ -274,7 +273,7 @@ void printLformat(STRPTR format, int value)
 		break;
 
 	    default:
-		printf("%%%c", format[i]);
+		Printf("%%%c", format[i]);
 		break;
 		
 	    } /* switch(%-command) */
@@ -282,7 +281,7 @@ void printLformat(STRPTR format, int value)
 	    break;
 
 	default:
-	    printf("%c", format[i]);
+	    Printf("%c", format[i]);
 	    break;
 	} /* switch format character */
     }

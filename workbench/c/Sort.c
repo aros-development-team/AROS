@@ -57,7 +57,6 @@
 #include <aros/debug.h>
 
 #include <string.h>
-#include <stdio.h>
 
 #define TEMPLATE "FROM/A,TO/A,COLSTART/K,CASE/S,NUMERIC/S"
 

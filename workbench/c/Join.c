@@ -118,9 +118,7 @@ int main( void )
 		}
 		else
 		{
-		    PutStr(", ");
-		    PutStr(getstring(STR_REMOVINGDEST));
-		    PutStr(".\n");
+		    Printf(", %s.\n", getstring(STR_REMOVINGDEST));
 		    DeleteFile(destination);
 		}
 	    }
@@ -177,9 +175,7 @@ int doJoin(STRPTR *files, BPTR destfile)
 	{	
 	    if(append(destfile, ap->ap_Buf) != RETURN_OK )
 	    {
-		PutStr(ERROR_HEADER);
-		PutStr(": ");
-		PutStr(getstring(STR_ABORTED));
+		Printf("%s: %s", ERROR_HEADER, getstring(STR_ABORTED));
 		rc = RETURN_FAIL;
 		break;
 	    }
@@ -208,10 +204,7 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 	    {
 		if (Write(destfile, buffer, actualLength) == -1 )
 		{
-		    PutStr(ERROR_HEADER);
-		    PutStr(": ");
-		    PutStr(getstring(STR_ERR_WRITING));
-		    PutStr(".\n");
+		    Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_WRITING));
 		    rc = RETURN_FAIL;
 		    
 		    break;
@@ -227,12 +220,10 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 	}
 	else
 	{
-	    PutStr(ERROR_HEADER);
-	    PutStr(": ");
-	    PutStr(getstring(STR_ERR_OPENREAD));
-	    PutStr(": '");
-	    PutStr(srcfilename);
-	    PutStr("'\n");
+	    Printf("%s: %s: '%s'\n",
+		ERROR_HEADER,
+		getstring(STR_ERR_OPENREAD),
+		srcfilename);
 	    
 	    rc = RETURN_FAIL;
 	}
@@ -241,10 +232,7 @@ LONG append(BPTR destfile, STRPTR srcfilename)
     }
     else
     {
-	PutStr(ERROR_HEADER);
-	PutStr(": ");
-	PutStr(getstring(STR_ERR_NOMEM));
-	PutStr(".\n");
+	Printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_NOMEM));
 	rc = RETURN_FAIL;
     }
     
