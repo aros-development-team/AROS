@@ -892,7 +892,9 @@ VOID conTaskEntry(struct conTaskParams *param)
 	
     DeleteIORequest( ioReq(fh->conreadio) );
     FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
-    
+
+    if (fh->screentitle) FreeVec(fh->screentitle);
+
     FreeMem(fh, sizeof (struct filehandle));
     if (fh->wintitle) FreeVec(fh->wintitle);
         
