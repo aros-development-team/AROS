@@ -202,7 +202,7 @@ same work twice. This is accomplished by the jobserver. It has a database
 with all tasks that are still to do, tasks that are currently under
 construction and tasks which are finished.
 
-\subsection{How does it work ?}
+\subsection{How does it work ? *New*}
 
 Just send an EMail to
 
@@ -224,6 +224,17 @@ you what it did, what commands it did understand, which it did execute and
 which not and if not, why not. jobserv will also remember your EMail so
 others can see who added/requested/did which job - So don't worry you won't
 be credited for your work.
+
+There is now a preliminary jobserver WWW interface:
+
+\begin{itemize}
+\item \link{Show free jobs}{jobserv-free.html}
+
+\item \link{Show jobs which are in work}{jobserv-work.html}
+
+\item \link{Show completed jobs}{jobserv-done.html}
+
+\end{itemize}
 
 \subsection{Some commands the jobserver understands}
 

@@ -21,13 +21,15 @@ SRCS = $(foreach f,$(FILES),$(f).src)
 HTML = $(foreach f,$(FILES),$(DEST)$(f).html) $(DEST)index.html
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
-	$(DEST)jobserv.html cgi-scripte \
+	jobserver cgi-scripte \
 	access-rights
 
 cgi-scripte : \
 	$(DEST)cgi-bin/search.cgi \
 	$(DEST)cgi-bin/counter.cgi \
-	$(DEST)cgi-bin/jobserv.cgi
+	$(DEST)cgi-bin/jobserv-free.cgi \
+	$(DEST)cgi-bin/jobserv-work.cgi \
+	$(DEST)cgi-bin/jobserv-done.cgi
 
 access-rights:
 	cd $(DEST) ; \
@@ -51,8 +53,8 @@ clean :
 	rm -f $(HTML)
 
 $(DEST)index.html : $(DEST)toc.html doc_header.html doc_footer.html
-	cat doc_header.html $(DEST)toc.html \
-	    doc_footer.html | sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	cat doc_header.html $(DEST)toc.html doc_footer.html | \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
 	    > $@
 	chmod a+r $@
 
@@ -87,8 +89,30 @@ $(DEST)background.html: background.src stathtml.gawk $(HOME)/Mail/jobs \
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-$(DEST)jobserv.html: $(HOME)/Mail/jobs jobtable.gawk jobtable.head \
-	    jobtable.tail
+jobserver : $(DEST)jobserv-free.html \
+	    $(DEST)jobserv-work.html \
+	    $(DEST)jobserv-done.html
+
+$(DEST)jobserv-free.html: page_header.html jobserv-free.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Free jobs/" \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(DEST)jobserv-work.html: page_header.html jobserv-work.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Free in work/" \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
+
+$(DEST)jobserv-done.html: page_header.html jobserv-done.body \
+	    page_footer_nolinks.html
+	cat $^ | \
+	    sed "s/\\\\thischapter/Finished jobs/" \
+	    sed "s/\\\\today/`date "+%d %b %Y"`/" \
+	    > $@
 
 autodocs: $(DEST)adoc_index.html gen/htmlpages
 
