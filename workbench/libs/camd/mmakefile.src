@@ -45,7 +45,8 @@ closemididevice \
 rethinkcamd \
 startclusternotify \
 endclusternotify \
-
+goodputmidi \
+midi2driver
 
 %define_libs prelibs=-l$(LIBNAME)
 

@@ -11,9 +11,11 @@
 
 #include "camd_intern.h"
 
+#ifdef _AROS
 #  undef DEBUG
 #  define DEBUG 1
-#  include AROS_DEBUG_H_FILE
+#  include <aros/debug.h>
+#endif
 
 BOOL isPointerInSeglist(APTR pointer,BPTR seglist,ULONG minsize);
 

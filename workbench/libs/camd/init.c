@@ -8,6 +8,7 @@
 
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/camd.h>
 
 #include "camd_intern.h"
 
@@ -18,35 +19,26 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	char temp[256];
 
 	CB(CamdBase)->CLSemaphore=AllocMem(sizeof(struct SignalSemaphore),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
-
 	if(CB(CamdBase)->CLSemaphore==NULL){
 		return FALSE;
 	}
-
 	InitSemaphore(CB(CamdBase)->CLSemaphore);
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
-
 	if(InitCamdTimer()==FALSE) return FALSE;
-
 	lock=Lock("devs:Midi",ACCESS_READ);
-
 	if(lock==NULL){
 		return TRUE;
 	}
-
 	if(Examine(lock,&fib)==FALSE){
 		UnLock(lock);
 		return TRUE;
 	}
-
 	while(ExNext(lock,&fib)!=FALSE){
 		mysprintf(CamdBase,temp,"devs:Midi/%s",fib.fib_FileName);
 		LoadDriver(temp,CamdBase);
 	}
-
 	UnLock(lock);
-
 	return TRUE;
 }
 
@@ -82,11 +74,7 @@ void UninitCamd(struct CamdBase *CamdBase){
 		temp2=driver->next;
 		(*driver->mididevicedata->Expunge)();
 		FreeDriverData(driver,CamdBase);
-#ifdef _AROS
-		Camd_CloseMidiDevice(driver->mididevicedata,CamdBase);
-#else
-		CloseMidiDevice(driver->mididevicedata,CamdBase);
-#endif
+		CloseMidiDevice(driver->mididevicedata);
 		driver=temp2;
 	}
 

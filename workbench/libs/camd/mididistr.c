@@ -16,53 +16,15 @@
 #undef SysBase
 #undef UtilityBase
 
-__inline BYTE GetMsgLen(LONG msg){
-	msg=0xff&msg>>24;
-
-	if(msg<0x80) return 3;
-
-	if(msg&0x80 && msg&0x40){
-		if(!(msg&0x20)){
-			return 1;				//0xc0 or 0xb0
-		}else{
-			if(msg&0x10){	//0xfx
-				switch(msg){
-					case 0xf0:
-						return 3;		//Return error. Not the appropriate way to send sysx.
-					case 0xf1:
-						return 1;
-					case 0xf2:
-						return 2;
-					case 0xf3:
-						return 1;
-					case 0xf4:
-						return 3;
-					case 0xf5:
-						return 3;
-					case 0xf6:
-						return 0;
-					case 0xf7:
-						return 3;
-					default:
-						return 4;		//Realtime message
-						break;
-				}
-			}
-		}
-	}
-	return 2;
-}
-
-
 
 void PutMidi2Link(
 	struct MidiLink *midilink,
 	struct MyMidiMessage2 *msg2,
 	ULONG timestamp
 ){
-	int lokke;
 	ULONG type;
-	struct MyMidiMessage *msg;
+	MidiMsg *msg;
+	MidiMsg hmsg;
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midilink->ml_MidiNode;
 
 	if(mymidinode->error&CMEF_BufferFull){
@@ -114,102 +76,100 @@ outofhere:
 		msg2->status=0xf0;
 	}
 
-	msg=mymidinode->in_curr;
-	if(msg==NULL){					//If no buffer.
-		return;
-	}
 
-	if(mymidinode->unpicked+1==mymidinode->midinode.mi_MsgQueueSize-1){
-		mymidinode->error |= CMEF_BufferFull;
-		return;
-	}
-
-	msg->timestamp=timestamp;
-
-	msg->m[0]=msg2->status;
-	if(msg2->len>1){
-		msg->m[1]=msg2->data1;
-	}else{
-		msg->m[1]=0;
-	}
-	if(msg2->len>2){
-		msg->m[2]=msg2->data2;
-	}else{
-		msg->m[2]=0;
-	}
-	msg->m[3]=midilink->ml_PortID;
-
-	mymidinode->unpicked++;
-
-	mymidinode->in_curr++;
-	if(mymidinode->in_curr==mymidinode->in_end){
-		mymidinode->in_curr=mymidinode->in_start;
-	}
-
-	if(mymidinode->midinode.mi_ReceiveSigBit!=-1){
-		Signal(mymidinode->midinode.mi_SigTask,1L<<mymidinode->midinode.mi_ReceiveSigBit);
-	}
 	if(mymidinode->midinode.mi_ReceiveHook!=NULL){
-// Topic! Should the hook carry any data? (guess so...)
+
+		/* I haven`t found any documentation about what the hooks carry. But the
+		   camd in tool hook for Barsnpipes has the following proto:
+
+	      static ULONG __asm __saveds midiinhook(register __a0 struct Hook *hook,
+                                       register __a2 struct MidiLink *link,
+                                       register __a1 MidiMsg *msg,
+                                       register __d0 long sysexlen,
+                                       register __a3 void *sysexdata);
+		... So I do that. -K.Matheussen.
+		*/
+#if 0
 		CallHookPkt(mymidinode->midinode.mi_ReceiveHook,NULL,NULL);
-	}
-}
+#endif
 
+		hmsg.mm_Time=timestamp;
 
-/******************************************************************************
-
-  FUNCTION
-    Returns NULL if success, driverdata if not.
-
-******************************************************************************/
-
-struct DriverData *GoodPutMidi(
-	struct MidiLink *midilink,
-	ULONG msg,
-	ULONG maxbuff,
-	struct CamdBase *CamdBase
-){
-	int len=GetMsgLen(msg);
-	struct Node *node;
-	struct DriverData *driverdata=NULL;
-	struct MyMidiCluster *mycluster=(struct MyMidiCluster *)midilink->ml_Location;
-	struct MyMidiMessage2 msg2;
-	struct MidiLink *midilink2;
-	struct MyMidiNode *mymidinode;
-
-	if(len==3) return NULL;	//Illegal message.
-
-	ObtainSemaphoreShared(&mycluster->semaphore);
-
-	if( ! (IsListEmpty(&mycluster->cluster.mcl_Receivers))){
-
-		msg2.status=msg>>24;
-		msg2.data1=0x7f&(msg>>16);
-		msg2.data2=0x7f&(msg>>8);
-		msg2.len=(len&3)+1;
-
-		node=mycluster->cluster.mcl_Receivers.lh_Head;
-
-		while(node->ln_Succ!=NULL){
-			if(node->ln_Type==NT_USER-MLTYPE_NTypes){
-				driverdata=Midi2Driver((struct DriverData *)node,msg,maxbuff)?NULL:(struct DriverData *)node;
-			}else{
-				midilink2=(struct MidiLink *)node;
-				mymidinode=(struct MyMidiNode *)midilink2->ml_MidiNode;
-				ObtainSemaphore(&mymidinode->receiversemaphore);
-					PutMidi2Link(midilink2,&msg2,*mymidinode->midinode.mi_TimeStamp);
-				ReleaseSemaphore(&mymidinode->receiversemaphore);
-				if(driverdata!=NULL){
-					driverdata=Midi2Driver(driverdata,msg,maxbuff)?NULL:driverdata;
-				}
-			}
-			node=node->ln_Succ;
+		hmsg.mm_Status=msg2->status;
+		if(msg2->len>1){
+			hmsg.mm_Data1=msg2->data1;
+		}else{
+			hmsg.mm_Data1=0;
 		}
+		if(msg2->len>2){
+			hmsg.mm_Data2=msg2->data2;
+		}else{
+			hmsg.mm_Data2=0;
+		}
+		hmsg.mm_Port=midilink->ml_PortID;
+
+		(*
+			(
+				(ULONG (* ASM)(
+						REG(a0) struct Hook*,
+						REG(a2) struct MidiLink*,
+						REG(a1) MidiMsg*,
+						REG(d0) long,
+						REG(a3) void*
+					)
+				)
+				(mymidinode->midinode.mi_ReceiveHook->h_Entry)
+			)
+		)(
+			mymidinode->midinode.mi_ReceiveHook,
+			midilink,
+			&hmsg,
+			hmsg.mm_Status==0xf0?GetSysXLen(mymidinode->sysex_laststart):0L,
+			hmsg.mm_Status==0xf0?mymidinode->sysex_laststart:NULL
+		);
+
+
+	}else{
+
+		msg=mymidinode->in_curr;
+		if(msg==NULL){					//If no buffer.
+			return;
+		}
+
+		if(mymidinode->unpicked+1==mymidinode->midinode.mi_MsgQueueSize-1){
+			mymidinode->error |= CMEF_BufferFull;
+			return;
+		}
+
+		msg->mm_Time=timestamp;
+
+		msg->mm_Status=msg2->status;
+		if(msg2->len>1){
+			msg->mm_Data1=msg2->data1;
+		}else{
+			msg->mm_Data1=0;
+		}
+		if(msg2->len>2){
+			msg->mm_Data2=msg2->data2;
+		}else{
+			msg->mm_Data2=0;
+		}
+		msg->mm_Port=midilink->ml_PortID;
+
+		mymidinode->unpicked++;
+
+		mymidinode->in_curr++;
+		if(mymidinode->in_curr==mymidinode->in_end){
+			mymidinode->in_curr=mymidinode->in_start;
+		}
+
+		if(mymidinode->midinode.mi_ReceiveSigBit!=-1){
+			Signal(mymidinode->midinode.mi_SigTask,1L<<mymidinode->midinode.mi_ReceiveSigBit);
+		}
+
 	}
-
-	ReleaseSemaphore(&mycluster->semaphore);
-
-	return driverdata;
 }
+
+
 
 

@@ -54,18 +54,15 @@
     AROS_LIBBASE_EXT_DECL(struct CamdBase *,CamdBase)
 
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midinode;
-	struct MyMidiMessage *mymsg;
+	MidiMsg *mymsg;
 
 	if(mymidinode->unpicked==0){
 		return FALSE;
 	}
 	mymsg=mymidinode->in_curr_get;
 
-	msg->mm_Time=mymsg->timestamp;
-	msg->mm_Status=mymsg->m[0];
-	msg->mm_Data1=mymsg->m[1];
-	msg->mm_Data2=mymsg->m[2];
-	msg->mm_Port=mymsg->m[3];
+	msg->mm_Msg=mymsg->mm_Msg;
+	msg->mm_Time=mymsg->mm_Time;
 
 	mymidinode->unpicked--;
 
@@ -75,9 +72,6 @@
 	}
 
 	mymidinode->lastreadstatus=msg->mm_Status;
-
-	// Hmmm, union, have to check...
-	msg->mm_Msg=(msg->mm_Status<<24)|(msg->mm_Data1<<16)|(msg->mm_Data2<<8);
 
 	return TRUE;
 

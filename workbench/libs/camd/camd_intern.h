@@ -1,7 +1,7 @@
 #ifndef CAMD_INTERN_H
 #define CAMD_INTERN_H
 /*
-    Copyright (C) 2001 AROS - The Amiga Research OS
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -56,6 +56,8 @@
 #endif
 
 #ifdef _AROS
+#  undef DEBUG
+#  define DEBUG 1
 #  include <aros/debug.h>
 #endif
 
@@ -109,11 +111,13 @@ struct DriverData{
 
 	int buffercurrsend_sx;	// Number of bytes in the current sysex message being sent.
 	UBYTE *buffer_sx;			// Pointer to user-suplied sysex message
+	int unsent_sx;				// Used by miditodriver_oldformat
 
 	UBYTE *buffer_rt;				// Realtime sendbuffer start
 	UBYTE *buffercurrsend_rt;	// Realtime sendbuffer write
 	UBYTE *buffercurr_rt;		// Realtime sendbuffer read
 	UBYTE *bufferend_rt;			// Realtime sendbuffer end
+	int isnowtransmitting;		// Used by mididitodriver_oldformat
 
 	int realtimesysx;				// =1 if the current sysex message being sent is realtime.
 
@@ -161,23 +165,18 @@ struct Drivers{
 };
 
 
-struct MyMidiMessage{
-	ULONG timestamp;
-	UBYTE m[4];
-};
-
 struct MyMidiNode{
 	struct MidiNode midinode;
 
 	ULONG error;
 
-	struct MyMidiMessage *in_start;
-	struct MyMidiMessage *in_curr;
-	struct MyMidiMessage *in_end;
+	MidiMsg *in_start;
+	MidiMsg *in_curr;
+	MidiMsg *in_end;
 
 	int unpicked;
 
-	struct MyMidiMessage *in_curr_get;
+	MidiMsg *in_curr_get;
 
 	ULONG dummytimestamp;	// To avoid reading from NULL if no timestamp was defined.
 
@@ -257,6 +256,7 @@ struct CamdBase_intern{
 #endif
 
 
+#ifndef FUNCTIONTABLE
 /* Prototypes */
 
 struct CamdBase{struct Library library;};
@@ -266,20 +266,21 @@ void PutMidi2Link(
 	struct MyMidiMessage2 *msg2,
 	ULONG timestamp
 );
-struct DriverData *GoodPutMidi(
-	struct MidiLink *midilink,
-	ULONG msg,
-	ULONG maxbuff,
-	struct CamdBase *CamdBase
-);
 void UnlinkMidiLink(struct MidiLink *midilink,BOOL unlinkfromnode,struct CamdBase *CamdBase);
-ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata);
-BOOL Midi2Driver(
+BOOL Midi2Driver_internal(
 	struct DriverData *driverdata,
 	ULONG msg,
 	ULONG maxbuff
 );
+BOOL Midi2Driver_internal_oldformat(
+	struct DriverData *driverdata,
+	ULONG msg,
+	ULONG maxbuff
+);
+ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata);
+ULONG ASM Transmitter_oldformat(REG(a2) struct DriverData *driverdata);
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer);
+BOOL SysEx2Driver_oldformat(struct DriverData *driverdata, UBYTE *buffer);
 void RemoveCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase);
 void LinkHasBeenRemovedFromCluster(struct MidiCluster *cluster,struct CamdBase *CamdBase);
 struct MidiCluster *NewCluster(char *name,struct CamdBase *CamdBase);
@@ -317,8 +318,6 @@ void EndReceiverProc(
 	struct CamdBase *CamdBase
 );
 
-BOOL InitCamd(struct CamdBase *CamdBase);
-void UninitCamd(struct CamdBase *CamdBase);
 void Reciever_SysExSuperTreat(
 	struct DriverData *driverdata,
 	UBYTE data
@@ -372,35 +371,14 @@ char *findonlyfilename(char *pathfile);
 void mysprintf(struct CamdBase *camdbase,char *string,char *fmt,...);
 struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node);
 
+void CamdWait(void);
+
+#endif
+
 BOOL InitCamdTimer(void);
 void UninitCamdTimer(void);
-void CamdWait(void);
-BOOL InitCamdTimerOkey(void);
-
-#if 0
-	AROS_LP2(BOOL, SetMidiAttrsA,
-	AROS_LPA(struct MidiNode *, midinode, A0),
-	AROS_LPA(struct TagItem *, tags, A1),
-	struct CamdBase *, CamdBase, 14, Camd);
-
-	AROS_LP2(BOOL, GetMidi,
-	AROS_LPA(struct MidiNode *, midinode, A0),
-	AROS_LPA(MidiMsg *, msg, A1),
-	struct CamdBase *, CamdBase, 28, Camd);
-
-	AROS_LP2(BOOL, SetMidiLinkAttrsA,
-	AROS_LPA(struct MidiLink *, midilink, A0),
-	AROS_LPA(struct TagItem *, tags, A1),
-	struct CamdBase *, CamdBase, 21, Camd);
-
-	AROS_LP1(void, CloseMidiDevice,
-	AROS_LPA(struct MidiDeviceData *, mididevicedata, A0),
-	struct CamdBase *, CamdBase, 35, Camd);
-
-	AROS_LP1(struct MidiDeviceData *, OpenMidiDevice,
-	AROS_LPA(UBYTE *, name, A0),
-	struct CamdBase *, CamdBase, 34, Camd);
-#endif
+BOOL InitCamd(struct CamdBase *CamdBase);
+void UninitCamd(struct CamdBase *CamdBase);
 
 #endif /* CAMD_INTERN_H */
 

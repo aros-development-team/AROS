@@ -37,6 +37,45 @@
 #  define TOBUF(a) ((a)^3)
 #endif
 
+
+__inline BYTE GetMsgLen(LONG msg){
+	msg=0xff&msg>>24;
+
+	if(msg<0x80) return 3;
+
+	if(msg&0x80 && msg&0x40){
+		if(!(msg&0x20)){
+			return 1;				//0xc0 or 0xb0
+		}else{
+			if(msg&0x10){	//0xfx
+				switch(msg){
+					case 0xf0:
+						return 3;		//Return error. Not the appropriate way to send sysx.
+					case 0xf1:
+						return 1;
+					case 0xf2:
+						return 2;
+					case 0xf3:
+						return 1;
+					case 0xf4:
+						return 3;
+					case 0xf5:
+						return 3;
+					case 0xf6:
+						return 0;
+					case 0xf7:
+						return 3;
+					default:
+						return 4;		//Realtime message
+						break;
+				}
+			}
+		}
+	}
+	return 2;
+}
+
+
 __inline void IncBuffer(struct DriverData *data,ULONG **buffer){
 	(*buffer)++;
 	if(*buffer==data->bufferend){
@@ -136,53 +175,39 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 }
 
 
-#ifdef _AROS
-#  define CLEARD1
-#else
-#  include <dos.h>
-#  define CLEARD1	putreg(REG_D1,0);	// This is sas/c spesific!
-#  define UNCLEARD1	putreg(REG_D1,0xff);
-#endif
-
 ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 	UBYTE ret;
 
+#ifndef _AROS
+	if((driverdata->mididevicedata->Flags&1)==0){
+		return Transmitter_oldformat(driverdata);
+	}
+#endif
 
 	// First of all, check if there are any realtime-messages on the realtime-buffer.
 	if(driverdata->unsent_rt>0){
 		ret=*driverdata->buffercurrsend_rt;
 		IncBuffer_rt(driverdata,&driverdata->buffercurrsend_rt);
 		driverdata->unsent_rt--;
-		CLEARD1
 		return ret;
 	}
 
 
 	if(driverdata->transmitfunc!=NULL){
 		ret=(*driverdata->transmitfunc)(driverdata);
-		CLEARD1
 		return ret;
 	}
 
 	if(driverdata->realtimesysx==1){
 		driverdata->transmitfunc=Transmit_SysEx;
 		ret=Transmit_SysEx(driverdata);
-		CLEARD1
 		return ret;
 	}
 
 	if(driverdata->unsent!=0){
 		ret=Transmit_Status(driverdata);
-		CLEARD1
 		return ret;
 	}
-
-#ifndef _AROS
-	if(driverdata->mididevicedata->Flags&1==0){
-		UNCLEARD1
-		return 0xfd;		// Dummy-message.
-	}
-#endif
 
 	return 0x100;
 
@@ -207,7 +232,7 @@ BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 
 	IncBuffer_rt(driverdata,&driverdata->buffercurr_rt);
 
-	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 
@@ -225,11 +250,17 @@ BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 
 ******************************************************************************/
 
-BOOL Midi2Driver(
+BOOL Midi2Driver_internal(
 	struct DriverData *driverdata,
 	ULONG msg,
 	ULONG maxbuff
 ){
+
+#ifndef _AROS
+	if((driverdata->mididevicedata->Flags&1)==0){
+		return Midi2Driver_internal_oldformat(driverdata,msg,maxbuff);
+	}
+#endif
 
 	if(msg>=0xf8000000) return Midi2Driver_rt(driverdata,msg);
 
@@ -250,7 +281,7 @@ BOOL Midi2Driver(
 
 	IncBuffer(driverdata,&driverdata->buffercurr);
 
-	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 
@@ -260,6 +291,12 @@ BOOL Midi2Driver(
 
 
 BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
+
+#ifndef _AROS
+	if((driverdata->mididevicedata->Flags&1)==0){
+		return SysEx2Driver_oldformat(driverdata,buffer);
+	}
+#endif
 
 	if(buffer[1]!=0x7f){
 		ObtainSemaphore(&driverdata->sendsemaphore);
@@ -278,7 +315,7 @@ BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 		ObtainSemaphore(&driverdata->sendsemaphore);
 	}
 
-	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+	(*driverdata->midiportdata->ActivateXmit)(driverdata,driverdata->portnum);
 
 	ReleaseSemaphore(&driverdata->sendsemaphore);
 

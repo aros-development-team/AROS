@@ -39,7 +39,7 @@ struct UtilityBase *UtilityBase;
 #define LC_LIB_FIELD(lib)	(CB(lib)->library)
 
 /* #define LC_NO_INITLIB    */
-// #define LC_NO_OPENLIB
+#define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB
 /* #define LC_NO_EXPUNGELIB */
 
@@ -84,12 +84,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR CamdBase)
     return TRUE;
 }
 
-
-ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR CamdBase)
-{
-      D(bug("Inside Open func of camd.library\n"));
-      return InitCamdTimerOkey();
-}
 
 
 /****************************************************************************************/
