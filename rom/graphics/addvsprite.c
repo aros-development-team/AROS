@@ -50,34 +50,40 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+	AROS_LIBFUNC_INIT
+	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct VSprite * CurVSprite;
-    /* the Y-coordinate is most significant! */
-    LONG Koord = JOIN_XY_COORDS(vs->X, vs->Y);
+	struct VSprite * CurVSprite;
+	/* the Y-coordinate is most significant! */
+	LONG Koord = JOIN_XY_COORDS(vs->X, vs->Y);
 
-    /* Reset the Flags for this VSprite and set OldX/Y */
-    vs -> Flags &= 0xFF;
-    vs -> OldY = vs -> Y;
-    vs -> OldX = vs -> X;
+	/* Reset the Flags for this VSprite and set OldX/Y */
+	vs -> Flags &= 0xFF;
+	vs -> OldY = vs -> Y;
+	vs -> OldX = vs -> X;
 
-    CurVSprite = rp->GelsInfo->gelHead;
+	CurVSprite = rp->GelsInfo->gelHead;
 
-    /* look for the appropriate place to insert the VSprite into the
-       list of VSprites which is connected to the GelsInfo which was
-       previously found in the rastport */
+	/* look for the appropriate place to insert the VSprite into the
+	   list of VSprites which is connected to the GelsInfo which was
+	   previously found in the rastport */
 
-    while (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord)
-        CurVSprite = CurVSprite->NextVSprite;
+	while (JOIN_XY_COORDS(CurVSprite->NextVSprite->X, CurVSprite->NextVSprite->Y) < Koord)
+		CurVSprite = CurVSprite->NextVSprite;
 
-    /* insert the new VSprite *after* CurVSprite */
+	/* insert the new VSprite *after* CurVSprite */
 
-    CurVSprite -> NextVSprite -> PrevVSprite = vs;
-    vs -> NextVSprite = CurVSprite -> NextVSprite;
-    vs -> PrevVSprite = CurVSprite;
-    CurVSprite -> NextVSprite = vs;
+	CurVSprite -> NextVSprite -> PrevVSprite = vs;
+	vs -> NextVSprite = CurVSprite -> NextVSprite;
+	vs -> PrevVSprite = CurVSprite;
+	CurVSprite -> NextVSprite = vs;
 
-    AROS_LIBFUNC_EXIT
-    
+	/*
+	 * Create he IntVSprite structure for improved handling of
+	 * the VSprite ImageData.
+	 */
+	vs -> IntVSprite = _CreateIntVSprite(vs, rp);
+
+	AROS_LIBFUNC_EXIT
+
 } /* AddVSprite */

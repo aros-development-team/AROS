@@ -47,46 +47,50 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+	AROS_LIBFUNC_INIT
+	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    struct VSprite * Head;
-    struct VSprite * Current;
+	struct VSprite * Head;
+	struct VSprite * Current;
 
-    /* unlink this VSprite */
-    vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
-    vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
+	/* unlink this VSprite */
+	vs -> NextVSprite -> PrevVSprite = vs -> PrevVSprite;
+	vs -> PrevVSprite -> NextVSprite = vs -> NextVSprite;
 
-    /* look for the head of this list of gels*/
-    Head = vs;
-    while (NULL != Head -> PrevVSprite )
-        Head = Head -> PrevVSprite;
+	/* look for the head of this list of gels */
+	Head = vs;
+	while (NULL != Head -> PrevVSprite )
+		Head = Head -> PrevVSprite;
 
-    /* take this VSprite out of the DrawPath and ClearPath */
-    Current = Head;
-    while (Current != NULL)
-    {
-	if (Current -> DrawPath == vs)
-	{
-	    Current -> DrawPath = Current -> DrawPath -> DrawPath;
-	    break;
+	/* take this VSprite out of the DrawPath and ClearPath */
+	Current = Head;
+
+	while (Current != NULL) {
+		if (Current -> IntVSprite -> DrawPath == vs) {
+			Current -> IntVSprite -> DrawPath = vs -> IntVSprite -> DrawPath;
+			break;
+		} else
+			Current = Current -> NextVSprite;
 	}
-	else
-	    Current = Current -> DrawPath;
-    }
 
-    Current = Head;
-    while (Current != NULL)
-    {
-	if (Current -> ClearPath == vs)
-	{
-	    Current -> ClearPath = Current -> ClearPath -> ClearPath;
-	    break;
+	Current = Head;
+	while (Current != NULL) {
+		if (Current -> ClearPath == vs) {
+			Current -> ClearPath = vs -> ClearPath;
+			break;
+		}
+		else
+			Current = Current -> NextVSprite;
 	}
-	else
-	    Current = Current -> ClearPath;
-    }
 
-    AROS_LIBFUNC_EXIT
-    
+	/*
+	 * Are only the head and the tail VSprite left?
+	 */
+	if (NULL == Head->NextVSprite->NextVSprite) {
+		_DeleteIntVSprite(Head);
+		_DeleteIntVSprite(Head->NextVSprite);
+	}
+
+	AROS_LIBFUNC_EXIT
+	
 } /* RemVSprite */

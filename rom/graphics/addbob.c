@@ -49,11 +49,24 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+	AROS_LIBFUNC_INIT
+	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  bob->Flags &= 0x00FF;
-  AddVSprite (bob->BobVSprite, rp);
+	if (NULL != rp->GelsInfo) {
 
-  AROS_LIBFUNC_EXIT
+		/*
+		 * Check whether the head and tail VSprite
+		 * were alone before. If so, then give them
+		 * a IntVSprite structure now.
+		 */
+		if (rp->GelsInfo->gelHead->NextVSprite ==
+		    rp->GelsInfo->gelTail) {
+			_CreateIntVSprite(rp->GelsInfo->gelHead, NULL);
+			_CreateIntVSprite(rp->GelsInfo->gelTail, NULL);
+		}
+		bob->Flags &= 0x00FF;
+		AddVSprite (bob->BobVSprite, rp);
+	}
+	
+	AROS_LIBFUNC_EXIT
 } /* AddBob */
