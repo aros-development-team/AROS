@@ -12,7 +12,7 @@
     NAME */
 #include <proto/battclock.h>
 
-	AROS_LH0I(void, ResetBattClock,
+	AROS_LH0(void, ResetBattClock,
 
 /*  SYNOPSIS */
 	/* void */

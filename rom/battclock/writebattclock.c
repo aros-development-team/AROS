@@ -12,7 +12,7 @@
     NAME */
 #include <proto/battclock.h>
 
-	AROS_LH1I(void, WriteBattClock,
+	AROS_LH1(void, WriteBattClock,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG, time, D0),
