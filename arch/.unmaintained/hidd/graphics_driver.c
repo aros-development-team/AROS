@@ -1205,6 +1205,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     	struct Region    *R;
     	struct Rectangle  Rect;
     	struct Rectangle  ScrollRect;
+	struct Rectangle  bounds;
 
 	LockLayerRom(L);
 
@@ -1246,50 +1247,17 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 
         /* (xleft,yup)(xright,ydown) defines the rectangle to copy out of */
 
-        xleft  = x1 + L->bounds.MinX + xCorr1;
-        xright = x2 + L->bounds.MinX + xCorr2;
-        yup    = y1 + L->bounds.MinY + yCorr1;
-        ydown  = y2 + L->bounds.MinY + yCorr2;
+	bounds.MinX = xleft  = x1 + L->bounds.MinX + xCorr1;
+        bounds.MaxX = xright = x2 + L->bounds.MinX + xCorr2;
+        bounds.MinY = yup    = y1 + L->bounds.MinY + yCorr1;
+        bounds.MaxY = ydown  = y2 + L->bounds.MinY + yCorr2;
 
         /* First read all data out of the source area */
     	while (NULL != CR)
     	{
 	    /* Is this a CR to be concerned about at all??? */
-      	    if
-	    (
-	        !(
-		      CR->bounds.MinX > xright ||
-                      CR->bounds.MaxX < xleft  ||
-                      CR->bounds.MinY > ydown  ||
-                      CR->bounds.MaxY < yup
-		 )
-	    )
-      	    {
-        	/* that is one to be at least partly concerned about */
-        	/*
-           	   first determine the area to copy out of this cliprect
-           	   into the destination bitmap
-        	*/
-        	if (CR->bounds.MinX > xleft)
-          	    Rect.MinX = CR->bounds.MinX;
-        	else
-		    Rect.MinX = xleft;
-
-        	if (CR->bounds.MaxX < xright)
-          	    Rect.MaxX = CR->bounds.MaxX;
-        	else
-          	    Rect.MaxX = xright;
-
-        	if (CR->bounds.MinY > yup)
-          	    Rect.MinY = CR->bounds.MinY;
-        	else
-          	    Rect.MinY = yup;
-
-        	if (CR->bounds.MaxY < ydown)
-          	    Rect.MaxY = CR->bounds.MaxY;
-        	else
-          	    Rect.MaxY = ydown;
-
+	    if (AndRectRect(&CR->bounds, &bounds, &Rect))
+	    {
         	/* If this cliprect is hidden and belongs to a simple layer then
            	   I add the Rect to the Region, otherwise I do a blit into the
            	   temporary bitmap instead
@@ -1409,52 +1377,18 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 
         }
 
-        xleft  -= dx;
-        xright -= dx;
-        yup    -= dy;
-        ydown  -= dy;
+        bounds.MinX = xleft  -= dx;
+        bounds.MaxX = xright -= dx;
+        bounds.MinY = yup    -= dy;
+        bounds.MaxY = ydown  -= dy;
 
         /* now copy from the bitmap bm into the destination */
         CR = L->ClipRect;
         while (NULL != CR)
     	{
             /* Is this a CR to be concerned about at all??? */
-      	   if
-	   (
-	       !(
-	             CR->bounds.MinX > xright ||
-            	     CR->bounds.MaxX < xleft  ||
-            	     CR->bounds.MinY > ydown  ||
-            	     CR->bounds.MaxY < yup
-		)
-	    )
-     	    {
-        	struct Rectangle Rect;
-        	/* that is one to be at least partly concerned about */
-        	/*
-           	    first determine the area to copy into from the
-           	    temporary bitmap
-        	*/
-        	if (CR->bounds.MinX > xleft)
-          	    Rect.MinX = CR->bounds.MinX;
-        	else
-          	    Rect.MinX = xleft;
-
-        	if (CR->bounds.MaxX < xright)
-          	    Rect.MaxX = CR->bounds.MaxX;
-        	else
-          	    Rect.MaxX = xright;
-
-        	if (CR->bounds.MinY > yup)
-          	    Rect.MinY = CR->bounds.MinY;
-        	else
-          	    Rect.MinY = yup;
-
-        	if (CR->bounds.MaxY < ydown)
-          	    Rect.MaxY = CR->bounds.MaxY;
-        	else
-          	    Rect.MaxY = ydown;
-
+	    if (AndRectRect(&CR->bounds, &bounds, &Rect))
+	    {
                 /*
            	    If this cliprect is hidden and belongs to a simple layer then
            	    I subtract the Rect from the Region, otherwise I do a blit
