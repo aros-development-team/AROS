@@ -54,6 +54,7 @@ static CONST_STRPTR color_labels[] =
     "standard",
     "hilite",
     "3d",
+    "outline",
     NULL,
 };
 

@@ -35,6 +35,7 @@ typedef enum GroupTitleColor {
     GROUP_TITLE_COLOR_STANDARD,
     GROUP_TITLE_COLOR_HILITE,
     GROUP_TITLE_COLOR_3D,
+    GROUP_TITLE_COLOR_OUTLINE,
 } GroupTitleColor;
 
 typedef enum WindowPosition {
