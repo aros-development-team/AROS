@@ -6,6 +6,20 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+struct bitmap_render_data
+{
+    struct render_special_info rsi;
+    ULONG   	    	       minterm;
+    struct BitMap   	       *srcbm;
+    OOP_Object      	       *srcbm_obj;
+
+};
+
+static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
@@ -52,15 +66,92 @@
 {
     AROS_LIBFUNC_INIT
      
-    driver_BltBitMapRastPort(srcBitMap
-    	, xSrc, ySrc
-	, destRP
-	, xDest, yDest
-	, xSize, ySize
-	, minterm
-	, GfxBase
-	
-    );
+    struct bitmap_render_data 	brd;
+    struct Rectangle 	    	rr;
+    HIDDT_DrawMode  	    	old_drmd;
+    OOP_Object      	    	*gc;
+    Point   	    	    	src;
+
+    struct TagItem gc_tags[] =
+    {
+    	{ aHidd_GC_DrawMode , 0UL },
+	{ TAG_DONE  	    	  }
+    };
+
+    EnterFunc(bug("driver_BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
+    	, xSrc, ySrc, xDest, yDest, xSize, ySize));
+
+    if (!CorrectDriverData(destRP, GfxBase))
+    	return;
+
+    brd.minterm	= minterm;
+    brd.srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
+    if (NULL == brd.srcbm_obj)
+    	return;
+
+    brd.srcbm = srcBitMap;
+
+    gc = GetDriverData(destRP)->dd_GC;
+    OOP_GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+
+    gc_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+    OOP_SetAttrs(gc, gc_tags);
+
+    rr.MinX = xDest;
+    rr.MinY = yDest;
+    rr.MaxX = xDest + xSize - 1;
+    rr.MaxY = yDest + ySize - 1;
+
+    src.x = xSrc;
+    src.y = ySrc;
+
+    do_render_func(destRP, &src, &rr, bitmap_render, &brd, TRUE, GfxBase);
+
+    RELEASE_HIDD_BM(brd.srcbm_obj, srcBitMap);
+
+    gc_tags[0].ti_Data = old_drmd;
+    OOP_SetAttrs(gc, gc_tags);
 
     AROS_LIBFUNC_EXIT
+    
 } /* BltBitMapRastPort */
+
+/****************************************************************************************/
+
+static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
+    	    	    	   OOP_Object *dstbm_obj, OOP_Object *dst_gc,
+			   LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase *GfxBase)
+{
+    struct bitmap_render_data 	*brd;
+    ULONG   	    	    	width, height;
+
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+
+    brd = (struct bitmap_render_data *)bitmap_rd;
+
+//    D(bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
+//	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase));
+
+
+    /* Get some info on the colormaps. We have to make sure
+       that we have the apropriate mapping tables set.
+    */
+
+    if (!int_bltbitmap(brd->srcbm
+    	, brd->srcbm_obj
+	, srcx, srcy
+	, brd->rsi.curbm
+	, dstbm_obj
+	, x1, y1
+	, x2 - x1 + 1, y2 - y1 + 1
+	, brd->minterm
+	, dst_gc
+	, GfxBase
+    ))
+    	return 0;
+
+   return width * height;
+}
+
+/****************************************************************************************/

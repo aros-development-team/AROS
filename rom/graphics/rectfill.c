@@ -6,7 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
-#include <graphics/rastport.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -61,9 +61,42 @@
 	}
 	else
 	{
-	    driver_RectFill (rp, xMin, yMin, xMax, yMax, GfxBase);
+	    struct BitMap   *bm = rp->BitMap;
+	    UBYTE   	    rp_drmd;
+
+	    HIDDT_Pixel     pix;
+	    HIDDT_DrawMode  drmd;
+	    ULONG   	    pen;
+
+	    /* Get drawmode */
+	    rp_drmd = GetDrMd(rp);
+
+	    pen = (rp_drmd & INVERSVID ? GetBPen(rp) : GetAPen(rp));
+
+	    /* Get rectfill pixel */
+
+	    pix = BM_PIXEL(bm, pen);
+
+
+	    if (rp_drmd & JAM2)
+	    {
+    		drmd = vHidd_GC_DrawMode_Copy;
+	    }
+	    else if (rp_drmd & COMPLEMENT)
+	    {
+    		drmd = vHidd_GC_DrawMode_Invert;
+	    }
+	    else if ((rp_drmd & (~INVERSVID)) == JAM1)
+	    {
+    		drmd = vHidd_GC_DrawMode_Copy;
+	    }
+
+	    fillrect_pendrmd(rp, xMin, yMin, xMax, yMax, pix, drmd, GfxBase);
+
 	}
-    }
+	
+    } /* if ((xMax >= xMin) && (yMax >= yMin)) */
     
     AROS_LIBFUNC_EXIT
+
 } /* RectFill */

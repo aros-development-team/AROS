@@ -7,7 +7,7 @@ include $(TOP)/config/make.cfg
 # END_DESC{makefile}
 
 # Sigh, this is needed because libtail.c uses <libdefs.h> not "libdefs.h"
-USER_INCLUDES := -I.
+USER_INCLUDES := -I. -I$(TOP)/rom/cgfx
 
 # BEGIN_DESC{localmakevar}
 # \item{LIBNAME} The lowercase name of the library (without the extension).
@@ -35,7 +35,22 @@ LIBNAME  := graphics
 ULIBNAME := Graphics
 
 OSMODULE  := graphics.library
-FILES	  := intregions graphics_misc areafill fontsupport color_support gels_internal
+
+FILES	  := \
+	intregions \
+	graphics_misc \
+	areafill \
+	fontsupport \
+	color_support \
+	gels_internal \
+	objcache \
+	default_font \
+	graphics_driver \
+	fakegfxhidd \
+	dispinfo \
+	gfxfuncsupport
+
+
 FUNCTIONS := \
 	addanimob \
 	addbob \
@@ -273,7 +288,7 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_finline
 
-#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)
+#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH) hidd-graphics-linklib
 kernel-graphics-linklib : $(LIB)
 	@$(NOP)
 

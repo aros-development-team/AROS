@@ -10,6 +10,8 @@
 #include <graphics/gfx.h>
 #include <proto/exec.h>
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+#include "objcache.h"
 
 static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	ULONG xdest, ULONG minterm);
@@ -115,12 +117,102 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     if ( srcBitMap->Pad != 0 || destBitMap->Pad != 0 
       || srcBitMap->Flags & BMF_AROS_HIDD || destBitMap->Flags & BMF_AROS_HIDD)
     {
-	planecnt = driver_BltBitMap (srcBitMap, xSrc, ySrc
-	    , destBitMap, xDest, yDest
-	    , xSize, ySize
-	    , minterm, mask, tempA
-	    , GfxBase
-	);
+	ULONG wSrc, wDest;
+	ULONG x;
+	ULONG depth;
+
+	OOP_Object *tmp_gc;
+
+	EnterFunc(bug("driver_BltBitMap()\n"));
+
+	/* bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
+			,srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm);
+
+	*/
+		
+	wSrc  = GetBitMapAttr( srcBitMap, BMA_WIDTH);
+	wDest = GetBitMapAttr(destBitMap, BMA_WIDTH);
+
+	/* Clip all blits */
+
+	depth = GetBitMapAttr ( srcBitMap, BMA_DEPTH);
+	x     = GetBitMapAttr (destBitMap, BMA_DEPTH);
+	
+	if (x < depth) depth = x;
+
+	/* Clip X and Y */
+	if (xSrc < 0)
+	{
+	    xDest += -xSrc;
+	    xSize -= -xSrc;
+	    xSrc = 0;
+	}
+
+	if (ySrc < 0)
+	{
+	    yDest += -ySrc;
+	    ySize -= -ySrc;
+	    ySrc = 0;
+	}
+
+	/* Clip width and height for source and dest */
+	if (ySrc + ySize > srcBitMap->Rows)
+	{
+	    ySize = srcBitMap->Rows - ySrc;
+	}
+
+	if (yDest + ySize > destBitMap->Rows)
+	{
+	    ySize = destBitMap->Rows - yDest;
+	}
+
+	if (xSrc + xSize >= wSrc)
+	{
+	    xSize = wSrc - xSrc;
+	}
+
+	if (xDest + xSize >= wDest)
+	{
+    	    xSize = wDest - xDest;
+	}
+
+	/* If the size is illegal or we need not copy anything, return */
+	if (ySize <= 0 || xSize <= 0 || !mask) return 0;
+
+	tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+	if (NULL != tmp_gc)
+	{
+	    OOP_Object *srcbm_obj;
+
+    	    srcbm_obj = OBTAIN_HIDD_BM(srcBitMap);
+	    if (NULL != srcbm_obj)
+	    {	
+		OOP_Object *dstbm_obj;
+
+		dstbm_obj = OBTAIN_HIDD_BM(destBitMap);
+		if (NULL != dstbm_obj)
+		{
+
+	    	    int_bltbitmap(srcBitMap, srcbm_obj
+			    , xSrc, ySrc
+			    , destBitMap, dstbm_obj
+			    , xDest, yDest
+			    , xSize, ySize
+			    , minterm
+			    , tmp_gc
+			    , GfxBase);
+
+	    	    RELEASE_HIDD_BM(dstbm_obj, destBitMap);
+		}
+
+		RELEASE_HIDD_BM(srcbm_obj, srcBitMap);
+	    }
+	    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
+	}
+
+    	#warning: dummy return value
+	planecnt = 8;
+ 
     }
     else
     {
@@ -242,8 +334,12 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
     }
 
     return planecnt;
+    
     AROS_LIBFUNC_EXIT
+    
 } /* BltBitMap */
+
+/****************************************************************************************/
 
 static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
 	ULONG minterm)
@@ -300,3 +396,4 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest, ULONG xdest,
 	dest[dByte] &= ~dBit;
 }
 
+/****************************************************************************************/

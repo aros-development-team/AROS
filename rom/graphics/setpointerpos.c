@@ -53,7 +53,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    driver_SetPointerPos(x, y, GfxBase);
+    HIDD_Gfx_SetCursorPos(SDD(GfxBase)->gfxhidd, x, y);
 
     AROS_LIBFUNC_EXIT
 } /* SetPointerPos */

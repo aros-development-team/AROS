@@ -26,6 +26,7 @@
 #include <proto/graphics.h>
 #include <utility/utility.h>
 #include "graphics_intern.h"
+#include "default_font.h"
 #include "libdefs.h"
 
 #include <stdio.h>
@@ -120,6 +121,11 @@ AROS_LH2(LIBBASETYPEPTR, init,
     NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
 #endif
 
+    OOPBase = OpenLibrary(AROSOOP_NAME, 0);
+    if (!OOPBase) return NULL;
+    
+    if (!InitROMFont(LIBBASE)) return NULL;
+    
     Disable();
     if (!driver_init (LIBBASE))
     {

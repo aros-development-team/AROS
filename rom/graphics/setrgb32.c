@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -64,9 +65,53 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    struct BitMap   	*bm;
+    HIDDT_Color     	hidd_col;
+    OOP_Object      	*pf;
+    HIDDT_ColorModel 	colmod;
+ 
     if (vp->ColorMap) SetRGB32CM(vp->ColorMap, n, r, g, b);
     
-    driver_SetRGB32 (vp, n, r, g, b, GfxBase);
+    /* Get bitmap object */
+    bm = vp->RasInfo->BitMap;
+
+    if (!IS_HIDD_BM(bm))
+    {
+    	 D(bug("!!!!! Trying to use SetRGB32() call on non-hidd bitmap!!!\n"));
+    	 return;
+    }
+    
+    if (NULL == HIDD_BM_COLMAP(bm))
+    {
+    	 D(bug("!!!!! Trying to use SetRGB32() call on bitmap with no CLUT !!!\n"));
+	 return;
+    }
+   
+   
+    /* HIDDT_Color entries are UWORD */
+    hidd_col.red   = r >> 16;
+    hidd_col.green = g >> 16 ;
+    hidd_col.blue  = b >> 16;
+    hidd_col.alpha = 0;
+
+    OOP_GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+    if (vHidd_ColorModel_Palette == colmod || vHidd_ColorModel_TrueColor == colmod)
+    {
+   	 HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, n, 1);
+
+	 /*
+	  bug("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
+			 , bm
+			 , HIDD_BM_OBJ(bm)
+			 , n
+			 , hidd_col.red, hidd_col.green, hidd_col.blue, hidd_col.alpha
+			 , hidd_col.pixval);
+
+	 */
+	 HIDD_BM_PIXTAB(bm)[n] = hidd_col.pixval;
+    }
 
     AROS_LIBFUNC_EXIT
     

@@ -6,6 +6,8 @@
     Lang: english
 */
 #include <graphics/displayinfo.h>
+#include <hidd/graphics.h>
+#include "dispinfo.h"
 
 /*****************************************************************************
 
@@ -48,7 +50,29 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    return driver_FindDisplayInfo(ID, GfxBase);
+    DisplayInfoHandle ret = NULL;
+    HIDDT_ModeID hiddmode;
+    OOP_Object *sync, *pixfmt;
+    
+    D(bug("FindDisplayInfo(id=%x)\n", ID));
+    
+    /* Check for the NOTNULLMASK */
+    if ((ID & NOTNULLMASK) != NOTNULLMASK) {
+    	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
+    	return NULL;
+    }
+    
+    hiddmode = AMIGA_TO_HIDD_MODEID(ID);
+    
+    /* Try to get mode info for the mode */
+    if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt)) {
+	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
+	return NULL;
+    }
+    
+    ret = (DisplayInfoHandle)ID;
+
+    return ret;
 
     AROS_LIBFUNC_EXIT
 } /* FindDisplayInfo */

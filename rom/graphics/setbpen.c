@@ -6,7 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
-#include <graphics/rastport.h>
+#include <proto/oop.h>
 
 /*****************************************************************************
 
@@ -48,7 +48,25 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_SetBPen (rp, pen, GfxBase);
+    struct gfx_driverdata *dd;
+
+    if (CorrectDriverData (rp, GfxBase))
+    {
+    	
+        struct TagItem col_tags[]=
+	{
+	    { aHidd_GC_Background, 0},
+	    { TAG_DONE	    	    }
+	};
+
+	col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
+	
+	dd = GetDriverData(rp);
+	if (dd)
+	{
+	    OOP_SetAttrs( dd->dd_GC, col_tags );
+	}
+    }
 
     /* Do it after the driver to allow it to inspect the previous value */
     rp->BgPen = pen;
