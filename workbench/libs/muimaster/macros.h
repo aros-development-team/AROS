@@ -292,7 +292,7 @@ struct __dummyAreaData__
 #define muiRenderInfo(obj) (((struct __dummyAreaData__ *)(obj))->mad.mad_RenderInfo)
 
 
-/* the following macros are only valid inbetween MUIM_Setup and MUIM_Cleanuü */
+/* the following macros are only valid inbetween MUIM_Setup and MUIM_Cleanup */
 #define _app(obj)          (muiGlobalInfo(obj)->mgi_ApplicationObject)
 #define _win(obj)          (muiRenderInfo(obj)->mri_WindowObject)
 #define _dri(obj)          (muiRenderInfo(obj)->mri_DrawInfo)
