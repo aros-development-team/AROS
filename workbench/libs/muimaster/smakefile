@@ -40,6 +40,7 @@ LIBOBJS = \
 CLASSESOBJS= \
   objs/classes/application.o \
   objs/classes/area.o \
+  objs/classes/bitmap.o \
   objs/classes/boopsi.o \
   objs/classes/dataspace.o \
   objs/classes/family.o \
@@ -183,6 +184,9 @@ objs/classes/application.o: classes/application.c
 
 objs/classes/area.o: classes/area.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/area.c objname=$@
+
+objs/classes/area.o: classes/bitmap.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/bitmap.c objname=$@
 
 objs/classes/boopsi.o: classes/boopsi.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/boopsi.c objname=$@
