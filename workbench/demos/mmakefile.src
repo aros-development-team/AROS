@@ -28,7 +28,7 @@ else
 FILES := compleximage demowin font2c gtdemo helloworld inquire intuitext \
 	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
-	 strtest unixio ooplib consoledemo layerstest\
+	 strtest unixio ooplib consoledemo layerstest easyreq sysreq \
 	 x11gfxhidd serialtest window cxtest simple_timer multiple_timers
 endif
 
