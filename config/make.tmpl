@@ -1120,15 +1120,22 @@ setup ::
 #
 %define copy_includes path=. dir=include
 
+ifneq (%(dir),)
 INCL_FILES_1 := $(subst %(dir),$(AROS_INCLUDES)/%(path),$(INCLUDE_FILES))
 INCL_FILES_2 := $(subst %(dir),$(GENINCDIR)/%(path),$(INCLUDE_FILES))
+_INC_PATH := %(dir)/
+else
+INCL_FILES_1 := $(foreach f,$(INCLUDE_FILES),$(AROS_INCLUDES)/%(path)/$(f))
+INCL_FILES_2 := $(foreach f,$(INCLUDE_FILES),$(GENINCDIR)/%(path)/$(f))
+_INC_PATH :=
+endif
 
 includes-copy : setup $(INCL_FILES_1) $(INCL_FILES_2)
 
-$(AROS_INCLUDES)/%(path)/%.h : %(dir)/%.h
+$(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
 
-$(GENINCDIR)/%(path)/%.h : %(dir)/%.h
+$(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
 
 setup ::
@@ -1190,11 +1197,11 @@ $(GENINCDIR)/%(path)/%.h : %.h
 # Generate a link library from a collection of files.
 #
 
-%define make_linklib dflags=$(CFLAGS)
+%define make_linklib dflags=$(CFLAGS) mmake=linklibs-$(LIB)
 OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS := $(DEPS) $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
-linklibs-$(LIB): setup $(LIBDIR)/lib$(LIB).a
+%(mmake): setup $(LIBDIR)/lib$(LIB).a
 	@$(NOP)
 
 $(LIBDIR)/lib$(LIB).a : $(OBJS)
