@@ -254,6 +254,8 @@ AROS_UFH3S(IPTR, Test_Dispatcher,
 	AROS_UFHA(Msg     , msg, A1))
 #endif
 {
+    AROS_USERFUNC_INIT
+
     /*
      * Watch out for methods we do understand.
      */
@@ -277,6 +279,8 @@ AROS_UFH3S(IPTR, Test_Dispatcher,
      * We didn't understand the last method, so call our superclass.
      */
     return(DoSuperMethodA(cl, obj, msg));
+
+    AROS_USERFUNC_EXIT
 }
 
 
@@ -397,6 +401,8 @@ AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,
 	AROS_UFHA(Msg     , msg, A1))
 #endif
 {
+    AROS_USERFUNC_INIT
+
     /*
      * Watch out for methods we do understand.
      */
@@ -416,6 +422,8 @@ AROS_UFH3S(IPTR, ExtendedTest_Dispatcher,
      * We didn't understand the last method, so call our superclass.
      */
     return(DoSuperMethodA(cl, obj, msg));
+
+    AROS_USERFUNC_EXIT
 }
 
 
