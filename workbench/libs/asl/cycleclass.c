@@ -123,8 +123,8 @@ static void RenderObject_Update(Class *cl, Object *o, struct GadgetInfo *gi)
     if ((rp = ObtainGIRPort(gi)))
     {
         DoMethod(o, GM_RENDER,
-		    gi,
-		    rp,
+		    (IPTR) gi,
+		    (IPTR) rp,
 		    GREDRAW_UPDATE);
 		    
         ReleaseGIRPort(rp);
@@ -327,7 +327,7 @@ static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
     struct TagItem 	*tag, *tstate = msg->ops_AttrList;
     IPTR		retval, tidata;
     
-    retval = DoSuperMethod(cl, o, OM_SET, msg->ops_AttrList, msg->ops_GInfo);
+    retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
     
     while((tag = NextTagItem(&tstate)))
     {
@@ -624,13 +624,13 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
 	x2 = x + data->menuwidth - 1;
 	y2 = y + data->menuheight - 1;
 
-	if ((data->popupwindow = OpenWindowTags(0,WA_CustomScreen, msg->gpi_GInfo->gi_Screen, 
+	if ((data->popupwindow = OpenWindowTags(0,WA_CustomScreen, (IPTR) msg->gpi_GInfo->gi_Screen, 
 						  WA_Left, x,
 						  WA_Top, y,
 						  WA_Width, data->menuwidth,
 						  WA_Height, data->menuheight,
 						  WA_Flags, WFLG_BORDERLESS,
-						  WA_BackFill, LAYERS_NOBACKFILL,
+						  WA_BackFill, (IPTR) LAYERS_NOBACKFILL,
 						  TAG_DONE)))
 	{
 	    data->menuleft = 0;
