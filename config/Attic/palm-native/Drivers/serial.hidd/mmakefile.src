@@ -1,0 +1,53 @@
+# $Id$
+TOP = ../../../..
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+FILES	:=	serial_init functable SerialClass SerialUnitClass endtag
+OBJDIR	:=	$(GENDIR)/$(CURDIR)
+LIBS	:=	-L$(LIBDIR) -lhiddserialstubs
+
+#MM- Drivers-native: Serial-palm-m68k
+
+#MM Serial-palm-m68k : workbench-hidd-serial-stubs
+Serial-palm-m68k : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+	%add_objects rom/boot/serial_driver
+	$(STATIC_LD) -r $(LIBS) $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	    -o $(OSGENDIR)/boot/serial_driver.o
+	@objcopy -R .note -R .comment $(OSGENDIR)/boot/serial_driver.o
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) libdefs.h endtag.c *.err
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+$(OBJDIR)/%.o : %.S
+	%assemble_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+onbitmap.s: onbitmap.c
+	%ctoasm_q
+	
+libdefs.h : lib.conf
+	@$(ECHO) "Generating $@..."
+	@$(ARCHTOOL) -c
+	
+FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+
+%mkfunctable_arch
+
+endtag.c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+%common
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
