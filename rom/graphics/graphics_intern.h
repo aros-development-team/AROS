@@ -218,6 +218,8 @@ struct GfxBase_intern
 
 #define TFE(tfe) 		((struct TextFontExtension*)tfe)
 
+#define TFE_MATCHWORD	    	0xDFE7 /* randomly invented */
+
 /* Defines for flags in areainfo->FlagPtr */
 
 #define AREAINFOFLAG_MOVE   	0x0
