@@ -34,8 +34,8 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* The speed of the crystal */
@@ -104,6 +104,9 @@ static inline unsigned int serial_inp(struct HIDDSerialUnitData * data,
 
 /*************************** Classes *****************************/
 
+/* IO bases for every COM port */
+ULONG bases[] = { 0x3f8, 0x2f8, 0x3e8, 0x2e8 };
+
 /******* SerialUnit::New() ***********************************/
 static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
 {
@@ -117,12 +120,24 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
   {
     data = INST_DATA(cl, obj);
     
-    data->baseaddr = 0x3fb; //?????????????
+    data->baseaddr = bases[*msg];
     
     data->datalength = 8;
     data->parity     = FALSE;
     data->baudrate   = 0; /* will be initialize in set_baudrate() */
-    
+    data->unitnum    = *msg;
+
+    CSD(cl->UserData)->units[*msg] = data;
+
+    D(bug("Unit %d at 0x0%x\n", *msg, data->baseaddr));
+
+    /* Wake up UART */
+    serial_outp(data, UART_LCR, 0xBF);
+    serial_outp(data, UART_EFR, UART_EFR_ECB);
+    serial_outp(data, UART_IER, 0);
+    serial_outp(data, UART_EFR, 0);
+    serial_outp(data, UART_LCR, 0);
+
     /* clear the FIFOs */
     serial_outp(data, UART_FCR, (UART_FCR_CLEAR_RCVR | UART_FCR_CLEAR_XMIT));
     
@@ -134,8 +149,8 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
     /* initilize the UART */
     serial_outp(data, UART_LCR, get_lcr(data));
      
-    serial_outp(data, UART_MCR, 0);
-    serial_outp(data, UART_IER, UART_IER_MSI | UART_IER_RLSI | UART_IER_RDI);
+    serial_outp(data, UART_MCR, 8);
+    serial_outp(data, UART_IER, UART_IER_RDI);
      
     /* clear the interrupt registers again ... */
     (void)serial_inp(data, UART_LSR);
@@ -157,8 +172,10 @@ static Object *serialunit_dispose(Class *cl, Object *obj, struct pRoot_New *msg)
 
   data = INST_DATA(cl, obj);
 
+  CSD(cl->UserData)->units[data->unitnum] = NULL;
+
   /* stop all interrupts */
-  serial_outp(data, UART_IER, 0);  
+  serial_outp(data, UART_IER, 0);
 
   DoSuperMethod(cl, obj, (Msg)msg);
   ReturnPtr("SerialUnit::Dispose()", Object *, obj);
@@ -278,6 +295,10 @@ BOOL serialunit_setparameters(Class *cl, Object *o, struct pHidd_SerialUnit_SetP
 
       case TAG_PARITY_OFF:
         data->parity = FALSE;
+      break;
+
+      case TAG_SET_MCR:
+	serial_outp(data, UART_MCR, (tags[i].ti_Data & 0x0f) | 0x08);
       break;
       
       default:
@@ -572,4 +593,96 @@ BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed)
     serial_outp(data, UART_FCR, get_fcr(speed));
     
     return TRUE;
+}
+
+/* Serial interrupts */
+
+#undef SysBase
+
+AROS_UFH4(int, serial_int_13,
+    AROS_UFHA(ULONG, dummy1, A0),
+    AROS_UFHA(struct class_static_data *, csd, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    UBYTE code;
+
+    code = 1;
+
+    if (csd->units[0])
+	code = serial_inp(csd->units[0], UART_IIR) & 0x07;
+
+    switch (code)
+    {
+	case UART_IIR_RLSI:
+	    (void)serial_inp(csd->units[0], UART_LSR);
+	    break;
+	case UART_IIR_RDI:
+	    if (csd->units[0]) serialunit_receive_data(csd->units[0],NULL,SysBase);
+	    break;
+	case UART_IIR_MSI:
+	    (void)serial_inp(csd->units[0], UART_MSR);
+	    break;
+    }	
+
+    code = 1;
+    if (csd->units[2])
+	code = serial_inp(csd->units[2], UART_IIR) & 0x07;
+    switch (code)
+    {
+	case UART_IIR_RLSI:
+	    (void)serial_inp(csd->units[2], UART_LSR);
+	    break;
+	case UART_IIR_RDI:
+	    if (csd->units[2]) serialunit_receive_data(csd->units[2],NULL,SysBase);
+	    break;
+	case UART_IIR_MSI:
+	    (void)serial_inp(csd->units[2], UART_MSR);
+	    break;
+    }	
+
+    return 0;
+}
+
+AROS_UFH4(int, serial_int_24,
+    AROS_UFHA(ULONG, dummy1, A0),
+    AROS_UFHA(struct class_static_data *, csd, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    UBYTE code;
+
+    code = 1;
+    if (csd->units[1])
+	code = serial_inp(csd->units[1], UART_IIR) & 0x07;
+    switch (code)
+    {
+	case UART_IIR_RLSI:
+	    (void)serial_inp(csd->units[1], UART_LSR);
+	    break;
+	case UART_IIR_RDI:
+	    if (csd->units[1]) serialunit_receive_data(csd->units[1],NULL,SysBase);
+	    break;
+	case UART_IIR_MSI:
+	    (void)serial_inp(csd->units[1], UART_MSR);
+	    break;
+    }
+
+    code = 1;
+    if (csd->units[3])
+	code = serial_inp(csd->units[3], UART_IIR) & 0x07;
+    switch (code)
+    {
+	case UART_IIR_RLSI:
+	    (void)serial_inp(csd->units[3], UART_LSR);
+	    break;
+	case UART_IIR_RDI:
+	    if (csd->units[3]) serialunit_receive_data(csd->units[3],NULL,SysBase);
+	    break;
+	case UART_IIR_MSI:
+	    (void)serial_inp(csd->units[3], UART_MSR);
+	    break;
+    }	
+
+    return 0;
 }

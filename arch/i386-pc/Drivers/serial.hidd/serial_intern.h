@@ -26,22 +26,10 @@ struct HIDDSerialData
     UBYTE		usedunits;
 };
 
-
 #define SER_UNIT_0_F	1
 #define SER_UNIT_1_F	2
 #define SER_UNIT_2_F	4
 #define SER_UNIT_3_F	8
-
-
-struct class_static_data
-{
-    struct ExecBase      * sysbase;
-    struct Library       * utilitybase;
-    struct Library       * oopbase;
-
-    Class		 *serialhiddclass;
-    Class		 *serialunitclass;
-};
 
 struct HIDDSerialUnitData
 {
@@ -58,6 +46,17 @@ struct HIDDSerialUnitData
     BOOL		breakcontrol;    
 };
 
+struct class_static_data
+{
+    struct ExecBase      * sysbase;
+    struct Library       * utilitybase;
+    struct Library       * oopbase;
+
+    Class		 *serialhiddclass;
+    Class		 *serialunitclass;
+
+    struct HIDDSerialUnitData   *units[SER_MAX_UNITS];
+};
 
 #define SER_DEFAULT_BAUDRATE	57600
 

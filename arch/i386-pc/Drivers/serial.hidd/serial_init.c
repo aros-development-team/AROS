@@ -8,6 +8,11 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <stddef.h>
 #include <exec/types.h>
+#include <exec/alerts.h>
+
+#include <aros/system.h>
+#include <aros/machine.h>
+#include <aros/asmcall.h>
 
 #include <proto/exec.h>
 
@@ -20,8 +25,8 @@
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SegList)
 #define LC_RESIDENTNAME         hiddserial_resident
-#define LC_RESIDENTFLAGS        RTF_AUTOINIT
-#define LC_RESIDENTPRI          0
+#define LC_RESIDENTFLAGS        RTF_AUTOINIT | RTF_COLDSTART
+#define LC_RESIDENTPRI          9
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
 #define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->hdg_LibNode)
@@ -35,12 +40,26 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define sysBase      (LC_SYSBASE_FIELD(lh))
 
 struct ExecBase * SysBase;
+
+AROS_UFP4(int, serial_int_13,
+    AROS_UFHA(ULONG, dummy1, A0),
+    AROS_UFHA(struct class_static_data *, csd, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+AROS_UFP4(int, serial_int_24,
+    AROS_UFHA(ULONG, dummy1, A0),
+    AROS_UFHA(struct class_static_data *, csd, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
+int init_interrupts(struct class_static_data *csd);
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
@@ -78,8 +97,36 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
                 if(csd->serialhiddclass)
                 {
+		    struct Interrupt *is;
+		    
                     D(bug("  Got SerialHIDDClass\n"));
-                    ReturnInt("SerialHIDD_Init", ULONG, TRUE);
+		    
+		    /* Install COM1 and COM3 interrupt */
+		    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+		    if(!is)
+		    {
+			kprintf("  ERROR: Cannot install Serial\n");
+			Alert( AT_DeadEnd | AN_IntrMem );
+		    }
+		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
+		    is->is_Code = (void (*)())&serial_int_13;
+		    is->is_Data = (APTR)csd;
+		    AddIntServer(0x80000004,is);	//<-- int_ser13
+
+		    /* Install COM2 and COM4 interrupt */
+		    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+		    if(!is)
+		    {
+			kprintf("  ERROR: Cannot install Serial\n");
+		    	Alert( AT_DeadEnd | AN_IntrMem );
+		    }
+		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
+		    is->is_Code = (void (*)())&serial_int_24;
+		    is->is_Data = (APTR)csd;
+		    AddIntServer(0x80000003,is);	//<-- int_ser24
+
+		    D(bug("  Got Interrupts\n"));
+		    ReturnInt("SerialHIDD_Init", ULONG, TRUE);
                 }
 
                 CloseLibrary(csd->utilitybase);
@@ -114,3 +161,33 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
     ReturnVoid("SerialHIDD_Expunge");
 }
 
+int init_interrupts(struct class_static_data *csd)
+{
+    struct Interrupt *is;
+
+    /* Install COM1 and COM3 interrupt */
+    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+    if(!is)
+    {
+	kprintf("  ERROR: Cannot install Serial\n");
+	Alert( AT_DeadEnd | AN_IntrMem );
+    }
+    is->is_Node.ln_Pri=127;		/* Set the highest pri */
+    is->is_Code = (void (*)())&serial_int_13;
+    is->is_Data = (APTR)csd;
+    AddIntServer(0x80000004,is);	//<-- int_ser13
+
+    /* Install COM2 and COM4 interrupt */
+    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
+    if(!is)
+    {
+	kprintf("  ERROR: Cannot install Serial\n");
+	Alert( AT_DeadEnd | AN_IntrMem );
+    }
+    is->is_Node.ln_Pri=127;		/* Set the highest pri */
+    is->is_Code = (void (*)())&serial_int_24;
+    is->is_Data = (APTR)csd;
+    AddIntServer(0x80000003,is);	//<-- int_ser24
+
+    return 1;
+}

@@ -3,15 +3,15 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	serial_init SerialClass SerialUnitClass
+FILES	:=	serial_init serial_stubs functable SerialClass SerialUnitClass endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Serial-native : 
 Serial-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-	%add_objects rom/boot/vgah_driver
+	%add_objects rom/boot/serial_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-	    -o $(OSGENDIR)/boot/vgah_driver.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/vgah_driver.o
+	    -o $(OSGENDIR)/boot/serial_driver.o
+	@objcopy -R .note -R .comment $(OSGENDIR)/boot/serial_driver.o
 
 #MM
 clean ::

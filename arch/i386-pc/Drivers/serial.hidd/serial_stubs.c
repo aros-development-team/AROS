@@ -31,21 +31,6 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(obj)))->UserData)
 
-
-/* A small utility function for using varargs when setting attrs */
-
-#warning SetAttrsTags is defined in inline/oop.h
-
-#ifndef SetAttrsTags
-IPTR SetAttrsTags(Object *obj, IPTR tag1, ...)
-{
-    AROS_SLOWSTACKTAGS_PRE(tag1)
-    retval = SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
-    AROS_SLOWSTACKTAGS_POST
-
-}
-#endif
-
 /***************************************************************/
 
 Object * HIDD_Serial_NewUnit(Object *obj, ULONG unitnum)
