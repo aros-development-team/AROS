@@ -179,7 +179,7 @@ void writemccinit(void)
             "\n"
             "\n"
             "/*** Custom dispatcher prototype ********************************************/\n"
-            "BOOPSI_DISPATCHER(IPTR, %s_Dispatcher, CLASS, object, message);\n",
+            "BOOPSI_DISPATCHER_PROTO(IPTR, %s_Dispatcher, CLASS, object, message);\n",
             modulename
         );
     }
