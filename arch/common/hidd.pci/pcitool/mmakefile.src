@@ -1,0 +1,16 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES = main
+
+EXEDIR = $(AROSDIR)/Tools
+
+#MM- workbench-tools: workbench-tools-pcitool
+
+%build_prog mmake=workbench-tools-pcitool \
+    progname=PCITool targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui amiga arosc m hiddstubs"
+
+%common
+
