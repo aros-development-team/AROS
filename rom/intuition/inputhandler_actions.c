@@ -38,6 +38,8 @@
 #define LOCK_ACTIONS()      	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);	
 #define UNLOCK_ACTIONS()	ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
+static void move_family(struct Window *, int , int);
+
 /*******************************************************************************************************/
 
 static void CheckLayerRefresh(struct Layer *lay, struct Screen *targetscreen,
@@ -689,6 +691,9 @@ void HandleIntuiActions(struct IIHData *iihdata,
                     targetwindow->LeftEdge += dx;
                     targetwindow->TopEdge  += dy;
 
+                    if (HAS_CHILDREN(targetwindow))
+                      move_family(targetwindow, dx, dy);
+
 		    CheckLayerRefreshBehind(targetlayer, targetscreen, IntuitionBase);
 		    
                     UNLOCK_REFRESH(targetscreen);
@@ -985,3 +990,16 @@ next_action:
 }
 			  
 
+static void move_family(struct Window * w, int dx, int dy)
+{
+  struct Window * _w = w->firstchild;
+  
+  while (_w)
+  {
+    _w->LeftEdge  += dx,
+    _w->TopEdge   += dy;
+    if (HAS_CHILDREN(_w))
+      move_family(_w,dx,dy);
+    _w=_w->nextchild;
+  }
+}			  

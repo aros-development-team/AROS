@@ -76,7 +76,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct NewWindow 	nw;
-    struct Window   	*w = NULL, *helpgroupwindow = NULL;
+    struct Window   	*w = NULL, *helpgroupwindow = NULL, *parentwin = NULL;
     struct TagItem  	*tag, *tagList;
     struct RastPort 	*rp;
     struct Hook     	*backfillhook = LAYERS_BACKFILL;
@@ -84,6 +84,7 @@
     struct IBox     	*zoombox = NULL;
     struct Image    	*AmigaKey = NULL;
     struct Image    	*Checkmark = NULL;
+    struct Layer        *parentl = NULL;
     
     STRPTR  	    	pubScreenName = NULL;
     UBYTE   	    	*screenTitle = NULL;
@@ -276,6 +277,11 @@
 	    case WA_Shape:
 	    	shape = (struct Region *)tag->ti_Data;
 		break;
+
+            case WA_Parent:
+                parentwin = ((struct Window *)tag->ti_Data);
+                parentl   = parentwin->WLayer;
+                break;
 
 	    case WA_Pointer:
 	    case WA_BusyPointer:
@@ -508,8 +514,20 @@
     if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
     if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
 
-    w->LeftEdge    = nw.LeftEdge;
-    w->TopEdge     = nw.TopEdge;
+#if 0    
+    if (NULL == parentwin)
+    {
+#endif
+      w->LeftEdge    = nw.LeftEdge;
+      w->TopEdge     = nw.TopEdge;
+#if 0
+    }
+    else
+    {
+      w->LeftEdge    = nw.LeftEdge + parentwin->LeftEdge;
+      w->TopEdge     = nw.TopEdge  + parentwin->TopEdge;
+    }
+#endif
 
     w->Width	   = (nw.Width  != ~0) ? nw.Width  : w->WScreen->Width - w->LeftEdge;
     w->Height	   = (nw.Height != ~0) ? nw.Height : w->WScreen->Height - w->TopEdge;
@@ -559,6 +577,17 @@
     IW(w)->AmigaKey  = AmigaKey  ? AmigaKey  :
 				   ((struct IntScreen *)(w->WScreen))->DInfo.dri_AmigaKey;
     
+    /* child support */
+    if (NULL != parentwin)
+    {
+      if (parentwin->firstchild)
+        parentwin->firstchild->prevchild = w;
+    
+      w->nextchild = parentwin->firstchild;
+      parentwin->firstchild = w;
+      w->parent = parentwin;
+    }
+    
     /* Help stuff */
    
     if (!have_helpgroup && helpgroupwindow)
@@ -576,7 +605,7 @@
 	IW(w)->helpgroup = helpgroup;
     }	
 	
-    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook, shape))
+    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook, shape, parentl))
 	goto failexit;
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
@@ -732,7 +761,8 @@ int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase,
 	struct BitMap        * SuperBitMap,
 	struct Hook          * backfillhook,
-	struct Region	     * shape)
+	struct Region	     * shape,
+	struct Layer         * parent)
 {
     /* Create a layer for the window */
     LONG layerflags = 0;
@@ -843,6 +873,7 @@ int intui_OpenWindow (struct Window * w,
 	  {LA_Priority	    , (layerflags & LAYERBACKDROP) ? BACKDROPPRIORITY : UPFRONTPRIORITY },
 	  {LA_Shape 	    , (IPTR)shape   	    	    	    	    	    	    	},
 	  {LA_SuperBitMap   , (IPTR)SuperBitMap							},
+	  {LA_ChildOf       , (IPTR)parent							},
 	  {TAG_DONE 	    	    	    	    	    	    	    	    	    	}
       };
       BOOL shape_created = FALSE;
