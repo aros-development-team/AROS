@@ -156,12 +156,12 @@ void * memclr(APTR, ULONG);
 
 #define MENUS_BACKFILL  TRUE
 
-#define MENUS_AMIGALOOK                (GetPrivIBase(IntuitionBase)->MenuLook)
+#define MENUS_AMIGALOOK                ((GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_3DMENUS) == 0)
 /* --- Values --- */
 #define MENULOOK_3D            0
 #define MENULOOK_CLASSIC       1
 
-#define MENUS_UNDERMOUSE       (GetPrivIBase(IntuitionBase)->MenusUnderMouse)
+#define MENUS_UNDERMOUSE       (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_POPUPMENUS)
 /* --- Values --- */
 /* TRUE, FALSE */
 
@@ -323,6 +323,8 @@ struct LayerContext
 #define IP_IEXTENSIONS  21
 #define IP_INPUTEXT     22
 
+#ifdef __MORPHOS__
+
 struct IScreenModePrefs
 {
     ULONG smp_DisplayID;
@@ -342,6 +344,12 @@ struct IIControlPrefs
     UBYTE ic_ReqTrue;
     UBYTE ic_ReqFalse;
 };
+
+#else
+
+#include <intuition/iprefs.h>
+
+#endif
 
 struct Color32
 {
@@ -523,8 +531,6 @@ struct IntIntuitionBase
     struct MinList             ResourceList[RESOURCELIST_HASHSIZE];
 
     /* Menu Look Settings */
-    int                                MenusUnderMouse;
-    int                                MenuLook;
     int                                FrameSize;
 };
 
