@@ -15,12 +15,12 @@
     NAME */
 #include <proto/locale.h>
 
-	AROS_LH3(STRPTR, GetCatalogStr,
+	AROS_LH3(CONST_STRPTR, GetCatalogStr,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct Catalog *, catalog, A0),
-	AROS_LHA(ULONG           , stringNum, D0),	/* Not a typo! Needs to be unsigned for ICF_INORDER */
-	AROS_LHA(STRPTR          , defaultString, A1),
+	AROS_LHA(const struct Catalog *, catalog,       A0),
+	AROS_LHA(ULONG,                  stringNum,     D0),	/* Not a typo! Needs to be unsigned for ICF_INORDER */
+	AROS_LHA(CONST_STRPTR,           defaultString, A1),
 
 /*  LOCATION */
 	struct LocaleBase *, LocaleBase, 12, Locale)
@@ -63,7 +63,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
-    STRPTR str = defaultString;
+    CONST_STRPTR str = defaultString;
 
     if(catalog != NULL)
     {
