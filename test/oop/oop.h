@@ -15,26 +15,27 @@
 #   include "support.h"
 #endif
 
-typedef struct IClass
+typedef struct IClass Class;
+
+struct IClass
 {
 
     /* Array of pointers to methodtables for this class */
     struct Node 	ClassNode;
-    
+
     ULONG InstOffset;
     ULONG InstSize;
-    
+
     /* The number of methods in the hashtable */
     ULONG NumMethods;
-    
+
     ULONG SubClassCount;
     ULONG ObjectCount;
-    
-    struct IClass *SuperClass;
+
+    Class *SuperClass;
     struct Bucket **HashTable;
     ULONG HashTableSize; /* Hashtable size counted in number of *entries* (not bytes) */
-    
-} Class;
+};
 
 
 typedef ULONG Object;
@@ -42,7 +43,7 @@ typedef ULONG Method;
 
 struct _Object
 {
-    Class *Class;
+    Class *oClass;
 };
 
 typedef struct
@@ -71,14 +72,14 @@ struct MethodDescr
 #define INST_DATA(cl, obj) \
 	(((VOID *)(obj)) + cl->InstOffset)
 
-	
-#define OCLASS(o) (_OBJECT(o)->Class)
+
+#define OCLASS(o) (_OBJECT(o)->oClass)
 
 
 #define ROOTCLASS "rootclass"
 
 #define RootInterface (0 << NUM_METHOD_BITS)
-#define M_New 		(RootInterface + 0)
+#define M_New		(RootInterface + 0)
 #define M_Dispose	(RootInterface + 1)
 
 struct P_New
@@ -91,10 +92,10 @@ struct P_New
 #include "intern.h"
 
 
-#define CallMethodFast(o, m, msg) 			  \
-({							  \
-	IPTR (*m_func)(Class *, Object *, Msg);	  \
-	m_func = ((struct Bucket *)m)->MethodFunc;	  \
+#define CallMethodFast(o, m, msg)                         \
+({                                                        \
+	IPTR (*m_func)(Class *, Object *, Msg);   \
+	m_func = ((struct Bucket *)m)->MethodFunc;        \
 	m_func(((struct Bucket *)m)->Class, o, (Msg)msg); \
 })
 
