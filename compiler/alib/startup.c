@@ -17,12 +17,12 @@
 #include <aros/symbolsets.h>
 
 /* Don't define symbols before the entry point. */
-extern struct ExecBase * SysBase;
+extern struct ExecBase  *SysBase;
 extern struct WBStartup *WBenchMsg;
 extern int main (int argc, char ** argv);
 
 extern jmp_buf __startup_jmp_buf;
-extern LONG __startup_error;
+extern LONG    __startup_error;
 
 DECLARESET(INIT);
 DECLARESET(EXIT);
@@ -79,7 +79,8 @@ AROS_UFH3(LONG, __startup_entry,
 
 	WaitPort(&myproc->pr_MsgPort);
 	WBenchMsg = (struct WBStartup *)GetMsg(&myproc->pr_MsgPort);
-	__argv = (char **)WBenchMsg;
+	__argv = (char **) WBenchMsg;
+        __argc = 0;
     }
 
     if (!setjmp(__startup_jmp_buf))
