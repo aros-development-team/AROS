@@ -114,6 +114,7 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             if (ExtendFont(curfont, 0L))
 	    {
             	tattr->tta_Tags = TFE(curfont->tf_Extension)->tfe_Tags;
+		if (tattr->tta_Tags) tattr->tta_Style |= FSF_TAGGED;
             }
 
 	    retval |= FH_SUCCESS;

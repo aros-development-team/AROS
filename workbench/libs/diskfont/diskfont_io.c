@@ -307,70 +307,6 @@ struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
     dfh->dfh_DF.ln_Name = dfh->dfh_Name;
     
     /* ----------------------- */
-    /* Handle taglist */
-    if (tf->tf_Style & FSF_TAGGED)
-    {
-	UWORD numtags = 0;
-	ULONG tag;
-	struct TagItem *taglist;
-	
-    	D(bug("Tagged font\n"));
-
-	/* Convert the tags */
-	ptr = taglist_ptr;
-
-	/* We assume that tags are placed in one single array, and not
-	spread around the whole file with TAG_NEXT
-	*/
-
-	/* Count number of tags w/TAG_DONE */
-	do
-	{
-	    CONVLONG(ptr, tag)
-	    SKIPLONG(ptr);
-	    numtags ++;
-	}
-	while (tag != TAG_DONE);
-
-	/* Allocate memory for taglist */
-	prevsegment = taglist = (struct TagItem *)AllocSegment(prevsegment,
-	    	    	    	    	    	    	       numtags * sizeof(struct TagItem),
-							       MEMF_ANY,
-							       DiskfontBase);
-	if (!taglist)
-	    goto failure;
-
-	/* Copy tags into allocated mem */
-	ptr = taglist_ptr;
-	for (i = 0; i < numtags; i ++ )
-	{
-	    CONVLONG(ptr, taglist[i].ti_Tag);
-	    CONVLONG(ptr, taglist[i].ti_Data);
-	}
-
-	if (ExtendFont(tf, taglist))
-	{
-	    fontextended = TRUE;
-	}
-	else
-	{
-	    goto failure;
-	}
-    }
-    else
-    {
-    	D(bug("No tags, extending it\n"));
-
-	if (ExtendFont(tf, NULL))
-	{
-	    fontextended = TRUE;
-	}
-	else
-	{
-	    goto failure;
-	}
-    }
-    /* ----------------------- */
     /* Allocate memory for charloc */
 
     D(bug("Doing charloc\n"));
@@ -439,6 +375,74 @@ struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
     }
 
     D(bug("Charkern, ptr =%p\n", tf->tf_CharKern));	
+
+
+    /* ----------------------- */
+    /* Handle taglist */
+    
+    if (tf->tf_Style & FSF_TAGGED)
+    {
+	UWORD numtags = 0;
+	ULONG tag;
+	struct TagItem *taglist;
+	
+    	D(bug("Tagged font\n"));
+
+	/* Convert the tags */
+	ptr = taglist_ptr;
+
+	/* We assume that tags are placed in one single array, and not
+	spread around the whole file with TAG_NEXT
+	*/
+
+	/* Count number of tags w/TAG_DONE */
+	do
+	{
+	    CONVLONG(ptr, tag)
+	    SKIPLONG(ptr);
+	    numtags ++;
+	}
+	while (tag != TAG_DONE);
+
+	/* Allocate memory for taglist */
+	prevsegment = taglist = (struct TagItem *)AllocSegment(prevsegment,
+	    	    	    	    	    	    	       numtags * sizeof(struct TagItem),
+							       MEMF_ANY,
+							       DiskfontBase);
+	if (!taglist)
+	    goto failure;
+
+	/* Copy tags into allocated mem */
+	ptr = taglist_ptr;
+	for (i = 0; i < numtags; i ++ )
+	{
+	    CONVLONG(ptr, taglist[i].ti_Tag);
+	    CONVLONG(ptr, taglist[i].ti_Data);
+	}
+
+	if (ExtendFont(tf, taglist))
+	{
+	    fontextended = TRUE;
+	}
+	else
+	{
+	    goto failure;
+	}
+    }
+    else
+    {
+    	D(bug("No tags, extending it\n"));
+
+	if (ExtendFont(tf, NULL))
+	{
+	    fontextended = TRUE;
+	}
+	else
+	{
+	    goto failure;
+	}
+    }
+    
     /* ----------------------- */
 
     ReturnPtr("ConvTextFont", struct TextFont *, tf);
