@@ -967,6 +967,12 @@ BOOL ih_fire_intuimessage(struct Window * w, ULONG Class, UWORD Code, APTR IAddr
     	    	    	  struct IntuitionBase *IntuitionBase);
 void NotifyDepthArrangement(struct Window *w, struct IntuitionBase *IntuitionBase);
 
+/* printitext.c */
+
+void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
+            	    LONG leftOffset, LONG topOffset, BOOL ignore_attributes,
+		    struct IntuitionBase *IntuitionBase);
+
 #ifdef __MORPHOS__
 BOOL IsLayerHiddenBySibling(struct Layer *layer, BOOL xx);
 LONG IsLayerVisible(struct Layer *layer);

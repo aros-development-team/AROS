@@ -59,6 +59,17 @@ AROS_LH4(void, PrintIText,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    int_PrintIText(rp, iText, leftOffset, topOffset, FALSE, IntuitionBase);
+    
+    AROS_LIBFUNC_EXIT
+    
+} /* PrintIText */
+
+void int_PrintIText(struct RastPort * rp, struct IntuiText * iText,
+            	    LONG leftOffset, LONG topOffset, BOOL ignore_attributes,
+		    struct IntuitionBase *IntuitionBase)
+{
+
     IPTR   	     apen;
     IPTR   	     bpen;
     IPTR   	     drmd;
@@ -70,8 +81,8 @@ AROS_LH4(void, PrintIText,
     EXTENDWORD(leftOffset);
     EXTENDWORD(topOffset);
 
-    DEBUG_PRINTITEXT(dprintf("PrintIText: rp %p text %p Left %ld Top %ld\n",
-                 rp, iText, leftOffset, topOffset));
+    DEBUG_PRINTITEXT(dprintf("int_PrintIText: rp %p text %p Left %ld Top %ld IgnoreAttrs %ld\n",
+                 rp, iText, leftOffset, topOffset, ignore_attributes));
 
     /* Store important variables of the RastPort */
 #ifdef __MORPHOS__
@@ -88,9 +99,12 @@ AROS_LH4(void, PrintIText,
     /* For all borders... */
     for ( ; iText; iText = iText->NextText)
     {
-        /* Change RastPort to the colors/mode specified */
-        SetABPenDrMd (rp, iText->FrontPen, iText->BackPen, iText->DrawMode);
-
+    	if (!ignore_attributes)
+	{
+            /* Change RastPort to the colors/mode specified */
+            SetABPenDrMd (rp, iText->FrontPen, iText->BackPen, iText->DrawMode);
+    	}
+	
         if (iText->ITextFont)
         {
             newfont = OpenFont (iText->ITextFont);
@@ -127,5 +141,5 @@ AROS_LH4(void, PrintIText,
     SetFont      (rp, font);
     SetSoftStyle (rp, style, AskSoftStyle(rp));
 
-    AROS_LIBFUNC_EXIT
-} /* PrintIText */
+}
+
