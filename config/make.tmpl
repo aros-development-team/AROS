@@ -526,7 +526,7 @@ endif
 GENFILES_TMP := %(objdir)/%(modname)_start.c %(objdir)/%(modname)_end.c
 
 # Some of the generated files are dependent on the module type.
-ifeq (%(modtype),library)
+ifneq ($(findstring %(modtype),library device),)
 GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
                 $(GENINCDIR)/clib/%(modname)_protos.h \
                 $(GENINCDIR)/defines/%(modname).h \
@@ -740,7 +740,7 @@ BD_REFFILES$(BDID)   := $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .ref, $(not
 endif
 BD_REFFILE$(BDID)    := %(reffile)
 
-ifeq ($(BD_MODTYPE$(BDID)),library)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
 BD_GENINCS$(BDID)    := clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
 endif
 BD_LIBDEFSINC$(BDID) := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_libdefs.h
@@ -753,7 +753,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_INCLUDE$(BDID)) -I$(BD_OBJDIR$(BDID)) -
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library mcc mui mcp),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library device mcc mui mcp),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -766,6 +766,14 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 		compiler=%(compiler)
+endif
+
+ifeq ($(BD_MODTYPE$(BDID)),device)
+  BD_MODDIR$(BDID)         := $(BD_PREFIX$(BDID))/$(AROS_DIR_DEVS)
+  BD_LINKLIBFILES$(BDID)   := 
+  BD_LINKLIBOBJS$(BDID)    := $(addprefix $(BD_LIBOBJDIR$(BDID))/,$(addsuffix .o,$(BD_LIBFILES$(BDID)))) \
+  			      $(BD_LIBARCHOBJS$(BDID))
+  BD_LINKLIBGENFILES$(BDID):= $(BD_PREFIX$(BDID))/$(AROS_DIR_LIB)/lib%(linklibname).a
 endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
@@ -783,7 +791,7 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
 		compiler=%(compiler)
 endif
 
-ifneq ($(findstring $(BD_MODTYPE$(BDID)),library mcc mcp),)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device mcc mcp),)
   BD_LINKLIBFILES$(BDID)   += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
   BD_LINKLIBOBJS$(BDID)    += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.o
   BD_LINKLIBDEPS$(BDID)    := $(patsubst %.o,%.d,$(BD_LINKLIBOBJS$(BDID))) 
@@ -800,11 +808,11 @@ BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 # What are the files that need to be generated before the .d and .ref files
 # can be generated ?
 BD_REFFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-ifeq ($(BD_MODTYPE$(BDID)),library)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
   BD_REFFILE_DEPS$(BDID) += $(addprefix $(BD_OBJDIR$(BDID))/dummyinc/,$(BD_GENINCS$(BDID)))
 endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
-ifeq ($(BD_MODTYPE$(BDID)),library)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
   BD_DFILE_DEPS$(BDID) += $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID)))
 endif
 
@@ -887,7 +895,7 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h :
 		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)"
 
 # The include files generated in $(GENINCDIR) have to be mirrored in the AROS include directory
-ifeq ($(BD_MODTYPE$(BDID)),library)
+ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device),)
 %rule_makedirs dirs="$(addprefix $(BD_INCLUDE$(BDID))/, clib defines pragmas proto)" setuptarget=setup-module$(BDID)
 %rule_copy from=$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h to=$(BD_INCLUDE$(BDID))/clib/$(BD_MODNAME$(BDID))_protos.h
 %rule_copy from=$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h to=$(BD_INCLUDE$(BDID))/defines/$(BD_MODNAME$(BDID)).h
