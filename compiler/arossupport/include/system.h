@@ -24,6 +24,17 @@
 #   endif
 #endif
 
+/* 2. Analyze compiler */
+#if defined(__cplusplus)
+#   define EXTERN extern "C"
+#   define BEGIN_EXTERN     extern "C" {
+#   define END_EXTERN	    };
+#else
+#   define EXTERN extern
+#   define BEGIN_EXTERN
+#   define END_EXTERN
+#endif
+
 /* 2. Makros for debugging and development */
 #if defined(TEST) || defined(DEBUG)
 #   include <assert.h>
