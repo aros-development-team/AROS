@@ -7,8 +7,6 @@ FILES := amigaguideclass nodeclass file util process navigator
 
 USER_CFLAGS   := -DCOMPILE_DATATYPE -DMORPHOS_AG_EXTENSION -Iinclude
 
-%build_module_macro mmake=workbench-datatypes-amigaguide modname=amigaguide \
-  modtype=datatype initfile=classbase_aros files=$(FILES) \
-  uselibs="amiga rom"
-
-%common
+%build_module mmake=workbench-datatypes-amigaguide \
+    modname=amigaguide modtype=datatype \
+    files=$(FILES) uselibs="rexxsyslib amiga rom"

@@ -54,7 +54,7 @@
 
 /* ----------------------- needed system libraries ------------------------ */
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__AROS__)
 #define __NOLIBBASE__
 #endif
 
@@ -135,18 +135,19 @@ struct ClassBase
 {
    struct ClassLibrary cb_Lib;
 
-   struct Library *cb_SysBase;
+   struct ExecBase *cb_SysBase;
    struct Library *cb_IntuitionBase;
    struct Library *cb_UtilityBase;
 
+#ifndef __AROS__
 #ifdef USE_DOSLIB
 #define DOSBase                 cb->cb_DOSBase
    struct Library *cb_DOSBase;
 #endif
 
 #ifdef USE_GFXLIB
+   struct GfxBase *cb_GfxBase;
 #define GfxBase                 cb->cb_GfxBase
-   struct Library *cb_GfxBase;
 #endif
 
 #ifdef USE_DATATYPESLIB
@@ -204,7 +205,8 @@ struct ClassBase
 #define SuperClassBase          cb->cb_SuperClassBase
    struct Library *cb_SuperClassBase;
 #endif
-
+#endif /* !__AROS__ */
+    
    BPTR cb_SegList;
 
    struct SignalSemaphore cb_Lock;
@@ -212,9 +214,11 @@ struct ClassBase
    USERCLASSBASEDATA
 };
 
+#ifndef __AROS__
 #define SysBase                 ((struct ExecBase *)cb->cb_SysBase)
 #define UtilityBase             cb->cb_UtilityBase
 #define IntuitionBase           cb->cb_IntuitionBase
+#endif
 
 #define CLASSBASE               struct ClassBase *cb = (struct ClassBase *) cl->cl_UserData
 
