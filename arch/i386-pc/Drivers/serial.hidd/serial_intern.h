@@ -61,20 +61,7 @@ struct HIDDSerialUnitData
 
 #define SER_DEFAULT_BAUDRATE	57600
 
-#define PARITY_1	0x01
-#define PARITY_0	0x02
-#define PARITY_EVEN	0x03
-#define PARITY_ODD	0x04
 
-
-#define TAG_PARITY	0x01
-#define TAG_PARITY_OFF	0x02
-#define TAG_STOP_BITS	0x03
-#define TAG_DATALENGTH	0x04
-
-
-#define LIMIT_LOWER_BOUND	0x40000000
-#define LIMIT_UPPER_BOUND	0x80000000
 
 /* Library base */
 
