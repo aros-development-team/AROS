@@ -88,6 +88,10 @@ struct InputEvent *AllocInputEvent(struct IIHData *iihdata);
 void FreeGeneratedInputEvents(struct IIHData *iihdata);
 
 /*********************************************************************/
+
+BOOL FireMenuMessage(WORD code, struct Window *win,
+		     struct InputEvent *ie, struct IntuitionBase *IntuitionBase);
+		     
 /*********************************************************************/
 /*********************************************************************/
 /*********************************************************************/
