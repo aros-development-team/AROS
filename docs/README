@@ -59,25 +59,23 @@ WHERE TO FIND MORE INFOS ?
 
 Look at these pages on WorldWideWait:
 
-    http://www.aros.org/ (Alias for Main site, preferred)
-    http://aros.fh-konstanz.de/aros/ (Main site)
-    http://home.pages.de/~aros/ (Alias for main site)
+    http://www.aros.org/ (Main site, preferred)
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
 (quite smaller than lha) from
 
-    ftp://aros.fh-konstanz.de/pub/aros/
+    ftp://ftp.aros.org/pub/aros/
 
 HOW DO I REPORT BUGS ?
 ----------------------
 
 There are these EMail addresses where you can send bug reports to:
 
-    aros-bugs@aros.fh-konstanz.de
-    aros-linux-bugs@aros.fh-konstanz.de
-    aros-amiga-bugs@aros.fh-konstanz.de
+    aros-bugs@aros.org
+    aros-linux-bugs@aros.org
+    aros-amiga-bugs@aros.org
 
 MISC
 ----
