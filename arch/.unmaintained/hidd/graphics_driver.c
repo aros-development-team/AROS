@@ -27,6 +27,7 @@
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
+#include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -89,9 +90,18 @@ static LONG fillrect_pendrmd(struct RastPort *tp
 	, ULONG drmd
 	, struct GfxBase *GfxBase);
 
-static AttrBase HiddBitMapAttrBase = 0;
-static AttrBase HiddGCAttrBase = 0;
+static AttrBase HiddBitMapAttrBase	= 0;
+static AttrBase HiddGCAttrBase		= 0;
+static AttrBase HiddGfxModeAttrBase	= 0;
+static AttrBase HiddPixFmtAttrBase	= 0; 
 
+static struct ABDescr attrbases[] = {
+    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
+    { IID_Hidd_GC,	&HiddGCAttrBase		},
+    { IID_Hidd_GfxMode,	&HiddGfxModeAttrBase	},
+    { IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+    { NULL, 0UL }
+};
 
 #define PIXELBUF_SIZE 200000
 #define NUMPIX (PIXELBUF_SIZE / 4)
@@ -287,23 +297,17 @@ int driver_init (struct GfxBase * GfxBase)
 	if ( SDD(GfxBase)->oopbase )
 	{
 	    /* Init the needed attrbases */
-	    HiddBitMapAttrBase	= ObtainAttrBase(IID_Hidd_BitMap);
-	    if (HiddBitMapAttrBase)
+	    
+	    if (ObtainAttrBases(attrbases))
 	    {
-	    	HiddGCAttrBase 	= ObtainAttrBase(IID_Hidd_GC);
-	    	if (HiddGCAttrBase)
+		/* Init the driver's defaultfont */
+		if (init_romfonts(GfxBase))
 		{
-	           /* Init the driver's defaultfont */
-		   if (init_romfonts(GfxBase))
-	    	   {
-			pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
-			if (pixel_buf)
-		   	    ReturnInt("driver_init", int, TRUE);
-		   }	
-		   ReleaseAttrBase(IID_Hidd_GC);
-		}
-		
-		ReleaseAttrBase(IID_Hidd_BitMap);
+		    pixel_buf=AllocMem(PIXELBUF_SIZE,MEMF_ANY);
+		    if (pixel_buf)
+			ReturnInt("driver_init", int, TRUE);
+		}	
+		ReleaseAttrBases(attrbases);
 	    }
 	    CloseLibrary( SDD(GfxBase)->oopbase );
 	}
@@ -325,13 +329,11 @@ void driver_close (struct GfxBase * GfxBase)
 
 void driver_expunge (struct GfxBase * GfxBase)
 {
+
+    ReleaseAttrBases(attrbases);
+    
     if ( SDD(GfxBase) )
     {
-        if (HiddBitMapAttrBase)
-	    ReleaseAttrBase(IID_Hidd_BitMap);
-	    
-        if (HiddGCAttrBase)
-	    ReleaseAttrBase(IID_Hidd_GC);
 	    
         if ( SDD(GfxBase)->oopbase )
 	     CloseLibrary( SDD(GfxBase)->oopbase );
@@ -2456,7 +2458,6 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		    
 		    /* Write to the HIDD */
 LOCK_HIDD(bm);	
-#warning Handle offscreen bitmaps
 		    bm_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
 
 		    SetAttrs(BM_OBJ(bm), bm_tags);
@@ -2476,7 +2477,6 @@ ULOCK_HIDD(bm);
 		    else
 		    {
 LOCK_HIDD(CR->BitMap);	
-#warning Handle offscreen bitmaps
 			bm_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
 		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
 		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
@@ -2508,9 +2508,7 @@ ULOCK_HIDD(CR->BitMap);
 	};
 	
 LOCK_HIDD(bm);	
-#warning Handle offscreen bitmaps
 	tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
-kprintf("SETRAST USING PEN %d, pixel %p\n", color, tags[1].ti_Data);
 	SetAttrs( BM_OBJ(bm), tags);
 	HIDD_BM_Clear( BM_OBJ(bm) );
 ULOCK_HIDD(bm);
@@ -2888,8 +2886,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    nbm->Flags  = flags | BMF_AROS_HIDD;
 		    
 		    /* If this is a displayable bitmap, create a color table for it */
-#warning What about offscreen bitmaps ??		    
-/* Offscreen bitmaps may be handled by copying their friend bitmap's colormap */
+
 		    if (flags & BMF_DISPLAYABLE) {
 		    	BM_PIXTAB(nbm) = AllocMem(AROS_PALETTE_MEMSIZE, MEMF_ANY);
 			if (NULL != BM_PIXTAB(nbm)) {
@@ -2939,7 +2936,6 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		    {
 		    	if (friend)
 			{
-			    /* ULONG i; */
 #warning Here we assume that the friend bitmap is a HIDD bitmap		    
 			    /* We got a friend bitmap. We inherit its colormap
 			       !!! NOTE !!! If this is used after the friend bitmap is freed
@@ -3405,12 +3401,9 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 		    };
 
 LOCK_HIDD(destBitMap);	
-#warning Handle offscreen bitmaps
 		    tags[0].ti_Data = BM_PIXTAB(destBitMap)[0];
 
 		    SetAttrs(dst_bm, tags);
-/* kprintf("clear HIDD bitmap\n");
-*/		    
 		    HIDD_BM_FillRect(dst_bm
 		    	, xDest, yDest
 			, xDest + xSize - 1
@@ -4614,7 +4607,6 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
 	     };
 
 LOCK_HIDD(bm);
-#warning Handle offscreen bitmaps
 	     bm_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[0];
 
 	     SetAttrs(BM_OBJ(bm), bm_tags);
@@ -5074,7 +5066,11 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 
 #include "cybergraphics_intern.h"
 
+#include <proto/cybergraphics.h>
 #include <cybergraphx/cybergraphics.h>
+
+static HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct Library *CyberGfxBase);
+static UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct Library *CyberGfxBase);
 
 LONG driver_WriteLUTPixelArray(APTR srcrect, 
 	UWORD srcx, UWORD srcy,
@@ -5719,23 +5715,24 @@ ULOCK_HIDD(CR->BitMap);
     return retval;
 }
 
-#if 0
 
-APTR driver_AllocCModeListTagList(struct TagItem *, struct Library *CyberGfxBase )
+#warning Implement Display mode attributes in the below function
+APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct Library *CyberGfxBase )
 {
+    struct List *hiddmlist;
     struct TagItem *tag, *tstate;
-    
-    ULONG i, o, entries;
     
     ULONG minwidth = 0;
     ULONG maxwidth = 0xFFFFFFFF;
     ULONG minheight = 0;
     ULONG maxheight = 0xFFFFFFFF;
     
-    struct List *mlist = NULL;
+    struct List *cybermlist = NULL;
+    
+    Object *gfxhidd;
     
     /* GetModeInfo tags */
-    struct TagItem gmitags[] =  {
+    struct TagItem qgmtags[] =  {
     	{ tHidd_GfxMode_MinWidth,	0x0 },
 	{ tHidd_GfxMode_MaxWidth,	0xFFFFFFFF },
 	{ tHidd_GfxMode_MinHeight,	0x0 },
@@ -5747,9 +5744,8 @@ APTR driver_AllocCModeListTagList(struct TagItem *, struct Library *CyberGfxBase
 
 
     UWORD *cmodelarray = NULL;
-    HIDDT_StdPixFmt *pfarray;
     
-    struct TagItem *modes;
+    gfxhidd = SDD(GfxBase)->gfxhidd;
     
     for (tstate = taglist; (tag = NextTagItem(&tstate)); ) {
 	switch (tag->ti_Tag) {
@@ -5773,148 +5769,278 @@ APTR driver_AllocCModeListTagList(struct TagItem *, struct Library *CyberGfxBase
 	    	cmodelarray = (UWORD *)tag->ti_Data;
 		break;
 		
+	    default:
+	    	kprintf("!!! UNKNOWN TAG PASSED TO AllocCModeListTagList\n");
+		break;
+		
 	
 	} 	
     }
     
-    
-    /* Build taglist for the GetModeInfo call */
-    gnmitags[0].ti_Data = minwidth;
-    gnmitags[1].ti_Data = maxwidth;
-    gnmitags[2].ti_Data = minheight;
-    gnmitags[3].ti_Data = maxheight;
-    
-    
-    /* Convert the colormodel array ..
-       .. first count the number of entries in the array */
-       
-    for (entries = 0; cmodelarray[entries]; entries ++)
-    	;
-    
-    /* Allocate an array for the request */
-    pfarray = AllocMem(sizeof (HIDDT_StdPixFmt) * (entries + 1), MEMF_ANY);
-    if (NULL == pfarray)
-    	return NULL;
-	
-    for (i = 0, o = 0; i < entries; i ++) {
-    	switch (cmodelarray[i]) {
-	     case PIXFMT_LUT8:
-	     	pfarray[o ++] = vHidd_PixFmt_LUT8;
-	     	break;
-		
-	     case PIXFMT_RGB24:
-	     	pfarray[o ++] = vHidd_PixFmt_RGB24;
-		break;
-	
-	     case PIXFMT_ARGB32:
-	     	pfarray[o ++] = vHidd_PixFmt_ARGB32:
-		break;
-		
-	     default:
-	     	kprintf("UNKNOWN PIXEL %d FORMAT IN AllocCModeListTagList()\n"
-			, cmodelarray[i]);
-		break;
-	}
-    }
-    
-    pfarray[o] = 0;
+    /* Build taglist for the QueryGfxModes call */
+    qgmtags[0].ti_Data = minwidth;
+    qgmtags[1].ti_Data = maxwidth;
+    qgmtags[2].ti_Data = minheight;
+    qgmtags[3].ti_Data = maxheight;
     
     /* Ask the HIDD for the modes */
-    modes = HIDD_Gfx_GetModeInfo(gfxhidd, ggmtags);
+    hiddmlist = HIDD_Gfx_QueryGfxModes(gfxhidd, qgmtags);
     
-    /* This is not needed anymore */
-    FreeMem(pfarray, sizeof (HIDDT_StdPixFmt) * (entries + 1));
-    
-    if (NULL != modes) {
-    	struct TagItem *mtag, *mtstate;
+    if (NULL != hiddmlist) {
 	
 	/* Allocate the exec list */
-	mlist = AllocMem(sizeof (struct List), MEMF_CLEAR);
-	if (NULL != mlist) {
-	    NEWLIST(mlist);
-	    	/* Convert the modeinfo into an exec list */
+	cybermlist = AllocMem(sizeof (struct List), MEMF_CLEAR);
+	if (NULL != cybermlist) {
+    	    struct ModeNode *hmnode;
+	    NEWLIST(cybermlist);
+	    /* Convert the modeinfo into an exec list */
 	
-	    	/* NOTE: If HIDD_GfxGetModeInfo returned != NULL, it means
+	    /* NOTE: If HIDD_GfxGetModeInfo returned != NULL, it means
 	           we have at least one mode, ie. ine tHidd_GfxMode_Start/Stop pair
-	    	*/
+	    */	    
+	    ForeachNode(hiddmlist, hmnode) {
 	    
-	     while ((mtstate = FindTagItem(modes, tHidd_GfxMode_Start))) {
-	
-	    	struct CyberModeNode *mnode;
+	    	struct CyberModeNode *cmnode;
+		
+		UWORD *cyberpixfmts;
+		ULONG width, height, depth;
+		
+		
+		/* Check whether the gfxmode is the correct pixel format */
+		if (NULL != cmodelarray) {
+		    HIDDT_StdPixFmt stdpf;
+		    UWORD cyberpf;
+		    BOOL found = FALSE;
+			/* Get the gfxmode pixelf format */
+		    GetAttr(hmnode->gfxMode, aHidd_PixFmt_StdPixFmt, &stdpf);
+		
+		    cyberpf = hidd2cyber_pixfmt(stdpf, CyberGfxBase);
+		    if (cyberpf == (UWORD)-1)
+		    	continue;	/* Unknown format */
+			
+		    for (cyberpixfmts = cmodelarray; *cyberpixfmts; cyberpixfmts ++) {
+		    	/* See if the stdpixfmt is present in the array */
+			if (*cyberpixfmts == cyberpf) {
+			    found = TRUE;
+			    break;
+			}
+			
+ 		    } /* for (each supplied pixelformat in the cmodelarray) */
+		    
+		    if (!found)
+		    	continue; /* PixFmt not wanted, just continue with next node */
+		
+		} /* if (cmodelarray supplied in the taglist) */
+		
 	    	/* Allocate a cybergfx modeinfo struct */
 	    
-	    	mnode = AllocMem(sizeof (struct CyberModeNode), MEMF_CLEAR);
-	    	if (NULL == mnode)
+	    	cmnode = AllocMem(sizeof (struct CyberModeNode), MEMF_CLEAR);
+	    	if (NULL == cmnode)
 		    goto failexit;
-	
-		for (mtstate = modes; (mtag = NextTagItem(&mtstate)); ) {
-		    if (tHidd_GfxMode_Stop == mtag->ti_Tag) {
-		    	/* Fill in the left out fields in the node */
-			mnode->DisplayTagList = NULL;
-			strcpy(mnode->ModeText, "Blah");
-			AddTail(mlist, mnode);
-		    	break;
-			
-		    }
-			
-		    switch (mtag->ti_Tag) {
-	     	
-			case tHidd_GfxMode_Width:
-			    mnode->Width = (UWORD)mtag->ti_Data;
-			    break;
-			case tHidd_GfxMode_Height:
-			    mnode->Height = (UWORD)mtag->ti_Data;
-			    break;
-			    
-			case tHidd_GfxMode_Depth:
-			     mnode->Depth = (UWORD)mtag->ti_Data;
-			     break;
-			     
-			
-			
-			
 		    
-		    
-		} /* for (tags in a mode) */
+		/* Get some info from the HIDD object */
+		
+		GetAttr(hmnode->gfxMode, aHidd_GfxMode_Width,  &width);
+		GetAttr(hmnode->gfxMode, aHidd_GfxMode_Height, &height);
+		GetAttr(hmnode->gfxMode, aHidd_PixFmt_Depth,   &depth);
+		
+		cmnode->Width	= width;
+		cmnode->Height	= height;
+		cmnode->Depth	= depth;
+		cmnode->DisplayTagList = NULL;
+		strncpy(cmnode->ModeText, "Blah", DISPLAYNAMELEN);
+		
+		/* Keep track of the node */
+		AddTail(cybermlist, (struct Node *)cmnode);
+		
+		/* Get a display ID for the mode */
 	
-	    } /* while (modes to process( */
+	    } /* while (hidd modes to process( */
 	
-	} /* if (NULL != mlist) */
+	} /* if (NULL != cybermlist) */
 	
-    	HIDD_Gfx_FreeModeInfo(gfxhidd, modes);
-    } /* if (NULL != modes) */
+    	HIDD_Gfx_ReleaseGfxModes(gfxhidd, hiddmlist);
+    } /* if (NULL != hiddmlist) */
 
     
-    return mlist;
+    return cybermlist;
     
 failexit:
-    if (NULL != modes)
-     	HIDD_Gfx_FreeModeInfo(gfxhidd, modes);
+    if (NULL != hiddmlist)
+     	HIDD_Gfx_ReleaseGfxModes(gfxhidd, hiddmlist);
 	
-    if (NULL != mlist)
-     	FreeCModeList(mlist);
+    if (NULL != cybermlist)
+     	FreeCModeList(cybermlist);
     
     return NULL;
 }
-#endif
 
-APTR driver_AllocCModeListTagList(struct TagItem *tags, struct Library *CyberGfxBase )
-{
-    kprintf("\n\n\n\n **** driver_AllocCModeListTagList() func called by someone ********** \n\n\n\n");
-    return NULL;
-}
 
 VOID driver_FreeCModeList(struct List *modeList, struct Library *CyberGfxBase)
 {
-    kprintf("\n\n\n\n **** driver_FreeCModeList() func called by someone ********** \n\n\n\n");
+    struct CyberModeNode *node, *safe;
+    
+    ForeachNodeSafe(modeList, node, safe) {
+	Remove((struct Node *)node);
+	FreeMem(node, sizeof (struct CyberModeNode));
+    }
+    
+    FreeMem(modeList, sizeof (struct List));
 }
+
 
 ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Library *CyberGfxBase)
 {
-    kprintf("\n\n\n\n **** driver_GetCyberMapAttr() func called by someone ********** \n\n\n\n");
-
-    return NULL;
+    Object *bm_obj;
+    Object *pf;
+    
+    IPTR retval;
+    
+    /* We only get info about HIDD bitmaps */
+    if (!(bitMap->Flags & BMF_AROS_HIDD))
+    	return 0;
+	
+    bm_obj = BM_OBJ(bitMap);
+    
+    pf = HIDD_BM_GetPixelFormat(bm_obj, vHidd_PixFmt_Native);
+    
+    switch (attribute) {
+   	case CYBRMATTR_XMOD:
+	    GetAttr(bm_obj, aHidd_BitMap_BytesPerRow, &retval);
+	    break;
+	
+   	case CYBRMATTR_BPPIX:
+	    GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &retval);
+	    break;
+	
+   	case CYBRMATTR_PIXFMT: {
+	    HIDDT_StdPixFmt stdpf;
+	    UWORD cpf;
+	    GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
+	    
+	    /* Convert to cybergfx */
+	    cpf = hidd2cyber_pixfmt(stdpf, CyberGfxBase);
+	    
+	    if (cpf == (UWORD)-1) {
+	    	kprintf("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n");
+	    }
+	    
+	    retval = (IPTR)cpf;
+	    break;
+	    
+	}
+	
+   	case CYBRMATTR_WIDTH:
+	    GetAttr(bm_obj, aHidd_BitMap_Width, &retval);
+	    break;
+	
+   	case CYBRMATTR_HEIGHT:
+	    GetAttr(bm_obj, aHidd_BitMap_Height, &retval);
+	    break;
+	
+   	case CYBRMATTR_DEPTH:
+	    GetAttr(pf, aHidd_PixFmt_Depth, &retval);
+	    break;
+	
+   	case CYBRMATTR_ISCYBERGFX: {
+	    IPTR depth;
+	    
+	    GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    
+	    if (depth < 8) {
+	    	retval = FALSE;
+	    } else {
+	    /* We allways have a HIDD bitmap */
+	    	retval = TRUE;
+	    }
+	    break; }
+	
+   	case CYBRMATTR_ISLINEARMEM:
+	    GetAttr(bm_obj, aHidd_BitMap_IsLinearMem, &retval);
+	    break;
+	
+	default:
+	kprintf("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n");
+	break;
+	
+	
+    } /* switch (attribute) */
+    
+    return retval;
 }
 
 
+/******************************************/
+/* Support stuff for cybergfx             */
+/******************************************/
 
+static UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct Library *CyberGfxBase)
+{
+     UWORD cpf = (UWORD)-1;
+     
+     switch (stdpf) {
+	case vHidd_PixFmt_RGB16:
+	    cpf = PIXFMT_RGB16;
+	    break;
+	
+	case vHidd_PixFmt_RGB24:
+	    cpf = PIXFMT_RGB24;
+	    break;
+	
+	case vHidd_PixFmt_ARGB32:
+	    cpf = PIXFMT_ARGB32;
+	    break;
+	
+	case vHidd_PixFmt_RGBA32:
+	    cpf = PIXFMT_RGBA32;
+	    break;
+	
+	case vHidd_PixFmt_LUT8:
+	    cpf = PIXFMT_LUT8;
+	    break;
+	    
+	default:
+	    kprintf("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n");
+	    break;
+     
+    }
+
+    return cpf;     
+     
+}
+
+static HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct Library *CyberGfxBase)
+{
+    HIDDT_StdPixFmt stdpf = vHidd_PixFmt_Unknown;
+
+    switch (cpf) {
+	case PIXFMT_RGB16:
+	    stdpf = vHidd_PixFmt_RGB16;
+	    break;
+	
+	case PIXFMT_RGB24:
+	    stdpf = vHidd_PixFmt_RGB24;
+	    break;
+	
+	case PIXFMT_ARGB32:
+	    stdpf = vHidd_PixFmt_ARGB32;
+	    break;
+	
+	case PIXFMT_RGBA32:
+	    stdpf = vHidd_PixFmt_RGBA32;
+	    break;
+	
+	case PIXFMT_LUT8:
+	    stdpf = vHidd_PixFmt_LUT8;
+	    break;
+	    
+	default:
+	    kprintf("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n");
+	    break;
+	
+    }
+    
+    return stdpf;
+    
+}
+    
