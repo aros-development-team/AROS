@@ -518,22 +518,22 @@ else
 fi
 
 #-----------------------------------------------------------------------------
-AC_MSG_CHECKING([what optimization level to use])
-AC_ARG_WITH(optimization,[  --with-optimization=N   Use optimization level N [default=2]],optimization=$withval,optimization=unknown)
+AC_MSG_CHECKING([what optimization flags to use])
+AC_ARG_WITH(optimization,AC_HELP_STRING([--with-optimization=FLAGS],[Use optimization flags FLAGS (default=-O2).]),optimization="$withval",optimization="unknown")
 if test "$optimization" = "unknown"; then
     dnl default is -O2 for normal builds, -O0 for debug builds
-    aros_config_cflags="$aros_config_cflags -O2"
-    aros_debug_cflags="$aros_debug_cflags -O0"
-else
-    aros_config_cflags="$aros_config_cflags -O$optimization"
-    aros_debug_cflags="$aros_debug_cflags -O$optimization"
+    if test "$debug" != "none"; then
+        optimization="-O0"
+    else
+        optimization="-O2"
+    fi
 fi
-AC_MSG_RESULT($withval)
-
+aros_config_cflags="$aros_config_cflags $optimization"
+AC_MSG_RESULT($optimization)
 
 #-----------------------------------------------------------------------------
 AC_MSG_CHECKING([what target variant to enable])
-AC_ARG_ENABLE(target_variant,AC_HELP_STRING([--enable-target-variant=NAME],[Enable a specific target variant. (default=none)]),target_variant=$enableval,target_variant="none")
+AC_ARG_ENABLE(target_variant,AC_HELP_STRING([--enable-target-variant=NAME],[Enable a specific target variant(default=none)]),target_variant=$enableval,target_variant="none")
 if test "$target_variant" = "none"; then
     aros_target_variant=""
     aros_target_suffix=""
@@ -544,7 +544,6 @@ fi
 AC_MSG_RESULT($enableval)
 
 #-----------------------------------------------------------------------------
-
 # This is the target configuration switch.
 case "$target_os" in
     linux*)
