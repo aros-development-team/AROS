@@ -208,11 +208,6 @@ AROS_LH2(struct ideBase *,  init,
                                 /* Init device daemon */
                                 if(InitDaemon(IBase))
                                 {
-                                    /* Examine disks and add bootnodes */
-                                    for (i = 0;i < cunit; i++)
-                                    {
-                                        IBase->ide_Units[i] = InitUnit(i,IBase);
-                                    }
                                     ReturnPtr("ide_init", struct ideBase *, IBase);
                                 }
                             }
@@ -344,7 +339,7 @@ AROS_LH3(void, Open,
     AROS_LIBFUNC_INIT
      
     iorq->io_Error = IOERR_OPENFAIL;
-    
+   
     /* Is the requested unitNumber valid? */
     if (unitnum < IBase->ide_NumUnit)
     {
@@ -375,7 +370,6 @@ AROS_LH3(void, Open,
 
         iorq->io_Error = 0;
     }
-
     AROS_LIBFUNC_EXIT
 }
 
