@@ -7,6 +7,6 @@ BEGIN {
 	if ($1==""||substr($1,1,1)=="#")
 	    continue;
 
-	print $3":"$4
+	print $1":"$3":"$4
     }
 }
