@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#include <proto/asl.h>
+
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -45,6 +47,8 @@ __asm VOID MUI_FreeAslRequest(register __a0 APTR requester)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+    FreeAslRequest(requester);
 
     AROS_LIBFUNC_EXIT
 

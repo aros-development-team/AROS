@@ -52,6 +52,8 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    return 0;
+
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_RequestA */

@@ -1,2 +1,7 @@
-mmakefile
+*_end.c
+*_endtag.c
 libdefs.h
+mmakefile
+*.bak
+*.info
+

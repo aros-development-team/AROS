@@ -45,6 +45,8 @@ __asm LONG MUI_Error(VOID)
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+    return 0;
+
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_Error */

@@ -46,6 +46,9 @@ __asm VOID MUI_FreeClass(register __a0 struct IClass *classptr)
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
+#warning FIXME: I should decrease the open count of library (use cl->hook->data)
+    return;
+
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_FreeClass */

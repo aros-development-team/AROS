@@ -6,7 +6,14 @@
     Lang: english
 */
 
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/dos.h>
+
+#include "mui.h"
 #include "muimaster_intern.h"
+#include "support.h"
 
 /*****************************************************************************
 
@@ -49,6 +56,44 @@ __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+
+    struct MUI_CustomClass *mcc;
+    struct IClass	*cl, *super;
+    ClassID		 id = NULL;
+
+    if ((supername == NULL) && (supermcc == NULL))
+	return NULL;
+
+    if (!supermcc)
+    {
+	if (!(super = MUI_GetClass(supername)))
+	    return NULL;
+    }   else super = supermcc->mcc_Class;
+
+    if (!(mcc = mui_alloc_struct(struct MUI_CustomClass)))
+	return NULL;
+
+    if (base)
+	id = FilePart(((struct Node *)base)->ln_Name);
+
+    if (!(cl = MakeClass(id, NULL, super, datasize, 0)))
+    {
+	mui_free(mcc);
+	return NULL;
+    }
+
+    mcc->mcc_UtilityBase   = (struct Library *)UtilityBase;
+    mcc->mcc_DOSBase       = (struct Library *)DOSBase;
+    mcc->mcc_GfxBase       = (struct Library *)GfxBase;
+    mcc->mcc_IntuitionBase = (struct Library *)IntuitionBase;
+
+    mcc->mcc_Class  = cl;
+    mcc->mcc_Super  = super;
+    mcc->mcc_Module = NULL; /* _zune_class_load() will set this */
+
+    cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
+    cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)dispatcher;
+    cl->cl_Dispatcher.h_Data     = base;
 
     AROS_LIBFUNC_EXIT
 
