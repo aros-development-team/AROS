@@ -132,9 +132,17 @@ void InstallClipRegionClipRects(struct Layer_Info * LI);
                               ((r1)->MaxX < (r2)->MinX) ||	\
                               ((r1)->MaxY < (r2)->MinY) ))
 
-#define IS_EMPTYREGION(r) ((NULL == r->RegionRectangle))
+#define IS_EMPTYREGION(r) (NULL == (r)->RegionRectangle)
 
-#define IS_ROOTLAYER(l) (l == l->LayerInfo->check_lp)
+#define IS_ROOTLAYER(l) ((l) == (l)->LayerInfo->check_lp)
+
+#define CHECKDAMAGELIST(l)			\
+	if (IS_EMPTYREGION(l->DamageList))	\
+	{					\
+		l->Flags &= ~LAYERREFRESH;	\
+	}					\
+	else					\
+		l->Flags |=  LAYERREFRESH;
                               
 int _BackupPartsOfLayer(struct Layer * l, 
                         struct Region * hide_region,
