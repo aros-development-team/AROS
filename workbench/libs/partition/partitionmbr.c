@@ -110,6 +110,7 @@ ULONG cylsecs;
 				ph->root = root;
 				ph->bd = root->bd;
 				ph->data = data;
+				/* initialize DosEnvec */
 				CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
 				if (
 						(AROS_LE2LONG(data->entry->first_sector) % cylsecs) ||
@@ -132,6 +133,13 @@ ULONG cylsecs;
 					(AROS_LE2LONG(data->entry->count_sector)/cylsecs)-1;
 				ph->de.de_TableSize = 10; // only until de_HighCyl
 				ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-position;
+				/* initialize DriveGeometry */
+				ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+				ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
+				ph->dg.dg_Heads = ph->de.de_Surfaces;
+				ph->dg.dg_TrackSectors = ph->de.de_BlocksPerTrack;
+				ph->dg.dg_Cylinders = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+				ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 				return ph;
 			}
 			FreeMem(ph, sizeof(struct PartitionHandle));
@@ -367,14 +375,6 @@ LONG PartitionMBRGetPartitionTableAttrs
 
 		switch (taglist[0].ti_Tag)
 		{
-		case PTT_DOSENVEC:
-			{
-				struct DosEnvec *de = (struct DosEnvec *)taglist[0].ti_Data;
-				CopyMem(&root->de, de, sizeof(struct DosEnvec));
-				de->de_HighCyl -= de->de_LowCyl;
-				de->de_LowCyl = 0;
-			}
-			break;
 		case PTT_TYPE:
 			*((LONG *)taglist[0].ti_Data) = root->table->type;
 			break;
@@ -423,6 +423,12 @@ LONG PartitionMBRGetPartitionAttrs
 
 		switch (taglist[0].ti_Tag)
 		{
+		case PT_GEOMETRY:
+			{
+				struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
+				CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
+			}
+			break;
 		case PT_DOSENVEC:
 			CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
 			break;
@@ -511,30 +517,29 @@ posbreak:
 	return 0;
 }
 
-ULONG PartitionMBRPartitionTableAttrs[]=
+struct PartitionAttribute PartitionMBRPartitionTableAttrs[]=
 {
-	PTTA_GEOMETRY,
-	PTTA_TYPE,
-	PTTA_RESERVED,
-	PTTA_MAX_PARTITIONS,
-	0
+	{PTTA_TYPE,           PLAM_READ},
+	{PTTA_RESERVED,       PLAM_READ},
+	{PTTA_MAX_PARTITIONS, PLAM_READ},
+	{PTTA_DONE,           0}
 };
 
-ULONG *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
+struct PartitionAttribute *PartitionMBRQueryPartitionTableAttrs(struct Library *PartitionBase)
 {
 	return PartitionMBRPartitionTableAttrs;
 }
 
-ULONG PartitionMBRPartitionAttrs[]=
+struct PartitionAttribute PartitionMBRPartitionAttrs[]=
 {
-	PTA_GEOMETRY,
-	PTA_TYPE,
-	PTA_POSITION,
-	PTA_ACTIVE,
-	0
+	{PTA_GEOMETRY, PLAM_READ},
+	{PTA_TYPE,     PLAM_READ | PLAM_WRITE},
+	{PTA_POSITION, PLAM_READ | PLAM_WRITE},
+	{PTA_ACTIVE,   PLAM_READ | PLAM_WRITE},
+	{PTA_DONE,     0}
 };
 
-ULONG *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
+struct PartitionAttribute *PartitionMBRQueryPartitionAttrs(struct Library *PartitionBase)
 {
 	return PartitionMBRPartitionAttrs;
 }

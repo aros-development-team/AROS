@@ -24,8 +24,8 @@ struct PartitionBlockDevice {
 struct PartitionTableHandler {
 	ULONG type;
 	struct List list;   /* list of partitions */
-	void *handler; /* the handler which handles this partition table */
-	void *data;    /* private field for the table */
+	void *handler;      /* the handler which handles this partition table */
+	void *data;         /* private field for the table */
 };
 
 struct PartitionHandle {
@@ -34,8 +34,11 @@ struct PartitionHandle {
 	struct PartitionBlockDevice *bd; /* block device info */
 	ULONG flags;
 	struct PartitionTableHandler *table;
-	void *data;         /* a private field for the partition */
-	struct DosEnvec de; /* info about HD/partition */
+	void *data;                      /* a private field for the partition */
+	struct DriveGeometry dg;         /* geometry of whole partition */
+	struct DosEnvec de;              /* info about HD/partition including */
+                                    /* position within root->dg */
+                                    /* (de_Surfaces==root->dg.Heads,...!!!) */
 };
 
 struct PartitionType {
@@ -54,41 +57,50 @@ struct PartitionType {
 /* commands for DoPartition() */
 
 /* Tags for partition tables */
-#define PTT_DOSENVEC         (1)
-#define PTT_TYPE             (2)  /* returns partition table type */
-#define PTT_RESERVED         (32) /* returns number of reserved blocks
-                                    at begining of a partition table */
-#define PTT_MAX_PARTITIONS   (33) /* max number of partitions in table */
+#define PTT_TYPE             (1)  /* ULONG - partition table type */
+#define PTT_RESERVED         (32) /* ULONG - number of reserved blocks at
+                                             begining of a partition table */
+#define PTT_MAX_PARTITIONS   (33) /* ULONG - max number of partitions in table */
 
 
 /* Tags for partitions */
-#define PT_DOSENVEC PTT_DOSENVEC
-#define PT_TYPE     PTT_TYPE /* arg is of struct PartitionType */
-#define PT_POSITION  (32)  /* 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
-#define PT_ACTIVE    (33)  /* MBR: set/get partition as active */
-#define PT_NAME      (34)  /* name of partition */
-#define PT_BOOTABLE  (35)  /* partition is bootable */
-#define PT_AUTOMOUNT (36)  /* partition will be auto mounted */
+#define PT_GEOMETRY   (1) /* struct DriveGeometry - geometry of partition */
+#define PT_DOSENVEC   (2) /* struct DosEnvec - partition layout info */
+#define PT_TYPE       (3) /* struct PartitionType - type of partition */
+#define PT_POSITION  (32) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
+#define PT_ACTIVE    (33) /* BOOL - MBR: set/get partition as active */
+#define PT_NAME      (34) /* STRPTR - name of partition */
+#define PT_BOOTABLE  (35) /* BOOL - partition is bootable */
+#define PT_AUTOMOUNT (36) /* BOOL - partition will be auto mounted */
+
+
+/* Attributes */
+
+struct PartitionAttribute {
+	ULONG attribute;
+	ULONG mode;
+};
+
+/* are attributes readable/writeable */
+#define PLAM_READ  (1<<0)
+#define PLAM_WRITE (1<<1)
 
 /* partition table attributes */
-#define PTTA_DOSENVEC         1 /* seems to be obsolete because only LowCyl,
-                                   HighCyl, Surfaces, BlocksPerTrack,
-                                   SizeBlock are of interrest in a table */
-#define PTTA_GEOMETRY         2 /* because of above comment ... */
+#define PTTA_DONE             0 /* no more attributes */
 #define PTTA_TYPE           100 /* partition table type */
 #define PTTA_RESERVED       101 /* reserved blocks */
 #define PTTA_MAX_PARTITIONS 102 /* max numbers of partitions in table */
 
 /* partition attributes */
-#define PTA_DOSENVEC   1 /* whole struct DosEnvec support */
-#define PTA_GEOMETRY   2 /* only geometry info in DosEnvec
-                            (LowCyl, HighCyl, Surfaces, BlocksPerTrack,
-                             SizeBlock) */
-#define PTA_TYPE      100 /* type of partition */
-#define PTA_POSITION  101 /* position of table within partition table */
-#define PTA_ACTIVE    102 /* make partition active (whatever that means ;) */
-#define PTA_NAME      103 /* device name support */
-#define PTA_BOOTABLE  104
+#define PTA_DONE      PTTA_DONE /* no more attributes */
+#define PTA_GEOMETRY          1 /* geometry of partition (virtual HD) */
+#define PTA_DOSENVEC          2 /* whole struct DosEnvec support */
+#define PTA_DOSENVEC_GEOMETRY 3 /* only low/high cyl, sizeblock support in struct DosEnvec */
+#define PTA_TYPE            100 /* type of partition */
+#define PTA_POSITION        101 /* position of table within partition table */
+#define PTA_ACTIVE          102 /* make partition active (whatever that means ;) */
+#define PTA_NAME            103 /* device name support */
+#define PTA_BOOTABLE        104 /* bootable flag support */
 #define PTA_AUTOMOUNT 105
 
 struct PartitionBase {

@@ -147,6 +147,11 @@ struct PartitionHandle *ph;
 					CopyMem(pblock->pb_DriveName+1, ph->ln.ln_Name, pblock->pb_DriveName[0]);
 					ph->ln.ln_Name[pblock->pb_DriveName[0]]=0;
 					CopyBEDosEnvec(pblock->pb_Environment, (ULONG *)&ph->de, AROS_BE2LONG(((struct DosEnvec *)pblock->pb_Environment)->de_TableSize)+1);
+					ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+					ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
+					ph->dg.dg_Heads = ph->de.de_BlocksPerTrack;
+					ph->dg.dg_TrackSectors = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+					ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 					return ph;
 				}
 				FreeVec(ph->ln.ln_Name);
@@ -271,12 +276,10 @@ UBYTE i;
 			NEWLIST(&data->fsheaderlist);
 			root->table->data = data;
 			/* take the values of the rdb instead of TD_GEOMETRY */
-			if (root->de.de_HighCyl != (AROS_BE2LONG(data->rdb.rdb_Cylinders)-1))
-				root->de.de_HighCyl = AROS_BE2LONG(data->rdb.rdb_Cylinders)-1;
-			if (root->de.de_BlocksPerTrack != AROS_BE2LONG(data->rdb.rdb_Sectors))
-				root->de.de_BlocksPerTrack = AROS_BE2LONG(data->rdb.rdb_Sectors);
-			if (root->de.de_Surfaces != AROS_BE2LONG(data->rdb.rdb_Heads))
-				root->de.de_Surfaces = AROS_BE2LONG(data->rdb.rdb_Heads);
+			root->dg.dg_SectorSize = AROS_BE2LONG(data->rdb.rdb_BlockBytes);
+			root->dg.dg_Cylinders = AROS_BE2LONG(data->rdb.rdb_Cylinders);
+			root->dg.dg_TrackSectors = AROS_BE2LONG(data->rdb.rdb_Sectors);
+			root->dg.dg_Heads = AROS_BE2LONG(data->rdb.rdb_Heads);
 			/* read bad blocks */
 			block = AROS_BE2LONG(data->rdb.rdb_BadBlockList);
 			while (block != (ULONG)-1)
@@ -302,7 +305,7 @@ UBYTE i;
 			while (block != (ULONG)-1)
 			{
 			struct PartitionHandle *ph;
-
+kprintf("pblock=%ld\n", block);
 				if (readBlock(PartitionBase, root, block, buffer)==0)
 				{
 					ph = PartitionRDBNewHandle(PartitionBase, root, (struct PartitionBlock *)buffer);
@@ -529,16 +532,16 @@ ULONG i;
 		ph->table->data = data;
 		data->rdb.rdb_ID = AROS_LONG2BE(IDNAME_RIGIDDISK);
 		data->rdb.rdb_SummedLongs = AROS_LONG2BE(sizeof(struct RigidDiskBlock)/4);
-		data->rdb.rdb_BlockBytes = AROS_LONG2BE(ph->de.de_SizeBlock<<2);
+		data->rdb.rdb_BlockBytes = AROS_LONG2BE(ph->dg.dg_SectorSize);
 		data->rdb.rdb_BadBlockList = (ULONG)-1;
 		data->rdb.rdb_PartitionList = (ULONG)-1;
 		data->rdb.rdb_FileSysHeaderList = (ULONG)-1;
 		data->rdb.rdb_DriveInit = (ULONG)-1;
 		for (i=0;i<6;i++)
 			data->rdb.rdb_Reserved1[i] = (ULONG)-1;
-		data->rdb.rdb_Cylinders = AROS_LONG2BE(ph->de.de_HighCyl+1);
-		data->rdb.rdb_Sectors = AROS_LONG2BE(ph->de.de_BlocksPerTrack);
-		data->rdb.rdb_Heads = AROS_LONG2BE(ph->de.de_Surfaces);
+		data->rdb.rdb_Cylinders = AROS_LONG2BE(ph->dg.dg_Cylinders);
+		data->rdb.rdb_Sectors = AROS_LONG2BE(ph->dg.dg_TrackSectors);
+		data->rdb.rdb_Heads = AROS_LONG2BE(ph->dg.dg_Heads);
 
 		data->rdb.rdb_Park = data->rdb.rdb_Cylinders;
 		data->rdb.rdb_WritePreComp = data->rdb.rdb_Cylinders;
@@ -546,10 +549,10 @@ ULONG i;
 		/* StepRate */
 		
 		data->rdb.rdb_RDBBlocksLo = AROS_LONG2BE(1); /* leave a block for PC */
-		data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE((ph->de.de_Surfaces*ph->de.de_BlocksPerTrack*2)-1); /* two cylinders */
+		data->rdb.rdb_RDBBlocksHi = AROS_LONG2BE((ph->dg.dg_Heads*ph->dg.dg_TrackSectors*2)-1); /* two cylinders */
 		data->rdb.rdb_LoCylinder = AROS_LONG2BE(2);
-		data->rdb.rdb_HiCylinder = AROS_LONG2BE(ph->de.de_HighCyl);
-		data->rdb.rdb_CylBlocks = AROS_LONG2BE(ph->de.de_Surfaces*ph->de.de_BlocksPerTrack);
+		data->rdb.rdb_HiCylinder = AROS_LONG2BE(ph->dg.dg_Cylinders-1);
+		data->rdb.rdb_CylBlocks = AROS_LONG2BE(ph->dg.dg_Heads*ph->dg.dg_TrackSectors);
 		/* AutoParkSeconds */
 		/* DiskVendor */
 		/* DiskProduct */
@@ -580,14 +583,6 @@ LONG PartitionRDBGetPartitionTableAttrs
 
 		switch (taglist[0].ti_Tag)
 		{
-		case PTT_DOSENVEC:
-			{
-				struct DosEnvec *de = (struct DosEnvec *)taglist[0].ti_Data;
-				CopyMem(&root->de, de, sizeof(struct DosEnvec));
-				de->de_HighCyl -= de->de_LowCyl;
-				de->de_LowCyl = 0;
-			}
-			break;
 		case PTT_TYPE:
 			*((LONG *)taglist[0].ti_Data) = root->table->type;
 			break;
@@ -634,6 +629,12 @@ LONG PartitionRDBGetPartitionAttrs
 
 		switch (taglist[0].ti_Tag)
 		{
+		case PT_GEOMETRY:
+			{
+				struct DriveGeometry *dg = (struct DriveGeometry *)taglist[0].ti_Data;
+				CopyMem(&ph->dg, dg, sizeof(struct DriveGeometry));
+			}
+			break;
 		case PT_DOSENVEC:
 			CopyMem(&ph->de, (struct DosEnvec *)taglist[0].ti_Data, sizeof(struct DosEnvec));
 			break;
@@ -770,6 +771,11 @@ struct PartitionHandle *PartitionRDBAddPartition
 					}
 					else
 						AddTail(&root->table->list, &ph->ln);
+					ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+					ph->dg.dg_SectorSize = ph->de.de_SizeBlock<<2;
+					ph->dg.dg_Heads = ph->de.de_BlocksPerTrack;
+					ph->dg.dg_TrackSectors = ph->de.de_HighCyl - ph->de.de_LowCyl + 1;
+					ph->dg.dg_BufMemType = ph->de.de_BufMemType;
 					return ph;
 				}
 				FreeVec(ph->ln.ln_Name);
@@ -790,29 +796,31 @@ void PartitionRDBDeletePartition
 	PartitionRDBFreeHandle(PartitionBase, ph);
 }
 
-ULONG PartitionRDBPartitionTableAttrs[]=
+struct PartitionAttribute PartitionRDBPartitionTableAttrs[]=
 {
-	PTTA_GEOMETRY,
-	PTTA_RESERVED,
-	0
+	{PTTA_TYPE,     PLAM_READ},
+	{PTTA_RESERVED, PLAM_READ},
+	{PTTA_DONE,     0}
 };
 
-ULONG *PartitionRDBQueryPartitionTableAttrs(struct Library *PartitionBase)
+struct PartitionAttribute *PartitionRDBQueryPartitionTableAttrs(struct Library *PartitionBase)
 {
 	return PartitionRDBPartitionTableAttrs;
 }
 
-ULONG PartitionRDBPartitionAttrs[]=
+struct PartitionAttribute PartitionRDBPartitionAttrs[]=
 {
-	PTA_DOSENVEC,
-	PTA_TYPE,
-	PTA_NAME,
-	PTA_BOOTABLE,
-	PTA_AUTOMOUNT,
-	0
+#warning "TODO: implement write"
+	{PTA_GEOMETRY,  PLAM_READ},
+	{PTA_DOSENVEC,  PLAM_READ | PLAM_WRITE},
+	{PTA_TYPE,      PLAM_READ | PLAM_WRITE},
+	{PTA_NAME,      PLAM_READ | PLAM_WRITE},
+	{PTA_BOOTABLE,  PLAM_READ | PLAM_WRITE},
+	{PTA_AUTOMOUNT, PLAM_READ | PLAM_WRITE},
+	{PTA_DONE,      0}
 };
 
-ULONG *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
+struct PartitionAttribute *PartitionRDBQueryPartitionAttrs(struct Library *PartitionBase)
 {
 	return PartitionRDBPartitionAttrs;
 }
