@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -23,7 +21,7 @@
 
 extern struct Library *MUIMasterBase;
 
-struct Scrollbutton_Data
+struct Scrollbutton_DATA
 {
   WORD mx,my;
   WORD cx,cy;
@@ -33,7 +31,8 @@ struct Scrollbutton_Data
   struct MUI_EventHandlerNode ehn;
 };
 
-static ULONG Scrollbutton_New(struct IClass * cl, Object * o, struct opSet * msg)
+
+IPTR Scrollbutton__OM_NEW(struct IClass * cl, Object * o, struct opSet * msg)
 {
   return (ULONG) DoSuperNewTags(cl, o, NULL,
   	ButtonFrame,
@@ -42,9 +41,9 @@ static ULONG Scrollbutton_New(struct IClass * cl, Object * o, struct opSet * msg
 	TAG_MORE, (IPTR) msg->ops_AttrList);
 }
 
-static ULONG Scrollbutton_Get(struct IClass * cl, Object * o, struct opGet * msg)
+IPTR Scrollbutton__OM_GET(struct IClass * cl, Object * o, struct opGet * msg)
 {
-    struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
+    struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
     switch (msg->opg_AttrID)
     {
 	case	MUIA_Scrollbutton_NewPosition:
@@ -64,9 +63,9 @@ static ULONG Scrollbutton_Get(struct IClass * cl, Object * o, struct opGet * msg
     }
 }
 
-static ULONG Scrollbutton_Set(struct IClass * cl, Object * o, struct opSet * msg)
+IPTR Scrollbutton__OM_SET(struct IClass * cl, Object * o, struct opSet * msg)
 {
-    struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
+    struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
     struct TagItem *tl = msg->ops_AttrList;
     struct TagItem *ti;
 
@@ -86,7 +85,7 @@ static ULONG Scrollbutton_Set(struct IClass * cl, Object * o, struct opSet * msg
     return DoSuperMethodA(cl, o, (Msg) msg);
 }
 
-static ULONG Scrollbutton_AskMinMax(struct IClass *cl, Object *o, struct MUIP_AskMinMax *msg)
+IPTR Scrollbutton__MUIM_AskMinMax(struct IClass *cl, Object *o, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl, o, (Msg) msg);
 
@@ -100,9 +99,9 @@ static ULONG Scrollbutton_AskMinMax(struct IClass *cl, Object *o, struct MUIP_As
     return 0;
 }
 
-static ULONG Scrollbutton_Setup(struct IClass * cl, Object * o, Msg msg)
+IPTR Scrollbutton__MUIM_Setup(struct IClass * cl, Object * o, Msg msg)
 {
-    struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
+    struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
     if (!DoSuperMethodA(cl, o, msg))
 	return FALSE;
 
@@ -117,17 +116,17 @@ static ULONG Scrollbutton_Setup(struct IClass * cl, Object * o, Msg msg)
     return TRUE;
 }
 
-static ULONG Scrollbutton_Cleanup(struct IClass * cl, Object * o, Msg msg)
+IPTR Scrollbutton__MUIM_Cleanup(struct IClass * cl, Object * o, Msg msg)
 {
-    struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
+    struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
     DoMethod(_win(o), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     DoSuperMethodA(cl, o, msg);
     return 0;
 }
 
-static ULONG Scrollbutton_HandleEvent(struct IClass * cl, Object * o, struct MUIP_HandleEvent * msg)
+IPTR Scrollbutton__MUIM_HandleEvent(struct IClass * cl, Object * o, struct MUIP_HandleEvent * msg)
 {
-    struct Scrollbutton_Data *data = (struct Scrollbutton_Data *) INST_DATA(cl, o);
+    struct Scrollbutton_DATA *data = (struct Scrollbutton_DATA *) INST_DATA(cl, o);
     if (msg->imsg)
     {
 	switch (msg->imsg->Class)
@@ -182,25 +181,23 @@ static ULONG Scrollbutton_HandleEvent(struct IClass * cl, Object * o, struct MUI
 
 BOOPSI_DISPATCHER(IPTR, Scrollbutton_Dispatcher, cl, obj, msg)
 {
-  switch (msg->MethodID)
-  {
-    case  OM_NEW: return Scrollbutton_New(cl, obj, (struct opSet *) msg);
-    case  OM_GET: return Scrollbutton_Get(cl, obj, (struct opGet *) msg);
-    case  OM_SET: return Scrollbutton_Set(cl, obj, (struct opSet *) msg);
-    case  MUIM_AskMinMax: return Scrollbutton_AskMinMax(cl, obj, (struct MUIP_AskMinMax *) msg);
-    case  MUIM_Setup: return Scrollbutton_Setup(cl, obj, msg);
-    case  MUIM_Cleanup: return Scrollbutton_Cleanup(cl, obj, msg);
-    case  MUIM_HandleEvent: return Scrollbutton_HandleEvent(cl, obj, (struct MUIP_HandleEvent *) msg);
-  }
-  return DoSuperMethodA(cl, obj, msg);
+    switch (msg->MethodID)
+    {
+        case OM_NEW:           return Scrollbutton__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_GET:           return Scrollbutton__OM_GET(cl, obj, (struct opGet *) msg);
+        case OM_SET:           return Scrollbutton__OM_SET(cl, obj, (struct opSet *) msg);
+        case MUIM_AskMinMax:   return Scrollbutton__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *) msg);
+        case MUIM_Setup:       return Scrollbutton__MUIM_Setup(cl, obj, msg);
+        case MUIM_Cleanup:     return Scrollbutton__MUIM_Cleanup(cl, obj, msg);
+        case MUIM_HandleEvent: return Scrollbutton__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *) msg);
+        default:               return DoSuperMethodA(cl, obj, msg);
+    }
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Scrollbutton_desc = { 
+const struct __MUIBuiltinClass _MUI_Scrollbutton_desc =
+{ 
     MUIC_Scrollbutton, 
     MUIC_Area, 
-    sizeof(struct Scrollbutton_Data),
+    sizeof(struct Scrollbutton_DATA),
     (void*)Scrollbutton_Dispatcher 
 };
