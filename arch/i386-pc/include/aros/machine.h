@@ -27,6 +27,7 @@
 #define SIZEOF_ALL_REGISTERS	(15*4 + SIZEOF_FPU_STATE)  /* Size of iet_Context */
 
 #define AROS_GET_SYSBASE	struct ExecBase * SysBase = *(struct ExecBase **)0x4;
+#define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
 
 /* ??? */
 #define SP_OFFSET 0
