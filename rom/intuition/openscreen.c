@@ -107,7 +107,8 @@ static const ULONG coltab[] = {
     ULONG            *errorPtr;	  /* Store error at user specified location */
     UWORD	     *customdripens = NULL;
     ULONG	     *colors32 = NULL;
-    BOOL	      ok = TRUE, rp_inited = FALSE;
+    UWORD	      numcolormapcols;
+    BOOL	      ok = TRUE, rp_inited = FALSE, sharepens = FALSE;
     
     struct TagItem   modetags[] = {
     	{ BIDTAG_Depth		, 0UL 	},
@@ -303,6 +304,10 @@ static const ULONG coltab[] = {
 	    case SA_DisplayID:
 	    	modeid = tag->ti_Data;
 		break;
+
+	    case SA_SharePens:
+		sharepens = tag->ti_Data ? TRUE : FALSE;
+		break;
 		
 	    case SA_DClip:
 	    case SA_Overscan:
@@ -313,7 +318,6 @@ static const ULONG coltab[] = {
 	    case SA_Parent:
 	    case SA_Draggable:
 	    case SA_Exclusive:
-	    case SA_SharePens:
 	    case SA_Interleaved:
 	    case SA_VideoControl:
 	    case SA_FrontChild:
@@ -382,8 +386,12 @@ static const ULONG coltab[] = {
 
 	if (NULL != (screen->Screen.ViewPort.ColorMap = GetColorMap(numcolors)))
 	{
+	    numcolormapcols = numcolors;
+	    
             /* I should probably also call AttachPalExtra */
 	    screen->Screen.ViewPort.ColorMap->VPModeID = modeid;
+	    
+	    
             if (0 != AttachPalExtra(screen->Screen.ViewPort.ColorMap,
                                     &screen->Screen.ViewPort))
                 ok = FALSE;
@@ -585,6 +593,56 @@ static const ULONG coltab[] = {
 	    {
 	        screen->Pens[i] = customdripens[i];
 	    }
+	}
+	
+	/* Allocate shared/exclusive colors */
+	
+	{
+	    BYTE color_alloced[256];
+	    
+	    WORD i;
+	    
+	    for(i = 0; i < 256; i++) color_alloced[i] = FALSE;
+	    
+	    /* The Pens in the DrawInfo must be allocated as shared */
+	    
+	    for(i = 0; i < NUMDRIPENS; i++)
+	    {
+	        if (!color_alloced[screen->Pens[i]])
+		{
+		    ObtainPen(screen->Screen.ViewPort.ColorMap,
+		    	      screen->Pens[i],
+			      0,
+			      0,
+			      0,
+			      PENF_NO_SETCOLOR);
+			      
+		    color_alloced[screen->Pens[i]] = TRUE;
+		}
+	    }
+	    
+	    /* If SA_SharePens is FALSE then allocate the rest of the colors
+	       in the colormap as exclusive */
+	    
+	    if (!sharepens)
+	    {   
+		for(i = 0; i < numcolormapcols; i ++)
+		{
+	            if (!color_alloced[i])
+		    {
+			ObtainPen(screen->Screen.ViewPort.ColorMap,
+		    		  i,
+				  0,
+				  0,
+				  0,
+				  PENF_EXCLUSIVE | PENF_NO_SETCOLOR);
+				  
+			color_alloced[i] = TRUE;
+		    }
+		}
+		
+	    } /* if (!sharepens) */
+	    
 	}
 	
         D(bug("callling SetRast()\n"));	    
