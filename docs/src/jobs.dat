@@ -154,7 +154,7 @@ c/break;2;iaint;Write C:Break
 c/cd;2;matthias;Write C:Cd
 c/copy;0;digulla;Write Copy
 c/cpu;1;laguest;Write C:CPU
-c/date;1;srittau;Write Date
+c/date;2;srittau;Write Date
 c/dir;0;digulla;Write C:Dir
 c/echo;2;matthias;Write C:Echo
 c/else;2;SDuvan;Write Else
