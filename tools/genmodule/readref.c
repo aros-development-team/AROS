@@ -41,17 +41,6 @@ void readref(struct config *cfg, struct functions *functions)
     unsigned int funcnamelength;
     char *begin, *end, *line;
 
-    
-    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
-    {
-        struct functionhead *function = newfunctionhead("MCC_Query", REGISTERMACRO);
-	function->lvo = cfg->firstlvo - 1;
-	funcaddarg(function, "LONG", "what", "D0");
-
-        function->next = functions->funclist;
-        functions->funclist = function;
-    }
-
     if (!fileopen(cfg->reffile))
     {
 	fprintf(stderr, "Could not open %s\n", cfg->reffile);
@@ -260,36 +249,36 @@ void readref(struct config *cfg, struct functions *functions)
     {
 	if (funclistit->type==NULL)
 	{
-	    if 
-            (
-                   (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP) 
-                && strcmp(funclistit->name, "MCC_Query") == 0 
-            )
-            {
-                struct functionarg *arglistit = funclistit->arguments;
-                
-                if (arglistit == NULL)
-                {
-                    fprintf(stderr, "Wrong number of arguments for MCC_Query");
-                    exit(20);
-                }
-                
-                funclistit->type = "IPTR";
-                
-                arglistit->type = "LONG";
-                arglistit->name = "what";
-            }
-            else
-            {
-                fprintf
-                (
-                    stderr, "Did not find function %s in reffile %s\n", 
-                    funclistit->name, cfg->reffile
-                );
-                exit(20);
-            }
+	    fprintf
+            (   
+		stderr, "Did not find function %s in reffile %s\n", 
+		funclistit->name, cfg->reffile
+            );
+	    exit(20);
 	}
     }
+    
+    /* Add internal generated functions */
+    if (cfg->modtype == MCC || cfg->modtype == MUI || cfg->modtype == MCP)
+    {
+        struct functionhead *function = newfunctionhead("MCC_Query", REGISTERMACRO);
+	function->lvo = cfg->firstlvo - 1;
+	function->type = "IPTR";
+	funcaddarg(function, "what", "LONG", "D0");
+
+        function->next = functions->funclist;
+        functions->funclist = function;
+    }
+    else if (cfg->modtype == DATATYPE)
+    {
+	struct functionhead *function = newfunctionhead("ObtainEngine", REGISTERMACRO);
+	function->lvo = cfg->firstlvo - 1;
+	function->type = "struct IClass *";
+	
+	function->next = functions->funclist;
+	functions->funclist = function;
+    }
+    
 }
 
 

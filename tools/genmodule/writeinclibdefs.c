@@ -112,6 +112,11 @@ void writeinclibdefs(struct config *cfg)
 		    "#define GM_SEGLIST_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
 		    cfg->seglist_field
 	    );
+	if (cfg->classptr_field != NULL)
+	    fprintf(out,
+		    "#define GM_CLASSPTR_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
+		    cfg->classptr_field
+	    );
 	if ((cfg->options & OPTION_DUPBASE) && cfg->rootbase_field != NULL)
 	    fprintf(out,
 		    "#define GM_ROOTBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",

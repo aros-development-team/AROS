@@ -50,7 +50,14 @@ static const char *gadgetmprefix[] =
     "__AROSM_",
     NULL
 };
-
+static const char *dtmprefix[] =
+{
+    "__OM_",
+    "__GM_",
+    "__DTM_",
+    "__PDTM_",
+    NULL
+};
 
 /* Create a config struct. Initialize with the values from the programs command
  * line arguments and the contents of the modules .conf file
@@ -140,6 +147,10 @@ struct config *initconfig(int argc, char **argv, int command)
     {
 	cfg->modtype = GADGET;
     }
+    else if (strcmp(*argvit, "datatype")==0)
+    {
+	cfg->modtype = DATATYPE;
+    }
     else
     {
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
@@ -170,6 +181,10 @@ struct config *initconfig(int argc, char **argv, int command)
     case GADGET:
 	cfg->firstlvo = 5;
 	cfg->boopsimprefix = gadgetmprefix;
+	break;
+    case DATATYPE:
+	cfg->firstlvo = 6;
+	cfg->boopsimprefix = dtmprefix;
 	break;
     default:
 	fprintf(stderr, "Internal error: unsupported modtype for firstlvo\n");
@@ -470,7 +485,7 @@ static void readsectionconfig(struct config *cfg)
 		break;
 		
 	    case 16: /* classname */
-		if (cfg->modtype != GADGET)
+		if (cfg->modtype != GADGET && cfg->modtype != DATATYPE)
 		    exitfileerror(20, "classname specified when not a BOOPSI class\n");
 		cfg->classname = strdup(s);
 		break;
@@ -521,12 +536,18 @@ static void readsectionconfig(struct config *cfg)
     if (cfg->seglist_field != NULL && cfg->libbasetype == NULL)
 	exitfileerror(20, "seglist_field specified when no libbasetype is given\n");
 
-    if (cfg->modtype == GADGET)
+    if (cfg->classname == NULL)
     {
-	if (cfg->classname == NULL)
+	if (cfg->modtype == GADGET)
 	{
 	    char s[256];
 	    sprintf(s, "%sclass", cfg->modulename);
+	    cfg->classname = strdup(s);
+	}
+	else if (cfg->modtype == DATATYPE)
+	{
+	    char s[256];
+	    sprintf(s, "%s.datatype", cfg->modulename);
 	    cfg->classname = strdup(s);
 	}
     }
@@ -546,6 +567,7 @@ static void readsectionconfig(struct config *cfg)
 	case MCP:
 	case MCC:
 	case GADGET:
+	case DATATYPE:
 	    cfg->libbasetypeptrextern = "struct Library *";
 	    break;
 	default:
@@ -573,6 +595,9 @@ static void readsectionconfig(struct config *cfg)
 	    break;
 	case GADGET:
 	    cfg->superclass = "gadgetclass";
+	    break;
+	case DATATYPE:
+	    cfg->superclass = "datatypesclass";
 	    break;
 	default:
 	    break;
