@@ -5,6 +5,52 @@
     Desc: List the contents of a directory
     Lang: english
 */
+/*****************************************************************************
+
+    NAME
+	
+	    List
+
+    FORMAT
+	
+	    List [<directory>]
+		
+	SYNOPSIS
+	
+	    DIR/M
+	   
+	LOCATION
+	
+	    Workbench:C/
+	   
+	FUNCTION
+	
+	    Lists detailed information about the files and directories contained
+		within the current directory or in the directory specified by DIR.
+
+    INPUTS
+	
+	    DIR - The directory to list. If left out, the current directory
+		      will be listed.
+	   
+	RESULT
+	
+	    Standard DOS return codes.
+	   
+	EXAMPLE
+	
+	BUGS
+	
+    SEE ALSO
+	
+	    Dir
+		
+	INTERNALS
+	
+	HISTORY
+	
+******************************************************************************/
+
 #include <clib/macros.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
