@@ -1,5 +1,5 @@
 /*
-    (C) 1999 - 2001 AROS - The Amiga Research OS
+    Copyright (C) 1999 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AmigaOS specific ReqTools initialization code.
@@ -22,10 +22,10 @@
 #include "rtfuncs.h"
 
 #define VERSION 39
-#define REVISION 0
+#define REVISION 2
 
 #define NAME_STRING      "reqtools.library"
-#define VERSION_STRING   "$VER: reqtools 39.1 (08.07.2001)\r\n"
+#define VERSION_STRING   "$VER: reqtools 39.2 (10.08.2001)\r\n"
 
 /****************************************************************************************/
 
@@ -170,7 +170,7 @@ static ULONG CheckStack_GetString(UBYTE *stringbuff,
 	if (sssptr->sss.stk_Lower)
 	{
 	    sssptr->sss.stk_Upper = ((IPTR)sssptr->sss.stk_Lower) + MIN_STACK;
-	    sssptr->sss.stk_Pointer = sssptr->sss.stk_Upper;
+	    sssptr->sss.stk_Pointer = (APTR) sssptr->sss.stk_Upper;
 	    
 	    sssptr->stringbuff  = stringbuff;
 	    sssptr->maxlen  	= maxlen;
@@ -272,6 +272,47 @@ ULONG SAVEDS ASM librtGetLongA(REGPARAM(a1, ULONG *, longptr),
 
 /****************************************************************************************/
 
+/* NOTE: Used by powerpacker.library/ppGetPassword() */
+
+BOOL SAVEDS ASM librtInternalGetPasswordA(REGPARAM(a1, UBYTE *, buffer),
+					  REGPARAM(d1, ULONG, checksum),
+					  REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
+					  REGPARAM(a3, struct rtReqInfo *, reqinfo),
+					  REGPARAM(a0, struct TagItem *, taglist))
+{
+    buffer[0] = '\0';
+
+    return GETSTRING(buffer,
+    		     16,
+    		     "Password",
+		     checksum & 0xffff,
+		     (ULONG *) pwcallback,
+		     CHECK_PASSWORD,
+		     reqinfo,
+		     taglist);
+}
+
+/****************************************************************************************/
+
+/* NOTE: Used by powerpacker.library/ppEnterPassword */
+
+BOOL SAVEDS ASM librtInternalEnterPasswordA(REGPARAM(a1, UBYTE *, buffer),
+					    REGPARAM(d2, PWCALLBACKFUNPTR, pwcallback),
+					    REGPARAM(a3, struct rtReqInfo *, reqinfo),
+					    REGPARAM(a0, struct TagItem *, taglist))
+{
+    return GETSTRING(buffer,
+    		     16,
+    		     "Password",
+		     0,
+		     (ULONG *) pwcallback,
+		     ENTER_PASSWORD,
+		     reqinfo,
+		     taglist);
+}
+
+/****************************************************************************************/
+
 extern void libopen(void);
 extern void libclose(void);
 extern void libexpunge(void);
@@ -303,8 +344,8 @@ void *const functable[]=
     librtEZRequestA,
     librtGetStringA,
     librtGetLongA,
-    NULL,
-    NULL,
+    librtInternalGetPasswordA,
+    librtInternalEnterPasswordA,
     FileRequestA,
     PaletteRequestA,
     RTFuncs_rtReqHandlerA,
