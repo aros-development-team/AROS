@@ -52,7 +52,7 @@ static BOOL sigactive[NSIG];
 */
 static const int sig2int[][2] =
 {
-    { SIGALRM, INTB_VERTB },
+    { SIGALRM, INTB_VERTB100 },
     { SIGUSR1, INTB_SOFTINT },
     { SIGIO,   INTB_DSKBLK }
 };
@@ -150,6 +150,32 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    AROS_UFCA(APTR, iv->iv_Code, A5),
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
+	
+	/* If this was 100 Hz VBlank timer, emulate 50 Hz VBlank timer if
+	   we are on an even 100 Hz tick count */
+	   
+	if (sig2tab[sig] == INTB_VERTB100)
+	{
+	    static int vertb100_counter;
+	    
+	    if ((vertb100_counter % 2) == 0)
+	    {
+	    	iv = &SysBase->IntVects[INTB_VERTB];
+		if (iv->iv_Code)
+		{
+		    AROS_UFC5(void, iv->iv_Code,
+			AROS_UFCA(ULONG, 0, D1),
+			AROS_UFCA(ULONG, 0, A0),
+			AROS_UFCA(APTR, iv->iv_Data, A1),
+			AROS_UFCA(APTR, iv->iv_Code, A5),
+			AROS_UFCA(struct ExecBase *, SysBase, A6)
+		    );
+		}
+		
+	    }
+	    
+	    vertb100_counter++;
+	}
 	
 	AROS_ATOMIC_DEC(SysBase->IDNestCnt);
     }
@@ -295,7 +321,7 @@ void InitCore(void)
 
     /* Set up the "pseudo" vertical blank interrupt. */
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
-    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000 / 50;
+    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000 / 100;
 
     setitimer(ITIMER_REAL, &interval, NULL);
 }
