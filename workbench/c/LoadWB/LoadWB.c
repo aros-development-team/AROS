@@ -60,7 +60,7 @@
 #include <stdlib.h>
 
 static const char version[] = "$VER: LoadWB 0.1 (06.04.2002)\n";
-
+static const char easteregg[] = "Brought to you by the wizzards of AROS!!!";
 
 static ULONG     notifysig;
 struct MsgPort * notifyport;
@@ -71,12 +71,56 @@ APTR vi;
 
 static struct NewMenu nm[] =
 {
-    {NM_TITLE, "Workbench"              },
-    {NM_ITEM,  "Backdrop",           "B"},
+  {NM_TITLE, "Workbench"              },
+    {NM_ITEM,  "Backdrop",           "B", CHECKIT | CHECKED},
     {NM_ITEM,  "Execute Command...", "E"},
+    {NM_ITEM,  "Redraw All" },
+    {NM_ITEM,  "Update All" },
+    {NM_ITEM,  "Last Message" },
     {NM_ITEM,  "Shell",              "Z"},
     {NM_ITEM,  "About...",           "?"},
-    {NM_ITEM,  "Quit...",            "Q"}
+    {NM_ITEM,  "Quit...",            "Q"},
+
+  {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
+    {NM_ITEM,  "New Drawer", "N"},
+    {NM_ITEM,  "Open Parent" },
+    {NM_ITEM,  "Close", "K"},
+    {NM_ITEM,  "Update" },
+    {NM_ITEM,  "Select Contents", "A"},
+    {NM_ITEM,  "Clean Up", "."},
+    {NM_ITEM,  "Snapshot" },
+      {NM_SUB, "Window"},
+      {NM_SUB, "All"},
+    {NM_ITEM,  "Show" },
+      {NM_SUB, "Only Icons", CHECKIT | CHECKED},
+      {NM_SUB, "All Files", CHECKIT },
+    {NM_ITEM,  "View By" },
+      {NM_SUB, "Icon", CHECKIT | CHECKED},
+      {NM_SUB, "Name",CHECKIT},
+      {NM_SUB, "Size",CHECKIT},
+      {NM_SUB, "Date", CHECKIT},
+
+  {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
+    {NM_ITEM,  "Open", "O"},
+    {NM_ITEM,  "Close","C" },
+    {NM_ITEM,  "Rename...", "R"},
+    {NM_ITEM,  "Information...", "I" },
+    {NM_ITEM,  "Snapshot", "S" },
+    {NM_ITEM,  "Unsnapshot", "U" },
+    {NM_ITEM,  "Leave Out", "L" },
+    {NM_ITEM,  "Put Away", "P" },
+    {NM_ITEM, NM_BARLABEL},
+    {NM_ITEM,  "Delete..." },
+    {NM_ITEM,  "Format Disk..." },
+    {NM_ITEM,  "Empty Trash..." },
+
+  {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
+    {NM_ITEM,  "ResetWB" },
+    {NM_ITEM,  "Matt Parsons did a good job?" },
+      {NM_SUB, "Yeah, Kinda...", CHECKIT | CHECKED},
+      {NM_SUB, "Nope, this sucks!", CHECKIT },
+  {NM_END}
+
 };
 
 
