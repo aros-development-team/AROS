@@ -24,7 +24,14 @@
 #define WINDOW_BG   ((IPTR) "2:00000000,00000000,00000000")
 #define REGISTER_BG ((IPTR) "7:V,00000000,82000000,81000000-00000000,62000000,61000000")
 #define LIST_BG     ((IPTR) "2:00000000,62000000,61000000")
-#define LOGOTYPE    ((IPTR) "3:SYS:Images/AROS.png")
+#define LOGOTYPE    "SYS:Images/AROS.png"
+#define LOGOTYPE_ASCII \
+"   ______________    ________________   _____________             ________ \n" \
+"  #@############@@  #@##############F  #@############@p          @@######F \n"  \
+" q@             q@  @b                q@\"            #@         q@         \n" \
+" #@             q@  @b                d@_            q@         q@         \n" \
+"  #@@@@@@@@@@p  q@  @b                 #@@@@@@@@@@@@@@F  g@@@@@@#@         \n" \
+"   7\"********^   \"  \"\"                  7\"**********\"\"   7*******          "
 
 
 /*** Private methods ********************************************************/
@@ -43,19 +50,36 @@ IPTR AboutAROS__OM_NEW
     Class *CLASS, Object *self, struct opSet *message 
 )
 {
-    struct AboutAROS_DATA *data = NULL;
-    Object *window, *licenseButton;    
+    struct AboutAROS_DATA *data           = NULL;
+    Object                *window, 
+                          *licenseButton,
+                          *authorsList,
+                          *sponsorsList,
+                          *acksList;
     
-    Object *authorsList,
-           *sponsorsList,
-           *acksList;
+    STRPTR                 pages[4]       = { NULL };
+    BOOL                   showLogotype;
+    BPTR                   lock;
     
-    STRPTR pages[]        = { NULL, NULL, NULL, NULL };
-            
+    /* Check if the logotype is available ----------------------------------*/
+    if ((lock = Lock(LOGOTYPE, ACCESS_READ)) != NULL)
+    {
+        showLogotype = TRUE;
+        UnLock(lock);
+    }
+    else
+    {
+        showLogotype = FALSE;
+    }
+    
+
+    
+    /* Initialize page labels ----------------------------------------------*/
     pages[0] = _(MSG_PAGE_AUTHORS);
     pages[1] = _(MSG_PAGE_SPONSORS);
     pages[2] = _(MSG_PAGE_ACKNOWLEDGEMENTS);
-
+    
+    /* Create application and window objects -------------------------------*/
     self = (Object *) DoSuperNewTags
     (
         CLASS, self, NULL,
@@ -73,9 +97,17 @@ IPTR AboutAROS__OM_NEW
                 GroupSpacing(2),
                 MUIA_Background, WINDOW_BG,
                 
-                Child, (IPTR) ImageObject,
-                    MUIA_Image_Spec, LOGOTYPE,
-                End,
+                Child, showLogotype
+                    ? (IPTR) ImageObject,
+                          MUIA_Image_Spec, (IPTR) "3:"LOGOTYPE,
+                      End
+                    : (IPTR) TextObject,
+                          MUIA_Font, MUIV_Font_Fixed,
+                          MUIA_Text_PreParse, (IPTR) "\0333\033b\033c",
+                          MUIA_Text_Contents, (IPTR) LOGOTYPE_ASCII,
+                          MUIA_Weight,               0,
+                      End
+                    ,
                 Child, (IPTR) VSpace(4),
                 Child, (IPTR) HGroup,
                     InnerSpacing(0,0),
