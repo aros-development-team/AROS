@@ -805,7 +805,8 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
 	    sd->CardMem = &LIBBASE->mh;
 	    
 	    InitSemaphore(&sd->HWLock);
-
+    	    InitSemaphore(&sd->MultiBMLock);
+	    
 	    sd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	    sd->dpms = vHidd_Gfx_DPMSLevel_On;
 
