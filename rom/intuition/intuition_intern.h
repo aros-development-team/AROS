@@ -59,6 +59,9 @@
 
 #include <aros/asmcall.h>
 
+#define MENUS_AMIGALOOK  0
+#define MENUS_UNDERMOUSE 1
+
 /* ObtainGIRPort must install a 0 clipregion and
    set scrollx/scrolly of layer to 0. Since this
    will be restored only when ReleaseGIRPort is
