@@ -4,7 +4,7 @@ CURDIR=workbench
 
 include $(TOP)/config/make.cfg
 
-SUBDIRS=c demos devs libs locale
+SUBDIRS=c demos devs libs locale fonts classes
 
 all: $(SDIR)/Startup-Sequence
 	%subdirs_q target=all
