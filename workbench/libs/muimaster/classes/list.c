@@ -679,7 +679,7 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    {
 			LONG new_entries_active = tag->ti_Data;
 
-			if (data->entries_num)
+			if ((data->entries_num) && (new_entries_active != MUIV_List_Active_Off))
 			{
 			    switch (new_entries_active)
 			    {
@@ -978,6 +978,14 @@ static IPTR List_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 static IPTR List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
+    {
+	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+	data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+    }
+    data->mouse_click = 0;
 
     zune_imspec_hide(data->list_cursor);
     zune_imspec_hide(data->list_select);
