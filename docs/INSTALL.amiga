@@ -40,9 +40,9 @@ on the Amiga. Please address any comments and questions to
    If you don't have a working GeekGadgets installation yet,
    you will have to get several packages and install them before
    you can build AROS. GeekGadgets tools are available from
-   ftp.ninemoons.com and its mirrors:
+   ftp.geekgadgets.org and its mirrors:
 
-      ftp://ftp.ninemoons.com/pub/geekgadgets/    (main site)
+      ftp://ftp.geekgadgets.org/pub/geekgadgets/  (main site)
       ftp://ftp.unina.it/pub/Amiga/geekgadgets/   (full mirror)
 
    I recommend using ftp.unina.it because it's much faster
@@ -122,7 +122,7 @@ on the Amiga. Please address any comments and questions to
    The good news is that you can safely break cvs at any time and
    continue later.
 
-   The source tree lives in a dirctory called AROS/. Do not delete
+   The source tree lives in a directory called AROS/. Do not delete
    the CVS/ and CVSROOT/ subdirectories: they contain information used
    by cvs to keep your source tree in sync with the repository.
 
@@ -171,7 +171,7 @@ on the Amiga. Please address any comments and questions to
 
    f) to improve overall performance, store the AROS source code
       in a fast disk, perhaps using a good filesystem such as
-      SmartFileSytem or PFS2. You can safely make the partition
+      SmartFileSystem or PFS2. You can safely make the partition
       case sensitive: this way you'll catch upper/lower case
       typos which would break AROS when compiling on a UNIX OS.
 
