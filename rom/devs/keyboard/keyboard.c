@@ -623,8 +623,8 @@ BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
 
 VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 {
-    D(bug("keyCallBack(KBBase=%p, keyCode=%d, mode=%d)\n"
-    		, KBBase, keyCode, mode));
+    D(bug("keyCallBack(KBBase=%p, keyCode=%d)\n"
+    		, KBBase, keyCode));
     KBBase->kb_keyBuffer[(KBBase->kb_writePos)++] = keyCode;
 
 D(bug("Wrote to buffer\n"));
