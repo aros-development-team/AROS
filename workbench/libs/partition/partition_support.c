@@ -18,8 +18,9 @@
 #include <aros/debug.h>
 
 extern struct PTFunctionTable PartitionMBR;
+extern struct PTFunctionTable PartitionRDB;
 
-struct PTFunctionTable *PartitionSupport[]={&PartitionMBR, 0};
+struct PTFunctionTable *PartitionSupport[]={&PartitionMBR, &PartitionRDB, 0};
 
 /* get geometry */
 LONG PartitionGetGeometry
@@ -116,7 +117,7 @@ QUAD offset;
 	ioreq->iotd_Req.io_Command=ph->bd->cmdread;
 	ioreq->iotd_Req.io_Length=ph->de.de_SizeBlock<<2;
 	ioreq->iotd_Req.io_Data=mem;
-	offset=getStartBlock(ph)*(ph->de.de_SizeBlock<<2);
+	offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
 	ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	ioreq->iotd_Req.io_Actual=offset>>32;
 	return DoIO((struct IORequest *)&ioreq->iotd_Req);
@@ -141,10 +142,9 @@ QUAD offset;
 	ioreq->iotd_Req.io_Command=ph->bd->cmdwrite;
 	ioreq->iotd_Req.io_Length=ph->de.de_SizeBlock<<2;
 	ioreq->iotd_Req.io_Data=mem;
-	offset=getStartBlock(ph)*(ph->de.de_SizeBlock<<2);
+	offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
 	ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	ioreq->iotd_Req.io_Actual=offset>>32;
-kprintf("write\n");
 	return DoIO((struct IORequest *)&ioreq->iotd_Req);
 }
 
@@ -163,5 +163,13 @@ void fillMem(BYTE *mem, LONG size, BYTE fillbyte) {
 
 	while (size--)
 		mem[size]=fillbyte;
+}
+
+ULONG strlen(STRPTR *str) {
+ULONG count = 0;
+
+	while (*str++)
+		count++;
+	return count;
 }
 
