@@ -30,7 +30,7 @@ delay the execution of defered actions.
 
 gfx functions must subtract Layer->Scroll_X and Layer->Scroll_Y
 from coordinates, not add it!!! Many gfx functions don't handle
-scrollx/scrolly yet.
+scrollx/scrolly yet.                                           DONE (Stefan)
 
 if a certain GUI object (window/gadget/image/bitmap/...) has
 a width/height of, let's say, 40, then this means that it has
