@@ -826,7 +826,7 @@ retryopenwindow:
 	glob->zoom[3] = glob->newreqwin.MinHeight;
 	
 	if (!img || !gad || !(glob->reqwin = OpenWindowBF (&glob->newreqwin,
-	    &glob->backfillhook, glob->pens, &glob->rpmask, glob->zoom)))
+	    &glob->backfillhook, glob->pens, &glob->rpmask, glob->zoom, FALSE)))
 	{	 
 	    my_FreeGadgets (glob->buttoninfo.glist);
 	    glob->buttoninfo.glist = NULL;

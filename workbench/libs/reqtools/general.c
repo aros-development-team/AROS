@@ -408,6 +408,37 @@ void SAVEDS ASM WinBackFill (
 
 /****************************************************************************************/
 
+#ifdef _AROS
+
+AROS_UFH3(void, PatternWinBackFill,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(struct RastPort *, the_rp, A2),
+    AROS_UFHA(struct BackFillMsg, *msg, A1))
+{
+    struct RastPort rp;
+    UWORD pattern[] = {0xAAAA,0x5555};
+    
+    memcpy( &rp, the_rp, sizeof( rp ) );
+    rp.Layer = NULL;
+
+    SetAPen (&rp, ((UWORD *)hook->h_Data)[BACKGROUNDPEN]);
+    SetBPen (&rp, ((UWORD *)hook->h_Data)[SHINEPEN]);
+    SetDrMd (&rp, JAM2);
+    
+    mySetWriteMask (&rp, ~0);
+    
+    SetAfPt(&rp, pattern, 1);
+    
+    RectFill (&rp, msg->bounds.MinX, msg->bounds.MinY,
+		   msg->bounds.MaxX, msg->bounds.MaxY);
+		   
+    SetAfPt(&rp, NULL, 0);
+}
+
+#endif
+
+/****************************************************************************************/
+
 void REGARGS mySetWriteMask (struct RastPort *rp, ULONG mask)
 {
     if (GfxBase->LibNode.lib_Version >= 39) SetWriteMask (rp, mask);
@@ -417,7 +448,8 @@ void REGARGS mySetWriteMask (struct RastPort *rp, ULONG mask)
 /****************************************************************************************/
 
 struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
-			struct Hook *hook, UWORD *pens, ULONG *maskptr, WORD *zoom )
+			struct Hook *hook, UWORD *pens, ULONG *maskptr, WORD *zoom,
+			BOOL backfillpattern)
 {
     struct RastPort *rp;
     struct Window *win;
@@ -425,8 +457,16 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     UWORD maxpen = 0;
     int i;
 
+#ifdef _AROS
+    if (backfillpattern)
+    {
+        hook->h_Entry = (ULONG (*)())PatternWinBackFill;
+    } else
+#endif
     hook->h_Entry = (ULONG (*)())WinBackFill;
+
     hook->h_Data = (void *)pens;
+
     tags[0] = WA_BackFill;
     tags[1] = (ULONG)hook;
     tags[2] = WA_Zoom;

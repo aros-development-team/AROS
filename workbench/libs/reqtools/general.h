@@ -106,7 +106,7 @@ extern void REGARGS mySetWriteMask (struct RastPort *, ULONG);
 void SAVEDS ASM WinBackFill (register __a0 struct Hook *,
 	register __a2 struct RastPort *, register __a1 struct BackFillMsg * );
 struct Window *REGARGS OpenWindowBF (struct NewWindow *,
-				struct Hook *, UWORD *, ULONG *, WORD *);
+				struct Hook *, UWORD *, ULONG *, WORD *, BOOL);
 int CheckReqPos (int, int, struct NewWindow *);
 int REGARGS StrWidth_noloc (struct IntuiText *, UBYTE *);
 int CheckBoxWidth (struct NewGadget *);

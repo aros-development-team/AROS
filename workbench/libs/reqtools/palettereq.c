@@ -1280,7 +1280,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 
     if( ( glob->dowheel && !glob->wheel ) || !img || !gad ||
 	  !(glob->palwin = OpenWindowBF( &glob->newpalwin,
-	  &glob->backfillhook, glob->drinfo->dri_Pens, NULL, glob->zoom ) ) )
+	  &glob->backfillhook, glob->drinfo->dri_Pens, NULL, glob->zoom, FALSE ) ) )
     {
 	my_FreeGadgets( glob->buttoninfo.glist );
 	glob->buttoninfo.glist = NULL;

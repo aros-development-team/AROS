@@ -422,8 +422,7 @@ ULONG ASM SAVEDS GetString (
 	if (glob->textfmt)
 	{
 	    glob->texttop = top;
-	    glob->textht = (glob->fontht + 1) * glob->numlines
-													    + (glob->nowinbackfill ? 0 : 15);
+	    glob->textht = (glob->fontht + 1) * glob->numlines + (glob->nowinbackfill ? 0 : 15);
 	    height += spacing + glob->textht;
 	    top += spacing + glob->textht;
 	}
@@ -672,7 +671,12 @@ ULONG ASM SAVEDS GetString (
 
 
     /* Now open the message window. */
-    if (!(glob->reqwin = OpenWindowBF (&glob->newreqwin, &glob->backfillhook, glob->drinfo->dri_Pens, NULL, NULL)))
+    if (!(glob->reqwin = OpenWindowBF (&glob->newreqwin,
+    				       &glob->backfillhook,
+				       glob->drinfo->dri_Pens,
+				       NULL,
+				       NULL,
+				       !glob->nowinbackfill)))
 	return (ReqExit (glob, FALSE));
 
     if (glob->shareidcmp)
