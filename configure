@@ -852,15 +852,16 @@ Optional Features:
                           personal, nightly, snapshot, milestone, release. Do
                           NOT use this option unless you know what you are
                           doing! (default=personal)
+  --enable-debug=list     Enable different types of debug. Commas or
+                          whitespaces can be used to separate the items in the
+                          list. Available types of debug are: all, none,
+                          messages, stack, mungwall, modules, symbols. If no
+                          list is provided then "all" is assumed.
+                          (default=none)
   --enable-includes=dir   Alternative system include directory
   --enable-bochs-hack     Enable hacks to make BOCHS (partly) work (default=no)
   --enable-palm-debug-hack   Enable palm debug output hack in palm native (default=no)
   --enable-nesting-supervisor   Enable nesting supervisor support in unix (default=no)
-  --enable-debug=list     Enable different types of debug. Commas or
-                          whitespaces can be used to separate the items in the
-                          list. Available types of modules are: all none stack
-                          mungwall modules. If no list is provided then "all"
-                          is assumed. (default=none)
   --enable-cpak           Enable cpak default=yes
   --enable-xshm-extension Enable X11 MIT-SHM extension default=yes
 
@@ -6113,10 +6114,6 @@ aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 aros_compiler_libs=
 
-# These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g -DADEBUG=1 -DMDEBUG=1"
-aros_debug_aflags=""
-aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
 
 # Native flavour stuff
@@ -6140,26 +6137,6 @@ ignore_undefined_symbols=""
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
 
-#-----------------------------------------------------------------------------
-echo "$as_me:$LINENO: checking what optimization level to use" >&5
-echo $ECHO_N "checking what optimization level to use... $ECHO_C" >&6
-
-# Check whether --with-optimization or --without-optimization was given.
-if test "${with_optimization+set}" = set; then
-  withval="$with_optimization"
-  optimization=$withval
-else
-  optimization=unknown
-fi;
-if test "$optimization" = "unknown"; then
-        aros_target_cflags="$aros_target_cflags -O2"
-    aros_debug_cflags="$aros_debug_cflags -O0"
-else
-    aros_target_cflags="$aros_target_cflags -O$optimization"
-    aros_debug_cflags="$aros_debug_cflags -O$optimization"
-fi
-echo "$as_me:$LINENO: result: $withval" >&5
-echo "${ECHO_T}$withval" >&6
 
 #-----------------------------------------------------------------------------
 
@@ -6190,6 +6167,91 @@ aros_target_cflags="$aros_target_cflags -DAROS_BUILD_TYPE=AROS_BUILD_TYPE_$build
 
 echo "$as_me:$LINENO: result: $build_type" >&5
 echo "${ECHO_T}$build_type" >&6
+
+#-----------------------------------------------------------------------------
+all_debug_types="messages stack mungwall modules symbols"
+
+echo "$as_me:$LINENO: checking which debug types to enable" >&5
+echo $ECHO_N "checking which debug types to enable... $ECHO_C" >&6
+# Check whether --enable-debug or --disable-debug was given.
+if test "${enable_debug+set}" = set; then
+  enableval="$enable_debug"
+  debug="$enableval"
+else
+  debug=""
+fi;
+
+if test "$debug" = "" -o "$debug" = "no"; then
+    debug="none"
+elif test "$debug" = "yes"; then
+    debug="all"
+fi
+
+if test "$debug" = "none"; then
+    for d in $all_debug_types; do
+        export aros_${d}_debug="0"
+    done
+elif test "$debug" = "all" ; then
+    debug=$all_debug_types
+    for d in $all_debug_types; do
+        export aros_${d}_debug="1"
+    done
+else
+    debug=`echo $debug | sed s/,/\ /g`
+    for d in $debug; do
+        found="0"
+        for d2 in $all_debug_types; do
+	    if test "$d2" = "$d"; then
+	        found="1"
+		break
+	    fi
+	done
+	if test "$found" = "0"; then
+	    { { echo "$as_me:$LINENO: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&5
+echo "$as_me: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&2;}
+   { (exit 1); exit 1; }; }
+	fi
+	export aros_${d}_debug="1"
+    done
+fi
+echo "$as_me:$LINENO: result: $debug" >&5
+echo "${ECHO_T}$debug" >&6
+
+if test "$aros_messages_debug" = "1"; then
+    aros_debug="yes"
+    aros_messages_debug="-DADEBUG=1 -DMDEBUG=1"
+fi
+if test "$aros_symbols_debug" = "1"; then
+    aros_symbols_debug="-g"
+fi
+
+# These are the flags to pass when compiling debugged programs
+aros_debug_cflags="$aros_symbols_debug $aros_messages_debug"
+aros_debug_aflags=""
+aros_debug_ldflags="$aros_symbols_debug"
+
+
+#-----------------------------------------------------------------------------
+echo "$as_me:$LINENO: checking what optimization level to use" >&5
+echo $ECHO_N "checking what optimization level to use... $ECHO_C" >&6
+
+# Check whether --with-optimization or --without-optimization was given.
+if test "${with_optimization+set}" = set; then
+  withval="$with_optimization"
+  optimization=$withval
+else
+  optimization=unknown
+fi;
+if test "$optimization" = "unknown"; then
+        aros_target_cflags="$aros_target_cflags -O2"
+    aros_debug_cflags="$aros_debug_cflags -O0"
+else
+    aros_target_cflags="$aros_target_cflags -O$optimization"
+    aros_debug_cflags="$aros_debug_cflags -O$optimization"
+fi
+echo "$as_me:$LINENO: result: $withval" >&5
+echo "${ECHO_T}$withval" >&6
+
 #-----------------------------------------------------------------------------
 
 # This is the target configuration switch.
@@ -6463,9 +6525,9 @@ echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
 		aros_static_aflags="-mc68000"
 		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -Werror-implicit-function-declaration -g -DADEBUG=1 -DMDEBUG=1 -mc68000 -Wa,-mc68000"
+		aros_debug_cflags="-Wall -Werror-implicit-function-declaration $aros_symbols_debug  $aros_messages_debug -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
-		aros_debug_ldflags="-g"
+		aros_debug_ldflags="$aros_symbols_debug"
 		aros_mungwall_debug="0"
 		aros_modules_debug="0"
 		gcc_target_cpu="mc68000"
@@ -7158,56 +7220,6 @@ echo "$as_me:$LINENO: result: $nesting_supervisor" >&5
 echo "${ECHO_T}$nesting_supervisor" >&6
 
 
-all_debug_types="stack mungwall modules"
-
-echo "$as_me:$LINENO: checking which debug types to enable" >&5
-echo $ECHO_N "checking which debug types to enable... $ECHO_C" >&6
-# Check whether --enable-debug or --disable-debug was given.
-if test "${enable_debug+set}" = set; then
-  enableval="$enable_debug"
-  debug="$enableval"
-else
-  debug=""
-fi;
-
-if test "$debug" = "" -o "$debug" = "no"; then
-    debug="none"
-elif test "$debug" = "yes"; then
-    debug="all"
-fi
-
-if test "$debug" = "none"; then
-    for d in $all_debug_types; do
-        export aros_${d}_debug="0"
-    done
-elif test "$debug" = "all" ; then
-    debug=$all_debug_types
-    for d in $all_debug_types; do
-        export aros_${d}_debug="1"
-    done
-    aros_debug="yes"
-else
-    debug=`echo $debug | sed s/,/\ /g`
-    for d in $debug; do
-        found="0"
-        for d2 in $all_debug_types; do
-	    if test "$d2" = "$d"; then
-	        found="1"
-		break
-	    fi
-	done
-	if test "$found" = "0"; then
-	    { { echo "$as_me:$LINENO: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&5
-echo "$as_me: error: unrecognized debug type \"$d\". Available types are: all none $all_debug_types" >&2;}
-   { (exit 1); exit 1; }; }
-	fi
-	export aros_${d}_debug="1"
-    done
-    aros_debug="yes"
-fi
-
-echo "$as_me:$LINENO: result: $debug" >&5
-echo "${ECHO_T}$debug" >&6
 
 echo "$as_me:$LINENO: checking if cpak is enabled" >&5
 echo $ECHO_N "checking if cpak is enabled... $ECHO_C" >&6
