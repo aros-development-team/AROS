@@ -233,6 +233,7 @@ $(DEST)progress.gif : size2plot.in $(AROS_SIZE)
 	    size2plot.in > $(DOCGENDIR)/size2plot.gp
 	$(GNUPLOT) $(DOCGENDIR)/size2plot.gp
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
+	$(CONVERT) $(DOCGENDIR)/plot.pbm $(DEST)progress.png
 
 $(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
