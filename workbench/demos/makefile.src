@@ -38,6 +38,7 @@ images/%.h : images/%.dat images/datfilt.awk
 	cd images ; gawk -f datfilt.awk $(<F)
 
 setup :
+	@echo "CFLAGS=$(CFLAGS)"
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 clean::
