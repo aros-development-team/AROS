@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -63,12 +63,15 @@
 {
     AROS_LIBFUNC_INIT
 
-    if((player == NULL) || (player->pl_Source == NULL) ||
-       !(player->pl_Flags & PLAYERF_EXTSYNC))
+    if ((player == NULL) || (player->pl_Source == NULL) ||
+	!(player->pl_Flags & PLAYERF_EXTSYNC))
+    {
 	return FALSE;
+    }
 
-    player->pl_Source->cdt_StartTime       = minTime; /* ??? */
+    player->pl_Source->cdt_ExternalTime    = minTime;
     player->pl_Source->cdt_MaxExternalTime = maxTime;
+    player->pl_Source->cdt_Flags |= CONDUCTF_GOTTICK;
 
     return TRUE;
 
