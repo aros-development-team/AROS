@@ -19,8 +19,6 @@ FILES := \
     infutil \
     inffast
 
-USER_INCLUDES	:= -Iinclude
-USER_CFLAGS	:= -DAROS
 #MM- linklibs : linklibs-arosz
 #MM linklibs-zlib : linklibs-arosz
 #MM linklibs-arosz : arosz-setup-link includes
