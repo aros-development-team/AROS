@@ -22,6 +22,7 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "prefs.h"
+#include "imspec.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -30,11 +31,13 @@ struct MUI_SliderData
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
     struct ZuneFrameGfx *knob_frame;
+    struct MUI_ImageSpec_intern *knob_bg;
     LONG knob_left;
     LONG knob_top;
     LONG knob_width;
     LONG knob_height;
     LONG knob_click;
+    LONG last_val;
     LONG state; /* When using mouse */
 };
 
@@ -79,6 +82,7 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 	MUIA_Background, MUII_SliderBack,
+	MUIA_Font, MUIV_Font_Knob,
 	MUIA_Frame, MUIV_Frame_Slider,
 	TAG_MORE, msg->ops_AttrList);
 
@@ -115,6 +119,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	return FALSE;
 
     data->knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
+    data->knob_bg = zune_imspec_setup(MUII_SliderKnob, muiRenderInfo(obj));
 
     InitRastPort(&rp);
     SetFont(&rp,_font(obj));
@@ -157,6 +162,11 @@ static ULONG Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
+    if (data->knob_bg)
+    {
+	zune_imspec_cleanup(data->knob_bg);
+	data->knob_bg = NULL;
+    }
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
@@ -197,6 +207,32 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 }
 
 /**************************************************************************
+ MUIM_Show
+**************************************************************************/
+static IPTR Slider_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    if (data->knob_bg)
+	zune_imspec_show(data->knob_bg, obj);
+    return 1;
+}
+
+/**************************************************************************
+ MUIM_Hide
+**************************************************************************/
+static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
+{
+    struct MUI_SliderData *data = INST_DATA(cl, obj);
+
+    if (data->knob_bg)
+	zune_imspec_hide(data->knob_bg);
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+
+/**************************************************************************
  MUIM_Draw
 **************************************************************************/
 static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
@@ -224,6 +260,11 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
 
     DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+
+    zune_imspec_draw(data->knob_bg, muiRenderInfo(obj),
+		     data->knob_left, data->knob_top, data->knob_width, data->knob_height,
+		     0, 0, 0);
+
     data->knob_frame->draw[data->state](muiRenderInfo(obj), data->knob_left, data->knob_top, data->knob_width, data->knob_height);
 
     get(obj, MUIA_Numeric_Value, &val);
@@ -304,6 +345,7 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 
 	case IDCMP_MOUSEMOVE:
 	{
+	    LONG oldval;
 	    LONG newval;
 
 	    if (data->flags & SLIDER_HORIZ)
@@ -320,7 +362,12 @@ static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 					scale);
 		D(bug("%p: Y=%ld scale=%ld val=%ld\n", obj, msg->imsg->MouseY, scale, newval));
 	    }
-	    set(obj, MUIA_Numeric_Value, newval);
+
+	    get(obj, MUIA_Numeric_Value, oldval);
+	    if (oldval != newval)
+	    {
+		set(obj, MUIA_Numeric_Value, newval);
+	    }
 	}
 	break;
     }
@@ -335,6 +382,8 @@ BOOPSI_DISPATCHER(IPTR, Slider_Dispatcher, cl, obj, msg)
 	case OM_NEW: return Slider_New(cl, obj, (struct opSet *)msg);
 	case MUIM_Setup: return Slider_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Slider_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show: return Slider_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide: return Slider_Hide(cl, obj, (APTR)msg);
 	case MUIM_AskMinMax: return Slider_AskMinMax(cl, obj, (APTR)msg);
 	case MUIM_Draw: return Slider_Draw(cl, obj, (APTR)msg);
 	case MUIM_HandleEvent: return Slider_HandleEvent(cl, obj, (APTR)msg);
