@@ -421,6 +421,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct Window         *w;
     struct Requester      *req;
     ULONG                 stitlebarhit = 0;
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+    WORD    	    	    pointerposx, pointerposy;
+    BOOL    	    	    call_setpointerpos = FALSE;
+#endif
 
     D(bug("Inside intuition inputhandler, active window=%p\n", IntuitionBase->ActiveWindow));
 
@@ -1576,7 +1580,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     }
 #endif
 
-                    SetPointerPos(ie->ie_X, ie->ie_Y);
+    	    	    #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+			SetPointerPos(ie->ie_X, ie->ie_Y);
+    	    	    #else
+		    	pointerposx = ie->ie_X;
+			pointerposy = ie->ie_Y;
+			call_setpointerpos = TRUE;
+		    #endif
 
                     iihdata->LastMouseX = ie->ie_X;
                     iihdata->LastMouseY = ie->ie_Y;
@@ -2581,11 +2591,14 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
                 keep_event = FALSE;
                 break;
             }
-
-            bug("\x07" "\n\n======== Unknown IEClass: addr = %lx  class = %ld (origclass = %ld)! =============\n\n",
-                (ULONG) iihdata->FreeInputEvents, (ULONG) ie->ie_Class, (ULONG) ie->ie_Class);
+            
+            bug
+            (
+                "[Intui] InputHandler: Unknown IEClass: addr = %x  class = %d (origclass = %d)\n",
+                orig_ie, ie->ie_Class,orig_ie->ie_Class
+            );
+            
             break;
-
         } /* switch (ie->ie_Class) */
 
         if (reuse_event)
@@ -2608,6 +2621,13 @@ IEQUALIFIER_NUMERICPAD | IEQUALIFIER_REPEAT)
     iihdata->ActiveGadget = gadget;
 
     D(bug("Outside pollingloop\n"));
+
+#if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+    if (call_setpointerpos)
+    {
+    	SetPointerPos(pointerposx, pointerposy);
+    }
+#endif
 
     /* Terminate the event chain. */
     *iihdata->EndInputEventChain = NULL;
