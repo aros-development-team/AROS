@@ -50,9 +50,9 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #include "dragndrop.h"
 #endif
 
-#define IM(x) ((struct Image*)x)
-#define G(x) ((struct Gadget*)x)
-#define GADGETID(x) (((struct Gadget*)x)->GadgetID)
+#define IM(x) ((struct Image*)(x))
+#define G(x) ((struct Gadget*)(x))
+#define GADGETID(x) (((struct Gadget*)(x))->GadgetID)
 
 static char *StrDup(char *x)
 {
@@ -405,7 +405,7 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	if (!firstgad) firstgad = prevgad;
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_UpButton = NewObject(NULL,"buttongclass",
+	prevgad = data->wd_LeftButton = NewObject(NULL,"buttongclass",
 		GA_Image, mri->mri_LeftImage,
 		GA_RelRight, 1 - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
 		GA_RelBottom, 1 - IM(mri->mri_LeftImage)->Height,
@@ -416,7 +416,7 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 		TAG_DONE);
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_DownButton = NewObject(NULL,"buttongclass",
+	prevgad = data->wd_RightButton = NewObject(NULL,"buttongclass",
 		GA_Image, mri->mri_RightImage,
 		GA_RelRight, 1 - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
 		GA_RelBottom, 1 - IM(mri->mri_RightImage)->Height,
@@ -855,7 +855,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			}
 		    }
 		}
-			
+
     }
 
     handle_event(oWin, imsg);
@@ -1933,7 +1933,7 @@ static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct
 }
 
 /**************************************************************************
- 
+
 **************************************************************************/
 static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Window_DragObject *msg)
 {
@@ -2025,7 +2025,7 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 }
 
 /**************************************************************************
- 
+
 **************************************************************************/
 static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_FreeGadgetID *msg)
 {
