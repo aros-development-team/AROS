@@ -328,43 +328,46 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
     FixWindowCoords(targetwindow, &NewLeftEdge, &NewTopEdge, &NewWidth, &NewHeight);
 
-    bug("DoMoveSizeWindow to %d,%d %d x %d\n", NewLeftEdge, NewTopEdge, NewWidth, NewHeight);
+    D(bug("DoMoveSizeWindow to %d,%d %d x %d\n", NewLeftEdge, NewTopEdge, NewWidth, NewHeight));
     
     pos_dx  = NewLeftEdge - OldLeftEdge;
     pos_dy  = NewTopEdge  - OldTopEdge;
     size_dx = NewWidth    - OldWidth;
     size_dy = NewHeight   - OldHeight;
 
-    if (!pos_dx && !pos_dy && !size_dx && !size_dy) return;
-
     LOCK_REFRESH(targetwindow->WScreen);
+
+    if (pos_dx || pos_dy || size_dx || size_dy)
+    {
     
-    if (size_dx || size_dy)
-    {
-	WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
-    }
+	if (size_dx || size_dy)
+	{
+	    WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
+	}
 
-    targetwindow->LeftEdge = NewLeftEdge;
-    targetwindow->TopEdge  = NewTopEdge;
-    targetwindow->Width    = NewWidth;
-    targetwindow->Height   = NewHeight; 
+	targetwindow->LeftEdge = NewLeftEdge;
+	targetwindow->TopEdge  = NewTopEdge;
+	targetwindow->Width    = NewWidth;
+	targetwindow->Height   = NewHeight; 
 
-    /* check for GZZ window */
-    if (IS_GZZWINDOW(targetwindow))
-    {
-	/* move outer window first */
-	MoveSizeLayer(targetwindow->BorderRPort->Layer, pos_dx, pos_dy, size_dx, size_dy);
-    }
+	/* check for GZZ window */
+	if (IS_GZZWINDOW(targetwindow))
+	{
+	    /* move outer window first */
+	    MoveSizeLayer(targetwindow->BorderRPort->Layer, pos_dx, pos_dy, size_dx, size_dy);
+	}
 
-    MoveSizeLayer(targetlayer, pos_dx, pos_dy, size_dx, size_dy);
+	MoveSizeLayer(targetlayer, pos_dx, pos_dy, size_dx, size_dy);
 
-    if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
-    if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
-    if (w->ZipWidth    != ~0) w->ZipWidth    = OldWidth;
-    if (w->ZipHeight   != ~0) w->ZipHeight   = OldHeight;
+	if (w->ZipLeftEdge != ~0) w->ZipLeftEdge = OldLeftEdge;
+	if (w->ZipTopEdge  != ~0) w->ZipTopEdge  = OldTopEdge;
+	if (w->ZipWidth    != ~0) w->ZipWidth    = OldWidth;
+	if (w->ZipHeight   != ~0) w->ZipHeight   = OldHeight;
 
-    if (pos_dx || pos_dy) UpdateMouseCoords(targetwindow);
+	if (pos_dx || pos_dy) UpdateMouseCoords(targetwindow);
 
+    } /* if (pos_dx || pos_dy || size_dx || size_dy) */
+    
     if (size_dx || size_dy)
     {
 	/* This func also takes care of sending IDCMP_CHANGEWINDOW
@@ -376,7 +379,9 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 
 	L = targetwindow->BorderRPort->Layer->back;
     } else {
-	/* Send IDCMP_CHANGEWINDOW to resized window */
+	/* Send IDCMP_CHANGEWINDOW to resized window, even if there
+	   was no resizing/position change at all. BGUI for example
+	   relies on this! */
 
 	ih_fire_intuimessage(targetwindow,
 		    	     IDCMP_CHANGEWINDOW,
