@@ -39,14 +39,13 @@
 #include "navigationp.h"
 #include "zunestuff.h"
 
-struct Library *MUIMasterBase;
-
 void load_prefs(CONST_STRPTR name);
 void save_prefs(CONST_STRPTR name, BOOL envarc);
 void test_prefs(void);
 void restore_prefs(CONST_STRPTR name);
 
 #ifndef __AROS__
+struct Library *MUIMasterBase;
 
 /* On AmigaOS we build a fake library base, because it's not compiled as sharedlibrary yet */
 #include "muimaster_intern.h"
@@ -77,19 +76,15 @@ void close_muimaster(void)
 {
 }
 
-#else
+#else /* __AROS__ */
 
 int open_muimaster(void)
 {
-    if ((MUIMasterBase = OpenLibrary("muimaster.library", 0)))
-	return 1;
-    return 0;
+    return 1;
 }
 
 void close_muimaster(void)
 {
-    if (MUIMasterBase)
-	CloseLibrary(MUIMasterBase);
 }
 
 #endif
@@ -208,14 +203,17 @@ void main_page_active(void)
     int new_active = XGET(main_page_list,MUIA_List_Active);
     Object *new_group;
 
-    if (new_active == -1) new_group = main_page_space;
+    if (new_active == -1)
+	new_group = main_page_space;
     else
     {
 	new_group = main_page_entries[new_active].group;
-	if (!new_group) new_group = main_page_space;
+	if (!new_group)
+	    new_group = main_page_space;
     }
 
-    if (new_group == main_page_group_displayed) return;
+    if (new_group == main_page_group_displayed)
+	return;
 
     DoMethod(main_page_group, MUIM_Group_InitChange);
     DoMethod(main_page_group, OM_REMMEMBER, (IPTR)main_page_group_displayed);
@@ -269,20 +267,24 @@ void deinit_gui(void)
 
     if (app)
 	MUI_DisposeObject(app);
+
     for (i = 0; main_page_entries[i].name; i++)
     {
 	if ((main_page_entries[i].group != NULL) &&
 	    (main_page_entries[i].group != main_page_group_displayed))
 	{
 	    DisposeObject(main_page_entries[i].group);
-	    main_page_entries[i].group = NULL;
 	}
+	main_page_entries[i].group = NULL;
 	if (main_page_entries[i].cl != NULL)
 	{
 	    MUI_DeleteCustomClass(main_page_entries[i].cl);
 	    main_page_entries[i].cl = NULL;
 	}
     }
+
+    if (main_page_group_displayed != main_page_space)
+	MUI_DisposeObject(main_page_space);
 }
 
 /****************************************************************
@@ -342,7 +344,6 @@ int init_gui(void)
 			    End,
 			End,
 		    Child, HGroup,
-	                MUIA_Group_SameWidth, TRUE, /* 20030706, until layout bug is fixed */
 	                Child, MUI_NewObject(MUIC_Popframe,
 					     MUIA_FixHeight, 20,
 					     MUIA_Window_Title, (IPTR)"Frame Clipboard",
@@ -404,10 +405,9 @@ int init_gui(void)
 	    struct page_entry *p = &main_page_entries[i];
 	    if (p->desc)
 	    {
-		if (
-		    !(
-		    (p->cl = create_class(p->desc)) &&
-		    (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
+		if (!((p->cl = create_class(p->desc))
+		      &&
+		      (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
 		{
 		    deinit_gui();
 		    return 0;
