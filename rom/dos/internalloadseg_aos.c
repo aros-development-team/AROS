@@ -211,10 +211,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           */
           hunktab[i].size = count * 4 + sizeof(ULONG) + sizeof(BPTR);
           hunktab[i].memory =(UBYTE *)
-		AROS_UFC3(void *, funcarray[1] /* AllocMem */,
-		  AROS_UFCA(ULONG           , hunktab[i].size          , D0),
-		  AROS_UFCA(ULONG           , req                      , D1),
-		  AROS_UFCA(struct Library *, (struct Library *)SysBase, A6) );
+		AROS_CALL2(void *, funcarray[1] /* AllocMem */,
+		  AROS_LCA(ULONG           , hunktab[i].size          , D0),
+		  AROS_LCA(ULONG           , req                      , D1),
+		  struct Library *, (struct Library *)SysBase);
 
           if (hunktab[i].memory == NULL)
             ERROR(ERROR_NO_FREE_STORE);
@@ -462,10 +462,10 @@ end:
     for (t = 0 /* first */; t < numhunks /* last */; t++)
       if (hunktab[t].memory != NULL)
       {
-	AROS_UFC3(void , funcarray[2] /* FreeMem*/,
-	  AROS_UFCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
-	  AROS_UFCA(ULONG  , hunktab[t].size                             , D0),
-	  AROS_UFCA(struct Library *, (struct Library *)SysBase          , A6) );
+	AROS_CALL2(void , funcarray[2] /* FreeMem*/,
+	  AROS_LCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
+	  AROS_LCA(ULONG  , hunktab[t].size                             , D0),
+	  struct Library *, (struct Library *)SysBase);
       }
       
     FreeVec(hunktab);
@@ -481,11 +481,11 @@ static int read_block(BPTR file, APTR buffer, ULONG size, LONG * funcarray, stru
 
   while(size)
   {
-    subsize = AROS_UFC4(LONG, funcarray[0] /* Read */,
-		AROS_UFCA(BPTR               , file   , D1),
-		AROS_UFCA(void *             , buf    , D2),
-		AROS_UFCA(LONG               , size   , D3),
-		AROS_UFCA(struct DosLibrary *, DOSBase, A6) );
+    subsize = AROS_CALL3(LONG, funcarray[0] /* Read */,
+		AROS_LCA(BPTR               , file   , D1),
+		AROS_LCA(void *             , buf    , D2),
+		AROS_LCA(LONG               , size   , D3),
+		struct DosLibrary *, DOSBase);
     if(subsize==0)
     {
       ((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
