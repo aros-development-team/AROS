@@ -100,7 +100,7 @@ AROS_UFH3(void, intBoot,
 		AssignLock("Devs", lock);
 	
 	/* Late binding ENVARC: assign, only if used */
-	AssignLate("ENVARC:", "SYS:Prefs/env-archive");
+	AssignLate("ENVARC", "SYS:Prefs/env-archive");
 
 	/* We now call the system dependant boot - should never return. */
 	AROS_UFC3(void, boot, 
