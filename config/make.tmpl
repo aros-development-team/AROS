@@ -646,7 +646,7 @@ endif
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
-#MM- %(mmake) : setup includes linklibs %(mmake)-quick
+#MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
 
 ifneq (%(install_target),)
     %(mmake)-install_command := \
