@@ -20,10 +20,10 @@
 #   define AROS_WORD2BE(w)     ((((w) >> 8) & 0x00FF) | (((w) & 0x00FF) << 8))
 #   define AROS_LONG2BE(l)     \
 	(                                  \
-	    ((((unsigned long)l) >> 24) & 0x000000FFUL) | \
-	    ((((unsigned long)l) >> 08) & 0x0000FF00UL) | \
-	    ((((unsigned long)l) << 08) & 0x00FF0000UL) | \
-	    ((((unsigned long)l) << 24) & 0xFF000000UL) | \
+	    ((((unsigned long)(l)) >> 24) & 0x000000FFUL) | \
+	    ((((unsigned long)(l)) >>  8) & 0x0000FF00UL) | \
+	    ((((unsigned long)(l)) <<  8) & 0x00FF0000UL) | \
+	    ((((unsigned long)(l)) << 24) & 0xFF000000UL)   \
 	)
 #endif
 
