@@ -390,8 +390,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 	        under a Forbidden state.
 
 		falemagn: well, it doesn't want us under a Forbidden state, it just
-		          wants to besingle threaded, and it is, in fact, so no
-			  need of Forbid()/Permit() around open. I Hope... :)
+		          wants to be single threaded, and it is, in fact, so no
+			  need for Forbid()/Permit() around open. I Hope... :)
 
 	    */
 	    Forbid();
@@ -420,11 +420,13 @@ AROS_LH2(struct Library *, OpenLibrary,
 
     if (library == NULL)
     {
-    /*
-	the library is not on disk so
-	check Resident List
-    */
-    struct Resident *resident;
+        /*
+	    the library is not on disk so
+	    check Resident List
+        */
+
+	struct Resident *resident;
+
 	resident = FindResident(stripped_libname);
 	if (resident)
 	{
