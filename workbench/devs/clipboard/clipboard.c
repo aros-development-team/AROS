@@ -21,7 +21,7 @@
 #include <exec/errors.h>
 #include <exec/lists.h>
 #include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include "clipboard_intern.h"
 #define DEBUG 0
 #include <aros/debug.h>
@@ -36,6 +36,8 @@
 #ifdef __MORPHOS__
     unsigned long __abox__ = 1;
 #endif
+
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 #ifndef __MORPHOS__
@@ -52,84 +54,6 @@
 static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 static void writeCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
 static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase);
-
-/****************************************************************************************/
-
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct  ClipboardBase  *AROS_SLIB_ENTRY(init, Clipboard)();
-void  AROS_SLIB_ENTRY(open, Clipboard)();
-BPTR  AROS_SLIB_ENTRY(close, Clipboard)();
-BPTR  AROS_SLIB_ENTRY(expunge, Clipboard)();
-int   AROS_SLIB_ENTRY(null, Clipboard)();
-void  AROS_SLIB_ENTRY(beginio, Clipboard)();
-LONG  AROS_SLIB_ENTRY(abortio, Clipboard)();
-
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry, Clipboard)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-const struct Resident Clipboard_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Clipboard_resident,
-    (APTR)&end,
-#ifdef __MORPHOS__
-    RTF_PPC | RTF_EXTENDED | RTF_AUTOINIT,
-#else
-    RTF_AUTOINIT|RTF_COLDSTART,
-#endif
-    50,
-    NT_DEVICE,
-    45,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl,
-#ifdef __MORPHOS__
-    0,	/* Revision */
-    NULL /* Tags */
-#endif
-};
-
-static const char name[] = "clipboard.device";
-
-static const char version[] = "$VER: clipboard.device 50.0 (11.5.2002)\r\n";
-
-static const APTR inittabl[4] =
-{
-    (APTR)sizeof(struct ClipboardBase),
-    (APTR)functable,
-#ifdef __MORPHOS__
-	NULL,
-#else
-    (APTR)&datatable,
-#endif
-    &AROS_SLIB_ENTRY(init, Clipboard)
-};
-
-static void *const functable[] =
-{
-#ifdef __MORPHOS__
-    (void *const) FUNCARRAY_32BIT_NATIVE,
-#endif
-    &AROS_SLIB_ENTRY(open, Clipboard),
-    &AROS_SLIB_ENTRY(close, Clipboard),
-    &AROS_SLIB_ENTRY(expunge, Clipboard),
-    &AROS_SLIB_ENTRY(null, Clipboard),
-    &AROS_SLIB_ENTRY(beginio, Clipboard),
-    &AROS_SLIB_ENTRY(abortio, Clipboard),
-    (void *)-1
-};
 
 /****************************************************************************************/
 
@@ -152,29 +76,17 @@ static const UWORD SupportedCommands[] =
 
 /****************************************************************************************/
 
-#ifdef __MORPHOS__
-struct ClipboardBase *LIB_init(struct ClipboardBase *CBBase, BPTR segList, struct ExecBase *sysBase)
-#else
-AROS_UFH3(struct ClipboardBase *,  AROS_SLIB_ENTRY(init,Clipboard),
- AROS_UFHA(struct ClipboardBase *, CBBase, D0),
- AROS_UFHA(BPTR,          segList, A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
-#endif
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Init), LIBBASETYPE, CBBase)
 {
-    AROS_USERFUNC_INIT
-
-    /* Store arguments */
-    CBBase->cb_sysBase = sysBase;
-    CBBase->cb_seglist = segList;
+    AROS_SET_LIBFUNC_INIT
 
     InitSemaphore(&CBBase->cb_SignalSemaphore);
     NEWLIST(&CBBase->cb_UnitList);
     NEWLIST(&CBBase->cb_HookList);
 
-    return CBBase;
+    return TRUE;
 
-    AROS_USERFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -204,31 +116,27 @@ void cb_sprintf(struct ClipboardBase *CBBase, UBYTE *buffer,
 
 /****************************************************************************************/
 
-AROS_LH3(void, open,
- AROS_LHA(struct IORequest *, ioreq, A1),
- AROS_LHA(ULONG,              unitnum, D0),
- AROS_LHA(ULONG,              flags, D1),
-	   struct ClipboardBase *, CBBase, 1, Clipboard)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(Open),
+		     LIBBASETYPE, CBBase,
+		     struct IORequest, ioreq,
+		     unitnum,
+		     flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     BPTR   tempLock = NULL, tempLock2 = NULL, tempLock3 = NULL;
     BOOL   found = FALSE;	   /* Does the unit already exist? */
     struct Node *tempNode;	   /* Temporary variable used to see if a unit
 				      already exists */
 
-    /* Keep compiler happy */
-    flags = 0;
-
     D(bug("clipboard.device/open: ioreq 0x%lx unitnum %ld flags 0x%lx\n",ioreq,unitnum,flags));
-
-    CBBase->cb_device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 
     if(unitnum > 255)
     {
 	D(bug("clipboard.device/open: unitnum too large\n"));
 	ioClip(ioreq)->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
 
 #ifndef __MORPHOS__
@@ -237,7 +145,7 @@ AROS_LH3(void, open,
     {
         D(bug("clipboard.device/open: IORequest structure passed to OpenDevice is too small!\n"));
         ioreq->io_Error = IOERR_OPENFAIL;
-	return;
+	return FALSE;
     }
 #endif
 
@@ -250,7 +158,7 @@ AROS_LH3(void, open,
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	return;
+	return FALSE;
     }
 
     if(CBBase->cb_UtilityBase == NULL)
@@ -261,12 +169,12 @@ AROS_LH3(void, open,
 	ioreq->io_Error = IOERR_OPENFAIL;
 	CloseLibrary(CBBase->cb_DosBase);
 	ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	return;
+	return FALSE;
     }
 
     /* Set up clipboard directory if we are the first opener */
 
-    if(CBBase->cb_device.dd_Library.lib_OpenCnt == 0)
+    if(CBBase->cb_ClipDir == NULL)
     {
 	D(bug("clipboard.device/Checking for CLIPS:\n"));
 
@@ -315,7 +223,7 @@ AROS_LH3(void, open,
 	    CloseLibrary(CBBase->cb_DosBase);
 	    CloseLibrary(CBBase->cb_UtilityBase);
 	    ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
-	    return;
+	    return FALSE;
 	}
     }
 
@@ -433,9 +341,6 @@ AROS_LH3(void, open,
     if ((ioreq->io_Error == 0) && CBUn)
     {
     	CBUn->cu_OpenCnt++;
-
-    	/* I have one more opener. */
-    	CBBase->cb_device.dd_Library.lib_OpenCnt++;
     }
     else if (CBUn && (found == FALSE))
     {
@@ -454,21 +359,21 @@ AROS_LH3(void, open,
     
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close,
- AROS_LHA(struct IORequest *,     ioreq,  A1),
-	  struct ClipboardBase *, CBBase,  2, Clipboard)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(Close),
+		      LIBBASETYPE, CBBase,
+		      struct IORequest, ioreq
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 
     D(bug("clipboard.device/close:ioreq 0x%lx\n",ioreq));
-
-    /* Let any following attemps to use the device crash hard. */
-    ioreq->io_Device = (struct Device *)-1;
 
     ObtainSemaphore(&CBBase->cb_SignalSemaphore);
 
@@ -487,67 +392,33 @@ AROS_LH1(BPTR, close,
 
     ReleaseSemaphore(&CBBase->cb_SignalSemaphore);
 
-    CBBase->cb_device.dd_Library.lib_OpenCnt--;
+    return TRUE;
 
-    if (CBBase->cb_device.dd_Library.lib_OpenCnt == 0)
-    {
-	if (CBBase->cb_device.dd_Library.lib_Flags & LIBF_DELEXP)
-	{
-	    return expunge();
-	}
-    }
-
-    return 0;
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct ClipboardBase *, CBBase, 3, Clipboard)
+AROS_SET_LIBFUNC(GM_UNIQUENAME(Expunge), LIBBASETYPE, CBBase)
 {
-    AROS_LIBFUNC_INIT
-
-    BPTR ret;	     /* Temporary vaiable to preserve seglist. */
+    AROS_SET_LIBFUNC_INIT
 
     D(bug("clipboard.device/expunge:\n"));
-
-    if(CBBase->cb_device.dd_Library.lib_OpenCnt != 0)
-    {
-	/* Do not expunge the device. Set the delayed expunge flag and
-	   return. */
-	CBBase->cb_device.dd_Library.lib_Flags |= LIBF_DELEXP;
-	return 0;
-    }
-
-    /* Get rid of the device. Remove it from the list. */
-    Remove(&CBBase->cb_device.dd_Library.lib_Node);
-
-    /* Get returncode here - FreeMem() will destroy the field. */
-    ret = CBBase->cb_seglist;
 
     CloseLibrary(CBBase->cb_DosBase);
     CloseLibrary(CBBase->cb_UtilityBase);
 
-    /* Free the memory. */
-    FreeMem((char *)CBBase-CBBase->cb_device.dd_Library.lib_NegSize,
-	    CBBase->cb_device.dd_Library.lib_NegSize
-	    + CBBase->cb_device.dd_Library.lib_PosSize);
+    return TRUE;
 
-    D(bug("clipboard.device/expunge: done\n"));
-    return ret;
-
-    AROS_LIBFUNC_EXIT
+    AROS_SET_LIBFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0I(int, null, struct ClipboardBase *, KBBase, 4, Clipboard)
-{
-    AROS_LIBFUNC_INIT
-    D(bug("clipboard.device/null:\n"));
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(Init), 0)
+ADD2EXPUNGELIB(GM_UNIQUENAME(Expunge), 0)
+ADD2OPENDEV(GM_UNIQUENAME(Open), 0)
+ADD2CLOSEDEV(GM_UNIQUENAME(Close), 0)
 
 /****************************************************************************************/
 
@@ -988,9 +859,5 @@ static void updateCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
     D(bug("clipboard.device/updateCb: end of function\n"));
 
 }
-
-/****************************************************************************************/
-
-static const char end = 0;
 
 /****************************************************************************************/
