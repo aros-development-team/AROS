@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1997/02/26 01:33:40  ldp
+    AROSfA: added hack to keep dos.library patches working. See source for
+    extensive comments.
+
     Revision 1.9  1997/01/01 03:46:16  ldp
     Committed Amiga native (support) code
 
@@ -33,10 +37,22 @@
     Desc:
     Lang: english
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/machine.h>
 #include <proto/exec.h>
+#include "exec_debug.h"
+
+#ifndef DEBUG_SetFunction
+#   define DEBUG_SetFunction 0
+#endif
+#if DEBUG_SetFunction
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
 
 /*****************************************************************************
 
@@ -75,6 +91,11 @@
     EXAMPLE
 
     BUGS
+	On native builds, this contains a hack to fix dos.library attempts to
+	setfunction exec functions. Because of this, a funcOffset of more than
+	32 kB be truncated. This hack will also fix other programs only using
+	the lower 16 bits of funcOffset and leaving garbage in the upper
+	16 bits. These programs should be fixed.
 
     SEE ALSO
 	MakeLibrary(), MakeFunctions(), SumLibrary().
@@ -87,6 +108,41 @@
 {
     AROS_LIBFUNC_INIT
     APTR ret;
+
+    /*
+	Fix dos.library attempts to SetFunction() CloseDevice/CloseLibrary/
+	RemDevice/RemLibrary/OpenDevice/OpenLibrary.
+
+	This also effectively limits the max offset to 32k, but this limit was
+	already in the original, though not really documented.
+
+	What happes is this: the prototype for the funcOffset says it is a
+	long, but the autodoc also says that only a0.w (lower 16 bits) is used.
+	Dos.library only sets the lower 16 bits of a0 to the required offset,
+	without sign-extending to the upper 16 bits, in fact without even
+	clearing them. These high 16 bits will therefore contain garbage:
+
+	SetFunction(exec.library, 7804fe3e, fc6524) = 30303030 CloseDevice
+	SetFunction(exec.library, 3030fe62, fc6528) = 30303030 CloseLibrary
+	SetFunction(exec.library, 3030fe4a, fc651c) = 30303030 RemDevice
+	SetFunction(exec.library, 3030fe6e, fc6520) = 30303030 RemLibrary
+	SetFunction(exec.library, 3030fe44, fc6564) = 30303030 OpenDevice
+	SetFunction(exec.library, 3030fdd8, fc659a) = 30303030 OpenLibrary
+
+	In asm, I would use "ext.l", but I can't do that in C. Therefore I use	
+	this method of forcibly setting the upper 16-bits. As long as no
+	library has a negsize over 32kB, this will keep working.
+
+	In my [ldp] opinion, the autodoc should never have said that only A0.W
+	is used for the funcOffset, while specifying a "long" in the prototype.
+	This will stay broken and this fix will stay here until we fix
+	dos.library.
+    */
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    funcOffset |= 0xffff0000;
+#endif
+
+    D(bug("SetFunction(%s, %lx, %lx) = ", (ULONG)library->lib_Node.ln_Name, funcOffset, (ULONG)newFunction));
 
     funcOffset = (-funcOffset) / LIB_VECTSIZE;
 
@@ -102,21 +158,30 @@
     /* Get old vector. */
     ret = __AROS_GETVECADDR (library, funcOffset);
 
+#if 1
+    __AROS_INITVEC (library, funcOffset);
+#endif
+
     /* Write new one. */
     __AROS_SETVECADDR (library, funcOffset, newFunction);
 
     /* And clear the instruction cache. */
+    CacheClearU();
+#if 0
     /*
        Fixed to also flush data cache (very important for CopyBack style
        caches) [ldp]
     */
     CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI|CACRF_ClearD);
+#endif
 
     /* Arbitration is no longer needed */
     Permit();
 
     /* Sum the library up again */
     SumLibrary(library);
+
+    D(bug("%lx\n", ret));
 
     /* All done. */
     return ret;
