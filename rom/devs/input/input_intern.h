@@ -1,9 +1,10 @@
 /*
- *  Copyright (C) 1997-2001 AROS - The Amiga Research OS
- *  $Id$
- *
- *  Internal Definitions for the input.device
- */
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Internal definitions for the input.device
+    Lang: english
+*/
 
 #ifndef INPUT_INTERN_H
 #define INPUT_INTERN_H

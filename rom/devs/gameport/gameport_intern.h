@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 #ifndef  GAMEPORT_INTERN_H
 #define  GAMEPORT_INTERN_H
 

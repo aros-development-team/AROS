@@ -8,6 +8,7 @@ INIT_FILE := con_handler
 FILES := con_task support
 FUNCS := 
 
+USE_CLIB_STATIC := yes
 USE_LIBDEFS := no
 USE_ROMLIB := yes
 USE_MLIB := yes

@@ -1,3 +1,11 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: Filesystem that uses console device for input/output.
+    Lang: english
+*/
+
 #define CUR_UP    'A'
 #define CUR_DOWN  'B'
 #define CUR_RIGHT 'C'

@@ -1,6 +1,14 @@
 #ifndef  KEYBOARD_GCC_H
 #define  KEYBOARD_GCC_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 /*  Johan Alfredsson  */
 
 #include <aros/libcall.h>
