@@ -103,7 +103,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
         bug("Loaded as AmigaOS exe\n");
 #endif
     }
-    if (!segs)
+    if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
     {
       segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL);
 #if DEBUG > 1
@@ -111,7 +111,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
         bug("Loaded as ELF exe\n");
 #endif
     }
-    if (!segs)
+    if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
     {
       segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL);
 #if DEBUG > 1
