@@ -777,7 +777,7 @@ int intui_OpenWindow (struct Window * w,
                            
       /* Could the layer be created. Nothing bad happened so far, so simply leave */
       if (NULL == L)
-          ReturnBool("intui_OpenWindow", FALSE);
+          ReturnBool("intui_OpenWindow(No GimmeZeroZero layer)", FALSE);
 	      			      
       /* install it as the BorderRPort */
       w->BorderRPort = L->rp;
@@ -804,7 +804,7 @@ int intui_OpenWindow (struct Window * w,
       if (NULL == w->WLayer)
       {
         DeleteLayer(0, L);
-        ReturnBool("intui_OpenWindow", FALSE);
+        ReturnBool("intui_OpenWindow(No window layer)", FALSE);
       }	
 
       if ((layerflags & LAYERBACKDROP) && (w->WScreen->Flags & SHOWTITLE))
@@ -852,7 +852,7 @@ int intui_OpenWindow (struct Window * w,
         {
           /* no memory for RastPort! Simply close the window */
           intui_CloseWindow(w, IntuitionBase);
-    	  ReturnBool("intui_OpenWindow", FALSE);
+    	  ReturnBool("intui_OpenWindow(No BorderRPort)", FALSE);
         }
       }		  
     }
@@ -873,15 +873,13 @@ int intui_OpenWindow (struct Window * w,
 	 
 	if (createsysgads(w, IntuitionBase))
 	{
-
     	    ReturnBool("intui_OpenWindow", TRUE);
-
 	}
 	intui_CloseWindow(w, IntuitionBase);
 	
     } /* if (layer created) */
     
-    ReturnBool("intui_OpenWindow", FALSE);
+    ReturnBool("intui_OpenWindow(General failure)", FALSE);
 }
 
 
