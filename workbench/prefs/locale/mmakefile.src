@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main vars locale misc
+FILES 	    := main vars locale misc registertab page_language page_country page_timezone
 IMAGES      := earthmap_small timezones_small
 SRCIMAGES   := $(foreach f, $(IMAGES), pics/$(f).ilbm)
 C_IMAGES    := $(foreach f, $(IMAGES), $(f)_image.c)

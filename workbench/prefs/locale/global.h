@@ -154,6 +154,29 @@
 
 /*********************************************************************************************/
 
+#define PAGECMD_INIT         1
+#define PAGECMD_LAYOUT       2
+#define PAGECMD_GETMINWIDTH  3
+#define PAGECMD_GETMINHEIGHT 4
+#define PAGECMD_SETDOMLEFT   5
+#define PAGECMD_SETDOMTOP    6
+#define PAGECMD_SETDOMWIDTH  7
+#define PAGECMD_SETDOMHEIGHT 8
+#define PAGECMD_MAKEGADGETS  9
+#define PAGECMD_ADDGADGETS   10
+#define PAGECMD_REMGADGETS   11
+#define PAGECMD_HANDLEINPUT  12
+#define PAGECMD_CLEANUP      13
+
+#define BORDER_X    4
+#define BORDER_Y    4
+#define TABBORDER_X 4
+#define TABBORDER_Y 4
+#define SPACE_X     4
+#define SPACE_Y     4
+
+/*********************************************************************************************/
+
 /* main.c */
 
 void Cleanup(STRPTR msg);
@@ -166,6 +189,18 @@ void KillMenus(void);
 void SetMenuFlags(void);
 
 STRPTR GetFile(void);
+
+/* page_language.c */
+
+LONG page_language_handler(LONG cmd, LONG param);
+
+/* page_country.c */
+
+LONG page_country_handler(LONG cmd, LONG param);
+
+/* page_timezone.c */
+
+LONG page_timezone_handler(LONG cmd, LONG param);
 
 /* locale.c */
 
