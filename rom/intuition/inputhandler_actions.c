@@ -330,8 +330,8 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 {
     struct IntWindow 	*w 	     = (struct IntWindow *)targetwindow;
     struct Layer	*targetlayer = targetwindow->WLayer, *L;
-    WORD		OldLeftEdge  = targetwindow->RelLeftEdge;
-    WORD		OldTopEdge   = targetwindow->RelTopEdge;
+    WORD		OldLeftEdge  = targetwindow->LeftEdge;
+    WORD		OldTopEdge   = targetwindow->TopEdge;
     WORD 		OldWidth     = targetwindow->Width;
     WORD 		OldHeight    = targetwindow->Height;
     WORD 		pos_dx, pos_dy, size_dx, size_dy;
@@ -381,8 +381,11 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 	if (w->ZipWidth    != ~0) w->ZipWidth    = OldWidth;
 	if (w->ZipHeight   != ~0) w->ZipHeight   = OldHeight;
 
-	if (pos_dx || pos_dy) UpdateMouseCoords(targetwindow);
-
+	if (pos_dx || pos_dy) {
+		UpdateMouseCoords(targetwindow);
+		if (HAS_CHILDREN(targetwindow))
+			move_family(targetwindow, pos_dx, pos_dy);
+	}
     } /* if (pos_dx || pos_dy || size_dx || size_dy) */
     
     if (size_dx || size_dy)
