@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE aros_host_ld HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP SED CHMOD PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST EGREP LIBOBJS aros_target_ar_ln aros_target_nm_ln aros_target_objcopy_ln aros_target_objdump_ln aros_target_ranlib_ln aros_target_strip_ln DISTCC CCACHE SHARED_LD KERNEL_LD TARGET_CC TARGET_AS TARGET_LD NOSTDINC_CFLAGS NOSTARTUP_LDFLAGS NIX_LDFLAGS DETACH_LDFLAGS NOSTDLIB_LDFLAGS aros_cc_pre AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_tools_dir aros_target_arch aros_target_cpu aros_target_variant aros_target_suffix aros_target_incl aros_target_cc aros_target_cc_includes aros_target_cc_path aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_config_cflags aros_config_aflags aros_target_ld aros_config_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor ENABLE_DBUS DBUS_CFLAGS DBUS_LIBFLAGS KERNEL_DBUS_KOBJ KERNEL_DBUS_INCLUDES aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -870,6 +870,7 @@ Optional Features:
   --enable-palm-debug-hack   Enable palm debug output hack in palm native (default=no)
   --enable-nesting-supervisor   Enable nesting supervisor support in unix (default=no)
   --enable-xshm-extension Enable X11 MIT-SHM extension default=yes
+  --enable-dbus           Enable DBUS support via dbus.library (default=no)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -8347,6 +8348,30 @@ else
 fi
 
 
+
+echo "$as_me:$LINENO: checking if building of dbus.library is enabled" >&5
+echo $ECHO_N "checking if building of dbus.library is enabled... $ECHO_C" >&6
+# Check whether --enable-dbus or --disable-dbus was given.
+if test "${enable_dbus+set}" = set; then
+  enableval="$enable_dbus"
+  dbus="yes"
+else
+  dbus="no"
+fi;
+if test "$dbus" = "yes" ; then
+    ENABLE_DBUS=1
+    DBUS_CFLAGS=`pkg-config --cflags dbus-1`
+    DBUS_LIBFLAGS=`pkg-config --libs dbus-1`
+    KERNEL_DBUS_KOBJ=kernel-dbus-kobj
+    KERNEL_DBUS_INCLUDES=kernel-dbus-includes
+else
+    ENABLE_DBUS=0
+fi
+echo "$as_me:$LINENO: result: $dbus" >&5
+echo "${ECHO_T}$dbus" >&6
+
+
+
 # Generic
 
 
@@ -8421,6 +8446,13 @@ fi
 
 
 # Unix/Hosted version related
+
+
+# DBUS related
+
+
+
+
 
 
 # Debug related
@@ -8521,7 +8553,7 @@ fi
           ac_config_commands="$ac_config_commands adflib/myaros.conf_executable"
 
 
-                                                                                                                                  ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros"
+                                                                                                                                            ac_config_files="$ac_config_files Makefile rom/mmakefile ${aros_inc_dir}/config.h:config/config.h.in ${aros_geninc_dir}/config.h:config/config.h.in ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in ${aros_targetcfg_dir}/target.cfg:config/target.cfg.in mmake.config ${aros_targetcfg_dir}/make.defaults:config/make.defaults.in ${aros_targetcfg_dir}/specs:config/specs.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-gcc:scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}${aros_target_suffix}-aros-ld:scripts/aros-ld.in ${aros_scripts_dir}/genshared:compiler/c_lib/source/lib_source/genshared.in ${aros_tools_dir}/genmf.py:tools/genmf/genmf.py tools/adflib/myconf.aros"
 
 
 cat >confcache <<\_ACEOF
@@ -9075,6 +9107,7 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+  "rom/mmakefile" ) CONFIG_FILES="$CONFIG_FILES rom/mmakefile" ;;
   "${aros_inc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_inc_dir}/config.h:config/config.h.in" ;;
   "${aros_geninc_dir}/config.h" ) CONFIG_FILES="$CONFIG_FILES ${aros_geninc_dir}/config.h:config/config.h.in" ;;
   "${aros_hostcfg_dir}/host.cfg" ) CONFIG_FILES="$CONFIG_FILES ${aros_hostcfg_dir}/host.cfg:config/host.cfg.in" ;;
@@ -9311,6 +9344,11 @@ s,@aros_bochs_hack@,$aros_bochs_hack,;t t
 s,@aros_serial_debug@,$aros_serial_debug,;t t
 s,@aros_palm_debug_hack@,$aros_palm_debug_hack,;t t
 s,@aros_nesting_supervisor@,$aros_nesting_supervisor,;t t
+s,@ENABLE_DBUS@,$ENABLE_DBUS,;t t
+s,@DBUS_CFLAGS@,$DBUS_CFLAGS,;t t
+s,@DBUS_LIBFLAGS@,$DBUS_LIBFLAGS,;t t
+s,@KERNEL_DBUS_KOBJ@,$KERNEL_DBUS_KOBJ,;t t
+s,@KERNEL_DBUS_INCLUDES@,$KERNEL_DBUS_INCLUDES,;t t
 s,@aros_debug@,$aros_debug,;t t
 s,@aros_mungwall_debug@,$aros_mungwall_debug,;t t
 s,@aros_stack_debug@,$aros_stack_debug,;t t

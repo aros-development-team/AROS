@@ -50,6 +50,11 @@ GUI_LIBFLAGS	:= @aros_gui_libflags@
 GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CFLAGS	:= @aros_gui_ccflags@
 
+# DBUS flags
+ENABLE_DBUS		:= @ENABLE_DBUS@
+DBUS_CFLAGS		:= @DBUS_CFLAGS@
+DBUS_LIBFLAGS		:= @DBUS_LIBFLAGS@
+
 # --------------------------------------------------------------------------
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
 # configured version of this file to find out a number of variables.

@@ -1,0 +1,245 @@
+/* Automatically generated header! Do not edit! */
+
+#ifndef CLIB_DBUS_PROTOS_H
+#define CLIB_DBUS_PROTOS_H
+
+/*
+**	$VER: dbus_protos.h $Id$ $Id$
+**
+**	C prototypes. For use with 32 bit integers only.
+**
+**	Copyright © 2001 Amiga, Inc.
+**	    All Rights Reserved
+*/
+
+#include <dbus/dbus.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+void dbus_address_entries_free(DBusAddressEntry **entries);
+const char * dbus_address_entry_get_method(DBusAddressEntry *entry);
+const char * dbus_address_entry_get_value(DBusAddressEntry *entry, const char *key);
+dbus_bool_t dbus_parse_address(const char *address, DBusAddressEntry ***entry, int *array_len, DBusError *error);
+DBusConnection * dbus_bus_get(DBusBusType type, DBusError *error);
+dbus_bool_t dbus_bus_register(DBusConnection *connection, DBusError *error);
+dbus_bool_t dbus_bus_set_base_service(DBusConnection *connection, const char *base_service);
+const char * dbus_bus_get_base_service(DBusConnection *connection);
+long unsigned int dbus_bus_get_unix_user(DBusConnection *connection, const char *service, DBusError *error);
+int dbus_bus_acquire_service(DBusConnection *connection, const char *service_name, unsigned int flags, DBusError *error);
+dbus_bool_t dbus_bus_service_exists(DBusConnection *connection, const char *service_name, DBusError *error);
+dbus_bool_t dbus_bus_activate_service(DBusConnection *connection, const char *service_name, dbus_uint32_t flags, dbus_uint32_t *result, DBusError *error);
+void dbus_bus_add_match(DBusConnection *connection, const char *rule, DBusError *error);
+void dbus_bus_remove_match(DBusConnection *connection, const char *rule, DBusError *error);
+DBusConnection * dbus_connection_open(const char *address, DBusError *error);
+DBusConnection * dbus_connection_ref(DBusConnection *connection);
+void dbus_connection_unref(DBusConnection *connection);
+void dbus_connection_disconnect(DBusConnection *connection);
+dbus_bool_t dbus_connection_get_is_connected(DBusConnection *connection);
+dbus_bool_t dbus_connection_get_is_authenticated(DBusConnection *connection);
+void dbus_connection_set_exit_on_disconnect(DBusConnection *connection, dbus_bool_t exit_on_disconnect);
+DBusPreallocatedSend * dbus_connection_preallocate_send(DBusConnection *connection);
+void dbus_connection_free_preallocated_send(DBusConnection *connection, DBusPreallocatedSend *preallocated);
+void dbus_connection_send_preallocated(DBusConnection *connection, DBusPreallocatedSend *preallocated, DBusMessage *message, dbus_uint32_t *client_serial);
+dbus_bool_t dbus_connection_send(DBusConnection *connection, DBusMessage *message, dbus_uint32_t *client_serial);
+dbus_bool_t dbus_connection_send_with_reply(DBusConnection *connection, DBusMessage *message, DBusPendingCall **pending_return, int timeout_milliseconds);
+DBusMessage * dbus_connection_send_with_reply_and_block(DBusConnection *connection, DBusMessage *message, int timeout_milliseconds, DBusError *error);
+void dbus_connection_flush(DBusConnection *connection);
+DBusMessage * dbus_connection_borrow_message(DBusConnection *connection);
+void dbus_connection_return_message(DBusConnection *connection, DBusMessage *message);
+void dbus_connection_steal_borrowed_message(DBusConnection *connection, DBusMessage *message);
+DBusMessage * dbus_connection_pop_message(DBusConnection *connection);
+DBusDispatchStatus dbus_connection_get_dispatch_status(DBusConnection *connection);
+DBusDispatchStatus dbus_connection_dispatch(DBusConnection *connection);
+dbus_bool_t dbus_connection_set_watch_functions(DBusConnection *connection, DBusAddWatchFunction add_function, DBusRemoveWatchFunction remove_function, DBusWatchToggledFunction toggled_function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_connection_set_timeout_functions(DBusConnection *connection, DBusAddTimeoutFunction add_function, DBusRemoveTimeoutFunction remove_function, DBusTimeoutToggledFunction toggled_function, void *data, DBusFreeFunction free_data_function);
+void dbus_connection_set_wakeup_main_function(DBusConnection *connection, DBusWakeupMainFunction wakeup_main_function, void *data, DBusFreeFunction free_data_function);
+void dbus_connection_set_dispatch_status_function(DBusConnection *connection, DBusDispatchStatusFunction function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_connection_get_unix_fd(DBusConnection *connection, int *fd);
+dbus_bool_t dbus_connection_get_unix_user(DBusConnection *connection, long unsigned int *uid);
+dbus_bool_t dbus_connection_get_unix_process_id(DBusConnection *connection, long unsigned int *pid);
+void dbus_connection_set_unix_user_function(DBusConnection *connection, DBusAllowUnixUserFunction function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_connection_add_filter(DBusConnection *connection, DBusHandleMessageFunction function, void *user_data, DBusFreeFunction free_data_function);
+void dbus_connection_remove_filter(DBusConnection *connection, DBusHandleMessageFunction function, void *user_data);
+dbus_bool_t dbus_connection_register_object_path(DBusConnection *connection, const char *path, const DBusObjectPathVTable *vtable, void *user_data);
+dbus_bool_t dbus_connection_register_fallback(DBusConnection *connection, const char *path, const DBusObjectPathVTable *vtable, void *user_data);
+dbus_bool_t dbus_connection_unregister_object_path(DBusConnection *connection, const char *path);
+dbus_bool_t dbus_connection_list_registered(DBusConnection *connection, const char *parent_path, char ***child_entries);
+dbus_bool_t dbus_connection_allocate_data_slot(dbus_int32_t *slot_p);
+void dbus_connection_free_data_slot(dbus_int32_t *slot_p);
+dbus_bool_t dbus_connection_set_data(DBusConnection *connection, dbus_int32_t slot, void *data, DBusFreeFunction free_data_func);
+void * dbus_connection_get_data(DBusConnection *connection, dbus_int32_t slot);
+void dbus_connection_set_change_sigpipe(dbus_bool_t will_modify_sigpipe);
+void dbus_connection_set_max_message_size(DBusConnection *connection, long int size);
+long int dbus_connection_get_max_message_size(DBusConnection *connection);
+void dbus_connection_set_max_received_size(DBusConnection *connection, long int size);
+long int dbus_connection_get_max_received_size(DBusConnection *connection);
+long int dbus_connection_get_outgoing_size(DBusConnection *connection);
+void dbus_error_init(DBusError *error);
+void dbus_error_free(DBusError *error);
+void dbus_set_error_const(DBusError *error, const char *name, const char *message);
+void dbus_move_error(DBusError *src, DBusError *dest);
+dbus_bool_t dbus_error_has_name(const DBusError *error, const char *name);
+dbus_bool_t dbus_error_is_set(const DBusError *error);
+void dbus_set_error(DBusError *error, const char *name, const char *format, ...);
+void * dbus_malloc(size_t bytes);
+void * dbus_malloc0(size_t bytes);
+void * dbus_realloc(void *memory, size_t bytes);
+void dbus_free(void *memory);
+void dbus_free_string_array(char **str_array);
+void dbus_shutdown(void);
+dbus_bool_t dbus_message_set_reply_serial(DBusMessage *message, dbus_uint32_t reply_serial);
+dbus_uint32_t dbus_message_get_serial(DBusMessage *message);
+dbus_uint32_t dbus_message_get_reply_serial(DBusMessage *message);
+DBusMessage * dbus_message_new(int message_type);
+DBusMessage * dbus_message_new_method_call(const char *service, const char *path, const char *interface, const char *method);
+DBusMessage * dbus_message_new_method_return(DBusMessage *method_call);
+DBusMessage * dbus_message_new_signal(const char *path, const char *interface, const char *name);
+DBusMessage * dbus_message_new_error(DBusMessage *reply_to, const char *error_name, const char *error_message);
+DBusMessage * dbus_message_new_error_printf(DBusMessage *reply_to, const char *error_name, const char *error_format, ...);
+DBusMessage * dbus_message_copy(const DBusMessage *message);
+DBusMessage * dbus_message_ref(DBusMessage *message);
+void dbus_message_unref(DBusMessage *message);
+int dbus_message_get_type(DBusMessage *message);
+dbus_bool_t dbus_message_set_path(DBusMessage *message, const char *object_path);
+const char * dbus_message_get_path(DBusMessage *message);
+dbus_bool_t dbus_message_get_path_decomposed(DBusMessage *message, char ***path);
+dbus_bool_t dbus_message_set_interface(DBusMessage *message, const char *interface);
+const char * dbus_message_get_interface(DBusMessage *message);
+dbus_bool_t dbus_message_set_member(DBusMessage *message, const char *member);
+const char * dbus_message_get_member(DBusMessage *message);
+dbus_bool_t dbus_message_set_error_name(DBusMessage *message, const char *error_name);
+const char * dbus_message_get_error_name(DBusMessage *message);
+dbus_bool_t dbus_message_set_destination(DBusMessage *message, const char *destination);
+const char * dbus_message_get_destination(DBusMessage *message);
+dbus_bool_t dbus_message_append_args(DBusMessage *message, int first_arg_type, ...);
+dbus_bool_t dbus_message_get_args(DBusMessage *message, DBusError *error, int first_arg_type, ...);
+dbus_bool_t dbus_message_get_args_valist(DBusMessage *message, DBusError *error, int first_arg_type, va_list var_args);
+dbus_bool_t dbus_message_iter_get_args(DBusMessageIter *iter, DBusError *error, int first_arg_type, ...);
+dbus_bool_t dbus_message_iter_init(DBusMessage *message, DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_has_next(DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_next(DBusMessageIter *iter);
+int dbus_message_iter_get_arg_type(DBusMessageIter *iter);
+int dbus_message_iter_get_array_type(DBusMessageIter *iter);
+char * dbus_message_iter_get_string(DBusMessageIter *iter);
+char * dbus_message_iter_get_object_path(DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_get_custom(DBusMessageIter *iter, char **name, unsigned char **value, int *len);
+dbus_bool_t dbus_message_iter_get_args_valist(DBusMessageIter *iter, DBusError *error, int first_arg_type, va_list var_args);
+unsigned char dbus_message_iter_get_byte(DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_get_boolean(DBusMessageIter *iter);
+dbus_int32_t dbus_message_iter_get_int32(DBusMessageIter *iter);
+dbus_uint32_t dbus_message_iter_get_uint32(DBusMessageIter *iter);
+dbus_int64_t dbus_message_iter_get_int64(DBusMessageIter *iter);
+dbus_uint64_t dbus_message_iter_get_uint64(DBusMessageIter *iter);
+double dbus_message_iter_get_double(DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_init_array_iterator(DBusMessageIter *iter, DBusMessageIter *array_iter, int *array_type);
+dbus_bool_t dbus_message_iter_init_dict_iterator(DBusMessageIter *iter, DBusMessageIter *dict_iter);
+dbus_bool_t dbus_message_iter_get_byte_array(DBusMessageIter *iter, unsigned char **value, int *len);
+dbus_bool_t dbus_message_iter_get_boolean_array(DBusMessageIter *iter, unsigned char **value, int *len);
+dbus_bool_t dbus_message_iter_get_int32_array(DBusMessageIter *iter, dbus_int32_t **value, int *len);
+dbus_bool_t dbus_message_iter_get_uint32_array(DBusMessageIter *iter, dbus_uint32_t **value, int *len);
+dbus_bool_t dbus_message_iter_get_int64_array(DBusMessageIter *iter, dbus_int64_t **value, int *len);
+dbus_bool_t dbus_message_iter_get_uint64_array(DBusMessageIter *iter, dbus_uint64_t **value, int *len);
+dbus_bool_t dbus_message_iter_get_double_array(DBusMessageIter *iter, double **value, int *len);
+dbus_bool_t dbus_message_iter_get_string_array(DBusMessageIter *iter, char ***value, int *len);
+dbus_bool_t dbus_message_iter_get_object_path_array(DBusMessageIter *iter, char ***value, int *len);
+char * dbus_message_iter_get_dict_key(DBusMessageIter *iter);
+void dbus_message_append_iter_init(DBusMessage *message, DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_append_nil(DBusMessageIter *iter);
+dbus_bool_t dbus_message_iter_append_boolean(DBusMessageIter *iter, dbus_bool_t value);
+dbus_bool_t dbus_message_iter_append_byte(DBusMessageIter *iter, unsigned char value);
+dbus_bool_t dbus_message_iter_append_int32(DBusMessageIter *iter, dbus_int32_t value);
+dbus_bool_t dbus_message_iter_append_uint32(DBusMessageIter *iter, dbus_uint32_t value);
+dbus_bool_t dbus_message_iter_append_int64(DBusMessageIter *iter, dbus_int64_t value);
+dbus_bool_t dbus_message_iter_append_uint64(DBusMessageIter *iter, dbus_uint64_t value);
+dbus_bool_t dbus_message_iter_append_double(DBusMessageIter *iter, double value);
+dbus_bool_t dbus_message_iter_append_string(DBusMessageIter *iter, const char *value);
+dbus_bool_t dbus_message_iter_append_object_path(DBusMessageIter *iter, const char *value);
+dbus_bool_t dbus_message_iter_append_custom(DBusMessageIter *iter, const char *name, const unsigned char *data, int len);
+dbus_bool_t dbus_message_iter_append_dict_key(DBusMessageIter *iter, const char *value);
+dbus_bool_t dbus_message_iter_append_array(DBusMessageIter *iter, DBusMessageIter *array_iter, int element_type);
+dbus_bool_t dbus_message_iter_append_dict(DBusMessageIter *iter, DBusMessageIter *dict_iter);
+dbus_bool_t dbus_message_append_args_valist(DBusMessage *message, int first_arg_type, va_list var_args);
+dbus_bool_t dbus_message_iter_append_boolean_array(DBusMessageIter *iter, const unsigned char *value, int len);
+dbus_bool_t dbus_message_iter_append_int32_array(DBusMessageIter *iter, const dbus_int32_t *value, int len);
+dbus_bool_t dbus_message_iter_append_uint32_array(DBusMessageIter *iter, const dbus_uint32_t *value, int len);
+dbus_bool_t dbus_message_iter_append_int64_array(DBusMessageIter *iter, const dbus_int64_t *value, int len);
+dbus_bool_t dbus_message_iter_append_uint64_array(DBusMessageIter *iter, const dbus_uint64_t *value, int len);
+dbus_bool_t dbus_message_iter_append_double_array(DBusMessageIter *iter, const double *value, int len);
+dbus_bool_t dbus_message_iter_append_byte_array(DBusMessageIter *iter, const unsigned char *value, int len);
+dbus_bool_t dbus_message_iter_append_string_array(DBusMessageIter *iter, const char **value, int len);
+dbus_bool_t dbus_message_iter_append_object_path_array(DBusMessageIter *iter, const char **value, int len);
+dbus_bool_t dbus_message_set_sender(DBusMessage *message, const char *sender);
+void dbus_message_set_no_reply(DBusMessage *message, dbus_bool_t no_reply);
+dbus_bool_t dbus_message_get_no_reply(DBusMessage *message);
+void dbus_message_set_auto_activation(DBusMessage *message, dbus_bool_t auto_activation);
+dbus_bool_t dbus_message_get_auto_activation(DBusMessage *message);
+const char * dbus_message_get_sender(DBusMessage *message);
+const char * dbus_message_get_signature(DBusMessage *message);
+dbus_bool_t dbus_message_is_method_call(DBusMessage *message, const char *interface, const char *method);
+dbus_bool_t dbus_message_is_signal(DBusMessage *message, const char *interface, const char *signal_name);
+dbus_bool_t dbus_message_is_error(DBusMessage *message, const char *error_name);
+dbus_bool_t dbus_message_has_destination(DBusMessage *message, const char *service);
+dbus_bool_t dbus_message_has_sender(DBusMessage *message, const char *service);
+dbus_bool_t dbus_message_has_signature(DBusMessage *message, const char *signature);
+dbus_bool_t dbus_set_error_from_message(DBusError *error, DBusMessage *message);
+dbus_bool_t dbus_message_allocate_data_slot(dbus_int32_t *slot_p);
+void dbus_message_free_data_slot(dbus_int32_t *slot_p);
+dbus_bool_t dbus_message_set_data(DBusMessage *message, dbus_int32_t slot, void *data, DBusFreeFunction free_data_func);
+void * dbus_message_get_data(DBusMessage *message, dbus_int32_t slot);
+int dbus_message_type_from_string(const char *type_str);
+DBusPendingCall * dbus_pending_call_ref(DBusPendingCall *pending);
+void dbus_pending_call_unref(DBusPendingCall *pending);
+dbus_bool_t dbus_pending_call_set_notify(DBusPendingCall *pending, DBusPendingCallNotifyFunction function, void *user_data, DBusFreeFunction free_user_data);
+void dbus_pending_call_cancel(DBusPendingCall *pending);
+dbus_bool_t dbus_pending_call_get_completed(DBusPendingCall *pending);
+DBusMessage * dbus_pending_call_get_reply(DBusPendingCall *pending);
+void dbus_pending_call_block(DBusPendingCall *pending);
+dbus_bool_t dbus_pending_call_allocate_data_slot(dbus_int32_t *slot_p);
+void dbus_pending_call_free_data_slot(dbus_int32_t *slot_p);
+dbus_bool_t dbus_pending_call_set_data(DBusPendingCall *pending, dbus_int32_t slot, void *data, DBusFreeFunction free_data_func);
+void * dbus_pending_call_get_data(DBusPendingCall *pending, dbus_int32_t slot);
+DBusServer * dbus_server_listen(const char *address, DBusError *error);
+DBusServer * dbus_server_ref(DBusServer *server);
+void dbus_server_unref(DBusServer *server);
+void dbus_server_disconnect(DBusServer *server);
+dbus_bool_t dbus_server_get_is_connected(DBusServer *server);
+char * dbus_server_get_address(DBusServer *server);
+void dbus_server_set_new_connection_function(DBusServer *server, DBusNewConnectionFunction function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_server_set_watch_functions(DBusServer *server, DBusAddWatchFunction add_function, DBusRemoveWatchFunction remove_function, DBusWatchToggledFunction toggled_function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_server_set_timeout_functions(DBusServer *server, DBusAddTimeoutFunction add_function, DBusRemoveTimeoutFunction remove_function, DBusTimeoutToggledFunction toggled_function, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_server_set_auth_mechanisms(DBusServer *server, const char **mechanisms);
+dbus_bool_t dbus_server_allocate_data_slot(dbus_int32_t *slot_p);
+void dbus_server_free_data_slot(dbus_int32_t *slot_p);
+dbus_bool_t dbus_server_set_data(DBusServer *server, int slot, void *data, DBusFreeFunction free_data_func);
+void * dbus_server_get_data(DBusServer *server, int slot);
+void dbus_internal_do_not_use_run_tests(const char *test_data_dir);
+DBusMutex * dbus_mutex_new(void);
+void dbus_mutex_free(DBusMutex *mutex);
+dbus_bool_t dbus_mutex_lock(DBusMutex *mutex);
+dbus_bool_t dbus_mutex_unlock(DBusMutex *mutex);
+DBusCondVar * dbus_condvar_new(void);
+void dbus_condvar_free(DBusCondVar *cond);
+void dbus_condvar_wait(DBusCondVar *cond, DBusMutex *mutex);
+dbus_bool_t dbus_condvar_wait_timeout(DBusCondVar *cond, DBusMutex *mutex, int timeout_milliseconds);
+void dbus_condvar_wake_one(DBusCondVar *cond);
+void dbus_condvar_wake_all(DBusCondVar *cond);
+dbus_bool_t dbus_threads_init(const DBusThreadFunctions *functions);
+int dbus_timeout_get_interval(DBusTimeout *timeout);
+void * dbus_timeout_get_data(DBusTimeout *timeout);
+void dbus_timeout_set_data(DBusTimeout *timeout, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_timeout_handle(DBusTimeout *timeout);
+dbus_bool_t dbus_timeout_get_enabled(DBusTimeout *timeout);
+int dbus_watch_get_fd(DBusWatch *watch);
+unsigned int dbus_watch_get_flags(DBusWatch *watch);
+void * dbus_watch_get_data(DBusWatch *watch);
+void dbus_watch_set_data(DBusWatch *watch, void *data, DBusFreeFunction free_data_function);
+dbus_bool_t dbus_watch_get_enabled(DBusWatch *watch);
+dbus_bool_t dbus_watch_handle(DBusWatch *watch, unsigned int flags);
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* CLIB_DBUS_PROTOS_H */
