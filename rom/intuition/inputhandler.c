@@ -644,6 +644,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
 	    	if (MouseCoordsRelative())
 		{
+		    struct Screen *scr;
+		    
 		    iihdata->DeltaMouseX = ie->ie_X;
 		    iihdata->DeltaMouseY = ie->ie_Y;
 		    
@@ -653,11 +655,17 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    if (ie->ie_X < 0) ie->ie_X = 0;
 		    if (ie->ie_Y < 0) ie->ie_Y = 0;
 		    
-		    if (w)
+		    lock = LockIBase(0);
+		    scr = IntuitionBase->ActiveScreen;
+
+		    if (scr)
 		    {
-		    	if (ie->ie_X >= w->WScreen->Width)  ie->ie_X = w->WScreen->Width - 1;
-			if (ie->ie_Y >= w->WScreen->Height) ie->ie_Y = w->WScreen->Height - 1;
+		    	if (ie->ie_X >= scr->Width)  ie->ie_X = scr->Width - 1;
+			if (ie->ie_Y >= scr->Height) ie->ie_Y = scr->Height - 1;
 		    }
+		    
+   		    UnlockIBase(lock);
+
 		}
 		else
 		{
