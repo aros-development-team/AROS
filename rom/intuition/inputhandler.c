@@ -109,16 +109,17 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 
     gpht.MethodID     = GM_HITTEST;
     gpht.gpht_GInfo   = gi;
-    gpht.gpht_Mouse.X = x;
-    gpht.gpht_Mouse.Y = y;
+    gpht.gpht_Mouse.X = x - GetLeft(gadget, window);
+    gpht.gpht_Mouse.Y = y - GetTop(gadget, window);
 
     for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
 	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
 	{
-	    /* Mousclick inside the gadget? */
+	    /* Mouseclick inside the gadget? */
 	    gx = x - GetLeft(gadget,window);
 	    gy = y - GetTop(gadget,window);
+
 	    if (gx >= 0
 		&& gy >= 0
 		&& gx < GetWidth(gadget,window)
@@ -213,7 +214,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
 	}
 
-
 	switch (ie->ie_Class)
 	{
 	    
@@ -234,8 +234,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	case IECLASS_RAWMOUSE:
 	    im->Code	= ie->ie_Code;
-	    im->MouseX	= ie->ie_X;
-	    im->MouseY	= ie->ie_Y;
 
 	    ptr = "RAWMOUSE";
 
@@ -243,13 +241,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    {
 	    case SELECTDOWN: {
 		BOOL new_gadget = FALSE;
-		struct Window *new_w;
-		
+		struct Window *new_w;		
 		D(bug("SELECTDOWN\n"));
-		
 		new_w = intui_FindActiveWindow(ie, IntuitionBase);
 		D(bug("iih:New active window: %p\n", new_w));
-		
+
 		if (!new_w)
 		{
 		    if (!w)
@@ -271,6 +267,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    }
 		}
 
+                /* at this point w contains the pointer to the active window */
+
+ 	        /* 
+	        **  The mouse coordinates relative to the upper left
+	        **  corner of the window
+	        */
+	        im->MouseX	= ie->ie_X - w->LeftEdge;
+	        im->MouseY	= ie->ie_Y - w->TopEdge;
 
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
@@ -391,6 +395,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
 
+ 	        /* 
+	        **  The mouse coordinates relative to the upper left
+	        **  corner of the window
+	        */
+	        im->MouseX	= ie->ie_X - w->LeftEdge;
+	        im->MouseY	= ie->ie_Y - w->TopEdge;
+
 
 		D(bug("SELECTUP\n"));
 		if (gadget)
@@ -491,6 +502,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
 
+ 	        /* 
+	        **  The mouse coordinates relative to the upper left
+	        **  corner of the window
+	        */
+	        im->MouseX	= ie->ie_X - w->LeftEdge;
+	        im->MouseY	= ie->ie_Y - w->TopEdge;
+
 		if (gadget)
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
@@ -548,6 +566,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    case MENUUP:
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
+
+ 	        /* 
+	        **  The mouse coordinates relative to the upper left
+	        **  corner of the window
+	        */
+	        im->MouseX	= ie->ie_X - w->LeftEdge;
+	        im->MouseY	= ie->ie_Y - w->TopEdge;
 
 		if (gadget)
 		{
@@ -609,6 +634,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		struct IntuiMessage *msg, *succ;
 
 		im->Class = IDCMP_MOUSEMOVE;
+ 	        /* 
+	        **  The mouse coordinates relative to the upper left
+	        **  corner of the window
+	        */
+	        im->MouseX	= ie->ie_X - w->LeftEdge;
+	        im->MouseY	= ie->ie_Y - w->TopEdge;
+
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
