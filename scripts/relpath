@@ -7,6 +7,7 @@
 # Example: $0 x/../y/z a/b -> ../../a/b
 # Example: $0 x/y/../z a/b -> ../../a/b
 # Example: $0 x/./y/z a/b -> ../../../a/b
+# Example (in x): $0 ../y/z a/b -> ../../x/a/b
 
 gawk 'BEGIN {
     from=ARGV[1];
@@ -15,6 +16,9 @@ gawk 'BEGIN {
     prefix="";
 
     gsub (/\/$/,"",from);
+
+    first=1;
+    cddir=".";
 
     if (substr(from,1,1)=="/")
 	print from
@@ -31,10 +35,28 @@ gawk 'BEGIN {
 		dir=substr(from,RSTART,RLENGTH);
 		from=substr(from,RSTART+RLENGTH+1);
 
+		if (dir!="..")
+		    first=0;
+
 		if (dir != "." && dir != "..")
+		{
 		    prefix=prefix "../";
+		}
 		else if (dir=="..")
-		    prefix=substr(prefix,4);
+		{
+		    if (first)
+		    {
+			cmd="cd " cddir " ; pwd";
+			cmd | getline;
+			close (cmd);
+			path=$1;
+			gsub(/.*\//,"",path);
+			to=path "/" to;
+			cddir=cddir "/..";
+		    }
+		    else
+			prefix=substr(prefix,4);
+		}
 	    }
 	}
 
