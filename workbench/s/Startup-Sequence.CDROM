@@ -42,8 +42,6 @@ AddDatatypes REFRESH QUIET
 IPrefs
 Run <NIL: >NIL: ConClip
 
-
-
 ; -- BEGIN "AROS under construction" section -------------------------
 
 SetClock LOAD
@@ -60,9 +58,6 @@ SetClock LOAD
 Assign FDSK: SYS:DiskImages
 ;Mount FDSK0:
 
-; Install a Workbench screen background pattern.
-Run <NIL: >NIL: ScreenPattern
-
 PATH SYS:Demos ADD QUIET
 
 If exists C:RexxMast
@@ -71,7 +66,6 @@ If exists C:RexxMast
 EndIf
 
 ; -- END "AROS under construction" section ---------------------------
-
 
 If EXISTS S:User-Startup
   Execute S:User-Startup
