@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/boopsi.h>
+#include <exec/memory.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
@@ -23,7 +24,7 @@
 
 #undef DEBUG
 #define DEBUG 0
-#	include <aros/debug.h>
+#include <aros/debug.h>
 
 #undef IntuitionBase
 #define IntuitionBase ((struct IntuitionBase *)(cl->cl_UserData))
@@ -33,12 +34,15 @@ struct StrGData
 {
     struct StringInfo	StrInfo;
     struct StringExtend	StrExtend;
-    UBYTE		PenFlags;
+    UBYTE		Flags;
 
 };
 
-#define PFLG_INACTIVE_SET	(1 << 0)
-#define PFLG_ACTIVE_SET		(1 << 1)
+#define SFLG_INACTIVE_SET	(1 << 0)
+#define SFLG_ACTIVE_SET		(1 << 1)
+#define SFLG_BUFFER_ALLOCATED	(1 << 2)
+#define SFLG_WORKBUF_ALLOCATED	(1 << 3)
+#define SFLG_UNDOBUF_ALLOCATED	(1 << 4)
 
 /*****************
 ** StrG::Set()  **
@@ -50,7 +54,7 @@ struct StrGData
     	flagvar &= ~flag;
 
 
-IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
+STATIC IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
 {
     IPTR retval = 0UL;
     struct TagItem *tag, *tstate;
@@ -78,10 +82,13 @@ IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
     	    break;
     	    
     	case STRINGA_TextVal:		/* [ISGNU] */
-	    strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
-     	    EG(o)->Activation &= ~GACT_LONGINT;
-     	    retval = 1UL;
-     	    notify = TRUE;
+    	    if (msg->MethodID != OM_NEW)
+    	    {
+	    	strcpy(data->StrInfo.Buffer, (STRPTR)tidata);
+     	    	EG(o)->Activation &= ~GACT_LONGINT;
+     	    	retval = 1UL;
+     	    	notify = TRUE;
+     	    }
     	    break;
 
     	case STRINGA_MaxChars:		/* [I] */
@@ -179,7 +186,7 @@ IPTR strg_set(Class *cl, Object * o, struct opSet *msg)
 **  StrG::Get()  **
 ******************/
 
-IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
+STATIC IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
 {
     IPTR retval = 1UL;
     struct StrGData *data = INST_DATA(cl, o);
@@ -211,30 +218,89 @@ IPTR strg_get(Class *cl, Object * o, struct opGet *msg)
 **  StrG::New()  **
 ******************/
  
-Object *strg_new(Class *cl, Object * o, struct opSet *msg)
+STATIC Object *strg_new(Class *cl, Object * o, struct opSet *msg)
 {
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
     if (o)
     {
+    	WORD maxchars;
+    	STRPTR textval;
+    	
     	struct StrGData *data = INST_DATA(cl, o);
     	memset(data, 0, sizeof (struct StrGData));
     	
     	/* Set some defaults */
+    	data->StrInfo.MaxChars = 80;
     	
     	strg_set(cl, o, msg);
+    	
+    	/* If no buffers have been supplied, then allocate them */
+    	maxchars = data->StrInfo.MaxChars;
+    	if (!data->StrInfo.Buffer)
+    	{
+    	    data->StrInfo.Buffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+    	    if (!data->StrInfo.Buffer)
+    	    	goto failure;
+    	    data->Flags |= SFLG_BUFFER_ALLOCATED;
+    	}
+    	if (!data->StrInfo.UndoBuffer)
+    	{
+    	    data->StrInfo.UndoBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+    	    if (!data->StrInfo.UndoBuffer)
+    	    	goto failure;
+    	    data->Flags |= SFLG_UNDOBUF_ALLOCATED;
+    	}
+    	if (!data->StrExtend.WorkBuffer)
+    	{
+    	    data->StrExtend.WorkBuffer = (STRPTR)AllocVec(maxchars, MEMF_ANY);
+    	    if (!data->StrExtend.WorkBuffer)
+    	    	goto failure;
+    	    data->Flags |= SFLG_WORKBUF_ALLOCATED;
+    	}
+    	
+    	/* Get inital string contents */
+    	textval = (STRPTR)GetTagData(STRINGA_TextVal, NULL, msg->ops_AttrList);
+    	if (textval)
+	{
+	    strcpy(data->StrInfo.Buffer, textval);
+	    D(bug("strgclass:Initializing string gadget to value %s\n", textval));
+     	    EG(o)->Activation &= ~GACT_LONGINT;
+     	}
     	
     	EG(o)->SpecialInfo = &(data->StrInfo);
     	EG(o)->Flags |= GFLG_STRINGEXTEND;
     	data->StrInfo.Extension = &(data->StrExtend);
     }
     return (o);
+    
+failure:
+    CoerceMethod(cl, o, OM_DISPOSE);
+    
+    return (NULL);
 }
 
+/**********************
+**  StrG::Dispose()  **
+**********************/
+STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
+{
+    struct StrGData *data = INST_DATA(cl, o);
+    if ((data->StrInfo.Buffer) && (data->Flags & SFLG_BUFFER_ALLOCATED))
+    	FreeVec(data->StrInfo.Buffer);
+
+    if ((data->StrInfo.UndoBuffer) && (data->Flags & SFLG_UNDOBUF_ALLOCATED))
+    	FreeVec(data->StrInfo.UndoBuffer);
+
+    if ((data->StrExtend.WorkBuffer) && (data->Flags & SFLG_WORKBUF_ALLOCATED))
+    	FreeVec(data->StrExtend.WorkBuffer);
+    	
+    return;
+}
 /*********************
 **  Strg::Render()  **
 *********************/
 
-VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
+STATIC VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct StrGData *data = INST_DATA(cl, o);
     /* This is a kludge to set default values for 
@@ -242,7 +308,7 @@ VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
     ** be set during OM_NEW, because we then know nothing about
     ** our display environment
     */
-    if (!(data->PenFlags & PFLG_INACTIVE_SET))
+    if (!(data->Flags & SFLG_INACTIVE_SET))
     {
     	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     	
@@ -250,7 +316,7 @@ VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
     	data->StrExtend.Pens[1] = pens[BACKGROUNDPEN];
     }
 
-    if (!(data->PenFlags & PFLG_ACTIVE_SET))
+    if (!(data->Flags & SFLG_ACTIVE_SET))
     {
     	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
     	
@@ -258,52 +324,10 @@ VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
     	data->StrExtend.ActivePens[1] = pens[SHINEPEN];
     }
     
-    switch (msg->gpr_Redraw)
-    {
-    case GREDRAW_REDRAW: {
-    	#undef IM
-    	#define IM(im)	((struct Image *)im)
-    	
-	ULONG x, y;
-
-	if (EG(o)->GadgetRender)
-	{
-	    struct IBox container;
-	    GetGadgetIBox(o, msg->gpr_GInfo, &container);
-
-	    /* center image position, we assume image top and left is 0 */
-	    SetAttrs(EG(o)->GadgetRender,
-                         IA_Width, container.Width + 4,
-                         IA_Height, container.Height + 4,
-                         TAG_DONE);
-
-	    x = container.Left - 2; 
-	    
-	    /*(container.Width / 2) -
-		(IM(EG(o)->GadgetRender)->Width / 2);*/
-		
-	    y = container.Top - 2; /* + (container.Height / 2) -
-		(IM(EG(o)->GadgetRender)->Height / 2) - 2;*/
-
-	    D(bug("strg: Rendering framing image at pos (%d,%d)\n", x, y));
-	    DrawImageState(msg->gpr_RPort,
-		    IM(EG(o)->GadgetRender),
-		    x, y,
-		    ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-		    msg->gpr_GInfo->gi_DrInfo);
-	} /* if (gadget has a GadgetRender image) */
-   	    	
-	UpdateStrGadget((struct Gadget *)o,
-    	    	    msg->gpr_GInfo->gi_Window,
-    	    	    IntuitionBase);
-    	} break;
-    	    	
-    case GREDRAW_UPDATE:
-	UpdateStrGadget((struct Gadget *)o,
+    UpdateStrGadget((struct Gadget *)o,
     	   msg->gpr_GInfo->gi_Window,
     	   IntuitionBase);
-    	break;
-    }
+    	   
     return;
 }
 
@@ -311,36 +335,45 @@ VOID strg_render(Class *cl, Object *o, struct gpRender *msg)
 /**************************
 **  StrG::HandleInput()  **
 **************************/
-IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
+STATIC IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
 
     ULONG ret;
-    IPTR retval = 0UL;
+    IPTR retval = GMR_MEACTIVE;
     
     UWORD imsgcode;
     struct InputEvent *ie = msg->gpi_IEvent;
     
-    if ((ie->ie_Class == IECLASS_RAWMOUSE) && (ie->ie_Code == SELECTDOWN))
+    if (ie->ie_Class == IECLASS_RAWMOUSE)
     {
-    	struct IBox container;
+    	if (ie->ie_Code == SELECTDOWN)
+        {
+    	    struct IBox container;
     
-    	GetGadgetIBox(o, msg->gpi_GInfo, &container);
+    	    GetGadgetIBox(o, msg->gpi_GInfo, &container);
     	
-    	/* Click outside gadget */
-    	if (    (ie->ie_X > container.Left + container.Width)
-    	     || (ie->ie_X < container.Left)
-    	     || (ie->ie_Y > container.Top  + container.Height)
-    	     || (ie->ie_Y < container.Top))
+    	    /* Click outside gadget ? */
+    	    if (    (ie->ie_X > container.Left + container.Width)
+    	     	 || (ie->ie_X < container.Left)
+    	     	 || (ie->ie_Y > container.Top  + container.Height)
+    	     	 || (ie->ie_Y < container.Top))
     	     
-    	{
-    	     retval = GMR_REUSE;
-    	     
+    	    {
+    	     	retval = GMR_REUSE;
+    	    }
     	}
+    	/* Just to prevent a whole lot of MOUSE_MOVE messages being passed */
+	else if (ie->ie_Code == IECODE_NOBUTTON)
+    	{
+    	    return (retval);
+    	}    
     }
     
-    if (!retval)
+    
+    if (retval == GMR_MEACTIVE)
     {    
-    	ret = HandleStrInput((struct Gadget *)o
+        
+        ret = HandleStrInput((struct Gadget *)o
 	    		,msg->gpi_GInfo
 	    		,ie
 	    		,&imsgcode
@@ -375,7 +408,7 @@ IPTR strg_handleinput(Class *cl, Object *o, struct gpInput *msg)
 /*************************
 **  Strg::GoInactive()  **
 *************************/
-IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+STATIC IPTR strg_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 {
     struct RastPort *rp;
     
@@ -436,8 +469,6 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 {
     IPTR retval = 0UL;
 
-    D(bug("strg dispatcher: %d\n", msg->MethodID));
-
     switch(msg->MethodID)
     {
     	case GM_RENDER:
@@ -467,6 +498,10 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 
 	case OM_NEW:
 	    retval = (IPTR)strg_new(cl, o, (struct opSet *)msg);
+	    break;
+	
+	case OM_DISPOSE:
+	    strg_dispose(cl, o, msg);
 	    break;
 
 	case OM_SET:
@@ -504,7 +539,7 @@ AROS_UFH3(STATIC IPTR, dispatch_strgclass,
 	    break;
     } /* switch */
 
-    ReturnPtr ("strg disp", IPTR, retval);
+    return (retval);
 }  /* dispatch_strgclass */
 
 
