@@ -524,11 +524,6 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    }
 			    data->first_selected = NULL;
 
-			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
-			    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
-			    data->mouse_pressed = 1;
-
 			    node = List_First(&data->icon_list);
 			    while (node)
 			    {
@@ -550,6 +545,15 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				data->last_selected = node;
 				data->last_secs = msg->imsg->Seconds;
 				data->last_mics = msg->imsg->Micros;
+
+				/* After a double click you often open a new window
+				 * and since Zune doesn't not support the faking
+				 * of SELECTUP events only change the Events
+				 * if not doubleclicked */
+				DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+				DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+				data->mouse_pressed = 1;
 			    }
 
 			    MUI_Redraw(obj,MADF_DRAWOBJECT);
@@ -577,7 +581,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 		    {
 		    	int move_x = mx;
 		    	int move_y = my;
-		    	
+
 			if (data->first_selected && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
 			{
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
