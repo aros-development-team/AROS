@@ -203,6 +203,7 @@ void _FreeLayer(struct Layer * l, struct LayersBase *LayersBase)
   DisposeRegion(l->DamageList);
   DisposeRegion(l->VisibleRegion);
   DisposeRegion(l->shape);
+  DisposeRegion(l->visibleshape);
   
   FreeMem(l, sizeof(struct Layer));
 }
@@ -1053,8 +1054,7 @@ int _BackupPartsOfLayer(struct Layer * l,
   
   ClearRegionRegion(hide_region,l->VisibleRegion);
   _SetRegion(l->VisibleRegion, &r);
-  AndRegionRegion(l->shape,&r);
-  AndRegionRegion(l->parent->shape,&r);
+  AndRegionRegion(l->visibleshape,&r);
 
   newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
 
@@ -1113,8 +1113,7 @@ int _ShowPartsOfLayer(struct Layer * l,
 
   OrRegionRegion(show_region,l->VisibleRegion);
   _SetRegion(l->VisibleRegion,&r);
-  AndRegionRegion(l->shape,&r);
-  AndRegionRegion(l->parent->shape,&r);
+  AndRegionRegion(l->visibleshape,&r);
   
   newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
 

@@ -229,6 +229,9 @@
       goto failexit;
     if (NULL == (l->VisibleRegion = NewRegion()))
       goto failexit; 
+    if (NULL == (l->visibleshape = NewRegion()))
+      goto failexit;
+    
     l->visible = visible;
 
     if (NULL == li->check_lp)
@@ -305,8 +308,6 @@
        */
       struct Layer * _l = l->back;
       struct Layer * lparent = l->parent;
-      struct Region rtmp;
-      rtmp.RegionRectangle = NULL;
 
       /*
        * Does this layer have a layer in front of it?
@@ -317,15 +318,13 @@
       if (l->front)
       {
         _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
-        _SetRegion(l->front->shape, &rtmp);
-        AndRegionRegion(l->front->parent->shape, &rtmp);
-        ClearRegionRegion(&rtmp, l->VisibleRegion);
+        ClearRegionRegion(l->front->visibleshape, l->VisibleRegion);
       }
       else
         _SetRegion(li->check_lp->shape, l->VisibleRegion);
      
-      _SetRegion(l->shape, &rtmp);
-      AndRegionRegion(l->parent->shape, &rtmp);
+      _SetRegion(l->shape, l->visibleshape);
+      AndRegionRegion(l->parent->shape, l->visibleshape);
      
       /*
        * First tell all layers behind this layer to
@@ -335,9 +334,9 @@
       while (1)
       {
         if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-          _BackupPartsOfLayer(_l, l->shape, 0, FALSE, LayersBase);
+          _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
         else
-          ClearRegionRegion(&rtmp, _l->VisibleRegion);
+          ClearRegionRegion(l->visibleshape, _l->VisibleRegion);
         
         if (_l == lparent)
         {
@@ -349,7 +348,6 @@
         _l = _l->back;
       }
 
-      ClearRegion(&rtmp);
     }
     /*
      * Show the layer according to its visible area
@@ -375,6 +373,8 @@ failexit:
       DisposeRegion(l->VisibleRegion);
     if (l->DamageList)
       DisposeRegion(l->DamageList);
+    if (l->visibleshape)
+      DisposeRegion(l->visibleshape);
     FreeMem(l, sizeof(struct Layer));
   }
 
