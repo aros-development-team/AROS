@@ -7,11 +7,11 @@
 # Things of interest.
 SRC	:=  flexcat.c
 SDFILES	:=  C_c_orig.sd C_h_orig.sd
-SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
 -include $(TOP)/config/make.cfg
 
 USER_CFLAGS := -Wunused -O3
+SD_OUT	:=  $(foreach f,$(SDFILES),$(TOOLDIR)/$(f))
 
 # Try and get some defaults if we couldn't read make.cfg
 HOST_CC	    ?= $(CC)
@@ -23,6 +23,7 @@ CP	    ?= cp
 TOOLDIR	    ?= .
 STRIP	    ?= strip
 MECHO	    ?= echo
+
 
 all : $(FLEXCAT) copy_sd_files
 
