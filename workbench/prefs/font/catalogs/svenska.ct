@@ -7,38 +7,6 @@ MSG_ERROR_CANT_CREATE_APPLICATION
 Kan inte skapa applikationsobjekt.
 ; Can't create application object.
 ;
-MSG_CANT_OPEN_LIB
-Kan inte öppna %s V%ld!\n
-; Can't open %s V%ld!
-;
-MSG_CANT_LOCK_SCR
-Kan inte låsa allmän skärm!
-; Can't lock public screen!
-;
-MSG_CANT_GET_DRI
-Kan inte skapa DrawInfo!
-; Can't get DrawInfo!
-;
-MSG_CANT_GET_VI
-Kan inte skapa VisualInfo!
-; Can't get VisualInfo!
-;
-MSG_CANT_LAYOUT_MENUS
-Kan inte lägga ut menyer!
-; Can't layout menus!
-;
-MSG_CANT_CREATE_GADGET
-Kan inte skapa knappar!
-; Can't create gadgets!
-;
-MSG_CANT_CREATE_MENUS
-Kan inte skapa menyer!
-; Can't create menus!
-;
-MSG_CANT_CREATE_WIN
-Kan inte skapa fönster!
-; Can't create window!
-;
 MSG_CANT_CREATE_REQ
 Kan inte skapa filväljare!
 ; Can't open create filerequester!
