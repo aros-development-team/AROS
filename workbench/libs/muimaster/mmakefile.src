@@ -11,7 +11,32 @@ DESTDIR   := $(SLIBDIR)
 
 FILES     := muimaster_init
 
-FUNCTIONS := dummyfunction
+FUNCTIONS := \
+	mui_addclipping \
+	mui_addclipregion \
+	mui_allocaslrequest \
+	mui_aslrequest \
+	mui_beginrefresh \
+	mui_createcustomclass \
+	mui_deletecustomclass \
+	mui_disposeobject \
+	mui_endrefresh \
+	mui_error \
+	mui_freeaslrequest \
+	mui_freeclass \
+	mui_getclass \
+	mui_layout \
+	mui_makeobject \
+	mui_newobject \
+	mui_obtainpen \
+	mui_redraw \
+	mui_rejectidcmp \
+	mui_releasepen \
+	mui_removeclipping \
+	mui_removeclipregion \
+	mui_request \
+	mui_requestidcmp \
+	mui_seterror
 
 %define_libs prelibs=-l$(LIBNAME)
 
