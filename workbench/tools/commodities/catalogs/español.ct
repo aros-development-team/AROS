@@ -8,11 +8,11 @@ MSG_CANT_OPEN_LIB
 ; Can't open %s V%ld!\n
 ;
 MSG_CANT_LOCK_SCR
-¡No puedo lockar la pantalla publica!\n
+¡No puedo fijar la pantalla publica!\n
 ; Can't lock public screen!\n
 ;
 MSG_CANT_GET_VI
-¡No puedo encontrar VisualInfo!\n
+¡No puedo tomar la información visual!\n
 ; Can't get VisualInfo!\n
 ;
 MSG_CANT_CREATE_GADGET
@@ -20,11 +20,11 @@ MSG_CANT_CREATE_GADGET
 ; Can't create gadgets!\n
 ;
 MSG_CANT_CREATE_MENUS
-¡No puedo crear los menus!\n
+¡No puedo crear los menús!\n
 ; Can't create menus!\n
 ;
 MSG_CANT_LAYOUT_MENUS
-!No puedo layout los menus!\n
+!No puedo layout los menús!\n
 ; Can't layout menus!\n
 ;
 MSG_CANT_CREATE_WIN
@@ -32,11 +32,11 @@ MSG_CANT_CREATE_WIN
 ; Can't create window!\n
 ;
 MSG_CANT_ALLOCATE_MEM
-¡No puedo reservar memory para la aplicacion\n
+¡No puedo reservar memory para la aplicación\n
 ; Can't allocate application memory!\n
 ;
 MSG_CANT_CREATE_MSGPORT
-¡No puedo crear el MessagePort!\n
+¡No puedo crear el puerto de mensajes!\n
 ; Can't create message port!\n
 ;
 MSG_CANT_CREATE_BROKER
@@ -48,7 +48,7 @@ MSG_CANT_CREATE_CUSTOM
 ; Can't create CxCustom object!\n
 ;
 MSG_OK
-Vale
+OK
 ; Ok
 ;
 MSG_MEN_PROJECT
@@ -60,11 +60,11 @@ Q\0Salir
 ; Q\0Quit
 ;
 MSG_EXCHANGE_CXNAME
-Exchange
+Cambio
 ; Exchange
 ;
 MSG_EXCHANGE_CXTITLE
-Commodities Exchange
+Cambia Commodities
 ; Commodities Exchange
 ;
 MSG_EXCHANGE_CXDESCR
@@ -72,7 +72,7 @@ Controla system commodities
 ; Controls system commodities
 ;
 MSG_EXCHANGE_WINTITLE
-Exchange
+Cambio
 ; Exchange
 ;
 MSG_EXCHANGE_LISTVIEW
@@ -80,7 +80,7 @@ Commodities disponibles
 ; Available commodities
 ;
 MSG_EXCHANGE_INFO
-Informacion
+Información
 ; Information
 ;
 MSG_EXCHANGE_GAD_SHOW
@@ -152,7 +152,7 @@ Activa la ventana debajo de la mouse
 ; Activates the window under the mouse
 ;
 MSG_STARTMENU_CXNAME
-StartMenu
+StartMenú
 ; StartMenu
 ;
 MSG_STARTMENU_CXTITLE
@@ -160,7 +160,7 @@ System Programm Starter
 ; System Program Starter
 ;
 MSG_STARTMENU_CXDESCR
-Lanza programas del menu
+Lanza programas del menú
 ; Program launch commodity
 ;
 MSG_FKEY_CXNAME
@@ -216,7 +216,7 @@ Empqueñecer ventana
 ; Shrink Window
 ;
 MSG_FKEY_CMD_TOGGLE_WIN_SIZE
-Conmutar dimension de la ventana
+Conmutar dimensión de la ventana
 ; Toggle Window Size
 ;
 MSG_FKEY_CMD_INSERT_TEXT
