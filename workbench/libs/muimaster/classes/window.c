@@ -35,10 +35,11 @@
 #include "classes/window.h"
 #include "classes/area.h"
 #include "imspec.h"
+#include "prefs.h"
 
 #include "muimaster_intern.h"
 
-//#define MYDEBUG 1
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
@@ -168,9 +169,7 @@ struct __dummyXFC3__
 
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
-    int i;
-    struct ZunePrefsNew *prefs = muiGlobalInfo(obj)->mgi_Prefs;
-
+    ULONG rgbtable[3 * 3];
     Object *temp_obj;
     ULONG val;
 
@@ -192,9 +191,36 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     mri->mri_FocusPixel = MUI_ObtainPen (mri, &__zprefs.active_object_color, 0);
 #endif
 
+    mri->mri_PensStorage[MPEN_SHINE] = mri->mri_DrawInfo->dri_Pens[SHINEPEN];
+    mri->mri_PensStorage[MPEN_BACKGROUND] = mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
+    mri->mri_PensStorage[MPEN_SHADOW] = mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
+    mri->mri_PensStorage[MPEN_TEXT] = mri->mri_DrawInfo->dri_Pens[TEXTPEN];
+    mri->mri_PensStorage[MPEN_FILL] = mri->mri_DrawInfo->dri_Pens[FILLPEN];
 
-    for (i=0;i<MPEN_COUNT;i++)
-	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHINEPEN], 1, rgbtable);
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN], 1, rgbtable+3);
+    GetRGB32(mri->mri_Colormap, mri->mri_DrawInfo->dri_Pens[SHADOWPEN], 1, rgbtable+6);
+
+#define DO_HALFSHINE_GUN(a,b) ({ ULONG val = ((((a)>>24) + 3 * ((b)>>24)) / 4); val + (val<<8) + (val<<16) + (val<<24);})
+#define DO_HALFSHADOW_GUN(a,b) ({ ULONG val = ((((a)>>24) + 5 * ((b)>>24)) / 6); val + (val<<8) + (val<<16) + (val<<24);})
+    mri->mri_PensStorage[MPEN_HALFSHINE] = 
+	ObtainBestPenA(mri->mri_Colormap,
+		       DO_HALFSHINE_GUN(rgbtable[0], rgbtable[3]),
+		       DO_HALFSHINE_GUN(rgbtable[1], rgbtable[4]),
+		       DO_HALFSHINE_GUN(rgbtable[2], rgbtable[5]), NULL);
+
+    mri->mri_PensStorage[MPEN_HALFSHADOW] = 
+	ObtainBestPenA(mri->mri_Colormap,
+		       DO_HALFSHADOW_GUN(rgbtable[6], rgbtable[3]),
+		       DO_HALFSHADOW_GUN(rgbtable[7], rgbtable[4]),
+		       DO_HALFSHADOW_GUN(rgbtable[8], rgbtable[5]), NULL);
+#undef DO_HALFSHINE_GUN
+#undef DO_HALFSHADOW_GUN
+
+/* I'm really not sure that MUI does this for MPEN_MARK, but it seems mostly acceptable -dlc */
+    mri->mri_PensStorage[MPEN_MARK] =
+	ObtainBestPenA(mri->mri_Colormap, 0xf4f4f4f4, 0xb5b5b5b5, 0x8b8b8b8b, NULL);
+
     mri->mri_Pens = mri->mri_PensStorage;
 
     mri->mri_LeftImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,LEFTIMAGE,TAG_DONE);
@@ -232,9 +258,9 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 
 void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 {
-    int i;
-    for (i=0;i<MPEN_COUNT;i++)
-	ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[i]);
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHINE]);
+    ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
 
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
@@ -1612,7 +1638,8 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    if (data->wd_ScreenTitle) FreeVec(data->wd_ScreenTitle);
 		    data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
 		    if (data->wd_RenderInfo.mri_Window)
-			SetWindowTitles(data->wd_RenderInfo.mri_Window, (CONST_STRPTR)~0, data->wd_ScreenTitle);
+			SetWindowTitles(data->wd_RenderInfo.mri_Window,
+					(CONST_STRPTR)~0, data->wd_ScreenTitle);
 		    break;
 
 	    case    MUIA_Window_CloseGadget:
