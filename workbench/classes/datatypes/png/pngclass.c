@@ -359,8 +359,8 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	   as picture.datatype should handle it automatically when
 	   we use PBPAFMT_GREY8. But just to be sure ... */
 	
-	if (GetDTAttrs(o, PDTA_ColorRegisters, (IPTR *)&colorregs,
-	    	    	  PDTA_CRegs	     , (IPTR *)&cregs	 ,
+	if (GetDTAttrs(o, PDTA_ColorRegisters, (IPTR) &colorregs,
+	    	    	  PDTA_CRegs	     , (IPTR) &cregs	 ,
 			  TAG_DONE                                ) == 2)
 	{
 	    int i;
@@ -420,7 +420,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 		{
 		    if(!DoSuperMethod(cl, o,
 				      PDTM_WRITEPIXELARRAY, // Method_ID
-				      buf,		    // PixelData
+				      (IPTR) buf,	    // PixelData
 				      png.png_format,	    // PixelFormat
 				      0,		    // PixelArrayMod (number of bytes per row)
 				      0,		    // Left edge
@@ -445,10 +445,10 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     png_destroy_read_struct(&png.png_ptr, &png.png_info_ptr, &png.png_end_info_ptr);
     
     /* Pass picture size to picture.datatype */
-    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
-    SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz, png.png_width,
-			      DTA_NominalVert , png.png_height,
-			      DTA_ObjName     , name,
+    GetDTAttrs( o, DTA_Name, (IPTR) &name, TAG_DONE );
+    SetDTAttrs(o, NULL, NULL, DTA_NominalHoriz,        png.png_width,
+			      DTA_NominalVert ,        png.png_height,
+			      DTA_ObjName     , (IPTR) name,
 			      TAG_DONE);
 
     D(bug("png.datatype/LoadPNG(): Normal Exit\n"));

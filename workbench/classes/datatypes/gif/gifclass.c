@@ -256,8 +256,8 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
     bmhd->bmh_Depth  = scrnumplanes;
 
     /* get empty colormap to fill in colormap to use*/
-    if( !(GetDTAttrs(o, PDTA_ColorRegisters, &colormap,
-			PDTA_CRegs, &colorregs,
+    if( !(GetDTAttrs(o, PDTA_ColorRegisters, (IPTR) &colormap,
+			PDTA_CRegs, (IPTR) &colorregs,
 			TAG_DONE ) == 2) ||
 	!(colormap && colorregs) )
     {
@@ -376,11 +376,11 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
     D(bug("gif.datatype/LoadGIF() --- numcolors %d\n", numcolors));
 
     /* Pass attributes to picture.datatype */
-    GetDTAttrs( o, DTA_Name, (&name), TAG_DONE );
+    GetDTAttrs( o, DTA_Name, (IPTR) &name, TAG_DONE );
     SetDTAttrs(o, NULL, NULL, PDTA_NumColors, numcolors,
 			      DTA_NominalHoriz, scrwidth,
 			      DTA_NominalVert , scrheight,
-			      DTA_ObjName     , name,
+			      DTA_ObjName     , (IPTR) name,
 			      TAG_DONE);
 
 #if LEGACY
@@ -512,7 +512,7 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
     unsigned int            width, height, widthxheight, numplanes, numcolors;
     struct BitMapHeader     *bmhd;
     long                    *colorregs;
-    int                     i, j, ret;
+    int                     i, ret;
 #if LEGACY
     struct BitMap           *bm;
     struct RastPort         rp;
