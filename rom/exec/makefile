@@ -123,6 +123,12 @@ OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
+$(LIB): $(OBJS)
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(OBJS)
+	@$(RANLIB) $@
+	@$(RM) $(RMLIB)
+
 # ***** END ***************
 endif
 
@@ -133,13 +139,7 @@ setup :
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIB)
-
-$(LIB): $(OBJS)
-	@$(ECHO) "Creating library $@..."
-	@$(AR) $@ $(OBJS)
-	@$(RANLIB) $@
-	@$(RM) $(RMLIB)
+	$(RM) $(OBJDIR) *.err $(LIBDIR)/libexec.a
 
 $(OBJDIR)/%.o: %.c
 	@$(ECHO) "Compiling $(CURDIR)/$<..."

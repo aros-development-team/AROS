@@ -114,6 +114,10 @@ OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
+$(LIB): $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
 # ***** END ***************
 endif
 
@@ -123,10 +127,6 @@ setup :
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIB)
-
-$(LIB): $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
 
 $(OBJDIR)/%.o: %.c
 	%compile_q
