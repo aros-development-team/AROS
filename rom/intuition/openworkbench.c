@@ -78,56 +78,51 @@ AROS_LH0(IPTR, OpenWorkBench,
     }
     else
     {
-        WORD width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
-        WORD height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
-        WORD depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
-	 
         /* Open the Workbench screen if we don't have one. */
+        
+	WORD  width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
+        WORD  height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
+        WORD  depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
+	ULONG modeid = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_DisplayID;
+	
         struct TagItem screenTags[] =
         {   
-            { SA_Width,                width              },
-            { SA_Height,               height             },
-            { SA_Depth,                depth              },
-            { SA_LikeWorkbench,        TRUE               },
-            { SA_Type,                 WBENCHSCREEN       },
-            { SA_Title,         (IPTR) "Workbench Screen" },
-            { SA_PubName,       (IPTR) "Workbench"   	  },
-            { SA_SharePens,            TRUE               },
+            { SA_Width,                width              }, /* 0 */
+            { SA_Height,               height             }, /* 1 */
+            { SA_Depth,                depth              }, /* 2 */
+	    { SA_DisplayID,            0                  }, /* 3 */
+            { SA_LikeWorkbench,        TRUE               }, /* 4 */
+            { SA_Type,                 WBENCHSCREEN       }, /* 5 */
+            { SA_Title,         (IPTR) "Workbench Screen" }, /* 6 */
+            { SA_PubName,       (IPTR) "Workbench"   	  }, /* 7 */
+            { SA_SharePens,            TRUE               }, /* 8 */
             { TAG_END,                 0           	  }
         };
-    	struct TagItem modetags[] =
-	{
-	    { BIDTAG_DesiredWidth,  width  },
-	    { BIDTAG_DesiredHeight, height },
-	    { BIDTAG_Depth,         depth  },
-	    { TAG_DONE,             0  	   }
-	};	                           
-    	ULONG modeid;
 	
-        modeid = BestModeIDA(modetags);
-    	if (modeid != INVALID_ID)
+	APTR disphandle = FindDisplayInfo(modeid);
+	
+        if (!disphandle)
 	{
-	    APTR  disphandle;
-	    
-	    if ((disphandle = FindDisplayInfo(modeid)))
+    	    struct TagItem modetags[] =
 	    {
-	    	struct DimensionInfo dim;
-	    	
-		if (GetDisplayInfoData(disphandle, (UBYTE *)&dim, sizeof(dim), DTAG_DIMS, modeid))
-		{
-		    screenTags[0].ti_Data = dim.Nominal.MaxX - dim.Nominal.MinX + 1;
-		    screenTags[1].ti_Data = dim.Nominal.MaxY - dim.Nominal.MinY + 1;
-		    if (dim.MaxDepth > AROS_DEFAULT_WBDEPTH)
-		    {
-		    	screenTags[2].ti_Data = dim.MaxDepth;
-		    }
-		}
-	    }
+	        { BIDTAG_DesiredWidth,  width  },
+	        { BIDTAG_DesiredHeight, height },
+	        { BIDTAG_Depth,         depth  },
+	        { TAG_DONE,             0  	   }
+	    };
+	    	                           
+	    modeid     = BestModeIDA(modetags);
+	    disphandle = FindDisplayInfo(modeid);
 	}
+	bug("DISPHANDLE = %p\n", disphandle);
+	if (disphandle)
+	    screenTags[3].ti_Data = modeid;
+	else
+	    screenTags[3].ti_Tag  = TAG_IGNORE;
 
         DEBUG_OPENWORKBENCH(dprintf("OpenWorkBench: Trying to open Workbench screen\n"));
 
-        wbscreen = OpenScreenTagList( NULL, screenTags );
+        wbscreen = OpenScreenTagList(NULL, screenTags);
 
         if( !wbscreen )
         {
