@@ -112,7 +112,8 @@
 # Create the function reference file %(to) to %(from)
 %define mkref_q cc=$(AROS_CC) cppflags="-E -C -dD" cflags=$(CFLAGS) from=$< to=$@
 	@$(ECHO) "Generating ref for $(notdir %(from))..."
-	@if $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to) 2>$(GENDIR)/cerrors; \
+	@$(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to) 2>$(GENDIR)/cerrors
+	@$(IF) $(TEST) -s %(to) ; \
 	then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 	        $(ECHO) "%(from): $(CXREF) -raw -CPP '%(cc) %(cppflags) %(cflags)' %(from) >%(to)" >> $(GENDIR)/errors ; \
@@ -863,8 +864,12 @@ BD_LIBFILES$(BDID)   := %(linklibfiles)
 BD_STARTFILE$(BDID)  := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
 
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir $(BD_FILES$(BDID)))))
 BD_STARTOBJ$(BDID)   := $(addsuffix .o,$(BD_STARTFILE$(BDID)))
+BD_ARCHOBJS$(BDID)   := $(wildcard $(BD_OBJDIR$(BDID))/arch/*.o)
+BD_ARCHFILES$(BDID)  := $(basename $(notdir $(BD_ARCHOBJS$(BDID))))
+BD_FILES$(BDID)      := $(filter-out $(BD_ARCHFILES$(BDID)),$(BD_FILES$(BDID)))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(BD_FILES$(BDID)))) \
+		     	$(BD_ARCHOBJS$(BDID))
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
 BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_STARTOBJ$(BDID)) $(BD_ENDOBJ$(BDID)))
@@ -1048,7 +1053,7 @@ $(BD_OBJS$(BDID)) \
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
 	@$(ECHO) "Linking $@"
 	@$(COLLECT-AROS) -Ur -o $@ $^
-	@$(OBJCOPY) $@ `$(NM) $@ | $(AWK) '$$3 ~ /^__.*_LIST__$$/ {print "-L " $$3;}'`
+	@$(OBJCOPY) $@ `$(NM_PLAIN) $@ | $(AWK) '$$3 ~ /^__.*_(LIST|END)__$$/ {print "-L " $$3;}'`
 
 %include_deps depstargets="%(mmake) %(mmake)-quick" deps=$(BD_DEPS$(BDID))
 %end
