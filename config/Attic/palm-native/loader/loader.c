@@ -1,4 +1,9 @@
-/* Code for downloading an ELF file onto the Palm */
+/*    
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Code for downloading an ELF file onto the Palm.
+*/
 
 #include <Pilot.h>
 #include <System/SerialMgr.h>

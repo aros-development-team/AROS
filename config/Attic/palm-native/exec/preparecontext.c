@@ -1,28 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.1  2001/05/30 00:18:07  bergers
-    Exec functions derived from the i386 code. Need some more work and also task switching with the real time clock is not a good thing. Might want to change this to use one of the two timers. Currently switches tasks at rate of 1Hz.
-
-    Revision 1.2  1998/10/20 16:43:47  hkiel
-    Amiga Research OS
-
-    Revision 1.1  1997/03/14 18:36:08  ldp
-    Moved files
-
-    Revision 1.4  1996/10/24 15:51:31  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/20 02:57:47  aros
-    Changed AROS_LA to AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:36  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #include <exec/types.h>
 #include <aros/libcall.h>
 #include <exec/execbase.h>

@@ -1,11 +1,10 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Serial Unit hidd class implementation.
     Lang: english
 */
-
 
 #define AROS_ALMOST_COMPATIBLE 1
 

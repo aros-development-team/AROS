@@ -1,4 +1,9 @@
-/* Main code for LCD test */
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+    
+    Main code for LCD test 
+*/
 
 #include <Pilot.h>
 #include "callback.h"

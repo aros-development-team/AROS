@@ -2,7 +2,7 @@
 #define GADGETS_AROSLISTVIEW_H
 
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: MethodIDs and AttrIDs for the AROS listview class.

@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Enable() - Allow interrupts to occur after Disable().
     Lang: english
 */
+
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>

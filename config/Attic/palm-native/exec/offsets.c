@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/tasks.h>
 #include <exec/types.h>
 #include <exec/execbase.h>
