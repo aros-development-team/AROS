@@ -3,13 +3,12 @@
  */
 #define NO_INLINE_STDARG
 
-#define _CLIB_USERDATA_
-#include <libraries/arosc.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dos/exall.h>
 #include <dos/dostags.h>
 #include <exec/memory.h>
+
 #define MUI_OBSOLETE
 #include <libraries/mui.h>
 #include <libraries/asl.h>
@@ -25,6 +24,8 @@
 #include <proto/muimaster.h>
 #include <proto/freetype2.h>
 #include <aros/debug.h>
+
+#include "etask.h"
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -648,7 +649,7 @@ AROS_UFH3(void, IntegerBounds,
 		AROS_UFHA(struct IntegerBoundsP *, p, A1))
 {
 	AROS_USERFUNC_INIT
-	
+
 	LONG t;
 	get(obj, MUIA_String_Integer, &t);
 	if (t < p->Min)
@@ -1495,7 +1496,7 @@ AROS_UFH3(void, CloseWinFunc,
 	set(*winp, MUIA_Window_Open, FALSE);
 	DoMethod(app, OM_REMMEMBER, *winp);
 	MUI_DisposeObject(*winp);
-	
+
 	AROS_USERFUNC_EXIT
 }
 
@@ -1853,9 +1854,9 @@ void ScanDirTask(void)
 	FT_Library ftlibrary;
 
 #warning FIXME: Possible thread race conflicts not checked !!!
-    void *test = AROSC_USERDATA(parent);
-        AROSC_USERDATA(0) = test;
-    
+        void *test = GetIntETask(parent)->iet_acpd;
+        GetIntETask(FindTask(NULL))->iet_acpd = test;
+
 	Signal(parent, SIGBREAKF_CTRL_F);
 
         DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
