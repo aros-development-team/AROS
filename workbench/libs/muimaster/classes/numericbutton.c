@@ -61,15 +61,40 @@ IPTR Numericbutton__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static ULONG Numericbutton__OM_SET(struct IClass *cl, Object * obj, struct opSet *msg)
+{
+    struct Numericbutton_DATA *data = INST_DATA(cl, obj);
+    struct TagItem *tags, *tag;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags));)
+    {
+	switch (tag->ti_Tag)
+	{
+	    case MUIA_Numeric_Max:
+	        if (tag->ti_Data != XGET(obj, MUIA_Numeric_Max))
+		    data->needs_to_recalculate_sizes = TRUE;
+		break;
+	    case MUIA_Numeric_Min:
+	        if (tag->ti_Data != XGET(obj, MUIA_Numeric_Min))
+		    data->needs_to_recalculate_sizes = TRUE;
+		break;
+	    case MUIA_Numeric_Format:
+	        if (tag->ti_Data != XGET(obj, MUIA_Numeric_Format))
+		    data->needs_to_recalculate_sizes = TRUE;
+		break;
+	}
+    }
+    
+    return DoSuperMethodA(cl, obj, (Msg)msg);
+}
+
 IPTR Numericbutton__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Numericbutton_DATA *data = INST_DATA(cl, obj);
 //  const struct ZuneFrameGfx *knob_frame;
-    struct RastPort 	       rp;
-    LONG    	    	       min;
-    LONG    	    	       max;
-    LONG    	    	       val;
-    LONG    	    	       width;
     IPTR    	    	       retval;
     
     retval = DoSuperMethodA(cl, obj, (Msg)msg);
@@ -77,32 +102,11 @@ IPTR Numericbutton__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup
     {
     	//knob_frame = zune_zframe_get(&muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob]);
 
-	InitRastPort(&rp);
-	SetFont(&rp,_font(obj));
-
-	width = 0;
-
-	longget(obj,MUIA_Numeric_Min,&min);
-	longget(obj,MUIA_Numeric_Max,&max);
-
-	/* Determine the width of the knob */
-	for (val=min;val<=max;val++)
-	{
-	    LONG nw;
-	    char *buf;
-
-	    buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
-	    nw = TextLength(&rp,buf,strlen(buf));
-	    if (nw > width) width = nw;
-	}
-	
-    	data->max_text_width = width;
-    	data->text_height = _font(obj)->tf_YSize;
-
     	data->knob_bg = zune_imspec_setup(MUII_ButtonBack, muiRenderInfo(obj));
 
         DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
+	data->needs_to_recalculate_sizes = TRUE;
     }
     
     return retval;
@@ -132,6 +136,38 @@ IPTR Numericbutton__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
+    if (data->needs_to_recalculate_sizes)
+    {
+        struct RastPort rp;
+        LONG min, max, val, width;
+	
+	InitRastPort(&rp);
+	SetFont(&rp,_font(obj));
+
+	width = 0;
+
+	longget(obj, MUIA_Numeric_Min, &min);
+	longget(obj, MUIA_Numeric_Max, &max);
+
+	/* Determine the width of the knob */
+	for (val=min;val<=max;val++)
+	{
+	    LONG nw;
+	    char *buf;
+
+	    buf = (char*)DoMethod(obj, MUIM_Numeric_Stringify, val);
+	    nw  = TextLength(&rp, buf, strlen(buf));
+	    
+	    if (nw > width)
+	        width = nw;
+	}
+	
+    	data->max_text_width = width;
+    	data->text_height    = _font(obj)->tf_YSize;
+        
+	data->needs_to_recalculate_sizes = FALSE;
+    }
+    
     msg->MinMaxInfo->MinWidth  += data->max_text_width;
     msg->MinMaxInfo->MinHeight += data->text_height;
     msg->MinMaxInfo->DefWidth  += data->max_text_width;
@@ -477,12 +513,15 @@ IPTR Numericbutton__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
     return 0;
 }
 
+
 #if ZUNE_BUILTIN_NUMERICBUTTON
 BOOPSI_DISPATCHER(IPTR, Numericbutton_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
 	case OM_NEW: return Numericbutton__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_SET: return Numericbutton__OM_SET(cl, obj, (struct opSet *)msg);
+	
 	case MUIM_Setup: return Numericbutton__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
 	case MUIM_Cleanup: return Numericbutton__MUIM_Cleanup(cl, obj, (struct MUIP_Cleanup *)msg);		
     	case MUIM_Show: return Numericbutton__MUIM_Show(cl, obj, (struct MUIP_Show *)msg);
@@ -490,7 +529,7 @@ BOOPSI_DISPATCHER(IPTR, Numericbutton_Dispatcher, cl, obj, msg)
 	case MUIM_AskMinMax: return Numericbutton__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax *)msg);
 	case MUIM_Draw: return Numericbutton__MUIM_Draw(cl, obj, (struct MUIP_Draw *)msg);
 	case MUIM_HandleEvent: return Numericbutton__MUIM_HandleEvent(cl, obj, (struct MUIP_HandleEvent *)msg);
-        default:     return DoSuperMethodA(cl, obj, msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }
 }
 
