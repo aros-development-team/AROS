@@ -1,15 +1,14 @@
 # $Id$
 
 # The workbench-classes target points back to config/$(ARCH)/mmakefile:
-#MM workbench-classes : workbench-classes-$(ARCH)
-workbench-classes :
-	@$(NOP)
+#MM- workbench-classes : workbench-classes-$(ARCH)
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM workbench-classes-complete : workbench-classes-aroscheckbox workbench-classes-aroslist
-#MM workbench-classes-complete : workbench-classes-aroslistview workbench-classes-arosmutualexclude
-#MM workbench-classes-complete : workbench-classes-aroscycle workbench-classes-arospalette
-workbench-classes-complete :
-	@$(NOP)
+#MM- workbench-classes-complete : workbench-classes-aroscheckbox \
+#MM	    workbench-classes-aroslist \
+#MM	    workbench-classes-aroslistview \
+#MM	    workbench-classes-arosmutualexclude \
+#MM	    workbench-classes-aroscycle \
+#MM	    workbench-classes-arospalette
 

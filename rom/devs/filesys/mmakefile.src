@@ -15,9 +15,7 @@ kernel-filesys-$(ARCH)-$(CPU) : show-flags $(LIB)
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
-#MM kernel-filesys : setup includes kernel-filesys-$(ARCH)-$(CPU)
-kernel-filesys :
-	@$(NOP)
+#MM- kernel-filesys : setup includes kernel-filesys-$(ARCH)-$(CPU)
 
 #MM
 setup :

@@ -1,93 +1,70 @@
 # $Id$
 
 # (bernie) removed targets to speed up things: setup includes compiler arosboot
-#MM AROS-amiga : kernel workbench demos games
-AROS-amiga :
-	@$(NOP)
+#MM- AROS-amiga : kernel workbench demos games
 
 # hidd-graphics target removed from below line because of missing lib.conf file
-#MM kernel-amiga : kernel-hidd kernel-exec-module kernel-aros 
-#MM kernel-amiga : kernel-utility-module
-#MM kernel-amiga : kernel-alerthook-module kernel-boopsi-module
-#MM kernel-amiga : kernel-devs kernel-expansion-module kernel-keymap-module
-kernel-amiga :
-	@$(NOP)
+#MM- kernel-amiga : kernel-hidd \
+#MM	    kernel-exec-module \
+#MM	    kernel-aros \
+#MM	    kernel-utility-module \
+#MM	    kernel-alerthook-module \
+#MM	    kernel-boopsi-module \
+#MM	    kernel-devs \
+#MM	    kernel-expansion-module \
+#MM	    kernel-keymap-module
 
-#MM workbench-amiga : workbench-c workbench-devs workbench-libs workbench-classes
-#MM workbench-amiga : workbench-s workbench-locale
-workbench-amiga :
-	@$(NOP)
+#MM- workbench-amiga : workbench-c \
+#MM	    workbench-devs \
+#MM	    workbench-libs \
+#MM	    workbench-classes \
+#MM	    workbench-s \
+#MM	    workbench-locale
 
-#MM workbench-libs-amiga : workbench-libs-asl workbench-libs-diskfont
-#MM workbench-libs-amiga : workbench-libs-gadtools workbench-libs-icon
-#MM workbench-libs-amiga : workbench-libs-iffparse
-#MM workbench-libs-amiga : workbench-libs-mathtrans
-#MM workbench-libs-amiga : workbench-libs-mathieeedoubbas
-#MM workbench-libs-amiga : workbench-libs-mathieeedoubtrans
-workbench-libs-amiga :
-	@$(NOP)
+#MM- workbench-libs-amiga : workbench-libs-asl \
+#MM	    workbench-libs-diskfont \
+#MM	    workbench-libs-gadtools \
+#MM	    workbench-libs-icon \
+#MM	    workbench-libs-iffparse \
+#MM	    workbench-libs-mathtrans \
+#MM	    workbench-libs-mathieeedoubbas \
+#MM	    workbench-libs-mathieeedoubtrans
 
-##MM workbench-classes-amiga : workbench-classes-complete
-workbench-classes-amiga :
-	@$(NOP)
+##MM- workbench-classes-amiga : workbench-classes-complete
 
-#MM apps-amiga :
-apps-amiga : fish Moria3D
-	@$(NOP)
+#MM- apps-amiga : fish Moria3D
 
-#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga
-#MM setup-amiga : setup-layers-amiga setup-hidd-graphics-amiga
-setup-amiga :
-	@$(NOP)
+#MM- setup-amiga : setup-clib-amiga \
+#MM	    setup-exec-amiga \
+#MM	    setup-utility-amiga \
+#MM	    setup-layers-amiga \
+#MM	    setup-hidd-graphics-amiga
 
-#MM setup-exec-amiga : setup-exec-amiga-$(CPU)
-setup-exec-amiga :
-	@$(NOP)
+#MM- setup-exec-amiga : setup-exec-amiga-$(CPU)
 
-#MM exec-amiga : exec-amiga-$(CPU)
-exec-amiga :
-	@$(NOP)
+#MM- exec-amiga : exec-amiga-$(CPU)
 
-#MM setup-utility-amiga : setup-utility-amiga-$(CPU)
-setup-utility-amiga :
-	@$(NOP)
+#MM- setup-utility-amiga : setup-utility-amiga-$(CPU)
 
-#MM utility-amiga : utility-amiga-$(CPU)
-utility-amiga :
-	@$(NOP)
+#MM- utility-amiga : utility-amiga-$(CPU)
 
-#MM setup-layers-amiga : setup-layers-amiga-$(CPU)
-setup-layers-amiga :
-	@$(NOP)
+#MM- setup-layers-amiga : setup-layers-amiga-$(CPU)
 
-#MM layers-amiga : layers-amiga-$(CPU)
-layers-amiga :
-	@$(NOP)
+#MM- layers-amiga : layers-amiga-$(CPU)
 
-#MM setup-hidd-amiga : setup-hidd-amiga-$(CPU)
-setup-hidd-amiga :
-	@$(NOP)
+#MM- setup-hidd-amiga : setup-hidd-amiga-$(CPU)
 
-#MM hidd-amiga-$(CPU) : hidd-amiga-$(CPU)
-hidd-amiga :
-	@$(NOP)
+#MM- hidd-amiga-$(CPU) : hidd-amiga-$(CPU)
 
-#MM setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
-setup-hidd-graphics-amiga :
-	@$(NOP)
+#MM- setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
 
-#MM check :
+#MM- check :
 check :
 	@$(NOP)
 
-#MM setup-clib-amiga : setup-clib-amiga-$(CPU)
-setup-clib-amiga :
-	@$(NOP)
+#MM- setup-clib-amiga : setup-clib-amiga-$(CPU)
 
-#MM clib-amiga : clib-amiga-$(CPU)
-clib-amiga :
-	@$(NOP)
+#MM- clib-amiga : clib-amiga-$(CPU)
 
-#MM includes-amiga : includes-copy includes-amiga-$(CPU)
-includes-amiga :
-	@$(NOP)
+#MM- includes-amiga : includes-copy includes-amiga-$(CPU)
+

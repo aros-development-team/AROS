@@ -53,9 +53,7 @@ $(LIB) : $(OBJS)
 
 endif
 
-#MM kernel-boot : setup includes kernel-boot-$(ARCH)-$(CPU)
-kernel-boot :
-	@$(NOP)
+#MM- kernel-boot : setup includes kernel-boot-$(ARCH)-$(CPU)
 
 #MM
 clean ::

@@ -1,5 +1,4 @@
 # $Id$
 
-#MM compiler : setup includes linklibs
-compiler :
-	@$(NOP)
+#MM- compiler : setup includes linklibs
+

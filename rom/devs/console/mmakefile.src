@@ -31,9 +31,7 @@ kernel-devs-$(ARCH)-$(CPU) : $(LIB)
 $(LIB) : $(OBJS)
 	%mklib_q
 
-#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
-kernel-devs :
-	@$(NOP)
+#MM- kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
 
 #MM
 clean ::

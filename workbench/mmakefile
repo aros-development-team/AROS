@@ -1,12 +1,11 @@
 # $Id$
 
 # The workbench target points back to config/$(ARCH)/mmakefile:
-#MM workbench : workbench-$(ARCH)
-workbench :
-	@$(NOP)
+#MM- workbench : workbench-$(ARCH)
 
-#MM workbench-complete : workbench-c workbench-devs workbench-libs-complete
-#MM workbench-complete : workbench-classes-complete workbench-s
-workbench-complete:
-	@$(NOP)
+#MM- workbench-complete : workbench-c \
+#MM	    workbench-devs \
+#MM	    workbench-libs-complete \
+#MM	    workbench-classes-complete \
+#MM	    workbench-s
 

@@ -1,18 +1,17 @@
 # $Id$
 
 # The workbench-libs target points back to config/$(ARCH)/mmakefile:
-#MM workbench-libs : workbench-libs-$(ARCH)
-workbench-libs :
-	@$(NOP)
+#MM- workbench-libs : workbench-libs-$(ARCH)
 
 # A general catch-all target. You can use this if everything compiles on your
 # machine, and you want to save yourself some typing.
-#MM workbench-libs-complete : workbench-libs-asl workbench-libs-diskfont
-#MM workbench-libs-complete : workbench-libs-gadtools workbench-libs-icon
-#MM workbench-libs-complete : workbench-libs-iffparse workbench-libs-mathieeesingtrans
-#MM workbench-libs-complete : workbench-libs-mathtrans 
-#MM workbench-libs-complete : workbench-libs-mathieeedoubbas
-#MM workbench-libs-complete : workbench-libs-mathieeedoubtrans
-workbench-libs-complete :
-	@$(NOP)
+#MM- workbench-libs-complete : workbench-libs-asl \
+#MM	    workbench-libs-diskfont \
+#MM	    workbench-libs-gadtools \
+#MM	    workbench-libs-icon \
+#MM	    workbench-libs-iffparse \
+#MM	    workbench-libs-mathieeesingtrans \
+#MM	    workbench-libs-mathtrans \
+#MM	    workbench-libs-mathieeedoubbas \
+#MM	    workbench-libs-mathieeedoubtrans \
 
