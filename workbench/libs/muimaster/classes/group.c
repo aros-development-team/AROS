@@ -1565,6 +1565,13 @@ static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *ms
     return 0;
 }
 
+static ULONG IsObjectVisible(Object *obj, Object *child)
+{
+    if (_right(child) < _mleft(obj) || _left(child) > _mright(obj) || _bottom(child) < _mtop(obj) || _top(child) > _mbottom(obj))
+	return FALSE;
+    return TRUE;
+}
+
 static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1592,8 +1599,18 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 	}
     } else
     {
-	while ((child = NextObject(&cstate)))
-	    DoMethodA(child, (Msg)msg);
+    	if (data->flags & GROUP_VIRTUAL)
+    	{
+	    while ((child = NextObject(&cstate)))
+	    {
+		if (IsObjectVisible(obj,child))
+		    DoMethod(child, MUIM_Show);
+	    }
+    	} else
+    	{
+	    while ((child = NextObject(&cstate)))
+		DoMethod(child, MUIM_Show);
+	}
     }
     return TRUE;
 }
@@ -1622,8 +1639,18 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	}
     } else
     {
-	while ((child = NextObject(&cstate)))
-	    DoMethod(child, MUIM_Hide);
+    	if (data->flags & GROUP_VIRTUAL)
+    	{
+	    while ((child = NextObject(&cstate)))
+	    {
+		if (IsObjectVisible(obj,child))
+		    DoMethod(child, MUIM_Hide);
+	    }
+    	} else
+    	{
+	    while ((child = NextObject(&cstate)))
+		DoMethod(child, MUIM_Hide);
+	}
     }
 
     /* If msg is NULL, we won't want that the super method actually gets this call */
@@ -1824,10 +1851,12 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 
 			if (new_virt_offx != data->virt_offx || new_virt_offy != data->virt_offy)
 			{
-			    /* Relayout our self, this will also relayout all the children */
+			    if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
 			    data->virt_offx = new_virt_offx;
 			    data->virt_offy = new_virt_offy;
+			    /* Relayout ourself, this will also relayout all the children */
 			    DoMethod(obj,MUIM_Layout);
+			    if (_flags(obj) & MADF_CANDRAW) Group_Show(cl,obj,NULL);
 			    /* Needs to be optimized! */
 			    MUI_Redraw(obj,MADF_DRAWOBJECT);
 			}
