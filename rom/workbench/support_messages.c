@@ -83,5 +83,24 @@ VOID __DestroyWBHM_WB
     struct WBHandlerMessage *message, struct WorkbenchBase *WorkbenchBase
 )
 {
-    FreeMessage((struct Message *) message);
+    if (message != NULL)
+    {
+        switch (message->wbhm_Type)
+        {
+            case WBHM_TYPE_OPEN:
+                FreeVec(message->wbhm_Data.Open.Name);
+                break;
+                
+            case WBHM_TYPE_UPDATE:
+                // FIXME
+                break;
+                
+            case WBHM_TYPE_SHOW:
+            case WBHM_TYPE_HIDE:
+            default:
+                /* No additional resources to free */
+        }
+    
+        FreeMessage((struct Message *) message);
+    }
 }

@@ -98,7 +98,17 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 */
                 
                 D(bug("OpenWorkbenchObject: it's a DISK, DRAWER or GARGABE\n"));
-                // FIXME: Implement
+                
+                {
+                    struct WBCommandMessage *wbcm = CreateWBCM(WBCM_TYPE_RELAY);
+                    struct WBHandlerMessage *wbhm = CreateWBHM(WBHM_TYPE_OPEN);
+                    // FIXME: check errors
+                    
+                    wbhm->wbhm_Data.Open.Name = StrDup(name);
+                    wbcm->wbcm_Data.Relay.Message = wbhm;
+                    
+                    PutMsg(&(WorkbenchBase->wb_HandlerPort), (struct Message *) wbcm);
+                }
                 
                 break;
                 
