@@ -36,6 +36,14 @@ LIBBASETYPE
     APTR    	    	    lb_ClipRectPool;
 };
 
+struct IntLayer
+{
+    struct Layer lay;
+    struct Hook  *shapehook;
+};
+
+#define IL(x) ((struct IntLayer *)(x))
+
 struct LayerInfo_extra
 {
 #if 0
@@ -89,13 +97,6 @@ struct ResourceNode
 #define IS_SMARTREFRESH(l)  (LAYERSMART == ((l)->Flags & (LAYERSMART|LAYERSUPER)))
 #define IS_SUPERREFRESH(l)  (0 != ((l)->Flags & LAYERSUPER))
 
-#warning Might want to move this to a public include file.
-struct ChangeLayerShapeMsg
-{
-  struct Region   * newshape; // same as passed to ChangeLayerShape()
-  struct ClipRect * cliprect;
-  struct Region   * shape;
-};
 
 int _MoveLayerBehind(struct Layer *l,
                      struct Layer *lfront,
