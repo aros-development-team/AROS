@@ -5,6 +5,9 @@
     Desc:
     Lang: English
 */
+
+#define  DEBUG 1
+#include <aros/debug.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
@@ -74,6 +77,8 @@
 	return FALSE;
     }
     
+    kprintf("Allocated packet %p\n", dp);
+
     if (NT_PROCESS == me->pr_Task.tc_Node.ln_Type)
     {
 	replyPort = &me->pr_MsgPort;
@@ -102,8 +107,6 @@
     
     internal_WaitPkt(replyPort, DOSBase);
     
-    dp->dp_Res1 = DOSTRUE;
-    dp->dp_Res2 = iofs->io_DosError;
     SetIoErr(iofs->io_DosError);
 
     res = dp->dp_Res1;
@@ -119,4 +122,5 @@
 
     AROS_LIBFUNC_EXIT
 } /* DoPkt */
+
 
