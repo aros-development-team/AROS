@@ -247,8 +247,7 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
       }
       break;
     }
-
-    if (IS_VISIBLE(_l))
+    else if (IS_VISIBLE(_l))
     {
       /*
        * I must recalcualte the visible shape of
@@ -260,13 +259,11 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED!\n",
 #if 0
 kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
         __FUNCTION__);
-#endif    
-      ClearRegion(l->VisibleRegion);
+#endif
+      ClearRegion(_l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
       
-      
       ClearRegionRegion(_l->visibleshape, &r);
-      
     }
       
     _l = _l->back;
