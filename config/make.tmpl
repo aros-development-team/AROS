@@ -599,24 +599,28 @@ BDID := $(BDTARGETID)
 # to the name which has to follow it.
 
 %define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix= \
-    bindir= libdir= includedir= extraoptions= nix=no host=no install_target=install
+    aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
+    install_target=install
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
 
 #MM- %(mmake) : setup includes linklibs %(mmake)-quick
 
-%(mmake)-PATH := PATH=$(TOOLDIR):$$PATH
+ifneq (%(install_target),)
+    %(mmake)-install_command := \
+    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" exec_prefix="$(%(mmake)-prefix)" \
+    prefix="$(%(mmake)-prefix)" -C $(GENDIR)/$(CURDIR) %(install_target)
+endif
 
 #MM
 %(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
-	@$(%(mmake)-PATH); \
-	 if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
+	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
 	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
 	    ret=$$?; \
 	    if [ $$ret -ne 0 ] ; then \
 	        exit $$ret; \
 	    fi; \
-	    $(if %(install_target),$(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) %(install_target);,) \
+	    $(%(mmake)-install_command); \
 	fi
 
 $(TOP)/$(CURDIR)/.files-touched:
@@ -641,7 +645,7 @@ ifneq (%(prefix),)
 else
     %(mmake)-prefix := --prefix=$(CONTRIBDIR)
     ifeq ($(%(mmake)-bindir),)
-        %(mmake)-bindir := --bindir=$(CONTRIBDIR)
+        %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
         %(mmake)-PROGDIR := $(CONTRIBDIR)
     endif
     ifeq ($(%(mmake)-libdir),)
@@ -652,12 +656,16 @@ else
     endif
 endif
 
+ifneq (%(aros_prefix),)
+    %(mmake)-aros_prefix := --prefix=%(aros_prefix)
+else
+    %(mmake)-aros_prefix := $(%(mmake)-prefix)
+endif
+
 ifeq ($(%(mmake)-PROGDIR),)
     %(mmake)-PROGDIR := %(prefix)/bin
 endif
 
-$(GENDIR)/$(CURDIR)/.configured : AR2     := $(firstword $(AR))
-$(GENDIR)/$(CURDIR)/.configured : RANLIB2 := $(firstword $(RANLIB))
 
 ifeq (%(host),yes)
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
@@ -665,23 +673,21 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
 	    $(%(mmake)-PATH); \
-	    AR=$(AR2) RANLIB=$(RANLIB2) OBJCOPY="$(OBJCOPY)" \
 	    CC="$(HOST_CC)" \
 	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions); \
 	$(ECHO) YES > $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	@echo ==== $$PATH
+	@echo ++++ $(PATH)
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    $(%(mmake)-PATH); \
-	    AR=$(AR2) RANLIB=$(RANLIB2) OBJCOPY="$(OBJCOPY)" \
-	    CC="$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)$(AROS_TARGET_SUFFIX)-aros-gcc $(%(mmake)-nix)" \
-	    CC_FOR_BUILD="$(HOST_CC)" \
-	    %(configure) $(%(mmake)-prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
+	    CC="$(TARGET_CC) -nix" \
+	    %(configure) $(%(mmake)-aros_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
 	    $(%(mmake)-includedir) %(extraoptions) \
-	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros; \
+	    --host=$(AROS_TARGET_CPU)-aros; \
 	$(ECHO) YES > $@
 endif
 	
