@@ -121,7 +121,7 @@
 
 	The conversion specifiers and their meanings are:
 
-	\end{description}
+	\begin{description}
 	\item{diouxX} The int (or appropriate variant) argument is
 	converted to signed decimal (d and i), unsigned octal (o, unsigned
 	decimal (u, or unsigned hexadecimal (x and X) notation. The letters
