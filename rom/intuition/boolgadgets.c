@@ -10,6 +10,7 @@
 #include <proto/intuition.h>
 #include <intuition/cghooks.h>
 #include "intuition_intern.h"
+#include <graphics/gfxmacros.h>
 #include "gadgets.h"
 
 void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
@@ -172,6 +173,22 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	break;
     } /* Highlight after contents have been drawn */
+
+    if ( gadget->Flags & GFLG_DISABLED )
+    {
+	UWORD pattern[] = { 0x8888, 0x2222 };
+
+	SetDrMd( rp, JAM1 );
+	SetAPen( rp, 1 );
+	SetAfPt( rp, pattern, 1);
+
+	/* render disable pattern */
+	RectFill(rp,
+	    bbox.Left,
+	    bbox.Top,
+	    bbox.Left + bbox.Width - 1,
+	    bbox.Top + bbox.Height - 1 );
+    }
 
     ReleaseGIRPort(rp);
     
