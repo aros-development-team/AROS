@@ -93,7 +93,7 @@ AROS_LH1(void, BeginRefresh,
     */
 
     /* let the user know that we're currently doing a refresh */
-    window->Flags |= WFLG_WINDOWREFRESH;
+    AROS_ATOMIC_ORL(window->Flags, WFLG_WINDOWREFRESH);
 
     AROS_LIBFUNC_EXIT
 } /* BeginRefresh */
