@@ -119,6 +119,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     if (xsd)
     {
 	xsd->sysBase = SysBase;
+	
+    #if BUFFERED_VRAM
+	InitSemaphore(&xsd->framebufferlock);
+    #endif
+    
 	xsd->oopBase = OpenLibrary(AROSOOP_NAME, 0);
 	if (xsd->oopBase)
 	{

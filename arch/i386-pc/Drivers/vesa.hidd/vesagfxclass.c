@@ -304,6 +304,15 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 		
     	} /* switch(mode) */
 	
+    #if BUFFERED_VRAM
+	if (OOP_OCLASS(msg->dest) == XSD(cl)->onbmclass)
+	{
+    	    LOCK_FRAMEBUFFER(XSD(cl));    
+    	    vesaRefreshArea(ddata, msg->destX, msg->destY, msg->destX + msg->width - 1, msg->destY + msg->height - 1);
+    	    UNLOCK_FRAMEBUFFER(XSD(cl));
+	}
+    #endif
+    
     } /**/
 
 }

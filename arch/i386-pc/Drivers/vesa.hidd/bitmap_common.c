@@ -21,20 +21,37 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 {
     struct BitmapData *data = OOP_INST_DATA(cl, o);
     ULONG   	       offset;
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    ULONG   	       offset2;
+#endif
     ULONG   	       pixel = msg->pixel;
     UBYTE   	      *mem;
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    UBYTE   	      *mem2;
+#endif
     
     offset = (msg->x * data->bytesperpix) + (msg->y * data->bytesperline);
     mem = data->VideoData + offset;
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    offset2 = (msg->x * data->bytesperpix) + (msg->y * data->data->bytesperline);
+    mem2 = data->data->framebuffer + offset2;
+#endif
     
     switch(data->bytesperpix)
     {
     	case 1:
-	    *(UBYTE*)mem = pixel;
+	    *(UBYTE *)mem = pixel;
+    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+	    *(UBYTE *)mem2 = pixel;
+    	#endif
 	    break;
 	   
 	case 2:
-	    *(UWORD*)mem = pixel;
+	    *(UWORD *)mem = pixel;
+    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+	    *(UWORD *)mem2 = pixel;
+	#endif
 	    break;
 	    
 	case 3:
@@ -47,10 +64,25 @@ static VOID MNAME(putpixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	    *(UBYTE *)(mem + 1) = pixel >> 8;
 	    *(UBYTE *)(mem + 2) = pixel >> 16;
 	#endif
-	    break;
+
+    	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+	#if AROS_BIG_ENDIAN
+	    *(UBYTE *)(mem2) = pixel >> 16;
+	    *(UBYTE *)(mem2 + 1) = pixel >> 8;
+	    *(UBYTE *)(mem2 + 2) = pixel;
+	#else
+	    *(UBYTE *)(mem2) = pixel;
+	    *(UBYTE *)(mem2 + 1) = pixel >> 8;
+	    *(UBYTE *)(mem2 + 2) = pixel >> 16;
+	#endif
+	#endif
+ 	    break;
 	    
 	case 4:
 	    *(ULONG *)mem = pixel;
+	#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+	    *(ULONG *)mem2 = pixel;	    
+    	#endif
 	    break;
     }
     
@@ -175,6 +207,11 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 	    
     } /* switch(mode) */
 
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->minX, msg->minY, msg->maxX, msg->maxY);    
+    UNLOCK_FRAMEBUFFER(XSD(cl));
+#endif
 }
 
 /*********  BitMap::PutImage()  ***************************/
@@ -308,6 +345,12 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 	    break;
 	    
     } /* switch(msg->pixFmt) */
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
+    UNLOCK_FRAMEBUFFER(XSD(cl));
+#endif
 	    
 }
 
@@ -500,6 +543,12 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 
     } /* switch(data->bytesperpix) */
+
+#if defined(OnBitmap) && defined(BUFFERED_VRAM)
+    LOCK_FRAMEBUFFER(XSD(cl));    
+    vesaRefreshArea(data, msg->x, msg->y, msg->x + msg->width - 1, msg->y + msg->height - 1);    
+    UNLOCK_FRAMEBUFFER(XSD(cl));
+#endif
 	    
 }
 

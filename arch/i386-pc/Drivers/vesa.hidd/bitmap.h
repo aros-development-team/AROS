@@ -17,11 +17,13 @@
 #define IID_Hidd_VesaGfxBitMap "hidd.bitmap.vesabitmap"
 
 #define HiddVesaGfxBitMapAttrBase __abHidd_VesaGfxBitMap
+
 extern OOP_AttrBase HiddVesaGfxBitMapAttrBase;
 
-enum {
-	aoHidd_VesaGfxBitMap_Drawable,
-	num_Hidd_VesaGfxBitMap_Attrs
+enum
+{
+    aoHidd_VesaGfxBitMap_Drawable,
+    num_Hidd_VesaGfxBitMap_Attrs
 };
 
 #define aHidd_VesaGfxBitMap_Drawable	(HiddVesaGfxBitMapAttrBase + aoHidd_VesaGfxBitMap_Drawable)
@@ -39,22 +41,24 @@ enum {
    onbitmap and offbitmap classes.
 */
 
-struct HWRegs {
-	UBYTE clt[768];
+struct HWRegs
+{
+    UBYTE clt[768];
 };
 
-struct BitmapData {
-	struct HWRegs  regs;
-	struct HWData	*data;
-	UBYTE *VideoData;	/* Pointing to video data */
-	ULONG width;      /* Width of bitmap */
-	ULONG height;		/* Height of bitmap */
-	UBYTE bytesperpix;
-	ULONG bytesperline;
-	ULONG cmap[16];   /* ColorMap */
-	BYTE bpp;         /* 8 -> chunky; planar otherwise */
-	BYTE disp;        /* !=0 - displayable */
-	struct MouseData *mouse;
+struct BitmapData
+{
+    struct HWRegs   	regs;
+    struct HWData	*data;
+    UBYTE   	    	*VideoData;	/* Pointing to video data */
+    ULONG   	    	width;      	/* Width of bitmap */
+    ULONG   	    	height;		/* Height of bitmap */
+    UBYTE   	    	bytesperpix;
+    ULONG   	    	bytesperline;
+    ULONG   	    	cmap[16];   	/* ColorMap */
+    BYTE    	    	bpp;         	/* 8 -> chunky; planar otherwise */
+    BYTE    	    	disp;        	/* !=0 - displayable */
+    struct MouseData 	*mouse;
 };
 
 struct Box
