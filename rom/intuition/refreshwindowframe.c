@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  2000/03/17 22:13:46  stegerg
+    Don't LockIBase before and after int_refreshglist
+
     Revision 1.11  2000/03/16 14:57:53  bergers
     Pass additional parameter to CheckRectFill.
 
@@ -89,8 +92,7 @@
     EnterFunc(bug("RefreshWindowFrame(window=%p)\n", window));
     
     if (!(window->Flags & WFLG_BORDERLESS))
-    {
-    	
+    {    	
 	dri = GetScreenDrawInfo(window->WScreen);
 	if (dri)
 	{
@@ -224,7 +226,6 @@
 	    
 	    */
 	    
-	    ilock = LockIBase(0);
 	    int_refreshglist(window->FirstGadget, 
 	                     window, 
 	                     NULL, 
@@ -233,7 +234,6 @@
 	                     0, 
 	                     IntuitionBase);
 	                     	    
-	    UnlockIBase(ilock);
 
 	    FreeScreenDrawInfo(window->WScreen, dri);
 	    
