@@ -53,7 +53,8 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
 	if (!Background)
 	{
 	    struct IOFileSys iofs;
-	    struct FileHandle *fh = BADDR(Input());
+	    struct FileHandle *fhin  = BADDR(Input());
+	    struct FileHandle *fhout = BADDR(Output());
 
             iofs.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
             iofs.IOFS.io_Message.mn_ReplyPort    = &me->pr_MsgPort;
@@ -61,10 +62,15 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
             iofs.IOFS.io_Command                 = FSA_CHANGE_SIGNAL;
             iofs.IOFS.io_Flags                   = 0;
 
-	    iofs.IOFS.io_Device  = fh->fh_Device;
-    	    iofs.IOFS.io_Unit    = fh->fh_Unit;
-
 	    iofs.io_Union.io_CHANGE_SIGNAL.io_Task = (struct Task *)me;
+
+	    iofs.IOFS.io_Device  = fhin->fh_Device;
+    	    iofs.IOFS.io_Unit    = fhin->fh_Unit;
+
+	    DoIO(&iofs.IOFS);
+
+	    iofs.IOFS.io_Device  = fhout->fh_Device;
+    	    iofs.IOFS.io_Unit    = fhout->fh_Unit;
 
 	    DoIO(&iofs.IOFS);
         }
