@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: RequestChoice CLI command
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -93,6 +93,8 @@
 #include <exec/types.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+
+#include <string.h>
 
 #define ARG_TEMPLATE    "TITLE/A,BODY/A,GADGETS/A/M,PUBSCREEN/K"
 #define ARG_TITLE       0

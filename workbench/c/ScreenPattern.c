@@ -1,3 +1,4 @@
+
 #include <exec/memory.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
@@ -14,6 +15,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /****************************************************************************************/
 
@@ -596,15 +598,15 @@ static void removebackfillhook(void)
 {
     struct TagItem wintags[] =
     {
-    	{WA_PubScreen	,(IPTR)scr			},
-    	{WA_Left	,0				},
-	{WA_Top		,0				},
-	{WA_Width	,scr->Width			},
-	{WA_Height	,scr->Height			},
-	{WA_Borderless	,TRUE				},
-	{WA_Backdrop	,TRUE				},
-	{WA_BackFill	,(IPTR)LAYERS_NOBACKFILL	},
-	{TAG_DONE					}
+    	{ WA_PubScreen , (IPTR)scr		 },
+    	{ WA_Left      , 0			 },
+	{ WA_Top       , 0			 },
+	{ WA_Width     , scr->Width		 },
+	{ WA_Height    , scr->Height		 },
+	{ WA_Borderless, TRUE			 },
+	{ WA_Backdrop  , TRUE			 },
+	{ WA_BackFill  , (IPTR)LAYERS_NOBACKFILL },
+	{ TAG_DONE				 }
     };
     struct Window *tempwin;
     

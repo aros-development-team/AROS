@@ -64,6 +64,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static const char version[] = "$VER: SetKeyboard 41.2 (16.01.2000)\n";
 

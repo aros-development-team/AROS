@@ -64,6 +64,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static const char version[] = "$VER: SetDefaultFont 41.0 (01.02.2001)\n";
 
@@ -144,7 +145,8 @@ static void Action(void)
    	if (font->tf_Flags & FPF_PROPORTIONAL)
 	{
 	    CloseFont(font);
-	    Cleanup("The font must be mono spaced (non-proportional)!", RETURN_ERROR);
+	    Cleanup("The font must be mono spaced (non-proportional)!",
+		    RETURN_ERROR);
 	}
 	
 	Forbid();
