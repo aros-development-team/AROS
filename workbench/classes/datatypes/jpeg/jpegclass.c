@@ -31,9 +31,9 @@
 #include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
-#include <jpeg/jinclude.h>
-#include <jpeg/jpeglib.h>
-#include <jpeg/jerror.h>
+#include <jinclude.h>
+#include <jpeglib.h>
+#include <jerror.h>
 #include <setjmp.h>
 
 #include "compilerspecific.h"
