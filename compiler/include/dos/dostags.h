@@ -2,14 +2,14 @@
 #define DOS_DOSTAGS_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Tags for DOS routines
     Lang: english
 */
 #ifndef UTILITY_TAGITEM_H
-#   include "utility/tagitem.h"
+#   include <utility/tagitem.h>
 #endif
 
 /* System() */

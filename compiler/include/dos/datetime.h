@@ -2,17 +2,17 @@
 #define DOS_DATETIME_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Date and time in dos.library
     Lang: english
 */
 #ifndef DOS_DOS_H
-#   include "dos/dos.h"
+#   include <dos/dos.h>
 #endif
 
-/* Data structure used by StrtoDate() and DatetoStr() */
+/* Data structure used by StrToDate() and DateToStr() */
 struct DateTime
 {
     struct DateStamp dat_Stamp;   /* DOS DateStamp */
