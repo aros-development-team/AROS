@@ -161,8 +161,6 @@ static BOOL GenericInit(struct staticdata *sd)
     
     sd->Card.alphaCursor = (implementation & 0x0ff0) >= 0x0110;
 
-    bug("sd->Card.alphaCursor = %d, %d\n", sd->Card.alphaCursor, implementation);
-
     switch (implementation)
     {
 	case 0x0112:
@@ -195,18 +193,129 @@ static BOOL GenericInit(struct staticdata *sd)
     }
 
 #warning TODO: Add SecondCRTC handling
-
-    sd->Card.PCIO = sd->Card.PCIO0;
+/*    sd->Card.PCIO = sd->Card.PCIO0;
     sd->Card.PCRTC = sd->Card.PCRTC0;
     sd->Card.PRAMDAC = sd->Card.PRAMDAC0;
     sd->Card.PDIO = sd->Card.PDIO0;
-
+*/
     if (sd->Card.Architecture == NV_ARCH_04)
 	nv4GetConfig(sd);
     else
 	nv10GetConfig(sd);
-	
+    
+    NVSelectHead(sd, 0);
+
     NVLockUnlock(sd, 0);
+
+    if (!sd->Card.twoHeads)
+    {
+	VGA_WR08(sd->Card.PCIO, 0x3d4, 0x28);
+	if (VGA_RD08(sd->Card.PCIO, 0x3d5) & 0x80)
+	    sd->Card.FlatPanel = 1;
+	else
+	    sd->Card.FlatPanel = 0;
+    }
+    else
+    {
+	UBYTE outputAfromCRTC, outputBfromCRTC;
+	int CRTCnumber = -1;
+	UBYTE slaved_on_A, slaved_on_B,tvA=0,tvB=0;
+	BOOL analog_on_A, analog_on_B;
+	ULONG oldhead;
+	UBYTE cr44;
+	
+	if(implementation != 0x0110) {
+	    if(sd->Card.PRAMDAC0[0x0000052C/4] & 0x100)
+		outputAfromCRTC = 1;
+	    else
+		outputAfromCRTC = 0;
+	    if(sd->Card.PRAMDAC0[0x0000252C/4] & 0x100)
+		outputBfromCRTC = 1;
+	    else
+		outputBfromCRTC = 0;
+	    analog_on_A = NVIsConnected(sd, 0);
+	    analog_on_B = NVIsConnected(sd, 1);
+	} else {
+	    outputAfromCRTC = 0;
+	    outputBfromCRTC = 1;
+	    analog_on_A = FALSE;
+	    analog_on_B = FALSE;
+	}
+
+	VGA_WR08(sd->Card.PCIO, 0x03D4, 0x44);
+	cr44 = VGA_RD08(sd->Card.PCIO, 0x03D5);
+
+	VGA_WR08(sd->Card.PCIO, 0x03D5, 3);
+	NVSelectHead(sd, 1);
+	NVLockUnlock(sd, 0);
+
+	VGA_WR08(sd->Card.PCIO, 0x03D4, 0x28);
+	slaved_on_B = VGA_RD08(sd->Card.PCIO, 0x03D5) & 0x80;
+	if(slaved_on_B) {
+	    VGA_WR08(sd->Card.PCIO, 0x03D4, 0x33);
+	    tvB = !(VGA_RD08(sd->Card.PCIO, 0x03D5) & 0x01);
+	}
+
+	VGA_WR08(sd->Card.PCIO, 0x03D4, 0x44);
+	VGA_WR08(sd->Card.PCIO, 0x03D5, 0);
+	NVSelectHead(sd, 0);
+	NVLockUnlock(sd, 0);
+
+	VGA_WR08(sd->Card.PCIO, 0x03D4, 0x28);
+	slaved_on_A = VGA_RD08(sd->Card.PCIO, 0x03D5) & 0x80;
+	if(slaved_on_A) {
+	    VGA_WR08(sd->Card.PCIO, 0x03D4, 0x33);
+	    tvA = !(VGA_RD08(sd->Card.PCIO, 0x03D5) & 0x01);
+	}
+
+	oldhead = sd->Card.PCRTC0[0x00000860/4];
+	sd->Card.PCRTC0[0x00000860/4] = oldhead | 0x00000010;
+
+	if(slaved_on_A && !tvA) {
+	    CRTCnumber = 0;
+	    sd->Card.FlatPanel = 1;
+	} else
+	if(slaved_on_B && !tvB) {
+	    CRTCnumber = 1;
+	    sd->Card.FlatPanel = 1;
+	} else
+	if(analog_on_A) {
+	    CRTCnumber = outputAfromCRTC;
+	    sd->Card.FlatPanel = 0;
+	} else
+	if(analog_on_B) {
+	    CRTCnumber = outputBfromCRTC;
+	    sd->Card.FlatPanel = 0;
+	} else
+	if(slaved_on_A) {
+	    CRTCnumber = 0;
+	    sd->Card.FlatPanel = 1;
+	    sd->Card.Television = 1;
+	} else
+	if(slaved_on_B) {
+	    CRTCnumber = 1;
+	    sd->Card.FlatPanel = 1;
+	    sd->Card.Television = 1;
+	}
+	
+	if (CRTCnumber == -1)
+	{
+	    D(bug("[NVidia] Unable to detect CRTC number, using defaults\n"));
+
+	    if (sd->Card.FlatPanel) sd->Card.CRTCnumber = 1;
+	    else sd->Card.CRTCnumber = 0;
+	}
+	else sd->Card.CRTCnumber = CRTCnumber;
+
+	if(implementation == 0x0110)
+	    cr44 = sd->Card.CRTCnumber * 0x3;
+
+	sd->Card.PCRTC0[0x00000860/4] = oldhead;
+
+	VGA_WR08(sd->Card.PCIO, 0x03D4, 0x44);
+	VGA_WR08(sd->Card.PCIO, 0x03D5, cr44);
+	NVSelectHead(sd, sd->Card.CRTCnumber);
+    }
 
     D(bug("[NVidia] Configuration received.\n"));
     D(bug("[NVidia] Card has %dMB of video memory\n",
