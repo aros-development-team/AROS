@@ -10,7 +10,6 @@
 
 /****************************************************************************************/
 
-#include <exec/resident.h>
 #include <exec/interrupts.h>
 #include <exec/initializers.h>
 #include <hardware/intbits.h>
@@ -29,6 +28,7 @@
 #include <hidd/mouse.h>
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include "gameport_intern.h"
 #include "devs_private.h"
 
@@ -38,6 +38,8 @@
 
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include LC_LIBDEFS_FILE
 
 /****************************************************************************************/
 
@@ -76,71 +78,6 @@
 
 /****************************************************************************************/
 
-static const char name[];
-static const char version[];
-static const APTR inittabl[4];
-static void *const functable[];
-static const UBYTE datatable;
-
-struct GameportBase *AROS_SLIB_ENTRY(init, Gameport)();
-void AROS_SLIB_ENTRY(open, Gameport)();
-BPTR AROS_SLIB_ENTRY(close, Gameport)();
-BPTR AROS_SLIB_ENTRY(expunge, Gameport)();
-int  AROS_SLIB_ENTRY(null, Gameport)();
-void AROS_SLIB_ENTRY(beginio, Gameport)();
-LONG AROS_SLIB_ENTRY(abortio, Gameport)();
-
-static const char end;
-
-/****************************************************************************************/
-
-int AROS_SLIB_ENTRY(entry, Gameport)(void)
-{
-    /* If the device was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident Gameport_resident =
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&Gameport_resident,
-    (APTR)&end,
-    RTF_AUTOINIT|RTF_COLDSTART,
-    41,
-    NT_DEVICE,
-    44,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-static const char name[] = "gameport.device";
-
-static const char version[] = "$VER: gameport.device 41.0 (7.3.1998)\r\n";
-
-static const APTR inittabl[4] =
-{
-    (APTR)sizeof(struct GameportBase),
-    (APTR)functable,
-    (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init, Gameport)
-};
-
-static void *const functable[] =
-{
-    &AROS_SLIB_ENTRY(open, Gameport),
-    &AROS_SLIB_ENTRY(close, Gameport),
-    &AROS_SLIB_ENTRY(expunge, Gameport),
-    &AROS_SLIB_ENTRY(null, Gameport),
-    &AROS_SLIB_ENTRY(beginio, Gameport),
-    &AROS_SLIB_ENTRY(abortio, Gameport),
-    (void *)-1
-};
-
-/****************************************************************************************/
-
 #if NEWSTYLE_DEVICE
 
 static const UWORD SupportedCommands[] =
@@ -171,44 +108,6 @@ AROS_UFP3S(VOID, gpSendQueuedEvents,
 
 /****************************************************************************************/
 
-AROS_UFH3(struct GameportBase *, AROS_SLIB_ENTRY(init,Gameport),
-	AROS_UFHA(struct GameportBase *, GPBase,    D0),
-	AROS_UFHA(BPTR,			segList,    A0),
-	AROS_UFHA(struct ExecBase *,	sysBase,    A6)
-)
-{
-    AROS_USERFUNC_INIT
-
-    int i;
-
-    /* reset static data */
-    HiddMouseAB = 0;
-
-    /* Store arguments */
-    GPBase->gp_sysBase = sysBase;
-    GPBase->gp_seglist = segList;
-
-    for(i = 0; i < GP_NUNITS; i++)
-    {
-	GPBase->gp_cTypes[i] = GPCT_NOCONTROLLER;
-    }
-    
-    InitSemaphore(&GPBase->gp_QueueLock);
-    InitSemaphore(&GPBase->gp_Lock);
-    NEWLIST(&GPBase->gp_PendingQueue);
-
-    GPBase->gp_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
-    GPBase->gp_Interrupt.is_Node.ln_Pri  = 0;
-    GPBase->gp_Interrupt.is_Data 	 = (APTR)GPBase;
-    GPBase->gp_Interrupt.is_Code 	 = gpSendQueuedEvents;
-
-    return GPBase;
-
-    AROS_USERFUNC_EXIT
-}
-
-/****************************************************************************************/
-
 /* 'data' is a pointer to GPBase->gp_nTicks. */
 
 AROS_UFH4(ULONG, gpVBlank,
@@ -229,26 +128,59 @@ AROS_UFH4(ULONG, gpVBlank,
     AROS_USERFUNC_EXIT
 }
 
+AROS_SET_LIBFUNC(GM_UNIQUENAME(init), LIBBASETYPE, GPBase)
+{
+    AROS_SET_LIBFUNC_INIT
+
+    int i;
+
+    /* reset static data */
+    HiddMouseAB = 0;
+
+    for(i = 0; i < GP_NUNITS; i++)
+    {
+	GPBase->gp_cTypes[i] = GPCT_NOCONTROLLER;
+    }
+    
+    InitSemaphore(&GPBase->gp_QueueLock);
+    InitSemaphore(&GPBase->gp_Lock);
+    NEWLIST(&GPBase->gp_PendingQueue);
+
+    GPBase->gp_Interrupt.is_Node.ln_Type = NT_INTERRUPT;
+    GPBase->gp_Interrupt.is_Node.ln_Pri  = 0;
+    GPBase->gp_Interrupt.is_Data 	 = (APTR)GPBase;
+    GPBase->gp_Interrupt.is_Code 	 = gpSendQueuedEvents;
+
+    GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
+    GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
+    GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
+    GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
+    GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
+	
+    /* Add a VBLANK server to take care of event timing. */
+    AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
+    
+    return TRUE;
+
+    AROS_SET_LIBFUNC_EXIT
+}
+
 /****************************************************************************************/
 
-
-AROS_LH3(void, open,
-	 AROS_LHA(struct IORequest *, ioreq  , A1),
-	 AROS_LHA(ULONG             , unitnum, D0),
-	 AROS_LHA(ULONG             , flags  , D1),
-	 struct GameportBase *, GPBase, 1, Gameport)
+AROS_SET_OPENDEVFUNC(GM_UNIQUENAME(open),
+		     LIBBASETYPE, GPBase,
+		     struct IORequest, ioreq,
+		     unitnum, flags
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 	
-    /* Keep compiler happy */
-    flags   = 0;
-    
     /* Erroneous unit? */
     if (unitnum > GP_MAXUNIT)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 
-	return;
+	return FALSE;
     }
     
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
@@ -257,7 +189,7 @@ AROS_LH3(void, open,
 	      "is too small!\n"));
         ioreq->io_Error = IOERR_OPENFAIL;
 
-	return;
+	return FALSE;
     }
     
     if (GPBase->gp_eventBuffer == NULL)
@@ -271,14 +203,14 @@ AROS_LH3(void, open,
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 
-	return;
+	return FALSE;
     }
     
     if ((ioreq->io_Unit = AllocMem(sizeof(GPUnit), MEMF_CLEAR)) == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
 
-	return;
+	return FALSE;
     }
 
     gpUn->gpu_unitNum = unitnum;
@@ -291,7 +223,7 @@ AROS_LH3(void, open,
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
 
-	    return;
+	    return FALSE;
 	}
     }
     
@@ -304,7 +236,7 @@ AROS_LH3(void, open,
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	    D(bug("gameport.device: Could not get attrbase\n"));
 
-	    return;
+	    return FALSE;
 	}
     }
 
@@ -312,72 +244,31 @@ AROS_LH3(void, open,
         
 /******* nlorentz: End of stuff added by me ********/
 
-    /* Is the vblank server installed? */
-    if (GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
-    {
-	GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
-	GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
-	GPBase->gp_VBlank.is_Node.ln_Name = "Gameport VBlank server";
-	GPBase->gp_VBlank.is_Node.ln_Pri  = 0;
-	GPBase->gp_VBlank.is_Node.ln_Type = NT_INTERRUPT;
-	
-	/* Add a VBLANK server to take care of event timing. */
-	AddIntServer(INTB_VERTB, &GPBase->gp_VBlank);
-    }
+    return TRUE;
     
-    /* I have one more opener. */
-    GPBase->gp_device.dd_Library.lib_OpenCnt++;
-    
-    AROS_LIBFUNC_EXIT
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH1(BPTR, close,
-	 AROS_LHA(struct IORequest *,    ioreq,  A1),
-	 struct GameportBase *, GPBase, 2, Gameport)
+AROS_SET_CLOSEDEVFUNC(GM_UNIQUENAME(close),
+		      LIBBASETYPE, GPBase,
+		      struct IORequest, ioreq
+)
 {
-    AROS_LIBFUNC_INIT
+    AROS_SET_DEVFUNC_INIT
 	
     FreeMem(ioreq->io_Unit, sizeof(GPUnit));
 
-    /* Let any following attemps to use the device crash hard. */
-    ioreq->io_Device = (struct Device *)-1;
-
-    GPBase->gp_device.dd_Library.lib_OpenCnt--;
-
-    if (GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
-    {
-	expunge();
-    }
-    
-    return 0;
-    AROS_LIBFUNC_EXIT
+    return TRUE;
+    AROS_SET_DEVFUNC_EXIT
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct GameportBase *, GPBase, 3, Gameport)
-{
-    AROS_LIBFUNC_INIT
-
-    /* Do not expunge the device. Set the delayed expunge flag and return. */
-    RemIntServer(INTB_VERTB, &GPBase->gp_VBlank);
-
-    GPBase->gp_device.dd_Library.lib_Flags |= LIBF_DELEXP;
-
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
-
-AROS_LH0I(int, null, struct GameportBase *, GPBase, 4, Gameport)
-{
-    AROS_LIBFUNC_INIT
-    return 0;
-    AROS_LIBFUNC_EXIT
-}
+ADD2INITLIB(GM_UNIQUENAME(init),0)
+ADD2OPENDEV(GM_UNIQUENAME(open),0)
+ADD2CLOSEDEV(GM_UNIQUENAME(close),0)
 
 /****************************************************************************************/
 

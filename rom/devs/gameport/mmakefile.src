@@ -5,15 +5,12 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I$(TOP)/rom/devs
 
-%build_module_macro mmake=kernel-gameport \
+%build_module mmake=kernel-gameport \
   modname=gameport modtype=device \
   objdir=$(GENDIR)/rom/gameport \
-  initfile=gameport \
-  conffile=lib.conf
+  files=gameport
 
 #MM includes-copy
 
 INCLUDE_FILES := $(wildcard include/*.h)
 %copy_includes path=devices
-
-%common
