@@ -97,7 +97,7 @@ IPTR IconImage$MUIM_Draw
 {
     struct IconImage_DATA *data = INST_DATA(CLASS, self); 
     IPTR                   rc   = DoSuperMethodA(CLASS, self, (Msg) message);
-    BOOL                   selected;
+    IPTR                   selected;
     
     DoMethod
     (
