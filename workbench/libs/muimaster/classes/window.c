@@ -175,7 +175,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
 	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
     mri->mri_Pens = mri->mri_PensStorage;
 
-    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize + 1;
+    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
 
     temp_obj = NewObject(NULL,"sysiclass",
     	SYSIA_DrawInfo, mri->mri_DrawInfo,
