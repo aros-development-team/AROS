@@ -1423,9 +1423,12 @@ static void handle_event(Object *win, struct IntuiMessage *event)
                        &muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix
                    )
             )
+	    {
 		break;
+	    }
 	}
-	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX)) muikey = MUIKEY_RELEASE;
+	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX))
+	    muikey = MUIKEY_RELEASE;
     }
 
     /* try ActiveObject */
@@ -1540,16 +1543,25 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     }
 
 
-    /* try eventhandler */
-    for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    /* try eventhandlers of other objects, only if we didnt get a MUIKEY,
+     * because only the active or default object should get keyboard
+     * input.
+     */
+    if (muikey == MUIKEY_NONE)
     {
-	ehn = (struct MUI_EventHandlerNode *)mn;
-
-	if (ehn->ehn_Events & mask)
+	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
-	    res = invoke_event_handler(ehn, event, muikey);
-	    if (res & MUI_EventHandlerRC_Eat)
-		return;
+	    ehn = (struct MUI_EventHandlerNode *)mn;
+	    
+	    if (ehn->ehn_Events & mask)
+	    {
+		/* non-active and non-default objects dont get the MUIKEY because
+		 * they dont have focus.
+		 */
+		res = invoke_event_handler(ehn, event, MUIKEY_NONE);
+		if (res & MUI_EventHandlerRC_Eat)
+		    return;
+	    }
 	}
     }
 
@@ -2337,13 +2349,13 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("Window_DisconnectParent(%p) : muiGlobalInfo=%p\n", muiGlobalInfo(obj)));
+/*      D(bug("Window_DisconnectParent(%p) : muiGlobalInfo=%p\n", muiGlobalInfo(obj))); */
     if (muiGlobalInfo(obj))
     {
 	/* Close the window before disconnecting all the childs */
 	if ((data->wd_Flags & MUIWF_OPENED))
 	{
-	    D(bug(" Window_DisconnectParent(%p) : closing window\n", muiGlobalInfo(obj)));
+/*  	    D(bug(" Window_DisconnectParent(%p) : closing window\n", muiGlobalInfo(obj))); */
 	    set(obj, MUIA_Window_Open, FALSE);
 	}
 	if (data->wd_ChildMenustrip)
@@ -2352,7 +2364,7 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 	if (data->wd_RootObject)
 	    DoMethodA(data->wd_RootObject, (Msg)msg);
 	
-	D(bug(" Window_DisconnectParent(%p) : calling supermethod\n", muiGlobalInfo(obj)));
+/*  	D(bug(" Window_DisconnectParent(%p) : calling supermethod\n", muiGlobalInfo(obj))); */
 	return DoSuperMethodA(cl,obj,(Msg)msg);
     }
     else
