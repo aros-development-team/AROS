@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/12 14:47:52  digulla
+    More stack
+
     Revision 1.3  1996/08/13 15:32:25  digulla
     Externel reference to DOSBase was missing
 
@@ -24,7 +27,7 @@ int main(void)
     segs=LoadSeg("c/shell");
     if(segs)
     {
-	RunCommand(segs,4096,"FROM S:Startup-Sequence",23);
+	RunCommand(segs,100000,"FROM S:Startup-Sequence",23);
 	UnLoadSeg(segs);
     }
     return 0;

@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/12 14:47:55  digulla
+    More stack
+
     Revision 1.4  1996/08/30 17:02:03  digulla
     Fixed a bug which caused the shell to exit if the timer sent a signal. This
-    	fix is a very bad hack :(
+	fix is a very bad hack :(
 
     Revision 1.3  1996/08/23 17:05:58  digulla
     Increased the stack.
@@ -262,7 +265,7 @@ LONG execute(STRPTR com)
 	last=s2;
 	while(*last++)
 	    ;
-	RunCommand(seglist,20000,s2,last-s2-1);
+	RunCommand(seglist,100000,s2,last-s2-1);
 	UnLoadSeg(seglist);
     }else if(infile==NULL&&outfile==NULL)
     {
