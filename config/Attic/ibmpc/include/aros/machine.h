@@ -155,6 +155,6 @@ extern void assert();
 	: "cc", "memory", "%eax" );\
     (t)_re;\
 })
-#define AROS_UFC3R(t,n,a1,a2,a3,p) __UFC3R(t,n,a1,a2,a3,p)
+#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p)
 
 #endif /* AROS_MACHINE_H */
