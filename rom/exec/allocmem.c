@@ -26,7 +26,7 @@
 #   define DEBUG 1
 #endif
 #define MDEBUG 1
-#include <aros/debug.h>
+#   include <aros/debug.h>
 
 /*****************************************************************************
 
