@@ -94,8 +94,8 @@ extern const struct __MUIBuiltinClass _MUI_Notify_desc; /* PRIV */
 
 #define _parent(obj)    (muiNotifyData(obj)->mnd_ParentObject) /* Shortcut */
 
-#define MUIM_ConnectParent       (METHOD_USER|0x10429ab9) /* Zune: V1  */
-#define MUIM_DisconnectParent    (METHOD_USER|0x10429aba) /* Zune: V1  */
+#define MUIM_ConnectParent       (METHOD_USER|0x10429ab9) /* Zune: V1 */
+#define MUIM_DisconnectParent    (METHOD_USER|0x10429aba) /* Zune: V1 */
 
 struct MUIP_ConnectParent          {ULONG MethodID; Object *parent;};
 struct MUIP_DisconnectParent       {ULONG MethodID;};

@@ -75,6 +75,10 @@ enum
 /* The following tag is Zune only, it should not be used in MUI Programs */
 #define MUIA_Group_Virtual  (TAG_USER|0x1042e1c0) /* Zune: V1 i.. BOOL  */
 
+/* Zune methods, used privatly */
+#define MUIM_Group_DoMethodNoForward (TAG_USER|0x1042e1c1)
+struct MUIP_Group_DoMethodNoForward {ULONG MethodID; ULONG DoMethodID; }; /* msg stuff follows */
+
 extern const struct __MUIBuiltinClass _MUI_Group_desc; /* PRIV */
 
 #endif
