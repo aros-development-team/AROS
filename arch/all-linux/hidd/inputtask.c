@@ -149,8 +149,8 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	/* Turn on kbd support */
 //	init_kbd(lsd);
 	
-	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Read, SysBase);
-	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Read, SysBase);
+	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Terminal, vHidd_UnixIO_Read, SysBase);
+	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Terminal, vHidd_UnixIO_Read, SysBase);
 	
 //    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
