@@ -115,7 +115,7 @@ AROS_LH0(BPTR, close,
 		/* Delayed expunge pending? */
 		if(LIBBASE->LibNode.lib_Flags & LIBF_DELEXP)
 			return expunge();
-#endif DISK_BASED
+#endif
 	}
 	return 0;
 
