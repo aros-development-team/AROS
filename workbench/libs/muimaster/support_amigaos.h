@@ -123,4 +123,16 @@ int strlcat(char *buf, char *src, int len);
 
 #define AROS_UFHA(type, name, reg) register reg type name
 
+#define AROS_UFP0 AROS_UFH0
+#define AROS_UFP1 AROS_UFH1
+#define AROS_UFP2 AROS_UFH2
+#define AROS_UFP3 AROS_UFH3
+#define AROS_UFP4 AROS_UFH4
+#define AROS_UFP5 AROS_UFH5
+#define AROS_UFP6 AROS_UFH6
+#define AROS_UFP7 AROS_UFH7
+#define AROS_UFP8 AROS_UFH8
+
+#define AROS_UFPA AROS_UFHA
+
 #endif /* _MUIMASTER_SUPPORT_AMIGAOS_H_ */
