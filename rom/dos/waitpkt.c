@@ -222,19 +222,19 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 		
 		ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList,
 				(struct Node *)nm, tempNode)
+		{
+		    if (notify->nr_MsgCount == 0)
 		    {
-			if (notify->nr_MsgCount == 0)
-			{
-			    break;
-			}
-			
-			if (nm->nm_NReq == notify)
-			{
-			    notify->nr_MsgCount--;
-			    Remove((struct Node *)nm);
-			    ReplyMsg((struct Message *)nm);		
-			}
+			break;
 		    }
+		    
+		    if (nm->nm_NReq == notify)
+		    {
+			notify->nr_MsgCount--;
+			Remove((struct Node *)nm);
+			ReplyMsg((struct Message *)nm);		
+		    }
+		}
 		
 		Enable();
 	    }
@@ -301,20 +301,3 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
     return packet;
 }
-
-#if 0
-    /*
-    ** The Result code 1 is most of the time a DOS boolean
-    ** but unfortunately this is not always true...
-    */
-
-#warning do_Res1 is always DOSTRUE!
-    dp->dp_Res1 = DOSTRUE;
-    dp->dp_Res2 = iofs->io_DosError;
-    SetIoErr(iofs->io_DosError);
-    
-    FreeMem(iofs, sizeof(struct IOFileSys));    
-    
-    return dp;
-
-#endif
