@@ -132,6 +132,11 @@ extern char *tmpnam(char *name_buf);
 
 void perror(const char *);
 
+/* AROS specific function to synchronise to keep DOS Input and Output in sync
+ * with the C stdin, stdout and stderr
+ */
+void updatestdio(void);
+
 #define putc fputc
 #define getc fgetc
 #define getchar()   getc(stdin)
