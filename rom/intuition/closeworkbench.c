@@ -73,6 +73,8 @@
         imsg.Class = IDCMP_WBENCHMESSAGE;
         imsg.Code  = WBENCHCLOSE;
 
+    	SetSignal(0, SIGF_SINGLE);
+	
         /* Sends it to the handler and wait for the reply */
         PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
         WaitPort( &replymp );
