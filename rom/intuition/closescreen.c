@@ -1,24 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:36:36  ldp
-    Polish
 
-    Revision 1.4  1996/12/10 14:00:01  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/10/31 13:50:39  aros
-    Don't forget to free the RastPort
-
-    Revision 1.2  1996/10/24 15:51:18  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/09/21 14:11:39  digulla
-    Open and close screens
-
-
-    Desc:
+    Desc: Close a screen opened via OpenScreen and the like
     Lang: english
 */
 #include "intuition_intern.h"
