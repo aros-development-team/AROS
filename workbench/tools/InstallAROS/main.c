@@ -147,6 +147,7 @@ IPTR Install__MUIM_Partition
     struct DosEnvec         tableDE,
                             partitionDE;
     struct DriveGeometry    tableDG;
+    struct PartitionType    ptype = {"DOS\1", 4};
     LONG                    rc;
     LONG                    reserved = 0;
     
@@ -154,11 +155,14 @@ IPTR Install__MUIM_Partition
     
     /* Step 1: Destroy the existing partitiontable, if any exists. */
     root = OpenRootPartition("ide.device", 0);
+    if (root == NULL)
+    {
+        D(bug("*** ERROR: Could not open root partition! Aborting.\n"));
+        return RETURN_FAIL;
+    }
     DestroyPartitionTable(root);
-    CloseRootPartition(root);
     
     /* Step 2: Create a root RDB partition table. */
-    root = OpenRootPartition("ide.device", 0);
     rc = CreatePartitionTable(root, PHPTT_RDB);
     if (rc != 0)
     {
@@ -185,7 +189,7 @@ IPTR Install__MUIM_Partition
     
     CopyMem(&tableDE, &partitionDE, sizeof(struct DosEnvec));
     
-    partitionDE.de_SizeBlock      = tableDG.dg_SectorSize >> 2;
+    partitionDE.de_SizeBlock      = 512 >> 2;
     partitionDE.de_Surfaces       = tableDG.dg_Heads;
     partitionDE.de_BlocksPerTrack = tableDG.dg_TrackSectors;
     partitionDE.de_BufMemType     = tableDG.dg_BufMemType;
@@ -194,12 +198,10 @@ IPTR Install__MUIM_Partition
     partitionDE.de_Reserved       = 2;
     partitionDE.de_HighCyl        = tableDE.de_HighCyl;
     partitionDE.de_LowCyl         = reserved 
-                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors) 
-                                  + 1;
+                                  / (tableDG.dg_Heads * tableDG.dg_TrackSectors);
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
-    partitionDE.de_DosType        = ID_FFS_DISK;
     
     D(bug("* highcyl = %ld\n", partitionDE.de_HighCyl));
     D(bug("* lowcyl = %ld\n", partitionDE.de_LowCyl));
@@ -211,6 +213,7 @@ IPTR Install__MUIM_Partition
         root,
         
         PT_DOSENVEC, (IPTR) &partitionDE,
+        PT_TYPE,     (IPTR) &ptype,
         PT_NAME,     (IPTR) kDstDev,
         PT_BOOTABLE,        TRUE,
         PT_AUTOMOUNT,       TRUE,
