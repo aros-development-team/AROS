@@ -60,8 +60,7 @@ void td_motoroff(UBYTE unitnum, struct TrackDiskBase *tdb)
 {
     tdb->td_dor = tdb->td_dor & ~(0x10 << unitnum);
     outb(tdb->td_dor,FD_DOR);
-    D(bug("motor: %d result %02x\n",unitnum,tdb->td_dor));
-//    outb(inb(FD_DOR) & ~(0x10 << unitnum),FD_DOR);
+    td_waitUntilReady();
 }
 
 /* Just select a drive, leaving motorbits as is */
@@ -79,21 +78,22 @@ void td_select(UBYTE unitnum, struct TrackDiskBase *tdb)
 /* Wait for interrupt */
 int td_waitint(struct TrackDiskBase *TDBase)
 {
-
+    D(bug("$"));
     TDBase->td_iotime = 150;	// Each IO command has 3s to complete before error occurs
     Wait((1L << TDBase->td_IntBit));
     if (TDBase->td_iotime)
     {
+	D(bug("+"));
 	TDBase->td_iotime = 0;
 	return 0;
     }
+    D(bug("-"));
     return TDERR_NotSpecified;
 }
 
 // Send byte to drive. Returns DriveInUse error if busy, 0 otherwise
 int td_sendbyte(unsigned char byte, struct TrackDiskBase *TDBase)
 {
-
     TDBase->td_iotime=50;	//1s to send a command
     do
     {
@@ -111,7 +111,6 @@ int td_sendbyte(unsigned char byte, struct TrackDiskBase *TDBase)
 // Get byte from drive. Returns the same as td_sendbyte
 int td_getbyte(unsigned char *byte, struct TrackDiskBase *TDBase)
 {
-
     TDBase->td_iotime=50;
     do
     {
@@ -185,11 +184,12 @@ int td_configure(struct TrackDiskBase *TDBase)
 {
 
     // Do Configure (enable FIFO and turn polling off)
+    // We also enable implied seeks
     td_sendbyte(FD_CONFIGURE, TDBase);
     if (needMoreOutput(TDBase) == MORE_OUTPUT)
     {
 	td_sendbyte(0, TDBase);
-	td_sendbyte(0x1a, TDBase);
+	td_sendbyte(0x5a, TDBase);
 	td_sendbyte(0, TDBase);
 	return 1;
     }
@@ -222,7 +222,7 @@ int td_dinit(struct TrackDiskBase *TDBase)
     td_configure(TDBase);
     // programm data rate
     fd_outb(0,FD_DCR);
-    td_waitint(TDBase);
+    //td_waitint(TDBase);
     // issue Sense Interrupt Status (loop 4 times)
     for (i=0; i<4; i++)
     {
@@ -302,7 +302,7 @@ int td_rseek(UBYTE unitn, UBYTE dir, UBYTE cyls, struct TrackDiskBase *TDBase)
     int err;
 
     /* Select the unit, do not start motor */
-    td_motoron(unitn,TDBase);
+    td_select(unitn,TDBase);
 
     if (dir)
     {
@@ -374,8 +374,8 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
     do
     {
 	/* Seek drive */
-	err = td_recalibrate(unitnum, 0, (cyl*DP_SECTORS) << 1, TDBase);
-	if (!err)
+	//err = td_recalibrate(unitnum, 0, (cyl*DP_SECTORS) << 1, TDBase);
+	//if (!err)
 	{
 	    rwcnt = 3;	// Max 3 retries of read/write
 
@@ -434,7 +434,7 @@ int td_readwritetrack(UBYTE unitnum, char cyl, char hd, char mode, struct TrackD
 		}
 	    } while (--rwcnt);
 	}
-	td_recalibrate(unitnum, 1, 0, TDBase);
+	//td_recalibrate(unitnum, 1, 0, TDBase);
     } while(--skcnt);	
 
     return err;

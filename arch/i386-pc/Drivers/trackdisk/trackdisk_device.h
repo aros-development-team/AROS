@@ -48,6 +48,8 @@ struct TDU
     UBYTE	tdu_lastcyl;
     UBYTE	tdu_lasthd;
     UBYTE	tdu_flags;
+    UBYTE	tdu_si1;
+    UBYTE	tdu_si2;
 };
 
 struct TrackDiskBase
