@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 13:17:14  digulla
+    Added #include <proto/exec.h>
+
     Revision 1.6  1997/01/27 00:32:31  ldp
     Polish
 
@@ -20,6 +23,7 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
 #include "utility_intern.h"
 
 /*****************************************************************************

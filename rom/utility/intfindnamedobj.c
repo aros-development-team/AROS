@@ -8,33 +8,34 @@
 */
 
 #include "utility_intern.h"
+#include <proto/exec.h>
 #include <proto/utility.h>
 
 struct IntNamedObject *
 IntFindNamedObj(struct NameSpace *ns,
-                struct Node *start,
-                STRPTR name,
-                struct UtilityBase *UtilityBase)
+		struct Node *start,
+		STRPTR name,
+		struct UtilityBase *UtilityBase)
 {
     struct IntNamedObject *no = NULL;
 
     if((ns->ns_Flags & NSF_CASE))
     {
-        no = (struct IntNamedObject *)
-            FindName((struct List *)start->ln_Pred, name);
+	no = (struct IntNamedObject *)
+	    FindName((struct List *)start->ln_Pred, name);
     }
     else
     {
-        /* We are at the end of the list when ln_Succ == NULL */
-        while(start->ln_Succ != NULL)
-        {
-            if(!Stricmp(name, start->ln_Name))
-            {
-                /* We have found the node we are after. */
-                return GetIntNamedObject(start);
-            }
-            start = start->ln_Succ;
-        }
+	/* We are at the end of the list when ln_Succ == NULL */
+	while(start->ln_Succ != NULL)
+	{
+	    if(!Stricmp(name, start->ln_Name))
+	    {
+		/* We have found the node we are after. */
+		return GetIntNamedObject(start);
+	    }
+	    start = start->ln_Succ;
+	}
     }
 
     return NULL;

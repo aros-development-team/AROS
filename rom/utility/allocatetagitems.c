@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.8  1997/01/27 13:17:13  digulla
+    Added #include <proto/exec.h>
+
     Revision 1.7  1997/01/27 00:32:29  ldp
     Polish
 
@@ -25,6 +28,7 @@
     Desc: AllocateTagItems()
     Lang: english
 */
+#include <proto/exec.h>
 #include "utility_intern.h"
 
 /*****************************************************************************
