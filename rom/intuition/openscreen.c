@@ -23,11 +23,28 @@
 /* Default colors for the new screen */
 
 static const ULONG coltab[] = { 
-    (4L << 16) + 0,	/* 4 colors, loaded at index 0 */
-    0x7FFFFFFF, 0x7FFFFFFF, 0x7FFFFFFF, /* Grey  */
-    0x00000000, 0x00000000, 0x00000000, /* Black */
-    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White */
-    0x00000000, 0x00000000, 0xAFFFFFFF, /* Blue  */
+    (16L << 16) + 0,	/* 16 colors, loaded at index 0 */
+    
+    					/* X11 color names	*/
+    0xB3B3B3B3, 0xB3B3B3B3, 0xB3B3B3B3, /* Grey70	*/
+    0x00000000, 0x00000000, 0x00000000, /* Black	*/
+    0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, /* White	*/
+    0xFFFFFFFF, 0xA5A5A5A5, 0x00000000, /* Orange	*/
+    
+    0x00000000, 0x00000000, 0xFFFFFFFF, /* Blue		*/
+    0x00000000, 0xFFFFFFFF, 0x00000000, /* Green	*/
+    0xFFFFFFFF, 0x00000000, 0x00000000, /* Red		*/
+    0x00000000, 0xFFFFFFFF, 0xFFFFFFFF, /* Cyan		*/
+    
+    0xFFFFFFFF, 0x00000000, 0xFFFFFFFF, /* Magenta	*/
+    0xEEEEEEEE, 0x82828282, 0xEEEEEEEE, /* Violet 	*/
+    0xA5A5A5A5, 0x2A2A2A2A, 0x2A2A2A2A, /* Brown	*/
+    0xFFFFFFFF, 0xE4E4E4E4, 0xC4C4C4C4, /* Bisque	*/
+    
+    0xE6E6E6E6, 0xE6E6E6E6, 0xFAFAFAFA, /* Lavender	*/
+    0x00000000, 0x00000000, 0x80808080, /* Navy		*/
+    0xF0F0F0F0, 0xE6E6E6E6, 0x8C8C8C8C, /* Khaki	*/
+    0xA0A0A0A0, 0x52525252, 0x2D2D2D2D, /* Sienna	*/
     0L		/* Termination */
 };    
 /*****************************************************************************
@@ -90,7 +107,9 @@ static const ULONG coltab[] = {
                                                      newScreen->Height, 
                                                      newScreen->Depth, 
                                                      BMF_CLEAR |BMF_DISPLAYABLE , 
+
                                                      NULL);
+        D(bug("got bitmap\n"));	    
 						     
 	/* Init screens viewport (probably not necessary, but I'll do it anyway */
 	InitVPort(&screen->Screen.ViewPort);
@@ -119,6 +138,7 @@ static const ULONG coltab[] = {
 	    /* Store pointer to bitmap, so we can get hold of it
 	       from withing LoadRGBxx() functions
 	    */
+        D(bug("got allocated stuff\n"));	    
 	    screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
 	}
 	
@@ -126,8 +146,10 @@ static const ULONG coltab[] = {
 
     if (screen)
     {
+        D(bug("Loading colors\n"));
         /* Load some default colors for the screen */
 	LoadRGB32(&screen->Screen.ViewPort, (ULONG *)coltab);
+        D(bug("Loaded colors\n"));
 	
 	COPY(LeftEdge);
 	COPY(TopEdge);
@@ -166,7 +188,10 @@ static const ULONG coltab[] = {
 	IntuitionBase->FirstScreen =
 	    IntuitionBase->ActiveScreen = &screen->Screen;
 
+        D(bug("set active screen\n"));	    
 	InitLayers(&screen->Screen.LayerInfo);
+
+        D(bug("layers intited screen\n"));	    
 
 	screen->DInfo.dri_Version = DRI_VERSION;
 	screen->DInfo.dri_NumPens = NUMDRIPENS;
@@ -184,6 +209,8 @@ static const ULONG coltab[] = {
 
 	SetFont (&screen->Screen.RastPort, screen->DInfo.dri_Font);
 
+        D(bug("fonts set\n"));	    
+
 	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
 	screen->Pens[BLOCKPEN]	= screen->Screen.BlockPen;
 	screen->Pens[TEXTPEN] = 1;
@@ -197,8 +224,12 @@ static const ULONG coltab[] = {
 	screen->Pens[BARBLOCKPEN] = 2;
 	screen->Pens[BARTRIMPEN] = 1;
 	
+
+        D(bug("callling SetRast()\n"));	    
 	/* Set screen to background color */
 	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+
+        D(bug("SetRast() called\n"));	    
 
     }
 
