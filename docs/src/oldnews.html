@@ -15,6 +15,110 @@ Old News
 <HR WIDTH="100%">
 <TABLE>
 
+<TR><TD VALIGN=TOP>05.03.2001</TD><TD>
+Georg Steger fixed a couple of bugs in the initialization code of
+AROS Linux/x86 and AROS Native/x86. Also commands with input
+redirection in shell script should work now. C:ConClip is now
+started in the Startup-Sequence. Global variables are now in the
+BSS segment and get initialized manually, so they have a defined
+value after a reset (otherwise, they would be initilized once and
+keep their value after a reset). And a bug in the menu handling in
+intuition was fixed.<P>
+
+Iain Templeton fixed a bug in text.datatype, added some new alerts
+for our HIDD system and made sure that some more temporary files
+are created in the build rather than in the source tree.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>01.03.2001</TD><TD>
+Stefan Berger fixed the smearing in DrawGList().<P>
+
+Georg Steger fixed some more ULONGs that should have been IPTRs and the
+depth calculations for AROS' screens on X11. Relative mousemovements
+are now confined to the screen borders and two apps can now render text
+at the same time without trashing the screen.<P>
+
+Johan Alfredsson fixed some bugs in the Dos.library and finished
+C:Copy. ENVARC: is now copied to ENV: in the startup sequence so
+saved prefs survive a reset.<P>
+
+Henning Kiel hunted a lot of spelling errors down.<P>
+
+Sebastian Heutling made our new filesystem compile when AROS Native/i386
+is built. The new native kernel now includes a filesystem ! Soon, we'll
+be able to do something with AROS when it runs standalone :-) Also,
+the floppy drives are now searched for bootable floppy disks. And some
+bugs in the filesystem were fixed.<P>
+
+Peter Eriksson added Swedish translation for Locale Preferences.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>25.02.2001</TD><TD>
+Georg Steger finished Locale preferences. Have a look at our
+<A HREF="screenshots/index.html">screenshots</A> !! Definitely
+worth a look :-) There is now a demo on how to use the
+cool_buttonclass from his coolimages lib. XaoS depends on
+topaz/8 font, so it didn't work correctly anymore, because we
+use a proportional font now. <P>
+
+Johan Alfredsson fixed a bug in C:SetKeyboard and RAM handler.
+IPrefs can now use notification in ENV:Sys/ to update preferences.<P>
+
+Thanks to Stefan Berger, one can now abort packets sent to filesystems.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>22.02.2001</TD><TD>
+Georg Steger implemented FindCliProc() and brought the workbench
+background pattern back. There is now a tool to install a pattern.
+Locking of Open/CloseWorkbench() should be correct now. He also
+committed a batch of new <A HREF="screenshots/index.html">screenshots</A> !
+Here you can see our first preferences program: Locale.
+There is now a linklib with some icons (used, for example,
+by ASL).<P>
+
+Johan Alfredsson finished record locking (mostly untested because
+we have no filesystem which supports locking, yet).<P>
+
+Lars Bischoff cleaned S:Startup-Sequence. S:User-Startup is now
+supported.<P>
+
+Sebastian Heutling improved his filesystem (removed a lot of global
+variables).<P>
+
+Stefan Berger began to work on a packet IO system emulator. As you
+might know, DOS uses DosPackets to talk to filesystems while any
+other system on the AmigaOS uses Exec IORequests. Therefore, AROS
+uses IORequests for filesystems, too (because they are much more
+clean in design). Now you can port AmigaOS code which relies on
+packets and it will work.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>18.02.2001</TD><TD>
+Johan Alfredsson began work on record locking and fixed a notification
+bug in RAM handler.<P>
+
+Sebastian Heutling fixed a bug in his filesystem (extending a new
+file didn't always work).<P>
+
+Kjetil Svalastog Matheussen improved his CAMD/MIDI library.<P>
+
+Georg Steger added a demo for a register tab gadget.  He also committed an
+ILBM-&gt;C converter so we can put images in our software (for example, the map of
+Earth in the locale preferences). 
+</TD></TR>
+
+<TR><TD VALIGN=TOP>15.02.2001</TD><TD>
+Georg Steger wrote the locale sensitve StrToDate replacement and
+made IPrefs install them. The workbench screen title is now 
+"Workbench Screen" as it should be. Also some bugs which the
+test code showed in the date&lt;-&gt;string conversion were
+squished by him. Lastly, he added some scripts to start Doom
+with a certain amount of players using his netlocal routines.
+Makes a nice running demo for AROS :-)<P>
+
+Johan Alfredsson completed notifications support.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>12.02.2001</TD><TD>
 Sebastian Heutling fixed the seek() code in his filesystem and he
 implemented FSA_DISK_INFO.<P>

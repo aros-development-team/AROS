@@ -25,6 +25,139 @@ in the <strong>Links</strong> section.<P>
 <H2>NEWS</H2>
 <TABLE>
 
+<TR><TD VALIGN=TOP>26.03.2001</TD><TD>
+Stefan Berger committed the sources for gtlayout.library and improved
+archtool further. He also added some stubs for the pool functions in
+exec which old code (for example, the gtlayout.library) expect. Seems
+like we need a way to "deprecate" an API :-) He began to port
+gtlayout.library to AROS.<P>
+
+Georg Steger committed an AVI anim with a rotating floppy disk.<P>
+
+And some statistics: We have almost completed 75% of the original AmigaOS.
+138 developers are registered. At the time of writing, the AROS
+sources were 55 MB (that includes all changes ever made to AROS)
+and we have 38.5 MB of contributed software (also with changes)
+plus several MB of screenshots. Our webpage has almost 80k hits.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>23.03.2001</TD><TD>
+Johan Alfredsson fixed the emulation of ACTION_ADD_NOTIFY, ACTION_REMOVE_NOTIFY
+and ACTION_MAKE_LINK.<P>
+
+Stefan Berger continued to improve archtool and comitted the sources
+for shutdown.library from Aminet.<P>
+
+AROS now boots into the shell instead of waiting in SAD for the user
+to start it. With the floppy code, you can now boot AROS from a floppy
+disk and actually do something useful with it :-) Horay !
+</TD></TR>
+
+<TR><TD VALIGN=TOP>20.03.2001</TD><TD>
+Georg Steger wrote a mmakefile.src for BGUI prefs.<P>
+
+Peter Eriksson began work on Font prefs.<P>
+
+Johan Grip added a MultiBoot compliant header for GRUB and
+fixed the problem with the intialization of the ide.device.
+AROS can now boot from a HD partition !<P>
+
+Georg Steger improved the oop.library which is the base of our
+HIDD system and two mmakefiles for BGUI. Next, he fixed a bug
+in the mouse detection code which made the keyboard freeze
+and made the ide.hidd compile on Linux 2.4.<P>
+
+Stefan Berger fixed BUG 00080 (cd into a file) and added
+a new bug in C:Which.<P>
+
+Przemys³aw Szczygielski made tools in C: compile for
+AROS Native/i386.<P>
+
+Sebastian Heutling fixed a bug in the trackdisk driver for
+AROS Native/i386.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>17.03.2001</TD><TD>
+Johan Alfredsson finished DoPkt(). He also fixed ACTION_FIND#? and 
+ACTION_END.<P>
+
+Stefan Berger finished AbortPkt() and the mmakefiles for BGUI so it
+compiles for AROS Native/i386. He marked all bugs as fixed which are
+fixed now. He also reordered the TODO list.<P>
+
+Iain Templeton added some new bugs. The build process will now say
+what is not implemented in emul_handler. He removed some old code
+from Intuition.library and improved the init code of console and
+input.device and exec.library. He removed a lot of CVS log headers
+from files in dos.library.<P>
+
+Johan Alfredsson made ACTION_COPY_DIR, ACTION_COPY_DIR_FH,
+ACTION_LOCATE_OBJECT, ACTION_LOCK_RECORD and ACTION_FREE_RECORD work.<P>
+
+Georg Steger fixed a deadlock in ExtendFont(). The X11.hidd now uses
+dos.library to read the x11keymaptable. The rendering of text to a
+bitmap.hidd is now protected by a semaphore. And he improved the
+ASL font requester.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>14.03.2001</TD><TD>
+Sebastian Heutling made AROS reboot if it cannot read from floppy disk
+(so you can now change the disks and boot if the wrong disk was in the
+drive).<P>
+
+Johan Alfredsson finished the packet emulation. We should now be able
+to run old software which uses DOS packets.<P>
+
+Georg Steger fixed a bug in the gtmultiselect demo, the graphics
+emulation (ghosting of gadgets) and the gameport.device. There is
+now some intellimouse support. He improved the mouse driver further.<P>
+
+Jonathan Perkin improved configure for FreeBSD (make sure we use
+GNU make).<P>
+
+Iain Templeton made the LVOs more simple: Instead of using JMP <addr>,
+AROS just stores the destination addess in the LVO table. Since we use
+macros for all this stuff, he had just 8 lines to change. He also
+fixed a bug for non-Linux systems.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>11.03.2001</TD><TD>
+Georg Steger continued his conquest to kill unecessary debug output.
+Good luck ! locale.library can now patch dos.library to use the correct
+locale. And he fixed a bug on Examine(). He added localization support
+to asl.library.<P>
+
+Stefan Berger improved PS/2 support (mouse/keyboard). Next, he began to
+work on an improved version of archtool. <P>
+
+Johan Alfredsson improved the packet emulation system (DOS packet to
+Exec IORequest mapper).<P>
+
+Peter Eriksson added a swedish catalog to asl.library and dos.library.<P>
+
+Przemys³aw Szczygielski improved the polish (polski) catalogs.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>09.03.2001</TD><TD>
+Georg Steger made sure that windows don't get closed while menus of them
+are still open. Clicking on the screen bar doesn't make the current window
+inactive anymore. And he fixed a small bug in our port of DOpus. The
+stack is now 40K instead of 8K (just to prevent stupid crashes until
+we have some good stack extending code). Some debug output was disabled
+and a problem with refreshes on X11 was improved. Tagbases are now
+the same as on AmigaOS. There are now german catalogs for dos.library.<P>
+
+Stefan Berger made the floppy drive recognition code work reliable.
+He also improved mouse support and the serial and parallel.hidd.<P>
+
+Iain Templeton updated the FreeBSD port of AROS and fixed a bug in
+the console.device.<P>
+
+Henning Kiel improved cpak, a tool to make compilation faster (all .c
+sources for a library are concatenated into one large file and that
+is then compiled).
+</TD></TR>
+
 <TR><TD VALIGN=TOP>07.03.2001</TD><TD>
 Sebastian Heutling has created some floppy images for AROS (a boot
 image with the kernel and a boot floppy with an FFS filesystem from
@@ -34,110 +167,6 @@ at
 <A HREF="ftp://ftp.aros.org/pub/aros/DiskImages/">ftp://ftp.aros.org/pub/aros/DiskImages/</A>
 or at Sebastians site at
 <A HREF="http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros/">http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros/</A>.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>05.03.2001</TD><TD>
-Georg Steger fixed a couple of bugs in the initialization code of
-AROS Linux/x86 and AROS Native/x86. Also commands with input
-redirection in shell script should work now. C:ConClip is now
-started in the Startup-Sequence. Global variables are now in the
-BSS segment and get initialized manually, so they have a defined
-value after a reset (otherwise, they would be initilized once and
-keep their value after a reset). And a bug in the menu handling in
-intuition was fixed.<P>
-
-Iain Templeton fixed a bug in text.datatype, added some new alerts
-for our HIDD system and made sure that some more temporary files
-are created in the build rather than in the source tree.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>01.03.2001</TD><TD>
-Stefan Berger fixed the smearing in DrawGList().<P>
-
-Georg Steger fixed some more ULONGs that should have been IPTRs and the
-depth calculations for AROS' screens on X11. Relative mousemovements
-are now confined to the screen borders and two apps can now render text
-at the same time without trashing the screen.<P>
-
-Johan Alfredsson fixed some bugs in the Dos.library and finished
-C:Copy. ENVARC: is now copied to ENV: in the startup sequence so
-saved prefs survive a reset.<P>
-
-Henning Kiel hunted a lot of spelling errors down.<P>
-
-Sebastian Heutling made our new filesystem compile when AROS Native/i386
-is built. The new native kernel now includes a filesystem ! Soon, we'll
-be able to do something with AROS when it runs standalone :-) Also,
-the floppy drives are now searched for bootable floppy disks. And some
-bugs in the filesystem were fixed.<P>
-
-Peter Eriksson added Swedish translation for Locale Preferences.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>25.02.2001</TD><TD>
-Georg Steger finished Locale preferences. Have a look at our
-<A HREF="screenshots/index.html">screenshots</A> !! Definitely
-worth a look :-) There is now a demo on how to use the
-cool_buttonclass from his coolimages lib. XaoS depends on
-topaz/8 font, so it didn't work correctly anymore, because we
-use a proportional font now. <P>
-
-Johan Alfredsson fixed a bug in C:SetKeyboard and RAM handler.
-IPrefs can now use notification in ENV:Sys/ to update preferences.<P>
-
-Thanks to Stefan Berger, one can now abort packets sent to filesystems.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>22.02.2001</TD><TD>
-Georg Steger implemented FindCliProc() and brought the workbench
-background pattern back. There is now a tool to install a pattern.
-Locking of Open/CloseWorkbench() should be correct now. He also
-committed a batch of new <A HREF="screenshots/index.html">screenshots</A> !
-Here you can see our first preferences program: Locale.
-There is now a linklib with some icons (used, for example,
-by ASL).<P>
-
-Johan Alfredsson finished record locking (mostly untested because
-we have no filesystem which supports locking, yet).<P>
-
-Lars Bischoff cleaned S:Startup-Sequence. S:User-Startup is now
-supported.<P>
-
-Sebastian Heutling improved his filesystem (removed a lot of global
-variables).<P>
-
-Stefan Berger began to work on a packet IO system emulator. As you
-might know, DOS uses DosPackets to talk to filesystems while any
-other system on the AmigaOS uses Exec IORequests. Therefore, AROS
-uses IORequests for filesystems, too (because they are much more
-clean in design). Now you can port AmigaOS code which relies on
-packets and it will work.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>18.02.2001</TD><TD>
-Johan Alfredsson began work on record locking and fixed a notification
-bug in RAM handler.<P>
-
-Sebastian Heutling fixed a bug in his filesystem (extending a new
-file didn't always work).<P>
-
-Kjetil Svalastog Matheussen improved his CAMD/MIDI library.<P>
-
-Georg Steger added a demo for a register tab gadget.  He also committed an
-ILBM-&gt;C converter so we can put images in our software (for example, the map of
-Earth in the locale preferences). 
-</TD></TR>
-
-<TR><TD VALIGN=TOP>15.02.2001</TD><TD>
-Georg Steger wrote the locale sensitve StrToDate replacement and
-made IPrefs install them. The workbench screen title is now 
-"Workbench Screen" as it should be. Also some bugs which the
-test code showed in the date&lt;-&gt;string conversion were
-squished by him. Lastly, he added some scripts to start Doom
-with a certain amount of players using his netlocal routines.
-Makes a nice running demo for AROS :-)<P>
-
-Johan Alfredsson completed notifications support.
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
