@@ -12,6 +12,7 @@
 
 APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...);
 BOOL 	MUI_AslRequestTags(APTR requester, Tag tag1, ...);
+Object *MUI_MakeObject(LONG type, ...);
 Object *MUI_NewObject(char *classname, Tag tag1, ...);
 
 ##end clib
