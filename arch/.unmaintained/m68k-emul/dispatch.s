@@ -93,7 +93,7 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	/* If called from the signal handler don't do it. */
 	tst.b	AROS_CSYMNAME(supervisor)
 	jne	.noen
-	jbsr	en
+	jbsr	AROS_CSYMNAME(en)
 
 .noen:
 	/* Except bit set? */
@@ -111,4 +111,3 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 .noexpt:
 	movem.l	(%sp)+,%d0-%d7/%a0-%a6
 	rts
-
