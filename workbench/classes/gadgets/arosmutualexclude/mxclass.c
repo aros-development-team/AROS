@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: AROS specific mutualexclude class implementation.
-    Lang: English
+    AROS specific mutualexclude class implementation.
 */
 
 /***********************************************************************************/
@@ -46,7 +45,7 @@
 void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 {
     struct MXData  *data = INST_DATA(cl, obj);
-    struct TagItem *tag, *taglist = msg->ops_AttrList;
+    const struct TagItem *tag, *taglist = msg->ops_AttrList;
 
     while ((tag = NextTagItem(&taglist)))
     {
@@ -150,9 +149,9 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 
 IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    struct MXData   *data = INST_DATA(cl, obj);
-    struct TagItem  *tag, *taglist = msg->ops_AttrList;
-    IPTR    	    retval = FALSE;
+    struct MXData         *data = INST_DATA(cl, obj);
+    const struct TagItem  *tag, *taglist = msg->ops_AttrList;
+    IPTR    	           retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
