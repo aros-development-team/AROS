@@ -1,0 +1,28 @@
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES  := browse formatting fileinfo
+
+EXEDIR := $(AROS_C)/Wanderer
+EXE    := $(EXEDIR)/Browse
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MUILIB      := yes
+USE_AROSLIB     := yes
+
+#MM workbench-c-wanderer-browse : includes linklibs
+
+%make_prog_setup mmake=workbench-c-wanderer-browse
+
+workbench-c-wanderer-browse : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE) 
+
+#MM setup
+setup ::
+	%mkdirs_q $(EXEDIR)
+
+%common
+%include_deps
