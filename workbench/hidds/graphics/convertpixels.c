@@ -18,37 +18,43 @@
 /****************************************************************************************/
 
 #define SHIFT_PIX(pix, shift)	\
-	(( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
+    (( (shift) < 0) ? (pix) >> (-shift) : (pix) << (shift) )
 
 
-#define GETPIX32(s, pix)	\
-	 pix = ( *((ULONG *)s) ++ );
+#define GETPIX32(s, pix) \
+    do { pix = *(ULONG *)s; s = (UBYTE *)s + 4; } while (0)
 
 #if AROS_BIG_ENDIAN
-#define GETPIX24(s, pix) 	\
-	pix = (      ( ((UBYTE *)s)[0] << 16 )	\
-		   | ( ((UBYTE *)s)[1] << 8  )	\
-		   | ( ((UBYTE *)s)[2] )	);	\
-	((UBYTE *)s) += 3;
+#define GETPIX24(s, pix)                \
+    do                                  \
+    {                                   \
+        pix = (((UBYTE *)s)[0] << 16) | \
+              (((UBYTE *)s)[1] << 8)  | \
+	       ((UBYTE *)s)[2];	        \
+	s = (UBYTE *)s + 3;             \
+    } while (0);                         
 
 #else
 #define GETPIX24(s, pix) 	\
-	pix = (      ( ((UBYTE *)s)[2] << 16 )	\
-		   | ( ((UBYTE *)s)[1] << 8  )	\
-		   | ( ((UBYTE *)s)[0] )	);	\
-	((UBYTE *)s) += 3;
+    do                                  \
+    {                                   \
+        pix = (((UBYTE *)s)[2] << 16) | \
+              (((UBYTE *)s)[1] << 8)  | \
+	       ((UBYTE *)s)[0];	        \
+	s = (UBYTE *)s + 3;             \
+    } while (0);                         
 
 #endif
 
-#define GETPIX16(s, pix)	\
-	pix = *((UWORD *)s) ++;
+#define GETPIX16(s, pix) \
+    do { pix = *(UWORD *)s; s = (UBYTE *)s + 2; } while (0)
 
 
 #define GETPIX8(s, pix)	\
-	pix = *((UBYTE *)s) ++;
+    do { pix = *(BYTE *)s; s = (UBYTE *)s + 1; } while (0)
 
 #define GET_TRUE_PIX(s, pix, pf)			\
-	switch (pf->bytes_per_pixel) {			\
+	switch ((pf)->bytes_per_pixel) {	        \
 		case 4: GETPIX32(s, pix); break;	\
 		case 3: GETPIX24(s, pix); break;	\
 		case 2: GETPIX16(s, pix); break;	\
@@ -66,27 +72,32 @@
 	}	\
 	pix = lut[pix];
 
-#define PUTPIX32(d, pix)	\
-	*((ULONG *)d) ++ = pix;
-
+#define PUTPIX32(d, pix) \
+    do { *(ULONG *)d = pix; d = (UBYTE *)d + 4; } while (0)
 
 #if AROS_BIG_ENDIAN	
-#define PUTPIX24(d, pix)	\
-	((UBYTE *)d)[0] = (UBYTE)((pix >> 16) & 0x000000FF);	\
-	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF);	\
-	((UBYTE *)d)[2] = (UBYTE)( pix & 0x000000FF);	\
-	((UBYTE *)d) += 3;
+#define PUTPIX24(d, pix)                                     \
+    do                                                       \
+    {                                                        \
+        ((UBYTE *)d)[0] = (UBYTE)((pix >> 16) & 0x000000FF); \
+	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF); \
+	((UBYTE *)d)[2] = (UBYTE)( pix & 0x000000FF);        \
+	d = (UBYTE *)d + 3;                                  \
+    } while (0)
 #else
 #define PUTPIX24(d, pix)	\
-	((UBYTE *)d)[2] = (UBYTE)((pix >> 16) & 0x000000FF);	\
-	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF);	\
-	((UBYTE *)d)[0] = (UBYTE)( pix & 0x000000FF);	\
-	((UBYTE *)d) += 3;
+    do                                                       \
+    {                                                        \
+        ((UBYTE *)d)[2] = (UBYTE)((pix >> 16) & 0x000000FF); \
+	((UBYTE *)d)[1] = (UBYTE)((pix >> 8 ) & 0x000000FF); \
+	((UBYTE *)d)[0] = (UBYTE)( pix & 0x000000FF);        \
+	d = (UBYTE *)d + 3;                                  \
+    } while (0)
 
 #endif
 
 #define PUTPIX16(d, pix)	\
-	*((UWORD *)d) ++ = (UWORD)pix;
+    do { *(UWORD *)d = pix; d = (UBYTE *)d + 2; } while (0)
 
 #define PUT_TRUE_PIX(d, pix, pf)			\
 	switch (pf->bytes_per_pixel) {			\
@@ -101,8 +112,8 @@
 
 
 #define INIT_VARS()	\
-	APTR src = *msg->srcPixels;			\
-	APTR dst = *msg->dstBuf;			\
+	UBYTE *src = *msg->srcPixels;			\
+	UBYTE *dst = *msg->dstBuf;			\
 	
 #define INIT_FMTVARS()	\
 	HIDDT_PixelFormat *srcfmt = msg->srcPixFmt;	\
@@ -149,8 +160,8 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 #endif	    
     for (y = 0; y < msg->height; y ++)
     {
-    	APTR s = src;
-	APTR d = dst;
+    	UBYTE * s = src;
+	UBYTE * d = dst;
 	
     	for (x = 0; x < msg->width; x ++)
 	{
@@ -179,8 +190,8 @@ bug("destmasks = %p %p %p %p  diffs = %d %d %d %d\n",
 	    
 	} /* for (x) */
 	
-	((UBYTE *)src) += msg->srcMod;
-	((UBYTE *)dst) += msg->dstMod;
+	src += msg->srcMod;
+	dst += msg->dstMod;
 	
     } /* for (y) */
     
@@ -224,8 +235,8 @@ static VOID pal_to_true(OOP_Class *cl, OOP_Object *o,
 	    
 	
 	}
-	((UBYTE *)src) += msg->srcMod;
-	((UBYTE *)dst) += msg->dstMod;
+	src += msg->srcMod;
+	dst += msg->dstMod;
 	
     } 
     
@@ -273,8 +284,8 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o,
 
     for ( y = 0; y < msg->height; y ++)
     {
-	APTR d = dst;
-	APTR s = src;
+	UBYTE *d = dst;
+	UBYTE *s = src;
 	
 	for (x = 0; x < msg->width; x ++)
 	{
@@ -282,28 +293,32 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o,
 	    switch (dstfmt->bytes_per_pixel)
 	    {
 		case 4:
-		    *((ULONG *)d) ++ = (ULONG)*((HIDDT_Pixel *)s) ++;
+		    *(ULONG *)d  = (ULONG)*((HIDDT_Pixel *)s);
+		    d += 4; s += sizeof(HIDDT_Pixel);
 		    break;
 	    
 		case 3:
 		{
 		    HIDDT_Pixel dstpix;
 		
-		    dstpix = *((HIDDT_Pixel *)s) ++;
+		    dstpix = *((HIDDT_Pixel *)s);
 		
-		    ((UBYTE *)d)[0] = (UBYTE)((dstpix >> 16) & 0x000000FF);
-		    ((UBYTE *)d)[1] = (UBYTE)((dstpix >> 8)  & 0x000000FF);
-		    ((UBYTE *)d)[2] = (UBYTE)(dstpix  & 0x000000FF);
+		    d[0] = (UBYTE)((dstpix >> 16) & 0x000000FF);
+		    d[1] = (UBYTE)((dstpix >> 8)  & 0x000000FF);
+		    d[2] = (UBYTE)(dstpix  & 0x000000FF);
 	    
+	            d += 3; s += sizeof(HIDDT_Pixel);
 		    break;
 		}
 	    
 		case 2:
-		    *((UWORD *)d) ++ = (UWORD)(*((HIDDT_Pixel *)s) ++);
+		    *((UWORD *)d) = (UWORD)(*((HIDDT_Pixel *)s));
+	            d += 2; s += sizeof(HIDDT_Pixel);	    
 		    break;
 	    
 		case 1:
-		    *((UBYTE *)d) ++ = (UBYTE)*((HIDDT_Pixel *)s) ++;
+		    *d  = (UBYTE)*((HIDDT_Pixel *)s);
+	            d += 1; s += sizeof(HIDDT_Pixel);	    
 		    break;
 			
     	    #if 0
@@ -327,8 +342,8 @@ static void native32_to_native(OOP_Class *cl, OOP_Object *o,
 				
 	} /* for (x) */
 	    
-	((UBYTE *)src) += msg->srcMod;
-	((UBYTE *)dst) += msg->dstMod;
+	src += msg->srcMod;
+	dst += msg->dstMod;
 
     }
     
@@ -362,8 +377,8 @@ static VOID quick_copy(OOP_Class *cl, OOP_Object *o,
 	for (i = 0; i < msg->height; i ++)
 	{
 	    memcpy(dst, src, copy_width);
-	    ((UBYTE *)src) += msg->srcMod;
-	    ((UBYTE *)dst) += msg->dstMod;
+	    src += msg->srcMod;
+	    dst += msg->dstMod;
 	}
     }
 	
