@@ -279,7 +279,12 @@ void InitCore(void)
 #endif
 
     /* We want to be signalled - make these interrupts. */
+#ifdef SIGCORE_NEED_SA_SIGINFO
+    sa.sa_sigaction = (void *)SIGHANDLER;
+    sa.sa_flags |= SA_SIGINFO;
+#else
     sa.sa_handler = (SIGHANDLER_T)SIGHANDLER;
+#endif
     sa.sa_mask = sig_int_mask;
     for(i=0; i < (sizeof(sig2int) / sizeof(sig2int[0])); i++)
     {
