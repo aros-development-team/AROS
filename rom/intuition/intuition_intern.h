@@ -148,6 +148,7 @@ struct IntScreen
     struct PubScreenNode 	* pubScrNode;
     Object 			* depthgadget;
     UWORD  			SpecialFlags;
+    struct Layer                * rootLayer;
 };
 
 #define GetPrivScreen(s)	((struct IntScreen *)s)

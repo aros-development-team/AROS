@@ -136,6 +136,10 @@
 	    } else {
 	    	SetFrontBitMap(NULL, FALSE);
 	    }
+
+	    /* Free the root layer */
+	    DeleteLayer(0UL, ((struct IntScreen *)screen)->rootLayer);
+	    
 	    /* Free the screen's bitmap */
 
 	    FreeBitMap(screen->RastPort.BitMap);
@@ -155,7 +159,6 @@
 	    /* Free the memory */
 	    FreeMem(screen, sizeof (struct IntScreen));
 	    
-
 	    ReturnBool("CloseScreen",TRUE);
 	}
 	
