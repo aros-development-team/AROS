@@ -35,6 +35,8 @@ extern int main (int argc, char ** argv);
 extern jmp_buf __startup_jmp_buf;
 extern LONG __startup_error;
 
+DECLARESET(INIT);
+DECLARESET(EXIT);
 DECLARESET(CTORS);
 DECLARESET(DTORS);
 
@@ -91,19 +93,25 @@ AROS_UFH3(LONG, __startup_entry,
 	__argv = (char **)WBenchMsg;
     }
 
-    if
-    (
-        !(__startup_error = set_open_libraries()) &&
-        !(__startup_error = set_call_funcs(SETNAME(CTORS), 1))
-    )
+    if (!setjmp(__startup_jmp_buf))
     {
-        /* Invoke main() */
-        if (!setjmp(__startup_jmp_buf))
+        if
+        (
+            !(__startup_error = set_open_libraries()) &&
+            !(__startup_error = set_call_funcs(SETNAME(INIT), 1))
+        )
+        {
+            int n = 1;
+
+            while (SETNAME(CTORS)[n]) ((VOID_FUNC)(SETNAME(CTORS)[n++]))();
+
 	    __startup_error = main (__argc, __argv);
+        }
 
     }
 
     set_call_funcs(SETNAME(DTORS), -1);
+    set_call_funcs(SETNAME(EXIT), -1);
     set_close_libraries();
 
     /* Reply startup message to Workbench.
@@ -145,15 +153,6 @@ LONG __startup_error;
 
 DEFINESET(CTORS);
 DEFINESET(DTORS);
+DEFINESET(INIT);
+DEFINESET(EXIT);
 
-/*	Stub function for GCC __main().
-
-	The __main() function is originally used for C++ style constructors
-	and destructors in C. This replacement does nothing and gets rid of
-	linker-errors about references to __main().
-*/
-
-void __main(void)
-{
-/* Do nothing. */
-}
