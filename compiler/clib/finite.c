@@ -18,6 +18,9 @@
 
 #include "__math.h"
 
+#ifdef finite
+#   undef finite
+#endif
 int finite(double x)
 {
     int hx;
