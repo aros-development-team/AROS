@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 FILES := dispatch
 FUNCS := obtainengine
 
-#MM workbench-datatypes-sound : includes linklibs
+#MM workbench-datatypes-sound : includes linklibs contrib-AHI
 
 USER_CFLAGS := -I$(GENDIR)/contrib/AHI/Include/gcc
 
