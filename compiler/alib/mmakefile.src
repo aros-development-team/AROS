@@ -115,13 +115,16 @@ FILES	:= \
 
 # The rules to build the startup code.
 
-linklibs-startup : $(LIBDIR)/startup.o
+linklibs-startup : $(LIBDIR)/startup.o $(LIBDIR)/detach.o
 
 %make_linklib
 
 $(LIBDIR)/startup.o : startup.c
 	%compile_q
 
+$(LIBDIR)/detach.o : detach.c
+	%compile_q
+	
 # Tests - these probably won't work at the moment.
 ifeq (1,0)
 #MM
