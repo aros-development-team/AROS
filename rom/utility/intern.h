@@ -124,4 +124,21 @@ struct IntNamedObject
 struct NameSpace *GetNameSpace(struct NamedObject *, struct UtilityBase *);
 struct IntNamedObject *IntFindNamedObj(struct NameSpace *, struct Node *, STRPTR, struct UtilityBase *);
 
+/*
+    Access union to get a some memory in Pack|UnpackStructureTags(). I use
+    this because
+    a) it's neater.
+    b) it avoids any bizarre aliasing problems in the compiler.
+    c) did I say it makes stuff easier to read? :-)
+*/
+union memaccess
+{
+    UBYTE   ub;
+    UWORD   uw;
+    ULONG   ul;
+    BYTE    sb;
+    WORD    sw;
+    LONG    sl;
+};
+
 #endif

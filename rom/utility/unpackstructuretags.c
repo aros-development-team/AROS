@@ -63,12 +63,13 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct UtilityBase *, UtilityBase)
 
-    Tag 	tagBase;
-    UWORD	memOff;
-    UWORD	tagOff;
-    UBYTE	bitOff;
-    struct TagItem *ti;
-    LONG	count = 0;
+    Tag			tagBase;
+    UWORD		memOff;
+    UWORD		tagOff;
+    UBYTE		bitOff;
+    struct TagItem *	ti;
+    LONG		count = 0;
+    union memaccess *	memptr;
 
     tagBase = *packTable++;
     for( ; *packTable != 0; packTable++)
@@ -92,56 +93,48 @@
 
 	memOff = *packTable & 0x1FFF;
 	bitOff = (*packTable & 0xE000) >> 13;
+	memptr = (union memaccess *)((UBYTE *)pack + memOff);
 
 	/*
-	    I need this rather interesting casting because the offset
-	    is always in bytes, but the cast to (ULONG *) etc, will cause
-	    the array indexing to be done in different sizes, so I basically
-	    override that, then cast to the required size. This is worse
-	    than in PackStructure tags, because we need to do strange
-	    casting of the ti->ti_Data field.
-
-	    Ah, so much easier in assembly eh?
-
-	    Also the assigning is different for signed and unsigned since
+	    The assigning is different for signed and unsigned since
 	    ti_Data is not necessarily the same size as the structure field,
 	    so we have to let the compiler do sign extension.
 	*/
 	switch(*packTable & 0x98000000)
 	{
 	    case PKCTRL_ULONG:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(ULONG *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->ul;
 		break;
 
 	    case PKCTRL_UWORD:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(UWORD *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->uw;
 		break;
 
 	    case PKCTRL_UBYTE:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(UBYTE *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->ub;
 		break;
 
 	    case PKCTRL_LONG:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(LONG *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->sl;
 		break;
 
 	    case PKCTRL_WORD:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(WORD *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->sw;
 		break;
 
 	    case PKCTRL_BYTE:
-		*(IPTR *)ti->ti_Data = (IPTR)(*(BYTE *)&((UBYTE *)pack)[memOff]);
+		*(IPTR *)ti->ti_Data = (IPTR)memptr->sb;
 		break;
 
 	    case PKCTRL_BIT:
-		if( ((UBYTE *)pack)[memOff] & (1 << bitOff) )
+		if( memptr->ub & (1 << bitOff) )
 		    *(IPTR *)ti->ti_Data = TRUE;
 		else
 		    *(IPTR *)ti->ti_Data = FALSE;
 		break;
 
 	    case PKCTRL_FLIPBIT:
-		if( ((UBYTE *)pack)[memOff] & (1 << bitOff) )
+		if( memptr->ub & (1 << bitOff) )
 		    *(IPTR *)ti->ti_Data = FALSE;
 		else
 		    *(IPTR *)ti->ti_Data = TRUE;
@@ -150,15 +143,14 @@
 	    /* We didn't actually pack anything */
 	    default:
 		count--;
-		
+
 	} /* switch() */
-	
+
 	count++;
-	
+
     } /* for() */
 
     return count;
 
     AROS_LIBFUNC_EXIT
-    
 } /* UnpackStructureTags */
