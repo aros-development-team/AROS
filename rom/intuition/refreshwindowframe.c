@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2000/04/08 16:37:37  stegerg
+    removed ilock variable because it is unused.
+
     Revision 1.12  2000/03/17 22:13:46  stegerg
     Don't LockIBase before and after int_refreshglist
 
@@ -87,7 +90,6 @@
     struct DrawInfo *dri;
     struct Region *old_clipregion;
     WORD  old_scroll_x, old_scroll_y;
-    ULONG ilock;
     
     EnterFunc(bug("RefreshWindowFrame(window=%p)\n", window));
     
