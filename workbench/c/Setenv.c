@@ -80,91 +80,70 @@
 #include <utility/tagitem.h>
 #include <stdio.h>
 
-#define ARG_TEMPLATE    "NAME,STRING/F"
-#define ARG_NAME        0
-#define ARG_STRING      1
-#define TOTAL_ARGS      2
+#include "shcommands.h"
 
-static const char version[] = "$VER: Setenv 41.1 (13.08.1997)\n";
-
-int __nocommandline;
-
-int main(void)
+AROS_SH2(Setenv, 41.1, 13.08.1997,
+AROS_SHA(,NAME,     , NULL),
+AROS_SHA(,STRING, /F, NULL))
 {
-    struct RDArgs	* rda;
-    IPTR		* args[TOTAL_ARGS] = { NULL, NULL };
-    int			  Return_Value;
-    BOOL		  Success;
-    BPTR		  lock;
+    AROS_SHCOMMAND_INIT
 
-    Return_Value = RETURN_OK;
-
-    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
-    if (rda)
+    if (SHArg(NAME) != NULL || SHArg(STRING) != NULL)
     {
-        if (args[ARG_NAME] != NULL || args[ARG_STRING] != NULL)
+        /* Make sure we get to here is either arguments are
+         * provided on the command line.
+         */
+        if (SHArg(NAME) != NULL && SHArg(STRING) != NULL)
         {
-            /* Make sure we get to here is either arguments are
-             * provided on the command line.
+            /* Add the new global variable to the list.
              */
-            if (args[ARG_NAME] != NULL && args[ARG_STRING] != NULL)
-            {
-                /* Add the new global variable to the list.
-                 */
-                Success = SetVar((STRPTR)args[ARG_NAME],
-                                 (STRPTR)args[ARG_STRING],
-                                 -1,
-                                 GVF_GLOBAL_ONLY
-                );
-                if (Success == FALSE)
-                {
-                    PrintFault(IoErr(), "Setenv");
-                    Return_Value = RETURN_ERROR;
-                }
-            }
-        }
-        else
-        {
-            /* Display a list of global variables.
-             */
-            lock = Lock("ENV:", ACCESS_READ);
-            if (lock)
-            {
-		struct FileInfoBlock * FIB = AllocVec(sizeof(struct FileInfoBlock), MEMF_CLEAR);
-		BOOL success;
-		if (FIB)
-		{
-		  success = Examine(lock, FIB);
-		  success = ExNext(lock, FIB);
-                  while (success != DOSFALSE)
-                  {
-                    /* don't show dirs */
-                    if (FIB->fib_DirEntryType < 0)
-                       printf("%s\n",FIB->fib_FileName);
-		    success = ExNext(lock, FIB);
-                  }
-                  FreeVec(FIB);
-                }
-                UnLock(lock);
-            }
-            else
-            {
-                PrintFault(IoErr(), "Setenv");
-
-                Return_Value = RETURN_FAIL;
-            }
+	     if
+	     (
+	         !SetVar((STRPTR)SHArg(NAME),
+                         (STRPTR)SHArg(STRING),
+                         -1,
+                         GVF_GLOBAL_ONLY)
+             )
+	     {
+	         SHReturn(RETURN_ERROR);
+	     }
         }
     }
     else
     {
-        PrintFault(IoErr(), "Setenv");
+        /* Display a list of global variables.
+         */
+        BPTR lock                 = NULL;
+	struct FileInfoBlock *FIB = NULL;
 
-        Return_Value = RETURN_ERROR;
+	if
+	(
+	    !(lock = Lock("ENV:", ACCESS_READ))    ||
+	    !(FIB = AllocDosObject(DOS_FIB, NULL)) ||
+	    (Examine(lock, FIB) == DOSFALSE)
+	)
+	{
+	    if (FIB) FreeDosObject(DOS_FIB, FIB);
+	    if (lock) UnLock(lock);
+
+	    SHReturn(RETURN_FAIL);
+	}
+
+        while (ExNext(lock, FIB))
+        {
+	    /* don't show dirs */
+            if (FIB->fib_DirEntryType < 0)
+	    {
+                FPuts(Output(),&FIB->fib_FileName);
+		FPuts(Output(),"\n");
+ 	    }
+	}
+
+	FreeDosObject(DOS_FIB, FIB);
+	UnLock(lock);
     }
 
-    if (rda)
-        FreeArgs(rda);
+    return (RETURN_OK);
 
-    return (Return_Value);
-
+    AROS_SHCOMMAND_EXIT
 } /* main */
