@@ -88,7 +88,7 @@
 	    	contextgad->activegadget = NULL;
 		
 	    	gad = (struct Gadget *)imsg->IAddress;
-		bug("GADGETDOWN: %d\n",imsg->Code);
+
 		if ((gad->GadgetType & GTYP_GADTOOLS) &&
 		    ((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET))
 		{
