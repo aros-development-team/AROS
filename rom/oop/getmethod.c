@@ -9,6 +9,7 @@
 #include <exec/lists.h>
 #include <proto/exec.h>
 #include <oop/oop.h>
+#include <aros/debug.h>
 #include "intern.h"
 
 /*****************************************************************************
@@ -73,7 +74,7 @@
 
     /* Paranoia */    
     if (NULL == ifm->MethodFunc) {
-	kprintf("!!! OOP/GetMethod(): IFMethod instance had no methodfunc. This should NEVER happen !!!\n");
+	D(bug("!!! OOP/GetMethod(): IFMethod instance had no methodfunc. This should NEVER happen !!!\n"));
 	return NULL;
     }
     
