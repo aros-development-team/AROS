@@ -19,7 +19,8 @@ FILES = helloworld \
 	compleximage \
 	shadowborder \
 	readicon \
-	sift
+	sift \
+	regiontest
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
