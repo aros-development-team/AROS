@@ -2,8 +2,8 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.5  2001/07/16 07:06:25  falemagn
-    Cleaned up a little
+    Revision 1.6  2001/07/16 07:26:18  falemagn
+    Cleaned up a little more
 
     Revision 1.4  2001/07/15 21:12:24  falemagn
     Ooops... forgot to do merge with Stefan changes...
@@ -475,7 +475,12 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 
     if (!path[0]) return (struct filenode *)dn;
 
-    if ((BYTE)dn->node.ln_Type <= 0) return NULL;
+    if ((BYTE)dn->node.ln_Type <= 0)
+    {
+        kprintf("User wants %S to be a directory, but it's a file.\n", dn->node.ln_Name);
+	dn = NULL;
+	return NULL;
+    }
 
     len      = LenFirstPart(path);
     nextpart = &path[len];
@@ -500,20 +505,9 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
     if (fn)
     {
 	if (nextpart[0] == '/') nextpart++;
-        if (nextpart[0])
-	{
-	    if ((BYTE)fn->node.ln_Type <= 0)
-            {
-                kprintf("User wants %.*S to be a directory, but it's a file.\n", len, path);
-	        dn = NULL;
-	        fn = NULL;
-            }
-	    else
-	    {
-		dn = (struct dirnode *)fn;
-		fn = FindFile(&dn, nextpart);
-	    }
-	}
+
+	dn = (struct dirnode *)fn;
+	fn = FindFile(&dn, nextpart);
     }
 
     return fn;
