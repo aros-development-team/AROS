@@ -311,7 +311,7 @@ else:
 	except GenmfException, ge:
 	    s = ge.s
 	    if len(sys.argv) == 4:
-		s = sys.argv[3]+":"+s
+		s = files[0]+":"+s
 		sys.exit(s+"\n")
 
 	if not template.hascommon:
@@ -321,3 +321,4 @@ else:
     
 	outfile.close()
 	
+    sys.stderr.write('\n')
