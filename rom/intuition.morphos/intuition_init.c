@@ -33,7 +33,7 @@
 #endif
 #include <utility/utility.h>
 #include <aros/asmcall.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #ifdef __MORPHOS__
 #ifdef VERSION_STRING
 #undef VERSION_STRING
