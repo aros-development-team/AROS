@@ -35,6 +35,18 @@ struct arosc_userdata * __get_arosc_userdata(void)
     #else
 
     struct arosc_privdata *acpd = GetIntETask(FindTask(NULL))->iet_acpd;
+    if (!acpd)
+    {
+        #warning FIXME: This is a quick hack to make old programs which use
+	#warning        the libc from inside newly created tasks/processes
+	#warning        without going trough special libc routines
+	#warning        (yet to be written).
+
+        /* This might be NULL as well but... oh well...  */
+
+	acpd = GetIntETask(FindTask(NULL))->iet_acpd =
+	       GetIntETask(GetETask(FindTask(NULL))->et_Parent)->iet_acpd;
+    }
 
     return &acpd->acpd_acud;
 
