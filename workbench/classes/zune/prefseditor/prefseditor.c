@@ -43,14 +43,9 @@ Object *PrefsEditor__OM_NEW
     if (self != NULL)
     {
         SETUP_INST_DATA;
-	struct TagItem noforward_attrs[] =
-	{
-	    { MUIA_Group_Forward, FALSE                       },
-	    { TAG_MORE,           (IPTR)message->ops_AttrList }
-	};
 	
         /*-- Handle initial attribute values -------------------------------*/
-        SetAttrsA(self, noforward_attrs);
+        SetAttrsA(self, message->ops_AttrList);
         
         /*-- Set defaults --------------------------------------------------*/
         data->ped_CanSave = TRUE;
@@ -160,7 +155,14 @@ IPTR PrefsEditor__OM_SET
 {
     SETUP_INST_DATA;
     struct TagItem *tstate = message->ops_AttrList,
-                   *tag;
+                   *tag,
+                    noforward_attrs[] =
+                    {
+	                { MUIA_Group_Forward, FALSE        },
+	                { TAG_MORE,           (IPTR)tstate }
+                    };
+    struct opSet noforward_message = *message;
+    noforward_message.ops_AttrList = noforward_attrs;
     
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -186,7 +188,7 @@ IPTR PrefsEditor__OM_SET
         }
     }
     
-    return DoSuperMethodA(CLASS, self, (Msg) message);
+    return DoSuperMethodA(CLASS, self, (Msg) &noforward_message);
 }
 
 IPTR PrefsEditor__OM_GET
