@@ -14,7 +14,7 @@ GENMODULE_SRCS := \
     writemccinit.c \
     writemccquery.c
 GENMODULE_INCS := genmodule.h fileread.h
-GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS)
+GENMODULE_DEPS := $(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h
 
 GENLIBDEFS_SRCS := \
     genlibdefs.c \

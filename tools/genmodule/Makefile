@@ -19,7 +19,9 @@ GENMODULEDUMMY ?= genmoduledummy
 
 all : $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY)
 
-$(GENMODULE) : $(GENMODULE_DEPS)
+GENMODULEINCLUDE := $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
+
+$(GENMODULE) : $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $(GENMODULE_SRCS) -o $@
 	@$(HOST_STRIP) $@
@@ -34,8 +36,11 @@ $(GENMODULEDUMMY) : $(GENMODULEDUMMY_DEPS)
 	@$(HOST_CC) $(HOST_CFLAGS) $(GENMODULEDUMMY_SRCS) -o $@
 	@$(HOST_STRIP) $@
 
+$(GENMODULEINCLUDE) : include/aros/libcall.h
+	@$(MKDIR) $(dir $@)
+	@$(CP) $< $@
 
 clean :
-	@$(RM) $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY)
+	@$(RM) $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY) $(GENMODULEINCLUDE)
 
 .PHONY : all clean

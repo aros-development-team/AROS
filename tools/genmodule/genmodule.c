@@ -62,10 +62,6 @@ int main(int argc, char **argv)
 
     readconfig();
     readref();
-    if (modtype == MCC || modtype == MUI || modtype == MCP)
-    {
-        readrefmcc();
-    }
     if (modtype == LIBRARY)
     {
         writeincproto(0);

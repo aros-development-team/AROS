@@ -69,7 +69,6 @@ extern int customdispatcher; /* does class have custom dispatcher? */
 
 void readconfig(void);
 void readref(void);
-void readrefmcc(void);
 void writeincproto(int dummy);
 void writeincclib(int dummy);
 void writeincdefines(int dummy);
