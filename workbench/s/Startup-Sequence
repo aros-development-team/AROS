@@ -24,6 +24,9 @@ If NOT EXISTS SYS:Fonts/_fixfonts_called
   echo "blah" >SYS:Fonts/_fixfonts_called
 EndIf
 
+SetDefaultFont ttcourier 14
+SetDefaultFont arial 13 SCREEN
+
 ; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
 
 ;Prompt "%N.%S> "
