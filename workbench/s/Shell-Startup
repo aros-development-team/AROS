@@ -1,1 +1,2 @@
-Prompt "%N.%S> "
+;Prompt "%N.%S> "
+prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
