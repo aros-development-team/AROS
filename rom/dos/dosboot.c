@@ -1,9 +1,9 @@
 /*
-	Copyright (C) 1997 AROS - The Amiga Research OS
-	$Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Id: dosboot.c,v 1.16 2001/08/26 02:27:00 falemagn Exp $
 
-	Desc: Start up the ol' Dos boot process.
-	Lang: english 
+    Desc: Start up the ol' Dos boot process.
+    Lang: english 
 */
 
 #define AROS_ALMOST_COMPATIBLE
