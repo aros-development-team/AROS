@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/12 13:23:23  digulla
+    Fixed a severe bug in the code. If nothing was found, the function returned
+    	the list-header instead of NULL
+
     Revision 1.5  1996/08/13 13:56:01  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -74,15 +78,11 @@
     assert (name);
 
     /* Look through the list */
-    node = list->lh_Head;
-
-    while (node->ln_Succ != NULL)
+    for (node=GetHead(list); node; node=GetSucc(node))
     {
 	/* check the node. If we found it, stop */
 	if (!STRCMP (node->ln_Name, name))
 	    break;
-
-	node = node->ln_Succ;
     }
 
     /*
