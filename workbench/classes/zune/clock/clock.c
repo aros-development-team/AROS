@@ -51,18 +51,19 @@ struct Clock_DATA
 IPTR Clock$OM_NEW(Class *cl, Object *obj, struct opSet *msg)
 {
     struct Clock_DATA *data;
-    struct TagItem  	*ti, tags[] =
-    {
-	{MUIA_InnerLeft     , 4 	    	    	},
-	{MUIA_InnerTop	    , 4 	    	    	},
-	{MUIA_InnerRight    , 4 	    	    	},
-	{MUIA_InnerBottom   , 4 	    	     	},
-	{TAG_MORE   	    , (IPTR)msg->ops_AttrList	}
-    };
+    struct TagItem  	*ti;
     
-    msg->ops_AttrList = tags;
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
     
-    obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
+        MUIA_InnerLeft,   4,
+	MUIA_InnerTop,    4,
+	MUIA_InnerRight,  4,
+	MUIA_InnerBottom, 4,
+	
+        TAG_MORE, (IPTR) msg->ops_AttrList	
+    );
 	
     if (!obj) return 0;
     
