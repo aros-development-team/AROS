@@ -358,6 +358,9 @@ case "$install_device" in
     fi ;;
 \([hf]d[0-9]*\))
     install_drive="$install_device" ;;
+[hf]d[0-9]*)
+    # The GRUB format with no parenthesis.
+    install_drive="($install_device)" ;;
 *)
     echo "Format of install_device not recognized." 1>&2
     usage

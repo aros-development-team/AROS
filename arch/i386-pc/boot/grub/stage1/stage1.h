@@ -80,4 +80,7 @@
    floppy.  */
 #define STAGE1_BIOS_HD_FLAG	0x80
 
+/* The drive number of not-existant drive */
+#define GRUB_NO_DRIVE           0xFF
+
 #endif /* ! STAGE1_HEADER */

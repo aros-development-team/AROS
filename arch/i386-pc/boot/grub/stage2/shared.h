@@ -206,6 +206,7 @@ extern char *grub_scratch_mem;
 #define STAGE2_ID_JFS_STAGE1_5		7
 #define STAGE2_ID_XFS_STAGE1_5		8
 #define STAGE2_ID_AFFS_STAGE1_5		9
+#define STAGE2_ID_ISO9660_STAGE1_5	10
 
 #ifndef STAGE1_5
 # define STAGE2_ID	STAGE2_ID_STAGE2
@@ -228,6 +229,8 @@ extern char *grub_scratch_mem;
 #  define STAGE2_ID	STAGE2_ID_XFS_STAGE1_5
 # elif defined(FSYS_AFFS)
 #  define STAGE2_ID	STAGE2_ID_AFFS_STAGE1_5
+# elif defined(FSYS_ISO9660)
+#  define STAGE2_ID	STAGE2_ID_ISO9660_STAGE1_5
 # else
 #  error "unknown Stage 2"
 # endif
@@ -407,6 +410,7 @@ struct linux_kernel_header
   unsigned short heap_end_ptr;		/* Free memory after setup end */
   unsigned short pad1;			/* Unused */
   char *cmd_line_ptr;			/* Points to the kernel command line */
+  unsigned long initrd_addr_max;	/* The highest address of initrd */
 } __attribute__ ((packed));
 
 /* Memory map address range descriptor used by GET_MMAP_ENTRY. */
@@ -637,6 +641,8 @@ struct geometry
   unsigned long sectors;
   /* The total number of sectors */
   unsigned long total_sectors;
+  /* Device sector size */
+  unsigned long sector_size;
   /* Flags */
   unsigned long flags;
 };

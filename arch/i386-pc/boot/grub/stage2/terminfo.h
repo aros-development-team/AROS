@@ -1,7 +1,7 @@
 /* terminfo.h - read a terminfo entry from the command line */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2002,2003  Free Software Foundation, Inc.
+ *  Copyright (C) 2002,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ char *ti_escape_string (const char *in);
 char *ti_unescape_memory (const char *in, const char *end);
 char *ti_unescape_string (const char *in);
 
-void ti_set_term (struct terminfo term);
-struct terminfo ti_get_term (void);
+void ti_set_term (const struct terminfo *new);
+void ti_get_term (struct terminfo *copy);
 
 void ti_cursor_address (int x, int y);
 void ti_clear_screen (void);

@@ -1,6 +1,10 @@
 -*- text -*-
 
-How to update the online manual:
+This is a list of random notes for GRUB maintainers. If you are not a
+maintainer, you need to ask maintainers to do these instead of doing
+these yourself.
+
+How to update the online manual: (FIXME: this is obsoelete)
 1. Copy docs/*.texi (excluding "multiboot.texi") to fencepost.gnu.org.
 2. Make a symbolic link from ~mohit/gnudoc/gnudoc_template to the
    directory under which *.texi were copied, if the link isn't present.

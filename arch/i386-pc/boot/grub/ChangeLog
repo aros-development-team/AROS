@@ -1,3 +1,86 @@
+2004-02-28  Jeroen Dekkers  <jeroen@dekkers.cx>
+
+	* docs/grub.texi (partnew): Change @var{to} to @var{len}.
+
+2004-02-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Yury V. Umanets <umka@namesys.com>:
+	* stage2/fsys_reiserfs.c (REISER3FS_SUPER_MAGIC_STRING): New
+	macro.
+	(reiserfs_mount): Added checks for ReiserFS 3.
+	(reiserfs_embed): Likewise.
+
+2004-01-25  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* docs/grub.texi (Obtaining and Building GRUB): Instead of
+	describing how to use the anoncvs method, specify the URL of
+	the description page on Savannah.
+	Reported by Bernhard Treutwein.
+
+2004-01-18  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	From Thomas Schwinge <kischde@gmx.net>:
+	* grub/Makefile.am (AM_CPPFLAGS): New variable.
+	(AM_CFLAGS): Removed all cpp flags.
+
+	* stage2/xfs.h (__int8_t): Renamed to ...
+	(xfs_int8_t): ... this.
+	(__uint8_t): Renamed to ...
+	(xfs_uint8_t): ... this.
+	(__int16_t): Renamed to ...
+	(xfs_int16_t): ... this.
+	(__uint16_t): Renamed to ...
+	(xfs_uint16_t): ... this.
+	(__int32_t): Renamed to ...
+	(xfs_int32_t): ... this.
+	(__uint32_t): Renamed to ...
+	(xfs_uint32_t): ... this.
+	(__int64_t): Renamed to ...
+	(xfs_int64_t): ... this.
+	(__uint64_t): Renamed to ...
+	(xfs_uint64_t): ... this.
+	All callers are changed.x
+
+	From Egmont Koblinger <egmont@uhulinux.hu>:
+	* util/grub-install.in: Support an install devices in GRUB's
+	notation without parentheses.
+
+	* docs/grub.texi (Installing GRUB using grub-install): Added an
+	example of using grub-install without parentheses.
+
+2004-01-18  Yoshinori K. Okuji  <okuji@enbug.org>
+	
+	* util/grub-install.in: Use the first word of GRUB_SHELL when
+	checking if the grub shell is present. This is necessary to
+	support options to the grub shell (e.g. grub --read-only).
+
+	From Eric Kvaalen <E_Kvaalen.Arnesen@noos.fr>:
+	* docs/grub.texi: Many bug fixes.
+
+2004-01-17  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* lib/device.c [__linux__] (MAJOR): Support 32 bit and 64 bit
+	dev_t. This code is stolen from glibc.
+	Suggested by Shen Feng <shen@nanjing-fnst.com>.
+
+2004-01-11  Yoshinori K. Okuji  <okuji@enbug.org>
+
+	* stage2/terminfo.c (ti_set_term): Use a pointer to struct
+	terminfo instead to avoid GCC's bug, which inserts a reference
+	to memcpy implicitly.
+	(ti_get_term): Likewise.
+	All callers are fixed.
+
+	* stage2/terminfo.h (ti_set_term): Updated.
+	(ti_get_term): Likewise.
+
+	* stage2/shared.h (struct linux_kernel_header): New member,
+	initrd_max_address. Defined in the boot protocol 2.03 or higher.
+
+	* stage2/boot.c (load_initrd): If the boot protocol is greater
+	than or equal to 2.03, use the field ``initrd_max_address''
+	instead of LINUX_INITRD_MAX_ADDRESS.
+
 2003-12-30  Yoshinori K. Okuji  <okuji@enbug.org>
 
 	* stage2/fsys_ext2fs.c (ext2_is_fast_symlink): New function.
@@ -149,6 +232,18 @@
 	DATA_LEN is less than or equal to MULTIBOOT_SEARCH.
 	Reported by Neelkanth Natu <neelnatu@yahoo.com>.
 
+2003-03-12  Leonid Lisovskiy  <lly@pisem.net>
+
+	* lib/device.c (get_drive_geometry): grub utility didn't work
+	due to uninitialized 'sector_size' struct geometry member.
+	* stage1/stage1.h (GRUB_NO_DRIVE): Constant moved from
+	stage2/shared.h and its value rolled back to 0xFF for backward
+	compatibility with original grub.
+	* stage1/stage1.S (boot_drive): Use GRUB_NO_DRIVE instead of
+	constant.
+	* stage2/bios.c (get_diskinfo): Workaround for BIOS'es that
+	has CD-ROM drive number = last harddisk + 1.
+
 2003-03-10  Yoshinori K. Okuji  <okuji@enbug.org>
 
 	From Andrew Walrond <andrew@walrond.org>:
@@ -192,6 +287,42 @@
 	Supposedly the BIOS assumes even bigger space is available and
 	thus corrupts the stack.  This is why we specify the exactly 
 	necessary size of 0x42 bytes.
+
+2003-01-28  Leonid Lisovskiy  <lly@pisem.net>
+
+	ISO9660 support is added.
+
+	* stage2/fsys_iso9660.c: New file - a lot of code stolen from
+	GRUB/98 0.5.
+	* stage2/iso9660.h: Likewise.
+	* stage2/start_torito.S: New file - El Torito boot sector.
+	* stage2/Makefile.am (noinst_HEADERS): iso9660.h added.
+	(libgrub_a_SOURCES): fsys_iso9660.c added.
+	(pkgdata_DATA): iso9660_stage1_5 added.
+	(noinst_PROGRAMS): iso9660_stage1_5.exec added.
+	* configure.in (--disable-iso9660): New option.
+	* stage2/builtins.c (setup_func): Add item for ISO9660 into
+	STAGE1_5_MAP.
+	* stage2/disk_io.c (rawread): Ability to read devices with
+	sector size other than 512 added.
+	(fsys_table): Added entry for ISO9660.
+	(check_and_print_mount): Don't print error when probing
+	partition.
+	(real_open_partition): Cleanup globals after probing.
+	* stage2/filesys.h [FSYS_ISO9660]: Add entries for ISO9660
+	functions.
+	(NUM_FSYS): Added FSYS_ISO9660_NUM.
+	* stage2/shared.h (STAGE2_ID_ISO9660_STAGE1_5): New macro.
+	(GRUB_NO_DRIVE): New constant.
+	(struct geometry): New member 'sector_size'.
+	* stage2/bios.c (get_diskinfo): Request 1.xx version of
+	int13 extensions only since higher version request can
+	destroy El Torito emulation on some BIOS'es.
+	(get_cdinfo): New function - get El Torito emulation parameters.
+	* stage2/asm.S (biosdisk_int13_extensions): pass AX, instead
+	of AH for universality, save EBX,ECX,EDX registers content to
+	avoid data corruption in caller functions.
+	(get_diskinfo_int13_extensions): Removed.
 
 2003-01-25  Yoshinori K. Okuji  <okuji@enbug.org>
 

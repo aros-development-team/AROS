@@ -17,7 +17,7 @@ endif
 #MM- config-i386-native-boot-grub : grub-quick grub-copy-stages
 
 #MM
-grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2
+grub-copy-stages : $(AROSDIR)/boot/grub/stage1 $(AROSDIR)/boot/grub/stage2 $(AROSDIR)/boot/grub/stage2_hdisk $(AROSDIR)/boot/grub/iso9660_stage1_5
 
 CFLAGS := -minline-all-stringops
 export CFLAGS
@@ -29,6 +29,14 @@ $(AROSDIR)/boot/grub/stage1: $(GENDIR)/$(CURDIR)/stage1/stage1
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@
 
-$(AROSDIR)/boot/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2
+$(AROSDIR)/boot/grub/stage2: $(GENDIR)/$(CURDIR)/stage2/stage2_eltorito
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROSDIR)/boot/grub/stage2_hdisk: $(GENDIR)/$(CURDIR)/stage2/stage2
+	%mkdirs_q $(dir $@)
+	@$(CP) $< $@
+
+$(AROSDIR)/boot/grub/iso9660_stage1_5: $(GENDIR)/$(CURDIR)/stage2/iso9660_stage1_5
 	%mkdirs_q $(dir $@)
 	@$(CP) $< $@

@@ -59,10 +59,12 @@ struct hd_geometry
 #  define FLOPPY_MAJOR	2	/* the major number for floppy */
 # endif /* ! FLOPPY_MAJOR */
 # ifndef MAJOR
-#  ifndef MINORBITS
-#   define MINORBITS	8
-#  endif /* ! MINORBITS */
-#  define MAJOR(dev)	((unsigned int) ((dev) >> MINORBITS))
+#  define MAJOR(dev)	\
+  ({ \
+     unsigned long long __dev = (dev); \
+     (unsigned) ((__dev >> 8) & 0xfff) \
+                 | ((unsigned int) (__dev >> 32) & ~0xfff); \
+  })
 # endif /* ! MAJOR */
 # ifndef CDROM_GET_CAPABILITY
 #  define CDROM_GET_CAPABILITY	0x5331	/* get capabilities */
@@ -112,7 +114,8 @@ get_drive_geometry (struct geometry *geom, char **map, int drive)
     geom->heads = hdg.heads;
     geom->sectors = hdg.sectors;
     geom->total_sectors = nr;
-    
+    geom->sector_size = SECTOR_SIZE;
+
     close (fd);
     return;
   }
@@ -128,6 +131,7 @@ get_drive_geometry (struct geometry *geom, char **map, int drive)
     geom->heads = hdg.d_ntracks;
     geom->sectors = hdg.d_nsectors;
     geom->total_sectors = hdg.d_secperunit;
+    geom->sector_size = SECTOR_SIZE;
 
     close (fd);
     return;
@@ -163,6 +167,8 @@ partially. This is not fatal."
       geom->total_sectors = st.st_blocks;
     else
       geom->total_sectors = geom->cylinders * geom->heads * geom->sectors;
+
+    geom->sector_size = SECTOR_SIZE;
   }
 
   close (fd);

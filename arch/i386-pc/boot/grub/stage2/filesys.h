@@ -95,15 +95,6 @@ int xfs_dir (char *dirname);
 #define FSYS_XFS_NUM 0
 #endif
 
-#ifdef FSYS_AFFS
-#define FSYS_AFFS_NUM 1
-int affs_mount (void);
-int affs_read (char *buf, int len);
-int affs_dir (char *dirname);
-#else
-#define FSYS_AFFS_NUM 0
-#endif
-
 #ifdef FSYS_TFTP
 #define FSYS_TFTP_NUM 1
 int tftp_mount (void);
@@ -114,11 +105,29 @@ void tftp_close (void);
 #define FSYS_TFTP_NUM 0
 #endif
 
+#ifdef FSYS_AFFS
+#define FSYS_AFFS_NUM 1
+int affs_mount (void);
+int affs_read (char *buf, int len);
+int affs_dir (char *dirname);
+#else
+#define FSYS_AFFS_NUM 0
+#endif
+
+#ifdef FSYS_ISO9660
+#define FSYS_ISO9660_NUM 1
+int iso9660_mount (void);
+int iso9660_read (char *buf, int len);
+int iso9660_dir (char *dirname);
+#else
+#define FSYS_ISO9660_NUM 0
+#endif
+
 #ifndef NUM_FSYS
 #define NUM_FSYS	\
   (FSYS_FFS_NUM + FSYS_FAT_NUM + FSYS_EXT2FS_NUM + FSYS_MINIX_NUM	\
    + FSYS_REISERFS_NUM + FSYS_VSTAFS_NUM + FSYS_JFS_NUM + FSYS_XFS_NUM	\
-   + FSYS_AFFS_NUM + FSYS_TFTP_NUM)
+   + FSYS_TFTP_NUM + FSYS_AFFS_NUM + FSYS_ISO9660_NUM)
 #endif
 
 /* defines for the block filesystem info area */

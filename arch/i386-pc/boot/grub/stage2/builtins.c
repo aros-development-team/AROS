@@ -128,7 +128,6 @@ disk_read_print_func (int sector, int offset, int length)
   grub_printf ("[%d,%d,%d]", sector, offset, length);
 }
 
-
 /* blocklist */
 static int
 blocklist_func (char *arg, int flags)
@@ -325,7 +324,6 @@ static struct builtin builtin_boot =
   "Boot the OS/chain-loader which has been loaded."
 };
 
-
 #ifdef SUPPORT_NETBOOT
 /* bootp */
 static int
@@ -371,7 +369,6 @@ static struct builtin builtin_bootp =
 };
 #endif /* SUPPORT_NETBOOT */
 
-
 /* cat */
 static int
 cat_func (char *arg, int flags)
@@ -404,7 +401,6 @@ static struct builtin builtin_cat =
   "Print the contents of the file FILE."
 };
 
-
 /* chainloader */
 static int
 chainloader_func (char *arg, int flags)
@@ -477,7 +473,6 @@ static struct builtin builtin_chainloader =
   " forcibly, whether the boot loader signature is present or not."
 };
 
-
 /* This function could be used to debug new filesystem code. Put a file
    in the new filesystem and the same file in a well-tested filesystem.
    Then, run "cmp" with the files. If no output is obtained, probably
@@ -566,7 +561,6 @@ static struct builtin builtin_cmp =
   " if any."
 };
 
-
 /* color */
 /* Set new colors used for the menu interface. Support two methods to
    specify a color name: a direct integer representation and a symbolic
@@ -696,7 +690,6 @@ static struct builtin builtin_color =
   " \"blink-\" to FG if you want a blinking foreground color."
 };
 
-
 /* configfile */
 static int
 configfile_func (char *arg, int flags)
@@ -737,7 +730,6 @@ static struct builtin builtin_configfile =
   "Load FILE as the configuration file."
 };
 
-
 /* debug */
 static int
 debug_func (char *arg, int flags)
@@ -765,7 +757,6 @@ static struct builtin builtin_debug =
   "Turn on/off the debug mode."
 };
 
-
 /* default */
 static int
 default_func (char *arg, int flags)
@@ -796,7 +787,6 @@ static struct builtin builtin_default =
 #endif
 };
 
-
 #ifdef GRUB_UTIL
 /* device */
 static int
@@ -837,7 +827,6 @@ static struct builtin builtin_device =
 };
 #endif /* GRUB_UTIL */
 
-
 #ifdef SUPPORT_NETBOOT
 /* dhcp */
 static int
@@ -857,7 +846,6 @@ static struct builtin builtin_dhcp =
 };
 #endif /* SUPPORT_NETBOOT */
 
-
 /* displayapm */
 static int
 displayapm_func (char *arg, int flags)
@@ -899,7 +887,6 @@ static struct builtin builtin_displayapm =
   "Display APM BIOS information."
 };
 
-
 /* displaymem */
 static int
 displaymem_func (char *arg, int flags)
@@ -954,7 +941,6 @@ static struct builtin builtin_displaymem =
   " machine is, including all regions of physical RAM installed."
 };
 
-
 /* dump FROM TO */
 #ifdef GRUB_UTIL
 static int
@@ -1014,7 +1000,6 @@ static struct builtin builtin_dump =
   };
 #endif /* GRUB_UTIL */
 
-
 static char embed_info[32];
 /* embed */
 /* Embed a Stage 1.5 in the first cylinder after MBR or in the
@@ -1149,7 +1134,6 @@ static struct builtin builtin_embed =
   " Print the number of sectors which STAGE1_5 occupies if successful."
 };
 
-
 /* fallback */
 static int
 fallback_func (char *arg, int flags)
@@ -1175,7 +1159,6 @@ static struct builtin builtin_fallback =
 #endif
 };
 
-
 /* find */
 /* Search for the filename ARG in all of partitions.  */
 static int
@@ -1281,7 +1264,6 @@ static struct builtin builtin_find =
   " the devices which contain the file."
 };
 
-
 /* fstest */
 static int
 fstest_func (char *arg, int flags)
@@ -1309,7 +1291,6 @@ static struct builtin builtin_fstest =
   "Toggle filesystem test mode."
 };
 
-
 /* geometry */
 static int
 geometry_func (char *arg, int flags)
@@ -1407,7 +1388,6 @@ static struct builtin builtin_geometry =
   " on the C/H/S values automatically."
 };
 
-
 /* halt */
 static int
 halt_func (char *arg, int flags)
@@ -1431,7 +1411,6 @@ static struct builtin builtin_halt =
   " the APM BIOS, unless you specify the option `--no-apm'."
 };
 
-
 /* help */
 #define MAX_SHORT_DOC_LEN	39
 #define MAX_LONG_DOC_LEN	66
@@ -1559,7 +1538,6 @@ static struct builtin builtin_help =
   " aren't shown without the option `--all'."
 };
 
-
 /* hiddenmenu */
 static int
 hiddenmenu_func (char *arg, int flags)
@@ -1579,7 +1557,6 @@ static struct builtin builtin_hiddenmenu =
 #endif
 };
 
-
 /* hide */
 static int
 hide_func (char *arg, int flags)
@@ -1603,7 +1580,6 @@ static struct builtin builtin_hide =
   " its partition type code."
 };
 
-
 #ifdef SUPPORT_NETBOOT
 /* ifconfig */
 static int
@@ -1658,7 +1634,6 @@ static struct builtin builtin_ifconfig =
 };
 #endif /* SUPPORT_NETBOOT */
 
-
 /* impsprobe */
 static int
 impsprobe_func (char *arg, int flags)
@@ -1686,7 +1661,6 @@ static struct builtin builtin_impsprobe =
   " a tight loop."
 };
 
-
 /* initrd */
 static int
 initrd_func (char *arg, int flags)
@@ -1717,7 +1691,6 @@ static struct builtin builtin_initrd =
   " appropriate parameters in the Linux setup area in memory."
 };
 
-
 /* install */
 static int
 install_func (char *arg, int flags)
@@ -1731,7 +1704,7 @@ install_func (char *arg, int flags)
   /* XXX: Probably SECTOR_SIZE is reasonable.  */
   char *config_filename = stage2_second_buffer + SECTOR_SIZE;
   char *dummy = config_filename + SECTOR_SIZE;
-  int new_drive = 0xFF;
+    int new_drive = GRUB_NO_DRIVE;
   int dest_drive, dest_partition, dest_sector;
   int src_drive, src_partition, src_part_start;
   int i;
@@ -2062,7 +2035,7 @@ install_func (char *arg, int flags)
 	      /* If the drive where the Stage 2 resides is the same as
 		 the one where the Stage 1.5 resides, do not embed the
 		 drive number.  */
-	      current_drive = 0xFF;
+	      current_drive = GRUB_NO_DRIVE;
 	    }
 
 	  device = (current_drive << 24) | current_partition;
@@ -2254,7 +2227,6 @@ static struct builtin builtin_install =
   " 2 via your OS's filesystem instead of the raw device."
 };
 
-
 /* ioprobe */
 static int
 ioprobe_func (char *arg, int flags)
@@ -2297,7 +2269,6 @@ static struct builtin builtin_ioprobe =
   "Probe I/O ports used for the drive DRIVE."
 };
 
-
 /* kernel */
 static int
 kernel_func (char *arg, int flags)
@@ -2386,7 +2357,6 @@ static struct builtin builtin_kernel =
   " Linux's mem option automatically."
 };
 
-
 /* lock */
 static int
 lock_func (char *arg, int flags)
@@ -2408,8 +2378,7 @@ static struct builtin builtin_lock =
   "lock",
   "Break a command execution unless the user is authenticated."
 };
-  
-
+
 /* makeactive */
 static int
 makeactive_func (char *arg, int flags)
@@ -2430,7 +2399,6 @@ static struct builtin builtin_makeactive =
   " This command is limited to _primary_ PC partitions on a hard disk."
 };
 
-
 /* map */
 /* Map FROM_DRIVE to TO_DRIVE.  */
 static int
@@ -2494,7 +2462,6 @@ static struct builtin builtin_map =
   " OS resides at a non-first drive."
 };
 
-
 #ifdef USE_MD5_PASSWORDS
 /* md5crypt */
 static int
@@ -2553,7 +2520,6 @@ static struct builtin builtin_md5crypt =
 };
 #endif /* USE_MD5_PASSWORDS */
 
-
 /* module */
 static int
 module_func (char *arg, int flags)
@@ -2601,7 +2567,6 @@ static struct builtin builtin_module =
   " the `kernel' command."
 };
 
-
 /* modulenounzip */
 static int
 modulenounzip_func (char *arg, int flags)
@@ -2631,7 +2596,6 @@ static struct builtin builtin_modulenounzip =
   " disabled."
 };
 
-
 /* pager [on|off] */
 static int
 pager_func (char *arg, int flags)
@@ -2663,7 +2627,6 @@ static struct builtin builtin_pager =
   " is `on', turn on the mode. If FLAG is `off', turn off the mode."
 };
 
-
 /* partnew PART TYPE START LEN */
 static int
 partnew_func (char *arg, int flags)
@@ -2782,7 +2745,6 @@ static struct builtin builtin_partnew =
   " length LEN, with the type TYPE. START and LEN are in sector units."
 };
 
-
 /* parttype PART TYPE */
 static int
 parttype_func (char *arg, int flags)
@@ -2859,7 +2821,6 @@ static struct builtin builtin_parttype =
   "Change the type of the partition PART to TYPE."
 };
 
-
 /* password */
 static int
 password_func (char *arg, int flags)
@@ -2933,7 +2894,6 @@ static struct builtin builtin_password =
   " md5crypt."
 };
 
-
 /* pause */
 static int
 pause_func (char *arg, int flags)
@@ -2956,7 +2916,6 @@ static struct builtin builtin_pause =
   "Print MESSAGE, then wait until a key is pressed."
 };
 
-
 #ifdef GRUB_UTIL
 /* quit */
 static int
@@ -2978,7 +2937,6 @@ static struct builtin builtin_quit =
 };
 #endif /* GRUB_UTIL */
 
-
 #ifdef SUPPORT_NETBOOT
 /* rarp */
 static int
@@ -3007,7 +2965,6 @@ static struct builtin builtin_rarp =
 };
 #endif /* SUPPORT_NETBOOT */
 
-
 static int
 read_func (char *arg, int flags)
 {
@@ -3031,7 +2988,6 @@ static struct builtin builtin_read =
   " display it in hex format."
 };
 
-
 /* reboot */
 static int
 reboot_func (char *arg, int flags)
@@ -3051,7 +3007,6 @@ static struct builtin builtin_reboot =
   "Reboot your system."
 };
 
-
 /* Print the root device information.  */
 static void
 print_root_device (void)
@@ -3169,7 +3124,6 @@ static struct builtin builtin_root =
   " FreeBSD root partition is on the SCSI disk, then use a `1' for HDBIAS."
 };
 
-
 /* rootnoverify */
 static int
 rootnoverify_func (char *arg, int flags)
@@ -3190,7 +3144,6 @@ static struct builtin builtin_rootnoverify =
   " derived from attempting the mount will NOT work correctly."
 };
 
-
 /* savedefault */
 static int
 savedefault_func (char *arg, int flags)
@@ -3261,7 +3214,6 @@ static struct builtin builtin_savedefault =
   "Save the current entry as the default boot entry."
 };
 
-
 #ifdef SUPPORT_SERIAL
 /* serial */
 static int
@@ -3414,7 +3366,6 @@ static struct builtin builtin_serial =
 };
 #endif /* SUPPORT_SERIAL */
 
-
 /* setkey */
 struct keysym
 {
@@ -3658,7 +3609,6 @@ static struct builtin builtin_setkey =
   " mappings."
 };
 
-
 /* setup */
 static int
 setup_func (char *arg, int flags)
@@ -3759,6 +3709,7 @@ setup_func (char *arg, int flags)
     {"ext2fs",   "/e2fs_stage1_5"},
     {"fat",      "/fat_stage1_5"},
     {"ffs",      "/ffs_stage1_5"},
+    {"iso9660",  "/iso9660_stage1_5"},
     {"jfs",      "/jfs_stage1_5"},
     {"minix",    "/minix_stage1_5"},
     {"reiserfs", "/reiserfs_stage1_5"},
@@ -4288,7 +4239,6 @@ static struct builtin builtin_terminal =
 };
 #endif /* SUPPORT_SERIAL || SUPPORT_HERCULES */
 
-
 #ifdef SUPPORT_SERIAL
 static int
 terminfo_func (char *arg, int flags)
@@ -4347,12 +4297,12 @@ terminfo_func (char *arg, int flags)
 	  return errnum;
 	}
 
-      ti_set_term (term);
+      ti_set_term (&term);
     }
   else
     {
       /* No option specifies printing out current settings.  */
-      term = ti_get_term ();
+      ti_get_term (&term);
 
       grub_printf ("name=%s\n",
 		   ti_escape_string (term.name));
@@ -4383,8 +4333,7 @@ static struct builtin builtin_terminfo =
   " If no option is specified, the current settings are printed."
 };
 #endif /* SUPPORT_SERIAL */
-	  
-
+
 /* testload */
 static int
 testload_func (char *arg, int flags)
@@ -4577,7 +4526,6 @@ static struct builtin builtin_testvbe =
   "Test the VBE mode MODE. Hit any key to return."
 };
 
-
 #ifdef SUPPORT_NETBOOT
 /* tftpserver */
 static int
@@ -4603,7 +4551,6 @@ static struct builtin builtin_tftpserver =
 };
 #endif /* SUPPORT_NETBOOT */
 
-
 /* timeout */
 static int
 timeout_func (char *arg, int flags)
@@ -4626,7 +4573,6 @@ static struct builtin builtin_timeout =
 #endif
 };
 
-
 /* title */
 static int
 title_func (char *arg, int flags)
@@ -4647,7 +4593,6 @@ static struct builtin builtin_title =
 #endif
 };
 
-
 /* unhide */
 static int
 unhide_func (char *arg, int flags)
@@ -4671,7 +4616,6 @@ static struct builtin builtin_unhide =
   " partition type code."
 };
 
-
 /* uppermem */
 static int
 uppermem_func (char *arg, int flags)
@@ -4693,7 +4637,6 @@ static struct builtin builtin_uppermem =
   " installed.  Any system address range maps are discarded."
 };
 
-
 /* vbeprobe */
 static int
 vbeprobe_func (char *arg, int flags)
