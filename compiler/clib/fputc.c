@@ -49,19 +49,21 @@
 
 ******************************************************************************/
 {
-    GETUSER;
-
     fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)
     {
+        GETUSER;
+
     	errno = EBADF;
 	return EOF;
     }
 
     if (FPutC((BPTR)fdesc->fh, c) == EOF)
     {
-    	errno = IoErr2errno(IoErr());
+        GETUSER;
+
+	errno = IoErr2errno(IoErr());
 	c = EOF;
     }
 
