@@ -55,7 +55,9 @@ BOOT_TAR_FILES := \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info \
     Themes \
-    test/printnativekeytable
+    test/printnativekeytable\
+    test/benchmarks
+    
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
