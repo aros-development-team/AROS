@@ -10,6 +10,7 @@
 #include <aros/machine.h>
 #include <exec/alerts.h>
 #include <aros/libcall.h>
+#include <aros/macros.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
 

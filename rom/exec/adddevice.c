@@ -5,6 +5,7 @@
     Desc: Add a device to the public list of devices.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
 #include <aros/libcall.h>

@@ -5,6 +5,7 @@
     Desc: Get a message from a message port.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/execbase.h>
 #include <exec/ports.h>
 #include <aros/libcall.h>

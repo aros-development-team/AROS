@@ -5,6 +5,7 @@
     Desc: Add a node at the end of a list.
     Lang: english
 */
+#include <aros/debug.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
 
