@@ -4,7 +4,7 @@
 */
 
 #ifndef REGISTERS_H
-#define REGISTERS_h
+#define REGISTERS_H
 
 #ifdef __PALM_CODE__
 #define WREG_L(addr)	*(Long *)addr
@@ -39,7 +39,7 @@
 #define PCR             0xfffff003
 
 /*
- * Whatever is in chpater 6 in the downloadable 
+ * Whatever is in chapter 6 in the downloadable 
  * dragonball documentation seems to be wrong.
  * Found the correct register description in the 
  * xcopilot source.
