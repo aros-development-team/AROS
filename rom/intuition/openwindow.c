@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include <exec/memory.h>
+#include <graphics/layers.h>
 #include <intuition/intuition.h>
 #include <utility/tagitem.h>
 #include <proto/exec.h>
@@ -73,7 +74,8 @@
     struct NewWindow nw;
     struct Window * w;
     struct TagItem *tag, *tagList;
-    struct RastPort * rp;
+    struct RastPort *rp;
+    struct Hook *backfillhook = LAYERS_BACKFILL;
 
     UBYTE * screenTitle = NULL;
     BOOL    autoAdjust	= FALSE;
@@ -222,11 +224,14 @@
 
 		break;
 
+	    case WA_BackFill:
+	    	backfillhook = (struct Hook *)tag->ti_Data;
+		break;
+		
 	    case WA_WindowName:
 	    case WA_Colors:
 	    case WA_MouseQueue:
 	    case WA_RptQueue:
-	    case WA_BackFill:
 	    case WA_MenuHelp:
 	    case WA_NotifyDepth:
 	    case WA_Checkmark:
@@ -362,7 +367,7 @@
     ((struct IntWindow *)w)->ZipWidth    = w->Width;
     ((struct IntWindow *)w)->ZipHeight   = w->Height;
     
-    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap))
+    if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
