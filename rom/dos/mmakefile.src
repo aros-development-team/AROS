@@ -1,0 +1,116 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_DOS)","yes")
+SPECIAL_CFLAGS := $(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS := -I/usr/include
+endif
+
+LIBNAME     := dos
+EXEDIR	    := $(BINDIR)/test
+TESTOBJDIR  := $(GENDIR)/rom/dos
+OBJDIR	    := $(OSGENDIR)/$(LIBNAME)
+LIB	    := $(LIBDIR)/lib$(LIBNAME).so
+
+%define_libs
+
+%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+
+INIT_FILE   := $(LIBNAME)_init
+
+FILES	    := $(LIBNAME)_functable lddemon errorlist loadseg_elf doname \
+	       loadseg_aout loadseg_aos
+
+END_FILE    := $(LIBNAME)_endtag
+
+FUNCTIONS   := \
+	abortpkt addbuffers adddosentry addpart addprocess addsegment	     \
+	allocdosobject assignadd assignlate	       \
+	assignlock assignpath attemptlockdoslist changemode checksignal cli  \
+	cliinitnewcli cliinitrun close comparedates createdir createnewproc  \
+	createproc currentdir datestamp datetostr	\
+	delay deletefile deletevar deviceproc dopkt	\
+	duplock endnotify errorreport	    \
+	exall exallend examine execute exit exnext fault fgetc	   \
+	fgets filepart findarg findcliproc finddosentry findsegment findvar  \
+	flush format fputc fputs fread freeargs freedeviceproc	     \
+	freedosentry freedosobject fwrite getargstr getconsoletask   \
+	getcurrentdirname getdeviceproc getfilesystask getprogramdir	     \
+	getprogramname getprompt getvar info inhibit input internalloadseg   \
+	internalunloadseg ioerr isfilesystem isinteractive loadseg   \
+	lock lockdoslist lockrecord lockrecords makedosentry	 \
+	makelink matchend matchfirst matchnext matchpattern		     \
+	matchpatternnocase maxcli namefromlock newloadseg	  \
+	nextdosentry open openfromlock output parentdir    \
+	parentoffh parsepattern parsepatternnocase pathpart printfault	     \
+	putstr read readargs readitem readlink relabel remassignlist	     \
+	remdosentry remsegment rename replypkt runcommand samedevice	     \
+	samelock seek selectinput selectoutput sendpkt setargstr setcomment  \
+	setconsoletask setcurrentdirname setfiledate setfilesize	     \
+	setfilesystask setioerr setmode setowner setprogramdir		     \
+	setprogramname setprompt setprotection setvar setvbuf splitname      \
+	startnotify strtodate strtolong systemtaglist ungetc	      \
+	unloadseg unlockdoslist unlockrecord unlockrecords vfprintf   \
+	vfwritef vprintf waitforchar waitpkt write writechars \
+	dosgetstring
+
+PRE_FILES := $(FILES)
+PRE_FUNCS := $(FUNCTIONS)
+%prepare_replace rom/dos
+%filter_replace FILES
+%filter_replace FUNCTIONS
+
+DEPS	    := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+ALL_FILES   := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+
+#MM kernel : setup includes kernel-setup dos-$(ARCH)
+kernel : $(LIB)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR)
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err $(LIB)
+
+TESTS := datetostr strtodate splitname readargs
+
+#MM
+check : setup-test $(foreach f,$(TESTS),$(EXEDIR)/$(f))
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+$(EXEDIR)/% : %.c $(DEPLIBS)
+	%link_q opt="$(ILDFLAGS) -DTEST $(COMMON_CFLAGS)"
+
+setup-test :
+	%mkdirs_q $(TESTOBJDIR) $(EXEDIR)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+dos_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q Dos
+
+$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Dos
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+%additional_objs_rule
+
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps

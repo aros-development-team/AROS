@@ -1,0 +1,73 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_MATHFFP)","yes")
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS	:= -I/usr/include
+endif
+
+LIBNAME 	:= mathffp
+OBJDIR		:= $(OSGENDIR)/$(LIBNAME)
+LIB		:= $(LIBDIR)/lib$(LIBNAME).so
+
+%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+
+INIT_FILE	:= $(LIBNAME)_init
+FILES		:= $(LIBNAME)_functable
+END_FILE	:= $(LIBNAME)_endtag
+FUNCTIONS	:= \
+		    spabs \
+		    spadd \
+		    spceil \
+		    spcmp \
+		    spdiv \
+		    spfix \
+		    spfloor \
+		    spflt \
+		    spmul \
+		    spneg \
+		    spsub \
+		    sptst
+ALL_FILES	:= $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
+OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+
+#MM kernel : setup includes
+kernel : show-flags $(LIB)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+show-flags :
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(LIBNAME)_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q Mathffp
+
+$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Mathffp
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)

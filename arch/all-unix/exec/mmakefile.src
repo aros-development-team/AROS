@@ -1,0 +1,54 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+REP_FILES   := cause disable enable preparecontext stackswap switch \
+		rawioinit rawputchar rawmaygetchar
+FILES	    := kernel $(REP_FILES)
+OBDIR	    := $(OSGENDIR)/exec
+ADD_OBJS    := $(foreach f,$(FILES),rom/exec/$(f))
+OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+
+# You don't need to change anything after here unless you add new
+# directories to the above.
+
+SPECIAL_CFLAGS	= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
+CFLAGS2 	= $(SHARED_CFLAGS) $(CFLAGS)
+CFILES		:= $(foreach f,$(FILES),$(f).c)
+DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
+TESTS		:= stackswap coretest
+
+#MM exec-unix : setup-exec-unix
+exec-unix : print-flags $(OBJS)
+
+print-flags :
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "CFLAGS2=$(CFLAGS2)"
+
+#MM setup-exec-unix : setup-exec-unix-$(CPU)
+setup-exec-unix :
+	%mkdirs_q $(OBJDIR)
+	mkdir -p $(OBJDIR)
+	%add_objects $(ADD_OBJS)
+	%exclude_files	$(foreach f,$(REP_FILES),rom/exec/$(f))
+
+#MM
+clean ::
+	$(RM) $(TESTS) $(OBJS) $(OBJDIR)
+
+#MM
+check-exec-unix : $(TESTS)
+
+% : %.c
+	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.d : %.c $(MACHINE_H)
+	%mkdepend_q
+
+%common
+%include_deps

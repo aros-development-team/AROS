@@ -1,0 +1,152 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES	:= -Iinclude
+OBJDIR		:= $(GENDIR)/compiler/clib
+INCDIR		:= $(BINDIR)/include
+LIB		:= $(LIBDIR)/libarosc.a
+
+%define_libs
+
+FILES := \
+	__assert \
+	__getfilenode4fd \
+	__ioerr2errno \
+	__log \
+	__log10 \
+	__kernel_standard \
+	__pow \
+	__stdio \
+	__vcformat \
+	__vcscan \
+	abort \
+	abs \
+	asctime \
+	atoi \
+	atol \
+	bcopy \
+	bsearch \
+	bzero \
+	calloc \
+	clearerr \
+	ctime \
+	ctype \
+	close \
+	copysign \
+	creat \
+	errno \
+	exit \
+	fabs \
+	fclose \
+	feof \
+	ferror \
+	fflush \
+	fgetc \
+	fgets \
+	finite \
+	fopen \
+	fprintf \
+	fscanf \
+	fputc \
+	fputs \
+	fread \
+	free \
+	fseek \
+	fwrite \
+	gettimeofday \
+	gmtime \
+	isnan \
+	labs \
+	localtime \
+	log10 \
+	malloc \
+	matherr \
+	memchr \
+	memcmp \
+	memcpy \
+	memmove \
+	memset \
+	open \
+	pow \
+	printf \
+	puts \
+	qsort \
+	rand \
+	read \
+	realloc \
+	rint \
+	scalbn \
+	scanf \
+	snprintf \
+	sprintf \
+	sqrt \
+	sscanf \
+	strcasecmp \
+	strcat \
+	strchr \
+	strcmp \
+	strcpy \
+	strcspn \
+	strdup \
+	strerror \
+	strftime \
+	strlen \
+	strncasecmp \
+	strncat \
+	strncmp \
+	strncpy \
+	strpbrk \
+	strrchr \
+	strspn \
+	strstr \
+	strtok \
+	strtol \
+	strtoul \
+	time \
+	ungetc \
+	unlink \
+	vfprintf \
+	vfscanf \
+	vprintf \
+	vscanf \
+	vsnprintf \
+	vsprintf \
+	vsscanf \
+	write
+
+ASMFILES := setjmp longjmp
+
+OBJS := $(foreach f,$(FILES) $(ASMFILES),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+#MM linklibs : setup includes clib-$(ARCH)
+linklibs : show-flags $(LIB)
+
+show-flags :
+	@echo "APPCFLAGS=$(APPCFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(INCDIR)/sys $(OBJDIR)
+
+#MM
+check : $(TESTDIR)/snprint
+
+$(TESTDIR)/snprintf : snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
+	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q cmd=$(SYS_CC) opt=$(APPCFLAGS)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=$(APPCFLAGS)
+
+%common
+%include_deps

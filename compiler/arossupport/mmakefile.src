@@ -1,0 +1,92 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		    := $(GENDIR)/compiler/arossupport
+FILES		    := \
+			_kprintf \
+			calcchecksum \
+			debugmem \
+			freestruct \
+			hexdump \
+			isdosentrya \
+			kprintf \
+			nastyfreemem \
+			purify \
+			rawputchars \
+			readbyte \
+			readdouble \
+			readfloat \
+			readlong \
+			readstring \
+			readstruct \
+			readword \
+			removeslist \
+			rt \
+			rt_exec \
+			rt_dos \
+			rt_intuition \
+			strrncasecmp \
+			writebyte \
+			writedouble \
+			writefloat \
+			writelong \
+			writestring \
+			writestruct \
+			writeword
+OBJS		    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+DEPS		    := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+LIB		    := $(LIBDIR)/libarossupport.a
+INCLUDE_FILES	    := $(wildcard include/*.h)
+DEST_INCLUDE_FILES  := $(subst include,$(INCDIR)/aros,$(INCLUDE_FILES))
+CFLAGS2 	    := $(CFLAGS) -I$(TOP)/rom/exec
+
+
+#MM linklibs : setup includes
+linklibs : $(LIB)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(INCDIR) $(LIBDIR)
+
+#MM
+includes : $(DEST_INCLUDE_FILES)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
+
+
+$(INCDIR)/aros/%.h: include/%.h
+	$(CP) $< $@
+
+$(LIB) : show_cflags $(OBJS)
+	%mklib_q
+
+show_cflags :
+	@echo "CFLAGS=$(CFLAGS)"
+
+# These files need special CFLAGS
+$(OBJDIR)/kprintf.o : kprintf.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/rawputchars.o : rawputchars.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/_kprintf.o : _kprintf.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/rt%.o : rt%.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+$(OBJDIR)/rt.o : rt.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
+# Default compile rule
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q flags=$(CFLAGS2)
+
+%common
+%include_deps

@@ -1,0 +1,25 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES	:= -I/usr/include
+OBJDIR		:= $(GENDIR)/filesys
+
+#MM kernel : setup includes
+kernel : $(OBJDIR)/emul_handler.o
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(OBJDIR)/emul_handler.d

@@ -1,0 +1,75 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+INCLUDES    := -I$(BINDIR)/include -I$(TOP)/amiga/include
+#CC	     :=$(PURIFY) $(SYS_CC)
+OBJDIR	    := $(GENDIR)/workbench/c
+
+%define_libs
+
+FILES	    := \
+	addbuffers \
+	ask \
+	assign \
+	avail \
+	cd \
+	copy \
+	date \
+	delete \
+	dir \
+	echo \
+	execute \
+	liblist \
+	list \
+	makedir \
+	mount \
+	newshell \
+	path \
+	rename \
+	run \
+	shell \
+	tasklist \
+	type \
+	version \
+	wait \
+	why \
+	Alias \
+	Filenote \
+	Get \
+	Getenv \
+	Protect \
+	RequestChoice \
+	Set \
+	Setenv \
+	Unalias
+
+EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
+#MM apps : setup includes
+apps : show-flags $(EXES)
+
+show-flags :
+	@echo "OBJDIR=$(OBJDIR)"
+	@echo "EXEDIR=$(EXEDIR)"
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+setup :
+	%mkdirs_q $(EXEDIR) $(OBJDIR)
+
+#MM
+clean ::
+	-$(RM) $(EXES)
+
+$(EXEDIR)/% : $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
+	%link_q
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(APPCFLAGS)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps

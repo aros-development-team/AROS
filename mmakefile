@@ -1,0 +1,243 @@
+# $Id$
+
+# BEGIN_DESC{makefile}
+# This is the toplevel makefile. Use it if you want to compile the whole
+# distribution.
+# END_DESC{makefile}
+
+include $(TOP)/config/make.cfg
+
+# MetaMake rules
+#MM AROS : setup includes compiler kernel apps
+#MM clean
+
+AROS : $(BINDIR)/arosshell checkerr
+
+#MM
+setup :
+	@$(RM) $(TOP)/errors
+	@$(FOR) dir in $(BINDIR) $(GENDIR) ; do \
+	    $(IF) [ ! -d $$dir ]; then \
+		$(ECHO) "mkdir $$dir" ; \
+		$(MKDIR) "$$dir" ; \
+	    else true ; fi ; \
+	done
+
+# BEGIN_DESC{localmakevar}
+# \item{LIBS} Flags which are passed to the linker for executables.
+#
+# \item{DEP_LIBS} Files on which executables depend (ie. if these files are
+#	newer than the executable, then the executable is linked anew).
+#
+# END_DESC{localmakevar}
+ifeq ("$(SHARED_AR)","")
+DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.a
+else
+DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.so
+endif
+ifeq ("$(SHARED_EXEC)","yes")
+DEPLIB_EXEC=$(LIBDIR)/libexec.so
+else
+DEPLIB_EXEC=$(LIBDIR)/libexec.a
+endif
+ifeq ("$(SHARED_DOS)","yes")
+DEPLIB_DOS=$(LIBDIR)/libdos.so
+else
+DEPLIB_DOS=$(LIBDIR)/libdos.a
+endif
+ifeq ("$(SHARED_INTUITION)","yes")
+DEPLIB_INTUITION=$(LIBDIR)/libintuition.so
+else
+DEPLIB_INTUITION=$(LIBDIR)/libintuition.a
+endif
+ifeq ("$(SHARED_GRAPHICS)","yes")
+DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so
+else
+DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.a
+endif
+ifeq ("$(SHARED_UTILITY)","yes")
+DEPLIB_UTILITY=$(LIBDIR)/libutility.so
+else
+DEPLIB_UTILITY=$(LIBDIR)/libutility.a
+endif
+ifeq ("$(SHARED_MATHFFP)","yes")
+DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
+else
+DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
+endif
+
+DEP_LIBS= $(DEPLIB_AMIGAOS) \
+    $(GENDIR)/filesys/emul_handler.o \
+    $(LIBDIR)/libamiga.a \
+    $(LIBDIR)/libarossupport.a \
+    $(DEPLIB_DOS) \
+    $(DEPLIB_EXEC) \
+    $(DEPLIB_UTILITY) \
+    $(DEPLIB_INTUITION) \
+    $(DEPLIB_GRAPHICS) \
+    $(DEPLIB_MATHFFP) \
+    $(LIBDIR)/libconsole.a \
+    $(LIBDIR)/libaros.a
+
+LIBS=-L$(LIBDIR) \
+	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
+	-lintuition -lgraphics -ldos -lexec -lconsole -lutility \
+	-laros -lmathffp \
+	-lamiga -larossupport
+
+# BEGIN_DESC{internaltarget}
+# \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
+#	support emulation.
+#
+# END_DESC{internaltarget}
+$(BINDIR)/arosshell: $(GENDIR)/arosshell.o $(DEP_LIBS)
+	$(CC) $(CFLAGS) -Dmain=submain $< \
+	    $(LIBS) $(GUI_LDFLAGS) $(GUI_LIBFLAGS) -o $@ \
+	    -Xlinker -rpath -Xlinker ./lib
+
+# BEGIN_DESC{internaltarget}
+# \item{checkerr} Checks if any error has been occurred during compile
+#
+# END_DESC{internaltarget}
+checkerr :
+	@if test -e $(TOP)/errors ; then \
+	    $(RM) $(TOP)/errors ; \
+	    $(ECHO) "There have been errors" ; \
+	    find . -name "*.err" -print ; \
+	else \
+	    true ; \
+	fi
+
+# BEGIN_DESC{target}
+# \item{crypt} Create the file crypt to create a password for CVS access
+#
+# END_DESC{target}
+crypt : crypt.c
+	$(CC) -o crypt crypt.c
+
+# BEGIN_DESC{localmakevar}
+# \item{BINARCHIVE} Basename of the binary archive
+#
+# \item{DEVARCHIVE} Basename of the source archive
+#
+# END_DESC{localmakevar}
+BINARCHIVE = AROS-$(ARCH)-$(CPU)-current
+DEVARCHIVE = AROSdev-current
+
+# BEGIN_DESC{target}
+# \item{dist} Create the distribution archives
+#
+# END_DESC{target}
+# BEGIN_DESC{internaltarget}
+# \item{dir-dir} Creates the directory for the distribution archives
+#
+# \item{dist-tar} Create .tar.gz archive of the binary for the local
+#	architecture.
+#
+# \item{dist-lha} Create LhA archive of the binary for the local
+#	architecture.
+#
+# \item{dist-src} Create the source archive as .tar.gz and LhA files.
+#
+# END_DESC{internaltarget}
+dist : dist-dir dist-tar dist-lha dist-src
+	cp README dist/$(BINARCHIVE).readme
+	cp README dist/$(DEVARCHIVE).readme
+
+dist-dir : .FORCE
+	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
+	@echo "Correcting access flags"
+	@chmod -R ug=rwX,o=rX .
+
+dist-tar : .FORCE
+	cd $(ARCHDIR) ; \
+	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
+	    tar chvvzf ../../dist/$(BINARCHIVE).tgz AROS
+
+dist-lha : .FORCE
+	cd $(ARCHDIR) ; \
+	    $(RM) ../../dist/$(BINARCHIVE).lha ; \
+	    lha a ../../dist/$(BINARCHIVE).lha AROS
+
+dist-src : .FORCE
+	$(TOP)/scripts/makedist src $(DEVARCHIVE)
+
+# BEGIN_DESC{target}
+# \item{clean} Remove all generated files
+#
+# END_DESC{target}
+#MM
+clean :
+	-$(RM) $(ARCHDIR)
+
+# BEGIN_DESC{internaltarget}
+# \item{$(LIBDIR)/libAmigaOS.a} Recreate the kernel if any kernel function
+#	has been recompiled.
+#
+# END_DESC{internaltarget}
+LIBOBJS=$(wildcard $(OSGENDIR)/*.o)
+ifneq ("$(SHARED_AR)","")
+ifeq ("$(SHARED_EXEC)","yes")
+DEPLIBEXEC=$(LIBDIR)/libexec.so
+LIBEXEC=-lexec
+endif
+ifeq ("$(SHARED_DOS)","yes")
+DEPLIBDOS=$(LIBDIR)/libdos.so
+LIBDOS=-ldos
+endif
+ifeq ("$(SHARED_UTILITY)","yes")
+DEPLIBUTILITY=$(LIBDIR)/libutility.so
+LIBUTILITY=-lutility
+endif
+ifeq ("$(SHARED_GRAPHICS)","yes")
+DEPLIBGRAPHICS=$(LIBDIR)/libgraphics.so
+LIBGRAPHICS=-lgraphics
+endif
+ifeq ("$(SHARED_INTUITION)","yes")
+DEPLIBINTUITION=$(LIBDIR)/libintuition.so
+LIBINTUITION=-lintuition
+endif
+
+LIBLIBS=$(DEPLIBEXEC) $(DEPLIBDOS) $(DEPLIBUTILITY) \
+	$(DEPLIBGRAPHICS) $(DEPLIBINTUITION) $(DEPLIBAROS)
+LIBPATH=$(shell cd $(LIBDIR) ; pwd)
+endif
+$(DEPLIB_AMIGAOS) : $(LIBOBJS) $(LIBLIBS) $(LIBDIR)/libamiga.a
+	@echo "Recreating library"
+ifeq ("$(SHARED_AR)","")
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+else
+	@$(SHARED_AR) $@ $(LIBOBJS) -L$(LIBDIR) \
+		$(LIBINTUITION) $(LIBGRAPHICS) $(LIBDOS) \
+		$(LIBAROS) $(LIBUTILITY) $(LIBEXEC) -lamiga
+endif
+
+$(GENDIR)/arosshell.o : arosshell.c
+	$(CC) $(CFLAGS) -Dmain=submain $< -c -o $@
+
+$(GENDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $< -c -o $@
+
+# BEGIN_DESC{target}
+# \item{cleandep} Remove all generated dependency files.
+#
+# END_DESC{target}
+cleandep:
+	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
+
+# BEGIN_DESC{target}
+# \item{docs} Compile the documentation for AROS.
+#
+# END_DESC{target}
+docs:
+	cd $(TOP)/docs/src ; make
+
+# BEGIN_DESC{target}
+# \item{mmake} Build MetaMake tool
+#
+# END_DESC{target}
+mmake : mmake.c
+	$(CC) -Wall -g -O0 $< -o $@
+
+.PHONY: docs

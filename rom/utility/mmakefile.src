@@ -1,0 +1,128 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR		:= $(GENDIR)/$(CURDIR)
+
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_UTILITY)","yes")
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS	:= -I/usr/include
+endif
+
+USER_INCLUDES	:= -I.
+USER_DEFINES	:= -D_AROS
+
+# BEGIN_DESC{makefile}
+# This is the makefile for utility.library. Use it if you want to compile
+# only this part of AROS.
+# END_DESC{makefile}
+
+# BEGIN_DESC{localmakevar}
+# \item{FILES} This is a list of all files (without the .c) which
+#	contain internal functions of the library (eg. libinit(),
+#	libopen(), libexpunge() and the function table).
+#
+# \item{FUNCTIONS} This is a list of all files (without the .c)
+#	with public functions of the library. The makefile will
+#	strip all files from this list for which a special
+#	version for this CPU does exist.
+#
+# END_DESC{localmakevar}
+
+# Main function for exec.strap. Need this apart as an anchor for the link:
+INIT_FILE	:= utility_init
+# Guarantee that this will go at the end of the file:
+END_FILE	:= endtag
+FILES		:= functable getnamespace intfindnamedobj
+FUNCTIONS	:= \
+	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
+	tolower toupper getuniqueid date2amiga amiga2date allocatetagitems  \
+	freetagitems clonetagitems gettagdata packbooltags taginarray	    \
+	refreshtagitemclones maptags addnamedobject allocnamedobjecta	    \
+	attemptremnamedobject findnamedobject namedobjectname		    \
+	releasenamedobject remnamedobject freenamedobject packstructuretags \
+	unpackstructuretags checkdate filtertagitems filtertagchanges	    \
+	smult32 umult32 smult64 umult64 sdivmod32 udivmod32
+
+# Do the magic required for function replacement.
+# Keep this value for later
+ALL_FILES	:= $(FILES)
+ALL_FUNCTIONS	:= $(FUNCTIONS)
+
+%prepare_replace rom/utility
+%filter_replace FUNCTIONS
+%filter_replace FILES
+
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+
+# The filename of the linklib or shared Linux lib
+%prepare_shlib utility $(SHARED_UTILITY)
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+kernel : $(OSMODDIR)/utility.library
+
+# The options for the linker
+LIBS	    := -L$(LIBDIR) -lutility -larosc
+
+# The names of the linklibs utility.library depends on
+LIBLIST     := utility arosc
+
+# The filenames of the linklibs utility.library depends on
+LIBDEPS     := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+OBJS	    := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+INITFUNC    := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC     := $(OBJDIR)/$(END_FILE).o
+
+$(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.map
+	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
+	@strip $@
+
+# ***** Not Native ***************
+else
+
+#MM
+kernel : $(LIB)
+
+OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+# ***** END ***************
+endif
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR) $(OBJDIR)
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+%genlib
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps
+
+$(OBJDIR)/utility_init.o: libdefs.h
+$(OBJDIR)/endtag.d: libdefs.h

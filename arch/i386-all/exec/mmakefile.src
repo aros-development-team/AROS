@@ -1,0 +1,32 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES		:= execstubs
+OBJDIR		:= $(OSGENDIR)/exec
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
+CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
+AFLAGS2 	:= $(AFLAGS) -I..
+TESTS		:=
+
+#MM
+exec-linux : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+
+#MM
+setup-exec-i386 :
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
+
+#MM
+clean ::
+	$(RM) $(TESTS)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OBJDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS2)
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common

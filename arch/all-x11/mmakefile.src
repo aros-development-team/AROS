@@ -1,0 +1,43 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+GFX_INCLUDES	:= -I/usr/include -I$(TOP)/rom/graphics
+INT_INCLUDES	:= -I/usr/include -I$(TOP)/rom/intuition
+DEPS		:= $(OSGENDIR)/graphics/graphics_driver.d \
+		   $(OSGENDIR)/intuition/intuition_driver.d
+GFX_CFLAGS	:= $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $(GFX_INCLUDES)
+INT_CFLAGS	:= $(SHARED_CFLAGS) $(CFLAGS) $(GUI_CCFLAGS) $(INT_INCLUDES)
+
+
+#MM
+graphics-x11 : $(OSGENDIR)/graphics/graphics_driver.o
+
+#MM
+intuition-x11 : $(OSGENDIR)/intuition/intuition_driver.o
+
+#MM
+setup-x11 :
+	%mkdirs_q $(OSGENDIR)/graphics $(OSGENDIR)/intuition
+	%add_objects rom/graphics/graphics_driver rom/intuition/intuition_driver
+
+#MM
+clean ::
+	-$(RM) $(OSGENDIR)/graphics/graphics_driver.o \
+	    $(OSGENDIR)/graphics/intuition_driver.o \
+	    *.err
+
+
+$(OSGENDIR)/graphics/%.o: %.c
+	%compile_q opt=$(GFX_CFLAGS)
+
+$(OSGENDIR)/intuition/%.o: %.c
+	%compile_q opt=$(INT_CFLAGS)
+
+$(OSGENDIR)/graphics/%.d: %.c
+	%mkdepend_q $(GFX_CFLAGS)
+
+$(OSGENDIR)/intuition/%.d: %.c
+	%mkdepend_q $(INT_CFLAGS)
+
+%include_deps
+%common

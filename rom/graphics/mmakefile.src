@@ -1,0 +1,124 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_GRAPHICS)","yes")
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS	:= -I/usr/include
+endif
+
+LIBNAME 	:= graphics
+OBJDIR		:=$(OSGENDIR)/$(LIBNAME)
+LIB		:=$(LIBDIR)/lib$(LIBNAME).so
+
+%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+
+INIT_FILE	:= $(LIBNAME)_init
+
+FILES		:= $(LIBNAME)_functable intregions
+
+END_FILE	:= $(LIBNAME)_endtag
+
+FUNCTIONS	:= \
+	addfont \
+	allocbitmap \
+	allocraster \
+	andrectregion \
+	askfont \
+	bltbitmap \
+	clearrectregion \
+	clearregion \
+	clonerastport \
+	closefont \
+	createrastport \
+	deinitrastport \
+	disposeregion \
+	draw \
+	drawellipse \
+	extendfont \
+	eraserect \
+	freebitmap \
+	freeraster \
+	freerastport \
+	getapen \
+	getbpen \
+	getdrmd \
+	getoutlinepen \
+	initrastport \
+	loadrgb32 \
+	loadrgb4 \
+	move \
+	newregion \
+	openfont \
+	orrectregion \
+	polydraw \
+	readpixel \
+	rectfill \
+	remfont \
+	scrollraster \
+	setabpendrmd \
+	setapen \
+	setbpen \
+	setdrmd \
+	setfont \
+	setoutlinepen \
+	setrast \
+	setrgb32 \
+	setrpattrsa \
+	setwritemask \
+	stripfont \
+	text \
+	textextent \
+	textfit \
+	textlength \
+	waittof \
+	weightamatch \
+	writepixel \
+	writepixelarray8 \
+	xorrectregion
+
+PRE_FUNCS := $(FUNCTIONS)
+%prepare_replace rom/graphics
+%filter_replace FUNCTIONS
+ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
+
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNC) $(END_FILE),$(OBJDIR)/$(f).d)
+OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
+
+#MM kernel : setup includes graphics-$(ARCH)
+kernel : $(LIB)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+	@echo "CFLAGS=$(CFLAGS)"
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err $(LIB)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(LIBNAME)_functable.c : $(foreach f,$(PRE_FUNCS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q Graphics
+
+$(LIBNAME)_endtag.c : $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Graphics
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+%additional_objs_rule
+%libdefs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps

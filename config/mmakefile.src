@@ -1,0 +1,32 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+CONFIG_H := $(INCDIR)/aros/config.h
+
+#MM setup : setup-$(ARCH)
+setup : make-dirs $(CONFIG_H)
+	@$(ECHO) "Creating mf.inc files..."
+	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
+	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files
+	@$(AWK) -f $(TOP)/scripts/genreplace.gawk \
+		--assign TOP="$(TOP)" --assign GENDIR="$(GENDIR)" \
+		$(GENDIR)/config.files
+
+make-dirs :
+	%mkdirs_q $(INCDIR)/aros $(GENDIR)
+
+$(CONFIG_H): $(TOP)/configure
+	$(SHELL) $(TOP)/configure -h $@
+
+#MM
+clean ::
+	-$(RM) ./machine
+	$(RM) $(CONFIG_H) $(INCDIR)/aros
+
+#MM
+machine:
+	$(CC) -I$(TOP)/compiler/include -I$(TOP)/compiler/arossupport/include -o machine machine.c
+	./machine
+
+%common
+%include_deps $(TOP)/config/host.cfg
