@@ -5,7 +5,7 @@
 # $Id$
 #
 
-CCFLAGS = code=far noversion IDIR=/libs/muimaster/include IDIR=/libs/muimaster
+CCFLAGS = gst=/libs/muimaster/all.gst code=far noversion IDIR=/libs/muimaster/include IDIR=/libs/muimaster
 
 zune: zune.o zunestuff.o /libs/muimaster/muimaster.lib
   sc link zune.o zunestuff.o /libs/muimaster/muimaster.lib lib:debug.lib
