@@ -250,7 +250,7 @@ void main(void)
     Object *popobject, *listview;
     Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
 
-    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List",NULL};
+    static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges",NULL};
 
     static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
     static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
@@ -490,7 +490,30 @@ End,
 			    Child, list_clear_button = MUI_MakeObject(MUIO_Button,"_Clear"),
 			    End,
 			End,
-		    End,
+
+/* gauges */ 
+		    Child, VGroup,
+	                Child, VGroup, GroupFrame,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 25, End,
+		            Child, ScaleObject, End,
+	                    End,
+	                Child, VGroup, GroupFrame,
+   		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 50, End,
+		            Child, ScaleObject, End,
+	                    End,
+	                Child, VGroup, GroupFrame,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Horiz, TRUE, MUIA_Gauge_Current, 75, End,
+		            Child, ScaleObject, End,
+	                    End,
+	                Child, HGroup,
+			    Child, HVSpace,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 25, End,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 50, End,
+		            Child, GaugeObject, GaugeFrame, MUIA_Gauge_InfoText, "%ld %%", MUIA_Gauge_Current, 75, End,
+			    Child, HVSpace,
+	                    End,
+		        End,
+		   End,
 #endif
 		Child, RectangleObject,
 		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
