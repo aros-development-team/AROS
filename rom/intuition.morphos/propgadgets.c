@@ -16,10 +16,10 @@
 #include <cybergraphx/cybergraphics.h>
 #include <graphics/rpattr.h>
 #include "intuition_intern.h"
-#include "intuition_customize.h"
-#include "intuition_customizesupport.h"
 #include "propgadgets.h"
 #ifdef SKINS
+#include "intuition_customize.h"
+#include "intuition_customizesupport.h"
 #include "morphos/proprender.h"
 #endif
 #include "gadgets.h"
@@ -28,6 +28,8 @@ extern ULONG HookEntry();
 
 #ifndef SKINS
 #warning define RenderPropBackground here and paste aros one to this file!
+// FIXME!
+#define RenderPropBackground(a,b,c,d,e,f,g)
 #endif
 
 #undef DEBUG
@@ -38,6 +40,8 @@ extern ULONG HookEntry();
 //static WORD clickoffset_x, clickoffset_y;
 #define clickoffset_x GetPrivIBase(IntuitionBase)->prop_clickoffset_x
 #define clickoffset_y GetPrivIBase(IntuitionBase)->prop_clickoffset_y
+
+BOOL isonborder(struct Gadget *gadget,struct Window *window);
 
 VOID HandlePropSelectDown
 (
@@ -851,3 +855,14 @@ void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
     ReturnVoid("RefreshPropGadgetKnob");
 
 } /* RefreshPropGadgetKnob */
+
+BOOL isonborder(struct Gadget *gadget,struct Window *window)
+{
+    if ((window->BorderBottom > 2) && (gadget->Flags & GFLG_RELBOTTOM))
+    if (window->Height + gadget->TopEdge >= window->Height - window->BorderBottom) return TRUE;
+
+    if ((window->BorderRight > 2) && (gadget->Flags & GFLG_RELRIGHT))
+    if (window->Width + gadget->LeftEdge >= window->Width - window->BorderRight) return TRUE;
+
+    return FALSE;
+}
