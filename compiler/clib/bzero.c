@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: bzero()
+    Desc: ANSI C function bzero()
     Lang: english
 */
 #include <clib/exec_protos.h>
@@ -15,8 +15,8 @@
 	void bzero (
 
 /*  SYNOPSIS */
-	void *       ptr,
-	size_t       len)
+	void * ptr,
+	int    len)
 
 /*  FUNCTION
 	Write len zero bytes to ptr. If len is zero, does nothing.

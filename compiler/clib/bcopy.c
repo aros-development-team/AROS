@@ -2,7 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc: bcopy()
+    Desc: ANSI C function bcopy()
     Lang: english
 */
 #include <clib/exec_protos.h>
@@ -16,8 +16,8 @@
 
 /*  SYNOPSIS */
 	const void * src,
-	void *       dst,
-	size_t       len)
+	void *	     dst,
+	int	     len)
 
 /*  FUNCTION
 	Copy the contents of a part of memory to another. Both areas
