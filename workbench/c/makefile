@@ -38,7 +38,8 @@ FILES = \
 	type \
 	version \
 	wait \
-	why
+	why \
+	rename
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
