@@ -761,13 +761,15 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 	/* stegerg: Set redirection to default in/out handles */
 
 	rd->oldIn  = SelectInput(cli->cli_StandardInput);
-	rd->oldOut = SelectOutput(cli->cli_StandardOutput);
+
+	if (!rd->oldOut)
+	    rd->oldOut = SelectOutput(cli->cli_StandardOutput);
 
 	if(rd->haveOutRD)
 	{
 	    P(kprintf("Redirecting output to file %s\n", rd->outFileName));
 
-	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE /*FMF_WRITE|FMF_CREATE*/);
+	    rd->newOut = Open(rd->outFileName, MODE_NEWFILE);
 
 	    P(kprintf("Output stream opened\n"));
 
@@ -787,7 +789,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	if(rd->haveAppRD)
 	{
-	    rd->newOut = Open(rd->outFileName, FMF_MODE_OLDFILE | FMF_CREATE | FMF_APPEND & ~FMF_AMIGADOS);
+	    rd->newOut = Open(rd->outFileName, (FMF_MODE_OLDFILE | FMF_CREATE | FMF_APPEND) & ~FMF_AMIGADOS);
 
 	    if(BADDR(rd->newOut) == NULL)
 	    {
@@ -823,7 +825,7 @@ BOOL checkLine(struct Redirection *rd, struct CommandLine *cl)
 
 	/* OK, we've got a command. Let's execute it! */
 	executeLine(rd->commandStr, filtered.CS_Buffer, rd);
-	
+
 	result = TRUE;
     }
     else
@@ -837,6 +839,29 @@ exit:
     return result;
 }
 
+static BOOL Pipe(BPTR pipefhs[2])
+{
+    pipefhs[0] = Open("PIPEFS://unnamedpipe//", FMF_READ|FMF_NONBLOCK);
+    if (pipefhs[0])
+    {
+	BPTR olddir = CurrentDir(pipefhs[0]);
+
+	if
+	(
+	    ChangeMode(CHANGE_FH, pipefhs[0], FMF_READ) == DOSTRUE &&
+	    (pipefhs[1] = Open("", FMF_WRITE))
+	)
+	{
+	    CurrentDir(olddir);
+	    return TRUE;
+	}
+
+	CurrentDir(olddir);
+	Close(pipefhs[0]);
+    }
+
+    return FALSE;
+}
 
 /* The shell has the following semantics when it comes to command lines:
    Redirection (<,>,>>) may be written anywhere (except before the command
@@ -875,6 +900,76 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	if(item == '\n' || item == ';' || item == '\0')
 	    break;
 
+	if(item == '|')
+	{
+	    BOOL ret;
+	    int i;
+	    struct TagItem tags[] =
+    	    {
+		{ SYS_Input   , NULL                                            },
+		{ SYS_Output  , NULL                             	    	},
+		{ SYS_Asynch  , TRUE    	    	    	    	    	},
+		{ NP_StackSize, Cli()->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT },
+		{ TAG_DONE    , 0 	    	    	    	    	    	}
+    	    };
+
+	    /* Prevent command lines like "Prompt> | Olle echo Oepir" */
+	    if(!rd->haveCommand)
+		return FALSE;
+
+	    item = 0;
+
+	    /* There must be something after a pipe... */
+	    for
+	    (
+	        i = cs->CS_CurChr + 1;
+		cs->CS_Buffer[i] == ' ' || cs->CS_Buffer[i] == '\t';
+		i++
+	    );
+
+	    if(cs->CS_Buffer[i] == '\n' || cs->CS_Buffer[i] == ';' || cs->CS_Buffer[i] == '\0')
+	    {
+		SetIoErr(ERROR_LINE_TOO_LONG); /* what kind of error must we report? */
+	        return FALSE;
+	    }
+
+	    P(kprintf("commannd = %S\n", &item+1));
+
+	    tags[1].ti_Data = (IPTR)Open("*", MODE_NEWFILE);
+
+	    if(rd->haveOutRD)
+	    {
+		tags[0].ti_Data = (IPTR)Open("NIL:", MODE_OLDFILE);
+		ret = SystemTagList(&item+1, tags);
+	    }
+	    else
+	    {
+	        BPTR pipefhs[2];
+
+		if (!Pipe(pipefhs))
+	            return FALSE;
+
+		tags[0].ti_Data = (IPTR)pipefhs[0];
+		ret = SystemTagList(&item+1, tags);
+
+		if (ret == -1)
+		    Close(pipefhs[1]);
+		else
+		{
+		    rd->oldOut = SelectOutput(pipefhs[1]);
+		    rd->newOut = pipefhs[1];
+		}
+
+	    }
+
+	    if (ret == -1)
+	    {
+	       if (tags[0].ti_Data) Close((BPTR)tags[0].ti_Data);
+	       if (tags[1].ti_Data) Close((BPTR)tags[1].ti_Data);
+	       return FALSE;
+	    }
+        }
+	else
 	if(item == '<')
 	{
 	    /* Prevent command lines like "Prompt> <Olle type" */
@@ -988,7 +1083,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		advance(1);
 
 		P(kprintf("Found possible embedded command.\n"));
-		
+
 		if(extractEmbeddedCommand(&embedCl, cs))
 		{
 		    /* The Amiga shell has severe problems when using
@@ -997,10 +1092,10 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 		       a little bit sloppy with this, too.
 		           If you really wanted to, you could track down
 		       uses of > and >> and make them work inside ` `, too,
-		       but this seems to be rather much work for little gain. 
+		       but this seems to be rather much work for little gain.
 		    */
 
-		    char embedOutputFilename[sizeof("T:Shell$embed") + 
+		    char embedOutputFilename[sizeof("T:Shell$embed") +
 					     sizeof("9999999999999")];
 		    struct Redirection embedRd;
 
@@ -1132,26 +1227,26 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
     P(kprintf("Command found!\n"));
 
     result = ReadItem(rd->commandStr, COMMANDSTR_LEN, cs);
-    
+
     if(result == ITEM_ERROR || result == ITEM_NOTHING)
 	return FALSE;
-    
+
     /* Is this command an alias? */
     if(GetVar(rd->commandStr, avBuffer, sizeof(avBuffer),
 	      GVF_LOCAL_ONLY | LV_ALIAS) != -1)
     {
 	struct CSource aliasCs = { avBuffer, sizeof(avBuffer), 0 };
-	
+
 	result = ReadItem(rd->commandStr, COMMANDSTR_LEN, &aliasCs);
 
 	P(kprintf("Found alias! value = %s\n", avBuffer));
-	    
+
 	if(result == ITEM_ERROR || result == ITEM_NOTHING)
 	    return FALSE;
-	
+
 	/* We don't check if the alias was an alias as that might
 	   lead to infinite loops (alias Copy Copy) */
-		
+
 	/* Make a recursive call to take care of the rest of the
 	   alias string */
 	return convertLine(filtered, &aliasCs, rd);
@@ -1273,7 +1368,7 @@ LONG executeFile(STRPTR fileName)
 	    P(kprintf("Calling checkLine()\n"));
 	    checkLine(&rd, &cl);
 	    FreeVec(cl.line);
-	    
+
 	    Redirection_release(&rd);
 
     	    breakD = CheckSignal(SIGBREAKF_CTRL_D);
@@ -1472,7 +1567,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 
     if(module != NULL)
     {
-	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module
+	BPTR seglist = ss.residentCommand ? ((struct Segment *)BADDR(module))->seg_Seg:module;
 	P(kprintf("Command loaded!\n"));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
