@@ -1,6 +1,14 @@
 #ifndef  KEYBOARD_INTERN_H
 #define  KEYBOARD_INTERN_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc:
+    Lang: English
+*/
+
 #include <exec/types.h>
 #include <exec/devices.h>
 #include <exec/semaphores.h>
