@@ -63,6 +63,7 @@ static void readfile(FILE *in)
 			}
 	    	    }
 		}
+		else printf("%s", linebuf);
 	    } else printf("%s",linebuf);
 	}
     }
