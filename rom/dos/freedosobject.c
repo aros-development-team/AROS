@@ -74,6 +74,10 @@
 	    struct CommandLineInterface *cli=(struct CommandLineInterface *)ptr;
 	    BPTR *cur, *next;
 	    cur=(BPTR *)BADDR(cli->cli_CommandDir);
+	    FreeVec(BADDR(cli->cli_SetName));
+	    FreeVec(BADDR(cli->cli_CommandName));
+	    FreeVec(BADDR(cli->cli_CommandFile));
+	    FreeVec(BADDR(cli->cli_Prompt));
 	    FreeMem(ptr,sizeof(struct CommandLineInterface));
 	    while(cur!=NULL)
 	    {

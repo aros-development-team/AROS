@@ -128,6 +128,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 	cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,NULL);
 	ENOMEM_IF(cli==NULL);
 	oldpath=NULL;
+	cli->cli_DefaultStack=defaults[9].ti_Data>>2;
 	if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
 	{
 	    struct CommandLineInterface *oldcli=Cli();
