@@ -101,6 +101,11 @@ STRPTR pos;
 struct BlockCache *blockbuffer;
 UBYTE buffer[32];
 
+	if (dirah->volume->dostype != 0x444F5300)
+	{
+		error = ERROR_NOT_A_DOS_DISK;
+		return 0;
+	}
 	*block=dirah->header_block;
 	/* Skip ":" if there is one */
 	pos=name;

@@ -142,29 +142,32 @@ char *bname;
 char string[32];
 UBYTE i;
 
-	bname=BADDR(volume->devicelist.dl_OldName);
-	if (bname)
+	if (volume->dostype == 0x444F5300)
 	{
-		for (i=0;i<AROS_BSTR_strlen(bname);i++)
-			string[i]=AROS_BSTR_getchar(bname,i);
-		string[AROS_BSTR_strlen(bname)]=0;
-		if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES)))
+		bname=BADDR(volume->devicelist.dl_OldName);
+		if (bname)
 		{
-			if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
+			for (i=0;i<AROS_BSTR_strlen(bname);i++)
+				string[i]=AROS_BSTR_getchar(bname,i);
+			string[AROS_BSTR_strlen(bname)]=0;
+			if ((doslist=LockDosList(LDF_WRITE | LDF_VOLUMES)))
 			{
-				if (volume->locklist)
+				if ((dl=FindDosEntry(doslist,string,LDF_VOLUMES)))
 				{
-					dl->dol_misc.dol_volume.dol_LockList=volume->locklist;
+					if (volume->locklist)
+					{
+						dl->dol_misc.dol_volume.dol_LockList=volume->locklist;
+					}
+					else
+					{
+						RemDosEntry(dl);
+						FreeDosEntry(dl);
+					}
 				}
 				else
-				{
-					RemDosEntry(dl);
-					FreeDosEntry(dl);
-				}
+					showText(afsbase, "doslist not in chain");
+				UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 			}
-			else
-				showText(afsbase, "doslist not in chain");
-			UnLockDosList(LDF_WRITE | LDF_VOLUMES);
 		}
 	}
 }
@@ -373,7 +376,7 @@ struct Volume *volume;
 								D(bug("afs.handler: initVolume-NSD: no need for NSD\n"));
 						}
 						*error=newMedium(afsbase, volume);
-						if (!*error)
+						if ((!*error) || (*error=ERROR_NOT_A_DOS_DISK))
 						{
 							D(bug("afs.handler: initVolume: BootBlocks=%ld\n",volume->bootblocks));
 							D(bug("afs.handler: initVolume: RootBlock=%ld\n",volume->rootblock));
