@@ -19,6 +19,8 @@
 #include "muimaster_intern.h"
 #include "mui.h"
 
+extern struct Library *MUIMasterBase;
+
 STATIC int get_control_char(const char *label)
 {
     /* find the control char */

@@ -49,19 +49,19 @@ int open_muimaster(void)
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
 
     MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
-    MUIMasterBase_instance.dosbase = (void*)OpenLibrary("dos.library",37);
-    MUIMasterBase_instance.utilitybase = (void*)OpenLibrary("utility.library",37);
+    MUIMasterBase_instance.dosbase = (APTR)OpenLibrary("dos.library",37);
+    MUIMasterBase_instance.utilitybase = (APTR)OpenLibrary("utility.library",37);
     MUIMasterBase_instance.aslbase = OpenLibrary("asl.library",37);
-    MUIMasterBase_instance.gfxbase = (void*)OpenLibrary("graphics.library",37);
+    MUIMasterBase_instance.gfxbase = (APTR)OpenLibrary("graphics.library",37);
     MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
-    MUIMasterBase_instance.intuibase = (void*)OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.intuibase = (APTR)OpenLibrary("intuition.library",37);
     MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     MUIMasterBase_instance.gadtoolsbase = OpenLibrary("gadtools.library",37);
     MUIMasterBase_instance.iffparsebase = OpenLibrary("iffparse.library",37);
     MUIMasterBase_instance.diskfontbase = OpenLibrary("diskfont.library",37);
-    __zune_prefs_init(&__zprefs);
-    InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    MUIMasterBase_instance.iconbase = OpenLibrary("icon.library",44);
+    InitSemaphore(&MUIMasterBase_instance.ZuneSemaphore);
     return 1;
 }
 
