@@ -80,9 +80,17 @@ ULONG myBACKGROUNDPEN;
 IntuitionBase = OpenLibrary("intuition.library",37);
 if (IntuitionBase)
     {
+#ifdef __AROS
+    if ((screen = LockPubScreen(NULL)))
+#else
     if (screen = LockPubScreen(NULL))
+#endif
 	{
+#ifdef __AROS
+	if ((drawinfo = GetScreenDrawInfo(screen)))
+#else
 	if (drawinfo = GetScreenDrawInfo(screen))
+#endif
 	    {
 	    /* Get a copy of the correct pens for the screen.
 	    ** This is very important in case the user or the
@@ -101,10 +109,21 @@ if (IntuitionBase)
 	    ** a text string.  An application would probably never use such a
 	    ** window, but it is useful for demonstrating graphics...
 	    */
+#ifdef __AROS
+	    if ((win = OpenWindowTags(NULL,
+#else
 	    if (win = OpenWindowTags(NULL,
+#endif
 				WA_PubScreen,	 screen,
 				WA_RMBTrap,	 TRUE,
+#ifdef __AROS
+				WA_IDCMP,	 IDCMP_RAWKEY,
+#endif
+#ifdef __AROS
+				TAG_END)))
+#else
 				TAG_END))
+#endif
 		{
 		myIText.FrontPen    = myTEXTPEN;
 		myIText.BackPen     = myBACKGROUNDPEN;
@@ -118,12 +137,17 @@ if (IntuitionBase)
 		/* Draw the text string at 10,10 */
 		PrintIText(win->RPort,&myIText,10,10);
 
+#ifdef __AROS
+		/* Wait for keypress */
+		Wait (1L << win->UserPort->mp_SigBit);
+#else
 		/* Wait a bit, then quit.
 		** In a real application, this would be an event loop,
 		** like the one described in the Intuition Input and
 		** Output Methods chapter.
 		*/
 		Delay(200);
+#endif
 
 		CloseWindow(win);
 		}
