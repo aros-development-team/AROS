@@ -213,7 +213,7 @@ int intui_OpenWindow (struct Window * w,
 		  , SuperBitMap);
 
       /* could this layer be created? If not then delete the outer window and exit */
-      if (NULL != w->WLayer)
+      if (NULL == w->WLayer)
       {
         DeleteLayer(0, L);
         ReturnBool("intui_OpenWindow", FALSE);
