@@ -177,8 +177,20 @@
     }while(!error&&ead->ed_Type!=ST_ROOT);
 
     /* Move the name from the top to the bottom of the buffer. */
-    while((*buffer++=*name++)!=0)
-	;
+    {
+        UBYTE c, old_c = '\0';
+	
+	do
+	{
+	    c = *name++;
+	    if ((c != '/') || (old_c != ':'))
+	    {
+	        *buffer++ = c;
+	    }
+	    old_c = c;
+	} while (c);
+    }
+     
     /* All done. */
     me->pr_Result2=error;
     return !error;
