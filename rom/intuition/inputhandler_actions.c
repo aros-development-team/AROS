@@ -944,6 +944,7 @@ void HandleIntuiActions(struct IIHData *iihdata,
                     ChangeLayerVisibility(targetwindow->BorderRPort->Layer, am->iam_ShowWindow.yesno);
                 }
                 ChangeLayerVisibility(targetwindow->WLayer, am->iam_ShowWindow.yesno);
+	        CheckLayerRefresh(targetwindow->WLayer, targetscreen, IntuitionBase);
 	        break;
 #endif
 	}
