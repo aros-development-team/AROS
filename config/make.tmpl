@@ -1685,7 +1685,7 @@ ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) %(host)),yes)
 else
     %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
     
-    %(mmake)-install_opts := bindir=$(%(mmake)-PROGDIR) sbindir$(%(mmake)-PROGDIR) \
+    %(mmake)-install_opts := bindir=$(%(mmake)-PROGDIR) sbindir=$(%(mmake)-PROGDIR) \
     libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) oldincludedir=$(AROS_INCLUDES)
 endif
 
