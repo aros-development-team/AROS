@@ -162,10 +162,6 @@ struct ReqToolsBase
 
     /* PRIVATE FIELDS, THESE WILL CHANGE FROM RELEASE TO RELEASE! */
 
-    /* The RealOpenCnt is for the buffered AvailFonts feature.  Since
-       Kickstart 3.0 offers low memory handlers a release of ReqTools for 3.0
-       will not use this field and start using the normal OpenCnt again. */
-    UWORD 			RealOpenCnt;
     UWORD 			AvailFontsLock;
     struct AvailFontsHeader 	*AvailFontsHeader;
     ULONG 			FontsAssignType;
