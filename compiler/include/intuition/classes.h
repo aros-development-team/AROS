@@ -25,7 +25,7 @@ typedef struct IClass
     ClassID         cl_ID;
     UWORD           cl_InstOffset;
     UWORD           cl_InstSize;
-    ULONG           cl_UserData;      /* application specific */
+    IPTR            cl_UserData;      /* application specific */
     ULONG           cl_SubclassCount; /* # of direct suclasses */
     ULONG           cl_ObjectCount;   /* # of objects, made from this class
                                          must be 0, if the class is to be
