@@ -16,7 +16,7 @@
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
-		tee < $(GENDIR)/cerrors -a $(GENDIR)/errors ; \
+		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
 		$(NOP) ; \
 	    fi ; \
@@ -621,7 +621,7 @@ endif
   objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
   genshlinklib=no genfunctable= genincludes=
 
-%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib"
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick"
 
 .PHONY : setup-module$(BDID)
 
@@ -798,7 +798,7 @@ endif
 #MM
 %(mmake)-includes-libdefs : $(BD_LIBDEFSINC$(BDID))
 
-ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-linklib),) # Avoid conflicts
+ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-linklib %(mmake)-quick),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FUNCS$(BDID)) $(BD_FILES$(BDID))))
 endif
@@ -812,7 +812,7 @@ endif
 BD_DFILE_DEPS$(BDID) := $(BD_LIBDEFSINC$(BDID)) $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_deflibdefs.h
 
 # Some include files need to be generated before the .c can be parsed.
-ifeq ($(TARGET),%(mmake)) # Only for this target these deps are wanted
+ifneq ($(findstring $(TARGET),%(mmake) %(mmake)-quick %(mmake)-linklib),) # Only for this target these deps are wanted
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
 
@@ -2390,401 +2390,6 @@ ifeq ($(AROS_TARGET_ARCH),morphos)
 endif
 %end
 
-#------------------------------------------------------------------------------
-#   Create a shared object (ie library, device, gadget, hidd, ...)
-#
-%define make_module_setup mmake=/A objdir=$(OBJDIR) id=
-.PHONY : %(mmake) %(mmake)-clean %(mmake)-object-quick %(mmake)-linklib-quick
-#MM
-%(mmake)-clean : clean
-
-%safe_define var=MODULE%(id) value="$(MODNAME).$(MODTYPE)"
-%safe_define var=USE_FUNCTABLE value="yes"
-%safe_define var=USE_CPAK value="$(USE_CPAK_DEFAULT)"
-
-%make_use_linklibs libs=LIBS%(id) module=MODULE%(id)
-%make_common_setup id=%(id)
-
-# Depending upon the value of MODTYPE, much changes...
-MOD_DIR%(id) := bollocks
-ifeq ($(MODTYPE),library)
-MOD_DIR%(id) := $(AROS_LIBS)
-endif
-ifeq ($(MODTYPE),device)
-MOD_DIR%(id) := $(AROS_DEVS)
-endif
-ifeq ($(MODTYPE),resource)
-MOD_DIR%(id) := $(AROS_MODULES)
-endif
-ifeq ($(MODTYPE),gadget)
-MOD_DIR%(id) := $(AROS_GADGETS)
-endif
-ifeq ($(MODTYPE),class)
-MOD_DIR%(id) := $(AROS_CLASSES)
-endif
-ifeq ($(MODTYPE),datatype)
-MOD_DIR%(id) := $(AROS_DATATYPES)
-endif
-ifeq ($(MODTYPE),handler)
-MOD_DIR%(id) := $(AROS_FS)
-endif
-ifeq ($(MODTYPE),language)
-MOD_DIR%(id) := $(AROS_LOCALE)/Languages
-endif
-ifeq ($(MODTYPE),module)
-MOD_DIR%(id) := $(AROS_MODULES)
-endif
-ifeq ($(MODTYPE),mui)
-MOD_DIR%(id) := $(AROS_CLASSES)/Zune
-endif
-ifeq ($(MODTYPE),mcc)
-MOD_DIR%(id) := $(AROS_CLASSES)/Zune
-endif
-ifeq ($(MODTYPE),mcp)
-MOD_DIR%(id) := $(AROS_CLASSES)/Zune
-endif
-ifeq ($(MOD_DIR%(id)),bollocks)
-$(error You have to set MODTYPE to something other than $(MODTYPE))
-endif
-
-# Save these because they may be changed later.
-FILES_ALL := $(foreach f,$(FILES),$(f).c)
-FUNCS_ALL%(id) := $(foreach f,$(FUNCS),$(f).c)
-
-setup :: $(OBJDIR) $(MOD_DIR%(id))
-
-$(OBJDIR) $(MOD_DIR%(id)) :
-	$(MKDIR) $@
-
-%end
-
-%define make_module_common dflags=$(CFLAGS) id= cc=$(TARGET_CC)
-# You need to put the $(OBJDIR) rules first, because they are more specific.
-# and that affects the way that GNU Make binds its dependencies.
-#
-# Note that if you wish to use a $(OBJDIR)/%.c rather than $(ARCH)/blah/%.c
-# or $(CPU)/blah/%.c then you will have to specify that manually. Shouldn't
-# happen though.
-
-$(OBJDIR%(id))/%.o : $(OBJDIR%(id))/%.c
-	%compile_q cmd=%(cc) opt=$(CFLAGS%(id))
-
-$(OBJDIR%(id))/%.so : $(OBJDIR%(id))/%.c
-	%compile_q cmd=%(cc) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
-
-$(OBJDIR%(id))/%.d : $(OBJDIR%(id))/%.c
-	%mkdepend_q flags=%(dflags)
-
-$(OBJDIR%(id))/%.o : %.c
-	%compile_q cmd=%(cc) opt=$(CFLAGS%(id))
-
-$(OBJDIR%(id))/%.so : %.c
-	%compile_q cmd=%(cc) opt="$(SHARED_CFLAGS) $(CFLAGS%(id))"
-
-$(OBJDIR%(id))/%.d : %.c
-	%mkdepend_q flags=%(dflags)
-
-ifeq ($(USE_LIBDEFS),yes)
-LIBDEFS := libdefs.h
-%libdefs_rule
-endif
-
-setup :: $(LIBDEFS)
-	%mkdirs_q  $(OBJDIR%(id)) $(LIBDIR) $(MOD_DIR%(id))
-
-#MM
-setup-morphos :: $(LIBDEFS)
-	%mkdirs_q  $(OBJDIR%(id)) $(LIBDIR) $(MOD_DIR%(id))
-
-clean ::
-	-@$(RM) $(OBJDIR%(id))
-
-%end
-
-#-------------------------------------------------------------------------
-# Use cpak to generate the files functions.[ch]. This requires a small
-# check to make sure that $(FUNCS) != "".
-#
-%define make_module_cpak id=
-# Don't even bother generating the file if $(FUNCS) is zero.
-ifneq ($(FUNCS),)
-ifneq ($(USE_CPAK),no)
-F_NAME := functions
-
-$(OBJDIR%(id))/functions.c : $(foreach f,$(FUNCS),$(f).c)
-	%mkdir_q $(OBJDIR%(id))
-	@$(CPAK) $(patsubst %.c,%,$^)
-	@$(MV) functions.c functions.h $(OBJDIR%(id))
-
-endif
-endif
-%end
-
-#-------------------------------------------------------------------------
-# Use the old archtool to generate the files functions.[ch].
-#
-%define make_module_archtool
-F_NAME := functions
-
-$(OBJDIR)/functions.c : $(ARCHIVE)
-	@$(ARCHTOOL) -s $@ $(ARCHIVE)
-
-# This version of $(OBJDIR)/functable.c will override the one later.
-# Especially with $(FUNCS) == ""...
-$(OBJDIR)/functable.c : $(ARCHIVE)
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(ARCHTOOL) -t $(ARCHIVE)
-	@$(MV) functable.c $@
-
-# Because $(FUNCS) is "", then USE_FUNCTABLE is set to no, so I have to do
-# myself. Similarly, USE_LIBDEFS = no breaks the END_OBJ
-FUNC_OBJ := $(OBJDIR)/functable.o
-FUNC_SOBJ := $(OBJDIR)/functable.so
-
-%end
-
-#-------------------------------------------------------------------------
-# I want to get rid of this. Either use the new archtool, or the scripts
-#
-%define make_lib_incl_arch name=$(MODNAME) hasrt=
-#MM includes-generate :
-includes-generate :: includes-setup \
-	    $(INCDIR)/clib/%(name)_protos.h \
-	    $(INCDIR)/defines/%(name).h \
-	    $(INCDIR)/inline/%(name).h \
-	    $(INCDIR)/proto/%(name).h \
-	    $(GENINCDIR)/clib/%(name)_protos.h \
-	    $(GENINCDIR)/defines/%(name).h \
-	    $(GENINCDIR)/inline/%(name).h \
-	    $(GENINCDIR)/proto/%(name).h
-	@$(NOP)
-
-_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
-                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
-
-includes-setup : $(_MOD_INCL_DIRS)
-
-$(_MOD_INCL_DIRS) :
-	%mkdir_q $@
-
-clean ::
-	@$(RM) \
-	    $(AROS_INCLUDES)/clib/%(name)_protos.h \
-	    $(AROS_INCLUDES)/defines/%(name).h \
-	    $(AROS_INCLUDES)/inline/%(name).h \
-	    $(AROS_INCLUDES)/proto/%(name).h \
-	    $(GENINCDIR)/clib/%(name)_protos.h \
-	    $(GENINCDIR)/defines/%(name).h \
-	    $(GENINCDIR)/inline/%(name).h \
-	    $(GENINCDIR)/proto/%(name).h
-
-_HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h
-
-$(GENINCDIR)/pragmas/%(name)_pragmas.h \
-    $(GENINCDIR)/clib/%(name)_protos.h \
-    $(GENINCDIR)/defines/%(name).h \
-    $(GENINCDIR)/inline/%(name).h \
-    $(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
-	@$(ARCHTOOL) -I $(GENINCDIR) $(ARCHIVE)
-
-$(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
-	@$(CP) $< $@
-%end
-
-#-------------------------------------------------------------------------------
-#   Generate a module like a normal shared library/device/etc that consists
-#   of multiple files, with an init file, function table, and an endtag at the
-#   end.
-#
-%define make_module dflags=$(CFLAGS) mmake=/A id= cc=$(TARGET_CC)
-%safe_define var=INIT_FILE value="$(MODNAME)_init"
-%safe_define var=END_FILE value="endtag"
-%safe_define var=USE_ENDTAG value="yes"
-%safe_define var=USE_LIBDEFS value="yes"
-
-#MM
-%(mmake)-module-quick : %(mmake)-module
-#MM
-%(mmake)-linklib-quick : %(mmake)-linklib
-
-#MM %(mmake)-module : %(mmake)
-%(mmake)-module : setup $(MOD_DIR%(id))/$(MODULE%(id))
-
-#MM %(mmake)-linklib : %(mmake)
-ifeq ($(MAKE_SHLIB),yes)
-%(mmake)-linklib : setup $(AROSDIR)/lib/lib$(MODNAME).so
-else
-%(mmake)-linklib : setup $(AROSDIR)/lib/lib$(MODNAME).a
-endif
-
-ifeq ($(USE_LIBDEFS),no)
-USE_FUNCTABLE := no
-USE_ENDTAG := no
-endif
-
-# Don't generate a functable if there is nothing there to do.
-ifeq ($(FUNCS),)
-    USE_FUNCTABLE := no
-endif
-
-# F_NAME might be set by make_module_cpak/make_module_archtool
-# It should be set to $(FUNCS) otherwise
-ifndef F_NAME
-  F_NAME := $(FUNCS)
-endif
-
-DEPS := $(DEPS) $(foreach f,$(INIT_FILE) $(FILES) $(F_NAME), $(OBJDIR%(id))/$(f).d)
-OBJS := $(foreach f,$(FILES) $(F_NAME), $(OBJDIR%(id))/$(f).o)
-SOBJS := $(foreach f,$(FILES) $(F_NAME), $(OBJDIR%(id))/$(f).so)
-
-INIT_OBJ := $(OBJDIR%(id))/$(INIT_FILE).o
-INIT_SOBJ := $(OBJDIR%(id))/$(INIT_FILE).so
-
-ifeq ($(USE_FUNCTABLE),yes)
-FUNC_OBJ := $(OBJDIR%(id))/functable.o
-FUNC_SOBJ := $(OBJDIR%(id))/functable.so
-endif
-ifeq ($(USE_ENDTAG),yes)
-END_OBJ := $(OBJDIR%(id))/endtag.o
-END_SOBJ := $(OBJDIR%(id))/endtag.so
-endif
-
-# Generate the module from the object files.
-ifeq ($(NO_MODULE),yes)
-$(MOD_DIR%(id))/$(MODULE%(id)) :
-	$(error You cannot make $(MODULE%(id)) into a module)
-else
-$(MOD_DIR%(id))/$(MODULE%(id)) : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ) $(DEPLIBS)
-	%link_module_q objs="$(INIT_OBJ) $(FUNC_OBJ) $(OBJS)" endtag="$(END_OBJ)" objdir=$(OBJDIR%(id)) libs=$(LIBS%(id)) module=$(MODULE%(id)) ldflags=$(LDFLAGS%(id))
-endif
-
-# Make a library. Not sure about the RHS yet.
-$(AROSDIR)/lib/lib$(MODNAME).a : $(INIT_OBJ) $(FUNC_OBJ) $(OBJS) $(END_OBJ)
-	%mklib_q from=$^
-
-$(AROSDIR)/lib/lib$(MODNAME).so : $(INIT_SOBJ) $(FUNC_SOBJ) $(SOBJS) $(END_SOBJ)
-	@$(ECHO) "Linking $(notdir $@)..."
-	@$(SHARED_LD) $(SHARED_LDFLAGS) -o $@ $^
-
-# Make a function table
-ifeq ($(USE_FUNCTABLE),yes)
-$(OBJDIR%(id))/functable.c : $(FUNCS_ALL%(id)) $(BINDIR)/scripts/genfunctable.awk libdefs.h
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCS_ALL%(id)) > $@
-endif
-
-# Make the end tag if it is needed.
-$(OBJDIR%(id))/endtag.c : libdefs.h
-	@$(ECHO) "Generating $(CURDIR)/$(notdir $@)..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
-
-%asm_rule "$(INIT_FILE) $(FILES) $(FUNCS)"
-%ctoasm_q
-
-clean ::
-	-@$(RM) $(AROS_MODULES)/$(MODULE%(id)) \
-	    $(AROSDIR)/lib/lib$(MODNAME).a $(AROSDIR)/lib/lib$(MODNAME).so
-
-%make_module_common dflags=%(dflags) id=%(id) cc=%(cc)
-%end
-
-#--------------------------------------------------------------------------
-#   Compile the files $(MODULES) based on single files. It will take a file
-#   %.c -> %.o -> %.$(MODTYPE) without generating any of the other regular
-#   cruft associated with modules. It also can perform the rule:
-#   %.c -> %.o -> %, for those people who don't want an extension.
-#
-%define make_module_single mmake=/A dflags=$(CFLAGS)
-# Munge the linklibs into something that is useful for linking. Don't put
-# this before the inclusion of the config/ stuff. This is so that they
-# can change the linklibs if necessary.
-%make_use_linklibs
-
-$(MOD_DIR)/%.$(MODTYPE) : $(OBJDIR)/%.o $(DEPLIBS)
-	%link_module_q objs=$(OBJDIR)/$*.o
-
-$(MOD_DIR)/% : $(OBJDIR)/%.o $(DEPLIBS)
-	%link_module_q objs=$(OBJDIR)/$*.o
-
-DEPS := $(DEPS) $(OBJDIR)/$(MODNAME).d
-
-%ctoasm_q
-
-# Use the common rules to generate the rest of the files.
-%make_module_common dflags=%(dflags)
-%end
-
-%define make_lib_includes name=$(MODNAME) hasrt= id=
-#MM includes-generate :
-includes-generate :: includes-setup \
-	    $(INCDIR)/clib/%(name)_protos.h \
-	    $(INCDIR)/defines/%(name).h \
-	    $(INCDIR)/inline/%(name).h \
-	    $(INCDIR)/proto/%(name).h \
-	    $(GENINCDIR)/clib/%(name)_protos.h \
-	    $(GENINCDIR)/defines/%(name).h \
-	    $(GENINCDIR)/inline/%(name).h \
-	    $(GENINCDIR)/proto/%(name).h
-	@$(NOP)
-
-_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
-                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
-
-includes-setup : $(_MOD_INCL_DIRS)
-
-$(_MOD_INCL_DIRS) :
-	%mkdir_q $@
-
-clean ::
-	@$(RM) \
-	    $(AROS_INCLUDES)/clib/%(name)_protos.h \
-	    $(AROS_INCLUDES)/defines/%(name).h \
-	    $(AROS_INCLUDES)/inline/%(name).h \
-	    $(AROS_INCLUDES)/proto/%(name).h \
-	    $(GENINCDIR)/clib/%(name)_protos.h \
-	    $(GENINCDIR)/defines/%(name).h \
-	    $(GENINCDIR)/inline/%(name).h \
-	    $(GENINCDIR)/proto/%(name).h
-
-_HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h \
-	    $(FUNCS_ALL%(id)) \
-	    $(SCRIPTDIR)/genshared $(SCRIPTDIR)/genclib.awk \
-	    $(SCRIPTDIR)/gendefines.awk $(SCRIPTDIR)/geninline.awk
-
-$(GENINCDIR)/clib/%(name)_protos.h : $(_HEADER_DEPS)
-	@$(SCRIPTDIR)/genshared -clib %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL%(id))
-
-$(GENINCDIR)/defines/%(name).h : $(_HEADER_DEPS)
-	@$(SCRIPTDIR)/genshared -defines %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL%(id))
-
-$(GENINCDIR)/inline/%(name).h : $(_HEADER_DEPS)
-	@$(SCRIPTDIR)/genshared -inline %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL%(id))
-
-$(GENINCDIR)/proto/%(name).h : $(_HEADER_DEPS)
-	@$(SCRIPTDIR)/genshared -proto %(hasrt) -prefix $(GENINCDIR) $(FUNCS_ALL%(id))
-
-$(AROS_INCLUDES)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/inline/%(name).h : $(GENINCDIR)/inline/%(name).h
-	@$(CP) $< $@
-
-$(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
-	@$(CP) $< $@
-%end
-
 %define make_hidd_stubs hidd=/A cflags=$(CFLAGS) dflags=$(CFLAGS)
 STUBS_SRC := $(foreach f,$(STUBS),$(f).c)
 STUBS_OBJ := $(foreach f,$(STUBS),$(OBJDIR)/$(f).o)
@@ -2814,11 +2419,6 @@ clean ::
 
 DEPS := $(DEPS) $(STUBS_DEP)
 
-%end
-
-%define add_kernel_module id=/A
-AROS_BUILTIN_LIBS := $(AROS_BUILTIN_LIBS) $(AROS_LIB)/lib%(id).mo
-AROS_BUILTIN_DEPS := $(AROS_BUILTIN_DEPS) $(AROS_LIB)/lib%(id).mo
 %end
 
 #------------------------------------------------------------------------------
