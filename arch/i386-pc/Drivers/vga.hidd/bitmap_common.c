@@ -31,6 +31,10 @@ static VOID MNAME(clear)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Clear
     return;
 }
 
+#if 0
+
+/* this function does not really make sense for LUT bitmaps */
+
 static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_MapColor *msg)
 {
     int i,f;
@@ -74,6 +78,12 @@ static HIDDT_Pixel MNAME(mapcolor)(OOP_Class *cl, OOP_Object *o, struct pHidd_Bi
     return i;
 }
 
+#endif
+
+#if 0
+
+/* this function does not really make sense for LUT bitmaps */
+
 static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_UnmapPixel *msg)
 {
     int i,f;
@@ -101,6 +111,8 @@ static VOID MNAME(unmappixel)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_
 	else i++;	    
     } while (f && (i<16));
 }
+
+#endif
 
 static BOOL MNAME(setcolors)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetColors *msg)
 {
@@ -270,35 +282,61 @@ static VOID MNAME(drawpixel)(OOP_Class *cl,OOP_ Object *o, struct pHidd_BitMap_D
 static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     struct bitmap_data *data = OOP_INST_DATA(cl, o);
-    struct Box box = {0, 0, 0, 0};
-
-    int i;
-
-    // start of Source data
-    unsigned char *buff = data->VideoData +
-                                 msg->x + (msg->y * data->width);
-    // adder for each line
-    ULONG add = data->width - msg->width;
-    ULONG cnt = msg->height;
-
-    unsigned long *s_start = (unsigned long *)msg->pixels;
-
+    struct Box      	box = {0, 0, 0, 0};
+    UBYTE   	       *buff = data->VideoData + msg->x + (msg->y * data->width);
+    ULONG   	    	add = data->width - msg->width;
+    ULONG   	    	cnt = msg->height;
+    UBYTE   	       *s_start = (UBYTE *)msg->pixels;
+    BOOL    	    	done_by_superclass = FALSE;
+    int     	    	i;
+    
     EnterFunc(bug("VGAGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 
-    while (cnt > 0)
+    switch(msg->pixFmt)
     {
-        i = msg->width;
-        while (i)
-        {
-            *buff++ = (unsigned char)*s_start++;
-            i--;
-        }
-        buff += add;
-	s_start += (msg->modulo - msg->width);
-        cnt--;
+    	case vHidd_StdPixFmt_Native:
+	    while (cnt > 0)
+	    {
+    		UBYTE *p = s_start;
+
+        	i = msg->width;
+        	while (i)
+        	{
+        	    *buff++ = *p++;
+        	    i--;
+        	}
+        	buff += add;
+		s_start += msg->modulo;
+        	cnt--;
+	    }
+	    break;
+	    
+    	case vHidd_StdPixFmt_Native32:
+	    while (cnt > 0)
+	    {
+    		HIDDT_Pixel *p = (HIDDT_Pixel *)s_start;
+
+        	i = msg->width;
+        	while (i)
+        	{
+        	    *buff++ = (UBYTE)*p++;
+        	    i--;
+        	}
+        	buff += add;
+		s_start += msg->modulo;
+        	cnt--;
+	    }
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    done_by_superclass = TRUE;
+	    break;
+	    
     }
-    if (data->disp)
+	    
+    if (data->disp && !done_by_superclass)
     {
         box.x1 = msg->x;
         box.y1 = msg->y;
@@ -314,6 +352,7 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 		(XSD(cl)->mouseY <= box.y2) ) )
 	    draw_mouse(XSD(cl));
     }
+    
     ReturnVoid("VGAGfx.BitMap::PutImage");
 }
 
@@ -321,31 +360,56 @@ static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
 
 static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
-    struct bitmap_data *data = OOP_INST_DATA(cl, o);
+    struct bitmap_data  *data = OOP_INST_DATA(cl, o);
+    UBYTE   	    	*buff = data->VideoData + msg->x + (msg->y * data->width);
+    ULONG   	    	 add = data->width - msg->width;
+    ULONG   	    	 cnt = msg->height;
+    UBYTE      	    	*s_start = (UBYTE *)msg->pixels;
+    int     	    	 i;
 
-    int i;
-
-    // start of Source data
-    unsigned char *buff = data->VideoData +
-                                 msg->x + (msg->y * data->width);
-    // adder for each line
-    ULONG add = data->width - msg->width;
-    ULONG cnt = msg->height;
-
-    unsigned long *s_start = (unsigned long *)msg->pixels;
-
-    while (cnt > 0)
+    switch(msg->pixFmt)
     {
-        i = msg->width;
-        while (i)
-        {
-	    *s_start++ = (unsigned long)*buff++;
-            i--;
-        }
-        buff += add;
-	s_start += (msg->modulo - msg->width);
-        cnt--;
-    }
+    	case vHidd_StdPixFmt_Native:
+	    while (cnt > 0)
+	    {
+	    	UBYTE *p = s_start;
+		
+        	i = msg->width;
+        	while (i)
+        	{
+		    *p++ = *buff++;
+        	    i--;
+        	}
+        	buff += add;
+		s_start += msg->modulo;
+        	cnt--;
+	    }
+	    break;
+	    
+    	case vHidd_StdPixFmt_Native32:
+	    while (cnt > 0)
+	    {
+	    	HIDDT_Pixel *p = (HIDDT_Pixel *)s_start;
+
+        	i = msg->width;
+        	while (i)
+        	{
+		    *p++ = (HIDDT_Pixel)*buff++;
+        	    i--;
+        	}
+        	buff += add;
+		s_start += msg->modulo;
+        	cnt--;
+	    }
+	    break;
+	    
+	    
+    	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+    
 }
 
 /*********  BitMap::PutImageLUT()  ***************************/
@@ -541,43 +605,6 @@ static VOID MNAME(fillrect)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
             draw_mouse(XSD(cl));
     }
     ReturnVoid("VGAGfx.BitMap::FillRect");
-}
-
-static VOID PutPixel(OOP_Class *cl, struct bitmap_data *data, int x, int y, unsigned long fg)
-{
-    unsigned char *ptr;
-
-#ifdef OnBitmap
-    int pix;
-    int i;
-    unsigned char *ptr2;
-#endif /* OnBitmap */
-
-    ptr = (char *)(data->VideoData + x + (y * data->width));
-    *ptr = (char) fg;
-
-#ifdef OnBitmap
-    ptr2 = (char *)(0xa0000 + (x + (y * data->width)) / 8);
-    pix = 0x8000 >> (x % 8);
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-
-    outw(0x3c4,0x0f02);
-    outw(0x3ce,pix | 8);
-    outw(0x3ce,0x0005);
-    outw(0x3ce,0x0003);
-    outw(0x3ce,(fg << 8));
-    outw(0x3ce,0x0f01);
-
-    *ptr2 |= 1;		// This or'ed value isn't important
-
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-
-    if (((x >= XSD(cl)->mouseX) && (x < (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
-	((y >= XSD(cl)->mouseY) && (y < (XSD(cl)->mouseY + XSD(cl)->mouseH))))
-	draw_mouse(XSD(cl));
-
-#endif /* OnBitmap */
-    return;
 }
 
 /*** BitMap::BlitColorExpansion() **********************************************/
