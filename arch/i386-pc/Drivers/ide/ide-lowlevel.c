@@ -755,7 +755,7 @@ ULONG atapi_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, U
                     size = ide_in(atapi_ByteCntH, port) << 8 |
                            ide_in(atapi_ByteCntL, port);
 
-                    insl(port, buffer, size / 4);
+                    insw(port, buffer, size / 2);
                     
                     buffer += size;
                     *cnt += size;
@@ -797,7 +797,7 @@ ULONG atapi_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, 
                     size = ide_in(atapi_ByteCntH, port) << 8 |
                            ide_in(atapi_ByteCntL, port);
 
-                    outsl(port, buffer, size / 4);
+                    outsw(port, buffer, size / 2);
 
                     buffer += size;
                     *cnt += size;
@@ -952,7 +952,7 @@ ULONG ata_ReadSector(ULONG hd, ULONG sec, ULONG cyl, APTR buffer, struct ide_Uni
         {
             err = ide_in(ata_Status, port);
             
-            insl(port, buffer, 512 / 4);
+            insw(port, buffer, 512 / 2);
 
             if (!(err & ATAF_ERROR))
             {
@@ -1008,7 +1008,7 @@ ULONG ata_Read(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, ULO
                         return TDERR_NotSpecified;
 
                     /* Yes. Copy ide buffer */
-                    insl(port, buffer, 512 / 4);
+                    insw(port, buffer, 512 / 2);
 
                     /* Handle swapped bit here!!!!!!!! */
 
@@ -1066,7 +1066,7 @@ ULONG ata_Write(ULONG block, ULONG count, APTR buffer, struct ide_Unit *unit, UL
                                     ATAF_DATAREQ)
                         return TDERR_NotSpecified;
 
-                    outsl(port, buffer, 512 / 4);
+                    outsw(port, buffer, 512 / 2);
                 } while((--(*act)) & 0xff);
                 
                 if (!WaitBusy(port, unit))
@@ -1155,7 +1155,7 @@ ULONG ata_Identify(APTR buffer, struct ide_Unit *unit)
             {
                 struct iDev *id = buffer;
 
-                insl(port, buffer, 512 / 4);
+                insw(port, buffer, 512 / 2);
 
                 if (!(ide_in(ata_Status, port) & ATAF_ERROR))
                 {
