@@ -1,0 +1,30 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES           := memset
+EXEDIR          := $(AROSDIR)/test/benchmarks/clib
+EXES            := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+
+#MM- test-benchmarks : test-benchmarks-clib
+#MM- test-benchmarks-quick : test-benchmarks-clib-quick
+
+#MM test-benchmarks-clib : includes linklibs 
+
+%make_prog_setup mmake=test-benchmarks-clib
+
+test-benchmarks-clib : setup $(EXES)
+
+setup ::
+	%mkdir_q $(EXEDIR)
+
+%make_prog_single dir=$(EXEDIR)
+
+%common
+%include_deps
