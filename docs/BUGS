@@ -1,3 +1,10 @@
+Outstanding bugs:
+BUG000021 BUG000026 BUG000037 BUG000058 BUG000063
+BUG000068 BUG000070 BUG000074 BUG000075 BUG000076
+BUG000077
+
+
+
 BUG000001 fixed
 digulla@wi-pc44.fh-konstanz.de
 assign DEVS: devs -> ok
@@ -102,7 +109,7 @@ Intel (compatible) processors with internal FPU.
 This is because you can't operate on floats anymore, maybe FPU has been
 disabled.
 
-BUG000014
+BUG000014 (seems) fixed
 klaus21@t-online.de
 "dir :" does nothing.
 The problem is that DoName() does not support a lock to the root directory of
@@ -130,7 +137,7 @@ BUG000017 fixed
 bergers@aros.org
 Local DOS-variables are not deallocated yet when the task is ending.
 
-BUG000018
+BUG000018 fixed (forget about that program :-))
 bergers@aros.org
 Devicetest cannot be linked correctly as there is no external Resident
 structure found in a linkfile.
@@ -170,7 +177,7 @@ which code is executed by the call to CallHookPkt()."
 The problem was caused by lots of bugs in the diskfont library. (Fixed
 by Georg Steger.)
 
-BUG000023
+BUG000023 (seems) fixed
 bergers@aros.org
 Demos/sift crashes with a GURU-Meditation saying that memory was
 freed twice.
@@ -381,7 +388,7 @@ BUG000053 fixed
 bergers@aros.org
 Games/Mine doesn't run any more. Crashes immediately.
 
-BUG000054
+BUG000054 fixed
 bergers@aros.org
 There seems to be a problem when colors are changed with the background when
 a window is moved. Probably also the same problem that causes the lines to
@@ -415,7 +422,7 @@ bergers@aros.org
 The areafill algorithms are not very much in sync with the line drawing and
 ellipse drawing algorithms.
 
-BUG000059
+BUG000059 fixed
 bergers@aros.org
 Once the window of fish/watchman is clicked on with the left mouse button
 nothing can be done with other windows. (Locking error?)
@@ -451,6 +458,11 @@ segfaults after some time). Must be a bug in mlib, because it used to work
 with my own sin/cos routines (taylor series with arg folded to [0,Pi/2]),
 before the Sun routines have been added.
 
+[The current math libs return the values they calculate in non-FPU registers
+whereas the program expects them in CPU registers. This worked fine on linux 
+m68k but no on i386. -> On i386 and all systems that have FPU the FPU should
+be used rather than the libs.]
+
 BUG000064 fixed
 bergers@aros.org
 ExNext() does not work on the ram disk. This is the reason why 'Setenv' 
@@ -461,10 +473,14 @@ bernie@aros.org
 AROS dumps core when you attempt to cd into a plain file (try "cd aros" in
 the Workbench: directory).
 
-BUG000066
+BUG000066 (is this a bug or a feature?)
 digulla@hepe.com
 (Reported by Dirk Weber) Run AROS, "cd C", "cd ..". The path reads now
 "Workbench:C/..".
+
+[This is because there is actually a 'file' named '..' when reading a
+unix directory. This file would have to be intercepted in emul handler (as
+it was before until someone took it out).]
 
 BUG000067 fixed
 digulla@hepe.com
@@ -476,7 +492,7 @@ digulla@hepe.com
 When you change headers.tmpl and someone else does an update, the
 headers are not regenerated.
 
-BUG000069
+BUG000069 fixed
 Stefan.Berger@att.net
 c/sort seems to have a problem on SYS:. The Examine() command causes a
 crash (not immediately but at some later point in execution). Sort works
@@ -538,3 +554,7 @@ stefan.berger@att.net
 'Aros' only links correctly if layers library has a global variable
 GfxBase, otherwise GfxBase is undefined in graphics.library.
 Also see 'nm -u libgraphics.so'
+
+
+
+!! Keep the list of outstanding bugs at the top up-to-date
