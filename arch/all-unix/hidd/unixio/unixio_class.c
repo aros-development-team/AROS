@@ -91,8 +91,6 @@ static const struct newMemList MemTemplate =
 static const UBYTE name[] = "unixioclass";
 static const UBYTE version[] = "unixioclass 41.1 (27.10.1997)\r\n";
 
-static const char unknown[] = "--unknown device--";
-
 /************************************************************************/
 
 /* instance data for the unixioclass */
@@ -218,6 +216,7 @@ static void WaitForIO (void)
         tv.tv_sec  = 0;
 	tv.tv_usec = 100000;
 
+	errno = 0; /* set errno to zero before select() call */
 	selecterr = select (maxfd+1, rp, wp, ep, &tv);
 	err = errno;
 
