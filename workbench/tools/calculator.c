@@ -2,12 +2,12 @@
 #include <libraries/gadtools.h>
 #include <libraries/locale.h>
 
-#include <pragma/exec_lib.h>
-#include <pragma/dos_lib.h>
-#include <pragma/intuition_lib.h>
-#include <pragma/graphics_lib.h>
-#include <pragma/gadtools_lib.h>
-#include <pragma/locale_lib.h>
+#include <proto/exec.h>
+#include <proto/dos.h>
+#include <proto/intuition.h>
+#include <proto/graphics.h>
+#include <proto/gadtools.h>
+#include <proto/locale.h>
 
 #include <stdio.h>
 #include <string.h>
