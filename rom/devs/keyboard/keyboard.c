@@ -614,6 +614,7 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	struct Interrupt *node;
 
 	if(!IsListEmpty(&KBBase->kb_ResetHandlerList))
+	{
 	    /* We may want to install a timer here so that ColdReboot()
 	       will eventually be called even if a reset handler hang. */
 	    ForeachNode(&KBBase->kb_ResetHandlerList, (struct Node *)node)
@@ -625,8 +626,11 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 			  AROS_UFCA(APTR, node->is_Code, A5),
 			  AROS_UFCA(struct ExecBase *, SysBase, A6));
 	    }
+	}
 	else
+	{
 	    ColdReboot();	/* Bye bye AROS */
+	}
     }
     
     return moreevents;
@@ -730,18 +734,31 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
     if(KBBase->kb_writePos == KB_BUFFERSIZE)
 	KBBase->kb_writePos = 0;
 
-    if(keyCode & KEYUPMASK)
-	BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
-    else
-	BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
-
-    D(bug("Wrote to matrix\n"));
-
-    if(!IsListEmpty(&KBBase->kb_PendingQueue))
+    if (CORRECT(keyCode) < KB_MAXKEYS)
     {
-	D(bug("doing software irq\n"));
+	if(keyCode & KEYUPMASK)
+	    BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
+	else
+	    BVBITSET(CORRECT(keyCode), KBBase->kb_Matrix);
     
+    	D(bug("Wrote to matrix\n"));
+    }
+    else
+    {
+    	D(bug("Keycode value too high. Is %d. Should be < %d\n", CORRECT(keyCode), KB_MAXKEYS));
+    }
+    
+    if(!IsListEmpty(&KBBase->kb_PendingQueue))
+    {    
+#if 0
+	D(bug("doing software irq\n"));
 	Cause(&KBBase->kb_Interrupt);
+#else
+	AROS_UFC3(VOID, kbdSendQueuedEvents,
+	    AROS_UFCA(struct KeyboardBase *, KBBase  , A1),
+	    AROS_UFCA(APTR                 , NULL, A5),
+	    AROS_UFCA(struct ExecBase *    , SysBase , A6));
+#endif
     }
     
     Enable();
