@@ -9,7 +9,4 @@ The demo shows how fast these two invocation methods
 are compared to each other. This test is not
 very much to go by though, because I don't have a large
 class hierarchy (so methods are well spread through
-the hash table), and also the hashfunction I use
-is not very sophisticated: methodid % hashtablesize,
-which is a slow hash function (at least
-for this purpose).
+the hash table in this demo).

@@ -10,7 +10,7 @@
 
 #include "types.h"
 
-#define CalcHash(id, ht_size) (id % ht_size)
+#define CalcHash(id, ht_size) (id & ht_size)
 
 struct Bucket
 {

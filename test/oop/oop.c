@@ -141,6 +141,24 @@ UnlockCL;
 ** We always make sure that 
 
 */
+static ULONG NumHashEntries(ULONG initial)
+{
+    /* Calulates hashsize as 2^n - 1 so that htsize >= 2*initial */
+    ULONG temp = 1;
+    BYTE i;
+    
+    for (i = 31; i >= 0; i --)
+    {
+    	if ((temp << i) & initial)
+	    break;
+    }
+    
+    /* Make sure table is never more than 50% full */
+    i ++;
+    
+    return ((temp << i) - 1);
+    
+}
 
 static struct Bucket **AllocHash(Class *cl, ULONG numNewMethods)
 {
@@ -148,7 +166,7 @@ static struct Bucket **AllocHash(Class *cl, ULONG numNewMethods)
     LONG htable_size;
     
     struct Bucket **htable = NULL; /* keep compiler happy */
-    ULONG nummethods;
+    ULONG nummethods, numentries;
     
     Class *super;
     
@@ -161,13 +179,15 @@ static struct Bucket **AllocHash(Class *cl, ULONG numNewMethods)
     	nummethods += super->NumMethods;
 	
     D(bug("Total number of methods: %ld\n", nummethods));
+    
+    numentries = NumHashEntries(nummethods);
 	
     /* Create hash table so that it gets 50 % full, so there are fewer collisions */
-    htable_size = UB(&htable[nummethods * 2]) - UB(&htable[0]);
+    htable_size = UB(&htable[numentries]) - UB(&htable[0]);
 
     D(bug("Hash table size: %ld\n", htable_size));
     /* Save hash table size */
-    cl->HashTableSize = nummethods * 2;
+    cl->HashTableSize = numentries;
     
     htable = malloc(htable_size);
     if (htable)
