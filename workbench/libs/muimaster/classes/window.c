@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include <intuition/imageclass.h>
+#include <intuition/icclass.h>
 #include <clib/alib_protos.h>
 #include <graphics/gfxmacros.h>
 #include <proto/exec.h>
@@ -48,6 +49,10 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 #ifndef _DRAGNDROP_H
 #include "dragndrop.h"
 #endif
+
+#define IM(x) ((struct Image*)x)
+#define G(x) ((struct Gadget*)x)
+#define GADGETID(x) (((struct Gadget*)x)->GadgetID)
 
 static char *StrDup(char *x)
 {
@@ -110,6 +115,14 @@ struct MUI_WindowData
     Object *      wd_Menustrip; /* The menustrip object which is actually is used (eighter apps or windows or NULL) */
     Object *      wd_ChildMenustrip; /* If window has an own Menustrip */
     struct Menu  *wd_Menu; /* the intuition menustrip */
+
+    Object *wd_VertProp;
+    Object *wd_UpButton;
+    Object *wd_DownButton;
+
+    Object *wd_HorizProp;
+    Object *wd_LeftButton;
+    Object *wd_RightButton;
 };
 
 #ifndef WFLG_SIZEGADGET
@@ -133,6 +146,8 @@ struct MUI_WindowData
 #define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a message handler */
 #define MUIWF_CLOSEME         (1<<6) /* close the window after processing the message */
 #define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
+#define MUIWF_USERIGHTSCROLLER (1<<8) /* window should have a right scroller */
+#define MUIWF_USEBOTTOMSCROLLER (1<<9) /* windiw should have a bottom scroller */
 
 struct __dummyXFC3__
 {
@@ -177,8 +192,14 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
 	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
     mri->mri_Pens = mri->mri_PensStorage;
 
-    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
+    mri->mri_LeftImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,LEFTIMAGE,TAG_DONE);
+    mri->mri_RightImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,RIGHTIMAGE,TAG_DONE);
+    mri->mri_UpImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,UPIMAGE,TAG_DONE);
+    mri->mri_DownImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,DOWNIMAGE,TAG_DONE);
+    mri->mri_SizeImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,SIZEIMAGE,TAG_DONE);
 
+    mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
+    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
     temp_obj = NewObject(NULL,"sysiclass",
     	SYSIA_DrawInfo, mri->mri_DrawInfo,
     	SYSIA_Which, SIZEIMAGE,
@@ -204,6 +225,12 @@ void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 
     UnlockPubScreen(NULL, mri->mri_Screen);
     mri->mri_Screen = NULL;
+
+    if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
+    if (mri->mri_RightImage){DisposeObject(mri->mri_LeftImage);mri->mri_RightImage=NULL;};
+    if (mri->mri_UpImage) {DisposeObject(mri->mri_LeftImage);mri->mri_UpImage=NULL;};
+    if (mri->mri_DownImage) {DisposeObject(mri->mri_LeftImage);mri->mri_DownImage=NULL;};
+    if (mri->mri_SizeImage) {DisposeObject(mri->mri_LeftImage);mri->mri_SizeImage=NULL;};
 }
 
 void ShowRenderInfo(struct MUI_RenderInfo *mri)
@@ -252,15 +279,19 @@ void _zune_window_change_events (struct MUI_WindowData *data)
     }
 }
 
-
-BOOL DisplayWindow(struct MUI_WindowData *data)
+BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win;
     ULONG flags = data->wd_CrtFlags;
+    struct MUI_RenderInfo *mri = &data->wd_RenderInfo;
 
     struct Menu *menu = NULL;
     struct NewMenu *newmenu = NULL;
     APTR visinfo = NULL;
+
+    Object *firstgad = NULL;
+    Object *prevgad = NULL;
+    LONG id;
 
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
         flags |= WFLG_ACTIVATE;
@@ -307,6 +338,95 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
 	FreeVisualInfo(visinfo);
     }
 
+    /* Create the right border scrollers now if requested */
+    if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
+    {
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	firstgad = prevgad = data->wd_VertProp = NewObject(NULL,"propgclass",
+		GA_RelRight, 1 - (IM(mri->mri_UpImage)->Width - 8 / 2),
+		GA_Top, mri->mri_BorderTop + 2,
+		GA_Width, IM(mri->mri_UpImage)->Width - 8,
+		GA_RelHeight, - (mri->mri_BorderTop + 2) - IM(mri->mri_UpImage)->Height - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height - 2,
+		GA_RightBorder, TRUE,
+		GA_ID, id,
+		PGA_Borderless, TRUE,
+		PGA_NewLook, TRUE,
+		PGA_Freedom, FREEVERT,
+		PGA_Top, 0,
+		PGA_Total, 2,
+		PGA_Visible, 1,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_UpButton = NewObject(NULL,"buttongclass",
+		GA_Image, mri->mri_UpImage,
+		GA_RelRight, 1 - IM(mri->mri_UpImage)->Width,
+		GA_RelBottom, 1 - IM(mri->mri_UpImage)->Height - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height,
+		GA_RightBorder, TRUE,
+		GA_Previous, prevgad,
+		GA_ID, id,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_DownButton = NewObject(NULL,"buttongclass",
+		GA_Image, mri->mri_DownImage,
+		GA_RelRight, 1 - IM(mri->mri_DownImage)->Width,
+		GA_RelBottom, 1 - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height,
+		GA_RightBorder, TRUE,
+		GA_Previous, prevgad,
+		GA_ID, id,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+    }
+
+    /* Create the bottom border scrollers now if requested */
+    if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
+    {
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_HorizProp = NewObject(NULL,"propgclass",
+		GA_RelBottom, 1 - (IM(mri->mri_LeftImage)->Height - 4 / 2),
+		GA_Left, mri->mri_BorderLeft,
+		GA_Height, IM(mri->mri_LeftImage)->Height - 4,
+		GA_RelWidth, - (mri->mri_BorderLeft) - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width - 2,
+		GA_BottomBorder, TRUE,
+		GA_ID, id,
+		prevgad?GA_Previous:TAG_IGNORE, prevgad,
+		PGA_Borderless, TRUE,
+		PGA_NewLook, TRUE,
+		PGA_Freedom, FREEHORIZ,
+		PGA_Top, 0,
+		PGA_Total, 2,
+		PGA_Visible, 1,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+
+	if (!firstgad) firstgad = prevgad;
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_UpButton = NewObject(NULL,"buttongclass",
+		GA_Image, mri->mri_LeftImage,
+		GA_RelRight, 1 - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
+		GA_RelBottom, 1 - IM(mri->mri_LeftImage)->Height,
+		GA_BottomBorder, TRUE,
+		GA_Previous, prevgad,
+		GA_ID, id,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_DownButton = NewObject(NULL,"buttongclass",
+		GA_Image, mri->mri_RightImage,
+		GA_RelRight, 1 - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width,
+		GA_RelBottom, 1 - IM(mri->mri_RightImage)->Height,
+		GA_BottomBorder, TRUE,
+		GA_Previous, prevgad,
+		GA_ID, id,
+		ICA_TARGET, ICTARGET_IDCMP,
+		TAG_DONE);
+    }
+
     win = OpenWindowTags(NULL,
         WA_Left,         (IPTR)data->wd_X,
         WA_Top,          (IPTR)data->wd_Y,
@@ -317,6 +437,7 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
         WA_InnerHeight,  (IPTR)data->wd_Height,
         WA_AutoAdjust,   (IPTR)TRUE,
         WA_NewLookMenus, (IPTR)TRUE,
+        WA_Gadgets, data->wd_VertProp,
         TAG_DONE);
 
     if (win)
@@ -339,6 +460,8 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
         ModifyIDCMP(win, data->wd_Events);
 
         data->wd_RenderInfo.mri_Window = win;
+        data->wd_RenderInfo.mri_VertProp = data->wd_VertProp;
+        data->wd_RenderInfo.mri_HorizProp = data->wd_HorizProp;
 	if (menu)
 	{
 	    data->wd_Menu = menu;
@@ -354,13 +477,15 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     return FALSE;
 }
 
-void UndisplayWindow(struct MUI_WindowData *data)
+void UndisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win = data->wd_RenderInfo.mri_Window;
 
     if (win != NULL)
     {
         data->wd_RenderInfo.mri_Window = NULL;
+        data->wd_RenderInfo.mri_VertProp = NULL;
+        data->wd_RenderInfo.mri_HorizProp = NULL;
 
         /* store position and size */
         data->wd_X      = win->LeftEdge;
@@ -397,6 +522,21 @@ void UndisplayWindow(struct MUI_WindowData *data)
         }
 
         CloseWindow(win);
+
+#define DISPOSEGADGET(x) \
+	if (x)\
+	{\
+	    DoMethod(obj, MUIM_Window_FreeGadgetID, ((struct Gadget*)x)->GadgetID);\
+	    DisposeObject(x);\
+	    x = NULL;\
+	}
+
+	DISPOSEGADGET(data->wd_VertProp);
+	DISPOSEGADGET(data->wd_UpButton);
+	DISPOSEGADGET(data->wd_DownButton);
+	DISPOSEGADGET(data->wd_HorizProp);
+	DISPOSEGADGET(data->wd_LeftButton);
+	DISPOSEGADGET(data->wd_RightButton);
     }
 }
 
@@ -692,6 +832,30 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    }
 		}
 		break;
+
+	case    IDCMP_IDCMPUPDATE:
+		if (data->wd_VertProp || data->wd_HorizProp)
+		{
+		    struct TagItem *tag;
+		    tag = FindTagItem(GA_ID,(struct TagItem*)imsg->IAddress);
+		    if (tag)
+		    {
+		    	if (data->wd_VertProp)
+		    	{
+			    if (tag->ti_Data == GADGETID(data->wd_VertProp));
+			    if (tag->ti_Data == GADGETID(data->wd_UpButton));
+			    if (tag->ti_Data == GADGETID(data->wd_DownButton));
+			}
+
+		    	if (data->wd_HorizProp)
+		    	{
+			    if (tag->ti_Data == GADGETID(data->wd_HorizProp));
+			    if (tag->ti_Data == GADGETID(data->wd_LeftButton));
+			    if (tag->ti_Data == GADGETID(data->wd_RightButton));
+			}
+		    }
+		}
+			
     }
 
     handle_event(oWin, imsg);
@@ -1277,6 +1441,14 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_Window_TopEdge:
 		    data->wd_Y = tag->ti_Data;
 		    break;
+
+	    case    MUIA_Window_UseBottomBorderScroller:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
+		    break;
+
+	    case    MUIA_Window_UseRightBorderScroller:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
+		    break;
 	}
     }
 
@@ -1566,7 +1738,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     else data->wd_Menustrip = data->wd_ChildMenustrip;
 
     /* open window here ... */
-    if (!DisplayWindow(data))
+    if (!DisplayWindow(obj,data))
     {
 	/* free display dependant data */
 	data->wd_Menustrip = NULL;
@@ -1614,7 +1786,7 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
-    UndisplayWindow(data);
+    UndisplayWindow(obj,data);
     data->wd_Flags &= ~MUIWF_OPENED;
     data->wd_Menustrip = NULL;
 

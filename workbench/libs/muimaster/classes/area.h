@@ -221,6 +221,7 @@ struct MUI_AreaData
 #define MADF_DRAGGING          (1<< 23) /* PRIV */
 #define MADF_DROPABLE          (1<< 24) /* PRIV */
 #define MADF_OWNBG						 (1<< 25) /* PRIV */
+#define MADF_BORDERGADGET      (1<< 26) /* PRIV - is a border gadget */
 
 #define MADF_INVIRTUALGROUP	(1<<29) /* PRIV UNDOC: The object is inside a virtual group */
 #define MADF_ISVIRTUALGROUP	(1<<30) /* PRIV UNDOC: The object is a virtual group */

@@ -282,6 +282,7 @@ void main(void)
     Object *popobject, *listview;
     Object *list_add_button, *list_add_child_button, *list_remove_button, *list_clear_button;
     Object *country_radio[2];
+    Object *prop;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group","Edit","List","Gauges","Radio","IconList",NULL};
     static char **radio_entries1 = pages;
@@ -363,6 +364,8 @@ void main(void)
     	SubWindow, wnd = WindowObject,
     	    MUIA_Window_Title, "test",
 	    MUIA_Window_Activate, TRUE,
+
+	    MUIA_Window_UseRightBorderScroller, TRUE,
 
     	    WindowContents, VGroup,
     	    	Child, TextObject, MUIA_Background, "2:cfffffff,cfffffff,10000000", TextFrame, MUIA_Text_Contents, "\33cHello World!!\nThis is a text object\n\33lLeft \33bbold\33n\n\33rRight",End,
@@ -602,6 +605,13 @@ End,
 		    MUIA_Prop_First, 50,
 		    End,
 
+		Child, prop = PropObject,
+		    MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
+		    MUIA_Prop_First, 0,
+		    MUIA_Prop_Visible, 10,
+		    MUIA_Prop_Entries, 100,
+		    End,
+
     	    	Child, HGroup,
     	    	    Child, quit_button = TextObject,
 			ButtonFrame,
@@ -635,6 +645,7 @@ End,
 	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 	DoMethod(objects_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_CallHook, &hook_objects);
 	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
+	DoMethod(prop, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
 
 	DoMethod(wheel, MUIM_Notify,WHEEL_Hue       , MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
 	DoMethod(wheel, MUIM_Notify,WHEEL_Saturation, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
