@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/05/07 14:44:50  aros
+    Swap order of include files
+
     Revision 1.4  1997/01/01 03:46:18  ldp
     Committed Amiga native (support) code
 
@@ -24,11 +27,11 @@
 /* This is a short file that contains a few things every Exec function
     needs */
 
-#ifndef AROS_OPTIONS_H
-#   include <aros/options.h>
-#endif
 #ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
+#endif
+#ifndef AROS_OPTIONS_H
+#   include <aros/options.h>
 #endif
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
