@@ -340,7 +340,6 @@ AROS_LH1(BOOL, isxdigit,
 {
     AROS_LIBFUNC_INIT
 
-    return (BOOL)(__code_table_ctype[chr] & iXDigit);
     return (BOOL)( chr < __CODE_TABLE_SIZE
                  ? (__code_table_ctype[chr] & iXDigit)
                  : 0 );
