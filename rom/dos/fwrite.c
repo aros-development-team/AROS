@@ -69,7 +69,7 @@
     {
 	for(len = blocklen; len--; )
 	{
-	    if(FPUTC(fh, *ptr++) < 0)
+	    if(FPutC(fh, *ptr++) < 0)
 		return EOF;
 	}
     }
