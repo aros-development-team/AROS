@@ -347,6 +347,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
 		aros_flavour="emulcompat"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__linux__"
 		aros_shared_ldflags="-Wl,-T,\$(TOP)/config/linux/m68k/script.so"
@@ -354,6 +355,7 @@ case "$target_os" in
 		;;
 	    *i?86*)
 		aros_target_cpu="i386"
+		aros_object_format="elf_i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__linux__"
 		aros_default_wbdepth=8
@@ -371,6 +373,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
+		aros_object_format="elf_i386"
 		aros_flavour="standalone"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 		aros_kernel_ldflags=""
@@ -386,6 +389,7 @@ case "$target_os" in
     freebsd*)
 	aros_target_arch="freebsd"
 	aros_target_cpu="i386"
+	aros_object_format="elf_i386"
 	aros_flavour="emulation"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386"
 	strip_args="-x"
@@ -396,11 +400,13 @@ case "$target_os" in
 	case "$target_cpu" in
             *m68k*)
         	aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
         	aros_flavour="emulcompat"
         	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D__mc68000 -D__NetBSD__"
         	;;
             *i?86*)
         	aros_target_cpu="i386"
+		aros_object_format="elf_i386"
         	aros_flavour="emulation"
         	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__NetBSD__"
         	aros_default_wbdepth=8
@@ -420,6 +426,7 @@ case "$target_os" in
         case "$target_cpu" in
             *i?86*)
                 aros_target_cpu="i386"
+		aros_object_format="elf_i386"
                 aros_flavour="emulation"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__OpenBSD__"
                 ;;
@@ -439,6 +446,7 @@ case "$target_os" in
         case "$target_cpu" in
             *sparc*)
                 aros_target_cpu="sparc"
+		aros_object_format="elf_sparc"
                 aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dsparc -D__Solaris__"
                 ;;
             *)
@@ -453,6 +461,7 @@ case "$target_os" in
 	aros_target_arch="morphos"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
+	aros_object_format="elf_ppc"
 	aros_flavour="nativecompat"
 	aros_target_cflags="-O2 -mcpu=604e -mmultiple -D__MORPHOS_DIRECTCALL -D__MORPHOS__ -D__NOLIBBASE__"
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dppc"
@@ -468,6 +477,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
 		aros_flavour="nativecompat"
 		aros_target_cflags="$aros_target_cflags -m68020 -m68881"
 		aros_target_aflags="$aros_target_aflags -m68060"
@@ -491,6 +501,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *i?86*)
 		aros_target_cpu="i386"
+		aros_object_format="elf_i386"
 		aros_flavour="emulation"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Di386 -D__CYGWIN32__"
 		aros_shared_cflags=""
@@ -507,6 +518,7 @@ case "$target_os" in
 	case "$target_cpu" in
 	    *m68k*)
 		aros_target_cpu="m68k"
+		aros_object_format="m68kelf"
 		aros_flavour="palmnative"
 		aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -Dm68k"
 		aros_kernel_ldflags=""
@@ -774,6 +786,7 @@ AC_SUBST(aros_target_incl)
 AC_SUBST(aros_target_cc)
 AC_SUBST(aros_target_cc_includes)
 AC_SUBST(aros_shared_default)
+AC_SUBST(aros_object_format)
 
 AC_SUBST(aros_target_cflags)
 AC_SUBST(aros_target_aflags)
