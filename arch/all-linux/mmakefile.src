@@ -96,7 +96,7 @@ exec-linux : $(OSGENDIR)/exec/init.o
 
 #MM- includes-linux : includes-copy includes-linux-$(CPU)
 
-#MM- workbench-linux : workbench-complete
+#MM- workbench-linux : workbench-complete workbench-hidds-unix
 
 #MM- contrib-linux : contrib-complete
 
