@@ -55,8 +55,7 @@ typedef enum {
     /*
 	The ID's defined here are not real IRQ numbers! They are internal codes.
     */
-      
-    vHidd_IRQ_Timer = 0,    /* Timer IRQ, also known as VBlank IRQ */
+    vHidd_IRQ_Timer = -14,    /* Timer IRQ, also known as VBlank IRQ */
     vHidd_IRQ_Keyboard,     /* Keyboard */
     vHidd_IRQ_Serial1,      /* Serial ports 1 and 3 */
     vHidd_IRQ_Serial2,      /* Serial ports 2 and 4 */
@@ -70,19 +69,8 @@ typedef enum {
     vHidd_IRQ_HDD2,         /* IDE port 2 */
     vHidd_IRQ_Ether,        /* Ethernet card IRQ */
     vHidd_IRQ_Mouse,        /* PS/2 mouse IRQ */
-    vHidd_IRQ_Touchscreen,  /* Touchscreen IRQ */
-    vHidd_IRQ_Timer2,       /* Timer 2 */
-    vHidd_IRQ_CustomA,      /* Custom A IRQ */
-    vHidd_IRQ_CustomB,      /* Custom B IRQ */
-    vHidd_IRQ_CustomC,      /* Custom C IRQ */
-    vHidd_IRQ_CustomD,      /* Custom D IRQ */
-    vHidd_IRQ_CustomE,      /* Custom E IRQ */
-    vHidd_IRQ_CustomF,      /* Custom F IRQ */
-    vHidd_IRQ_CustomG,      /* Custom G IRQ */
-    vHidd_IRQ_CustomH,      /* Custom H IRQ */
-    vHidd_IRQ_CustomI,      /* Custom I IRQ */
 
-    vHidd_IRQ_NumIRQ        /* Number of IRQ's defined */
+//    vHidd_IRQ_NumIRQ        /* Number of IRQ's defined */
     
 } HIDDT_IRQ_Id;
 
