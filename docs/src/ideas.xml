@@ -767,4 +767,25 @@ Python based archtools that Aaron Digulla has been workin on. </p>
 </comment>
 </idea>
 
+<idea title="Virtual Desktops" by="Stefan Berger et al.">
+
+<p> Enhance Intuition to support virtual desktops. This should be
+easily possible with the (hyper)layers.library and the ability to
+make layers and windows invisible. Windows by default are opened
+on the currently active virtual desktop, which is identified
+by a 32 bit identifier in the screen structure. If windows are to
+be opened on a different desktop this can be specified with the WA_Desktop 
+tag when the window is opened. WA_Sticky allows to make the window
+sticky and it will appear on all desktops. 
+Desktops could be identified by a bit, thus making 32 virtual desktops
+available on a screen with the previously mentioned 32 bit identifier.
+The sticky flag would therefore select the desktop identifier 0xffffffff.
+The window and screen structures would have to be extended with a ULONG 
+field.
+Enhance Intuition with function DisplayDesktop(screen, desktopnum).
+The technology is out in the public with the X window system, although
+there is a patent on this afaik.
+</p>
+</idea>
+
 </chapter>
