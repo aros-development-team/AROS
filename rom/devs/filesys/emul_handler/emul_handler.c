@@ -125,7 +125,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 41.5 (21.06.2000)\r\n";
+static const char version[]="$VER: emul_handler 41.6 (25.07.2000)\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -324,38 +324,58 @@ static LONG makefilename(struct emulbase *emulbase,
 static void fixcase(struct emulbase *emulbase, char *pathname)
 {
     struct dirent 	*de;
+    struct stat		st;
     DIR			*dir;
     char		*pathstart, *pathend;
-
+    BOOL		dirfound;
+    
     pathstart = pathname;
     
-    while((pathstart = strchr(pathstart, '/')))
+    if (stat((const char *)pathname, &st) != 0)
     {
-        *pathstart++ = '\0';
+        /* file/dir called pathname does not exist */
 	
-	pathend = strchr(pathstart, '/');
-	if (pathend) *pathend = '\0';
-	
-	if ((dir = opendir(pathname)))
+	while((pathstart = strchr(pathstart, '/')))
 	{
-	    while((de = readdir(dir)))
-	    {
-        	if (strcasecmp(de->d_name, pathstart) == 0)
-		{
-		    strcpy(pathstart, de->d_name);
-		    break;
-		}
-	    }	    
-	    closedir(dir);
+	    pathstart++;
 	    
-	} /* if ((dir = opendir(pathname))) */
+	    pathend = strchr(pathstart, '/');
+	    if (pathend) *pathend = '\0';
+
+	    dirfound = TRUE;
+	    
+	    if (stat((const char *)pathname, &st) != 0)
+	    {
+	    	dirfound = FALSE;
+		
+        	pathstart[-1] = '\0';
+		dir = opendir(pathname);
+		pathstart[-1] = '/';		
+		
+		if (dir)
+		{
+		    while((de = readdir(dir)))
+		    {
+        		if (strcasecmp(de->d_name, pathstart) == 0)
+			{
+			    dirfound = TRUE;
+			    strcpy(pathstart, de->d_name);
+			    break;
+			}
+		    }	    
+		    closedir(dir);
+
+		} /* if ((dir = opendir(pathname))) */
+
+	    } /* if (stat((const char *)pathname, &st) != 0) */
+	    
+	    if (pathend) *pathend = '/';			    
+
+	    if (!dirfound) break;
+
+	} /* while((pathpos = strchr(pathpos, '/))) */
 	
-	if (pathend) *pathend = '/';
-	pathstart[-1] = '/';
-	
-	if (!dir) break;
-	
-    } /* while((pathpos = strchr(pathpos, '/))) */
+    } /* if (stat((const char *)pathname, &st) != 0) */
 
 }
 
@@ -418,6 +438,20 @@ static int nocase_unlink(struct emulbase *emulbase, char *pathname)
     
     return result;
 }
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_mkdir(struct emulbase *emulbase, char *pathname, mode_t mode)
+{
+    int result;
+    
+    fixcase(emulbase, pathname);
+    result = mkdir((const char *)pathname, mode);
+    
+    return result;
+}
+
+
 /*-------------------------------------------------------------------------------------------*/
 
 static int nocase_rmdir(struct emulbase *emulbase, char *pathname)
@@ -432,26 +466,42 @@ static int nocase_rmdir(struct emulbase *emulbase, char *pathname)
 
 /*-------------------------------------------------------------------------------------------*/
 
-static int nocase_link(struct emulbase *emulbase, char *oldpath, const char *newpath)
+static int nocase_link(struct emulbase *emulbase, char *oldpath, char *newpath)
 {
     int result;
     
     fixcase(emulbase, oldpath);
-    result = link((const char *)oldpath, newpath);
+    fixcase(emulbase, newpath);
+    result = link((const char *)oldpath, (const char *)newpath);
     
     return result;
 }
 
 /*-------------------------------------------------------------------------------------------*/
 
-static int nocase_symlink(struct emulbase *emulbase, char *oldpath, const char *newpath)
+static int nocase_symlink(struct emulbase *emulbase, char *oldpath, char *newpath)
 { 
     int result;
     
     fixcase(emulbase, oldpath);
-    result = symlink((const char *)oldpath, newpath);
+    fixcase(emulbase, newpath);
+    result = symlink((const char *)oldpath, (const char *)newpath);
     
     return result;
+}
+
+/*-------------------------------------------------------------------------------------------*/
+
+static int nocase_rename(struct emulbase *emulbase, char *oldpath, char *newpath)
+{
+    int result;
+    
+    fixcase(emulbase, oldpath);
+    fixcase(emulbase, newpath);
+    result = rename((const char *)oldpath, (const char *)newpath);
+    
+    return result;
+    
 }
 
 /*-------------------------------------------------------------------------------------------*/
@@ -471,6 +521,9 @@ static int nocase_symlink(struct emulbase *emulbase, char *oldpath, const char *
 #undef unlink
 #define unlink(a) nocase_unlink(emulbase, a)
 
+#undef mkdir
+#define mkdir(a,b) nocase_mkdir(emulbase, a, b)
+
 #undef rmdir
 #define rmdir(a) nocase_rmdir(emulbase,a)
 
@@ -479,6 +532,9 @@ static int nocase_symlink(struct emulbase *emulbase, char *oldpath, const char *
 
 #undef symlink
 #define symlink(a,b) nocase_symlink(emulbase, a, b)
+
+#undef rename
+#define rename(a,b) nocase_rename(emulbase, a, b)
 
 #endif /* NO_CASE_SENSITIVITY */
 
