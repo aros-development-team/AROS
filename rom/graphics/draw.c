@@ -52,5 +52,8 @@ void driver_Draw (struct RastPort *, long, long);
 
     driver_Draw (rp, x, y);
 
+    rp->cp_x = x;
+    rp->cp_y = y;
+
     __AROS_FUNC_EXIT
 } /* Draw */
