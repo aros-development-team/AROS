@@ -88,7 +88,8 @@ static void sighandler(int sig, sigcontext_t * sc)
 	fprintf(stderr, "Illegal Supervisor %d\n", supervisor);
 	fflush(stderr);
 #endif
-SysBase->ThisTask->tc_Flags &= ~2;
+if (SysBase->ThisTask)
+  SysBase->ThisTask->tc_Flags &= ~2;
 
 	return;
     }
@@ -170,7 +171,8 @@ SysBase->ThisTask->tc_Flags &= ~2;
 #endif
     }
 
-SysBase->ThisTask->tc_Flags &= ~2;
+if (SysBase->ThisTask)
+  SysBase->ThisTask->tc_Flags &= ~2;
 
     /* Leave the interrupt. */
     supervisor--;
