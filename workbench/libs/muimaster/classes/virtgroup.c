@@ -41,14 +41,8 @@ static ULONG Virtgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperNew(cl, obj, MUIA_Group_Virtual, TRUE, TAG_MORE, msg->ops_AttrList);
 }
 
-#ifndef _AROS
-__asm IPTR Virtgroup_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Virtgroup_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Virtgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

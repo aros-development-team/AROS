@@ -462,14 +462,8 @@ static IPTR Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
-#ifndef _AROS
-__asm IPTR Imageadjust_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Imageadjust_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {

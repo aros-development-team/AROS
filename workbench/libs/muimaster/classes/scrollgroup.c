@@ -270,14 +270,7 @@ static ULONG Scrollgroup_Show(struct IClass *cl, Object *obj, struct MUIP_Show *
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-#ifndef _AROS
-__asm IPTR Scrollgroup_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Scrollgroup_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+BOOPSI_DISPATCHER(IPTR, Scrollgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
