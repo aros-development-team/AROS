@@ -13,13 +13,10 @@
 	.globl	switch_to_user_mode
 
 switch_to_user_mode:
-	move.l	0xc(%sp),%a0	// get USP
+	move.l	0x8(%sp),%a0	// get USP
 	move.l	%a0,%usp        // set the USP to the new value
 
 	move.l	%ssp,%a1        // ssp->a1 for later to access
-
-	move.l	0x8(%sp),%a2	// get new SSP memory
-	move.l	%a2,%ssp        // set the SSP to the new value
 
 	lea.l	in_user_mode,%a0// prepare a fake exception stack frame
 	move.l	%a0,-(%ssp)	// PC
