@@ -61,8 +61,9 @@ extern enum modtype modtype;
 enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 extern enum libcall libcall;
 
-enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE };
-enum optionflags { OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB, OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE };
+enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT };
+enum optionflags { OPTION_NOAUTOLIB = 1<<BIT_NOAUTOLIB, OPTION_NOEXPUNGE = 1<<BIT_NOEXPUNGE,
+                   OPTION_NORESIDENT =1<<BIT_NORESIDENT };
 extern int options;
 
 extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, 
