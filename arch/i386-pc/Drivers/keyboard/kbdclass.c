@@ -616,7 +616,7 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
             /* Pass the code to handler */
             data->kbd_callback(data->callbackdata, result);
         }
-      }
+      } else break;
 
       info = kbd_read_status();
 
