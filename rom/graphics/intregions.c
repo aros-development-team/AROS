@@ -216,6 +216,8 @@ BOOL clearregionregion(struct Region* r1, struct Region* r2, struct GfxBase* Gfx
 		return FALSE;
 	    }
 	}
+	/* the backup is not needed anymore in this case */
+	disposerrects(backup);
     }
     return TRUE;
 }
