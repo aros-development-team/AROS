@@ -9,7 +9,7 @@ KLIBS   := exec boot aros dos graphics utility intuition keymap mathffp \
       	   mathieeesingbas expansion oop layers workbench cybergraphics
 KDEVS   := timer input keyboard console gameport
 KHNDLRS := con emul nil ram
-KHIDDS  := hiddclass graphics unixio x11gfx
+KHIDDS  := hiddclass unixio x11gfx
 ifeq ("$(AROS_HOST_ARCH)","linux")
 KHIDDS  += linux
 endif
