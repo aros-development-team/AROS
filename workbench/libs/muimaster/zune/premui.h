@@ -1,3 +1,11 @@
+/* 
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002, The AROS Development Team.
+    All rights reserved.
+
+    $Id$
+*/
+
 #ifndef __ZUNE_MUI_H_ADAPTATOR_H__
 #define __ZUNE_MUI_H_ADAPTATOR_H__
 
@@ -78,39 +86,7 @@ struct  MUIP_HandleEvent                    { ULONG MethodID; GdkEvent *imsg; LO
 #undef MUI_RenderInfo
 #undef MUI_AreaData
 
-/*
- * inclusion of real MUI_RenderInfo and MUI_AreaData here
- */
-struct MUI_RenderInfo
-{
-    Object          *mri_WindowObject;  /* valid between MUIM_Setup/MUIM_Cleanup */
-    struct DrawInfo *mri_DrawInfo;
-    ULONG            mri_Flags;         /* valid between MUIM_Setup/MUIM_Cleanup */
-    GdkWindow       *mri_Window;        /* valid between MUIM_Show/MUIM_Hide */
-    gulong          *mri_Pens;
-    GdkGC           *mri_GC;
-    GdkColormap     *mri_Colormap;
-    GdkVisual       *mri_Visual;
-    gint             mri_ScreenWidth;
-    gint             mri_ScreenHeight;
-    /* boring stuff follows ... Refer to core includes if curious */
-};
-
-struct MUI_AreaData
-{
-    struct MUI_RenderInfo *mad_RenderInfo;     /* RenderInfo for this object */
-    ULONG priv7;
-    GdkFont           *mad_Font;           /* Font */
-    struct MUI_MinMax  mad_MinMax;         /* min/max/default sizes */
-    struct IBox        mad_Box;            /* position and dimension */
-    BYTE               mad_addleft;        /* frame & innerspacing left offset */
-    BYTE               mad_addtop;         /* frame & innerspacing top offset  */
-    BYTE               mad_subwidth;       /* frame & innerspacing add. width  */
-    BYTE               mad_subheight;      /* frame & innerspacing add. height */
-    ULONG              mad_Flags;          /* see definitions below */
-    /* boring stuff follows ... Refer to core includes if curious */
-};
-
+/* Removed... */
 
 #undef MUIP_Setup
 struct MUIP_Setup { ULONG MethodID; struct MUI_RenderInfo *RenderInfo; }; /* Custom Class */
