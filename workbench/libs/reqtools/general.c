@@ -728,7 +728,7 @@ LONG BottomBorderHeight (struct Screen *scr)
     if ((dri = GetScreenDrawInfo (scr)))
     {
 	if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, (IPTR) dri,
-						// Must be SYSISIZE_MEDRES!
+						/* Must be SYSISIZE_MEDRES! */
 						SYSIA_Size, SYSISIZE_MEDRES,
 						SYSIA_Which, SIZEIMAGE,
 						TAG_DONE)))

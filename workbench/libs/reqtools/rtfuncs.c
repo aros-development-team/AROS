@@ -50,9 +50,9 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Init(REGPARAM(d0, struct ReqToolsBase *,
     /* SysBase is setup in reqtools_init.c */
 #else
     SysBase = *(struct ExecBase **)4L;
-#endif
 
     RTBase->SegList = segList;
+#endif
 
     InitSemaphore(&RTBase->ReqToolsPrefs.PrefsSemaphore);
     RTBase->ReqToolsPrefs.PrefsSize = RTPREFS_SIZE;
@@ -228,10 +228,12 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
     
     D(bug("reqtools.library: Inside libopen func. ButtonImgClass create successfully.\n"));
 
+#ifndef __AROS__
     /* I have one more opener. */
     RTBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
     RTBase->LibNode.lib_OpenCnt++;
-
+#endif
+    
     D(bug("reqtools.library: Inside libopen func. Returning success.\n"));
     
     return RTBase;
@@ -241,6 +243,7 @@ SAVEDS ASM struct ReqToolsBase *RTFuncs_Open(REGPARAM(a6, struct ReqToolsBase *,
 
 SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
+#ifndef __AROS__
     /* I have one fewer opener. */
     RTBase->LibNode.lib_OpenCnt--;
     
@@ -253,7 +256,8 @@ SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 	
 	RTBase->LibNode.lib_Flags &= ~LIBF_DELEXP;
     }
-
+#endif
+    
     return NULL;
 }
 
@@ -261,20 +265,22 @@ SAVEDS ASM BPTR RTFuncs_Close(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 
 SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 {
-    BPTR ret;
-    
+    BPTR ret = NULL;
+
+#ifndef __AROS__
     if(RTBase->LibNode.lib_OpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
 	RTBase->LibNode.lib_Flags |= LIBF_DELEXP;
 	return NULL;
     }
-
+    
     /* Get rid of the library. Remove it from the list. */
     Remove(&RTBase->LibNode.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
     ret = RTBase->SegList;
+#endif
 
     D(bug("reqtools.library: Inside libexpunge func. Freeing ButtonImgClass.\n"));
 
@@ -296,10 +302,12 @@ SAVEDS ASM BPTR RTFuncs_Expunge(REGPARAM(a6, struct ReqToolsBase *, RTBase))
 
     D(bug("reqtools.library: Inside libexpunge func. Freeing libbase.\n"));
 
+#ifndef __AROS__
     /* Free the memory. */
     FreeMem((char *)RTBase-RTBase->LibNode.lib_NegSize,
 	    RTBase->LibNode.lib_NegSize + RTBase->LibNode.lib_PosSize);
-
+#endif
+    
     return ret;
 }
 

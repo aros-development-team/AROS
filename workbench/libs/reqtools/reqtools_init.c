@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ReqTools initialization code.
@@ -21,12 +21,9 @@
 #include <proto/intuition.h>
 #include <intuition/classes.h>
 #include <libraries/reqtools.h>
-#include <aros/libcall.h>
-#include <aros/asmcall.h>
+#include <aros/symbolsets.h>
 #include <aros/macros.h>
 
-#include "initstruct.h"
-#include <stddef.h>
 #include <string.h>
 
 #define DEBUG 1
@@ -42,85 +39,6 @@
 
 /****************************************************************************************/
 
-#define INIT	AROS_SLIB_ENTRY(init, ReqTools)
-
-struct inittable;
-extern const char name[];
-extern const char version[];
-extern const APTR inittabl[4];
-extern void *const LIBFUNCTABLE[];
-extern const struct inittable datatable;
-extern struct ReqToolsBase *INIT();
-extern struct ReqToolsBase *AROS_SLIB_ENTRY(open, ReqTools)();
-extern BPTR AROS_SLIB_ENTRY(close, ReqTools)();
-extern BPTR AROS_SLIB_ENTRY(expunge, ReqTools)();
-extern int AROS_SLIB_ENTRY(null, ReqTools)();
-extern const char LIBEND;
-
-/****************************************************************************************/
-
-int entry(void)
-{
-    /* If the library was executed by accident return error code. */
-    return -1;
-}
-
-/****************************************************************************************/
-
-const struct Resident resident=
-{
-    RTC_MATCHWORD,
-    (struct Resident *)&resident,
-    (APTR)&LIBEND,
-    RTF_AUTOINIT,
-    VERSION_NUMBER,
-    NT_LIBRARY,
-    0,
-    (char *)name,
-    (char *)&version[6],
-    (ULONG *)inittabl
-};
-
-const char name[] = NAME_STRING;
-
-const char version[] = VERSION_STRING;
-
-const APTR inittabl[4]=
-{
-    (APTR)sizeof(struct ReqToolsBase),
-    (APTR)LIBFUNCTABLE,
-    (APTR)&datatable,
-    &INIT
-};
-
-struct inittable
-{
-    S_CPYO(1,1,B);
-    S_CPYO(2,1,L);
-    S_CPYO(3,1,B);
-    S_CPYO(4,1,W);
-    S_CPYO(5,1,W);
-    S_CPYO(6,1,L);
-    S_END (LIBEND);
-};
-
-#define O(n) offsetof(struct ReqToolsBase, n)
-
-const struct inittable datatable=
-{
-    { { I_CPYO(1,B,O(LibNode.lib_Node.ln_Type)), { NT_LIBRARY } } },
-    { { I_CPYO(1,L,O(LibNode.lib_Node.ln_Name)), { (IPTR)name } } },
-    { { I_CPYO(1,B,O(LibNode.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
-    { { I_CPYO(1,W,O(LibNode.lib_Version     )), { 1 } } },
-    { { I_CPYO(1,W,O(LibNode.lib_Revision    )), { 0 } } },
-    { { I_CPYO(1,L,O(LibNode.lib_IdString    )), { (IPTR)&version[6] } } },
-	I_END ()
-};
-
-#undef O
-
-/****************************************************************************************/
-
 /* Global variables */
 
 #define extern
@@ -129,35 +47,20 @@ const struct inittable datatable=
 
 /****************************************************************************************/
 
-AROS_UFH3(struct ReqToolsBase *, AROS_SLIB_ENTRY(init,ReqTools),
- AROS_UFHA(struct ReqToolsBase *, RTBase, D0),
- AROS_UFHA(BPTR,               segList,   A0),
- AROS_UFHA(struct ExecBase *, sysBase, A6)
-)
+
+AROS_SET_LIBFUNC(Init, LIBBASETYPE, RTBase)
 {
-    AROS_USERFUNC_INIT
-    
     ReqToolsBase = (struct ReqToolsBase *)RTBase;
         
-    /* This function is single-threaded by exec by calling Forbid. */
-
-    SysBase = sysBase;
-
     D(bug("reqtools.library: Inside libinit func\n"));
     
-    return (struct ReqToolsBase *)RTFuncs_Init(RTBase, segList);
-
-    AROS_USERFUNC_EXIT
+    return (struct ReqToolsBase *)RTFuncs_Init(RTBase, NULL) != NULL;
 }
 
 /****************************************************************************************/
 
-AROS_LH1(struct ReqToolsBase *, open,
- AROS_LHA(ULONG, version, D0),
-	   struct ReqToolsBase *, RTBase, 1, ReqTools)
+AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, RTBase)
 {
-    AROS_LIBFUNC_INIT
-    
     D(bug("reqtools.library: Inside libopen func\n"));
  
     /*
@@ -166,21 +69,15 @@ AROS_LH1(struct ReqToolsBase *, open,
       at the same time. Take care.
     */
     
-    /* Keep compiler happy */
-    (void)version;
-
     D(bug("reqtools.library: Inside libopen func\n"));
     
-    return (struct ReqToolsBase *)RTFuncs_Open(RTBase, version);
-
-    AROS_LIBFUNC_EXIT
+    return RTFuncs_Open(RTBase, 0) != NULL;
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, close, struct ReqToolsBase *, RTBase, 2, ReqTools)
+AROS_SET_LIBFUNC(CloseLib, LIBBASETYPE, RTBase)
 {
-    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -189,17 +86,15 @@ AROS_LH0(BPTR, close, struct ReqToolsBase *, RTBase, 2, ReqTools)
 
     D(bug("reqtools.library: Inside libclose func.\n"));
 
-    return RTFuncs_Close(RTBase);
+    RTFuncs_Close(RTBase);
     
-    AROS_LIBFUNC_EXIT
+    return TRUE;
 }
 
 /****************************************************************************************/
 
-AROS_LH0(BPTR, expunge, struct ReqToolsBase *, RTBase, 3, ReqTools)
+AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, RTBase)
 {
-    AROS_LIBFUNC_INIT
-
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -209,20 +104,14 @@ AROS_LH0(BPTR, expunge, struct ReqToolsBase *, RTBase, 3, ReqTools)
  
     D(bug("reqtools.library: Inside libexpunge func.\n"));
 
-    return RTFuncs_Expunge(RTBase);
+    RTFuncs_Expunge(RTBase);
     
-    AROS_LIBFUNC_EXIT
+    return TRUE;
 }
 
 /****************************************************************************************/
 
-AROS_LH0(int, null, struct ReqToolsBase *, RTBase, 4, ReqTools)
-{
-    AROS_LIBFUNC_INIT
-
-    return RTFuncs_Null(RTBase);
-    
-    AROS_LIBFUNC_EXIT
-}
-
-/****************************************************************************************/
+ADD2INITLIB(Init, 0);
+ADD2OPENLIB(OpenLib, 0);
+ADD2CLOSELIB(CloseLib, 0);
+ADD2EXPUNGELIB(Expunge, 0);

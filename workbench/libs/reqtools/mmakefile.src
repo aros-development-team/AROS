@@ -36,8 +36,9 @@ FUNCS := \
 #MM- workbench-libs-reqtools : includes linklibs
 #MM- workbench-libs-reqtools : workbench-libs-reqtools-catalogs
 
-%build_module_macro mmake=workbench-libs-reqtools modname=reqtools \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-reqtools \
+    modname=reqtools modtype=library \
+    files="reqtools_init $(FUNCS) $(FILES)" \
+    uselibs="amiga rom"
 
 %common
