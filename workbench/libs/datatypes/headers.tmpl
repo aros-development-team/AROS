@@ -15,6 +15,6 @@ ULONG SetDTAttrs (Object * o, struct Window * win, struct Requester *req, Tag ta
 Object * NewDTObject (APTR name, Tag tag1, ...);
 void RefreshDTObject (Object * o, struct Window * win, struct Requester *req, Tag tag1, ...);
 void RefreshDTObjects (Object * o, struct Window * win, struct Requester *req, Tag tag1, ...);
-
+IPTR DoDTMethod (Object *, struct Window * win, struct Requester * req, ULONG MethodID, ...);
 
 ##end clib
