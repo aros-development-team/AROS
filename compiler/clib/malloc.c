@@ -6,10 +6,12 @@
     Lang: english
 */
 #include <exec/memory.h>
+#include <exec/semaphores.h>
 #include <proto/exec.h>
+#include <aros/symbolsets.h>
 
-extern struct SignalSemaphore __startup_memsem;
-extern APTR __startup_mempool;
+struct SignalSemaphore __startup_memsem;
+APTR __startup_mempool = NULL;
 
 /*****************************************************************************
 
@@ -65,17 +67,32 @@ extern APTR __startup_mempool;
     if (__startup_mempool)
     {
 	/* Allocate the memory */
-	mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));    
+	mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
 	if (mem)
-	{	
+	{
 	    *((size_t *)mem) = size;
 	    mem += AROS_ALIGN(sizeof(size_t));
 	}
     }
-    
+
     ReleaseSemaphore(&__startup_memsem);
-    
+
     return mem;
-    
+
 } /* malloc */
 
+
+void __init_memstuff(void)
+{
+    InitSemaphore(&__startup_memsem);
+}
+
+
+void __exit_memstuff(void)
+{
+    if (__startup_mempool)
+	DeletePool(__startup_mempool);
+}
+
+ADD2INIT(__init_memstuff, 0);
+ADD2EXIT(__exit_memstuff, 0);
