@@ -21,6 +21,8 @@ FILES := \
 	writechunkdata
 
 #MM- linklibs : linklibs-c_iff
+#MM
+linklibs-c_iff :
 
 %make_linklib_setup mmake=linklibs-c_iff
 %make_linklib
