@@ -658,6 +658,11 @@
 	({ULONG _tags[] = { tags }; VFWritef((a0), (a1), (LONG *)_tags);})
 #endif /* !NO_INLINE_STDARG */
 
+#ifndef NO_INLINE_STDARG
+#define Printf(a0, tags...) \
+	({ULONG _tags[] = { tags }; VPrintf((a0), (APTR)_tags);})
+#endif /* !NO_INLINE_STDARG */
+
 #define VPrintf(format, argarray) \
 	LP2(0x3ba, LONG, VPrintf, STRPTR, format, d1, APTR, argarray, d2, \
 	, DOS_BASE_NAME)
