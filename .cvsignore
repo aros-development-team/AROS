@@ -4,8 +4,10 @@ aros_logo.gif
 amiga
 bin
 dist
-host.cfg
 out
 diffs
 crypt
 machine
+t.c
+t
+t.asm
