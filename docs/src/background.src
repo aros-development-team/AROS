@@ -69,28 +69,39 @@ we want to protect the developers from junk mail. If you have something to
 ask or say, contact the \link{coordinator}{mailto:digulla@aros.fh-konstanz.de}.
 
 \begin{itemize}
-\item{Aaron Digulla} - Coordinator
-\item{Matthias Fleischer} - Exec, DOS, drivers
-\item{Peter Boeckmann} - Sparc, Alpha
-\item{Iain Templeton} - FreeBSD, utility
-\item{Peter Bortas} - WWW site
-\item{Martin Recktenwald} - WWW, misc.
-\item{Lennard voor den Dag} - Amiga port
-\item{Chris Lawrence} - Linux/m68k
-\item{Stefan Reinauer}
-\item{Christopher D. Judd}
-\item{Tommy Johansson}
-\item{Paolo Costabel}
-\item{Bill Boatman}
-\item{Daniel Verite}
-\item{Michael Roth}
-\item{Nico Heinz}
+\item Aaron Digulla - Coordinator
+\item Matthias Fleischer - Exec, DOS, drivers
+\item Peter Boeckmann - Sparc, Alpha
+\item Iain Templeton - FreeBSD, utility
+\item Peter Bortas - WWW site
+\item Martin Recktenwald - WWW, misc.
+\item Lennard voor den Dag - Amiga port
+\item Chris Lawrence - Linux/m68k
+\item Stefan Reinauer
+\item Christopher D. Judd
+\item Tommy Johansson
+\item Paolo Costabel
+\item Bill Boatman
+\item Daniel Verite
+\item Michael Roth
+\item Nico Heinz
 \end{itemize}
 
 \section{The current status}
 
 \exec{gawk -f ../../scripts/stat.awk}
 
-\section{Screenshots}
+Exec, DOS and utility are almost completed, graphics, intuition, diskfont
+and icon are in work right now.
 
 \largepic{A snapshot of the window of demowin}{pics/demowin.gif}
+
+\section{The future}
+
+These are things which are still to do:
+
+\begin{itemize}
+\item Use SDE - one binary which runs on any AROS hardware
+\item Ports to PPC, HHPA, Sparc and Alpha
+\end{itemize}
+
