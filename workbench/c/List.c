@@ -108,6 +108,9 @@
                           Reworked and corrected the behaviour of LFORMAT and
 			  restructured most of the code.
 
+    Feb 2001  stegerg --  Added support for the ALL option. Now List should
+                          be 100% finished.
+
 ******************************************************************************/
 
 #define  DEBUG  0
@@ -122,15 +125,32 @@
 #include <dos/dosasl.h>
 #include <dos/datetime.h>
 #include <proto/dos.h>
+#include <proto/alib.h>
 #include <utility/tagitem.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <memory.h>
 
 static const char version[] = "$VER: list 41.5 (3.12.2000)\n";
 
-#define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K"
+#define ARG_TEMPLATE "DIR/M,P=PAT/K,KEYS/S,DATES/S,NODATES/S,TO/K,SUB/K,SINCE/K,UPTO/K,QUICK/S,BLOCK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K,ALL/S"
+
+struct DirNode
+{
+    struct MinNode  node;
+    char           *dirname;
+};
+
+
+typedef struct _Statistics
+{
+    ULONG nFiles;
+    ULONG nDirs;
+    ULONG nBlocks;
+} Statistics;
 
 
 enum
@@ -267,7 +287,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 	    case 'F':
 		{
 		    STRPTR pEnd = PathPart(lf->filename);
-		    UBYTE  token;
+		    UBYTE  token = 0;     /* Set only to avoid a warning */
 
 		    if (pEnd != NULL)
 		    {
@@ -392,7 +412,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 	}
 	else
 	{
-	    printf("%c",c);
+	    printf("%c", c);
 	}
     }
     
@@ -601,104 +621,157 @@ int listFile(STRPTR filename, BOOL showFiles, BOOL showDirs,
              STRPTR parsedPattern, BOOL noHead, STRPTR lFormat, BOOL quick,
 	     BOOL dates, BOOL noDates, BOOL block, struct DateStamp *sinceDate,
 	     struct DateStamp *uptoDate, BOOL doSince, BOOL doUpto,
-	     STRPTR subpatternStr, BOOL all, BOOL keys)
+	     STRPTR subpatternStr, BOOL all, BOOL keys, Statistics *stats)
 {
     struct AnchorPath *ap;
-
+    struct List DirList, FreeDirNodeList;
+    struct DirNode *dirnode, *prev_dirnode = NULL;
+    
     ULONG  files = 0;
     ULONG  dirs = 0;
     ULONG  nBlocks = 0;
     ULONG  error;
 
-    ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
-
-    if (ap == NULL)
+    NewList(&DirList);
+    NewList(&FreeDirNodeList);
+     
+    do 
     {
-	return RETURN_ERROR;
-    }
+	ap = AllocVec(sizeof(struct AnchorPath) + MAX_PATH_LEN, MEMF_CLEAR);
 
-    ap->ap_Strlen = MAX_PATH_LEN;
-
-    error = MatchFirst(filename, ap);
-
-    /* Explicitely named directory and not a pattern? --> enter dir */
-  
-    if (0 == error)
-    {
-	if (!(ap->ap_Flags & APF_ITSWILD))
+	if (ap == NULL)
 	{
-	    if (ap->ap_Info.fib_DirEntryType >= 0)
-	    {
-		error = printDirHeader(filename, noHead);
-		ap->ap_Flags |= APF_DODIR;
+	    return RETURN_ERROR;
+	}
 
-		if (0 == error)
+	ap->ap_Strlen = MAX_PATH_LEN;
+
+	error = MatchFirst(filename, ap);
+
+	/* Explicitely named directory and not a pattern? --> enter dir */
+
+	if (0 == error)
+	{
+	    if (!(ap->ap_Flags & APF_ITSWILD))
+	    {
+		if (ap->ap_Info.fib_DirEntryType >= 0)
 		{
-		    error = MatchNext(ap);
+		    error = printDirHeader(filename, noHead);
+		    ap->ap_Flags |= APF_DODIR;
+
+		    if (0 == error)
+		    {
+			error = MatchNext(ap);
+		    }
 		}
 	    }
 	}
-    }
-    
-    if (0 == error)
-    {
-    	ap->ap_BreakBits = SIGBREAKF_CTRL_C;
-	
-	do
+
+	if (0 == error)
 	{
-	    /*
-	    ** There's something to show.
-	    */
-	    if (!(ap->ap_Flags & APF_DIDDIR))
+    	    ap->ap_BreakBits = SIGBREAKF_CTRL_C;
+
+	    do
 	    {
-		error = printFileData(ap->ap_Buf,
-				      ap->ap_Info.fib_DirEntryType >= 0,
-				      &ap->ap_Info.fib_Date,
-				      ap->ap_Info.fib_Protection,
-				      ap->ap_Info.fib_Size,
-				      ap->ap_Info.fib_Comment,
-				      ap->ap_Info.fib_DiskKey,
-				      showFiles,
-				      showDirs,
-				      parsedPattern,
-				      &files,
-				      &dirs,
-				      &nBlocks,
-				      lFormat,
-				      quick,
-				      dates,
-				      noDates,
-				      block,
-				      sinceDate,
-				      uptoDate,
-				      doSince,
-				      doUpto,
-				      subpatternStr,
-				      keys);
-	    }
-	    else
-	    {
-		ap->ap_Flags &= ~APF_DIDDIR;
-		printSummary(files, dirs, nBlocks, noHead);
-		files = 0;
-		dirs = 0;
-		nBlocks = 0;
-	    }
+		/*
+		** There's something to show.
+		*/
+		if (!(ap->ap_Flags & APF_DIDDIR))
+		{
+		    error = printFileData(ap->ap_Buf,
+					  ap->ap_Info.fib_DirEntryType >= 0,
+					  &ap->ap_Info.fib_Date,
+					  ap->ap_Info.fib_Protection,
+					  ap->ap_Info.fib_Size,
+					  ap->ap_Info.fib_Comment,
+					  ap->ap_Info.fib_DiskKey,
+					  showFiles,
+					  showDirs,
+					  parsedPattern,
+					  &files,
+					  &dirs,
+					  &nBlocks,
+					  lFormat,
+					  quick,
+					  dates,
+					  noDates,
+					  block,
+					  sinceDate,
+					  uptoDate,
+					  doSince,
+					  doUpto,
+					  subpatternStr,
+					  keys);
+		
+		    if (all && (ap->ap_Info.fib_DirEntryType >= 0))
+		    {
+		    	if ((dirnode = malloc(sizeof(struct DirNode))))
+			{
+			    if ((dirnode->dirname = strdup(ap->ap_Buf)))
+			    {
+			    	Insert(&DirList, (struct Node *)dirnode,
+				       (struct Node *)prev_dirnode);
+				
+				prev_dirnode = dirnode;
+			    }
+			    else
+			    {
+			    	free(dirnode);
+			    }
+			}
+		    }
+		}
+
+		error = MatchNext(ap);
+
+	    } while (0 == error);
+	}
+
+	MatchEnd(ap);
+
+	FreeVec(ap);
+	
+	if (error == ERROR_BREAK)
+	{
+	    PrintFault(error, NULL);
+	}
+
+	printSummary(files, dirs, nBlocks, noHead);
+
+	/* Update global statistics for (possiblr) ALL option */
+	stats->nFiles += files;
+	stats->nDirs += dirs;
+	stats->nBlocks += nBlocks;
+
+	files = 0;
+	dirs = 0;
+	nBlocks = 0;
+
+	if (error == ERROR_NO_MORE_ENTRIES)
+	{
+	    error = 0;
+	}
+
+    	dirnode = (struct DirNode *)RemHead(&DirList);
+
+	if (dirnode != NULL)
+	{
+	    filename = dirnode->dirname;
+	    puts("");
 	    
-	    error = MatchNext(ap);
+	    prev_dirnode = NULL;
 	    
-	} while (0 == error);
+	    /* do not free() dirnode, as we reference dirnode->dirname! */
+	    
+	    AddTail(&FreeDirNodeList, (struct Node *)dirnode);
+	}
+    } while (dirnode);
+        
+    while ((dirnode = (struct DirNode *)RemHead(&FreeDirNodeList)))
+    {
+    	free(dirnode->dirname);
+	free(dirnode);
     }
-    
-    MatchEnd(ap);
-    
-    FreeVec(ap);
-
-    if (error == ERROR_BREAK) PrintFault(error, NULL);
-    
-    printSummary(files, dirs, nBlocks, noHead);
-
-    if (error == ERROR_NO_MORE_ENTRIES) error = 0;
     
     return error;
 }
@@ -729,8 +802,9 @@ int main(void)
     LONG     error = RETURN_OK;
     STRPTR   parsedPattern = NULL;
     STRPTR   subpatternStr = NULL;
-
     BPTR     oldOutput = NULL;
+
+    Statistics stats = { 0, 0, 0 };
 
     rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
@@ -791,7 +865,6 @@ int main(void)
 		return RETURN_FAIL;
 	    }
 	}
-
 
 	if (subStr != NULL)
 	{
@@ -880,7 +953,7 @@ int main(void)
 			     lFormat, quick, dates, noDates, block,
 			     &sinceDatetime.dat_Stamp, &uptoDatetime.dat_Stamp,
 			     since != NULL, upto != NULL, subpatternStr, all,
-			     keys);
+			     keys, &stats);
 	}
 	else
 	{
@@ -890,7 +963,8 @@ int main(void)
 				 noHead, lFormat, quick, dates, noDates,
 				 block, &sinceDatetime.dat_Stamp,
 				 &uptoDatetime.dat_Stamp, since != NULL,
-				 upto != NULL, subpatternStr, all, keys);
+				 upto != NULL, subpatternStr, all, keys,
+				 &stats);
 		
 		if (error != RETURN_OK)
 		{
@@ -907,6 +981,13 @@ int main(void)
     {
 	error = IoErr();;
     }
+
+    if ((BOOL)args[ARG_ALL])
+    {
+	printf("TOTAL: %u files - %u directories - %u blocks used\n",
+	       stats.nFiles, stats.nDirs, stats.nBlocks);
+    }
+
 
     if (error != RETURN_OK)
     {
