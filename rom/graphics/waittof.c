@@ -52,7 +52,7 @@
     struct Node wait;  /* We cannot use the task's node here as that is
 			  used to queue the task in Wait() */
 
-    wait.ln_Name = FindTask(NULL);
+    wait.ln_Name = (char *)FindTask(NULL);
     SetSignal(0, SIGB_SINGLE);
 
     Disable();
