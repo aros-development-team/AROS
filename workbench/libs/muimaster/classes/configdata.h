@@ -12,9 +12,16 @@
 
 /* The config items for MUIM_GetConfigItem */
 #define MUICFG_Invalid                  (-1L)
+#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
+#define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def.=1) */
+#define MUICFG_List_FontLeading         0x0b  /* ULONG, vertical pixels (def.=1) */
 #define MUICFG_GroupTitle_Position      0x0f  /* ULONG, 1=centered */
 #define MUICFG_GroupTitle_Color         0x10  /* ULONG, 0=normal */
+#define MUICFG_Cycle_MenuCtrl_Level     0x11  /* ULONG, num of entries (def.=2) */
+#define MUICFG_Cycle_MenuCtrl_Position  0x12  /* ULONG, 1=on active (def.=below=0) */
 #define MUICFG_Frame_Drag               0x18
+#define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, 1=true (def.=false=0) */
+#define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def.=0) */
 #define MUICFG_Font_Normal              0x1e
 #define MUICFG_Font_List                0x1f
 #define MUICFG_Font_Tiny                0x20
