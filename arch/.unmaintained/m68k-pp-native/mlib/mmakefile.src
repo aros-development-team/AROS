@@ -18,6 +18,6 @@ linklibs-arosm-m68k: arosm-setup-link linklibs-arosm-m68k
 #MM
 arosm-setup-link :
 	@$(RM) $(AROSDIR)/lib/libm.a
-	@ln -s $(AROSDIR)/lib/libarosm.a $(AROSDIR)/lib/libm.a
+	@ln -s libarosm.a $(AROSDIR)/lib/libm.a
 
 %common
