@@ -1,3 +1,49 @@
+2004-06-13  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5g of cxref released.
+
+2004-05-09  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* Makefile.in:
+	Add the cxref-cpp-configure script and cxref-cpp.defines file.
+	Renamed the manual pages.
+
+	* README:
+	Changed the location of the parameters to define if not using gcc.
+
+	* cccp.c: Add the -cxref-cpp-defines option.
+	Replace C++ style comments with C style comments.
+
+	* configure.in:
+	Move the gcc configuration detection code to cxref-cpp-configure.
+
+	* cxref-cpp.man: Renamed from README.man and rewritten.
+
+	* cxref-cpp-configure.man, cxref-cpp-configure.in: New file.
+
+2004-04-11  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c: Fix handling of -Afoo=bar options (patch from Camm Maguire).
+
+2004-03-06  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in:
+	Add a --without-cxref-cpp option to the configure scripts.
+
+2004-02-14  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5f of cxref released.
+
+2004-01-18  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* configure.in:
+	Add a check that the installed gcc preserves comments after #include statements.
+
+2003-07-31  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cccp.c:
+	Allow for gcc 3.x style -Afoo=bar options as well as existing -Afoo(bar) options (in Makefile CPP_PREDEFINES).
+
 2003-06-29  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
 
 	Version 1.5e of cxref released.

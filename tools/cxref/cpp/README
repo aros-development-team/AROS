@@ -2,12 +2,16 @@
        ==============================================================
 
 If you have gcc version 2.8.0 or later installed then you do not need to use
-this program.  There are problems with gcc version 3.3 (and others?) where
-comments that follow on the same line as a #define statement are lost.
+this program although you may chose to do so.
+
+There are problems with gcc version 3.3 (and others?) where comments that follow
+on the same line as a #define statement or a #include statement are lost.  If
+you are using one of these versions of gcc then using cxref-cpp is the only way
+to keep all of these comments.
 
 
 This program is a copy of the gcc-2.7.2 pre-processor with some modifications to
-make cxref work better.  Most of the changes were put back into gcc version 2.8.0.
+make cxref work better.  Some of the changes were put back into gcc version 2.8.0.
 
 The files are modified in the following way.
 
@@ -79,10 +83,10 @@ C   The command line that is used when gcc calls cpp.  Notice that it includes
     a number of flags that change the default action of cpp.  (Try doing
     'cpp -v -dM - < /dev/null' to see the difference.)
     Note the -D... and -A... command line flags, the PREDEFINES variable in
-    Makefile.cpp needs to be set equal to these.
+    cxref-cpp-configure needs to be set equal to these.
 
 I*  The include files that are built into the cpp program.
-    Add these to the makefile as described below:
+    Add these to the cxref-cpp-configure script as described below:
 
     I1  =>  INCLUDE_DIR1
     I2  =>  INCLUDE_DIR2

@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   Collects the variable definition stuff.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,99 Andrew M. Bishop
+  This file Copyright 1995,96,97,99,2004 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -68,7 +68,6 @@ void SeenVariableDefinition(char* name,char* type,int scope)
       {
        var->scope|=scope;
        seen=1;
-       break;
        if(!in_header && var->scope&EXTERN_H)
          {
           if(var->comment)
@@ -76,6 +75,7 @@ void SeenVariableDefinition(char* name,char* type,int scope)
           var->comment=MallocString(GetCurrentComment());
           var->lineno=parse_line;
          }
+       break;
       }
 
  if(!seen)

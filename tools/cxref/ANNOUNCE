@@ -1,4 +1,4 @@
-    C Cross Referencing & Documenting tool. Version 1.5e - cxref
+    C Cross Referencing & Documenting tool. Version 1.5g - cxref
     ============================================================
 
 Cxref is a program that will produce documentation (in LaTeX, HTML, RTF or SGML)
@@ -54,18 +54,18 @@ program.
 Changes
 -------
 
-Since version 1.5d:
+Since version 1.5f:
 
 Bug fixes
-  Don't lose the comment or value when C++ style comments follow a #define.
-  Updated to work with newer version of flex and SUN version of yacc.
-  Handle references for local functions with the same name in several files.
-  Remove some extra ';' from the HTML output.
-  Handle macros with variable args like MACRO(a,b,...) as well as MACRO(a,b...).
+  New fix allowing a mix of declarations and statements in compound statements.
+  Fix handling of -Afoo=bar options again.
 
-GCC changes
-  Handle gcc-3.x putting all of its internal #defines in the output.
-  Compile cxref-cpp if using gcc-3.x that drops comment on same line as #define.
+Configure/Make changes
+  Add a --without-cxref-cpp option to force using gcc instead of cxref-cpp.
+
+cxref-cpp changes
+  cxref-cpp now gets gcc defines and include path at runtime from config file.
+  There is a script cxref-cpp-configure to create this configuration file.
 
 
 Availability
@@ -74,8 +74,8 @@ Availability
 Previous versions of this program have been tested on the following systems:
 Linux 1.[123].x, Linux 2.[01234].x, SunOS 4.1.x, Solaris 2.x, HPUX 10.x
 
-FTP server: ftp://ftp.demon.co.uk/pub/unix/tools/cxref-1.5e.tgz
-FTP server: ftp://ftp.ibiblio.org/pub/Linux/devel/lang/c/cxref-1.5e.tgz
+FTP  server: ftp://ftp.ibiblio.org/pub/Linux/devel/lang/c/cxref-1.5g.tgz
+HTTP server: http://www.gedanken.demon.co.uk/download-cxref/cxref-1.5g.tgz
 
 Web page: http://www.gedanken.demon.co.uk/cxref/
 
@@ -83,7 +83,7 @@ Web page: http://www.gedanken.demon.co.uk/cxref/
 Author & Copyright
 ------------------
 
-This program is copyright Andrew M. Bishop 1995,96,97,98,99,2000,01,02,03
+This program is copyright Andrew M. Bishop 1995,96,97,98,99,2000,01,02,03,04
 (amb@gedanken.demon.co.uk) and distributed under GPL.
 
 email: amb@gedanken.demon.co.uk

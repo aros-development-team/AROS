@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5f.
 
   Writes the SGML output.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,98,2001 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,2001,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -605,7 +605,7 @@ static void WriteSGMLFunction(Function func)
  int i,pret,pargs;
  char* comment2=NULL,*type;
 
- if(func->scope&GLOBAL)
+ if(func->scope&(GLOBAL|EXTERNAL))
     fprintf(of,"\n<sect1>Global Function %s()\n\n<p>",sgml(func->name,0));
  else
     fprintf(of,"\n<sect1>Local Function %s()\n\n<p>",sgml(func->name,0));

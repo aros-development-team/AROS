@@ -1,12 +1,12 @@
 # $Header$
 #
-# C Cross Referencing & Documentation tool. Version 1.5d.
+# C Cross Referencing & Documentation tool. Version 1.5g.
 #
 # Program Makefile.
 #
 # Written by Andrew M. Bishop
 #
-# This file Copyright 1995,96,97,98,99,2000,01,02,03 Andrew M. Bishop
+# This file Copyright 1995,96,97,98,99,2000,01,02,03,04 Andrew M. Bishop
 # It may be distributed under the GNU Public License, version 2, or
 # any higher version.  See section COPYING of the GNU Public license
 # for conditions under which this file may be redistributed.
@@ -170,7 +170,9 @@ parse-yacc.c : parse.y
 	@echo Created parse-yacc.c
 
 parse-yacc.h : parse-yacc.c
-	-@if cmp -s parse-yacc.h y.tab.h ; then : ; else \
+	-@if cmp -s parse-yacc.h y.tab.h ; then \
+	   rm y.tab.h ; \
+	else \
 	   if [ -f y.tab.h ] ; then \
 	      cp y.tab.h parse-yacc.h ; \
 	      echo Created parse-yacc.h ; \
@@ -220,12 +222,12 @@ latex-style.c : $(srcdir)/doc/fonts.style $(srcdir)/doc/page.style $(srcdir)/doc
 	$(CC) -c $(CFLAGS) $< -o $@ $(INCLUDE) -I.
 
 cxref.o      : cxref.c      cxref.h datatype.h memory.h parse-yy.h
-	[ ! -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE) "-DCXREF_CPP=\"$$PWD/cpp/cxref-cpp -C -dD -dI\""
-	[   -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE) "-DCXREF_CPP=\"$(CC) -E -C -dD -dI\""
+	[ ! -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE) "-DCXREF_CPP=\"$$PWD/cpp/cxref-cpp -cxref-cpp-defines $$PWD/cpp/cxref-cpp.defines -C -dD -dI\""
+	[   -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE)
 
 cxref-inst.o : cxref.c      cxref.h datatype.h memory.h parse-yy.h
 	[ ! -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE) '-DCXREF_CPP="cxref-cpp -C -dD -dI"'
-	[   -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE) "-DCXREF_CPP=\"$(CC) -E -C -dD -dI\""
+	[   -f cpp/cxref-cpp ] || $(CC) -c $(CFLAGS) $(srcdir)/cxref.c -o $@ $(INCLUDE)
 
 func.o       : func.c       cxref.h datatype.h memory.h parse-yy.h
 type.o       : type.c       cxref.h datatype.h memory.h parse-yy.h

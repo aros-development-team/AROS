@@ -1,11 +1,11 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5e.
+  C Cross Referencing & Documentation tool. Version 1.5g.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,98,99,2000,01,02,03 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,99,2000,01,02,03,04 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -377,11 +377,11 @@ int main(int argc,char** argv)
 static void Usage(int verbose)
 {
  fputs("\n"
-       "              C Cross Referencing & Documenting tool - Version 1.5e\n"
+       "              C Cross Referencing & Documenting tool - Version 1.5g\n"
        "              -----------------------------------------------------\n"
        "\n"
        "(c) Andrew M. Bishop 1995,96,97,98,99, [       amb@gedanken.demon.co.uk       ]\n"
-       "                     2000,01,02,03     [http://www.gedanken.demon.co.uk/cxref/]\n"
+       "                     2000,01,02,03,04  [http://www.gedanken.demon.co.uk/cxref/]\n"
        "\n"
        "Usage: cxref filename [ ... filename]\n"
        "             [-Odirname] [-Nbasename] [-Rdirname]\n"
@@ -894,7 +894,7 @@ static int DocumentTheFile(char* name)
  yyin=popen_execvp(cpp_command);
 
  if(!yyin)
-   {fprintf(stderr,"cxref: Failed to start the cpp command '%s\n",cpp_command[0]);exit(1);}
+   {fprintf(stderr,"cxref: Failed to start the cpp command '%s'\n",cpp_command[0]);exit(1);}
 
  if(!first)
     yyrestart(yyin);

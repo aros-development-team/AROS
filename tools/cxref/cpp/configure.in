@@ -8,7 +8,8 @@ dnl Check if we are forced to use the cxref-cpp
 WITH_CXREF_CPP=test
 AC_ARG_WITH(cxref-cpp,
 [  --with-cxref-cpp       use the supplied cpp instead of trying to use gcc],
-[if test "$withval" = "yes"; then WITH_CXREF_CPP=yes; fi])
+[if test "$withval" = "yes"; then WITH_CXREF_CPP=yes; fi
+ if test "$withval" = "no";  then WITH_CXREF_CPP=no;  fi])
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -46,27 +47,35 @@ if test ! "x$GCC" = "x" ; then
    AC_MSG_CHECKING([if installed gcc is new enough to use instead of cxref-cpp])
 
    AC_TRY_RUN([
+   int main()
+   {
    #if defined(__GNUC__) && ( ( __GNUC__==2 && __GNUC_MINOR__>=8 ) || __GNUC__>=3 )
-   int main() {exit(0);}
+    exit(0);
    #else
-   int main() {exit(1);}
+    exit(1);
    #endif
+   }
    ],
    [newGCC=yes])
 
-   if test "x$newGCC" = "x" || test "$WITH_CXREF_CPP" = "yes" ; then
+   if test "$WITH_CXREF_CPP" = "no" ; then
+
+      if test "x$newGCC" = "x" ; then
+         AC_MSG_RESULT([no])
+         AC_MSG_ERROR([the '--without-cxref-cpp' option was used but gcc is not suitable])
+      else
+         AC_MSG_RESULT([yes, ignoring further checks due to '--without-cxref-cpp' option])
+      fi
+
+   elif test "x$newGCC" = "x" || test "$WITH_CXREF_CPP" = "yes" ; then
 
       if test "x$newGCC" = "x" ; then
          AC_MSG_RESULT([no, using cxref-cpp])
       else
-         AC_MSG_RESULT([yes but '-with-cxref-cpp' option overrides this])
+         AC_MSG_RESULT([yes, but '--with-cxref-cpp' option overrides this])
       fi
 
-      CXREF_CPP=cxref-cpp
-
-   else
-
-      AC_MSG_RESULT(yes)
+      rm ./conftest.gcc
 
       AC_MSG_CHECKING([if installed gcc preserves comments after define statements])
 
@@ -82,48 +91,40 @@ if test ! "x$GCC" = "x" ; then
 
       rm ./conftest.gcc
 
-   fi
+      AC_MSG_CHECKING([if installed gcc preserves comments after include statements])
 
-   if test ! "x$CXREF_CPP" = "x" ; then
+      touch conftest.h
 
-      $CC -E -v -dM - < /dev/null > ./conftest.gcc 2>&1
+      echo "#include \"conftest.h\" /* FIND-ME */" | $CC -E -C - > ./conftest.gcc
 
-      changequote(<<, >>)dnl
-      PREDEFINES=`$EGREP -e -D__GNUC ./conftest.gcc | tr ' ' '\012' | $EGREP -e '^-[AD]' | tr '\012' ' '`
-      changequote([, ])dnl
+      if $EGREP -e FIND-ME ./conftest.gcc > /dev/null 2>&1 ; then
+         AC_MSG_RESULT(yes)
+      else
+         AC_MSG_RESULT([no, using cxref-cpp])
 
-      INCLUDE_DIR1=`awk '/include <.+> search/,/End of search/ {if(i==1)print $1;i++}' ./conftest.gcc`
-      INCLUDE_DIR2=`awk '/include <.+> search/,/End of search/ {if(i==2)print $1;i++}' ./conftest.gcc`
-      INCLUDE_DIR3=`awk '/include <.+> search/,/End of search/ {if(i==3)print $1;i++}' ./conftest.gcc`
+         CXREF_CPP=cxref-cpp
+      fi
 
-      rm ./conftest.gcc
+      rm ./conftest.h ./conftest.gcc
 
    fi
 
 else
 
-   AC_MSG_WARN(-------------------------------------------------)
-   AC_MSG_WARN(The C compiler is not gcc, you may have problems!)
-   AC_MSG_WARN(the configure script is trying to compensate,    )
-   AC_MSG_WARN(read the file cpp/README and check cpp/Makefile. )
-   AC_MSG_WARN(-------------------------------------------------)
-
-   PREDEFINES=""
-
-   INCLUDE_DIR1=/usr/local/include
-   INCLUDE_DIR2=/usr/include
-   INCLUDE_DIR3=/usr/local/include
+   AC_MSG_WARN(-----------------------------------------------------)
+   AC_MSG_WARN(The C compiler is not gcc, you may have problems!    )
+   AC_MSG_WARN(read the file cpp/README and cpp/cxref-cpp-configure.)
+   AC_MSG_WARN(-----------------------------------------------------)
 
    CXREF_CPP=cxref-cpp
 
 fi
 
-AC_SUBST(PREDEFINES)
-AC_SUBST(INCLUDE_DIR1)
-AC_SUBST(INCLUDE_DIR2)
-AC_SUBST(INCLUDE_DIR3)
-
 AC_SUBST(CXREF_CPP)
+AC_SUBST(GCC)
 
 dnl Create the output files.
 AC_OUTPUT(Makefile)
+AC_OUTPUT(cxref-cpp-configure)
+
+chmod 755 cxref-cpp-configure
