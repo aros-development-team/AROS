@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/21 15:46:46  digulla
+    "%d", 0 gave " " instead of "0"
+
     Revision 1.7  1996/09/18 14:41:54  digulla
     Fixed the bug from %ld for %d also
     Fill with "0" or " "
@@ -145,7 +148,7 @@
 		    ret ++;
 		}
 
-		len = strlen (str);
+		len = StrLen (str);
 
 		write (2, str, len);
 		ret += len;
@@ -209,11 +212,17 @@ print_int:
 		    if (width == 0)
 			width = 1;
 
+		    if (*fill == ' ')
+			width --;
+
 		    while (width > 0)
 		    {
 			write (2, fill, (width < 8) ? width : 8);
 			width -= 8;
 		    }
+
+		    if (*fill == ' ')
+			write (2, "0", 1);
 
 		    ret ++;
 		    break;
