@@ -8,33 +8,27 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
+#include <exec/memory.h>
 #include <utility/tagitem.h>
-#include <libraries/mui.h>
 #include <dos/dos.h>
+#include <libraries/mui.h>
+#include <zune/iconimage.h>
 
+#include <proto/exec.h>
 #include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/locale.h>
 #include <proto/dos.h>
-#include <proto/icon.h>
-
 #include <clib/alib_protos.h>   /* StrDup() */
 
-#include <exec/memory.h>
-
 #include <string.h>
-
-#include <zune/iconimage.h>
 
 #include "aboutwindow.h"
 #include "aboutwindow_private.h"
 
 #define CATCOMP_ARRAY
 #include "strings.h"
-
-#define DEBUG 1
-#include <aros/debug.h>
 
 /*** Locale functions *******************************************************/
 CONST_STRPTR MSG(struct Catalog *catalog, ULONG id)
