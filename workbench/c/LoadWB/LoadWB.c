@@ -94,13 +94,13 @@ static struct NewMenu nm[] =
       {NM_SUB, "Window"},
       {NM_SUB, "All"},
     {NM_ITEM,  "Show" },
-      {NM_SUB, "Only Icons", CHECKIT | CHECKED, 32},
-      {NM_SUB, "All Files", CHECKIT, 16 },
+      {NM_SUB, "Only Icons", NULL, CHECKIT | CHECKED, 32},
+      {NM_SUB, "All Files", NULL, CHECKIT, 16 },
     {NM_ITEM,  "View By" },
-      {NM_SUB, "Icon", CHECKIT | CHECKED, 32 + 64 + 128},
-      {NM_SUB, "Name",CHECKIT, 16 + 64 + 128},
-      {NM_SUB, "Size",CHECKIT, 16 + 32 + 128},
-      {NM_SUB, "Date", CHECKIT, 16 + 32 + 64},
+      {NM_SUB, "Icon", NULL, CHECKIT | CHECKED, 32 + 64 + 128},
+      {NM_SUB, "Name",NULL, CHECKIT, 16 + 64 + 128},
+      {NM_SUB, "Size",NULL, CHECKIT, 16 + 32 + 128},
+      {NM_SUB, "Date", NULL, CHECKIT, 16 + 32 + 64},
 
   {NM_TITLE, "Icon",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "Open", "O"},
@@ -119,8 +119,8 @@ static struct NewMenu nm[] =
   {NM_TITLE, "Tools",          NULL, NM_MENUDISABLED},
     {NM_ITEM,  "ResetWB" },
     {NM_ITEM,  "Matt Parsons did a good job?" },
-      {NM_SUB, "Yeah, Kinda...", CHECKIT | CHECKED, 32},
-      {NM_SUB, "Nope, this sucks!", CHECKIT, 16 },
+      {NM_SUB, "Yeah, Kinda...", NULL, CHECKIT | CHECKED, 32},
+      {NM_SUB, "Nope, this sucks!", NULL, CHECKIT, 16 },
   {NM_END}
 
 };
