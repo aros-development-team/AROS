@@ -11,6 +11,9 @@ struct MUI_TextData {
     STRPTR preparse;
     TEXT   hichar;
     ZText *ztext;
+    LONG xpos;
+    LONG ypos;
+    struct MUI_EventHandlerNode ehn;
 };
  
 #define MTDF_SETMIN    (1<<0)
@@ -18,6 +21,7 @@ struct MUI_TextData {
 #define MTDF_SETVMAX   (1<<2)
 #define MTDF_HICHAR    (1<<3)
 #define MTDF_HICHARIDX (1<<4)
+#define MTDF_EDITABLE  (1<<5)
 
 #ifdef _DCC
 extern char MUIC_Text[];
@@ -39,6 +43,7 @@ enum {
 /* Attributes */
 
 #define MUIA_Text_HiCharIdx   0x804214f5
+#define MUIA_Text_Editable    0x80420d8c  /* ZV1 i.. BOOL              */
 
 
 extern const struct __MUIBuiltinClass _MUI_Text_desc;
