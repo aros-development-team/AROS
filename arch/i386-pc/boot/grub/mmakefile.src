@@ -27,5 +27,5 @@ config.h.in: configure.in
 configure: config.h.in configure.in
 	autoconf
 
-Makefile: configure
-	./configure
+Makefile: configure $(TOP)/config/i386-native/boot/menu.lst
+	./configure --enable-preset-menu=$(TOP)/config/i386-native/boot/menu.lst
