@@ -58,9 +58,9 @@ int main (void)
     printf ("\tTF_SWITCH     = 0x%04lX\n", TF_SWITCH);
 
     printf ("\n# Exec functions\n");
-    printf ("\tSwitch        = %d\n", FuncOffset (6));
-    printf ("\tDispatch      = %d\n", FuncOffset (7));
-    printf ("\tException     = %d\n", FuncOffset (8));
+    printf ("\tSwitch        = %d\n", FuncOffset (9));
+    printf ("\tDispatch      = %d\n", FuncOffset (10));
+    printf ("\tException     = %d\n", FuncOffset (11));
     printf ("\tAlert         = %d\n", FuncOffset (18));
     printf ("\tDisable       = %d\n", FuncOffset (20));
     printf ("\tEnable        = %d\n", FuncOffset (21));

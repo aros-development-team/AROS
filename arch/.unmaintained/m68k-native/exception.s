@@ -12,7 +12,7 @@
  	AROS_LH0(void, Exception,
  
     LOCATION
- 	struct ExecBase *, SysBase, 8, Exec)
+ 	struct ExecBase *, SysBase, 11, Exec)
  
     FUNCTION
  	Exception handler. This function is called by the dispatcher if a

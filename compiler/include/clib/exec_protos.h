@@ -58,10 +58,10 @@ AROS_LP0(void, Disable,
     struct ExecBase *, SysBase, 20, Exec)
 
 AROS_LP0(void, Dispatch,
-    struct ExecBase *, SysBase, 7, Exec)
+    struct ExecBase *, SysBase, 10, Exec)
 #define Dispatch() \
     AROS_LC0(void, Dispatch, \
-    struct ExecBase *, SysBase, 7, Exec)
+    struct ExecBase *, SysBase, 10, Exec)
 
 AROS_LP0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
@@ -70,10 +70,10 @@ AROS_LP0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
 
 AROS_LP0(void, Exception,
-    struct ExecBase *, SysBase, 8, Exec)
+    struct ExecBase *, SysBase, 11, Exec)
 #define Exception() \
     AROS_LC0(void, Exception, \
-    struct ExecBase *, SysBase, 8, Exec)
+    struct ExecBase *, SysBase, 11, Exec)
 
 AROS_LP0(void, Forbid,
     struct ExecBase *, SysBase, 22, Exec)
@@ -111,17 +111,19 @@ AROS_LP0(void, SuperState,
     AROS_LC0(void, SuperState, \
     struct ExecBase *, SysBase, 25, Exec)
 
-AROS_LP0(void, Supervisor,
-    struct ExecBase *, SysBase, 6, Exec)
+AROS_LP1(void, Supervisor,
+    AROS_LPA(void *, userFunc, A5),
+    struct ExecBase *, SysBase, 5, Exec)
 #define Supervisor() \
-    AROS_LC0(void, Supervisor, \
-    struct ExecBase *, SysBase, 6, Exec)
+    AROS_LC1(void, Supervisor, \
+    AROS_LCA(void *, userFunc, A5), \
+    struct ExecBase *, SysBase, 5, Exec)
 
 AROS_LP0(void, Switch,
-    struct ExecBase *, SysBase, 6, Exec)
+    struct ExecBase *, SysBase, 9, Exec)
 #define Switch() \
     AROS_LC0(void, Switch, \
-    struct ExecBase *, SysBase, 6, Exec)
+    struct ExecBase *, SysBase, 9, Exec)
 
 AROS_LP0(void, UserState,
     struct ExecBase *, SysBase, 26, Exec)
@@ -133,13 +135,13 @@ AROS_LP3I(APTR, PrepareContext,
     AROS_LPA(APTR, stackPointer, A0),
     AROS_LPA(APTR, entryPoint,   A1),
     AROS_LPA(APTR, fallBack,     A2),
-    struct ExecBase *, SysBase, 9, Exec)
+    struct ExecBase *, SysBase, 6, Exec)
 #define PrepareContext(stackPointer, entryPoint, fallBack) \
     AROS_LC3I(APTR, PrepareContext, \
     AROS_LCA(APTR, stackPointer, A0), \
     AROS_LCA(APTR, entryPoint,   A1), \
     AROS_LCA(APTR, fallBack,     A2), \
-    struct ExecBase *, SysBase, 9, Exec)
+    struct ExecBase *, SysBase, 6, Exec)
 
 AROS_LP1I(LONG, AbortIO,
     AROS_LPA(struct IORequest *, iORequest, A1),

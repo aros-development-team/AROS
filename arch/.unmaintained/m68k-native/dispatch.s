@@ -13,7 +13,7 @@
  	AROS_LH0(void, Dispatch,
  
     LOCATION
- 	struct ExecBase *, SysBase, 7, Exec)
+ 	struct ExecBase *, SysBase, 10, Exec)
  
     FUNCTION
  	This function switches between the task in SysBase->ThisTask and
@@ -208,4 +208,12 @@ usrexc: jsr	Exception(a6)
 	move.l	(sp)+,a5
 	move.w	(sp)+,ccr
 	rts
+
+
+	.globl	AROS_SLIB_ENTRY(DispatchSup,Exec)
+	.type	AROS_SLIB_ENTRY(DispatchSup,Exec),@function
+AROS_SLIB_ENTRY(DispatchSup,Exec):
+	move.l	AROS_SLIB_ENTRY(Dispatch,Exec),a5
+	jsr	Supervisor(a5)
+	rte
 

@@ -11,8 +11,9 @@
 int main (void)
 {
     printf ("# Macros\n"
-	"#define AROS_SLIB_ENTRY(n,s)   _ ## s ## _ ## n\n"
 	"#define AROS_CSYMNAME(n)       _ ## n\n"
+	"#define AROS_CDEFNAME(n)       _ ## n\n"
+	"#define AROS_SLIB_ENTRY(n,s)   _ ## s ## _ ## n\n"
 	"\n");
 
     printf ("# ExecBase\n");
@@ -57,9 +58,9 @@ int main (void)
 
     printf ("\n# Exec functions\n");
     printf ("\tSupervisor    = %d\n", FuncOffset (5));
-    printf ("\tSwitch        = %d\n", FuncOffset (6));
-    printf ("\tDispatch      = %d\n", FuncOffset (7));
-    printf ("\tException     = %d\n", FuncOffset (8));
+    printf ("\tSwitch        = %d\n", FuncOffset (9));
+    printf ("\tDispatch      = %d\n", FuncOffset (10));
+    printf ("\tException     = %d\n", FuncOffset (11));
     printf ("\tAlert         = %d\n", FuncOffset (18));
     printf ("\tDisable       = %d\n", FuncOffset (20));
     printf ("\tEnable        = %d\n", FuncOffset (21));

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1996/12/06 03:58:19  aros
+    Vector shuffle
+
     Revision 1.10  1996/11/14 08:51:35  aros
     Some work on the kernel:
     Mapping of Linux-Signals to AROS interrupts
@@ -156,12 +159,12 @@ void *ExecFunctions[131]=
 	NULL,
 	NULL,
 	&AROS_SLIB_ENTRY(Supervisor,Exec),
-	&AROS_SLIB_ENTRY(Switch,Exec),
-	&AROS_SLIB_ENTRY(Dispatch,Exec),
-	&AROS_SLIB_ENTRY(Exception,Exec),
 	&AROS_SLIB_ENTRY(PrepareContext,Exec),
-/* 10 */NULL,		/* Private5 */
-	NULL,		/* Private6 */
+	NULL,		/* Private2 */
+	NULL,		/* Private3 */
+	&AROS_SLIB_ENTRY(Switch,Exec),
+/* 10 */&AROS_SLIB_ENTRY(Dispatch,Exec),
+	&AROS_SLIB_ENTRY(Exception,Exec),
 	NULL,		/* InitCode */
 	&AROS_SLIB_ENTRY(InitStruct,Exec),
 	&AROS_SLIB_ENTRY(MakeLibrary,Exec),

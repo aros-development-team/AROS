@@ -11,8 +11,12 @@
     NAME
 	AROS_LH0(void, Supervisor,
 
+    SYNOPSIS
+/* Aaron: please enable this */
+/* 	AROS_LHA(ULONG_FUNC, userFunction, A5), */
+ 
     LOCATION
-	struct ExecBase *, SysBase, 6, Exec)
+	struct ExecBase *, SysBase, 5, Exec)
 
     FUNCTION
 
