@@ -796,9 +796,10 @@ void intui_ProcessEvents (void)
 		    newgad = FindGadget (w, xb->x, xb->y, gi);
 		    
 		    /* If the active gadget was a stringgadget, and we clicked
-		    ** outside it, then deactivate it.
+		    ** outside it, then deactivate it. Make sure that there
+		    ** was an active gadget to begin with.
 		    */
-		    if (gadget != newgad)
+		    if (gadget && gadget != newgad)
 		    {
 		    	if (gadget->GadgetType & GTYP_STRGADGET)
 		    	{

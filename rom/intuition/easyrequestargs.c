@@ -38,7 +38,7 @@
 	            too. This is useful for requesters, which want to
 	            listen to disk changes, etc. The contents of this
 	            pointer is set to the IDCMP flag, which caused the
-	            requester to close.
+	            requester to close. This pointer may be NULL.
 	ArgList - The arguments for easyStruct->es_TextFormat.
 
     RESULT
@@ -69,7 +69,8 @@
     LONG result;
     struct Window *req;
 
-    req = BuildEasyRequestArgs(Window, easyStruct, *IDCMP_ptr, ArgList);
+    req = BuildEasyRequestArgs(Window, easyStruct, 
+	    IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, ArgList);
     if (!req)
         return 0L;
 
