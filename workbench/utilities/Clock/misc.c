@@ -94,42 +94,51 @@ void KillMenus(void)
 
 /*********************************************************************************************/
 
+BOOL MenuChecked(UWORD menucode)
+{
+    struct MenuItem *item;
+    BOOL    	     retval = FALSE;
+    
+    item = ItemAddress(menus, menucode);
+    if (item) if (item->Flags & CHECKED) retval = TRUE;
+    
+    return retval;
+}
+
+/*********************************************************************************************/
+
+void SetMenuCheck(UWORD menucode, BOOL on)
+{
+    struct MenuItem *item;
+    
+    item = ItemAddress(menus, menucode);
+    if (item)
+    {
+    	if (on)
+	{
+	    item->Flags |= CHECKED;
+	}
+	else
+	{
+	    item->Flags &= ~CHECKED;
+	}
+    }
+}
+
+/*********************************************************************************************/
+
 void SetMenuFlags(void)
 {
     struct MenuItem *item;
     
     if (win) ClearMenuStrip(win);
 
-    item = ItemAddress(menus, FULLMENUNUM(0, 0, NOSUB));
-    if (item)
-    {
-	if (opt_analogmode) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
-    }
-    
-    item = ItemAddress(menus, FULLMENUNUM(0, 1, NOSUB));
-    if (item)
-    {
-	if (!opt_analogmode) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
-    }
-
-    item = ItemAddress(menus, FULLMENUNUM(1, 0, NOSUB));
-    if (item)
-    {
-	if (opt_showdate) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
-    }
-
-    item = ItemAddress(menus, FULLMENUNUM(1, 1, NOSUB));
-    if (item)
-    {
-	if (opt_showsecs) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
-    }
-
-    item = ItemAddress(menus, FULLMENUNUM(0, 4, NOSUB));
-    if (item)
-    {
-	if (opt_alarm) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
-    }
-        
+    SetMenuCheck(FULLMENUNUM(0, 0, NOSUB), opt_analogmode);
+    SetMenuCheck(FULLMENUNUM(0, 1, NOSUB), !opt_analogmode);
+    SetMenuCheck(FULLMENUNUM(1, 0, NOSUB), opt_showdate);
+    SetMenuCheck(FULLMENUNUM(1, 1, NOSUB), opt_showsecs);
+    SetMenuCheck(FULLMENUNUM(1, 4, NOSUB), opt_alarm);
+         
     if (win) ResetMenuStrip(win, menus);
 }
 
