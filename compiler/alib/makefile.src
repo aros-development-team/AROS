@@ -21,7 +21,8 @@ FILES = alib_util allocnamedobject callhook coercemethod createextio	    \
 	getvisualinfo gt_getgadgetattrs gt_setgadgetattrs hookentry	    \
 	layoutmenuitems layoutmenus liballocpooled libcreatepool	    \
 	libdeletepool libfreepooled newlist newobject openscreentags	    \
-	openwindowtags rangerand setattrs setsuperattrs arosinquire
+	openwindowtags rangerand setattrs setgadgetattrs setsuperattrs	    \
+	arosinquire
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
