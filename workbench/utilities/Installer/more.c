@@ -27,7 +27,7 @@
 
 /*******************************************************************************/
 
-#define USE_SIMPLEREFRESH
+#define USE_SIMPLEREFRESH 0
 
 #define DEFAULT_TABSIZE 8
 
@@ -447,9 +447,9 @@ static void MakeWin(char *title)
 				 WA_Width,WINDOWWIDTH,
 				 WA_Height,WINDOWHEIGHT,
 				 WA_Title,(IPTR)wintitle,
-			       #ifdef USE_SIMPLEREFRESH
-				 WA_SimpleRefresh,TRUE,
-			       #endif
+			         (USE_SIMPLEREFRESH != 0) ?
+				 WA_SimpleRefresh         :
+                                 TAG_IGNORE,TRUE,
 				 WA_CloseGadget,TRUE,
 				 WA_DepthGadget,TRUE,
 				 WA_DragBar,TRUE,
@@ -463,13 +463,10 @@ static void MakeWin(char *title)
 				 WA_MaxWidth,scr->Width,
 				 WA_MaxHeight,scr->Height,
 				 WA_ReportMouse,TRUE,
-				 WA_IDCMP,IDCMP_CLOSEWINDOW | IDCMP_NEWSIZE |
-					  IDCMP_GADGETDOWN | IDCMP_GADGETUP |
-					  IDCMP_MOUSEMOVE | IDCMP_VANILLAKEY |
-					#ifdef USE_SIMPLEREFRESH
-					  IDCMP_REFRESHWINDOW |
-					#endif
-					  IDCMP_RAWKEY,
+				 WA_IDCMP,IDCMP_CLOSEWINDOW   | IDCMP_NEWSIZE   |
+					  IDCMP_GADGETDOWN    | IDCMP_GADGETUP  |
+					  IDCMP_MOUSEMOVE     | IDCMP_VANILLAKEY| 
+               ((USE_SIMPLEREFRESH != 0) * IDCMP_REFRESHWINDOW) | IDCMP_RAWKEY,
 				 TAG_DONE)))
     {
 	Cleanup();
