@@ -20,6 +20,24 @@ BEGIN {
 	    for (t=4; t<=NF; t++)
 		libbtp=libbtp" "$t;
 	}
+	else if($2 == "NT_TYPE")
+	{
+	    if( $3 == "NT_RESOURCE" )
+	    {
+		firstlvo = 0;
+		libext = ".resource";
+	    }
+	    else if ( $3 == "NT_DEVICE" )
+	    {
+		firstlvo = 6;
+		libext = ".device";
+	    }
+	    else
+	    {
+		firstlvo = 4;
+		libexit = ".library";
+	    }
+	}
     }
 
     verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
@@ -32,10 +50,10 @@ BEGIN {
     print "#define DEFINES_"BASENAME"_PROTOS_H"
     print ""
     print "/*"
-    print "    (C) 1995-98 AROS - The Amiga Replacement OS"
+    print "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS"
     print "    $""Id$"
     print ""
-    print "    Desc: Prototypes for "basename".library"
+    print "    Desc: Prototypes for "basename libext
     print "    Lang: english"
     print "*/"
     print ""
@@ -101,7 +119,7 @@ BEGIN {
     na=split(line,a,",");
     lvo=int(a[3]);
 
-    if (lvo > 4)
+    if (lvo > firstlvo)
     {
 	print "#define "fname"("args") \\"
 	print "\t"call" \\";

@@ -15,19 +15,37 @@ BEGIN {
 	{
 	    libbase = $3;
 	}
+	else if ($2 == "NT_TYPE")
+	{
+	    if ($3 == "NT_RESOURCE")
+	    {
+		firstlvo = 0;
+	    }
+	    else if ($3 == "NT_DEVICE")
+	    {
+		firstlvo = 6;
+	    }
+	    else
+	    {
+		firstlvo = 4;
+	    }
+	}
     }
 
-    f[1] = "open";
-    f[2] = "close";
-    f[3] = "expunge";
-    f[4] = "null";
-
+    # Only for non-resources
+    if( firstlvo >= 4 )
+    {
+	f[1] = "open";
+	f[2] = "close";
+	f[3] = "expunge";
+	f[4] = "null";
+    }
     verbose_pattern = libbase"[ \\t]*,[ \\t]*[0-9]+[ \\t]*,[ \\t]*"basename;
 
 #print verbose_pattern > "/dev/stderr";
 
-    if (maxlvo < 4)
-	maxlvo = 4;
+    if (maxlvo < firstlvo)
+	maxlvo = firstlvo;
 }
 /AROS_LH(QUAD)?[0-9]/ {
     line=$0;
@@ -67,7 +85,7 @@ BEGIN {
 
     if (lvo == 0)
 	print "Illegal LVO 0 in "FN
-    else if (lvo <= 4)
+    else if (lvo <= firstlvo)
 	f[lvo] = "";
 
 #print "lvo="lvo;
@@ -89,17 +107,17 @@ BEGIN {
     }
 }
 END {
-    print "##base _"basename;
-    print "##bias 30"
+    print "##base _"basename"Base";
+    print "##bias " ((firstlvo+1)*6)
     print "##public"
 
-    if (maxlvo <= 4)
+    if (maxlvo <= firstlvo)
     {
 	print "Error: No matching functions found" > "/dev/stderr";
 	exit (10);
     }
 
-    for (t=5; t<=maxlvo; t++)
+    for (t=(firstlvo+1); t<=maxlvo; t++)
     {
 	if (t in f)
 	    print f[t]"("a_args[t]")("a_regs[t]")"
