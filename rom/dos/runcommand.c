@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/10 13:22:20  digulla
+    Wrong cast (Fleischer)
+
     Revision 1.6  1996/09/13 17:50:09  digulla
     Use IPTR
 
@@ -101,7 +104,7 @@ LONG __AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
     oldargs=me->pr_Arguments;
     me->pr_Arguments=argptr;
     ret=__AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
-		(APTR)BADDR(segList+1),DOSBase);
+		(LONG_FUNC)((BPTR *)BADDR(segList)+1),DOSBase);
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;
