@@ -18,44 +18,51 @@
 
 static BOOL LoadSerialPrefs(STRPTR filename, struct SerialPrefs * serialprefs);
 
+static const ULONG buffersizes[] = 
+{
+	512,
+	1024,
+	2048,
+	4096,
+	8000,
+	16000,
+	-1
+};
+
 /*********************************************************************************************/
 
 void SerialPrefs_Handler(STRPTR filename)
 {	
 	static struct SerialPrefs serialprefs;
-	struct MsgPort * SerPort;
 	D(bug("In IPrefs:SerialPrefs_Handler\n"));
 	D(bug("filename=%s\n",filename));
-	SerPort = CreatePort("IPrefsSerial",0);
-	if (NULL != SerPort) {
-		struct IOExtSer * ioes = (struct IOExtSer *)CreateExtIO(SerPort, sizeof(struct IOExtSer));
-		if (NULL  != ioes) {
-			if (0 == OpenDevice("serial.device",0,(struct IORequest *)ioes,0)) {
-				if (TRUE == LoadSerialPrefs(filename, &serialprefs)) {
-					D(bug("Setting new serial prefs."));
-					ioes->IOSer.io_Command = SDCMD_SETPARAMS;
-					D(bug("Setting baudrate to %d\n",serialprefs.sp_BaudRate));
-					ioes->io_Baud = serialprefs.sp_BaudRate;
-					D(bug("Setting receive buffer size to %d\n",serialprefs.sp_InputBuffer));
-					ioes->io_RBufLen  = serialprefs.sp_InputBuffer;
-					D(bug("Setting read len to %d\n",serialprefs.sp_BitsPerChar));
-					ioes->io_ReadLen   = serialprefs.sp_BitsPerChar;
-					D(bug("Setting write len to %d\n",serialprefs.sp_BitsPerChar));
-					ioes->io_WriteLen  = serialprefs.sp_BitsPerChar;
-					D(bug("Setting stop bits to %d\n",serialprefs.sp_StopBits));
-					ioes->io_StopBits  = serialprefs.sp_StopBits;
-					DoIO((struct IORequest *)ioes);
-					if (0 != ((struct IORequest *)ioes)->io_Error) {
-						D(bug("Could not change settings on serial device!\n"));
-					} else {
-						D(bug("Successfully changed settings on serial device!\n"));
-					}
-				}
-				CloseDevice((struct IORequest *)ioes);
-			}
-			DeleteExtIO((struct IORequest *)ioes);
+	if (TRUE == LoadSerialPrefs(filename, &serialprefs)) {
+		struct Preferences prefs;
+		ULONG index = 0;
+		GetPrefs(&prefs, sizeof(prefs));
+
+		while (-1 != buffersizes[index]) {
+			if (buffersizes[index] == serialprefs.sp_InputBuffer)
+				break;
+			index++;
 		}
-		DeletePort(SerPort);
+
+		if (-1 == buffersizes[index])
+			index = 0;
+
+		D(bug("Setting new serial prefs.\n"));
+		D(bug("Setting baudrate to %d\n",serialprefs.sp_BaudRate));
+		D(bug("Setting receive buffer size to %d\n",buffersizes[index]));
+		D(bug("Setting read bit len to %d\n",8-serialprefs.sp_BitsPerChar));
+		D(bug("Setting write bit len to %d\n",8-serialprefs.sp_BitsPerChar));
+		D(bug("Setting stop bits to %d\n",1+serialprefs.sp_StopBits));
+
+		prefs.BaudRate   =  serialprefs.sp_BaudRate;
+		prefs.SerRWBits  = (serialprefs.sp_BitsPerChar << 4) | serialprefs.sp_BitsPerChar;
+		prefs.SerStopBuf = (serialprefs.sp_StopBits    << 4) | index;
+		prefs.SerParShk  = (serialprefs.sp_Parity      << 4) | serialprefs.sp_InputHandshake;
+
+		SetPrefs(&prefs, sizeof(prefs), TRUE);
 	}
 }
 /*********************************************************************************************/
