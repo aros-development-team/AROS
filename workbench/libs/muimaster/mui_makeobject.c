@@ -108,6 +108,56 @@ STATIC Object *CreateMenuString( struct NewMenu *newmenu, ULONG flags, struct Li
     return menustrip;
 }
 
+
+Object *INTERNAL_ImageButton(CONST_STRPTR label, CONST_STRPTR imagePath)
+{
+#   define BUFFERSIZE 512
+    
+    BPTR lock = Lock(imagePath, ACCESS_READ);
+    if (lock != NULL)
+    {
+        
+        TEXT imageSpec[BUFFERSIZE]; 
+        TEXT controlChar = get_control_char(label);
+        
+        imageSpec[0] = '\0';
+        strlcat(imageSpec, "3:", BUFFERSIZE);
+        strlcat(imageSpec, imagePath, BUFFERSIZE);
+        
+        UnLock(lock);
+    
+        return HGroup,
+            ButtonFrame,
+            MUIA_VertWeight,               0,
+            MUIA_Background,               MUII_ButtonBack,
+            MUIA_InputMode,                MUIV_InputMode_RelVerify,
+            MUIA_Group_Spacing,            0,
+            MUIA_Group_SameHeight,         TRUE,
+            controlChar      ? 
+            MUIA_ControlChar : 
+            TAG_IGNORE,             (IPTR) controlChar,
+            
+            Child, ImageObject,
+                MUIA_Image_Spec, (IPTR) imageSpec,
+            End,
+            Child, HSpace(4),
+            Child, TextObject,
+                MUIA_Font,                  MUIV_Font_Button,
+                MUIA_Text_HiCharIdx, (IPTR) '_',
+                MUIA_Text_Contents,  (IPTR) label,
+                MUIA_Text_PreParse,  (IPTR) "\33c",
+            End,
+        End;    
+        
+    }
+    else
+    {
+        return SimpleButton(label);
+    }
+
+#   undef BUFFERSIZE
+}
+
 /*****************************************************************************
 
     NAME */
@@ -294,6 +344,12 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 		control_char?MUIA_ControlChar:TAG_IGNORE, control_char,
 		TAG_DONE);
 	}
+
+        case MUIO_ImageButton: 
+            return INTERNAL_ImageButton
+            ( 
+                (CONST_STRPTR) params[0], (CONST_STRPTR) params[1] 
+            );
 
 	case MUIO_Checkmark: /* STRPTR label */
 	{

@@ -207,6 +207,7 @@ enum
     MUIO_NumericButton,/* STRPTR label, LONG min, LONG max, STRPTR format */
     
     MUIO_CoolButton = 111, /* STRPTR label, APTR CoolImage, ULONG flags */
+    MUIO_ImageButton,      /* CONST_STRPTR label, CONST_STRPTR imagePath */
 };
 
 /* flag for MUIO_Menuitem */
