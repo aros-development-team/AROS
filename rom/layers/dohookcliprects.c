@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -108,7 +108,7 @@
 		   rect to bound (clip) our actions to this rect. */
 
 		/* Get a cross-section between the main rect and this rect (store in rect2) */
-		_IntersectRects(CurRect, mainrect, &rect2);
+		IntersectRects(CurRect, mainrect, &rect2);
 
 		/* Check if there actually _is_ a cross-section. If there isn't
 		   one, the Min values will be larger than the Max values */
@@ -167,7 +167,7 @@
 
 		if(mainrect)
 		{
-		    _IntersectRects(&cr->bounds, mainrect, &rect1);
+		    IntersectRects(&cr->bounds, mainrect, &rect1);
 
 		    if(rect1.MaxY >= rect1.MinY &&
 		       rect1.MaxX >= rect1.MinX)
