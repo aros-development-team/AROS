@@ -16,6 +16,10 @@ FILES := cycleclass support
 workbench-classes-aroscycle : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-aroscycle-quick : 
+workbench-classes-aroscycle-quick : $(SLIB)
+	@$(NOP)
+
 
 #MM workbench-classes-setup
 workbench-classes-setup : setup

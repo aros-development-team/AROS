@@ -1,10 +1,13 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Support functions for AROSCycleClass.
     Lang: english
 */
+
+/***********************************************************************************/
+
 #include <strings.h>
 #include <exec/types.h>
 #include <proto/intuition.h>
@@ -44,9 +47,9 @@ void renderlabel(struct CycleBase_intern *AROSCycleBase,
                  struct RastPort *rport,
                  struct GadgetInfo *ginfo)
 {
-    UWORD *pens = ginfo->gi_DrInfo->dri_Pens;
-    WORD x,y,h;
-    int len = strlen(string);
+    UWORD   *pens = ginfo->gi_DrInfo->dri_Pens;
+    WORD    x,y,h;
+    int     len = strlen(string);
 
     SetABPenDrMd(rport, pens[TEXTPEN], pens[BACKGROUNDPEN], JAM1);
     Move(rport,

@@ -1,10 +1,12 @@
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS specific cycle class implementation.
     Lang: english
 */
+
+/***********************************************************************************/
 
 #define USE_BOOPSI_STUBS
 #include <exec/libraries.h>
@@ -47,16 +49,17 @@
 
 Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
-    struct CycleData *data;
-    Object *o;
-    struct TagItem imgtags[] = {
+    struct CycleData 	*data;
+    struct TextAttr 	*tattr;
+    struct TagItem  	imgtags[] = {
         { IA_Width	, 0 		},
         { IA_Height	, 0 		},
         { IA_EdgesOnly	, FALSE		},
 	{ IA_FrameType	, FRAME_BUTTON	},
         { TAG_DONE	, 0UL 		}
     };
-    STRPTR *labels;
+    STRPTR  	    	*labels;
+    Object  	    	*o;
 
     o = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!o)
@@ -66,6 +69,7 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
     data->active = GetTagData(AROSCYCLE_Active, 0, msg->ops_AttrList);
     data->labels = (STRPTR *)GetTagData(AROSCYCLE_Labels, NULL, msg->ops_AttrList);
     data->numlabels = 0;
+
     labels = data->labels;
     if (labels)
     {
@@ -76,8 +80,12 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
         }
     }
 
+    tattr = (struct TextAttr *)GetTagData(GA_TextAttr, NULL, msg->ops_AttrList);
+    if (tattr) data->font = OpenFont(tattr);
+    
     imgtags[0].ti_Data = (IPTR)EG(o)->Width;
     imgtags[1].ti_Data = (IPTR)EG(o)->Height;
+
     EG(o)->GadgetRender = NewObjectA(NULL, FRAMEICLASS, imgtags);
     if (!EG(o)->GadgetRender)
     {
@@ -93,8 +101,13 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
 
 VOID cycle_dispose(Class *cl, Object *o, Msg msg)
 {
+    struct CycleData *data = INST_DATA(cl, o);
+    
     if (EG(o)->GadgetRender)
         DisposeObject(EG(o)->GadgetRender);
+	
+    if (data->font) CloseFont(data->font);
+    
     DoSuperMethodA(cl,o,msg);
 }
 
@@ -103,7 +116,7 @@ VOID cycle_dispose(Class *cl, Object *o, Msg msg)
 IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 {
     struct CycleData *data = INST_DATA(cl, o);
-    IPTR   retval = 1;
+    IPTR    	     retval = 1;
 
     switch(msg->opg_AttrID)
     {
@@ -127,10 +140,11 @@ IPTR cycle_get(Class *cl, Object *o, struct opGet *msg)
 
 IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 {
-    struct TagItem *tag, *taglist = msg->ops_AttrList;
-    BOOL rerender = FALSE;
-    IPTR result;
-    struct CycleData *data = INST_DATA(cl, o);
+    struct CycleData 	*data = INST_DATA(cl, o);
+    struct TagItem  	*tag, *taglist = msg->ops_AttrList;
+    STRPTR  	    	*mylabels;
+    BOOL    	    	rerender = FALSE;
+    IPTR    	    	result;
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
@@ -138,9 +152,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
     {
         switch(tag->ti_Tag)
         {
-            case AROSCYCLE_Labels:{
-        	STRPTR *mylabels;
-
+            case AROSCYCLE_Labels:
         	data->labels = (STRPTR *)tag->ti_Data;
         	data->numlabels = 0;
 		data->active = 0;
@@ -154,7 +166,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
                     }
         	}
         	rerender = TRUE;
-        	break;}
+        	break;
 
             case AROSCYCLE_Active:
         	data->active = tag->ti_Data;
@@ -176,7 +188,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
         if(data->active > data->numlabels-1)
 	    data->active = 0;
 
-	kprintf("Rerendering\n");
+	//kprintf("Rerendering\n");
 
         rport = ObtainGIRPort(msg->ops_GInfo);
         if(rport)
@@ -212,6 +224,8 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
                    EG(o)->Flags&GFLG_SELECTED?IDS_SELECTED:IDS_NORMAL,
                    msg->gpr_GInfo->gi_DrInfo);
 
+    if (data->font) SetFont(msg->gpr_RPort, data->font);
+    
     if (data->labels)
         renderlabel(AROSCycleBase, EG(o),
                     data->labels[data->active],
@@ -230,12 +244,14 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
 
 IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
 {	
-    struct CycleData *data;    
-    struct RastPort *rport;
-    IPTR retval;
+    struct CycleData 	*data;    
+    struct RastPort 	*rport;
+    IPTR    	    	retval;
     
     data = INST_DATA(cl, o);
+    
     EG(o)->Flags |= GFLG_SELECTED;
+    
     rport = ObtainGIRPort(msg->gpi_GInfo);
     if (rport)
     {
@@ -254,9 +270,9 @@ IPTR cycle_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 IPTR cycle_handleinput(Class *cl, Object *o, struct gpInput *msg)
 {
-    IPTR retval = GMR_MEACTIVE;
-    struct RastPort *rport;
-    struct CycleData *data;
+    struct RastPort 	*rport;
+    struct CycleData 	*data;
+    IPTR    	    	retval = GMR_MEACTIVE;
 
     data = INST_DATA(cl, o);
     
@@ -339,11 +355,12 @@ IPTR cycle_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     struct RastPort *rport;
 
     EG(o)->Flags &= ~GFLG_SELECTED;
+
     rport = ObtainGIRPort(msg->gpgi_GInfo);
     if (rport)
     {
-        struct gpRender rmsg =
-            { GM_RENDER, msg->gpgi_GInfo, rport, GREDRAW_UPDATE };
+        struct gpRender rmsg = { GM_RENDER, msg->gpgi_GInfo, rport, GREDRAW_UPDATE };
+	
         DoMethodA(o, (Msg)&rmsg);
         ReleaseGIRPort(rport);
     }

@@ -1,5 +1,15 @@
+/*
+    (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+*/
+
+/***********************************************************************************/
+
 #ifndef AROSCYCLE_INTERN_H
 #define AROSCYCLE_INTERN_H
+
+/***********************************************************************************/
 
 #undef  AROS_ALMOST_COMPATIBLE 
 #define AROS_ALMOST_COMPATIBLE 
@@ -30,8 +40,7 @@
 #   include <intuition/gadgetclass.h>
 #endif
 
-/* Predeclaration */
-struct CycleBase_intern;
+/***********************************************************************************/
 
 #define GLOBAL_INTUIBASE
 
@@ -41,44 +50,55 @@ struct CycleBase_intern;
 /* Support */
 #define G(obj) ((struct Gadget *)(obj))
 
+/***********************************************************************************/
+
+/* Predeclaration */
+struct CycleBase_intern;
 
 /* CycleClass definitions */
 struct CycleData
 {
-    UWORD active;
-    UWORD numlabels;
-    STRPTR *labels;
+    STRPTR  	    *labels;
+    struct TextFont *font;
+    UWORD   	    active;
+    UWORD   	    numlabels;
 };
 
+/***********************************************************************************/
 
 /* Prototypes */
+
 void drawdisabledpattern(struct CycleBase_intern *AROSCycleBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 void renderlabel (struct CycleBase_intern *AROSCycleBase, struct Gadget *gad, STRPTR label, struct RastPort *rport, struct GadgetInfo *ginfo);
 BOOL pointingadget(struct Gadget *gad, struct GadgetInfo *gi, WORD x, WORD y);
 
+/***********************************************************************************/
 
 /* Library stuff */
 struct CycleBase_intern
 {
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-    struct Library	*dosbase;
+    struct Library 	    library;
+    struct ExecBase	    *sysbase;
+    BPTR		    seglist;
+    struct Library	    *dosbase;
 
     #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
+    struct IntuitionBase    *intuitionbase;
     #endif
-    struct GfxBase	*gfxbase;
-    struct Library	*utilitybase;
+    struct GfxBase	    *gfxbase;
+    struct Library	    *utilitybase;
     
-    struct IClass	*classptr;
+    struct IClass	    *classptr;
 	
 };
+
+/***********************************************************************************/
 
 /* The following typedefs are necessary, because the names of the global
    variables storing the library base pointers	and the corresponding
    structs are equal.
    This is a hack, of course. */
+   
 typedef struct GfxBase GraphicsBase;
 typedef struct IntuitionBase IntuiBase;
 
@@ -104,4 +124,8 @@ typedef struct IntuitionBase IntuiBase;
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct CycleBase_intern *, AROSCycleBase, 3, AROSCycle)
 
+/***********************************************************************************/
+
 #endif /* AROSCYCLE_INTERN_H */
+
+/***********************************************************************************/

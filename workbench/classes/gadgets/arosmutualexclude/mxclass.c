@@ -1,10 +1,12 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: AROS specific mutualexclude class implementation.
     Lang: english
 */
+
+/***********************************************************************************/
 
 #define USE_BOOPSI_STUBS
 #include <exec/libraries.h>
@@ -36,49 +38,57 @@
 
 #include <clib/boopsistubs.h>
 
-
+/***********************************************************************************/
 
 void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
 {
-    struct MXData *data = INST_DATA(cl, obj);
+    struct MXData  *data = INST_DATA(cl, obj);
     struct TagItem *tag, *taglist = msg->ops_AttrList;
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist))) {
-	switch (tag->ti_Tag) {
-	case GA_DrawInfo:
-	    data->dri = (struct DrawInfo *) tag->ti_Data;
-	    break;
-        case GA_TextAttr:
-            data->tattr = (struct TextAttr *) tag->ti_Data;
-            break;
-        case GA_LabelPlace:
-            data->labelplace = (LONG) tag->ti_Data;
-            break;
-	case AROSMX_Active:
-	    data->active = tag->ti_Data;
-	    break;
-	case AROSMX_Labels:
-	    data->labels = (STRPTR *) tag->ti_Data;
-	    data->numlabels = 0;
-	    while (data->labels[data->numlabels])
-		data->numlabels++;
-	    break;
-	case AROSMX_Spacing:
-	    data->spacing = tag->ti_Data;
-	    break;
-        case AROSMX_TickLabelPlace:
-            data->ticklabelplace = (LONG) tag->ti_Data;
-	    break;
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    {
+	switch (tag->ti_Tag)
+	{
+	    case GA_DrawInfo:
+		data->dri = (struct DrawInfo *) tag->ti_Data;
+		break;
+		
+            case GA_TextAttr:
+        	data->tattr = (struct TextAttr *) tag->ti_Data;
+        	break;
+		
+            case GA_LabelPlace:
+        	data->labelplace = (LONG) tag->ti_Data;
+        	break;
+		
+	    case AROSMX_Active:
+		data->active = tag->ti_Data;
+		break;
+		
+	    case AROSMX_Labels:
+		data->labels = (STRPTR *) tag->ti_Data;
+		data->numlabels = 0;
+		while (data->labels[data->numlabels])
+		    data->numlabels++;
+		break;
+		
+	    case AROSMX_Spacing:
+		data->spacing = tag->ti_Data;
+		break;
+		
+            case AROSMX_TickLabelPlace:
+        	data->ticklabelplace = (LONG) tag->ti_Data;
+		break;
 	}
     }
 }
 
+/***********************************************************************************/
 
 Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 {
-    struct MXData *data;
-    Object *obj;
-    struct TagItem tags[] =
+    struct MXData   *data;
+    struct TagItem  tags[] =
     {
 	{IA_Width, 0},
 	{IA_Height, 0},
@@ -86,6 +96,7 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
 	{SYSIA_Which, MXIMAGE},
 	{TAG_DONE, 0L}
     };
+    Object  	    *obj;
 
     obj = (Object *) DoSuperMethodA(cl, (Object *) rootcl, (Msg)msg);
     if (!obj)
@@ -103,6 +114,9 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
     data->ticklabelplace = GV_LabelPlace_Right;
     mx_setnew(cl, obj, msg);
 
+    if (data->tattr)
+    	data->font = OpenFont(data->tattr);
+	
     /* Calculate fontheight */
     if (data->tattr)
         data->fontheight = data->tattr->ta_YSize;
@@ -129,27 +143,32 @@ Object *mx_new(Class * cl, Class * rootcl, struct opSet *msg)
     return obj;
 }
 
+/***********************************************************************************/
 
 IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
 {
-    IPTR retval = FALSE;
-    struct MXData *data = INST_DATA(cl, obj);
-    struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct MXData   *data = INST_DATA(cl, obj);
+    struct TagItem  *tag, *taglist = msg->ops_AttrList;
+    IPTR    	    retval = FALSE;
 
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist))) {
-	switch (tag->ti_Tag) {
-        case GA_Disabled:
-            retval = TRUE;
-            break;
-	case AROSMX_Active:
-            if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels)) {
-                data->active = tag->ti_Data;
-                retval = TRUE;
-            }
-            break;
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    {
+	switch (tag->ti_Tag)
+	{
+            case GA_Disabled:
+        	retval = TRUE;
+        	break;
+		
+	    case AROSMX_Active:
+        	if ((tag->ti_Data >= 0) && (tag->ti_Data < data->numlabels))
+		{
+                    data->active = tag->ti_Data;
+                    retval = TRUE;
+        	}
+        	break;
 	}
     }
 
@@ -158,7 +177,8 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
         struct RastPort *rport;
 
 	rport = ObtainGIRPort(msg->ops_GInfo);
-	if (rport) {
+	if (rport)
+	{
 	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_REDRAW);
 	    ReleaseGIRPort(rport);
 	    retval = FALSE;
@@ -168,26 +188,33 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
     return retval;
 }
 
+/***********************************************************************************/
 
 IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 {
-    struct MXData *data = INST_DATA(cl, obj);
-    WORD ypos = G(obj)->TopEdge;
-    UWORD maxtextwidth;
-    int y;
+    struct MXData   *data = INST_DATA(cl, obj);
+    WORD    	    ypos = G(obj)->TopEdge;
+    UWORD   	    maxtextwidth;
+    int     	    y;
 
-    if (msg->gpr_Redraw == GREDRAW_UPDATE) {
+    if (msg->gpr_Redraw == GREDRAW_UPDATE)
+    {
         /* Only redraw the current and the last tick activated */
         DrawImageState(msg->gpr_RPort, data->mximage,
                        G(obj)->LeftEdge, ypos + data->active * (data->fontheight + data->spacing),
                        IDS_NORMAL, data->dri);
+
         DrawImageState(msg->gpr_RPort, data->mximage,
                        G(obj)->LeftEdge, ypos + data->newactive * (data->fontheight + data->spacing),
                        IDS_SELECTED, data->dri);
-    } else {
+    }
+    else
+    {
         /* Full redraw */
         STRPTR *labels;
 	WORD minx, miny, maxx, maxy;
+	
+	if (data->font) SetFont(msg->gpr_RPort, data->font);
 	
         /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
@@ -219,9 +246,10 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 	maxx = minx + G(obj)->Width - 1;
 	maxy = miny + G(obj)->Height - 1;
 	
-        for (labels=data->labels; *labels; labels++) {
-	    struct TextExtent te;
-	    WORD x, y, width, height, len;
+        for (labels=data->labels; *labels; labels++)
+	{
+	    struct TextExtent 	te;
+	    WORD    	    	x, y, width, height, len;
 	    
 	    x = G(obj)->LeftEdge;
 	    y = ypos;
@@ -309,12 +337,13 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
     return TRUE;
 }
 
+/***********************************************************************************/
 
 IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
 {
-    IPTR retval = GMR_NOREUSE;
-    struct MXData *data = INST_DATA(cl, obj);
-    int y, blobheight = data->spacing + data->fontheight;
+    struct MXData   *data = INST_DATA(cl, obj);
+    int     	    y, blobheight = data->spacing + data->fontheight;
+    IPTR    	    retval = GMR_NOREUSE;
 
     D(bug("blobheight: %d\n", blobheight));
 
@@ -344,6 +373,7 @@ IPTR mx_goactive(Class * cl, Object * obj, struct gpInput * msg)
     return retval;
 }
 
+/***********************************************************************************/
 
 AROS_UFH3S(IPTR, dispatch_mxclass,
 	  AROS_UFHA(Class *, cl, A0),
@@ -351,47 +381,56 @@ AROS_UFH3S(IPTR, dispatch_mxclass,
 	  AROS_UFHA(Msg, msg, A1)
 )
 {
-    IPTR retval = 0UL;
-    struct MXData *data;
+    struct MXData   *data;
+    IPTR    	    retval = 0UL;
 
-    switch (msg->MethodID) {
-    case OM_NEW:
-	retval = (IPTR) mx_new(cl, (Class *) obj, (struct opSet *) msg);
-	break;
+    switch (msg->MethodID)
+    {
+	case OM_NEW:
+	    retval = (IPTR) mx_new(cl, (Class *) obj, (struct opSet *) msg);
+	    break;
 
-    case OM_SET:
-        retval = mx_set(cl, obj, (struct opSet *)msg);
-        break;
+	case OM_DISPOSE:
+            data = INST_DATA(cl, obj);
+    	    if (data->font) CloseFont(data->font);
+	    DoSuperMethodA(cl, obj, msg);
+	    break;
+
+	case OM_SET:
+            retval = mx_set(cl, obj, (struct opSet *)msg);
+            break;
 
 #define OPG(x) ((struct opGet *)(x))
-    case OM_GET:
-        data = INST_DATA(cl, obj);
-        if (OPG(msg)->opg_AttrID == GTMX_Active) {
-            *OPG(msg)->opg_Storage = data->active;
-            retval = 1UL;
-        } else
-            retval = DoSuperMethodA(cl, obj, msg);
-        break;
+	case OM_GET:
+            data = INST_DATA(cl, obj);
+            if (OPG(msg)->opg_AttrID == GTMX_Active) {
+        	*OPG(msg)->opg_Storage = data->active;
+        	retval = 1UL;
+            } else
+        	retval = DoSuperMethodA(cl, obj, msg);
+            break;
 
-    case GM_RENDER:
-	retval = mx_render(cl, obj, (struct gpRender *) msg);
-	break;
+	case GM_RENDER:
+	    retval = mx_render(cl, obj, (struct gpRender *) msg);
+	    break;
 
-    case GM_GOACTIVE:
-        retval = mx_goactive(cl, obj, (struct gpInput *) msg);
-        break;
+	case GM_GOACTIVE:
+            retval = mx_goactive(cl, obj, (struct gpInput *) msg);
+            break;
 
-    default:
-	retval = DoSuperMethodA(cl, obj, msg);
-	break;
+	default:
+	    retval = DoSuperMethodA(cl, obj, msg);
+	    break;
     }
 
     return retval;
 }
 
-/*************************** Classes *****************************/
+/***********************************************************************************/
 
 #undef AROSMutualExcludeBase
+
+/***********************************************************************************/
 
 struct IClass *InitMutualExcludeClass (struct MXBase_intern * AROSMutualExcludeBase)
 {
@@ -408,3 +447,6 @@ struct IClass *InitMutualExcludeClass (struct MXBase_intern * AROSMutualExcludeB
 
     return (cl);
 }
+
+/***********************************************************************************/
+
