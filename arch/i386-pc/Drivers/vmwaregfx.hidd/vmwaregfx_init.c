@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: vmware gfx Hidd for standalone i386 AROS
@@ -52,7 +52,7 @@ struct VMWareGfxBase
 
 #undef  SDEBUG
 #undef  DEBUG
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef SysBase
@@ -129,7 +129,6 @@ struct TagItem findpcitags[] =
 {
 	{tHidd_PCI_VendorID, VENDOR_VMWARE},
 	{tHidd_PCI_Class,       3}, /* Display */
-	{tHidd_PCI_SubClass,  128}, /* Other */
 	{tHidd_PCI_Interface,   0},
 	{TAG_DONE,            0UL}
 	
@@ -138,9 +137,21 @@ struct TagItem findpcitags[] =
 	res = ptr = HIDD_PCI_FindDevice(xsd->pcihidd, findpcitags);
 	while (*ptr)
 	{
-		if ((*ptr)->DeviceID == DEVICE_VMWARE0710)
+		if (
+				((*ptr)->SubClass == 0x80) && /* other */
+				((*ptr)->DeviceID == DEVICE_VMWARE0710)
+			)
 		{
-			D(bug("found vmwareSVGA device\n"));
+			D(bug("found vmwareSVGA 0710 device\n"));
+			xsd->card = *ptr;
+			break;
+		}
+		else if (
+						((*ptr)->SubClass == 0x00) && /* VGA */
+						((*ptr)->DeviceID == DEVICE_VMWARE0405)
+					)
+		{
+			D(bug("found vmwareSVGA 0405 device\n"));
 			xsd->card = *ptr;
 			break;
 		}
@@ -149,7 +160,7 @@ struct TagItem findpcitags[] =
 	HIDD_PCI_FreeQuery(xsd->pcihidd, res);
 	if (xsd->card)
 	{
-		if (!initVMWareGfxHW(&xsd->data))
+		if (!initVMWareGfxHW(&xsd->data, xsd->card))
 		{
 			D(bug("init hw error (unsupported vmware svga)\n"));
 			xsd->card = NULL;

@@ -1,3 +1,13 @@
+/*
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: vmware svga hardware functions
+    Lang: English
+*/
+
+
+//#include <asm/io.h>
 #define DEBUG 1 /* no SysBase */
 #include <aros/debug.h>
 
@@ -25,6 +35,9 @@ void vmwareWriteReg(struct HWData *data, ULONG reg, ULONG val) {
 	outl(data->valueReg, val);
 }
 
+#undef SysBase
+extern struct ExecBase *SysBase;
+
 ULONG getVMWareSVGAID(struct HWData *data) {
 ULONG id;
 
@@ -36,8 +49,8 @@ ULONG id;
 	id = vmwareReadReg(data, SVGA_REG_ID);
 	if (id == SVGA_ID_1)
 		return id;
-	vmwareWriteReg(data, SVGA_REG_ID, SVGA_ID_0);
-	id = vmwareReadReg(data, SVGA_REG_ID);
+//	vmwareWriteReg(data, SVGA_REG_ID, SVGA_ID_0);
+//	id = vmwareReadReg(data, SVGA_REG_ID);
 	if (id == SVGA_ID_0)
 		return id;
 	return SVGA_ID_INVALID;
@@ -80,11 +93,21 @@ ULONG *fifo;
 		fifo[SVGA_FIFO_NEXT_CMD] = fifo[SVGA_FIFO_MIN];
 }
 
-BOOL initVMWareGfxHW(struct HWData *data) {
+BOOL initVMWareGfxHW(struct HWData *data, HIDDT_PCI_Device *device) {
+ULONG *ba;
 ULONG id;
 
-	data->indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT*sizeof(ULONG);
-	data->valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT*sizeof(ULONG);
+	if (device->DeviceID == DEVICE_VMWARE0710)
+	{
+		data->indexReg = SVGA_LEGACY_BASE_PORT + SVGA_INDEX_PORT*sizeof(ULONG);
+		data->valueReg = SVGA_LEGACY_BASE_PORT + SVGA_VALUE_PORT*sizeof(ULONG);
+	}
+	else
+	{
+		ULONG mmio = (ULONG)device->BaseAddress[0] & 0xfffffff0;
+		data->indexReg = mmio+SVGA_INDEX_PORT;
+		data->valueReg = mmio+SVGA_VALUE_PORT;
+	}
 	id = getVMWareSVGAID(data);
 	if ((id == SVGA_ID_0) || (id == SVGA_ID_INVALID))
 	{
