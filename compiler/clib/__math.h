@@ -70,7 +70,6 @@ struct exception
 #endif
 
 extern double __kernel_standard (double, double, int);
-extern int    matherr		(struct exception *);
 extern double scalbn		(double, int);
 extern double copysign		(double x, double y);
 extern double __ieee754_pow	(double, double);
@@ -78,5 +77,9 @@ extern double __ieee754_log10	(double);
 extern double __ieee754_log	(double);
 extern int    isinf		(double);
 extern int    __isinf		(double);
+
+#if 0 /* Unused */
+extern int    matherr		(struct exception *);
+#endif
 
 #endif /* __MATH_H */
