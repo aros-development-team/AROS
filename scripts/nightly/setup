@@ -55,7 +55,7 @@ fi
 
 alias makedir='execute mkdir -p'
 alias  delete='execute rm -rf'
-alias    copy='execute cp -pR'
+alias    copy='execute cp -a'
 alias    move='execute mv -f'
 alias   prune='execute find . -name CVS -prune -exec rm -rf "{}" ";"'
 
