@@ -23,6 +23,7 @@ FUNCTIONS	:= \
 	ieeedplog10 \
 	ieeedppow \
 	ieeedpsin \
+	ieeedpsincos \
 	ieeedpsinh \
 	ieeedpsqrt \
 	ieeedptanh \
