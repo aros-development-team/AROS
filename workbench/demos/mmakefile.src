@@ -14,7 +14,7 @@ ifeq ($(FLAVOUR),native)
 FILES	:= \
     font2c gtdemo helloworld inquire intuitext librarytest listfonts \
     keymaptest mxgads oopdemo readicon regiontest shadowborder sift strtest \
-    ooplib consoledemo serialtest window test_text \
+    consoledemo serialtest window test_text \
     clippingtest
 
 else
@@ -51,7 +51,6 @@ FILES	:= \
     mxgads \
     notify \
     oopdemo \
-    ooplib \
     palettedemo \
     readicon \
     regiontest \
