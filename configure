@@ -308,7 +308,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP PYTHON FOR IF TEST EGREP LIBOBJS TARGET_CC TARGET_AS STATIC_LD SHARED_LD KERNEL_LD AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_ld aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_target_arch aros_target_cpu aros_target_incl aros_target_cc aros_target_cc_includes aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_target_cflags aros_target_aflags aros_target_ld aros_target_ldflags aros_static_cflags aros_static_aflags aros_static_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT CPP AWK MMAKE HOST_AR HOST_RANLIB RM CP MV ECHO MKDIR TOUCH SORT UNIQ NOP CAT BISON PNGTOPNM PPMTOILBM STRIP PYTHON PYTHON_VERSION PYTHON_PREFIX PYTHON_EXEC_PREFIX PYTHON_PLATFORM pythondir pkgpythondir pyexecdir pkgpyexecdir FOR IF TEST EGREP LIBOBJS TARGET_CC TARGET_AS STATIC_LD SHARED_LD KERNEL_LD AR RANLIB NM NM_PLAIN OBJDUMP OBJCOPY aros_arch aros_cpu aros_flavour aros_flavour_uc TOPDIR aros_host_arch aros_host_cpu aros_host_cc aros_host_ld aros_host_make aros_host_cflags aros_host_ldflags aros_host_debug aros_host_mkdep aros_host_mkargs aros_host_exe_suffix aros_host_lib_suffix aros_target_arch aros_target_cpu aros_target_incl aros_target_cc aros_target_cc_includes aros_target_objdump aros_target_objcopy aros_target_strip aros_target_as aros_target_nm aros_shared_default aros_object_format aros_compiler_libs aros_target_cflags aros_target_aflags aros_target_ld aros_target_ldflags aros_static_cflags aros_static_aflags aros_static_ldflags aros_shared_cflags aros_shared_aflags aros_shared_ldflags aros_kernel_ldflags aros_debug_cflags aros_debug_aflags aros_debug_ldflags aros_target_genmap aros_gui_libdir aros_gui_ldflags aros_gui_libflags aros_gui_incdir aros_gui_ccflags aros_default_wbwidth aros_default_wbheight aros_default_wbdepth DO_XSHM_SUPPORT aros_bochs_hack aros_serial_debug aros_palm_debug_hack aros_nesting_supervisor aros_debug aros_mungwall_debug aros_stack_debug aros_modules_debug ignore_undefined_symbols gcc_target_cpu LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -3454,33 +3454,100 @@ echo "$as_me: error: strip is required to build AROS. Please install and run con
    { (exit 1); exit 1; }; }
 fi
 
-# Extract the first word of "python", so it can be a program name with args.
-set dummy python; ac_word=$2
-echo "$as_me:$LINENO: checking for $ac_word" >&5
-echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
-if test "${ac_cv_prog_PYTHON+set}" = set; then
+
+
+
+
+        if test -n "$PYTHON"; then
+      # If the user set $PYTHON, use it and don't search something else.
+      echo "$as_me:$LINENO: checking whether $PYTHON version >= 2.2.1" >&5
+echo $ECHO_N "checking whether $PYTHON version >= 2.2.1... $ECHO_C" >&6
+      prog="import sys, string
+# split strings by '.' and convert to numeric.  Append some zeros
+# because we need at least 4 digits for the hex conversion.
+minver = map(int, string.split('2.2.1', '.')) + [0, 0, 0]
+minverhex = 0
+for i in xrange(0, 4): minverhex = (minverhex << 8) + minver[i]
+sys.exit(sys.hexversion < minverhex)"
+  if { echo "$as_me:$LINENO: $PYTHON -c "$prog"" >&5
+   ($PYTHON -c "$prog") >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; then
+  echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+else
+  { { echo "$as_me:$LINENO: error: too old" >&5
+echo "$as_me: error: too old" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+    else
+      # Otherwise, try each interpreter until we find one that satisfies
+      # VERSION.
+      echo "$as_me:$LINENO: checking for a Python interpreter with version >= 2.2.1" >&5
+echo $ECHO_N "checking for a Python interpreter with version >= 2.2.1... $ECHO_C" >&6
+if test "${am_cv_pathless_PYTHON+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-  if test -n "$PYTHON"; then
-  ac_cv_prog_PYTHON="$PYTHON" # Let the user override the test.
+
+	for am_cv_pathless_PYTHON in python python2 python2.3 python2.2 python2.1 python2.0 python1.6 python1.5 : ; do
+          if test "$am_cv_pathless_PYTHON" = : ; then
+            { { echo "$as_me:$LINENO: error: no suitable Python interpreter found" >&5
+echo "$as_me: error: no suitable Python interpreter found" >&2;}
+   { (exit 1); exit 1; }; }
+	  fi
+          prog="import sys, string
+# split strings by '.' and convert to numeric.  Append some zeros
+# because we need at least 4 digits for the hex conversion.
+minver = map(int, string.split('2.2.1', '.')) + [0, 0, 0]
+minverhex = 0
+for i in xrange(0, 4): minverhex = (minverhex << 8) + minver[i]
+sys.exit(sys.hexversion < minverhex)"
+  if { echo "$as_me:$LINENO: $am_cv_pathless_PYTHON -c "$prog"" >&5
+   ($am_cv_pathless_PYTHON -c "$prog") >&5 2>&5
+   ac_status=$?
+   echo "$as_me:$LINENO: \$? = $ac_status" >&5
+   (exit $ac_status); }; then
+  break
+fi
+
+        done
+fi
+echo "$as_me:$LINENO: result: $am_cv_pathless_PYTHON" >&5
+echo "${ECHO_T}$am_cv_pathless_PYTHON" >&6
+      # Set $PYTHON to the absolute path of $am_cv_pathless_PYTHON.
+      # Extract the first word of "$am_cv_pathless_PYTHON", so it can be a program name with args.
+set dummy $am_cv_pathless_PYTHON; ac_word=$2
+echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6
+if test "${ac_cv_path_PYTHON+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
 else
-as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+  case $PYTHON in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_PYTHON="$PYTHON" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
 for as_dir in $PATH
 do
   IFS=$as_save_IFS
   test -z "$as_dir" && as_dir=.
   for ac_exec_ext in '' $ac_executable_extensions; do
   if $as_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
-    ac_cv_prog_PYTHON="python"
+    ac_cv_path_PYTHON="$as_dir/$ac_word$ac_exec_ext"
     echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
     break 2
   fi
 done
 done
 
+  ;;
+esac
 fi
-fi
-PYTHON=$ac_cv_prog_PYTHON
+PYTHON=$ac_cv_path_PYTHON
+
 if test -n "$PYTHON"; then
   echo "$as_me:$LINENO: result: $PYTHON" >&5
 echo "${ECHO_T}$PYTHON" >&6
@@ -3489,6 +3556,76 @@ else
 echo "${ECHO_T}no" >&6
 fi
 
+      am_display_PYTHON=$am_cv_pathless_PYTHON
+    fi
+
+
+
+  echo "$as_me:$LINENO: checking for $am_display_PYTHON version" >&5
+echo $ECHO_N "checking for $am_display_PYTHON version... $ECHO_C" >&6
+if test "${am_cv_python_version+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_version=`$PYTHON -c "import sys; print sys.version[:3]"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_version" >&5
+echo "${ECHO_T}$am_cv_python_version" >&6
+  PYTHON_VERSION=$am_cv_python_version
+
+
+
+  PYTHON_PREFIX='${prefix}'
+
+  PYTHON_EXEC_PREFIX='${exec_prefix}'
+
+
+
+  echo "$as_me:$LINENO: checking for $am_display_PYTHON platform" >&5
+echo $ECHO_N "checking for $am_display_PYTHON platform... $ECHO_C" >&6
+if test "${am_cv_python_platform+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_platform=`$PYTHON -c "import sys; print sys.platform"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_platform" >&5
+echo "${ECHO_T}$am_cv_python_platform" >&6
+  PYTHON_PLATFORM=$am_cv_python_platform
+
+
+
+
+                echo "$as_me:$LINENO: checking for $am_display_PYTHON script directory" >&5
+echo $ECHO_N "checking for $am_display_PYTHON script directory... $ECHO_C" >&6
+if test "${am_cv_python_pythondir+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,prefix='$PYTHON_PREFIX')" 2>/dev/null ||
+     echo "$PYTHON_PREFIX/lib/python$PYTHON_VERSION/site-packages"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_pythondir" >&5
+echo "${ECHO_T}$am_cv_python_pythondir" >&6
+  pythondir=$am_cv_python_pythondir
+
+
+
+  pkgpythondir=\${pythondir}/$PACKAGE
+
+
+            echo "$as_me:$LINENO: checking for $am_display_PYTHON extension module directory" >&5
+echo $ECHO_N "checking for $am_display_PYTHON extension module directory... $ECHO_C" >&6
+if test "${am_cv_python_pyexecdir+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  am_cv_python_pyexecdir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1,0,prefix='$PYTHON_EXEC_PREFIX')" 2>/dev/null ||
+     echo "${PYTHON_EXEC_PREFIX}/lib/python${PYTHON_VERSION}/site-packages"`
+fi
+echo "$as_me:$LINENO: result: $am_cv_python_pyexecdir" >&5
+echo "${ECHO_T}$am_cv_python_pyexecdir" >&6
+  pyexecdir=$am_cv_python_pyexecdir
+
+
+
+  pkgpyexecdir=\${pyexecdir}/$PACKAGE
 
 
 
@@ -7996,6 +8133,14 @@ s,@PNGTOPNM@,$PNGTOPNM,;t t
 s,@PPMTOILBM@,$PPMTOILBM,;t t
 s,@STRIP@,$STRIP,;t t
 s,@PYTHON@,$PYTHON,;t t
+s,@PYTHON_VERSION@,$PYTHON_VERSION,;t t
+s,@PYTHON_PREFIX@,$PYTHON_PREFIX,;t t
+s,@PYTHON_EXEC_PREFIX@,$PYTHON_EXEC_PREFIX,;t t
+s,@PYTHON_PLATFORM@,$PYTHON_PLATFORM,;t t
+s,@pythondir@,$pythondir,;t t
+s,@pkgpythondir@,$pkgpythondir,;t t
+s,@pyexecdir@,$pyexecdir,;t t
+s,@pkgpyexecdir@,$pkgpyexecdir,;t t
 s,@FOR@,$FOR,;t t
 s,@IF@,$IF,;t t
 s,@TEST@,$TEST,;t t
