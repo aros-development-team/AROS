@@ -140,7 +140,7 @@ static void _zune_focus_new(Object *obj, int type)
     }
     else
     {
-    	SetDrPt(rp,0x5555);
+    	SetDrPt(rp,0xF0F0);
     }
 
     Move(rp, x1, y1);
