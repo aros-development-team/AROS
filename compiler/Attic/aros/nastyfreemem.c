@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/11 16:50:52  digulla
+    Moved PurgeChunk() to here to avoid problems during link
+
     Revision 1.2  1996/08/16 14:03:26  digulla
     NastyFreeMem() should itself call FreeMem, no matter what :)
 
@@ -67,4 +70,20 @@ extern void PurgeChunk (ULONG *, ULONG);
     PurgeChunk ((ULONG *)mem, size);
     FreeMem (mem, size);
 } /* NastyFreeMem */
+
+
+/* Don't use #if on this one since it may be used by some other routine, too.
+    It's not static by design. */
+void PurgeChunk (ULONG * ptr, ULONG size)
+{
+    while (size >= sizeof (ULONG))
+    {
+#if SIZEOFULONG > 4
+	*ptr ++ = 0xDEAFBEEFDEADBEEFL;
+#else
+	*ptr ++ = 0xDEAFBEEFL;
+#endif
+	size -= sizeof (ULONG);
+    }
+}
 
