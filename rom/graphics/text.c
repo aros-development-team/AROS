@@ -134,7 +134,7 @@ void BltTemplateBasedText(struct RastPort *rp, STRPTR text, ULONG len,
 	    for(bold = 0; bold <= is_bold; bold++)
 	    {
 	    	WORD wx;
-		WORD italicshift, italiccheck;
+		WORD italicshift, italiccheck = 0;
 		
 		if (is_italic)
 		{
