@@ -60,10 +60,11 @@ BPTR LoadSeg_AOS(BPTR file)
   if (Seek(file, 0, OFFSET_BEGINNING) < 0)
     goto end;
   while(!read_block(file, &hunktype, sizeof(hunktype))) {
-    switch(hunktype) {
+    switch(hunktype & 0xFFFFFF) {
       ULONG tmp, req;
 
     case HUNK_SYMBOL:
+      D(bug("HUNK_SYMBOL (skipping)\n"));
       while(!read_block(file, &count, sizeof(count)) && count) {
 	if (Seek(file, (count+1)*4, OFFSET_CURRENT) < 0)
 	  goto end;
@@ -99,34 +100,40 @@ BPTR LoadSeg_AOS(BPTR file)
       if (read_block(file, &first, sizeof(first)))
 	goto end;
       D(bug("\tFirst hunk: %ld\n", first));
-      curhunk = first;
+      curhunk = 0 /* first */;
       if (read_block(file, &last, sizeof(last)))
 	goto end;
       D(bug("\tLast hunk: %ld\n", last));
-      for (i = first; i <= last; i++) {
+      for (i = 0 /* first */; i < numhunks /* last */; i++) {
 	if (read_block(file, &count, sizeof(count)))
 	  goto end;
-	tmp = count & 0xC0000000;
-	count &= 0x3FFFFFFF;
+	tmp = count & 0xFF000000;
+	count &= 0xFFFFFF;
 	D(bug("\tHunk %d size: 0x%06lx bytes in ", i, count*4));
+	req = MEMF_CLEAR;
 	switch(tmp) {
-	case 0x80000000:
+	case HUNKF_FAST:
 	  D(bug("FAST"));
-	  req = MEMF_FAST;
+	  req |= MEMF_FAST;
 	  break;
-	case 0x40000000:
+	case HUNKF_CHIP:
 	  D(bug("CHIP"));
-	  req = MEMF_CHIP;
+	  req |= MEMF_CHIP;
+	  break;
+	case HUNKF_ADVISORY:
+	  D(bug("ADVISORY"));
+	  if (read_block(file, &req, sizeof(req)))
+	    goto end;
 	  break;
 	default:
 	  D(bug("ANY"));
-	  req = MEMF_ANY;
+	  req |= MEMF_ANY;
 	  break;
 	}
 	D(bug(" memory\n"));
 	hunktab[i].size = count * 4;
 	hunktab[i].memory = (UBYTE *)AllocVec(hunktab[i].size + sizeof(BPTR),
-	                                      (req | MEMF_CLEAR));
+					      req);
 	if (hunktab[i].memory == NULL)
 	  ERROR(ERROR_NO_FREE_STORE);
 	hunktab[i].memory += sizeof(BPTR);
@@ -137,18 +144,21 @@ BPTR LoadSeg_AOS(BPTR file)
     case HUNK_BSS:
       if (read_block(file, &count, sizeof(count)))
 	goto end;
-      tmp = count & 0xC0000000;
-      count &= 0x3fffffff;
       D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
-	    segtypes[hunktype-HUNK_CODE], curhunk, count*4));
-      switch(tmp) {
-      case 0x8000000:
+	    segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
+      switch(hunktype & 0xFF000000) {
+      case HUNKF_FAST:
 	D(bug("FAST"));
 	req = MEMF_FAST;
 	break;
-      case 0x40000000:
+      case HUNKF_CHIP:
 	D(bug("CHIP"));
 	req = MEMF_CHIP;
+	break;
+      case HUNKF_ADVISORY:
+	D(bug("ADVISORY"));
+	if (read_block(file, &req, sizeof(req)))
+	  goto end;
 	break;
       default:
 	D(bug("ANY"));
@@ -156,7 +166,7 @@ BPTR LoadSeg_AOS(BPTR file)
 	break;
       }
       D(bug(" memory\n"));
-      if (hunktype != HUNK_BSS && count)
+      if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
 	if (read_block(file, hunktab[curhunk].memory, count*4))
 	  goto end;
       break;
@@ -188,18 +198,33 @@ BPTR LoadSeg_AOS(BPTR file)
       ++curhunk;
       break;
     case HUNK_RELOC16:
+      D(bug("HUNK_RELOC16 not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_RELOC8:
+      D(bug("HUNK_RELOC8 not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_NAME:
+      D(bug("HUNK_NAME not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_EXT:
+      D(bug("HUNK_EXT not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_DEBUG:
+      D(bug("HUNK_DEBUG not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_OVERLAY:
+      D(bug("HUNK_OVERLAY not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     case HUNK_BREAK:
+      D(bug("HUNK_BREAK not implemented\n"));
+      ERROR(ERROR_BAD_HUNK);
     default:
+      D(bug("Hunk type 0x%06lx not implemented\n", hunktype & 0xFFFFFF));
       ERROR(ERROR_BAD_HUNK);
     }
   }
   /* Clear caches */
-  for (t=last; t >= (LONG)first; t--) {
+  for (t=numhunks-1 /* last */; t >= (LONG)0 /*first */; t--) {
     if (hunktab[t].size) {
       CacheClearE(hunktab[t].memory, hunktab[t].size, CACRF_ClearI|CACRF_ClearD);
       ((BPTR *)hunktab[t].memory)[-1] = last_p;
@@ -210,7 +235,7 @@ BPTR LoadSeg_AOS(BPTR file)
   hunktab = NULL;
 end:
   if (hunktab != NULL) {
-    for (t = first; t <= last; t++)
+    for (t = 0 /* first */; t < numhunks /* last */; t++)
       if (hunktab[t].memory != NULL)
 	FreeVec(hunktab[t].memory - sizeof(BPTR));
     FreeVec(hunktab);
