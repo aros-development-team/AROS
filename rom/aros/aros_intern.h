@@ -8,15 +8,27 @@
 #ifndef _AROS_INTERN_H_
 #define _AROS_INTERN_H_
 
+#include <exec/types.h>
+#include <exec/libraries.h>
+#include <dos/dos.h>
+
+#include "libdefs.h"
+
 /*
-    This is the internal version of the ArosBase structure
+    This is the ArosBase structure. It is documented here because it is
+    completely private. Applications should treat it as a struct Library, and
+    use the aros.library functions to get information.
 */
 
-struct ArosBase
+struct LIBBASETYPE
 {
     struct Library       aros_LibNode;
-    struct ExecBase     *aros_SysBase;
-    BPTR                 aros_SegList;
+
+    /* The following information is private! */
+
+    struct ExecBase *    aros_sysBase;
+    struct Library *     aros_utilityBase;
+    BPTR                 aros_segList;
 
 };
 
@@ -24,6 +36,7 @@ struct ArosBase
 #define expunge() \
  AROS_LC0(BPTR, expunge, struct ArosBase *, ArosBase, 3, Aros)
 
-#define SysBase         UtilityBase->aros_SysBase
+#define SysBase         LIBBASE->aros_sysBase
+#define UtilityBase	LIBBASE->aros_utilityBase
 
 #endif /* _AROS_INTERN_H */

@@ -36,7 +36,8 @@ FILES = aros_init aros_functable
 # ***** END ***************
 endif
 
-FUNCTIONS = 
+FUNCTIONS = \
+	arosinquire
 
 # BEGIN_DESC{localmakevar}
 # \item{ASM_PATH} The path to the assembler sources
@@ -73,7 +74,7 @@ OBJDIR=$(OSGENDIR)/aros
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-LIBS = -L$(LIBDIR) -laros -larosc
+LIBS = -L$(LIBDIR) -laros -larossupport -larosc
 LIB=$(LIBDIR)/libaros.a
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o

@@ -5,19 +5,16 @@
     Desc: aros.library Resident and initialization.
     Lang: english
 */
+
 #include <exec/types.h>
-#include <aros/system.h>
-#include <aros/libcall.h>
-#include <exec/alerts.h>
-#include <exec/libraries.h>
 #include <exec/resident.h>
-#include <exec/execbase.h>
-#include <dos/dos.h>
 #include <proto/exec.h>
-#include <proto/arossupport.h>
 
 #include "aros_intern.h"
-#include "libdefs.h"
+
+#define DEBUG 0
+#include <aros/debug.h>
+#undef kprintf
 
 extern const UBYTE name[];
 extern const UBYTE version[];
@@ -40,7 +37,7 @@ const struct Resident Aros_resident=
     RTF_AUTOINIT|RTF_COLDSTART,
     LIBVERSION,
     NT_LIBRARY,
-    103,
+    102,		/* Immediately after utility.library */
     (STRPTR)name,
     (STRPTR)&version[6],
     (ULONG *)inittabl
@@ -66,8 +63,8 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_INIT
 
     /* Store arguments */
-    LIBBASE->aros_SysBase=sysBase;
-    LIBBASE->aros_SegList=segList;
+    LIBBASE->aros_sysBase=sysBase;
+    LIBBASE->aros_segList=segList;
 
     /* Set up ArosBase */
     LIBBASE->aros_LibNode.lib_Node.ln_Pri = 0;
@@ -77,6 +74,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
     LIBBASE->aros_LibNode.lib_Version = LIBVERSION;
     LIBBASE->aros_LibNode.lib_Revision = LIBREVISION;
     (const)LIBBASE->aros_LibNode.lib_IdString = &version[6];
+
+    D(bug("aros.library starting...\n"));
+
+    if(!(LIBBASE->aros_utilityBase = OpenLibrary("utility.library", 37)))
+	return NULL;
 
     /* You would return NULL if the init failed */
     return LIBBASE;
@@ -111,6 +113,8 @@ AROS_LH0(BPTR, close,
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/* aros.library must not ever be expunged! */
 
 AROS_LH0(BPTR, expunge,
 	   struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
