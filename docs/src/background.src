@@ -8,6 +8,8 @@
 
 \section{The current status}
 
+\exec{gawk -f ../../scripts/stat.awk}
+
 \section{Screenshots}
 
 \largepic{A snapshot of the window of demowin}{../pics/demowin.gif}
