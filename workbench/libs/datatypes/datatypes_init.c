@@ -24,7 +24,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static const void * const LIBFUNCTABLE[];
-struct LIBBASETYPE * INIT();
+LIBBASETYPE * INIT();
 extern const char LIBEND;
 
 int entry(void)
@@ -51,14 +51,14 @@ static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4] =
 {
-    (APTR)sizeof(struct LIBBASETYPE),
+    (APTR)sizeof(LIBBASETYPE),
     (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
 };
 
 
-static BOOL openlibs(struct LIBBASETYPE *DTBase)
+static BOOL openlibs(LIBBASETYPE *DTBase)
 {
     if(DTBase->dtb_IntuitionBase == NULL)
 	DTBase->dtb_IntuitionBase = OpenLibrary("intuition.library", 39);
@@ -103,7 +103,7 @@ static BOOL openlibs(struct LIBBASETYPE *DTBase)
     return TRUE;
 }
 
-static void closelibs(struct LIBBASETYPE *DTBase)
+static void closelibs(LIBBASETYPE *DTBase)
 {
     if(DTBase->dtb_IntuitionBase != NULL)
 	CloseLibrary(DTBase->dtb_IntuitionBase);
@@ -131,8 +131,8 @@ static void closelibs(struct LIBBASETYPE *DTBase)
 }
 
 
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *,  DTBase, D0),
+AROS_LH2(LIBBASETYPE *, init,
+    AROS_LHA(LIBBASETYPE *,  DTBase, D0),
     AROS_LHA(BPTR,                  segList, A0),
     struct ExecBase *, sysBase, 0, DataTypes)
 {
@@ -154,9 +154,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
 }
 
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPE *, open,
     AROS_LHA(ULONG, version, D0),
-    struct LIBBASETYPE *, DTBase, 1, DataTypes)
+    LIBBASETYPE *, DTBase, 1, DataTypes)
 {
     AROS_LIBFUNC_INIT
 
@@ -196,7 +196,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 
 
 AROS_LH0(BPTR, close,
-    struct LIBBASETYPE *, DTBase, 2, DataTypes)
+    LIBBASETYPE *, DTBase, 2, DataTypes)
 {
     AROS_LIBFUNC_INIT
 
@@ -214,7 +214,7 @@ AROS_LH0(BPTR, close,
 
 
 AROS_LH0(BPTR, expunge,
-    struct LIBBASETYPE *, DTBase, 3, DataTypes)
+    LIBBASETYPE *, DTBase, 3, DataTypes)
 {
     AROS_LIBFUNC_INIT
 
@@ -229,7 +229,7 @@ AROS_LH0(BPTR, expunge,
 
 
 AROS_LH0I(int, null,
-    struct LIBBASETYPE *, LIBBASE, 4, DataTypes)
+    LIBBASETYPE *, LIBBASE, 4, DataTypes)
 {
     AROS_LIBFUNC_INIT
 

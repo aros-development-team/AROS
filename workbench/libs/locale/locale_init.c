@@ -29,7 +29,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static const void * const LIBFUNCTABLE[];
-struct LIBBASETYPE * INIT();
+LIBBASETYPE * INIT();
 extern const char LIBEND;
 
 extern void SetLocaleLanguage(struct IntLocale *, struct LocaleBase *);
@@ -68,8 +68,8 @@ static const APTR inittabl[4] =
 #undef UtilityBase
 #undef IFFParseBase
 
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *,  LIBBASE, D0),
+AROS_LH2(LIBBASETYPE *, init,
+    AROS_LHA(LIBBASETYPE *,  LIBBASE, D0),
     AROS_LHA(BPTR,                  segList, A0),
     struct ExecBase *, sysBase, 0, Locale)
 {
@@ -130,9 +130,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPE *, open,
     AROS_LHA(ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, Locale)
+    LIBBASETYPE *, LIBBASE, 1, Locale)
 {
     AROS_LIBFUNC_INIT
 
@@ -149,7 +149,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-    struct LIBBASETYPE *, LIBBASE, 2, Locale)
+    LIBBASETYPE *, LIBBASE, 2, Locale)
 {
     AROS_LIBFUNC_INIT
 
@@ -166,7 +166,7 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-    struct LIBBASETYPE *, LIBBASE, 3, Locale)
+    LIBBASETYPE *, LIBBASE, 3, Locale)
 {
     AROS_LIBFUNC_INIT
 
@@ -180,7 +180,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-    struct LIBBASETYPE *, LIBBASE, 4, Locale)
+    LIBBASETYPE *, LIBBASE, 4, Locale)
 {
     AROS_LIBFUNC_INIT
 
