@@ -33,6 +33,8 @@ FUNCTIONS = \
 	setfont \
 	setoutlinepen \
 	setrast \
+	setrpattrsa \
+	setwritemask \
 	text \
 	textlength \
 	writepixel

@@ -284,6 +284,26 @@ AROS_LP2(void, SetRast,
     AROS_LCA(ULONG            , pen, D0), \
     struct GfxBase *, GfxBase, 39, Graphics)
 
+AROS_LP2(void, SetRPAttrsA,
+    AROS_LPA(struct RastPort *, rp, A0),
+    AROS_LPA(struct TagItem  *, tags, A1),
+    struct GfxBase *, GfxBase, 173, Graphics)
+#define SetRPAttrsA(rp, tags) \
+    AROS_LC2(void, SetRPAttrsA, \
+    AROS_LCA(struct RastPort *, rp, A0), \
+    AROS_LCA(struct TagItem  *, tags, A1), \
+    struct GfxBase *, GfxBase, 173, Graphics)
+
+AROS_LP2(ULONG, SetWriteMask,
+    AROS_LPA(struct RastPort *, rp,   A0),
+    AROS_LPA(ULONG            , mask, D0),
+    struct GfxBase *, GfxBase, 164, Graphics)
+#define SetWriteMask(rp, mask) \
+    AROS_LC2(ULONG, SetWriteMask, \
+    AROS_LCA(struct RastPort *, rp,   A0), \
+    AROS_LCA(ULONG            , mask, D0), \
+    struct GfxBase *, GfxBase, 164, Graphics)
+
 AROS_LP3(void, Text,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(STRPTR           , string, A0),

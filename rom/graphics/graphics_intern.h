@@ -29,6 +29,10 @@ extern struct GfxBase * GfxBase;
 #undef SysBase
 #endif
 #define SysBase ((struct ExecBase *)(GfxBase->ExecBase))
+#ifdef UtilityBase
+#undef UtilityBase
+#endif
+#define UtilityBase ((struct Library *)(GfxBase->UtilBase))
 
 /* Needed for close() */
 #define expunge() \
@@ -65,6 +69,7 @@ extern void driver_SetDrMd (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_SetFont (struct RastPort *, struct TextFont *,
 			    struct GfxBase *);
 extern void driver_SetOutlinePen (struct RastPort *, ULONG, struct GfxBase *);
+extern ULONG driver_SetWriteMask (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_SetRast (struct RastPort *, ULONG, struct GfxBase *);
 extern void driver_Text (struct RastPort *, STRPTR, LONG, struct GfxBase *);
 extern WORD driver_TextLength (struct RastPort *, STRPTR, ULONG,
