@@ -1,3 +1,6 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
 FILES := \
@@ -37,8 +40,8 @@ FUNCS := \
 
 #MM- workbench-libs-desktop : setup includes linklibs
 
-%build_module_macro mmake=workbench-libs-desktop modname=desktop \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui rom arosc" \
-  conffile=lib.conf
+%build_module_macro mmake=workbench-libs-desktop \
+ modname=desktop modtype=library funcs=$(FUNCS) files=$(FILES) \
+ uselibs="mui rom arosc" conffile=lib.conf
 
 %common
