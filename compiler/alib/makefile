@@ -27,7 +27,6 @@ FILES = alib_util \
 	domethod \
 	dosupermethod \
 	fastrand \
-	freestruct \
 	hookentry \
 	liballocpooled \
 	libcreatepool \

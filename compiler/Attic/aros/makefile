@@ -8,6 +8,7 @@ OBJDIR=$(GENDIR)/aros
 FILES = calcchecksum kprintf nastyfreemem \
 	purify removeslist debugmem \
 	_kprintf hexdump \
+	freestruct \
 	readbyte \
 	readdouble \
 	readfloat \
