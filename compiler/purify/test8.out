@@ -1,0 +1,8 @@
+*** Purify: UMR: Read from uninitialized memory ***
+at /home/digulla/AROS/compiler/purify/test8.c:16 in main()
+called by :0 in _start()
+Read of 4 bytes at 0xbffff27c. This is 10220 bytes into the block
+"Stack" at 0xbfffca90 with the size of 10240 bytes (type=1)
+***
+Purify active
+Purify finished

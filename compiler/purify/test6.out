@@ -1,0 +1,62 @@
+*** Purify: UMR: Read from uninitialized memory ***
+at /home/digulla/AROS/compiler/purify/test6.c:13 in main()
+called by :0 in _start()
+Read of 1 bytes at 0x804fd23. This is 3 bytes into the block
+allocated at 0x804fd20 with the size of 8 bytes (type=0)
+The block was allocated at /home/digulla/AROS/compiler/purify/test6.c:9 in main()
+called by :0 in _start()
+***
+*** Purify: IAC: Access to memory not owned by this process ***
+at /home/digulla/AROS/compiler/purify/test6.c:15 in main()
+called by :0 in _start()
+Write of 1 bytes at 0x804fd1f
+***
+*** Purify: IAC: Access to memory not owned by this process ***
+at /home/digulla/AROS/compiler/purify/test6.c:16 in main()
+called by :0 in _start()
+Write of 1 bytes at 0x804fd28
+***
+*** Purify: IAC: Access to memory not owned by this process ***
+at /home/digulla/AROS/compiler/purify/test6.c:23 in main()
+called by :0 in _start()
+Write of 1 bytes at 0x804fdf4
+***
+*** Purify: UMR: Read from uninitialized memory ***
+at /home/digulla/AROS/compiler/purify/test6.c:31 in main()
+called by :0 in _start()
+Read of 1 bytes at 0x804fec5. This is 5 bytes into the block
+allocated at 0x804fec0 with the size of 7 bytes (type=0)
+The block was allocated at /home/digulla/AROS/compiler/purify/test6.c:25 in main()
+called by :0 in _start()
+***
+*** Purify: RFM: Read from free memory ***
+at /home/digulla/AROS/compiler/purify/test6.c:35 in main()
+called by :0 in _start()
+Read of 1 bytes at 0x804fec1. This is 1 bytes into the block
+allocated at 0x804fec0 with the size of 7 bytes (type=0)
+The block was allocated at /home/digulla/AROS/compiler/purify/test6.c:25 in main()
+called by :0 in _start()
+It was freed at /home/digulla/AROS/compiler/purify/test6.c:33 in main()
+called by :0 in _start()
+***
+*** Purify: WFM: Write to free memory ***
+at /home/digulla/AROS/compiler/purify/test6.c:36 in main()
+called by :0 in _start()
+Write of 1 bytes at 0x804fec1. This is 1 bytes into the block
+allocated at 0x804fec0 with the size of 7 bytes (type=0)
+The block was allocated at /home/digulla/AROS/compiler/purify/test6.c:25 in main()
+called by :0 in _start()
+It was freed at /home/digulla/AROS/compiler/purify/test6.c:33 in main()
+called by :0 in _start()
+***
+*** Purify: MLK: Memory leak ***
+at :0 in _start()
+The memory block at 0x804fd20 with the size 8 was allocated at
+at /home/digulla/AROS/compiler/purify/test6.c:9 in main()
+called by :0 in _start()
+***
+Purify active
+str=0x804fd20 (malloc)
+str=0x804fdf0 (calloc)
+str=0x804fec0 (realloc)
+Purify finished
