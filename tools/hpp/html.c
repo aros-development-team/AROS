@@ -228,6 +228,7 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
     char	 * elseptr;
     char	 * str;
     int 	   line = Str_GetLine (in);
+    int 	   level = 0;
 
     body = HTML_ReadBody (in, data, "IF", 1);
 
@@ -275,7 +276,7 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 	    while (isspace (*elseptr)) elseptr ++;
 
-	    if (!strncasecmp (elseptr, "ELSE", 4))
+	    if (!strncasecmp (elseptr, "ELSE", 4) && !level)
 	    {
 		elseptr += 4;
 
@@ -283,6 +284,14 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
 		if (*elseptr == '>')
 		    break;
+	    }
+	    else if (!strncasecmp (elseptr, "IF", 2) && isspace (elseptr[2]))
+		level ++;
+	    else if (!strncasecmp (elseptr, "/IF", 3) &&
+		(isspace (elseptr[3]) || elseptr[3] == '>')
+	    )
+	    {
+		level --;
 	    }
 	}
 

@@ -410,6 +410,7 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
     int    c;
     int    mode;
     int    line = Str_GetLine (stream);
+    int    namelen;
 
     mode  = 0;
 
@@ -420,6 +421,8 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 
     if (c != '\n')
 	VS_AppendChar (str, c);
+
+    namelen = strlen (name);
 
     while ((c = Str_Get (stream, data)) != EOF)
     {
@@ -436,7 +439,9 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 
 	if (c == '>')
 	{
-	    if (!strcasecmp (str->buffer+start, name))
+	    if (!strncasecmp (str->buffer+start, name, namelen)
+		&& (isspace (str->buffer[start+namelen]) || str->buffer[start+namelen] == 0)
+	    )
 	    {
 		if (!allowNest)
 		{
@@ -449,8 +454,10 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 		    level ++;
 		}
 	    }
-	    else if (str->buffer[start] == '/' &&
-		!strcasecmp (str->buffer+start+1, name))
+	    else if (str->buffer[start] == '/'
+		&& !strncasecmp (str->buffer+start+1, name, namelen)
+		&& (isspace (str->buffer[start+namelen+1]) || str->buffer[start+namelen+1] == 0)
+	    )
 	    {
 		if (level == 0)
 		{
@@ -476,6 +483,10 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 	VS_Delete (str);
 	return NULL;
     }
+
+#if 0
+    printf ("Body={%s}\n", str->buffer);
+#endif
 
     return str;
 }
