@@ -130,20 +130,20 @@ ULONG i,curblock;
 
 	for (i=0;(i<=24) && (volume->bitmapblockpointers[i]);i++)
 		markBlock(afsbase, volume, volume->bitmapblockpointers[i], 0);
-	curblock=volume->bitmapextensionblock;
-	while (curblock)
+	curblock = volume->bitmapextensionblock;
+	while (curblock != 0)
 	{
-		blockbuffer=getBlock(afsbase, volume, curblock);
-		if (!blockbuffer)
+		blockbuffer = getBlock(afsbase, volume, curblock);
+		if (blockbuffer == NULL)
 			return;
 		markBlock(afsbase, volume, curblock, 0);
 		for (i=0;i<volume->SizeBlock-1;i++)
 		{
-			if (!blockbuffer->buffer[i])
+			if (blockbuffer->buffer[i] == 0)
 				break;
 			markBlock(afsbase, volume, OS_BE2LONG(blockbuffer->buffer[i]), 0);
 		}
-		curblock=OS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
+		curblock = OS_BE2LONG(blockbuffer->buffer[volume->SizeBlock-1]);
 	}
 }
 
@@ -168,18 +168,20 @@ struct BlockCache *blockbuffer;
 struct DateStamp ds;
 UWORD i;
 
-	if ((blockbuffer=getFreeCacheBlock(afsbase, volume,0)))
+	blockbuffer = getFreeCacheBlock(afsbase, volume,0);
+	if (blockbuffer != NULL)
 	{
-		blockbuffer->buffer[0]=OS_LONG2BE(dostype);
-		blockbuffer->buffer[2]=OS_LONG2BE(volume->rootblock);
-		writeBlock(afsbase, volume,blockbuffer);
-		if ((blockbuffer=getFreeCacheBlock(afsbase, volume,volume->rootblock)))
+		blockbuffer->buffer[0] = OS_LONG2BE(dostype);
+		blockbuffer->buffer[2] = OS_LONG2BE(volume->rootblock);
+		writeBlock(afsbase, volume, blockbuffer);
+		blockbuffer = getFreeCacheBlock(afsbase, volume,volume->rootblock);
+		if (blockbuffer != NULL)
 		{
 			blockbuffer->flags |= BCF_USED;
 			DateStamp(&ds);
-			blockbuffer->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_SHORT);
-			blockbuffer->buffer[1]=0;
-			blockbuffer->buffer[2]=0;
+			blockbuffer->buffer[BLK_PRIMARY_TYPE] = OS_LONG2BE(T_SHORT);
+			blockbuffer->buffer[1] = 0;
+			blockbuffer->buffer[2] = 0;
 			blockbuffer->buffer[BLK_TABLE_SIZE]=OS_LONG2BE(volume->SizeBlock-56);
 			blockbuffer->buffer[4]=0;
 			for (i=BLK_TABLE_START;i<=BLK_TABLE_END(volume);i++)
