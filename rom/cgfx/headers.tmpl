@@ -8,6 +8,10 @@
 #include <utility/tagitem.h>
 #endif /* UTILITY_TAGITEM_H */
 
+#ifndef CyberGfxBase
+extern struct Library * CyberGfxBase;
+#endif
+
 APTR LockBitMapTags(APTR, Tag tag1, ...);
 void UnLockBitMapTags(APTR, Tag tag1, ...);
 
