@@ -34,6 +34,8 @@
 
 #include <libcore/libheader.c>
 
+#define SysBase     (WorkbenchBase->wb_SysBase)
+
 ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase) {
     /* Make sure that the libraries are opened in L_OpenLib() */
     WorkbenchBase->wb_LibsOpened = FALSE;
