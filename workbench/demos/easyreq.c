@@ -40,7 +40,7 @@ void main(void)
 	es.es_GadgetFormat = "10|20|30|40|50|60|70|80|90|100";
 	
 	result = EasyRequestArgs(0, &es, 0, 0);
-	printf("Result %d\n",result);
+	printf("Result %ld\n",result);
 	
 	es.es_Title = "Fourth Requester";
 	es.es_TextFormat = "Requester Text with args:\n\nArg 1: %ld  Arg 2: %ld  Arg 3: %ld\nStringarg: %s";
@@ -59,7 +59,7 @@ void main(void)
 	    {
 	        Delay(20);
 	    	result = SysReqHandler(req, 0, FALSE);
-		printf("*** Async Counter: %d ***\n",++counter);
+		printf("*** Async Counter: %ld ***\n",++counter);
 		
 	    } while (result == -2);
 	    
