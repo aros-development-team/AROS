@@ -6,7 +6,7 @@
     Lang: English.
 
     1997/12/13: Changed filename to internalloadseg_aout.c
-                Original file was created by digulla.
+                Original file was created by digulla (iaint actually).
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -31,11 +31,6 @@ extern struct DosLibrary * DOSBase;
     This has the unfortunate side effect of that for large programs, if
     your memory is quite fragmented, you will not have enough memory to
     load the program into memory.
-
-    THINGS TO DO:
-        -   Adapt this to use InternalLoadSeg() calling information.
-            Can't do this until InternalLoadSeg() exists though :)
-        -   Make it work properly.
 
 */
 
@@ -86,6 +81,7 @@ struct reloc
 */
 struct JumpHunk
 {
+    ULONG   size;
     BPTR    next;
     struct JumpVec vec;
 };
@@ -198,7 +194,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
      over those strings to the actual entry. To do this I will use
      a struct JumpVec (yes the same as in the the library bases).
   */
-  jumphunk = AllocVec(sizeof(struct JumpHunk), MEMF_CLEAR|MEMF_ANY);
+  jumphunk = AllocMem(sizeof(struct JumpHunk), MEMF_CLEAR|MEMF_ANY);
   if(jumphunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
 
@@ -210,7 +206,8 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
 
   *texthunk = header.a_text + sizeof(ULONG) + sizeof(BPTR);
   /* Link and Bump the text hunk past the next hunk pointer. */
-  jumphunk->next = MKBADDR(texthunk);
+  jumphunk->size = sizeof(struct JumpHunk);
+  jumphunk->next = MKBADDR(texthunk + sizeof(ULONG));
   texthunk += sizeof(ULONG) + sizeof(BPTR);
 
   jumphunk->vec.jmp = __AROS_ASMJMP;
@@ -355,12 +352,12 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   if(header.a_entry != 0)
   {
     /* jumphunk is the address of the next hunk pointer. */
-    return MKBADDR(jumphunk);
+    return MKBADDR(&jumphunk->next);
   }
   else
   {
     /* We don't need it */
-    FreeVec(jumphunk);
+    FreeMem(jumphunk, sizeof(struct JumpHunk));
     return MKBADDR((BPTR *)texthunk - 1);
   }
 
@@ -375,7 +372,7 @@ end:
             *(ULONG *) ((ULONG)texthunk - sizeof(BPTR) - sizeof(ULONG)));
 
   if(jumphunk)
-    FreeVec(jumphunk);
+    FreeMem(jumphunk, sizeof(struct JumpHunk));
 
   return (BPTR)NULL;
 }
