@@ -29,14 +29,14 @@ VOID ForwardQueuedEvents(struct inputbase *InputDevice)
    {
    	ForeachNode(&(InputDevice->HandlerList), ihiterator)
     	{
-	    D(bug("ipe: calling inputhandler %s at %p\n",
+/*	    D(bug("ipe: calling inputhandler %s at %p\n",
 	    		ihiterator->is_Node.ln_Name, ihiterator->is_Code));
-		
+*/		
             ie_chain = AROS_UFC2(struct InputEvent *, ihiterator->is_Code,
 		    AROS_UFCA(struct InputEvent *,  ie_chain,          	    A0),
 		    AROS_UFCA(APTR,                 ihiterator->is_Data,    A1));
 
-	    D(bug("ipe: returned from inputhandler\n"));
+//	    D(bug("ipe: returned from inputhandler\n"));
 	} /* for each input handler */
 	
     } 
@@ -58,14 +58,11 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     /* Initializing command msgport */
     InputDevice->CommandPort->mp_Flags	 = PA_SIGNAL;
     InputDevice->CommandPort->mp_SigTask = FindTask(NULL);
-
-    D(bug("idtask: allocating signal\n"));
     
     /* This will always succeed, as this task just has been created */
     InputDevice->CommandPort->mp_SigBit = AllocSignal(-1L);
     NEWLIST( &(InputDevice->CommandPort->mp_MsgList) );
 
-    D(bug("idtask: signaling parent\n"));
     /* Tell the task that created us, that we are finished initializing */
     Signal(taskparams->Caller, taskparams->Signal);
     
@@ -84,15 +81,12 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     TimerBase = (struct Library *)timerio->tr_node.io_Device;
 
     
-    D(bug("idtask: getting commandsig\n"));
-    
     commandsig = 1 << InputDevice->CommandPort->mp_SigBit;
-    D(bug("ProcessEvents: Going into infinite loop\n"));
 
     for (;;)
     {
 
-	D(bug("id : waiting for wakeup-call\n"));
+//	D(bug("id : waiting for wakeup-call\n"));
 	wakeupsigs = Wait (commandsig);
 	
 	if (wakeupsigs & commandsig)
@@ -101,7 +95,7 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    /* Get all commands from the port */
 	    while ( (ioreq = (struct IOStdReq *)GetMsg(InputDevice->CommandPort)) )
 	    {
-	    D(bug("id task: processing sommand %d\n", ioreq->io_Command));
+//	    D(bug("id task: processing sommand %d\n", ioreq->io_Command));
 	    	
 	    switch (ioreq->io_Command)
 	    {
@@ -116,15 +110,27 @@ void ProcessEvents (struct IDTaskParams *taskparams)
     	    	Remove((struct Node *)ioreq->io_Data);
     	    	break;
     	    	    
-    	    case IND_WRITEEVENT: 
+    	    case IND_WRITEEVENT: {
+    	        struct InputEvent *ie;
+    	        
+    	        ie = (struct InputEvent *)ioreq->io_Data; 
     	    	/* Add a timestamp to the event */
-    	    	GetSysTime( &((struct InputEvent *)ioreq->io_Data)->ie_TimeStamp);
+//    	    	D(bug("id: Getting system time\n"));
+    	    	GetSysTime( &(ie->ie_TimeStamp ));
+
+    	    	D(bug("id: %d\n", ie->ie_Class));
     	    	
     	    	/* Add event to queue */
+    	    	
     	    	AddEQTail((struct InputEvent *)ioreq->io_Data, InputDevice);
+    	    	
+    //	    	D(bug("id: Forwarding events\n"));
+    	    	
     	    	/* Forward event (and possible others in the queue) */
     	    	ForwardQueuedEvents(InputDevice);
-    	    	break;
+//    	    	D(bug("id: Events forwarded\n"));
+
+    	    	} break;
     	    	
 	    	    
 	    } /* switch (IO command) */
