@@ -574,7 +574,11 @@ static const ULONG sizes[]=
   offsetof(struct ExAllData,ed_Comment), offsetof(struct ExAllData,ed_OwnerUID),
   sizeof(struct ExAllData) };
 
-static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG type)
+static LONG examine(struct filehandle *fh,
+                    struct ExAllData *ead,
+                    ULONG  size,
+                    ULONG  type,
+                    off_t  *dirpos)
 {
     STRPTR next, end, last, name;
     struct stat st;
@@ -587,25 +591,28 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 	return ERROR_BUFFER_OVERFLOW;
     if(lstat(*fh->name?fh->name:".",&st))
 	return err_u2a();
+    *dirpos = (LONG)telldir((DIR *)fh->fd);
     switch(type)
     {
 	default:
 	case ED_OWNER:
-	    ead->ed_OwnerUID=st.st_uid;
-	    ead->ed_OwnerGID=st.st_gid;
+	    ead->ed_OwnerUID	= st.st_uid;
+	    ead->ed_OwnerGID	= st.st_gid;
 	case ED_COMMENT:
 	    ead->ed_Comment=NULL;
 	case ED_DATE:
-	    ead->ed_Days=st.st_ctime/(60*60*24)-(6*365+2*366);
-	    ead->ed_Mins=(st.st_ctime/60)%(60*24);
-	    ead->ed_Ticks=(st.st_ctime%60)*TICKS_PER_SECOND;
+	    ead->ed_Days	= st.st_ctime/(60*60*24)-(6*365+2*366);
+	    ead->ed_Mins	= (st.st_ctime/60)%(60*24);
+	    ead->ed_Ticks	= (st.st_ctime%60)*TICKS_PER_SECOND;
 	case ED_PROTECTION:
-	    ead->ed_Prot = prot_u2a(st.st_mode);
+	    ead->ed_Prot 	= prot_u2a(st.st_mode);
 	case ED_SIZE:
-	    ead->ed_Size=st.st_size;
+	    ead->ed_Size	= st.st_size;
 	case ED_TYPE:
-	    ead->ed_Type=S_ISREG(st.st_mode)?ST_FILE:
-			 S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0;
+          if (S_ISDIR(st.st_mode))
+            ead->ed_Type 	= 1 /* S_ISDIR(st.st_mode)?(*fh->name?ST_USERDIR:ST_ROOT):0*/;
+          else
+            ead->ed_Type 	= -1 /* ST_FILE */ ;
 	case ED_NAME:
 	    ead->ed_Name=next;
 	    last=name=*fh->name?fh->name:"Workbench";
@@ -625,13 +632,83 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
     }
 }
 
-static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG type)
+static LONG examine_next(struct filehandle *fh,
+                         struct FileInfoBlock *FIB)
+{
+  int		i;
+  struct stat 	st;
+  struct dirent *dir;
+  char 		*name, *src, *dest;
+  
+  /* first of all we have to go to the position where Examine() or
+     ExNext() stopped the previous time so we can read the next entry! */
+
+  seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
+
+  /* hm, let's read the data now! 
+     but skip '.' and '..' (they're not available on Amigas and
+     Amiga progs wouldn't know how to treat '.' and '..', i.e. they
+     might want to scan recursively the directory and end up scanning
+     ./././ etc. */
+  do
+  {
+    dir = readdir((DIR *)fh->fd);
+  }  
+  while ( dir->d_name[0] == '.' && 
+         (dir->d_name[1] == '\0' || dir->d_name[1] == '.') );
+
+  name = (STRPTR)malloc(strlen(fh->name)+strlen(dir->d_name)+2);
+  if (NULL == name)
+    return ERROR_NO_FREE_STORE;
+  
+  strcpy(name,fh->name);
+  if (*name)
+    strcat(name,"/");
+  strcat(name,dir->d_name);
+    
+  if (stat(name,&st))
+  {
+    free(name);
+    return err_u2a();
+  }
+  free(name);
+
+  FIB->fib_OwnerUID		= st.st_uid;
+  FIB->fib_OwnerGID		= st.st_gid;
+  FIB->fib_Comment[0]		= '\0'; /* no comments available yet! */
+  FIB->fib_Date.ds_Days		= st.st_ctime/(60*60*24)-(6*365+2*366);
+  FIB->fib_Date.ds_Minute	= (st.st_ctime/60)%(60*24);
+  FIB->fib_Date.ds_Tick		= (st.st_ctime%60)*TICKS_PER_SECOND;
+  FIB->fib_Protection		= prot_u2a(st.st_mode);
+  FIB->fib_Size			= st.st_size;
+
+  if (S_ISDIR(st.st_mode))
+    FIB->fib_DirEntryType 	= 1;
+  else
+    FIB->fib_DirEntryType 	= -1;
+
+  /* fast copying of the filename */
+  src  = dir->d_name;
+  dest = FIB->fib_FileName;
+  for (i =0; i<MAXFILENAMELENGTH-1;i++)
+    if(! (*dest++=*src++) )
+        break;
+
+  FIB->fib_DiskKey		= (LONG)telldir((DIR *)fh->fd);
+  return 0;				    
+}
+
+static LONG examine_all(struct filehandle *fh,
+                        struct ExAllData *ead,
+                        ULONG  size,
+                        ULONG  type)
 {
     struct ExAllData *last=NULL;
     STRPTR end=(STRPTR)ead+size, name, old;
     off_t oldpos;
     struct dirent *dir;
     LONG error;
+    off_t dummy; /* not anything is done with this value but passed to examine */
     if(fh->type!=FHD_DIRECTORY)
 	return ERROR_OBJECT_WRONG_TYPE;
     for(;;)
@@ -661,7 +738,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 	strcat(name,dir->d_name);
 	old=fh->name;
 	fh->name=name;
-	error=examine(fh,ead,end-(STRPTR)ead,type);
+	error=examine(fh,ead,end-(STRPTR)ead,type,&dummy);
 	fh->name=old;
 	free(name);
 	if(error)
@@ -943,7 +1020,13 @@ AROS_LH1(void, beginio,
 	    error=examine((struct filehandle *)iofs->IOFS.io_Unit,
 			  iofs->io_Union.io_EXAMINE.io_ead,
 			  iofs->io_Union.io_EXAMINE.io_Size,
-			  iofs->io_Union.io_EXAMINE.io_Mode);
+			  iofs->io_Union.io_EXAMINE.io_Mode,
+			  &(iofs->io_DirPos));
+	    break;
+
+	case FSA_EXAMINE_NEXT:
+	    error=examine_next((struct filehandle *)iofs->IOFS.io_Unit,
+	    		       iofs->io_Union.io_EXAMINE_NEXT.io_fib);
 	    break;
 
 	case FSA_EXAMINE_ALL:
