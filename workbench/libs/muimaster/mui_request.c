@@ -49,9 +49,9 @@ AROS_UFH2S(void, len_func,
 	AROS_LHA(APTR, app, D0),
 	AROS_LHA(APTR, win, D1),
 	AROS_LHA(LONGBITS, flags, D2),
-	AROS_LHA(char *, title, A0),
-	AROS_LHA(char *, gadgets, A1),
-	AROS_LHA(char *, format, A2),
+	AROS_LHA(CONST_STRPTR, title, A0),
+	AROS_LHA(CONST_STRPTR, gadgets, A1),
+	AROS_LHA(CONST_STRPTR, format, A2),
 	AROS_LHA(APTR, params, A3),
 
 /*  LOCATION */
