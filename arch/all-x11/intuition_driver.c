@@ -1559,6 +1559,14 @@ AROS_UFH3(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			
+			/* Hack to make Gadtools slider & scroller gadgets work */
+			if (retval == GMR_INTERIMUPDATE)
+			{
+			    im->Code = termination & 0x0000FFFF;
+			    im->IAddress = gadget;
+			    retval = GMR_MEACTIVE;
+			}
 
 			if (retval != GMR_MEACTIVE)
 			{
