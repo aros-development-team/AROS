@@ -17,6 +17,7 @@ FILES  := test      	    \
 	  crawling	    \
 	  levelmeter	    \
 	  knob              \
+	  texticonlist	    \
 	  loginwindow
 
 EXEDIR := $(AROS_TESTS)/Zune
