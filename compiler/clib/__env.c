@@ -63,20 +63,23 @@ __env_item *__env_getvar(const char *name, int valuesize)
 
     curr = internal_findvar(name);
 
-    if (*curr && (strlen((*curr)->value) < valuesize))
+    if (*curr)
     {
-	free((*curr)->value);
-	(*curr)->value = malloc(valuesize);
+        if (strlen((*curr)->value) < valuesize)
+        {
+	    free((*curr)->value);
+	    (*curr)->value = malloc(valuesize);
 
-	if (!(*curr)->value)
-	{
-	    __env_item *tmp = (*curr)->next;
+	    if (!(*curr)->value)
+	    {
+	        __env_item *tmp = (*curr)->next;
 
-	    free(*curr);
-	    *curr = tmp;
+	        free(*curr);
+	        *curr = tmp;
+   	    }
 	}
     }
-    else if (!*curr)
+    else 
     {
 	*curr = __env_newvar(name, valuesize);
     }
