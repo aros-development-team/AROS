@@ -7,6 +7,10 @@ include $(TOP)/config/make.cfg
 LIB	:= amiga
 
 FILES	:= \
+    addamigaguidehost \
+    addappicon \
+    addappmenuitem \
+    addappwindow \
     alib_util \
     allocaslrequesttags \
     allocdosobjecttags \
@@ -64,11 +68,18 @@ FILES	:= \
     newloadsegtags \
     newobject \
     obtainbestpen \
+    openamigaguide \
+    openamigaguideasync \
     opencatalog \
     openscreentags \
     openwindowtags \
     printf \
     rangerand \
+    removeamigaguidehost \
+    sendamigaguidecmd \
+    sendamigaguidecontext \
+    setamigaguideattrs \
+    setamigaguidecontext \
     setattrs \
     setgadgetattrs \
     setrpattrs \
