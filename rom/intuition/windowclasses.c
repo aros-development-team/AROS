@@ -63,6 +63,18 @@ const WORD image_leftedge[] =
     0,		/* GTYP_CLOSE		*/
 };
 
+const WORD image_extrasize[] = 
+{
+    0,		/* GTYP_SIZING		*/
+    0,		/* GTYP_WDRAGGING	*/
+    0,		/* GTYP_SDRAGGING	*/
+    1,		/* GTYP_WDEPTH		*/
+    1,	 	/* GTYP_SDEPTH		*/
+    1,		/* GTYP_WZOOM		*/
+    0,		/* GTYP_SUNUSED		*/
+    1,		/* GTYP_CLOSE		*/
+};
+
 struct dragbar_data
 {
     /* Current left- and topedge of moving window. Ie when the user releases
@@ -946,18 +958,18 @@ static Object *tbb_new(Class *cl, Object *o, struct opSet *msg)
 	{
 	    struct TagItem image_tags[] =
 	    {
-/*	    	{IA_Left,		image_leftedge[SYSGADTYPE_IDX(o)]				},*/
-	    	{IA_Width,		G(o)->Width - 2 /* - image_leftedge[SYSGADTYPE_IDX(o)] */	},
-	    	{IA_Height, 		G(o)->Height - 2						},
+	    	{IA_Left,		image_leftedge[SYSGADTYPE_IDX(o)]				},
+	    	{IA_Width,		G(o)->Width  + image_extrasize[SYSGADTYPE_IDX(o)] 		},
+	    	{IA_Height, 		G(o)->Height 							},
 	    	{SYSIA_Which,		gtyp2image[SYSGADTYPE_IDX(o)]					},
 	    	{SYSIA_DrawInfo,	(IPTR)dri							},
-		{SYSIA_WithBorder,	FALSE								},
+		{SYSIA_WithBorder,	TRUE								},
 	    	{TAG_DONE, 0UL}
 	    };
 
 	    /* Create a sysimage with gadget's sizes */
 	    data->image = NewObjectA(NULL, SYSICLASS, image_tags);
-	    D(bug("tbb: image=%p\n", data->image));
+	    (bug("tbb: image=%p\n", data->image));
 	    if (data->image)
 	    {
 	    	((struct Gadget *)o)->GadgetType |= GTYP_SYSGADGET;
@@ -995,20 +1007,28 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	GetGadgetIBox(o, msg->gpr_GInfo, &container);
 	D(bug("Gadget IBOX\n"));
 
-	x = container.Left + ((container.Width / 2) -
-		    (IM(data->image)->Width / 2));
+	x = container.Left; /* + ((container.Width / 2) -
+		    (IM(data->image)->Width / 2)); */
 		    
-	y = container.Top + ((container.Height / 2) -
-		    (IM(data->image)->Height / 2));
+	y = container.Top; /* + ((container.Height / 2) -
+		    (IM(data->image)->Height / 2)); */
 		
 	/* Are we part of the active window ? */
-	if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
+	if (msg->gpr_GInfo->gi_Window)
 	{
-	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
+	    if (msg->gpr_GInfo->gi_Window->Flags & WFLG_WINDOWACTIVE)
+	    {
+		state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
+	    }
+	    else
+	    {
+		state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_INACTIVESELECTED : IDS_INACTIVENORMAL );
+	    }
 	}
 	else
 	{
-	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_INACTIVESELECTED : IDS_INACTIVENORMAL );
+	    /* Screen gadgets don't have a window */
+	    state = ( (G(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL );
 	}
 	
 	D(bug("Drawing image\n"));
@@ -1018,7 +1038,8 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 	    , x, y
 	    , state
 	    , msg->gpr_GInfo->gi_DrInfo);
-	    
+
+#if 0	    
 	/* For now just render a tiny black edge around the image */
 
 	SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
@@ -1048,7 +1069,7 @@ static VOID tbb_render(Class *cl, Object *o, struct gpRender *msg)
 		    container.Top + container.Height - 1,
 		    container.Left + container.Width - 2,
 		    container.Top + container.Height - 1);
-
+#endif
     return;
 }
 
@@ -1104,6 +1125,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    break;
 	    }
 	    
+	    retval &= ~GMR_VERIFY;
 	    
 	} /* if (verified button press) */
 	
@@ -1123,6 +1145,7 @@ AROS_UFH3S(IPTR, dispatch_tbbclass,
     IPTR retval = 0UL;
     
     EnterFunc(bug("tbb_dispatcher(mid=%d)\n", msg->MethodID));
+    
     switch (msg->MethodID)
     {
 	case OM_NEW:
