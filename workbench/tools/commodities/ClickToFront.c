@@ -116,7 +116,6 @@ struct Library        *InputBase = NULL;
 struct Catalog        *catalogPtr;
 
 struct IOStdReq       *inputIO;
-BOOL                   inputOpen = FALSE;
 
 
 /* The ClickToFront broker */
@@ -285,8 +284,6 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
 	return FALSE;
     }
     
-    inputOpen = TRUE;
-
     InputBase = (struct Library *)inputIO->io_Device;
 
     if (Cli() != NULL)
@@ -391,12 +388,8 @@ static void freeResources(CFState *cs)
 
     if (inputIO != NULL)
     {
-	DeleteIORequest(inputIO);
-    }
-    
-    if (inputOpen)
-    {
 	CloseDevice(inputIO);
+	DeleteIORequest(inputIO);
     }
 
     if (LocaleBase != NULL)
@@ -410,9 +403,9 @@ static void freeResources(CFState *cs)
     {
 	CloseLibrary((*(struct Library **)tmpLibTable->lT_Library));
 	D(bug("Closed %s!\n", tmpLibTable->lT_Name));
+	tmpLibTable++;
     }
     
-    tmpLibTable++;
 }
 
 
