@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.4  2001/07/15 21:12:24  falemagn
+    Ooops... forgot to do merge with Stefan changes...
+
     Revision 1.3  2001/07/15 20:52:23  falemagn
     there was a silly bug. I fixed it, but it looks hacky... I think I'll have to look at it again. One of these days :)
 
@@ -595,14 +598,18 @@ AROS_UFH3(LONG, pipefsproc,
 {
     AROS_USERFUNC_INIT
 
-    SysBase = _SysBase;
-
-    struct Process       *me         = (struct Process *)FindTask(0);
-    struct pipefsbase    *pipefsbase = me->pr_Task.tc_UserData;
+    struct Process       *me;
+    struct pipefsbase    *pipefsbase;
     struct pipefsmessage *msg;
     struct usernode      *un;
     struct filenode      *fn;
     BOOL cont = TRUE;
+
+    SysBase = _SysBase;
+
+    me         = (struct Process *)FindTask(0);
+    pipefsbase = me->pr_Task.tc_UserData;
+
 
     do
     {
