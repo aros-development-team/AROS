@@ -3,11 +3,15 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
-SPECIAL_AFLAGS = -I../
-CLIBDIR=$(GENDIR)/clib
-OBJDIR=$(OSGENDIR)/layers
+SPECIAL_AFLAGS := -I../
+CLIBDIR        := $(GENDIR)/clib
+OBJDIR         := $(OSGENDIR)/layers
 
-FILES = basicasmfuncs
+FILES := basicasmfuncs
+
+#MM
+layers-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+	@$(NOP)
 
 #MM
 setup-layers-amiga-m68k :
