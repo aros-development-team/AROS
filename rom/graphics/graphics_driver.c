@@ -1686,7 +1686,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
-    start_offset = ((ULONG)srcy) * dstmod + srcx * bppix;
+    start_offset = ((ULONG)desty) * dstmod + destx * bppix;
         
     rpard.array	 = ((UBYTE *)dst) + start_offset;
     rpard.pixfmt = dstfmt_hidd;
