@@ -110,6 +110,11 @@ After rtdemo, dir doesn't work anymore. I get "Object not found".
 Changing dirs or using assigns causes segfaults. However, this only affects
 the hd filesystem, you can change to RAM: where everything works okay.
 
+Location of the bug:
+The line file = Open("test.rtdemo",...) causes the error in the long run
+because when removing this line verything seems to work alright.
+
+
 BUG000016 partial fix
 digulla@fh-konstanz.de
 The path of the inital shell is wrong. Instead of "Workbench:" it
@@ -147,6 +152,17 @@ BUG000022
 bergers@cip.e-technik.uni-erlangen.de
 After Demos/listfonts the next entry to the shell will cause a Segmentation 
 Fault. The output of listfonts looks like garbage at some lines.
+
+"I think that I found the error in the listfonts program. It is occuring in
+ScanFontInfo (af_scanfontinfo.c) in line 74 at the call to CallHookPkt() if
+idx=1, because if you put
+if (1 == idx)
+  return TRUE;
+before that line everything works out alright and you'll be able to enter
+commands to the shell. But if you put these two lines after the call to
+CallHookPkt() you'll get the segmentation fault. Unfortunately I don't know
+which code is executed by the call to CallHookPkt()."
+
 
 BUG000023
 berger@cip.e-technik.uni-erlangen.de
