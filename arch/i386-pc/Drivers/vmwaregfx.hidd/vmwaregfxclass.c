@@ -528,7 +528,7 @@ STATIC VOID gfxhidd_setcursorvisible(OOP_Class *cl, OOP_Object *o, struct pHidd_
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VMWAREGFX_METHODS 5
+#define NUM_VMWAREGFX_METHODS 4
 
 OOP_Class *init_vmwaregfxclass(struct VMWareGfx_staticdata *xsd) {
 OOP_Class *cl = NULL;
@@ -542,7 +542,7 @@ struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
 struct OOP_MethodDescr vmwaregfxhidd_descr[NUM_VMWAREGFX_METHODS + 1] = 
 {
 	{(IPTR (*)())gfxhidd_newbitmap,        moHidd_Gfx_NewBitMap},
-	{(IPTR (*)())gfxhidd_copybox,          moHidd_Gfx_CopyBox},
+//	{(IPTR (*)())gfxhidd_copybox,          moHidd_Gfx_CopyBox},
 	{(IPTR (*)())gfxhidd_setcursorshape,   moHidd_Gfx_SetCursorShape},
 	{(IPTR (*)())gfxhidd_setcursorpos,     moHidd_Gfx_SetCursorPos},
 	{(IPTR (*)())gfxhidd_setcursorvisible, moHidd_Gfx_SetCursorVisible},
