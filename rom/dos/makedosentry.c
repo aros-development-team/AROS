@@ -52,32 +52,56 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    CONST_STRPTR s2;
-    STRPTR s3;
+    CONST_STRPTR    s2;
+    STRPTR          s3;
     struct DosList *dl;
 
-    dl=(struct DosList *)AllocMem(sizeof(struct DosList),MEMF_PUBLIC|MEMF_CLEAR);
-    if(dl!=NULL)
-    {
-	s2=name;
-	while(*s2++)
-	    ;
-	s3=(STRPTR)AllocVec(s2-name+1,MEMF_PUBLIC);
-	if(s3!=NULL)
-	{
-	    /* Compatibility */
-	    dl->dol_OldName=MKBADDR(s3);
-	    *s3++=s2-name>256?255:s2-name-1;
+    dl = (struct DosList *)AllocMem(sizeof(struct DosList),
+				    MEMF_PUBLIC | MEMF_CLEAR);
 
-	    CopyMem(name,s3,s2-name);
-	    dl->dol_DevName=s3;
-	    dl->dol_Type=type;
+    if (dl != NULL)
+    {
+	s2 = name;
+
+	while (*s2++)
+	    ;
+
+	/* Use MEMF_CLEAR to make sure that "real" BSTR:s also are always
+	   ended with a 0 byte */
+	s3 = (STRPTR)AllocVec(s2 - name + 1, MEMF_PUBLIC | MEMF_CLEAR);
+
+	if (s3 != NULL)
+	{
+	    int i;		/* Loop variable */
+	    int length = s2 - name > 255 ? 255 : s2 - name - 1;
+
+	    /* Compatibility */
+	    dl->dol_OldName = MKBADDR(s3);
+	    AROS_BSTR_setstrlen(s3, length);
+
+	    for (i = 0; i < length; i++)
+	    {
+		AROS_BSTR_putchar(s3, i, name[i]); 
+	    }
+
+	    dl->dol_DevName = AROS_BSTR_ADDR(dl->dol_OldName);
+	    dl->dol_Type = type;
+
 	    return dl;
-	} else
+	}
+	else
+	{
 	    SetIoErr(ERROR_NO_FREE_STORE);
-	FreeMem(dl,sizeof(struct DosList));
-    } else
+	}
+	
+	FreeMem(dl, sizeof(struct DosList));
+    }
+    else
+    {
         SetIoErr(ERROR_NO_FREE_STORE);
+    }
+
     return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* MakeDosEntry */
