@@ -1468,6 +1468,11 @@ void deventry(struct rambase *rambase)
                                         iofs->io_Union.io_SET_FILE_SIZE.io_SeekMode);
 		    break;
 
+		case FSA_IS_FILESYSTEM:
+		    iofs->io_Union.io_IS_FILESYSTEM.io_IsFilesystem = TRUE;
+		    error = 0;
+		    break;
+
 		default:
 		    error=ERROR_NOT_IMPLEMENTED;
 		    break;
@@ -1509,7 +1514,6 @@ void deventry(struct rambase *rambase)
   FSA_SAME_LOCK
   FSA_CHANGE_SIGNAL
   FSA_FORMAT
-  FSA_IS_FILESYSTEM
   FSA_EXAMINE_ALL
   FSA_EXAMINE_FH
   FSA_ADD_NOTIFY
