@@ -1131,17 +1131,20 @@ D(bug("Window: %p\n", w));
 		    BeginUpdate(targetlayer);
 		    if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
 		    {
-			 RefreshWindowFrame(targetwindow);
+			RefreshWindowFrame(targetwindow);
 		    }
 		    RefreshGadgets(targetwindow->FirstGadget, w, NULL);
 		    EndUpdate(targetlayer, FALSE);
 
-		    IM = alloc_intuimessage(IntuitionBase);
-		    targetlayer->Flags &= ~LAYERREFRESH;
-		    if (NULL != IM)
+		    if (targetwindow->IDCMPFlags & IDCMP_REFRESHWINDOW)
 		    {
-		      IM->Class = IDCMP_REFRESHWINDOW;
-		      send_intuimessage(IM, targetwindow, IntuitionBase);
+			IM = alloc_intuimessage(IntuitionBase);
+			targetlayer->Flags &= ~LAYERREFRESH;
+			if (NULL != IM)
+			{
+			  IM->Class = IDCMP_REFRESHWINDOW;
+			  send_intuimessage(IM, targetwindow, IntuitionBase);
+			}
 		    }
 		  }
 		} 
@@ -1391,8 +1394,9 @@ D(bug("Window: %p\n", w));
 		 /* and refresh all gadgets except border gadgets */
 		 int_refreshglist(w->FirstGadget, w, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 
-		 /* Send IDCMP_NEWSIZE to resized window */
+		 if (targetwindow->IDCMPFlags & IDCMP_NEWSIZE)
                  {
+		    /* Send IDCMP_NEWSIZE to resized window */
 		    struct IntuiMessage *imsg;
 		    imsg = alloc_intuimessage(IntuitionBase);
 		    if (!imsg)
@@ -1565,8 +1569,9 @@ D(bug("Window: %p\n", w));
 		 /* and refresh all gadgets except border gadgets */
 		 int_refreshglist(targetwindow->FirstGadget, targetwindow, NULL, -1, 0, REFRESHGAD_BORDER, IntuitionBase);
 
-		 /* Send IDCMP_CHANGEWINDOW to resized window */
+		 if (targetwindow->IDCMPFlags & IDCMP_CHANGEWINDOW)
                  {
+		    /* Send IDCMP_CHANGEWINDOW to resized window */
 		    struct IntuiMessage *imsg;
 		    imsg = alloc_intuimessage(IntuitionBase);
 		    if (!imsg)
@@ -1628,8 +1633,9 @@ D(bug("Window: %p\n", w));
 		 /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
 		 DoGMLayout(targetwindow->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
 
-		 /* Send IDCMP_CHANGEWINDOW to resized window */
+		 if (targetwindow->IDCMPFlags & IDCMP_CHANGEWINDOW)
                  {
+		    /* Send IDCMP_CHANGEWINDOW to resized window */
 		    struct IntuiMessage *imsg;
 		    imsg = alloc_intuimessage(IntuitionBase);
 		    if (!imsg)
