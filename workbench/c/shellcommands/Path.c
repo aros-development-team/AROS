@@ -16,6 +16,7 @@
 
 #include <aros/shcommands.h>
 
+
 AROS_SH7(Path, 45.2,
 AROS_SHA(STRPTR *, ,PATH,/M,NULL),
 AROS_SHA(BOOL, ,ADD,/S,TRUE),
@@ -63,22 +64,22 @@ AROS_SHA(BOOL, ,HEAD,/S,FALSE))
 
         next = cur->next;
 
-        for (; *names; names++)
+        for (; *names; names++, cur = PE(cur->next))
 	{
-            cur->next = MKBADDR(AllocVec(sizeof(PathEntry), MEMF_ANY));
-
-            if (cur->next)
+	    if
+            (
+                !(cur->next = MKBADDR(AllocVec(sizeof(PathEntry), MEMF_ANY)))
+		||
+                !(PE(cur->next)->lock = Lock(*names, SHARED_LOCK))
+            )
             {
-                PE(cur->next)->lock = Lock(*names, SHARED_LOCK);
+	        if (!PE(cur->next)->lock)
+                    PrintFault(IoErr(), *names);
 
-                if (!PE(cur->next)->lock)
-                {
-                    FreeVec(PE(cur->next));
-		    break;
-	        }
+		FreeVec(PE(cur->next));
 
-                cur  = PE(cur->next);
- 	    }
+                break;
+	    }
 	}
 
         cur->next = next;
