@@ -266,7 +266,6 @@ static LONG tinymain(void)
     {
 	strcpy (path, args.dir!=NULL?args.dir:"");
 
-	VPrintf ("Dir %ld %ld %ld\n", (LONG *)&args);
 	error = do_dir ();
 
 	FreeArgs(rda);
@@ -277,7 +276,7 @@ static LONG tinymain(void)
     return error;
 }
 
-#if 0
+#ifdef NO_LINK
 #include "strcpy.c"
 #include "strlen.c"
 #include "qsort.c"
