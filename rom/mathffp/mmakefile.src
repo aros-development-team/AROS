@@ -33,8 +33,9 @@ ALL_FILES	:= $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
 
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM kernel : setup includes
-kernel : show-flags $(LIB)
+#MM
+kernel-mathffp-$(ARCH)-$(CPU) : show-flags $(LIB)
+	@$(NOP)
 
 $(LIB) : $(OBJS)
 	%mklib_q
@@ -42,6 +43,10 @@ $(LIB) : $(OBJS)
 
 show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
+
+#MM kernel-mathffp : setup includes kernel-mathffp-$(ARCH)-$(CPU)
+kernel-mathffp :
+	@$(NOP)
 
 #MM
 setup :

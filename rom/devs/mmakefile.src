@@ -6,10 +6,15 @@ OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libconsole.a
 
 #MM
-kernel : $(LIB)
+kernel-devs-$(ARCH)-$(CPU) : $(LIB)
+	@$(NOP)
 
 $(LIB) : $(OBJS)
 	%mklib_q
+
+#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
+kernel-devs :
+	@$(NOP)
 
 #MM
 clean ::

@@ -40,8 +40,13 @@ FUNCTIONS := \
 %define_libs prelibs=-l$(LIBNAME)
 %genlib
 
-#MM workbench : setup includes linklibs
-workbench : show-flags $(SLIB)
+#MM
+kernel-mathieeesingbas-$(ARCH)-$(CPU) : show-flags $(LIB)
+	@$(NOP)
+
+#MM kernel-mathieeesingbas : setup includes linklibs kernel-mathieeesingbas-$(ARCH)-$(CPU)
+kernel-mathieeesingbas :
+	@$(NOP)
 
 #MM setup
 #MM clean
