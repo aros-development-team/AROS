@@ -98,44 +98,17 @@ static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
     {
 	if (iofs->IOFS.io_Message.mn_ReplyPort->mp_SigTask == fh->breaktask)
 	{
-	    fh->breaktask = 0;
-	}
-	
-        iofs->io_DosError = 0;
-	ReplyMsg(&iofs->IOFS.io_Message);
-	return;
+	    fh->breaktask = NULL;
+	}	
     }
-    
-    if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+    else
     {
-	/* Abort all pending requests */
-	if (!CheckIO( ioReq(fh->conreadio) ))
-    	    AbortIO( ioReq(fh->conreadio) );
-
-	/* Wait for abort */
-	WaitIO( ioReq(fh->conreadio) );
+    	fh->breaktask = NULL;
+	iofs->IOFS.io_Unit = NULL;
     }
-    
-    /* Clean up */
-    
-    if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
-    	CloseDevice((struct IORequest *)fh->conreadio);
-	
-    if (fh->window)
-    	CloseWindow(fh->window);
-	
-    DeleteIORequest( ioReq(fh->conreadio) );
-    FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
-    
-    FreeMem(fh, sizeof (struct filehandle));
-    if (fh->wintitle) FreeVec(fh->wintitle);
-    
+
     iofs->io_DosError = 0;
-    iofs->IOFS.io_Unit = NULL;    
     ReplyMsg(&iofs->IOFS.io_Message);
-    
-    /* let's kill ourselves */
-    RemTask(FindTask(NULL));
 }
 
 /****************************************************************************************/
@@ -447,7 +420,7 @@ VOID conTaskEntry(struct conTaskParams *param)
     	StartAsyncConsoleRead(fh, conbase);	
     }
     
-    for(;;)
+    while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) )
     {
         ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
 	ULONG contaskmask = 1L << fh->contaskmp->mp_SigBit;
@@ -883,8 +856,35 @@ VOID conTaskEntry(struct conTaskParams *param)
 #endif
 	} /* if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart) && (fh->inputsize == 0)) */
 	    
-    } /* for(;;) */
+    } /* while(! ((fh->usecount == 0) && ((fh->flags & FHFLG_EOF) || !(fh->flags & FHFLG_WAIT))) ) */
 
+    if (fh->flags & FHFLG_ASYNCCONSOLEREAD)
+    {
+	/* Abort all pending requests */
+	if (!CheckIO( ioReq(fh->conreadio) ))
+    	    AbortIO( ioReq(fh->conreadio) );
+
+	/* Wait for abort */
+	WaitIO( ioReq(fh->conreadio) );
+    }
+    
+    /* Clean up */
+    
+    if (fh->flags & FHFLG_CONSOLEDEVICEOPEN)
+    	CloseDevice((struct IORequest *)fh->conreadio);
+	
+    if (fh->window)
+    	CloseWindow(fh->window);
+	
+    DeleteIORequest( ioReq(fh->conreadio) );
+    FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
+    
+    FreeMem(fh, sizeof (struct filehandle));
+    if (fh->wintitle) FreeVec(fh->wintitle);
+        
+    /* let's kill ourselves */
+    RemTask(FindTask(NULL));
+    
     /* this point must never be reached */
 }
 
