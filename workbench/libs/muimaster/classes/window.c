@@ -563,6 +563,9 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 			 WA_AutoAdjust,   (IPTR)TRUE,
 			 WA_NewLookMenus, (IPTR)TRUE,
 			 WA_Gadgets, data->wd_VertProp,
+#if REDUCE_FLICKER_TEST
+			 WA_BackFill, LAYERS_NOBACKFILL,
+#endif
 			 TAG_DONE);
 
     if (win)
@@ -965,6 +968,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		}
 
 		MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+
 	    } else
 	    {
 		if (MUI_BeginRefresh(&data->wd_RenderInfo, 0))
@@ -1549,7 +1553,12 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_ReqWidth = MUIV_Window_Width_Default;
     data->wd_RootObject = NULL;
     data->wd_DefaultObject = NULL;
+#if REDUCE_FLICKER_TEST
+    data->wd_Flags = 0;
+#else
     data->wd_Flags = MUIWF_ERASEAREA;
+#endif
+
 /* alternate dimensions */
 /* no change in coordinates */
     data->wd_AltDim.Top = MUIV_Window_AltTopEdge_NoChange;

@@ -99,6 +99,10 @@ struct MUIMasterBase_intern
 
 /****************************************************************************************/
 
+#define REDUCE_FLICKER_TEST 0
+
+/****************************************************************************************/
+
 #undef MUIMB
 #define MUIMB(b)	((struct MUIMasterBase_intern *)b)
 
