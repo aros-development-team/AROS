@@ -115,6 +115,8 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 #ifdef __mc68000__
     register APTR pdata __asm(A3) = hook->h_Data;
+#else
+    char *pdata = hook->h_Data;
 #endif
 
     AROS_UFC3(void, hook->h_SubEntry,
@@ -181,10 +183,10 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 #define LocaleBase globallocalebase
 
     struct Hook       hook;
-    struct HookData   data;
     APTR    	      retval;
 
 #ifdef __MORPHOS__
+    struct HookData   data;
 
     if ((ULONG) PutChProc > 1)
     {
