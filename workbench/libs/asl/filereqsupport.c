@@ -741,6 +741,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
     struct IntFileReq 		*ifreq = (struct IntFileReq *)ld->ld_IntReq;
     struct ASLLVFileReqNode 	*node;
     IPTR 			active, total, visible;
+    struct Gadget		*mainstrgad;
     struct TagItem		set_tags[] =
     {
     	{ASLLV_Active		, 0		},
@@ -752,6 +753,8 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
     GetAttr(ASLLV_Total  , udata->Listview, &total  );
     GetAttr(ASLLV_Visible, udata->Listview, &visible);
     
+    mainstrgad = (struct Gadget *)((ifreq->ifr_Flags2 & FRF_DRAWERSONLY) ? udata->PathGad : udata->FileGad);
+    
     if (total < 1) return;
     
     if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
@@ -762,7 +765,7 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
     {
         delta *= total;
     }
-    else if (gad && (gad != (struct Gadget *)udata->PatternGad))
+    else if (gad && (gad == mainstrgad))
     {
         /* try to jump to first item which matches text in string gadget,
 	   but only if text in string gadget mismatches actual active
@@ -779,29 +782,35 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 	len = strlen(buffer);
 	if (len > 0) if (buffer[len - 1] == '/') buffer[--len] = '\0';
 	
-	if (((LONG)active) >= 0)
+	if (len)
 	{
-	    if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
+	    if (((LONG)active) >= 0)
 	    {
-	        if (stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
-	    }     
-	}
-	
-	if (dojump)
-	{
-	    i = 0;
-	    ForeachNode(&udata->ListviewList, node)
-	    {
-		if (Strnicmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)buffer, len) == 0)
+		if ((node = (struct ASLLVFileReqNode *)FindListNode(&udata->ListviewList, (WORD)active)))
 		{
-		    active = i;
-		    delta = 0;
-		    break;
-		}
-		i++;
+	            if (stricmp(node->node.ln_Name, buffer) == 0) dojump = FALSE;
+		}     
 	    }
-	}
-     
+
+	    if (dojump)
+	    {
+		i = 0;
+		ForeachNode(&udata->ListviewList, node)
+		{
+		    if (Strnicmp((CONST_STRPTR)node->node.ln_Name, (CONST_STRPTR)buffer, len) == 0)
+		    {
+			active = i;
+			delta = 0;
+			break;
+		    }
+		    i++;
+		    
+		}
+		
+	    } /* if (dojump) */
+	    
+	} /* if (len) */
+	    
     }
     
     active += delta;
