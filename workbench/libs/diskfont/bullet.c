@@ -940,7 +940,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
 
     if (!OTAG_GetGlyphMaps(ge,
 			   gm,
-			   attr->tta_YSize,
+			   reqattr->tta_YSize,
 			   &lochar,
 			   &hichar,
 			   &baseline,
@@ -958,7 +958,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     dfh = OTAG_AllocFontStruct(reqattr->tta_Name,
 			       hichar - lochar + 2,
 			       gfxwidth,
-			       attr->tta_YSize,
+			       reqattr->tta_YSize,
 			       DiskfontBase);
     if (!dfh)
     {
@@ -979,7 +979,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     */
 
     #warning maybe should do 64 bit calculations (long long)
-    spacewidth = spacewidth * attr->tta_YSize / 250 * xdpi / 2540;
+    spacewidth = spacewidth * reqattr->tta_YSize / 250 * xdpi / 2540;
 
     dfh->dfh_TF.ctf_TF.tf_Style    = fontstyle;
     dfh->dfh_TF.ctf_TF.tf_Flags    = OTAG_GetFontFlags(otag, DiskfontBase) & ~FPF_ROMFONT;
@@ -1013,7 +1013,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
 	struct TagItem *tags = (struct TagItem *)(dfh + 1);
 
 	tags[0].ti_Tag  = OT_PointHeight;
-	tags[0].ti_Data = attr->tta_YSize << 16;
+	tags[0].ti_Data = reqattr->tta_YSize << 16;
 	tags[1].ti_Tag  = OT_DeviceDPI;
 	tags[1].ti_Data = (xdpi << 16) | ydpi;
 	tags[2].ti_Tag  = OT_DotSize;
