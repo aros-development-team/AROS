@@ -90,15 +90,6 @@ void writeinclibdefs(struct config *cfg)
     }
     else
     {
-	fprintf(out,
-		"\n"
-		"#ifdef LC_SYSBASE_FIELD\n"
-		"#define GM_SYSBASE_FIELD LC_SYSBASE_FIELD\n"
-		"#endif\n"
-		"#ifdef LC_SEGLIST_FIELD\n"
-		"#define GM_SEGLIST_FIELD LC_SEGLIST_FIELD\n"
-		"#endif\n"
-	);
 	if (cfg->sysbase_field != NULL)
 	    fprintf(out,
 		    "#define GM_SYSBASE_FIELD(lh) (((LIBBASETYPEPTR)lh)->%s)\n",
