@@ -88,10 +88,12 @@ static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
     char *spec;
 
-//    setstring(data->text_font_string,FindConfig(MUICFG_Buttons_Font));
+    setstring(data->text_font_string, FindConfig(MUICFG_Font_Button));
+
     spec = FindConfig(MUICFG_Background_Button);
     set(data->text_background_popimage,MUIA_Imagedisplay_Spec,
 	spec ? spec : MUII_ButtonBack);
+
     spec = FindConfig(MUICFG_Background_Selected);
     set(data->text_selbackground_popimage,MUIA_Imagedisplay_Spec,
 	spec ? spec : MUII_SelectedBack);
@@ -102,14 +104,10 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
     char *buf;
-    char *str;/* = getstring(data->font_normal_string);
-    AddConfigStr(str,MUICFG_Font_Normal);
+    char *str;
 
-    str = getstring(data->font_tiny_string);
-    AddConfigStr(str,MUICFG_Font_Tiny);
-
-    str = getstring(data->font_big_string);
-    AddConfigStr(str,MUICFG_Font_Big);*/
+    str = getstring(data->text_font_string);
+    AddConfigStr(str,MUICFG_Font_Button);
 
     str = (char*)xget(data->text_background_popimage,MUIA_Imagedisplay_Spec);
     AddConfigImgStr(str,MUICFG_Background_Button);
