@@ -191,7 +191,7 @@ int main()
 
     OOP_Object *o;
 
-    void *ptr = (&_end + 15) & ~15;
+    void *ptr = (void*)((ULONG)(&_end + 15) & ~15);
 
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */
