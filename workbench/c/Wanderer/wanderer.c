@@ -242,6 +242,7 @@ ULONG xget(Object *obj, Tag attr)
 #define MUIA_IconWindow_IsRoot       (TAG_USER+0x1631313) /* i.g */
 #define MUIA_IconWindow_Drawer       (TAG_USER+0x1631314) /* i.g */
 #define MUIA_IconWindow_ActionHook   (TAG_USER+0x1631315) /* i.. */ /* Hook to call when some action happens */
+#define MUIA_IconWindow_IsBackdrop   (TAG_USER+0x1631316) /* isg */ /* is Backdrop window ? */
 
 /* private methods, should be not called from outside */
 #define MUIM_IconWindow_DoubleClicked (0x129090)
@@ -260,39 +261,36 @@ struct IconWindow_Data
 {
     Object *iconlist; /* The iconlist it displays */
     int is_root;
+    int is_backdrop;
     struct Hook *action_hook;
 };
 
 STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    char *title;
     struct Hook *action_hook;
-    int is_root;
+    int is_root, is_backdrop;
     struct IconWindow_Data *data;
 
     Object *iconlist;
 
-    is_root = (int)GetTagData(MUIA_IconWindow_IsRoot,FALSE,msg->ops_AttrList);
+    /* More than one GetTagData is not really efficient but since this is called very unoften... */
+    is_backdrop = (int)GetTagData(MUIA_IconWindow_IsBackdrop, 0, msg->ops_AttrList);
+    is_root = (int)GetTagData(MUIA_IconWindow_IsRoot, 0, msg->ops_AttrList);
+    action_hook = (struct Hook*)GetTagData(MUIA_IconWindow_ActionHook, NULL, msg->ops_AttrList);
+
     if (is_root)
     {
-	title = "Wanderer";
 	iconlist = MUI_NewObject(MUIC_IconVolumeList, TAG_DONE);
     } else
     {
-	title = (char*)GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
-	iconlist = MUI_NewObject(MUIC_IconDrawerList, MUIA_IconDrawerList_Drawer, title, TAG_DONE);
+	char *drw = (char*)GetTagData(MUIA_IconWindow_Drawer,NULL,msg->ops_AttrList);
+	iconlist = MUI_NewObject(MUIC_IconDrawerList, MUIA_IconDrawerList_Drawer, drw, TAG_DONE);
     }
-
-    /* More than one GetTagData is not really efficient but since this is called very unoften... */
-    action_hook = (struct Hook*)GetTagData(MUIA_IconWindow_ActionHook, NULL, msg->ops_AttrList);
 
     /* Now call the super methods new method with additional tags */
     obj = (Object*)DoSuperNew(cl,obj,
-	MUIA_Window_Title,title,
 	MUIA_Window_Width,300,
 	MUIA_Window_Height,300,
-	MUIA_Window_UseBottomBorderScroller, TRUE,
-	MUIA_Window_UseRightBorderScroller, TRUE,
 	MUIA_Window_ScreenTitle, GetScreenTitle(),
 	WindowContents, VGroup,
 		MUIA_Group_Child, MUI_NewObject(MUIC_IconListview, MUIA_IconListview_UseWinBorder, TRUE, MUIA_IconListview_IconList, iconlist, TAG_DONE),
@@ -306,11 +304,70 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->is_root = is_root;
     data->action_hook = action_hook;
 
+    data->is_backdrop = -1;
+    set(obj, MUIA_IconWindow_IsBackdrop, is_backdrop);
+
     /* If double clicked then we call our own private methods, that's easier then using Hooks */
     DoMethod(iconlist,MUIM_Notify,MUIA_IconList_DoubleClick,TRUE,obj,1,MUIM_IconWindow_DoubleClicked);
 
     return (IPTR)obj;
 }
+
+STATIC IPTR IconWindow_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    struct TagItem        *tags = msg->ops_AttrList;
+    struct TagItem        *tag;
+
+    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    {
+	switch (tag->ti_Tag)
+	{
+	    case    MUIA_IconWindow_IsBackdrop:
+		    if ((!!tag->ti_Data) != data->is_backdrop)
+		    {
+		    	int is_open = xget(obj, MUIA_Window_Open);
+		    	if (is_open) set(obj, MUIA_Window_Open, FALSE);
+		        if (tag->ti_Data)
+		        {
+		            SetAttrs(obj,
+				MUIA_Window_Title, NULL,
+				MUIA_Window_Borderless, TRUE,
+				MUIA_Window_CloseGadget, FALSE,
+				MUIA_Window_SizeGadget, FALSE,
+				MUIA_Window_DepthGadget, FALSE,
+				MUIA_Window_DragBar, FALSE,
+				MUIA_Window_UseBottomBorderScroller, FALSE,
+				MUIA_Window_UseRightBorderScroller, FALSE,
+				TAG_DONE);
+				
+		        } else
+		        {
+			    char *title;
+			    if (data->is_root) title = "Wanderer";
+			    else title = (char*)xget(data->iconlist, MUIA_IconDrawerList_Drawer);
+
+			    SetAttrs(obj,
+				MUIA_Window_Title,title,
+				MUIA_Window_Borderless, FALSE,
+				MUIA_Window_CloseGadget, TRUE,
+				MUIA_Window_SizeGadget, TRUE,
+				MUIA_Window_DepthGadget, TRUE,
+				MUIA_Window_DragBar, TRUE,
+				MUIA_Window_UseBottomBorderScroller, TRUE,
+				MUIA_Window_UseRightBorderScroller, TRUE,
+				TAG_DONE);
+			}
+		        data->is_backdrop = !!tag->ti_Data;
+		    	if (is_open) set(obj, MUIA_Window_Open, TRUE);
+		     }
+		     break;
+		
+	}
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
 
 STATIC IPTR IconWindow_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 {
@@ -342,6 +399,7 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return IconWindow_New(cl,obj,(struct opSet*)msg);
+	case OM_SET: return IconWindow_Set(cl,obj,(struct opSet*)msg);
 	case OM_GET: return IconWindow_Get(cl,obj,(struct opGet*)msg);
 
 	/* private methods */
@@ -423,6 +481,7 @@ STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 #ifdef _AROS
 	UnregisterWorkbench(data->notify_port);
 #endif
+	DeleteMsgPort(data->notify_port);
 	data->notify_port = NULL;
     }
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
@@ -581,6 +640,24 @@ void shell_open(char **cd_ptr)
     }
 }
 
+void wanderer_backdrop(Object **pstrip)
+{
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip,MEN_WANDERER_BACKDROP);
+    if (item)
+    {
+    	set(root_iconwnd,MUIA_Window_Open,FALSE);
+    	SetAttrs(root_iconwnd,
+	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
+	    MUIA_Window_LeftEdge, 0,
+	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
+	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
+	    TAG_DONE);
+	set(root_iconwnd,MUIA_IconWindow_IsBackdrop, xget(item, MUIA_Menuitem_Checked));
+    	set(root_iconwnd,MUIA_Window_Open,TRUE);
+    }
+}
+
 void wanderer_about(void)
 {
     MUI_RequestA(app,NULL,0,"About Wanderer", "*Better than ever",
@@ -609,12 +686,19 @@ void wanderer_quit(void)
 **************************************************************************/
 VOID DoAllMenuNotifies(Object *strip, char *path)
 {
+    Object *item;
+
     if (!strip) return;
 
     DoMenuNotify(strip,MEN_WANDERER_EXECUTE,execute_open, path);
     DoMenuNotify(strip,MEN_WANDERER_SHELL,shell_open,path);
     DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
     DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
+
+    if ((item = FindMenuitem(strip,MEN_WANDERER_BACKDROP)))
+    {
+	DoMethod(item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 7, MUIM_Application_PushMethod, app, 4, MUIM_CallHook, &hook_standard, wanderer_backdrop, strip);
+    }
 }
 
 /**************************************************************************
