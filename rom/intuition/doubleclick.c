@@ -62,7 +62,7 @@
 	sMicros += 1000000 * (sSeconds - base);
 	cMicros += 1000000 * (cSeconds - base);
 
-	base = ABS(sMicros - cMicros);
+	base = ABS((LONG)(sMicros - cMicros));
 
 	return (base <= 500000);
     }
