@@ -36,7 +36,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     UBYTE   	    	  *linebuffer;
     LONG    	    	  bmflags = 0;
     WORD    	    	  bmdepth, x, y;
-    
+
     if (!data->mappingtable && !data->sourcecolors) return;
     if (!data->bm || (data->width < 1) || (data->height < 1)) return;
     
@@ -48,7 +48,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     	data->remaptable = AllocVec(256 * sizeof(WORD), MEMF_PUBLIC | MEMF_CLEAR);
 	if (!data->remaptable) return;
     }
-    
+   
     scrrp = &_screen(obj)->RastPort;
     
     if (data->usefriend)
@@ -59,10 +59,13 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     
     linebuffer = AllocVec(data->width + 16, MEMF_PUBLIC);
     if (!linebuffer) return;
-    
+
+   
     bmdepth = GetBitMapAttr(scrrp->BitMap, BMA_DEPTH);
+    if (bmdepth > 8) bmdepth = 8;
     
     data->remapped_bm = AllocBitMap(data->width, data->height, bmdepth, bmflags, friendbm);
+
     if (!data->remapped_bm)
     {
     	FreeVec(linebuffer);
@@ -73,7 +76,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
     temprp.BitMap = AllocBitMap(data->width, 1, 1, 0, NULL);
     
     InitRastPort(&bmrp);
-    
+
     for(y = 0; y < data->height; y++)
     {
     	/* Read a line from source bitmap */
@@ -99,7 +102,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 	    	linebuffer[x] = data->mappingtable[linebuffer[x]];
 	    }
 	}
-	else
+	else 
 	{
 	    for(x = 0; x < data->width; x++)
 	    {
@@ -124,6 +127,7 @@ static void remap_bitmap(struct IClass *cl, Object *obj)
 		
 		linebuffer[x] = (remappixel & 0xFF);
 	    }
+
 	}
 	
 	/* Write line into destination bitmap */
