@@ -95,7 +95,8 @@ struct MUI_WindowData
     ULONG          wd_Flags;        /* various status flags */
     struct MUI_ImageSpec_intern *wd_Background;
     ULONG          wd_DisabledKeys;
-
+    BOOL           wd_NoMenus;     /* MUIA_Window_NoMenus */
+    
     Object *       wd_DragObject; /* the object which is being dragged */
     struct Window *wd_DropWindow; /* the destination window, for faster access */
     Object *       wd_DropObject; /* the destination object */
@@ -336,7 +337,7 @@ static void _zune_window_change_events (struct MUI_WindowData *data)
     ** (also on MUI)
     */
     new_events &= ~IDCMP_VANILLAKEY;
-
+    
     data->wd_Events = new_events;
     if ((old_events != new_events) && (data->wd_Flags & MUIWF_OPENED))
     {
@@ -628,7 +629,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
      */
     altdims.Width += data->wd_RenderInfo.mri_Screen->WBorLeft + data->wd_RenderInfo.mri_Screen->WBorRight;
     altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 11;
-
+    
     win = OpenWindowTags(NULL,
 			 WA_Left,         (IPTR)data->wd_X,
 			 WA_Top,          (IPTR)data->wd_Y,
@@ -640,7 +641,8 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 			 WA_InnerHeight,  (IPTR)data->wd_Height,
 			 WA_AutoAdjust,   (IPTR)TRUE,
 			 WA_NewLookMenus, (IPTR)TRUE,
-			 WA_Gadgets, data->wd_VertProp,
+			 data->wd_NoMenus ? WA_RMBTrap : TAG_IGNORE, (IPTR) TRUE,
+                         WA_Gadgets, data->wd_VertProp,
 			 WA_Zoom,         (IPTR)&altdims,
 			 REDUCE_FLICKER_TEST ? WA_BackFill : TAG_IGNORE, LAYERS_NOBACKFILL,
 			 TAG_DONE);
@@ -659,7 +661,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 		     data->wd_MinMax.MinHeight + vborders,
 		     data->wd_MinMax.MaxWidth  + hborders,
 		     data->wd_MinMax.MaxHeight + vborders);
-
+        
         win->UserData = (char*)data->wd_RenderInfo.mri_WindowObject;
         win->UserPort = data->wd_UserPort; /* Same port for all windows */
         ModifyIDCMP(win, data->wd_Events);
@@ -672,7 +674,6 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	    data->wd_Menu = menu;
 	    SetMenuStrip(win,menu);
 	}
-//	D(bug(" >> &data->wd_RenderInfo=%lx\n", &data->wd_RenderInfo));
 
         return TRUE;
     }
@@ -955,8 +956,20 @@ void _zune_window_message(struct IntuiMessage *imsg)
     switch (imsg->Class)
     {
     	case IDCMP_MOUSEMOVE:
-	    if (ContextMenuUnderPointer(data,data->wd_RootObject,imsg->MouseX,imsg->MouseY)) iWin->Flags |= WFLG_RMBTRAP;
-	    else iWin->Flags &= ~WFLG_RMBTRAP;
+	    if 
+            (
+                ContextMenuUnderPointer
+                (
+                    data, data->wd_RootObject, imsg->MouseX, imsg->MouseY
+                )
+            )
+            {
+                iWin->Flags |= WFLG_RMBTRAP;
+	    }
+            else if (!data->wd_NoMenus)
+            {
+                iWin->Flags &= ~WFLG_RMBTRAP;
+            }
 	    break;
 
 	case IDCMP_ACTIVEWINDOW:
@@ -1731,7 +1744,11 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->wd_ChildMenustrip = (Object*)tag->ti_Data;
 		break;
 
-   	    case MUIA_Window_RootObject:
+   	    case MUIA_Window_NoMenus:
+                data->wd_NoMenus = (BOOL) tag->ti_Data;
+                break;
+            
+            case MUIA_Window_RootObject:
 		if (!tag->ti_Data)
 		{
 		    CoerceMethod(cl, obj, OM_DISPOSE);
@@ -1888,7 +1905,11 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    SetWindowTitles(data->wd_RenderInfo.mri_Window,
 				    (CONST_STRPTR)~0, data->wd_ScreenTitle);
 		break;
-
+            
+            case MUIA_Window_NoMenus:
+                data->wd_NoMenus = (BOOL) tag->ti_Data;
+                break;
+                
 	    case MUIA_Window_UseBottomBorderScroller:
 		_handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
 		break;
