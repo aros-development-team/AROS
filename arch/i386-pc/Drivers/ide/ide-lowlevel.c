@@ -367,9 +367,8 @@ void CalculateGeometry(struct ide_Unit *unit, struct iDev *id)
    /* Now to some serious fun.
     * We still might not have the proper geometry
     * here even after the heavy guessworking above.
-    * Some leeway is allowed, 10% ought to cover all cases
     */
-   if ((MAXCapacity-unit->au_Blocks) > MAXCapacity/10)
+   if (unit->au_Blocks < MAXCapacity)
    {
        /* Most likely we have a disk larger than 8.3 Gb here, so do the thing */
        unit->au_SectorsT = 63;
@@ -474,44 +473,41 @@ void Delay400ns( void )
 /* Perform a softreset on an ATA port */
 void ResetBus(struct ide_Bus *bus)
 {
-    UWORD port;
-    UBYTE status;
-    UBYTE delay;
-
-    port = bus->ib_Port;
-
-    /* Set device parameters */
-    ide_out(0x0a,ata_Control,port);
-
-    /* Perform the actual resetting */
-    ide_out(0x0e,ata_Control,port);
-    Delay400ns();
-    ide_out(0x0a,ata_Control,port);
-    Delay400ns();
-
-    /* Wait for dev0 to come online */
-    if ( bus->ib_Dev0 != IDE_DEVTYPE_NONE )
-    {
-	for (delay=0;delay++;delay<10)
-	{
-	    Delay400ns();
-	    status = ide_in(ata_Status,port);
-	    if ((status & ATAF_BUSY) == 0) break;
-	}
-    }
-
-    /* Wait for dev1 to come online */
-    if ( bus->ib_Dev1 != IDE_DEVTYPE_NONE )
-    {
-	ide_out(0xb0,ata_DevHead,port);
-	Delay400ns();
-	for (delay=0;delay++;delay<10)
-	{
-	    Delay400ns();
-	    status = ide_in(ata_Status,port);
-	    if ((status & ATAF_BUSY) == 0) break;
-	}
-    }
+   UWORD port;
+   UBYTE status;
+   
+   port = bus->ib_Port;
+   
+   /* Set device parameters */
+   ide_out(0x0a,ata_Control,port);
+   
+   /* Perform the actual resetting */
+   ide_out(0x0e,ata_Control,port);
+   Delay400ns();
+   ide_out(0x0a,ata_Control,port);
+   Delay400ns();
+   
+   /* Wait for dev0 to come online */
+   if ( bus->ib_Dev0 != IDE_DEVTYPE_NONE )
+   {
+      while (1)
+      {
+         status = ide_in(ata_Status,port);
+         if ((status & ATAF_BUSY) == 0) break;
+      }
+   }
+   
+   /* Wait for dev1 to come online */
+   if ( bus->ib_Dev1 != IDE_DEVTYPE_NONE )
+   {
+      ide_out(0xb0,ata_DevHead,port);
+      Delay400ns();
+      while(1)
+      {
+         status = ide_in(ata_Status,port);
+         if ((status & ATAF_BUSY) == 0) break;
+      }
+   }
 }
 
 /* Scan an ATA bus for devices */
