@@ -76,7 +76,7 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     struct Process   *me = (struct Process *)FindTask(NULL);
     struct IOFileSys *iofs;
  
-    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    if (__is_process(me))
     {
 	/* Call the packet wait function if the user has one installed.
 	   Unfortunately, the user gets something completely different than
