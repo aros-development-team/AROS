@@ -183,8 +183,6 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
 
 	if (cl)
 	    ZUNE_AddBuiltinClass(cl, mb);
-	else
-	    bug ("[Zune] Couldn't create builtin class `%s'\n", classid);
     }
 
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
