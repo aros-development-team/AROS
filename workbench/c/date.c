@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Date CLI command
@@ -14,6 +14,7 @@
 #include <dos/dos.h>
 #include <dos/datetime.h>
 #include <devices/timer.h>
+#include <string.h>
 
 static const char version[] = "$VER: date 41.4 (5.3.2000)\n";
 
@@ -24,43 +25,127 @@ static const char version[] = "$VER: date 41.4 (5.3.2000)\n";
 #define ARG_VER 3
 #define ARG_COUNT 4
 
-int setdate(STRPTR day, STRPTR date, STRPTR time)
+static WORD chrcount(STRPTR s, UBYTE c)
+{
+    UBYTE sc;
+    WORD retval = 0;
+    
+    while((sc = *s++))
+    {
+    	if (sc == c) retval++;
+    }
+    
+    return retval;    
+}
+
+int setdate(STRPTR *day_date_time)
 {
     int                error = RETURN_OK;
     BYTE               timererror;
-    struct timerequest timerReq;
+    struct timerequest *timerReq;
+    struct MsgPort     *timerMP;
     struct DateTime    dt;
-
-    timererror = OpenDevice(TIMERNAME, UNIT_MICROHZ, 
-			    (struct IORequest *)&timerReq, 0L);
-    if(timererror == 0)
+    WORD    	       i, count;
+    UBYTE   	       fulltime[9];
+    STRPTR  	       realtime = NULL, realdate = NULL;
+    
+    for(i = 0; i < 3; i++)
     {
-	dt.dat_StrDay  = day;
-	dt.dat_StrDate = date;
-	dt.dat_StrTime = time;
-
-	if(StrToDate(&dt) == 0)
+    	if (day_date_time[i] == NULL) continue;
+	
+	if (chrcount(day_date_time[i], '-'))
 	{
-	    PutStr("***Bad args:\n- use DD-MMM-YY or <dayname> or yesterday "
-		   "etc. to set date\n HH:MM:SS or HH:MM to set time\n");
-	    CloseDevice((struct IORequest *)&timerReq);
-	    exit(RETURN_FAIL);
+	    /* must be date */
+	    
+	    realdate = day_date_time[i];
 	}
+	else if ((count = chrcount(day_date_time[i], ':')))
+	{
+	    /* must be time */
+	    if (count == 1)
+	    {
+	    	/* seconds are missing */
+		
+		if (strlen(day_date_time[i]) <= 5)
+		{
+		    strcpy(fulltime, day_date_time[i]);
+		    strcat(fulltime, ":00");
+		    realtime = fulltime;
+		}
+		else
+		{
+		    realtime = day_date_time[i];
+		}
+	    }
+	    else
+	    {
+	    	realtime = day_date_time[i];
+	    }
+	}
+	else
+	{
+	    /* must be week day name */
+	    
+	    if (!realdate) realdate = day_date_time[i];
+	}
+	
+    }
 
-	timerReq.tr_time.tv_secs = dt.dat_Stamp.ds_Days*60*60*24 +
-	                           dt.dat_Stamp.ds_Minute*60 +
-	                           dt.dat_Stamp.ds_Tick / TICKS_PER_SECOND;
-	timerReq.tr_time.tv_micro = 0;
-	timerReq.tr_node.io_Command = TR_SETSYSTIME;
-	timerReq.tr_node.io_Flags |= IOF_QUICK;
+    timerMP = CreateMsgPort();
+    if (timerMP)
+    {
+	timerReq = (struct timerequest *)CreateIORequest(timerMP, sizeof(struct timerequest));
 
-	DoIO((struct IORequest *)&timerReq);
+    	if (timerReq)
+	{
+	    timererror = OpenDevice(TIMERNAME, UNIT_VBLANK, 
+				    &timerReq->tr_node, 0L);
+	    if(timererror == 0)
+	    {
+    		dt.dat_Format  = FORMAT_DOS;
+		dt.dat_Flags   = DTF_FUTURE;
+		dt.dat_StrDay  = NULL; /* StrToDate ignores this anyway */	
+		dt.dat_StrDate = realdate;
+		dt.dat_StrTime = realtime;
 
-        CloseDevice((struct IORequest *)&timerReq);
-    } 
+		DateStamp(&dt.dat_Stamp);
+
+		if((!realdate && !realtime) || (StrToDate(&dt) == 0))
+		{
+		    PutStr("***Bad args:\n- use DD-MMM-YY or <dayname> or yesterday "
+			   "etc. to set date\n HH:MM:SS or HH:MM to set time\n");
+		    CloseDevice(&timerReq->tr_node);
+		    exit(RETURN_FAIL);
+		}
+
+		timerReq->tr_time.tv_secs = dt.dat_Stamp.ds_Days*60*60*24 +
+	                        	   dt.dat_Stamp.ds_Minute*60 +
+	                        	   dt.dat_Stamp.ds_Tick / TICKS_PER_SECOND;
+		timerReq->tr_time.tv_micro = 0;
+		timerReq->tr_node.io_Command = TR_SETSYSTIME;
+		timerReq->tr_node.io_Flags |= IOF_QUICK;
+
+		DoIO(&timerReq->tr_node);
+
+        	CloseDevice(&timerReq->tr_node);
+	    } 
+	    else
+	    {
+        	PutStr("Date: Error opening timer.device\n");
+        	error = RETURN_FAIL;
+	    }
+	    DeleteIORequest(&timerReq->tr_node);
+	}
+	else
+	{
+            PutStr("Date: Error creating timerequest\n");
+            error = RETURN_FAIL; 	    
+	}
+	DeleteMsgPort(timerMP);
+    }
     else
     {
-        PutStr("Date: Error opening timer.device\n");
+        PutStr("Date: Error creating MsgPort\n");
         error = RETURN_FAIL;
     }
     
@@ -74,8 +159,8 @@ int printdate(STRPTR filename)
     int ownfile = 0;
     int error = RETURN_OK;
     struct DateTime dt;
-    char dowstring[LEN_DATSTRING], datestring[LEN_DATSTRING],
-	timestring[LEN_DATSTRING], resstring[LEN_DATSTRING*3+1];
+    char dowstring[LEN_DATSTRING * 2], datestring[LEN_DATSTRING * 2],
+	timestring[LEN_DATSTRING * 2], resstring[LEN_DATSTRING*6+1];
     
     if(filename != NULL)
     {
@@ -138,8 +223,7 @@ int main(int argc, char **argv)
         if (args[ARG_DAY] != NULL || args[ARG_DATE] != NULL ||
 	    args[ARG_TIME] != NULL)
         {
-            if ((error = setdate(args[ARG_DAY], args[ARG_DATE],
-				 args[ARG_TIME])) == RETURN_OK)
+            if ((error = setdate(args) == RETURN_OK))
             {
                 if (args[ARG_VER] != NULL)
                     printdate(args[ARG_VER]);
