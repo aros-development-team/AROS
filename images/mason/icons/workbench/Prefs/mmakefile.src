@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Input Zune Time ReqTools Font
+ICONS     := Input Zune Time ReqTools Font Locale Serial
 ICONDIR   := $(AROSDIR)/Prefs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
