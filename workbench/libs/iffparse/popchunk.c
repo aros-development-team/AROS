@@ -74,8 +74,6 @@
 
     UBYTE nullbyte = 0;
 
-
-
     /* Get current chunk */
     cn = TopChunk(iff);
 
@@ -102,11 +100,11 @@
 	    size = cn->cn_Scan;
 
 	    /* Write the chunk size */
-	    WriteStreamLong
+	    err = WriteStreamLong
 	    (
 		iff,
 		&size,
-		&err
+		IPB(IFFParseBase)
 	    );
 
 	    if (err < 0) return (err);

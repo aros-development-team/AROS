@@ -14,6 +14,7 @@
 #include <utility/utility.h>
 #include "initstruct.h"
 #include "iffparse_intern.h"
+#include <aros/debug.h>
 
 struct inittable;
 extern const char name[];
@@ -21,8 +22,8 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const IFFParse_functable[];
 extern const struct inittable datatable;
-extern struct IFFParseBase *AROS_SLIB_ENTRY(init,IFFParse)();
-extern struct IFFParseBase *AROS_SLIB_ENTRY(open,IFFParse)();
+extern struct IFFParseBase_intern *AROS_SLIB_ENTRY(init,IFFParse)();
+extern struct IFFParseBase_intern *AROS_SLIB_ENTRY(open,IFFParse)();
 extern BPTR AROS_SLIB_ENTRY(close,IFFParse)();
 extern BPTR AROS_SLIB_ENTRY(expunge,IFFParse)();
 extern int AROS_SLIB_ENTRY(null,IFFParse)();
@@ -54,7 +55,7 @@ const char version[]="$VER: icon 1.0 (28.3.96)\n\015";
 
 const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct IFFParseBase),
+    (APTR)sizeof(struct IFFParseBase_intern),
     (APTR)IFFParse_functable,
     (APTR)&datatable,
     &AROS_SLIB_ENTRY(init,IFFParse)
@@ -71,7 +72,7 @@ struct inittable
     S_END (IFFParse_end);
 };
 
-#define O(n) offsetof(struct IFFParseBase,n)
+#define O(n) offsetof(struct IFFParseBase_intern,n)
 
 const struct inittable datatable=
 {
@@ -85,22 +86,15 @@ const struct inittable datatable=
 };
 
 #define EasyHook(hook, func)  \
-const struct Hook hook = { {0,0}, HookEntry, (IPTR(*)())func, NULL}
-
-EasyHook(stophook,             StopFunc           );
-EasyHook(prophook,             PropFunc           );
-EasyHook(collectionhook,       CollectionFunc     );
-EasyHook(doshook,              DOSStreamHandler   );
-EasyHook(cliphook,             ClipStreamHandler  );
-EasyHook(bufhook,              BufStreamHandler   );
-EasyHook(collectionpurgehook,  CollectionPurgeFunc);
-EasyHook(proppurgehook,        PropPurgeFunc      );
+    IFFParseBase->hook.h_Entry = HookEntry; \
+    IFFParseBase->hook.h_SubEntry = (IPTR(*)())func; \
+    IFFParseBase->hook.h_Data = IFFParseBase
 
 #undef O
 #undef SysBase
 
-AROS_LH2(struct IFFParseBase *, init,
- AROS_LHA(struct IFFParseBase *, IFFParseBase, D0),
+AROS_LH2(struct IFFParseBase_intern *, init,
+ AROS_LHA(struct IFFParseBase_intern *, IFFParseBase, D0),
  AROS_LHA(BPTR,               segList,   A0),
      struct ExecBase *, SysBase, 0, IFFParse)
 {
@@ -111,6 +105,15 @@ AROS_LH2(struct IFFParseBase *, init,
     IFFParseBase->sysbase=SysBase;
     IFFParseBase->seglist=segList;
 
+    EasyHook(stophook,             StopFunc           );
+    EasyHook(prophook,             PropFunc           );
+    EasyHook(collectionhook,       CollectionFunc     );
+    EasyHook(doshook,              DOSStreamHandler   );
+    EasyHook(cliphook,             ClipStreamHandler  );
+    EasyHook(bufhook,              BufStreamHandler   );
+    EasyHook(collectionpurgehook,  CollectionPurgeFunc);
+    EasyHook(proppurgehook,        PropPurgeFunc      );
+
     /* You would return NULL here if the init failed. */
     return IFFParseBase;
     AROS_LIBFUNC_EXIT
@@ -119,9 +122,9 @@ AROS_LH2(struct IFFParseBase *, init,
 /* Use This from now on */
 #define SysBase IFFParseBase->sysbase
 
-AROS_LH1(struct IFFParseBase *, open,
+AROS_LH1(struct IFFParseBase_intern *, open,
  AROS_LHA(ULONG, version, D0),
-     struct IFFParseBase *, IFFParseBase, 1, IFFParse)
+     struct IFFParseBase_intern *, IFFParseBase, 1, IFFParse)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -145,6 +148,8 @@ AROS_LH1(struct IFFParseBase *, open,
     if (!UtilityBase)
 	return NULL;
 
+kprintf ("DOSBase=%p  UtilBase=%p\n", DOSBase, UtilityBase);
+
     /* I have one more opener. */
     IFFParseBase->library.lib_OpenCnt++;
     IFFParseBase->library.lib_Flags&=~LIBF_DELEXP;
@@ -154,7 +159,7 @@ AROS_LH1(struct IFFParseBase *, open,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, close, struct IFFParseBase *, IFFParseBase, 2, IFFParse)
+AROS_LH0(BPTR, close, struct IFFParseBase_intern *, IFFParseBase, 2, IFFParse)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -175,7 +180,7 @@ AROS_LH0(BPTR, close, struct IFFParseBase *, IFFParseBase, 2, IFFParse)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct IFFParseBase *, IFFParseBase, 3, IFFParse)
+AROS_LH0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 {
     AROS_LIBFUNC_INIT
 
@@ -207,7 +212,7 @@ AROS_LH0(BPTR, expunge, struct IFFParseBase *, IFFParseBase, 3, IFFParse)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct IFFParseBase *, IFFParseBase, 4, IFFParse)
+AROS_LH0I(int, null, struct IFFParseBase_intern *, IFFParseBase, 4, IFFParse)
 {
     AROS_LIBFUNC_INIT
     return 0;

@@ -17,7 +17,7 @@
 /* Look at page 501-502 in RKM Libraries     */
 
 BOOL InitPort (struct MsgPort *mp, struct Task *t,
-	struct IFFParseBase * IFFParseBase)
+	struct IFFParseBase_intern * IFFParseBase)
 {
     LONG sigbit;
 
@@ -34,7 +34,7 @@ BOOL InitPort (struct MsgPort *mp, struct Task *t,
 }
 
 VOID ClosePort (struct MsgPort *mp,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     mp->mp_SigTask	    =  (struct Task*)-1;
     mp->mp_MsgList.lh_Head  = (struct Node*)-1;
@@ -49,12 +49,14 @@ VOID ClosePort (struct MsgPort *mp,
 /* ClipStreamHandler  */
 /**********************/
 
+#undef SysBase
+#define SysBase     (IPB(hook->h_Data)->sysbase)
+
 ULONG ClipStreamHandler
 (
     struct Hook 	* hook,
     struct IFFHandle	* iff,
-    struct IFFStreamCmd * cmd,
-    struct IFFParseBase * IFFParseBase
+    struct IFFStreamCmd * cmd
 )
 {
     #define CLIPSCANBUFSIZE 500

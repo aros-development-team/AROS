@@ -57,8 +57,6 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    extern struct Hook prophook;
-
     return
     (
 	EntryHandler
@@ -67,7 +65,7 @@
 	    type,
 	    id,
 	    IFFSLI_PROP,
-	    (struct Hook *)&prophook,
+	    &IPB(IFFParseBase)->prophook,
 	    iff
 	)
     );

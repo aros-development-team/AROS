@@ -14,12 +14,15 @@
 /* CollectionLCI Purge func  */
 /****************************/
 
+#undef SysBase
+#define SysBase 	IPB(hook->h_Data)->sysbase
+#define IFFParseBase	IPB(hook->h_Data)
+
 ULONG CollectionPurgeFunc
 (
     struct Hook 	    * hook,
     struct LocalContextItem * lci,
-    ULONG		      p,
-    struct IFFParseBase     * IFFParseBase
+    ULONG		      p
 )
 {
     struct CIPtr	   *ciptr;
@@ -65,9 +68,12 @@ struct CF_ResourceInfo
     struct CollectionItem    *CollItem;
 };
 
+#undef SysBase
+#define SysBase 	IFFParseBase->sysbase
+#undef IFFParseBase
 
 VOID CF_FreeResources (struct CF_ResourceInfo * ri,
-	struct IFFParseBase * IFFParseBase)
+	struct IFFParseBase_intern * IFFParseBase)
 {
     if (ri->LCIStored)  Remove((struct Node*)ri->LCI);
     if (ri->LCI)        FreeLocalItem(ri->LCI);
@@ -77,17 +83,17 @@ VOID CF_FreeResources (struct CF_ResourceInfo * ri,
     return;
 }
 
+#undef SysBase
+#define SysBase 	IPB(hook->h_Data)->sysbase
+#define IFFParseBase	IPB(hook->h_Data)
 
 LONG CollectionFunc
 (
     struct Hook 	* hook,
     struct IFFHandle	* iff,
-    APTR		  p,
-    struct IFFParseBase * IFFParseBase
+    APTR		  p
 )
 {
-    extern struct Hook collectionpurgehook;
-
     struct LocalContextItem *lci;
 
     struct ContextNode	    *cn;
@@ -151,7 +157,7 @@ LONG CollectionFunc
 	}
 	resinfo.LCIStored = TRUE;
 
-	SetLocalItemPurge(lci,(struct Hook *)&collectionpurgehook);
+	SetLocalItemPurge(lci,&IFFParseBase->collectionpurgehook);
 
     }
 

@@ -11,12 +11,14 @@
 /* DosStreamHandler */
 /********************/
 
+#undef DOSBase
+#define DOSBase    (IPB(hook->h_Data)->dosbase)
+
 ULONG DOSStreamHandler
 (
     struct Hook 	* hook,
     struct IFFHandle	* iff,
-    struct IFFStreamCmd * cmd,
-    struct IFFParseBase * IFFParseBase
+    struct IFFStreamCmd * cmd
 )
 {
 

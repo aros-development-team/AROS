@@ -52,13 +52,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    extern struct Hook cliphook;
-
-
     /* Initialize the DOS stream handler hook */
     /* Clipboard streams are ALWAYS random seekable */
-    InitIFF(iff, IFFF_RSEEK, (struct Hook *)&cliphook);
-    return;
+    InitIFF(iff, IFFF_RSEEK, &(IPB(IFFParseBase)->cliphook));
 
     AROS_LIBFUNC_EXIT
 } /* InitIFFasClip */

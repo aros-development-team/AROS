@@ -14,7 +14,7 @@ LONG PushContextNode
     LONG	       id,
     LONG	       size,
     LONG	       scan,
-    struct IFFParseBase *IFFParseBase
+    struct IFFParseBase_intern *IFFParseBase
 )
 {
     /* Allocates and puts a new context-node into the top of the context-stack
@@ -103,7 +103,7 @@ LONG PushContextNode
 }
 
 VOID PopContextNode(struct IFFHandle* iff,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     struct LocalContextItem *node,
 			    *nextnode;
@@ -131,12 +131,53 @@ VOID PopContextNode(struct IFFHandle* iff,
     return;
 }
 
+LONG ReadStreamLong (struct IFFHandle *iff,
+    APTR valptr,
+    struct IFFParseBase_intern *IFFParseBase)
+{
+    LONG val;
+    UBYTE bytes[4];
+
+    val = ReadStream (iff, bytes, sizeof(LONG), IFFParseBase);
+
+    if (val < 0)
+	return val;
+    else if (val != sizeof(LONG))
+	return IFFERR_EOF;
+
+    *(LONG *)valptr = bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
+
+    return sizeof(LONG);
+} /* ReadStreamLong */
+
+LONG WriteStreamLong (struct IFFHandle *iff,
+    APTR valptr,
+    struct IFFParseBase_intern *IFFParseBase)
+{
+    LONG val = *(LONG *)valptr;
+    UBYTE bytes[4];
+
+    bytes[0] = val >> 24;
+    bytes[1] = val >> 16;
+    bytes[2] = val >> 8;
+    bytes[3] = val;
+
+    val = WriteStream (iff, bytes, sizeof(LONG), IFFParseBase);
+
+    if (val < 0)
+	return val;
+    else if (val != sizeof(LONG))
+	return IFFERR_EOF;
+
+    return sizeof(LONG);
+} /* WriteStreamLong */
+
 /********************/
 /* GetChunkHeader   */
 /********************/
 
 LONG GetChunkHeader(struct IFFHandle *iff,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     LONG type,
 	 id,
@@ -149,22 +190,22 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     /* Reads in the appropriate stuff from a chunk and makes a contextnode of it */
 
 	/* Read chunk ID */
-    ReadStreamLong
+    bytesread = ReadStreamLong
     (
 	iff,
 	&id,
-	&bytesread
+	IFFParseBase
     );
 
     /* We may have an IFF Error */
-      if ( bytesread < 0) return (bytesread);
+    if ( bytesread < 0) return (bytesread);
 
     /* Read chunk size */
-    ReadStreamLong
+    bytesread = ReadStreamLong
     (
 	iff,
 	&size,
-	&bytesread
+	IFFParseBase
     );
 
     if ( bytesread < 0) return (bytesread);
@@ -182,11 +223,11 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     )
     {
 	/* Read chunk size */
-	ReadStreamLong
+	bytesread = ReadStreamLong
 	(
 	    iff,
 	    &type,
-	    &bytesread
+	    IFFParseBase
 	);
 
 	if ( bytesread < 0) return (bytesread);
@@ -216,7 +257,7 @@ LONG GetChunkHeader(struct IFFHandle *iff,
 /********************/
 
 LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     struct ContextNode	     *cn;
     struct HandlerInfo	    *hi;
@@ -287,7 +328,7 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
 /******************/
 
 VOID PurgeLCI(struct LocalContextItem *lci,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     /* Look in the RKM SetLocalItemPurge autodoc for explanation on that one below */
 
@@ -318,7 +359,7 @@ VOID PurgeLCI(struct LocalContextItem *lci,
 
 /* returns one of the standar IFF errors */
 LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     LONG   retval,
 	  err;
@@ -351,7 +392,7 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
 /****************/
 
 LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
     LONG   retval,
 	  err;
@@ -383,7 +424,7 @@ LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
 /***************/
 
 LONG SeekStream(struct IFFHandle *iff,LONG offset,
-    struct IFFParseBase *IFFParseBase)
+    struct IFFParseBase_intern *IFFParseBase)
 {
 
     /* Some different problem - situations:

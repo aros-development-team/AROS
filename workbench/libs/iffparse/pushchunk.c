@@ -96,13 +96,10 @@
     LONG scan = 0;
 
     if (iff->iff_Flags & IFFF_WRITE)
-      {
+    {
       /* Do we have a problem - situation ? */
-	if
-	(
-	    (size == IFFSIZE_UNKNOWN)
-	&&
-	    (!(iff->iff_Flags & IFFF_RSEEK))
+	if ( (size == IFFSIZE_UNKNOWN)
+	    && (!(iff->iff_Flags & IFFF_RSEEK))
 	)
 	{
 
@@ -114,11 +111,11 @@
 	/* The ID must be big endian when written */
 	id = SwitchIfLittleEndian(id);
 
-	WriteStreamLong
+	byteswritten = WriteStreamLong
 	(
 	    iff,
 	    &id,
-	    &byteswritten
+	    IPB(IFFParseBase)
 	);
 
 	/* IFFFERR_ ..	? */
@@ -127,37 +124,27 @@
 	/* The chunk size will be written during PopChunk too, but we write
 	 here to seek past it */
 
-	WriteStreamLong
+	byteswritten = WriteStreamLong
 	(
 	    iff,
 	    &size,
-	    &byteswritten
+	    IPB(IFFParseBase)
 	);
 	/* IFFERR_... ? */
 	if (byteswritten < 0) return (byteswritten);
 
-
-
 	/* If a composite type, then write whole type */
 	if
-	(
-	    id == ID_FORM
-	||
-	    id == ID_LIST
-	||
-	    id == ID_CAT
-	||
-	    id == ID_PROP
-	)
+	( id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP )
 	{
 	    /* The type MUST be big endian when written */
 	    type = SwitchIfLittleEndian(type);
 
-	    WriteStreamLong
+	    byteswritten = WriteStreamLong
 	    (
 		iff,
 		&type,
-		&byteswritten
+	    IPB(IFFParseBase)
 	    );
 
 	    if (byteswritten < 0) return (byteswritten);
@@ -166,24 +153,20 @@
 
 	} /* End of composite */
 
-    err = PushContextNode
-    (
-	iff,
-	type,
-	id,
-	size,
-	scan,
-	IPB(IFFParseBase)
-    );
-
-
+	err = PushContextNode
+	(
+	    iff,
+	    type,
+	    id,
+	    size,
+	    scan,
+	    IPB(IFFParseBase)
+	);
     }
     else  /* Read or write mode */
     {
 	/* Read mode. Read the chunk header from stream and put a new contextnode into the stack */
 	err = GetChunkHeader(iff, IPB(IFFParseBase));
-
-
     }  /* End of Write or Read */
 
     return (err);

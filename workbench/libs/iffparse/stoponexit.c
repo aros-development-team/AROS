@@ -54,10 +54,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    extern struct Hook stophook;
-
     /* Install an ExitHandler */
-
     return
     (
 	ExitHandler
@@ -66,7 +63,7 @@
 	    type,
 	    id,
 	    IFFSLI_TOP,
-	    (struct Hook *)&stophook,
+	    &IPB(IFFParseBase)->stophook,
 	    NULL
 	)
     );

@@ -14,12 +14,15 @@
 /* PropLCI Purge func  */
 /****************************/
 
+#undef SysBase
+#define SysBase     IPB(hook->h_Data)->sysbase
+#define IFFParseBase IPB(hook->h_Data)
+
 IPTR PropPurgeFunc
 (
     struct Hook 	    * hook,
     struct LocalContextItem * lci,
-    ULONG		      p,
-    struct IFFParseBase     * IFFParseBase
+    ULONG		      p
 )
 {
     struct StoredProperty *sp;
@@ -47,9 +50,12 @@ struct PF_ResourceInfo
     LONG		    BufferSize;
 };
 
+#undef SysBase
+#undef IFFParseBase
+#define SysBase     IFFParseBase->sysbase
 
 VOID PF_FreeResources(struct PF_ResourceInfo *ri,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     if (ri->LCI)     FreeLocalItem(ri->LCI);
     if (ri->Buffer)  FreeMem(ri->Buffer, ri->BufferSize);
@@ -58,17 +64,17 @@ VOID PF_FreeResources(struct PF_ResourceInfo *ri,
 }
 
 
+#undef SysBase
+#define SysBase     IPB(hook->h_Data)->sysbase
+#define IFFParseBase IPB(hook->h_Data)
 
 LONG PropFunc
 (
     struct Hook 	* hook,
     struct IFFHandle	* iff,
-    APTR		  p,
-    struct IFFParseBase * IFFParseBase
+    APTR		  p
 )
 {
-    extern struct Hook proppurgehook;
-
     struct LocalContextItem *lci;
 
 
@@ -163,7 +169,7 @@ LONG PropFunc
     }
 
 
-    SetLocalItemPurge(lci, (struct Hook *)&proppurgehook);
+    SetLocalItemPurge(lci, &IFFParseBase->proppurgehook);
 
     return (NULL);
 }

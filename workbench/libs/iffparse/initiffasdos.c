@@ -56,12 +56,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    extern struct Hook doshook;
-
     /* Initialize the DOS stream handler hook */
-    InitIFF(iff, IFFF_RSEEK, (struct Hook *)&doshook);
-
-    return;
+    InitIFF(iff, IFFF_RSEEK, &IPB(IFFParseBase)->doshook);
 
     AROS_LIBFUNC_EXIT
 } /* InitIFFasDOS */

@@ -41,65 +41,57 @@
 
 /* Some external stuff (iffparse_init.c) */
 
-extern const struct Hook stophook;
-extern const struct Hook prophook;
-extern const struct Hook collectionhook;
 
-extern const struct Hook doshook;
-extern const struct Hook cliphook;
-extern const struct Hook bufhook;
-
-extern const struct Hook collectionpurgehook;
-extern const struct Hook proppurgehook;
-
-struct IFFParseBase; /* below */
+struct IFFParseBase_intern; /* prerefrence */
 
 /* Internal prototypes */
-LONG ReadStream  (struct IFFHandle *, APTR, LONG, struct IFFParseBase *);
-LONG WriteStream (struct IFFHandle *, APTR, LONG, struct IFFParseBase *);
-VOID PurgeLCI (struct LocalContextItem *, struct IFFParseBase *);
+LONG ReadStream      (struct IFFHandle *, APTR, LONG, struct IFFParseBase_intern *);
+LONG ReadStreamLong  (struct IFFHandle *, APTR, struct IFFParseBase_intern *);
+LONG WriteStream     (struct IFFHandle *, APTR, LONG, struct IFFParseBase_intern *);
+LONG WriteStreamLong (struct IFFHandle *, APTR, struct IFFParseBase_intern *);
+VOID PurgeLCI	     (struct LocalContextItem *, struct IFFParseBase_intern *);
 
-LONG PushContextNode (struct IFFHandle *, LONG ,LONG, LONG, LONG, struct IFFParseBase *);
-VOID PopContextNode  (struct IFFHandle *, struct IFFParseBase *);
-LONG GetChunkHeader  (struct IFFHandle *, struct IFFParseBase *);
-LONG InvokeHandlers  (struct IFFHandle *, LONG, LONG, struct IFFParseBase *);
-LONG SeekStream      (struct IFFHandle *, LONG, struct IFFParseBase *);
+LONG PushContextNode (struct IFFHandle *, LONG ,LONG, LONG, LONG, struct IFFParseBase_intern *);
+VOID PopContextNode  (struct IFFHandle *, struct IFFParseBase_intern *);
+LONG GetChunkHeader  (struct IFFHandle *, struct IFFParseBase_intern *);
+LONG InvokeHandlers  (struct IFFHandle *, LONG, LONG, struct IFFParseBase_intern *);
+LONG SeekStream      (struct IFFHandle *, LONG, struct IFFParseBase_intern *);
 
 /* Some system entry & exit handlers (hook funcs) ß*/
 LONG StopFunc	    (struct Hook *, APTR, APTR);
-LONG PropFunc	    (struct Hook *, struct IFFHandle *, APTR, struct IFFParseBase *);
-LONG CollectionFunc (struct Hook *, struct IFFHandle *, APTR, struct IFFParseBase *);
+LONG PropFunc	    (struct Hook *, struct IFFHandle *, APTR);
+LONG CollectionFunc (struct Hook *, struct IFFHandle *, APTR);
 
 /* A system purge hook for purging the LCIs installed by PropChunk and CollectionChunk */
-IPTR CollectionPurgeFunc (struct Hook *, struct LocalContextItem *, ULONG, struct IFFParseBase *);
-IPTR PropPurgeFunc	 (struct Hook *, struct LocalContextItem *, ULONG, struct IFFParseBase *);
+IPTR CollectionPurgeFunc (struct Hook *, struct LocalContextItem *, ULONG);
+IPTR PropPurgeFunc	 (struct Hook *, struct LocalContextItem *, ULONG);
 
 /* Buffer functions */
-struct BufferList * AllocBuffer (ULONG, struct IFFParseBase *);
-VOID		    FreeBuffer	(struct BufferList *, struct IFFParseBase *);
+struct BufferList * AllocBuffer (ULONG, struct IFFParseBase_intern *);
+VOID		    FreeBuffer	(struct BufferList *, struct IFFParseBase_intern *);
 
-struct BufferNode * AllocBufferNode (struct BufferList *, struct IFFParseBase *);
+struct BufferNode * AllocBufferNode (struct BufferList *, struct IFFParseBase_intern *);
 
-LONG WriteToBuffer  (struct BufferList *, UBYTE *, LONG, struct IFFParseBase *);
+LONG WriteToBuffer  (struct BufferList *, UBYTE *, LONG, struct IFFParseBase_intern *);
 BOOL SeekBuffer     (struct BufferList *, LONG);
 
-BOOL BufferToStream (struct BufferList *, struct IFFHandle *, struct IFFParseBase *);
+BOOL BufferToStream (struct BufferList *, struct IFFHandle *, struct IFFParseBase_intern *);
 
 /* StreamHandler hooks */
 
-IPTR DOSStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *, struct IFFParseBase *);
-IPTR ClipStreamHandler (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *, struct IFFParseBase *);
-IPTR BufStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *, struct IFFParseBase *);
+IPTR DOSStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
+IPTR ClipStreamHandler (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
+IPTR BufStreamHandler  (struct Hook *, struct IFFHandle *, struct IFFStreamCmd *);
 
 /* Message port help functions */
 
-BOOL InitPort  (struct MsgPort *, struct Task *, struct IFFParseBase *);
-VOID ClosePort (struct MsgPort *, struct IFFParseBase *);
+BOOL InitPort  (struct MsgPort *, struct Task *, struct IFFParseBase_intern *);
+VOID ClosePort (struct MsgPort *, struct IFFParseBase_intern *);
 
 
 /* Buffered stream install/deinstall */
-LONG InitBufferedStream (struct IFFHandle*, struct IFFParseBase *);
-LONG ExitBufferedStream (struct IFFHandle*, struct IFFParseBase *);
+LONG InitBufferedStream (struct IFFHandle*, struct IFFParseBase_intern *);
+LONG ExitBufferedStream (struct IFFHandle*, struct IFFParseBase_intern *);
 
 /* Endian conversion */
 LONG SwitchIfLittleEndian(LONG);
@@ -265,28 +257,25 @@ struct CIPtr
 #define TopChunk( iff ) (struct ContextNode*)GetIntIH(iff)->iff_CNStack.mlh_Head
 #define RootChunk(iff) (struct ContextNode*)GetIntIH(iff)->iff_CNStack.mlh_TailPred
 
-/*
-    Macros that takes care of endian
-    conversions when reding and writing LONGs
-*/
-#define ReadStreamLong(iff,varptr,breadptr)  \
-    *breadptr = ReadStream (iff, varptr, sizeof(LONG), IPB(IFFParseBase)); \
-    *varptr = SwitchIfLittleEndian (*varptr);
-
-#define WriteStreamLong( iff, varptr, bwrittenptr) \
-    *varptr = SwitchIfLittleEndian( *varptr ); \
-    *bwrittenptr = WriteStream (iff, varptr, sizeof(LONG), IPB(IFFParseBase));
-
-struct IFFParseBase
+struct IFFParseBase_intern
 {
     struct Library    library;
     struct ExecBase * sysbase;
     BPTR	      seglist;
     struct Library  * dosbase;
     struct Library  * utilitybase;
+
+    struct Hook       stophook;
+    struct Hook       prophook;
+    struct Hook       collectionhook;
+    struct Hook       doshook;
+    struct Hook       cliphook;
+    struct Hook       bufhook;
+    struct Hook       collectionpurgehook;
+    struct Hook       proppurgehook;
 };
 
-#define IPB(ipb)        ((struct IFFParseBase *)ipb)
+#define IPB(ipb)        ((struct IFFParseBase_intern *)ipb)
 #undef SysBase
 #define SysBase (IPB(IFFParseBase)->sysbase)
 #undef DOSBase
@@ -295,6 +284,6 @@ struct IFFParseBase
 #define UtilityBase (IPB(IFFParseBase)->utilitybase)
 
 #define expunge() \
-AROS_LC0(BPTR, expunge, struct IFFParseBase *, IFFParseBase, 3, IFFParse)
+AROS_LC0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 
 #endif /* IFFPARSE_INTERN_H */

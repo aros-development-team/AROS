@@ -53,8 +53,8 @@
     {
 	/* Delete the messageports */
 
-	ClosePort (&(clipHandle->cbh_CBport), (struct IFFParseBase *)IFFParseBase);
-	ClosePort (&(clipHandle->cbh_SatisfyPort), (struct IFFParseBase *)IFFParseBase);
+	ClosePort (&(clipHandle->cbh_CBport), IPB(IFFParseBase));
+	ClosePort (&(clipHandle->cbh_SatisfyPort), IPB(IFFParseBase));
 
 	CloseDevice((struct IORequest *)&(clipHandle->cbh_Req));
 

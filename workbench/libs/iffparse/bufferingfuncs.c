@@ -14,7 +14,7 @@
 /****************/
 
 struct BufferList *AllocBuffer(ULONG bufnodesize,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     struct BufferList *buflist;
     struct BufferNode *bufnode;
@@ -59,7 +59,7 @@ struct BufferList *AllocBuffer(ULONG bufnodesize,
 /* Frees all the buffers and buffernodes inside a bufferlist */
 
 VOID FreeBuffer(struct BufferList *buflist,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     /* Frees all the buffernodes in a bufferlist */
     struct BufferNode *node, *nextnode;
@@ -92,7 +92,7 @@ VOID FreeBuffer(struct BufferList *buflist,
   a new buffer, and add the buffernode to the TAIL of the bufferlist
 */
 struct BufferNode *AllocBufferNode(struct BufferList *buflist,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     /* New buffernodes are added at the HEAD of the list */
 
@@ -121,7 +121,7 @@ struct BufferNode *AllocBufferNode(struct BufferList *buflist,
 /* Copies a number of bytes into the buffer at the current position */
 
 LONG WriteToBuffer( struct BufferList *buflist, UBYTE *mem, LONG size,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     /* The buffernode that the routine currently will buffer to */
     struct BufferNode *bufnode;
@@ -399,7 +399,7 @@ BOOL BufferToStream
 (
     struct BufferList *buflist,
     struct IFFHandle   *iff,
-    struct IFFParseBase * IFFParseBase
+    struct IFFParseBase_intern * IFFParseBase
 )
 {
     struct BufferNode *node,
@@ -472,10 +472,8 @@ BOOL BufferToStream
 /* Put in own functions just to make code tidier */
 
 LONG  InitBufferedStream(struct IFFHandle *iff,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
-    extern struct Hook bufhook;
-
     if
     (
 	!(GetIntIH(iff)->iff_BufferStartDepth)
@@ -510,7 +508,7 @@ LONG  InitBufferedStream(struct IFFHandle *iff,
 
 
 	/* Insert the BufStreamHandler into the hook instead */
-	InitIFF(iff, IFFF_RSEEK, (struct Hook *)&bufhook);
+	InitIFF(iff, IFFF_RSEEK, &IFFParseBase->bufhook);
 
     }
 
@@ -518,7 +516,7 @@ LONG  InitBufferedStream(struct IFFHandle *iff,
 }
 
 LONG ExitBufferedStream(struct IFFHandle *iff,
-    struct IFFParseBase * IFFParseBase)
+    struct IFFParseBase_intern * IFFParseBase)
 {
     /*
       If we have come to the chunk that started internal buffering, then we should do the following.
@@ -572,12 +570,13 @@ LONG ExitBufferedStream(struct IFFHandle *iff,
 /* BufStreamHandler    */
 /**********************/
 
+#define IFFParseBase	    (IPB(hook->h_Data))
+
 ULONG BufStreamHandler
 (
     struct Hook 	*hook,
     struct IFFHandle	*iff,
-    struct IFFStreamCmd  *cmd,
-    struct IFFParseBase * IFFParseBase
+    struct IFFStreamCmd  *cmd
 )
 {
 
