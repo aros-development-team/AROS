@@ -73,6 +73,8 @@ void FillScan(UWORD StartIndex,
               struct BoundLine * AreaBound,
               UWORD scanline,
               struct RastPort * rp,
+              struct Rectangle * bounds,
+              UWORD BytesPerRow,
               struct GfxBase * GfxBase)
 {
   int i = StartIndex;
@@ -86,7 +88,6 @@ void FillScan(UWORD StartIndex,
         if (i > EndIndex) return;
       }
       x1=AreaBound[i].RightX+1;
-      Move(rp, x1,  scanline);
 
       SetAPen(rp,8);
 
@@ -97,11 +98,15 @@ void FillScan(UWORD StartIndex,
       }
 
       if (x1 <= AreaBound[i+1].LeftX-1)
-        Draw(rp, AreaBound[i+1].LeftX-1, scanline);
-/*
-      else
-        kprintf("Refusing to draw from %d to %d\n",x1,AreaBound[i+1].LeftX-1);
-*/
+      {
+        LineInTmpRas(rp,
+                     bounds,
+                     BytesPerRow,
+                     x1,
+                     AreaBound[i+1].LeftX-1,
+                     scanline);
+      }
+
     i+=2;
   }
 }
@@ -509,7 +514,14 @@ kprintf("at end!\n");
     XSort(StartEdge, EndEdge, AreaBound);
 
     if (scan > bounds->MinY)
-      FillScan(StartEdge, EndEdge, AreaBound, scan, rp, GfxBase);
+      FillScan(StartEdge, 
+               EndEdge, 
+               AreaBound, 
+               scan, 
+               rp, 
+               bounds, 
+               BytesPerRow,
+               GfxBase);
 
 /*
     kprintf("scanline: %d   StartEdge: %d, EndEdge: %d\n",scan,StartEdge,EndEdge);
@@ -567,12 +579,12 @@ void areafillellipse(struct RastPort  * rp,
   memset(rp->TmpRas->RasPtr,
          0x00,
          BytesPerRow * (bounds->MaxY - bounds->MinY + 1) );
-
+/*
 kprintf("filled bytes: %d\n",BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
 
 kprintf("Filling ellipse with center at (%d,%d) and radius in x: %d and in y: %d\n",
                             CurVctr[0],CurVctr[1],CurVctr[2],CurVctr[3]);
-  
+*/  
   while (d2 < 0 && y < CurVctr[3])
   {
     /* draw 2 lines using symmetry */
@@ -670,7 +682,9 @@ void LineInTmpRas(struct RastPort  * rp,
   xright -= bounds->MinX; 
   y      -= bounds->MinY;
 
+kprintf("line from %d to %d\n",xleft,xright);
 
+  if (xleft > xright) return;
   /* 
     an algorithm that tries to minimize the number of accesses to the 
     RasPtr
@@ -687,14 +701,15 @@ void LineInTmpRas(struct RastPort  * rp,
   /* create enough pixels */  
   PixelMask >>= (NumPixels - 1);
 
-
   index = (y * (BytesPerRow >> 1)) + (xleft >> 4);
   /* Adjust the pixelmask so we hit the very first pixel  */
   PixelMask2 = PixelMask & 0xffff;
   PixelMask2 >>= (xleft & 0x0f);
   
-    /* Endianess conversion*/
+#if (AROS_BIG_ENDIAN == 0)
+  /* Endianess conversion*/
   PixelMask2 = PixelMask2 << 8 | PixelMask2 >> 8;    
+#endif
   RasPtr[index] |= PixelMask2;
   
   index++;
@@ -702,15 +717,15 @@ void LineInTmpRas(struct RastPort  * rp,
   if ((xleft & 0x0f) + NumPixels > 16)
     xleft += (16 - (xleft & 0x0f));
   else
-    return;
+    xleft += 16 - (xleft & 0x0f);
  
-  /* fill the middle with 0xffff's */
   if ((xright - xleft) <= 16)
     goto fillright;
 
 if (xleft & 0x0f)
   kprintf("Error!!! %d\n",xleft);
     
+  /* fill the middle with 0xffff's */
   while ((xleft + 15) < xright)
   {
     RasPtr[index] = (WORD)0xffff;
@@ -726,9 +741,13 @@ fillright:
     PixelMask >>= (xright - xleft + 1);
 
     PixelMask2 = PixelMask & 0xffff;
+
+#if (AROS_BIG_ENDIAN == 0)
     /* Endianess conversion*/
-    PixelMask2 = PixelMask2 << 8 | PixelMask2 >> 8;    
-    RasPtr[index] = (WORD)PixelMask2;
+    PixelMask2 = PixelMask2 << 8 | PixelMask2 >> 8;
+#endif    
+
+    RasPtr[index] |= PixelMask2;
   }
 
 }
