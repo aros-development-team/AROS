@@ -369,7 +369,6 @@ int main(void)
 
 		if (error)
 		{
-		    printf("ddddd\n");
 		    break;
 		}
 	    }
