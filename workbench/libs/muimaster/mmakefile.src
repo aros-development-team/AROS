@@ -5,6 +5,10 @@ include $(TOP)/config/make.cfg
 MAKE_BUILTIN_ABOUTMUI := no
 MAKE_BUILTIN_BOOPSI   := yes
 MAKE_BUILTIN_GAUGE    := yes
+MAKE_BUILTIN_POPASL   := yes
+MAKE_BUILTIN_POPFRAME := yes
+MAKE_BUILTIN_POPIMAGE := yes
+MAKE_BUILTIN_POPPEN   := yes
 
 CLASSES := \
     application \
@@ -35,11 +39,7 @@ CLASSES := \
     numeric \
     penadjust \
     pendisplay \
-    popasl \
-    popframe \
-    popimage \
     popobject \
-    poppen \
     popstring \
     prop \
     radio \
@@ -119,6 +119,34 @@ ifeq ($(MAKE_BUILTIN_GAUGE),yes)
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=1
 else
     USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_GAUGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPASL),yes)
+    CLASSES     := $(CLASSES) popasl
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPASL=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPASL=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPFRAME),yes)
+    CLASSES     := $(CLASSES) popframe
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPFRAME=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPFRAME=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPIMAGE),yes)
+    CLASSES     := $(CLASSES) popimage
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPIMAGE=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPIMAGE=0
+endif
+
+ifeq ($(MAKE_BUILTIN_POPPEN),yes)
+    CLASSES     := $(CLASSES) poppen
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPPEN=1
+else
+    USER_CFLAGS := $(USER_CFLAGS) -DZUNE_BUILTIN_POPPEN=0
 endif
 
 CLASSFILES    := $(foreach f, $(CLASSES), classes/$(f))

@@ -1,9 +1,9 @@
 /*
-    Copyright © 2002, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
+
+#define MUIMASTER_YES_INLINE_STDARG
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -17,10 +17,11 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_PopimageData
+struct Popimage_DATA
 {
     Object *wnd;
     Object *imageadjust;
@@ -35,7 +36,7 @@ struct MUI_PopimageData
 **************************************************************************/
 static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PopimageData   *data;
+    struct Popimage_DATA   *data;
     struct TagItem  	    *tag, *tags;
     //Object *image;
 
@@ -78,7 +79,7 @@ static IPTR Popimage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    struct Popimage_DATA *data = INST_DATA(cl, obj);
 
     if (data->wnd)
     {
@@ -95,7 +96,7 @@ static ULONG Popimage_Dispose(struct IClass *cl, Object *obj, Msg msg)
 static IPTR Popimage_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #if 0
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    struct Popimage_DATA *data = INST_DATA(cl, obj);
     if (data->wnd)
     {
 	D(bug("Popimage_Hide(%p) : closing window %p\n", obj, data->wnd));
@@ -116,7 +117,7 @@ static IPTR Popimage_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 **************************************************************************/
 STATIC IPTR Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    struct Popimage_DATA *data = INST_DATA(cl, obj);
 
     if (!data->wnd)
     {
@@ -193,7 +194,7 @@ STATIC IPTR Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
 				 struct MUIP_Popimage_CloseWindow *msg)
 {
-    struct MUI_PopimageData *data = INST_DATA(cl, obj);
+    struct Popimage_DATA *data = INST_DATA(cl, obj);
     int ok = msg->ok;
 
     set(data->wnd, MUIA_Window_Open, FALSE);
@@ -213,7 +214,7 @@ STATIC IPTR Popimage_CloseWindow(struct IClass *cl, Object *obj,
     return 1;
 }
 
-
+#if ZUNE_BUILTIN_POPIMAGE
 BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
@@ -228,13 +229,11 @@ BOOPSI_DISPATCHER(IPTR, Popimage_Dispatcher, cl, obj, msg)
     return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
-const struct __MUIBuiltinClass _MUI_Popimage_desc = { 
+const struct __MUIBuiltinClass _MUI_Popimage_desc =
+{ 
     MUIC_Popimage, 
     MUIC_Imagedisplay, 
-    sizeof(struct MUI_PopimageData), 
+    sizeof(struct Popimage_DATA), 
     (void*)Popimage_Dispatcher 
 };
-
+#endif /* ZUNE_BUILTIN_POPIMAGE */
