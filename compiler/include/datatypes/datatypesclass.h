@@ -122,7 +122,7 @@
 #define  DTA_Immediate          (DTA_Dummy + 37)
 
 /* Indicate that the object should repeat playing -- defaults to FALSE (BOOL)*/
-#define	DTA_Repeat		(DTA_Dummy+38)
+#define  DTA_Repeat             (DTA_Dummy + 38)
 
 
 /* DTObject attributes */
@@ -407,6 +407,15 @@ struct dtDraw
     LONG             dtd_TopVert;
     struct TagItem  *dtd_AttrList;          /* Additional attributes */
 };
+
+/* DTM_RELEASEDRAWINFO */
+struct dtReleaseDrawInfo
+
+{
+    ULONG   MethodID;
+    APTR    dtr_Handle;		/* Handle as returned by DTM_OBTAINDRAWINFO */
+};
+
 
 /* DTM_WRITE */
 struct dtWrite
