@@ -177,7 +177,7 @@ function emit_struct(tname)
 
     if (lvo > firstlvo)
     {
-        printf "#define __%s_WB(%s", fname, libbase
+        printf "#define __%s_WB(__%s", fname, libbase
         for (t=0; t<narg; t++)
 	{
             printf ", __%s", arg[t, 2]
@@ -189,7 +189,7 @@ function emit_struct(tname)
 	{
             printf "    AROS_LCA(%s, (__%s), %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
 	}
-        printf "    %s, (%s), %d, %s)\n\n", libbtp, libbase, lvo, basename
+        printf "    %s, (__%s), %d, %s)\n\n", libbtp, libbase, lvo, basename
 
         printf "#define %s(", fname
         for (t=0; t<narg; t++)
@@ -206,7 +206,7 @@ function emit_struct(tname)
 	}
         print ")\n"
 
-    }
+   }
     narg=0;
 }
 END {
