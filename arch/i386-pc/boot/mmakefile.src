@@ -14,7 +14,7 @@ KHNDLRS := con nil ram cdrom afs
 KHIDDS  := hiddclass serial mouse irq graphics kbd vesagfx vgah pci pcipc nvidia
 KRSRCS  := battclock bootloader misc
 #Disabled RSRC cpu
-#Disabled HIDD usbuhci vmwaregfx
+#Disabled HIDD vmwaregfx usbuhci
 
 .PHONY: $(OSGENDIR)/boot/aros.iso
 
@@ -66,7 +66,7 @@ BOOT_TAR_FILES := \
     Prefs/Font Prefs/Font.info Prefs/Locale Prefs/Serial \
     Prefs/Input Prefs/Input.info Prefs/Time Prefs/Time.info \
     Prefs/Zune Prefs/Zune.info Prefs.info \
-    Prefs/Env-Archive Prefs/Presets \
+    Prefs/Env-Archive Prefs/Presets/Patterns/Stripes Prefs/Presets/Patterns.info \
     S/Shell-Startup S/Startup-Sequence \
     System/About System/FixFonts System/FixFonts.info System/Themes \
     System/Wanderer System.info \
