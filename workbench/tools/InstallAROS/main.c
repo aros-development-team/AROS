@@ -1228,6 +1228,7 @@ BOOPSI_DISPATCHER(IPTR, Install_Dispatcher, CLASS, self, message)
     }
     return NULL;
 }
+BOOPSI_DISPATCHER_END
 
 int main(int argc,char *argv[])
 {
