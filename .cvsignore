@@ -9,3 +9,5 @@ machine
 t.c
 t
 t.asm
+make.log
+c_lib
