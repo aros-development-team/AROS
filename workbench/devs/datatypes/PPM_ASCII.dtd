@@ -1,0 +1,11 @@
+# DataType Description for PPM
+Name=PPM
+Version=$VER: PPM 41.0 (13-Nov-2000)
+BaseName=ppm
+Pattern=#?
+Mask=P6
+GroupID=pict
+ID=_ppm
+Flags=DTF_ASCII,DTF_CASE
+Priority=0
+
