@@ -61,6 +61,7 @@ int strtostrs ( char *, char *** );
 #include <proto/gadtools.h>
 #include <libraries/gadtools.h>
 
+
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *GadToolsBase = NULL;
 struct GfxBase * GfxBase = NULL;
@@ -75,7 +76,6 @@ const char GuiWinTitle[] ="AROS - Installer V43.3";
 APTR vi;
 struct Screen *scr;
 struct Gadget *glist = NULL, *first = NULL, *gad = NULL;
-
 
 #define INTUIGUI 1
 
@@ -101,6 +101,12 @@ struct NewGadget gt_textgad = {
   NULL  /* ng_UserData */
 };
 
+struct TagItem bevel_tag[] = {
+  { GT_VisualInfo, 0 },
+  { GTBB_Recessed, TRUE },
+  { GTBB_FrameType, BBFT_RIDGE },
+  { TAG_DONE }
+};
 
 /*
  * Initialize the GUI
@@ -120,9 +126,8 @@ struct TagItem tags[] =
 		  | WFLG_DRAGBAR
 		  | WFLG_GIMMEZEROZERO },
 
-  { 0,0 }
+  { TAG_DONE }
 };
-struct Gadget *gad = NULL;
 
   IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37 );
   if (IntuitionBase == NULL)
@@ -155,6 +160,8 @@ struct Gadget *gad = NULL;
 
   scr = LockPubScreen( NULL );
   vi = GetVisualInfoA( scr, NULL );
+  bevel_tag[0].ti_Data = (ULONG)vi;
+
   gad = CreateContext( &glist );
   if(gad==NULL)
     printf("CreateContext() failed\n");
@@ -617,32 +624,35 @@ char c;
     struct IntuiText itext;
     char **out;
     int j, n, m;
+    struct TagItem ti1[] = {
+		    	{ GA_Immediate, TRUE },
+		    	{ TAG_DONE }
+    };
+    struct TagItem ti2[] = {
+	{ GTTX_Text, (ULONG)yesstring },
+	{ GTTX_CopyText, TRUE },
+	{ GTTX_Border, TRUE },
+	{ GTTX_Justification, GTJ_CENTER },
+	{ TAG_DONE } };
 
     clear_gui();
-    gad = CreateGadget( BUTTON_KIND, gad, &gt_boolgad,
-		    	GA_Immediate, TRUE,
-		    	TAG_DONE );
+    gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgad, ti1 );
     first = gad;
 
-    gad = CreateGadget( TEXT_KIND, gad, &gt_textgad,
-		    	GTTX_Text, yesstring,
-		    	GTTX_CopyText, TRUE,
-		    	GTTX_Border, TRUE,
-		    	GTTX_Justification, GTJ_CENTER,
-		    	TAG_DONE );
+    gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
 
     if(glist==NULL)
         printf("glist==NULL\n");
     else
     {
+printf("glist=%p\n",glist);
 printf("Adding gads...\n");
         AddGList(GuiWin,glist,-1,-1,NULL);
 printf("Refreshing glist...\n");
         RefreshGList(glist,GuiWin,NULL,-1);
 printf("Refreshing win...\n");
         GT_RefreshWindow(GuiWin,NULL);
-printf("Drawing Bevel...\n");
-        DrawBevelBox(rp, 8,8,160,75,NULL);
+        //DrawBevelBoxA(rp, 8,8,160,75,bevel_tag);
 printf("Finished...\n");
     }
         
@@ -998,7 +1008,7 @@ char c;
     {
       for( i = 0 ; i < max ; i ++)
       {
-        printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval&(1<<i) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
+        printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
       }
     }
     else
@@ -1031,7 +1041,8 @@ char c;
                   break;
       case 'v'	: /* change value */
                   scanf( "%s", buffer );
-                  retval = ( atol( buffer ) < max ) ? atol( buffer ) : retval ;
+                  i = atol( buffer );
+                  retval = ( i < max && i > 0 ) ? i : retval ;
                   break;
       default	: break;
     }
