@@ -1868,7 +1868,7 @@ else
 endif
 
 ifeq (%(patch),yes)
-    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:(%(mmake)-%(subpackage)-srcdir):-p1    
+    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:$(%(mmake)-%(subpackage)-srcdir):-p1    
 else
     %(mmake)-%(subpackage)-patches_specs := ::
 endif
