@@ -1,6 +1,11 @@
  /*
     $Id$
     $Log$
+    Revision 1.2  1996/10/23 14:08:59  aros
+    Formatted
+
+    Added parens to all assignments which are used truth expressions
+
     Revision 1.1  1996/10/22 04:46:01  aros
     Some more utility.library functions.
 
@@ -12,64 +17,64 @@
 /*****************************************************************************
 
     NAME */
-        #include <utility/tagitem.h>
-        #include <clib/utility_protos.h>
+	#include <utility/tagitem.h>
+	#include <clib/utility_protos.h>
 
-        __AROS_LH2(void, RefreshTagItemClones,
+	__AROS_LH2(void, RefreshTagItemClones,
 
 /*  SYNOPSIS */
-        __AROS_LHA(struct TagItem *, clone, A0),
-        __AROS_LHA(struct TagItem *, original, A1),
+	__AROS_LHA(struct TagItem *, clone, A0),
+	__AROS_LHA(struct TagItem *, original, A1),
 
 /*  LOCATION */
-        struct UtilityBase *, UtilityBase, 14, Utility)
+	struct UtilityBase *, UtilityBase, 14, Utility)
 
 /*  FUNCTION
-        If (and only if) the Tag list 'clone' was created by calling
-        CloneTagItems on the Tag list 'original', and the list original
-        has NOT been changed in any way, then this function will change
-        the list 'clone' back to its original state.
+	If (and only if) the Tag list 'clone' was created by calling
+	CloneTagItems on the Tag list 'original', and the list original
+	has NOT been changed in any way, then this function will change
+	the list 'clone' back to its original state.
 
     INPUTS
-        original    - The source TagList (unaltered)
-        clone       - The destination TagList (MUST be allocated by
-                        CloneTagItems())
+	original    - The source TagList (unaltered)
+	clone	    - The destination TagList (MUST be allocated by
+			CloneTagItems())
 
     RESULT
-        The second TagList now has the same values as the first.
+	The second TagList now has the same values as the first.
 
     NOTES
-        If either of the inputs is NULL, then the function will not do
-        anything.
+	If either of the inputs is NULL, then the function will not do
+	anything.
 
     EXAMPLE
-        struct TagItem *orig, clone;
+	struct TagItem *orig, clone;
 
-        \* TagList orig has some values already *\
-        clone = CloneTagList( orig );
+	\* TagList orig has some values already *\
+	clone = CloneTagList( orig );
 
-        \* In between here we do something to the TagItems in clone,
-            but we need to have them restored.
-        *\
+	\* In between here we do something to the TagItems in clone,
+	    but we need to have them restored.
+	*\
 
-        RefreshTagItemClones( clone, orig );
+	RefreshTagItemClones( clone, orig );
 
     BUGS
-        None, however if either of the two pre-conditions is not fulfilled
-        then this function will probably be unreliable, or trash memory.
+	None, however if either of the two pre-conditions is not fulfilled
+	then this function will probably be unreliable, or trash memory.
 
-        We warned you...
+	We warned you...
 
     SEE ALSO
-        <utility/tagitem.h> CloneTagItems()
+	<utility/tagitem.h> CloneTagItems()
 
     INTERNALS
 
     HISTORY
-        29-10-95    digulla automatically created from
-                            utility_lib.fd and clib/utility_protos.h
-        11-08-96    iaint   Based on the 3.0/2.04 version.
-        05-09-96    iaint   Updated autodoc, and removed another variable.
+	29-10-95    digulla automatically created from
+			    utility_lib.fd and clib/utility_protos.h
+	11-08-96    iaint   Based on the 3.0/2.04 version.
+	05-09-96    iaint   Updated autodoc, and removed another variable.
 
 *****************************************************************************/
 {
@@ -78,17 +83,16 @@
     struct TagItem *current;
 
     if( !original || !clone )
-        return;
+	return;
 
     /* Remember, the clone list is a straight memory block, however
-        the original list may not be.
+	the original list may not be.
     */
-    while(current = NextTagItem(&original ))
+    while ((current = NextTagItem (&original)))
     {
-        *clone = *current; /* Copies both tag and data */
-        clone++;
+	*clone = *current; /* Copies both tag and data */
+	clone++;
     }
 
     __AROS_FUNC_EXIT
-
 } /* RefreshTagItemClones */
