@@ -13,7 +13,6 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/pictureclass.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #ifdef MYDEBUG

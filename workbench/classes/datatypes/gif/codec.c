@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     This file does not contain LZW code. It can read uncompressed files only,
@@ -21,7 +21,6 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 
-#include "compilerspecific.h"
 #include "debug.h"
 
 #include "gifclass.h"
