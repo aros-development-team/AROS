@@ -43,7 +43,7 @@ void readref(struct config *cfg, struct functions *functions)
 
     if (!fileopen(cfg->reffile))
     {
-	fprintf(stderr, "Could not open %s\n", cfg->reffile);
+	fprintf(stderr, "In readref: Could not open %s\n", cfg->reffile);
 	exit(20);
     }
 

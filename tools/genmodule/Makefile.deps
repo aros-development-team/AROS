@@ -10,6 +10,7 @@ GENMODULE_SRCS := \
     writeincclib.c \
     writeincproto.c \
     writeincdefines.c \
+    writeinclibdefs.c \
     writestart.c \
     writeend.c \
     writeautoinit.c \
@@ -19,22 +20,3 @@ GENMODULE_SRCS := \
 GENMODULE_INCS := genmodule.h fileread.h functionhead.h
 GENMODULE_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULE_SRCS) $(GENMODULE_INCS) include/aros/libcall.h) \
 	       	  $(AROS_INCLUDES)/aros/machine.h
-GENLIBDEFS_SRCS := \
-    genlibdefs.c \
-    config.c \
-    fileread.c \
-    functionhead.c \
-    stringlist.c \
-    writeinclibdefs.c
-GENLIBDEFS_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENLIBDEFS_SRCS) $(GENMODULE_INCS))
-
-GENMODULEDUMMY_SRCS := \
-    genmoduledummy.c \
-    config.c \
-    fileread.c \
-    functionhead.c \
-    stringlist.c \
-    writeincproto.c \
-    writeincclib.c \
-    writeincdefines.c
-GENMODULEDUMMY_DEPS := $(addprefix $(TOP)/tools/genmodule/,$(GENMODULEDUMMY_SRCS) $(GENMODULE_INCS))

@@ -497,9 +497,15 @@ endif
 # Generate the libdefs.h include file for a module.
 %define rule_genlibdefs modname=/A modtype=/A modsuffix= conffile=/A targetdir=/A
 
-%(targetdir)/%(modname)_libdefs.h : %(conffile) $(GENLIBDEFS)
+TMP_OPTS := -c %(conffile) -d %(targetdir)
+ifneq (%(modsuffix),)
+    TMP_OPTS += -s %(modsuffix)
+endif
+%(targetdir)/%(modname)_libdefs.h : OPTS := $(TMP_OPTS)
+
+%(targetdir)/%(modname)_libdefs.h : %(conffile) $(GENMODULE)
 	@$(ECHO) "Generating $(notdir $@)"
-	@$(GENLIBDEFS) %(modname) %(modtype) %(modsuffix) %(conffile) %(targetdir)
+	$(GENMODULE) $(OPTS) writelibdefs %(modname) %(modtype)
 %end
 #------------------------------------------------------------------------------
 
@@ -509,11 +515,20 @@ endif
 # will find something to include.
 %define rule_genmodule_dummy modname=/A modtype=/A modsuffix= conffile=/A targetdir=/A
 
-%(targetdir)/clib/%(modname)_protos.h %(targetdir)/defines/%(modname).h \
-%(targetdir)/proto/%(modname).h : %(conffile) $(GENMODULEDUMMY)
+TMP_TARGETS := %(targetdir)/clib/%(modname)_protos.h \
+	       %(targetdir)/defines/%(modname).h \
+	       %(targetdir)/proto/%(modname).h
+
+TMP_OPTS := -c %(conffile) -d %(targetdir)
+ifneq (%(modsuffix),)
+    TMP_OPTS += -s %(modsuffix)
+endif
+$(TMP_TARGETS) : OPTS := $(TMP_OPTS)
+
+$(TMP_TARGETS) : %(conffile) $(GENMODULEDUMMY)
 	@$(ECHO) "Generating $(notdir $@)"
 	%mkdirs_q dirs="%(targetdir) %(targetdir)/clib %(targetdir)/defines %(targetdir)/proto"
-	$(GENMODULEDUMMY) %(modname) %(modtype) %(modsuffix) %(conffile) %(targetdir)
+	$(GENMODULE) $(OPTS) writedummy %(modname) %(modtype)
 %end
 #------------------------------------------------------------------------------
 
@@ -537,6 +552,12 @@ ifneq ($(findstring %(modtype),mcc mui mcp),)
 GENFILES_TMP += %(objdir)/%(modname)_stubs.c
 endif
 
+TMP_OPTS := -c %(conffile) -d %(objdir) -i $(GENINCDIR) -r %(reffile)
+ifneq (%(modsuffix),)
+    TMP_OPTS += -s %(modsuffix)
+endif
+$(GENFILES_TMP) : OPTS := $(TMP_OPTS)
+
 $(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
 	@$(ECHO) "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 ifneq (%(conffile),lib.conf)
@@ -547,7 +568,7 @@ endif
 	@$(IF) $(TEST) -f libdefs.h; then \
 	  $(ECHO) "WARNING !!! $(CURDIR)/libdefs.h may probably be removed"; \
 	fi
-	@$(GENMODULE) %(modname) %(modtype) %(modsuffix) %(conffile) %(objdir) $(GENINCDIR) %(reffile)
+	@$(GENMODULE) $(OPTS) writefiles %(modname) %(modtype)
 %end
 #------------------------------------------------------------------------------
 
