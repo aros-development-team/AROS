@@ -136,22 +136,61 @@ const struct IntFileReq def_filereq =
 	NULL,	/* IntuiMsgFunc 	*/
 	NULL,	/* TextAttr		*/
 	NULL,	/* Locale		*/
-	"Open file",
-	"OK",
+	NULL,	/* MemPool		*/
+	2048,	/* MemPoolPuddle	*/
+	2048,	/* MemPoolThresh	*/
+	"Select File",
+	"Ok",
 	"Cancel",
-	0, 0,
-	500, 300
+	-1, -1,	 /* --> center on screen */
+	300, 300
     },
 
-    NULL,	/* File 	*/
-    "Sys:",     /* Drawer       */
-    "#?",       /* Pattern      */
-    FRF_DOPATTERNS,
-    FRF_REJECTICONS,
-    NULL,	/* FilterFunc	*/
-    NULL,	/* HookFunc	*/
-    "Volumes",  /* VolumesText  */
-    "Parent"    /* CancelText   */
+    "",			/* File 	 */
+    "",     		/* Drawer        */
+    "#?",       	/* Pattern       */
+    NULL,		/* AcceptPattern */ /* def. = "#?", but must be ParsePatternNoCase'ed */
+    NULL,		/* RejectPattern */ /* def. = "~(#?)", but must be ParsePatternNoCase'ed */
+    0,			/* Flags1	 */
+    FRF_REJECTICONS,	/* Flags2	 */
+    NULL,		/* FilterFunc	 */
+    NULL,		/* HookFunc	 */
+    "Volumes", 	 	/* VolumesText   */
+    "Parent",  		/* CancelText    */
+    "Pattern",		/* PatternText   */
+    "Drawer",		/* DrawerText    */
+    "File",		/* FileText	 */
+    "Drawer",		/* LVDrawerText  */
+    "Assign",		/* LVAssignText */
+    
+    /* Menus */
+    
+    "Control",
+
+    "L\0Last Name",
+    "N\0Next Name",
+    "R\0Restore",
+    "P\0Parent",
+    "V\0Volumes",
+    "U\0Update",
+    "D\0Delete",
+    "T\0Create new drawer...",
+    "E\0Rename...",
+    "#\0Select...",
+    "O\0Ok",
+    "C\0Cancel",
+    
+    "File list",
+    
+    "1\0Sort by name",
+    "2\0Sort by date",
+    "3\0Sort by size",
+    "+\0Ascending order",
+    "-\0Descending order",
+    "4\0Show drawers first",
+    "5\0Show drawers with files",
+    "6\0Show drawers last"
+    
 };
 
 #include <intuition/screens.h> /* Needed for pen constants */
@@ -165,6 +204,9 @@ const struct IntFontReq def_fontreq =
 	NULL,	/* IntuiMsgFunc 	*/
 	NULL,	/* TextAttr		*/
 	NULL,	/* Locale		*/
+	NULL,	/* MemPool		*/
+	0,	/* MemPoolPuddle	*/
+	0,	/* MemPoolThresh	*/
 	"Open font",
 	"OK",
 	"Cancel",
@@ -259,11 +301,20 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!GfxBase)
 	return(NULL);
 
+    if (!CyberGfxBase)
+        CyberGfxBase = OpenLibrary("cybergraphics.library",0);
+    /* We can live without cybergraphics.library so don't abort if opening fails */
+    	
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
 	return(NULL);
 
+    if (!GadToolsBase)
+        GadToolsBase = OpenLibrary("gadtools.library", 37);
+    if (!GadToolsBase)
+        return (NULL);
+	
     if (!BOOPSIBase)
 	BOOPSIBase = OpenLibrary(BOOPSINAME, 37);
     if (!BOOPSIBase)
@@ -284,6 +335,31 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!LIBBASE->aroslistbase)
 	return (NULL);
 
+    if (!LIBBASE->aslpropclass)
+        LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
+    if (!LIBBASE->aslpropclass)
+        return (NULL);
+
+    if (!LIBBASE->aslarrowclass)
+        LIBBASE->aslarrowclass = makeaslarrowclass(LIBBASE);
+    if (!LIBBASE->aslarrowclass)
+        return (NULL);
+	
+    if (!LIBBASE->asllistviewclass)
+        LIBBASE->asllistviewclass = makeasllistviewclass(LIBBASE);
+    if (!LIBBASE->asllistviewclass)
+        return (NULL);
+
+    if (!LIBBASE->aslbuttonclass)
+        LIBBASE->aslbuttonclass = makeaslbuttonclass(LIBBASE);
+    if (!LIBBASE->aslbuttonclass)
+        return (NULL);
+
+    if (!LIBBASE->aslstringclass)
+        LIBBASE->aslstringclass = makeaslstringclass(LIBBASE);
+    if (!LIBBASE->aslstringclass)
+        return (NULL);
+	
     /* ------------------------- */
 
     /* Asl specific initialization stuff */
@@ -317,20 +393,62 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
     {
+
+	if (LIBBASE->aslpropclass)
+	    FreeClass(LIBBASE->aslpropclass);
+	LIBBASE->aslpropclass = NULL;
+
+	if (LIBBASE->aslarrowclass)
+	    FreeClass(LIBBASE->aslarrowclass);
+	LIBBASE->aslarrowclass = NULL;
+	
+	if (LIBBASE->asllistviewclass)
+	    FreeClass(LIBBASE->asllistviewclass);
+	LIBBASE->asllistviewclass = NULL;
+	
+	if (LIBBASE->aslbuttonclass)
+	    FreeClass(LIBBASE->aslbuttonclass);
+	LIBBASE->aslbuttonclass = NULL;
+
+	if (LIBBASE->aslstringclass)
+	    FreeClass(LIBBASE->aslstringclass);
+	LIBBASE->aslstringclass = NULL;
+
+	if (GadToolsBase)
+	    CloseLibrary(GadToolsBase);
+	GadToolsBase = NULL;
+	
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
+	UtilityBase = NULL;
+	
 	if (BOOPSIBase)
 	    CloseLibrary(BOOPSIBase);
+	BOOPSIBase = NULL;
+	
+	if (CyberGfxBase)
+	    CloseLibrary(CyberGfxBase);
+	CyberGfxBase = NULL;
+	
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
+	GfxBase = NULL;
+	
 	if (DOSBase)
 	    CloseLibrary((struct Library *)DOSBase);
+	DOSBase = NULL;
+	
 	if (IntuitionBase)
 	    CloseLibrary((struct Library *)IntuitionBase);
+	IntuitionBase = NULL;
+	
 	if (LIBBASE->aroslistviewbase)
 	    CloseLibrary(LIBBASE->aroslistviewbase);
+	LIBBASE->aroslistviewbase = NULL;
+	
 	if (LIBBASE->aroslistbase)
 	    CloseLibrary(LIBBASE->aroslistbase);
+	LIBBASE->aroslistbase = NULL;
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
