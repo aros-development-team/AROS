@@ -5,6 +5,9 @@
     Desc: Set attributes in a specific class
     Lang: english
 */
+
+#define AROS_TAGRETURNTYPE IPTR
+
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"
@@ -15,7 +18,7 @@
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
 
-	ULONG SetSuperAttrs (
+	IPTR SetSuperAttrs (
 
 /*  SYNOPSIS */
 	Class *  class,

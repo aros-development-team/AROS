@@ -6,6 +6,7 @@
     Lang: english
 */
 #define AROS_TAGRETURNTYPE struct ExtSprite *
+
 #include <graphics/gfx.h>
 #include <graphics/sprite.h>
 #include <utility/tagitem.h>
@@ -47,6 +48,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    AllocSpriteDataA (bitmap, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = AllocSpriteDataA (bitmap, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* AllocSpriteData */

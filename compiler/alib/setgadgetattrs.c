@@ -5,6 +5,9 @@
     Desc: Change the attributes of a BOOPSI gadget
     Lang: english
 */
+
+#define AROS_TAGRETURNTYPE IPTR
+
 #include <intuition/classes.h>
 #include <intuition/intuitionbase.h>
 #include "alib_intern.h"

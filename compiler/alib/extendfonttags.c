@@ -46,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    ExtendFont (font, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = ExtendFont (font, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* ExtendFontTags */

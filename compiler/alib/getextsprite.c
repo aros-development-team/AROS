@@ -46,6 +46,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    GetExtSpriteA (sprite, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = GetExtSpriteA (sprite, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* GetExtSprite */

@@ -49,6 +49,6 @@
 *****************************************************************************/
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
-    ChangeExtSpriteA (vp, oldsprite, newsprite, AROS_SLOWSTACKTAGS_ARG(tag1));
+    retval = ChangeExtSpriteA (vp, oldsprite, newsprite, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 } /* ChangeExtSprite */

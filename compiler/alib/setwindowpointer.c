@@ -6,7 +6,8 @@
     Lang: english
 */
 #include <exec/types.h>
-#define AROS_TAGRETURNTYPE BOOL
+#define AROS_TAGRETURNTYPE void
+#define AROS_TAGRETURNTYPEVOID
 
 #include "alib_intern.h"
 
@@ -20,7 +21,7 @@ extern struct IntuitionBase * IntuitionBase;
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/intuition.h>
 
-	LONG SetWindowPointer (
+	void SetWindowPointer (
 
 /*  SYNOPSIS */
         struct Window   * window,
