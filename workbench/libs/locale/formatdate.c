@@ -379,7 +379,7 @@ VOID PrintDigits(UWORD number, char fill, UWORD len, struct Hook *hook,
     
     buf[6] = 0;
     
-    while(number && i < len)
+    while((number || !i) && i < len)
     {
 	*--ptr = number % 10 + '0';
 	number /= 10;
