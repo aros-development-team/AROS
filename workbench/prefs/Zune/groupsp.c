@@ -113,9 +113,9 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	        Child, HVSpace,
 	        Child, HVSpace,
 		Child, MakeLabel("Horizontal:"),
-	        Child, (IPTR)d.spacing_horiz_slider = MakeSpacingSlider(),
+	        Child, d.spacing_horiz_slider = (Object*)MakeSpacingSlider(),
 	        Child, MakeLabel("Vertical:"),
-		Child, (IPTR)d.spacing_vert_slider = MakeSpacingSlider(),
+		Child, d.spacing_vert_slider = (Object*)MakeSpacingSlider(),
 	        Child, HVSpace,
 	        Child, HVSpace,
 							 End, /* Spacing */

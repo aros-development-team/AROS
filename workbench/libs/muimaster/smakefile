@@ -54,6 +54,8 @@ CLASSESOBJS= \
   objs/classes/cycle.o \
   objs/classes/dataspace.o \
   objs/classes/family.o \
+  objs/classes/frameadjust.o \
+  objs/classes/framedisplay.o \
   objs/classes/gauge.o \
   objs/classes/group.o \
   objs/classes/iconlist.o \
@@ -71,6 +73,7 @@ CLASSESOBJS= \
   objs/classes/pendisplay.o \
   objs/classes/poppen.o \
   objs/classes/popasl.o \
+  objs/classes/popframe.o \
   objs/classes/popimage.o \
   objs/classes/popobject.o \
   objs/classes/popstring.o \
@@ -83,6 +86,7 @@ CLASSESOBJS= \
   objs/classes/scrollbar.o \
   objs/classes/scrollbutton.o \
   objs/classes/scrollgroup.o \
+  objs/classes/settings.o \
   objs/classes/settingsgroup.o \
   objs/classes/slider.o \
   objs/classes/string.o \
@@ -281,6 +285,12 @@ objs/classes/dataspace.o: classes/dataspace.c
 objs/classes/family.o: classes/family.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/family.c objname=$@
 
+objs/classes/frameadjust.o: classes/frameadjust.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/frameadjust.c objname=$@
+
+objs/classes/framedisplay.o: classes/framedisplay.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/framedisplay.c objname=$@
+
 objs/classes/gauge.o: classes/gauge.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/gauge.c objname=$@
 
@@ -341,6 +351,9 @@ objs/classes/poppen.o: classes/poppen.c
 objs/classes/popstring.o: classes/popstring.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popstring.c objname=$@
 
+objs/classes/popframe.o: classes/popframe.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/popframe.c objname=$@
+
 objs/classes/radio.o: classes/radio.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/radio.c objname=$@
 
@@ -352,6 +365,9 @@ objs/classes/scale.o: classes/scale.c
 
 objs/classes/semaphore.o: classes/semaphore.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/semaphore.c objname=$@
+
+objs/classes/settings.o: classes/settings.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/settings.c objname=$@
 
 objs/classes/scrollbar.o: classes/scrollbar.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/scrollbar.c objname=$@
