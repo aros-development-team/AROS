@@ -60,15 +60,68 @@ static APTR 	    	    mempool;
 
 /*********************************************************************************************/
 
+struct nameexp
+{
+    STRPTR shortname;
+    STRPTR longname;
+};
+
+/*********************************************************************************************/
+
+struct nameexp model_expansion_table[] =
+{
+    {"pc105", "PC 105"},
+    {NULL   ,  NULL   }
+};
+
+/*********************************************************************************************/
+
+struct nameexp layout_expansion_table[] =
+{
+    {"usa1" , "American"    	    },    
+    {"d"    , "Deutsch"     	    },
+    {"gb"   , "British"     	    },
+    {"cdn"  , "Canadien Français"   },
+    {"dk"   , "Dansk"	    	    },
+    {"usa2" , "Dvorak"	    	    },
+    {"e"    , "Español"     	    },
+    {"f"    , "Français"    	    },
+    {"i"    , "Italiana"    	    },
+    {"n"    , "Norsk"	    	    },
+    {"po"   , "Português"   	    },
+    {"ch2"  , "Schweiz"     	    },
+    {"ch1"  , "Suisse"	    	    },
+    {"s"    , "Svenskt"     	    },
+    {NULL   , NULL  	    	    }
+};
+
+/*********************************************************************************************/
+
+static void ExpandName(STRPTR name, struct nameexp *exp)
+{
+    for(; exp->shortname; exp++)
+    {
+    	if (stricmp(exp->shortname, name) == 0)
+	{
+	    strcpy(name, exp->longname);
+	    break;
+	}
+    }
+}
+
+/*********************************************************************************************/
+
 static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 {
     struct AnchorPath 	    ap;
-    struct ListviewEntry    *entry;
+    struct ListviewEntry    *entry, *entry2;
+    struct List     	    templist;
     STRPTR  	    	    sp;
     LONG    	    	    error;
     
     memset(&ap, 0, sizeof(ap));
-    
+    NewList(&templist);
+
     error = MatchFirst(pattern, &ap);
     while((error == 0))
     {
@@ -77,27 +130,103 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 	    entry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
 	    if (entry)
 	    {
-	    	entry->node.ln_Name = entry->name;
-		strncpy(entry->name, ap.ap_Info.fib_FileName, sizeof(entry->name));
+	    	entry->node.ln_Name = entry->modelname;
+		strncpy(entry->realname, ap.ap_Info.fib_FileName, sizeof(entry->realname));
 		
-		entry->name[0] = ToUpper(entry->name[0]);
-		sp = strchr(entry->name, '.');
-		if (sp) sp[0] = '\0';
+		// entry->name[0] = ToUpper(entry->name[0]);
 		
-		strcpy(entry->realname, entry->name);
-		
-		sp = strchr(entry->name, '_');
+		sp = strchr(entry->realname, '_');
 		if (sp)
 		{
-		    sp[0] = ' ';
-		    if (sp[1]) sp[1] = ToUpper(sp[1]);
+		    sp[0] = '\0';
+		    strcpy(entry->modelname, entry->realname);
+		    strcpy(entry->layoutname, sp + 1);
 		}
-		SortInNode(list, &entry->node);
+		else
+		{
+		    strcpy(entry->modelname, "Amiga");
+		    strcpy(entry->layoutname, entry->realname);
+		}
+		ExpandName(entry->modelname, model_expansion_table);
+		ExpandName(entry->layoutname, layout_expansion_table);
+		AddTail(&templist, &entry->node);
 	    }
 	}
     	error = MatchNext(&ap);
     }
     MatchEnd(&ap);
+    
+    /* Sort by Model Name */
+    
+    ForeachNodeSafe(&templist, entry, entry2)
+    {
+    	Remove(&entry->node);
+    	SortInNode(list, &entry->node);
+    }
+    
+    /* Fix ln_Name to point to Layout Name */
+    
+    ForeachNode(list, entry)
+    {
+    	entry->node.ln_Name = entry->layoutname;
+    }
+    
+    /* Move back to temp list */
+    
+    NewList(&templist);
+    
+    ForeachNodeSafe(list, entry, entry2)
+    {
+    	Remove(&entry->node);
+	AddTail(&templist, &entry->node);
+    }
+    
+    /* Create Model ~tree nodes + sort by Layout Name in each Model ~tree */
+    
+    NewList(list);
+    
+    ForeachNodeSafe(&templist, entry, entry2)
+    {
+    	struct ListviewEntry    *modelentry, *layoutentry;
+	struct List 	    	layoutlist;
+
+	modelentry = (struct ListviewEntry *)AllocPooled(mempool, entrysize);
+	if (!modelentry) break;
+	
+	modelentry->modelnode    = TRUE;
+	modelentry->node.ln_Name = entry->modelname;
+	
+	AddTail(list, &modelentry->node);
+	
+	/* Create a sorted list of layouts for this model ~tree */
+	
+	NewList(&layoutlist);
+	for(; (entry2 = (struct ListviewEntry *)entry->node.ln_Succ); entry = entry2)
+	{
+	    if (stricmp(entry->modelname, modelentry->node.ln_Name) != 0)
+	    {
+	    	entry2 = entry;
+	    	break;
+	    }
+	    Remove(&entry->node);
+	    SortInNode(&layoutlist, &entry->node);
+	}
+	
+	/* Add the sorted list of layouts to the final list */
+	
+	while((layoutentry = (struct ListviewEntry *)RemHead(&layoutlist)))
+	{
+	    AddTail(list, &layoutentry->node);
+	}
+ 
+    	if (!entry2) break; 
+	
+    } /* ForeachNodeSafe(&templist, entry, entry2) */
+    
+    ForeachNode(list, entry)
+    {
+    	kprintf("%s%s\n", (entry->modelnode ? "* " : "   "), entry->node.ln_Name);
+    }
 }
 
 /*********************************************************************************************/
@@ -111,7 +240,7 @@ void InitPrefs(STRPTR filename, BOOL use, BOOL save)
     if (!mempool) Cleanup("Out of memory!");
 
     ScanDirectory("DEVS:Keymaps/#?_~(#?.info)", &keymap_list, sizeof(struct KeymapEntry));    
-        
+    
     if (!LoadPrefs(filename))
     {
     	if (!DefaultPrefs())
@@ -331,9 +460,6 @@ BOOL SavePrefs(STRPTR filename)
 
 BOOL DefaultPrefs(void)
 {
-    BOOL retval = FALSE;
-    WORD i;
-    
     TellGUI(PAGECMD_PREFS_CHANGING);
     
     strcpy(inputprefs.ip_Keymap, "amiga_usa0");
