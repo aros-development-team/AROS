@@ -6,7 +6,7 @@ USER_INCLUDES := -I.
 FILES	:=	pcibios pci_init functable
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
-ENDFILE :=	$(END_FILE).o
+ENDFUNC :=	$(END_FILE).o
 
 #MM Drivers-native : 
 Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
