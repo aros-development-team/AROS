@@ -28,8 +28,8 @@ ERREUR
 ; ERROR
 ;
 MSG_DRIVER_INFO
-Info du pilote :
-;Driver info:
+Info du pilote
+;Driver info
 ;
 MSG_DRIVER_NAME
 Nom du pilote :
@@ -44,8 +44,8 @@ Info matériel :
 ;Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-Info du périphérique PCI :
-;PCI device info:
+Info du périphérique PCI
+;PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
 Description :

@@ -28,8 +28,8 @@ FEHLER
 ; ERROR
 ;
 MSG_DRIVER_INFO
-Treiber Information:
-;Driver info:
+Treiber Information
+;Driver info
 ;
 MSG_DRIVER_NAME
 Treiber Name:
@@ -44,8 +44,8 @@ Hardware Information:
 ;Hardware info:
 ;
 MSG_PCI_DEVICE_INFO
-PCI-Geräte Information:
-;PCI device info:
+PCI-Geräte Information
+;PCI device info
 ;
 MSG_DEVICE_DESCRIPTION
 Beschreibung:

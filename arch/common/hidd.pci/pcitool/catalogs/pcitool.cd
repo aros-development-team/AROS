@@ -18,7 +18,7 @@ MSG_ERROR_HEADER (//)
 ERROR
 ;
 MSG_DRIVER_INFO (//)
-Driver info:
+Driver info
 ;
 MSG_DRIVER_NAME (//)
 Driver name:
@@ -30,7 +30,7 @@ MSG_HARDWARE_INFO (//)
 Hardware info:
 ;
 MSG_PCI_DEVICE_INFO (//)
-PCI device info:
+PCI device info
 ;
 MSG_DEVICE_DESCRIPTION (//)
 Description:
