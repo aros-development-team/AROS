@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 14:11:54  digulla
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:41:42  digulla
     Added standard header for all files
 
@@ -60,8 +63,8 @@ static const APTR inittabl[4]=
 #define SysBase UtilityBase->ub_SysBase
 
 __AROS_LH2(struct UtilityBase *, init,
- __AROS_LA(struct UtilityBase *, UtilityBase, D0),
- __AROS_LA(BPTR,               segList,   A0),
+ __AROS_LHA(struct UtilityBase *, UtilityBase, D0),
+ __AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Utility)
 {
     __AROS_FUNC_INIT
@@ -76,7 +79,7 @@ __AROS_LH2(struct UtilityBase *, init,
 }
 
 __AROS_LH1(struct UtilityBase *, open,
- __AROS_LA(ULONG, version, D0),
+ __AROS_LHA(ULONG, version, D0),
 	   struct UtilityBase *, UtilityBase, 1, Utility)
 {
     __AROS_FUNC_INIT

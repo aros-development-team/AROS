@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/13 14:10:31  digulla
+    Replaced __AROS_LA by __AROS_LHA
+
     Revision 1.2  1996/08/01 17:41:41  digulla
     Added standard header for all files
 
@@ -20,8 +23,8 @@
 	__AROS_LH2I(LONG, Stricmp,
 
 /*  SYNOPSIS */
-	__AROS_LA(STRPTR, string1, A0),
-	__AROS_LA(STRPTR, string2, A1),
+	__AROS_LHA(STRPTR, string1, A0),
+	__AROS_LHA(STRPTR, string2, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 27, Utility)
