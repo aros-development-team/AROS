@@ -40,7 +40,10 @@ AROS_LH0(void, Switch,
         */
 
         SysBase->AttnResched |= 0x8000;
-        __asm__ __volatile__ ("trap #1\n");
+        __asm__ __volatile__ ("move.l %d7,-(%sp)\n\t"
+                              "clr.l %d7\n\t"
+                              "trap #1\n\t"
+                              "move.l (%sp)+,%d7\n\t");
     }
 
     Enable();
