@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/21 15:54:21  digulla
+    Use Screens' font if there is one
+
     Revision 1.3  1996/09/21 14:20:26  digulla
     DEBUG Code
     Initialize new RastPort with InitRastPort()
@@ -133,7 +136,11 @@ extern int intui_GetWindowSize (void);
     if (!intui_OpenWindow (w, IntuitionBase))
 	goto failexit;
 
-    SetFont (rp, GfxBase->DefaultFont);
+    if (w->WScreen->Font)
+	SetFont (rp, ((struct IntScreen *)(w->WScreen))->DInfo.dri_Font);
+    else
+	SetFont (rp, GfxBase->DefaultFont);
+
     SetAPen (rp, newWindow->DetailPen);
     SetBPen (rp, newWindow->BlockPen);
     SetDrMd (rp, JAM2);
