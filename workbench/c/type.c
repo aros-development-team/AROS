@@ -2,14 +2,14 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Type CLI command
+    Lang: english
 */
 #include <exec/memory.h>
 #include <exec/execbase.h>
 #include <proto/exec.h>
-#include <dos/dos.h>
 #include <proto/dos.h>
+#include <dos/dos.h>
 
 static const char version[] = "$VER: type 41.1 (14.3.1997)\n";
 
@@ -266,8 +266,11 @@ int main (int argc, char ** argv)
 	    if(in->fd)
 	    {
 		in->cnt=0;
-		if(args[3] || 0 == strcmp((const char *)args[2], "h"))
+		if(args[3] || (args[2] && (!strcmp((const char *)args[2], "h"))))
 		    hexdumpfile(in,out);
+		else if (args[4] || (args[2] && (!strcmp((const char *)args[2], "n"))))
+#warning TODO: option NUMBER not implemented
+		    VPrintf("Type: OPT N / NUMBER not implemented\n", NULL);
 		else
 		    dumpfile(in,out);
 		Close(in->fd);
