@@ -16,7 +16,7 @@
 	
 	AROS_LH1(BOOL	, RemoveAppIcon,
 /*  SYNOPSIS */
-	AROS_LHA(struct AppIcon *, AppIcon, A0),
+	AROS_LHA(struct AppIcon *, appIcon, A0),
 /*  LOCATION */
 
 	struct WorkbenchBase *, WorkbenchBase, 11, Workbench)

@@ -17,7 +17,7 @@
 	AROS_LH1(BOOL	, RemoveAppMenuItem,
 /*  SYNOPSIS */
 
-	AROS_LHA(struct AppMenuItem *, AppMenuItem, A0),
+	AROS_LHA(struct AppMenuItem *, appMenuItem, A0),
 
 /*  LOCATION */
 	struct WorkbenchBase *, WorkbenchBase, 13, Workbench)

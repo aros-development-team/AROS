@@ -18,7 +18,7 @@
 
 /*  SYNOPSIS */
 
-	AROS_LHA(struct AppWindow *, AppWindow, A0),
+	AROS_LHA(struct AppWindow *, appWindow, A0),
 
 /*  LOCATION */
 	struct WorkbenchBase *, WorkbenchBase, 9, Workbench)
