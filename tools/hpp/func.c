@@ -1,11 +1,15 @@
 #include <stdio.h>
+#include <string.h>
 #include <toollib/error.h>
 #include "var.h"
 #include "parse.h"
 #include "expr.h"
 
 static String DiffDateCB (const char ** args, int dummy, CBD data);
-static String ExprCB	(const char ** args, int dummy, CBD data);
+static String ExprCB	 (const char ** args, int dummy, CBD data);
+static String BasenameCB (const char ** args, int dummy, CBD data);
+static String StrcmpCB	 (const char ** args, int dummy, CBD data);
+static String StrcasecmpCB (const char ** args, int dummy, CBD data);
 
 static String
 DiffDateCB (const char ** args, int dummy, CBD data)
@@ -50,7 +54,7 @@ ExprCB (const char ** args, int dummy, CBD data)
     int rc, value;
     char buffer[32];
 
-    if (!args[0])
+    if (!args[0] || args[1])
     {
 	PushError ("$expr(): Expecting one arg");
 	return NULL;
@@ -73,6 +77,73 @@ ExprCB (const char ** args, int dummy, CBD data)
     return VS_New (buffer);
 }
 
+static String
+BasenameCB (const char ** args, int dummy, CBD data)
+{
+    const char * ptr;
+    const char * begin;
+
+    if (!args[0] || args[1])
+    {
+	PushError ("$basename(): Expecting one arg");
+	return NULL;
+    }
+
+    begin = strrchr (args[0], '/');
+
+    if (!begin)
+	begin = args[0];
+    else
+	begin ++;
+
+    ptr = strrchr (begin, '.');
+
+    if (ptr)
+    {
+	return VS_SubString (begin, 0, (long)ptr-(long)begin);
+    }
+
+    return VS_New (begin);
+}
+
+static String
+StrcmpCB (const char ** args, int dummy, CBD data)
+{
+    int  rc;
+    char buffer[32];
+
+    if (!args[0] || !args[1] || args[2])
+    {
+	PushError ("$diffdate(): Expecting two args");
+	return NULL;
+    }
+
+    rc = strcmp (args[0], args[1]);
+
+    sprintf (buffer, "%d", rc);
+
+    return VS_New (buffer);
+}
+
+static String
+StrcasecmpCB (const char ** args, int dummy, CBD data)
+{
+    int  rc;
+    char buffer[32];
+
+    if (!args[0] || !args[1] || args[2])
+    {
+	PushError ("$diffdate(): Expecting two args");
+	return NULL;
+    }
+
+    rc = strcasecmp (args[0], args[1]);
+
+    sprintf (buffer, "%d", rc);
+
+    return VS_New (buffer);
+}
+
 void
 Func_Init (void)
 {
@@ -80,6 +151,9 @@ Func_Init (void)
 
     Func_Add ("diffdate", (CB) DiffDateCB, NULL);
     Func_Add ("expr", (CB) ExprCB, NULL);
+    Func_Add ("basename", (CB) BasenameCB, NULL);
+    Func_Add ("strcmp", (CB) StrcmpCB, NULL);
+    Func_Add ("strcasecmp", (CB) StrcasecmpCB, NULL);
 }
 
 void
