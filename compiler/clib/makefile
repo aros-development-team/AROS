@@ -10,14 +10,63 @@ LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
-FILES = ctype printf strcmp stricmp strlen strcpy qsort \
-	strdup malloc free calloc realloc memcpy bcopy \
-	bzero memset vprintf vfprintf fputc putc __stdio \
-	fgetc fprintf errno feof fgetc fflush fputs puts \
-	strncmp memchr memmove strcat strchr strcspn \
-	strerror strncat strncpy strpbrk strrchr strspn \
-	strstr strtok strncasecmp sprintf vsprintf \
-	snprintf vsnprintf __vcformat
+FILES = \
+	__stdio \
+	__vcformat \
+	abs \
+	atoi \
+	atol \
+	bcopy \
+	bsearch \
+	bzero \
+	calloc \
+	ctype \
+	errno \
+	feof \
+	fflush \
+	fgetc \
+	fprintf \
+	fputc \
+	fputs \
+	free \
+	labs \
+	malloc \
+	memchr \
+	memcmp \
+	memcpy \
+	memmove \
+	memset \
+	printf \
+	puts \
+	qsort \
+	rand \
+	realloc \
+	snprintf \
+	sprintf \
+	strcasecmp \
+	strcat \
+	strchr \
+	strcmp \
+	strcpy \
+	strcspn \
+	strdup \
+	strerror \
+	strlen \
+	strncasecmp \
+	strncat \
+	strncmp \
+	strncpy \
+	strpbrk \
+	strrchr \
+	strspn \
+	strstr \
+	strtok \
+	strtol \
+	strtoul \
+	vfprintf \
+	vprintf \
+	vsnprintf \
+	vsprintf
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
