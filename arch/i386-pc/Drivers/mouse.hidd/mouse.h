@@ -30,6 +30,11 @@
 #define RIGHT_BUTTON    2
 #define MIDDLE_BUTTON   4
 
+#define INTELLIMOUSE_SUPPORT 	    1
+
+#define PS2_PROTOCOL_STANDARD	    0
+#define PS2_PROTOCOL_INTELLIMOUSE   1
+
 /***** Mouse HIDD *******************/
 
 /* IDs */
@@ -94,30 +99,33 @@ struct mouse_data
     {
         struct
         {
-            OOP_Object  *usbhidd;
+            OOP_Object *usbhidd;
         } usb;
         struct
         {
-            OOP_Object  *irqhidd;
-            HIDDT_IRQ_Handler *irq;
-            UBYTE       mouse_data[4];
-            UBYTE       mouse_collected_bytes;
-            UBYTE       expected_mouse_acks;
-
+            OOP_Object      	    	*irqhidd;
+            HIDDT_IRQ_Handler 	    	*irq;
+            UBYTE           	    	mouse_data[5];
+            UBYTE           	    	mouse_collected_bytes;
+    	    UBYTE   	    	    	mouse_protocol;
+	    UBYTE   	    	    	mouse_packetsize;
+            UBYTE           	    	expected_mouse_acks;
+	    UBYTE   	    	    	packetsize;
+	    
             struct pHidd_Mouse_Event    event;
         } ps2;
         struct
         {
-            OOP_Object  *serial;
-            OOP_Object  *unit;
-            struct Library *shidd;
-            UBYTE       mouse_data[4];
-            UBYTE       mouse_collected_bytes;
-            UBYTE       mouse_protocol;
-            UBYTE       mouse_inth_state;
+            OOP_Object      	    	*serial;
+            OOP_Object      	    	*unit;
+            struct Library  	    	*shidd;
+            UBYTE   	    	    	mouse_data[5];
+            UBYTE   	    	    	mouse_collected_bytes;
+            UBYTE   	    	    	mouse_protocol;
+            UBYTE           	    	mouse_inth_state;
 
-            struct      pHidd_Mouse_Event   event;
-            struct      Ring *rx;    /* Ring structure for mouse init */
+            struct pHidd_Mouse_Event	event;
+            struct Ring     	    	*rx;    /* Ring structure for mouse init */
         } com;
     } u;
 };
@@ -177,6 +185,7 @@ struct mouse_data
 #define KBD_OUTCMD_SET_STREAM_MODE	0xEA
 #define KBD_OUTCMD_READ_DATA		0xEB
 #define KBD_OUTCMD_SET_REMOTE_MODE	0xF0
+#define KBD_OUTCMD_GET_ID    	    	0xF2
 #define KBD_OUTCMD_SET_RATE		0xF3
 #define KBD_OUTCMD_SET_STREAM          	0xEA
 #define KBD_OUTCMD_ENABLE		0xF4

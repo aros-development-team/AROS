@@ -30,6 +30,7 @@
 
 /****************************************************************************************/
 
+#undef HiddMouseAB
 #define HiddMouseAB	(MSD(cl)->hiddMouseAB)
 
 /* defines for buttonstate */
@@ -183,6 +184,58 @@ int kbd_detect_aux()
 
 /****************************************************************************************/
 
+static int query_mouse(UBYTE *buf, int size, int timeout)
+{
+    int ret = 0;
+	
+    do
+    {
+	UBYTE status = kbd_read_status();
+
+	if (status & KBD_STATUS_OBF)
+	{
+	    UBYTE c = kbd_read_input();
+
+	    if ((c != KBD_REPLY_ACK) && (status & KBD_STATUS_MOUSE_OBF))
+	    {
+		buf[ret++] = c;
+	    }
+	}
+    	else
+	{
+	    mouse_usleep(1000);
+	}
+
+    } while ((--timeout) && (ret < size));
+	
+    return ret;
+     
+}
+
+
+/****************************************************************************************/
+
+static int detect_intellimouse(void)
+{
+    UBYTE id = 0;
+    
+    /* Try to switch into IMPS2 mode */
+    
+    aux_write_ack(KBD_OUTCMD_SET_RATE);
+    aux_write_ack(200);
+    aux_write_ack(KBD_OUTCMD_SET_RATE);
+    aux_write_ack(100);
+    aux_write_ack(KBD_OUTCMD_SET_RATE);
+    aux_write_ack(80);     
+    aux_write_ack(KBD_OUTCMD_GET_ID);
+    
+    query_mouse(&id, 1, 20);
+
+    return ((id == 3) || (id == 4)) ? id : 0;
+}
+
+/****************************************************************************************/
+
 #undef SysBase
 #define SysBase (hw->sysBase)
 
@@ -250,7 +303,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 	
         data->u.ps2.mouse_collected_bytes++;
 	
-	if (data->u.ps2.mouse_collected_bytes != 3)
+	if (data->u.ps2.mouse_collected_bytes != data->u.ps2.mouse_packetsize)
 	{
 	    /* Mouse Packet not yet complete */
 	    continue;
@@ -276,7 +329,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
          *
          * http://www.hut.fi/~then/mytexts/mouse.htm
          */
-
+	 
     #if 0
         D(bug("Got the following: 1. byte: 0x%x, dx=%d, dy=%d\n",
               mouse_data[0],
@@ -329,6 +382,19 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
         data->buttonstate = buttonstate;
  
+    #if INTELLIMOUSE_SUPPORT
+    	/* mouse wheel */
+    	e->y = (mouse_data[3] & 8) ? (mouse_data[3] & 15) - 16 : (mouse_data[3] & 15);
+	if (e->y)
+	{
+	    e->x = 0;
+	    e->type  = vHidd_Mouse_WheelMotion;
+	    e->button = vHidd_Mouse_NoButton;
+	    
+	    data->mouse_callback(data->callbackdata, e);	    
+	}	
+    #endif
+    
     } /* for(; ((info = kbd_read_statues()) & KBD_STATUS_OBF) && work; work--) */
 
     if (!work)
@@ -372,7 +438,18 @@ int mouse_ps2reset(struct mouse_data *data)
      */
     kbd_write_cmd(AUX_INTS_OFF);
     kbd_write_command_w(KBD_CTRLCMD_KBD_DISABLE);
+
+    data->u.ps2.mouse_protocol = PS2_PROTOCOL_STANDARD;
+    data->u.ps2.mouse_packetsize = 3;
     
+#if INTELLIMOUSE_SUPPORT
+    if (detect_intellimouse())
+    {
+    	data->u.ps2.mouse_protocol = PS2_PROTOCOL_INTELLIMOUSE;
+    	data->u.ps2.mouse_packetsize = 4;    	
+    }    
+#endif
+              
     /*
      * Now the commands themselves.
      */
