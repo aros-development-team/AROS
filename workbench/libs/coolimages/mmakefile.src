@@ -2,10 +2,16 @@
 
 include $(TOP)/config/make.cfg
 
-#MM- workbench-libs-coolimages : includes linklibs
+#MM workbench-libs-coolimages : \
+#MM     kernel-exec-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-cybergraphics-includes \
+#MM     includes-copy
+#MM- workbench-libs-coolimages : linklibs
 
-%build_module_macro mmake=workbench-libs-coolimages modname=coolimages \
-  modtype=library funcs=cool_obtainimagea \
-  uselibs="coolimagesstatic amiga rom" conffile=lib.conf
+%build_module mmake=workbench-libs-coolimages \
+    modname=coolimages modtype=library \
+    files="coolimages_init cool_obtainimagea" \
+    uselibs="coolimagesstatic amiga rom"
 
 %common
