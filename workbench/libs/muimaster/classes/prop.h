@@ -29,6 +29,11 @@ struct  MUIP_Prop_Increase                  { ULONG MethodID; LONG amount; };
 #define MUIV_Prop_UseWinBorder_Right 2
 #define MUIV_Prop_UseWinBorder_Bottom 3
 
+#define MUIA_Prop_FirstReal     0x804205DC
+#define MUIA_Prop_PropRelease   0x80429839
+#define MUIA_Prop_DeltaFactor   0x80427C5E /* is. LONG */
+#define MUIA_Prop_DoSmooth      0x804236ce /* V4 i.. LONG */
+
 extern const struct __MUIBuiltinClass _MUI_Prop_desc;
 
 #endif

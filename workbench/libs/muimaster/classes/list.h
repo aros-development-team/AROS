@@ -261,4 +261,25 @@ struct  MUIP_Dirlist_ReRead                 { ULONG MethodID; };
 extern const struct __MUIBuiltinClass _MUI_Listview_desc;
 extern const struct __MUIBuiltinClass _MUI_List_desc;
 
+/**********************/
+/* List Position Test */
+/**********************/
+
+struct MUI_List_TestPos_Result
+{
+	LONG  entry;   /* number of entry, -1 if mouse not over valid entry */
+	WORD  column;  /* numer of column, -1 if no valid column */
+	UWORD flags;   /* see below */
+	WORD  xoffset; /* x offset of mouse click relative to column start */
+	WORD  yoffset; /* y offset of mouse click from center of line
+	                  (negative values mean click was above center,
+	                   positive values mean click was below center) */
+};
+
+#define MUI_LPR_ABOVE  (1<<0)
+#define MUI_LPR_BELOW  (1<<1)
+#define MUI_LPR_LEFT   (1<<2)
+#define MUI_LPR_RIGHT  (1<<3)
+
+
 #endif
