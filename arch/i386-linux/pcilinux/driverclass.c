@@ -138,7 +138,7 @@ static IPTR pcidriver_mm(OOP_Class *cl, OOP_Object *o,
 }
 
 static VOID pcidriver_um(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_UnMapPCI *msg)
+    struct pHidd_PCIDriver_UnmapPCI *msg)
 {
     ULONG offs = msg->CPUAddress;
     ULONG size = msg->Length;
@@ -194,7 +194,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	{ OOP_METHODDEF(pcidriver_RL),  moHidd_PCIDriver_ReadConfigLong },
 	{ OOP_METHODDEF(pcidriver_WL),  moHidd_PCIDriver_WriteConfigLong },
 	{ OOP_METHODDEF(pcidriver_mm),  moHidd_PCIDriver_MapPCI },
-	{ OOP_METHODDEF(pcidriver_um),  moHidd_PCIDriver_UnMapPCI },
+	{ OOP_METHODDEF(pcidriver_um),  moHidd_PCIDriver_UnmapPCI },
 	{ NULL, 0UL }
     };
 
