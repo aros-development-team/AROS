@@ -91,6 +91,15 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     if (!IntuitionBase)
     	return FALSE;
 
+    if (!CxBase)
+    	CxBase = OpenLibrary("commodities.library", 37);
+    if (!CxBase)
+    	return FALSE;
+	
+    KeymapBase = OpenLibrary("keymap.library", 37);
+    if (!KeymapBase)
+    	return FALSE;
+	
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
     
     __zune_prefs_init(&__zprefs);
@@ -139,6 +148,12 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->intuibase);
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase = NULL;
+    
+    CloseLibrary(CxBase);
+    CxBase = NULL;
+    
+    CloseLibrary(KeymapBase);
+    KeymapBase = NULL;
 }
 
 /****************************************************************************************/

@@ -38,6 +38,8 @@ void main(void)
     MUIMasterBase_instance.gfxbase = OpenLibrary("graphics.library",37);
     MUIMasterBase_instance.layersbase = OpenLibrary("layers.library",37);
     MUIMasterBase_instance.intuibase = OpenLibrary("intuition.library",37);
+    MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
+    MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     __zune_prefs_init(&__zprefs);
 
     app = ApplicationObject,
