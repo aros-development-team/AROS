@@ -10,6 +10,9 @@
 #define NULL ((void *)0)
 #endif
 
+void AROS_SLIB_ENTRY(open,Exec)();
+void AROS_SLIB_ENTRY(close,Exec)();
+void AROS_SLIB_ENTRY(null,Exec)();
 void AROS_SLIB_ENTRY(Supervisor,Exec)();
 void AROS_SLIB_ENTRY(Switch,Exec)();
 void AROS_SLIB_ENTRY(Dispatch,Exec)();
@@ -140,10 +143,10 @@ void AROS_SLIB_ENTRY(RawPutChar,Exec)();
 
 void *ExecFunctions[131]=
 {
-/*  1 */NULL,
-	NULL,
-	NULL,
-	NULL,
+/*  1 */&AROS_SLIB_ENTRY(open,Exec),
+	&AROS_SLIB_ENTRY(close,Exec),
+	&AROS_SLIB_ENTRY(null,Exec),
+	&AROS_SLIB_ENTRY(null,Exec),
 	&AROS_SLIB_ENTRY(Supervisor,Exec),
 	&AROS_SLIB_ENTRY(PrepareContext,Exec),
 	NULL,		/* Private2 */

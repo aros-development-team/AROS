@@ -315,4 +315,35 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LH1(struct ExecBase *, open,
+    AROS_LHA(ULONG, version, D0),
+    struct ExecBase *, SysBase, 1, Exec)
+{
+    AROS_LIBFUNC_INIT
+
+    /* I have one more opener. */
+    SysBase->LibNode.lib_OpenCnt++;
+    return SysBase;
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0(BPTR, close,
+    struct ExecBase *, SysBase, 2, Exec)
+{
+    AROS_LIBFUNC_INIT
+
+    /* I have one fewer opener. */
+    SysBase->LibNode.lib_OpenCnt--;
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_LH0I(int, null,
+    struct ExecBase *, SysBase, 4, Exec)
+{
+    AROS_LIBFUNC_INIT
+    return 0;
+    AROS_LIBFUNC_EXIT
+}
+
 const char END = 1;
