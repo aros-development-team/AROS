@@ -116,6 +116,7 @@ ULONG i,blocks,maxinbitmap;
 	bitmapblock=getFreeCacheBlock(afsbase, volume,volume->rootblock+1);
 	for (i=1;i<volume->SizeBlock;i++)
 		bitmapblock->buffer[i]=0xFFFFFFFF;								//all blocks are free
+	bitmapblock->buffer[0]=0;
 	bitmapblock->buffer[0]=AROS_LONG2BE(0-calcChkSum(volume->SizeBlock,bitmapblock->buffer));
 	blocks=volume->rootblock*2-volume->bootblocks;					//blocks to mark in bitmaps
 	maxinbitmap=(volume->SizeBlock-1)*32;			//max blocks marked in a bitmapblock
