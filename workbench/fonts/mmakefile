@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 FONTSDIR=$(BINDIR)/Fonts
 
-FONTS=fixed
+FONTS=fixed arial stop ttcourier
 
 #MM workbench-fonts : setup
 workbench-fonts: $(FONTS)
