@@ -47,30 +47,14 @@ USE_CLIB_STATIC := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
+NO_AUTOINIT := yes
 
 #MM- workbench : workbench-c
 #MM workbench-c : includes linklibs
-
-%make_prog_setup mmake=workbench-c
+%make_prog_setup mmake=workbench-c startup=
 
 workbench-c : setup $(EXES)
 
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
-$(AROS_C)/% : %.c
-	%link_q cmd=$(STATIC_LD) opt="$(CFLAGS) $(LDFLAGS)" startup="" libs="$(filter-out -lautoinit, $(LIBS))"
-#	%compile_q cmd=$(CC) opt="$(CFLAGS) $(USER_CFLAGS)"
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q flags="$(CFLAGS) -MT $(AROS_C)/$(notdir $(basename $@))"
-
-$(AROS_C)/% : $(DEPLIBS)
-
-setup ::
-	%mkdirs_q $(OBJDIR) $(AROS_C)
-
-clean ::
-	-@$(RM) $(OBJDIR)
-
+%make_prog_single dir=$(AROS_C)
 %common
 %include_deps
