@@ -62,8 +62,8 @@ static struct page
 }
 pagetable[NUM_PAGES] =
 {
-    {MSG_GAD_TAB_MOUSE	    , page_mouse_handler},
-    {MSG_GAD_TAB_KEYBOARD   , page_kbd_handler  }
+    {MSG_GAD_TAB_KEYBOARD   , page_kbd_handler  },
+    {MSG_GAD_TAB_MOUSE	    , page_mouse_handler}
 };
 
 /*********************************************************************************************/
@@ -230,8 +230,8 @@ static void MakePages(void)
 {
     static const struct CoolImage *tabimages[] =
     {
-    	&cool_mouseimage,
-	&cool_keyimage
+	&cool_kbdimage,
+    	&cool_mouseimage
     };
     ULONG bgcol = 0;
     WORD i;

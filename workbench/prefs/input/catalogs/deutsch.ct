@@ -101,3 +101,5 @@ Test
 MSG_GAD_KEY_TYPE
 Tastaturbelegung
 ;
+MSG_TIME_FORMAT
+%d,%02d s

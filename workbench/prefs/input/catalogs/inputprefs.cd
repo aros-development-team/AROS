@@ -98,3 +98,5 @@ Test
 MSG_GAD_KEY_TYPE (//)
 Type
 ;
+MSG_TIME_FORMAT (//)
+%d.%02d s

@@ -10,6 +10,7 @@
 
 #include "global.h"
 #include <aros/asmcall.h>
+#include <aros/debug.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -21,18 +22,30 @@
 #define FRAME_OFFX (FRAMESPACEX)
 #define FRAME_OFFY (dri->dri_Font->tf_YSize + SPACE_Y)
 
+#define LABELSPACE_X 4
+
+#define REPEAT_DELAY_TICS_MIN 1
+#define REPEAT_DELAY_TICS_MAX 75
+#define REPEAT_DELAY_TICS_RANGE (REPEAT_DELAY_TICS_MAX - REPEAT_DELAY_TICS_MIN + 1)
+
+#define REPEAT_RATE_TICS_MIN 0
+#define REPEAT_RATE_TICS_MAX 12
+#define REPEAT_RATE_TICS_RANGE (REPEAT_RATE_TICS_MAX - REPEAT_RATE_TICS_MIN + 1)
+
 /*********************************************************************************************/
 
-static struct Gadget 	*gadlist, *gad, *lvgad, *rategad, *delaygad;
+static struct Gadget 	*gadlist, *gad, *lvgad, *rategad, *delaygad, *showrategad, *showdelaygad;
 static WORD 	    	minwidth, minheight;
 static WORD 	    	domleft, domtop, domwidth, domheight;
 static WORD 	    	lvwidth, lvheight, lvgroupwidth, lvgroupheight, lvgroupx1, lvgroupy1;
 static WORD 	    	ratewidth, rateheight, rategroupwidth, rategroupheight, rategroupx1, rategroupy1;
 static WORD 	    	delaywidth, delayheight, delaygroupwidth, delaygroupheight, delaygroupx1, delaygroupy1;
+static WORD 	    	showtimewidth;
 
 static BOOL 	    	init_done;
 
 static BOOL 	    	page_active;
+static UBYTE	    	showratebuf[30], showdelaybuf[30];
 
 /*********************************************************************************************/
 
@@ -144,6 +157,8 @@ AROS_UFH3S(IPTR, LVRenderFunc,
      	retval = LVCB_UNKNOWN;
      }
      	
+     return retval;
+     
      AROS_USERFUNC_EXIT
 }
 
@@ -153,7 +168,7 @@ static LONG kbd_layout(void)
 {
     struct RastPort temprp;
     struct ListviewEntry *entry;
-    WORD w, h, maxw;
+    WORD i, w, h, maxw;
     
     InitRastPort(&temprp);
     SetFont(&temprp, dri->dri_Font);
@@ -178,14 +193,41 @@ static LONG kbd_layout(void)
     if (maxw > lvgroupwidth) lvgroupwidth = maxw;
     
     lvgroupheight = SPACE_Y * 2 + dri->dri_Font->tf_YSize * 8 + FRAME_FRAMEHEIGHT;
+       
+    /* Calculate width of time display labels */
     
-    DeinitRastPort(&temprp);
-   
+    for(i = REPEAT_RATE_TICS_MIN; i <= REPEAT_RATE_TICS_MAX; i++)
+    {
+    	LONG secs, micro;
+	
+	secs = i / 50;
+	micro = (i % 50) * 2;
+	
+    	snprintf(showratebuf, sizeof(showratebuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    	w = TextLength(&temprp, showratebuf, strlen(showratebuf));
+	if (w > showtimewidth) showtimewidth = w;
+    }
+
+    for(i = REPEAT_DELAY_TICS_MIN; i <= REPEAT_DELAY_TICS_MAX; i++)
+    {
+    	LONG secs, micro;
+	
+	secs = i / 50;
+	micro = (i % 50) * 2;
+	
+    	snprintf(showdelaybuf, sizeof(showdelaybuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    	w = TextLength(&temprp, showdelaybuf, strlen(showdelaybuf));
+	if (w > showtimewidth) showtimewidth = w;
+    }
+    
     /* Repeat Rate gadget */
     
     rategroupwidth  = TextLength(&temprp, MSG(MSG_GAD_KEY_REPEAT_RATE), strlen(MSG(MSG_GAD_KEY_REPEAT_RATE)));
     rategroupwidth += FRAMETITLE_EXTRAWIDTH;
-    if (rategroupwidth < 200) rategroupwidth = 200;
+    if (rategroupwidth < 200 + LABELSPACE_X + showtimewidth)
+    {
+    	rategroupwidth = 200 + LABELSPACE_X + showtimewidth;
+    }
 
     rategroupheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + FRAME_FRAMEHEIGHT;
     
@@ -193,7 +235,10 @@ static LONG kbd_layout(void)
     
     delaygroupwidth  = TextLength(&temprp, MSG(MSG_GAD_KEY_REPEAT_DELAY), strlen(MSG(MSG_GAD_KEY_REPEAT_DELAY)));
     delaygroupwidth += FRAMETITLE_EXTRAWIDTH;
-    if (delaygroupwidth < 200) delaygroupwidth = 200;
+    if (delaygroupwidth < 200 + LABELSPACE_X + showtimewidth)
+    {
+    	delaygroupwidth = 200 + LABELSPACE_X + showtimewidth;
+    }
 
     delaygroupheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT + FRAME_FRAMEHEIGHT;
     
@@ -211,16 +256,210 @@ static LONG kbd_layout(void)
     h = delaygroupheight + SPACE_Y + rategroupheight;
     
     minheight = (lvgroupheight > h) ? lvgroupheight : h;
+
+    DeinitRastPort(&temprp);
     
     return TRUE;
 }
 
 /*********************************************************************************************/
 
+static void update_keymap_gad(void)
+{
+    struct ListviewEntry    *keymapnode;
+    struct TagItem  	    lvsettags[] =
+    {
+    	{GTLV_Selected	,   0	},
+	{TAG_DONE   	    	}
+    };
+    WORD    	    	    active = -1, index = 0;
+
+    ForeachNode(&keymap_list, keymapnode)
+    {
+    	if (keymapnode->modelnode == FALSE)
+	{
+	    if (strcmp(keymapnode->realname, inputprefs.ip_Keymap) == 0)
+	    {
+	    	active = index;
+		break;
+	    }
+	}
+	index++;
+    }
+    
+    lvsettags[0].ti_Data = (IPTR)active;
+    
+    GT_SetGadgetAttrsA(lvgad, win, NULL, lvsettags);
+}
+
+/*********************************************************************************************/
+
+static void update_showrate_gad(void)
+{
+    struct TagItem settags[] =
+    {
+    	{GTTX_Text, (IPTR)showratebuf},
+	{TAG_DONE   	    	     }
+    };
+    LONG secs, micro;
+    
+    secs  = inputprefs.ip_KeyRptSpeed.tv_secs;
+    micro = inputprefs.ip_KeyRptSpeed.tv_micro / 10000;
+    
+    snprintf(showratebuf, sizeof(showratebuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    
+    GT_SetGadgetAttrsA(showrategad, win, NULL, settags);
+}
+
+/*********************************************************************************************/
+
+static void update_rate_gad(void)
+{
+    struct TagItem scsettags[] =
+    {
+    	{GTSC_Top, 0},
+	{TAG_DONE   }
+    };
+    LONG rate;
+    
+    rate = inputprefs.ip_KeyRptSpeed.tv_secs * 50;
+    rate += inputprefs.ip_KeyRptSpeed.tv_micro / (1000000 / 50);
+    
+    if (rate < REPEAT_RATE_TICS_MIN)
+    {
+    	rate = REPEAT_RATE_TICS_MIN;
+    }
+    else if (rate > REPEAT_RATE_TICS_MAX)
+    {
+    	rate = REPEAT_RATE_TICS_MAX;
+    }
+    
+    scsettags[0].ti_Data = rate - REPEAT_RATE_TICS_MIN;
+    
+    GT_SetGadgetAttrsA(rategad, win, NULL, scsettags);
+    
+    update_showrate_gad();
+}
+
+/*********************************************************************************************/
+
+static void update_showdelay_gad(void)
+{
+    struct TagItem settags[] =
+    {
+    	{GTTX_Text, (IPTR)showdelaybuf},
+	{TAG_DONE   	    	      }
+    };
+    LONG secs, micro;
+    
+    secs  = inputprefs.ip_KeyRptDelay.tv_secs;
+    micro = inputprefs.ip_KeyRptDelay.tv_micro / 10000;
+    
+    snprintf(showdelaybuf, sizeof(showdelaybuf), MSG(MSG_TIME_FORMAT), secs, micro);
+    
+    GT_SetGadgetAttrsA(showdelaygad, win, NULL, settags);
+}
+
+/*********************************************************************************************/
+
+static void update_delay_gad(void)
+{
+    struct TagItem scsettags[] =
+    {
+    	{GTSC_Top, 0},
+	{TAG_DONE   }
+    };
+    LONG delay;
+    
+    delay = inputprefs.ip_KeyRptDelay.tv_secs * 50;
+    delay += inputprefs.ip_KeyRptDelay.tv_micro / (1000000 / 50);
+    
+    if (delay < REPEAT_DELAY_TICS_MIN)
+    {
+    	delay = REPEAT_DELAY_TICS_MIN;
+    }
+    else if (delay > REPEAT_DELAY_TICS_MAX)
+    {
+    	delay = REPEAT_DELAY_TICS_MAX;
+    }
+    
+    scsettags[0].ti_Data = delay - REPEAT_DELAY_TICS_MIN;
+    
+    GT_SetGadgetAttrsA(delaygad, win, NULL, scsettags);
+    
+    update_showdelay_gad();
+}
+
+/*********************************************************************************************/
+
 static LONG kbd_input(struct IntuiMessage *msg)
 {
-    LONG retval = FALSE;
-
+    struct ListviewEntry    *keymapnode;
+    LONG    	    	    retval = FALSE;
+    LONG    	    	    top;
+    
+    if (msg->Class == IDCMP_GADGETUP)
+    {
+    	struct Gadget *gad = (struct Gadget *)msg->IAddress;
+	
+	switch(gad->GadgetID)
+	{
+	    case MSG_GAD_KEY_TYPE:
+	    	if ((keymapnode = (struct ListviewEntry *)FindListNode(&keymap_list, msg->Code)))
+		{
+		    if ((keymapnode->modelnode))
+		    {
+		    	update_keymap_gad();
+		    }
+		    else
+		    {
+		    	strncpy(inputprefs.ip_Keymap, keymapnode->realname, sizeof(inputprefs.ip_Keymap));
+		    }
+		}
+		retval = TRUE;
+	    	break;
+		
+		
+	} /* switch(gad->GadgetID) */
+	
+    } /* if (msg->Class == IDCMP_GADGETUP) */
+    
+    if (!retval)
+    {
+    	struct Gadget *gad = (struct Gadget *)msg->IAddress;
+	LONG	       top;
+	
+    	switch(msg->Class)
+	{
+	    case IDCMP_GADGETUP:
+	    case IDCMP_GADGETDOWN:
+	    case IDCMP_MOUSEMOVE:
+	    	if (gad == rategad)
+		{
+		    top = msg->Code + REPEAT_RATE_TICS_MIN;
+		    
+		    inputprefs.ip_KeyRptSpeed.tv_secs = top / 50;
+		    inputprefs.ip_KeyRptSpeed.tv_micro = (top % 50) * (1000000 / 50);
+		    update_showrate_gad();
+		    
+		    retval = TRUE;
+		}
+		else if (gad == delaygad)
+		{
+		    top = msg->Code + REPEAT_DELAY_TICS_MIN;
+		    
+		    inputprefs.ip_KeyRptDelay.tv_secs = top / 50;
+		    inputprefs.ip_KeyRptDelay.tv_micro = (top % 50) * (1000000 / 50);
+		    update_showdelay_gad();
+		    
+		    retval = TRUE;
+		}
+	    	break;
+		
+	} /* switch(msg->Class) */
+	
+    } /* if (!retval) */
+    
     return retval;
 }
 
@@ -259,32 +498,53 @@ static LONG kbd_makegadgets(void)
     gad = lvgad = CreateGadget(LISTVIEW_KIND, gad, &ng, GTLV_Labels, (IPTR)&keymap_list,
     	    	    	    	    	    	    	GTLV_ItemHeight, dri->dri_Font->tf_YSize + 4,
 							GTLV_CallBack, (IPTR)&lvrenderhook,
+							GTLV_ShowSelected, 0,
     	    	    	    	    	    	    	TAG_DONE);
 	
-    ratewidth  = rategroupwidth  - FRAME_FRAMEWIDTH;
+    ratewidth  = rategroupwidth  - FRAME_FRAMEWIDTH - LABELSPACE_X - showtimewidth;
     rateheight = rategroupheight - FRAME_FRAMEHEIGHT;
      		
-    ng.ng_LeftEdge = rategroupx1 + FRAME_OFFX;
+    ng.ng_LeftEdge = rategroupx1 + FRAME_OFFX + showtimewidth + LABELSPACE_X;
     ng.ng_TopEdge  = rategroupy1 + FRAME_OFFY;
     ng.ng_Width    = ratewidth;
     ng.ng_Height   = rateheight;
     ng.ng_GadgetID = MSG_GAD_KEY_REPEAT_RATE;
     
-    gad = rategad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, 100,
+    gad = rategad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, REPEAT_RATE_TICS_RANGE + 1,
 							  TAG_DONE);
     					      
-    delaywidth  = delaygroupwidth  - FRAME_FRAMEWIDTH;
+    delaywidth  = delaygroupwidth  - FRAME_FRAMEWIDTH - LABELSPACE_X - showtimewidth;
     delayheight = delaygroupheight - FRAME_FRAMEHEIGHT;
      		
-    ng.ng_LeftEdge = delaygroupx1 + FRAME_OFFX;
+    ng.ng_LeftEdge = delaygroupx1 + FRAME_OFFX + showtimewidth + LABELSPACE_X;
     ng.ng_TopEdge  = delaygroupy1 + FRAME_OFFY;
     ng.ng_Width    = delaywidth;
     ng.ng_Height   = delayheight;
     ng.ng_GadgetID = MSG_GAD_KEY_REPEAT_DELAY;
     
-    gad = delaygad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, 100,
-							  TAG_DONE);
+    gad = delaygad = CreateGadget(SCROLLER_KIND, gad, &ng, GTSC_Total, REPEAT_DELAY_TICS_RANGE + 1,
+							   TAG_DONE);
 
+    ng.ng_LeftEdge   = rategroupx1 + FRAME_OFFX;
+    ng.ng_TopEdge    = rategroupy1 + FRAME_OFFY;
+    ng.ng_Width      = showtimewidth;
+    ng.ng_Height     = rateheight;
+    ng.ng_GadgetID   = 0;
+    
+    gad = showrategad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Text, (IPTR)showratebuf,
+    	    	    	    	    	    	    	  GTTX_Justification, GTJ_RIGHT,
+							  TAG_DONE);
+	
+    ng.ng_LeftEdge   = delaygroupx1 + FRAME_OFFX;
+    ng.ng_TopEdge    = delaygroupy1 + FRAME_OFFY;
+    ng.ng_Width      = showtimewidth;
+    ng.ng_Height     = rateheight;
+    ng.ng_GadgetID   = 0;
+    						  
+    gad = showdelaygad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Text, (IPTR)showdelaybuf,
+    	    	    	    	    	    	    	   GTTX_Justification, GTJ_RIGHT,
+							   TAG_DONE);
+	   						  
     return gad ? TRUE : FALSE;
 }
 
@@ -292,6 +552,12 @@ static LONG kbd_makegadgets(void)
 
 static void kbd_prefs_changed(void)
 {
+    if (page_active)
+    {
+    	update_keymap_gad();
+    	update_rate_gad();
+    	update_delay_gad();
+    }
 }
 
 /*********************************************************************************************/
@@ -348,12 +614,13 @@ LONG page_kbd_handler(LONG cmd, IPTR param)
 	case PAGECMD_ADDGADGETS:
 	    if (!page_active)
 	    {
+		page_active = TRUE;
+
+	    	kbd_prefs_changed();
 		AddGList(win, gadlist, -1, -1, NULL);
 		GT_RefreshWindow(win, NULL);
 		RefreshGList(gadlist, win, NULL, -1);
 		DrawFrames();
-
-		page_active = TRUE;
 	    }
 	    break;
 	    

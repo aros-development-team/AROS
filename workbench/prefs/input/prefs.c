@@ -143,6 +143,7 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 		    sp[0] = '\0';
 		    strcpy(entry->modelname, entry->realname);
 		    strcpy(entry->layoutname, sp + 1);
+		    sp[0] = '_';
 		}
 		else
 		{
@@ -225,10 +226,12 @@ static void ScanDirectory(STRPTR pattern, struct List *list, LONG entrysize)
 	
     } /* ForeachNodeSafe(&templist, entry, entry2) */
     
+#if 0
     ForeachNode(list, entry)
     {
     	kprintf("%s%s\n", (entry->modelnode ? "* " : "   "), entry->node.ln_Name);
     }
+#endif
 }
 
 /*********************************************************************************************/
