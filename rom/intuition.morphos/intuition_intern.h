@@ -100,6 +100,11 @@
 #define ICF_DEFPUBSCREEN        (1<<27)
 #define ICF_SCREENACTIVATION    (1<<26)
 
+// FIXME: seems only used for RefreshWindowTitles() ? -> better names
+// FIXME: what are the correct values?
+#define NO_DOUBLEBUFFER         (0)
+#define DOUBLEBUFFER            (1)
+
 /* features */
 #ifdef __MORPHOS__
 #   define USE_OPAQUESIZE 1
