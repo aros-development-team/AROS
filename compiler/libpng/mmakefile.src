@@ -30,12 +30,15 @@ FILES := \
     pngwtran \
     pngwutil
 
+#MM- linklibs-png : linklibs-png-stdio linklibs-png-nostdio
+#MM- linklibs-png-clean : linklibs-png-stdio-clean linklibs-png-nostdio-clean
+
 USER_INCLUDES	:= -Iinclude
-TARGET_CFLAGS	+= -DAROS -DNO_ERRNO_H
+USER_CFLAGS	:= -DAROS -DNO_ERRNO_H
 
-%build_linklib mmake=linklibs-png libname=png files=$(FILES)
+%build_linklib mmake=linklibs-png-stdio libname=png files=$(FILES)
 
-TARGET_CFLAGS   += -DPNG_NO_STDIO
-%build_linklib mmake=linklibs-png libname=png_nostdio files=$(FILES) objdir=$(OBJDIR)/no_stdio
+USER_CFLAGS     += -DPNG_NO_STDIO
+%build_linklib mmake=linklibs-png-nostdio libname=png_nostdio files=$(FILES) objdir=$(OBJDIR)/no_stdio
 
 %common
