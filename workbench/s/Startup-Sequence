@@ -28,7 +28,7 @@ Assign HELP:    LOCALE:Help DEFER
 ;Assign PRINTERS: DEVS:Printers
 
 touch PIPEFS:systempipe
-Assign PIPE:    PIPEFS:systempipe
+;Assign PIPE:    PIPEFS:systempipe
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
 
