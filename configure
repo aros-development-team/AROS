@@ -119,6 +119,9 @@ case "$type" in
 	FLAVOUR="native"
 # Prevent the Amiga c:sort from being found when we really want the GNU sort
 	SORT=/gg/bin/sort
+# And another problem with old pdksh shells not knowing `test -e' and newer
+# ones having problems. Just take the fileutils test
+	TEST=/gg/bin/test
 	;;
 esac
 
@@ -257,7 +260,7 @@ case "$1" in
 	echo "CAT := $CAT" >> $2
     fi
     if [ -n "$TEST" ]; then
-	echo "TEST := $CAT" >> $2
+	echo "TEST := $TEST" >> $2
     fi
     ;;
 "-h" )
