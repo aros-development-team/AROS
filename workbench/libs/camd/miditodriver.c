@@ -194,9 +194,12 @@ ULONG ASM Transmitter(REG(a2) struct DriverData *driverdata){
 
 BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 
+	ObtainSemaphore(&driverdata->sendsemaphore);
+
 	if(
 		driverdata->unsent_rt>=OUTBUFFERSIZE_RT-2
 	){
+		ReleaseSemaphore(&driverdata->sendsemaphore);
 		return FALSE;
 	}
 	*driverdata->buffercurr_rt=msg>>24;
@@ -205,6 +208,8 @@ BOOL Midi2Driver_rt(struct DriverData *driverdata,ULONG msg){
 	IncBuffer_rt(driverdata,&driverdata->buffercurr_rt);
 
 	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+
+	ReleaseSemaphore(&driverdata->sendsemaphore);
 
 	return TRUE;
 }
@@ -245,9 +250,9 @@ BOOL Midi2Driver(
 
 	IncBuffer(driverdata,&driverdata->buffercurr);
 
-	ReleaseSemaphore(&driverdata->sendsemaphore);
-
 	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+
+	ReleaseSemaphore(&driverdata->sendsemaphore);
 
 	return TRUE;
 }
@@ -267,12 +272,15 @@ BOOL SysEx2Driver(struct DriverData *driverdata,UBYTE *buffer){
 		*driverdata->buffercurr=0xf0000000;
 		driverdata->unsent++;
 		IncBuffer(driverdata,&driverdata->buffercurr);
-		ReleaseSemaphore(&driverdata->sendsemaphore);
+
 	}else{
 		driverdata->realtimesysx=1;
+		ObtainSemaphore(&driverdata->sendsemaphore);
 	}
 
 	(*driverdata->midiportdata->ActivateXmit)(driverdata->portnum);
+
+	ReleaseSemaphore(&driverdata->sendsemaphore);
 
 	return TRUE;
 }
