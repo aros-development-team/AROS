@@ -142,7 +142,7 @@ int RectAndRect(struct Rectangle *a, struct Rectangle *b)
 static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
 {
     LONG tx,ty;
-    LONG txwidth,txheight;
+    LONG txwidth; // txheight;
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
 
 #ifndef _AROS
@@ -373,14 +373,14 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 
     if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0;
 
-    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
     node = List_First(&data->icon_list);
     while (node)
     {
 	if (!node->dob)
 	{
-	    const static struct TagItem geticon_tags[] = {
+	    static struct TagItem geticon_tags[] = {
 		{ICONGETA_FailIfUnavailable, FALSE},
 		{TAG_DONE,0}
 	    };
@@ -413,7 +413,7 @@ static ULONG IconList_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanu
     }
 
 
-    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -612,7 +612,7 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
-    const static struct TagItem geticon_tags[] = {
+    static struct TagItem geticon_tags[] = {
 	{ICONGETA_FailIfUnavailable, FALSE},
 	{TAG_DONE,0}
     };
@@ -758,9 +758,9 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				 * and since Zune doesn't not support the faking
 				 * of SELECTUP events only change the Events
 				 * if not doubleclicked */
-				DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 				data->mouse_pressed = 1;
 			    }
 
@@ -773,9 +773,9 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 		    {
 			if (msg->imsg->Code == SELECTUP && data->mouse_pressed)
 			{
-			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			    data->mouse_pressed = 0;
 			    return MUI_EventHandlerRC_Eat;
 			}
@@ -790,9 +790,9 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 
 			if (data->first_selected && (abs(move_x - data->click_x) >= 2 || abs(move_y - data->click_y) >= 2))
 			{
-			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
 			    data->touch_x = move_x + data->view_x - data->first_selected->x;
 			    data->touch_y = move_y + data->view_y - data->first_selected->y;
@@ -1046,7 +1046,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
     void *ead;
     LONG more;
     BPTR olddir;
-    char pattern[40];
+    //char pattern[40];
     char filename[256];
 
     if (!data->drawer) return 1;
@@ -1112,7 +1112,7 @@ static int ReadIcons(struct IClass *cl, Object *obj)
 		strcpy(buf,data->drawer);
 		AddPart(buf,filename,sizeof(buf));
 
-		if (!(DoMethod(obj,MUIM_IconList_Add,buf,filename,entry->ed_Type,NULL /* udata */)))
+		if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)filename,entry->ed_Type,NULL /* udata */)))
 		{
 		}
 	    }
@@ -1214,8 +1214,8 @@ static ULONG IconDrawerList_Get(struct IClass *cl, Object *obj, struct opGet *ms
 **************************************************************************/
 ULONG IconDrawerList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
-    struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
-    struct IconEntry *node;
+    //struct MUI_IconDrawerData *data = INST_DATA(cl, obj);
+    //struct IconEntry *node;
     DoMethod(obj,MUIM_IconList_Clear);
 
     /* If not in setup do nothing */
@@ -1393,8 +1393,8 @@ static IPTR IconVolumeList_New(struct IClass *cl, Object *obj, struct opSet *msg
 **************************************************************************/
 ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList_Update *msg)
 {
-    struct MUI_IconVolumeData *data = INST_DATA(cl, obj);
-    struct IconEntry *node;
+    //struct MUI_IconVolumeData *data = INST_DATA(cl, obj);
+    //struct IconEntry *node;
     struct NewDosList *ndl;
     DoMethod(obj,MUIM_IconList_Clear);
 
@@ -1412,7 +1412,7 @@ ULONG IconVolumeList_Update(struct IClass *cl, Object *obj, struct MUIP_IconList
 		strcpy(buf,nd->name);
 		strcat(buf,":Disk");
 
-		if (!(DoMethod(obj,MUIM_IconList_Add,buf,nd->name,ST_USERDIR, NULL/* udata */)))
+		if (!(DoMethod(obj,MUIM_IconList_Add,(IPTR)buf,(IPTR)nd->name,ST_USERDIR, NULL/* udata */)))
 		{
 		}
 

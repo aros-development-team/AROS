@@ -69,7 +69,7 @@ static IPTR Popstring_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    DoMethod(button,MUIM_Notify,MUIA_Pressed,FALSE,obj,1,MUIM_Popstring_Open);
+    DoMethod(button,MUIM_Notify,MUIA_Pressed,FALSE,(IPTR)obj,1,MUIM_Popstring_Open);
 
     return (IPTR)obj;
 }
@@ -104,7 +104,7 @@ static IPTR Popstring_Close(struct IClass *cl, Object *obj, struct MUIP_Popstrin
     struct MUI_PopstringData *data = INST_DATA(cl, obj);
     if (data->close_hook && data->open)
     {
-    	DoMethod(_app(obj), MUIM_Application_PushMethod, obj, 4, MUIM_CallHook, data->close_hook, data->string, msg->result);
+    	DoMethod(_app(obj), MUIM_Application_PushMethod, (IPTR)obj, 4, MUIM_CallHook, (IPTR)data->close_hook, (IPTR)data->string, msg->result);
 	data->open = 0;
     	set(data->button,MUIA_Disabled, FALSE);
     }
@@ -127,7 +127,7 @@ static IPTR Popstring_Open(struct IClass *cl, Object *obj, struct MUIP_Popstring
 
 	if (!data->open)
 	{
-	    if (DoMethod(obj, MUIM_CallHook, data->open_hook, data->string))
+	    if (DoMethod(obj, MUIM_CallHook, (IPTR)data->open_hook, (IPTR)data->string))
 	    {
 		/* Opening the popup window was successful */
 		data->open = 1;

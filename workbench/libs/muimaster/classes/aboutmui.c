@@ -903,10 +903,10 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    if (app) DoMethod(app,OM_ADDMEMBER,obj);
+    if (app) DoMethod(app,OM_ADDMEMBER,(IPTR)obj);
 
-    DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, obj, 3 , MUIM_Set, MUIA_Window_Open, FALSE);
+    DoMethod(obj, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)obj, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+    DoMethod(ok_button, MUIM_Notify, MUIA_Pressed, FALSE, (IPTR)obj, 3 , MUIM_Set, MUIA_Window_Open, FALSE);
     return (IPTR)obj;
 }
 

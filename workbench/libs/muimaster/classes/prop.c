@@ -95,8 +95,8 @@ static ULONG Prop_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Prop_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_PropData *data = INST_DATA(cl, obj);
-    return 0;
+    //struct MUI_PropData *data = INST_DATA(cl, obj);
+    return DoSuperMethodA(cl, obj, msg);
 }
 
 /**************************************************************************
@@ -229,7 +229,7 @@ static ULONG Prop_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     if (!rc) return 0;
 
-    DoMethod(_win(obj),MUIM_Window_AddEventHandler,&data->ehn);
+    DoMethod(_win(obj),MUIM_Window_AddEventHandler,(IPTR)&data->ehn);
 
     if (!data->usewinborder)
     {
@@ -361,7 +361,7 @@ static ULONG Prop_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
     {
     	if (msg->imsg->Class == IDCMP_IDCMPUPDATE)
     	{
-	    struct TagItem *tags,*tag;
+	    struct TagItem *tag;
 
 	    /* Check if we are meant */
 	    tag = FindTagItem(GA_ID,(struct TagItem*)msg->imsg->IAddress);

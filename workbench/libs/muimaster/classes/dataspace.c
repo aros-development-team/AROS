@@ -207,7 +207,7 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
 #endif
 
 	/* Now add the data */
-        DoMethod(obj,MUIM_Dataspace_Add,p,len,id);
+        DoMethod(obj,MUIM_Dataspace_Add,(IPTR)p,len,id);
         p += len;
     }
     return 0;

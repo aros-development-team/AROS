@@ -318,7 +318,7 @@ static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
     if (!rc) return 0;
 
-    DoMethod(_win(obj),MUIM_Window_AddEventHandler,&data->ehn);
+    DoMethod(_win(obj),MUIM_Window_AddEventHandler,(IPTR)&data->ehn);
 
     return 1;
 }
@@ -329,7 +329,7 @@ static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 static ULONG Boopsi_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_BoopsiData *data = INST_DATA(cl, obj);
-    DoMethod(_win(obj),MUIM_Window_RemEventHandler,&data->ehn);
+    DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
@@ -401,7 +401,8 @@ static ULONG Boopsi_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 **************************************************************************/
 static ULONG Boopsi_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    //struct MUI_BoopsiData *data = INST_DATA(cl, obj);
+    
     if (msg->imsg)
     {
     	if (msg->imsg->Class == IDCMP_IDCMPUPDATE)

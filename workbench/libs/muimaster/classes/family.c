@@ -100,7 +100,7 @@ static ULONG mNew(struct IClass *cl, Object *obj, struct opSet *msg)
     /*
      * parse initial taglist
      */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	if (tag->ti_Tag == MUIA_Family_Child || tag->ti_Tag == MUIA_Group_Child)
 	{
@@ -372,7 +372,7 @@ mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
 **************************************************************************/
 static ULONG Family_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    //struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList;
@@ -385,7 +385,7 @@ static ULONG Family_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
-	DoMethod(child, MUIM_ConnectParent, obj);
+	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
     }
     return TRUE;
 }
@@ -395,7 +395,7 @@ static ULONG Family_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Co
 **************************************************************************/
 static ULONG Family_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    //struct MUI_GroupData *data = INST_DATA(cl, obj);
     Object               *cstate;
     Object               *child;
     struct MinList       *ChildList;

@@ -835,7 +835,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
     struct Rectangle mrect, current;
-    APTR areaclip;
+    //APTR areaclip;
 
     D(bug("muimaster.library/area.c: Draw Area Object at 0x%lx %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj)));
 
@@ -1169,7 +1169,7 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 
     if (data->mad_Timer.ihn_Millis)
     {
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
 	data->mad_Timer.ihn_Millis = 0;
     }
 
@@ -1334,7 +1334,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    if (!data->mad_Timer.ihn_Millis)
 	    {
 	    	data->mad_Timer.ihn_Millis = 300;
-		DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
+		DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
 	    }
 	    set(obj, MUIA_Selected, TRUE);
 	    set(obj, MUIA_Pressed, TRUE);
@@ -1370,7 +1370,7 @@ static void handle_release(struct IClass *cl, Object *obj, int cancel)
 
     if (data->mad_Timer.ihn_Millis)
     {
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
     	data->mad_Timer.ihn_Millis = 0;
     }
 
@@ -1482,12 +1482,12 @@ static ULONG event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		    set(obj, MUIA_Selected, FALSE);
 		nnset(obj, MUIA_Pressed, FALSE);
 
-		if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		if (data->mad_Timer.ihn_Millis)
 		{
-		   DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+		   DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
 		   data->mad_Timer.ihn_Millis = 0;
 		}
 
@@ -1527,9 +1527,9 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    case    MUIKEY_PRESS:
 		    if (data->mad_Flags & MADF_SELECTED) break;
 		    handle_press(cl, obj);
-		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events |= IDCMP_RAWKEY;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_TOGGLE:
@@ -1538,9 +1538,9 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 
 	    case    MUIKEY_RELEASE:
 		    handle_release(cl, obj, FALSE /* cancel */);
-		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
-		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		    return MUI_EventHandlerRC_Eat;
 	}
 	return 0;
@@ -1601,7 +1601,7 @@ static ULONG Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
     	char selected = (data->mad_Flags & MADF_SELECTED)?1:0;
-	DoMethod(msg->dataspace, MUIM_Dataspace_Add, &selected, sizeof(char),id);
+	DoMethod(msg->dataspace, MUIM_Dataspace_Add, (IPTR)&selected, sizeof(char),(IPTR)id);
     }
     return 0;
 }
@@ -1614,11 +1614,11 @@ static ULONG Area_Import(struct IClass *cl, Object *obj, struct MUIP_Import *msg
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     STRPTR id;
-    BOOL val = FALSE;
+    //BOOL val = FALSE;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-    	char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, id);
+    	char *selected = (char*)DoMethod(msg->dataspace, MUIM_Dataspace_Find, (IPTR)id);
 
 	if (selected)
 	{
@@ -1636,9 +1636,9 @@ static ULONG Area_Timer(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     if (data->mad_Timer.ihn_Millis)
-	DoMethod(_app(obj), MUIM_Application_RemInputHandler, &data->mad_Timer);
+	DoMethod(_app(obj), MUIM_Application_RemInputHandler, (IPTR)&data->mad_Timer);
     data->mad_Timer.ihn_Millis = 50;
-    DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
+    DoMethod(_app(obj), MUIM_Application_AddInputHandler, (IPTR)&data->mad_Timer);
 
     if (data->mad_Flags & MADF_SELECTED)
 	set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
@@ -1650,8 +1650,8 @@ static ULONG Area_Timer(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static ULONG Area_DoDrag(struct IClass *cl, Object *obj, struct MUIP_DoDrag *msg)
 {
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
-    DoMethod(_win(obj), MUIM_Window_DragObject, obj, msg->touchx, msg->touchy, msg->flags);
+    //struct MUI_AreaData *data = INST_DATA(cl, obj);
+    DoMethod(_win(obj), MUIM_Window_DragObject, (IPTR)obj, msg->touchx, msg->touchy, msg->flags);
     return 0;
 }
 
@@ -1715,7 +1715,7 @@ static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
     {
 	if (_left(obj) <= msg->x && msg->x <= _right(obj) && _top(obj) <= msg->y && msg->y <= _bottom(obj))
 	{
-	    if (DoMethod(obj,MUIM_DragQuery,msg->obj) == MUIV_DragQuery_Accept)
+	    if (DoMethod(obj,MUIM_DragQuery,(IPTR)msg->obj) == MUIV_DragQuery_Accept)
 		return (IPTR)obj;
 	}
     }
@@ -1727,7 +1727,7 @@ static IPTR Area_DragQueryExtended(struct IClass *cl, Object *obj, struct MUIP_D
 **************************************************************************/
 ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 {
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    //struct MUI_AreaData *data = INST_DATA(cl, obj);
     _zune_focus_new(obj,1);
     return 0;
 }
@@ -1737,7 +1737,7 @@ ULONG Area_DragBegin(struct IClass *cl, Object *obj, struct MUIP_DragBegin *msg)
 **************************************************************************/
 ULONG Area_DragFinish(struct IClass *cl, Object *obj, struct MUIP_DragFinish *msg)
 {
-    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    //struct MUI_AreaData *data = INST_DATA(cl, obj);
     _zune_focus_destroy(obj);
     return 0;
 }

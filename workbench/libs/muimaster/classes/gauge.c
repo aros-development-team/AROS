@@ -78,7 +78,7 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->info = NULL;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -349,7 +349,7 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_GaugeData *data = INST_DATA(cl,obj);
-    ULONG val;
+    //ULONG val;
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 

@@ -149,7 +149,7 @@ static int AddDirectory(Object *list, STRPTR dir, LONG parent)
 		strcpy(buf,dir);
 		AddPart(buf,ead->ed_Name,len);
 
-		num = DoMethod(list,MUIM_List_InsertSingleAsTree, buf, parent, MUIV_List_InsertSingleAsTree_Bottom,is_directory?MUIV_List_InsertSingleAsTree_List:0);
+		num = DoMethod(list,MUIM_List_InsertSingleAsTree, (IPTR)buf, (IPTR)parent, MUIV_List_InsertSingleAsTree_Bottom,is_directory?MUIV_List_InsertSingleAsTree_List:0);
 
 		if (num != -1 && is_directory)
 		{
@@ -293,8 +293,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	if (data->pattern_image[i])
 	{
-	    DoMethod(pattern_group,OM_ADDMEMBER,data->pattern_image[i]);
-	    DoMethod(data->pattern_image[i],MUIM_Notify,MUIA_Selected,TRUE,obj,3,MUIM_CallHook,&data->pattern_select_hook,i);
+	    DoMethod(pattern_group,OM_ADDMEMBER,(IPTR)data->pattern_image[i]);
+	    DoMethod(data->pattern_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->pattern_select_hook,i);
 	}
     }
 
@@ -305,8 +305,11 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     for (i=0;i<24;i++)
     {
     	char spec[10];
+    #ifdef _AROS
+    	sprintf(spec,"1:%d",i);
+    #else
     	sprintf(spec,"1:%ld",i);
-
+    #endif
     	data->vector_image[i] = ImageObject,
     	    ButtonFrame,
 	    MUIA_Image_Spec, spec,
@@ -316,8 +319,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 	if (data->vector_image[i])
 	{
-	    DoMethod(vector_group,OM_ADDMEMBER,data->vector_image[i]);
-	    DoMethod(data->vector_image[i],MUIM_Notify,MUIA_Selected,TRUE,obj,3,MUIM_CallHook,&data->vector_select_hook,i);
+	    DoMethod(vector_group,OM_ADDMEMBER,(IPTR)data->vector_image[i]);
+	    DoMethod(data->vector_image[i],MUIM_Notify,MUIA_Selected,TRUE,(IPTR)obj,3,MUIM_CallHook,(IPTR)&data->vector_select_hook,i);
 	}
     }
 
@@ -338,7 +341,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->external_display_hook.h_Entry = (HOOKFUNC)Imageadjust_External_Display;
     set(data->external_list,MUIA_List_DisplayHook, &data->external_display_hook);
 
-    DoMethod(obj,MUIM_Notify,MUIA_Group_ActivePage, 4, obj, 1, MUIM_Imageadjust_ReadExternal);
+    DoMethod(obj,MUIM_Notify,MUIA_Group_ActivePage, 4, (IPTR)obj, 1, MUIM_Imageadjust_ReadExternal);
 
     Imageadjust_SetImagespec(obj,data,spec);
     return (IPTR)obj;
@@ -403,7 +406,11 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(40,0)))
 				{
 				    if (data->last_pattern_selected != -1)
+				    #ifdef _AROS
+					sprintf(data->imagespec,"0:%d",data->last_pattern_selected+128);
+				    #else
 					sprintf(data->imagespec,"0:%ld",data->last_pattern_selected+128);
+    	    	    	    	    #endif
 				    else strcpy(data->imagespec,"0:128");
 				}
 		    		break;
@@ -412,7 +419,11 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(20,0)))
 				{
 				    if (data->last_vector_selected != -1)
+				    #ifdef _AROS
+					sprintf(data->imagespec,"1:%d",data->last_vector_selected);
+				    #else
 					sprintf(data->imagespec,"1:%ld",data->last_vector_selected);
+				    #endif
 				    else strcpy(data->imagespec,"0:128");
 				}
 				break;

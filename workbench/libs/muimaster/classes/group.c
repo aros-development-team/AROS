@@ -480,7 +480,7 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
         /* Only childs of groups can have parents */
         muiNotifyData(child)->mnd_ParentObject = obj;
 
-	DoMethod(child, MUIM_ConnectParent, obj);
+	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
     }
     return TRUE;
 }
@@ -667,7 +667,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     Object                *cstate;
     Object                *child;
     struct MinList        *ChildList;
-    struct Rectangle        group_rect, child_rect;
+    struct Rectangle        group_rect; /* child_rect;*/
     int                    page = -1;
     struct Region *region = NULL;
     APTR clip;
@@ -1891,7 +1891,7 @@ static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
  */
 static ULONG mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    //struct MUI_GroupData *data = INST_DATA(cl, obj);
     STRPTR id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
@@ -1911,7 +1911,7 @@ static ULONG mExport(struct IClass *cl, Object *obj, struct MUIP_Export *msg)
  */
 static ULONG mImport(struct IClass *cl, Object *obj, struct MUIP_Import *msg)
 {
-    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    //struct MUI_GroupData *data = INST_DATA(cl, obj);
     STRPTR id;
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
@@ -2041,17 +2041,17 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 	            {
 	            	if (_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj)))
 	            	{
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events |= IDCMP_INTUITICKS;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			}
 		    } else
 		    {
 			if (data->ehn.ehn_Events & IDCMP_INTUITICKS)
 			{
-			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_INTUITICKS;
-			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+			    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 			}
 		    }
 		    break;

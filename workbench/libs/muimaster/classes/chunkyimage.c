@@ -117,7 +117,7 @@ static IPTR ChunkyImage_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->modulo = 0xFFFF;
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -178,7 +178,7 @@ static IPTR ChunkyImage_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem          	*tags  = msg->ops_AttrList;
     struct TagItem          	*tag;
 
-    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem(&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
