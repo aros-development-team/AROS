@@ -10,7 +10,6 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
-#include "intuition_private.h"
 
 /*****************************************************************************
  

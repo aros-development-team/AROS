@@ -7,7 +7,6 @@
 #include <proto/layers.h>
 #include "showhide.h"
 #include "intuition_intern.h"
-#include "intuition_private.h"
 #include "inputhandler_actions.h"
 
 #ifdef CGXSHOWHIDESUPPORT

@@ -21,9 +21,6 @@
 #include <proto/utility.h>
 #include <proto/intuition.h>
 
-#include "intuition_private.h"
-#include "intuition_pdefs.h"
-
 #ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>

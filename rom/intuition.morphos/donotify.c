@@ -16,7 +16,6 @@
 #include <proto/intuition.h>
 
 #include "intuition_intern.h"
-#include "intuition_private.h"
 #include "icclass.h"
 
 #define DEBUG_NOTIFY(x) ;
@@ -78,8 +77,6 @@ static struct IntuiMessage *SendIDCMPUpdate(
 /*****i***********************************************************************
  
     NAME */
-#include <intuition_private.h>
-
 #include "maybe_boopsi.h"
 
 AROS_LH4(IPTR, DoNotify,
