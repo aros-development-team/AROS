@@ -6,16 +6,27 @@
 #include "docommand.h"
 #include "misc.h"
 
-void docommandv(const char *command, char *argv[])
+static void _docommandv(const char *command, char *argv[], int do_path)
 {
-    int ret = spawnv(P_WAIT, command, argv);
+    int ret = (do_path ? spawnvp : spawnv)(P_WAIT, command, argv);
     if (ret == -1)
     {
 	fatal(command, strerror(errno));
     }
     if (ret > 0)
     {
-        exit(ret);
+        exit(EXIT_FAILURE);
     }
+}
+
+void docommandv(const char *command, char *argv[])
+{
+    _docommandv(command, argv, 0);
+}
+
+void docommandvp(const char *command, char *argv[])
+{
+    set_compiler_path();
+    _docommandv(command, argv, 1);
 }
 
