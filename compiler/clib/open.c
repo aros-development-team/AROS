@@ -21,7 +21,7 @@
 	...)
 
 /*  FUNCTION
-	Opens a file with the specified flags and name.
+ 	Opens a file with the specified flags and name.
 
     INPUTS
 	pathname - Path and filename of the file you want to open.

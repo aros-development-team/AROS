@@ -11,17 +11,19 @@
 
 int IoErr2errno (int ioerr)
 {
-	switch (ioerr)
-	{
-		case ERROR_OBJECT_WRONG_TYPE:
-	    	return EINVAL;
+    switch (ioerr)
+    {
+	case 0:
+	    return 0;
+	case ERROR_OBJECT_WRONG_TYPE:
+	    return EINVAL;
 
-		case ERROR_NO_FREE_STORE:
-	    	return ENOMEM;
+	case ERROR_NO_FREE_STORE:
+	    return ENOMEM;
 
-		case ERROR_OBJECT_NOT_FOUND:
-	    	return ENOENT;
- 	}
+	case ERROR_OBJECT_NOT_FOUND:
+	    return ENOENT;
+    }
 
-	return MAX_ERRNO+1;
+    return MAX_ERRNO+1;
 } /* IoErr2errno */

@@ -146,6 +146,7 @@ FILES := \
 	unlink \
 	unsetenv \
 	utime \
+	utimes \
 	vfprintf \
 	vfscanf \
 	vprintf \
