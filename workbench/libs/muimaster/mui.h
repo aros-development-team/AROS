@@ -522,6 +522,10 @@ struct MUI_PenSpec {
 #include "classes/colorfield.h"
 #endif
 
+#ifndef _MUI_CLASSES_COLORADJUST_H
+#include "classes/coloradjust.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/
