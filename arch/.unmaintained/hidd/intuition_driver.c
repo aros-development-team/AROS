@@ -323,6 +323,14 @@ void intui_CloseWindow (struct Window * w,
     }
 }
 
+static void CheckRectFill(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2)
+{
+    if ((x2 >= x1) && (y2 >= y1))
+    {
+    	RectFill(rp, x1, y1, x2, y2);
+    }
+}
+
 void intui_RefreshWindowFrame(struct Window *w)
 {
     /* Draw a frame around the window */
@@ -354,29 +362,29 @@ void intui_RefreshWindowFrame(struct Window *w)
 	    old_clipregion = InstallClipRegion(rp->Layer, NULL);
 	    
 	    SetAPen(rp, dri->dri_Pens[SHINEPEN]);
-	    if (w->BorderLeft > 0) RectFill(rp, 0, 0, 0, w->Height - 1);
-	    if (w->BorderTop > 0)  RectFill(rp, 0, 0, w->Width - 1, 0);
-	    if (w->BorderRight > 1) RectFill(rp, w->Width - w->BorderRight,w->BorderTop,
-	    					 w->Width - w->BorderRight,w->Height - w->BorderBottom);
-	    if (w->BorderBottom > 1) RectFill(rp,w->BorderLeft,w->Height - w->BorderBottom,
-	    					 w->Width - w->BorderRight,w->Height - w->BorderBottom);
+	    if (w->BorderLeft > 0) CheckRectFill(rp, 0, 0, 0, w->Height - 1);
+	    if (w->BorderTop > 0)  CheckRectFill(rp, 0, 0, w->Width - 1, 0);
+	    if (w->BorderRight > 1) CheckRectFill(rp, w->Width - w->BorderRight,w->BorderTop,
+	    					      w->Width - w->BorderRight,w->Height - w->BorderBottom);
+	    if (w->BorderBottom > 1) CheckRectFill(rp,w->BorderLeft,w->Height - w->BorderBottom,
+	    					      w->Width - w->BorderRight,w->Height - w->BorderBottom);
 	    
 	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
-	    if (w->BorderRight > 0) RectFill(rp, w->Width - 1, 1, w->Width - 1, w->Height - 1);
-	    if (w->BorderBottom > 0) RectFill(rp, 1, w->Height - 1, w->Width - 1, w->Height - 1);
-	    if (w->BorderLeft > 1) RectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
-	    					w->BorderLeft - 1, w->Height - w->BorderBottom);
-	    if (w->BorderTop > 1) RectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
-	    				       w->Width - w->BorderRight, w->BorderTop - 1);
+	    if (w->BorderRight > 0) CheckRectFill(rp, w->Width - 1, 1, w->Width - 1, w->Height - 1);
+	    if (w->BorderBottom > 0) CheckRectFill(rp, 1, w->Height - 1, w->Width - 1, w->Height - 1);
+	    if (w->BorderLeft > 1) CheckRectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
+	    					     w->BorderLeft - 1, w->Height - w->BorderBottom);
+	    if (w->BorderTop > 1) CheckRectFill(rp, w->BorderLeft - 1, w->BorderTop - 1,
+	    				       	    w->Width - w->BorderRight, w->BorderTop - 1);
 	    
 	   
 	    SetAPen(rp, dri->dri_Pens[(w->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
-	    if (w->BorderLeft > 2) RectFill(rp, 1, 1, w->BorderLeft - 2,w->Height - 2);
-	    if (w->BorderTop > 2)  RectFill(rp, 1, 1, w->Width - 2, w->BorderTop - 2);
-	    if (w->BorderRight > 2) RectFill(rp, w->Width - w->BorderRight + 1, 1,
-	    					 w->Width - 2, w->Height - 2);
-	    if (w->BorderBottom > 2) RectFill(rp, 1, w->Height - w->BorderBottom + 1,
-	    					  w->Width - 2, w->Height - 2);
+	    if (w->BorderLeft > 2) CheckRectFill(rp, 1, 1, w->BorderLeft - 2,w->Height - 2);
+	    if (w->BorderTop > 2)  CheckRectFill(rp, 1, 1, w->Width - 2, w->BorderTop - 2);
+	    if (w->BorderRight > 2) CheckRectFill(rp, w->Width - w->BorderRight + 1, 1,
+	    					      w->Width - 2, w->Height - 2);
+	    if (w->BorderBottom > 2) CheckRectFill(rp, 1, w->Height - w->BorderBottom + 1,
+	    					       w->Width - 2, w->Height - 2);
 						  
 	    InstallClipRegion(rp->Layer,old_clipregion);
 	    
