@@ -167,6 +167,14 @@ static ULONG DoHalfshadowGun(ULONG a, ULONG b)
     return val;
 }
 
+static Object *CreateSysimage(struct DrawInfo *dri, ULONG which)
+{
+    return NewObject(NULL, "sysiclass",
+		     SYSIA_DrawInfo, (IPTR)dri,
+		     SYSIA_Which, which,
+		     TAG_DONE);
+}
+
 static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     ULONG rgbtable[3 * 3];
@@ -234,11 +242,11 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	mri->mri_Fonts[i] = NULL;
     }
 
-    mri->mri_LeftImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,LEFTIMAGE,TAG_DONE);
-    mri->mri_RightImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,RIGHTIMAGE,TAG_DONE);
-    mri->mri_UpImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,UPIMAGE,TAG_DONE);
-    mri->mri_DownImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,DOWNIMAGE,TAG_DONE);
-    mri->mri_SizeImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,SIZEIMAGE,TAG_DONE);
+    mri->mri_LeftImage  = CreateSysimage(mri->mri_DrawInfo, LEFTIMAGE);
+    mri->mri_RightImage = CreateSysimage(mri->mri_DrawInfo, RIGHTIMAGE);
+    mri->mri_UpImage    = CreateSysimage(mri->mri_DrawInfo, UPIMAGE);
+    mri->mri_DownImage  = CreateSysimage(mri->mri_DrawInfo, DOWNIMAGE);
+    mri->mri_SizeImage  = CreateSysimage(mri->mri_DrawInfo, SIZEIMAGE);
 
     if (data->wd_CrtFlags & WFLG_BORDERLESS)
     {
@@ -256,7 +264,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	temp_obj = NewObject
         (
             NULL, "sysiclass",
-    	    SYSIA_DrawInfo, mri->mri_DrawInfo,
+    	    SYSIA_DrawInfo, (IPTR)mri->mri_DrawInfo,
     	    SYSIA_Which,    SIZEIMAGE,
     	    TAG_DONE
         );
@@ -507,13 +515,13 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         (
             NULL, "buttongclass",
             
-            GA_Image,       mri->mri_UpImage,
+            GA_Image,       (IPTR)mri->mri_UpImage,
             GA_RelRight,    1 - IM(mri->mri_UpImage)->Width,
             GA_RelBottom,   1 - IM(mri->mri_UpImage)->Height 
                               - IM(mri->mri_DownImage)->Height 
                               - IM(mri->mri_SizeImage)->Height,
             GA_RightBorder, TRUE,
-            GA_Previous,    prevgad,
+            GA_Previous,    (IPTR)prevgad,
             GA_ID,          id,
             ICA_TARGET,     ICTARGET_IDCMP,
             TAG_DONE
@@ -524,12 +532,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         (
             NULL, "buttongclass",
             
-            GA_Image, mri->mri_DownImage,
+            GA_Image,       (IPTR)mri->mri_DownImage,
             GA_RelRight,    1 - IM(mri->mri_DownImage)->Width,
             GA_RelBottom,   1 - IM(mri->mri_DownImage)->Height 
                               - IM(mri->mri_SizeImage)->Height,
             GA_RightBorder, TRUE,
-            GA_Previous,    prevgad,
+            GA_Previous,    (IPTR)prevgad,
             GA_ID,          id,
             ICA_TARGET,     ICTARGET_IDCMP,
             TAG_DONE
@@ -559,7 +567,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
                                                 - 2,
             GA_BottomBorder,                    TRUE,
             GA_ID,                              id,
-            prevgad ? GA_Previous : TAG_IGNORE, prevgad,
+            prevgad ? GA_Previous : TAG_IGNORE, (IPTR)prevgad,
             PGA_Borderless,                     TRUE,
             PGA_NewLook,                        TRUE,
             PGA_Freedom,                        FREEHORIZ,
@@ -577,13 +585,13 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         (
             NULL, "buttongclass",
             
-            GA_Image,        mri->mri_LeftImage,
+            GA_Image,        (IPTR)mri->mri_LeftImage,
             GA_RelRight,     1 - IM(mri->mri_LeftImage)->Width 
                                - IM(mri->mri_RightImage)->Width 
                                - IM(mri->mri_SizeImage)->Width,
             GA_RelBottom,    1 - IM(mri->mri_LeftImage)->Height,
             GA_BottomBorder, TRUE,
-            GA_Previous,     prevgad,
+            GA_Previous,     (IPTR)prevgad,
             GA_ID,           id,
             ICA_TARGET,      ICTARGET_IDCMP,
             TAG_DONE
@@ -594,12 +602,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         (
             NULL, "buttongclass",
             
-            GA_Image,        mri->mri_RightImage,
+            GA_Image,        (IPTR)mri->mri_RightImage,
             GA_RelRight,     1 - IM(mri->mri_RightImage)->Width 
                                - IM(mri->mri_SizeImage)->Width,
             GA_RelBottom,    1 - IM(mri->mri_RightImage)->Height,
             GA_BottomBorder, TRUE,
-            GA_Previous,     prevgad,
+            GA_Previous,     (IPTR)prevgad,
             GA_ID,           id,
             ICA_TARGET,      ICTARGET_IDCMP,
             TAG_DONE);
@@ -742,7 +750,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
         data->wd_NoMenus ? 
             WA_RMBTrap   : 
             TAG_IGNORE,         (IPTR) TRUE,
-        WA_Gadgets,                    data->wd_VertProp,
+        WA_Gadgets,             (IPTR) data->wd_VertProp,
         WA_Zoom,                (IPTR) &altdims,
         REDUCE_FLICKER_TEST ? 
         WA_BackFill         : 
@@ -1237,7 +1245,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			    if (item->Flags & CHECKIT)
 				set(item_obj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
 
-			    set(item_obj, MUIA_Menuitem_Trigger, item);
+			    set(item_obj, MUIA_Menuitem_Trigger, (IPTR)item);
 
 			    get(oWin, MUIA_ApplicationObject, &app);
 			    get(item_obj, MUIA_UserData, &udata);
@@ -1584,8 +1592,12 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
 			   Object *newRoot)
 {
-    Object *oldRoot = data->wd_RootObject;
+    Object *oldRoot;
 
+    ASSERT_VALID_PTR(data);
+    ASSERT_VALID_PTR(obj);
+
+    oldRoot = data->wd_RootObject;
     if (!(data->wd_Flags & MUIWF_OPENED))
     {
 	if (oldRoot)
@@ -1608,6 +1620,14 @@ static void window_change_root_object (struct MUI_WindowData *data, Object *obj,
 static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 {
     struct ObjNode *node;
+
+    ASSERT_VALID_PTR(list);
+
+    if (!obj)
+	return NULL;
+
+    ASSERT_VALID_PTR(obj);
+
     for (node = (struct ObjNode*)list->mlh_Head; node->node.mln_Succ; node = (struct ObjNode*)node->node.mln_Succ)
     {
     	if (node->obj == obj)
@@ -1617,6 +1637,87 @@ static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
     }
     return NULL;
 }
+
+static Object *GetFirstActiveObject (struct MUI_WindowData *data)
+{
+    ASSERT_VALID_PTR(data);
+
+    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+	return ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+    else
+	return NULL;
+}
+
+static Object *GetLastActiveObject (struct MUI_WindowData *data)
+{
+    ASSERT_VALID_PTR(data);
+
+    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
+	return ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+    else
+	return NULL;
+}
+
+typedef struct ObjNode *objnode_iterator_t(struct ObjNode *curr_node);
+
+static objnode_iterator_t NextObjNodeIterator;
+static objnode_iterator_t PrevObjNodeIterator;
+
+static struct ObjNode *NextObjNodeIterator (struct ObjNode *curr_node)
+{
+    if (curr_node->node.mln_Succ->mln_Succ)
+	return (struct ObjNode*)curr_node->node.mln_Succ;
+    else
+	return NULL;
+}
+
+static struct ObjNode *PrevObjNodeIterator (struct ObjNode *curr_node)
+{
+    if (curr_node->node.mln_Pred->mln_Pred)
+	return (struct ObjNode*)curr_node->node.mln_Pred;
+    else
+	return NULL;
+}
+
+static Object *GetPrevNextActiveObject (struct ObjNode *old_activenode, objnode_iterator_t node_iterator)
+{
+    struct ObjNode *curr_node;
+    struct ObjNode *node;
+    Object *obj;
+
+    ASSERT_VALID_PTR(old_activenode);
+    
+    curr_node = old_activenode;
+    node = NULL;
+    obj = NULL;
+
+    while (curr_node)
+    {
+	node = node_iterator(curr_node);
+
+	if (node)
+	    obj = node->obj;
+
+	/* let's see if this obj meets cycle requirements (enabled & visible) */
+	if (obj)
+	{
+	    IPTR is_disabled;
+
+	    get(obj, MUIA_Disabled, &is_disabled);
+
+	    if (!is_disabled && (_flags(obj) & MADF_CANDRAW))
+	    {
+		return obj;
+	    }
+	}
+
+	curr_node = node;
+	obj = NULL;
+	node = NULL;
+    }
+    return obj;
+}
+
 
 /**************************************************************************
  Code for setting MUIA_Window_ActiveObject
@@ -1628,6 +1729,9 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 {
     struct ObjNode *old_activenode;
     Object *old_active;
+
+    ASSERT_VALID_PTR(data);
+    ASSERT_VALID_PTR(obj);
 
     if ((ULONG)data->wd_ActiveObject == newval) return;
 
@@ -1653,20 +1757,16 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		    DoMethod(old_active, MUIM_GoInactive);
 		if (old_activenode)
 		{
-		    data->wd_ActiveObject = (old_activenode->node.mln_Succ->mln_Succ) ?
-			((struct ObjNode*)old_activenode->node.mln_Succ)->obj : NULL;
+		    data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode, NextObjNodeIterator);
 		}
 		else
 		{
-		    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			data->wd_ActiveObject =
-			    ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+		    data->wd_ActiveObject = GetFirstActiveObject(data);
 		}
 	    }
 	    else
 	    {
-		if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		    data->wd_ActiveObject = ((struct ObjNode*)data->wd_CycleChain.mlh_Head)->obj;
+		data->wd_ActiveObject = GetFirstActiveObject(data);
 	    }
 	    break;
 
@@ -1678,21 +1778,16 @@ static void window_set_active_object (struct MUI_WindowData *data, Object *obj, 
 		    DoMethod(old_active, MUIM_GoInactive);
 		if (old_activenode)
 		{
-		    data->wd_ActiveObject = (old_activenode->node.mln_Pred->mln_Pred) ?
-			((struct ObjNode*)old_activenode->node.mln_Pred)->obj : NULL;
+		    data->wd_ActiveObject = GetPrevNextActiveObject(old_activenode, PrevObjNodeIterator);
 		}
 		else
 		{
-		    if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-			data->wd_ActiveObject =
-			    ((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		    data->wd_ActiveObject = GetLastActiveObject(data);
 		}
 	    }
 	    else
 	    {
-		if (!IsListEmpty((struct List*)&data->wd_CycleChain))
-		    data->wd_ActiveObject =
-			((struct ObjNode*)data->wd_CycleChain.mlh_TailPred)->obj;
+		data->wd_ActiveObject = GetLastActiveObject(data);
 	    }
 	    break;
 
@@ -2325,9 +2420,9 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 static void install_backbuffer (struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+#if 0
     struct Window *win = data->wd_RenderInfo.mri_Window;
 
-#if 0
     data->wd_RenderInfo.mri_BufferBM =
 	AllocBitMap(win->Width, win->Height, win->RPort->BitMap->Depth,
 		    0, win->RPort->BitMap);
