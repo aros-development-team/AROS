@@ -85,3 +85,4 @@ code='''vardb['subsection'] = int (vardb['subsection']) + 1'''
 <section>B</section>
 <subsection>B</subsection>
 <section>C</section>
+<include filename="inc.hpp">

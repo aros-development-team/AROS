@@ -352,6 +352,16 @@ class SkipHandler (xil.CmdHandler):
     def handle (self, parser, args):
 	parser.skipWhiteSpace ()
 
+class IncludeHandler (xil.CmdHandler):
+    def __init__ (self):
+	xil.CmdHandler.__init__ (self, 'include')
+
+    def handle (self, parser, args):
+	fh = open (args['FILENAME'], 'r')
+	HPPParser (fh,
+	    parser.wf,
+	    parser.handlers, startLine = parser.lineno).run ()
+
 if __name__ == '__main__':
     import sys
 
@@ -371,5 +381,6 @@ if __name__ == '__main__':
 	    'b': HTMLEnvHandler ('b'),
 	    'tt': HTMLEnvHandler ('tt'),
 	    'sws': SkipHandler (),
+	    'include': IncludeHandler (),
 	}
     ).run ()
