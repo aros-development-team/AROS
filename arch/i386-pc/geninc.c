@@ -2,7 +2,6 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/tasks.h>
-#include <exec/etask.h>
 #include <dos/dosextens.h>
 #include <stdio.h>
 #include <stddef.h>
@@ -49,11 +48,6 @@ int main (void)
     printf ("#define tc_SPUpper    %d\n", offsetof (struct Task, tc_SPUpper));
     printf ("#define tc_IDNestCnt  %d\n", offsetof (struct Task, tc_IDNestCnt));
     printf ("#define tc_ETask      %d\n", offsetof (struct Task, tc_UnionETask.tc_ETask));
-
-    printf ("\n# struct IntETask\n");
-    printf ("#define iet_Context   %d\n", offsetof (struct IntETask, iet_Context));
-    printf ("#define iet_FPU       %d\n", offsetof (struct IntETask, iet_FPU));
-    printf ("#define iet_CR3	   %d\n", offsetof (struct IntETask, iet_CR3));
 
     printf ("\n# struct DosBase\n");
     printf ("#define dl_SysBase    %d\n", offsetof (struct DosLibrary, dl_SysBase));

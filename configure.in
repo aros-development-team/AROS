@@ -276,7 +276,7 @@ case "$target_os" in
 
     native)
 	aros_target_arch="native"
-	aros_target_cflags="-Wall -O2"
+	aros_target_cflags="-Wall -O2 -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
 
 	case "$target_cpu" in
