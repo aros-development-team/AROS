@@ -43,7 +43,12 @@ BEGIN {
 	    }
 	}
 
-	printf "AROS_LH%d%s(", $prototype->{numargs}, $nb ? "I" : "";
+	if ($self->{PROTO}) {
+	    printf "AROS_LP%d%s(", $prototype->{numargs}, $nb ? "I" : "";
+	}
+	else {
+	    printf "AROS_LH%d%s(", $prototype->{numargs}, $nb ? "I" : "";
+	}
 	print "$prototype->{return}, $gateprefix$prototype->{funcname},\n";
     }
 
@@ -60,8 +65,13 @@ BEGIN {
 	if ($argtype =~ /\(\*\)/) {
 	    $argtype = "_$sfd->{Basename}_$prototype->{funcname}_fp$argnum";
 	}
-	
-	print "	AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
+
+	if ($self->{PROTO}) {
+	    print "	AROS_LPA($argtype, $argname, " . (uc $argreg) . "),\n";
+	}
+	else {
+	    print "	AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
+	}	    
     }
     
     sub function_end {
@@ -92,6 +102,9 @@ BEGIN {
 
 	if ($self->{PROTO}) {
 	    print ";\n";
+	    print "#ifdef __AROS_USE_MACROS_FOR_LIBCALL\n".
+	        "int AROS_SLIB_ENTRY($gateprefix$prototype->{funcname},$sfd->{Basename}) ();\n" .
+	        "#endif\n";
 	    print "#define $gateprefix$prototype->{funcname} " .
 		"AROS_SLIB_ENTRY(" .
 		"$gateprefix$prototype->{funcname},$sfd->{Basename})\n";
