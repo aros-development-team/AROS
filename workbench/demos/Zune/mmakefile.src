@@ -3,7 +3,6 @@
 # Makefile for Zune Demos
 
 include $(TOP)/config/make.cfg
-include ../make.cfg
 
 FILES := \
     mui_layout1 \
@@ -13,7 +12,7 @@ FILES := \
     mui_notify2 \
     mui_input1
 
-EXEDIR := $(ZUNEDIR)/Tests
+EXEDIR := $(AROSDIR)/Demos
 EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 USE_CLIB     := yes
@@ -21,18 +20,17 @@ USE_AMIGALIB := yes
 USE_MUILIB   := yes
 USE_AROSLIB  := yes
 
-#MM contrib-zune-demos : includes linklibs  
+#MM workbench-demos-zune : includes linklibs  
 
-%make_prog_setup mmake=contrib-zune-demos
+%make_prog_setup mmake=workbench-demos-zune
 
-contrib-zune-demos : setup $(EXES)
+workbench-demos-zune : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
 
 #MM setup
 setup ::
-	%mkdirs_q $(ZUNEDIR)
-	%mkdirs_q $(ZUNEDIR)/Tests
+	%mkdirs_q $(EXEDIR)
 
 %common
 %include_deps

@@ -3,30 +3,28 @@
 # Makefile for Zune test programs
 
 include $(TOP)/config/make.cfg
-include ../make.cfg
 
-FILES	:= test wb
+FILES  := test wb
 
-EXEDIR := $(ZUNEDIR)/Tests
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+EXEDIR := $(AROSDIR)/test/Zune
+EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 USE_CLIB_SHARED := yes
 USE_AMIGALIB    := yes
 USE_MUILIB      := yes
 USE_AROSLIB     := yes
 
-#MM contrib-zune-test : includes linklibs
+#MM test-zune : includes linklibs
 
-%make_prog_setup mmake=contrib-zune-test
+%make_prog_setup mmake=test-zune
 
-contrib-zune-test : setup $(EXES)
+test-zune : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
 
 #MM setup
 setup ::
-	%mkdirs_q $(ZUNEDIR)
-	%mkdirs_q $(ZUNEDIR)/Tests
+	%mkdirs_q $(EXEDIR)
 
 %common
 %include_deps

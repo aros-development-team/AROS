@@ -1,7 +1,6 @@
 # $Id$
 
 include $(TOP)/config/make.cfg
-include ../../make.cfg
 
 MODNAME := muimaster
 MODTYPE := library
@@ -95,15 +94,13 @@ USE_MLIB        := yes
 
 USER_INCLUDES := -I.
 
-#MM- contrib-zune-libs-muimaster : setup includes linklibs \
-#MM	contrib-zune-libs-muimaster-module
+#MM- workbench-libs-muimaster : setup includes linklibs \
+#MM	workbench-libs-muimaster-module
 
-%make_module_setup mmake=contrib-zune-libs-muimaster
-
-MOD_DIR := $(ZUNEDIR)/Libs
+%make_module_setup mmake=workbench-libs-muimaster
 
 %make_module_cpak
-%make_module mmake=contrib-zune-libs-muimaster
+%make_module mmake=workbench-libs-muimaster
 %make_lib_includes
 
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
@@ -124,10 +121,6 @@ $(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL) mui.h
 $(BUILDINCTOOL) : buildincludes.c
 	%mkdirs_q $(dir $(BUILDINCTOOL))
 	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@
-
-#MM setup
-setup ::
-	%mkdirs_q $(ZUNEDIR)/Libs
 
 %common
 %include_deps
