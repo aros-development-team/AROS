@@ -1,8 +1,24 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
 
-    Desc: Exec lists
-    Lang: english
+#Description: @LISTS@
+
+<chapter title="Exec Lists">
+
+<p>Exec offers a standard way to create lists of structures. All you
+need to do is to put <code>struct Node node;</code>
+as the first
+field into any structure you want to collect in a list. You can
+then use the macro <code>NEWLIST()</code> to initialize a structure
+of the type <code>struct List</code> and insert the nodes
+with <code>AddHead()</code>, <code>AddTail()</code>, 
+<code>Enqueue()</code> or <code>Insert()</code>.<p>
+
+<p>FIXME Explain other functions, how to use the macros,
+give some example programs and explain how lists work.<p>
+
+</chapter>
+
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <string.h>
@@ -24,7 +40,7 @@
 	Exec (40), BaseNotNecessary
 
     FUNCTION
-	Insert Node node as the first node of the list.
+	Insert Node <code>node</code> as the first node of the list.
 
     RESULT
 	None.
@@ -84,7 +100,7 @@
 	Exec (39), BaseNotNecessary
 
     FUNCTION
-	Insert Node node after pred in list.
+	Insert Node <code>node</code> after <code>pred</code> in list.
 
     RESULT
 
@@ -154,11 +170,11 @@
     else
     {
 	/*
-	    add at the top of the list. I do not use AddHead() here but
-	    write the code twice for two reasons: 1. The code is small and
-	    therefore errors are unlikely and 2. If I would call AddHead(),
-	    it would take almost as long to call the function as the execution
-	    would take yielding 100% overhead.
+	    add at the top of the list. I do not use <code>AddHead()</code>
+	    here but write the code twice for two reasons: 1. The code is small
+	    and therefore errors are unlikely and 2. If I would call 
+	    <code>AddHead()</code>, it would take almost as long to call the
+	    function as the execution would take yielding 100% overhead.
 	*/
 	node->ln_Succ	       = list->lh_Head;
 	node->ln_Pred	       = (struct Node *)&list->lh_Head;
@@ -227,7 +243,7 @@
 
     /*
 	If we found a node, this will contain the pointer to it. If we
-	didn't, this will be NULL (either because the list was
+	didn't, this will be <code>NULL</code> (either because the list was
 	empty or because we tried all nodes in the list)
     */
     return node;
