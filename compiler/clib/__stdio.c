@@ -36,6 +36,7 @@ struct MinList __stdio_files =
 int __smode2oflags(char *mode)
 {
     int ret = -1;
+    int theresb = 0;
 
     switch (*mode++)
     {
@@ -56,11 +57,24 @@ int __smode2oflags(char *mode)
 	    return -1;
     }
 
-    if ( *mode == '+' || (*mode == 'b' && mode[1] == '+'))
+    if (*mode == 'b')
+    {
+	theresb = 1;
+	mode++;
+    }
+
+    if (*mode == '+')
     {
 	ret = O_RDWR | (ret & ~O_ACCMODE);
+    	mode++;
     }
-    else if (*mode != '\0')
+
+    if (*mode == 'b' && !theresb)
+    {
+	mode++;
+    }
+
+    if (*mode != '\0')
     {
     	errno = EINVAL;
 	return -1;
