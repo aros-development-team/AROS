@@ -57,10 +57,6 @@ enum
 };
 
 
-/* GC types */
-
-#define vHIDD_Gfx_GCType_Quick  0x1
-#define vHIDD_Gfx_GCType_Clip   0x2
 
 
 /* messages for a graphics hidd */
@@ -68,7 +64,6 @@ enum
 struct pHidd_Gfx_NewGC
 {
     MethodID       mID;
-    ULONG          gcType;
     struct TagItem *attrList;
 };
 
@@ -360,12 +355,8 @@ enum
 
 /* Drawmodes for a graphics context */
 
-#define vHIDD_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
-#define vHIDD_GC_DrawMode_XOR  0x06 /* XOR                                  */
-
-/* obsolete */
-#define HIDDV_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
-#define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
+#define vHidd_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
+#define vHidd_GC_DrawMode_XOR  0x06 /* XOR                                  */
 
 
 #define vHidd_GC_ColExp_Transparent	(1 << 0)
@@ -373,7 +364,7 @@ enum
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
-Object * HIDD_Gfx_NewGC        (Object *hiddGfx, ULONG gcType, struct TagItem *tagList);
+Object * HIDD_Gfx_NewGC        (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeGC    (Object *hiddGfx, Object *gc);
 Object * HIDD_Gfx_NewBitMap    (Object *hiddGfx, struct TagItem *tagList);
 VOID     HIDD_Gfx_DisposeBitMap(Object *hiddGfx, Object *bitMap);
