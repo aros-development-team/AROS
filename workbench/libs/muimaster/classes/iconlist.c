@@ -101,6 +101,8 @@ struct MUI_IconData
     WORD update_scrolldx;
     WORD update_scrolldy;
     struct IconEntry *update_icon;
+    struct Rectangle *update_rect1;
+    struct Rectangle *update_rect2;
 };
 
 /**************************************************************************
@@ -111,31 +113,6 @@ int RectAndRect(struct Rectangle *a, struct Rectangle *b)
     if ((a->MinX > b->MaxX) || (a->MinY > b->MaxY) || (a->MaxX < b->MinX) || (a->MaxY < b->MinY))
 	return 0;
     return 1;
-}
-
-/**************************************************************************
- Draw the icon at its position
-**************************************************************************/
-static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
-{
-    LONG tx,ty;
-    LONG txwidth; // txheight;
-    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
-
-#ifndef __AROS__
-    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
-#else
-    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
-#endif
-
-    if (icon->entry.label)
-    {
-	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
-	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
-	ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
-	Move(_rp(obj),tx,ty);
-	Text(_rp(obj),icon->entry.label,strlen(icon->entry.label));
-    }
 }
 
 /**************************************************************************
@@ -150,6 +127,7 @@ static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struc
 
     if (icon->entry.label)
     {
+    	SetFont(_rp(obj), _font(obj));
 	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
 	tx = (icon->width - txwidth)/2;
 	if (tx < rect->MinX) rect->MinX = tx;
@@ -157,6 +135,67 @@ static void IconList_GetIconRectangle(Object *obj, struct IconEntry *icon, struc
     }
 
     rect->MaxY += _font(obj)->tf_YSize + 2;
+}
+
+/**************************************************************************
+ Draw the icon at its position
+**************************************************************************/
+static void IconList_DrawIcon(Object *obj, struct MUI_IconData *data, struct IconEntry *icon)
+{
+    struct Rectangle iconrect;
+    struct Rectangle objrect;
+    
+    LONG tx,ty;
+    LONG txwidth; // txheight;
+
+    IconList_GetIconRectangle(obj, icon, &iconrect);
+    iconrect.MinX += _mleft(obj) - data->view_x + icon->x;
+    iconrect.MaxX += _mleft(obj) - data->view_x + icon->x;
+    iconrect.MinY += _mtop(obj) - data->view_y + icon->y;
+    iconrect.MaxY += _mtop(obj) - data->view_y + icon->y;
+
+    objrect.MinX = _mleft(obj);
+    objrect.MinY = _mtop(obj);
+    objrect.MaxX = _mright(obj);
+    objrect.MaxY = _mbottom(obj);
+    
+    if (!RectAndRect(&iconrect, &objrect)) return;
+ 
+    /* data->update_rect1 and data->update_rect2 may
+       point to rectangles to indicate that only icons
+       in any of this rectangles need to be drawn */
+       
+    if (data->update_rect1 && data->update_rect2)
+    {
+    	if (!RectAndRect(&iconrect, data->update_rect1) &&
+	    !RectAndRect(&iconrect, data->update_rect2)) return;
+    }
+    else if (data->update_rect1)
+    {
+    	if (!RectAndRect(&iconrect, data->update_rect1)) return;
+    }
+    else if (data->update_rect2)
+    {
+    	if (!RectAndRect(&iconrect, data->update_rect2)) return;
+    }
+    
+    SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],0,JAM1);
+
+#ifndef __AROS__
+    DrawIconState(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, ICONDRAWA_EraseBackground, FALSE, TAG_DONE);
+#else
+    DrawIconStateA(_rp(obj),icon->dob,NULL,_mleft(obj) - data->view_x + icon->x, _mtop(obj) - data->view_y + icon->y, icon->selected?IDS_SELECTED:IDS_NORMAL, NULL);
+#endif
+
+    if (icon->entry.label)
+    {
+    	SetFont(_rp(obj), _font(obj));
+	txwidth = TextLength(_rp(obj),icon->entry.label,strlen(icon->entry.label));
+	tx = _mleft(obj) - data->view_x + icon->x + (icon->width - txwidth)/2;
+	ty = _mtop(obj) - data->view_y + icon->y + icon->height + _font(obj)->tf_Baseline + 1;
+	Move(_rp(obj),tx,ty);
+	Text(_rp(obj),icon->entry.label,strlen(icon->entry.label));
+    }
 }
 
 /**************************************************************************
@@ -633,8 +672,9 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 	}
 	else if (data->update == UPDATE_SCROLL)
 	{
-	    struct Region *region;
-	    BOOL scroll_caused_damage;
+	    struct Region   	*region;
+	    struct Rectangle 	 xrect, yrect;
+	    BOOL    	    	 scroll_caused_damage;
 
 	    scroll_caused_damage = (_rp(obj)->Layer->Flags & LAYERREFRESH) ? FALSE : TRUE;
 
@@ -656,48 +696,48 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
 	    if (data->update_scrolldx > 0)
 	    {
-	    	struct Rectangle rect;
+		xrect.MinX = _mright(obj) - data->update_scrolldx;
+		xrect.MinY = _mtop(obj);
+		xrect.MaxX = _mright(obj);
+		xrect.MaxY = _mbottom(obj);
 
-		rect.MinX = _mright(obj) - data->update_scrolldx;
-		rect.MinY = _mtop(obj);
-		rect.MaxX = _mright(obj);
-		rect.MaxY = _mbottom(obj);
-
-		OrRectRegion(region, &rect);
+		OrRectRegion(region, &xrect);
+		
+		data->update_rect1 = &xrect;
 	    }
 	    else if (data->update_scrolldx < 0)
 	    {
-	    	struct Rectangle rect;
+		xrect.MinX = _mleft(obj);
+		xrect.MinY = _mtop(obj);
+		xrect.MaxX = _mleft(obj) - data->update_scrolldx;
+		xrect.MaxY = _mbottom(obj);
 
-		rect.MinX = _mleft(obj);
-		rect.MinY = _mtop(obj);
-		rect.MaxX = _mleft(obj) - data->update_scrolldx;
-		rect.MaxY = _mbottom(obj);
+		OrRectRegion(region, &xrect);
 
-		OrRectRegion(region, &rect);
+		data->update_rect1 = &xrect;
 	    }
 
 	    if (data->update_scrolldy > 0)
 	    {
-	    	struct Rectangle rect;
+		yrect.MinX = _mleft(obj);
+		yrect.MinY = _mbottom(obj) - data->update_scrolldy;
+		yrect.MaxX = _mright(obj);
+		yrect.MaxY = _mbottom(obj);
 
-		rect.MinX = _mleft(obj);
-		rect.MinY = _mbottom(obj) - data->update_scrolldy;
-		rect.MaxX = _mright(obj);
-		rect.MaxY = _mbottom(obj);
+		OrRectRegion(region, &yrect);
 
-		OrRectRegion(region, &rect);
+		data->update_rect2 = &yrect;
 	    }
 	    else if (data->update_scrolldy < 0)
 	    {
-	    	struct Rectangle rect;
+		yrect.MinX = _mleft(obj);
+		yrect.MinY = _mtop(obj);
+		yrect.MaxX = _mright(obj);
+		yrect.MaxY = _mtop(obj) - data->update_scrolldy;
 
-		rect.MinX = _mleft(obj);
-		rect.MinY = _mtop(obj);
-		rect.MaxX = _mright(obj);
-		rect.MaxY = _mtop(obj) - data->update_scrolldy;
+		OrRectRegion(region, &yrect);
 
-		OrRectRegion(region, &rect);
+		data->update_rect2 = &yrect;
 	    }
 
 	    ScrollRasterBF(_rp(obj),
@@ -714,6 +754,8 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 
 	    MUI_Redraw(obj, MADF_DRAWOBJECT);
 
+    	    data->update_rect1 = data->update_rect2 = NULL;
+	    
 	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
 
 //	    DisposeRegion(region);
