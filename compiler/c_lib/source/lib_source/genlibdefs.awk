@@ -37,10 +37,19 @@
 #		The default is _LIBDEFS_H.
 # type <string> - What kind of library is this ? Valid values
 #		for <string> are: device, library, resource and hidd.
-# option <string>... - Specify an option. Valid values for <string> are
-#		noexpunge, rom. You can specify more than one option
-#		in a config file and more than one option per option line.
-#		Separate options by space.
+# option <string>... - Specify an option. Valid values for <string> are:
+#
+#		    noexpunge - Once the lib/dev is loaded, it can't be
+#				removed from memory. Be careful with this
+#				option.
+#		    rom - For ROM based libraries. Implies noexpunge and
+#				unique.
+#		    unique - Generate unique names for all external
+#				symbols.
+#
+#		You can specify more than one option in a config file and
+#		more than one option per option line. Separate options by
+#		space.
 #
 BEGIN {
     libbase="";
@@ -100,6 +109,8 @@ BEGIN {
 	    noexpunge = 1;
 	else if ($t == "rom")
 	    rom = 1;
+	else if ($t == "unique")
+	    unique = 1;
 	else
 	{
 	    print "Unknown option \"" $t "\"" > "/dev/stderr";
@@ -153,6 +164,16 @@ END {
 	print "#define NOEXPUNGE"
     if (rom)
 	print "#define ROMBASED"
+
+    if (rom || unique)
+    {
+	print "#define LC_UNIQUE_PREFIX "basename
+	print "#define LC_BUILDNAME(n)  "basename" ## n"
+    }
+    else
+    {
+	print "#define LC_BUILDNAME(n)  n"
+    }
 
     print "#define LIBBASE          "libbase
     print "#define LIBBASETYPE      "libbasetype
