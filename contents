@@ -60,10 +60,14 @@ dist/ - \shell{make dist} will put an archive with all files for
 docs/ - The source and the formatted docs (currently only in HTML
 	format).
 
-makefile - This is the magic file which holds the whole thing together.
+local/ - This directory and it's contents are ignored by AROS. You can
+	put alpha stuff here if you want to avoid CVS complaining about
+	it.
+
+mmakefile - This is the magic file which holds the whole thing together.
 	It has the following rules:
 
-	\filtermakefile{$(TOP)/makefile,target}
+	\filtermakefile{$(TOP)/mmakefile,target}
 
 make.defaults - File with options for the make. If you want to change
 	an option, create a file \filename{make.opts} and put your changes
@@ -73,6 +77,8 @@ make.defaults - File with options for the make. If you want to change
 rom/ - Things which are internal parts of the OS.
 
 scripts/ - Scripts which are used to generate code.
+
+tools/ - This contains build tools.
 
 test/ - Testcode, which is more complex.
 
