@@ -864,12 +864,18 @@ static ULONG List_AskMinMax(struct IClass *cl, Object *obj,struct MUIP_AskMinMax
 	msg->MinMaxInfo->DefHeight += data->entries_totalheight;
 	msg->MinMaxInfo->MaxHeight += data->entries_totalheight;
     }
-    else
+    else if (data->entries_num > 0)
     {
 	ULONG h = data->entry_maxheight + data->prefs_linespacing;
 	msg->MinMaxInfo->MinHeight += 3 * h + data->prefs_linespacing;
 	msg->MinMaxInfo->DefHeight += 8 * h + data->prefs_linespacing;
 	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    }
+    else
+    {
+	msg->MinMaxInfo->MinHeight += 40;
+	msg->MinMaxInfo->DefHeight += 100;
+	msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;	
     }
     D(bug("List minheigh=%d, line maxh=%d\n", msg->MinMaxInfo->MinHeight, data->entry_maxheight));
 
