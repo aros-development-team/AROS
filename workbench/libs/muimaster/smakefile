@@ -320,6 +320,15 @@ objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 demos: muimaster.lib
   smake -f //demos/smakefile
 
+include: buildincludes
+  -makedir include
+  -makedir include/libraries
+  buildincludes >include/libraries/mui.h
+  -delete buildincludes
+
+buildincludes: buildincludes.c
+  sc link buildincludes.c
+
 clean:
   -delete objs all
   -delete test
