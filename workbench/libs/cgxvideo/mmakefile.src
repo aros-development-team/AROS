@@ -1,0 +1,33 @@
+#   $Id$
+#
+#   Generate cgxvideo.library
+#
+include $(TOP)/config/make.cfg
+
+FUNCS := \
+	CreateVLayerHandleTagList \
+	DeleteVLayerHandle \
+	AttachVLayerTagList \
+	DetachVLayer \
+	GetVLayerAttr \
+	LockVLayer \
+	UnLockVLayer \
+	SetVLayerAttrTagList
+
+#MM- workbench-libs-cgxvideo : linklibs
+#MM- workbench-libs-cgxvideo-kobj : linklibs
+
+#MM- workbench-libs-cgxvideo-includes : \
+#MM      kernel-exec-includes \
+#MM      includes-copy
+
+%build_module mmake=workbench-libs-cgxvideo \
+  modname=cgxvideo modtype=library \
+  files="cgxvideo_init $(FUNCS)" \
+  uselibs="arossupport amiga rom m cgxvideo"
+
+#MM includes-copy
+
+INCLUDE_FILES := $(wildcard include/*.h)
+
+%copy_includes path=cybergraphx
