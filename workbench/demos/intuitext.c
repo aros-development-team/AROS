@@ -55,7 +55,7 @@ int CXBRK(void)    { return(0); }  /* Disable Lattice CTRL/C handling */
 int chkabort(void) { return(0); }  /* really */
 #endif
 
-struct Library *IntuitionBase = NULL;
+struct IntuitionBase *IntuitionBase = NULL;
 
 #define MYTEXT_LEFT (0)
 #define MYTEXT_TOP  (0)
@@ -77,7 +77,7 @@ struct TextAttr   myTextAttr;
 ULONG myTEXTPEN;
 ULONG myBACKGROUNDPEN;
 
-IntuitionBase = OpenLibrary("intuition.library",37);
+IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase)
     {
 #ifdef __AROS
@@ -155,6 +155,6 @@ if (IntuitionBase)
 	    }
 	UnlockPubScreen(NULL,screen);
 	}
-    CloseLibrary(IntuitionBase);
+    CloseLibrary((struct Library *)IntuitionBase);
     }
 }

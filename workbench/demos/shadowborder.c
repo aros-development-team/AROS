@@ -53,7 +53,7 @@ int CXBRK(void)    { return(0); }  /* Disable Lattice CTRL/C handling */
 int chkabort(void) { return(0); }  /* really */
 #endif
 
-struct Library *IntuitionBase = NULL;
+struct IntuitionBase *IntuitionBase = NULL;
 
 #define MYBORDER_LEFT	(0)
 #define MYBORDER_TOP	(0)
@@ -82,7 +82,7 @@ struct Border	 shadowBorder;
 ULONG mySHADOWPEN = 1;	/* set default values for pens */
 ULONG mySHINEPEN  = 2;	/* in case can't get info...   */
 
-IntuitionBase = OpenLibrary("intuition.library",37);
+IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",37);
 if (IntuitionBase)
     {
     if ((screen = LockPubScreen(NULL)))
@@ -149,6 +149,6 @@ if (IntuitionBase)
 
 	CloseWindow(win);
 	}
-    CloseLibrary(IntuitionBase);
+    CloseLibrary((struct Library *)IntuitionBase);
     }
 }
