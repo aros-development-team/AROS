@@ -69,3 +69,11 @@ Object *MakePopframe(void)
 		     MUIA_Window_Title, (IPTR)"Adjust Frame",
 		     TAG_DONE);
 }
+
+Object *MakePoppen(void)
+{
+    return MUI_NewObject(MUIC_Poppen,
+		     MUIA_CycleChain, 1,
+		     MUIA_Window_Title, (IPTR)"Adjust Pen",
+		     TAG_DONE);
+}
