@@ -62,17 +62,9 @@ BOOL init_core(struct ExecBase * SysBase)
 		WREG_L(0x110) = (ULONG)IRQ4_interrupt;
 		WREG_L(0x114) = (ULONG)IRQ5_interrupt;
 		WREG_L(0x118) = (ULONG)IRQ6_interrupt;
-#if 0
-/* Does NOT seem to work on xcopilot */
-WREG_W(TCTL1) = 0x11;
-WREG_W(TCMP1) = 0x411a;
-#endif
-#if 1
-WREG_W(TCTL2) = 0x11;
-//WREG_W(TCMP2) = 0x411a;
-WREG_W(TCMP2) = 0xfff0;
-#endif
-		D(bug("Activated new interrupt handlers!\n"));
+
+		WREG_W(TCTL2) = 0x11;
+		WREG_W(TCMP2) = 0x411a;
 	}
 	return rc;
 }
@@ -213,9 +205,11 @@ extern void sys_Dispatch(struct pt_regs * regs);
 //D(bug("isr=0x%x,irq=%d\n",isr,irq));
 	switch (irq) {
 		case 0:
+
 		break;
 		
 		case 1:
+
 		break;
 		
 		case 2:
@@ -246,10 +240,11 @@ sys_Dispatch(regs);
 				WREG_W(TSTAT2) = 0;
 				//D(bug("%x ",tstat2));
 			}
+
 			if (isr & UART1_F) {
 				/* UART 1 */
-				
 			}
+
 			if (isr & WDT_F) {
 				/* Watchdog timer */
 			}
@@ -274,6 +269,10 @@ sys_Dispatch(regs);
 		case 6:
 			if (isr & PWM1_F) {
 				/* PWM */
+			}
+
+			if (isr & TMR1_F) {
+				/* TMR1 */
 			}
 		break;
 		
