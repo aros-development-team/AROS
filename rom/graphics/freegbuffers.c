@@ -67,11 +67,11 @@
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
   struct AnimComp * CurAnimComp = anOb -> HeadComp;
-  struct AnimComp * CurSeqAnimComp = CurAnimComp;
 
   /* visit all the components of this AnimOb */
   while (NULL != CurAnimComp)
   {
+    struct AnimComp * CurSeqAnimComp = CurAnimComp;
     /* visit all the sequences of a component
        the sequences are connected like a ring!! */
     do
