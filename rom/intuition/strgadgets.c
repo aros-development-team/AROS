@@ -448,7 +448,13 @@ ULONG HandleStrInput(	struct Gadget 		*gad,
     	strinfo->BufferPos = sgw.BufferPos;
     	strinfo->NumChars  = sgw.NumChars;
     	strinfo->LongInt   = sgw.LongInt;
-   kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); 	
+
+	if (gad->Activation & GACT_LONGINT)
+	{
+	   kprintf("strinfo->LongInt = %d\n",strinfo->LongInt); 	
+	} else {
+	   kprintf("strinfo->Buffer = \"%s\"\n",strinfo->Buffer);
+	}
     }
 
     if (sgw.Actions & SGA_BEEP)
