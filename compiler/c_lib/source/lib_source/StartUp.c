@@ -23,47 +23,35 @@
 #include <proto/exec.h>    // all other compilers
 #endif
 #include "compiler.h"
+#include "intern.h"
 
-#ifdef __GNUC__
-#include "examplebase.h"  // GNUC can not handle relativ pathnames.
-			  // The full path must be given in the makefile
-#else
-#include "/include/example/examplebase.h"
-#endif
 #include "SampleFuncs.h"
-
-#define LIBBASETYPE	ExampleBase
-#define LIBBASE 	ExampleBase
-#define BASENAME	Example
-
-ULONG SAVEDS L_OpenLibs (struct ExampleBase *exb);
-void  SAVEDS L_CloseLibs (struct ExampleBase *exb);
 
 AROS_LH2(struct LIBBASETYPE *, InitLib,
     AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
     AROS_LHA(BPTR,                 segList, A0),
-    struct ExecBase *, SysBase, 0, Example
+    struct ExecBase *, SysBase, 0, BASENAME
 );
-AROS_LH1 (struct ExampleBase *, OpenLib,
+AROS_LH1 (struct LIBBASETYPE *, OpenLib,
     AROS_LHA (ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, Example
+    struct LIBBASETYPE *, LIBBASE, 1, BASENAME
 );
-AROS_LH0 (struct ExampleBase *, CloseLib,
-    struct LIBBASETYPE *, LIBBASE, 2, Example
+AROS_LH0 (struct LIBBASETYPE *, CloseLib,
+    struct LIBBASETYPE *, LIBBASE, 2, BASENAME
 );
-AROS_LH0 (struct ExampleBase *, ExpungeLib,
-    struct LIBBASETYPE *, LIBBASE, 3, Example
+AROS_LH0 (struct LIBBASETYPE *, ExpungeLib,
+    struct LIBBASETYPE *, LIBBASE, 3, BASENAME
 );
-AROS_LH0 (struct ExampleBase *, ExtFuncLib,
-    struct LIBBASETYPE *, LIBBASE, 4, Example
+AROS_LH0 (struct LIBBASETYPE *, ExtFuncLib,
+    struct LIBBASETYPE *, LIBBASE, 4, BASENAME
 );
 
 /* Declare functions for FuncTab[] */
-AROS_LH3 (struct ExampleBase *, EXF_TestRequest,
+AROS_LH3 (struct LIBBASETYPE *, EXF_TestRequest,
     AROS_LHA (UBYTE *, title_d1, D1),
     AROS_LHA (UBYTE *, body,     D2),
     AROS_LHA (UBYTE *, gadgets,  D3),
-    struct LIBBASETYPE *, LIBBASE, 5, Example
+    struct LIBBASETYPE *, LIBBASE, 5, BASENAME
 );
 
 LONG ASM LibStart(void)
@@ -72,7 +60,6 @@ LONG ASM LibStart(void)
 }
 
 extern const APTR FuncTab [];
-extern struct MyDataInit DataTab;
 
 struct InitTable		       /* do not change */
 {
@@ -80,15 +67,16 @@ struct InitTable		       /* do not change */
     const APTR	      *FunctionTable;
     struct MyDataInit *DataTable;
     APTR	       InitLibTable;
-} const InitTab =
+}
+const InitTab =
 {
-    sizeof(struct ExampleBase),
+    sizeof(struct LIBBASETYPE),
     &FuncTab[0],
     &DataTab,
 #ifndef _AROS
     InitLib
 #else
-    (APTR) AROS_SLIB_ENTRY(InitLib, Example),
+    (APTR) AROS_SLIB_ENTRY(InitLib, BASENAME)
 #endif
 };
 
@@ -102,42 +90,40 @@ APTR const FuncTab [] =
 
     EXF_TestRequest,  /* add your own functions here */
 #else
-    (APTR) AROS_SLIB_ENTRY(OpenLib, Example),
-    (APTR) AROS_SLIB_ENTRY(CloseLib, Example),
-    (APTR) AROS_SLIB_ENTRY(ExpungeLib, Example),
-    (APTR) AROS_SLIB_ENTRY(ExtFuncLib, Example),
-    (APTR) AROS_SLIB_ENTRY(EXF_TestRequest, Example),
+    (APTR) AROS_SLIB_ENTRY(OpenLib, BASENAME),
+    (APTR) AROS_SLIB_ENTRY(CloseLib, BASENAME),
+    (APTR) AROS_SLIB_ENTRY(ExpungeLib, BASENAME),
+    (APTR) AROS_SLIB_ENTRY(ExtFuncLib, BASENAME),
+    (APTR) AROS_SLIB_ENTRY(EXF_TestRequest, BASENAME),
 #endif
 
     (APTR) ((LONG)-1)
 };
 
 
-extern struct ExampleBase *ExampleBase;
-
 AROS_LH2(struct LIBBASETYPE *, InitLib,
     AROS_LHA(struct LIBBASETYPE *, exb,     D0),
     AROS_LHA(BPTR,                 segList, A0),
-    struct ExecBase *, sysBase, 0, Example)
+    struct ExecBase *, sysBase, 0, BASENAME)
 {
-    ExampleBase = exb;
+    LIBBASE = exb;
 
-    ExampleBase->exb_SysBase = sysBase;
-    ExampleBase->exb_SegList = segList;
+    LIBBASE->exb_SysBase = sysBase;
+    LIBBASE->exb_SegList = segList;
 
-    if (L_OpenLibs (ExampleBase))
-	return (ExampleBase);
+    if (L_OpenLibs (LIBBASE))
+	return (LIBBASE);
 
-    L_CloseLibs (ExampleBase);
+    L_CloseLibs (LIBBASE);
 
-    FreeMem (exb, sizeof (struct ExampleBase));
+    FreeMem (exb, sizeof (struct LIBBASETYPE));
 
     return (NULL);
 }
 
-AROS_LH1 (struct ExampleBase *, OpenLib,
+AROS_LH1 (struct LIBBASETYPE *, OpenLib,
     AROS_LHA (ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, Example
+    struct LIBBASETYPE *, LIBBASE, 1, BASENAME
 )
 {
 #ifdef __MAXON__
@@ -145,49 +131,49 @@ AROS_LH1 (struct ExampleBase *, OpenLib,
     InitModules();
 #endif
 
-    ExampleBase->exb_LibNode.lib_OpenCnt++;
+    LIBBASE->exb_LibNode.lib_OpenCnt++;
 
-    ExampleBase->exb_LibNode.lib_Flags &= ~LIBF_DELEXP;
+    LIBBASE->exb_LibNode.lib_Flags &= ~LIBF_DELEXP;
 
-    return(ExampleBase);
+    return(LIBBASE);
 }
 
-AROS_LH0 (struct ExampleBase *, CloseLib,
-    struct LIBBASETYPE *, LIBBASE, 2, Example
+AROS_LH0 (struct LIBBASETYPE *, CloseLib,
+    struct LIBBASETYPE *, LIBBASE, 2, BASENAME
 )
 {
-    ExampleBase->exb_LibNode.lib_OpenCnt--;
+    LIBBASE->exb_LibNode.lib_OpenCnt--;
 
-    if(!ExampleBase->exb_LibNode.lib_OpenCnt)
+    if(!LIBBASE->exb_LibNode.lib_OpenCnt)
     {
-	if(ExampleBase->exb_LibNode.lib_Flags & LIBF_DELEXP)
+	if(LIBBASE->exb_LibNode.lib_Flags & LIBF_DELEXP)
 	{
-	    return (AROS_SLIB_ENTRY(ExpungeLib,Example)(ExampleBase));
+	    return (AROS_SLIB_ENTRY(ExpungeLib,BASENAME)(LIBBASE));
 	}
     }
 
     return(NULL);
 }
 
-AROS_LH0 (struct ExampleBase *, ExpungeLib,
-    struct LIBBASETYPE *, LIBBASE, 3, Example
+AROS_LH0 (struct LIBBASETYPE *, ExpungeLib,
+    struct LIBBASETYPE *, LIBBASE, 3, BASENAME
 )
 {
     APTR seglist;
 
-    if(!ExampleBase->exb_LibNode.lib_OpenCnt)
+    if(!LIBBASE->exb_LibNode.lib_OpenCnt)
     {
 	ULONG negsize, possize, fullsize;
-	UBYTE *negptr = (UBYTE *) ExampleBase;
+	UBYTE *negptr = (UBYTE *) LIBBASE;
 
-	seglist = ExampleBase->exb_SegList;
+	seglist = LIBBASE->exb_SegList;
 
-	Remove((struct Node *)ExampleBase);
+	Remove((struct Node *)LIBBASE);
 
-	L_CloseLibs(ExampleBase);
+	L_CloseLibs(LIBBASE);
 
-	negsize  = ExampleBase->exb_LibNode.lib_NegSize;
-	possize  = ExampleBase->exb_LibNode.lib_PosSize;
+	negsize  = LIBBASE->exb_LibNode.lib_NegSize;
+	possize  = LIBBASE->exb_LibNode.lib_PosSize;
 	fullsize = negsize + possize;
 	negptr	-= negsize;
 
@@ -200,19 +186,19 @@ AROS_LH0 (struct ExampleBase *, ExpungeLib,
 	return(seglist);
     }
 
-    ExampleBase->exb_LibNode.lib_Flags |= LIBF_DELEXP;
+    LIBBASE->exb_LibNode.lib_Flags |= LIBF_DELEXP;
 
     return(NULL);
 }
 
-AROS_LH0 (struct ExampleBase *, ExtFuncLib,
-    struct LIBBASETYPE *, LIBBASE, 4, Example
+AROS_LH0 (struct LIBBASETYPE *, ExtFuncLib,
+    struct LIBBASETYPE *, LIBBASE, 4, BASENAME
 )
 {
     return(NULL);
 }
 
-struct ExampleBase *ExampleBase = NULL;
+struct LIBBASETYPE *LIBBASE = NULL;
 
 #ifdef __SASC
 

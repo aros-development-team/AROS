@@ -23,13 +23,8 @@
 #include <proto/exec.h>
 #endif
 #include "compiler.h"
-
-#ifdef __GNUC__
-#include "examplebase.h"  // GNUC can not handle relativ pathnames.
-			  // The full path must be given in the makefile
-#else
-#include "/include/example/examplebase.h"
-#endif
+#include "libdefs.h"
+#include "intern.h"
 
 #ifndef _AROS
 #   define INTUITIONNAME "intuition.library" /* AROS defines these */
@@ -38,24 +33,14 @@
 #   include <intuition/intuitionbase.h> /* INTUITIONNAME */
 #endif
 
-ULONG SAVEDS STDARGS L_OpenLibs(struct ExampleBase *exb);
-void  SAVEDS STDARGS L_CloseLibs(struct ExampleBase *exb);
-
-extern struct ExampleBase *ExampleBase;
-
 
 struct ExecBase      *SysBase	    = NULL;
 struct IntuitionBase *IntuitionBase = NULL;
 struct GfxBase	     *GfxBase	    = NULL;
 
-#define VERSION  37
-#define REVISION 11
-
-char ALIGNED ExLibName [] = "example.library";
-char ALIGNED ExLibID   [] = "example 37.10 (1.4.97)";
+char ALIGNED ExLibName [] = LIBNAME;
+char ALIGNED ExLibID   [] = VERSION;
 char ALIGNED Copyright [] = "(C)opyright 1996-97 by Andreas R. Kleinert. All rights reserved.";
-
-extern ULONG InitTab[];
 
 extern APTR EndResident; /* below */
 
@@ -65,12 +50,12 @@ struct Resident ALIGNED ROMTag =     /* do not change */
     &ROMTag,
     &EndResident,
     RTF_AUTOINIT,
-    VERSION,
+    LIBVERSION,
     NT_LIBRARY,
     0,
     &ExLibName[0],
     &ExLibID[0],
-    &InitTab[0]
+    (APTR) &InitTab
 };
 
 APTR EndResident;
@@ -84,13 +69,14 @@ struct MyDataInit		       /* do not change */
     UWORD lib_Revision_Init; UWORD lib_Revision_Offset; UWORD lib_Revision_Content;
     UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;
     ULONG ENDMARK;
-} DataTab =
+}
+DataTab =
 {
     INITBYTE(OFFSET(Node,         ln_Type),      NT_LIBRARY),
     0x80, (UBYTE) OFFSET(Node,    ln_Name),      (ULONG) &ExLibName[0],
     INITBYTE(OFFSET(Library,      lib_Flags),    LIBF_SUMUSED|LIBF_CHANGED),
-    INITWORD(OFFSET(Library,      lib_Version),  VERSION),
-    INITWORD(OFFSET(Library,      lib_Revision), REVISION),
+    INITWORD(OFFSET(Library,      lib_Version),  LIBVERSION),
+    INITWORD(OFFSET(Library,      lib_Revision), LIBREVISION),
     0x80, (UBYTE) OFFSET(Library, lib_IdString), (ULONG) &ExLibID[0],
     (ULONG) 0
 };
@@ -101,7 +87,7 @@ struct MyDataInit		       /* do not change */
     when expunging !
  */
 
-ULONG SAVEDS STDARGS L_OpenLibs(struct ExampleBase *exb)
+ULONG SAVEDS STDARGS L_OpenLibs(struct LIBBASETYPE *exb)
 {
     SysBase = exb->exb_SysBase;
 
@@ -111,15 +97,15 @@ ULONG SAVEDS STDARGS L_OpenLibs(struct ExampleBase *exb)
     GfxBase = (struct GfxBase *) OpenLibrary(GRAPHICSNAME, 37);
     if(!GfxBase) return(FALSE);
 
-    ExampleBase->exb_SysBase	   = SysBase;
+    LIBBASE->exb_SysBase       = SysBase;
 
-    ExampleBase->exb_IntuitionBase = IntuitionBase;
-    ExampleBase->exb_GfxBase	   = GfxBase;
+    LIBBASE->exb_IntuitionBase = IntuitionBase;
+    LIBBASE->exb_GfxBase       = GfxBase;
 
     return(TRUE);
 }
 
-void SAVEDS STDARGS L_CloseLibs (struct ExampleBase *exb)
+void SAVEDS STDARGS L_CloseLibs (struct LIBBASETYPE *exb)
 {
     if(GfxBase)       CloseLibrary((struct Library *) GfxBase);
     if(IntuitionBase) CloseLibrary((struct Library *) IntuitionBase);
