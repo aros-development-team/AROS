@@ -1,6 +1,6 @@
 # AROS_PRESET_MENU
 
-default 0
+default 2
 timeout 5 
 fallback 0
 
