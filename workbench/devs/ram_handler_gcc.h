@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/10/10 13:16:45  digulla
     ? (Fleischer)
 
@@ -34,25 +37,25 @@ struct rambase
 };
 
 #define init(rambase, segList) \
-__AROS_LC2(struct rambase *, init, __AROS_LA(struct rambase *, rambase, D0), __AROS_LA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, ram)
+AROS_LC2(struct rambase *, init, AROS_LCA(struct rambase *, rambase, D0), AROS_LCA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, ram)
 
 #define open(iob, unitnum, flags) \
-__AROS_LC3(void, open, __AROS_LA(struct ramrequest *, iob, A1), __AROS_LA(ULONG, unitnum, D0), __AROS_LA(ULONG, flags, D0), struct rambase *, rambase, 1, ram)
+AROS_LC3(void, open, AROS_LCA(struct ramrequest *, iob, A1), AROS_LCA(ULONG, unitnum, D0), AROS_LCA(ULONG, flags, D0), struct rambase *, rambase, 1, ram)
 
 #define close(iob) \
-__AROS_LC1(BPTR, close, __AROS_LA(struct ramrequest *, iob, A1), struct rambase *, rambase, 2, ram)
+AROS_LC1(BPTR, close, AROS_LCA(struct ramrequest *, iob, A1), struct rambase *, rambase, 2, ram)
 
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct rambase *, rambase, 3, ram)
+AROS_LC0(BPTR, expunge, struct rambase *, rambase, 3, ram)
 
 #define null() \
-__AROS_LC0(int, null, struct rambase *, rambase, 4, ram)
+AROS_LC0(int, null, struct rambase *, rambase, 4, ram)
 
 #define beginio(iob) \
-__AROS_LC1(void, beginio, __AROS_LA(struct ramrequest *, iob, A1), struct rambase *, rambase, 5, ram)
+AROS_LC1(void, beginio, AROS_LCA(struct ramrequest *, iob, A1), struct rambase *, rambase, 5, ram)
 
 #define abortio(iob) \
-__AROS_LC1(LONG, abortio, __AROS_LA(struct ramrequest *, iob, A1), struct rambase *, rambase, 6, ram)
+AROS_LC1(LONG, abortio, AROS_LCA(struct ramrequest *, iob, A1), struct rambase *, rambase, 6, ram)
 
 #endif
 

@@ -1,6 +1,9 @@
  /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:36  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/10/23 14:08:59  aros
     Formatted
 
@@ -20,11 +23,11 @@
 	#include <utility/tagitem.h>
 	#include <clib/utility_protos.h>
 
-	__AROS_LH2(void, RefreshTagItemClones,
+	AROS_LH2(void, RefreshTagItemClones,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TagItem *, clone, A0),
-	__AROS_LHA(struct TagItem *, original, A1),
+	AROS_LHA(struct TagItem *, clone, A0),
+	AROS_LHA(struct TagItem *, original, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 14, Utility)
@@ -78,7 +81,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     struct TagItem *current;
 
@@ -94,5 +97,5 @@
 	clone++;
     }
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* RefreshTagItemClones */

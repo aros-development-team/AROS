@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:26  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/23 14:23:06  aros
     Use LIB_VECTSIZE over sizeof(struct JumpVec)
 
@@ -16,13 +19,13 @@
     Use correct way to access external names (was missing)
 
     Revision 1.4  1996/09/11 16:54:23  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
 	some systems name an external symbol "x" as "_x" and others as "x".
 	(The problem arises with assembler symbols which might differ)
 
     Revision 1.3  1996/08/13 13:52:53  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:40:49  digulla
     Added standard header for all files
@@ -46,7 +49,7 @@ static const char name[];
 static const char version[];
 static const APTR Dos_inittabl[4];
 static void *const Dos_functable[];
-struct DosLibrary *__AROS_SLIB_ENTRY(init,Dos) ();
+struct DosLibrary *AROS_SLIB_ENTRY(init,Dos) ();
 extern const char Dos_end;
 
 int Dos_entry(void)
@@ -78,25 +81,25 @@ static const APTR Dos_inittabl[4]=
     (APTR)sizeof(struct DosLibrary),
     (APTR)Dos_functable,
     NULL,
-    &__AROS_SLIB_ENTRY(init,Dos)
+    &AROS_SLIB_ENTRY(init,Dos)
 };
 
 void LDDemon();
-void __AROS_SLIB_ENTRY(OpenLibrary,Dos)();
-void __AROS_SLIB_ENTRY(OpenDevice,Dos)();
-void __AROS_SLIB_ENTRY(CloseLibrary,Dos)();
-void __AROS_SLIB_ENTRY(CloseDevice,Dos)();
-void __AROS_SLIB_ENTRY(RemLibrary,Dos)();
+void AROS_SLIB_ENTRY(OpenLibrary,Dos)();
+void AROS_SLIB_ENTRY(OpenDevice,Dos)();
+void AROS_SLIB_ENTRY(CloseLibrary,Dos)();
+void AROS_SLIB_ENTRY(CloseDevice,Dos)();
+void AROS_SLIB_ENTRY(RemLibrary,Dos)();
 void LDFlush();
 
 #undef SysBase
 
-__AROS_LH2(struct DosLibrary *, init,
- __AROS_LHA(struct DosLibrary *, DOSBase, D0),
- __AROS_LHA(BPTR,               segList,   A0),
+AROS_LH2(struct DosLibrary *, init,
+ AROS_LHA(struct DosLibrary *, DOSBase, D0),
+ AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, SysBase, 0, Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -122,12 +125,12 @@ __AROS_LH2(struct DosLibrary *, init,
 
 	if(DOSBase->dl_LDDemon!=NULL)
 	{
-	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,__AROS_SLIB_ENTRY(OpenLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,__AROS_SLIB_ENTRY(OpenDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,__AROS_SLIB_ENTRY(CloseLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,__AROS_SLIB_ENTRY(CloseDevice,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,__AROS_SLIB_ENTRY(RemLibrary,Dos));
-	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,__AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-92*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-74*LIB_VECTSIZE,AROS_SLIB_ENTRY(OpenDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-69*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-75*LIB_VECTSIZE,AROS_SLIB_ENTRY(CloseDevice,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-67*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
+	    (void)SetFunction(&SysBase->LibNode,-73*LIB_VECTSIZE,AROS_SLIB_ENTRY(RemLibrary,Dos));
 
 	    DOSBase->dl_LDHandler.is_Node.ln_Name="lib & dev loader demon";
 	    DOSBase->dl_LDHandler.is_Node.ln_Pri=0;
@@ -142,16 +145,16 @@ __AROS_LH2(struct DosLibrary *, init,
     }
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 #define SysBase     (DOSBase->dl_SysBase)
 
-__AROS_LH1(struct DosLibrary *, open,
- __AROS_LHA(ULONG, version, D0),
+AROS_LH1(struct DosLibrary *, open,
+ AROS_LHA(ULONG, version, D0),
 	   struct DosLibrary *, DOSBase, 1, Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -167,13 +170,13 @@ __AROS_LH1(struct DosLibrary *, open,
 
     /* You would return NULL if the open failed. */
     return DOSBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, close,
+AROS_LH0(BPTR, close,
 	   struct DosLibrary *, DOSBase, 2, Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -189,13 +192,13 @@ __AROS_LH0(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge,
+AROS_LH0(BPTR, expunge,
 	   struct DosLibrary *, DOSBase, 3, Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -222,13 +225,13 @@ __AROS_LH0(BPTR, expunge,
 	    DOSBase->dl_lib.lib_NegSize+DOSBase->dl_lib.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null,
+AROS_LH0I(int, null,
 	    struct DosLibrary *, DOSBase, 4, Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }

@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:51  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/08/13 13:56:03  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:12  digulla
@@ -14,7 +17,7 @@
     Lang:
 */
 #include <dos/dos.h>
-#include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include "exec_intern.h"
 
 /*****************************************************************************
@@ -23,11 +26,11 @@
 	#include <exec/resident.h>
 	#include <clib/exec_protos.h>
 
-__AROS_LH2(APTR, InitResident,
+AROS_LH2(APTR, InitResident,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Resident *, resident, A1),
-	__AROS_LHA(BPTR,              segList,  D1),
+	AROS_LHA(struct Resident *, resident, A1),
+	AROS_LHA(BPTR,              segList,  D1),
 
 /* LOCATION */
 	struct ExecBase *, SysBase, 17, Exec)
@@ -58,7 +61,7 @@ __AROS_LH2(APTR, InitResident,
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Check for validity */
     if(resident->rt_MatchWord!=RTC_MATCHWORD||
@@ -88,9 +91,14 @@ __AROS_LH2(APTR, InitResident,
 	    library->lib_IdString    =resident->rt_IdString;
 	}
 	return library;
-    }else
+    }
+    else
 	/* ...or let the library do it. */
-	return __AROS_ABS_CALL3(struct Library *,resident->rt_Init,NULL,D0,
-				segList,A0,SysBase,A6);
-    __AROS_FUNC_EXIT
+	return AROS_UFC3(struct Library *,resident->rt_Init,
+	    AROS_UFCA(ULONG,0L,D0),
+	    AROS_UFCA(BPTR,segList,A0),
+	    AROS_UFCA(struct ExecBase *,SysBase,A6)
+	);
+
+    AROS_LIBFUNC_EXIT
 } /* InitResident */

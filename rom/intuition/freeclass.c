@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:19  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/28 17:55:34  digulla
     Proportional gadgets
     BOOPSI
@@ -19,10 +22,10 @@
 	#include <intuition/classes.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(BOOL, FreeClass,
+	AROS_LH1(BOOL, FreeClass,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct IClass *, classPtr, A0),
+	AROS_LHA(struct IClass *, classPtr, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 119, Intuition)
@@ -90,8 +93,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Make sure no one creates another object from this class. For private
 	classes, this call does nothing. */
@@ -107,5 +110,5 @@
     }
 
     return (FALSE);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeClass */

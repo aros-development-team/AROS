@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:58  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/08/13 13:56:08  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:20  digulla
@@ -21,11 +24,11 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH2(BYTE, SetTaskPri,
+	AROS_LH2(BYTE, SetTaskPri,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Task *, task,      A1),
-	__AROS_LHA(LONG,          priority,  D0),
+	AROS_LHA(struct Task *, task,      A1),
+	AROS_LHA(LONG,          priority,  D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 50, Exec)
@@ -56,7 +59,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BYTE old;
 
@@ -103,5 +106,5 @@
     /* All done. */
     Enable();
     return old;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetTaskPri */

@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:36  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/09/12 14:52:47  digulla
     Better way to separate public and private parts of the library base
 
@@ -18,7 +21,7 @@
     NAME */
 	#include <clib/utility_protos.h>
 
-	__AROS_LH0(ULONG, GetUniqueID,
+	AROS_LH0(ULONG, GetUniqueID,
 
 /*  SYNOPSIS */
 	/* void */
@@ -53,7 +56,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     ULONG ret;
 
     Disable();
@@ -64,5 +67,5 @@
 
     return ret;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetUniqueID */

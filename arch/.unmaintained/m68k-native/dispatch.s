@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/10/24 15:51:30  aros
+#    Use the official AROS macros over the __AROS versions.
+#
 #    Revision 1.3  1996/10/24 01:38:31  aros
 #    Include machine.i
 #
@@ -14,7 +17,7 @@
 #
 #   NAME
 #
-#	__AROS_LH0(void, Dispatch,
+#	AROS_LH0(void, Dispatch,
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 7, Exec)

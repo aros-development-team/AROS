@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:24  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/08/29 13:57:38  digulla
     Commented
     Moved common code from driver to Intuition
@@ -21,12 +24,12 @@
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH3(void, RefreshGadgets,
+	AROS_LH3(void, RefreshGadgets,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Gadget    *, gadgets, A0),
-	__AROS_LHA(struct Window    *, window, A1),
-	__AROS_LHA(struct Requester *, requester, A2),
+	AROS_LHA(struct Gadget    *, gadgets, A0),
+	AROS_LHA(struct Window    *, window, A1),
+	AROS_LHA(struct Requester *, requester, A2),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 37, Intuition)
@@ -63,10 +66,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     RefreshGList (gadgets, window, requester, ~0L);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* RefreshGadgets */

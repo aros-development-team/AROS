@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:24  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/09/11 12:54:45  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -18,12 +21,12 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(BOOL, ChangeMode,
+	AROS_LH3(BOOL, ChangeMode,
 
 /*  SYNOPSIS */
-	__AROS_LHA(ULONG, type,    D1),
-	__AROS_LHA(BPTR,  object,  D2),
-	__AROS_LHA(ULONG, newmode, D3),
+	AROS_LHA(ULONG, type,    D1),
+	AROS_LHA(BPTR,  object,  D2),
+	AROS_LHA(ULONG, newmode, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 75, Dos)
@@ -58,8 +61,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(object);
@@ -85,5 +88,5 @@
     
     /* Set error code and return */
     return (me->pr_Result2=iofs->io_DosError)==0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ChangeMode */

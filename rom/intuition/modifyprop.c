@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/28 17:55:35  digulla
     Proportional gadgets
     BOOPSI
@@ -18,17 +21,17 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH8(void, ModifyProp,
+	AROS_LH8(void, ModifyProp,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Gadget    *, gadget, A0),
-	__AROS_LHA(struct Window    *, window, A1),
-	__AROS_LHA(struct Requester *, requester, A2),
-	__AROS_LHA(unsigned long     , flags, D0),
-	__AROS_LHA(unsigned long     , horizPot, D1),
-	__AROS_LHA(unsigned long     , vertPot, D2),
-	__AROS_LHA(unsigned long     , horizBody, D3),
-	__AROS_LHA(unsigned long     , vertBody, D4),
+	AROS_LHA(struct Gadget    *, gadget, A0),
+	AROS_LHA(struct Window    *, window, A1),
+	AROS_LHA(struct Requester *, requester, A2),
+	AROS_LHA(unsigned long     , flags, D0),
+	AROS_LHA(unsigned long     , horizPot, D1),
+	AROS_LHA(unsigned long     , vertPot, D2),
+	AROS_LHA(unsigned long     , horizBody, D3),
+	AROS_LHA(unsigned long     , vertBody, D4),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 26, Intuition)
@@ -71,8 +74,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct PropInfo * pi;
 
     if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_PROPGADGET
@@ -90,5 +93,5 @@
 
     RefreshGadgets (gadget, window, requester);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ModifyProp */

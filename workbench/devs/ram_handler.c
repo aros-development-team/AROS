@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:50:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/23 14:21:17  aros
     Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
     which not.
@@ -54,13 +57,13 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern const UBYTE datatable;
-extern struct rambase *__AROS_SLIB_ENTRY(init,ramdev)();
-extern void __AROS_SLIB_ENTRY(open,ramdev)();
-extern BPTR __AROS_SLIB_ENTRY(close,ramdev)();
-extern BPTR __AROS_SLIB_ENTRY(expunge,ramdev)();
-extern int __AROS_SLIB_ENTRY(null,ramdev)();
-extern void __AROS_SLIB_ENTRY(beginio,ramdev)();
-extern LONG __AROS_SLIB_ENTRY(abortio,ramdev)();
+extern struct rambase *AROS_SLIB_ENTRY(init,ramdev)();
+extern void AROS_SLIB_ENTRY(open,ramdev)();
+extern BPTR AROS_SLIB_ENTRY(close,ramdev)();
+extern BPTR AROS_SLIB_ENTRY(expunge,ramdev)();
+extern int AROS_SLIB_ENTRY(null,ramdev)();
+extern void AROS_SLIB_ENTRY(beginio,ramdev)();
+extern LONG AROS_SLIB_ENTRY(abortio,ramdev)();
 extern void deventry();
 extern const char end;
 
@@ -193,28 +196,28 @@ const APTR inittabl[4]=
     (APTR)sizeof(struct rambase),
     (APTR)functable,
     (APTR)&datatable,
-    &__AROS_SLIB_ENTRY(init,ramdev)
+    &AROS_SLIB_ENTRY(init,ramdev)
 };
 
 void *const functable[]=
 {
-    &__AROS_SLIB_ENTRY(open,ramdev),
-    &__AROS_SLIB_ENTRY(close,ramdev),
-    &__AROS_SLIB_ENTRY(expunge,ramdev),
-    &__AROS_SLIB_ENTRY(null,ramdev),
-    &__AROS_SLIB_ENTRY(beginio,ramdev),
-    &__AROS_SLIB_ENTRY(abortio,ramdev),
+    &AROS_SLIB_ENTRY(open,ramdev),
+    &AROS_SLIB_ENTRY(close,ramdev),
+    &AROS_SLIB_ENTRY(expunge,ramdev),
+    &AROS_SLIB_ENTRY(null,ramdev),
+    &AROS_SLIB_ENTRY(beginio,ramdev),
+    &AROS_SLIB_ENTRY(abortio,ramdev),
     (void *)-1
 };
 
 const UBYTE datatable=0;
 
-__AROS_LH2(struct rambase *, init,
- __AROS_LHA(struct rambase *, rambase, D0),
- __AROS_LHA(BPTR,             segList,   A0),
+AROS_LH2(struct rambase *, init,
+ AROS_LHA(struct rambase *, rambase, D0),
+ AROS_LHA(BPTR,             segList,   A0),
 	   struct ExecBase *, SysBase, 0, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -285,7 +288,7 @@ __AROS_LH2(struct rambase *, init,
     }
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /* Use This from now on */
@@ -323,13 +326,13 @@ static void Strfree(struct rambase *rambase, STRPTR string)
     FreeMem(string,s2-string);
 }
 
-__AROS_LH3(void, open,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
- __AROS_LHA(ULONG,              unitnum, D0),
- __AROS_LHA(ULONG,              flags, D0),
+AROS_LH3(void, open,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
+ AROS_LHA(ULONG,              unitnum, D0),
+ AROS_LHA(ULONG,              flags, D0),
 	   struct rambase *, rambase, 1, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct filehandle *fhv, *fhc;
     struct vnode *vol;
     struct cnode *dev;
@@ -397,12 +400,12 @@ __AROS_LH3(void, open,
     iofs->IOFS.io_Error=IOERR_OPENFAIL;
 
     rambase->device.dd_Library.lib_OpenCnt--;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
+AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -438,21 +441,21 @@ __AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
 	    rambase->device.dd_Library.lib_NegSize+rambase->device.dd_Library.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null, struct rambase *, rambase, 4, ramdev)
+AROS_LH0I(int, null, struct rambase *, rambase, 4, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(void, beginio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 5, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
@@ -463,16 +466,16 @@ __AROS_LH1(void, beginio,
     /* So let the device task do it */
     PutMsg(rambase->port,&iofs->IOFS.io_Message);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(LONG, abortio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 6, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 static LONG getblock(struct rambase *rambase, struct fnode *file, LONG block, int mode, UBYTE **result)
@@ -1100,11 +1103,11 @@ static LONG delete_object(struct rambase *rambase, struct filehandle *filehandle
     return 0;
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(BPTR, close,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 2, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct cnode *dev;
     struct vnode *vol;
     struct dnode *dir;
@@ -1157,7 +1160,7 @@ __AROS_LH1(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 void deventry(struct rambase *rambase)

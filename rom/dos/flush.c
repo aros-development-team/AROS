@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:50:29  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/08/13 13:52:46  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:40:51  digulla
     Added standard header for all files
@@ -20,10 +23,10 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH1(LONG, Flush,
+	AROS_LH1(LONG, Flush,
 
 /*  SYNOPSIS */
-	__AROS_LHA(BPTR, file, D1),
+	AROS_LHA(BPTR, file, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 60, Dos)
@@ -56,8 +59,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(file);
@@ -92,5 +95,5 @@
     /* Reinit the buffer and return. */
     fh->fh_Pos=fh->fh_End=fh->fh_Buf;
     return success;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Flush */

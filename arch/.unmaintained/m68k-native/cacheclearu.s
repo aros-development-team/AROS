@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.3  1996/10/24 15:51:29  aros
+#    Use the official AROS macros over the __AROS versions.
+#
 #    Revision 1.2  1996/08/01 17:41:33  digulla
 #    Added standard header for all files
 #
@@ -11,7 +14,7 @@
 #
 #   NAME
 #
-#	__AROS_LH0(void, CacheClearU,
+#	AROS_LH0(void, CacheClearU,
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 106, Exec)

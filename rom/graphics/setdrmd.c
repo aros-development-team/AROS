@@ -15,11 +15,11 @@ void driver_SetDrMd (struct RastPort *, ULONG, struct GfxBase *);
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH2(void, SetDrMd,
+	AROS_LH2(void, SetDrMd,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A1),
-	__AROS_LHA(unsigned long    , drawMode, D0),
+	AROS_LHA(struct RastPort *, rp, A1),
+	AROS_LHA(unsigned long    , drawMode, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 59, Graphics)
@@ -46,12 +46,12 @@ void driver_SetDrMd (struct RastPort *, ULONG, struct GfxBase *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     driver_SetDrMd (rp, drawMode, GfxBase);
 
     rp->DrawMode = drawMode;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetDrMd */

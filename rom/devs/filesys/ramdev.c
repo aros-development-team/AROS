@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:02  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/10/23 14:21:32  aros
     Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
     which not.
@@ -195,12 +198,12 @@ void *const functable[]=
 
 const UBYTE datatable=0;
 
-__AROS_LH2(struct rambase *, init,
- __AROS_LA(struct rambase *, rambase, D0),
- __AROS_LA(BPTR,             segList,   A0),
+AROS_LH2(struct rambase *, init,
+ AROS_LA(struct rambase *, rambase, D0),
+ AROS_LA(BPTR,             segList,   A0),
 	   struct ExecBase *, SysBase, 0, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* This function is single-threaded by exec by calling Forbid. */
 
@@ -271,7 +274,7 @@ __AROS_LH2(struct rambase *, init,
     }
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /* Use This from now on */
@@ -288,13 +291,13 @@ __AROS_LH2(struct rambase *, init,
 #define DOSBase rambase->dosbase
 #define UtilityBase rambase->utilitybase
 
-__AROS_LH3(void, open,
- __AROS_LA(struct IOFileSys *, iofs, A1),
- __AROS_LA(ULONG,              unitnum, D0),
- __AROS_LA(ULONG,              flags, D0),
+AROS_LH3(void, open,
+ AROS_LA(struct IOFileSys *, iofs, A1),
+ AROS_LA(ULONG,              unitnum, D0),
+ AROS_LA(ULONG,              flags, D0),
 	   struct rambase *, rambase, 1, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -314,14 +317,14 @@ __AROS_LH3(void, open,
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+AROS_LH1(BPTR, close,
+ AROS_LA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 2, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -340,12 +343,12 @@ __AROS_LH1(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
+AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -381,21 +384,21 @@ __AROS_LH0(BPTR, expunge, struct rambase *, rambase, 3, ramdev)
 	    rambase->device.dd_Library.lib_NegSize+rambase->device.dd_Library.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null, struct rambase *, rambase, 4, ramdev)
+AROS_LH0I(int, null, struct rambase *, rambase, 4, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+AROS_LH1(void, beginio,
+ AROS_LA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 5, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
@@ -406,14 +409,14 @@ __AROS_LH1(void, beginio,
     /* So let the device task do it */
     PutMsg(rambase->port,&iofs->IOFS.io_Message);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(LONG, abortio,
- __AROS_LA(struct IOFileSys *, iofs, A1),
+AROS_LH1(LONG, abortio,
+ AROS_LA(struct IOFileSys *, iofs, A1),
 	   struct rambase *, rambase, 6, ramdev)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 #if 0
     if(iofs->IOFS.io_Command==FSA_NOTIFY)
     {
@@ -426,7 +429,7 @@ __AROS_LH1(LONG, abortio,
     }
 #endif
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 static STRPTR Strdup(struct rambase *rambase, STRPTR string)

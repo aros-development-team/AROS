@@ -15,11 +15,11 @@ extern void driver_SetOutlinePen (struct RastPort *, ULONG, struct GfxBase *);
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH2(ULONG, SetOutlinePen,
+	AROS_LH2(ULONG, SetOutlinePen,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A0),
-	__AROS_LHA(ULONG,             pen, D0),
+	AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(ULONG,             pen, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 163, Graphics)
@@ -46,8 +46,8 @@ extern void driver_SetOutlinePen (struct RastPort *, ULONG, struct GfxBase *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     ULONG oldPen;
 
     oldPen = rp->AOlPen;
@@ -58,5 +58,5 @@ extern void driver_SetOutlinePen (struct RastPort *, ULONG, struct GfxBase *);
     rp->Flags |= AREAOUTLINE;
 
     return oldPen;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetOutlinePen */

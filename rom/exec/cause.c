@@ -1,6 +1,6 @@
 /*
     (C) 1995 AROS - The Amiga Replacement OS
-    $Id$    $Log
+    $Id$	 $Log
     Desc:
     Lang: english
 */
@@ -12,10 +12,10 @@
 	#include <exec/interrupts.h>
 	#include <clib/exec_protos.h>
 
-	__AROS_LH1(void, Cause,
+	AROS_LH1(void, Cause,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Interrupt *, Interrupt, A1),
+	AROS_LHA(struct Interrupt *, interrupt, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 30, Exec)
@@ -42,7 +42,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct ExecBase *,SysBase)
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
+    AROS_LIBFUNC_EXIT
 } /* Cause */

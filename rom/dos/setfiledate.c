@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:37  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/21 14:14:23  digulla
     Hand DOSBase to DoName()
 
@@ -22,11 +25,11 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH2(BOOL, SetFileDate,
+	AROS_LH2(BOOL, SetFileDate,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR,             name, D1),
-	__AROS_LHA(struct DateStamp *, date, D2),
+	AROS_LHA(STRPTR,             name, D1),
+	AROS_LHA(struct DateStamp *, date, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 66, Dos)
@@ -58,8 +61,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -78,5 +81,5 @@
     iofs->io_Args[2]=date->ds_Minute;
     iofs->io_Args[3]=date->ds_Tick;
     return !DoName(iofs,name,DOSBase);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetFileDate */

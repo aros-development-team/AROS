@@ -7,7 +7,7 @@
 #*****************************************************************************
 #
 #   NAME
-#	__AROS_LH0(void, Disable,
+#	AROS_LH0(void, Disable,
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 20, Exec)

@@ -13,10 +13,10 @@
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(ULONG, LockIBase,
+	AROS_LH1(ULONG, LockIBase,
 
 /*  SYNOPSIS */
-	__AROS_LHA(ULONG, What, D0),
+	AROS_LHA(ULONG, What, D0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 69, Intuition)
@@ -51,11 +51,11 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     ObtainSemaphore (GetPrivIBase(IntuitionBase)->SigSem);
 
     return What;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* LockIBase */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:51:39  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.5  1996/09/13 17:10:55  aros
     Don't use the TOLOWER() and TOUPPER() macros directly.
 
@@ -84,12 +87,12 @@ struct IntUtilityBase
 	when I change the library base I will have to recompile most of
 	the files, oh well...
     */
-    ULONG		 ub_SegList;
+    BPTR		 ub_SegList;
 };
 
 /* digulla again... Needed for close() */
 #define expunge() \
- __AROS_LC0(BPTR, expunge, struct UtilityBase *, UtilityBase, 3, Utility)
+ AROS_LC0(BPTR, expunge, struct UtilityBase *, UtilityBase, 3, Utility)
 
 #define GetIntUtilityBase(ub)   ((struct IntUtilityBase *)(ub))
 #define GetUtilityBase(ub)      (GetIntUtilityBase(ub)->UBase)

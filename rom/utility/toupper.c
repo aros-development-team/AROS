@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:39  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/13 17:16:35  digulla
     Removed the macro TOUPPER. Use this library function instead
 
@@ -21,10 +24,10 @@
     NAME */
 	#include <clib/utility_protos.h>
 
-	__AROS_LH1I(UBYTE, ToUpper,
+	AROS_LH1I(UBYTE, ToUpper,
 
 /*  SYNOPSIS */
-	__AROS_LHA(unsigned long, character, D0),
+	AROS_LHA(unsigned long, character, D0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 29, Utility)
@@ -70,7 +73,7 @@
 	10-08-96    iaint   Created from tolower.c from AROSdev15
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     return
     (
@@ -82,5 +85,5 @@
 	: character
     );
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ToLower */

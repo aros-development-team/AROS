@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:27  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/09/11 12:54:45  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -20,14 +23,14 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH5(void, ExAllEnd,
+	AROS_LH5(void, ExAllEnd,
 
 /*  SYNOPSIS */
-	__AROS_LHA(BPTR,                  lock,    D1),
-	__AROS_LHA(struct ExAllData *,    buffer,  D2),
-	__AROS_LHA(LONG,                  size,    D3),
-	__AROS_LHA(LONG,                  data,    D4),
-	__AROS_LHA(struct ExAllControl *, control, D5),
+	AROS_LHA(BPTR,                  lock,    D1),
+	AROS_LHA(struct ExAllData *,    buffer,  D2),
+	AROS_LHA(LONG,                  size,    D3),
+	AROS_LHA(LONG,                  data,    D4),
+	AROS_LHA(struct ExAllControl *, control, D5),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 165, Dos)
@@ -54,8 +57,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
     /* Get pointer to filehandle */
     struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
@@ -77,5 +80,5 @@
 
     /* Send the request. May not fail. */
     DoIO(&iofs->IOFS);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ExAllEnd */

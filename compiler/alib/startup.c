@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:20  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/10/24 01:41:05  aros
     Added __main()
 
@@ -30,9 +33,9 @@
 extern int main (int argc, char ** argv);
 extern APTR __startup_mempool; /* malloc() and free() */
 
-__AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
+AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     LONG error=RETURN_FAIL;
 
     SysBase=sysbase;
@@ -53,7 +56,7 @@ __AROS_LH0(LONG,entry,struct ExecBase *,sysbase,,)
 	DeletePool (__startup_mempool);
 
     return error;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 struct ExecBase *SysBase;

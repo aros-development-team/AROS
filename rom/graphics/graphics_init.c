@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:51:04  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/10/01 15:50:58  digulla
     Don't do Amiga specific things in the X11 driver
     Don't expunge the library if it's in ROM (the user cannot open if again if
@@ -9,14 +12,14 @@
     Fixed some bugs in expunge() which made "avail flush" crash.
 
     Revision 1.3  1996/09/11 16:54:24  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
 	some systems name an external symbol "x" as "_x" and others as "x".
 	(The problem arises with assembler symbols which might differ)
 
     Revision 1.2  1996/08/13 14:00:53  digulla
     Added calls to driver
     Init local SysBase
-    Replaced __AROS_LA with __AROS_LHA
+    Replaced AROS_LA with AROS_LHA
 
     Revision 1.1  1996/08/12 14:27:50  digulla
     Base of graphics library
@@ -41,7 +44,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Graphics_functable[];
-struct GfxBase * __AROS_SLIB_ENTRY(init,Graphics)();
+struct GfxBase * AROS_SLIB_ENTRY(init,Graphics)();
 extern const char Graphics_end;
 
 extern int  driver_init (struct GfxBase *);
@@ -78,7 +81,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct GfxBase),
     (APTR)Graphics_functable,
     NULL,
-    &__AROS_SLIB_ENTRY(init,Graphics)
+    &AROS_SLIB_ENTRY(init,Graphics)
 };
 
 #ifndef SYSFONTNAME
@@ -87,12 +90,12 @@ static const APTR inittabl[4]=
 
 static struct TextAttr sysTA;
 
-__AROS_LH2(struct GfxBase *, init,
- __AROS_LHA(struct GfxBase *, GfxBase, D0),
- __AROS_LHA(BPTR,               segList,   A0),
+AROS_LH2(struct GfxBase *, init,
+ AROS_LHA(struct GfxBase *, GfxBase, D0),
+ AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Graphics)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     SysBase = sysBase;
 
@@ -101,14 +104,14 @@ __AROS_LH2(struct GfxBase *, init,
 
     /* You would return NULL if the init failed */
     return GfxBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(struct GfxBase *, open,
- __AROS_LHA(ULONG, version, D0),
+AROS_LH1(struct GfxBase *, open,
+ AROS_LHA(ULONG, version, D0),
 	   struct GfxBase *, GfxBase, 1, Graphics)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct TextFont * def;
 
     /* Keep compiler happy */
@@ -139,13 +142,13 @@ __AROS_LH1(struct GfxBase *, open,
 
     /* You would return NULL if the open failed. */
     return GfxBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, close,
+AROS_LH0(BPTR, close,
 	   struct GfxBase *, GfxBase, 2, Graphics)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--GfxBase->LibNode.lib_OpenCnt)
@@ -158,13 +161,13 @@ __AROS_LH0(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge,
+AROS_LH0(BPTR, expunge,
 	   struct GfxBase *, GfxBase, 3, Graphics)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 #ifndef DISK_BASED
     if (!(GfxBase->LibNode.lib_OpenCnt) )
     {
@@ -205,13 +208,13 @@ __AROS_LH0(BPTR, expunge,
 
     return ret;
 #endif
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null,
+AROS_LH0I(int, null,
 	    struct GfxBase *, GfxBase, 4, Graphics)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/23 17:32:24  digulla
     Implementation of the console.device
 
@@ -23,13 +26,13 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, long,
 	#include <devices/keymap.h>
 	#include <clib/console_protos.h>
 
-	__AROS_LH4(LONG, RawKeyConvert,
+	AROS_LH4(LONG, RawKeyConvert,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct InputEvent *, events, A0),
-	__AROS_LHA(STRPTR             , buffer, A1),
-	__AROS_LHA(long               , length, D1),
-	__AROS_LHA(struct KeyMap     *, keyMap, A2),
+	AROS_LHA(struct InputEvent *, events, A0),
+	AROS_LHA(STRPTR             , buffer, A1),
+	AROS_LHA(long               , length, D1),
+	AROS_LHA(struct KeyMap     *, keyMap, A2),
 
 /*  LOCATION */
 	struct Library *, ConsoleDevice, 8, Console)
@@ -56,10 +59,10 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, long,
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct Library *,ConsoleDevice)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
 
     return intui_RawKeyConvert (events, buffer, length, keyMap);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* RawKeyConvert */

@@ -2,12 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:50:33  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.5  1996/09/13 17:50:07  digulla
     Use IPTR
 
     Revision 1.4  1996/08/13 13:52:49  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.3  1996/08/12 14:20:38  digulla
     Added aliases
@@ -28,12 +31,12 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(BOOL, NameFromLock,
+	AROS_LH3(BOOL, NameFromLock,
 
 /*  SYNOPSIS */
-	__AROS_LHA(BPTR,   lock,   D1),
-	__AROS_LHA(STRPTR, buffer, D2),
-	__AROS_LHA(LONG,   length, D3),
+	AROS_LHA(BPTR,   lock,   D1),
+	AROS_LHA(STRPTR, buffer, D2),
+	AROS_LHA(LONG,   length, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 67, Dos)
@@ -73,12 +76,12 @@
     NAME
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(LONG, NameFromFH,
+	AROS_LH3(LONG, NameFromFH,
 
     SYNOPSIS
-	__AROS_LHA(BPTR  , fh, D1),
-	__AROS_LHA(STRPTR, buffer, D2),
-	__AROS_LHA(long  , len, D3),
+	AROS_LHA(BPTR  , fh, D1),
+	AROS_LHA(STRPTR, buffer, D2),
+	AROS_LHA(long  , len, D3),
 
     LOCATION
 	struct DosLibrary *, DOSBase, 68, Dos)
@@ -114,8 +117,8 @@
 *****************************************************************************/
 /*AROS alias NameFromFH NameFromLock */
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     STRPTR s1, s2, name;
     struct Unit *curlock, *oldlock=NULL;
@@ -195,5 +198,5 @@
     /* All done. */
     me->pr_Result2=error;
     return !error;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* NameFromLock */

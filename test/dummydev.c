@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:34  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/09/13 17:57:10  digulla
     Use IPTR
 
@@ -105,12 +108,12 @@ const struct inittable datatable=
 
 #undef O
 
-__AROS_LH2(struct dummybase *, init,
- __AROS_LA(struct dummybase *, dummybase, D0),
- __AROS_LA(BPTR,               segList,   A0),
+AROS_LH2(struct dummybase *, init,
+ AROS_LA(struct dummybase *, dummybase, D0),
+ AROS_LA(BPTR,               segList,   A0),
 	   struct ExecBase *, SysBase, 0, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -119,7 +122,7 @@ __AROS_LH2(struct dummybase *, init,
 
     /* You would return NULL here if the init failed. */
     return dummybase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /* Use This from now on */
@@ -128,13 +131,13 @@ __AROS_LH2(struct dummybase *, init,
 #endif
 #define SysBase dummybase->sysbase
 
-__AROS_LH3(void, open,
- __AROS_LA(struct dummyrequest *, iob, A1),
- __AROS_LA(ULONG,                 unitnum, D0),
- __AROS_LA(ULONG,                 flags, D0),
+AROS_LH3(void, open,
+ AROS_LA(struct dummyrequest *, iob, A1),
+ AROS_LA(ULONG,                 unitnum, D0),
+ AROS_LA(ULONG,                 flags, D0),
 	   struct dummybase *, dummybase, 1, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -159,14 +162,14 @@ __AROS_LH3(void, open,
 
     /* Mark Message as recently used. */
     iob->iorequest.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LA(struct dummyrequest *, iob, A1),
+AROS_LH1(BPTR, close,
+ AROS_LA(struct dummyrequest *, iob, A1),
 	   struct dummybase *, dummybase, 2, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -185,12 +188,12 @@ __AROS_LH1(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
+AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -217,20 +220,20 @@ __AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 	    dummybase->device.dd_Library.lib_NegSize+dummybase->device.dd_Library.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
-__AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
+AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LA(struct dummyrequest *, iob, A1),
+AROS_LH1(void, beginio,
+ AROS_LA(struct dummyrequest *, iob, A1),
 	   struct dummybase *, dummybase, 5, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* WaitIO will look into this */
     iob->iorequest.io_Message.mn_Node.ln_Type=NT_MESSAGE;
@@ -261,20 +264,20 @@ __AROS_LH1(void, beginio,
     */
     if(!(iob->iorequest.io_Flags&IOF_QUICK))
 	ReplyMsg(&iob->iorequest.io_Message);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1I(LONG, abortio,
- __AROS_LA(struct dummyrequest *, iob, A1),
+AROS_LH1I(LONG, abortio,
+ AROS_LA(struct dummyrequest *, iob, A1),
 	   struct dummybase *, dummybase, 6, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* Get compiler happy */
     iob=0;
 
     /* Since everything is finished quick nothing needs an abort. */
     return IOERR_NOCMD;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 const char end=0;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:51:27  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/23 14:05:18  aros
     Missing include
 
@@ -12,7 +15,7 @@
     Use correct way to access external names (was missing)
 
     Revision 1.3  1996/08/13 15:35:11  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:28  digulla
     Added standard header for all files
@@ -36,13 +39,13 @@ extern const char version[];
 extern const APTR inittabl[4];
 extern void *const functable[];
 extern const struct inittable datatable;
-extern struct dummybase *__AROS_SLIB_ENTRY(init,dummy)();
-extern struct dummybase *__AROS_SLIB_ENTRY(open,dummy)();
-extern BPTR __AROS_SLIB_ENTRY(close,dummy)();
-extern BPTR __AROS_SLIB_ENTRY(expunge,dummy)();
-extern int __AROS_SLIB_ENTRY(null,dummy)();
-extern ULONG __AROS_SLIB_ENTRY(add,dummy)();
-extern ULONG __AROS_SLIB_ENTRY(asl,dummy)();
+extern struct dummybase *AROS_SLIB_ENTRY(init,dummy)();
+extern struct dummybase *AROS_SLIB_ENTRY(open,dummy)();
+extern BPTR AROS_SLIB_ENTRY(close,dummy)();
+extern BPTR AROS_SLIB_ENTRY(expunge,dummy)();
+extern int AROS_SLIB_ENTRY(null,dummy)();
+extern ULONG AROS_SLIB_ENTRY(add,dummy)();
+extern ULONG AROS_SLIB_ENTRY(asl,dummy)();
 extern const char end;
 
 int entry(void)
@@ -74,17 +77,17 @@ const APTR inittabl[4]=
     (APTR)sizeof(struct dummybase),
     (APTR)functable,
     (APTR)&datatable,
-    &__AROS_SLIB_ENTRY(init,dummy)
+    &AROS_SLIB_ENTRY(init,dummy)
 };
 
 void *const functable[]=
 {
-    &__AROS_SLIB_ENTRY(open,dummy),
-    &__AROS_SLIB_ENTRY(close,dummy),
-    &__AROS_SLIB_ENTRY(expunge,dummy),
-    &__AROS_SLIB_ENTRY(null,dummy),
-    &__AROS_SLIB_ENTRY(add,dummy),
-    &__AROS_SLIB_ENTRY(asl,dummy),
+    &AROS_SLIB_ENTRY(open,dummy),
+    &AROS_SLIB_ENTRY(close,dummy),
+    &AROS_SLIB_ENTRY(expunge,dummy),
+    &AROS_SLIB_ENTRY(null,dummy),
+    &AROS_SLIB_ENTRY(add,dummy),
+    &AROS_SLIB_ENTRY(asl,dummy),
     (void *)-1
 };
 
@@ -114,12 +117,12 @@ const struct inittable datatable=
 
 #undef O
 
-__AROS_LH2(struct dummybase *, init,
- __AROS_LHA(struct dummybase *, dummybase, D0),
- __AROS_LHA(BPTR,               segList,   A0),
+AROS_LH2(struct dummybase *, init,
+ AROS_LHA(struct dummybase *, dummybase, D0),
+ AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, SysBase, 0, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
@@ -128,7 +131,7 @@ __AROS_LH2(struct dummybase *, init,
 
     /* You would return NULL here if the init failed. */
     return dummybase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /* Use This from now on */
@@ -137,11 +140,11 @@ __AROS_LH2(struct dummybase *, init,
 #endif
 #define SysBase dummybase->sysbase
 
-__AROS_LH1(struct dummybase *, open,
- __AROS_LHA(ULONG, version, D0),
+AROS_LH1(struct dummybase *, open,
+ AROS_LHA(ULONG, version, D0),
 	   struct dummybase *, dummybase, 1, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -157,12 +160,12 @@ __AROS_LH1(struct dummybase *, open,
 
     /* You would return NULL if the open failed. */
     return dummybase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, close, struct dummybase *, dummybase, 2, dummy)
+AROS_LH0(BPTR, close, struct dummybase *, dummybase, 2, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -178,12 +181,12 @@ __AROS_LH0(BPTR, close, struct dummybase *, dummybase, 2, dummy)
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
+AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -210,33 +213,33 @@ __AROS_LH0(BPTR, expunge, struct dummybase *, dummybase, 3, dummy)
 	    dummybase->library.lib_NegSize+dummybase->library.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
-__AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
+AROS_LH0I(int, null, struct dummybase *, dummybase, 4, dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH2I(ULONG, add,
-    __AROS_LHA(ULONG,a,D0),
-    __AROS_LHA(ULONG,b,D1),
+AROS_LH2I(ULONG, add,
+    AROS_LHA(ULONG,a,D0),
+    AROS_LHA(ULONG,b,D1),
     struct dummybase *,dummybase,5,dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return a+b;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH2I(ULONG, asl,
-    __AROS_LHA(ULONG,a,D0),
-    __AROS_LHA(ULONG,b,D1),
+AROS_LH2I(ULONG, asl,
+    AROS_LHA(ULONG,a,D0),
+    AROS_LHA(ULONG,b,D1),
     struct dummybase *,dummybase,6,dummy)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return a<<b;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 const char end=0;

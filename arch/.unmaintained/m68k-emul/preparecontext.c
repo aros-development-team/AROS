@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:28  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/08/01 17:41:32  digulla
     Added standard header for all files
 
@@ -15,12 +18,12 @@
 
     NAME */
 
-	__AROS_LH3I(APTR, PrepareContext,
+	AROS_LH3I(APTR, PrepareContext,
 
 /*  SYNOPSIS */
-	__AROS_LA(APTR, stackPointer, A0),
-	__AROS_LA(APTR, entryPoint,   A1),
-	__AROS_LA(APTR, fallBack,     A2),
+	AROS_LA(APTR, stackPointer, A0),
+	AROS_LA(APTR, entryPoint,   A1),
+	AROS_LA(APTR, fallBack,     A2),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 9, Exec)
@@ -58,7 +61,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     UBYTE *sp=(UBYTE *)stackPointer;
     int i;
 
@@ -83,5 +86,5 @@
     }
 
     return sp;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* PrepareContext */

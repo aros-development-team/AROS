@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:50:52  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/23 14:28:54  aros
     Use the respective macros to access and manipulate a libraries' jumptable
 
@@ -9,8 +12,8 @@
     Include <aros/machine.h> instead of machine.h
 
     Revision 1.4  1996/08/13 13:56:04  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:14  digulla
@@ -22,22 +25,21 @@
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <dos/dos.h>
-#include <aros/libcall.h>
-#include <aros/machine.h>
+#include <aros/asmcall.h>
 
 /*****************************************************************************
 
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH5(struct Library *, MakeLibrary,
+	AROS_LH5(struct Library *, MakeLibrary,
 
 /*  SYNOPSIS */
-	__AROS_LHA(APTR,       funcInit,   A0),
-	__AROS_LHA(APTR,       structInit, A1),
-	__AROS_LHA(ULONG_FUNC, libInit,    A2),
-	__AROS_LHA(ULONG,      dataSize,   D0),
-	__AROS_LHA(BPTR,       segList,    D1),
+	AROS_LHA(APTR,       funcInit,   A0),
+	AROS_LHA(APTR,       structInit, A1),
+	AROS_LHA(ULONG_FUNC, libInit,    A2),
+	AROS_LHA(ULONG,      dataSize,   D0),
+	AROS_LHA(BPTR,       segList,    D1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 14, Exec)
@@ -83,7 +85,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     struct Library *library;
     ULONG negsize=0;
@@ -134,15 +136,15 @@
 
 	/* Call init vector */
 	if(libInit!=NULL)
-	    library=__AROS_ABS_CALL3(struct Library *, libInit,
-		    library, D0,
-		    segList, A0,
-		    SysBase, A6
+	    library=AROS_UFC3(struct Library *, libInit,
+		AROS_UFCA(struct Library *,  library, D0),
+		AROS_UFCA(BPTR,              segList, A0),
+		AROS_UFCA(struct ExecBase *, SysBase, A6)
 	    );
     }
     /* All done */
     return library;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* MakeLibrary */
 

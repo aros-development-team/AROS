@@ -15,10 +15,10 @@ void driver_CloseFont (struct TextFont *, struct GfxBase *);
 	#include <graphics/text.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH1(void, CloseFont,
+	AROS_LH1(void, CloseFont,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TextFont *, textFont, A1),
+	AROS_LHA(struct TextFont *, textFont, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 13, Graphics)
@@ -45,12 +45,12 @@ void driver_CloseFont (struct TextFont *, struct GfxBase *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     textFont->tf_Accessors --;
 
     driver_CloseFont (textFont, GfxBase);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CloseFont */

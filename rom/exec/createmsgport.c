@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:50:46  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/08/01 17:41:08  digulla
     Added standard header for all files
 
@@ -18,7 +21,7 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH0(struct MsgPort *, CreateMsgPort,
+	AROS_LH0(struct MsgPort *, CreateMsgPort,
 
 /*  SYNOPSIS */
 
@@ -48,7 +51,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     struct MsgPort *ret;
 
@@ -84,6 +87,6 @@
     }
     /* function failed */
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CreateMsgPort */
 

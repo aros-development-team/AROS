@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:51:23  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.5  1996/10/15 15:45:31  digulla
     Two new functions: LockIBase() and UnlockIBase()
     Modified code to make sure that it is impossible to access illegal data (ie.
@@ -50,10 +53,10 @@ extern int intui_GetWindowSize (void);
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(struct Window *, OpenWindow,
+	AROS_LH1(struct Window *, OpenWindow,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct NewWindow *, newWindow, A0),
+	AROS_LHA(struct NewWindow *, newWindow, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 34, Intuition)
@@ -87,8 +90,8 @@ extern int intui_GetWindowSize (void);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct Window * w;
     struct RastPort * rp;
     ULONG lock;
@@ -183,5 +186,5 @@ failexit:
 
 exit:
     ReturnPtr ("OpenWindow", struct Window *, w);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OpenWindow */

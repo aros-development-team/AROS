@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/21 17:56:23  aros
     Two new functions
 
@@ -19,10 +22,10 @@ extern void intui_WindowToBack (struct Window * window);
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(void, WindowToBack,
+	AROS_LH1(void, WindowToBack,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Window *, window, A0),
+	AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 51, Intuition)
@@ -52,10 +55,10 @@ extern void intui_WindowToBack (struct Window * window);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     intui_WindowToBack (window);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* WindowToBack */

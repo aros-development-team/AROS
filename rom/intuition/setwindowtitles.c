@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/08/29 13:57:38  digulla
     Commented
     Moved common code from driver to Intuition
@@ -22,12 +25,12 @@ extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH3(void, SetWindowTitles,
+	AROS_LH3(void, SetWindowTitles,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Window *, window, A0),
-	__AROS_LHA(UBYTE         *, windowTitle, A1),
-	__AROS_LHA(UBYTE         *, screenTitle, A2),
+	AROS_LHA(struct Window *, window, A0),
+	AROS_LHA(UBYTE         *, windowTitle, A1),
+	AROS_LHA(UBYTE         *, screenTitle, A2),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 46, Intuition)
@@ -68,8 +71,8 @@ extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Call driver before changing the window to allow it to examine
 	the old values. */
@@ -87,5 +90,5 @@ extern void intui_SetWindowTitles (struct Window *, UBYTE *, UBYTE *);
     else if (screenTitle != (UBYTE *)~0L)
 	window->ScreenTitle = screenTitle;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetWindowTitles */

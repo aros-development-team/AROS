@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:38  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/22 04:46:01  aros
     Some more utility.library functions.
 
@@ -15,11 +18,11 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        __AROS_LH2(BOOL, TagInArray,
+        AROS_LH2(BOOL, TagInArray,
 
 /*  SYNOPSIS */
-        __AROS_LHA(Tag  , tagValue, D0),
-        __AROS_LHA(Tag *, tagArray, A0),
+        AROS_LHA(Tag  , tagValue, D0),
+        AROS_LHA(Tag *, tagArray, A0),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 15, Utility)
@@ -58,7 +61,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     while(*tagArray != TAG_DONE)
     {
@@ -68,5 +71,5 @@
     }
     return FALSE;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* TagInArray */

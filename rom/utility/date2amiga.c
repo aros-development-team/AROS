@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:35  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/31 12:58:12  aros
     Merged in/modified for FreeBSD.
 
@@ -14,10 +17,10 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        __AROS_LH1(ULONG, Date2Amiga,
+        AROS_LH1(ULONG, Date2Amiga,
 
 /*  SYNOPSIS */
-        __AROS_LHA(struct ClockData *, date, A0),
+        AROS_LHA(struct ClockData *, date, A0),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 21, Utility)
@@ -50,7 +53,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* This array contains the number of days that have been in the year
        up to the start of the month. Does not take into account leap years.
@@ -91,5 +94,5 @@
 
     return time;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Date2Amiga */

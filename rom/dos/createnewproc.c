@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/23 14:22:23  aros
     Use the systems' stacksize
 
@@ -46,10 +49,10 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH1(struct Process *, CreateNewProc,
+	AROS_LH1(struct Process *, CreateNewProc,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TagItem *, tags, D1),
+	AROS_LHA(struct TagItem *, tags, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 83, Dos)
@@ -79,8 +82,8 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Allocated resources */
     struct Process *process=NULL;
@@ -281,7 +284,7 @@ error:
 	FreeMem(process,sizeof(struct Process));
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CreateNewProc */
 
 static void KillCurrentProcess(void)

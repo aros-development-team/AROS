@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:29  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/13 17:50:07  digulla
     Use IPTR
 
@@ -21,12 +24,12 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(BOOL, Format,
+	AROS_LH3(BOOL, Format,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, devicename, D1),
-	__AROS_LHA(STRPTR, volumename, D2),
-	__AROS_LHA(ULONG,  dostype,    D3),
+	AROS_LHA(STRPTR, devicename, D1),
+	AROS_LHA(STRPTR, volumename, D2),
+	AROS_LHA(ULONG,  dostype,    D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 119, Dos)
@@ -53,8 +56,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -93,5 +96,5 @@
     /* All Done. */
     UnLockDosList(LDF_DEVICES|LDF_READ);
     return success;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Format */

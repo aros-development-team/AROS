@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:26  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/09/21 14:14:23  digulla
     Hand DOSBase to DoName()
 
@@ -31,7 +34,7 @@
 
 /* Needed for close() */
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
+AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
 
 struct DAList
 {

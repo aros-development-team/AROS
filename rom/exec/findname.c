@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:48  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/21 20:47:33  aros
     Changed struct SysBase to struct ExecBase
 
@@ -13,8 +16,8 @@
 	the list-header instead of NULL
 
     Revision 1.5  1996/08/13 13:56:01  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.4  1996/08/01 17:41:10  digulla
@@ -34,11 +37,11 @@
 	#include <exec/lists.h>
 	#include <clib/exec_protos.h>
 
-	__AROS_LH2I(struct Node *, FindName,
+	AROS_LH2I(struct Node *, FindName,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct List *, list, A0),
-	__AROS_LHA(UBYTE       *, name, A1),
+	AROS_LHA(struct List *, list, A0),
+	AROS_LHA(UBYTE       *, name, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 46, Exec)
@@ -77,7 +80,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct Node * node;
 
     assert (list);
@@ -97,6 +100,6 @@
 	empty or because we tried all nodes in the list)
     */
     return node;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FindName */
 

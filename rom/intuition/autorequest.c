@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:17  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/21 17:06:48  aros
     A couple of new functions
 
@@ -17,17 +20,17 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH8(BOOL, AutoRequest,
+	AROS_LH8(BOOL, AutoRequest,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Window    *, window, A0),
-	__AROS_LHA(struct IntuiText *, body, A1),
-	__AROS_LHA(struct IntuiText *, posText, A2),
-	__AROS_LHA(struct IntuiText *, negText, A3),
-	__AROS_LHA(unsigned long     , pFlag, D0),
-	__AROS_LHA(unsigned long     , nFlag, D1),
-	__AROS_LHA(unsigned long     , width, D2),
-	__AROS_LHA(unsigned long     , height, D3),
+	AROS_LHA(struct Window    *, window, A0),
+	AROS_LHA(struct IntuiText *, body, A1),
+	AROS_LHA(struct IntuiText *, posText, A2),
+	AROS_LHA(struct IntuiText *, negText, A3),
+	AROS_LHA(unsigned long     , pFlag, D0),
+	AROS_LHA(unsigned long     , nFlag, D1),
+	AROS_LHA(unsigned long     , width, D2),
+	AROS_LHA(unsigned long     , height, D3),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 58, Intuition)
@@ -54,10 +57,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     return FALSE; /* TODO */
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AutoRequest */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/10/23 16:30:09  aros
     Ooops.. PublicClassList is a MinNode list :-)
 
@@ -25,14 +28,14 @@
 	#include <intuition/classes.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH5(struct IClass *, MakeClass,
+	AROS_LH5(struct IClass *, MakeClass,
 
 /*  SYNOPSIS */
-	__AROS_LHA(UBYTE         *, classID, A0),
-	__AROS_LHA(UBYTE         *, superClassID, A1),
-	__AROS_LHA(struct IClass *, superClassPtr, A2),
-	__AROS_LHA(unsigned long  , instanceSize, D0),
-	__AROS_LHA(unsigned long  , flags, D1),
+	AROS_LHA(UBYTE         *, classID, A0),
+	AROS_LHA(UBYTE         *, superClassID, A1),
+	AROS_LHA(struct IClass *, superClassPtr, A2),
+	AROS_LHA(unsigned long  , instanceSize, D0),
+	AROS_LHA(unsigned long  , flags, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 113, Intuition)
@@ -92,8 +95,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     Class * iclass;
 
     /* trust the user ;-) */
@@ -137,5 +140,5 @@
     }
 
     return (iclass);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* MakeClass */

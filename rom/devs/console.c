@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:21  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/11 16:54:19  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
     	some systems name an external symbol "x" as "_x" and others as "x".
     	(The problem arises with assembler symbols which might differ)
 
@@ -29,19 +32,19 @@ static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
 
-struct consolebase *__AROS_SLIB_ENTRY(init,Console)();
-void __AROS_SLIB_ENTRY(open,Console)();
-BPTR __AROS_SLIB_ENTRY(close,Console)();
-BPTR __AROS_SLIB_ENTRY(expunge,Console)();
-int __AROS_SLIB_ENTRY(null,Console)();
-void __AROS_SLIB_ENTRY(beginio,Console)();
-LONG __AROS_SLIB_ENTRY(abortio,Console)();
+struct consolebase *AROS_SLIB_ENTRY(init,Console)();
+void AROS_SLIB_ENTRY(open,Console)();
+BPTR AROS_SLIB_ENTRY(close,Console)();
+BPTR AROS_SLIB_ENTRY(expunge,Console)();
+int AROS_SLIB_ENTRY(null,Console)();
+void AROS_SLIB_ENTRY(beginio,Console)();
+LONG AROS_SLIB_ENTRY(abortio,Console)();
 
-extern struct InputEvent * __AROS_SLIB_ENTRY(CDInputHandler,Console) ();
-extern LONG __AROS_SLIB_ENTRY(RawKeyConvert,Console) ();
+extern struct InputEvent * AROS_SLIB_ENTRY(CDInputHandler,Console) ();
+extern LONG AROS_SLIB_ENTRY(RawKeyConvert,Console) ();
 static const char end;
 
-int __AROS_SLIB_ENTRY(entry,Console)(void)
+int AROS_SLIB_ENTRY(entry,Console)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
@@ -70,28 +73,28 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct consolebase),
     (APTR)functable,
     (APTR)&datatable,
-    &__AROS_SLIB_ENTRY(init,Console)
+    &AROS_SLIB_ENTRY(init,Console)
 };
 
 static void *const functable[]=
 {
-    &__AROS_SLIB_ENTRY(open,Console),
-    &__AROS_SLIB_ENTRY(close,Console),
-    &__AROS_SLIB_ENTRY(expunge,Console),
-    &__AROS_SLIB_ENTRY(null,Console),
-    &__AROS_SLIB_ENTRY(beginio,Console),
-    &__AROS_SLIB_ENTRY(abortio,Console),
-    &__AROS_SLIB_ENTRY(CDInputHandler,Console),
-    &__AROS_SLIB_ENTRY(RawKeyConvert,Console),
+    &AROS_SLIB_ENTRY(open,Console),
+    &AROS_SLIB_ENTRY(close,Console),
+    &AROS_SLIB_ENTRY(expunge,Console),
+    &AROS_SLIB_ENTRY(null,Console),
+    &AROS_SLIB_ENTRY(beginio,Console),
+    &AROS_SLIB_ENTRY(abortio,Console),
+    &AROS_SLIB_ENTRY(CDInputHandler,Console),
+    &AROS_SLIB_ENTRY(RawKeyConvert,Console),
     (void *)-1
 };
 
-__AROS_LH2(struct consolebase *, init,
- __AROS_LHA(struct consolebase *, consoleDevice, D0),
- __AROS_LHA(BPTR,              segList,   A0),
+AROS_LH2(struct consolebase *, init,
+ AROS_LHA(struct consolebase *, consoleDevice, D0),
+ AROS_LHA(BPTR,              segList,   A0),
 	   struct ExecBase *, sysBase, 0, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Store arguments */
     consoleDevice->sysBase = sysBase;
@@ -100,16 +103,16 @@ __AROS_LH2(struct consolebase *, init,
     consoleDevice->device.dd_Library.lib_OpenCnt=1;
 
     return consoleDevice;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH3(void, open,
- __AROS_LHA(struct IORequest *, ioreq, A1),
- __AROS_LHA(ULONG,              unitnum, D0),
- __AROS_LHA(ULONG,              flags, D0),
+AROS_LH3(void, open,
+ AROS_LHA(struct IORequest *, ioreq, A1),
+ AROS_LHA(ULONG,              unitnum, D0),
+ AROS_LHA(ULONG,              flags, D0),
 	   struct consolebase *, ConsoleDevice, 1, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Keep compiler happy */
     unitnum=0;
@@ -118,43 +121,43 @@ __AROS_LH3(void, open,
     /* I have one more opener. */
     ConsoleDevice->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LHA(struct IORequest *, ioreq, A1),
+AROS_LH1(BPTR, close,
+ AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct consolebase *, ConsoleDevice, 2, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Let any following attemps to use the device crash hard. */
     ioreq->io_Device=(struct Device *)-1;
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct consolebase *, ConsoleDevice, 3, Console)
+AROS_LH0(BPTR, expunge, struct consolebase *, ConsoleDevice, 3, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Do not expunge the device. Set the delayed expunge flag and return. */
     ConsoleDevice->device.dd_Library.lib_Flags|=LIBF_DELEXP;
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null, struct consolebase *, ConsoleDevice, 4, Console)
+AROS_LH0I(int, null, struct consolebase *, ConsoleDevice, 4, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LHA(struct IORequest *, ioreq, A1),
+AROS_LH1(void, beginio,
+ AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct consolebase *, ConsoleDevice, 5, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     LONG error=0;
 
     /* WaitIO will look into this */
@@ -184,17 +187,17 @@ __AROS_LH1(void, beginio,
 	Switch();
     }
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(LONG, abortio,
- __AROS_LHA(struct IORequest *, ioreq, A1),
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IORequest *, ioreq, A1),
 	   struct consolebase *, ConsoleDevice, 6, Console)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* Everything already done. */
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 static const char end=0;

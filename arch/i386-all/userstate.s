@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/10/24 15:51:13  aros
+#    Use the official AROS macros over the __AROS versions.
+#
 #    Revision 1.5  1996/09/11 16:54:30  digulla
 #    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
 #    	some systems name an external symbol "x" as "_x" and others as "x".
@@ -22,7 +25,7 @@
 #*****************************************************************************
 #
 #   NAME
-#	__AROS_LH0(void, UserState,
+#	AROS_LH0(void, UserState,
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 26, Exec)

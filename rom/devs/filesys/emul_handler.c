@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.15  1996/10/24 15:51:01  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.14  1996/10/23 14:21:32  aros
     Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
     which not.
@@ -22,7 +25,7 @@
     Define FreeBSD should have been __FreeBSD__ (sorry my fault).
 
     Revision 1.8  1996/09/11 16:54:24  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
 	some systems name an external symbol "x" as "_x" and others as "x".
 	(The problem arises with assembler symbols which might differ)
 
@@ -41,7 +44,7 @@
 	fix is a very bad hack :(
 
     Revision 1.3  1996/08/13 15:35:07  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:22  digulla
     Added standard header for all files
@@ -82,13 +85,13 @@ static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
 
-struct emulbase * __AROS_SLIB_ENTRY(init,emul_handler) ();
-void __AROS_SLIB_ENTRY(open,emul_handler) ();
-BPTR __AROS_SLIB_ENTRY(close,emul_handler) ();
-BPTR __AROS_SLIB_ENTRY(expunge,emul_handler) ();
-int __AROS_SLIB_ENTRY(null,emul_handler) ();
-void __AROS_SLIB_ENTRY(beginio,emul_handler) ();
-LONG __AROS_SLIB_ENTRY(abortio,emul_handler) ();
+struct emulbase * AROS_SLIB_ENTRY(init,emul_handler) ();
+void AROS_SLIB_ENTRY(open,emul_handler) ();
+BPTR AROS_SLIB_ENTRY(close,emul_handler) ();
+BPTR AROS_SLIB_ENTRY(expunge,emul_handler) ();
+int AROS_SLIB_ENTRY(null,emul_handler) ();
+void AROS_SLIB_ENTRY(beginio,emul_handler) ();
+LONG AROS_SLIB_ENTRY(abortio,emul_handler) ();
 
 static const char end;
 
@@ -130,17 +133,17 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct emulbase),
     (APTR)functable,
     (APTR)&datatable,
-    &__AROS_SLIB_ENTRY(init,emul_handler)
+    &AROS_SLIB_ENTRY(init,emul_handler)
 };
 
 static void *const functable[]=
 {
-    &__AROS_SLIB_ENTRY(open,emul_handler),
-    &__AROS_SLIB_ENTRY(close,emul_handler),
-    &__AROS_SLIB_ENTRY(expunge,emul_handler),
-    &__AROS_SLIB_ENTRY(null,emul_handler),
-    &__AROS_SLIB_ENTRY(beginio,emul_handler),
-    &__AROS_SLIB_ENTRY(abortio,emul_handler),
+    &AROS_SLIB_ENTRY(open,emul_handler),
+    &AROS_SLIB_ENTRY(close,emul_handler),
+    &AROS_SLIB_ENTRY(expunge,emul_handler),
+    &AROS_SLIB_ENTRY(null,emul_handler),
+    &AROS_SLIB_ENTRY(beginio,emul_handler),
+    &AROS_SLIB_ENTRY(abortio,emul_handler),
     (void *)-1
 };
 
@@ -504,12 +507,12 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
     return error;
 }
 
-__AROS_LH2(struct emulbase *, init,
- __AROS_LHA(struct emulbase *, emulbase, D0),
- __AROS_LHA(BPTR,              segList,   A0),
+AROS_LH2(struct emulbase *, init,
+ AROS_LHA(struct emulbase *, emulbase, D0),
+ AROS_LHA(BPTR,              segList,   A0),
 	   struct ExecBase *, sysBase, 0, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Store arguments */
     emulbase->sysbase=sysBase;
@@ -531,16 +534,16 @@ __AROS_LH2(struct emulbase *, init,
     }
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH3(void, open,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
- __AROS_LHA(ULONG,              unitnum, D0),
- __AROS_LHA(ULONG,              flags, D0),
+AROS_LH3(void, open,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
+ AROS_LHA(ULONG,              unitnum, D0),
+ AROS_LHA(ULONG,              flags, D0),
 	   struct emulbase *, emulbase, 1, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Keep compiler happy */
     unitnum=0;
@@ -554,43 +557,43 @@ __AROS_LH3(void, open,
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(BPTR, close,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 2, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Let any following attemps to use the device crash hard. */
     iofs->IOFS.io_Device=(struct Device *)-1;
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
+AROS_LH0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Do not expunge the device. Set the delayed expunge flag and return. */
     emulbase->device.dd_Library.lib_Flags|=LIBF_DELEXP;
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
+AROS_LH0I(int, null, struct emulbase *, emulbase, 4, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(void, beginio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 5, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     LONG error=0;
 
     /* WaitIO will look into this */
@@ -717,17 +720,17 @@ __AROS_LH1(void, beginio,
     if(!(iofs->IOFS.io_Flags&IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(LONG, abortio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct emulbase *, emulbase, 6, emul_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* Everything already done. */
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 static const char end=0;

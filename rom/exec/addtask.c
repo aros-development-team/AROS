@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:42  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/23 14:21:23  aros
     Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
     which not.
@@ -10,7 +13,7 @@
     Include <aros/machine.h> instead of machine.h
 
     Revision 1.6  1996/09/11 16:54:23  digulla
-    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
 	some systems name an external symbol "x" as "_x" and others as "x".
 	(The problem arises with assembler symbols which might differ)
 
@@ -18,8 +21,8 @@
     Added debug output
 
     Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:03  digulla
@@ -43,19 +46,19 @@
 #include <aros/debug.h>
 
 static void KillCurrentTask(void);
-void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
+void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
 /*****************************************************************************
 
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH3(APTR, AddTask,
+	AROS_LH3(APTR, AddTask,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Task *,     task,      A1),
-	__AROS_LHA(APTR,              initialPC, A2),
-	__AROS_LHA(APTR,              finalPC,   A3),
+	AROS_LHA(struct Task *,     task,      A1),
+	AROS_LHA(APTR,              initialPC, A2),
+	AROS_LHA(APTR,              finalPC,   A3),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 47, Exec)
@@ -96,7 +99,7 @@ void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     APTR sp;
 
     D(bug("Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
@@ -123,7 +126,7 @@ void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
     /* Currently only used for segmentation violation */
     if(task->tc_TrapCode==NULL)
-	task->tc_TrapCode=&__AROS_SLIB_ENTRY(TrapHandler,Exec);
+	task->tc_TrapCode=&AROS_SLIB_ENTRY(TrapHandler,Exec);
 
     /* Get new stackpointer. */
     sp=task->tc_SPReg;
@@ -191,7 +194,7 @@ void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     Enable();
 
     ReturnPtr ("AddTask", struct Task *, task);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AddTask */
 
 /* Default finalizer. */

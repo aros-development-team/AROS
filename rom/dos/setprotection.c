@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:37  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/21 14:14:24  digulla
     Hand DOSBase to DoName()
 
@@ -22,11 +25,11 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH2(BOOL, SetProtection,
+	AROS_LH2(BOOL, SetProtection,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, name,    D1),
-	__AROS_LHA(ULONG,  protect, D2),
+	AROS_LHA(STRPTR, name,    D1),
+	AROS_LHA(ULONG,  protect, D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 31, Dos)
@@ -57,8 +60,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
     struct Process *me=(struct Process *)FindTask(NULL);
@@ -75,5 +78,5 @@
     /* io_Args[0] is the name which is set by DoName(). */
     iofs->io_Args[1]=protect;
     return !DoName(iofs,name,DOSBase);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetProtection */

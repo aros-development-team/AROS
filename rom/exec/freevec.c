@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:50:50  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/23 14:13:44  aros
     Use AROS_ALIGN() to align pointers
 
@@ -9,8 +12,8 @@
     Include <aros/machine.h> instead of machine.h
 
     Revision 1.4  1996/08/13 13:56:03  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:12  digulla
@@ -29,10 +32,10 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH1(void, FreeVec,
+	AROS_LH1(void, FreeVec,
 
 /*  SYNOPSIS */
-	__AROS_LHA(APTR, memoryBlock, A1),
+	AROS_LHA(APTR, memoryBlock, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 115, Exec)
@@ -61,7 +64,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* If there's nothing to free do nothing. */
     if (memoryBlock != NULL)
@@ -69,5 +72,5 @@
 	*(UBYTE **)&memoryBlock -= AROS_ALIGN(sizeof(ULONG));
 	FreeMem (memoryBlock, *((ULONG *)memoryBlock));
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeVec */

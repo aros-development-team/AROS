@@ -12,10 +12,10 @@
 	#include <utility/tagitem.h>
 	#include <clib/utility_protos.h>
 
-	__AROS_LH1(struct TagItem *, NextTagItem,
+	AROS_LH1(struct TagItem *, NextTagItem,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TagItem **, tagListPtr, A0),
+	AROS_LHA(struct TagItem **, tagListPtr, A0),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 8, Utility)
@@ -59,8 +59,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct Library *,UtilityBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct Library *,UtilityBase)
 
     while (TRUE)
     {
@@ -89,5 +89,5 @@
 	(*tagListPtr) ++;
     }
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* NextTagItem */

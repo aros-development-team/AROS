@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:01  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/08/13 15:35:07  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:23  digulla
     Added standard header for all files
@@ -85,12 +88,12 @@ static void *const functable[]=
     (void *)-1
 };
 
-__AROS_LH2(struct nilbase *, init,
- __AROS_LHA(struct nilbase *, nilbase, D0),
- __AROS_LHA(BPTR,             segList, A0),
+AROS_LH2(struct nilbase *, init,
+ AROS_LHA(struct nilbase *, nilbase, D0),
+ AROS_LHA(BPTR,             segList, A0),
 	   struct ExecBase *, sysBase, 0, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Store arguments */
     nilbase->sysbase=sysBase;
@@ -100,16 +103,16 @@ __AROS_LH2(struct nilbase *, init,
 	return nilbase;
 
     return NULL;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH3(void, open,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
- __AROS_LHA(ULONG,              unitnum, D0),
- __AROS_LHA(ULONG,              flags, D0),
+AROS_LH3(void, open,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
+ AROS_LHA(ULONG,              unitnum, D0),
+ AROS_LHA(ULONG,              flags, D0),
 	   struct nilbase *, nilbase, 1, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Keep compiler happy */
     unitnum=0;
@@ -124,14 +127,14 @@ __AROS_LH3(void, open,
 
     /* Mark Message as recently used. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(BPTR, close,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(BPTR, close,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct nilbase *, nilbase, 2, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Let any following attemps to use the device crash hard. */
     iofs->IOFS.io_Device=(struct Device *)-1;
@@ -145,12 +148,12 @@ __AROS_LH1(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
+AROS_LH0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     BPTR ret;
     /*
@@ -180,21 +183,21 @@ __AROS_LH0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
 	    nilbase->device.dd_Library.lib_NegSize+nilbase->device.dd_Library.lib_PosSize);
 
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null, struct nilbase *, nilbase, 4, nil_handler)
+AROS_LH0I(int, null, struct nilbase *, nilbase, 4, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void, beginio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(void, beginio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct nilbase *, nilbase, 5, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     LONG error=0;
     struct device *dev;
     struct DosList *dl;
@@ -297,17 +300,17 @@ __AROS_LH1(void, beginio,
     if(!(iofs->IOFS.io_Flags&IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(LONG, abortio,
- __AROS_LHA(struct IOFileSys *, iofs, A1),
+AROS_LH1(LONG, abortio,
+ AROS_LHA(struct IOFileSys *, iofs, A1),
 	   struct nilbase *, nilbase, 6, nil_handler)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     /* Everything already done. */
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 static const char end=0;

@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:58  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/08/13 13:56:09  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:21  digulla
@@ -22,10 +25,10 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH1(ULONG, TypeOfMem,
+	AROS_LH1(ULONG, TypeOfMem,
 
 /*  SYNOPSIS */
-	__AROS_LHA(APTR, address, A1),
+	AROS_LHA(APTR, address, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 89, Exec)
@@ -55,7 +58,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     ULONG ret=0;
     struct MemHeader *mh;
@@ -80,6 +83,6 @@
     /* Allow Taskswitches and return */
     Permit();
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* TypeOfMem */
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:50:33  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/10/10 13:21:22  digulla
     Returns ULONG instead of BPTR (Fleischer)
 
@@ -20,7 +23,7 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH0(ULONG, MaxCli,
+	AROS_LH0(ULONG, MaxCli,
 
 /*  SYNOPSIS */
 
@@ -53,9 +56,9 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
     return DOSBase->dl_ProcCnt-1;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* MaxCli */

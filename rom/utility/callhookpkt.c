@@ -12,12 +12,12 @@
 	#include <utility/hooks.h>
 	#include <clib/utility_protos.h>
 
-	__AROS_LH3(ULONG, CallHookPkt,
+	AROS_LH3(ULONG, CallHookPkt,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Hook *, hook, A0),
-	__AROS_LHA(APTR         , object, A2),
-	__AROS_LHA(APTR         , paramPacket, A1),
+	AROS_LHA(struct Hook *, hook, A0),
+	AROS_LHA(APTR         , object, A2),
+	AROS_LHA(APTR         , paramPacket, A1),
 
 /*  LOCATION */
 	struct Library *, UtilityBase, 17, Utility)
@@ -44,10 +44,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct Library *,UtilityBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct Library *,UtilityBase)
 
     return ((*(hook->h_Entry)) (hook, object, paramPacket));
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CallHookPkt */

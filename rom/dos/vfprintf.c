@@ -2,12 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:38  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/09/13 17:50:09  digulla
     Use IPTR
 
     Revision 1.3  1996/08/13 13:52:52  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:40:59  digulla
     Added standard header for all files
@@ -19,11 +22,15 @@
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <clib/dos_protos.h>
+#include <aros/asmcall.h>
 #include "dos_intern.h"
 
-__RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
+AROS_UFH2(void,vfp_hook,
+    AROS_UFHA(UBYTE,        chr, D0),
+    AROS_UFHA(struct vfp *, vfp, A3)
+)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     if(vfp->count>=0)
     {
@@ -34,7 +41,7 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
 	}
 	vfp->count++;
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 /*****************************************************************************
@@ -42,12 +49,12 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(LONG, VFPrintf,
+	AROS_LH3(LONG, VFPrintf,
 
 /*  SYNOPSIS */
-	__AROS_LHA(BPTR,   file,     D1),
-	__AROS_LHA(STRPTR, format,   D2),
-	__AROS_LHA(IPTR *, argarray, D3),
+	AROS_LHA(BPTR,   file,     D1),
+	AROS_LHA(STRPTR, format,   D2),
+	AROS_LHA(IPTR *, argarray, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 59, Dos)
@@ -74,15 +81,19 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct vfp vfp;
 
     vfp.file=file;
     vfp.count=0;
 
-    (void)RawDoFmt(format,argarray,(VOID_FUNC)vfp_hook,&vfp);
+    (void) RawDoFmt (format,
+	argarray,
+	(VOID_FUNC)AROS_ASMFUNC_NAME(vfp_hook),
+	&vfp
+    );
 
     /* Remove the last character (which is a NUL character) */
     if(vfp.count>0)
@@ -91,5 +102,5 @@ __RA2(void,vfp_hook,UBYTE,chr,D0,struct vfp*,vfp,A3)
 	((struct FileHandle *)BADDR(file))->fh_Pos--;
     }
     return vfp.count;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* VFPrintf */

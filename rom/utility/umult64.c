@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:39  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/31 12:58:14  aros
     Merged in/modified for FreeBSD.
 
@@ -14,11 +17,11 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        __AROS_LH2(ULONG, UMult64,
+        AROS_LH2(ULONG, UMult64,
 
 /*  SYNOPSIS */
-        __AROS_LHA(unsigned long, arg1, D0),
-        __AROS_LHA(unsigned long, arg2, D1),
+        AROS_LHA(unsigned long, arg1, D0),
+        AROS_LHA(unsigned long, arg2, D1),
 
 /*  LOCATION */
         struct UtilityBase *, UtilityBase, 34, Utility)
@@ -56,7 +59,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
 #ifdef HAS_64BITMULU
     return arg1 * arg2;
@@ -79,5 +82,5 @@
     product += (((a1 * b0) + (a0 * b1)) << 16) + (a0 * b0);
     return product;
 #endif
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* UMult64 */

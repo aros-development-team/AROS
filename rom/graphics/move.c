@@ -15,12 +15,12 @@ void driver_Move (struct RastPort *, long, long, struct GfxBase *);
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH3(void, Move,
+	AROS_LH3(void, Move,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A1),
-	__AROS_LHA(long             , x, D0),
-	__AROS_LHA(long             , y, D1),
+	AROS_LHA(struct RastPort *, rp, A1),
+	AROS_LHA(long             , x, D0),
+	AROS_LHA(long             , y, D1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 40, Graphics)
@@ -47,13 +47,13 @@ void driver_Move (struct RastPort *, long, long, struct GfxBase *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     driver_Move (rp, x, y, GfxBase);
 
     rp->cp_x = x;
     rp->cp_y = y;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Move */

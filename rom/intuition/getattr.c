@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:19  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/28 17:55:34  digulla
     Proportional gadgets
     BOOPSI
@@ -19,12 +22,12 @@
 	#include <intuition/classusr.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH3(ULONG, GetAttr,
+	AROS_LH3(ULONG, GetAttr,
 
 /*  SYNOPSIS */
-	__AROS_LHA(unsigned long, attrID, D0),
-	__AROS_LHA(APTR         , object, A0),
-	__AROS_LHA(ULONG       *, storagePtr, A1),
+	AROS_LHA(unsigned long, attrID, D0),
+	AROS_LHA(APTR         , object, A0),
+	AROS_LHA(ULONG       *, storagePtr, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 109, Intuition)
@@ -69,8 +72,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct opGet get;
 
     get.MethodID    = OM_GET;
@@ -78,5 +81,5 @@
     get.opg_Storage = storagePtr;
 
     return (DoMethodA (object, (Msg)&get));
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetAttr */

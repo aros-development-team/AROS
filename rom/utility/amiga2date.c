@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:34  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/31 12:58:11  aros
     Merged in/modified for FreeBSD.
 
@@ -14,11 +17,11 @@
     NAME */
         #include <clib/utility_protos.h>
 
-        __AROS_LH2(void, Amiga2Date,
+        AROS_LH2(void, Amiga2Date,
 
 /*  SYNOPSIS */
-        __AROS_LHA(unsigned long     , seconds, D0),
-        __AROS_LHA(struct ClockData *, result, A0),
+        AROS_LHA(unsigned long     , seconds, D0),
+        AROS_LHA(struct ClockData *, result, A0),
 
 /*  LOCATION */
         struct Library *, UtilityBase, 20, Utility)
@@ -68,7 +71,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     static const ULONG dim[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
     ULONG days, temp, leap;
@@ -113,6 +116,6 @@
     result->month = temp;
     result->mday = days + 1;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 
 } /* Amiga2Date */

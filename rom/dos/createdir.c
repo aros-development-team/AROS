@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/21 14:14:22  digulla
     Hand DOSBase to DoName()
 
@@ -25,10 +28,10 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH1(BPTR, CreateDir,
+	AROS_LH1(BPTR, CreateDir,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, name, D1),
+	AROS_LHA(STRPTR, name, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 20, Dos)
@@ -60,8 +63,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     struct FileHandle *ret;
 
@@ -93,5 +96,5 @@
     }else
 	me->pr_Result2=ERROR_NO_FREE_STORE;
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CreateDir */

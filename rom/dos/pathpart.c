@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:34  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/21 17:43:11  aros
     A new function
 
@@ -11,11 +14,11 @@
 #ifndef TEST
 #include "dos_intern.h"
 #else
-#define __AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
-#define __AROS_LHA(t,n,r)                   t n
-#define __AROS_FUNC_INIT
-#define __AROS_BASE_EXT_DECL(bt,bn)
-#define __AROS_FUNC_EXIT
+#define AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
+#define AROS_LHA(t,n,r)                   t n
+#define AROS_LIBFUNC_INIT
+#define AROS_LIBBASE_EXT_DECL(bt,bn)
+#define AROS_LIBFUNC_EXIT
 #define CLIB_DOS_PROTOS_H
 #include <exec/types.h>
 #endif
@@ -25,10 +28,10 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH1(STRPTR, PathPart,
+	AROS_LH1(STRPTR, PathPart,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, path, D1),
+	AROS_LHA(STRPTR, path, D1),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 146, Dos)
@@ -61,8 +64,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     char * ptr;
 
     ptr = path;
@@ -81,7 +84,7 @@
     }
 
     return path;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* PathPart */
 
 #ifdef TEST

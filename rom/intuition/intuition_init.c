@@ -25,13 +25,14 @@
 #   include <utility/hooks.h>
 #endif
 #include <utility/utility.h>
+#include <aros/asmcall.h>
 #include "intuition_intern.h"
 
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Intuition_functable[];
-struct IntuitionBase *__AROS_SLIB_ENTRY(init,Intuition) ();
+struct IntuitionBase *AROS_SLIB_ENTRY(init,Intuition) ();
 extern const char Intuition_end;
 
 extern int  intui_init (struct IntuitionBase *);
@@ -39,10 +40,11 @@ extern int  intui_open (struct IntuitionBase *);
 extern void intui_close (struct IntuitionBase *);
 extern void intui_expunge (struct IntuitionBase *);
 
-__RA3(static ULONG, rootDispatcher,
-    Class *, cl, A0,
-    Object *, obj, A2,
-    Msg, msg, A1);
+AROS_UFP3(static ULONG, rootDispatcher,
+    AROS_UFPA(Class *,  cl,  A0),
+    AROS_UFPA(Object *, obj, A2),
+    AROS_UFPA(Msg,      msg, A1)
+);
 
 /* There has to be a better way... */
 struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase);
@@ -76,12 +78,12 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct IntIntuitionBase),
     (APTR)Intuition_functable,
     NULL,
-    &__AROS_SLIB_ENTRY(init,Intuition)
+    &AROS_SLIB_ENTRY(init,Intuition)
 };
 
 static Class rootclass =
 {
-    { { NULL, NULL }, rootDispatcher, NULL, NULL },
+    { { NULL, NULL }, AROS_ASMFUNC_NAME(rootDispatcher), NULL, NULL },
     0,		/* reserved */
     NULL,	/* No superclass */
     (ClassID)ROOTCLASS,  /* ClassID */
@@ -98,12 +100,12 @@ void intui_ProcessEvents (void);
 
 struct Process * inputDevice;
 
-__AROS_LH2(struct IntuitionBase *, init,
- __AROS_LHA(struct IntuitionBase *, IntuitionBase, D0),
- __AROS_LHA(BPTR,               segList,   A0),
+AROS_LH2(struct IntuitionBase *, init,
+ AROS_LHA(struct IntuitionBase *, IntuitionBase, D0),
+ AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Intuition)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct TagItem inputTask[]=
     {
 	{ NP_UserData,	0L },
@@ -144,14 +146,14 @@ __AROS_LH2(struct IntuitionBase *, init,
 
     /* You would return NULL if the init failed */
     return IntuitionBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(struct IntuitionBase *, open,
- __AROS_LHA(ULONG, version, D0),
+AROS_LH1(struct IntuitionBase *, open,
+ AROS_LHA(ULONG, version, D0),
 	   struct IntuitionBase *, IntuitionBase, 1, Intuition)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct TagItem screenTags[] =
     {
 	{ SA_Depth, 4			},
@@ -198,13 +200,13 @@ __AROS_LH1(struct IntuitionBase *, open,
 
     /* You would return NULL if the open failed. */
     return IntuitionBase;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, close,
+AROS_LH0(BPTR, close,
 	   struct IntuitionBase *, IntuitionBase, 2, Intuition)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
     if(!--IntuitionBase->LibNode.lib_OpenCnt)
@@ -217,13 +219,13 @@ __AROS_LH0(BPTR, close,
 	    return expunge();
     }
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0(BPTR, expunge,
+AROS_LH0(BPTR, expunge,
 	   struct IntuitionBase *, IntuitionBase, 3, Intuition)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Test for openers. */
     if(IntuitionBase->LibNode.lib_OpenCnt)
@@ -258,15 +260,15 @@ __AROS_LH0(BPTR, expunge,
 #endif
 
     return 0L;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH0I(int, null,
+AROS_LH0I(int, null,
 	    struct IntuitionBase *, IntuitionBase, 4, Intuition)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 #undef IntuitionBase
@@ -275,12 +277,12 @@ __AROS_LH0I(int, null,
 /******************************************************************************
 
     NAME */
-	__RA3(static IPTR, rootDispatcher,
+	AROS_UFH3(static IPTR, rootDispatcher,
 
 /*  SYNOPSIS */
-	Class  *, cl,  A0,
-	Object *, o,   A2,
-	Msg,	  msg, A1)
+	AROS_UFHA(Class  *, cl,  A0),
+	AROS_UFHA(Object *, o,   A2),
+	AROS_UFHA(Msg,      msg, A1))
 
 /*  FUNCTION
 	internal !
@@ -313,6 +315,7 @@ __AROS_LH0I(int, null,
 
 ******************************************************************************/
 {
+    AROS_USERFUNC_INIT
     IPTR retval = 0;
 
     switch (msg->MethodID)
@@ -359,6 +362,7 @@ __AROS_LH0I(int, null,
     } /* switch */
 
     return (retval);
+    AROS_USERFUNC_EXIT
 } /* rootDispatcher */
 
 

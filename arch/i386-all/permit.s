@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.7  1996/10/24 15:51:12  aros
+#    Use the official AROS macros over the __AROS versions.
+#
 #    Revision 1.6  1996/10/23 08:04:25  aros
 #    Use generated offsets which makes porting much easier
 #
@@ -25,7 +28,7 @@
 #*****************************************************************************
 #
 #   NAME
-#	__AROS_LH0(void, Permit,
+#	AROS_LH0(void, Permit,
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 23, Exec)

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:21  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/08/23 17:32:23  digulla
     Implementation of the console.device
 
@@ -17,11 +20,11 @@
 	#include <devices/inputevent.h>
 	#include <clib/console_protos.h>
 
-	__AROS_LH2(struct InputEvent *, CDInputHandler,
+	AROS_LH2(struct InputEvent *, CDInputHandler,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct InputEvent *, events, A0),
-	__AROS_LHA(struct Library    *, consoleDevice, A1),
+	AROS_LHA(struct InputEvent *, events, A0),
+	AROS_LHA(struct Library    *, consoleDevice, A1),
 
 /*  LOCATION */
 	struct Library *, ConsoleDevice, 7, Console)
@@ -48,10 +51,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct Library *,ConsoleDevice)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
 
     return NULL;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CDInputHandler */

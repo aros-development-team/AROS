@@ -26,6 +26,8 @@
 #include <graphics/rastport.h>
 #include <ctype.h>
 #include <aros/rt.h>
+#include <intuition/classusr.h>
+#include <intuition/imageclass.h>
 
 #if 1
 #   define D(x)    x
@@ -37,6 +39,7 @@
 struct Library *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
+Object * image;
 
 void Refresh (struct RastPort * rp)
 {
@@ -88,6 +91,9 @@ void Refresh (struct RastPort * rp)
 
     Move (rp, 20, 350);
     Text (rp, "Press \"Complement\" to flip PropGadgets", 39);
+
+    if (image)
+	DrawImageState (rp, (struct Image *)image, 10, 10, IDS_NORMAL, NULL);
 
     tend = 10;
     t = 0;
@@ -520,6 +526,14 @@ int main (int argc, char ** argv)
     DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
     DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
 
+    image = NewObject (NULL, IMAGECLASS
+	, SYSIA_Which, DOWNIMAGE
+	, TAG_END
+    );
+
+    if (!image)
+	bug("Warning: Couldn't create image\n");
+
     cont = 1;
     draw = 0;
     prop = 0;
@@ -860,6 +874,9 @@ int main (int argc, char ** argv)
     CloseWindow (win);
 
 end:
+    if (image)
+	DisposeObject (image);
+
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
 

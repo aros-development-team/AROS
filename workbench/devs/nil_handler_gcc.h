@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:50:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/10/19 17:03:56  aros
     Wrong #define to protect the file
 
@@ -30,7 +33,7 @@ struct nilbase
 };
 
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
+AROS_LC0(BPTR, expunge, struct nilbase *, nilbase, 3, nil_handler)
 
 #ifdef SysBase
     #undef SysBase

@@ -2,11 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:51:38  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/09/13 17:33:30  digulla
     Use the ToLower function instead of the macro
 
     Revision 1.3  1996/08/13 14:10:31  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:41  digulla
     Added standard header for all files
@@ -23,11 +26,11 @@
     NAME */
 	#include <clib/utility_protos.h>
 
-	__AROS_LH2(LONG, Stricmp,
+	AROS_LH2(LONG, Stricmp,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, string1, A0),
-	__AROS_LHA(STRPTR, string2, A1),
+	AROS_LHA(STRPTR, string1, A0),
+	AROS_LHA(STRPTR, string2, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 27, Utility)
@@ -58,7 +61,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     UBYTE c1, c2;
 
     /* Loop as long as the strings are identical and valid. */
@@ -71,5 +74,5 @@
 
     /* Get result. */
     return (LONG)c1-(LONG)c2;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Stricmp */

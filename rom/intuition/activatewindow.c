@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:17  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/08/29 13:33:30  digulla
     Moved common code from driver to Intuition
     More docs
@@ -22,10 +25,10 @@ extern intui_ActivateWindow (struct Window *);
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(void, ActivateWindow,
+	AROS_LH1(void, ActivateWindow,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Window *, window, A0),
+	AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 75, Intuition)
@@ -64,8 +67,8 @@ extern intui_ActivateWindow (struct Window *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     intui_ActivateWindow (window);
 
@@ -73,5 +76,5 @@ extern intui_ActivateWindow (struct Window *);
 	might want to deactivate the old window first */
     IntuitionBase->ActiveWindow = window;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ActivateWindow */

@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:55  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/08/13 13:56:06  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:16  digulla
@@ -23,10 +26,10 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH1(void, RemDevice,
+	AROS_LH1(void, RemDevice,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Device *, device,A1),
+	AROS_LHA(struct Device *, device,A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 73, Exec)
@@ -55,13 +58,13 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Arbitrate for the device list */
     Forbid();
 
     /* Call expunge vector */
-    (void)__AROS_LVO_CALL0(BPTR,3,device);
+    (void)AROS_LVO_CALL0(BPTR,struct Device *,device,3,);
     /*
 	Normally you'd expect the device to be expunged if this returns
 	non-zero, but this is only exec which doesn't know anything about
@@ -71,6 +74,6 @@
 
     /* All done. */
     Permit();
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* RemDevice */
 

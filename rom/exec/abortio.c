@@ -2,9 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:50:40  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/08/13 13:55:55  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:01  digulla
@@ -22,10 +25,10 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH1I(LONG, AbortIO,
+	AROS_LH1I(LONG, AbortIO,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct IORequest *, iORequest, A1),
+	AROS_LHA(struct IORequest *, iORequest, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 80, Exec)
@@ -58,10 +61,13 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
-    return __AROS_LVO_CALL1(ULONG,6,iORequest->io_Device,iORequest,A1);
+    return AROS_LVO_CALL1(ULONG,
+	AROS_LCA(struct IORequest *,iORequest,A1),
+	struct Device *,iORequest->io_Device,6,
+    );
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AbortIO */
 

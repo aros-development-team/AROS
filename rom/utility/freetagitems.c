@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:35  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/09/13 17:36:37  digulla
     Use IPTR
 
@@ -21,10 +24,10 @@
 	#include <utility/tagitem.h>
 	#include <clib/utility_protos.h>
 
-	__AROS_LH1(void, FreeTagItems,
+	AROS_LH1(void, FreeTagItems,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 13, Utility)
@@ -69,10 +72,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     if( tagList )
 	FreeVec( tagList );
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FreeTagItems */

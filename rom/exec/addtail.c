@@ -2,12 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:50:42  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/21 20:46:42  aros
     Changed struct SysBase to struct ExecBase
 
     Revision 1.5  1996/08/13 13:55:56  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.4  1996/08/01 17:41:03  digulla
@@ -24,11 +27,11 @@
 	#include <exec/lists.h>
 	#include <clib/exec_protos.h>
 
-	__AROS_LH2I(void, AddTail,
+	AROS_LH2I(void, AddTail,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct List *, list, A0),
-	__AROS_LHA(struct Node *, node, A1),
+	AROS_LHA(struct List *, list, A0),
+	AROS_LHA(struct Node *, node, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 41, Exec)
@@ -63,7 +66,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     assert (node);
     assert (list);
 
@@ -80,5 +83,5 @@
     */
     list->lh_TailPred->ln_Succ = node;
     list->lh_TailPred	       = node;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AddTail */

@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:05  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/08/16 14:05:49  digulla
     Added #include <graphics/rastport.h>
 
@@ -38,6 +41,6 @@ extern struct GfxBase * GfxBase;
 
 /* Needed for close() */
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
+    AROS_LC0(BPTR, expunge, struct GfxBase *, GfxBase, 3, Gfx)
 
 #endif /* GRAPHICS_INTERN_H */

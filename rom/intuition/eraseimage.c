@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:19  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/23 15:33:51  aros
     Three new functions: DrawImageState(), EraseImage() and PointInImage()
     by C. Aldi.
@@ -25,13 +28,13 @@
 	#include <intuition/imageclass.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH4(void, EraseImage,
+	AROS_LH4(void, EraseImage,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A0),
-	__AROS_LHA(struct Image    *, image, A1),
-	__AROS_LHA(long             , leftOffset, D0),
-	__AROS_LHA(long             , topOffset, D1),
+	AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(struct Image    *, image, A1),
+	AROS_LHA(long             , leftOffset, D0),
+	AROS_LHA(long             , topOffset, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 105, Intuition)
@@ -66,8 +69,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     if (image != NULL)
     {
@@ -88,5 +91,5 @@
 	}
     }
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* EraseImage */

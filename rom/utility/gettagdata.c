@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:36  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/10/23 14:08:59  aros
     Formatted
 
@@ -20,12 +23,12 @@
 	#include <utility/tagitem.h>
 	#include <clib/utility_protos.h>
 
-	__AROS_LH3(ULONG, GetTagData,
+	AROS_LH3(ULONG, GetTagData,
 
 /*  SYNOPSIS */
-	__AROS_LHA(Tag             , tagValue, D0),
-	__AROS_LHA(unsigned long   , defaultVal, D1),
-	__AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(Tag             , tagValue, D0),
+	AROS_LHA(unsigned long   , defaultVal, D1),
+	AROS_LHA(struct TagItem *, tagList, A0),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 6, Utility)
@@ -73,7 +76,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct TagItem *ti = NULL;
 
     /*
@@ -86,5 +89,5 @@
 	return ti->ti_Data;
 
     return defaultVal;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetTagData */

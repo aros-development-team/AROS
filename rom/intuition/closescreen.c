@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:18  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/09/21 14:11:39  digulla
     Open and close screens
 
@@ -27,10 +30,10 @@
 	#include <intuition/screens.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH1(BOOL, CloseScreen,
+	AROS_LH1(BOOL, CloseScreen,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Screen *, screen, A0),
+	AROS_LHA(struct Screen *, screen, A0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 11, Intuition)
@@ -57,8 +60,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct Screen * parent;
 
     D(bug("CloseScreen (%p)\n", screen));
@@ -96,5 +99,5 @@
     }
 
     ReturnBool("CloseScreen",FALSE);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* CloseScreen */

@@ -2,8 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:35  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/08/13 14:10:30  digulla
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:41:41  digulla
     Added standard header for all files
@@ -21,11 +24,11 @@
     NAME */
 	#include <clib/utility_protos.h>
 
-	__AROS_LH2(void, ApplyTagChanges,
+	AROS_LH2(void, ApplyTagChanges,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TagItem *, list,       A0),
-	__AROS_LHA(struct TagItem *, changelist, A1),
+	AROS_LHA(struct TagItem *, list,       A0),
+	AROS_LHA(struct TagItem *, changelist, A1),
 
 /*  LOCATION */
 	struct UtilityBase *, UtilityBase, 31, Utility)
@@ -50,7 +53,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     /* Loop over the whole list */
     for(;;)
@@ -87,5 +90,5 @@
 	/* Got to next tag */
 	list++;
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ApplyTagChanges */

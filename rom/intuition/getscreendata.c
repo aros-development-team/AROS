@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:20  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/21 17:06:49  aros
     A couple of new functions
 
@@ -19,13 +22,13 @@
 	#include <intuition/screens.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH4(LONG, GetScreenData,
+	AROS_LH4(LONG, GetScreenData,
 
 /*  SYNOPSIS */
-	__AROS_LHA(APTR           , buffer, A0),
-	__AROS_LHA(unsigned long  , size, D0),
-	__AROS_LHA(unsigned long  , type, D1),
-	__AROS_LHA(struct Screen *, screen, A1),
+	AROS_LHA(APTR           , buffer, A0),
+	AROS_LHA(unsigned long  , size, D0),
+	AROS_LHA(unsigned long  , type, D1),
+	AROS_LHA(struct Screen *, screen, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 71, Intuition)
@@ -69,8 +72,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     if (type == WBENCHSCREEN)
 	screen = GetPrivIBase(IntuitionBase)->WorkBench;
@@ -81,5 +84,5 @@
 	CopyMem (screen, buffer, size);
 
     return (screen != NULL);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetScreenData */

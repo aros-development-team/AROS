@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/24 15:51:23  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.4  1996/10/21 17:07:08  aros
     Restored wrong font
 
@@ -30,13 +33,13 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH4(void, PrintIText,
+	AROS_LH4(void, PrintIText,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort  *, rp, A0),
-	__AROS_LHA(struct IntuiText *, iText, A1),
-	__AROS_LHA(long              , leftOffset, D0),
-	__AROS_LHA(long              , topOffset, D1),
+	AROS_LHA(struct RastPort  *, rp, A0),
+	AROS_LHA(struct IntuiText *, iText, A1),
+	AROS_LHA(long              , leftOffset, D0),
+	AROS_LHA(long              , topOffset, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 36, Intuition)
@@ -70,8 +73,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     ULONG  apen;
     ULONG  bpen;
     ULONG  drmd;
@@ -124,5 +127,5 @@
     SetDrMd (rp, drmd);
     SetFont (rp, font);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* PrintIText */

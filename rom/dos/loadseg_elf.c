@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:32  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/23 14:23:54  aros
     Added some more debug code
 
@@ -14,7 +17,7 @@
 
     Revision 1.5  1996/08/13 13:52:48  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.4  1996/08/03 18:21:10  digulla
     Added support for linked files !

@@ -8,6 +8,7 @@
 
 #include <exec/execbase.h>
 #include <dos/dosextens.h>
+#include <aros/asmcall.h>
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 
@@ -22,9 +23,12 @@ struct Data
     BPTR file;
 };
 
-__RA2(static void,_putc,UBYTE,chr,D0,struct Data *,hd,A3)
+AROS_UFH2(static void, _putc,
+    AROS_UFHA(UBYTE,         chr, D0),
+    AROS_UFHA(struct Data *, hd,  A3)
+)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
 
     if (hd->count >= 0)
     {
@@ -33,7 +37,7 @@ __RA2(static void,_putc,UBYTE,chr,D0,struct Data *,hd,A3)
 	else
 	    hd->count ++;
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 int printf(const char * format, ...)

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/24 15:51:18  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.3  1996/10/02 18:10:47  digulla
     Fixed a bug (coordinates are relative to offset and not to last point)
 
@@ -26,13 +29,13 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH4(void, DrawBorder,
+	AROS_LH4(void, DrawBorder,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A0),
-	__AROS_LHA(struct Border   *, border, A1),
-	__AROS_LHA(long             , leftOffset, D0),
-	__AROS_LHA(long             , topOffset, D1),
+	AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(struct Border   *, border, A1),
+	AROS_LHA(long             , leftOffset, D0),
+	AROS_LHA(long             , topOffset, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 18, Intuition)
@@ -92,8 +95,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     ULONG  apen;
     ULONG  bpen;
     ULONG  drmd;
@@ -140,5 +143,5 @@
     SetBPen (rp, bpen);
     SetDrMd (rp, drmd);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* DrawBorder */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/24 15:50:31  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.7  1996/10/23 14:13:43  aros
     Use AROS_ALIGN() to align pointers
 
@@ -16,7 +19,7 @@
 
     Revision 1.3  1996/08/13 13:52:48  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:40:53  digulla
     Added standard header for all files
@@ -28,6 +31,7 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/errors.h>
+#include <exec/libraries.h>
 #include <clib/exec_protos.h>
 #include <dos/dosextens.h>
 #include <clib/dos_protos.h>
@@ -102,11 +106,11 @@ void LDDemon(void)
     }
 }
 
-__AROS_LH2(struct Library *,OpenLibrary,
-__AROS_LHA(STRPTR,libName,A1),__AROS_LHA(ULONG,version,D0),
+AROS_LH2(struct Library *,OpenLibrary,
+AROS_LHA(STRPTR,libName,A1),AROS_LHA(ULONG,version,D0),
 struct ExecBase *,sysbase,0,Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     struct Library *library;
     Forbid();
@@ -127,21 +131,26 @@ struct ExecBase *,sysbase,0,Dos)
     if(library!=NULL)
     {
 	if(library->lib_Version>=version)
-	    library=__AROS_LVO_CALL1(struct Library *,1,library,version,D0);
+	    library=AROS_LVO_CALL1(struct Library *,
+		AROS_LCA(ULONG,version,D0),
+		struct Library *,library,1,
+	    );
 	else
 	    library=NULL;
     }
     Permit();
     return library;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH4(BYTE,OpenDevice,
-__AROS_LHA(STRPTR,devName,A0),__AROS_LHA(ULONG,unitNumber,D0),
-__AROS_LHA(struct IORequest *,iORequest,A1),__AROS_LHA(ULONG,flags,D1),
-struct ExecBase *,sysbase,0,Dos)
+AROS_LH4(BYTE,OpenDevice,
+    AROS_LHA(STRPTR,devName,A0),
+    AROS_LHA(ULONG,unitNumber,D0),
+    AROS_LHA(struct IORequest *,iORequest,A1),
+    AROS_LHA(ULONG,flags,D1),
+    struct ExecBase *,sysbase,0,Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     struct Device *device;
     UBYTE ret=IOERR_OPENFAIL;
@@ -166,27 +175,33 @@ struct ExecBase *,sysbase,0,Dos)
 	iORequest->io_Device=device;
 	iORequest->io_Flags=flags;
 	iORequest->io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	__AROS_LVO_CALL3(void,1,device,iORequest,A1,unitNumber,D0,flags,D1);
+	AROS_LVO_CALL3(void,
+	    AROS_LCA(struct IORequest *,iORequest,A1),
+	    AROS_LCA(ULONG,unitNumber,D0),
+	    AROS_LCA(ULONG,flags,D1),
+	    struct Device *,device,1,
+	);
 	ret=iORequest->io_Error;
 	if(ret)
 	    iORequest->io_Device=NULL;
     }
     Permit();
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void,CloseLibrary,
-__AROS_LHA(struct Library *,library,A1),
-struct ExecBase *,sysbase,0,Dos)
+AROS_LH1(void,CloseLibrary,
+    AROS_LHA(struct Library *,library,A1),
+    struct ExecBase *,sysbase,0,Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     BPTR seglist;
     if(library!=NULL)
     {
 	Forbid();
-	seglist=__AROS_LVO_CALL0(BPTR,2,library);
+	seglist=AROS_LVO_CALL0(BPTR,
+	    struct Library *,library,2,);
 	if(seglist)
 	{
 	    DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
@@ -194,20 +209,23 @@ struct ExecBase *,sysbase,0,Dos)
 	}
 	Permit();
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void,CloseDevice,
-__AROS_LHA(struct IORequest *,iORequest,A1),
+AROS_LH1(void,CloseDevice,
+AROS_LHA(struct IORequest *,iORequest,A1),
 struct ExecBase *,sysbase,0,Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     BPTR seglist;
     Forbid();
     if(iORequest->io_Device!=NULL)
     {
-	seglist=__AROS_LVO_CALL1(BPTR,2,iORequest->io_Device,iORequest,A1);
+	seglist=AROS_LVO_CALL1(BPTR,
+	    AROS_LHA(struct IORequest *,iORequest,A1),
+	    struct Device *,iORequest->io_Device,2,
+	);
 	iORequest->io_Device=(struct Device *)-1;
 	if(seglist)
 	{
@@ -216,25 +234,27 @@ struct ExecBase *,sysbase,0,Dos)
 	}
     }
     Permit();
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
-__AROS_LH1(void,RemLibrary,
-__AROS_LHA(struct Library *,library,A1),
+AROS_LH1(void,RemLibrary,
+AROS_LHA(struct Library *,library,A1),
 struct ExecBase *,sysbase,0,Dos)
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
     BPTR seglist;
     Forbid();
-    seglist=__AROS_LVO_CALL0(BPTR,3,library);
+    seglist=AROS_LVO_CALL0(BPTR,
+	struct Library *,library,3,
+    );
     if(seglist)
     {
 	DOSBase->dl_LDReturn=MEM_TRY_AGAIN;
 	UnLoadSeg(seglist);
     }
     Permit();
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 }
 
 LONG LDFlush(void)

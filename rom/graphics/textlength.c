@@ -14,12 +14,12 @@ WORD driver_TextLength (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH3(WORD, TextLength,
+	AROS_LH3(WORD, TextLength,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A1),
-	__AROS_LHA(STRPTR           , string, A0),
-	__AROS_LHA(unsigned long    , count, D0),
+	AROS_LHA(struct RastPort *, rp, A1),
+	AROS_LHA(STRPTR           , string, A0),
+	AROS_LHA(unsigned long    , count, D0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 9, Graphics)
@@ -46,10 +46,10 @@ WORD driver_TextLength (struct RastPort *, STRPTR, ULONG, struct GfxBase *);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     return driver_TextLength (rp, string, count, GfxBase);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* TextLength */

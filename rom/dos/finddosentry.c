@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:50:28  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.5  1996/10/10 13:20:49  digulla
     Use dol_DevName(STRPTR) instead of dol_Name(BSTR) (Fleischer)
 
@@ -10,7 +13,7 @@
 
     Revision 1.3  1996/08/13 13:52:46  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced __AROS_LA by __AROS_LHA
+    Replaced AROS_LA by AROS_LHA
 
     Revision 1.2  1996/08/01 17:40:51  digulla
     Added standard header for all files
@@ -27,12 +30,12 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(struct DosList *, FindDosEntry,
+	AROS_LH3(struct DosList *, FindDosEntry,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct DosList *, dlist, D1),
-	__AROS_LHA(STRPTR,           name,  D2),
-	__AROS_LHA(ULONG,            flags, D3),
+	AROS_LHA(struct DosList *, dlist, D1),
+	AROS_LHA(STRPTR,           name,  D2),
+	AROS_LHA(ULONG,            flags, D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 114, Dos)
@@ -69,8 +72,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     
     static const ULONG flagarray[]=
     { LDF_DEVICES, LDF_ASSIGNS, LDF_VOLUMES, LDF_ASSIGNS, LDF_ASSIGNS };
@@ -97,5 +100,5 @@
 	   !Strnicmp(name,dlist->dol_DevName,size)&&!dlist->dol_DevName[size])
 	    return dlist;
     }
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* FindDosEntry */

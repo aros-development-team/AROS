@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/08/29 13:57:38  digulla
     Commented
     Moved common code from driver to Intuition
@@ -22,12 +25,12 @@ extern void intui_SizeWindow (struct Window * win, long dx, long dy);
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH3(void, SizeWindow,
+	AROS_LH3(void, SizeWindow,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Window *, window, A0),
-	__AROS_LHA(long           , dx, D0),
-	__AROS_LHA(long           , dy, D1),
+	AROS_LHA(struct Window *, window, A0),
+	AROS_LHA(long           , dx, D0),
+	AROS_LHA(long           , dy, D1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 48, Intuition)
@@ -61,8 +64,8 @@ extern void intui_SizeWindow (struct Window * win, long dx, long dy);
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     /* Call the driver before changing the window */
     intui_SizeWindow (window, dx, dy);
@@ -71,5 +74,5 @@ extern void intui_SizeWindow (struct Window * win, long dx, long dy);
     window->Width += dx;
     window->Height += dy;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SizeWindow */

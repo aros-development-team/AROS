@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:22  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/10/10 13:09:55  digulla
     New function: NewModifyProp()
 
@@ -18,18 +21,18 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH9(void, NewModifyProp,
+	AROS_LH9(void, NewModifyProp,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Gadget    *, gadget, A0),
-	__AROS_LHA(struct Window    *, window, A1),
-	__AROS_LHA(struct Requester *, requester, A2),
-	__AROS_LHA(unsigned long     , flags, D0),
-	__AROS_LHA(unsigned long     , horizPot, D1),
-	__AROS_LHA(unsigned long     , vertPot, D2),
-	__AROS_LHA(unsigned long     , horizBody, D3),
-	__AROS_LHA(unsigned long     , vertBody, D4),
-	__AROS_LHA(long              , numGad, D5),
+	AROS_LHA(struct Gadget    *, gadget, A0),
+	AROS_LHA(struct Window    *, window, A1),
+	AROS_LHA(struct Requester *, requester, A2),
+	AROS_LHA(unsigned long     , flags, D0),
+	AROS_LHA(unsigned long     , horizPot, D1),
+	AROS_LHA(unsigned long     , vertPot, D2),
+	AROS_LHA(unsigned long     , horizBody, D3),
+	AROS_LHA(unsigned long     , vertBody, D4),
+	AROS_LHA(long              , numGad, D5),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 78, Intuition)
@@ -73,8 +76,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct PropInfo * pi;
     struct BBox old, new;
     int right, bottom;
@@ -124,5 +127,5 @@
     if (numGad > 1 && gadget->NextGadget)
 	RefreshGList (gadget->NextGadget, window, requester, numGad-1);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* NewModifyProp */

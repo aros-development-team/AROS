@@ -12,10 +12,10 @@
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH1(ULONG, GetBPen,
+	AROS_LH1(ULONG, GetBPen,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A0),
+	AROS_LHA(struct RastPort *, rp, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 144, Graphics)
@@ -42,10 +42,10 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     return rp->BgPen;
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetBPen */

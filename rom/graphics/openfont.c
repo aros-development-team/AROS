@@ -16,10 +16,10 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
 	#include <graphics/text.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH1(struct TextFont *, OpenFont,
+	AROS_LH1(struct TextFont *, OpenFont,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct TextAttr *, textAttr, A0),
+	AROS_LHA(struct TextAttr *, textAttr, A0),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 12, Graphics)
@@ -46,8 +46,8 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     struct TextFont * font;
 
     font = driver_OpenFont (textAttr, GfxBase);
@@ -58,5 +58,5 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
     }
 
     return font;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OpenFont */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/24 15:51:23  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.2  1996/09/21 14:20:53  digulla
     Deleted empty line
 
@@ -22,11 +25,11 @@
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH2(struct Window *, OpenWindowTagList,
+	AROS_LH2(struct Window *, OpenWindowTagList,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct NewWindow *, newWindow, A0),
-	__AROS_LHA(struct TagItem   *, tagList, A1),
+	AROS_LHA(struct NewWindow *, newWindow, A0),
+	AROS_LHA(struct TagItem   *, tagList, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 101, Intuition)
@@ -53,8 +56,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct TagItem * tag;
     struct NewWindow nw =
     {
@@ -183,5 +186,5 @@
 	SetWindowTitles (window, (UBYTE *)~0L, screenTitle);
 
     return window;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* OpenWindowTagList */

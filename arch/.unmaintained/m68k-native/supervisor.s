@@ -1,8 +1,11 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.4  1996/10/24 15:51:32  aros
+#    Use the official AROS macros over the __AROS versions.
+#
 #    Revision 1.3  1996/10/21 21:08:59  aros
-#    Changed __AROS_LA to __AROS_LHA
+#    Changed AROS_LA to AROS_LHA
 #
 #    Revision 1.2  1996/08/01 17:41:37  digulla
 #    Added standard header for all files
@@ -14,10 +17,10 @@
 #
 #   NAME
 #
-#	__AROS_LH1(ULONG, Supervisor,
+#	AROS_LH1(ULONG, Supervisor,
 #
 #   SYNOPSIS
-#	__AROS_LHA(ULONG_FUNC, userFunction, A5),
+#	AROS_LHA(ULONG_FUNC, userFunction, A5),
 #
 #   LOCATION
 #	struct ExecBase *, SysBase, 5, Exec)

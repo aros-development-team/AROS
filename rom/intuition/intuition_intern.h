@@ -4,10 +4,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/24 15:51:20  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.7  1996/10/15 15:45:32  digulla
     Two new functions: LockIBase() and UnlockIBase()
     Modified code to make sure that it is impossible to access illegal data (ie.
-    	fields of a window which is currently beeing closed).
+	fields of a window which is currently beeing closed).
 
     Revision 1.6  1996/09/21 15:53:28  digulla
     IntScree structure to store private fields in a screen
@@ -102,6 +105,6 @@ extern struct IntuitionBase * IntuitionBase;
 
 /* Needed for close() */
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
+    AROS_LC0(BPTR, expunge, struct IntuitionBase *, IntuitionBase, 3, Intuition)
 
 #endif /* INTUITION_INTERN_H */

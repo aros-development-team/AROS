@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/24 15:50:44  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.8  1996/10/19 17:07:24  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -15,8 +18,8 @@
     Added debug output
 
     Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:04  digulla
@@ -27,7 +30,7 @@
 */
 #include <exec/alerts.h>
 #include <exec/execbase.h>
-#include <aros/libcall.h>
+#include <aros/asmcall.h>
 #include <aros/rt.h>
 #include <aros/machine.h>
 #include "memory.h"
@@ -48,11 +51,11 @@
 	#include <exec/memory.h>
 	#include <clib/exec_protos.h>
 
-	__AROS_LH2(APTR, AllocMem,
+	AROS_LH2(APTR, AllocMem,
 
 /*  SYNOPSIS */
-	__AROS_LHA(ULONG, byteSize,     D0),
-	__AROS_LHA(ULONG, requirements, D1),
+	AROS_LHA(ULONG, byteSize,     D0),
+	AROS_LHA(ULONG, requirements, D1),
 
 /* LOCATION */
 	struct ExecBase *, SysBase, 33, Exec)
@@ -89,7 +92,7 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     struct Interrupt *lmh;
     struct MemHandlerData lmhd={ byteSize,requirements,0 };
     APTR res = NULL;
@@ -258,7 +261,11 @@
 		goto end;
 	    }
 	    /* Yes. Execute it. */
-	    lmhr=__AROS_ABS_CALL3(LONG,lmh->is_Code,&lmhd,A0,lmh->is_Data,A1,SysBase,A6);
+	    lmhr = AROS_UFC3 (LONG, lmh->is_Code,
+		AROS_UFCA(struct MemHandlerData *,&lmhd,A0),
+		AROS_UFCA(APTR,lmh->is_Data,A1),
+		AROS_UFCA(struct ExecBase *,SysBase,A6)
+	    );
 
 	    /* Check returncode. */
 	    if(lmhr==MEM_TRY_AGAIN)
@@ -285,6 +292,6 @@ end:
 #endif
 
     ReturnPtr ("AllocMem", APTR, res);
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* AllocMem */
 

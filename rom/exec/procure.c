@@ -2,12 +2,15 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/24 15:50:53  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.5  1996/09/13 17:51:23  digulla
     Use IPTR
 
     Revision 1.4  1996/08/13 13:56:05  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:15  digulla
@@ -25,11 +28,11 @@
 	#include <exec/semaphores.h>
 	#include <clib/exec_protos.h>
 
-	__AROS_LH2(ULONG, Procure,
+	AROS_LH2(ULONG, Procure,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct SignalSemaphore  *, sigSem, A0),
-	__AROS_LHA(struct SemaphoreMessage *, bidMsg, A1),
+	AROS_LHA(struct SignalSemaphore  *, sigSem, A0),
+	AROS_LHA(struct SemaphoreMessage *, bidMsg, A1),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 90, Exec)
@@ -67,8 +70,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct ExecBase *,SysBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     /* Prepare semaphore message to be a sent message */
     bidMsg->ssm_Message.mn_Length=sizeof(struct SemaphoreMessage);
@@ -94,6 +97,6 @@
 
     /* Huh? */
     return 0;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* Procure */
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:51:24  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.6  1996/10/10 13:31:07  digulla
     Move Gadget code in own files
 
@@ -38,13 +41,13 @@
 	#include <intuition/intuition.h>
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH4(void, RefreshGList,
+	AROS_LH4(void, RefreshGList,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Gadget    *, gadgets, A0),
-	__AROS_LHA(struct Window    *, window, A1),
-	__AROS_LHA(struct Requester *, requester, A2),
-	__AROS_LHA(long              , numGad, D0),
+	AROS_LHA(struct Gadget    *, gadgets, A0),
+	AROS_LHA(struct Window    *, window, A1),
+	AROS_LHA(struct Requester *, requester, A2),
+	AROS_LHA(long              , numGad, D0),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 72, Intuition)
@@ -90,8 +93,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     for ( ; gadgets && numGad; gadgets=gadgets->NextGadget, numGad --)
     {
@@ -119,5 +122,5 @@
 	} /* switch GadgetType */
     }
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* RefreshGList */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:51:25  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/09/21 15:48:47  digulla
     New functions to handle Public Screens
 
@@ -16,11 +19,11 @@
     NAME */
 	#include <clib/intuition_protos.h>
 
-	__AROS_LH2(void, UnlockPubScreen,
+	AROS_LH2(void, UnlockPubScreen,
 
 /*  SYNOPSIS */
-	__AROS_LHA(UBYTE         *, name, A0),
-	__AROS_LHA(struct Screen *, screen, A1),
+	AROS_LHA(UBYTE         *, name, A0),
+	AROS_LHA(struct Screen *, screen, A1),
 
 /*  LOCATION */
 	struct IntuitionBase *, IntuitionBase, 86, Intuition)
@@ -47,7 +50,7 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_EXIT
 } /* UnlockPubScreen */

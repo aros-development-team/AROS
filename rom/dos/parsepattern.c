@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/24 15:50:34  aros
+    Use the official AROS macros over the __AROS versions.
+
     Revision 1.1  1996/09/11 12:54:46  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -18,12 +21,12 @@
     NAME */
 	#include <clib/dos_protos.h>
 
-	__AROS_LH3(LONG, ParsePattern,
+	AROS_LH3(LONG, ParsePattern,
 
 /*  SYNOPSIS */
-	__AROS_LHA(STRPTR, Source,      D1),
-	__AROS_LHA(STRPTR, Dest,        D2),
-	__AROS_LHA(LONG,   DestLength,  D3),
+	AROS_LHA(STRPTR, Source,      D1),
+	AROS_LHA(STRPTR, Dest,        D2),
+	AROS_LHA(LONG,   DestLength,  D3),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 140, Dos)
@@ -74,8 +77,8 @@
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
     STRPTR stack, end;
     UBYTE a, b, t;
     LONG iswild=0;
@@ -202,5 +205,5 @@
     PUT(MP_OR_END);
     PUT(0);
     return iswild;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* ParsePattern */

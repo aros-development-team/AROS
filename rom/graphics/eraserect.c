@@ -16,14 +16,14 @@ extern void driver_EraseRect (struct RastPort *, long, long, long, long,
 	#include <graphics/rastport.h>
 	#include <clib/graphics_protos.h>
 
-	__AROS_LH5(void, EraseRect,
+	AROS_LH5(void, EraseRect,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct RastPort *, rp, A1),
-	__AROS_LHA(long             , xMin, D0),
-	__AROS_LHA(long             , yMin, D1),
-	__AROS_LHA(long             , xMax, D2),
-	__AROS_LHA(long             , yMax, D3),
+	AROS_LHA(struct RastPort *, rp, A1),
+	AROS_LHA(long             , xMin, D0),
+	AROS_LHA(long             , yMin, D1),
+	AROS_LHA(long             , xMax, D2),
+	AROS_LHA(long             , yMax, D3),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 135, Graphics)
@@ -50,10 +50,10 @@ extern void driver_EraseRect (struct RastPort *, long, long, long, long,
 
 *****************************************************************************/
 {
-    __AROS_FUNC_INIT
-    __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
     driver_EraseRect (rp, xMin, yMin, xMax, yMax, GfxBase);
 
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* EraseRect */
