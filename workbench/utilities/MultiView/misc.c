@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -18,41 +15,102 @@
 
 /*********************************************************************************************/
 
-static struct NewMenu nm[] =
+static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid );
+static void ChangeItemState( ULONG msgid, BOOL state );
+
+/*********************************************************************************************/
+
+struct NewMenu nm[] =
 {
-    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },
+    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },	/* 0 */
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN                                             },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS                                           },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS_IFF                                       },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_PRINT                                            },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ABOUT                                            },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT                                             },
-    {NM_TITLE, (STRPTR)MSG_MEN_EDIT                                                     },
+    {NM_TITLE, (STRPTR)MSG_MEN_EDIT                                                     },	/* 1 */
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_MARK                                                },
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_COPY                                                },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_SELECTALL                                           },
      {NM_ITEM, (STRPTR)MSG_MEN_EDIT_CLEARSELECTED                                       },
-    {NM_TITLE, (STRPTR)MSG_MEN_WINDOW                                                   },
+    {NM_TITLE, (STRPTR)MSG_MEN_WINDOW                                                   },	/* 2 */
      {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_SEPSCREEN         , 0, CHECKIT | MENUTOGGLE       },
      {NM_ITEM, NM_BARLABEL                                                              },
      {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MINIMIZE                                          },
      {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_NORMAL                                            },
      {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MAXIMIZE                                          },
-    {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS                                                 },
+    {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS                                                 },	/* 3 */
      {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_SAVEDEF                                         },
+    {NM_END}
+};
+
+struct NewMenu nmpict[] =
+{
+    {NM_TITLE, (STRPTR)MSG_MEN_PICT                                                      },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_FIT_WIN              , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_ZOOM_IN                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_ZOOM_OUT                                             },
+     {NM_ITEM, (STRPTR)MSG_MEN_PICT_RESET                                                },
+    {NM_END}
+};
+
+struct NewMenu nmtext[] =
+{
+    {NM_TITLE, (STRPTR)MSG_MEN_TEXT                                                      },
+     {NM_ITEM, (STRPTR)MSG_MEN_TEXT_WORDWRAP             , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, (STRPTR)MSG_MEN_TEXT_SEARCH                                               },
+     {NM_ITEM, (STRPTR)MSG_MEN_TEXT_SEARCH_PREV                                          },
+     {NM_ITEM, (STRPTR)MSG_MEN_TEXT_SEARCH_NEXT                                          },
     {NM_END}
 };
 
 /*********************************************************************************************/
 
-void InitMenus(void)
+static struct MenuItem * FindMenuItem( struct Menu *menu, ULONG msgid )
 {
-    struct NewMenu *actnm = nm;
+    struct MenuItem *item;
     
-    for(actnm = nm; actnm->nm_Type != NM_END; actnm++)
+    while( menu )
+    {
+	if( (ULONG)GTMENU_USERDATA(menu) == msgid )
+	    return (struct MenuItem *)menu;
+	item = menu->FirstItem;
+	while( item )
+	{
+	    if( (ULONG)GTMENUITEM_USERDATA(item) == msgid )
+		return item;
+	    item = item->NextItem;
+	}
+	menu = menu->NextMenu;
+    }
+    return NULL;
+}
+
+/*********************************************************************************************/
+			    
+static void ChangeItemState( ULONG msgid, BOOL state )
+{
+    struct MenuItem *item;
+
+    item = FindMenuItem(menus, msgid);
+    if (item)
+    {
+	if (state) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+    }
+}
+
+/*********************************************************************************************/
+
+void InitMenus(struct NewMenu *newm)
+{
+    struct NewMenu *actnm;
+    
+    for(actnm = newm; actnm->nm_Type != NM_END; actnm++)
     {
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
@@ -76,19 +134,24 @@ void InitMenus(void)
 
 /*********************************************************************************************/
 
-void MakeMenus(void)
+struct Menu * MakeMenus(struct NewMenu *newm)
 {
+    struct Menu *menu;
     struct TagItem menu_tags[] =
     {
 	{GTMN_NewLookMenus, TRUE},
 	{TAG_DONE               }
     };
     
-    menus = CreateMenusA(nm, NULL);
-    if (!menus) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
+    menu = CreateMenusA(newm, NULL);
+    if (!menu) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
     
-    if (!LayoutMenusA(menus, vi, menu_tags)) Cleanup(MSG(MSG_CANT_CREATE_MENUS));
-    
+    if (!LayoutMenusA(menu, vi, menu_tags))
+    {
+	FreeMenus(menu);
+	Cleanup(MSG(MSG_CANT_CREATE_MENUS));
+    }
+    return menu;
 }
 
 /*********************************************************************************************/
@@ -97,36 +160,69 @@ void KillMenus(void)
 {
     if (win) ClearMenuStrip(win);
     if (menus) FreeMenus(menus);
+    if (pictmenus) FreeMenus(pictmenus);
+    if (textmenus) FreeMenus(textmenus);
     
     menus = NULL;
+    pictmenus = NULL;
+    textmenus = NULL;
 }
 
 /*********************************************************************************************/
 
 void SetMenuFlags(void)
 {
+    struct Menu *menu;
     struct MenuItem *item;
+    IPTR val;
+    BOOL ret;
     
     if (win) ClearMenuStrip(win);
 
-    item = ItemAddress(menus, FULLMENUNUM(1, 1, NOSUB));
-    if (item)
+    ChangeItemState( MSG_MEN_PROJECT_SAVEAS, dto_supports_write );
+    ChangeItemState( MSG_MEN_PROJECT_SAVEAS_IFF, dto_supports_write_iff );
+    ChangeItemState( MSG_MEN_PROJECT_PRINT, dto_supports_print );
+    ChangeItemState( MSG_MEN_EDIT_COPY, dto_supports_copy );
+    ChangeItemState( MSG_MEN_EDIT_SELECTALL, dto_supports_selectall );
+    ChangeItemState( MSG_MEN_EDIT_CLEARSELECTED, dto_supports_clearselected );
+
+    item = FindMenuItem(menus, MSG_MEN_SETTINGS);	/* Search last menu, then append dt group dependent menu */
+    menu = (struct Menu *)item;
+    if (menu)
     {
-	if (dto_supports_copy) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+	if (dto_subclass_gid == GID_PICTURE)
+	{
+	    D(bug("Multiview: is picture.datatype\n"));
+	    menu->NextMenu = pictmenus;
+	}
+	else if (dto_subclass_gid == GID_TEXT)
+	{
+	    D(bug("Multiview: is text.datatype\n"));
+	    menu->NextMenu = textmenus;
+	    ret = GetDTAttrs(dto, TDTA_WordWrap, (IPTR)&val, TAG_DONE);
+	    item = FindMenuItem(menus, MSG_MEN_TEXT_WORDWRAP);
+	    if (ret && item)
+	    {
+		if (val) item->Flags |= CHECKED; else item->Flags &= ~CHECKED;
+	    }
+	    ChangeItemState( MSG_MEN_TEXT_WORDWRAP, ret );
+	    ChangeItemState( MSG_MEN_TEXT_SEARCH, dto_supports_search );
+	    ChangeItemState( MSG_MEN_TEXT_SEARCH_PREV, dto_supports_search_prev );
+	    ChangeItemState( MSG_MEN_TEXT_SEARCH_NEXT, dto_supports_search_next );
+	}
+	else
+	{
+	    D(bug("Multiview: is unknown datatype\n"));
+	    menu->NextMenu = NULL;
+	}
     }
-    
-    item = ItemAddress(menus, FULLMENUNUM(1, 4, NOSUB));
-    if (item)
-    {
-	if (dto_supports_clearselected) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
-    }
-    
-    if (win) ResetMenuStrip(win, menus);
+
+    if (win) SetMenuStrip(win, menus);
 }
 
 /*********************************************************************************************/
 
-STRPTR GetFile(void)
+STRPTR GetFileName(ULONG msgtextid)
 {
     static UBYTE         pathbuffer[300];
     static UBYTE         filebuffer[300];
@@ -143,7 +239,7 @@ STRPTR GetFile(void)
 	strncpy(pathbuffer, filenamebuffer, 299);
 	*(FilePart(pathbuffer)) = 0;
 	
-	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
+	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(msgtextid),
 						   ASLFR_DoPatterns   , TRUE                         ,
 						   ASLFR_InitialFile  , (IPTR)filebuffer             ,
 						   ASLFR_InitialDrawer, (IPTR)pathbuffer             ,
@@ -207,25 +303,25 @@ void About(void)
 	dtver_string[i++] = *sp++;
     }
     dtver_string[i++] = '\0';
-    
+
     es.es_StructSize   = sizeof(es);
     es.es_Flags        = 0;
     es.es_Title        = MSG(MSG_ABOUT_TITLE);
     es.es_TextFormat   = MSG(MSG_ABOUT);
     es.es_GadgetFormat = MSG(MSG_CONTINUE);
  
-    EasyRequest(win, &es, NULL, VERSION,
-				REVISION,
-				DATESTR, 
-				dtver_string,
-				name_string,
-				gid_string);
+    EasyRequest(win, &es, NULL, (IPTR)VERSION,
+				(IPTR)REVISION,
+				(IPTR)DATESTR, 
+				(IPTR)dtver_string,
+				(IPTR)name_string,
+				(IPTR)gid_string);
 
 }
 
 /*********************************************************************************************/
 
-void DoTrigger(ULONG what)
+ULONG DoTrigger(ULONG what)
 {
     struct dtTrigger m;
 
@@ -234,7 +330,46 @@ void DoTrigger(ULONG what)
     m.dtt_Function      = what;
     m.dtt_Data          = NULL;
 
-    DoDTMethodA(dto, win, NULL, (Msg)&m);                               
+    return DoDTMethodA(dto, win, NULL, (Msg)&m);                               
+}
+
+/*********************************************************************************************/
+
+ULONG DoWriteMethod(STRPTR name, ULONG mode)
+{
+    struct dtWrite m;
+    BPTR fh;
+    ULONG retval;
+    
+    fh = NULL;
+    if (name)
+    {
+	fh = Open( name, MODE_NEWFILE );
+	if (!fh)
+	{
+	    D(bug("Multiview: Cannot open %s\n", name));
+	    OutputMessage(MSG(MSG_SAVE_FAILED));
+	    return FALSE;
+	}
+    }
+    m.MethodID          = DTM_WRITE;
+    m.dtw_GInfo         = NULL;
+    m.dtw_FileHandle    = fh;
+    m.dtw_Mode          = mode;
+    m.dtw_AttrList      = NULL;
+
+    D(bug("Multiview: Saving %s mode %ld\n", name ? name : (STRPTR)"[nothing]", mode));
+    retval = DoDTMethodA(dto, win, NULL, (Msg)&m);
+    if (fh)
+    {
+	Close( fh );
+	if( !retval )
+	{
+	    D(bug("Multiview: Error during write !\n"));
+	    OutputMessage(MSG(MSG_SAVE_FAILED));
+	}
+    }
+    return retval;
 }
 
 /*********************************************************************************************/
