@@ -68,99 +68,120 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  BYTE old_fgpen = GetAPen(rp);
-  BOOL hasClipRegion = FALSE;
-  /* 
-     This function will simply call ScrollRaster() and fill the empty
-     space with calls to RectFill
-   */
+    BYTE old_fgpen = GetAPen(rp);
+    BOOL hasClipRegion = FALSE;
+    LONG width, height, absdx, absdy;
 
-  /* 
-     adjust xMax and yMax in case the lower right corner would be outside
-     the rastport
-  */
-  /* Is it a window's rastport ? */
-  if (NULL != rp->Layer)
-  {
-    struct Layer * L = rp->Layer;
-    if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
-      xMax = (L->bounds.MaxX - L->bounds.MinX) ;
-    if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
-      yMax = (L->bounds.MaxY - L->bounds.MinY) ;
-      
-    if (NULL != L->ClipRegion || LAYERSIMPLE == (L->Flags & LAYERSIMPLE))
-      hasClipRegion = TRUE;
-  }
-  else
-  {
-    /* this one belongs to a screen */
-    struct BitMap * bm = rp->BitMap;
-    ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
-    ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
-    if (xMax > width )
-      xMax = width;
-    if (yMax > height)
-      yMax = height;
-  }
+    /* 
+       This function will simply call ScrollRaster() and fill the empty
+       space with calls to RectFill
+     */
 
-  if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
-                                 hasClipRegion,
-                                 GfxBase))
-    return;
-
-  /* 
-     The raster is scrolled and I fill the empty area with the 
-     RectFill()
-   */
-  
-  SetAPen(rp, GetBPen(rp));
-  
-  /* was it scrolled left or right? */
-  if (0 != dx)
-  {
-    if (dx > 0)
+    /* 
+       adjust xMax and yMax in case the lower right corner would be outside
+       the rastport
+    */
+    /* Is it a window's rastport ? */
+    if (NULL != rp->Layer)
     {
-      /* scrolled towards left, clearing on the right */
-      RectFill (rp,
-                xMax - dx + 1,
-                yMin,
-                xMax,
-                yMax);
+	struct Layer * L = rp->Layer;
+	
+	if (xMax > (L->bounds.MaxX - L->bounds.MinX) )
+	    xMax = (L->bounds.MaxX - L->bounds.MinX) ;
+	    
+	if (yMax > (L->bounds.MaxY - L->bounds.MinY) )
+	    yMax = (L->bounds.MaxY - L->bounds.MinY) ;
+
+	if (NULL != L->ClipRegion || LAYERSIMPLE == (L->Flags & LAYERSIMPLE))
+	    hasClipRegion = TRUE;
     }
     else
     {
-      /* scrolled towards right, clearing on the left */
-      RectFill (rp,
-                xMin,
-                yMin,
-                xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */ 
-                yMax);
+	/* this one belongs to a screen */
+	struct BitMap * bm = rp->BitMap;
+	ULONG width  = GetBitMapAttr(bm, BMA_WIDTH);
+	ULONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+	if (xMax >= width )
+	    xMax = width - 1;
+	if (yMax >= height)
+	    yMax = height - 1;
     }
-  }
-  
-  if (0 != dy)
-  {
-    if (dy > 0)
+
+    absdx = (dx >= 0) ? dx : -dx;
+    absdy = (dy >= 0) ? dy : -dy;
+
+    width  = xMax - xMin + 1;
+    height = yMax - yMin + 1;
+
+    if ((width < 1) || (height < 1)) return;
+
+    if ((absdx >= width) || (absdy >= height))
     {
-      /* scrolled up, clearing on the bottom */
-      RectFill (rp,
-                xMin,
-                yMax - dy + 1,
-                xMax,
-                yMax);
+	SetAPen(rp, GetBPen(rp));
+	RectFill(rp, xMin, yMin, xMax, yMax);
+	SetAPen(rp, old_fgpen);
+	
+	return;
     }
-    else
+
+    if (FALSE == driver_MoveRaster(rp, dx, dy, xMin, yMin, xMax, yMax, TRUE,
+                                   hasClipRegion,
+                                   GfxBase))
+         return;
+
+    /* 
+       The raster is scrolled and I fill the empty area with the 
+       RectFill()
+     */
+
+    SetAPen(rp, GetBPen(rp));
+
+    /* was it scrolled left or right? */
+    if (0 != dx)
     {
-      /* scrolled down, clearing on the top */
-      RectFill (rp,
-                xMin,
-                yMin,
-                xMax, 
-                yMin - dy - 1);
+	if (dx > 0)
+	{
+	    /* scrolled towards left, clearing on the right */
+	    RectFill (rp,
+                      xMax - dx + 1,
+                      yMin,
+                      xMax,
+                      yMax);
+	}
+	else
+	{
+	    /* scrolled towards right, clearing on the left */
+	    RectFill (rp,
+                      xMin,
+                      yMin,
+                      xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */ 
+                      yMax);
+	}
     }
-  }
-  
-  SetAPen(rp, old_fgpen);
+
+    if (0 != dy)
+    {
+	if (dy > 0)
+	{
+	    /* scrolled up, clearing on the bottom */
+	    RectFill (rp,
+                      xMin,
+                      yMax - dy + 1,
+                      xMax,
+                      yMax);
+	}
+	else
+	{
+	    /* scrolled down, clearing on the top */
+	    RectFill (rp,
+                      xMin,
+                      yMin,
+                      xMax, 
+                      yMin - dy - 1);
+	}
+    }
+
+    SetAPen(rp, old_fgpen);
   
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */
