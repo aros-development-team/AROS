@@ -6,6 +6,8 @@
 #ifndef AROS_ATOMIC_H
 #define AROS_ATOMIC_H
 
+#include <exec/types.h>
+
 #ifdef __i386__
 
 #define AROS_ATOMIC_INCB(var) \
@@ -57,22 +59,27 @@
 
 #endif
 
-#define __AROS_ATOMIC(__instr__, var)             \
-do                                                \
-{                                                 \
-    struct atomic_size                            \
-    {                                             \
-        int unsupported[sizeof(var)>4 ? 1 : -1];  \
-    };                                            \
-                                                  \
-    if (sizeof(var) == 1)                         \
-        AROS_ATOMIC_ ## __instr__ ## B(var);      \
-    else                                          \
-    if (sizeof(var) == 2)                         \
-        AROS_ATOMIC_ ## __instr__ ## W(var);      \
-    else                                          \
-    if (sizeof(var) == 4)                         \
-        AROS_ATOMIC_ ## __instr__ ## L(var);      \
+#define __AROS_ATOMIC(__instr__, var)                        \
+do                                                           \
+{                                                            \
+    struct atomic_size                                       \
+    {                                                        \
+        int unsupported_atomic_size                          \
+	[                                                    \
+	    sizeof(var) != sizeof(BYTE) &&                   \
+	    sizeof(var) != sizeof(WORD) &&                   \
+	    sizeof(var) != sizeof(LONG) ? -1 : 1             \
+	];                                                   \
+    };                                                       \
+                                                             \
+    if (sizeof(var) == sizeof(BYTE))                         \
+        AROS_ATOMIC_ ## __instr__ ## B(var);                 \
+    else                                                     \
+    if (sizeof(var) == sizeof(WORD))                         \
+        AROS_ATOMIC_ ## __instr__ ## W(var);                 \
+    else                                                     \
+    if (sizeof(var) == sizeof(LONG))                         \
+        AROS_ATOMIC_ ## __instr__ ## L(var);                 \
 } while (0)
 
 #define AROS_ATOMIC_INC(var) __AROS_ATOMIC(INC, (var))
