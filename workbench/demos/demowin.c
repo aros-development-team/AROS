@@ -643,9 +643,6 @@ int main (int argc, char ** argv)
 		ievent.ie_Code	    = im->Code;
 		ievent.ie_Qualifier = im->Qualifier;
 
-bug ("Opening console.device=%p (%s)\n", ConsoleDevice,
-    ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
-
 		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
 		printf ("Key %s %3ld + Qual %08lx=\""
