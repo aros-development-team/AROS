@@ -25,8 +25,6 @@
 #include "locale.h"
 #include "wpeditor.h"
 
-#define DEBUG 1
-#   include <aros/debug.h>
 
 /*** Instance Data **********************************************************/
 struct WPEditor_DATA
