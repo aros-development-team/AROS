@@ -336,11 +336,9 @@ void intui_RefreshWindowFrame(struct Window *w)
     /* Draw a frame around the window */
     struct RastPort *rp = w->BorderRPort;
     struct DrawInfo *dri;
-    struct Gadget *gad;
     struct Region *old_clipregion;
     WORD  old_scroll_x, old_scroll_y;
     ULONG ilock;
-    UWORD i;
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
     
