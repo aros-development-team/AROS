@@ -101,8 +101,9 @@ void createupfrontlayer(void)
 {
   int x0,y0,x1,y1;
   int i;
-  char c;
+  char c,s;
   LONG flags = 0;
+  struct BitMap * sb = NULL;
   for (i = 0; i < 10; i++)
   {
     if (layers[i] == NULL)
@@ -112,6 +113,8 @@ void createupfrontlayer(void)
   {
       printf("Backdroplayer [y/N]: ");
       scanf("%c", &c);
+      printf("SuperBitMap [y/N]: ");
+      scanf("%c", &s);
       printf("x0: ");
       scanf("%d", &x0);
       printf("y0: ");
@@ -124,7 +127,13 @@ void createupfrontlayer(void)
       if (c=='y' || c=='Y')
       {
         printf("Generating a backdrop layer.\n");
-        flags = LAYERBACKDROP;
+        flags |= LAYERBACKDROP;
+      }
+      if (c=='s' || c=='Y')
+      {
+        printf("Generating a superbitmap layer.\n");
+        flags |= LAYERSUPER;
+        sb = AllocBitMap(x1-x0+1,y1-y0+1,1,BMF_CLEAR,NULL);
       }
       
       flags |= LAYERSMART;
@@ -136,7 +145,7 @@ void createupfrontlayer(void)
                                      x1,
                                      y1,
                                      flags,
-                                     NULL);
+                                     sb);
       if (layers[i])
         printf("Created layer with ID %d\n",i);
       else
@@ -150,8 +159,9 @@ void createbehindlayer(void)
 {
   int x0,y0,x1,y1;
   int i;
-  char c;
+  char c, s;
   LONG flags = 0;
+  struct BitMap * sb = NULL;
   for (i = 0; i < 10; i++)
   {
     if (layers[i] == NULL)
@@ -161,6 +171,8 @@ void createbehindlayer(void)
   {
       printf("Backdroplayer [y/N]: ");
       scanf("%c", &c);
+      printf("SuperBitMap [y/N]: ");
+      scanf("%c", &s);
       printf("x0: ");
       scanf("%d", &x0);
       printf("y0: ");
@@ -173,7 +185,13 @@ void createbehindlayer(void)
       if (c=='y' || c=='Y')
       {
         printf("Generating a backdrop layer.\n");
-        flags = LAYERBACKDROP;
+        flags |= LAYERBACKDROP;
+      }
+      if (c=='s' || c=='Y')
+      {
+        printf("Generating a superbitmap layer.\n");
+        flags |= LAYERSUPER;
+        sb = AllocBitMap(x1-x0+1,y1-y0+1,1,BMF_CLEAR,NULL);
       }
       
       flags |= LAYERSMART;
@@ -185,7 +203,7 @@ void createbehindlayer(void)
                                      x1,
                                      y1,
                                      flags,
-                                     NULL);
+                                     sb);
       if (layers[i])
          printf("Created layer with ID %d\n",i);
       else
@@ -202,6 +220,8 @@ void deletelayer(void)
   scanf("%d", &i);
   if (layers[i]) 
   {
+    if (layers[i]->SuperBitMap)
+      FreeBitMap(layers[i]->SuperBitMap);
     DeleteLayer(0, layers[i]);
     printf("Deleted layer with id %d\n",i);
     layers[i] = NULL;
