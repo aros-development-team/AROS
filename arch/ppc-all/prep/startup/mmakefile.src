@@ -33,10 +33,5 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
-test.s: test.c
-	%ctoasm_q
-
-	%ctoasm_q
-
 %common
 %include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
