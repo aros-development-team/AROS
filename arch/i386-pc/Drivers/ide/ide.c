@@ -9,6 +9,7 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE 1
+#include <dos/filehandler.h>
 #include <exec/devices.h>
 #include <exec/errors.h>
 #include <exec/execbase.h>
@@ -20,6 +21,8 @@
 #include <hardware/intbits.h>
 #include <devices/timer.h>
 #include <devices/trackdisk.h>
+#include <libraries/expansion.h>
+#include <libraries/configvars.h>
 #include <proto/exec.h>
 #include <proto/expansion.h>
 #include <proto/timer.h>
@@ -31,7 +34,7 @@
 
 #include "ide_intern.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #undef kprintf
@@ -223,7 +226,7 @@ AROS_LH2(struct ideBase *,  init,
                         IBase->ide_NumUnit = cunit;
 	  	
                         /* Close timer.device */
-                        CloseDevice((struct IORequest*)IBase->ide_TimerIO);
+                        CloseDevice((struct IORequest *)IBase->ide_TimerIO);
                         DeleteIORequest((struct IORequest *)IBase->ide_TimerIO);
                         IBase->ide_TimerIO = NULL;
                         DeleteMsgPort(IBase->ide_TimerMP);
@@ -238,6 +241,11 @@ AROS_LH2(struct ideBase *,  init,
                                 /* Init device daemon */
                                 if(InitDaemon(IBase))
                                 {
+                                    /* Examine disks and add bootnodes */
+                                    for (i = 0;i < cunit; i++)
+                                    {
+                                        IBase->ide_Units[i] = InitUnit(i,IBase);
+                                    }
                                     ReturnPtr("ide_init", struct ideBase *, IBase);
                                 }
                             }
@@ -245,7 +253,7 @@ AROS_LH2(struct ideBase *,  init,
                     }
                     /* Free timerequest memory */
                     if (IBase->ide_TimerIO)
-                        DeleteIORequest(IBase->ide_TimerIO);
+                        DeleteIORequest((struct IORequest *)IBase->ide_TimerIO);
                 }
                 if (IBase->ide_TimerMP)
                     DeleteMsgPort(IBase->ide_TimerMP);
@@ -274,7 +282,7 @@ ULONG InitTask(struct ideBase *ib)
     {
         /* prepare stack */
         BYTE	*sp = t->td_Stack;
-    
+
         D(bug("Creating ide.task..."));
         /* Save stack info into task structure */
         t->td_Task.tc_SPLower = sp;
@@ -303,7 +311,7 @@ ULONG InitTask(struct ideBase *ib)
         t->td_Task.tc_Node.ln_Pri  = 5;
 
         ib->ide_TaskData = t;
-        
+
         /* Add task to system task list */
         AddTask(&t->td_Task, &TaskCode, NULL);
 
@@ -526,7 +534,7 @@ AROS_LH1(void, BeginIO,
             return;
         }
     } 
-    
+
     /* Immediate command */
     
     /* Make unit active */
@@ -1051,7 +1059,123 @@ struct ide_Unit *InitUnit(ULONG num, struct ideBase *ib)
 
 void RDBInfo(struct ide_Unit *unit)
 {
-    /* Not impemented! */
+    struct PartEntry {
+        UBYTE Status;
+        UBYTE StartH;
+        UBYTE StartS;
+        UBYTE StartC;
+        UBYTE PartType;
+        UBYTE EndH;
+        UBYTE EndS;
+        UBYTE EndC;
+        ULONG LBAStart;
+        ULONG LBACount;
+    } __attribute__((packed));
+
+    UBYTE *buffer;
+    ULONG temp,count,i,SSecs,SCyls,ESecs,ECyls,highcyl,highhead,highsec;
+    ULONG *pp;
+    struct PartEntry *pe;
+    struct ExpansionBase *ExpansionBase;
+    struct DeviceNode *devnode;
+
+    buffer = AllocMem(512,MEMF_PUBLIC | MEMF_CLEAR);
+    if (buffer)
+    {
+        /* Read the MBR Sector */
+        count = ReadBlocks(0,1,buffer,unit,&temp);
+        if (!count)
+        {
+            /* Make an extra pass to figure out the geometry */
+            highcyl = highhead = highsec = 0;
+            for (i=0;i<3;i++)
+            {
+                count = 0x1be + (i*16);
+                pe = (struct PartEntry *)(&buffer[count]);
+                SSecs = pe->StartS & 0x3f;
+                SCyls = ((pe->StartS & 0xc0) << 2) + pe->StartC;
+                ESecs = pe->EndS &0x3f;
+                ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
+                if (ECyls > highcyl) highcyl = ECyls;
+                if (pe->EndH > highhead) highhead = pe->EndH;
+                if (ESecs > highsec) highsec = ESecs;
+            }
+
+            /* Then adjust the unit structure with this guesstimate */
+            highcyl++; highhead++;
+            D(bug("-Gussing that the L-CHS is %d/%d/%d\n",highcyl,highhead,highsec));
+            unit->au_Cylinders = highcyl;
+            unit->au_Heads = highhead;
+            unit->au_SectorsT = highsec;
+            unit->au_SectorsC = highsec * highhead;
+
+            /* Print partition table and add BootNodes */
+            D(bug("====================== Partition table =======================\n"));
+            D(bug("Act Type StartC StartH StartS EndC EndH EndS LBAStart LBACount\n"));
+            for (i=0;i<=3;i++)
+            {
+                count = 0x1be + (i*16);
+                pe = (struct PartEntry *)(&buffer[count]);
+                SSecs = pe->StartS & 0x3f;
+                SCyls = ((pe->StartS & 0xc0) << 2) + pe->StartC;
+                ESecs = pe->EndS &0x3f;
+                ECyls = ((pe->EndS & 0xc0) << 2) + pe->EndC;
+                D(bug(" %02x  %02x   %3d    %3d    %3d    %3d  %3d  %3d %8d %8d\n",
+                    pe->Status,pe->PartType,SCyls,pe->StartH,SSecs,
+                    ECyls,pe->EndH,ESecs,pe->LBAStart,pe->LBACount));
+
+                /* If this is an AROS partition, add a BootNode */
+                if (pe->PartType == 0x30)
+                {
+                    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",40);
+                    if (ExpansionBase)
+                    {
+                        pp = (ULONG *)AllocMem(24*4,MEMF_PUBLIC|MEMF_CLEAR);
+                        if (pp)
+                        {
+                            pp[0]=(ULONG)"afs.handler";
+                            pp[1]=(ULONG)name;
+                            pp[2]=0;
+                            pp[DE_TABLESIZE+4]=DE_BOOTBLOCKS;
+                            pp[DE_SIZEBLOCK+4]=unit->au_SectSize/4;
+                            pp[DE_NUMHEADS+4]=unit->au_Heads;
+                            pp[DE_SECSPERBLOCK+4]=1;
+                            pp[DE_BLKSPERTRACK+4]=unit->au_SectorsT;
+                            pp[DE_RESERVEDBLKS+4]=2;
+                            pp[DE_LOWCYL+4]=SCyls;
+                            pp[DE_HIGHCYL+4]=ECyls;
+                            pp[DE_NUMBUFFERS+4]=10;
+                            pp[DE_BUFMEMTYPE+4]=MEMF_PUBLIC|MEMF_CHIP;
+                            pp[DE_MAXTRANSFER+4]=0x00200000;
+                            pp[DE_MASK+4]=0x7FFFFFFE;
+                            pp[DE_BOOTPRI+4]=0;         /* Raise this to 10 to boot ahead of DF0 */
+                            pp[DE_DOSTYPE+4]=0x444F5301;
+                            pp[DE_BOOTBLOCKS+4]=2;
+                            devnode = MakeDosNode(pp);
+                            if (devnode)
+                            {
+                                if ((devnode->dn_NewName=AllocMem(5,MEMF_PUBLIC|MEMF_CLEAR)))
+                                {
+                                    devnode->dn_NewName[0]=3;
+                                    devnode->dn_NewName[1]='D';
+                                    devnode->dn_NewName[2]='H';
+                                    devnode->dn_NewName[3]=i+'0';
+                                    devnode->dn_OldName=MKBADDR(devnode->dn_NewName);
+                                    devnode->dn_NewName += 1;
+                                    AddBootNode(pp[DE_BOOTPRI+4],0,devnode,0);
+                                }
+                            }
+                        }
+                        if (ExpansionBase)
+                        {
+                            CloseLibrary((struct Library *)ExpansionBase);
+                        }
+                    }
+                }
+            }
+            FreeMem(buffer,512);
+        }
+    }
     return;
 }
 
@@ -1119,7 +1243,7 @@ void SearchCHS(struct ide_Unit *unit)
     unit->au_DevType = DG_DIRECT_ACCESS;
     unit->au_SecShift = 9;
     unit->au_SectSize = 512;
-    
+
     FreeMem(empty, 512);
 }
 
@@ -1158,15 +1282,33 @@ void UnitInfo(struct ide_Unit *unit)
         strcp(&unit->au_RevNumber[0], &id.idev_RevisionNumber[0], 4);
         strcp(&unit->au_SerNumber[0], &id.idev_SerialNumber[0], 8);
 
-        D(bug("0x0%x: %s,%s,%s\n", unit->au_PortAddr, &unit->au_ModelID[0],
-                                &unit->au_RevNumber[0], &unit->au_SerNumber[0]));
-        
+        D(bug("IDE Unit: %s\n",&unit->au_ModelID[0]));
+
         /* Get Disk geometry */
-        unit->au_Heads      = id.idev_Heads;
-        unit->au_SectorsT   = id.idev_Sectors;
-        unit->au_Cylinders  = id.idev_Cylinders;
-        unit->au_SectorsC   = id.idev_Sectors * id.idev_Heads;
-        unit->au_Blocks     = unit->au_SectorsC * id.idev_Cylinders;
+        if (id.idev_Features & ATAF_LBA)
+        {
+            /* Set LBA flag */
+            unit->au_Flags |= AF_LBAMode;
+
+            /* These values will be replace later on */
+            unit->au_Blocks     = id.ideva_LBASectors;
+            unit->au_Heads      = id.idev_Heads;
+            unit->au_SectorsT   = id.idev_Sectors;
+            unit->au_Cylinders  = id.idev_Cylinders;
+            unit->au_SectorsC   = id.idev_Sectors * id.idev_Heads;
+            D(bug("-Using LBA mode, sectors = %d (%d MB) ",unit->au_Blocks,unit->au_Blocks/2048));
+        }
+        else
+        {
+            unit->au_Heads      = id.idev_Heads;
+            unit->au_SectorsT   = id.idev_Sectors;
+            unit->au_Cylinders  = id.idev_Cylinders;
+            unit->au_SectorsC   = id.idev_Sectors * id.idev_Heads;
+            unit->au_Blocks     = unit->au_SectorsC * id.idev_Cylinders;
+            D(bug("-Using CHS mode, sectors = %d (%d MB) ",unit->au_Blocks,unit->au_Blocks/2048));
+        }
+
+        D(bug("P-CHS=%d/%d/%d\n",unit->au_Cylinders,unit->au_Heads,unit->au_SectorsT));
 
         /* is drive removable? */
         if (id.idev_DInfo & 0x80)
