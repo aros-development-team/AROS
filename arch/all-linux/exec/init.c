@@ -248,7 +248,8 @@ int main(int argc, char **argv)
     struct termios t;
     int psize = 0;
     int i = 0, x;
-    BOOL mapSysBase  = FALSE;
+    BOOL mapSysBase   = FALSE;
+    BOOL _use_hostmem = FALSE;
 
     while (i < argc)
     {
@@ -335,7 +336,7 @@ int main(int argc, char **argv)
 /*
 #else
 */
-    if (!use_hostmem)
+    if (!_use_hostmem)
     {
       /* We allocate memSize megabytes */
       memory = __libc_malloc((memSize << 20));
@@ -361,7 +362,7 @@ int main(int argc, char **argv)
     mh->mh_Attributes    = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
 			   MEMF_24BITDMA | MEMF_KICK;
 			    
-    if (use_hostmem)
+    if (_use_hostmem)
     {
         mh->mh_Attributes |= MEMF_MANAGED;
         mh->mh_First       = NULL;
@@ -390,6 +391,8 @@ int main(int argc, char **argv)
     */
     SysBase = PrepareExecBase(mh);
 
+    use_hostmem = _use_hostmem;
+    
     /* ROM memory header. This special memory header covers all ROM code and data sections
      * so that TypeOfMem() will not return 0 for addresses pointing into the kernel.
      */
