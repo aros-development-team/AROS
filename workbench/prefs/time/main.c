@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -11,10 +8,11 @@
 #include "global.h"
 #include "version.h"
 #include "calendarclass.h"
-#include "clockclass.h"
 
 #include <libraries/coolimages.h>
 #include <aros/debug.h>
+
+#include <zune/clock.h>
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -485,7 +483,7 @@ static void MakeGUI(void)
     Object *menu, *yearaddobj, *yearsubobj, *timeaddobj, *timesubobj;
     Object *saveobj, *useobj, *cancelobj;
     
-    if (!MakeCalendarClass() || !MakeClockClass())
+    if (!MakeCalendarClass())
     {
     	Cleanup(MSG(MSG_CANT_CREATE_APP));
     }
@@ -574,7 +572,8 @@ static void MakeGUI(void)
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
 			MUIA_Background, MUII_GroupBack,
-			Child, clockobj = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
+			Child, clockobj = ClockObject,
+                        End,
 			Child, HGroup,
 			    Child, HVSpace,
 			    Child, PageGroup,
@@ -690,7 +689,6 @@ static void KillGUI(void)
 {
     DisposeObject(app);
     KillCalendarClass();
-    KillClockClass();
 }
 
 /*********************************************************************************************/
