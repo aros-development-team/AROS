@@ -97,6 +97,10 @@
 	    }
 	    
 	/* We'll start from there. */
+	
+        /* Match UnlockDosList at end of func */
+    	LockDosList(LDF_ALL|LDF_READ);
+	
 	dl = dp->dvp_DevNode;
     }
     else
@@ -240,34 +244,60 @@
 	    /* If called before, this will be set */
 	    if( dp->dvp_Flags == DVPF_ASSIGN )
 	    {
-		struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
-
-		/*  
-		    Go through until we have found the last one returned.
-		*/
-		while( al && (al->al_Lock != dp->dvp_Lock) )
+		
+		/* First iteration of list ? */
+		if (dp->dvp_Lock == dl->dol_Lock)
 		{
-		    al = al->al_Next;
-		}
-
-		if( al != NULL )
-		{
-		    if( al->al_Next != NULL )
-    			dp->dvp_Lock = al->al_Next->al_Lock;
+		    /* If so, set to first item in assignlist.
+		       (The set DVPF_ASSIGN flag tells that a assignlist
+		       does exist
+		    */
+		    dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
 		}
 		else
 		{
-		    /* We have reached the end of the list - just return NULL */
-	    	    UnLockDosList(LDF_ALL|LDF_READ);
-		    SetIoErr(ERROR_NO_MORE_ENTRIES);
-		    FreeMem(volname, s1-name);
-		    return NULL;
-		}		    
-	    }
+
+		    struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
+		
+		    UBYTE buf[100];
+		    /*  
+		    	Go through until we have found the last one returned.
+		    */
+		    while( al && (al->al_Lock != dp->dvp_Lock) )
+		    {
+		    	NameFromLock(al->al_Lock, buf, 100);
+		    	kprintf("gdp: trying assigndir %s\n", buf);
+		    	al = al->al_Next;
+		    }
+
+		    if( al != NULL )
+		    {
+		    	if( al->al_Next != NULL )
+		    	{
+    			    dp->dvp_Lock = al->al_Next->al_Lock;
+			
+		    	    NameFromLock(dp->dvp_Lock, buf, 100);
+		    	    kprintf("gdp: returning assigndir %s\n", buf);
+		    	}
+		    }
+		    else
+		    {
+		    	/* We have reached the end of the list - just return NULL */
+	    	    	UnLockDosList(LDF_ALL|LDF_READ);
+		    	SetIoErr(ERROR_NO_MORE_ENTRIES);
+		    
+		    	if (volname)
+		    	    FreeMem(volname, s1-name);
+		    	return NULL;
+		    }
+		    
+		} /* if (first iteration of assignlist) */
+		
+	    } /* if (DVPF_ASSIGN flag has been set */
 	    else
     		dp->dvp_Lock = dl->dol_Lock;
 
-	    /* Only set this for again if we have some locks to look at */
+	    /* Only set this again if we have some locks to look at */
 	    if( dl->dol_misc.dol_assign.dol_List != NULL )
     		dp->dvp_Flags = DVPF_ASSIGN;
 
