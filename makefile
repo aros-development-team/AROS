@@ -14,10 +14,13 @@ LIBS=-L$(LIBDIR) \
 
 SUBDIRS = $(KERNEL) include aros clib exec dos utility graphics intuition \
 	alib filesys libs devs c Demos
+
+# Extra files which should go in the developer dist
 DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
 	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS \
-	i386-emul m68k-native m68k-emul purify scripts/purify.awk
+	i386-emul m68k-native m68k-emul purify scripts/purify.awk \
+	scripts/CVS s/CVS CVS .cvsignore scripts/.cvsignore
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
