@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/07/23 21:41:07  stegerg
+    fixes, gzz
+
     Revision 1.8  1999/07/21 21:38:07  stegerg
     fixes for gzz gadgets
 
@@ -41,6 +44,7 @@
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include "intuition_intern.h"
+#include "gadgets.h"
 
 /*****************************************************************************
 
@@ -136,7 +140,8 @@
 	    if (tw)
 	    {
 		/* Initialize the GadgetInfo data. */
-		gi->gi_Window	      = tw;
+		
+		gi->gi_Window	      = (gad->GadgetType & GTYP_SCRGADGET) ? NULL : tw;
 		gi->gi_Screen	      = tw->WScreen;
 		gi->gi_Layer	      = tw->WLayer;
 		gi->gi_Pens.DetailPen = tw->DetailPen;
@@ -147,58 +152,8 @@
 		
 		gi->gi_Layer	      = gi->gi_RastPort->Layer;
 		
-		switch (gad->GadgetType & (GTYP_GADGETTYPE & ~GTYP_SYSGADGET))
-		{
-		case GTYP_SCRGADGET:
-		    gi->gi_Window	 = NULL;
-		    gi->gi_Domain.Left	 = 0;
-		    gi->gi_Domain.Top	 = 0;
-		    gi->gi_Domain.Width  = tw->WScreen->Width;
-		    gi->gi_Domain.Height = tw->WScreen->Height;
-
-		    break;
-
-		case GTYP_GZZGADGET:
-		    /* stegerg: this means gadget is in window border! */
-		    
-		    gi->gi_Domain.Left	 = 0;
-		    gi->gi_Domain.Top	 = 0;
-		    gi->gi_Domain.Width  = tw->Width;
-		    gi->gi_Domain.Height = tw->Height;
-		    
-		    break;
-
-		case GTYP_REQGADGET:
-		    gi->gi_Domain.Left	 = req->LeftEdge;
-		    gi->gi_Domain.Top	 = req->TopEdge;
-		    gi->gi_Domain.Width  = req->Width;
-		    gi->gi_Domain.Height = req->Height;
-
-		    break;
-
-		default:
-		    if (tw->Flags & WFLG_GIMMEZEROZERO)
-		    {
-		        /* stegerg: domain.left and domain.top must not be added
-			   to gadget position when it is rendered, because gadgets
-			   in the innerlayer of a gzz gadget are already shifted
-			   thanks to the innerlayer. */
-			   
-		        gi->gi_Domain.Left   = tw->BorderLeft;
-		        gi->gi_Domain.Top    = tw->BorderTop;
-			
-		        gi->gi_Domain.Width  = tw->Width - tw->BorderLeft - tw->BorderRight;
-		        gi->gi_Domain.Height = tw->Height - tw->BorderTop - tw->BorderBottom;
-		    } else {		    	
-			gi->gi_Domain.Left   = 0;
-			gi->gi_Domain.Top    = 0;
-			gi->gi_Domain.Width  = tw->Width;
-			gi->gi_Domain.Height = tw->Height;
-		    }
-		    
-		    break;
-
-		} /* switch (gadgettype) */
+		GetGadgetDomain(gad, tw, req, &gi->gi_Domain);
+		
 	    } /* if (tw) */
 	} /* if (gi) */
 

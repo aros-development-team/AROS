@@ -7,6 +7,7 @@
 */
 #include "intuition_intern.h"
 #include "inputhandler.h"
+#include "gadgets.h"
 
 /*****************************************************************************
 
@@ -77,13 +78,21 @@
 	    UWORD imsgcode;
 	    struct GadgetInfo gi;
 	    struct InputEvent ie;
+	    struct IBox box;
 	    
 	    /* Fake an inputevent to the gadget */
 	    ie.ie_Class	= IECLASS_RAWMOUSE;
 	    ie.ie_Code	= SELECTDOWN;
 	
+	     /*
 	    ie.ie_X	= GetLeft (gadget, window) + window->LeftEdge;
 	    ie.ie_Y	= GetTop  (gadget, window) + window->TopEdge;
+	    */
+	    
+	    /* stegerg: really screen coords ?? */
+	    GetScrGadgetIBox(gadget, window, requester,&box);	    
+	    ie.ie_X = box.Left;
+	    ie.ie_Y = box.Top;
 	    
 	    gi.gi_Screen = window->WScreen;
 	    gi.gi_Window = window;
@@ -99,16 +108,19 @@
 	    
 	case GTYP_CUSTOMGADGET: {
 	    struct gpInput msg;
+	    struct IBox box;
 	    
 	    LONG termination;
 	    IPTR retval;
+	    
+	    GetGadgetDomain(gadget, window, requester, &box);
 	    
 	    msg.MethodID	= GM_GOACTIVE;
 	    msg.gpi_GInfo	= NULL;
 	    msg.gpi_IEvent	= NULL;
 	    msg.gpi_Termination	= &termination;
-	    msg.gpi_Mouse.X	= window->WScreen->MouseX - window->LeftEdge;
-	    msg.gpi_Mouse.Y	= window->WScreen->MouseY - window->TopEdge;
+	    msg.gpi_Mouse.X	= window->WScreen->MouseX - window->LeftEdge - box.Left;
+	    msg.gpi_Mouse.Y	= window->WScreen->MouseY - window->TopEdge  - box.Top;
 	    msg.gpi_TabletData	= NULL;
 	    
 	

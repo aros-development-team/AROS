@@ -22,6 +22,7 @@
 #include "boolgadgets.h"
 #include "propgadgets.h"
 #include "strgadgets.h"
+#include "gadgets.h"
 #include "intuition_intern.h" /* EWFLG_xxx */
 
 #undef DEBUG
@@ -105,6 +106,25 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 
 
 
+static BOOL InsideGadget(struct Window *win, struct Gadget *gad,
+			 WORD x, WORD y)
+{
+    struct IBox box;
+    BOOL rc = FALSE;
+    
+    GetScrGadgetIBox(gad, win, NULL, &box);
+       
+    if ((x >= box.Left) &&
+    	(y >= box.Top)  &&
+	(x < box.Left + box.Width) &&
+	(y < box.Top + box.Height))
+    {
+    	rc = TRUE;
+    }
+    
+    return rc; 
+}
+
 /*****************
 **  FindGadget	**
 *****************/
@@ -113,6 +133,8 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 {
     struct Gadget * gadget;
     struct gpHitTest gpht;
+    struct IBox ibox;
+    WORD xrel, yrel;
     int gx, gy;
 
     gpht.MethodID     = GM_HITTEST;
@@ -120,42 +142,30 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 
     for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
     {
-	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
-	{
-	    /* Mouseclick inside the gadget? */
-	    gx = x - GetLeft(gadget,window);
-	    gy = y - GetTop(gadget,window);
+    	/* stegerg: domain depends on gadgettype and windowflags! */
+        GetGadgetDomain(gadget, window, NULL, &gi->gi_Domain);
+	
+	/* Get coords relative to window */
 
-	    if (gx >= 0
-		&& gy >= 0
-		&& gx < GetWidth(gadget,window)
-		&& gy < GetHeight(gadget,window)
-	    )
+    	GetGadgetIBox((Object *)gadget, gi, &ibox);
+
+	xrel = x - gi->gi_Domain.Left - window->LeftEdge;
+	yrel = y - gi->gi_Domain.Top  - window->TopEdge;
+
+	if (   xrel >= ibox.Left
+	    && yrel >= ibox.Top
+	    && xrel < ibox.Left + ibox.Width 
+	    && yrel < ibox.Top  + ibox.Height )
+	{
+	    if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET) break;
+	     
+	    gpht.gpht_Mouse.X = xrel;
+	    gpht.gpht_Mouse.Y = yrel;
+
+	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
 		break;
 	}
-	else
-	{
-	    struct IBox ibox;
-	    WORD xrel, yrel;
-	    
-	    /* Get coords relative to window */
-	    xrel = x - window->LeftEdge;
-	    yrel = y - window->TopEdge;
-	    
-	    GetGadgetIBox((Object *)gadget, gi, &ibox);
-	    
-	    if (   xrel >= ibox.Left
-	    	&& yrel >= ibox.Top
-		&& xrel < ibox.Left + ibox.Width 
-		&& yrel < ibox.Top  + ibox.Height )
-	    {
-		gpht.gpht_Mouse.X = xrel;
-		gpht.gpht_Mouse.Y = yrel;
-	    
-		if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
-		    break;
-	    }
-	}
+
     }
 
     return (gadget);
@@ -178,7 +188,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
     char *ptr = NULL;
-    WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
+    WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY,
+    	 win_mousex, win_mousey;
     struct GadgetInfo stackgi, *gi = &stackgi;
     BOOL reuse_event = FALSE;
     struct Window *w;
@@ -279,6 +290,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
 	gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
 
+	/* mouse position relative to upper left window edge,
+	   only valid for certain IECLASSes!! */
+	   
+	win_mousex = ie->ie_X - w->LeftEdge;
+	win_mousey = ie->ie_Y - w->TopEdge;
+	
 	switch (ie->ie_Class)
 	{
 	    
@@ -320,8 +337,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
-	        im->MouseX	= ie->ie_X - w->LeftEdge;
-	        im->MouseY	= ie->ie_Y - w->TopEdge;
+	        im->MouseX	= win_mousex;
+	        im->MouseY	= win_mousey;
 
 		im->Class = IDCMP_MOUSEBUTTONS;
 		ptr = "MOUSEBUTTONS";
@@ -358,10 +375,19 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_PROPGADGET:
-			HandlePropSelectDown(gadget, w, NULL, im->MouseX,
-					     im->MouseY, IntuitionBase);
+		    	{
+			    struct IBox box;
+			    
+			    GetGadgetDomain(gadget, w, NULL, &box);
+			    
+			    HandlePropSelectDown(gadget,
+						 w,
+						 NULL,
+						 win_mousex - box.Left,
+						 win_mousey - box.Top,
+						 IntuitionBase);
 
-			
+			}
 			break;
 
 		    case GTYP_STRGADGET:
@@ -430,12 +456,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			}
 			
 			SET_GI_RPORT(gi, w, gadget);
-
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
+			
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = im->MouseX;
-			gpi.gpi_Mouse.Y = im->MouseY;
+			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left;
+			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top;
 			gpi.gpi_TabletData	= NULL;
 
 
@@ -496,9 +523,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
-	        im->MouseX	= ie->ie_X - w->LeftEdge;
-	        im->MouseY	= ie->ie_Y - w->TopEdge;
-
+	        im->MouseX = win_mousex;
+	        im->MouseY = win_mousey;
 
 		D(bug("SELECTUP\n"));
 		if (gadget)
@@ -547,13 +573,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG termination;
 
 			SET_GI_RPORT(gi, w, gadget);
-
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
+			
 			gpi.MethodID	= GM_HANDLEINPUT;
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = im->MouseX;
-			gpi.gpi_Mouse.Y = im->MouseY;
+			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left;
+			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top;
 			gpi.gpi_TabletData	= NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
@@ -609,8 +636,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
-	        im->MouseX	= ie->ie_X - w->LeftEdge;
-	        im->MouseY	= ie->ie_Y - w->TopEdge;
+	        im->MouseX = win_mousex;
+	        im->MouseY = win_mousey;
 
 		if (gadget)
 		{
@@ -622,13 +649,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG termination;
 
 			SET_GI_RPORT(gi, w, gadget);
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
 			
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = im->MouseX;
-			gpi.gpi_Mouse.Y     = im->MouseY;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -681,8 +709,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
-	        im->MouseX	= ie->ie_X - w->LeftEdge;
-	        im->MouseY	= ie->ie_Y - w->TopEdge;
+	        im->MouseX = win_mousex;
+	        im->MouseY = win_mousey;
 
 		if (gadget)
 		{
@@ -694,13 +722,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG termination;
 
 			SET_GI_RPORT(gi, w, gadget);
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
 
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = im->MouseX;
-			gpi.gpi_Mouse.Y     = im->MouseY;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
@@ -754,8 +783,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	        **  The mouse coordinates relative to the upper left
 	        **  corner of the window
 	        */
-	        im->MouseX	= ie->ie_X - w->LeftEdge;
-	        im->MouseY	= ie->ie_Y - w->TopEdge;
+	        im->MouseX = win_mousex;
+	        im->MouseY = win_mousey;
 
 		ptr = "MOUSEMOVE";
 		iihdata->LastMouseX = ie->ie_X;
@@ -798,13 +827,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			ULONG termination;
 
 			SET_GI_RPORT(gi, w, gadget);
+			GetGadgetDomain(gadget, w, NULL, &gi->gi_Domain);
 			
 			gpi.MethodID	= GM_HANDLEINPUT;
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = im->MouseX;
-			gpi.gpi_Mouse.Y     = im->MouseY;
+			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left;
+			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top;
 			gpi.gpi_TabletData  = NULL;
 
 			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
