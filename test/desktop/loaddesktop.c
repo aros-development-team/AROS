@@ -32,72 +32,24 @@ struct Library *MUIMasterBase;
 
 int main(void)
 {
-	Object *app, *win, *iconCon, *strip, *vert, *horiz;
+	Object *app, *win, *iconCon, *vert, *horiz;
+	Object *strip;
 	struct MUI_CustomClass *iconContainerClass;
 	BOOL running=TRUE;
 	ULONG signals=0;
 	struct Screen *screen;
-	struct DesktopOperationItem *doi;
-	LONG i=0, j=0;
 	struct NewMenu *menuDat;
 	struct TagItem icTags[6];
 	ULONG inputResult;
 
-	DesktopBase=OpenLibrary("desktop.library", 0);
 	MUIMasterBase=OpenLibrary("muimaster.library", 0);
+	if(!MUIMasterBase)
+		printf("could not open muimaster.library\n");
+	DesktopBase=OpenLibrary("desktop.library", 0);
+	if(!DesktopBase)
+		printf("could not open desktop.library\n");
 
-	doi=GetMenuItemList(DOC_ICONOP);
-	if(doi)
-	{
-		while(doi[i].doi_Code!=0 && doi[i].doi_Name!=NULL)
-			i++;
-	}
-
-	menuDat=(struct NewMenu*)AllocVec(sizeof(struct NewMenu)*(i+3), MEMF_ANY);
-	menuDat[0].nm_Type=NM_TITLE;
-	menuDat[0].nm_Label="AROS";
-	menuDat[0].nm_CommKey=0;
-	menuDat[0].nm_Flags=0;
-	menuDat[0].nm_MutualExclude=0;
-	menuDat[0].nm_UserData=0;
-	menuDat[1].nm_Type=NM_ITEM;
-	menuDat[1].nm_Label="Quit";
-	menuDat[1].nm_CommKey="Q";
-	menuDat[1].nm_Flags=0;
-	menuDat[1].nm_MutualExclude=0;
-	menuDat[1].nm_UserData=2;
-	j=2;
-
-	if(i>0)
-	{
-		menuDat[2].nm_Type=NM_TITLE;
-		menuDat[2].nm_Label="Icon";
-		menuDat[2].nm_CommKey=0;
-		menuDat[2].nm_Flags=0;
-		menuDat[2].nm_MutualExclude=0;
-		menuDat[2].nm_UserData=DOC_ICONOP;
-		j=3;
-
-		i=0;
-		while(doi[i].doi_Code!=0 && doi[i].doi_Name!=NULL)
-		{
-			menuDat[j].nm_Type=NM_ITEM;
-			menuDat[j].nm_Label=doi[i].doi_Name;
-			menuDat[j].nm_CommKey=0;
-			menuDat[j].nm_Flags=0;
-			menuDat[j].nm_MutualExclude=0;
-			menuDat[j].nm_UserData=doi[i].doi_Code;
-			i++;
-			j++;
-		}
-	}
-
-	menuDat[j].nm_Type=NM_END;
-	menuDat[j].nm_Label=NULL;
-	menuDat[j].nm_CommKey=0;
-	menuDat[j].nm_Flags=0;
-	menuDat[j].nm_MutualExclude=0;
-	menuDat[j].nm_UserData=0;
+	menuDat=BuildDesktopMenus();
 
 	screen=LockPubScreen(NULL);
 
@@ -176,16 +128,30 @@ int main(void)
 					// a menuitem was selected...
 					struct MinList *subjects=NULL;
 					Object *member, *ostate;
+					Tag activeSubjectsTag;
+					struct TagItem args[2];
 
-					if(inputResult & DOC_ICONOP)
+					if(inputResult & DOC_DESKTOPOP)
 					{
-						GetAttr(ICA_SelectedIcons, iconCon, &subjects);
+						args[0].ti_Tag=DDO_Target;
+						args[0].ti_Data=iconCon;
+						args[1].ti_Tag=TAG_END;
+						args[1].ti_Data=0;
+
+						DoDesktopOperation(inputResult, args);
+					}
+					else if((inputResult & DOC_ICONOP) || (inputResult & DOC_WINDOWOP))
+					{
+						if(inputResult & DOC_ICONOP)
+							activeSubjectsTag=ICA_SelectedIcons;
+						else if(inputResult & DOC_WINDOWOP)
+							activeSubjectsTag=DA_ActiveWindows;
+
+						GetAttr(activeSubjectsTag, iconCon, &subjects);
 
 						ostate=subjects->mlh_Head;
 						while(member=NextObject(&ostate))
 						{
-							struct TagItem args[2];
-
 							args[0].ti_Tag=DDO_Target;
 							args[0].ti_Data=member;
 							args[1].ti_Tag=TAG_END;
@@ -205,10 +171,12 @@ int main(void)
 
 		DisposeObject(app);
 	}
+	else
+		kprintf("could not create app\n");
 
 
-	CloseLibrary(MUIMasterBase);
 	CloseLibrary(DesktopBase);
+	CloseLibrary(MUIMasterBase);
 
 	return 0;
 }
