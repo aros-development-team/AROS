@@ -181,7 +181,7 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
             return 0;
         }
     }
-    
+
     startup->msg.mn_ReplyPort = msg_port;
     startup->msg.mn_Length = sizeof(struct Asl_Startup);
     startup->tags = data->tag_list;
@@ -254,6 +254,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
     }
 
     data->asl_proc = NULL;
+    set(obj, MUIA_Popasl_Active, FALSE);
 
     return 0;
 }
