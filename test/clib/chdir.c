@@ -10,14 +10,14 @@ int main()
     char *path = NULL;
     int   error;
     
-    chdir( "SYS:" );
+    TEST( chdir( "SYS:" ) == 0 );
     path  = getcwd( NULL, 0 );
     TEST( stricmp( path, "SYS:" ) == 0 );
     free( path ); path = NULL;
     
-    chdir( "SYS:Tools" );
+    TEST( chdir( "SYS:Tools" ) == 0 );
     path = getcwd( NULL, 0 );
-    TEST( stricmp( path, "SYS:TOOLS" ) );
+    TEST( strcmp( path, "SYS:Tools" ) == 0 );
     free( path ); path = NULL;
     
     return OK;
@@ -25,8 +25,5 @@ int main()
 
 void cleanup() 
 {
-    if( path != NULL )
-    {
-    	free( path );
-    }
+    if( path != NULL ) free( path );
 }

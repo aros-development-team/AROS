@@ -4,6 +4,7 @@
 
 char *tests[] =
 {
+    "chdir",
     "strchr",
     "stpblk",
     
