@@ -343,6 +343,7 @@ static void GetVisual(void)
 
 static void FreeVisual(void)
 {
+    if (vi)  FreeVisualInfo(vi);
     if (dri) FreeScreenDrawInfo(scr, dri);
     if (scr) UnlockPubScreen(NULL, scr);
 }
