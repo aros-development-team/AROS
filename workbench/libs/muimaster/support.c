@@ -55,13 +55,16 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
  Convient way to get an attribute of an object easily. If the object
  doesn't support the attribute this call returns an undefined value. So use
  this call only if the attribute is known to be known by the object. 
+ Implemented as a macro when compiling with GCC.
 **************************************************************************/
+#ifndef __GNUC__
 IPTR xget(Object *obj, Tag attr)
 {
   IPTR storage = 0;
   GetAttr(attr, obj, &storage);
   return storage;
 }
+#endif /* __GNUC__ */
 
 /**************************************************************************
  Call the Setup Method of an given object, but before set the renderinfo
