@@ -3,7 +3,9 @@ files to build the FreeType demo programs ftlint and ftview for MacOS.
 
 Building
 To build these apps, you'll first need to build the FreeType library
-(see config/mac). The applications get built in the demos/bin folder.
+(see config/mac). Be sure to unpack the resource.hqx file; it contains
+two resource files that are needed for ftlint and ftview. The
+applications get built in the demos/bin folder.
 
 Notes
 Since the Mac doesn't have the notion of argc/argv, we'll emulate
@@ -19,4 +21,4 @@ Just van Rossum, <just@letterror.com>
 
 DISCLAIMER: this subdirectory is *not* being maintained by the
 FreeType team, but by Just van Rossum. It's being released under
-the same terms as FreeType (see license.txt).
+the same terms as FreeType (see LICENSE.TXT).

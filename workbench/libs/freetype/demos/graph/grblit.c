@@ -2,10 +2,10 @@
 /*                                                                          */
 /*  The FreeType project -- a free and portable quality TrueType renderer.  */
 /*                                                                          */
-/*  Copyright 1996-1999 by                                                  */
+/*  Copyright 1996-1999, 2000, 2001, 2002 by                                */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
 /*                                                                          */
-/*  blitter.c: Support for blitting of bitmaps with various depth.          */
+/*  grblit.c: Support for blitting of bitmaps with various depth.           */
 /*                                                                          */
 /****************************************************************************/
 
@@ -32,7 +32,15 @@
     case gr_pixel_mode_pal4:
       width = (width + 1) & -2;
       break;
-      
+
+    case gr_pixel_mode_lcd:
+      width /= 3;
+      break;
+
+    case gr_pixel_mode_lcdv:
+      height /= 3;
+      break;
+
     default:
       ;
     }
@@ -82,7 +90,7 @@
     case gr_pixel_mode_pal4:
       target_width = (target_width + 1) & -2;
       break;
-      
+
     default:
       ;
     }
@@ -99,12 +107,12 @@
     /* set read and write to the top-left corner of the read */
     /* and write areas before clipping.                      */
 
-    blit->read  = (unsigned char*)blit->source.buffer;
-    blit->write = (unsigned char*)blit->target.buffer;
+    blit->read  = blit->source.buffer;
+    blit->write = blit->target.buffer;
 
     blit->read_line  = blit->source.pitch;
     blit->write_line = blit->target.pitch;
-    
+
     if ( blit->read_line < 0 )
       blit->read -= (blit->source.rows-1) * blit->read_line;
 
@@ -182,7 +190,7 @@
       {
         unsigned char*  _read  = read;
         unsigned char*  _write = write;
-        unsigned char   old;
+        unsigned int    old;
         int             shift2 = (8-shift);
 
         if ( left_clip )
@@ -196,13 +204,13 @@
           unsigned char val;
 
           val = *_read++;
-          *_write++ |= ( (val >> shift) | old );
+          *_write++ |= (unsigned char)( (val >> shift) | old );
           old = val << shift2;
           x--;
         }
 
         if ( !blit->right_clip )
-          *_write |= old;
+          *_write |= (unsigned char)old;
 
         read  += blit->read_line;
         write += blit->write_line;
@@ -223,38 +231,31 @@
   void  blit_mono_to_pal8( grBlitter*  blit,
                            grColor     color )
   {
-    int             x, y;
-    unsigned int    left_mask;
+    int             x, y, shift;
     unsigned char*  read;
     unsigned char*  write;
 
     read  = blit->read  + (blit->xread >> 3);
     write = blit->write +  blit->xwrite;
-
-    left_mask = 0x80 >> (blit->xread & 7);
+    shift = blit->xread & 7;
 
     y = blit->height;
     do
     {
       unsigned char*  _read  = read;
       unsigned char*  _write = write;
-      unsigned int    mask   = left_mask;
-      unsigned int    val    = *_read;
-
+      unsigned long    val    = (*_read++ | 0x100) << shift;
 
       x = blit->width;
       do
       {
-        if ( mask == 0x80 )
-          val = *_read++;
-          
-        if ( val & mask )
+        if (val & 0x10000)
+          val = *_read++ | 0x100;
+
+        if ( val & 0x80 )
           *_write = (unsigned char)color.value;
 
-        mask >>= 1;
-        if ( mask == 0 )
-          mask = 0x80;
-
+        val <<= 1;
         _write++;
         x--;
       } while ( x > 0 );
@@ -276,11 +277,10 @@
   void  blit_mono_to_pal4( grBlitter*  blit,
                            grColor     color )
   {
-    int             x, y, phase;
-    unsigned int    left_mask;
+    int             x, y, phase,shift;
     unsigned char*  read;
     unsigned char*  write;
-    unsigned char   col;
+    unsigned int    col;
 
 
     col   = color.value & 15;
@@ -288,35 +288,32 @@
     write = blit->write + (blit->xwrite >> 1);
 
     /* now begin blit */
-    left_mask = 0x80 >> (blit->xread & 7);
-    phase     = blit->xwrite & 1;
+    shift = blit->xread & 7;
+    phase = blit->xwrite & 1;
 
     y = blit->height;
     do
     {
       unsigned char*  _read  = read;
       unsigned char*  _write = write;
-      unsigned int    mask   = left_mask;
       int             _phase = phase;
-      unsigned int    val    = *_read;
+      unsigned long    val    = (*_read++ | 0x100) << shift;
 
       x = blit->width;
       do
       {
-        if ( mask == 0x80 )
-          val = *_read++;
+        if (val & 0x10000)
+          val = *_read++ | 0x100;
 
-        if ( val & mask )
+        if ( val & 0x80 )
         {
           if ( _phase )
-            *_write = (*_write & 0xF0) | col;
+            *_write = (unsigned char)((*_write & 0xF0) | col);
           else
-            *_write = (*_write & 0x0F) | (col << 4);
+            *_write = (unsigned char)((*_write & 0x0F) | (col << 4));
         }
 
-        mask >>= 1;
-        if ( mask == 0 )
-          mask = 0x80;
+        val <<= 1;
 
         _write += _phase;
         _phase ^= 1;
@@ -340,37 +337,31 @@
   void  blit_mono_to_rgb16( grBlitter*  blit,
                             grColor     color )
   {
-    int              x, y;
-    unsigned int     left_mask;
+    int              x, y,shift;
     unsigned char*   read;
     unsigned char*   write;
-    
+
     read  = blit->read + (blit->xread >> 3);
     write = blit->write + blit->xwrite*2;
-
-    left_mask = 0x80 >> (blit->xread & 7);
+    shift = blit->xread & 7;
 
     y = blit->height;
     do
     {
       unsigned char*  _read  = read;
       unsigned char*  _write = write;
-      unsigned int    mask   = left_mask;
-      unsigned int    val    = *_read;
+      unsigned long    val    = (*_read++ | 0x100) << shift;
 
       x = blit->width;
       do
       {
-        if ( mask == 0x80 )
-          val = *_read++;
+        if (val & 0x10000)
+          val = *_read++ | 0x100;
 
-        if ( val & mask )
+        if ( val & 0x80 )
           *(short*)_write = (short)color.value;
 
-        mask >>= 1;
-        if ( mask == 0 )
-          mask = 0x80;
-
+        val   <<= 1;
         _write +=2;
         x--;
       } while ( x > 0 );
@@ -392,41 +383,35 @@
   void  blit_mono_to_rgb24( grBlitter*  blit,
                             grColor     color )
   {
-    int             x, y;
-    unsigned int    left_mask;
+    int             x, y, shift;
     unsigned char*  read;
     unsigned char*  write;
-    
+
     read  = blit->read  + (blit->xread >> 3);
     write = blit->write + blit->xwrite*3;
-
-    left_mask = 0x80 >> (blit->xread & 7);
+    shift = blit->xread & 7;
 
     y = blit->height;
     do
     {
       unsigned char*  _read  = read;
       unsigned char*  _write = write;
-      unsigned int    mask   = left_mask;
-      unsigned int    val    = *_read;
+      unsigned long    val   = (*_read++ | 0x100) << shift;
 
       x = blit->width;
       do
       {
-        if ( mask == 0x80 )
-          val = *_read++;
+        if (val & 0x10000)
+          val = *_read++ | 0x100;
 
-        if ( val & mask )
+        if ( val & 0x80 )
         {
           _write[0] = color.chroma[0];
           _write[1] = color.chroma[1];
           _write[2] = color.chroma[2];
         }
 
-        mask >>= 1;
-        if ( mask == 0 )
-          mask = 0x80;
-
+        val   <<= 1;
         _write += 3;
         x--;
       } while ( x > 0 );
@@ -448,31 +433,28 @@
   void  blit_mono_to_rgb32( grBlitter*  blit,
                             grColor     color )
   {
-    int             x, y;
-    unsigned int    left_mask;
+    int             x, y,shift;
     unsigned char*  read;
     unsigned char*  write;
-     
+
     read  = blit->read  + (blit->xread >> 3);
     write = blit->write + blit->xwrite*4;
-
-    left_mask = 0x80 >> (blit->xread & 7);
+    shift = blit->xread & 7;
 
     y = blit->height;
     do
     {
       unsigned char*  _read  = read;
       unsigned char*  _write = write;
-      unsigned int    mask   = left_mask;
-      unsigned int    val    = *_read;
+      unsigned long   val    = (*_read | 0x100L) << shift;
 
       x = blit->width;
       do
       {
-        if ( mask == 0x80 )
-          val = *_read++;
+        if (val & 0x10000)
+          val = (*_read | 0x100L);
 
-        if ( val & mask )
+        if ( val & 0x80 )
         {
    /* this could be greatly optimised as a *(long*)_write = color.value */
    /* but this wouldn't work on 64-bits systems... stupid C types!      */
@@ -482,10 +464,7 @@
           _write[3] = color.chroma[3];
         }
 
-        mask >>= 1;
-        if ( mask == 0 )
-          mask = 0x80;
-
+        val   <<= 1;
         _write += 4;
         x--;
       } while ( x > 0 );
@@ -523,19 +502,19 @@
   {
     int          count;
     const byte*  table;
-  
+
   } grSaturation;
-  
-  
+
+
   static
   const byte  gr_saturation_5[8] = { 0, 1, 2, 3, 4, 4, 4, 4 };
-  
+
 
   static
   const byte  gr_saturation_17[32] =
   {
      0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15,
-    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 
+    16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16,
   };
 
 
@@ -565,7 +544,7 @@
       grError = gr_err_bad_argument;
       return 0;
     }
-     
+
     for ( ; sat < limit; sat++ )
     {
       if ( sat->count == num_grays )
@@ -574,25 +553,25 @@
         return sat->table;
       }
     }
-    
+
     /* not found, simply create a new entry if there is room */
     if (gr_num_saturations < GR_MAX_SATURATIONS)
     {
       int          i;
       const byte*  table;
-      
+
       table = (const byte*)grAlloc( (3*num_grays-1)*sizeof(byte) );
       if (!table) return 0;
-        
+
       sat->count = num_grays;
       sat->table = table;
-      
+
       for ( i = 0; i < num_grays; i++, table++ )
-        *(unsigned char*)table = (unsigned char)i;  
-      
+        *(unsigned char*)table = (unsigned char)i;
+
       for ( i = 2*num_grays-1; i > 0; i--, table++ )
-        *(unsigned char*)table = (unsigned char)(num_grays-1);   
-        
+        *(unsigned char*)table = (unsigned char)(num_grays-1);
+
       gr_num_saturations++;
       gr_last_saturation = sat;
       return sat->table;
@@ -614,11 +593,11 @@
     int          target_grays;
     int          source_grays;
     const byte*  table;
-  
+
   } grConversion;
-  
-  
-  
+
+
+
   static
   const byte  gr_gray5_to_gray17[5] = { 0, 4, 8, 12, 16 };
 
@@ -654,13 +633,13 @@
   {
     grConversion*  conv  = gr_conversions;
     grConversion*  limit = conv + gr_num_conversions;
-   
+
     if ( target_grays < 2 || source_grays < 2 )
     {
       grError = gr_err_bad_argument;
       return 0;
     }
-    
+
     /* otherwise, scan table */
     for ( ; conv < limit; conv++ )
     {
@@ -671,7 +650,7 @@
         return conv->table;
       }
     }
-    
+
     /* not found, add a new conversion to the table */
     if (gr_num_conversions < GR_MAX_CONVERSIONS)
     {
@@ -681,15 +660,15 @@
       table = (const byte*)grAlloc( source_grays*sizeof(byte) );
       if (!table)
         return 0;
-        
+
       conv->target_grays = target_grays;
       conv->source_grays = source_grays;
       conv->table        = table;
 
       for ( n = 0; n < source_grays; n++ )
-        ((unsigned char*)table)[n] = (unsigned char)(n*(target_grays-1)) / 
-                                         (source_grays-1);
-            
+        ((unsigned char*)table)[n] = (unsigned char)(n*(target_grays-1) /
+                                         (source_grays-1));
+
       gr_num_conversions++;
       gr_last_conversion = conv;
       return table;
@@ -720,9 +699,9 @@
 
     max1  = (unsigned char)(blit->source.grays-1);
     max2  = (unsigned char)(blit->target.grays-1);
-    
-    read  = (unsigned char*)blit->read  + blit->xread;
-    write = (unsigned char*)blit->write + blit->xwrite;
+
+    read  = blit->read  + blit->xread;
+    write = blit->write + blit->xwrite;
 
     y = blit->height;
     do
@@ -735,7 +714,7 @@
       {
 #ifdef GR_CONFIG_GRAY_SKIP_WHITE
         unsigned char val = *_read;
-        
+
         if (val)
         {
           if (val == max)
@@ -750,7 +729,7 @@
         _read++;
         x--;
       }
-      
+
       read  += blit->read_line;
       write += blit->write_line;
       y--;
@@ -775,9 +754,9 @@
     unsigned char   max;
 
     max   = (unsigned char)(blit->source.grays-1);
-    
-    read  = (unsigned char*)blit->read  + blit->xread;
-    write = (unsigned char*)blit->write + blit->xwrite;
+
+    read  = blit->read  + blit->xread;
+    write = blit->write + blit->xwrite;
 
     y = blit->height;
     do
@@ -790,7 +769,7 @@
       {
 #ifdef GR_CONFIG_GRAY_SKIP_WHITE
         unsigned char val = *_read;
-        
+
         if (val)
         {
           if (val == max)
@@ -805,7 +784,7 @@
         _read++;
         x--;
       }
-      
+
       read  += blit->read_line;
       write += blit->write_line;
       y--;
@@ -815,44 +794,48 @@
 
 
 
-#define  compose_pixel( a, b, n, max )       \
-   {                                         \
-     int  d, half = max >> 1;                \
-                                             \
-     d = (int)b.chroma[0] - a.chroma[0]; \
-     a.chroma[0] += (n*d + half)/max;      \
-                                             \
-     d = (int)b.chroma[1] - a.chroma[1]; \
-     a.chroma[1] += (n*d + half)/max;      \
-                                             \
-     d = (int)b.chroma[2] - a.chroma[2]; \
-     a.chroma[2] += (n*d + half)/max;      \
-   }
+#define compose_pixel_full( a, b, n0, n1, n2, max )          \
+  {                                                          \
+    int  d, half = max >> 1;                                 \
+                                                             \
+                                                             \
+    d = (int)b.chroma[0] - a.chroma[0];                      \
+    a.chroma[0] += (unsigned char)((n0*d + half)/max);       \
+                                                             \
+    d = (int)b.chroma[1] - a.chroma[1];                      \
+    a.chroma[1] += (unsigned char)((n1*d + half)/max);       \
+                                                             \
+    d = (int)b.chroma[2] - a.chroma[2];                      \
+    a.chroma[2] += (unsigned char)((n2*d + half)/max);       \
+  }
+
+#define compose_pixel( a, b, n, max )  \
+    compose_pixel_full( a, b, n, n, n, max )
 
 
-#define  extract555( pixel, color )           \
-   color.chroma[0] = (pixel >> 10) & 0x1F;  \
-   color.chroma[1] = (pixel >>  5) & 0x1F;  \
-   color.chroma[2] = (pixel      ) & 0x1F;
-   
-
-#define  extract565( pixel, color )           \
-   color.chroma[0] = (pixel >> 11) & 0x1F;  \
-   color.chroma[1] = (pixel >>  5) & 0x3F;  \
-   color.chroma[2] = (pixel      ) & 0x1F;
+#define extract555( pixel, color )                           \
+   color.chroma[0] = (unsigned char)((pixel >> 10) & 0x1F);  \
+   color.chroma[1] = (unsigned char)((pixel >>  5) & 0x1F);  \
+   color.chroma[2] = (unsigned char)((pixel      ) & 0x1F);
 
 
-#define  inject555( color )                           \
+#define extract565( pixel, color )                           \
+   color.chroma[0] = (unsigned char)((pixel >> 11) & 0x1F);  \
+   color.chroma[1] = (unsigned char)((pixel >>  5) & 0x3F);  \
+   color.chroma[2] = (unsigned char)((pixel      ) & 0x1F);
+
+
+#define inject555( color )                          \
    ( ( (unsigned short)color.chroma[0] << 10 ) |    \
      ( (unsigned short)color.chroma[1] <<  5 ) |    \
        color.chroma[2]                         )
-      
 
-#define  inject565( color )         \
+
+#define inject565( color )                          \
    ( ( (unsigned short)color.chroma[0] << 11 ) |    \
      ( (unsigned short)color.chroma[1] <<  5 ) |    \
        color.chroma[2]                         )
-      
+
 
 /**************************************************************************/
 /*                                                                        */
@@ -872,7 +855,7 @@
 
     read   = blit->read  + blit->xread;
     write  = blit->write + 2*blit->xwrite;
-    
+
     /* convert color to R:G:B triplet */
     color2 = color.value;
     extract555( color2, color );
@@ -887,12 +870,12 @@
       while (x > 0)
       {
         unsigned char   val;
-        
+
         val = *_read;
         if (val)
         {
           unsigned short* pixel = (unsigned short*)_write;
-          
+
           if (val == max)
           {
             pixel[0] = (short)color2;
@@ -902,18 +885,18 @@
             /* compose gray value */
             unsigned short  pix16 = *pixel;
             grColor         pix;
-            
+
             extract555( pix16, pix );
 
             compose_pixel( pix, color, val, max );
-            *pixel = inject555(pix);
-          }  
+            *pixel = (unsigned short)(inject555(pix));
+          }
         }
         _write += 2;
         _read  ++;
         x--;
       }
-      
+
       read  += blit->read_line;
       write += blit->write_line;
       y--;
@@ -940,7 +923,7 @@
 
     read   = blit->read  + blit->xread;
     write  = blit->write + 2*blit->xwrite;
-    
+
     color2 = color.value;
     extract565( color2, color );
 
@@ -954,12 +937,12 @@
       while (x > 0)
       {
         unsigned char    val;
-        
+
         val = *_read;
         if (val)
         {
           unsigned short* pixel = (unsigned short*)_write;
-          
+
           if (val == max)
           {
             pixel[0] = (short)color2;
@@ -970,17 +953,17 @@
             unsigned short  pix16 = *pixel;
             grColor         pix;
 
-            extract565( pix16, pix );            
+            extract565( pix16, pix );
 
             compose_pixel( pix, color, val, max );
-            *pixel = inject565( pix );
-          }  
+            *pixel = (short)inject565( pix );
+          }
         }
         _write +=2;
         _read  ++;
         x--;
       }
-      
+
       read  += blit->read_line;
       write += blit->write_line;
       y--;
@@ -1006,7 +989,7 @@
 
     read   = blit->read  + blit->xread;
     write  = blit->write + 3*blit->xwrite;
-    
+
     y = blit->height;
     do
     {
@@ -1017,7 +1000,7 @@
       while (x > 0)
       {
         unsigned char    val;
-        
+
         val = *_read;
         if (val)
         {
@@ -1031,23 +1014,23 @@
           {
             /* compose gray value */
             grColor pix;
-            
+
             pix.chroma[0] = _write[0];
             pix.chroma[1] = _write[1];
             pix.chroma[2] = _write[2];
 
             compose_pixel( pix, color, val, max );
-            
+
             _write[0] = pix.chroma[0];
             _write[1] = pix.chroma[1];
             _write[2] = pix.chroma[2];
-          }  
+          }
         }
         _write += 3;
         _read  ++;
         x--;
       }
-      
+
       read  += blit->read_line;
       write += blit->write_line;
       y--;
@@ -1073,7 +1056,7 @@
 
     read   = blit->read  + blit->xread;
     write  = blit->write + 4*blit->xwrite;
-    
+
     y = blit->height;
     do
     {
@@ -1084,7 +1067,7 @@
       while (x > 0)
       {
         unsigned char  val;
-        
+
         val = *_read;
         if (val)
         {
@@ -1099,24 +1082,190 @@
           {
             /* compose gray value */
             grColor pix;
-            
+
             pix.chroma[0] = _write[0];
             pix.chroma[1] = _write[1];
             pix.chroma[2] = _write[2];
 
             compose_pixel( pix, color, val, max );
-            
+
             _write[0] = pix.chroma[0];
             _write[1] = pix.chroma[1];
             _write[2] = pix.chroma[2];
-          }  
+          }
         }
         _write += 4;
         _read  ++;
         x--;
       }
-      
+
       read  += blit->read_line;
+      write += blit->write_line;
+      y--;
+    }
+    while (y > 0);
+  }
+
+
+/**************************************************************************/
+/*                                                                        */
+/* <Function> blit_lcd_to_24                                              */
+/*                                                                        */
+/**************************************************************************/
+
+  static void
+  blit_lcd_to_24( int         is_bgr,
+                  grBlitter*  blit,
+                  grColor     color,
+                  int         max )
+  {
+    int             y;
+    unsigned char*  read;
+    unsigned char*  write;
+
+    read   = blit->read  + 3*blit->xread;
+    write  = blit->write + 3*blit->xwrite;
+
+    y = blit->height;
+    do
+    {
+      unsigned char*  _read  = read;
+      unsigned char*  _write = write;
+      int             x      = blit->width;
+
+      while (x > 0)
+      {
+        int    val0, val1, val2;
+
+        if (is_bgr)
+        {
+          val0 = _read[0];
+          val1 = _read[1];
+          val2 = _read[2];
+        }
+        else
+        {
+          val0 = _read[2];
+          val1 = _read[1];
+          val2 = _read[0];
+        }
+
+        if ( val0 | val1 | val2 )
+        {
+          if ( val0 == val1 &&
+               val0 == val2 &&
+               val0 == max  )
+          {
+            _write[0] = color.chroma[0];
+            _write[1] = color.chroma[1];
+            _write[2] = color.chroma[2];
+          }
+          else
+          {
+            /* compose gray value */
+            grColor pix;
+
+            pix.chroma[0] = _write[0];
+            pix.chroma[1] = _write[1];
+            pix.chroma[2] = _write[2];
+
+            compose_pixel_full( pix, color, val0, val1, val2, max );
+
+            _write[0] = pix.chroma[0];
+            _write[1] = pix.chroma[1];
+            _write[2] = pix.chroma[2];
+          }
+        }
+        _write += 3;
+        _read  += 3;
+        x--;
+      }
+
+      read  += blit->read_line;
+      write += blit->write_line;
+      y--;
+    }
+    while (y > 0);
+  }
+
+
+/**************************************************************************/
+/*                                                                        */
+/* <Function> blit_lcdv_to_24                                             */
+/*                                                                        */
+/**************************************************************************/
+
+  static void
+  blit_lcdv_to_24( int         is_bgr,
+                   grBlitter*  blit,
+                   grColor     color,
+                   int         max )
+  {
+    int             y;
+    unsigned char*  read;
+    unsigned char*  write;
+    long            line;
+
+    read   = blit->read  + blit->xread;
+    write  = blit->write + 3*blit->xwrite;
+    line   = blit->read_line;
+
+    y = blit->height;
+    do
+    {
+      unsigned char*  _read  = read;
+      unsigned char*  _write = write;
+      int             x      = blit->width;
+
+      while (x > 0)
+      {
+        unsigned char    val0, val1, val2;
+
+        if (is_bgr)
+        {
+          val0 = _read[2*line];
+          val1 = _read[1*line];
+          val2 = _read[0*line];
+        }
+        else
+        {
+          val0 = _read[0*line];
+          val1 = _read[1*line];
+          val2 = _read[2*line];
+        }
+
+        if ( val0 | val1 | val2 )
+        {
+          if ( val0 == val1 &&
+               val0 == val2 &&
+               val0 == max  )
+          {
+            _write[0] = color.chroma[0];
+            _write[1] = color.chroma[1];
+            _write[2] = color.chroma[2];
+          }
+          else
+          {
+            /* compose gray value */
+            grColor pix;
+
+            pix.chroma[0] = _write[0];
+            pix.chroma[1] = _write[1];
+            pix.chroma[2] = _write[2];
+
+            compose_pixel_full( pix, color, val0, val1, val2, max );
+
+            _write[0] = pix.chroma[0];
+            _write[1] = pix.chroma[1];
+            _write[2] = pix.chroma[2];
+          }
+        }
+        _write += 3;
+        _read  += 1;
+        x--;
+      }
+
+      read  += 3*line;
       write += blit->write_line;
       y--;
     }
@@ -1142,7 +1291,7 @@
   *   Error code. 0 means success
   *
   **********************************************************************/
-    
+
   typedef  void (*grColorGlyphBlitter)( grBlitter*  blit,
                                         grColor     color,
                                         int         max_gray );
@@ -1154,113 +1303,131 @@
     0,
     0,
     0,
+    0,
     blit_gray_to_555,
     blit_gray_to_565,
     blit_gray_to_24,
     blit_gray_to_32
-  };  
+  };
 
-   
-  extern int  grBlitGlyphToBitmap( grBitmap*  target,
-                                   grBitmap*  glyph,
-                                   grPos      x,
-                                   grPos      y,
-                                   grColor    color )
+
+  extern int
+  grBlitGlyphToBitmap( int        is_bgr,
+                       grBitmap*  target,
+                       grBitmap*  glyph,
+                       grPos      x,
+                       grPos      y,
+                       grColor    color )
   {
     grBlitter    blit;
     grPixelMode  mode;
-  
+
+
     /* check arguments */
-    if (!target || !glyph)
+    if ( !target || !glyph )
     {
       grError = gr_err_bad_argument;
       return -1;
     }
-    
 
-    /* set up blitter and compute clipping. Return immediately if needed */
+    /* set up blitter and compute clipping.  Return immediately if needed */
     blit.source = *glyph;
     blit.target = *target;
     mode        = target->mode;
 
     if ( compute_clips( &blit, x, y ) )
       return 0;
-    
 
-    /* handle monochrome bitmap blitting */
-    if (glyph->mode == gr_pixel_mode_mono)
+    switch ( glyph->mode )
     {
+    case gr_pixel_mode_mono:     /* handle monochrome bitmap blitting */
       if ( mode <= gr_pixel_mode_none || mode >= gr_pixel_mode_max )
       {
         grError = gr_err_bad_source_depth;
         return -1;
       }
-      
+
       gr_mono_blitters[mode]( &blit, color );
-      goto End;     
-    }
-    
-    /* handle gray bitmap composition */
-    if (glyph->mode == gr_pixel_mode_gray &&
-        glyph->grays > 1                  )
-    {
-      int          target_grays = target->grays;
-      int          source_grays = glyph->grays;
-      const byte*  saturation;
-      
-      if ( mode == gr_pixel_mode_gray && target_grays > 1 )
+      break;
+
+    case gr_pixel_mode_gray:
+      if ( glyph->grays > 1 )
       {
-        /* rendering into a gray target - use special composition */
-        /* routines..                                             */
-        if ( gr_last_saturation->count == target_grays )
-          saturation = gr_last_saturation->table;
-        else
+        int          target_grays = target->grays;
+        int          source_grays = glyph->grays;
+        const byte*  saturation;
+
+
+        if ( mode == gr_pixel_mode_gray && target_grays > 1 )
         {
-          saturation = grGetSaturation( target_grays );
-          if (!saturation) return -3;
-        }
-
-
-        if ( target_grays == source_grays )
-          blit_gray_to_gray_simple( &blit, saturation );
-        else
-        {
-          const byte*  conversion;
-
-          if ( gr_last_conversion->target_grays == target_grays &&
-               gr_last_conversion->source_grays == source_grays )
-            conversion = gr_last_conversion->table;
+          /* rendering into a gray target - use special composition */
+          /* routines..                                             */
+          if ( gr_last_saturation->count == target_grays )
+            saturation = gr_last_saturation->table;
           else
           {
-            conversion = grGetConversion( target_grays, source_grays );
-            if (!conversion) return -3;
-          };
-              
-          blit_gray_to_gray( &blit, saturation, conversion );
+            saturation = grGetSaturation( target_grays );
+            if ( !saturation )
+              return -3;
+          }
+
+          if ( target_grays == source_grays )
+            blit_gray_to_gray_simple( &blit, saturation );
+          else
+          {
+            const byte*  conversion;
+
+
+            if ( gr_last_conversion->target_grays == target_grays &&
+                 gr_last_conversion->source_grays == source_grays )
+              conversion = gr_last_conversion->table;
+            else
+            {
+              conversion = grGetConversion( target_grays, source_grays );
+              if ( !conversion )
+                return -3;
+            }
+
+            blit_gray_to_gray( &blit, saturation, conversion );
+          }
         }
-      }
-      else
-      {
-        /* rendering into a color target */
-        if ( mode <= gr_pixel_mode_gray ||
-             mode >= gr_pixel_mode_max  )
+        else
         {
-          grError = gr_err_bad_target_depth;
-          return -1;
+          /* rendering into a color target */
+          if ( mode <= gr_pixel_mode_gray ||
+               mode >= gr_pixel_mode_max  )
+          {
+            grError = gr_err_bad_target_depth;
+            return -1;
+          }
+
+          gr_color_blitters[mode]( &blit, color, source_grays - 1 );
         }
-        
-        gr_color_blitters[mode]( &blit, color, source_grays-1 );
       }
-      goto End;      
+      break;
+
+    case gr_pixel_mode_lcd:
+      if ( glyph->grays > 1 && mode == gr_pixel_mode_rgb24 )
+      {
+        blit_lcd_to_24( is_bgr, &blit, color, glyph->grays-1 );
+        break;
+      }
+
+    case gr_pixel_mode_lcdv:
+      if ( glyph->grays > 1 && mode == gr_pixel_mode_rgb24 )
+      {
+        blit_lcdv_to_24( is_bgr, &blit, color, glyph->grays-1 );
+        break;
+      }
+
+    default:
+      /* we don't support the blitting of bitmaps of the following  */
+      /* types : pal4, pal8, rgb555, rgb565, rgb24, rgb32           */
+      /*                                                            */
+      grError = gr_err_bad_source_depth;
+      return -2;
     }
-    
-    /* we don't support the blitting of bitmaps of the following  */
-    /* types : pal4, pal8, rgb555, rgb565, rgb24, rgb32           */
-    /*                                                            */
-    grError = gr_err_bad_source_depth;
-    return -2;
-    
-  End:
+
     return 0;
   }
 

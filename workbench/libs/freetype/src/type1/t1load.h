@@ -1,72 +1,84 @@
-/*******************************************************************
- *
- *  t1load.h                                                    1.0
- *
- *    Type1 Loader.                          
- *
- *  Copyright 1996-1998 by
- *  David Turner, Robert Wilhelm, and Werner Lemberg.
- *
- *  This file is part of the FreeType project, and may only be used
- *  modified and distributed under the terms of the FreeType project
- *  license, LICENSE.TXT.  By continuing to use, modify, or distribute
- *  this file you indicate that you have read the license and
- *  understand and accept it fully.
- *
- ******************************************************************/
-
-#ifndef T1LOAD_H
-#define T1LOAD_H
-
-#include <ftstream.h>
-#include <t1parse.h>
-
-#ifdef __cplusplus
-  extern "C" {
-#endif
-
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Function> Init_T1_Parser                                             */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    Initialise a given parser object to build a given T1_Face          */
-  /*                                                                       */
-  /* <Input>                                                               */
-  /*    parser  :: handle to the newly built parser object                 */
-  /*    face    :: handle to target T1 face object                         */
-  /*                                                                       */
-   LOCAL_DEF
-   void  Init_T1_Parser( T1_Parser*    parser,
-                         T1_Face       face,
-                         T1_Tokenizer  tokenizer );
+/***************************************************************************/
+/*                                                                         */
+/*  t1load.h                                                               */
+/*                                                                         */
+/*    Type 1 font loader (specification).                                  */
+/*                                                                         */
+/*  Copyright 1996-2001, 2002 by                                           */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Function> Parse_T1_FontProgram                                       */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    Parses a given Type 1 font file and builds its face object         */
-  /*                                                                       */
-  /* <Input>                                                               */
-  /*    parser  :: handle to target parser object                          */
-  /*                                                                       */
-  /* <Return>                                                              */
-  /*    Error code. 0 means success..                                      */
-  /*                                                                       */
-  /* <Note>                                                                */
-  /*    The parser contains a handle to the target face object.            */
-  /*                                                                       */
-   LOCAL_DEF
-   T1_Error  Parse_T1_FontProgram( T1_Parser*  parser );
+#ifndef __T1LOAD_H__
+#define __T1LOAD_H__
 
 
-#ifdef __cplusplus
-  }
-#endif
+#include <ft2build.h>
+#include FT_INTERNAL_STREAM_H
+#include FT_INTERNAL_POSTSCRIPT_AUX_H
+#include FT_MULTIPLE_MASTERS_H
 
-#endif /* T1LOAD_H */
+#include "t1parse.h"
+
+
+FT_BEGIN_HEADER
+
+
+  typedef struct  T1_Loader_
+  {
+    T1_ParserRec  parser;          /* parser used to read the stream */
+
+    FT_Int        num_chars;       /* number of characters in encoding */
+    PS_TableRec   encoding_table;  /* PS_Table used to store the       */
+                                   /* encoding character names         */
+
+    FT_Int        num_glyphs;
+    PS_TableRec   glyph_names;
+    PS_TableRec   charstrings;
+    PS_TableRec   swap_table;      /* For moving .notdef glyph to index 0. */
+
+    FT_Int        num_subrs;
+    PS_TableRec   subrs;
+    FT_Bool       fontdata;
+
+  } T1_LoaderRec, *T1_Loader;
+
+
+  FT_LOCAL( FT_Error )
+  T1_Open_Face( T1_Face  face );
+
+#ifndef T1_CONFIG_OPTION_NO_MM_SUPPORT
+
+  FT_LOCAL( FT_Error )
+  T1_Get_Multi_Master( T1_Face           face,
+                       FT_Multi_Master*  master );
+
+  FT_LOCAL( FT_Error )
+  T1_Set_MM_Blend( T1_Face    face,
+                   FT_UInt    num_coords,
+                   FT_Fixed*  coords );
+
+  FT_LOCAL( FT_Error )
+  T1_Set_MM_Design( T1_Face   face,
+                    FT_UInt   num_coords,
+                    FT_Long*  coords );
+
+  FT_LOCAL( void )
+  T1_Done_Blend( T1_Face  face );
+
+#endif /* !T1_CONFIG_OPTION_NO_MM_SUPPORT */
+
+
+FT_END_HEADER
+
+#endif /* __T1LOAD_H__ */
 
 
 /* END */

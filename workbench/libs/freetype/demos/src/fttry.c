@@ -12,12 +12,15 @@
 /*                                                                          */
 /****************************************************************************/
 
-#include "freetype.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+
+#define  DUMP_NAME
 
 #define gettext( x )  ( x )
 
@@ -53,7 +56,7 @@
     exit(1);
   }
 
-  int  main( int  argc, char**  argv ) 
+  int  main( int  argc, char**  argv )
   {
     int           i, file_index, glyph_index;
     char          filename[128 + 4];
@@ -119,7 +122,7 @@
           fname = filename + i + 1;
           i = -1;
         }
-        else 
+        else
           i--;
 
       printf( "%s: ", fname );
@@ -132,7 +135,20 @@
 
       error = FT_Set_Char_Size( face, ptsize << 6, 0, 0, 0 );
       if (error) Panic( "Could not set character size" );
+
+#ifdef DUMP_NAME
+      {
+        char name[1024];
+        
+        error = FT_Get_Glyph_Name( face, glyph_index, name, 1024 );
+        if (error)
+          printf( "no glyph name available\n" );
+        else
+          printf( "glyph name = '%s'\n", name );
+      }
       
+#endif
+
       error = FT_Load_Glyph( face,
                              glyph_index,
                              load_unscaled ? FT_LOAD_NO_SCALE

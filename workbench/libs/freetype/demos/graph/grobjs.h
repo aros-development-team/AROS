@@ -23,7 +23,7 @@
   {
     grColor   foreground;
     grColor   background;
-    
+
     int       num_levels;
     int       max_levels;
     grColor*  levels;
@@ -97,13 +97,13 @@
                                      int         y,
                                      int         width,
                                      int         height );
-                                    
+
   typedef void (*grDoneSurfaceFunc)( grSurface*  surface );
 
   typedef int  (*grListenEventFunc)( grSurface* surface,
                                      int        event_mode,
                                      grEvent   *event );
- 
+
 
 
   struct grSurface_
@@ -112,7 +112,7 @@
     grBitmap           bitmap;
     grBool             refresh;
     grBool             owner;
-     
+
     const byte*        saturation;  /* used for gray surfaces only   */
     grBlitterFunc      blit_mono;   /* 0 by default, set by grBlit.. */
 
@@ -140,8 +140,8 @@
   *
   ********************************************************************/
 
-  extern  char*  grAlloc( long size );
-  
+  extern  unsigned char*  grAlloc( long size );
+
 
  /********************************************************************
   *
@@ -160,7 +160,7 @@
   *
   ********************************************************************/
 
-  extern  char*  grRealloc( const char*  block, long size );
+  extern unsigned char*  grRealloc( const unsigned char*  block, long size );
 
 
  /********************************************************************
@@ -176,11 +176,7 @@
   *
   ********************************************************************/
 
-  extern  void   grFree( const void*  block );
+  extern void  grFree( const void*  block );
 
-
-  extern grDevice*  gr_devices[];
-  extern int        gr_num_devices;
-  extern int        gr_max_devices;
 
 #endif /* GROBJS_H */

@@ -26,11 +26,14 @@
 #endif
 
 
-#include "freetype.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+/* "freetype2/src/truetype" must be in the current include path */
 #include "ttobjs.h"
 #include "ttdriver.h"
 #include "ttinterp.h"
-
+#include "tterrors.h"
 
 FT_Library      library;    /* root library object */
 FT_Memory       memory;     /* system object */
@@ -39,7 +42,7 @@ TT_Face         face;       /* truetype face */
 TT_Size         size;       /* truetype size */
 TT_GlyphSlot    glyph;      /* truetype glyph slot */
 TT_ExecContext  exec;       /* truetype execution context */
-TT_Error        error;
+FT_Error        error;
 
 TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 
@@ -53,7 +56,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 #undef  PACK
 #define PACK( x, y )  ((x << 4) | y)
 
-  static const TT_Byte  Pop_Push_Count[256] =
+  static const FT_Byte  Pop_Push_Count[256] =
   {
     /* opcodes are gathered in groups of 16 */
     /* please keep the spaces as they are   */
@@ -617,20 +620,20 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 #ifdef UNIX
 
  struct termios  old_termio;
- 
+
  static
  void Init_Keyboard( void )
  {
    struct termios  termio;
 
 #ifndef HAVE_TCGETATTR
-   ioctl( 0, TCGETS, &old_termio ); 
+   ioctl( 0, TCGETS, &old_termio );
 #else
    tcgetattr( 0, &old_termio );
 #endif
 
    termio = old_termio;
-   
+
 /*   termio.c_lflag &= ~(ICANON+ECHO+ECHOE+ECHOK+ECHONL+ECHOKE); */
    termio.c_lflag &= ~(ICANON+ECHO+ECHOE+ECHOK+ECHONL);
 
@@ -807,16 +810,28 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
 
 
   static
-  TT_Error  RunIns( TT_ExecContext  exc )
+  int  old_tag_to_new( int  tag )
+  {
+    int  result = tag & 1;
+    if (tag & FT_Curve_Tag_Touch_X)
+      result |= 2;
+    if (tag & FT_Curve_Tag_Touch_Y)
+      result |= 4;
+
+    return result;
+  }
+
+  static
+  FT_Error  RunIns( TT_ExecContext  exc )
   {
     FT_Int    A, diff, key;
     FT_Long   next_IP;
     FT_Char   ch, oldch = '\0', *temp;
 
-    TT_Error  error = 0;
+    FT_Error  error = 0;
 
-    FT_GlyphZone  save;
-    FT_GlyphZone  pts;
+    TT_GlyphZoneRec  save;
+    TT_GlyphZoneRec  pts;
 
     const FT_String*  round_str[8] =
     {
@@ -831,23 +846,23 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
     };
 
     /* only debug the requested code range */
-    if (exc->curRange != (TT_Int)debug_coderange)
+    if (exc->curRange != (FT_Int)debug_coderange)
       return TT_RunIns(exc);
 
     exc->pts.n_points   = exc->zp0.n_points;
     exc->pts.n_contours = exc->zp0.n_contours;
 
     pts = exc->pts;
-    
+
 
     save.n_points   = pts.n_points;
     save.n_contours = pts.n_contours;
 
-    save.org   = (TT_Vector*)malloc( 2 * sizeof( TT_F26Dot6 ) *
+    save.org   = (FT_Vector*)malloc( 2 * sizeof( FT_F26Dot6 ) *
                                        save.n_points );
-    save.cur   = (TT_Vector*)malloc( 2 * sizeof( TT_F26Dot6 ) *
+    save.cur   = (FT_Vector*)malloc( 2 * sizeof( FT_F26Dot6 ) *
                                        save.n_points );
-    save.tags = (TT_Byte*)malloc( save.n_points );
+    save.tags = (FT_Byte*)malloc( save.n_points );
 
     exc->instruction_trap = 1;
 
@@ -996,9 +1011,9 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
         }
       } while ( !key );
 
-      MEM_Copy( save.org,   pts.org, pts.n_points * sizeof ( TT_Vector ) );
-      MEM_Copy( save.cur,   pts.cur, pts.n_points * sizeof ( TT_Vector ) );
-      MEM_Copy( save.tags, pts.tags, pts.n_points );
+      FT_MEM_COPY( save.org,   pts.org, pts.n_points * sizeof ( FT_Vector ) );
+      FT_MEM_COPY( save.cur,   pts.cur, pts.n_points * sizeof ( FT_Vector ) );
+      FT_MEM_COPY( save.tags, pts.tags, pts.n_points );
 
       /* a return indicate the last command */
       if (ch == '\r')
@@ -1023,7 +1038,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
           next_IP = CUR.IP + CUR.length;
           while ( exc->IP != next_IP )
           {
-            if ( ( error = TT_RunIns( exc ) ) )
+            if ( ( error = TT_RunIns( exc ) ) != 0 )
               goto LErrorLabel_;
           }
         }
@@ -1035,7 +1050,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
         if ( exc->IP < exc->codeSize )
 
       Step_into:
-          if ( ( error = TT_RunIns( exc ) ) )
+          if ( ( error = TT_RunIns( exc ) ) != 0 )
             goto LErrorLabel_;
         oldch = ch;
         break;
@@ -1059,7 +1074,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
           printf( "%02hx  ", A );
 
           if ( diff & 16 ) temp = "(%01hx)"; else temp = " %01hx ";
-          printf( temp, save.tags[A] & 7 );
+          printf( temp, old_tag_to_new(save.tags[A]) );
 
           if ( diff & 1 ) temp = "(%08lx)"; else temp = " %08lx ";
           printf( temp, save.org[A].x );
@@ -1078,7 +1093,7 @@ TT_CodeRange_Tag  debug_coderange = tt_coderange_glyph;
           printf( "%02hx  ", A );
 
           if ( diff & 16 ) temp = "[%01hx]"; else temp = " %01hx ";
-          printf( temp, pts.tags[A] & 7 );
+          printf( temp, old_tag_to_new(pts.tags[A]) );
 
           if ( diff & 1 ) temp = "[%08lx]"; else temp = " %08lx ";
           printf( temp, pts.org[A].x );
@@ -1203,9 +1218,9 @@ int    glyph_size;
     if (error) Panic( "could not initialise FreeType library" );
 
     memory = library->memory;
-    driver = FT_Get_Driver( library, "truetype" );
+    driver = (FT_Driver)FT_Get_Module( library, "truetype" );
     if (!driver) Panic( "could not find the TrueType driver in FreeType 2\n" );
-    
+
     FT_Set_Debug_Hook( library,
                        FT_DEBUG_HOOK_TRUETYPE,
                        (FT_DebugHook_Func)RunIns );
@@ -1219,7 +1234,7 @@ int    glyph_size;
       error = FT_Err_Invalid_File_Format;
       Panic( "This is not a TrueType font" );
     }
-  
+
     size = (TT_Size)face->root.size;
 
     if (glyph_index < 0)
@@ -1239,7 +1254,7 @@ int    glyph_size;
       glyph = (TT_GlyphSlot)face->root.glyph;
 
       /* Now load glyph */
-      error = FT_Load_Glyph( (FT_Face)face, glyph_index, FT_LOAD_DEFAULT );
+      error = FT_Load_Glyph( (FT_Face)face, glyph_index, FT_LOAD_NO_BITMAP );
       if (error) Panic( "could not load glyph" );
     }
 

@@ -4,7 +4,7 @@
 /*                                                                         */
 /*    High-level TrueType driver interface (specification).                */
 /*                                                                         */
-/*  Copyright 1996-1999 by                                                 */
+/*  Copyright 1996-2001, 2002 by                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
 /*  This file is part of the FreeType project, and may only be used,       */
@@ -16,21 +16,23 @@
 /***************************************************************************/
 
 
-#ifndef TTDRIVER_H
-#define TTDRIVER_H
-
-#include <freetype.h>
-#include <ftdriver.h>
-#include <ttobjs.h>
-#include <tterrors.h>
-#include <ttnameid.h>
+#ifndef __TTDRIVER_H__
+#define __TTDRIVER_H__
 
 
-  EXPORT_DEF
-  const FT_DriverInterface  tt_driver_interface;
+#include <ft2build.h>
+#include FT_INTERNAL_DRIVER_H
 
 
-#endif /* TTDRIVER_H */
+FT_BEGIN_HEADER
+
+
+  FT_EXPORT_VAR( const FT_Driver_ClassRec )  tt_driver_class;
+
+
+FT_END_HEADER
+
+#endif /* __TTDRIVER_H__ */
 
 
 /* END */

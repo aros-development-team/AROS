@@ -13,9 +13,8 @@
 /*                                                                          */
 /****************************************************************************/
 
-#include "freetype.h"
-#include "ftobjs.h"
-#include "ftdriver.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,7 +57,7 @@
   }
 
 
-  int  main( int  argc, char**  argv ) 
+  int  main( int  argc, char**  argv )
   {
     int           i, file_index;
     unsigned int  id;
@@ -114,7 +113,7 @@
           fname = filename + i + 1;
           i = -1;
         }
-        else 
+        else
           i--;
 
       printf( "%s:\n", fname );
@@ -138,7 +137,7 @@
         for ( id = 0; id < num_glyphs; id++ )
         {
           int  has_scale;
-          
+
           error = FT_Load_Glyph( face, id, FT_LOAD_NO_RECURSE );
           if (!error && slot->format == ft_glyph_format_composite)
           {
@@ -152,19 +151,19 @@
                             FT_SUBGLYPH_FLAG_SCALE |
                             FT_SUBGLYPH_FLAG_XY_SCALE |
                             FT_SUBGLYPH_FLAG_2X2 );
-              
+
               printf( " [%d%c",
                       subg->index,
                       subg->flags & FT_SUBGLYPH_FLAG_USE_MY_METRICS ? '*' : ' ' );
-                      
+
               if ( subg->arg1|subg->arg2 )
               {
-                if ( subg->flags & FT_SUBGLYPH_FLAG_ARGS_ARE_XY_VALUES ) 
+                if ( subg->flags & FT_SUBGLYPH_FLAG_ARGS_ARE_XY_VALUES )
                   printf( "(%d,%d)", subg->arg1, subg->arg2 );
                 else
                   printf( "<%d,%d>", subg->arg1, subg->arg2 );
               }
-                
+
               if (has_scale)
                 printf( "-{%0.3f %0.3f %0.3f %0.3f}",
                         subg->transform.xx/65536.0,

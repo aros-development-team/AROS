@@ -1,6 +1,115 @@
-2002-06-23  Vincent Caron
+2002-09-25  David Turner  <david@freetype.org>
 
-        * src/ftstring.c: adding support for gamma-corrected display
+        * graph/win32/grwin32.c: removing compiler warnings
+
+        * descrip.mms: removing 'ftmemchk' and 'testnames' from the list
+        of programs to compile, these are now obsolete
+
+2002-09-25  Anthony Fok  <anthony@thizlinux.com>
+
+        * src/ftbench.c: the program did perform out-of-bound memory writes
+        with certain fonts containing a buggy charmap
+
+2002-09-18  Werner Lemberg  <wl@gnu.org>
+
+	Add LCD BGR support.
+
+	* graph/grblit.c (blit_lcd_to_24, blit_lcdv_to_24): Add parameter
+	`is_bgr' to assign color components in reversed order.
+	(grBlitGlyphToBitmap): Add parameter `is_bgr' passed on to
+	`blit_lcd_lcd*'.
+	Updated all callers.
+	Remove unused label.
+	* graph/graph.h, graph/grfont.c: Updated.
+
+	* src/ftcommon.i (set_current_image_type), src/ftview.c (Render_All,
+	Render_Text, Render_Waterfall, Process_Event): Handle LCD modes
+	3 and 4.
+	* src/ftstring.c, src/ftmulti.c: Updated.
+
+	* graph/x11/grx11.c (gr_x11_device_init, gr_x11_surface_init):
+	Remove unused variables.
+	(gr_x11_format_rgb555): Fix typos.
+
+2002-09-08  David Turner  <david@freetype.org>
+
+	Add support for sub-pixel rendering.
+
+	* graph/x11/grx11.c, graph/win32/grwin32.c: Completely rewritten to
+	support 24-bits RGB surfaces.  This is needed to test sub-pixel
+	rendering.
+
+	Note that other drivers haven't been touched yet.  The X11 driver
+	doesn't work with 8-bit displays for now, but a reduced mode will
+	probably be introduced in the near future.
+
+	* graph/graph.h (grPixelMode): Add `gr_pixel_mode_lcd' and
+	`gr_pixel_mode_lcdv'.
+	* graph/grblit.c (compute_clips): Use `gr_pixel_mode_lcd' and
+	`gr_pixel_mode_lcdv'.
+	(compose_pixel_full): New macro.
+	(compose_pixel): Use it.
+	(blit_lcd_to_24, blit_lcdv_to_24): New functions. for RGB-decimated
+	modes (BGR not yet implemented).
+	(gr_color_blitters): Updated.
+	(grBlitGlyphToBitmap): Support new pixel modes.
+
+	* src/Jamfile (PROGRAMS): Don't include fttimer, fttry, and
+	testnames.
+
+	* src/ftbench.c: Updated to latest changes in FreeType library.
+	* src/ftcommon.i (Init_Display): New default mode is
+	`gr_pixel_mode_rgb24'.
+	(set_current_image_type, get_glyph_bitmap): Add support for LCD
+	modes (horizontal and vertical).
+	* src/ftview.c (Render_Waterfall): Call `set_current_size'.
+	(Help): Document new `L' key for cycling through the pixel modes.
+	(Process_Event): Handle `L' key.
+
+2002-08-04  Vincent Caron  <v.caron@zerodeux.net>
+
+	* src/ftcommon.i (Text), src/ftmulti.c (Text): s/jumped/jumps/.
+	* src/ftview.c (Render_Waterfall): Remove unused variable.
+
+2002-07-03  David Turner  <david@freetype.org>
+
+	* src/ftview.c (Render_Waterfall): New function, adding a
+	"waterfall" rendering mode (accessible by cycling modes with the
+	space bar).
+	(Process_Event, main): Use it.
+
+2002-07-01  David Turner  <david@freetype.org>
+
+	* src/ftbench.c: Adding the "-p" option to pre-load font files in
+	memory.  This is a very useful thing to quantify the performance
+	improvements achieved by many of FreeType internal optimizations
+	regarding stream i/o.
+
+	* src/ftstring.c (reset_transform): Fix Werner's incorrect fix.
+
+2002-06-25  Werner Lemberg  <wl@gnu.org>
+
+	* src/ftstring.c (reset_transform): Fix transformation matrix.
+
+2002-06-23  Vincent Caron  <v.caron@zerodeux.net>
+
+	Adding support for gamma-corrected display to ftstring (assigned to
+	`g', F9, and F10 keys).
+
+	* src/ftstring.c (use_gamma, gamma_value, gamma_ramp): New global
+	variables.
+	(init_gamma, apply_gamma, draw_gamma_ramp): New functions.
+	(render_string): Use apply_gamma.
+	(Help): Updated.
+	(Process_Event): Handle `g', F9, and F10 keys.
+	(main): Call init_gamma and draw_gamma_ramp.
+
+2002-06-21  David Turner  <david@freetype.org>
+
+
+	* Version 2.1.2 released.
+	=========================
+
 
 2002-06-14  Werner Lemberg  <wl@gnu.org>
 
@@ -16,6 +125,13 @@
 	* src/ftbench.c: Removing compiler warnings.
 
 	* src/ttdebug.c: Updating to latest internal changes.
+
+2002-06-09  David Turner  <david@freetype.org>
+
+
+	* Version 2.1.1 released.
+	=========================
+
 
 2002-06-07  David Turner  <david@freetype.org>
 

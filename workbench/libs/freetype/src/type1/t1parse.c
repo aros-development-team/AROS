@@ -1,665 +1,460 @@
-#include <ftdebug.h>
-#include <t1types.h>
-#include <t1parse.h>
+/***************************************************************************/
+/*                                                                         */
+/*  t1parse.c                                                              */
+/*                                                                         */
+/*    Type 1 parser (body).                                                */
+/*                                                                         */
+/*  Copyright 1996-2001, 2002 by                                           */
+/*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
+/*                                                                         */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
+/*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
+/*  this file you indicate that you have read the license and              */
+/*  understand and accept it fully.                                        */
+/*                                                                         */
+/***************************************************************************/
 
-#include <stdio.h>  /* for sscanf */
 
-/*************************************************************************/
-/*                                                                       */
-/* <Function> T1_New_Table                                               */
-/*                                                                       */
-/* <Description>                                                         */
-/*    Initialise a T1_Table.                                             */
-/*                                                                       */
-/* <Input>                                                               */
-/*    table  :: address of target table                                  */
-/*    count  :: table size = maximum number of elements                  */
-/*    memory :: memory object to use for all subsequent reallocations    */
-/*                                                                       */
-/* <Return>                                                              */
-/*    Error code. 0 means success                                        */
-/*                                                                       */
+  /*************************************************************************/
+  /*                                                                       */
+  /* The Type 1 parser is in charge of the following:                      */
+  /*                                                                       */
+  /*  - provide an implementation of a growing sequence of objects called  */
+  /*    a `T1_Table' (used to build various tables needed by the loader).  */
+  /*                                                                       */
+  /*  - opening .pfb and .pfa files to extract their top-level and private */
+  /*    dictionaries.                                                      */
+  /*                                                                       */
+  /*  - read numbers, arrays & strings from any dictionary.                */
+  /*                                                                       */
+  /* See `t1load.c' to see how data is loaded from the font file.          */
+  /*                                                                       */
+  /*************************************************************************/
 
-  LOCAL_FUNC
-  T1_Error  T1_New_Table( T1_Table*  table,
-                          T1_Int     count,
-                          FT_Memory  memory )
+
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_CALC_H
+#include FT_INTERNAL_STREAM_H
+#include FT_INTERNAL_POSTSCRIPT_AUX_H
+
+#include "t1parse.h"
+
+#include "t1errors.h"
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
+#undef  FT_COMPONENT
+#define FT_COMPONENT  trace_t1parse
+
+
+  /*************************************************************************/
+  /*************************************************************************/
+  /*************************************************************************/
+  /*****                                                               *****/
+  /*****                   INPUT STREAM PARSER                         *****/
+  /*****                                                               *****/
+  /*************************************************************************/
+  /*************************************************************************/
+  /*************************************************************************/
+
+
+#define IS_T1_WHITESPACE( c )  ( (c) == ' '  || (c) == '\t' )
+#define IS_T1_LINESPACE( c )   ( (c) == '\r' || (c) == '\n' )
+
+#define IS_T1_SPACE( c )  ( IS_T1_WHITESPACE( c ) || IS_T1_LINESPACE( c ) )
+
+
+  typedef struct  PFB_Tag_
   {
-	 T1_Error  error;
+    FT_UShort  tag;
+    FT_Long    size;
 
-	 table->memory = memory;
-	 if ( ALLOC_ARRAY( table->elements, count, T1_Byte* ) )
-		 return error;
-
-	 if ( ALLOC_ARRAY( table->lengths, count, T1_Byte* ) )
-	 {
-	   FREE( table->elements );
-	   return error;
-	}
-
-	table->max_elems = count;
-	table->num_elems = 0;
-
-	table->block        = 0;
-	table->capacity     = 0;
-	table->cursor       = 0;
-
-	return error;
-  }
+  } PFB_Tag;
 
 
+#undef  FT_STRUCTURE
+#define FT_STRUCTURE  PFB_Tag
 
-/*************************************************************************/
-/*                                                                       */
-/* <Function> T1_Add_Table                                               */
-/*                                                                       */
-/* <Description>                                                         */
-/*    Adds an object to a T1_Table, possibly growing its memory block    */
-/*                                                                       */
-/* <Input>                                                               */
-/*    table  :: target table                                             */
-/*    index  :: index of object in table                                 */
-/*    object :: address of object to copy in memory                      */
-/*    length :: length in bytes of source object                         */
-/*                                                                       */
-/* <Return>                                                              */
-/*    Error code. 0 means success. An error is returned when a           */
-/*    realloc failed..                                                   */
-/*                                                                       */
 
-      static
-      T1_Error  reallocate_t1_table( T1_Table*  table,
-                                     T1_Int     new_size )
+  static
+  const FT_Frame_Field  pfb_tag_fields[] =
+  {
+    FT_FRAME_START( 6 ),
+      FT_FRAME_USHORT ( tag ),
+      FT_FRAME_LONG_LE( size ),
+    FT_FRAME_END
+  };
+
+
+  static FT_Error
+  read_pfb_tag( FT_Stream   stream,
+                FT_UShort*  tag,
+                FT_Long*    size )
+  {
+    FT_Error  error;
+    PFB_Tag   head;
+
+
+    *tag  = 0;
+    *size = 0;
+    if ( !FT_STREAM_READ_FIELDS( pfb_tag_fields, &head ) )
+    {
+      if ( head.tag == 0x8001U || head.tag == 0x8002U )
       {
-        FT_Memory  memory   = table->memory;
-        T1_Byte*   old_base = table->block;
-        T1_Error   error;
-
-        /* realloc the base block */
-        if ( REALLOC( table->block, table->capacity, new_size ) )
-          return error;
-        table->capacity = new_size;
-
-        /* shift all offsets when needed */
-        if (old_base)
-        {
-          T1_Long   delta  = table->block - old_base;
-          T1_Byte** offset = table->elements;
-          T1_Byte** limit  = offset + table->max_elems;
-
-          if (delta)
-            for ( ; offset < limit; offset ++ )
-              if (offset[0])
-                offset[0] += delta;
-        }
-
-        return T1_Err_Ok;
+        *tag  = head.tag;
+        *size = head.size;
       }
-
-
-  LOCAL_FUNC
-  T1_Error  T1_Add_Table( T1_Table*  table,
-                          T1_Int     index,
-                          void*      object,
-                          T1_Int     length )
-  {
-	if (index < 0 || index > table->max_elems)
-    {
-	  FT_ERROR(( "T1.Add_Table: invalid index\n" ));
-	  return T1_Err_Syntax_Error;
     }
-
-    /* grow the base block if needed */
-    if ( table->cursor + length > table->capacity )
-    {
-      T1_Error  error;
-      T1_Int    new_size = table->capacity;
-
-      while ( new_size < table->cursor+length )
-        new_size += 1024;
-
-      error = reallocate_t1_table( table, new_size );
-      if (error) return error;
-    }
-
-    /* add the object to the base block and adjust offset */
-    table->elements[ index ] = table->block + table->cursor;
-    table->lengths [ index ] = length;
-    MEM_Copy( table->block + table->cursor, object, length );
-
-    table->cursor += length;
-    return T1_Err_Ok;
+    return error;
   }
 
 
-/*************************************************************************/
-/*                                                                       */
-/* <Function> T1_Done_Table                                              */
-/*                                                                       */
-/* <Description>                                                         */
-/*    Finalise a T1_Table. (realloc it to its current cursor).           */
-/*                                                                       */
-/* <Input>                                                               */
-/*    table :: target table                                              */
-/*                                                                       */
-/* <Note>                                                                */
-/*    This function does NOT release the heap's memory block. It is up   */
-/*    to the caller to clean it, or reference it in its own structures.  */
-/*                                                                       */
-  LOCAL_FUNC
-  void  T1_Done_Table( T1_Table*  table )
+  FT_LOCAL_DEF( FT_Error )
+  T1_New_Parser( T1_Parser      parser,
+                 FT_Stream      stream,
+                 FT_Memory      memory,
+                 PSAux_Service  psaux )
   {
-    FT_Memory  memory = table->memory;
-    T1_Error   error;
-    T1_Byte*   old_base;
+    FT_Error   error;
+    FT_UShort  tag;
+    FT_Long    size;
 
-    /* should never fail, as rec.cursor <= rec.size */
-    old_base = table->block;
-    if (!old_base)
-      return;
-    
-    (void)REALLOC( table->block, table->capacity, table->cursor );
-    table->capacity = table->cursor;
-    
-    if (old_base != table->block)
+
+    psaux->ps_parser_funcs->init( &parser->root,0, 0, memory );
+
+    parser->stream       = stream;
+    parser->base_len     = 0;
+    parser->base_dict    = 0;
+    parser->private_len  = 0;
+    parser->private_dict = 0;
+    parser->in_pfb       = 0;
+    parser->in_memory    = 0;
+    parser->single_block = 0;
+
+    /******************************************************************/
+    /*                                                                */
+    /* Here a short summary of what is going on:                      */
+    /*                                                                */
+    /*   When creating a new Type 1 parser, we try to locate and load */
+    /*   the base dictionary if this is possible (i.e. for PFB        */
+    /*   files).  Otherwise, we load the whole font into memory.      */
+    /*                                                                */
+    /*   When `loading' the base dictionary, we only setup pointers   */
+    /*   in the case of a memory-based stream.  Otherwise, we         */
+    /*   allocate and load the base dictionary in it.                 */
+    /*                                                                */
+    /*   parser->in_pfb is set if we are in a binary (".pfb") font.   */
+    /*   parser->in_memory is set if we have a memory stream.         */
+    /*                                                                */
+
+    /* try to compute the size of the base dictionary;   */
+    /* look for a Postscript binary file tag, i.e 0x8001 */
+    if ( FT_STREAM_SEEK( 0L ) )
+      goto Exit;
+
+    error = read_pfb_tag( stream, &tag, &size );
+    if ( error )
+      goto Exit;
+
+    if ( tag != 0x8001U )
     {
-      T1_Long   delta   = table->block - old_base;
-      T1_Byte** element = table->elements;
-      T1_Byte** limit   = element + table->max_elems;
-      
-      for ( ; element < limit; element++ )
-        if (element[0])
-          element[0] += delta;
+      /* assume that this is a PFA file for now; an error will */
+      /* be produced later when more things are checked        */
+      if ( FT_STREAM_SEEK( 0L ) )
+        goto Exit;
+      size = stream->size;
     }
-  }
+    else
+      parser->in_pfb = 1;
 
+    /* now, try to load `size' bytes of the `base' dictionary we */
+    /* found previously                                          */
 
-  LOCAL_FUNC
-  T1_String*   CopyString( T1_Parser*  parser )
-  {
-    T1_String*  string = NULL;
-    T1_Token*   token  = parser->args++;
-    FT_Memory   memory = parser->tokenizer->memory;
-    T1_Error    error;
-
-    if ( token->kind == tok_string )
+    /* if it is a memory-based resource, set up pointers */
+    if ( !stream->read )
     {
-      int  len = token->len-2;
+      parser->base_dict = (FT_Byte*)stream->base + stream->pos;
+      parser->base_len  = size;
+      parser->in_memory = 1;
 
-      if ( ALLOC( string, len+1 ) )
-      {
-        parser->error = error;
-        return 0;
-      }
-
-      MEM_Copy( string, parser->tokenizer->base + token->start+1, len );
-      string[len] = '\0';
-
-      parser->error = T1_Err_Ok;
+      /* check that the `size' field is valid */
+      if ( FT_STREAM_SKIP( size ) )
+        goto Exit;
     }
     else
     {
-      FT_ERROR(( "T1.CopyString : syntax error, string token expected !\n" ));
-      parser->error = T1_Err_Syntax_Error;
-    }
-    return string;
-  }
-
-
-
-  static
-  T1_Error  parse_int( T1_Byte*  base,
-                       T1_Byte*  limit,
-                       T1_Long*  result )
-  {
-    T1_Bool  sign = 0;
-    T1_Long  sum  = 0;
-
-    if (base >= limit)
-      goto Fail;
-
-    /* check sign */
-    if ( *base == '+' )
-      base++;
-
-    else if ( *base == '-' )
-    {
-      sign++;
-      base++;
+      /* read segment in memory */
+      if ( FT_ALLOC( parser->base_dict, size )     ||
+           FT_STREAM_READ( parser->base_dict, size ) )
+        goto Exit;
+      parser->base_len = size;
     }
 
-    /* parse digits */
-    if ( base >= limit )
-      goto Fail;
-
-    do
+    /* Now check font format; we must see `%!PS-AdobeFont-1' */
+    /* or `%!FontType'                                       */
     {
-      sum = ( 10*sum + (*base++ - '0') );
-
-    } while (base < limit);
-
-    if (sign)
-      sum = -sum;
-
-    *result = sum;
-    return T1_Err_Ok;
-
-  Fail:
-    FT_ERROR(( "T1.parse_integer : integer expected\n" ));
-    *result = 0;
-    return T1_Err_Syntax_Error;
-  }
-
-
-
-
-  static
-  T1_Error  parse_float( T1_Byte*  base,
-                         T1_Byte*  limit,
-                         T1_Int    scale,
-                         T1_Long*  result )
-  {
-#if 1
-    /* XXX : We're simply much too lazy to code this function  */
-    /*       properly for now.. We'll do that when the rest of */
-    /*       the driver works properly..                       */
-    char    temp[32];
-    int     len = limit-base;
-    double  value;
-
-    if (len > 31) goto Fail;
-
-    strncpy( temp, (char*)base, len );
-    temp[len] = '\0';
-    if ( sscanf( temp, "%lf", &value ) != 1 )
-      goto Fail;
-
-    *result = (T1_Long)(scale*value);
-    return 0;
-
-#else
-  T1_Byte*  cur;
-  T1_Bool   sign        = 0;  /* sign                        */
-  T1_Long   number_int  = 0;  /* integer part                */
-  T1_Long   number_frac = 0;  /* fractional part             */
-  T1_Long   exponent    = 0;  /* exponent value              */
-  T1_Int    num_frac    = 0;  /* number of fractional digits */
-
-  /* check sign */
-  if (*base == '+')
-    base++;
-
-  else if (*base == '-')
-  {
-    sign++;
-    base++;
-  }
-
-  /* find integer part */
-  cur = base;
-  while ( cur < limit )
-  {
-    T1_Byte  c = *cur;
-    if ( c == '.' || c == 'e' || c == 'E' )
-      break;
-
-    cur++;
-  }
-
-  if ( cur > base )
-  {
-    error = parse_integer( base, cur, &number_int );
-    if (error) goto Fail;
-  }
-
-  /* read fractional part, if any */
-  if ( *cur == '.' )
-  {
-    cur++;
-    base = cur;
-    while ( cur < limit )
-    {
-      T1_Byte  c = *cur;
-      if ( c == 'e' || c == 'E' )
-        break;
-      cur++;
-    }
-
-    num_frac = cur - base;
-
-    if ( cur > base )
-    {
-      error = parse_integer( base, cur, &number_frac );
-      if (error) goto Fail;
-      base = cur;
-    }
-  }
-
-  /* read exponent, if any */
-  if ( *cur == 'e' || *cur == 'E' )
-  {
-    cur++;
-    base = cur;
-    error = parse_integer( base, limit, &exponent );
-    if (error) goto Fail;
-
-    /* now check that exponent is within 'correct bounds' */
-    /* i.e. between -6 and 6                              */
-    if ( exponent < -6 || exponent > 6 )
-      goto Fail;
-  }
-
-  /* now adjust integer value and exponent for fractional part */
-  while ( num_frac > 0 )
-  {
-    number_int *= 10;
-    exponent   --;
-    num_frac--;
-  }
-
-  number_int += num_frac;
-
-  /* skip point if any, read fractional part */
-  if ( cur+1 < limit )
-  {
-    if (*cur
-  }
-
-  /* now compute scaled float value */
-  /* XXXXX : incomplete !!!         */
-#endif
-
-  Fail:
-    FT_ERROR(( "T1.parse_float : syntax error !\n" ));
-    return T1_Err_Syntax_Error;
-  }
-
-
-
-  static
-  T1_Error  parse_integer( T1_Byte*  base,
-                           T1_Byte*  limit,
-                           T1_Long*  result )
-  {
-    T1_Byte*  cur;
-
-    /* the lexical analyser accepts floats as well as integers */
-    /* now, check that we really have an int in this token     */
-    cur = base;
-    while ( cur < limit )
-    {
-      T1_Byte  c = *cur++;
-
-      if ( c == '.' || c == 'e' || c == 'E' )
-        goto Float_Number;
-    }
-
-    /* now read the number's value */
-    return parse_int( base, limit, result );
-
-  Float_Number:
-    /* We really have a float there, simply call parse_float in this */
-    /* case with a scale of '10' to perform round..                */
-    {
-      T1_Error error;
-
-      error = parse_float( base, limit, 10, result );
-      if (!error)
+      if ( size <= 16                                       ||
+           ( ft_strncmp( (const char*)parser->base_dict,
+                         "%!PS-AdobeFont-1", 16 )        &&
+             ft_strncmp( (const char*)parser->base_dict,
+                         "%!FontType", 10 )              )  )
       {
-        if (*result >= 0) *result = (*result+5)/10;      /* round value */
-                    else  *result = -((5-*result)/10);
+        FT_TRACE2(( "[not a Type1 font]\n" ));
+        error = T1_Err_Unknown_File_Format;
       }
-      return error;
+      else
+      {
+        parser->root.base   = parser->base_dict;
+        parser->root.cursor = parser->base_dict;
+        parser->root.limit  = parser->root.cursor + parser->base_len;
+      }
     }
+
+  Exit:
+    if ( error && !parser->in_memory )
+      FT_FREE( parser->base_dict );
+
+    return error;
   }
 
 
-  LOCAL_FUNC
-  T1_Long  CopyInteger( T1_Parser*  parser )
+  FT_LOCAL_DEF( void )
+  T1_Finalize_Parser( T1_Parser  parser )
   {
-    T1_Long   sum   = 0;
-    T1_Token* token = parser->args++;
+    FT_Memory  memory = parser->root.memory;
 
-    if ( token->kind == tok_number )
-    {
-      T1_Byte*  base  = parser->tokenizer->base + token->start;
-      T1_Byte*  limit = base + token->len;
 
-      /* now read the number's value */
-      parser->error = parse_integer( base, limit, &sum );
-      return sum;
-    }
+    /* always free the private dictionary */
+    FT_FREE( parser->private_dict );
 
-    FT_ERROR(( "T1.CopyInteger : number expected\n" ));
-    parser->args--;
-    parser->error = T1_Err_Syntax_Error;
-    return 0;
+    /* free the base dictionary only when we have a disk stream */
+    if ( !parser->in_memory )
+      FT_FREE( parser->base_dict );
+
+    parser->root.funcs.done( &parser->root );
   }
 
 
-
-  LOCAL_FUNC
-  T1_Bool   CopyBoolean( T1_Parser*  parser )
+  /* return the value of an hexadecimal digit */
+  static int
+  hexa_value( char  c )
   {
-    T1_Error  error  = T1_Err_Ok;
-    T1_Bool   result = 0;
-    T1_Token* token  = parser->args++;
+    unsigned int  d;
 
-    if ( token->kind == tok_keyword )
+
+    d = (unsigned int)( c - '0' );
+    if ( d <= 9 )
+      return (int)d;
+
+    d = (unsigned int)( c - 'a' );
+    if ( d <= 5 )
+      return (int)( d + 10 );
+
+    d = (unsigned int)( c - 'A' );
+    if ( d <= 5 )
+      return (int)( d + 10 );
+
+    return -1;
+  }
+
+
+  FT_LOCAL_DEF( FT_Error )
+  T1_Get_Private_Dict( T1_Parser      parser,
+                       PSAux_Service  psaux )
+  {
+    FT_Stream  stream = parser->stream;
+    FT_Memory  memory = parser->root.memory;
+    FT_Error   error  = 0;
+    FT_Long    size;
+
+
+    if ( parser->in_pfb )
     {
-      if ( token->kind2 == key_false )
-        result = 0;
+      /* in the case of the PFB format, the private dictionary can be  */
+      /* made of several segments.  We thus first read the number of   */
+      /* segments to compute the total size of the private dictionary  */
+      /* then re-read them into memory.                                */
+      FT_Long    start_pos = FT_STREAM_POS();
+      FT_UShort  tag;
 
-      else if ( token->kind2 == key_true )
-        result = !0;
+
+      parser->private_len = 0;
+      for (;;)
+      {
+        error = read_pfb_tag( stream, &tag, &size );
+        if ( error )
+          goto Fail;
+
+        if ( tag != 0x8002U )
+          break;
+
+        parser->private_len += size;
+
+        if ( FT_STREAM_SKIP( size ) )
+          goto Fail;
+      }
+
+      /* Check that we have a private dictionary there */
+      /* and allocate private dictionary buffer        */
+      if ( parser->private_len == 0 )
+      {
+        FT_ERROR(( "T1_Get_Private_Dict:" ));
+        FT_ERROR(( " invalid private dictionary section\n" ));
+        error = T1_Err_Invalid_File_Format;
+        goto Fail;
+      }
+
+      if ( FT_STREAM_SEEK( start_pos )                             ||
+           FT_ALLOC( parser->private_dict, parser->private_len ) )
+        goto Fail;
+
+      parser->private_len = 0;
+      for (;;)
+      {
+        error = read_pfb_tag( stream, &tag, &size );
+        if ( error || tag != 0x8002U )
+        {
+          error = T1_Err_Ok;
+          break;
+        }
+
+        if ( FT_STREAM_READ( parser->private_dict + parser->private_len, size ) )
+          goto Fail;
+
+        parser->private_len += size;
+      }
+    }
+    else
+    {
+      /* we have already `loaded' the whole PFA font file into memory; */
+      /* if this is a memory resource, allocate a new block to hold    */
+      /* the private dict. Otherwise, simply overwrite into the base   */
+      /* dictionary block in the heap.                                 */
+
+      /* first of all, look at the `eexec' keyword */
+      FT_Byte*  cur   = parser->base_dict;
+      FT_Byte*  limit = cur + parser->base_len;
+      FT_Byte   c;
+
+
+      for (;;)
+      {
+        c = cur[0];
+        if ( c == 'e' && cur + 9 < limit )  /* 9 = 5 letters for `eexec' + */
+                                            /* newline + 4 chars           */
+        {
+          if ( cur[1] == 'e' && cur[2] == 'x' &&
+               cur[3] == 'e' && cur[4] == 'c' )
+          {
+            cur += 6; /* we skip the newling after the `eexec' */
+
+            /* XXX: Some fonts use DOS-linefeeds, i.e. \r\n; we need to */
+            /*      skip the extra \n if we find it                     */
+            if ( cur[0] == '\n' )
+              cur++;
+
+            break;
+          }
+        }
+        cur++;
+        if ( cur >= limit )
+        {
+          FT_ERROR(( "T1_Get_Private_Dict:" ));
+          FT_ERROR(( " could not find `eexec' keyword\n" ));
+          error = T1_Err_Invalid_File_Format;
+          goto Exit;
+        }
+      }
+
+      /* now determine where to write the _encrypted_ binary private  */
+      /* dictionary.  We overwrite the base dictionary for disk-based */
+      /* resources and allocate a new block otherwise                 */
+
+      size = (FT_Long)( parser->base_len - ( cur - parser->base_dict ) );
+
+      if ( parser->in_memory )
+      {
+        /* note that we allocate one more byte to put a terminating `0' */
+        if ( FT_ALLOC( parser->private_dict, size + 1 ) )
+          goto Fail;
+        parser->private_len = size;
+      }
+      else
+      {
+        parser->single_block = 1;
+        parser->private_dict = parser->base_dict;
+        parser->private_len  = size;
+        parser->base_dict    = 0;
+        parser->base_len     = 0;
+      }
+
+      /* now determine whether the private dictionary is encoded in binary */
+      /* or hexadecimal ASCII format -- decode it accordingly              */
+
+      /* we need to access the next 4 bytes (after the final \r following */
+      /* the `eexec' keyword); if they all are hexadecimal digits, then   */
+      /* we have a case of ASCII storage                                  */
+
+      if ( ( hexa_value( cur[0] ) | hexa_value( cur[1] ) |
+             hexa_value( cur[2] ) | hexa_value( cur[3] ) ) < 0 )
+
+        /* binary encoding -- `simply' copy the private dict */
+        FT_MEM_COPY( parser->private_dict, cur, size );
 
       else
-        goto Fail;
-    }
-    else
-    {
-      Fail:
-        FT_ERROR(( "T1.CopyBoolean : syntax error, 'false' or 'true' expected\n" ));
-        error = T1_Err_Syntax_Error;
-    }
-    parser->error = error;
-    return result;
-  }
-
-
-
-
-  LOCAL_FUNC
-  T1_Long   CopyFloat( T1_Parser*  parser,
-                       T1_Int      scale )
-  {
-    T1_Error  error;
-    T1_Long   sum = 0;
-    T1_Token* token = parser->args++;
-
-    if ( token->kind == tok_number )
-    {
-      T1_Byte*  base  = parser->tokenizer->base + token->start;
-      T1_Byte*  limit = base + token->len;
-
-      error = parser->error = parse_float( base, limit, scale, &sum );
-      if (error) goto Fail;
-
-      return sum;
-    }
-
-  Fail:
-    FT_ERROR(( "T1.CopyFloat : syntax error !\n" ));
-    parser->error = T1_Err_Syntax_Error;
-    return 0;
-  }
-
-
-
-
-
-
-  LOCAL_FUNC
-  void  CopyBBox( T1_Parser*  parser,
-                  T1_BBox*    bbox )
-  {
-    T1_Token* token = parser->args++;
-    T1_Int    n;
-    T1_Error  error;
-
-    if ( token->kind == tok_program ||
-         token->kind == tok_array   )
-    {
-      /* get rid of '['/']', or '{'/'}' */
-      T1_Byte*  base  = parser->tokenizer->base + token->start + 1;
-      T1_Byte*  limit = base + token->len - 1;
-      T1_Byte*  cur;
-      T1_Byte*  start;
-
-      /* read each parameter independently */
-      cur = base;
-      for ( n = 0; n < 4; n++ )
       {
-        T1_Long*  result;
+        /* ASCII hexadecimal encoding */
 
-        /* skip whitespace */
-        while (cur < limit && *cur == ' ') cur++;
+        FT_Byte*  write;
+        FT_Int    count;
 
-        /* skip numbers */
-        start = cur;
-        while (cur < limit && *cur != ' ') cur++;
 
-        /* compute result address */
-        switch (n)
+        write = parser->private_dict;
+        count = 0;
+
+        for ( ;cur < limit; cur++ )
         {
-          case 0 : result = &bbox->xMin; break;
-          case 1 : result = &bbox->yMin; break;
-          case 2 : result = &bbox->xMax; break;
-          default: result = &bbox->yMax;
+          int  hex1;
+
+
+          /* check for newline */
+          if ( cur[0] == '\r' || cur[0] == '\n' )
+            continue;
+
+          /* exit if we have a non-hexadecimal digit that isn't a newline */
+          hex1 = hexa_value( cur[0] );
+          if ( hex1 < 0 || cur + 1 >= limit )
+            break;
+
+          /* otherwise, store byte */
+          *write++ = (FT_Byte)( ( hex1 << 4 ) | hexa_value( cur[1] ) );
+          count++;
+          cur++;
         }
 
-        error = parse_integer( start, cur, result );
-        if (error) goto Fail;
+        /* put a safeguard */
+        parser->private_len = write - parser->private_dict;
+        *write++ = 0;
       }
-      parser->error = 0;
-      return;
     }
 
+    /* we now decrypt the encoded binary private dictionary */
+    psaux->t1_decrypt( parser->private_dict, parser->private_len, 55665U );
+    parser->root.base   = parser->private_dict;
+    parser->root.cursor = parser->private_dict;
+    parser->root.limit  = parser->root.cursor + parser->private_len;
+
   Fail:
-    FT_ERROR(( "T1.CopyBBox : syntax error !\n" ));
-    parser->error = T1_Err_Syntax_Error;
+  Exit:
+    return error;
   }
 
 
-
-
-  LOCAL_FUNC
-  void  CopyMatrix( T1_Parser*  parser,
-                    T1_Matrix*  matrix )
-  {
-    T1_Token* token = parser->args++;
-    T1_Error  error;
-
-    if ( token->kind == tok_array )
-    {
-      /* get rid of '[' and ']' */
-      T1_Byte*  base  = parser->tokenizer->base + token->start + 1;
-      T1_Byte*  limit = base + token->len - 1;
-      T1_Byte*  cur;
-      T1_Byte*  start;
-      T1_Int    n;
-
-      /* read each parameter independently */
-      cur = base;
-      for ( n = 0; n < 4; n++ )
-      {
-        T1_Long*  result;
-
-        /* skip whitespace */
-        while (cur < limit && *cur == ' ') cur++;
-
-        /* skip numbers */
-        start = cur;
-        while (cur < limit && *cur != ' ') cur++;
-
-        /* compute result address */
-        switch (n)
-        {
-          case 0 : result = &matrix->xx; break;
-          case 1 : result = &matrix->xy; break;
-          case 2 : result = &matrix->yx; break;
-          default: result = &matrix->yy;
-        }
-
-        error = parse_float( start, cur, 65536000, result );
-        if (error) goto Fail;
-      }
-      parser->error = 0;
-      return;
-    }
-
-  Fail:
-    FT_ERROR(( "T1.CopyMatrix : syntax error !\n" ));
-    parser->error = T1_Err_Syntax_Error;
-  }
-
-
-
-  LOCAL_FUNC
-  void  CopyArray( T1_Parser*  parser,
-                   T1_Byte*    num_elements,
-                   T1_Short*   elements,
-                   T1_Int      max_elements )
-  {
-    T1_Token* token = parser->args++;
-    T1_Error  error;
-
-    if ( token->kind == tok_array   ||
-         token->kind == tok_program )   /* in the case of MinFeature */
-    {
-      /* get rid of '['/']', or '{'/'}' */
-      T1_Byte*  base  = parser->tokenizer->base + token->start + 1;
-      T1_Byte*  limit = base + token->len - 2;
-      T1_Byte*  cur;
-      T1_Byte*  start;
-      T1_Int    n;
-
-      /* read each parameter independently */
-      cur = base;
-      for ( n = 0; n < max_elements; n++ )
-      {
-        T1_Long  result;
-
-        /* test end of string */
-        if (cur >= limit)
-          break;
-
-        /* skip whitespace */
-        while (cur < limit && *cur == ' ') cur++;
-
-        /* end of list ? */
-        if (cur >= limit)
-          break;
-
-        /* skip numbers */
-        start = cur;
-        while (cur < limit && *cur != ' ') cur++;
-
-        error = parse_integer( start, cur, &result );
-        if (error) goto Fail;
-
-        *elements ++ = (T1_Short)result;
-      }
-
-      if (num_elements)
-        *num_elements = (T1_Byte)n;
-
-      parser->error = 0;
-      return;
-    }
-
-  Fail:
-    FT_ERROR(( "T1.CopyArray : syntax error !\n" ));
-    parser->error = T1_Err_Syntax_Error;
-  }
-
+/* END */

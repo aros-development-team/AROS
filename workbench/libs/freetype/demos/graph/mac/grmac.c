@@ -26,7 +26,7 @@
 #include <Windows.h>
 
 /* FT graphics subsystem */
-#include "grmac.h"
+#include "grobjs.h"
 #include "grdevice.h"
 
 /* CodeWarrior's poor excuse for a console */
@@ -271,7 +271,7 @@ grSurface*  init_surface( grSurface*  surface,
   surface->bitmap = *bitmap;
 
   /* initialize the PixMap to appropriate values */
-  thePixMap.baseAddr = bitmap->buffer;
+  thePixMap.baseAddr = (char*)bitmap->buffer;
   thePixMap.rowBytes = bitmap->pitch;
   if (thePixMap.rowBytes < 0)
      thePixMap.rowBytes = -thePixMap.rowBytes;
@@ -298,7 +298,7 @@ grSurface*  init_surface( grSurface*  surface,
   case gr_pixel_mode_gray:
     thePixMap.cmpSize = 8;
     thePixMap.pixelSize = 8;
-    thePixMap.pmTable = GetCTable(256); /* color palette matching FT's idea 
+    thePixMap.pmTable = GetCTable(256); /* color palette matching FT's idea
                                            of grayscale. See ftview.rsrc */
     break;
 

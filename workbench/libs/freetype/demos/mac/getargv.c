@@ -32,6 +32,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <string.h>
 #include "getargv.h"
 
+#ifndef USING_CARBON
 #include <Types.h>
 #include <Files.h>
 #include <Events.h>
@@ -39,12 +40,15 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <Errors.h>
 #include <AppleEvents.h>
 #include <AEObjects.h>
+#else
+#include <Carbon.h>
+#endif
 
-#ifdef GENERATINGCFM	/* Defined to 0 or 1 in Universal headers */
+#if defined(GENERATINGCFM) && !defined(USING_CARBON)	/* Defined to 0 or 1 in Universal headers */
 #define HAVE_UNIVERSAL_HEADERS
 #endif
 
-#ifndef HAVE_UNIVERSAL_HEADERS
+#if !defined(HAVE_UNIVERSAL_HEADERS) && !defined(USING_CARBON)
 #define NewAEEventHandlerProc(x) (x)
 #define AEEventHandlerUPP EventHandlerProcPtr
 #endif
@@ -158,7 +162,7 @@ init_app_name()
 /* Check that there aren't any args remaining in the event */
 
 static OSErr 
-get_missing_params(AppleEvent *theAppleEvent)
+get_missing_params(const AppleEvent *theAppleEvent)
 {
 	DescType theType;
 	Size actualSize;
@@ -178,7 +182,7 @@ static int got_one; /* Flag that we can stop getting events */
 /* Handle the Print or Quit events (by failing) */
 
 static pascal OSErr
-handle_not(AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
+handle_not(const AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 {
 	#pragma unused (reply, refCon)
 	got_one = 1;
@@ -189,7 +193,7 @@ handle_not(AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 /* Handle the Open Application event (by ignoring it) */
 
 static pascal OSErr
-handle_open_app(AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
+handle_open_app(const AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 {
 	#pragma unused (reply, refCon)
 #if 0
@@ -203,7 +207,7 @@ handle_open_app(AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 /* Handle the Open Document event, by adding an argument */
 
 static pascal OSErr
-handle_open_doc(AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
+handle_open_doc(const AppleEvent *theAppleEvent, AppleEvent *reply, long refCon)
 {
 	#pragma unused (reply, refCon)
 	OSErr err;
@@ -242,10 +246,16 @@ static AEEventHandlerUPP not_upp;
 static void
 set_ae_handlers()
 {
+#ifdef USING_CARBON
+	open_doc_upp = NewAEEventHandlerUPP(handle_open_doc);
+	open_app_upp = NewAEEventHandlerUPP(handle_open_app);
+	not_upp = NewAEEventHandlerUPP(handle_not);
+#else
 	open_doc_upp = NewAEEventHandlerProc(handle_open_doc);
 	open_app_upp = NewAEEventHandlerProc(handle_open_app);
 	not_upp = NewAEEventHandlerProc(handle_not);
-	
+#endif
+
 	AEInstallEventHandler(kCoreEventClass, kAEOpenApplication,
 			      open_app_upp, 0L, false);
 	AEInstallEventHandler(kCoreEventClass, kAEOpenDocuments,
@@ -282,7 +292,9 @@ event_loop()
 	
 	got_one = 0;
 	for (n = 0; n < 100 && !got_one; n++) {
+	#ifndef USING_CARBON
 		SystemTask();
+	#endif
 		ok = GetNextEvent(everyEvent, &event);
 		if (ok && event.what == kHighLevelEvent) {
 			AEProcessAppleEvent(&event);

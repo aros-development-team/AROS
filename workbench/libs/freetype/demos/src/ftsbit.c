@@ -17,7 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "freetype.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 
 #ifdef HAVE_LIBINTL_H
@@ -115,14 +116,14 @@
   }
 
 
-  
+
   static
   void  dump_range( FT_GlyphSlot  glyph,
                     int           first_glyph,
                     int           last_glyph )
   {
     int  i;
-    
+
     for ( i = first_glyph; i <= last_glyph; i++ )
     {
       error = FT_Load_Glyph( glyph,
@@ -137,7 +138,7 @@
                 TT_ErrToString18( error ) );
         continue;
       }
-      
+
       dump_bitmap(glyph,i);
     }
   }
@@ -270,7 +271,7 @@
         char*  base = argv[i];
         char*  cur  = base;
         int    first, last;
-        
+
         while (*cur)
         {
           if (*cur == '-')
@@ -285,14 +286,14 @@
         {
           if ( sscanf( argv[i], "%d-%d", &first, &last ) != 2 )
             Usage( execname );
-            
+
           dump_range( glyph, first, last );
         }
         else
         {
           if ( sscanf( argv[i], "%d", &first ) != 1 )
             Usage( execname );
-            
+
           dump_range( glyph, first, first );
         }
       }

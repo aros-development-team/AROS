@@ -1,6 +1,6 @@
 /****************************************************************************/
 /*                                                                          */
-/*  The FreeType project -- a free and portable quality TrueType renderer.  */
+/*  The FreeType project -- a free and portable quality font engine         */
 /*                                                                          */
 /*  Copyright 1996-1998 by                                                  */
 /*  D. Turner, R.Wilhelm, and W. Lemberg                                    */
@@ -13,14 +13,15 @@
 /*                                                                          */
 /****************************************************************************/
 
-#include "freetype.h"
-#include "ftobjs.h"
-#include "ftdriver.h"
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+
+#define  xxTEST_PSNAMES
 
 #define gettext( x )  ( x )
 
@@ -58,7 +59,7 @@
   }
 
 
-  int  main( int  argc, char**  argv ) 
+  int  main( int  argc, char**  argv )
   {
     int           i, file_index;
     unsigned int  id;
@@ -83,6 +84,25 @@
     for ( file_index = 2; file_index < argc; file_index++ )
     {
       fname = argv[file_index];
+
+      /* try to open the file with no extra extension first */
+      error = FT_New_Face( library, fname, 0, &face );
+      if (!error)
+      {
+        printf( "%s: ", fname );
+        goto Success;
+      }
+
+
+      if ( error == FT_Err_Unknown_File_Format )
+      {
+        printf( "unknown format\n" );
+        continue;
+      }
+
+      /* ok, we could not load the file, try to add an extension to */
+      /* its name if possible..                                     */
+
       i     = strlen( fname );
       while ( i > 0 && fname[i] != '\\' && fname[i] != '/' )
       {
@@ -117,7 +137,7 @@
           fname = filename + i + 1;
           i = -1;
         }
-        else 
+        else
           i--;
 
       printf( "%s: ", fname );
@@ -126,7 +146,7 @@
       error = FT_New_Face( library, filename, 0, &face );
       if (error)
       {
-        if (error == FT_Err_Invalid_File_Format)
+        if (error == FT_Err_Unknown_File_Format)
           printf( "unknown format\n" );
         else
           printf( "could not find/open file (error: %d)\n", error );
@@ -134,7 +154,16 @@
       }
       if (error) Panic( "Could not open file" );
 
+  Success:
       num_glyphs = face->num_glyphs;
+
+#ifdef  TEST_PSNAMES
+      {
+        const char*  ps_name = FT_Get_Postscript_Name( face );
+        
+        printf( "[%s] ", ps_name ? ps_name : "." );
+      }
+#endif
 
       error = FT_Set_Char_Size( face, ptsize << 6, ptsize << 6, 72, 72 );
       if (error) Panic( "Could not set character size" );

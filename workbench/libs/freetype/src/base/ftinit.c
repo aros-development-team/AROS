@@ -2,13 +2,13 @@
 /*                                                                         */
 /*  ftinit.c                                                               */
 /*                                                                         */
-/*    FreeType initialisation layer (body).                                */
+/*    FreeType initialization layer (body).                                */
 /*                                                                         */
-/*  Copyright 1996-2000 by                                                 */
+/*  Copyright 1996-2001, 2002 by                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
-/*  This file is part of the FreeType project, and may only be used        */
-/*  modified and distributed under the terms of the FreeType project       */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
 /*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
 /*  this file you indicate that you have read the license and              */
 /*  understand and accept it fully.                                        */
@@ -17,22 +17,18 @@
 
   /*************************************************************************/
   /*                                                                       */
-  /*  The purpose of this file is to implement the three following         */
+  /*  The purpose of this file is to implement the following two           */
   /*  functions:                                                           */
   /*                                                                       */
-  /*  FT_Default_Drivers:                                                  */
-  /*     This function is used to add the set of default drivers to a      */
-  /*     fresh new library object.  The set is computed at compile time    */
-  /*     from the Makefiles inclusions in Makefile.lib.  See the document  */
-  /*     `FreeType Internals' for more info.                               */
+  /*  FT_Add_Default_Modules():                                            */
+  /*     This function is used to add the set of default modules to a      */
+  /*     fresh new library object.  The set is taken from the header file  */
+  /*     `freetype/config/ftmodule.h'.  See the document `FreeType 2.0     */
+  /*     Build System' for more information.                               */
   /*                                                                       */
-  /*  FT_Init_FreeType:                                                    */
+  /*  FT_Init_FreeType():                                                  */
   /*     This function creates a system object for the current platform,   */
   /*     builds a library out of it, then calls FT_Default_Drivers().      */
-  /*                                                                       */
-  /*  FT_Done_FreeType:                                                    */
-  /*     This function simply finalizes the library and the corresponding  */
-  /*     system object.                                                    */
   /*                                                                       */
   /*  Note that even if FT_Init_FreeType() uses the implementation of the  */
   /*  system object defined at build time, client applications are still   */
@@ -41,102 +37,124 @@
   /*************************************************************************/
 
 
-#include <ftobjs.h>
-#include <ftconfig.h>
-#include <ftdebug.h>
-#include <ftdriver.h>
-
-#undef  FT_COMPONENT
-#define FT_COMPONENT  trace_init
-
-#undef  FT_DRIVER
-#define FT_DRIVER( x )  extern FT_DriverInterface  x;
-
-#include <ftmodule.h>
-
-#undef  FT_DRIVER
-#define FT_DRIVER( x )  &x,
-
-static
-const FT_DriverInterface*  ft_default_drivers[] =
-  {
-#include <ftmodule.h>
-    0
-  };
+#include <ft2build.h>
+#include FT_CONFIG_CONFIG_H
+#include FT_INTERNAL_OBJECTS_H
+#include FT_INTERNAL_DEBUG_H
+#include FT_MODULE_H
 
 
   /*************************************************************************/
   /*                                                                       */
-  /* <Function>                                                            */
-  /*    FT_Default_Drivers                                                 */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
   /*                                                                       */
-  /* <Description>                                                         */
-  /*    Adds the set of default drivers to a given library object.         */
-  /*                                                                       */
-  /* <InOut>                                                               */
-  /*    library :: A handle to a new library object.                       */
-  /*                                                                       */
-  EXPORT_FUNC
-  void  FT_Default_Drivers( FT_Library  library )
+#undef  FT_COMPONENT
+#define FT_COMPONENT  trace_init
+
+#undef  FT_USE_MODULE
+#ifdef __cplusplus
+#define FT_USE_MODULE( x )  extern "C" const FT_Module_Class*  x;
+#else
+#define FT_USE_MODULE( x )  extern const FT_Module_Class*  x;
+#endif
+
+
+#include FT_CONFIG_MODULES_H
+
+
+#undef  FT_USE_MODULE
+#define FT_USE_MODULE( x )  (const FT_Module_Class*)&x,
+
+  static
+  const FT_Module_Class*  const ft_default_modules[] =
   {
-    FT_Error                   error;
-    const FT_DriverInterface* *cur;
+#include FT_CONFIG_MODULES_H
+    0
+  };
 
 
-    cur = ft_default_drivers;
+  /* documentation is in ftmodule.h */
+
+  FT_EXPORT_DEF( void )
+  FT_Add_Default_Modules( FT_Library  library )
+  {
+    FT_Error                       error;
+    const FT_Module_Class* const*  cur;
+
+
+    /* test for valid `library' delayed to FT_Add_Module() */
+
+    cur = ft_default_modules;
     while ( *cur )
     {
-      error = FT_Add_Driver( library, *cur );
+      error = FT_Add_Module( library, *cur );
       /* notify errors, but don't stop */
       if ( error )
-        FT_ERROR(( "FT.Default_Drivers: Cannot install `%s', error = %x\n",
-                   (*cur)->driver_name, error ));
+      {
+        FT_ERROR(( "FT_Add_Default_Module: Cannot install `%s', error = 0x%x\n",
+                   (*cur)->module_name, error ));
+      }
       cur++;
     }
   }
 
 
-  /*************************************************************************/
-  /*                                                                       */
-  /* <Function>                                                            */
-  /*    FT_Init_FreeType                                                   */
-  /*                                                                       */
-  /* <Description>                                                         */
-  /*    Initializes a new FreeType library object.  The set of drivers     */
-  /*    that are registered by this function is determined at build time.  */
-  /*                                                                       */
-  /* <Output>                                                              */
-  /*    library :: A handle to a new library object.                       */
-  /*                                                                       */
-  /* <Return>                                                              */
-  /*    FreeTyoe error code.  0 means success.                             */
-  /*                                                                       */
-  EXPORT_FUNC
-  FT_Error  FT_Init_FreeType( FT_Library*  library )
+  /* documentation is in freetype.h */
+
+  FT_EXPORT_DEF( FT_Error )
+  FT_Init_FreeType( FT_Library  *alibrary )
   {
     FT_Error   error;
     FT_Memory  memory;
 
 
-    /* First of all, allocate a new system object - -this function is part */
+    /* First of all, allocate a new system object -- this function is part */
     /* of the system-specific component, i.e. `ftsystem.c'.                */
 
     memory = FT_New_Memory();
     if ( !memory )
     {
-      FT_ERROR(( "FT_Init_FreeType:" ));
-      FT_ERROR(( " cannot find memory manager" ));
+      FT_ERROR(( "FT_Init_FreeType: cannot find memory manager\n" ));
       return FT_Err_Unimplemented_Feature;
     }
 
-    /* builds a library out of it, then fill it with the set of */
-    /* default drivers.                                         */
+    /* build a library out of it, then fill it with the set of */
+    /* default drivers.                                        */
 
-    error = FT_New_Library( memory, library );
+    error = FT_New_Library( memory, alibrary );
     if ( !error )
-      FT_Default_Drivers( *library );
+    {
+      (*alibrary)->version_major = FREETYPE_MAJOR;
+      (*alibrary)->version_minor = FREETYPE_MINOR;
+      (*alibrary)->version_patch = FREETYPE_PATCH;
+
+      FT_Add_Default_Modules( *alibrary );
+    }
 
     return error;
+  }
+
+
+  /* documentation is in freetype.h */
+
+  FT_EXPORT_DEF( FT_Error )
+  FT_Done_FreeType( FT_Library  library )
+  {
+    if ( library )
+    {
+      FT_Memory  memory = library->memory;
+
+
+      /* Discard the library object */
+      FT_Done_Library( library );
+
+      /* discard memory manager */
+      FT_Done_Memory( memory );
+    }
+
+    return FT_Err_Ok;
   }
 
 

@@ -1,14 +1,14 @@
 /***************************************************************************/
 /*                                                                         */
-/*  ttpload.h                                                              */
+/*  ttpload.c                                                              */
 /*                                                                         */
 /*    TrueType glyph data/program tables loader (body).                    */
 /*                                                                         */
-/*  Copyright 1996-1999 by                                                 */
+/*  Copyright 1996-2001, 2002 by                                           */
 /*  David Turner, Robert Wilhelm, and Werner Lemberg.                      */
 /*                                                                         */
-/*  This file is part of the FreeType project, and may only be used        */
-/*  modified and distributed under the terms of the FreeType project       */
+/*  This file is part of the FreeType project, and may only be used,       */
+/*  modified, and distributed under the terms of the FreeType project      */
 /*  license, LICENSE.TXT.  By continuing to use, modify, or distribute     */
 /*  this file you indicate that you have read the license and              */
 /*  understand and accept it fully.                                        */
@@ -16,46 +16,59 @@
 /***************************************************************************/
 
 
-#include <ftdebug.h>
-#include <ftobjs.h>
-#include <ftstream.h>
+#include <ft2build.h>
+#include FT_INTERNAL_DEBUG_H
+#include FT_INTERNAL_OBJECTS_H
+#include FT_INTERNAL_STREAM_H
+#include FT_TRUETYPE_TAGS_H
 
-#include <ttpload.h>
-#include <tttags.h>
-#include <tterrors.h>
+#include "ttpload.h"
 
+#include "tterrors.h"
+
+
+  /*************************************************************************/
+  /*                                                                       */
+  /* The macro FT_COMPONENT is used in trace mode.  It is an implicit      */
+  /* parameter of the FT_TRACE() and FT_ERROR() macros, used to print/log  */
+  /* messages during execution.                                            */
+  /*                                                                       */
 #undef  FT_COMPONENT
-#define FT_COMPONENT  trace_ttload
+#define FT_COMPONENT  trace_ttpload
+
 
   /*************************************************************************/
   /*                                                                       */
   /* <Function>                                                            */
-  /*    TT_Load_Locations                                                  */
+  /*    tt_face_load_loca                                                  */
   /*                                                                       */
   /* <Description>                                                         */
   /*    Loads the locations table.                                         */
   /*                                                                       */
-  /* <Input>                                                               */
+  /* <InOut>                                                               */
   /*    face   :: A handle to the target face object.                      */
+  /*                                                                       */
+  /* <Input>                                                               */
   /*    stream :: The input stream.                                        */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  LOCAL_FUNC
-  TT_Error  TT_Load_Locations( TT_Face    face,
-                               FT_Stream  stream )
+  FT_LOCAL_DEF( FT_Error )
+  tt_face_load_loca( TT_Face    face,
+                     FT_Stream  stream )
   {
-    TT_Error   error;
+    FT_Error   error;
     FT_Memory  memory = stream->memory;
-    TT_Short   LongOffsets;
-    TT_ULong   table_len;
+    FT_Short   LongOffsets;
+    FT_ULong   table_len;
+
 
     FT_TRACE2(( "Locations " ));
     LongOffsets = face->header.Index_To_Loc_Format;
 
     error = face->goto_table( face, TTAG_loca, stream, &table_len );
-    if (error)
+    if ( error )
     {
       error = TT_Err_Locations_Missing;
       goto Exit;
@@ -63,50 +76,47 @@
 
     if ( LongOffsets != 0 )
     {
-      face->num_locations = (TT_UShort)(table_len >> 2);
+      face->num_locations = (FT_UShort)( table_len >> 2 );
 
-      FT_TRACE2(( "(32 bits offsets): %12d ", face->num_locations ));
+      FT_TRACE2(( "(32bit offsets): %12d ", face->num_locations ));
 
-      if ( ALLOC_ARRAY( face->glyph_locations,
-                        face->num_locations,
-                        TT_Long ) )
+      if ( FT_NEW_ARRAY( face->glyph_locations, face->num_locations ) )
         goto Exit;
 
-      if ( ACCESS_Frame( face->num_locations * 4L ) )
+      if ( FT_FRAME_ENTER( face->num_locations * 4L ) )
         goto Exit;
 
       {
-        TT_Long*  loc   = face->glyph_locations;
-        TT_Long*  limit = loc + face->num_locations;
+        FT_Long*  loc   = face->glyph_locations;
+        FT_Long*  limit = loc + face->num_locations;
+
 
         for ( ; loc < limit; loc++ )
-          *loc = GET_Long();
+          *loc = FT_GET_LONG();
       }
 
-      FORGET_Frame();
+      FT_FRAME_EXIT();
     }
     else
     {
-      face->num_locations = (TT_UShort)(table_len >> 1);
+      face->num_locations = (FT_UShort)( table_len >> 1 );
 
-      FT_TRACE2(( "(16 bits offsets): %12d ",
-                   face->num_locations ));
+      FT_TRACE2(( "(16bit offsets): %12d ", face->num_locations ));
 
-      if ( ALLOC_ARRAY( face->glyph_locations,
-                        face->num_locations,
-                        TT_Long ) )
+      if ( FT_NEW_ARRAY( face->glyph_locations, face->num_locations ) )
         goto Exit;
 
-      if ( ACCESS_Frame( face->num_locations * 2L ) )
+      if ( FT_FRAME_ENTER( face->num_locations * 2L ) )
         goto Exit;
       {
-        TT_Long*  loc   = face->glyph_locations;
-        TT_Long*  limit = loc + face->num_locations;
+        FT_Long*  loc   = face->glyph_locations;
+        FT_Long*  limit = loc + face->num_locations;
+
 
         for ( ; loc < limit; loc++ )
-          *loc = (TT_Long)((TT_ULong)GET_UShort() * 2);
+          *loc = (FT_Long)( (FT_ULong)FT_GET_USHORT() * 2 );
       }
-      FORGET_Frame();
+      FT_FRAME_EXIT();
     }
 
     FT_TRACE2(( "loaded\n" ));
@@ -119,30 +129,33 @@
   /*************************************************************************/
   /*                                                                       */
   /* <Function>                                                            */
-  /*    TT_Load_CVT                                                        */
+  /*    tt_face_load_cvt                                                   */
   /*                                                                       */
   /* <Description>                                                         */
   /*    Loads the control value table into a face object.                  */
   /*                                                                       */
-  /* <Input>                                                               */
+  /* <InOut>                                                               */
   /*    face   :: A handle to the target face object.                      */
+  /*                                                                       */
+  /* <Input>                                                               */
   /*    stream :: A handle to the input stream.                            */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  LOCAL_FUNC
-  TT_Error  TT_Load_CVT( TT_Face    face,
-                         FT_Stream  stream )
+  FT_LOCAL_DEF( FT_Error )
+  tt_face_load_cvt( TT_Face    face,
+                    FT_Stream  stream )
   {
-    TT_Error   error;
+    FT_Error   error;
     FT_Memory  memory = stream->memory;
-    TT_ULong   table_len;
+    FT_ULong   table_len;
+
 
     FT_TRACE2(( "CVT " ));
 
     error = face->goto_table( face, TTAG_cvt, stream, &table_len );
-    if (error)
+    if ( error )
     {
       FT_TRACE2(( "is missing!\n" ));
 
@@ -155,23 +168,22 @@
 
     face->cvt_size = table_len / 2;
 
-    if ( ALLOC_ARRAY( face->cvt,
-                      face->cvt_size,
-                      TT_Short ) )
+    if ( FT_NEW_ARRAY( face->cvt, face->cvt_size ) )
       goto Exit;
 
-    if ( ACCESS_Frame( face->cvt_size * 2L ) )
+    if ( FT_FRAME_ENTER( face->cvt_size * 2L ) )
       goto Exit;
 
     {
-      TT_Short*  cur   = face->cvt;
-      TT_Short*  limit = cur + face->cvt_size;
+      FT_Short*  cur   = face->cvt;
+      FT_Short*  limit = cur + face->cvt_size;
+
 
       for ( ; cur <  limit; cur++ )
-        *cur = GET_Short();
+        *cur = FT_GET_SHORT();
     }
 
-    FORGET_Frame();
+    FT_FRAME_EXIT();
     FT_TRACE2(( "loaded\n" ));
 
   Exit:
@@ -182,25 +194,26 @@
   /*************************************************************************/
   /*                                                                       */
   /* <Function>                                                            */
-  /*    TT_Load_Progams                                                    */
+  /*    tt_face_load_fpgm                                                  */
   /*                                                                       */
   /* <Description>                                                         */
   /*    Loads the font program and the cvt program.                        */
   /*                                                                       */
-  /* <Input>                                                               */
+  /* <InOut>                                                               */
   /*    face   :: A handle to the target face object.                      */
+  /*                                                                       */
+  /* <Input>                                                               */
   /*    stream :: A handle to the input stream.                            */
   /*                                                                       */
   /* <Return>                                                              */
-  /*    TrueType error code.  0 means success.                             */
+  /*    FreeType error code.  0 means success.                             */
   /*                                                                       */
-  LOCAL_FUNC
-  TT_Error  TT_Load_Programs( TT_Face    face,
-                              FT_Stream  stream )
+  FT_LOCAL_DEF( FT_Error )
+  tt_face_load_fpgm( TT_Face    face,
+                     FT_Stream  stream )
   {
-    TT_Error   error;
-    FT_Memory  memory = stream->memory;
-    TT_ULong   table_len;
+    FT_Error   error;
+    FT_ULong   table_len;
 
 
     FT_TRACE2(( "Font program " ));
@@ -211,17 +224,13 @@
     {
       face->font_program      = NULL;
       face->font_program_size = 0;
+
       FT_TRACE2(( "is missing!\n" ));
     }
     else
     {
       face->font_program_size = table_len;
-
-      if ( ALLOC( face->font_program,
-                  face->font_program_size ) ||
-
-           FILE_Read( (void*)face->font_program,
-                      face->font_program_size )   )
+      if ( FT_FRAME_EXTRACT( table_len, face->font_program ) )
         goto Exit;
 
       FT_TRACE2(( "loaded, %12d bytes\n", face->font_program_size ));
@@ -241,13 +250,8 @@
     else
     {
       face->cvt_program_size = table_len;
-
-      if ( ALLOC( face->cvt_program,
-                  face->cvt_program_size )           ||
-
-           FILE_Read( (void*)face->cvt_program,
-                      face->cvt_program_size ) )
-        return error;
+      if ( FT_FRAME_EXTRACT( table_len, face->cvt_program ) )
+        goto Exit;
 
       FT_TRACE2(( "loaded, %12d bytes\n", face->cvt_program_size ));
     }
