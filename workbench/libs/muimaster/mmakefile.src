@@ -13,18 +13,21 @@ CLASSES := \
     bitmap \
     bodychunk \
     boopsi \
+    configdata \
     cycle \
     dataspace \
     family \
     gauge \
     group \
     image \
+    imageadjust \
     list \
     listview \
     menuitem \
     notify \
     numeric \
     popasl \
+    popimage \
     popobject \
     popstring \
     prop \
@@ -103,7 +106,7 @@ BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
 
 #MM includes-generate
-includes-generate : $(INCLUDEFILES)
+includes-generate : $(INCLUDEFILES) mui.h
 	@$(NOP)
 	
 $(AROS_INCLUDES)/libraries/mui.h : $(BUILDINCTOOL)
