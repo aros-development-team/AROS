@@ -23,73 +23,6 @@ extern struct ExecBase * SysBase;
 /*
     Prototypes
 */
-AROS_LP0(void, Dispatch,
-    struct ExecBase *, SysBase, 10, Exec)
-
-AROS_LP3(void, CacheClearE,
-    AROS_LPA(APTR,  address, A0),
-    AROS_LPA(ULONG, length,  D0),
-    AROS_LPA(ULONG, caches,  D1),
-    struct ExecBase *, SysBase, 107, Exec)
-
-AROS_LP0(void, CacheClearU,
-    struct ExecBase *, SysBase, 106, Exec)
-
-AROS_LP0(void, CacheControl,
-    struct ExecBase *, SysBase, 108, Exec)
-
-AROS_LP0(void, CachePostDMA,
-    struct ExecBase *, SysBase, 128, Exec)
-
-AROS_LP0(void, CachePreDMA,
-    struct ExecBase *, SysBase, 127, Exec)
-
-AROS_LP0(void, Disable,
-    struct ExecBase *, SysBase, 20, Exec)
-
-AROS_LP0(void, Enable,
-    struct ExecBase *, SysBase, 21, Exec)
-
-AROS_LP0(void, Exception,
-    struct ExecBase *, SysBase, 11, Exec)
-
-AROS_LP0(void, Forbid,
-    struct ExecBase *, SysBase, 22, Exec)
-
-AROS_LP0(ULONG, GetCC,
-    struct ExecBase *, SysBase, 88, Exec)
-
-AROS_LP0(void, Permit,
-    struct ExecBase *, SysBase, 23, Exec)
-
-AROS_LP3I(APTR, PrepareContext,
-    AROS_LPA(APTR, stackPointer, A0),
-    AROS_LPA(APTR, entryPoint,   A1),
-    AROS_LPA(APTR, fallBack,     A2),
-    struct ExecBase *, SysBase, 6, Exec)
-
-AROS_LP2(ULONG, SetSR,
-    AROS_LPA(ULONG, newSR, D0),
-    AROS_LPA(ULONG, mask, D1),
-    struct ExecBase *, SysBase, 24, Exec)
-
-AROS_LP1(void, StackSwap,
-    AROS_LPA(struct StackSwapStruct *, sss, A0),
-    struct ExecBase *, SysBase, 122, Exec)
-
-AROS_LP0(void, SuperState,
-    struct ExecBase *, SysBase, 25, Exec)
-
-AROS_LP1(void, Supervisor,
-    AROS_LPA(ULONG_FUNC, userFunction, A5),
-    struct ExecBase *, SysBase, 5, Exec)
-
-AROS_LP0(void, Switch,
-    struct ExecBase *, SysBase, 9, Exec)
-
-AROS_LP0(void, UserState,
-    struct ExecBase *, SysBase, 26, Exec)
-
 AROS_LP1I(LONG, AbortIO,
     AROS_LPA(struct IORequest *, iORequest, A1),
     struct ExecBase *, SysBase, 80, Exec)
@@ -200,8 +133,34 @@ AROS_LP1(ULONG, AvailMem,
     AROS_LPA(ULONG, attributes, D1),
     struct ExecBase *, SysBase, 36, Exec)
 
+AROS_LP3(void, CacheClearE,
+    AROS_LPA(APTR, address, A0),
+    AROS_LPA(ULONG, length, D0),
+    AROS_LPA(ULONG, caches, D1),
+    struct ExecBase *, SysBase, 107, Exec)
+
+AROS_LP0(void, CacheClearU,
+    struct ExecBase *, SysBase, 106, Exec)
+
+AROS_LP2(ULONG, CacheControl,
+    AROS_LPA(ULONG, cacheBits, D0),
+    AROS_LPA(ULONG, cacheMask, D1),
+    struct ExecBase *, SysBase, 108, Exec)
+
+AROS_LP3(void, CachePostDMA,
+    AROS_LPA(APTR,    address, A0),
+    AROS_LPA(ULONG *, length,  A1),
+    AROS_LPA(ULONG,   flags,  D0),
+    struct ExecBase *, SysBase, 128, Exec)
+
+AROS_LP3(APTR, CachePreDMA,
+    AROS_LPA(APTR,    address, A0),
+    AROS_LPA(ULONG *, length,  A1),
+    AROS_LPA(ULONG,   flags,  D0),
+    struct ExecBase *, SysBase, 127, Exec)
+
 AROS_LP1(void, Cause,
-    AROS_LPA(struct Interrupt *, interrupt, A1),
+    AROS_LPA(struct Interrupt *, softint, A1),
     struct ExecBase *, SysBase, 30, Exec)
 
 AROS_LP1I(struct IORequest *, CheckIO,
@@ -283,9 +242,15 @@ AROS_LP1(void, DeletePool,
     AROS_LPA(APTR, poolHeader, A0),
     struct ExecBase *, SysBase, 117, Exec)
 
+AROS_LP0(void, Disable,
+    struct ExecBase *, SysBase, 20, Exec)
+
 AROS_LP1(BYTE, DoIO,
     AROS_LPA(struct IORequest *, iORequest, A1),
     struct ExecBase *, SysBase, 76, Exec)
+
+AROS_LP0(void, Enable,
+    struct ExecBase *, SysBase, 21, Exec)
 
 AROS_LP2I(void, Enqueue,
     AROS_LPA(struct List *, list, A0),
@@ -313,6 +278,9 @@ AROS_LP1(struct Task *, FindTask,
     AROS_LPA(STRPTR, name, A1),
     struct ExecBase *, SysBase, 49, Exec)
 
+AROS_LP0(void, Forbid,
+    struct ExecBase *, SysBase, 22, Exec)
+
 AROS_LP1(void, FreeEntry,
     AROS_LPA(struct MemList *, entry,A0),
     struct ExecBase *, SysBase, 38, Exec)
@@ -339,6 +307,9 @@ AROS_LP1(void, FreeTrap,
 AROS_LP1(void, FreeVec,
     AROS_LPA(APTR, memoryBlock, A1),
     struct ExecBase *, SysBase, 115, Exec)
+
+AROS_LP0(UWORD, GetCC,
+    struct ExecBase *, SysBase, 88, Exec)
 
 AROS_LP1(struct Message *, GetMsg,
     AROS_LPA(struct MsgPort *, port, A0),
@@ -419,6 +390,9 @@ AROS_LP2(struct Library *, OpenLibrary,
 AROS_LP1(APTR, OpenResource,
     AROS_LPA(STRPTR, resName, A1),
     struct ExecBase *, SysBase, 83, Exec)
+
+AROS_LP0(void, Permit,
+    struct ExecBase *, SysBase, 23, Exec)
 
 AROS_LP2(ULONG, Procure,
     AROS_LPA(struct SignalSemaphore  *, sigSem, A0),
@@ -519,6 +493,11 @@ AROS_LP2(ULONG, SetSignal,
     AROS_LPA(ULONG, signalSet,  D1),
     struct ExecBase *, SysBase, 51, Exec)
 
+AROS_LP2(ULONG, SetSR,
+    AROS_LPA(ULONG, newSR, D0),
+    AROS_LPA(ULONG, mask,  D1),
+    struct ExecBase *, SysBase, 24, Exec)
+
 AROS_LP2(BYTE, SetTaskPri,
     AROS_LPA(struct Task *, task,      A1),
     AROS_LPA(LONG,          priority,  D0),
@@ -529,6 +508,10 @@ AROS_LP2(void, Signal,
     AROS_LPA(ULONG,             signalSet, D0),
     struct ExecBase *, SysBase, 54, Exec)
 
+AROS_LP1(void, StackSwap,
+    AROS_LPA(struct StackSwapStruct *,  sss, A0),
+    struct ExecBase *, SysBase, 122, Exec)
+
 AROS_LP0(ULONG, SumKickData,
     struct ExecBase *, SysBase, 102, Exec)
 
@@ -536,9 +519,23 @@ AROS_LP1(void, SumLibrary,
     AROS_LPA(struct Library *, library,A1),
     struct ExecBase *, SysBase, 71, Exec)
 
+AROS_LP0(APTR, SuperState,
+    struct ExecBase *, SysBase, 25, Exec)
+
+AROS_LP1(void, Supervisor,
+    AROS_LPA(ULONG_FUNC, userFunction, A5),
+    struct ExecBase *, SysBase, 5, Exec)
+
+AROS_LP0(void, Switch,
+    struct ExecBase *, SysBase, 9, Exec)
+
 AROS_LP1(ULONG, TypeOfMem,
     AROS_LPA(APTR, address, A1),
     struct ExecBase *, SysBase, 89, Exec)
+
+AROS_LP1(void, UserState,
+    AROS_LPA(APTR, sysStack, D0),
+    struct ExecBase *, SysBase, 26, Exec)
 
 AROS_LP2(void, Vacate,
     AROS_LPA(struct SignalSemaphore  *, sigSem, A0),
