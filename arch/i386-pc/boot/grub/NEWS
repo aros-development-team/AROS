@@ -1,13 +1,47 @@
 NEWS - list of user-visible changes between releases of GRUB
 
-New in 0.5.96.1 - 2000-10-19:
-* Bug fixes.
+New in 0.91:
+* Support for Linux DAC960 is added.
+* JFS and XFS support is added.
+* Important bugfixes are made for ReiserFS, APM, TFTP, etc.
+
+New in 0.90 - 2001-07-11:
 * The command "setkey" resets key mappings, when no argument is
   specified.
 * Linux devfs support is added.
 * The utility ``grub-install'' accepts a new option, `--recheck'. If
   this option is specified, probe a device map, even if it already
   exists. You should use this option whenever you add/remove a disk.
+* The command "password" supports a md5 password if the option `--md5'
+  is given.  This command can now also be used to protect specific menu
+  items with their own passwords.
+* New command, "displayapm".
+* New command, "md5crypt".
+* The new utility ``grub-md5-crypt'' is a frontend of the grub shell. It
+  encrypts a password in MD5 format.
+* New commands, "testvbe" and "vbeprobe".
+* The configure script accepts a new option, `--enable-preset-menu'. You
+  can embed an arbitrary configuration which will be used when Stage 2
+  cannot open a real configuration file, with this option. The argument
+  must be an existing file.
+* EZ-BIOS support is added.
+* Booting Windows from a logical partition is supported.
+* The example Multiboot kernel in the directory "docs" is built, if you
+  specify the option `--enable-example-kernel' to the configure script.
+* New command, "ifconfig".
+* Linux software RAID support is added (only for RAID-1).
+* Hercules support is added.
+* The configure script now accepts `--disable-auto-linux-mem-opt', which
+  has the same meaning as you specify the option `--no-mem-option' to the
+  command "kernel".
+* Jump to the physical entry address of a Multiboot kernel when booting
+  it up. The old behavior was to use the virtual one, regardless of the
+  setting of the physical address.
+* The commands "bootp" and "dhcp" accepts a new option
+  `--with-configfile', so that you can load a remotely specified
+  configuration file automatically, like the network boot images.
+* VSTa filesystem support is added.
+* ELF symbol loading support is added.
 
 New in 0.5.96 - 2000-10-04:
 * New commands, "reboot" and "halt".

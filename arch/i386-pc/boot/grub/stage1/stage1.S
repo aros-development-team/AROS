@@ -425,13 +425,15 @@ message:
 	ret
 
 	/*
-	 *  Windows NT breaks the compatibility by embedding a magic
+	 *  Windows NT breaks compatibility by embedding a magic
 	 *  number here.
 	 */
 
-nt_magic:	
 	. = _start + STAGE1_WINDOWS_NT_MAGIC
-	
+nt_magic:	
+	.long 0
+	.word 0
+
 	/*
 	 *  This is where an MBR would go if on a hard disk.  The code
 	 *  here isn't even referenced unless we're on a floppy.  Kinda

@@ -4,10 +4,12 @@ INFO-DIR-SECTION Kernel
 START-INFO-DIR-ENTRY
 * GRUB: (grub).                 The GRand Unified Bootloader
 * grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
+* grub-md5-crypt: (grub)Invoking grub-md5-crypt.        Encrypt a password
+                                                        in MD5 format
 * mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
 END-INFO-DIR-ENTRY
 
-   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000 Free
+   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000, 2001 Free
 Software Foundation, Inc.
 
    Permission is granted to make and distribute verbatim copies of this
@@ -25,114 +27,160 @@ versions.
 
 
 Indirect:
-grub.info-1: 1008
-grub.info-2: 50771
-grub.info-3: 99387
-grub.info-4: 149297
+grub.info-1: 1159
+grub.info-2: 50670
+grub.info-3: 99839
 
 Tag Table:
 (Indirect)
-Node: Top1008
-Node: Overview3297
-Node: Overview-Footnotes5266
-Ref: Overview-Footnote-15327
-Node: Naming convention5488
-Node: Installation8389
-Node: Creating a GRUB boot floppy9518
-Node: Installing GRUB natively10329
-Node: Installing GRUB natively-Footnotes12481
-Ref: Installing GRUB natively-Footnote-112574
-Node: Installing GRUB using grub-install12759
-Node: Booting15049
-Node: General boot methods15366
-Node: Loading an operating system directly16097
-Node: Chain-loading17302
-Node: Chain-loading-Footnotes18492
-Ref: Chain-loading-Footnote-118563
-Node: OS-specific notes18635
-Node: GNU/Hurd18964
-Node: GNU/Linux19539
-Node: FreeBSD20759
-Node: NetBSD21263
-Node: OpenBSD21859
-Node: DOS/Windows22050
-Node: SCO UnixWare23775
-Node: Configuration24150
-Node: Network28548
-Node: General usage of network support29046
-Node: Diskless30538
-Node: Serial terminal32487
-Node: Security34775
-Node: Introduction36727
-Node: History37202
-Node: Features38298
-Node: Features-Footnotes43923
-Ref: Features-Footnote-143984
-Ref: Features-Footnote-244129
-Node: Role of a boot loader44288
-Node: Role of a boot loader-Footnotes45621
-Ref: Role of a boot loader-Footnote-145708
-Node: GRUB images45787
-Node: Filesystem47969
-Node: Device syntax48657
-Node: Filename syntax50057
-Node: Blocklist syntax50771
-Node: Interface51490
-Node: Command line52309
-Node: Command line-Footnotes54114
-Ref: Command line-Footnote-154183
-Node: Menu interface54278
-Node: Menu entry editor55108
-Node: Commands56150
-Node: Menu-specific commands56716
-Node: Command-line and menu commands59163
-Node: Command-line and menu entry commands66925
-Node: Command-line and menu entry commands-Footnotes80034
-Ref: Command-line and menu entry commands-Footnote-180151
-Ref: Command-line and menu entry commands-Footnote-280208
-Node: Troubleshooting80305
-Node: Stage1 errors80840
-Node: Stage1.5 errors82210
-Node: Stage2 errors82641
-Node: Invoking the grub shell89733
-Node: Basic usage90483
-Node: Installation under UNIX92732
-Node: Device map94410
-Node: Invoking grub-install95566
-Node: Invoking mbchk96946
-Node: Hacking97433
-Node: Memory map97811
-Node: Memory map-Footnotes99097
-Ref: Memory map-Footnote-199162
-Node: Embedded data99387
-Node: Filesystem interface104270
-Node: Bootstrap tricks107645
-Node: I/O ports detection109807
-Node: Memory detection111479
-Node: Query System Address Map112048
-Node: Get Large Memory Size122397
-Node: Get Extended Memory Size123719
-Node: Low-level disk I/O124504
-Node: CHS Translation125026
-Node: CHS mode disk I/O132192
-Node: LBA mode disk I/O134205
-Node: LBA mode disk I/O-Footnotes139373
-Ref: LBA mode disk I/O-Footnote-1139452
-Node: MBR139591
-Node: MBR-Footnotes142155
-Ref: MBR-Footnote-1142206
-Ref: MBR-Footnote-2142271
-Node: Partition table142341
-Node: Partition basics142741
-Node: Partition types144379
-Node: Partition types-Footnotes147109
-Ref: Partition types-Footnote-1147184
-Ref: Partition types-Footnote-2147289
-Node: Partition entry format147367
-Node: Partition table rules149297
-Node: FAQ152271
-Node: Obtaining and Building GRUB158699
-Node: Reporting bugs160546
-Node: Index161936
+Node: Top1159
+Node: Introduction2796
+Node: Overview3169
+Node: Overview-Footnotes5137
+Ref: Overview-Footnote-15198
+Node: History5359
+Node: Features6472
+Node: Features-Footnotes12227
+Ref: Features-Footnote-112288
+Node: Role of a boot loader12433
+Node: Role of a boot loader-Footnotes13766
+Ref: Role of a boot loader-Footnote-113853
+Node: Naming convention13932
+Node: Installation16848
+Node: Creating a GRUB boot floppy18144
+Node: Installing GRUB natively18959
+Node: Installing GRUB natively-Footnotes21110
+Ref: Installing GRUB natively-Footnote-121203
+Node: Installing GRUB using grub-install21388
+Node: Booting24173
+Node: General boot methods24578
+Node: Loading an operating system directly25309
+Node: Chain-loading26607
+Node: Chain-loading-Footnotes27903
+Ref: Chain-loading-Footnote-127974
+Node: OS-specific notes28046
+Node: GNU/Hurd28375
+Node: GNU/Linux28985
+Node: FreeBSD30229
+Node: NetBSD30733
+Node: OpenBSD31381
+Node: DOS/Windows31572
+Node: SCO UnixWare33389
+Node: Configuration33786
+Node: Network38214
+Node: General usage of network support38707
+Node: General usage of network support-Footnotes40569
+Ref: General usage of network support-Footnote-140678
+Node: Diskless40745
+Node: Serial terminal42662
+Node: Security44987
+Node: Images47791
+Node: Filesystem49990
+Node: Device syntax50670
+Node: File name syntax52046
+Node: Block list syntax52782
+Node: Interface53508
+Node: Command-line interface54382
+Node: Command-line interface-Footnotes56236
+Ref: Command-line interface-Footnote-156325
+Node: Menu interface56420
+Node: Menu entry editor57423
+Node: Hidden menu interface58495
+Node: Commands59067
+Node: Menu-specific commands59619
+Node: default60782
+Node: fallback61245
+Node: hiddenmenu61723
+Node: timeout62196
+Node: title62459
+Node: General commands62715
+Node: bootp63875
+Node: color64339
+Node: device65808
+Node: dhcp66365
+Node: hide66936
+Node: ifconfig67298
+Node: partnew67861
+Node: parttype68304
+Node: password68656
+Node: rarp69459
+Node: serial69743
+Node: setkey70991
+Node: terminal73136
+Node: tftpserver74060
+Node: unhide74589
+Node: Command-line and menu entry commands74947
+Node: blocklist77470
+Node: boot77697
+Node: cat78000
+Node: chainloader78289
+Node: cmp78890
+Node: configfile79426
+Node: debug79625
+Node: displayapm79994
+Node: displaymem80190
+Node: embed80877
+Node: embed-Footnotes81394
+Ref: embed-Footnote-181449
+Node: find81506
+Node: fstest81857
+Node: geometry82525
+Node: halt83127
+Node: help83437
+Node: impsprobe83875
+Node: initrd84225
+Node: install84547
+Node: install-Footnotes87364
+Ref: install-Footnote-187423
+Node: ioprobe87520
+Node: kernel87828
+Node: lock88871
+Node: makeactive89429
+Node: map89724
+Node: md5crypt90274
+Node: module90604
+Node: modulenounzip91165
+Node: pause91441
+Node: quit91838
+Node: reboot92097
+Node: read92261
+Node: root92486
+Node: rootnoverify93346
+Node: savedefault93884
+Node: setup94575
+Node: testload95624
+Node: testvbe96218
+Node: uppermem96572
+Node: vbeprobe97137
+Node: Troubleshooting97503
+Node: Stage1 errors98038
+Node: Stage1.5 errors99408
+Node: Stage2 errors99839
+Node: Invoking the grub shell107097
+Node: Basic usage107847
+Node: Installation under UNIX110096
+Node: Device map111774
+Node: Invoking grub-install112931
+Node: Invoking grub-md5-crypt114504
+Node: Invoking mbchk115141
+Node: FAQ115626
+Node: FAQ-Footnotes122971
+Ref: FAQ-Footnote-1123022
+Node: Obtaining and Building GRUB123086
+Node: Reporting bugs124741
+Node: Future127193
+Node: Internals127634
+Node: Memory map128838
+Node: Embedded data130311
+Node: Filesystem interface132323
+Node: Command interface135751
+Node: Bootstrap tricks137061
+Node: I/O ports detection139205
+Node: Memory detection139472
+Node: Low-level disk I/O139759
+Node: MBR140023
+Node: Partition table140215
+Node: Submitting patches140481
+Node: Index141962
 
 End Tag Table

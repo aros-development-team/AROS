@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -73,6 +73,7 @@ char *err_list[] =
   [ERR_GEOM] = "Selected cylinder exceeds maximum supported by BIOS",
   [ERR_NEED_LX_KERNEL] = "Linux kernel must be loaded before initrd",
   [ERR_NEED_MB_KERNEL] = "Multiboot kernel must be loaded before modules",
+  [ERR_NEED_SERIAL] = "Serial device not configured",
   [ERR_NO_DISK] = "Selected disk does not exist",
   [ERR_NO_PART] = "No such partition",
   [ERR_NUMBER_PARSING] = "Error while parsing number",
@@ -158,6 +159,7 @@ init_bios_info (void)
 {
 #ifndef STAGE1_5
   unsigned long cont, memtmp, addr;
+  int drive;
 #endif
 
   /*
@@ -225,7 +227,7 @@ init_bios_info (void)
 	{
 	  struct AddrRangeDesc *desc = (struct AddrRangeDesc *) addr;
 	  
-	  if (desc->Type == MB_ARD_MEMORY
+	  if (desc->Type == MB_ARD_MEMORY && desc->Length > 0
 	      && desc->BaseAddr + desc->Length > max_addr)
 	    max_addr = desc->BaseAddr + desc->Length;
 	}
@@ -260,11 +262,73 @@ init_bios_info (void)
 
   saved_mem_upper = mbi.mem_upper;
 
+  /* Get the drive info.  */
+  /* FIXME: This should be postponed until a Multiboot kernel actually
+     requires it, because this could slow down the start-up
+     unreasonably.  */
+  mbi.drives_length = 0;
+  mbi.drives_addr = addr;
+
+  /* For now, GRUB doesn't probe floppies, since it is trivial to map
+     floppy drives to BIOS drives.  */
+  for (drive = 0x80; drive < 0x88; drive++)
+    {
+      struct geometry geom;
+      struct drive_info *info = (struct drive_info *) addr;
+      unsigned short *port;
+      
+      /* Get the geometry. This ensures that the drive is present.  */
+      if (get_diskinfo (drive, &geom))
+	break;
+      
+      /* Clean out the I/O map.  */
+      grub_memset ((char *) io_map, 0,
+		   IO_MAP_SIZE * sizeof (unsigned short));
+
+      /* Disable to probe I/O ports temporarily, because this doesn't
+	 work with some BIOSes (maybe they are too buggy).  */
+#if 0
+      /* Track the int13 handler.  */
+      track_int13 (drive);
+#endif
+
+      /* Set the information.  */
+      info->drive_number = drive;
+      info->drive_mode = ((geom.flags & BIOSDISK_FLAG_LBA_EXTENSION)
+			  ? MB_DI_LBA_MODE : MB_DI_CHS_MODE);
+      info->drive_cylinders = geom.cylinders;
+      info->drive_heads = geom.heads;
+      info->drive_sectors = geom.sectors;
+
+      addr += sizeof (struct drive_info);
+      for (port = io_map; *port; port++, addr += sizeof (unsigned short))
+	*((unsigned short *) addr) = *port;
+
+      info->size = addr - (unsigned long) info;
+      mbi.drives_length += info->size;
+    }
+
+  /* Get the ROM configuration table by INT 15, AH=C0h.  */
+  mbi.config_table = get_rom_config_table ();
+
+  /* Set the boot loader name.  */
+  mbi.boot_loader_name = (unsigned long) "GNU GRUB " VERSION;
+
+  /* Get the APM BIOS table.  */
+  get_apm_info ();
+  if (apm_bios_info.version)
+    mbi.apm_table = (unsigned long) &apm_bios_info;
+  
   /*
    *  Initialize other Multiboot Info flags.
    */
 
-  mbi.flags = MB_INFO_MEMORY | MB_INFO_CMDLINE | MB_INFO_BOOTDEV;
+  mbi.flags = (MB_INFO_MEMORY | MB_INFO_CMDLINE | MB_INFO_BOOTDEV
+	       | MB_INFO_DRIVE_INFO | MB_INFO_CONFIG_TABLE
+	       | MB_INFO_BOOT_LOADER_NAME);
+  
+  if (apm_bios_info.version)
+    mbi.flags |= MB_INFO_APM_TABLE;
 
 #endif /* STAGE1_5 */
 

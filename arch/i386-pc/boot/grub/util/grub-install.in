@@ -49,15 +49,15 @@ Install GRUB on your drive.
   -h, --help              print this message and exit
   -v, --version           print the version information and exit
   --root-directory=DIR    install GRUB images under the directory DIR
-                          instead of the root directory.
-  --grub-shell=FILE       use FILE as the grub shell.
+                          instead of the root directory
+  --grub-shell=FILE       use FILE as the grub shell
   --force-lba             force GRUB to use LBA mode even for a buggy
-                          BIOS.
-  --recheck               probe a device map even if it already exists.
+                          BIOS
+  --recheck               probe a device map even if it already exists
 
 INSTALL_DEVICE can be a GRUB device name or a system device filename.
 
-Reports bugs to <bug-grub@gnu.org>.
+Report bugs to <bug-grub@gnu.org>.
 EOF
 }
 
@@ -76,14 +76,26 @@ convert () {
     # Break the device name into the disk part and the partition part.
     case "$host_os" in
     linux*)
-	tmp_disk=`echo "$1" | sed -e 's%\([sh]d[a-z]\)[0-9]*$%\1%'
-				  -e 's%/part[0-9]*$%/disc%'`
-	tmp_part=`echo "$1" | sed -e 's%.*/[sh]d[a-z]\([0-9]*\)$%\1%'
-				  -e 's%.*/\(disc\|part\([0-9]*\)\)$%\2%'`
+	tmp_disk=`echo "$1" | sed -e 's%\([sh]d[a-z]\)[0-9]*$%\1%' \
+				  -e 's%\(fd[0-9]*\)$%\1%' \
+				  -e 's%/part[0-9]*$%/disc%' \
+				  -e 's%\(c[0-7]d[0-9]*\).*$%\1%'`
+	tmp_part=`echo "$1" | sed -e 's%.*/[sh]d[a-z]\([0-9]*\)$%\1%' \
+				  -e 's%.*/fd[0-9]*$%%' \
+				  -e 's%.*/floppy/[0-9]*$%%' \
+				  -e 's%.*/\(disc\|part\([0-9]*\)\)$%\2%' \
+				  -e 's%.*c[0-7]d[0-9]*p*%%'`
 	;;
     gnu*)
 	tmp_disk=`echo "$1" | sed 's%\([sh]d[0-9]*\).*%\1%'`
 	tmp_part=`echo "$1" | sed "s%$tmp_disk%%"` ;;
+    freebsd*)
+	tmp_disk=`echo "$1" | sed 's%r\{0,1\}\([saw]d[0-9]*\).*$%r\1%' \
+			    | sed 's%r\{0,1\}\(da[0-9]*\).*$%r\1%'`
+	tmp_part=`echo "$1" \
+	    | sed "s%.*/r\{0,1\}[saw]d[0-9]\(s[0-9]*[a-h]\)%\1%" \
+       	    | sed "s%.*/r\{0,1\}da[0-9]\(s[0-9]*[a-h]\)%\1%"`
+	;;
     *)
 	echo "grub-install does not support your OS yet." 1>&2
 	exit 1 ;;
@@ -119,6 +131,20 @@ convert () {
 		    | sed "s%)%,$tmp_bsd_partition)%"`
 	    fi
 	    echo "$tmp_drive" ;;
+	freebsd*)
+	    if echo $tmp_part | grep "^s" >/dev/null; then
+		tmp_pc_slice=`echo $tmp_part \
+		    | sed "s%s\([0-9]*\)[a-h]*$%\1%"`
+		tmp_drive=`echo "$tmp_drive" \
+		    | sed "s%)%,\`expr "$tmp_pc_slice" - 1\`)%"`
+	    fi
+	    if echo $tmp_part | grep "[a-h]$" >/dev/null; then
+		tmp_bsd_partition=`echo "$tmp_part" \
+		    | sed "s%s\{0,1\}[0-9]*\([a-h]\)$%\1%"`
+		tmp_drive=`echo "$tmp_drive" \
+		    | sed "s%)%,$tmp_bsd_partition)%"`
+	    fi
+	    echo "$tmp_drive" ;;
 	esac
     else
 	# If no partition is specified, just print the drive name.
@@ -146,6 +172,11 @@ for option in "$@"; do
     # This is an undocumented feature...
     --debug)
 	debug=yes ;;
+    -*)
+	echo "Unrecognized option \`$option'" 1>&2
+	usage
+	exit 1
+	;;
     *)
 	if test "x$install_device" != x; then
 	    echo "More than one install_devices?" 1>&2

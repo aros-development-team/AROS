@@ -312,3 +312,55 @@ fi
 
 AC_MSG_RESULT([$grub_cv_check_uscore_end_symbol])
 ])
+
+dnl grub_DEFINE_FILE(MACRO_NAME, FILE_NAME)
+dnl grub_DEFINE_FILE defines a macro as the contents of a file safely.
+dnl Replace some escape sequences, because autoconf doesn't handle them
+dnl gracefully.
+dnl Written by OKUJI Yoshinori.
+AC_DEFUN(grub_DEFINE_FILE,
+[AC_REQUIRE([AC_PROG_CC])
+# Because early versions of GNU sed 3.x are too buggy, use a C program
+# instead of shell commands. *sigh*
+cat >conftest.c <<\EOF
+#include <stdio.h>
+
+int
+main (void)
+{
+  int c;
+
+  while ((c = getchar ()) != EOF)
+    {
+      switch (c)
+        {
+	case '\n':
+	  fputs ("\\n", stdout);
+	  break;
+	case '\r':
+	  fputs ("\\r", stdout);
+	  break;
+	case '\\':
+	  fputs ("\\\\", stdout);
+	  break;
+	case '"':
+	  fputs ("\\\"", stdout);
+	  break;
+	default:
+	  putchar (c);
+	}
+    }
+
+  return 0;
+}
+EOF
+
+if AC_TRY_COMMAND([${CC-cc} ${CFLAGS} conftest.c -o conftest]) && test -s conftest; then
+  grub_tmp_value=`./conftest < "[$2]"`
+else
+  AC_MSG_ERROR([${CC-cc} failed to produce an executable file])
+fi
+
+AC_DEFINE_UNQUOTED([$1], "$grub_tmp_value")
+rm -f conftest*
+])

@@ -2,7 +2,7 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
  *  Copyright (C) 1996  Erich Boleyn  <erich@uruk.org>
- *  Copyright (C) 1999, 2000 Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001 Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ extern char *grub_scratch_mem;
 #define LINUX_MAGIC_SIGNATURE		0x53726448	/* "HdrS" */
 #define LINUX_DEFAULT_SETUP_SECTS	4
 #define LINUX_FLAG_CAN_USE_HEAP		0x80
-#define LINUX_INITRD_MAX_ADDRESS	0x3C000000
+#define LINUX_INITRD_MAX_ADDRESS	0x38000000
 #define LINUX_MAX_SETUP_SECTS		63
 #define LINUX_BOOT_LOADER_TYPE		0x71
 #define LINUX_HEAP_END_OFFSET		(0x7F00 - 0x200)
@@ -171,14 +171,16 @@ extern char *grub_scratch_mem;
 #define SECTOR_BITS		9
 #define BIOS_FLAG_FIXED_DISK	0x80
 
-#define BOOTSEC_LOCATION     RAW_ADDR (0x7C00)
-#define BOOTSEC_SIGNATURE    0xAA55
-#define BOOTSEC_BPB_OFFSET   0x3
-#define BOOTSEC_BPB_LENGTH   0x3B
-#define BOOTSEC_PART_OFFSET  0x1BE
-#define BOOTSEC_PART_LENGTH  0x40
-#define BOOTSEC_SIG_OFFSET   0x1FE
-#define BOOTSEC_LISTSIZE     8
+#define BOOTSEC_LOCATION		RAW_ADDR (0x7C00)
+#define BOOTSEC_SIGNATURE		0xAA55
+#define BOOTSEC_BPB_OFFSET		0x3
+#define BOOTSEC_BPB_LENGTH		0x3B
+#define BOOTSEC_BPB_SYSTEM_ID		0x3
+#define BOOTSEC_BPB_HIDDEN_SECTORS	0x1C
+#define BOOTSEC_PART_OFFSET		0x1BE
+#define BOOTSEC_PART_LENGTH		0x40
+#define BOOTSEC_SIG_OFFSET		0x1FE
+#define BOOTSEC_LISTSIZE		8
 
 /* Not bad, perhaps.  */
 #define NETWORK_DRIVE	0x20
@@ -204,6 +206,9 @@ extern char *grub_scratch_mem;
 #define STAGE2_ID_FAT_STAGE1_5		3
 #define STAGE2_ID_MINIX_STAGE1_5	4
 #define STAGE2_ID_REISERFS_STAGE1_5	5
+#define STAGE2_ID_VSTAFS_STAGE1_5	6
+#define STAGE2_ID_JFS_STAGE1_5		7
+#define STAGE2_ID_XFS_STAGE1_5		8
 
 #ifndef STAGE1_5
 # define STAGE2_ID	STAGE2_ID_STAGE2
@@ -218,6 +223,12 @@ extern char *grub_scratch_mem;
 #  define STAGE2_ID	STAGE2_ID_MINIX_STAGE1_5
 # elif defined(FSYS_REISERFS)
 #  define STAGE2_ID	STAGE2_ID_REISERFS_STAGE1_5
+# elif defined(FSYS_VSTAFS)
+#  define STAGE2_ID	STAGE2_ID_VSTAFS_STAGE1_5
+# elif defined(FSYS_JFS)
+#  define STAGE2_ID	STAGE2_ID_JFS_STAGE1_5
+# elif defined(FSYS_XFS)
+#  define STAGE2_ID	STAGE2_ID_XFS_STAGE1_5
 # else
 #  error "unknown Stage 2"
 # endif
@@ -244,7 +255,7 @@ extern char *grub_scratch_mem;
  *   command.
  */
 
-#define ENTRY(x) .globl EXT_C(x) ; EXT_C(x) ## :
+#define ENTRY(x) .globl EXT_C(x) ; EXT_C(x):
 #define VARIABLE(x) ENTRY(x)
 
 
@@ -420,6 +431,83 @@ struct mmar_desc
   unsigned long type;		/* Type of address range. */
 };
 
+/* VBE controller information.  */
+struct vbe_controller
+{
+  unsigned char signature[4];
+  unsigned short version;
+  unsigned long oem_string;
+  unsigned long capabilities;
+  unsigned long video_mode;
+  unsigned short total_memory;
+  unsigned short oem_software_rev;
+  unsigned long oem_vendor_name;
+  unsigned long oem_product_name;
+  unsigned long oem_product_rev;
+  unsigned char reserved[222];
+  unsigned char oem_data[256];
+} __attribute__ ((packed));
+
+/* VBE mode information.  */
+struct vbe_mode
+{
+  unsigned short mode_attributes;
+  unsigned char win_a_attributes;
+  unsigned char win_b_attributes;
+  unsigned short win_granularity;
+  unsigned short win_size;
+  unsigned short win_a_segment;
+  unsigned short win_b_segment;
+  unsigned long win_func;
+  unsigned short bytes_per_scanline;
+
+  /* >=1.2 */
+  unsigned short x_resolution;
+  unsigned short y_resolution;
+  unsigned char x_char_size;
+  unsigned char y_char_size;
+  unsigned char number_of_planes;
+  unsigned char bits_per_pixel;
+  unsigned char number_of_banks;
+  unsigned char memory_model;
+  unsigned char bank_size;
+  unsigned char number_of_image_pages;
+  unsigned char reserved0;
+
+  /* direct color */
+  unsigned char red_mask_size;
+  unsigned char red_field_position;
+  unsigned char green_mask_size;
+  unsigned char green_field_position;
+  unsigned char blue_mask_size;
+  unsigned char blue_field_position;
+  unsigned char reserved_mask_size;
+  unsigned char reserved_field_position;
+  unsigned char direct_color_mode_info;
+
+  /* >=2.0 */
+  unsigned long phys_base;
+  unsigned long reserved1;
+  unsigned short reversed2;
+
+  /* >=3.0 */
+  unsigned short linear_bytes_per_scanline;
+  unsigned char banked_number_of_image_pages;
+  unsigned char linear_number_of_image_pages;
+  unsigned char linear_red_mask_size;
+  unsigned char linear_red_field_position;
+  unsigned char linear_green_mask_size;
+  unsigned char linear_green_field_position;
+  unsigned char linear_blue_mask_size;
+  unsigned char linear_blue_field_position;
+  unsigned char linear_reserved_mask_size;
+  unsigned char linear_reserved_field_position;
+  unsigned long max_pixel_clock;
+
+  unsigned char reserved3[189];
+} __attribute__ ((packed));
+
+
 #undef NULL
 #define NULL         ((void *) 0)
 
@@ -459,6 +547,7 @@ typedef enum
   ERR_BAD_ARGUMENT,
   ERR_UNALIGNED,
   ERR_PRIVILEGED,
+  ERR_NEED_SERIAL,
 
   MAX_ERR_NUM
 } grub_error_t;
@@ -466,6 +555,7 @@ typedef enum
 extern unsigned long install_partition;
 extern unsigned long boot_drive;
 extern unsigned long install_second_sector;
+extern struct apm_info apm_bios_info;
 extern unsigned long boot_part_addr;
 extern unsigned long boot_part_offset;
 extern int saved_entryno;
@@ -501,7 +591,18 @@ extern void assign_device_name (int drive, const char *device);
 extern int fallback_entry;
 extern int default_entry;
 extern int current_entryno;
+
+/* The constants for password types.  */
+typedef enum
+{
+  PASSWORD_PLAIN,
+  PASSWORD_MD5,
+  PASSWORD_UNSUPPORTED
+}
+password_t;
+
 extern char *password;
+extern password_t password_type;
 extern int auth;
 extern char commands[];
 #endif
@@ -511,10 +612,11 @@ extern int no_decompression;
 extern int compressed_file;
 #endif
 
-#ifndef STAGE1_5
 /* instrumentation variables */
 extern void (*disk_read_hook) (int, int, int);
 extern void (*disk_read_func) (int, int, int);
+
+#ifndef STAGE1_5
 /* The flag for debug mode.  */
 extern int debug;
 /* Color settings */
@@ -615,7 +717,8 @@ extern unsigned short io_map[];
 void chain_stage1 (unsigned long segment, unsigned long offset,
 		   unsigned long part_table_addr)
      __attribute__ ((noreturn));
-void chain_stage2 (unsigned long segment, unsigned long offset)
+void chain_stage2 (unsigned long segment, unsigned long offset,
+		   int second_sector)
      __attribute__ ((noreturn));
 
 /* do some funky stuff, then boot linux */
@@ -642,6 +745,22 @@ int get_eisamemsize (void);
    previous continuation value (0 to get the first entry in the
    map). */
 int get_mmap_entry (struct mmar_desc *desc, int cont);
+
+/* Get the linear address of a ROM configuration table. Return zero,
+   if fails.  */
+unsigned long get_rom_config_table (void);
+
+/* Get APM BIOS information.  */
+void get_apm_info (void);
+
+/* Get VBE controller information.  */
+int get_vbe_controller_info (struct vbe_controller *controller);
+
+/* Get VBE mode information.  */
+int get_vbe_mode_info (int mode_number, struct vbe_mode *mode);
+
+/* Set VBE mode.  */
+int set_vbe_mode (int mode_number);
 
 /* Return the data area immediately following our code. */
 int get_code_end (void);
@@ -700,6 +819,9 @@ int console_checkkey (void);
    constants defined above. */
 void set_attrib (int attr);
 
+/* The console part of set_attrib.  */
+void console_set_attrib (int attr);
+
 /* Low-level disk I/O */
 int get_diskinfo (int drive, struct geometry *geometry);
 int biosdisk (int subfunc, int drive, struct geometry *geometry,
@@ -714,6 +836,7 @@ void stop_floppy (void);
 #define BUILTIN_MENU		0x2	/* Run in the menu.  */
 #define BUILTIN_TITLE		0x4	/* Only for the command title.  */
 #define BUILTIN_SCRIPT		0x8	/* Run in the script.  */
+#define BUILTIN_HIDDEN		0x10	/* Don't print command on booting. */
 
 /* The table for a builtin.  */
 struct builtin
@@ -758,6 +881,7 @@ extern int terminal;
 
 #define TERMINAL_CONSOLE	(1 << 0)	/* keyboard and screen */
 #define TERMINAL_SERIAL		(1 << 1)	/* serial console */
+#define TERMINAL_HERCULES	(1 << 2)	/* hercules */
 
 #define TERMINAL_DUMB		(1 << 16)	/* dumb terminal */
 
@@ -827,6 +951,8 @@ int gunzip_read (char *buf, int len);
 
 int rawread (int drive, int sector, int byte_offset, int byte_len, char *buf);
 int devread (int sector, int byte_offset, int byte_len, char *buf);
+int rawwrite (int drive, int sector, char *buf);
+int devwrite (int sector, int sector_len, char *buf);
 
 /* Parse a device string and initialize the global parameters. */
 char *set_device (char *device);
@@ -888,6 +1014,8 @@ kernel_t load_image (char *kernel, char *arg, kernel_t suggested_type,
 
 int load_module (char *module, char *arg);
 int load_initrd (char *initrd);
+
+int check_password(char *entered, char* expected, password_t type);
 #endif
 
 void init_bios_info (void);

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -150,6 +150,81 @@ static struct pci_device	pci_nic_list[] = {
 
 #include "cards.h"
 
+#if defined(GRUB) && defined(INCLUDE_PCI)
+struct pci_dispatch_table
+{
+  unsigned short vendor;
+  unsigned short dev_id;
+  struct nic *(*eth_probe) (struct nic *, unsigned short *,
+			    struct pci_device *);
+};
+
+static struct pci_dispatch_table PCI_NIC[] =
+{
+# ifdef INCLUDE_NS8390
+  { PCI_VENDOR_ID_REALTEK,  PCI_DEVICE_ID_REALTEK_8029,    nepci_probe },
+  { PCI_VENDOR_ID_WINBOND2, PCI_DEVICE_ID_WINBOND2_89C940, nepci_probe },
+  { PCI_VENDOR_ID_COMPEX,   PCI_DEVICE_ID_COMPEX_RL2000,   nepci_probe },
+  { PCI_VENDOR_ID_KTI,      PCI_DEVICE_ID_KTI_ET32P2,      nepci_probe },
+  { PCI_VENDOR_ID_NETVIN,   PCI_DEVICE_ID_NETVIN_NV5000SC, nepci_probe },
+# endif /* INCLUDE_NS8390 */
+# ifdef INCLUDE_3C90X
+  { PCI_VENDOR_ID_3COM,	    PCI_DEVICE_ID_3COM_3C900TPO,   a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C900COMBO, a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C905TX,    a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C905T4,    a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x9004,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x9005,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x9006,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x900A,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C905B_TX,  a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x9056,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     0x905A,                        a3c90x_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C905C_TXM, a3c90x_probe },
+# endif /* INCLUDE_3C90X */
+# ifdef	INCLUDE_3C595
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C590,      t595_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C595,      t595_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C595_1,    t595_probe },
+  { PCI_VENDOR_ID_3COM,     PCI_DEVICE_ID_3COM_3C595_2,    t595_probe },
+# endif /* INCLUDE_3C595 */
+# ifdef	INCLUDE_EEPRO100
+  { PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82557,     eepro100_probe },
+# endif /* INCLUDE_EEPRO100 */
+# ifdef	INCLUDE_EPIC100
+  { PCI_VENDOR_ID_SMC,      PCI_DEVICE_ID_SMC_EPIC100,     epic100_probe },
+# endif /* INCLUDE_EPIC100 */
+# ifdef	INCLUDE_LANCE
+  { PCI_VENDOR_ID_AMD,      PCI_DEVICE_ID_AMD_LANCE,       lancepci_probe },
+# endif /* INCLUDE_LANCE */
+# ifdef	INCLUDE_RTL8139
+  { PCI_VENDOR_ID_REALTEK,  PCI_DEVICE_ID_REALTEK_8139,    rtl8139_probe },
+  { PCI_VENDOR_ID_SMC_1211, PCI_DEVICE_ID_SMC_1211,        rtl8139_probe },
+# endif /* INCLUDE_RTL8139 */
+# ifdef	INCLUDE_OTULIP
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP,       otulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP_FAST,  otulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP_PLUS,  otulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_21142,       otulip_probe },
+# endif /* INCLUDE_OTULIP */
+# ifdef	INCLUDE_TULIP
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP,       tulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP_FAST,  tulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_TULIP_PLUS,  tulip_probe },
+  { PCI_VENDOR_ID_DEC,      PCI_DEVICE_ID_DEC_21142,       tulip_probe },
+  { PCI_VENDOR_ID_MACRONIX, PCI_DEVICE_ID_MX987x5,         tulip_probe },
+  { PCI_VENDOR_ID_LINKSYS,  PCI_DEVICE_ID_LC82C115,        tulip_probe },
+  { PCI_VENDOR_ID_LINKSYS,  PCI_DEVICE_ID_DEC_TULIP,       tulip_probe },
+  { PCI_VENDOR_ID_DAVICOM,  PCI_DEVICE_ID_DM9102,          tulip_probe },
+  { PCI_VENDOR_ID_ADMTEK,   PCI_DEVICE_ID_ADMTEK_0985,     tulip_probe },
+# endif /* INCLUDE_TULIP */
+# ifdef	INCLUDE_VIA_RHINE
+  { PCI_VENDOR_ID_VIATEC,   PCI_DEVICE_ID_VIA_RHINE_I,     rhine_probe },
+  { PCI_VENDOR_ID_VIATEC,   PCI_DEVICE_ID_VIA_86C100A,     rhine_probe },
+# endif /* INCLUDE_VIA_RHINE */
+  { 0,                      0,                             0 }
+};
+#endif /* GRUB && INCLUDE_PCI */
 
 struct dispatch_table
 {
@@ -350,6 +425,25 @@ int eth_probe(void)
 	}
 #endif
 	printf("Probing...");
+	
+#if defined(GRUB) && defined(INCLUDE_PCI)
+	if (p->vendor)
+	  {
+	    struct pci_dispatch_table *pt;
+
+	    for (pt = PCI_NIC; pt->eth_probe != 0; pt++)
+	      if (p->vendor == pt->vendor && p->dev_id == pt->dev_id)
+		{
+		  printf ("[%s]", p->name);
+		  if ((pt->eth_probe) (&nic, pci_ioaddrs, p))
+		    {
+		      probed = 1;
+		      return 1;
+		    }
+		}
+	  }
+#endif /* GRUB && INCLUDE_PCI */
+	
 	for (t = NIC; t->nic_name != 0; ++t)
 	{
 		printf("[%s]", t->nic_name);

@@ -1,7 +1,7 @@
 /* serial.h - serial device interface */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -92,6 +92,9 @@ unsigned short serial_get_port (int unit);
 /* Initialize a serial device.  */
 int serial_init (unsigned short port, unsigned int speed,
 		 int word_len, int parity, int stop_bit_len);
+
+/* Check if a serial port is set up.  */
+int serial_exists (void);
 
 #ifdef GRUB_UTIL
 /* Set the file name of a serial device (or a pty device). This is a

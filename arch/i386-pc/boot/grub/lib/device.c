@@ -1,7 +1,7 @@
 /* device.c - Some helper functions for OS devices and BIOS drives */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999, 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 1999, 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -208,7 +208,11 @@ get_ide_disk_name (char *name, int unit)
   sprintf (name, "/dev/hd%d", unit);
 #elif defined(__FreeBSD__)
   /* FreeBSD */
+# if __FreeBSD__ >= 4
+  sprintf (name, "/dev/rad%d", unit);
+# else /* __FreeBSD__ <= 3 */
   sprintf (name, "/dev/rwd%d", unit);
+# endif /* __FreeBSD__ <= 3 */
 #elif defined(__NetBSD__) && defined(HAVE_OPENDISK)
   /* NetBSD */
   char shortname[16];
@@ -262,6 +266,14 @@ get_scsi_disk_name (char *name, int unit)
   *name = 0;
 #endif
 }
+
+#ifdef __linux__
+static void
+get_dac960_disk_name (char *name, int controller, int drive)
+{
+  sprintf (name, "/dev/rd/c%dd%d", controller, drive);
+}
+#endif
 
 /* Check if DEVICE can be read. If an error occurs, return zero,
    otherwise return non-zero.  */
@@ -370,6 +382,10 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       /* Skip leading spaces.  */
       while (*ptr && isspace (*ptr))
 	ptr++;
+
+      /* Skip empty lines.  */
+      if (! *ptr)
+	continue;
       
       if (*ptr != '(')
 	{
@@ -569,6 +585,38 @@ init_device_map (char ***map, const char *map_file, int floppy_disks)
 	}
     }
   
+#ifdef __linux__
+  /* This is for DAC960 - we have
+     /dev/rd/c<controller>d<logical drive>p<partition>.
+     
+     DAC960 driver currently supports up to 8 controllers, 32 logical
+     drives, and 7 partitions.  */
+  {
+    int controller, drive;
+    
+    for (controller = 0; controller < 8; controller++)
+      {
+	for (drive = 0; drive < 15; drive++)
+	  {
+	    char name[24];
+	    
+	    get_dac960_disk_name (name, controller, drive);
+	    if (check_device (name))
+	      {
+		(*map)[num_hd + 0x80] = strdup (name);
+		assert ((*map)[num_hd + 0x80]);
+		
+		/* If the device map file is opened, write the map.  */
+		if (fp)
+		  fprintf (fp, "(hd%d)\t%s\n", num_hd, name);
+		
+		num_hd++;
+	      }
+	  }
+      }
+  }
+#endif /* __linux__ */
+  
   /* OK, close the device map file if opened.  */
   if (fp)
     fclose (fp);
@@ -614,7 +662,7 @@ write_to_partition (char **map, int drive, int partition,
   if (have_devfs ())
     {
       if (strcmp (dev + strlen(dev) - 5, "/disc") == 0)
-	strcat (dev + strlen(dev) - 5, "/part");
+	strcpy (dev + strlen(dev) - 5, "/part");
     }
   sprintf (dev + strlen(dev), "%d", ((partition >> 16) & 0xFF) + 1);
   

@@ -1,3 +1,999 @@
+2001-10-27  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	JFS and XFS support is added.
+	
+	From Serguei Tzukanov <tzukanov@narod.ru>:
+	* configure.in (--disable-jfs): New option.
+	(--disable-xfs): Likewise.
+	* stage2/Makefile.am (noinst_HEADERS): Added jfs.h and xfs.h.
+	(libgrub_a_SOURCES): Added fsys_jfs.c and fsys_xfs.c.
+	(libgrub_a_CFLAGS): Added -DFSYS_JFS=1 and -DFSYS_XFS=1.
+	(pkgdata_DATA): Added jfs_stage1_5 and xfs_stage1_5.
+	(noinst_PROGRAMS): Added jfs_stage1_5.exec and
+	xfs_stage1_5.exec.
+	(pre_stage2_exec_SOURCES): Added fsys_jfs.c and fsys_xfs.c.
+	(jfs_stage1_5_exec_SOURCES): New variable.
+	(jfs_stage1_5_exec_CFLAGS): Likewise.
+	(jfs_stage1_5_exec_ASFLAGS): Likewise.
+	(jfs_stage1_5_exec_LDFLAGS): Likewise.
+	(xfs_stage1_5_exec_SOURCES): Likewise.
+	(xfs_stage1_5_exec_CFLAGS): Likewise.
+	(xfs_stage1_5_exec_ASFLAGS): Likewise.
+	(xfs_stage1_5_exec_LDFLAGS): Likewise.
+	* stage2/builtins.c (setup_func): Add items for JFS and XFS into
+	STAGE1_5_MAP.
+	* stage2/disk_io.c (fsys_table): Added entries for JFS and XFS.
+	* stage2/filesys.h [FSYS_JFS] (FSYS_JFS_NUM): Set to 1.
+	[FSYS_JFS] (jfs_mount): Declared.
+	[FSYS_JFS] (jfs_read): Likewise.
+	[FSYS_JFS] (jfs_dir): Likewise.
+	[FSYS_JFS] (jfs_embed): Likewise.
+	[!FSYS_JFS] (FSYS_JFS_NUM): Set to 0.
+	[FSYS_XFS] (FSYS_XFS_NUM): Set to 1.
+	[FSYS_XFS] (xfs_mount): Declared.
+	[FSYS_XFS] (xfs_read): Likewise.
+	[FSYS_XFS] (xfs_dir): Likewise.
+	(NUM_FSYS): Added FSYS_JFS_NUM and FSYS_XFS_NUM.
+	* stage2/shared.h (STAGE2_ID_JFS_STAGE1_5): New macro.
+	(STAGE2_ID_XFS_STAGE1_5): Likewise.
+	[FSYS_JFS] (STAGE2_ID): Set to STAGE2_ID_JFS_STAGE1_5.
+	[FSYS_XFS] (STAGE2_ID): Set to STAGE2_ID_XFS_STAGE1_5.
+	* stage2/fsys_jfs.c: New file.
+	* stage2/fsys_xfs.c: Likewise.
+	* stage2/jfs.h: Likewise.
+	* stage2/xfs.h: Likewise.
+
+2001-10-27  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* stage2/apm.S: Always disconnect from APM. Written by Erich
+	Stefan Boleyn.
+
+	* util/Makefile.am (noinst_DATA): Removed.
+	(EXTRA_DIST): Likewise.
+	
+2001-10-14  Gordon Matzigkeit  <gord@fig.org>
+
+	* configure.in: Explicitly call _AM_DEPENDENCIES(CC) for the
+	benefit of older Autoconfs.
+
+2001-10-13  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	* netboot/fsys_tftp.c (tftp_read): Move the unused data
+	forwards, only if AMT is more than zero. If AMT is not positive,
+	subtract BUF_READ from SAVED_FILEPOS and set BUF_READ to zero,
+	to skip the whole buffer. Reported by Frank Mehnert.
+	
+2001-10-13  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	Don't use get_diskinfo_floppy. Reported by Ben Liblit
+	<liblit@eecs.berkeley.edu>.
+	
+	* stage2/asm.S (get_diskinfo_floppy): Removed (by cpp).
+	* stage2/bios.c (get_diskinfo_floppy): Removed.
+	(get_diskinfo): Don't call get_diskinfo_floppy any longer.
+	
+2001-10-13  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	Based on a patch from Jeremy Katz <katzj@redhat.com>:
+	* docs/grub.texi (Stage2 errors): Added documentation on the
+	error number 33 (Serial device not configured).
+	* grub/asmstub.c (serial_exists): New function.
+	* stage2/serial.c (serial_exists): Likewise.
+	* stage2/serial.h (serial_exists): New prototype.
+	* stage2/shared.h (grub_error_t): ERR_NEED_SERIAL is added.
+	* stage2/builtins.c (terminal_func) [SUPPORT_SERIAL]: If a
+	serial device is not configured yet, restore the terminal and
+	set ERRNUM to ERR_NEED_SERIAL.
+	* stage2/common.c (err_list): Added an item for ERR_NEED_SERIAL.
+	
+2001-10-13  Yoshinori K. Okuji  <okuji@gnu.org>
+
+	From Jason Thomas <jason@topic.com.au>:
+	* util/grub-install.in (convert): Add support for DAC960.
+
+	From Adrian Phillips <a.phillips@dnmi.no>:
+	* lib/device.c (get_dac960_disk_name): New function.
+	(init_device_map) [__linux__]: Add support for DAC960.
+	
+2001-10-11  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c (reiserfs_super_block): Updated
+	to better match recent reiserfs versions.
+	(reiserfs_mount): Handle cases where journal can't be found,
+	e.g. journal on another disk or unexpected journal parameters.
+	In that case the journal isn't used.
+	
+2001-10-10  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c (reiserfs_mount):  Don't look at
+	the superblock field s_journal_block_count anymore.  It used
+	to contain 0, it never contained a valid value, and now I
+	have a report that it can contain an invalid value.
+	Bug reported by Jim Caley <caley@chesco.com>.
+	
+2001-09-24  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c (reiserfs_dir):  Set errnum to 
+	ERR_FSYS_CORRUPT if a symlink can't be read for some reason,
+	but no error is set by read.
+	
+2001-08-08  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Derrik Pates <dpates@dsdk12.net>:
+	* stage2/asm.S [!STAGE1_5] (grub_halt): Set the level of APM
+	support to 1.1, before turning off the power state.
+	
+2001-08-08  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* util/grub-md5-crypt.in: Prefix backquotes with backslashes in
+	strings.  From Fernando Silveira.
+	
+2001-08-02  Gordon Matzigkeit  <gord@fig.org>
+
+	* stage2/common.c (init_bios_info): Ignore zero-length memory
+	ranges.  From Derrik Pates <dpates@dsdk12.net>.
+
+2001-07-26  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/Makefile.am (libgrub_a_CFLAGS): Enable USE_MD5_PASSWORDS
+	for libgrub.  Previously that was implicitly done by configure.in
+	until the patch from 2001-07-04, which moved that flag from CFLAGS
+	to FSYS_CFLAGS.  Reported by YAMAGUCHI Shingo
+	<shingo@kip.iis.toyama-u.ac.jp>
+
+2001-07-13  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* util/grub-install.in (convert): Recognize the naming scheme
+	for Linux devfs floppy devices. Reported by Jason Thomas
+	<jason@topic.com.au>.
+	
+2001-07-07  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* netboot/compile: New file. This was also missing... How many
+	``compile''s does automake want?
+	
+2001-07-07  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Jan Zerebecki <jan.list@elite-pferde.de>:
+	* acinclude.m4 (grub_DEFINE_FILE): Escape double-quotations as
+	well.
+	
+2001-07-05  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* configure.in (AM_INIT_AUTOMAKE): Set the version number to
+	0.90.
+
+2001-07-05  OKUJI Yoshinori  <okuji@gnu.org>
+
+	Ughh! I forgot to add this file to the CVS.
+
+	* docs/compile: New file.
+	
+2001-07-05  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/grub.texi: Updated.
+	
+2001-07-05  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/boot.c (load_initrd) [!NO_DECOMPRESSION]: Set
+	NO_DECOMPRESSION to one before opening INITRD, so that GRUB
+	doesn't decompress an initrd automatically. Reported by
+	Thierry Laronde.
+	
+2001-07-04  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/compile: New file.
+	* docs/mdate-sh: Likewise.
+	* docs/texinfo.tex: Likewise.
+	* compile: Removed.
+	* mdate-sh: Likewise.
+	* texinfo.tex: Likewise.
+	* config.guess: Updated from automake-1.4h.
+	* config.sub: Likewise.
+	* depcomp: Likewise.
+	* install-sh: Likewise.
+	* missing: Likewise.
+	* mkinstalldirs: Likewise.
+	* configure.in (AS): New variable.
+	(ASFLAGS): Likewise.
+	(--disable-md5-password): Use FSYS_CFLAGS instead of CFLAGS.
+	* stage1/Makefile.am (AM_CFLAGS): Renamed to ...
+	(AM_ASFLAGS): ... this.
+	* stage2/Makefile.am (pre_stage2_exec_ASFLAGS): New variable.
+	(start_exec_CFLAGS): Renamed to ...
+	(start_exec_ASFLAGS): ... this.
+	(start_exec-start.o): Renamed to ...
+	(start_exec-start.$(OBJEXT)): ... this.
+	(e2fs_stage1_5_exec_ASFLAGS): New variable.
+	(fat_stage1_5_exec_ASFLAGS): Likewise.
+	(ffs_stage1_5_exec_ASFLAGS): Likewise.
+	(minix_stage1_5_exec_ASFLAGS): Likewise.
+	(reiserfs_stage1_5_exec_ASFLAGS): Likewise.
+	(vstafs_stage1_5_exec_ASFLAGS): Likewise.
+	(diskless_exec_ASFLAGS): Likewise.
+	(nbloader_exec_CFLAGS): Renamed to ...
+	(nbloader_exec_ASFLAGS): ... this.
+	(nbloader_exec-nbloader.o): Renamed to ...
+	(nbloader_exec-nbloader.$(OBJEXT)): ... this.
+	(pxeloader_exec_CFLAGS): Renamed to ...
+	(pxeloader_exec_ASFLAGS): ... this.
+	(pxeloader_exec-pxeloader.$(OBJEXT)): New target.
+
+2001-07-03  OKUJI Yoshinori  <okuji@gnu.org>
+	
+	From Julien Bordet <julien.bordet@int-evry.fr>:
+	* stage2/i386-elf.h (Elf32_Shdr): New type.
+	* stage2/boot.c (load_image): Added ELF symbol loading support.
+	
+2001-06-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/char_io.c [STAGE1_5] (grub_strcmp): Defined, even
+	for Stage 1.5. See thecomment, for a possible future strategy.
+	* stage2/fsys_vstafs.c [!FSYS_VSTAFS]: Don't define anything.
+	[STAGE1_5] (grub_strcmp): Removed.
+	(get_file_info): Made static.
+	(vstafs_readdir): Likewise.
+	(vstafs_nextdir): Likewise.
+	(curr_ext): Likewise.
+	(current_direntry): Likewise.
+	(current_blockpos): Likewise.
+	(a): Likewise.
+	
+2001-06-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	VSTa filesystem support is added.
+	
+	From Kristoffer Brånemyr <ztion@swipnet.se>:
+	* stage2/configure.in (--disable-vstafs): New option.
+	* stage2/Makefile.am (noinst_HEADERS): Added vstafs.h.
+	(libgrub_a_SOURCES): Added fsys_vstafs.c.
+	(libgrub_a_CFLAGS): Added -DFSYS_VSTAFS=1.
+	(pkgdata_DATA): Added vstafs_stage1_5.
+	(noinst_PROGRAMS): Added vstafs_stage1_5.exec.
+	(pre_stage2_exec_SOURCES): Added fsys_vstafs.c.
+	(vstafs_stage1_5_exec_SOURCES): New variable.
+	(vstafs_stage1_5_exec_CFLAGS): Likewise.
+	(vstafs_stage1_5_exec_LDFLAGS): Likewise.
+	* stage2/disk_io.c (fsys_table): Added an entry for vstafs.
+	* stage2/filesys.h [FSYS_VSTAFS] (FSYS_VSTAFS_NUM): Defined as
+	1.
+	[FSYS_VSTAFS] (vstafs_mount): New prototype.
+	[FSYS_VSTAFS] (vstafs_read): Likewise.
+	[FSYS_VSTAFS] (vstafs_dir): Likewise.
+	[!FSYS_VSTAFS] (FSYS_VSTAFS_NUM): Defined as 0.
+	(NUM_FSYS): Added FSYS_VSTAFS_NUM.
+	* stage2/pc_slice.h (PC_SLICE_TYPE_VSTAFS): New macro.
+	* stage2/shared.h (STAGE2_ID_VSTAFS_STAGE1_5): Likewise.
+	[STAGE1_5 && FSYS_VSTAFS] (STAGE2_ID): Defined as
+	STAGE2_ID_VSTAFS_STAGE1_5.
+	* stage2/vstafs.h: New file.
+	* stage2/fsys_vstafs.c: Likewise.
+	
+2001-06-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Thierry Laronde <thierry@cri74.org>:
+	* stage2/builtins.c (configfile_func): Added a prototype.
+	(bootp_func): If `--with-configfile' is given, set
+	WITH_CONFIGFILE to one, and call configfile_func with
+	CONFIG_FILE.
+	
+2001-06-21  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/grub.texi: Update the location of the CVS repository
+	[/home/cvs -> /cvsroot/grub].
+	* README: Likewise.
+	
+2001-06-19  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/boot.c (load_image): If the image is a Multiboot ELF OS
+	image, get the physical entry address, when a loaded memory
+	segment contains it. And, set ENTRY_ADDR to it, after printing
+	out the virtual one. Suggested by Rogelio M. Serrano Jr.
+	<rogelio@victorio.com>.
+	
+2001-05-30  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/grub.texi: Fix some typos. Reported by Florian Hatat
+	<mininet@wanadoo.fr>.
+	
+2001-05-29  Pavel Roskin  <proski@gnu.org>
+
+	* configure.in (AC_OUTPUT): Remove debian/Makefile.
+
+2001-05-28  Gordon Matzigkeit  <gord@fig.org>
+
+	* Makefile.am (SUBDIRS): Remove reference to debian directory.
+	Packaging is no longer done by the GRUB team.
+
+2001-05-03  Gordon Matzigkeit  <gord@fig.org>
+
+	* stage1/stage1.S (nt_magic): Explicitly reserve space for the NT
+	magic number.
+
+2001-05-25  Klaus Reichl  <Klaus.Reichl@alcatel.at>
+
+	* stage2/stage2.c (print_entries_raw): New function.
+	(run_menu): Use it to implement menu & command-list if on dumb
+	terminals.  
+	Changes are:
+	  Adjust FIRST_ENTRY only on non-dumb terminals.
+	  Setting of SHOW_MENU is honoured also on dumb
+	    terminals. 
+	  Likely if SHOW_MENU is false, ESC brings her to the
+	    menu - not to the command-line as before.
+	  PRINT_BORDER, GOTOXY, SET_LINE_xxx are only called if
+	    not on dumb terminals.
+	  Show entry number when timeout is running if terminal is dumb.
+	  Prompt with entry number when waiting for keys.
+
+2001-05-14  Pavel Roskin  <proski@gnu.org>
+
+	* stage2/shared.h (ENTRY): Remove unnecessary `##'.
+
+2001-05-03  Jochen Hoenicke  <jochen@gnu.org>
+
+	* grub/asmstub.c (biosdisk): Work around a bug in linux's ez
+	remapping.  Problem reported by Ben Byer <bbyer@rice.edu>.
+	
+2001-03-28  Gordon Matzigkeit  <gord@fig.org>
+
+	* stage2/boot.c (load_image): Don't cast entry_addr to an int, or
+	the top bit will be interpreted as the sign.
+
+2001-03-16  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Bodo Rueskamp <br@itchigo.com>:
+	* stage2/boot.c (load_initrd): Avoid the last 64kb for
+	Linux 2.2.x bug.
+	
+2001-03-03  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/multiboot.texi (History): Written.
+	
+2001-02-28  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From HASEGAWA Tomoki <thasegawa@mta.biglobe.ne.jp>:
+	* lib/device.c (get_ide_disk_name) [__FreeBSD__]: Add support
+	for FreeBSD-4.0 or later. Use "/dev/rad0".
+	* util/grub-install.in (convert): Add code for FreeBSD
+	disklabels.
+
+2001-02-28  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Thierry Laronde <thierry@cri74.org>:
+	* stage2/stage2.c (cmain): If the default entry is wrong, set it
+	to FALLBACK_ENTRY if FALLBACK_ENTRY is valid, otherwise set it
+	to zero. Suggested by Nicolas Boos <nicolas.boos@wanadoo.fr>.
+	
+2001-02-28  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* acconfig.h (AUTO_LINUX_MEM_OPT): New entry.
+	* configure.in (--disable-auto-linux-mem-opt): New option.
+	* stage2/builtins.c (kernel_func) [!AUTO_LINUX_MEM_OPT]: Add
+	KERNEL_LOAD_NO_MEM_OPTION into LOAD_FLAGS, whether the user
+	specifies --no-mem-option or not.
+	
+2001-02-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (chainloader_func): Don't check if the
+	current partition is FAT, but check if it has a FAT partition
+	type and the BPB has a system id starting with "MSWIN".
+	
+2001-02-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	Added hercules support based on a patch by Frank Mehnert
+	<fm3@os.inf.tu-dresden.de>. I translated his assembly code into
+	C, and separated hercules from the normal console.
+	
+	* configure.in (--disable-hercules): New option.
+	
+	* grub/asmstub.c: Include <hercules.h>.
+	(set_attrib): Renamed to ...
+	(console_set_attrib): ... this.
+	(herc_cls): New function.
+	(herc_getxy): Likewise.
+	(herc_gotoxy): Likewise.
+	(herc_putchar): Likewise.
+	(herc_set_attrib): Likewise.
+	
+	* stage2/Makefile.am (noinst_HEADERS): Added hercules.h.
+	(libgrub_a_CFLAGS): Added -DSUPPORT_HERCULES=1.
+	(HERCULES_FLAGS): New variable.
+	(STAGE2_COMPILE): Added $(HERCULES_FLAGS).
+	(pre_stage2_exec_SOURCES): Added hercules.c.
+	* stage2/asm.S [!STAGE1_5] (set_attrib) Renamed to ...
+	[!STAGE1_5] (console_set_attrib): ... this.
+	* stage2/builtins.c [SUPPORT_HERCULES] (terminal_func): Added
+	hercules support.
+	(builtin_table) [SUPPORT_HERCULES]: Added a pointer to
+	BUILTIN_TERMINAL.
+	* stage2/char_io.c [SUPPORT_HERCULES]: Include <hercules.h>.
+	[!STAGE1_5] (get_cmdline) [SUPPORT_HERCULES]: Added hercules
+	support.
+	[!STAGE1_5] (getkey) [SUPPORT_HERCULES]: Likewise.
+	[!STAGE1_5] (checkkey) [SUPPORT_HERCULES]: Likewise.
+	(grub_putchar) [SUPPORT_HERCULES]: Likewise.
+	[!STAGE1_5] (gotoxy) [SUPPORT_HERCULES]: Likewise.
+	[!STAGE1_5] (getxy) [SUPPORT_HERCULES]: Likewise.
+	[!STAGE1_5] (cls) [SUPPORT_HERCULES]: Likewise.
+	(set_attrib): New function.
+	* stage2/shared.h (console_set_attrib): Declared.
+	(TERMINAL_HERCULES): New macro.
+	* stage2/stage2.c (run_menu) [SUPPORT_HERCULES]: Added hercules
+	support.
+	* stage2/hercules.h: New file.
+	* stage2/hercules.c: Likewise.
+	
+2001-02-17  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From "Treutwein; Bernhard"
+	<Bernhard.Treutwein@Verwaltung.Uni-Muenchen.DE>:
+	* docs/grub.texi (DOS/Windows): Improved the readability.
+	
+2001-02-11  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/grub.texi (Command-line and menu commands): Renamed to ...
+	(General commands): ... this.
+	
+2001-02-08  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/asm.S [STAGE1_5] (chain_stage2): Save the second sector
+	of stage2 in %ecx temporarily, and set %ebp to %ecx after
+	switching to protected mode. I forgot that %ebp is broken by
+	rot_to_real. Reported by Torvald Riegel
+	<tr16@inf.tu-dresden.de>.
+	
+2001-02-08  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/grub-new.texi: Moved to ...
+	* docs/grub.texi: ... here. And, include internals.texi.
+	* docs/internals.texi: New file.
+	* docs/prog-ref.texi: Removed.
+	* docs/user-ref.texi: Likewise.
+	* docs/tutorial.texi: Likewise.
+	* docs/appendices.texi: Likewise.
+	* docs/Makefile.am (grub_TEXINFOS): Removed prog-ref.texi,
+	user-ref.texi, tutorial.texi, and appendices.texi. Added
+	internals.texi.
+	
+2001-02-03  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Erik Schoenfelder <schoenfr@gaertner.de>:
+	* stage2/shared.h (LINUX_INITRD_MAX_ADDRESS): Changed from
+	0x3C000000 to 0x38000000.
+	
+2001-02-03  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (savedefault_func)
+	[!SUPPORT_DISKLESS && !GRUB_UTIL]: Check if the version
+	contained in the buffer matches to current one as well.
+	
+2001-02-02  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (savedefault_func)
+	[!SUPPORT_DISKLESS && !GRUB_UTIL]: Check if the stage2 id is
+	STAGE2_ID_STAGE2. Suggested by Jochen Hoenicke.
+	
+	* stage2/stage2.c (cmain): If DEFAULT_ENTRY is out of entries,
+	reset DEFAULT_ENTRY to zero.
+	
+2001-02-02  OKUJI Yoshinori  <okuji@gnu.org>
+
+	Make savedefault workable even with Stage 1.5. Reported by
+	Thierry Laronde <thierry@cri74.org>.
+	
+	* grub/asmstub.c (chain_stage2): Added an additional argument,
+	SECOND_SECTOR.
+	* stage2/asm.S [STAGE1_5] (chain_stage2): Set %ebp to
+	SECOND_SECTOR.
+	* stage2/disk_io.c [STAGE1_5] (disk_read_hook): Defined.
+	[STAGE1_5] (disk_read_func): Likewise.
+	(rawread) [STAGE1_5]: Handle DISK_READ_FUNC.
+	(grub_read) [STAGE1_5]: Likewise.
+	* stage2/fsys_ext2fs.c (ext2fs_read) [STAGE1_5]: Likewise.
+	* stage2/fsys_fat.c (fat_read) [STAGE1_5]: Likewise.
+	* stage2/fsys_ffs.c (ffs_read) [STAGE1_5]: Likewise.
+	* stage2/fsys_minix.c (minix_read) [STAGE1_5]: Likewise.
+	* stage2/fsys_reiserfs.c (reiserfs_read) [STAGE1_5]: Likewise.
+	
+2001-02-02  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* netboot/config.c [GRUB && INCLUDE_PCI] (pci_dispatch_table):
+	New structure.
+	[GRUB && INCLUDE_PCI] (PCI_NIC): New variable.
+	(eth_probe) [GRUB && INCLUDE_PCI]: If a PCI NIC candidate is
+	present, probe it first.
+	
+2001-01-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Danilo Godec <danci@agenda.si>:
+	* stage2/pc_slice.h (PC_SLICE_TYPE_LINUX_RAID): New macro.
+	* stage2/fsys_ext2fs.c (ext2fs_mount): Add a check for
+	PC_SLICE_LINUX_RAID.
+	
+2001-01-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Bernhard Treutwein
+	<Bernhard.Treutwein@Verwaltung.Uni-Muenchen.DE>:
+	* docs/grub-new.texi (DOS/Windows): Made more readable.
+	
+2001-01-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/multiboot.texi: Start reorganizing Multiboot
+	Specification.
+	
+2001-01-15  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Thierry Laronde <thierry.laronde@polynum.com>:
+	* docs/user-ref.texi (Command-line and menu commands): Update
+	the description about setkey.
+	* stage2/builtins.c (setkey_func): When checking if TO_KEY and
+	FROM_KEY are specified, see *TO_KEY and *FROM_KEY instead of
+	TO_KEY and FROM_KEY, respectively.
+	
+2001-01-13  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Thierry Laronde <thierry.laronde@polynum.com>:
+	* util/grub-md5-crypt.in (prefix): New variable.
+	(exec_prefix): Likewise.
+	(sbindir): Likewise.
+	
+2001-01-12  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/multiboot.h [__ELF__] (MULTIBOOT_HEADER_FLAGS): Defined
+	as 0x00000003 instead of 0x00010003.
+	* docs/boot.S (multiboot_header) [__ELF__]: Don't define a.out
+	kludge information.
+	
+	* docs/Makefile.am (EXTRA_PROGRAMS): New variable.
+	[BUILD_EXAMPLE_KERNEL] (noinst_DATA): Removed.
+	[BUILD_EXAMPLE_KERNEL] (noinst_PROGRAMS): Changed to kernel.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_SOURCES): Renamed to ...
+	[BUILD_EXAMPLE_KERNEL] (kernel_SOURCES): ... this.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_CFLAGS): Renamed to ...
+	[BUILD_EXAMPLE_KERNEL] (kernel_CFLAGS): ... this.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_LDFLAGS): Renamed to ...
+	[BUILD_EXAMPLE_KERNEL] (kernel_LDFLAGS): ... this.
+	[BUILD_EXAMPLE_KERNEL] (kernel): Removed.
+	[BUILD_EXAMPLE_KERNEL] (boot.o): New dependency.
+	(CLEANFILES): New variable.
+	
+2001-01-11  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c [SUPPORT_NETBOOT] (ifconfig_func): Always
+	print current network configuration.
+	[SUPPORT_NETBOOT] (tftpserver_func): Use ifconfig instead of
+	arp_server_override.
+	* netboot/main.c (arp_server_override): Removed.
+	* netboot/etherboot.h (arp_server_override): Likewise.
+
+2001-01-11  Eugene Doudine  <dudin@np.nk.nornik.ru>
+	
+	* stage2/builtins.c [SUPPORT_NETBOOT] (ifconfig_func): New
+	function to configure network interface from command line.
+	[SUPPORT_NETBOOT] (builtin_ifconfig): New variable.
+	[SUPPORT_NETBOOT] (builtin_table): Added a pointer to
+	BUILTIN_IFCONFIG.
+	* netboot/main.c (ifconfig): New function.
+	* netboot/etherboot.h (ifconfig): Added the prototype.
+	
+2001-01-11  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/Makefile.am [BUILD_EXAMPLE_KERNEL] (noinst_DATA): New
+	variable.
+	[BUILD_EXAMPLE_KERNEL] (noinst_PROGRAMS): Likewise.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_SOURCES): Likewise.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_CFLAGS): Likewise.
+	[BUILD_EXAMPLE_KERNEL] (kernel_exec_LDFLAGS): Likewise.
+	[BUILD_EXAMPLE_KERNEL] (kernel): New target.
+	* configure.in (--enable-example-kernel): New option.
+
+	* docs/kernel.c (cmain): Cast unsigned long variables to
+	unsigned explicitly, to suppress GCC warnings.
+	
+2001-01-08  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/shared.h (BOOTSEC_BPB_HIDDEN_SECTORS): New macro.
+	
+	* stage2/builtins.c (chainloader_func): If CURRENT_PARTITION is
+	FAT, set the hidden sectors field of the BPB to PART_START, to
+	avoid a Windows bug which affects only when Windows is booted
+	from a logical partition. And, clear ERRNUM after testing if a
+	partition is FAT, because open_partition or fat_mount may set
+	ERRNUM. Reported by Ingo Korb <ingo@akana.de>.
+	
+2001-01-07  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (boot_func): In the chain-loading mode,
+	clear the active flag of each of the loaded partition entries,
+	and then set the active flag of the booted partition image.
+	
+2001-01-04  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/builtins.c (embed_func): Call open_partition() even for
+ 	MBR, so that part_start is correct.  This fixes a bug reported by
+ 	Matthias Granberry <matthias@slurpee.org>.
+	
+2000-12-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/disk_io.c (make_saved_active): Change the variable name
+	``MBR'' to lower case.
+	(set_partition_hidden_flag): Likewise.
+	
+2000-12-20  Jochen Hoenicke  <jochen@gnu.org>
+
+	From Cedric Ware <ware@com.enst.fr>:
+	* stage2/fsys_ext2.c (ext2fs_mount): Detect ext2 partitions in
+	a OpenBSD/NetBSD FS_EXT2FS slice.
+	* stage2/pc_slice.h (FS_ADOS): New Macro from OpenBSD/NetBSD.
+	(FS_HFS): Likewise.
+	(FS_FILECORE): Likewise.
+	(FS_EXT2FS): Likewise.
+	
+2000-12-17  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/disk_io.c (rawread): Check if there is a EZD partition
+	and remap sector 0 to sector 1 like EZ-BIOS does.
+	(rawwrite): New function to write to disk.  Also does EZD
+	remapping.
+	(devwrite): New function.  Does the special remapping to
+	partitions needed for linux.  This contains the code that was
+	previously duplicated in embed_func and install_func at several
+	places.
+	(make_saved_active): Use rawwrite. Don't use SCRATCHSEG, as it is
+	needed by devwrite.
+	(set_partition_hidden_flag): Likewise.	
+	* stage2/disk_io.h (rawwrite): New function.
+	(devwrite): Likewise.
+	* stage2/pc_slice.h (PC_SLICE_TYPE_EZD): New macro.
+	* stage2/builtins.c (embed_info): New variable to store the
+	position of the embedded stage1_5 for setup_func.
+	(embed_func): Don't embed after the MBR if an EZ-BIOS is detected
+	there.  Use the new devwrite method.  If embedding is successful
+	store position in embed_info.
+	(install_func): Use devwrite.  Don't use SCRATCHSEG.
+	(partnew_func): Use rawwrite.  Don't use SCRATCHSEG.
+	(parttype_func): Likewise.
+	(savedefault_func): Likewise.
+	(setup_func): New nested function embed_stage1_5.  Stage1_5 is now
+	also be embedded into filesystems which supports that.
+	
+2000-12-17  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (chainloader_func): Set ERRNUM to
+	ERR_EXEC_FORMAT, when ERRNUM is ERR_NONE, even if grub_read
+	fails in reading one sector.
+	
+2000-12-14  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/prog-ref.texi (Partition types): Rewrite the footnotes.
+	Suggested by Ralf.Medow@t-online.de (Ralf Medow).
+	
+2000-12-14  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Erik Schoenfelder <schoenfr@gaertner.de>:
+	* util/grub-install.in (convert): Revised the fix for floppy
+	device handling.
+	
+2000-12-14  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From HORIKAWA Kazunori <kaz-hori@tkd.att.ne.jp>:
+	* stage2/bios.c (get_diskinfo): Append 16 bytes dummy data to
+	DRP, because the BIOS of Thinkpad X20 write a garbage beyond the
+	size of the structure.
+	
+2000-12-09  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/disk_io.c (next_partition): Mask out bsd partition sub
+	type when checking if last partition was a bsd partition.
+	Reported by Heikki Vatiainen <hessu@cs.tut.fi>.
+	
+2000-12-09  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Leendert Meyer <leen.meyer@home.nl>:
+	* util/grub-install.in (convert): If a floppy device is
+	specified, remove everything from $tmp_part.
+	
+2000-12-09  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* lib/device.c [__linux__] (write_to_partition): Use strcpy
+	instead of strcat, to overwrite "/disc". Reported by Thiago
+	Macieira <thiagom@mail.com>.
+	
+2000-12-05  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_minix.c (minix_mount): Corrected the check for
+	IS_PC_SLICE_TYPE_MINIX; minix was only working if slice type was
+	wrong! Reported by Ralf Medow <ralf.medow@t-online.de>.
+	
+2000-11-27  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/fsys_reiserfs.c: Handle items with old version key on
+	new version reiserfs partition.
+	(K_OFFSET): Removed.
+	(IH_KEY_OFFSET): New Macro, which checks item head version.
+	(IH_KEY_ISOFFSET): Likewise.
+	(reiserfs_read): Use new macros.
+	(reiserfs_dir): Fixed version check for >4GB stat entries.
+	
+2000-11-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/common.c (init_bios_info) [!STAGE1_5]: Don't call
+	track_int13, because the current implementation hangs up in some
+	environments.
+	
+2000-11-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* grub/asmstub.c (serial_init) [!O_SYNC]: Don't specify O_SYNC
+	to open SERIAL_DEVICE.
+	(serial_init) [O_FSYNC]: Specify O_FSYNC to open SERIAL_DEVICE.
+	Reported by Farid Hajji <farid.hajji@ob.kamp.net>.
+	
+2000-11-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Vesa Jaaskelainen <jaaskela@tietomyrsky.fi>:
+	* stage2/builtins.c (testvbe_func): Don't set the bit 14 of a
+	VBE mode number explicitly when calling get_vbe_mode_info.
+	(vbeprobe_func): Likewise.
+	
+2000-11-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	The code for the "INT 13H tracking technique" is somewhat
+	simplified.
+
+	* stage2/asm.S [!STAGE1_5] (track_int13): Don't replace an int13
+	handler with set_tf_int13_handler. Instead, track_int13 itself
+	emulates an int13 interrupt.
+	[!STAGE1_5] (set_tf_int13_handler): Removed.
+	[!STAGE1_5] (int1_handler): Use movzbw instead of xorb and movb.
+	
+2000-11-15  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* acconfig.h (PRESET_MENU_STRING): New entry.
+	* acinclude.m4 (grub_DEFINE_FILE): New M4 macro.
+	* configure.in (--enable-preset-menu): New option.
+	* stage2/stage2.c [PRESET_MENU_STRING] (preset_menu): New
+	variable.
+	[PRESET_MENU_STRING] (preset_menu_offset): Likewise.
+	[PRESET_MENU_STRING] (open_preset_menu): New function.
+	[PRESET_MENU_STRING] (read_from_preset_menu): Likewise.
+	[PRESET_MENU_STRING] (close_preset_menu): Likewise.
+	[!PRESET_MENU_STRING] (open_preset_menu): New macro.
+	[!PRESET_MENU_STRING] (read_from_preset_menu): Likewise.
+	[!PRESET_MENU_STRING] (close_preset_menu): Likewise.
+	(get_line_from_config): Accept a new argument READ_FROM_FILE.
+	If it is false, read data from the preset menu instead.
+	(cmain): If grub_open fails in opening the configuration file,
+	then try to open the preset menu.
+	
+2000-11-11  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Jan Fricke <fricke@uni-greifswald.de>:
+	* stage2/asm.S [!STAGE1_5] (set_vbe_mode): Add a missing `$'
+	prefix.
+	
+2000-11-11  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/bios.c (get_diskinfo): If BIOS supports LBA but doesn't
+	return the correct total number of sectors, compute this by
+	C/H/S returned by get_diskinfo_int13_extensions instead of
+	get_diskinfo_standard.
+	
+2000-11-09  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/disk_io.c (make_saved_active): Set ERRNUM to
+	ERR_DEV_VALUES instead of ERR_NO_PART, when the save partition
+	is not a primary partition.
+	
+2000-11-05  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/user-ref.texi (Features): Update the URL of grub/98.
+	
+2000-11-03  OKUJI Yoshinori  <okuji@gnu.org>
+
+	VBE support is _partially_ implemented.
+	
+	* stage2/mb_header.h (multiboot_header): Added new fields,
+	mode_type, width, height, and depth.
+	(MULTIBOOT_FOUND): Check if MULTIBOOT_VIDEO_MODE is set, and
+	check if LEN is greater than or equal to 48, if set.
+	(MULTIBOOT_UNSUPPORTED): Set to 0x0000FFF8.
+	(MULTIBOOT_VIDEO_MODE): New macro.
+	* stage2/mb_info.h (multiboot_info): Added new fields,
+	vbe_control_info, vbe_mode_info, vbe_mode, vbe_interface_seg,
+	vbe_interface_off, and vbe_interface_len.
+	(MB_INFO_VIDEO_INFO): New macro.
+	
+	* stage2/shared.h (vbe_controller): New structure.
+	(vbe_mode): Likewise.
+	(get_vbe_controller_info): Declared.
+	(get_vbe_mode_info): Likewise.
+	(set_vbe_mode): Likewise.
+	* stage2/asm.S [!STAGE1_5] (get_vbe_controller_info): New
+	function.
+	[!STAGE1_5] (get_vbe_mode_info): Likewise.
+	[!STAGE1_5] (set_vbe_mode): Likewise.
+	* grub/asmstub.c (get_vbe_controller_info): Likewise.
+	(get_vbe_mode_info): Likewise.
+	(set_vbe_mode): Likewise.
+
+	* stage2/builtins.c (testvbe_func): New function.
+	(builtin_testvbe): New variable.
+	(vbeprobe_func): New function.
+	(builtin_vbeprobe): New variable.
+	(builtin_table): Added pointers to BUILTIN_TESTVBE and
+	BUILTIN_VBEPROBE.
+	
+2000-11-01  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/help2man: Copied from help2man-1.23.
+	
+2000-10-29  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/asm.S [STAGE1_5]: Don't include setjmp.S or apm.S.
+	
+2000-10-27  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* lib/device.c (read_device_map): Don't parse a line, if it is
+	empty. Reported by Holger Bauer <bauer@itsm.uni-stuttgart.de>.
+	
+2000-10-25  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/builtins.c (md5crypt_func): Use all bits of currticks ()
+	to generate the salt.  The old code would often produce the same
+	one character salt.
+
+2000-10-25  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/apm.S (get_apm_info): Fix a serious typo: prot_to_real
+	-> real_to_prot. Umm, I can't understand why it worked for me!
+	
+2000-10-24  Jochen Hoenicke  <jochen@gnu.org>
+
+	* stage2/builtins.c (setup_func): When invoking install with an
+ 	embedded stage1_5 give the path to menu.lst as real_config_file.
+
+2000-10-23  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/multiboot.texi: Upgraded to 0.6.92.
+	(Boot information format): Re-designed the graphics table.
+	
+2000-10-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/tutorial.texi: Miscellaneous updates.
+	* docs/user-ref.texi: Likewise.
+	* docs/appendices.texi: Likewise.
+	
+2000-10-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* util/grub-install.in (usage): Removed unnecessary commas.
+	
+	* util/grub-md5-crypt.in: New file.
+	* util/Makefile.am (sbin_SCRIPTS): Added grub-md5-crypt.
+	* configure.in (AC_OUTPUT): Added util/grub-md5-crypt.
+	* docs/Makefile.am (man_MANS): Added grub-md5-crypt.8.
+	[MAINTAINER_MODE] ($(srcdir)/grub-md5-crypt.8): New target.
+	* docs/grub-md5-crypt.8: New file. Generated by help2man.
+
+	* docs/grub.texi (grub-md5-crypt): New direntry.
+	(Invoking grub-md5-crypt): New entry.
+	* docs/user-ref.texi (Invoking grub-md5-crypt): New chapter.
+	
+2000-10-22  OKUJI Yoshinori  <okuji@gnu.org>
+
+	From Matthias Granberry <matthias@slurpee.org>:
+	* util/grub-install.in (convert): Added backslashes into
+	continuous lines.
+	
+2000-10-21  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/md5.c (check_md5_password): Removed.
+	(md5_password): New function. Mostly copied from
+	check_md5_password.
+	(md5_init): Made static.
+	(md5_update): Likewise.
+	(md5_final): Likewise.
+	* stage2/md5.h (check_md5_password): Changed to just a macro.
+	(md5_password): Declared.
+	(make_md5_password): New macro.
+	* stage2/char_io.c [!STAGE1_5] (grub_strstr): Rewriten, because
+	it was too buggy.
+	* stage2/builtins.c [USE_MD5_PASSWORDS] (md5crypt_func): New
+	function.
+	[USE_MD5_PASSWORDS] (builtin_md5crypt): New variable.
+	(builtin_table) [USE_MD5_PASSWORDS]: Added a pointer to
+	BUILTIN_MD5CRYPT.
+	* docs/tutorial.texi (Security): Added a paragraph about
+	md5crypt.
+	
+2000-10-21  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* docs/user-ref.texi: Fixed several typos and some inappropriate
+	texinfo commands, and update the descriptions about some
+	commands.
+	
+2000-10-20  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/builtins.c (displayapm_func): New function.
+	(builtin_displayapm): New variable.
+	(builtin_table): Added a pointer to BUILTIN_DISPLAYAPM.
+	
+2000-10-20  OKUJI Yoshinori  <okuji@gnu.org>
+
+	APM BIOS table support is added, based on a patch by Matt Yourst
+	<yourst@mit.edu>.
+	
+	* docs/multiboot.texi (Boot information format): Added the
+	definition of APM table format.
+	
+	* stage2/mb_info.h (apm_info): New structure.
+	(multiboot_info): Added a new element, apm_table.
+	(MB_INFO_APM_TABLE): New macro.
+	* stage2/asm.S (apm_bios_info): New variable.
+	Include "apm.S".
+	* stage2/apm.S: New file.
+	* stage2/common.c (init_bios_info) [!STAGE1_5]: Added APM BIOS
+	table support.
+	* stage2/shared.h (apm_bios_info): Declared.
+	(get_apm_info): Likewise.
+	* stage2/Makefile.am (EXTRA_DIST): Added apm.S.
+	* grub/asmstub.c (apm_bios_info): New variable.
+	(get_apm_info): New function.
+	
+2000-10-19  OKUJI Yoshinori  <okuji@gnu.org>
+
+	Segregate functions which are copyrighted differently.
+	
+	* stage2/setjmp.S: New file.
+	* stage2/Makefile.am (EXTRA_DIST): Added setjmp.S.
+	* stage2/asm.S: Include "setjmp.S".
+	(grub_setjmp): Moved to ...
+	* stage2/setjmp.S (grub_setjmp): ... here.
+	* stage2/asm.S (grub_longjmp): Moved to ...
+	* stage2/setjmp.S (grub_longjmp): ... here.
+	
+2000-10-18  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* stage2/Makefile.am (noinst_HEADERS): Added md5.h. Reported by
+	Volker Augustin <Volker.Augustin@stud.uni-regensburg.de>.
+	
+2000-10-17  OKUJI Yoshinori  <okuji@gnu.org>
+
+	* configure.in (--disable-md5password): Renamed to ...
+	(--disable-md5-password): ... this. Just for my preference.
+	
+2000-10-17  Jochen Hoenicke  <jochen@gnu.org>
+
+	Added MD5 passwords and extended password command:
+	
+	* configure.in (--disable-md5password): New option.
+	* stage2/Makefile.am (libgrub_a_SOURCES): Added md5.c.
+	(pre_stage2_exec_SOURCES): Likewise.
+	* stage2/md5.c: New file.
+	* stage2/shared.h (password_t): New type.
+	(password_type): New variable.
+	(BUILTIN_HIDDEN): New flag, describing that a command should not
+	be printed when booting the entry.
+	(check_password): New function.
+	* stage2/cmdline.c (run_script): Don't show commands that have
+	the hidden attribute.
+	* stage2/builtins.c (password_type): New variable.
+	(check_password): New function.
+	(password_func): Handle the --md5 option and set password_type.
+	Check if in CMDLINE or SCRIPT mode and ask password immediately.
+	(builtin_password): Also allow passwords in CMDLINE mode, make
+	it hidden, so the user wont see the password he should enter.
+	Changed command description.
+	(builtin_pause): Make the command hidden.
+	(pause_func): Print argument, since the command is now hidden.
+	* stage2/stage2.c (run_menu): Call check_password to check password.
+	* docs/tutorial.texi (Security): Describe the new features of the
+	password commands.
+	* docs/user-ref.texi (Menu-specific commands): password command
+ 	moved ...
+	(Command-line and menu commands): ... to here.  New features 
+	doumented.
+	
 2000-10-17  OKUJI Yoshinori  <okuji@gnu.org>
 
 	* stage2/builtins.c (setkey_func): Clear the all elements of
@@ -10,6 +1006,34 @@
 	copy a null character from SRC to DEST, because this inserted an
 	extra null character into the cmdline. Reported by Robert
 	Bihlmeyer <robbe@orcus.priv.at>.
+	
+2000-10-16  OKUJI Yoshinori  <okuji@gnu.org>
+
+	Some of the new Multiboot features are supported. APM support
+	and VESA support are not strictly defined or implemented yet.
+	
+	* docs/multiboot.texi (Top): Increase the version number.
+	(Boot information format): Changed the drive information format,
+	because it was not straightforward.
+	
+	* grub/asmstub.c (io_map): New variable.
+	(track_int13): New function.
+	(get_rom_config_table): Likewise.
+	* stage2/stage2.c (cmain): Set CONFIG_ENTRIES to MBI.DRIVES_ADDR
+	+ MBI.DRIVES.LENGTH instead of MBI.MMAP_ADDR + MBI.MMAP_LENGTH.
+	* stage2/common.c (init_bios_info) [!STAGE1_5]: Added support
+	for drive info, ROM config table, and boot loader name features
+	of the Multiboot Specification.
+	* stage2/mb_info.h (drive_info): New structure.
+	(MB_DI_CHS_MODE): New macro.
+	(MB_DI_LBA_MODE): Likewise.
+	(multiboot_info): Added drives_length, drives_addr,
+	config_table, and boot_loader_name.
+	(MB_INFO_DRIVE_INFO): New macro.
+	(MB_INFO_CONFIG_TABLE): Likewise.
+	(MB_INFO_BOOT_LOADER_NAME): Likewise.
+	* stage2/asm.S (get_rom_config_table): New function.
+	* stage2/shared.h (get_rom_config_table): Declared.
 	
 2000-10-16  OKUJI Yoshinori  <okuji@gnu.org>
 
@@ -65,10 +1089,6 @@
 	chapter "Booting".
 	(Security): New chapter.
 	
-2000-10-11  Gordon Matzigkeit  <gord@fig.org>
-
-	* docs/appendices.texi: Add `@kbd' where appropriate.
-
 2000-10-10  OKUJI Yoshinori  <okuji@gnu.org>
 
 	From Alessandro Rubini:

@@ -1,6 +1,6 @@
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 2000  Free Software Foundation, Inc.
+ *  Copyright (C) 2000, 2001  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -367,15 +367,21 @@ tftp_read (char *addr, int size)
 	  addr += amt;
 	  filepos += amt;
 	  ret += amt;
-	}
 
-      /* If the size of the empty space becomes small, move the unused
-	 data forwards.  */
-      if (filepos - saved_filepos > FSYS_BUFLEN / 2)
+	  /* If the size of the empty space becomes small, move the unused
+	     data forwards.  */
+	  if (filepos - saved_filepos > FSYS_BUFLEN / 2)
+	    {
+	      grub_memmove (buf, buf + FSYS_BUFLEN / 2, FSYS_BUFLEN / 2);
+	      buf_read -= FSYS_BUFLEN / 2;
+	      saved_filepos += FSYS_BUFLEN / 2;
+	    }
+	}
+      else
 	{
-	  grub_memmove (buf, buf + FSYS_BUFLEN / 2, FSYS_BUFLEN / 2);
-	  buf_read -= FSYS_BUFLEN / 2;
-	  saved_filepos += FSYS_BUFLEN / 2;
+	  /* Skip the whole buffer.  */
+	  saved_filepos += buf_read;
+	  buf_read = 0;
 	}
 
       /* Read the data.  */

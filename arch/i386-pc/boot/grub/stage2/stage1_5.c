@@ -19,6 +19,14 @@
 
 #include "shared.h"
 
+static int saved_sector;
+
+static void
+disk_read_savesect_func (int sector, int offset, int length)
+{
+  saved_sector = sector;
+}
+
 void
 cmain (void)
 {
@@ -30,12 +38,18 @@ cmain (void)
 
   if (grub_open (config_file))
     {
-      int ret = grub_read ((char *) 0x8000, -1);
+      int ret;
+
+      disk_read_hook = disk_read_savesect_func;
+      grub_read ((char *) 0x8000, SECTOR_SIZE * 2);
+      disk_read_hook = NULL;
+      
+      ret = grub_read ((char *) 0x8000 + SECTOR_SIZE * 2, -1);
       
       grub_close ();
 
       if (ret)
-	chain_stage2 (0, 0x8200);
+	chain_stage2 (0, 0x8200, saved_sector);
     }
 
   /*
