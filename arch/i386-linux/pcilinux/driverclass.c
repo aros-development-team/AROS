@@ -114,16 +114,36 @@ static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
     outl(orig, PCI_AddressPort);
 }
 
-/*
-    In case of linux driver, where we use PCI subsystem mostly for fun (at
-    least now), there is no need for CPUtoPCI and PCItoCPU translations.
-    Therefore we return 0xffffffff always
-*/
-static IPTR pcidriver_c2p(OOP_Class *cl, OOP_Object *o,
-    OOP_Msg msg)
+static IPTR pcidriver_mm(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_MapPCI *msg)
 {
-    return -1;
-};
+    ULONG offs = (IPTR)msg->PCIAddress >> 12;
+    ULONG size = msg->Length;
+    IPTR ret;
+
+    D(bug("[PCILinux] PCIDriver::MapPCI(%x, %x)\n", offs, size));
+    asm volatile(
+	"push %%ebp; movl %%eax,%%ebp; movl %1,%%eax; int $0x80; pop %%ebp"
+	:"=a"(ret)
+	:"i"(192), "b"(0), "c"(size), "d"(0x03), "S"(0x01), "D"(PSD(cl)->fd), "0"(offs)
+    );
+
+    D(bug("[PCILinux] mmap syscall returned %x\n", ret));
+
+    return ret;
+}
+
+static VOID pcidriver_um(OOP_Class *cl, OOP_Object *o,
+    struct pHidd_PCIDriver_UnMapPCI *msg)
+{
+    ULONG offs = msg->CPUAddress;
+    ULONG size = msg->Length;
+
+    asm volatile(
+	"int $0x80"
+	:
+	:"a"(91),"b"(offs),"c"(size));
+}
 
 /* Class initialization and destruction */
 
@@ -137,7 +157,7 @@ static IPTR pcidriver_c2p(OOP_Class *cl, OOP_Object *o,
 
 void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 {
-    D(bug("PCI: Dummy Driver Class destruction\n"));
+    D(bug("[PCILinux] deleting classes\n"));
     
     if (psd)
     {
@@ -169,8 +189,8 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
     {
 	{ OOP_METHODDEF(pcidriver_RL),  moHidd_PCIDriver_ReadConfigLong },
 	{ OOP_METHODDEF(pcidriver_WL),  moHidd_PCIDriver_WriteConfigLong },
-	{ OOP_METHODDEF(pcidriver_c2p), moHidd_PCIDriver_CPUtoPCI },
-	{ OOP_METHODDEF(pcidriver_c2p), moHidd_PCIDriver_PCItoCPU },
+	{ OOP_METHODDEF(pcidriver_mm),  moHidd_PCIDriver_MapPCI },
+	{ OOP_METHODDEF(pcidriver_um),  moHidd_PCIDriver_UnMapPCI },
 	{ NULL, 0UL }
     };
 
@@ -223,6 +243,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 		pci = OOP_NewObject(NULL, CLID_Hidd_PCI, NULL);
 		OOP_DoMethod(pci, (OOP_Msg)&msg);
 		OOP_DisposeObject(pci);
+		psd->driverClass = cl;
 	    }
 	    else
 	    {

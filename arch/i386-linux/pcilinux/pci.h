@@ -10,6 +10,8 @@
 #include <aros/libcall.h>
 #include <aros/asmcall.h>
 
+#include <dos/bptr.h>
+
 #include <oop/oop.h>
 
 #include <aros/arossupportbase.h>
@@ -19,23 +21,34 @@
 
 extern UBYTE LIBEND;
 
-AROS_UFP3(LIBBASETYPEPTR, Pci_init,
-    AROS_UFHA(LIBBASETYPEPTR, pcibase, D0),
-    AROS_UFHA(ULONG, slist, A0),
+AROS_UFP3(struct pcibase *, Pci_init,
+    AROS_UFHA(struct pcibase *, pcilinuxBase, D0),
+    AROS_UFHA(BPTR, slist, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6));
 
 struct pci_staticdata {
     struct ExecBase	*sysbase;
     struct Library	*oopbase;
     struct Library	*utilitybase;
-    
+
+    BPTR		slist;
+
     OOP_AttrBase	hiddPCIDriverAB;
     OOP_AttrBase	hiddAB;
 
     OOP_Class		*driverClass;
+
+    int			fd;
+};
+
+struct pcibase {
+    struct Library	    LibNode;
+    struct pci_staticdata   *psd;
+    struct ExecBase	    *sysBase;
 };
 
 OOP_Class *init_pcidriverclass(struct pci_staticdata *);
+void free_pcidriverclass(struct pci_staticdata *, OOP_Class *cl);
 
 #define PCI_AddressPort	0x0cf8
 #define PCI_DataPort	0x0cfc
