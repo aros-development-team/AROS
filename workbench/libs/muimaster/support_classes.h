@@ -168,8 +168,16 @@ Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_MakeBuiltinClass(ClassID className, struct Library *mb);
-VOID   ZUNE_AddBuiltinClass(Class *cl, struct Library *mb);
-VOID   ZUNE_RemoveBuiltinClass(Class *cl, struct Library *mb);
+
+#define ZUNE_AddBuiltinClass(cl, mb)                                         \
+do                                                                           \
+{                                                                            \
+    AddTail((struct List *)&MUIMB(mb)->BuiltinClasses, (struct Node *)(cl)); \
+    (cl)->cl_Flags |= CLF_INLIST;                                            \
+} while (0)
+
+#define ZUNE_RemoveBuiltinClass(cl, mb) \
+    (void)Remove((struct Node *)(cl))
 
 AROS_UFP3
 (
