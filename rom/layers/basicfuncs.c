@@ -712,12 +712,14 @@ void UnsplitLayers(struct Layer_Info * LI, struct Rectangle * rect)
           if (NULL != CR->BitMap)
           {
             _CR = L->ClipRect;
-            /* search for the cliprect where this bitmap info will
-               go into
+            /* 
+            ** Search for the cliprect where this bitmap info will
+            ** go into.
             */
             while (NULL != _CR)
             {
-              if (!(CR->bounds.MinX > _CR->bounds.MaxX ||
+              if (NULL != _CR->BitMap && 
+                  !(CR->bounds.MinX > _CR->bounds.MaxX ||
                     CR->bounds.MaxX < _CR->bounds.MinX ||
                     CR->bounds.MinY > _CR->bounds.MaxY ||
                     CR->bounds.MaxY < _CR->bounds.MinY    ))
