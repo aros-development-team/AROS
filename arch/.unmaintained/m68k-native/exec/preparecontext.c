@@ -1,24 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.2  1998/10/20 16:43:47  hkiel
-    Amiga Research OS
-
-    Revision 1.1  1997/03/14 18:36:08  ldp
-    Moved files
-
-    Revision 1.4  1996/10/24 15:51:31  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/10/20 02:57:47  aros
-    Changed AROS_LA to AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:36  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
 #include <exec/types.h>
 #include <aros/libcall.h>
