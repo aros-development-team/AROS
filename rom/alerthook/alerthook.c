@@ -25,40 +25,40 @@ struct Errors
     STRPTR  string;
 };
 
-extern const UBYTE name[];
-extern const UBYTE version[];
+extern const UBYTE Alerthook_name[];
+extern const UBYTE Alerthook_version[];
 #ifdef _DCC
-extern ULONG AROS_SLIB_ENTRY(init,alerthook)(__a6 struct ExecBase *);
+extern ULONG AROS_SLIB_ENTRY(init,Alerthook)(__a6 struct ExecBase *);
 #else
-extern ULONG AROS_SLIB_ENTRY(init,alerthook)();
+extern ULONG AROS_SLIB_ENTRY(init,Alerthook)();
 #endif
-extern const char end;
-extern const struct Resident resident;
+extern const char Alerthook_end;
+extern const struct Resident Alerthook_resident;
 
 STRPTR getGuruString(ULONG, STRPTR);
 
-int entry(void)
+int Alerthook_entry(void)
 {
     /* If the hook was executed by accident return error code. */
     return -1;
 }
 
-const struct Resident resident =
+const struct Resident Alerthook_resident =
 {
     RTC_MATCHWORD,
-    (struct Resident *)&resident,
-    (APTR)&end,
+    (struct Resident *)&Alerthook_resident,
+    (APTR)&Alerthook_end,
     RTF_COLDSTART,
     41,
     NT_UNKNOWN,
     -55,
-    (UBYTE *)name,
-    (UBYTE *)&version[6],
-    (APTR)&AROS_SLIB_ENTRY(init,alerthook)
+    (UBYTE *)Alerthook_name,
+    (UBYTE *)&Alerthook_version[6],
+    (APTR)&AROS_SLIB_ENTRY(init,Alerthook)
 };
 
-const UBYTE name[] = "alert.hook\r\n";
-const UBYTE version[] = "$VER: alert.hook 41.7 (2.4.1997)";
+const UBYTE Alerthook_name[] = "alert.hook\r\n";
+const UBYTE Alerthook_version[] = "$VER: alert.hook 41.7 (2.4.1997)";
 UBYTE *const nomem = "\x38\x0f" "Not Enough Memory! ";
 UBYTE *const sfail = "\x38\x0f" "Software Failure! ";
 UBYTE *const recov = "\x38\x0f" "Recoverable Alert! ";
@@ -93,7 +93,7 @@ STRPTR mystrcpy(STRPTR dest, STRPTR src, LONG len)
     return dest;
 }
 
-AROS_UFH1(ULONG, AROS_SLIB_ENTRY(init,alerthook),
+AROS_UFH1(ULONG, AROS_SLIB_ENTRY(init,Alerthook),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
@@ -563,4 +563,4 @@ STRPTR getGuruString(ULONG alertnum, STRPTR buf)
     return buf;
 }
 
-const char end = 0;
+const char Alerthook_end = 1;
