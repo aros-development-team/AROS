@@ -9,6 +9,7 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 #include <proto/exec.h>
 
 #include <stdlib.h>
@@ -29,7 +30,9 @@ AROS_LH0(void, Enable,
 
     AROS_LIBFUNC_INIT
 
-    if(--SysBase->IDNestCnt < 0)
+    AROS_ATOMIC_DECB(SysBase->IDNestCnt);
+    
+    if(SysBase->IDNestCnt < 0)
     {
 	sigprocmask(SIG_UNBLOCK, &sig_int_mask, NULL);
     }
