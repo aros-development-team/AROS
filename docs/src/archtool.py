@@ -125,12 +125,12 @@ class Archive:
 
 	    postFunctionCB - This is called when a new function has been
 		    read. The function will be called with a reference
-		    to the archive object, the library and the function.
+		    to the archive object and the function.
 	    dirs - A list of directories to examine.
 	'''
 
 	if not postFunctionCB:
-	    postFunctionCB = lambda x, y, z: None
+	    postFunctionCB = lambda x, y: None
 	self.postFunctionCB = postFunctionCB
 
 	self.libs = {}
@@ -138,6 +138,8 @@ class Archive:
 
 	for filename in archives:
 	    self.processArchive (filename)
+
+	self.postFunctionCB = None
 
     sections = (
 	'FUNCTION', 'RESULT', 'NOTES', 'EXAMPLE',
@@ -156,6 +158,7 @@ class Archive:
 	    if not line: break
 
 	    self.mode (data, line)
+	self.mode = None
 	
     def searching (self, data, line):
 	match = includePattern.match (line)
@@ -206,7 +209,7 @@ class Archive:
 		if not list:
 		    list = []
 		    self.seeAlso[item] = list
-		list.append ((data.lib, data.func))
+		list.append (data.func)
 	
     def readNAME (self, data, line):
 	#print 'readName', line
@@ -228,6 +231,7 @@ class Archive:
 	    rettype = string.join (words[0:-1])
 	    funcname = words[-1]
 	    data.func = Function (rettype, funcname)
+	    data.func.filename = data.filename
 	    # Clean autodoc section
 	    for s in self.sections:
 		data.func.section[s] = ''
@@ -391,9 +395,10 @@ class Archive:
 
 	# This may overwrite an existing function (merging)
 	data.lib.functions[data.func.name] = data.func
+	data.func.lib = data.lib
 
 	#print self.postFunctionCB
-	self.postFunctionCB (self, data.lib, data.func)
+	self.postFunctionCB (self, data.func)
 	data.func = None
 
 	self.mode = self.searching
@@ -432,6 +437,8 @@ class Archive:
 		    funcname = words[-1]
 		    func = Function (rettype, funcname)
 		    func.header = header
+		    func.lib = lib
+		    func.filename = filename
 		    lib.functions[func.name] = func
 		elif line[:9] == '#Options':
 		    words = string.split (line)
@@ -442,7 +449,7 @@ class Archive:
 		    Storage.func = func
 		    Storage.lib = lib
 		    self.processSeeAlso (Storage, func.section['SEE ALSO'])	
-		    self.postFunctionCB (self, lib, func)
+		    self.postFunctionCB (self, func)
 		    func = None
 		elif line[:11] == '#Parameter ':
 		    words = string.split (line)
@@ -596,6 +603,10 @@ class Function:
 	self.name = name
 	self.parameters, self.header = [], []
 	self.section, self.flag = {}, {}
+    
+	# Set later
+	self.lib = None
+	self.filename = None
 
     def __cmp__ (self, other):
 	if not other:
