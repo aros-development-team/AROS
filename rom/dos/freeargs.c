@@ -14,7 +14,7 @@
     NAME */
 #include <proto/dos.h>
 
-	AROS_LH1(void, FreeArgs,
+	AROS_NTLH1(void, FreeArgs,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RDArgs *, args, D1),
