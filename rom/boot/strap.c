@@ -116,7 +116,7 @@ start_boot:
 void putstring(char *string) {
 
 	while (*string)
-		putc(*string++);
+		Putc(*string++);
 }
 
 
