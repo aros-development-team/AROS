@@ -358,6 +358,14 @@ struct IFS_CONSOLE_MODE
 #define FCM_RAW		1
 
 
+#define FSA_RELABEL    44
+struct IFS_RELABEL
+{
+    STRPTR      io_NewName;
+    BOOL        io_Result;
+};
+
+
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
    and may be or'ed. Note that not all filesystems support all flags. */
 #define FMF_LOCK    (1L<<0) /* Lock exclusively. */
@@ -441,6 +449,7 @@ struct IOFileSys
 	struct IFS_INHIBIT         io_INHIBIT;        /* FSA_INHIBIT */
         struct IFS_PARENT_DIR      io_PARENT_DIR;     /* FSA_PARENT_DIR */
 	struct IFS_CONSOLE_MODE	   io_CONSOLE_MODE;   /* FSA_CONSOLE_MODE */
+	struct IFS_RELABEL         io_RELABEL;        /* FSA_RELABEL */
     } io_Union;
 };
 #if 0
