@@ -23,6 +23,8 @@
 #include <string.h>
 #include <stddef.h>
 
+#include <aros/macros.h>
+
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
 #define SHT_STRTAB      3
@@ -56,6 +58,7 @@
 #define SHN_UNDEF       0
 
 #define SHF_ALLOC            (1 << 1)
+#define SHF_EXECINSTR        (1 << 2)
 
 #define ELF32_ST_TYPE(i)    ((i) & 0x0F)
 
@@ -296,25 +299,58 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
 static int load_hunk
 (
-    BPTR                file,
-    BPTR              **next_hunk_ptr,
+    BPTR                 file,
+    BPTR               **next_hunk_ptr,
     struct sheader     *sh,
-    LONG               *funcarray,
+    LONG                *funcarray,
+    BOOL                 do_align,
     struct DosLibrary  *DOSBase
 )
 {
     struct hunk *hunk;
+    ULONG   hunk_size;
 
     if (!sh->size)
         return 1;
 
-    hunk = MyAlloc(sh->size + sizeof(struct hunk), MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
+    /* The size of the hunk is the size of the section, plus
+       the size of the hunk structure, plus the size of the alignment (if necessary)*/
+    hunk_size = sh->size + sizeof(struct hunk);
+
+    if (do_align)
+    {
+         hunk_size += sh->addralign;
+
+         /* Also create space for a trampoline, if necessary */
+         if (sh->flags & SHF_EXECINSTR)
+             hunk_size += sizeof(struct FullJumpVec);
+    }
+
+    hunk = MyAlloc(hunk_size, MEMF_ANY | (sh->type == SHT_NOBITS) ? MEMF_CLEAR : 0);
     if (hunk)
     {
         hunk->next = 0;
-	hunk->size = sh->size + sizeof(struct hunk);
+	hunk->size = hunk_size;
 
-        sh->addr = hunk->data;
+        /* In case we are required to honour alignment, and If this section contains
+	   executable code, create a trampoline to its beginning, so that even if the
+	   alignment requirements make the actual code go much after the end of the
+	   hunk structure, the code can still be reached in the usual way.  */
+        if (do_align)
+        {
+	    if (sh->flags & SHF_EXECINSTR)
+            {
+	        sh->addr = (char *)AROS_ROUNDUP2
+                (
+                    (ULONG)hunk->data + sizeof(struct FullJumpVec), sh->addralign
+                );
+                __AROS_SET_FULLJMP((struct FullJumpVec *)hunk->data, sh->addr);
+            }
+            else
+                sh->addr = (char *)AROS_ROUNDUP2((ULONG)hunk->data, sh->addralign);
+	}
+	else
+	    sh->addr = hunk->data;
 
         /* Link the previous one with the new one */
         BPTR2HUNK(*next_hunk_ptr)->next = HUNK2BPTR(hunk);
@@ -323,7 +359,7 @@ static int load_hunk
         *next_hunk_ptr = HUNK2BPTR(hunk);
 
         if (sh->type != SHT_NOBITS)
-            return read_block(file, sh->offset, hunk->data, sh->size, funcarray, DOSBase);
+            return read_block(file, sh->offset, sh->addr, sh->size, funcarray, DOSBase);
 
         return 1;
 
@@ -403,9 +439,9 @@ static int relocate
 
             case R_68k_NONE:
                 break;
-            
+
             #elif defined(__arm__)
-            
+
             /*
              * This has not been tested. Taken from ARMELF.pdf
              * from arm.com page 33ff.
@@ -413,14 +449,14 @@ static int relocate
             case R_ARM_PC24:
                 *p = s + rel->addend - (ULONG)p;
                 break;
-                
+
             case R_ARM_ABS32:
                 *p = s + rel->addend;
                 break;
-            
+
             case R_ARM_NONE:
                 break;
-            
+
             #else
             #    error Your architecture is not supported
             #endif
@@ -448,7 +484,8 @@ BPTR InternalLoadSeg_ELF
     struct sheader   *sh;
     BPTR   hunks         = 0;
     BPTR  *next_hunk_ptr = &hunks;
-    ULONG offset = 0, i;
+    ULONG  i;
+    BOOL   exec_hunk_seen = FALSE;
 
     /* Load Elf Header and Section Headers */
     if
@@ -481,8 +518,19 @@ BPTR InternalLoadSeg_ELF
         /* Load the section in memory if needed, and make an hunk out of it */
         if (sh[i].flags & SHF_ALLOC)
         {
-            if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, DOSBase))
-                goto error;
+	    if (sh[i].size)
+	    {
+	        /* Only allow alignment if this is an executable hunk
+		   or if an executable hunk has been loaded already,
+		   so to avoid the situation in which a data hunk has its
+		   content displaced from the hunk's header in case it's the
+		   first hunk (this happens with Keymaps, for instance).  */
+	        if (sh[i].flags & SHF_EXECINSTR)
+		    exec_hunk_seen = TRUE;
+
+                if (!load_hunk(file, &next_hunk_ptr, &sh[i], funcarray, exec_hunk_seen, DOSBase))
+                    goto error;
+	    }
         }
 
     }
