@@ -87,7 +87,7 @@ aros_host_ld="$CC"
 aros_host_make="make"
 aros_host_cflags=
 aros_host_ldflags=
-aros_host_debug="-g -O0"
+aros_host_debug="-g3 -O0"
 aros_host_mkdep="\$(TOP)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
@@ -287,9 +287,9 @@ aros_static_ldflags=""
 aros_kernel_ldflags="-Wl,-rpath,./lib"
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
+aros_debug_cflags="-g3 -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
-aros_debug_ldflags="-g"
+aros_debug_ldflags="-g3"
 aros_target_genmap="-Wl,-Map -Xlinker"
 
 # Native flavour stuff
@@ -492,9 +492,9 @@ case "$target_os" in
 		aros_static_aflags="-mc68000"
 		aros_static_ldflags=""
 		aros_kernel_ldflags="-Wl,-rpath,./lib"
-		aros_debug_cflags="-Wall -g -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000"
+		aros_debug_cflags="-Wall -g3 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
-		aros_debug_ldflags="-g"
+		aros_debug_ldflags="-g3"
 		aros_mungwall_debug="0"
 		;;
 	   *)
@@ -636,6 +636,14 @@ if test "$stack_debug" = "no" ; then
 fi
 AC_MSG_RESULT("$stack_debug")
 
+dnl See if the user wants modules debug to be enabled
+AC_MSG_CHECKING([if debug modules is enabled])
+AC_ARG_ENABLE(modules_debug,[  --enable-modules-debug  Enable modules debug [default=no]],modules_debug="$enableval",modules_debug="no")
+if test "$modules_debug" = "yes" ; then
+    aros_modules_debug="1"
+fi
+AC_MSG_RESULT("$modules_debug")
+
 if test "$HAVE_XSHM_SUPPORT" = "1" ; then
   dnl See if the user wants the X11 MIT-SHM extension to be enabled
   AC_MSG_CHECKING([if X11 MIT-SHM extension is enabled])
@@ -716,6 +724,7 @@ AC_SUBST(aros_palm_debug_hack)
 # Debug related
 AC_SUBST(aros_mungwall_debug)
 AC_SUBST(aros_stack_debug)
+AC_SUBST(aros_modules_debug)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
