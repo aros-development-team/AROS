@@ -39,6 +39,8 @@ enum numeric_flags {
 
 extern struct Library *MUIMasterBase;
 
+#include <aros/debug.h>
+
 /**************************************************************************
  OM_NEW
 **************************************************************************/
@@ -46,6 +48,8 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_NumericData *data;
     struct TagItem *tags, *tag;
+    
+    BOOL value_set = FALSE;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj)
@@ -87,16 +91,15 @@ static IPTR  Numeric_New(struct IClass *cl, Object * obj, struct opSet *msg)
 	  _handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 	  break;
 	case MUIA_Numeric_Value:
+	  value_set   = TRUE;
 	  data->value = (LONG)tag->ti_Data;
 	  break;
 	}
     }
 
-    data->value = CLAMP(data->value, data->min, data->max);
+    data->value = CLAMP(value_set ? data->value : data->defvalue, data->min, data->max);
     return (ULONG)obj;
 }
-
-#include <aros/debug.h>
 
 /**************************************************************************
  OM_SET
@@ -145,12 +148,16 @@ static IPTR Numeric_Set(struct IClass *cl, Object * obj, struct opSet *msg)
 		_handle_bool_tag(data->flags, tag->ti_Data, NUMERIC_REVUPDOWN);
 		break;
 	    case MUIA_Numeric_Value:
-		data->value = (LONG)tag->ti_Data;
+	        tag->ti_Data = CLAMP(tag->ti_Data, data->min, data->max);
+		
+		if (data->value == tag->ti_Data)
+		    tag->ti_Tag = TAG_IGNORE;
+		else
+		    data->value = tag->ti_Data;
+		
 		break;
 	}
     }
-
-    data->value = CLAMP(data->value, data->min, data->max);
 
     /* If the max, min or format values changed, then the minimum and maximum sizes
        of the string output by MUIM_Numeric_Strigify maye have changed, so
@@ -401,26 +408,27 @@ static ULONG Numeric_ScaleToValue(struct IClass *cl, Object * obj, struct MUIP_N
 /**************************************************************************
  MUIM_Numeric_SetDefault
 **************************************************************************/
-static ULONG Numeric_SetDefault(struct IClass *cl, Object * obj, Msg msg)
+static IPTR Numeric_SetDefault(struct IClass *cl, Object * obj, Msg msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
-    data->value = CLAMP(data->defvalue, data->min, data->max);
-    MUI_Redraw(obj, MADF_DRAWUPDATE);
+    set(obj, MUIA_Numeric_Value, CLAMP(data->defvalue, data->min, data->max));
+    
     return 0;
 }
 
 /**************************************************************************
  MUIM_Numeric_Stringify
 **************************************************************************/
-static ULONG  Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Numeric_Stringify *msg)
+static IPTR Numeric_Stringify(struct IClass *cl, Object * obj, struct MUIP_Numeric_Stringify *msg)
 {
     struct MUI_NumericData *data = INST_DATA(cl, obj);
 
     /* TODO: use RawDoFmt() and buffer overrun */
     snprintf(data->buf, 49, data->format, msg->value);
     data->buf[49] = 0;
-    return (ULONG)data->buf;
+    
+    return (IPTR)data->buf;
 }
 
 /**************************************************************************
