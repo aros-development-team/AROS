@@ -194,6 +194,10 @@ BEGIN {
 		    }
 		}
 	    }
+	    else if (yytext=="nl" || yytext=="newline")
+	    {
+		yytext="<BR>";
+	    }
 	    else if (yytext=="label")
 	    {
 		getarg();
