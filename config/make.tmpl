@@ -944,7 +944,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
   BD_DFILE_DEPS$(BDID) += $(addprefix $(BD_INCLUDE$(BDID))/,$(BD_GENINCS$(BDID)))
 endif
 
-#MM- includes : %(mmake)-includes
+#MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes
 #MM %(mmake)-kobj : %(mmake)-includes
 #MM %(mmake)-includes : %(mmake)-setup includes-generate-deps
@@ -1197,7 +1197,7 @@ BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BD
 BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID))
 BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
 
-#MM- includes : %(mmake)-includes
+#MM- includes-all : %(mmake)-includes
 #MM %(mmake) : %(mmake)-includes %(mmake)-setup
 #MM %(mmake)-includes : %(mmake)-setup
 
