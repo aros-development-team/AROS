@@ -1,24 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.9  1996/10/02 16:39:43  digulla
-    Correct prototype for function passed on to QSort()
 
-    Revision 1.8  1996/09/21 15:49:26  digulla
-    Use AROS instead of C.lib functions
-
-    Revision 1.7  1996/09/17 16:42:59  digulla
-    Use general startup code
-
-    Revision 1.6  1996/09/13 17:52:10  digulla
-    Use IPTR
-
-    Revision 1.5  1996/08/01 17:40:44  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Dir CLI command
+    Lang: english
 */
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
@@ -30,6 +15,8 @@
 #include <utility/tagitem.h>
 #include <utility/utility.h>
 #include <clib/aros_protos.h>
+
+static const char version[] = "$VER: Dir 1.9 (4.10.1996)\n";
 
 struct UtilityBase *UtilityBase;
 
@@ -267,7 +254,7 @@ int main (int argc, char ** argv)
     }else
 	error=RETURN_FAIL;
     if(error)
-	PrintFault(IoErr(),"List");
+	PrintFault(IoErr(),"Dir");
 
     CloseLibrary((struct Library *)UtilityBase);
 
