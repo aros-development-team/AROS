@@ -165,6 +165,8 @@ AROS_LH2(struct KeyboardBase *,  init,
 {
     AROS_LIBFUNC_INIT
 
+    /* reset static data */
+    HiddKbdAB = 0;
 
     /* Store arguments */
     KBBase->kb_sysBase = sysBase;

@@ -161,6 +161,9 @@ AROS_LH2(struct GameportBase *,  init,
 
     int i;
 
+    /* reset static data */
+    HiddMouseAB = 0;
+
     /* Store arguments */
     GPBase->gp_sysBase = sysBase;
     GPBase->gp_seglist = segList;
