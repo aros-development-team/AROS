@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
 
     Desc: global include for genmodule. Defines global variables and
           the function prototypes.
@@ -14,7 +14,7 @@
 
 #include "stringlist.h"
 
-#include "config.h" /* FIXME: remove me when enum libcall is moved to this file */
+enum libcall { STACK, REGISTER, MIXED, REGISTERMACRO, AUTOREGISTER };
 
 struct functionarg {
     struct functionarg *next;
@@ -32,7 +32,7 @@ struct functionhead {
     struct functionarg *arguments;
     struct stringlist *aliases;
     unsigned int lvo;
-    int novararg : 1; /* Are varargs allowed for this functio ? */
+    int novararg : 1; /* Are varargs allowed for this function ? */
     int priv     : 1; /* Is function private */
 };
 

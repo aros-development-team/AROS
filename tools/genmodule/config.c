@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Code to parse the command line options and the module config file for
@@ -316,26 +316,7 @@ static void readsectionconfig(struct config *cfg)
 		break;
 		
 	    case 7: /* libcall */
-		if (strcmp(s, "stack")==0)
-		    cfg->libcall = STACK;
-		else if (strcmp(s, "register")==0)
-		    cfg->libcall = REGISTER;
-		else if (strcmp(s, "mixed")==0)
-		{
-		    cfg->libcall = MIXED;
-		    exitfileerror(20, "mixed libcall not supported yet\n");
-		}
-		else if (strcmp(s, "registermacro")==0)
-		{
-		    cfg->libcall = REGISTERMACRO;
-		}
-		else if (strcmp(s, "autoregister")==0)
-		{
-		    cfg->libcall = AUTOREGISTER;
-		    exitfileerror(20, "autoregister libcall not supported yet\n");
-		}
-		else
-		    exitfileerror(20, "unknown libcall type\n");
+		fprintf(stderr, "libcall specification is deprecated and ignored\n");
 		break;
 		
 	    case 8: /* forcebase */
@@ -571,9 +552,6 @@ static void readsectionfunctionlist(struct config *cfg)
     if (cfg->basename==NULL)
 	exitfileerror(20, "section functionlist has to come after section config\n");
 
-    if (cfg->libcall==REGISTERMACRO)
-	exitfileerror(20, "No functionlist allowed for registermacro libcall");
-    
     while (!atend)
     {
 	line = readline();
@@ -658,8 +636,6 @@ static void readsectionfunctionlist(struct config *cfg)
 		
 		if (sclosebracket == NULL)
 		    exitfileerror(20, "'(' without ')'");
-		if (cfg->libcall != REGISTER)
-		    exitfileerror(20, "registers may only be specified for REGISTER libcall\n");
 		
 		*sopenbracket='\0';
 		*sclosebracket='\0';
