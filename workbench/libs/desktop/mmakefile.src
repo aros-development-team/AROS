@@ -38,7 +38,7 @@ FUNCS := \
 #MM- workbench-libs-desktop : setup includes linklibs
 
 %build_module_macro mmake=workbench-libs-desktop modname=desktop \
-  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui rom" \
+  modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="mui rom arosc" \
   conffile=lib.conf
 
 %common
