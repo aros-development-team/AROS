@@ -11,7 +11,6 @@
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <exec/memory.h>
-#include <aros/machine.h>
 #include <libraries/commodities.h>
 #include <dos/dos.h>
 

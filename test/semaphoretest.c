@@ -8,7 +8,6 @@
 #include <exec/tasks.h>
 #include <exec/semaphores.h>
 #include <clib/exec_protos.h>
-#include <aros/machine.h>
 #include <stdio.h>
 
 struct SignalSemaphore *ss;

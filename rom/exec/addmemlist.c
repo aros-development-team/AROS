@@ -6,7 +6,6 @@
     Lang: english
 */
 #include <exec/execbase.h>
-#include <aros/machine.h>
 #include "memory.h"
 #include <aros/libcall.h>
 #include <exec/memory.h>

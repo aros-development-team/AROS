@@ -20,7 +20,6 @@
 #include <proto/oop.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
-#include <aros/machine.h>
 
 #include <utility/tagitem.h>
 #include <hidd/graphics.h>

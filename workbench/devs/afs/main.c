@@ -12,7 +12,6 @@
 #include <dos/filesystem.h>
 #include <intuition/intuitionbase.h>
 
-#include <aros/machine.h>
 #include <aros/macros.h>
 #include <aros/debug.h>
 

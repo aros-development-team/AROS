@@ -12,7 +12,6 @@
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
-#include <aros/machine.h>
 
 static const char version[] = "$VER: reslist 41.2 (20.07.2001)\n";
 

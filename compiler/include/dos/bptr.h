@@ -12,9 +12,6 @@
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
-#ifndef AROS_MACHINE_H
-#   include <aros/machine.h>
-#endif
 
 
 /* Replace BPTRs by simple APTRs for some machines. On Amiga with binary
