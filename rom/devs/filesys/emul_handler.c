@@ -64,8 +64,11 @@ static const char end;
 
 struct filehandle
 {
-    char * name;
+    char * name; /*full name includeing pathname */
     int    type;
+    char * pathname; /* if type == FHD_FILE then you'll find the pathname here */
+    long   dirpos;   /* and how to reach it via seekdir(.,dirpos) here. */
+    long   DIR;      /* both of these vars will be filled in by examine *only* */
     long   fd;
 };
 #define FHD_FILE      0
@@ -274,6 +277,9 @@ static LONG free_lock(struct filehandle *current)
 	    {
 		close(current->fd);
 		free(current->name);
+		free(current->pathname);
+		if (current->DIR)
+		  closedir((DIR *)current->DIR);
 	    }
 	    break;
 	case FHD_DIRECTORY:
@@ -296,6 +302,7 @@ static LONG open_(struct emulbase *emulbase, struct filehandle **handle,STRPTR n
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
+        fh->pathname = NULL; /* just to make sure... */
 	/* If no filename is given and the file-descriptor is one of the
 	   standard filehandles (stdin, stdout, stderr) ... */
 	if((!name[0]) && ((*handle)->type == FHD_FILE) &&
@@ -574,6 +581,43 @@ static const ULONG sizes[]=
   offsetof(struct ExAllData,ed_Comment), offsetof(struct ExAllData,ed_OwnerUID),
   sizeof(struct ExAllData) };
 
+char * pathname_from_name (char * name)
+{
+  long len = strlen(name);
+  long i = len;
+  char * result = NULL;
+  /* look for the first '/' in the filename starting at the end */
+  while (i != 0 && name[i] != '/')
+    i--; 
+    
+  if (0 != i)
+  {
+    result = (char *)malloc(i+1);
+    strncpy(result, name, i);
+    result[i]=0x0;
+  } 
+  return result;
+}
+
+char * filename_from_name(char * name)
+{
+  long len = strlen(name);
+  long i = len;
+  char * result = NULL;
+  /* look for the first '/' in the filename starting at the end */
+  while (i != 0 && name[i] != '/')
+    i--; 
+ 
+  if (0 != i)
+  {
+    result = (char *)malloc(len-i);
+    strncpy(result, &name[i+1], len-i);
+    result[len-i-1]=0x0;
+  } 
+  return result;  
+} 
+
+
 static LONG examine(struct filehandle *fh,
                     struct ExAllData *ead,
                     ULONG  size,
@@ -589,9 +633,42 @@ static LONG examine(struct filehandle *fh,
     end =(STRPTR)ead+size;
     if(next>=end)
 	return ERROR_BUFFER_OVERFLOW;
+
     if(lstat(*fh->name?fh->name:".",&st))
-	return err_u2a();
-    *dirpos = (LONG)telldir((DIR *)fh->fd);
+      return err_u2a();
+
+    
+    if (FHD_FILE == fh->type)
+       /* what we have here is a file, so it's no that easy to
+          deal with it when the user is calling ExNext() after
+          Examine. So I better prepare it now. */
+    {
+      /* We're going to opendir the directory where the file is in
+         and then actually start searching for the file. Yuk! */
+      if (NULL == fh->pathname)
+      {
+        struct dirent * dirEnt;
+        char * filename;
+        fh->pathname = pathname_from_name(fh->name);
+        filename     = filename_from_name(fh->name);
+        fh->DIR      = opendir(fh->pathname);
+        do 
+        {
+          dirEnt = readdir(fh->DIR);
+        }
+        while (NULL != dirEnt &&
+               0    != strcmp(dirEnt->d_name, filename));
+        free(filename);
+        if (NULL == dirEnt)
+          return ERROR_NO_MORE_ENTRIES; /* !!! */
+
+        *dirpos = (LONG)telldir((DIR *)fh->DIR);
+        
+      }
+    }
+    else
+      *dirpos = (LONG)telldir((DIR *)fh->fd);
+
     switch(type)
     {
 	default:
@@ -638,41 +715,57 @@ static LONG examine_next(struct filehandle *fh,
   int		i;
   struct stat 	st;
   struct dirent *dir;
-  char 		*name, *src, *dest;
+  char 		*name, *src, *dest, *pathname;
+  DIR		*ReadDIR;
   
   /* first of all we have to go to the position where Examine() or
      ExNext() stopped the previous time so we can read the next entry! */
-
-  seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
-
+  switch(fh->type)
+  {
+    case FHD_DIRECTORY:
+        seekdir((DIR *)fh->fd, FIB->fib_DiskKey);
+        pathname = fh->name; /* it's just a directory!!! */
+        ReadDIR  = fh->fd;
+    break;
+     
+    case FHD_FILE:
+        seekdir((DIR *)fh->DIR, FIB->fib_DiskKey);
+        pathname = fh->pathname;
+        ReadDIR  = fh->DIR;
+    break; 
+  }
   /* hm, let's read the data now! 
      but skip '.' and '..' (they're not available on Amigas and
      Amiga progs wouldn't know how to treat '.' and '..', i.e. they
      might want to scan recursively the directory and end up scanning
      ./././ etc. */
+
   do
   {
-    dir = readdir((DIR *)fh->fd);
+    dir = readdir(ReadDIR);
   }  
   while ( dir->d_name[0] == '.' && 
          (dir->d_name[1] == '\0' || dir->d_name[1] == '.') );
-
-  name = (STRPTR)malloc(strlen(fh->name)+strlen(dir->d_name)+2);
+  
+  
+  name = (STRPTR)malloc(strlen(pathname)+strlen(dir->d_name)+2);
+  
   if (NULL == name)
     return ERROR_NO_FREE_STORE;
   
-  strcpy(name,fh->name);
+  strcpy(name,pathname);
   if (*name)
     strcat(name,"/");
   strcat(name,dir->d_name);
-    
+
   if (stat(name,&st))
   {
     free(name);
     return err_u2a();
   }
-  free(name);
+    free(name);
 
+  
   FIB->fib_OwnerUID		= st.st_uid;
   FIB->fib_OwnerGID		= st.st_gid;
   FIB->fib_Comment[0]		= '\0'; /* no comments available yet! */
@@ -694,7 +787,7 @@ static LONG examine_next(struct filehandle *fh,
     if(! (*dest++=*src++) )
         break;
 
-  FIB->fib_DiskKey		= (LONG)telldir((DIR *)fh->fd);
+  FIB->fib_DiskKey		= (LONG)telldir(ReadDIR);
   return 0;				    
 }
 
