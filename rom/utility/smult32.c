@@ -1,83 +1,83 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Signed 32 bit multiplication function.
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/utility.h>
 
-        AROS_LH2(LONG, SMult32,
+	AROS_LH2(LONG, SMult32,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, arg1, D0),
-        AROS_LHA(LONG, arg2, D1),
+	AROS_LHA(LONG, arg1, D0),
+	AROS_LHA(LONG, arg2, D1),
 
 /*  LOCATION */
-        struct UtilityBase *, UtilityBase, 23, Utility)
+	struct UtilityBase *, UtilityBase, 23, Utility)
 
 /*  FUNCTION
-        Performs the signed 32-bit multiplication of arg1 * arg2 and
-        returns a signed 32 bit value.
+	Performs the signed 32-bit multiplication of arg1 * arg2 and
+	returns a signed 32 bit value.
 
     INPUTS
-        arg1, arg2  -   32 bit signed longs
+	arg1, arg2  -	32 bit signed longs
 
     RESULT
-        arg1 * arg2
+	arg1 * arg2
 
     NOTES
-        This can perform the multiplication either using the machines
-        native instructions (if they exist), or in software using a
-        simple algorithm based on expanding algebraic products.
+	This can perform the multiplication either using the machines
+	native instructions (if they exist), or in software using a
+	simple algorithm based on expanding algebraic products.
 
-        The utility.library math functions are unlike all other utility
-        functions in that they don't require the library base to be
-        loaded in register A6, and they also save the values of the
-        address registers A0/A1.
+	The utility.library math functions are unlike all other utility
+	functions in that they don't require the library base to be
+	loaded in register A6, and they also save the values of the
+	address registers A0/A1.
 
-        This function is mainly to support assembly programers, and is
-        probably of limited use to higher-level language programmers.
+	This function is mainly to support assembly programers, and is
+	probably of limited use to higher-level language programmers.
 
     EXAMPLE
 
-        LONG a = 352543;
-        LONG b = -52464;
-        LONG c = SMult32(a,b);
-        c == -1315946768
+	LONG a = 352543;
+	LONG b = -52464;
+	LONG c = SMult32(a,b);
+	c == -1315946768
 
     BUGS
-        Of limited use to C programmers.
+	Of limited use to C programmers.
 
     SEE ALSO
-        UMult32(), UMult64(), SMult64()
+	UMult32(), UMult64(), SMult64()
 
     INTERNALS
-        May be handled by code in config/$(KERNEL), may not be...
-        It is for m68k-native.
+	May be handled by code in config/$(KERNEL), may not be...
+	It is for m68k-native.
 
-        For emulation we are performing the operation:
+	For emulation we are performing the operation:
 
-            (2^16 * a + b) * (2^16 * c + d)
-          = 2^32 * ab + 2^16 * ad + 2^16 * bc + bd
-          = 2^32 * ab + 2^16 ( ad + bc ) + bd
+	    (2^16 * a + b) * (2^16 * c + d)
+	  = 2^32 * ab + 2^16 * ad + 2^16 * bc + bd
+	  = 2^32 * ab + 2^16 ( ad + bc ) + bd
 
-        Now since the result is a 32-bit number, the 2^32 term will have
-        no effect. (Since 2^32 > max (32-bit number)), as will the
-        high part of ad + bc.
+	Now since the result is a 32-bit number, the 2^32 term will have
+	no effect. (Since 2^32 > max (32-bit number)), as will the
+	high part of ad + bc.
 
-        Therefore:
-        product = 2^16( ad + bc ) + bd
+	Therefore:
+	product = 2^16( ad + bc ) + bd
 
     HISTORY
-        29-10-95    digulla automatically created from
-                            utility_lib.fd and clib/utility_protos.h
-        18-08-96    iaint   Implemented as described above.
+	29-10-95    digulla automatically created from
+			    utility_lib.fd and clib/utility_protos.h
+	18-08-96    iaint   Implemented as described above.
 
 *****************************************************************************/
 {
@@ -89,7 +89,7 @@
 
 #if 0
     /* This is effectively what the emulation does, see also
-        config/m68k-native/sumult32.s
+	config/m68k-native/sumult32.s
     */
 
     UWORD a1, b1, a0, b0;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Find a NamedObject in a NameSpace.
@@ -13,7 +13,7 @@
 
 */
 
-#include "utility_intern.h"
+#include "intern.h"
 #include <proto/exec.h>
 #include <proto/utility.h>
 

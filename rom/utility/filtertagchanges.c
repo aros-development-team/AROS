@@ -1,19 +1,11 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 00:32:30  ldp
-    Polish
-
-    Revision 1.2  1997/01/09 12:54:13  digulla
-    Added parentheses around if (a=b)
-
-    Revision 1.1  1997/01/08 03:36:13  iaint
-    A few more utility.lib functions
 
     Desc: FilterTagChanges() - filter unchanged tags from a list.
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

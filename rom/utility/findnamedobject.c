@@ -1,12 +1,12 @@
 /*
-    (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: FindNamedObject() - find a NamedObject in a given NameSpace.
     Lang: english
 */
 #include <proto/exec.h>
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

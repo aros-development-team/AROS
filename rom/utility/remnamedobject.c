@@ -1,12 +1,12 @@
 /*
-    (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: RemNamedObject() - Remove a NamedObject from a NameSpace.
     Lang: english
 */
 #include <proto/exec.h>
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
@@ -39,8 +39,8 @@
 	      and you should not do so.
 
     INPUTS
-	object      -   The NamedObject to attempt to remove.
-	message     -   The message to send. This message is a standard
+	object	    -	The NamedObject to attempt to remove.
+	message     -	The message to send. This message is a standard
 			Exec Message, which MUST have the mn_ReplyPort
 			field correctly set. The mn_Node.ln_Name field
 			will contain the address of the NamedObject or NULL
@@ -77,7 +77,7 @@
 {
     AROS_LIBFUNC_INIT
 
-    struct NameSpace       *ns;
+    struct NameSpace	   *ns;
     struct IntNamedObject *no;
 
     if(object)

@@ -1,32 +1,13 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:32:33  ldp
-    Polish
-
-    Revision 1.5  1996/12/10 14:00:16  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.4  1996/10/24 22:51:46  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.3  1996/10/24 15:51:39  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/09/13 17:16:35  digulla
-    Removed the macro TOUPPER. Use this library function instead
-
-    Revision 1.1  1996/08/31 12:58:13  aros
-    Merged in/modified for FreeBSD.
-
 
     Desc:
     Lang: english
 */
 #include <exec/types.h>
 #include <aros/libcall.h>
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

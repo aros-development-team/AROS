@@ -5,7 +5,7 @@
     Desc: GetTagData()
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

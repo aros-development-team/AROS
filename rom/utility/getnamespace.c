@@ -1,17 +1,11 @@
 /*
-    (C) 1996 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/04/23 05:25:22  aros
-    No longer allocate memory in libInit()
-
-    Revision 1.1  1996/12/18 01:27:35  iaint
-    NamedObjects
-
 
     Desc: GetNameSpace - Internal utility.library function.
+    Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /* GetNameSpace: Internal function that gets the NameSpace to use.
     Will look at either the supplied NameSpace, or use the Global

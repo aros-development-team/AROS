@@ -1,20 +1,12 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 13:17:14  digulla
-    Added #include <proto/exec.h>
-
-    Revision 1.2  1997/01/27 00:32:32  ldp
-    Polish
-
-    Revision 1.1  1996/12/18 01:27:36  iaint
-    NamedObjects
 
     Desc: ReleaseNamedObject()
     Lang: english
 */
 #include <proto/exec.h>
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

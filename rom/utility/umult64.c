@@ -1,61 +1,61 @@
 /*
-    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Unsigned 64-bit product of two 32-bit numbers.
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/utility.h>
 
-        AROS_LH2(UQUAD, UMult64,
+	AROS_LH2(UQUAD, UMult64,
 
 /*  SYNOPSIS */
-        AROS_LHA(ULONG, arg1, D0),
-        AROS_LHA(ULONG, arg2, D1),
+	AROS_LHA(ULONG, arg1, D0),
+	AROS_LHA(ULONG, arg2, D1),
 
 /*  LOCATION */
-        struct UtilityBase *, UtilityBase, 34, Utility)
+	struct UtilityBase *, UtilityBase, 34, Utility)
 
 /*  FUNCTION
-        Compute the unsigned 64-bit product of arg1 * arg2.
+	Compute the unsigned 64-bit product of arg1 * arg2.
 
     INPUTS
-        arg1, arg2  -   32 bit unsigned numbers.
+	arg1, arg2  -	32 bit unsigned numbers.
 
     RESULT
-        arg1 * arg2
+	arg1 * arg2
 
     NOTES
-        For m68k assembly programmers, UQUADs are returned in D0:D1 (with
-        the high 32 bits in D0.
+	For m68k assembly programmers, UQUADs are returned in D0:D1 (with
+	the high 32 bits in D0.
 
-        This function is really only for people programming in
-        assembly on real Amigas. Most compilers will be able to do this
-        math for you inline.
+	This function is really only for people programming in
+	assembly on real Amigas. Most compilers will be able to do this
+	math for you inline.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-        SMult32(), UMult32(), SMult64()
+	SMult32(), UMult32(), SMult64()
 
     INTERNALS
-        This may or may not be handled by code in config/$(KERNEL),
-        for m68k-native it is...
+	This may or may not be handled by code in config/$(KERNEL),
+	for m68k-native it is...
 
-        This is essentially UMult32(), but with the code to calculate
-        the product of the high 32 bits of the multiplicands.
+	This is essentially UMult32(), but with the code to calculate
+	the product of the high 32 bits of the multiplicands.
 
     HISTORY
-        29-10-95    digulla automatically created from
-                            utility_lib.fd and clib/utility_protos.h
-        18-08-96    iaint   Modified UMult32().
+	29-10-95    digulla automatically created from
+			    utility_lib.fd and clib/utility_protos.h
+	18-08-96    iaint   Modified UMult32().
 
 *****************************************************************************/
 {
@@ -70,8 +70,8 @@
        more complete version see config/m68k-native/smult64.s
 
        This version has problems with:
-        - adding the partial products together
-        - setting the value of QUADs
+	- adding the partial products together
+	- setting the value of QUADs
     */
 
     UQUAD product;

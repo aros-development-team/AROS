@@ -1,55 +1,50 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.2  1997/01/27 00:32:30  ldp
-    Polish
-
-    Revision 1.1  1997/01/08 03:36:13  iaint
-    A few more utility.lib functions
 
     Desc: FilterTagItems() - filter an array of TagItems.
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <proto/utility.h>
 
-        AROS_LH3(ULONG, FilterTagItems,
+	AROS_LH3(ULONG, FilterTagItems,
 
 /*  SYNOPSIS */
-        AROS_LHA(struct TagItem *, tagList, A0),
-        AROS_LHA(Tag            *, filterArray, A1),
-        AROS_LHA(ULONG           , logic, D0),
+	AROS_LHA(struct TagItem *, tagList, A0),
+	AROS_LHA(Tag            *, filterArray, A1),
+	AROS_LHA(ULONG           , logic, D0),
 
 /*  LOCATION */
-        struct Library *, UtilityBase, 16, Utility)
+	struct Library *, UtilityBase, 16, Utility)
 
 /*  FUNCTION
-        Scans a tag list and removes tag items from the list depending
-        upon whether the tag's Tag value is found in an array of tag
-        values.
+	Scans a tag list and removes tag items from the list depending
+	upon whether the tag's Tag value is found in an array of tag
+	values.
 
-        If 'logic' is TAGFILTER_AND, then all the tags that are NOT
-        in the array filterArray will be removed from the tagList.
+	If 'logic' is TAGFILTER_AND, then all the tags that are NOT
+	in the array filterArray will be removed from the tagList.
 
-        If 'logic' is TAGFILTER_NOT, then all the tags that ARE in
-        the array filterArray will be removed from the tagList.
+	If 'logic' is TAGFILTER_NOT, then all the tags that ARE in
+	the array filterArray will be removed from the tagList.
 
-        Tags are removed by setting their ti_Tag value to TAG_IGNORE.
+	Tags are removed by setting their ti_Tag value to TAG_IGNORE.
 
     INPUTS
-        tagList         -   A TagList to filter items from.
-        filterArray     -   An array (as described by TagInArray())
-                            to determine which tag items are to be
-                            removed.
-        logic           -   Whether the tags in filterArray are to be
-                            included or excluded from the tag list.
+	tagList 	-   A TagList to filter items from.
+	filterArray	-   An array (as described by TagInArray())
+			    to determine which tag items are to be
+			    removed.
+	logic		-   Whether the tags in filterArray are to be
+			    included or excluded from the tag list.
 
     RESULT
-        The number of valid items left in the resulting filtered list.
+	The number of valid items left in the resulting filtered list.
 
     NOTES
 
@@ -58,13 +53,13 @@
     BUGS
 
     SEE ALSO
-        TagInArray()
+	TagInArray()
 
     INTERNALS
 
     HISTORY
-        29-10-95    digulla automatically created from
-                            utility_lib.fd and clib/utility_protos.h
+	29-10-95    digulla automatically created from
+			    utility_lib.fd and clib/utility_protos.h
 
 *****************************************************************************/
 {
@@ -73,25 +68,25 @@
     ULONG valid = 0;
     if(tagList && filterArray)
     {
-        struct TagItem *ti;
+	struct TagItem *ti;
 
-        while((ti = NextTagItem(&tagList)))
-        {
-            if(logic == TAGFILTER_AND)
-            {
-                if(TagInArray(ti->ti_Tag, filterArray))
-                    valid++;
-                else
-                    ti->ti_Tag = TAG_IGNORE;
-            }
-            else if(logic == TAGFILTER_NOT)
-            {
-                if(TagInArray(ti->ti_Tag, filterArray))
-                    ti->ti_Tag = TAG_IGNORE;
-                else
-                    valid++;
-            }
-        }
+	while((ti = NextTagItem(&tagList)))
+	{
+	    if(logic == TAGFILTER_AND)
+	    {
+		if(TagInArray(ti->ti_Tag, filterArray))
+		    valid++;
+		else
+		    ti->ti_Tag = TAG_IGNORE;
+	    }
+	    else if(logic == TAGFILTER_NOT)
+	    {
+		if(TagInArray(ti->ti_Tag, filterArray))
+		    ti->ti_Tag = TAG_IGNORE;
+		else
+		    valid++;
+	    }
+	}
     }
     return valid;
 

@@ -1,32 +1,11 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:32:32  ldp
-    Polish
-
-    Revision 1.5  1996/11/21 16:41:05  aros
-    Includes must start in the first column
-
-    No includes may be used in the SEE ALSO field
-
-    Revision 1.4  1996/10/24 22:51:46  aros
-    Use proper Amiga datatypes (eg: ULONG not unsigned long)
-
-    Revision 1.3  1996/10/24 15:51:36  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/10/23 14:08:59  aros
-    Formatted
-
-    Added parens to all assignments which are used truth expressions
-
-    Revision 1.1  1996/10/22 04:46:00  aros
-    Some more utility.library functions.
 
     Desc:
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 

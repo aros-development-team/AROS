@@ -1,11 +1,11 @@
 /*
-    (C) 1995 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: CallHookPkt - Call an Amiga callback hook.
     Lang: english
 */
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
@@ -35,12 +35,12 @@
 	to push the arguments on the stack and call your function.
 
 	See the include file utility/hooks.h for more information.
-	
+
     INPUTS
-	hook        -   Pointer to an initialized Hook structure. See the
+	hook	    -	Pointer to an initialized Hook structure. See the
 			include file <utility/hooks.h> for a definition.
-	object      -   The object that this Hook is to act upon.
-	paramPacket -   The arguments to this callback. This will depend
+	object	    -	The object that this Hook is to act upon.
+	paramPacket -	The arguments to this callback. This will depend
 			entirely on the type of the object.
 
     RESULT

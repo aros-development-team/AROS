@@ -1,21 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.6  1997/01/27 00:32:29  ldp
-    Polish
-
-    Revision 1.5  1996/12/10 14:00:12  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.4  1996/10/24 15:51:35  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 14:10:30  digulla
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:41  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english

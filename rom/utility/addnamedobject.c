@@ -1,20 +1,12 @@
 /*
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.3  1997/01/27 13:17:12  digulla
-    Added #include <proto/exec.h>
-
-    Revision 1.2  1997/01/27 00:32:29  ldp
-    Polish
-
-    Revision 1.1  1996/12/18 01:27:34  iaint
-    NamedObjects
 
     Desc: AddNamedObject() - adds a NamedObject to a given NameSpace.
     Lang: english
 */
 #include <proto/exec.h>
-#include "utility_intern.h"
+#include "intern.h"
 
 /*****************************************************************************
 
