@@ -52,11 +52,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    rp->Font	   = textFont;
-    rp->TxWidth    = textFont->tf_XSize;
-    rp->TxHeight   = textFont->tf_YSize;
-    rp->TxBaseline = textFont->tf_Baseline;
-
+    if (textFont)
+    {
+	rp->Font       = textFont;
+	rp->TxWidth    = textFont->tf_XSize;
+	rp->TxHeight   = textFont->tf_YSize;
+	rp->TxBaseline = textFont->tf_Baseline;
+    }
+    
     AROS_LIBFUNC_EXIT
     
 } /* SetFont */
