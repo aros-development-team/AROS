@@ -32,7 +32,7 @@ Kan inte skapa fönster!
 ; Can't create window!
 ;
 MSG_CANT_CREATE_REQ
-Kan inte skapa fildialog!
+Kan inte skapa filväljare!
 ; Can't open create filerequester!
 ;
 MSG_CANT_OPEN_STREAM
