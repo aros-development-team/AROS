@@ -13,4 +13,4 @@
 #define VERSION 41
 #define REVISION 2
 
-#define DATE "7.2.97"
+#define DATE "(7.2.97)"
