@@ -13,7 +13,7 @@
 #define __inline
 #define __saveds
 #define const
-#endif
+#endif /* __MAXON__ */
 
 #ifndef __AROS__
 #ifndef _AROS_TYPES_DEFINED
@@ -21,7 +21,7 @@ typedef unsigned long IPTR;
 typedef long STACKLONG;
 typedef unsigned long STACKULONG;
 #define _AROS_TYPES_DEFINED
-#endif
+#endif /* _AROS_TYPES_DEFINED */
+#endif /* __AROS__ */
 
-
-#endif
+#endif /* _COMPILER_H */
