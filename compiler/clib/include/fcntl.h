@@ -27,5 +27,12 @@ int creat (const char * filename, int mode);
 #define O_NDELAY	O_NONBLOCK /* Alias */
 #define O_SYNC		0x1000
 
+#ifndef _STDIO_H    /*fcntl.h has the same definitions */
+
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+
+#endif
 
 #endif /* _FCNTL_H */
