@@ -19,14 +19,14 @@
 /*  SYNOPSIS */
 	AROS_LHA(LONG          , dummy, A0),
 	AROS_LHA(struct Layer *, l    , A1),
-	AROS_LHA(LONG          , dx   , D0),
-	AROS_LHA(LONG          , dy   , D1),
+	AROS_LHA(LONG          , dw   , D0),
+	AROS_LHA(LONG          , dh   , D1),
 
 /*  LOCATION */
 	struct LayersBase *, LayersBase, 11, Layers)
 
 /*  FUNCTION
-        Resizes the given layer by adding dx to its width and dy
+        Resizes the given layer by adding dw to its width and dh
         to its height.
         If parts of simple layers become visible those parts are
         added to the damage list and a refresh is triggered for
@@ -37,8 +37,8 @@
 
     INPUTS
         l    - pointer to layer to be resized
-        dx   - delta to be added to the width
-        dy   - delta to be added to the height
+        dw   - delta to be added to the width
+        dh   - delta to be added to the height
 
     RESULT
         TRUE  - layer could be resized
@@ -68,7 +68,9 @@
     I will try to clear as little of the layer that was above it as
     possible.
   */    
+  return MoveSizeLayer(l,0,0,dw,dh);
 
+#if 0
   struct Layer * l_tmp;
   struct ClipRect * CR;
   struct RastPort * RP;
@@ -83,10 +85,10 @@
   
   /* Check coordinates as there's no suport for layers outside the displayed
      bitmap. I might add this feature later. */
-  if (l->bounds.MaxX - l->bounds.MinX + 1 + dx <= 0 ||
-      l->bounds.MaxY - l->bounds.MinY + 1 + dy <= 0 ||
-      l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
-      l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
+  if (l->bounds.MaxX - l->bounds.MinX + 1 + dw <= 0 ||
+      l->bounds.MaxY - l->bounds.MinY + 1 + dh <= 0 ||
+      l->bounds.MaxX+dw > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
+      l->bounds.MaxY+dh > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
     return FALSE; 
   
 
@@ -132,9 +134,9 @@
       */
       Rect.MinX = l->bounds.MinX; 
       Rect.MinY = l->bounds.MinY;
-      Rect.MaxX = (dx <  0) ? l->bounds.MaxX + dx
+      Rect.MaxX = (dw <  0) ? l->bounds.MaxX + dw
                             : l->bounds.MaxX;
-      Rect.MaxY = (dy <  0) ? l->bounds.MaxY + dy
+      Rect.MaxY = (dh <  0) ? l->bounds.MaxY + dh
                             : l->bounds.MaxY;
       /* Walk throught the layer's cliprects and copy bitmap data
          to the backup bitmap. The backup bitmap, however, is only
@@ -277,19 +279,20 @@
     LockLayer(0, l_tmp);
 
     /* modify the layer l's structure for the new size */
-    l->bounds.MaxX += dx;
-    l->bounds.MaxY += dy;
+    l->bounds.MaxX += dw;
+    l->bounds.MaxY += dh;
 
     l->ClipRect = CR;
+    /* Copy the bounds */
+    CR->bounds = l->bounds;
 
     /*
     ** If the window is not as wide/high as before then cut down
     ** the damage list if there is a damage list.
-    ** If it's a simple refresh layer then just clear the damage list.
     */
     if (NULL != damagelist->RegionRectangle)
     {
-      if (dx <= 0 || dy <= 0)
+      if (dw <= 0 || dh <= 0)
       {
         tmpRect.MinX = 0;
         tmpRect.MinY = 0;
@@ -313,26 +316,24 @@
     ** Add that area to the damage list
     ** where the layer increased its size
     */
-    if (!IS_SIMPLEREFRESH(l) && (dx > 0 || dy > 0))
+    if (IS_SMARTREFRESH(l) && (dw > 0 || dh > 0))
     {
         tmpRect = l->bounds;
 
-        if (dx > 0)
+        if (dw > 0)
         {
           tmpRect.MinX = tmpRect.MaxX - dx;
           OrRectRegion(damagelist, &tmpRect);
         }
 
-        if (dy > 0)
+        if (dh > 0)
         {
           tmpRect.MinX = l->bounds.MinX;
-          tmpRect.MinY = tmpRect.MaxY - dy;
+          tmpRect.MinY = tmpRect.MaxY - dh;
           OrRectRegion(damagelist, &tmpRect);
         }
     }
     
-    /* Copy the bounds */
-    CR->bounds = l->bounds;
     /* 
       Now create all ClipRects of all Layers correctly.   
       Comment: CreateClipRects is the only function that does the
@@ -351,12 +352,12 @@
        one, so I have to find out about the width and height that I
        am allowed to copy 
      */
-    if (dx < 0)
+    if (dw < 0)
       width  = l    ->bounds.MaxX - l    ->bounds.MinX + 1;
     else
       width =  l_tmp->bounds.MaxX - l_tmp->bounds.MinX + 1;
     
-    if (dy < 0)
+    if (dh < 0)
       height = l    ->bounds.MaxY - l    ->bounds.MinY + 1;
     else
       height = l_tmp->bounds.MaxY - l_tmp->bounds.MinY + 1;
@@ -381,7 +382,7 @@
       and only for a superbitmapped layer!
      */
  
-    if (LAYERSUPER == (l->Flags & (LAYERSUPER|LAYERSIMPLE)) && (dx < 0 || dy < 0))
+    if (LAYERSUPER == (l->Flags & (LAYERSUPER|LAYERSIMPLE)) && (dw < 0 || dh < 0))
     {
       struct BitMap * bm = l->rp->BitMap;
 
@@ -392,7 +393,7 @@
         if (NULL == CR->lobs)
 	{
           LONG SrcX, SrcY;
-          if (dx < 0 && (CR->bounds.MaxX - l_tmp->bounds.MinX) > width)
+          if (dw < 0 && (CR->bounds.MaxX - l_tmp->bounds.MinX) > width)
 	  {
             if ((CR->bounds.MinX - l_tmp->bounds.MinX) > width)
               SrcX = CR->bounds.MinX;
@@ -414,7 +415,7 @@
             );
 	  }
 
-          if (dy < 0 && (CR->bounds.MaxY - l_tmp->bounds.MinY) > height)
+          if (dh < 0 && (CR->bounds.MaxY - l_tmp->bounds.MinY) > height)
 	  {
             if ((CR->bounds.MinY - l_tmp->bounds.MinY) > height)
               SrcY = CR->bounds.MinY;
@@ -515,7 +516,7 @@
     */
     /* only do this if the size increased */
 
-    if (dx > 0 || dy > 0)
+    if (dw > 0 || dh > 0)
     {
       struct BitMap * bm = l->rp->BitMap;
       CR = l->ClipRect;
@@ -527,7 +528,7 @@
           LONG DestX, DestY;
           struct Rectangle bounds;
 
-          if (dx > 0 && (CR->bounds.MaxX - l->bounds.MinX) >= width)
+          if (dw > 0 && (CR->bounds.MaxX - l->bounds.MinX) >= width)
 	  {
             if ((CR->bounds.MinX - l->bounds.MinX) > width)
               DestX = CR->bounds.MinX;
@@ -579,7 +580,7 @@
             }
 	  }
 
-          if (dy > 0 && (CR->bounds.MaxY - l->bounds.MinY) >= height)
+          if (dh > 0 && (CR->bounds.MaxY - l->bounds.MinY) >= height)
 	  {
             if ((CR->bounds.MinY - l->bounds.MinY) > height)
               DestY = CR->bounds.MinY;
@@ -699,6 +700,8 @@
   UnlockLayers(LI);
 
   return retval;
+
+#endif
    
   AROS_LIBFUNC_EXIT
 

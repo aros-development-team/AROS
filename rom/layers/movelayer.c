@@ -63,6 +63,10 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
+  return MoveSizeLayer(l,dx,dy,0,0);
+
+#if 0
+
   struct Layer * l_tmp;
   struct ClipRect * CR;
   struct RastPort * RP;
@@ -513,6 +517,7 @@
   UnlockLayers(LI);
 
   return retval;
+#endif
 
   AROS_LIBFUNC_EXIT
 } /* MoveLayer */

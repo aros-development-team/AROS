@@ -75,6 +75,8 @@
   struct BitMap * SimpleBackupBM = NULL;
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
+
+  struct Rectangle tmpRect;
   BOOL retVal; 
   struct Region * oldclipregion = NULL;
 
@@ -250,9 +252,17 @@
         _CR = _CR->Next;
       }
     }
-    
   } /* if (simple layer) */
-
+  else
+  {
+    /*
+    ** Adjust damage list coordinates for further processing...
+    */
+    l->DamageList->bounds.MinX += l->bounds.MinX;
+    l->DamageList->bounds.MinY += l->bounds.MinY;
+    l->DamageList->bounds.MaxX += l->bounds.MinX;
+    l->DamageList->bounds.MaxY += l->bounds.MinY;
+  }
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)  , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(l);
@@ -273,10 +283,11 @@
 
     /* 
     ** For all layers install the regular cliprects and remove
-    ** the installe clipregion cliprects 
+    ** the installed clipregion cliprects 
     */
     UninstallClipRegionClipRects(LI);
 
+    SetLayerPriorities(LI);
     /* copy important data to the temporary layer. this list might be 
        shrinkable
        depending on what data deletelayer() needs later on */
@@ -323,18 +334,22 @@
     l->bounds.MaxX += dx+dw;
     l->bounds.MinY += dy;
     l->bounds.MaxY += dy+dh;
+    
+    /* also move the damage list to its new position */
+    l->DamageList->bounds.MinX += dx;
+    l->DamageList->bounds.MinY += dy;
+    l->DamageList->bounds.MaxX += dx;
+    l->DamageList->bounds.MaxY += dy;
 
-    /* a necessary adjustment to the Damagelist's base coordinates! */
-    if (NULL != l->DamageList)
-    {
-      l->DamageList->bounds.MinX += dx;
-      l->DamageList->bounds.MinY += dy;
-      l->DamageList->bounds.MaxX += dx;
-      l->DamageList->bounds.MaxY += dy;
-    }
+    /*
+    ** If the layer is not as wide/high as before then cut down
+    ** the damage list if there is one.
+    ** Damage List is in screen coordinates.
+    */
+    if (dw <= 0 || dh <= 0)
+      AndRectRegion(l->DamageList, &l->bounds);
     
     l->ClipRect = CR;
-
 
     /* Copy the bounds */
     CR->bounds = l->bounds;
@@ -344,6 +359,30 @@
                job correctly if you want to create a layer somewhere
                behind other layers.
     */
+    
+    /*
+    ** Add that area to the damage list
+    ** where the layer increased its size.
+    ** SIMPLE REFRESH layers are handled later on.
+    ** Damage list is in screen coordinates.
+    */
+    if (IS_SMARTREFRESH(l) && (dw > 0 || dh > 0))
+    {
+      tmpRect = l->bounds;
+      
+      if (dw > 0)
+      {
+        tmpRect.MinX = tmpRect.MaxX - dw;
+        OrRectRegion(l->DamageList, &tmpRect);
+      }
+      
+      if (dh > 0)
+      {
+        tmpRect.MinX = l->bounds.MinX;
+        tmpRect.MinY = tmpRect.MaxY - dh;
+        OrRectRegion(l->DamageList, &tmpRect);
+      }
+    }
 
     CreateClipRects(LI, l); 
 
@@ -476,14 +515,14 @@
     ** need to be refreshed. Therefore determine the damage list.
      */
 
-    if (0 != (l_tmp->Flags & LAYERSIMPLE))
+    if (0 != (l->Flags & LAYERSIMPLE))
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
       
       /*
       ** l->DamageList contains the list of rectangles at the old position
-      ** that were not visible.
+      ** that were *NOT* visible.
       */
 
       /*  
@@ -510,23 +549,20 @@
       DisposeRegion(R);
 
       /*
-      ** Adjust Damagelist to layer coordinates
-      */      
-      l->DamageList->bounds.MinX -= l->bounds.MinX;
-      l->DamageList->bounds.MinY -= l->bounds.MinY;
-      l->DamageList->bounds.MaxX -= l->bounds.MinX;
-      l->DamageList->bounds.MaxY -= l->bounds.MinY;
-
-      /*
       ** See whether there's something in the final region and then
-      ** set the REFRESH flag
+      ** set the REFRESH flag. 
       */
       if (NULL != l->DamageList->RegionRectangle)
         l->Flags |= LAYERREFRESH;
 
     }
-
-
+ 
+    /* Adjust the damage list for a moment */
+    l->DamageList->bounds.MinX -= l->bounds.MinX;
+    l->DamageList->bounds.MinY -= l->bounds.MinY;
+    l->DamageList->bounds.MaxX -= l->bounds.MinX;
+    l->DamageList->bounds.MaxY -= l->bounds.MinY;
+    
     /* 
       The layer that was moved is totally visible now at its new position
       and also at its old position. I delete it now from its old position.
@@ -534,9 +570,14 @@
 
     DeleteLayer(0, l_tmp);
 
+    l->DamageList->bounds.MinX += l->bounds.MinX;
+    l->DamageList->bounds.MinY += l->bounds.MinY;
+    l->DamageList->bounds.MaxX += l->bounds.MinX;
+    l->DamageList->bounds.MaxY += l->bounds.MinY;
+
     /*
     ** If it's a simple layer then call for all those parts that are in the 
-    ** damage list the layer hook.
+    ** damage list the layer hook. DamageList is still in screen coordinates!
     */
 
     
@@ -547,10 +588,10 @@
       while (NULL != RR)
       {
         struct Rectangle bounds;
-        bounds.MinX = R->bounds.MinX + RR->bounds.MinX + l->bounds.MinX;
-        bounds.MinY = R->bounds.MinY + RR->bounds.MinY + l->bounds.MinY;
-        bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX + l->bounds.MinX;
-        bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY + l->bounds.MinY;
+        bounds.MinX = R->bounds.MinX + RR->bounds.MinX;
+        bounds.MinY = R->bounds.MinY + RR->bounds.MinY;
+        bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX;
+        bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY;
         _CallLayerHook(l->BackFill,
                        l->rp,
                        l,
@@ -632,8 +673,8 @@
                              bounds.MinX - l->bounds.MinX - l->Scroll_X,
                              bounds.MinY - l->bounds.MinY - l->Scroll_Y);
 
-              OrRectRegion(l->DamageList,&CR->bounds);
-              l->Flags |= LAYERREFRESH;
+              if (IS_SIMPLEREFRESH(l))
+                OrRectRegion(l->DamageList, &bounds);
 	    }
             else
 	    {
@@ -676,8 +717,8 @@
                              bounds.MinX - l->bounds.MinX - l->Scroll_X,
                              bounds.MinY - l->bounds.MinY - l->Scroll_Y);
 
-              OrRectRegion(l->DamageList,&CR->bounds);
-              l->Flags |= LAYERREFRESH;
+              if (IS_SIMPLEREFRESH(l))
+                OrRectRegion(l->DamageList,&CR->bounds);
 	    }
             else
 	    {
@@ -731,9 +772,21 @@
       CR = CR->Next;
       }
     }
+    
+    /* Adjust damage list */
+    l->DamageList->bounds.MinX -= l->bounds.MinX;
+    l->DamageList->bounds.MinY -= l->bounds.MinY;
+    l->DamageList->bounds.MaxX -= l->bounds.MinX;
+    l->DamageList->bounds.MaxY -= l->bounds.MinY;
+
+    if (l->DamageList->RegionRectangle)
+      l->Flags |= LAYERREFRESH;
 
     /* That's it folks! */
     CleanupLayers(LI);
+
+    if (NULL != oldclipregion)
+      InstallClipRegion(l, oldclipregion);
 
     InstallClipRegionClipRects(LI);
 
@@ -745,8 +798,7 @@
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
     if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
-    if (NULL != oldclipregion)
-      InstallClipRegion(l, oldclipregion);
+    if (NULL != oldclipregion)  InstallClipRegion(l, oldclipregion);
     
     retVal = FALSE;
   }
