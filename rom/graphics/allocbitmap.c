@@ -250,12 +250,18 @@
     		    OOP_GetAttr(bm_obj, aHidd_BitMap_ColorMap, (IPTR *)&colmap);
 
     			/* Store it in plane array */
-    		    HIDD_BM_OBJ(nbm) = bm_obj;
-    		    HIDD_BM_COLMOD(nbm) = colmod;
-    		    HIDD_BM_COLMAP(nbm) = colmap;
+    		    HIDD_BM_OBJ(nbm) 	    = bm_obj;
+    		    HIDD_BM_COLMOD(nbm)     = colmod;
+    		    HIDD_BM_COLMAP(nbm)     = colmap;
+		    HIDD_BM_REALDEPTH(nbm)  = depth;
+		    
     		    nbm->Rows   = height;
     		    nbm->BytesPerRow = WIDTH_TO_BYTES(width);
+		#if BMDEPTH_COMPATIBILITY
+		    nbm->Depth  = (depth > 8) ? 8 : depth;
+		#else
     		    nbm->Depth  = depth;
+		#endif
     		    nbm->Flags  = flags | BMF_AROS_HIDD;
 
     		    /* If this is a displayable bitmap, create a color table for it */
@@ -319,15 +325,20 @@
     			    if (IS_HIDD_BM(nbm))
 			    {
 
-    				HIDD_BM_COLMAP(nbm) = HIDD_BM_COLMAP(friend_bitmap);
-    				HIDD_BM_COLMOD(nbm) = HIDD_BM_COLMOD(friend_bitmap);
-    				HIDD_BM_PIXTAB(nbm) = HIDD_BM_PIXTAB(friend_bitmap);
-
+    				HIDD_BM_COLMAP(nbm) 	= HIDD_BM_COLMAP(friend_bitmap);
+    				HIDD_BM_COLMOD(nbm) 	= HIDD_BM_COLMOD(friend_bitmap);
+    				HIDD_BM_PIXTAB(nbm) 	= HIDD_BM_PIXTAB(friend_bitmap);
+    	    	    	    	HIDD_BM_REALDEPTH(nbm)  = HIDD_BM_REALDEPTH(friend_bitmap);
     				ok = TRUE;
     			    }
 
 
-    			} else ok = TRUE;
+    			}
+			else
+			{
+    	    	    	    HIDD_BM_REALDEPTH(nbm) = depth;		    
+			    ok = TRUE;
+			}
     		    }
 
     		    if (ok)
