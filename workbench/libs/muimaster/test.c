@@ -313,7 +313,7 @@ void main(void)
 			End,
     	    	    End,
     	    	Child, RegisterGroup(pages),
-		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
+//		    MUIA_Background, "5:SYS:Prefs/Presets/Backdrops/StuccoBlue.pic",
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
 		        Child, ColGroup(2),

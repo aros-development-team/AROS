@@ -604,7 +604,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
 
 			zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
-				 left, top, width, height, 0, 0, 0);
+				 left, top, width, height, left, top, 0);
 		    }
 
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
@@ -1529,7 +1529,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
 
 	zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
-		 left, top, width, height, 0, 0, 0);
+		 left, top, width, height, left, top, 0);
     }
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
