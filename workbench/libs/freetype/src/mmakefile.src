@@ -53,6 +53,6 @@ USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
 %build_module mmake=workbench-libs-freetype-module modname=freetype2 \
     modtype=library files=$(FILESDIR) linklibname=freetype2shared \
-    linklibfiles=tagcall uselibs="amiga rom m"
- 
-%common
+    linklibfiles=tagcall noref=../config/aros/ftsystem \
+    uselibs="amiga rom m"
+
