@@ -34,6 +34,11 @@ struct MUIMasterBase_intern MUIMasterBase_instance;
 struct Library *MUIMasterBase;
 struct Library *ColorWheelBase;
 
+struct list_entry
+{
+    char *column1;
+    char *column2;
+};
 
 Object *wheel;
 Object *r_slider;
@@ -82,6 +87,23 @@ __saveds void objects_function(void)
     	DoMethod(group, MUIM_Group_InitChange);
     	DoMethod(group, OM_ADDMEMBER, new_obj);
     	DoMethod(group, MUIM_Group_ExitChange);
+    }
+}
+
+__saveds __asm void display_function(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct list_entry *entry)
+{
+    static char buf[100];
+    if (entry)
+    {
+    	sprintf(buf,"%ld",*(strings-1));
+        strings[0] = buf;
+        strings[1] = entry->column1;
+        strings[2] = entry->column2;
+    } else
+    {
+        strings[0] = "Number";
+        strings[1] = "Column 1";
+        strings[2] = "Column 2";
     }
 }
 
@@ -143,12 +165,22 @@ void main(void)
     Object *context_menu;
 
     static char *pages[] = {"Groups","Colorwheel","Virtual Group",NULL};
-    static char *entries[] = {"Entry1","Entry2", "Entry3", "Entry4", "Entry5", "Entry6",NULL};
+
+    static struct list_entry entry1 = {"Testentry1","Col2: Entry1"};
+    static struct list_entry entry2 = {"Entry2","Col2: Entry2"};
+    static struct list_entry entry3 = {"Entry3","Col2: Entry3"};
+    static struct list_entry entry4 = {"Entry4","Col2: Entry4"};
+    static struct list_entry entry5 = {"Entry5","Col2: Entry5"};
+    static struct list_entry entry6 = {"Entry6","Col2: Entry6"};
+
+    static struct list_entry *entries[] =
+    	{&entry1,&entry2,&entry3,&entry4,&entry5,&entry6,NULL};
 
     struct Hook hook;
     struct Hook hook_wheel;
     struct Hook hook_slider;
     struct Hook hook_objects;
+    struct Hook hook_display;
 
 #ifndef COMPILE_WITH_MUI
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
@@ -176,6 +208,7 @@ void main(void)
     hook_wheel.h_Entry = (HOOKFUNC)wheel_function;
     hook_slider.h_Entry = (HOOKFUNC)slider_function;
     hook_objects.h_Entry = (HOOKFUNC)objects_function;
+    hook_display.h_Entry = (HOOKFUNC)display_function;
 
     context_menu = MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
@@ -207,7 +240,10 @@ void main(void)
     	    	Child, ListviewObject,
     	    	    MUIA_Listview_List, ListObject,
     	    	    	InputListFrame,
+    	    	    	MUIA_List_DisplayHook, &hook_display,
+    	    	    	MUIA_List_Format, ",,",
     	    	    	MUIA_List_SourceArray, entries,
+    	    	    	MUIA_List_Title, TRUE,
     	    	    	End,
     	    	    End,
     	    	Child, RegisterGroup(pages),

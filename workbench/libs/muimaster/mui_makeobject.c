@@ -238,6 +238,7 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_String: /* STRPTR label, LONG maxlen */
 	    return MUI_NewObject(MUIC_String,
+	        StringFrame,
 	    	MUIA_String_MaxLen,params[1],
 	    	TAG_DONE);
 	    break;
