@@ -35,6 +35,10 @@ bin/ - This directory contains all generated files under the name of
 	\shell{$(GENDIR)} and all \filename{*.o} files in this directory
 	are collected to the \filename{AmigaOS.lib}.
 
+compiler/ - The C compiler for AROS. It contains include files,
+	the source for amiga.lib and c.lib and the source for the
+	compiler and all compiler specific utilities.
+
 config/ - This directory contains the dirty stuff. Code which makes AROS
 	live (mostly hacked up assembler code which you don't want to see).
 	Anything is allowed inside this directory in order to make AROS
