@@ -1609,7 +1609,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
                     }
 #endif
 
-    	    	    #if SINGLE_SETPOINTERPOS_PER_EVENTLOOP
+    	    	    #if !SINGLE_SETPOINTERPOS_PER_EVENTLOOP
 			SetPointerPos(ie->ie_X, ie->ie_Y);
     	    	    #else
 		    	pointerposx = ie->ie_X;
