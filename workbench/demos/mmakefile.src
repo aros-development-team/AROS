@@ -79,7 +79,7 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM demos :includes linklibs demos-images-setup 
+#MM demos :includes linklibs demos-images-setup workbench-demos-zune
 
 %make_prog_setup mmake=demos
 
