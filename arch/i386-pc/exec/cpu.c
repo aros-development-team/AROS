@@ -70,61 +70,65 @@ extern inline void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx)
 #define CALIBRATE_TIME	(5 * 1000020/100)
 ULONG CalcCPUSpeed()
 {
-    /* Set the Gate high, disable speaker */
-    outb((inb(0x61) & ~0x02) | 0x01, 0x61);
-    /*
-     * Now let's take care of CTC channel 2
-     *
-     * Set the Gate high, program CTC channel 2 for mode 0,
-     * (interrupt on terminal count mode), binary count,
-     * load 5 * LATCH count, (LSB and MSB) to begin countdown.
-     */
-    outb(0xb0, 0x43);			/* binary, mode 0, LSB/MSB, Ch 2 */
-    outb(CALIBRATE_LATCH & 0xff, 0x42);	/* LSB of count */
-    outb(CALIBRATE_LATCH >> 8, 0x42);	/* MSB of count */
+    /* Check if we have something better than 80486 */
+    if (*(BYTE*)0x000009a0 > 4)
     {
-	unsigned long startlow, starthigh;
-	unsigned long endlow, endhigh;
-	unsigned long count;
-        unsigned long eax=0, edx=1000000;
-	unsigned long cpu_hz;
+	/* Set the Gate high, disable speaker */
+	outb((inb(0x61) & ~0x02) | 0x01, 0x61);
+	/*
+	 * Now let's take care of CTC channel 2
+	 *
+	 * Set the Gate high, program CTC channel 2 for mode 0,
+         * (interrupt on terminal count mode), binary count,
+         * load 5 * LATCH count, (LSB and MSB) to begin countdown.
+         */
+        outb(0xb0, 0x43);			/* binary, mode 0, LSB/MSB, Ch 2 */
+        outb(CALIBRATE_LATCH & 0xff, 0x42);	/* LSB of count */
+        outb(CALIBRATE_LATCH >> 8, 0x42);	/* MSB of count */
+        {	
+	    unsigned long startlow, starthigh;
+	    unsigned long endlow, endhigh;
+	    unsigned long count;
+    	    unsigned long eax=0, edx=1000000;
+	    unsigned long cpu_hz;
     
-	__asm__ __volatile__("rdtsc":"=a" (startlow),"=d" (starthigh));
-	count = 0;
-	do {
+	    __asm__ __volatile__("rdtsc":"=a" (startlow),"=d" (starthigh));
+	    count = 0;
+	    do {
 		count++;
-	} while ((inb(0x61) & 0x20) == 0);
-	__asm__ __volatile__("rdtsc":"=a" (endlow),"=d" (endhigh));
+	    } while ((inb(0x61) & 0x20) == 0);
+	    __asm__ __volatile__("rdtsc":"=a" (endlow),"=d" (endhigh));
 
-	/* Error: ECTCNEVERSET */
-	if (count <= 1)
-	    goto bad_ctc;
+	    /* Error: ECTCNEVERSET */
+	    if (count <= 1)
+		goto bad_ctc;
 
-	/* 64-bit subtract - gcc just messes up with long longs */
-	__asm__("subl %2,%0\n\t"
-		"sbbl %3,%1"
-		:"=a" (endlow), "=d" (endhigh)
-		:"g" (startlow), "g" (starthigh),
-		 "0" (endlow), "1" (endhigh));
+	    /* 64-bit subtract - gcc just messes up with long longs */
+	    __asm__("subl %2,%0\n\t"
+		    "sbbl %3,%1"
+		    :"=a" (endlow), "=d" (endhigh)
+		    :"g" (startlow), "g" (starthigh),
+		     "0" (endlow), "1" (endhigh));
 
-	/* Error: ECPUTOOFAST */
-	if (endhigh)
-	    goto bad_ctc;
+	    /* Error: ECPUTOOFAST */
+	    if (endhigh)
+		goto bad_ctc;
 
-	/* Error: ECPUTOOSLOW */
-	if (endlow <= CALIBRATE_TIME)
-	    goto bad_ctc;
+	    /* Error: ECPUTOOSLOW */
+	    if (endlow <= CALIBRATE_TIME)
+		goto bad_ctc;
 
-	__asm__("divl %2"
-		:"=a" (endlow), "=d" (endhigh)
-		:"r" (endlow), "0" (0), "1" (CALIBRATE_TIME));
+	    __asm__("divl %2"
+	    	    :"=a" (endlow), "=d" (endhigh)
+		    :"r" (endlow), "0" (0), "1" (CALIBRATE_TIME));
 
-        __asm__("divl %2"
-		:"=a" (cpu_hz), "=d" (edx)
-        	:"r" (endlow),
-	    	"0" (eax), "1" (edx));
+    	    __asm__("divl %2"
+		    :"=a" (cpu_hz), "=d" (edx)
+        	    :"r" (endlow),
+	    	    "0" (eax), "1" (edx));
 
-	return cpu_hz;
+	    return cpu_hz;
+	}
     }
     /*
      * The CTC wasn't reliable: we got a hit on the very first read,
