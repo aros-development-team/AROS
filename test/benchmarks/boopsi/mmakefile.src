@@ -12,6 +12,9 @@ USE_CLIB_SHARED := yes
 USE_AMIGALIB    := yes
 USE_MLIB        := yes
 
+#MM- test-benchmarks : test-benchmarks-boopsi
+#MM- test-benchmarks-quick : test-benchmarks-boopsi-quick
+
 #MM test-benchmarks-boopsi : includes linklibs 
 
 %make_prog_setup mmake=test-benchmarks-boopsi
