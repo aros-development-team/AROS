@@ -367,8 +367,12 @@ enum
 
 /* Drawmodes for a graphics context */
 
-#define vHidd_GC_DrawMode_Copy 0x03 /* Copy src into destination            */
-#define vHidd_GC_DrawMode_XOR  0x06 /* XOR                                  */
+
+#define vHidd_GC_DrawMode_Clear 	0x00 /* 0 */
+#define vHidd_GC_DrawMode_And 		0x01 /* src AND dst	*/
+#define vHidd_GC_DrawMode_Copy 		0x03 /* src		*/
+#define vHidd_GC_DrawMode_Xor  		0x06 /* src XOR dst	*/
+#define vHidd_GC_DrawMode_Invert  	0x0A /* NOT dst		*/
 
 
 #define vHidd_GC_ColExp_Transparent	(1 << 0)
