@@ -8,6 +8,7 @@
 
 #include <aros/config.h>
 #include <exec/types.h>
+#include <utility/tagitem.h>
 #include <aros/libcall.h>
 #include <proto/utility.h>
 #include "aros_intern.h"
@@ -30,11 +31,11 @@
 #include <proto/aros.h>
 #include <aros/inquire.h>
 
-	AROS_LH1(IPTR, ArosInquire,
+	AROS_LH1(void, ArosInquire,
 
 /*  SYNOPSIS */
 
-	AROS_LHA(ULONG, query, D0),
+	AROS_LHA(struct TagItem *, tags, A0),
 
 /*  LOCATION */
 
@@ -45,11 +46,14 @@
 	queried with another function.
 
     INPUTS
-	query -- which type of inquiry should be done
+	tags -- taglist with appropriate queries. The tag's ti_Data field
+	        should point to the location where the result of the query
+	        is stored. Do not forget to clear the location before, as
+	        queries not understood will be left untouched.
 
     RESULT
-	Value depending on the type of query being done. See <aros/inquire.h>
-	for details on this.
+	All queries understood by this call will have appropriate values
+	assigned to the location a tag's ti_Data pointed to.
 
     NOTES
 
@@ -65,12 +69,17 @@
 
 ******************************************************************************/
 {
-    IPTR ret = 0;
+    struct TagItem *tag;
 
-    D(bug("ArosInquire $%lx\n", query));
+    D(bug("ArosInquire(taglist @ $%lx)\n", query));
 
-    switch(query)
+    while( (tag = NextTagItem(&taglist)))
     {
+	D(bug("  tag = $%lx\n", tag->ti_Tag));
+
+	switch(tag->ti_Tag)
+	{
+
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
 	/*
 	    Only support these tags if we are on the native machine. On other
@@ -111,7 +120,8 @@
 	    /* Update this whenever a new AROS is released */
 	    ret = (IPTR)(ULONG)11;
 	    break;
+
+	}
     }
 
-    return ret;
 } /* ArosInquireTagList */
