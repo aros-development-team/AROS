@@ -1,0 +1,105 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES		:= exec/init
+DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
+		    -I/usr/include $(CFLAGS)
+
+#MM AROS-linux : setup setup-linux includes compiler kernel workbench demos shell
+AROS-linux:
+	@$(NOP)
+
+#MM kernel-linux : kernel-exec kernel-aros-linklib  kernel-dos kernel-boot-linklib
+#MM kernel-linux : kernel-graphics kernel-utility kernel-intuition-linklib
+#MM kernel-linux : kernel-mathffp kernel-mathieeesingbas
+#MM kernel-linux : kernel-devs kernel-expansion-linklib
+#MM kernel-linux : kernel-filesys kernel-boopsi-linklib kernel-hidd
+#MM kernel-linux : kernel-expansion-linklib
+kernel-linux :
+	@$(NOP)
+
+# Setup the CLIB metatargets...
+#MM setup-clib-linux : setup-clib-linux-i386
+setup-clib-linux :
+	@$(NOP)
+
+#MM
+kernel :
+	@$(NOP)
+
+#MM
+setup-linux :
+	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
+	%add_objects rom/boot/strap_emul
+
+# These are the targets to get mmake to do what I want...
+#MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11
+
+#MM setup-exec-linux : setup-exec-unix setup-exec-i386
+setup-exec-linux :
+	%add_objects rom/exec/init
+
+#MM kernel-exec-linux-i386 : exec-linux exec-i386 exec-unix kernel-exec-linklib
+kernel-exec-linux-i386 :
+	@$(NOP)
+
+#MM
+exec-linux : $(OSGENDIR)/exec/init.o
+
+#MM setup-dos-linux : setup-dos-unix
+setup-dos-linux :
+	@$(NOP)
+
+#MM kernel-dos-linux-i386 : dos-unix kernel-dos-linklib
+kernel-dos-linux-i386 :
+	@$(NOP)
+
+#MM setup-battclock-linux : setup-battclock-unix
+setup-battclock-linux :
+	@$(NOP)
+
+#MM kernel-graphics-linux-i386 : graphics-x11 kernel-graphics-linklib
+kernel-graphics-linux-i386 :
+	@$(NOP)
+
+#MM kernel-intuition-linux-i386 : intuition-x11 kernel-intuition-linklib
+kernel-intuition-linux-i386 :
+	@$(NOP)
+
+#MM kernel-hidd-linux-i386 : kernel-hidd-linklib
+kernel-hidd-linux-i386 :
+	@$(NOP)
+
+#MM kernel-boot-linux-i386 : kernel-boot-linklib
+kernel-boot-linux-i386 :
+	@$(NOP)
+
+#MM check : check-exec-unix
+check :
+	@$(NOP)
+
+#MM clib-linux : clib-linux-$(CPU)
+clib-linux :
+	@$(NOP)
+
+#MM includes-linux : includes-copy includes-linux-$(CPU)
+includes-linux:
+	@$(NOP)
+
+#MM workbench-linux : workbench-complete
+workbench-linux:
+	@$(NOP)
+
+#MM
+clean ::
+	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q $(CFLAGS2)
+
+%include_deps
+%common
