@@ -30,8 +30,8 @@ pid_t getpid(void);
    Returns 0 if successful, -1 if not.  */
 int pipe(int pipedes[2]);
 
-ssize_t read (int fd, void * buf, size_t count);
-#define rmdir unlink
+ssize_t read(int fd, void * buf, size_t count);
+int rmdir(const char *pathname);
 int truncate(const char *path, off_t length);
 int ftruncate(int fd, off_t length);
 int unlink(const char *pathname);
@@ -42,6 +42,9 @@ ssize_t write (int fd, const void * buf, size_t count);
 void _exit(int code) __noreturn;
 
 int execvp(const char *file, char *const argv[]);
+
+uid_t getuid(void);
+uid_t geteuid(void);
 
 /* Standard file descriptors */
 #define STDIN_FILENO  0 /* Standard input */
