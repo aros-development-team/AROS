@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/25 14:25:56  aros
+    Handle BOOPSI Gadgets
+
     Revision 1.7  1996/10/24 15:51:24  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -33,6 +36,7 @@
 #include <clib/graphics_protos.h>
 #include "intuition_intern.h"
 #include "boolgadgets.h"
+#include "boopsigadgets.h"
 #include "propgadgets.h"
 
 /*****************************************************************************
@@ -102,7 +106,6 @@
 	{
 	case GTYP_BOOLGADGET:
 	    RefreshBoolGadget (gadgets, window, IntuitionBase);
-
 	    break;
 
 	case GTYP_GADGET0002:
@@ -110,13 +113,13 @@
 
 	case GTYP_PROPGADGET:
 	    RefreshPropGadget (gadgets, window, IntuitionBase);
-
 	    break;
 
 	case GTYP_STRGADGET:
 	    break;
 
 	case GTYP_CUSTOMGADGET:
+	    RefreshBoopsiGadget (gadgets, window, IntuitionBase);
 	    break;
 
 	} /* switch GadgetType */
