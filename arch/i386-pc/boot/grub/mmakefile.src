@@ -27,9 +27,9 @@ config.h.in: configure.in
 configure: config.h.in configure.in
 	autoconf
 
-Makefile: configure $(TOP)/arch/i386-native/boot/menu.lst
+Makefile: configure $(TOP)/$(CURDIR)/../menu.lst
 	CFLAGS="-minline-all-stringops" CC="$(HOST_CC)" ./configure \
-	--enable-preset-menu=$(TOP)/arch/i386-native/boot/menu.lst \
+	--enable-preset-menu=$(TOP)/$(CURDIR)/../menu.lst \
 	--disable-fat --disable-ffs --disable-minix --disable-reiserfs \
 	--disable-vstafs --disable-jfs --disable-xfs --disable-md5-password \
 	--disable-packet-retransmission --disable-ext2fs -disable-serial \
