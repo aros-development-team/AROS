@@ -34,8 +34,8 @@
 #    include "serial_intern.h"
 #endif
 
-#define DEBUG 0
-#include <aros/debug.h>
+/*  # define DEBUG 1 */
+# include <aros/debug.h>
 
 /****************************************************************************************/
 
@@ -155,15 +155,27 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
   {
     SerialDevice->SerialHidd = OpenLibrary("sys:Hidds/serial.hidd",0);
     D(bug("serial.hidd base: 0x%x\n",SerialDevice->SerialHidd));
+    if (NULL == SerialDevice->SerialHidd)
+	return NULL;
     
     if (NULL == SerialDevice->oopBase)
       SerialDevice->oopBase = OpenLibrary(AROSOOP_NAME, 0);
-    
-    if (NULL != SerialDevice->SerialHidd && 
-        NULL != SerialDevice->oopBase)
+    if (NULL == SerialDevice->oopBase)
     {
-      SerialDevice->SerialObject = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
-      D(bug("serialHidd Object: 0x%x\n",SerialDevice->SerialObject));
+	CloseLibrary(SerialDevice->SerialHidd);
+	SerialDevice->SerialHidd = NULL;
+	return NULL;
+    }
+
+    SerialDevice->SerialObject = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
+    D(bug("serialHidd Object: 0x%x\n",SerialDevice->SerialObject));
+    if (NULL == SerialDevice->SerialObject)
+    {
+	CloseLibrary(SerialDevice->oopBase);
+	SerialDevice->oopBase = NULL;
+	CloseLibrary(SerialDevice->SerialHidd);
+	SerialDevice->SerialHidd = NULL;
+	return NULL;
     }
   }
     
@@ -365,8 +377,10 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
       ** Throw away the HIDD object and close the library
       */
       OOP_DisposeObject(SerialDevice->SerialObject);
+      CloseLibrary(SerialDevice->oopBase);
       CloseLibrary(SerialDevice->SerialHidd);
       SerialDevice->SerialHidd   = NULL;
+      SerialDevice->oopBase      = NULL;
       SerialDevice->SerialObject = NULL;
     }
   
