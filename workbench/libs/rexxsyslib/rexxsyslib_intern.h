@@ -50,9 +50,12 @@ struct RexxSysBase_intern; /* prereference */
 struct RexxSysBase_intern
 {
     struct LibHeader library;
+    char *           rexxmsgid;
 };
 
 #undef SysBase
 #define SysBase (((struct LibHeader*)RexxSysBase)->lh_SysBase)
+
+#define RSBI(base) ((struct RexxSysBase_intern *)base)
 
 #endif /* REXXSYSLIB_INTERN_H */
