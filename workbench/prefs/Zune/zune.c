@@ -24,7 +24,7 @@
 
 #ifdef __AROS__
 /*  #define DEBUG 1 */
-/*  #include <aros/debug.h> */
+/* #include <aros/debug.h> */
 #endif
 
 #include "buttonsp.h"
@@ -150,9 +150,13 @@ struct page_entry
     struct MUI_CustomClass *cl; /* The class pointer,  maybe NULL */
     Object *group;  /* The group which should be is displayed, maybe NULL */
     const struct __MUIBuiltinClass *desc;
+    struct Library *mcp_library;
+    UBYTE mcp_namebuffer[MAXFILENAMELENGTH + 1];
 };
 
-struct page_entry main_page_entries[] =
+#define MAX_PAGE_ENTRIES 100
+
+struct page_entry main_page_entries[MAX_PAGE_ENTRIES + 1] =
 {
 /*      {"Info",NULL,NULL,NULL}, */
 /*      {"System",NULL,NULL,NULL}, */
@@ -257,6 +261,114 @@ void main_cancel_pressed(void)
     DoMethod(app, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 }
 
+#ifdef __AROS__
+#define MCC_Query(x) AROS_LVO_CALL1(struct MUI_CustomClass *,          \
+		                    AROS_LCA(LONG, (x), D0),           \
+				    struct Library *, mcclib, 5, lib)
+#else
+
+struct MUI_CustomClass *MCC_Query(ULONG d0);
+#pragma  libcall mcclib MCC_Query 01e 001
+
+#endif
+
+/****************************************************************
+ Look for MCPs
+*****************************************************************/
+void find_mcps(void)
+{
+    static CONST_STRPTR const searchpaths[] =
+    {
+        "Zune/#?.(mcp|mcc)",
+        "Classes/Zune/#?.(mcp|mcc)",
+        "MUI/#?.(mcp|mcc)",
+        NULL,
+    };
+    CONST_STRPTR const *pathptr;
+    struct DevProc *dp = NULL;
+    struct page_entry *pe;
+    WORD   num_page_entries = 0;
+    BPTR olddir;
+    
+    for(pe = main_page_entries; pe->name; pe++)
+    {
+    	num_page_entries++;
+    }
+    
+    olddir = CurrentDir(NULL);
+    
+    while((dp = GetDeviceProc("LIBS:", dp)))
+    {
+    	CurrentDir(dp->dvp_Lock);
+	
+	for(pathptr = searchpaths; *pathptr; pathptr++)
+	{
+	    struct AnchorPath *ap;
+	    LONG    	       match;
+	    
+	    ap = (struct AnchorPath *)AllocVec(sizeof(struct AnchorPath) + 256, MEMF_CLEAR);
+	    if (ap)
+	    {
+	    	ap->ap_Strlen = 256;
+		
+		for(match = MatchFirst((STRPTR)*pathptr, ap);
+		    match == 0;
+		    match = MatchNext(ap))
+		{
+		    struct Library *mcclib;
+		    
+		    if (num_page_entries < MAX_PAGE_ENTRIES)
+		    {
+			if ((mcclib = OpenLibrary(ap->ap_Buf, 0)))
+			{
+		    	    struct MUI_CustomClass *mcp;
+
+		    	    if ((mcp = MCC_Query(1)))
+			    {
+			    	char *sp;
+				
+				pe->cl = mcp;
+				pe->mcp_library = mcclib;
+				mcclib = NULL;
+				
+				pe->mcp_namebuffer[0] = 27;
+				pe->mcp_namebuffer[1] = '3';
+				strncpy(pe->mcp_namebuffer + 2, mcp->mcc_Class->cl_ID, sizeof(pe->mcp_namebuffer) - 3);
+				
+				if ((sp = strrchr(pe->mcp_namebuffer, '.')))
+				    *sp = '\0';
+				
+				pe->name = pe->mcp_namebuffer;
+						
+				pe++;
+				num_page_entries++;
+				
+			    } /* if ((mcp = MCC_Query(1))) */
+
+		    	    if (mcclib) CloseLibrary(mcclib);
+			    
+			} /* if ((mcclib = OpenLibrary(ap->ap_Buf, 0))) */
+
+		    } /* if (num_page_entries < MAX_PAGE_ENTRIES) */
+		    
+		} /* for(match = ... */
+		
+		MatchEnd(ap);
+		
+	    	FreeVec(ap);
+		
+	    } /* if (ap) */
+	    
+	} /* for(pathptr = searchpaths; *pathptr; pathptr++) */
+	
+    	if (!dp->dvp_Flags & DVPF_ASSIGN) break;
+	
+    } /* while((dp = GetDeviceProc("LIBS:", dp))) */
+    
+    FreeDeviceProc(dp);
+    
+    CurrentDir(olddir);
+}
 
 /****************************************************************
  Deallocates all gui resources
@@ -275,7 +387,25 @@ void deinit_gui(void)
 	{
 	    DisposeObject(main_page_entries[i].group);
 	}
+
+    	if (main_page_entries[i].mcp_library)
+	{
+	    main_page_entries[i].cl = NULL; /* Prevent MUI_DeleteCustomClass call below */
+	   
+	    if ((main_page_entries[i].group == NULL) ||
+	        (main_page_entries[i].group != main_page_group_displayed))
+	    {
+	    	/* Only close library if main_page_group_displayed is not this page,
+		   because in that case the object got automatically killed through
+		   MUI_DisposeObject(app) which also does the CloseLibrary()!! */
+		   
+    		CloseLibrary(main_page_entries[i].mcp_library);
+    		main_page_entries[i].mcp_library = NULL;
+	    }	    
+	}
+	
 	main_page_entries[i].group = NULL;
+    	
 	if (main_page_entries[i].cl != NULL)
 	{
 	    MUI_DeleteCustomClass(main_page_entries[i].cl);
@@ -403,16 +533,15 @@ int init_gui(void)
 	for (i = 0; main_page_entries[i].name != NULL; i++)
 	{
 	    struct page_entry *p = &main_page_entries[i];
-	    if (p->desc)
+
+	    if (!p->cl) p->cl = create_class(p->desc);
+
+	    if (!(p->cl && (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
 	    {
-		if (!((p->cl = create_class(p->desc))
-		      &&
-		      (p->group = NewObject(p->cl->mcc_Class, NULL, TAG_DONE))))
-		{
-		    deinit_gui();
-		    return 0;
-		}
+		deinit_gui();
+		return 0;
 	    }
+
 	    DoMethod(main_page_list, MUIM_List_InsertSingle, (IPTR)p,
 		     MUIV_List_Insert_Bottom);
 	}
@@ -559,6 +688,8 @@ int main(void)
 	{
 	    if (open_classes())
 	    {
+	    	find_mcps();
+		
 		if (init_gui())
 		{
 		    load_prefs((STRPTR)args[ARG_APPNAME]);
