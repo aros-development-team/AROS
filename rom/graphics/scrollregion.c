@@ -82,10 +82,7 @@
             {
                 if (OrRegionRegion(cutRegion, newRegion))
                 {
-                    struct Region tmp = *region;
-
-                    *region    = *newRegion;
-                    *newRegion = tmp;
+		    _SwapRegions(region, newregion);
 
                     res = TRUE;
                 }
