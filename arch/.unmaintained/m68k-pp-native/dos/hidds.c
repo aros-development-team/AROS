@@ -182,6 +182,8 @@ D(bug("Moving dx=1\n"));
 	    y--;
 	  }
 #endif
+	  while(1) {
+	  }
 	}
 
 #if 0
