@@ -293,18 +293,78 @@ static ULONG compute_numbits(HIDDT_Pixel mask);
 	case DTAG_NAME:
 	{
 	    struct NameInfo *ni;
-	    ULONG depth, width, height;
+	    IPTR depth, width, height, stdpixfmt;
+	    STRPTR sync_description;
 	    
-	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth,	&depth);
-	    OOP_GetAttr(sync, aHidd_Sync_HDisp, 	&width);
+	    OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpixfmt);
+
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp, &width);
 	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
-	    
+	    OOP_GetAttr(sync, aHidd_Sync_Description, &sync_description);
 	    ni = (struct NameInfo *)buf;
 	    
-	    snprintf(ni->Name, DISPLAYNAMELEN
-	    	, "AROS: %ldx%ldx%ld"
-		, width, height, depth
-	    );
+	    if (sync_description && sync_description[0] && IS_REAL_STDPIXFMT(stdpixfmt))
+	    {
+	    	STRPTR pixfmt_name = "";
+		
+		switch(stdpixfmt)
+		{
+		    case vHidd_StdPixFmt_RGB16:
+		    case vHidd_StdPixFmt_RGB15:
+		    case vHidd_StdPixFmt_RGB24:
+		    	pixfmt_name = "RGB";
+			break;
+
+		    case vHidd_StdPixFmt_RGB16_LE:
+		    case vHidd_StdPixFmt_RGB15_LE:
+		    	pixfmt_name = "RGB PC";
+			break;
+			
+		    case vHidd_StdPixFmt_BGR24:
+		    case vHidd_StdPixFmt_BGR16:
+		    case vHidd_StdPixFmt_BGR15:
+		    	pixfmt_name = "BGR";
+			break;
+
+		    case vHidd_StdPixFmt_BGR16_LE:
+		    case vHidd_StdPixFmt_BGR15_LE:
+		    	pixfmt_name = "BGR PC";
+			break;
+			
+		    case vHidd_StdPixFmt_ARGB32:
+		    	pixfmt_name = "ARGB";
+			break;
+			
+		    case vHidd_StdPixFmt_BGRA32:
+		    	pixfmt_name = "BGRA";
+			break;
+			
+		    case vHidd_StdPixFmt_RGBA32:
+		    	pixfmt_name = "RGBA";
+			break;
+			
+		    case vHidd_StdPixFmt_0RGB32:
+		    	pixfmt_name = "0RGB";
+			break;
+			
+		    case vHidd_StdPixFmt_BGR032:
+		    	pixfmt_name = "BGR0";
+			break;
+			
+		    case vHidd_StdPixFmt_RGB032:
+		    	pixfmt_name = "RGB0";
+			break;
+			
+		}
+		
+		snprintf(ni->Name, DISPLAYNAMELEN, "%s %2dbit %s",
+		    	 sync_description, depth, pixfmt_name);
+	    }
+	    else
+	    {
+	    	snprintf(ni->Name, DISPLAYNAMELEN, "AROS: %ldx%ldx%ld", width, height, depth);
+	    }
 	    break;
 	}
 	    
