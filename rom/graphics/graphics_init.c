@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics library
@@ -7,7 +7,7 @@
 */
 #define AROS_ALMOST_COMPATIBLE 1
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <aros/debug.h>
 

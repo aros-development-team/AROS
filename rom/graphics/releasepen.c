@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Release a pen previously allocated.
@@ -7,7 +7,7 @@
 */
 #include "graphics_intern.h"
 #include <graphics/view.h>
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************
@@ -149,8 +149,11 @@
           while (-1 != (BYTE)index);
         }
         
+#if DEBUG
         if (FALSE==found)
-          kprintf("Error in RealsePen() pen = %d!\n",n);
+          D(bug("Error in RealsePen() pen = %d!\n",n));
+#endif
+
       } /* if (no further app needs this pen) */
     }
     else
