@@ -5,13 +5,14 @@
 maketool $(HOST_MAKE) $(MKARGS) TOP=$(TOP) CURDIR=$(CURDIR) TARGET=$(TARGET)
 defaultmakefilename mmakefile
 defaulttarget AROS
-genmakefilescript $(GENMF) $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
+genmakefilescript $(GENMF) $(TOP)/config/make.tmpl < $(MMSRC) > $(MMDEST)
 genmakefiledeps $(GENMF) $(TOP)/config/make.tmpl
 globalvarfile $(TOP)/config/host.cfg
 genglobalvarfile sh $(TOP)/configure
 
 ignoredir CVS
 ignoredir bin
-#add compiler/include/makefile
-#add makefile
+#uncomment next line if you have checked out contrib/regina
+#add contrib/regina/mmakefile-libs
+
 
