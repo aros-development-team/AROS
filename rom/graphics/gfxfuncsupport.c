@@ -1310,6 +1310,12 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
             if (Damage->RegionRectangle)
             {
+            {
+		/* Scroll the current damage list */
+                TranslateRect(Bounds(L->DamageList), -dx, -dy);
+                AndRectRegion(L->DamageList, Bounds(L));
+
+		/* Join the new one with the old one */
                 TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
                 OrRegionRegion(Damage, L->DamageList);
 
@@ -1498,6 +1504,11 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         {
 	    if (Damage->RegionRectangle)
             {
+		/* Scroll the current damage list */
+                TranslateRect(Bounds(L->DamageList), -dx, -dy);
+                AndRectRegion(L->DamageList, Bounds(L));
+
+		/* Join the new one with the old one */
                 TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
                 OrRegionRegion(Damage, L->DamageList);
 
