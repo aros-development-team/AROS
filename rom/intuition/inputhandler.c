@@ -45,59 +45,70 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 
     D(bug("InitIIH(IntuitionBase=%p)\n", IntuitionBase));
 
-    iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+    iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC | MEMF_CLEAR);
     if (iihandler)
     {
-	iihdata = AllocMem(sizeof (struct IIHData), MEMF_PUBLIC|MEMF_CLEAR);
+	iihdata = AllocMem(sizeof (struct IIHData), MEMF_PUBLIC | MEMF_CLEAR);
 	if (iihdata)
 	{
 	    struct MsgPort *port;
 	    
 	    /* Multiply with 2 because we need memory for two MsgPorts!!! */
-	    port = AllocMem(sizeof (struct MsgPort) * 2, MEMF_PUBLIC|MEMF_CLEAR);
+	    port = AllocMem(sizeof (struct MsgPort) * 2, MEMF_PUBLIC | MEMF_CLEAR);
 	    if (port)
 	    {
-	        ULONG lock;
-		
-		/* We do not want to be woken up by message replies.
-		   We are anyway woken up about 10 times a second by
-		   timer events
-		*/
-	    	port->mp_Flags   = PA_IGNORE;
-		
-	    	/* stegerg: PA_IGNORE doesn't need mp_SigBit and mp_SigTask
-		port->mp_SigBit  = SIGB_INTUITION;
-	    	port->mp_SigTask = FindTask("input.device");
-		*/
-	    	NEWLIST( &(port->mp_MsgList) );
-	    	iihdata->IntuiReplyPort = port;
-	    	
-		port++;
-		
-		port->mp_Flags	 = PA_IGNORE;
-		NEWLIST( &(port->mp_MsgList) );
-		iihdata->IntuiDeferedActionPort = port;
-		
-		iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
-		iihandler->is_Data = iihdata;
-		iihandler->is_Node.ln_Pri	= 50;
-		iihandler->is_Node.ln_Name	= "Intuition InputHandler";
-		
-		lock = LockIBase(0UL);
+	        if ((iihdata->InputEventMemPool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
+							     sizeof(struct InputEvent) * 10,
+							     sizeof(struct InputEvent) * 10)))
+		{
+	            ULONG lock;
 
-		iihdata->IntuitionBase = IntuitionBase;
-		
-		UnlockIBase(lock);
-		
-		GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
-		GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort = iihdata->IntuiDeferedActionPort;
+		    /* We do not want to be woken up by message replies.
+		       We are anyway woken up about 10 times a second by
+		       timer events
+		    */
+	    	    port->mp_Flags   = PA_IGNORE;
 
-		ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
-	    }
+	    	    /* stegerg: PA_IGNORE doesn't need mp_SigBit and mp_SigTask
+		    port->mp_SigBit  = SIGB_INTUITION;
+	    	    port->mp_SigTask = FindTask("input.device");
+		    */
+	    	    NEWLIST( &(port->mp_MsgList) );
+	    	    iihdata->IntuiReplyPort = port;
+
+		    port++;
+
+		    port->mp_Flags	 = PA_IGNORE;
+		    NEWLIST( &(port->mp_MsgList) );
+		    iihdata->IntuiDeferedActionPort = port;
+
+		    iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
+		    iihandler->is_Data = iihdata;
+		    iihandler->is_Node.ln_Pri	= 50;
+		    iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+
+		    lock = LockIBase(0UL);
+
+		    iihdata->IntuitionBase = IntuitionBase;
+
+		    UnlockIBase(lock);
+
+		    GetPrivIBase(IntuitionBase)->IntuiReplyPort = iihdata->IntuiReplyPort;
+		    GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort = iihdata->IntuiDeferedActionPort;
+
+		    ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
+		    
+		} /* if (iihdata->InputEventMemPool = ... */
+		FreeMem(port, sizeof(struct MsgPort) * 2);
+		
+	    } /* if (port) */
 	    FreeMem(iihdata, sizeof (struct IIHData));
-	}
+	    
+	} /* if (iihdata) */
 	FreeMem(iihandler, sizeof (struct Interrupt));
-    }
+	
+    } /* if (iihandler) */
+    
     ReturnPtr ("InitIIH", struct Interrupt *, NULL);
 }
 
@@ -107,16 +118,20 @@ struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
 
 VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase)
 {
+    struct IIHData *iihdata = (struct IIHData *)iihandler->is_Data;
+    
+    FreeGeneratedInputEvents(iihdata);
+    DeletePool(iihdata->InputEventMemPool);
+    
     /* One might think that this port is still in use by the inputhandler.
     ** However, if intuition is closed for the last time, there should be no
     ** windows that IntuiMessage can be sent to.
     **
     ** sizeof(struct MsgPort) * 2, because memory for two MsgPorts was allocated!
     */
-    FreeMem(((struct IIHData *)iihandler->is_Data)->IntuiReplyPort, sizeof (struct MsgPort) * 2);
-    
-    
-    FreeMem(iihandler->is_Data, sizeof (struct IIHData));
+    FreeMem(iihdata->IntuiReplyPort, sizeof (struct MsgPort) * 2);
+        
+    FreeMem(iihdata, sizeof (struct IIHData));
     FreeMem(iihandler, sizeof (struct Interrupt));
 
     return;
@@ -168,7 +183,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     AROS_UFHA(struct IIHData *,         iihdata,        A1)
 )
 {
-    struct InputEvent	*ie;
+    struct InputEvent *ie, *orig_ie, stackie;
     struct Gadget *gadget = iihdata->ActiveGadget;
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
@@ -184,9 +199,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
        
     HandleIntuiReplyPort(iihdata, IntuitionBase);
     
+    /* Then free generated InputEvents done in the previous round */
+    
+    FreeGeneratedInputEvents(iihdata);
+    
     /* Now handle the input events */
     
-    for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
+    ie = &stackie;
+    orig_ie = iihdata->ActInputEvent = oldchain;
+    if (orig_ie) *ie = *orig_ie;
+    iihdata->ActInputEventUsed = FALSE;
+    
+    while(orig_ie)
     {
     
 	struct Window *old_w;
@@ -276,11 +300,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    HandlePropSelectUp(gadget, gi->gi_Window, NULL, IntuitionBase);
 		    if (gadget->Activation & GACT_RELVERIFY)
 		    {
-			fire_intuimessage(gi->gi_Window,
-			    		  IDCMP_GADGETUP,
-					  0,
-					  gadget,
-					  IntuitionBase);
+			ih_fire_intuimessage(gi->gi_Window,
+			    		     IDCMP_GADGETUP,
+					     0,
+					     gadget,
+					     IntuitionBase);
 		    }
 		   
 		}
@@ -293,14 +317,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    if(old_w)
 	    {
-		if (old_w->IDCMPFlags & IDCMP_INACTIVEWINDOW)
-		{
-		    fire_intuimessage(old_w,
-				      IDCMP_INACTIVEWINDOW,
-				      0,
-				      old_w,
-				      IntuitionBase);
-		}
+		ih_fire_intuimessage(old_w,
+				     IDCMP_INACTIVEWINDOW,
+				     0,
+				     old_w,
+				     IntuitionBase);
 	    }
 
 	    /* int_activatewindow works if w = NULL */
@@ -308,57 +329,19 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 	    if (w)
 	    {
-		if (w->IDCMPFlags & IDCMP_ACTIVEWINDOW)
-		{
-		    fire_intuimessage(w,
-				      IDCMP_ACTIVEWINDOW,
-				      0,
-				      w,
-				      IntuitionBase);
-		}
+		ih_fire_intuimessage(w,
+				     IDCMP_ACTIVEWINDOW,
+				     0,
+				     w,
+				     IntuitionBase);
 	    }
 	    
 	    
 	} /* if (new_active_window) */
 		
-	if (swallow_event)
-	    continue;
-
-        /* If there is no active window, nothing to do */
-/*        if (w == NULL)
-	    continue;*/
-	         		
- 	/* 
-	**  IntuiMessages get the mouse coordinates relative to
-	**  the upper left corner of the window no matter if
-	**  window is GZZ or not
-	*/
-			    	
-	switch (ie->ie_Class)
+	if (!swallow_event) switch (ie->ie_Class)
 	{
 	    
-	case IECLASS_REFRESHWINDOW:
-	    if (w)
-	    {
-		fire_intuimessage(w, IDCMP_REFRESHWINDOW, 0, w, IntuitionBase);
-
-		RefreshGadgets (w->FirstGadget, w, NULL);
-	    }
-	    break; /* case IECLASS_REFRESHWINDOW */
-
-	case IECLASS_SIZEWINDOW:
-	    if (w)
-	    {
-		fire_intuimessage(w, IDCMP_NEWSIZE, 0, w, IntuitionBase);
-
-		/* Change width of dragbar gadget */
-
-
-		/* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
-		DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
-	    }
-	    break; /* case IECLASS_SIZEWINDOW */
-
 	case IECLASS_RAWMOUSE:
 	    switch (ie->ie_Code)
 	    {
@@ -380,15 +363,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		        PrepareGadgetInfo(gi, IntuitionBase->ActiveScreen, w);
 		    	SetGadgetInfoGadget(gi, gadget);
 			
-			if ((gadget->Activation & GACT_IMMEDIATE) &&
-			    (w->IDCMPFlags & IDCMP_GADGETDOWN))
+			if (gadget->Activation & GACT_IMMEDIATE)
 			{
-			    fire_intuimessage(w,
-					      IDCMP_GADGETDOWN,
-					      0,
-					      gadget,
-					      IntuitionBase);
-
+			    ih_fire_intuimessage(w,
+					      	 IDCMP_GADGETDOWN,
+					      	 0,
+					      	 gadget,
+					      	 IntuitionBase);
 			}
 
 			new_gadget = TRUE;
@@ -447,30 +428,13 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_CUSTOMGADGET: {
-			struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-			
-			if (new_gadget)
-			{			   
-			    gpi.MethodID = GM_GOACTIVE;				
-			}
-			else
-			{
-			    gpi.MethodID = GM_HANDLEINPUT;
-			}
-			
-			gpi.gpi_GInfo	= gi;
-			gpi.gpi_IEvent	= ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_TabletData	= NULL;
-			SetGPIMouseCoords(&gpi, gadget);
-			
-			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
-							  &reuse_event, IntuitionBase);
-			    
+			gadget = DoGPInput(gi,
+					   gadget,
+					   ie,
+					   (new_gadget ? GM_GOACTIVE : GM_HANDLEINPUT),
+					   &reuse_event,
+					   IntuitionBase);
+					   
 			break; }
 
 
@@ -479,11 +443,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* if (a gadget is active) */
 		else if (w)
 		{
-		    fire_intuimessage(w,
-		    		      IDCMP_MOUSEBUTTONS,
-				      SELECTDOWN,
-				      w,
-				      IntuitionBase);
+		    ih_fire_intuimessage(w,
+		    		      	 IDCMP_MOUSEBUTTONS,
+				      	 SELECTDOWN,
+				      	 w,
+				      	 IntuitionBase);
 		}
 		
 		}break; /* case SELECTDOWN */
@@ -508,18 +472,18 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			if (inside && (gadget->Activation & GACT_RELVERIFY))
 			{
-			    fire_intuimessage(w,
-			    		      IDCMP_GADGETUP,
-					      0,
-					      gadget,
-					      IntuitionBase);
+			    ih_fire_intuimessage(w,
+			    		      	 IDCMP_GADGETUP,
+					      	 0,
+					      	 gadget,
+					      	 IntuitionBase);
 			} else {
 			    /* RKRM say so */
-			    fire_intuimessage(w,
-			    		      IDCMP_MOUSEBUTTONS,
-					      SELECTUP,
-					      w,
-					      IntuitionBase);
+			    ih_fire_intuimessage(w,
+			    		      	 IDCMP_MOUSEBUTTONS,
+					      	 SELECTUP,
+					      	 w,
+					      	 IntuitionBase);
 			}
 
 			gadget = NULL;
@@ -529,11 +493,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
 			if (gadget->Activation & GACT_RELVERIFY)
 			{
-			    fire_intuimessage(w,
-			    		      IDCMP_GADGETUP,
-					      0,
-					      gadget,
-					      IntuitionBase);
+			    ih_fire_intuimessage(w,
+			    		      	 IDCMP_GADGETUP,
+					      	 0,
+					      	 gadget,
+					      	 IntuitionBase);
 			}
 			
 
@@ -543,22 +507,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    /* Intuition string gadgets don't care about SELECTUP */
 
 		    case GTYP_CUSTOMGADGET: {
-			struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-
-			gpi.MethodID	= GM_HANDLEINPUT;
-			gpi.gpi_GInfo	= gi;
-			gpi.gpi_IEvent	= ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_TabletData	= NULL;
-			SetGPIMouseCoords(&gpi, gadget);
-
-			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
-							  &reuse_event, IntuitionBase);
-
+			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
 			break; }
 
 		    } /* switch GadgetType */
@@ -566,11 +515,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* if (a gadget is currently active) */
 		else if (w)
 		{
-		    fire_intuimessage(w,
-		    		      IDCMP_MOUSEBUTTONS,
-				      SELECTUP,
-				      w,
-				      IntuitionBase);
+		    ih_fire_intuimessage(w,
+		    		      	 IDCMP_MOUSEBUTTONS,
+				      	 SELECTUP,
+				      	 w,
+				      	 IntuitionBase);
 		}
 
 		break; /* case SELECTUP */
@@ -602,39 +551,22 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		{
 		    if ( (gadget->GadgetType & GTYP_GTYPEMASK) ==  GTYP_CUSTOMGADGET)
 		    {
-
-			struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-			
-			gpi.MethodID	    = GM_HANDLEINPUT;
-			gpi.gpi_GInfo	    = gi;
-			gpi.gpi_IEvent	    = ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_TabletData  = NULL;
-			SetGPIMouseCoords(&gpi, gadget);
-
-			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
-							  &reuse_event, IntuitionBase);
-
+			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
 		    } /* if (active gadget is a BOOPSI gad) */
 
 		} /* if (there is an active gadget) */
 		else if (w)
 		{
-		    fire_intuimessage(w,
-		    		      IDCMP_MOUSEBUTTONS,
-				      ie->ie_Code,
-				      w,
-				      IntuitionBase);
+		    ih_fire_intuimessage(w,
+		    		      	 IDCMP_MOUSEBUTTONS,
+				      	 ie->ie_Code,
+				      	 w,
+				      	 IntuitionBase);
 		}
 
 		break; /* case MENUDOWN */
 
-	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
-	    
+	    case IECODE_NOBUTTON: { /* MOUSEMOVE */ 
 		iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
 		iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
 		
@@ -649,7 +581,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		{
 		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
-
+		    
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_BOOLGADGET:
@@ -671,40 +605,29 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break;
 
 		    case GTYP_CUSTOMGADGET: {
-			struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-			
-			gpi.MethodID	= GM_HANDLEINPUT;
-			gpi.gpi_GInfo	= gi;
-			gpi.gpi_IEvent	= ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_TabletData  = NULL;
-			SetGPIMouseCoords(&gpi, gadget);
-
-			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination, 
-							  &reuse_event, IntuitionBase);
-			
+			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
 			break; }
 
 		    } /* switch GadgetType */
 	    	
 		} /* if (a gadget is currently active) */
 
-		if (!w) continue;
+		orig_ie->ie_Class = IECLASS_NULL;
 		
-		if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE)) continue;
-		
+		if (!w) break;
+
+		if (!(w->IDCMPFlags & IDCMP_MOUSEMOVE)) break;
+			
 		/* Send IDCMP_MOUSEMOVE if WFLG_REPORTMOUSE is set
 		   and/or active gadget has GACT_FOLLOWMOUSE set */
 		   
 		if (!(w->Flags & WFLG_REPORTMOUSE))
 		{
-		    if (!gadget) continue;
-		    if (!(gadget->Activation & GACT_FOLLOWMOUSE)) continue;
+		    if (!gadget) break;
+		    if (!(gadget->Activation & GACT_FOLLOWMOUSE)) break;
 		}
+		
+		orig_ie->ie_Class = IECLASS_RAWMOUSE;
 		
 		/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
 		   note that this comes after handling gadgets, because gadgets should get all events.
@@ -752,7 +675,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    /* no need to send a new message if we modified
 		       an existing one ... */
 		       
-		    if (old_msg_found) continue;
+		    if (old_msg_found) break;
 		    
 		    /* ... otherwise we are in a strange situation. The mouse
 		       queue is full, but we did not find an existing MOUSEMOVE
@@ -769,11 +692,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		   the Intuition InputHandler gets the ReplyMessage from the app
 		   and handles it in HandleIntuiReplyPort() */
 				
-		if (fire_intuimessage(w,
-				      IDCMP_MOUSEMOVE,
-				      IECODE_NOBUTTON,
-				      w,
-				      IntuitionBase))
+		if (ih_fire_intuimessage(w,
+				      	 IDCMP_MOUSEMOVE,
+				      	 IECODE_NOBUTTON,
+				      	 w,
+				      	 IntuitionBase))
 		{
 		    IW(w)->num_mouseevents++;
 		}
@@ -804,6 +727,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (gadget)
 		{
+		    orig_ie->ie_Class = IECLASS_NULL;
+		    
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_STRGADGET: {
@@ -815,11 +740,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			{
 			    if (gadget->Activation & GACT_RELVERIFY)
 			    {
-			        fire_intuimessage(w,
-						  IDCMP_GADGETUP,
-						  imsgcode,
-						  gadget,
-						  IntuitionBase);
+			        ih_fire_intuimessage(w,
+						     IDCMP_GADGETUP,
+						     imsgcode,
+						     gadget,
+						     IntuitionBase);
 				
 			    }
 			    
@@ -846,23 +771,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			break; }
 
 		    case GTYP_CUSTOMGADGET: {
-			struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-			
-			gpi.MethodID	    = GM_HANDLEINPUT;
-			gpi.gpi_GInfo	    = gi;
-			gpi.gpi_IEvent	    = ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_TabletData  = NULL;
-			SetGPIMouseCoords(&gpi, gadget);
-
-			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-			gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
-							  &reuse_event, IntuitionBase);
-
-
+			gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
 			break;}  /* case BOOPSI custom gadget type */
 
 		    } /* switch (gadget type) */
@@ -889,11 +798,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
 			{
-			    if (fire_intuimessage(w,
-			    		      	  IDCMP_VANILLAKEY,
-					      	  keyBuffer,
-					      	  0,
-					      	  IntuitionBase))
+			    if (ih_fire_intuimessage(w,
+			    		      	     IDCMP_VANILLAKEY,
+					      	     keyBuffer,
+					      	     0,
+					      	     IntuitionBase))
 			    {
 			        if (is_repeat_event) IW(w)->num_repeatevents++;
 			    }
@@ -906,11 +815,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			       			    
 		    }
 		    
-		    if (fire_intuimessage(w,
-		    		      	  IDCMP_RAWKEY,
-				      	  ie->ie_Code,
-				      	  0, /* TODO: Should be prevdownqode/qual */
-				      	  IntuitionBase))
+		    if (ih_fire_intuimessage(w,
+		    		      	     IDCMP_RAWKEY,
+				      	     ie->ie_Code,
+				      	     0, /* TODO: Should be prevdownqode/qual */
+				      	     IntuitionBase))
 		    {
 		    	if (is_repeat_event) IW(w)->num_repeatevents++;
 		    }		 
@@ -919,60 +828,41 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    }
 	    break; /* case IECLASS_RAWKEY */
 	    
-	case IECLASS_TIMER:	    
+	case IECLASS_TIMER:	    	    
 	    if (gadget)
 	    {
 	        if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET)
 		{
-		    /* Pass the event to the active gadget */
-		    struct gpInput gpi;
-		    IPTR retval;
-		    ULONG termination;
-		    
-		    gpi.MethodID	= GM_HANDLEINPUT;
-		    gpi.gpi_GInfo	= gi;
-		    gpi.gpi_IEvent	= ie;
-		    gpi.gpi_Termination = &termination;
-		    gpi.gpi_TabletData  = NULL;
-		    SetGPIMouseCoords(&gpi, gadget);
-
-		    retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
-
-		    gadget = HandleCustomGadgetRetVal(retval, gi, gadget, termination,
-						      &reuse_event, IntuitionBase);
-
+		    gadget = DoGPInput(gi, gadget, ie, GM_HANDLEINPUT, &reuse_event, IntuitionBase);
 		} /* if ((gadget->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET) */
 		
 	    } /* if (gadget) */
+
+	    /* stegerg: on the Amiga, Intuition's InputHandler seems to always
+	       swallow IECLASS_TIMER InputEvents. They never reach InputHandlers with
+	       lower priorities. So we mark the event as eaten by Intuition */	       
+	    orig_ie->ie_Class = IECLASS_NULL;
 	    
-	    if (!w) continue;
+	    if (!w) break;
 	    
 	    /* Send INTUITICK msg only if app already replied the last INTUITICK msg */
-	    if (w->Flags & WFLG_WINDOWTICKED) continue;
+	    if (w->Flags & WFLG_WINDOWTICKED) break;
 	    
 	    /* Set the WINDOWTICKED flag, it will be cleared again when the app
 	       replies back the msg and the InputHandler handles the replymsg
 	       in HandleIntuiReplyPort() */
 	       
-	    fire_intuimessage(w,
-	    		      IDCMP_INTUITICKS,
-			      0,
-			      w,
-			      IntuitionBase);
+	    ih_fire_intuimessage(w,
+	    		      	 IDCMP_INTUITICKS,
+			      	 0,
+			      	 w,
+			      	 IntuitionBase);
 			      
 	    Forbid();
 	    w->Flags |= WFLG_WINDOWTICKED;
 	    Permit();
 	    
 	    break; /* case IECLASS_TIMER */
-
-	case IECLASS_ACTIVEWINDOW:
-	    if (w) fire_intuimessage(w, IDCMP_ACTIVEWINDOW, 0, w, IntuitionBase);
-	    break;
-
-	case IECLASS_INACTIVEWINDOW:
-	    if (w) fire_intuimessage(w, IDCMP_INACTIVEWINDOW, 0, w, IntuitionBase);
-	    break;
 
 	default:
 	    ptr = NULL;
@@ -981,16 +871,54 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    break;
 	} /* switch (im->Class) */
 
-
+	if (!reuse_event)
+	{
+	    orig_ie = iihdata->ActInputEvent = orig_ie->ie_NextEvent;
+	    if (orig_ie) *ie = *orig_ie;
+	    iihdata->ActInputEventUsed = FALSE;
+	}
+	
     } /* for (each event in the chain) */
 
     iihdata->ActiveGadget = gadget;
+    iihdata->ActInputEvent = 0;
 
-
-    HandleDeferedActions(iihdata, IntuitionBase);
-    
     D(bug("Outside pollingloop\n"));
-    return (oldchain);
+
+    
+    {
+        struct InputEvent *last_ie = NULL;
+
+        /* Remove eaten InputEvents */
+	
+	iihdata->ReturnInputEvent = 0;
+	for(ie = oldchain; ie; ie = ie->ie_NextEvent)
+	{
+            if (ie->ie_Class != IECLASS_NULL)
+	    {
+		if (last_ie)
+		{
+	            last_ie->ie_NextEvent = ie;
+		} else {
+	            iihdata->ReturnInputEvent = ie;
+		}
+		last_ie = ie;
+	    }
+	}
+
+        HandleDeferedActions(iihdata, IntuitionBase);
+    
+   	/* Add generated InputEvents */
+	
+	if (last_ie)
+	{
+	    last_ie->ie_NextEvent = iihdata->GeneratedInputEvents;
+	} else {
+	    iihdata->ReturnInputEvent = iihdata->GeneratedInputEvents;
+	}
+    }
+        
+    return iihdata->ReturnInputEvent;
 }
 
 
