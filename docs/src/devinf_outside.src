@@ -153,14 +153,18 @@ The following resources are tracked:
 \begin{itemize}
 \item Memory in |AllocMem()|, |FreeMem()|, |AllocVec()| and |FreeVec()|
 
-\item Files in |Open()|, |Close()|, |Read()| and |Write()|
+\item MsgPorts in |CreateMsgPort()|, |DeleteMsgPort()|, |CreatePort()|,
+|DeletePort()| and |PutMsg()|
 
-\item Windows in |OpenWindow()|, |CloseWindow()|, |WindowToFront()|,
-    |WindowToBack()|
+\item Files in |Open()|, |Close()|, |Read()| and |Write()|. |Read()| and
+|Write()| also check their buffers.
 
-\item Screens in |OpenScreen()|, |CloseScreen()|, |ScreenToFront()|,
-    |ScreenToBack()|. |CloseScreen()| also checks for open windows
-    on the screen before closing.
+\item Windows in |OpenWindow()|, |OpenWindowTags()|, |OpenWindowTagList()|,
+|CloseWindow()|, |WindowToFront()|, |WindowToBack()|
+
+\item Screens in |OpenScreen()|, |OpenScreenTags()|, |OpenScreenTagList()|,
+|CloseScreen()|, |ScreenToFront()|, |ScreenToBack()|. |CloseScreen()| also
+checks for open windows on the screen before closing.
 
 \end{itemize}
 

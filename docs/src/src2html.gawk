@@ -41,15 +41,25 @@ BEGIN {
     special_items["AllocVec()"] = "<A HREF=\"autodocs/allocvec.html\">AllocVec()</A>";
     special_items["FreeMem()"] = "<A HREF=\"autodocs/freemem.html\">FreeMem()</A>";
     special_items["FreeVec()"] = "<A HREF=\"autodocs/freevec.html\">FreeVec()</A>";
+    special_items["CreatePort()"] = "<A HREF=\"autodocs/createport.html\">CreatePort()</A>";
+    special_items["CreateMsgPort()"] = "<A HREF=\"autodocs/createmsgport.html\">CreateMsgPort()</A>";
+    special_items["DeletePort()"] = "<A HREF=\"autodocs/deleteport.html\">DeletePort()</A>";
+    special_items["DeleteMsgPort()"] = "<A HREF=\"autodocs/deletemsgport.html\">DeleteMsgPort()</A>";
+    special_items["PutMsg()"] = "<A HREF=\"autodocs/putmsg.html\">PutMsg()</A>";
+    special_items["GetMsg()"] = "<A HREF=\"autodocs/getmsg.html\">GetMsg()</A>";
 
     special_items["DoMethod()"] = "<A HREF=\"autodocs/domethod.html\">DoMethod()</A>";
     special_items["DoMethodA()"] = "<A HREF=\"autodocs/domethod.html\">DoMethodA()</A>";
 
     special_items["OpenWindow()"] = "<A HREF=\"autodocs/openwindow.html\">OpenWindow()</A>";
+    special_items["OpenWindowTags()"] = "<A HREF=\"autodocs/openwindowtags.html\">OpenWindowTags()</A>";
+    special_items["OpenWindowTagList()"] = "<A HREF=\"autodocs/openwindowtaglist.html\">OpenWindowTagList()</A>";
     special_items["CloseWindow()"] = "<A HREF=\"autodocs/closewindow.html\">CloseWindow()</A>";
     special_items["WindowToFront()"] = "<A HREF=\"autodocs/windowtofront.html\">WindowToFront()</A>";
     special_items["WindowToBack()"] = "<A HREF=\"autodocs/windowtoback.html\">WindowToBack()</A>";
     special_items["OpenScreen()"] = "<A HREF=\"autodocs/openscreen.html\">OpenScreen()</A>";
+    special_items["OpenScreenTags()"] = "<A HREF=\"autodocs/openscreentags.html\">OpenScreenTags()</A>";
+    special_items["OpenScreenTagList()"] = "<A HREF=\"autodocs/openscreentaglist.html\">OpenScreenTagList()</A>";
     special_items["CloseScreen()"] = "<A HREF=\"autodocs/closescreen.html\">CloseScreen()</A>";
     special_items["ScreenToFront()"] = "<A HREF=\"autodocs/screentofront.html\">ScreenToFront()</A>";
     special_items["ScreenToBack()"] = "<A HREF=\"autodocs/screentoback.html\">ScreenToBack()</A>";
