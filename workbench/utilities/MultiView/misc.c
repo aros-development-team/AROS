@@ -13,36 +13,36 @@
 
 #include <string.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#include "compilerspecific.h"
+#include "debug.h"
 
 /*********************************************************************************************/
 
 static struct NewMenu nm[] =
 {
-    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT							},
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN						},
-     {NM_ITEM, NM_BARLABEL								},
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS						},
-     {NM_ITEM, NM_BARLABEL								},
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_PRINT						},
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ABOUT						},
-     {NM_ITEM, NM_BARLABEL								},
-     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT						},
-    {NM_TITLE, (STRPTR)MSG_MEN_EDIT							},
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_MARK						},
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_COPY						},
-     {NM_ITEM, NM_BARLABEL								},
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_SELECTALL						},
-     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_CLEARSELECTED					},
-    {NM_TITLE, (STRPTR)MSG_MEN_WINDOW							},
-     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_SEPSCREEN		, 0, CHECKIT | MENUTOGGLE	},
-     {NM_ITEM, NM_BARLABEL								},
-     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MINIMIZE						},
-     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_NORMAL						},
-     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MAXIMIZE						},
-    {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS							},
-     {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_SAVEDEF						},
+    {NM_TITLE, (STRPTR)MSG_MEN_PROJECT                                                  },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_OPEN                                             },
+     {NM_ITEM, NM_BARLABEL                                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_SAVEAS                                           },
+     {NM_ITEM, NM_BARLABEL                                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_PRINT                                            },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_ABOUT                                            },
+     {NM_ITEM, NM_BARLABEL                                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_PROJECT_QUIT                                             },
+    {NM_TITLE, (STRPTR)MSG_MEN_EDIT                                                     },
+     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_MARK                                                },
+     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_COPY                                                },
+     {NM_ITEM, NM_BARLABEL                                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_SELECTALL                                           },
+     {NM_ITEM, (STRPTR)MSG_MEN_EDIT_CLEARSELECTED                                       },
+    {NM_TITLE, (STRPTR)MSG_MEN_WINDOW                                                   },
+     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_SEPSCREEN         , 0, CHECKIT | MENUTOGGLE       },
+     {NM_ITEM, NM_BARLABEL                                                              },
+     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MINIMIZE                                          },
+     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_NORMAL                                            },
+     {NM_ITEM, (STRPTR)MSG_MEN_WINDOW_MAXIMIZE                                          },
+    {NM_TITLE, (STRPTR)MSG_MEN_SETTINGS                                                 },
+     {NM_ITEM, (STRPTR)MSG_MEN_SETTINGS_SAVEDEF                                         },
     {NM_END}
 };
 
@@ -54,16 +54,16 @@ void InitMenus(void)
     
     for(actnm = nm; actnm->nm_Type != NM_END; actnm++)
     {
-        if (actnm->nm_Label != NM_BARLABEL)
+	if (actnm->nm_Label != NM_BARLABEL)
 	{
 	    ULONG  id = (ULONG)actnm->nm_Label;
 	    STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
 	    {
-	        actnm->nm_Label = str;
+		actnm->nm_Label = str;
 	    } else {
-	        actnm->nm_Label = str + 2;
+		actnm->nm_Label = str + 2;
 		if (str[0] != ' ') actnm->nm_CommKey = str;
 	    }
 	    actnm->nm_UserData = (APTR)id;
@@ -80,8 +80,8 @@ void MakeMenus(void)
 {
     struct TagItem menu_tags[] =
     {
-    	{GTMN_NewLookMenus, TRUE},
-	{TAG_DONE   	    	}
+	{GTMN_NewLookMenus, TRUE},
+	{TAG_DONE               }
     };
     
     menus = CreateMenusA(nm, NULL);
@@ -112,13 +112,13 @@ void SetMenuFlags(void)
     item = ItemAddress(menus, FULLMENUNUM(1, 1, NOSUB));
     if (item)
     {
-        if (dto_supports_copy) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+	if (dto_supports_copy) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
     }
     
     item = ItemAddress(menus, FULLMENUNUM(1, 4, NOSUB));
     if (item)
     {
-        if (dto_supports_clearselected) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+	if (dto_supports_clearselected) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
     }
     
     if (win) ResetMenuStrip(win, menus);
@@ -128,31 +128,31 @@ void SetMenuFlags(void)
 
 STRPTR GetFile(void)
 {
-    static UBYTE	 pathbuffer[300];
-    static UBYTE	 filebuffer[300];
+    static UBYTE         pathbuffer[300];
+    static UBYTE         filebuffer[300];
     struct FileRequester *req;
-    STRPTR 		 retval = NULL;
+    STRPTR               retval = NULL;
     
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
-        filebuffer[299] = 0;
+	filebuffer[299] = 0;
 	pathbuffer[299] = 0;
 	
-        strncpy(filebuffer, FilePart(filenamebuffer), 299);
+	strncpy(filebuffer, FilePart(filenamebuffer), 299);
 	strncpy(pathbuffer, filenamebuffer, 299);
 	*(FilePart(pathbuffer)) = 0;
 	
-        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
-						   ASLFR_DoPatterns   , TRUE			     ,
-						   ASLFR_InitialFile  , (IPTR)filebuffer	     ,
-						   ASLFR_InitialDrawer, (IPTR)pathbuffer	     ,
+	req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
+						   ASLFR_DoPatterns   , TRUE                         ,
+						   ASLFR_InitialFile  , (IPTR)filebuffer             ,
+						   ASLFR_InitialDrawer, (IPTR)pathbuffer             ,
 						   TAG_DONE);
 	if (req)
 	{
 	    if (AslRequest(req, NULL))
 	    {
-	        strncpy(filebuffer, req->fr_Drawer, 299);
+		strncpy(filebuffer, req->fr_Drawer, 299);
 		AddPart(filebuffer, req->fr_File, 299);
 		
 		retval = filebuffer;
@@ -174,17 +174,17 @@ STRPTR GetFile(void)
 
 void About(void)
 {
-    struct DataType 	*dt = NULL;
-    struct EasyStruct	es;
-    STRPTR 		gid_string = NULL;
-    STRPTR		name_string = NULL;
-    STRPTR		sp;
-    WORD		i;
-    UBYTE		dtver_string[100];
+    struct DataType     *dt = NULL;
+    struct EasyStruct   es;
+    STRPTR              gid_string = NULL;
+    STRPTR              name_string = NULL;
+    STRPTR              sp;
+    WORD                i;
+    UBYTE               dtver_string[100];
     
     if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
     {
-        if (dt)
+	if (dt)
 	{
 	    gid_string = GetDTString(dt->dtn_Header->dth_GroupID);
 	    name_string = dt->dtn_Header->dth_Name;
@@ -195,7 +195,7 @@ void About(void)
     if (!name_string) name_string = "";
     
     for(sp = DataTypesBase->lib_IdString;
-        (*sp != 0) && ((*sp < '0') || (*sp > '9'));
+	(*sp != 0) && ((*sp < '0') || (*sp > '9'));
 	sp++)
     {
     }
@@ -203,7 +203,7 @@ void About(void)
     i = 0;
     while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
     {
-        dtver_string[i++] = *sp++;
+	dtver_string[i++] = *sp++;
     }
     dtver_string[i++] = '\0';
     
@@ -214,7 +214,7 @@ void About(void)
     es.es_GadgetFormat = MSG(MSG_CONTINUE);
  
     EasyRequest(win, &es, NULL, VERSION,
-    				REVISION,
+				REVISION,
 				DATESTR, 
 				dtver_string,
 				name_string,
@@ -228,12 +228,12 @@ void DoTrigger(ULONG what)
 {
     struct dtTrigger m;
 
-    m.MethodID 		= DTM_TRIGGER;
-    m.dtt_GInfo 	= NULL;
-    m.dtt_Function 	= what;
-    m.dtt_Data 		= NULL;
+    m.MethodID          = DTM_TRIGGER;
+    m.dtt_GInfo         = NULL;
+    m.dtt_Function      = what;
+    m.dtt_Data          = NULL;
 
-    DoDTMethodA(dto, win, NULL, (Msg)&m);				
+    DoDTMethodA(dto, win, NULL, (Msg)&m);                               
 }
 
 /*********************************************************************************************/

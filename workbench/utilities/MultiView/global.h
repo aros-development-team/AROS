@@ -63,10 +63,6 @@
 #include <graphics/layers.h>
 #endif
 
-#ifndef CYBERGRAPHX_CYBERGRAPHICS_H
-#include <cybergraphx/cybergraphics.h>
-#endif
-
 #ifndef DEVICES_KEYMAP_H
 #include <devices/keymap.h>
 #endif
@@ -119,10 +115,6 @@
 
 #ifndef PROTO_GRAPHICS_H
 #include <proto/graphics.h>
-#endif
-
-#ifndef PROTO_CYBERGRAPHICS_H
-#include <proto/cybergraphics.h>
 #endif
 
 #ifndef PROTO_UTILITY_H
