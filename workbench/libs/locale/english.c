@@ -43,6 +43,9 @@ extern ULONG AROS_SLIB_ENTRY(null,Locale)();
     This function converts the character char to the equivalent
     lower case value.
 */
+AROS_LD1(ULONG, convtolower,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 6, english);
 AROS_LH1(ULONG, convtolower,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 6, english)
@@ -58,6 +61,9 @@ AROS_LH1(ULONG, convtolower,
     This function converts the character char to the equivalent
     upper case character.
 */
+AROS_LD1(ULONG, convtoupper,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 7, english);
 AROS_LH1(ULONG, convtoupper,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 7, english)
@@ -73,6 +79,9 @@ AROS_LH1(ULONG, convtoupper,
     This function is called by GetLocaleStr() and should return
     the string matching the string id passed in as num.
 */
+AROS_LD1(STRPTR, getlangstring,
+    AROS_LDA(ULONG, id, D0),
+    struct LocaleBase *, LocaleBase, 9, english);
 AROS_LH1(STRPTR, getlangstring,
     AROS_LHA(ULONG, id, D0),
     struct LocaleBase *, LocaleBase, 9, english)
@@ -96,6 +105,9 @@ AROS_LH1(STRPTR, getlangstring,
     font problems.
 */
 
+AROS_LD1(BOOL, isalnum,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 10, english);
 AROS_LH1(BOOL, isalnum,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 10, english)
@@ -109,6 +121,9 @@ AROS_LH1(BOOL, isalnum,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isalpha,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 11, english);
 AROS_LH1(BOOL, isalpha,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 11, english)
@@ -120,6 +135,9 @@ AROS_LH1(BOOL, isalpha,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, iscntrl,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 12, english);
 AROS_LH1(BOOL, iscntrl,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 12, english)
@@ -131,6 +149,9 @@ AROS_LH1(BOOL, iscntrl,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isdigit,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 13, english);
 AROS_LH1(BOOL, isdigit,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 13, english)
@@ -142,6 +163,9 @@ AROS_LH1(BOOL, isdigit,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isgraph,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 14, english);
 AROS_LH1(BOOL, isgraph,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 14, english)
@@ -153,6 +177,9 @@ AROS_LH1(BOOL, isgraph,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, islower,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 15, english);
 AROS_LH1(BOOL, islower,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 15, english)
@@ -164,6 +191,9 @@ AROS_LH1(BOOL, islower,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isprint,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 16, english);
 AROS_LH1(BOOL, isprint,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 16, english)
@@ -175,6 +205,9 @@ AROS_LH1(BOOL, isprint,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, ispunct,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 17, english);
 AROS_LH1(BOOL, ispunct,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 17, english)
@@ -186,6 +219,9 @@ AROS_LH1(BOOL, ispunct,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isspace,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 18, english);
 AROS_LH1(BOOL, isspace,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 18, english)
@@ -197,6 +233,9 @@ AROS_LH1(BOOL, isspace,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isupper,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 19, english);
 AROS_LH1(BOOL, isupper,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 19, english)
@@ -208,6 +247,9 @@ AROS_LH1(BOOL, isupper,
     AROS_LIBFUNC_EXIT
 }
 
+AROS_LD1(BOOL, isxdigit,
+    AROS_LDA(ULONG, chr, D0),
+    struct LocaleBase *, LocaleBase, 20, english);
 AROS_LH1(BOOL, isxdigit,
     AROS_LHA(ULONG, chr, D0),
     struct LocaleBase *, LocaleBase, 20, english)
@@ -228,6 +270,12 @@ AROS_LH1(BOOL, isxdigit,
     If you use SC_COLLATE2 this does SC_COLLATE1 encoding, the repeats
     the string as is...
 */
+AROS_LD4(ULONG, strconvert,
+    AROS_LDA(STRPTR,    string1, A1),
+    AROS_LDA(STRPTR,    string2, A2),
+    AROS_LDA(LONG,      length,  D0),
+    AROS_LDA(ULONG,     type,    D1),
+    struct LocaleBase *, LocaleBase, 21, english);
 AROS_LH4(ULONG, strconvert,
     AROS_LHA(STRPTR,    string1, A1),
     AROS_LHA(STRPTR,    string2, A2),
@@ -281,6 +329,12 @@ AROS_LH4(ULONG, strconvert,
     or the collation information. This is explained more in
     the data file, or in the autodoc...
 */
+AROS_LD4(LONG, strcompare,
+    AROS_LDA(STRPTR,    string1, A1),
+    AROS_LDA(STRPTR,    string2, A2),
+    AROS_LDA(LONG,      length,  D0),
+    AROS_LDA(ULONG,     type,    D1),
+    struct LocaleBase *, LocaleBase, 22, english);
 AROS_LH4(LONG, strcompare,
     AROS_LHA(STRPTR,    string1, A1),
     AROS_LHA(STRPTR,    string2, A2),
