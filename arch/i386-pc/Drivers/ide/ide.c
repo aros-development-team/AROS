@@ -199,7 +199,6 @@ AROS_LH2(struct ideBase *,  init,
                             IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
                             D(bug("ide_init: device (%x) found at port 0%x\n",
                                                     (UBYTE)devID, Ports[i]));
-//			    kprintf("ide_init: device (%x) found at port 0%x\n", (UBYTE)devID, Ports[i));
                         }
                         /* Check for SLAVE drive */
                         if (!devID)
@@ -216,7 +215,6 @@ AROS_LH2(struct ideBase *,  init,
                             IBase->ide_DevMaskArray[cunit++] = (UBYTE)devID;
                             D(bug("ide_init: device (%x) found at port 0%x\n",
                                                     (UBYTE)devID, Ports[i]));
-//                          kprintf("ide_init: device (%x) found at port 0%x\n", (UBYTE)devID, Ports[i]);
                         }
                     }
                     /* Store number of available units */
