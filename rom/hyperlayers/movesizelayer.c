@@ -69,11 +69,12 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * first, *_l, *lparent;
-  struct Region * newshape = NewRegion(), * oldshape, r, rtmp;
+  struct Region * newshape = NewRegion(), * oldshape, r, rtmp, cutnewshape;
   struct Rectangle rectw, recth;
 
   rtmp.RegionRectangle = NULL; // min. initialization
   r.RegionRectangle = NULL; // min. initialization
+  cutnewshape.RegionRectangle = NULL;
   
   LockLayers(l->LayerInfo);
 
@@ -127,6 +128,9 @@
     _TranslateRect(&recth, dx, dy);
   }
 
+  _SetRegion(newshape, &cutnewshape);
+  AndRegionRegion(l->parent->shape, &cutnewshape);
+
   first = GetFirstFamilyMember(l);
   /*
    * Must make a copy of the VisibleRegion of l here
@@ -152,10 +156,10 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
 #endif
   while (1)
   {
-    if (IS_VISIBLE(_l) && DO_OVERLAP(&newshape->bounds, &_l->shape->bounds))
-      _BackupPartsOfLayer(_l, newshape, 0, FALSE, LayersBase);
+    if (IS_VISIBLE(_l) && DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds))
+      _BackupPartsOfLayer(_l, &cutnewshape, 0, FALSE, LayersBase);
     else
-      ClearRegionRegion(newshape, _l->VisibleRegion);
+      ClearRegionRegion(&cutnewshape, _l->VisibleRegion);
 
     if (_l == lparent)
     {
@@ -273,7 +277,7 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
    * its parent visible.
    */
   _SetRegion(l->VisibleRegion, &r);
-  ClearRegionRegion(newshape, &r);
+  ClearRegionRegion(&cutnewshape, &r);
   _l = l->back;
   lparent = l->parent;
     
@@ -284,8 +288,8 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
         __FUNCTION__);
 #endif
     if (IS_VISIBLE(_l) && 
-         (DO_OVERLAP(&newshape->bounds, &_l->shape->bounds) ||
-          DO_OVERLAP(&oldshape->bounds, &_l->shape->bounds) ))
+         (DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds) ||
+          DO_OVERLAP(   &oldshape->bounds, &_l->shape->bounds) ))
     {
       ClearRegion(_l->VisibleRegion);
       _ShowPartsOfLayer(_l, &r, LayersBase);
@@ -318,6 +322,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     _l = _l->back;
   }
 
+  ClearRegion(&cutnewshape);
   ClearRegion(&rtmp);
     
   /*  
