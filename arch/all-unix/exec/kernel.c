@@ -141,7 +141,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	   happening by doing this manual Disable()ing/Enable()ing,
 	   ie. inc/dec of SysBase->IDNestCnt. */
 	   
-	SysBase->IDNestCnt++;
+	AROS_ATOMIC_INCB(SysBase->IDNestCnt);
 	
 	AROS_UFC5(void, iv->iv_Code,
 	    AROS_UFCA(ULONG, 0, D1),
@@ -151,7 +151,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    AROS_UFCA(struct ExecBase *, SysBase, A6)
 	);
 	
-	SysBase->IDNestCnt--;
+	AROS_ATOMIC_DECB(SysBase->IDNestCnt);
     }
 
     /* Has an interrupt told us to dispatch when leaving */
@@ -162,7 +162,7 @@ static void sighandler(int sig, sigcontext_t * sc)
     if (SysBase->AttnResched & 0x8000)
     {
     #if AROS_NESTING_SUPERVISOR
-    	Disable();
+    	// Disable(); commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif
     	AROS_ATOMIC_ANDW(SysBase->AttnResched, ~0x8000);
 
@@ -204,7 +204,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 #endif
 
     #if AROS_NESTING_SUPERVISOR
-    	Enable();
+    	// Enable();  commented out, as causes problems with IDNestCnt. Getting completely out of range. 
     #endif	
     }
 
