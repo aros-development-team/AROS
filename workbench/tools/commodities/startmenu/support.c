@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <graphics/gfx.h>
 #include <intuition/screens.h>
 #include <proto/graphics.h>

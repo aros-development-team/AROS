@@ -1,5 +1,6 @@
 /*
-	$Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #ifndef PC_PARTITION_TABLE_H

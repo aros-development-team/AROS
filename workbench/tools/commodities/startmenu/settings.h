@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define LOGO_EXTRA_WIDTH  8
 #define LOGO_EXTRA_HEIGHT 4
 
