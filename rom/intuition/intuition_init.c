@@ -51,7 +51,7 @@ static const char version[];
 static const APTR inittabl[4];
 static void *const LIBFUNCTABLE[];
 
-struct LIBBASETYPE *INIT();
+LIBBASETYPEPTR INIT();
 
 extern const char LIBEND;
 
@@ -67,24 +67,24 @@ AROS_UFP3(ULONG, rootDispatcher,
 
 #endif
 
-struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitModelClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitSysIClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitFillRectClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitStrGClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitGroupGClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitICClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitModelClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitImageClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitFrameIClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitSysIClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitFillRectClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitGadgetClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitButtonGClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitFrButtonClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitPropGClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitStrGClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitGroupGClass (LIBBASETYPEPTR LIBBASE);
 
-struct IClass *InitMenuBarLabelClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitMenuBarLabelClass (LIBBASETYPEPTR LIBBASE);
 
-struct IClass *InitDragBarClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitSizeButtonClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitTitleBarButClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitDragBarClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitSizeButtonClass (LIBBASETYPEPTR LIBBASE);
+struct IClass *InitTitleBarButClass (LIBBASETYPEPTR LIBBASE);
 
 
 int Intuition_entry(void)
@@ -121,8 +121,8 @@ static const APTR inittabl[4]=
 
 /****************************************************************************************/
 
-AROS_LH2(struct LIBBASETYPE *, init,
- AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, init,
+ AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Intuition)
 {
@@ -222,9 +222,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 /****************************************************************************************/
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPEPTR, open,
  AROS_LHA(ULONG, version, D0),
-	   struct LIBBASETYPE *, LIBBASE, 1, Intuition)
+	   LIBBASETYPEPTR, LIBBASE, 1, Intuition)
 {
     AROS_LIBFUNC_INIT
 
@@ -340,7 +340,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 /****************************************************************************************/
 
 AROS_LH0(BPTR, close,
-	   struct LIBBASETYPE *, LIBBASE, 2, Intuition)
+	   LIBBASETYPEPTR, LIBBASE, 2, Intuition)
 {
     AROS_LIBFUNC_INIT
 
@@ -364,7 +364,7 @@ AROS_LH0(BPTR, close,
 /****************************************************************************************/
 
 AROS_LH0(BPTR, expunge,
-	   struct LIBBASETYPE *, LIBBASE, 3, Intuition)
+	   LIBBASETYPEPTR, LIBBASE, 3, Intuition)
 {
     AROS_LIBFUNC_INIT
 
@@ -447,7 +447,7 @@ AROS_LH0(BPTR, expunge,
 /****************************************************************************************/
 
 AROS_LH0I(int, null,
-	    struct LIBBASETYPE *, LIBBASE, 4, Intuition)
+	    LIBBASETYPEPTR, LIBBASE, 4, Intuition)
 {
     AROS_LIBFUNC_INIT
     return 0;

@@ -22,7 +22,7 @@ static const UBYTE name[];
 static const UBYTE version[];
 static const APTR inittabl[4];
 extern void *const LIBFUNCTABLE[];
-struct LIBBASETYPE *AROS_SLIB_ENTRY(init,Aros)();
+LIBBASETYPEPTR AROS_SLIB_ENTRY(init,Aros)();
 extern const char LIBEND;
 
 int Aros_entry(void)
@@ -57,8 +57,8 @@ static const APTR inittabl[4]=
     &INIT
 };
 
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, init,
+    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_LHA(BPTR,               segList,   A0),
     struct ExecBase *, sysBase, 0, BASENAME)
 {
@@ -84,9 +84,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPEPTR, open,
  AROS_LHA(ULONG, version, D0),
-	   struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
+	   LIBBASETYPEPTR, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -106,7 +106,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 }
 
 AROS_LH0(BPTR, close,
-	   struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
+	   LIBBASETYPEPTR, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -122,7 +122,7 @@ AROS_LH0(BPTR, close,
 /* aros.library must not ever be expunged! */
 
 AROS_LH0(BPTR, expunge,
-	   struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
+	   LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -138,7 +138,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-	    struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
+	    LIBBASETYPEPTR, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
     return 0;

@@ -20,7 +20,7 @@
     use the aros.library functions to get information.
 */
 
-struct LIBBASETYPE
+LIBBASETYPE
 {
     struct Library       aros_LibNode;
 

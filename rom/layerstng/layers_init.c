@@ -18,14 +18,14 @@
 
 
 /* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((struct LIBBASETYPEPTR)(lib))->lb_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((struct LIBBASETYPEPTR)(lib))->lb_SegList)
+#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->lb_SysBase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->lb_SegList)
 #define LC_RESIDENTNAME 	Layers_resident
 #define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
 #define LC_RESIDENTPRI		60
-#define LC_LIBBASESIZE		sizeof (struct LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR	struct LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((struct LIBBASETYPEPTR)(lib))->lb_LibNode)
+#define LC_LIBBASESIZE		sizeof (LIBBASETYPE)
+#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
+#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->lb_LibNode)
 
 #define LC_NO_OPENLIB
 #define LC_NO_CLOSELIB

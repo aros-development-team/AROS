@@ -25,7 +25,7 @@
 #include <graphics/gfxbase.h>
 /* ... ??? */
 
-struct LIBBASETYPE
+LIBBASETYPE
 {
     struct Library   	    lb_LibNode;
 
@@ -77,7 +77,7 @@ struct ResourceNode
 
 /* digulla again... Needed for close() */
 #define expunge() \
- AROS_LC0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
+ AROS_LC0(BPTR, expunge, LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
 
 /*
 #define SysBase         LIBBASE->lb_SysBase

@@ -27,7 +27,7 @@ static const char version[];
 static const APTR inittabl[4];
 static void *const LIBFUNCTABLE[];
 
-struct LIBBASETYPE *INIT();
+LIBBASETYPEPTR INIT();
 
 extern const char LIBEND;
 
@@ -77,8 +77,8 @@ struct KeymapBase *DebugKeymapBase;
 
 /****************************************************************************************/
 
-AROS_LH2(struct LIBBASETYPE *, init,
-    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+AROS_LH2(LIBBASETYPEPTR, init,
+    AROS_LHA(LIBBASETYPEPTR, LIBBASE, D0),
     AROS_LHA(BPTR, segList, A0),
     struct ExecBase *, sysBase, 0, Keymap)
 {
@@ -123,9 +123,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 /****************************************************************************************/
 
-AROS_LH1(struct LIBBASETYPE *, open,
+AROS_LH1(LIBBASETYPEPTR, open,
     AROS_LHA(ULONG, version, D0),
-    struct LIBBASETYPE *, LIBBASE, 1, Keymap)
+    LIBBASETYPEPTR, LIBBASE, 1, Keymap)
 {
     AROS_LIBFUNC_INIT
     
@@ -145,7 +145,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 /****************************************************************************************/
 
 AROS_LH0(BPTR, close,
-    struct LIBBASETYPE *, LIBBASE, 2, Keymap)
+    LIBBASETYPEPTR, LIBBASE, 2, Keymap)
 {
     AROS_LIBFUNC_INIT
 
@@ -170,7 +170,7 @@ AROS_LH0(BPTR, close,
 /****************************************************************************************/
 
 AROS_LH0(BPTR, expunge,
-	   struct LIBBASETYPE *, LIBBASE, 3, Keymap)
+	   LIBBASETYPEPTR, LIBBASE, 3, Keymap)
 {
     AROS_LIBFUNC_INIT
 
@@ -204,7 +204,7 @@ AROS_LH0(BPTR, expunge,
 /****************************************************************************************/
 
 AROS_LH0I(int, null,
-    struct LIBBASETYPE *, LIBBASE, 4, Keymap)
+    LIBBASETYPEPTR, LIBBASE, 4, Keymap)
 {
     AROS_LIBFUNC_INIT
     

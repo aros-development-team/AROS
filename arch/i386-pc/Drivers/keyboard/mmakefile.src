@@ -3,19 +3,21 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	kbd_init functable kbdclass kbd_common endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
+END_FILE :=	$(OBJDIR)/endtag
+ENDFUNC	:=	$(END_FILE).o
+FILES	:=	kbd_init functable kbdclass kbd_common
 
 #MM Drivers-native-kbd :
 Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s
 	%add_objects rom/boot/kbd_driver
-	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/kbd_driver.o
 
 #MM
 clean ::
-	-$(RM) $(OBJDIR) libdefs.h endtag.c *.err
+	-$(RM) $(OBJDIR) libdefs.h *.err
 
 #MM
 setup :
@@ -44,9 +46,7 @@ FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_arch
 
-endtag.c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d

@@ -24,8 +24,8 @@
 #undef SysBase
 
 /* Customize libheader.c */
-#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->sysbase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->seglist)
+#define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->sysbase)
+#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->seglist)
 #define LC_RESIDENTNAME		X11Hidd_resident
 #define LC_RESIDENTFLAGS	RTF_AUTOINIT|RTF_COLDSTART
 #define LC_RESIDENTPRI		9
