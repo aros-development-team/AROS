@@ -281,7 +281,6 @@ ULONG serialunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Wri
 {
   struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
   ULONG len = 0;
-  ULONG error;
   
   EnterFunc(bug("SerialUnit::Write()\n"));
   /*
@@ -574,7 +573,6 @@ AROS_UFH3(void, serialunit_receive_data,
 {
   AROS_USERFUNC_INIT
 
-  ULONG error;
   struct HIDDSerialUnitData * data = iD;
   ssize_t len;
   UBYTE buffer[READBUFFER_SIZE];

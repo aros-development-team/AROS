@@ -239,7 +239,6 @@ ULONG parallelunit_write(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit
 {
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
 	ULONG len = 0;
-	ULONG error;
 	
 	EnterFunc(bug("ParallelUnit::Write()\n"));
 
@@ -293,7 +292,9 @@ VOID parallelunit_stop(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_S
 /****** ParallelUnit::GetStatus ********************************/
 UWORD parallelunit_getstatus(OOP_Class *cl, OOP_Object *o, struct pHidd_ParallelUnit_GetStatus *msg)
 {
+#if 0
 	struct HIDDParallelUnitData * data = OOP_INST_DATA(cl, o);
+#endif
 
 	return 0;
 }
@@ -315,12 +316,9 @@ AROS_UFH3(void, parallelunit_receive_data,
 {
 	AROS_USERFUNC_INIT
 
-	ULONG error;
 	struct HIDDParallelUnitData * data = iD;
 	ssize_t len;
 	UBYTE buffer[READBUFFER_SIZE];
-	struct Message * msg;
-
 
 	/*
 	** Read the data from the port ...
