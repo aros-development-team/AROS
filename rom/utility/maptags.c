@@ -54,7 +54,7 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,UtilityBase)
     struct TagItem * tag, * map;
 
-    while ((tag = NextTagItem (&tagList)))
+    while ((tag = NextTagItem ((const struct TagItem **)&tagList)))
     {
 	if (mapList && (map = FindTagItem (tag->ti_Tag, mapList)))
 	{
