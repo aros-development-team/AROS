@@ -189,4 +189,4 @@ Therefore ASM must be used. */
 
 /*									 */
 /* ********************************************************************* */
-#endif /* _COMPILER_H */
+#endif /* LIBCORE_COMPILER_H */
