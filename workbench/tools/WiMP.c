@@ -33,43 +33,17 @@
 
 ******************************************************************************/
 
-static const char version[] = "$VER: WiMP 0.8 (1.5.2001)";
+static const char version[] = "$VER: WiMP 0.9 (10.08.2003)";
 
 
-#include <ctype.h>
-#include <time.h>
 #include <stdio.h>
-#include <math.h>
 #include <stdlib.h>
-#include <string.h>
-#include <devices/keymap.h>
-#include <dos/dos.h>
-#include <dos/exall.h>
-#include <dos/datetime.h>
-#include <exec/lists.h>
-#include <exec/types.h>
-#include <exec/memory.h>
-#include <exec/tasks.h>
-#include <exec/execbase.h>
-#include <graphics/gfxbase.h>
-#include <graphics/gfx.h>
-#include <graphics/rastport.h>
-#include <graphics/gfxmacros.h>
-#include <intuition/intuitionbase.h>
-#include <intuition/intuition.h>
-#include <intuition/classusr.h>
-#include <intuition/gadgetclass.h>
-#include <intuition/imageclass.h>
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
-#include <proto/utility.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
-#include <proto/console.h>
 #include <proto/gadtools.h>
-#include <libraries/gadtools.h>
 
 struct Screen *Screen;
 struct Window *Window;
@@ -886,7 +860,7 @@ return;
 int main()
 {
 struct Gadget *gad;
-struct IntuiMessage *msg;
+struct IntuiMessage *msg = NULL;
 struct MenuItem *item;
 struct EasyStruct es;
 ULONG class;
@@ -920,7 +894,7 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
   while ( quit == 0 )
   {
-    port = Wait ( w_sigbit | iw_sigbit | SIGBREAKF_CTRL_C);
+    port = Wait ( w_sigbit | iw_sigbit | SIGBREAKF_CTRL_C );
 
     if ( (port & SIGBREAKF_CTRL_C) )
      quit = 1;
@@ -934,7 +908,6 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
       {
 	close_infowindow();
       }
-      ReplyMsg ( (struct Message *) msg );
     }
     else if ( ( port & w_sigbit ) != 0L )
     {
@@ -1354,8 +1327,8 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 	default :
 		break;
       }
-      ReplyMsg ( (struct Message *)msg );
     }
+    ReplyMsg ( (struct Message *)msg );
   }
 
   close_infowindow();
