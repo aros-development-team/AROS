@@ -897,7 +897,7 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
  */
 static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct IClass *cl)
 {
-    if (data->mad_InputMode != MUIV_InputMode_None)
+/*    if (data->mad_InputMode != MUIV_InputMode_None) */ /* needed to be commented, because it checks also for the controlchar */
     {
 	data->mad_ccn.ehn_Events = data->mad_ControlChar;
 	switch (data->mad_InputMode)

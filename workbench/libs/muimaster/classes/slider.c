@@ -17,7 +17,7 @@
  * Boston, MA 02111-1307, USA.
  */
 
-#include <exec/types.h>
+#include <string.h>
 
 #include <clib/alib_protos.h>
 #include <proto/exec.h>
@@ -106,12 +106,40 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
+    LONG min;
+    LONG max;
+    LONG val;
+    LONG width;
+    struct RastPort rp;
 
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
 	return FALSE;
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    data->knob_frame = zune_zframe_get(&__zprefs.frames[MUIV_Frame_Knob]);
 
+    InitRastPort(&rp);
+    SetFont(&rp,_font(obj));
+
+    width = 0;
+
+    get(obj,MUIA_Numeric_Min,&min);
+    get(obj,MUIA_Numeric_Max,&max);
+
+    /* Determine the with of the know */
+    for (val=min;val<=max;val++)
+    {
+	LONG nw;
+	char *buf;
+
+	buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
+	nw = TextLength(&rp,buf,strlen(buf));
+	if (nw > width) width = nw;
+    }
+
+    data->val_width = width;
+    data->knob_width = width + 2 * data->knob_frame->xthickness;
+
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     return TRUE;
 }
 
@@ -132,17 +160,21 @@ static ULONG Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
+    LONG min,max;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
+    get(obj,MUIA_Numeric_Min,&min);
+    get(obj,MUIA_Numeric_Max,&max);
+
     if (data->flags & SLIDER_HORIZ)
     {
-	msg->MinMaxInfo->MinWidth  += 24;
-	msg->MinMaxInfo->MinHeight += 12;
-	msg->MinMaxInfo->DefWidth  += 42;
-	msg->MinMaxInfo->DefHeight += 12;
+	msg->MinMaxInfo->MinWidth  += data->knob_width + (max - min);
+	msg->MinMaxInfo->MinHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
+	msg->MinMaxInfo->DefWidth  += data->knob_width + (max - min) + 20;
+	msg->MinMaxInfo->DefHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
 	msg->MinMaxInfo->MaxWidth   = MUI_MAXMAX;
-	msg->MinMaxInfo->MaxHeight += 12;
+	msg->MinMaxInfo->MaxHeight += _font(obj)->tf_YSize + 2 * data->knob_frame->ythickness;
     }
     else
     {
@@ -163,6 +195,32 @@ static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
 static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
+    
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    if (data->flags & SLIDER_HORIZ)
+    {
+    	LONG val;
+	LONG pos = DoMethod(obj,MUIM_Numeric_ValueToScale, 0, _mwidth(obj) - data->knob_width) + _mleft(obj);
+
+	char *buf;
+	int width;
+
+	DoMethod(obj,MUIM_DrawBackground,_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj));
+	data->knob_frame->draw[0](muiRenderInfo(obj), pos, _mtop(obj), data->knob_width, _mheight(obj));
+
+	get(obj,MUIA_Numeric_Value,&val);
+
+	SetFont(_rp(obj),_font(obj));
+	SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
+	buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
+	width = TextLength(_rp(obj),buf,strlen(buf));
+
+	Move(_rp(obj),pos + (data->knob_width - width)/2, _mtop(obj) + _font(obj)->tf_Baseline + data->knob_frame->ythickness);
+	Text(_rp(obj),buf,strlen(buf));
+    }
+
+
     return TRUE;
 }
 

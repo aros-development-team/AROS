@@ -5,6 +5,9 @@ struct MUI_SliderData
 {
     ULONG flags;
     struct MUI_EventHandlerNode ehn;
+    LONG val_width;
+    LONG knob_width;
+    struct ZuneFrameGfx *knob_frame;
 };
 
 

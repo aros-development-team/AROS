@@ -120,6 +120,8 @@ void main(void)
 		    End,
 
     	    	Child, SliderObject,
+    	    	    MUIA_Group_Horiz, TRUE,
+    	    	    MUIA_CycleChain,1,
 		    End,
 
     	    	Child, HGroup,
