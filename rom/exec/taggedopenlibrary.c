@@ -29,13 +29,15 @@ char *copyrights[] =
     "AMIGA Replacement Operating System (AROS)",
     "Copyright © 1995-1997 ",
     "AROS - The Amiga Replacement OS  ",
-    "© 1985-1996 ESCOM AG",
+    "Other parts © by respective owners.",
     "ALPHA RELEASE ",
     "exec.library",
-    "exec 40.100 (12.12.96)\013\010"
+    "exec 40.101 (2.2.96)\013\010"
 };
 
 /*****i* exec.library/TaggedOpenLibrary **************************************
+
+	TaggedOpenLibrary -- open a library by tag (V39)
 
     NAME */
 	AROS_LH1(APTR, TaggedOpenLibrary,
@@ -61,13 +63,14 @@ char *copyrights[] =
 	tag -  Which library or text string to return.
 
     RESULT
-	Pointer to library or text string.
+	Pointer to library or pointer to text string.
 
     NOTES
 	This is an *INTERNAL* function, and is only meant to provide backwards
 	compatibility until all original Amiga system ROM modules that use it
 	have been implemented as part of AROS. This function *WILL BE REMOVED*
-	in the future. *DO NOT USE!* This can not be emhasized enough.
+	in the future. *DO NOT USE!* This can not be emhasized enough. This
+	also applies to AROS system programmers.
 
     EXAMPLE
 
@@ -80,7 +83,6 @@ char *copyrights[] =
 	No checks are made on the validity of the tag.
 
     HISTORY
-	12-12-96 ldp created
 
 ******************************************************************************/
 {
@@ -92,15 +94,15 @@ char *copyrights[] =
 	/*
 	    Try to open the library. If it opened, return.
 	*/
-	if((lib = OpenLibrary(libnames[tag-1], 0))) return((APTR)lib);
+	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
 
 	/*
 	    If it didn't open, FindResident(), InitResident(), and then
 	    try to open it again.
 	*/
-	if(!(res = FindResident(libnames[tag-1]))) return(NULL);
+	if(!(res = FindResident(libnames[tag-1]))) return 0;
 	InitResident(res, NULL);
-	if((lib = OpenLibrary(libnames[tag-1], 0))) return((APTR)lib);
+	if((lib = OpenLibrary(libnames[tag-1], 0))) return (APTR)lib;
     }
 
     if(tag < 0) return( (APTR)copyrights[(-tag)-1] );
