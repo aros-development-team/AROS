@@ -23,6 +23,8 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
+#include <aros/detach.h>
+
 #include "detach.h"
 #include "iconwindow.h"
 #include "wandererprefs.h"
@@ -656,18 +658,16 @@ IPTR Wanderer__MUIM_Application_Execute
             (IPTR) self, 3, MUIM_CallHook, (IPTR) &hook_standard, (IPTR) wanderer_quit
         );
 
-        DoDetach(RETURN_OK);
+        Detach();
         
 	DoSuperMethodA(CLASS, self, message);
         
-        return TRUE;
+        return RETURN_OK;
     }
     
     // FIXME: report error...
     
-    DoDetach(RETURN_FAIL);
-
-    return FALSE;
+    return RETURN_ERROR;
 }
 
 IPTR Wanderer__MUIM_Wanderer_HandleTimer

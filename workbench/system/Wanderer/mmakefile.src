@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main locale support detach wanderer wandererprefs iconwindow
+FILES := main locale support wanderer wandererprefs iconwindow
 
 #MM- workbench-system : workbench-system-wanderer
 #MM workbench-system-wanderer : workbench-system-wanderer-catalogs includes linklibs

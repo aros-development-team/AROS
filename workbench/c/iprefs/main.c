@@ -15,6 +15,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#include <aros/detach.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -94,19 +95,6 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 }
 /*********************************************************************************************/
 
-LONG            __detacher_must_wait_for_signal = SIGBREAKF_CTRL_F;
-struct Process *__detacher_process              = NULL;
-
-void DoDetach(void)
-{
-    /* If there's a detacher, tell it to go away */
-    if (__detacher_process)
-    {
-        Signal((struct Task *)__detacher_process, __detacher_must_wait_for_signal);
-    }
-}
-
-/*********************************************************************************************/
 void Cleanup(STRPTR msg)
 {
     if (msg)
@@ -121,7 +109,7 @@ void Cleanup(STRPTR msg)
     KillNotifications();
     RootPatternCleanup();
     CloseLibs();
-    DoDetach();
+    Detach();
 
     exit(prog_exitcode);
 }
@@ -333,7 +321,7 @@ int main(void)
     StartNotifications();
     PreparePatches();
     HandleNotify();
-    DoDetach();
+    Detach();
     HandleAll();
     Cleanup(NULL);
 
