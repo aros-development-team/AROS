@@ -39,6 +39,7 @@ extern struct Library *MUIMasterBase;
 #include "support.h"
 #include "mui.h"
 #include "imspec.h"
+#include "menu.h"
 
 #define MYDEBUG 1
 #include "debug.h"
@@ -1099,6 +1100,12 @@ static ULONG Area_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	zune_imspec_hide(data->mad_SelBack);
     }
 
+    if (data->mad_ContextZMenu)
+    {
+	zune_close_menu(data->mad_ContextZMenu);
+	data->mad_ContextZMenu = NULL;
+    }
+
     _flags(obj) &= ~MADF_CANDRAW;
     return TRUE;
 }
@@ -1257,19 +1264,35 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 		break;
 
 	case    MENUDOWN:
-		if (in)
+		if (in && data->mad_ContextMenu)
 		{
-		#ifndef _AROS
-		    printf("Display Menu\n");
-		#endif
+		    Object *menuobj = (Object*)DoMethod(obj, MUIM_ContextMenuBuild, imsg->MouseX, imsg->MouseY);
+		    if (menuobj)
+		    {
+			struct NewMenu *newmenu;
+			get(menuobj,MUIA_Menuitem_NewMenu,&newmenu);
+			if (newmenu)
+			{
+			    if (data->mad_ContextZMenu) zune_close_menu(data->mad_ContextZMenu);
+			    data->mad_ContextZMenu = zune_open_menu(_window(obj),newmenu);
+			}
+
+			if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+			data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+	                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
+		    }
 	            return MUI_EventHandlerRC_Eat;
         	}
 	        break;
 
 	case    MENUUP:
-		if (data->mad_ContextMenuWindow)
+		if (data->mad_ContextZMenu)
 		{
-		    data->mad_ContextMenuWindow = NULL;
+		    zune_close_menu(data->mad_ContextZMenu);
+		    data->mad_ContextZMenu = NULL;
+		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
+	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
+		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 	            return MUI_EventHandlerRC_Eat;
 		}
 		break;
@@ -1281,6 +1304,12 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 static ULONG event_motion(Class *cl, Object *obj, struct IntuiMessage *imsg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+
+    if ((imsg->Qualifier & IEQUALIFIER_RBUTTON) && data->mad_ContextZMenu)
+    {
+	zune_mouse_update(data->mad_ContextZMenu, 0);
+	return MUI_EventHandlerRC_Eat;
+    }
 
     if (imsg->Qualifier & IEQUALIFIER_LEFTBUTTON)
     {

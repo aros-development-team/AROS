@@ -48,7 +48,7 @@ struct MUI_AreaData
     LONG               mad_ClickX;        /* x position of the initial SELECTDOWN click */
     LONG               mad_ClickY;        /* y position of the intiial SELECTDOWN click */
 
-    struct Window     *mad_ContextMenuWindow;
+    struct ZMenu      *mad_ContextZMenu;
 };
 
 
