@@ -224,6 +224,7 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
         {
             if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
             
+            // FIXME: localize output window title
             console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
             if (console != NULL)
             {
@@ -233,10 +234,11 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
                     (
                         command,
                         
-                        SYS_Asynch,	   TRUE,
-                        SYS_Input,  (IPTR) console,
-                        SYS_Output, (IPTR) NULL,
-                        SYS_Error,  (IPTR) NULL,
+                        SYS_Asynch,	       TRUE,
+                        SYS_Input,      (IPTR) console,
+                        SYS_Output,     (IPTR) NULL,
+                        SYS_Error,      (IPTR) NULL,
+                        SYS_Background,        FALSE,
                         
                         TAG_DONE
                     ) == -1
