@@ -1,6 +1,15 @@
 #ifndef LIBRARIES_REALTIME_H
 #define LIBRARIES_REALTIME_H
 
+/*
+    (C) 1999-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Includes for realtime.library
+    Lang: English
+*/
+
+
 #ifndef   EXEC_TYPES_H
 #include <exec/types.h>
 #endif
