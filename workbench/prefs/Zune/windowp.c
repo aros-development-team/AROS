@@ -64,14 +64,6 @@ static CONST_STRPTR redraw_labels[] =
 };
 
 
-
-static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
-}
-
-#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-
 static Object*MakeSpacingSlider (void)
 {
     Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
@@ -135,25 +127,18 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		   End,
 	        End,
 	     Child, VGroup,
-                Child, ColGroup(2),
+                Child, HGroup,
 		   GroupFrameT("Background"),
+		   MUIA_Group_SameWidth, TRUE,
 		   Child, VGroup,
 		      MUIA_Group_VertSpacing, 1,
-		      Child, d.background_window_popimage =
-			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
-					 MUIA_Draggable, TRUE,
-					 MUIA_Window_Title, "Adjust Background",
-					 End,
+		      Child, d.background_window_popimage = MakeBackgroundPopimage(),
 		      Child, MUI_MakeObject(MUIO_Label, "Window",
 					    MUIO_Label_Centered),
 		      End,
 		   Child, VGroup,
 		      MUIA_Group_VertSpacing, 1,
-		      Child, d.background_requester_popimage =
-			     NewObject(CL_ImageClipboard->mcc_Class, NULL,
-				       MUIA_Draggable, TRUE,
-				       MUIA_Window_Title, "Adjust Background",
-				       End,
+		      Child, d.background_requester_popimage = MakeBackgroundPopimage(),
 		      Child, MUI_MakeObject(MUIO_Label, "Requester",
 					    MUIO_Label_Centered),
 	              End,

@@ -59,13 +59,6 @@ static CONST_STRPTR color_labels[] =
 };
 
 
-static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
-}
-
-#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-
 static Object*MakeSpacingSlider (void)
 {
     return MUI_MakeObject(MUIO_Slider, "", 0, 9);
@@ -103,22 +96,15 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       End, /* Title */
 	    Child, HGroup,
 		GroupFrameT("Frame"),
+		MUIA_Group_SameWidth, TRUE,
 		Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
-		   Child, d.normal_popframe =
-			       NewObject(CL_FrameClipboard->mcc_Class, NULL,
-			       MUIA_Draggable, TRUE,
-			       MUIA_Window_Title, "Adjust Frame",
-			       End,
+		   Child, d.normal_popframe = MakePopframe(),
 		   Child, MUI_MakeObject(MUIO_Label, "Normal", MUIO_Label_Centered),
 	           End,
        	       Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
-		   Child, d.virtual_popframe =
-			       NewObject(CL_FrameClipboard->mcc_Class, NULL,
-			       MUIA_Draggable, TRUE,
-			       MUIA_Window_Title, "Adjust Frame",
-			       End,
+		   Child, d.virtual_popframe = MakePopframe(),
 		   Child, MUI_MakeObject(MUIO_Label, "Virtual", MUIO_Label_Centered),
 	           End,
 							 End, /* Frame */
@@ -135,31 +121,20 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 							 End, /* Spacing */
 	    Child, HGroup,
 		GroupFrameT("Background"),
+                MUIA_Group_SameWidth, TRUE,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
-		    Child, d.background_framed_popimage =
-		           NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE,
-			      MUIA_Window_Title, "Adjust Background",
-			      End,
+		    Child, d.background_framed_popimage = MakeBackgroundPopimage(),
 		    Child, MUI_MakeObject(MUIO_Label, "Framed", MUIO_Label_Centered),
 		    End,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
-		    Child, d.background_page_popimage =
-		           NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE,
-			      MUIA_Window_Title, "Adjust Background",
-			      End,
+		    Child, d.background_page_popimage = MakeBackgroundPopimage(),
 		    Child, MUI_MakeObject(MUIO_Label, "Page", MUIO_Label_Centered),
 		    End,
 		Child, VGroup,
 		    MUIA_Group_VertSpacing, 1,
-		    Child, d.background_register_popimage =
-		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
-			      MUIA_Draggable, TRUE,
-			      MUIA_Window_Title, "Adjust Background",
-			      End,
+		    Child, d.background_register_popimage = MakeBackgroundPopimage(),
 		    Child, MUI_MakeObject(MUIO_Label, "Register", MUIO_Label_Centered),
 		    End,
 		End, /* Background */

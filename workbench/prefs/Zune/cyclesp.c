@@ -49,14 +49,6 @@ static CONST_STRPTR positions_labels[] =
 
 
 
-static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
-}
-
-#define FindFont(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-
-
 static Object *MakeCheckmark()
 {
     Object *obj;
@@ -125,14 +117,10 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       GroupFrameT("Popup Menu Design"),
 			       Child, HGroup,
+			       MUIA_Group_SameWidth, TRUE,
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
-			       Child, d.menu_popframe =
-			       NewObject(CL_FrameClipboard->mcc_Class, NULL,
-					 MUIA_Draggable, TRUE,
-					 MUIA_CycleChain, 1,
-					 MUIA_Window_Title, "Adjust Frame",
-					 TAG_DONE),
+			       Child, d.menu_popframe = MakePopframe(),
 			       Child, MUI_MakeObject(MUIO_Label, "Frame",
 						     MUIO_Label_Centered),
 			       End, /* VGroup Frame */
