@@ -78,7 +78,6 @@
   
   LockLayers(l->LayerInfo);
 
-#warning Write a function to copy a region.
   /*
    * First Create the new region of the layer:
    * adjust its size and position.
