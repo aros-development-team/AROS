@@ -31,7 +31,7 @@ void initDefaultPrefs(struct FontPrefs **fontPrefsPtr)
 {
     UBYTE a;
 
-    for(a = 0; a <= 2; a++)
+    for (a = 0; a <= 2; a++)
     {
 	fontPrefs[a]->fp_Type = a;	/* Is this 0, 1, 2 or 1, 2, 3? Look it up! */
 	fontPrefs[a]->fp_FrontPen = 0;	/* Is this (really) default? Look it up! */
@@ -95,7 +95,7 @@ void convertEndian(struct FontPrefs *fontPrefs)
 }
 
 /* Main *********************************************************************/
-BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
+BOOL WritePrefs(CONST_STRPTR filename, struct FontPrefs **fontPrefs)
 {
     BOOL              rc = TRUE;
     UBYTE             a = 0, b = 0;
@@ -103,13 +103,13 @@ BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
     
     memset(&header, 0, sizeof(struct PrefHeader));
     
-    if((iffHandle = AllocIFF()))
+    if ((iffHandle = AllocIFF()))
     {
-	if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_NEWFILE)))
+	if ((iffHandle->iff_Stream = (IPTR) Open(filename, MODE_NEWFILE)))
 	{
 	    InitIFFasDOS(iffHandle); /* Can't fail? Look it up! */
 
-	    if(!(b = OpenIFF(iffHandle, IFFF_WRITE))) /* NULL = successful! */
+	    if (!(b = OpenIFF(iffHandle, IFFF_WRITE))) /* NULL = successful! */
 	    {
 		PushChunk(iffHandle, ID_PREF, ID_FORM, IFFSIZE_UNKNOWN);
 
@@ -122,13 +122,14 @@ BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
 
 		PopChunk(iffHandle);
 
-		for(a = 0; a <= 2; a++)
+		for (a = 0; a <= 2; a++)
 		{
 		    b = PushChunk(iffHandle, ID_PREF, ID_FONT, sizeof(struct FontPrefs));
 
-		    if(b) // TODO: We need some error checking here!
-			printf("error: PushChunk() = %d ", b);
-
+		    if (b) // TODO: We need some error checking here!
+                    {
+                        printf("error: PushChunk() = %d ", b);
+                    }
 		    kprintf("fontPrefs = %d bytes struct FontPrefs = %d bytes\n", sizeof(fontPrefs), sizeof(struct FontPrefs));
 
 		    convertEndian(fontPrefs[a]); // Convert to m68k endian
@@ -139,9 +140,11 @@ BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
 
 		    convertEndian(fontPrefs[a]); // Revert to initial endian
 
-		    if(b) // TODO: We need some error checking here!
-			printf("error: PopChunk() = %d ", b);
-		}
+		    if (b) // TODO: We need some error checking here!
+                    {
+                        printf("error: PopChunk() = %d ", b);
+                    }
+                }
 
 		// Terminate the FORM
 		PopChunk(iffHandle);
@@ -159,11 +162,15 @@ BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
         }
         
 	// CloseIFF() in iffparse.library 39 accepts NULL, but earlier versions doesn't
-	if(iffHandle)
+	if (iffHandle)
+        {
 	    CloseIFF(iffHandle);
-
-	if((BPTR)iffHandle->iff_Stream) // File can't be closed prior to CloseIFF()!
-	    Close((BPTR)iffHandle->iff_Stream); // Why isn't this stored in memory as a "BPTR"? Look up!
+        }
+        
+	if (iffHandle->iff_Stream) // File can't be closed prior to CloseIFF()!
+        {
+            Close((BPTR) iffHandle->iff_Stream); // Why isn't this stored in memory as a "BPTR"? Look up!
+        }
     }
     else // AllocIFF()
     {
@@ -177,13 +184,13 @@ BOOL SavePrefs(CONST_STRPTR fileName, struct FontPrefs **fontPrefs)
     return rc;
 }
 
-BOOL LoadPrefs(CONST_STRPTR fileName, struct FontPrefs **readFontPrefs)
+BOOL ReadPrefs(CONST_STRPTR filename, struct FontPrefs **readFontPrefs)
 {
     UBYTE a;
     LONG error;
     struct ContextNode *conNode;
 
-    kprintf("reading %s preferences...\n", fileName);
+    kprintf("reading %s preferences...\n", filename);
 
     if(!(iffHandle = AllocIFF()))
     {
@@ -191,20 +198,20 @@ BOOL LoadPrefs(CONST_STRPTR fileName, struct FontPrefs **readFontPrefs)
 	return(FALSE);
     }
 
-    if((iffHandle->iff_Stream = (IPTR)Open(fileName, MODE_OLDFILE))) // Whats up with the "IPTR"? Why not the usual "BPTR"?
+    if ((iffHandle->iff_Stream = (IPTR) Open(filename, MODE_OLDFILE))) // Whats up with the "IPTR"? Why not the usual "BPTR"?
     {
 	InitIFFasDOS(iffHandle); // No need to check for errors? RKRM:Libraries p. 781
 
-	if(!(error = OpenIFF(iffHandle, IFFF_READ))) // NULL = successful!
+	if (!(error = OpenIFF(iffHandle, IFFF_READ))) // NULL = successful!
 	{
 	    // TODO: We want some sanity checking here!
-	    for(a = 0; a <= 2; a++)
+	    for (a = 0; a <= 2; a++)
 	    {
-		if(0 <= (error = StopChunk(iffHandle, ID_PREF, ID_FONT)))
+		if (0 <= (error = StopChunk(iffHandle, ID_PREF, ID_FONT)))
 		{
 		    kprintf("StopChunk() returned %ld\n", error);
 
-		    if(0 <= (error = ParseIFF(iffHandle, IFFPARSE_SCAN)))
+		    if (0 <= (error = ParseIFF(iffHandle, IFFPARSE_SCAN)))
 		    {
 			kprintf("ParseIFF returned %ld\n", error);
 
@@ -213,9 +220,11 @@ BOOL LoadPrefs(CONST_STRPTR fileName, struct FontPrefs **readFontPrefs)
 			// Check what structure goes where!
 			error = ReadChunkBytes(iffHandle, readFontPrefs[a], sizeof(struct FontPrefs));
 
-			if(error < 0)
+			if (error < 0)
+                        {
 			    printf("Error: ReadChunkBytes() returned %ld!\n", error);
-
+                        }
+                        
 			readFontPrefs[a]->fp_TextAttr.ta_Name = readFontPrefs[a]->fp_Name;
 
 			kprintf("readFontPrefs->YSize = >%d< ", readFontPrefs[a]->fp_TextAttr.ta_YSize);
@@ -241,7 +250,7 @@ BOOL LoadPrefs(CONST_STRPTR fileName, struct FontPrefs **readFontPrefs)
             ShowError(MSG(MSG_CANT_OPEN_STREAM));
         }
         
-	Close((BPTR)iffHandle->iff_Stream);
+	Close((BPTR) iffHandle->iff_Stream);
 
 	kprintf("Closed IFF file for reading!\n");
     }
