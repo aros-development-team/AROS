@@ -37,6 +37,7 @@ void writeincdefines(struct config *cfg, struct functions *functions)
 	    "\n"
 	    "#include <aros/libcall.h>\n"
 	    "#include <exec/types.h>\n"
+	    "#include <aros/preprocessor/variadic/cast2iptr.hpp>\n"
 	    "\n",
 	    cfg->modulenameupper, cfg->modulenameupper, cfg->modulename
     );
@@ -197,9 +198,9 @@ writedefinevararg(FILE *out, struct functionhead *funclistit, struct config *cfg
 	    fprintf(out, "%s, ", arglistit->name);
 	}
 	fprintf(out,
-		"args...) \\\n"
+		"...) \\\n"
 		"({ \\\n"
-		"    IPTR __args[] = { args }; \\\n"
+		"    IPTR __args[] = { AROS_PP_VARIADIC_CAST2IPTR(__VA_ARGS__) }; \\\n"
 		"    %s(",
 		funclistit->name
 	);
