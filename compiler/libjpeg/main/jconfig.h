@@ -28,6 +28,7 @@
 /* These are for configuring the JPEG memory manager. */
 #undef DEFAULT_MAX_MEM
 #undef NO_MKTEMP
+#define NO_GETENV
 
 #endif /* JPEG_INTERNALS */
 
