@@ -8,6 +8,7 @@ MODTYPE := library
 
 CLASSES   := application \
     	     area \
+	     bitmap \
 	     boopsi \
 	     dataspace \
 	     family \
