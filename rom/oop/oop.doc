@@ -35,6 +35,48 @@ locally, it can move itself to the remote host.
 
 - Thread safe method invocation.
 
+
+Definitions:
+
+Class - A collection of Interfaces and Methods.
+
+Object - Instance of a class.
+
+Method - A method is a function which is called with a class, an object
+and a message as arguments.
+
+Interface - An interface is a view of an object. Interfaces are
+defined globally. A class can implement any number of Interfaces.
+It contains a table of Methods.
+
+Method Stub - This is a normal C function which is called with an
+object and a message. It is used to simplify the call of a method.
+The Method Stub extracts the class from the Object and invokes the
+Method.
+
+Method Base - The lowest ID of all Methods of a Class. All methods
+of the class haven ID equal or larger than this.
+
+Method Count - The number of methods of a Class.
+
+Interface ID - The ID of an Interface. It is used to look up an
+Interface in a Class.
+
+Method Offset - The offset to the Method Base for a Method. Always
+positive.
+
+Method ID - The addition of Method Base and Method Offset for a specific
+Method.
+
+Method Name - A string with the name of a method.
+
+Method Object - An Object used to store a Method to allow to invoke
+the method fast.
+
+Interface Object - An object used to store a Method of an Interface
+to invoke it fast.
+
+
 Possible solutions to design goals w/pros & cons
 
 1) Invocation speed.
@@ -262,4 +304,6 @@ Now, A calls a method on b, but the method calls another
 method on a. Since A will be Wait()ing for a response from
 B, then it can't execute the method, and both
 tasks will be waiting forever.
+
+
 
