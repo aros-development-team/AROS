@@ -304,8 +304,8 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
                 if (tattr->tta_Name)
                     FreeVec(tattr->tta_Name);
 
-		if (tattr->tta_Tags)
-		    FreeVec(tattr->tta_Tags);
+		//if (tattr->tta_Tags)
+		//    FreeVec(tattr->tta_Tags);
                 
                 tattr ++;
             }
