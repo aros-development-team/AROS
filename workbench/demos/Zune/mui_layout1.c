@@ -1,4 +1,5 @@
 #include <exec/types.h>
+#include <dos/dos.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
