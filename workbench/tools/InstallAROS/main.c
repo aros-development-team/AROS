@@ -36,7 +36,9 @@
 #define kDstDev  "DH0"
 #define kDstName "AROS"
 
-#define DEF_INSTALL_IMAGE          "IMAGES:install_aros.png"
+#define DEF_INSTALL_IMAGE           "IMAGES:Logos/install.logo"
+#define DEF_BACK_IMAGE              "IMAGES:Logos/install.logo"
+#define DEF_LIGHTBACK_IMAGE         "IMAGES:Logos/install.logo"
 
 //extern ULONG InitTask(void);
 int CopyDirArray( Object *self, struct Install_DATA* data, TEXT *copy_files[]);
@@ -1289,110 +1291,112 @@ int main(int argc,char *argv[])
             MUIA_Window_SizeGadget, TRUE,
             WindowContents, (IPTR)wndcontents = VGroup,
 
-                Child, HGroup,
-                    Child, VGroup,
-                        MUIA_Background, MUII_SHADOW,    
-                
-                        Child, ImageObject,
-                            MUIA_Frame, MUIV_Frame_None,
-                            MUIA_Image_Spec, (IPTR)"3:"DEF_INSTALL_IMAGE,
+                Child, VGroup,
+                    Child, HGroup,
+                        Child, VGroup,
+                            MUIA_Background, MUII_SHADOW,    
+                    
+                            Child, ImageObject,
+                                MUIA_Frame, MUIV_Frame_None,
+                                MUIA_Image_Spec, (IPTR)"3:"DEF_INSTALL_IMAGE,
+                            End,
+                            Child,HVSpace,
                         End,
-                        Child,HVSpace,
-                    End,
 
-                    Child, VGroup,
-                        Child, (IPTR) page = VGroup,
-                            MUIA_Group_PageMode, TRUE,
-                            ReadListFrame,
-                            MUIA_Background, MUII_SHINE,
+                        Child, VGroup,
+                            Child, (IPTR) page = VGroup,
+                                MUIA_Group_PageMode, TRUE,
+                                ReadListFrame,
+                                MUIA_Background, MUII_SHINE,
 
-/* each page represents an install time page .. you must have one for each enumerated install progress page */
+    /* each page represents an install time page .. you must have one for each enumerated install progress page */
 
-                            Child, VGroup,
                                 Child, VGroup,
-                                    Child, (IPTR) welcomeMsg = FreeCLabel(""),
-                                    Child, HVSpace,
-                                End,
-                            End,
-
-                            Child, VGroup,
-                                Child, VGroup,
-                                    Child, CLabel(KMsgInstallOptions),
-                                    Child, HVSpace,
-                                    Child, ColGroup(2),
-                                        Child, LLabel("Auto Select & Format Partitions"),
-                                        Child, check_autopart,
-                                        Child, LLabel("Choose Language Options"),
-                                        Child, check_locale,
-                                        Child, LLabel("Install AROS Core System"),
-                                        Child, check_core,
-                                        Child, LLabel("Install Extra Software"),
-                                        Child, check_extras,
-                                        Child, LLabel("Install Development Software"),
-                                        Child, check_dev,
-                                        Child, LLabel("Copy and Install Bootloader "),
-                                        Child, check_bootloader,
-                                    End,
-                                    Child, HVSpace,
-                                End,
-                            End,
-
-                            Child, VGroup,
-                                Child, VGroup,
-                                    Child, CLabel(KMsgPartitioning),
-                                    Child, HVSpace,
-                                    Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge1, End,
-                                    Child, ScaleObject, End,
-                                    Child, HVSpace,
-                                End,
-                            End,
-
-                            Child, VGroup,
-                                Child, VGroup,
-                                    Child, CLabel(KMsgPartitioningWipe),
-                                    Child, HVSpace,
-                                    Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
-                                    Child, ScaleObject, End,
-                                    Child, HVSpace,
-                                End,
-                            End,
-
-                            Child, VGroup,
-                                Child, VGroup,
-                                    Child, (IPTR) pagetitle        = CLabel(" "),
-                                    Child, HVSpace,
-                                    Child, (IPTR) pageheader       = FreeCLabel(KMsgInstall),
-                                    Child, HVSpace,
-                                    Child, (IPTR) label            = FreeLLabel("YOU SHOULD NOT SEE THIS"),
-                                    Child, HVSpace,
-                                    Child, (IPTR) currentaction    = TextObject,MUIA_Text_Contents,(IPTR)" ",End,
-                                    Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge2, End,
-                                    Child, HVSpace,
-                                End,
-                            End,
-
-                            Child, VGroup,
-                                Child, VGroup,
-                                    MUIA_Group_SameHeight, FALSE,
-                                    Child, (IPTR) doneMsg = FreeCLabel(KMsgDone),
-                                    Child, HVSpace,
-                                    Child, ColGroup(2),
-                                        MUIA_Weight,0,
-                                        Child, LLabel("Reboot this computer now?"),
-                                        Child, check_reboot,
+                                    Child, VGroup,
+                                        Child, (IPTR) welcomeMsg = FreeCLabel(""),
+                                        Child, HVSpace,
                                     End,
                                 End,
-                            End,
-/* */
-                        End,
 
-                        Child, HGroup,
-                            Child, HVSpace,
-                            Child, gad_back,
-                            Child, gad_proceed,
-                            Child, gad_cancel,
+                                Child, VGroup,
+                                    Child, VGroup,
+                                        Child, CLabel(KMsgInstallOptions),
+                                        Child, HVSpace,
+                                        Child, ColGroup(2),
+                                            Child, LLabel("Auto Select & Format Partitions"),
+                                            Child, check_autopart,
+                                            Child, LLabel("Choose Language Options"),
+                                            Child, check_locale,
+                                            Child, LLabel("Install AROS Core System"),
+                                            Child, check_core,
+                                            Child, LLabel("Install Extra Software"),
+                                            Child, check_extras,
+                                            Child, LLabel("Install Development Software"),
+                                            Child, check_dev,
+                                            Child, LLabel("Copy and Install Bootloader "),
+                                            Child, check_bootloader,
+                                        End,
+                                        Child, HVSpace,
+                                    End,
+                                End,
+
+                                Child, VGroup,
+                                    Child, VGroup,
+                                        Child, CLabel(KMsgPartitioning),
+                                        Child, HVSpace,
+                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge1, End,
+                                        Child, ScaleObject, End,
+                                        Child, HVSpace,
+                                    End,
+                                End,
+
+                                Child, VGroup,
+                                    Child, VGroup,
+                                        Child, CLabel(KMsgPartitioningWipe),
+                                        Child, HVSpace,
+                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, (IPTR) gauge3, End,
+                                        Child, ScaleObject, End,
+                                        Child, HVSpace,
+                                    End,
+                                End,
+
+                                Child, VGroup,
+                                    Child, VGroup,
+                                        Child, (IPTR) pagetitle        = CLabel(" "),
+                                        Child, HVSpace,
+                                        Child, (IPTR) pageheader       = FreeCLabel(KMsgInstall),
+                                        Child, HVSpace,
+                                        Child, (IPTR) label            = FreeLLabel("YOU SHOULD NOT SEE THIS"),
+                                        Child, HVSpace,
+                                        Child, (IPTR) currentaction    = TextObject,MUIA_Text_Contents,(IPTR)" ",End,
+                                        Child, VGroup, GaugeFrame,MUIA_Background, MUII_HSHINEBACK, Child, gauge2, End,
+                                        Child, HVSpace,
+                                    End,
+                                End,
+
+                                Child, VGroup,
+                                    Child, VGroup,
+                                        MUIA_Group_SameHeight, FALSE,
+                                        Child, (IPTR) doneMsg = FreeCLabel(KMsgDone),
+                                        Child, HVSpace,
+                                        Child, ColGroup(2),
+                                            MUIA_Weight,0,
+                                            Child, LLabel("Reboot this computer now?"),
+                                            Child, check_reboot,
+                                        End,
+                                    End,
+                                End,
+    /* */
+                            End,
                         End,
                     End,
+                    Child, HGroup,
+                        Child, HVSpace,
+                        Child, gad_back,
+                        Child, gad_proceed,
+                        Child, gad_cancel,
+                    End,
+
                 End,
             End,
         End,
@@ -1574,15 +1578,15 @@ int main(int argc,char *argv[])
 
     set(wnd,MUIA_Window_Open,FALSE);
 
-    D(bug("[INST-APP] Disposeing of Installer Object\n"));
+    D(bug("[INST-APP] Disposing of Installer Object\n"));
 
     DisposeObject(installer);
 
-    D(bug("[INST-APP] Removeing Custom Class\n"));
+    D(bug("[INST-APP] Removing Custom Class\n"));
 
     MUI_DeleteCustomClass(mcc);
 
-    D(bug("[INST-APP] Removeing App Object\n"));
+    D(bug("[INST-APP] Removing App Object\n"));
 
     MUI_DisposeObject(app);
 
