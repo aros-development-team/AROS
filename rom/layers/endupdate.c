@@ -65,8 +65,13 @@
   */
   l->Flags &= ~LAYERUPDATING;
 
-  InstallClipRegion(l, l->saveClipRects);
-  l->saveClipRects = NULL;
+  if (NULL != l->ClipRect)
+    if (IS_SMARTREFRESH(l))
+      CopyAndFreeClipRects(l,l->ClipRect,l->cr2);
+    else
+      _FreeClipRectListBM(l,l->ClipRect);
+      
+  l->ClipRect = l->cr2;
 
   if (FALSE != flag)
   {
