@@ -17,8 +17,6 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_COOLIMAGESLIB := yes
 
-USER_CFLAGS := -O2 -Wunused -Wall
-
 #MM workbench-prefs : includes linklibs setup-localeprefs-catalogs
 
 %make_prog_setup mmake=workbench-prefs
