@@ -1,7 +1,7 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5d.
+  C Cross Referencing & Documentation tool. Version 1.5e.
 
   Writes the HTML output.
   ******************/ /******************
@@ -420,7 +420,7 @@ static void WriteHTMLInclude(Include inc)
  fprintf(of,"<ul>\n");
 
  if(inc->scope==LOCAL)
-    fprintf(of,"<li><tt><a href=\"%s%s"HTML_FILE"#file\">#include \";%s\";</a></tt>\n",goback,inc->name,html(inc->name,0));
+    fprintf(of,"<li><tt><a href=\"%s%s"HTML_FILE"#file\">#include \"%s\"</a></tt>\n",goback,inc->name,html(inc->name,0));
  else
     fprintf(of,"<li><tt>#include &lt;%s&gt;</tt>\n",html(inc->name,0));
 
@@ -446,7 +446,7 @@ static void WriteHTMLSubInclude(Include inc,int depth)
  while(inc)
    {
     if(inc->scope==LOCAL)
-       fprintf(of,"<li><tt><a href=\"%s%s"HTML_FILE"#file\">#include \";%s\";</a></tt>\n",goback,inc->name,html(inc->name,0));
+       fprintf(of,"<li><tt><a href=\"%s%s"HTML_FILE"#file\">#include \"%s\"</a></tt>\n",goback,inc->name,html(inc->name,0));
     else
        fprintf(of,"<li><tt>#include &lt;%s&gt;</tt>\n",html(inc->name,0));
 
@@ -1299,6 +1299,20 @@ void WriteHTMLAppendix(StringList files,StringList2 funcs,StringList2 vars,Strin
  WriteHTMLPreamble(of,ConcatStrings(3,"Cross reference index of ",option_name,"."),0);
 
  fprintf(of,"<h1>Cross References</h1>\n");
+
+ if(files->n || funcs->n || vars->n || types->n) 
+   {
+    fprintf(of,"<ul>\n");
+    if(files->n) 
+       fprintf(of,"<li><a href=\"#files\">Files</a>\n");
+    if(funcs->n) 
+       fprintf(of,"<li><a href=\"#functions\">Global Functions</a>\n");
+    if(vars->n) 
+       fprintf(of,"<li><a href=\"#variables\">Global Variables</a>\n");
+    if(types->n) 
+       fprintf(of,"<li><a href=\"#types\">Defined Types</a>\n");
+    fprintf(of,"</ul>\n");
+   }
 
  /* Write out the appendix of files. */
 

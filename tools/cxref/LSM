@@ -1,7 +1,7 @@
 Begin3
 Title:          Cxref - C program cross-referencing & documentation tool
-Version:        1.5d [May-05-02]
-Entered-date:   05MAY02
+Version:        1.5e [Jun-29-03]
+Entered-date:   29JUN03
 Description:    A program that takes as input a series of C source files
                 and produces a LaTeX or HTML document containing a cross
                 reference of the files/functions/variables in the program,
@@ -17,7 +17,7 @@ Keywords:       C programming document cross-reference
 Author:         amb@gedanken.demon.co.uk
 Maintained-by:  amb@gedanken.demon.co.uk
 Primary-site:   ftp.demon.co.uk /pub/unix/tools
-                286k cxref-1.5d.tgz
+                321k cxref-1.5e.tgz
 Alternate-site: ftp.ibiblio.org /pub/Linux/devel/lang/c
 Original-site:  
 Platforms:      UNIX

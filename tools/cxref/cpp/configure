@@ -2036,8 +2036,7 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); }; }; then
   for ac_declaration in \
-   ''\
-   '#include <stdlib.h>' \
+   '' \
    'extern "C" void std::exit (int) throw (); using std::exit;' \
    'extern "C" void std::exit (int); using std::exit;' \
    'extern "C" void exit (int) throw ();' \
@@ -2051,8 +2050,8 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-#include <stdlib.h>
 $ac_declaration
+#include <stdlib.h>
 int
 main ()
 {
@@ -2553,10 +2552,6 @@ echo "${ECHO_T}no" >&6
   SET_MAKE="MAKE=${MAKE-make}"
 fi
 
-
-
-
-
 echo "$as_me:$LINENO: checking for egrep" >&5
 echo $ECHO_N "checking for egrep... $ECHO_C" >&6
 if test "${ac_cv_prog_egrep+set}" = set; then
@@ -2570,6 +2565,10 @@ fi
 echo "$as_me:$LINENO: result: $ac_cv_prog_egrep" >&5
 echo "${ECHO_T}$ac_cv_prog_egrep" >&6
  EGREP=$ac_cv_prog_egrep
+
+
+
+
 
 
 echo "$as_me:$LINENO: checking for ANSI C header files" >&5
@@ -4568,8 +4567,8 @@ done
 
 if test ! "x$GCC" = "x" ; then
 
-   echo "$as_me:$LINENO: checking if we can use gcc instead of cxref-cpp" >&5
-echo $ECHO_N "checking if we can use gcc instead of cxref-cpp... $ECHO_C" >&6
+   echo "$as_me:$LINENO: checking if installed gcc is new enough to use instead of cxref-cpp" >&5
+echo $ECHO_N "checking if installed gcc is new enough to use instead of cxref-cpp... $ECHO_C" >&6
 
    if test "$cross_compiling" = yes; then
   { { echo "$as_me:$LINENO: error: cannot run test program while cross compiling
@@ -4617,20 +4616,12 @@ fi
    if test "x$newGCC" = "x" || test "$WITH_CXREF_CPP" = "yes" ; then
 
       if test "x$newGCC" = "x" ; then
-         echo "$as_me:$LINENO: result: no" >&5
-echo "${ECHO_T}no" >&6
+         echo "$as_me:$LINENO: result: no, using cxref-cpp" >&5
+echo "${ECHO_T}no, using cxref-cpp" >&6
       else
          echo "$as_me:$LINENO: result: yes but '-with-cxref-cpp' option overrides this" >&5
 echo "${ECHO_T}yes but '-with-cxref-cpp' option overrides this" >&6
       fi
-
-      $CC -E -v -dM - < /dev/null > ./conftest.gcc 2>&1
-
-            PREDEFINES=`egrep -e -lang-c ./conftest.gcc | tr ' ' '\012' | egrep -e '^-[AD]' | tr '\012' ' '`
-
-      INCLUDE_DIR1=`awk '/include <.+> search/,/End of search/ {if(i==1)print $1;i++}' ./conftest.gcc`
-      INCLUDE_DIR2=`awk '/include <.+> search/,/End of search/ {if(i==2)print $1;i++}' ./conftest.gcc`
-      INCLUDE_DIR3=`awk '/include <.+> search/,/End of search/ {if(i==3)print $1;i++}' ./conftest.gcc`
 
       CXREF_CPP=cxref-cpp
 
@@ -4639,20 +4630,51 @@ echo "${ECHO_T}yes but '-with-cxref-cpp' option overrides this" >&6
       echo "$as_me:$LINENO: result: yes" >&5
 echo "${ECHO_T}yes" >&6
 
+      echo "$as_me:$LINENO: checking if installed gcc preserves comments after define statements" >&5
+echo $ECHO_N "checking if installed gcc preserves comments after define statements... $ECHO_C" >&6
+
+      echo "#define foo bar /* FIND-ME */" | $CC -E -C - > ./conftest.gcc
+
+      if $EGREP -e FIND-ME ./conftest.gcc > /dev/null 2>&1 ; then
+         echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+      else
+         echo "$as_me:$LINENO: result: no, using cxref-cpp" >&5
+echo "${ECHO_T}no, using cxref-cpp" >&6
+
+         CXREF_CPP=cxref-cpp
+      fi
+
+      rm ./conftest.gcc
+
+   fi
+
+   if test ! "x$CXREF_CPP" = "x" ; then
+
+      $CC -E -v -dM - < /dev/null > ./conftest.gcc 2>&1
+
+            PREDEFINES=`$EGREP -e -D__GNUC ./conftest.gcc | tr ' ' '\012' | $EGREP -e '^-[AD]' | tr '\012' ' '`
+
+      INCLUDE_DIR1=`awk '/include <.+> search/,/End of search/ {if(i==1)print $1;i++}' ./conftest.gcc`
+      INCLUDE_DIR2=`awk '/include <.+> search/,/End of search/ {if(i==2)print $1;i++}' ./conftest.gcc`
+      INCLUDE_DIR3=`awk '/include <.+> search/,/End of search/ {if(i==3)print $1;i++}' ./conftest.gcc`
+
+      rm ./conftest.gcc
+
    fi
 
 else
 
-   { echo "$as_me:$LINENO: WARNING: ----------------------------------------" >&5
-echo "$as_me: WARNING: ----------------------------------------" >&2;}
-   { echo "$as_me:$LINENO: WARNING: the C compiler is not gcc" >&5
-echo "$as_me: WARNING: the C compiler is not gcc" >&2;}
+   { echo "$as_me:$LINENO: WARNING: -------------------------------------------------" >&5
+echo "$as_me: WARNING: -------------------------------------------------" >&2;}
+   { echo "$as_me:$LINENO: WARNING: The C compiler is not gcc" >&5
+echo "$as_me: WARNING: The C compiler is not gcc" >&2;}
    { echo "$as_me:$LINENO: WARNING: the configure script is trying to compensate" >&5
 echo "$as_me: WARNING: the configure script is trying to compensate" >&2;}
-   { echo "$as_me:$LINENO: WARNING: read the file cpp/README and check cpp/Makefile." >&5
-echo "$as_me: WARNING: read the file cpp/README and check cpp/Makefile." >&2;}
-   { echo "$as_me:$LINENO: WARNING: ----------------------------------------" >&5
-echo "$as_me: WARNING: ----------------------------------------" >&2;}
+   { echo "$as_me:$LINENO: WARNING: read the file cpp/README and check cpp/Makefile. " >&5
+echo "$as_me: WARNING: read the file cpp/README and check cpp/Makefile. " >&2;}
+   { echo "$as_me:$LINENO: WARNING: -------------------------------------------------" >&5
+echo "$as_me: WARNING: -------------------------------------------------" >&2;}
 
    PREDEFINES=""
 

@@ -1,11 +1,11 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5d.
+  C Cross Referencing & Documentation tool. Version 1.5e.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,98,99,2000,01,02 Andrew M. Bishop
+  This file Copyright 1995,96,97,98,99,2000,01,02,03 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -121,7 +121,8 @@ int main(int argc,char** argv)
        cpp_command[cpp_command_num-1][i]=0;
        if((cpp_command_num%8)==6)
           cpp_command=(char**)Realloc(cpp_command,(cpp_command_num+10)*sizeof(char*));
-       cpp_command[cpp_command_num++]=MallocString(&cpp_command[cpp_command_num-1][i+1]);
+       cpp_command[cpp_command_num]=MallocString(&cpp_command[cpp_command_num-1][i+1]);
+       cpp_command_num++;
        i=1;
       }
 
@@ -261,6 +262,9 @@ int main(int argc,char** argv)
          {
           CurFile=NewFile(filename);
 
+          ResetLexer();
+          ResetParser();
+
           if(!DocumentTheFile(filename))
             {
              if(option_xref)
@@ -373,11 +377,11 @@ int main(int argc,char** argv)
 static void Usage(int verbose)
 {
  fputs("\n"
-       "              C Cross Referencing & Documenting tool - Version 1.5d\n"
+       "              C Cross Referencing & Documenting tool - Version 1.5e\n"
        "              -----------------------------------------------------\n"
        "\n"
        "(c) Andrew M. Bishop 1995,96,97,98,99, [       amb@gedanken.demon.co.uk       ]\n"
-       "                     2000,01,02        [http://www.gedanken.demon.co.uk/cxref/]\n"
+       "                     2000,01,02,03     [http://www.gedanken.demon.co.uk/cxref/]\n"
        "\n"
        "Usage: cxref filename [ ... filename]\n"
        "             [-Odirname] [-Nbasename] [-Rdirname]\n"
@@ -597,7 +601,8 @@ static int ParseOptions(int nargs,char **args,int fromfile)
              cpp_command[cpp_command_num-1][j]=0;
              if((cpp_command_num%8)==6)
                 cpp_command=(char**)Realloc(cpp_command,(cpp_command_num+10)*sizeof(char*));
-             cpp_command[cpp_command_num++]=MallocString(&cpp_command[cpp_command_num-1][j+1]);
+             cpp_command[cpp_command_num]=MallocString(&cpp_command[cpp_command_num-1][j+1]);
+             cpp_command_num++;
              j=1;
             }
 
@@ -796,6 +801,8 @@ static int ParseOptions(int nargs,char **args,int fromfile)
   char *CanonicaliseName Returns the argument modified.
 
   char *name The original name
+
+  The same function is used in WWWOFFLE and cxref with changes for files or URLs.
   ++++++++++++++++++++++++++++++++++++++*/
 
 char *CanonicaliseName(char *name)

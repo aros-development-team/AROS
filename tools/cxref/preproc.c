@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5c.
+  C Cross Referencing & Documentation tool. Version 1.5e.
 
   Collects the pre-processing instruction stuff.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,97,99,2001 Andrew M. Bishop
+  This file Copyright 1995,96,97,99,2000,01,02,03 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -150,6 +150,14 @@ char *SeenFileChange(char *name,int flag)
     cwd=(char*)Malloc(PATH_MAX+1);
     if(!getcwd(cwd,PATH_MAX))
        cwd[0]=0;
+   }
+
+ /* Special gcc-3.x fake names for built-in #defines. */
+
+ if(!strcmp(name,"<built-in>") || !strcmp(name,"<command line>"))
+   {
+    in_header=1;
+    return(NULL);
    }
 
  name=CanonicaliseName(name);

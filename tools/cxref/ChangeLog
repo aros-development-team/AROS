@@ -1,3 +1,70 @@
+2003-06-29  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	Version 1.5e of cxref released.
+
+2003-06-29  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* NEWS: Update with latest information.
+
+2003-06-27  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Update version number.
+
+2003-06-22  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l:
+	Handle macros with variable args that use MACRO(a,b,...) as well as MACRO(a,b...).
+
+	* preproc.c, parse.l:
+	Handle gcc-3.x putting all of its internal #defines in the output.
+
+2003-06-15  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* FAQ-html.pl:
+	Don't force emacs to use perl mode and indent the file with emacs cperl mode.
+
+2003-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* cxref.c: Update to work with newer version of flex.
+	Removed some gcc warnings.
+
+	* parse-yy.h, parse.l, Makefile.in:
+	Update to work with newer version of flex.
+
+2003-01-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* comment.c:
+	Don't copy from bad pointer if new comment equls current one (patch from Simon 'corecode' Schubert).
+
+2002-09-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l:
+	Don't lose the comment or value when C++ style comments follow a #define.
+
+2002-08-17  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse.l:
+	Allow parsing of integers defined with i32 or i64 suffix denoting length.
+
+2002-07-19  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* INSTALL: Clarified the installation instructions.
+
+2002-07-14  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* parse-yy.h: Bug fix for Sun version of yacc.
+
+2002-06-30  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* html.c: Add quick links to cross references in appendix.
+
+	* html.c: Remove some extra ';' in #include cross reference output.
+
+2002-06-23  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
+
+	* xref.c:
+	Fix overwriting of cross-reference filenames for local functions with the same name in multiple files.
+
 2002-05-05  Andrew M. Bishop  <amb@gedanken.demon.co.uk>
 
 	Version 1.5d of cxref released.

@@ -1,13 +1,13 @@
 /***************************************
   $Header$
 
-  C Cross Referencing & Documentation tool. Version 1.5a.
+  C Cross Referencing & Documentation tool. Version 1.5e.
 
   The function protypes that are missing from the lex and yacc output.
   ******************/ /******************
   Written by Andrew M. Bishop
 
-  This file Copyright 1995,96,99 Andrew M. Bishop
+  This file Copyright 1995,96,99,2002,03 Andrew M. Bishop
   It may be distributed under the GNU Public License, version 2, or
   any higher version.  See section COPYING of the GNU Public license
   for conditions under which this file may be redistributed.
@@ -34,8 +34,11 @@
 /* Only the #define for YYDEBUG above is user editable,
    those below are for fixing up yacc/lex only. */
 
+/*+ Some versions of yacc (Sun) don't allow YYSTYPE to be #defined as char* +*/
+typedef char* yystype;
+
 /*+ Semantic type is a char* +*/
-#define YYSTYPE char*
+#define YYSTYPE yystype
 
 /*+ use prototypes in function declarations +*/
 #define YY_USE_PROTOS
@@ -81,6 +84,8 @@ int yyparse(void);
 void yyrestart (FILE *input_file);
 
 /* yywrap() function */
+
+#define YY_SKIP_YYWRAP 1 /* Don't use yywrap prototype */
 
 #ifndef yywrap
 
