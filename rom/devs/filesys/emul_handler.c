@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/31 12:58:11  aros
+    Merged in/modified for FreeBSD.
+
     Revision 1.4  1996/08/30 17:02:06  digulla
     Fixed a bug which caused the shell to exit if the timer sent a signal. This
     	fix is a very bad hack :(
@@ -30,7 +33,6 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <string.h>
 #include <sys/stat.h>
 #ifdef __GNUC__
     #include "emul_handler_gcc.h"

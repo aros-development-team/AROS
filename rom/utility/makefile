@@ -3,7 +3,9 @@ TOP=..
 include $(TOP)/make.cfg
 
 FILES = applytagchanges callhookpkt findtagitem nexttagitem \
-	stricmp strnicmp tolower
+	stricmp strnicmp tolower toupper getuniqueid smult32 umult32 \
+	smult64	umult64 date2amiga amiga2date allocatetagitems \
+	freetagitems
 
 all: setup $(OSGENDIR)/utility_init.o $(OSGENDIR)/utility_functable.o \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)

@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.2  1996/08/31 12:58:10  aros
+#    Merged in/modified for FreeBSD.
+#
 #    Revision 1.1  1996/08/23 17:26:44  digulla
 #    Files with functions for RT and Purify
 #
@@ -42,7 +45,7 @@
 #
 #******************************************************************************
 	.text
-	.align	16
+	.balign	16
 	.globl	RT_Leave
 	.type	RT_Leave,@function
 RT_Leave:
