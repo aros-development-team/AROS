@@ -312,7 +312,9 @@ static IPTR Calendar_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     offx = (_mwidth(obj) - data->cellwidth * 7) / 2;
     offy = (_mheight(obj) - data->cellheight * 7) / 2;
     
-    mwday = (data->clockdata.mday + data->clockdata.wday) % 7;
+    /* ~random 8 * 7 to make sure expression inside brackets is positive */
+    mwday = (8 * 7 + data->clockdata.wday - data->clockdata.mday + 1) % 7;
+    
     mdays = NumMonthDays(&data->clockdata);
 
 kprintf("actdate = %d.%d.%d  wday = %d\n", data->clockdata.mday, data->clockdata.month, data->clockdata.year, data->clockdata.wday);
