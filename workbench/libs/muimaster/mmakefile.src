@@ -103,10 +103,10 @@ INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
 includes-generate : $(INCLUDEFILES)
 	@$(NOP)
 	
-$(AROS_INCLUDES)/libraries/%.h : $(BUILDINCTOOL)
+$(AROS_INCLUDES)/libraries/mui.h : $(BUILDINCTOOL)
 	@$(BUILDINCTOOL) > $@
 
-$(GENINCDIR)/libraries/%.h : $(BUILDINCTOOL)
+$(GENINCDIR)/libraries/mui.h : $(BUILDINCTOOL)
 	@$(BUILDINCTOOL) > $@
 
 $(BUILDINCTOOL) : buildincludes.c
