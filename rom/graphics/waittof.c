@@ -1,35 +1,36 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1999 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
-#include "graphics_intern.h"
+
+#include <proto/exec.h>
+#include <exec/tasks.h>
+#include <graphics/gfxbase.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
 
-	AROS_LH0(void, WaitTOF,
+	AROS_LH0(VOID, WaitTOF,
 
 /*  SYNOPSIS */
-	/* void */
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 45, Graphics)
 
 /*  FUNCTION
-	Wait for the video beam to return to the upper left edge. During
-	this time, changes in the visible screens will not be noticed by
-	the user (because the monitor doesn't display anything).
+
+    Wait for vertical blank.
 
     INPUTS
-	None.
 
     RESULT
-	None.
+
+    Adds the task to the TOF queue; it will be signalled when the vertical
+    blank interrupt occurs.
 
     NOTES
 
@@ -48,7 +49,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_WaitTOF (GfxBase);
+    struct Node wait;  /* We cannot use the task's node here as that is
+			  used to queue the task in Wait() */
+
+    wait.ln_Name = FindTask(NULL);
+    SetSignal(0, SIGB_SINGLE);
+
+    Disable();
+
+    AddTail((struct List *)&GfxBase->TOF_WaitQ, (struct Node *)&wait);
+    Wait(SIGF_SINGLE);
+    Remove((struct Node *)&wait);
+
+    Enable();
 
     AROS_LIBFUNC_EXIT
 } /* WaitTOF */
