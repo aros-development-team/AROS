@@ -21,7 +21,7 @@
 #define SetDrPt(w,p) \
     { \
 	(w)->LinePtrn = p; \
-	(w)->Flags |= FRST_DOT; \
+	(w)->Flags |= FRST_DOT|0x10; \
 	(w)->linpatcnt = 15; \
     }
 #define SetAfPt(w,p,n) \

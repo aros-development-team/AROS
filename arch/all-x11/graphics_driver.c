@@ -191,6 +191,9 @@ void UpdateLinePtrn (struct RastPort * rp)
 {
     XGCValues gcval;
 
+    if (!(rp->Flags & 0x10) )
+	return;
+
     if (rp->LinePtrn != 0xFFFF)
     {
 	char dash_list[16];
@@ -240,6 +243,8 @@ void UpdateLinePtrn (struct RastPort * rp)
 	);
 
     }
+
+    rp->Flags &= ~0x10;
 }
 
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
