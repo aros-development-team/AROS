@@ -7,11 +7,12 @@
 */
 
 #include <proto/dos.h>
+#include <stdio.h>
+#include <assert.h>
 
 /******************************************************************************
 
     NAME */
-#include <stdio.h>
 #include <aros/bigendianio.h>
 #include <proto/alib.h>
 
