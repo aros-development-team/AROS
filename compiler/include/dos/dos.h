@@ -4,7 +4,9 @@
 #ifndef EXEC_TYPES_H
 #include <exec/types.h>
 #endif
-#include <machine.h>
+#ifndef AROS_MACHINE_H
+#include <aros/machine.h>
+#endif
 
 #define DOSNAME "dos.library"
 
@@ -64,9 +66,9 @@ struct FileInfoBlock
 
 #define DOS_FILEHANDLE		0
 #define DOS_EXALLCONTROL	1
-#define DOS_FIB			2
+#define DOS_FIB 		2
 #define DOS_STDPKT		3
-#define DOS_CLI			4
+#define DOS_CLI 		4
 #define DOS_RDARGS		5
 
 #define TICKS_PER_SECOND	50
@@ -78,11 +80,11 @@ struct FileInfoBlock
 #define FIBB_ARCHIVE		4
 #define FIBB_PURE		5
 #define FIBB_SCRIPT		6
-#define FIBB_GRP_DELETE		8
+#define FIBB_GRP_DELETE 	8
 #define FIBB_GRP_EXECUTE	9
 #define FIBB_GRP_WRITE		10
 #define FIBB_GRP_READ		11
-#define FIBB_OTR_DELETE		12
+#define FIBB_OTR_DELETE 	12
 #define FIBB_OTR_EXECUTE	13
 #define FIBB_OTR_WRITE		14
 #define FIBB_OTR_READ		15
@@ -93,11 +95,11 @@ struct FileInfoBlock
 #define FIBF_ARCHIVE		0x10
 #define FIBF_PURE		0x20
 #define FIBF_SCRIPT		0x40
-#define FIBF_GRP_DELETE		0x100
+#define FIBF_GRP_DELETE 	0x100
 #define FIBF_GRP_EXECUTE	0x200
 #define FIBF_GRP_WRITE		0x400
 #define FIBF_GRP_READ		0x800
-#define FIBF_OTR_DELETE		0x1000
+#define FIBF_OTR_DELETE 	0x1000
 #define FIBF_OTR_EXECUTE	0x2000
 #define FIBF_OTR_WRITE		0x4000
 #define FIBF_OTR_READ		0x8000
@@ -123,7 +125,7 @@ struct FileInfoBlock
 #define ERROR_ACTION_NOT_KNOWN		209
 #define ERROR_INVALID_COMPONENT_NAME	210
 #define ERROR_INVALID_LOCK		211
-#define ERROR_OBJECT_WRONG_TYPE		212
+#define ERROR_OBJECT_WRONG_TYPE 	212
 #define ERROR_DISK_NOT_VALIDATED	213
 #define ERROR_DISK_WRITE_PROTECTED	214
 #define ERROR_RENAME_ACROSS_DEVICES	215
@@ -132,7 +134,7 @@ struct FileInfoBlock
 #define ERROR_DEVICE_NOT_MOUNTED	218
 #define ERROR_SEEK_ERROR		219
 #define ERROR_COMMENT_TOO_BIG		220
-#define ERROR_DISK_FULL			221
+#define ERROR_DISK_FULL 		221
 #define ERROR_DELETE_PROTECTED		222
 #define ERROR_WRITE_PROTECTED		223
 #define ERROR_READ_PROTECTED		224
@@ -143,7 +145,7 @@ struct FileInfoBlock
 #define ERROR_OBJECT_LINKED		234
 #define ERROR_BAD_HUNK			235
 #define ERROR_NOT_IMPLEMENTED		236
-#define ERROR_RECORD_NOT_LOCKED		240
+#define ERROR_RECORD_NOT_LOCKED 	240
 #define ERROR_LOCK_COLLISION		241
 #define ERROR_LOCK_TIMEOUT		242
 #define ERROR_UNLOCK_ERROR		243

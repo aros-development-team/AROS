@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/19 17:07:24  aros
+    Include <aros/machine.h> instead of machine.h
+
     Revision 1.7  1996/09/13 17:51:22  digulla
     Use IPTR
 
@@ -26,7 +29,7 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <aros/rt.h>
-#include <machine.h>
+#include <aros/machine.h>
 #include "memory.h"
 
 #include "exec_debug.h"

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/19 17:07:32  aros
+    Include <aros/machine.h> instead of machine.h
+
     Revision 1.2  1996/08/01 17:41:40  digulla
     Added standard header for all files
 
@@ -12,7 +15,7 @@
 #include <exec/tasks.h>
 #include <exec/semaphores.h>
 #include <clib/exec_protos.h>
-#include "machine.h"
+#include <aros/machine.h>
 #include <stdio.h>
 
 #define NEWLIST(l)                          \

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/10/19 17:07:29  aros
+    Include <aros/machine.h> instead of machine.h
+
     Revision 1.2  1996/08/01 17:41:30  digulla
     Added standard header for all files
 
@@ -10,7 +13,7 @@
 */
 #ifndef _INITSTRUCT_H_
 #define _INITSTRUCT_H_
-#include "machine.h"
+#include <aros/machine.h>
 
 typedef BYTE type_B;
 typedef WORD type_W;

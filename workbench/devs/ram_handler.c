@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/19 17:07:21  aros
+    Include <aros/machine.h> instead of machine.h
+
     Revision 1.4  1996/10/10 13:16:27  digulla
     ? (Fleischer)
 
@@ -34,7 +37,7 @@
 #ifdef __GNUC__
     #include "ram_handler_gcc.h"
 #endif
-#include "machine.h"
+#include <aros/machine.h>
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \

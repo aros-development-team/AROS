@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/10/19 17:07:26  aros
+    Include <aros/machine.h> instead of machine.h
+
     Revision 1.4  1996/08/13 13:56:03  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -15,7 +18,7 @@
 */
 #include "exec_intern.h"
 #include <aros/libcall.h>
-#include "machine.h"
+#include <aros/machine.h>
 #include "memory.h"
 
 /*****************************************************************************
