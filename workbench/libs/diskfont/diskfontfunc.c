@@ -124,6 +124,8 @@ STATIC struct FileEntry *GetFileList(BPTR fontslock, struct DiskfontBase_intern 
 		    }
 		    
 		    strcpy(fe->FileName, fib->fib_FileName);
+		    D(bug("Add to list: \"%s\"\n", fe->FileName));
+		    
 		    fe->Next = NULL;
 		    
 		    if (prevfe)

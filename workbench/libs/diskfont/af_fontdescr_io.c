@@ -58,7 +58,10 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     /* Check that this is a .font file */
     
     if ( (aword != FCH_ID) && (aword != TFCH_ID) && (aword != OFCH_ID) )
+    {
+	D(bug("ReadFontDescr: unsupported file id\n"));
         goto failure;
+    }
         
     fdh->ContentsID = aword;
     
@@ -67,6 +70,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
      /* Read number of (T)FontContents structs in the file */
     if (!ReadWord( &DFB(DiskfontBase)->dsh, &numentries , (void *)fh ))
     {
+	D(bug("ReadFontDescr: error reading numentries\n"));
         goto failure;
     }
     
@@ -89,6 +93,8 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
 		
 	    }
 	}
+	else
+	    D(bug("ReadFontDescr: No OTagList for outlined font\n"));
     }
     
     if (!(numentries + numoutlineentries)) goto failure;
