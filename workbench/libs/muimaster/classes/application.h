@@ -9,6 +9,10 @@
 #ifndef _MUI_CLASSES_APPLICATION_H
 #define _MUI_CLASSES_APPLICATION_H
 
+#ifndef EXEC_SEMAPHORES_H
+#include <exec/semaphores.h>
+#endif
+
 #ifdef _DCC
 extern char MUIC_Application[];
 #else
@@ -98,6 +102,7 @@ struct MUI_ApplicationData
     APTR           app_WindowFamily; /* delegates window list */
     struct MinList app_IHList;
     struct MinList app_MethodQueue;
+    struct SignalSemaphore app_MethodSemaphore;
     struct MinList app_ReturnIDQueue;
     APTR           app_RIDMemChunk;
     STRPTR         app_Author;
