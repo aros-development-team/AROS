@@ -2,8 +2,8 @@
     Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: ANSI C function getenv()
-    Lang: english
+    Desc: ANSI C function putenv()
+    Lang: English
 */
 
 #include <proto/dos.h>
