@@ -97,6 +97,7 @@ SHARED	:= \
 	errno \
 	exit \
 	fclose \
+	fcntl \
 	fdopen \
 	feof \
 	ferror \
@@ -140,6 +141,7 @@ SHARED	:= \
 	open \
 	opendir \
 	perror \
+	pipe \
 	printf \
 	putenv \
 	puts \
