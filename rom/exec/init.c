@@ -60,6 +60,7 @@ static int returncode=20;
 static struct AROSBase AROSBase;
 
 extern struct Task * inputDevice;
+extern void debugmem (void);
 
 static void idleTask (void)
 {
@@ -246,6 +247,8 @@ int main(int argc,char *argv[])
     }
     Enable();
     Permit();
+
+    debugmem ();
 
     {
 	struct Library * lib;
