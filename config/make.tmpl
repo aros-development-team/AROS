@@ -78,7 +78,7 @@ endif
 
 # Generate function table
 %define mkfunctable_q lib=dummy from=$^ to=$@
-	@$(ECHO) "Regenerating $(to)..."
+	@$(ECHO) "Regenerating %(to)..."
 	@$(AWK) -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib="%(lib)" %(from)
 %end
