@@ -26,6 +26,8 @@
 */
 ULONG DoMethodA (Object * obj, Msg message);
 ULONG DoMethod (Object * obj, ULONG MethodID, ...);
+ULONG DoGadgetMethod (struct Gadget * gad, struct Window * win,
+		    struct Requester * req, ULONG MethodID, ...);
 ULONG DoSuperMethodA (Class  * cl, Object * obj, Msg message);
 ULONG DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 void SetAttrs (Object * obj, ULONG tag1, ...);
