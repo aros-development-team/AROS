@@ -583,6 +583,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		    break;
 
 		case IDCMP_NEWSIZE:
+#if 0
 		    win = ld->ld_Window;
 		    SetAPen(win->RPort, 0);
 		    RectFill(win->RPort,
@@ -590,6 +591,8 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		             win->BorderTop,
 		             win->Width - win->BorderRight,
 		             win->Height- win->BorderTop);
+#endif
+		    break;
 		    
 		case IDCMP_REFRESHWINDOW:
 
@@ -607,7 +610,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 
 //		    AddGList(win, glist, -1,  2, NULL);
 		    D(bug("HE: Refreshing gadgets\n"));
-		    RefreshGList(glist, win, NULL, -1);
+//		    RefreshGList(glist, win, NULL, -1);
 
 		    D(bug("HE: Gadgets refreshed\n"));
 
@@ -618,7 +621,7 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		    for some reason contain the gadget imagery, so we must
 		    refresh them */
 
-		    RefreshWindowFrame(win);
+//		    RefreshWindowFrame(win);
 		    D(bug("HE: Window frame refreshed\n"));
 		    break;
 
