@@ -23,14 +23,10 @@ BEGIN {
  {
     if (mode=="pre_bylib")
     {
-	if (!($3 in libs) )
-	{
-	    libs[$3]=1;
-	    print "-:"$3;
-	}
 	file=$1;
 	gsub("..\/html\/","",file);
 	first=toupper(substr($2,1,1));
+	libs[$3]=libs[$3] first;
 	print $3":"first":"$2":"file;
     }
     else if (mode=="post_bylib")
@@ -50,8 +46,19 @@ BEGIN {
 	    else
 		print "<A HREF=\"#lib"$2"\">"
 
-	    print "<FONT SIZE=6><B>A.2."cnt" "$2"</B></FONT></A><BR>"
+	    print "<FONT SIZE=6><B>A.2."cnt" "$2"</B></FONT></A> ("
 	    cnt ++;
+
+	    libini[$2]=$3;
+
+	    initials=$3;
+	    for (t=1; t<length(initials); t++)
+	    {
+		c=substr(initials,t,1);
+		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
+	    }
+
+	    print ")<BR>"
 
 	    lib="";
 	    char="";
@@ -91,10 +98,17 @@ BEGIN {
 		else
 		    print "<A NAME=\"lib"lib"\"></A>"
 
-		print "<FONT SIZE=6><B>A.2."cnt " " $1"</B></FONT>"
+		print "<FONT SIZE=6><B>A.2."cnt " " $1"</B></FONT><DD>"
 		cnt ++;
 
-		print "<DD><DL>"
+		initials=libini[lib];
+		for (t=1; t<length(initials); t++)
+		{
+		    c=substr(initials,t,1);
+		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
+		}
+
+		print "<P><DL>"
 		dl++;
 	    }
 	    if (char != $2)
@@ -112,7 +126,9 @@ BEGIN {
 		    table=0;
 		}
 
-		print "<DT><FONT SIZE=5><B>"char"</B></FONT><DD>"
+		print "<DT>"
+		print "<A NAME=\"lib"lib char"\"></A>"
+		print "<FONT SIZE=5><B>"char"</B></FONT><DD>"
 
 		print "<TABLE WIDTH=80%>"
 		table=1;
@@ -217,6 +233,18 @@ BEGIN {
 END {
     if (mode=="pre_bylib")
     {
+	alphabeth="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+	for (lib in libs)
+	{
+	    out="";
+	    for (t=1; t<=26; t++)
+	    {
+		if (index(libs[lib],substr(alphabeth,t,1)))
+		    out=out substr(alphabeth,t,1);
+	    }
+	    print "-:"lib":"out;
+	}
     }
     else if (mode=="post_bylib")
     {
