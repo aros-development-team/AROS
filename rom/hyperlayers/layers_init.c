@@ -10,10 +10,7 @@
 #include <graphics/gfxbase.h>
 
 #ifdef SysBase
-#   undef SysBase
-#endif
-#ifdef ExecBase
-#   undef ExecBase
+#undef SysBase
 #endif
 
 
@@ -34,55 +31,42 @@
 
 #include <libcore/libheader.c>
 
-
-#ifdef GfxBase
 #undef GfxBase
-#endif
-
-#ifdef UtilityBase
 #undef UtilityBase
-#endif
+#define SysBase LIBBASE->lb_SysBase
 
-struct ExecBase * SysBase; /* global variable */
-struct GfxBase * GfxBase; /* unfortunatley need it for AROS to link!!*/
-
-ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
+ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR LIBBASE)
 {
-  SysBase = lh->lb_SysBase;
-  
-  InitSemaphore(&lh->lb_MemLock);
+  InitSemaphore(&LIBBASE->lb_MemLock);
  
-  if (!lh->lb_ClipRectPool)
-     lh->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
+  if (!LIBBASE->lb_ClipRectPool)
+     LIBBASE->lb_ClipRectPool = CreatePool(MEMF_CLEAR | MEMF_PUBLIC, sizeof(struct ClipRect) * 50, sizeof(struct ClipRect) * 50);
 
-  if (NULL == lh->lb_GfxBase)
-    lh->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
+  if (NULL == LIBBASE->lb_GfxBase)
+    LIBBASE->lb_GfxBase = (struct GfxBase *) OpenLibrary("graphics.library",0);
 
-  GfxBase = lh->lb_GfxBase;
-
-  if (NULL == lh->lb_UtilityBase)
-     lh->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
+  if (NULL == LIBBASE->lb_UtilityBase)
+     LIBBASE->lb_UtilityBase = (struct UtilityBase *) OpenLibrary("utility.library",0);
   
-  if (!lh->lb_GfxBase || !lh->lb_UtilityBase || !lh->lb_ClipRectPool)
+  if (!LIBBASE->lb_GfxBase || !LIBBASE->lb_UtilityBase || !LIBBASE->lb_ClipRectPool)
   {
-    if (lh->lb_GfxBase)
+    if (LIBBASE->lb_GfxBase)
     {
-      CloseLibrary((struct Library *)lh->lb_GfxBase);
-      lh->lb_GfxBase = NULL;
+      CloseLibrary((struct Library *)LIBBASE->lb_GfxBase);
+      LIBBASE->lb_GfxBase = NULL;
     }
-    if (lh->lb_UtilityBase)
+    if (LIBBASE->lb_UtilityBase)
     {
-      CloseLibrary((struct Library *)lh->lb_UtilityBase);
-      lh->lb_UtilityBase = NULL;
+      CloseLibrary((struct Library *)LIBBASE->lb_UtilityBase);
+      LIBBASE->lb_UtilityBase = NULL;
     }
-    if (lh->lb_ClipRectPool)
+    if (LIBBASE->lb_ClipRectPool)
     {
-      DeletePool(lh->lb_ClipRectPool);
-      lh->lb_ClipRectPool = NULL;
+      DeletePool(LIBBASE->lb_ClipRectPool);
+      LIBBASE->lb_ClipRectPool = NULL;
     }
     return FALSE;
   }
   
   return TRUE;    
 }
-
