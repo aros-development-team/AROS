@@ -276,22 +276,24 @@ static BOOL ReadRGBPic(Class *cl, Object *o, struct IFFHandle *handle, struct Bi
 		    *chunky++ = rgb & 0xff;
 		    *chunky++ = (rgb >> 8) & 0xff;
 		    *chunky++ = (rgb >> 16) & 0xff;
-		    if( !DoSuperMethod(cl, o,
-				PDTM_WRITEPIXELARRAY,	// Method_ID
-				(IPTR) chunkystart,	// PixelData
-				PBPAFMT_RGB,		// PixelFormat
-				width*3,		// PixelArrayMod (number of bytes per row)
-				0,			// Left edge
-				y,			// Top edge
-				width,			// Width
-				1))			// Height (here: one line)
-		    {
-			D(bug("ilbm.datatype/ReadRGB: WRITEPIXELARRAY failed\n"));
-			FreeVec(body);
-			SetIoErr(ERROR_UNKNOWN);
-			return FALSE;
-		    }
 		}
+		
+		if( !DoSuperMethod(cl, o,
+			    PDTM_WRITEPIXELARRAY,   // Method_ID
+			    (IPTR) chunkystart,	    // PixelData
+			    PBPAFMT_RGB,	    // PixelFormat
+			    width*3,		    // PixelArrayMod (number of bytes per row)
+			    0,			    // Left edge
+			    y,			    // Top edge
+			    width,		    // Width
+			    1))			    // Height (here: one line)
+		{
+		    D(bug("ilbm.datatype/ReadRGB: WRITEPIXELARRAY failed\n"));
+		    FreeVec(body);
+		    SetIoErr(ERROR_UNKNOWN);
+		    return FALSE;
+		}
+
 		src += body_bpr * numplanes;
 	    }
 	    break;
