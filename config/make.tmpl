@@ -1448,6 +1448,10 @@ endif
 FILES_ALL := $(foreach f,$(FILES),$(f).c)
 FUNCS_ALL%(id) := $(foreach f,$(FUNCS),$(f).c)
 
+setup :: $(OBJDIR) $(MOD_DIR%(id))
+
+$(OBJDIR) $(MOD_DIR%(id)) :
+	$(MKDIR) $@
 
 %end
 
@@ -1481,7 +1485,6 @@ LIBDEFS := libdefs.h
 %libdefs_rule
 endif
 
-#MM
 setup :: $(LIBDEFS)
 	%mkdirs_q  $(OBJDIR%(id)) $(LIBDIR) $(MOD_DIR%(id))
 
@@ -1624,13 +1627,13 @@ $(AROS_INCLUDES)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 %(mmake)-linklib-quick : %(mmake)-linklib
 
 #MM %(mmake)-module : %(mmake)
-%(mmake)-module : $(MOD_DIR%(id))/$(MODULE%(id))
+%(mmake)-module : setup $(MOD_DIR%(id))/$(MODULE%(id))
 
 #MM %(mmake)-linklib : %(mmake)
 ifeq ($(MAKE_SHLIB),yes)
-%(mmake)-linklib : $(AROSDIR)/lib/lib$(MODNAME).so
+%(mmake)-linklib : setup $(AROSDIR)/lib/lib$(MODNAME).so
 else
-%(mmake)-linklib : $(AROSDIR)/lib/lib$(MODNAME).a
+%(mmake)-linklib : setup $(AROSDIR)/lib/lib$(MODNAME).a
 endif
 
 ifeq ($(USE_LIBDEFS),no)
@@ -1640,7 +1643,7 @@ endif
 
 # Don't generate a functable if there is nothing there to do.
 ifeq ($(FUNCS),)
-   USE_FUNCTABLE := no
+    USE_FUNCTABLE := no
 endif
 
 # F_NAME might be set by make_module_cpak/make_module_archtool
@@ -1804,7 +1807,6 @@ $(STUBS_OBJ) : $(STUBS_SRC)
 $(STUBS_DEP) : $(STUBS_SRC)
 	%mkdepend_q flags=%(dflags)
 
-#MM
 setup ::
 	%mkdirs_q $(OBJDIR) $(LIBDIR)
 
@@ -1815,6 +1817,7 @@ clean ::
 DEPS := $(DEPS) $(STUBS_DEP)
 
 %end
+
 #------------------------------------------------------------------------------
 #   Hey! iaint says don't add things here, add them before my other message.
 #   The reason is that I'm trying to work out which of macros are still
