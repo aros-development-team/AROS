@@ -27,9 +27,8 @@ typedef struct ScriptArg
   struct  ScriptArg *parent;	/* Parent argument				*/
   char  * arg;			/* Either string or				*/
   struct  ScriptArg *cmd;	/* ptr to list of arguments			*/
-				/* Set one to NULL				*/
-  char  * value;		/* Holds the return value, if cmd is evaluated	*/
-  int     intval;		/* if argument is an integer *arg will get NULL	*/
+				/* set one of them to NULL			*/
+  int     intval;		/* If argument is an integer *arg will get NULL	*/
 
 } ScriptArg;
 
@@ -59,3 +58,4 @@ struct VariableList
 
 
 #endif /* _INSTALLER_H */
+

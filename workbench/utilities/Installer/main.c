@@ -9,7 +9,7 @@
 #include "Installer.h"
 #include "main.h"
 
-static const char version[] = "$VER: Installer 0.1 (26.6.1998)\n";
+static const char version[] = "$VER: Installer 0.1 (08.07.1998)\n";
 
 
 FILE *inputfile;
@@ -24,6 +24,9 @@ extern void free_script(ScriptArg * );
 extern void set_preset_variables();
 extern void *get_variable( char *name );
 extern void set_variable( char *name, char *text, int intval );
+#ifdef DEBUG
+extern void dump_varlist();
+#endif
 
 InstallerPrefs preferences;
 ScriptArg script;
@@ -62,7 +65,6 @@ char *filename;
   script.arg = NULL;
   script.cmd = NULL;
   script.next = NULL;
-  script.value = NULL;
   script.parent = NULL;
   currentarg = script.cmd;
   /* parse script file */
@@ -95,7 +97,6 @@ char *filename;
     currentarg->arg = NULL;
     currentarg->cmd = NULL;
     currentarg->next = NULL;
-    currentarg->value = NULL;
 
     nextarg = FALSE;
     do
@@ -110,35 +111,35 @@ char *filename;
         switch( buffer[0] )
         {
           case SEMICOLON  : /* A comment, ok - Go on with next line */
-	                    do
-	                    {
-			      count = fread( &buffer[0], 1, 1, inputfile );
-			    } while( buffer[0] != LINEFEED && count != 0 );
+                            do
+                            {
+                              count = fread( &buffer[0], 1, 1, inputfile );
+                            } while( buffer[0] != LINEFEED && count != 0 );
                             if( count == 0 )
-			      endoffile = TRUE;
-			    break;
+                              endoffile = TRUE;
+                            break;
 
-	  case LBRACK	  : /* A command (...) , parse the content of braces */
+          case LBRACK	  : /* A command (...) , parse the content of braces */
                             currentarg->cmd = (ScriptArg *)malloc( sizeof(ScriptArg) );
                             if( currentarg->cmd == NULL )
                             {
                               printf("Couldn't malloc memory!\n");
                               exit(-1);
                             }
-			    dummy = currentarg->cmd;
+                            dummy = currentarg->cmd;
                             dummy->parent = currentarg;
-			    dummy->arg = NULL;
-			    dummy->cmd = NULL;
-			    dummy->next = NULL;
-			    dummy->value = NULL;
-	                    parse_file( currentarg->cmd );
-	                    nextarg = TRUE;
-	                    break;
+                            dummy->arg = NULL;
+                            dummy->intval = 0;
+                            dummy->cmd = NULL;
+                            dummy->next = NULL;
+                            parse_file( currentarg->cmd );
+                            nextarg = TRUE;
+                            break;
 
-	  default	  : /* Plain text is not allowed */
-	                    printf( "Script syntax error!\n" );
-	                    exit(-1);
-	                    break;
+             default	  : /* Plain text is not allowed */
+                            printf( "Script syntax error!\n" );
+                            exit(-1);
+                            break;
         }
       }
     } while( nextarg != TRUE && !endoffile );
@@ -149,7 +150,14 @@ char *filename;
   /* execute parsed script */
   execute_script( &script, 0 );
 
+#define DOTHIS
+#ifdef DOTHIS
+#undef DOTHIS
+  dump_varlist();
+#endif
+
 /*  free_script( script.cmd ); */
 
 return error;
 }
+
