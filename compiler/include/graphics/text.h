@@ -65,8 +65,8 @@ struct TextFontExtension
 };
 
 /* tfe_Flags0 */
-#define TEOB_NOREMFONT	   0
-#define TEOF_NOREMFONT (1<<0)
+#define TE0B_NOREMFONT	   0
+#define TE0F_NOREMFONT (1<<0)
 
 /* Text Attributes */
 struct TextAttr
