@@ -18,9 +18,9 @@ AROS_UFH2 (void, KPutChar,
 	AROS_UFHA(struct ExecBase *,SysBase,A3)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     RawPutChar(chr);
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 void KPrintF(STRPTR format, ...)
