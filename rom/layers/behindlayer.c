@@ -246,7 +246,8 @@
            /* There might not just be one ClipRect of the layer _L hidden. So
               I have to check them all  
             */
-           if (!(_CR->bounds.MinX > CR->bounds.MaxX ||
+           if (NULL != _CR->lobs &&
+               !(_CR->bounds.MinX > CR->bounds.MaxX ||
                  _CR->bounds.MaxX < CR->bounds.MinX ||
                  _CR->bounds.MinY > CR->bounds.MaxY ||
                  _CR->bounds.MaxY < CR->bounds.MinY))
@@ -305,6 +306,13 @@
 
              _CR -> lobs   = NULL;
              _CR -> BitMap = NULL;
+             
+             /* check whether the whole area has already been moved... */
+             if (_CR->bounds.MinX == CR->bounds.MinX &&
+                 _CR->bounds.MinY == CR->bounds.MinY &&
+                 _CR->bounds.MaxX == CR->bounds.MaxX &&
+                 _CR->bounds.MaxY == CR->bounds.MaxY)
+               break;
            }
            _CR = _CR->Next;
          }
