@@ -90,15 +90,17 @@ DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-LIBS = -L$(LIBDIR) -lexec -larossupport -larosc
+LIBS = -L$(LIBDIR) -lexec -larosc
+LIBLIST = exec arosc
+LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASMFUNCTIONS),$(OBJDIR)/$(f).o)
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
 
 all: setup $(LIB) $(OSMODDIR)/exec.strap
 
-$(OSMODDIR)/exec.strap: $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/libarosc.a
+$(OSMODDIR)/exec.strap: $(LIB) $(INITFUNC) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.map
+	$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.map
 	@if test ! -s execstrap.map; then rm execstrap.map ; else true ; fi
 	@strip $@
 
