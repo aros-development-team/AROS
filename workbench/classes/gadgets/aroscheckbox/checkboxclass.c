@@ -148,6 +148,7 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
     struct TagItem supertags[] =
     {
 	{GA_RelVerify, TRUE},
+	{GA_Immediate, TRUE},
 	{TAG_MORE, (IPTR) msg->ops_AttrList}
     };
     struct TagItem tags[] =

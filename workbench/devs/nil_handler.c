@@ -244,8 +244,19 @@ AROS_LH1(void, beginio,
 	    Permit();
 	    break;
 
+        case FSA_SET_FILE_SIZE:
+        case FSA_EXAMINE:
+        case FSA_EXAMINE_ALL:
+        case FSA_CREATE_DIR:
+        case FSA_CREATE_HARDLINK:
+        case FSA_CREATE_SOFTLINK:
+        case FSA_RENAME:
+        case FSA_DELETE_OBJECT:
+            error = ERROR_NOT_IMPLEMENTED;
+            break;
+
 	default:
-	    error=ERROR_NOT_IMPLEMENTED;
+	    error = ERROR_ACTION_NOT_KNOWN;
 	    break;
     }
 

@@ -1,25 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:36:16  ldp
-    Polish
 
-    Revision 1.4  1996/12/09 13:53:24  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.3  1996/10/24 15:50:26  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.2  1996/09/21 14:14:22  digulla
-    Hand DOSBase to DoName()
-
-    Revision 1.1  1996/09/11 12:54:45  digulla
-    A couple of new DOS functions from M. Fleischer
-
-    Desc:
+    Desc: Delete a file or directory.
     Lang: english
 */
 #include <exec/memory.h>
@@ -86,7 +69,12 @@
     iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Flags=0;
     iofs->IOFS.io_Command=FSA_DELETE_OBJECT;
-    /* io_Args[0] is the name which is set by DoName(). */
-    return !DoName(iofs,name,DOSBase);
+
+    DoName(iofs,name,DOSBase);
+    SetIoErr(iofs->io_DosError);
+
+    if (iofs->io_DosError)
+	return DOSFALSE;
+    return DOSTRUE;
     AROS_LIBFUNC_EXIT
 } /* DeleteFile */

@@ -1,32 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1997/01/27 00:36:18  ldp
-    Polish
 
-    Revision 1.7  1996/12/09 13:53:25  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.6  1996/10/24 15:50:27  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.5  1996/09/13 17:50:06  digulla
-    Use IPTR
-
-    Revision 1.4  1996/08/13 13:52:45  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.3  1996/08/12 14:20:38  digulla
-    Added aliases
-
-    Revision 1.2  1996/08/01 17:40:50  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: dos.library function Examine().
     Lang: english
 */
 #include <exec/memory.h>
@@ -133,15 +109,16 @@
     iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_EXAMINE;
     iofs->IOFS.io_Flags  =0;
-    iofs->io_Args[0]=(IPTR)buffer;
-    iofs->io_Args[1]=512;
-    iofs->io_Args[2]=ED_OWNER;
+    iofs->io_Union.io_EXAMINE.io_ead = (struct ExAllData *)buffer;
+    iofs->io_Union.io_EXAMINE.io_Size = sizeof(buffer);
+    iofs->io_Union.io_EXAMINE.io_Mode = ED_OWNER;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
 
     /* Set error code and return */
-    if((me->pr_Result2=iofs->io_DosError))
+    SetIoErr(iofs->io_DosError);
+    if(iofs->io_DosError)
 	return 0;
     else
     {
@@ -150,11 +127,11 @@
 	src=ead->ed_Name;
 	dst=fib->fib_FileName;
 	if(src!=NULL)
-	    for(i=0;i<107;i++)
+	    for(i=0;i<MAXFILENAMELENGTH-1;i++)
 		if(!(*dst++=*src++))
 		    break;
 	*dst++=0;
-	fib->fib_Protection=ead->ed_Prot^0xf;
+	fib->fib_Protection=ead->ed_Prot;
 	fib->fib_EntryType=ead->ed_Type;
 	fib->fib_Size=ead->ed_Size;
 	fib->fib_Date.ds_Days=ead->ed_Days;

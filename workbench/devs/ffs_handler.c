@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Amiga FastFileSystem handler
+    Lang: english
 */
 #include <devices/trackdisk.h>
 #include <exec/errors.h>
@@ -225,7 +225,7 @@ const struct Resident resident=
 
 const char name[]="ffs.handler";
 
-const char version[]="$VER: ffs-handler 41.1 (28.3.96)\n\015";
+const char version[]="$VER: ffs-handler 41.2 (9.10.97)\n\015";
 
 const APTR inittabl[4]=
 {
@@ -965,11 +965,11 @@ static LONG lock(struct dev *dev, struct cinfo *block, ULONG mode)
 	        return ERROR_OBJECT_IN_USE;
     touch_read(dev,block);
     protect=EC(block->data->fb_protect)^0xf;
-    if((mode&FMF_EXECUTE)&&!(protect&FMF_EXECUTE))
+    if((mode&FMF_EXECUTE)&&(protect&FMF_EXECUTE))
         return ERROR_NOT_EXECUTABLE;
-    if((mode&FMF_WRITE)&&!(protect&FMF_WRITE))
+    if((mode&FMF_WRITE)&&(protect&FMF_WRITE))
 	return ERROR_WRITE_PROTECTED;
-    if((mode&FMF_READ)&&!(protect&FMF_READ))
+    if((mode&FMF_READ)&&(protect&FMF_READ))
 	return ERROR_READ_PROTECTED;
     return 0;
 }
@@ -1408,7 +1408,7 @@ void deventry(struct ffsbase *ffsbase)
 		                      iofs->io_Args[1], iofs->io_Args[2]);
 		    break;
 		default:
-		    error=ERROR_NOT_IMPLEMENTED;
+		    error=ERROR_ACTION_NOT_KNOWN;
 		    break;
     	    }
     	    iofs->io_DosError=error;

@@ -79,7 +79,7 @@
 
         buffer[index++] = ':';
         buffer[index++] = ' ';
-    };
+    }
 
     theString = DosGetString(code);
     if(theString)
@@ -100,27 +100,36 @@
 	    buffer[index++] = *theString++;
 	}
 
-	/* If the number is negative, whack in a - sign. */
-	if(code < 0)
+	if (code)
 	{
-	    code = -code;
-	    buffer[index++] = '-';
+	    /* If code is 0, just insert it. */
+	    if (len-- > 0)
+		buffer[index++] = '0';
 	}
-
-	/* Convert the number to a string, I work backwards, its easier */
-	l2str[l2idx--] = '\0';
-	while(code != 0)
+	else
 	{
-	    l2str[l2idx--] = (code % 10) + '0';
-	    code /= 10;
-	}
+	    /* If the number is negative, whack in a - sign. */
+	    if(code < 0)
+	    {
+		code = -code;
+		buffer[index++] = '-';
+	    }
 
-	l2str[l2idx] = ' ';
+	    /* Convert the number to a string, I work backwards, its easier */
+	    l2str[l2idx--] = '\0';
+	    while(code != 0)
+	    {
+		l2str[l2idx--] = (code % 10) + '0';
+		code /= 10;
+	    }
 
-	/* Copy the number onto the fault string */
-	while((index < len) && l2str[l2idx])
-	{
-	    buffer[index++] = l2str[l2idx++];
+	    l2str[l2idx] = ' ';
+
+	    /* Copy the number onto the fault string */
+	    while((index < len) && l2str[l2idx])
+	    {
+	        buffer[index++] = l2str[l2idx++];
+	    }
 	}
     }
     buffer[index] = '\0';

@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Prepare an IO message for use with a specific filename.
     Lang: english
 */
 #include <exec/memory.h>
@@ -85,7 +85,7 @@ LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
 
     iofs->IOFS.io_Device =device;
     iofs->IOFS.io_Unit	 =unit;
-    iofs->io_Args[0]=(IPTR)pathname;
+    iofs->io_Union.io_NamedFile.io_Filename=pathname;
 
     /* Send the request. */
     DoIO(&iofs->IOFS);

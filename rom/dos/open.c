@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Open a file with the specified mode.
@@ -91,16 +91,16 @@
 	switch(accessMode)
 	{
 	    case MODE_OLDFILE:
-		iofs->io_Args[1]=FMF_WRITE|FMF_READ;
+		iofs->io_Union.io_OPEN_FILE.io_FileMode=FMF_WRITE|FMF_READ;
 		ast=con=me->pr_CIS;
 		break;
 	    case MODE_NEWFILE:
-		iofs->io_Args[1]=FMF_LOCK|FMF_CREATE|FMF_CLEAR|FMF_WRITE|FMF_READ;
+		iofs->io_Union.io_OPEN_FILE.io_FileMode=FMF_LOCK|FMF_CREATE|FMF_CLEAR|FMF_WRITE|FMF_READ;
 		con=me->pr_COS;
 		ast=me->pr_CES?me->pr_CES:me->pr_COS;
 		break;
 	    case MODE_READWRITE:
-		iofs->io_Args[1]=FMF_CREATE|FMF_WRITE|FMF_READ;
+		iofs->io_Union.io_OPEN_FILE.io_FileMode=FMF_CREATE|FMF_WRITE|FMF_READ;
 		con=me->pr_COS;
 		ast=me->pr_CES?me->pr_CES:me->pr_COS;
 		break;
@@ -109,7 +109,7 @@
 		ast=con=me->pr_CIS;
 		break;
 	}
-	iofs->io_Args[2]=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
+	iofs->io_Union.io_OPEN_FILE.io_Protection=0UL;
 	if(!Stricmp(name,"CONSOLE:"))
 	{
 	    iofs->IOFS.io_Device=((struct FileHandle *)BADDR(con))->fh_Device;

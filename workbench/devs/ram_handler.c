@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: RAM: handler
@@ -167,7 +167,7 @@ const struct Resident resident=
 
 const char name[]="ram.handler";
 
-const char version[]="$VER: ram-handler 41.2 (28.7.97)\n\015";
+const char version[]="$VER: ram-handler 41.3 (11.10.1997)\n\015";
 
 const APTR inittabl[4]=
 {
@@ -328,10 +328,10 @@ AROS_LH3(void, open,
     iofs->IOFS.io_Error=ERROR_NO_FREE_STORE;
     fhv=(struct filehandle*)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
     if(fhv!=NULL)
-{
+    {
 	fhc=(struct filehandle*)AllocMem(sizeof(struct filehandle),MEMF_CLEAR);
 	if(fhc!=NULL)
-    {
+        {
 	    vol=(struct vnode *)AllocMem(sizeof(struct vnode),MEMF_CLEAR);
 	    if(vol!=NULL)
 	    {
@@ -347,7 +347,7 @@ AROS_LH3(void, open,
 			    vol->type=ST_USERDIR;
 			    vol->self=vol;
 			    vol->doslist=dlv;
-			    vol->protect=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
+			    vol->protect=0UL;
 			    NEWLIST((struct List *)&vol->list);
 			    fhv->node=(struct dnode *)vol;
 			    dlv->dol_Unit  =(struct Unit *)fhv;
@@ -782,11 +782,11 @@ static LONG write(struct rambase *rambase, struct filehandle *handle, UBYTE *buf
 
 static LONG lock(struct dnode *dir, ULONG mode)
 {
-    if((mode&FMF_EXECUTE)&&!(dir->protect&FMF_EXECUTE))
+    if((mode&FMF_EXECUTE)&&(dir->protect&FMF_EXECUTE))
 	return ERROR_NOT_EXECUTABLE;
-    if((mode&FMF_WRITE)&&!(dir->protect&FMF_WRITE))
+    if((mode&FMF_WRITE)&&(dir->protect&FMF_WRITE))
 	return ERROR_WRITE_PROTECTED;
-    if((mode&FMF_READ)&&!(dir->protect&FMF_READ))
+    if((mode&FMF_READ)&&(dir->protect&FMF_READ))
 	return ERROR_READ_PROTECTED;
     if(mode&FMF_LOCK)
     {
@@ -892,6 +892,9 @@ static LONG create_dir(struct rambase *rambase, struct filehandle **handle, STRP
     struct filehandle *fh;
     STRPTR s;
     LONG error;
+
+    if (dir->protect&FIBF_WRITE)
+        return ERROR_WRITE_PROTECTED;
 
     error=findname(rambase,&name,&dir);
     if(!error)
