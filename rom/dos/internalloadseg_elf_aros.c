@@ -260,7 +260,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             eh->ident[EI_DATA] != ELFDATA2LSB ||
             eh->machine        != EM_386
         
-        #elif defined(__mc68000__)
+        #elif defined(__m68k__)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
@@ -283,7 +283,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         kprintf("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],
         #if defined (__i386__)
             ELFDATA2LSB);
-        #elif defined(__mc68000__)
+        #elif defined(__m68k__)
             ELFDATA2MSB);
         #elif defined(__arm__)
             ELFDATA2MSB);
@@ -292,7 +292,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
         #if defined (__i386__)
             EM_386);
-        #elif defined(__mc68000__)
+        #elif defined(__m68k__)
             EM_68K);
         #elif defined(__arm__)
             EM_ARM);
