@@ -265,6 +265,19 @@ static LONG country_input(struct IntuiMessage *msg)
 	} /* switch(gad->GadgetID) */
 	
     } /* if (msg->Class == IDCMP_GADGETUP) */
+    else if (msg->Class == IDCMP_RAWKEY)
+    {
+   	switch(msg->Code)
+	{
+	    case RAWKEY_NM_WHEEL_UP:
+	    	ScrollListview(countrygad, -1);
+	    	break;
+		
+	    case RAWKEY_NM_WHEEL_DOWN:
+	    	ScrollListview(countrygad, 1);
+	    	break;
+	}
+    }
     
     return retval;
 }

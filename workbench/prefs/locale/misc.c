@@ -168,3 +168,31 @@ void SortInNode(struct List *list, struct Node *node)
 
 /*********************************************************************************************/
 
+void ScrollListview(struct Gadget *gad, WORD delta)
+{
+    IPTR top, visible, total;
+    LONG newtop;
+    
+    GT_GetGadgetAttrs(gad, win, NULL, GTLV_Top, (IPTR)&top,
+    	    	    	    	      GTLV_Visible, (IPTR)&visible,
+				      GTLV_Total, (IPTR)&total,
+				      TAG_DONE);
+				      
+    newtop = (LONG)top + delta * 3;
+
+    if (newtop + visible > total)
+    {
+    	newtop = total - visible;
+    }
+    
+    if (newtop < 0) newtop = 0;
+    
+    if (newtop != top)
+    {
+    	GT_SetGadgetAttrs(gad, win, NULL, GTLV_Top, newtop, TAG_DONE);
+    }
+    				      
+}
+
+/*********************************************************************************************/
+
