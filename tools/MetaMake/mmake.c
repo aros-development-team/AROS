@@ -1198,6 +1198,9 @@ updatemakefile (Project * prj, const char * path)
 	else
 	    printf ("config.deps is newer\n");
 
+        setvar (prj, "MMSRC", src);
+        setvar (prj, "MMDEST", dest);
+      
 	if (!execute (prj, prj->genmakefilescript,"-","-",""))
 	{
 	    unlink (dest);
@@ -1208,6 +1211,24 @@ updatemakefile (Project * prj, const char * path)
 
     xfree (dest);
     xfree (mf);
+}
+
+void
+updatemflist (Project * prj)
+{
+    char mfnsrc[256];
+    Node * makefile;
+    struct stat st;
+  
+    ForeachNode(&prj->makefiles, makefile)
+    {
+        strcpy(mfnsrc, makefile->name);
+        strcat(mfnsrc, ".src");
+        assert(strlen(mfnsrc)<256);
+      
+        if (!stat(makefile->name, &st) && !stat(mfnsrc, &st))
+	    updatemakefile(prj, mfnsrc);
+    }
 }
 
 void
@@ -1978,6 +1999,7 @@ maketarget (char * metatarget)
     chdir (prj->top);
 
     readvars (prj);
+    updatemflist (prj);
     buildmflist (prj);
     buildtargetlist (prj);
 
