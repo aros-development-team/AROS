@@ -40,6 +40,7 @@ extern struct Library *MUIMasterBase;
 #define FLAG_NO_PEN 	    4
 
 #define ColorWheelBase data->colorwheelbase
+#define IColorWheel data->icolorwheel
 
 static void NotifyGun(Object *obj, struct Coloradjust_DATA *data, LONG gun)
 {
@@ -226,7 +227,7 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
                 MUIA_Boopsi_Remember,         WHEEL_Saturation,
                 MUIA_Boopsi_Remember,         WHEEL_Hue,
                 MUIA_Boopsi_TagScreen,        WHEEL_Screen,
-                WHEEL_Screen,                 NULL,
+                WHEEL_Screen,                 (IPTR)NULL,
                 GA_Left,                      0,
                 GA_Top,                       0,
                 GA_Width,                     0,
@@ -267,6 +268,11 @@ IPTR Coloradjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     data->colorwheelbase = colorwheelbase;
     data->gradientsliderbase = gradientsliderbase;
+    if (!EXEC_INTERFACE_GET_MAIN(data->icolorwheel,data->colorwheelbase))
+    {
+    	CoerceMethod(cl,obj,OM_DISPOSE);
+    	return 0;
+    }
     data->notifyclass = cl->cl_Super->cl_Super;
         
     data->sliderhook.h_Entry 	= HookEntry;
@@ -361,6 +367,7 @@ IPTR Coloradjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
     
     data = INST_DATA(cl, obj);
     
+    EXEC_INTERFACE_DROP(data->icolorwheel);
     colorwheelbase = data->colorwheelbase;
     gradientsliderbase = data->gradientsliderbase;
     
