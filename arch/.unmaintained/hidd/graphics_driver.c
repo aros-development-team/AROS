@@ -1310,7 +1310,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
             {
               /* a smart layer */
               BltBitMap(CR->BitMap,
-                        Rect.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0F),
+                        Rect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
                         Rect.MinY - CR->bounds.MinY,
                         bm,
                         Rect.MinX - xleft,
@@ -1514,7 +1514,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
                         Rect.MinX - xleft,
                         Rect.MinY - yup,
                         CR->BitMap,
-                        Rect.MinX - CR->bounds.MinX + (CR->bounds.MinX & 0x0f),
+                        Rect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX),
                         Rect.MinY - CR->bounds.MinY,
                         Rect.MaxX-Rect.MinX+1,
                         Rect.MaxY-Rect.MinY+1,
@@ -1991,7 +1991,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 	    ULONG val;
             /* Smart refresh */
 
-            Offset = CR->bounds.MinX & 0x0f;
+            Offset = ALIGN_OFFSET(CR->bounds.MinX);
 
 
 LOCK_HIDD(bm);
@@ -2003,7 +2003,7 @@ ULOCK_HIDD(bm);
 	    return val;
 
 #if 0          
-            Offset = CR->bounds.MinX & 0x0f;
+            Offset = ALIGN_OFFSET(CR->bounds.MinX);
             i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
 	    			, y - (CR->bounds.MinY - YRel)
 				, Width
@@ -2218,7 +2218,7 @@ ULOCK_HIDD(bm);
           { 
             /* Smart refresh */
 
-            Offset = CR->bounds.MinX & 0x0f;
+            Offset = ALIGN_OFFSET(CR->bounds.MinX);
 	    
 LOCK_HIDD(bm);	  
 	    SetAttrs( BM_OBJ(bm), bm_tags);
@@ -2229,7 +2229,7 @@ LOCK_HIDD(bm);
 ULOCK_HIDD(bm);
 
 #if 0	    
-            Offset = CR->bounds.MinX & 0x0f;
+            Offset = ALIGN_OFFSET(CR->bounds.MinX);
           
             i = COORD_TO_BYTEIDX( x - (CR->bounds.MinX - XRel) + Offset
 	    			, y - (CR->bounds.MinY - YRel)
