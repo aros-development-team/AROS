@@ -1,0 +1,2 @@
+gcc #?.o -o jed -s -noixemul
+protect jed +e

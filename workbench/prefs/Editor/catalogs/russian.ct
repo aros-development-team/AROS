@@ -1,0 +1,104 @@
+#version $VER: JanoEditor.catalog 1.0 (1.10.2000).
+#codeset 0
+#language russian
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT
+Default values
+;
+MSG_LASTSAVED
+Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN
+Главный setup
+;
+MSG_TAB
+Табуляция:
+;
+MSG_SEPARATORS
+Separators:
+;
+MSG_TXTFONT
+Шрифт для текста:
+;
+MSG_SCRFONT
+Экранный шрифт:
+;
+MSG_PUBSCREEN
+Общий экран:
+;
+MSG_BACKDROP
+Бэкдроп
+;
+MSG_LEFTMARGIN
+Левая граница
+;
+MSG_AUTOINDENT
+Автоотступ
+;
+MSG_EXTEND
+Расширенная цифровая клавиатура
+;
+MSG_PREFSSAVE
+Сохранить
+;
+MSG_USEPREFS
+Использовать
+;
+MSG_DISCARDPREFS
+Отмена
+;
+MSG_USEDEF
+Использовать базовые
+;
+MSG_CHOOSEIT
+Выбрать...
+;
+MSG_CLONEPARENT
+Использовать предыдущие
+;
+MSG_COLOR_BACK
+Background
+;
+MSG_COLOR_TEXT
+Standard text
+;
+MSG_COLOR_FILLTXT
+Selected fill text
+;
+MSG_COLOR_FILLSEL
+Selected text
+;
+MSG_COLOR_MARGINBACK
+Margin background
+;
+MSG_COLOR_MARGINTXT
+Margin text
+;
+MSG_COLOR_SHINE
+Panel shine
+;
+MSG_COLOR_SHADE
+Panel shade
+;
+MSG_COLOR_PANELBACK
+Panel back
+;
+MSG_COLOR_PANELTEXT
+Panel text
+;
+MSG_COLOR_GLYPH
+Panel glyph
+;
+MSG_COLOR_MARKEDLINES
+Active panel
+;

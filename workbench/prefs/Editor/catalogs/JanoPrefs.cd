@@ -1,0 +1,104 @@
+;
+; Catalog description for JanoPrefs
+; JanoPrefs.cd
+;
+; *****************************
+;  NewMenu strings
+; *****************************
+;
+; Edit Menu
+;
+MSG_RESETDEFAULT (//)
+Default values
+;
+MSG_LASTSAVED (//)
+Last saved values
+;
+; *******************
+;  Preference window
+; *******************
+;
+MSG_TITLEWIN (//)
+Main setup
+;
+MSG_TAB (//)
+Tabulation:
+;
+MSG_SEPARATORS (//)
+Separators:
+;
+MSG_TXTFONT (//)
+Text font:
+;
+MSG_SCRFONT (//)
+Screen font:
+;
+MSG_PUBSCREEN (//)
+Screen mode:
+;
+MSG_BACKDROP (//)
+Backdrop
+;
+MSG_LEFTMARGIN (//)
+Left margin
+;
+MSG_AUTOINDENT (//)
+Auto indent
+;
+MSG_EXTEND (//)
+Extended numeric pad
+;
+MSG_PREFSSAVE (//)
+Save
+;
+MSG_USEPREFS (//)
+Use
+;
+MSG_DISCARDPREFS (//)
+Cancel
+;
+MSG_USEDEF (//)
+Use Default
+;
+MSG_CHOOSEIT (//)
+Choose one...
+;
+MSG_CLONEPARENT (//)
+Clone parent
+;
+MSG_COLOR_BACK (//)
+Background
+;
+MSG_COLOR_TEXT (//)
+Standard text
+;
+MSG_COLOR_FILLTXT (//)
+Selected fill text
+;
+MSG_COLOR_FILLSEL (//)
+Selected text
+;
+MSG_COLOR_MARGINBACK (//)
+Margin background
+;
+MSG_COLOR_MARGINTXT (//)
+Margin text
+;
+MSG_COLOR_SHINE (//)
+Panel shine
+;
+MSG_COLOR_SHADE (//)
+Panel shade
+;
+MSG_COLOR_PANELBACK (//)
+Panel back
+;
+MSG_COLOR_PANELTEXT (//)
+Panel text
+;
+MSG_COLOR_GLYPH (//)
+Panel glyph
+;
+MSG_COLOR_MARKEDLINES (//)
+Active panel
+;
