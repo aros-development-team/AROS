@@ -71,13 +71,47 @@
 
     /* check if 'region' and 'rectangle' overlap */
     if (region->RegionRectangle && overlap(region->bounds, *rectangle)) {
+        /*
+         * Search the region for rectangles overlapping
+         * the one to be inserted. 
+         */
+        if (region->bounds.MinX < rectangle->MinX &&
+            region->bounds.MinY < rectangle->MinY &&
+            region->bounds.MaxX > rectangle->MaxX &&
+            region->bounds.MaxY > rectangle->MaxY)
+        {
+          struct Rectangle tmprect;
+          tmprect.MinX =  rectangle->MinX - region->bounds.MinX;
+          tmprect.MinY =  rectangle->MinY - region->bounds.MinY;
+          tmprect.MaxX =  rectangle->MaxX - region->bounds.MinX;
+          tmprect.MaxY =  rectangle->MaxY - region->bounds.MinY;
 
+          rr = region->RegionRectangle;
+          while (rr)
+          {
+            if (rr->bounds.MinX <= tmprect.MinX &&
+                rr->bounds.MinY <= tmprect.MinY &&
+                rr->bounds.MaxX >= tmprect.MaxX &&
+                rr->bounds.MaxY >= tmprect.MaxY)
+            {
+              DisposeRegionRectangle(nrect);
+              return TRUE;
+            }
+            rr = rr->Next;
+          }
+          /*
+           * None of the rectangles was completely overlapping
+           * the one to be added. So I won't get around 
+           * adding it.
+           */
+	}
 	/* clear the rectangle from the region */
 	if (!ClearRectRegion(region, rectangle)) {
-	    DisposeRegionRectangle(nrect);
+            DisposeRegionRectangle(nrect);
 	    return FALSE; /* out of memory */
 	}
     }
+
 
     if (region->RegionRectangle) {
 	/* calculate xoffset, yoffset
@@ -128,16 +162,58 @@
     if (rr)
       rr->Prev = nrect;
 
+    /*
+     * try to recombine rectangles with the newly added one.
+     */
+    while (rr)
+    {
+      int combined = FALSE;
+      /*
+       * combine them horizontally
+       */
+      if (nrect->bounds.MinY == rr->bounds.MinY &&
+          nrect->bounds.MaxY == rr->bounds.MaxY)
+      {
+        if (nrect->bounds.MaxX+1 == rr->bounds.MinX)
+        {
+          combined = TRUE;
+          nrect->bounds.MaxX = rr->bounds.MaxX;
+        }
+        else if (nrect->bounds.MinX == rr->bounds.MaxX+1)
+        {
+          combined = TRUE;
+          nrect->bounds.MinX =  rr->bounds.MinX;
+        }
+      }
+      else /* or vertically */
+      if (nrect->bounds.MinX == rr->bounds.MinX &&
+          nrect->bounds.MaxX == rr->bounds.MaxX)
+      {
+        if (nrect->bounds.MaxY+1 == rr->bounds.MinY)
+        {
+          combined = TRUE;
+          nrect->bounds.MaxY = rr->bounds.MaxY;
+        }
+        else if (nrect->bounds.MinY == rr->bounds.MaxY+1)
+        {
+          combined = TRUE;
+          nrect->bounds.MinY = rr->bounds.MinY;
+        }
+      }
+      
+      if (TRUE == combined) 
+      {
+        rr->Prev->Next = rr->Next;
+        if (rr->Next)
+          rr->Next->Prev = rr->Prev;
+        DisposeRegionRectangle(rr);
+        rr = nrect->Next;
+      }
+      else
+        rr = rr->Next;
+    }
+
     return TRUE;
 
     AROS_LIBFUNC_EXIT
 } /* OrRectRegion */
-
-
-
-
-
-
-
-
-
