@@ -5,14 +5,15 @@ include $(TOP)/config/make.cfg
 # two different forms of device here.
 
 MODULES := \
-	ram.handler \
-	nil.handler \
 	ffs.handler \
 	pipefs.handler \
 	fdsk.device \
 	ramdrive.device \
-	zero.handler \
+	zero.handler
+
 #	rootfs.handler
+#	ram.handler
+#	nil.handler 
 
 DEVS := $(foreach f,$(filter %.device,$(MODULES)),$(AROS_DEVS)/$(f))
 FS := $(foreach f,$(filter %.handler,$(MODULES)),$(AROS_DEVS)/$(f))
