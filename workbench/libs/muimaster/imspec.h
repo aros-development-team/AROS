@@ -17,7 +17,6 @@ void zune_image_spec_parse_string (STRPTR s, struct MUI_ImageSpec **out);
 STRPTR zune_imspec_to_string (struct MUI_ImageSpec *spec);
 struct MUI_ImageSpec *zune_get_pattern_spec(LONG muiipatt);
 struct MUI_ImageSpec *zune_get_muipen_spec(LONG muipen);
-BOOL __zune_imspec_set_state (struct MUI_ImageSpec *img, ULONG state);
 LONG zune_imspec_get_width (struct MUI_ImageSpec *img);
 LONG zune_imspec_get_height (struct MUI_ImageSpec *img);
 void zune_imspec_set_width (struct MUI_ImageSpec *img, LONG w);
@@ -35,13 +34,8 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 
 /****/
 
-
 int zune_imspec_get_minwidth(struct MUI_ImageSpec *spec);
 int zune_imspec_get_minheight(struct MUI_ImageSpec *spec);
-
-struct MUI_ImageSpec *zune_imspec_link_new(struct MUI_ImageSpec *linked);
-
-void zune_link_rebind (struct MUI_ImageSpec *img, struct MUI_ImageSpec *new_link);
 
 /***************/
 
