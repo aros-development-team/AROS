@@ -249,14 +249,14 @@ void _FreeExtLayerInfo(struct Layer_Info * li, struct LayersBase *LayersBase)
     if(--li->fatten_count >= 0)
 	return;
 
-    if(li->LayerInfo_extra == NULL)
-	return;
-
     /* Kill Root Layer */
     
     if (li->check_lp)
         DeleteLayer(0UL, li->check_lp);
     li->check_lp = NULL;
+
+    if(li->LayerInfo_extra == NULL)
+	return;
     
     FreeMem(li->LayerInfo_extra, sizeof(struct LayerInfo_extra));
 
