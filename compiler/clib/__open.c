@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: file descriptors handling internals
-    Lang: english
+    File descriptors handling internals.
 */
 
 #include <string.h>
@@ -29,7 +28,6 @@ int c;
 
 fdesc *__getfdesc(register int fd)
 {
-
     return ((__numslots>fd) && (fd>=0))?__fd_array[fd]:NULL;
 }
 
@@ -58,26 +56,26 @@ int __getfdslot(int wanted_fd)
     if (wanted_fd>=__numslots)
     {
         void *tmp;
-
+        
         tmp = malloc((wanted_fd+1)*sizeof(fdesc *));
+        
+        if (!tmp) return -1;
 
-	if (!tmp) return -1;
+        if (__fd_array)
+        {
+            CopyMem(__fd_array, tmp, __numslots*sizeof(fdesc *));
+            free(__fd_array);
+        }
 
-	if (__fd_array)
-	{
-	    CopyMem(__fd_array, tmp, __numslots*sizeof(fdesc *));
-	    free(__fd_array);
-     	}
+        __fd_array = tmp;
 
-	__fd_array = tmp;
-
-	bzero(__fd_array + __numslots, (wanted_fd - __numslots + 1) * sizeof(fdesc *));
-	__numslots = wanted_fd+1;
+        bzero(__fd_array + __numslots, (wanted_fd - __numslots + 1) * sizeof(fdesc *));
+        __numslots = wanted_fd+1;
     }
     else if (wanted_fd<0)
         return -1;
     else if (__fd_array[wanted_fd])
-    	close(wanted_fd);
+        close(wanted_fd);
 
     return wanted_fd;
 }
@@ -142,71 +140,72 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     lock = Lock((char *)pathname, SHARED_LOCK);
     if (!lock)
     {
-	if
-	(
-	    (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
-	    /* if the file doesn't exist and the flag O_CREAT is not set return an error*/
-	    (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
+        if
+        (
+            (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
+            /* If the file doesn't exist and the flag O_CREAT is not set return an error */
+            (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
         )
-	{
-	    errno = IoErr2errno(IoErr());
-	    goto err;
+        {
+            errno = IoErr2errno(IoErr());
+            goto err;
         }
     }
     else
     {
-	/*if the file exists, but O_EXCL is set, then return an error. */
-    	if (flags & O_EXCL)
+        /* If the file exists, but O_EXCL is set, then return an error */
+        if (flags & O_EXCL)
     	{
-	    errno = EEXIST;
-	    goto err;
-    	}
-
-	fib = AllocDosObject(DOS_FIB, NULL);
-	if (!fib)
-        {
-    	   errno = IoErr2errno(IoErr());
-	   goto err;
+            errno = EEXIST;
+            goto err;
         }
 
-	if (!Examine(lock, fib))
-    	{
-	   /* The filesystem in which the files resides doesn't support
-	      the EXAMINE action. It might be broken or migth also
-	      not be a filesystem at all. So let's assume the file is
-	      not a diretory
-	   */
-	   fib->fib_DirEntryType = 0;
-	}
+        fib = AllocDosObject(DOS_FIB, NULL);
+        if (!fib)
+        {
+           errno = IoErr2errno(IoErr());
+           goto err;
+        }
+        
+        if (!Examine(lock, fib))
+        {
+            /*
+                The filesystem in which the files resides doesn't support
+                the EXAMINE action. It might be broken or migth also not
+                be a filesystem at all. So let's assume the file is not a
+                diretory.
+           */
+           fib->fib_DirEntryType = 0;
+        }
 
-	#warning implement softlink handling
+#       warning implement softlink handling
 
-	/* Check if it's a directory or a softlink.
-	   Softlinks are not handled yet, though */
-	if (fib->fib_DirEntryType > 0)
-  	{
-	    /* A directory cannot be opened for writing */
-	    if (openmode & FMF_WRITE)
-	    {
-	        errno = EISDIR;
-	        goto err;
+        /* Check if it's a directory or a softlink.
+           Softlinks are not handled yet, though */
+        if (fib->fib_DirEntryType > 0)
+        {
+            /* A directory cannot be opened for writing */
+            if (openmode & FMF_WRITE)
+            {
+                errno = EISDIR;
+                goto err;
             }
-
-	    fh = lock;
+            
+            fh = lock;
             FreeDosObject(DOS_FIB, fib);
-
-	    goto success;
-	}
+            
+            goto success;
+        }
         FreeDosObject(DOS_FIB, fib);
-	fib = NULL;
+        fib = NULL;
     }
 
     /* the file exists and it's not a directory or the file doesn't exist */
 
     if (!(fh = Open ((char *)pathname, openmode)) )
     {
-	errno = IoErr2errno (IoErr ());
-	goto err;
+        errno = IoErr2errno (IoErr ());
+        goto err;
     }
 
     if (lock) UnLock(lock);
