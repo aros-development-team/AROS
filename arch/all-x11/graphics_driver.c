@@ -158,19 +158,13 @@ struct gfx_driverdata * InitDriverData (struct RastPort * rp, struct GfxBase * G
 {
     struct gfx_driverdata * retval;
 
-    kprintf("InitDriverData...\n");
-
     retval = AllocMem (sizeof(struct gfx_driverdata), MEMF_CHIP|MEMF_CLEAR);
-    kprintf("AllocMem Okay\n");
     if (!retval)
     {
-    kprintf("retval==0\n");
 	fprintf (stderr, "Can't allocate Memory for internal use\n");
 	return NULL;
     }
-    kprintf("retval!=0\n");
     retval->dd_RastPort = rp;
-    kprintf("\n");
 
     return retval;
 }
@@ -195,6 +189,27 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     FreeMem (driverdata
 	, sizeof(struct gfx_driverdata)
     );
+}
+
+BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
+{
+    BOOL retval = True;
+    struct gfx_driverdata * dd, * old;
+
+    old = GetDriverData (rp);
+    if (rp != old->dd_RastPort)
+    {
+        dd = InitDriverData(rp, GfxBase);
+	if (old->dd_Window)
+	    dd->dd_Window = old->dd_Window;
+	else
+	    retval = False;
+	if (old->dd_GC)
+	    dd->dd_GC = old->dd_GC;
+	else
+	    retval = False;
+    }
+    return retval;
 }
 
 
@@ -621,6 +636,7 @@ UX11
 void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	ULONG drmd, struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     apen &= PEN_MASK;
     bpen &= PEN_MASK;
 LX11
@@ -637,6 +653,7 @@ UX11
 void driver_SetAPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     pen &= PEN_MASK;
 LX11
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
@@ -646,6 +663,7 @@ UX11
 void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     pen &= PEN_MASK;
 LX11
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
@@ -660,6 +678,7 @@ void driver_SetOutlinePen (struct RastPort * rp, ULONG pen,
 void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     if (mode & COMPLEMENT)
 	XSetFunction (sysDisplay, GetGC(rp), GXxor);
@@ -671,6 +690,7 @@ UX11
 void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     XClearArea (sysDisplay, GetXWindow (rp),
 		x1, y1, x2-x1+1, y2-y1+1, False);
@@ -682,6 +702,8 @@ UX11
 void driver_RectFill (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
+    UpdateAreaPtrn (rp, GfxBase);
 LX11
     if (rp->DrawMode & COMPLEMENT)
     {
@@ -710,7 +732,10 @@ void driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
 {
     LONG w, h, x3, y3, x4, y4, _dx_, _dy_;
-    ULONG apen = GetAPen (rp);
+    ULONG apen;
+    
+    CorrectDriverData (rp, GfxBase);
+    apen = GetAPen (rp);
 
     if (!dx && !dy) return;
 
@@ -782,6 +807,7 @@ UX11
 void driver_DrawEllipse (struct RastPort * rp, LONG x, LONG y, LONG rx, LONG ry,
 		struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     UpdateLinePtrn (rp);
 LX11
     XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
@@ -794,6 +820,7 @@ UX11
 void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     if (rp->DrawMode & JAM2)
 	XDrawImageString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
@@ -826,6 +853,7 @@ void driver_Move (struct RastPort * rp, LONG x, LONG y,
 void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     UpdateLinePtrn (rp);
 LX11
     XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
@@ -841,6 +869,8 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
     XImage * image;
     unsigned long pixel;
     ULONG t;
+
+    CorrectDriverData (rp, GfxBase);
 LX11
     XSync (sysDisplay, False);
     SIGID ();
@@ -870,6 +900,7 @@ UX11
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
@@ -882,6 +913,7 @@ UX11
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
     UpdateLinePtrn (rp);
 LX11
     XDrawLines (sysDisplay, GetXWindow(rp), GetGC(rp),
@@ -895,6 +927,7 @@ UX11
 void driver_SetRast (struct RastPort * rp, ULONG color,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     XClearArea (sysDisplay, GetXWindow(rp),
 	    0, 0,
@@ -907,6 +940,7 @@ UX11
 void driver_SetFont (struct RastPort * rp, struct TextFont * font,
 		    struct GfxBase * GfxBase)
 {
+    CorrectDriverData (rp, GfxBase);
 LX11
     if (GetGC(rp))
 	XSetFont (sysDisplay, GetGC(rp), ETF(font)->etf_XFS.fid);
@@ -1030,8 +1064,7 @@ UX11
     if(!GetDriverData(rp))
 	InitDriverData (rp, GfxBase);
     else
-	if(GetDriverData(rp)->dd_RastPort!=rp)
-	    InitDriverData(rp, GfxBase);
+	CorrectDriverData(rp, GfxBase);
     SetGC (rp, gc);
 
     rp->Flags |= 0x8000;
@@ -1054,7 +1087,7 @@ UX11
 	return FALSE;
 LX11
     XCopyGC (sysDisplay, GetGC(oldRP), (1L<<(GCLastBit+1))-1, gc);
-    InitDriverData(newRP, GfxBase);
+    CorrectDriverData (newRP, GfxBase);
     SetGC (newRP, gc);
 UX11
     if (oldRP->BitMap)
@@ -1113,6 +1146,7 @@ ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
     XGCValues gcval;
     GC gc;
 
+    CorrectDriverData (rp, GfxBase);
     if ((gc = GetGC (rp)))
     {
 	gcval.plane_mask = sysPlaneMask;
@@ -1471,6 +1505,7 @@ LONG driver_WritePixelArray8 (struct RastPort * rp, ULONG xstart,
 
     width = xstop - xstart + 1;
 
+    CorrectDriverData (rp, GfxBase);
     gc = GetGC(rp);
     win = GetXWindow(rp);
 
