@@ -69,8 +69,8 @@
     if (!object)
         return;
 
-    OCLASS (object)->cl_ObjectCount --;
-
+    /* cl_ObjCount is decreased in the rootclass! */
+    
     DoMethodA (object, (Msg)&MethodID);
     
 #else
