@@ -160,10 +160,11 @@ int intui_OpenWindow (struct Window * w,
     
 
     D(bug("Layer created: %p\n", w->WLayer));
+    D(bug("Window created: %p\n", w));
     if (w->WLayer)
     {
         /* Layer gets pointer to the window */
-        w->WLayer->Window = (APTR)w; 
+        w->WLayer->Window = (APTR)w;
 	/* Window needs a rastport */
 	w->RPort = w->WLayer->rp;
 	
@@ -175,7 +176,6 @@ int intui_OpenWindow (struct Window * w,
     	    ReturnBool("intui_OpenWindow", TRUE);
 	}
 	
-	/* Not OK. Free resources */
 	intui_CloseWindow(w, IntuitionBase);
 	
     } /* if (layer created) */
@@ -201,7 +201,7 @@ void intui_RefreshWindowFrame(struct Window *w)
     SetAPen(rp, 1);
     D(bug("Pen set\n"));
     Move(rp, 0, 0);
-    D(bug("RP moved set\n"));
+    D(bug("RP move\n"));
 
     D(bug("Window dims: (%d, %d, %d, %d)\n"
     	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
@@ -271,6 +271,38 @@ void intui_ActivateWindow (struct Window * win)
 
 }
 
+struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase)
+{
+    /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
+    struct Screen *scr;
+    struct Layer *l;
+    struct Window *new_w;
+    ULONG lock;
+
+#warning Fixme: Find out what screen the click was in.
+    lock = LockIBase(0UL);
+    scr = IntuitionBase->ActiveScreen;
+    UnlockIBase(lock);
+    
+    D(bug("screen: %p\n", scr));
+
+    /* What layer ? */
+    l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
+    if (!l)
+    {
+	D(bug("iih: Click not inside layer\n"));
+	return NULL;
+    }
+
+    new_w = (struct Window *)l->Window;
+    if (!new_w)
+    {
+	D(bug("iih: Selected layer is not a window\n"));
+    }
+    D(bug("Found layer %p\n", l));
+    return new_w;
+    
+}
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 	LONG size, struct KeyMap * km)
 {
