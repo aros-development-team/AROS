@@ -137,7 +137,6 @@ struct MinList *GetWidthList(FT_GlyphEngine *ge)
 
 int get_kerning_dir(FT_GlyphEngine *ge)
 {
-    FT_Error err;
     //FT_Kern_Subtable *k;
     //FT_Kern_0_Pair   *p;	/* a table of nPairs 'pairs' */
     
