@@ -138,7 +138,7 @@ static struct csimatch
 
 /******************************************************************************************/
 
-static LONG stricmp(STRPTR string1, STRPTR string2) /* taken from utility/stricmp */
+static LONG strnicmp(STRPTR string1, STRPTR string2, LONG length) /* taken from utility/strnicmp */
 {
     UBYTE c1, c2;
 
@@ -148,7 +148,7 @@ static LONG stricmp(STRPTR string1, STRPTR string2) /* taken from utility/stricm
 	/* Get characters, convert them to lower case. */
 	c1 = tolower(*string1++);
 	c2 = tolower(*string2++);
-    }while(c1 == c2 && c1);
+    }while(c1 == c2 && c1 && --length);
 
     /* Get result. */
     return (LONG)c1 - (LONG)c2;
@@ -213,17 +213,22 @@ struct Task *createConTask(APTR taskparams, struct conbase *conbase)
 
 void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs, struct NewWindow *nw)
 {
-    UBYTE *filename = iofs->io_Union.io_OPEN.io_Filename;
+    UBYTE *filename;
     UBYTE *param, c;
     WORD paramid = 1;
     LONG paramval = 0;
     BOOL done = FALSE, paramok = FALSE;
-    
-    param = filename;
+
+    ASSERT_VALID_PTR(conbase);
+    ASSERT_VALID_PTR(fh);
+    ASSERT_VALID_PTR(iofs);
+    ASSERT_VALID_PTR(nw);
+
+    param = filename = iofs->io_Union.io_OPEN.io_Filename;
+    ASSERT_VALID_PTR(param);
 
     while (!done)
     {
-	
 	c = *filename++;
 	
         switch(c)
@@ -254,7 +259,7 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFil
 	    	if (paramok)
 		{
 		    UWORD paramlen = filename - param - 1;
-		    
+
 		    if (paramid == 1)
 		    {
 		    	nw->LeftEdge = paramval;
@@ -276,17 +281,16 @@ void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFil
 			    nw->Title = fh->wintitle;
 			}
 		    } else {
-		        filename[-1] = '\0';
-			
-			if (!stricmp(param, "WAIT"))
+			if (!strnicmp(param, "WAIT", paramlen))
 			{
 			    fh->flags |= FHFLG_WAIT;
-			} else if (!stricmp(param, "CLOSE"))
+			} else if (!strnicmp(param, "CLOSE", paramlen))
 			{
 			    nw->Flags |= WFLG_CLOSEGADGET;
+			} else if (!strnicmp(param, "AUTO", paramlen))
+			{
+			    /* TODO */
 			}
-			
-			filename[-1] = c;			
 		    }
 		    
 		    paramok = FALSE;
