@@ -27,10 +27,12 @@ BEGIN {
 	    {
 		line=$0;
 		sub(/[ \t]*$/,"",line);
-		match(line,/[a-zA-Z0-9_]+,$/);
-		name=substr(line,RSTART,RLENGTH-1);
+		if (match(line,/[a-zA-Z0-9_]+,$/))
+		    name=substr(line,RSTART,RLENGTH-1);
 		break;
 	    }
+	    if (match ($0, /(\*\/|\*\/)/))
+		break;
 	}
     }
 /^(\/\*)?[ \t]*LOCATION[ \t]*(\*\/)?[ \t]*$/ {
