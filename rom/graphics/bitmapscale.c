@@ -387,7 +387,7 @@ VOID HIDD_BM_BitMapScale(OOP_Object *, OOP_Object *, OOP_Object *, struct BitSca
           }
 
           /* treat all the Bitmaps after another */
-          for (i = 0; i < DestBitMap -> Depth; i++)
+          for (i = 0; (i < DestBitMap -> Depth) && (i < SrcBitMap -> Depth); i++)
           {
             for (y = 0; y < bitScaleArgs -> bsa_DestHeight; y++)
             {
