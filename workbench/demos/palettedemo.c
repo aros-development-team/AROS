@@ -110,6 +110,9 @@ int main(int argc, char **argv)
     	    		GA_RelHeight,		-70,
     	    		GA_ID,			GID_PALETTE,
     	    		AROSA_Palette_Depth,	3,
+    	    		AROSA_Palette_IndicatorWidth,	40,
+    	    		GA_Text,		"Palette gadget",
+    	    		GA_LabelPlace,		GV_LabelPlace_Above,
     	    		TAG_DONE);
     	    		
 		    prop = NewObject(NULL, PROPGCLASS,
@@ -125,7 +128,6 @@ int main(int argc, char **argv)
 		    	PGA_Top,	2,
 		    	PGA_Freedom,	FREEHORIZ,
 		    	TAG_DONE);
-		    	
 		    	
 
     	    	    if (palette && prop)
