@@ -10,8 +10,8 @@ The latest snapshots (updated every night) are in
 \link{snapshots}{ftp://ftp.aros.org/pub/aros/snapshots/}.
 They are for the impatient and should not be expected to work.
 
-\item Sebastian Heutlin has created a set of boot images
-which can find on
+\item Sebastian Heutling has created a set of boot images
+which you can find on
 \link{the AROS site}{ftp://ftp.aros.org/pub/aros/DiskImages/}
 or
 \link{Sebastians site}{http://wh2-315.st.uni-magdeburg.de/~sheutlin/aros/}. 
