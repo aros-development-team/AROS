@@ -63,6 +63,7 @@
     HISTORY
 
         30-Jul-1997     laguest     Initial inclusion into the AROS tree
+        13-Aug-1997     srittau     Minor changes
 
 ******************************************************************************/
 
@@ -76,12 +77,14 @@
 #include <exec/memory.h>
 #include <exec/types.h>
 
+#include <utility/tagitem.h>
+
 #define ARG_TEMPLATE    "NAME,STRING/F"
 #define ARG_NAME        0
 #define ARG_STRING      1
 #define TOTAL_ARGS      2
 
-static const char version[] = "$VER: Setenv 41.0 (27.07.1997)\n";
+static const char version[] = "$VER: Setenv 41.1 (13.08.1997)\n";
 
 int main(int argc, char *argv[])
 {
