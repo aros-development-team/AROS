@@ -9,7 +9,9 @@ LITE	:= /usr/local/Hughes/bin/lite
 GNUPLOT := gnuplot
 PPMTOGIF := ppmtogif
 
-FILES := main.src
+FILES := main.src background.src faq.src differences.src cvs.src missing.src \
+    included.src style.src devinfo_inside.src devinfo_outside.src \
+    autodoc.src history.src links.src jobserv.src
 
 AUTODOC_SRCS := $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/*/*.c \
 	$(TOP)/compiler/alib/*.c \
@@ -105,7 +107,7 @@ clean ::
 src2html : conv/src2html
 	cp $< $@
 
-$(DEST)index.html : main.src doc_header.html doc_footer.html autodoc.inc \
+$(DEST)index.html : $(FILES) doc_header.html doc_footer.html autodoc.inc \
 	    src2html keywords.db files.db
 	export TOP="$(TOP)" ; \
 	$(SRC2HTML) ; \
@@ -269,9 +271,5 @@ jobserv-done.inc :
 
 contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
 	collectcontents.sh $(TOP) > $@
-
-main.src : background.src faq.src differences.src cvs.src missing.src \
-    included.src style.src devinfo_inside.src devinfo_outside.src \
-    autodoc.src history.src links.src jobserv.src
 
 autodoc.src : autodoc.inc
