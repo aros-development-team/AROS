@@ -1060,8 +1060,7 @@ int _BackupPartsOfLayer(struct Layer * l,
                         struct LayersBase * LayersBase)
 {
   struct ClipRect * newcr;
-  struct Region r, * clipregion;
-  InitRegion(&r);
+  struct Region *r, * clipregion;
 
 if (hide_region == l->VisibleRegion)
   kprintf("ERROR - same regions!! %s\n",__FUNCTION__);
@@ -1075,11 +1074,10 @@ if (hide_region == l->VisibleRegion)
   clipregion = _InternalInstallClipRegion(l, NULL, 0, 0, LayersBase);
 
   ClearRegionRegion(hide_region,l->VisibleRegion);
-  SetRegion(l->VisibleRegion, &r);
-  AndRegionRegion(l->visibleshape,&r);
+  r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
 
-  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
-  ClearRegion(&r);
+  newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+  DisposeRegion(r);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1117,10 +1115,8 @@ int _ShowPartsOfLayer(struct Layer * l,
                       struct LayersBase * LayersBase)
 {
   struct ClipRect * newcr;
-  struct Region r;
+  struct Region *r;
   struct Region * clipregion;
-
-  InitRegion(&r);
 
 //kprintf("%s called for %p\n",__FUNCTION__,l);
 
@@ -1139,11 +1135,10 @@ if (show_region == l->VisibleRegion)
   clipregion = InstallClipRegion(l, NULL);
 
   OrRegionRegion(show_region,l->VisibleRegion);
-  SetRegion(l->VisibleRegion,&r);
-  AndRegionRegion(l->visibleshape,&r);
+  r = AndRegionRegionND(l->visibleshape, l->VisibleRegion);
 
-  newcr = _CreateClipRectsFromRegion(&r,l,FALSE,NULL,LayersBase);
-  ClearRegion(&r);
+  newcr = _CreateClipRectsFromRegion(r,l,FALSE,NULL,LayersBase);
+  DisposeRegion(r);
 
   _CopyClipRectsToClipRects(l,
                             l->ClipRect /* source */,
@@ -1166,21 +1161,18 @@ if (show_region == l->VisibleRegion)
 
 int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
 {
-  struct Region r;
+  struct Region *r;
   struct RegionRectangle * rr;
   struct ClipRect * prevcr = NULL;
   struct BitMap * bm = l->rp->BitMap;
   int invisible = FALSE;
 
-  InitRegion(&r);
-
-  SetRegion(l->VisibleRegion, &r);
-  AndRegionRegion(l->shape, &r);
-  AndRegionRegion(l->parent->shape, &r);
+  r = AndRegionRegionND(l->shape, l->VisibleRegion);
+  AndRegionRegion(l->parent->shape, r);
 
   while (1)
   {
-    rr = r.RegionRectangle;
+    rr = r->RegionRectangle;
 
     while (NULL != rr)
     {
@@ -1196,10 +1188,10 @@ int _ShowLayer(struct Layer * l, struct LayersBase *LayersBase)
 
 //kprintf("\t\tinvisible: %d !!!!!!!!!!!!\n",invisible);
 
-      cr->bounds.MinX = rr->bounds.MinX + r.bounds.MinX;
-      cr->bounds.MinY = rr->bounds.MinY + r.bounds.MinY;
-      cr->bounds.MaxX = rr->bounds.MaxX + r.bounds.MinX;
-      cr->bounds.MaxY = rr->bounds.MaxY + r.bounds.MinY;
+      MinX(cr) = MinX(rr) + MinX(r);
+      MinY(cr) = MinY(rr) + MinY(r);
+      MaxX(cr) = MaxX(rr) + MinX(r);
+      MaxY(cr) = MaxY(rr) + MinY(r);
       cr->lobs = (struct Layer *)invisible;
 #if 0
 kprintf("\t\t%s: Created cliprect %d/%d-%d/%d invisible: %d\n",
@@ -1276,9 +1268,9 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
 
     if (FALSE == invisible)
     {
-      XorRectRegion(&r, &l->bounds);
+      XorRectRegion(r, &l->bounds);
 #if !CLIPRECTS_OUTSIDE_OF_SHAPE
-      AndRegionRegion(l->shape, &r);
+      AndRegionRegion(l->shape, r);
 #endif
       invisible = TRUE;
     }
@@ -1286,7 +1278,7 @@ kprintf("\t\tClearing background! %d/%d-%d/%d  bitmap: %p\n",
       break;
   }
 
-  ClearRegion(&r);
+  DisposeRegion(r);
 
   return TRUE;
 }
@@ -1446,8 +1438,7 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
       l->_cliprects = NULL;
     else
     {
-      struct Region r;
-      InitRegion(&r);
+      struct Region *r;
 
       /* convert the region to a list of ClipRects */
       /* backup the old cliprects */
@@ -1455,15 +1446,15 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 
       _TranslateRect(&region->bounds, l->bounds.MinX, l->bounds.MinY);
 
-      SetRegion(region, &r);
-      AndRegionRegion(l->VisibleRegion, &r);
+      r = AndRegionRegion(l->VisibleRegion, region);
 
-      l->ClipRect = _CreateClipRectsFromRegion(&r,
+      l->ClipRect = _CreateClipRectsFromRegion(r,
                                                l,
                                                FALSE,
                                                region,
 					       LayersBase);
-                                               
+      DisposeRegion(r);
+
       _CopyClipRectsToClipRects(l,
                                 l->_cliprects,
                                 l->ClipRect,
@@ -1478,11 +1469,11 @@ struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region
 
       /* right now I am assuming that everything went alright */
     }
-  
+
     if (updating)
       BeginUpdate(l);
 
   } /* if ((OldRegion != NULL) || (region != NULL)) */
-  
+
   return OldRegion;
 }
