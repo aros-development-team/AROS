@@ -283,8 +283,7 @@ OOP_Class *init_offbmclass(struct display_staticdata *xsd)
         }
 	
 	/* We don't need this anymore */
-#warning Change this!!!
-//	OOP_ReleaseAttrBase(IID_Meta);
+	OOP_ReleaseAttrBase(IID_Meta);
     } /* if(MetaAttrBase) */
 
     ReturnPtr("init_bmclass", Class *,  cl);
@@ -304,7 +303,16 @@ void free_offbmclass(struct display_staticdata *xsd)
         xsd->offbmclass = NULL;
 
 #warning Change this!
-//	OOP_ReleaseAttrBases(attrbases);
+        if (NULL != __IHidd_BitMap)
+        	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+        if (NULL != __IHidd_PixFmt)
+        	OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
+        if (NULL != __IHidd_Gfx)
+        	OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+        if (NULL != __IHidd_DisplayGfx)
+        	OOP_ReleaseAttrBase(IID_Hidd_Displaygfx);
+        if (NULL != __IHidd_DisplayBitMap)
+        	OOP_ReleaseAttrBase(IID_Hidd_DisplayBitMap);
     }
     ReturnVoid("free_bmclass");
 }
