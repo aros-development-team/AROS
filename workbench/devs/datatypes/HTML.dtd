@@ -1,0 +1,9 @@
+# DataType Description for HTML
+Name=HTML
+Version=$VER: HTML 41.0 (03-Dec-2004)
+BaseName=html
+Pattern=#?.html
+GroupID=text
+ID=_htm
+Flags=DTF_ASCII,DTF_CASE
+Priority=0
