@@ -32,10 +32,17 @@ typedef union{
 
 #define mm_Msg l[0]
 #define mm_Time l[1]
-#define mm_Status b[0]
-#define mm_Data1 b[1]
-#define mm_Data2 b[2]
-#define mm_Port b[3]
+#ifdef AROS_BIG_ENDIAN
+#  define mm_Status b[3]
+#  define mm_Data1 b[2]
+#  define mm_Data2 b[1]
+#  define mm_Port b[0]
+#else
+#  define mm_Status b[0]
+#  define mm_Data1 b[1]
+#  define mm_Data2 b[2]
+#  define mm_Port b[3]
+#endif
 #define mm_Data b
 
 struct MidiCluster{
