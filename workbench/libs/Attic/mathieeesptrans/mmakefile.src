@@ -40,7 +40,7 @@ FUNCTIONS := \
 	ieeespcos \
 	ieeesptan
 
-%define_libs postlibs=-lamiga -lmathieeesingtrans
+%define_libs postlibs="-lamiga -lmathieeesingtrans"
 
 %genlib
 
