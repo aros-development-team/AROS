@@ -1,3 +1,10 @@
+/*
+    (C) 2000-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: English
+*/
 
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -6,11 +13,13 @@
 #include <proto/dos.h>
 #include "dos_intern.h"
 
+#include <string.h>
+
 
 inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 		     struct DosLibrary *DOSBase)
 { 
-    struct Process *me = FindTask(NULL);
+    struct Process *me = (struct Process *)FindTask(NULL);
 
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort    = &me->pr_MsgPort;
@@ -36,18 +45,24 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
     struct DosList *dl;
 
     if(colon == NULL)
+    {
 	return NULL;
+    }
 
     size = colon - name;
 
     /* Not only a device name with trailing colon? */
     if(size + 1 != len)
+    {
 	return NULL;
+    }
 
     tempName = AllocVec(len, MEMF_ANY);
 
     if(tempName == NULL)
+    {
 	return NULL;
+    }
 
     CopyMem(name, tempName, size);
     tempName[size] = 0;		/* Terminate string */
@@ -60,13 +75,17 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
 	device = dl->dol_Device;
 
 	if(unit != NULL)
+	{
 	    *unit = dl->dol_Unit;
+	}
     }
 
     UnLockDosList(LDF_DEVICES | LDF_READ);
 
     if(device == NULL)
+    {
 	SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
+    }
 
     return device;
 }
