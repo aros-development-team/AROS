@@ -51,6 +51,9 @@ IPTR desktopSet(Class *cl, Object *obj, struct opSet *msg)
 	{
 		switch(tag->ti_Tag)
 		{
+			case DA_ActiveWindow:
+				data->activeWindow=tag->ti_Data;
+				break;
 			default:
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
@@ -69,6 +72,9 @@ IPTR desktopGet(Class *cl, Object *obj, struct opGet *msg)
 
 	switch(msg->opg_AttrID)
 	{
+		case DA_ActiveWindow:
+			*msg->opg_Storage=data->activeWindow;
+			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
 			break;

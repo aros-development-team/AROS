@@ -20,6 +20,7 @@
 
 #include <proto/desktop.h>
 #include <proto/dos.h>
+#include <proto/muimaster.h>
 #include <proto/intuition.h>
 #include <proto/utility.h>
 
@@ -29,6 +30,7 @@
 #include "drawericonobserver.h"
 #include "desktopobserver.h"
 #include "iconcontainerclass.h"
+#include "iconclass.h"
 
 #include "desktop_intern_protos.h"
 
@@ -40,9 +42,11 @@ IPTR containerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 	LONG dirNameLen=0;
 	struct ContainerIconObserverClassData *data;
 	IPTR retval=1;
-	Object *horiz, *vert, *dirWindow, *iconcontainer;
+	Object *horiz, *vert, *dirWindow, *iconcontainer, *strip;
 	struct TagItem *icTags;
 	BYTE terminator;
+	struct NewMenu *menuDat;
+	Object *desktop=NULL;
 
 	data=(struct ContainerIconObserverClassData*)INST_DATA(cl, obj);
 	retval=DoSuperMethodA(cl, obj, msg);
@@ -78,6 +82,10 @@ IPTR containerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 		MUIA_Prop_UseWinBorder, MUIV_Prop_UseWinBorder_Right,
 		End;
 
+	menuDat=BuildDesktopMenus();
+
+	GetAttr(IA_Desktop, _presentation(obj), &desktop);
+
 	icTags=AllocVec(sizeof(struct TagItem)*10, MEMF_ANY);
 	icTags[0].ti_Tag=MUIA_FillArea;
 	icTags[0].ti_Data=FALSE;
@@ -95,8 +103,10 @@ IPTR containerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 	icTags[6].ti_Data=0;
 	icTags[7].ti_Tag=MUIA_InnerBottom;
 	icTags[7].ti_Data=0;
-	icTags[8].ti_Tag=TAG_END;
-	icTags[8].ti_Data=0;
+	icTags[8].ti_Tag=ICA_Desktop;
+	icTags[8].ti_Data=desktop;
+	icTags[9].ti_Tag=TAG_END;
+	icTags[9].ti_Data=0;
 
 	iconcontainer=CreateDesktopObjectA(CDO_IconContainer, icTags);
 
@@ -104,7 +114,7 @@ IPTR containerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 	dirWindow=WindowObject,
 		MUIA_Window_Width, 300,
 		MUIA_Window_Height, 140,
-//		MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+		MUIA_Window_Menustrip, strip=MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
 		MUIA_Window_UseBottomBorderScroller, TRUE,
 		MUIA_Window_UseRightBorderScroller, TRUE,
 		MUIA_Window_EraseArea, FALSE,
@@ -118,6 +128,7 @@ IPTR containerIconObserverExecute(Class *cl, Object *obj, Msg msg)
 
 	DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
 	DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime, iconcontainer, 3, MUIM_Set, ICA_ScrollToHoriz, MUIV_TriggerValue);
+	DoMethod(dirWindow, MUIM_Notify, MUIA_Window_Activate, TRUE, desktop, 3, MUIM_Set, DA_ActiveWindow, dirWindow);
 	SetAttrs(dirWindow, MUIA_Window_Open, TRUE, TAG_END);
 
 	return 1;

@@ -27,7 +27,8 @@
 
 #include <stdlib.h>
 
-ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
+
+static ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info)
 {
 	/* MUI set the correct render info *before* it calls MUIM_Setup so please only use this function instead of DoMethodA() */
     muiRenderInfo(obj)=info;
@@ -62,6 +63,7 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 	struct TagItem *tag;
 	Object *vert=NULL, *horiz=NULL;
 	Object *desktop=NULL;
+	BYTE viewMode=ICAVM_LARGE;
 
 	tag=FindTagItem(ICA_VertScroller, ops->ops_AttrList);
 	if(tag)
@@ -75,11 +77,19 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		tag->ti_Tag=TAG_IGNORE;
 		horiz=(Object*)tag->ti_Data;
 	}
+
 	tag=FindTagItem(ICA_Desktop, ops->ops_AttrList);
 	if(tag)
 	{
 		tag->ti_Tag=TAG_IGNORE;
 		desktop=(Object*)tag->ti_Data;
+	}
+
+	tag=FindTagItem(ICA_ViewMode, ops->ops_AttrList);
+	if(tag)
+	{
+		tag->ti_Tag=TAG_IGNORE;
+		viewMode=(Object*)tag->ti_Data;
 	}
 
 	retval=DoSuperMethodA(cl, obj, (Msg)ops);
@@ -88,6 +98,10 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 	{
 		obj=(Object*)retval;
 		data=INST_DATA(cl, obj);
+
+		if(desktop==NULL)
+			desktop=obj;
+
 		NewList((struct List*)&data->memberList);
 		data->perfectLayout=TRUE;
 		data->thisColumnWidth=0;
@@ -108,6 +122,30 @@ IPTR iconConNew(Class *cl, Object *obj, struct opSet *ops)
 		data->justSelected=FALSE;
 		data->open=TRUE;
 		NewList((struct List*)&data->selectedList);
+		data->ehn.ehn_Priority=0;
+		data->ehn.ehn_Flags=(1<<1);
+		data->ehn.ehn_Object=obj;
+		data->ehn.ehn_Class=NULL;
+		data->ehn.ehn_Events=IDCMP_MOUSEBUTTONS;
+		data->desktop=desktop;
+		data->viewMode=viewMode;
+		data->memberCount=0;
+
+		data->columns=AllocVec(sizeof(struct DetailColumn)*4, MEMF_ANY);
+		data->columns[0].dc_Content=IA_Label;
+		data->columns[0].dc_X=0;
+		data->columns[0].dc_Width=120;
+		data->columns[1].dc_Content=IA_Size;
+		data->columns[1].dc_X=121;
+		data->columns[1].dc_Width=60;
+		data->columns[2].dc_Content=IA_Type;
+		data->columns[2].dc_X=182;
+		data->columns[2].dc_Width=80;
+		data->columns[3].dc_Content=IA_LastModified;
+		data->columns[3].dc_X=263;
+		data->columns[3].dc_Width=160;
+
+		data->numColumns=4;
 	}
 
 	return retval;
@@ -136,7 +174,23 @@ IPTR iconConSetup(Class *cl, Object *obj, struct MUIP_Setup *msg)
 	if(data->vertProp)
 		DoSetupMethod(data->vertProp, msg->RenderInfo);
 
-	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
+	DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+
+	return retval;
+}
+
+IPTR iconConCleanup(Class *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+	IPTR retval=0;
+	struct IconContainerClassData *data;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+
+	broadcastMessage(cl, obj, msg);
+
+	retval=DoSuperMethodA(cl, obj, msg);
 
 	return retval;
 }
@@ -164,11 +218,8 @@ IPTR iconConShow(Class *cl, Object *obj, Msg msg)
 	if(data->vertProp)
 		DoMethod(data->vertProp, MUIM_Show);
 
-	MUI_RequestIDCMP(obj, IDCMP_MOUSEBUTTONS);
-
 	return retval;
 }
-
 
 IPTR iconConAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
@@ -214,11 +265,11 @@ IPTR iconConAskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 	return retval;
 }
 
-BOOL canLay(Object *parent, Object *newObject, ULONG newX, ULONG newY, struct MinList *memberList)
+BOOL canLay(Object *parent, Object *newObject, ULONG newX, ULONG newY, struct MinList *memberList, struct IconContainerClassData *data)
 {
 	struct MemberNode *mn;
 
-	if(!IsListEmpty(memberList))
+	if(data->memberCount!=0)
 	{
 		mn=(struct MemberNode*)memberList->mlh_Head;
 		while(mn->m_Node.mln_Succ)
@@ -246,85 +297,104 @@ BOOL canLay(Object *parent, Object *newObject, ULONG newX, ULONG newY, struct Mi
 ULONG layoutObject(struct IconContainerClassData *data, Object *obj, Object *newObject)
 {
 	ULONG retval=0;
-	struct MemberNode *last;
 	ULONG newX, newY;
 	BOOL laid=TRUE;
 
-	if(data->perfectLayout)
+	if(data->viewMode==ICAVM_DETAIL)
 	{
-		if(IsListEmpty(&data->memberList))
-		{
-			newX=ICONSPACINGX;
-			newY=ICONSPACINGY;
-
-//			data->virtualWidth=_defwidth(newObject)+ICONSPACINGX;
-			data->thisColumnWidth=_defwidth(newObject);
-		}
-		else
-		{
-			last=(struct MemberNode*)data->memberList.mlh_TailPred;
-			newX=_left(last->m_Object)-_mleft(obj);
-			newY=_bottom(last->m_Object)+ICONSPACINGY-_mtop(obj);
-			if(newY+_defheight(newObject) > _mheight(obj))
-			{
-				// new column
-				newX+=data->thisColumnWidth+ICONSPACINGX;
-				newY=ICONSPACINGY;
-//				data->virtualWidth+=(_defwidth(newObject)+ICONSPACINGX);
-				data->thisColumnHeight=0;
-				data->thisColumnWidth=0;
-			}
-
-			if(_defwidth(newObject) > data->thisColumnWidth)
-			{
-//				data->virtualWidth+=(_defwidth(newObject)-data->thisColumnWidth);
-				data->thisColumnWidth=_defwidth(newObject);
-			}
-		}
-
-		data->thisColumnHeight+=(ICONSPACINGY+_defheight(newObject));
-//		if(data->thisColumnHeight+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
-//			data->virtualHeight+=data->thisColumnHeight;
-	}
-	else
-	{
-		struct MemberNode *mn;
-		BOOL laid=FALSE;
-
 		newX=ICONSPACINGX;
-		newY=ICONSPACINGY;
-
-		laid=canLay(obj, newObject, newX, newY, &data->memberList);
-
-		mn=(struct MemberNode*)data->memberList.mlh_Head;
-		while(mn->m_Node.mln_Succ && !laid)
-		{
-			newX=_left(mn->m_Object)-_mleft(obj);
-			newY=_bottom(mn->m_Object)+ICONSPACINGY-_mtop(obj);
-
-			// will the icon go off the bottom of the screen?
-			if((newY+_defwidth(newObject) > _mheight(obj)) && _mheight(obj) > _defheight(newObject))
-			{
-				newX+=_width(mn->m_Object)+ICONSPACINGX;
-				newY=ICONSPACINGY;
-			}
-
-			laid=canLay(obj, newObject, newX, newY, &data->memberList);
-
-			mn=(struct MemberNode*)mn->m_Node.mln_Succ;
-		}
-	}
-
-	if(laid)
-	{
+		if(data->memberCount==0)
+			newY=ICONSPACINGY;
+		else
+			newY=_bottom(data->last)+ICONSPACINGY-_mtop(obj);
 		if(newX+_defwidth(newObject)+ICONSPACINGX > data->virtualWidth)
-			data->virtualWidth=newX+_defwidth(newObject+ICONSPACINGX);
+			data->virtualWidth=newX+_defwidth(newObject)+ICONSPACINGX;
 
 		if(newY+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
 			data->virtualHeight=newY+_defheight(newObject)+ICONSPACINGX;
 
 		MUI_Layout(newObject, newX, newY, _defwidth(newObject), _defheight(newObject), 0);
 	}
+	else
+	{
+		if(data->perfectLayout)
+		{
+			if(data->memberCount==0)
+			{
+				newX=ICONSPACINGX;
+				newY=ICONSPACINGY;
+
+	//			data->virtualWidth=_defwidth(newObject)+ICONSPACINGX;
+				data->thisColumnWidth=_defwidth(newObject);
+			}
+			else
+			{
+				newX=_left(data->last)-_mleft(obj);
+				newY=_bottom(data->last)+ICONSPACINGY-_mtop(obj);
+				if(newY+_defheight(newObject) > _mheight(obj))
+				{
+					// new column
+					newX+=data->thisColumnWidth+ICONSPACINGX;
+					newY=ICONSPACINGY;
+	//				data->virtualWidth+=(_defwidth(newObject)+ICONSPACINGX);
+					data->thisColumnHeight=0;
+					data->thisColumnWidth=0;
+				}
+
+				if(_defwidth(newObject) > data->thisColumnWidth)
+				{
+	//				data->virtualWidth+=(_defwidth(newObject)-data->thisColumnWidth);
+					data->thisColumnWidth=_defwidth(newObject);
+				}
+			}
+
+			data->thisColumnHeight+=(ICONSPACINGY+_defheight(newObject));
+	//		if(data->thisColumnHeight+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
+	//			data->virtualHeight+=data->thisColumnHeight;
+		}
+		else
+		{
+			struct MemberNode *mn;
+			BOOL laid=FALSE;
+
+			newX=ICONSPACINGX;
+			newY=ICONSPACINGY;
+
+			laid=canLay(obj, newObject, newX, newY, &data->memberList, data);
+
+			mn=(struct MemberNode*)data->memberList.mlh_Head;
+			while(mn->m_Node.mln_Succ && !laid)
+			{
+				newX=_left(mn->m_Object)-_mleft(obj);
+				newY=_bottom(mn->m_Object)+ICONSPACINGY-_mtop(obj);
+
+				// will the icon go off the bottom of the screen?
+				if((newY+_defwidth(newObject) > _mheight(obj)) && _mheight(obj) > _defheight(newObject))
+				{
+					newX+=_width(mn->m_Object)+ICONSPACINGX;
+					newY=ICONSPACINGY;
+				}
+
+				laid=canLay(obj, newObject, newX, newY, &data->memberList, data);
+
+				mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+			}
+		}
+
+		if(laid)
+		{
+			if(newX+_defwidth(newObject)+ICONSPACINGX > data->virtualWidth)
+				data->virtualWidth=newX+_defwidth(newObject+ICONSPACINGX);
+
+			if(newY+_defheight(newObject)+ICONSPACINGY > data->virtualHeight)
+				data->virtualHeight=newY+_defheight(newObject)+ICONSPACINGX;
+
+			MUI_Layout(newObject, newX, newY, _defwidth(newObject), _defheight(newObject), 0);
+		}
+	}
+
+	data->last=newObject;
+
 	return retval;
 }
 
@@ -385,8 +455,6 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	muiNotifyData(msg->opam_Object)->mnd_ParentObject = obj;
 	DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
 
-	DoMethod(msg->opam_Object, MUIM_Notify, IA_Executed, TRUE, obj, 3, MUIM_Set, ICA_JustSelected, TRUE);
-
 	DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, MUIV_EveryTime, obj, 3, ICM_UpdateSelectList, msg->opam_Object, MUIV_TriggerValue);
 
 	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
@@ -407,9 +475,8 @@ IPTR iconConAdd(Class *cl, Object *obj, struct opMember *msg)
 	clip=MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj), _mwidth(obj), _mheight(obj));
 	MUI_Redraw(msg->opam_Object, MADF_DRAWOBJECT);
 	MUI_RemoveClipping(muiRenderInfo(obj), clip);
-
+	data->memberCount++;
 	AddTail((struct List*)&data->memberList, (struct Node*)mn);
-
 	SetAttrs(data->horizProp, MUIA_Prop_Entries, data->virtualWidth, TAG_END);
 	SetAttrs(data->vertProp, MUIA_Prop_Entries, data->virtualHeight, TAG_END);
 
@@ -473,6 +540,7 @@ IPTR drawAll(Class *cl, Object *obj, struct MUIP_Draw *msg, struct IconContainer
 //			SetAttrs(data->horizProp, MUIA_Prop_Visible, _mwidth(obj), TAG_END);
 //			SetAttrs(data->vertProp, MUIA_Prop_Visible, _mheight(obj), TAG_END);
 //		}
+		EraseRect(_rp(obj), _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
 
 		mn=(struct MemberNode*)data->memberList.mlh_Head;
 		while(mn->m_Node.mln_Succ)
@@ -685,15 +753,68 @@ IPTR iconConSet(Class *cl, Object *obj, struct opSet *msg)
 				data->vertScroll=TRUE;
 				MUI_Redraw(obj, MADF_DRAWUPDATE);
 				break;
-			case ICA_JustSelected:
-				data->justSelected=tag->ti_Data;
-				retval=DoSuperMethodA(cl, obj, (Msg)msg);
-				break;
 			case ICA_Open:
 				data->open=tag->ti_Data;
 				SetAttrs(_win(obj), MUIA_Window_Open, FALSE, TAG_END);
 				break;
+			case ICA_ViewMode:
+			{
+				ULONG iconViewMode;
+				struct MemberNode *mn;
+				struct MUI_MinMax minMax;
+
+				data->viewMode=tag->ti_Data;
+				switch(data->viewMode)
+				{
+					case ICAVM_LARGE:
+						iconViewMode=IAVM_LARGEICON;
+						break;
+					case ICAVM_SMALL:
+						iconViewMode=IAVM_SMALLICON;
+						break;
+					case ICAVM_DETAIL:
+						iconViewMode=IAVM_DETAIL;
+						break;
+				}
+
+				data->memberCount=0;
+				data->thisColumnWidth=0;
+				data->thisColumnHeight=0;
+				data->virtualWidth=0;
+				data->virtualHeight=0;
+
+				mn=(struct MemberNode*)data->memberList.mlh_Head;
+				while(mn->m_Node.mln_Succ)
+				{
+					DoMethod(mn->m_Object, MUIM_Hide);
+					SetAttrs(mn->m_Object, IA_ViewMode, iconViewMode, TAG_END);
+					muiNotifyData(mn->m_Object)->mnd_ParentObject = obj;
+					DoMethod(mn->m_Object, MUIM_ConnectParent, obj);
+					DoMethod(mn->m_Object, MUIM_AskMinMax, &minMax);
+
+					_minwidth(mn->m_Object)=minMax.MinWidth;
+					_minheight(mn->m_Object)=minMax.MinHeight;
+					_maxwidth(mn->m_Object)=minMax.MaxWidth;
+					_maxheight(mn->m_Object)=minMax.MaxHeight;
+					_defwidth(mn->m_Object)=minMax.DefWidth;
+					_defheight(mn->m_Object)=minMax.DefHeight;
+
+					layoutObject(data, obj, mn->m_Object);
+					DoMethod(mn->m_Object, MUIM_Show);
+
+					data->memberCount++;
+
+					SetAttrs(data->horizProp, MUIA_Prop_Entries, data->virtualWidth, TAG_END);
+					SetAttrs(data->vertProp, MUIA_Prop_Entries, data->virtualHeight, TAG_END);
+
+					mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+				}
+
+				MUI_Redraw(obj, MADF_DRAWALL);
+				break;
+			}
 			default:
+				broadcastMessage(cl, obj, (Msg)msg);
 				retval=DoSuperMethodA(cl, obj, (Msg)msg);
 				break;
 		}
@@ -716,6 +837,9 @@ IPTR iconConGet(Class *cl, Object *obj, struct opGet *msg)
 			break;
 		case ICA_Open:
 			*msg->opg_Storage=(ULONG)data->open;
+			break;
+		case ICA_Desktop:
+			*msg->opg_Storage=(Object*)data->desktop;
 			break;
 		default:
 			retval=DoSuperMethodA(cl, obj, (Msg)msg);
@@ -764,13 +888,23 @@ IPTR iconConHandleInput(Class *cl, Object *obj, struct MUIP_HandleInput *msg)
 			{
 				if(msg->imsg->Code==SELECTDOWN)
 				{
+//kprintf("ic handleinput\n");
+
 					if(msg->imsg->MouseX >= _mleft(obj) && msg->imsg->MouseX <= _mright(obj) &&
 						msg->imsg->MouseY >= _mtop(obj) && msg->imsg->MouseY <= _mbottom(obj))
 					{
-						if(!data->justSelected)
-							DoMethod(obj, ICM_UnselectAll);
-						else
-							data->justSelected=FALSE;
+//						kprintf("ic1\n");
+//						if(!data->justSelected)
+//						{
+//							kprintf("ic2\n");
+//							DoMethod(obj, ICM_UnselectAll);
+//						}
+//						else
+//						{
+//						kprintf("ic3\n");
+//							data->justSelected=FALSE;
+//						}
+//						kprintf("ic4\n");
 					}
 				}
 				break;
@@ -789,14 +923,15 @@ IPTR iconConUnselectAll(Class *cl, Object *obj, Msg msg)
 
 	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
 
-	mn=(struct MemberNode*)data->memberList.mlh_Head;
-	while(mn->m_Node.mln_Succ)
-	{
-		if(_selected(mn->m_Object))
-
-			SetAttrs(mn->m_Object, IA_Selected, FALSE, TAG_END);
-		mn=(struct MemberNode*)mn->m_Node.mln_Succ;
-	}
+//	mn=(struct MemberNode*)data->memberList.mlh_Head;
+//	while(mn->m_Node.mln_Succ)
+//	{
+//		if(_selected(mn->m_Object) && )
+//		{
+//			SetAttrs(mn->m_Object, IA_Selected, FALSE, TAG_END);
+//		}
+//		mn=(struct MemberNode*)mn->m_Node.mln_Succ;
+//	}
 
 	return retval;
 }
@@ -810,11 +945,12 @@ IPTR iconConUpdateSelectList(Class *cl, Object *obj, struct opUpdateSelectList *
 
 	if(msg->selectState==TRUE)
 	{
-		data->justSelected=TRUE;
 		AddTail((struct List*)&(data->selectedList), (struct Node *)_OBJECT(msg->target));
 	}
 	else if(msg->selectState==FALSE)
+	{
 		Remove((struct Node *)_OBJECT(msg->target));
+	}
 
 	return retval;
 }
@@ -830,6 +966,27 @@ IPTR iconConDispose(Class *cl, Object *obj, Msg msg)
 	return retval;
 }
 
+IPTR iconConGetColumn(Class *cl, Object *obj, struct opGetColumn *msg)
+{
+	struct IconContainerClassData *data;
+	BOOL found=FALSE;
+	ULONG i=0;
+	struct DetailColumn *dc=NULL;
+
+	data=(struct IconContainerClassData*)INST_DATA(cl, obj);
+
+	while(!found && i<data->numColumns)
+	{
+		if(data->columns[i].dc_Content==msg->colType)
+		{
+			found=TRUE;
+			dc=&data->columns[i];
+		}
+		i++;
+	}
+
+	return dc;
+}
 
 AROS_UFH3(IPTR, iconContainerDispatcher,
 	AROS_UFHA(Class  *, cl,  A0),
@@ -845,6 +1002,9 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 			break;
 		case MUIM_Setup:
 			retval=iconConSetup(cl, obj, (struct MUIP_Setup*)msg);
+			break;
+		case MUIM_Cleanup:
+			retval=iconConCleanup(cl, obj, (struct MUIP_Cleanup*)msg);
 			break;
 		case MUIM_Show:
 			retval=iconConShow(cl, obj, (struct MUIP_Show*)msg);
@@ -884,13 +1044,23 @@ AROS_UFH3(IPTR, iconContainerDispatcher,
 		case OM_DISPOSE:
 			retval=iconConDispose(cl, obj, msg);
 			break;
+		case ICM_GetColumn:
+			retval=iconConGetColumn(cl, obj, (struct opGetColumn*)msg);
+			break;
 		default:
-			retval=DoSuperMethodA(cl, obj, msg);
 			broadcastMessage(cl, obj, msg);
+			retval=DoSuperMethodA(cl, obj, msg);
 			break;
 	}
 
 	return retval;
 }
+
+
+
+
+
+
+
 
 

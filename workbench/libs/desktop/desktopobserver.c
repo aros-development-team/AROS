@@ -140,15 +140,19 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 
 	for(i=0; i<msg->wsr_Results; i++)
 	{
-		iconTags=AllocVec(4*sizeof(struct TagItem), MEMF_ANY);
+		iconTags=AllocVec(5*sizeof(struct TagItem), MEMF_ANY);
 		iconTags[0].ti_Tag=IA_DiskObject;
 		iconTags[0].ti_Data=msg->wsr_ResultsArray[i].sr_DiskObject;
 		iconTags[1].ti_Tag=IA_Label;
 		iconTags[1].ti_Data=msg->wsr_ResultsArray[i].sr_Name;
 //		iconTags[2].ti_Tag=IA_Directory;
 //		iconTags[2].ti_Data=data->directory;
-		iconTags[2].ti_Tag=TAG_END;
-		iconTags[2].ti_Data=0;
+		iconTags[2].ti_Tag=MUIA_Draggable;
+		iconTags[2].ti_Data=TRUE;
+		iconTags[3].ti_Tag=IA_Desktop;
+		iconTags[3].ti_Data=_presentation(obj);
+		iconTags[4].ti_Tag=TAG_END;
+		iconTags[4].ti_Data=0;
 
 		switch(msg->wsr_ResultsArray[i].sr_DiskObject->do_Type)
 		{
@@ -179,9 +183,7 @@ IPTR desktopObsAddIcons(Class *cl, Object *obj, struct icoAddIcon *msg)
 		}
 
 		newIcon=CreateDesktopObjectA(kind, iconTags);
-
 		FreeVec(iconTags);
-
 		DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
 	}
 

@@ -17,14 +17,25 @@
 #define ICA_Open           ICA_BASE+7 /* (-SG) */
 #define ICA_Desktop        ICA_BASE+8 /* (ISG) */
 #define ICA_DeleteMe       ICA_BASE+9
-
 #define ICM_UnselectAll      ICA_BASE+10
 #define ICM_UpdateSelectList ICA_BASE+11
+#define ICM_GetColumn      ICA_BASE+12
+#define ICA_ViewMode       ICA_BASE+15
+
+#define ICAVM_LARGE  1
+#define ICAVM_SMALL  2
+#define ICAVM_DETAIL 3
 
 struct MemberNode
 {
 	struct MinNode m_Node;
 	Object *m_Object;
+};
+
+struct opGetColumn
+{
+	ULONG methodID;
+	Tag colType;
 };
 
 struct opUpdateSelectList
@@ -34,6 +45,12 @@ struct opUpdateSelectList
 	ULONG selectState;
 };
 
+struct DetailColumn
+{
+	Tag dc_Content;
+	ULONG dc_X, dc_Width;
+};
+
 struct IconContainerClassData
 {
 	// icons are ordered in the order they were added to the
@@ -41,6 +58,7 @@ struct IconContainerClassData
 	// and will start a new column when there is no room
 	// left (for icon view)
 	struct MinList memberList;
+	ULONG memberCount;
 
 	// list of selected icons
 	struct MinList selectedList;
@@ -71,6 +89,12 @@ struct IconContainerClassData
 	BOOL iconSelected;
 	BOOL justSelected;
 	BOOL open;
+	struct MUI_EventHandlerNode ehn;
+	BYTE viewMode;
+	struct DetailColumn *columns;
+	ULONG numColumns;
+	Object *desktop;
+	Object *last;
 };
 
 #define ICONSPACINGX 10
