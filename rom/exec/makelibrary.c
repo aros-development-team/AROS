@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:28:54  aros
+    Use the respective macros to access and manipulate a libraries' jumptable
+
     Revision 1.5  1996/10/19 17:07:27  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -91,18 +94,18 @@
 	/* Count offsets */
 	WORD *fp=(WORD *)funcInit+1;
 	while(*fp++!=-1)
-	    negsize+=sizeof(struct JumpVec);
+	    negsize+=LIB_VECTSIZE;
     }
     else
     {
 	/* Count function pointers */
 	void **fp=(void **)funcInit;
 	while(*fp++!=(void *)-1)
-	    negsize+=sizeof(struct JumpVec);
+	    negsize+=LIB_VECTSIZE;
     }
 
     /* Align library base */
-    negsize=(negsize+(LIBALIGN-1))&~(LIBALIGN-1);
+    negsize=AROS_ALIGN(negsize);
 
     /* Allocate memory */
     library=(struct Library *)AllocMem(dataSize+negsize,MEMF_PUBLIC|MEMF_CLEAR);
@@ -131,8 +134,11 @@
 
 	/* Call init vector */
 	if(libInit!=NULL)
-	    library=__AROS_ABS_CALL3(struct Library *,libInit,
-				     library,D0,segList,A0,SysBase,A6);
+	    library=__AROS_ABS_CALL3(struct Library *, libInit,
+		    library, D0,
+		    segList, A0,
+		    SysBase, A6
+	    );
     }
     /* All done */
     return library;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:28:54  aros
+    Use the respective macros to access and manipulate a libraries' jumptable
+
     Revision 1.5  1996/10/19 17:07:27  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -69,8 +72,9 @@
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
-
     APTR ret;
+
+    funcOffset /= -LIB_VECTSIZE;
 
     /*
 	Arbitrate for the jumptable. This isn't enough for interrupt callable
@@ -82,13 +86,13 @@
     library->lib_Flags|=LIBF_CHANGED;
 
     /* Get old vector. */
-    ret=GET_VEC((struct JumpVec *)((char *)library+funcOffset));
+    ret = __AROS_GETVECADDR (library, funcOffset);
 
     /* Write new one. */
-    SET_VEC((struct JumpVec *)((char *)library+funcOffset),newFunction);
+    __AROS_SETVECADDR (library, funcOffset, newFunction);
 
     /* And clear the instructiuon cache. */
-    CacheClearE((char *)library+funcOffset,LIB_VECTSIZE,CACRF_ClearI);
+    CacheClearE (__AROS_GETJUMPVEC(library,funcOffset),LIB_VECTSIZE,CACRF_ClearI);
 
     /* Arbitration is no longer needed */
     Permit();

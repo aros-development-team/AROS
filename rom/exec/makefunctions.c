@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:28:53  aros
+    Use the respective macros to access and manipulate a libraries' jumptable
+
     Revision 1.5  1996/10/19 17:07:26  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -67,11 +70,12 @@
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
+    long n;
+    APTR lastvec;
 
-    /* Cast for easier access */
-    struct JumpVec *jv=(struct JumpVec *)target;
+    n = 1;
 
-    if(funcDispBase!=NULL)
+    if (funcDispBase!=NULL)
     {
 	/* If FuncDispBase is non-NULL it's an array of relative offsets */
 	WORD *fp=(WORD *)functionArray;
@@ -80,14 +84,15 @@
 	while(*fp!=-1)
 	{
 	    /* Decrement vector pointer by one and install vector */
-	    jv--;
-	    SET_JMP(jv);
-	    SET_VEC(jv,(BYTE *)funcDispBase+*fp);
+	    __AROS_INITVEC(target,n);
+	    __AROS_SETVECADDR(target,n,funcDispBase+*fp);
 
 	    /* Use next array entry */
 	    fp++;
+	    n++;
 	}
-    }else
+    }
+    else
     {
 	/* If FuncDispBase is NULL it's an array of function pointers */
 	void **fp=(void **)functionArray;
@@ -96,20 +101,23 @@
 	while(*fp!=(void *)-1)
 	{
 	    /* Decrement vector pointer by one and install vector */
-	    jv--;
-	    SET_JMP(jv);
-	    SET_VEC(jv,*fp);
+	    __AROS_INITVEC(target,n);
+	    __AROS_SETVECADDR(target,n,*fp);
 
 	    /* Use next array entry */
 	    fp++;
+	    n++;
 	}
     }
 
+    lastvec = __AROS_GETJUMPVEC(target,n);
+    n = (IPTR)funcDispBase-(IPTR)lastvec;
+
     /* Clear instruction cache for the whole jumptable */
-    CacheClearE(jv,(BYTE *)funcDispBase-(BYTE *)jv,CACRF_ClearI);
+    CacheClearE(lastvec, n, CACRF_ClearI);
 
     /* Return size of jumptable */
-    return (BYTE *)funcDispBase-(BYTE *)jv;
+    return n;
     __AROS_FUNC_EXIT
 } /* MakeFunctions */
 
