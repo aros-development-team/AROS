@@ -69,9 +69,7 @@ dnl copying files around and the like.
 # The first step is to find the host binaries.
 # Check for a compiler.
 AC_PROG_CC
-AC_PROG_CXX
 AC_PROG_CPP
-AC_PROG_CXXCPP
 
 # We don't yet support cross-compiling, but we may later on.
 AC_CYGWIN
