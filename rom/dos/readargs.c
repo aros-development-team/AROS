@@ -5,14 +5,14 @@
     Desc:
     Lang: english
 */
-#ifndef TEST
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include <dos/rdargs.h>
 #include <dos/dosextens.h>
 #include "dos_intern.h"
-#if 0
-#ifndef TEST
+
+#ifdef TEST
+#include <stdio.h>
 #include <proto/dos.h>
 #undef ReadArgs
 #undef AROS_LH3
@@ -25,7 +25,6 @@
 #define AROS_LIBBASE_EXT_DECL(bt,bn)
 #undef AROS_LIBFUNC_EXIT
 #define AROS_LIBFUNC_EXIT
-#endif
 #endif
 
 /*****************************************************************************
@@ -191,6 +190,11 @@
 		ULONG isize=0, ibuf=0;
 		LONG c;
 		/* Prompt for more input */
+/* printf ("Only ? found\n");
+printf ("rdargs=%p\n", rdargs);
+if (rdargs)
+printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
+
 		if(rdargs!=NULL&&rdargs->RDA_ExtHelp!=NULL)
 		{
 		    if(FPuts(output,rdargs->RDA_ExtHelp))
@@ -486,7 +490,6 @@ end:
     }
     AROS_LIBFUNC_EXIT
 } /* ReadArgs */
-#endif /* !TEST */
 
 #ifdef TEST
 #include <dos/dos.h>
