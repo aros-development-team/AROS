@@ -72,3 +72,7 @@ clean :: contrib-freetype-linklib-clean
 
 %common
 
+#MM- contrib-freetype : contrib-freetype-linklib \
+#MM	contrib-freetype-graph \
+#MM	contrib-freetype-fonts \
+#MM	contrib-freetype-demos
