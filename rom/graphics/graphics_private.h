@@ -39,4 +39,10 @@ AROS_LP1(struct BitMap *, AllocScreenBitMap,
 AROS_LP0(BOOL, MouseCoordsRelative,
     struct GfxBase *, GfxBase, 183, Graphics)
 
+
+AROS_LP2(BOOL, SetFrontBitMap,
+    AROS_LPA(struct BitMap *, bitmap, A0),
+    AROS_LPA(BOOL, copyback, D0),
+    struct GfxBase *, GfxBase, 184, Graphics)
+
 #endif /* _GRAPHICS_PRIVATE_H */

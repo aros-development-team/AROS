@@ -29,5 +29,12 @@
 #define MouseCoordsRelative() \
     LP0( , BOOL, MouseCoordsRelative, \
 	GFX_BASE_NAME )
+
+#define SetFrontBitMap(modeid) \
+    LP2( , BOOL, SetFrontBitMap, \
+	struct BitMap *, bitmap, a0, \
+	BOOL, copyback, d0, \
+	GFX_BASE_NAME )
+
 	
 #endif _GFX_PINLINES_H

@@ -33,4 +33,10 @@
     AROS_LC0(BOOL, MouseCoordsRelative, \
     struct GfxBase *, GfxBase, 183, Graphics)
 
+#define SetFrontBitMap(bitmap) \
+    AROS_LC2(BOOL, SetFrontBitMap, \
+    AROS_LCA(struct BitMap *, bitmap, A0), \
+    AROS_LCA(BOOL, copyback, D0), \
+    struct GfxBase *, GfxBase, 184, Graphics)
+    
 #endif /* _GFX_PDEFS_H */
