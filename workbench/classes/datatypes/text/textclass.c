@@ -2576,9 +2576,8 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
     return 0;
 }
 
-struct IClass *DT_MakeClass(void)
+struct IClass *DT_MakeClass(struct Library *textbase)
 {
-    ULONG reg_a6 = getreg(REG_A6);
     struct IClass *cl = MakeClass("text.datatype", DATATYPESCLASS, NULL, sizeof(struct Text_Data), NULL);
 
     if (cl)
@@ -2589,7 +2588,7 @@ struct IClass *DT_MakeClass(void)
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
 #endif
 	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
-	cl->cl_UserData = reg_a6;	/* Required by datatypes */
+	cl->cl_UserData = textbase;	/* Required by datatypes */
     }
 
     return cl;
