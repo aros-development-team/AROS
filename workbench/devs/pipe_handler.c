@@ -403,13 +403,13 @@ AROS_UFH3(LONG, pipeproc,
 {
     AROS_USERFUNC_INIT
 
-    SysBase = _SysBase;
     struct Process     *me = (struct Process *)FindTask(0);
     struct pipemessage *msg;
     struct usernode    *un;
     struct filenode    *fn;
     BOOL cont = TRUE;
 
+    SysBase = _SysBase;
     do
     {
     	WaitPort(&(me->pr_MsgPort));
