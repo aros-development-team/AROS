@@ -4,7 +4,7 @@ include $(TOP)/make.cfg
 
 OBJDIR=$(GENDIR)/filesys
 
-all: setup $(OBJDIR)/emul_handler.o $(OBJDIR)/nil_handler.o
+all: setup $(OBJDIR)/emul_handler.o
 
 setup:
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
