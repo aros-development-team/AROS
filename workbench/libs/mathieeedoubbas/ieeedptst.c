@@ -19,7 +19,7 @@
       AROS_LHQUAD1(LONG, IEEEDPTst,
 
 /*  SYNOPSIS */
-      AROS_LHAQUAD(QUAD, y, D0, D1),
+      AROS_LHAQUAD(double, y, D0, D1),
 
 /*  LOCATION */
       struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 8, MathIeeeDoubBas)

@@ -16,10 +16,10 @@
 
     NAME */
 
-      AROS_LHQUAD1(QUAD, IEEEDPAbs,
+      AROS_LHQUAD1(double, IEEEDPAbs,
 
 /*  SYNOPSIS */
-      AROS_LHAQUAD(QUAD, y, D0, D1),
+      AROS_LHAQUAD(double, y, D0, D1),
 
 /*  LOCATION */
       struct MathIeeeDoubBasBase *, MathIeeeDoubBasBase, 9, MathIeeeDoubBas)

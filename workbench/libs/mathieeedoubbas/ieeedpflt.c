@@ -16,7 +16,7 @@
 
     NAME */
 
-      AROS_LHQUAD1(QUAD, IEEEDPFlt,
+      AROS_LHQUAD1(double, IEEEDPFlt,
 
 /*  SYNOPSIS */
       AROS_LHAQUAD(LONG, y, D0, D1),
