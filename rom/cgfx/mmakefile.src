@@ -28,17 +28,19 @@ FUNCS := \
 	writepixelarrayalpha	\
 	writergbpixel		
 
-#MM- kernel-cgfx : includes linklibs
+#MM- kernel-cgfx : linklibs
+#MM- kernel-cgfx-kobj : linklibs
 
-%build_module_macro mmake=kernel-cgfx \
+#MM- kernel-cgfx-includes : \
+#MM      kernel-exec-includes \
+#MM      includes-copy
+
+%build_module mmake=kernel-cgfx \
   modname=cybergraphics modtype=library \
-  funcs=$(FUNCS) \
-  conffile=lib.conf
+  files="cybergraphics_init $(FUNCS)"
 
 #MM includes-copy
 
 INCLUDE_FILES := $(wildcard include/*.h)
 
 %copy_includes path=cybergraphx
-
-%common
