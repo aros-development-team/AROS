@@ -23,9 +23,9 @@
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
-static void *const FUNCTABLE[];
+static void *const LIBFUNCTABLE[];
 struct LIBBASETYPE * INIT();
-extern const char END;
+extern const char LIBEND;
 
 extern int  driver_init (struct LIBBASETYPE *);
 extern int  driver_open (struct LIBBASETYPE *);
@@ -42,9 +42,9 @@ const struct Resident Graphics_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Graphics_resident,
-    (APTR)&END,
+    (APTR)&LIBEND,
     RTF_AUTOINIT|RTF_COLDSTART,
-    41,
+    VERSION_NUMBER,
     NT_LIBRARY,
     65,
     (char *)name,
@@ -54,12 +54,12 @@ const struct Resident Graphics_resident=
 
 static const char name[]=GRAPHICSNAME;
 
-static const char version[]=VERSION;
+static const char version[]=VERSION_STRING;
 
 static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct LIBBASETYPE),
-    (APTR)FUNCTABLE,
+    (APTR)LIBFUNCTABLE,
     NULL,
     &INIT
 };
