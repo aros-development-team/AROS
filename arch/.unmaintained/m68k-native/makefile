@@ -7,39 +7,12 @@ SPECIAL_CFLAGS = -I $(TOP)/exec
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
-ifeq ($(FLAVOUR),native)
 FILES = \
 	disable \
 	forbid \
 	getcc \
 	cacheclearu cachepredma cachepostdma \
 	sdivmod32 smult32 smult64 udivmod32 umult32 umult64
-else
-FILES = \
-	supervisor \
-	switch \
-	dispatch \
-	disable \
-	enable \
-	forbid \
-	permit \
-	preparecontext \
-	special \
-	semaphoreglue \
-	exception \
-	cachecleare \
-	cacheclearu \
-	cachecontrol \
-	cachepostdma \
-	cachepredma \
-	setsr \
-	getcc \
-	superstate \
-	userstate \
-	stackswap \
-	runprocess \
-	initcore
-endif
 
 all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
@@ -69,5 +42,7 @@ $(OSGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),setup)
 include $(OSGENDIR)/geninc.d
 include $(OSGENDIR)/preparecontext.d
+endif
