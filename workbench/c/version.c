@@ -240,7 +240,7 @@ int makedatafromstring(char *buffer)
 		parsedver.name = AllocVec(pos + 1, MEMF_ANY);
 		if (parsedver.name == NULL)
 		{
-		    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+		    PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 		    return(RETURN_FAIL);
 		}
 		CopyMem(buffer, parsedver.name, pos);
@@ -258,7 +258,7 @@ int makedatafromstring(char *buffer)
 		    parsedver.name = AllocVec(pos + 1, MEMF_ANY);
 		    if (parsedver.name == NULL)
 		    {
-			PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+			PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 			return(RETURN_FAIL);
 		    }
 		    CopyMem(buffer, parsedver.name, pos);
@@ -313,7 +313,7 @@ int makefilever(STRPTR name)
 		verbuffer = AllocVec(len + 1, MEMF_ANY);
 		if (verbuffer == NULL)
 		{
-		    PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+		    PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 		    error = RETURN_FAIL;
 		} else
 		{
@@ -326,7 +326,7 @@ int makefilever(STRPTR name)
 		error = RETURN_ERROR;
 	    }
 	} else
-	    PrintFault(IoErr(), ERROR_HEADER);
+	    PrintFault(IoErr(), (char *)ERROR_HEADER);
 	Close(file);
     } else
     {
@@ -334,7 +334,7 @@ int makefilever(STRPTR name)
 	    error = -1;
 	else
 	{
-	    PrintFault(IoErr(), ERROR_HEADER);
+	    PrintFault(IoErr(), (char *)ERROR_HEADER);
 	    error = RETURN_FAIL;
 	}
     }
@@ -355,7 +355,7 @@ int makekickver()
     parsedver.name = AllocVec(KICKSTRLEN, MEMF_ANY);
     if (parsedver.name == NULL)
     {
-	PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+	PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 	return(RETURN_FAIL);
     }
     CopyMem("Kickstart", parsedver.name, KICKSTRLEN);
@@ -365,7 +365,7 @@ int makekickver()
     verbuffer = AllocVec(MAXKICKSTRLEN, MEMF_ANY);
     if (verbuffer == NULL)
     {
-	PrintFault(ERROR_NO_FREE_STORE, ERROR_HEADER);
+	PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 	return(RETURN_FAIL);
     }
     CopyMem("Kickstart ", verbuffer, 10);
@@ -410,7 +410,7 @@ int makeverstring()
 	    error = makefilever(args.name);
 	if (error == -1)
 	{
-	    PrintFault(ERROR_OBJECT_NOT_FOUND, ERROR_HEADER);
+	    PrintFault(ERROR_OBJECT_NOT_FOUND, (char *)ERROR_HEADER);
 	    error = RETURN_FAIL;
 	}
     }
@@ -476,7 +476,7 @@ int verifyargs()
 	error = RETURN_FAIL;
 
     if (error == RETURN_FAIL)
-	PrintFault(ERROR_BAD_TEMPLATE, ERROR_HEADER);
+	PrintFault(ERROR_BAD_TEMPLATE, (char *)ERROR_HEADER);
 
     return(error);
 }
@@ -509,7 +509,7 @@ int main (int argc, char ** argv)
     }
     else
     {
-	PrintFault(IoErr(), ERROR_HEADER);
+	PrintFault(IoErr(), (char *)ERROR_HEADER);
 	error = RETURN_FAIL;
     }
 
