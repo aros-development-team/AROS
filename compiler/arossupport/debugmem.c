@@ -49,6 +49,7 @@
 
 ******************************************************************************/
 {
+#ifndef __DONT_USE_DEBUGMEM__
     struct MemHeader *mh;
     struct MemChunk  *mc;
 
@@ -71,5 +72,6 @@
     }
 
     Permit();
+#endif
 } /* debugmem */
 
