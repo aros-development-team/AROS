@@ -65,14 +65,15 @@
   if(name)
   {
     /* We scan through the process->pr_LocalVars list */
+    struct Process  *pr;
     struct LocalVar *var;
     
-    var = (struct LocalVar *)
-          ((struct Process *)FindTask(NULL))->pr_LocalVars.mlh_Head;
+    pr  = (struct Process *)FindTask(NULL);
+    var = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 
-    while(var->lv_Node.ln_Succ)
+    while(var != (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail) )
     { 
-      ULONG res;
+      LONG res;
       if(var->lv_Node.ln_Type == type)
       {
         /* The list is alphabetically sorted. */
@@ -83,7 +84,7 @@
           return var;
 
         /* We have gone too far through the sorted list. */
-        else if(res > 0)
+        else if(res < 0)
           return NULL;
       }
       var = (struct LocalVar *)var->lv_Node.ln_Succ;

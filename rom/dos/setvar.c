@@ -101,7 +101,7 @@
                                   MEMF_CLEAR|MEMF_PUBLIC) ) )
         {
           struct Process * pr = (struct Process *)FindTask(NULL);
-          struct LocalVar * n = (struct LocalVar *)&((pr)->pr_LocalVars.mlh_Head);
+          struct LocalVar * n = (struct LocalVar *)pr->pr_LocalVars.mlh_Head;
 
           /* init the newly created structure */
           lv->lv_Node.ln_Type = flags;
@@ -109,25 +109,40 @@
           CopyMem(name, lv->lv_Node.ln_Name, nameLen);
           lv->lv_Flags = flags & (GVF_BINARY_VAR|GVF_DONT_NULL_TERM);
           
-          /* Insert the node into the list, if there is one member in the list already. */
-          if ( pr->pr_LocalVars.mlh_TailPred   != 
-               (struct MinNode *)&(pr->pr_LocalVars.mlh_Head) )
+          /* First let's see whether we have to add it at the head of the list 
+             as the list is still empty   OR
+             the very first element is already greater than the one we want to
+             insert */
+          
+          if( n == (struct LocalVar *)&(pr->pr_LocalVars.mlh_Tail)  ||
+              Stricmp(name, n->lv_Node.ln_Name) < 0 
+            )
           {
-            while(n->lv_Node.ln_Succ != NULL)
+            AddHead((struct List *)&pr->pr_LocalVars,
+                    (struct Node *) lv
+                   );
+          }
+          else
+          {
+            /* now we can be sure that we will have to insert somewhere 
+               behind the first element in the list */
+            while ( n->lv_Node.ln_Succ != 
+                         (struct Node *)&(pr->pr_LocalVars.mlh_Head)
+                    &&
+                    Stricmp(name, n->lv_Node.ln_Name) > 0 
+                  )
             {
-              /* Is this node less than n? */
-              if( Stricmp(name, n->lv_Node.ln_Name) < 0)
-                break;
               n = (struct LocalVar *)n->lv_Node.ln_Succ;
             }
+            /* now we have to insert it before the element we have in
+               'n' (this means we have to insert it after the pred. of
+               'n') 
+             */
+            Insert((struct List *)&pr->pr_LocalVars ,
+                   (struct Node *) lv ,
+                   (struct Node *) n->lv_Node.ln_Pred
+                  );
           }
-          /* Ok, three cases:
-             1- start of list, n == NULL ---> ok.
-             2- middle of list, n == pred ---> ok.
-             3- end of list, n == last node ---> ok.
-          */
-          Insert((struct List *)&pr->pr_LocalVars,
-            (struct Node *)lv, (struct Node *)n);
         }
       /* -1 as size means: buffer contains a null-terminated string*/
       if (-1 == size)
