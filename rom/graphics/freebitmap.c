@@ -50,7 +50,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    if (bm->Pad != 0)
+    if (bm->Pad != 0 || (bm->Flags & BMF_AROS_DISPLAYED))
     {
 	driver_FreeBitMap (bm, GfxBase);
     }
