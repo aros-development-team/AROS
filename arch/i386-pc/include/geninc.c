@@ -99,7 +99,7 @@ int main (void)
     printf ("#define ln_Pri        %d\n", offsetof (struct Node, ln_Pri));
 
     printf ("#define lh_Head       %d\n", offsetof (struct List, lh_Head));
-    printf ("#define ln_TailPred   %d\n", offsetof (struct List, lh_TailPred));
+    printf ("#define lh_TailPred   %d\n", offsetof (struct List, lh_TailPred));
 
 
 #ifdef UseExecstubs
