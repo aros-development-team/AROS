@@ -16,9 +16,6 @@
 
 #include <proto/exec.h>
 #include <aros/libcall.h>
-#ifdef _AMIGA
-#include <hardware/custom.h>
-#endif
 
 /*****************************************************************************
 
