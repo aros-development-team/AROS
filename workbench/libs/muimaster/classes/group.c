@@ -1067,9 +1067,9 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
 	  if all but some childs have null weights, the maxheight
 	  is the min of all maxheights
 	 */
+	tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
 	if (_vweight(child) > 0)
 	{
-	    tmp.MaxHeight = MIN(tmp.MaxHeight, _maxheight(child));
 	    found_nonzero_vweight = TRUE;
 	}
     }
@@ -1121,9 +1121,9 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	tmp.MaxHeight = MIN(tmp.MaxHeight, MUI_MAXMAX);
 	tmp.MinWidth = MAX(tmp.MinWidth, _minwidth(child));
 	tmp.DefWidth = MAX(tmp.DefWidth, _defwidth(child));
+	tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
 	if (_hweight(child) > 0)
 	{
-	    tmp.MaxWidth = MIN(tmp.MaxWidth, _maxwidth(child));
 	    found_nonzero_hweight = TRUE;
 	}
     }
@@ -1161,9 +1161,9 @@ minmax_2d_rows_pass (struct MUI_GroupData *data, struct MinList *children,
 	    }
 	    min_h = MAX(min_h, _minheight(child));
 	    def_h = MAX(def_h, w0_defheight(child));
+	    max_h = MIN(max_h, _maxheight(child));
 	    if (_vweight(child) > 0)
 	    {
-		max_h = MIN(max_h, _maxheight(child));
 		found_nonzero_vweight = TRUE;
 	    }
 	    ++j;
@@ -1216,9 +1216,9 @@ minmax_2d_columns_pass (struct MUI_GroupData *data, struct MinList *children,
 	     *  the max size if they're alone, but not if they are with
 	     *  non-null weight obj
 	     */
+	    max_w = MIN(max_w, _maxwidth(child));
 	    if (_hweight(child) > 0)
 	    {
-		max_w = MIN(max_w, _maxwidth(child));
 		found_nonzero_hweight = TRUE;
 	    }
 	}
