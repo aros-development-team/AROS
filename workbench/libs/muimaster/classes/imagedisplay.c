@@ -213,6 +213,7 @@ IPTR Imagedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
     if (data->img)
     {
 	WORD left, top, width, height;
+	APTR clip;
 
 	left = _mleft(obj);
 	top = _mtop(obj);
@@ -244,10 +245,31 @@ IPTR Imagedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *ms
 		width = data->defwidth;
 	    }
 	}
+	else
+	{
+	    struct MUI_MinMax minmax;
 
+	    zune_imspec_askminmax(data->img, &minmax);
+
+	    if (width > minmax.MaxWidth)
+	    {
+		width = minmax.MaxWidth;
+		left = _mleft(obj) + (_mwidth(obj) - width) / 2;
+	    }
+
+	    if (height > minmax.MaxHeight)
+	    {
+		height = minmax.MaxHeight;
+		top = _mtop(obj) + (_mheight(obj) - height) / 2;
+	    }
+	}
+
+	clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+			       _mwidth(obj), _mheight(obj));
 	zune_imspec_draw(data->img, muiRenderInfo(obj),
 			 left, top, width, height,
 			 0, 0, IDS_NORMAL);
+	MUI_RemoveClipping(muiRenderInfo(obj), clip);
     }
 
     return 1;
