@@ -11,6 +11,7 @@ FILES	:= \
 	Beep \
 	Break \
 	ChangeTaskPri \
+	CheckMem \
 	ConClip \
 	Copy \
 	CRList \
