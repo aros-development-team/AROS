@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Free arguments structure from ReadArgs()
@@ -67,6 +67,9 @@
 	FreeVec(((struct DAList *)args->RDA_DAList)->MultVec);
 	FreeVec((struct DAList *)args->RDA_DAList);
 
+    	args->RDA_DAList = 0;
+	
+#if 0
 	/*
 	    Why do I put this here. Unless the user has been bad and
 	    set RDA_DAList to something other than NULL, then this
@@ -76,8 +79,14 @@
 
 	    See the original AmigaOS autodoc if you don't believe me
 	*/
-	FreeVec(args);
+
+    	FreeVec(args);
+#endif
     }
 
+    if (args->RDA_Flags & RDAF_ALLOCATED_BY_READARGS)
+	FreeVec(args);
+
     AROS_LIBFUNC_EXIT
+    
 } /* FreeArgs */

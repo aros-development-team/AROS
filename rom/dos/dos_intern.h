@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal types and stuff for dos
@@ -33,6 +33,8 @@
 /* Needed for close() */
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct DosLibrary *, DOSBase, 3, Dos)
+
+#define RDAF_ALLOCATED_BY_READARGS (1L << 31)
 
 struct DAList
 {

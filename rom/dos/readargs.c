@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -110,7 +110,6 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Allocated resources */
-    struct RDArgs *rda = NULL;
     struct DAList *dalist = NULL;
     UBYTE         *flags = NULL;
     STRPTR         strbuf = NULL, iline = NULL;
@@ -148,14 +147,18 @@
       NUMERIC, 0, 0, 0, 0, SWITCH|KEYWORD, TOGGLE|KEYWORD, 0, 0, 0, 0, 0, 0 };
     
     /* Allocate readargs structure (and private internal one) */
-    rda = (struct RDArgs *)AllocVec(sizeof(struct RDArgs), MEMF_ANY);
-    dalist = (struct DAList *)AllocVec(sizeof(struct DAList), MEMF_ANY);
+    if (!rdargs)
+    {
+    	rdargs = (struct RDArgs *)AllocVec(sizeof(struct RDArgs), MEMF_ANY | MEMF_CLEAR);
+	if (rdargs) rdargs->RDA_Flags |= RDAF_ALLOCATED_BY_READARGS;
+    }
+    dalist = (struct DAList *)AllocVec(sizeof(struct DAList), MEMF_ANY | MEMF_CLEAR);
 
-    if(rda == NULL || dalist == NULL)
+    if(rdargs == NULL || dalist == NULL)
 	ERROR(ERROR_NO_FREE_STORE);
     
     /* Init character source. */
-    if(rdargs != NULL && rdargs->RDA_Source.CS_Buffer)
+    if(rdargs->RDA_Source.CS_Buffer)
     {
 	cs = &rdargs->RDA_Source;
     }
@@ -172,7 +175,7 @@
     }
 
     /* Check for optional reprompting */
-    if(rdargs == NULL || !(rdargs->RDA_Flags & RDAF_NOPROMPT))
+    if(!(rdargs->RDA_Flags & RDAF_NOPROMPT))
     {
 	/* Check commandline for a single '?' */
 	s1 = cs->CS_Buffer;
@@ -202,7 +205,7 @@ printf ("rdargs=%p\n", rdargs);
 if (rdargs)
 printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
-		if(rdargs != NULL && rdargs->RDA_ExtHelp != NULL)
+		if(rdargs->RDA_ExtHelp != NULL)
 		{
 		    if(FPuts(output, rdargs->RDA_ExtHelp))
 			ERROR(me->pr_Result2);
@@ -517,7 +520,7 @@ end:
     if(error)
     {
 	/* ReadArgs() failed. Clean everything up. */
-	FreeVec(rda);
+	if (rdargs) if (rdargs->RDA_Flags & RDAF_ALLOCATED_BY_READARGS) FreeVec(rdargs);
 	FreeVec(dalist);
 	FreeVec(argbuf);
 	FreeVec(strbuf);
@@ -527,11 +530,11 @@ end:
     }else
     {
 	/* All went well. Prepare result and return. */
-	rda->RDA_DAList=(IPTR)dalist;
+	rdargs->RDA_DAList=(IPTR)dalist;
 	dalist->ArgBuf=argbuf;
 	dalist->StrBuf=strbuf;
 	dalist->MultVec=multvec;
-	return rda;
+	return rdargs;
     }
     AROS_LIBFUNC_EXIT
 } /* ReadArgs */
