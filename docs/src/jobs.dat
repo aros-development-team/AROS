@@ -1042,10 +1042,10 @@ intuition00072;1;nlorentz;Write ActivateGadget
 intuition00073;2;digulla;Write NewModifyProp
 intuition00074;0;digulla;Write QueryOverscan
 intuition00075;2;bergers;Write MoveWindowInFrontOf
-intuition00076;2;bergers;Write ChangeWindowBox
+intuition00076;2;nlorentz;Write ChangeWindowBox
 intuition00077;2;nlorentz;Write SetEditHook
 intuition00078;2;stegerg;Write SetMouseQueue
-intuition00079;2;bergers;Write ZipWindow
+intuition00079;2;nlorentz;Write ZipWindow
 intuition00080;2;SDuvan;Write LockPubScreen
 intuition00081;2;SDuvan;Write UnlockPubScreen
 intuition00082;2;SDuvan;Write LockPubScreenList
