@@ -7,11 +7,9 @@
 
 #include <clib/alib_protos.h>
 #include <intuition/classusr.h>
+#include <graphics/gfxmacros.h>
 #include <proto/graphics.h>
 #include <proto/intuition.h>
-#ifdef __AROS__
-#include <proto/muimaster.h>
-#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -61,6 +59,7 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
     struct Region *region = NULL;
     APTR clip;
     struct Rectangle *clip_rect;
+    ULONG disabled;
 
     if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return;
 
@@ -113,6 +112,23 @@ __asm VOID MUI_Redraw(register __a0 Object *obj, register __d0 ULONG flags)
         clip_rect->MaxY = _bottom(obj);
     }
     DoMethod(obj, MUIM_Draw, flags);
+
+    if (get(obj, MUIA_Disabled, &disabled))
+    {
+	if (disabled)
+	{
+	    const static UWORD pattern[] = {
+		0x5555,
+		0xaaaa,
+	    };
+	    LONG fg = muiRenderInfo(obj)->mri_Pens[MPEN_SHADOW];
+	    SetDrMd(_rp(obj), JAM1);
+	    SetAPen(_rp(obj), fg);
+	    SetAfPt(_rp(obj), pattern, 1);
+	    RectFill(_rp(obj), _left(obj), _top(obj), _right(obj), _bottom(obj));
+	    SetAfPt(_rp(obj), NULL, 0);
+	}
+    }
 
     /* copy buffer to window */
     if (muiRenderInfo(obj)->mri_BufferBM)
