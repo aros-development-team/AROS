@@ -893,7 +893,7 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 %compile_q
 
 $(OBJDIR)/functions.c : mmakefile.src $(ARCHIVE)
-	@$(ARCHTOOL) -s $(ARCHIVE) $@
+	@$(ARCHTOOL) -s $@ $(ARCHIVE)
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
