@@ -268,21 +268,6 @@ $(END_FILE).d : $(END_FILE).c
 clean ::
 	@$(RM) $(TOP)/$(CURDIR)/mmakefile $(TOP)/$(CURDIR)/mmakefile.bak
 
-$(GENMODULE) $(GENLIBDEFS) : $(wildcard $(TOP)/tools/genmodule/*.[hc])
-	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmodule TOP=$(TOP)
-
-$(TOP)/tools/cxref/configure : $(TOP)/tools/cxref/configure.in
-	cd $(TOP)/tools/cxref ; aclocal ; autoconf
-
-$(TOP)/tools/cxref/Makefile : $(TOP)/tools/cxref/configure $(TOP)/tools/cxref/Makefile.in
-	cd $(TOP)/tools/cxref ; \
-	CC="$(HOST_CC)" CFLAGS='' ./configure --prefix=$(TOOLDIR)
-
-$(CXREF): $(TOP)/tools/cxref/*.[ch] $(TOP)/tools/cxref/cpp/*.[ch] $(TOP)/tools/cxref/query/*.[ch] \
-		$(TOP)/tools/cxref/Makefile
-	$(MAKE) $(MKARGS) -C $(TOP)/tools/cxref
-	cp $(TOP)/tools/cxref/cxref$(HOST_EXE_SUFFIX) $(CXREF)
-
 %end
 
 #------------------------------------------------------------------------------
