@@ -95,7 +95,9 @@ AROS_UFH3(LIBBASETYPE *, AROS_SLIB_ENTRY(init,Locale),
 )
 #endif
 {
+#ifndef __MORPHOS__
     AROS_USERFUNC_INIT
+#endif
 
     struct IntLocale *def;
 

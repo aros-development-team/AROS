@@ -1,0 +1,2446 @@
+? MORPHOS_CVS_LOG
+
+RCS file: /home/cvs/morphos/iffparse/.cvsignore,v
+Working file: .cvsignore
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/22 00:33:25;  author: nadir;  state: Exp;  lines: +1 -6
+*** empty log message ***
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/allociff.c,v
+Working file: allociff.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:22;  author: piru;  state: Exp;  lines: +5 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/alloclocalitem.c,v
+Working file: alloclocalitem.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:22;  author: piru;  state: Exp;  lines: +11 -19
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/basicfuncs.c,v
+Working file: basicfuncs.c
+head: 1.10
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 11;	selected revisions: 11
+description:
+----------------------------
+revision 1.10
+date: 2002/12/15 21:45:22;  author: piru;  state: Exp;  lines: +34 -17
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.9
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.8
+date: 2002/07/17 01:50:13;  author: cisc;  state: Exp;  lines: +1 -4
+Bah, that was wrong.
+----------------------------
+revision 1.7
+date: 2002/07/17 01:20:21;  author: cisc;  state: Exp;  lines: +4 -1
+Hopefully fixed IFFF_READ (cn_Composite wasn't set when it should have been) .. bumped date...
+----------------------------
+revision 1.6
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +4 -5
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.5
+date: 2001/07/27 22:42:06;  author: emm;  state: Exp;  lines: +35 -29
+Don't call stream hooks with 0 byte read/writes
+----------------------------
+revision 1.4
+date: 2001/07/24 19:38:14;  author: emm;  state: Exp;  lines: +22 -2
+Some small adjustments.
+----------------------------
+revision 1.3
+date: 2001/07/24 19:28:16;  author: emm;  state: Exp;  lines: +3 -12
+Removed endianness conversions.
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:35;  author: emm;  state: Exp;  lines: +4 -4
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/bufferingfuncs.c,v
+Working file: bufferingfuncs.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +76 -33
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/clipboardfuncs.c,v
+Working file: clipboardfuncs.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +16 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +5 -5
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/25 21:08:07;  author: emm;  state: Exp;  lines: +20 -12
+Fixed clipboard lockup (I hope)
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/closeclipboard.c,v
+Working file: closeclipboard.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +3 -3
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/28 20:09:16;  author: emm;  state: Exp;  lines: +3 -3
+Don't delete ports before closing the device.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/closeiff.c,v
+Working file: closeiff.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +11 -4
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.6
+date: 2002/12/15 13:55:22;  author: steger;  state: Exp;  lines: +1 -3
+killed unused "count" variable
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +38 -38
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/05/12 17:29:02;  author: cisc;  state: Exp;  lines: +4 -1
+Fixed CloseIFF(), FreeIFF(), FreeLocalItem() and OpenIFF() with null-pointer .. iffparse seems 100% now... ;)
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +5 -3
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/collectionchunk.c,v
+Working file: collectionchunk.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +3 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.6
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.5
+date: 2002/07/17 06:29:08;  author: cisc;  state: Exp;  lines: +2 -2
+Fixed completely broken chunk-handler additions.
+----------------------------
+revision 1.4
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +3 -8
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +2 -2
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:36;  author: emm;  state: Exp;  lines: +11 -1
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/collectionchunks.c,v
+Working file: collectionchunks.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +2 -2
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:36;  author: emm;  state: Exp;  lines: +20 -4
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/collectionhooks.c,v
+Working file: collectionhooks.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +7 -7
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +6 -6
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -1
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/26 19:48:02;  author: emm;  state: Exp;  lines: +2 -2
+Bug fix: collectionned chunks were saved in a bad context.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/currentchunk.c,v
+Working file: currentchunk.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:55;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/dosstreamhandler.c,v
+Working file: dosstreamhandler.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +30 -35
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +7 -10
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/entryhandler.c,v
+Working file: entryhandler.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +7 -11
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/exithandler.c,v
+Working file: exithandler.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +8 -11
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -1
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:37;  author: emm;  state: Exp;  lines: +10 -1
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/findcollection.c,v
+Working file: findcollection.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +9 -12
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +6 -6
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +8 -5
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/findlocalitem.c,v
+Working file: findlocalitem.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +10 -22
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 14:24:55;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/findprop.c,v
+Working file: findprop.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +9 -12
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:39;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:06;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/findpropcontext.c,v
+Working file: findpropcontext.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +2 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/freeiff.c,v
+Working file: freeiff.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +17 -17
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/12 17:29:02;  author: cisc;  state: Exp;  lines: +4 -1
+Fixed CloseIFF(), FreeIFF(), FreeLocalItem() and OpenIFF() with null-pointer .. iffparse seems 100% now... ;)
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/freelocalitem.c,v
+Working file: freelocalitem.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +3 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +12 -12
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/12 17:29:02;  author: cisc;  state: Exp;  lines: +4 -1
+Fixed CloseIFF(), FreeIFF(), FreeLocalItem() and OpenIFF() with null-pointer .. iffparse seems 100% now... ;)
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/functable.c,v
+Working file: functable.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2001/07/22 00:27:49;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/goodid.c,v
+Working file: goodid.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +2 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 14:24:55;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +12 -9
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:37;  author: emm;  state: Exp;  lines: +29 -8
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/goodtype.c,v
+Working file: goodtype.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +7 -5
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:38;  author: emm;  state: Exp;  lines: +18 -6
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/headers.tmpl,v
+Working file: headers.tmpl
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/idtostr.c,v
+Working file: idtostr.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:55;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/iffparse_endtag.c,v
+Working file: iffparse_endtag.c
+head: 1.1
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 1;	selected revisions: 1
+description:
+----------------------------
+revision 1.1
+date: 2001/07/22 00:27:49;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/iffparse_init.c,v
+Working file: iffparse_init.c
+head: 1.10
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 11;	selected revisions: 11
+description:
+----------------------------
+revision 1.10
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +2 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.9
+date: 2002/12/15 14:13:09;  author: piru;  state: Exp;  lines: +3 -1
+#ifndef __MORPHOS__ was missing for AROS_USERFUNC_INIT in LIB_init. Builds again.
+----------------------------
+revision 1.8
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +12 -10
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.7
+date: 2002/07/01 07:16:11;  author: cisc;  state: Exp;  lines: +8 -1
+Compile fixes and date bump.
+----------------------------
+revision 1.6
+date: 2002/05/09 17:45:02;  author: laire;  state: Exp;  lines: +2 -2
+revision fixed
+----------------------------
+revision 1.5
+date: 2002/05/08 22:45:19;  author: laire;  state: Exp;  lines: +8 -4
+removed debug and added working include/lib paths
+----------------------------
+revision 1.4
+date: 2002/05/04 20:12:45;  author: cisc;  state: Exp;  lines: +2 -2
+compile fix
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +52 -23
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:38;  author: emm;  state: Exp;  lines: +2 -1
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/iffparse_intern.h,v
+Working file: iffparse_intern.h
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +23 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:54;  author: steger;  state: Exp;  lines: +5 -0
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +18 -0
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -1
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:39;  author: emm;  state: Exp;  lines: +2 -0
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/initiff.c,v
+Working file: initiff.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:56;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/initiffasclip.c,v
+Working file: initiffasclip.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/initiffasdos.c,v
+Working file: initiffasdos.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/initstruct.h,v
+Working file: initstruct.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/lib.conf,v
+Working file: lib.conf
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/25 21:08:08;  author: emm;  state: Exp;  lines: +1 -1
+Fixed clipboard lockup (I hope)
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/libdefs.h,v
+Working file: libdefs.h
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +2 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/07/17 01:20:21;  author: cisc;  state: Exp;  lines: +1 -1
+Hopefully fixed IFFF_READ (cn_Composite wasn't set when it should have been) .. bumped date...
+----------------------------
+revision 1.3
+date: 2002/07/01 07:16:11;  author: cisc;  state: Exp;  lines: +1 -1
+Compile fixes and date bump.
+----------------------------
+revision 1.2
+date: 2001/07/25 21:08:08;  author: emm;  state: Exp;  lines: +2 -2
+Fixed clipboard lockup (I hope)
+----------------------------
+revision 1.1
+date: 2001/07/22 00:27:49;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/localitemdata.c,v
+Working file: localitemdata.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:56;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:04;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/makefile,v
+Working file: makefile
+head: 1.11
+branch:
+locks: strict
+access list:
+symbolic names:
+keyword substitution: kv
+total revisions: 11;	selected revisions: 11
+description:
+----------------------------
+revision 1.11
+date: 2002/12/15 15:33:43;  author: piru;  state: Exp;  lines: +5 -2
+fixed deps.
+----------------------------
+revision 1.10
+date: 2002/12/15 14:24:55;  author: piru;  state: Exp;  lines: +7 -3
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.9
+date: 2002/07/15 18:05:20;  author: cisc;  state: Exp;  lines: +4 -2
+build improvement
+----------------------------
+revision 1.8
+date: 2002/07/01 07:16:11;  author: cisc;  state: Exp;  lines: +1 -1
+Compile fixes and date bump.
+----------------------------
+revision 1.7
+date: 2002/05/08 22:45:19;  author: laire;  state: Exp;  lines: +6 -4
+removed debug and added working include/lib paths
+----------------------------
+revision 1.6
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +49 -49
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.5
+date: 2002/05/04 20:29:09;  author: cisc;  state: Exp;  lines: +1 -1
+IFFSIZE_UNKNOWN works fine here, but datatypes.library causes a hit, let's add debug so we can track it...
+----------------------------
+revision 1.4
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -2
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.3
+date: 2001/07/24 19:38:14;  author: emm;  state: Exp;  lines: +1 -1
+Some small adjustments.
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:40;  author: emm;  state: Exp;  lines: +2 -2
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/22 00:27:49;  author: nadir;  state: Exp;
+added missing files
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/mmakefile.src,v
+Working file: mmakefile.src
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/openclipboard.c,v
+Working file: openclipboard.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/openiff.c,v
+Working file: openiff.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.6
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.5
+date: 2002/10/29 13:36:45;  author: steger;  state: Exp;  lines: +2 -2
+had to undo the previous change, because on Amiga
+OpenIFF() apparently succeeds even if file is not
+an IFF file. Grrr! But it still smells like there's
+something wrong in this function :-\
+----------------------------
+revision 1.4
+date: 2002/10/28 19:30:39;  author: steger;  state: Exp;  lines: +2 -2
+if GetChunkHeader returned an error don't overwrite the err
+variable when sending the iff stream handler IFFCMD_CLEANUP
+msg.
+----------------------------
+revision 1.3
+date: 2002/05/12 17:29:02;  author: cisc;  state: Exp;  lines: +6 -1
+Fixed CloseIFF(), FreeIFF(), FreeLocalItem() and OpenIFF() with null-pointer .. iffparse seems 100% now... ;)
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +21 -11
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:05;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/parentchunk.c,v
+Working file: parentchunk.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:56;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/parseiff.c,v
+Working file: parseiff.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -2
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.3
+date: 2001/07/25 21:08:09;  author: emm;  state: Exp;  lines: +10 -5
+Fixed clipboard lockup (I hope)
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:40;  author: emm;  state: Exp;  lines: +9 -1
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:11;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/popchunk.c,v
+Working file: popchunk.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +5 -5
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +6 -4
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/propchunk.c,v
+Working file: propchunk.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +3 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/07/17 06:29:08;  author: cisc;  state: Exp;  lines: +3 -3
+Fixed completely broken chunk-handler additions.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +3 -8
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/propchunks.c,v
+Working file: propchunks.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/prophooks.c,v
+Working file: prophooks.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +34 -17
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +4 -4
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +5 -5
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/pushchunk.c,v
+Working file: pushchunk.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +3 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/readchunkbytes.c,v
+Working file: readchunkbytes.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +8 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:01;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:01;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/readchunkrecords.c,v
+Working file: readchunkrecords.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +4 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/setlocalitempurge.c,v
+Working file: setlocalitempurge.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +4 -2
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 14:24:56;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:02;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/stopchunk.c,v
+Working file: stopchunk.c
+head: 1.6
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 7;	selected revisions: 7
+description:
+----------------------------
+revision 1.6
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +3 -3
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.5
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.4
+date: 2002/07/17 06:29:08;  author: cisc;  state: Exp;  lines: +3 -3
+Fixed completely broken chunk-handler additions.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:07;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/stopchunks.c,v
+Working file: stopchunks.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/stophook.c,v
+Working file: stophook.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:09;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/stoponexit.c,v
+Working file: stoponexit.c
+head: 1.7
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 8;	selected revisions: 8
+description:
+----------------------------
+revision 1.7
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +5 -5
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.6
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.5
+date: 2002/07/17 06:29:08;  author: cisc;  state: Exp;  lines: +3 -3
+Fixed completely broken chunk-handler additions.
+----------------------------
+revision 1.4
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.3
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +1 -3
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.2
+date: 2001/07/24 19:20:41;  author: emm;  state: Exp;  lines: +29 -2
+Fixed bad return value of the end-of-context hook.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/storeitemincontext.c,v
+Working file: storeitemincontext.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 14:24:56;  author: piru;  state: Exp;  lines: +3 -1
+Added -Wall, fixed warnings.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +4 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:10;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/storelocalitem.c,v
+Working file: storelocalitem.c
+head: 1.3
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 4;	selected revisions: 4
+description:
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:11;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/writechunkbytes.c,v
+Working file: writechunkbytes.c
+head: 1.5
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 6;	selected revisions: 6
+description:
+----------------------------
+revision 1.5
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +4 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.4
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.3
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +3 -1
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:11;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/writechunkrecords.c,v
+Working file: writechunkrecords.c
+head: 1.4
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 5;	selected revisions: 5
+description:
+----------------------------
+revision 1.4
+date: 2002/12/15 21:45:23;  author: piru;  state: Exp;  lines: +4 -1
+Imrpoved debug and used it to trace problem where failed OpenIFF() could leave stream positioned somewhere else than the beginning (broke multiview for some jpegs for example). Fixed by explicit seek to file beginning at dosstream IFFCMD_CLEANUP. Bumped to 50.2.
+----------------------------
+revision 1.3
+date: 2002/12/15 12:58:55;  author: steger;  state: Exp;  lines: +2 -2
+Sync with AROS code. With exception of iffparse_init.c
+only thing that changed for you is the aros copyright
+header.
+----------------------------
+revision 1.2
+date: 2001/08/26 21:58:11;  author: nadir;  state: Exp;  lines: +0 -0
+Georg Steger's reintegration with AROS. we are synced now
+----------------------------
+revision 1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:28:59;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/amiga.h,v
+Working file: aros/amiga.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/asmcall.h,v
+Working file: aros/asmcall.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:15;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:15;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/config.h,v
+Working file: aros/config.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2001/07/24 19:38:33;  author: emm;  state: Exp;  lines: +2 -0
+Some small adjustments.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/debug.h,v
+Working file: aros/debug.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/07/01 07:16:11;  author: cisc;  state: Exp;  lines: +3 -0
+Compile fixes and date bump.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/libcall.h,v
+Working file: aros/libcall.h
+head: 1.2
+branch:
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 3;	selected revisions: 3
+description:
+----------------------------
+revision 1.2
+date: 2002/05/08 21:07:40;  author: emm;  state: Exp;  lines: +2 -2
+Some fixes. Now works with toolmanager.
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:14;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:14;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/machine.h,v
+Working file: aros/machine.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:16;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/options.h,v
+Working file: aros/options.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:18;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:18;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
+
+RCS file: /home/cvs/morphos/iffparse/aros/system.h,v
+Working file: aros/system.h
+head: 1.1
+branch: 1.1.1
+locks: strict
+access list:
+symbolic names:
+	beta: 1.1.1.1
+	aros: 1.1.1
+keyword substitution: kv
+total revisions: 2;	selected revisions: 2
+description:
+----------------------------
+revision 1.1
+date: 2001/07/21 23:29:18;  author: nadir;  state: Exp;
+branches:  1.1.1;
+Initial revision
+----------------------------
+revision 1.1.1.1
+date: 2001/07/21 23:29:18;  author: nadir;  state: Exp;  lines: +0 -0
+imported src
+=============================================================================
