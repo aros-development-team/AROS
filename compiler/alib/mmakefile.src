@@ -54,10 +54,12 @@ FILES		:= \
 	setsuperattrs \
 	timedelay
 
-OBJS := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
-DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+%prepare_replace compiler/alib
 
-#MM linklibs : setup includes
+OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+DEPS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).d)
+
+#MM linklibs : setup includes alib-$(ARCH)
 linklibs : $(LIB) $(STARTUP)
 	@$(NOP)
 
