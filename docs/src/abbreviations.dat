@@ -53,6 +53,7 @@ prefs;Preferences
 ramdrive;Ramdrive.device
 realtime;RealTime.library
 reqtools;ReqTools.library
+rexxsupport;RexxSupport.library
 rexxsyslib;RexxSys.library
 rexxmast;RexxMast Program
 timer;Timer.device
