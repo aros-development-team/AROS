@@ -58,6 +58,7 @@ FUNCS := \
 	writechunkrecords
 
 USE_AMIGALIB := yes
+USE_CLIB_STATIC := yes
 
 #MM- workbench-libs-iffparse : setup includes linklibs workbench-libs-iffparse-module
 %make_module_setup mmake=workbench-libs-iffparse
