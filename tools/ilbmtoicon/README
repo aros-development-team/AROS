@@ -1,0 +1,91 @@
+ilbmtoicon
+
+  converts one or two ilbm image files into an amiga icon file
+  which will contain both old style (pre 3.5) image data and
+  new style image data (IFF ICON attached at the end).
+  
+usage
+
+  ilbmtoicon < DESCRIPTIONFILE outfile
+  
+icondescription file
+
+  Is a text file which should be named ICONNAME.info.src.
+  It can contain the following options in the form of
+  KEYWORD = KEYVALUE. 
+  
+   IMAGE1 = <string>
+   
+     IFF ILBM filename to be used as first icon image.
+     Required.
+     
+   IMAGE2 = <string>
+   
+     IFF ILBM filename to be used for second icon image.
+     Optional.
+     
+     
+   TYPE = (DISK|DRAWER|TOOL|PROJECT|GARBAGE|DEVICE|KICK|APPICON)
+   
+     Icon type. Optional. Default is TOOL.
+     
+   DEFAULTTOOL = <string>
+   
+     Optional.
+    
+   STACK = <integer>
+   
+     Stack. Optional. Default is 4096.
+
+   TOOLTYPE = <string>
+   
+     Can be used multiple times. Optional.
+         
+   ICONLEFTPOS = <integer>
+   
+     X Position of icon. Optional. Default is 0x80000000 (NO_ICON_POSITION).
+     
+   ICONTOPPOS = <integer>
+   
+     Y Position of icon. Optional. Default is 0x80000000 (NO_ICON_POSITION).
+     
+
+   DRAWERDATA = <anystring>
+   
+     Attach DrawerData struct to Icon. Optional.
+   
+   DRAWERLEFTPOS = <integer>
+   
+     X Position of Drawer Window. Optional.
+      
+   DRAWERTOPPOS = <integer>
+   
+     Y Position of Drawer Window. Optional.
+     
+   DRAWERWIDTH = <integer>
+   
+     Width of Drawer Window. Optional.
+     
+   DRAWERHEIGHT = <integer>
+   
+     Height of Drawer Window. Optional.
+     
+   DRAWERVIEWLEFT = <integer>
+   
+     X View Position of icons inside drawer window. Optional.
+     
+   DRAWERVIEWTOP = <integer>
+   
+     Y View Position of icons inside drawer window. Optional.
+     
+   DRAWERSHOW = (DEFAULT|ICONS|ALL)
+   
+     Show icons only for files having icons or for all files.
+     Optional. Default = DEFAULT = only icons.
+    
+   DRAWERSHOWAS = (DEFAULT|ICON|TEXT_NAME|TEXT_DATE|TEXT_SIZE|TEXT_TYPE)
+   
+     View Mode. Icons or Text sorted by name/date/size/type.
+     Optional. Default = DEFAULT = inherit from parent view
+     mode.
+     

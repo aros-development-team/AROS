@@ -26,6 +26,10 @@
 #define ID_BODY MAKE_ID('B','O','D','Y')
 #define ID_BMHD MAKE_ID('B','M','H','D')
 
+#define ID_ICON MAKE_ID('I','C','O','N')
+#define ID_FACE MAKE_ID('F','A','C','E')
+#define ID_IMAG MAKE_ID('I','M','A','G')
+
 #define CMP_NONE     0
 #define CMP_BYTERUN1 1
 
@@ -72,7 +76,7 @@ struct ILBMImage
     struct BitMapHeader bmh;
     unsigned char   	*planarbuffer, *chunkybuffer;
     LONG    	    	cmapentries, bpr, totdepth;
-    UBYTE   	    	red[256], green[256], blue[256];
+    UBYTE   	    	rgb[256][3];
 };
 
 /****************************************************************************************/
@@ -533,6 +537,10 @@ static void scanimage(struct ILBMImage *img)
 {
     WORD i;
     
+    have_bmhd = 0;
+    have_cmap = 0;
+    have_body = 0;
+    
     for(;;)
     {
     	ULONG id;
@@ -587,9 +595,9 @@ static void scanimage(struct ILBMImage *img)
 		
 		for(i = 0; i < img->cmapentries; i++)
 		{
-		    img->red[i]   = getbyte();
-		    img->green[i] = getbyte();
-		    img->blue[i]  = getbyte();
+		    img->rgb[i][0] = getbyte();
+		    img->rgb[i][1] = getbyte();
+		    img->rgb[i][2] = getbyte();
 		    size -= 3;
 		}
 	    	
@@ -1179,6 +1187,282 @@ static void writeimage(struct ILBMImage *img)
 
 /****************************************************************************************/
 
+struct facechunk
+{
+    UBYTE fc_width;
+    UBYTE fc_height;
+    UBYTE fc_flags;
+    UBYTE fc_aspect;
+    UBYTE fc_maxpalettebytes[2];
+};
+
+/****************************************************************************************/
+
+struct imagchunk
+{
+    UBYTE ic_transparentcolour;
+    UBYTE ic_numcolours;
+    UBYTE ic_flags;
+    UBYTE ic_imageformat;
+    UBYTE ic_paletteformat;
+    UBYTE ic_depth;
+    UBYTE ic_numimagebytes[2];
+    UBYTE ic_numpalettebytes[2];
+};
+
+/****************************************************************************************/
+
+static LONG writefacechunk(void)
+{
+    struct facechunk fc;
+    LONG palbytes;
+    
+#undef ACT_STRUCT
+#define ACT_STRUCT fc
+
+    writelong(ID_FACE);
+    writelong(sizeof(struct facechunk));
+    
+    SET_BYTE(fc_width, img1.bmh.bmh_Width - 1);
+    SET_BYTE(fc_height, img1.bmh.bmh_Height - 1);
+    SET_BYTE(fc_flags, 0);
+    SET_BYTE(fc_aspect, 0); // 0x11);
+    
+    palbytes = (img1.cmapentries > img2.cmapentries) ? img1.cmapentries : img2.cmapentries;
+    palbytes = palbytes * 3;
+    
+    SET_WORD(fc_maxpalettebytes, palbytes - 1);
+    
+    if (fwrite(&fc, 1, sizeof(fc), outfile) != sizeof(fc))
+    {
+    	cleanup("Error writing face chunk!", 1);
+    }
+    
+    return sizeof(struct facechunk) + 8;
+}
+
+/****************************************************************************************/
+
+/* createrle() based on ModifyIcon source by Dirk Stöcker */
+
+/****************************************************************************************/
+
+static char * createrle(unsigned long depth, unsigned char *dtype, LONG *dsize, unsigned long size,
+    	    	        unsigned char *src)
+{
+  int i, j, k;
+  unsigned long bitbuf, numbits;
+  unsigned char *buf;
+  long ressize, numcopy, numequal;
+
+  buf = malloc(size * 2);
+  if (!buf) return NULL;
+  
+  numcopy = 0;
+  numequal = 1;
+  bitbuf = 0;
+  numbits = 0;
+  ressize = 0;
+  k = 0; /* the really output pointer */
+  for(i = 1; numequal || numcopy;)
+  {
+    if(i < size && numequal && (src[i-1] == src[i]))
+    {
+      ++numequal; ++i;
+    }
+    else if(i < size && numequal*depth <= 16)
+    {
+      numcopy += numequal; numequal = 1; ++i;
+    }
+    else
+    {
+      /* care for end case, where it maybe better to join the two */
+      if(i == size && numcopy + numequal <= 128 && (numequal-1)*depth <= 8)
+      {
+        numcopy += numequal; numequal = 0;
+      }
+      if(numcopy)
+      {
+        if((j = numcopy) > 128) j = 128;
+        bitbuf = (bitbuf<<8) | (j-1);
+        numcopy -= j;
+      }
+      else
+      {
+        if((j = numequal) > 128) j = 128;
+        bitbuf = (bitbuf<<8) | (256-(j-1));
+        numequal -= j;
+        k += j-1;
+        j = 1;
+      }
+      buf[ressize++] = (bitbuf >> numbits);
+      while(j--)
+      {
+        numbits += depth;
+        bitbuf = (bitbuf<<depth) | src[k++];
+        if(numbits >= 8)
+        {
+          numbits -= 8;
+          buf[ressize++] = (bitbuf >> numbits);
+        }
+      }
+      if(i < size && !numcopy && !numequal)
+      {
+        numequal = 1; ++i;
+      }
+    }
+  }
+  if(numbits)
+    buf[ressize++] = bitbuf << (8-numbits);
+
+  if(ressize > size) /* no RLE */
+  {
+    ressize = size;
+    *dtype = 0;
+    for(i = 0; i < size; ++i)
+      buf[i]= src[i];
+  }
+  else
+    *dtype = 1;
+    
+  *dsize = ressize;
+  
+  return buf;
+}
+
+/****************************************************************************************/
+
+static LONG writeimagchunk(struct ILBMImage *img)
+{
+    struct imagchunk ic;  
+    LONG imagsize;
+    UBYTE skippalette = 0;
+    UBYTE *pal, *gfx;
+    LONG palsize, gfxsize;
+    UBYTE palpacked, gfxpacked;
+    
+    imagsize = sizeof(struct imagchunk);
+    
+    /* if this is second image check whether palette is identical to
+       the one of first image */
+       
+    if (img == &img2)
+    {
+    	if (img1.cmapentries == img2.cmapentries)
+	{
+	    WORD i;
+	    
+	    for (i = 0; i < img1.cmapentries; i++)
+	    {
+	    	if (img1.rgb[i][0] != img2.rgb[i][0]) break;
+	    	if (img1.rgb[i][1] != img2.rgb[i][1]) break;
+	    	if (img1.rgb[i][2] != img2.rgb[i][2]) break;		
+	    }
+	    
+	    if (i == img1.cmapentries) skippalette = 1;
+	}
+    }
+    
+    if (!skippalette)
+    {
+    	pal = createrle(8,
+	    	    	&palpacked,
+			&palsize,
+			img->cmapentries * 3,
+			(unsigned char *)img->rgb);
+			
+    	imagsize += palsize;
+    }
+    
+    gfx = createrle(img->bmh.bmh_Depth,
+    	    	    &gfxpacked,
+		    &gfxsize,
+		    img->bmh.bmh_Width * img->bmh.bmh_Height,
+		    img->chunkybuffer);
+		
+    imagsize += gfxsize;
+    
+#undef ACT_STRUCT
+#define ACT_STRUCT ic
+
+    SET_BYTE(ic_transparentcolour, 0);
+    if (skippalette)
+    {
+    	SET_BYTE(ic_numcolours, 0);
+	SET_BYTE(ic_flags, 1); /* HasTransparentColour */
+	SET_BYTE(ic_paletteformat, 0);
+	SET_WORD(ic_numpalettebytes, 0);
+    }
+    else
+    {
+    	SET_BYTE(ic_numcolours, img->cmapentries - 1);
+	SET_BYTE(ic_flags, 3); /* HasTransparentColour + HasPalette */
+	SET_BYTE(ic_paletteformat, palpacked);
+    	SET_WORD(ic_numpalettebytes, palsize - 1);
+    }
+    
+    SET_BYTE(ic_imageformat, gfxpacked);
+    SET_BYTE(ic_depth, img->bmh.bmh_Depth);
+    SET_WORD(ic_numimagebytes, gfxsize - 1);
+    
+    writelong(ID_IMAG);
+    writelong(imagsize);
+    
+    if (fwrite(&ic, 1, sizeof(ic), outfile) != sizeof(ic))
+    {
+    	cleanup("Error writing imag chunk!", 1);
+    }
+
+    if (fwrite(gfx, 1, gfxsize, outfile) != gfxsize)
+    {
+    	cleanup("Error write gfx data in imag chunk!", 1);
+    }
+    
+    if (!skippalette)
+    {
+	if (fwrite(pal, 1, palsize, outfile) != palsize)
+	{
+    	    cleanup("Error write palette data in imag chunk!", 1);
+	}    	
+    }
+    
+    if (imagsize & 1)
+    {
+    	UBYTE dummy = 0;
+	
+	if (fwrite(&dummy, 1, 1, outfile) != 1)
+	{
+	    cleanup("Error writing imag chunk!", 1);
+	}
+	
+	imagsize++;
+    }
+    
+    return imagsize + 8;
+}
+
+/****************************************************************************************/
+
+static void write35data(void)
+{
+    LONG formsize = 4;
+    LONG formsizeseek;
+    
+    writelong(ID_FORM);
+    formsizeseek = ftell(outfile);
+    writelong(0x12345678);
+    writelong(ID_ICON);
+    
+    formsize += writefacechunk();
+    formsize += writeimagchunk(&img1);
+    if (image2option) formsize += writeimagchunk(&img2);
+    
+    fseek(outfile, formsizeseek, SEEK_SET);
+    writelong(formsize);
+}
+
+/****************************************************************************************/
+
 static void writeicon(void)
 {
     struct diskobject dobj;
@@ -1213,6 +1497,8 @@ static void writeicon(void)
     /* toolwindow would have to be saved in between here if there is any */
     
     writenewdrawerdata();
+    
+    write35data();
     
 }
 
