@@ -316,9 +316,9 @@ int find_smp_config (void)
 {
     unsigned int confAddr;
 
-    if  (confAddr = scan_for_smpconfig(0x00000000,0x400)) return confAddr;          /* Scan the bottom 1K for a signature        */
-    if	(confAddr = scan_for_smpconfig(0x0009FC00,0x400)) return confAddr;          /* Scan the top 1K of base RAM (639*0x400)   */
-    if  (confAddr = scan_for_smpconfig(0x000F0000,0x10000)) return confAddr;        /* Scan the 64K of bios                      */
+    if  ((confAddr = scan_for_smpconfig(0x00000000,0x400))) return confAddr;          /* Scan the bottom 1K for a signature        */
+    if	((confAddr = scan_for_smpconfig(0x0009FC00,0x400))) return confAddr;          /* Scan the top 1K of base RAM (639*0x400)   */
+    if  ((confAddr = scan_for_smpconfig(0x000F0000,0x10000))) return confAddr;        /* Scan the 64K of bios                      */
 
     /*  If it is an SMP machine we should know now, unless the
         configuration is in an EISA/MCA bus machine with an
