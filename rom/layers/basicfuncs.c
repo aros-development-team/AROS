@@ -157,7 +157,7 @@ AROS_UFH8(void, CallLayerHook,
  * node structure. See AddLayersResource for more information on the basic
  * operation.
  */
-AROS_UFH2(BOOL, AllocExtLayerInfo,
+AROS_UFH2(BOOL, _AllocExtLayerInfo,
     AROS_UFHA(struct Layer_Info *, li,         A0),
     AROS_UFHA(struct LayersBase *, LayersBase, A6))
 {
@@ -175,7 +175,7 @@ AROS_UFH2(BOOL, AllocExtLayerInfo,
 /*
  * Free LayerInfo_extra.
  */
-AROS_UFH2(void, FreeExtLayerInfo,
+AROS_UFH2(void, _FreeExtLayerInfo,
     AROS_UFHA(struct Layer_Info *, li,         A0),
     AROS_UFHA(struct LayersBase *, LayersBase, A6))
 {
@@ -193,7 +193,7 @@ AROS_UFH2(void, FreeExtLayerInfo,
 /*
  * Initialize LayerInfo_extra and save the current environment.
  */
-AROS_UFH2(ULONG, InitLIExtra,
+AROS_UFH2(ULONG, _InitLIExtra,
     AROS_UFHA(struct Layer_Info *, li,         A0),
     AROS_UFHA(struct LayersBase *, LayersBase, A6))
 {
@@ -212,7 +212,8 @@ AROS_UFH2(ULONG, InitLIExtra,
      * Save the current environment, so we can drop back in case of
      * an error.
      */
-    return setjmp(lie->lie_JumpBuf);
+    // return setjmp(lie->lie_JumpBuf);
+    return 0;
 }
 
 AROS_UFH2(void, ExitLIExtra,
@@ -245,7 +246,7 @@ AROS_UFH2(BOOL, SafeAllocExtLI,
     if(li->Flags & NEWLAYERINFO_CALLED)
 	return TRUE;
 
-    if(AllocExtLayerInfo(li, LayersBase))
+    if(_AllocExtLayerInfo(li, LayersBase))
 	return TRUE;
 
     UnlockLayerInfo(li);
@@ -261,7 +262,7 @@ AROS_UFH2(void, SafeFreeExtLI,
     AROS_UFHA(struct LayersBase *, LayersBase, A6))
 {
     if(!(li->Flags & NEWLAYERINFO_CALLED))
-	FreeExtLayerInfo(li, LayersBase);
+	_FreeExtLayerInfo(li, LayersBase);
 
     UnlockLayerInfo(li);
 }

@@ -52,7 +52,7 @@
 
     D(bug("ThinLayerInfo(li @ $%lx)\n", li));
 
-    FreeExtLayerInfo(li, LayersBase);
+    _FreeExtLayerInfo(li, LayersBase);
 
     li->Flags &= ~NEWLAYERINFO_CALLED;
 

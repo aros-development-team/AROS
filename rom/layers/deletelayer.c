@@ -9,7 +9,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <graphics/layers.h>
-
+#include <graphics/regions.h>
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -19,7 +19,7 @@
 
     NAME */
 #include <proto/layers.h>
-//#include "layers_intern.h"
+#include "layers_intern.h"
 #include <aros/libcall.h>
 
 	AROS_LH2(LONG, DeleteLayer,
@@ -43,6 +43,7 @@
 
     BUGS
       No call to any refresh functions of any layers.
+      No support for simple layers!!!
 
     SEE ALSO
 
@@ -89,10 +90,12 @@
   
   Ok, here we go: 
   */
+  
   struct Layer_Info * LI = LD->LayerInfo;
   struct ClipRect * DCR,  * CR;
   struct Region * R;
   struct RegionRectangle * RR;
+
   /* no one may interrupt me */
   LockLayers(LI);
 
@@ -121,15 +124,35 @@
   CR = LD->ClipRect;
   while (NULL != CR)
   {
+    BOOL status;
     struct ClipRect * _CR = CR->Next;
     if (NULL != CR->lobs)
+    {
+      /* 
+         This ClipRect of the layer is hidden. So we can simply 
+         free the bitmap data there.
+       */
       FreeBitMap(CR->BitMap);
+    }
     else
     {
-      /* Add this rectangle to the region which we might have
-         to clear later on
+      /* 
+         Add this rectangle to the region which we might have
+         to clear later on. Parts that do not have to be cleared
+         later on will be taken out further below with a call
+         to ClearRectRegion(). These parts are restored from
+         other layers.
       */
-      OrRectRegion(LD->DamageList, &CR->bounds);
+      status = OrRectRegion(LD->DamageList, &CR->bounds);
+      if (FALSE == status)
+      {
+        /* 
+           We ran out of memory. Hope this never happens, as
+           some of the CR->BitMaps might already be gone. 
+         */
+        UnlockLayers(LI);
+        return FALSE;
+      }
     }
     FreeMem(CR, sizeof(struct ClipRect));      
     CR = _CR;
@@ -138,21 +161,30 @@
      Remember: The ClipRects list is now invalid!
   */
   
-  /* there is a damagelist left and there is 
-     a layer behind */
+  /* there is a damagelist left and there is a layer behind */
+  
   if (NULL != LD->DamageList->RegionRectangle && NULL != LD->back)
   {
-    /* let's visit the layers that are behind this layer */
-    /* start out with the one immediately behind the layer
-       LD */
+    /* 
+       Let's visit the layers that are behind this layer 
+       start out with the one immediately behind the layer LD 
+     */
+     
     struct Layer * L_behind = LD->back;
     CR = L_behind -> ClipRect;
 
     while (NULL != L_behind)
     {
       CR = L_behind -> ClipRect;
+      /* go through all ClipRects of the Layer L_behind. */
       while (NULL != CR)
       {
+        /* 
+           If the ClipRect of the layer L_behind was previously
+           hidden by the deleted Layer LD then we might have to
+           make it visible if it is not hidden by yet another
+           layer.
+         */
         if (LD == CR->lobs)
         {
           struct Layer * Ltmp = internal_WhichLayer(
@@ -160,13 +192,13 @@
             CR->bounds.MinX,
             CR->bounds.MinY
           );
-          /* if this layer is now visible 
-             (it was previously hidden by the layer ld,
-              but not anymore) 
+          /* 
+              If this layer is now visible ... 
+              (it was previously hidden by the layer ld, but not anymore) 
           */
           if (Ltmp == L_behind)
-          {  /* restore the bitmap stuff found there */
-
+          {  
+            /* ... restore the bitmap stuff found there */
             BltBitMap(
               CR->BitMap,
               CR->bounds.MinX & 0x0f,
@@ -180,15 +212,34 @@
               0xff,
               NULL
              );
-            /* Free the bitmap */
+            /* 
+               Free the bitmap and clear the lobs entry 
+             */
             FreeBitMap(CR->BitMap);
             CR->BitMap = NULL;
-            CR->lobs = NULL;
-            /* leave a mark for the garbage collector that
-               will combine small cliprects to larger ones */
+            CR->lobs   = NULL;
+            /* 
+               Leave a mark for the garbage collector that
+               will combine small (adjacent) cliprects to larger ones 
+             */
             CR->reserved = 1;
+            /*
+               Take this ClipRect out of the damagelist so that
+               this part will not be cleared later on. 
+             */
             ClearRectRegion(LD->DamageList, &CR->bounds);
-          } /* if */  
+          } /* if */
+          else /* Ltmp != L_behind */
+          {
+            /* 
+               The entry in lobs of the current ClipRect says that this
+               ClipRect was previously hidden by the deleted layer, but
+               it is still hidden by yet another layer. So I have to change
+               the entry in lobs to the layer that is currently hiding this
+               part.
+             */
+            CR -> lobs = Ltmp;
+          }  
         } /* if */
         CR = CR->Next;
       } /* while */
@@ -196,9 +247,16 @@
     }
   
     /* !! this is not implemented !! */
-    /* The List of the ClipRects of the layer LD should
+    /* 
+       The List of the ClipRects of the layer LD should
        now only contain these parts that have to be cleared
        in the bitmap. 
+    */
+    /*
+        The last thing we have to do now is clear those parts of
+        the deleted layer that we not hiding anything.
+        !!! Actuall we should use EraseRect() here so the background
+        can be restored with the installed backfill hook.
     */
     R = LD->DamageList;
 
@@ -208,7 +266,7 @@
     /* check if a region is empty */
     while (NULL != RR)
     {
-
+/*
       Move(LD->rp,RR->bounds.MinX,RR->bounds.MinY);
       Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MinY);
       Draw(LD->rp,RR->bounds.MaxX,RR->bounds.MaxY);
@@ -221,7 +279,7 @@
         RR->bounds.MinY,
         RR->bounds.MaxX,
         RR->bounds.MaxY);
-
+*/
       BltBitMap(
         LD->rp->BitMap, /* don't need a source but mustn't give NULL!!!*/
         0,
@@ -240,6 +298,13 @@
   
   } /* if */
   
+  /*
+     Free 
+     - rastport
+     - damagelist 
+     - layer structure itself
+   */
+   
   FreeMem(LD->rp, sizeof(struct RastPort));
   DisposeRegion(LD->DamageList);
   FreeMem(LD, sizeof(struct Layer));

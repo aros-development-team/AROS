@@ -174,4 +174,3 @@
 
   AROS_LIBFUNC_EXIT
 } /* CreateUpfrontHookLayer */
-

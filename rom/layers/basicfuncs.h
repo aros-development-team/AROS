@@ -8,8 +8,6 @@
 
 #include <aros/asmcall.h>
 
-#define _abcdef abcdef
-
 /*
  *  Sections:
  *
@@ -61,15 +59,15 @@ AROS_UFP8(void, CallLayerHook,
 /*                               LAYERINFO                                 */
 /***************************************************************************/
 
-AROS_UFP2(BOOL, AllocExtLayerInfo,
+AROS_UFP2(BOOL, _AllocExtLayerInfo,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
-AROS_UFP2(void, FreeExtLayerInfo,
+AROS_UFP2(void, _FreeExtLayerInfo,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 
-AROS_UFP2(ULONG, InitLIExtra,
+AROS_UFP2(ULONG, _InitLIExtra,
     AROS_UFPA(struct Layer_Info *, li,         A0),
     AROS_UFPA(struct LayersBase *, LayersBase, A6));
 

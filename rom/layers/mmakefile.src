@@ -38,8 +38,12 @@ OSMODULE  := layers.library
 FILES	  := cliprectfunctions createcliprectsbehindlayer basicfuncs helpfunctions
 	
 FUNCTIONS := \
+	createbehindhooklayer		\
+	createbehindlayer		\
 	createupfronthooklayer		\
 	createupfrontlayer		\
+	deletelayer			\
+	disposelayerinfo		\
 	fattenlayerinfo			\
 	initlayers			\
 	locklayer			\
@@ -48,6 +52,7 @@ FUNCTIONS := \
 	movelayer			\
 	movelayerinfrontof		\
 	movesizelayer			\
+	newlayerinfo			\
 	thinlayerinfo			\
 	unlocklayer			\
 	unlocklayerinfo 		\

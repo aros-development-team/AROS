@@ -54,7 +54,7 @@
      0,                                                      \
      (FRIEND_BM));                                           \
                                                              \
-  BltBitMap(                                                \
+  BltBitMap(                                                 \
     bm_old,                                                  \
     (X0) - DEF_MINX + (DEF_MINX & 0x0F),                     \
     (Y0) - DEF_MINY,                                         \
@@ -107,7 +107,7 @@ struct ClipRect * Case_0(struct Rectangle * R,
                          struct BitMap * display_bm,
                          struct Layer * newlayer)
 {
-  /* first let's see wheter the area has alreay been backed up one */
+  /* first let's see whether the area has alreay been backed up one */
   if (NULL == CR->BitMap)
   {
     /* we have to back it up now because it will be hidden by the
@@ -120,6 +120,10 @@ struct ClipRect * Case_0(struct Rectangle * R,
        0,
        display_bm);
 
+    /* out of memory */
+    if (NULL == CR -> BitMap)
+      return NULL;
+      
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -181,14 +185,14 @@ struct ClipRect * Case_1(struct Rectangle * R,
   CR_New1 = (struct ClipRect *)AllocMem(sizeof(struct ClipRect),MEMF_CLEAR|MEMF_PUBLIC);
 
 
-  /* If the ClipRect with the o's already had some backed up pixels
+  /* 
+     If the ClipRect with the o's already had some backed up pixels
      in a bitmap-structure, then we have to split up the info found
      there in a bitmap which contains the info about the n's and the
      other one about the o's.
      If there were no backed up pixels so far we have to back up
      the ones that are overlapped now. This is the case for the
      part with the n's.
-
   */
 
   if (NULL != CR_New1)
@@ -231,6 +235,10 @@ struct ClipRect * Case_1(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -352,6 +360,10 @@ struct ClipRect * Case_2(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -478,6 +490,10 @@ struct ClipRect * Case_3(struct Rectangle * R,
          0,
          display_bm);
 
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
+
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -600,6 +616,10 @@ struct ClipRect * Case_4(struct Rectangle * R,
         display_bm->Depth,
         0,
         display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -728,6 +748,10 @@ struct ClipRect * Case_5(struct Rectangle * R,
          0,
          display_bm);
 
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
+
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -854,6 +878,10 @@ struct ClipRect * Case_6(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -990,6 +1018,10 @@ struct ClipRect * Case_7(struct Rectangle * R,
          0,
          display_bm);
 
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
+
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -1109,6 +1141,10 @@ struct ClipRect * Case_8(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -1233,6 +1269,10 @@ struct ClipRect * Case_9(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -1361,6 +1401,10 @@ struct ClipRect * Case_10(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -1497,6 +1541,10 @@ struct ClipRect * Case_11(struct Rectangle * R,
          0,
          display_bm);
 
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
+
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -1625,6 +1673,10 @@ struct ClipRect * Case_12(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -1763,6 +1815,10 @@ struct ClipRect * Case_13(struct Rectangle * R,
          0,
          display_bm);
 
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
+
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
       */
@@ -1899,6 +1955,10 @@ struct ClipRect * Case_14(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
@@ -2038,7 +2098,8 @@ struct ClipRect * Case_15(struct Rectangle * R,
       DEF_DO_THE_BLIT(CR_New4, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
-    /* dispose the old bitmap structure as everything
+    /* 
+       Dispose the old bitmap structure as everything
        that was backed up there is now in the two other
        bitmap structures
     */
@@ -2053,6 +2114,10 @@ struct ClipRect * Case_15(struct Rectangle * R,
          display_bm->Depth,
          0,
          display_bm);
+
+      /* out of memory */
+      if (NULL == CR->BitMap)
+        return NULL;
 
       /* and back up the information for the part with the n's
          from the info found in the display bitmap.
