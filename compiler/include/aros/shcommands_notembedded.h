@@ -182,7 +182,7 @@ DEFINE_main(name)                                              \
 	__SHA_TYPEDEF(a1);                                      \
 	__SHA_TYPEDEF(a2);                                      \
 	__SHA_TYPEDEF(a3);                                      \
-        enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
+        enum {__SHA_ENUM(a1), __SHA_ENUM(a2),                   \
 	      __SHA_ENUM(a3)};
 
 #define __AROS_SH4(name, version, help, a1, a2, a3, a4)         \
@@ -197,7 +197,7 @@ DEFINE_main(name)                                              \
 	__SHA_TYPEDEF(a2);                                      \
 	__SHA_TYPEDEF(a3);                                      \
 	__SHA_TYPEDEF(a4);                                      \
-        enum {__SHA_ENUM(a1), __SHA_ENUM(a2)                    \
+        enum {__SHA_ENUM(a1), __SHA_ENUM(a2),                   \
 	      __SHA_ENUM(a3), __SHA_ENUM(a4)};
 
 #define __AROS_SH5(name, version, help, a1, a2, a3, a4, a5)     \
