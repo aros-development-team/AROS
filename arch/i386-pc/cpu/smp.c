@@ -135,7 +135,6 @@ void parse_MP_IOAPIC (struct mpc_config_ioapic *mc, struct SMP_Definition *SMP_G
     //if (nr_ioapics >= MAX_IO_APICS)
     //{
     //    kprintf(DEBUG_NAME_STR ": CRITICAL - Max # of I/O APICs (%d) exceeded (found %d).\n",MAX_IO_APICS, nr_ioapics);
-	    //panic("Recompile kernel with bigger MAX_IO_APICS!.\n");
     //}
 
     if (!mc->mpc_apicaddr)
@@ -154,7 +153,7 @@ void parse_MP_IntSrc (struct mpc_config_intsrc *mc, struct SMP_Definition *SMP_G
     kprintf(DEBUG_NAME_STR ": Int: type %d, pol %d, trig %d, bus %d, IRQ %02x, APIC ID %x, APIC INT %02x\n",	mc->mpc_irqtype, mc->mpc_irqflag & 3, (mc->mpc_irqflag >> 2) & 3, mc->mpc_srcbus, mc->mpc_srcbusirq, mc->mpc_dstapic, mc->mpc_dstirq);
 
 #warning TODO: Replace the following print with ALERT
-    //if (++mp_irq_entries == MAX_IRQ_SOURCES)  kprintf(DEBUG_NAME_STR ": DIE HERE!!! (BUG) ");//panic("Max # of irq sources exceeded!!\n");
+    //if (++mp_irq_entries == MAX_IRQ_SOURCES)  kprintf(DEBUG_NAME_STR ": DIE HERE!!! (BUG) ");
 }
 
 void parse_MP_LIntSrc (struct mpc_config_lintsrc *mc, struct SMP_Definition *SMP_Group )
