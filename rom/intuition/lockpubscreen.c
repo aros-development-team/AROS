@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/12/07 16:15:01  chodorowski
+    Now automatically opens the Workbench screen if there is no default
+    public screen or Workbench screen and the function was called with
+    "Workbench" or NULL as an argument.
+
     Revision 1.10  2000/04/08 16:38:09  stegerg
     type cast 2nd param of FindName to (UBYTE *) to avoid
     compiler warning. Or Should instead 2nd arg of FindName()
@@ -55,11 +60,15 @@
 
 /*  FUNCTION
 
-    Prevents a public screen from closing.
+    Locks a public screen, thus preventing it from closing.
     This is useful if you want to put up a visitor window on a public screen
     and need to check some of the public screen's field first -- not locking
     the screen may lead to the public screen not existing when your visitor
     window is ready.
+
+    If you try to lock the Workbench screen or the default public screen
+    and there isn't any, the Workbench screen will be automatically opened
+    and locked.
 
     INPUTS
 
@@ -106,46 +115,53 @@
 
 *****************************************************************************/
 {
-    struct Screen *scr = NULL;
+    struct Screen *screen = NULL;
 
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    if( !name ) {
+        LockPubScreenList();
+        if( (screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen) ) {
+            ASSERT_VALID_PTR(screen);
+            GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
+        }
+        UnlockPubScreenList();
 
-    if(!name)
-    {
-	LockPubScreenList();
-	if ((scr = GetPrivIBase(IntuitionBase)->DefaultPubScreen))
-	{
-	    ASSERT_VALID_PTR(scr);
-	    GetPrivScreen(scr)->pubScrNode->psn_VisitorCount++;
-	}
-	UnlockPubScreenList();
+    } else {
+        struct PubScreenNode *psn;
+        ASSERT_VALID_PTR(name);
+
+        /* Browse the public screen list */
+        if( (psn = (struct PubScreenNode *) FindName( LockPubScreenList(), (UBYTE *)name )) ) {
+            ASSERT_VALID_PTR(psn);
+
+            /* Don't lock screens in private state */
+            if( (psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE) ) {
+                /* Increment screen lock count */
+                psn->psn_VisitorCount++;
+                screen = psn->psn_Screen;
+                ASSERT_VALID_PTR(screen);
+            }
+        }
+
+        UnlockPubScreenList();
     }
-    else
-    {
-	struct PubScreenNode *psn;
-	ASSERT_VALID_PTR(name);
 
-	/* Browse the public screen list */
-	if ((psn = (struct PubScreenNode *)FindName(LockPubScreenList(), (UBYTE *)name)))
-	{
-	    ASSERT_VALID_PTR(psn);
+    /* If no screen was found and the requested one was the Workbench screen or
+     * the default public screen, open the Workbench screen and lock it. */
+    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ))) ) {
+        OpenWorkBench();
 
-	    /* Don't lock screens in private state */
-	    if((psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE))
-	    {
-		/* Increment screen lock count */
-		psn->psn_VisitorCount++;
-		scr = psn->psn_Screen;
-		ASSERT_VALID_PTR(scr);
-	    }
-	}
-	
-	UnlockPubScreenList();
+        LockPubScreenList();
+        if( (screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen) ) {
+            ASSERT_VALID_PTR(screen);
+            GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
+        }
+        UnlockPubScreenList();
     }
-    
-    return scr;
+
+    return screen;
 
     AROS_LIBFUNC_EXIT
-} /* LociPubScreen */
+} /* LockPubScreen */
