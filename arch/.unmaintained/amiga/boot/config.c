@@ -18,6 +18,7 @@
 #include <string.h>
 
 #include <proto/exec.h>
+#include <proto/alib.h>
 #include <proto/dos.h>
 
 #include "boot.h"
