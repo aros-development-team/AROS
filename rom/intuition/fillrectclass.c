@@ -58,7 +58,7 @@ IPTR fillrect_set(Class *cl, Object *obj, struct opSet *msg)
     
     IPTR retval = 0;
     
-    while((tag = NextTagItem((const struct TagItem **)tstate)))
+    while((tag = NextTagItem((const struct TagItem **)&tstate)))
     {
         switch(tag->ti_Tag)
 	{
@@ -99,6 +99,7 @@ IPTR fillrect_draw(Class *cl, Object *obj, struct impDraw *msg)
     SetABPenDrMd(rp, IM_FGPEN((struct Image *)obj),
     		     IM_BGPEN((struct Image *)obj),
 		     data->mode);
+	
     SetAfPt(rp, (APTR)((struct Image *)obj)->ImageData, data->apatsize);
 
     x1 = ((struct Image *)obj)->LeftEdge + ((struct impDraw *)msg)->imp_Offset.X;
