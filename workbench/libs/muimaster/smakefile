@@ -37,7 +37,7 @@ CLASSESOBJS= \
   objs/classes/window.o \
   objs/classes/text.o
 
-all: dirs objs/frame.o objs/support.o objs/prefs.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS) test
+all: dirs objs/frame.o objs/imspec.o objs/support.o objs/prefs.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS) test
 
 dirs:
   execute  <<
@@ -52,6 +52,9 @@ dirs:
 
 objs/frame.o: frame.c
   sc $(CFLAGS) frame.c objname=$@
+
+objs/imspec.o: imspec.c
+  sc $(CFLAGS) imspec.c objname=$@
 
 objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
@@ -164,9 +167,9 @@ objs/classes/text.o: classes/text.c
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
 
-test: objs/test.o objs/frame.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
+test: objs/test.o objs/frame.o objs/imspec.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
-objs/test.o objs/frame.o objs/prefs.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
+objs/test.o objs/imspec.o objs/frame.o objs/prefs.o objs/support.o objs/textengine.o $(LIBOBJS) $(CLASSESOBJS)
 <
 
 clean:

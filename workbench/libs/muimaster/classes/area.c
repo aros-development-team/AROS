@@ -30,10 +30,14 @@
 #include <proto/muimaster.h>
 #endif
 
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 extern struct Library *MUIMasterBase;
 
 #include "support.h"
 #include "mui.h"
+#include "imspec.h"
 
 #define MYDEBUG 1
 #include "debug.h"
@@ -152,10 +156,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->mad_Flags = MADF_FILLAREA | MADF_SHOWME | MADF_SHOWSELSTATE;
     data->mad_HorizWeight = data->mad_VertWeight = 100;
     data->mad_InputMode = MUIV_InputMode_None;
-#warning FIXME: mad_Background
-#if 0
     data->mad_Background = (struct MUI_ImageSpec *)-1;
-#endif
 
     /* parse initial taglist */
 
@@ -163,12 +164,9 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-#warning FIXME: mad_Background
-#if 0
 	    case MUIA_Background:
 		data->mad_Background = (struct MUI_ImageSpec *)tag->ti_Data;
 		break;
-#endif
 	    case MUIA_ControlChar:
 		data->mad_ControlChar = tag->ti_Data;
 		break;
@@ -250,27 +248,12 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
-#warning FIXME: mad_Background
-#if 0
     if (data->mad_Background != (struct MUI_ImageSpec *)-1) /* own bg ? */
-    {
-	data->mad_Background =
-	    zune_image_spec_to_structure((ULONG)data->mad_Background);
-/*    		g_print("created img %p (%s) for area %p\n", data->mad_Background, */
-/*  			zune_imspec_to_string(data->mad_Background), obj); */
-    }
-    else
-    {
-	data->mad_Background = NULL; /* will be filled by parent */
-    }
+	data->mad_Background = zune_image_spec_to_structure((ULONG)data->mad_Background);
+    else data->mad_Background = NULL; /* will be filled by parent */
 
-    if ((data->mad_Flags & MADF_SHOWSELSTATE)
-	&& (data->mad_InputMode != MUIV_InputMode_None))
-    {
-/*  	g_print("mad_SelBack for obj %p\n", obj); */
-	data->mad_SelBack = zune_imspec_copy(__zprefs.images[MUII_SelectedBack]);
-    }
-#endif
+    if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
+	data->mad_SelBack = zune_image_spec_to_structure(MUII_SelectedBack);
 
     if ((data->mad_Frame != 0) && (data->mad_FrameTitle))
     {
@@ -305,14 +288,11 @@ static ULONG Area_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	mui_free(data->mad_FrameTitle);
     }
 
-#warning FIXME: mad_Background
-#if 0
     if (data->mad_Background)
 	zune_imspec_free(data->mad_Background);
 
     if (data->mad_SelBack)
 	zune_imspec_free(data->mad_SelBack);
-#endif
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -690,73 +670,37 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     }
 
     zframe = zune_zframe_get (&__zprefs.frames[data->mad_Frame]);
-/*
-    areaclip = MUI_AddClipping(muiRenderInfo(obj),
-			       muiRenderInfo(obj)->mri_ClipRect.x,
-			       muiRenderInfo(obj)->mri_ClipRect.y,
-			       muiRenderInfo(obj)->mri_ClipRect.width,
-			       muiRenderInfo(obj)->mri_ClipRect.height);
-*/
 
-/*
- * Background drawing
- */
-
+    /* Backgrounddrawing */
     if (data->mad_Flags & MADF_FILLAREA)
     {
-#warning FIXME: mad_Background
-#if 0
 	struct MUI_ImageSpec *background;
 
-	if (!(data->mad_Flags & MADF_SELECTED))
-	    background = data->mad_Background;
-	else
-	    background = data->mad_SelBack;
-/*  g_print("AREADRAW: area=(%s) bg=%p\n", zune_area_to_string(obj), */
-/*  	background); */
+	if (!(data->mad_Flags & MADF_SELECTED)) background = data->mad_Background;
+	else background = data->mad_SelBack;
+
 	if (data->mad_TitleText)
 	{
-	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.y,
+	    int y = MAX(muiRenderInfo(obj)->mri_ClipRect.MinY,
 			_top(obj) + zframe->ythickness
 			+ data->mad_TitleText->height / 2);
 	    zune_draw_image(data->mad_RenderInfo, background,
-			    muiRenderInfo(obj)->mri_ClipRect.x, y,
-			    muiRenderInfo(obj)->mri_ClipRect.width,
-			    MIN(muiRenderInfo(obj)->mri_ClipRect.height,
+			    muiRenderInfo(obj)->mri_ClipRect.MinY, y,
+			    muiRenderInfo(obj)->mri_ClipRect.MaxX - muiRenderInfo(obj)->mri_ClipRect.MinX + 1,
+			    MIN(muiRenderInfo(obj)->mri_ClipRect.MaxY - muiRenderInfo(obj)->mri_ClipRect.MinY + 1,
 				_bottom(obj) - y),
 			    _left(obj), _top(obj) + data->mad_TitleText->height / 2, 0);
 	}
 	else
 	{
 	    zune_draw_image(data->mad_RenderInfo, background,
-			    muiRenderInfo(obj)->mri_ClipRect.x,
-			    muiRenderInfo(obj)->mri_ClipRect.y,
-			    muiRenderInfo(obj)->mri_ClipRect.width,
-			    muiRenderInfo(obj)->mri_ClipRect.height,
+                           _left(obj),_top(obj),_width(obj),_height(obj),
+/*			    muiRenderInfo(obj)->mri_ClipRect.MinX, // RECHECK: This won't work
+			    muiRenderInfo(obj)->mri_ClipRect.MinY,
+			    muiRenderInfo(obj)->mri_ClipRect.MaxX - muiRenderInfo(obj)->mri_ClipRect.MinX + 1,
+			    muiRenderInfo(obj)->mri_ClipRect.MaxY - muiRenderInfo(obj)->mri_ClipRect.MinY + 1,*/
 			    _left(obj), _top(obj), 0);
 	}
-#else
-	struct Rectangle *r = &data->mad_RenderInfo->mri_ClipRect;
-
-	SetAPen(data->mad_RenderInfo->mri_RastPort,
-	        data->mad_RenderInfo->mri_Pens[MPEN_BACKGROUND]);
-
-/*	if (data->mad_TitleText)
-	{
-	    int y = MAX(r->y,
-			_top(obj) + zframe->ythickness
-			+ data->mad_TitleText->height / 2);
-	    RectFill(data->mad_RenderInfo->mri_RastPort,
-			    r->x, y,
-			    r->width,
-			    MIN(r->height, _bottom(obj) - y));
-	}
-	else*/
-	{
-	    /* clipping should be calculated */
-	    RectFill(_rp(obj),_mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
-	}
-#endif
     }
 
 /*
@@ -1013,20 +957,13 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     area_update_data(data);
     muiRenderInfo(obj) = msg->RenderInfo;
 
-#warning FIXME: mad_Background
-#if 0
-/*      g_print("mSetup Area %p, background %p\n", obj, data->mad_Background); */
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
-/*      g_print("mSetup Area %p, background now %p\n", obj, data->mad_Background); */
 
     if (data->mad_Flags & MADF_SHOWSELSTATE
 	&& data->mad_InputMode != MUIV_InputMode_None)
     {
-/*  	g_print("mSetup Area %p, selback %p\n", obj, data->mad_SelBack); */
 	zune_imspec_setup(&data->mad_SelBack, muiRenderInfo(obj));
-/*  	g_print("mSetup Area %p, selback now %p\n", obj, data->mad_SelBack); */
     }
-#endif
 
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
@@ -1100,21 +1037,13 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
     }
 
-#warning FIXME: mad_Background
-#if 0
     if (data->mad_Flags & MADF_SHOWSELSTATE
 	&& data->mad_InputMode != MUIV_InputMode_None)
     {
-/*  	g_print("mCleanup Area %p, selback %p\n", obj, data->mad_SelBack); */
 	zune_imspec_cleanup(&data->mad_SelBack, muiRenderInfo(obj));
-/*  	g_print("mCleanup Area %p, selback now %p\n", obj, data->mad_SelBack); */
     }
 
-/*      g_print("mCleanup Area %p, background %p\n", obj, data->mad_Background); */
     zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
-/*      g_print("mCleanup Area %p, background now %p\n", obj, data->mad_Background); */
-#endif
-
     return TRUE;
 }
 
