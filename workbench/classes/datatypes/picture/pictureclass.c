@@ -685,7 +685,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
    */
   if(pd->Remap)
   {
-   unsigned int BM_Width, BM_Height;
+   unsigned int BM_Width, BM_Height, BM_Width16;
    unsigned int DestDepth;
    unsigned int DestNumColors;
    struct RastPort SrcRP, DestRP;
@@ -701,6 +701,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
    }
 
    BM_Width=pd->bmhd.bmh_Width;
+   BM_Width16=(BM_Width + 15) & ~15; /* multiple of 16 */
    BM_Height=pd->bmhd.bmh_Height;
 
    DestDepth=GetBitMapAttr(pd->TheScreen->RastPort.BitMap, BMA_DEPTH);
@@ -764,7 +765,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     return(0);
    }
 
-   pd->ChunkyBuffer=AllocVec(BM_Width*BM_Height, MEMF_ANY | MEMF_CLEAR);
+   pd->ChunkyBuffer=AllocVec(BM_Width16*BM_Height, MEMF_ANY | MEMF_CLEAR);
    if(!pd->ChunkyBuffer)
    {
     ReleaseSemaphore(&si->si_Lock);
@@ -778,13 +779,24 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
    /*
     *  planare BitMap in einen chunky Buffer auslesen
     */
+
+#ifdef _AROS
+   for(i=0; i<BM_Height; i++)
+   {
+     /* AROS ReadPixelLine/Array8 does not need a temprp */
+     
+     ReadPixelLine8(&SrcRP, 0, i, BM_Width, &pd->ChunkyBuffer[i * BM_Width16], NULL);
+     
+   }
+#else
    for(i=0; i<BM_Height; i++)
    {
     for(j=0; j<BM_Width; j++)
     {
-     pd->ChunkyBuffer[i*BM_Width+j]=ReadPixel(&SrcRP, j, i);
+     pd->ChunkyBuffer[i*BM_Width16+j]=ReadPixel(&SrcRP, j, i);
     }
    }
+#endif
 
    /*
     *  ColorMap bestimmen
@@ -811,11 +823,20 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     /*
      *  Farbanzahl im Histogramm ermitteln
      */
-    for(i=0; i<(BM_Width*BM_Height); i++)
-    {
-     TheHist[pd->ChunkyBuffer[i]].Count++;
+    
+    { 
+    	UBYTE *cb = pd->ChunkyBuffer;
+    
+	for(i = 0; i < BM_Height;i++)
+	{
+	    for(j = 0; j < BM_Width; j++)
+	    {
+	    	TheHist[cb[j]].Count++;
+	    }
+	    cb += BM_Width16;
+	}
     }
-
+    
     /*
      *  Duplikate im Histogramm ausmerzen
      */
@@ -912,10 +933,19 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
    /*
     *  ChunkyBuffer remappen
     */
-   for(i=0; i<(BM_Width*BM_Height); i++)
-   {
-    pd->ChunkyBuffer[i]=pd->SparseTable[pd->ChunkyBuffer[i]];
-   }
+    
+    { 
+    	UBYTE *cb = pd->ChunkyBuffer;
+    
+	for(i = 0; i < BM_Height;i++)
+	{
+	    for(j = 0; j < BM_Width; j++)
+	    {
+	    	cb[j] = pd->SparseTable[cb[j]];
+	    }
+	    cb += BM_Width16;
+	}
+    }
 
    /*
     *  C2P vom ChunkyBuffer auf DestBM
@@ -923,7 +953,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
    InitRastPort(&DestRP);
    DestRP.BitMap=pd->DestBM;
 
-   WriteChunkyPixels(&DestRP, 0, 0, BM_Width-1, BM_Height-1, pd->ChunkyBuffer, BM_Width);
+   WriteChunkyPixels(&DestRP, 0, 0, BM_Width-1, BM_Height-1, pd->ChunkyBuffer, BM_Width16);
 
 #ifdef AROS
    DeinitRastPort(&SrcRP);
