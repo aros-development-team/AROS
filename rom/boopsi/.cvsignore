@@ -1,6 +1,5 @@
 *.s
 *.map
-*.err
 mmakefile
 libdefs.h
 endtag.c

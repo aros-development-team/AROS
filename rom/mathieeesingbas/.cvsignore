@@ -3,5 +3,4 @@
 libdefs.h
 makefile
 mmakefile
-*.err
 functions.[ch]

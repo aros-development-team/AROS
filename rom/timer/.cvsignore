@@ -4,5 +4,4 @@ functions.[ch]
 libdefs.h
 *.s
 *.map
-*.err
 functable.c

@@ -1,5 +1,4 @@
 mmakefile
-*.err
 *.map
 libdefs.h
 expansion_functable.c

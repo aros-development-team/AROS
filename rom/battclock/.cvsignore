@@ -1,5 +1,4 @@
 mmakefile
-*.err
 *.bak
 libdefs.h
 functions.[ch]

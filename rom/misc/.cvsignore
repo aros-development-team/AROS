@@ -1,4 +1,3 @@
 mmakefile
-*.err
 libdefs.h
 endtag.c

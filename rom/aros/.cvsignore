@@ -1,6 +1,5 @@
 *.s
 *.map
-*.err
 makefile
 libdefs.h
 *functable.c

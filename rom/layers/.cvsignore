@@ -1,6 +1,5 @@
 makefile
 mmakefile
-*.err
 *.s
 *.map
 libdefs.h

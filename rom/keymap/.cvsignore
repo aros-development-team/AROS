@@ -3,4 +3,3 @@ endtag.c
 functable.c
 libdefs.h
 *.map
-*.err
