@@ -37,7 +37,7 @@ IPTR Poppen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 			       InnerSpacing(4,4),
 			       MUIA_Background, MUII_ButtonBack,
 			       MUIA_InputMode, MUIV_InputMode_RelVerify,
-			       TAG_MORE, msg->ops_AttrList);
+			       TAG_MORE, (IPTR)msg->ops_AttrList);
 
     if (!obj) return FALSE;
     
@@ -90,14 +90,14 @@ IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     	data->wnd = WindowObject,
 	  MUIA_Window_Title, (IPTR)data->wintitle,
           MUIA_Window_Activate, TRUE,
-    	    WindowContents, VGroup,
-		Child, data->penadjust = PenadjustObject,
+    	    WindowContents, (IPTR)VGroup,
+		Child, (IPTR)data->penadjust = PenadjustObject,
 		    MUIA_CycleChain, 1,
-		    MUIA_Penadjust_Spec, penspec,
+		    MUIA_Penadjust_Spec, (IPTR)penspec,
 		    End,
-		Child, HGroup,
-		    Child, ok_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Ok"),
-		    Child, cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel"),
+		Child, (IPTR)HGroup,
+		    Child, (IPTR)ok_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Ok"),
+		    Child, (IPTR)cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel"),
 		    End,
 		End,
 	    End;
