@@ -66,6 +66,7 @@ FUNCTIONS	:= \
 	getgbuffers \
 	getrgb32 \
 	getrgb4 \
+	getrpattrsa \
 	getoutlinepen \
 	getsprite \
 	gfxassociate \
