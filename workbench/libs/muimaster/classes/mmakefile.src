@@ -28,7 +28,8 @@ USER_LIBS   := amiga rom m mui
 ##MM     workbench-classes-zune-scale \
 #MM     workbench-classes-zune-scrollgroup \
 #MM     workbench-classes-zune-settingsgroup \
-#MM     workbench-classes-zune-virtgroup
+#MM     workbench-classes-zune-virtgroup \
+#MM     workbench-classes-zune-volumelist
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
@@ -52,7 +53,8 @@ USER_LIBS   := amiga rom m mui
 #MM     workbench-classes-zune-scale-clean \
 #MM     workbench-classes-zune-scrollgroup-clean \
 #MM     workbench-classes-zune-settingsgroup-clean \
-#MM     workbench-classes-zune-virtgroup-clean
+#MM     workbench-classes-zune-virtgroup-clean \
+#MM     workbench-classes-zune-volumelist-clean
 
 #MM workbench-classes-zune-aboutmui : includes
 %build_module \
@@ -228,6 +230,14 @@ USER_LIBS   := amiga rom m mui
     modname=Virtgroup modtype=mui files=virtgroup \
     conffile=virtgroup.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_VIRTGROUP=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-volumelist : includes
+%build_module \
+    mmake=workbench-classes-zune-volumelist \
+    modname=Volumelist modtype=mui files=volumelist \
+    conffile=volumelist.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_VOLUMELIST=0" \
     uselibs=$(USER_LIBS)
 
 %common

@@ -96,6 +96,7 @@ CLASSESOBJS= \
   objs/classes/string.o \
   objs/classes/text.o \
   objs/classes/virtgroup.o \
+  objs/classes/volumelist.o \
   objs/classes/window.o
 
 NLISTOBJS= \
@@ -420,6 +421,9 @@ objs/classes/text.o: classes/text.c
 
 objs/classes/virtgroup.o: classes/virtgroup.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/virtgroup.c objname=$@
+
+objs/classes/volumelist.o: classes/volumelist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/volumelist.c objname=$@
 
 objs/classes/window.o: classes/window.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/window.c objname=$@
