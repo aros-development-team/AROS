@@ -445,7 +445,7 @@ dos00015;2;matthias;Write CreateDir
 dos00016;2;matthias;Write CurrentDir
 dos00017;2;matthias;Write IoErr
 dos00018;2;iaint;Write CreateProc
-dos00019;0;digulla;Write Exit
+dos00019;1;SDuvan;Write Exit
 dos00020;2;matthias;Write LoadSeg
 dos00021;2;matthias;Write UnLoadSeg
 dos00022;2;iaint;Write DeviceProc
@@ -570,8 +570,8 @@ dos00140;2;bergers;Write SetVar
 dos00141;2;bergers;Write GetVar
 dos00142;2;bergers;Write DeleteVar
 dos00143;2;bergers;Write FindVar
-dos00144;0;digulla;Write CliInitNewcli
-dos00145;0;digulla;Write CliInitRun
+dos00144;1;SDuvan;Write CliInitNewcli
+dos00145;1;SDuvan;Write CliInitRun
 dos00146;2;turrican;Write WriteChars
 dos00147;2;matthias;Write PutStr
 dos00148;2;matthias;Write VPrintf
