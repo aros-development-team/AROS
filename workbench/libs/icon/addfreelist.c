@@ -69,7 +69,7 @@
 	if (!(memlist = AllocMem (sizeof(struct IconInternalMemList),
 		    MEMF_ANY)
 	) )
-	    {dprintf("addfreelist(): return FALSE\n"); return FALSE;}
+	    return FALSE;
 
 	memlist->ml_NumEntries = 0;
 
@@ -86,7 +86,6 @@
 
     freelist->fl_NumFree ++;
 
-    dprintf("addfreelist(): return FALSE\n");
     return TRUE;
     AROS_LIBFUNC_EXIT
 } /* AddFreeList */
