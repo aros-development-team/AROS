@@ -52,6 +52,206 @@
 
 /****************************************************************************/
 
+void buttong_render(Class *cl, Object *o, struct gpRender *msg)
+{
+    /* We will let the AROS gadgetclass test if it is safe to render */
+    if ( DoSuperMethodA(cl, o, (Msg)msg) != 0)
+    {
+	UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
+	struct RastPort *rp = msg->gpr_RPort;
+	struct IBox container;
+
+	GetGadgetIBox(o, msg->gpr_GInfo, &container);
+
+	if (container.Width <= 1 || container.Height <= 1)
+	    return;
+
+	/* clear gadget */
+	if (EG(o)->Flags & GFLG_SELECTED)
+	    SetAPen(rp, pens[FILLPEN]);
+	else
+	    SetAPen(rp, pens[BACKGROUNDPEN]);
+	SetDrMd(rp, JAM1);
+	RectFill(rp,
+	    container.Left,
+	    container.Top,
+	    container.Left + container.Width - 1,
+	    container.Top + container.Height - 1);
+
+	if ((EG(o)->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
+	{
+	    /* draw border */
+	    if ((EG(o)->SelectRender != NULL ) &&  (EG(o)->Flags & GFLG_SELECTED))
+		DrawBorder(rp,
+		    ((struct Border *)EG(o)->SelectRender),
+		    container.Left,
+		    container.Top);
+	    else if (EG(o)->GadgetRender != NULL)
+	        DrawBorder(rp,
+		    ((struct Border *)EG(o)->GadgetRender),
+		    container.Left,
+		    container.Top);
+
+	    /* print label */
+	    printgadgetlabel(cl, o, msg);
+	}
+	else /* GFLG_GADGIMAGE set */
+	{
+	    if ((EG(o)->SelectRender != NULL) &&
+		(EG(o)->Flags & GFLG_SELECTED)) /* render selected image */
+	    {
+		/* center image position, we assume image top and left is 0 */
+	        ULONG x = container.Left + ((container.Width / 2) -
+		    (IM(EG(o)->SelectRender)->Width / 2));
+		ULONG y = container.Top + ((container.Height / 2) -
+		    (IM(EG(o)->SelectRender)->Height / 2));
+
+		DrawImageState(rp,
+		    IM(EG(o)->SelectRender),
+		    x, y,
+		    IDS_SELECTED,
+		    msg->gpr_GInfo->gi_DrInfo );
+	    }
+	    else if ( EG(o)->GadgetRender != NULL ) /* render normal image */
+	    {
+	        /* center image position, we assume image top and left is 0 */
+	        ULONG x = container.Left + ((container.Width / 2) -
+		    (IM(EG(o)->GadgetRender)->Width / 2));
+		ULONG y = container.Top + ((container.Height / 2) -
+		    (IM(EG(o)->GadgetRender)->Height / 2));
+
+		DrawImageState(rp,
+		    IM(EG(o)->GadgetRender),
+		    x, y,
+		    ((EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
+		    msg->gpr_GInfo->gi_DrInfo);
+	    }
+	}
+
+	if ( EG(o)->Flags & GFLG_DISABLED )
+	{
+	    UWORD pattern[] = { 0x8888, 0x2222 };
+
+	    SetDrMd( rp, JAM1 );
+	    SetAPen( rp, pens[SHADOWPEN] );
+	    SetAfPt( rp, pattern, 1);
+
+	    /* render disable pattern */
+	    RectFill(rp,
+		container.Left,
+		container.Top,
+		container.Left + container.Width - 1,
+		container.Top + container.Height - 1 );
+	}
+    }
+}
+
+IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
+{
+    IPTR retval = GMR_MEACTIVE;
+    struct GadgetInfo *gi = msg->gpi_GInfo;
+
+    if (gi)
+    {
+	struct InputEvent *ie = ((struct gpInput *)msg)->gpi_IEvent;
+
+	switch( ie->ie_Class )
+	{
+	case IECLASS_RAWMOUSE:
+	    switch( ie->ie_Code )
+	    {
+	    case SELECTUP:
+	        if( EG(o)->Flags & GFLG_SELECTED )
+		{
+		    struct RastPort *rp;
+
+		    /* mouse is over gadget */
+		    EG(o)->Flags &= ~GFLG_SELECTED;
+
+		    if ((rp = ObtainGIRPort(gi)))
+		    {
+			DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+			ReleaseGIRPort(rp);
+		    }
+		    retval = GMR_NOREUSE | GMR_VERIFY;
+		    *msg->gpi_Termination = 1UL;
+		}
+		else
+		{
+		    retval = GMR_NOREUSE;
+		    *msg->gpi_Termination = 0UL;
+		}
+		break;
+
+	    case IECODE_NOBUTTON:
+	        {
+		    struct gpHitTest gpht;
+
+		    gpht.MethodID     = GM_HITTEST;
+		    gpht.gpht_GInfo   = gi;
+		    gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
+		    gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
+
+		    /*
+		       This case handles selection state toggling when the
+		       left button is depressed and the mouse is moved
+		       around on/off the gadget bounds.
+		    */
+		    if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
+		    {
+			if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
+			{
+			    struct RastPort *rp;
+
+			    /* mouse is over gadget */
+			    EG(o)->Flags |= GFLG_SELECTED;
+
+			    if ((rp = ObtainGIRPort(gi)))
+			    {
+				DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+				ReleaseGIRPort(rp);
+			    }
+			}
+		    }
+		    else
+		    {
+			if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
+			{
+			    struct RastPort *rp;
+
+			    /* mouse is not over gadget */
+			    EG(o)->Flags &= ~GFLG_SELECTED;
+
+			    if ((rp = ObtainGIRPort(gi)))
+			    {
+				DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
+				ReleaseGIRPort(rp);
+			    }
+			}
+		    }
+		    break;
+		}
+
+	    default:
+	        retval = GMR_REUSE;
+		*((struct gpInput *)msg)->gpi_Termination = 0UL;
+		break;
+	    }
+	    break;
+
+	case IECLASS_TIMER:
+	    if (EG(o)->Flags & GFLG_SELECTED)
+		DoMethod(o, OM_NOTIFY, NULL, gi, OPUF_INTERIM);
+	    break;
+	}
+    }
+    else
+        retval = GMR_NOREUSE;
+
+    return retval;
+}
+
+/****************************************************************************/
 
 #undef IntuitionBase
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
@@ -69,136 +269,7 @@ AROS_UFH3(static IPTR, dispatch_buttongclass,
     switch(msg->MethodID)
     {
     case GM_RENDER:
-	/* We will let the AROS gadgetclass test if it is safe to render */
-	if ( DoSuperMethodA(cl, o, msg) != 0)
-	{
-	    UWORD *pens = ((struct gpRender *)msg)->gpr_GInfo->gi_DrInfo->dri_Pens;
-	    struct RastPort *rp = ((struct gpRender *)msg)->gpr_RPort;
-	    struct IBox container;
-
-	    GetGadgetIBox(o, ((struct gpRender *)msg)->gpr_GInfo, &container);
-
-	    if (container.Width <= 1 || container.Height <= 1)
-		return(retval);
-
-	    if ( EG(o)->Flags & GFLG_SELECTED )
-	    {
-		SetAPen( rp, pens[FILLPEN] );
-	    }
-	    else
-	    {
-		SetAPen( rp, pens[BACKGROUNDPEN] );
-	    } /* if */
-
-	    SetDrMd( rp, JAM1 );
-
-	    RectFill( rp,
-		container.Left,
-		container.Top,
-		container.Left + container.Width - 1,
-		container.Top + container.Height - 1
-	    );
-
-	    if ( (EG(o)->Flags & GFLG_GADGIMAGE) == 0 )
-	    {
-		if ( ( EG(o)->SelectRender != NULL ) && ( EG(o)->Flags & GFLG_SELECTED ) )
-		{
-		    DrawBorder(rp, ((struct Border *)EG(o)->SelectRender), container.Left, container.Top );
-		}
-		else if ( EG(o)->GadgetRender != NULL )
-		{
-		    DrawBorder(rp, ((struct Border *)EG(o)->GadgetRender), container.Left, container.Top );
-		}
-	    }
-	    else if ( EG(o)->Flags & GFLG_GADGIMAGE )
-	    {
-		if ( ( EG(o)->SelectRender != NULL ) && ( EG(o)->Flags & GFLG_SELECTED ) )
-		{
-		    /* center image position, we assume image top and left is 0 */
-		    ULONG x = container.Left + ((container.Width / 2) - (IM(EG(o)->SelectRender)->Width / 2));
-		    ULONG y = container.Top + ((container.Height / 2) - (IM(EG(o)->SelectRender)->Height / 2));
-
-		    DrawImageState( rp,
-			IM(EG(o)->SelectRender),
-			x, y,
-			( (EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-			((struct gpRender *)msg)->gpr_GInfo->gi_DrInfo );
-		}
-		else if ( EG(o)->GadgetRender != NULL )
-		{
-		    /* center image position, we assume image top and left is 0 */
-		    ULONG x = container.Left + ((container.Width / 2) - (IM(EG(o)->GadgetRender)->Width / 2));
-		    ULONG y = container.Top + ((container.Height / 2) - (IM(EG(o)->GadgetRender)->Height / 2));
-
-		    DrawImageState( rp,
-			IM(EG(o)->GadgetRender),
-			x, y,
-			( (EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-			((struct gpRender *)msg)->gpr_GInfo->gi_DrInfo );
-		}
-	    }
-
-	    switch (EG(o)->Flags & GFLG_LABELMASK)
-	    {
-		case GFLG_LABELITEXT:
-		    PrintIText( rp, EG(o)->GadgetText, container.Left, container.Top );
-		    break;
-
-		case GFLG_LABELSTRING:
-		    if( EG(o)->GadgetText != NULL )
-		    {
-			ULONG len;
-
-			if ((len = strlen ((STRPTR) EG(o)->GadgetText)) > 0UL)
-			{
-			    ULONG x;
-			    ULONG y;
-
-			    x = container.Left + (container.Width / 2);
-			    x -= LabelWidth (rp, (STRPTR) EG(o)->GadgetText, len, IntuitionBase) / 2;
-
-			    y = container.Top + (container.Height / 2) + rp->Font->tf_Baseline;
-			    y -= rp->Font->tf_YSize / 2;
-
-			    SetAPen (rp, pens[TEXTPEN] );
-
-			    Move (rp, x, y );
-			    RenderLabel (rp, (STRPTR) EG(o)->GadgetText, len, IntuitionBase);
-			}
-		    }
-		    break;
-
-		case GFLG_LABELIMAGE:
-		    {
-			/* center image position, we assume image top and left is 0 */
-			ULONG x = container.Left + ((container.Width / 2) - (IM(EG(o)->GadgetText)->Width / 2));
-			ULONG y = container.Top + ((container.Height / 2) - (IM(EG(o)->GadgetText)->Height / 2));
-
-			DrawImageState( rp,
-			    IM(EG(o)->GadgetText),
-			    x, y,
-			    ( (EG(o)->Flags & GFLG_SELECTED) ? IDS_SELECTED : IDS_NORMAL ),
-			    ((struct gpRender *)msg)->gpr_GInfo->gi_DrInfo );
-		    }
-		    break;
-	    }
-
-	    if ( EG(o)->Flags & GFLG_DISABLED )
-	    {
-		UWORD pattern[] = { 0x8888, 0x2222 };
-
-		SetDrMd( rp, JAM1 );
-		SetAPen( rp, pens[SHADOWPEN] );
-		SetAfPt( rp, pattern, 1);
-
-		/* render disable pattern */
-		RectFill( rp,
-		    container.Left,
-		    container.Top,
-		    container.Left + container.Width - 1,
-		    container.Top + container.Height - 1 );
-	    } /* if */
-	} /* if */
+        buttong_render(cl, o, (struct gpRender *)msg);
 	break;
 
     case GM_LAYOUT:
@@ -224,109 +295,13 @@ AROS_UFH3(static IPTR, dispatch_buttongclass,
 		    DoMethod(o, OM_NOTIFY, gi, NULL, OPUF_INTERIM);
 
 		    retval = GMR_MEACTIVE;
-		} /* if */
-	    } /* if */
-	} /* if */
+		}
+	    }
+	}
 	break;
 
     case GM_HANDLEINPUT:
-	{
-	    struct GadgetInfo *gi = ((struct gpInput *)msg)->gpi_GInfo;
-
-	    if (gi)
-	    {
-		struct InputEvent *ie = ((struct gpInput *)msg)->gpi_IEvent;
-
-		retval = GMR_MEACTIVE;
-
-		switch( ie->ie_Class )
-		{
-		case IECLASS_RAWMOUSE:
-		    switch( ie->ie_Code )
-		    {
-		    case MENUDOWN:
-			retval = GMR_REUSE;
-			*((struct gpInput *)msg)->gpi_Termination = 0UL;
-			break;
-
-		    case SELECTUP:
-			if( EG(o)->Flags & GFLG_SELECTED )
-			{
-			    retval = GMR_NOREUSE | GMR_VERIFY;
-			    *((struct gpInput *)msg)->gpi_Termination = 1UL;
-			}
-			else
-			{
-			    retval = GMR_NOREUSE;
-			    *((struct gpInput *)msg)->gpi_Termination = 0UL;
-			} /* if */
-			break;
-
-		    case IECODE_NOBUTTON: {
-			struct gpHitTest gpht;
-
-			gpht.MethodID	  = GM_HITTEST;
-			gpht.gpht_GInfo   = gi;
-			gpht.gpht_Mouse.X = ((struct gpInput *)msg)->gpi_Mouse.X;
-			gpht.gpht_Mouse.Y = ((struct gpInput *)msg)->gpi_Mouse.Y;
-
-			/*
-			    This case handles selection state toggling when the
-			    left button is depressed and the mouse is moved
-			    around on/off the gadget bounds.
-			*/
-			if ( DoMethodA(o, (Msg)&gpht) == GMR_GADGETHIT )
-			{
-			    if ( (EG(o)->Flags & GFLG_SELECTED) == 0 )
-			    {
-				struct RastPort *rp;
-
-				/* mouse is over gadget */
-				EG(o)->Flags |= GFLG_SELECTED;
-
-				if ((rp = ObtainGIRPort(gi)))
-				{
-				    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
-				    ReleaseGIRPort(rp);
-				} /* if */
-			    } /* if */
-			}
-			else
-			{
-			    if ( (EG(o)->Flags & GFLG_SELECTED) != 0 )
-			    {
-				struct RastPort *rp;
-
-				/* mouse is not over gadget */
-				EG(o)->Flags &= ~GFLG_SELECTED;
-
-				if ((rp = ObtainGIRPort(gi)))
-				{
-				    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_UPDATE);
-				    ReleaseGIRPort(rp);
-				} /* if */
-			    } /* if */
-			} /* if */
-			break; }
-
-		    } /* switch */
-
-		    break;
-
-		case IECLASS_TIMER:
-		    if (EG(o)->Flags & GFLG_SELECTED)
-		    {
-			DoMethod(o, OM_NOTIFY, NULL, gi, OPUF_INTERIM);
-		    } /* if */
-		    break;
-		} /* switch */
-	    }
-	    else
-	    {
-		/* if we get here something is *really* wrong */
-		retval = GMR_NOREUSE;
-	    } /* if */
-	} /* if */
+        retval = buttong_handleinput(cl, o, (struct gpInput *)msg);
 	break;
 
     case GM_GOINACTIVE:
