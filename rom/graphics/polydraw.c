@@ -49,15 +49,10 @@
 
     LONG i;
     WORD x, y;
-    
+
     if (count < 2) return;
     
-    x = *polyTable++;
-    y = *polyTable++;
-    
-    Move(rp, x, y);
-    
-    for(i = 1; i < count; i++)
+    for(i = 0; i < count; i++)
     {
     	x = *polyTable++;
 	y = *polyTable++;
