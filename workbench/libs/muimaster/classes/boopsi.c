@@ -374,7 +374,7 @@ ULONG Boopsi__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 	}
     }
 
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return 0;
 }
 
 BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
