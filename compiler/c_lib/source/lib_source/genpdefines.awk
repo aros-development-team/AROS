@@ -48,8 +48,8 @@ BEGIN {
 
     BASENAME=toupper(basename);
 
-    print "#ifndef DEFINES_"BASENAME"_PROTOS_H"
-    print "#define DEFINES_"BASENAME"_PROTOS_H"
+    print "#ifndef DEFINES_"BASENAME"_PRIVATE_PROTOS_H"
+    print "#define DEFINES_"BASENAME"_PRIVATE_PROTOS_H"
     print ""
     print "/*"
     print "    Copyright © 1995-2003, The AROS Development Team. All rights reserved."
@@ -66,48 +66,10 @@ BEGIN {
     print "#   include <exec/types.h>"
     print "#endif"
     print ""
-
-    file = "headers.tmpl"
-    doprint = 0;
-    emit = 0;
-
-    while ((getline < file) > 0)
-    {
-	if ($1=="##begin" && $2 == "defines")
-	    doprint = 1;
-	else if ($1=="##end" && $2 == "defines")
-	    doprint = 0;
-	else if (doprint)
-	{
-	    print;
-	    emit ++;
-	}
-    }
-
-    if (emit > 0)
-	print ""
-
-}
-#This function emits forward declarations for structures. To be used
-#when emitting inlines rather than defines
-function emit_struct(tname)
-{
-    if (match(tname,/struct.+[^ \t*]/))
-    {
-       struct_name = substr(tname,RSTART,RLENGTH);
-       match(struct_name, /[^ \t]+$/)
-       struct_name = substr(struct_name, RSTART,RLENGTH);
-
-       if (!(struct_name in structures))
-       {
-           printf "struct %s;\n", struct_name
-           structures[struct_name] = 1
-       }
-    }
 }
 /AROS_LH[0-9]/ { isprivate=0; }
 /AROS_PLH[0-9]/ { isprivate=1; }
-/AROS_LH(A|(QUAD)?[0-9])/ {
+/AROS_((LHA)|(LHQUAD)|(PLH[0-9]))/ {
     line=$0;
     isarg=match($0,/AROS_LHA/);
 
@@ -126,8 +88,6 @@ function emit_struct(tname)
 
         tname = a[1]
         fname = a[2]
-
-        #emit_struct(tname)
     }
     else
     {
@@ -178,8 +138,6 @@ function emit_struct(tname)
  	arg[narg, 2] = arg_args[2]
  	arg[narg, 3] = arg_args[3]
 
-        #emit_struct(arg_args[1])
-
         narg++
     }
 }
@@ -196,26 +154,7 @@ function emit_struct(tname)
     lvo      = a[3]
     basename = a[4]
 
-    #emit_struct(libbtp)
-
-       #this commented out code is used for emitting inlines rather than macros
-       #unused as for now. Put it after the below if()
-       #-----------------------------------------------------------------------
-       #header     = tname  " __" fname "_WB"
-       #header_len = length(header)
-
-       #printf "static __inline__\n%s(%s %s", header, libbtp, libbase
-
-       #for (t=0; t<narg; t++)
-       #{
-       #     arg_to_print = arg[t, 1] " " arg[t, 2]
-       #     printf ",\n%+*s", header_len + length (arg_to_print) + 1, arg_to_print
-       #}
-       #print ")"
-
-       #print "{"
-
-    if (lvo > firstlvo && !isprivate)
+    if (lvo > firstlvo && isprivate)
     {
         printf "#define __%s_WB(__%s", fname, libbase
         for (t=0; t<narg; t++)
@@ -319,8 +258,8 @@ function emit_struct(tname)
             print "#endif /* !NO_INLINE_STDARG */\n"
         }
    }
-    narg=0;
+   narg=0;
 }
 END {
-    print "#endif /* DEFINES_"BASENAME"_PROTOS_H */"
+    print "#endif /* DEFINES_"BASENAME"_PRIVATE_PROTOS_H */"
 }
