@@ -56,7 +56,7 @@ struct x11clbase
 
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
-#undef XSD(cl) xsd
+#undef XSD
 #undef SysBase
 #undef OOPBase
 
