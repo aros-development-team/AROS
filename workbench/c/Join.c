@@ -63,8 +63,6 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#include <stdio.h>
-
 #define ARG_TEMPLATE "FILE/M/A,AS=TO/K/A"
 #define ARG_FILE     0
 #define ARG_AS       1
@@ -120,7 +118,9 @@ int main( void )
 		}
 		else
 		{
-		    printf(", %s.\n" , getstring(STR_REMOVINGDEST));
+		    PutStr(", ");
+		    PutStr(getstring(STR_REMOVINGDEST));
+		    PutStr(".\n");
 		    DeleteFile(destination);
 		}
 	    }
@@ -177,7 +177,9 @@ int doJoin(STRPTR *files, BPTR destfile)
 	{	
 	    if(append(destfile, ap->ap_Buf) != RETURN_OK )
 	    {
-		printf("%s: %s", ERROR_HEADER, getstring(STR_ABORTED));
+		PutStr(ERROR_HEADER);
+		PutStr(": ");
+		PutStr(getstring(STR_ABORTED));
 		rc = RETURN_FAIL;
 		break;
 	    }
@@ -206,8 +208,10 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 	    {
 		if (Write(destfile, buffer, actualLength) == -1 )
 		{
-		    printf( "%s: %s.\n", ERROR_HEADER,
-			    getstring(STR_ERR_WRITING));
+		    PutStr(ERROR_HEADER);
+		    PutStr(": ");
+		    PutStr(getstring(STR_ERR_WRITING));
+		    PutStr(".\n");
 		    rc = RETURN_FAIL;
 		    
 		    break;
@@ -223,8 +227,12 @@ LONG append(BPTR destfile, STRPTR srcfilename)
 	}
 	else
 	{
-	    printf("%s: %s: '%s'\n", ERROR_HEADER,
-		   getstring(STR_ERR_OPENREAD),	srcfilename);
+	    PutStr(ERROR_HEADER);
+	    PutStr(": ");
+	    PutStr(getstring(STR_ERR_OPENREAD));
+	    PutStr(": '");
+	    PutStr(srcfilename);
+	    PutStr("'\n");
 	    
 	    rc = RETURN_FAIL;
 	}
@@ -233,7 +241,10 @@ LONG append(BPTR destfile, STRPTR srcfilename)
     }
     else
     {
-	printf("%s: %s.\n", ERROR_HEADER, getstring(STR_ERR_NOMEM));
+	PutStr(ERROR_HEADER);
+	PutStr(": ");
+	PutStr(getstring(STR_ERR_NOMEM));
+	PutStr(".\n");
 	rc = RETURN_FAIL;
     }
     
