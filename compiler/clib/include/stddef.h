@@ -12,6 +12,11 @@
 #include <sys/types.h>
 #endif
 
+#ifndef _WCHAR_T
+#define _WCHAR_T
+typedef unsigned long wchar_t;
+#endif
+ 
 #ifndef offsetof
 #define offsetof(TYPE,MEMBER)     ((size_t) &((TYPE *)0)->MEMBER)
 #endif
