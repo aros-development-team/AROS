@@ -118,7 +118,7 @@ struct JumpVec
 #endif
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
-#define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-(n*LIB_VECTSIZE)))
+#define __AROS_GETJUMPVEC(lib,n)        (&((struct JumpVec *)lib)[-(n)])
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
 #define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
@@ -130,8 +130,10 @@ struct JumpVec
 
    - The first parameter is the function name,
    - The second parameter is the basename,
+     i.e. bname is the address of a pointer to the library base,
    - The third parameter is the library vector to be called.
-     It's value must be computed by the stub generator with this code:
+
+    It's value must be computed by the stub generator with this code:
      &(__AROS_GETJUMPVEC(0, n+1)->vec), where n is the library vector position in
      the library vectors list.
 
@@ -141,10 +143,11 @@ struct JumpVec
 	".globl fname; "                       \
 	"fname : "                             \
 	"lis   11,bname@ha; "                  \
-	"la    0,bname@l(11); "                \
-	"lwz   0,vec(0); "                     \
+	"la    11,bname@l(11); "               \
+	"lwz   11, 0(11);"                     \
+	"lwz   0,vec(11); "                    \
 	"mtctr 0; "                            \
-	"bctrl;\n "                            \
+	"bctr;\n "                             \
 	"EMITSTUB(%s, %s, %d) "
 /*
    We want to activate the execstubs and preserve all registers
