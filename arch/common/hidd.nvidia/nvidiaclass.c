@@ -667,7 +667,8 @@ static void TransformCursor(struct staticdata *sd)
 
 	for(i=0; i < dwords; i++)
 	{
-	    ((UWORD*)tmp)[i] = ToRGB555(curimg[i]);
+	    if (!curimg[i]) ((UWORD*)tmp)[i] = 0;
+	    else ((UWORD*)tmp)[i] = ToRGB555(curimg[i]);
 	}
     }
 
