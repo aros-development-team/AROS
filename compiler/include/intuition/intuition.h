@@ -664,6 +664,15 @@ struct ExtNewWindow
 #define WA_HelpGroup	     (WA_Dummy + 56)
 #define WA_HelpGroupWindow   (WA_Dummy + 57)
 
+/* AROS specific tags */
+
+#define WA_Priority 	     (WA_Dummy + 100)
+#define WA_Parent   	     (WA_Dummy + 101)
+#define WA_InFrontOf	     (WA_Dummy + 102)
+#define WA_Behind   	     (WA_Dummy + 103)
+#define WA_Visible  	     (WA_Dummy + 104)
+#define WA_Shape    	     (WA_Dummy + 105)
+
 /* Flags */
 #define WFLG_SIZEGADGET     (1L<<0)
 #define WFLG_DRAGBAR	    (1L<<1)
