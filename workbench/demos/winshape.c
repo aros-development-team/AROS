@@ -1,6 +1,7 @@
 #include <intuition/intuition.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxmacros.h>
+#include <utility/tagitem.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -156,6 +157,11 @@ static void handleall(void)
 {
     struct IntuiMessage *imsg;
     BOOL quitme = FALSE;
+    struct TagItem taglist[] = {
+        {LA_DESTWIDTH  , 0                              },
+        {LA_DESTHEIGHT , 0                              },
+        {TAG_END       , 0                              }
+    };
     
     while(!quitme)
     {
@@ -169,9 +175,32 @@ static void handleall(void)
 		    break;
 	    	
 		case IDCMP_VANILLAKEY:
-		    actshape = 1 - actshape;
-		    ChangeWindowShape(win, (actshape ? NULL : shape), NULL);
-		    break;
+		    switch (imsg->Code)
+		    {
+		    
+		      case 43:
+		         /*
+		          * '+': enlarge the layer.
+		          */
+		        taglist[0].ti_Data = (win->Width*3)/2;
+		        taglist[1].ti_Data = (win->Height*3)/2;
+		        ScaleLayer(win->WLayer, taglist);
+                      break;
+
+                      case 45:
+		         /*
+		          * '-': make layer smaller.
+		          */
+		        taglist[0].ti_Data = (win->Width*2)/3;
+		        taglist[1].ti_Data = (win->Height*2)/3;
+		        ScaleLayer(win->WLayer, taglist);
+                      break;
+
+                      default:
+		        actshape = 1 - actshape;
+		        ChangeWindowShape(win, (actshape ? NULL : shape), NULL);
+		      break;
+		    }
 	    }
 	    ReplyMsg((struct Message *)imsg);
 	}
