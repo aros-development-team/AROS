@@ -14,7 +14,7 @@
 
 #include <aros/asmcall.h>
 #include "battclock_intern.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 #ifdef SysBase
 #undef SysBase

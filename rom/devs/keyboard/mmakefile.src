@@ -1,25 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := keyboard
-MODTYPE := device
-
-USER_INCLUDES := -I$(TOP)/rom/devs
-OBJDIR := $(GENDIR)/keyboard
-
-INIT_FILE := keyboard
-FILES :=
-FUNCS :=
-
-USE_FUNCTABLE := no
-USE_ENDTAG := no
-
-MAKE_SHLIB := $(SHARED_KEYBOARD)
-
 #MM- kernel-devs : kernel-keyboard-linklib
 #MM- kernel-keyboard : includes linklibs
-%make_module_setup mmake=kernel-keyboard
-%make_module mmake=kernel-keyboard
+
+USER_INCLUDES := -I$(TOP)/rom/devs
+
+%build_module_macro mmake=kernel-keyboard \
+  modname=keyboard modtype=device \
+  initfile=keyboard \
+  conffile=lib.conf \
+  genshlinklib=$(SHARED_KEYBOARD)
 
 %common
-%include_deps

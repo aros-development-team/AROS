@@ -1,35 +1,26 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-# This directory has things in a funny place.
-OBJDIR := $(GENDIR)/rom/console
-USER_INCLUDES := -I.
 
-MODNAME := console
-MODTYPE := device
-
-INIT_FILE := console
 FILES	:=  support consoleclass stdconclass consoletask
 FUNCS	:=  cdinputhandler rawkeyconvert
-
-INCLUDE_FILES := $(wildcard include/*.h)
-USE_FUNCTABLE := no
-
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
 
 #XXX Remove the next line eventually
 #MM- kernel-devs : kernel-console-linklib
 
-MAKE_SHLIB := $(SHARED_CONSOLE)
-
 #MM- kernel-console : includes linklibs
-%make_module_setup mmake=kernel-console
-%make_module_cpak
-%make_module mmake=kernel-console
+
+%build_module_macro mmake=kernel-console \
+  modname=console modtype=device \
+  initfile=console funcs=$(FUNCS) files=$(FILES) \
+  conffile=lib.conf \
+  uselibs="amiga rom" \
+  objdir=$(GENDIR)/rom/console \
+  genshlinklib=$(SHARED_CONSOLE) genfunctable=no genincludes=no
 
 #MM includes-copy
+
+INCLUDE_FILES := $(wildcard include/*.h)
 %copy_includes path=devices
 
 %common
-%include_deps
