@@ -657,11 +657,7 @@ void *params;
 			  outofmem( string );
 			  callbackstring = string;
 			  globalstring = callbackstring;
-#ifndef ADE
 			  RawDoFmt( clip, params, (VOID_FUNC)&callback, &globalstring );
-#else /* !ADE */
-			  RawDoFmt( clip, params, &callback, &globalstring );
-#endif /* !ADE */
 			  string = callbackstring;
 			  /* Free temporary space */
 			  FreeVec( clip );
@@ -1712,7 +1708,7 @@ void *params;
 			      char buffer[1024] = {0};
 			      string = strip_quotes( current->arg );
 
-#warning: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
+#warning: FIXME: flag must be one of GVF_GLOBAL_ONLY or GVF_LOCAL_ONLY???
 			      i = GetVar( string, buffer, 1023, NULL );
 
 			      FreeVec( string );

@@ -25,10 +25,6 @@
 #endif /* DEBUG */
 
 
-#ifdef ADE
-#   define IPTR int
-#endif /* ADE */
-
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>

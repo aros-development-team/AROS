@@ -9,6 +9,7 @@
 #define DEBUG 1
 #include "Installer.h"
 #include "main.h"
+#include "locale.h"
 
 #include "version.h"
 
@@ -47,7 +48,7 @@ int error = 0, grace_exit = 0;
 InstallerPrefs preferences;
 ScriptArg script;
 
-IPTR * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+IPTR args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
 UBYTE **tooltypes;
 
 /*
@@ -61,11 +62,13 @@ char *ttemp, *tstring;
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
+  Locale_Initialize();
+
   if ( argc != 0 )
   { /* Invoked from Shell */
     preferences.fromcli = TRUE;
     /* evaluate args with RDArgs(); */
-    rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
+    rda = ReadArgs( ARG_TEMPLATE, args, NULL );
     if ( rda == NULL )
     {
       PrintFault( IoErr(), INSTALLER_NAME );
@@ -309,9 +312,11 @@ int nextarg, endoffile, count;
     {
       count = Read( inputfile, &buffer[0], 1 );
       if ( count == 0 )
-	endoffile = TRUE;
+      {
+	break;
+      }
 
-      if ( !isspace( buffer[0] ) && !endoffile )
+      if ( !isspace( buffer[0] ) )
       {
 	/* This is text, is it valid ? */
 	switch( buffer[0] )
@@ -323,7 +328,9 @@ int nextarg, endoffile, count;
 			    } while ( buffer[0] != LINEFEED && count != 0 );
 			    line++;
 			    if ( count == 0 )
+			    {
 			      endoffile = TRUE;
+			    }
 			    break;
 
 	  case LBRACK	  : /* A command (...) , parse the content of braces */

@@ -185,19 +185,16 @@ char *ttemp;
   }
   else
   { /* Started from Workbench */
-      ttemp = ArgString( tooltypes, "APPNAME", NULL );
-      if (!ttemp)
-      {
-#ifdef DEBUG
-	fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
-#endif
-	set_variable( "@app-name", ttemp, 0 );
-      }
-      else
-      {
-	set_variable( "@app-name", "DemoApp", 0 );
-      }
-      set_variable( "@language", ArgString( tooltypes, "LANGUAGE", "english" ), 0 );
+    ttemp = ArgString( tooltypes, "APPNAME", NULL );
+    if (ttemp)
+    {
+      set_variable( "@app-name", ttemp, 0 );
+    }
+    else
+    {
+      set_variable( "@app-name", "DemoApp", 0 );
+    }
+    set_variable( "@language", ArgString( tooltypes, "LANGUAGE", "english" ), 0 );
   }
 
   set_variable( "@abort-button", ABORT_BUTTON, 0 );
