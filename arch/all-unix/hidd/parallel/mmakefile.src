@@ -1,9 +1,10 @@
 #$Id$
 include $(TOP)/config/make.cfg
 
-FILES       := ParallelClass ParallelUnitClass unix_funcs
+FILES       := ParallelClass ParallelUnitClass #unix_funcs
 
 USER_CFLAGS := -DAROS_USE_OOP
+OS_INCLUDES := -I$(SYS_INCLUDES) -I$(GENINCDIR)
 %build_module_macro mmake=workbench-hidd-unix-parallel \
   modname=parallel modtype=hidd \
   files=$(FILES) \
