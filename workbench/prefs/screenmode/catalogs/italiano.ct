@@ -1,0 +1,22 @@
+;
+MSG_NAME (//)
+Preferenze dello schermo
+; 
+MSG_WIDTH (//)
+\33lLarghezza:
+;
+MSG_DEFAULT (//)
+\33l_Predefinito
+;
+MSG_HEIGHT (//)
+\33lAltezza:
+;
+MSG_DEPTH (//)
+\33lProfondità:
+;
+MSG_AUTOSCROLL (//)
+\33lScorrimento automatico
+;
+MSG_SELECT (//)
+Scegli una risoluzione
+;
