@@ -1,7 +1,7 @@
 #ifndef LIBCORE_COMPILER_H
 #define LIBCORE_COMPILER_H
 /*
-**	$VER: compiler.h 37.14 (13.8.97)
+**	$VER: compiler.h 37.15 (14.8.97)
 **
 **	Compiler independent register (and SAS/C extensions) handling
 **
