@@ -147,6 +147,7 @@ BOOL running=TRUE, changed;
 					break;
 				case ID_MAIN_PARTITION_DRIVE :
 					changed = FALSE;
+					setPCPGadgetAttrs(0);
 					findPartitions(0, current_hd);
 					RemoveGList(win, mainglist, ~0);
 					clearGadgets((struct ExtGadget *)mainglist, win, -1);
@@ -172,15 +173,54 @@ BOOL running=TRUE, changed;
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_STARTCYL :
-					if (changeStartCyl(mainwin, current_hd, current_partition, msg->Code))
+					if (
+							changeStartCyl
+								(
+									mainwin,
+									current_hd,
+									current_partition,
+									(
+										(struct StringInfo *)
+											(
+												(struct Gadget *) msg->IAddress
+											)->SpecialInfo
+									)->LongInt
+								)
+						)
 						changed = TRUE;
 					break;
 				case ID_PCP_ENDCYL :
-					if (changeEndCyl(mainwin, current_hd, current_partition, msg->Code))
+					if (
+							changeEndCyl
+								(
+									mainwin,
+									current_hd,
+									current_partition,
+									(
+										(struct StringInfo *)
+											(
+												(struct Gadget *) msg->IAddress
+											)->SpecialInfo
+									)->LongInt
+								)
+						)
 						changed = TRUE;
 					break;
 				case ID_PCP_TOTALCYL :
-					if (changeTotalCyl(mainwin, current_hd, current_partition, msg->Code))
+					if (
+							changeTotalCyl
+								(
+									mainwin,
+									current_hd,
+									current_partition,
+									(
+										(struct StringInfo *)
+											(
+												(struct Gadget *) msg->IAddress
+											)->SpecialInfo
+									)->LongInt
+								)
+						)
 						changed = TRUE;
 					break;
 				case ID_PCP_TYPELV :
