@@ -24,11 +24,12 @@
 #include <aros/debug.h>
 
 #include "iconwindow.h"
+#include "wandererprefs.h"
 #include "wanderer.h"
 
-VOID LoadPrefs(VOID);
 VOID DoAllMenuNotifies(Object *strip, char *path);
 Object *FindMenuitem(Object* strip, int id);
+VOID DoDetach(VOID);
 
 extern Object *app;
 extern Object *root_iconwnd;
@@ -365,7 +366,7 @@ AROS_UFH3(void, hook_func_action,
 		    MUIA_IconWindow_IsRoot, FALSE,
 		    MUIA_IconWindow_ActionHook, (IPTR) &hook_action,
 		    MUIA_IconWindow_Drawer, (IPTR) buf,
-		End;
+                End;
 
 		if (drawerwnd)
 		{
@@ -525,6 +526,8 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
 /*** Instance Data **********************************************************/
 struct Wanderer_DATA
 {
+    Object *wd_Prefs;
+
     struct MUI_InputHandlerNode timer_ihn;
     struct MUI_InputHandlerNode notify_ihn;
     struct MsgPort *notify_port;
@@ -590,7 +593,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->notify_ihn.ihn_Signals = 1UL<<data->notify_port->mp_SigBit;
         bug("Wanderer: notify signal %ld\n", data->notify_ihn.ihn_Signals);
         data->notify_ihn.ihn_Object = self;
-        data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
+        data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleCommand;
         DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->notify_ihn);
     
     
@@ -609,7 +612,7 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         data->pnotify_ihn.ihn_Signals = 1UL<<data->pnotify_port->mp_SigBit;
         bug("Wanderer: pnotify signal %ld\n", data->pnotify_ihn.ihn_Signals);
         data->pnotify_ihn.ihn_Object = self;
-        data->pnotify_ihn.ihn_Method = MUIM_Wanderer_HandlePrefsNotify;
+        data->pnotify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
         DoMethod(self, MUIM_Application_AddInputHandler, (IPTR) &data->pnotify_ihn);
     
         data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
@@ -624,6 +627,15 @@ Object *Wanderer__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
         {
             D(bug("Wanderer: prefs notification setup FAILED\n"));
         }
+        
+        data->wd_Prefs = WandererPrefsObject, End; // FIXME: error handling
+    
+        SET(root_iconwnd, MUIA_IconWindow_Background, XGET(data->wd_Prefs, MUIA_WandererPrefs_WorkbenchBackground));
+        DoMethod
+        (
+            data->wd_Prefs, MUIM_Notify, MUIA_WandererPrefs_WorkbenchBackground, MUIV_EveryTime,
+            (IPTR) root_iconwnd, 3, MUIM_Set, MUIA_IconWindow_Background, MUIV_TriggerValue
+        );
     }
     
     return self;
@@ -649,9 +661,51 @@ IPTR Wanderer__OM_DISPOSE(Class *CLASS, Object *self, Msg message)
         DeleteMsgPort(data->pnotify_port);
         DeleteMsgPort(data->notify_port);
 	data->notify_port = NULL;
+        
+        DisposeObject(data->wd_Prefs);
     }
     
     return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
+#if 0
+IPTR Wanderer__OM_SET(Class *CLASS, Object *self, struct opSet *message)
+{
+    SETUP_INST_DATA;
+    struct TagItem *tstate = message->ops_AttrList, *tag;
+
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+            /*
+            case MUIA_Wanderer_:
+                break;
+            */
+        }
+    }
+    
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+#endif
+
+IPTR Wanderer__OM_GET(Class *CLASS, Object *self, struct opGet *message)
+{
+    SETUP_INST_DATA;
+    IPTR *store = message->opg_Storage;
+    IPTR  rv    = TRUE;
+    
+    switch (message->opg_AttrID)
+    {
+        case MUIA_Wanderer_Prefs:
+            *store = (IPTR) data->wd_Prefs;
+            break;
+            
+        default:
+            rv = DoSuperMethodA(CLASS, self, (Msg) message);
+    }
+    
+    return rv;
 }
 
 IPTR Wanderer__MUIM_Application_Execute
@@ -669,16 +723,21 @@ IPTR Wanderer__MUIM_Application_Execute
 
     /* If "Execute Command" entry is clicked open the execute window */
     DoAllMenuNotifies(root_menustrip, "RAM:");
-
+    
     /* open root window */
     DoMethod(root_iconwnd, MUIM_IconWindow_Open);
+    
+    DoDetach();
     
     DoSuperMethodA(CLASS, self, message);
     
     return TRUE;
 }
 
-IPTR Wanderer__MUIM_Wanderer_HandleTimer(Class *CLASS, Object *self, Msg message)
+IPTR Wanderer__MUIM_Wanderer_HandleTimer
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
     Object *cstate = (Object*)(((struct List*)XGET(self, MUIA_Application_WindowList))->lh_Head);
     Object *child;
@@ -686,10 +745,14 @@ IPTR Wanderer__MUIM_Wanderer_HandleTimer(Class *CLASS, Object *self, Msg message
 
     while ((child = NextObject(&cstate)))
 	set(child, MUIA_Window_ScreenTitle, (IPTR) scr_title);
-    return 0; /* irrelevant */
+    
+    return TRUE;
 }
 
-IPTR Wanderer__MUIM_Wanderer_HandleNotify(Class *CLASS, Object *self, Msg message)
+IPTR Wanderer__MUIM_Wanderer_HandleCommand
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
     SETUP_INST_DATA;
     struct WBHandlerMessage *wbhm;
@@ -839,7 +902,10 @@ IPTR Wanderer__MUIM_Wanderer_HandleNotify(Class *CLASS, Object *self, Msg messag
 }
 
 
-IPTR Wanderer__MUIM_Wanderer_HandlePrefsNotify(Class *CLASS, Object *self, Msg message)
+IPTR Wanderer__MUIM_Wanderer_HandleNotify
+(
+    Class *CLASS, Object *self, Msg message
+)
 {
     SETUP_INST_DATA;
     struct Message *notifyMessage;
@@ -851,19 +917,20 @@ IPTR Wanderer__MUIM_Wanderer_HandlePrefsNotify(Class *CLASS, Object *self, Msg m
         ReplyMsg(notifyMessage);
     }
     
-    LoadPrefs();
+    DoMethod(data->wd_Prefs, MUIM_WandererPrefs_Reload);
     
     return 0;
 }
 
 /*** Setup ******************************************************************/
-ZUNE_CUSTOMCLASS_6
+ZUNE_CUSTOMCLASS_7
 (
     Wanderer, NULL, MUIC_Application, NULL,
     OM_NEW,                          struct opSet *,
     OM_DISPOSE,                      Msg,
+    OM_GET,                          struct opGet *,
     MUIM_Application_Execute,        Msg,
     MUIM_Wanderer_HandleTimer,       Msg,
-    MUIM_Wanderer_HandleNotify,      Msg,
-    MUIM_Wanderer_HandlePrefsNotify, Msg
+    MUIM_Wanderer_HandleCommand,     Msg,
+    MUIM_Wanderer_HandleNotify,      Msg
 );

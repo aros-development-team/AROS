@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES := main support prefs wanderer iconwindow
+FILES := main support wanderer wandererprefs iconwindow
 
 #MM- workbench-system : workbench-system-wanderer
 ##MM workbench-system-wanderer : includes linklibs
