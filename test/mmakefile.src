@@ -14,6 +14,7 @@ FILES := amigademo \
 	iffparsewrite \
 	localetest \
 	matchtest \
+	mathffp \
 	messagetest \
 	newmatch \
 	scantest \
