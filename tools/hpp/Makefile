@@ -26,6 +26,11 @@ htmlparsetest : test_parse_html.o $(DEPLIBS)
 test_%.o : %.c
 	$(CC) -DTEST $(CFLAGS) -c $< -o $@
 
+test : test.html
+
+%.html : %.src
+	hpp $< -o $@
+
 depend :
 	makedepend -- $(CFLAGS) -- *.c
 
