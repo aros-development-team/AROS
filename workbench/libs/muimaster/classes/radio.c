@@ -110,7 +110,11 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    End;
 	j++;
 	grouptags[j].ti_Tag = MUIA_Group_Child;
-	grouptags[j].ti_Data = (IPTR)LLabel(entries[i]);
+	grouptags[j].ti_Data = (IPTR)TextObject,
+	    MUIA_Text_Contents, entries[i],
+	    MUIA_FramePhantomHoriz, TRUE,
+	    MUIA_Text_PreParse, "\33l",
+	    End;
 	j++;
     }
 
