@@ -18,7 +18,7 @@
 
 #include "pci.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define	HiddPCIDriverAttrBase	(PSD(cl)->hiddPCIDriverAB)
@@ -121,16 +121,6 @@ static void pcidriver_WL(OOP_Class *cl, OOP_Object *o,
     outl(orig, PCI_AddressPort);
 }
 
-static void pcidriver_WW(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_WriteConfigWord *msg)
-{
-}
-
-static void pcidriver_WB(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_WriteConfigByte *msg)
-{
-}
-
 /* Class initialization and destruction */
 
 #undef OOPBase
@@ -157,7 +147,7 @@ void free_pcidriverclass(struct pci_staticdata *psd, OOP_Class *cl)
 }
 	
 #define _NUM_ROOT_METHODS	1
-#define _NUM_PCIDRIVER_METHODS	6
+#define _NUM_PCIDRIVER_METHODS	4
 
 OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 {
@@ -175,8 +165,6 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	{ OOP_METHODDEF(pcidriver_RB),  moHidd_PCIDriver_ReadConfigByte },
 	{ OOP_METHODDEF(pcidriver_RW),  moHidd_PCIDriver_ReadConfigWord },
 	{ OOP_METHODDEF(pcidriver_RL),  moHidd_PCIDriver_ReadConfigLong },
-	{ OOP_METHODDEF(pcidriver_WB),  moHidd_PCIDriver_WriteConfigByte },
-	{ OOP_METHODDEF(pcidriver_WW),  moHidd_PCIDriver_WriteConfigWord },
 	{ OOP_METHODDEF(pcidriver_WL),  moHidd_PCIDriver_WriteConfigLong },
 	{ NULL, 0UL }
     };
