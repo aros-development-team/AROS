@@ -7,8 +7,8 @@ export CFG_NAME=$1
 source $SP/setup initial
 source $SP/mail
 
+#-- Update sources -----------------------------------------------------------
 printi "Starting nightly build on $CFG_NAME..."
-# Update sources.
 zsh $SP/update
 if [ $? != 0 ]; then
     printe "Updating sources FAILED! ABORTING SCRIPT!"
@@ -26,7 +26,7 @@ if [ $? != 0 ]; then
     exit 5
 fi
 
-# Build packages.
+#-- Build packages -----------------------------------------------------------
 failed=()
 succeeded=()
 for package in $CFG_PACKAGES; do
@@ -40,14 +40,32 @@ for package in $CFG_PACKAGES; do
     fi
 done
 
-# Cleanup.
+#-- Cleanup ------------------------------------------------------------------
 setl cleanup.log
 source $SP/cleanup
 resetl
 
+#-- Compress log files -------------------------------------------------------
+printi "Compressing log files..."
+pushd
+cd $LOG_BASE
+for file in *.log; do
+    bzip2 $file
+    md5sum $file.bz2 >$file.bz2.md5
+done
+popd
+
 STOP_TIME=$(date -u +"%H:%M")
 
-# Generate report.
+#-- Upload -------------------------------------------------------------------
+UPLOAD_START_TIME=$(date -u +"%H:%M")
+
+# Backup
+rsync -avz -e "ssh -i .ssh/id_dsa.aros-nightly-backup" Archive/ aroskity@thenostromo.com:nightly/
+
+UPLOAD_STOP_TIME=$(date -u +"%H:%M")
+
+#-- Generate report ----------------------------------------------------------
 if   [ -z $failed ]; then
     RESULT="completed successfully"
 elif [ -z $succeeded ]; then
@@ -91,15 +109,5 @@ if [ ! -z $failed ]; then
 fi
 mail_stop
 
-printi "Compressing log files..."
-pushd
-cd $LOG_BASE
-for file in *.log; do
-    bzip2 $file
-    md5sum $file.bz2 >$file.bz2.md5
-done
-popd
-
 # Prune old nightly builds
 find Archive/ -maxdepth 1 -ctime +2 | xargs rm -rf
-
