@@ -133,7 +133,7 @@ void createupfrontlayer(void)
         printf("Generating a backdrop layer.\n");
         flags |= LAYERBACKDROP;
       }
-      if (c=='s' || c=='Y')
+      if (s=='y' || s=='Y')
       {
         printf("Generating a superbitmap layer.\n");
         flags |= LAYERSUPER;
@@ -191,7 +191,7 @@ void createbehindlayer(void)
         printf("Generating a backdrop layer.\n");
         flags |= LAYERBACKDROP;
       }
-      if (c=='s' || c=='Y')
+      if (s=='y' || s=='Y')
       {
         printf("Generating a superbitmap layer.\n");
         flags |= LAYERSUPER;
