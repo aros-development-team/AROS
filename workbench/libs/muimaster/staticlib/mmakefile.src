@@ -11,7 +11,7 @@ FILES := \
     mui_newobject \
     mui_request
 
-#MM- linklibs: linklibs-mui
+#MM- linklibs-core: linklibs-mui
 #MM linklibs-mui : includes
 
 %build_linklib mmake=linklibs-mui libname=mui files=$(FILES)
