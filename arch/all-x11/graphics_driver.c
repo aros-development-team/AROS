@@ -654,6 +654,8 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 
     SetGC (rp, gc);
 
+    rp->Flags |= 0x8000;
+
     return TRUE;
 }
 
