@@ -15,7 +15,7 @@
 /*  SYNOPSIS */
 	const void * s1,
 	const void * s2,
-	int	     n)
+	size_t	     n)
 
 /*  FUNCTION
 	Compare the first n bytes of s1 and s2.
@@ -39,6 +39,6 @@
 
 ******************************************************************************/
 {
-    return memcmp(s1, s2, (size_t)n);
+    return memcmp(s1, s2, n);
 } /* bcmp */
 
