@@ -231,8 +231,7 @@ struct stat st;
 	{
 		if (S_ISDIR(st.st_mode))
 		{
-			copyDir(path, "", volume);
-			return 0;
+			return copyDir(path, "", volume);
 		}
 		else if (S_ISREG(st.st_mode))
 		{
