@@ -2208,7 +2208,7 @@ static VOID amiga2hidd_fast(APTR src_info
 	, VOID (*fillbuf_hook)()
 )
 {
-#define NUMPIX 2000 /* We can chunky2bitmap-convert 1000 pixels before writing pixarray */
+#define NUMPIX 1000 /* We can chunky2bitmap-convert 2000 pixels before writing pixarray */
 #define DEPTH 8
     
     
@@ -3456,7 +3456,12 @@ struct pattern_info
     LONG mask_xmin;
     LONG mask_ymin;
     LONG mask_bpr; /* Butes per row */
+    
+    LONG orig_xmin;
+    LONG orig_ymin;
+    
     UBYTE dest_depth;
+    
     struct GfxBase * gfxbase;
     Object *destbm;
     
@@ -3479,13 +3484,21 @@ static VOID pattern_to_buf(struct pattern_info *pi
     ULONG drmd = GetDrMd(rp);
     UBYTE *apt = (UBYTE *)rp->AreaPtrn;
     
+    LONG pattern_x, pattern_y;
+    
+    if (pi->mask)
+    {
+    	pattern_x = x_src - pi->orig_xmin + pi->mask_xmin;
+	pattern_y = y_src - pi->orig_ymin + pi->mask_ymin;
+    }
+    
 
     EnterFunc(bug("pattern_to_buf(%p, %d, %d, %d, %d, %d, %d, %p)\n"
     			, pi, x_src, y_src, x_dest, y_dest, xsize, ysize, buf ));
 			
 
     HIDD_BM_GetImage(pi->destbm, buf, x_dest, y_dest, xsize, ysize);
-			
+
     
     for (y = 0; y < ysize; y ++)
     {
@@ -3500,9 +3513,10 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	    if (pi->mask)
 	    {
 		ULONG idx, mask;
-		
-		idx = COORD_TO_BYTEIDX(x + pi->mask_xmin, y + pi->mask_ymin, pi->mask_bpr);
-		mask = XCOORD_TO_MASK(x + pi->mask_xmin);
+
+
+		idx = COORD_TO_BYTEIDX(x + pattern_x, y + pattern_y, pi->mask_bpr);
+		mask = XCOORD_TO_MASK(x + pattern_x);
 		 
 		set_pixel = pi->mask[idx] & mask;
 		 
@@ -3538,7 +3552,7 @@ static VOID pattern_to_buf(struct pattern_info *pi
 	} /* for (each column) */
 	
     } /* for (each row) */
-
+    
     
     ReturnVoid("pattern_to_buf");
 }
@@ -3645,6 +3659,7 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     pi.mask_bpr = byteCnt;
     pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
     pi.destbm	= BM_OBJ(bm);
+    
 	
     dd = GetDriverData(rp);
     
@@ -3662,6 +3677,9 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 	
 	pi.mask_xmin = 0;
 	pi.mask_ymin = 0;
+
+	pi.orig_xmin = 0;
+	pi.orig_ymin = 0;
 	
 	amiga2hidd_fast( (APTR) &pi
 		, 0, 0
@@ -3711,6 +3729,9 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 		    
 		    pi.mask_xmin = intersect.MinX - toblit.MinX;
 		    pi.mask_ymin = intersect.MinY - toblit.MinY;
+		    
+		    pi.orig_xmin = xMin;
+		    pi.orig_ymin = yMin;
 		    
 D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
 			, xMin, yMin 
