@@ -6,7 +6,7 @@
 
     NOTE: This file must compile *without* any other header !
 
-    Desc: machine.h include file for Linux/m68k
+    Desc: machine.h include file for Linux/m68k (and others?)
     Lang: english
 */
 
@@ -19,23 +19,22 @@
 #define AROS_PTRALIGN              2 /* Alignment for PTR */
 #define AROS_IPTRALIGN             2 /* Alignment for IPTR */
 #define AROS_DOUBLEALIGN           2 /* Alignment for double */
-#define AROS_WORSTALIGN            2 /* Worst case alignment */
+#define AROS_WORSTALIGN            8 /* Worst case alignment */
 
-/* ??? */
+/*
+    How much do I have to add to sp to get the address of the first
+    byte on the stack?
+*/
 #define SP_OFFSET 0
 
-/* Retain binary compatibility with AmigaOS */
-typedef ULONG BPTR;
-#define MKBADDR(a)      (((BPTR)(a))>>2)
-#define BADDR(a)        (((APTR)(a))<<2)
 /*
-    Alternative: Replace BPTRs by simple APTRs (if we can afford to loose the
-		 binary ocmpaibility)
-    #define AROS_BPTR_TYPE  APTR
-    #define MKBADDR(a)      ((APTR)(a))
-    #define BADDR(a)        (a)
+    Retain binary compatibility with AmigaOS.
+    Comment this out if you want APTRs.
 */
-
+#define AROS_BSTR_TYPE	long
+#define AROS_BPTR_TYPE	long
+#define MKBADDR(a)	(((LONG)(a)) >> 2)
+#define BADDR(a)	((APTR)((ULONG)(a) << 2))
 
 /*
     One entry in a libraries' jumptable. For assembler compatibility, the
@@ -48,8 +47,9 @@ struct JumpVec
     unsigned short jmp;
     unsigned char vec[4];
 };
+
 /* Internal macros */
-#define __AROS_ASMJMP			0x0x4EF9
+#define __AROS_ASMJMP			0x4EF9
 #define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
 #define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
 
@@ -77,10 +77,6 @@ extern void _aros_not_implemented (void);
 #define AROS_STACKSIZE	100000
 
 /* How to map function arguments to CPU registers */
-/*
-    The library base is mapped to the last argument so that it can be
-    ignored by the function.
-*/
 
 /* The registers */
 #define D0 "%d0"
@@ -97,20 +93,20 @@ extern void _aros_not_implemented (void);
 #define A3 "%a3"
 #define A4 "%a4"
 #define A5 "%a5"
-#define A6 "%a6"	/* Will this work? m68k-linux-gcc reserves a6 for the
-			   frame pointer... */
+#define A6 "%a6"	/* This will only work with m68k-linux-gcc when
+			   compiling with -O0 and -fomit-frame-pointer */
 
 /* What to do with the library base in header, prototype and call */
-#define __AROS_LH_BASE(basetype,basename)   basetype basename __asm("%a6")
-#define __AROS_LP_BASE(basetype,basename)   void *  __asm("%a6")
+#define __AROS_LH_BASE(basetype,basename)   basetype basename
+#define __AROS_LP_BASE(basetype,basename)   void *
 #define __AROS_LC_BASE(basetype,basename)   basename
 
 /* How to transform an argument in header, prototype and call */
-#define __AROS_LHA(type,name,reg)     type name __asm(reg)
-#define __AROS_LPA(type,name,reg)     type __asm(reg)
+#define __AROS_LHA(type,name,reg)     type name
+#define __AROS_LPA(type,name,reg)     type
 #define __AROS_LCA(type,name,reg)     name
-#define __AROS_UFHA(type,name,reg)    type name __asm(reg)
-#define __AROS_UFPA(type,name,reg)    type __asm(reg)
+#define __AROS_UFHA(type,name,reg)    type name
+#define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
 
 /* Prefix for library function in header, prototype and call */
@@ -120,14 +116,6 @@ extern void _aros_not_implemented (void);
 #define __AROS_UFH_PREFIX   /* eps */
 #define __AROS_UFP_PREFIX   /* eps */
 #define __AROS_UFC_PREFIX   /* eps */
-
-/* Postfix for library function in header, prototype and call */
-#define __AROS_LH_POSTFIX    /* eps */
-#define __AROS_LP_POSTFIX    /* eps */
-#define __AROS_LC_POSTFIX    /* eps */
-#define __AROS_UFH_POSTFIX   /* eps */
-#define __AROS_UFP_POSTFIX   /* eps */
-#define __AROS_UFC_POSTFIX   /* eps */
 
 /* if this is defined, all AROS_LP*-macros will expand to nothing. */
 #define __AROS_USE_MACROS_FOR_LIBCALL
