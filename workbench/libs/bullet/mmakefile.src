@@ -1,18 +1,19 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME 	:= bullet
-MODTYPE		:= library
-
 FUNCS := openengine \
     	 closeengine \
 	 setinfoa \
 	 obtaininfoa \
 	 releaseinfoa
-	 
-%libdefs_rule
 
-%make_module_setup mmake=workbench-libs-bullet
-%make_lib_includes
+# Only build the includes for bullet.library
+#MM- workbench-libs-bullet : workbench-libs-bullet-intern-includes
+#MM- workbench-libs-bullet-includes : workbench-libs-bullet-intern-includes
+
+%build_module_macro mmake=workbench-libs-bullet-intern \
+  modname=bullet modtype=library \
+  funcs=$(FUNCS) \
+  conffile=lib.conf
 
 %common
