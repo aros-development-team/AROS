@@ -404,7 +404,7 @@ UX11
     pixel = XGetPixel(image, 0, 0);
     
 LX11    
-    XFree(image);
+    XDestroyImage(image);
 UX11    
     /* Get pen number from colortab */
 
@@ -530,7 +530,7 @@ LX11
 	    
 	D(bug("image put\n"));
 
-	XFree(image);
+	XDestroyImage(image);
 UX11	
 	D(bug("image destroyed\n"));
     }
@@ -637,8 +637,8 @@ LX11
 		, msg->width, msg->height);
 	
 
-	XFree(src_image);
-	XFree(dst_image);
+	XDestroyImage(src_image);
+	XDestroyImage(dst_image);
 UX11
 	
     }
@@ -717,7 +717,7 @@ UX11
 	
     }
 LX11    
-    XFree(image);
+    XDestroyImage(image);
 UX11    
     
     ReturnVoid("X11Gfx.BitMap::GetImage");
@@ -805,7 +805,7 @@ LX11
 	, msg->width, msg->height);
 	
 	
-   XFree(image);
+   XDestroyImage(image);
 
    XFlush(data->display);
 UX11   

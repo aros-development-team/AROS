@@ -166,7 +166,7 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
     if (data->ximage)
     {
 LX11    
-    	XFree(data->ximage);
+    	XDestroyImage(data->ximage);
 UX11	
     }
 	
