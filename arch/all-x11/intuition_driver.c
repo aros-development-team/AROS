@@ -13,6 +13,7 @@
 #include "intuition_intern.h"
 #include <clib/intuition_protos.h>
 #include <clib/graphics_protos.h>
+#include <clib/aros_protos.h>
 
 static struct MsgPort * intuiReplyPort;
 
@@ -28,6 +29,37 @@ int	  GetSysScreen (void);
 extern void SetGC (struct RastPort * rp, GC gc);
 extern GC GetGC (struct RastPort * rp);
 extern void SetXWindow (struct RastPort * rp, int win);
+
+#define DEBUG			0
+#define DEBUG_OpenWindow	0
+#define DEBUG_CloseWindow	0
+#define DEBUG_ProcessXEvents	0
+
+#if DEBUG
+#   define D(x)     x
+#else
+#   define D(x)     /* eps */
+#endif
+
+#if DEBUG_ProcessXEvents
+#   define Dipxe(x) x
+#else
+#   define Dipxe(x) /* eps */
+#endif
+
+#if DEBUG_OpenWindow
+#   define Diow(x) x
+#else
+#   define Diow(x) /* eps */
+#endif
+
+#if DEBUG_CloseWindow
+#   define Dicw(x) x
+#else
+#   define Dicw(x) /* eps */
+#endif
+
+#define bug	    kprintf
 
 struct IntWindow
 {
@@ -234,6 +266,8 @@ struct Window * intui_OpenWindow (struct NewWindow * nw,
 
     XSync (sysDisplay, FALSE);
 
+    Diow(bug("Opening Window %08lx (X=%ld)\n", w, iw->iw_XWindow));
+
     return (w);
 }
 
@@ -244,6 +278,8 @@ void intui_CloseWindow (struct Window * win,
     struct Window * wptr;
 
     iw = (struct IntWindow *)win;
+
+    Dicw(bug("Closing Window %08lx (X=%ld)\n", win, iw->iw_XWindow));
 
     if (win->Descendant)
 	win->Descendant->Parent = win->Parent;
@@ -386,6 +422,8 @@ void intui_ProcessXEvents (void)
     {
 	XNextEvent (sysDisplay, &event);
 
+	Dipxe(bug("Got Event for X=%d\n", event.xany.window));
+
 	if (event.type == MappingNotify)
 	{
 	    XRefreshKeyboardMapping ((XMappingEvent*)&event);
@@ -397,6 +435,16 @@ void intui_ProcessXEvents (void)
 	    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
 		break;
 	}
+
+	if (w)
+	{
+	    Dipxe(bug("X=%d is asocciated with Window %08lx\n",
+		event.xany.window,
+		(ULONG)w));
+	}
+	else
+	    Dipxe(bug("X=%d is not asocciated with a Window\n",
+		event.xany.window));
 
 	if (!w)
 	    continue;
@@ -440,7 +488,7 @@ void intui_ProcessXEvents (void)
 	    if (count != 0)
 		break;
 
-	    im->Class = REFRESHWINDOW;
+	    im->Class = IDCMP_REFRESHWINDOW;
 	    ptr       = "REFRESHWINDOW";
 	} break;
 
@@ -566,11 +614,15 @@ void intui_ProcessXEvents (void)
 	} break;
 
 	default:
+	    ptr = NULL;
 	break;
 	} /* switch */
 
 	mpos_x = im->MouseX;
 	mpos_y = im->MouseY;
+
+	if (ptr)
+	    Dipxe(bug("Msg=%s\n", ptr));
 
 	if (im->Class)
 	{
