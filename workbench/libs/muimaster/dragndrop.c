@@ -25,6 +25,7 @@
 
 #include "dragndrop.h"
 #include "muimaster_intern.h"
+#include "support.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -53,20 +54,8 @@ struct DiskObject *GetIconTags( CONST_STRPTR name, ... )
 
 #endif
 
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#define MAX(a,b) ((a)>(b)?(a):(b))
-
 //-------------------------------------
 // List Funcs
-//-------------------------------------
-static struct MinNode *Node_Next(APTR node)
-{
-	if(node == NULL) return NULL;
-	if(((struct MinNode*)node)->mln_Succ == NULL) return NULL;
-	if(((struct MinNode*)node)->mln_Succ->mln_Succ == NULL)
-		return NULL;
-	return ((struct MinNode*)node)->mln_Succ;
-}
 //-------------------------------------
 static struct MinNode *Node_Prev(APTR node)
 {
@@ -79,14 +68,6 @@ static struct MinNode *Node_Prev(APTR node)
 //-------------------------------------
 
 //-------------------------------------
-static struct MinNode *List_First(APTR list)
-{
-	if( !((struct MinList*)list)->mlh_Head) return NULL;
-
-	if(((struct MinList*)list)->mlh_Head->mln_Succ == NULL) return NULL;
-	return ((struct MinList*)list)->mlh_Head;
-}
-//-------------------------------------
 static struct MinNode *List_Last(APTR list)
 {
 	if( !((struct MinList*)list)->mlh_TailPred) return NULL;
@@ -95,6 +76,7 @@ static struct MinNode *List_Last(APTR list)
 	return ((struct MinList*)list)->mlh_TailPred;
 }
 //-------------------------------------
+#if 0
 static ULONG List_Length(APTR list)
 {
 	struct MinNode *node = List_First(list);
@@ -116,6 +98,7 @@ static struct MinNode *List_Find(APTR list, ULONG num)
 	}
 	return node;
 }
+#endif
 //-------------------------------------
 
 struct DragNDrop
@@ -179,12 +162,12 @@ STATIC VOID List_Sort_Mode_1( struct MinList *list )
 		notfinished = FALSE;
 
 		/* Get first node */
-		if(( first = (struct BitMapNode*)List_First(list)))
+		if(( first = List_First(list)))
 		{
 			struct BitMapNode *second;
 
 			/* One bubble sort round */
-			while(( second = (struct BitMapNode *)Node_Next(first)))
+			while(( second = Node_Next(first)))
 			{
 				BOOL sort;
 				if(first->bmn_Top > second->bmn_Top) sort=TRUE;
@@ -202,6 +185,7 @@ STATIC VOID List_Sort_Mode_1( struct MinList *list )
 	}
 }
 //-------------------------------------
+#if 0
 STATIC VOID List_Sort_Mode_2( struct MinList *list )
 {
 	BOOL notfinished=TRUE;
@@ -215,12 +199,12 @@ STATIC VOID List_Sort_Mode_2( struct MinList *list )
 		notfinished = FALSE;
 
 		/* Get first node */
-		if(( first = (struct BitMapNode*)List_First(list)))
+		if(( first = List_First(list)))
 		{
 			struct BitMapNode *second;
 
 			/* One bubble sort round */
-			while(( second = (struct BitMapNode *)Node_Next(first)))
+			while(( second = Node_Next(first)))
 			{
 				BOOL sort;
 				if(first->bmn_Top > second->bmn_Top) sort=TRUE;
@@ -237,6 +221,7 @@ STATIC VOID List_Sort_Mode_2( struct MinList *list )
 		}
 	}
 }
+#endif
 //-------------------------------------
 STATIC VOID List_Sort_Mode_3( struct MinList *list )
 {
@@ -251,12 +236,12 @@ STATIC VOID List_Sort_Mode_3( struct MinList *list )
 		notfinished = FALSE;
 
 		/* Get first node */
-		if(( first = (struct BitMapNode*)List_First(list)))
+		if(( first = List_First(list)))
 		{
 			struct BitMapNode *second;
 
 			/* One bubble sort round */
-			while(( second = (struct BitMapNode *)Node_Next(first)))
+			while(( second = Node_Next(first)))
 			{
 				BOOL sort;
 				if(first->bmn_Left > second->bmn_Left) sort=TRUE;
@@ -390,6 +375,7 @@ STATIC LONG SafeBltBitMap( struct BitMap *srcBitMap, long xSrc, long ySrc,
 	{
 		return BltBitMap( srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm, mask, tempA );
 	}
+	return 0;
 }
 
 //-------------------------------------
@@ -433,7 +419,7 @@ STATIC VOID BltBackgroundBitMap( struct BitMapNode *dest_bmn, long xSrc, long yS
 
 	if(xSize > 0 && ySize > 0)
 	{
-		struct BitMapNode *bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+		struct BitMapNode *bmn = List_First(&dnd->dnd_List);
 
 		SafeBltBitMap(srcBitMap,xSrc,ySrc,destBitMap,xDest,yDest,xSize,ySize,0xc0, -1, NULL);
 
@@ -468,7 +454,7 @@ STATIC VOID BltBackgroundBitMap( struct BitMapNode *dest_bmn, long xSrc, long yS
 
 				}
 			}
-			bmn = (struct BitMapNode*)Node_Next(bmn);
+			bmn = Node_Next(bmn);
 		}
 
 //		BltBitMapRastPort(destBitMap,0,0,
@@ -517,7 +503,7 @@ STATIC VOID BltBitMapNode(struct BitMapNode *src_bmn, LONG offx, LONG offy, stru
 STATIC VOID BltNearBitMaps(struct BitMapNode *src_bmn, struct RastPort *rp,  LONG x, LONG y, LONG width, LONG height)
 {
 	struct DragNDrop *dnd = src_bmn->bmn_DnD;
-	struct BitMapNode *bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	struct BitMapNode *bmn = List_First(&dnd->dnd_List);
 	struct Rectangle rect;
 
 	rect.MinX = x;
@@ -549,7 +535,7 @@ STATIC VOID BltNearBitMaps(struct BitMapNode *src_bmn, struct RastPort *rp,  LON
 				
 			}
 		}
-		bmn = (struct BitMapNode*)Node_Next(bmn);
+		bmn = Node_Next(bmn);
 	}
 }
 //-------------------------------------
@@ -561,7 +547,7 @@ STATIC VOID RestoreBackground( struct BitMapNode *src_bmn, struct RastPort *rp)
 	LONG save_height = src_bmn->bmn_SaveHeight;
 
 	struct DragNDrop *dnd = src_bmn->bmn_DnD;
-	struct BitMapNode *bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	struct BitMapNode *bmn = List_First(&dnd->dnd_List);
 	struct Rectangle last_rect;
 
 	last_rect.MinX = save_x;
@@ -589,8 +575,8 @@ STATIC VOID RestoreBackground( struct BitMapNode *src_bmn, struct RastPort *rp)
 				LONG bmn_y = result_rect.MinY - bmn_rect.MinY;
 				LONG bmn_width = result_rect.MaxX - result_rect.MinX + 1;
 				LONG bmn_height = result_rect.MaxY - result_rect.MinY + 1;
-				LONG xDest = result_rect.MinX - last_rect.MinX;
-				LONG yDest = result_rect.MinY - last_rect.MinY;
+/*  				LONG xDest = result_rect.MinX - last_rect.MinX; */
+/*  				LONG yDest = result_rect.MinY - last_rect.MinY; */
 
 				BltBitMapNode(bmn, bmn_x, bmn_y,
 										rp, result_rect.MinX, result_rect.MinY, bmn_width, bmn_height);
@@ -600,7 +586,7 @@ STATIC VOID RestoreBackground( struct BitMapNode *src_bmn, struct RastPort *rp)
 				
 			}
 		}
-		bmn = (struct BitMapNode*)Node_Next(bmn);
+		bmn = Node_Next(bmn);
 	}
 }
 //-------------------------------------
@@ -609,7 +595,7 @@ struct BitMapNode *CreateBitMapNodeA( struct TagItem *tagList )
 	struct BitMapNode *bmn = (struct BitMapNode*)AllocMem( sizeof(struct BitMapNode), MEMF_CLEAR );
 	if( bmn )
 	{
-		BOOL alloc=FALSE;
+/*  		BOOL alloc=FALSE; */
 		struct TagItem *tl=tagList;
 		struct TagItem *tag;
 
@@ -711,7 +697,7 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
 	}*/
 
 	{
-		LONG maxWidth, maxHeight, offx=0, offy=0, save_offx=0, save_offy=0;
+		LONG maxWidth, maxHeight/*  , offx=0, offy=0, save_offx=0, save_offy=0 */;
 		LONG real_width = width, real_height = height;
 		LONG real_save_width = save_width, real_save_height = save_height;
 
@@ -989,20 +975,20 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
 //		cout << x << "  " << lastx << "  " << y << "  " << lasty << " " << reverse << endl;
 	}*/
 
-	node = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	node = List_First(&dnd->dnd_List);
 	while(node)
 	{
 		node->bmn_Drawed = FALSE;
-		node =  (struct BitMapNode *)Node_Next(node);
+		node = Node_Next(node);
 	}
 
 	if(!reverse)
 	{
-		node = (struct BitMapNode *)List_First(&dnd->dnd_List);
+		node = List_First(&dnd->dnd_List);
 		while(node)
 		{
 			DrawBitMapNode( node, x + node->bmn_Left, y + node->bmn_Top);
-			node =  (struct BitMapNode *)Node_Next(node);
+			node = Node_Next(node);
 		}
 	}	else
 	{
@@ -1010,7 +996,7 @@ VOID DrawDragNDrop(struct DragNDrop *dnd, LONG x, LONG y)
 		while(node)
 		{
 			DrawBitMapNode(node, x + node->bmn_Left, y + node->bmn_Top);
-			node =  (struct BitMapNode *)Node_Prev(node);
+			node = (struct BitMapNode *)Node_Prev(node);
 		}
 	}
 	first = FALSE;
@@ -1043,7 +1029,7 @@ BOOL PrepareDragNDrop(struct DragNDrop *dnd,struct Screen *scr)
 	rp = &scr->RastPort;
 	depth = GetBitMapAttr( rp->BitMap, BMA_DEPTH );
 
-	bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	bmn = List_First(&dnd->dnd_List);
 	while(bmn)
 	{
 		bmn->bmn_SaveWidth = bmn->bmn_SaveHeight = 0;
@@ -1055,7 +1041,7 @@ BOOL PrepareDragNDrop(struct DragNDrop *dnd,struct Screen *scr)
 			ok = FALSE;
 			break;
 		}
-		bmn = (struct BitMapNode*)Node_Next(bmn);
+		bmn = Node_Next(bmn);
 	}
 
 	if(ok && maxwidth && maxheight)
@@ -1064,7 +1050,7 @@ BOOL PrepareDragNDrop(struct DragNDrop *dnd,struct Screen *scr)
 		return TRUE;
 	}
 
-	bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	bmn = List_First(&dnd->dnd_List);
 	while(bmn)
 	{
 		if(bmn->bmn_SaveBitMap)
@@ -1072,7 +1058,7 @@ BOOL PrepareDragNDrop(struct DragNDrop *dnd,struct Screen *scr)
 			FreeBitMap(bmn->bmn_SaveBitMap);
 			bmn->bmn_SaveBitMap = NULL;
 		}
-		bmn = (struct BitMapNode*)Node_Next(bmn);
+		bmn = Node_Next(bmn);
 	}
 
 	return FALSE;
@@ -1083,7 +1069,7 @@ VOID FinishDragNDrop(struct DragNDrop *dnd)
 	struct BitMapNode *bmn;
 	if(dnd->dnd_TempBitMap) FreeBitMap(dnd->dnd_TempBitMap);
 
-	bmn = (struct BitMapNode *)List_First(&dnd->dnd_List);
+	bmn = List_First(&dnd->dnd_List);
 	while(bmn)
 	{
 		if(bmn->bmn_SaveBitMap)
@@ -1091,7 +1077,7 @@ VOID FinishDragNDrop(struct DragNDrop *dnd)
 			FreeBitMap(bmn->bmn_SaveBitMap);
 			bmn->bmn_SaveBitMap = NULL;
 		}
-		bmn = (struct BitMapNode*)Node_Next(bmn);
+		bmn = Node_Next(bmn);
 	}
 
 }
