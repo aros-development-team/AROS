@@ -1,7 +1,7 @@
 #include <aros/machine.h>
 #include <stdio.h>
 
-#if (AROS_BEG_ENDIAN == 0)
+#if (AROS_BIG_ENDIAN == 0)
   #define HIGH 4
   #define MIDDLE 2
   #define LOW 0
@@ -15,7 +15,7 @@ unsigned char __Xrand_buffer[6];
 
 unsigned char __Xrand[8] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 
-#if (AROS_BEG_ENDIAN == 0)
+#if (AROS_BIG_ENDIAN == 0)
 unsigned char __arand[6] = {0x6d, 0xe6, 0xec, 0xde, 0x05, 0x00};
 #else
 unsigned char __arand[6] = {0x00, 0x05, 0xde, 0xec, 0xe6, 0x6d};
