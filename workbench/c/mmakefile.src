@@ -13,8 +13,6 @@ FILES	:= \
     ConClip \
     Copy \
     Filenote \
-    Get \
-    Getenv \
     Info \
     Join \
     List \
@@ -32,7 +30,6 @@ FILES	:= \
     Version \
     Which \
     addbuffers \
-    assign \
     avail \
     crlist \
     damagelist \
@@ -40,7 +37,6 @@ FILES	:= \
     delete \
     devlist \
     dir \
-    execute \
     install \
     liblist \
     makedir \
@@ -48,7 +44,6 @@ FILES	:= \
     newshell \
     path \
     reslist \
-    run \
     screenpattern \
     setclock \
     setlocale \
