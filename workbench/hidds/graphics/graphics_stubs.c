@@ -647,6 +647,36 @@ VOID     HIDD_BM_PutAlphaImage  (OOP_Object *obj
 
 /***************************************************************/
 
+VOID     HIDD_BM_PutTemplate  (OOP_Object *obj
+	, OOP_Object *gc
+	, UBYTE *template
+	, ULONG modulo
+	, WORD srcx
+	, WORD x, WORD y
+	, WORD width, WORD height
+	, BOOL inverttemplate)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutTemplate p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutTemplate);
+        
+    p.mID    	= mid;
+    p.gc     	= gc;
+    p.template  = template;
+    p.modulo 	= modulo;
+    p.srcx   	= srcx;
+    p.x      	= x;
+    p.y      	= y;
+    p.width  	= width;
+    p.height 	= height;
+    p.inverttemplate = inverttemplate;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+/***************************************************************/
+
 VOID     HIDD_BM_PutAlphaTemplate  (OOP_Object *obj
 	, OOP_Object *gc
 	, UBYTE *alpha
