@@ -1321,6 +1321,11 @@ ifndef MODULE
 endif
 
 %(libs) := $(%(libs)) %(postlibs)
+
+ifeq ($(TARGET_ARCH),morphos)
+%(libs) := $(FORCE_LIBS)
+%(deps) := $(FORCE_DEPLIBS)
+endif
 %end
 
 #------------------------------------------------------------------------------
