@@ -15,6 +15,7 @@ FILES := coldreboot \
 	addintserver \
 	addtask \
 	rawputchar \
+	remtask \
 	preparecontext \
 	prepareexecbase \
 	disable \
