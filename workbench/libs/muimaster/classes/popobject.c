@@ -174,6 +174,18 @@ static IPTR Popobject_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 /**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static ULONG Popobject_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_PopobjectData *data = INST_DATA(cl, obj);
+
+    if (!data->wnd && data->object)
+	MUI_DisposeObject(data->object);
+    return DoSuperMethodA(cl, obj, msg);
+}
+
+/**************************************************************************
  OM_SET
 **************************************************************************/
 static IPTR Popobject_Set(struct IClass *cl, Object *obj, struct opSet *msg)
@@ -229,18 +241,13 @@ static IPTR Popobject_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-#ifndef _AROS
-__asm IPTR Popobject_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,Popobject_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, Popobject_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
 	case OM_NEW: return Popobject_New(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Popobject_Dispose(cl, obj, msg);
 	case OM_SET: return Popobject_Set(cl, obj, (struct opSet *)msg);
 	case MUIM_Show: return Popobject_Show(cl, obj, (struct MUIP_Show*)msg);
 	case MUIM_Hide: return Popobject_Hide(cl, obj, (struct MUIP_Hide*)msg);
