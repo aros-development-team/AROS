@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/12 14:20:38  digulla
+    Added aliases
+
     Revision 1.2  1996/08/01 17:40:55  digulla
     Added standard header for all files
 
@@ -40,10 +43,10 @@
 	Opens a file for read and/or write depending on the accessmode given.
 
     INPUTS
-	name       - NUL terminated name of the file.
+	name	   - NUL terminated name of the file.
 	accessMode - One of MODE_OLDFILE   - open existing file
 			    MODE_NEWFILE   - delete old, create new file
-			    		     exclusive lock
+					     exclusive lock
 			    MODE_READWRITE - open new one if it doesn't exist
 
     RESULT
@@ -87,7 +90,7 @@
 	Locked files or directories may not be deleted.
 
     INPUTS
-	name       - NUL terminated name of the file or directory.
+	name	   - NUL terminated name of the file or directory.
 	accessMode - One of SHARED_LOCK
 			    EXCLUSIVE_LOCK
 
@@ -113,7 +116,7 @@
 			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
-
+/*AROS alias Lock Open */
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
@@ -135,7 +138,7 @@
     struct IOFileSys io,*iofs=&io;
 
     struct MsgPort mp,*msgport=&mp;
-    
+
     static const struct TagItem tags[]={ { TAG_END, 0 } };
 
     /* Prepare message port */
@@ -159,8 +162,8 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =msgport;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =msgport;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Flags=0;
 
     switch(accessMode)
@@ -192,39 +195,39 @@
 
     if(!Stricmp(name,"CONSOLE:"))
     {
-        cur=con;
-        volname=NULL;
-        pathname="";
+	cur=con;
+	volname=NULL;
+	pathname="";
     }else if(!Stricmp(name,"*"))
     {
-    	cur=ast;
-    	volname=NULL;
-        pathname="";
+	cur=ast;
+	volname=NULL;
+	pathname="";
     }else if(!Strnicmp(name,"PROGDIR:",8))
     {
-        cur=me->pr_HomeDir;
-        volname=NULL;
-        pathname=name+8;
+	cur=me->pr_HomeDir;
+	volname=NULL;
+	pathname=name+8;
     }else
     {
-        /* Copy volume name */
-        cur=me->pr_CurrentDir;
-        s1=name;
-        pathname=name;
-        volname=NULL;
-        while(*s1)
-    	    if(*s1++==':')
-    	    {
-	        volname=(STRPTR)AllocMem(s1-name,MEMF_ANY);
-	        if(volname==NULL)
-	        {
-	            me->pr_Result2=ERROR_NO_FREE_STORE;
+	/* Copy volume name */
+	cur=me->pr_CurrentDir;
+	s1=name;
+	pathname=name;
+	volname=NULL;
+	while(*s1)
+	    if(*s1++==':')
+	    {
+		volname=(STRPTR)AllocMem(s1-name,MEMF_ANY);
+		if(volname==NULL)
+		{
+		    me->pr_Result2=ERROR_NO_FREE_STORE;
 		    return 0;
-	        }
-	        CopyMem(name,volname,s1-name-1);
-	        volname[s1-name-1]=0;
-	        pathname=s1;
-	        break;
+		}
+		CopyMem(name,volname,s1-name-1);
+		volname[s1-name-1]=0;
+		pathname=s1;
+		break;
 	    }
     }
 
@@ -255,7 +258,7 @@
     }
 
     iofs->IOFS.io_Device =device;
-    iofs->IOFS.io_Unit   =unit;
+    iofs->IOFS.io_Unit	 =unit;
     iofs->IOFS.io_Command=FSA_OPEN;
     iofs->io_Args[0]=(LONG)pathname;
     iofs->io_Args[1]=flags;
@@ -263,7 +266,7 @@
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     error=iofs->io_DosError;
 
     if(dl!=NULL)
@@ -283,4 +286,4 @@
     ret->fh_Unit  =iofs->IOFS.io_Unit;
     return MKBADDR(ret);
     __AROS_FUNC_EXIT
-} /* Open */
+} /* Lock */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/12 14:20:38  digulla
+    Added aliases
+
     Revision 1.2  1996/08/01 17:40:50  digulla
     Added standard header for all files
 
@@ -49,10 +52,47 @@
 			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
+
+/*****************************************************************************
+
+    NAME
+	#include <clib/dos_protos.h>
+
+	__AROS_LH2(BOOL, ExamineFH,
+
+    SYNOPSIS
+	__AROS_LA(BPTR                  , fh, D1),
+	__AROS_LA(struct FileInfoBlock *, fib, D2),
+
+    LOCATION
+	struct DosLibrary *, DOSBase, 65, Dos)
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	29-10-95    digulla automatically created from
+			    dos_lib.fd and clib/dos_protos.h
+
+*****************************************************************************/
+/*AROS alias ExamineFH Examine */
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    
+
     UBYTE buffer[512];
     struct ExAllData *ead=(struct ExAllData *)buffer;
     STRPTR src, dst;
@@ -69,10 +109,10 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Device =fh->fh_Device;
-    iofs->IOFS.io_Unit   =fh->fh_Unit;
+    iofs->IOFS.io_Unit	 =fh->fh_Unit;
     iofs->IOFS.io_Command=FSA_EXAMINE;
     iofs->IOFS.io_Flags  =0;
     iofs->io_Args[0]=(LONG)buffer;
@@ -81,10 +121,10 @@
 
     /* Send the request. */
     DoIO(&iofs->IOFS);
-    
+
     /* Set error code and return */
     if((me->pr_Result2=iofs->io_DosError))
-        return 0;
+	return 0;
     else
     {
 	fib->fib_DiskKey=0;
@@ -92,9 +132,9 @@
 	src=ead->ed_Name;
 	dst=fib->fib_FileName;
 	if(src!=NULL)
-  	    for(i=0;i<107;i++)
-	        if(!(*dst++=*src++))
-	            break;
+	    for(i=0;i<107;i++)
+		if(!(*dst++=*src++))
+		    break;
 	*dst++=0;
 	fib->fib_Protection=ead->ed_Prot^0xf;
 	fib->fib_EntryType=ead->ed_Type;
@@ -105,9 +145,9 @@
 	src=ead->ed_Comment;
 	dst=fib->fib_Comment;
 	if(src!=NULL)
-  	    for(i=0;i<79;i++)
-	        if(!(*dst++=*src++))
-	            break;
+	    for(i=0;i<79;i++)
+		if(!(*dst++=*src++))
+		    break;
 	*dst++=0;
 	fib->fib_OwnerUID=ead->ed_OwnerUID;
 	fib->fib_OwnerGID=ead->ed_OwnerGID;

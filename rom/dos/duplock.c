@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/12 14:20:37  digulla
+    Added aliases
+
     Revision 1.2  1996/08/01 17:40:49  digulla
     Added standard header for all files
 
@@ -91,6 +94,7 @@
 			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
+/*AROS alias DupLockFromFH DupLock */
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct DosLibrary *,DOSBase)
