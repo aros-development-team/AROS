@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/13 17:33:30  digulla
+    Use the ToLower function instead of the macro
+
     Revision 1.3  1996/08/13 14:10:31  digulla
     Replaced __AROS_LA by __AROS_LHA
 
@@ -20,7 +23,7 @@
     NAME */
 	#include <clib/utility_protos.h>
 
-	__AROS_LH2I(LONG, Stricmp,
+	__AROS_LH2(LONG, Stricmp,
 
 /*  SYNOPSIS */
 	__AROS_LHA(STRPTR, string1, A0),
@@ -61,11 +64,9 @@
     /* Loop as long as the strings are identical and valid. */
     do
     {
-    	/* Get characters, convert them to lower case. */
-	c1=*string1++;
-	c1=TOLOWER(c1);
-	c2=*string2++;
-	c2=TOLOWER(c2);
+	/* Get characters, convert them to lower case. */
+	c1=ToLower(*string1++);
+	c2=ToLower(*string2++);
     }while(c1==c2&&c1);
 
     /* Get result. */
