@@ -9,7 +9,8 @@ ULIBNAME	:= MathIeeeDoubBas
 FILES		:= ieeedpbas_fpu
 ARCHIVE		:= mathieeedoubbas.arch
 
-%define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
+# NO THIS IS VERY WRONG - iaint
+#%#define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
 
 %genlib_arch
 

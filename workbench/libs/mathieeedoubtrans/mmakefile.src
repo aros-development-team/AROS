@@ -14,7 +14,7 @@ FILES		:= \
 ARCHIVE		:= mathieeedoubtrans.arch
 
 
-%define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
+#%#define_libs prelibs=-l$(LIBNAME) postlibs=-lgcc
 
 %genlib_arch
 
