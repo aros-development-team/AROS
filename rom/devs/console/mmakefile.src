@@ -5,9 +5,6 @@ include $(TOP)/config/make.cfg
 FILES	:=  support consoleclass stdconclass consoletask
 FUNCS	:=  cdinputhandler rawkeyconvert
 
-#XXX Remove the next line eventually
-#MM- kernel-devs : kernel-console-linklib
-
 #MM- kernel-console : includes linklibs
 
 %build_module_macro mmake=kernel-console \

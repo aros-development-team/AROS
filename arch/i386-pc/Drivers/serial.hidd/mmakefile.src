@@ -9,14 +9,11 @@ LIBS	:=	-L$(LIBDIR) -lhiddstubs
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC	:=	$(END_FILE).o
 
-#MM- Drivers-pc-i386: Serial-pc-i386
-
-#MM Serial-pc-i386 : workbench-hidd-serial-stubs
-Serial-pc-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/serial_driver
+#MM kernel-pc-i386-serial-kobj : workbench-hidd-serial-stubs
+kernel-pc-i386-serial-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r -d $(LIBS) $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/serial_driver.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/serial_driver.o
+	    -o $(KOBJSDIR)/serial_driver.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/serial_driver.o
 
 #MM
 clean ::

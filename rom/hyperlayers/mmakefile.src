@@ -44,10 +44,9 @@ FUNCS := \
 	upfrontlayer \
 	whichlayer
 
-#MM- kernel-layers-linklib : kernel-layers-intern-linklib
-#MM kernel-layers-intern-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
+#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
 
-%build_module_macro mmake=kernel-layers-intern \
+%build_module_macro mmake=kernel-layers \
   modname=layers modtype=library \
   funcs=$(FUNCS) files=$(FILES) \
   conffile=lib.conf \

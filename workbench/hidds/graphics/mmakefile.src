@@ -56,6 +56,8 @@ hidd-graphics-linklib : $(LIB) $(STUB_FILE)
 #MM hidd-graphics-module : workbench-hidd-setup includes hidd-graphics-$(ARCH)-$(CPU)
 hidd-graphics-module : $(SLIB) $(STUB_FILE)
 
+$(LIB) $(SLIB) : $(STUB_FILE)
+
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
 # only if you know set the setup is correct and do not add them as targets

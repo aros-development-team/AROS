@@ -36,6 +36,9 @@ INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
 #MM includes-copy : includes-copy-$(ARCH)-$(CPU) includes-generate
 includes-copy : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
+#MM
+compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
+
 ifeq ($(TARGET_CPU),m68k)
 $(INCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
 	@$(CP) $< $@

@@ -8,14 +8,13 @@ OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-#MM Drivers-pc-i386 : hidd-graphics-module
-Drivers-pc-i386 : $(OSGENDIR)/boot/hidd_graphics.o
+#MM kernel-pc-i386-gfx-kobj : hidd-graphics-linklib
+kernel-pc-i386-gfx-kobj : $(KOBJSDIR)/graphics_hidd.o
 
-$(OSGENDIR)/boot/hidd_graphics.o : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd_graphics
+$(KOBJSDIR)/graphics_hidd.o : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd_graphics.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd_graphics.o
+	    -o $(KOBJSDIR)/graphics_hidd.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/graphics_hidd.o
 
 #MM
 clean ::

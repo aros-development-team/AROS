@@ -5,6 +5,9 @@ INCDIR		:= $(AROSDIR)/Include
 INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
+#MM
+compiler-clib-includes : includes-copy
+
 #MM includes-copy :
 includes-copy : setup $(DEST_INCLUDES)
 	@$(NOP)

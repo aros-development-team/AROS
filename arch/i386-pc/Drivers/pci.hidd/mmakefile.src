@@ -11,12 +11,11 @@ OBJDIR	    := $(GENDIR)/$(CURDIR)
 END_FILE    := $(OBJDIR)/endtag
 ENDFUNC     := $(END_FILE).o
 
-#MM Drivers-pc-i386-pci : 
-Drivers-pc-i386-pci : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
-	%add_objects rom/boot/hidd.kernel.pci
+#MM
+kernel-pc-i386-pci-kobj : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	@ld -r -d $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
-	    -o $(OSGENDIR)/boot/hidd.kernel.pci.o
-	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.kernel.pci.o
+	    -o $(KOBJSDIR)/pci_hidd.o
+	@objcopy -R .note -R .comment $(KOBJSDIR)/pci_hidd.o
 
 #MM
 includes-pc-i386 : $(DEST_INC) $(GEN_INC)

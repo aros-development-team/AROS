@@ -7,15 +7,22 @@ DEVS    := $(DEVSDIR)/trackdisk.device
 FILES	:= trackdisk_device trackdisk_hw
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 LIB	:= $(LIBDIR)/libtrackdisk.a
+KOBJ    := $(KOBJSDIR)/trackdisk_device.o
 
 %define_libs
 
 #MM
 kernel-devs-pc-i386 : $(LIB)
-	@$(NOP)
+
+#MM
+kernel-pc-i386-trackdisk-kobj : $(KOBJ)
 
 $(LIB) : $(OBJS)
 	%mklib_q
+
+$(KOBJ) : $(OBJS)
+	@echo Linking $@
+	@$(LD) -r -o $@ $^
 
 #MM
 clean ::

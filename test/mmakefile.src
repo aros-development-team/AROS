@@ -78,8 +78,8 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM test : test-clib
 #MM test : test-clib test-zune test-desktop
+#MM test : includes includes-copy
 
 %make_prog_setup mmake=test
 

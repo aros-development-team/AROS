@@ -1,4 +1,21 @@
 # $Id$
 
-# The kernel target points back to config/$(ARCH)/mmakefile:
-#MM- kernel : kernel-$(ARCH)-$(CPU)
+#MM- kernel-objs : kernel-exec-kobj \
+#MM	    kernel-aros-kobj \
+#MM	    kernel-dos-kobj \
+#MM	    kernel-boot-kobj \
+#MM	    kernel-graphics-kobj \
+#MM	    kernel-utility-kobj \
+#MM	    kernel-intuition-kobj \
+#MM	    kernel-keymap-kobj \
+#MM	    kernel-mathffp-kobj \
+#MM	    kernel-mathieeesingbas-kobj \
+#MM	    kernel-devs \
+#MM	    kernel-expansion-kobj \
+#MM	    kernel-hidd-kobj \
+#MM	    kernel-timer-kobj \
+#MM	    kernel-battclock-kobj \
+#MM	    kernel-oop-kobj \
+#MM	    kernel-layers-kobj \
+#MM	    kernel-workbench-kobj \
+#MM	    kernel-cgfx-kobj

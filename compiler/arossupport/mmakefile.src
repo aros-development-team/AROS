@@ -41,6 +41,8 @@ FILES	:= \
 #MM- linklibs: linklibs-arossupport
 #MM linklibs-arossupport : includes
 #MM includes-copy
+#MM
+compiler-arossupport-includes : includes-copy
 
 USER_CFLAGS := -I$(TOP)/rom/exec
 %build_linklib mmake=linklibs-arossupport libname=arossupport files=$(FILES)
