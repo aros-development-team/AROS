@@ -52,11 +52,11 @@ clean:
 	-$(RM) $(EXES)
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee -a $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*-x.err
+	@if test ! -s $*-x.err; then rm $*-x.err ; else true ; fi
 
 $(OBJDIR)/%.o: %.c
-	$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee -a $*.err
+	$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c
