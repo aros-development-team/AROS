@@ -187,3 +187,4 @@ struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct MUIMasterBase *
 
     return NULL;
 }
+
