@@ -85,9 +85,6 @@ TESTS = $(TESTDIR)/tasktest \
 # \item{all} Compile the whole project (except the documentation).
 #
 # END_DESC{target}
-#MM AROS : setup includes libs AmigaOS
-#MM clean
-
 AROS : $(BINDIR)/arosshell checkerr
 
 ifeq ($(FLAVOUR),native)
@@ -175,7 +172,6 @@ dist-src : .FORCE
 #	are initially neccessary to compile AROS.
 #
 # END_DESC{internaltarget}
-#MM
 setup :
 	@$(RM) $(TOP)/errors
 	@if [ ! -d bin ]; then $(MKDIR) bin ; else true ; fi
@@ -248,7 +244,6 @@ subdirs:
 #	first place.
 #
 # END_DESC{internaltarget}
-#MM
 AmigaOS :
 	@$(MAKE) $(MFLAGS) $(LIBAMIGAOS)
 
