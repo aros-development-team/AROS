@@ -112,7 +112,7 @@ IPTR button_set(Class * cl, Object * obj, struct opSet * msg)
 
     /* Redraw the gadget, if an attribute was changed and if this is the
        objects' base-class. */
-    if ((retval) && (((Class *) (*(obj - sizeof(Class *)))) == cl)) {
+    if ((retval) && (OCLASS(obj) == cl)) {
 	rport = ObtainGIRPort(msg->ops_GInfo);
 	if (rport) {
 	    DoMethod(obj, GM_RENDER, msg->ops_GInfo, rport, GREDRAW_UPDATE);
