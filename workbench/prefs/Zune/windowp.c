@@ -74,7 +74,10 @@ static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 
 static Object*MakeSpacingSlider (void)
 {
-    return MUI_MakeObject(MUIO_Slider, "", 0, 9);
+    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
+
+    set(obj, MUIA_CycleChain, 1);
+    return obj;
 }
 
 
