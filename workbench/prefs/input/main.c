@@ -231,7 +231,7 @@ static void MakePages(void)
     static const struct CoolImage *tabimages[] =
     {
     	&cool_mouseimage,
-	&cool_flagimage
+	&cool_keyimage
     };
     ULONG bgcol = 0;
     WORD i;

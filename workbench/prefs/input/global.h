@@ -209,8 +209,10 @@
 struct ListviewEntry
 {
     struct Node node;
-    UBYTE   	name[30];
+    UBYTE   	layoutname[30];
+    UBYTE   	modelname[30];
     UBYTE   	realname[30];
+    BOOL    	modelnode;
 };
 
 struct KeymapEntry
