@@ -168,7 +168,7 @@ kprintf("CreateBehindLayer: New layer is first one.\n");
     
     /* 
       Now create all ClipRects of all Layers correctly.   
-      Comment: CreateClipRects is the onlt function that does the
+      Comment: CreateClipRects is the only function that does the
                job correctly if you want to create a layer somewhere
                behind other layers.
     */

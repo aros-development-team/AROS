@@ -164,8 +164,10 @@ void LayerSplitsLayer(struct Layer * L_active,
                  	(void *)&Case_13,
                  	(void *)&Case_14,
                  	(void *)&Case_15};
-  
+
+/*  
 kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_passive->priority,L_active,L_active->priority);
+*/
   /* first check whether L_active overlaps L_passive at all */
 
   if (x0 > L_passive -> bounds.MaxX ||
@@ -249,6 +251,9 @@ kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_pass
 
         if (TRUE == notdisplayed)
           CR->Flags |= CR_NEEDS_NO_LAYERBLIT_DAMAGE;
+        else
+          CR->Flags = 0; /* I had a problem when I din't do this, so I do this now*/
+
 //kprintf("Calling case %d\n",OverlapIndex);
         CR = (struct ClipRect *)
             FunctionArray[OverlapIndex](&L_active->bounds, 
@@ -271,7 +276,6 @@ kprintf("LSL: Splitting Layer at %x(%d) with Layer at %x(%d)\n",L_passive,L_pass
       CR = CR -> Next;   
     } /* while */    
   }
-kprintf("leaving layersplitslayer\n");
   return;
 }
 

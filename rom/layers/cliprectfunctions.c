@@ -1225,7 +1225,6 @@ struct ClipRect * Case_8(struct Rectangle * R,
   /* Get a new structure for a 2nd ClipRect */
   CR_New1 = (struct ClipRect *)AllocMem(sizeof(struct ClipRect),MEMF_CLEAR|MEMF_PUBLIC);
 
-
   /* If the ClipRect with the o's already had some backed up pixels
      in a bitmap-structure, then we have to split up the info found
      there in a bitmap which contains the info about the n's and the
@@ -1272,7 +1271,7 @@ struct ClipRect * Case_8(struct Rectangle * R,
     else
     { /* the "right" one (n's) */
       /* get one new bitmap structure, if there is none. But only
-         get it if the new layer is in front of the passive layer */ 
+         get it if the new layer is in front of the passive layer */
       if (newlayer->priority > passivelayer->priority)
       {
         ULONG AllocBitMapFlag = 0;
@@ -1311,7 +1310,6 @@ struct ClipRect * Case_8(struct Rectangle * R,
             0xff                   /* Mask */,
             NULL
           );
-
         CR -> lobs = newlayer;
       }
     }
@@ -1320,7 +1318,6 @@ struct ClipRect * Case_8(struct Rectangle * R,
     /* Change CR, it will contain the left part (n's) */
      CR->bounds.MinX = DEF_X0;
   }
-
   return CR_New1;
 }
 

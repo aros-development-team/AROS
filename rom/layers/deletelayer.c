@@ -11,9 +11,7 @@
 #include <graphics/layers.h>
 #include <graphics/regions.h>
 
-#define DEBUG 0
-#include <aros/debug.h>
-#undef kprintf
+
 
 /*****************************************************************************
 
@@ -170,8 +168,9 @@
      Remember: The ClipRects list is now invalid!
   */
   
-  /* there is a damagelist left and there is a layer behind */
+  
 
+  /* there is a damagelist left and there is a layer behind */
   if (NULL != LD->DamageList->RegionRectangle && NULL != LD->back)
   {
     /* 
@@ -180,6 +179,7 @@
      */
      
     struct Layer * L_behind = LD->back;
+
     CR = L_behind -> ClipRect;
 
     while (NULL != L_behind)
@@ -227,11 +227,6 @@
             FreeBitMap(CR->BitMap);
             CR->BitMap = NULL;
             CR->lobs   = NULL;
-            /* 
-               Leave a mark for the garbage collector that
-               will combine small (adjacent) cliprects to larger ones 
-             */
-            CR->reserved = 1;
             /*
                Take this ClipRect out of the damagelist so that
                this part will not be cleared later on. 
