@@ -76,6 +76,7 @@ struct FileRequester
 #define ASLFR_SleepWindow		ASL_TB + 43
 #define ASLFR_UserData			ASL_TB + 52
 #define ASLFR_PopToFront		ASL_TB + 131
+#define ASLFR_Activate	    	    	ASL_TB + 132
 
 #define ASLFR_TextAttr			ASL_TB + 51
 #define ASLFR_Locale			ASL_TB + 50
@@ -183,6 +184,7 @@ struct FontRequester
 #define ASLFO_SleepWindow		ASL_TB + 43
 #define ASLFO_UserData			ASL_TB + 52
 #define ASLFO_PopToFront		ASL_TB + 131
+#define ASLFO_Activate	    	    	ASL_TB + 132
 
 #define ASLFO_TextAttr			ASL_TB + 51
 #define ASLFO_Locale			ASL_TB + 50
@@ -207,6 +209,7 @@ struct FontRequester
 #define ASLFO_DoBackPen 		ASL_TB + 45
 #define ASLFO_DoStyle			ASL_TB + 46
 #define ASLFO_DoDrawMode		ASL_TB + 47
+#define ASLFO_SampleText    	    	ASL_TB + 133
 
 #define ASLFO_FixedWidthOnly		ASL_TB + 48
 #define ASLFO_MinHeight 		ASL_TB + 16
@@ -289,6 +292,7 @@ struct DisplayMode
 #define ASLSM_SleepWindow		ASL_TB + 43
 #define ASLSM_UserData			ASL_TB + 52
 #define ASLSM_PopToFront		ASL_TB + 131
+#define ASLSM_Activate	    	    	ASL_TB + 132
 
 #define ASLSM_TextAttr			ASL_TB + 51
 #define ASLSM_Locale			ASL_TB + 50
