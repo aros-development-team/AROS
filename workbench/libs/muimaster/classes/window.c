@@ -178,6 +178,7 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     ULONG rgbtable[3 * 3];
     Object *temp_obj;
     ULONG val;
+    int i;
 
     if (!(mri->mri_Screen = LockPubScreen(NULL))) return FALSE;
     if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
@@ -225,6 +226,9 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 
     mri->mri_Pens = mri->mri_PensStorage;
 
+    for (i = 0; i < -MUIV_Font_NegCount; i++)
+	mri->mri_Fonts[i] = NULL;
+
     mri->mri_LeftImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,LEFTIMAGE,TAG_DONE);
     mri->mri_RightImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,RIGHTIMAGE,TAG_DONE);
     mri->mri_UpImage  = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,UPIMAGE,TAG_DONE);
@@ -260,11 +264,17 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 
 void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 {
+    int i;
+
     if (mri->mri_LeftImage) {DisposeObject(mri->mri_LeftImage);mri->mri_LeftImage=NULL;};
     if (mri->mri_RightImage){DisposeObject(mri->mri_RightImage);mri->mri_RightImage=NULL;};
     if (mri->mri_UpImage) {DisposeObject(mri->mri_UpImage);mri->mri_UpImage=NULL;};
     if (mri->mri_DownImage) {DisposeObject(mri->mri_DownImage);mri->mri_DownImage=NULL;};
     if (mri->mri_SizeImage) {DisposeObject(mri->mri_SizeImage);mri->mri_SizeImage=NULL;};
+
+    for (i = 0; i < -MUIV_Font_NegCount; i++)
+	if (mri->mri_Fonts[i])
+	    CloseFont(mri->mri_Fonts[i]);
 
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_MARK]);
     ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[MPEN_HALFSHADOW]);
@@ -1956,6 +1966,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     /* If object is active send a initial MUIM_GoActive, note that no MUIM_GoInactive is send yet if window closes */
     if (data->wd_ActiveObject) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
+
     return TRUE;
 }
 
@@ -1979,6 +1990,7 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 
     /* close here ... */
     UndisplayWindow(obj,data);
+
     data->wd_Flags &= ~MUIWF_OPENED;
     data->wd_Menustrip = NULL;
 
