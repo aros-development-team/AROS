@@ -26,7 +26,7 @@ machine :
 #MM- kernel-objs : kernel-$(ARCH)-$(CPU)
 
 #MM- AROS : workbench demos contrib
-#MM- workbench : kernel-objs
+#MM- workbench : workbench-$(ARCH)-$(CPU) kernel-objs
 #MM- demos : workbench
 #MM- contrib : workbench
 
