@@ -23,7 +23,8 @@ FILES := amigademo \
 	ExNext \
 	taskswitchbench \
 	randtest \
-	enqueue
+	enqueue \
+	semtorture
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
