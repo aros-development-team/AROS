@@ -170,7 +170,7 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 {
     struct MemList *memlist;
     ULONG *modarray;
-    ULONG i;
+    ULONG i, nummods;
     struct Module *mod;
 
     /*
@@ -195,12 +195,17 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	modarray[i+1] = NULL;
 
 	/*
+	    Cache number of modules, since it will be modified in BuildMemList.
+	*/
+	nummods = modlist->ml_Num;
+
+	/*
 	    build a memlist to be put in KickMemPtr
 	*/
 	if( (memlist = BuildMemList(&ils_mem, modarray,
 				    (modlist->ml_Num+1)*sizeof(ULONG) )) )
 	{
-	    StuffTags(memlist, modarray, modlist->ml_Num);
+	    StuffTags(memlist, modarray, nummods);
 	    return TRUE;
 	}
 	FreeVec(modarray);
