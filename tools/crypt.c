@@ -25,7 +25,7 @@
 
     which must print:
 
-	Encrypting test: xx1LtbDbOY4
+	Encrypting test: xx1LtbDbOY4/E
 
     If it prints something else, then your version of crypt(3) is not
     compatible.
