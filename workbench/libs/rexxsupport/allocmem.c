@@ -19,7 +19,6 @@
 #include "rexxsupport_intern.h"
 #include "rxfunctions.h"
 
-#warning FIXME: Second argument to AllocMem is not handled at the moment
 LONG rxsupp_allocmem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE **argstring)
 {
     char *end;
@@ -57,7 +56,7 @@ LONG rxsupp_allocmem(struct Library *RexxSupportBase, struct RexxMsg *msg, UBYTE
     }
     else
     {
-        *argstring = CreateArgstring(&mem, 4);
+        *argstring = CreateArgstring((UBYTE *)&mem, sizeof(void *));
         return 0;
     }
 }
