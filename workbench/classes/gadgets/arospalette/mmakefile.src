@@ -18,6 +18,10 @@ FILES := paletteclass support
 workbench-classes-arospalette : $(SLIB)
 	@$(NOP)
 
+#MM workbench-classes-arospalette-quick :
+workbench-classes-arospalette-quick : $(SLIB)
+	@$(NOP)
+
 #MM workbench-classes-setup
 workbench-classes-setup : setup
 #MM clean

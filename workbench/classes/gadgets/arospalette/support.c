@@ -230,8 +230,8 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     	RectFill(rp, 
     	    left - VBORDER,
     	    top - HBORDER,
-    	    left + data->pd_ColWidth,
-    	    top  + data->pd_RowHeight);
+    	    left + data->pd_ColWidth - 1,
+    	    top  + data->pd_RowHeight - 1);
 
     	/* Rerender in original color */
     	SetAPen(rp, GetPalettePen(data, data->pd_OldColor + data->pd_ColorOffset));
@@ -254,30 +254,33 @@ VOID UpdateActiveColor( struct PaletteData	*data,
     	left, top, right, bottom, data->pd_Color));
 
 
-    /* Draw some borders */
+    if ((right - left >= 6) && (bottom - top >= 6))
+    {
+	/* Draw some borders */
 
-    SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
+	SetAPen(rp, dri->dri_Pens[BACKGROUNDPEN]);
 
-    /* We draw left & right from top to bottom, but draw top & bottom
-    ** so they don't overlap with what's allready drawn
-    */
+	/* We draw left & right from top to bottom, but draw top & bottom
+	** so they don't overlap with what's allready drawn
+	*/
 
-    /* left */
-    RectFill(rp, left, top,
-    	left + 1, bottom);
+	/* left */
+	RectFill(rp, left, top,
+    	    left + 1, bottom);
 
-    /* right */	
-    RectFill(rp, right - 1, top,
-    	right, bottom);
+	/* right */	
+	RectFill(rp, right - 1, top,
+    	    right, bottom);
 
-    /* top */
-    RectFill(rp, left + 2, top,
-    	right - 2, top + 1);
+	/* top */
+	RectFill(rp, left + 2, top,
+    	    right - 2, top + 1);
 
-    /* bottom */
-    RectFill(rp, left + 2, bottom - 1,
-    	right - 2, bottom);
-
+	/* bottom */
+	RectFill(rp, left + 2, bottom - 1,
+    	    right - 2, bottom);
+    }
+    
     /* Draw recessed frame around selected color */
     framebox.Left   = left - VBORDER;
     framebox.Top    = top  - HBORDER;

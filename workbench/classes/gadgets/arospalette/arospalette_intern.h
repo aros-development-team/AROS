@@ -33,33 +33,33 @@ struct PaletteBase_intern;
 
 struct PaletteData
 {
-    UWORD	pd_NumColors;
-    UBYTE	*pd_ColorTable;
-    UBYTE	pd_Color;
+    UWORD		pd_NumColors;
+    UBYTE		*pd_ColorTable;
+    UBYTE		pd_Color;
     /* For state info, to know what selected entry to delete in GM_RENDER, GREDRAW_UPDATE */
-    UBYTE	pd_OldColor; 
+    UBYTE		pd_OldColor; 
     
-    UBYTE	pd_ColorOffset;
-    UWORD	pd_IndWidth;
-    UWORD	pd_IndHeight;
+    UBYTE		pd_ColorOffset;
+    UWORD		pd_IndWidth;
+    UWORD		pd_IndHeight;
 
-    struct IBox pd_GadgetBox;	 /* Box surrounding whole palette 	*/
-    struct IBox pd_PaletteBox;	 /* Box surrounding palette 		*/
-    struct IBox pd_IndicatorBox; /* Box surrounding indicator		*/
+    struct IBox 	pd_GadgetBox;	 /* Box surrounding whole palette 	*/
+    struct IBox 	pd_PaletteBox;	 /* Box surrounding palette 		*/
+    struct IBox 	pd_IndicatorBox; /* Box surrounding indicator		*/
     
-    UWORD	pd_ColWidth;
-    UWORD	pd_RowHeight;
-    UBYTE	pd_NumCols;
-    UBYTE	pd_NumRows;
+    UWORD		pd_ColWidth;
+    UWORD		pd_RowHeight;
+    UBYTE		pd_NumCols;
+    UBYTE		pd_NumRows;
 
     /* This one is used to backup pd_Color if left is clicked. This
     ** way the old state can be restored if the left is released
     ** outside the gadget.
     */
-    UBYTE	pd_ColorBackup;
-    struct TextAttr *pd_TAttr;
-    LONG	pd_LabelPlace;
-    Object	*pd_Frame;
+    UBYTE		pd_ColorBackup;
+    struct TextAttr 	*pd_TAttr;
+    LONG		pd_LabelPlace;
+    Object		*pd_Frame;
     
 };
 
@@ -73,10 +73,10 @@ struct PaletteData
 
 
 #define HSPACING	2
-#define VSPACING	3
+#define VSPACING	2
 
 #define HBORDER	HSPACING
-#define VBORDER (VSPACING - 1)
+#define VBORDER VSPACING
 
 
 #define HSELBORDER	1
