@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Init of mathieeesingtrans.library
@@ -16,13 +16,13 @@
 #include <aros/debug.h>
 #undef kprintf
 
-struct MathIeeeSingBasBase * MathIeeeSingBasBase;
+struct Library * MathIeeeSingBasBase;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
     AROS_SET_LIBFUNC_INIT;
     
-    MathIeeeSingBasBase = (struct MathIeeeSingBasBase *) OpenLibrary ("mathieeesingbas.library", 39);
+    MathIeeeSingBasBase = OpenLibrary ("mathieeesingbas.library", 39);
     if (!MathIeeeSingBasBase)
 	return FALSE;
 
