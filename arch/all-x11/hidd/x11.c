@@ -192,10 +192,10 @@ VOID free_x11class(struct x11_staticdata *xsd)
     {
 
         OOP_RemoveClass(xsd->x11class);
-	
+
         if(xsd->x11class) OOP_DisposeObject((OOP_Object *) xsd->x11class);
         xsd->x11class = NULL;
-	
+
 	OOP_ReleaseAttrBases(attrbases);
 
     }
@@ -211,8 +211,12 @@ AROS_UFH4(ULONG, x11VBlank,
     AROS_UFHA(ULONG, dummy2, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+
     Signal((struct Task *)data, SIGBREAKF_CTRL_D);
     return 0;
+
+    AROS_USERFUNC_EXIT
 }
 
 #else
