@@ -15,6 +15,7 @@
 #include "__ctype.h"
 #include "etask.h"
 
+#include <aros/debug.h>
 
 extern struct Library *aroscbase;
 
@@ -33,7 +34,7 @@ struct arosc_userdata * __get_arosc_userdata(void)
 
     #else
 
-    static void __arosc_userdata_exitcode(LONG exitcode, struct arosc_privdata *acpd);
+    static void __arosc_userdata_exitcode(LONG returncode, struct arosc_privdata *acpd);
 
     struct Task *me = FindTask(NULL);
     struct arosc_privdata *acpd = GetIntETask(me)->iet_acpd;
@@ -83,7 +84,7 @@ struct arosc_userdata * __get_arosc_userdata(void)
 }
 
 #ifndef DO_STATIC
-static void __arosc_userdata_exitcode(LONG exitcode, struct arosc_privdata *acpd)
+static void __arosc_userdata_exitcode(LONG returncode, struct arosc_privdata *acpd)
 {
     void (*oldexitcode)() = acpd->acpd_oldexitcode;
     IPTR oldexitdata      = acpd->acpd_oldexitdata;
@@ -104,7 +105,7 @@ static void __arosc_userdata_exitcode(LONG exitcode, struct arosc_privdata *acpd
     CloseLibrary(aroscbase);
 
     if (oldexitcode)
-        oldexitcode(oldexitdata);
+        oldexitcode(returncode, oldexitdata);
 
     /* No Permit() here, because exec will reenable multitasking as soon
        as the process is terminated, which is what we really want.  */
