@@ -1,11 +1,3 @@
-;
-; $Id$
-;
-
-; $VER: AROS Startup-Sequence for native-i386 0.0 (2001-09-06)
-
-;SetPatch QUIET
-
 ;SetClock LOAD
 
 ;-----------------------------------------------
