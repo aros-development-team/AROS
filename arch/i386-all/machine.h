@@ -43,8 +43,13 @@ struct FullJumpVec
     unsigned char jmp;
     unsigned char vec[4];
 };
-#define __AROS_SET_FULLJMP(v,a)         (struct FullJumpVec *)v->jmp = 0xE9,        \
-					(*(ULONG*)(v)->vec=(ULONG)(a)-(ULONG)(v)-5))
+#define __AROS_SET_FULLJMP(v,a) \
+do \
+{  \
+    struct FullJumpVec *_v = v; \
+    _v->jmp = 0xE9; \
+    *((ULONG *)(_v->vec))=(ULONG)(a)-(ULONG)(_v)-5;\
+} while (0)
 
 struct JumpVec
 {
