@@ -19,7 +19,6 @@
 #define AROS_DEFAULT_WBHEIGHT		@aros_default_wbheight@
 #define AROS_DEFAULT_WBDEPTH		@aros_default_wbdepth@
 
-#define AROS_VMWARE_HACK		@aros_vmware_hack@
 #define AROS_BOCHS_HACK			@aros_bochs_hack@
 #define AROS_SERIAL_DEBUG		@aros_serial_debug@
 #define AROS_IDE_DRIVER                 @aros_ide_driver@
