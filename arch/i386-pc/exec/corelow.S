@@ -133,7 +133,7 @@ Exec_ExitIntr:      cmpl    $KERNEL_DS,R_ds(%esp)
                     incb    (0xb8004)
                     movb    $0x1f,(0xb8005)
                     testw   $0x80,AttnResched(%eax)
-                    je      restore_all
+                    jne      restore_all
                     incb    (0xb8006)
                     movb    $0x1f,(0xb8007)
                     jmp     Exec_Schedule_x
