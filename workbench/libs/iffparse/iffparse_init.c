@@ -40,7 +40,7 @@ const struct Resident resident=
     (struct Resident *)&resident,
     (APTR)&IFFParse_end,
     RTF_AUTOINIT,
-    1,
+    41,
     NT_LIBRARY,
     0,
     (char *)name,
