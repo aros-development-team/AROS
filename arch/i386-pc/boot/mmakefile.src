@@ -46,7 +46,7 @@ BOOT_DEST_DIR := $(OSGENDIR)/bootdisk
 BOOT_DEST_FILES := $(foreach f, $(BOOT_FILES), $(BOOT_DEST_DIR)/$(f))
 
 #MM
-setup-native :
+setup-pc-i386 :
 	%mkdirs_q $(OSGENDIR)/boot
 	%mkdirs_q $(BINDIR)/boot
 	%mkdirs_q $(BINDIR)/boot/grub
@@ -63,33 +63,33 @@ setup-native :
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
 #MM
-workbench-s-native-i386 : Startup-Sequence
+workbench-s-pc-i386 : Startup-Sequence
 	@$(CP) $< $(SDIR)
 	@$(NOP)
 
-#MM kernel-link-native : setup
-kernel-link-native : $(BINDIR)/boot/aros-native-i386
+#MM kernel-link-pc-i386 : setup
+kernel-link-pc-i386 : $(BINDIR)/boot/aros-pc-i386
 	@$(NOP)
 
-$(BINDIR)/boot/aros-native-i386 : $(OBJS)
+$(BINDIR)/boot/aros-pc-i386 : $(OBJS)
 	@ld -N -e kernel_startup -Ttext 0x00100000 -Map $(OSGENDIR)/boot/aros.map \
 	    -o $@ $(OBJS) -L$(LIBDIR) $(LIBS)
 	@strip --strip-unneeded -R .note -R .comment $@
 
-#MM workbench-boot-native-i386
-workbench-boot-native-i386: \
+#MM workbench-boot-pc-i386
+workbench-boot-pc-i386: \
 	$(BINDIR)/boot/grub/menu.lst
 	@$(NOP)
 
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
-#MM bootdisk-native-i386 : software-native-i386
-bootdisk-native-i386: \
+#MM bootdisk-pc-i386 : software-pc-i386
+bootdisk-pc-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.tgz \
-	$(BINDIR)/boot/aros-native-i386 install
-	@$(CP) $(BINDIR)/boot/aros-native-i386 $(BOOT_DEST_DIR)/Devs
-	@gzip -f $(BOOT_DEST_DIR)/Devs/aros-native-i386
+	$(BINDIR)/boot/aros-pc-i386 install
+	@$(CP) $(BINDIR)/boot/aros-pc-i386 $(BOOT_DEST_DIR)/boot
+	@gzip -f $(BOOT_DEST_DIR)/boot/aros-pc-i386
 	@$(TOOLDIR)/createhdfile $(OSGENDIR)/boot/aros.bin floppy1440 $(BOOT_DEST_DIR)
 	@./install $(OSGENDIR)/boot/aros.bin
 
@@ -102,8 +102,8 @@ $(BOOT_DEST_DIR)/AROS.tgz :
 $(BOOT_DEST_DIR)/% : $(BOOT_SRC_DIR)/%
 	@$(CP) $< $@
 
-#MM bootiso-native-i386 : software-native-i386 bootdisk-native-i386
-bootiso-native-i386: $(OSGENDIR)/boot/aros.iso
+#MM bootiso-pc-i386 : software-pc-i386 bootdisk-pc-i386
+bootiso-pc-i386: $(OSGENDIR)/boot/aros.iso
 
 $(AROSDIR)/boot/aros.bin : $(OSGENDIR)/boot/aros.bin
 	@$(CP) $< $@
