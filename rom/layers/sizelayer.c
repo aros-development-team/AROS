@@ -333,7 +333,7 @@
       and only for a superbitmapped layer!
      */
  
-    if (0 != (l->Flags & (LAYERSUPER|LAYERSIMPLE)) && (dx < 0 || dy < 0))
+    if (LAYERSUPER == (l->Flags & (LAYERSUPER|LAYERSIMPLE)) && (dx < 0 || dy < 0))
     {
       struct BitMap * bm = l->rp->BitMap;
 
@@ -406,13 +406,13 @@
     DeleteLayer(0, l_tmp);
 
 
-#if 0
+//#if 0
     if (0 != (l->Flags & LAYERSIMPLE))
     {
       OrRectRegion(l->DamageList, &l->bounds);
       l->Flags |= LAYERREFRESH;
     }
-#endif
+//#endif
 
     /*
     ** If the layer was a simple layer then there might be bitmap

@@ -368,7 +368,7 @@
       and only for a superbitmapped layer!
      */
  
-    if (0 != (l->Flags & LAYERSUPER) && (dw < 0 || dh < 0))
+    if (LAYERSUPER == (l->Flags & (LAYERSUPER|LAYERSMART)) && (dw < 0 || dh < 0))
     {
       struct BitMap * bm = l->rp->BitMap;
       CR = l_tmp->ClipRect;
