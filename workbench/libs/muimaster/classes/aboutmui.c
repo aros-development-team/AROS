@@ -27,7 +27,7 @@ struct MUI_AboutmuiData
     int dummy;
 };
 
-
+#if 0
 static const unsigned long colors[] = {
 	0xECECECEC, 0xF5F5F5F5, 0xFEFEFEFE,
 	0x83838383, 0xB4B4B4B4, 0xF3F3F3F3,
@@ -861,6 +861,7 @@ static const unsigned char body[] = {
 	0x3E, 0x02, 0xBF, 0xFF, 0xEF, 0xF3, 0xA9, 0x38, 
 	0x00, 0x03, 0xD0, 0xFC, 0x03, 
 };
+#endif
 
 static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -868,10 +869,14 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
     Object *app = NULL;
     Object *ok_button;
+    const char about_text[] = "Zune, a MUI clone\n"
+	"\nCompiled on " __DATE__
+	"\nCopyright © 2002, The AROS Development Team.";
     
     obj = (Object *)DoSuperNew(cl, obj,
-    	MUIA_Window_Title, "Zune - About",
+    	MUIA_Window_Title, "About Zune",
 	WindowContents, VGroup,
+#if 0
 	    Child, MUI_NewObject(MUIC_Bodychunk,
 	    	MUIA_Bodychunk_Body, body,
 	    	MUIA_Bodychunk_Compression, 1,
@@ -884,6 +889,8 @@ static IPTR Aboutmui_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    	MUIA_FixWidth,100,
 	    	MUIA_FixHeight,100,
 	    	TAG_DONE),
+#endif
+	    Child, CLabel(about_text),
 	    Child, ok_button = SimpleButton("Ok"),
 	    End,
     	TAG_MORE, msg->ops_AttrList);
