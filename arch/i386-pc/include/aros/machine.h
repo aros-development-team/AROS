@@ -31,7 +31,7 @@
 #define AROS_GET_SYSBASE_OK     extern struct ExecBase * SysBase;
 
 #ifndef __TINYC__
-register unsigned char * AROS_GET_SP asm("%esp");
+register unsigned char * AROS_GET_SP __asm__("%esp");
 #endif
 
 /* ??? */
