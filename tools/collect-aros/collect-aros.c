@@ -79,15 +79,6 @@ FILE *xfopen(char *name, char *mode)
     return ret;
 }
 
-pid_t xvfork(void)
-{
-    pid_t pid = vfork();
-
-    fatalerror(pid == -1);
-
-    return pid;
-}
-
 void xwaitpid(pid_t pid)
 {
     int status;
@@ -99,7 +90,8 @@ void xwaitpid(pid_t pid)
 #define docommand(func, cmd, ...)                                             \
 do                                                                            \
 {                                                                             \
-    pid_t pid = xvfork();                                                     \
+    pid_t pid = vfork();                                                      \
+    fatalerror(pid == -1);                                                    \
     if (pid == 0)                                                             \
     {                                                                         \
 	func(cmd, __VA_ARGS__);                                               \
