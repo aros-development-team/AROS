@@ -1,10 +1,11 @@
-#if USE_BANDED_FUNCTIONS
 #include <proto/graphics.h>
 
 #include <clib/macros.h>
 
 #include "graphics_intern.h"
 #include "intregions.h"
+
+#if USE_BANDED_FUNCTIONS
 
 #define DEBUG 0
 
@@ -831,6 +832,8 @@ static void __inline__ DisposeBand
 
 static void __inline__ ShrinkBand
 (
+    LONG OffX,
+    LONG OffY,
     struct RegionRectangle  *Band,
     LONG MinX,
     LONG MinY,
@@ -856,23 +859,23 @@ static void __inline__ ShrinkBand
         Band->Prev = LastRR;
 
         if (MinX(Band) < MinX)
-            MinX(Band) = MinX;
+            MinX(Band) = MinX + OffX;
     }
 
     while (Band && MaxX >= MaxX(Band))
     {
-        MinY(Band) = MinY;
-        MaxY(Band) = MaxY;
+        MinY(Band) = MinY + OffY;
+        MaxY(Band) = MaxY + OffY;
 
         ADVANCE(NextBandPtr, Band);
     }
 
     if (Band)
     {
-        MinY(Band) = MinY;
-        MaxY(Band) = MaxY;
+        MinY(Band) = MinY + OffY;
+        MaxY(Band) = MaxY + OffY;
 
-        MaxX(Band) = MaxX;
+        MaxX(Band) = MaxX + OffX;
         ADVANCE(NextBandPtr, Band);
 
         if (Band)
@@ -937,6 +940,8 @@ BOOL _AndRectRegion
         /* The band overlaps with the rectangle */
 	ShrinkBand
         (
+            OldBounds.MinX - MinX(Reg),
+            OldBounds.MinY - MinY(Reg),
             rr,
             Rect->MinX - OldBounds.MinX,
             MAX(Rect->MinY - OldBounds.MinY, MinY(rr)),
@@ -953,7 +958,7 @@ BOOL _AndRectRegion
         DisposeRegionRectangleList(rr);
     }
 
-    _TranslateRegionRectangles(Reg->RegionRectangle, -MinX(Reg->RegionRectangle), -MinY(Reg->RegionRectangle));
+//    _TranslateRegionRectangles(Reg->RegionRectangle, -MinX(Reg->RegionRectangle), -MinY(Reg->RegionRectangle));
 
     return TRUE;
 }
