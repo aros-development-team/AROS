@@ -19,10 +19,19 @@
 #define MUIM_IconList_Add               (MUIB_IconList | 0x00000002) /* Zune: V1 returns BOOL */
 #define MUIM_IconList_NextSelected      (MUIB_IconList | 0x00000003) /* Zune: V1 */
 #define MUIM_IconList_UnselectAll       (MUIB_IconList | 0x00000004) /* Zune: V1 */
+#define MUIM_IconList_Sort              (MUIB_IconList | 0x00000005) /* Zune: V1 */
+#define MUIM_IconList_GetSortBits       (MUIB_IconList | 0x00000006) /* Zune: V1 */
+#define MUIM_IconList_SetSortBits       (MUIB_IconList | 0x00000007) /* Zune: V1 */
+#define MUIM_IconList_PositionIcons     (MUIB_IconList | 0x00000008) /* Zune: V1 */
+
 struct MUIP_IconList_Clear              {ULONG MethodID;};
 struct MUIP_IconList_Update             {ULONG MethodID;};
-struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; LONG type; void *udata; /* More file attrs to add */};
+struct MUIP_IconList_Add                {ULONG MethodID; char *filename; char *label; struct FileInfoBlock *fib;};/* void *udata; More file attrs to add };*/
 struct MUIP_IconList_NextSelected       {ULONG MethodID; struct IconList_Entry **entry;}; /* *entry maybe MUIV_IconList_NextSelected_Start, *entry is MUIV_IconList_NextSelected_End if no more entries are selected */
+struct MUIP_IconList_Sort               {ULONG MethodID;};
+struct MUIP_IconList_SetSortBits        {ULONG MethodID; ULONG sort_bits; };
+struct MUIP_IconList_GetSortBits        {ULONG MethodID;};
+struct MUIP_IconList_PositionIcons      {ULONG MethodID;};
 
 #define MUIV_IconList_NextSelected_Start 0
 #define MUIV_IconList_NextSelected_End   0
@@ -50,6 +59,24 @@ struct IconList_Click
     int shift; /* TRUE for shift click */
     struct IconList_Entry *entry; /* might be NULL */
 };
+
+
+
+/****************************************************************************/
+/* iconlist sort bits - a value of zero sets: sort by name + drawers at top */
+
+#define ICONLIST_SORT_DRAWERS_MIXED  (1<<0)		/*mix folders and files when sorting*/
+#define ICONLIST_SORT_DRAWERS_LAST   (1<<1)		/*ignored if mixed is set*/
+#define ICONLIST_SORT_REVERSE		 (1<<2)		/*reverse sort direction*/
+#define ICONLIST_SORT_BY_DATE	     (1<<3)		/*both date and size = sort by type*/
+#define ICONLIST_SORT_BY_SIZE	     (1<<4)		/*neither = sort by name*/
+
+#define ICONLIST_SHOW_HIDDEN	     (1<<5)		/*needs to be globally overridable*/
+#define ICONLIST_SHOW_INFO		     (1<<6)		/*show icon *.info files*/
+
+#define ICONLIST_DISP_VERTICAL	     (1<<7)		/*tile icons vertically*/
+#define ICONLIST_DISP_NOICONS	     (1<<8)		/*name only mode*/
+#define ICONLIST_DISP_DETAILS	     (1<<9)		/*name=details mode, icon=??*/
 
 
 
