@@ -91,7 +91,7 @@ install : makedirs tools mmake
 	@$(MMAKE) AROS.install
 
 # Don't try to generate $(TOP)/make.opts
-$(TOP)/make.opts
+$(TOP)/make.opts:
 	$(NOP)
 
 # targets which do not generate files or for which a file/directory exists
