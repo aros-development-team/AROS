@@ -1649,14 +1649,14 @@ STATIC IPTR string_render(Class *cl, Object *o, struct gpRender *msg)
 	D(bug("Full redraw\n"));
 
 	/* center image position, we assume image top and left is 0 */
-	itags[0].ti_Data = G(o)->Width + 8;
-	itags[1].ti_Data = G(o)->Height + 4;
+	itags[0].ti_Data = G(o)->Width + BORDERSTRINGSPACINGX * 2;
+	itags[1].ti_Data = G(o)->Height + BORDERSTRINGSPACINGY * 2;
 	
 	SetAttrsA((Object *)data->frame, itags);
 	
 
-	x = G(o)->LeftEdge - 4; 
-	y = G(o)->TopEdge - 2;
+	x = G(o)->LeftEdge - BORDERSTRINGSPACINGX; 
+	y = G(o)->TopEdge - BORDERSTRINGSPACINGY;
 	    
 	DrawImageState(msg->gpr_RPort,
 		(struct Image *)data->frame,

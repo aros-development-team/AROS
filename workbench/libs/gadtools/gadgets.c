@@ -904,6 +904,8 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
+    struct IBox bbox;
+    
     Class *cl;
 
     struct TagItem *tag, tags[] =
@@ -919,6 +921,7 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     	{STRINGA_ReplaceMode,	FALSE},
     	{GA_TextAttr,		(IPTR)NULL},
 	{GTA_GadgetKind,	STRING_KIND},
+	{GA_Bounds,		(IPTR)&bbox},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -948,7 +951,24 @@ struct Gadget *makestring(struct GadToolsBase_intern *GadToolsBase,
     else
     	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 	
-    tags[11].ti_Data = (IPTR)stdgadtags;
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+       
+    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
+    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
+    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
+    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+
+    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
+       thanks to creategadgeta.c! */
+      
+    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERSTRINGSPACINGX;
+    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERSTRINGSPACINGY;
+    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
+    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
+
+    tags[12].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
@@ -968,6 +988,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem *taglist)
 {
     struct Gadget *obj = NULL;
+    struct IBox bbox;
     Class *cl;
 
     struct TagItem *tag, tags[] =
@@ -983,6 +1004,7 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     	{STRINGA_ReplaceMode,	FALSE},
     	{GA_TextAttr,		(IPTR)NULL},
 	{GTA_GadgetKind,	INTEGER_KIND},
+	{GA_Bounds,		(IPTR)&bbox},
 	{TAG_MORE, 	(IPTR)NULL}
     };
     
@@ -1012,7 +1034,24 @@ struct Gadget *makeinteger(struct GadToolsBase_intern *GadToolsBase,
     else
     	tags[9].ti_Tag = TAG_IGNORE; /* Don't pass GA_TextAttr, NULL */
 
-    tags[11].ti_Data = (IPTR)stdgadtags;
+    /* if there is a bounding box the label position
+       will be calculated based on this box and not
+       the gadget coords */
+       
+    bbox.Left   = GetTagData(GA_Left, 0, stdgadtags);
+    bbox.Top    = GetTagData(GA_Top,  0, stdgadtags);
+    bbox.Width  = GetTagData(GA_Width, 0, stdgadtags);
+    bbox.Height = GetTagData(GA_Height, 0, stdgadtags);
+
+    /* There are always GA_Left, GA_Top, GA_Width and GA_Height tags
+       thanks to creategadgeta.c! */
+      
+    FindTagItem(GA_Left,stdgadtags)->ti_Data   += BORDERSTRINGSPACINGX;
+    FindTagItem(GA_Top,stdgadtags)->ti_Data    += BORDERSTRINGSPACINGY;
+    FindTagItem(GA_Width,stdgadtags)->ti_Data  -= BORDERSTRINGSPACINGX * 2;
+    FindTagItem(GA_Height,stdgadtags)->ti_Data -= BORDERSTRINGSPACINGY * 2;
+
+    tags[12].ti_Data = (IPTR)stdgadtags;
 
     cl = makestringclass(GadToolsBase);
     if (!cl)
