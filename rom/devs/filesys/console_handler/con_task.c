@@ -750,7 +750,7 @@ VOID conTaskEntry(struct conTaskParams *param)
 				fh->inputstart = fh->inputsize;
 				fh->inputpos = fh->inputstart;
 
-				HandlePendingReads(conbase, fh);
+				if (fh->inputsize) HandlePendingReads(conbase, fh);
 
 				if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
 				{
