@@ -2,7 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.12  1996/09/18 14:42:07  digulla
+    Revision 1.13  1996/09/21 15:49:08  digulla
+    No need for stdlib.h
+
+    Revision 1.12  1996/09/18 14:42:07	digulla
     Our window is simplerefresh
 
     Revision 1.11  1996/09/17 16:42:59	digulla
@@ -72,7 +75,6 @@
 #include <intuition/intuition.h>
 #include <graphics/gfxbase.h>
 #include <graphics/rastport.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <aros/rt.h>
 
