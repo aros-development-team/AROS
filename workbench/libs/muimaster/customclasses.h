@@ -34,7 +34,7 @@ int name ## _Initialize(void)                                         \
     {                                                                 \
         __showerror                                                   \
 	(                                                             \
-	    "Couldn not create Zune custom class `" #name "'."        \
+	    "Could not create Zune custom class `" #name "'."         \
 	);                                                            \
                                                                       \
 	return RETURN_FAIL;                                           \
