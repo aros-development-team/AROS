@@ -8,6 +8,16 @@ Type:	  misc/emu
 
 New this time:
 
+- First hardware (well, Linux) drivers using the new HIDD technologie
+- New license (source is freeware, firms can create commercial products
+  with it)
+- *Lots* of new code (about 10MB) since the last release.
+- *Lots* of new bugs, too ;-)
+- Some bugs fixed (well, last time that I mention that)
+- IBM PC Standalone version (doesn't do much, yet, but looks promising)
+- Many demos from old Fish disks were ported
+- New naming scheme
+
 HOW TO USE THIS
 ---------------
 
