@@ -11,6 +11,7 @@ SUPPORTOBJS = \
   objs/menu.o \
   objs/penspec.o \
   objs/support.o \
+  objs/support_classes.o \
   objs/textengine.o
 
 LIBOBJS = \
@@ -160,6 +161,9 @@ objs/menu.o: menu.c
 
 objs/support.o: support.c
   sc $(CFLAGS) support.c objname=$@
+
+objs/support_classes.o: support_classes.c
+  sc $(CFLAGS) support_classes.c objname=$@
 
 objs/textengine.o: textengine.c
   sc $(CFLAGS) textengine.c objname=$@
