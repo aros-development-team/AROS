@@ -103,6 +103,9 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
     struct Library *CGXSystemBase;
 
     if (!window) return;
+
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
+
     if (window->Flags & WFLG_BACKDROP) return;
 
     if (((struct IntWindow *)(window))->specialflags & SPFLAG_NOICONIFY) return;
@@ -122,6 +125,8 @@ static VOID int_hidewindow(struct HideWindowActionMsg *msg,
 {
     struct Window *window = msg->window;
     struct Screen *screen = window->WScreen;
+
+    if (!ResourceExisting(window, RESOURCE_WINDOW, IntuitionBase)) return;
 
     if (!IsWindowVisible(window))
     {
