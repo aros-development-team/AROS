@@ -23,6 +23,7 @@ TOOLLIB ?= $(TOOLDIR)/libtool.a
 HOST_CFLAGS := $(HOST_CFLAGS) -Wall -g -DHAVE_VSNPRINTF -I.. -O
 
 OBJDIR	= $(TOOLDIR)/obj
+DEPFILE = $(TOOLDIR)/depend
 
 all : depend $(OBJDIR) $(TOOLLIB)
 
@@ -49,6 +50,11 @@ clean :
 	-@$(RM) Makefile.bak
 
 depend :
-	@makedepend -- $(HOST_CFLAGS) -- *.c
+	@touch $(DEPFILE)
+	@makedepend -f$(DEPFILE) -- $(HOST_CFLAGS) -- *.c
 
-# DO NOT DELETE
+$(DEPFILE) : 
+	@touch $(DEPFILE)
+	@makedepend -f$(DEPFILE) -- $(HOST_CFLAGS) -- *.c
+
+-include $(DEPFILE)
