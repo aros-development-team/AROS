@@ -16,7 +16,8 @@ SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
 	alib filesys libs devs c Demos
 DIST_FILES = makefile arosshell.c README* make.cfg crypt.c \
 	configure scripts/cint2.awk scripts/makefunctable.awk \
-	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS
+	scripts/genprotos.h s/Startup-Sequence AFD-COPYRIGHT BUGS \
+	i386-emul m68k-native m68k-emul
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -46,14 +47,14 @@ dist-tar : FORCE
 	cd bin/$(ARCH) ; \
 	    tar cvvzf ../../dist/AROSbin-$(VERSION).tgz AROS
 	cd .. ; tar cvvzf AROS/dist/AROSdev-$(VERSION).tgz \
-		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES)) \
+		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
 		$(shell cd ..; find AROS/include -name "*.h")
 
 dist-lha : FORCE
 	cd bin/$(ARCH) ; \
 	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
 	cd .. ; lha a AROS/dist/AROSdev-$(VERSION).lha \
-		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES)) \
+		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
 		$(shell cd ..; find AROS/include -name "*.h")
 
 # Alwaye remake rules that depend on this one
