@@ -16,8 +16,8 @@
 	AROS_LH2(LONG, FindArg,
 
 /*  SYNOPSIS */
-	AROS_LHA(STRPTR, template, D1),
-	AROS_LHA(STRPTR, keyword,  D2),
+	AROS_LHA(CONST_STRPTR, template, D1),
+	AROS_LHA(CONST_STRPTR, keyword,  D2),
 
 /*  LOCATION */
 	struct DosLibrary *, DOSBase, 134, Dos)
@@ -44,7 +44,7 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     LONG count=0;
-    STRPTR key;
+    CONST_STRPTR key;
 
     /* Loop over template */
     for(;;)
