@@ -1483,8 +1483,6 @@ void NVLoadDAC(
 
 static void InitBaseRegs(struct staticdata *sd, struct CardState *card, Sync *mode)
 {
-    ObtainSemaphore(&sd->GlobalLock);
-
     /* Determine sync polarity */
     if (mode->VDisplay < 400)
 	card->Regs.misc = 0xa3;
@@ -1545,8 +1543,6 @@ static void InitBaseRegs(struct staticdata *sd, struct CardState *card, Sync *mo
     card->Regs.attr[18] = 0x0f;
     card->Regs.attr[19] = 0x00;
     card->Regs.attr[20] = 0x00;
-
-    ReleaseSemaphore(&sd->GlobalLock);
 }
 
 #define BITMASK(t,b) (((unsigned)(1U << (((t)-(b)+1)))-1)  << (b))
@@ -1573,8 +1569,6 @@ void InitMode(struct staticdata *sdd, struct CardState *state,
 	HDisplay, HSyncStart, HSyncEnd, HTotal,
 	VDisplay, VSyncStart, VSyncEnd, VTotal
     };
-
-    ObtainSemaphore(&sd->GlobalLock);
 
     InitBaseRegs(sd, state, &mode);
 
@@ -1700,8 +1694,6 @@ void InitMode(struct staticdata *sdd, struct CardState *state,
     
     state->timingH = 0;
     state->timingV = 0;
-    
-    ReleaseSemaphore(&sd->GlobalLock);
 }
 
 void acc_reset(struct staticdata *);
@@ -1911,7 +1903,6 @@ void acc_reset(struct staticdata *sd)
     struct Card *pNv = &sd->Card;
     int pitch, i;
 
-LOCK_ALL
 LOCK_HW
 
     pitch = pNv->CurrentState->width *
@@ -1994,7 +1985,6 @@ LOCK_HW
     NVDmaKickoff(pNv);
 
 UNLOCK_HW
-UNLOCK_ALL
 }
 
 void NVSync(struct staticdata *sd)

@@ -263,7 +263,7 @@ D(bug("[NVidia] NewBitmap: framebuffer=%d, displayable=%d\n", framebuffer, displ
 	modeid = (HIDDT_ModeID)GetTagData(aHidd_BitMap_ModeID, vHidd_ModeID_Invalid, msg->attrList);
 	if (vHidd_ModeID_Invalid != modeid) {
 	    /* User supplied a valid modeid. We can use our offscreen class */
-	    classptr = sd->offbmclass;
+	    classptr = sd->onbmclass;
 	} else {
 	    /* We may create an offscreen bitmap if the user supplied a friend
 	       bitmap. But we need to check that he did not supplied a StdPixFmt
@@ -326,7 +326,6 @@ static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o,
 	    {
 		bm->usecount++;
 		
-		LOCK_ALL
 		LOCK_HW
 
 		LoadState(sd, bm->state);
@@ -338,7 +337,6 @@ static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o,
 		sd->Card.PRAMDAC[0x0300 / 4] = 0;
 
 		UNLOCK_HW
-		UNLOCK_ALL
 	    }
 	}
     }
@@ -375,7 +373,7 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 	}
 	/* Case 0: one of bitmaps is 8bpp, whereas the other is TrueColor one */
-	if ((bm_src->depth <= 8 || bm_dst->depth <= 8) &&
+	else if ((bm_src->depth <= 8 || bm_dst->depth <= 8) &&
 	    (bm_src->depth != bm_dst->depth))
 	{
 	    /* Unsupported case */
@@ -383,12 +381,11 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    return;
 	}
 	/* Case 1: both bitmaps have the same depth - use Blit engine */
-	if (bm_src->depth == bm_dst->depth)
+	else if (bm_src->depth == bm_dst->depth)
 	{
-	    LOCK_ALL
 	    LOCK_HW
 	    
-	    NVSetRopSolid(sd, mode, ~0);
+	    NVSetRopSolid(sd, mode, ~0 << bm_src->depth);
 
 	    if (bm_dst->surface_format != sd->surface_format)
 	    {
@@ -429,11 +426,9 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    NVSync(sd);
 
 	    UNLOCK_HW
-	    UNLOCK_ALL
 	}
 	else /* Case 2: different bitmaps. use Stretch engine */
 	{
-	    LOCK_ALL
 	    LOCK_HW
 
 	    if ((bm_dst->surface_format != sd->surface_format) && bm_dst->depth != 15)
@@ -516,14 +511,13 @@ static VOID nv__copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyBox *
 	    NVSync(sd);
 
 	    UNLOCK_HW
-	    UNLOCK_ALL
 	}
 
-/*D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
+D(bug("[NVidia] CopyBox(src(%p,%d:%d@%d),dst(%p,%d:%d@%d),%d:%d\n",
 		bm_src->framebuffer,msg->srcX,msg->srcY,bm_src->depth,
 		bm_dst->framebuffer,msg->destX,msg->destY,bm_dst->depth,
 		msg->width, msg->height));
-*/	
+	
 	bm_src->usecount++;
 	bm_dst->usecount++;
     }
@@ -538,7 +532,7 @@ static void TransformCursor(struct staticdata *);
 
 static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_SetCursorShape *msg)
 {
-    bug("SetCursorShape %p\n", msg->shape);
+//    bug("SetCursorShape %p\n", msg->shape);
 //    return OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
     if (msg->shape == NULL)
     {
@@ -590,6 +584,9 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	}
 	
 	LOCK_HW
+
+	for (x = 0; x < maxw*maxh; x++)
+	    curimg[x] = 0;
 	
 	for (y = 0; y < height; y++)
 	{
@@ -608,7 +605,7 @@ static BOOL nv__setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 			    ((color.green) & 0x00ff00)    |
 			    ((color.blue >> 8) & 0x0000ff);
 		    
-		    curimg[maxw*2+4] = pixel ? 0x50000000 : 0x00000000;
+		    curimg[maxw*2+3] = pixel ? 0x50000000 : 0x00000000;
 		    if (pixel)
 			*curimg++ = pixel;
 		    else curimg++;
@@ -760,6 +757,8 @@ IPTR AllocBitmapArea(struct staticdata *sd, ULONG width, ULONG height,
 {
     IPTR result;
     
+    LOCK_HW
+    
     Forbid();
     result = (IPTR)Allocate(sd->CardMem, ((width * bpp + 63) & ~63) * height);
     Permit();
@@ -773,6 +772,8 @@ IPTR AllocBitmapArea(struct staticdata *sd, ULONG width, ULONG height,
     if (result == 0) --result;
     else result -= (IPTR)sd->Card.FrameBuffer;
 
+    UNLOCK_HW
+
     /* Generic thing. Will be extended later */
     return result;
 }
@@ -782,12 +783,16 @@ VOID FreeBitmapArea(struct staticdata *sd, IPTR bmp, ULONG width, ULONG height,
 {
     APTR ptr = (APTR)(bmp + sd->Card.FrameBuffer);
 
+    LOCK_HW
+
     D(bug("[NVidia] FreeBitmapArea(%p,%dx%d@%d)\n",
 	bmp, width, height, bpp));
 
     Forbid();
     Deallocate(sd->CardMem, ptr, ((width * bpp + 63) & ~63) * height);
     Permit();
+    
+    UNLOCK_HW
 }
 
 

@@ -189,7 +189,6 @@ struct staticdata {
 
     struct MemHeader	    *CardMem;
 
-    struct SignalSemaphore  GlobalLock;    /* Protect whole driver */
     struct SignalSemaphore  HWLock;	    /* Hardware exclusive semaphore */
 
     APTR		    memPool;
@@ -245,11 +244,9 @@ typedef struct __bm {
     struct CardState *state;
 } nvBitMap;
 
-#define LOCK_ALL	ObtainSemaphore(&sd->GlobalLock);
-#define LOCK_HW		ObtainSemaphore(&sd->HWLock);
+#define LOCK_HW		{ ObtainSemaphore(&sd->HWLock); }
 
-#define UNLOCK_ALL	ReleaseSemaphore(&sd->GlobalLock);
-#define UNLOCK_HW	ReleaseSemaphore(&sd->HWLock);
+#define UNLOCK_HW	{ ReleaseSemaphore(&sd->HWLock); }
 
 LIBBASETYPE {
     struct Library	LibNode;
