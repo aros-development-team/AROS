@@ -447,7 +447,7 @@ static OOP_Object *create_framebuffer(struct GfxBase *GfxBase)
     /* Get the highest available resolution at the best possible depth */
     hiddmode = get_best_resolution_and_depth(GfxBase);
     if (vHidd_ModeID_Invalid == hiddmode) {
-    	kprintf("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n");
+    	D(bug("!!! create_framebuffer(): COULD NOT GET HIDD MODEID !!!\n"));
     } else {
     	/* Create the framebuffer object */
 	fbtags[1].ti_Data = hiddmode;
@@ -538,7 +538,7 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 	    release_cache_object(SDD(GfxBase)->gc_cache, gc, GfxBase);
 	    
 	    if (HIDD_Gfx_SetCursorShape(SDD(GfxBase)->gfxhidd, SDD(GfxBase)->pointerbm)) {
-kprintf("CURSOR SHAPE SET\n");
+D(bug("CURSOR SHAPE SET\n"));
 		/* Make it visible */
 		HIDD_Gfx_SetCursorVisible(SDD(GfxBase)->gfxhidd, TRUE);
 		
@@ -568,7 +568,7 @@ VOID driver_SetPointerPos(UWORD x, UWORD y, struct GfxBase *GfxBase)
 VOID driver_SetPointerShape(UWORD *shape, UWORD width, UWORD height
 		, UWORD xoffset, UWORD yoffset, struct GfxBase *GfxBase)
 {
-    kprintf("!!! driver_SetPointerShape YET NOT IMPLEMENTED !!!\n");
+    D(bug("!!! driver_SetPointerShape YET NOT IMPLEMENTED !!!\n"));
 }
 
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
@@ -629,10 +629,10 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 		    
 			SDD(GfxBase)->framebuffer = create_framebuffer(GfxBase);
 			if (NULL != SDD(GfxBase)->framebuffer) {
-kprintf("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer);			
+D(bug("FRAMEBUFFER OK: %p\n", SDD(GfxBase)->framebuffer));			
 			    if (init_cursor(GfxBase)) {
 
-kprintf("MOUSE INITED\n");			    
+D(bug("MOUSE INITED\n"));			    
 		            	ReturnBool("driver_LateGfxInit", TRUE);
 			    }
 			    OOP_DisposeObject(SDD(GfxBase)->framebuffer);
@@ -975,7 +975,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy
     
     brd = (struct bitmap_render_data *)bitmap_rd;
     
-//kprintf("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
+//bug("bitmap_render(%p, %d, %d, %p, %p, %d, %d, %d, %d, %p)\n"
 //	, bitmap_rd, srcx, srcy, dstbm_obj, dst_gc, x1, y1, x2, y2, GfxBase);
 	
 	
@@ -1675,7 +1675,9 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
 		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
+		    {
+		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+		    }
 		    else
 		    {
 		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
@@ -1733,7 +1735,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
     
     if (!CorrectDriverData (rp, GfxBase))
 	return;
-/* kprintf("driver_DrawEllipse(%d %d %d %d)\n", center_x, center_y, rx, ry);	
+/* bug("driver_DrawEllipse(%d %d %d %d)\n", center_x, center_y, rx, ry);	
 */    gc = GetDriverData(rp)->dd_GC;
     
     rr.MinX = center_x - rx;
@@ -1800,7 +1802,7 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 		{
 		
 		    /* Set clip rectangle */
-/* kprintf("Setting cliprect: %d %d %d %d : layerrel: %d %d %d %d\n"
+/* bug("Setting cliprect: %d %d %d %d : layerrel: %d %d %d %d\n"
 		    	, intersect.MinX
 			, intersect.MinY
 			, intersect.MaxX
@@ -1837,7 +1839,9 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
 		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
+		    {
+		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+		    }
 		    else
 		    {
 		    	LONG bm_rel_minx, bm_rel_miny, bm_rel_maxx, bm_rel_maxy;
@@ -2023,7 +2027,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
     
     if (NULL == fontbm)
     {
-    	kprintf("FONT HAS NO HIDD BITMAP ! Won't render text\n");
+    	D(bug("FONT HAS NO HIDD BITMAP ! Won't render text\n"));
 	return;
     }
 
@@ -2141,7 +2145,7 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 
     ret = do_pixel_func(rp, x, y, pix_read_lut8, &prlrd, GfxBase);
     if (-1 == ret || -1 == prlrd.pen) {
-        kprintf("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??");
+        D(bug("ReadPixel(), COULD NOT GET PEN. TRYING TO READ FROM SimpleRefresh cliprect ??"));
     	return (ULONG)-1;
     }
 	
@@ -2291,7 +2295,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     struct TagItem bm_tags[8];	/* Tags for offscreen bitmaps */
     
 /*
-    kprintf("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
+    bug("driver_AllocBitMap(sizex=%d, sizey=%d, depth=%d, flags=%d, friend=%p)\n",
     	sizex, sizey, depth, flags, friend);
 */
 
@@ -2707,7 +2711,7 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 
     EnterFunc(bug("driver_BltBitMap()\n"));
 	
-/* kprintf("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
+/* bug("BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %x)\n"
 		,srcBitMap, xSrc, ySrc, dstBitMap, xDest, yDest, xSize, ySize, minterm);
 
 */	
@@ -2844,7 +2848,7 @@ LOCK_BLIT
             /* palettized with no colmap. Neew to get a colmap from dest*/
             if (dstflags == FLG_TRUECOLOR) {
     	
-                kprintf("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n");
+                D(bug("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n"));
                 colmaps_ok = FALSE;
                 success = FALSE;
     	    
@@ -2859,7 +2863,7 @@ LOCK_BLIT
         if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
     	    /* palettized with no pixtab. Nees to get a pixtab from dest*/
             if (srcflags == FLG_TRUECOLOR) {
-                kprintf("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n");
+                D(bug("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n"));
                 colmaps_ok = FALSE;
                 success = FALSE;
     	    
@@ -2945,29 +2949,29 @@ LOCK_BLIT
 
     /* Try to get a CLUT for the bitmaps */
     if (IS_HIDD_BM(srcBitMap)) {
-    	//kprintf("driver_intbltbitmap: source is hidd bitmap\n");
+    	//bug("driver_intbltbitmap: source is hidd bitmap\n");
     	if (NULL != HIDD_BM_COLMAP(srcBitMap))
     	{
-    	    //kprintf("driver_intbltbitmap: source has colormap\n");
+    	    //bug("driver_intbltbitmap: source has colormap\n");
     	    srcflags |= FLG_HASCOLMAP;
     	}
     	srcflags |= GET_COLMOD_FLAGS(srcBitMap);
     } else {
-    	//kprintf("driver_intbltbitmap: source is amiga bitmap\n");
+    	//bug("driver_intbltbitmap: source is amiga bitmap\n");
     	/* Amiga BM */
     	srcflags |= FLG_PALETTE;
     }
 
     if (IS_HIDD_BM(dstBitMap)) {
-    	//kprintf("driver_intbltbitmap: dest is hidd bitmap\n");
+    	//bug("driver_intbltbitmap: dest is hidd bitmap\n");
     	if (NULL != HIDD_BM_COLMAP(dstBitMap))
     	{
-    	    //kprintf("driver_intbltbitmap: dest has colormap\n");
+    	    //bug("driver_intbltbitmap: dest has colormap\n");
     	    dstflags |= FLG_HASCOLMAP;
     	}
     	dstflags |= GET_COLMOD_FLAGS(dstBitMap);
     } else {
-    	//kprintf("driver_intbltbitmap: dest is amiga bitmap\n");
+    	//bug("driver_intbltbitmap: dest is amiga bitmap\n");
     	/* Amiga BM */
     	dstflags |= FLG_PALETTE;
     }
@@ -2976,7 +2980,7 @@ LOCK_BLIT
     	/* palettized with no colmap. Neew to get a colmap from dest*/
     	if (dstflags == FLG_TRUECOLOR) {
     	
-    	    kprintf("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n");
+    	    D(bug("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n"));
     	    colmaps_ok = FALSE;
 	    success = FALSE;
     	    
@@ -2988,11 +2992,11 @@ LOCK_BLIT
 	    src_colmap_set = TRUE;
 
 /* 		
-kprintf("Colormap:\n");
+bug("Colormap:\n");
 {
 ULONG idx;
 for (idx = 0; idx < 256; idx ++)
-	kprintf("[%d]=%d ", idx, HIDD_CM_GetPixel(HIDD_BM_COLMAP(dstBitMap), idx));
+	bug("[%d]=%d ", idx, HIDD_CM_GetPixel(HIDD_BM_COLMAP(dstBitMap), idx));
 }
 */
 	}
@@ -3001,7 +3005,7 @@ for (idx = 0; idx < 256; idx ++)
     if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
     	/* palettized with no pixtab. Nees to get a pixtab from dest*/
     	if (srcflags == FLG_TRUECOLOR) {
-    	    kprintf("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n");
+    	    D(bug("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n"));
     	    colmaps_ok = FALSE;
 	    success = FALSE;
     	    
@@ -3121,11 +3125,11 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    bm = vp->RasInfo->BitMap;
 
    if (!IS_HIDD_BM(bm)) {
-    	kprintf("!!!!! Trying to use SetRGB32() call on non-hidd bitmap!!!\n");
+    	D(bug("!!!!! Trying to use SetRGB32() call on non-hidd bitmap!!!\n"));
     	return;
    }
    if (NULL == HIDD_BM_COLMAP(bm)) {
-    	kprintf("!!!!! Trying to use SetRGB32() call on bitmap with no CLUT !!!\n");
+    	D(bug("!!!!! Trying to use SetRGB32() call on bitmap with no CLUT !!!\n"));
 	return;
    }
    
@@ -3144,7 +3148,7 @@ void driver_SetRGB32 (struct ViewPort * vp, ULONG color,
    	HIDD_BM_SetColors(HIDD_BM_OBJ(bm), &hidd_col, color, 1);
 
 /*
- kprintf("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
+ bug("SetRGB32: bm %p, hbm %p, col %d (%x %x %x %x) mapped to %x\n"
 		, bm
 		, HIDD_BM_OBJ(bm)
 		, color
@@ -4131,7 +4135,9 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
 		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("driver_BltMaskBitMapRastPort(): Superbitmap not handled yet\n");
+		    {
+		    	D(bug("driver_BltMaskBitMapRastPort(): Superbitmap not handled yet\n"));
+		    }
 		    else
 		    {
 		    
@@ -4240,12 +4246,12 @@ static inline OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxB
 {
     OOP_Object *pbm_obj;
 
-//kprintf("get_planarbm_object()\n");    
+//bug("get_planarbm_object()\n");    
     pbm_obj = obtain_cache_object(SDD(GfxBase)->planarbm_cache, GfxBase);
     
     if (NULL != pbm_obj) {
 /*
-kprintf("Got cache object %p, class=%s, domethod=%p, instoffset=%d\n"
+bug("Got cache object %p, class=%s, domethod=%p, instoffset=%d\n"
 	, pbm_obj
 	, OOP_OCLASS(pbm_obj)->ClassNode.ln_Name
 	, OOP_OCLASS(pbm_obj)->DoMethod
@@ -4253,13 +4259,13 @@ kprintf("Got cache object %p, class=%s, domethod=%p, instoffset=%d\n"
 );
 */
     	if (!HIDD_PlanarBM_SetBitMap(pbm_obj, bitmap)) {
-	     kprintf("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n");
+	     D(bug("!!! get_planarbm_object: HIDD_PlanarBM_SetBitMap FAILED !!!\n"));
 	     release_cache_object(SDD(GfxBase)->planarbm_cache, pbm_obj, GfxBase);
 	     pbm_obj = NULL;
 	}
 		
     } else {
-    	kprintf("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n");
+    	D(bug("!!! get_planarbm_object: obtain_cache_object FAILED !!!\n"));
     }
     
     return pbm_obj;
@@ -4338,7 +4344,9 @@ ULONG do_pixel_func(struct RastPort *rp
 		    	retval =  0;
 		
 		    } else if (L->Flags & LAYERSUPER)
-		    	kprintf("driver_WriteRGBPixel(): Superbitmap not handled yet\n");
+		    {
+		    	D(bug("driver_WriteRGBPixel(): Superbitmap not handled yet\n"));
+		    }
 		    else
 		    {
 			retval = render_func(funcdata
@@ -4493,7 +4501,9 @@ ULONG do_render_func(struct RastPort *rp
 		    if (L->Flags & LAYERSIMPLE)
 		    	continue;
 		    else if (L->Flags & LAYERSUPER)
-		    	kprintf("do_render_func(): Superbitmap not handled yet\n");
+		    {
+		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+		    }
 		    else
 		    {
 
@@ -4563,11 +4573,11 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
     }
     
     if ( BMF_DISPLAYABLE != (bm->Flags & BMF_DISPLAYABLE)) {
-    	kprintf("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n");
+    	D(bug("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
 	return FALSE;
     }
     if ( SDD(GfxBase)->frontbm == bm) {
-    	kprintf("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bm);
+    	D(bug("!!!!!!!!!!!!!!! SHOWING BITMAP %p TWICE !!!!!!!!!!!\n", bm));
 	return TRUE;
     }
     
@@ -4576,7 +4586,7 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
     }
     fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(bm), showflags);
     if (NULL == fb) {
-    	kprintf("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n");
+    	D(bug("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n"));
     } else {
 	Forbid();
 	 /* Set this as the active screen */
@@ -4876,7 +4886,7 @@ static ULONG dm_render(APTR dmr_data
 	bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
     
 	if (PIXELBUF_SIZE < bytesperrow) {
-	    kprintf("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n");
+	    D(bug("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n"));
 	    return 0;
     	}
     
@@ -4947,7 +4957,7 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteLUTPixelArray()!!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteLUTPixelArray()!!!\n"));
     	return 0;
     }
     
@@ -4961,14 +4971,14 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
     */
     
     if (depth <= 8) {
-    	kprintf("!!! TRYING TO USE WriteLUTPixelArray() ON BITMAP WITH DEPTH < 8\n");
+    	D(bug("!!! TRYING TO USE WriteLUTPixelArray() ON BITMAP WITH DEPTH < 8\n"));
     	return 0;
     }
 	
     /* Curently only one format is supported */
     if (CTABFMT_XRGB8 != ctabformat) {
-    	kprintf("!!! WriteLUTPixelArray() CALLED WITH UNSUPPORTED CTAB FORMAT %d\n"
-		, ctabformat);
+    	D(bug("!!! WriteLUTPixelArray() CALLED WITH UNSUPPORTED CTAB FORMAT %d\n"
+		, ctabformat));
     	return 0;
     }
     col.alpha	= 0;
@@ -5019,7 +5029,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WritePixelArray() !!!\n"));
     	return 0;
     }
     
@@ -5032,7 +5042,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	UBYTE * array = (UBYTE *)src;
 	
 	if (rp->BitMap->Flags & BMF_SPECIALFMT) {
-	    kprintf("!!! No CLUT in driver_WritePixelArray\n");
+	    D(bug("!!! No CLUT in driver_WritePixelArray\n"));
 	    return 0;
 	}
 	
@@ -5049,7 +5059,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     }
     
     if (RECTFMT_GREY8 == srcformat) {
-    	kprintf("!!! RECTFMT_GREY8 not yet handled in driver_WritePixelArray\n");
+    	D(bug("!!! RECTFMT_GREY8 not yet handled in driver_WritePixelArray\n"));
 	return 0;
     }
     
@@ -5114,7 +5124,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadPixelArray() !!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadPixelArray() !!!\n"));
     	return 0;
     }
     
@@ -5174,7 +5184,7 @@ LONG driver_InvertPixelArray(struct RastPort *rp
 
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap InvertPixelArray() !!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap InvertPixelArray() !!!\n"));
     	return 0;
     }
 
@@ -5243,7 +5253,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteRGBPixel() !!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in WriteRGBPixel() !!!\n"));
     	return 0;
     }
 
@@ -5273,7 +5283,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadRGBPixel()!!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in ReadRGBPixel()!!!\n"));
     	return (ULONG)-1;
     }
     
@@ -5304,7 +5314,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
     
     /* This is cybergraphx. We only work wih HIDD bitmaps */
     if (!IS_HIDD_BM(bitMap)) {
-    	kprintf("!!!!! Trying to use CGFX call on non-hidd bitmap in GetCyberMapAttr() !!!\n");
+    	D(bug("!!!!! Trying to use CGFX call on non-hidd bitmap in GetCyberMapAttr() !!!\n"));
     	return 0;
     }
 	
@@ -5330,7 +5340,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	    cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
 	    
 	    if (cpf == (UWORD)-1) {
-	    	kprintf("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n");
+	    	D(bug("!!! UNKNOWN PIXEL FORMAT IN GetCyberMapAttr()\n"));
 	    }
 	    
 	    retval = (IPTR)cpf;
@@ -5368,7 +5378,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	    break;
 	
 	default:
-	    kprintf("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n");
+	    D(bug("!!! UNKNOWN ATTRIBUTE PASSED TO GetCyberMapAttr()\n"));
 	    break;
 	
 	
@@ -5400,8 +5410,8 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
 	    	break;
 	    
 	    default:
-	    	kprintf("!!! UNKNOWN TAG IN CVideoCtrlTagList(): %x !!!\n"
-			, tag->ti_Tag);
+	    	D(bug("!!! UNKNOWN TAG IN CVideoCtrlTagList(): %x !!!\n"
+			, tag->ti_Tag));
 		break;
 	    
 	} /* switch() */
@@ -5430,8 +5440,8 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
 	    	break;
 	
 	    default:
-	    	kprintf("!!! UNKNOWN DPMS LEVEL IN CVideoCtrlTagList(): %x !!!\n"
-	    	    , dpmslevel);
+	    	D(bug("!!! UNKNOWN DPMS LEVEL IN CVideoCtrlTagList(): %x !!!\n"
+	    	    , dpmslevel));
 		    
 		dpms_found = FALSE;
 		break;
@@ -5465,7 +5475,7 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     	return FALSE;
 	
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!! CALLING ExtractColor() ON NO-HIDD BITMAP !!!\n");
+    	D(bug("!!! CALLING ExtractColor() ON NO-HIDD BITMAP !!!\n"));
 	return FALSE;
     }
     
@@ -5515,7 +5525,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
 	
 	
     if (!IS_HIDD_BM(rp->BitMap)) {
-    	kprintf("!!! NO HIDD BITMAP IN CALL TO DoCDrawMethodTagList() !!!\n");
+    	D(bug("!!! NO HIDD BITMAP IN CALL TO DoCDrawMethodTagList() !!!\n"));
 	return;
     }
 
@@ -5527,7 +5537,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     dmrd.rp = rp;
     
     if (((ULONG)-1) == dmrd.msg.colormodel) {
-    	kprintf("!!! UNKNOWN HIDD PIXFMT IN DoCDrawMethodTagList() !!!\n");
+    	D(bug("!!! UNKNOWN HIDD PIXFMT IN DoCDrawMethodTagList() !!!\n"));
 	return;
     }
     
@@ -5567,7 +5577,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     UWORD cpf;
     
     if (!IS_HIDD_BM(bm)) {
-    	kprintf("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n");
+    	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n"));
 	return NULL;
     }
 
@@ -5576,7 +5586,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
     cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
     if (((UWORD)-1) == cpf) {
-    	kprintf("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n");
+    	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n"));
 	return NULL;
     }
     
@@ -5617,7 +5627,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
 	    	break;
 		
 	    default:
-	    	kprintf("!!! UNKNOWN TAG PASSED TO LockBitMapTagList() !!!\n");
+	    	D(bug("!!! UNKNOWN TAG PASSED TO LockBitMapTagList() !!!\n"));
 		break;
 	}
     }
@@ -5651,7 +5661,7 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
 	    	break; }
 	
 	    default:
-	    	kprintf("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n");
+	    	D(bug("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n"));
 		break;
 	}
     }
@@ -5691,7 +5701,7 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 	    break;
 	    
 	default:
-	    kprintf("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n");
+	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
 	    break;
      
     }
@@ -5726,7 +5736,7 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 	    break;
 	    
 	default:
-	    kprintf("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n");
+	    D(bug("UNKNOWN CYBERGRAPHICS PIXFMT IN cyber2hidd_pixfmt\n"));
 	    break;
     }
     return stdpf;

@@ -23,6 +23,9 @@
 #include "graphics_intern.h"
 #include "graphics_internal.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 /* stegerg: check */
 
 /* #define NOTNULLMASK 0x10000000 --> trouble with more than 4 gfxmodes: 4 << 26 = 0x10000000 */
@@ -155,11 +158,11 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
     HIDDT_ModeID hiddmode;
     OOP_Object *sync, *pixfmt;
     
-    kprintf("FindDisplayInfo(id=%x)\n", id);
+    D(bug("FindDisplayInfo(id=%x)\n", id));
     
     /* Check for the NOTNULLMASK */
     if ((id & NOTNULLMASK) != NOTNULLMASK) {
-    	kprintf("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n");
+    	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
     	return NULL;
     }
     
@@ -167,7 +170,7 @@ DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase)
     
     /* Try to get mode info for the mode */
     if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pixfmt)) {
-	kprintf("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n");
+	D(bug("!!! NO AROS MODEID IN FindDisplayInfo() !!!\n"));
 	return NULL;
     }
     
@@ -204,19 +207,19 @@ static inline BOOL check_sizes(ULONG tagid, ULONG size)
     idx = DTAG_TO_IDX(tagid);
     
     if (idx > 5) {
-    	kprintf("!!! INVALID TAGID TO GetDisplayInfoData");
+    	D(bug("!!! INVALID TAGID TO GetDisplayInfoData"));
 	return FALSE;
     }
     
     sc = &size_checks[idx];
     if (sc->struct_id != tagid) {
-    	kprintf("!!! INVALID TAGID TO GetDisplayInfoData");
+    	D(bug("!!! INVALID TAGID TO GetDisplayInfoData"));
 	return FALSE;
     }
     
     if (sc->struct_size > size) {
-    	kprintf("!!! NO SPACE FOR %s IN BUFFER SUPPLIED TO GetDisplayInfoData !!!\n"
-		, sc->struct_name);
+    	D(bug("!!! NO SPACE FOR %s IN BUFFER SUPPLIED TO GetDisplayInfoData !!!\n"
+		, sc->struct_name));
 	return FALSE;
     }
     
@@ -250,13 +253,13 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 	    /* Check that id2 is a valid modeid */
 	    handle = FindDisplayInfo(id2);
 	} else {
-	    kprintf("!!! INVALID MODE ID IN GetDisplayInfoData()\n");
+	    D(bug("!!! INVALID MODE ID IN GetDisplayInfoData()\n"));
 	    return 0;
 	}
     }
     
     if (NULL == handle) {
-	kprintf("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n");
+	D(bug("!!! COULD NOT GET HANDLE IN GetDisplayInfoData()\n"));
 	return 0;
     }
     
@@ -265,13 +268,13 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
     
     /* Get mode info from the HIDD */
     if (!HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf)) {
-	kprintf("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n");
+	D(bug("NO VALID MODE PASSED TO GetDisplayInfoData() !!!\n"));
 	return 0;
     }
     
     
-    kprintf("GetDisplayInfoData(handle=%d, modeid=%x, tagid=%x)\n"
-    	, (ULONG)handle, modeid, tagid);
+    D(bug("GetDisplayInfoData(handle=%d, modeid=%x, tagid=%x)\n"
+    	, (ULONG)handle, modeid, tagid));
 	
     
     /* Build the queryheader */
@@ -386,7 +389,7 @@ ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size
 ObtainSemaphoreShared(&db->sema);
 	    majoridx = MAJORID2NUM(modeid);
 	    if (majoridx >= db->num_mspecs) {
-		kprintf("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n");
+		D(bug("!!! INVALID MODE ID IN GetDisplayInfoData(DTAG_MNTR) !!!\n"));
 ReleaseSemaphore(&db->sema);
 		return 0;
 	    }
@@ -449,13 +452,13 @@ ReleaseSemaphore(&db->sema);
 	    break; }
 	    
 	default:
-	    kprintf("!!! UNKNOWN TAGID IN CALL TO GetDisplayInfoData() !!!\n");
+	    D(bug("!!! UNKNOWN TAGID IN CALL TO GetDisplayInfoData() !!!\n"));
 	    break;
     	
     }
     
 
-kprintf("GDID: %d\n", structsize);
+D(bug("GDID: %d\n", structsize));
     return structsize;
 }
 
@@ -463,10 +466,10 @@ kprintf("GDID: %d\n", structsize);
 ULONG driver_GetVPModeID(struct ViewPort *vp, struct GfxBase *GfxBase)
 {
     ULONG modeid;
-    kprintf(" GetVPModeID returning %x\n", vp->ColorMap->VPModeID);
+    D(bug(" GetVPModeID returning %x\n", vp->ColorMap->VPModeID));
     modeid = vp->ColorMap->VPModeID;
     
-    kprintf("RETURNING\n");
+    D(bug("RETURNING\n"));
     return modeid;
     
 }
@@ -520,7 +523,7 @@ ULONG driver_BestModeIDA(struct TagItem *tags, struct GfxBase *GfxBase)
 	if (NULL != vp->RasInfo->BitMap) {
 	    depth = vp->RasInfo->BitMap->Depth;
 	} else {
-	    kprintf("!!! Passing viewport with NULL vp->RasInfo->BitMap to BestModeIDA() !!!\n");
+	    D(bug("!!! Passing viewport with NULL vp->RasInfo->BitMap to BestModeIDA() !!!\n"));
 	}
     }
     
@@ -639,7 +642,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 		break;
 		
 	    default:
-	    	kprintf("!!! UNKNOWN TAG PASSED TO AllocCModeListTagList\n");
+	    	D(bug("!!! UNKNOWN TAG PASSED TO AllocCModeListTagList\n"));
 		break;
 	} 	
     }
@@ -669,8 +672,8 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    /* This should never happen because HIDD_GfxWueryModeIDs() should
 	       only return valid modes
 	    */
-	    kprintf("!!! UNABLE TO GET HIDD MODE INFO IN AllocCModeListTagList() !!!\n");
-	    kprintf("!!! THIS SHOULD *NEVER* HAPPEN !!!\n");
+	    D(bug("!!! UNABLE TO GET HIDD MODE INFO IN AllocCModeListTagList() !!!\n"));
+	    D(bug("!!! THIS SHOULD *NEVER* HAPPEN !!!\n"));
 	    goto failexit;
 	}
 
@@ -794,7 +797,7 @@ ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase)
 	    	break;
 		
 	    default:
-	    	kprintf("!!! UNKOWN ATTR PASSED TO BestCModeIDTagList(): %x !!!\n", tag->ti_Tag);
+	    	D(bug("!!! UNKOWN ATTR PASSED TO BestCModeIDTagList(): %x !!!\n", tag->ti_Tag));
 		break;
 
 	} /* switch () */
@@ -840,7 +843,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 	OOP_GetAttr(pf, aHidd_PixFmt_Depth, &depth);
     
 	if (depth < 8) {
-    	    kprintf("!!! TRYING TO GET ATTR FROM NON-CGFX MODE IN GetCyberIDAttr() !!!\n");
+    	    D(bug("!!! TRYING TO GET ATTR FROM NON-CGFX MODE IN GetCyberIDAttr() !!!\n"));
 	    retval = (ULONG)-1;
 	} else {
     
@@ -852,7 +855,7 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 		
 		    retval = hidd2cyber_pixfmt(stdpf, GfxBase);
 		    if (-1 == retval) {
-			kprintf("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n");
+			D(bug("!!! NO CGFX PIXFMT IN GetCyberIDAttr() !!!\n"));
 		    }
 	    	    break; }
 	
@@ -873,8 +876,8 @@ ULONG driver_GetCyberIDAttr(ULONG attribute, ULONG id, struct GfxBase *GfxBase)
 		    break;
 		
 		default:
-	    	    kprintf("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n"
-			, attribute);
+	    	    D(bug("!!! UNKONOW ATTRIBUTE IN GetCyberIDAttr(): %x !!!\n"
+			, attribute));
 		    retval = (ULONG)-1;
 		    break;
 	    	

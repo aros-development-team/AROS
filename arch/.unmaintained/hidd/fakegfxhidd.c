@@ -9,6 +9,9 @@
 #include "graphics_internal.h"
 #include "fakegfxhidd.h"
 
+#define DEBUG 0
+#include <aros/debug.h>
+
 static OOP_Class *init_fakefbclass(struct class_static_data *csd);
 static VOID free_fakefbclass(OOP_Class *cl, struct class_static_data *csd);
 
@@ -214,7 +217,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	if (    ( curs_width  > (mode_width  / 2) )
 	     || ( curs_height > (mode_height / 2) )
 	     || ( curs_depth  > mode_depth) ) {
-	     kprintf("!!! FakeGfx::SetCursorShape: CURSOR BM HAS INVALID ATTRS !!!\n");
+	     D(bug("!!! FakeGfx::SetCursorShape: CURSOR BM HAS INVALID ATTRS !!!\n"));
 	     return FALSE;
 	}
 	    
@@ -225,7 +228,7 @@ static BOOL gfx_setcursorshape(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_Se
 	new_backup = HIDD_Gfx_NewBitMap(data->gfxhidd, bmtags);
 	    
 	if (NULL == new_backup) {
-	    kprintf("!!! FakeGfx::SetCursorShape: COULD NOT CREATE BACKUP BM !!!\n");
+	    D(bug("!!! FakeGfx::SetCursorShape: COULD NOT CREATE BACKUP BM !!!\n"));
 	    return FALSE;
 	}
 	    
@@ -434,7 +437,7 @@ static OOP_Object *fakefb_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
     framebuffer = (OOP_Object *)GetTagData(aHidd_FakeFB_RealBitMap,	NULL, msg->attrList);
     fakegfxhidd = (OOP_Object *)GetTagData(aHidd_FakeFB_FakeGfxHidd,	NULL, msg->attrList);
     if (NULL == framebuffer || NULL == fakegfxhidd) {
-    	kprintf("!!! FakeBM::New(): MISSING FRAMEBUFFER OR FAKE GFX HIDD !!!\n");
+    	D(bug("!!! FakeBM::New(): MISSING FRAMEBUFFER OR FAKE GFX HIDD !!!\n"));
     	return NULL;
     }
 	
@@ -604,13 +607,13 @@ static IPTR fakefb_fillrect(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Dr
 {
     BITMAP_METHOD_INIT
 
- /* kprintf("BITMAP FILLRECT(%d, %d, %d, %d), (%d, %d, %d, %d, %d, %d)\n"
+ /* bug("BITMAP FILLRECT(%d, %d, %d, %d), (%d, %d, %d, %d, %d, %d)\n"
 	, msg->minX, msg->minY, msg->maxX, msg->maxY
 	, fgh->curs_x, fgh->curs_y, fgh->curs_maxx, fgh->curs_maxy
 	, fgh->curs_width, fgh->curs_height);    
 */	
     if (RECT_INSIDE(fgh, msg->minX, msg->minY, msg->maxX, msg->maxY)) {
-/*  kprintf("FILLRECT: REMOVING CURSOR\n");    
+/*  bug("FILLRECT: REMOVING CURSOR\n");    
 */
     	REMOVE_CURSOR(data);
 	
@@ -757,7 +760,7 @@ static IPTR fakefb_fwd(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
     struct fakefb_data *data;
     data = OOP_INST_DATA(cl, o);
 // kill(getpid(), 19);
-// kprintf("BITMAP_FWD\n");    
+// bug("BITMAP_FWD\n");    
     return OOP_DoMethod(data->framebuffer, msg);
 }
 
@@ -827,11 +830,11 @@ static OOP_Class *init_fakegfxhiddclass (struct class_static_data *csd)
     };
     
     
-kprintf("INIT FAKEGFXCLASS\n");
+D(bug("INIT FAKEGFXCLASS\n"));
     if (OOP_ObtainAttrBases(attrbases)) {
 	 cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 	 if(NULL != cl) {
-kprintf("FAKE GFX CLASS INITED\n");	    
+D(bug("FAKE GFX CLASS INITED\n"));	    
 	     cl->UserData = csd;
 	     OOP_AddClass(cl);
 	     
@@ -967,9 +970,9 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 	{ TAG_DONE, 0UL }
     };
     if (NULL == data->curs_bm || NULL == data->framebuffer || !data->curs_on) {
-    	kprintf("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n");
-	kprintf("CURS BM: %p, FB: %p, ON: %d\n"
-		, data->curs_bm, data->framebuffer, data->curs_on);
+    	D(bug("!!! draw_cursor: FAKE GFX HIDD NOT PROPERLY INITIALIZED !!!\n"));
+	D(bug("CURS BM: %p, FB: %p, ON: %d\n"
+		, data->curs_bm, data->framebuffer, data->curs_on));
     	return;
     }
     
@@ -999,7 +1002,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
     
     if (draw) {
 	/* Backup under the new cursor image */
-// kprintf("BACKING UP RENDERED AREA\n");	
+// bug("BACKING UP RENDERED AREA\n");	
 	HIDD_Gfx_CopyBox(data->gfxhidd
 	    , data->framebuffer
 	    , data->curs_x
@@ -1012,7 +1015,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
 
 	data->backup_done = TRUE;
 
-// kprintf("RENDERING CURSOR IMAGE\n");
+// bug("RENDERING CURSOR IMAGE\n");
 	/* Render the cursor image */
 	HIDD_Gfx_CopyBox(data->gfxhidd
 	    , data->curs_bm
@@ -1025,7 +1028,7 @@ static VOID draw_cursor(struct gfx_data *data, BOOL draw, struct class_static_da
     } else {
 	/* Erase the old cursor image */
 	if (data->backup_done) {
-// kprintf("PUTTING BACK BACKED UP AREA\n");
+// bug("PUTTING BACK BACKED UP AREA\n");
 	    HIDD_Gfx_CopyBox(data->gfxhidd
 	    	, data->curs_backup
 	    	, 0, 0

@@ -13,7 +13,8 @@
 #include "graphics_internal.h"
 #include "graphics_intern.h"
 
-
+#define DEBUG 0
+#include <aros/debug.h>
 
 #define CACHE_INCREMENT 4
 
@@ -100,7 +101,7 @@ VOID delete_object_cache(ObjectCache *objectCache, struct GfxBase *GfxBase)
     /* Check if all elements in the object cache are unused */
     for (i = 0; i < oc->num_objects; i ++) {
 	    if (oc->cache[i].used == TRUE) {
-		kprintf("!!!! TRYING TO DELETE AN OBJECT CACHE WITH USED OBJECTS !!!!\n");
+		D(bug("!!!! TRYING TO DELETE AN OBJECT CACHE WITH USED OBJECTS !!!!\n"));
     		ReleaseSemaphore(&oc->lock);
 		return;
 
@@ -141,7 +142,7 @@ OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBas
     
     oc = (struct objcache *)objectCache;
 
-/*    kprintf("obtain_cache_object(classID=%s, classPtr=%p)\n"
+/*    bug("obtain_cache_object(classID=%s, classPtr=%p)\n"
     	, oc->class_id, oc->class_ptr);
 */    
     ObtainSemaphore(&oc->lock);
@@ -152,7 +153,7 @@ OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBas
     	struct cacheitem *ci;
 	
 	ci = &oc->cache[i];
-/* kprintf("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
+/* bug("cache[%d]=%p, %d\n", i, ci->obj, ci->used);
 */    	if (NULL == ci->obj) {
 	    break;
 	} else {
@@ -164,7 +165,7 @@ OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBas
 	}
     }
     
-/* kprintf("obj found in cache: %p\n", obj);    
+/* bug("obj found in cache: %p\n", obj);    
 */    if (NULL == obj) {
     	struct cacheitem *ci;
     	/* No object free, so we try to create a new one.
@@ -191,7 +192,7 @@ OOP_Object *obtain_cache_object(ObjectCache *objectCache, struct GfxBase *GfxBas
 	}
 	
 	/* Try to create a new object */
-/* kprintf("Trying to create new object\n");
+/* bug("Trying to create new object\n");
 */	ci = &oc->cache[oc->num_objects];
 	
 	if (oc->class_id)
@@ -241,10 +242,12 @@ VOID release_cache_object(ObjectCache *objectCache, OOP_Object *object, struct G
 	    }
 	}
     }
-    
+
+#if DEBUG
     if (!found)
-	kprintf("!!!! TRYING TO RELEASE OBJECT CACHE ELEMENT WHICH WAS NOT PRESENT IN CACHE\n");
-    
+	bug("!!!! TRYING TO RELEASE OBJECT CACHE ELEMENT WHICH WAS NOT PRESENT IN CACHE\n");
+#endif
+
     ReleaseSemaphore(&oc->lock);
     
     return;
