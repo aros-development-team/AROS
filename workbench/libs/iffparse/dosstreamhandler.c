@@ -13,10 +13,7 @@
 /* DosStreamHandler */
 /********************/
 
-#undef SysBase
-#undef DOSBase
-#define SysBase    (IPB(hook->h_Data)->sysbase)
-#define DOSBase    (IPB(hook->h_Data)->dosbase)
+#define IFFParseBase IPB(hook->h_Data)
 
 ULONG DOSStreamHandler
 (

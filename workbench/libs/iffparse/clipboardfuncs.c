@@ -53,8 +53,7 @@ VOID ClosePort (struct MsgPort *mp,
 /* ClipStreamHandler  */
 /**********************/
 
-#undef SysBase
-#define SysBase     (IPB(hook->h_Data)->sysbase)
+#define IFFParseBase IPB(hook->h_Data)
 
 ULONG ClipStreamHandler
 (

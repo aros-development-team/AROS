@@ -46,6 +46,7 @@
 #endif
 #include <stdlib.h>
 
+#include <libcore/base.h>
 
 /* Some external stuff (iffparse_init.c) */
 
@@ -268,9 +269,7 @@ struct CIPtr
 
 struct IFFParseBase_intern
 {
-    struct Library    library;
-    struct ExecBase * sysbase;
-    BPTR	      seglist;
+    struct LibHeader  libheader;
     struct Library  * dosbase;
     struct Library  * utilitybase;
 
@@ -287,14 +286,11 @@ struct IFFParseBase_intern
 
 #define IPB(ipb)        ((struct IFFParseBase_intern *)ipb)
 #undef SysBase
-#define SysBase (IPB(IFFParseBase)->sysbase)
+#define SysBase (((struct LibHeader *)IFFParseBase)->lh_SysBase)
 #undef DOSBase
 #define DOSBase (IPB(IFFParseBase)->dosbase)
 #undef UtilityBase
 #define UtilityBase (IPB(IFFParseBase)->utilitybase)
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 
 //void	dprintf(const char *, ...) __attribute__ ((format (printf, 1, 2)));
 void	dprintf(const char *, ...);

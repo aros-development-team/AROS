@@ -52,9 +52,16 @@ FUNCS := \
 	writechunkbytes \
 	writechunkrecords
 
-#MM- workbench-libs-iffparse : includes linklibs
+#MM workbench-libs-iffparse-include : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-utility-includes \
+#MM     includes-copy
+#MM- workbench-libs-iffparse : linklibs
 
-%build_module_macro mmake=workbench-libs-iffparse modname=iffparse modtype=library funcs=$(FUNCS) \
-  files=$(FILES) uselibs="amiga rom" conffile=lib.conf
+%build_module mmake=workbench-libs-iffparse \
+    modname=iffparse modtype=library \
+    files="iffparse_init $(FUNCS) $(FILES)" \
+    uselibs="amiga rom"
 
 %common

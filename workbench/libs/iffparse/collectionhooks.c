@@ -14,8 +14,6 @@
 /* CollectionLCI Purge func  */
 /****************************/
 
-#undef SysBase
-#define SysBase 	IPB(hook->h_Data)->sysbase
 #define IFFParseBase	IPB(hook->h_Data)
 
 ULONG CollectionPurgeFunc
@@ -68,8 +66,6 @@ struct CF_ResourceInfo
     struct CollectionItem    *CollItem;
 };
 
-#undef SysBase
-#define SysBase 	IFFParseBase->sysbase
 #undef IFFParseBase
 
 VOID CF_FreeResources (struct CF_ResourceInfo * ri,
@@ -83,8 +79,6 @@ VOID CF_FreeResources (struct CF_ResourceInfo * ri,
     return;
 }
 
-#undef SysBase
-#define SysBase 	IPB(hook->h_Data)->sysbase
 #define IFFParseBase	IPB(hook->h_Data)
 
 LONG CollectionFunc

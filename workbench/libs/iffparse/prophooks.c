@@ -14,8 +14,6 @@
 /* PropLCI Purge func  */
 /****************************/
 
-#undef SysBase
-#define SysBase     IPB(hook->h_Data)->sysbase
 #define IFFParseBase IPB(hook->h_Data)
 
 IPTR PropPurgeFunc
@@ -54,9 +52,7 @@ struct PF_ResourceInfo
     LONG		    BufferSize;
 };
 
-#undef SysBase
 #undef IFFParseBase
-#define SysBase     IFFParseBase->sysbase
 
 VOID PF_FreeResources(struct PF_ResourceInfo *ri,
     struct IFFParseBase_intern * IFFParseBase)
@@ -68,8 +64,6 @@ VOID PF_FreeResources(struct PF_ResourceInfo *ri,
 }
 
 
-#undef SysBase
-#define SysBase     IPB(hook->h_Data)->sysbase
 #define IFFParseBase IPB(hook->h_Data)
 
 LONG PropFunc
