@@ -104,6 +104,12 @@ AROS_UFH3(void, intBoot,
 	/* Late binding ENVARC: assign, only if used */
 	AssignLate("ENVARC", "SYS:Prefs/env-archive");
 	
+	/* HACK: Wait for LDDemon to signal us that it has finished
+	   initializing itself
+	*/
+	Wait(SIGBREAKF_CTRL_F);
+	   
+	
 	/* Initialize HIDDs */
 	init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 

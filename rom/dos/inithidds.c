@@ -114,7 +114,6 @@ static BOOL init_hiddtype(struct hiddprefs *hp, struct initbase *base)
     struct Library *basehidd;
     BOOL success = FALSE;
     
-    D(bug("Hello!\n"));
     EnterFunc(bug("init_hiddtype(basehiddfile=%s, prefsfile=%s)\n",
     		hp->basehiddfile, hp->prefsfile));
     

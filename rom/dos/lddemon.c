@@ -502,6 +502,8 @@ AROS_UFH3(void, LDDemon,
     void AROS_SLIB_ENTRY(RemLibrary,Dos)();
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct LDDMsg *ldd;
+    
+    struct Task *bootproc;
 
     /* Complete the initialisation. */
     if( (DOSBase->dl_LDDemonPort = CreateMsgPort()) == NULL )
@@ -527,6 +529,22 @@ AROS_UFH3(void, LDDemon,
     InitSemaphore(&DOSBase->dl_LSigSem);
     InitSemaphore(&DOSBase->dl_DSigSem);
     AddMemHandler(&DOSBase->dl_LDHandler);
+    
+    /* Do syncronization with boot process (./dosboot.c):
+       assure that LDDemon is initialize before the boot
+       process, as the boot process might want to open
+       disk-based libraries or devices.
+    */
+    
+    Forbid(); /* To assure that if bootprocess is still not added to the system, it won't start here */
+    bootproc = FindTask("Boot Process");
+    if (bootproc)
+    {
+	Signal(bootproc, SIGBREAKF_CTRL_F);
+    }
+    else
+    	kprintf("lddemon.c: LDDemon process scheduled after Boot process\nor name of Boot Process changed\nwhich causes Boot process to halt\n");
+    Permit();
     
     for(;;)
     {
@@ -586,6 +604,7 @@ AROS_LH2(ULONG, Init,
     {
 	Alert( AT_DeadEnd | AN_RAMLib | AG_ProcCreate );
     }
+
     return NULL;
 
     AROS_LIBFUNC_EXIT
