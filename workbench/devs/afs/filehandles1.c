@@ -160,7 +160,12 @@ UBYTE buffer[32];
 				break;		//object not found or other error
 		}
 	}
-	D(bug("afs.handler:   findBlock: block=%ld\n",blockbuffer->blocknum));
+	D(
+		if (blockbuffer)
+			bug("afs.handler:   findBlock: block=%ld\n",blockbuffer->blocknum);
+		else
+			bug("afs.handler:   findBlock: error\n");
+	);
 	return blockbuffer;
 }
 
