@@ -93,7 +93,7 @@ libTable[] =
     { NULL  	    	    	    	    	  }
 };
 
-#ifdef __AROS__
+#ifndef __MORPHOS__
 struct LocaleBase   	*LocaleBase    = NULL;
 #endif
 struct Library      	*GadToolsBase  = NULL;
