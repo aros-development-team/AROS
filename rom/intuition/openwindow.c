@@ -22,7 +22,7 @@
 #   define DEBUG_OpenWindow 0
 #endif
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #if DEBUG_OpenWindow
 #   define DEBUG 1
 #endif

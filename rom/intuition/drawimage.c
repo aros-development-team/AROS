@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Render an image.
@@ -10,7 +10,7 @@
 #include <aros/macros.h>
 
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #	include <aros/debug.h>
 #include <proto/arossupport.h>
 
