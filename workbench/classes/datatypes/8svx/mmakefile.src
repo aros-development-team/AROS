@@ -1,0 +1,15 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+FILES := 8svxclass libfunc
+FUNCS := obtainengine
+
+#MM workbench-datatypes-8svx : includes linklibs
+
+USER_CFLAGS   := -DMYDEBUG
+
+%build_module_macro mmake=workbench-datatypes-8svx modname=8svx \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs=amiga
+
+%common
