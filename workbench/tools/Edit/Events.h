@@ -8,12 +8,11 @@
 #ifndef	EVENTS_H
 #define	EVENTS_H
 
-#ifndef	RAWKEY_H
-#include	"Rawkey.h"
+#ifndef	_RAWKEY_H_
+#   include "Rawkey.h"
 #endif
-
 #ifndef UTILITY_H
-#include	"Utility.h"
+#   include "Utility.h"
 #endif
 
 /** Jano public port management **/
@@ -28,4 +27,4 @@ void  handle_kbd  ( Project );
 char send_pref(PREFS *prefs, ULONG class);
 char find_janoed( StartUpArgs *args );
 
-#endif
+#endif /* EVENTS_H */
