@@ -418,6 +418,11 @@ AROS_LH1(void, beginio,
 		case TD_CHANGESTATE:
          ObtainSemaphore(&TDBase->io_lock);
 			iotd->iotd_Req.io_Actual=td_getDiskChange(iotd, TDBase);
+			if (!iotd->iotd_Req.io_Actual)
+			{
+				/* turn motor off */
+				fd_outb(fd_inb(FD_DOR) & ~(0x10 << unit->unitnum), FD_DOR);
+			}
 			iotd->iotd_Req.io_Error=0;
 			ReleaseSemaphore(&TDBase->io_lock);
 			break;
@@ -427,6 +432,7 @@ AROS_LH1(void, beginio,
          ObtainSemaphore(&TDBase->io_lock);
          iotd->iotd_Req.io_Length&=1;
 			unit=(struct TDU*)iotd->iotd_Req.io_Unit;
+			TDBase->DOR = fd_inb(FD_DOR);
 			iotd->iotd_Req.io_Actual=(TDBase->DOR>>(unit->unitnum+4))&1;
 			TDBase->DOR&=~(1<<(unit->unitnum+4));
 			TDBase->DOR|=iotd->iotd_Req.io_Length<<(unit->unitnum+4);
@@ -501,12 +507,9 @@ AROS_LH1(LONG, abortio,
 /* Wait for interrupt */
 int td_waitint(struct IOExtTD *iotd, struct TrackDiskBase *TDBase)
 {
-struct Task *sigtask;
 int err = TDERR_NotSpecified;
 
 	TDBase->io_msg = &iotd->iotd_Req.io_Message;
-	sigtask = TDBase->io_msg->mn_ReplyPort->mp_SigTask;
-	TDBase->io_msg->mn_ReplyPort->mp_SigTask = FindTask(NULL);
 	TDBase->iotime = 150;	// Each IO command has 1s to complete before error occurs
 									// atdisk.c says 3 seconds (sheutlin)
 	Wait(1 << iotd->iotd_Req.io_Message.mn_ReplyPort->mp_SigBit);
@@ -515,7 +518,6 @@ int err = TDERR_NotSpecified;
 		TDBase->iotime = 0;
 		err = 0;
 	}
-	TDBase->io_msg->mn_ReplyPort->mp_SigTask = sigtask;
 	return err;
 }
 
@@ -736,7 +738,6 @@ int td_recalibrate(unsigned char unitn, char type, int sector, struct IOExtTD *i
 *************************************************/
 int td_checkDisk(struct TDU *unit, struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
 int actual;
-unsigned char DOR;
 
 	actual=fd_inb(FD_DIR) & (1<<7) ? 1 : 0;
 	if (actual)
@@ -750,9 +751,7 @@ unsigned char DOR;
 		if (actual)
 		{
 			/* no disk, turn motor off */
-			DOR = fd_inb(FD_DOR);
-			DOR &= ~(0x10 << unit->unitnum);
-			fd_outb(DOR, FD_DOR);
+			fd_outb(fd_inb(FD_DOR) & ~(0x10 << unit->unitnum), FD_DOR);
 		}	
 #warning This doesn't look good if the track wasn't written
 		unit->lastcyl=-1;
@@ -764,19 +763,11 @@ unsigned char DOR;
 
 int td_getDiskChange(struct IOExtTD *iotd, struct TrackDiskBase *TDBase) {
 struct TDU *unit=(struct TDU *)iotd->iotd_Req.io_Unit;
-unsigned char DOR;
 int actual;
 	
 	TDBase->timeout[unit->unitnum] = 255;	/* Lock the motor */
 	fd_outb(0x0c | unit->unitnum | (0x10 << unit->unitnum), FD_DOR);	/* Motor ON, use DMA */
 	actual=td_checkDisk(unit, iotd, TDBase);
-	if (!actual)
-	{
-		/* turn motor off */
-		DOR = fd_inb(FD_DOR);
-		DOR &= ~(0x10 << unit->unitnum);
-		fd_outb(DOR, FD_DOR);
-	}
 	TDBase->timeout[unit->unitnum] = TOFF;
 	return actual;
 }
@@ -1026,13 +1017,6 @@ void td_floppytimer(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 		if ((TDBase->timeout[i] > 0) && (TDBase->timeout[i] < 255))
 		{
 			TDBase->timeout[i]--;
-			// Zero? If yes, turn the motor off
-			if (!TDBase->timeout[i])
-			{
-				DOR = fd_inb(FD_DOR);
-				DOR &= ~(0x10 << i);
-				fd_outb(DOR, FD_DOR);
-			}
 		}
 	}
 
