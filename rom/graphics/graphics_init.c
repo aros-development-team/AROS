@@ -1,14 +1,21 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics library
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE 1
+
+#define DEBUG 1
+
+#include <aros/debug.h>
+
 #include <exec/resident.h>
 #include <proto/exec.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
+#include <hardware/intbits.h>
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
@@ -18,6 +25,8 @@
 #include <utility/utility.h>
 #include "graphics_intern.h"
 #include "libdefs.h"
+
+#include <stdio.h>
 
 #define INIT    AROS_SLIB_ENTRY(init,Graphics)
 
@@ -32,6 +41,13 @@ extern int  driver_init (struct LIBBASETYPE *);
 extern int  driver_open (struct LIBBASETYPE *);
 extern void driver_close (struct LIBBASETYPE *);
 extern void driver_expunge (struct LIBBASETYPE *);
+
+AROS_UFP4(ULONG, TOF_VBlank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6));
+
 
 int Graphics_entry(void)
 {
@@ -102,6 +118,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_EXIT
 }
 
+
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
            struct LIBBASETYPE *, LIBBASE, 1, Graphics)
@@ -148,7 +165,22 @@ AROS_LH1(struct LIBBASETYPE *, open,
     	LIBBASE->hash_table = (LONG *)AllocMem(8*sizeof(LONG *), 
                                            MEMF_CLEAR|MEMF_PUBLIC);
     if (!LIBBASE->hash_table)
-      return NULL;
+	return NULL;
+
+
+    if(LIBBASE->LibNode.lib_OpenCnt == 0)
+    {
+	NEWLIST(&LIBBASE->TOF_WaitQ);
+	LIBBASE->vbsrv.is_Code         = (APTR)TOF_VBlank;
+	LIBBASE->vbsrv.is_Data         = LIBBASE;
+	LIBBASE->vbsrv.is_Node.ln_Name = "Graphics TOF server";
+	LIBBASE->vbsrv.is_Node.ln_Pri  = 10;
+	LIBBASE->vbsrv.is_Node.ln_Type = NT_INTERRUPT;
+	
+	/* Add a VBLANK server to take care of TOF waiting tasks. */
+	AddIntServer(INTB_VERTB, &LIBBASE->vbsrv);
+    }
+
 
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
@@ -158,6 +190,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
     return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
+
 
 AROS_LH0(BPTR, close,
            struct LIBBASETYPE *, LIBBASE, 2, Graphics)
@@ -232,3 +265,27 @@ AROS_LH0I(int, null,
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+
+#undef SysBase
+
+AROS_UFH4(ULONG, TOF_VBlank,
+    AROS_UFHA(ULONG, dummy, A0),
+    AROS_UFHA(void *, data, A1),
+    AROS_UFHA(ULONG, dummy2, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    struct Node *tNode;
+
+    if(!IsListEmpty(&GfxBase->TOF_WaitQ))
+    {
+	ForeachNode(&GfxBase->TOF_WaitQ, tNode)
+	{
+	    Signal((struct Task *)tNode->ln_Name, SIGF_SINGLE);
+	}
+    }
+
+    return 0;
+}
+
+
