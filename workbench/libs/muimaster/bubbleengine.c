@@ -34,6 +34,27 @@
 
 extern struct Library *MUIMasterBase;
 
+/************************************************************************/
+
+#ifndef __AROS__
+#define WA_Shape WA_ShapeRegion
+#endif
+
+/************************************************************************/
+
+typedef struct ZBubble
+{
+    struct Window *win;
+    ZText   	  *ztext;
+    STRPTR  	   text;
+    UBYTE   	   flags;
+    struct Region *shape;
+} ZBubble;
+
+#define BUBBLEF_CREATESHORTHELP_CALLED 1
+
+/************************************************************************/
+
 
 /*                [][][][]
               [][]
@@ -72,7 +93,6 @@ static WORD roundtab[ROUNDEDGE_SIZE] =
     0
 };
 
-#ifdef __AROS__
 static struct Region *zune_bubble_shape_create(Object *obj, ZBubble *bubble, WORD w, WORD h)
 {
     struct Region   	*shape = NewRegion();
@@ -106,7 +126,6 @@ static struct Region *zune_bubble_shape_create(Object *obj, ZBubble *bubble, WOR
     return shape;
 
 }
-#endif
 
 static void zune_bubble_draw(Object *obj, ZBubble *bubble)
 {
@@ -201,22 +220,8 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
     #define WINHEIGHT ((bubble->ztext->height  + BORDER_Y * 2) < ROUNDEDGE_SIZE * 2 + 1) ? \
     	    	      ROUNDEDGE_SIZE * 2 + 1 : (bubble->ztext->height + BORDER_Y * 2)
     
-    #ifdef __AROS__
     bubble->shape = zune_bubble_shape_create(obj, bubble, WINWIDTH, WINHEIGHT);
-    #endif
-    
-#ifndef __AROS__
-    bubble->win = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)_screen(obj),
-    	    	    	    	       WA_Left, WINLEFT,
-				       WA_Top, WINTOP,
-				       WA_Width, WINWIDTH,
-				       WA_Height, WINHEIGHT,
-				       WA_AutoAdjust, TRUE,
-				       WA_Activate, FALSE,
-				       WA_Borderless, TRUE,
-				       WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
-				       TAG_DONE);
-#else				       
+
     bubble->win = OpenWindowTags(NULL, WA_CustomScreen, (IPTR)_screen(obj),
     	    	    	    	       WA_Left, WINLEFT,
 				       WA_Top, WINTOP,
@@ -228,8 +233,7 @@ APTR zune_bubble_create(Object *obj, LONG x, LONG y, char *text, ULONG flags)
 				       WA_BackFill, (IPTR)LAYERS_NOBACKFILL,
 				       WA_Shape, (IPTR)bubble->shape,
 				       TAG_DONE);
-#endif				       
-				     
+
     if (!bubble->win)
     {
     	zune_bubble_delete(obj, bubble);
@@ -248,9 +252,7 @@ void zune_bubble_delete(Object *obj, APTR bubble)
     if (b)
     {
     	if (b->win) CloseWindow(b->win);
-#ifdef __AROS__
 	if (b->shape) DisposeRegion(b->shape);
-#endif
     	if (b->ztext) zune_text_destroy(b->ztext);
 	
     	if (b->flags & BUBBLEF_CREATESHORTHELP_CALLED)
