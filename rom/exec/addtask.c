@@ -1,48 +1,16 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.11  1997/01/01 03:46:04  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.10  1996/12/10 13:51:36  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.9  1996/10/24 15:50:42  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/23 14:21:23  aros
-    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
-    which not.
-
-    Revision 1.7  1996/10/19 17:07:23  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.6  1996/09/11 16:54:23  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.5  1996/08/16 14:05:12  digulla
-    Added debug output
-
-    Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:03  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
 */
 #include <exec/execbase.h>
+#include <exec/memory.h>
 #include <aros/libcall.h>
 #include <aros/machine.h>
 #include <proto/exec.h>
+#include "etask.h"
 
 #include "exec_debug.h"
 #ifndef DEBUG_AddTask
@@ -135,6 +103,16 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
     /* Currently only used for segmentation violation */
     if(task->tc_TrapCode==NULL)
 	task->tc_TrapCode=&AROS_SLIB_ENTRY(TrapHandler,Exec);
+
+    /* Allocate the ETask structure if requested */
+    if (task->tc_Flags & TF_ETASK)
+    {
+	task->tc_UnionETask.tc_ETask = AllocMem (sizeof (struct IntETask),
+		MEMF_ANY|MEMF_CLEAR);
+
+	if (!task->tc_UnionETask.tc_ETask)
+	    return NULL;
+    }
 
     /* Get new stackpointer. */
     sp=task->tc_SPReg;
