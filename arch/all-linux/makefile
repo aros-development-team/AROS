@@ -2,7 +2,10 @@
 
 TOP=../..
 
-USER_INCLUDES=-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition
+#	-I./pthreads/include
+USER_INCLUDES= \
+	-I/usr/include -I$(TOP)/rom/graphics -I$(TOP)/rom/intuition \
+	-I$(TOP)/rom/exec
 
 include $(TOP)/config/make.cfg
 
@@ -11,6 +14,15 @@ FILES = graphics_driver intuition_driver \
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+
+threads : $(LIBDIR)/libgthreads.a $(LIBDIR)/libmalloc.a
+	cd pthreads/src ; make
+
+$(LIBDIR)/libgthreads.a : pthreads/lib/libgthreads.a
+	cp $? $@
+
+$(LIBDIR)/libmalloc.a : pthreads/malloc/libmalloc.a
+	cp $? $@
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
