@@ -90,7 +90,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     It's an executable. Before I launch it, I must check
                     whether it is a Workbench program or a CLI program.
                 */
-                #if 0
+                #if 0 /* [ach] disabled since not implemented */
                 icon = GetIconTags(name, TAG_DONE);
                 if (icon != NULL)
                 {
@@ -112,7 +112,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     rc = CLI_LaunchProgram(name, tags);
                 }
             }
-            #if 0
+            #if 0 /* [ach] script bit not handled properly in AROS */
             else if (fib.fib_Protection & FIBF_SCRIPT)
             {
                 /* 
@@ -121,7 +121,6 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     for a normal CLI program.
                 */
                 // FIXME
-                // [ach] The script bit isn't handled properly in AROS...
                 
             }
             #endif
@@ -132,6 +131,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     a plain data file. Test whether it has an icon, and if
                     so try to launch it's default tool (if it has one). 
                 */
+                
                 icon = GetIconTags
                 (
                     name, ICONGETA_FailIfUnavailable, FALSE, TAG_DONE
@@ -140,14 +140,21 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                 if (icon != NULL)
                 {
                     /* Test whether it has an valid default tool. */
-                    bug("OWO: default tool: %s\n", icon->do_DefaultTool);
                     if
                     (
                            icon->do_DefaultTool != NULL 
                         && strlen(icon->do_DefaultTool) > 0
                     )
                     {
-                        //FIXME: launch default tool
+                        BPTR parent = ParentDir(lock);
+                        
+                        rc = OpenWorkbenchObject
+                        (
+                            icon->do_DefaultTool,
+                            WBOPENA_ArgLock, parent,
+                            WBOPENA_ArgName, FilePart(name), 
+                            TAG_DONE
+                        );
                     }
                     else
                     {
@@ -175,8 +182,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
             relative) path: that is, it must not contain any ':' or '/'.
         */
         
-        D(bug("OpenWorkbenchObjectA: Lock failed, looking in search path...\n"));
-        
+        // FIXME: links in strpbrk from host libc?!?! -> crash
         //if (strpbrk(name, '/:') == NULL)
         {
             struct CommandLineInterface *cli = Cli();
@@ -213,10 +219,6 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     {
                         rc = OpenWorkbenchObjectA(path, tags);
                         FreeVec(path);
-                    }
-                    else
-                    {
-                        // FIXME: panic_or_something
                     }
                     
                     UnLock(lock);
@@ -342,8 +344,13 @@ BOOL __CLI_LaunchProgram
     
     if
     (
-        // FIXME: this should actually be done in the handler, to reduce
-        // blocking time
+        /*
+            Launch the program. Note that there is no advantage of doing this
+            in the handler, since we need to wait for the return value anyway
+            (and thus we cannot cut down the blocking time by returning before
+            the program is loaded from disk).
+        */
+        
         SystemTags
         (
             commandline,
