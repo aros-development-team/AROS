@@ -78,7 +78,18 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 
 	if (pp)
 	{
-    	    pp[0] = (ULONG) ((!unit->au_DevType) ? "afs.handler" : "cdrom.handler");
+	    /* This should be dealt with using some sort of volume manager or such. */
+	    switch (unit->au_DevType)
+	    {
+		case DG_DIRECT_ACCESS:
+		    pp[0] = "afs.handler";
+		    break;
+		case DG_CDROM:
+		    pp[0] = "cdrom.handler";
+		    break;
+		default:
+		    D(bug("IDE: AddVolume called on unknown devicetype\n"));
+	    }
 	    pp[1] = (ULONG)name;
 	    pp[2] = unit->au_UnitNumber;
 	    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
@@ -492,21 +503,19 @@ void UnitInfo(struct ide_Unit *unit)
 
         unit->au_SectSize = 1 << unit->au_SecShift;
 
-        /* And the drive is HDD... */
-        if (!unit->au_DevType)
-        {
-            /* Set the geometry of the drive */
-            CalculateGeometry(unit,&id);
-            
-            /* Then get RigidDiskBlock info */
-            RDBInfo(unit);
-        }
-	else /* Hmmm... It's probably a CDROM... */
+	switch (unit->au_DevType)
 	{
-	    D(bug("Unit not a HDD, assuming CDROM...\n"));
-	    AddVolume( 0, 0, unit );
+	    case DG_DIRECT_ACCESS:
+		CalculateGeometry(unit,&id);
+		RDBInfo(unit);
+		break;
+	    case DG_CDROM:
+		AddVolume(0,0,unit);
+		break;
+	    default:
+		D(bug("IDE: Unknown/unhandled unit\n"));
+		break;
 	}
-
         return;
     }
 }
