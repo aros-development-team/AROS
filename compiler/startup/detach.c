@@ -135,7 +135,9 @@ AROS_UFHA(struct ExecBase *,SysBase,A6))
     __detacher_process = NULL;
 
     if (!newproc || __detached_return_value)
+    {
         PutStr(__detached_name); PutStr(": Failed to detach.\n");
+    }
     
     return newproc ? __detached_return_value : RETURN_FAIL;
     
