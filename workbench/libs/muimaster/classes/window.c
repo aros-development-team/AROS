@@ -1184,6 +1184,9 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    height = data->wd_RenderInfo.mri_Window->Height
 			- data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
+//		    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//			  __LINE__, data->wd_Background, left, top, width,
+//			  height, left, top));
 		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 				     left, top, width, height, left, top, 0);
 		}
@@ -1222,6 +1225,9 @@ void _zune_window_message(struct IntuiMessage *imsg)
 
 		    if(data->wd_Flags & MUIWF_ERASEAREA)
 		    {
+//			D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//			      __LINE__, data->wd_Background, left, top, width,
+//			      height, left, top));
 			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 					 left, top, width, height, left, top, 0);
 		    }
@@ -2298,7 +2304,7 @@ static ULONG Window_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    if (data->wd_Flags & MUIWF_OPENED)
 		STORE = (data->wd_Flags & MUIWF_ACTIVE) ? TRUE : FALSE;
 	    else
-		STORE = (data->wd_Flags & MUIWF_DONTACTIVATE) ? FALSE : TRUE;
+		STORE = FALSE;
 	    return(TRUE);
         case MUIA_Window_Window:
             STORE = (data->wd_Flags & MUIWF_OPENED) ? ((ULONG)data->wd_RenderInfo.mri_Window) : FALSE;
@@ -2582,6 +2588,10 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	    - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
 /*  	D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+//	D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//	      __LINE__, data->wd_Background, left, top, width,
+//	      height, left, top));
+
 	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 		 left, top, width, height, left, top, 0);
     }
@@ -2687,6 +2697,9 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 	    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 	else
 	{
+//	    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//		  __LINE__, data->wd_Background, left, top, width,
+//		  height, left, top));
 	    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 			     left, top, width, height, left, top, 0);
 	    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
@@ -2997,7 +3010,9 @@ static IPTR Window_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Wi
     if (!(data->wd_RenderInfo.mri_Window)) /* not between show/hide */
 	return FALSE;
 
-/*      D(bug("zune_imspec_draw %s %d\n", __FILE__, __LINE__)); */
+//    D(bug("%d:zune_imspec_draw(%p) l=%d t=%d w=%d h=%d xo=%d yo=%d\n",
+//	  __LINE__, data->wd_Background, msg->left, msg->top, msg->width,
+//	  msg->height, msg->xoffset, msg->yoffset));
     zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 		    msg->left, msg->top, msg->width, msg->height,
 		    msg->xoffset, msg->yoffset, 0);
