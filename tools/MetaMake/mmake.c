@@ -34,6 +34,10 @@ Boston, MA 02111-1307, USA.  */
 #   define VA_START(args, lastarg) va_start(args)
 #endif
 
+#ifndef __DATE__
+#   define __DATE__ "No __DATE__"
+#endif
+
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
@@ -798,7 +802,8 @@ printdirtree (Project * prj)
     printdirnode (prj->topdir, 1);
 }
 
-void freecachenodes (DirNode * node)
+void
+freecachenodes (DirNode * node)
 {
     DirNode * subnode;
 
