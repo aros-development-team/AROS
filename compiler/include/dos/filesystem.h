@@ -448,7 +448,7 @@ struct IOFileSys
             ULONG  io_Unit;       /* Number of unit to open. */
             IPTR * io_Environ;    /* Pointer to environment array. (see
                                      <dos/filehandler.h> */
-            STRPTR io_DosName     /* The name with wich the filesystem
+            STRPTR io_DosName;    /* The name with wich the filesystem
 	                             is being mounted (the mount point,
 				     one might say) */
         } io_OpenDevice;
