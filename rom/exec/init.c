@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/15 13:21:06  digulla
+    A couple of comments
+
     Revision 1.4  1996/08/13 14:04:33  digulla
     Added intui_ProcessXEvents() to Idle-Task
     Added graphics and intuition.library to system libraries
@@ -193,6 +196,8 @@ int main(int argc,char *argv[])
 	struct MemList *ml;
 	UBYTE *s;
 
+	/* Allocate one header (incl. the first entry) and one additional
+	    entry */
 	ml=(struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry),
 				      MEMF_PUBLIC|MEMF_CLEAR);
 	t =(struct Task *)   AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
@@ -279,7 +284,7 @@ int main(int argc,char *argv[])
 
 	CreateNewProc(bootprocess);
     }
-    RemTask(NULL);
+    RemTask(NULL); /* get rid of Boot task */
 
     /* Get compiler happy */
     return 0;
