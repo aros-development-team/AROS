@@ -229,7 +229,7 @@ STATIC IPTR DT_SetMethod(struct IClass *cl, struct Gadget *g, struct opSet *msg)
 
     pd=(struct Picture_Data *) INST_DATA(cl, g);
     tl=msg->ops_AttrList;
-    RetVal=1;
+    RetVal=0;
 
     while((ti=NextTagItem(&tl)))
     {
@@ -607,6 +607,120 @@ STATIC IPTR DT_Render(struct IClass *cl, struct Gadget *g, struct gpRender *msg)
 #endif
 
     return TRUE;
+}
+
+/**************************************************************************************************/
+
+STATIC IPTR DT_GoActiveMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+{
+    struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
+    struct Picture_Data  *pd = INST_DATA(cl, g);
+    IPTR    	    	  retval = GMR_NOREUSE;
+    
+    if (!AttemptSemaphore(&dtsi->si_Lock))
+    {
+	return GMR_NOREUSE;
+    }
+    
+    if (dtsi->si_Flags & DTSIF_DRAGSELECT)
+    {
+    	ReleaseSemaphore(&dtsi->si_Lock);
+	
+    	return DoSuperMethodA(cl, (Object *)g, (Msg)msg);
+    }
+    else if (msg->gpi_IEvent && !(dtsi->si_Flags & DTSIF_LAYOUT))
+    {
+    	IPTR toph, topv;
+	
+	GetDTAttrs((Object *)g, DTA_TopVert, (IPTR)&topv,
+	    	    	    	DTA_TopHoriz, (IPTR)&toph,
+				TAG_DONE);
+				
+    	pd->ClickX = msg->gpi_Mouse.X + (LONG)toph;
+	pd->ClickY = msg->gpi_Mouse.Y + (LONG)topv;
+	
+    	retval = GMR_MEACTIVE;
+    }
+    
+    ReleaseSemaphore(&dtsi->si_Lock);
+    
+    return retval;
+}
+
+STATIC IPTR DT_HandleInputMethod(struct IClass *cl, struct Gadget *g, struct gpInput *msg)
+{
+    struct DTSpecialInfo *dtsi = (struct DTSpecialInfo *)g->SpecialInfo;
+    struct Picture_Data  *pd = INST_DATA(cl, g);
+    IPTR    	    	  retval = GMR_MEACTIVE;
+    
+    if (!AttemptSemaphore(&dtsi->si_Lock))
+    {
+	return GMR_NOREUSE;
+    }
+
+    if (dtsi->si_Flags & DTSIF_DRAGSELECT)
+    {
+    	ReleaseSemaphore(&dtsi->si_Lock);
+    	return DoSuperMethodA(cl, (Object *)g, (Msg)msg);
+    }
+    
+    if (dtsi->si_Flags & DTSIF_LAYOUT)
+    {
+    	ReleaseSemaphore(&dtsi->si_Lock);
+	return GMR_NOREUSE;
+    }
+    
+    switch(msg->gpi_IEvent->ie_Class)
+    {
+    	case IECLASS_RAWMOUSE:
+	    switch(msg->gpi_IEvent->ie_Code)
+	    {
+	    	case SELECTUP:
+		    retval = GMR_NOREUSE;
+		    break;
+		    
+		case IECODE_NOBUTTON:
+		{
+		    IPTR toph, totalh, visibleh;
+		    IPTR topv, totalv, visiblev;
+		    LONG newtoph, newtopv;
+		    
+		    GetDTAttrs((Object *)g, DTA_TopVert     , &topv,
+		    	    	    	    DTA_TotalVert   , &totalv,
+					    DTA_VisibleVert , &visiblev,
+					    DTA_TopHoriz    , &toph,
+					    DTA_TotalHoriz  , &totalh,
+					    DTA_VisibleHoriz, &visibleh,
+					    TAG_DONE);
+				
+		    newtoph = pd->ClickX - msg->gpi_Mouse.X;
+		    newtopv = pd->ClickY - msg->gpi_Mouse.Y;
+		    
+		    if (newtoph + (LONG)visibleh > (LONG)totalh) newtoph = (LONG)totalh - (LONG)visibleh;
+		    if (newtoph < 0) newtoph = 0;
+		    
+		    if (newtopv + (LONG)visiblev > (LONG)totalv) newtopv = (LONG)totalv - (LONG)visiblev;
+		    if (newtopv < 0) newtopv = 0;
+		    
+		    if ((newtoph != (LONG)toph) || (newtopv != (LONG)topv))
+		    {
+		    	NotifyAttrChanges((Object *) g, msg->gpi_GInfo, NULL,
+					   GA_ID, g->GadgetID,
+					   DTA_TopHoriz, newtoph,
+					   DTA_TopVert, newtopv,
+					   TAG_DONE);
+		    }
+
+		    break;
+		}
+	    }
+	    
+	    break;
+    }
+    
+    ReleaseSemaphore(&dtsi->si_Lock);
+    
+    return retval;
 }
 
 /**************************************************************************************************/
@@ -1020,6 +1134,20 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
             break;
         }
 
+    	case GM_GOACTIVE:
+	{
+            D(bug("picture.datatype/DT_Dispatcher: Method GM_GOACTIVE\n"));
+	    RetVal = DT_GoActiveMethod(cl, (struct Gadget *)o, (struct gpInput *)msg);
+	    break;
+	}
+	   
+	case GM_HANDLEINPUT:
+	{
+            D(bug("picture.datatype/DT_Dispatcher: Method GM_HANDLEINPUT\n"));
+	    RetVal = DT_HandleInputMethod(cl, (struct Gadget *)o, (struct gpInput *)msg);
+	    break;
+	}
+	   
         case DTM_PROCLAYOUT:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_PROCLAYOUT\n"));
