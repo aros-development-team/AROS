@@ -42,12 +42,15 @@ BEGIN {
     fninfo=ARGV[1];
     gsub(/.src$/,".info",fninfo);
 
-    while ((getline < fninfo) > 0)
+    if (fninfo!="")
     {
-	if ($1=="prev")
-	    prev_doc=$2;
-	else if ($1=="next")
-	    next_doc=$2;
+	while ((getline < fninfo) > 0)
+	{
+	    if ($1=="prev")
+		prev_doc=$2;
+	    else if ($1=="next")
+		next_doc=$2;
+	}
     }
 
     if (prev_doc!="")
@@ -55,10 +58,13 @@ BEGIN {
     if (next_doc!="")
 	next_doc="<A HREF=\""next_doc"\">next</A>";
 
-    file="page_header.html";
+    if (fninfo!="")
+    {
+	file="page_header.html";
 
-    while ((getline < file) > 0)
-	print
+	while ((getline < file) > 0)
+	    print
+    }
 
     while ((token=yylex()) != "")
     {
@@ -243,14 +249,18 @@ BEGIN {
     } # while
 
     print ""
-    file="page_footer.html";
 
-    while ((getline < file) > 0)
+    if (fninfo!="")
     {
-	gsub(/\\prev/,prev_doc);
-	gsub(/\\next/,next_doc);
-	gsub(/\\today/,today);
-	print
+	file="page_footer.html";
+
+	while ((getline < file) > 0)
+	{
+	    gsub(/\\prev/,prev_doc);
+	    gsub(/\\next/,next_doc);
+	    gsub(/\\today/,today);
+	    print
+	}
     }
 }
 

@@ -89,7 +89,7 @@ BEGIN {
 			{
 			    match (line,/<.*>/);
 			    hfile=substr(line,RSTART+1,RLENGTH-2);
-			    link="../../../include/" hfile;
+			    link="../../include/" hfile;
 
 			    err=getline < link;
 
@@ -97,7 +97,7 @@ BEGIN {
 			    {
 				close (link);
 
-				line="<A HREF=\""link"\">"hfile"</A>";
+				line="<A HREF=\"../"link"\">"hfile"</A>";
 			    }
 			    else
 				line=hfile;
