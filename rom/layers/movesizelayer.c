@@ -215,9 +215,33 @@
                     ~0,
                     NULL);                    
         }
+        
+        if (NULL != _CR->lobs)
+          OrRectRegion(l->DamageList, &_CR->bounds);
+        
         _CR = _CR->Next;
       }
     } /* if (overlapping) */
+    else
+    {
+      struct ClipRect * _CR;
+      /*
+      ** I must at least build the list of cliprects that are
+      ** not visible right now into the damagelist.
+      */
+      _CR = l->ClipRect;
+      
+      /* Throw away the damage list an rebuild it here */
+      ClearRegion(l->DamageList);
+      
+      while (NULL != _CR)
+      {
+        if (NULL != _CR->lobs)
+          OrRectRegion(l->DamageList, &_CR->bounds);
+        _CR = _CR->Next;
+      }
+    }
+    
   } /* if (simple layer) */
 
   

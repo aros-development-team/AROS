@@ -204,13 +204,32 @@
                     ~0,
                     NULL);                    
         }
-        else
-        {
+        
+        if (NULL != _CR->lobs)
           OrRectRegion(l->DamageList, &_CR->bounds);
-        }
+
         _CR = _CR->Next;
       }
     } /* if (overlapping) */
+    else
+    {
+      struct ClipRect * _CR;
+      /*
+      ** I must at least build the list of cliprects that are
+      ** not visible right now into the damagelist.
+      */
+      _CR = l->ClipRect;
+      
+      /* Throw away the damage list an rebuild it here */
+      ClearRegion(l->DamageList);
+      
+      while (NULL != _CR)
+      {
+        if (NULL != _CR->lobs)
+          OrRectRegion(l->DamageList, &_CR->bounds);
+        _CR = _CR->Next;
+      }
+    }
   } /* if (simple layer) */
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer), MEMF_CLEAR|MEMF_PUBLIC);
@@ -347,14 +366,14 @@
     }
 
 
-    if (0 != (l_tmp->Flags & LAYERSIMPLE))
+    if (0 != (l->Flags & LAYERSIMPLE))
     {
       struct ClipRect * _CR;
       struct Region * R = NewRegion();
       
       /*
       ** l->DamageList contains the list of rectangles at the old position
-      ** that were not visible.
+      ** that were not visible. This list has been moved to the new position.
       */
 
       /*  
@@ -380,16 +399,17 @@
       /* both regions are relative to the screen */      
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
-      
+
       /*
       ** See whether there's something in the final region and then
-      ** set the REFRESH flag
+      ** set the REFRESH flag.
       */
       if (NULL != l->DamageList->RegionRectangle)
+{
+  kprintf("Setting REFRESH flag.\n");
         l->Flags |= LAYERREFRESH;
-
+}
     }
-
 
     /* 
       The layer that was moved is totally visible now at its new position
