@@ -3,7 +3,7 @@
  */
 
 #ifndef LIMITS_H
-#define LIMITS_H 1
+#define LIMITS_H 
 
 /*
  *  Define ANSI <limits.h> for standard 32-bit words.
@@ -12,6 +12,12 @@
  *  16-bit 'short int', and
  *  32-bit 'int' and 'long int'.
  */
+
+/* Maximum length of any multibyte character in any locale.
+ * Gcc's own limit.h dosn't define this value correctly, that's
+ * why we define it here.
+ */
+#define MB_LEN_MAX      16
 
 /* Number of bits in a 'char' */
 #define CHAR_BIT	8
