@@ -154,19 +154,9 @@ endif
 
 # Common rules for all makefiles
 %define common
-# Check if the makefile itself must be remade
+# Delete generated makefiles
 clean ::
-	$(RM) makefile makefile.bak
-
-all : makefile
-
-# Remake makefile
-makefile : makefile.src $(TOP)/scripts/genmf.gawk \
-	    $(TOP)/config/make.tmpl
-	@$(ECHO) "Regenerating makefile..."
-	@$(MV) $@ $@.bak
-	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    $< > $@
+	$(RM) mmakefile mmakefile.bak
 
 %end
 
