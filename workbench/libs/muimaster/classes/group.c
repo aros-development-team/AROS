@@ -562,10 +562,6 @@ static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_Con
 
     DoSuperMethodA(cl,obj,(Msg)msg);
 
-    /* Now we can access muiGlobalData() */
-    if (data->horiz_spacing == -1) data->horiz_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_hspacing;
-    if (data->vert_spacing == -1) data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
-
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
@@ -711,6 +707,13 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (!DoSuperMethodA(cl, obj, (Msg)msg))
 	return FALSE;
 
+    ASSERT_VALID_PTR(muiGlobalInfo(obj));
+
+    if (data->horiz_spacing == -1)
+	data->horiz_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_hspacing;
+    if (data->vert_spacing == -1)
+	data->vert_spacing = muiGlobalInfo(obj)->mgi_Prefs->group_vspacing;
+
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = cstate_copy = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
@@ -843,7 +846,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	 * need to redraw background ourself
 	 */
 	DoMethod(obj, MUIM_DrawBackground,
-		_mleft(obj), _mtop(obj),  _mwidth(obj), _mheight(obj), _left(obj), _top(obj), 0);
+		_mleft(obj), _mtop(obj),  _mwidth(obj), _mheight(obj), _mleft(obj), _mtop(obj), 0);
 
 	data->update = 0;
     } else
