@@ -49,6 +49,8 @@ FUNCTIONS	:= \
 	gfxfree \
 	gfxlookup \
 	gfxnew \
+	initview \
+	initvport \
 	initrastport \
 	loadrgb32 \
 	loadrgb4 \
