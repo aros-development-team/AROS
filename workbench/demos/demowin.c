@@ -578,7 +578,7 @@ int main (int argc, char ** argv)
     win = OpenWindowTags (NULL
 	, WA_Title,	    "Open a window demo"
 	, WA_Left,	    100
-	, WA_Top,	    100
+	, WA_Top,	    50
 	, WA_Width,	    640
 	, WA_Height,	    512
 	, WA_IDCMP,	    IDCMP_RAWKEY
