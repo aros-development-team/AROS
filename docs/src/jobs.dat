@@ -230,6 +230,11 @@ clib00114;2;falemagn;Write setenv
 clib00115;2;hkiel;Write rename
 clib00116;2;falemagn;Write fdopen
 clib00117;1;falemagn;Write perror
+clib00118;2;falemagn;Write access
+clib00119;2;falemagn;Write mkdir
+clib00118;2;falemagn;Write truncate
+clib00119;2;falemagn;Write ftruncate
+clib00120;2;falemagn;Write fileno
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
