@@ -29,8 +29,10 @@
 #include <utility/tagitem.h>
 #include <aros/rt.h>
 #include <aros/arosbase.h>
+#include <hardware/intbits.h>
 #include "memory.h"
 #include <aros/machine.h>
+#include <aros/asmcall.h>
 #undef kprintf
 
 #define NEWLIST(l)                          \
@@ -45,11 +47,16 @@ extern const struct Resident Graphics_resident;
 extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
+extern void InitCore(void);
 
 #define MEMSIZE 1024*1024
+/*#define STATIC_MEMORY */ /* So that gdb can disassemble it */
 static struct MemHeader mh;
-/* static UBYTE memory[MEMSIZE+MEMCHUNK_TOTAL]; */
+#ifdef STATIC_MEMORY
+static UBYTE memory[MEMSIZE+MEMCHUNK_TOTAL];
+#else
 UBYTE * memory;
+#endif
 
 #define NUMVECT 131
 
@@ -68,8 +75,6 @@ static void idleTask (void)
     {
 	if (inputDevice)
 	    Signal (inputDevice, SIGBREAKF_CTRL_F);
-
-	Switch (); /* Rescedule */
     }
 }
 
@@ -84,16 +89,44 @@ static void boot(void)
     RemTask(NULL);
 }
 
-static void timer (int dummy)
+AROS_LH1(void,IntServer,AROS_LHA(struct Interrupt *,first,A1),struct ExecBase *,SysBase,,)
 {
-    signal (SIGALRM, timer);
+    AROS_LIBFUNC_INIT
+    while(first!=NULL)
+    {
+        if(AROS_UFC2(int,first->is_Code,AROS_UFCA(APTR,first->is_Data,A1),
+        				AROS_UFCA(struct ExecBase *,SysBase,A6)))
+            break;
+	first=(struct Interrupt *)first->is_Node.ln_Succ;
+    }
+    AROS_LIBFUNC_EXIT
+}
 
-    if (SysBase->TDNestCnt >= 0
-	&& SysBase->ThisTask->tc_Node.ln_Pri <=
-	    ((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
-	Switch ();
-    else
-	SysBase->AttnResched |= 0x80;
+AROS_LH1(int,Dispatcher,AROS_LHA(APTR,is_Data,A1),struct ExecBase *,SysBase,,)
+{
+    AROS_LIBFUNC_INIT
+    Disable();
+    /* Check if a task switch is necessary */
+    if(SysBase->TaskReady.lh_Head->ln_Succ!=NULL&&
+       SysBase->ThisTask->tc_Node.ln_Pri<=
+    	((struct Task *)SysBase->TaskReady.lh_Head)->tc_Node.ln_Pri)
+    {
+        /* Check if it is possible */
+    	if(SysBase->TDNestCnt<0)
+	{
+	    if(SysBase->ThisTask->tc_State==TS_RUN)
+	    {
+		SysBase->ThisTask->tc_State=TS_READY;
+		Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+		SysBase->AttnResched|=0x8000;
+	    }
+	}else
+	    SysBase->AttnResched|=0x80;
+    }
+    Enable();
+    /* Wasn't explicitly for me */
+    return 0;
+    AROS_LIBFUNC_EXIT
 }
 
 static APTR allocmem(ULONG size)
@@ -123,7 +156,9 @@ int main(int argc,char *argv[])
 
     /* Leave a space of 4096 bytes before the memory */
     space = malloc (4096);
+#ifndef STATIC_MEMORY
     memory = malloc (MEMSIZE+MEMCHUNK_TOTAL);
+#endif
 
     { /* erase space */
 	int size = 4096/sizeof(ULONG);
@@ -187,6 +222,12 @@ int main(int argc,char *argv[])
 	{
 	    NEWLIST(&SysBase->SoftInts[i].sh_List);
 	}
+	for(i=0;i<16;i++)
+	{
+	    SysBase->IntVects[i].iv_Code=NULL;
+	    SysBase->IntVects[i].iv_Data=NULL;
+	    SysBase->IntVects[i].iv_Node=NULL;
+	}
 
 	NEWLIST(&SysBase->SemaphoreList);
 
@@ -244,6 +285,27 @@ int main(int argc,char *argv[])
 	t->tc_Node.ln_Name="Idle task";
 	t->tc_Node.ln_Pri=-128;
 	AddTask(t,&idleTask,NULL);
+    }
+    /* Install all interrupt servers */
+    {
+	int i;
+	for(i=0;i<16;i++)
+	    if((1<<i)&(INTF_PORTS|INTF_COPER|INTF_VERTB|INTF_EXTER|INTF_SETCLR))
+	    {
+	        struct Interrupt *is;
+		is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+		is->is_Code=&__IntServer;
+		is->is_Data=NULL;
+		SetIntVector(i,is);
+	    }
+    }
+    InitCore();
+    /* Install the Dispatcher */
+    {
+        struct Interrupt *is;
+        is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+        is->is_Code=(void (*)())&__Dispatcher;
+        AddIntServer(INTB_VERTB,is);
     }
     Enable();
     Permit();
@@ -334,17 +396,6 @@ int main(int argc,char *argv[])
 
 	CreateNewProc (bootprocess);
 
-	{
-	    struct itimerval interval;
-
-	    /* Start Multitasking */
-	    signal (SIGALRM, timer);
-
-	    interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
-	    interval.it_interval.tv_usec = interval.it_value.tv_usec = 1000000/50;
-
-	    setitimer (ITIMER_REAL, &interval, NULL);
-	}
     }
 
     RemTask(NULL); /* get rid of Boot task */

@@ -27,7 +27,8 @@ FILES = \
 	superstate \
 	userstate \
 	stackswap \
-	runprocess
+	runprocess \
+	initcore
 
 all: setup $(TOP)/include/aros/machine.h machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)

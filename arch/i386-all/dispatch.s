@@ -121,6 +121,9 @@ _Exec_Dispatch:
 	/* Unblock signals if necessary */
 	cmpb	$0,tc_IDNestCnt(%edx)
 	jge	.noen
+	/* If called from the signal handler don't do it. */
+	cmpb	$0,supervisor
+	jne	.noen
 	call	en
 
 .noen:

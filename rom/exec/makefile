@@ -45,7 +45,8 @@ FUNCTIONS = \
 	closedevice doio sendio \
 	checkio abortio waitio \
 	initresident cause \
-	rawputchar
+	rawputchar addintserver \
+	remintserver setintvector
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \

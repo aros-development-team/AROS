@@ -2,6 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/11/14 08:51:35  aros
+    Some work on the kernel:
+    Mapping of Linux-Signals to AROS interrupts
+    Some documentation to the exec microkernel
+    hopefully all holes plugged now
+
     Revision 1.9  1996/10/24 15:50:48  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -50,6 +56,9 @@ void AROS_SLIB_ENTRY(Permit,Exec)();
 void AROS_SLIB_ENTRY(SetSR,Exec)();
 void AROS_SLIB_ENTRY(SuperState,Exec)();
 void AROS_SLIB_ENTRY(UserState,Exec)();
+void AROS_SLIB_ENTRY(SetIntVector,Exec)();
+void AROS_SLIB_ENTRY(AddIntServer,Exec)();
+void AROS_SLIB_ENTRY(RemIntServer,Exec)();
 void AROS_SLIB_ENTRY(Allocate,Exec)();
 void AROS_SLIB_ENTRY(Deallocate,Exec)();
 void AROS_SLIB_ENTRY(AllocMem,Exec)();
@@ -168,9 +177,9 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(SetSR,Exec),
 	&AROS_SLIB_ENTRY(SuperState,Exec),
 	&AROS_SLIB_ENTRY(UserState,Exec),
-	NULL,		/* SetIntVector */
-	NULL,		/* AddIntServer */
-	NULL,		/* RemIntServer */
+	&AROS_SLIB_ENTRY(SetIntVector,Exec),
+	&AROS_SLIB_ENTRY(AddIntServer,Exec),
+	&AROS_SLIB_ENTRY(RemIntServer,Exec),
 /* 30 */NULL,		/* Cause */
 	&AROS_SLIB_ENTRY(Allocate,Exec),
 	&AROS_SLIB_ENTRY(Deallocate,Exec),
