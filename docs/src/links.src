@@ -6,57 +6,67 @@
 \begin{itemize}
 \item \link{AROS FTP Server}{ftp://aros.fh-konstanz.de/pub/aros/} with
 the last binary release for linux as
-\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.10.tgz},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.10.tgz})
+\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.tgz}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.tgz},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.tgz})
 or
-\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10.lha}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.10.lha},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.10.lha})
+\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.lha}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.lha},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.lha})
 with
-\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.10.readme}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.10.readme},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.10.readme})
+\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386.readme}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386.readme},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386.readme})
 and the source as
-\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.10.tgz},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.10.tgz})
+\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.tgz}
+(\execverb{getfilesize $(TOP)/dist/AROSdev.tgz},
+ \execverb{getfiledate $(TOP)/dist/AROSdev.tgz})
 or
-\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10.lha}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.10.lha},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.10.lha})
+\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.lha}
+(\execverb{getfilesize $(TOP)/dist/AROSdev.lha},
+ \execverb{getfiledate $(TOP)/dist/AROSdev.lha})
 with
-\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.10.readme}.
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.10.readme},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.10.readme}).
+\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev.readme}.
+(\execverb{getfilesize $(TOP)/dist/AROSdev.readme},
+ \execverb{getfiledate $(TOP)/dist/AROSdev.readme}).
 
 Also available is the latest beta as binary for linux as
-\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.11b.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.11b.tgz},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.11b.tgz})
+\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.tgz}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.tgz},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.tgz})
 or
-\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.11b.lha}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.11b.lha},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.11b.lha})
+\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.lha}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.lha},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.lha})
 with
-\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-1.11b.readme}
-(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-1.11b.readme},
- \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-1.11b.readme})
+\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-linux-i386-current.readme}
+(\execverb{getfilesize $(TOP)/dist/AROS-linux-i386-current.readme},
+ \execverb{getfiledate $(TOP)/dist/AROS-linux-i386-current.readme})
 and the source of the beta as
-\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.11b.tgz}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.11b.tgz},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.11b.tgz})
+\link{tar.gz-}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.tgz}
+(\execverb{getfilesize $(TOP)/dist/AROSdev-current.tgz},
+ \execverb{getfiledate $(TOP)/dist/AROSdev-current.tgz})
 or
-\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.11b.lha}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.11b.lha},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.11b.lha})
+\link{lha-archive}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.lha}
+(\execverb{getfilesize $(TOP)/dist/AROSdev-current.lha},
+ \execverb{getfiledate $(TOP)/dist/AROSdev-current.lha})
 with
-\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-1.11b.readme}
-(\execverb{getfilesize $(TOP)/dist/AROSdev-1.11b.readme},
- \execverb{getfiledate $(TOP)/dist/AROSdev-1.11b.readme}).
+\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROSdev-current.readme}
+(\execverb{getfilesize $(TOP)/dist/AROSdev-current.readme},
+ \execverb{getfiledate $(TOP)/dist/AROSdev-current.readme}).
 
 \item AROS in \link{Sweden}{http://www.lysator.liu.se/amiga/aros/} and
 \link{Germany}{http://www.lake.de/home/lake/home/}
+
+\item \link{AROS for Amiga}{http://home.worldonline.nl/~ldp/aros/}
+(Local copy of the
+\link{binary}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.lha}
+(\execverb{getfilesize ~ftp/pub/aros/AROS-m68k-bin.lha},
+ \execverb{getfiledate ~ftp/pub/aros/AROS-m68k-bin.lha}) and
+the
+\link{readme}{ftp://aros.fh-konstanz.de/pub/aros/AROS-m68k-bin.readme}
+(\execverb{getfilesize ~ftp/pub/aros/AROS-m68k-bin.readme},
+ \execverb{getfiledate ~ftp/pub/aros/AROS-m68k-bin.readme}) and
 
 \item \link{AROS AutoDocs}{adoc_index.html}
 
