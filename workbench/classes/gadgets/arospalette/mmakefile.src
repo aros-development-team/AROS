@@ -14,11 +14,12 @@ FILES := paletteclass support
 # Make shared object
 %genwblib
 
-#MM workbench-classes-arospalette : setup includes
+#MM workbench-classes-arospalette : workbench-classes-setup includes
 workbench-classes-arospalette : show-flags $(SLIB)
 	@$(NOP)
 
-#MM setup
+#MM workbench-classes-setup
+workbench-classes-setup : setup
 #MM clean
 
 %common

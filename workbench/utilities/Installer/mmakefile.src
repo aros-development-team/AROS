@@ -15,12 +15,12 @@ SCRIPT := test.script
 
 .PHONY : all clean
 
-#MM utilities : setup-utilities
-utilities : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
+#MM workbench-utilities : setup-workbench-utilities
+workbench-utilities : $(OBJS) $(EXE) $(DESTDIR)/$(SCRIPT)
 	@$(NOP)
 
 #MM
-setup-utilities :
+setup-workbench-utilities :
 	%mkdirs_q $(DESTDIR) $(OBJDIR)
 
 $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
@@ -33,7 +33,7 @@ $(DESTDIR)/$(SCRIPT) :
 	$(CP) $(SCRIPT) $(DESTDIR)
 
 #MM
-clean-utilities :
+clean-workbench :
 	@$(RM) $(OBJDIR) $(DESTDIR)
 
 $(OBJDIR)/%.o : %.c

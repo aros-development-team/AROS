@@ -14,12 +14,12 @@ EXE := $(DESTDIR)/More
 
 .PHONY : all clean
 
-#MM utilities : setup-utilities
-utilities : $(OBJS) $(EXE)
+#MM workbench-utilities : setup-workbench-utilities
+workbench-utilities : $(OBJS) $(EXE)
 	@$(NOP)
 
 #MM
-setup-utilities :
+setup-workbench-utilities :
 	%mkdirs_q $(DESTDIR) $(OBJDIR)
 
 $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
@@ -29,7 +29,7 @@ $(EXE) : $(DESTDIR)/% : $(OBJS) $(DEPLIBS)
 	@$(CHECKUDS) $@
 
 #MM
-clean-utilities :
+clean-workbench :
 	@$(RM) $(OBJDIR) $(DESTDIR)
 
 $(OBJDIR)/%.o : %.c

@@ -33,15 +33,15 @@ EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 tools-quick : tools
 	@$(NOP)
 	
-#MM tools : setup tools-setup includes linklibs commodities
-tools : show-flags $(EXES)
+#MM workbench-tools : setup-workbench-tools includes linklibs commodities
+workbench-tools : show-flags $(EXES)
 	@$(NOP)
 
 show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 #MM
-setup :
+setup-workbench-tools :
 	%mkdirs_q $(EXEDIR) $(OBJDIR)
 
 #MM
