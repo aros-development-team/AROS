@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Serial 
+ICONS     := Locale Serial 
 ICONDIR   := $(AROSDIR)/Prefs
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 

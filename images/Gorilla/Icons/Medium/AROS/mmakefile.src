@@ -3,7 +3,7 @@
 
 include $(TOP)/config/make.cfg
 
-ICONS     := Devs Storage
+ICONS     := Devs Storage Locale
 ICONDIR   := $(AROSDIR)
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
 
