@@ -1,0 +1,28 @@
+## version $VER: SystemPrefsWindow.catalog 1.0 (19.02.2004)
+## codeset 0
+## language deutsch
+;
+MSG_MENU_PREFS
+Voreinstellungen
+;
+MSG_MENU_PREFS_IMPORT
+I\0Importieren...
+;
+MSG_MENU_PREFS_EXPORT
+E\0Exportieren...
+;
+MSG_MENU_PREFS_TEST
+T\0Testen
+;
+MSG_MENU_PREFS_REVERT
+R\0Rückgängig
+;
+MSG_MENU_PREFS_SAVE
+S\0Speichern
+;
+MSG_MENU_PREFS_USE
+B\0Benutzen
+;
+MSG_MENU_PREFS_CANCEL
+A\0Abbrechen
+;
