@@ -68,32 +68,26 @@
 				{
 					if (OpenDevice(Device, Unit, (struct IORequest *)ph->bd->ioreq, 0)==0)
 					{
-					struct DriveGeometry dg;
-	
-						if (getGeometry(PartitionBase, ph->bd->ioreq, &dg)==0)
+#warning "FIXME: this is only to test fdsk.device which doesn't support TD_GETGEOMETRY yet!"
+						if (getGeometry(PartitionBase, ph->bd->ioreq, &ph->dg)!=0)
 						{
-							if (dg.dg_DeviceType != DG_CDROM)
-							{
-								ph->de.de_SizeBlock = dg.dg_SectorSize>>2;
-								ph->de.de_Surfaces = dg.dg_Heads;
-								ph->de.de_SectorPerBlock = 1;
-								ph->de.de_BlocksPerTrack = dg.dg_TrackSectors;
-								ph->de.de_HighCyl = dg.dg_Cylinders;
-								ph->de.de_NumBuffers = 20;
-								ph->de.de_BufMemType = dg.dg_BufMemType;
-								PartitionNsdCheck(PartitionBase, ph);
-								return ph;
-							}
+							ph->dg.dg_DeviceType = DG_DIRECT_ACCESS;
+							ph->dg.dg_SectorSize = 512;
+							ph->dg.dg_Heads = 255;
+							ph->dg.dg_TrackSectors = 63;
+							ph->dg.dg_Cylinders = 5004;
+							ph->dg.dg_BufMemType = MEMF_PUBLIC;
 						}
-						else
+						if (ph->dg.dg_DeviceType != DG_CDROM)
 						{
-							ph->de.de_SizeBlock = 512>>2;
-							ph->de.de_Surfaces = 255;
+							ph->de.de_SizeBlock = ph->dg.dg_SectorSize>>2;
+							ph->de.de_Surfaces = ph->dg.dg_Heads;
 							ph->de.de_SectorPerBlock = 1;
-							ph->de.de_BlocksPerTrack = 63;
-							ph->de.de_HighCyl = 5004;
+							ph->de.de_BlocksPerTrack = ph->dg.dg_TrackSectors;
+							ph->de.de_HighCyl = ph->dg.dg_Cylinders;
 							ph->de.de_NumBuffers = 20;
-							ph->de.de_BufMemType = MEMF_PUBLIC;
+							ph->de.de_BufMemType = ph->dg.dg_BufMemType;
+							PartitionNsdCheck(PartitionBase, ph);
 							return ph;
 						}
 					}

@@ -27,8 +27,8 @@ struct PTFunctionTable {
 	LONG 		(*SetPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
 	LONG 		(*GetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
 	LONG 		(*SetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
-	ULONG *	(*QueryPartitionTableAttrs)(struct Library *);
-	ULONG *	(*QueryPartitionAttrs)	(struct Library *);
+	struct PartitionAttribute *	(*QueryPartitionTableAttrs)(struct Library *);
+	struct PartitionAttribute *	(*QueryPartitionAttrs)	(struct Library *);
 	ULONG    (*DestroyPartitionTable) (struct Library *, struct PartitionHandle *);
 };
 
