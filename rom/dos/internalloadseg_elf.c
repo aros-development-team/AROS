@@ -18,7 +18,7 @@
 #include <aros/machine.h>
 #include "internalloadseg.h"
 #include "dos_intern.h"
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #include <string.h>
 #include <stddef.h>
