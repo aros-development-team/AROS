@@ -15,6 +15,7 @@ USE_AROSLIB := yes
 USE_CLIB := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
+USE_COOLIMAGESLIB := yes
 
 USER_CFLAGS := -O2 -Wunused -Wall
 

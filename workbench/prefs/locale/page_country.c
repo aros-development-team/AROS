@@ -31,7 +31,12 @@ LONG page_country_handler(LONG cmd, IPTR param)
 	case PAGECMD_MAKEGADGETS:
 	case PAGECMD_ADDGADGETS:
 	case PAGECMD_REMGADGETS:
+	    break;
+	    
 	case PAGECMD_HANDLEINPUT:
+	    retval = FALSE;
+	    break;
+	    
 	case PAGECMD_CLEANUP:
 	    break;
     }

@@ -11,6 +11,8 @@
 #include "global.h"
 #include "registertab.h"
 
+#include <linklibs/coolimages.h>
+
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
 #include <string.h>
@@ -48,6 +50,8 @@ libtable[] =
     {NULL                                            	     }
 };
 
+/*********************************************************************************************/
+
 #define NUM_PAGES 3
 
 static struct page
@@ -66,8 +70,26 @@ pagetable[NUM_PAGES] =
 
 /*********************************************************************************************/
 
+#define NUM_BUTTONS 3
+
+static struct button
+{
+    LONG    	    	    nameid;
+    const struct CoolImage  *image;
+    struct Gadget   	    *gad;
+}
+buttontable[NUM_BUTTONS] =
+{
+    {MSG_GAD_SAVE  , &cool_saveimage  },
+    {MSG_GAD_USE   , &cool_useimage   },
+    {MSG_GAD_CANCEL, &cool_cancelimage}
+};
+
+/*********************************************************************************************/
+
 static struct RegisterTabItem 	regitems[NUM_PAGES + 1];
 static struct RegisterTab   	reg;
+static struct Gadget	    	*okgad, *usegad, *cancelgad;
 static struct RDArgs        	*myargs;
 static WORD 	    	    	activetab;
 static IPTR                 	args[NUM_ARGS];
@@ -79,6 +101,7 @@ static void FreeArguments(void);
 static void FreeVisual(void);
 static void KillPages(void);
 static void KillWin(void);
+static void KillGadgets(void);
 
 /*********************************************************************************************/
 
@@ -109,6 +132,7 @@ void Cleanup(STRPTR msg)
 	}
     }
     
+    KillGadgets();
     KillWin();
     KillPages();
     KillMenus();
@@ -227,11 +251,54 @@ static void KillPages(void)
 
 /*********************************************************************************************/
 
+static void LayoutButtons(void)
+{
+    struct RastPort temprp;
+    WORD i, w, maxtextlen = 0, maximheight = 0;
+    BOOL truecolor = GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) >= 15;
+    
+    InitRastPort(&temprp);
+    SetFont(&temprp, dri->dri_Font);
+    
+    for(i = 0; i < 3; i++)
+    {
+    	w = TextLength(&temprp, MSG(buttontable[i].nameid), strlen(MSG(buttontable[i].nameid)));
+	if (truecolor)
+	{
+	    if (buttontable[i].image->height > maximheight)
+	    	maximheight = buttontable[i].image->height;
+		
+	    w += IMBUTTON_EXTRAWIDTH + buttontable[i].image->width;
+	}
+	else
+	{
+	    buttontable[i].image = NULL;
+	}
+	if (w > maxtextlen) maxtextlen = w;
+		
+    }
+    
+    buttonwidth = w + BUTTON_EXTRAWIDTH;
+    buttonheight = dri->dri_Font->tf_YSize + BUTTON_EXTRAHEIGHT;
+
+    if (truecolor)
+    {
+    	maximheight += IMBUTTON_EXTRAHEIGHT;
+	if (maximheight > buttonheight) buttonheight = maximheight;
+    }
+    
+    DeinitRastPort(&temprp);
+}
+
+/*********************************************************************************************/
+
 static void LayoutGUI(void)
 {
-    WORD x, w, max_pagewidth = 0;
-    WORD y, h, max_pageheight = 0;
+    WORD w, max_pagewidth = 0;
+    WORD h, max_pageheight = 0;
     WORD i;
+    
+    LayoutButtons();
     
     for(i = 0; i < NUM_PAGES; i++)
     {
@@ -247,6 +314,9 @@ static void LayoutGUI(void)
     
     LayoutRegisterTab(&reg, scr, dri, TRUE);
     if (reg.width > max_pagewidth) max_pagewidth = reg.width;
+    
+    i = buttonwidth * NUM_BUTTONS + SPACE_X * (NUM_BUTTONS - 1) - TABBORDER_X * 2;
+    if (i > max_pagewidth) max_pagewidth = i;
     
     SetRegisterTabPos(&reg, scr->WBorLeft + BORDER_X, scr->WBorTop + scr->Font->ta_YSize + 1 + BORDER_Y);
     
@@ -267,7 +337,7 @@ static void LayoutGUI(void)
     }
     
     winwidth  = pages_width + TABBORDER_X * 2 + BORDER_X * 2;
-    winheight = pages_height + reg.height + TABBORDER_Y * 2 + BORDER_Y * 2;
+    winheight = pages_height + buttonheight + SPACE_Y + reg.height + TABBORDER_Y * 2 + BORDER_Y * 2;
 }
 
 /*********************************************************************************************/
@@ -279,20 +349,21 @@ static void MakeWin(void)
     wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
     wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
     
-    win = OpenWindowTags(0, WA_PubScreen, (IPTR)scr,
-    	    	    	    WA_Left, wx,
-			    WA_Top, wy,
-			    WA_InnerWidth, winwidth,
-			    WA_InnerHeight, winheight,
-			    WA_Title, (IPTR)MSG(MSG_WINTITLE),
-			    WA_CloseGadget, TRUE,
-			    WA_DragBar, TRUE,
-			    WA_DepthGadget, TRUE,
-			    WA_Activate, TRUE,
-			    WA_IDCMP, REGISTERTAB_IDCMP |
-			    	      BUTTONIDCMP |
-				      LISTVIEWIDCMP |
-				      IDCMP_CLOSEWINDOW,
+    win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr,
+    	    	    	    WA_Left 	    , wx,
+			    WA_Top  	    , wy,
+			    WA_InnerWidth   , winwidth,
+			    WA_InnerHeight  , winheight,
+			    WA_Title	    , (IPTR)MSG(MSG_WINTITLE),
+			    WA_CloseGadget  , TRUE,
+			    WA_DragBar	    , TRUE,
+			    WA_DepthGadget  , TRUE,
+			    WA_Activate     , TRUE,
+			    WA_Gadgets	    , (IPTR)buttontable[0].gad,
+			    WA_IDCMP	    , REGISTERTAB_IDCMP |
+			    	      	      BUTTONIDCMP   	|
+				      	      LISTVIEWIDCMP 	|
+				      	      IDCMP_CLOSEWINDOW,
 			    TAG_DONE);
 
     SetMenuStrip(win, menus);
@@ -307,6 +378,75 @@ static void KillWin(void)
     pagetable[reg.active].handler(PAGECMD_REMGADGETS, 0);
     
     if (win) CloseWindow(win);
+}
+
+/*********************************************************************************************/
+
+static void MakeGadgets(void)
+{
+    WORD    	    x = scr->WBorLeft + BORDER_X;
+    WORD    	    y = scr->WBorTop + scr->Font->ta_YSize + 1 + winheight - BORDER_Y - buttonheight;
+    WORD    	    spacex;
+    WORD    	    i;
+    struct TagItem  tags[] =
+    {
+    	{GA_Left    	    , 0     	    },
+	{GA_Top     	    , y     	    },
+	{GA_Width   	    , buttonwidth   },
+	{GA_Height  	    , buttonheight  },
+	{GA_Text    	    , 0     	    },
+	{GA_ID	    	    , 0     	    },
+	{GA_Previous	    , 0     	    },
+	{COOLBT_CoolImage   , 0     	    },
+	{TAG_DONE   	    	    	    }
+    };
+    
+    if (!InitCoolButtonClass(CyberGfxBase))
+    	Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+	
+    spacex = (pages_width + TABBORDER_X * 2 - buttonwidth * NUM_BUTTONS) * 16 / (NUM_BUTTONS - 1);
+    
+    for(i = 0; i < NUM_BUTTONS; i++)
+    {
+    	if (i == NUM_BUTTONS - 1)
+	{
+	    tags[0].ti_Data = x + pages_width + TABBORDER_X * 2 - buttonwidth;
+	}
+	else
+	{
+	    tags[0].ti_Data = x + (buttonwidth * 16 + spacex) * i / 16;
+	}
+
+	tags[4].ti_Data = (IPTR)MSG(buttontable[i].nameid);
+	tags[5].ti_Data = buttontable[i].nameid;
+	tags[7].ti_Data = (IPTR)buttontable[i].image;
+
+	if (i > 0) tags[6].ti_Data = (IPTR)buttontable[i - 1].gad;
+	
+	buttontable[i].gad = NewObjectA(cool_buttonclass, NULL, tags);
+	if (!buttontable[i].gad) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
+	
+    }
+    
+}
+
+/*********************************************************************************************/
+
+static void KillGadgets(void)
+{
+    WORD i;
+    
+    if (win)
+    {
+    	RemoveGList(win, buttontable[0].gad, NUM_BUTTONS);
+    }
+    
+    for(i = 0; i < 3; i++)
+    {
+    	if (buttontable[i].gad) DisposeObject((Object *)buttontable[i].gad);
+    }
+    
+    CleanupCoolButtonClass();
 }
 
 /*********************************************************************************************/
@@ -407,6 +547,7 @@ int main(void)
     MakeMenus();
     MakePages();
     LayoutGUI();
+    MakeGadgets();
     MakeWin();
     HandleAll();
     Cleanup(NULL);
