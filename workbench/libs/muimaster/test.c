@@ -39,6 +39,7 @@ Object *wheel;
 Object *r_slider;
 Object *g_slider;
 Object *b_slider;
+Object *group;
 
 ULONG xget(Object *obj, Tag attr)
 {
@@ -71,6 +72,17 @@ __saveds void slider_function(void)
     cw.cw_Blue = (blue<<24)|(blue<<16)|(blue<<8)|blue;
 
     nnset(wheel, WHEEL_RGB, &cw);
+}
+
+__saveds void objects_function(void)
+{
+    Object *new_obj = MUI_MakeObject(MUIO_Button,"Button");
+    if (new_obj)
+    {
+    	DoMethod(group, MUIM_Group_InitChange);
+    	DoMethod(group, OM_ADDMEMBER, new_obj);
+    	DoMethod(group, MUIM_Group_ExitChange);
+    }
 }
 
 /* The custom class */
@@ -118,6 +130,7 @@ void main(void)
     Object *open_button;
     Object *quit_button;
     Object *repeat_button;
+    Object *objects_button;
     Object *about_item, *quit_item;
     Object *context_menu;
 
@@ -126,6 +139,7 @@ void main(void)
     struct Hook hook;
     struct Hook hook_wheel;
     struct Hook hook_slider;
+    struct Hook hook_objects;
 
 #ifndef COMPILE_WITH_MUI
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
@@ -148,6 +162,7 @@ void main(void)
     hook.h_Entry = (HOOKFUNC)repeat_function;
     hook_wheel.h_Entry = (HOOKFUNC)wheel_function;
     hook_slider.h_Entry = (HOOKFUNC)slider_function;
+    hook_objects.h_Entry = (HOOKFUNC)objects_function;
 
     context_menu = MenuitemObject,
 	    MUIA_Family_Child, MenuitemObject,
@@ -185,10 +200,10 @@ void main(void)
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drag Me", MUIA_Draggable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, objects_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Add Objects", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    End,
-		        Child, VGroup,
+		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),
 			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
@@ -284,6 +299,7 @@ void main(void)
 	DoMethod(second_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, second_wnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
 	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+	DoMethod(objects_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_CallHook, &hook_objects);
 	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
 
 	DoMethod(wheel, MUIM_Notify,WHEEL_Hue       , MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_wheel);
