@@ -58,7 +58,9 @@
 #   define ULONG_MAX    4294967295UL
 #endif
 
-
+#define LLONG_MIN	(-0x7fffffffffffffffLL - 1)
+#define LLONG_MAX	0x7fffffffffffffffLL
+#define ULLONG_MAX	0xffffffffffffffffULL
 
 /*
  *  Maximal length of a path name.
