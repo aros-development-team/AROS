@@ -182,6 +182,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	XSD(cl)->mouseH = 11;
 	XSD(cl)->mouseShape = shape;
 	XSD(cl)->mouseVisible = 1;
+
+	XSD(cl)->vgahidd = o;
 	
 	if(HIDD_Gfx_RegisterGfxModes(o, mode_tags))
 	{
@@ -271,9 +273,17 @@ static VOID gfxhidd_setmousexy(Class *cl, Object *o, struct pHidd_Gfx_SetMouseXY
     if (XSD(cl)->visible)
 	vgaRefreshArea(XSD(cl)->visible, 1, &box);
 
-    XSD(cl)->mouseX = msg->x;
-    XSD(cl)->mouseY = msg->y;
+    XSD(cl)->mouseX += msg->dx;
+    XSD(cl)->mouseY += msg->dy;
 
+    if (XSD(cl)->visible)
+    {
+        if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
+	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
+	if (XSD(cl)->mouseX >= XSD(cl)->visible->width) XSD(cl)->mouseX = XSD(cl)->visible->width - 1;
+	if (XSD(cl)->mouseY >= XSD(cl)->visible->height) XSD(cl)->mouseY = XSD(cl)->visible->height - 1;
+    }
+    
     draw_mouse(XSD(cl));
 }
 
@@ -430,6 +440,11 @@ void draw_mouse(struct vga_staticdata *xsd)
     
     	    ObtainSemaphore(&xsd->HW_acc);
 
+    	    outw(0x3c4,0x0f02);
+	    outw(0x3ce,0x0005);
+	    outw(0x3ce,0x0003);
+	    outw(0x3ce,0x0f01);
+
 	    for (y_i = 0, y = xsd->mouseY ; y_i < xsd->mouseH; y_i++, y++)
     	    {
     		for (x_i = 0, x = xsd->mouseX; x_i < xsd->mouseW; x_i++, x++)
@@ -441,12 +456,8 @@ void draw_mouse(struct vga_staticdata *xsd)
 
 		    if (fg && (x < width))
 		    {
-    			outw(0x3c4,0x0f02);
 			outw(0x3ce,pix | 8);
-			outw(0x3ce,0x0005);
-			outw(0x3ce,0x0003);
 			outw(0x3ce,(fg << 8));
-			outw(0x3ce,0x0f01);
 
 			*ptr |= 1;		// This or'ed value isn't important
 		    }

@@ -73,12 +73,13 @@ struct vga_staticdata
     Class 	*onbmclass;
     Class 	*offbmclass;
     Class 	*mouseclass;
+
     Object 	*vgahidd;
     Object 	*mousehidd;
 
-    ULONG		mouseX;		/* Pointer X position on screen */
+    LONG		mouseX;		/* Pointer X position on screen */
     ULONG		mouseW;		/* Pointer width */
-    ULONG		mouseY;		/* Pointer Y position on screen */
+    LONG		mouseY;		/* Pointer Y position on screen */
     ULONG		mouseH;		/* Pointer height */
     ULONG		mouseVisible;	/* Is pointer visible flag */
     UBYTE		*mouseShape;	/* Points to pointer shape */
@@ -89,7 +90,7 @@ struct vga_staticdata
 
 enum
 {
-    moHidd_Gfx_SetMouseShape = num_Hidd_Gfx_Methods + 20,
+    moHidd_Gfx_SetMouseShape = num_Hidd_Gfx_Methods + 2,
     moHidd_Gfx_SetMouseXY,
     moHidd_Gfx_ShowHide
 };
@@ -103,8 +104,8 @@ struct pHidd_Gfx_SetMouseShape {
 
 struct pHidd_Gfx_SetMouseXY {
     MethodID mID;
-    ULONG x;
-    ULONG y;
+    LONG dx;
+    LONG dy;
 };
 
 struct pHidd_Gfx_ShowHide {

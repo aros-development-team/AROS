@@ -146,6 +146,8 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
     
     if (data->VideoData)
 	FreeVec(data->VideoData);
+    if (data->Regs)
+	FreeVec(data->Regs);
 	
     DoSuperMethod(cl, o, msg);
     
@@ -186,7 +188,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
 
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-      {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
+        {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
     	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},

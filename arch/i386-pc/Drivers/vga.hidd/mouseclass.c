@@ -16,13 +16,16 @@
 
 #include <hidd/hidd.h>
 #include <hidd/mouse.h>
+#include <hidd/serial.h>
 
 #include <devices/inputevent.h>
 
 #include "vga.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
+
+ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
 
 static AttrBase HiddMouseAB;
 
@@ -36,6 +39,9 @@ struct mouse_data
 {
     VOID (*mouse_callback)(APTR, UWORD);
     APTR callbackdata;
+    
+    Object * Ser;
+    Object * Unit;
 };
 
 /***** Mouse::New()  ***************************************/
@@ -87,8 +93,39 @@ static Object * mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	/* Install the mouse hidd */
 
+	if (OpenLibrary("serial.hidd",0))
+	{
+	    if ((data->Ser = NewObject(NULL, CLID_Hidd_Serial, NULL)))
+	    {
+		D(bug("Got serial object = %p", data->Ser));
+		if ((data->Unit = HIDD_Serial_NewUnit(data->Ser, 0)))
+		{
+		    int i;
+		    struct TagItem stags[] = {
+			    { TAG_DATALENGTH,		7 },
+			    { TAG_STOP_BITS,		1 },
+			    { TAG_PARITY_OFF,	 	1 },
+			    { TAG_DONE,			0 }};
+		    struct TagItem t2[] = {
+			    { TAG_SET_MCR,		0 },
+			    { TAG_DONE,			0 }};	// DTR + RTS
+		    
+		    D(bug("Got Unit object = %p", data->Unit));
+    		    HIDD_SerialUnit_SetBaudrate(data->Unit, 1200);
+		    HIDD_SerialUnit_SetParameters(data->Unit, stags);
+		    t2[0].ti_Data = 1;
+		    HIDD_SerialUnit_SetParameters(data->Unit, t2);
+		    i = 3000000;
+    		    while (i) {i--;};
+		    t2[0].ti_Data = 3;
+		    HIDD_SerialUnit_SetParameters(data->Unit, t2);
+		    i = 3000000;
+		    while (i) {i--;};
 
-	
+		    HIDD_SerialUnit_Init(data->Unit, mouse_InterruptHandler, NULL);
+		}
+	    }
+	}
 	ObtainSemaphore( &XSD(cl)->sema);
 	XSD(cl)->mousehidd = o;
 	ReleaseSemaphore( &XSD(cl)->sema);
@@ -102,17 +139,19 @@ static VOID mouse_handleevent(Class *cl, Object *o, struct pHidd_Mouse_HandleEve
 {
     struct mouse_data * data;
 
-    EnterFunc(bug("kbd_handleevent()\n"));
+    EnterFunc(bug("mouse_handleevent()\n"));
 
     data = INST_DATA(cl, o);
 
 /* Nothing done yet */
 
-    ReturnVoid("Kbd::HandleEvent");
+    ReturnVoid("Mouse::HandleEvent");
 }
 
 #undef XSD
 #define XSD(cl) xsd
+
+static struct vga_staticdata *vsd;
 
 /********************  init_kbdclass()  *********************************/
 
@@ -163,6 +202,8 @@ Class *init_mouseclass (struct vga_staticdata *xsd)
 	    cl->UserData = (APTR)xsd;
 	    xsd->mouseclass = cl;
 	    
+	    vsd = xsd;
+	    
 	    if (ObtainAttrBases(attrbases))
 	    {
 		D(bug("MouseHiddClass ok\n"));
@@ -198,3 +239,50 @@ VOID free_mouseclass(struct vga_staticdata *xsd)
     ReturnVoid("free_mouseclass");
 }
 
+#undef OOPBase
+#define OOPBase (vsd->oopbase)
+
+ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
+{
+    static UBYTE inbuf[3];
+    static UBYTE cnt = 0;
+
+    static MethodID mid = 0;
+    static struct pHidd_Gfx_SetMouseXY p;
+  
+    if (!mid)
+    {
+	mid = GetMethodID(IID_Hidd_Gfx, moHidd_Gfx_SetMouseXY);
+	p.mID = mid;
+    }
+    
+    /* Get bytes untill there is anything to get */
+    while (length)
+    {
+	while ((cnt < 3) && length)
+	{
+	    inbuf[cnt] = *data++;
+	    length--;
+	    cnt++;
+	}
+	if (cnt == 3)
+	{
+	    cnt = 0;
+	    while (!(inbuf[0] & 0x40))
+	    {
+		inbuf[0] = inbuf[1];
+	        inbuf[1] = inbuf[2];
+		if (length)
+		{
+		    inbuf[2] = *data++;
+		    length--;
+	        }
+		else return;
+	    }
+            p.dx = (char)(((inbuf[0] & 0x03) << 6) | (inbuf[1] & 0x3f));
+	    p.dy = (char)(((inbuf[0] & 0x0c) << 4) | (inbuf[2] & 0x3f));
+
+            DoMethod(vsd->vgahidd, (Msg) &p);
+	}
+    }
+}

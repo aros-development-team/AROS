@@ -41,7 +41,6 @@ struct bitmap_data
     unsigned char	*VideoData;	/* Pointing to video data */
     unsigned long	width;		/* Width of bitmap */
     unsigned long	height;		/* Height of bitmap */
-    unsigned long	fg,bg,drmd;
     unsigned long	cmap[16];	/* ColorMap */
     char		bpp;    	/* 8 -> chunky; planar otherwise */
     char		disp;		/* !=0 - displayable */
