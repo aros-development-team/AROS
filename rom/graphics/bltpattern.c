@@ -65,7 +65,14 @@
     {
     	if (mask)
 	{
+	    ULONG old_drawmode = GetDrMd(rp);
+	    
+	    if ((old_drawmode & ~INVERSVID) == JAM2)
+	    	SetDrMd(rp, JAM1 | (old_drawmode & INVERSVID));
+		
 	    BltTemplate(mask, 0, byteCnt, rp, xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+	    
+	    SetDrMd(rp, old_drawmode);
 	}
 	else
 	{
