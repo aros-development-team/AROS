@@ -143,7 +143,7 @@
     /* Copy flags */
     w->Flags = newWindow->Flags;
 
-    if (!intui_OpenWindow (w, IntuitionBase))
+    if (!intui_OpenWindow (w, IntuitionBase, newWindow->BitMap))
 	goto failexit;
 
 
@@ -183,11 +183,6 @@
 
     /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
-
-/*
-   remove following line as soon as windows are working with layers.
-*/
-w->RPort->BitMap->Flags |= BMF_AROS_OLDWINDOW;
 
     RefreshGadgets (w->FirstGadget, w, NULL);
 
