@@ -390,98 +390,119 @@ static const ULONG coltab[] = {
 	}
 	
 	if (!screen->DInfo.dri_Font) ok = FALSE;
-	
-	if (ok)
-	{
-	    SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
 
-	    AskFont(&screen->Screen.RastPort, &screen->textattr); 
-            screen->Screen.Font = &screen->textattr;
-
-            D(bug("fonts set\n"));	    
-
-	    screen->Screen.BarVBorder  = 4; /* on the Amiga it is (usually?) 1 */
-	    screen->Screen.BarHBorder  = 5;
-	    screen->Screen.MenuVBorder = 4; /* on teh Amiga it is (usually?) 2 */
-	    screen->Screen.MenuHBorder = 4;
-	    screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize +
-	    				 screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
-
-	    {
-	        #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
-		#define SDEPTH_WIDTH SDEPTH_HEIGHT
-
-	        struct TagItem sdepth_tags[] =
-		{
-	            {GA_RelRight,	-SDEPTH_WIDTH + 1	},
-		    {GA_Top,		0  			},
-		    {GA_Width,		SDEPTH_WIDTH		},
-		    {GA_Height,		SDEPTH_HEIGHT		},
-		    {GA_DrawInfo,	(IPTR)&screen->DInfo 	}, /* required */
-		    {GA_SysGadget,	TRUE			},
-		    {GA_SysGType,	GTYP_SDEPTH	 	},
-		    {GA_RelVerify,	TRUE			},
-		    {TAG_DONE,		0UL			}
-		};
-
-		screen->depthgadget = NewObjectA(GetPrivIBase(IntuitionBase)->tbbclass,
-						 NULL,
-						 sdepth_tags );
-
-		screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
-		if (screen->Screen.FirstGadget)
-		{
-		    screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
-		}
-	    }
-
-	    if (!(screen->Screen.Flags & SCREENQUIET))
-	    {
-		CreateScreenBar(&screen->Screen, IntuitionBase);
-	    }
-	    	    
-	    screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
-	    screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
-	    screen->Pens[TEXTPEN] = 1;
-	    screen->Pens[SHINEPEN] = 2;
-	    screen->Pens[SHADOWPEN] = 1;
-	    screen->Pens[FILLPEN] = 3;
-	    screen->Pens[FILLTEXTPEN] = 2;
-	    screen->Pens[BACKGROUNDPEN] = 0;
-	    screen->Pens[HIGHLIGHTTEXTPEN] = 1;
-	    screen->Pens[BARDETAILPEN] = 1;
-	    screen->Pens[BARBLOCKPEN] = 2;
-	    screen->Pens[BARTRIMPEN] = 1;
-
-
-            D(bug("callling SetRast()\n"));	    
-	    /* Set screen to background color */
-	    SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
-
-            D(bug("SetRast() called\n"));	    
-
-	    
-	    /* If this is a public screen, we link it into the intuition global
-	       public screen list */
-	    if(screen->pubScrNode != NULL)
-	    {
-		AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
-			(struct Node *)GetPrivScreen(screen)->pubScrNode);
-	    }
-
-	    screen->Screen.NextScreen = IntuitionBase->FirstScreen;
-	    IntuitionBase->FirstScreen =
-		IntuitionBase->ActiveScreen = &screen->Screen;
-
-            D(bug("set active screen\n"));
-	
-	} /* if (ok) */	    
- 	
     } /* if (ok) */
+    
+    if (ok)
+    {
+        struct TagItem sysi_tags[] =
+	{
+	    {SYSIA_Which, 	MENUCHECK		},
+	    {SYSIA_DrawInfo,	(IPTR)&screen->DInfo	},
+	    {TAG_DONE					}	    
+	};
+	
+        screen->DInfo.dri_CheckMark = NewObjectA(NULL, "sysiclass", sysi_tags);
+	
+	sysi_tags[0].ti_Data = AMIGAKEY;
+	
+	screen->DInfo.dri_AmigaKey  = NewObjectA(NULL, "sysiclass", sysi_tags);
+	
+	if (!screen->DInfo.dri_CheckMark || !screen->DInfo.dri_AmigaKey) ok = FALSE;
+    }
+    
+    if (ok)
+    {
+	SetFont(&screen->Screen.RastPort, screen->DInfo.dri_Font);
 
+	AskFont(&screen->Screen.RastPort, &screen->textattr); 
+        screen->Screen.Font = &screen->textattr;
+
+        D(bug("fonts set\n"));	    
+
+	screen->Screen.BarVBorder  = 4; /* on the Amiga it is (usually?) 1 */
+	screen->Screen.BarHBorder  = 5;
+	screen->Screen.MenuVBorder = 4; /* on teh Amiga it is (usually?) 2 */
+	screen->Screen.MenuHBorder = 4;
+	screen->Screen.BarHeight   = screen->DInfo.dri_Font->tf_YSize +
+	    			     screen->Screen.BarVBorder * 2; /* real layer will be 1 pixel higher! */
+
+	{
+	    #define SDEPTH_HEIGHT (screen->Screen.BarHeight + 1)
+	    #define SDEPTH_WIDTH SDEPTH_HEIGHT
+
+	    struct TagItem sdepth_tags[] =
+	    {
+	        {GA_RelRight,	-SDEPTH_WIDTH + 1	},
+		{GA_Top,		0  			},
+		{GA_Width,		SDEPTH_WIDTH		},
+		{GA_Height,		SDEPTH_HEIGHT		},
+		{GA_DrawInfo,	(IPTR)&screen->DInfo 	}, /* required */
+		{GA_SysGadget,	TRUE			},
+		{GA_SysGType,	GTYP_SDEPTH	 	},
+		{GA_RelVerify,	TRUE			},
+		{TAG_DONE,		0UL			}
+	    };
+
+	    screen->depthgadget = NewObjectA(GetPrivIBase(IntuitionBase)->tbbclass,
+					     NULL,
+					     sdepth_tags );
+
+	    screen->Screen.FirstGadget = (struct Gadget *)screen->depthgadget;
+	    if (screen->Screen.FirstGadget)
+	    {
+		screen->Screen.FirstGadget->GadgetType |= GTYP_SCRGADGET;
+	    }
+	}
+
+	if (!(screen->Screen.Flags & SCREENQUIET))
+	{
+	    CreateScreenBar(&screen->Screen, IntuitionBase);
+	}
+
+	screen->Pens[DETAILPEN] = screen->Screen.DetailPen;
+	screen->Pens[BLOCKPEN] = screen->Screen.BlockPen;
+	screen->Pens[TEXTPEN] = 1;
+	screen->Pens[SHINEPEN] = 2;
+	screen->Pens[SHADOWPEN] = 1;
+	screen->Pens[FILLPEN] = 3;
+	screen->Pens[FILLTEXTPEN] = 2;
+	screen->Pens[BACKGROUNDPEN] = 0;
+	screen->Pens[HIGHLIGHTTEXTPEN] = 1;
+	screen->Pens[BARDETAILPEN] = 1;
+	screen->Pens[BARBLOCKPEN] = 2;
+	screen->Pens[BARTRIMPEN] = 1;
+
+
+        D(bug("callling SetRast()\n"));	    
+	/* Set screen to background color */
+	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
+
+        D(bug("SetRast() called\n"));	    
+
+
+	/* If this is a public screen, we link it into the intuition global
+	   public screen list */
+	if(screen->pubScrNode != NULL)
+	{
+	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
+		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
+	}
+
+	screen->Screen.NextScreen = IntuitionBase->FirstScreen;
+	IntuitionBase->FirstScreen =
+	    IntuitionBase->ActiveScreen = &screen->Screen;
+
+        D(bug("set active screen\n"));
+
+    } /* if (ok) */	    
+ 	
     if (!ok)
     {
         if (screen->Screen.BarLayer) KillScreenBar(&screen->Screen, IntuitionBase);
+	
+	if (screen->DInfo.dri_AmigaKey)  DisposeObject(screen->DInfo.dri_AmigaKey);
+	if (screen->DInfo.dri_CheckMark) DisposeObject(screen->DInfo.dri_CheckMark);
 	
         if (screen->DInfo.dri_Font) CloseFont(screen->DInfo.dri_Font);
 	
