@@ -786,7 +786,10 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
     bgtop = frame_top + zframe->itop;
     bgw = _width(obj);
 #if REDUCE_FLICKER_TEST
-    bgh = _height(obj) - frame_top + _top(obj);
+    if (_flags(obj) & MADF_FRAMEPHANTOM)
+	bgh = _height(obj) - frame_top + _top(obj);
+    else
+	bgh = _height(obj) - bgtop + _top(obj);
 #else
     bgh = _height(obj) - bgtop + _top(obj);
 #endif
