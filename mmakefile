@@ -32,6 +32,7 @@ $(FLEXCAT):
 # \item{clean-errors} Delete the global error file
 #
 # END_DESC{internaltarget}
+#MM
 clean-errors :
 	@$(RM) -f $(GENDIR)/errors
 	
