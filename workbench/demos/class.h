@@ -1,7 +1,7 @@
 #ifndef OOPSYS_CLASS_H
 #define OOPSYS_CLASS_H
 
-#ifndef EXEX_TYPES_H
+#ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
 
@@ -10,25 +10,25 @@ typedef struct IClass
 
     /* Array of pointers to methodtables for this class */
     struct Node 	ClassNode;
-    
+
     IPTR  		**InterfaceTable;
     struct IClass 	**ClassTable;
-    
+
     ULONG InstOffset;
     ULONG InstSize;
-    
+
     /* The number of methods that are new for this class */
     ULONG NumMethods;
-    
+
     ULONG SubClassCount;
     ULONG ObjectCount;
-    
+
     /* Can also be gotten with indexing the ClassTable */
     struct IClass *SuperClass;
-    
+
     /* What level in the hierarchy are we ? */
     ULONG SuperCount;
-    
+
 } Class;
 
 typedef APTR Object;
