@@ -524,7 +524,7 @@ IPTR iconDraw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 		if(data->whyRedraw==WR_SELECTED)
 		{
 			if(data->selected==TRUE)
-				imageDrawState==IDS_SELECTED;
+				imageDrawState=IDS_SELECTED;
 		}
 
 		DrawIconStateA(_rp(obj), data->diskObject, NULL, _left(data->imagePart), _top(data->imagePart), imageDrawState, NULL);
