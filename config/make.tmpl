@@ -249,7 +249,9 @@ GENFILES_TMP += %(objdir)/%(modname)_autoinit.c %(objdir)/%(modname)_stubs.c \
 endif
 
 ifneq ($(findstring %(modtype),mcc mui mcp),)
-GENFILES_TMP += %(objdir)/%(modname)_stubs.c %(objdir)/%(modname)_mcc_query.c
+GENFILES_TMP += %(objdir)/%(modname)_stubs.c \
+                %(objdir)/%(modname)_mcc_query.c \
+                %(objdir)/%(modname)_mcc_init.c
 endif
 
 $(GENFILES_TMP) : %(conffile) $(GENMODULE) %(reffile)
@@ -342,10 +344,15 @@ endif
 
 ifneq ($(findstring $(BD_MODTYPE$(BDID)),mcc mui mcp),)
   BD_MODDIR$(BDID)       := $(AROS_CLASSES)/Zune
-  BD_SRCS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.c
-  BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o
+  BD_SRCS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.c \
+                            $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.c
+  BD_OBJS$(BDID)         += $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query.o \
+                            $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init.o
   BD_LINKLIBGENFILES$(BDID):= 
   %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_query \
+  		targetdir=$(BD_OBJDIR$(BDID)) \
+		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_mcc_init \
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 endif

@@ -10,7 +10,7 @@ void writemccinit(void)
 {
     FILE *out;
     char line[256];
-    struct functionlist *funclistit;
+    struct functionlist *methlistit;
     struct arglist *arglistit;
     struct linelist *linelistit;
     unsigned int lvo;
@@ -51,7 +51,7 @@ void writemccinit(void)
         "\n"
     );
         
-    for(linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
+    for(linelistit = cdeflines; linelistit != NULL; linelistit = linelistit->next)
     {
         fprintf(out, "%s\n", linelistit->line);
     }
@@ -59,11 +59,47 @@ void writemccinit(void)
     fprintf
     (
         out,
+        "\n"
         "/*** Variables **************************************************************/\n"
         "struct ExecBase        *SysBase;\n"
         "struct Library         *MUIMasterBase;\n"
         "\n"
         "struct MUI_CustomClass *MCC;\n"
+        "\n"
+        "\n"
+        "/*** Prototypes *************************************************************/\n"
+    );
+    
+    for 
+    (
+        methlistit = methlist; 
+        methlistit != NULL; 
+        methlistit = methlistit->next)
+    {
+        int first = 1;
+        
+        fprintf(out, "%s %s$%s(", methlistit->type, modulename, methlistit->name);
+        
+        for 
+        (
+            arglistit = methlistit->arguments; 
+            arglistit != NULL; 
+            arglistit = arglistit->next)
+        {
+            if (!first)
+                fprintf(out, ", ");
+            else
+                first = 0;
+            
+            fprintf(out, "%s %s", arglistit->type, arglistit->name );
+        }
+        
+        fprintf(out, ");\n");
+    }
+    
+    fprintf
+    (
+        out,
         "\n"
         "\n"
         "/*** Dispatcher *************************************************************/\n"
@@ -74,14 +110,37 @@ void writemccinit(void)
         modulename
     );
     
-    /* FIXME: Methods here... */
-    
-    /*case OM_NEW: return PreferencesWindow$OM_NEW( CLASS, self, (struct opSet *) message );*/
+    for 
+    (
+        methlistit = methlist; 
+        methlistit != NULL; 
+        methlistit = methlistit->next)
+    {
+        fprintf
+        (
+            out, 
+            "        case %s: return %s$%s( ", 
+            methlistit->name, modulename, methlistit->name
+        );
+        
+        if (methlistit->argcount != 3)
+        {
+            fprintf(stderr, "Method \"%s\" has wrong number of arguments\n", methlistit->name);
+            exit(20);
+        }
+        
+        arglistit = methlistit->arguments;
+        fprintf(out, "CLASS, ");
+        arglistit = arglistit->next;
+        fprintf(out, "self, ");
+        arglistit = arglistit->next;
+        fprintf(out, "(%s) message);\n", arglistit->type);
+    }
     
     fprintf
     (
         out,
-        "        default:     return DoSuperMethodA( CLASS, self, message );\n"
+        "        default: return DoSuperMethodA( CLASS, self, message );\n"
         "    }\n"
         "    \n"
         "    return NULL;\n"
