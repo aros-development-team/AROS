@@ -1711,7 +1711,7 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 				, bm_rel_maxy
 			);
 			
-			HIDD_BM_DrawLine(HIDD_BM_OBJ(bm)
+			HIDD_BM_DrawLine(HIDD_BM_OBJ(CR->BitMap)
 				, gc
 				, bm_rel_minx - (layer_rel_x - rp->cp_x) + ALIGN_OFFSET(CR->bounds.MinX)
 				, bm_rel_miny - (layer_rel_y - rp->cp_y)
@@ -1731,6 +1731,10 @@ void driver_Draw( struct RastPort *rp, LONG x, LONG y, struct GfxBase  *GfxBase)
 	
         UnlockLayerRom(L);
     } /* if (rp->Layer) */
+    
+    rp->cp_x = x;
+    rp->cp_y = y;
+    
     return;
 }
 
