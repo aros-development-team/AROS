@@ -86,13 +86,17 @@ void writeinclibdefs(struct config *cfg)
 	);
 	if (cfg->options & OPTION_DUPBASE)
 	    fprintf(out, "    LIBBASETYPEPTR   lh_RootBase;\n");
+	if (cfg->boopsimprefix != NULL)
+	    fprintf(out, "    APTR             lh_ClassPtr;\n");
 	fprintf(out,
 		"};\n"
 		"#define GM_SYSBASE_FIELD(lh) ((lh)->lh_SysBase)\n"
 		"#define GM_SEGLIST_FIELD(lh) ((lh)->lh_SegList)\n"
 	);
 	if (cfg->options & OPTION_DUPBASE)
-	    fprintf(out, "#deifne GM_ROOTBASE_FIELD(lh) ((lh)->lh_RootBase)\n");
+	    fprintf(out, "#define GM_ROOTBASE_FIELD(lh) ((lh)->lh_RootBase)\n");
+	if (cfg->boopsimprefix != NULL)
+	    fprintf(out, "#define GM_CLASSPTR_FIELD(lh) ((lh)->lh_ClassPtr)\n");
     }
     else
     {

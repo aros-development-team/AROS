@@ -1,50 +1,40 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
     
     Function to write modulename_mcc_query.c. Part of genmodule.
 */
+#include <stdio.h>
+
 #include "genmodule.h"
 
-void writemccquery(struct config *cfg)
+void writemccquery(FILE *out, struct config *cfg)
 {
-    FILE *out;
-    char line[256];
-    
-    if(cfg->modtype != MCC && cfg->modtype != MUI && cfg->modtype != MCP)
-    {
-        fprintf(stderr, "Unsupported modtype %d\n", cfg->modtype);
-        exit(20);
-    }
-    
-    snprintf(line, 255, "%s/%s_mcc_query.c", cfg->gendir, cfg->modulename);
-    out = fopen(line, "w");
-    if(out == NULL)
-    {
-        fprintf(stderr, "Could not write %s\n", line);
-        exit(20);
-    }
-    
     fprintf
     (
         out,
-        "/*\n"
-        "    *** Automatically generated file. Do not edit ***\n"
-        "    Copyright © 1995-2004, The AROS Development Team. All rights reserved.\n"
-        "*/\n"
         "\n"
-        "#include <exec/types.h>\n"
+        "/* MCC_Query function */\n"
+        "/* ================== */\n"
+        "\n"
         "#include <libraries/mui.h>\n"
+        "#include <aros/libcall.h>\n"
         "\n"
         "#define MCC_CLASS       0\n"
         "#define MCC_PREFS_CLASS 1\n"
         "\n"
         "extern struct MUI_CustomClass *MCC;\n"
         "\n"
-        "IPTR MCC_Query( LONG what )\n"
+        "AROS_LH1(IPTR, MCC_Query,\n"
+        "         AROS_LHA(LONG, what, D0),\n"
+        "         struct Library *, %s, 5, %s\n"
+        ")\n"
         "{\n"
+        "    AROS_LIBFUNC_INIT\n"
+        "\n"
         "    switch( what )\n"
-        "    {\n"
+        "    {\n",
+        cfg->libbase, cfg->basename
     );
     
     switch(cfg->modtype)
@@ -67,8 +57,8 @@ void writemccquery(struct config *cfg)
         "    }\n"
         "\n"
         "    return 0;\n"
+        "\n"
+        "    AROS_LIBFUNC_EXIT\n"
         "}\n"
     );
-    
-    fclose(out);
 }

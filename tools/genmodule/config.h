@@ -11,7 +11,7 @@
 #include "stringlist.h"
 
 enum command { CMD_UNSPECIFIED, DUMMY, NORMAL, LIBDEFS };
-enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE };
+enum modtype { UNSPECIFIED, LIBRARY, MCC, MUI, MCP, DEVICE, RESOURCE, GADGET };
 enum optionbit { BIT_NOAUTOLIB, BIT_NOEXPUNGE, BIT_NORESIDENT,
                  BIT_DUPBASE
 };
@@ -57,8 +57,10 @@ struct config
     /* Name for variables and types */
     char *basename, *libbase, *libbasetype, *libbasetypeptrextern;
     
-    /* Where are the sysbase and seglist fields in the libbase ? */
-    char *sysbase_field, *seglist_field, *rootbase_field;
+    /* The names of the fields in the custom library base for storing internal
+     * information
+     */
+    char *sysbase_field, *seglist_field, *rootbase_field, *classptr_field;
 
     /* Some additional options, see optionsflags enum above */
     int options;
@@ -79,9 +81,11 @@ struct config
     /* The function config data present in the functionlist section */
     struct conffuncinfo *conffunclist;
     
-    /* MCC specific data */
-    char *superclass;
+    /* BOOPSI specific data */
+    const char **boopsimprefix;
+    char *classname, *superclass;
     int customdispatcher; /* does class have custom dispatcher? */
+    char *classdatatype; /* The type of the data for every object */
 };
 
 /* Function prototypes */
