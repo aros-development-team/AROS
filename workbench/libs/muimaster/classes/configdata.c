@@ -33,10 +33,9 @@ extern struct Library *MUIMasterBase;
 
 struct MUI_ConfigdataData
 {
-    Object *app;
-    CONST_STRPTR appbase;
+    Object             *app;
+    CONST_STRPTR        appbase;
     struct ZunePrefsNew prefs;
-    int test;
 };
 
 
@@ -51,7 +50,9 @@ static ULONG GetConfigULong(Object *obj, ULONG id)
 }
 
 
-/*------------ imspec config stuff --------------*/
+/**************************************************************************
+ Default ImageSpec values
+**************************************************************************/
 
 struct spec_cfg {
     ULONG muiv;
@@ -126,7 +127,9 @@ static void init_imspecs (Object *obj, struct MUI_ConfigdataData *data)
     }
 }
 
-/*------------ framespec config stuff --------------*/
+/**************************************************************************
+ Default FrameSpec values
+**************************************************************************/
 
 /* spec format : type, recessed, left, right, up, down spacing */
 static struct spec_cfg DefFramespecValues[] =
@@ -165,7 +168,9 @@ static void init_framespecs (Object *obj, struct MUI_ConfigdataData *data)
     }
 }
 
-/*--------------------*/
+/**************************************************************************
+ Default ULONG values
+**************************************************************************/
 
 struct def_ulval {
     ULONG id;
@@ -200,7 +205,9 @@ static struct def_ulval DefULValues[] =
     { 0, 0 },
 };
 
-/*---------------------*/
+/**************************************************************************
+ Default string values
+**************************************************************************/
 
 struct def_strval {
     ULONG id;
@@ -217,16 +224,19 @@ static struct def_strval DefStrValues[] =
     { MUICFG_Font_Big,      NULL },
     { MUICFG_Font_Button,   NULL },
     { MUICFG_Font_Knob,     NULL },
-    { MUICFG_String_Background,         "m2" },
+    { MUICFG_String_Background,         "2:m2" },
     { MUICFG_String_Text,               "m5" },
-    { MUICFG_String_ActiveBackground,   "m2" },
+    { MUICFG_String_ActiveBackground,   "2:m1" },
     { MUICFG_String_ActiveText,         "m5" },
+    { MUICFG_String_Cursor,             "m7" },
     { 0, 0 },
 };
 
 
 /**************************************************************************
  OM_NEW
+ Load global (and maybe application-specific) prefs files into the dataspace,
+ then fill the prefs struct with dataspace or default values
 **************************************************************************/
 static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -349,6 +359,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.string_text_inactive = GetConfigString(obj, MUICFG_String_Text);
     data->prefs.string_bg_active = GetConfigString(obj, MUICFG_String_ActiveBackground);
     data->prefs.string_text_active = GetConfigString(obj, MUICFG_String_ActiveText);
+    data->prefs.string_cursor = GetConfigString(obj, MUICFG_String_Cursor);
 
     /*---------- Navigation ----------*/
 
@@ -458,6 +469,8 @@ static ULONG  Configdata_Get(struct IClass *cl, Object * obj, struct opGet *msg)
 
 /**************************************************************************
  MUIM_Configdata_GetString
+ Check if string is found in dataspace, then if not found, search each
+ builtin array
 **************************************************************************/
 static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_GetString *msg)
@@ -494,6 +507,8 @@ static IPTR Configdata_GetString(struct IClass *cl, Object * obj,
 
 /**************************************************************************
  MUIM_Configdata_SetImspec
+ search in builtin array first, to not not have in dataspace the default
+ value (would be redundant)
 **************************************************************************/
 static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 				 struct MUIP_Configdata_SetImspec *msg)
@@ -514,6 +529,16 @@ static IPTR Configdata_SetImspec(struct IClass *cl, Object * obj,
 	    {
 /*  		D(bug("Configdata_SetImspec(%p) : set to def, id %08lx, val %s\n", */
 /*  		      obj, msg->id, msg->imspec)); */
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
+	    }
+    }
+
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+	if (DefStrValues[i].id == msg->id)
+	    if (!strcmp(DefStrValues[i].val, msg->imspec))
+	    {
 		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
 		return 0;
 	    }
@@ -654,6 +679,9 @@ static ULONG Configdata_SetULong(struct IClass *cl, Object * obj,
 }
 
 
+/**************************************************************************
+ SavePrefsHeader: Write a PRHD chunk
+**************************************************************************/
 static int SavePrefsHeader(struct IFFHandle *iff)
 {
     if (!PushChunk( iff, 0, MAKE_ID('P','R','H','D'), IFFSIZE_UNKNOWN))
