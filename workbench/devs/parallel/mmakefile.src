@@ -1,0 +1,39 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR := $(GENDIR)/$(CURDIR)
+
+%define_libs
+
+DEVS    := $(DEVSDIR)/parallel.device
+INIT    := parallel_init
+FILES	:= parallel_support parallel_interrupthandlers
+OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+LIBS    := $(LIBS) -lhiddparallelstubs
+
+#MM workbench-devs : setup includes linklibs workbench-devs-$(ARCH)-$(CPU) hidd-parallel-module
+workbench-devs : show-flags $(OBJDIR)/$(INIT).o $(OBJS) $(DEVS)
+	@$(NOP)
+
+#MM
+clean ::
+	$(RM) $(DEVSDIR) *.err
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(DEVSDIR)
+
+show-flags:
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+$(DEVSDIR)/parallel.device : $(OBJS)
+	%link_q startup=$(OBJDIR)/$(INIT).o $(OBJS)
+
+$(OBJDIR)/%.o : %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
