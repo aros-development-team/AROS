@@ -12,6 +12,7 @@
 /****************************************************************************************/
 
 #include <cybergraphx/cybergraphics.h>
+#include <graphics/rpattr.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/layers.h>
@@ -73,13 +74,14 @@ ULONG do_render_func(struct RastPort *rp
 	, struct GfxBase *GfxBase)
 {
 
-    struct BitMap *bm = rp->BitMap;
-    struct Layer *L = rp->Layer;
-    OOP_Object *gc;
-    ULONG width, height;
-    LONG srcx, srcy;
-    
-    LONG pixwritten = 0;
+    struct BitMap   	*bm = rp->BitMap;
+    struct Layer    	*L = rp->Layer;
+    OOP_Object      	*gc;
+    struct Rectangle 	 rp_clip_rectangle;
+    BOOL    	    	 have_rp_cliprectangle;
+    ULONG   	     	 width, height;
+    LONG    	     	 srcx, srcy;    
+    LONG    	     	 pixwritten = 0;
     
     gc = GetDriverData(rp)->dd_GC;
 	
@@ -133,6 +135,8 @@ ULONG do_render_func(struct RastPort *rp
 	
 	LockLayerRom(L);
 	
+	have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
+	
 	xrel = L->bounds.MinX;
 	yrel = L->bounds.MinY;
 
@@ -152,69 +156,73 @@ ULONG do_render_func(struct RastPort *rp
 		
 	    /* Does this cliprect intersect with area to rectfill ? */
 	    if (_AndRectRect(&CR->bounds, &torender, &intersect))
-	    {
-	    	LONG xoffset, yoffset;
-		
-		xoffset = intersect.MinX - torender.MinX;
-		yoffset = intersect.MinY - torender.MinY;
-		
-		if (get_special_info) {
-		     RSI(funcdata)->layer_rel_srcx = intersect.MinX - L->bounds.MinX + L->Scroll_X;
-		     RSI(funcdata)->layer_rel_srcy = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
-		}
-		
-	        if (NULL == CR->lobs)
+	    {		
+		if (!have_rp_cliprectangle || _AndRectRect(&rp_clip_rectangle, &intersect, &intersect))
 		{
-		    if (get_special_info)
-		    {
-			RSI(funcdata)->curbm = bm;
-			RSI(funcdata)->onscreen = TRUE;
+    		    LONG xoffset, yoffset;
+
+		    xoffset = intersect.MinX - torender.MinX;
+		    yoffset = intersect.MinY - torender.MinY;
+
+		    if (get_special_info) {
+			 RSI(funcdata)->layer_rel_srcx = intersect.MinX - L->bounds.MinX + L->Scroll_X;
+			 RSI(funcdata)->layer_rel_srcy = intersect.MinY - L->bounds.MinY + L->Scroll_Y;
 		    }
-		    
-		    pixwritten += render_func(funcdata
-		    	, srcx + xoffset
-			, srcy + yoffset
-		        , HIDD_BM_OBJ(bm)
-		    	, gc
-		    	, intersect.MinX
-			, intersect.MinY
-			, intersect.MaxX
-			, intersect.MaxY
-			, GfxBase
-		    );
-		
-		
-		}
-		else
-		{
-		    /* Render into offscreen cliprect bitmap */
-		    if (L->Flags & LAYERSIMPLE)
-		    	continue;
-		    else if (L->Flags & LAYERSUPER)
+
+	            if (NULL == CR->lobs)
 		    {
-		    	D(bug("do_render_func(): Superbitmap not handled yet\n"));
+			if (get_special_info)
+			{
+			    RSI(funcdata)->curbm = bm;
+			    RSI(funcdata)->onscreen = TRUE;
+			}
+
+			pixwritten += render_func(funcdata
+		    	    , srcx + xoffset
+			    , srcy + yoffset
+		            , HIDD_BM_OBJ(bm)
+		    	    , gc
+		    	    , intersect.MinX
+			    , intersect.MinY
+			    , intersect.MaxX
+			    , intersect.MaxY
+			    , GfxBase
+			);
+
+
 		    }
 		    else
 		    {
-
-		    	if (get_special_info)
+			/* Render into offscreen cliprect bitmap */
+			if (L->Flags & LAYERSIMPLE)
+		    	    continue;
+			else if (L->Flags & LAYERSUPER)
 			{
-			    RSI(funcdata)->curbm = CR->BitMap;
-			    RSI(funcdata)->onscreen = FALSE;
-		    	}
-			pixwritten += render_func(funcdata
-				, srcx + xoffset, srcy + yoffset
-		        	, HIDD_BM_OBJ(CR->BitMap)
-		    		, gc
-		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, intersect.MinY - CR->bounds.MinY
-				, intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
-				, intersect.MaxY - CR->bounds.MinY
-				, GfxBase
-		    	);
-		    }
-		    
-		} /* if (CR->lobs == NULL) */
+		    	    D(bug("do_render_func(): Superbitmap not handled yet\n"));
+			}
+			else
+			{
+
+		    	    if (get_special_info)
+			    {
+				RSI(funcdata)->curbm = CR->BitMap;
+				RSI(funcdata)->onscreen = FALSE;
+		    	    }
+			    pixwritten += render_func(funcdata
+				    , srcx + xoffset, srcy + yoffset
+		        	    , HIDD_BM_OBJ(CR->BitMap)
+		    		    , gc
+		    		    , intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				    , intersect.MinY - CR->bounds.MinY
+				    , intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
+				    , intersect.MaxY - CR->bounds.MinY
+				    , GfxBase
+		    	    );
+			}
+
+		    } /* if (CR->lobs == NULL) */
+		
+		} /* if it also intersects with possible rastport clip rectangle */
 		
 	    } /* if (cliprect intersects with area to render into) */
 	    
@@ -236,10 +244,12 @@ ULONG do_pixel_func(struct RastPort *rp
 	, APTR funcdata
 	, struct GfxBase *GfxBase)
 {
-    struct BitMap *bm = rp->BitMap;
-    struct Layer *L = rp->Layer;
-    OOP_Object *gc;
-    ULONG retval = -1;
+    struct BitMap   	*bm = rp->BitMap;
+    struct Layer    	*L = rp->Layer;
+    OOP_Object      	*gc;
+    struct Rectangle 	 rp_clip_rectangle;
+    BOOL    	    	 have_rp_cliprectangle;
+    ULONG   	     	 retval = -1;
    
     gc = GetDriverData(rp)->dd_GC;
    
@@ -279,6 +289,8 @@ ULONG do_pixel_func(struct RastPort *rp
 	LONG absx, absy;
 	
 	LockLayerRom( L );
+
+	have_rp_cliprectangle = GetRPClipRectangleForLayer(rp, L, &rp_clip_rectangle, GfxBase);
 	
 	CR = L->ClipRect;
 	
@@ -294,43 +306,45 @@ ULONG do_pixel_func(struct RastPort *rp
 		 && absy <= CR->bounds.MaxY )
 	    {
 
-
-	
-	        if (NULL == CR->lobs)
-		{
-		    retval = render_func(funcdata
-		    	, HIDD_BM_OBJ(bm), gc
-			, absx, absy
-			, GfxBase
-		    );
-		}
-		else 
-		{
-		    /* This is the tricky one: render into offscreen cliprect bitmap */
-		    if (L->Flags & LAYERSIMPLE)
-		    {
-		    	/* We cannot do anything */
-		    	retval =  0;
-		
-		    }
-		    else if (L->Flags & LAYERSUPER)
-		    {
-		    	D(bug("driver_WriteRGBPixel(): Superbitmap not handled yet\n"));
-		    }
-		    else
+    	    	if (!have_rp_cliprectangle || _IsPointInRect(&rp_clip_rectangle, absx, absy))
+		{	    	    
+	            if (NULL == CR->lobs)
 		    {
 			retval = render_func(funcdata
-				, HIDD_BM_OBJ(CR->BitMap), gc
-				, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, absy - CR->bounds.MinY
-				, GfxBase
-			); 
+		    	    , HIDD_BM_OBJ(bm), gc
+			    , absx, absy
+			    , GfxBase
+			);
+		    }
+		    else 
+		    {
+			/* This is the tricky one: render into offscreen cliprect bitmap */
+			if (L->Flags & LAYERSIMPLE)
+			{
+		    	    /* We cannot do anything */
+		    	    retval =  0;
+
+			}
+			else if (L->Flags & LAYERSUPER)
+			{
+		    	    D(bug("driver_WriteRGBPixel(): Superbitmap not handled yet\n"));
+			}
+			else
+			{
+			    retval = render_func(funcdata
+				    , HIDD_BM_OBJ(CR->BitMap), gc
+				    , absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
+				    , absy - CR->bounds.MinY
+				    , GfxBase
+			    ); 
 
 
-		    } /* If (SMARTREFRESH cliprect) */
-		    
-		    
-		}   /* if (intersecton inside hidden cliprect) */
+			} /* If (SMARTREFRESH cliprect) */
+
+
+		    }   /* if (intersecton inside hidden cliprect) */
+		
+		} /* if point is also inside possible rastport clip rectangle */
 		
 		/* The pixel was found and put inside one of the cliprects, just exit */
 		break;
@@ -1207,7 +1221,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 #if USE_OLDMoveRaster
 
 	{
-            struct ClipREct *LastHiddenCR;
+            struct ClipRect *LastHiddenCR;
 
             for (LastHiddenCR = NULL, SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next)
             {
@@ -1491,6 +1505,68 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     RELEASE_DRIVERDATA(rp, GfxBase);
     
     return TRUE;
+}
+
+/****************************************************************************************/
+
+BOOL GetRPClipRectangleForLayer(struct RastPort *rp, struct Layer *lay,
+    	    	    	    	struct Rectangle *r, struct GfxBase *GfxBase)
+{
+    (void)GfxBase;
+    
+    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
+    {
+    	*r = RP_DRIVERDATA(rp)->dd_ClipRectangle;
+	
+	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
+	{
+	    r->MaxX += (lay->bounds.MaxX - lay->bounds.MinX + 1) - 1;
+	}
+	
+	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
+	{
+	    r->MaxY += (lay->bounds.MaxY - lay->bounds.MinY + 1) - 1;
+	}
+	
+	r->MinX += lay->bounds.MinX;
+	r->MinY += lay->bounds.MinY;
+	r->MaxX += lay->bounds.MinX;
+	r->MaxY += lay->bounds.MinY;
+	
+	return TRUE;
+    }
+    
+    return FALSE;
+}
+
+/****************************************************************************************/
+
+BOOL GetRPClipRectangleForBitMap(struct RastPort *rp, struct BitMap *bm,
+    	    	    	    	 struct Rectangle *r, struct GfxBase *GfxBase)
+{
+    if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_VALID)
+    {
+	
+    	*r = RP_DRIVERDATA(rp)->dd_ClipRectangle;
+	
+	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELRIGHT)
+	{
+    	    LONG width = GetBitMapAttr(bm, BMA_WIDTH);
+	    
+	    r->MaxX += width - 1;
+	}
+	
+	if (RP_DRIVERDATA(rp)->dd_ClipRectangleFlags & RPCRF_RELBOTTOM)
+	{
+	    LONG height = GetBitMapAttr(bm, BMA_HEIGHT);
+	    
+	    r->MaxY += height - 1;
+	}
+	
+	return TRUE;
+    }
+    
+    return FALSE;
 }
 
 /****************************************************************************************/
