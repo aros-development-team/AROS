@@ -80,7 +80,10 @@ void docommand(char *path, char *argv[])
     if (!pid)
     {
     	if (execve(path, argv, environ))
-	   perror("Internal error");
+	{
+	   fprintf(stderr, "collect-aros - Error while executing %s\n", path);
+	   perror(NULL);
+	}   
 
 	errno = 0; /* the parent process is going to exit too
 	            and we don't want it to complain again about the error. */
