@@ -20,7 +20,7 @@
 #  include <libcore/compiler.h>
 #endif
 
-#if defined(_AMIGA) && !defined(__AROS__)
+#ifndef __AROS__
 #  define AROS_LIBFUNC_INIT
 #  define AROS_LIBBASE_EXT_DECL(a,b)
 #  define AROS_LIBFUNC_EXIT
@@ -213,7 +213,7 @@ struct CamdBase_intern{
 
 };
 
-#if defined(AMIGA) && !defined(__AROS__)
+#ifdef __AMIGAOS__
    extern void kprintf(char *bla,...);
 #  ifdef DEBUG
 #    define bug kprintf
