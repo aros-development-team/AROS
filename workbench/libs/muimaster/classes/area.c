@@ -484,7 +484,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			    Object *parent = _parent(obj); /* Will be NULL if direct child of a window! */
 			    if (parent)
 			    {
-				if (_flags(parent) & MADF_SETUP) DoMethod(obj,MUIM_Setup,muiRenderInfo(parent));
+				if (_flags(parent) & MADF_SETUP) DoSetupMethod(obj,muiRenderInfo(parent));
 				if (_flags(parent) & MADF_CANDRAW) DoMethod(obj,MUIM_Show);
 			    } else
 			    {

@@ -398,8 +398,7 @@ static ULONG Group_AddMember(struct IClass *cl, Object *obj, struct opMember *ms
 
     if (_flags(obj) & MADF_SETUP)
     {
-	muiRenderInfo(msg->opam_Object) = muiRenderInfo(obj);
-	DoMethod(msg->opam_Object, MUIM_Setup, (IPTR)muiRenderInfo(obj));
+	DoSetupMethod(msg->opam_Object, muiRenderInfo(obj));
     }
     if (_flags(obj) & MADF_CANDRAW)
 	DoMethod(msg->opam_Object, MUIM_Show);
@@ -579,9 +578,7 @@ static ULONG Group_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	if (! (_flags(child) & MADF_SHOWME))
 	    continue;
 
-	/* MUI set the correct render info *before* it calls MUIM_Setup, this must be done in other areas too */
-	muiRenderInfo(child) = msg->RenderInfo;
-	if (!DoMethodA(child, (Msg)msg))
+	if (!DoSetupMethod(child, msg->RenderInfo))
 	{
 	    /* Send MUIM_Cleanup to all objects that received MUIM_Setup.
 	     */
