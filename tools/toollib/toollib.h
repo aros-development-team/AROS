@@ -1,5 +1,5 @@
-#ifndef _TOOLLIB_H
-#define _TOOLLIB_H
+#ifndef TOOLLIB_TOOLLIB_H
+#define TOOLLIB_TOOLLIB_H
 
 #include <sys/types.h>
 
@@ -49,6 +49,7 @@ typedef struct
 List;
 
 /* Macros */
+#   define IsListEmpty(l)   (((List *)l)->prelast == (Node *)(l))
 #   define NewList(l)       (((List *)l)->prelast = (Node *)(l), \
 			    ((List *)l)->last = 0, \
 			    ((List *)l)->first = (Node *)&(((List *)l)->last))
@@ -114,4 +115,4 @@ extern Node * FindNodeNC PARAMS ((const List * l, const char * name));
 extern void printlist PARAMS ((const List * l));
 extern Node * RemHead PARAMS ((List * l));
 
-#endif /* _TOOLLIB_H */
+#endif /* TOOLLIB_TOOLLIB_H */

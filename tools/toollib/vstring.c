@@ -1,6 +1,6 @@
 #include <string.h>
-#include <vstring.h>
 #include <ctype.h>
+#include <toollib/vstring.h>
 
 String
 VS_New (const char * ini)

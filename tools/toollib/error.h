@@ -1,8 +1,8 @@
-#ifndef _ERROR_H
-#define _ERROR_H
+#ifndef TOOLLIB_ERROR_H
+#define TOOLLIB_ERROR_H
 
-#ifndef _TOOLLIB_H
-#   include <toollib.h>
+#ifndef TOOLLIB_TOOLLIB_H
+#   include <toollib/toollib.h>
 #endif
 
 extern void Error	    PARAMS ((const char * fmt, ...));
@@ -18,5 +18,5 @@ extern void PushStdError    PARAMS ((const char * fmt, ...));
 extern void PushStdWarn     PARAMS ((const char * fmt, ...));
 extern void ErrorExit	    PARAMS ((int ec));
 
-#endif /* _ERROR_H */
+#endif /* TOOLLIB_ERROR_H */
 

@@ -1,53 +1,119 @@
-#include <error.h>
-#include <stdiocb.h>
+#include <string.h>
+#include <toollib/error.h>
+#include <toollib/stdiocb.h>
 
-int
-StdioGetCharCB (void * obj, int cmd, CBD data)
+static int
+StdioGetCB (StdioStream * ss, int dummy, CBD data)
 {
-    StdioStream * ss = (StdioStream *)obj;
-    int c;
-
-    switch (cmd & STRCB_CMDMASK)
+    if (ss->in)
     {
-    case STRCB_GETCHAR:
-	c = getc (ss->fh);
+	int c = getc (ss->in);
 
 	if (c == '\n')
-	    ss->line ++;
+	    Str_NextLine (ss);
 
-	break;
-
-    case _STRCB_UNGETC:
-	c = (cmd & 0xFFFF);
-
-	if (c == 0xFFFF)
-	    c = -1;
-
-	c = ungetc (c, ss->fh);
-
-	break;
-
-    default:
-	c = -2;
+	return c;
     }
 
-    return c;
+    errno = EINVAL;
+    return -1;
+}
+
+static int
+StdioUngetCB (StdioStream * ss, int c, CBD data)
+{
+    if (ss->in)
+	return ungetc (c, ss->in);
+
+    errno = EINVAL;
+    return -1;
+}
+
+static int
+StdioPutCB (StdioStream * ss, int c, CBD data)
+{
+    if (ss->out)
+	return putc (c, ss->out);
+
+    errno = EINVAL;
+    return -1;
+}
+
+static int
+StdioPutsCB (StdioStream * ss, const char * str, CBD data)
+{
+    if (ss->out)
+	return fputs (str, ss->out);
+
+    errno = EINVAL;
+    return -1;
 }
 
 StdioStream *
 StdStr_New (const char * path, const char * mode)
 {
     StdioStream * ss = new (StdioStream);
+    FILE * fh = NULL;
 
-    ss->name = xstrdup (path);
-    ss->line = 1;
-    ss->fh   = fopen (path, mode);
-
-    if (!ss->fh)
+    if (strcmp (path, "-"))
     {
-	xfree (ss->name);
-	xfree (ss);
-	ss = NULL;
+	fh = fopen (path, mode);
+
+	if (!fh)
+	{
+	    PushStdError ("Can't open \"%s\" with mode \"%s\"\n", path, mode);
+	    return NULL;
+	}
+    }
+
+    Str_Init (&ss->stream, path);
+
+    ss->stream.get   = (CB) StdioGetCB;
+    ss->stream.unget = (CB) StdioUngetCB;
+    ss->stream.put   = (CB) StdioPutCB;
+    ss->stream.puts  = (CB) StdioPutsCB;
+
+    if (strchr (mode, 'r'))
+    {
+	if (strcmp (path, "-"))
+	{
+	    ss->in = fh;
+	    ss->closein = 1;
+	}
+	else
+	{
+	    ss->in = stdin;
+	    ss->closein = 0;
+	}
+    }
+    else
+    {
+	ss->in = NULL;
+	ss->closein = 0;
+    }
+
+    if (strchr (mode, 'w'))
+    {
+	if (strcmp (path, "-"))
+	{
+	    ss->out = fh;
+	    ss->closeout = 1;
+	}
+	else
+	{
+	    ss->out = stdout;
+	    ss->closeout = 0;
+	}
+    }
+    else
+    {
+	ss->out = NULL;
+	ss->closeout = 0;
+    }
+
+    if (ss->in && ss->out)
+    {
+	ss->closeout = 0;
     }
 
     return ss;
@@ -56,19 +122,14 @@ StdStr_New (const char * path, const char * mode)
 void
 StdStr_Delete (StdioStream * ss)
 {
-    fclose (ss->fh);
-    xfree (ss->name);
+    if (ss->closein)
+	fclose (ss->in);
+
+    if (ss->closeout)
+	fclose (ss->out);
+
+    Str_Delete (&ss->stream);
+
     xfree (ss);
 }
 
-const char  *
-StdStr_GetName (StdioStream * ss)
-{
-    return ss->name;
-}
-
-int
-StdStr_GetLine (StdioStream * ss)
-{
-    return ss->line;
-}

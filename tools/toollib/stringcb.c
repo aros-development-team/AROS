@@ -1,41 +1,67 @@
-#include <error.h>
-#include <stringcb.h>
+#include <toollib/error.h>
+#include <toollib/stringcb.h>
 
-int
-StringGetCharCB (void * obj, int cmd, CBD data)
+static int
+StringGetCB (StringStream * ss, int dummy, CBD data)
 {
-    StringStream * ss = (StringStream *)obj;
     int c;
 
-    switch (cmd & STRCB_CMDMASK)
+    if (ss->pos == ss->max)
     {
-    case STRCB_GETCHAR:
-	if (ss->pos == ss->max)
-	    c = -1;
-	else
-	    c = ss->string[ss->pos++];
+	errno = 0;
+	c = -1;
+    }
+    else
+	c = ss->string[ss->pos++];
 
-	break;
+    if (c == '\n')
+	Str_NextLine (ss);
 
-    case _STRCB_UNGETC:
-	if (!ss->pos)
-	    c = -2;
-	else
-	{
-	    c = (cmd & 0xFFFF);
+    return c;
+}
 
-	    ss->pos --;
-
-	    if (c != ss->string[ss->pos])
-		c = -2;
-	}
-	break;
-
-    default:
+static int
+StringUngetCB (StringStream * ss, int c, CBD data)
+{
+    if (!ss->pos)
+    {
+	errno = EINVAL;
 	c = -2;
+    }
+    else
+    {
+	ss->pos --;
+
+	if (c != ss->string[ss->pos])
+	{
+	    errno = EINVAL;
+	    c = -2;
+	}
     }
 
     return c;
+}
+
+static int
+StringPutCB (StringStream * ss, int c, CBD data)
+{
+    if (!ss->out)
+	ss->out = VS_New (NULL);
+
+    VS_AppendChar (ss->out, c);
+
+    return c;
+}
+
+static int
+StringPutsCB (StringStream * ss, const char * str, CBD data)
+{
+    if (!ss->out)
+	ss->out = VS_New (NULL);
+
+    VS_AppendString (ss->out, str);
+
+    return 1;
 }
 
 StringStream *
@@ -43,10 +69,17 @@ StrStr_New (const char * string)
 {
     StringStream * ss = new (StringStream);
 
+    Str_Init (&ss->stream, "string");
+
+    ss->stream.get   = (CB) StringGetCB;
+    ss->stream.unget = (CB) StringUngetCB;
+    ss->stream.put   = (CB) StringPutCB;
+    ss->stream.puts  = (CB) StringPutsCB;
+
     ss->string = string;
+    ss->out    = NULL;
     ss->pos    = 0;
     ss->max    = strlen (string);
-    ss->line   = 1;
 
     return ss;
 }
@@ -54,11 +87,11 @@ StrStr_New (const char * string)
 void
 StrStr_Delete (StringStream * ss)
 {
+    if (ss->out)
+	VS_Delete (ss->out);
+
+    Str_Delete (&ss->stream);
+
     xfree (ss);
 }
 
-int
-StrStr_GetLine (StringStream * ss)
-{
-    return ss->line;
-}

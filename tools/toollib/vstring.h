@@ -1,8 +1,8 @@
-#ifndef _VSTRING_H
-#define _VSTRING_H
+#ifndef TOOLLIB_VSTRING_H
+#define TOOLLIB_VSTRING_H
 
-#ifndef _TOOLLIB_H
-#   include <toollib.h>
+#ifndef TOOLLIB_TOOLLIB_H
+#   include <toollib/toollib.h>
 #endif
 
 typedef struct _String
@@ -28,4 +28,4 @@ extern char * stripws	  PARAMS((const char * str));
 extern char * stripwsq	  PARAMS((const char * str));
 extern char * strupper	  PARAMS((char * str));
 
-#endif /* _VSTRING_H */
+#endif /* TOOLLIB_VSTRING_H */

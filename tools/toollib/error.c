@@ -1,7 +1,7 @@
-#include <error.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <toollib/error.h>
 
 void
 Error (const char * fmt, ...)

@@ -1,6 +1,6 @@
-#include <hash.h>
 #include <string.h>
 #include <stdlib.h>
+#include <toollib/hash.h>
 
 typedef struct _HashNode HashNode;
 

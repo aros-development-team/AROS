@@ -1,30 +1,28 @@
-#ifndef _STRINGCB_H
-#define _STRINGCB_H
+#ifndef TOOLLIB_STRINGCB_H
+#define TOOLLIB_STRINGCB_H
 
-#ifndef _TOOLLIB_H
-#   include <toollib.h>
+#ifndef TOOLLIB_TOOLLIB_H
+#   include <toollib/toollib.h>
 #endif
-#ifndef _CALLBACK_H
-#   include <callback.h>
+#ifndef TOOLLIB_MYSTREAM_H
+#   include <toollib/mystream.h>
 #endif
-#ifndef _STDIOCB_H
-#   include <stdiocb.h>
+#ifndef TOOLLIB_VSTRING_H
+#   include <toollib/vstring.h>
 #endif
 
 typedef struct
 {
+    MyStream	 stream;
     const char * string;
+    String	 out;
     int 	 pos,
 		 max,
 		 line;
 }
 StringStream;
 
-extern int StringGetCharCB PARAMS ((void * obj, int cmd, CBD data));
-
 extern StringStream * StrStr_New     PARAMS ((const char * string));
 extern void	      StrStr_Delete  PARAMS ((StringStream *));
-extern const char   * StrStr_GetName PARAMS ((StringStream *));
-extern int	      StrStr_GetLine PARAMS ((StringStream *));
 
-#endif /* _STRINGCB_H */
+#endif /* TOOLLIB_STRINGCB_H */

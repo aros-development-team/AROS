@@ -1,9 +1,9 @@
-#ifndef _CALLBACK_H
-#define _CALLBACK_H
+#ifndef TOOLLIB_CALLBACK_H
+#define TOOLLIB_CALLBACK_H
 
 typedef void * CBD;
 typedef int (*CB) (void * obj, int, CBD);
 
 #define CallCB(cb,obj,cmd,data)     ((*(cb))(obj,cmd,data))
 
-#endif /* _CALLBACK_H */
+#endif /* TOOLLIB_CALLBACK_H */
