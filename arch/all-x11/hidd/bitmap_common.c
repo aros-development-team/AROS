@@ -410,7 +410,8 @@ UX11
 
 }
 
-#else
+#endif
+
 static void getimage_xlib(OOP_Class *cl, OOP_Object *o
 	, LONG x, LONG y
 	, ULONG width, ULONG height
@@ -452,34 +453,30 @@ UX11
     return;
 }    
 
-#endif
-
 static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
 {
-
-    #if USE_XSHM
-    getimage_xshm(cl, o
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())ximage_to_buf
-	, NULL
-    );
-	
-    
-    #else
-    
-
-    getimage_xlib(cl, o
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())ximage_to_buf
-	, NULL
-    );
-    
-    #endif
-        
+#if USE_XSHM
+    if (XSD(cl)->use_xshm)
+    {
+	getimage_xshm(cl, o
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)())ximage_to_buf
+	    , NULL
+	);
+    }
+    else
+#endif
+    {
+	 getimage_xlib(cl, o
+    	     , msg->x, msg->y
+	     , msg->width, msg->height
+	     , msg->pixels
+	     , (APTR (*)())ximage_to_buf
+	     , NULL
+	 );
+    }
 	
     return;
 }
@@ -487,30 +484,29 @@ static VOID MNAME(getimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Ge
 
 static VOID MNAME(getimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
-
 #if USE_XSHM
-    getimage_xshm(cl, o
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())ximage_to_buf_lut
-	, msg
-    );
-	
-    
-#else
-    
-
-    getimage_xlib(cl, o
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())ximage_to_buf_lut
-	, msg
-    );
-    
+    if (XSD(cl)->use_xshm)
+    {
+	getimage_xshm(cl, o
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)())ximage_to_buf_lut
+	    , msg
+	);
+    }
+    else
 #endif
-	
+    {
+	getimage_xlib(cl, o
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)())ximage_to_buf_lut
+	    , msg
+	);
+    }
+    	
     return;
 }
 
@@ -824,7 +820,8 @@ UX11
 
 }
 
-#else
+#endif
+
 static void putimage_xlib(OOP_Class *cl, OOP_Object *o, OOP_Object *gc
 	, LONG x, LONG y
 	, ULONG width, ULONG height
@@ -902,34 +899,33 @@ UX11
     return;
 }
 	
-
-#endif
-
 static VOID MNAME(putimage)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
 {
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
 #if USE_XSHM
-    putimage_xshm(cl, o, msg->gc
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)()) buf_to_ximage
-	, msg
-    );
-
-#else
-
-    putimage_xlib(cl, o, msg->gc
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)()) buf_to_ximage
-	, msg
-    );
-
+    if (XSD(cl)->use_xshm)
+    {
+	putimage_xshm(cl, o, msg->gc
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)()) buf_to_ximage
+	    , msg
+	);
+    }
+    else
 #endif
+    {
+	putimage_xlib(cl, o, msg->gc
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)()) buf_to_ximage
+	    , msg
+	);
+    }
 
     ReturnVoid("X11Gfx.BitMap::PutImage");
 }
@@ -943,25 +939,27 @@ static VOID MNAME(putimagelut)(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
 #if USE_XSHM
-    putimage_xshm(cl, o, msg->gc
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())buf_to_ximage_lut
-	, msg
-    );
-
-#else
-
-    putimage_xlib(cl, o, msg->gc
-    	, msg->x, msg->y
-	, msg->width, msg->height
-	, msg->pixels
-	, (APTR (*)())buf_to_ximage_lut
-	, msg
-    );
-
+    if (XSD(cl)->use_xshm)
+    {
+	putimage_xshm(cl, o, msg->gc
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)())buf_to_ximage_lut
+	    , msg
+	);
+    }
+    else
 #endif
+    {
+	putimage_xlib(cl, o, msg->gc
+    	    , msg->x, msg->y
+	    , msg->width, msg->height
+	    , msg->pixels
+	    , (APTR (*)())buf_to_ximage_lut
+	    , msg
+	);
+    }
 
     ReturnVoid("X11Gfx.BitMap::PutImageLUT");
 }
