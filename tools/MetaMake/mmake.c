@@ -222,7 +222,8 @@ int debug = 0;
 extern int execute PARAMS ((Project * prj, const char * cmd, const char * in,
 			    const char * out, const char * args));
 extern void setvar PARAMS ((Project *, const char *, const char *));
-extern void freecachenodes PARAMS((DirNode * node));
+extern void freecachenodes PARAMS ((DirNode * node));
+extern int  checkdeps PARAMS ((Project * prj, time_t desttime));
 
 /* Functions */
 char *
@@ -634,13 +635,13 @@ init (void)
 
 
     /* Try "$MMAKE_CONFIG" */
-    if (optionfile = getenv ("MMAKE_CONFIG"))
+    if ((optionfile = getenv ("MMAKE_CONFIG")))
 	optfh = fopen (optionfile, "r");
 
     /* Try "$HOME/.mmake.config" */
     if (!optfh)
     {
-	if (home = getenv("HOME"))
+	if ((home = getenv("HOME")))
 	{
 		optionfile = xmalloc (strlen(home) + sizeof("/.mmake.config") + 1);
 		sprintf (optionfile, "%s/.mmake.config", home);
