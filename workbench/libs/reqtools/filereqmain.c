@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -14,6 +14,11 @@
 **************************************************************/
 
 #include "filereq.h"
+
+/* The AmigaOS V40 ScrollWindowRaster() function is buggy and
+   causes Enforcer Hits */
+   
+#define NO_SCROLLWINDOWRASTER 1
 
 #ifdef  _AROS
 
@@ -1321,6 +1326,10 @@ parentdir:
 iterate:
 	if ((glob->downgadget != FILES) && (glob->buff->gotopos != glob->buff->pos))
 	{
+	#if NO_SCROLLWINDOWRASTER
+	    BOOL refreshall = FALSE;
+	#endif
+	
 	    start = 0; stop = glob->numentries;
 	    step = glob->buff->gotopos - glob->buff->pos;
 	    
@@ -1333,6 +1342,7 @@ iterate:
 		SetBPen (glob->reqrp, glob->pens[BACKGROUNDPEN]);
 		mySetWriteMask (glob->reqrp, glob->entrymask);
 		
+    	    #if !NO_SCROLLWINDOWRASTER
 		if (glob->os30)
 		{
 		    ScrollWindowRaster (glob->reqwin, 0, step * glob->entryheight,
@@ -1341,12 +1351,16 @@ iterate:
 		}
 		else
 		{
+	    #endif
 		    ScrollRaster (glob->reqrp, 0, step * glob->entryheight,
-						      glob->boxleft, glob->boxtop, glob->boxright,
-						      glob->boxtop + glob->boxheight - 1);
+				  glob->boxleft, glob->boxtop, glob->boxright,
+				  glob->boxtop + glob->boxheight - 1);
 		    if (glob->reqrp->Layer->Flags & LAYERREFRESH)
-			    RenderReqWindow (glob, TRUE, FALSE);
+		    	refreshall = TRUE; /* RenderReqWindow (glob, TRUE, FALSE); */
+			
+	    #if !NO_SCROLLWINDOWRASTER
 		}
+	    #endif
 		mySetWriteMask (glob->reqrp, glob->rpmask);
 
 		if (step > 0)
@@ -1359,6 +1373,13 @@ iterate:
 	    glob->buff->pos += step;
 	    UpdateDisplayList (glob);
 	    
+	#if NO_SCROLLWINDOWRASTER
+	    if (refreshall)
+	    {
+	    	RenderReqWindow (glob, TRUE, FALSE);
+	    }
+	#endif
+
 	    for (i = start; i < stop; i++) PrintEntry (glob, i);
 	    
 	    glob->DoNotWait = TRUE;
