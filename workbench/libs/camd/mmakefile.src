@@ -1,0 +1,68 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+
+LIBNAME   := camd
+ULIBNAME  := Camd
+LIBPOST   := library
+DESTDIR   := $(SLIBDIR)
+
+FILES     := camd_init drivers clusters init camdmutex mididistr midifromdriver midimsgtype2 miditodriver receiverproc strings sysexdistr unlinkmidilink getmidilinkfromownernode
+
+FUNCTIONS := \
+lockcamd \
+unlockcamd \
+createmidia \
+deletemidi \
+setmidiattrsa \
+getmidiattrsa \
+nextmidi \
+findmidi  \
+flushmidi \
+addmidilinka \
+removemidilink \
+setmidilinkattrsa \
+getmidilinkattrsa \
+nextclusterlink \
+nextmidilink \
+midilinkconnected \
+nextcluster \
+findcluster \
+putmidi \
+getmidi \
+waitmidi \
+putsysex \
+getsysex \
+querysysex \
+skipsysex \
+getmidierr \
+midimsgtype \
+midimsglen \
+parsemidi \
+openmididevice \
+closemididevice \
+rethinkcamd \
+startclusternotify \
+endclusternotify \
+
+
+%define_libs prelibs=-l$(LIBNAME)
+
+%genlib_cpak
+
+#MM workbench-libs-camd : setup includes
+workbench-libs-camd : $(SLIB)
+	@$(NOP)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR)
+
+#MM
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c functions.* mmakefile \
+	$(END_FILE).c $(LIB) $(SLIB)
+
+%common
+
