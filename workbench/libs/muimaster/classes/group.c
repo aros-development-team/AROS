@@ -2679,8 +2679,6 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
     /* Disabled. See above */
     case MUIM_Notify: return Group_Notify(cl, obj, (APTR)msg);
 #endif
-    case MUIM_Set:
-    case MUIM_MultiSet:
     case MUIM_CallHook:
     case MUIM_DrawBackground:
     case MUIM_DrawParentBackground:
