@@ -1,0 +1,24 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM contrib-freetype-ftmanager
+
+EXEDIR := $(CONTRIBDIR)/Freetype
+
+EXE := $(EXEDIR)/ftmanager
+
+USE_AMIGALIB    := yes
+USE_CLIB_SHARED := yes
+USE_MUILIB      := yes
+
+contrib-freetype-ftmanager : setup $(EXE)
+
+%make_prog_setup mmake=contrib-freetype-ftmanager
+
+LIBS := -lfreetype2shared $(LIBS)
+
+FILES := ftmanager
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+#include_deps
