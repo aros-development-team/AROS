@@ -8,6 +8,9 @@
 
 #define AROS_USE_OOP
 
+# define  DEBUG  1
+# include <aros/debug.h>
+
 #include <intuition/intuition.h>
 
 #include <exec/memory.h>
@@ -24,19 +27,27 @@
 #include <hidd/hidd.h>
 #include <hidd/serial.h>
 
+#include <stdio.h>
+
+#include <clib/arossupport_protos.h>
+
 #define ioStd(x) ((struct IOStdReq *)x)
+
+static void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase);
+static void WhitePrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase);
+
 
 void hidd_demo(struct ExecBase * SysBase)
 {
-    kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
-    kprintf("display.hidd = %08.8lx\n",OpenLibrary("display.hidd",0));
+    D(bug("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0)));
+    D(bug("display.hidd = %08.8lx\n",OpenLibrary("display.hidd",0)));
 
     OpenLibrary("hidd.gfx.display",0);
     {
 	struct GfxBase *GfxBase;
 	BOOL success = FALSE;
     
-        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.display");
+        D(bug("init_gfx(hiddbase=%s)\n", "hidd.gfx.display"));
 
         GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
         if (GfxBase)
@@ -47,16 +58,16 @@ void hidd_demo(struct ExecBase * SysBase)
 	        library (although it will probably not be neccesary).
 	    */
 
-	    kprintf("calling private gfx LateGfxInit()\n");
+	    D(bug("calling private gfx LateGfxInit()\n"));
 	    if (LateGfxInit("hidd.gfx.display"))
 	    {
 	        struct IntuitionBase *IntuitionBase;
 
-    	    	kprintf("lategfxinit okay\n");
+    	    	D(bug("lategfxinit okay\n"));
  
 	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
 	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-		kprintf("ibase = %lx\n", IntuitionBase);
+		D(bug("ibase = %lx\n", IntuitionBase));
 	        if (IntuitionBase)
 	        {
 	    	    if (LateIntuiInit(NULL))
@@ -66,13 +77,13 @@ void hidd_demo(struct ExecBase * SysBase)
 		    CloseLibrary((struct Library *)IntuitionBase);
 		}
 	    }
-	    kprintf("Closing gfx\n");
+	    D(bug("Closing gfx\n"));
 	
 	    CloseLibrary((struct Library *)GfxBase);
 
 	    if (success == FALSE)
 	    {
-	    	kprintf("There is something wrong with hidd subsystem...");
+	    	D(bug("There is something wrong with hidd subsystem..."));
 		while(1) {};
 	    }
 	
@@ -86,9 +97,9 @@ void hidd_demo(struct ExecBase * SysBase)
 
 	mp=CreateMsgPort();
 	io=CreateIORequest(mp,sizeof(struct IOStdReq));
-	kprintf("Result of opening device %d\n",
-	    OpenDevice("gameport.device",0,io,0));
-	kprintf("Doing CMD_HIDDINIT...\n");
+	D(bug("Result of opening device %d\n",
+	    OpenDevice("gameport.device",0,io,0)));
+	D(bug("Doing CMD_HIDDINIT...\n"));
 	{
 	    UBYTE *data;
 	    data = AllocMem(100, MEMF_PUBLIC);
@@ -97,16 +108,16 @@ void hidd_demo(struct ExecBase * SysBase)
 	    ioStd(io)->io_Data=data;
 	    ioStd(io)->io_Length=strlen(data);
 	    DoIO(io);
-	    kprintf("Got io_ERROR=%d",io->io_Error);
+	    D(bug("Got io_ERROR=%d",io->io_Error));
 	}
     }
 #endif
     {
         struct IntuitionBase *IntuitionBase;
         struct GfxBase *GfxBase;
-        struct Window * win;
-        int x = 100;
-        int y = 100;
+        struct Window * win = NULL;
+        int x = 0;
+        int y = 0;
 
 
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
@@ -119,20 +130,21 @@ void hidd_demo(struct ExecBase * SysBase)
 		{WA_Height,			100},
 		{WA_Left,			50},
 		{WA_Top,			50},
-		{WA_MinWidth,                   320},
-		{WA_MinHeight,                  240},
-		{WA_MaxWidth,                   640},
-		{WA_MaxHeight,                  480},
+		{WA_MinWidth,                   100},
+		{WA_MinHeight,                  100},
+		{WA_MaxWidth,                   120},
+		{WA_MaxHeight,                  120},
 		{WA_Title,  (ULONG)"AROS Dream :-)"},
 		{WA_Activate,			  1},
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
 		{TAG_DONE,			  0}};
-kprintf("Opening window\n");
+D(bug("Opening window\n"));
 	    win = OpenWindowTagList(0, tags);
+D(bug("Opened window\n"));
 	}
 
-kprintf("Window okay: win = %x\n", win);
+D(bug("Window okay: win = %x\n", win));
 
         DrawEllipse(win->RPort,160/2-35,120/2-4,80/2,80/2);
         DrawEllipse(win->RPort,185/2-35,90/2-4,15/2,15/2);
@@ -143,35 +155,36 @@ kprintf("Window okay: win = %x\n", win);
         Draw(win->RPort,180/2-35,150/2-4);
         Draw(win->RPort,195/2-35,140/2-4);
 
-	/* This is slow like hell under Bochs */
-
 	if (win)
 	{
-	  while (x < 200)
+	  while (x < 50)
 	  {
+D(bug("Moving dx=1\n"));
 	    MoveWindow(win,1,0);
 	    x++;
 	  }
 	  
-	  while (y < 200)
+	  while (y < 50)
 	  {
 	    MoveWindow(win,0,1);
 	    y++;
 	  }
-	  
-	  while (x >= 100)
+#if 0	  
+	  while (x >= 50)
 	  {
 	    MoveWindow(win,-1,0);
 	    x--;
 	  }
 	  
-	  while (y >= 100)
+	  while (y >= 50)
 	  {
 	    MoveWindow(win,0,-1);
 	    y--;
 	  }
+#endif
 	}
 
+#if 0
 	if (IntuitionBase)
 	{
 	  struct Screen	 *screen;
@@ -243,7 +256,7 @@ kprintf("Window okay: win = %x\n", win);
 
 			  char s[20];
 
-			  sprintf(s, "Mouse: %4ld, %4ld", mx, my);
+			  sprintf(s, "Mouse: %4d, %4d", mx, my);
 
 			  WhitePrint(win2->RPort, s, 80, GfxBase);
 #if 0			  
@@ -274,10 +287,11 @@ kprintf("Window okay: win = %x\n", win);
 	    UnlockPubScreen(NULL,screen);
 	  }
 	}
+#endif
     }
 }
 
-void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
+static void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
 {
         SetAPen(RPort, 2);
         SetBPen(RPort, 1);
@@ -286,7 +300,7 @@ void BlackPrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBa
         Text(RPort, String, strlen(String));
 }
 
-void WhitePrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
+static void WhitePrint(struct RastPort *RPort, char *String, UWORD height, struct GfxBase * GfxBase)
 {
         SetAPen(RPort, 1);
         SetBPen(RPort, 2);
