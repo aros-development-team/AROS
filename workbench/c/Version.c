@@ -6,17 +6,18 @@
     Lang: english
 */
 
+#include <aros/arosbase.h>
 #include <aros/config.h>
+#include <aros/inquire.h>
+#include <proto/aros.h>
 
-#if !(AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#define ENABLE_RT	1
-#endif
-
+#define ENABLE_RT 1
 #include <aros/rt.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <proto/exec.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
@@ -27,7 +28,11 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: Version 41.5 (08.12.1997)\n";
+
+struct Library *ArosBase;
+
+
+static const char version[] = "$VER: Version 41.6 (13.09.1998)\n";
 
 static const char ERROR_HEADER[] = "Version";
 
@@ -47,7 +52,7 @@ struct
     STRPTR name;
     UWORD  version;
     UWORD  revision;
-    ULONG  days;
+    LONG  days;
 } parsedver = { NULL, 0, 0, 0L };
 
 /* This points to the full (unparsed) version string. */
@@ -99,7 +104,7 @@ int number2string(unsigned int number, STRPTR string)
 char *skipwhites(char *buffer)
 {
     for(;; buffer++)
-	if ((buffer[0] != ' ' && buffer[0] != '\t') || buffer[0] == '\0')
+	if(buffer[0] == '\0' || !isspace(buffer[0]))
 	    return(buffer);
 }
 
@@ -111,7 +116,7 @@ void stripwhites(char *buffer)
 
     while(len > 0)
     {
-	if (buffer[len-1] != ' ' && buffer[len-1] != '\t')
+	if (!isspace(buffer[len-1]))
 	{
 	    buffer[len] = '\0';
 	    return;
@@ -173,10 +178,40 @@ int findinfile(BPTR file, STRPTR string, STRPTR buffer, int *lenptr)
 
 /*************************** parsing functions *************************/
 
-int makedatefromstring(char *buffer)
+/* Convert a date in the form DD.MM.YY or DD.MM.YYYY into a numerical
+   value. Return FALSE, if buffer doesn't contain a valid date. */
+BOOL makedatefromstring(char *buffer)
 {
-#warning FIXME: not implemented, yet
-    return(RETURN_OK);
+    struct DateTime dt;
+    char *end, *newbuf;
+    int len;
+
+    buffer = strchr(buffer, '(');
+    if(!buffer)
+        return FALSE;
+
+    end = strchr(buffer, ')');
+    if(!end)
+        return FALSE;
+
+    len = (int)(end - buffer);
+    newbuf = AllocVec(len + 1, MEMF_CLEAR);
+    if(!newbuf)
+        return FALSE;
+    CopyMem(buffer, newbuf, len);
+
+    dt.dat_Format = FORMAT_CDN;
+    dt.dat_Flags = 0;
+    dt.dat_StrDate = newbuf;
+    dt.dat_StrTime = NULL;
+    if(!StrToDate(&dt)) {
+        FreeVec(newbuf);
+        return FALSE;
+    }
+    FreeVec(newbuf);
+
+    parsedver.days = dt.dat_Stamp.ds_Days;
+    return TRUE;
 }
 
 /* Check whether the given string contains a version in the form
@@ -238,9 +273,9 @@ BOOL makeversionfromstring(char *buffer)
 int makedatafromstring(char *buffer)
 {
     int error = RETURN_OK;
-    int pos;
+    int pos = 0;
 
-    for (pos = 0; buffer[pos] != '\0'; pos++)
+    while(buffer[pos])
     {
 	if ((buffer[pos] == ' ') &&
             (buffer[pos+1] >= '0') && (buffer[pos+1] <='9'))
@@ -262,7 +297,6 @@ int makedatafromstring(char *buffer)
 
                 /* Now find the date. */
                 for (; buffer[pos] != '\0' && buffer[pos] != ' '; pos++);
-                pos = skipwhites(&buffer[pos]) - buffer;
                 makedatefromstring(&buffer[pos]);
                 break;
             } else
@@ -273,6 +307,7 @@ int makedatafromstring(char *buffer)
                     pos++;
             }
         }
+        pos++;
     }
     /* Strip any whitespaces from the tail of the program-name. */
     if (parsedver.name != NULL)
@@ -350,30 +385,39 @@ int makekickver()
     int len;
     struct DateTime dt;
 
+    ArosBase = OpenLibrary(AROSLIBNAME, 0);
+    if(!ArosBase) {
+        printf("%s: This program needs AROS 1.12 or better to run\n", ERROR_HEADER);
+        return RETURN_FAIL;
+    }
+
     /* Fill in struct parsedver. */
-    parsedver.version  = SysBase->LibNode.lib_Version;
-    parsedver.revision = SysBase->LibNode.lib_Revision;
-#warning FIXME: Should be the real date
-    parsedver.days = 0L;
-#define KICKSTRLEN 10
+    ArosInquire(
+                AI_ArosVersion, &parsedver.version,
+                AI_ArosReleaseMinor, &parsedver.revision,
+                AI_ArosReleaseDate, &parsedver.days,
+                TAG_DONE);
+    CloseLibrary(ArosBase); 
+
+#define KICKSTRLEN 5
     parsedver.name = AllocVec(KICKSTRLEN, MEMF_ANY);
     if (parsedver.name == NULL)
     {
 	PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
-	return(RETURN_FAIL);
+	return RETURN_FAIL;
     }
-    CopyMem("Kickstart", parsedver.name, KICKSTRLEN);
+    CopyMem("AROS", parsedver.name, KICKSTRLEN);
 
     /* Make string used by output with FULL switch. */
-#define MAXKICKSTRLEN (25 + LEN_DATSTRING)
+#define MAXKICKSTRLEN (KICKSTRLEN + LEN_DATSTRING + 15)
     verbuffer = AllocVec(MAXKICKSTRLEN, MEMF_ANY);
     if (verbuffer == NULL)
     {
 	PrintFault(ERROR_NO_FREE_STORE, (char *)ERROR_HEADER);
 	return(RETURN_FAIL);
     }
-    CopyMem("Kickstart ", verbuffer, 10);
-    len = 10;
+    CopyMem("AROS ", verbuffer, 5);
+    len = 5;
     len += number2string(parsedver.version, &verbuffer[len]);
     verbuffer[len] = '.';
     len++;
