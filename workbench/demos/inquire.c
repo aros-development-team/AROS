@@ -2,6 +2,7 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
+    Desc: Use of aros.library/ArosInquire()
     Desc: Use of aros.library/ArosInquireTagList
     Lang:
 */
@@ -16,13 +17,18 @@
 
 static const char version[]= "$VER: inquire 41.1 (29.3.1997)\n\r";
 
+ULONG major, minor, vers;
+ULONG kickb, kicks;
+UWORD kickver, kickrev;
+
 struct Library *ArosBase;
 
 int main(int argc, char **argv)
 {
     int rc;
-    IPTR relMajor, relMinor, version;
-    IPTR kickbase, kicksize, kickver, kickrev;
+    ULONG relMajor, relMinor, vers;
+    ULONG kickbase, kicksize;
+    UWORD kickver, kickrev;
 
     rc = 0;
 
@@ -41,19 +47,18 @@ int main(int argc, char **argv)
 	return RETURN_FAIL;
     }
 
-    ArosInquire
-    (
-	AI_ArosReleaseMajor, &relMajor,
-	AI_ArosReleaseMinor, &relMinor,
-	AI_ArosVersion,      &version,
-	AI_KickstartBase,    &kickbase,
-	AI_KickstartSize,    &kicksize,
-	AI_KickstartVersion, &kickver,
-	AI_KickstartRevision, &kickrev,
-	TAG_END
-    );
+    ArosInquire(
+	AI_ArosVersion,		(IPTR)&vers,
+	AI_ArosReleaseMajor,	(IPTR)&relMajor,
+	AI_ArosReleaseMinor,	(IPTR)&relMinor,
+	AI_KickstartBase,	(IPTR)&kickbase,
+	AI_KickstartSize,	(IPTR)&kicksize,
+	AI_KickstartVersion,	(IPTR)&kickver,
+	AI_KickstartRevision,	(IPTR)&kickrev,
+	TAG_DONE);
 
-    printf("AROS release = %ld.%ld (V%ld)\n", relMajor, relMinor, version);
+    printf("AROS release = %ld.%ld\n", relMajor, relMinor);
+    printf("AROS module major version = V%ld\n", vers);
 
     if (kickbase)
     {
@@ -61,7 +66,7 @@ int main(int argc, char **argv)
 
 	printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
 
-	printf("Kickstart version = %ld.%ld\n", kickver, kickrev);
+	printf("Kickstart version = %d.%d\n", kickver, kickrev);
     }
     else
     {
@@ -70,5 +75,5 @@ int main(int argc, char **argv)
 
     CloseLibrary(ArosBase);
 
-    return rc;
+    return 0;
 }
