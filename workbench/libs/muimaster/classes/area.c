@@ -1207,7 +1207,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 	/* no frame allowed for root object (see Area.doc) */
 	IPTR rootobj;
 	get(_win(obj), MUIA_Window_RootObject, &rootobj);
-	if (rootobj == obj)
+	if ((Object*)rootobj == obj)
 	{
 	    data->mad_Frame = MUIV_Frame_None;
 	    if (data->mad_FrameTitle)
