@@ -31,28 +31,41 @@
 	struct LayersBase *, LayersBase, 32, Layers)
 
 /*  FUNCTION
-        Creates a layer behind other layers. A backdrop layer will
-        be created at the most behind positon, a non-backdrop layer 
-        will be placed behind the last non-backdrop layer and in front
-        of the first backdrop layer.
+        Create a new layer at the given position and with the
+        given size. The new layer will be in front of all other
+        layers. If it is a backdrop layer it will be created
+        in front of all other backdrop layers and behind all
+        non backdrop layers.
+        Install the given hook as a backfill hook. This hook will
+        be called whenever a part of the layer is supposed to be
+        filled with a certain pattern. The backfill hook has to
+        do that.
+        If a super bitmap layer is wanted the flags LAYERSUPER and
+        the flag LAYERSMART have to be set and a pointer to a 
+        bitmap must also be passed to this function. 
 
     INPUTS
-        li    - pointer to layer info structure
-        bm    - pointer to common bitmap (= bitmap of screen)
-        x0    - upper left corner x-coordinate
-        y0    - upper left corner y-coordinate
-        x1    - lower right corner x-coordinate
-        y1    - lower right corner y-coordinate
-        flags - flags for this layer
-        Hook  - Backfill hook for this layer
-        BitMap- optional SuperBitMap for this layer. Used if the LAYERSUPER
-                flag is set
+        li    - pointer to LayerInfo structure
+        bm    - pointer to common bitmap
+        x0, y0- upper left corner of the layer
+        x1, y1- lower right corner of the layer
+        flags - choose the type of layer by setting some flags
+        hook  - pointer to the backfill hook of this layer
+                The backfill hook will be called with
+                     object = (struct RastPort *) result->RastPort
+                and message = [ (struct Layer *) layer,
+                                (struct Rectangle) bounds,
+                                (WORD) offsetx,
+                                (WORD) offsety ]
+        bm2   - pointer to optional super bitmap. 
         
     RESULT
         Pointer to the newly created layer. NULL if layer could not be 
         created (Probably out of memory).
         
     NOTES
+        Does not allow to create layers that are partially outside
+        the given bitmap (, yet).
 
     EXAMPLE
 
@@ -70,13 +83,21 @@
 {
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
-/*
-  D(bug("CreateBehindHookLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, hook@$%lx, bm2@$lx)\n", li, bm, x0, y0, x1, y1, flags, hook, bm2));
-*/
 
   struct Layer * L;
   struct ClipRect * CR;
   struct RastPort * RP;
+
+  /* 
+  **  First check whether the layer will totally fit into the given
+  **  bitmap
+   */
+  if (x0 < 0 
+      || y0 < 0 
+      || x1 > GetBitMapAttr(bm, BMA_WIDTH) 
+      || y1 > GetBitMapAttr(bm, BMA_HEIGHT))
+    return NULL;
+
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(li);

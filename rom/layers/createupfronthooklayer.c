@@ -36,13 +36,41 @@
         struct LayersBase *, LayersBase, 31, Layers)
 
 /*  FUNCTION
+        Create a new layer at the given position and with the
+        given size. The new layer will be in front of all other
+        layers. If it is a backdrop layer it will be created
+        in front of all other backdrop layers and behind all
+        non backdrop layers.
+        Install the given hook as a backfill hook. This hook will
+        be called whenever a part of the layer is supposed to be
+        filled with a certain pattern. The backfill hook has to
+        do that.
+        If a super bitmap layer is wanted the flags LAYERSUPER and
+        the flag LAYERSMART have to be set and a pointer to a 
+        bitmap must also be passed to this function. 
 
     INPUTS
+        li    - pointer to LayerInfo structure
+        bm    - pointer to common bitmap
+        x0, y0- upper left corner of the layer
+        x1, y1- lower right corner of the layer
+        flags - choose the type of layer by setting some flags
+        hook  - pointer to the backfill hook of this layer
+                The backfill hook will be called with
+                     object = (struct RastPort *) result->RastPort
+                and message = [ (struct Layer *) layer,
+                                (struct Rectangle) bounds,
+                                (WORD) offsetx,
+                                (WORD) offsety ]
+        bm2   - pointer to optional super bitmap. 
 
     RESULT
+        pointer to layer if successful, NULL otherwise
 
     NOTES
-
+        Does not allow to create layers that are partially outside
+        the given bitmap (, yet).
+ 
     EXAMPLE
 
     BUGS
@@ -64,8 +92,15 @@
   struct ClipRect * CR;
   struct RastPort * RP;
 
-  /* no one else may screw around with the layers I will be working with */
-  /* don't forget to add UnlockLayers(li) before any return-statement! */
+  /* 
+  **  First check whether the layer will totally fit into the given
+  **  bitmap
+   */
+  if (x0 < 0 
+      || y0 < 0 
+      || x1 > GetBitMapAttr(bm, BMA_WIDTH) 
+      || y1 > GetBitMapAttr(bm, BMA_HEIGHT))
+    return NULL;
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(li);
@@ -116,6 +151,9 @@
            BACKDROP layer: insert if befor the first BACKDROP layer
                            found in the list.
 			   */
+   
+    /* no one else may fool around with the layers I will be working with */
+    /* don't forget to add UnlockLayers(li) before any return-statement! */
 
     LockLayers(li);
     
