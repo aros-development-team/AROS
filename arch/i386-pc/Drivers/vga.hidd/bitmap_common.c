@@ -7,6 +7,7 @@
 */
 
 #include <exec/alerts.h>
+#include <string.h>    // memset() prototype
 
 #undef DEBUG
 #define DEBUG 0
