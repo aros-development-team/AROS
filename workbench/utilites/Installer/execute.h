@@ -8,6 +8,7 @@ struct CommandList
   int  cmdnumber;
 };
 
+#define _USERDEF	-1
 #define _UNKNOWN	0
 
 #define _ABORT		1
@@ -235,6 +236,17 @@ struct CommandList internal_commands[] =
   {"xor",		_XOR		},
   {"",			0		}
 };
+
+/* _DATABASE keywords */
+
+/* Installer 1.24 keywords */
+#define _VBLANK		1
+#define _CPU		2
+#define _GRAPHICS_MEM	3
+#define _TOTAL_MEM	4
+/* Installer V43 keywords */
+#define _FPU		5
+#define	_CHIPREV	6
 
 
 #endif /* _EXECUTE_H */

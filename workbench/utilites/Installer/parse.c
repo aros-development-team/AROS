@@ -5,20 +5,25 @@
 /* External variables */
 extern char buffer[MAXARGSIZE];
 extern FILE *inputfile;
-extern int error;
+extern int error, line;
 extern InstallerPrefs preferences;
 
 /* External function prototypes */
 extern void end_malloc();
+extern void set_procedure( char *, ScriptArg * );
+extern void show_parseerror( int );
 
 /* Internal function prototypes */
 void parse_file( ScriptArg * );
 
 
+int line;
+
 void parse_file( ScriptArg *first )
 {
 ScriptArg *current;
 int count, i, ready;
+char *name;
 
   ready = FALSE;
   current = first;
@@ -28,6 +33,7 @@ int count, i, ready;
     if( count == 0 )
     {
       PrintFault( IoErr(), "Installer" );
+      show_parseerror( line );
       exit(-1);
     }
     if( !isspace( buffer[0] ) )
@@ -39,6 +45,7 @@ int count, i, ready;
                          {
                            count = fread( &buffer[0], 1, 1, inputfile );
                          } while( buffer[0] != LINEFEED && count != 0 );
+                         line++;
                          break;
 
         case LBRACK    : /* Open bracket: recurse into next level */
@@ -60,11 +67,12 @@ int count, i, ready;
                            end_malloc();
                          }
                          current->next->parent = current->parent;
-                         current = current->next;
                          /* Set initial values */
+                         current = current->next;
                          current->arg = NULL;
                          current->cmd = NULL;
                          current->next = NULL;
+                         current->intval = 0;
                          break;
 
         case RBRACK    : /* All args collected return to lower level */
@@ -122,6 +130,10 @@ int count, i, ready;
                              i++;
                              count = fread( &buffer[i], 1, 1, inputfile );
                            } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+                           if( buffer[i] == LINEFEED )
+                           {
+                             line++;
+                           }
                            if( i == MAXARGSIZE )
                            {
                              printf("Argument length overflow!\n");
@@ -133,6 +145,7 @@ int count, i, ready;
                              {
                                count = fread( &buffer[i], 1, 1, inputfile );
                              } while( buffer[i] != LINEFEED && count != 0 );
+                             line++;
                            }
                            if( buffer[i] == LBRACK || buffer[i] == RBRACK )
                            {
@@ -162,7 +175,102 @@ int count, i, ready;
                                               }
                                               strncpy( current->arg, buffer, i+1 );
                                             }
-                                            if( strcasecmp( buffer, "welcome" ) == 0 )
+                                            if( current->arg == current->parent->cmd->arg && strcasecmp( buffer, "procedure" ) == 0 )
+                                            {
+                                            ScriptArg *proc;
+                                              /* Save procedure in ProcedureList */
+                                              proc = malloc( sizeof( ScriptArg ) );
+                                              if( proc == NULL )
+                                              {
+                                                end_malloc();
+                                              }
+                                              proc->parent = NULL;
+                                              proc->next = NULL;
+                                              proc->arg = NULL;
+                                              proc->intval = 0;
+                                              proc->cmd = malloc( sizeof( ScriptArg ) );
+                                              if( proc->cmd == NULL )
+                                              {
+                                                end_malloc();
+                                              }
+                                              proc->cmd->parent = proc;
+                                              proc->cmd->next = NULL;
+                                              proc->cmd->arg = NULL;
+                                              proc->cmd->intval = 0;
+                                              /* Procedure name */
+                                              i = 0;
+                                              /* goto 1st argument after keyword "procedure" */
+                                              do
+                                              {
+                                                do
+                                                {
+                                                  count = fread( &buffer[0], 1, 1, inputfile );
+                                                  if( buffer[0] == LINEFEED )
+                                                  {
+                                                    line++;
+                                                  }
+                                                } while( isspace( buffer[0] ) && count != 0 );
+                                                if( buffer[0] == SEMICOLON && count != 0 )
+                                                {
+                                                  do
+                                                  {
+                                                    count = fread( &buffer[0], 1, 1, inputfile );
+                                                  } while( buffer[0] != LINEFEED && count != 0 );
+                                                  line++;
+                                                }
+                                                else
+                                                {
+                                                  i++;
+                                                }
+                                              } while( i == 0 );
+                                              i = 0;
+                                              /* read in name */
+                                              do
+                                              {
+                                                i++;
+                                                count = fread( &buffer[i], 1, 1, inputfile );
+                                              } while( !isspace( buffer[i] ) && buffer[i]!=LBRACK && buffer[i]!=RBRACK && buffer[i]!=SEMICOLON && count != 0 && i < MAXARGSIZE );
+                                              if( i == MAXARGSIZE )
+                                              {
+                                                printf("Argument length overflow!\n");
+                                                exit(-1);
+                                              }
+                                              if( buffer[i] == LINEFEED )
+                                              {
+                                                line++;
+                                              }
+                                              if( buffer[i] == SEMICOLON )
+                                              {
+                                                do
+                                                {
+                                                  count = fread( &buffer[i], 1, 1, inputfile );
+                                                } while( buffer[i] != LINEFEED && count != 0 );
+                                                line++;
+                                              }
+                                              if( buffer[i] == LBRACK || buffer[i] == RBRACK )
+                                              {
+#warning FIXME: fseek() does not work!
+                                                fseek(inputfile, -1 , SEEK_CUR );
+                                              }
+                                              buffer[i] = 0;
+                                              /* Exit if procedure has no name or name is string/digit or bracket follows */
+                                              if( buffer[0] == LBRACK || buffer[0] == RBRACK || buffer[0] == SQUOTE || buffer[0] == DQUOTE )
+                                              {
+                                                printf( "Invalid procedure name <%s>!\n", buffer );
+                                              }
+                                              name = malloc( strlen( buffer ) + 1 );
+                                              if( name == NULL )
+                                              {
+                                                end_malloc();
+                                              }
+                                              strcpy( name, buffer );
+                                              /* Procedure body */
+                                              parse_file( proc->cmd );
+                                              set_procedure( name, proc->cmd );
+                                              buffer[0] = 0;
+                                              ready = TRUE;
+                                            }
+                                            if( current->arg == current->parent->cmd->arg && strcasecmp( buffer, "welcome" ) == 0 )
                                             {
                                               preferences.welcome = TRUE;
                                             }
@@ -183,9 +291,17 @@ int count, i, ready;
                          break;
       }
     }
+    else
+    {
+      if( buffer[0] == LINEFEED )
+      {
+        line++;
+      }
+    }
     if( count == 0 )
     {
       PrintFault( IoErr(), "Installer" );
+      show_parseerror( line );
       exit(-1);
     }
   } while( !ready );

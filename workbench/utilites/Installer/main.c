@@ -13,6 +13,7 @@ static const char version[] = "$VER: Installer 0.1 (18.07.1998)\n";
 
 
 /* External variables */
+extern int line;
 
 /* External function prototypes */
 extern void parse_file( ScriptArg * );
@@ -25,11 +26,13 @@ extern void end_malloc();
 #ifdef DEBUG
 extern void dump_varlist();
 #endif
+extern show_parseerror( int );
 
 /* Internal function prototypes */
 int main( int, char ** );
 
 
+char *filename;
 FILE *inputfile;
 char buffer[MAXARGSIZE];
 int error = 0;
@@ -46,8 +49,6 @@ struct RDArgs *rda;
 
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
-
-char *filename;
 
 #ifndef LINUX
   /* evaluate args with RDArgs(); */
@@ -84,6 +85,7 @@ char *filename;
     PrintFault( IoErr(), "Installer" );
     exit(-1);
   }
+  line = 1;
 
   endoffile = FALSE;
   script.arg = NULL;
@@ -137,6 +139,7 @@ char *filename;
                             {
                               count = fread( &buffer[0], 1, 1, inputfile );
                             } while( buffer[0] != LINEFEED && count != 0 );
+                            line++;
                             if( count == 0 )
                               endoffile = TRUE;
                             break;
@@ -158,14 +161,24 @@ char *filename;
                             break;
 
           default	  : /* Plain text or closing bracket is not allowed */
-                            printf( "Script syntax error!\n" );
+                            fclose( inputfile );
+                            printf("!!!!!\n");
+                            show_parseerror( line );
                             exit(-1);
                             break;
+        }
+      }
+      else
+      {
+        if( buffer[0] == LINEFEED )
+        {
+          line++;
         }
       }
     } while( nextarg != TRUE && !endoffile );
   } while( !endoffile );
 
+  free( filename );
   fclose( inputfile );
 
   if( preferences.transcriptfile != NULL )

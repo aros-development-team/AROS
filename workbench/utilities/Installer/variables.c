@@ -39,8 +39,7 @@ struct VariableList *list;
     if( i == numlocalvars )
     {
       /* Not in any list */
-      printf( "<%s> - Variable not found!\n", name );
-      exit(-1);
+      return NULL;
     }
   }
 
@@ -55,9 +54,16 @@ struct VariableList *entry;
   entry = find_var( name );
 
   /* Return Pointer to value */
-  return ( entry->vartext == NULL ) ?
-         (void *)&(entry->varinteger) :
-         (void *)entry->vartext;
+  if( entry != NULL )
+  {
+    return ( entry->vartext == NULL ) ?
+           (void *)(entry->varinteger) :
+           (void *)entry->vartext;
+  }
+  else
+  {
+    return NULL;
+  }
 }
 
 char *get_var_arg( char *name )
@@ -67,7 +73,9 @@ struct VariableList *entry;
   /* Find variable in lists */
   entry = find_var( name );
 
-return entry->vartext;
+return ( entry != NULL ) ?
+       entry->vartext :
+       NULL;
 }
 
 int get_var_int( char *name )
@@ -77,7 +85,9 @@ struct VariableList *entry;
   /* Find variable in lists */
   entry = find_var( name );
 
-return entry->varinteger;
+return ( entry != NULL ) ?
+       entry->varinteger :
+       0;
 }
 
 void set_variable( char *name, char *text, int intval )
@@ -152,8 +162,9 @@ struct VariableList *list;
 
 void set_preset_variables( )
 {
-#warning FIXME: Use real APPNAME from RDArgs()
+#warning FIXME: Use real APPNAME, LANGUAGE from RDArgs()
   set_variable( "@app-name", "DemoApp", 0 );
+  set_variable( "@language", "english", 0 );
 }
 
 #ifdef DEBUG
@@ -185,5 +196,6 @@ int i;
     free( localvars[i].varsymbol );
     free( localvars[i].vartext );
   }
+  free( localvars );
 }
 

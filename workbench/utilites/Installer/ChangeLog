@@ -108,4 +108,25 @@
 - Implemented "in"
 - Optimized item to integer conversion
 
+0021
+- added error.h with structs/defines on error Handling
+- added procedure.c with functions on user-defined procedures
+- added blank template for "_PROCEDURE" keyword:
+  procedures are parsed before script execution,
+  redefinition of procedures is not allowed
+- fixed bug where I used sizeof(string) instead of strlen(string)
+- added missing commands/tags as empty templates to execute_script()
+- fixed bug in RawDoFmt() with ints ;-)
+- extended test.script_simple
+
+0022
+- added dynamic size support to RawDoFmt()
+  ( needed quite some hacks :-( and works only up to 256k ;-)
+
+0023
+- added gui.c with functions for the gui
+- added error handling for parsing file
+- undefined variables now return (NULL|0) as value
+- added "database" command -- needs computation of return values
+
 

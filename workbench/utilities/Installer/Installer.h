@@ -18,8 +18,12 @@
 
 #ifndef LINUX
 #include <dos/dos.h>
+#include <exec/exec.h>
+#include <exec/execbase.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+
+extern struct ExecBase *SysBase;
 #endif /* !LINUX */
 
 
@@ -46,6 +50,12 @@ struct VariableList
   char * varsymbol;
   char * vartext;
   int varinteger;
+};
+
+struct ProcedureList
+{
+  char * procname;
+  ScriptArg * procbody;
 };
 
 #define SEMICOLON	0x3B

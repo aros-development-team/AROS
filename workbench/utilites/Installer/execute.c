@@ -15,6 +15,8 @@ extern void set_variable( char *, char *, int );
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
+extern ScriptArg *find_proc( char * );
+extern void show_complete( int );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -24,6 +26,12 @@ char *strip_quotes( char * );
 static void callback( char, char ** );
 #endif /* !LINUX */
 int getint( ScriptArg * );
+int database_keyword( char * );
+
+
+#ifndef LINUX
+char * callbackstring = NULL, * globalstring = NULL;
+#endif /* !LINUX */
 
 void execute_script( ScriptArg *commands, int level )
 {
@@ -41,14 +49,14 @@ void *params;
   /* If first one is a (...)-function execute it */
   if( current->cmd != NULL )
   {
-    execute_script( current->cmd, level+1 );
+    execute_script( current->cmd, level + 1 );
     /* So next ones are (...)-functions, too: execute them */
     while( current->next != NULL )
     {
       current = current->next;
       if( current->cmd != NULL )
       {
-        execute_script( current->cmd, level );
+        execute_script( current->cmd, level+ 1  );
       }
       else
       {
@@ -65,7 +73,7 @@ void *params;
     current->parent->intval = current->intval;
     if( current->arg != NULL )
     {
-      current->parent->arg = malloc( sizeof( current->arg ) + 1 );
+      current->parent->arg = malloc( strlen( current->arg ) + 1 );
       if( current->parent->arg == NULL )
       {
         end_malloc();
@@ -102,7 +110,7 @@ void *params;
 #ifdef DOTHIS
 #undef DOTHIS
                           dump_varlist();
-#endif /* DEBUG */
+#endif /* DOTHIS */
 
                           cleanup();
                           exit(-1);
@@ -245,7 +253,15 @@ void *params;
                                   {
                                     end_malloc();
                                   }
-                                  sprintf( clip, "%d", get_var_int( current->arg ));
+#ifndef LINUX
+                                  callbackstring = clip;
+                                  globalstring = callbackstring;
+                                  i = get_var_int( current->arg );
+                                  RawDoFmt( "%d", &i, (VOID_FUNC)&callback, &(globalstring));
+                                  clip = callbackstring;
+#else /* !LINUX */
+                                  sprintf( clip, "%d", get_var_int( current->arg ) );
+#endif /* !LINUX */
                                 }
                               }
                             }
@@ -256,7 +272,14 @@ void *params;
                               {
                                 end_malloc();
                               }
-                              sprintf( clip, "%d", current->intval );
+#ifndef LINUX
+                              callbackstring = clip;
+                              globalstring = callbackstring;
+                              RawDoFmt( "%d", &(current->intval), (VOID_FUNC)&callback, &(globalstring) );
+                              clip = callbackstring;
+#else /* !LINUX */
+                                  sprintf( clip, "%d", current->intval );
+#endif /* !LINUX */
                             }
                             slen = current->parent->arg == NULL ?
                                    0 :
@@ -289,7 +312,8 @@ void *params;
                           break;
 
       case _COMPLETE	: /* Display how much we have done in percent */
-#ifdef DEBUG
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
                           if( current->next != NULL )
                           {
                             current = current->next;
@@ -303,7 +327,6 @@ void *params;
                               {
                                 /* Strip off quotes */
                                 clip = strip_quotes( current->arg );
-                                printf( "Done %d%c\n", atoi( clip ), PERCENT );
                                 current->parent->intval = atoi( clip );
                                 free( clip );
                               }
@@ -312,19 +335,16 @@ void *params;
                                 clip = get_var_arg( current->arg );
                                 if( clip != NULL )
                                 {
-                                  printf( "Done %d%c\n", atoi( clip ), PERCENT );
                                   current->parent->intval = atoi( clip );
                                 }
                                 else
                                 {
-                                  printf( "Done %d%c\n", get_var_int( current->arg ), PERCENT );
                                   current->parent->intval = get_var_int( current->arg );
                                 }
                               }
                             }
                             else
                             {
-                              printf( "Done %d%c\n", current->intval, PERCENT );
                               current->parent->intval = current->intval;
                             }
                           }
@@ -332,9 +352,7 @@ void *params;
                           {
                             current->parent->intval = 0;
                           }
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-#endif /* DEBUG */
+                          show_complete( current->parent->intval );
                           break;
 
       case _EXIT	: /* Output all strings and exit, print "Done with installation" unless (quiet) is given */
@@ -390,7 +408,7 @@ void *params;
                               current->parent->intval = current->intval;
                               if( current->arg != NULL )
                               {
-                                current->parent->arg = malloc( sizeof( current->arg ) + 1 );
+                                current->parent->arg = malloc( strlen( current->arg ) + 1 );
                                 if( current->parent->arg == NULL )
                                 {
                                   end_malloc();
@@ -474,7 +492,62 @@ void *params;
                           current->parent->arg = NULL;
                           break;
 
+      case _PROCEDURE	: /* Ignore this keyword, it was parsed in parse.c */
+                          break;
+
+      case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            if( current->cmd != NULL )
+                            {
+                              execute_script( current->cmd, level + 1 );
+                            }
+                            i = getint( current );
+                            if( i > 0 )
+                            {
+                              j = 0;
+                              for( ; i > 0 ; i-- )
+                              {
+                                if( current->next != NULL )
+                                {
+                                  current = current->next;
+                                }
+                                else
+                                {
+                                  j = 1;
+                                }
+                              }
+                              if( j == 0 )
+                              {
+                                current->parent->intval = current->intval;
+                                if( current->arg != NULL )
+                                {
+                                  current->parent->arg = malloc( strlen( current->arg ) + 1 );
+                                  if( current->parent->arg == NULL )
+                                  {
+                                    end_malloc();
+                                  }
+                                  strcpy( current->parent->arg, current->arg );
+                                }
+                              }
+                            }
+                          }
+                          else
+                          {
+                            cleanup();
+                            printf( "ERROR!\n" );
+                            exit(-1);
+                          }
+                          break;
+
       case _SET		: /* assign values to variables */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
                           /* take odd args as names and even as values */
                           if( current->next != NULL )
                           {
@@ -530,8 +603,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                               }
                             }
                             /* SET returns the value of the of the last assignment */
-                            free( dummy->parent->arg );
-                            dummy->parent->arg = NULL;
                             if( dummy->next->arg != NULL )
                             {
                               if( (dummy->next->arg)[0] == SQUOTE || (dummy->next->arg)[0] == DQUOTE )
@@ -556,7 +627,7 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                                     end_malloc();
                                   }
                                   (dummy->parent->arg)[0] = DQUOTE;
-                                  strcpy( (dummy->parent->arg) + 1, get_var_arg(dummy->next->arg) );
+                                  strcpy( (dummy->parent->arg) + 1, clip );
                                   (dummy->parent->arg)[slen+1] = DQUOTE;
                                   (dummy->parent->arg)[slen+2] = 0;
                                 }
@@ -567,55 +638,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                             {
                               dummy->parent->intval = dummy->next->intval;
                             }
-                          }
-                          break;
-
-      case _SELECT	: /* Return the nth item of arguments, NULL|0 if 0 */
-                          free( current->parent->arg );
-                          current->parent->arg = NULL;
-                          current->parent->intval = 0;
-                          if( current->next != NULL )
-                          {
-                            current = current->next;
-                            if( current->cmd != NULL )
-                            {
-                              execute_script( current->cmd, level + 1 );
-                            }
-                            i = getint( current );
-                            if( i > 0 )
-                            {
-                              j = 0;
-                              for( ; i > 0 ; i-- )
-                              {
-                                if( current->next != NULL )
-                                {
-                                  current = current->next;
-                                }
-                                else
-                                {
-                                  j = 1;
-                                }
-                              }
-                              if( j == 0 )
-                              {
-                                current->parent->intval = current->intval;
-                                if( current->arg != NULL )
-                                {
-                                  current->parent->arg = malloc( strlen( current->arg ) + 1 );
-                                  if( current->parent->arg == NULL )
-                                  {
-                                    end_malloc();
-                                  }
-                                  strcpy( current->parent->arg, current->arg );
-                                }
-                              }
-                            }
-                          }
-                          else
-                          {
-                            cleanup();
-                            printf( "ERROR!\n" );
-                            exit(-1);
                           }
                           break;
 
@@ -644,9 +666,6 @@ printf( "%s = %s | %d\n", current->arg, current->next->arg, current->next->intva
                           /* Prepare base string */
                           /* Strip off quotes */
                           clip = strip_quotes( current->arg );
-#ifdef DEBUG
-printf( "<%s>", clip );
-#endif /* DEBUG */
 
                           /* Now get arguments into typeless array (void *params) */
                           params = (void *)malloc(sizeof(IPTR));
@@ -679,24 +698,15 @@ printf( "<%s>", clip );
                                 mclip[j] = strip_quotes( current->arg );
                                 ((char **)params)[i] = mclip[j];
                                 j++;
-#ifdef DEBUG
-printf( ", s=%s", ((char **)params)[i] );
-#endif /* DEBUG */
                               }
                               else
                               {
                                 ((char **)params)[i] = (char *)get_variable( current->arg );
-#ifdef DEBUG
-printf( ", var: s=%s d=%d", ((char **)params)[i], *((int **)params)[i] );
-#endif /* DEBUG */
                               }
                             }
                             else
                             {
-                              ((char **)params)[i] = (char *)&(current->intval);
-#ifdef DEBUG
-printf( ", d=%d", *((int **)params)[i] );
-#endif /* DEBUG */
+                              ((char **)params)[i] = (char *)(current->intval);
                             }
                             i++;
                             params = (void *)realloc( params, sizeof(IPTR)*(i+1) );
@@ -705,9 +715,6 @@ printf( ", d=%d", *((int **)params)[i] );
                               end_malloc();
                             }
                           }
-#ifdef DEBUG
-printf( "\n" );
-#endif /* DEBUG */
                           /* Call RawDoFmt() with parameter list */
                           /* Store that produced string as return value */
                           free( current->parent->arg );
@@ -717,14 +724,15 @@ printf( "\n" );
                           {
                             end_malloc();
                           }
-                          string = current->parent->arg;
-                          RawDoFmt( clip, params, (VOID_FUNC)&callback, &(current->parent->arg) );
-                          current->parent->arg = string;
+                          callbackstring = current->parent->arg;
+                          globalstring = callbackstring;
+                          RawDoFmt( clip, params, (VOID_FUNC)&callback, &(globalstring) );
+                          current->parent->arg = callbackstring;
 #ifdef DEBUG
                           printf( "String = <%s>\n", current->parent->arg );
-#endif
+#endif /* DEBUG */
 #else /* !LINUX */
-                          current->parent->arg = malloc( strlen( clip ) );
+                          current->parent->arg = malloc( strlen( clip ) + 1 );
                           if( current->parent->arg == NULL )
                           {
                             end_malloc();
@@ -741,10 +749,9 @@ printf( "\n" );
                             }
                             free( mclip );
                           }
-
                           /* Add surrounding quotes to string */
                           slen = strlen( current->parent->arg );
-                          clip = malloc(slen + 3);
+                          clip = malloc( slen + 3 );
                           if( clip == NULL)
                           {
                             end_malloc();
@@ -854,7 +861,7 @@ printf( "\n" );
                                 current->parent->intval = current->next->intval;
                                 if( current->next->arg != NULL )
                                 {
-                                  current->parent->arg = malloc( sizeof( current->next->arg ) + 1 );
+                                  current->parent->arg = malloc( strlen( current->next->arg ) + 1 );
                                   if( current->parent->arg == NULL )
                                   {
                                     end_malloc();
@@ -945,7 +952,7 @@ printf( "\n" );
                                 current->parent->intval = current->next->intval;
                                 if( current->next->arg != NULL )
                                 {
-                                  current->parent->arg = malloc( sizeof( current->next->arg ) + 1 );
+                                  current->parent->arg = malloc( strlen( current->next->arg ) + 1 );
                                   if( current->parent->arg == NULL )
                                   {
                                     end_malloc();
@@ -1007,8 +1014,165 @@ printf( "\n" );
 #endif /* DEBUG */
                           break;
 
-      default		: /* Unimplemented command */
+      case _DATABASE	: /* Return information on the hardware Installer is running on */
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = 0;
+                          if( current->next != NULL )
+                          {
+                            current = current->next;
+                            clip = strip_quotes( current->arg );
+                            i = database_keyword( clip );
+                            free( clip );
+#warning FIXME: compute return values for "database"
+                            switch( i )
+                            {
+                              case _VBLANK :
+                                clip = malloc( MAXARGSIZE );
+                                if( clip == NULL )
+                                {
+                                  end_malloc();
+                                }
+#ifndef LINUX
+                                sprintf( clip, "%c%d%c", DQUOTE, SysBase->VBlankFrequency, DQUOTE );
+#else /* !LINUX */
+                                sprintf( clip, "%c%d%c", DQUOTE, 50, DQUOTE );
+#endif /* !LINUX */
+#ifdef DEBUG
+                                printf( "VBlank = %s\n", clip );
+#endif /* DEBUG */
+                                current->parent->arg = malloc( strlen( clip ) + 1 );
+                                if( current->parent->arg == NULL )
+                                {
+                                  end_malloc();
+                                }
+                                strcpy( current->parent->arg, clip );
+                                free( clip );
+                                break;
+
+                              case _CPU:
+                                break;
+
+                              case _GRAPHICS_MEM:
+                                break;
+
+                              case _TOTAL_MEM:
+                                break;
+
+                              case _FPU:
+                                break;
+
+                              case _CHIPREV:
+                                break;
+
+                              default :
+                                break;
+                            }
+                          }
+                          else
+                          {
+#warning FIXME: add error message
+                            cleanup();
+                            printf( "No arguments given!\n" );
+                            exit(-1);
+                          }
+                          break;
+
+      /* Here are all unimplemented commands/tags */
+      case _ALL		:
+      case _APPEND	:
+      case _ASKBOOL	:
+      case _ASKCHOICE	:
+      case _ASKDIR	:
+      case _ASKDISK	:
+      case _ASKFILE	:
+      case _ASKNUMBER	:
+      case _ASKOPTIONS	:
+      case _ASKSTRING	:
+      case _ASSIGNS	:
+      case _CHOICES	:
+      case _COMMAND	:
+      case _CONFIRM	:
+      case _COPYFILES	:
+      case _COPYLIB	:
+      case _DEBUG	:
+      case _DEFAULT	:
+      case _DELETE	:
+      case _DELOPTS	:
+      case _DEST	:
+      case _DISK	:
+      case _EARLIER	:
+      case _EXECUTE	:
+      case _EXISTS	:
+      case _EXPANDPATH	:
+      case _FILEONLY	:
+      case _FILES	:
+      case _FONTS	:
+      case _FOREACH	:
+      case _GETASSIGN	:
+      case _GETDEVICE	:
+      case _GETDISKSPACE	:
+      case _GETENV	:
+      case _GETSIZE	:
+      case _GETSUM	:
+      case _GETVERSION	:
+      case _HELP	:
+      case _INCLUDE	:
+      case _INFOS	:
+      case _MAKEASSIGN	:
+      case _MAKEDIR	:
+      case _MESSAGE	:
+      case _NEWNAME	:
+      case _NEWPATH	:
+      case _NOGAUGE	:
+      case _NOPOSITION	:
+      case _ONERROR	:
+      case _OPTIONAL	:
+      case _PATHONLY	:
+      case _PATMATCH	:
+      case _PATTERN	:
+      case _PROMPT	:
+      case _PROTECT	:
+      case _RANGE	:
+      case _RENAME	:
+      case _REXX	:
+      case _RUN		:
+      case _SAFE	:
+      case _SETDEFAULTTOOL	:
+      case _SETSTACK	:
+      case _SETTOOLTYPE	:
+      case _SOURCE	:
+      case _STARTUP	:
+      case _SUBSTR	:
+      case _SWAPCOLORS	:
+      case _TACKON	:
+      case _TEXTFILE	:
+      case _TOOLTYPE	:
+      case _TRAP	:
+      case _USER	:
+      case _QUIET	:
                           printf( "Unimplemented command <%s>\n", current->arg );
+                          break;
+
+      case _USERDEF	: /* User defined routine */
+                          dummy = find_proc( current->arg );
+                          execute_script( dummy->cmd, level + 1 );
+                          free( current->parent->arg );
+                          current->parent->arg = NULL;
+                          current->parent->intval = dummy->intval;
+                          if( dummy->arg != NULL )
+                          {
+                            current->parent->arg = malloc( strlen( dummy->arg ) + 1 );
+                            if( current->parent->arg == NULL )
+                            {
+                              end_malloc();
+                            }
+                            strcpy( current->parent->arg, dummy->arg );
+                          }
+                          break;
+
+      default		: /* Unknown/unimplemented command */
+                          /* Hey! Where did you get this number from??? It's invalid. */
                           break;
     }
   }
@@ -1026,9 +1190,21 @@ int i;
   else
   {
     for( i = 0 ; i < _MAXCOMMAND && strcasecmp(internal_commands[i].cmdsymbol, argument ) != 0 ; i++ );
-      return ( i == _MAXCOMMAND ) ?
-             _UNKNOWN :
-             internal_commands[i].cmdnumber;
+    if( i == _MAXCOMMAND )
+    {
+      if( find_proc( argument ) != NULL )
+      {
+        return _USERDEF;
+      }
+      else
+      {
+        return _UNKNOWN;
+      }
+    }
+    else
+    {
+      return internal_commands[i].cmdnumber;
+    }
   }
 }
 
@@ -1036,6 +1212,28 @@ int i;
 #ifndef LINUX
 static void callback( char chr, char ** data )
 {
+static int i = 0, j = 1;
+static char * string = NULL;
+
+  if( callbackstring != string )
+  {
+    string = callbackstring;
+    i = 0;
+    j = 1;
+  }
+  i++;
+  if( i > MAXARGSIZE )
+  {
+    j++;
+    i = 1;
+    callbackstring = realloc( callbackstring, MAXARGSIZE * j );
+    if( callbackstring == NULL )
+    {
+      end_malloc();
+    }
+    globalstring += ( callbackstring - string );
+    string = callbackstring;
+  }
   *(*data)++ = chr;
 }
 #endif /* !LINUX */
@@ -1094,4 +1292,21 @@ char * clip;
 return i;
 }
 
+int database_keyword( char *name )
+{
+  if( strcasecmp( name, "vblank" ) == 0 )
+    return _VBLANK;
+  if( strcasecmp( name, "cpu" ) == 0 )
+    return _CPU;
+  if( strcasecmp( name, "graphics-mem" ) == 0 )
+    return _GRAPHICS_MEM;
+  if( strcasecmp( name, "total-mem" ) == 0 )
+    return _TOTAL_MEM;
+  if( strcasecmp( name, "fpu" ) == 0 )
+    return _FPU;
+  if( strcasecmp( name, "chiprev" ) == 0 )
+    return _CHIPREV;
+
+return _UNKNOWN;
+}
 
