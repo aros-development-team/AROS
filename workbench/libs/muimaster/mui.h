@@ -17,6 +17,8 @@
 #endif
 
 #define MUIMASTER_NAME "muimaster.library"
+#define MUIMASTER_VMIN    41
+#define MUIMASTER_VLATEST 41
 
 /* Sometype defs in AROS */
 #ifndef _AROS
