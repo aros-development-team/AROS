@@ -9,14 +9,19 @@
 
 #include "diskfont_intern.h"
 
+#ifndef TURN_OFF_DEBUG
+#define DEBUG 1
+#endif
 
+#include <aros/debug.h>
 
 BOOL CopyDescrToBuffer
 (
 	UBYTE *buffer, 
 	ULONG buflen, 
 	ULONG flags, 
-	struct AF_Lists *lists, 
+	struct MinList *filist,
+	struct CopyState *cs, 
 	struct DiskfontBase_intern *DiskfontBase
 )
 {
@@ -25,16 +30,22 @@ BOOL CopyDescrToBuffer
          
     UBYTE *bufptr;
     
-    APTR node;
+    struct FontInfoNode *node;
     
     struct TAvailFonts *taf;
+   	struct TTextAttr *tattr;
     
-    UWORD len,
-          curstate,
+    UWORD curstate,
           numentries = 0;
-
-    struct TagItem default_taglist = {TAG_DONE, 0L};
     
+    STRPTR lastnameinbuf;
+
+
+	D(bug(
+		"CopyDescrToBuffer(buffer=%p, buflen=%d, userflags=%d, filist=%p, copystate=%p)\n",
+		buffer, buflen, flags, filist, cs
+		));
+	
     bufptr = buffer;
     
     /* Get a pointer to the end of the buffer */
@@ -48,7 +59,7 @@ BOOL CopyDescrToBuffer
 
     curstate = BFSTATE_FONTINFO;
     
-    ForeachNode( &(lists->FontInfoList), node)
+    ForeachNode( filist, node )
     {
         /* Get pointer to next structure */
         nextptr = flags & AFF_TAGGED ? (APTR)&TAVF(bufptr)[1] : (APTR)&AVF(bufptr)[1];
@@ -58,7 +69,7 @@ BOOL CopyDescrToBuffer
             goto bufferfull;
         
         /* Copy stuff into the buffer */
-        taf = &(FIN(node)->TAF);
+        taf = &(node->TAF);
     
         /* 
           AvailFonts and TAVailFonts are stored similarly in memory except for
@@ -69,6 +80,7 @@ BOOL CopyDescrToBuffer
       
         /* We do not write fontname pointer because
         it is not yet copied to the buffer. */
+
                 
         TAVF(bufptr)->taf_Attr.tta_YSize = taf->taf_Attr.tta_YSize;
         TAVF(bufptr)->taf_Attr.tta_Style = taf->taf_Attr.tta_Style;
@@ -79,8 +91,7 @@ BOOL CopyDescrToBuffer
         
         /* Count number of entries */
         numentries ++;
-        
-        
+ 
         bufptr = nextptr;
     }
     
@@ -92,46 +103,39 @@ BOOL CopyDescrToBuffer
     /* Write the tags into the buffer */
     if (flags & AFF_TAGGED)
     {
-
+    	struct TagItem  *lasttagsinbuf;
+    	
         curstate = BFSTATE_FONTTAGS;
         
         /* !!! Here we should do alignment !!! */   
-        ForeachNode( &(lists->FontTagsList), node)
+        ForeachNode( filist, node)
         {
-            
-            /* Count the number of tags to copy. */
-            nextptr = &TI(bufptr)[ NumTags(FTN(node)->TagList, DFB(DiskfontBase)) ];
+        	tattr = &(node->TAF.taf_Attr);
+        	
+			/* Reuse tags ? */
+			if ( node->Flags & FDF_REUSETAGS)
+				node->TagsInBuf = lasttagsinbuf;
+			else
+			{
+
+				/* Does this node have tags ? */
+				if ( tattr->tta_Tags )
+				{
+    	   			nextptr = &TI(bufptr)[ node->NumTags ];
     
-            if (nextptr > bufend)
-                goto bufferfull;
+					if (nextptr > bufend)
+        	        	goto bufferfull;
             
-            /* Copy the tags */
-            CopyTagItems( TI(bufptr), FTN(node)->TagList, DFB(DiskfontBase) );
+            		/* Copy the tags */
+            		CopyTagItems( TI(bufptr), tattr->tta_Tags, DFB(DiskfontBase) );
             
-            /* Remember where we put them */
-            FTN(node)->TagListInBuf = TI(bufptr);
-            
+        	    	node->TagsInBuf = lasttagsinbuf = TI(bufptr);
+        	    }
+            }
             bufptr = nextptr;
         }
-
-        /* ------------ */
-        
-        /* Move the default tags into the buffer */
-        
-        curstate = BFSTATE_DEFAULTTAGS;
-        nextptr = &TI(bufptr)[1];
-        
-        if (nextptr > bufend)
-            goto bufferfull;
-            
-        CopyTagItems( TI(bufptr), &default_taglist, DFB(DiskfontBase) );
-        
-        /* Save the position in the buffer */
-        lists->DefTagsInBuf = TI(bufptr);
-        
-        bufptr = nextptr;
-    } 
-
+	}
+	
     /* ------------ */
 
     /* Write the fontnames into the buffer */
@@ -139,26 +143,33 @@ BOOL CopyDescrToBuffer
     curstate = BFSTATE_FONTNAME;
     
     /* !!! Here we should do alignment stuff !!! */
-    ForeachNode( &(lists->FontNameList), node )
+    ForeachNode( filist, node )
     {
+        tattr = &(node->TAF.taf_Attr);
+        
+        if (node->Flags & FDF_REUSENAME)
+        	TAVF(bufptr)->taf_Attr.tta_Name = lastnameinbuf;
+        else
+        {
+        	UB(nextptr) += node->NameLength;
+        	D(bug("\tCFTB: %s, %d\n", node->TAF.taf_Attr.tta_Name, node->NameLength));
+        
+        	if (nextptr > bufend)
+            	goto bufferfull;
+        	
+        	/* Write the string into the buffer */
+        	strcpy( bufptr, tattr->tta_Name);
+        
+        	/* 
+          	Remember where we put it, so we can update the (T)AvailFonts structs
+          	later on.
+       	 	*/
+        
+        	node->NameInBuf = bufptr;
+        	lastnameinbuf 	= bufptr;
+        	D(bug("\tCFTB: Name in buffer %s\n", bufptr));
 
-        
-        len = strlen (FNN(node)->FontName) +1;
-        UB(nextptr) += len;
-        
-        if (nextptr > bufend)
-            goto bufferfull;
-        
-        /* Write the string into the buffer */
-        strcpy( bufptr, FNN(node)->FontName);
-        
-        /* 
-          Remember where we put it, so we can update the (T)AvailFonts structs
-          later on.
-        */
-        
-        FNN(node)->FontNameInBuf = bufptr;
-        
+        }
         bufptr = nextptr;
     }
         
@@ -166,15 +177,15 @@ BOOL CopyDescrToBuffer
     
     AFH(buffer)->afh_NumEntries = numentries;
     
-    return (TRUE);
+    ReturnBool ("CopyDescrToBuffer", TRUE);
 
 /* Not enough place in the buffer */
 bufferfull:
-    lists->BufferFullNode   = node;
-    lists->BufferFullState  = curstate;
-    lists->BufferFullPtr    = bufptr;
+    cs->BufferFullNode   = node;
+    cs->BufferFullState  = curstate;
+    cs->BufferFullPtr    = bufptr;
     
-    return (FALSE);
+    ReturnBool ("CopyDescrToBuffer", FALSE);
 }
 
 
@@ -184,24 +195,39 @@ bufferfull:
 
 ULONG CountBytesNeeded
 (
-	UBYTE *bufend, 
-	ULONG flags, 
-	struct AF_Lists *lists, 
-	struct DiskfontBase_intern *DiskfontBase
+	UBYTE 						*bufend, 
+	ULONG 						flags, 
+	struct CopyState			*cs,
+	struct DiskfontBase_intern	*DiskfontBase
 )
 {
-    struct MinNode *node;
-    /* What state were we inn when the buffer was filled ? */
+	/* Macro for going through the rest of nodes in a list */
+	
+	#define ForRestOfNodes(node) \
+		for (; ((struct Node*)(node))->ln_Succ; \
+			node = (void *)((struct Node*)(node))->ln_Succ )
+	
+    struct FontInfoNode *node;
     
     UBYTE *bufptr;    
 
+	
+	D(bug(
+		"CountBytesNeeded(bufend=%p, userflags=%d, copystate=%p)\n",
+		bufend, flags, cs
+		));
+
     /* Get a pointer to where the buffer got filled */
-    bufptr = lists->BufferFullPtr;
+    bufptr = cs->BufferFullPtr;
     
-    switch (lists->BufferFullState)
+    node = cs->BufferFullNode; 
+    
+    /* What state were we in when the buffer was filled ? */
+
+    switch (cs->BufferFullState)
     {
         case BFSTATE_FONTINFO:
-            ForeachNode( &(lists->FontInfoList), node)
+            ForRestOfNodes( node)
                 bufptr = flags & AFF_TAGGED ? (UBYTE *)&TAVF(bufptr)[1] : (UBYTE *)&AVF(bufptr)[1];
 
             /* There is no break here, so that we continue with the strings */
@@ -210,22 +236,19 @@ ULONG CountBytesNeeded
         case BFSTATE_FONTTAGS:
           /* !!! Here we SHOULD do alignment !!! */
           
-            ForeachNode( &(lists->FontTagsList), node)
-                bufptr = (UBYTE*)&TI(bufptr)[ NumTags( FTN(node)->TagList, DFB(DiskfontBase)) ];
-              
-        case BFSTATE_DEFAULTTAGS:
-            bufptr = (UBYTE*)&TI(bufptr)[1];
-
-    
+          	/* I finode->NumTags == 0, then bufptr will remain the same */
+            ForRestOfNodes( node )
+                bufptr = (UBYTE*)&TI(bufptr)[ node->NumTags ];
+    		
         case BFSTATE_FONTNAME:
             /* !!! Here we SHOULD do alignment !!! */
             
-            ForeachNode( &(lists->FontNameList), node)
-                bufptr += strlen(FNN(node)->FontName) + 1;
+            ForRestOfNodes( node )
+                bufptr += node->NameLength;
                 
     }
 
-    return ( (ULONG)(bufptr - bufend) );
+    ReturnInt ("CountBytesNeeded", ULONG, (bufptr - bufend) );
 } 
 
 /******************/
@@ -234,16 +257,21 @@ ULONG CountBytesNeeded
 
 VOID UpdatePointers
 (
-	UBYTE *bufptr, 
-	ULONG flags, 
-	struct AF_Lists *lists, 
-	struct DiskfontBase_intern *DiskfontBase
+	UBYTE 						*bufptr, 
+	ULONG 						flags, 
+	struct MinList 				*filist, 
+	struct DiskfontBase_intern 	*DiskfontBase
 )
 {
     UWORD numentries;
     
-    struct MinNode *node;
+    struct FontInfoNode *node;
     
+ 	D(bug(
+		"UpdatePointers(buffer=%p, userflags=%d, filist=%p)\n",
+		bufptr, flags, filist
+		));
+
     /* Update the pointers in the (T)Availfonts elements */
     numentries = AFH(bufptr)->afh_NumEntries;
     
@@ -251,29 +279,29 @@ VOID UpdatePointers
     bufptr = (UBYTE *)&AFH(bufptr)[1];
     
     /* Walk down the FontInfoList too */
-    node = lists->FontInfoList.mlh_Head;
+    node = (struct FontInfoNode*)filist->mlh_Head;
     
     for (; numentries --; )
     {
         /* Update the fontname */
-        TAVF(bufptr)->taf_Attr.tta_Name = FIN(node)->FontName->FontNameInBuf;
+        TAVF(bufptr)->taf_Attr.tta_Name = node->NameInBuf;
         
+		D(bug("\tUP: Name:      %s\n", node->TAF.taf_Attr.tta_Name));
+        D(bug("\tUP: NameInBuf: %s\n", node->NameInBuf));
+        
+		/* Update tagptr */
         if (flags & AFF_TAGGED)
         {
-            /* Either use the default emty taglist, or a supplied one */
-            if (!FIN(node)->FontTags)
-                TAVF(bufptr)->taf_Attr.tta_Tags = lists->DefTagsInBuf;
-            else
-                TAVF(bufptr)->taf_Attr.tta_Tags = FIN(node)->FontTags->TagListInBuf;
+            TAVF(bufptr)->taf_Attr.tta_Tags = node->TagsInBuf;
         
             bufptr = (UBYTE *)&TAVF(bufptr)[1];
         }
         else
             bufptr = (UBYTE *)&AVF(bufptr)[1];
             
-        node = node->mln_Succ;
+        node = (struct FontInfoNode*)node->NodeHeader.mln_Succ;
 
     }
 
-    return; 
+    ReturnVoid("UpdatePointers"); 
 }

@@ -6,29 +6,42 @@
     Lang: English.
 */
 
-
+#include <proto/arossupport.h>
+#include <proto/dos.h>
+#include <string.h>
 #include "diskfont_intern.h"
 
 
+#ifndef TURN_OFF_DEBUG
+#define DEBUG 1
+#endif
 
+#include <aros/debug.h>
 
 /******************/
 /* ReadFontDescr  */
 /******************/
 
 
-struct FontDescrHeader *ReadFontDescr(BPTR fh, struct DiskfontBase_intern *DiskfontBase)
+struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
     UWORD aword,
-          numentries;
+          numentries,
+          numtags;
           
     struct FontDescrHeader *fdh = 0;
     
-    struct FontDescr  *fdptr;
-    
+    struct TTextAttr *tattr;
+
+	UBYTE strbuf[MAXFONTNAME];
+	   
+	BPTR fh;
+    D(bug("ReadFontDescr(filename=%s\n", filename));
     
     /* Allocate the FontDescrHeader */
-    
+    if (!(fh = Open(filename, MODE_OLDFILE)))
+    	goto failure;
+    	
     if (!(fdh = AllocMem(sizeof (struct FontDescrHeader), MEMF_ANY|MEMF_CLEAR)) )
         goto failure;
 
@@ -38,7 +51,7 @@ struct FontDescrHeader *ReadFontDescr(BPTR fh, struct DiskfontBase_intern *Diskf
     
     /* Check that this is a .font file */
     
-    if (aword != FCH_ID && aword != TFCH_ID)
+    if ( (aword != FCH_ID) && (aword != TFCH_ID) )
         goto failure;
         
     fdh->Tagged = (aword == TFCH_ID);
@@ -49,33 +62,53 @@ struct FontDescrHeader *ReadFontDescr(BPTR fh, struct DiskfontBase_intern *Diskf
     
     fdh->NumEntries = numentries;
         
-    /* Allocate mem for array of FontDescrs */
-    if 
-    (!(
-        fdh->FontDescrArray = AllocVec
-        (
-            UB(&fdptr[fdh->NumEntries]) - UB(&fdptr[0]),
-            MEMF_ANY|MEMF_CLEAR
-        )
-    ))
+    /* Allocate mem for array of TTextAttrs */
+    fdh->TAttrArray = AllocVec( UB(&tattr[fdh->NumEntries]) - UB(&tattr[0]), MEMF_ANY|MEMF_CLEAR);
+    if (!fdh->TAttrArray)
         goto failure;
     
-    fdptr = fdh->FontDescrArray;
+    tattr = fdh->TAttrArray;
         
     for (; numentries --; )
     {
         
         /* Read the fontname */
         
-        if (!ReadString( &DFB(DiskfontBase)->dsh, &(fdptr->FontName), fh ))
-            goto failure;
-            
+        STRPTR	strptr;
+        UWORD   oldstrlen = 0; /* Length of fontname in file including null-termination */
+
+        strptr = strbuf;
+        
+        do
+        {
+        	if (!ReadByte( &DFB(DiskfontBase)->dsh, strptr, fh))
+        		goto failure;
+        		
+        	oldstrlen ++;
+        }
+        while (*strptr ++);
+        
+     
+        /* We don't want a "topaz/9" like name here, but "topaz.font" */
+       	strptr = strpbrk(strbuf, "/");
+       	/* End string at '/' */
+       	*strptr = 0;
+       	
+       	
+       	/* Allocate space for fontname */
+       	if ( !(tattr->tta_Name = AllocVec(strptr - strbuf + sizeof(".font") + 1, MEMF_ANY)))
+       		goto failure;
+     	
+     	strcpy(tattr->tta_Name, strbuf);
+     
+     	strcat(tattr->tta_Name, ".font");  	
+       	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */
         Flush(fh);
         Seek
         (
             fh,
-            MAXFONTPATH - ( (strlen(fdptr->FontName) + 1) + (fdh->Tagged ? 2 : 0) ),
+            MAXFONTPATH - ( oldstrlen + (fdh->Tagged ? 2 : 0) ),
             OFFSET_CURRENT
         );
             
@@ -85,26 +118,23 @@ struct FontDescrHeader *ReadFontDescr(BPTR fh, struct DiskfontBase_intern *Diskf
         {
 
             /* Next thing up is the tagcount */
-            if (!ReadWord(&DFB(DiskfontBase)->dsh, &(fdptr->NumTags), fh))
+            if (!ReadWord(&DFB(DiskfontBase)->dsh, &numtags, fh))
                 goto failure;
                 
-                
             
-            if (fdptr->NumTags)
+            if (numtags)
             {
                 
-
-
-                /* Seek back and read the tags */
+	              /* Seek back and read the tags */
                 Flush(fh);
                 Seek
                 (
                     fh, 
-                    - ( (fdptr->NumTags << 3) + sizeof (UWORD) ), /*  sizeof (struct TagItem) = 8 */
+                    - ( (numtags << 3) + sizeof (UWORD) ), /*  sizeof (struct TagItem) = 8 */
                     OFFSET_CURRENT
                 );
 
-                if (!(fdptr->Tags = ReadTags(fh, fdptr->NumTags, DFB(DiskfontBase) )))
+                if (!(tattr->tta_Tags = ReadTags(fh, numtags, DFB(DiskfontBase) )))
                     goto failure;
                 
                 /* Seek past the tagcount */
@@ -112,26 +142,26 @@ struct FontDescrHeader *ReadFontDescr(BPTR fh, struct DiskfontBase_intern *Diskf
                     goto failure;
                 
 
-            } /* if (fdh->NumTags) */
+            } /* if (numtags) */
             
         
         } /* if (fdh->Tagged) */
         
         /* Read the rest of the info */
-        if (!ReadWord( &DFB(DiskfontBase)->dsh, &(fdptr->YSize), fh ))
+        if (!ReadWord( &DFB(DiskfontBase)->dsh, &(tattr->tta_YSize), fh ))
             goto failure;
 
-        if (!ReadByte(&DFB(DiskfontBase)->dsh, &(fdptr->Style), fh ))
+        if (!ReadByte(&DFB(DiskfontBase)->dsh, &(tattr->tta_Style), fh ))
             goto failure;
             
-        if (!ReadByte( &DFB(DiskfontBase)->dsh, &(fdptr->Flags), fh ))
+        if (!ReadByte( &DFB(DiskfontBase)->dsh, &(tattr->tta_Flags), fh ))
             goto failure;
 
-        fdptr ++;
+        tattr ++;
         
     } /* for (; numentries --; ) */
     
-    return (fdh);
+    ReturnPtr ("ReadFontDescr", struct FontDescrHeader*, fdh);
 
 failure:
     /* Free all allocated memory */
@@ -139,7 +169,8 @@ failure:
     if (fdh)
         FreeFontDescr(fdh, DFB(DiskfontBase) );
         
-    return(FALSE);    
+    ReturnPtr ("ReadFontDescr", struct FontDescrHeader*, FALSE);
+
 }
 
 /******************/
@@ -149,35 +180,36 @@ failure:
 
 VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *DiskfontBase)
 {
-    struct FontDescr *fdptr;
+    struct TTextAttr *tattr;
 
     UWORD numentries;
     
+    D(bug("FreeFontDescr(fdh=%p\n", fdh));
 
     if (fdh)
     {       
-        fdptr       = fdh->FontDescrArray;
+        tattr       = fdh->TAttrArray;
         numentries  = fdh->NumEntries;
     
-        if (fdptr)
+        if (tattr)
         {
             /* Go through the whole array freeing strings and tags */
             for (; numentries --; )
             {
-                if (fdptr->FontName)
-                    FreeVec(fdptr->FontName);
+                if (tattr->tta_Name)
+                    FreeVec(tattr->tta_Name);
                 
-                if (fdptr->Tags)
-                    FreeVec(fdptr->Tags);
+                if (tattr->tta_Tags)
+                    FreeVec(tattr->tta_Tags);
                 
-                fdptr ++;
+                tattr ++;
             }
             
-            FreeVec(fdh->FontDescrArray);
+            FreeVec(fdh->TAttrArray);
         }
     
         FreeMem(fdh, sizeof (struct FontDescrHeader));
     }
     
-    return;
+    ReturnVoid("FreeFontDescr");
 }

@@ -6,67 +6,42 @@
     Lang: English.
 */
 
-
+#include <proto/utility.h>
 #include "diskfont_intern.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
 
 
-/****************************/
-/* AllocFontNameNode        */
-/****************************/
+/****************/
+/* AllocFIN		*/
+/****************/
 
-struct FontNameNode *AllocFontNameNode(STRPTR fontname, struct DiskfontBase_intern *DiskfontBase)
+struct FontInfoNode *AllocFIN(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
-    
-    struct FontNameNode *node;
-  
+	struct FontInfoNode *finode;
 
-    /* Allocate memory for the node */
-    if ( (node = AllocVec(sizeof(struct FontNameNode), MEMF_ANY)) != 0)
-    {
-        /* Allocate memory for the fontname itself */
-        if ( (node->FontName = AllocVec(
-                strlen(fontname) + 1, /* + 1 because of null-termination */
-                MEMF_ANY
-            )) != 0
-        )
-        {
-            /* Copy the fontname into the allocated memory area */
-            strcpy( node->FontName, fontname );
-      
-            /* Successfull. Return pointer to the node. */
-            return (node);
-        }
-  
-        FreeVec(node);
-    }
-    return (FALSE);
+	D(bug("AllocFIN(filist=%p)\n", filist));
+	
+	finode = AllocMem(sizeof (struct FontInfoNode), MEMF_ANY|MEMF_CLEAR);
+	if (finode)
+		AddTail( (struct List*)filist, (struct Node*)finode );
+		
+	ReturnPtr("AllocFIN", struct FontInfoNode *, finode);
 }
 
-/**********************/
-/* AllocFontTagsNode  */
-/**********************/
+/************/
+/* FreeFIN	*/
+/************/
 
-struct FontTagsNode *AllocFontTagsNode( struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase )
+VOID FreeFIN(struct FontInfoNode *finode, struct DiskfontBase_intern *DiskfontBase)
 {
-  
-    struct FontTagsNode *node;
-  
-    /* Allocate a new fonttags node */
-  
-    if ( (node = AllocVec(sizeof(struct FontTagsNode), MEMF_ANY)) != 0)
-    {
-        /* Clone the font tagitems and save pointer to the clones */
-        if ( (node->TagList = CloneTagItems( taglist )) != 0)
-        {
-            /* Success */
-            return (node);
-      
-        }
-    
-        FreeVec(node);
-    }
-    return (FALSE);
+	D(bug( "FreeFIN(finode=%p)\n", finode ));
+	
+	Remove( (struct Node*)finode);	
+	FreeMem(finode, sizeof (struct FontInfoNode) );
+	
+	ReturnVoid("FreeFIN");
 }
 
 /**************/
@@ -79,13 +54,15 @@ ULONG NumTags(struct TagItem *taglist, struct DiskfontBase_intern *DiskfontBase)
 {
   
     ULONG numtags = 0;
-  
+
+    D(bug("NumTags(taglist=%p)\n", taglist));
+
     for (; NextTagItem(&taglist); )
         numtags ++;
 
     numtags ++; /* Count TAG_DONE */
   
-    return numtags;
+    ReturnInt ("NumTags", ULONG, numtags);
 }
 /****************/
 /* CopyTagItems */
@@ -104,7 +81,9 @@ ULONG CopyTagItems
     ULONG numtags=0;
   
     struct TagItem *tag;
-  
+
+    D(bug("CopyTagItems(desttaglist=%p, sourcetaglist=%p)\n", desttaglist, sourcetaglist));
+
     for (; (tag = NextTagItem(&sourcetaglist)); )
     {
         desttaglist->ti_Tag   = tag->ti_Tag;
@@ -122,30 +101,39 @@ ULONG CopyTagItems
     desttaglist->ti_Tag   = TAG_DONE;
     desttaglist->ti_Data  = 0L;
   
-    return (numtags);
+    ReturnInt ("CopyTagItems", ULONG, numtags);
 }
 
 
   
 
 /**********************/
-/* AF_FreeLists       */
+/* FreeFontList       */
 /**********************/
 
-VOID FreeAFLists(struct AF_Lists *lists, struct DiskfontBase_intern *DiskfontBase)
+VOID FreeFontList(struct MinList *filist, struct DiskfontBase_intern *DiskfontBase)
 {
-    
-    /* Frees the nodes in the lists found inside the AF_Lists structures
-    + the AF_Lists structure itself */
-  
+ 
     struct MinNode *node, *nextnode;
-  
+  	struct TTextAttr	*tattr;
+  	
     /* Free the fontinfolist */
+    D(bug("FreeFontList(filist=%p)\n", filist));
+
+    node = filist->mlh_Head;
   
-    node = lists->FontInfoList.mlh_Head;
-  
-    while ( (nextnode = ((struct FontInfoNode*)node)->NodeHeader.mln_Succ) )
+    while ( (nextnode = FIN(node)->NodeHeader.mln_Succ) )
     {
+    	tattr = &(FIN(node)->TAF.taf_Attr);
+    	
+    	/* Free fontname */
+    	if (tattr->tta_Name)
+    		FreeVec(tattr->tta_Name);
+    	
+    	/* Free tags */
+    	if (tattr->tta_Tags)
+    		FreeVec(tattr->tta_Tags);
+    		
         FreeMem
         (
             node,
@@ -154,36 +142,8 @@ VOID FreeAFLists(struct AF_Lists *lists, struct DiskfontBase_intern *DiskfontBas
         node = nextnode;
     }
       
-    /* Free fontnamelist */
-    node = lists->FontNameList.mlh_Head;
   
-    while ( (nextnode = ((struct FontNameNode*)node)->NodeHeader.mln_Succ) )
-    {
-        FreeVec( ((struct FontNameNode*)node)->FontName ); 
-        FreeMem
-        (
-            node,
-            sizeof (struct FontNameNode)
-        );
-            node = nextnode;
-    }
-    /* Free fonttagslist */
-  
-    node=lists->FontTagsList.mlh_Head;
-  
-    while ( (nextnode = ((struct FontTagsNode*)node)->NodeHeader.mln_Succ) )
-    {
-        /* Allocated with CloneTagItems() */
-        FreeTagItems( ((struct FontTagsNode*)node)->TagList );
-        FreeMem
-        (
-            node,
-            sizeof (struct FontTagsNode)
-        );
-    
-        node = nextnode;
-    }
-  
-  return;
+  ReturnVoid ("FreeFontList");
   }
+
 
