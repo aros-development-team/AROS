@@ -120,7 +120,7 @@ void internal_ChildFree(APTR tid);
 #define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
 
     /* Inherit the parent process' stacksize if possible */
-    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    if (__is_process(me))
     {
 	struct CommandLineInterface *cli = Cli();
 	
@@ -128,8 +128,10 @@ void internal_ChildFree(APTR tid);
 	{
     	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 	
-	    if(parentstack > AROS_STACKSIZE)
+	    if (parentstack > AROS_STACKSIZE)
+	    {
 	        defaults[9].ti_Data = parentstack;
+	    }
 	}
     }
     
@@ -143,14 +145,18 @@ void internal_ChildFree(APTR tid);
     NEWLIST((struct List *)&process->pr_LocalVars);
 
     /* We need a minimum stack to handle interrupt contexts */
-    if(defaults[9].ti_Data < AROS_STACKSIZE)
+    if (defaults[9].ti_Data < AROS_STACKSIZE)
+    {
 	defaults[9].ti_Data = AROS_STACKSIZE;
+    }
 
     stack = AllocMem(defaults[9].ti_Data, MEMF_PUBLIC);
     ENOMEM_IF(stack == NULL);
 
     s = (STRPTR)defaults[10].ti_Data;
-    while(*s++);
+
+    while (*s++);
+
     namesize = s - (STRPTR)defaults[10].ti_Data;
 
     name = AllocMem(namesize, MEMF_PUBLIC);
@@ -158,7 +164,8 @@ void internal_ChildFree(APTR tid);
 
     /* NP_Arguments */
     s = (STRPTR)defaults[12].ti_Data;
-    if(s != NULL)
+
+    if (s != NULL)
     {
 	while(*s++);
 
@@ -171,7 +178,7 @@ void internal_ChildFree(APTR tid);
 		       MEMF_ANY);
     ENOMEM_IF(memlist == NULL);
 
-    if(defaults[13].ti_Data != NULL)
+    if (defaults[13].ti_Data != NULL)
     {
 	/* Don't forget to pass tags to AllocDosObject() */
 	cli = (struct CommandLineInterface *)AllocDosObject(DOS_CLI, tags);
@@ -179,23 +186,25 @@ void internal_ChildFree(APTR tid);
 
 	oldpath = NULL;
 	cli->cli_DefaultStack = (defaults[9].ti_Data + CLI_DEFAULTSTACK_UNIT - 1) / CLI_DEFAULTSTACK_UNIT;
-
-	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	
+	if (__is_process(me))
 	{
 	    struct CommandLineInterface *oldcli = Cli();
 
-	    if(oldcli != NULL)
+	    if (oldcli != NULL)
+	    {
 		oldpath = BADDR(oldcli->cli_CommandDir);
+	    }
 	}
 
 	newpath = &cli->cli_CommandDir;
-
+	
 	/* Add substitute for lock chain */
-	while(oldpath != NULL)
+	while (oldpath != NULL)
 	{
 	    nextpath = AllocVec(2*sizeof(BPTR), MEMF_CLEAR);
 	    ENOMEM_IF(nextpath == NULL);
-
+	    
 	    newpath[0]  = MKBADDR(nextpath);
 	    nextpath[1] = DupLock(oldpath[1]);
 	    ERROR_IF(!nextpath[1]);
@@ -207,9 +216,9 @@ void internal_ChildFree(APTR tid);
 
     /* NP_Input */
     
-    if(defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
+    if (defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	if (__is_process(me))
 	{     
 	    input = Open("NIL:", MODE_OLDFILE);
 	    ERROR_IF(!input);
@@ -217,29 +226,33 @@ void internal_ChildFree(APTR tid);
 	    defaults[2].ti_Data = (IPTR)input;
 	}
 	else
+	{
 	    defaults[2].ti_Data = 0;
+	}
     }
 
     /* NP_Output */
     
-    if(defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
+    if (defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	if (__is_process(me))
 	{
 	    output = Open("NIL:", MODE_NEWFILE);
 	    ERROR_IF(!output);
-
+	    
 	    defaults[4].ti_Data = (IPTR)output;
 	}
 	else
+	{
 	    defaults[4].ti_Data = 0;
+	}
     }
-
+    
     /* NP_CurrentDir */
     
-    if(defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
+    if (defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
-	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	if (__is_process(me))
 	{
 	    curdir = Lock("", SHARED_LOCK);
 	    ERROR_IF(!curdir);
@@ -247,16 +260,18 @@ void internal_ChildFree(APTR tid);
 	    defaults[8].ti_Data = (IPTR)curdir;
 	}
 	else
+	{
 	    defaults[8].ti_Data = 0;
+	}
     }
-
+    
     /* NP_HomeDir */
     
-    if(defaults[21].ti_Data == TAGDATA_NOT_SPECIFIED)
+    if (defaults[21].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
     	defaults[21].ti_Data = 0;
     	
-    	if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    	if (__is_process(me))
 	{
 	    if (me->pr_HomeDir)
 	    {
@@ -270,7 +285,7 @@ void internal_ChildFree(APTR tid);
     
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
     CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
-
+    
     process->pr_Task.tc_Node.ln_Type = NT_PROCESS;
     process->pr_Task.tc_Node.ln_Name = name;
     process->pr_Task.tc_Node.ln_Pri = defaults[11].ti_Data;
@@ -279,7 +294,7 @@ void internal_ChildFree(APTR tid);
 
 /*  process->pr_ReturnAddr; */
     NEWLIST(&process->pr_Task.tc_MemEntry);
-
+    
     memlist->ml_NumEntries = 3;
     memlist->ml_ME[0].me_Addr = process;
     memlist->ml_ME[0].me_Length = sizeof(struct Process);
@@ -330,7 +345,7 @@ void internal_ChildFree(APTR tid);
     process->pr_ExitData = defaults[16].ti_Data; 
     process->pr_Arguments = argptr;
 
-    if((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
+    if ((BOOL)defaults[18].ti_Data)      /* NP_CopyVars */
     {
 	BOOL res = copyVars(me, process);
 	
@@ -339,14 +354,14 @@ void internal_ChildFree(APTR tid);
 
     process->pr_ShellPrivate = 0;
 
-    if(AddProcess(process, argptr, argsize, 
-		  defaults[0].ti_Data ?
-		  (BPTR *)BADDR(defaults[0].ti_Data) + 1 :
-		  (BPTR *)defaults[1].ti_Data,
-		  KillCurrentProcess, DOSBase) != NULL)
+    if (AddProcess(process, argptr, argsize, 
+		   defaults[0].ti_Data ?
+		   (BPTR *)BADDR(defaults[0].ti_Data) + 1 :
+		   (BPTR *)defaults[1].ti_Data,
+		   KillCurrentProcess, DOSBase) != NULL)
     {
 	/* NP_Synchronous */
-	if(defaults[19].ti_Data)
+	if (defaults[19].ti_Data)
 	{
 	    P(kprintf("Calling ChildWait()\n"));
 	    internal_ChildWait(FindTask(NULL));
@@ -358,43 +373,66 @@ void internal_ChildFree(APTR tid);
 
     /* Fall through */
 enomem:
-    if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    if (__is_process(me))
+    {
 	SetIoErr(ERROR_NO_FREE_STORE);
+    }
 
     freeLocalVars(process, DOSBase);
 
 error:
-    if(cli)
+    if (cli != NULL)
+    {
 	FreeDosObject(DOS_CLI, cli);
+    }
 
-    if(homedir)
+    if (homedir != NULL)
+    {
     	UnLock(homedir);
+    }
 
-    if(curdir)
+    if (curdir != NULL)
+    {
 	UnLock(curdir);
+    }
 
-    if(output)
+    if (output != NULL)
+    {
 	Close(output);
+    }
 
-    if(input)
+    if (input != NULL)
+    {
 	Close(input);
+    }
 
-    if(argptr)
+    if (argptr != NULL)
+    {
 	FreeVec(argptr);
+    }
 
-    if(memlist != NULL)
+    if (memlist != NULL)
+    {
 	FreeMem(memlist, sizeof(struct MemList) + 2*sizeof(struct MemEntry));
+    }
 
-    if(name != NULL)
+    if (name != NULL)
+    {
 	FreeMem(name, namesize);
+    }
 
-    if(stack != NULL)
+    if (stack != NULL)
+    {
 	FreeMem(stack, defaults[9].ti_Data);
+    }
 
-    if(process != NULL)
+    if (process != NULL)
+    {
 	FreeMem(process, sizeof(struct Process));
+    }
 
     return NULL;
+
     AROS_LIBFUNC_EXIT
 } /* CreateNewProc */
 
@@ -407,8 +445,10 @@ static void KillCurrentProcess(void)
     struct Process *me = (struct Process *)FindTask(NULL);
 
     /* Call user defined exit function before shutting down. */
-    if(me->pr_ExitCode != NULL)
+    if (me->pr_ExitCode != NULL)
+    {
 	me->pr_ExitCode(me->pr_ExitData);
+    }
 
     P(kprintf("Deleting local variables\n"));
 
@@ -417,41 +457,55 @@ static void KillCurrentProcess(void)
 
     P(kprintf("Closing input stream\n"));
 
-    if(me->pr_Flags & PRF_CLOSEINPUT)
+    if (me->pr_Flags & PRF_CLOSEINPUT)
+    {
 	Close(me->pr_CIS);
+    }
 
     P(kprintf("Closing output stream\n"));
 
-    if(me->pr_Flags & PRF_CLOSEOUTPUT)
+    if (me->pr_Flags & PRF_CLOSEOUTPUT)
+    {
 	Close(me->pr_COS);
+    }
 
     P(kprintf("Closing error stream\n"));
 
-    if(me->pr_Flags & PRF_CLOSEERROR)
+    if (me->pr_Flags & PRF_CLOSEERROR)
+    {
 	Close(me->pr_CES);
+    }
 
     P(kprintf("Freeing arguments\n"));
 
-    if(me->pr_Flags & PRF_FREEARGS)
+    if (me->pr_Flags & PRF_FREEARGS)
+    {
 	FreeVec(me->pr_Arguments);
+    }
 
     P(kprintf("Unloading segment\n"));
 
-    if(me->pr_Flags & PRF_FREESEGLIST)
+    if (me->pr_Flags & PRF_FREESEGLIST)
+    {
 	UnLoadSeg(me->pr_SegList);
+    }
 
     P(kprintf("Unlocking current dir\n"));
 
-    if(me->pr_Flags & PRF_FREECURRDIR)
+    if (me->pr_Flags & PRF_FREECURRDIR)
+    {
 	UnLock(me->pr_CurrentDir);
+    }
 
     P(kprintf("Unlocking home dir\n"));
     UnLock(me->pr_HomeDir);
 
     P(kprintf("Freeing cli structure\n"));
 
-    if(me->pr_Flags & PRF_FREECLI)
-	FreeDosObject(DOS_CLI,BADDR(me->pr_CLI));
+    if (me->pr_Flags & PRF_FREECLI)
+    {
+	FreeDosObject(DOS_CLI, BADDR(me->pr_CLI));
+    }
 
     /* To implement NP_Synchronous and NP_NotifyOnDeath I need Child***()
        here */
@@ -459,7 +513,7 @@ static void KillCurrentProcess(void)
     // if(me->pr_Flags & PRF_NOTIFYONDEATH)
     //     Signal(GetETask(me)->iet_Parent, SIGF_CHILD);
 
-    if(me->pr_Flags & PRF_SYNCHRONOUS)
+    if (me->pr_Flags & PRF_SYNCHRONOUS)
     {
 	P(kprintf("Calling ChildFree()\n"));
 
@@ -522,7 +576,7 @@ void internal_ChildFree(APTR tid)
 BOOL copyVars(struct Process *fromProcess, struct Process *toProcess)
 {
     /* We must have variables to copy... */
-    if(fromProcess->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    if (__is_process(fromProcess))
     {
 	struct LocalVar *varNode;
 	struct LocalVar *newVar;
@@ -536,8 +590,10 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess)
 	    
 	    newVar = (struct LocalVar *)AllocVec(copyLength,
 						 MEMF_PUBLIC | MEMF_CLEAR);
-	    if(newVar == NULL)
+	    if (newVar == NULL)
+	    {
 		return FALSE;
+	    }
 	    
 	    CopyMem(varNode, newVar, copyLength);
 	    newVar->lv_Node.ln_Name = (char *)newVar +
@@ -547,7 +603,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess)
 	    
 	    newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
 	    
-	    if(newVar->lv_Value == NULL)
+	    if (newVar->lv_Value == NULL)
 	    {
 		/* Free variable node before shutting down */
 		FreeVec(newVar);
