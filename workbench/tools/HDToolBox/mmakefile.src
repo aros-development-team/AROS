@@ -17,9 +17,8 @@ FILES = \
 EXEDIR = $(AROSDIR)/Tools
 USER_CFLAGS := -DHAVE_COOLIMAGES
 
-#MM- workbench-tools: workbench-tools-hdtoolbox \
-#MM   workbench-tools-hdtoolbox-catalogs
-#MM workbench-tools-hdtoolbox : workbench-tools-hdtoolbox-prefs
+#MM- workbench-tools: workbench-tools-hdtoolbox
+#MM workbench-tools-hdtoolbox : workbench-tools-hdtoolbox-prefs workbench-tools-hdtoolbox-catalogs
 
 %build_prog mmake=workbench-tools-hdtoolbox \
     progname=HDToolBox targetdir=$(EXEDIR) \
