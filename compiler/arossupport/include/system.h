@@ -115,6 +115,17 @@
 #   endif
 #endif
 
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
+#   define AROS_64BIT_TYPE long long
+#   define AROS_HAVE_LONG_LONG
+#endif
+
+#if defined __STDC__ && __STDC_VERSION__ >= 199901L
+#   define AROS_HAVE_LONG_LONG
+#endif
+
+
+
 /* 5. Sytem-specific files */
 #ifdef _AMIGA
 #   include <aros/amiga.h>
@@ -144,4 +155,5 @@
 #   define AROS_SLOWSTACKMETHODS
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
+#   define AROS_64BIT_TYPE long long
 #endif /* AROS_SYSTEM_H */

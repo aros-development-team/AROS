@@ -34,7 +34,7 @@ typedef struct ldiv_t {
     long int rem;
 } ldiv_t;
 
-#if defined __STDC__ || __STDC_VERSION__ >= 199901L
+#if defined AROS_HAVE_LONG_LONG
 typedef struct lldiv_t {
     long long int   quot;
     long long int   rem;
@@ -63,7 +63,7 @@ __BEGIN_DECLS
 double atof(const char *nptr);
 int atoi(const char *nptr);
 long int atol(const char *nptr);
-#if  defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+#if defined AROS_HAVE_LONG_LONG
 long long int atoll(const char *nptr);
 #endif
 
@@ -77,8 +77,7 @@ unsigned long int strtoul(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
 
-#if defined(__GNUC__) || defined(__ICC) || \
-    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901)
+#if defined AROS_HAVE_LONG_LONG
 long long int strtoll(const char * restrict nptr,
 		char ** restrict endptr,
 		int base);
@@ -145,15 +144,13 @@ void *bsearch(const void * key, const void * base, size_t count,
 /* Integer arithmetic functions */
 int abs (int j);
 long labs (long j);
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901 \
-    || defined(__GNUC__)
+#if defined AROS_HAVE_LONG_LONG
 long long int llabs(long long int j);
 #endif
 
 div_t div(int numer, int denom);
 ldiv_t ldiv(long int numer, long int denom);
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901 \
-    || defined(__GNUC__)
+#if defined AROS_HAVE_LONG_LONG
 lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
