@@ -192,7 +192,7 @@ static void WaitForIO (void)
 	      
 	      ForeachNodeSafe(&waitList, umsg, _umsg)
 	      {
-	        if (umsg->fd = msg->fd)
+	        if (umsg->fd == msg->fd)
 	        {
 	          Remove((struct Node *)umsg);
 	          FreeMem(umsg, sizeof(struct uioMessage));
@@ -200,7 +200,7 @@ static void WaitForIO (void)
 	      }
 	      ReplyMsg((struct Message *)msg);
 	    }
-	}
+	} /* while (there are messages) */
 
 	FD_ZERO (&rfds);
 	FD_ZERO (&wfds);
@@ -370,7 +370,7 @@ static IPTR unixio_wait(Class *cl, Object *o, struct uioMsg *msg)
 	umsg->callback = ((struct uioMsg *)msg)->um_CallBack;
 	umsg->callbackdata = ((struct uioMsg *)msg)->um_CallBackData;
 
-	D(bug("Sending msg fd=%ld mode=%ld to port %x\n", umsg->fd, umsg->mode, ud->ud_Port));
+	D(bug("UnixIO::Wait() Sending msg fd=%ld mode=%ld to port %x\n", umsg->fd, umsg->mode, ud->ud_Port));
 
 /*
 kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_Node.ln_Name,FindTask(NULL),port);
