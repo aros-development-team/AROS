@@ -135,9 +135,6 @@ struct IntCatalog
 #define DOSBase     (((struct IntLocaleBase *)LocaleBase)->lb_DosBase)
 #define IFFParseBase (((struct IntLocaleBase *)LocaleBase)->lb_IFFParseBase)
 #define UtilityBase (((struct IntLocaleBase *)LocaleBase)->lb_UtilityBase)
-#ifdef __MORPHOS__
-#define __NOLIBBASE__
-#endif
 
 #if REPLACEMENTFUNCS_LOCK_LOCALE
 #define REPLACEMENT_LOCK    ObtainSemaphore(&IntLB(LocaleBase)->lb_LocaleLock)
