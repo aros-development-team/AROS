@@ -230,6 +230,8 @@ static struct def_ulval DefULValues[] =
     { MUICFG_Cycle_MenuCtrl_Speed, 0 },
     { MUICFG_Cycle_Menu_Recessed, FALSE },
     { MUICFG_List_FontLeading, 1 },
+    { MUICFG_GroupTitle_Position, GROUP_TITLE_POSITION_CENTERED },
+    { MUICFG_GroupTitle_Color, GROUP_TITLE_COLOR_HILITE },
     { 0, 0 },
 };
 
@@ -310,8 +312,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- group stuff ----------*/
 
-    data->prefs.group_title_position = GROUP_TITLE_POSITION_CENTERED;
-    data->prefs.group_title_color = GROUP_TITLE_COLOR_HILITE;
+    data->prefs.group_title_position = GetConfigULong(obj, MUICFG_GroupTitle_Position);
+    data->prefs.group_title_color = GetConfigULong(obj, MUICFG_GroupTitle_Color);
     data->prefs.group_hspacing = GetConfigULong(obj, MUICFG_Group_HSpacing);
     data->prefs.group_vspacing = GetConfigULong(obj, MUICFG_Group_VSpacing);
 
