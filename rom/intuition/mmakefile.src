@@ -146,6 +146,7 @@ FUNCTIONS := \
 	sendintuimessage \
 	setattrsa \
 	setdefaultpubscreen \
+	setdefaultscreenfont \
 	setdmrequest \
 	setedithook \
 	setgadgetattrsa \
