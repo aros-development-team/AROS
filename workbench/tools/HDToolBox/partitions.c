@@ -70,7 +70,6 @@ struct PartitionHandle *ph;
 struct HDTBPartition *pn;
 LONG flag;
 
-kprintf("search for partitions\n");
 	for
 		(
 			ph = (struct PartitionHandle *)partition->ph->table->list.lh_Head;
@@ -78,15 +77,15 @@ kprintf("search for partitions\n");
 			ph = (struct PartitionHandle *)ph->ln.ln_Succ
 		)
 	{
-kprintf("found a partition\n");
 		pn = newPartition(parent, partition);
 		if (pn != NULL)
 		{
 			pn->ph = ph;
 			GetPartitionAttrsA
 			(
-				pn->ph, PT_GEOMETRY, &pn->dg,
-				pn->ph, PT_DOSENVEC, &pn->de,
+				pn->ph,
+				PT_GEOMETRY, &pn->dg,
+				PT_DOSENVEC, &pn->de,
 				TAG_DONE
 			);
 			if (getAttrInfo(pn->root->table->pattrlist, PTA_TYPE) & PLAM_READ)
@@ -136,7 +135,6 @@ kprintf("found a partition\n");
 			}
 		}
 	}
-kprintf("done searching for partitions\n");
 }
 
 void freePartitionNode(struct HDTBPartition *node) {
