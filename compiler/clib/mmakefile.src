@@ -176,7 +176,7 @@ SFILES := \
 
 ASMFILES  := setjmp longjmp
 SASMFILES := longjmp
-STUBFILES := $(shell $(CAT) stubs/stubslist)
+STUBFILES := $(shell $(CAT) $(STUBSDIR)/stubslist)
 
 OBJS  := $(foreach f, $(FILES)   , $(OBJDIR)/$(f).o)
 OBJS  += $(foreach f, $(SFILES)  , $(OBJDIR)/$(f).o)
