@@ -134,3 +134,30 @@ developer packages pre-installed or at least much more easy to install from
 the Internet, eg. from \link{www.suse.com} {http://www.suse.com} (Germany)
 or \link{www.redhat.com} {http://www.redhat.com} (USA)).
 
+\section{Memory protection, VMM, RT, ... *New*}
+
+Hot themes. Oh well...
+
+Several hundred Amiga experts (or at least what they thought of themselves)
+tries for three years to find a way to implement MP (memory protection)
+into the AmigaOS. They failed. You should take it as a fact that the
+normal AmigaOS will never have something like Unix or WindowsNT.
+
+But all is not lost. There are plans to integrate MP into AROS which will
+allow to protect at least new programs which know about MP. Some efforts
+in this area look really promising and in the end: Is it really a problem
+if you machine crashes ? Let me explain, before you nail me to a tree :-)
+The problem is not that the machine crashes, the problems are: 1. If
+that happens, you have no good idea why it did, so you have to poke
+with a 100ft pole into a swamp with a thick fog. 2. You loose your work.
+Rebooting the machine is really no issue.
+
+So what we try to establish is a system which will at least alert if
+something dubious is happening and which can tell you in great detail what
+was happening when the machine crashes and which will save your work and
+*then* crash. There will also be means to check what has been saved so you
+can be sure that you don't continue with corrupted data.
+
+The same is with VMM, RT, SMP and RTG. We are currently planning how to
+implement them and we make sure that adding these features will be painless
+but they are no #1 priorities right now.
