@@ -126,11 +126,6 @@ struct ParallelUnit
                                        of the buffer.
                                     */
 
-#ifdef SysBase
-    #undef SysBase
-#endif
-//#define SysBase ParallelDevice->sysBase
-
 #ifdef OOPBase
     #undef OOPBase
 #endif
