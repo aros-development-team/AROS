@@ -13,7 +13,7 @@ FILES := functable basicfuncs \
 	 specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
-	 gadgets coolimagedata 
+	 gadgets coolimagedata locale 
 
 FUNCTIONS := allocfilerequest	\
 	allocaslrequest 	\
@@ -26,11 +26,11 @@ FUNCTIONS := allocfilerequest	\
 
 %genlib_cpak
 
-#MM workbench-libs-asl : setup includes linklibs
+#MM workbench-libs-asl : setup includes linklibs setup-asl-catalogs
 workbench-libs-asl : $(SLIB)
 	@$(NOP)
 
-#MM workbench-libs-asl-quick : 
+#MM workbench-libs-asl-quick : setup-asl-catalogs
 workbench-libs-asl-quick : $(SLIB)
 	@$(NOP)
 

@@ -1,3 +1,11 @@
+/*
+    (C) 1997-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: English.
+*/
+
 #ifndef ASL_INTERN_H
 #define ASL_INTERN_H
 
@@ -23,6 +31,10 @@
 
 #ifndef LIBRARIES_ASL_H
 #    include <libraries/asl.h>
+#endif
+
+#ifndef LIBRARIES_LOCALE_H
+#    include <libraries/locale.h>
 #endif
 
 #ifndef UTILITY_HOOKS_H
@@ -58,9 +70,11 @@ struct IntReq
     struct Hook 	*ir_IntuiMsgFunc;
     struct TextAttr	*ir_TextAttr;
     struct Locale	*ir_Locale;
+    struct Catalog  	*ir_Catalog;
     APTR		ir_MemPool;
     ULONG		ir_MemPoolPuddle;  	/* if 0, no pool is created */
     ULONG		ir_MemPoolThresh;
+    LONG    	    	ir_TitleID;
     STRPTR		ir_TitleText;
     STRPTR		ir_PositiveText;
     STRPTR		ir_NegativeText;
@@ -104,67 +118,7 @@ struct IntFileReq
     UWORD		ifr_SortBy;
     UWORD		ifr_SortOrder;
     UWORD		ifr_SortDrawers;
-    BOOL		ifr_InitialShowVolumes;
-    
-    /* Some GUI strings specific for the file requester */
-
-    STRPTR		ifr_VolumesText;
-    STRPTR		ifr_ParentText;
-    STRPTR		ifr_PatternText;
-    STRPTR		ifr_DrawerText;
-    STRPTR		ifr_FileText;
-    STRPTR		ifr_LVDrawerText;
-    STRPTR		ifr_LVAssignText;
-
-    /* Delete Requester */
-    
-    STRPTR		ifr_Delete_TitleText;
-    STRPTR		ifr_Delete_OkayCancelText;
-    STRPTR		ifr_Delete_Message;
-    
-    /* Rename Requester */
-    
-    STRPTR		ifr_Rename_TitleText;
-    STRPTR		ifr_Rename_OkayText;
-    STRPTR		ifr_Rename_CancelText;
-    
-    /* Create Drawer Requester */
-    
-    STRPTR		ifr_Create_TitleText;
-    STRPTR		ifr_Create_OkayText;
-    STRPTR		ifr_Create_CancelText;
-    STRPTR		ifr_Create_DefaultName;
-    
-    /* Select Requester */
-    
-    STRPTR		ifr_Select_TitleText;
-    STRPTR		ifr_Select_OkayText;
-    STRPTR		ifr_Select_CancelText;
-    
-    /* Menus */
-    
-    STRPTR		ifr_Menu_Control;
-    STRPTR		ifr_Item_Control_LastName;
-    STRPTR		ifr_Item_Control_NextName;
-    STRPTR		ifr_Item_Control_Restore;
-    STRPTR		ifr_Item_Control_Parent;
-    STRPTR		ifr_Item_Control_Volumes;
-    STRPTR		ifr_Item_Control_Update;
-    STRPTR		ifr_Item_Control_Delete;
-    STRPTR		ifr_Item_Control_CreateNewDrawer;
-    STRPTR		ifr_Item_Control_Rename;
-    STRPTR		ifr_Item_Control_Select;
-    STRPTR		ifr_Item_Control_OK;
-    STRPTR		ifr_Item_Control_Cancel;
-    STRPTR		ifr_Menu_FileList;
-    STRPTR		ifr_Item_FileList_SortByName;
-    STRPTR		ifr_Item_FileList_SortByDate;
-    STRPTR		ifr_Item_FileList_SortBySize;
-    STRPTR		ifr_Item_FileList_AscendingOrder;
-    STRPTR		ifr_Item_FileList_DescendingOrder;
-    STRPTR		ifr_Item_FileList_ShowDrawersFirst;
-    STRPTR		ifr_Item_FileList_ShowDrawerWithFiles;
-    STRPTR		ifr_Item_FileList_ShowDrawersLast;
+    BOOL		ifr_InitialShowVolumes;        
 };
 
 /*****************************************************************************************/
@@ -327,13 +281,11 @@ struct AslBase_intern
     struct GfxBase		*gfxbase;
     struct Library		*layersbase;
     struct Library		*cybergfxbase;
-    struct Library		*boopsibase;
     struct Library		*utilitybase;
     struct Library		*gadtoolsbase;
     struct Library  	    	*diskfontbase;
-    struct Library		*aroslistviewbase;
-    struct Library		*aroslistbase;
-
+    struct Library  	    	*localebase;
+    
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];
@@ -395,6 +347,11 @@ void getgadgetcoords(struct Gadget *gad, struct GadgetInfo *gi, WORD *x, WORD *y
 void connectscrollerandlistview(struct ScrollerGadget *scrollergad, Object *listview,
 				struct AslBase_intern *AslBase);
 void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase);
+
+/* locale.c */
+
+STRPTR GetString(LONG id, struct Catalog *catalog, struct AslBase_intern *AslBase);
+void LocalizeMenus(struct NewMenu *nm, struct Catalog *catalog, struct AslBase_intern *AslBase);
 
 /*****************************************************************************************/
 
@@ -472,6 +429,8 @@ typedef struct IntuitionBase IntuiBase;
 
 #define DiskfontBase	ASLB(AslBase)->diskfontbase
 
+#define LocaleBase  	ASLB(AslBase)->localebase
+
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
 #define IntuitionBase	ASLB(AslBase)->intuitionbase
@@ -479,9 +438,6 @@ typedef struct IntuitionBase IntuiBase;
 
 #undef GfxBase
 #define GfxBase 	ASLB(AslBase)->gfxbase
-
-#undef BOOPSIBase
-#define BOOPSIBase	   ASLB(AslBase)->boopsibase
 
 #ifndef GLOBAL_DOSBASE
 #undef DOSBase

@@ -17,6 +17,7 @@
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <proto/dos.h>
+#include <proto/locale.h>
 
 #include <exec/lists.h>
 #include <exec/memory.h>
@@ -236,6 +237,8 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
     if (ld)
     {
 
+    	if (ld->ld_IntReq->ir_Catalog) CloseCatalog(ld->ld_IntReq->ir_Catalog);
+	
 	if (ld->ld_Menu)
 	{
 	    if (ld->ld_Window)
@@ -369,6 +372,18 @@ struct LayoutData *AllocCommon
 
     SetFont( &(ld->ld_DummyRP), ld->ld_Font );
 
+    if (LocaleBase)
+    {
+    	struct TagItem tags[] =
+	{
+	    {OC_BuiltInLanguage , (IPTR)"english"},
+	    {OC_Version     	, 0 	    	 },
+	    {TAG_DONE	    	    	    	 }
+	};
+	
+    	intreq->ir_Catalog = OpenCatalogA(intreq->ir_Locale, "Sys/asl.catalog", tags);
+    }
+    	
     return (ld);
 
 failure:

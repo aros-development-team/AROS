@@ -12,7 +12,6 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
 #include <proto/layers.h>

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: File requester specific code.
@@ -12,7 +12,6 @@
 #include <proto/dos.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
-#include <proto/boopsi.h>
 #include <proto/graphics.h>
 #include <proto/gadtools.h>
 #include <exec/memory.h>
@@ -30,6 +29,9 @@
 #include "filereqsupport.h"
 #include "specialreq.h"
 #include "coolimages.h"
+
+#define CATCOMP_NUMBERS
+#include "asl_strings.h"
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -427,10 +429,10 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 					     &cool_loadimage);
     struct ButtonInfo 		bi[NUMBUTS] =
     {
-        { ID_BUTOK	, GetIR(ifreq)->ir_PositiveText , okimage           , &udata->OKBut	 },
-	{ ID_BUTVOLUMES , ifreq->ifr_VolumesText	, &cool_dotimage    , &udata->VolumesBut },
-	{ ID_BUTPARENT  , ifreq->ifr_ParentText	        , &cool_dotimage    , &udata->ParentBut  },
-	{ ID_BUTCANCEL  , GetIR(ifreq)->ir_NegativeText , &cool_cancelimage , &udata->CancelBut  }
+        { ID_BUTOK	, NULL , okimage           , &udata->OKBut	 },
+	{ ID_BUTVOLUMES , NULL , &cool_dotimage    , &udata->VolumesBut },
+	{ ID_BUTPARENT  , NULL , &cool_dotimage    , &udata->ParentBut  },
+	{ ID_BUTCANCEL  , NULL , &cool_cancelimage , &udata->CancelBut  }
     };
     Object 			*gad;
     STRPTR 			butstr[NUMBUTS];
@@ -448,6 +450,16 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     udata->ListviewHook.h_Data       = AslBase;
 
     /* calc. min. size */
+    
+    bi[0].text = GetIR(ifreq)->ir_PositiveText;
+    if (!bi[0].text) bi[0].text = GetString(MSG_FILEREQ_POSITIVE_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
+    
+    bi[1].text = GetString(MSG_FILEREQ_VOLUMES_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
+    bi[2].text = GetString(MSG_FILEREQ_PARENT_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
+    
+    bi[3].text = GetIR(ifreq)->ir_NegativeText;
+    if (!bi[3].text) bi[3].text = GetString(MSG_FILEREQ_NEGATIVE_GAD, GetIR(ifreq)->ir_Catalog, AslBase);
+    
     
     w = 0;
     for(i = 0; i < NUMBUTS; i++)
@@ -595,42 +607,24 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     }	 
     
     /* make labels */
-        
-    w = TextLength(&ld->ld_DummyRP, ifreq->ifr_DrawerText, strlen(ifreq->ifr_DrawerText)) + 
-        LABELSPACINGX +
-	ld->ld_Font->tf_XSize * 2; /* Frame symbol showing directory scan activity */
-
-    i = 0;
-    if (ifreq->ifr_Flags1 & FRF_DOPATTERNS) butstr[i++] = ifreq->ifr_PatternText;
-    if (!(ifreq->ifr_Flags2 & FRF_DRAWERSONLY)) butstr[i++] = ifreq->ifr_FileText;
-
-    if (i)
-    {
-	x = BiggestTextLength(butstr, i, &(ld->ld_DummyRP), AslBase);
-        if (x > w) w = x;
-    }
     
-    x = ld->ld_WBorLeft + OUTERSPACINGX;
-    y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
-    
-    {
+    {    
         struct LabelInfo
 	{
 	    BOOL 	doit;
-	    char 	*text;
+	    STRPTR  	text;
 	    Object 	**objvar;
 	} li [] =
 	{
-	    {TRUE, ifreq->ifr_PatternText, &udata->PatternLabel },
-	    {TRUE, ifreq->ifr_DrawerText , &udata->DrawerLabel  },
-	    {TRUE, ifreq->ifr_FileText   , &udata->FileLabel    }
+	    {TRUE, (STRPTR)MSG_FILEREQ_PATTERN_LABEL, &udata->PatternLabel },
+	    {TRUE, (STRPTR)MSG_FILEREQ_DRAWER_LABEL , &udata->DrawerLabel  },
+	    {TRUE, (STRPTR)MSG_FILEREQ_FILE_LABEL   , &udata->FileLabel    }
 	}; 
 
         struct TagItem label_tags[] =
 	{
 	    {GA_Left		, 0			},
-	    {GA_RelBottom	, y			},
+	    {GA_RelBottom	, 0			},
 	    {GA_Width		, 0			},
 	    {GA_Height		, udata->ButHeight	},
 	    {GA_Text		, 0			},
@@ -640,13 +634,52 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {TAG_DONE					}
 	};
 
-	if (!(ifreq->ifr_Flags1 & FRF_DOPATTERNS)) li[0].doit = FALSE;
-	if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)   li[2].doit = FALSE;
+    	for(i = 0; i < 3; i++)
+	{
+	    li[i].text = GetString((LONG)li[i].text, GetIR(ifreq)->ir_Catalog, AslBase);
+	}
+	
+	/* Drawer label is always there */
+	
+	w = TextLength(&ld->ld_DummyRP, li[1].text, strlen(li[1].text)) + 
+            LABELSPACINGX +
+	    ld->ld_Font->tf_XSize * 2; /* Frame symbol showing directory scan activity */
+
+	i = 0;
+	if (ifreq->ifr_Flags1 & FRF_DOPATTERNS)
+	{
+	    butstr[i++] = li[0].text;
+	}
+	else
+	{
+	    li[0].doit = FALSE;
+	}
+	
+	if (!(ifreq->ifr_Flags2 & FRF_DRAWERSONLY))
+	{
+	    butstr[i++] = li[2].text;
+	}
+	else
+	{
+	    li[2].doit = FALSE;
+	}
+
+	if (i)
+	{
+	    x = BiggestTextLength(butstr, i, &(ld->ld_DummyRP), AslBase);
+            if (x > w) w = x;
+	}
+
+	x = ld->ld_WBorLeft + OUTERSPACINGX;
+	y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
+    	    (udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
+    
+    	label_tags[1].ti_Data = y;
 	
 	for(i = 0; i < 3;i++)
 	{
 	    if (!li[i].doit) continue;
-	    
+	    	    
 	    if (i == 1) y2 = y;
 	    
 	    label_tags[2].ti_Data = TextLength(&ld->ld_DummyRP, li[i].text, strlen(li[i].text));
@@ -759,43 +792,45 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct NewMenu nm[] =
 	{
-	    {NM_TITLE, ifreq->ifr_Menu_Control																		}, /*  0 */ 
-	     {NM_ITEM, ifreq->ifr_Item_Control_LastName + 2		, ifreq->ifr_Item_Control_LastName		, 0		, 0		, (APTR)FRMEN_LASTNAME		}, /*  1 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_NextName + 2		, ifreq->ifr_Item_Control_NextName		, 0		, 0		, (APTR)FRMEN_NEXTNAME		}, /*  2 */
+	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_CONTROL																		}, /*  0 */ 
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_LASTNAME		, 0 , 0		, 0		, (APTR)FRMEN_LASTNAME		}, /*  1 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_NEXTNAME		, 0, 0		, 0		, (APTR)FRMEN_NEXTNAME		}, /*  2 */
 	     {NM_ITEM, NM_BARLABEL																			}, /*  3 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Restore + 2		, ifreq->ifr_Item_Control_Restore		, 0		, 0		, (APTR)FRMEN_RESTORE		}, /*  4 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Parent + 2		, ifreq->ifr_Item_Control_Parent		, 0		, 0		, (APTR)FRMEN_PARENT		}, /*  5 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Volumes + 2		, ifreq->ifr_Item_Control_Volumes		, 0		, 0		, (APTR)FRMEN_VOLUMES		}, /*  6 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Update + 2		, ifreq->ifr_Item_Control_Update		, 0		, 0		, (APTR)FRMEN_UPDATE		}, /*  7 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_RESTORE		, 0, 0		, 0		, (APTR)FRMEN_RESTORE		}, /*  4 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_PARENT		, 0, 0		, 0		, (APTR)FRMEN_PARENT		}, /*  5 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_VOLUMES		, 0, 0		, 0		, (APTR)FRMEN_VOLUMES		}, /*  6 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_UPDATE	    	, 0, 0		, 0		, (APTR)FRMEN_UPDATE		}, /*  7 */
 	     {NM_ITEM, NM_BARLABEL																			}, /*  8 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Delete + 2		, ifreq->ifr_Item_Control_Delete		, 0		, 0		, (APTR)FRMEN_DELETE		}, /*  9 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_CreateNewDrawer + 2	, ifreq->ifr_Item_Control_CreateNewDrawer	, 0		, 0		, (APTR)FRMEN_NEWDRAWER		}, /* 10 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Rename + 2		, ifreq->ifr_Item_Control_Rename		, 0		, 0		, (APTR)FRMEN_RENAME		}, /* 11 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_DELETE		, 0, 0		, 0		, (APTR)FRMEN_DELETE		}, /*  9 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_CREATEDRAWER	, 0, 0		, 0		, (APTR)FRMEN_NEWDRAWER		}, /* 10 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_RENAME		, 0, 0		, 0		, (APTR)FRMEN_RENAME		}, /* 11 */
 	     {NM_ITEM, NM_BARLABEL																			}, /* 12 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Select + 2		, ifreq->ifr_Item_Control_Select		, 0		, 0		, (APTR)FRMEN_SELECT		}, /* 13 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_SELECT		, 0, 0		, 0		, (APTR)FRMEN_SELECT		}, /* 13 */
 	     {NM_ITEM, NM_BARLABEL																			}, /* 14 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_OK + 2			, ifreq->ifr_Item_Control_OK			, 0		, 0		, (APTR)FRMEN_OK		}, /* 15 */
-	     {NM_ITEM, ifreq->ifr_Item_Control_Cancel + 2		, ifreq->ifr_Item_Control_Cancel		, 0		, 0		, (APTR)FRMEN_CANCEL		}, /* 16 */
-	    {NM_TITLE, ifreq->ifr_Menu_FileList																		}, /* 17 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByName + 2		, ifreq->ifr_Item_FileList_SortByName		, CHECKIT   	, 2 + 4		, (APTR)FRMEN_BYNAME		}, /* 18 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortByDate + 2		, ifreq->ifr_Item_FileList_SortByDate		, CHECKIT	, 1 + 4		, (APTR)FRMEN_BYDATE		}, /* 19 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_SortBySize + 2		, ifreq->ifr_Item_FileList_SortBySize		, CHECKIT	, 1 + 2		, (APTR)FRMEN_BYSIZE		}, /* 20 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_OK		, 0, 0		, 0		, (APTR)FRMEN_OK		}, /* 15 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_CONTROL_CANCEL		, 0, 0		, 0		, (APTR)FRMEN_CANCEL		}, /* 16 */
+	    {NM_TITLE, (STRPTR)MSG_FILEREQ_MEN_FILELIST																		}, /* 17 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTNAME	, 0, CHECKIT   	, 2 + 4		, (APTR)FRMEN_BYNAME		}, /* 18 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDATE	, 0, CHECKIT	, 1 + 4		, (APTR)FRMEN_BYDATE		}, /* 19 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTSIZE	, 0, CHECKIT	, 1 + 2		, (APTR)FRMEN_BYSIZE		}, /* 20 */
 	     {NM_ITEM, NM_BARLABEL																			}, /* 21 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_AscendingOrder + 2	, ifreq->ifr_Item_FileList_AscendingOrder	, CHECKIT 	, 32		, (APTR)FRMEN_ASCENDING		}, /* 22 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_DescendingOrder + 2	, ifreq->ifr_Item_FileList_DescendingOrder	, CHECKIT	, 16		, (APTR)FRMEN_DESCENDING	}, /* 23 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTUP	    	, 0, CHECKIT 	, 32		, (APTR)FRMEN_ASCENDING		}, /* 22 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDOWN	, 0, CHECKIT	, 16		, (APTR)FRMEN_DESCENDING	}, /* 23 */
 	     {NM_ITEM, NM_BARLABEL																			}, /* 24 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersFirst + 2	, ifreq->ifr_Item_FileList_ShowDrawersFirst	, CHECKIT	, 256 + 512	, (APTR)FRMEN_DRAWERSFIRST	}, /* 25 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawerWithFiles + 2	, ifreq->ifr_Item_FileList_ShowDrawerWithFiles	, CHECKIT	, 128 + 512	, (APTR)FRMEN_DRAWERSMIX	}, /* 26 */
-	     {NM_ITEM, ifreq->ifr_Item_FileList_ShowDrawersLast + 2	, ifreq->ifr_Item_FileList_ShowDrawersLast	, CHECKIT	, 128 + 256	, (APTR)FRMEN_DRAWERSLAST	}, /* 27 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERFIRST	, 0, CHECKIT	, 256 + 512	, (APTR)FRMEN_DRAWERSFIRST	}, /* 25 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERSAME	, 0, CHECKIT	, 128 + 512	, (APTR)FRMEN_DRAWERSMIX	}, /* 26 */
+	     {NM_ITEM, (STRPTR)MSG_FILEREQ_MEN_FILELIST_SORTDRAWERLAST	, 0, CHECKIT	, 128 + 256	, (APTR)FRMEN_DRAWERSLAST	}, /* 27 */
 	    {NM_END																					}  /* 28 */
 	};
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus  , TRUE  	    	    },
-	    {GTMN_TextAttr	, GetIR(ifreq)->ir_TextAttr },
-	    {TAG_DONE   	    	    	    	    }
+	    {GTMN_NewLookMenus  , TRUE  	    	    	    },
+	    {GTMN_TextAttr	, (IPTR)GetIR(ifreq)->ir_TextAttr   },
+	    {TAG_DONE   	    	    	    	    	    }
 	};
+	
+	LocalizeMenus(nm, GetIR(ifreq)->ir_Catalog, AslBase);
 	
 	nm[18 + ifreq->ifr_SortBy     ].nm_Flags |= CHECKED;
 	nm[22 + ifreq->ifr_SortOrder  ].nm_Flags |= CHECKED;
