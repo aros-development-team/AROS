@@ -8,7 +8,7 @@ conflicts between AROS includes and system includes */
 
 
 /* NOTE !!! All these functions need to be
-  singlethreded by the LX11/UX11 macros form the outside
+  singlethreded by the LOCK_X11/UNLOCK_X11 macros form the outside
 */
 
 #include <X11/Xlib.h>
@@ -18,34 +18,44 @@ conflicts between AROS includes and system includes */
 #include "xshm.h"
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 /* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
 #define NO_MALLOC 1
+
+/****************************************************************************************/
 
 #if NO_MALLOC
 #include <exec/memory.h>
 #include <proto/exec.h>
 #endif
 
+/****************************************************************************************/
+
 static void dummy_func()
 {
 	return;
 }
 
-
+/****************************************************************************************/
 
 #if USE_XSHM
+
+/****************************************************************************************/
 
 #include <sys/shm.h>
 #include <sys/ipc.h>
 #include <X11/extensions/XShm.h>
 
+/****************************************************************************************/
+
 void *init_shared_mem(Display *display)
 {
-
-#warning Alos check if this is a local display
+    #warning "Also check if this is a local display"
+    
     XShmSegmentInfo *shminfo;
-    int xshm_major, xshm_minor;
-    Bool xshm_pixmaps;
+    int     	     xshm_major, xshm_minor;
+    Bool    	     xshm_pixmaps;
     
     if (XShmQueryVersion(display, &xshm_major, &xshm_minor, &xshm_pixmaps))
     {
@@ -100,18 +110,21 @@ void *init_shared_mem(Display *display)
 		}
 		shmctl(shminfo->shmid, IPC_RMID, NULL);
 	    }
-	    #if NO_MALLOC
+	#if NO_MALLOC
 	    FreeVec(shminfo);
-	    #else	    
+	#else	    
 	    free(shminfo);
-	    #endif
+	#endif
 	    
-	 }
+	}
     
     }	/* If has XShm extension */
+    
     return NULL;
     
 }
+
+/****************************************************************************************/
 
 void cleanup_shared_mem(Display *display, void *meminfo)
 {
@@ -123,78 +136,61 @@ void cleanup_shared_mem(Display *display, void *meminfo)
     XShmDetach(display, shminfo);
     shmdt(shminfo->shmaddr);
     shmctl(shminfo->shmid, IPC_RMID, 0);
-    #if NO_MALLOC
+    
+#if NO_MALLOC
     FreeVec(shminfo);
-    #else
+#else
     free(shminfo);
-    #endif
-    return;
+#endif
+
 }
 
-XImage *create_xshm_ximage(Display *display
-	, Visual *visual
-	, int depth
-	, int format
-	, int width
-	, int height
-	, void *xshminfo)
-	
+/****************************************************************************************/
+
+XImage *create_xshm_ximage(Display *display, Visual *visual, int depth, int format,
+    	    	    	   int width, int height, void *xshminfo)	
 {
     XShmSegmentInfo *shminfo;
-    XImage *image;
+    XImage  	    *image;
     
     shminfo = (XShmSegmentInfo *)xshminfo;
     
-    image = XShmCreateImage(display
-    	, visual
-	, depth
-	, format
-	, shminfo->shmaddr
-	, shminfo
-	, width
-	, height
-    );
+    image = XShmCreateImage(display, visual, depth, format, shminfo->shmaddr,
+    	    	    	    shminfo, width, height);
     
     return image;
 }
 	
+/****************************************************************************************/
 
-void put_xshm_ximage(Display *display
-	, Drawable d
-	, GC gc
-	, XImage *image
-	, int xsrc,  int ysrc
-	, int xdest, int ydest
-	, int width, int height
-	, Bool send_event)
+void put_xshm_ximage(Display *display, Drawable d, GC gc, XImage *image,
+    	    	     int xsrc,  int ysrc, int xdest, int ydest,
+		     int width, int height, Bool send_event)
 {
-	XShmPutImage(display
-		, d
-		, gc
-		, image
-		, xsrc, ysrc
-		, xdest, ydest
-		, width, height
-		, send_event
-	);
+    XShmPutImage(display, d, gc, image, xsrc, ysrc, xdest, ydest,
+    	    	 width, height, send_event);
 
-	XSync(display, False);	
+    XSync(display, False);	
 
 }
 
-void get_xshm_ximage(Display *display
-	, Drawable d
-	, XImage *image
-	, int x, int y)
+/****************************************************************************************/
+
+void get_xshm_ximage(Display *display, Drawable d, XImage *image, int x, int y)
 {
-	XSync(display, False);
-	XShmGetImage(display, d, image, x, y, AllPlanes);
+    XSync(display, False);
+    XShmGetImage(display, d, image, x, y, AllPlanes);
 }
+
+/****************************************************************************************/
 
 void destroy_xshm_ximage(XImage *image)
 {
     XDestroyImage(image);
-
 }
 
+/****************************************************************************************/
+
 #endif /* USE_XSHM */
+
+/****************************************************************************************/

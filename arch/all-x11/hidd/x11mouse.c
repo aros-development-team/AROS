@@ -21,6 +21,7 @@
 
 #include "x11.h"
 
+/****************************************************************************************/
 
 struct x11mouse_data
 {
@@ -32,14 +33,16 @@ static OOP_AttrBase HiddMouseAB;
 
 static struct OOP_ABDescr attrbases[] =
 {
-    { IID_Hidd_Mouse, &HiddMouseAB },
-    { NULL,	NULL }
+    { IID_Hidd_Mouse, &HiddMouseAB  },
+    { NULL  	    , NULL  	    }
 };
 
+/****************************************************************************************/
 
 static ULONG xbutton2hidd(XButtonEvent *xb)
 {
     ULONG button;
+    
     switch (xb->button)
     {
 	case Button1:
@@ -55,13 +58,16 @@ static ULONG xbutton2hidd(XButtonEvent *xb)
 	    break;
 	
     }
-    return button;
     
+    return button;
 }
+
+/****************************************************************************************/
 
 static OOP_Object * x11mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
+    
     ObtainSemaphoreShared( &XSD(cl)->sema);
     
     if (XSD(cl)->mousehidd)
@@ -76,7 +82,7 @@ static OOP_Object * x11mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
     if (o)
     {
 	struct x11mouse_data *data = OOP_INST_DATA(cl, o);
-	struct TagItem *tag, *tstate;
+	struct TagItem       *tag, *tstate;
 	
 	tstate = msg->attrList;
 	while ((tag = NextTagItem((const struct TagItem **)&tstate)))
@@ -106,24 +112,23 @@ static OOP_Object * x11mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New 
 	ReleaseSemaphore( &XSD(cl)->sema);
 	
     }
+    
     return o;
 }
+
+/****************************************************************************************/
 
 static VOID x11mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11Mouse_HandleEvent *msg)
 {
 
-    struct x11mouse_data *data = OOP_INST_DATA(cl, o);
-    
-    struct pHidd_Mouse_Event e;
-
+    struct x11mouse_data    	*data = OOP_INST_DATA(cl, o);    
+    struct pHidd_Mouse_Event 	 e;
     
     XButtonEvent *xb = &(msg->event->xbutton);
     
-
     e.x = xb->x;
     e.y = xb->y;
    
-    
     if (msg->event->type == ButtonRelease)
     {
     	switch(xb->button)
@@ -175,11 +180,9 @@ static VOID x11mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11M
         data->mouse_callback(data->callbackdata, &e);
     }
     
-    return;
 }
 
-
-/********************  init_mouseclass()  *********************************/
+/****************************************************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
@@ -187,41 +190,44 @@ static VOID x11mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_X11M
 #define NUM_ROOT_METHODS 1
 #define NUM_X11MOUSE_METHODS 1
 
+/****************************************************************************************/
+
 OOP_Class *init_mouseclass (struct x11_staticdata *xsd)
 {
     OOP_Class *cl = NULL;
 
     struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{OOP_METHODDEF(x11mouse_new),		moRoot_New},
-	{NULL, 0UL}
+    	{OOP_METHODDEF(x11mouse_new), moRoot_New},
+	{NULL	    	    	    , 0UL   	}
     };
     
     struct OOP_MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 
     {
-    	{OOP_METHODDEF(x11mouse_handleevent),	moHidd_X11Mouse_HandleEvent},
-	{NULL, 0UL}
+    	{OOP_METHODDEF(x11mouse_handleevent), moHidd_X11Mouse_HandleEvent   },
+	{NULL	    	    	    	    , 0UL   	    	    	    }
     };
     
     struct OOP_InterfaceDescr ifdescr[] =
     {
-    	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
-    	{mousehidd_descr, IID_Hidd_X11Mouse, 	NUM_X11MOUSE_METHODS},
-	{NULL, NULL, 0}
+    	{root_descr 	, IID_Root  	    , NUM_ROOT_METHODS	    },
+    	{mousehidd_descr, IID_Hidd_X11Mouse , NUM_X11MOUSE_METHODS  },
+	{NULL	    	, NULL	    	    , 0     	    	    }
     };
     
     OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
 	
     struct TagItem tags[] =
     {
-	{ aMeta_SuperID,		(IPTR)CLID_Hidd },
-	{ aMeta_InterfaceDescr,		(IPTR)ifdescr},
-	{ aMeta_InstSize,		(IPTR)sizeof (struct x11mouse_data) },
-	{ aMeta_ID,			(IPTR)CLID_Hidd_X11Mouse },
-	{TAG_DONE, 0UL}
+	{ aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	    	},
+	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	    	},
+	{ aMeta_InstSize    	, (IPTR)sizeof (struct x11mouse_data) 	},
+	{ aMeta_ID  	    	, (IPTR)CLID_Hidd_X11Mouse  	    	},
+	{ TAG_DONE  	    	, 0UL	    	    	    	    	}
     };
 
     EnterFunc(bug("init_mouseclass(xsd=%p)\n", xsd));
+    
     if (MetaAttrBase)
     {
     	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
@@ -245,20 +251,18 @@ OOP_Class *init_mouseclass (struct x11_staticdata *xsd)
 	/* Don't need this anymore */
 	OOP_ReleaseAttrBase(IID_Meta);
     }
+    
     ReturnPtr("init_mouseclass", OOP_Class *, cl);
 }
 
+/****************************************************************************************/
 
-
-
-/*************** free_mouseclass()  **********************************/
 VOID free_mouseclass(struct x11_staticdata *xsd)
 {
     EnterFunc(bug("free_mouseclass(xsd=%p)\n", xsd));
 
     if(xsd)
     {
-
         OOP_RemoveClass(xsd->mouseclass);
 	
         if(xsd->mouseclass) OOP_DisposeObject((OOP_Object *) xsd->mouseclass);
@@ -270,6 +274,8 @@ VOID free_mouseclass(struct x11_staticdata *xsd)
 
     ReturnVoid("free_mouseclass");
 }
+
+/****************************************************************************************/
 
 
 

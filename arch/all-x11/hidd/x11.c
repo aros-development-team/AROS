@@ -30,7 +30,7 @@
 #include <aros/asmcall.h>
 #undef size_t
 
-#define timeval sys_timeval
+#define timeval sys_timevalinit_x11class
 #include <sys/types.h>
 #include <signal.h>
 #include <stddef.h>
@@ -50,6 +50,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/****************************************************************************************/
+
 #define NOUNIXIO 1
 
 #define XTASK_NAME "x11hidd task"
@@ -66,142 +68,23 @@ the irq handler directly from the task, we should instead
 Cause() a software irq, but Cause() does not work at the moment..
 */
 
-#define XTASK_PRIORITY 50
+#define XTASK_PRIORITY  50
 
 #define XTASK_STACKSIZE (AROS_STACKSIZE)
-
-
-struct x11_data
-{
-    ULONG dummy;
-    
-};
-
-static struct OOP_ABDescr attrbases[] =
-{
-    { NULL, NULL }
-};
 
 #define XSD(cl)     	((struct x11_staticdata *)cl->UserData)
 #define OOPBase		((struct Library *)XSD(cl)->oopbase)
 #define UtilityBase	((struct Library *)XSD(cl)->utilitybase)
 
-static OOP_Object *x11_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
-{
-    o = (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg) msg);
-    if (o)
-    {
-    }
-    return o;
-}
-
-#define IS_X11_ATTR(attr, idx) (( (idx) = (attr) - HiddX11AB) < num_Hidd_X11_Attrs)
-
-static VOID x11_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
-{
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-    return;
-}
-
-static VOID x11_get(OOP_Class *cl, OOP_Object *o, struct pRoot_Get *msg)
-{
-    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
-}
-
-
 #undef XSD
 #define XSD(cl) xsd
 #undef SysBase
 
-
-
-#define NUM_ROOT_METHODS 3
-#define NUM_X11_METHODS 0
-
-OOP_Class *init_x11class (struct x11_staticdata *xsd)
-{
-    OOP_Class *cl = NULL;
-
-    struct OOP_MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
-    {
-    	{OOP_METHODDEF(x11_new)     , moRoot_New    },
-    	{OOP_METHODDEF(x11_dispose) , moRoot_Dispose},
-    	{OOP_METHODDEF(x11_get)     , moRoot_Get    },
-	{NULL	    	    	    , 0UL   	    }
-    };
-    
-    struct OOP_MethodDescr x11hidd_descr[NUM_X11_METHODS + 1] = 
-    {
-	{NULL, 0UL}
-    };
-    
-    struct OOP_InterfaceDescr ifdescr[] =
-    {
-    	{root_descr 	, IID_Root  	, NUM_ROOT_METHODS  },
-    	{x11hidd_descr	, IID_Hidd_X11	, NUM_X11_METHODS   },
-	{NULL	    	, NULL	    	, 0 	    	    }
-    };
-    
-    OOP_AttrBase MetaAttrBase = OOP_ObtainAttrBase(IID_Meta);
-	
-    struct TagItem tags[] =
-    {
-	{ aMeta_SuperID     	, (IPTR)CLID_Hidd   	    	},
-	{ aMeta_InterfaceDescr	, (IPTR)ifdescr     	    	},
-	{ aMeta_InstSize    	, (IPTR)sizeof (struct x11_data)},
-	{ TAG_DONE  	    	, 0UL	    	    	    	}
-    };
-
-    EnterFunc(bug("X11HiddClass init\n"));
-    
-    if (MetaAttrBase)
-    {
-    	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
-    	if(cl)
-    	{
-	    cl->UserData = (APTR)xsd;
-	    xsd->x11class = cl;
-	    
-	    if (OOP_ObtainAttrBases(attrbases))
-	    {
-		D(bug("X11HiddClass ok\n"));
-		
-	    	OOP_AddClass(cl);
-	    }
-	    else
-	    {
-	    	free_x11class(xsd);
-		cl = NULL;
-	    }
-	}
-	/* Don't need this anymore */
-	OOP_ReleaseAttrBase(IID_Meta);
-    }
-    return cl;
-}
-
-
-
-
-/*************** free_x11class()  **********************************/
-VOID free_x11class(struct x11_staticdata *xsd)
-{
-    EnterFunc(bug("free_x11class(xsd=%p)\n", xsd));
-
-    if(xsd)
-    {
-        OOP_RemoveClass(xsd->x11class);
-
-        if(xsd->x11class) OOP_DisposeObject((OOP_Object *) xsd->x11class);
-        xsd->x11class = NULL;
-
-	OOP_ReleaseAttrBases(attrbases);
-    }
-
-    ReturnVoid("free_x11class");
-}
+/****************************************************************************************/
 
 #if NOUNIXIO
+
+/****************************************************************************************/
 
 AROS_UFH4(ULONG, x11VBlank,
     AROS_UFHA(ULONG, dummy, A0),
@@ -218,19 +101,28 @@ AROS_UFH4(ULONG, x11VBlank,
     AROS_USERFUNC_EXIT
 }
 
+/****************************************************************************************/
+
 #else
+
+/****************************************************************************************/
 
 static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
 {
     int pending;
     
-    LX11    
+    LOCK_X11    
     pending = XPending(xsd->display);
-    UX11
+    UNLOCK_X11
 
     return pending;
 }
+
+/****************************************************************************************/
+
 #endif
+
+/****************************************************************************************/
 
 VOID x11task_entry(struct x11task_params *xtpparam)
 {
@@ -413,12 +305,12 @@ D(bug("Got input from unixio\n"));
 		    }
 		
 		    case NOTY_MAPWINDOW:
-    	    		LX11		
+    	    		LOCK_X11		
 	        	XMapWindow (nmsg->xdisplay, nmsg->xwindow);
     	    	    #if ADJUST_XWIN_SIZE
 			XMapRaised (nmsg->xdisplay, nmsg->masterxwindow);
     	    	    #endif
-    	    		UX11
+    	    		UNLOCK_X11
 
 			AddTail((struct List *)&nmsg_list, (struct Node *)nmsg);			
 
@@ -433,7 +325,7 @@ D(bug("Got input from unixio\n"));
 			xwc.height = nmsg->height;
 
 
-    	    		LX11	
+    	    		LOCK_X11	
 			XConfigureWindow(nmsg->xdisplay
 		    	    , nmsg->masterxwindow
 		    	    , CWWidth | CWHeight
@@ -441,7 +333,7 @@ D(bug("Got input from unixio\n"));
 			);
 
 			XFlush(nmsg->xdisplay);
-    	    		UX11
+    	    		UNLOCK_X11
 
 			ReplyMsg((struct Message *)nmsg);
     	    	    #if 0
@@ -489,26 +381,26 @@ D(bug("Got input from unixio\n"));
 	    int     	     pending;
 	    BOOL    	     window_found = FALSE;
 
-    	    LX11
+    	    LOCK_X11
 	    XFlush(xsd->display);
 	    XSync(xsd->display, FALSE);
 	    pending = XEventsQueued(xsd->display, QueuedAlready);
-    	    UX11
+    	    UNLOCK_X11
 	    
 	    if (pending == 0)
 		break;
 
-    	    LX11
+    	    LOCK_X11
 	    XNextEvent(xsd->display, &event);
-    	    UX11
+    	    UNLOCK_X11
 
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
 	    if (event.type == MappingNotify)
 	    {
-    	    	    LX11
+    	    	    LOCK_X11
 		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
-    	    	    UX11
+    	    	    UNLOCK_X11
 		    
 		    continue;
 	    }
@@ -611,9 +503,9 @@ D(bug("Got input from unixio\n"));
 			break;
 
 		    case FocusOut:
-    	    	    	LX11
+    	    	    	LOCK_X11
 			XAutoRepeatOn(xsd->display);
-    	    	    	UX11
+    	    	    	UNLOCK_X11
 					    
     	    	    #if 0
     	    	    	ObtainSemaphoreShared(&xsd->sema);
@@ -640,9 +532,9 @@ D(bug("Got input from unixio\n"));
 
 	    	    case KeyPress:
 		    	xsd->x_time = event.xkey.time;
-    	    	    	LX11
+    	    	    	LOCK_X11
     			XAutoRepeatOff(XSD(cl)->display);
-    	    	    	UX11	
+    	    	    	UNLOCK_X11	
 				    
 	    		ObtainSemaphoreShared( &xsd->sema );
 			if (xsd->kbdhidd)
@@ -656,9 +548,9 @@ D(bug("Got input from unixio\n"));
 
 	    	    case KeyRelease:
 		    	xsd->x_time = event.xkey.time;
-    	    	    	LX11
+    	    	    	LOCK_X11
 			XAutoRepeatOn(XSD(cl)->display);
-    	    	    	UX11
+    	    	    	UNLOCK_X11
 					    
 	    		ObtainSemaphoreShared( &xsd->sema );
 			if (xsd->kbdhidd)
@@ -749,6 +641,8 @@ failexit:
     
 }
 
+/****************************************************************************************/
+
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase)
 {
     struct Task *task;
@@ -804,3 +698,5 @@ struct Task *create_x11task( struct x11task_params *params, struct ExecBase *Exe
     }
     return NULL;
 }
+
+/****************************************************************************************/

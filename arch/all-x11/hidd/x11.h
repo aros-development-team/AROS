@@ -37,22 +37,6 @@
 
 #define X11_LOAD_KEYMAPTABLE	    1
 
-/****** X11 hidd  *****************************/
-
-#define HiddX11AB __abHidd_X11Gfx
-
-#define IID_Hidd_X11 "hidd.misc.x11"
-
-extern OOP_AttrBase HiddX11AB;
-
-enum
-{
-   aoHidd_X11_SysDisplay,
-   
-   num_Hidd_X11_Attrs
-};
-
-#define aHidd_X11_SysDisplay	(aoHidd_X11_SysDisplay + HiddX11AB)
 
 /***** X11Mouse HIDD *******************/
 
@@ -162,7 +146,6 @@ struct x11_staticdata
     
     ULONG   	    	     refcount;
 
-    OOP_Class 	    	    *x11class;    
     OOP_Class 	    	    *gfxclass;
     OOP_Class 	    	    *onbmclass;
     OOP_Class 	    	    *offbmclass;
@@ -233,7 +216,6 @@ OOP_Class *init_onbmclass	( struct x11_staticdata * );
 OOP_Class *init_offbmclass	( struct x11_staticdata * );
 OOP_Class *init_kbdclass  	( struct x11_staticdata * );
 OOP_Class *init_mouseclass	( struct x11_staticdata * );
-OOP_Class *init_x11class	( struct x11_staticdata * );
 
 VOID free_gfxclass	( struct x11_staticdata * );
 VOID free_onbmclass	( struct x11_staticdata * );
@@ -241,7 +223,6 @@ VOID free_offbmclass	( struct x11_staticdata * );
 VOID free_osbmclass	( struct x11_staticdata * );
 VOID free_kbdclass	( struct x11_staticdata * );
 VOID free_mouseclass	( struct x11_staticdata * );
-VOID free_x11class	( struct x11_staticdata * );
 
 ULONG x11clipboard_init(struct x11_staticdata *);
 VOID  x11clipboard_handle_commands(struct x11_staticdata *);
@@ -262,7 +243,7 @@ VOID  x11clipboard_handle_event(struct x11_staticdata *, XEvent *);
 from other tasks
 */
 
-#define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
-#define UX11 ReleaseSemaphore(&XSD(cl)->x11sema);
+#define LOCK_X11 ObtainSemaphore (&XSD(cl)->x11sema);
+#define UNLOCK_X11 ReleaseSemaphore(&XSD(cl)->x11sema);
 
 #endif /* HIDD_X11_H */

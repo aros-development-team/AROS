@@ -5,6 +5,7 @@
     Desc: X11 hidd initialization code.
     Lang: English.
 */
+
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,6 +29,8 @@
 
 #undef SysBase
 
+/****************************************************************************************/
+
 /* Customize libheader.c */
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->sysbase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR)(lib))->seglist)
@@ -42,52 +45,50 @@
 #define LC_NO_EXPUNGELIB
 #define LC_NO_CLOSELIB
 
-
 /* to avoid removing the gfxhiddclass from memory add #define NOEXPUNGE */
+
+/****************************************************************************************/
 
 struct x11clbase
 {
-    struct Library library;
+    struct Library   library;
     struct ExecBase *sysbase;
-    BPTR	seglist;
+    BPTR	     seglist;
 };
 
 #include <libcore/libheader.c>
-
-
-#define SysBase      (LC_SYSBASE_FIELD(lh))
 
 #undef XSD
 #undef SysBase
 #undef OOPBase
 
+#define OOPBase     	xsd->oopbase
 
-#define OOPBase xsd->oopbase
+/****************************************************************************************/
 
 static BOOL initclasses( struct x11_staticdata *xsd );
 static VOID freeclasses( struct x11_staticdata *xsd );
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase);
 VOID x11task_entry(struct x11task_params *xtp);
 
-static OOP_AttrBase HiddPixFmtAttrBase = 0;
+/****************************************************************************************/
 
-static struct OOP_ABDescr abd[] = {
-	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
-	{ NULL, NULL }
+static OOP_AttrBase HiddPixFmtAttrBase;
+
+static struct OOP_ABDescr abd[] =
+{
+    { IID_Hidd_PixFmt   , &HiddPixFmtAttrBase   },
+    { NULL     	    	, NULL	    	    	}
 };
+
+/****************************************************************************************/
 
 static BOOL initclasses(struct x11_staticdata *xsd)
 {
-
     /* Get some attrbases */
     
     if (!OOP_ObtainAttrBases(abd))
     	goto failure;
-
-    xsd->x11class = init_x11class(xsd);
-    if (NULL == xsd->x11class)
-    	goto failure;
-
 
     xsd->gfxclass = init_gfxclass(xsd);
     if (NULL == xsd->gfxclass)
@@ -105,7 +106,6 @@ static BOOL initclasses(struct x11_staticdata *xsd)
     if (NULL == xsd->mouseclass)
     	goto failure;
 
-
     xsd->kbdclass = init_kbdclass(xsd);
     if (NULL == xsd->kbdclass)
     	goto failure;
@@ -115,14 +115,13 @@ static BOOL initclasses(struct x11_staticdata *xsd)
 failure:
     freeclasses(xsd);
 
-    return FALSE;
-    
+    return FALSE; 
 }
 
+/****************************************************************************************/
 
 static VOID freeclasses(struct x11_staticdata *xsd)
 {
-
     if (xsd->kbdclass)
     	free_kbdclass(xsd);
 
@@ -138,45 +137,48 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     if (xsd->onbmclass)
     	free_onbmclass(xsd);
 
-    if (xsd->x11class)
-    	free_x11class(xsd);
-	
     OOP_ReleaseAttrBases(abd);
-	
-    return;
 }
+
+/****************************************************************************************/
 
 static int MyErrorHandler (Display * display, XErrorEvent * errevent)
 {
     char buffer[256];
 
     XGetErrorText (display, errevent->error_code, buffer, sizeof (buffer));
-    fprintf (stderr
-	, "XError %d (Major=%d, Minor=%d) task = %s\n%s\n"
-	, errevent->error_code
-	, errevent->request_code
-	, errevent->minor_code
-	, FindTask(0)->tc_Node.ln_Name
-	, buffer
-    );
+
+    fprintf(stderr,
+    	    "XError %d (Major=%d, Minor=%d) task = %s\n%s\n",
+	    errevent->error_code,
+	    errevent->request_code,
+	    errevent->minor_code,
+	    FindTask(0)->tc_Node.ln_Name,
+	    buffer);
+	     
     fflush (stderr);
 
     return 0;
 }
+
+/****************************************************************************************/
 
 static int MySysErrorHandler (Display * display)
 {
     perror ("X11-Error");
     fflush (stderr);
-//    *((ULONG *)0) = 0;
+
+    // *((ULONG *)0) = 0;
 
     return 0;
 }
 
+/****************************************************************************************/
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct x11_staticdata *xsd;
+    
     xsd = AllocMem( sizeof (struct x11_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
     if (xsd)
     {
@@ -184,18 +186,17 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	
 	InitSemaphore( &xsd->sema );
 	InitSemaphore( &xsd->x11sema );
-	
-	
+		
         xsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if (xsd->oopbase)
 	{
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
-#if X11_LOAD_KEYMAPTABLE
+    	    #if X11_LOAD_KEYMAPTABLE
 	        xsd->dosbase = OpenLibrary(DOSNAME, 37);
 		if (xsd->dosbase)
-#endif
+    	    #endif
 		{
 	            STRPTR displayname;
 
@@ -216,21 +217,17 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     		    xsd->display = XOpenDisplay(displayname);
 		    if (xsd->display)
 		    {
-    			struct x11task_params xtp;
-		        struct  Task *x11task;
+    			struct x11task_params 	 xtp;
+		        struct Task 	    	*x11task;
 
 			XSetErrorHandler (MyErrorHandler);
 			XSetIOErrorHandler (MySysErrorHandler);
 			
-			/* Turn off auto repeat */
-    /*		    XAutoRepeatOff(xsd->display);
-    */		    
-    
-			xsd->delete_win_atom = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
-			xsd->clipboard_atom  = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
+			xsd->delete_win_atom 	     = XInternAtom(xsd->display, "WM_DELETE_WINDOW", FALSE);
+			xsd->clipboard_atom  	     = XInternAtom(xsd->display, "CLIPBOARD", FALSE);
     	    	    	xsd->clipboard_property_atom = XInternAtom(xsd->display, "AROS_HOSTCLIP", FALSE);
-    	    	    	xsd->clipboard_incr_atom = XInternAtom(xsd->display, "INCR", FALSE);
-    	    	    	xsd->clipboard_targets_atom = XInternAtom(xsd->display, "TARGETS", FALSE);
+    	    	    	xsd->clipboard_incr_atom     = XInternAtom(xsd->display, "INCR", FALSE);
+    	    	    	xsd->clipboard_targets_atom  = XInternAtom(xsd->display, "TARGETS", FALSE);
 			
     			xtp.parent = FindTask(NULL);
     			xtp.ok_signal	= SIGBREAKF_CTRL_E;
@@ -239,23 +236,21 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     			xtp.xsd 	= xsd;
 
     			if ((x11task = create_x11task(&xtp, SysBase)))
-    			{
-			
+    			{			
     		    	    if (initclasses(xsd))
 			    {
 				return TRUE;
     			    }
 			    
 			    Signal(x11task, xtp.kill_signal);
-
 			}
 
 			XCloseDisplay(xsd->display);
 
 		    }
-#if X11_LOAD_KEYMAPTABLE
+    	    	#if X11_LOAD_KEYMAPTABLE
 		    CloseLibrary(xsd->dosbase);
-#endif
+    	    	#endif
 		}
 		CloseLibrary(xsd->utilitybase);
 	    }
@@ -268,5 +263,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
         
 }
 
+/****************************************************************************************/
 
 
