@@ -15,13 +15,22 @@
 #include <utility/utility.h>
 #include <intuition/imageclass.h>
 #include <proto/exec.h>
+#ifndef __MORPHOS__
 #include "initstruct.h"
+#endif
 #include "gadtools_intern.h"
 #include "libdefs.h"
 
+#ifndef INTUITIONNAME
+#define INTUITIONNAME "intuition.library"
+#endif
 /****************************************************************************************/
 
 #define INIT	AROS_SLIB_ENTRY(init,GadTools)
+
+#ifdef __MORPHOS__
+    unsigned long __amigappc__ = 1;
+#endif
 
 struct inittable;
 extern const char name[];
@@ -53,7 +62,11 @@ const struct Resident resident=
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
+#ifdef __MORPHOS__
+    RTF_PPC |RTF_AUTOINIT,
+#else
     RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     0,
@@ -71,10 +84,15 @@ const APTR inittabl[4]=
 {
     (APTR)sizeof(struct GadToolsBase_intern),
     (APTR)LIBFUNCTABLE,
+#ifdef __MORPHOS__
+    NULL,
+#else
     (APTR)&datatable,
+#endif
     &INIT
 };
 
+#ifndef __MORPHOS__
 struct inittable
 {
     S_CPYO(1,1,B);
@@ -99,14 +117,21 @@ const struct inittable datatable=
   I_END ()
 };
 
+#endif /* ifndef __MORPHOS__ */
+
 struct ExecBase * SysBase;
 
 /****************************************************************************************/
 
+#ifdef __MORPHOS__
+struct GadToolsBase_intern *LIB_init(struct GadToolsBase_intern *LIBBASE, BPTR segList, struct ExecBase *sysBase)
+{
+#else
 AROS_LH2(struct GadToolsBase_intern *, init,
  AROS_LHA(struct GadToolsBase_intern *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
      struct ExecBase *, sysBase, 0, BASENAME)
+#endif
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
