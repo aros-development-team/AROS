@@ -12,8 +12,6 @@ USER_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- general-setup-pc-i386: setup-pc-i386 includes compiler
 
-#MM- includes-pc-i386 : includes-common-i386
-
 #MM- kernel-pc-i386 : general-setup-pc-i386
 
 #MM- software-pc-i386 : general-setup binary-pc-i386 \
