@@ -1,5 +1,8 @@
 /*
     $Id$
+
+    Changes:
+    3.4.03: Added comment to PPM/PGM header
 */
 
 /*
@@ -185,13 +188,13 @@ start_output_ppm (j_decompress_ptr cinfo, djpeg_dest_ptr dinfo)
   switch (cinfo->out_color_space) {
   case JCS_GRAYSCALE:
     /* emit header for raw PGM format */
-    fprintf(dest->pub.output_file, "P5\n%ld %ld\n%d\n",
+    fprintf(dest->pub.output_file, "P5\n# Created by djpeg, of the jpegsrc.v6b sources from IJG\n%ld %ld\n%d\n",
 	    (long) cinfo->output_width, (long) cinfo->output_height,
 	    PPM_MAXVAL);
     break;
   case JCS_RGB:
     /* emit header for raw PPM format */
-    fprintf(dest->pub.output_file, "P6\n%ld %ld\n%d\n",
+    fprintf(dest->pub.output_file, "P6\n# Created by djpeg, of the jpegsrc.v6b sources from IJG\n%ld %ld\n%d\n",
 	    (long) cinfo->output_width, (long) cinfo->output_height,
 	    PPM_MAXVAL);
     break;
