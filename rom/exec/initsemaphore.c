@@ -1,27 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/01 03:46:11  ldp
-    Committed Amiga native (support) code
 
-    Changed clib to proto
-
-    Revision 1.6  1996/12/10 13:51:47  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.5  1996/10/24 15:50:51  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/08/13 13:56:03  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:12  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Initialize a SignalSemaphore
     Lang: english
 */
 
@@ -73,12 +54,21 @@
     AROS_LIBFUNC_INIT
 
     /* Clear list of wait messages */
-    sigSem->ss_WaitQueue.mlh_Head    =(struct MinNode *)&sigSem->ss_WaitQueue.mlh_Tail;
-    sigSem->ss_WaitQueue.mlh_Tail    =NULL;
-    sigSem->ss_WaitQueue.mlh_TailPred=(struct MinNode *)&sigSem->ss_WaitQueue.mlh_Head;
+    sigSem->ss_WaitQueue.mlh_Head     = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Tail;
+    sigSem->ss_WaitQueue.mlh_Tail     = NULL;
+    sigSem->ss_WaitQueue.mlh_TailPred = (struct MinNode *)&sigSem->ss_WaitQueue.mlh_Head;
+
+    /* Set type of Semaphore */
+    sigSem->ss_Link.ln_Type = NT_SIGNALSEM;
 
     /* Semaphore is currently unused */
-    sigSem->ss_NestCount=0;
+    sigSem->ss_NestCount = 0;
+
+    /* Semaphore has no owner yet */
+    sigSem->ss_Owner = 0;
+
+    /* Semaphore has no queue */
+    sigSem->ss_QueueCount = -1;
 
     AROS_LIBFUNC_EXIT
 } /* InitSemaphore */
