@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/08/23 17:06:56  digulla
+    Began work on ressource tracking
+
     Revision 1.7  1996/08/16 14:05:12  digulla
     Added debug output
 
@@ -27,6 +30,7 @@
 #include <exec/execbase.h>
 #include "machine.h"
 #include "memory.h"
+#include <aros/rt.h>
 
 #include "exec_debug.h"
 #ifndef DEBUG_FreeMem
@@ -96,6 +100,8 @@ void PurgeChunk (ULONG *, ULONG);
     /* If there is no memory free nothing */
     if(!byteSize)
 	ReturnVoid ("FreeMem");
+
+    RT_Free (RTT_MEMORY, memoryBlock, byteSize);
 
     /* Align size to the requirements */
     byteSize+=(ULONG)memoryBlock&(MEMCHUNK_TOTAL-1);

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/08/23 17:06:56  digulla
+    Began work on ressource tracking
+
     Revision 1.5  1996/08/16 14:05:12  digulla
     Added debug output
 
@@ -19,6 +22,7 @@
 #include <exec/alerts.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/rt.h>
 #include <machine.h>
 #include "memory.h"
 
@@ -82,12 +86,16 @@
     __AROS_FUNC_INIT
     struct Interrupt *lmh;
     struct MemHandlerData lmhd={ byteSize,requirements,0 };
+    APTR res = NULL;
+#if ENABLE_RT
+    ULONG origSize = byteSize;
+#endif
 
     D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
 
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	ReturnPtr ("AllocMem", APTR, NULL);
+	goto end;
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
     byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
@@ -217,7 +225,8 @@
 			    while(cnt--)
 				*p++=0;
 			}
-			ReturnPtr ("AllocMem", APTR, mc);
+			res=mc;
+			goto end;
 		    }
 		}
 	    }
@@ -229,7 +238,7 @@
 	if(requirements&MEMF_NO_EXPUNGE)
 	{
 	    Permit();
-	    ReturnPtr ("AllocMem", APTR, NULL);
+	    goto end;
 	}
 
 	/* All memory headers done. Check low memory handlers. */
@@ -240,7 +249,7 @@
 	    {
 		/* No. return 'Not enough memory'. */
 		Permit();
-		ReturnPtr ("AllocMem", APTR, NULL);
+		goto end;
 	    }
 	    /* Yes. Execute it. */
 	    lmhr=__AROS_ABS_CALL3(LONG,lmh->is_Code,&lmhd,A0,lmh->is_Data,A1,SysBase,A6);
@@ -263,6 +272,13 @@
 	*/
 	}while(lmhr==MEM_DID_NOTHING);
     }
+
+end:
+#if ENABLE_RT
+    RT_Add (RTT_MEMORY, res, origSize);
+#endif
+
+    ReturnPtr ("AllocMem", APTR, res);
     __AROS_FUNC_EXIT
 } /* AllocMem */
 
