@@ -37,8 +37,8 @@
 #define G(x) ((struct Gadget *)(x))
 #define EG(X) ((struct ExtGadget *)(x))
 
-#define CF_Checked     0x0001
-#define CF_CustomImage 0x0002
+#define CF_MouseOverGad 0x0001
+#define CF_CustomImage  0x0002
 
 #define GadToolsBase ((struct GadToolsBase_intern *)cl->cl_UserData)
 
@@ -160,9 +160,9 @@ STATIC IPTR checkbox_set(Class *cl, Object *o, struct opSet *msg)
 		
 	    case GTCB_Checked:
 		if (tag->ti_Data)
-		    data->flags |= CF_Checked;
+		    G(o)->Flags |= GFLG_SELECTED;
 		else
-		    data->flags &= ~CF_Checked;
+		    G(o)->Flags &= ~GFLG_SELECTED;
         	retval = TRUE;
 		break;
 		
@@ -210,7 +210,7 @@ STATIC IPTR checkbox_get(Class *cl, Object *o, struct opGet *msg)
 	    break;
 
     	case GTCB_Checked:
-	    *(msg->opg_Storage) = (data->flags & CF_Checked) ? TRUE : FALSE;
+	    *(msg->opg_Storage) = (G(o)->Flags & GFLG_SELECTED) ? TRUE : FALSE;
 	    retval = 1UL;
 	    break;
 	    
@@ -297,7 +297,7 @@ STATIC IPTR checkbox_render(Class *cl, Object *o, struct gpRender *msg)
     
     /* Render image */
     drawimage(cl, G(o), msg->gpr_RPort,
-              data->flags&CF_Checked, G(o)->Flags&GFLG_DISABLED);
+              G(o)->Flags&GFLG_SELECTED, G(o)->Flags&GFLG_DISABLED);
 
     /* Render gadget label */
     if (msg->gpr_Redraw == GREDRAW_REDRAW)
@@ -317,12 +317,12 @@ STATIC IPTR checkbox_goactive(Class *cl, Object *o, struct gpInput *msg)
     IPTR    	    	retval;
     
     data = INST_DATA(cl, o);
-    G(o)->Flags |= GFLG_SELECTED;
+    data->flags |= CF_MouseOverGad;
     
     rp = ObtainGIRPort(msg->gpi_GInfo);
     if (rp)
     {
-        drawimage(cl, G(o), rp, (data->flags&CF_Checked) ? FALSE : TRUE, FALSE);
+        drawimage(cl, G(o), rp, (G(o)->Flags&GFLG_SELECTED) ? FALSE : TRUE, FALSE);
         ReleaseGIRPort(rp);
         retval = GMR_MEACTIVE;
     }
@@ -348,14 +348,13 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
     {
 	if (msg->gpi_IEvent->ie_Code == SELECTUP)
 	{
-	    if (G(o)->Flags & GFLG_SELECTED)
+	    if (data->flags & CF_MouseOverGad)
 	    {
 		/* mouse is over gadget */
-		if (data->flags & CF_Checked)
-		    data->flags &= ~CF_Checked;
-		else
-		    data->flags |= CF_Checked;
-		*msg->gpi_Termination = data->flags&CF_Checked?TRUE:FALSE;
+		
+		G(o)->Flags ^= GFLG_SELECTED;
+
+		*msg->gpi_Termination = G(o)->Flags&GFLG_SELECTED?TRUE:FALSE;
 		retval = GMR_NOREUSE | GMR_VERIFY;
 	    }
 	    else
@@ -366,46 +365,40 @@ STATIC IPTR checkbox_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	}
 	else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON)
 	{
-	    struct gpHitTest htmsg;
-
-	    htmsg.MethodID = GM_HITTEST;
-	    htmsg.gpht_GInfo = msg->gpi_GInfo;
-	    htmsg.gpht_Mouse.X = msg->gpi_Mouse.X;
-	    htmsg.gpht_Mouse.Y = msg->gpi_Mouse.Y;
-	    
-	    if (DoMethodA(o, (Msg) & htmsg) != GMR_GADGETHIT)
+	    if ((msg->gpi_Mouse.X < 0) || (msg->gpi_Mouse.Y < 0) ||
+	    	(msg->gpi_Mouse.X >= G(o)->Width ) || (msg->gpi_Mouse.Y >= G(o)->Height))
 	    {
-		if (G(o)->Flags & GFLG_SELECTED)
+		if (data->flags & CF_MouseOverGad)
 		{
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rp)
 		    {
                         drawimage(cl, G(o), rp,
-                                  data->flags&CF_Checked, FALSE);
+                                  G(o)->Flags&GFLG_SELECTED, FALSE);
 			ReleaseGIRPort(rp);
 		    }
-		    G(o)->Flags &= ~GFLG_SELECTED;
+		    data->flags &= ~CF_MouseOverGad;
 		}
 	    }
 	    else
 	    {
-		if (!(G(o)->Flags & GFLG_SELECTED))
+		if (!(data->flags & CF_MouseOverGad))
 		{
 		    rp = ObtainGIRPort(msg->gpi_GInfo);
 		    if (rp)
 		    {
                         drawimage(cl, G(o), rp,
-                                  (data->flags&CF_Checked)?FALSE:TRUE, FALSE);
+                                  (G(o)->Flags&GFLG_SELECTED)?FALSE:TRUE, FALSE);
 			ReleaseGIRPort(rp);
 		    }
-		    G(o)->Flags |= GFLG_SELECTED;
+		    data->flags |= CF_MouseOverGad;
 		}
 	    }
 	    
 	} /* else if (msg->gpi_IEvent->ie_Code == IECODE_NOBUTTON) */
 	else if (msg->gpi_IEvent->ie_Code == MENUDOWN)
 	{
-	    retval = GMR_REUSE;
+	    retval = GMR_NOREUSE;
 	}
 	
     } /* if (msg->gpi_IEvent->ie_Class == IECLASS_RAWMOUSE) */
@@ -421,11 +414,11 @@ STATIC IPTR checkbox_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
     struct RastPort    	*rp;
     
     data = INST_DATA(cl, o);
-    G(o)->Flags &= ~GFLG_SELECTED;
+    data->flags &= ~CF_MouseOverGad;
     rp = ObtainGIRPort(msg->gpgi_GInfo);
     if (rp)
     {
-        drawimage(cl, G(o), rp, data->flags & CF_Checked, FALSE);
+        drawimage(cl, G(o), rp, G(o)->Flags & GFLG_SELECTED, FALSE);
 	ReleaseGIRPort(rp);
     }
     
