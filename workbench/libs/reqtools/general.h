@@ -52,7 +52,9 @@
 #endif /* __AROS__ */
 
 struct PWCallBackArgs;
+#ifndef CLIB_REQTOOLS_PROTOS_H
 typedef STDARGS char * (*PWCALLBACKFUNPTR) (long, long, struct PWCallBackArgs *);
+#endif
 
 struct BackFillMsg;
 struct NewGadget;
