@@ -94,6 +94,8 @@ static int GetLineStartX(struct Line *line)
     return 0;
 }
 
+#if 0
+/* not used? */
 /**************************************************************************
  Returns the x pos of the line start
 **************************************************************************/
@@ -108,6 +110,7 @@ static int GetLineCharX(struct Line *line)
   }
   return x;
 }
+#endif
 
 /**************************************************************************
 
@@ -442,10 +445,10 @@ static void DrawText(struct Text_Data *td, struct RastPort *rp)
     old_region = installclipregion(rp->Layer,new_region);
 
     GetRPAttrs(rp,
-	       RPTAG_APen, &apen,
-	       RPTAG_BPen, &bpen,
-	       RPTAG_DrMd, &mode,
-	       RPTAG_Font, &oldfont,
+	       RPTAG_APen, (IPTR) &apen,
+	       RPTAG_BPen, (IPTR) &bpen,
+	       RPTAG_DrMd, (IPTR) &mode,
+	       RPTAG_Font, (IPTR) &oldfont,
 	       TAG_DONE);
 
     SetFont(rp, td->font);
@@ -675,10 +678,10 @@ static void DrawMarkedText(struct Text_Data *td, struct RastPort *rp, LONG marke
     old_region = installclipregion(rp->Layer,new_region);
 
     GetRPAttrs(rp,
-	       RPTAG_APen, &apen,
-	       RPTAG_BPen, &bpen,
-	       RPTAG_DrMd, &mode,
-	       RPTAG_Font, &oldfont,
+	       RPTAG_APen, (IPTR) &apen,
+	       RPTAG_BPen, (IPTR) &bpen,
+	       RPTAG_DrMd, (IPTR) &mode,
+	       RPTAG_Font, (IPTR) &oldfont,
 	       TAG_DONE);
 
     SetFont(rp, td->font);
@@ -1589,10 +1592,18 @@ static void CopyText(struct Text_Data *td)
 	    msg->cm_ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
 	    msg->cm_ExecMessage.mn_ReplyPort    = port;
 
-	    if ((p = CreateNewProcTags(NP_Entry,CopyTextEntry,
-	    			       NP_StackSize, 10000,
-	    			       NP_Name,"text.datatype copy process",
-				       TAG_DONE)))
+	    if
+            (
+                (
+                    p = CreateNewProcTags
+                    (
+                        NP_Entry,     (IPTR) CopyTextEntry,
+                        NP_StackSize,        10000,
+                        NP_Name,      (IPTR) "text.datatype copy process",
+                        TAG_DONE
+                    )
+                )
+            )
 	    {
 		PutMsg(&p->pr_MsgPort,&msg->cm_ExecMessage);
 		WaitPort(port);
@@ -1859,7 +1870,7 @@ const static struct DTMethod trigger_methods[] =
 
 STATIC ULONG notifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,...)
 {
-    return DoMethod(o, OM_NOTIFY, &tag1, ginfo, flags);
+    return DoMethod(o, OM_NOTIFY, (IPTR) &tag1, (IPTR) ginfo, flags);
 }
 
 #ifndef __AROS__
@@ -1999,7 +2010,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 	if (st == DTST_CLIPBOARD || st == DTST_FILE)
 	{
 	    APTR handle;
-	    if (GetDTAttrs((Object *) g, DTA_Handle, &handle, TAG_DONE) != 1)
+	    if (GetDTAttrs((Object *) g, DTA_Handle, (IPTR) &handle, TAG_DONE) != 1)
 		handle = NULL;
 
 	    if (handle)
@@ -2015,7 +2026,7 @@ STATIC struct Gadget *DT_NewMethod(struct IClass *cl, Object * o, struct opSet *
 		    STRPTR name;
 		    struct DataType *dt;
 
-		    if (GetDTAttrs((Object *) g, DTA_Name, &name, DTA_DataType, &dt, TAG_DONE) != 2)
+		    if (GetDTAttrs((Object *) g, DTA_Name, (IPTR) &name, DTA_DataType, (IPTR) &dt, TAG_DONE) != 2)
 		    {
 			name = NULL;
 			dt = NULL;
@@ -2345,9 +2356,9 @@ STATIC ULONG DT_Render(struct IClass * cl, struct Gadget * g, struct gpRender * 
 	LONG vh, vv;
 
 	if (GetDTAttrs((Object *) g,
-		       DTA_Domain, &domain,
-		       DTA_VisibleHoriz, &vh,
-		       DTA_VisibleVert, &vv,
+		       DTA_Domain, (IPTR) &domain,
+		       DTA_VisibleHoriz, (IPTR) &vh,
+		       DTA_VisibleVert, (IPTR) &vv,
 		       TAG_DONE) == 3)
 	{
 	    ULONG redraw_type;
@@ -2504,9 +2515,9 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		IPTR val;
 		LONG top, total, visible;
 
-		GetDTAttrs((Object *)g, DTA_TopHoriz, &val, TAG_DONE); top = (LONG)val;
-		GetDTAttrs((Object *)g, DTA_TotalHoriz, &val, TAG_DONE); total = (LONG)val;
-		GetDTAttrs((Object *)g, DTA_VisibleHoriz, &val, TAG_DONE); visible = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TopHoriz, (IPTR) &val, TAG_DONE); top = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TotalHoriz, (IPTR) &val, TAG_DONE); total = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_VisibleHoriz, (IPTR) &val, TAG_DONE); visible = (LONG)val;
 
 		newx = td->horiz_top + ((diff_x < 0) ? -1 : 1);
 
@@ -2533,9 +2544,9 @@ STATIC LONG DT_HandleInputMethod(struct IClass * cl, struct Gadget * g, struct g
 		IPTR val;
 		LONG top, total, visible;
 
-		GetDTAttrs((Object *)g, DTA_TopVert, &val, TAG_DONE); top = (LONG)val;
-		GetDTAttrs((Object *)g, DTA_TotalVert, &val, TAG_DONE); total = (LONG)val;
-		GetDTAttrs((Object *)g, DTA_VisibleVert, &val, TAG_DONE); visible = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TopVert, (IPTR) &val, TAG_DONE); top = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_TotalVert, (IPTR) &val, TAG_DONE); total = (LONG)val;
+		GetDTAttrs((Object *)g, DTA_VisibleVert, (IPTR) &val, TAG_DONE); visible = (LONG)val;
 
 		newy = td->vert_top + ((diff_y < 0) ? -1 : 1);
 
@@ -3071,7 +3082,7 @@ ASM ULONG DT_Dispatcher2(register __a0 struct IClass *cl, register __a2 Object *
 	    if ((rp = ObtainGIRPort (((struct opSet *) msg)->ops_GInfo)))
 	    {
 		/* Force a redraw */
-		DoMethod (o, GM_RENDER, ((struct opSet *) msg)->ops_GInfo, rp, GREDRAW_UPDATE);
+		DoMethod (o, GM_RENDER, (IPTR) ((struct opSet *) msg)->ops_GInfo, (IPTR) rp, GREDRAW_UPDATE);
 		/* Release the temporary rastport */
 		ReleaseGIRPort (rp);
 		retval = 0;
