@@ -6,11 +6,14 @@
     $Id$
 */
 
+#include <stdarg.h>
+
 struct AROSSupportBase
 {
     void * StdOut;
     int (*kprintf)(const char *, ...);
     int (*rkprintf)(const char *, const char *, int, const char *, ...);
+    int (*vkprintf)(const char *, va_list);
     void * DebugConfig;
 };
 

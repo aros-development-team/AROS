@@ -78,10 +78,12 @@ struct ExecBase * SysBase = NULL;
 
 #undef kprintf
 #undef rkprintf
+#undef vkprintf
 struct Library * PrepareAROSSupportBase (void)
 {
     AROSSupportBase.kprintf = (void *)kprintf;
     AROSSupportBase.rkprintf = (void *)rkprintf;
+    AROSSupportBase.vkprintf = (void *)vkprintf;
 
 #warning FIXME Add code to read in the debug options
 
@@ -101,6 +103,7 @@ void _aros_not_implemented(char *X)
 }
 #define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
 #define rkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
+#define vkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf)
 
 /* IntServer:
     This interrupt handler will send an interrupt to a series of queued

@@ -15,6 +15,7 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 #undef kprintf
+#undef vkprintf
 #include <unistd.h>
 #include <exec/execbase.h>
 #include "exec_private.h"

@@ -75,6 +75,7 @@ void FreeStruct  (APTR s,  const IPTR * desc);
 #ifndef __amigaos__
 #   define kprintf     (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
 #   define rkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
+#   define vkprintf    (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->vkprintf)
 #endif
 
 #endif /* CLIB_AROSSUPPORT_PROTOS_H */
