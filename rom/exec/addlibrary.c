@@ -13,7 +13,7 @@
 
     NAME */
 
-	AROS_LH1(struct Library *, AddLibrary,
+	AROS_LH1(void, AddLibrary,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct Library *, library,A1),
@@ -33,13 +33,13 @@
     RESULT
 
     NOTES
+	Some old Amiga software expects that AddLibrary returns the
+	library which was just added. When in binary compatibility mode
+	AROS does this too.
 
     EXAMPLE
 
     BUGS
-	Some old Amiga software expects that AddLibrary returns the
-	library which was just added. Therefore, the prototype of
-	this function is not 100% compatible with the AutoDocs.
 
     SEE ALSO
 	RemLibrary(), MakeLibrary(), MakeFunctions(), InitStruct(), SumLibrary().
@@ -53,22 +53,34 @@
     AROS_LIBFUNC_INIT
 
     /* Just in case the user forgot them */
-    library->lib_Node.ln_Type  = NT_LIBRARY;
-    library->lib_Flags	      |= LIBF_CHANGED;
+    library->lib_Node.ln_Type=NT_LIBRARY;
+    library->lib_Flags|=LIBF_CHANGED;
 
     /* Build checksum for library vectors */
-    SumLibrary (library);
+    SumLibrary(library);
 
     /* Arbitrate for the library list */
-    Forbid ();
+    Forbid();
 
     /* And add the library */
-    Enqueue (&SysBase->LibList, &library->lib_Node);
+    Enqueue(&SysBase->LibList,&library->lib_Node);
 
     /* All done. */
-    Permit ();
+    Permit();
+#if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
+    /*
+	Kludge to force the library to register d0.
+	Some libraries seem to use this side effect in
+	their init code. 
+    */
+    {
+        /* Put the library base in register d0 */
+        register struct Library *ret __asm("d0") = library;
 
-    return (library);
+        /* Make sure the above assignment isn't optimized away */
+        __asm __volatile("": : "r" (ret));
+    }
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* AddLibrary */
-
