@@ -25,6 +25,7 @@ make-dirs:
 	@if [ ! -d $(INCDIR)/dos ]; then $(MKDIR) $(INCDIR)/dos ; else true ; fi
 	@if [ ! -d $(INCDIR)/exec ]; then $(MKDIR) $(INCDIR)/exec ; else true ; fi
 	@if [ ! -d $(INCDIR)/graphics ]; then $(MKDIR) $(INCDIR)/graphics ; else true ; fi
+	@if [ ! -d $(INCDIR)/inline ]; then $(MKDIR) $(INCDIR)/inline ; else true ; fi
 	@if [ ! -d $(INCDIR)/intuition ]; then $(MKDIR) $(INCDIR)/intuition ; else true ; fi
 	@if [ ! -d $(INCDIR)/pragmas ]; then $(MKDIR) $(INCDIR)/pragmas ; else true ; fi
 	@if [ ! -d $(INCDIR)/proto ]; then $(MKDIR) $(INCDIR)/proto ; else true ; fi
