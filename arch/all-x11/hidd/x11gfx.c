@@ -206,9 +206,9 @@ static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 	ReturnPtr("X11Gfx::New", OOP_Object *, NULL);
     }
 	    
-    pftags[9].ti_Data = XSD(cl)->size;
+    pftags[9].ti_Data = XSD(cl)->depth;
     pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
-    pftags[11].ti_Data = XSD(cl)->size;
+    pftags[11].ti_Data = XSD(cl)->depth;
     pftags[12].ti_Data = vHidd_StdPixFmt_Native;
     
 #warning Do better than this
@@ -746,7 +746,32 @@ LX11
 	    	kill(getpid(), SIGSTOP);
 	}
 
-	xsd->size = 0;
+	xsd->depth = 0;
+
+#define NEW_DEPTH_CALC 1
+
+#if NEW_DEPTH_CALC
+
+    	/* stegerg: based on xwininfo source */
+	
+	{
+	    XWindowAttributes win_attributes;
+
+    	    if (!XGetWindowAttributes(xsd->display,
+	    	    	    	      RootWindow(xsd->display, DefaultScreen(xsd->display)),
+				      &win_attributes))
+    	    {
+	    	kprintf("!!! X11gfx could not get bits per pixel\n");
+	    	kill(getpid(), SIGSTOP);
+	    }
+	    xsd->depth = win_attributes.depth;
+	    kprintf("\n");
+	    kprintf("DisplayPlanes        = %d\n", DisplayPlanes(xsd->display, DefaultScreen(xsd->display)));
+	    kprintf("DefaultDepth         = %d\n", DefaultDepth(xsd->display, DefaultScreen(xsd->display)));
+	    
+	    kprintf("\n\n BITS PER PIXEL = %d \n\n\n", xsd->depth);
+ 	}
+#endif
 
 	/* Create a dummy X image to get bits per pixel */
 	testimage = XGetImage(xsd->display
@@ -756,17 +781,20 @@ LX11
 	);
 	
 	if (NULL != testimage)	{
-	    xsd->size = testimage->bits_per_pixel;
+#if NEW_DEPTH_CALC
+    	    xsd->bytes_per_pixel = (testimage->bits_per_pixel + 7) >> 3;
+#else
+	    xsd->depth = testimage->bits_per_pixel;
+	    xsd->bytes_per_pixel = (xsd->depth + 7) >> 3;
+#endif
 	    XDestroyImage(testimage);
 	} else {
 	    kprintf("!!! X11gfx could not get bits per pixel\n");
 	    kill(getpid(), SIGSTOP);
 	}
 	
-	xsd->bytes_per_pixel = (xsd->size + 7) >> 3;
-	
 	if (PseudoColor == xsd->vi.class) {
-	    xsd->clut_mask  = (1L << xsd->size) - 1;
+	    xsd->clut_mask  = (1L << xsd->depth) - 1;
 	    xsd->clut_shift = 0;
 	}
     }
