@@ -7,9 +7,12 @@
 */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include <exec/types.h>
 #include <exec/memory.h>
+
+#include <graphics/gfxmacros.h>
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
@@ -26,6 +29,8 @@
 #include "muimaster_intern.h"
 
 extern struct Library *MUIMasterBase;
+
+static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec);
 
 #if 0
 /*
@@ -1668,6 +1673,7 @@ _zune_fill_bitmap_rectangle(struct MUI_ImageSpec *img,
 
 
 typedef enum {
+    IST_MUICOLOR,
     IST_PATTERN,
     IST_COLOR,
     IST_BITMAP,
@@ -1679,8 +1685,37 @@ typedef enum {
 struct MUI_ImageSpec
 {
     ImageSpecType type;
-    UWORD muicolor;
+    UBYTE muicolor;
+    UBYTE pattern;
+
+    ULONG r,g,b;
+    LONG color;
 };
+
+
+const static UWORD pattern[] = {
+    0x5555,
+    0xaaaa,
+};
+
+const static MPenCouple patternPens[] = {
+    {MPEN_SHADOW, MPEN_BACKGROUND},     /* MUII_SHADOWBACK */
+    {MPEN_SHADOW, MPEN_FILL},           /* MUII_SHADOWFILL */
+    {MPEN_SHADOW, MPEN_SHINE},          /* MUII_SHADOWSHINE */
+    {MPEN_FILL, MPEN_BACKGROUND},       /* MUII_FILLBACK */
+    {MPEN_FILL, MPEN_SHINE},            /* MUII_FILLSHINE */
+    {MPEN_SHINE, MPEN_BACKGROUND},      /* MUII_SHINEBACK */
+    {MPEN_FILL, MPEN_BACKGROUND},       /* MUII_FILLBACK2 */
+    {MPEN_HALFSHINE, MPEN_BACKGROUND},  /* MUII_HSHINEBACK */
+    {MPEN_HALFSHADOW, MPEN_BACKGROUND}, /* MUII_HSHADOWBACK */
+    {MPEN_HALFSHINE, MPEN_SHINE},       /* MUII_HSHINESHINE */
+    {MPEN_HALFSHADOW, MPEN_SHADOW},     /* MUII_HSHADOWSHADOW */
+    {MPEN_MARK, MPEN_SHINE},            /* MUII_MARKSHINE */
+    {MPEN_MARK, MPEN_HALFSHINE},        /* MUII_MARKHALFSHINE */
+    {MPEN_MARK, MPEN_BACKGROUND},       /* MUII_MARKBACKGROUND */
+};
+
+#define PATTERN_COUNT (MUII_LASTPAT - MUII_BACKGROUND + 1)
 
 static struct MUI_ImageSpec *get_pattern_image_spec(LONG in)
 {
@@ -1691,7 +1726,7 @@ static struct MUI_ImageSpec *get_pattern_image_spec(LONG in)
 	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
 	{
 	    UWORD color;
-	    spec->type = IST_COLOR;
+	    spec->type = IST_MUICOLOR;
 	    if (in == MUII_BACKGROUND) color = MPEN_BACKGROUND;
 	    else if (in == MUII_SHADOW) color = MPEN_SHADOW;
 	    else if (in == MUII_SHINE) color = MPEN_SHINE;
@@ -1704,7 +1739,27 @@ static struct MUI_ImageSpec *get_pattern_image_spec(LONG in)
 
     if (in >= MUII_SHADOWBACK && in <= MUII_MARKBACKGROUND)
     {
-	return NULL;
+	if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+	{
+	    spec->type = IST_PATTERN;
+	    spec->pattern = in - MUII_SHADOWBACK;
+	}
+    	return spec;
+    }
+    return NULL;
+}
+
+static struct MUI_ImageSpec *get_color_image_spec(ULONG r, ULONG g, ULONG b)
+{
+    struct MUI_ImageSpec *spec;
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
+    {
+	spec->type = IST_COLOR;
+	spec->r = r;
+	spec->g = g;
+	spec->b = b;
+	spec->color = -1;
+    	return spec;
     }
     return NULL;
 }
@@ -1723,18 +1778,29 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 
     switch (*s)
     {
-    	case '0':
+	case '0':
              {
              	LONG pat;
              	StrToLong(s+2,&pat);
              	return get_pattern_image_spec(pat);
              }
-    }
 
+	case '2':
+	     {
+	     	ULONG r,g,b;
+	     	s += 2;
+	     	r = strtoul(s,&s, 16);
+	     	s++;
+	     	g = strtoul(s,&s, 16);
+	     	s++;
+	     	b = strtoul(s,&s, 16);
+	     	return get_color_image_spec(r,g,b);
+	     }
+    }
     return NULL;
 }
 
-struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
+static struct MUI_ImageSpec *zune_imspec_copy(struct MUI_ImageSpec *spec)
 {
     struct MUI_ImageSpec *nspec;
     
@@ -1751,10 +1817,25 @@ void zune_imspec_free(struct MUI_ImageSpec *spec)
 
 void zune_imspec_setup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 {
+    if (!spec || !(*spec)) return;
+    switch ((*spec)->type)
+    {
+	case	IST_COLOR:
+		(*spec)->color = ObtainBestPenA(mri->mri_Screen->ViewPort.ColorMap, (*spec)->r, (*spec)->g, (*spec)->b, NULL);
+		break;
+    }
 }
 
 void zune_imspec_cleanup(struct MUI_ImageSpec **spec, struct MUI_RenderInfo *mri)
 {
+    if (!spec || !(*spec)) return;
+    switch ((*spec)->type)
+    {
+	case	IST_COLOR:
+		if ((*spec)->color != -1)
+		    ReleasePen(mri->mri_Screen->ViewPort.ColorMap, (*spec)->color);
+		break;
+    }
 }
 
 void zune_imspec_show(struct MUI_ImageSpec *spec, Object *obj)
@@ -1769,12 +1850,49 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 		 LONG left, LONG top, LONG width, LONG height,
 		 LONG xoffset, LONG yoffset, LONG flags)
 {
-    LONG pen;
-    if (!img) pen = mri->mri_Pens[MPEN_BACKGROUND];
-    else pen = mri->mri_Pens[img->muicolor]; /* we do not have other types currently */
+    LONG right = left + width - 1;
+    LONG bottom = top + height - 1;
+    struct RastPort *rp = mri->mri_RastPort;
+    struct MUI_ImageSpec def;
 
-    SetAPen(mri->mri_RastPort, pen);
-    RectFill(mri->mri_RastPort, left, top, left + width - 1, top + height - 1);
+    if (!img)
+    {
+    	def.type = IST_MUICOLOR;
+    	def.muicolor = MPEN_BACKGROUND;
+    	img = &def;
+    }
+
+    switch (img->type)
+    {
+	case	IST_MUICOLOR:
+		{
+		    LONG pen = mri->mri_Pens[img->muicolor];
+		    SetAPen(mri->mri_RastPort, pen);
+		    RectFill(mri->mri_RastPort, left, top, right, bottom);
+		}
+		break;
+
+	case	IST_PATTERN:
+		{
+		    LONG fg = mri->mri_Pens[patternPens[img->pattern].fg];
+		    LONG bg = mri->mri_Pens[patternPens[img->pattern].bg];
+		    SetDrMd(rp,JAM2);
+		    SetAPen(rp,fg);
+		    SetBPen(rp,bg);
+		    SetAfPt(rp,pattern,1);
+		    RectFill(rp, left, top, right, bottom);
+		    SetAfPt(rp,NULL,0);
+		}
+		break;
+
+	case	IST_COLOR:
+		{
+		    LONG pen = img->color;
+		    SetAPen(mri->mri_RastPort, pen);
+		    RectFill(mri->mri_RastPort, left, top, right, bottom);
+		}
+		break;
+    }
 }
 
 void zune_imspec_set_scaled_size (struct MUI_ImageSpec *img, LONG w, LONG h)
