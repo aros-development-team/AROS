@@ -91,13 +91,18 @@
 #endif
 
 /* 4. Makros for debugging and development */
-#if defined(__GNUC__) && defined(__ELF__)
-#   define __IDSTRING(name,str)	    __asm__(".ident\t\"" str "\"")
-#else
-#   define __IDSTRING(name,str)	    static const char name[] __unused = str
+#if !defined(__IDSTRING)
+#   if defined(__GNUC__) && defined(__ELF__)
+#       define __IDSTRING(name,str)	    __asm__(".ident\t\"" str "\"")
+#   else
+#       define __IDSTRING(name,str)	    static const char name[] __unused = str
+#   endif
 #endif
 
-#define __RCSID(id)	__IDSTRING(rcsid,id)
+/* Need to protect __RCSID against the host system headers */
+#if !defined(__RCSID)
+#   define __RCSID(id)	__IDSTRING(rcsid,id)
+#endif
 
 /* __CONCAT is defined on Linux in cdefs.h */
 #if !defined(__CONCAT)
