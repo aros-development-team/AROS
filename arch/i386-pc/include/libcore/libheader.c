@@ -59,7 +59,7 @@
 /* Include the file with the #defines for this library */
 #include LC_LIBDEFS_FILE
 
-#define	TEXT	__attribute__((section(".text")))
+#define	TEXT_SECTION __attribute__((section(".text")))
 
 /* -----------------------------------------------------------------------
     entry:
@@ -98,14 +98,14 @@ LONG ASM LC_BUILDNAME(entry) (void)
 #endif
 
 /* Predeclarations */
-extern const int LIBEND TEXT;	  /* The end of the library */
-extern const APTR LIBFUNCTABLE[] TEXT; /* The function table */
-static const struct InitTable LC_BUILDNAME(InitTab) TEXT;
-static const struct DataTable LC_BUILDNAME(DataTab) TEXT;
+extern const int LIBEND TEXT_SECTION;	  /* The end of the library */
+extern const APTR LIBFUNCTABLE[] TEXT_SECTION; /* The function table */
+static const struct InitTable LC_BUILDNAME(InitTab) TEXT_SECTION;
+static const struct DataTable LC_BUILDNAME(DataTab) TEXT_SECTION;
 
-extern const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT;
-extern const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT;
-extern const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT;
+extern const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT_SECTION;
+extern const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT_SECTION;
+extern const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT_SECTION;
 
 AROS_LD2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
@@ -131,7 +131,7 @@ AROS_LD1 (BPTR, LC_BUILDNAME(ExpungeLib),
     EndResident can be placed somewhere else - but it must follow the
     ROMTag and it must not be placed in a different SECTION.
 ------------------------------------------------------------------------- */
-struct Resident const ALIGNED LC_RESIDENTNAME TEXT =
+struct Resident const ALIGNED LC_RESIDENTNAME TEXT_SECTION =
 {
     RTC_MATCHWORD,			    /* This is a romtag */
     (struct Resident *)&LC_RESIDENTNAME,
@@ -152,7 +152,7 @@ static struct InitTable 		      /* do not change */
     const struct DataTable *DataTable;
     APTR		    InitLibTable;
 }
-const LC_BUILDNAME(InitTab) TEXT =
+const LC_BUILDNAME(InitTab) TEXT_SECTION =
 {
     LC_LIBBASESIZE,
     &LIBFUNCTABLE[0],
@@ -170,7 +170,7 @@ static struct DataTable 		   /* do not change */
     UBYTE lib_IdString_Init; UBYTE lib_IdString_Offset; ULONG lib_IdString_Content;
     ULONG ENDMARK;
 }
-const LC_BUILDNAME(DataTab) TEXT =
+const LC_BUILDNAME(DataTab) TEXT_SECTION =
 {
     INITBYTE(OFFSET(Node,         ln_Type),      NT_TYPE),
     0x80, (UBYTE) OFFSET(Node,    ln_Name),      (ULONG) &LC_BUILDNAME(LibName[0]),
@@ -181,9 +181,9 @@ const LC_BUILDNAME(DataTab) TEXT =
     (ULONG) 0
 };
 
-const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT = NAME_STRING;
-const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT = VERSION_STRING;
-const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT = COPYRIGHT_STRING;
+const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT_SECTION = NAME_STRING;
+const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT_SECTION = VERSION_STRING;
+const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT_SECTION = COPYRIGHT_STRING;
 
 /* Use supplied functions to initialize the non-standard parts of the
    library */
