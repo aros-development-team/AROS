@@ -36,11 +36,16 @@ FILES	    := \
 	wait \
 	why \
 	Alias \
+	Break \
+	ChangeTaskPri \
 	Copy \
+	FailAt \
+	Fault \
 	Filenote \
 	Get \
 	Getenv \
 	List \
+	Lock \
 	Protect \
 	RequestChoice \
 	Set \
