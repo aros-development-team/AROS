@@ -5,9 +5,8 @@
     Desc: ISO C function lldiv
 */
 
-#if defined(__GNUC__) || \
-    defined(__ICC) || \
-    defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L
+#include <aros/system.h>
+#if defined(AROS_HAVE_LONG_LONG)
 
 /*****************************************************************************
 
@@ -70,5 +69,5 @@
     abort();
 }
 #endif /* 0 */
-#endif /* compiler supports long long */
+#endif /* AROS_HAVE_LONG_LONG */
 

@@ -9,11 +9,13 @@
     Lang: english
 */
 
+#include <aros/system.h>
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
 
-#if defined(AROS_64BIT_TYPE) || defined(__GNUC__)
+#if defined(AROS_64BIT_TYPE)
 #   define LOW32OF64(val64)     ((val64) & 0xFFFFFFFF)
 #   define HIGH32OF64(val64)    ((val64) >> 32L)
 #else

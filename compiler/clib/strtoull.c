@@ -7,9 +7,8 @@
 */
 
 /* This function requires the use of the long long type. */
-#if defined(__GNUC__) || \
-    defined(__ICC) || \
-    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
+#include <aros/system.h>
+#if defined(AROS_HAVE_LONG_LONG)
 
 #include <ctype.h>
 #include <errno.h>
@@ -203,4 +202,4 @@ strtoull(const char * restrict str, char ** restrict endptr, int base)
     abort();
 }
 #endif
-#endif /* compiler supports long long */
+#endif /* AROS_HAVE_LONG_LONG */

@@ -8,9 +8,8 @@
 
 /* This requires the C99 type long long. */
 
-#if defined(__GNUC__) || \
-    defined(__ICC) || \
-    (defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L)
+#include <aros/system.h>
+#if defined(AROS_HAVE_LONG_LONG)
 
 #include <ctype.h>
 #include <errno.h>
@@ -135,4 +134,4 @@
     return val;
 } /* strtoll */
 
-#endif /* compiler supports long long */
+#endif /* AROS_HAVE_LONG_LONG */
