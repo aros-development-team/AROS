@@ -141,7 +141,8 @@ int intui_GetWindowSize (void)
 
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase,
-	struct BitMap        * SuperBitMap)
+	struct BitMap        * SuperBitMap,
+	struct Hook          * backfillhook)
 {
     /* Create a layer for the window */
     LONG layerflags = 0;
@@ -220,7 +221,7 @@ int intui_OpenWindow (struct Window * w,
 		  , w->LeftEdge + w->BorderLeft + w->GZZWidth - 1
 		  , w->TopEdge  + w->BorderTop + w->GZZHeight - 1
 		  , layerflags
-		  , LAYERS_BACKFILL
+		  , backfillhook
 		  , SuperBitMap);
 
       /* could this layer be created? If not then delete the outer window and exit */
@@ -242,7 +243,7 @@ int intui_OpenWindow (struct Window * w,
 		  , w->LeftEdge + w->Width - 1
 		  , w->TopEdge  + w->Height - 1
 		  , layerflags
-		  , LAYERS_BACKFILL
+		  , backfillhook
 		  , SuperBitMap);
 
       /* Install the BorderRPort here! see GZZ window above  */
