@@ -186,11 +186,7 @@ static void getarguments(int argc, char **argv)
     if ((argc != 4) && (argc != 5))
     {
     	fprintf(stderr, "Wrong number of arguments\n");
-    }
-    
-    if (argc < 2)
-    {
-    	cleanup("Usage: ilbmtoicon icondescription ilbmimage1 [ilbmimage2] filename", 1);
+    	cleanup("Usage: ilbmtoicon icondescription image1 [image2] filename", 1);
     }
     
     if (argc == 4)
@@ -565,7 +561,7 @@ static void checkimage(struct ILBMImage *img)
     {
     	is_png = 1;
     }
-    else
+    else if (is_png == 0)
     {   
 	id = getlong();
 	if (id != ID_FORM) cleanup("File is not an IFF file!", 1);
@@ -575,6 +571,10 @@ static void checkimage(struct ILBMImage *img)
 
 	id = getlong();
 	if (id != ID_ILBM) cleanup("File is IFF, but not of type ILBM!", 1);
+    }
+    else if (is_png == 1)
+    {
+    	cleanup("Second image must be a PNG image, too!", 1);
     }
 }
 
@@ -1892,7 +1892,22 @@ static void writepngicon(void)
 	
 	filepos += chunksize;
     }
-      
+    
+    /* Two images: If filenames are different, cat/attach the 2nd
+       file onto the first one */
+         
+    if (image2option && strcasecmp(image1option, image2option))
+    {
+    	freeimage(&img1);
+	
+	loadimage(image2option, &img2);
+	
+	if (fwrite(filebuffer, 1, filesize, outfile) != filesize)
+	{
+	    cleanup("Error writing 2nd PNG Image!", 1);
+	}
+    }
+    
 }
 
 /****************************************************************************************/
