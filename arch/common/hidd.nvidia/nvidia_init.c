@@ -131,7 +131,9 @@ static BOOL GenericInit(struct staticdata *sd)
 {
     D(bug("[NVidia] Generic chip init\n"));
     IPTR regs = (IPTR)sd->Card.Registers;
-    ULONG implementation = sd->Card.Chipset;
+    UWORD architecture = sd->Card.Architecture;
+    UWORD implementation = sd->Card.Chipset;
+    UWORD implementation_masked = implementation & 0x0FF0;
     
     sd->Card.EnableIRQ	= 0;
     sd->Card.IO		= 0x3d0;
@@ -149,17 +151,19 @@ static BOOL GenericInit(struct staticdata *sd)
 
     sd->Card.FlatPanel	= 0;
 
-    sd->Card.twoHeads =  (implementation >= 0x0110) &&
-                     (implementation != 0x0150) &&
-                     (implementation != 0x01A0) &&
-                     (implementation != 0x0200);
+    sd->Card.twoHeads =  (architecture >= NV_ARCH_10) &&
+                     (implementation_masked != 0x0100) &&
+                     (implementation_masked != 0x0150) &&
+                     (implementation_masked != 0x01A0) &&
+                     (implementation_masked != 0x0200);
 
-    sd->Card.fpScaler = (sd->Card.twoHeads && (implementation != 0x0110));
+    sd->Card.fpScaler = (sd->Card.twoHeads && (implementation_masked != 0x0110));
 
-    sd->Card.twoStagePLL = (implementation == 0x0310) ||
-                       (implementation == 0x0340);
+    sd->Card.twoStagePLL = (implementation_masked == 0x0310) ||
+                           (implementation_masked == 0x0340) ||
+			   (architecture == NV_ARCH_40);
     
-    sd->Card.alphaCursor = (implementation & 0x0ff0) >= 0x0110;
+    sd->Card.alphaCursor = implementation_masked >= 0x0110;
 
     switch (implementation)
     {
@@ -183,8 +187,19 @@ static BOOL GenericInit(struct staticdata *sd)
 	case 0x031d:
 	case 0x031e:
 	case 0x031f:
-	case 0x0326:
-	case 0x032e:
+    	case 0x0324:
+    	case 0x0325:
+	case 0x0326: /* stegerg: checkme, not listed in xfree nv_setup.c */
+	case 0x0328:
+	case 0x0329:
+	case 0x032C:
+	case 0x032D:
+	case 0x032e: /* stegerg: checkme, not listed in xfree nv_setup.c */
+	case 0x0347:
+	case 0x0349:
+	case 0x034B:
+	case 0x034C:
+	
 	    D(bug("[NVidia] Assuming Digital FlatPanel\n"));
 	    sd->Card.FlatPanel = 1;
 	    break;
@@ -192,7 +207,7 @@ static BOOL GenericInit(struct staticdata *sd)
 	    break;
     }
 
-    if (sd->Card.Architecture == NV_ARCH_04)
+    if (architecture == NV_ARCH_04)
 	nv4GetConfig(sd);
     else
 	nv10GetConfig(sd);
@@ -218,7 +233,7 @@ static BOOL GenericInit(struct staticdata *sd)
 	ULONG oldhead;
 	UBYTE cr44;
 	
-	if(implementation != 0x0110) {
+	if(implementation_masked != 0x0110) {
 	    if(sd->Card.PRAMDAC0[0x0000052C/4] & 0x100)
 		outputAfromCRTC = 1;
 	    else
@@ -301,7 +316,7 @@ static BOOL GenericInit(struct staticdata *sd)
 	}
 	else sd->Card.CRTCnumber = CRTCnumber;
 
-	if(implementation == 0x0110)
+	if(implementation_masked == 0x0110)
 	    cr44 = sd->Card.CRTCnumber * 0x3;
 
 	sd->Card.PCRTC0[0x00000860/4] = oldhead;
@@ -329,6 +344,12 @@ static BOOL GenericInit(struct staticdata *sd)
     D(bug("[NVidia] Max clock is %dMHz\n",
 	sd->Card.MaxVClockFreqKHz / 1000));
 
+kprintf("\n=== NVidia GenericInit FlatPanel = %d TwoHeads = %d CRTCnumber = %d twostagepll = %d\n\n",
+    	sd->Card.FlatPanel,
+	sd->Card.twoHeads,
+	sd->Card.CRTCnumber,
+	sd->Card.twoStagePLL);
+	
     return TRUE;
 }
 
@@ -444,6 +465,7 @@ static const struct NVDevice {
     { 0x10de, 0x0330, NV34,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0331, NV34,	NV_ARCH_30, NV20Init },
     { 0x10de, 0x0338, NV34,	NV_ARCH_30, NV20Init },
+    { 0x10de, 0x0342, NV36,	NV_ARCH_30, NV20Init },
 
     { 0x0000, 0x0000, }
 };
