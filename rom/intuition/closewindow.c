@@ -2,13 +2,16 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/31 13:50:55  aros
+    Don't forget to free the RastPort
+
     Revision 1.5  1996/10/24 15:51:18  aros
     Use the official AROS macros over the __AROS versions.
 
     Revision 1.4  1996/10/15 15:45:31  digulla
     Two new functions: LockIBase() and UnlockIBase()
     Modified code to make sure that it is impossible to access illegal data (ie.
-    	fields of a window which is currently beeing closed).
+	fields of a window which is currently beeing closed).
 
     Revision 1.3  1996/09/21 14:16:26  digulla
     Debug code
@@ -130,7 +133,7 @@ extern int  intui_GetWindowSize (void);
     /* Free resources */
     CloseFont (window->RPort->Font);
 
-    FreeMem (window->RPort, sizeof (struct RastPort));
+    FreeRastPort (window->RPort);
 
     if (window->UserPort)
     {
