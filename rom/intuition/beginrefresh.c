@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/06/19 19:47:16  stegerg
+    use new refreshlock semaphore. also use locklayerinfo, because for
+    GZZ windows 2 layers are locked.
+
     Revision 1.8  2000/01/21 12:35:22  bergers
     No more debugging output.
 
@@ -69,27 +73,36 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-  /* lock all necessary layers */
-  LockLayerRom(window->WLayer);
-  /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
-  if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
-    LockLayerRom(window->BorderRPort->Layer);
+    ObtainSemaphore(&GetPrivScreen(window->WScreen)->RefreshLock);
+    
+    /* lock all necessary layers. We have to use LockLayerInfo first because
+       for a GZZ window 2 layers are locked. */
+       
+    LockLayerInfo(window->WLayer->LayerInfo);
+       
+    LockLayerRom(window->WLayer);
+
+    /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
+    if (IS_GZZWINDOW(window))
+        LockLayerRom(window->BorderRPort->Layer);
+
+    /* The layerinfo lock can be released when the layers are locked */    
+    UnlockLayerInfo(window->WLayer->LayerInfo);
+    
+    /* I don't think I ever have to update the BorderRPort's layer */
+    if (FALSE == BeginUpdate(window->WLayer))
+    {
+        EndUpdate(window->WLayer, FALSE);
+        //kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
+        return;
+    }
+
+    /* let the user know that we're currently doing a refresh */
+    window->Flags |= WFLG_WINDOWREFRESH;
 
 
-  /* I don't think I ever have to update the BorderRPort's layer */
-  if (FALSE == BeginUpdate(window->WLayer))
-  {
-    EndUpdate(window->WLayer, FALSE);
-//kprintf("%s :BeginUpdate returned FALSE!->Aborting BeginUpdate()\n",__FUNCTION__);
-    return;
-  }
-
-  /* let the user know that we're currently doing a refresh */
-  window->Flags |= WFLG_WINDOWREFRESH;
-
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* BeginRefresh */

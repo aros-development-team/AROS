@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/06/19 19:47:16  stegerg
+    use new refreshlock semaphore. also use locklayerinfo, because for
+    GZZ windows 2 layers are locked.
+
     Revision 1.9  2000/01/21 12:35:51  bergers
     No need to refresh window frame.
 
@@ -73,25 +77,27 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-  /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
-  if (0 != (window->Flags & WFLG_WINDOWREFRESH))
-    EndUpdate(window->WLayer, complete);
-  
-  /* reset all bits indicating a necessary or ongoing refresh */
-  window->Flags &= ~WFLG_WINDOWREFRESH;
-  
-  /* I reset this one only if Complete is TRUE!?! */
-  if (TRUE == complete)
-    window->WLayer->Flags &= ~LAYERREFRESH;
+    /* Check whether the BeginRefresh was aborted due to a FALSE=BeginUpdate()*/
+    if (window->Flags & WFLG_WINDOWREFRESH)
+        EndUpdate(window->WLayer, complete);
 
-  /* Unlock the layers. */
-  if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
-    UnlockLayerRom(window->BorderRPort->Layer);
-  
-  UnlockLayerRom(window->WLayer);
+    /* reset all bits indicating a necessary or ongoing refresh */
+    window->Flags &= ~WFLG_WINDOWREFRESH;
 
-  AROS_LIBFUNC_EXIT
+    /* I reset this one only if Complete is TRUE!?! */
+    if (TRUE == complete)
+        window->WLayer->Flags &= ~LAYERREFRESH;
+
+    /* Unlock the layers. */
+    if (IS_GZZWINDOW(window))
+        UnlockLayerRom(window->BorderRPort->Layer);
+
+    UnlockLayerRom(window->WLayer);
+
+    ReleaseSemaphore(&GetPrivScreen(window->WScreen)->RefreshLock);
+
+    AROS_LIBFUNC_EXIT
 } /* EndRefresh */
