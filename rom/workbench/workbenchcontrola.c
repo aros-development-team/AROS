@@ -14,20 +14,22 @@
 #include "workbench_intern.h"
 #include <workbench/workbench.h>
 
+#include "support.h"
+
 /*****************************************************************************
 
     NAME */
 
-        #include <proto/workbench.h>
+    #include <proto/workbench.h>
 
-        AROS_LH2(BOOL, WorkbenchControlA,
+    AROS_LH2(BOOL, WorkbenchControlA,
 
 /*  SYNOPSIS */
-        AROS_LHA(STRPTR,           name, A0),
-        AROS_LHA(struct TagItem *, tags,   A1),
+    AROS_LHA(STRPTR,           name, A0),
+    AROS_LHA(struct TagItem *, tags,   A1),
 
 /*  LOCATION */
-        struct WorkbenchBase *, WorkbenchBase, 18, Workbench)
+    struct WorkbenchBase *, WorkbenchBase, 18, Workbench)
 
 /*  FUNCTION
 
@@ -52,6 +54,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
+    BOOL            rc       = TRUE;  /* Return Code */
+
     struct TagItem *tagState = tags;
     struct TagItem *tag;
 
@@ -70,11 +74,12 @@
                 break;
 
             case WBCTRLA_GetDefaultStackSize:
-                /* TODO: Do something... */
+                if( tag->ti_Data != NULL )
+                    *((ULONG *) tag->ti_Data) = WorkbenchBase->wb_DefaultStackSize;
                 break;
 
             case WBCTRLA_SetDefaultStackSize:
-                /* TODO: Do something... */
+                WorkbenchBase->wb_DefaultStackSize = tag->ti_Data;
                 break;
 
             case WBCTRLA_RedrawAppIcon:
@@ -114,24 +119,25 @@
                 break;
 
             case WBCTRLA_AddHiddenDeviceName:
-                /* TODO: Do something... */
+                AddHiddenDevice( &(WorkbenchBase->wb_HiddenDevices), (STRPTR) tag->ti_Data );
                 break;
 
             case WBCTRLA_RemoveHiddenDeviceName:
-                /* TODO: Do something... */
+                RemoveHiddenDevice( &(WorkbenchBase->wb_HiddenDevices), (STRPTR) tag->ti_Data );
                 break;
 
             case WBCTRLA_GetTypeRestartTime:
-                /* TODO: Do something... */
+                if( tag->ti_Data != NULL )
+                    *((ULONG *) tag->ti_Data) = WorkbenchBase->wb_TypeRestartTime;
                 break;
 
             case WBCTRLA_SetTypeRestartTime:
-                /* TODO: Do something... */
+                WorkbenchBase->wb_TypeRestartTime = tag->ti_Data;
                 break;
         }
     }
 
-    return NULL;
+    return rc;
 
     AROS_LIBFUNC_EXIT
 } /* WorkbenchControlA */
