@@ -55,6 +55,13 @@ struct ObjNode
     Object *obj;
 };
 
+/* For the gadget ids */
+struct IDNode
+{
+    struct MinNode node;
+    UWORD id;
+};
+
 struct MUI_ImageSpec_intern;
 
 struct MUI_WindowData
@@ -62,10 +69,11 @@ struct MUI_WindowData
     struct MUI_RenderInfo wd_RenderInfo;
     struct MUI_MinMax     wd_MinMax;
     struct IBox    wd_AltDim;       /* zoomed dimensions */
+    APTR           wd_MemoryPool;   /* for nodes and stuff to deallocate at OM_DISPOSE */
     struct MinList wd_CycleChain;   /* objects activated with tab */
     struct MinList wd_EHList;       /* event handlers */
     struct MinList wd_CCList;       /* control chars */
-    ULONG          wd_NextGadgetID; /* to alloc gadgets ids */
+    struct MinList wd_IDList;       /* gadget ids */
     ULONG          wd_Events;       /* events received */
     ULONG          wd_CrtFlags;     /* window creation flags, see below */
     Object        *wd_ActiveObject; /* the active object */
@@ -125,7 +133,7 @@ struct MUI_WindowData
 #define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
 #define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
 #define MUIWF_USERIGHTSCROLLER (1<<8) /* window should have a right scroller */
-#define MUIWF_USEBOTTOMSCROLLER (1<<9) /* windiw should have a bottom scroller */
+#define MUIWF_USEBOTTOMSCROLLER (1<<9) /* window should have a bottom scroller */
 #define MUIWF_ERASEAREA       (1<<10) /* Erase area after a window resize */
 #define MUIWF_ISAPPWINDOW     (1<<11) /* Is an app window (user can drop icons on it) */
 #define MUIWF_ISSUBWINDOW     (1<<12) /* Dont get automatically disposed with app */
@@ -296,10 +304,14 @@ static void CleanupRenderInfo(struct MUI_RenderInfo *mri)
     if (mri->mri_DownImage) {DisposeObject(mri->mri_DownImage);mri->mri_DownImage=NULL;};
     if (mri->mri_SizeImage) {DisposeObject(mri->mri_SizeImage);mri->mri_SizeImage=NULL;};
 
+/*      bug("CleanupRenderInfo\n"); */
     for (i = 0; i < -MUIV_Font_NegCount; i++)
     {
 	if (mri->mri_Fonts[i])
 	{
+/*  	    bug("CleanupRenderInfo: closing font %p (%s/%d)\n", */
+/*  		mri->mri_Fonts[i], mri->mri_Fonts[i]->tf_Message.mn_Node.ln_Name, */
+/*  		mri->mri_Fonts[i]->tf_YSize); */
 	    CloseFont(mri->mri_Fonts[i]);
 	    mri->mri_Fonts[i] = NULL;
 	}
@@ -2035,12 +2047,21 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* Initial local instance data */
     data = INST_DATA(cl, obj);
+
+    data->wd_MemoryPool = CreatePool(0, 4096, 2048);
+    if (NULL == data->wd_MemoryPool)
+    {
+	CoerceMethod(cl, obj, OM_DISPOSE);
+	return NULL;
+    }
+
     data->wd_RenderInfo.mri_WindowObject = obj;
 
     NewList((struct List*)&(data->wd_EHList));
     NewList((struct List*)&(data->wd_CCList));
     NewList((struct List*)&(data->wd_CycleChain));
-
+    NewList((struct List*)&(data->wd_IDList));
+ 
     data->wd_CrtFlags = WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_DEPTHGADGET 
                       | WFLG_CLOSEGADGET | WFLG_SIMPLE_REFRESH 
                       | WFLG_REPORTMOUSE | WFLG_NEWLOOKMENUS;
@@ -2227,6 +2248,8 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->wd_ScreenTitle)
 	FreeVec(data->wd_ScreenTitle);
+
+    DeletePool(data->wd_MemoryPool);
 
 /*      D(bug(" Window_Dispose(%p) : calling supermethod\n", obj)); */
     return DoSuperMethodA(cl, obj, msg);
@@ -2816,8 +2839,6 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITH_CLEAR)
 	data->wd_Flags |= MUIWF_ERASEAREA;
 
-    data->wd_NextGadgetID = 1;
-
     return TRUE;
 }
 
@@ -2952,8 +2973,35 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadgetID *msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct IDNode *newnode;
 
-    return data->wd_NextGadgetID++;
+    newnode = AllocVecPooled(data->wd_MemoryPool, sizeof(struct IDNode));
+    if (newnode)
+    {
+       int id;
+       struct MinNode *mn;
+
+       if (IsListEmpty((struct List*)&data->wd_IDList))
+       {
+           newnode->id = 1;
+           AddHead((struct List*)&data->wd_IDList, (struct Node*)&newnode->node);
+           return (IPTR)1;
+       }
+
+       id = 1;
+
+       for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+       {
+           struct IDNode *idn = (struct IDNode *)mn;
+           if (id < idn->id)
+	       break;
+           id++;
+       }
+       newnode->id = id;
+       Insert((struct List*)&data->wd_IDList, (struct Node*)&newnode->node, (struct Node*)mn);
+       return (IPTR)id;
+    }
+    return 0;
 }
 
 /**************************************************************************
@@ -2961,6 +3009,20 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 **************************************************************************/
 static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_FreeGadgetID *msg)
 {
+    struct MUI_WindowData *data = INST_DATA(cl, obj);
+    struct MinNode *mn;
+
+    for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+       struct IDNode *idn = (struct IDNode *)mn;
+       if (msg->gadgetid == idn->id)
+       {
+           Remove((struct Node*)idn);
+           FreeVecPooled(data->wd_MemoryPool, idn);
+           return 0;
+       }
+    }
+
     return 0;
 }
 
