@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/03 18:21:10  digulla
+    Added support for linked files !
+
     Revision 1.3  1996/08/01 17:40:54  digulla
     Added standard header for all files
 
@@ -20,7 +23,7 @@
 #define SHT_REL 	9
 
 #define RELO_32 	1
-#define RELO_EXEC	2
+#define RELO_PC32	2
 
 struct elfheader
 {
@@ -202,7 +205,11 @@ BPTR LoadSeg_ELF(BPTR file)
 			    *(ULONG *)&loaded[reltab[i].addr]+=
 				(ULONG)hunks[symbol->shindex].memory+symbol->value;
 			    break;
-			case RELO_EXEC: break;
+			case RELO_PC32:
+			    *(ULONG *)&loaded[reltab[i].addr]+=
+				(ULONG)hunks[symbol->shindex].memory +
+				symbol->value - (ULONG)&loaded[reltab[i].addr];
+			    break;
 			default:
 			    ERROR(ERROR_BAD_HUNK);
 		    }
