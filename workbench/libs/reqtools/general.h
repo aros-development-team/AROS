@@ -11,34 +11,21 @@
 #define ENTER_NUMBER			3
 #define IS_EZREQUEST			4
 
-/* These are for AmigaOS. On AROS they are ignored */
-
-#define USE_ASM_FUNCS 	    	    	1
-#define USE_OPTASM_FUNCS    	    	1
 
 /* compiler/AmigaOS/AROS specific defines */
 
 #ifndef __AROS__
+#   define USE_ASM_FUNCS     1
+#   define USE_OPTASM_FUNCS  1
 
-/* AmigaOS */
+#   include "compilerspecific.h"
+#else /* __AROS__ */
+#   include <aros/asmcall.h>
+#   include <dos/dos.h>  /* for MININT and MAXINT defines */
 
-#include "compilerspecific.h"
+#   define USE_ASM_FUNCS     0
+#   define USE_OPTASM_FUNCS  0
 
-#else
-
-#include <aros/asmcall.h>
-
-/* AROS */
-
-#undef USE_ASM_FUNCS
-#define USE_ASM_FUNCS 	    	    	0
-
-#undef USE_OPTASM_FUNCS
-#define USE_OPTASM_FUNCS    	    	0
-
-/* AROS: FIXME Hmm ... */
-#define MININT      	    	    	0x80000000
-#define MAXINT      	    	    	0x7FFFFFFF
 
 #undef 	REGARGS
 #define REGARGS
@@ -62,7 +49,7 @@
 #define OPT_REGPARAM(reg,type,name) 	type name
 #define ASM_REGPARAM(reg,type,name) 	type name
 
-#endif
+#endif /* __AROS__ */
 
 struct PWCallBackArgs;
 typedef STDARGS char * (*PWCALLBACKFUNPTR) (long, long, struct PWCallBackArgs *);
