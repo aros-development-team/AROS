@@ -19,14 +19,6 @@
 
 #include "args.h"
 
-/*
-<Tjodden> BearlyWH: so, byteSize = dg_SectorSize * dg_Heads * dg_TrackSectors
-<Tjodden> and bytesPerCylinder = byteSize / dg_Cylinders
-<Tjodden> (just have to make sure to use UQUADs here I guess)
-
-byteSize = size of partition/drive in bytes
-*/
-
 int main(void)
 {
     struct PartitionHandle *root    = NULL, /* root partition */
