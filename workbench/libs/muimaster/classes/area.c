@@ -1197,9 +1197,27 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
-    struct MUI_FrameSpec_intern *frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
+    struct MUI_FrameSpec_intern *frame;
 
     muiRenderInfo(obj) = msg->RenderInfo;
+
+    if (data->mad_Frame)
+    {
+	/* no frame allowed for root object (see Area.doc) */
+	IPTR rootobj;
+	get(_win(obj), MUIA_Window_RootObject, &rootobj);
+	if (rootobj == obj)
+	{
+	    data->mad_Frame = MUIV_Frame_None;
+	    if (data->mad_FrameTitle)
+	    {
+		FreeVec((APTR)data->mad_FrameTitle);
+		data->mad_FrameTitle = NULL;
+	    }
+	}
+    }
+
+    frame = &muiGlobalInfo(obj)->mgi_Prefs->frames[data->mad_Frame];
 
     zframe = zune_zframe_get(frame);
     area_update_innersizes(obj, data, frame, zframe);
