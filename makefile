@@ -156,3 +156,10 @@ $(GENDIR)/%.o: %.c
 #	 @$(MKDEPEND) -f$@ -p$(GENDIR)/ -- $(CFLAGS) -- $^
 #
 #include $(GENDIR)/arosshell.d
+
+machine: machine.c
+	$(CC) -I./include -o machine machine.c
+	./machine
+
+cleandep:
+	$(RM) $(GENDIR)/*.d $(GENDIR)/*/*.d
