@@ -876,14 +876,18 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
     bgleft = _left(obj);
     bgtop = frame_top + zframe->itop;
     bgw = _width(obj);
-#if REDUCE_FLICKER_TEST
-    if (_flags(obj) & MADF_FRAMEPHANTOM)
-	bgh = _height(obj) - frame_top + _top(obj);
+    
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+    {
+	if (_flags(obj) & MADF_FRAMEPHANTOM)
+	    bgh = _height(obj) - frame_top + _top(obj);
+	else
+	    bgh = _height(obj) - bgtop + _top(obj);
+    }
     else
+    {
 	bgh = _height(obj) - bgtop + _top(obj);
-#else
-    bgh = _height(obj) - bgtop + _top(obj);
-#endif
+    }
 
     if (!background)
     {
@@ -899,15 +903,18 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
 			 bgleft, bgtop, bgw, bgh, bgleft, bgtop, 0);
     }
 
-#if REDUCE_FLICKER_TEST
-    if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
-	/* Fill in the gap produced by the title with the background of the parent object but only if
-	 * the upper object hasn't drawn it already (which is the case if MADF_DRAWALL is setted) */
-	DoMethod(obj, MUIM_DrawParentBackground, bgleft, _top(obj), bgw, bgtop - _top(obj),
-		 bgleft, _top(obj), data->mad_Flags);
+	if (bgtop > _top(obj) && !(flags & MADF_DRAWALL))
+	{
+	    /* Fill in the gap produced by the title with the background
+	     * of the parent object but only if
+	     * the upper object hasn't drawn it already
+	     * (which is the case if MADF_DRAWALL is setted) */
+	    DoMethod(obj, MUIM_DrawParentBackground, bgleft, _top(obj), bgw, bgtop - _top(obj),
+		     bgleft, _top(obj), data->mad_Flags);
+	}
     }
-#endif
 }
 
 
