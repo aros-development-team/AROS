@@ -214,6 +214,8 @@ unsigned char *__decimalpoint = ".";
 	  break;
 	case 's':
 	  buffer2=va_arg(args,char *);
+	  if (!buffer2)
+	    buffer2="(null)";
 	  size2=strlen(buffer2);
 	  size2=size2<=preci?size2:preci;
 	  preci=0;
