@@ -13,17 +13,22 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/preferences.h>
+#include <intuition/extensions.h>
 #include <graphics/layers.h>
 #include <graphics/rpattr.h>
 #include <graphics/gfxmacros.h>
 #include <cybergraphx/cybergraphics.h>
 
+#ifdef SKINS
+#   include "intuition_customize.h"
+#   include "intuition_extend.h"
+#   include "mosmisc.h"
+#endif
+
 #include "intuition_preferences.h"
 #include "intuition_intern.h"
+
 #include "boopsigadgets.h"
-#include "intuition_customize.h"
-#include "intuition_extend.h"
-#include "mosmisc.h"
 #include "showhide.h"
 
 #include <string.h>
@@ -41,9 +46,14 @@ extern ULONG HookEntry();
 void LoadDefaultPreferences(struct IntuitionBase * IntuitionBase)
 {
     BYTE read_preferences = FALSE;
-    static UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1 , 1 , 0};
-    static UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1};
-
+#   ifdef SKINS
+        static UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1 , 1 , 0};
+        static UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1 , 2 , 1};
+#   else
+        static UWORD DriPens2[NUMDRIPENS] = { 1, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1};
+        static UWORD DriPens4[NUMDRIPENS] = { 1, 0, 1, 2, 1, 3, 1, 0, 2, 1, 2, 1};
+#   endif /* SKINS */
+    
     /*
     ** Load the intuition preferences from a file on the disk
     ** Allocate storage for the preferences, even if it's just a copy
@@ -576,7 +586,7 @@ void CreateScreenBar(struct Screen *scr, struct IntuitionBase *IntuitionBase)
         ypos = - (scr->BarHeight + 1);
     }
 #else
-    if (scr->Flags & SCREENQUIET) front = FALSE:
+    if (scr->Flags & SCREENQUIET) front = FALSE;
 #endif
 
     if (!scr->BarLayer)
@@ -674,7 +684,12 @@ void RenderScreenBar(struct Screen *scr, BOOL refresh, struct IntuitionBase *Int
 
         if (scr->Title)
         {
+#ifdef __MORPHOS__
             CONST_STRPTR title = patchScreenTitle(scr->Title);
+#else
+            //FIXME: what's patchScreenTitle supposed to do? anything we want for AROS?
+            CONST_STRPTR title = scr->Title;
+#endif /* __MORPHOS__ */
 
             SetAPen(rp, dri->dri_Pens[beeping ? BARBLOCKPEN: BARDETAILPEN]);
             SetBPen(rp, dri->dri_Pens[beeping ? BARDETAILPEN : BARBLOCKPEN]);
