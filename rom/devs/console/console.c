@@ -3,12 +3,14 @@
     $Id$
 
     Desc: Console.device
-    Lang: english
+    Lang: English
 */
 
 /****************************************************************************************/
 
 #define AROS_ALMOST_COMPATIBLE 1
+
+#include <string.h>
 
 #include <proto/exec.h>
 #include <proto/console.h>

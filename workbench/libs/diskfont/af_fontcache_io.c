@@ -7,6 +7,9 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE
+
+#include <string.h>
+
 #include <proto/utility.h>
 #include <proto/dos.h>
 

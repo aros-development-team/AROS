@@ -3,17 +3,19 @@
     $Id$
 
     Desc: Tell Workbench task that it shall open/close its windows
-    Lang: english
+    Lang: English
 */
 
-/****************************************************************************************/
+/******************************************************************************/
 
 #define AROS_ALMOST_COMPATIBLE /* NEWLIST macro */
+
+#include <string.h>
 
 #include "intuition_intern.h"
 #include <proto/exec.h>
 
-/****************************************************************************************/
+/******************************************************************************/
 
 void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
 {
@@ -40,7 +42,8 @@ void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
     	SetSignal(0, SIGF_SINGLE);
 
         /* Sends it to the handler and wait for the reply. */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP,
+		(struct Message *) &imsg );
         WaitPort( &replymp );
 
         /* After leaving this block imsg and repymp will be automagically freed,
@@ -48,7 +51,7 @@ void TellWBTaskToOpenWindows(struct IntuitionBase *IntuitionBase)
     }
 }
 
-/****************************************************************************************/
+/******************************************************************************/
 
 void TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
 {
@@ -75,7 +78,8 @@ void TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
     	SetSignal(0, SIGF_SINGLE);
 	
         /* Sends it to the handler and wait for the reply */
-        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP, (struct Message *) (&imsg) );
+        PutMsg( GetPrivIBase(IntuitionBase)->WorkBenchMP,
+		(struct Message *) &imsg );
         WaitPort( &replymp );
 
         /* After leaving this block imsg and repymp will be automagically freed,
@@ -83,4 +87,4 @@ void TellWBTaskToCloseWindows(struct IntuitionBase *IntuitionBase)
     }
 }
 
-/****************************************************************************************/
+/******************************************************************************/

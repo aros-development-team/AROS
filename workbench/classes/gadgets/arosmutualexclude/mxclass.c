@@ -3,12 +3,15 @@
     $Id$
 
     Desc: AROS specific mutualexclude class implementation.
-    Lang: english
+    Lang: English
 */
 
 /***********************************************************************************/
 
 #define USE_BOOPSI_STUBS
+
+#include <string.h>
+
 #include <exec/libraries.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>

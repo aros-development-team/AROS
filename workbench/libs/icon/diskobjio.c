@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Read an icon from an .info file
-    Lang: english
+    Lang: English
 */
 
 #ifdef __MORPHOS__
@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <string.h>
 
 #include <exec/memory.h>
 #include <aros/bigendianio.h>

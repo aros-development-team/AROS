@@ -5,6 +5,9 @@
     Desc:
     Lang: English
 */
+
+#include <string.h>
+
 #include <proto/utility.h>
 #include <proto/icon.h>
 #include <proto/dos.h>
