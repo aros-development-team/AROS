@@ -645,6 +645,13 @@ UX11
     SIGID ();
 }
 
+struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase * IntuitionBase)
+{
+    /* Just dummy implemntation for now */
+    return NULL;
+    
+}
+
 LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 	LONG size, struct KeyMap * km)
 {
