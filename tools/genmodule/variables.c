@@ -34,3 +34,5 @@ char *modulename = NULL, *basename = NULL, *modulenameupper = NULL,
      *datestring = "00.00.0000", *superclass = NULL;
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *protolines = NULL;
+
+int customdispatcher = 0; /* does class have custom dispatcher? */

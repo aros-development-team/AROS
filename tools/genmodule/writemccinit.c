@@ -126,55 +126,75 @@ void writemccinit(void)
         
         fprintf(out, ");\n");
     }
-    
-    fprintf
-    (
-        out,
-        "\n"
-        "\n"
-        "/*** Dispatcher *************************************************************/\n"
-        "BOOPSI_DISPATCHER( IPTR, %s_Dispatcher, CLASS, self, message )\n"
-        "{\n"
-        "    switch( message->MethodID )\n"
-        "    {\n",
-        modulename
-    );
-    
-    for 
-    (
-        methlistit = methlist; 
-        methlistit != NULL; 
-        methlistit = methlistit->next)
+
+    if (!customdispatcher)
     {
         fprintf
         (
-            out, 
-            "        case %s: return %s__%s( ", 
-            methlistit->name, modulename, methlistit->name
+            out,
+            "\n"
+            "\n"
+            "/*** Dispatcher *************************************************************/\n"
+            "BOOPSI_DISPATCHER( IPTR, %s_Dispatcher, CLASS, self, message )\n"
+            "{\n"
+            "    switch( message->MethodID )\n"
+            "    {\n",
+            modulename
         );
         
-        if (methlistit->argcount != 3)
+        for 
+        (
+            methlistit = methlist; 
+            methlistit != NULL; 
+            methlistit = methlistit->next)
         {
-            fprintf(stderr, "Method \"%s\" has wrong number of arguments\n", methlistit->name);
-            exit(20);
+            fprintf
+            (
+                out, 
+                "        case %s: return %s__%s( ", 
+                methlistit->name, modulename, methlistit->name
+            );
+            
+            if (methlistit->argcount != 3)
+            {
+                fprintf(stderr, "Method \"%s\" has wrong number of arguments\n", methlistit->name);
+                exit(20);
+            }
+            
+            arglistit = methlistit->arguments;
+            fprintf(out, "CLASS, ");
+            arglistit = arglistit->next;
+            fprintf(out, "self, ");
+            arglistit = arglistit->next;
+            fprintf(out, "(%s) message);\n", arglistit->type);
         }
         
-        arglistit = methlistit->arguments;
-        fprintf(out, "CLASS, ");
-        arglistit = arglistit->next;
-        fprintf(out, "self, ");
-        arglistit = arglistit->next;
-        fprintf(out, "(%s) message);\n", arglistit->type);
+        fprintf
+        (
+            out,
+            "        default: return DoSuperMethodA( CLASS, self, message );\n"
+            "    }\n"
+            "    \n"
+            "    return NULL;\n"
+            "}\n"
+        );
+    }
+    else
+    {
+        fprintf
+        (
+            out,
+            "\n"
+            "\n"
+            "/*** Custom dispatcher prototype ********************************************/\n"
+            "BOOPSI_DISPATCHER(IPTR, %s_Dispatcher, CLASS, object, message);\n",
+            modulename
+        );
     }
     
     fprintf
     (
         out,
-        "        default: return DoSuperMethodA( CLASS, self, message );\n"
-        "    }\n"
-        "    \n"
-        "    return NULL;\n"
-        "}\n"
         "\n"
         "\n"
         "/*** Library startup and shutdown *******************************************/\n"
