@@ -11,6 +11,4 @@
 \include{mmake.src}
 \include{ideas.src}
 \appendix
-\include{autodoc.src}
-\include{history.src}
 \include{links.src}
