@@ -167,13 +167,13 @@ stripquotes (const char * str)
 
 	len = strlen (str + begin)-1;
 
-	if (str[len] != '"')
+	if (str[len] == '"')
 	    len --;
 
 	if (len <= 0)
 	    len = -1;
 
-	return strdupsub (str, begin, len+1);
+	return strdupsub (str, begin, len);
     }
 
     return xstrdup (str);
