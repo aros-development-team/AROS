@@ -5,11 +5,7 @@ include $(TOP)/config/make.cfg
 
 FILES	:= libexec
 LIBS	:= -lamiga -larossupport -larosc -larosm
-OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o) 	\
-           $(OSGENDIR)/graphics/graphics_driver.o				\
-	   $(OSGENDIR)/graphics/objcache.o					\
-	   $(OSGENDIR)/graphics/dispinfo.o					\
-	   $(OSGENDIR)/graphics/fakegfxhidd.o
+OBJS	:= $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OSGENDIR)/boot/$(f).o)
 
 BOOT_FILES := \
 	C/Shell \
