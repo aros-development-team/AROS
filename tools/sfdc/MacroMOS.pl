@@ -11,9 +11,12 @@ BEGIN {
 	my $class  = ref($proto) || $proto;
 	my $self   = $class->SUPER::new( @_ );
 	bless ($self, $class);
+	
+	$self->{macros_h} = "ppcinline/macros.h";
+	
 	return $self;
     }
-
+   
     sub function_end {
 	my $self      = shift;
 	my %params    = @_;
@@ -27,6 +30,14 @@ BEGIN {
 		print ",\\\n	, (___base)";
 	    }
 
+	    if ($self->{FUNCARGTYPE} ne '') {
+		my $fa = $self->{FUNCARGTYPE};
+
+		$fa =~ s/\(\*\)/(*__fpt)/;
+		
+		print ", $fa";
+	    }
+	    
 	    print ", IF_CACHEFLUSHALL, NULL, 0, IF_CACHEFLUSHALL, NULL, 0)\n";
 	}
 	else {

@@ -9,8 +9,11 @@ BEGIN {
     sub new {
 	my $proto  = shift;
 	my $class  = ref($proto) || $proto;
-	my $self   = $class->SUPER::new( @_ );
+	my $self   = $class->SUPER::new( @_ );	
 	bless ($self, $class);
+	
+	$self->{macros_h} = "inline/macros.h";
+	
 	return $self;
     }
 
@@ -21,7 +24,7 @@ BEGIN {
 	$self->SUPER::header (@_);
 	
 	print "#ifndef __INLINE_MACROS_H\n";
-	print "#include <inline/macros.h>\n";
+	print "#include <$self->{macros_h}>\n";
 	print "#endif /* !__INLINE_MACROS_H */\n";
 	print "\n";
 
@@ -40,9 +43,20 @@ BEGIN {
 	my $sfd       = $self->{SFD};
 
 	if ($$prototype{'type'} eq 'function') {
-	    printf "	LP%d%s%s(0x%x, ", $$prototype{'numargs'},
+	    
+	    $self->{FUNCARGTYPE} = '';
+	    for my $argtype (@{$$prototype{'argtypes'}}) {
+		if ($argtype =~ /\(\*\)/) {
+		    $self->{FUNCARGTYPE} = $argtype;
+		    last;
+		}
+	    }
+	    
+	    printf "	LP%d%s%s%s(0x%x, ", $$prototype{'numargs'},
 	    $prototype->{nr} ? "NR" : "",
-	    $prototype->{nb} ? "NB" : "", $$prototype{'bias'};
+	    $prototype->{nb} ? "NB" : "",
+	    $self->{FUNCARGTYPE} ne '' ? "FP" : "",
+            $$prototype{'bias'};
 
 	    if (!$prototype->{nr}) {
 		print "$$prototype{'return'}, ";
@@ -66,7 +80,12 @@ BEGIN {
 	my $sfd       = $self->{SFD};
 
 	if ($$prototype{'type'} eq 'function') {
-	    print ", $argtype, $argname, $argreg";
+	    if ($argtype =~ /\(\*\)/) {
+		print ", __fpt, $argname, $argreg";
+	    }
+	    else {
+		print ", $argtype, $argname, $argreg";
+	    }
 	}
 	else {
 	    $self->SUPER::function_arg (@_);
@@ -79,15 +98,20 @@ BEGIN {
 	my $prototype = $params{'prototype'};
 	my $sfd       = $self->{SFD};
 
-	
 	if ($$prototype{'type'} eq 'function') {
-
 	    if (!$prototype->{nb}) {
-		print ",\\\n	, (___base))\n";
+		print ",\\\n	, (___base)\n";
 	    }
-	    else {
-		print ")\n";
+
+	    if ($self->{FUNCARGTYPE} ne '') {
+		my $fa = $self->{FUNCARGTYPE};
+
+		$fa =~ s/\(\*\)/(*__fpt)/;
+		
+		print ", $fa";
 	    }
+	    
+  	    print ")\n";
 	}
 	else {
 	    $self->SUPER::function_end (@_);
