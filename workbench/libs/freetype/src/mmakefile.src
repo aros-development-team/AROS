@@ -1,0 +1,155 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+LIB := freetype
+
+FILES := \
+      ftbase \
+      ftinit \
+      ftsystem \
+      ftdebug \
+      ftglyph \
+      ftbbox \
+      ftmm \
+      ftsynth \
+      autohint \
+      ahoptim \
+      ftcache \
+      cff \
+      pshinter \
+      psaux \
+      psnames \
+      raster \
+      sfnt \
+      smooth \
+      truetype \
+      type1 \
+      type1cid \
+      type42 \
+      bdf \
+      pcf \
+      pfr \
+      winfnt
+
+USER_INCLUDES := -I../include
+
+#MM contrib-freetype-linklib : contrib-freetype-includes
+
+%make_linklib_setup mmake=contrib-freetype-linklib
+
+# Override the standard compilation because the files are
+# located in subdirectories and an extra include flags
+# needs to be set.
+
+$(OBJDIR)/%.o : base/%.c
+	%compile_q opt="$(CFLAGS) -Ibase"
+
+$(OBJDIR)/%.d : base/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ibase"
+
+$(OBJDIR)/%.o : autohint/%.c
+	%compile_q opt="$(CFLAGS) -Iautohint"
+
+$(OBJDIR)/%.d : autohint/%.c
+	%mkdepend_q flags="$(CFLAGS) -Iautohint"
+
+$(OBJDIR)/%.o : pshinter/%.c
+	%compile_q opt="$(CFLAGS) -Ipshinter"
+
+$(OBJDIR)/%.d : pshinter/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ipshinter"
+
+$(OBJDIR)/%.o : psaux/%.c
+	%compile_q opt="$(CFLAGS) -Ipsaux"
+
+$(OBJDIR)/%.d : psaux/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ipsaux"
+
+$(OBJDIR)/%.o : psnames/%.c
+	%compile_q opt="$(CFLAGS) -Ipsnames"
+
+$(OBJDIR)/%.d : psnames/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ipsnames"
+
+$(OBJDIR)/%.o : raster/%.c
+	%compile_q opt="$(CFLAGS) -Iraster"
+
+$(OBJDIR)/%.d : raster/%.c
+	%mkdepend_q flags="$(CFLAGS) -Iraster"
+
+$(OBJDIR)/%.o : smooth/%.c
+	%compile_q opt="$(CFLAGS) -Ismooth"
+
+$(OBJDIR)/%.d : smooth/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ismooth"
+
+$(OBJDIR)/%.o : sfnt/%.c
+	%compile_q opt="$(CFLAGS) -Isfnt"
+
+$(OBJDIR)/%.d : sfnt/%.c
+	%mkdepend_q flags="$(CFLAGS) -Isfnt"
+
+$(OBJDIR)/%.o : cache/%.c
+	%compile_q opt="$(CFLAGS) -Icache"
+
+$(OBJDIR)/%.d : cache/%.c
+	%mkdepend_q flags="$(CFLAGS) -Icache"
+
+$(OBJDIR)/%.o : cff/%.c
+	%compile_q opt="$(CFLAGS) -Icff"
+
+$(OBJDIR)/%.d : cff/%.c
+	%mkdepend_q flags="$(CFLAGS) -Icff"
+
+$(OBJDIR)/%.o : truetype/%.c
+	%compile_q opt="$(CFLAGS) -Itruetype"
+
+$(OBJDIR)/%.d : truetype/%.c
+	%mkdepend_q flags="$(CFLAGS) -Itruetype"
+
+$(OBJDIR)/%.o : type1/%.c
+	%compile_q opt="$(CFLAGS) -Itype1"
+
+$(OBJDIR)/%.d : type1/%.c
+	%mkdepend_q flags="$(CFLAGS) -Itype1"
+
+$(OBJDIR)/%.o : type42/%.c
+	%compile_q opt="$(CFLAGS) -Itype42"
+
+$(OBJDIR)/%.d : type42/%.c
+	%mkdepend_q flags="$(CFLAGS) -Itype42"
+
+$(OBJDIR)/%.o : cid/%.c
+	%compile_q opt="$(CFLAGS) -Icid"
+
+$(OBJDIR)/%.d : cid/%.c
+	%mkdepend_q flags="$(CFLAGS) -Icid"
+
+$(OBJDIR)/%.o : bdf/%.c
+	%compile_q opt="$(CFLAGS) -Ibdf"
+
+$(OBJDIR)/%.d : bdf/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ibdf"
+
+$(OBJDIR)/%.o : pcf/%.c
+	%compile_q opt="$(CFLAGS) -Ipcf"
+
+$(OBJDIR)/%.d : pcf/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ipcf"
+
+$(OBJDIR)/%.o : pfr/%.c
+	%compile_q opt="$(CFLAGS) -Ipfr"
+
+$(OBJDIR)/%.d : pfr/%.c
+	%mkdepend_q flags="$(CFLAGS) -Ipfr"
+
+$(OBJDIR)/%.o : winfonts/%.c
+	%compile_q opt="$(CFLAGS) -Iwinfonts"
+
+$(OBJDIR)/%.d : winfonts/%.c
+	%mkdepend_q flags="$(CFLAGS) -Iwinfonts"
+
+%make_linklib mmake=contrib-freetype-linklib
+
+%common
+%include_deps
