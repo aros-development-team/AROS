@@ -14,6 +14,10 @@
 #include <intuition/classes.h>
 #endif
 
+/* These are the identity function under AmigaOS */
+#define AROS_LONG2BE(x) (x)
+#define AROS_BE2LONG(x) (x)
+
 #define IMSPEC_EXTERNAL_PREFIX "MUI:Images/"
 
 /* Define all classes as built in...should be moved out to config.h like file */
