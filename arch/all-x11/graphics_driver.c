@@ -1708,12 +1708,12 @@ UX11
 
 
 
-void BltBitMapRastPort (struct BitMap   * srcBitMap,
+void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 	LONG xSrc, LONG ySrc,
 	struct RastPort * destRP,
 	LONG xDest, LONG yDest,
 	LONG xSize, LONG ySize,
-	ULONG minterm
+	ULONG minterm, struct GfxBase * GfxBase
 )
 {
     return;
