@@ -29,7 +29,7 @@
 #define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
 
-#include "../commodities_strings.h"
+#include "../strings.h"
 
 #include "main.h"
 #include "support.h"
