@@ -15,7 +15,7 @@
 
 #include <utility/utility.h>
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <proto/exec.h>
 #include <aros/debug.h>
