@@ -9,7 +9,18 @@
     Lang: english
 */
 
-#include <sys/types.h>
+#include <sys/_types.h>
+#include <sys/cdefs.h>
+
+#ifndef __AROS_INO_T_DECLARED
+#define __AROS_INO_T_DECLARED
+typedef __ino_t ino_t;
+#endif
+
+#ifndef __AROS_OFF_T_DECLARED
+#define __AROS_OFF_T_DECLARED
+typedef __off_t off_t;
+#endif
 
 #ifndef NAME_MAX
 #define NAME_MAX 255
@@ -33,19 +44,35 @@ typedef struct _dirdesc
 
 __BEGIN_DECLS
 
-DIR *opendir (const char *name);
-struct dirent *readdir (DIR *dir);
-void rewinddir (DIR *dir);
-int closedir (DIR *dir);
+int closedir(DIR *dir);
+DIR *opendir(const char *filename);
+struct dirent *readdir(DIR *dir);
+void rewinddir(DIR *dir);
 
-off_t telldir (const DIR *dir);
-void seekdir (DIR *dir, off_t offset);
-int scandir (const char *dir, struct dirent ***namelist,
+#if __POSIX_VISIBLE >= 200112
+/* NOTIMPL int readdir_r(DIR * restrict dir , struct dirent * restrict entry,
+        struct dirent * restrict result); */
+#endif
+
+#if __XSI_VISIBLE
+void seekdir(DIR *dir, long loc);
+long telldir(DIR *dir);
+#endif
+
+#if __BSD_VISIBLE
+
+#ifndef __AROS_SSIZE_T_DECLARED
+#define __AROS_SSIZE_T_DECLARED
+typedef __ssize_t ssize_t;
+#endif
+
+/* NOTIMPL int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
-              int (*compar)(const struct dirent **, const struct dirent **));
+              int (*compar)(const struct dirent **, const struct dirent **)); */
 
-int alphasort(const struct dirent **a, const struct dirent **b);
-ssize_t getdirentries(int fd, char *buf, size_t  nbytes, off_t *basep);
+/* NOTIMPL int alphasort(const struct dirent **a, const struct dirent **b); */
+/* NOTIMPL ssize_t getdirentries(int fd, char *buf, size_t  nbytes, off_t *basep); */
+#endif
 
 __END_DECLS
 

@@ -18,6 +18,8 @@
 #define complex		_Complex
 #define I		_Complex_I
 
+#warning AROS does not implement complex.h functions.
+#if 0
 __BEGIN_DECLS
 double complex cacos(double complex z);
 float complex cacosf(float complex z);
@@ -90,6 +92,7 @@ long double complex cprojl(long double complex z);
 long double creall(long double complex z);
 #endif
 __END_DECLS
+#endif
 
 #ifdef __GNUC__
 #define	cimag(z)	(__imag__ (z))
