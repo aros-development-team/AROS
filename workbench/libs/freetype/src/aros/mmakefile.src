@@ -11,6 +11,8 @@ USE_AMIGALIB    := yes
 USE_CLIB_SHARED := yes
 USE_MUILIB      := yes
 
+USER_CFLAGS := -I$(TOP)/rom/exec
+
 contrib-freetype-ftmanager : setup $(EXE)
 
 %make_prog_setup mmake=contrib-freetype-ftmanager
