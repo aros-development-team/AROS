@@ -10,13 +10,12 @@
 
 Mount RAM:
 Mount NIL:
-Mount PIPEFS:
 
 ;-----------------------------------------------
 ; Copy System to RAM:
 RAM:
 
-SYS:contrib/gnu/gzip -dc SYS:AROS.tgz | SYS:contrib/aminet/untar IN: > "CON:0/0/640/480/Decompressing AROS.../NODEPTH/NOSIZE"
+SYS:contrib/aminet/untgz SYS:AROS.tgz > "CON:0/0/640/480/Decompressing AROS.../NODEPTH/NOSIZE"
 
 C/Assign SYS: RAM:
 C/Assign C: SYS:C
@@ -41,6 +40,8 @@ Assign FONTS:   SYS:Fonts
 ;Assign PRINTERS: DEVS:Printers
 
 Copy >NIL: ENVARC: ENV: ALL CLONE NOREQ
+
+Mount PIPEFS:
 
 ;Mount DEVS:DOSDrivers/~(#?.info)
 
