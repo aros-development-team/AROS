@@ -174,7 +174,6 @@ struct Gadget * FindGadget (struct Window * window, int x, int y,
 
 
 
-
 /************************
 **  IntuiInputHandler  **
 ************************/
@@ -437,6 +436,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			{
 			    gpi.MethodID = GM_HANDLEINPUT;
 			}
+			
+			SET_GI_RPORT(gi, w, gadget);
 
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
@@ -553,6 +554,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IPTR retval;
 			ULONG termination;
 
+			SET_GI_RPORT(gi, w, gadget);
+
 			gpi.MethodID	= GM_HANDLEINPUT;
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
@@ -626,6 +629,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IPTR retval;
 			ULONG termination;
 
+			SET_GI_RPORT(gi, w, gadget);
+			
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
@@ -695,6 +700,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			struct gpInput gpi;
 			IPTR retval;
 			ULONG termination;
+
+			SET_GI_RPORT(gi, w, gadget);
 
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
@@ -798,6 +805,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IPTR retval;
 			ULONG termination;
 
+			SET_GI_RPORT(gi, w, gadget);
+			
 			gpi.MethodID	= GM_HANDLEINPUT;
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
@@ -921,6 +930,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			IPTR retval;
 			ULONG termination;
 
+			SET_GI_RPORT(gi, w, gadget);
+
 			gpi.MethodID	    = GM_HANDLEINPUT;
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
@@ -1012,6 +1023,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    IPTR retval;
 		    ULONG termination;
 		     
+ 		    SET_GI_RPORT(gi, w, gadget);
+		    
 		    gpi.MethodID	    = GM_HANDLEINPUT;
 		    gpi.gpi_GInfo	    = gi;
 		    gpi.gpi_IEvent	    = ie;
@@ -1270,6 +1283,8 @@ D(bug("Window: %p\n", w));
                 break; }
                     
                 case IMCODE_SIZEWINDOW: {
+		
+kprintf("Sizing layer\n");
                      
                      /* First erase the old frame on the right side and 
                         on the lower side if necessary, but only do this
@@ -1336,6 +1351,7 @@ D(bug("Window: %p\n", w));
                      RefreshWindowFrame(targetwindow);
 
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
+kprintf("Sizing done\n");		
                 break; }
                          
                 case IMCODE_ZIPWINDOW: {
