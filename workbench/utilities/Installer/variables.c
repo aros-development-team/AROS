@@ -1,4 +1,4 @@
-/* texts.c -- Here are all functions related to variables */
+/* variables.c -- Here are all functions related to variables */
 
 #include "Installer.h"
 #include "texts.h"
@@ -13,8 +13,8 @@ extern void request_userlevel( char * );
 /* Internal function prototypes */
 void *get_variable( char * );
 char *get_var_arg( char * );
-int get_var_int( char * );
-void set_variable( char *, char *, int );
+long int get_var_int( char * );
+void set_variable( char *, char *, long int );
 void set_preset_variables();
 #ifdef DEBUG
 void dump_varlist();
@@ -23,30 +23,18 @@ void free_varlist();
 struct VariableList *find_var( char * );
 
 
-int numlocalvars = 0;
-struct VariableList *localvars = NULL;
+int numvariables = 0;
+struct VariableList *variables = NULL;
 
 struct VariableList *find_var( char *name )
 {
 int i;
-struct VariableList *list;
 
-  /* Check if variable is in preset list */
-  list = variables;
-  for( i = 0 ; i < NUMDEFVAR && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
-  if( i == NUMDEFVAR )
-  {
-    list = localvars;
-    /* Check if variable is in dynamic list */
-    for( i = 0 ; i < numlocalvars && strcmp( name, localvars[i].varsymbol ) != 0 ; i++ );
-    if( i == numlocalvars )
-    {
-      /* Not in any list */
-      return NULL;
-    }
-  }
-
-return &(list[i]);
+  /* Check if variable is in list */
+  for( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
+  return ( i == numvariables ) ?
+         NULL:
+         &(variables[i]);
 }
 
 void *get_variable( char *name )
@@ -81,7 +69,7 @@ return ( entry != NULL ) ?
        NULL;
 }
 
-int get_var_int( char *name )
+long int get_var_int( char *name )
 {
 struct VariableList *entry;
 
@@ -93,42 +81,27 @@ return ( entry != NULL ) ?
        0;
 }
 
-void set_variable( char *name, char *text, int intval )
+void set_variable( char *name, char *text, long int intval )
 {
 int i;
-struct VariableList *list;
 
-  /* Check if variable is in preset list */
-  list = variables;
-  for( i = 0 ; i < NUMDEFVAR && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
-  if( i == NUMDEFVAR )
+  /* Check if variable is in list */
+  for( i = 0 ; i < numvariables && strcmp( name, variables[i].varsymbol ) != 0 ; i++ );
+  if( i == numvariables )
   {
-    /* Check if variable is in dynamic list */
-    for( i = 0 ; i < numlocalvars && strcmp( name, localvars[i].varsymbol ) != 0 ; i++ );
-    if( i == numlocalvars )
+    /* Enlarge list for one additional element */
+    numvariables++;
+    variables = realloc( variables, sizeof(struct VariableList) * numvariables );
+    if( variables == NULL )
     {
-      /* Enlarge list for one additional element */
-      numlocalvars++;
-      localvars = realloc( localvars, sizeof(struct VariableList) * numlocalvars );
-      if( localvars == NULL )
-      {
-        end_malloc();
-      }
-      localvars[i].varsymbol = NULL;
-      localvars[i].vartext = NULL;
+      end_malloc();
     }
-    else
-    {
-      /* Free space for strings to be replaced in dynamic list */
-      free( localvars[i].vartext );
-      localvars[i].vartext = NULL;
-    }
-    list = localvars;
+    variables[i].varsymbol = NULL;
+    variables[i].vartext = NULL;
   }
   else
   {
-#warning FIXME: Who can change values of preset variables?
-    /* Free space for strings to be replaced in preset list */
+    /* Free space for strings to be replaced in dynamic list */
     free( variables[i].vartext );
     variables[i].vartext = NULL;
   }
@@ -137,10 +110,10 @@ struct VariableList *list;
 
   /* Duplicate variable name if it does not exist yet */
   
-  if( list[i].varsymbol == NULL )
+  if( variables[i].varsymbol == NULL )
   {
-    list[i].varsymbol = strdup( name );
-    if( list[i].varsymbol == NULL )
+    variables[i].varsymbol = strdup( name );
+    if( variables[i].varsymbol == NULL )
     {
       end_malloc();
     }
@@ -149,15 +122,15 @@ struct VariableList *list;
   /* Duplicate variable text if existent */
   if( text != NULL )
   {
-    list[i].vartext = strdup( text );
-    if( list[i].vartext == NULL )
+    variables[i].vartext = strdup( text );
+    if( variables[i].vartext == NULL )
     {
       end_malloc();
     }
   }
 
   /* Set integer value */
-  list[i].varinteger = intval;
+  variables[i].varinteger = intval;
 
 }
 
@@ -165,14 +138,37 @@ void set_preset_variables( )
 {
 #warning FIXME: Use real APPNAME, LANGUAGE from RDArgs()
   set_variable( "@app-name", "DemoApp", 0 );
-  set_variable( "@abort-button", "Abort Install", 0 );
   set_variable( "@language", "english", 0 );
+
+  set_variable( "@abort-button", ABORT_BUTTON, 0 );
+  set_variable( "@default-dest", DEFAULT_DEST, 0 );
   set_variable( "@installer-version", NULL, ( INSTALLER_VERSION << 16 ) + INSTALLER_REVISION );
   set_variable( "@user-level", NULL, preferences.defusrlevel );
   if( preferences.welcome == FALSE )
   {
     request_userlevel( NULL );
   }
+
+  /* Set other variables to (NULL|0) */
+  set_variable( "@askchoice-help",	NULL,	0 );
+  set_variable( "@askdir-help",		NULL,	0 );
+  set_variable( "@askdisk-help",	NULL,	0 );
+  set_variable( "@askfile-help",	NULL,	0 );
+  set_variable( "@asknumber-help",	NULL,	0 );
+  set_variable( "@askoptions-help",	NULL,	0 );
+  set_variable( "@askstring-help",	NULL,	0 );
+  set_variable( "@copyfiles-help",	NULL,	0 );
+  set_variable( "@copylib-help",	NULL,	0 );
+  set_variable( "@each-name",		NULL,	0 );
+  set_variable( "@each-type",		NULL,	0 );
+  set_variable( "@error-msg",		NULL,	0 );
+  set_variable( "@execute-dir",		NULL,	0 );
+  set_variable( "@icon",		NULL,	0 );
+  set_variable( "@ioerr",		NULL,	0 );
+  set_variable( "@makedir-help",	NULL,	0 );
+  set_variable( "@pretend",		NULL,	0 );
+  set_variable( "@special-msg",		NULL,	0 );
+  set_variable( "@startup-help",	NULL,	0 );
 }
 
 #ifdef DEBUG
@@ -181,16 +177,8 @@ void dump_varlist( )
 int i;
 
   printf( "DUMP of all variables:\n" );
-
-  printf( "preset:\n" );
-  /* Dump variables in preset list */
-  for( i = 0 ; i < NUMDEFVAR ; i++ )
-    printf( "%s = %s | %d\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger );
-
-  printf( "dynamic:\n" );
-  /* Dump variables in dynamic list */
-  for( i = 0 ; i < numlocalvars ; i++ )
-    printf( "%s = %s | %d\n", localvars[i].varsymbol, localvars[i].vartext, localvars[i].varinteger );
+  for( i = 0 ; i < numvariables ; i++ )
+    printf( "%s = %s | %ld\n", variables[i].varsymbol, variables[i].vartext, variables[i].varinteger );
 
 }
 #endif /* DEBUG */
@@ -199,11 +187,11 @@ void free_varlist( )
 {
 int i; 
 
-  for( i = 0 ; i < numlocalvars ; i++ )
+  for( i = 0 ; i < numvariables ; i++ )
   {
-    free( localvars[i].varsymbol );
-    free( localvars[i].vartext );
+    free( variables[i].varsymbol );
+    free( variables[i].vartext );
   }
-  free( localvars );
+  free( variables );
 }
 

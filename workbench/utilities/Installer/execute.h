@@ -79,20 +79,23 @@ struct CommandList
 #define _STRING		65
 #define _STRLEN		66
 #define _SUBSTR		67
-#define _TACKON		68
-#define _TEXTFILE	69
-#define _TIMES		70
-#define _TOOLTYPE	71
-#define _TRANSCRIPT	72
-#define _TRAP		73
-#define _UNTIL		74
-#define _USER		75
-#define _WELCOME	76
-#define _WHILE		77
-#define _WORKING	78
-#define _XOR		79
+#define _SYMBOLSET	68
+#define _SYMBOLVAL	69
+#define _TACKON		70
+#define _TEXTFILE	71
+#define _TIMES		72
+#define _TOOLTYPE	73
+#define _TRANSCRIPT	74
+#define _TRAP		75
+#define _UNTIL		76
+#define _USER		77
+#define _WELCOME	78
+#define _WHILE		79
+#define _WORKING	80
+#define _XOR		81
+#define _ICONINFO	82
 
-#define NUMCMDS		79
+#define NUMCMDS		82
 /* Parameters */
 #define _PARAMETER	128 /* Base number for parameters */
 
@@ -112,26 +115,28 @@ struct CommandList
 #define _PROMPT		(_PARAMETER + 13)
 #define _RANGE		(_PARAMETER + 14)
 #define _SETDEFAULTTOOL	(_PARAMETER + 15)
-#define _SETSTACK	(_PARAMETER + 16)
-#define _SETTOOLTYPE	(_PARAMETER + 17)
-#define _SOURCE		(_PARAMETER + 18)
+#define _SETPOSITION	(_PARAMETER + 16)
+#define _SETSTACK	(_PARAMETER + 17)
+#define _SETTOOLTYPE	(_PARAMETER + 18)
+#define _SOURCE		(_PARAMETER + 19)
 
 /* Boolean parameters */
-#define _ALL		(_PARAMETER + 19)
-#define _ASSIGNS	(_PARAMETER + 20)
-#define _DISK		(_PARAMETER + 21)
-#define _FILES		(_PARAMETER + 22)
-#define _FONTS		(_PARAMETER + 23)
-#define _INFOS		(_PARAMETER + 24)
-#define _NEWPATH	(_PARAMETER + 25)
-#define _NOGAUGE	(_PARAMETER + 26)
-#define _NOPOSITION	(_PARAMETER + 27)
-#define _QUIET		(_PARAMETER + 28)
-#define _SAFE		(_PARAMETER + 29)
-#define _SWAPCOLORS	(_PARAMETER + 30)
+#define _ALL		(_PARAMETER + 20)
+#define _ASSIGNS	(_PARAMETER + 21)
+#define _DISK		(_PARAMETER + 22)
+#define _FILES		(_PARAMETER + 23)
+#define _FONTS		(_PARAMETER + 24)
+#define _INFOS		(_PARAMETER + 25)
+#define _NEWPATH	(_PARAMETER + 26)
+#define _NOGAUGE	(_PARAMETER + 27)
+#define _NOPOSITION	(_PARAMETER + 28)
+#define _QUIET		(_PARAMETER + 29)
+#define _RESIDENT	(_PARAMETER + 30)
+#define _SAFE		(_PARAMETER + 31)
+#define _SWAPCOLORS	(_PARAMETER + 32)
 
-#define NUMPARAMS	30	/* Number of keywords used as parameters */
-#define NUMARGPARAMS	18	/* Number of keywords used as parameters which may have arguments */
+#define NUMPARAMS	32	/* Number of keywords used as parameters */
+#define NUMARGPARAMS	19	/* Number of keywords used as parameters which may have arguments */
 
 #define _MAXCOMMAND	(NUMPARAMS+NUMCMDS)	/* Total number of keywords */
 

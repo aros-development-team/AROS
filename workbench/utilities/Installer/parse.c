@@ -36,6 +36,7 @@ char *clip;
     {
       PrintFault( IoErr(), "Installer" );
       show_parseerror( line );
+      cleanup();
       exit(-1);
     }
     if( !isspace( buffer[0] ) )
@@ -108,6 +109,10 @@ char *clip;
                          int masquerade = FALSE;
                            do
                            {
+                             if( masquerade )
+                             {
+#warning TODO: convert "\n" to 0x0a, etc.
+                             }
                              if( buffer[i] == BACKSLASH && !masquerade )
                                masquerade = TRUE;
                              else
@@ -171,7 +176,7 @@ char *clip;
                              default : /* number or variable */
                                             if( isdigit( buffer[0] ) || ( ( buffer[0] == PLUS || buffer[0] == MINUS ) && isdigit( buffer[1] ) ) )
                                             {
-                                              current->intval = atoi( buffer );
+                                              current->intval = atol( buffer );
                                             }
                                             else
                                             {
@@ -328,6 +333,7 @@ char *clip;
     {
       PrintFault( IoErr(), "Installer" );
       show_parseerror( line );
+      cleanup();
       exit(-1);
     }
   } while( !ready );

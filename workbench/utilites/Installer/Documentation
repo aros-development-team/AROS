@@ -1,0 +1,344 @@
+Parsing the script
+------------------
+	Read in 'tokens' and braces and save into structure.
+	Actually there is no "pre-compiling" done as stated in the
+	original Installer docs.
+
+Data Types
+----------
+<int>
+	is an interger of type (long int)
+	Its representation is a decimal number or
+	$xxx will be considered as HEX and
+	%xxxx as binary numbers.
+	Boolean arguments are 0 for FALSE and non-0 for TRUE.
+	Boolean functions return 1 as TRUE.
+
+<string>
+	is a quoted ("..." or '...') string
+
+Arguments without quotes are considered to be variables
+	Variables are typeless and converted to the functions needs
+	(exception is ( <format-string> <arguments>... ) where the variable
+	  is checked for a non-NULL string or the integer value will be
+	  used which will be 0 for unset variables
+	)
+	and therefore being exchanged by their values at runtime
+	( <string> is converted via atol( <string> );
+	  <int> is converted via sprintf( string, "%ld", <int> );
+	)
+	Unset variables are NULL in string and 0 in integer value.
+	Commands can be used as arguments, too, as the return value
+	will be taken.
+
+Executing the script
+--------------------
+Arguments in [...] are optional.
+
+( ( ... ) ... )
+  If first arg in braces is cmd all others have to be cmds, too.
+  Return value is return value of last cmd.
+  Empty brackets are not allowed.
+
+  If command is not recognized -> SCRIPTERROR -> traperr() -> exit
+
+( abort [<string>...] )
+  Shows strings and executes (onerror...) statements and exit(-1)
+
+( and <int> <int> )
+( bitand <int> <int> )
+( bitor <int> <int> )
+( bitxor <int> <int> )
+( <> <int> <int> )
+( / <int> <int> )
+( = <int> <int> )
+( < <int> <int> )
+( <= <int> <int> )
+( - <int> <int> )
+( > <int> <int> )
+( >= <int> <int> )
+( or <int> <int> )
+( shiftleft <int> <int> )
+( shiftrght <int> <int> )
+( xor <int> <int> )
+  These functions return the result of the operations on the two integers.
+  For logical operations 1 is returned as TRUE and 0 as FALSE.
+  Traperr() with error=SCRIPTERROR is executed if #args != 2
+  ( / <int> <int> ) checks 2nd arg == zero and executes traperr()
+    with error=BADPARAMETER and exit(-1)
+
+( cat <any>... )
+  Concatenates all args as strings. This function was intended to be the only
+  valid function for converting <int> to <string> (Well, except
+  ( "..." ... ), too )
+  The return value is the quoted string.
+
+( complete <int> )
+  Tells the user how much ( in percent ) is already done
+  The return value is the percentage.
+  NOTE: We do not check for percentage >100 or <0 !!!
+
+( debug <any>... )
+  If run from Shell and DEBUG was specified in the command line
+  the arguments (strings, integers, variables) will be printf()'ed
+  to the shell separated by spaces.
+  The return value is the quoted string of all concatenated arguments
+
+( exit [(quiet)] [<string>...] )
+  Shows the strings separated by a linefeed and exits normally.
+  A summarizing message with information on where the app was installed
+  and the log-file can be found will be displayed unless (quiet) is
+  specified as a parameter.
+
+( if <int> <then> [<else>] )
+  <int> is checked for !=0 and returns <then> otherwise <else> or 0
+  if <else> is left out.
+  <int>, <then> and <else> may be functions, too.
+
+( in <base-int> <bit-int>... )
+  This function returns <base-int>'s bits given in <bit-int>... (mask)
+
+( bitnot <int> )
+( not <int> )
+  Returns bitwise/logical negation of argument.
+
+( + <int>... )
+  Returns the sum of all integers, 0 for no integers.
+
+( * <int>[...] )
+  Returns the product of all integers. Needs at least one <int>
+
+( procedure <name> (...) )
+  Procedures are defined during parsing. The name has to be a non-quoted
+  string which must not begin with digits. Consider using a prefix like
+  "P_" for your commands to avoid a conflict with future extensions of
+  Installer.
+  Though it is ignored at run-time it returns 0.
+
+( select <int> [<any>...] )
+  Returns the value of the <int>th <any>-item or 0 if <int> < 1 or
+  <int> > number of <any>.
+
+( strlen <string> )
+  Returns the length of <string> or 0 if argument is an integer.
+
+( until <int> (...) )
+  Executes the block (post-checked) until <int> statement is TRUE.
+  Returns the (last) value of the executed block.
+
+( while <int> (...) )
+  Executes the block (pre-checked) while <int> statement is TRUE.
+  Returns the (last) value of the executed block or 0 if block has
+  not been executed.
+
+( set <var-name> <value> ... )
+  Use (set ...) to set variables.
+  Variable names have to be unquoted strings -- commands are not accepted
+  Values can be anything.
+  Consider using a prefix like '#' to avoid conflicts with future versions
+  of Installer. The prefix '@' is reserved for internal variables. They
+  can be set to other values, too.
+
+( symbolset <var-name> <value> ... )
+  With this functions you can use quoted strings as varnames (quotes will be
+  stripped). This allows to have "dynamic" variables like ( "var%ld" n )
+  Therefore commands as varnames will be executed.
+  NOTE: sole integers as variables are not allowed, though ( "1" ) will
+  work, but is not recommended to use.
+
+( symbolval <var-name> )
+  Use this functions to have access to "dynamic" variables set with
+  ( symbolset ... )
+  Same naming conventions as in symbolset apply here.
+
+( askbool [( help <string>... )]
+          [( prompt <string>... )]
+          [( default <int> )]
+          [( choices <yesstring> [<nostring>] )]
+)
+  Asks the user to select yes or no unless user is NOVICE
+  (ie. @user-level = 0 ).
+  default defaults to 0 = no
+
+( asknumber [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+            [( range <min-int> <maxint>] )]
+)
+  Asks the user for a number unless user is NOVICE (ie. @user-level = 0 ).
+  default defaults to 0
+  range defaults to non-negative numbers, unless default is negative which
+  causes range to be extended to include the default number.
+
+( askstring [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+)
+  Asks the user for a string unless user is NOVICE (ie. @user-level = 0 ).
+  default defaults to ""
+
+( askchoice [( help <string>... )]
+            [( prompt <string>... )]
+            [( default <int> )]
+            ( choices <string>... )
+)
+  Asks the user to select one item out of N unless user is NOVICE
+  (ie. @user-level = 0 ).
+  default defaults to 0
+  choices is list of strings listed as items of the requester
+  NULL strings will not be displayed.
+  The Return value is the bit-mask for the strings therefore we have a
+  maximum of 32 items.
+
+  NOTE: Original Installer docs read:
+  >>  NOTE: "<ESC>[2p" sequence at beginning of one item leads to
+  >>  proportional rendering (>V42)
+  This is not implemented now!
+
+( <format-string> <argument>... )
+  This construct works like C printf() and returns the resulting string
+  after substituting '%d' and '%s'. An 'sprintf(var,"format", args... )'
+  can be achieved by '( set var ( "format" <args>... ) )'
+  Installer uses RawDoFmt() and does not check correctness of arguments.
+
+( substr <string> <start> [<count>] )
+  Returns the substring of <string>, beginning with offset <start>
+  (offset 0 is the first character) and including <count> characters.
+  If <count> is omitted, then the rest of the string is returned.
+
+( transcript [<string>...] )
+  Concatenates all strings writes them to the logfile and appends a
+  newline character.
+  Returns the concatenated strings.
+
+( user <int>|<"novice"|"average"|"expert"> )
+  Changes the user level (@user-level) to the given value.
+  Specify an integer 0 = novice 1 = average 2 = expert or the (quoted)
+  strings "novice" "average" or "expert"
+  Use this function only to debug your own scripts. In official releases
+  this function shouldn't appear.
+  Returns the new user-level.
+
+( welcome <string>... )
+  Displays the strings instead of
+  "Welcome to <APPNAME> App installation utility."
+  and asks for the user level.
+  Without this function appearing in the script the user level is requested
+  straight at the beginning.
+
+( working <string>... )
+  Displays the concatenated strings under a standard line reading
+  "Working on Installation". This can be used to tell the user what's
+  going on when doing long operations except copying which has its own
+  status display.
+
+( askdir )
+ /* Ask user for a directory */
+
+( askdisk )
+ /* Ask user insert a disk */
+
+( askfile )
+ /* Ask user for a file */
+
+( askoptions )
+ /* Ask user to choose multiple items */
+
+
+(database )
+ /* Return information on the hardware Installer is running on */
+ "vblank"
+ "cpu"
+ "graphics-mem"
+ "total-mem"
+ "fpu"
+ "chiprev"
+
+( onerror )
+ /* link onerror to preferences */
+
+( trap )
+ /* link trap to preferences */
+
+( copyfiles )
+( copylib )
+( delete )
+( earlier )
+( execute )
+( exists )
+( expandpath )
+( fileonly )
+( foreach )
+( getassign )
+( getdevice )
+( getdiskspace )
+( getenv )
+( getsize )
+( getsum )
+( getversion )
+( makeassign )
+( makedir )
+( message )
+( pathonly )
+( patmatch )
+( protect )
+( rename )
+( rexx )
+( run )
+( startup )
+( tackon )
+( textfile )
+( tooltype )
+
+/* Here are all tags, first the ones which have to be executed */
+ 
+( delopts )
+ /* unset copying/deleting options if we are called global */
+ /* as parameter to a function we have got an ignore=1 before */
+ "fail"
+ "nofail"
+ "oknodelete"
+ /* These may be combined in any way */
+ "force"
+ "askuser"
+
+( optional )
+ /* set copying/deleting options if we are called global */
+ /* as parameter to a function we have got an ignore=1 before */
+ "fail"
+ "nofail"
+ "oknodelete"
+ /* These may be combined in any way */
+ "force"
+ "askuser"
+
+
+( all )
+( append )
+( assigns )
+( choices )
+( command )
+( confirm )
+( default )
+( dest )
+( disk )
+( files )
+( fonts )
+( help )
+( include )
+( infos )
+( newname )
+( newpath )
+( nogauge )
+( noposition )
+( pattern )
+( prompt )
+( range )
+( safe )
+( setdefaulttool )
+( setstack )
+( settooltype )
+( source )
+( swapcolors )
+( quiet )
+

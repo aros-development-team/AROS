@@ -9,6 +9,9 @@ extern InstallerPrefs preferences;
 /* External function prototypes */
 extern void free_varlist();
 extern void execute_script( ScriptArg *, int );
+#ifndef LINUX
+extern void deinit_gui();
+#endif /* !LINUX */
 
 /* Internal function prototypes */
 void free_script( ScriptArg * );
@@ -31,6 +34,9 @@ void cleanup( )
 {
   free_script( script.cmd );
   free_varlist();
+#ifndef LINUX
+  deinit_gui();
+#endif /* !LINUX */
 }
 
 void end_malloc( )

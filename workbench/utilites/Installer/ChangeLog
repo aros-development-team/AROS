@@ -175,4 +175,20 @@
 - main allocated one ScriptArg too much for the program list,
   we now remove it after parsing the file
 
+0029
+- added more comments
+- added recognition of Installer-command names in set_procedure()
+- "while" and "until" now require a command-block to execute
+  However, this is only checked at run-time
+- changed %d to %ld and (int) to (long int) where appropriate
+- removed BUG00002, BUG00003
+- started intuition GUI: added functions to open and close window
+
+0030
+- added and implemented "symbolset" "symbolval"
+- added file "documentation" which contains user's guide = description of
+  functions.
+- added "setposition" "resident" parameters and "iconinfo" function
+- Don't use two lists for variables anymore
+
 

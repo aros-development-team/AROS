@@ -37,7 +37,7 @@ typedef struct ScriptArg
   char  * arg;			/* Either string or				*/
   struct  ScriptArg *cmd;	/* ptr to list of arguments			*/
 				/* set one of them to NULL			*/
-  int     intval;		/* If argument is an integer *arg will get NULL	*/
+  long int intval;		/* If argument is an integer *arg will get NULL	*/
   int     ignore;		/* Parameters set this to 1 to disappear	*/
 
 } ScriptArg;
@@ -74,7 +74,7 @@ struct VariableList
 {
   char * varsymbol;
   char * vartext;
-  int varinteger;
+  long int varinteger;
 };
 
 struct ProcedureList
@@ -86,7 +86,7 @@ struct ProcedureList
 struct ParameterList
 {
   char ** arg;
-  int intval, intval2;
+  long int intval, intval2;
   int used;
 };
 

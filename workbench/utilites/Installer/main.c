@@ -21,14 +21,17 @@ extern void execute_script( ScriptArg * , int );
 extern void cleanup();
 extern void set_preset_variables();
 extern void *get_variable( char *name );
-extern int  get_var_int( char *name );
-extern void set_variable( char *name, char *text, int intval );
+extern long int get_var_int( char *name );
+extern void set_variable( char *name, char *text, long int intval );
 extern void end_malloc();
 #ifdef DEBUG
 extern void dump_varlist();
 #endif /* DEBUG */
 extern void show_parseerror( int );
 extern void final_report();
+#ifndef LINUX
+extern void init_gui();
+#endif /* !LINUX */
 
 /* Internal function prototypes */
 int main( int, char ** );
@@ -53,6 +56,7 @@ ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
 #ifndef LINUX
+
   /* evaluate args with RDArgs(); */
   rda = ReadArgs( ARG_TEMPLATE, args, NULL );
   if( rda == NULL )
@@ -110,6 +114,11 @@ int nextarg, endoffile, count;
   }
 
 #warning FIXME: distinguish between cli/workbench invocation
+
+  /* Init GUI -- i.e open empty window */
+#ifndef LINUX
+  init_gui();
+#endif /* !LINUX */
 
   line = 1;
 
@@ -194,6 +203,7 @@ int nextarg, endoffile, count;
           default	  : /* Plain text or closing bracket is not allowed */
                             fclose( inputfile );
                             show_parseerror( line );
+                            cleanup();
                             exit(-1);
                             break;
         }
@@ -230,6 +240,7 @@ int nextarg, endoffile, count;
     if( preferences.transcriptstream == NULL )
     {
       PrintFault( IoErr(), "Installer" );
+      cleanup();
       exit(-1);
     }
   }

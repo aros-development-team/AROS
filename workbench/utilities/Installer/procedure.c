@@ -1,11 +1,14 @@
 /* procedure.c -- Here are all functions related to user-defined procedures */
 
 #include "Installer.h"
+#include "execute.h"
 
 /* External variables */
+extern struct CommandList internal_commands[];
 
 /* External function prototypes */
 extern void end_malloc();
+extern void cleanup();
 
 /* Internal function prototypes */
 struct ScriptArg *find_proc( char * );
@@ -37,10 +40,20 @@ void set_procedure( char *name, ScriptArg *cmd )
 int i;
 
   /* Check if name is in preset list */
+  for( i = 0 ; i < _MAXCOMMAND && strcmp( name, internal_commands[i].cmdsymbol ) != 0 ; i++ );
+  if( i < _MAXCOMMAND )
+  {
+    printf( "Procedure name <%s> already defined for internal function!\n", name );
+    cleanup();
+    exit(-1);
+  }
+
+  /* Check if name is in list */
   for( i = 0 ; i < numusrprocs && strcmp( name, usrprocs[i].procname ) != 0 ; i++ );
   if( i != numusrprocs )
   {
     printf( "Procedure <%s> already defined!\n", name );
+    cleanup();
     exit(-1);
   }
   else

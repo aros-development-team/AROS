@@ -11,6 +11,7 @@ extern InstallerPrefs preferences;
 extern int error;
 
 /* External function prototypes */
+extern void cleanup();
 extern char *get_var_arg( char * );
 extern char *get_var_int( char * );
 extern void end_malloc();
@@ -18,26 +19,74 @@ extern void execute_script( ScriptArg *, int );
 extern void set_variable( char *, char *, int );
 
 /* Internal function prototypes */
+#ifndef LINUX
+void init_gui();
+void deinit_gui();
+#endif /* !LINUX */
 void show_abort( char * );
-void show_complete( int );
+void show_complete( long int );
 void show_exit( char * );
 void show_parseerror( int );
 void show_working( char * );
 void show_help_userlevel();
 void show_help_installer();
 void request_userlevel();
-int  request_bool( struct ParameterList *);
-int  request_number( struct ParameterList *);
+long int request_bool( struct ParameterList *);
+long int request_number( struct ParameterList *);
 char *request_string( struct ParameterList *);
-int request_choice( struct ParameterList * );
+long int request_choice( struct ParameterList * );
 char *request_dir( struct ParameterList * );
 char *request_disk( struct ParameterList * );
 char *request_file( struct ParameterList * );
-int request_options( struct ParameterList * );
+long int request_options( struct ParameterList * );
 void abort_install();
 void final_report();
 void traperr( char * );
 void parseerror( char *, int );
+
+
+#ifndef LINUX
+
+#include <proto/intuition.h>
+#include <intuition/intuition.h>
+#include <intuition/intuitionbase.h>
+
+struct IntuitionBase *IntuitionBase = NULL;
+struct Window *GuiWin;
+
+void init_gui()
+{
+struct TagItem tags[] =
+{
+  { WA_Width	, 200 },
+  { WA_Height	, 100 },
+  { WA_Title	, (ULONG)"AROS - Installer V43.3" },
+
+  { 0,0}
+};
+
+  IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37 );
+  if (IntuitionBase == NULL)
+  {
+    cleanup();
+    exit(-1);
+  }
+
+  if( NULL == ( GuiWin = OpenWindowTagList( NULL, tags ) ) )
+  {
+    cleanup();
+    CloseLibrary( (struct Library *)IntuitionBase );
+    exit(-1);
+  }
+}
+
+void deinit_gui()
+{
+  CloseWindow( GuiWin );
+  CloseLibrary( (struct Library *)IntuitionBase );
+}
+
+#endif /* !LINUX */
 
 void show_abort( char *msg )
 {
@@ -46,10 +95,10 @@ void show_abort( char *msg )
 #endif /* DEBUG */
 }
 
-void show_complete( int percent )
+void show_complete( long int percent )
 {
 #ifdef DEBUG
-  printf( "Done %d%c!\n", percent, PERCENT );
+  printf( "Done %ld%c!\n", percent, PERCENT );
 #endif /* DEBUG */
 }
 
@@ -75,6 +124,7 @@ int count = 1, i = -1;
   if( inputfile == NULL )
   {
     PrintFault( IoErr(), "Installer" );
+    cleanup();
     exit(-1);
   }
   errline--;
@@ -174,9 +224,10 @@ int c;
   set_variable( "@user-level", NULL, usrlevel );
 }
 
-int request_bool( struct ParameterList *pl)
+long int request_bool( struct ParameterList *pl)
 {
-int i, retval;
+int i;
+long int retval;
 char yes[] = "Yes", no[] = "No", *yesstring, *nostring;
 #ifdef DEBUG
 int c, finish = FALSE;
@@ -189,7 +240,7 @@ int c, finish = FALSE;
     {
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
     }
-    printf( "Default is %d.\n", retval );
+    printf( "Default is %ld.\n", retval );
     yesstring = yes;
     nostring = no;
     if( GetPL( pl, _CHOICES ).used == 1 )
@@ -223,6 +274,7 @@ int c, finish = FALSE;
                   }
                   if( i == 0 )
                   {
+#warning FIXME: What default help text is used?
                     printf( "%s\n", get_var_arg( "@asknumber-help" ) );
                   }
                   break;
@@ -235,9 +287,10 @@ int c, finish = FALSE;
 return retval;
 }
 
-int request_number( struct ParameterList *pl)
+long int request_number( struct ParameterList *pl)
 {
-int i, retval, min, max;
+int i;
+long int retval, min, max;
 #ifdef DEBUG
 char buffer[MAXARGSIZE];
 int c, finish = FALSE;
@@ -257,11 +310,10 @@ int c, finish = FALSE;
   }
   else
   {
-#define INTMIN -32768
 #define INTMAX  32767
     max = INTMAX;
     min =( retval < 0 ) ?
-         INTMIN :
+         retval :
          0;
   }
   if( get_var_int( "@user-level" ) > _NOVICE )
@@ -272,7 +324,7 @@ int c, finish = FALSE;
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
     }
     retval = GetPL( pl, _DEFAULT ).intval;
-    printf( "Number [%d,%d] is %d.\n", min, max, retval );
+    printf( "Number [%ld,%ld] is %ld.\n", min, max, retval );
     printf( " V - Change value\n P - Proceed\n A - Abort\n H - Help\n" );
     c = getchar();
     while( getchar() != LINEFEED );
@@ -280,7 +332,7 @@ int c, finish = FALSE;
     {
       case 'v'	: /* change value */
                   gets( buffer );
-                  retval = atoi( buffer );
+                  retval = atol( buffer );
                   if( retval < min || retval > max )
                   {
                     printf( "Input out of range!\n" );
@@ -396,9 +448,10 @@ return retval;
 
 #warning TODO: check whole function (supports only 1-9 in text-gui)
 /* Ask user to choose one of N items */
-int request_choice( struct ParameterList *pl )
+long int request_choice( struct ParameterList *pl )
 {
-int i, retval;
+int i;
+long int retval;
 #ifdef DEBUG
 int c, finish = FALSE;
 
@@ -486,9 +539,9 @@ return retval;
 }
 
 #warning TODO: write whole function
-int request_options( struct ParameterList *pl )
+long int request_options( struct ParameterList *pl )
 {
-int retval;
+long int retval;
 
   retval = GetPL( pl, _DEFAULT ).intval;
 
@@ -515,6 +568,7 @@ int c, abort = -1;
                   {
                     execute_script( preferences.onerror.cmd, -99 );
                   }
+                  cleanup();
                   exit(0);
                   break;
       case 'n'	: abort = 0;

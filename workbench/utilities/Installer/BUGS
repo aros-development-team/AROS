@@ -1,20 +1,7 @@
 BUG00001
 fseek() has a bug -- check in future
 
-BUG00002 fixed
-free_script() produces segfault when freeing a non-NULL first->arg
-(which contains a valid string which can be printf()'ed )
-TERROR! Always be sure to have enough space to save a string...
-(I really need to think twice ;-)
-
-BUG00003 fixed (see BUG00002)
-When compiled -O2 instead of -O0 program segfaults when parsing file,
-if I add a "printf(".");" in the first line of do{} loop, everything is ok
-(on both -O0 and -O2) (This strange behaviour happens quite often:
-adding a simple line with eg. printf() breaks working code, whereas it can
-cure broken code as well)
-Maybe connected to BUG00002
-
-BUG00004
-Strings are limited to MAXARGSIZE which is 1024 ATM.
+BUG00002
+Strings are limited to MAXARGSIZE which is 1024 ATM or if concatenated
+(with <MAXARGSIZE strings) up to 256k.
 
