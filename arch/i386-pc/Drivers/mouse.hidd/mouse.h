@@ -57,7 +57,49 @@ struct mouse_staticdata
     OOP_Class		*mouseclass;
 
     OOP_Object		*mousehidd;
-    OOP_Object		*irqhidd;
+};
+
+/* 256 byte long ring buffer used to read data with timeout defined */
+
+#define RingSize 256
+
+struct Ring
+{
+    char ring[RingSize];
+    int top, ptr;
+};
+
+/* Object data */
+
+struct mouse_data
+{
+    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
+    APTR callbackdata;
+	
+    UWORD buttonstate;
+
+    char *mouse_name;
+
+/* Driver specific data */
+
+    union
+    {
+        struct
+        {
+            OOP_Object	*usbhidd;
+        } usb;
+        struct
+        {
+            OOP_Object	*irqhidd;
+        } ps2;
+        struct
+        {
+            OOP_Object	*serial;
+            OOP_Object	*unit;
+
+            struct Ring *rx;    /* Ring structure for mouse init */
+        } com;
+    } u;
 };
 
 OOP_Class *_init_mouseclass  ( struct mouse_staticdata * );

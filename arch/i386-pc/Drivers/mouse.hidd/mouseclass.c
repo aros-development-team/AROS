@@ -6,6 +6,17 @@
     Lang: English.
 */
 
+/*
+    This is the native-i386 hidd maintaining all available mouse types. It
+    maintains all COM/PS2 mouses available. USB is in a way (we need pci.hidd
+    working, then usb.hidd).
+    
+    Please keep code clean from all .bss and .data sections. .rodata may exist
+    as it will be connected together with .text section during linking. In near
+    future this driver will be compiled as elf executable (instead of object)
+    with -fPIC flag.
+*/
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -38,16 +49,11 @@ static struct OOP_ABDescr attrbases[] =
 
 */
 
-struct mouse_data
-{
-    VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
-    APTR callbackdata;
-    
-    OOP_Object * Ser;
-    OOP_Object * Unit;
-    
-    UWORD buttonstate;
-};
+/* Prototypes */
+
+int test_mouse_usb(OOP_Class *, OOP_Object *);
+int test_mouse_ps2(OOP_Class *, OOP_Object *);
+int test_mouse_com(OOP_Class *, OOP_Object *);
 
 /* defines for buttonstate */
 
@@ -79,6 +85,9 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
         struct TagItem *tag, *tstate;
 
 	tstate = msg->attrList;
+
+	/* Search for all mouse attrs */
+
         while ((tag = NextTagItem((const struct TagItem **)&tstate)))
         {
             ULONG idx;
@@ -97,6 +106,26 @@ static OOP_Object * _mouse_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *m
 		}
 	    }
 	} /* while (tags to process) */
+
+	/* Search for mouse installed. As USB is the fastest to test, do it
+	first, if not found search for PS/2 mouse. If failure then check every
+	COM port in the system - the las chance to see... */
+
+	if (!test_mouse_usb(cl, o))
+	{
+	    if (!test_mouse_ps2(cl, o))
+	    {
+	        if (!test_mouse_com(cl, o))
+		{
+		    /* No mouse found. What we can do now is just Dispose() :( */
+
+	            OOP_MethodID disp_mid = OOP_GetMethodID(IID_Root, moRoot_Dispose);
+		    OOP_CoerceMethod(cl, o, (OOP_Msg) &disp_mid);
+
+		    o = NULL;
+		}
+	    }
+	}
 
         ObtainSemaphore( &MSD(cl)->sema);
         MSD(cl)->mousehidd = o;
