@@ -7,7 +7,7 @@ OBJDIR=$(GENDIR)/aros
 
 FILES = calcchecksum kprintf nastyfreemem \
 	    purify removeslist debugmem \
-	    _kprintf
+	    _kprintf hexdump
 
 all: setup $(LIBDIR)/libaros.a
 
