@@ -32,6 +32,7 @@
 
 #define EM_386          3
 #define EM_68K          4
+#define EM_ARM         40
 
 #define R_386_NONE      0
 #define R_386_32        1
@@ -40,6 +41,10 @@
 #define R_68k_NONE      0
 #define R_68K_32        1
 #define R_68K_PC32      4
+
+#define R_ARM_NONE      0
+#define R_ARM_PC24      1
+#define R_ARM_ABS32     2
 
 #define STT_OBJECT      1
 #define STT_FUNC        2
@@ -251,7 +256,10 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
 
             eh->ident[EI_DATA] != ELFDATA2MSB ||
             eh->machine        != EM_68K
-
+        #elif defined(__arm__)
+            eh->ident[EI_DATA] != ELFDATA2LSB ||
+            eh->machine        != EM_ARM
+#warning ARM has not been tested, yet!
         #else
         #    error Your architecture is not supported
         #endif
@@ -267,6 +275,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             ELFDATA2LSB);
         #elif defined(__mc68000__)
             ELFDATA2MSB);
+        #elif defined(__arm__)
+            ELFDATA2MSB);
         #endif
 
         kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
@@ -274,6 +284,8 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
             EM_386);
         #elif defined(__mc68000__)
             EM_68K);
+        #elif defined(__arm__)
+            EM_ARM);
         #endif
 
         SetIoErr(ERROR_OBJECT_WRONG_TYPE);
@@ -392,7 +404,24 @@ static int relocate
 
             case R_68k_NONE:
                 break;
-
+            
+            #elif defined(__arm__)
+            
+            /*
+             * This has not been tested. Taken from ARMELF.pdf
+             * from arm.com page 33ff.
+             */
+            case R_ARM_PC24:
+                *p = s + rel->addend - (ULONG)p;
+                break;
+                
+            case R_ARM_ABS32:
+                *p = s + rel->addend;
+                break;
+            
+            case R_ARM_NONE:
+                break;
+            
             #else
             #    error Your architecture is not supported
             #endif
@@ -471,6 +500,10 @@ BPTR InternalLoadSeg_ELF
             #elif defined(__mc68000__)
 
             sh[i].type == SHT_RELA &&
+
+            #elif defined(__arm__)
+            #warning Missing code for ARM            
+//            sh[i].type = SHT_
 
             #else
             #    error Your architecture is not supported
