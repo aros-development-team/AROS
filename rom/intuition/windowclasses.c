@@ -1073,39 +1073,20 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 	    switch (EG(o)->GadgetType & GTYP_SYSTYPEMASK)
 	    {
 		case GTYP_CLOSE: {
-		    struct IntuiMessage *imsg;
-		    
-		    
 		    /* Send an IDCMP_CLOSEWINDOW message to the application */
 		    /* Get an empty intuimessage */
-		    imsg = alloc_intuimessage(msg->gpi_GInfo->gi_Window, IntuitionBase);
-		    if (imsg)
-		    {
-			/* Fill it in */
-			imsg->Class	= IDCMP_CLOSEWINDOW;
-			imsg->Code	= 0;
-			imsg->Qualifier = 0;
-			imsg->IAddress	= 0;
-			imsg->MouseX	= 0;
-			imsg->MouseY	= 0;
-			imsg->Seconds	= 0;
-			imsg->Micros	= 0;
-			
-			/* And send it to the application */
-			send_intuimessage(imsg, msg->gpi_GInfo->gi_Window, IntuitionBase);
-			
-		    }
 		    
+		    fire_intuimessage(msg->gpi_GInfo->gi_Window,
+		    		      IDCMP_CLOSEWINDOW,
+				      0,
+				      msg->gpi_GInfo->gi_Window,
+				      IntuitionBase);
+				      		    
 		    break; }
 		    
 		case GTYP_WDEPTH: {
 		    struct Window *w = msg->gpi_GInfo->gi_Window;
 		    
-		    
-#warning How is window refreshing handled here ? Ie when is IDCMP_REFRESHWINDOW sent ?
-		    
-		    LockLayerInfo(&w->WScreen->LayerInfo);
-
 		    if (NULL == w->WLayer->front)
 		    {
 		    	/* Send window to back */
@@ -1115,9 +1096,7 @@ static IPTR tbb_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    {
 		    	/* Send window to front */
 			WindowToFront(w);
-		    }
-		    UnlockLayerInfo(&w->WScreen->LayerInfo);
-		    
+		    }		    
 		    break; }
 		
 		case GTYP_WZOOM:
