@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 #ifndef __MATHFFP_INTERN_H__
@@ -36,8 +36,7 @@
 #endif
 
 #include <proto/exec.h>
-
-#define MATHFFPNAME     "mathffp.library"
+#include <libcore/base.h>
 
 /*
     This is the MAthffpBase structure. It is documented here because it is
@@ -45,14 +44,8 @@
     use the mathffp.library functions to get information.
 */
 
-struct MathBase
-{
-    struct Library    LibNode;
-    struct ExecBase * sysbase;	
-};
-
 #undef SysBase
-#define SysBase (((struct MathBase *)MathBase) -> sysbase)
+#define SysBase (MathBase->lh_SysBase)
 
 #define FFPMantisse_Mask 0xFFFFFF00 /* 24 bit for the mantisse    */
 #define FFPExponent_Mask 0x0000007F /*  7 bit for the exponent    */
@@ -75,8 +68,5 @@ struct MathBase
 #define minusone 0x800000c1 /* -1.00000000000000000000e+00 */
 #define two      0x80000042 /*  2.0                        */
 #define onehalf  0x80000040 /*  0.5                        */
-
-#define expunge() \
- AROS_LC0(BPTR, expunge, struct MathBase *, MathBase, 3, Mathffp)
 
 #endif /* __MATHFFP_INTERN_H__  */

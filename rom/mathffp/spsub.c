@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -37,7 +37,7 @@
 AROS_LH2(float, SPSub,
     AROS_LHA(float, fnum1, D0),
     AROS_LHA(float, fnum2, D1),
-    struct MathBase *, MathBase, 12, Mathffp
+    struct LibHeader *, MathBase, 12, Mathffp
 )
 {
     AROS_LIBFUNC_INIT
