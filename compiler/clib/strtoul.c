@@ -156,7 +156,7 @@
             else
                 break;
 
-            if (digit > base)
+            if (digit >= base)
                 break;
 
             /*
