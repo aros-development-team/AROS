@@ -753,33 +753,60 @@ AROS_UFH3(void, hook_func_action,
 
 	if (ent->type == ST_ROOT || ent->type == ST_USERDIR)
 	{
-	    Object *menustrip;
+	    Object *cstate = (Object*)(((struct List*)xget(app, MUIA_Application_WindowList))->lh_Head);
+	    Object *child;
 
-	    /* Create a new icon drawer window with the correct drawer being set */
-	    drawerwnd = IconWindowObject,
-		MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
-		MUIA_IconWindow_IsRoot, FALSE,
-		MUIA_IconWindow_ActionHook, &hook_action,
-		MUIA_IconWindow_Drawer, buf,
-		End;
-
-	    if (drawerwnd)
+	    while ((child = NextObject(&cstate)))
 	    {
-	    	/* Get the drawer path back so we can use it also outside this function */
-	    	char *drw = (char*)xget(drawerwnd,MUIA_IconWindow_Drawer);
+	    	if (xget(child, MUIA_UserData))
+	    	{
+		    char *child_drawer = (char*)xget(child, MUIA_IconWindow_Drawer);
+		    if (child_drawer && !Stricmp(buf,child_drawer))
+		    {
+		    	int is_open = xget(child, MUIA_Window_Open);
+		    	if (!is_open)
+			    DoMethod(child, MUIM_IconWindow_Open);
+			else
+			{
+			    DoMethod(child, MUIM_Window_ToFront);
+			    set(child, MUIA_Window_Activate, TRUE);
+			}
+		    	return;
+		    }
+	    	}
+	    }
 
-		/* We simply close the window here in case somebody like to to this...
-		 * the memory is not freed until wb is closed however */
-		DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+	    {
+		/* Check if the window for this drawer is already opened */
+		Object *menustrip;
 
-		/* If "Execute Command" entry is clicked open the execute window */
-		DoAllMenuNotifies(menustrip,drw);
+		/* Create a new icon drawer window with the correct drawer being set */
+		drawerwnd = IconWindowObject,
+		    MUIA_UserData, 1,
+		    MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+		    MUIA_IconWindow_IsRoot, FALSE,
+		    MUIA_IconWindow_ActionHook, &hook_action,
+		    MUIA_IconWindow_Drawer, buf,
+		    End;
 
-		/* Add the window to the application */
-		DoMethod(app,OM_ADDMEMBER,drawerwnd);
+		if (drawerwnd)
+		{
+	    	    /* Get the drawer path back so we can use it also outside this function */
+		    char *drw = (char*)xget(drawerwnd,MUIA_IconWindow_Drawer);
 
-		/* And now open it */
-		DoMethod(drawerwnd, MUIM_IconWindow_Open);
+		    /* We simply close the window here in case somebody like to to this...
+		     * the memory is not freed until wb is closed however */
+		    DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+
+		    /* If "Execute Command" entry is clicked open the execute window */
+		    DoAllMenuNotifies(menustrip,drw);
+
+		    /* Add the window to the application */
+		    DoMethod(app,OM_ADDMEMBER,drawerwnd);
+
+		    /* And now open it */
+		    DoMethod(drawerwnd, MUIM_IconWindow_Open);
+		}
 	    }
 	} else if (ent->type == ST_FILE)
 	{
@@ -846,6 +873,7 @@ int main(void)
 
     app = WandererObject,
     	SubWindow, root_iconwnd = IconWindowObject,
+	    MUIA_UserData, 1,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
 	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
