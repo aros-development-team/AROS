@@ -1,5 +1,5 @@
 Short:    AROS 1.12b - Amiga Research OS / Amiga native binaries
-Author:   Aaron "Optimizer" Digulla (digulla@hepe.com) and many others
+Author:   Aaron "Optimizer" Digulla (digulla@aros.org) and many others
 Uploader: Lennard voor den Dag (ldp@xs4all.nl)
 Version:  1.12b
 Type:     misc/emu
@@ -16,6 +16,7 @@ precompiled binaries ready to run on an Amiga with a 68020 or better processor.
 For more info look at these pages on WorldWideWait:
 
     http://www.aros.org/ (Main site, preferred)
+    http://home.pages.de/~aros/ (Alias for Main site)
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
@@ -39,9 +40,9 @@ If you like it and use it regularly please send a message to the
 following address:
 
     Aaron "Optimizer" Digulla
-    Th.-Heuss-Str. 8
-    78467 Konstanz
+    Haldenweg 5
+    78464 Konstanz
     Germany
 
-    EMail: digulla@hepe.com
+    EMail: digulla@aros.org
 

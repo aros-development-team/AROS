@@ -1,6 +1,6 @@
 Short: AROS - Amiga Research OS (Beta release)
-Author:   Aaron "Optimizer" Digulla (digulla@hepe.com) and many others
-Uploader: Aaron "Optimizer" Digulla (digulla@hepe.com)
+Author:   Aaron "Optimizer" Digulla (digulla@aros.org) and many others
+Uploader: Aaron "Optimizer" Digulla (digulla@aros.org)
 Version:  1.12b
 Type:	  misc/emu
 
@@ -60,7 +60,7 @@ WHERE TO FIND MORE INFOS ?
 Look at these pages on WorldWideWait:
 
     http://www.aros.org/ (Main site, preferred)
-    http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
+    http://home.pages.de/~aros/ (Alias for Main site)
     http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
@@ -93,5 +93,5 @@ following address:
     78464 Konstanz
     Germany
 
-    EMail: digulla@hepe.com
+    EMail: digulla@aros.org
 
