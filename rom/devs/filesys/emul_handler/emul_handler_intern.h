@@ -22,9 +22,10 @@
 struct emulbase
 {
     struct Device		  device;
-    struct Unit       		* stdin;
-    struct Unit       		* stdout;
-    struct Unit       		* stderr;
+    				/* nlorentz: Cal it ev_std* because std* is reserved */
+    struct Unit       		* eb_stdin;
+    struct Unit       		* eb_stdout;
+    struct Unit       		* eb_stderr;
     struct ExecBase  		* sysbase;
     struct DosLibrary 		* dosbase;
     struct Library   		* oopbase;

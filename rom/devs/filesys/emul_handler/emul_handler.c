@@ -54,6 +54,7 @@
 
 /* Underlying OS's rename() Clib function prototype */
 #include <stdio.h>
+
 //extern int rename(const char *old, const char *new);
 
 
@@ -660,9 +661,9 @@ static LONG startup(struct emulbase *emulbase)
 			    fhe->fd   = STDERR_FILENO;
 			    fhe->name = "";
 
-			    emulbase->stdin  = (struct Unit *)fhi;
-			    emulbase->stdout = (struct Unit *)fho;
-			    emulbase->stderr = (struct Unit *)fhe;
+			    emulbase->eb_stdin  = (struct Unit *)fhi;
+			    emulbase->eb_stdout = (struct Unit *)fho;
+			    emulbase->eb_stderr = (struct Unit *)fhe;
 
 			    /*
 				Allocate space for the string from same mem
