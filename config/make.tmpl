@@ -693,7 +693,8 @@ endif
 # Explanation of this macro is done in the developer's manual
 %define build_module mmake=/A modname=/A modtype=/A modsuffix= \
   conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" \
-  linklibfiles= cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) prefix=$(AROSDIR)\
+  linklibfiles= cflags=$(CFLAGS) dflags= \
+  objdir=$(OBJDIR) moduledir= prefix=$(AROSDIR)\
   reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_ALL.ref noref= \
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
@@ -812,6 +813,10 @@ ifneq ($(findstring $(BD_MODTYPE$(BDID)),library device resource mcc mcp),)
   		targetdir=$(BD_OBJDIR$(BDID)) \
 		cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID)) \
 		compiler=%(compiler)
+endif
+
+ifneq (%(moduledir),)
+  BD_MODDIR$(BDID)    := $(BD_PREFIX$(BDID))/%(moduledir)
 endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODSUFFIX$(BDID))
