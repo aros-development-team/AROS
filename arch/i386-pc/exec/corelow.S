@@ -351,7 +351,13 @@ Exec_Dispatch_x:    cli
                     call    exec_ProcessFlags
 1:                  jmp     *%edi
 
-exec_ProcessFlags:  ret     /* HANDLE TASK FALGS!!!! */
+exec_ProcessFlags:
+                    testb   $TF_LAUNCH,tc_Flags(%ecx)
+                    je      1f
+                    movl    tc_Launch(%ecx),%eax
+                    call    *%eax
+1:
+                    ret     /* HANDLE TASK FALGS!!!! */
 
 Exec_Restore_Gene:  movl    %esp,%edi
                     movl    tc_ETask(%ecx),%esi
