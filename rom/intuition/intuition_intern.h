@@ -59,6 +59,7 @@ struct IntIntuitionBase
     struct MsgPort	   * TimerMP;
     struct timerequest	   * TimerIO;
 
+    struct MsgPort	   * WorkBenchMP;
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
     
