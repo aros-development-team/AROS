@@ -146,6 +146,12 @@
     AROS_LCA(struct RastPort *, rp, A0), \
     struct GfxBase *, GfxBase, 143, Graphics)
 
+#define GetBitMapAttr(bm, attr) \
+    AROS_LC2(IPTR, GetBitMapAttr, \
+    AROS_LCA(struct BitMap *, bm, A0), \
+    AROS_LCA(ULONG, attr, D1), \
+    struct GfxBase *, GfxBase, 160, Graphics)
+
 #define GetBPen(rp) \
     AROS_LC1(ULONG, GetBPen, \
     AROS_LCA(struct RastPort *, rp, A0), \

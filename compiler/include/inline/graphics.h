@@ -298,7 +298,7 @@
 	, GRAPHICS_BASE_NAME)
 
 #define GetBitMapAttr(bm, attrnum) \
-	LP2(0x3c0, ULONG, GetBitMapAttr, struct BitMap *, bm, a0, unsigned long, attrnum, d1, \
+	LP2(0x3c0, IPTR, GetBitMapAttr, struct BitMap *, bm, a0, unsigned long, attrnum, d1, \
 	, GRAPHICS_BASE_NAME)
 
 #define GetColorMap(entries) \
