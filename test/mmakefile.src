@@ -76,7 +76,8 @@ FILES := \
     playoss \
     openlib \
     dumpmem \
-    simplepng
+    simplepng \
+    truecolorpens
 
 EXEDIR := $(AROS_TESTS)
 
