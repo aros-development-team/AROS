@@ -9,7 +9,7 @@ void writeinclibdefs(void)
 {
     FILE *out;
     
-    snprintf(line, slen-1, "%s/libdefs.h", gendir);
+    snprintf(line, slen-1, "%s/%s_libdefs.h", gendir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
