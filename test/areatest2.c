@@ -1,7 +1,9 @@
 #include <intuition/intuition.h>
 #include <graphics/gfxmacros.h>
+#include <graphics/gfx.h>
 
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 
@@ -32,13 +34,19 @@ static struct TmpRas tr;
 static void *trbuf;
 static UBYTE aibuf[(MAX_POINTS + 1) * 5];
 static WORD mode, actpoint, hipoint, numpoints;
-static WORD points[MAX_POINTS][2];
+static WORD outlinepen = -1, testfillpen = -1;
+static BOOL outlinemode, testfill;
+static WORD points[MAX_POINTS + 1][2];
 static char wintitle[256];
+
+#include "areatest2_fillpoly.h"
 
 static void cleanup(char *msg)
 {
     if (msg) printf("areatest2: %s\n", msg);
     
+    if (outlinepen != -1) ReleasePen(win->WScreen->ViewPort.ColorMap, outlinepen);
+    if (testfillpen != -1) ReleasePen(win->WScreen->ViewPort.ColorMap, testfillpen);
     if (drawbm) FreeBitMap(drawbm);
     if (drawrp) FreeRastPort(drawrp);
     
@@ -101,6 +109,7 @@ static void makewin(void)
      
     InitArea(&ai, aibuf, sizeof(aibuf) / 5);
     trbuf = AllocRaster(win->GZZWidth, win->GZZHeight);
+    if (!trbuf) cleanup("TmpRas buffer allocation failed!");
     InitTmpRas(&tr, trbuf, RASSIZE(win->GZZWidth, win->GZZHeight));
     
     drawbm = AllocBitMap(win->GZZWidth, win->GZZHeight, 0, BMF_MINPLANES, win->RPort->BitMap);
@@ -112,8 +121,19 @@ static void makewin(void)
     
     drawrp->AreaInfo = &ai;
     drawrp->TmpRas = &tr;
+
+    outlinepen = ObtainBestPen(win->WScreen->ViewPort.ColorMap, 0xFFFFFFFF,
+    	    	    	    	    	    	    	    	0x00000000,
+							     	0x00000000,
+								OBP_FailIfBad, FALSE,
+								TAG_DONE);
     
-    if (!trbuf) cleanup("TmpRas buffer allocation failed!");
+    testfillpen = ObtainBestPen(win->WScreen->ViewPort.ColorMap, 0x44444444,
+    	    	    	    	    	    	    	    	 0x44444444,
+							     	 0x44444444,
+								 OBP_FailIfBad, FALSE,
+								 TAG_DONE);
+
 }
 
 static void hilightpoint(WORD point)
@@ -153,13 +173,30 @@ static void paint(void)
 	    
 	case MODE_MOVEPOINTS:
 	    clear(drawrp);
-	    SetABPenDrMd(drawrp, 1, 0, JAM1);
-	    AreaMove(drawrp, points[0][0], points[0][1]);
-	    for(i = 1; i < numpoints; i++)
+	    SetABPenDrMd(drawrp, testfill ? testfillpen : 1, 0, JAM1);
+	    if (outlinemode)
 	    {
-	    	AreaDraw(drawrp, points[i][0], points[i][1]);
+	    	SetOutlinePen(drawrp, outlinepen);
 	    }
-	    AreaEnd(drawrp);
+	    else
+	    {
+	    	drawrp->Flags &= ~AREAOUTLINE;
+	    }
+	    
+	    if (!testfill)
+	    {
+		AreaMove(drawrp, points[0][0], points[0][1]);
+		for(i = 1; i < numpoints; i++)
+		{
+	    	    AreaDraw(drawrp, points[i][0], points[i][1]);
+		}
+		AreaEnd(drawrp);
+	    }
+	    else
+	    {
+	    	MyFillPolygon(drawrp, points, numpoints);
+	    }
+	    
 	    BltBitMapRastPort(drawbm, 0, 0, winrp, 0, 0, win->GZZWidth, win->GZZHeight, 192);
 	    break;
     }
@@ -188,6 +225,7 @@ static WORD pointundermouse(LONG x, LONG y)
 static void handleall(void)
 {
     struct IntuiMessage *msg;
+    WORD    	    	 i;
     BOOL    	    	 quitme = FALSE, lmbdown = FALSE;
     
     mode = MODE_ADDPOINTS;
@@ -301,6 +339,82 @@ static void handleall(void)
 				    clear(winrp);
 				    updatetitle();
 				    break;
+			    }
+			    break;
+
+    	    	    	case '4':
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+				for(i = 0; i < numpoints; i++)
+				{
+			    	    if (points[i][0] > 0) points[i][0]--;				
+				}
+				hipoint = -1;
+				paint();
+			    }
+			    break;
+
+    	    	    	case '6':
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+				for(i = 0; i < numpoints; i++)
+				{
+			    	    if (points[i][0] < win->GZZWidth - 1) points[i][0]++;				
+				}
+				hipoint = -1;
+				paint();
+			    }
+			    break;
+
+    	    	    	case '8':
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+				for(i = 0; i < numpoints; i++)
+				{
+			    	    if (points[i][1] > 0) points[i][1]--;				
+				}
+				hipoint = -1;
+				paint();
+			    }
+			    break;
+
+    	    	    	case '2':
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+				for(i = 0; i < numpoints; i++)
+				{
+			    	    if (points[i][1] < win->GZZHeight - 1) points[i][1]++;				
+				}
+				hipoint = -1;
+				paint();
+			    }
+			    break;
+			
+			case 'o':
+			case 'O':
+			    outlinemode = !outlinemode;
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+			    	hipoint = -1;
+				paint();
+				SetWindowTitles(win, outlinemode ? "Outline Mode: ON" : "Outline Mode: OFF", (char *)~0);
+				Delay(30);
+				updatetitle();
+			    }
+			    break;
+			    
+			case 'f':
+			case 'F':
+			case 'R':
+			case 'r':
+			    testfill = !testfill;
+			    if (mode == MODE_MOVEPOINTS)
+			    {
+			    	hipoint = -1;
+				paint();
+				SetWindowTitles(win, testfill ? "Test Fillroutine: ON" : "Test Fillroutine: OFF", (char *)~0);
+				Delay(30);
+				updatetitle();
 			    }
 			    break;
 		    }
