@@ -38,14 +38,16 @@ inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
 struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit, 
 			 struct DosLibrary *DOSBase)
 {
-    return GetDosType(DLT_DEVICE, name, unit, DOSBase);
+    return GetDosType(LDF_DEVICES, name, unit, DOSBase);
+//    return GetDosType(DLT_DEVICE, name, unit, DOSBase);
 }
 
 
 struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
 			 struct DosLibrary *DOSBase)
 {
-    return GetDosType(DLT_VOLUME, name, unit, DOSBase);
+    return GetDosType(LDF_VOLUMES, name, unit, DOSBase);
+//    return GetDosType(DLT_VOLUME, name, unit, DOSBase);
 }
 
 
@@ -88,12 +90,12 @@ struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
     tempName[size] = 0;		/* Terminate string */
 
     dl = LockDosList(type | LDF_READ);
-    dl = FindDosEntry(dl, name, type);
-
+    dl = FindDosEntry(dl, tempName, type);
     if (dl != NULL)
     {
 	device = dl->dol_Device;
-	*unit = dl->dol_Unit;
+	if (unit!=NULL)
+	    *unit = dl->dol_Unit;
     }
 
     UnLockDosList(type | LDF_READ);
