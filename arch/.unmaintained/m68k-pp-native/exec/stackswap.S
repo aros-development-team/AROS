@@ -60,9 +60,19 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 
 	move.l	%d1,%d0
 
+	move.l	%d0,-(%sp)
+    	move.l	%a0,-(%sp)
+	move.l	%a1,-(%sp)
+	
 	/* Just to be sure interrupts always find a good stackframe */
+	move.l	%a6,-(%sp)
 	jsr	Disable(%a6)
-
+    	move.l	(%sp)+,%d0 /* dummy */
+	
+ 	move.l	(%sp)+,%a1
+	move.l	(%sp)+,%a0
+	move.l	(%sp)+,%d0
+	
 	/* Swap Lower boundaries */
 	move.l	(%a1),%d1
 	move.l	(%a0),(%a1)+
@@ -78,9 +88,15 @@ AROS_SLIB_ENTRY(StackSwap,Exec):
 	move.l	(%a0),%sp
 	move.l	%d1,(%a0)
 
+    	move.l	%d0,-(%sp)
+	
 	/* Reenable interrupts. */
+	move.l	%a6,-(%sp)
 	jsr	Enable(%a6)
-
+    	move.l  (%sp)+,%d0
+	
+	move.l	(%sp)+,%d0 /* dummy */
+	
 	/* Restore returnaddress and return */
 	move.l	%d0,-(%sp)
 	rts
