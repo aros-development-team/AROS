@@ -77,7 +77,7 @@ void _Exec_Enable(struct ExecBase * SysBase)
     /* Only disable interrupts if they are not already disabled. The
        initial (enabled) value of IDNestCnt is -1
     */
-    if( SysBase->IDNestCnt++ < 0)
+    if( --SysBase->IDNestCnt < 0)
     {
 	/*
 	    We have to disable interrupts, however some silly person
