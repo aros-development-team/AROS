@@ -270,6 +270,21 @@ static VOID gfxhidd_copybox(OOP_Class *cl, OOP_Object *o, struct pHidd_Gfx_CopyB
 					    ddata->bytesperline);
 			break;
 			
+
+		    case 3:
+	    		HIDD_BM_CopyMemBox24(msg->dest,
+		    	    		    data->VideoData,
+					    msg->srcX,
+					    msg->srcY,
+					    ddata->VideoData,
+					    msg->destX,
+					    msg->destY,
+					    msg->width,
+					    msg->height,
+					    data->bytesperline,
+					    ddata->bytesperline);
+			break;
+
 		    case 4:
 	    		HIDD_BM_CopyMemBox32(msg->dest,
 		    	    		    data->VideoData,

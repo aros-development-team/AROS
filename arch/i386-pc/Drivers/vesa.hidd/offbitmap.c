@@ -80,10 +80,14 @@ static OOP_Object *MNAME(new)(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	data->height = height;
 	data->bpp = depth;
 	data->disp = 0;
-	if (depth>16)
-	    multi = 4;
+
+    	if (depth>24)
+	    multi = 4;	
+	else if (depth>16)
+	    multi = 3;
 	else if (depth>8)
 	    multi = 2;
+
 	data->bytesperpix = multi;
 	data->bytesperline = width * multi;
 	
