@@ -44,9 +44,8 @@ and a
 \link{Cronus}{http://www.ninemoons.com/}
 \item \link{Smaky 400}{http://lamicounter.epfl.ch/Smaky/sm400.html} -
 A m68k PCI card for PCs.
-\item \link{OASYS Proposals}{http://www.ecs.soton.ac.uk/~sps196/OASYS}
-- Some great ideas for \link{OASYS}{http://www.netreach.net/~fleecy/oasys/}
-but they should be implemented in AmigaOS/AROS, too.
+\item \link{OASYS}{http://www.netreach.net/~fleecy/oasys/}
+- Lots of good ideas which we should consider.
 
 \end{itemize}
 
