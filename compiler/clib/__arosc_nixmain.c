@@ -41,7 +41,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     /* argv[0] usually contains the name of the program, possibly with the full
        path to it. Here we translate that path, which is an AmigaDOS-style path,
        into an unix-style one.  */
-    if (argv && argv[0] && !__get_arosc_privdata()->acpd_do_not_substitute_argv0)
+    if (argv && argv[0] && !__get_arosc_privdata()->acpd_parent_does_upath)
     {
         char *new_argv0;
 
@@ -71,9 +71,7 @@ int __arosc_nixmain(int (*main)(int argc, char *argv[]), int argc, char *argv[])
     /* If the PATH variable is not defined, then define it to be what CLI's path list
        points to.  */
     if (!getenv("PATH"))
-    {
         update_PATH();
-    }
 
     /* Call the real main.  */
     if (setjmp(__aros_startup_jmp_buf) == 0)
@@ -197,7 +195,7 @@ static void update_PATH(void)
     UBYTE aname[PATH_MAX]; /* PATH_MAX Ought to enough, it would be too complicated
                               handling aname dynamically (thanks to our sucky dos.library).  */
     char *PATH = NULL;
-    size_t oldlen = 0;
+    size_t PATH_len = 0;
     PathEntry *cur;
     struct CommandLineInterface *cli = Cli();
 
@@ -214,7 +212,7 @@ static void update_PATH(void)
     {
         char *new_PATH;
 	const char *uname;
-	size_t ulen, newlen;
+	size_t uname_len;
 
         if (NameFromLock(cur->lock, aname, sizeof(aname)) == DOSFALSE)
 	    continue;
@@ -224,32 +222,26 @@ static void update_PATH(void)
         uname = __path_a2u(aname);
 	if (!uname)
 	    continue;
+	uname_len = strlen(uname);
 
 	D(bug("uname = %s\n", uname));
 
-	ulen = strlen(uname);
-	newlen = oldlen + ulen + 1;
-
-	new_PATH = realloc(PATH, newlen);
+	new_PATH = realloc(PATH, PATH_len + uname_len + 1);
 	if (!new_PATH)
 	    continue;
-
 	PATH = new_PATH;
 
-	D(new_PATH[oldlen] = '\0');
-	D(bug("new_PATH = %s\n", new_PATH));
+	memcpy(PATH + PATH_len, uname, uname_len);
+	PATH_len += uname_len;
+	PATH[PATH_len++] = ':';
 
-	if (oldlen)
-	{
-            new_PATH[oldlen] = ':';
-	    new_PATH++;
-	}
-	memcpy(new_PATH + oldlen, uname, ulen + 1);
-
-        D(bug("PATH = %s - oldlen = %d, newlen = %d\n", PATH, oldlen, newlen));
-	oldlen = newlen - 1;
+	D(bug("PATH_len = %d, PATH = %.*s\n", PATH_len, PATH_len, PATH));
     }
 
     if (PATH)
+    {
+        PATH[PATH_len ? (PATH_len - 1) : 0] = '\0';
+
         setenv("PATH", PATH, 1);
+    }
 }
