@@ -82,18 +82,19 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 # Do something in all subdirs
 # This macro uses a trick: %(target) is evaluated *after* %(text), so one
 # can use %(target) in %(text).
-%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS)
+%define subdirs_q text="Making %(target)" target=$(TARGET) dirs=$(SUBDIRS) curdir=$(CURDIR) mflags=$(MFLAGS) submf=makefile
 	@for dir in %(dirs) ; do \
 	    echo "%(text) in %(curdir)/$$dir..." ; \
-	    if test ! -e $$dir/makefile ; then \
-		echo "Generating makefile..." ; \
+	    if test ! -e $$dir/%(submf) ; then \
+		echo "Generating %(submf)..." ; \
 		$(AWK) -f $(TOP)/scripts/genmf.gawk \
 		--assign TOP="$(TOP)" \
-		$$dir/makefile.src > $$dir/makefile || exit 1 ; \
+		$$dir/%(submf).src > $$dir/%(submf) || exit 1 ; \
 	    fi ; \
 	    if ( cd $$dir ; \
-		$(MAKE) %(mflags) TOP="$(TOP)/.." CURDIR="%(curdir)/$$dir" \
-		TARGET=%(target) %(target) ) ; \
+		$(MAKE) %(mflags) -f %(submf) \
+		    TOP="$(TOP)/.." CURDIR="%(curdir)/$$dir" \
+		    TARGET=%(target) %(target) ) ; \
 	    then true ; else exit 1 ; fi ; \
 	done
 %end
