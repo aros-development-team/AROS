@@ -536,9 +536,9 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
     D(bug("User wants to open file %S.\n", filename));
     D(bug("Current directory is %S\n", dn->name));
 
-    if (dn && !dn->parent && strcmp(filename, "//unnamedpipe//") == 0)
+    if (dn && !dn->parent && strcmp(filename, "__UNNAMED__") == 0)
     {
-        return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, err);
+        return NewFileNode(pipefsbase, "__UNNAMED__", FNF_DELETEONCLOSE, dn, err);
     }
 
     fn = FindFile(pipefsbase, &dn, filename);
