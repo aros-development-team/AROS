@@ -16,12 +16,18 @@ struct arglist {
     char *reg;
 };
 
+struct aliaslist {
+    struct aliaslist *next;
+    char *alias;
+};
+
 struct functionlist {
     struct functionlist *next;
     char *name;
     char *type;
     unsigned int argcount;
     struct arglist *arguments;
+    struct aliaslist *aliases;
     unsigned int lvo;
     int novararg;
 };

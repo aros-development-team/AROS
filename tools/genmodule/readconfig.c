@@ -98,6 +98,7 @@ void readconfig(void)
         function->arguments->type = NULL;
         function->arguments->name = NULL;
         function->arguments->reg  = "D0";
+	function->aliases = NULL;
         
         funclist = function;
     }
@@ -466,7 +467,7 @@ static void readsectionfunctionlist(void)
 	    if (*s=='\0')
 		lvo++;
 	    else
-		exitfileerror(20, "no space allowed before or after functionname\n");
+		exitfileerror(20, "no space allowed before functionname\n");
 	}
 	else if (strncmp(line, "##", 2)==0)
 	{
@@ -510,77 +511,121 @@ static void readsectionfunctionlist(void)
 	}
 	else if (*line!='#')
 	{
-	    int hasbracket;
-	    
-	    if (isspace(line[strlen(line)-1]))
-		exitfileerror(20, "no space allowed before or after functionname\n");
+	    char *sopenbracket, *sclosebracket, *scolon;
+	    int len;
 
-	    hasbracket = ((s=strchr(line, '('))!=NULL);
+	    sopenbracket = strchr(line,'(');
+	    sclosebracket = strchr(line,')');
+	    scolon = strchr(line,':');
 	    
 	    *funclistptr = malloc(sizeof(struct functionlist));
 	    (*funclistptr)->next = NULL;
 	    (*funclistptr)->type = NULL;
 	    (*funclistptr)->argcount = 0;
 	    (*funclistptr)->arguments = NULL;
+	    (*funclistptr)->aliases = NULL;
 	    (*funclistptr)->lvo = lvo;
 	    (*funclistptr)->novararg = 0;
 	    lvo++;
-	    switch (libcall)
+
+	    /* Parse registers specifications if available */
+	    if (sopenbracket != NULL && (scolon == NULL || scolon > sopenbracket))
 	    {
-	    case STACK:
-		if (hasbracket)
-		    exitfileerror(20, "registers given for stack based call\n");
-
-		(*funclistptr)->name = strdup(line);
-		break;
+		if (sclosebracket == NULL)
+		    exitfileerror(20, "'(' withouth ')'");
+		if (libcall != REGISTER)
+		    exitfileerror(20, "registers may only be specified for REGISTER libcall\n");
 		
-	    case REGISTER:
-		if (!hasbracket)
-		    exitfileerror(20, "no register specified for register based call\n");
-
-		s2 = s;
+		*sopenbracket='\0';
+		*sclosebracket='\0';
 		
-		while (isspace(*(s-1))) s--;
-		*s='\0';
-
-		(*funclistptr)->name = strdup(line);
 		arglistptr = &(*funclistptr)->arguments;
-		
-		s2++;
-		while (isspace(*s2)) s2++;
-		if (*s2!=')')
+		s = sopenbracket+1;
+		while (isspace(*s)) s++;
+		while (*s!='\0')
 		{
-		    while ((s = strpbrk(s2,",)"))!=NULL)
+		    *s = toupper(*s);
+		    if (memchr("AD",s[0],2)!=NULL && memchr("01234567",s[1],8)!=NULL)
 		    {
-			char *s3=s+1;
+			char c = s[2];
 			
-			while (isspace(*s2)) s2++;
-			while (isspace(*(s-1))) s--;
-			*s='\0';
-			
-			*s2 = toupper(*s2);
-			if (strlen(s2)==2 && memchr("AD",s2[0],2)!=NULL && memchr("01234567",s2[1],8)!=NULL)
-			{
-			    (*funclistptr)->argcount++;
-			    (*arglistptr) = malloc(sizeof(struct arglist));
-			    (*arglistptr)->reg = strdup(s2);
-			    (*arglistptr)->next = NULL;
-			    (*arglistptr)->type = NULL;
-			    (*arglistptr)->name = NULL;
-			    arglistptr = &(*arglistptr)->next;
-			}
-			else
-			    exitfileerror(20, "wrong register \"%s\" for argument %u\n", s2, (*funclistptr)->argcount+1);
-
-			s2 = s3;
+			(*funclistptr)->argcount++;
+			(*arglistptr) = malloc(sizeof(struct arglist));
+			s[2] = '\0';
+			(*arglistptr)->reg = strdup(s);
+			s[2] = c;
+			(*arglistptr)->next = NULL;
+			(*arglistptr)->type = NULL;
+			(*arglistptr)->name = NULL;
+			arglistptr = &(*arglistptr)->next;
 		    }
+		    else
+			exitfileerror(20, "wrong register \"%s\" for argument %u\n", s, (*funclistptr)->argcount+1);
+		    
+		    s += 2;
+		    while (isspace(*s)) s++;
+		    if (*s == ',')
+			s++;
+		    else if (*s != '\0')
+			exitfileerror(20, "wrong char %c at position %d\n", *s, (int)(s-line) + 1);
+		    
+		    while(isspace(*s)) s++;
 		}
-		break;
-			
-	    default:
-		exitfileerror(20, "Internal; unsupported libcall type\n");
-		break;
 	    }
+
+	    /* Duplicate the function name */
+	    for (len = 0;
+		 line[len] != '\0' && !isspace(line[len]) && line[len] != ':';
+		 len++
+	    )
+		/*NOP*/;
+
+	    line[len] = '\0';
+	    (*funclistptr)->name = strdup(line);
+	    
+	    /* Parse extra specification, like aliases, vararg, ... */
+	    if (scolon != NULL)
+	    {
+		struct aliaslist **aliaslistptr = &(*funclistptr)->aliases;
+		
+		s = scolon+1;
+		while (isspace(*s)) s++;
+		do
+		{
+		    if (strncmp(s, "alias", 5) == 0)
+		    {
+			char c;
+			s+=5;
+			while (isspace(*s)) s++;
+			if (*s != '(')
+			    exitfileerror(20, "Wrong format for alias: alias(name) is the right form\n");
+			s++;
+			while (isspace(*s)) s++;
+			s2 = s;
+			while (!isspace(*s2) && *s2!=')') s2++;
+			
+			*aliaslistptr = malloc(sizeof(struct aliaslist));
+			(*aliaslistptr)->next = NULL;
+			c = *s2;
+			*s2 = '\0';
+			(*aliaslistptr)->alias = strdup(s);
+			*s2 = c;
+			aliaslistptr = &(*aliaslistptr)->next;
+			
+			s = s2;
+			while (isspace(*s)) s++;
+
+			if (*s != ')')
+			    exitfileerror(20, "'(' without a ')'");
+			s++;
+		    }
+		    else
+			exitfileerror(20, "Unknown option for function\n");
+		    
+		    while (isspace(*s)) s++;
+		} while (*s != '\0');
+	    }
+	    
 	    funclistptr = &((*funclistptr)->next);
 	}
     }

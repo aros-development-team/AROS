@@ -9,6 +9,7 @@
 static void writedefineregister(FILE *, struct functionlist *);
 static void writedefinevararg(FILE *, struct functionlist *);
 static void writedefinestack(FILE *, struct functionlist *);
+static void writealiases(FILE *, struct functionlist *);
 
 void writeincdefines(int dummy)
 {
@@ -54,6 +55,8 @@ void writeincdefines(int dummy)
 		{
 		    writedefinestack(out, funclistit);
 		}
+		
+		writealiases(out, funclistit);
 	    }
 	}
     }
@@ -237,4 +240,18 @@ writedefinestack(FILE *out, struct functionlist *funclistit)
 	    fprintf(out, ", ");
     }
     fprintf(out, "))__AROS_GETVECADDR(%s,%d))\n", libbase, funclistit->lvo);
+}
+
+void
+writealiases(FILE *out, struct functionlist *funclistit)
+{
+    struct aliaslist *aliasesit;
+    
+    for (aliasesit = funclistit->aliases;
+	 aliasesit != NULL;
+	 aliasesit = aliasesit->next
+    )
+    {
+	fprintf(out, "#define %s %s\n", aliasesit->alias, funclistit->name);
+    }
 }
