@@ -1,6 +1,6 @@
 #include <devices/keymap.h>
 
-#define KMNAME "pc105_d"
+#define KMNAME "pc105_i"
 
 #define CONST const
 
@@ -57,7 +57,7 @@ CONST struct KeyMapNode km =
 
 CONST UBYTE lokeymaptypes[] =
 {
-    S, 		/* 00 */
+    V, 		/* 00 */
     S, 		/* 01 */
     S|A,	/* 02 */
     S|A,	/* 03 */
@@ -213,7 +213,7 @@ CONST UBYTE hikeymaptypes[] =
 
 CONST IPTR lokeymap[] =
 {
-    BYTES('|', '\\', '|', '\\'), 		/* 00 Left of 1 Key */
+    BYTES('|', '\\', '|', '\\'), 	/* 00 Left of 1 Key */
     BYTES('!', '1', '!', '1'), 		/* 01 1 */
     BYTES('²', '²', '"', '2'), 		/* 02 2 */
     BYTES('³', '³', '£', '3'), 		/* 03 3 */
