@@ -133,6 +133,7 @@ const ULONG bname##_version = ver
 #define LIBSET_ICON_PRI 	 14
 #define LIBSET_WORKBENCH_PRI 	 15
 #define LIBSET_DATATYPES_PRI 	 16
+#define LIBSET_COMMODITIES_PRI 	 17
 
 #define LIBSET_AROSC_PRI         20
 
