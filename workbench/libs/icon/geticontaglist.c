@@ -158,28 +158,9 @@
         }
         else if (!failIfUnavailable)
         {
-            struct IconIdentifyMsg  iim;
+            struct IconIdentifyMsg iim;
             
-            iim.iim_FileLock = Lock(name, ACCESS_READ);
-            if
-            (
-                   iim.iim_FileLock == NULL 
-                && strcasecmp(name + strlen(name) - 5, ":Disk") == 0
-            )
-            {
-                // FIXME: perhaps allocate buffer from heap?
-                TEXT  buffer[256];                     /* Path buffer */
-                ULONG length       = strlen(name) - 3; /* Amount to copy + NULL */
-                
-                if (sizeof(buffer) >= length)
-                {
-                    strlcpy(buffer, name, length);
-                    
-                    iim.iim_FileLock = Lock(buffer, ACCESS_READ);
-                }
-            }
-            
-            if (iim.iim_FileLock != NULL)
+            if ((iim.iim_FileLock = LockObject(name, ACCESS_READ)) != NULL)
             {
                 if ((iim.iim_FIB = AllocDosObject(DOS_FIB, TAG_DONE)) != NULL)
                 {
@@ -222,7 +203,7 @@
                     SetIoErr(ERROR_NO_FREE_STORE);
                 }
                 
-                UnLock(iim.iim_FileLock);
+                UnLockObject(iim.iim_FileLock);
             }
         }
     }
