@@ -763,7 +763,7 @@ to the sources. </p>
 put the content in this file. It turns out that some of this
 functionality is implemented in the
 <filename>tools/genskeleton</filename> directory, and some in the new
-Python based archtools that Aaron Digulla has been workin on. Hopefully
+Python based archtools that Aaron Digulla has been workin on. </p>
 </comment>
 </idea>
 
