@@ -8,6 +8,7 @@
 
 /****************************************************************************************/
 
+#include <exec/initializers.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
@@ -546,6 +547,17 @@ AROS_UFH3(IPTR, DiskFontFunc,
 		AddFont(fhc->fhc_TextFont);				
 		fhc->fhc_TextFont->tf_Accessors++;
 
+    	    	{
+		    struct DiskFontHeader *dfh;
+		    
+		    dfh = (struct DiskFontHeader *)(((IPTR)fhc->fhc_TextFont) - (IPTR)OFFSET(DiskFontHeader, dfh_TF));
+
+    	    	    /* Paranoia check */
+    	    	    if (dfh->dfh_FileID == DFH_ID)
+		    {
+		    	AddTail(&DiskfontBase->diskfontlist, &dfh->dfh_DF);
+		    }
+		}
 		Permit();
 				
 		D(bug("Font added\n"));
