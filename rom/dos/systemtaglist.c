@@ -212,7 +212,7 @@
 	    { NP_Arguments  , (IPTR)command                 }, /* 13 */
 	    { NP_Synchronous, FALSE                         }, /* 14 */
 	    { NP_Error      , (IPTR)ces                     }, /* 16 */
-	    { NP_CloseError , (isAsynch || cos_opened)      }, /* 17 */
+	    { NP_CloseError , (isAsynch || ces_opened)      }, /* 17 */
 	    { TAG_END       , 0                             }
 	};
 
