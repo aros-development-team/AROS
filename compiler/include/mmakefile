@@ -25,6 +25,11 @@ INCSUBDIRS :=	aros \
 		utility \
 		workbench
 
+# The includes target points back to config/$(ARCH)/mmakefile:
+#MM includes : includes-$(ARCH)
+includes :
+	@$(NOP)
+
 #MM
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
