@@ -912,8 +912,16 @@ static int CreateInterrupt(struct ata_Bus *bus)
 	    
 	    if (OOP_DoMethod(o, (OOP_Msg)msg))
 	    {
-		retval = 1;
+		msg->handlerinfo = timeout_irq;
+		msg->id = vHidd_IRQ_Timer;
+		
+		if (OOP_DoMethod(o, (OOP_Msg)msg))
+		{
+		    retval = 1;
+		}
 	    }
+	    
+	    
 
 	    OOP_DisposeObject(o);
 	}
