@@ -56,7 +56,9 @@ AROS_UFH3
             {
                 icon = GetIconTags
                 (
-                    NULL, ICONGETA_GetDefaultName, (IPTR) "RAM", TAG_DONE
+                    NULL, 
+                    ICONGETA_GetDefaultName, (IPTR) "RAM", 
+                    TAG_MORE,                (IPTR) iim->iim_Tags
                 );
             }
             else if
@@ -67,7 +69,9 @@ AROS_UFH3
             {
                 icon = GetIconTags
                 (
-                    NULL, ICONGETA_GetDefaultName, (IPTR) "Harddisk", TAG_DONE
+                    NULL, 
+                    ICONGETA_GetDefaultName, (IPTR) "Harddisk", 
+                    TAG_MORE,                (IPTR) iim->iim_Tags       
                 );
             }
                 
@@ -77,7 +81,9 @@ AROS_UFH3
             {
                 icon = GetIconTags
                 (
-                    NULL, ICONGETA_GetDefaultType, WBDISK, TAG_DONE
+                    NULL, 
+                    ICONGETA_GetDefaultType,        WBDISK, 
+                    TAG_MORE,                (IPTR) iim->iim_Tags
                 );
             }
         }
@@ -87,7 +93,9 @@ AROS_UFH3
             // FIXME: detect trashcan
             icon = GetIconTags
             (
-                NULL, ICONGETA_GetDefaultType, WBDRAWER, TAG_DONE
+                NULL, 
+                ICONGETA_GetDefaultType,        WBDRAWER, 
+                TAG_MORE,                (IPTR) iim->iim_Tags
             );
         }
         else
@@ -111,7 +119,9 @@ AROS_UFH3
                     /* It's a exutable file --------------------------------*/
                     icon = GetIconTags
                     (
-                        NULL, ICONGETA_GetDefaultType, WBTOOL, TAG_DONE
+                        NULL,
+                        ICONGETA_GetDefaultType,        WBTOOL, 
+                        TAG_MORE,                (IPTR) iim->iim_Tags
                     );
                 }
                 else
@@ -119,7 +129,9 @@ AROS_UFH3
                     /* It's a project file of some kind --------------------*/
                     icon = GetIconTags
                     (
-                        NULL, ICONGETA_GetDefaultName, (IPTR) dth->dth_Name, TAG_DONE
+                        NULL,
+                        ICONGETA_GetDefaultName, (IPTR) dth->dth_Name, 
+                        TAG_MORE,                (IPTR) iim->iim_Tags
                     );
                     
                     if (icon == NULL)
@@ -143,7 +155,9 @@ AROS_UFH3
                         {
                             icon = GetIconTags
                             (
-                                NULL, ICONGETA_GetDefaultName, (IPTR) name, TAG_DONE
+                                NULL, 
+                                ICONGETA_GetDefaultName, (IPTR) name,
+                                TAG_MORE,                (IPTR) iim->iim_Tags
                             );
                         }
                     }
@@ -152,7 +166,9 @@ AROS_UFH3
                     {
                         icon = GetIconTags
                         (
-                            NULL, ICONGETA_GetDefaultType, WBPROJECT, TAG_DONE
+                            NULL,
+                            ICONGETA_GetDefaultType,        WBPROJECT,
+                            TAG_MORE,                (IPTR) iim->iim_Tags
                         );
                     }
                 }
@@ -163,7 +179,9 @@ AROS_UFH3
             {
                 icon = GetIconTags
                 (
-                    NULL, ICONGETA_GetDefaultType, WBPROJECT, TAG_DONE
+                    NULL,
+                    ICONGETA_GetDefaultType,        WBPROJECT,
+                    TAG_MORE,                (IPTR) iim->iim_Tags
                 );
             }
         }
