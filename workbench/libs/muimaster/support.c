@@ -129,6 +129,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Dataspace_desc,
     &_MUI_Bitmap_desc,
     &_MUI_Bodychunk_desc,
+    &_MUI_ChunkyImage_desc,
     &_MUI_Cycle_desc,
     &_MUI_Popstring_desc,
     &_MUI_Popasl_desc,
