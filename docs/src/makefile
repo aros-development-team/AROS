@@ -3,7 +3,7 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 DEST=../html/
-FILES = background devinfo devinf_inside devinf_outside \
+FILES = background faq devinfo devinf_inside devinf_outside \
 	history links
 
 AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/exec/*.c \
