@@ -1,3 +1,8 @@
 # Some options for the make
 
 SHARED_EXEC = yes
+SHARED_DOS = yes
+SHARED_UTILITY = yes
+SHARED_GRAPHICS = yes
+SHARED_INTUITION = yes
+
