@@ -6,7 +6,11 @@ DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 OS_INCLUDES	:= -I$(GENINCDIR)
 CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 
-#MM- AROS-freebsd-i386 : setup includes compiler kernel workbench \
+#MM- AROS-freebsd-i386 : AROS-freebsd
+#MM- setup-freebsd-i386 : setup-freebsd
+#MM- kernel-freebsd-i386 : kernel-freebsd
+
+#MM- AROS-freebsd : setup includes compiler kernel workbench \
 #MM 	demos games shell
 
 #MM- kernel-freebsd : \
@@ -43,12 +47,12 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 kernel :
 	@$(NOP)
 
-#MM setup-freebsd-i386 : \
+#MM setup-freebsd : \
 #MM	setup-exec-freebsd \
 #MM	setup-dos-unix \
 #MM	setup-battclock-unix \
 #MM	setup-$(GFXSYSTEM)
-setup-freebsd-i386 : 
+setup-freebsd : 
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
 	%add_objects rom/boot/strap_emul
 
