@@ -73,93 +73,96 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ListviewsPData *data;
     struct MUI_ListviewsPData d;
     
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-	    MUIA_Group_Columns, 2,
-	    MUIA_Group_SameSize, TRUE,
-	    Child, VGroup,
-	        GroupFrameT("Control"),
-	        MUIA_Group_VertSpacing, 0,
-	        Child, VSpace(0),
-	        Child, ColGroup(2),
-		    MUIA_Group_VertSpacing, 2,
-		    Child, Label("Multi:"),
-		    Child, d.multi_cycle =
-			       MakeCycle("Multi:", multi_labels),
-		    Child, Label("Refresh:"),
-		    Child, d.refresh_cycle =
-			       MakeCycle("Refresh:", refresh_labels),
-		    Child, Label("Smooth:"),
-		    Child, HGroup,
-		        MUIA_Group_HorizSpacing, 4,
-		        Child, d.smooth_checkmark = MakeCheck(NULL),
-		        Child, d.smooth_slider = MakeListviewspSlider(),
-			End, /* HGroup */
-		    End, /* ColGroup */
-		Child, VSpace(0),
-		End, /* Control VGroup */
-
-	    Child, VGroup,
-		GroupFrameT("Fonts"),
-		MUIA_Group_VertSpacing, 0,
-		Child, VSpace(0),
-		Child, ColGroup(2),
-		    MUIA_Group_VertSpacing, 2,
-		    Child, Label("Normal:"),
-		    Child, PopaslObject,
-		        MUIA_Popasl_Type, ASL_FontRequest,
-		        MUIA_Popstring_String, d.fonts_normal_string = StringObject,
-		            MUIA_CycleChain, 1,
-		            StringFrame, 
-		            End, /* String */
-		        MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		        End, /* PopaslObject */
-		
-		    Child, Label("Fixed:"),
-		    Child, PopaslObject,
-		        MUIA_Popasl_Type, ASL_FontRequest,
-		        MUIA_Popstring_String, d.fonts_fixed_string = StringObject,
-		            MUIA_CycleChain, 1,
-		            StringFrame, 
-		            End, /* String */
-		        MUIA_Popstring_Button, PopButton(MUII_PopUp),
-		        End, /* PopaslObject */
-		
-		    Child, Label("Leading:"),
-		    Child, d.fonts_leading_slider = MakeListviewspSlider(),
-		
-		    End, /* ColGroup */
-		Child, VSpace(0),
-		End, /* Fonts */
-		
-	    Child, ColGroup(3),
-		GroupFrameT("Design"),
-		MUIA_Group_VertSpacing, 2,
-		Child, FreeLabel("Input \nLists:"),
-		Child, d.input_popframe = MakePopframe(),                  
-		Child, d.input_popimage = MakeBackgroundPopimage(),
-		Child, FreeLabel("Readonly \nLists:"),
-		Child, d.readonly_popframe = MakePopframe(),                  
-		Child, d.readonly_popimage = MakeBackgroundPopimage(),
-		Child, VSpace(0),
-		Child, CLabel("Frame"),
-		Child, CLabel("Background"),
-		End, /* Design ColGroup(3) */
-		
-	    Child, ColGroup(3),
-		GroupFrameT("Cursor"),
-		MUIA_Group_VertSpacing, 2,
-		MUIA_Group_SameSize, TRUE,
-		Child, FreeLabel("Active:"),
-		Child, d.active_popimage = MakeBackgroundPopimage(),
-		Child, VGroup,
-		    Child, HVSpace,
-		    Child, CLabel("Active &\nSelected:"),
-		    End, /* VGroup */
-		Child, FreeLabel("Selected:"),
-		Child, d.selected_popimage = MakeBackgroundPopimage(),
-		Child, d.activeselected_popimage = MakeBackgroundPopimage(),
-		End, /* Cursor ColGroup */
-    	TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        
+        MUIA_Group_Columns, 2,
+        MUIA_Group_SameSize, TRUE,
+        Child, (IPTR) VGroup,
+            GroupFrameT("Control"),
+            MUIA_Group_VertSpacing, 0,
+            Child, (IPTR) VSpace(0),
+            Child, (IPTR) ColGroup(2),
+                MUIA_Group_VertSpacing, 2,
+                Child, (IPTR) Label("Multi:"),
+                Child, (IPTR) d.multi_cycle = MakeCycle("Multi:", multi_labels),
+                Child, (IPTR) Label("Refresh:"),
+                Child, (IPTR) d.refresh_cycle = MakeCycle("Refresh:", refresh_labels),
+                Child, (IPTR) Label("Smooth:"),
+                Child, (IPTR) HGroup,
+                    MUIA_Group_HorizSpacing, 4,
+                    Child, (IPTR) d.smooth_checkmark = MakeCheck(NULL),
+                    Child, (IPTR) d.smooth_slider = MakeListviewspSlider(),
+                End, /* HGroup */
+            End, /* ColGroup */
+            Child, (IPTR) VSpace(0),
+        End, /* Control VGroup */
+    
+        Child, (IPTR) VGroup,
+            GroupFrameT("Fonts"),
+            MUIA_Group_VertSpacing, 0,
+            Child, (IPTR) VSpace(0),
+            Child, (IPTR) ColGroup(2),
+                MUIA_Group_VertSpacing, 2,
+                Child, (IPTR) Label("Normal:"),
+                Child, (IPTR) PopaslObject,
+                    MUIA_Popasl_Type, ASL_FontRequest,
+                    MUIA_Popstring_String, (IPTR) d.fonts_normal_string = StringObject,
+                        MUIA_CycleChain, 1,
+                        StringFrame, 
+                    End, /* String */
+                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+                End, /* PopaslObject */
+            
+                Child, (IPTR) Label("Fixed:"),
+                Child, (IPTR) PopaslObject,
+                    MUIA_Popasl_Type, ASL_FontRequest,
+                    MUIA_Popstring_String, (IPTR) d.fonts_fixed_string = StringObject,
+                        MUIA_CycleChain, 1,
+                        StringFrame, 
+                    End, /* String */
+                    MUIA_Popstring_Button, (IPTR) PopButton(MUII_PopUp),
+                End, /* PopaslObject */
+            
+                Child, (IPTR) Label("Leading:"),
+                Child, (IPTR) d.fonts_leading_slider = MakeListviewspSlider(),
+            
+            End, /* ColGroup */
+            Child, (IPTR) VSpace(0),
+        End, /* Fonts */
+            
+        Child, (IPTR) ColGroup(3),
+            GroupFrameT("Design"),
+            MUIA_Group_VertSpacing, 2,
+            Child, (IPTR) FreeLabel("Input \nLists:"),
+            Child, (IPTR) d.input_popframe = MakePopframe(),                  
+            Child, (IPTR) d.input_popimage = MakeBackgroundPopimage(),
+            Child, (IPTR) FreeLabel("Readonly \nLists:"),
+            Child, (IPTR) d.readonly_popframe = MakePopframe(),                  
+            Child, (IPTR) d.readonly_popimage = MakeBackgroundPopimage(),
+            Child, (IPTR) VSpace(0),
+            Child, (IPTR) CLabel("Frame"),
+            Child, (IPTR) CLabel("Background"),
+        End, /* Design ColGroup(3) */
+            
+        Child, (IPTR) ColGroup(3),
+            GroupFrameT("Cursor"),
+            MUIA_Group_VertSpacing, 2,
+            MUIA_Group_SameSize, TRUE,
+            Child, (IPTR) FreeLabel("Active:"),
+            Child, (IPTR) d.active_popimage = MakeBackgroundPopimage(),
+            Child, (IPTR) VGroup,
+                Child, (IPTR) HVSpace,
+                Child, (IPTR) CLabel("Active &\nSelected:"),
+            End, /* VGroup */
+            Child, (IPTR) FreeLabel("Selected:"),
+            Child, (IPTR) d.selected_popimage = MakeBackgroundPopimage(),
+            Child, (IPTR) d.activeselected_popimage = MakeBackgroundPopimage(),
+        End, /* Cursor ColGroup */
+            
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 
     if (!obj) return FALSE;
     
@@ -168,8 +171,11 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     set(data->refresh_cycle, MUIA_CycleChain, 1);
     set(data->multi_cycle, MUIA_CycleChain, 1);
 
-    DoMethod(d.smooth_checkmark, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
-	     d.smooth_slider, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue);
+    DoMethod
+    (
+        d.smooth_checkmark, MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+        (IPTR) d.smooth_slider, 3, MUIM_Set, MUIA_Disabled, MUIV_NotTriggerValue
+    );
 
     return (IPTR)obj;
 }
