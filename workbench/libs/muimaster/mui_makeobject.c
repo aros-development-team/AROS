@@ -197,28 +197,11 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 		    ButtonFrame,
 		    MUIA_Weight,0,
 	            MUIA_Image_Spec, MUII_CheckMark,
-//		    MUIA_Text_Contents, "C",
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
 	            MUIA_Image_FreeVert, TRUE,
-//	            MUIA_Image_FreeHoriz, TRUE,
-
-//	            MUIA_Frame, MUIV_Frame_None,
 	            MUIA_ShowSelState, FALSE,
 		    TAG_DONE);
-
-#if 0
-	    return MUI_NewObject(MUIC_Group,
-		MUIA_Group_Horiz,TRUE,
-		Child, Label(params[0]),
-		Child, MUI_NewObject(MUIC_Image,
-	            MUIA_Image_Spec, MUII_CheckMark,
-	            MUIA_InputMode, MUIV_InputMode_Toggle,
-	            MUIA_Frame, MUIV_Frame_None,
-	            MUIA_ShowSelState, FALSE,
-		    TAG_DONE),
-		TAG_DONE);
 	    break;
-#endif
 	}
 
 	case MUIO_Cycle: /* STRPTR label, STRPTR *entries */
@@ -248,14 +231,12 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 
 	case MUIO_PopButton: /* STRPTR imagespec */
-	    return MUI_NewObject(MUIC_Text,//MUIC_Image,
+	    return MUI_NewObject(MUIC_Image,
 	    	ButtonFrame,
 	    	MUIA_Weight,0,
-	    	MUIA_Text_SetVMax,FALSE,
-//		MUIA_Image_Spec, params[0],
+		MUIA_Image_Spec, params[0],
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
-		MUIA_Text_Contents, "Pop",
-//		MUIA_ShowSelState, FALSE,
+		MUIA_Image_FreeVert, TRUE,
 		TAG_DONE);
 	    break;
 

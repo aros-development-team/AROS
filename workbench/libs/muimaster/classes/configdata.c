@@ -116,9 +116,9 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.imagespecs[MUII_ArrowRight] = "1:3";
     data->prefs.imagespecs[MUII_CheckMark] = "1:4";
     data->prefs.imagespecs[MUII_RadioButton] = "1:5";
-    data->prefs.imagespecs[MUII_Cycle] = "0:128";
-    data->prefs.imagespecs[MUII_PopUp] = "0:128";
-    data->prefs.imagespecs[MUII_PopFile] = "0:128";
+    data->prefs.imagespecs[MUII_Cycle] = "1:6";
+    data->prefs.imagespecs[MUII_PopUp] = "1:7";
+    data->prefs.imagespecs[MUII_PopFile] = "1:8";
     data->prefs.imagespecs[MUII_PopDrawer] = "0:128";
     data->prefs.imagespecs[MUII_PropKnob] = "0:128";
     data->prefs.imagespecs[MUII_Drawer] = "0:128";
