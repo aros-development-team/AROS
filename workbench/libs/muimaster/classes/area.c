@@ -264,9 +264,12 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_CYCLECHAIN);
 		break;
 
-	    case    MUIA_Disabled:
-		    set(obj,MUIA_Disabled,tag->ti_Data); /* So all members of a group will also get disabled */
-		    break;
+	    case MUIA_Disabled:
+		if (tag->ti_Data)
+		{
+		    data->mad_DisableCount = 1;
+		}
+		break;
 
 	    case MUIA_FillArea:
 		_handle_bool_tag(data->mad_Flags, tag->ti_Data, MADF_FILLAREA);
@@ -893,8 +896,8 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
 		case GROUP_TITLE_POSITION_ABOVE:
-		    top += data->mad_TitleText->height;
-		    height -= data->mad_TitleText->height;
+		    top += _font(obj)->tf_Baseline;
+		    height -= _font(obj)->tf_Baseline;
 		    break;
 		case GROUP_TITLE_POSITION_CENTERED:
 		    top += data->mad_TitleText->height / 2 + 2;
@@ -946,8 +949,8 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
             switch (muiGlobalInfo(obj)->mgi_Prefs->group_title_position)
             {
 		case GROUP_TITLE_POSITION_ABOVE:
-		    top = _top(obj) + data->mad_TitleText->height - 2;
-		    height = _height(obj) - (data->mad_TitleText->height - 2);
+		    top = _top(obj) + _font(obj)->tf_Baseline - 2;
+		    height = _height(obj) - (_font(obj)->tf_Baseline - 2);
 		    break;
 		case GROUP_TITLE_POSITION_CENTERED:
 		    top = _top(obj) + data->mad_TitleText->height / 2;
