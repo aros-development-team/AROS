@@ -2,7 +2,7 @@ TODO list for the Palm Port (ROM)
 
 - The memory allocation for the Supervisor stack, display memory is
   a mess right now or non-existent.
-   -> Allocate memory for SSP in exec_init.c via AllocMem()
+   -> Allocate memory for SSP in exec_init.c via AllocMem() [DONE]
    
 
 - When processes are closed access to DOSBase (see createnewproc ->
@@ -35,7 +35,7 @@ TODO list for the Palm Port (ROM)
    SetTaskPri  |  no (copy from i386)
 
 
-- IRQ Hidd
+- IRQ Hidd [DONE]
 - graphics hidd (black and white support might be difficult to achieve with
   our multi color OS, might want to try a 256/64k color display hidd)
 - rom handler for file system: needed to place AROS files on it and to be
