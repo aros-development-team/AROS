@@ -20,6 +20,7 @@
 
 #include "executecommand.h"
 #include "locale.h"
+#include "support.h"
 
 void cleanup(CONST_STRPTR message)
 {
@@ -28,7 +29,7 @@ void cleanup(CONST_STRPTR message)
     
     if (message != NULL)
     {
-        // FIXME: show error message
+        ShowError(NULL, NULL, message, TRUE);
         exit(RETURN_FAIL);
     }
     else
@@ -43,8 +44,8 @@ int main(int argc, char **argv)
     BPTR    parent  = NULL;
     STRPTR  initial = NULL;
     
-    if (!Locale_Initialize()) cleanup("Failed to initialize locale.");
-    if (!ExecuteCommand_Initialize()) cleanup("Failed to initialize classes.");
+    if (!Locale_Initialize()) cleanup(_(MSG_ERROR_LOCALE));
+    if (!ExecuteCommand_Initialize()) cleanup(_(MSG_ERROR_CLASSES));
     
     if (argc == 0)
     {
