@@ -35,6 +35,7 @@ FUNCTIONS = \
 	makeclass \
 	modifyidcmp \
 	modifyprop \
+	movescreen \
 	newmodifyprop \
 	newobjecta \
 	obtaingirport \
@@ -49,8 +50,10 @@ FUNCTIONS = \
 	refreshwindowframe \
 	releasegirport \
 	removeclass \
+	screentofront \
 	setattrsa \
 	setdefaultpubscreen \
+	setpointer \
 	setwindowtitles \
 	sizewindow \
 	unlockibase \

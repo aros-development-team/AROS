@@ -192,6 +192,13 @@
     AROS_LCA(ULONG             , vertBody, D4), \
     struct IntuitionBase *, IntuitionBase, 26, Intuition)
 
+#define MoveScreen(screen, dx, dy) \
+    AROS_LC3(void, MoveScreen, \
+    AROS_LCA(struct Screen *, screen, A0), \
+    AROS_LCA(LONG           , dx, D0), \
+    AROS_LCA(LONG           , dy, D1), \
+    struct IntuitionBase *, IntuitionBase, 27, Intuition)
+
 #define NewModifyProp(gadget, window, requester, flags, horizPot, vertPot, horizBody, vertBody, numGad) \
     AROS_LC9(void, NewModifyProp, \
     AROS_LCA(struct Gadget    *, gadget, A0), \
@@ -283,6 +290,11 @@
     AROS_LCA(struct IClass *, classPtr, A0), \
     struct IntuitionBase *, IntuitionBase, 118, Intuition)
 
+#define ScreenToFront(screen) \
+    AROS_LC1(void, ScreenToFront, \
+    AROS_LCA(struct Screen *, screen, A0), \
+    struct IntuitionBase *, IntuitionBase, 42, Intuition)
+
 #define SetAttrsA(object, tagList) \
     AROS_LC2(ULONG, SetAttrsA, \
     AROS_LCA(APTR            , object, A0), \
@@ -293,6 +305,16 @@
     AROS_LC1(void, SetDefaultPubScreen, \
     AROS_LCA(UBYTE *, name, A0), \
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
+
+#define SetPointer(window, pointer, height, width, xOffset, yOffset) \
+    AROS_LC6(void, SetPointer, \
+    AROS_LCA(struct Window *, window, A0), \
+    AROS_LCA(UWORD         *, pointer, A1), \
+    AROS_LCA(LONG           , height, D0), \
+    AROS_LCA(LONG           , width, D1), \
+    AROS_LCA(LONG           , xOffset, D2), \
+    AROS_LCA(LONG           , yOffset, D3), \
+    struct IntuitionBase *, IntuitionBase, 45, Intuition)
 
 #define SetWindowTitles(window, windowTitle, screenTitle) \
     AROS_LC3(void, SetWindowTitles, \

@@ -15,8 +15,26 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#ifndef INTUITION_CLASSUSR_H
+#   include <intuition/classusr.h>
+#endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 
 extern struct IntuitionBase * IntuitionBase;
+
+/* Prototypes for stubs in amiga.lib */
+IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
+		    struct Requester * req, ULONG MethodID, ...);
+ULONG SetAttrs (Object * obj, ULONG tag1, ...);
+ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
+APTR NewObject (Class * classPtr, UBYTE * classID, ULONG tag1, ...);
+
+struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
+struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
+
+LONG EasyRequest (struct Window * window, struct EasyStruct * easyStruct, ULONG * idcmpPtr, ...);
 
 /*
     Prototypes
@@ -175,6 +193,12 @@ AROS_LP8(void, ModifyProp,
     AROS_LPA(ULONG             , vertBody, D4),
     struct IntuitionBase *, IntuitionBase, 26, Intuition)
 
+AROS_LP3(void, MoveScreen,
+    AROS_LPA(struct Screen *, screen, A0),
+    AROS_LPA(LONG           , dx, D0),
+    AROS_LPA(LONG           , dy, D1),
+    struct IntuitionBase *, IntuitionBase, 27, Intuition)
+
 AROS_LP9(void, NewModifyProp,
     AROS_LPA(struct Gadget    *, gadget, A0),
     AROS_LPA(struct Window    *, window, A1),
@@ -252,6 +276,10 @@ AROS_LP1(void, RemoveClass,
     AROS_LPA(struct IClass *, classPtr, A0),
     struct IntuitionBase *, IntuitionBase, 118, Intuition)
 
+AROS_LP1(void, ScreenToFront,
+    AROS_LPA(struct Screen *, screen, A0),
+    struct IntuitionBase *, IntuitionBase, 42, Intuition)
+
 AROS_LP2(ULONG, SetAttrsA,
     AROS_LPA(APTR            , object, A0),
     AROS_LPA(struct TagItem *, tagList, A1),
@@ -260,6 +288,15 @@ AROS_LP2(ULONG, SetAttrsA,
 AROS_LP1(void, SetDefaultPubScreen,
     AROS_LPA(UBYTE *, name, A0),
     struct IntuitionBase *, IntuitionBase, 90, Intuition)
+
+AROS_LP6(void, SetPointer,
+    AROS_LPA(struct Window *, window, A0),
+    AROS_LPA(UWORD         *, pointer, A1),
+    AROS_LPA(LONG           , height, D0),
+    AROS_LPA(LONG           , width, D1),
+    AROS_LPA(LONG           , xOffset, D2),
+    AROS_LPA(LONG           , yOffset, D3),
+    struct IntuitionBase *, IntuitionBase, 45, Intuition)
 
 AROS_LP3(void, SetWindowTitles,
     AROS_LPA(struct Window *, window, A0),

@@ -85,6 +85,13 @@
     AROS_LCA(struct RastPort *, rp, A1), \
     struct GfxBase *, GfxBase, 33, Graphics)
 
+#define LoadRGB4(vp, colors, count) \
+    AROS_LC3(void, LoadRGB4, \
+    AROS_LCA(struct ViewPort *, vp, A0), \
+    AROS_LCA(UWORD           *, colors, A1), \
+    AROS_LCA(LONG             , count, D0), \
+    struct GfxBase *, GfxBase, 32, Graphics)
+
 #define Move(rp, x, y) \
     AROS_LC3(void, Move, \
     AROS_LCA(struct RastPort *, rp, A1), \
@@ -200,6 +207,10 @@
     AROS_LCA(STRPTR           , string, A0), \
     AROS_LCA(ULONG            , count, D0), \
     struct GfxBase *, GfxBase, 9, Graphics)
+
+#define WaitTOF() \
+    AROS_LC0(void, WaitTOF, \
+    struct GfxBase *, GfxBase, 45, Graphics)
 
 #define WritePixel(rp, x, y) \
     AROS_LC3(LONG, WritePixel, \

@@ -20,6 +20,7 @@ FUNCTIONS = \
 	getdrmd \
 	getoutlinepen \
 	initrastport \
+	loadrgb4 \
 	move \
 	openfont \
 	polydraw \
@@ -37,6 +38,7 @@ FUNCTIONS = \
 	setwritemask \
 	text \
 	textlength \
+	waittof \
 	writepixel
 
 all: setup \

@@ -64,7 +64,8 @@ static const char * sysColName[NUM_COLORS] =
     "sienna",
 };
 
-static long sysCMap[NUM_COLORS];
+static long sysCMap[256];
+static long maxPen;
 static unsigned long sysPlaneMask;
 
 struct ETextFont
@@ -120,8 +121,8 @@ int driver_init (struct GfxBase * GfxBase)
 			    WhitePixel(sysDisplay, sysScreen) :
 			    BlackPixel(sysDisplay, sysScreen);
 		}
-
-		sysCMap[t] = xc.pixel;
+		else
+		    sysCMap[t] = xc.pixel;
 
 		if (t == 0)
 		    bg = xc;
@@ -136,6 +137,8 @@ int driver_init (struct GfxBase * GfxBase)
 
 	sysPlaneMask |= sysCMap[t];
     }
+
+    maxPen = NUM_COLORS;
 
     sysCursor = XCreateFontCursor (sysDisplay, XC_top_left_arrow);
     XRecolorCursor (sysDisplay, sysCursor, &fg, &bg);
@@ -672,3 +675,50 @@ ULONG driver_SetWriteMask (struct RastPort * rp, ULONG mask,
 
     return FALSE;
 }
+
+void driver_WaitTOF (struct GfxBase * GfxBase)
+{
+    /* TODO */
+}
+
+void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
+	    struct GfxBase * GfxBase)
+{
+    int t;
+    XColor xc;
+    Colormap cm;
+
+    cm = DefaultColormap (sysDisplay, sysScreen);
+
+    t = (count < maxPen) ? count : maxPen;
+
+    /* Return colors */
+    if (t)
+	XFreeColors (sysDisplay, cm, sysCMap, t, 0L);
+
+    /* Allocate new colors */
+    for (t=0; t<count; t++)
+    {
+	xc.red = ((colors[t] & 0x0F00) >> 8) << 4;
+	xc.green = ((colors[t] & 0x00F0) >> 4) << 4;
+	xc.blue = ((colors[t] & 0x000F) >> 0) << 4;
+
+	if (!XAllocColor (sysDisplay, cm, &xc))
+	{
+	    fprintf (stderr, "Couldn't allocate color %s\n",
+		    sysColName[t]);
+	    sysCMap[t] = !(t & 1) ?
+		    WhitePixel(sysDisplay, sysScreen) :
+		    BlackPixel(sysDisplay, sysScreen);
+	}
+	else
+	    sysCMap[t] = xc.pixel;
+    }
+
+    if (count > maxPen)
+	maxPen = count;
+
+    for (t=0,sysPlaneMask=0; t<maxPen; t++)
+	sysPlaneMask |= sysCMap[t];
+
+} /* driver_LoadRGB4 */
