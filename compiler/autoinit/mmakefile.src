@@ -40,6 +40,7 @@ MISCFILES := \
 
 FILES := $(LIBBASEFILES) $(LIBHANDLINGFILES) $(MISCFILES)
 
+#MM- linklibs-core : linklibs-autoinit
 #MM- linklibs: linklibs-autoinit
 #MM linklibs-autoinit : includes includes-copy
 

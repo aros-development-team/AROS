@@ -1,3 +1,4 @@
+
 #   $Id$
 #
 include $(TOP)/config/make.cfg
@@ -68,6 +69,7 @@ INCLUDE_FILES	:= jpeglib.h jversion.h jinclude.h jconfig.h jmorecfg.h jerror.h
 
 USER_CFLAGS	:= -O2
 
+#MM- linklibs-core : linklibs-jpeg
 #MM- linklibs: linklibs-jpeg
 #MM linklibs-jpeg : includes
 #MM includes-copy

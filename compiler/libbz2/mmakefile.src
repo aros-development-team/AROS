@@ -6,6 +6,7 @@ INCLUDE_FILES := bzlib.h
 
 USER_CFLAGS   := -DBZ_NO_STDIO
 
+#MM- linklibs-core : linklibs-bz2
 #MM- linklibs : linklibs-bz2
 #MM linklibs-bz2 : includes
 #MM includes-copy

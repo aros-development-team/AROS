@@ -116,8 +116,8 @@ FILES	:= \
     videocontroltags \
     workbenchcontrol
 
-
-#MM- linklibs: linklibs-amiga linklibs-startup
+#MM- linklibs-core : linklibs-amiga
+#MM- linklibs: linklibs-amiga 
 #MM linklibs-amiga : includes includes-copy
 
 %build_linklib mmake=linklibs-amiga libname=amiga files="$(FILES)"
