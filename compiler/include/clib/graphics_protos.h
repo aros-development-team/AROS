@@ -8,6 +8,14 @@
 /*
     Prototypes
 */
+AROS_LP1(struct RastPort *, CloneRastPort,
+    AROS_LPA(struct RastPort *, rp, A1),
+    struct GfxBase *, GfxBase, 178, Graphics)
+#define CloneRastPort(rp) \
+    AROS_LC1(struct RastPort *, CloneRastPort, \
+    AROS_LCA(struct RastPort *, rp, A1), \
+    struct GfxBase *, GfxBase, 178, Graphics)
+
 AROS_LP1(void, CloseFont,
     AROS_LPA(struct TextFont *, textFont, A1),
     struct GfxBase *, GfxBase, 13, Graphics)
@@ -15,6 +23,12 @@ AROS_LP1(void, CloseFont,
     AROS_LC1(void, CloseFont, \
     AROS_LCA(struct TextFont *, textFont, A1), \
     struct GfxBase *, GfxBase, 13, Graphics)
+
+AROS_LP0(struct RastPort *, CreateRastPort,
+    struct GfxBase *, GfxBase, 177, Graphics)
+#define CreateRastPort() \
+    AROS_LC0(struct RastPort *, CreateRastPort, \
+    struct GfxBase *, GfxBase, 177, Graphics)
 
 AROS_LP3(void, Draw,
     AROS_LPA(struct RastPort *, rp, A1),
@@ -59,6 +73,14 @@ AROS_LP5(void, EraseRect,
     AROS_LCA(long             , xMax, D2), \
     AROS_LCA(long             , yMax, D3), \
     struct GfxBase *, GfxBase, 135, Graphics)
+
+AROS_LP1(void, FreeRastPort,
+    AROS_LPA(struct RastPort *, rp, A1),
+    struct GfxBase *, GfxBase, 179, Graphics)
+#define FreeRastPort(rp) \
+    AROS_LC1(void, FreeRastPort, \
+    AROS_LCA(struct RastPort *, rp, A1), \
+    struct GfxBase *, GfxBase, 179, Graphics)
 
 AROS_LP1(ULONG, GetAPen,
     AROS_LPA(struct RastPort *, rp, A0),
@@ -224,12 +246,12 @@ AROS_LP2(void, SetDrMd,
     AROS_LCA(unsigned long    , drawMode, D0), \
     struct GfxBase *, GfxBase, 59, Graphics)
 
-AROS_LP2(LONG, SetFont,
+AROS_LP2(void, SetFont,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(struct TextFont *, textFont, A0),
     struct GfxBase *, GfxBase, 11, Graphics)
 #define SetFont(rp, textFont) \
-    AROS_LC2(LONG, SetFont, \
+    AROS_LC2(void, SetFont, \
     AROS_LCA(struct RastPort *, rp, A1), \
     AROS_LCA(struct TextFont *, textFont, A0), \
     struct GfxBase *, GfxBase, 11, Graphics)
@@ -254,13 +276,13 @@ AROS_LP2(void, SetRast,
     AROS_LCA(unsigned long    , pen, D0), \
     struct GfxBase *, GfxBase, 39, Graphics)
 
-AROS_LP3(LONG, Text,
+AROS_LP3(void, Text,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(STRPTR           , string, A0),
     AROS_LPA(unsigned long    , count, D0),
     struct GfxBase *, GfxBase, 10, Graphics)
 #define Text(rp, string, count) \
-    AROS_LC3(LONG, Text, \
+    AROS_LC3(void, Text, \
     AROS_LCA(struct RastPort *, rp, A1), \
     AROS_LCA(STRPTR           , string, A0), \
     AROS_LCA(unsigned long    , count, D0), \
