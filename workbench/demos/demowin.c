@@ -27,6 +27,7 @@
 #include <ctype.h>
 #include <aros/rt.h>
 #include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 
 #if 1
@@ -39,7 +40,7 @@
 struct Library *ConsoleDevice;
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
-Object * frame;
+Object * frame, * gadget;
 
 void Refresh (struct RastPort * rp)
 {
@@ -91,9 +92,6 @@ void Refresh (struct RastPort * rp)
 
     Move (rp, 20, 350);
     Text (rp, "Press \"Complement\" to flip PropGadgets", 39);
-
-    if (frame)
-	DoMethod (frame, IM_DRAW, rp, (WORD)10, (WORD)10, IDS_NORMAL, NULL);
 
     tend = 10;
     t = 0;
@@ -362,7 +360,7 @@ DemoGadget5 =
 	, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, &DemoITopBorder, /* Render */
-    (struct IntuiText *)"Toggle", /* Text */
+    (struct IntuiText *)"_Toggle", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     6, /* GadgetID */
     NULL /* UserData */
@@ -396,7 +394,7 @@ DemoGadget3 =
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &ImageButton0Image, &ImageButton1Image, /* Render */
-    (struct IntuiText *)"Image", /* Text */
+    (struct IntuiText *)"_Image", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     4, /* GadgetID */
     NULL /* UserData */
@@ -412,7 +410,7 @@ DemoGadget2 =
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
-    (struct IntuiText *)"Box", /* Text */
+    (struct IntuiText *)"_Box", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     3, /* GadgetID */
     NULL /* UserData */
@@ -428,7 +426,7 @@ DemoGadget1 =
     GACT_IMMEDIATE | GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, NULL, /* Render */
-    (struct IntuiText *)"Complement", /* Text */
+    (struct IntuiText *)"_Complement", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     2, /* GadgetID */
     NULL /* UserData */
@@ -444,7 +442,7 @@ ExitGadget =
     GACT_RELVERIFY, /* Activation */
     GTYP_BOOLGADGET, /* Type */
     &DemoTopBorder, &DemoITopBorder, /* Render */
-    (struct IntuiText *)"Exit", /* Text */
+    (struct IntuiText *)"E_xit", /* Text */
     0L, NULL, /* MutualExcl, SpecialInfo */
     1, /* GadgetID */
     NULL /* UserData */
@@ -497,6 +495,25 @@ int main (int argc, char ** argv)
 	return 10;
     }
 
+    frame = NewObject (NULL, FRAMEICLASS
+	, IA_Width,  GAD_WID
+	, IA_Height, GAD_HEI
+	, TAG_END
+    );
+
+    gadget = NewObject (NULL, BUTTONGCLASS
+	, GA_Left,	BORDER*2+GAD_WID
+	, GA_RelBottom, -(GAD_HEI+BORDER)
+	, GA_Width,	GAD_WID
+	, GA_Height,	GAD_HEI
+	, GA_Previous,	&DemoGadget12
+	, GA_Text,	"_Exit"
+	, GA_RelVerify, TRUE
+	, GA_ID,	1
+	, GA_Image,	frame
+	, TAG_END
+    );
+
     win = OpenWindowTags (NULL
 	, WA_Title,	    "Open a window demo"
 	, WA_Left,	    100
@@ -526,11 +543,8 @@ int main (int argc, char ** argv)
     DemoIText.LeftEdge = GAD_WID/2 - rp->Font->tf_XSize*2;
     DemoIText.TopEdge = GAD_HEI/2 - rp->Font->tf_YSize/2 + rp->Font->tf_Baseline;
 
-    frame = NewObject (NULL, FRAMEICLASS
-	, IA_Width,  20
-	, IA_Height, 20
-	, TAG_END
-    );
+    if (!gadget)
+	bug("Warning: Couldn't create gadget\n");
 
     if (!frame)
 	bug("Warning: Couldn't create frame\n");
@@ -875,6 +889,9 @@ int main (int argc, char ** argv)
     CloseWindow (win);
 
 end:
+    if (gadget)
+	DisposeObject (gadget);
+
     if (frame)
 	DisposeObject (frame);
 
