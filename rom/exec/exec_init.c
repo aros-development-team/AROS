@@ -83,7 +83,7 @@ void aros_print_not_implemented(char *name)
     kprintf("The function %s is not implemented.\n", name);
 }
 
-#define kprintf	(((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
+#define kprintf (((struct AROSSupportBase *)(SysBase->DebugData))->kprintf)
 
 /* IntServer:
     This interrupt handler will send an interrupt to a series of queued
@@ -197,6 +197,9 @@ AROS_LH2(struct LIBBASETYPE *, init,
 {
     AROS_LIBFUNC_INIT
 
+/* FIXME hack to avoid crash in timer_init.c:118 */
+SysBase->VBlankFrequency = 50;
+
     /* We have been entered by a call to InitCode(RTF_SINGLETASK,0); */
 
     /* Create boot task.  Sigh, we actually create a Process sized Task,
@@ -275,7 +278,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	if( !ml || !t || !s )
 	{
 	    kprintf("ERROR: Cannot create Idle Task!\n");
-    	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
+	    Alert( AT_DeadEnd | AG_NoMemory | AN_ExecLib );
 	}
 
 	ml->ml_NumEntries = 2;
@@ -331,7 +334,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	if(!is)
 	{
 	    kprintf("ERROR: Cannot install Task Dispatcher!\n");
-    	    Alert( AT_DeadEnd | AN_IntrMem );
+	    Alert( AT_DeadEnd | AN_IntrMem );
 	}
 	is->is_Code = (void (*)())&Dispatcher;
 	AddIntServer(INTB_VERTB,is);
