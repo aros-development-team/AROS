@@ -6,6 +6,7 @@
    Lang: English
  */
 
+#include <proto/exec.h>
 #include <exec/types.h>
 #include <exec/libraries.h>
 #include <exec/memory.h>
@@ -15,6 +16,7 @@
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/screens.h>
+#include <gadgets/aroscheckbox.h>
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
@@ -56,7 +58,6 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 			    struct TagItem *taglist)
 {
     struct Gadget *obj;
-    Class *cl;
     struct TagItem tags[] =
     {
 	{GA_Disabled, FALSE},
@@ -64,9 +65,10 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 	{TAG_MORE, (IPTR) NULL}
     };
 
-    cl = makecheckclass(GadToolsBase);
-    if (!cl)
-	return NULL;
+    if (!GadToolsBase->aroscbbase)
+        GadToolsBase->aroscbbase = OpenLibrary("SYS:Classes/Gadgets/aroscheckbox.gadget", 0);
+    if (!GadToolsBase->aroscbbase)
+        return NULL;
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCB_Checked, FALSE, taglist);
@@ -76,7 +78,7 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 	stdgadtags[TAG_Width].ti_Data = CHECKBOX_WIDTH;
 	stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
-    obj = (struct Gadget *) NewObjectA(cl, NULL, tags);
+    obj = (struct Gadget *) NewObjectA(NULL, AROSCHECKBOXCLASS, tags);
 
     return obj;
 }
@@ -128,7 +130,7 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     }
     while (labellist[labels])
 	labels++;
-    stdgadtags[TAG_Height].ti_Data = (height + tags[3].ti_Data) * labels;
+    stdgadtags[TAG_Height].ti_Data = (height + tags[3].ti_Data) * labels - tags[3].ti_Data;
 
     gad = (struct Gadget *) NewObjectA(cl, NULL, tags);
 

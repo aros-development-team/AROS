@@ -104,8 +104,9 @@ AROS_LH2(struct GadToolsBase_intern *, init,
     LIBBASE->sysbase=sysBase;
     LIBBASE->seglist=segList;
 
+    LIBBASE->aroscbbase = NULL;
+
     LIBBASE->buttonclass = NULL;
-    LIBBASE->checkclass = NULL;
     LIBBASE->mxclass = NULL;
 
     /* You would return NULL here if the init failed. */
@@ -170,21 +171,17 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
       {
-        if (GadToolsBase->mxclass)
-            FreeClass(GadToolsBase->mxclass);
-	if (GadToolsBase->checkclass)
-	    FreeClass(GadToolsBase->checkclass);
-	if (GadToolsBase->buttonclass)
-	    FreeClass(GadToolsBase->buttonclass);
+        if (LIBBASE->mxclass)
+            FreeClass(LIBBASE->mxclass);
+	if (LIBBASE->buttonclass)
+	    FreeClass(LIBBASE->buttonclass);
 
-	if (UtilityBase)
-	    CloseLibrary(UtilityBase);
-	if (GfxBase)
-	    CloseLibrary((struct Library *)GfxBase);
-	if (DOSBase)
-	    CloseLibrary(DOSBase);
-	if (IntuitionBase)
-	    CloseLibrary((struct Library *)IntuitionBase);
+        /*        CloseLibrary(LIBBASE->aroscbbase);*/
+
+	CloseLibrary(UtilityBase);
+        CloseLibrary((struct Library *)GfxBase);
+        CloseLibrary(DOSBase);
+        CloseLibrary((struct Library *)IntuitionBase);
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
