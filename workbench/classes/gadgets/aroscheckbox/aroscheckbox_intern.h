@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -33,11 +33,6 @@
 #   include <intuition/gadgetclass.h>
 #endif
 
-/* Predeclaration */
-struct CBBase_intern;
-
-//#define GLOBAL_INTUIBASE
-
 #define TURN_OFF_DEBUG
 
 
@@ -57,54 +52,7 @@ struct CheckData {
 
 
 /* Prototypes */
-void drawdisabledpattern(struct CBBase_intern *AROSCheckboxBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
-BOOL renderlabel(struct CBBase_intern *AROSCheckboxBase,
-		 struct Gadget *gad, struct RastPort *rport, LONG labelplace);
-
-
-
-/* Library stuff */
-struct CBBase_intern
-{
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-
-    #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
-    #endif
-    struct GfxBase	*gfxbase;
-    struct Library	*utilitybase;
-    
-    struct IClass	*classptr;
-	
-};
-
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
-#undef CBB
-#define CBB(b) ((struct CBBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase 	CBB(AROSCheckboxBase)->utilitybase
-
-
-#ifndef GLOBAL_INTUIBASE
-#undef IntuitionBase
-#define IntuitionBase	CBB(AROSCheckboxBase)->intuitionbase
-#endif
-
-#undef GfxBase
-#define GfxBase		CBB(AROSCheckboxBase)->gfxbase
-#undef SysBase
-#define SysBase		CBB(AROSCheckboxBase)->sysbase
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct CBBase_intern *, AROSCheckboxBase, 3, AROSCheckbox)
+void drawdisabledpattern(struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
+BOOL renderlabel(struct Gadget *gad, struct RastPort *rport, LONG labelplace);
 
 #endif /* AROSCHECKBOX_INTERN_H */
