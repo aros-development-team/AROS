@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/10/23 14:23:43  aros
+    dos/dosextens is a system headerfile
+
+    added debug code
+
     Revision 1.3  1996/08/13 13:52:48  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -14,7 +19,9 @@
 */
 #include <dos/dos.h>
 #include <clib/dos_protos.h>
-#include "dos/dosextens.h"
+#include <dos/dosextens.h>
+#include <aros/debug.h>
+#include "dos_intern.h"
 
 BPTR LoadSeg_AOS(BPTR file);
 BPTR LoadSeg_ELF(BPTR file);
@@ -70,6 +77,7 @@ BPTR LoadSeg_ELF(BPTR file);
     file=Open(name,MODE_OLDFILE);
     if(file)
     {
+D(bug("Loading \"%s\"...\n", name));
 	/* Then try to load the different file formats */
 /*	  segs=LoadSeg_AOS(file); Not yet */
 	if(!segs)
