@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <errno.h>
+#include <ctype.h>
 #include <toollib/stdiocb.h>
 #include <toollib/error.h>
 #include "html.h"
@@ -15,17 +16,59 @@ static const char version[] = "$VER: hpp 0.2 (19.11.1997)\r\n";
 static int
 MyStdioPutCB (StdioStream * ss, int c, CBD data)
 {
-    static int lastc = '\n';
-    static int size = 0;
+    static int lastc   = '\n';
+    static int size    = 0;
+    static int linelen = 0;
+    static int intag   = 0;
+    int allowbreak;
 
     if (ss->out)
     {
-	if (c == '\n' && c == lastc)
-	    return 1;
+	allowbreak = 0;
+
+	if (c == '\n')
+	{
+	    linelen = 0;
+	    if (c == lastc)
+		return 1;
+	}
+	else if (c == '<')
+	{
+	    intag = 1;
+	    allowbreak = 1;
+	}
+	else if (c == '>')
+	{
+	    intag = 0;
+	    allowbreak = -1;
+	}
+	else if (!intag && isspace (c))
+	{
+	    allowbreak = 1;
+	}
 
 	lastc = c;
 
+	if (linelen > 70 && allowbreak)
+	{
+	    linelen = 0;
+
+	    if (allowbreak > 0)
+	    {
+		putc ('\n', ss->out);
+
+		if (isspace (c))
+		    return c;
+	    }
+	    else
+	    {
+		putc (c, ss->out);
+		c = '\n';
+	    }
+	}
+
 	size ++;
+	linelen ++;
 
 	if (size == 1024)
 	{
@@ -167,12 +210,12 @@ void main (int argc, char ** argv)
     {
 	ss = StdStr_New (infiles[t], "r");
 
-	Var_Set ("filename", infiles[t]);
-
 	if (!ss)
 	    PrintErrorStack ();
 	else
 	{
+	    Var_Set ("filename", infiles[t]);
+
 	    rc = HTML_Parse ((MyStream *) ss, (MyStream *) output, NULL);
 
 	    if (rc == T_ERROR)
@@ -184,6 +227,9 @@ void main (int argc, char ** argv)
 	    StdStr_Delete (ss);
 	} /* if (ss) */
     } /* for all input files */
+
+    Str_Put (output, '\n', NULL);
+    StdStr_Delete (output);
 
     HTML_Exit ();
     DB_Exit ();
