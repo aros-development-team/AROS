@@ -82,9 +82,9 @@
 	/* yes, better do so */
 	struct MsgPort *mp;
 	struct IOFileSys *iofs;
-	
+
 	mp = CreateMsgPort();
-	
+
 	if (mp != NULL)
 	{
 	    iofs = (struct IOFileSys *)CreateIORequest(mp,
@@ -94,7 +94,7 @@
 	    {
 		STRPTR handler;
 		struct FileSysStartupMsg *fssm;
-		
+
 		if (deviceNode->dn_Handler == NULL)
 		{
 		    handler = "ffs.handler";
@@ -103,18 +103,19 @@
 		{
 		    handler = AROS_BSTR_ADDR(deviceNode->dn_Handler);
 		}
-		
+
 		fssm = (struct FileSysStartupMsg *)BADDR(deviceNode->dn_Startup);
 		iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
-		iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
-		iofs->io_Union.io_OpenDevice.io_Environ = (IPTR *)BADDR(fssm->fssm_Environ);
-		
+		iofs->io_Union.io_OpenDevice.io_Unit       = fssm->fssm_Unit;
+		iofs->io_Union.io_OpenDevice.io_Environ    = (IPTR *)BADDR(fssm->fssm_Environ);
+		iofs->io_Union.io_OpenDevice.io_DosName    = deviceNode->dn_NewName;
+
 		if (!OpenDevice(handler, 0, &iofs->IOFS, fssm->fssm_Flags))
 		{
 		    /*
 		      Ok, this means that the handler was able to open,
 		      the old mount command just left the device hanging?
-		      
+
 		      I suppose that is one one of preventing it from
 		      dieing
 		    */
@@ -122,7 +123,7 @@
 		    deviceNode->dn_Unit = iofs->IOFS.io_Unit;
 		    ok = TRUE;
 		}
-		
+
 		DeleteIORequest(&iofs->IOFS);
 	    }
 
@@ -133,15 +134,15 @@
     {
 	ok = TRUE;
     }
-    
+
     DOSBase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
-    
+
     /* Aha, DOS is up and running... */
     if (DOSBase != NULL)
     {
 	/* We should add the filesystem to the DOS device list. It will
 	   usable from this point onwards.
-	   
+
 	   The DeviceNode structure that was passed to us can be added
 	   to the DOS list as it is, and we will let DOS start the
 	   filesystem task if it is necessary to do so.
