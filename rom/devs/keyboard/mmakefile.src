@@ -1,0 +1,44 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+DEVS    := $(DEVSDIR)/keyboard.device
+FILES	:= keyboard
+OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+LIB	:= $(LIBDIR)/libkeyboard.a
+
+%define_libs
+
+#MM
+kernel-devs-$(ARCH)-$(CPU) : $(LIB)
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
+kernel-devs : show-flags $(DEVS)
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR)
+
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+
+$(DEVSDIR)/keyboard.device : $(OSGENDIR)/keyboard.o
+	%link_q startup=
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)

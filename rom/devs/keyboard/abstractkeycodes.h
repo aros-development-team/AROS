@@ -1,5 +1,5 @@
 /*
-    (C) 1998 AROS - The Amiga Research OS
+    (C) 1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Definitions for AROS abstract keymap
@@ -15,7 +15,8 @@
 #define  AMIGAKEYMASK      0x7f
 #define  NOTAMIGAKEYMASK   0xff00
 
-/* Key codes - not all of them yet... */
+/* We only care about the qualifier for now keys as the other ones
+   are taken care of by keymap.library anyway. */
 
 #define  AKC_QUALIFIERS_FIRST  0x60
 #define  AKC_QUALIFIERS_LAST   0x67

@@ -6,6 +6,10 @@
     Lang: English
 */
 
+/* HISTORY:  12.04.98  SDuvan  Began work
+             xx.06.98  SDuvan  Fixes, added amigakeyboard.HIDD
+ */
+
 #define AROS_ALMOST_COMPATIBLE 1
 #include <exec/resident.h>
 #include <exec/interrupts.h>
@@ -20,8 +24,13 @@
 #include "abstractkeycodes.h"
 #include "keyboard_intern.h"
 
+#ifdef  __GNUC__
+#include "keyboard_gcc.h"
+#endif
+
 #define DEBUG 0
 #include <aros/debug.h>
+
 
 #define ioStd(x)  ((struct IOStdReq *)x)
 #define kbUn      ((struct KBUnit *)(ioreq->io_Unit))
@@ -48,7 +57,7 @@ static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
 
-struct  KeyboardBase *AROS_SLIB_ENTRY(init, Keyboard)();
+struct KeyboardBase *AROS_SLIB_ENTRY(init, Keyboard)();
 void AROS_SLIB_ENTRY(open, Keyboard)();
 BPTR AROS_SLIB_ENTRY(close, Keyboard)();
 BPTR AROS_SLIB_ENTRY(expunge, Keyboard)();
@@ -133,8 +142,20 @@ AROS_LH3(void, open,
 
     /* Keep compiler happy */
     unitnum = 0;
-    flags = 0;
-    
+    flags   = 0;
+
+    if(KBBase->kb_keyBuffer == NULL)
+    {
+	KBBase->kb_keyBuffer = AllocMem(sizeof(UWORD)*KB_BUFFERSIZE, MEMF_ANY);
+    }
+
+    /* No memory for key buffer? */
+    if(KBBase->kb_keyBuffer == NULL)
+    {
+	ioreq->io_Error = IOERR_OPENFAIL;
+	return;
+    }
+
     if((ioreq->io_Unit = AllocMem(sizeof(KBUnit), MEMF_CLEAR)) == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
@@ -188,6 +209,8 @@ AROS_LH0(BPTR, expunge, struct KeyboardBase *, KBBase, 3, Keyboard)
     AROS_LIBFUNC_INIT
 
     /* Do not expunge the device. Set the delayed expunge flag and return. */
+
+    /* TODO: Deallocate key buffer. */
     KBBase->kb_device.dd_Library.lib_Flags |= LIBF_DELEXP;
     return 0;
     AROS_LIBFUNC_EXIT
@@ -215,35 +238,33 @@ AROS_LH1(void, beginio,
 					room for in memory pointed to by io_Data */
     struct InputEvent *event;        /* Temporary variable */
     
+    
     D(bug("id: beginio(ioreq=%p)\n", ioreq));
-
+    
     /* WaitIO will look into this */
     ioreq->io_Message.mn_Node.ln_Type = NT_MESSAGE;
-
+    
     switch (ioreq->io_Command)
     {
     case CMD_CLEAR:
 	kbUn->kbu_readPos = KBBase->kb_writePos;
 	break;
-
-    /*  The following may be better protected with Disable() Enable() pairs
-	as when reset is due, we don't want to wait on a semaphore */
-
+	
     case KBD_ADDRESETHANDLER:
 	Disable();
 	Enqueue((struct List *)(&KBBase->kb_ResetHandlerList),
 		(struct Node *)(ioStd(ioreq)->io_Data));
 	Enable();
 	break;
-
+	
     case KBD_REMRESETHANDLER:
 	Disable();
 	Remove((struct Node *)(ioStd(ioreq)->io_Data));
 	Enable();
 	break;
-
+	
     case KBD_RESETHANDLERDONE:
-
+	
 	/* We don't want any phony resets. */
 	if(KBBase->kb_ResetPhase == TRUE)
 	{
@@ -257,31 +278,31 @@ AROS_LH1(void, beginio,
 	    ioreq->io_Error = IOERR_NOCMD;
 	}
 	break;
-
+	
     case KBD_READMATRIX:
 	ioStd(ioreq)->io_Actual = min(KB_MATRIXSIZE, ioStd(ioreq)->io_Length);
 	CopyMem(KBBase->kb_Matrix, ioStd(ioreq)->io_Data, ioStd(ioreq)->io_Actual);
 	break;
-
+	
     case KBD_READEVENT:
-
-#warning TODO: Check for reset
+	
+	/* TODO */
 	/* Check for reset... via keybuffer or via HIDD? */
-
-
+	/* if(bufferkey == 0x78) ... */
+	
 	/* Is it OK to presuppose that __AROS_STRUCTURE_ALIGNMENT is 2^n ? */
 	/* if((&ioStd(ioreq)->io_Data != ALIGN(&iostd(ioreq)->io_Data))
 	   well, this should actually be more like
 	   if((&ioStd(ioreq)->io_Data) < (AROS_PTR_MAX - __AROS_STRUCTURE_ALIGNMENT) ?
-	       (&ioStd(ioreq)->io_Data != ALIGN(&ioStd(ioreq)->io_Data)) : &ioStd(ioreq)->io_Data != ... */
-
+	   (&ioStd(ioreq)->io_Data != ALIGN(&ioStd(ioreq)->io_Data)) : &ioStd(ioreq)->io_Data != ... */
+	
 	/* Hmm... (int) */
-	if(((int)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
+	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	{
 	    ioreq->io_Error = IOERR_BADADDRESS;
 	    break;
 	}
-
+	
 	/* Number of InputEvents we can store in io_Data */
 	nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
 	if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
@@ -293,7 +314,7 @@ AROS_LH1(void, beginio,
 	{
 	    nEvents = 1;
 	}
-
+	
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
@@ -303,17 +324,17 @@ AROS_LH1(void, beginio,
 	    ReleaseSemaphore(&KBBase->kb_QueueLock);
 	    break;
 	}
-
+	
 	event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
-
+	
 	for(i = 0; i < nEvents; i++)
 	{
 	    code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
-
+	    
 	    if(isQualifier(code) == TRUE)
 	    {
 		trueCode = code & AMIGAKEYMASK;
-
+		
 		/* Key released ? ... */
 		if(code & KEYUPMASK)
 		{
@@ -332,57 +353,54 @@ AROS_LH1(void, beginio,
 		    }
 		}
 	    }
-
+	    
 	    event->ie_Class = IECLASS_RAWKEY;
 	    event->ie_SubClass = 0;
 	    event->ie_Code = code;
 	    event->ie_Qualifier = kbUn->kbu_Qualifiers;
 	    event->ie_Qualifier |= isNumericPad(trueCode) ? IEQUALIFIER_NUMERICPAD : 0;
 	    event->ie_Prev1DownCode = (UBYTE)(kbUn->kbu_LastCode & 0xff);
-	    event->ie_Prev1DownCode = kbUn->kbu_LastQuals;
+	    event->ie_Prev1DownQual = kbUn->kbu_LastQuals;
 	    event->ie_Prev2DownCode = (UBYTE)(kbUn->kbu_LastLastCode & 0xff);
-	    event->ie_Prev2DownCode = kbUn->kbu_LastLastQuals;
+	    event->ie_Prev2DownQual = kbUn->kbu_LastLastQuals;
 	    event->ie_X = 0;
 	    event->ie_Y = 0;
 	    event->ie_TimeStamp.tv_secs = 0;
 	    event->ie_TimeStamp.tv_micro = 0;
-
+	    
 	    /* Update list of previous states for dead key handling */
 	    kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
 	    kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
 	    kbUn->kbu_LastCode      = code;
 	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
-
+	    
 	    /* No more keys in buffer? */
 	    if(kbUn->kbu_readPos == KBBase->kb_writePos)
 		break;
-
-	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event + ALIGN(sizeof(struct InputEvent)));
+	    
+	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
+				 + ALIGN(sizeof(struct InputEvent)));
 	}
 	event->ie_NextEvent = NULL;
-
-	/* io_Actual is not set. Is this necessary to do? If so, it ought to
-	   be set to nEventsWritten * sizeof(struct InputEvent) despite
-	   the fact that more memory may have been used (?). */
-
+	
 	break;
-
+	
     default:
 	ioreq->io_Error = IOERR_NOCMD;
 	break;
     }
-
+    
     /* If the quick bit is not set, send the message to the port */
     if(!(ioreq->io_Flags & IOF_QUICK))
 	ReplyMsg(&ioreq->io_Message);
-
+    
     AROS_LIBFUNC_EXIT
 }
 
 
 AROS_LH1(LONG, abortio,
  AROS_LHA(struct IORequest *,    ioreq,  A1),
-	  struct KeyboardBase *, KBBase, 6,  Input)
+	  struct KeyboardBase *, KBBase, 6,  Keyboard)
 {
     AROS_LIBFUNC_INIT
 
@@ -395,6 +413,7 @@ AROS_LH1(LONG, abortio,
 	ReleaseSemaphore(&KBBase->kb_QueueLock);
     }
     return 0;
+
     AROS_LIBFUNC_EXIT
 }
 
@@ -403,11 +422,53 @@ AROS_LH1(LONG, abortio,
 #define  BVBITCLEAR(x, y)  ((y)[(x) / sizeof(UBYTE)] &= ~(1 << ((x) & (sizeof(UBYTE) - 1))))
 #define  BVBITSET(x, y)    ((y)[(x) / sizeof(UBYTE)] |=  (1 << ((x) & (sizeof(UBYTE) - 1))))
 
-/* Example code called from keyboard interrupt (after HIDD translation) */
 
-VOID keyCallback(int keyCode, struct KeyboardBase *KBBase)
+#if 0
+
+/*
+   78      Reset warning.
+   F9      Last key code bad, next key is same code retransmitted
+   FA      Keyboard key buffer overflow
+   FC      Keyboard self-test fail.
+   FD      Initiate power-up key stream (for keys held or stuck at
+           power on)
+   FE      Terminate power-up key stream.
+   */
+
+#include  <hardware/cia.h>
+
+
+
+
+BOOL HIDDM_initKeyboard(struct KeyboardHIDD *kh)
+{
+    /* What should be done here? My guess is that we need the IRQ.hidd
+       before I can complete this function.
+       Presume that an IRQ.hidd exists, and that it has a method
+       HIDDV_addServerItem(ULONG level, BOOL (*)checkFunc) that adds an
+       interrupt server (sort of) to the real interrupt server at level
+       'level'. In the case of the keyboard.hidd, this would be level 6
+       (hardware wise) but probably something else in this context.
+           Then the code would look something like: */
+
+
+    kh->kh_irqhidd = FindHidd("IRQ.hidd");
+
+    if(kh->irqhidd == NULL)
+   	return FALSE;
+
+    HIDDV_addServerItem(irqhidd_keyboard, checkKBint);
+}
+
+#endif
+
+
+VOID keyCallback(UWORD keyCode, struct KeyboardBase *KBBase)
 {
     KBBase->kb_keyBuffer[(KBBase->kb_writePos)++] = keyCode;
+
+    if(KBBase->kb_writePos == KB_BUFFERSIZE)
+	KBBase->kb_writePos = 0;
 
     if(keyCode & KEYUPMASK)
 	BVBITCLEAR(CORRECT(keyCode), KBBase->kb_Matrix);
@@ -423,7 +484,6 @@ VOID keyCallback(int keyCode, struct KeyboardBase *KBBase)
 #undef  BVBITCLEAR
 #undef  CORRECT
 
-/* Example code for telling pending requests to return. */
 
 VOID keyBroadCast(struct List *pendingList)
 {
@@ -441,5 +501,5 @@ VOID keyBroadCast(struct List *pendingList)
     ReleaseSemaphore(&KBBase->kb_QueueLock);
 }
 
-
 static const char end = 0;
+

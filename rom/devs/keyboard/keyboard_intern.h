@@ -11,6 +11,8 @@
 #define KB_MAXKEYS     256				/* Temporary */
 #define KB_MATRIXSIZE  (KB_MAXKEYS/sizeof(UBYTE))
 
+#define KB_BUFFERSIZE  128
+
 struct KeyboardBase
 {
     struct Device      kb_device;
