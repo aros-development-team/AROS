@@ -382,9 +382,8 @@
 
     w->FirstGadget = nw.FirstGadget;
 
-
-    if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
-    if (nw.BlockPen  == 0xFF) nw.BlockPen = 0;
+    w->DetailPen = (nw.DetailPen != 0xFF) ? nw.DetailPen : w->WScreen->DetailPen;
+    w->BlockPen  = (nw.BlockPen != 0xFF)  ? nw.BlockPen  : w->WScreen->BlockPen;
 
     /* Copy flags */
     w->Flags = nw.Flags;
@@ -505,8 +504,8 @@
     
     w->LeftEdge    = nw.LeftEdge;
     w->TopEdge	   = nw.TopEdge;
-    w->Width	   = nw.Width;
-    w->Height	   = nw.Height;
+    w->Width	   = (nw.Width  != ~0) ? nw.Width  : w->WScreen->Width - w->LeftEdge;
+    w->Height	   = (nw.Height != ~0) ? nw.Height : w->WScreen->Height - w->TopEdge;
 
     if (autoAdjust)
     {
@@ -586,11 +585,17 @@
 
     D(bug("set fonts\n"));
 
-    SetAPen (rp, nw.DetailPen);
-    SetBPen (rp, nw.BlockPen);
-    SetDrMd (rp, JAM2);
-
+#warning Remove workaround!
+/* lbischoff: The following 4 Setxxx lines are a workaround for the InitRastPort 
+   problem (Bug #75 in docs/BUGS). They ensure that at least a window's rastport
+   is initialized correctly. Remove them if they are not needed any longer!
+*/
+    SetAPen (rp, rp->FgPen);
+    SetBPen (rp, rp->BgPen);
+    SetDrMd (rp, rp->DrawMode);
+    SetWriteMask (rp, rp->Mask);
     D(bug("set pens\n"));
+
     SetWindowTitles (w, nw.Title, (STRPTR)-1);
     D(bug("set title\n"));
 
