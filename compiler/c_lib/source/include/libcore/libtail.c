@@ -2,7 +2,7 @@
 **    © Copyright 1996-97 Andreas R. Kleinert
 **    All Rights Reserved.
 ** 
-**    Copyright © 1997-2001, The AROS Development Team. All rights reserved.
+**    Copyright © 1997-2003, The AROS Development Team. All rights reserved.
 **    $Id$
 **
 **    This file needs to be at the end of a compiled module. Most of the
@@ -18,6 +18,8 @@
 **    choice.
 */
 
+#include <libcore/compiler.h>
+
 /* If the file with the #defines for this library is not "libdefs.h",
     then you can redefine it. */
 #ifndef LC_LIBDEFS_FILE
@@ -27,4 +29,4 @@
 /* Include the file with the #defines for this library */
 #include LC_LIBDEFS_FILE
 
-const int LIBEND = 1;	       /* The end of the library */
+const int LIBEND TEXT_SECTION = 1;	       /* The end of the library */

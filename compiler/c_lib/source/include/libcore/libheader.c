@@ -2,7 +2,7 @@
 **    © Copyright 1996-97 Andreas R. Kleinert
 **    All Rights Reserved.
 ** 
-**    Copyright © 1997-2001, The AROS Development Team. All rights reserved.
+**    Copyright © 1997-2003, The AROS Development Team. All rights reserved.
 **    $Id$
 **
 **    This file needs to be at the start of a compiled module. Most of the
@@ -68,8 +68,6 @@
 #ifndef LC_LIBBASESIZE
 #   define LC_LIBBASESIZE  sizeof (struct LibHeader)
 #endif
-
-#define	TEXT_SECTION 
 
 /* -----------------------------------------------------------------------
     entry:
