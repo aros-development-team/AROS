@@ -12,19 +12,21 @@ OBJDIR = $(GENDIR)/workbench/demos
 
 %define_libs
 
-FILES = helloworld \
-	librarytest \
-	demowin \
-	simpleimage \
-	intuitext \
+FILES = \
 	compleximage \
-	shadowborder \
-	readicon \
-	sift \
-	regiontest \
+	demowin \
+	gtdemo \
+	helloworld \
 	inquire \
+	intuitext \
+	librarytest \
+	listfonts \
+	readicon \
+	regiontest \
 	rtdemo \
-	listfonts
+	shadowborder \
+	sift \
+	simpleimage
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)
