@@ -148,8 +148,6 @@ AROS_LH1(struct IFFParseBase_intern *, open,
     if (!UtilityBase)
 	return NULL;
 
-kprintf ("DOSBase=%p  UtilBase=%p\n", DOSBase, UtilityBase);
-
     /* I have one more opener. */
     IFFParseBase->library.lib_OpenCnt++;
     IFFParseBase->library.lib_Flags&=~LIBF_DELEXP;
@@ -171,6 +169,12 @@ AROS_LH0(BPTR, close, struct IFFParseBase_intern *, IFFParseBase, 2, IFFParse)
     /* I have one fewer opener. */
     if(!--IFFParseBase->library.lib_OpenCnt)
     {
+	if (DOSBase)
+	    CloseLibrary (DOSBase);
+
+	if (UtilityBase)
+	    CloseLibrary (UtilityBase);
+
 	/* Delayed expunge pending? */
 	if(IFFParseBase->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
@@ -186,8 +190,8 @@ AROS_LH0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 
     BPTR ret;
     /*
-  This function is single-threaded by exec by calling Forbid.
-  Never break the Forbid() or strange things might happen.
+	This function is single-threaded by exec by calling Forbid.
+	Never break the Forbid() or strange things might happen.
     */
 
     /* Test for openers. */
