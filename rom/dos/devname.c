@@ -31,12 +31,25 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
        device from pr_HomeDir or pr_CurrentDir. */
     if(!Strnicmp(name, "PROGDIR:", 8))
     {
-	*devptr = ((struct FileHandle *)BADDR(me->pr_HomeDir))->fh_Device;
-	return 0;
+    	struct FileHandle *fh = (struct FileHandle *)BADDR(me->pr_HomeDir);
+	
+	if (!fh)
+	{
+	    *devptr = 0xBADC0DE;
+	    return ERROR_DEVICE_NOT_MOUNTED;
+	}
+	else
+	{
+	    *devptr = fh->fh_Device;
+	    return 0;
+	}
     }
     else if(*name == ':')
     {
-	*devptr = ((struct FileHandle *)BADDR(me->pr_CurrentDir))->fh_Device;
+    	struct FileHandle *fh = (struct FileHandle *)BADDR(me->pr_CurrentDir);
+	
+	if (!fh) fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
+	*devptr = fh->fh_Device;
 	return 0;
     }
 
@@ -66,7 +79,10 @@ LONG DevName(CONST_STRPTR name, struct Device **devptr,
        pr_CurrentDir. */
     if(volname == NULL)
     {
-	*devptr = ((struct FileHandle *)BADDR(me->pr_CurrentDir))->fh_Device;
+    	struct FileHandle *fh = (struct FileHandle *)BADDR(me->pr_CurrentDir);
+	
+	if (!fh) fh = (struct FileHandle *)BADDR(DOSBase->dl_SYSLock);
+	*devptr = fh->fh_Device;
 	return 0;
     }
     
