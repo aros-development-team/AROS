@@ -6,12 +6,12 @@
     Lang: english
 */
 #include <exec/types.h>
+#include <string.h>
 
 /*****************************************************************************
 
     NAME */
-#include <sys/types.h>
-#include <memory.h>
+#include <stdlib.h>
 
 	void * calloc (
 
@@ -50,30 +50,14 @@
 {
     ULONG * mem;
 
+    size *= count;
+
     /* Allocate the memory */
-    mem = malloc (size*count);
+    mem = malloc (size);
 
     if (mem)
-    {
-	ULONG * ptr;
-
-	ptr = mem;
-
-	while (size > sizeof(ULONG))
-	{
-	    *ptr++ = 0;
-	    size -= sizeof (ULONG);
-	}
-
-	if (size)
-	{
-	    UBYTE * bptr = (UBYTE *)ptr;
-
-	    while (size --)
-		*bptr ++ = 0;
-	}
-    }
+	memset (mem, 0, size);
 
     return mem;
-} /* malloc */
+} /* calloc */
 
