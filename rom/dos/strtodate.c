@@ -49,7 +49,7 @@ const char *const Dos_SubstDateTable[]=
 #include <dos/datetime.h>
 #include <proto/dos.h>
 
-	AROS_LH1(LONG, StrToDate,
+	AROS_LH1(BOOL, StrToDate,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct DateTime *, datetime, D1),
