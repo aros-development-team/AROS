@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <aros/debug.h>
 
+static const char version[] = "$VER: Shell 1.0 (2.3.1997)\n";
+
 BPTR cLock;
 
 static void printpath(void)
@@ -272,7 +274,7 @@ LONG execute(STRPTR com)
 	    ;
 	RunCommand(seglist,100000,s2,last-s2-1);
 	UnLoadSeg(seglist);
-	Cli()->cli_Result2 = ((struct Process *)FindTask(NULL))->pr_Result2;
+	Cli()->cli_Result2 = IoErr();
     }else if(infile==NULL&&outfile==NULL)
     {
 	lock=Lock(command,SHARED_LOCK);
