@@ -20,7 +20,6 @@ else
 FILES	:= \
     childchild \
     childwindow \
-    clippingtest \
     colorwheel \
     compleximage \
     consoledemo \
