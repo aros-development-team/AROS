@@ -6,20 +6,23 @@
     Lang: english
 */
 
+#include <string.h>
+
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <aros/asmcall.h>
 #include <devices/conunit.h>
 #include <intuition/classes.h>
 #include <intuition/intuition.h>
-#include "consoleif.h"
-#include "console_gcc.h"
-
-#include <string.h>
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include "consoleif.h"
+#include "console_gcc.h"
+
+
 
 VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
 

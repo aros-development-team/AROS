@@ -5,19 +5,21 @@
     Desc: Code for CONU_STANDARD console units.
     Lang: english
 */
+#include <string.h>
+
 #include <proto/graphics.h>
 #include <proto/intuition.h>
 #include <intuition/intuition.h>
 #include <graphics/rastport.h>
 #include <aros/asmcall.h>
-#include <string.h>
-
-#include "console_gcc.h"
-#include "consoleif.h"
 
 #define SDEBUG 0
 #define DEBUG 0
 #include <aros/debug.h>
+
+#include "console_gcc.h"
+#include "consoleif.h"
+
 
 struct stdcondata
 {
