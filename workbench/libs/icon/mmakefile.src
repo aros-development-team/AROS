@@ -47,6 +47,7 @@ FUNCS := \
 #MM     kernel-cfgx-includes \
 #MM     workbench-libs-iffparse-includes \
 #MM     workbench-libs-datatypes-includes \
+#MM	workbench-datatypes-png-includes \
 #MM     includes-copy
 #MM- workbench-libs-icon : linklibs
 
