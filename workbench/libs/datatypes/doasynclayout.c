@@ -179,7 +179,7 @@ void AsyncLayouter(void)
 	    lm->lm_gplayout.gpl_GInfo= &lm->lm_ginfo;
 	    
 	    Tags[0].ti_Tag  = NP_StackSize;
-	    Tags[0].ti_Data = 4096;
+	    Tags[0].ti_Data = AROS_STACKSIZE;
 	    Tags[1].ti_Tag  = NP_Entry;
 	    Tags[1].ti_Data = (ULONG)&AsyncLayouter;
 	    Tags[2].ti_Tag  = NP_Priority;
