@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
 # Only exec, for the moment.
-SUBDIRS=exec
+SUBDIRS=exec alerthook
 else
 SUBDIRS=exec utility dos graphics intuition devs
 endif
