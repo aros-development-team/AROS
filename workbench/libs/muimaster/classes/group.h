@@ -1,5 +1,7 @@
-#include "muimaster_intern.h"
+#ifndef _MUI_CLASSES_GROUP_H
+#define _MUI_CLASSES_GROUP_H
 
+#include "muimaster_intern.h" /* Remove this line!! */
 
 /* Hook message for custom layout */
 
@@ -53,6 +55,7 @@ struct  MUIP_Group_Sort                     { ULONG MethodID; Object *obj[1]; };
 #define MUIA_Group_SameWidth                0x8042b3ec /* V4  i.. BOOL              */
 #define MUIA_Group_Spacing                  0x8042866d /* V4  is. LONG              */
 #define MUIA_Group_VertSpacing              0x8042e1bf /* V4  isg LONG              */
+#define MUIA_Group_Virtual                  0x8042e1c0 /* ZV1 PRIV i.. BOOL         */
 
 #define MUIV_Group_ActivePage_First 0
 #define MUIV_Group_ActivePage_Last -1
@@ -72,3 +75,5 @@ struct  MUIP_Group_FindObject               { ULONG MethodID; STACKLONG x, y; };
 #define MUIA_Group_Forward    0x80421422 /* V11 .s. BOOL */
 
 extern const struct __MUIBuiltinClass _MUI_Group_desc;
+
+#endif

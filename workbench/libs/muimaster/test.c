@@ -223,7 +223,7 @@ void main(void)
 		    Child, VGroupV,
 		    	Child, TextObject,
 			    TextFrame,
-			    MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n",
+			    MUIA_Text_Contents, "Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\nLine8\n\n\n\nLine9\nLine10\nLine11\n",
 		    	    End,
 		    	Child, HGroup,
 			    Child, MUI_MakeObject(MUIO_Button,"Button9"),
