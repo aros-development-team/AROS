@@ -41,6 +41,7 @@ struct MUI_ApplicationData
     struct timerequest      *app_TimerReq;
     CxObj   	    	    *app_Broker;
     Object          	    *app_Menustrip;
+    Object                  *app_AboutWin;
     APTR            	    app_RIDMemChunk;
     STRPTR          	    app_Author;
     STRPTR          	    app_Base;
@@ -1000,6 +1001,33 @@ static ULONG Application_SetUDataOnce(struct IClass *cl, Object *obj, struct MUI
 }
 
 
+/**************************************************************************
+ MUIM_Application_AboutMUI: brought up the about window, centered on refwindow
+**************************************************************************/
+static ULONG Application_AboutMUI(struct IClass *cl, Object *obj, struct MUIP_Application_AboutMUI *msg)
+{
+    struct MUI_ApplicationData *data = INST_DATA(cl, obj);
+
+    if (!data->app_AboutWin)
+    {
+	data->app_AboutWin = AboutmuiObject,
+	    msg->refwindow ? MUIA_Window_RefWindow : TAG_IGNORE, msg->refwindow,
+	    MUIA_Window_LeftEdge, MUIV_Window_LeftEdge_Centered,
+	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Centered,
+	    MUIA_Aboutmui_Application, obj,
+	    End;
+	DoMethod(data->app_AboutWin, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
+		 obj, 3, MUIM_WriteLong, 0L, &data->app_AboutWin);
+    } /* if (!data->app_AboutWin) */
+
+    if (data->app_AboutWin)
+    {
+	set(data->app_AboutWin, MUIA_Window_Open, TRUE);
+    }
+    return 0;
+}
+
+
 /*
  * The class dispatcher
  */
@@ -1043,6 +1071,8 @@ BOOPSI_DISPATCHER(IPTR, Application_Dispatcher, cl, obj, msg)
 	    return Application_SetUData(cl, obj, (APTR)msg);
 	case MUIM_SetUDataOnce :
 	    return Application_SetUDataOnce(cl, obj, (APTR)msg);
+	case MUIM_Application_AboutMUI :
+	    return Application_AboutMUI(cl, obj, (APTR)msg);
     }
 
     return(DoSuperMethodA(cl, obj, msg));
