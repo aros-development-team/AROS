@@ -13,6 +13,10 @@ STARTUP 	:= $(LIBDIR)/startup.o
 FILES		:= \
 	alib_util \
 	allocnamedobject \
+	argarrayinit \
+	argarraydone \
+	argint \
+	argstring \
 	arosinquire \
 	buildeasyrequest \
 	callhook \
@@ -33,10 +37,13 @@ FILES		:= \
 	drawbevelbox \
 	easyrequest \
 	fastrand \
+	freeievents \
 	getvisualinfo \
 	gt_getgadgetattrs \
 	gt_setgadgetattrs \
 	hookentry \
+	hotkey \
+	invertstring \
 	layoutmenuitems \
 	layoutmenus \
 	liballocpooled \
