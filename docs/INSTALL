@@ -106,7 +106,7 @@ Basic Installation of AROS-SOURCES
 
 	If you compiled AROS as an emulation then all binaries are
 	placed in AROS/bin/$arch-$cpu/AROS. To start AROS 'cd' into
-	this dir, type 'aros' and enjoy!
+	this dir, type './aros' and enjoy!
 
 	If you compiled AROS as stand alone (native), then do a
 	'make install' to write the boot image to a floppy disk.
