@@ -133,15 +133,15 @@ static void OpenLibs(void)
 {
     struct libinfo *li;
 
-    for(li = libtable; li->var; li++)
+    for (li = libtable; li->var; li++)
     {
-	if (!((*(struct Library **)li->var) = OpenLibrary(li->name, li->version)))
+	if (!((*(struct Library **)li->var) = OpenLibrary(li->name,
+							  li->version)))
 	{
-	    sprintf(s, "Can't open %s V%ld!", li->name, li->version);
+	    sprintf(s, "Can't open %s V%d!", li->name, li->version);
 	    Cleanup(s);
 	}
     }
-       
 }
 
 /*********************************************************************************************/
