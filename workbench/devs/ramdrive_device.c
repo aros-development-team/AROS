@@ -663,10 +663,6 @@ AROS_UFH3(LONG, unitentry,
     struct IOExtTD 	*iotd;
     struct unit 	*unit;
 
-#ifdef _AMIGA
-    SysBase = *((struct ExecBase **)4);
-#endif
-
     D(bug("ramdrive_device/unitentry: just started\n"));
     
     me = (struct Process *)FindTask(NULL);
