@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <stdio.h>

@@ -1,6 +1,10 @@
-
 #ifndef  CLIPBOARD_GCC_H
 #define  CLIPBOARD_GCC_H
+
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 /*  Johan Alfredsson  */
 

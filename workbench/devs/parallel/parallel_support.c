@@ -1,6 +1,8 @@
 /*
-  $Id :$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 */
+
 #define AROS_ALMOST_COMPATIBLE 1
 
 #include <proto/exec.h>
