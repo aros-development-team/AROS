@@ -24,7 +24,7 @@
 __asm__(                                     \
         "\n\t"__ALIGN_STR"\n"                \
 SYMBOL_NAME_STR(IRQ) #nr "_interrupt:\n\t"   \
-	"move.b  #0x61,0xdddddebc\n\t"       \
+	"/* move.b  #0x61,0xdddddebc*/\n\t"       \
         "movem.l %d0-%d7/%a0-%a6,-(%ssp)\n\t"\
         "move.l  %usp,%a0\n\t"               \
         "move.l  %a0,-(%ssp)\n\t"            \
@@ -36,7 +36,7 @@ SYMBOL_NAME_STR(IRQ) #nr "_interrupt:\n\t"   \
         "move.l  (%ssp)+,%a0\n\t"            \
         "move.l  %a0,%usp\n\t"               \
         "movem.l (%ssp)+,%d0-%d7/%a0-%a6\n\t"\
-        "move.b  #0x41,0xdddddebc\n\t"       \
+        "/*move.b  #0x41,0xdddddebc*/\n\t"       \
         "rte\n\t");
 
 
