@@ -7,10 +7,13 @@ include $(TOP)/config/make.cfg
 
 FILES = graphics_init graphics_functable
 FUNCTIONS = \
+	clonerastport \
 	closefont \
+	createrastport \
 	draw \
 	drawellipse \
 	eraserect \
+	freerastport \
 	getapen \
 	getbpen \
 	getdrmd \
