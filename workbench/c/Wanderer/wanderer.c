@@ -971,7 +971,7 @@ int main(void)
 	    MUIA_UserData, 1,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
-	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
+	    MUIA_Window_Width,   85,
 	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
 	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
 	    MUIA_Window_ScreenTitle, GetScreenTitle(),
