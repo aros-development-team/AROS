@@ -108,7 +108,7 @@ BEGIN {
         sub(/^LP[0-9]\(/,"",line);
         split(line, a, ",");
         rtype = a[1];
-        gsub(/[ \t]+/, "", rtype);
+        gsub(/[\t]+/, "", rtype);
 
         fname = a[2]
         gsub(/[ \t]+/, "", fname);
