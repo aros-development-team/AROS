@@ -17,9 +17,9 @@
     0x00000008 - 0x00000808	int vectors
     0x00000900 - 0x00000b00	data from setup
     0x00000b00 - 0x00000fff	Global Descriptor Table - 5 entries
-    0x00001000 - ....		Kernel
-    ....       - 0x0009f000	Temporary stack frame for startup code.
-    0x0009f000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
+    0x00001000 - ....		Kernel - if small
+    ....       - 0x00090fff	Temporary stack frame for startup code.
+    0x00091000 - 0x0009ffff	BIOS private data (e.g. PS mouse block)
 
     *** end of SYSTEM USE ONLY area ***
 
@@ -67,7 +67,7 @@ start_again:	cld
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x0009f000,%esp
+		mov	$0x00091000,%esp
 
 		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
 		popf
@@ -151,7 +151,7 @@ start:		cld
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
-		mov	$0x0009f000,%esp	/* Put stack in safe place */
+		mov	$0x00091000,%esp	/* Put stack in safe place */
 						/* skip BIOS ext area */
 
 		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
@@ -219,7 +219,7 @@ copy_idts:	movl	%eax,(%edi)
 
 /* Copy data from setup */
 
-		movl	$0x00098000,%esi
+		movl	$0x00090000,%esi
 		movl	$0x00000900,%edi
 		movl	$128,%ecx	/* 512/4 */
 		cld
