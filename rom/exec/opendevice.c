@@ -110,7 +110,7 @@ char *const inputname = "input.device";
 	    AROS_LCA(struct IORequest *,iORequest,A1),
 	    AROS_LCA(ULONG,unitNumber,D0),
 	    AROS_LCA(ULONG,flags,D1),
-	    struct Device, device, 1, dev
+	    struct Device *, device, 1, dev
 	);
 
 	/* Check for error */
