@@ -2,6 +2,9 @@
 #include <stdio.h>
 
 #include <clib/alib_protos.h>
+#include <intuition/gadgetclass.h>
+#include <intuition/icclass.h>
+#include <gadgets/colorwheel.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
@@ -16,11 +19,7 @@
 #undef SysBase
 
 struct Library *MUIMasterBase;
-
-Object *MUI_NewObject(char *classname, int tag,...)
-{
-    return MUI_NewObjectA(classname, (struct TagItem*)&tag);
-}
+struct Library *ColorWheelBase;
 
 AROS_UFH0(void, repeat_function)
 {
@@ -72,6 +71,7 @@ void main(void)
     Object *open_button,*second_wnd;
     Object *quit_button;
     Object *repeat_button;
+    Object *wheel;
     
     struct Hook hook;
     
@@ -87,6 +87,7 @@ void main(void)
 
     /* should check the result in a real program! */
     CL_DropText = MUI_CreateCustomClass(NULL,MUIC_Text,NULL,sizeof(struct DropText_Data), dispatcher);
+    ColorWheelBase = OpenLibrary("gadgets/colorwheel.gadget",0);
 
     app = ApplicationObject,
     	SubWindow, wnd = WindowObject,
@@ -104,7 +105,7 @@ void main(void)
 			Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    Child, VGroup,
 			GroupFrameT("A vertical group"),
@@ -112,15 +113,49 @@ void main(void)
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    End,
-		Child, StringObject,
-		    StringFrame,
-		    MUIA_CycleChain,1,
-		    MUIA_String_AdvanceOnCR, TRUE,
-		    End,
 
-    	    	Child, SliderObject,
-    	    	    MUIA_Group_Horiz, TRUE,
-    	    	    MUIA_CycleChain,1,
+		Child, HGroup,
+		    Child, VGroup,
+			Child, RectangleObject,
+			    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
+			    MUIA_Rectangle_HBar, TRUE,
+			    MUIA_Rectangle_BarTitle,"Enter a string",
+			    End,
+
+			Child, StringObject,
+			    StringFrame,
+			    MUIA_CycleChain,1,
+			    MUIA_String_AdvanceOnCR, TRUE,
+			    End,
+
+	    	    	Child, SliderObject,
+    		    	    MUIA_Group_Horiz, TRUE,
+    	    		    MUIA_CycleChain,1,
+			    End,
+			End,
+
+		    Child, wheel = BoopsiObject,  /* MUI and Boopsi tags mixed */
+		        GroupFrame,
+		        MUIA_Boopsi_ClassID  , "colorwheel.gadget",
+		        MUIA_Boopsi_MinWidth , 30, /* boopsi objects don't know */
+		        MUIA_Boopsi_MinHeight, 30, /* their sizes, so we help   */
+		        MUIA_Boopsi_Remember , WHEEL_Saturation, /* keep important values */
+		        MUIA_Boopsi_Remember , WHEEL_Hue,        /* during window resize  */
+		        MUIA_Boopsi_TagScreen, WHEEL_Screen, /* this magic fills in */
+		        WHEEL_Screen         , NULL,         /* the screen pointer  */
+		        GA_Left     , 0,
+		        GA_Top      , 0, /* MUI will automatically     */
+		        GA_Width    , 0, /* fill in the correct values */
+		        GA_Height   , 0,
+		        ICA_TARGET  , ICTARGET_IDCMP, /* needed for notification */
+		        WHEEL_Saturation, 0, /* start in the center */
+		    #ifdef _AROS
+		    	WHEEL_BevelBox	, TRUE, /* BltMaskBitMapRastPort not working correctly in AROS */
+		    #endif
+		        MUIA_FillArea, TRUE, /* use this because it defaults to FALSE 
+					     for boopsi gadgets but the colorwheel
+					     doesnt bother about redrawing its backgorund */
+		        End,
 		    End,
 
     	    	Child, HGroup,
@@ -155,6 +190,7 @@ void main(void)
     	DoMethod(open_button, MUIM_Notify, MUIA_Pressed, FALSE, second_wnd, 3,  MUIM_Set, MUIA_Window_Open, TRUE);
     	DoMethod(quit_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     	DoMethod(repeat_button, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook);
+
 	set(wnd,MUIA_Window_Open,TRUE);
 
 	while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
@@ -169,6 +205,7 @@ void main(void)
 
 	MUI_DisposeObject(app);
     }
+    CloseLibrary(ColorWheelBase);
     MUI_DeleteCustomClass(CL_DropText);
 
     CloseLibrary(MUIMasterBase);
