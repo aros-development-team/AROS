@@ -335,9 +335,17 @@ int driver_init (struct GfxBase * GfxBase)
 */
     maxPen = NUM_COLORS;
 
-#warning fg an bg probably contain bogus values
 
     sysCursor = XCreateFontCursor (sysDisplay, XC_top_left_arrow);
+    
+    fg.pixel = BlackPixel(sysDisplay, sysScreen);
+    fg.red = 0x0000; fg.green = 0x0000; fg.blue = 0x0000;
+    fg.flags = (DoRed|DoGreen|DoBlue);
+    
+    bg.pixel = WhitePixel(sysDisplay, sysScreen);
+    bg.red = 0xFFFF; bg.green = 0xFFFF; bg.blue = 0xFFFF;
+    bg.flags = (DoRed|DoGreen|DoBlue);
+    
     XRecolorCursor (sysDisplay, sysCursor, &fg, &bg);
     return True;
 }
