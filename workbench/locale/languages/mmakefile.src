@@ -8,8 +8,8 @@ MODULES := $(foreach f,$(LANGUAGES),$(AROS_LOCALE)/Languages/$(f).language)
 MODTYPE := language
 
 #MM- workbench-locale : workbench-locale-languages
-#MM workbench-locale-languages : setup includes linklibs
-workbench-locale-languages : $(MODULES)
+#MM workbench-locale-languages : includes linklibs
+workbench-locale-languages : setup $(MODULES)
 
 %make_module_setup mmake=workbench-locale-languages
 %make_module_single mmake=workbench-locale-languages
