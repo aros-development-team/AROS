@@ -9,13 +9,11 @@ MODTYPE :=  library
 
 INCLUDE_FILES := $(wildcard include/*.h)
 
-FILES	  :=	interfaceclass hash hiddmetaclass metaclass methodclass  \
-		privatestubs proxyclass rootclass serverclass support 
+FILES	  :=	hash hiddmetaclass metaclass   \
+		privatestubs rootclass support 
 	
 FUNCS :=    addclass		\
-	    addserver		\
 	    disposeobject	\
-	    findserver		\
 	    getattr		\
 	    getattrbase		\
 	    getmethod		\
@@ -27,7 +25,6 @@ FUNCS :=    addclass		\
 	    releaseattrbase	\
 	    releaseattrbases	\
 	    removeclass		\
-	    removeserver	\
 	    setattrs
 
 USE_CLIB_STATIC := yes
