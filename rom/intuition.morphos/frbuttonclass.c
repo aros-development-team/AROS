@@ -80,6 +80,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
     if (container.Width <= 1 || container.Height <= 1)
         return;
 
+#if 0
     /* clear gadget */
     if (EG(o)->Flags & GFLG_SELECTED)
         SetAPen(rp, pens[FILLPEN]);
@@ -91,6 +92,7 @@ void frbutton_render(Class *cl, Object *o, struct gpRender *msg)
              container.Top,
              container.Left + container.Width - 1,
              container.Top + container.Height - 1);
+#endif
 
     if ((EG(o)->Flags & GFLG_GADGIMAGE) == 0) /* not an image-button */
     {
