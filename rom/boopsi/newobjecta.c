@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Create a new BOOPSI object
@@ -11,6 +11,15 @@
 #include <proto/exec.h>
 #include <proto/alib.h>
 #include <clib/intuition_protos.h>
+
+#include "intern.h"
+
+#undef SDEBUG
+#define SDEBUG 0
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
 #include "intern.h"
 
 /*****************************************************************************
@@ -73,6 +82,8 @@
     AROS_LIBBASE_EXT_DECL(struct Library*,BOOPSIBase)
     Object * object;
 
+    EnterFunc(bug("intuition::NewObjectA()\n"));
+
     /* No classPtr ? */
     if (!classPtr)
 	classPtr = FindClass (classID);
@@ -80,11 +91,13 @@
     if (!classPtr)
 	return (NULL); /* Nothing found */
 
+    D(bug("classPtr: %p\n", classPtr));
+
     /* Try to create a new object */
     if ((object = (Object *) CoerceMethod (classPtr, (Object *)classPtr, OM_NEW,
 	    tagList, NULL)))
 	classPtr->cl_ObjectCount ++;
 
-    return (object);
+    ReturnPtr("intuition::NewObjectA()", Object *, object);
     AROS_LIBFUNC_EXIT
 } /* NewObjectA */

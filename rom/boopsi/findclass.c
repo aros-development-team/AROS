@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Find a BOOPSI Class in the class list.
@@ -7,9 +7,15 @@
 */
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
-
 #include <proto/exec.h>
+
 #include "intern.h"
+
+#undef SDEBUG
+#define SDEBUG 0
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -50,8 +56,12 @@
 
     Class * classPtr = NULL;
 
+    EnterFunc(bug("boopsi::FindClass()\n"));
+
     if (!classID)
 	return NULL;
+
+    D(bug("class to find: \"%s\"\n", classID));
 
     /* Lock the list */
     ObtainSemaphoreShared (&GetBBase(BOOPSIBase)->bb_ClassListLock);
@@ -59,18 +69,19 @@
     /* Search for the class */
     ForeachNode (&GetBBase(BOOPSIBase)->bb_ClassList, classPtr)
     {
+        D(bug("+\"%s\"\n", classPtr->cl_ID));
 	if (!strcmp (classPtr->cl_ID, classID))
 	    goto found;
     }
 
     classPtr = NULL; /* Nothing found */
+    D(bug("class not found!\n"));
 
 found:
     /* Unlock list */
     ReleaseSemaphore (&GetBBase(BOOPSIBase)->bb_ClassListLock);
 
-    return classPtr;
-
+    ReturnPtr("boopsi::FindClass()", struct IClass *, classPtr);
     AROS_LIBFUNC_EXIT
 }
 
