@@ -40,7 +40,7 @@ STRPTR MSG(ULONG id)
     
     if (catalog)
     {
-	retval = GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+	retval = (STRPTR)GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } else {
 	retval = CatCompArray[id].cca_Str;
     }
