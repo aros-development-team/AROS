@@ -1,6 +1,4 @@
-#ifndef AROS_RT_H
-#define AROS_RT_H
-
+/* This file can be included more than once */
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     Resource Tracking
@@ -10,114 +8,94 @@
 #   define ENABLE_RT	0
 #endif
 
-#if defined(RT_INTERNAL)
-#   undef ENABLE_RT_EXEC
-#   define ENABLE_RT_EXEC	1
-#   undef ENABLE_RT_DOS
-#   define ENABLE_RT_DOS	1
-#   undef ENABLE_RT_INTUITION
-#   define ENABLE_RT_INTUITION	1
-#elif !ENABLE_RT
-#   undef ENABLE_RT_EXEC
-#   define ENABLE_RT_EXEC	0
-#   undef ENABLE_RT_DOS
-#   define ENABLE_RT_DOS	0
-#   undef ENABLE_RT_INTUITION
-#   define ENABLE_RT_INTUITION	0
-#else
-#   ifndef ENABLE_RT_EXEC
-#	define ENABLE_RT_EXEC	    1
-#   endif
-#   ifndef ENABLE_RT_DOS
-#	define ENABLE_RT_DOS	    1
-#   endif
-#   ifndef ENABLE_RT_INTUITION
-#	define ENABLE_RT_INTUITION  1
-#   endif
-#endif
-
 #if ENABLE_RT || defined(RT_INTERNAL)
 #   ifndef EXEC_TYPES_H
 #	include <exec/types.h>
 #   endif
 
-/* Resources */
-enum
-{
-    RTT_ALLOCMEM,
-    RTT_ALLOCVEC,
-    RTT_PORT,
-    RTT_LIBRARY,
-    RTT_FILE,
-    RTT_SCREEN, /* Screen before Window, so the windows are closed before the screen */
-    RTT_WINDOW,
+#   ifndef AROS_RT_H
+#   define AROS_RT_H
+    /* Put code which must be defined only once here */
 
-    /* Don't add anything below here !!! */
-    RTT_MAX
-};
+    /* Resources */
+    enum
+    {
+	RTT_ALLOCMEM,
+	RTT_ALLOCVEC,
+	RTT_PORT,
+	RTT_LIBRARY,
+	RTT_FILE,
+	RTT_SCREEN, /* Screen before Window, so the windows are closed before the screen */
+	RTT_WINDOW,
 
-#   if ENABLE_RT_EXEC
-enum
-{
-    RTTB_EXEC,
-    RTTO_PutMsg,
-    RTTO_GetMsg,
-};
-#   endif /* ENABLE_RT_EXEC */
+	/* Don't add anything below here !!! */
+	RTT_MAX
+    };
 
-#   if ENABLE_RT_DOS
-enum
-{
-    RTTB_DOS,
-    RTTO_Read,
-    RTTO_Write,
-};
-#   endif /* ENABLE_RT_DOS */
+    enum
+    {
+	RTTB_EXEC,
+	RTTO_PutMsg,
+	RTTO_GetMsg,
+    };
 
-#   if ENABLE_RT_INTUITION
-enum
-{
-    RTTB_INTUITION,
-    RTTO_OpenScreen,
-    RTTO_OpenScreenTags,
-    RTTO_OpenScreenTagList,
-    RTTO_ScreenToFront,
-    RTTO_ScreenToBack,
-    RTTO_OpenWindow,
-    RTTO_OpenWindowTags,
-    RTTO_OpenWindowTagList,
-    RTTO_WindowToFront,
-    RTTO_WindowToBack,
-};
-#   endif /* ENABLE_RT_INTUITION */
+    enum
+    {
+	RTTB_DOS,
+	RTTO_Read,
+	RTTO_Write,
+    };
 
-void RT_IntInitB (void);
-void RT_IntInitE (void);
-void RT_IntExitB (void);
-void RT_IntExitE (void);
-IPTR RT_IntAdd	 (int rtt, const char * file, int line, ...); /* Add a resource for tracking */
-IPTR RT_IntCheck (int rtt, const char * file, int line, int op, ...); /* Check a resource before use */
-IPTR RT_IntFree  (int rtt, const char * file, int line, ...); /* Stop tracking of a resource */
-void RT_IntEnter (const char * functionname, const char * filename, int line);
-void RT_IntTrack (int rtt, const char * file, int line, APTR res, ...);
-void RT_Leave	 (void);
+    enum
+    {
+	RTTB_INTUITION,
+	RTTO_OpenScreen,
+	RTTO_OpenScreenTags,
+	RTTO_OpenScreenTagList,
+	RTTO_ScreenToFront,
+	RTTO_ScreenToBack,
+	RTTO_OpenWindow,
+	RTTO_OpenWindowTags,
+	RTTO_OpenWindowTagList,
+	RTTO_WindowToFront,
+	RTTO_WindowToBack,
+    };
+
+    BEGIN_EXTERN
+    void RT_IntInitB (void);
+    void RT_IntInitE (void);
+    void RT_IntExitB (void);
+    void RT_IntExitE (void);
+    IPTR RT_IntAdd   (int rtt, const char * file, int line, ...); /* Add a resource for tracking */
+    IPTR RT_IntCheck (int rtt, const char * file, int line, int op, ...); /* Check a resource before use */
+    IPTR RT_IntFree  (int rtt, const char * file, int line, ...); /* Stop tracking of a resource */
+    void RT_IntEnter (const char * functionname, const char * filename, int line);
+    void RT_IntTrack (int rtt, const char * file, int line, APTR res, ...);
+    void RT_Leave    (void);
+    END_EXTERN
+
+#	ifndef RT_INTERNAL
+#	    define RT_Add(rtt, args...)       RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
+#	    define RT_Check(rtt, op, args...) RT_IntCheck (rtt, __FILE__, __LINE__, op, ##args)
+#	    define RT_Free(rtt, args...)      RT_IntFree (rtt, __FILE__, __LINE__, ##args)
+#	    define RT_Enter(fn)               RT_IntEnter (fn,__FILE__, __LINE__)
+#	    define RT_Track(rtt, res...)      RT_IntTrack (rtt, __FILE__, __LINE__, ##res)
+#	endif /* ENABLE_RT */
+#   endif /* AROS_RT_H */
 
 /* Add a resource for tracking which must not be freed. */
 
 #   if ENABLE_RT
-#	define RT_Add(rtt, args...)       RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
-#	define RT_Check(rtt, op, args...) RT_IntCheck (rtt, __FILE__, __LINE__, op, ##args)
-#	define RT_Free(rtt, args...)      RT_IntFree (rtt, __FILE__, __LINE__, ##args)
-#	define RT_Enter(fn)               RT_IntEnter (fn,__FILE__, __LINE__)
-#	define RT_Track(rtt, res...)      RT_IntTrack (rtt, __FILE__, __LINE__, ##res)
+#	undef RT_INITEXEC
+#	undef RT_EXITEXEC
 
 #	if ENABLE_RT_EXEC
 #	    ifndef PROTO_EXEC_H
 #		include <proto/exec.h>
 #	    endif
 
-	    extern void RT_InitExec (void);
-	    extern void RT_ExitExec (void);
+	    EXTERN void RT_InitExec (void);
+	    EXTERN void RT_ExitExec (void);
 
 #	    define RT_INITEXEC		    RT_InitExec(),
 #	    define RT_EXITEXEC		    RT_ExitExec(),
@@ -151,13 +129,16 @@ void RT_Leave	 (void);
 #	    define RT_EXITEXEC
 #	endif /* ENABLE_RT_EXEC */
 
+#	undef RT_INITDOS
+#	undef RT_EXITDOS
+
 #	if ENABLE_RT_DOS
 #	    ifndef PROTO_DOS_H
 #		include <proto/dos.h>
 #	    endif
 
-	    extern void RT_InitDos (void);
-	    extern void RT_ExitDos (void);
+	    EXTERN void RT_InitDos (void);
+	    EXTERN void RT_ExitDos (void);
 
 #	    define RT_INITDOS		    RT_InitDos(),
 #	    define RT_EXITDOS		    RT_ExitDos(),
@@ -175,13 +156,16 @@ void RT_Leave	 (void);
 #	    define RT_EXITDOS
 #	endif /* ENABLE_RT_DOS */
 
+#	undef RT_INITINTUITION
+#	undef RT_EXITINTUITION
+
 #	if ENABLE_RT_INTUITION
 #	    ifndef PROTO_INTUITION_H
 #		include <proto/intuition.h>
 #	    endif
 
-	    extern void RT_InitIntuition (void);
-	    extern void RT_ExitIntuition (void);
+	    EXTERN void RT_InitIntuition (void);
+	    EXTERN void RT_ExitIntuition (void);
 
 #	    define RT_INITINTUITION	    RT_InitIntuition(),
 #	    define RT_EXITINTUITION	    RT_ExitIntuition(),
@@ -217,28 +201,30 @@ void RT_Leave	 (void);
 #	endif /* ENABLE_RT_INTUITION */
 #   endif /* ENABLE_RT */
 
+#   undef RT_Init
 #   define RT_Init()    \
 	RT_IntInitB(), \
 	RT_INITEXEC \
 	RT_INITDOS \
 	RT_INITINTUITION \
-	RT_IntInitE();
+	RT_IntInitE()
 
+#   undef RT_Exit
 #   define RT_Exit()    \
 	RT_IntExitB(), \
 	RT_EXITINTUITION \
 	RT_EXITDOS \
 	RT_EXITEXEC \
-	RT_IntExitE();
+	RT_IntExitE()
 
-#else /* ENABLE_RT || RT_INTERNAL */
-#   define RT_Init()                /* eps */
-#   define RT_Exit()                /* eps */
-#   define RT_Add(rtt, args...)     /* eps */
-#   define RT_Check(rtt, args...)   /* eps */
-#   define RT_Free(rtt, args...)    /* eps */
-#   define RT_Enter()               /* eps */
-#   define RT_Leave()               /* eps */
-#endif /* ENABLE_RT || RT_INTERNAL */
-
-#endif /* AROS_RT_H */
+#else /* ENABLE_RT || defined(RT_INTERNAL) */
+#   ifndef RT_Init
+#	define RT_Init()                /* eps */
+#	define RT_Exit()                /* eps */
+#	define RT_Add(rtt, args...)     /* eps */
+#	define RT_Check(rtt, args...)   /* eps */
+#	define RT_Free(rtt, args...)    /* eps */
+#	define RT_Enter()               /* eps */
+#	define RT_Leave()               /* eps */
+#   endif
+#endif /* ENABLE_RT || defined(RT_INTERNAL) */

@@ -17,4 +17,9 @@
 #include <defines/intuition.h>
 #endif
 
+#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_INTUITION)
+#   define ENABLE_RT_INTUITION	1
+#   include <aros/rt.h>
+#endif
+
 #endif /* PROTO_INTUITION_H */

@@ -17,4 +17,9 @@
 #include <defines/dos.h>
 #endif
 
+#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_DOS)
+#   define ENABLE_RT_DOS    1
+#   include <aros/rt.h>
+#endif
+
 #endif /* PROTO_DOS_H */
