@@ -5,6 +5,7 @@
 include $(TOP)/config/make.cfg
 
 FILES	:= \
+    If \
     Set \
     Setenv \
     Unset \
@@ -32,7 +33,7 @@ workbench-c : setup $(EXES)
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
 $(AROS_C)/% : %.c
-	%link_q cmd=$(STATIC_LD) opt="$(CFLAGS) $(LDFLAGS)" startup=""
+	%link_q cmd=$(STATIC_LD) opt="$(CFLAGS) $(LDFLAGS)" startup="" libs="$(filter-out -lautoinit, $(LIBS))"
 #	%compile_q cmd=$(CC) opt="$(CFLAGS) $(USER_CFLAGS)"
 
 $(AROS_C)/% : $(DEPLIBS)

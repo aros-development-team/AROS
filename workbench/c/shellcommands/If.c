@@ -94,10 +94,12 @@
 #include <proto/exec.h>
 #include <dos_commanderrors.h>
 
-int __nocommandline = 1;
+#include "shcommands.h"
 
-int main(void)
+AROS_SH0(If, 41.1)
 {
+    AROS_SHCOMMAND_INIT
+
     BOOL result = FALSE;
 
     IPTR args[] = { FALSE,
@@ -112,6 +114,9 @@ int main(void)
 		    NULL };
 
     struct RDArgs *rda;
+    struct UtilityBase *UtilityBase = (struct Library *)OpenLibrary("utility.library", 39);
+    if (!UtilityBase)
+        return RETURN_FAIL;
 
     struct CommandLineInterface *cli = Cli();
 
@@ -140,7 +145,7 @@ int main(void)
 		{
 		    FreeArgs(rda);
 		    PrintFault(ERROR_TOO_MANY_ARGS, "If");
-
+		    CloseLibrary((struct Library *)UtilityBase);
 		    return RETURN_ERROR;
 		}
 	    }
@@ -268,5 +273,9 @@ int main(void)
 	PrintFault(ERROR_SCRIPT_ONLY, "If");
     }
 
+    CloseLibrary((struct Library *)UtilityBase);
+
     return RETURN_OK;
+
+    AROS_SHCOMMAND_EXIT
 }
