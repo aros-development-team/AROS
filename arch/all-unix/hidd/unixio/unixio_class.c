@@ -38,7 +38,7 @@
 #ifdef _AROS
 #include <aros/asmcall.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 #endif /* _AROS */
 
@@ -141,6 +141,7 @@ static void WaitForIO (void)
 	    D(bug("wfio: Got messages\n"));
 	}
 
+fetchmsg:
 	while ((msg = (struct uioMessage *)GetMsg (ud->ud_Port)))
 	{
 	    D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
@@ -155,8 +156,11 @@ static void WaitForIO (void)
 
 	maxfd = 0;
 
+D(bug("Waiting on fd "));
+
 	ForeachNode (&waitList, msg)
 	{
+D(bug("%d, ", msg->fd));
 	    if (msg->mode == HIDDV_UnixIO_Read)
 	    {
 		FD_SET (msg->fd, &rfds);
@@ -174,6 +178,7 @@ static void WaitForIO (void)
 	    if (maxfd < msg->fd)
 		maxfd = msg->fd;
 	}
+D(bug("\n"));
 
 	for (;;)
 	{
@@ -190,8 +195,11 @@ static void WaitForIO (void)
 #if 0
 	D(bug("wfio: got io sel=%ld err=%ld\n", selecterr, err));
 #endif
-	    if (err == EINTR)
+	    if (selecterr == 0 || (selecterr < 0 && err == EINTR))
 	    {
+		if (!IsMsgPortEmpty (ud->ud_Port))
+		    goto fetchmsg;
+
 		Disable ();
 		SysBase->ThisTask->tc_State = TS_READY;
 		AddTail (&SysBase->TaskReady, &SysBase->ThisTask->tc_Node);
@@ -211,7 +219,7 @@ static void WaitForIO (void)
 	    {
 		if (FD_ISSET (msg->fd, &efds))
 		{
-		    msg->result = errno;
+		    msg->result = err;
 		    goto reply;
 		}
 		else if (FD_ISSET (msg->fd, &rfds))
