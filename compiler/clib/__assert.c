@@ -50,6 +50,6 @@
 void __assert (const char * expr, const char * file, unsigned int line)
 {
     fprintf (stderr, "Assertion (%s) failed in %s:%u\n", expr, file, line);
-    /* TODO exit (10); */
+    exit (10);
 } /* assert */
 
