@@ -77,7 +77,7 @@ extern int doing_abort;
 	{							\
 	    len += strlen(GetPL(pl, _PROMPT).arg[i]) + 2;	\
 	}							\
-	out = AllocVec((len+1)*sizeof(char), MEMF_PUBLIC);	\
+	out = AllocVec((len+2)*sizeof(char), MEMF_PUBLIC);	\
 	outofmem(out);						\
 	out[0] = 0;						\
 	for ( i = 0 ; i < m ; i ++ )				\
@@ -204,6 +204,10 @@ void init_gui()
 kprintf("Failed to intialize Zune GUI\n");
 #endif
     }
+    set(btproceed,MUIA_CycleChain,1);
+    set(btabort,MUIA_CycleChain,1);
+    set(btskip,MUIA_CycleChain,1);
+    set(bthelp,MUIA_CycleChain,1);
     DoMethod(helpwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR)app, 2,
 	MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
@@ -740,6 +744,7 @@ kprintf("Skip\n");
 	FreeVec(mxlabels[0]);
 	FreeVec(mxlabels[1]);
 	FreeVec(mxlabels);
+	FreeVec(out);
 	disable_skip(FALSE);
     }
 
@@ -795,9 +800,10 @@ long int i, min, max;
 			MUIA_Text_Multiline, TRUE,
 		    End,
 		    Child, st  = StringObject,
+			StringFrame,
 			MUIA_String_Accept,	(IPTR)"0123456789",
-			MUIA_String_Contents,	(IPTR)retval,
-			MUIA_String_MaxLen,	128,
+			MUIA_String_Integer,	retval,
+//			MUIA_String_MaxLen,	128,
 		    End,
 		End,
 	    End;
@@ -818,7 +824,7 @@ long int i, min, max;
 			break;
 		    case Push_Proceed:
 			GetAttr(MUIA_String_Integer, st, &retval);
-			if ( retval < max || retval > min)
+			if ( retval < max && retval > min)
 			{
 			    running = FALSE;
 			}
@@ -845,6 +851,7 @@ kprintf("Skip\n");
 
 	    DelContents(wc);
 	}
+	FreeVec(out);
 	disable_skip(FALSE);
     }
 
@@ -888,6 +895,7 @@ int i;
 			MUIA_Text_Multiline, TRUE,
 		    End,
 		    Child, st  = StringObject,
+			StringFrame,
 			MUIA_String_Contents,	(IPTR)string,
 			MUIA_String_MaxLen,	128,
 		    End,
@@ -929,10 +937,11 @@ kprintf("Skip\n");
 			break;
 		}
 	    }
-	    GetAttr(MUIA_String_Contents, st, &string);
+	    string = XGET(st,MUIA_String_Contents);
 
 	    DelContents(wc);
 	}
+	FreeVec(out);
 	disable_skip(FALSE);
     }
 
