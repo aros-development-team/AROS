@@ -32,7 +32,7 @@
 #include <string.h> /* memset() */
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "gadtools_intern.h"
@@ -2112,19 +2112,21 @@ STATIC VOID UpdateScroller(Object *o, struct LVData *data, struct GadgetInfo *gi
 
     EnterFunc(bug("UpdateScroller(data=%p, gi=%p\n", data, gi));
 
-
-    if (data->ld_NumEntries > 0)
+    if (data->ld_Scroller)
     {
-	scrtags[0].ti_Data = data->ld_Top;
-	scrtags[1].ti_Data = data->ld_NumEntries;
-	scrtags[2].ti_Data = ShownEntries(o, data);
+	if (data->ld_NumEntries > 0)
+	{
+	    scrtags[0].ti_Data = data->ld_Top;
+	    scrtags[1].ti_Data = data->ld_NumEntries;
+	    scrtags[2].ti_Data = ShownEntries(o, data);
+	}
+
+	if (gi)
+    	    SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
+	else
+    	    SetAttrsA(data->ld_Scroller, scrtags);
     }
     
-    if (gi)
-    	SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
-    else
-    	SetAttrsA(data->ld_Scroller, scrtags);
-	
     ReturnVoid("UpdateScroller");
 }
 
@@ -2289,7 +2291,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	}
     	D(bug("Number of items added: %d\n", data->ld_NumEntries));
     }
-    
+
     if (update_scroller)
     {
     	/* IMPORTANT! If this is an OM_UPDATE, we should NOT redraw the
@@ -2298,7 +2300,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	if (msg->MethodID != OM_UPDATE)
     	    UpdateScroller(o, data, msg->ops_GInfo, GadToolsBase);
     }
-    
+   
     if (scroll_entries && !refresh_all)
     {
     	ScrollEntries(o, data, old_top, new_top, msg->ops_GInfo, GadToolsBase);
@@ -2324,8 +2326,7 @@ STATIC Object *listview_new(Class *cl, Object *o, struct opSet *msg)
 {
     struct DrawInfo *dri;
     
-
-    EnterFunc(bug("Lisview::New()\n"));
+    EnterFunc(bug("Listview::New()\n"));
 
     dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
     if (dri == NULL)
@@ -2361,6 +2362,7 @@ STATIC Object *listview_new(Class *cl, Object *o, struct opSet *msg)
     	}
     	else
     	{
+
 	    data->ld_Dri = dri;
 
 	    /* Set some defaults */
