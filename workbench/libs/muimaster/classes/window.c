@@ -1235,6 +1235,9 @@ static ULONG Window_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
+    /* Close the window before disconnecting all the childs */
+    set(obj,MUIA_Window_Open,FALSE);
+
     if (data->wd_RootObject)
 	DoMethodA(data->wd_RootObject, (Msg)msg);
 
