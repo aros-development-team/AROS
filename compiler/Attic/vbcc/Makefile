@@ -29,32 +29,32 @@ local-vc :
 	$(MAKE) $(MFLAGS) -f mf.local \
 	    BINDIR=bin-vcc OBJDIR=obj-vcc \
 	    CC="bin-gcc/vc +vc-local.config" \
-	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
 	    ILDFLAGS=
 
 local-vc-test :
 	$(MAKE) $(MFLAGS) -f mf.local \
 	    BINDIR=bin-vcc2 OBJDIR=obj-vcc2 \
 	    CC="bin-vcc/vc +vc-localtest.config" \
-	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
 	    ILDFLAGS=
 
 local-vc-test2 :
 	$(MAKE) $(MFLAGS) -f mf.local \
 	    BINDIR=bin-vcc3 OBJDIR=obj-vcc3 \
 	    CC="bin-vcc2/vc +vc-localtest2.config" \
-	    APPCFLAGS="-v -I. -Imachines/i386" \
+	    APPCFLAGS="-v -I. -Imachines/$(KERNEL)" \
 	    ILDFLAGS=
 
 $(EXEDIR)/vc : vc.c $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS) 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(EXEDIR)/vbcci386 : $(CC_OBJS) $(DEPLIBS)
+$(EXEDIR)/vbcc$(KERNEL) : $(CC_OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CC_OBJS) -o $@ $(LIBS) 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(EXEDIR)/vbccsi386 : $(CCS_OBJS) $(DEPLIBS)
+$(EXEDIR)/vbccs$(KERNEL) : $(CCS_OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $(CCS_OBJS) -o $@ $(LIBS) 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
