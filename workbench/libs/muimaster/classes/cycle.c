@@ -72,6 +72,7 @@ static IPTR Cycle_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     obj = (Object *)DoSuperNew(cl, obj,
 		MUIA_Background, MUII_ButtonBack,
+		ButtonFrame,
 		MUIA_InputMode, MUIV_InputMode_RelVerify,
 		MUIA_InnerTop,1,
 		MUIA_InnerBottom,1,
