@@ -31,6 +31,7 @@ DECLARESET(INIT);
 DECLARESET(EXIT);
 DECLARESET(CTORS);
 DECLARESET(DTORS);
+DECLARESET(PROGRAM_ENTRIES);
 
 /*
     This won't work for normal AmigaOS because you can't expect SysBase to be
@@ -50,7 +51,7 @@ extern struct aros_startup __aros_startup;
 
 #warning TODO: reset and initialize the FPU
 #warning TODO: resident startup
-AROS_UFH3(LONG, __startup_entry,
+AROS_UFH3(static LONG, __startup_entry,
     AROS_UFHA(char *,argstr,A0),
     AROS_UFHA(ULONG,argsize,D0),
     AROS_UFHA(struct ExecBase *,sysbase,A6)
@@ -151,6 +152,8 @@ DEFINESET(CTORS);
 DEFINESET(DTORS);
 DEFINESET(INIT);
 DEFINESET(EXIT);
+DEFINESET(PROGRAM_ENTRIES);
+ADD2SET(__startup_entry, program_entries, 0);
 
 
 /*
