@@ -52,6 +52,7 @@
 #include "intuition_intern.h"
 #endif
 
+#if 0 /* This doesn't belong here, but don't loose it */
 /* Image data */
 #define ARROWDOWN_WIDTH    18
 #define ARROWDOWN_HEIGHT   11
@@ -145,6 +146,7 @@ UWORD ArrowRight1Data[] =
     0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
 };
 
+#endif
 
 
 /****************************************************************************/
@@ -268,6 +270,7 @@ AROS_UFH3(static IPTR, dispatch_imageclass,
 		    IM(o)->ImageData = (UWORD *) tidata;
 		    break;
 
+#if 0 /* This doesn't belong here, but don't loose it */
 		case SYSIA_Which:
 		    switch (tidata)
 		    {
@@ -313,6 +316,9 @@ AROS_UFH3(static IPTR, dispatch_imageclass,
 			break;
 
 		    } /* Which image ? */
+
+		    break;
+#endif
 
 		default:
 		    unsupported = TRUE;
@@ -384,20 +390,6 @@ AROS_UFH3(static IPTR, dispatch_imageclass,
 		which has no settable/gettable attributes we
 		we will NOT pass this method to our superclass!
 	    */
-	}
-	break;
-
-    case IM_DRAW:
-	{
-	    struct impDraw * imsg = (struct impDraw *)msg;
-
-	    /* DrawImage (imsg->imp_RPort
-		, (struct Image *)o
-		, imsg->imp_Offset.X
-		, imsg->imp_Offset.Y
-	    ); */
-
-	    /* Leave retval=0: No further rendering necessary */
 	}
 	break;
 
