@@ -21,13 +21,14 @@
 	Workbench:c
 
     FUNCTION
-	BREAK sends a signal to another process to get its attention.
-	The argument |PROCESS| specifies the number of the process that
-	you wish to send the signal to. You can find out process numbers
-	with the STATUS command.
+	BREAK sends one or more signals to a CLI process.
+	The argument |PROCESS| specifies the numeric ID of the CLI process that
+	you wish to send the signal to. The STATUS command will list all currently
+    running CLI processes along with ther ID.
 
-	You can send a combination of the flags CTRL-C, CTRL-D, CTRL-E
-	and CTRL-F. By default, only the CTRL-C flag is sent.
+	You can send all signals at once via option ALL or any combination of the
+    flags CTRL-C, CTRL-D, CTRL-E and CTRL-F by their respective options.
+    When only the CLI process ID is specified the CTRL-C signal will be sent.
 
 	The effect of using the BREAK command is the same as selecting
 	the console window of a process and pressing the relevant key
@@ -52,10 +53,6 @@
 
 	    Send the CTRL-E signal to the process numbered 4.
 
-    SEE ALSO
-
-	STATUS
-
 **************************************************************************/
 
 #include <exec/types.h>
@@ -76,77 +73,100 @@
 #define ARG_ALL		5
 #define TOTAL_ARGS	6
 
-static const char version[] = "$VER: Break 41.1 (3.1.1998)";
+static const char version[] = "$VER: Break 41.2 (20.2.2005)";
+
 static const char exthelp[] =
-    "Break : Set the attention flags of a DOS task\n"
-    "\tPROCESS/A/N  Process to set flags for\n"
-    "\tALL/S        Set ALL attention flags\n"
-    "\tC/S          Set the CTRL-C flag\n"
-    "\tD/S          Set the CTRL-D flag\n"
-    "\tE/S          Set the CTRL-E flag\n"
-    "\tF/S          Set the CTRL-F flag\n";
+    "Break: Send break signal(s) to a CLI process\n"
+    "\tPROCESS/A/N  signal receiver's CLI process number\n"
+    "\tC/S          send CTRL-C signal\n"
+    "\tD/S          send CTRL-D signal\n"
+    "\tE/S          send CTRL-E signal\n"
+    "\tF/S          send CTRL-F signal\n"
+    "\tALL/S        send all signals\n";
 
 int __nocommandline = 1;
 
-int main(void)
+
+int
+main(void)
 {
-    struct Process *pr = NULL;
     struct RDArgs *rd, *rda = NULL;
-    IPTR args[TOTAL_ARGS] = { 0, TRUE, FALSE, FALSE, FALSE, FALSE };
-    BPTR errStream = Output();
-    ULONG mask = 0;
+
+    IPTR args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL };
+
     int error = 0;
 
-    if((rda = AllocDosObject(DOS_RDARGS, NULL)))
+    if ((rda = AllocDosObject(DOS_RDARGS, NULL)))
     {
-	rda->RDA_ExtHelp = (STRPTR)exthelp;
+        rda->RDA_ExtHelp = (STRPTR) exthelp;
 
-	if((rd = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL)))
-	{
-	    pr = FindCliProc(*(IPTR *)args[ARG_PROCESS]);
-	    if( pr != NULL )
-	    {
-		/* Figure out the mask of flags to send. */
-		if( args[ARG_ALL] )
-		    mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D 
-			 | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
-		else
-		    mask =  (args[ARG_C] == TRUE ? SIGBREAKF_CTRL_C : 0)
-			  |	(args[ARG_D] == TRUE ? SIGBREAKF_CTRL_D : 0)	
-			  |	(args[ARG_E] == TRUE ? SIGBREAKF_CTRL_E : 0)
-			  |	(args[ARG_F] == TRUE ? SIGBREAKF_CTRL_F : 0);
+        if ((rd = ReadArgs(ARG_TEMPLATE, (LONG *) args, rda)))
+        {
+                struct Process
+            *pr = FindCliProc(*(IPTR *) args[ARG_PROCESS]);
 
-		Signal((struct Task *)pr, mask);
-	    }
-	    else
-	    {
-		/* There is no relevant error code, OBJECT_NOT_FOUND
-		    is a filesystem error, so we can't use that... */
+            if (pr != NULL)
+            {
+                    ULONG
+                mask = 0;
 
-		pr = (struct Process *)FindTask(NULL);
-		if (pr->pr_CES != NULL)
-		    errStream = pr->pr_CES;
+                /* Figure out the mask of flags to send. */
+                if (args[ARG_ALL])
+                {
+                    mask = SIGBREAKF_CTRL_C | SIGBREAKF_CTRL_D
+                        | SIGBREAKF_CTRL_E | SIGBREAKF_CTRL_F;
+                }
+                else
+                {
+                    mask = (args[ARG_C] != NULL ? SIGBREAKF_CTRL_C : 0)
+                        | (args[ARG_D] != NULL ? SIGBREAKF_CTRL_D : 0)
+                        | (args[ARG_E] != NULL ? SIGBREAKF_CTRL_E : 0)
+                        | (args[ARG_F]!= NULL ? SIGBREAKF_CTRL_F : 0);
+                        
+                    if (NULL == mask)
+                    {
+                        mask = SIGBREAKF_CTRL_C;    /* default */
+                    }
+                }
 
-		VFPrintf(errStream, "Break: Process not found.\n", NULL);
-		error = -1;
-	    }
+                Signal((struct Task *) pr, mask);
+            }
+            else
+            {
+                /* There is no relevant error code, OBJECT_NOT_FOUND
+                 * is a filesystem error, so we can't use that... */
 
-	    FreeArgs(rd);
-	} /* ReadArgs() ok */
-	else
-	    error = IoErr();
+                pr = (struct Process *) FindTask(NULL);
 
-	FreeDosObject(DOS_RDARGS, rda);
+                BPTR errStream = (pr->pr_CES != NULL)
+                    ? pr->pr_CES
+                    : Output();
+
+                VFPrintf(errStream, "Break: Process not found.\n", NULL);
+                error = -1;
+            }
+
+            FreeArgs(rd);
+        } /* ReadArgs() ok */
+        else
+        {
+            error = IoErr();
+        }
+
+        FreeDosObject(DOS_RDARGS, rda);
     } /* Got rda */
     else
-	error = IoErr();
-
-    if( error != 0 && error != -1)
     {
-	PrintFault(error, "Break");
-	return RETURN_FAIL;
+        error = IoErr();
+    }
+
+    if (error != 0 && error != -1)
+    {
+        PrintFault(error, "Break");
+        return RETURN_FAIL;
     }
 
     SetIoErr(0);
+
     return 0;
-}	    
+}
