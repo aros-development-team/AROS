@@ -95,6 +95,7 @@ FUNCTIONS := \
 	initgels \
 	initgmasks \
 	initmasks \
+	inittmpras \
 	initview \
 	initvport \
 	initrastport \
