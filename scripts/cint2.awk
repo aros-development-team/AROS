@@ -236,7 +236,7 @@ print "Working on " part_name "..."
 		    printf ("#include \"%s_intern.h\"\n\n", part_name) >> file;
 		    print "/*****************************************************************************\n" >> file
 		    print "    NAME */" >>file
-		    print "\t#include <clib/" part_name "_protos.h>\n">>file
+		    print "#include <clib/" part_name "_protos.h>\n">>file
 
 		    if (offset!=-1)
 		    {
