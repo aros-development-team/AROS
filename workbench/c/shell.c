@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/10/15 15:42:11  digulla
+    Fixed a bug in the code to extract the names of the redirection files
+    Added ">>" (append) redirection.
+    Better exit-code
+
     Revision 1.9  1996/10/04 14:35:14  digulla
     Search C: without path C: add
 
@@ -37,6 +42,9 @@
 #include <dos/rdargs.h>
 #include <clib/dos_protos.h>
 #include <utility/tagitem.h>
+#include <ctype.h>
+#include <stdio.h>
+#include <aros/debug.h>
 
 BPTR cLock;
 
@@ -183,7 +191,7 @@ BPTR loadseg(STRPTR name)
 LONG execute(STRPTR com)
 {
     STRPTR s1=NULL, s2=NULL;
-    STRPTR args, rest, command=NULL, infile=NULL, outfile=NULL;
+    STRPTR args, rest, command=NULL, infile=NULL, outfile=NULL, appfile=NULL;
     STRPTR last;
     BPTR in=0, out=0;
     BPTR seglist, lock;
@@ -215,9 +223,22 @@ LONG execute(STRPTR com)
 	if(command==NULL)
 	    command=args;
 	else if(com[cs.CS_CurChr]=='<')
-	    infile=args+1;
+	{
+	    cs.CS_CurChr ++; /* Skip redirection character */
+	    infile=args;
+	}
 	else if(com[cs.CS_CurChr]=='>')
-	    outfile=args+1;
+	{
+	    cs.CS_CurChr ++; /* Skip redirection character */
+
+	    if(com[cs.CS_CurChr]=='>')
+	    {
+		cs.CS_CurChr ++; /* Skip redirection character */
+		appfile=args;
+	    }
+	    else
+		outfile=args;
+	}
 	else
 	{
 	    size=cs.CS_CurChr;
@@ -261,6 +282,18 @@ LONG execute(STRPTR com)
 	}
 	out=SelectOutput(out);
     }
+    if(out==NULL && appfile!=NULL)
+    {
+	out=Open(appfile,MODE_OLDFILE);
+	if(!out)
+	{
+	    outfile=NULL;
+	    error=IoErr();
+	    goto end;
+	}
+	Seek (out,0,OFFSET_END);
+	out=SelectOutput(out);
+    }
     seglist=loadseg(command);
     if(seglist)
     {
@@ -293,9 +326,9 @@ LONG execute(STRPTR com)
     }
 
 end:
-    if(infile!=NULL)
+    if(in)
 	Close(SelectInput(in));
-    if(outfile!=NULL)
+    if(out)
 	Close(SelectOutput(out));
     FreeVec(s1);
     FreeVec(s2);
