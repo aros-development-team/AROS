@@ -1,179 +1,179 @@
-MSG_ERROR_NO_FREE_STORE (103//)
+MSG_ERROR_NO_FREE_STORE
 memoria insufficiente
 ;
-MSG_ERROR_TASK_TABLE_FULL (105//)
+MSG_ERROR_TASK_TABLE_FULL
 tavola dei processi completa
 ;
-MSG_ERROR_BAD_TEMPLATE (114//)
+MSG_ERROR_BAD_TEMPLATE
 template errato
 ;
-MSG_ERROR_BAD_NUMBER (115//)
+MSG_ERROR_BAD_NUMBER
 numero errato
 ;
-MSG_ERROR_REQUIRED_ARG_MISSING (116//)
+MSG_ERROR_REQUIRED_ARG_MISSING
 manca un argomento necessario
 ;
-MSG_ERROR_KEY_NEEDS_ARG (117//)
+MSG_ERROR_KEY_NEEDS_ARG
 manca un valore dopo la keyword
 ;
-MSG_ERROR_TOO_MANY_ARGS (118//)
+MSG_ERROR_TOO_MANY_ARGS
 numero di argomenti errato
 ;
-MSG_ERROR_UNMATCHED_QUOTES (119//)
+MSG_ERROR_UNMATCHED_QUOTES
 unmatched quotes
 ;
-MSG_ERROR_LINE_TOO_LONG (120//)
+MSG_ERROR_LINE_TOO_LONG
 linea degli argomenti invalida o troppo lunga
 ;
-MSG_ERROR_FILE_NOT_OBJECT (121//)
+MSG_ERROR_FILE_NOT_OBJECT
 il file non è eseguibile
 ;
-MSG_ERROR_INVALID_RESIDENT_LIBRARY (122//)
+MSG_ERROR_INVALID_RESIDENT_LIBRARY
 libreria residente invalida
 ;
-MSG_ERROR_NO_DEFAULT_DIR (201//)
+MSG_ERROR_NO_DEFAULT_DIR
 errore 201
 ;
-MSG_ERROR_OBJECT_IN_USE (202//)
+MSG_ERROR_OBJECT_IN_USE
 l'oggetto è in uso
 ;
-MSG_ERROR_OBJECT_EXISTS (203//)
+MSG_ERROR_OBJECT_EXISTS
 l'oggetto esiste già
 ;
-MSG_ERROR_DIR_NOT_FOUND (204//)
+MSG_ERROR_DIR_NOT_FOUND
 directory non trovata
 ;
-MSG_ERROR_OBJECT_NOT_FOUND (205//)
+MSG_ERROR_OBJECT_NOT_FOUND
 oggetto non trovato
 ;
-MSG_ERROR_BAD_STREAM_NAME (206//)
+MSG_ERROR_BAD_STREAM_NAME
 descrizione della finestra invalida
 ;
-MSG_ERROR_OBJECT_TOO_LARGE (207//)
+MSG_ERROR_OBJECT_TOO_LARGE
 oggetto troppo grande
 ;
-MSG_ERROR_ACTION_NOT_KNOWN (209//)
+MSG_ERROR_ACTION_NOT_KNOWN
 tipo di azione sconosciuto del filesystem
 ;
-MSG_ERROR_INVALID_COMPONENT_NAME (210//)
+MSG_ERROR_INVALID_COMPONENT_NAME
 nome dell'oggetto invalido
 ;
-MSG_ERROR_INVALID_LOCK (211//)
+MSG_ERROR_INVALID_LOCK
 blocco dell'oggetto invalido
 ;
-MSG_ERROR_OBJECT_WRONG_TYPE (212//)
+MSG_ERROR_OBJECT_WRONG_TYPE
 L'oggetto non è della tipologia richiesta
 ;
-MSG_ERROR_DISK_NOT_VALIDATED (213//)
+MSG_ERROR_DISK_NOT_VALIDATED
 disco non convalidato
 ;
-MSG_ERROR_DISK_WRITE_PROTECTED (214//)
+MSG_ERROR_DISK_WRITE_PROTECTED
 disco protetto dalla scrittura
 ;
-MSG_ERROR_RENAME_ACROSS_DEVICES (215//)
+MSG_ERROR_RENAME_ACROSS_DEVICES
 tentativo di rinominazione invalida
 ;
-MSG_ERROR_DIRECTORY_NOT_EMPTY (216//)
+MSG_ERROR_DIRECTORY_NOT_EMPTY
 la directory non è vuota
 ;
-MSG_ERROR_TOO_MANY_LEVELS (217//)
+MSG_ERROR_TOO_MANY_LEVELS
 troppi livelli
 ;
-MSG_ERROR_DEVICE_NOT_MOUNTED (218//)
+MSG_ERROR_DEVICE_NOT_MOUNTED
 dispositivo (o volume) non montato
 ;
-MSG_ERROR_SEEK_ERROR (219//)
+MSG_ERROR_SEEK_ERROR
 ricerca fallita
 ;
-MSG_ERROR_COMMENT_TOO_BIG (220//)
+MSG_ERROR_COMMENT_TOO_BIG
 commento troppo lungo
 ;
-MSG_ERROR_DISK_FULL (221//)
+MSG_ERROR_DISK_FULL
 il disco è pieno
 ;
-MSG_ERROR_DELETE_PROTECTED (222//)
+MSG_ERROR_DELETE_PROTECTED
 oggetto protetto dalla cancellazione
 ;
-MSG_ERROR_WRITE_PROTECTED (223//)
+MSG_ERROR_WRITE_PROTECTED
 file protetto dalla scrittura
 ;
-MSG_ERROR_READ_PROTECTED (224//)
+MSG_ERROR_READ_PROTECTED
 file protetto dalla lettura
 ;
-MSG_ERROR_NOT_A_DOS_DISK (225//)
+MSG_ERROR_NOT_A_DOS_DISK
 disco DOS non valido
 ;
-MSG_ERROR_NO_DISK (226//)
+MSG_ERROR_NO_DISK
 manca il disco
 ;
-MSG_ERROR_NO_MORE_ENTRIES (232//)
+MSG_ERROR_NO_MORE_ENTRIES
 la directory è piena
 ;
-MSG_ERROR_IS_SOFT_LINK (233//)
+MSG_ERROR_IS_SOFT_LINK
 l'oggetto è un collegamento semplice
 ;
-MSG_ERROR_OBJECT_LINKED (234//)
+MSG_ERROR_OBJECT_LINKED
 l'oggetto è collegato
 ;
-MSG_ERROR_BAD_HUNK (235//)
+MSG_ERROR_BAD_HUNK
 bad loadfile hunk
 ;
-MSG_ERROR_NOT_IMPLEMENTED (236//)
+MSG_ERROR_NOT_IMPLEMENTED
 funzione mancante
 ;
-MSG_ERROR_RECORD_NOT_LOCKED (240//)
+MSG_ERROR_RECORD_NOT_LOCKED
 record non bloccato
 ;
-MSG_ERROR_LOCK_COLLISION (241//)
+MSG_ERROR_LOCK_COLLISION
 collisione del blocco del record
 ;
-MSG_ERROR_LOCK_TIMEOUT (242//)
+MSG_ERROR_LOCK_TIMEOUT
 tempo esaurito per blocco record
 ;
-MSG_ERROR_UNLOCK_ERROR (243//)
+MSG_ERROR_UNLOCK_ERROR
 errore nello sblocco del record
 ;
-MSG_ERROR_BUFFER_OVERFLOW (303//)
+MSG_ERROR_BUFFER_OVERFLOW
 buffer overflow
 ;
-MSG_ERROR_BREAK (304//)
+MSG_ERROR_BREAK
 ***Interruzione
 ;
-MSG_ERROR_NOT_EXECUTABLE (305//)
+MSG_ERROR_NOT_EXECUTABLE
 file non eseguibile
 ;
-MSG_STRING_INSERT_VOLUME (4000//)
+MSG_STRING_INSERT_VOLUME)
 Prego inserire volume\n%s\nin un drive qualsiasi
 ;
-MSG_STRING_VOLUME_FULL (4001//)
+MSG_STRING_VOLUME_FULL)
 Il volume %s è pieno
 ;
-MSG_STRING_NO_DISK (4002//)
+MSG_STRING_NO_DISK)
 Disco non presente nel drive %s
 ;
-MSG_STRING_NO_DOS_DISK (4003//)
+MSG_STRING_NO_DOS_DISK)
 Disco non-DOS nel drive %s
 ;
-MSG_STRING_MUST_REPLACE (4004//)
+MSG_STRING_MUST_REPLACE)
 È NECESSARIO sostituire il volume\n\
 %s\n\
 nel drive %s
 ;
-MSG_STRING_RETRY (5000//)
+MSG_STRING_RETRY)
 Riprova
 ;
-MSG_STRING_CANCEL (5001//)
+MSG_STRING_CANCEL)
 Annulla
 ;
-MSG_STRING_REQUESTTITLE (5002//)
+MSG_STRING_REQUESTTITLE)
 Richiesta di sistema
 ;
-MSG_ERROR_NO_MATCHING_ELSEENDIF (10000//)
+MSG_ERROR_NO_MATCHING_ELSEENDIF
 manca corrispettivo Else o EndIf
 ;
-MSG_ERROR_SCRIPT_ONLY (10001//)
+MSG_ERROR_SCRIPT_ONLY
 questo comando può essere usato solo in file di comando
 ;
-MSG_ERROR_UNKNOWN (100//)
+MSG_ERROR_UNKNOWN
 errore indefinito
 ;
