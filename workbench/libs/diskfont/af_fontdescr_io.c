@@ -103,7 +103,8 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
             oldstrlen ++;
         }
         while (*strptr ++);
-     
+
+#if 0     
         /* We don't want a "topaz/9" like name here, but "topaz.font" */
        	strptr = strpbrk(strbuf, "/");
 
@@ -125,6 +126,13 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
      	strcpy(tattr->tta_Name, strbuf);
      
      	strcat(tattr->tta_Name, ".font");  	
+#else
+    	strptr = FilePart(filename);
+    	if (!(tattr->tta_Name = AllocVec(strlen(strptr) + 1, MEMF_ANY)))
+	    goto failure;
+	    
+	strcpy(tattr->tta_Name, strptr);
+#endif
        	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */
         Flush(fh);
