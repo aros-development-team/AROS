@@ -62,9 +62,9 @@ struct NewGadget checkbox =
 
 struct NewGadget mxgad =
 {
-    210, 60, 0, 20,
+    210, 60, MX_WIDTH, 20,
     "Mutual Exclude (3)", NULL,
-    ID_MX, PLACETEXT_ABOVE, NULL, NULL
+    ID_MX, PLACETEXT_RIGHT, NULL, NULL
 };
 
 STRPTR mxlabels[] =
@@ -163,6 +163,8 @@ struct Gadget *makegadgets(struct Gadget *gad)
                        TAG_DONE);
     gad = CreateGadget(MX_KIND, gad, &mxgad,
 		       GTMX_Labels, &mxlabels,
+                       GTMX_Scaled, TRUE,
+                       GTMX_TitlePlace, PLACETEXT_ABOVE,
 		       TAG_DONE);
 
 
@@ -219,19 +221,9 @@ void handlewin()
 		printf("Gadget %d pressed",
 		       ((struct Gadget *) msg->IAddress)->GadgetID);
                 switch (((struct Gadget *) msg->IAddress)->GadgetID) {
-                case ID_MX:{
-                    IPTR active;
-                    struct TagItem gettags[] =
-                    {
-                        {GTMX_Active, (IPTR) NULL},
-                        {TAG_DONE, 0UL}};
-                    gettags[0].ti_Data = (IPTR) & active;
-
-                    GT_GetGadgetAttrs((struct Gadget *) msg->IAddress, win, NULL,
-                                      GTMX_Active, (IPTR) & active, TAG_DONE);
-                    printf(" (active: %ld)", active);
+                case ID_MX:
+                    printf(" (active: %d)", msg->Code);
                     break;
-                }
                 }
                 printf("\n");
                 break;
@@ -243,21 +235,15 @@ void handlewin()
 		    ready = TRUE;
 		    break;
 		case ID_CHECKBOX:{
-                    IPTR checked;
-                    struct TagItem gettags[] =
-                    {
-                        {GTCB_Checked, (IPTR) NULL},
-                        {TAG_DONE, 0UL}};
-                    gettags[0].ti_Data = (IPTR) & checked;
+                    BOOL checked;
 
-                    GT_GetGadgetAttrs((struct Gadget *) msg->IAddress, win, NULL,
-                                      GTCB_Checked, (IPTR) & checked, TAG_DONE);
+                    checked = msg->Code;
                     if (checked)
                         printf(" (checked)");
                     else
                         printf(" (not checked)");
                     GT_SetGadgetAttrs(button, win, NULL,
-                                      GA_Disabled, checked, TAG_DONE);
+                                      GA_Disabled, (IPTR)checked, TAG_DONE);
                     break;
                 }
 		}
