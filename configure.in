@@ -250,6 +250,8 @@ AROS_PROG(PYTHON,[python])
 AROS_PROG(GNUPLOT,[gnuplot])
 AROS_PROG(CAT,[cat])
 AROS_PROG(BISON,[bison])
+AROS_PROG(PNGTOPNM,[pngtopnm])
+AROS_PROG(PPMTOILBM,[ppmtoilbm])
 
 FOR=for
 IF=if
