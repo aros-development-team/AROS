@@ -508,5 +508,5 @@ struct IOFileSys
 
 #define ERROR_BROKEN_PIPE   400  /* An attempt to write on a pipe without any reader has been made */
 #define ERROR_WOULD_BLOCK   401  /* A Read() or a Write() on a file opened with the FMF_NONBLOCK flag would block */
-
+#define ERROR_INTERRUPTED   402  /* The I/O file operation has been interrupted for some reasons */
 #endif /* DOS_FILESYSTEM_H */
