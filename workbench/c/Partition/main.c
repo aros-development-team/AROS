@@ -14,12 +14,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "args.h"
 
-const char		old_device[] = "ide.device";
 
 /*** Prototypes *************************************************************/
 struct PartitionHandle *CreateRootTable(CONST_STRPTR device, LONG unit);
@@ -31,33 +30,15 @@ int main(void)
 {
 	struct PartitionHandle *root   = NULL;
 	TEXT                    choice = 'N';
+    CONST_STRPTR            device;
+    ULONG                   unit;
 
-	char		*use_device = &old_device;
-	ULONG	use_unit = 0;
-
-	D(bug("[c:partition] Checking Arguments\n"));
-    
 	if (!ReadArguments()) return RETURN_FAIL;
 
-	D(bug("[c:partition] Arguments read\n"));
-    
-	if (ARG(DEVICE)!=NULL)
-	{
-		IPTR		arg_rettmp=0;
-		arg_rettmp = (IPTR)ARG(DEVICE);
-		use_device = (char *)arg_rettmp;
-	}
+    device = (CONST_STRPTR) ARG(DEVICE);
+    unit   = ARG(UNIT);
 	
-	D(bug("[c:partition] Using %s\n", use_device));
-	
-	if (ARG(UNIT)!=NULL)
-	{
-		IPTR		*arg_rettmp=NULL;
-		arg_rettmp = (IPTR *)ARG(UNIT);
-		use_unit = *arg_rettmp;
-	}
-    
-	D(bug("[c:partition] Unit %d\n",use_unit));
+    D(bug("[C:Partition] Using %s, unit %d\n", device, unit));
     
 	if (ARG(QUIET) && !ARG(FORCE))
 	{
@@ -67,7 +48,7 @@ int main(void)
     
     if (!ARG(FORCE))
     {
-        Printf("About to partition %s unit %d.\n", use_device, use_unit);
+        Printf("About to partition %s unit %d.\n", device, unit);
         Printf("This will DESTROY ALL DATA on the drive!\n");
         Printf("Are you sure? (y/N)"); Flush(Output());
     
@@ -86,9 +67,9 @@ int main(void)
         Flush(Output());
     }
     
-    D(bug("[c:partition] About to partition drive..\n"));
+    D(bug("[C:Partition] Partitioning drive...\n"));
     
-    if ((root = CreateRootTable(use_device, use_unit)) != NULL)
+    if ((root = CreateRootTable(device, unit)) != NULL)
     {
         CONST ULONG          TABLESIZE = 5 * 1024 * 1024;      
         CONST ULONG          DH0SIZE   = 1 * 1024 * 1024;
@@ -299,25 +280,26 @@ struct PartitionHandle *CreateRDBPartition
     CopyMem(&parentDE, &partitionDE, sizeof(struct DosEnvec));
     
     partitionDE.de_SizeBlock      = parentDG.dg_SectorSize >> 2;
-D(bug("[c:partition]  SizeBlock %d\n",partitionDE.de_SizeBlock ));
     partitionDE.de_Surfaces       = parentDG.dg_Heads;
-D(bug("[c:partition]  Surfaces %d\n",partitionDE.de_Surfaces));
     partitionDE.de_BlocksPerTrack = parentDG.dg_TrackSectors;
-D(bug("[c:partition]  BlocksPerTrack %d\n",partitionDE.de_BlocksPerTrack));
     partitionDE.de_BufMemType     = parentDG.dg_BufMemType;
-D(bug("[c:partition]  BufMemType %d\n",partitionDE.de_BufMemType));
     partitionDE.de_TableSize      = DE_DOSTYPE;
-D(bug("[c:partition] TableSize %d\n",partitionDE.de_TableSize));
     partitionDE.de_Reserved       = 2;
-D(bug("[c:partition] Reserved %d\n",partitionDE.de_Reserved));
     partitionDE.de_HighCyl        = highcyl;
-D(bug("[c:partition] HighCyl %d\n",partitionDE.de_HighCyl));
     partitionDE.de_LowCyl         = lowcyl;
-D(bug("[c:partition] LowCyl %d\n",partitionDE.de_LowCyl));
     partitionDE.de_NumBuffers     = 100;
     partitionDE.de_MaxTransfer    = 0xFFFFFF;
     partitionDE.de_Mask           = 0xFFFFFFFE;
             
+    D(bug("[C:Partition] SizeBlock %d\n", partitionDE.de_SizeBlock ));
+    D(bug("[C:Partition] Surfaces %d\n", partitionDE.de_Surfaces));
+    D(bug("[C:Partition] BlocksPerTrack %d\n", partitionDE.de_BlocksPerTrack));
+    D(bug("[C:Partition] BufMemType %d\n", partitionDE.de_BufMemType));
+    D(bug("[C:Partition] TableSize %d\n", partitionDE.de_TableSize));
+    D(bug("[C:Partition] Reserved %d\n", partitionDE.de_Reserved));
+    D(bug("[C:Partition] HighCyl %d\n", partitionDE.de_HighCyl));
+    D(bug("[C:Partition] LowCyl %d\n", partitionDE.de_LowCyl));
+
     partition = AddPartitionTags
     (
         parent,
