@@ -262,7 +262,7 @@ char *string;
   /* Traverse through all Screens */
   while ( scr )
   {
-    sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d   \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
+    sprintf(tmp,"Screen:   %p %4dx%4d @%4d.%4d     \"%s\",\"%s\"",scr,scr->Width,scr->Height,scr->LeftEdge,scr->TopEdge,scr->Title,scr->DefaultTitle);
     string = strdup(tmp);
     node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
     AddTail(list, node);
@@ -272,7 +272,7 @@ char *string;
     win = scr->FirstWindow;
     while ( win )
     {
-      sprintf(tmp,"  Window: %p %4dx%4d @%4d,%4d %c \"%s\"",win,win->Width,win->Height,win->LeftEdge,win->TopEdge,(IsWindowVisible(win)?' ':'H'),win->Title);
+      sprintf(tmp,"  Window: %p %4dx%4d @%4d,%4d %c%c%c \"%s\"%c(%p)",win,win->Width,win->Height,win->LeftEdge,win->TopEdge,(IsWindowVisible(win)?' ':'H'),(IS_CHILD(win)?'C':' '),(HAS_CHILDREN(win)?'P':' '),win->Title,(IS_CHILD(win)==NULL?0:' '),win->parent);
       string = strdup(tmp);
       node = (struct Node *) AllocMem ( sizeof(struct Node), MEMF_CLEAR );
       AddTail(list, node);
@@ -533,12 +533,12 @@ struct Window *win;
       /* Move Window onto the Screen if outside */
       /* TODO:	calculate reasonable values:
 		eg. this way only the Close Gadget my be visible :-( */
-      if ( win->LeftEdge < 0
-	|| win->TopEdge  < 0
-	|| win->LeftEdge > scr->Width
-	|| win->TopEdge  > scr->Height )
+      if ( win->RelLeftEdge < 0
+	|| win->RelTopEdge  < 0
+	|| win->RelLeftEdge > scr->Width
+	|| win->RelTopEdge  > scr->Height )
       {
-	MoveWindow ( win, - win->LeftEdge, - win->TopEdge );
+	MoveWindow ( win, - win->RelLeftEdge, - win->RelTopEdge );
       }
       win = win->NextWindow;
     }
@@ -739,7 +739,7 @@ int quit = 0;
 					MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
 					break;
 				    case Window_type :
-					MoveWindow((struct Window *)object,-((struct Window *)object)->LeftEdge,-((struct Window *)object)->TopEdge);
+					MoveWindow((struct Window *)object,-((struct Window *)object)->RelLeftEdge,-((struct Window *)object)->RelTopEdge);
 					break;
 				    default:
 					break;
@@ -937,7 +937,7 @@ int quit = 0;
 				MoveScreen((struct Screen *)object,-((struct Screen *)object)->LeftEdge,-((struct Screen *)object)->TopEdge);
 				break;
 			    case Window_type :
-				MoveWindow((struct Window *)object,-((struct Window *)object)->LeftEdge,-((struct Window *)object)->TopEdge);
+				MoveWindow((struct Window *)object,-((struct Window *)object)->RelLeftEdge,-((struct Window *)object)->RelTopEdge);
 				break;
 			    default:
 				break;
