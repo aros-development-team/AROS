@@ -105,6 +105,8 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
 
     MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
 
+    InitSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+
     __zune_prefs_init(&__zprefs);
 
     return TRUE;

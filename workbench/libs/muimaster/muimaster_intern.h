@@ -81,7 +81,9 @@ struct MUIMasterBase_intern
     struct Library  	    	*cxbase;
     struct Library  	    	*keymapbase;
     struct Library		*gadtoolsbase;
-    struct SignalSemaphore ClassSempahore;
+
+    struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
+
     struct IClass **Classes;
     int     ClassCount;
     int     ClassSpace;
