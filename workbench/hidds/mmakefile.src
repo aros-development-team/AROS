@@ -5,7 +5,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 %define_libs
 
-HIDDS := $(HIDDSDIR)/x11gfx.hidd
+HIDDS := $(HIDDSDIR)/gfx.hidd
 
 #MM workbench-hidds-quick :
 workbench-hidds-quick : show-flags $(HIDDS)
