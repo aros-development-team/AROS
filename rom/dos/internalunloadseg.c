@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -64,7 +64,7 @@ extern void Exec_FreeMem();
       AROS_UFC3(void, freefunc,
         AROS_UFCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
         AROS_UFCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
-        AROS_UFCA(struct Library *, SysBase                             , A6)
+        AROS_UFCA(struct Library *, (struct Library *)SysBase           , A6)
       );
       
       seglist = next;

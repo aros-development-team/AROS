@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc:
@@ -162,9 +162,9 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           hunktab[i].size = count * 4 + sizeof(ULONG) + sizeof(BPTR);
           hunktab[i].memory =(UBYTE *)
 		AROS_UFC3(void *, funcarray[1] /* AllocMem */,
-		  AROS_UFCA(ULONG           , hunktab[i].size, D0),
-		  AROS_UFCA(ULONG           , req            , D1),
-		  AROS_UFCA(struct Library *, SysBase        , A6) );
+		  AROS_UFCA(ULONG           , hunktab[i].size          , D0),
+		  AROS_UFCA(ULONG           , req                      , D1),
+		  AROS_UFCA(struct Library *, (struct Library *)SysBase, A6) );
 
           if (hunktab[i].memory == NULL)
             ERROR(ERROR_NO_FREE_STORE);
@@ -359,7 +359,7 @@ end:
 	AROS_UFC3(void , funcarray[2] /* FreeMem*/,
 	  AROS_UFCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
 	  AROS_UFCA(ULONG  , hunktab[t].size                             , D0),
-	  AROS_UFCA(struct Library *, SysBase                            , A6) );
+	  AROS_UFCA(struct Library *, (struct Library *)SysBase          , A6) );
       }
       
     FreeVec(hunktab);

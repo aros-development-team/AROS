@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Replacement OS
+    (C) 1997-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Code to dynamically load ELF executables
@@ -398,9 +398,9 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     {
       hunks[t].memory =
 		AROS_UFC3(void *, functionarray[1] /* AllocMem */,
-		  AROS_UFCA(ULONG, hunks[t].size+sizeof(ULONG)+sizeof(BPTR), D0),
-		  AROS_UFCA(ULONG, MEMF_CLEAR                                , D1),
-		  AROS_UFCA(struct Library *, SysBase                        , A6) );
+		  AROS_UFCA(ULONG, hunks[t].size+sizeof(ULONG)+sizeof(BPTR) , D0),
+		  AROS_UFCA(ULONG, MEMF_CLEAR                               , D1),
+		  AROS_UFCA(struct Library *, (struct Library *)SysBase     , A6) );
 
       if (hunks[t].memory == NULL)
         ERROR (ERROR_NO_FREE_STORE);
@@ -596,9 +596,9 @@ end:
       if (hunks[t].memory != NULL)
       {
 	AROS_UFC3(void , functionarray[2] /* FreeMem */,
-	  AROS_UFCA(void * , hunks[t].memory-sizeof(BPTR)-sizeof(ULONG), A1),
-	  AROS_UFCA(ULONG  , hunks[t].size  +sizeof(BPTR)+sizeof(ULONG), D0),
-	  AROS_UFCA(struct Library *, SysBase                          , A6) );
+	  AROS_UFCA(void * , hunks[t].memory-sizeof(BPTR)-sizeof(ULONG) , A1),
+	  AROS_UFCA(ULONG  , hunks[t].size  +sizeof(BPTR)+sizeof(ULONG) , D0),
+	  AROS_UFCA(struct Library *, (struct Library *)SysBase         , A6) );
 
       }
     }

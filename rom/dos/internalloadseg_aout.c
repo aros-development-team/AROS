@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Load an a.out format image into memory.
@@ -171,10 +171,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   Seek(file, 0, OFFSET_BEGINNING);
 
   if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
-  	 AROS_UFCA(BPTR  , file                   , D1),
-  	 AROS_UFCA(void *, &header                , D2),
-  	 AROS_UFCA(LONG  , sizeof(struct aout_hdr), D3),
-  	 AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+  	 AROS_UFCA(BPTR  , file                                , D1),
+  	 AROS_UFCA(void *, &header                             , D2),
+  	 AROS_UFCA(LONG  , sizeof(struct aout_hdr)             , D3),
+  	 AROS_UFCA(struct Library *, (struct Library *)DOSBase , A6)) != 
        sizeof(struct aout_hdr))
   {
     D(bug("LoadSeg_AOUT: Can't read all of header\n"));
@@ -201,17 +201,17 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
      a struct JumpVec (yes the same as in the the library bases).
   */
   jumphunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
-  		AROS_UFCA(ULONG, sizeof(struct JumpHunk), D0),
-  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY    , D1),
-  		AROS_UFCA(struct Library *, SysBase     , A6) );
+  		AROS_UFCA(ULONG, sizeof(struct JumpHunk)              , D0),
+  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                  , D1),
+  		AROS_UFCA(struct Library *, (struct Library *)SysBase , A6) );
   if(jumphunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
 
   /* Text segment is required. */
   texthunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
-  		AROS_UFCA(ULONG, header.a_text+sizeof(ULONG)+sizeof(BPTR), D0),
-  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
-  		AROS_UFCA(struct Library *, SysBase                      , A6));
+  		AROS_UFCA(ULONG, header.a_text+sizeof(ULONG)+sizeof(BPTR) , D0),
+  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                      , D1),
+  		AROS_UFCA(struct Library *, (struct Library *)SysBase     , A6));
 
   if(texthunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
@@ -226,10 +226,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   __AROS_SET_VEC(&jumphunk->vec, texthunk + header.a_entry);
 
   if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
-  	 AROS_UFCA(BPTR  , file                   , D1),
-  	 AROS_UFCA(void *, texthunk               , D2),
-  	 AROS_UFCA(LONG  , header.a_text          , D3),
-  	 AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+  	 AROS_UFCA(BPTR  , file                                , D1),
+  	 AROS_UFCA(void *, texthunk                            , D2),
+  	 AROS_UFCA(LONG  , header.a_text                       , D3),
+  	 AROS_UFCA(struct Library *, (struct Library *)DOSBase , A6)) != 
        header.a_text)
   {
     D(bug("LoadSeg_AOUT: Can't read all of text segment\n"));
@@ -244,9 +244,9 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   {
     /* Include BSS with the data hunk. */
     datahunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
-		 AROS_UFCA(ULONG, header.a_data+header.a_bss+sizeof(ULONG)+sizeof(BPTR), D0),
-  		 AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
-  		 AROS_UFCA(struct Library *, SysBase                      , A6));
+		 AROS_UFCA(ULONG, header.a_data+header.a_bss+sizeof(ULONG)+sizeof(BPTR) , D0),
+  		 AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                                   , D1),
+  		 AROS_UFCA(struct Library *, (struct Library *)SysBase                  , A6));
 
     if(datahunk == NULL)
       ERROR(ERROR_NO_FREE_STORE);
@@ -256,10 +256,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     datahunk += sizeof(ULONG) + sizeof(BPTR);
 
     if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
-	   AROS_UFCA(BPTR  , file                   , D1),
-  	   AROS_UFCA(void *, datahunk               , D2),
-  	   AROS_UFCA(LONG  , header.a_data          , D3),
-  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+	   AROS_UFCA(BPTR  , file                                , D1),
+  	   AROS_UFCA(void *, datahunk                            , D2),
+  	   AROS_UFCA(LONG  , header.a_data                       , D3),
+  	   AROS_UFCA(struct Library *, (struct Library *)DOSBase , A6)) != 
          header.a_data)
     {
       D(bug("LoadSeg_AOUT: Can't read all of data segment\n"));
@@ -271,7 +271,7 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
     datahunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
 		 AROS_UFCA(ULONG, header.a_bss+sizeof(ULONG)+sizeof(BPTR) , D0),
   		 AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
-  		 AROS_UFCA(struct Library *, SysBase                      , A6));
+  		 AROS_UFCA(struct Library *, (struct Library *)SysBase    , A6));
 
     if(datahunk == NULL)
       ERROR(ERROR_NO_FREE_STORE);
@@ -292,10 +292,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   for(; rel_remain > 0; rel_remain-- )
   {
     if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
-	   AROS_UFCA(BPTR  , file                   , D1),
-  	   AROS_UFCA(void *, &rel                   , D2),
-  	   AROS_UFCA(LONG  , sizeof(struct reloc)   , D3),
-  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+	   AROS_UFCA(BPTR  , file                                , D1),
+  	   AROS_UFCA(void *, &rel                                , D2),
+  	   AROS_UFCA(LONG  , sizeof(struct reloc)                , D3),
+  	   AROS_UFCA(struct Library *, (struct Library *)DOSBase , A6)) != 
          sizeof(struct reloc))
 
     {
@@ -338,10 +338,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   for(; rel_remain > 0; rel_remain-- )
   {
     if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
-	   AROS_UFCA(BPTR  , file                   , D1),
-  	   AROS_UFCA(void *, &rel                   , D2),
-  	   AROS_UFCA(LONG  , sizeof(struct reloc)   , D3),
-  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+	   AROS_UFCA(BPTR  , file                                , D1),
+  	   AROS_UFCA(void *, &rel                                , D2),
+  	   AROS_UFCA(LONG  , sizeof(struct reloc)                , D3),
+  	   AROS_UFCA(struct Library *, (struct Library *)DOSBase , A6)) != 
          sizeof(struct reloc))
     {
       D(bug("LoadSeg_AOUT: Can't load a text relocation.\n"));
@@ -402,9 +402,9 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   {
     /* We don't need it */
     AROS_UFC3(void *, functionarray[2] /* FreeMem */,
-      AROS_UFCA(void *, jumphunk               , A1),
-      AROS_UFCA(ULONG , sizeof(struct JumpHunk), D0),
-      AROS_UFCA(struct Library *, SysBase      , A6));
+      AROS_UFCA(void *, jumphunk                            , A1),
+      AROS_UFCA(ULONG , sizeof(struct JumpHunk)             , D0),
+      AROS_UFCA(struct Library *, (struct Library *)SysBase , A6));
 
     return MKBADDR((BPTR *)texthunk - 1);
   }
@@ -413,21 +413,21 @@ end:
   /* If we allocated a text or data hunk, then we should free them */
   if(datahunk)
     AROS_UFC3(void *, functionarray[2] /* FreeMem */,
-      AROS_UFCA(void *,                   datahunk - sizeof(BPTR) - sizeof(ULONG) , A1),
-      AROS_UFCA(ULONG , *(ULONG *)((ULONG)datahunk - sizeof(BPTR) - sizeof(ULONG)), D0),
-      AROS_UFCA(struct Library *, SysBase                                         , A6) );
+      AROS_UFCA(void *,                   datahunk - sizeof(BPTR) - sizeof(ULONG)  , A1),
+      AROS_UFCA(ULONG , *(ULONG *)((ULONG)datahunk - sizeof(BPTR) - sizeof(ULONG)) , D0),
+      AROS_UFCA(struct Library *, (struct Library *)SysBase                        , A6) );
 
   if(texthunk)
     AROS_UFC3(void *, functionarray[2] /* FreeMem */,
-      AROS_UFCA(void *,                   texthunk - sizeof(BPTR) - sizeof(ULONG) , A1),
-      AROS_UFCA(ULONG , *(ULONG *)((ULONG)texthunk - sizeof(BPTR) - sizeof(ULONG)), D0),
-      AROS_UFCA(struct Library *, SysBase                                         , A6));
+      AROS_UFCA(void *,                   texthunk - sizeof(BPTR) - sizeof(ULONG)  , A1),
+      AROS_UFCA(ULONG , *(ULONG *)((ULONG)texthunk - sizeof(BPTR) - sizeof(ULONG)) , D0),
+      AROS_UFCA(struct Library *, (struct Library *)SysBase                        , A6));
 
   if(jumphunk)
     AROS_UFC3(void *, functionarray[2] /* FreeMem */,
-      AROS_UFCA(void *, jumphunk                , A1),
-      AROS_UFCA(ULONG , sizeof(struct JumpHunk) , D0),
-      AROS_UFCA(struct Library *, SysBase       , A6));
+      AROS_UFCA(void *, jumphunk                            , A1),
+      AROS_UFCA(ULONG , sizeof(struct JumpHunk)             , D0),
+      AROS_UFCA(struct Library *, (struct Library *)SysBase , A6));
 
   return (BPTR)NULL;
 }
