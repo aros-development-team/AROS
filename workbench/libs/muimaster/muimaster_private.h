@@ -1,0 +1,4 @@
+#ifndef _MUIMASTER_PRIVATE_H
+#define _MUIMASTER_PRIVATE_H
+
+#endif
