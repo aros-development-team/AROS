@@ -60,6 +60,10 @@ Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C] <parameter>
      Usage: archtool -C <incdir> <archfile>
   -p genproto
      Usage: archtool -p <incdir>
+  -i geninline
+     Usage: archtool -i <incdir>
+  -I genincludes
+     Usage: archtool -I <incdir>
 
  1) Extract Files
 This module extracts all functions in the <archfile> archive to their
@@ -115,6 +119,21 @@ Be sure to have an existing subdir "clib" in <incdir>!
 10) Generate proto/<basename>.h
 This module generates the include files in <incdir>/proto/
 Be sure to have an existing subdir "proto" in <incdir>!
+
+11) Generate inline/<basename>.h
+This module generates the include files in <incdir>/inline/
+It reads in ./headers.tmpl if available, adds lines between
+'##begin clib' and '##end clib' and defines the LP macros for all
+functions in <archfile> archive.
+Be sure to have an existing subdir "inline" in <incdir>!
+
+12) Generate Includes
+This module generates all (ATM:clib/defines/proto/inline) includes in the
+corresponding subdirs of <incdir>.
+It reads in ./headers.tmpl if available, adds lines between
+'##begin [clib|defines]' and '##end [clib|defines]' and defines
+the LPA/LCA macros for all functions in <archfile> archive.
+Be sure to have an existing <incdir> and all subdirs!
 
 [Compiling Notes: this program has to be built before(!) starting mmake,
  because mmake will try to compile it with AROS includes/libs.

@@ -114,6 +114,8 @@ int num,len;
     fprintf( stderr, "Passed invalid NULL pointer to get_words()!\n" );
     exit(-1);
   }
+#warning FIXME: next lines cause segfault in realloc(NULL,) later
+/*
   array = *outarray;
   if( array )
   {
@@ -124,6 +126,7 @@ int num,len;
     }
     free(*outarray);
   }
+*/
   array = NULL;
   num = 0;
   word = line;
@@ -612,7 +615,7 @@ int extractfiles(int argc, char **argv)
 {
 FILE *fd, *fdo = NULL;
 char *line = 0;
-char *word, **words;
+char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, len, i;
 char **name = NULL, **type = NULL, **reg = NULL, *header = NULL, *code = NULL;
@@ -632,7 +635,6 @@ int numparams=0;
   }
   chdir(argv[1]);
 
-  words = NULL;
   in_archive = 0;
   in_function = 0;
   in_autodoc = 0;
@@ -844,7 +846,7 @@ int genfunctable(int argc, char **argv)
 FILE *fd = NULL, *fdo;
 struct libconf *lc;
 char *line = 0;
-char *word, **words;
+char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num;
 char *funcname = NULL, **funcnames = NULL;
@@ -879,7 +881,6 @@ int numfuncs = 4;
 
   if(lc->type!=t_hidd)
   {
-    words = NULL;
     in_archive = 0;
     in_function = 0;
     in_autodoc = 0;
@@ -892,29 +893,29 @@ int numfuncs = 4;
       {
         if( strcmp(word,"Archive")==0 && !in_archive )
           in_archive = 1;
-        if( strcmp(word,"/Archive")==0 && in_archive && ! in_function )
+        else if( strcmp(word,"/Archive")==0 && in_archive && ! in_function )
           break;
-        if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+        else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
           in_autodoc = 1;
-        if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+        else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
           in_autodoc = 0;
-        if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
           in_code = 1;
-        if( strcmp(word,"/Code")==0 && in_code )
+        else if( strcmp(word,"/Code")==0 && in_code )
           in_code = 0;
-        if( strcmp(word,"Header")==0 && in_archive && !in_function )
+        else if( strcmp(word,"Header")==0 && in_archive && !in_function )
           in_header = 1;
-        if( strcmp(word,"/Header")==0 && in_header )
+        else if( strcmp(word,"/Header")==0 && in_header )
           in_header = 0;
-        if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+        else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
         {
           num = get_words(line,&words);
           funcname = strdup(words[num-1]);
           in_function = 1;
         }
-        if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+        else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
           in_function = 0;
-        if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+        else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
         {
           num = get_words(line,&words);
           num = atoi(words[1]);
@@ -950,7 +951,7 @@ int gensource(int argc, char **argv)
 FILE *fd, *fdo = NULL;
 char *newfile;
 char *line = 0;
-char *word = NULL, **words;
+char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
@@ -977,7 +978,6 @@ int numparams=0;
     exit(-1);
   }
 
-  words = NULL;
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -991,13 +991,13 @@ int numparams=0;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
         break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
       {
         fprintf( fdo, "\nAROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
         for( i = 1 ; i <= numparams ; i++ )
@@ -1007,9 +1007,9 @@ int numparams=0;
         fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
         in_code = 1;
       }
-      if( strcmp(word,"/Code")==0 && in_code )
+      else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
         name = realloc( name, sizeof(char *) );
@@ -1038,26 +1038,26 @@ int numparams=0;
         numparams = 0;
         in_function = 1;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         free(macro[0]);
         free(macro[1]);
         in_function = 0;
       }
-      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
       {
         fprintf( fdo, "#include \"libdefs.h\"\n\n" );
         in_header = 1;
       }
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
         reg = realloc( reg, sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
-      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words( line, &words );
@@ -1095,7 +1095,7 @@ int genautodocs(int argc, char **argv)
 {
 FILE *fd, *fdo = NULL;
 char *line = 0;
-char *word, **words;
+char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_afunc, in_code ;
 int num, i, len;
 char **name = NULL, **type = NULL;
@@ -1114,7 +1114,6 @@ int numparams = 0;
   }
   chdir(argv[1]);
 
-  words = NULL;
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -1130,9 +1129,9 @@ int numparams = 0;
       {
         in_archive = 1;
       }
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
       {
       char *filename;
 
@@ -1157,9 +1156,9 @@ int numparams = 0;
         }
         fprintf( fdo, " )\n" );
       }
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc && !in_afunc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc && !in_afunc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 )
+      else if( strcmp(word,"Function")==0 )
       {
         if( in_archive && !in_function && !in_autodoc && !in_code )
         {
@@ -1188,14 +1187,14 @@ int numparams = 0;
             in_afunc = 1;
         }
       }
-      if( strcmp(word,"/Function")==0 )
+      else if( strcmp(word,"/Function")==0 )
       {
         if( in_function && !in_autodoc )
           in_function = 0;
         else if( in_afunc )
           in_afunc = 0;
       }
-      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words(line,&words);
@@ -1213,23 +1212,23 @@ int numparams = 0;
           strcat( type[numparams], words[i] );
         }
       }
-      if( strcmp(word,"Inputs")==0 && in_autodoc )
+      else if( strcmp(word,"Inputs")==0 && in_autodoc )
         fprintf( fdo, "\nINPUTS\n" );
-      if( strcmp(word,"Result")==0 && in_autodoc )
+      else if( strcmp(word,"Result")==0 && in_autodoc )
         fprintf( fdo, "\nRESULT\n" );
-      if( strcmp(word,"Notes")==0 && in_autodoc )
+      else if( strcmp(word,"Notes")==0 && in_autodoc )
         fprintf( fdo, "\nNOTES\n" );
-      if( strcmp(word,"Example")==0 && in_autodoc )
+      else if( strcmp(word,"Example")==0 && in_autodoc )
         fprintf( fdo, "\nEXAMPLE\n" );
-      if( strcmp(word,"Bugs")==0 && in_autodoc )
+      else if( strcmp(word,"Bugs")==0 && in_autodoc )
         fprintf( fdo, "\nBUGS\n" );
-      if( strcmp(word,"SeeAlso")==0 && in_autodoc )
+      else if( strcmp(word,"SeeAlso")==0 && in_autodoc )
         fprintf( fdo, "\nSEE ALSO\n" );
-      if( strcmp(word,"Internals")==0 && in_autodoc )
+      else if( strcmp(word,"Internals")==0 && in_autodoc )
         fprintf( fdo, "\nINTERNALS\n" );
-      if( strcmp(word,"History")==0 && in_autodoc )
+      else if( strcmp(word,"History")==0 && in_autodoc )
         fprintf( fdo, "\nHISTORY\n" );
-      if( strcmp(word,"Item")==0 && in_autodoc )
+      else if( strcmp(word,"Item")==0 && in_autodoc )
         fprintf( fdo, "<Item>%s\n", &line[6] );
 
       free(word);
@@ -1259,28 +1258,28 @@ char *word, *line;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function )
       {
         in_function = 1;
         if( i == num )
         {
           writefunc = 1;
         }
-        if( i > num )
+        else if( i > num )
           return;
         i++;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( writefunc )
@@ -1300,7 +1299,7 @@ int mergearch(int argc, char **argv)
 {
 FILE *fd1, *fd2, *fdo;
 char *line = 0;
-char *word, **words;
+char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num,i;
 char **name1 = NULL, **name2 = NULL;
@@ -1334,7 +1333,6 @@ int replace_function;
   fprintf( fdo, "#Archive\n#Header\n" );
   /* Get function names of 1st file and copy write header */
   num1 = 0;
-  words = NULL;
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -1347,21 +1345,21 @@ int replace_function;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
         in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_code )
+      else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         in_function = 1;
         num = get_words(line,&words);
@@ -1369,7 +1367,7 @@ int replace_function;
         name1 = realloc( name1, num1 * sizeof(char *) );
         name1[num1-1] = strdup(words[num-1]);
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
         in_function = 0;
 
       free(word);
@@ -1383,7 +1381,6 @@ int replace_function;
   }
   /* Get function names of 2nd file and append header */
   num2 = 0;
-  words = NULL;
   in_archive = 0;
   in_function = 0;
   in_autodoc = 0;
@@ -1396,17 +1393,17 @@ int replace_function;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function )
       {
         in_function = 1;
         num = get_words(line,&words);
@@ -1414,7 +1411,7 @@ int replace_function;
         name2 = realloc( name2, num2 * sizeof(char *) );
         name2[num2-1] = strdup(words[num-1]);
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
         in_function = 0;
 
       free(word);
@@ -1432,7 +1429,6 @@ int replace_function;
   fprintf( fdo, "#/Header\n\n" );
   /* Produce merged file */
   num = 0;
-  words = NULL;
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -1446,17 +1442,17 @@ int replace_function;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function )
       {
         in_function = 1;
         for( i = 0 ; i < num2 && strcmp(name1[num],name2[i])!=0 ; i++ );
@@ -1470,7 +1466,7 @@ int replace_function;
         }
         num++;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( !replace_function )
@@ -1486,7 +1482,6 @@ int replace_function;
   rewind(fd2);
   /* Append not replaces functions */
   num = 0;
-  words = NULL;
   in_archive = 0;
   in_header = 0;
   in_function = 0;
@@ -1500,17 +1495,17 @@ int replace_function;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && !in_function )
         break;
-      if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_header && !in_function )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function )
       {
         in_function = 1;
         if( rep[num] )
@@ -1519,7 +1514,7 @@ int replace_function;
           replace_function = 0;
         num++;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         in_function = 0;
         if( !replace_function )
@@ -1548,7 +1543,7 @@ char *filename, *newname;
 struct libconf *lc;
 char *upperbasename;
 char *line = 0;
-char *word = NULL, **words;
+char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
@@ -1622,11 +1617,9 @@ int firstlvo;
   fprintf( fdo, "#ifndef EXEC_TYPES_H\n" );
   fprintf( fdo, "#   include <exec/types.h>\n" );
   fprintf( fdo, "#endif\n\n" );
-  words = NULL;
   headerstempl = fopen( "headers.tmpl", "rb" );
   if( headerstempl )
   {
-  int cnt = 0;
     in_header = 0;
     while( (line = get_line(headerstempl)) )
     {
@@ -1642,7 +1635,6 @@ int firstlvo;
       else if( in_header )
       {
         fprintf( fdo, "%s\n", line );
-        cnt++;
       }
       free(line);
     }
@@ -1664,17 +1656,17 @@ int firstlvo;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
         break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
         in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_code )
+      else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
         name = realloc( name, sizeof(char *) );
@@ -1703,7 +1695,7 @@ int firstlvo;
         numparams = 0;
         in_function = 1;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         if( atoi(reg[0]) > firstlvo )
         {
@@ -1723,17 +1715,17 @@ int firstlvo;
         free(macro[0]);
         free(macro[1]);
       }
-      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
         reg = realloc( reg, sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
-      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words( line, &words );
@@ -1774,7 +1766,7 @@ char *filename, *newname;
 struct libconf *lc;
 char *upperbasename;
 char *line = 0;
-char *word = NULL, **words;
+char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
@@ -1845,11 +1837,9 @@ int firstlvo;
   fprintf( fdo, "#ifndef AROS_LIBCALL_H\n" );
   fprintf( fdo, "#   include <aros/libcall.h>\n" );
   fprintf( fdo, "#endif\n\n" );
-  words = NULL;
   headerstempl = fopen( "headers.tmpl", "rb" );
   if( headerstempl )
   {
-  int cnt = 0;
     in_header = 0;
     while( (line = get_line(headerstempl)) )
     {
@@ -1865,14 +1855,13 @@ int firstlvo;
       else if( in_header )
       {
         fprintf( fdo, "%s\n", line );
-        cnt++;
       }
       free(line);
     }
     fclose(headerstempl);
     fprintf( fdo, "\n" );
   }
-  fprintf( fdo, "/* Prototypes */\n" );
+  fprintf( fdo, "\n/* Prototypes */\n" );
   
   in_archive = 0;
   in_header = 0;
@@ -1887,17 +1876,17 @@ int firstlvo;
     {
       if( strcmp(word,"Archive")==0 && !in_archive )
         in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
         break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
         in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
         in_autodoc = 0;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
         in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_code )
+      else if( strcmp(word,"/Code")==0 && in_code )
         in_code = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
       {
         num = get_words(line,&words);
         name = realloc( name, sizeof(char *) );
@@ -1926,10 +1915,10 @@ int firstlvo;
         numparams = 0;
         in_function = 1;
       }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         if( atoi(reg[0]) > firstlvo )
-          {
+        {
           fprintf( fdo, "\nAROS_%s%d(%s, %s,\n", macro[0], numparams, type[0], name[0] );
           for( i = 1 ; i <= numparams ; i++ )
           {
@@ -1941,17 +1930,17 @@ int firstlvo;
         free(macro[1]);
         in_function = 0;
       }
-      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
+      else if( strcmp(word,"/Header")==0 && in_header )
         in_header = 0;
-      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
         reg = realloc( reg, sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
-      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words( line, &words );
@@ -2028,11 +2017,11 @@ char *upperbasename;
   fprintf( fdo, "#ifndef AROS_SYSTEM_H\n" );
   fprintf( fdo, "#   include <aros/system.h>\n" );
   fprintf( fdo, "#endif\n\n" );
-  fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->basename );
+  fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->libname );
   fprintf( fdo, "#if defined(_AMIGA) && defined(__GNUC__)\n" );
-  fprintf( fdo, "#   include <inline/%s.h>\n", lc->basename );
+  fprintf( fdo, "#   include <inline/%s.h>\n", lc->libname );
   fprintf( fdo, "#else\n" );
-  fprintf( fdo, "#   include <defines/%s.h>\n", lc->basename );
+  fprintf( fdo, "#   include <defines/%s.h>\n", lc->libname );
   fprintf( fdo, "#endif\n\n" );
   if(lc->option & o_hasrt)
   {
@@ -2050,6 +2039,616 @@ char *upperbasename;
 return 0;
 }
 
+int geninline(int argc, char **argv)
+{
+FILE *fd, *fdo = NULL, *headerstempl;
+char *filename, *newname;
+struct libconf *lc;
+char *upperbasename;
+char *line = 0;
+char *word = NULL, **words = NULL;
+int in_archive, in_header, in_function, in_autodoc, in_code;
+int num, i, len;
+char **name = NULL, **type = NULL, **reg = NULL;
+int numparams=0;
+int firstlvo;
+
+  if(argc != 3)
+  {
+    fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+  fd = fopen(argv[2],"rb");
+  if(!fd)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
+    return(-1);
+  }
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+11) * sizeof(char) );
+  sprintf( filename, "%s/inline/%s.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
+  sprintf( newname, "%s/inline/%s.h.new", argv[1], lc->libname );
+  fdo = fopen(newname,"w");
+  if(!fdo)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname );
+    return(-1);
+  }
+
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef _INLINE_%s_H\n", upperbasename );
+  fprintf( fdo, "#define _INLINE_%s_H\n\n", upperbasename );
+  fprintf( fdo, "/*\n" );
+  fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo, "    Desc: Inlines for %s.", lc->basename );
+  switch( lc->type )
+  {
+    case t_resource:
+      fprintf( fdo, "resource" );
+      firstlvo = 0;
+      break;
+    case t_device:
+      fprintf( fdo, "device" );
+      firstlvo = 6;
+      break;
+    case t_hidd:
+      fprintf( fdo, "hidd" );
+      firstlvo = 4;
+      break;
+    case t_library:
+    default:
+      fprintf( fdo, "library" );
+      firstlvo = 4;
+      break;
+  }
+  fprintf( fdo, "\n    Lang: english\n" );
+  fprintf( fdo, "*/\n\n" );
+  fprintf( fdo, "#ifndef __INLINE_MACROS_H\n" );
+  fprintf( fdo, "#   include <inline/macros.h>\n" );
+  fprintf( fdo, "#endif\n\n" );
+  fprintf( fdo, "#ifndef %s_BASE_NAME\n", upperbasename );
+  fprintf( fdo, "#define %s_BASE_NAME %s\n", upperbasename, lc->libbase );
+  fprintf( fdo, "#endif\n\n" );
+  headerstempl = fopen( "headers.tmpl", "rb" );
+  if( headerstempl )
+  {
+    in_header = 0;
+    while( (line = get_line(headerstempl)) )
+    {
+      num = get_words(line,&words);
+      if( num == 2 && strcmp(words[0],"##begin")==0 && strcmp(words[1],"clib")==0 )
+      {
+        in_header = 1;
+      }
+      else if( num == 2 && strcmp(words[0],"##end")==0 && strcmp(words[1],"clib")==0 )
+      {
+        in_header = 0;
+      }
+      else if( in_header )
+      {
+        fprintf( fdo, "%s\n", line );
+      }
+      free(line);
+    }
+    fclose(headerstempl);
+    fprintf( fdo, "\n" );
+  }
+  fprintf( fdo, "\n/* Prototypes */\n" );
+
+  in_archive = 0;
+  in_header = 0;
+  in_function = 0;
+  in_autodoc = 0;
+  in_code = 0;
+  while( (line = get_line(fd)) )
+  {
+    free(word);
+    word = keyword(line);
+    if( word && (isupper(word[0]) || isupper(word[1])) )
+    {
+      if( strcmp(word,"Archive")==0 && !in_archive )
+        in_archive = 1;
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+        break;
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+        in_autodoc = 1;
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+        in_autodoc = 0;
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      else if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      {
+        num = get_words(line,&words);
+        name = realloc( name, sizeof(char *) );
+        name[0] = strdup(words[num-1]);
+        type = realloc( type, sizeof(char *) );
+        len = 0;
+        for( i=2 ; i < num-1 ; i++ )
+          len += strlen(words[i]);
+        type[0] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[0], words[2]);
+        for( i=3 ; i < num-1 ; i++ )
+        {
+          strcat( type[0], " " );
+          strcat( type[0], words[i] );
+        }
+        numparams = 0;
+        in_function = 1;
+      }
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      {
+        if( atoi(reg[0]) > firstlvo )
+        {
+          fprintf( fdo, "\n#define %s(", name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+          {
+            if( i!=1 )
+              fprintf( fdo, ", " );
+            fprintf( fdo, "%s", name[i] );
+          }
+          if(strcasecmp(type[0],"void")==0)
+            fprintf( fdo, ") \\\n\tLP%dNR(0x%x, %s, ", numparams, atoi(reg[0])*6, name[0] );
+          else
+            fprintf( fdo, ") \\\n\tLP%d(0x%x, %s, %s, ", numparams, atoi(reg[0])*6, type[0], name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+            fprintf( fdo, "%s, %s, %s, ", type[i], name[i], reg[i] );
+          fprintf( fdo, "\\\n\t, %s_BASE_NAME)\n", upperbasename );
+          if( numparams!=0 )
+          {
+            num = get_words(type[numparams],&words);
+            if(num == 3 && strcmp(words[0],"struct")==0 && strcmp(words[1],"TagItem")==0 && strcmp(words[2],"*")==0 )
+            {
+              len = strlen(name[0]);
+              if(name[0][len-1]=='A')
+              {
+                word = strdup(name[0]);
+                word[len-1] = 0;
+              }
+              else
+              {
+                word = malloc( (len+5) * sizeof(char) );
+                sprintf( word, "%sTags", name[0] );
+              }
+              fprintf( fdo, "\n#ifndef NO_INLINE_STDARG\n#define %s(", word );
+              for( i=1 ; i<numparams ; i++ )
+                fprintf( fdo, "%s, ", reg[i] );
+              fprintf( fdo, "tags...) \\\n\t({ULONG _tags[] = { tags }; %s(", name[0] );
+              for( i=1 ; i<numparams ; i++ )
+                fprintf( fdo, "(%s), ", reg[i] );
+              fprintf( fdo, "(struct TagItem *)_tags);})\n" );
+              fprintf( fdo, "#endif /* !NO_INLINE_STDARG */\n\n" );
+              free(word);
+            }
+          }
+        }
+        in_function = 0;
+      }
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+        in_header = 1;
+      else if( strcmp(word,"/Header")==0 && in_header )
+        in_header = 0;
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      {
+        num = get_words(line,&words);
+        reg = realloc( reg, sizeof(char *) );
+        reg[0] = strdup(words[1]);
+      }
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      {
+        numparams++;
+        num = get_words( line, &words );
+        name = realloc( name, (numparams+1) * sizeof(char *) );
+        name[numparams] = strdup( words[num-2] );
+        type = realloc( type, (numparams+1) * sizeof(char *) );
+        len = 0;
+        for( i=1 ; i < num-2 ; i++ )
+          len += strlen(words[i]);
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[numparams], words[1]);
+        for( i=2 ; i < num-2 ; i++ )
+        {
+          strcat( type[numparams], " " );
+          strcat( type[numparams], words[i] );
+        }
+        reg = realloc( reg, (numparams+1) * sizeof(char *) );
+        reg[numparams] = strdup( words[num-1] );
+        strlower(reg[numparams]);
+      }
+    }
+
+    free(line);
+  }
+  fprintf( fdo, "\n#endif /* _INLINE_%s_H */\n", upperbasename );
+  fclose(fdo);
+  fclose(fd);
+  moveifchanged(filename,newname);
+  free(newname);
+  free(filename);
+
+return 0;
+}
+
+/* Generate clib/ defines/ proto/ inline/ */
+#define NUM_INCLUDES 4
+int genincludes(int argc, char **argv)
+{
+FILE *fd, *fdo[NUM_INCLUDES], *headerstempl;
+char *filename[NUM_INCLUDES], *newname[NUM_INCLUDES];
+struct libconf *lc;
+char *upperbasename;
+char *line = 0;
+char *word = NULL, **words = NULL;
+int in_archive, in_header, in_function, in_autodoc, in_code;
+int num, i, len;
+char **name = NULL, **type = NULL, **reg = NULL;
+char *macro[4];
+int numparams=0;
+int firstlvo;
+
+  if(argc != 3)
+  {
+    fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+  fd = fopen(argv[2],"rb");
+  if(!fd)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
+    return(-1);
+  }
+  filename[0] = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( filename[0], "%s/clib/%s_protos.h", argv[1], lc->libname );
+  newname[0] = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( newname[0], "%s/clib/%s_protos.h.new", argv[1], lc->libname );
+  fdo[0] = fopen(newname[0],"w");
+  filename[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+12) * sizeof(char) );
+  sprintf( filename[1], "%s/defines/%s.h", argv[1], lc->libname );
+  newname[1] = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( newname[1], "%s/defines/%s.h.new", argv[1], lc->libname );
+  fdo[1] = fopen(newname[1],"w");
+  filename[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
+  sprintf( filename[2], "%s/proto/%s.h", argv[1], lc->libname );
+  newname[2] = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
+  sprintf( newname[2], "%s/proto/%s.h.new", argv[1], lc->libname );
+  fdo[2] = fopen(newname[2],"w");
+  filename[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+11) * sizeof(char) );
+  sprintf( filename[3], "%s/inline/%s.h", argv[1], lc->libname );
+  newname[3] = malloc( (strlen(argv[1])+strlen(lc->libname)+15) * sizeof(char) );
+  sprintf( newname[3], "%s/inline/%s.h.new", argv[1], lc->libname );
+  for( i=0 ; i<NUM_INCLUDES ; i++ )
+  {
+    fdo[i] = fopen(newname[i],"w");
+    if(!fdo[i])
+    {
+      fprintf( stderr, "Couldn't open file %s!\n", newname[i] );
+      for( i-- ; i>0 ; i-- )
+        fclose(fdo[i]);
+      return(-1);
+    }
+  }
+
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo[0], "#ifndef CLIB_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo[0], "#define CLIB_%s_PROTOS_H\n\n", upperbasename );
+  fprintf( fdo[0], "/*\n" );
+  fprintf( fdo[0], "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo[0], "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo[0], "    Desc: Prototypes for %s.", lc->basename );
+  fprintf( fdo[1], "#ifndef DEFINES_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo[1], "#define DEFINES_%s_PROTOS_H\n\n", upperbasename );
+  fprintf( fdo[1], "/*\n" );
+  fprintf( fdo[1], "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo[1], "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo[1], "    Desc: Prototypes for %s.", lc->basename );
+  fprintf( fdo[2], "#ifndef PROTO_%s_H\n", upperbasename );
+  fprintf( fdo[2], "#define PROTO_%s_H\n\n", upperbasename );
+  fprintf( fdo[2], "/*\n" );
+  fprintf( fdo[2], "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo[2], "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo[2], "    Lang: english\n" );
+  fprintf( fdo[2], "*/\n\n" );
+  fprintf( fdo[2], "#ifndef AROS_SYSTEM_H\n" );
+  fprintf( fdo[2], "#   include <aros/system.h>\n" );
+  fprintf( fdo[2], "#endif\n\n" );
+  fprintf( fdo[2], "#include <clib/%s_protos.h>\n\n", lc->libname );
+  fprintf( fdo[2], "#if defined(_AMIGA) && defined(__GNUC__)\n" );
+  fprintf( fdo[2], "#   include <inline/%s.h>\n", lc->libname );
+  fprintf( fdo[2], "#else\n" );
+  fprintf( fdo[2], "#   include <defines/%s.h>\n", lc->libname );
+  fprintf( fdo[2], "#endif\n\n" );
+  if(lc->option & o_hasrt)
+  {
+    fprintf( fdo[2], "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
+    fprintf( fdo[2], "#   define ENABLE_RT_%s 1\n", upperbasename );
+    fprintf( fdo[2], "#   include <aros/rt.h>\n" );
+    fprintf( fdo[2], "#endif\n\n" );
+  }
+  fprintf( fdo[3], "#ifndef _INLINE_%s_H\n", upperbasename );
+  fprintf( fdo[3], "#define _INLINE_%s_H\n\n", upperbasename );
+  fprintf( fdo[3], "/*\n" );
+  fprintf( fdo[3], "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo[3], "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo[3], "    Desc: Inlines for %s.", lc->basename );
+  switch( lc->type )
+  {
+    case t_resource:
+      fprintf( fdo[0], "resource" );
+      fprintf( fdo[1], "resource" );
+      fprintf( fdo[3], "resource" );
+      firstlvo = 0;
+      break;
+    case t_device:
+      fprintf( fdo[0], "device" );
+      fprintf( fdo[1], "device" );
+      fprintf( fdo[3], "device" );
+      firstlvo = 6;
+      break;
+    case t_hidd:
+      fprintf( fdo[0], "hidd" );
+      fprintf( fdo[1], "hidd" );
+      fprintf( fdo[3], "hidd" );
+      firstlvo = 4;
+      break;
+    case t_library:
+    default:
+      fprintf( fdo[0], "library" );
+      fprintf( fdo[1], "library" );
+      fprintf( fdo[3], "library" );
+      firstlvo = 4;
+      break;
+  }
+  fprintf( fdo[0], "\n    Lang: english\n" );
+  fprintf( fdo[0], "*/\n\n" );
+  fprintf( fdo[0], "#ifndef AROS_LIBCALL_H\n" );
+  fprintf( fdo[0], "#   include <aros/libcall.h>\n" );
+  fprintf( fdo[0], "#endif\n\n" );
+  fprintf( fdo[1], "\n    Lang: english\n" );
+  fprintf( fdo[1], "*/\n\n" );
+  fprintf( fdo[1], "#ifndef AROS_LIBCALL_H\n" );
+  fprintf( fdo[1], "#   include <aros/libcall.h>\n" );
+  fprintf( fdo[1], "#endif\n" );
+  fprintf( fdo[1], "#ifndef EXEC_TYPES_H\n" );
+  fprintf( fdo[1], "#   include <exec/types.h>\n" );
+  fprintf( fdo[1], "#endif\n\n" );
+  fprintf( fdo[3], "\n    Lang: english\n" );
+  fprintf( fdo[3], "*/\n\n" );
+  fprintf( fdo[3], "#ifndef __INLINE_MACROS_H\n" );
+  fprintf( fdo[3], "#   include <inline/macros.h>\n" );
+  fprintf( fdo[3], "#endif\n\n" );
+  fprintf( fdo[3], "#ifndef %s_BASE_NAME\n", upperbasename );
+  fprintf( fdo[3], "#define %s_BASE_NAME %s\n", upperbasename, lc->libbase );
+  fprintf( fdo[3], "#endif\n\n" );
+  headerstempl = fopen( "headers.tmpl", "rb" );
+  if( headerstempl )
+  {
+    in_header = 0;
+    while( (line = get_line(headerstempl)) )
+    {
+      num = get_words(line,&words);
+      if( num == 2 && strcmp(words[0],"##begin")==0 )
+      {
+        if( strcmp(words[1],"clib")==0 )
+          in_header = 1;
+        else if( strcmp(words[1],"defines")==0 )
+          in_header = 2;
+      }
+      else if( num == 2 && strcmp(words[0],"##end")==0 )
+      {
+        in_header = 0;
+      }
+      else if( in_header )
+      {
+        if( in_header == 1 )
+        {
+          fprintf( fdo[0], "%s\n", line );
+          fprintf( fdo[3], "%s\n", line );
+        }
+        else if( in_header == 2 )
+          fprintf( fdo[1], "%s\n", line );
+      }
+      free(line);
+    }
+    fclose(headerstempl);
+    fprintf( fdo[0], "\n" );
+    fprintf( fdo[1], "\n" );
+    fprintf( fdo[3], "\n" );
+  }
+  fprintf( fdo[0], "\n/* Prototypes */\n" );
+  fprintf( fdo[1], "\n/* Defines */\n" );
+  fprintf( fdo[3], "\n/* Prototypes */\n" );
+  
+  in_archive = 0;
+  in_header = 0;
+  in_function = 0;
+  in_autodoc = 0;
+  in_code = 0;
+  while( (line = get_line(fd)) )
+  {
+    free(word);
+    word = keyword(line);
+    if( word && (isupper(word[0]) || isupper(word[1])) )
+    {
+      if( strcmp(word,"Archive")==0 && !in_archive )
+        in_archive = 1;
+      else if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+        break;
+      else if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+        in_autodoc = 1;
+      else if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+        in_autodoc = 0;
+      else if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      else if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
+      else if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      {
+        num = get_words(line,&words);
+        name = realloc( name, sizeof(char *) );
+        name[0] = strdup(words[num-1]);
+        type = realloc( type, sizeof(char *) );
+        len = 0;
+        for( i=2 ; i < num-1 ; i++ )
+          len += strlen(words[i]);
+        type[0] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[0], words[2]);
+        for( i=3 ; i < num-1 ; i++ )
+        {
+          strcat( type[0], " " );
+          strcat( type[0], words[i] );
+        }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          macro[0] = strdup("LPQUAD");
+          macro[1] = strdup("LPAQUAD");
+          macro[2] = strdup("LCQUAD");
+          macro[3] = strdup("LCAQUAD");
+        }
+        else
+        {
+          macro[0] = strdup("LP");
+          macro[1] = strdup("LPA");
+          macro[2] = strdup("LC");
+          macro[3] = strdup("LCA");
+        }
+        numparams = 0;
+        in_function = 1;
+      }
+      else if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      {
+        if( atoi(reg[0]) > firstlvo )
+        {
+          fprintf( fdo[0], "\nAROS_%s%d(%s, %s,\n", macro[0], numparams, type[0], name[0] );
+          fprintf( fdo[1], "\n#define %s(", name[0] );
+          fprintf( fdo[3], "\n#define %s(", name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+          {
+            if( i!=1 )
+            {
+              fprintf( fdo[1], ", " );
+              fprintf( fdo[3], ", " );
+            }
+            fprintf( fdo[1], "%s", name[i] );
+            fprintf( fdo[3], "%s", name[i] );
+          }
+          fprintf( fdo[1], ") \\\n\tAROS_%s%d(%s, %s, \\\n", macro[2], numparams, type[0], name[0] );
+          if(strcasecmp(type[0],"void")==0)
+            fprintf( fdo[3], ") \\\n\tLP%dNR(0x%x, %s, ", numparams, atoi(reg[0])*6, name[0] );
+          else
+            fprintf( fdo[3], ") \\\n\tLP%d(0x%x, %s, %s, ", numparams, atoi(reg[0])*6, type[0], name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+          {
+            fprintf( fdo[0], "\tAROS_%s(%s, %s, %s),\n", macro[1], type[i], name[i], reg[i] );
+            fprintf( fdo[1], "\tAROS_%s(%s, %s, %s), \\\n", macro[3], type[i], name[i], reg[i] );
+            strlower(reg[i]);
+            fprintf( fdo[3], "%s, %s, %s, ", type[i], name[i], reg[i] );
+          }
+          fprintf( fdo[0], "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo[1], "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo[3], "\\\n\t, %s_BASE_NAME)\n", upperbasename );
+
+          if( numparams!=0 )
+          {
+            num = get_words(type[numparams],&words);
+            if(num == 3 && strcmp(words[0],"struct")==0 && strcmp(words[1],"TagItem")==0 && strcmp(words[2],"*")==0 )
+            {
+              len = strlen(name[0]);
+              if(name[0][len-1]=='A')
+              {
+                word = strdup(name[0]);
+                word[len-1] = 0;
+              }
+              else
+              {
+                word = malloc( (len+5) * sizeof(char) );
+                sprintf( word, "%sTags", name[0] );
+              }
+              fprintf( fdo[3], "\n#ifndef NO_INLINE_STDARG\n#define %s(", word );
+              for( i=1 ; i<numparams ; i++ )
+                fprintf( fdo[3], "%s, ", reg[i] );
+              fprintf( fdo[3], "tags...) \\\n\t({ULONG _tags[] = { tags }; %s(", name[0] );
+              for( i=1 ; i<numparams ; i++ )
+                fprintf( fdo[3], "(%s), ", reg[i] );
+              fprintf( fdo[3], "(struct TagItem *)_tags);})\n" );
+              fprintf( fdo[3], "#endif /* !NO_INLINE_STDARG */\n\n" );
+              free(word);
+            }
+          }
+        }
+        in_function = 0;
+        for(i=0;i<4;i++)
+          free(macro[i]);
+      }
+      else if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+        in_header = 1;
+      else if( strcmp(word,"/Header")==0 && in_header )
+        in_header = 0;
+      else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      {
+        num = get_words(line,&words);
+        reg = realloc( reg, sizeof(char *) );
+        reg[0] = strdup(words[1]);
+      }
+      else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      {
+        numparams++;
+        num = get_words( line, &words );
+        name = realloc( name, (numparams+1) * sizeof(char *) );
+        name[numparams] = strdup( words[num-2] );
+        type = realloc( type, (numparams+1) * sizeof(char *) );
+        len = 0;
+        for( i=1 ; i < num-2 ; i++ )
+          len += strlen(words[i]);
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[numparams], words[1]);
+        for( i=2 ; i < num-2 ; i++ )
+        {
+          strcat( type[numparams], " " );
+          strcat( type[numparams], words[i] );
+        }
+        reg = realloc( reg, (numparams+1) * sizeof(char *) );
+        reg[numparams] = strdup( words[num-1] );
+      }
+    }
+
+    free(line);
+  }
+  fprintf( fdo[0], "\n#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo[1], "\n#endif /* DEFINES_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo[2], "#endif /* PROTO_%s_H */\n", upperbasename );
+  fprintf( fdo[3], "\n#endif /* _INLINE_%s_H */\n", upperbasename );
+  fclose(fd);
+  for(i=0;i<NUM_INCLUDES;i++)
+  {
+    fclose(fdo[i]);
+    moveifchanged(filename[i],newname[i]);
+    free(newname[i]);
+    free(filename[i]);
+  }
+
+return 0;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -2058,8 +2657,8 @@ char option;
 
   if( argc < 2 )
   {
-    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p] <parameter>\n", argv[0] );
-    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n" );
+    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|I] <parameter>\n", argv[0] );
+    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  I genincludes\n" );
     exit(-1);
   }
 
@@ -2130,10 +2729,16 @@ char option;
       case 'p':
         retval = genproto( argc, &argv[1] );
         break;
+      case 'i':
+        retval = geninline( argc, &argv[1] );
+        break;
+      case 'I':
+        retval = genincludes( argc, &argv[1] );
+        break;
       case 'h':
       default:
-        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p] <parameter>\n", argv[0] );
-        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n" );
+        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-I] <parameter>\n", argv[0] );
+        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n  -i geninline\n  I genincludes\n" );
         break;
     }
   }
