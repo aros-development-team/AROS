@@ -252,7 +252,7 @@
 
 /* Import the C++ definitions, if possible.  */
 #if defined(__cplusplus)
-#    include <aros/c++/exec/types.hpp>
+#    include <c++/exec/types.hpp>
 #endif
 
 #endif /* exec/types.h */
