@@ -56,7 +56,8 @@ COMMON	:= \
 	strspn \
 	strstr \
 	strtod \
-	strtok
+	strtok \
+	stpblk
 	
 
 #   - Shared are in either the shared linklib, or the arosc.library module
