@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/19 17:03:56  aros
+    Wrong #define to protect the file
+
     Revision 1.1  1996/09/11 12:52:54  digulla
     Two new devices by M. Fleischer: RAM: and NIL:
 
@@ -11,8 +14,8 @@
     Desc:
     Lang:
 */
-#ifndef EMUL_HANDLER_GCC_H
-#define EMUL_HANDLER_GCC_H
+#ifndef NIL_HANDLER_GCC_H
+#define NIL_HANDLER_GCC_H
 #include <aros/libcall.h>
 #include <exec/execbase.h>
 #include <exec/devices.h>
