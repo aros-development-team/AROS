@@ -5,7 +5,6 @@
 
 #define MUIMASTER_YES_INLINE_STDARG
 
-#include <aros/debug.h>
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -15,6 +14,7 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+#include "debug.h"
 #include "mui.h"
 #include "support_classes.h"
 #include "muimaster_intern.h"
