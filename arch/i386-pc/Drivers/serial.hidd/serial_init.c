@@ -45,9 +45,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define sysBase      (LC_SYSBASE_FIELD(lh))
-
-struct ExecBase * SysBase;
+#define SysBase      (LC_SYSBASE_FIELD(lh))
 
 void serial_int_13(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void serial_int_24(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
@@ -59,7 +57,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct class_static_data *csd; /* SerialHidd static data */
 
-    SysBase = sysBase;    
     EnterFunc(bug("SerialHIDD_Init()\n"));
 
     /*
@@ -72,7 +69,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     lh->hdg_csd = csd;
     if(csd)
     {
-        csd->sysbase = sysBase;
+        csd->sysbase = SysBase;
         
         D(bug("  Got csd\n"));
 
