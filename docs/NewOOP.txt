@@ -438,7 +438,7 @@ Thus, whilst 5.6.a is wrong, this is correct:
     5.6.b) shapes[0] = StaticCast(Shape, c);
 
 The attentive reader will have noticed something important in the above macro:
-there's checking to see whether the Object's class really implements the
+there's NO checking to see whether the Object's class really implements the
 requested interface!
 
 That is, infact, an unsafe casting, that because of this is also very fast. It
@@ -471,7 +471,7 @@ Appendices
 
 A - TODO
 
-1) Give a proper name, preferably and acronym, to this OO framework. It has to
+1) Give a proper name, preferably an acronym, to this OO framework. It has to
    be something easy to remember and with a strong meaning. BOOPSI(tm) is a good
    example of such an acronym, but of course it's not appropriate to this
    context.
