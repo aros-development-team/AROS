@@ -949,6 +949,8 @@ static IPTR List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
     if (data->entries_num <= data->entries_visible)
 	new_entries_first = 0;
 
+    if (new_entries_first < 0) new_entries_first = 0;
+    
     set(obj, new_entries_first != data->entries_first ?
 	MUIA_List_First : TAG_IGNORE,
 	new_entries_first);
