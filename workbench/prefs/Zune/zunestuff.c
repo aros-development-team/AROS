@@ -82,12 +82,3 @@ Object *MakePopframe(void)
 		     MUIA_Window_Title, (IPTR)"Adjust Frame",
 		     TAG_DONE);
 }
-
-#ifdef __AROS__
-
-ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-    return (DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL));
-}
-
-#endif
