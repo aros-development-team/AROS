@@ -14,19 +14,16 @@
 #include <utility/utility.h>
 #include "initstruct.h"
 #include "icon_intern.h"
+#include "libdefs.h"
 
 struct inittable;
 extern const char name[];
 extern const char version[];
 extern const APTR inittabl[4];
-extern void *const Icon_functable[];
+extern void * const FUNCTABLE[];
 extern const struct inittable datatable;
-extern struct IconBase *AROS_SLIB_ENTRY(init,Icon)();
-extern struct IconBase *AROS_SLIB_ENTRY(open,Icon)();
-extern BPTR AROS_SLIB_ENTRY(close,Icon)();
-extern BPTR AROS_SLIB_ENTRY(expunge,Icon)();
-extern int AROS_SLIB_ENTRY(null,Icon)();
-extern const char Icon_end;
+extern struct LIBBASETYPE * INIT();
+extern const char END;
 
 int entry(void)
 {
@@ -34,16 +31,11 @@ int entry(void)
     return -1;
 }
 
-#define LIBVERSION	41
-#define LIBREVISION	0
-#define LIBVER(name,ver,rev,date) \
-	#name " " #ver "." #rev " (" #date ")\n\r";
-
 const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
-    (APTR)&Icon_end,
+    (APTR)&END,
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
@@ -53,16 +45,16 @@ const struct Resident resident=
     (ULONG *)inittabl
 };
 
-const char name[]=ICONNAME;
+const char name[]=LIBNAME;
 
-const char version[]=LIBVER(icon,LIBVERSION,LIBREVISION,__DATE__);
+const char version[]=VERSION;
 
 const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct IconBase),
-    (APTR)Icon_functable,
+    (APTR)sizeof(struct LIBBASETYPE),
+    (APTR)FUNCTABLE,
     (APTR)&datatable,
-    &AROS_SLIB_ENTRY(init,Icon)
+    &INIT
 };
 
 struct inittable
@@ -73,10 +65,10 @@ struct inittable
     S_CPYO(4,1,W);
     S_CPYO(5,1,W);
     S_CPYO(6,1,L);
-    S_END (Icon_end);
+    S_END (END);
 };
 
-#define O(n) offsetof(struct IconBase,n)
+#define O(n) offsetof(struct LIBBASETYPE,n)
 
 const struct inittable datatable=
 {
@@ -93,26 +85,26 @@ const struct inittable datatable=
 
 struct ExecBase * SysBase; /* global variable */
 
-AROS_LH2(struct IconBase *, init,
- AROS_LHA(struct IconBase *, IconBase, D0),
+AROS_LH2(struct LIBBASETYPE *, init,
+ AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, sysBase, 0, Icon)
+     struct ExecBase *, sysBase, 0, _LIBnAME)
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
     SysBase=sysBase;
-    IconBase->seglist=segList;
+    LIBBASE->seglist=segList;
 
     /* You would return NULL here if the init failed. */
-    return IconBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct IconBase *, open,
+AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-     struct IconBase *, IconBase, 1, Icon)
+     struct LIBBASETYPE *, LIBBASE, 1, _LIBnAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -136,19 +128,19 @@ AROS_LH1(struct IconBase *, open,
     if (!UtilityBase)
 	return NULL;
 
-    IconBase->dsh.h_Entry = (void *)dosstreamhook;
-    IconBase->dsh.h_Data = DOSBase;
+    LIBBASE->dsh.h_Entry = (void *)dosstreamhook;
+    LIBBASE->dsh.h_Data = DOSBase;
 
     /* I have one more opener. */
-    IconBase->library.lib_OpenCnt++;
-    IconBase->library.lib_Flags&=~LIBF_DELEXP;
+    LIBBASE->library.lib_OpenCnt++;
+    LIBBASE->library.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
-    return IconBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, close, struct IconBase *, IconBase, 2, Icon)
+AROS_LH0(BPTR, close, struct LIBBASETYPE *, LIBBASE, 2, _LIBnAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -158,7 +150,7 @@ AROS_LH0(BPTR, close, struct IconBase *, IconBase, 2, Icon)
     */
 
     /* I have one fewer opener. */
-    if(!--IconBase->library.lib_OpenCnt)
+    if(!--LIBBASE->library.lib_OpenCnt)
     {
 	if (DOSBase)
 	    CloseLibrary (DOSBase);
@@ -167,7 +159,7 @@ AROS_LH0(BPTR, close, struct IconBase *, IconBase, 2, Icon)
 	    CloseLibrary (UtilityBase);
 
 	/* Delayed expunge pending? */
-	if(IconBase->library.lib_Flags&LIBF_DELEXP)
+	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
 	    return expunge();
     }
@@ -175,7 +167,7 @@ AROS_LH0(BPTR, close, struct IconBase *, IconBase, 2, Icon)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct IconBase *, IconBase, 3, Icon)
+AROS_LH0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, _LIBnAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -186,28 +178,28 @@ AROS_LH0(BPTR, expunge, struct IconBase *, IconBase, 3, Icon)
     */
 
     /* Test for openers. */
-    if(IconBase->library.lib_OpenCnt)
+    if(LIBBASE->library.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	IconBase->library.lib_Flags|=LIBF_DELEXP;
+	LIBBASE->library.lib_Flags|=LIBF_DELEXP;
 	return 0;
     }
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&IconBase->library.lib_Node);
+    Remove(&LIBBASE->library.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
-    ret=IconBase->seglist;
+    ret=LIBBASE->seglist;
 
     /* Free the memory. */
-    FreeMem((char *)IconBase-IconBase->library.lib_NegSize,
-	IconBase->library.lib_NegSize+IconBase->library.lib_PosSize);
+    FreeMem((char *)LIBBASE-LIBBASE->library.lib_NegSize,
+	LIBBASE->library.lib_NegSize+LIBBASE->library.lib_PosSize);
 
     return ret;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct IconBase *, IconBase, 4, Icon)
+AROS_LH0I(int, null, struct LIBBASETYPE *, LIBBASE, 4, _LIBnAME)
 {
     AROS_LIBFUNC_INIT
     return 0;
