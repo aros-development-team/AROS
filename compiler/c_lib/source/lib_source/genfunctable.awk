@@ -56,7 +56,7 @@ BEGIN {
 }
 /AROS_AREXXLIBQUERYFUNC/ {
     line=$0;
-    sub(/\([ \t]*/,"\(",line);
+    sub(/\([ \t]*/,"(",line);
     gsub(/[ \t]*,[ \t]*/,",",line);
     if (match(line,/\([a-zA-Z0-9_]+,/))
     {
