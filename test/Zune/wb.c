@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <clib/alib_protos.h>
+#include <dos/dostags.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <libraries/asl.h>
@@ -135,6 +136,27 @@ static struct NewMenu nm[] =
 
 };
 
+/**************************************************************************
+ This is the standard_hook for easy MUIM_CallHook callbacks
+ It is initialized at the very beginning of the main program
+**************************************************************************/
+static struct Hook hook_standard;
+
+
+#ifndef _AROS
+__asm __saveds void hook_func_standard(register __a0 struct Hook *h, register __a2 void *dummy, register __a1 **funcptr)
+#else
+AROS_UFH3(void, hook_func_standard,
+    AROS_UFHA(struct Hook *, h, A0),
+    AROS_UFHA(void *, dummy, A2),
+    AROS_UFHA(void **, funcptr, A1))
+#endif
+{
+	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+
+	if (func)
+		func(funcptr + 1);
+}
 
 /**************************************************************************
  Easily call the new method of super class with additional tags
@@ -144,14 +166,48 @@ STATIC ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
   return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
+/**************************************************************************
+ Duplicate a string using AllocVec
+**************************************************************************/
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, 0);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
+
+
+/**************************************************************************
+ This function returns a Menu Object with the given id
+**************************************************************************/
+Object *FindMenuitem(Object* strip, int id)
+{
+    return (Object*)DoMethod(strip, MUIM_FindUData, id);
+}
+
+/**************************************************************************
+ This connects a notify to the given menu entry id
+**************************************************************************/
+VOID DoMenuNotify(Object* strip, int id, void *function, void *arg)
+{
+    Object *entry;
+    entry = FindMenuitem(strip,id);
+    if (entry)
+    {
+	DoMethod(entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, entry, 4, MUIM_CallHook, &hook_standard, function, arg);
+    }
+}
 
 /* Our global variables */
 struct Library *MUIMasterBase;
 
 Object *app;
-Object *menustrip;
 Object *root_iconwnd;
+Object *root_menustrip;
 Object *execute_wnd;
+Object *execute_command_string;
 
 /**************************************************************************
  Easily get attributes
@@ -215,7 +271,7 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     action_hook = (struct Hook*)GetTagData(MUIA_IconWindow_ActionHook, NULL, msg->ops_AttrList);
 
     /* Now call the super methods new method with additional tags */
-    obj = DoSuperNew(cl,obj,
+    obj = (Object*)DoSuperNew(cl,obj,
 	MUIA_Window_Title,title,
 	MUIA_Window_Width,300,
 	MUIA_Window_Height,300,
@@ -235,6 +291,16 @@ STATIC IPTR IconWindow_New(struct IClass *cl, Object *obj, struct opSet *msg)
     DoMethod(iconlist,MUIM_Notify,MUIA_IconList_DoubleClick,TRUE,obj,1,MUIM_IconWindow_DoubleClicked);
 
     return (IPTR)obj;
+}
+
+STATIC IPTR IconWindow_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct IconWindow_Data *data = (struct IconWindow_Data*)INST_DATA(cl,obj);
+    switch (msg->opg_AttrID)
+    {
+	case	MUIA_IconWindow_Drawer: *msg->opg_Storage = xget(data->iconlist,MUIA_IconDrawerList_Drawer); return 1;
+    }
+    return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
 STATIC IPTR IconWindow_DoubleClicked(struct IClass *cl, Object *obj, Msg msg)
@@ -257,6 +323,7 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
     switch (msg->MethodID)
     {
 	case OM_NEW: return IconWindow_New(cl,obj,(struct opSet*)msg);
+	case OM_GET: return IconWindow_Get(cl,obj,(struct opGet*)msg);
 
 	/* private methods */
 	case MUIM_IconWindow_DoubleClicked: return IconWindow_DoubleClicked(cl,obj,msg);
@@ -268,25 +335,90 @@ struct MUI_CustomClass *CL_IconWindow;
 
 #define IconWindowObject (Object*)NewObject(CL_IconWindow->mcc_Class, NULL
 
+/******** Execute Window ********/
+
+static char *execute_current_directory;
+static char *execute_command;
 
 /**************************************************************************
- This is the standard_hook for easy MUIM_CallHook callbacks
+ Open the execute window
+
+ This function will always get the current drawer as argument
 **************************************************************************/
-static struct Hook hook_standard;
-
-#ifndef _AROS
-__asm __saveds void hook_func_standard(register __a0 struct Hook *h, register __a2 void *dummy, register __a1 **funcptr)
-#else
-AROS_UFH3(void, hook_func_standard,
-    AROS_UFHA(struct Hook *, h, A0),
-    AROS_UFHA(void *, dummy, A2),
-    AROS_UFHA(void **, funcptr, A1))
-#endif
+void execute_open(char **cd_ptr)
 {
-	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+    char *cd;
 
-	if (func)
-		func(funcptr + 1);
+    if (cd_ptr) cd = *cd_ptr;
+    else cd = NULL;
+
+    if (execute_current_directory) FreeVec(execute_current_directory);
+    execute_current_directory = StrDup(cd);
+
+    setstring(execute_command_string,execute_command);
+    set(execute_wnd,MUIA_Window_Open,TRUE);
+    set(execute_wnd,MUIA_Window_ActiveObject, execute_command_string);
+}
+
+/**************************************************************************
+ Open the execute window. Simliar to above but you can also set the
+ command. Called when item is openend
+**************************************************************************/
+void execute_open_with_command(char *cd, char *contents)
+{
+    if (execute_current_directory) FreeVec(execute_current_directory);
+    execute_current_directory = StrDup(cd);
+
+    setstring(execute_command_string,contents);
+    set(execute_wnd,MUIA_Window_Open,TRUE);
+    set(execute_wnd,MUIA_Window_ActiveObject, execute_command_string);
+}
+
+/**************************************************************************
+ ...
+**************************************************************************/
+void execute_ok(void)
+{
+    char *cd;
+    BPTR input;
+    BPTR lock;
+
+    set(execute_wnd,MUIA_Window_Open,FALSE);
+    if (execute_command) FreeVec(execute_command);
+    execute_command = StrDup((char*)xget(execute_command_string,MUIA_String_Contents));
+    if (!execute_command) return;
+
+    if (!execute_current_directory) cd = "RAM:";
+    else cd = execute_current_directory;
+
+    lock = Lock(cd,ACCESS_READ);
+    if (!lock) return;
+
+    input = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+    if (input)
+    {
+	if (SystemTags(execute_command,
+	    	SYS_Asynch,	TRUE,
+	    	SYS_Input,  (IPTR)input,
+	    	SYS_Output, (IPTR)NULL,
+#ifdef _AROS
+	    	SYS_Error,  (IPTR)NULL,
+#endif
+		NP_CurrentDir, lock, /* Will be freed automatical if successful */
+	    	TAG_DONE) == -1)
+        {
+            UnLock(lock);
+            Close(input);
+        }
+    } else UnLock(lock);
+}
+
+/**************************************************************************
+ Execute operation was canceld
+**************************************************************************/
+void execute_cancel(void)
+{
+    set(execute_wnd,MUIA_Window_Open,FALSE);
 }
 
 /**************************************************************************
@@ -323,66 +455,48 @@ AROS_UFH3(void, hook_func_action,
 	    strcpy(buf,ent->filename);
 	}
 
-	/* Create a new icon drawer window with the correct drawer being set */
-	drawerwnd = IconWindowObject,
-            MUIA_IconWindow_IsRoot, FALSE,
-	    MUIA_IconWindow_ActionHook, &hook_action,
-	    MUIA_IconWindow_Drawer, buf,
-	    End;
-
-	if (drawerwnd)
+	if (ent->type == ST_ROOT || ent->type == ST_USERDIR)
 	{
-	    /* We simply close the window here...the memory is not freed until wb is closed
-	     * however */
-	    DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+	    Object *menustrip;
 
-	    /* Add the window to the application */
-	    DoMethod(app,OM_ADDMEMBER,drawerwnd);
+	    /* Create a new icon drawer window with the correct drawer being set */
+	    drawerwnd = IconWindowObject,
+		MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+		MUIA_IconWindow_IsRoot, FALSE,
+		MUIA_IconWindow_ActionHook, &hook_action,
+		MUIA_IconWindow_Drawer, buf,
+		End;
 
-	    /* And now open it */
-	    set(drawerwnd,MUIA_Window_Open,TRUE);
+	    if (drawerwnd)
+	    {
+	    	/* Get the drawer path back so we can use it also outside this function */
+	    	char *drw = (char*)xget(drawerwnd,MUIA_IconWindow_Drawer);
+
+		/* We simply close the window here in case somebody like to to this...
+		 * the memory is not freed until wb is closed however */
+		DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+
+		/* If "Execute Command" entry is clicked open the execute window */
+		DoMenuNotify(menustrip, MEN_WORKBENCH_EXECUTE, execute_open, drw);
+
+		/* Add the window to the application */
+		DoMethod(app,OM_ADDMEMBER,drawerwnd);
+
+		/* And now open it */
+		set(drawerwnd,MUIA_Window_Open,TRUE);
+	    }
+	} else if (ent->type == ST_FILE)
+	{
+	    static char buf[1024];
+	    strncpy(buf,ent->filename,1023);
+	    buf[1023] = 0;
+	    /* truncate the path */
+	    PathPart(buf)[0] = 0;
+	    execute_open_with_command(buf, FilePart(ent->filename));
 	}
     }
 }
 
-/**************************************************************************
- This function returns a Menu Object with the given id
-**************************************************************************/
-Object *FindMenuitem(Object* strip, int id)
-{
-    return (Object*)DoMethod(strip, MUIM_FindUData, id);
-}
-
-/**************************************************************************
- This connects a notify to the given menu entry id
-**************************************************************************/
-VOID DoMenuNotify(Object* strip, int id, void *function)
-{
-    Object *entry;
-    entry = FindMenuitem(strip,id);
-    if (entry)
-    {
-	DoMethod(entry, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, entry, 3, MUIM_CallHook, &hook_standard, function);
-    }
-}
-
-/**************************************************************************
- Open the execute window
-**************************************************************************/
-void execute_open(void)
-{
-    set(execute_wnd,MUIA_Window_Open,TRUE);
-}
-
-void execute_ok(void)
-{
-    set(execute_wnd,MUIA_Window_Open,FALSE);
-}
-
-void execute_cancel(void)
-{
-    set(execute_wnd,MUIA_Window_Open,FALSE);
-}
 
 /**************************************************************************
  Our main entry
@@ -410,12 +524,12 @@ int main(void)
     }
 
     app = ApplicationObject,
- 	MUIA_Application_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
     	SubWindow, root_iconwnd = IconWindowObject,
 	    MUIA_Window_TopEdge, MUIV_Window_TopEdge_Delta(0), /* place the window below the bar layer */
 	    MUIA_Window_LeftEdge, 0,
 	    MUIA_Window_Width, MUIV_Window_Width_Screen(100),
 	    MUIA_Window_Height, MUIV_Window_Height_Screen(100), /* won't take the barlayer into account */
+	    MUIA_Window_Menustrip, root_menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
 	    End,
@@ -427,7 +541,7 @@ int main(void)
 		    Child, Label("Command:"),
 		    Child, PopaslObject,
 			MUIA_Popstring_Button, PopButton(MUII_PopFile),
-			MUIA_Popstring_String, StringObject, StringFrame, End,
+			MUIA_Popstring_String, execute_command_string = StringObject, StringFrame, End,
 			End,
 		    End,
 		Child, HGroup,
@@ -442,14 +556,14 @@ int main(void)
     if (app)
     {
 	ULONG sigs = 0;
-	Object *men;
 
 	DoMethod(root_iconwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
 	/* If "Execute Command" entry is clicked open the execute window */
-	DoMenuNotify(menustrip,MEN_WORKBENCH_EXECUTE,execute_open);
+	DoMenuNotify(root_menustrip,MEN_WORKBENCH_EXECUTE,execute_open, "RAM:");
 
         /* Execute Window Notifies */
+        DoMethod(execute_command_string, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
         DoMethod(execute_execute_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_ok);
         DoMethod(execute_cancel_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
         DoMethod(execute_wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 3, MUIM_CallHook, &hook_standard, execute_cancel);
