@@ -6,6 +6,9 @@
     Lang: English
 */
 
+#include <aros/libcall.h>
+#include <proto/bullet.h>
+
 /*****************************************************************************
 
     NAME */
