@@ -653,7 +653,7 @@ static void TransformCursor(struct staticdata *sd)
 	    if (curimg[i] == 0) alp = 0;
 	    else alp = 0xe0;
 	    
-	    if (curimg[i] == 0x50000000) ((ULONG*)tmp)[i] = ToRGB8888(0x50,0,0,0);
+	    if (curimg[i] == 0x50000000) ((ULONG*)tmp)[i] = ToRGB8888(0x50,0);
 	    else ((ULONG*)tmp)[i] = ToRGB8888(alp, curimg[i]);
 	}
     }
