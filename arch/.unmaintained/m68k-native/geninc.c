@@ -3,6 +3,7 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <dos/dosextens.h>
+#include <hardware/custom.h>
 #include <stdio.h>
 #include <stddef.h>
 
@@ -70,6 +71,7 @@ int main (void)
     printf ("#define Disable       %d\n", FuncOffset (20));
     printf ("#define Enable        %d\n", FuncOffset (21));
     printf ("#define Enqueue       %d\n", FuncOffset (45));
+    printf ("#define CacheControl  %d\n", FuncOffset (107));
     printf ("#define StackSwap     %d\n", FuncOffset (122));
 
     printf ("\n/* Constants */\n");
@@ -106,6 +108,14 @@ int main (void)
     printf ("#define DMAB_Continue        %ld\n", BitOf(DMA_Continue       ));
     printf ("#define DMAB_NoModify        %ld\n", BitOf(DMA_NoModify       ));
     printf ("#define DMAB_ReadFromR       %ld\n", BitOf(DMA_ReadFromRAM    ));
+
+    printf ("#define custom               0xdff000\n");
+    printf ("#define dmaconr              0x%04lx\n", offsetof (struct Custom, dmaconr));
+    printf ("#define intenar              0x%04lx\n", offsetof (struct Custom, intenar));
+    printf ("#define intreqr              0x%04lx\n", offsetof (struct Custom, intreqr));
+    printf ("#define intena               0x%04lx\n", offsetof (struct Custom, intena));
+    printf ("#define intreq               0x%04lx\n", offsetof (struct Custom, intreq));
+    printf ("#define dmacon               0x%04lx\n", offsetof (struct Custom, dmacon));
 
     return 0;
 }
