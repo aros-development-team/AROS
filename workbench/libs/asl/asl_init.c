@@ -392,7 +392,14 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!LocaleBase)
     	LocaleBase = OpenLibrary("locale.library", 38);
     /* We can live without locale.library so don't abort if opening fails */
+
+#if USE_SHARED_COOLIMAGES
+    if (!CoolImagesBase)
+    	CoolImagesBase = OpenLibrary("coolimages.library", 1);
     
+     /* We can live without coolimages.library so don't abort if opening fails */  
+#endif
+
     if (!LIBBASE->aslpropclass)
         LIBBASE->aslpropclass = makeaslpropclass(LIBBASE);
     if (!LIBBASE->aslpropclass)
@@ -519,6 +526,14 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	    LIBBASE->aslcolorpickerclass = NULL;
 	}
 	
+    #if USE_SHARED_COOLIMAGES
+	if (CoolImagesBase)
+	{
+	    CloseLibrary(CoolImagesBase);
+	    CoolImagesBase = NULL;
+	}
+    #endif
+    
 	if (LocaleBase)
 	{
 	    CloseLibrary(LocaleBase);

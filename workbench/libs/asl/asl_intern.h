@@ -50,6 +50,10 @@
 
 /*****************************************************************************************/
 
+#define USE_SHARED_COOLIMAGES 1
+
+/*****************************************************************************************/
+
 // #define TURN_OFF_DEBUG
 
 /* Predeclaration */
@@ -270,7 +274,10 @@ struct AslBase_intern
     struct Library		*gadtoolsbase;
     struct Library  	    	*diskfontbase;
     struct Library  	    	*localebase;
-    
+#if USE_SHARED_COOLIMAGES
+    struct Library  	    	*coolimagesbase;
+#endif
+
     struct MinList		ReqList;
     struct SignalSemaphore	ReqListSem;
     struct AslReqInfo		ReqInfo[3];
@@ -421,6 +428,8 @@ typedef struct IntuitionBase IntuiBase;
 #define DiskfontBase	ASLB(AslBase)->diskfontbase
 
 #define LocaleBase  	ASLB(AslBase)->localebase
+
+#define CoolImagesBase	ASLB(AslBase)->coolimagesbase
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase

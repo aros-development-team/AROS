@@ -29,7 +29,13 @@
 #include "fontreqhooks.h"
 #include "fontreqsupport.h"
 #include "layout.h"
+
+#if USE_SHARED_COOLIMAGES
+#include <libraries/coolimages.h>
+#include <proto/coolimages.h>
+#else
 #include "coolimages.h"
+#endif
 
 #define CATCOMP_NUMBERS
 #include "asl_strings.h"
@@ -354,8 +360,14 @@ struct ButtonInfo
     WORD 			gadid;  
     STRPTR  	    	    	text;
     LONG    	    	    	deftextid;
+#if USE_SHARED_COOLIMAGES
+    ULONG   	    	    	coolid;
+    Object  	    	    	**objvar;
+    const struct CoolImage  	*coolimage;
+#else
     const struct CoolImage 	*coolimage;
     Object 			**objvar;
+#endif
 };
 
 /*****************************************************************************************/
@@ -365,11 +377,19 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     struct FOUserData 	*udata = ld->ld_UserData;
     struct IntFontReq 	*iforeq = (struct IntFontReq *)ld->ld_IntReq;
     STRPTR 		str[6];
+#if USE_SHARED_COOLIMAGES
+    struct ButtonInfo 	bi[NUMBUTS] =
+    {
+        { ID_BUTOK	, GetIR(iforeq)->ir_PositiveText , MSG_FONTREQ_POSITIVE_GAD, COOL_USEIMAGE_ID    , &udata->OKBut	  },
+	{ ID_BUTCANCEL  , GetIR(iforeq)->ir_NegativeText , MSG_FONTREQ_NEGATIVE_GAD, COOL_CANCELIMAGE_ID , &udata->CancelBut  }
+    };
+#else
     struct ButtonInfo 	bi[NUMBUTS] =
     {
         { ID_BUTOK	, GetIR(iforeq)->ir_PositiveText , MSG_FONTREQ_POSITIVE_GAD, &cool_useimage    , &udata->OKBut	  },
 	{ ID_BUTCANCEL  , GetIR(iforeq)->ir_NegativeText , MSG_FONTREQ_NEGATIVE_GAD, &cool_cancelimage , &udata->CancelBut  }
     };
+#endif
     Object 		*gad;
     LONG		error;
     WORD 		gadrows, x, y, w, h, i, y2;
@@ -399,6 +419,14 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
         x = TextLength(&ld->ld_DummyRP, bi[i].text, strlen(bi[i].text));
 
 #if FOREQ_COOL_BUTTONS
+#if USE_SHARED_COOLIMAGES
+    	if (CoolImagesBase)
+	{
+	    bi[i].coolimage = (const struct CoolImage *)COOL_ObtainImageA(bi[i].coolid, NULL);
+	}
+	
+	if (CoolImagesBase)
+#endif
 	if (ld->ld_TrueColor)
 	{
 	    x += IMAGEBUTTONEXTRAWIDTH + bi[i].coolimage->width;
@@ -414,14 +442,27 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ld->ld_NumButtons = 4;
     
 #if FOREQ_COOL_BUTTONS
-    y  = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
-    if (ld->ld_TrueColor)
+
+#if USE_SHARED_COOLIMAGES
+    if (CoolImagesBase)
     {
-        y2 = IMAGEBUTTONEXTRAHEIGHT + DEF_COOLIMAGEHEIGHT;
-    } else {
-        y2 = 0;
+#endif
+	y  = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
+	if (ld->ld_TrueColor)
+	{
+            y2 = IMAGEBUTTONEXTRAHEIGHT + DEF_COOLIMAGEHEIGHT;
+	} else {
+            y2 = 0;
+	}
+	udata->ButHeight = (y > y2) ? y : y2;
+#if USE_SHARED_COOLIMAGES
     }
-    udata->ButHeight = (y > y2) ? y : y2;
+    else
+    {
+    	udata->ButHeight = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
+    }
+#endif
+
 #else
     udata->ButHeight = BUTTONEXTRAHEIGHT + ld->ld_Font->tf_YSize;
 #endif
@@ -640,6 +681,9 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    button_tags[0].ti_Data = (IPTR)bi[i].text;
 	    button_tags[1].ti_Data = (IPTR)gad;
 	    button_tags[2].ti_Data = bi[i].gadid;
+	#if USE_SHARED_COOLIMAGES
+	    if (CoolImagesBase == NULL) button_tags[3].ti_Tag = TAG_IGNORE;
+	#endif
 	    button_tags[3].ti_Data = (IPTR)bi[i].coolimage;
 
 	    *(bi[i].objvar) = gad = NewObjectA(AslBase->aslbuttonclass, NULL, button_tags);
