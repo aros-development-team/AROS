@@ -107,7 +107,7 @@ case "$type" in
 # different processors. Use -m68060 as a highest common denominator.
 # It is up to the coder of these routines to keep track of their
 # instructions.
-	COMMON_AFLAGS="-m68060 -x assembler-with-cpp"
+	COMMON_AFLAGS="-m68060 -x assembler-with-cpp -Wa,-M"
 	FLAVOUR="native"
 	;;
 esac
