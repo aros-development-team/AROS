@@ -205,8 +205,18 @@ static void IconList_PlaceIcon(Object *obj, struct MUI_IconData *data, struct Ic
     toplace->y = aty;
 
     /* update our view */
-    if (toplace_rect.MaxX - data->view_x > data->width) data->width = toplace_rect.MaxX - data->view_x;
-    if (toplace_rect.MaxY - data->view_y > data->height) data->height = toplace_rect.MaxY - data->view_y;
+    if (toplace_rect.MaxX - data->view_x > data->width)
+    {
+    	data->width = toplace_rect.MaxX - data->view_x;
+	set(obj, MUIA_IconList_Width, data->width);
+    }
+    
+    if (toplace_rect.MaxY - data->view_y > data->height)
+    {
+    	data->height = toplace_rect.MaxY - data->view_y;
+	set(obj, MUIA_IconList_Height, data->height);
+    }
+    
 }
 
 /**************************************************************************
@@ -567,6 +577,12 @@ static ULONG IconList_Clear(struct IClass *cl, Object *obj, struct MUIP_IconList
     data->first_selected = NULL;
     data->view_x = data->view_y = data->width = data->height = 0;
 
+    SetAttrs(obj, MUIA_IconList_Left, data->view_x,
+    	    	  MUIA_IconList_Top, data->view_y,
+		  MUIA_IconList_Width, data->width,
+		  MUIA_IconList_Height, data->height,
+		  TAG_DONE);
+		  
     MUI_Redraw(obj,MADF_DRAWOBJECT);
     return 1;
 }
@@ -654,6 +670,9 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
 	Insert((struct List*)&data->icon_list,(struct Node*)entry,(struct Node*)icon2);
     }
 
+    set(obj, MUIA_IconList_Width, data->width);
+    set(obj, MUIA_IconList_Height, data->height);
+    
     return 1;
 }
 
@@ -919,6 +938,7 @@ static ULONG IconList_DragDrop(struct IClass *cl, Object *obj, struct MUIP_DragD
 	{
 	    data->first_selected->x = msg->x - _mleft(obj) + data->view_x - data->touch_x;
 	    data->first_selected->y = msg->y - _mtop(obj) + data->view_y - data->touch_y;
+	    	    
 	    MUI_Redraw(obj,MADF_DRAWOBJECT);
 	}
     } else
