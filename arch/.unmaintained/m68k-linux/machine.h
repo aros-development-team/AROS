@@ -185,9 +185,9 @@ extern void _aros_not_implemented (char *X);
 	"move.l "## reg ##",-(%sp)\n\t"
 
 #define __ASM_ARGQUAD1(type, name, reg1, reg2) \
-	"move.l "## reg1 ##",-(%sp)\n\t"
-#define __ASM_ARGQUAD2(type, name, reg1, reg2) \
 	"move.l "## reg2 ##",-(%sp)\n\t"
+#define __ASM_ARGQUAD2(type, name, reg1, reg2) \
+	"move.l "## reg1 ##",-(%sp)\n\t"
 
 #ifdef __PIC__
 #define __ASM_POSTFIX(type,name,system,argc) \
@@ -1155,13 +1155,13 @@ extern void _aros_not_implemented (char *X);
 ({                                                  \
     t1 _##n##_n1 = (n1);                            \
     {						    \
-	long _##n##_re;                             \
+	t _##n##_re;                                \
 	register t1 _n1 __asm(r11) = _##n##_n1;     \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
 	    "move.l %2,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
-	    "move.l %%d0,%0"			    \
+	    "movem.l %%d0-%%d1,%0\n\t"		    \
 	    :"=g"(_##n##_re)                        \
 	    :"r"(_n1),"g"(bn)			    \
 	    :A0,A1,D0,D1,"memory","cc");            \
@@ -1174,16 +1174,16 @@ extern void _aros_not_implemented (char *X);
     t1 _##name##_n1 = (n1);                         \
     t2 _##name##_n2 = (n2);                         \
     {						    \
-	long _##name##_re;                          \
+	t _##name##_re;                             \
 	register t1 _n1 __asm(r11) = _##name##_n1;  \
 	register t2 _n2 __asm(r21) = _##name##_n2;  \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %1,%%a6\n\t"		    \
+	    "move.l %3,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
-	    "move.l %%d0,%0"			    \
+	    "move.l %%d0-%%d1,%0\n\t"		    \
 	    :"=g"(_##name##_re)                     \
-	    :"g"(bn),"r"(_n1),"r"(_n2)		    \
+	    :"r"(_n1),"r"(_n2),"g"(bn)		    \
 	    :D0,D1,A0,A1,"memory","cc");            \
         (t)_##name##_re;                            \
     }						    \
