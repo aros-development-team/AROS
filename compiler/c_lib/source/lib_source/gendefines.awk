@@ -177,30 +177,82 @@ function emit_struct(tname)
 
     if (lvo > firstlvo)
     {
-        header     = "#define __" fname "_WB"
-        header_len = length(header)
-
-        printf "%s(%s", header, libbase
-
+        printf "#define __%s_WB(%s", fname, libbase
         for (t=0; t<narg; t++)
 	{
-            arg_to_print = arg[t, 2]
-            printf ",\\\n%+*s", header_len + length (arg_to_print) + 1, arg_to_print
+            printf ", %s", arg[t, 2]
 	}
         print ")\\"
 
         printf "    AROS_LC%d(%s, %s, \\\n", narg, tname, fname
         for (t=0; t<narg; t++)
 	{
-            printf "    AROS_LCA(%s, %s, %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
+            printf "    AROS_LCA(%s, (%s), %s), \\\n", arg[t, 1], arg[t, 2], arg[t, 3]
 	}
-        printf "    %s, %s, %d, %s)\n\n", libbtp, libbase, lvo, basename
+        printf "    %s, (%s), %d, %s)\n\n", libbtp, libbase, lvo, basename
 
-        if (narg > 0)
-            printf "#define %s(...) __%s_WB(%s, __VA_ARGS__)\n\n", fname, fname, libbase
+        printf "#define %s(", fname
+        for (t=0; t<narg; t++)
+	{
+            printf "%s", arg[t, 2]
+            if (t != narg-1) printf ", "
+	}
+        print ")\\"
+
+        printf "    __%s_WB(%s", fname, libbase
+        for (t=0; t<narg; t++)
+	{
+            printf ", (%s)", arg[t, 2]
+	}
+        print ")\n"
+
+        #emit variadic macros for tag-based functions
+        do_emit_vararg = 0
+        if (fname ~ /A$/)
+        {
+            vname = sprintf("%.*s", length(fname)-1, fname)
+            do_emit_vararg = 1
+        }
         else
-            printf "#define %s() __%s_WB(%s)\n\n", fname, fname, libbase
+        if (fname ~ /TagList$/)
+        {
+            vname = sprintf("%.*sTags", length(fname)-7, fname)
+            do_emit_vararg = 1
+        }
+        else
+        if (fname ~ /Args$/ && (tolower(arg[narg-1, 2]) == "args") || (tolower(arg[narg-1, 2]) == "arglist"))
+        {
+            vname = sprintf("%.*s", length(fname)-4, fname)
+            do_emit_vararg = 1
+        }
+        else
+        if (arg[narg-1, 1] ~ /struct[ \t]+TagItem[ \t]*[*]/)
+        {
+            vname = fname "Tags"
+            do_emit_vararg = 1
+        }
 
+        if (do_emit_vararg)
+        {
+            print "#if !defined(NO_INLINE_STDARG) && !defined(" BASENAME "_NO_INLINE_STDARG)"
+
+            printf "#define %s(", vname
+            for (t=0; t<narg-1; t++)
+	    {
+                printf "%s, ", arg[t, 2]
+	    }
+            print "...) \\"
+            print "({ \\"
+            print "     IPTR __args[] = { __VA_ARGS__ }; \\"
+            printf "     %s(", fname
+            for (t=0; t<narg-1; t++)
+	    {
+                printf "%s, ", arg[t, 2]
+	    }
+            printf "(%s)__args); \\\n", arg[narg-1, 1]
+            print "})"
+            print "#endif /* !NO_INLINE_STDARG */\n"
+        }
     }
     narg=0;
 }
