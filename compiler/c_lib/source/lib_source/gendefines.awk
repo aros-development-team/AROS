@@ -113,6 +113,7 @@ function emit_struct(tname)
     {
 	args="";
 	narg=0;
+        ntagarg=0
 
         match(line,/\(.+,.+[^,]/);
 	line=substr(line,RSTART+1,RLENGTH-1);
@@ -127,6 +128,41 @@ function emit_struct(tname)
     else
     {
 	arg[narg] = line;
+
+        if (match(line, /\/\*[ \t]*tagcall.+\*\//))
+        {
+	    tagcall=substr(line,RSTART+2,RLENGTH-4)
+
+            valid_tagcall = 0
+
+            to_add = ""
+            if(match(tagcall, /\+[A-Za-z0-9]+/))
+            {
+	        to_add = substr(tagcall,RSTART+1,RLENGTH-1)
+
+                valid_tagcall = 1
+            }
+
+            to_sub = 0
+            if(match(tagcall, /\-[0-9]+/))
+            {
+	        to_sub = substr(tagcall,RSTART+1,RLENGTH-1)
+
+                valid_tagcall = 1
+            }
+
+            if (!valid_tagcall)
+            {
+                print "Invalid tagcall statement for function \"" fname "\", argument n. " narg > "/dev/stderr"
+                exit 1
+            }
+
+            tagarg[ntagarg, 1] = narg
+            tagarg[ntagarg, 2] = to_sub
+            tagarg[ntagarg, 3] = to_add
+
+            ntagarg++
+        }
 
         match(line,/\(.+\)/);
 	line=substr(line,RSTART+1,RLENGTH-2);
@@ -206,51 +242,76 @@ function emit_struct(tname)
 	}
         print ")\n"
 
-        #emit variadic macros for tag-based functions
-        do_emit_vararg = 0
-        if (fname ~ /A$/)
+        if (ntagarg == 0)
         {
-            vname = sprintf("%.*s", length(fname)-1, fname)
-            do_emit_vararg = 1
-        }
-        else
-        if (fname ~ /TagList$/)
-        {
-            vname = sprintf("%.*sTags", length(fname)-7, fname)
-            do_emit_vararg = 1
-        }
-        else
-        if (fname ~ /Args$/ && (tolower(arg[narg-1, 2]) == "args") || (tolower(arg[narg-1, 2]) == "arglist"))
-        {
-            vname = sprintf("%.*s", length(fname)-4, fname)
-            do_emit_vararg = 1
-        }
-        else
-        if (arg[narg-1, 1] ~ /struct[ \t]+TagItem[ \t]*[*]/)
-        {
-            vname = fname "Tags"
-            do_emit_vararg = 1
+            #emit variadic macros for tag-based functions
+
+            if (fname ~ /A$/)
+            {
+                tagarg[0, 1] = narg-1
+                tagarg[0, 2] = 1
+                tagarg[0, 3] = ""
+                ntagarg++
+            }
+            else
+            if (fname ~ /TagList$/)
+            {
+                tagarg[0, 1] = narg-1
+                tagarg[0, 2] = 7
+                tagarg[0, 3] = "Tags"
+                ntagarg++
+            }
+            else
+            if (fname ~ /Args$/ && (tolower(arg[narg-1, 2]) == "args") || (tolower(arg[narg-1, 2]) == "arglist"))
+            {
+                tagarg[0, 1] = narg-1
+                tagarg[0, 2] = 4
+                tagarg[0, 3] = ""
+                ntagarg++
+            }
+            else
+            if (arg[narg-1, 1] ~ /struct[ \t]+TagItem[ \t]*[*]/)
+            {
+                tagarg[0, 1] = narg-1
+                tagarg[0, 2] = 0
+                tagarg[0, 3] = "Tags"
+                ntagarg++
+            }
         }
 
-        if (do_emit_vararg)
+        if (ntagarg > 0)
         {
             print "#if !defined(NO_INLINE_STDARG) && !defined(" BASENAME "_NO_INLINE_STDARG)"
-
-            printf "#define %s(", vname
-            for (t=0; t<narg-1; t++)
+        }
+        for (i = 0; i < ntagarg; i++)
+        {
+            printf "#define %s(", substr(fname, 0, length(fname) - tagarg[i, 2]) tagarg[i, 3];
+            for (t=0; t<narg; t++)
 	    {
+                if (tagarg[i, 1] == t) continue
+
                 printf "%s, ", arg[t, 2]
 	    }
             print "args...) \\"
+
             print "({ \\"
             print "     IPTR __args[] = { args }; \\"
+
             printf "     %s(", fname
-            for (t=0; t<narg-1; t++)
+            for (t=0; t<narg; t++)
 	    {
-                printf "(%s), ", arg[t, 2]
+                if (tagarg[i, 1] == t)
+                    printf "(%s)__args", arg[tagarg[i, 1], 1]
+                else
+                    printf "(%s)", arg[t, 2]
+
+                if (t != narg-1)
+                    printf ", "
 	    }
-            printf "(%s)__args); \\\n", arg[narg-1, 1]
-            print "})"
+            print "); \\\n})"
+        }
+        if (ntagarg > 0)
+        {
             print "#endif /* !NO_INLINE_STDARG */\n"
         }
    }
