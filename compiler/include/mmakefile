@@ -30,7 +30,7 @@ DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 
 #MM- includes : setup-includes includes-$(ARCH)-$(CPU)
-#MM includes-copy : includes-generate
+#MM includes-copy : includes-copy-$(ARCH)-$(CPU) includes-generate
 includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 $(INCDIR)/%.h : %.h
