@@ -835,6 +835,10 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 
     switch (imsg->Class)
     {
+    case IDCMP_CLOSEWINDOW:
+	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+	break;
+	
     case IDCMP_GADGETUP:
 	gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
 	

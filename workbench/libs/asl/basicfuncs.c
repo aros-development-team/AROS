@@ -623,11 +623,6 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
 		struct Gadget *glist;
 		struct Window *win;
 
-		case IDCMP_CLOSEWINDOW:
-		    success = TRUE;
-		    terminated = TRUE;
-		    break;
-
 		case IDCMP_MOUSEMOVE:
 		    break;
 
