@@ -84,6 +84,7 @@ DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 
 $(SLIB) : $(LIB) $(DEPLIBS) $(EXTRA_DEPLIBS) $(OBJS) $(SYS_OBJS) $(ENDFUNC)
 	@$(ECHO) "Building $(notdir $@) ..."
+	@$(MKDIR) $(DESTDIR)
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OBJDIR)/$(LIBNAME)lib.map $(SYS_OBJS) $(LIBS) $(ENDFUNC) $(EXTRA_LIBS) -o $@ 2>&1|tee $(LIBNAME)lib.err
 	@$(ECHO) "Checking $@..."
 	@$(CHECKUDS) $@ > undefdsyms.list
@@ -155,12 +156,13 @@ endif
 #MM- workbench-hidd-unix : hidd-parallel-unix-module
 
 	
-#MM hidd-parallel-unix-linklib : setup includes hidd-parallel-$(ARCH)-$(CPU)
+#MM hidd-parallel-unix-linklib : setup includes linklibs kernel-hidd-unix
 hidd-parallel-unix-linklib : $(LIB) setup
 	@$(NOP)
 
-#MM hidd-parallel-unix-module : setup includes hidd-parallel-$(ARCH)-$(CPU)
+#MM hidd-parallel-unix-module : setup includes linklibs kernel-hidd-unix
 hidd-parallel-unix-module : $(SLIB)
+	@$(NOP)
 
 # --- QUICK HACKS BEGIN --- 
 # These are hacks for faster execution of "mmake" and "make". Use them
