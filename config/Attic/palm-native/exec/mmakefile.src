@@ -27,6 +27,8 @@ FILES := coldreboot \
 	idletask \
 	stackswap \
 	supervisor \
+	userstate \
+	superstate \
 	ints \
 	switchtouser \
 	inithw \
