@@ -1,13 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.13  1997/04/11 07:58:09  aros
-    NP_UserData was wrong
-
-    Revision 1.12  1997/03/19 16:35:42	digulla
-    Removed log
-
 
     Desc: Create a new process
     Lang: english
@@ -96,11 +89,11 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     /* 7 */    { NP_CloseError,    1 },
     /* 8 */    { NP_CurrentDir,    ~0ul },
     /* 9 */    { NP_StackSize,	   AROS_STACKSIZE },
-    /*11 */    { NP_Name,	   (IPTR)"New Process" },
-    /*12 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
-    /*13 */    { NP_Arguments,	   (IPTR)NULL },
-    /*14 */    { NP_Cli,	   0 },
-    /*15 */    { NP_UserData,	   (IPTR)NULL },
+    /*10 */    { NP_Name,	   (IPTR)"New Process" },
+    /*11 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
+    /*12 */    { NP_Arguments,	   (IPTR)NULL },
+    /*13 */    { NP_Cli,	   0 },
+    /*14 */    { NP_UserData,	   (IPTR)NULL },
 	{ TAG_END, 0 }
     };
     /* C has no exceptions. This is a simple replacement. */
