@@ -35,6 +35,11 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#define DEFSIZE_WIDTH  16
+#define DEFSIZE_HEIGHT 16
+
+#if 0 /* stegerg: ???? */
+
 /* Image data */
 #define ARROWDOWN_WIDTH    18
 #define ARROWDOWN_HEIGHT   11
@@ -128,6 +133,8 @@ UWORD ArrowRight1Data[] =
     0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0x0020, 0xFFE0,
 };
 
+#endif
+
 /****************************************************************************/
 
 /* Some handy transparent base class object casting defines.
@@ -135,6 +142,9 @@ UWORD ArrowRight1Data[] =
 #define IM(o) ((struct Image *)o)
 
 static UWORD getbgpen(ULONG state, UWORD *pens);
+static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
+			     WORD left, WORD top, WORD width, WORD height,
+			     struct IntuitionBase *IntuitionBase);
 
 #undef IntuitionBase
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
@@ -147,13 +157,16 @@ struct SysIData
     ULONG type;
     struct DrawInfo *dri;
     struct Image *frame;
+    UWORD flags;
 };
+
+#define SYSIFLG_GADTOOLS 1
+#define SYSIFLG_NOBORDER 2
 
 /****************************************************************************/
 
 /* Some handy drawing functions */
 
-#warning FIXME: Draw lines that are broader than 1 pixel
 void draw_thick_line(Class *cl, struct RastPort *rport,
                      LONG x1, LONG y1, LONG x2, LONG y2,
                      UWORD thickness)
@@ -188,29 +201,27 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 D(bug("SYSIA_Which type: %d\n", data->type));
             switch (tag->ti_Data)
             {
-            /* The following images are not scalable, yet! */
+
+#warning if IA_Width, IA_Height was not specified sysiclass should choose size depending on drawinfo (screen resolution)
+
             case LEFTIMAGE:
-                IM(obj)->ImageData = ArrowLeft0Data;
-                IM(obj)->Width     = ARROWLEFT_WIDTH;
-                IM(obj)->Height    = ARROWLEFT_HEIGHT;
+		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
+		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
                 break;
 
             case UPIMAGE:
-                IM(obj)->ImageData = ArrowUp0Data;
-                IM(obj)->Width     = ARROWUP_WIDTH;
-                IM(obj)->Height    = ARROWUP_HEIGHT;
+		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
+		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
                 break;
 
             case RIGHTIMAGE:
-                IM(obj)->ImageData = ArrowRight0Data;
-                IM(obj)->Width     = ARROWRIGHT_WIDTH;
-                IM(obj)->Height    = ARROWRIGHT_HEIGHT;
+		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
+		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
                 break;
 
             case DOWNIMAGE:
-                IM(obj)->ImageData = ArrowDown0Data;
-                IM(obj)->Width     = ARROWDOWN_WIDTH;
-                IM(obj)->Height    = ARROWDOWN_HEIGHT;
+		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
+		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT; 
                 break;
 
             case CHECKIMAGE:
@@ -221,6 +232,8 @@ D(bug("SYSIA_Which type: %d\n", data->type));
             case ZOOMIMAGE:
             case CLOSEIMAGE:
             case SIZEIMAGE:
+		if (IM(obj)->Width  == 0) IM(obj)->Width = DEFSIZE_WIDTH;
+		if (IM(obj)->Height == 0) IM(obj)->Height = DEFSIZE_HEIGHT;
 	        break;
 		
             case SDEPTHIMAGE:
@@ -238,12 +251,32 @@ D(bug("SYSIA_Which type: %d\n", data->type));
 	case SYSIA_Size:
 #warning FIXME: Missing Tag
 	    break;
-	}
-    }
+	
+	/* private tags */
+	
+	case SYSIA_WithBorder:
+	    if (tag->ti_Data == FALSE)
+	    {
+	    	data->flags |= SYSIFLG_NOBORDER;
+	    }
+	    break;
+	
+	case SYSIA_Style:
+	    if (tag->ti_Data == SYSISTYLE_GADTOOLS)
+	    {
+	    	data->flags |= SYSIFLG_GADTOOLS;
+	    }
+	    break;
+	    
+	} /* switch(tag->ti_Tag) */
+	
+    } /* while ((tag = NextTagItem(&taglist))) */
 
 D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
+
     if ((!data->dri) || (unsupported))
 	return FALSE;
+
     return TRUE;
 }
 
@@ -263,6 +296,7 @@ D(bug("sysi_new,: obj=%p\n", obj));
     data->type = 0L;
     data->dri = NULL;
     data->frame = NULL;
+    data->flags = 0;
     if (!sysi_setnew(cl, obj, (struct opSet *)msg))
     {
         CoerceMethod(cl, obj, OM_DISPOSE);
@@ -336,7 +370,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         /* Draw checkmark (only if image is in selected state) */
         if (msg->imp_State == IDS_SELECTED)
         {
-            SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
+            SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
        	    SetDrMd(rport, JAM1);
 
             draw_thick_line(cl, rport, left + width/4, top + height/2, left + width/2, top + width*3/4, 2);
@@ -372,35 +406,71 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     
     #define SPACING 3
     /* Georg Steger */
-    #define HSPACING 4
-    #define VSPACING 2
+    #define HSPACING 3
+    #define VSPACING 3
     
     case LEFTIMAGE:
     {
     	WORD cy;
 	
-    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
 
-#if 0
-    	Move(rport, left + width - SPACING - 1, top + SPACING); /* Move to upper right */
-    	Draw(rport, left + SPACING, top + ((height - 2 * SPACING) / 2));     /* Render '/' */
-    	Move(rport, rport->cp_x, rport->cp_y + 1);
-    	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
-#endif
-	/* Georg Steger */
-	cy = height / 2;
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, LEFTIMAGE, msg->imp_State, data->dri->dri_Pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++;top++;
+	    width -= 2;height -= 2; 
+	}
 
-	Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
-	Draw(rport, left + HSPACING, top + height - cy);
-	Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-	Draw(rport, left + HSPACING, top + height - cy - 1);
-	
-	Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
-	Draw(rport, left + HSPACING, top + cy - 1);
-	Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-	Draw(rport, left + HSPACING, top + cy);
-	
+	if (data->flags & SYSIFLG_GADTOOLS)
+	{
+	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+	    cy = height / 2;
+
+	    Move(rport, left + width - 1 - HSPACING, top + VSPACING + 1);
+	    Draw(rport, left + HSPACING, top + height - cy);
+	    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+	    Draw(rport, left + HSPACING, top + height - cy - 1);
+
+	    Move(rport, left + width - 1 - HSPACING, top + height - 1- VSPACING - 1);
+	    Draw(rport, left + HSPACING, top + cy - 1);
+	    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+	    Draw(rport, left + HSPACING, top + cy);
+	}
+	else
+	{
+	    WORD right, bottom, i;
+	    
+	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+	    
+	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    
+	    left += HSPACING; top += VSPACING;
+	    width -= HSPACING * 2;
+	    height -= VSPACING * 2;
+	    
+	    right = left + width - 1;
+	    bottom = top + height - 1;
+	    
+	    cy = (height + 1) / 2;
+	    
+	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+	    
+	    for(i = 0; i < cy; i++)
+	    {
+	    	RectFill(rport, left + (cy - i - 1) * width / cy,
+				top + i,
+				right - i * width / cy / 2,
+				top + i);
+		RectFill(rport, left + (cy - i - 1) * width / cy,
+				bottom - i,
+				right - i * width / cy / 2,
+				bottom - i);
+	    }
+	    
+	}
     	break;
     }
 
@@ -408,26 +478,64 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cx;
 	
-    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
-#if 0
-    	Move(rport, left + SPACING, top + height - SPACING - 1); /* Move to lower left */
-    	Draw(rport, left + ((width - SPACING * 2) / 2), top + SPACING);	 /* Render '/' */
-    	Move(rport, rport->cp_x + 1, rport->cp_y);
-    	Draw(rport, left + width - SPACING - 1, top + height - SPACING - 1); /* Render '\' */
-#endif
-	/* Georg Steger */
-	cx = width / 2;
-	
-	Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
-	Draw(rport, left + width - cx, top + VSPACING);
-	Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-	Draw(rport, left + width - cx - 1, top + VSPACING);
-	
-	Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
-	Draw(rport, left + cx - 1, top + VSPACING);
-	Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
-	Draw(rport, left + cx, top + VSPACING);
+
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, UPIMAGE, msg->imp_State, data->dri->dri_Pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++;top++;
+	    width -= 2;height -= 2; 
+	}
+
+	if (data->flags & SYSIFLG_GADTOOLS)
+	{
+    	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+	    cx = width / 2;
+
+	    Move(rport, left + HSPACING + 1, top + height - 1 - VSPACING);
+	    Draw(rport, left + width - cx, top + VSPACING);
+	    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+	    Draw(rport, left + width - cx - 1, top + VSPACING);
+
+	    Move(rport, left + width - 1 - HSPACING - 1, top + height - 1 - VSPACING);
+	    Draw(rport, left + cx - 1, top + VSPACING);
+	    Move(rport, left + width - 1 - HSPACING, top + height - 1 - VSPACING);
+	    Draw(rport, left + cx, top + VSPACING);
+	}
+	else
+	{
+	    WORD right, bottom, i;
+	    
+	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+	    
+	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    	    
+	    left += HSPACING; top += VSPACING;
+	    width -= HSPACING * 2;
+	    height -= VSPACING * 2;
+	    
+	    right = left + width - 1;
+	    bottom = top + height - 1;
+
+	    cx = (width + 1) / 2;
+	    	    
+	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+	    
+	    for(i = 0; i < cx; i++)
+	    {
+	    	RectFill(rport, left + i,
+				top + (cx - i - 1) * height / cx,
+				left + i,
+				bottom - i * height / cx / 2);
+	    	RectFill(rport, right - i,
+				top + (cx - i - 1) * height / cx,
+				right - i,
+				bottom - i * height / cx / 2);
+	    }
+	    
+	}
     	break;
     }
     
@@ -435,27 +543,65 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cy;
 	
-    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
-#if 0
-    	Move(rport, left + SPACING, top + SPACING); /* Move to upper left */
-    	Draw(rport, left + width - SPACING - 1, top + ((height - 2 * SPACING) / 2)); /* Render '\' */
-    	Move(rport, rport->cp_x, rport->cp_y + 1);
-    	Draw(rport, left + SPACING, top + height - SPACING - 1);		 /* Render '/' */
-#endif
-	/* Georg Steger */
-	cy = height / 2;
 
-	Move(rport, left + HSPACING, top + VSPACING + 1);
-	Draw(rport, left + width - 1 - HSPACING, top + height - cy);
-	Move(rport, left + HSPACING, top + VSPACING);
-	Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
-	
-	Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
-	Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
-	Move(rport, left + HSPACING, top + height - 1 - VSPACING);
-	Draw(rport, left + width - 1 - HSPACING, top + cy);
-	
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, RIGHTIMAGE, msg->imp_State, data->dri->dri_Pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++;top++;
+	    width -= 2;height -= 2; 
+	}
+
+	if (data->flags & SYSIFLG_GADTOOLS)
+	{
+    	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+	    cy = height / 2;
+
+	    Move(rport, left + HSPACING, top + VSPACING + 1);
+	    Draw(rport, left + width - 1 - HSPACING, top + height - cy);
+	    Move(rport, left + HSPACING, top + VSPACING);
+	    Draw(rport, left + width - 1 - HSPACING, top + height - cy - 1);
+
+	    Move(rport, left + HSPACING, top + height - 1- VSPACING - 1);
+	    Draw(rport, left + width - 1 - HSPACING, top + cy - 1);
+	    Move(rport, left + HSPACING, top + height - 1 - VSPACING);
+	    Draw(rport, left + width - 1 - HSPACING, top + cy);
+
+	}
+	else
+	{
+	    WORD right, bottom, i;
+	    
+	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+	    
+	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    
+	    left += HSPACING; top += VSPACING;
+	    width -= HSPACING * 2;
+	    height -= VSPACING * 2;
+	    
+	    right = left + width - 1;
+	    bottom = top + height - 1;
+	    
+	    cy = (height + 1) / 2;
+	    
+	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+	    
+	    for(i = 0; i < cy; i++)
+	    {
+	    	RectFill(rport, left + i * width / cy / 2,
+				top + i,
+				right - (cy - i - 1) * width / cy,
+				top + i);
+		RectFill(rport, left + i * width / cy / 2,
+				bottom - i,
+				right - (cy - i - 1) * width / cy,
+				bottom - i);
+	    }
+	    
+	}	
     	break;
     }
 
@@ -463,26 +609,65 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     {
     	WORD cx;
 	
-    	SetAPen(rport, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rport, JAM1);
-#if 0    	
-	Move(rport, left + SPACING, top + SPACING);	/* Move to upper left */
-    	Draw(rport, left + ((width - SPACING * 2) / 2), top + height - SPACING - 1);
-    	Move(rport, rport->cp_x + 1, rport->cp_y);
-    	Draw(rport, left + width - SPACING - 1, top + SPACING);
-#endif
-	/* Georg Steger */
-	cx = width / 2;
-	
-	Move(rport, left + HSPACING + 1, top + VSPACING);
-	Draw(rport, left + width - cx, top + height - 1 - VSPACING);
-	Move(rport, left + HSPACING, top + VSPACING);
-	Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
-	
-	Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
-	Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
-	Move(rport, left + width - 1 - HSPACING, top + VSPACING);
-	Draw(rport, left + cx, top + height - 1 - VSPACING);
+
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, DOWNIMAGE, msg->imp_State, data->dri->dri_Pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++;top++;
+	    width -= 2;height -= 2; 
+	}
+
+	if (data->flags & SYSIFLG_GADTOOLS)
+	{
+    	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+
+	    cx = width / 2;
+
+	    Move(rport, left + HSPACING + 1, top + VSPACING);
+	    Draw(rport, left + width - cx, top + height - 1 - VSPACING);
+	    Move(rport, left + HSPACING, top + VSPACING);
+	    Draw(rport, left + width - cx - 1, top + height - 1 - VSPACING);
+
+	    Move(rport, left + width - 1 - HSPACING - 1, top + VSPACING);
+	    Draw(rport, left + cx - 1, top + height - 1 - VSPACING);
+	    Move(rport, left + width - 1 - HSPACING, top + VSPACING);
+	    Draw(rport, left + cx, top + height - 1 - VSPACING);
+	}
+	else
+	{
+	    WORD right, bottom, i;
+	    
+	    SetAPen(rport, getbgpen(msg->imp_State, data->dri->dri_Pens));
+	    
+	    RectFill(rport, left, top, left + width - 1, top + height - 1);
+	    	    
+	    left += HSPACING; top += VSPACING;
+	    width -= HSPACING * 2;
+	    height -= VSPACING * 2;
+	    
+	    right = left + width - 1;
+	    bottom = top + height - 1;
+
+	    cx = (width + 1) / 2;
+	    	    
+	    SetAPen(rport, data->dri->dri_Pens[SHADOWPEN]);
+	    
+	    for(i = 0; i < cx; i++)
+	    {
+	    	RectFill(rport, left + i,
+				top + i * height / cx / 2,
+				left + i,
+				bottom - (cx - i - 1) * height / cx);
+	    	RectFill(rport, right - i,
+				top + i * height / cx / 2,
+				right -  i,
+				bottom - (cx - i - 1) * height / cx);
+	    	
+	    }
+	    
+	}
     	break;
     }
 
@@ -490,12 +675,21 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
 
-        WORD h_spacing = width  / 6;
-	WORD v_spacing = height / 6;
+        WORD h_spacing; 
+	WORD v_spacing;
 	
 	WORD right, bottom;
 	
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, DEPTHIMAGE, msg->imp_State, pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left += 2;top++;
+	    width -= 3;height -= 2; 
+	}
 	
+	h_spacing = width / 6;
+	v_spacing = height / 6;
 	
 	bg = getbgpen(msg->imp_State, pens);
 	
@@ -576,11 +770,25 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	
     case CLOSEIMAGE: {
 	UWORD *pens = data->dri->dri_Pens;
-	WORD right = left + width - 1;
-	WORD bottom = top  + height - 1;
-	WORD h_spacing = width * 4 / 10;
-	WORD v_spacing = height * 3 / 10;
+	WORD right;
+	WORD bottom;
+	WORD h_spacing;
+	WORD v_spacing;
 
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, CLOSEIMAGE, msg->imp_State, pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++ ;top++;
+	    width -= 3; /* 3 is no bug! */
+	    height -= 2; 
+	}
+
+	right = left + width - 1;
+	bottom = top + height - 1;
+	h_spacing = width * 4 / 10;
+	v_spacing = height * 3 / 10;
+	
 	SetAPen(rport, getbgpen(msg->imp_State, pens));
 	RectFill(rport,left, top, right, bottom);
 	
@@ -601,10 +809,23 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case ZOOMIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
-	WORD right = left + width - 1;
-	WORD bottom = top + height - 1 ;
-	WORD h_spacing = width / 6;
-	WORD v_spacing = height / 6;
+	WORD right;
+	WORD bottom;
+	WORD h_spacing;
+	WORD v_spacing;
+
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, ZOOMIMAGE, msg->imp_State, pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left += 2;top++;
+	    width -= 3;height -= 2; 
+	}
+
+	right = left + width - 1;
+	bottom = top + height - 1 ;
+	h_spacing = width / 6;
+	v_spacing = height / 6;
 	
 	bg = getbgpen(msg->imp_State, pens);
 	
@@ -642,11 +863,21 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case SIZEIMAGE: {
         UWORD *pens = data->dri->dri_Pens;
 	UWORD bg;
-
-        WORD h_spacing = width  / 5;
-	WORD v_spacing = height / 5;
+        WORD h_spacing;
+	WORD v_spacing;
 	
 	WORD right, bottom, x, y;
+
+	if (!(data->flags & SYSIFLG_NOBORDER))
+	{
+	    renderimageframe(rport, SIZEIMAGE, msg->imp_State, pens,
+	    		     left, top, width, height, IntuitionBase);
+	    left++;top++;
+	    width -= 2;height -= 2; 
+	}
+
+        h_spacing = width  / 5;
+	v_spacing = height / 5;
 	
 	bg = getbgpen(msg->imp_State, pens);
 	
@@ -777,5 +1008,83 @@ static UWORD getbgpen(ULONG state, UWORD *pens)
 	    break;
     }
     return bg;
+}
+
+
+static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWORD *pens,
+			     WORD left, WORD top, WORD width, WORD height,
+			     struct IntuitionBase *IntuitionBase)
+{
+    WORD right = left + width - 1;
+    WORD bottom = top + height - 1;
+    BOOL leftedgegodown = FALSE;
+    BOOL topedgegoright = FALSE;
+    
+    SetDrMd(rp, JAM1);    
+
+    switch(which)
+    {
+    	case CLOSEIMAGE:
+	    /* draw separator line at the right side */
+	    SetAPen(rp, pens[SHINEPEN]);
+	    RectFill(rp, right, top, right, bottom - 1);
+	    SetAPen(rp, pens[SHADOWPEN]);
+	    WritePixel(rp, right, bottom);
+	    
+	    right--;
+	    break;
+	
+	case ZOOMIMAGE:
+	case DEPTHIMAGE:
+	    /* draw separator line at the left side */
+	    SetAPen(rp, pens[SHINEPEN]);
+	    WritePixel(rp, left, top);
+	    SetAPen(rp, pens[SHADOWPEN]);
+	    RectFill(rp, left, top + 1, right, bottom);
+
+	    left++;
+	    break;
+	
+	case UPIMAGE:
+	case DOWNIMAGE:
+	    leftedgegodown = TRUE;
+	    break;
+	
+	case LEFTIMAGE:
+	case RIGHTIMAGE:
+	    topedgegoright = TRUE;
+	    break;
+    }
+
+    if (left == 0) leftedgegodown = TRUE;
+    if (top == 0) topedgegoright = TRUE;
+    
+    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHADOWPEN : SHINEPEN]);
+
+    /* left edge */
+    RectFill(rp, left,
+    		 top,
+		 left,
+		 bottom - (leftedgegodown ? 0 : 1));
+
+    /* top edge */
+    RectFill(rp, left + 1,
+    		 top,
+		 right - (topedgegoright ? 0 : 1),
+		 top);
+    
+    SetAPen(rp, pens[((state == IDS_SELECTED) || (state == IDS_INACTIVESELECTED)) ? SHINEPEN : SHADOWPEN]);
+
+    /* right edge */
+    RectFill(rp, right,
+    		 top + (topedgegoright ? 1 : 0),
+		 right,
+		 bottom);
+
+    /* bottom edge */
+    RectFill(rp, left + (leftedgegodown ? 1 : 0),
+    		 bottom,
+		 right - 1,
+		 bottom);
 }
 
