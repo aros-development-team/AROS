@@ -1,6 +1,6 @@
 
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -57,10 +57,16 @@
 {
     AROS_LIBFUNC_INIT
 
-    if(player == NULL)
-	return;
+    struct Conductor *conductor;
 
-    if(player->pl_Source != NULL)
+    if (player == NULL)
+    {
+	return;
+    }
+
+    conductor = player->pl_Source;
+
+    if (conductor != NULL)
     {
 	APTR lock;
 
@@ -69,10 +75,10 @@
 
 	/* If this was the last player of this conductor, we delete the
 	   conductor, too. */
-	if(IsListEmpty(&player->pl_Source->cdt_Players))
+	if (IsListEmpty(&conductor->cdt_Players))
 	{
-	    Remove((struct Node *)player->pl_Source);
-	    FreeMem(player->pl_Source, sizeof(struct Conductor));
+	    Remove((struct Node *)conductor);
+	    FreeMem(conductor, sizeof(struct Conductor));
 	}
 
 	UnlockRealTime(lock);
