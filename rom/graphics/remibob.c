@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gels_internal.h"
 
 /*****************************************************************************
 
@@ -42,10 +43,12 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+	AROS_LIBFUNC_INIT
+	AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    RemVSprite(bob->BobVSprite);
+	_ClearBobAndFollowClearPath(bob->BobVSprite,
+	                            rp);
+	RemVSprite(bob->BobVSprite);
 
-    AROS_LIBFUNC_EXIT
+	AROS_LIBFUNC_EXIT
 } /* RemIBob */
