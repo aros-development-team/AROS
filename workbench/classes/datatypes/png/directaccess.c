@@ -183,7 +183,6 @@ AROS_LH4(APTR, PNG_LoadImageFH,
 	    
 	    for(i = 0; chunkstoread[i]; i++)
 	    {
-kprintf("** Calling png_set_keep_unknown chunks(%s)\n", chunkstoread[i]);
 	    	png_set_keep_unknown_chunks(png.png_ptr, 3, chunkstoread[i], 1);	    	
 	    }
 	    	    	  				    
@@ -349,7 +348,6 @@ kprintf("** Calling png_set_keep_unknown chunks(%s)\n", chunkstoread[i]);
 		for(infoloop = 0; infoloop < 2; infoloop++)
 		{
 		    int numchunks = png_get_unknown_chunks(png.png_ptr, info, &entries);
-kprintf("png_get_unknown_chunks(%x) %d\n", info, numchunks);
 
 		    while(numchunks--)
 		    {
