@@ -993,8 +993,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
 
     OTAG_FreeGlyphMaps(ge, gm, BulletBase, DiskfontBase);
 
-#warning FIXME: Fix text functions to handle AA data
-/*    if (OTAG_GetAAGlyphMaps(ge,
+    if (OTAG_GetAAGlyphMaps(ge,
 			    gm,
 			    BulletBase,
 			    DiskfontBase))
@@ -1002,7 +1001,7 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
 	if (OTAG_AllocAAData(&dfh->dfh_TF, DiskfontBase))
 	    OTAG_MakeAAData(gm, &dfh->dfh_TF, DiskfontBase);
 	OTAG_FreeAAGlyphMaps(ge, gm, BulletBase, DiskfontBase);
-    }*/
+    }
 
     FreeVec(gm);
     CloseEngine(ge);
