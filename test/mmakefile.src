@@ -5,7 +5,8 @@ EXEDIR := $(BINDIR)/test
 
 %define_libs
 
-FILES := devicetest \
+FILES := amigademo \
+	devicetest \
 	dosvartest \
 	exceptiontest \
 	filetest \
