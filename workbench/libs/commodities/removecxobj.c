@@ -14,6 +14,7 @@
 #include <devices/input.h>
 #include <proto/exec.h>
 #include <proto/commodities.h>
+#include <aros/debug.h>
 
 VOID RemoveHandler(struct CommoditiesBase *CxBase);
 
@@ -72,7 +73,7 @@ VOID RemoveHandler(struct CommoditiesBase *CxBase);
     Remove(&co->co_Node);
     co->co_Flags &= ~COF_VALID;
     
-    if (CXOBJType(co) == CX_BROKER)
+    if ((CXOBJType(co) == CX_BROKER) || (CXOBJType(co) == CX_ZERO))
     {
 	if (IsListEmpty(&GPB(CxBase)->cx_BrokerList))
 	{
