@@ -9,7 +9,7 @@ already, if you use Amiga, install the ADE development environment
 
 \section{Compiling}
 
-\section{AROS extensions *New*}
+\section{AROS extensions}
 
 AROS makes a few extensions to the original AmigaOS. Some of them are
 transparent and compatible, others are only compatible and some or not.

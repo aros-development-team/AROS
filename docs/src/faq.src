@@ -71,7 +71,7 @@ If you want to use AROS' code in your project, you have to pay for this
 code if you earn money with the result. For PD developers, the code is
 still free.
 
-\section{How legal is AROS ? *New*}
+\section{How legal is AROS ?}
 
 Well, European law say "To gain interoperability, it is legal to apply
 reverse engineering techniques. It is illegal to distribute the knowledge
@@ -194,7 +194,7 @@ implement them and we make sure that adding these features will be painless
 but they are no #1 priorities right now. A very basic RT has been added
 recently, though.
 
-\section{Why no AROS on PIOS ONE ? *New*}
+\section{Why no AROS on PIOS ONE ?}
 
 Because no one has a PIOS ONE to do it. We are willing to port AROS on
 any available machine but it must be available to us. We got in
