@@ -11,7 +11,6 @@
 #include <libcore/base.h>
 
 #include <proto/exec.h>
-#include <proto/locale.h>
 #include <proto/timer.h>
 
 #include <aros/symbolsets.h>
@@ -23,7 +22,6 @@
 /*** Variables **************************************************************/
 struct Device      *TimerBase;
 struct timerequest *TimerIO;
-struct LocaleBase  *LocaleBase;
 
 /*** Library startup and shutdown *******************************************/
 AROS_SET_LIBFUNC( Calendar_Startup, LIBBASETYPE, LIBBASE )
@@ -32,7 +30,6 @@ AROS_SET_LIBFUNC( Calendar_Startup, LIBBASETYPE, LIBBASE )
     
     TimerIO    = NULL;
     TimerBase  = NULL;
-    LocaleBase = NULL;
     
     TimerIO = AllocMem( sizeof( struct timerequest ), MEMF_CLEAR );
     if( TimerIO == NULL ) goto error;
@@ -43,14 +40,10 @@ AROS_SET_LIBFUNC( Calendar_Startup, LIBBASETYPE, LIBBASE )
         TimerBase = (struct Device *) TimerIO->tr_node.io_Device;
     else
         goto error;
-        
-    LocaleBase = (struct LocaleBase *) OpenLibrary( "locale.library", 0 );
-    if( LocaleBase == NULL ) goto error;
-        
+           
     return TRUE;
 
 error:
-    if( LocaleBase != NULL ) CloseLibrary( (struct Library *) LocaleBase );
     if( TimerBase != NULL ) CloseDevice( TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
     
@@ -59,7 +52,6 @@ error:
 
 AROS_SET_LIBFUNC( Calendar_Shutdown, LIBBASETYPE, LIBBASE )
 {
-    if( LocaleBase != NULL ) CloseLibrary( (struct Library *) LocaleBase );
     if( TimerBase != NULL ) CloseDevice( TimerIO );
     if( TimerIO != NULL ) FreeMem( TimerIO, sizeof( struct timerequest ) );
 }
