@@ -9,8 +9,19 @@ BASENAME  := MUIMaster
 LIBPOST   := library
 DESTDIR   := $(SLIBDIR)
 
-FILES     := muimaster_init
-
+CLASSES   := application \
+    	     area \
+	     family \
+	     group \
+	     notify \
+	     window \
+	     text
+	
+CLASSFILES:= $(foreach f, $(CLASSES), classes/$(f))
+     
+FILES     := muimaster_init support support textengine \
+    	     frame prefs $(CLASSFILES)
+    	    
 FUNCTIONS := \
 	mui_addclipping \
 	mui_addclipregion \
@@ -52,7 +63,7 @@ workbench-libs-muimaster-quick : $(SLIB)
 
 #MM
 setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR)
+	%mkdirs_q $(OBJDIR) $(OBJDIR)/classes $(LIBDIR) $(SLIBDIR)
 
 #MM
 clean ::

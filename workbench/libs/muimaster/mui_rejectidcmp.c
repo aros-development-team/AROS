@@ -7,6 +7,9 @@
 */
 
 #include <intuition/classusr.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 
@@ -16,14 +19,14 @@
 #ifndef _AROS
 __asm VOID MUI_RejectIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
 #else
-	AROS_LH2(ULONG, MUI_RejectIDCMP,
+	AROS_LH2(VOID, MUI_RejectIDCMP,
 
 /*  SYNOPSIS */
 	AROS_LHA(Object *, obj, A0),
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 16, MUIMaster)
+	struct Library *, MUIMasterBase, 16, MUIMaster)
 #endif
 /*  FUNCTION
 

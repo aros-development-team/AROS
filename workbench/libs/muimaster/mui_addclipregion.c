@@ -9,6 +9,9 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 #include <proto/intuition.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -19,14 +22,14 @@
 #ifndef _AROS
 __asm APTR MUI_AddClipRegion(register __a0 struct MUI_RenderInfo *mri, register __a1 struct Region *r)
 #else
-	AROS_LH2(ULONG, MUI_AddClipRegion,
+	AROS_LH2(APTR, MUI_AddClipRegion,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct MUI_RenderInfo, mri, A0),
-	AROS_LHA(struct Region, r, A1),
+	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+	AROS_LHA(struct Region *, r, A1),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 26, MUIMaster)
+	struct Library *, MUIMasterBase, 26, MUIMaster)
 #endif
 /*  FUNCTION
 

@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include <exec/types.h>
+#include <exec/memory.h>
 
 #include <clib/alib_protos.h>
 #include <intuition/screens.h>
@@ -146,8 +147,11 @@ struct line_pos_datas {
 
 /** Declarations **********************/
 
+struct zune_context;
+
 static ZTextLine *zune_text_parse_line (STRPTR *s, struct zune_context *zc,
 					int *argtype, TEXT arg);
+
 
 /************************/
 
@@ -192,8 +196,8 @@ struct zune_context
 ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
 {
     ZText *text;
-    STRPTR *lines;
-    int i;
+    /* STRPTR *lines; */
+    /* int i; */
     char *dup_content, *buf;
     int preparse_len;
     struct zune_context zc;
@@ -221,7 +225,7 @@ ZText *zune_text_new (STRPTR preparse, STRPTR content, int argtype, TEXT arg)
 
     while (*buf)
     {
-	struct ZTextLine *ztl = zune_text_parse_line(&buf, &zc, &argtype, arg);
+	struct ZTextLine *ztl = zune_text_parse_line((STRPTR *)&buf, &zc, &argtype, arg);
 	if (ztl) AddTail((struct List*)&text->lines,(struct Node*)ztl);
 	else break;
 	if (*buf == '\n') buf++;

@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
+
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -20,7 +24,7 @@ __asm VOID MUI_FreeClass(register __a0 struct IClass *classptr)
 	AROS_LHA(struct IClass *, classptr, A0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 14, MUIMaster)
+	struct Library *, MUIMasterBase, 14, MUIMaster)
 #endif
 /*  FUNCTION
 

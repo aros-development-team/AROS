@@ -25,6 +25,9 @@
 #include <proto/intuition.h>
 #include <proto/utility.h>
 #include <proto/graphics.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "classes/window.h"
@@ -218,7 +221,7 @@ void UndisplayWindow(struct MUI_WindowData *data)
             /* remove all messages pending for this window */
             Forbid();
             for (msg  = (struct IntuiMessage *)win->UserPort->mp_MsgList.lh_Head;
-                 succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ;
+                 (succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ);
                  msg  = succ)
             {
                 if (msg->IDCMPWindow == win)
@@ -479,9 +482,9 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
     ULONG res;
 
     if (ehn->ehn_Class)
-	res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, event, muikey);
+	res = CoerceMethod(ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
     else
-	res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, event, muikey);
+	res = DoMethod(ehn->ehn_Object, MUIM_HandleEvent, (IPTR)event, muikey);
     return res;
 }
 
@@ -846,7 +849,7 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -944,7 +947,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem        *tags = msg->ops_AttrList;
     struct TagItem        *tag;
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{

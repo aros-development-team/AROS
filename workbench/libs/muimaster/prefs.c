@@ -23,6 +23,10 @@
 
 #include <proto/exec.h>
 #include <proto/graphics.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+extern struct Library *MUIMasterBase;
+#endif
 
 #include "muimaster_intern.h"
 #include "mui.h"
@@ -240,7 +244,7 @@ static void prefs_init_keys (struct ZunePrefs *prefs)
 {
     int i;
 
-#waring FIXME: muikeys
+#warning FIXME: muikeys
 #if 0
     prefs->muikeys[MUIKEY_PRESS].readable_hotkey = g_strdup("Return");
     prefs->muikeys[MUIKEY_TOGGLE].readable_hotkey = g_strdup("space");
@@ -416,7 +420,7 @@ void __zune_prefs_release(struct ZunePrefs *prefs)
     g_free(prefs->dragndrop_left_modifier);
     g_free(prefs->dragndrop_middle_modifier);
 
-#waring FIXME: keys
+#warning FIXME: keys
 #if 0
   for (i = 0; i < MUIKEY_COUNT; i++)
 	g_free(prefs->muikeys[i].readable_hotkey);

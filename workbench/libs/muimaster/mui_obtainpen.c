@@ -8,6 +8,9 @@
 
 #include <exec/types.h>
 #include <proto/graphics.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -21,12 +24,12 @@ __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1
 	AROS_LH3(LONG, MUI_ObtainPen,
 
 /*  SYNOPSIS */
-	AROS_LHA(register __a0 struct MUI_RenderInfo *, mri, A0),
-	AROS_LHA(register __a1 struct MUI_PenSpec *, spec, A1),
+	AROS_LHA(struct MUI_RenderInfo *, mri, A0),
+	AROS_LHA(struct MUI_PenSpec *, spec, A1),
 	AROS_LHA(ULONG, flags, D0),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 22, MUIMaster)
+	struct Library *, MUIMasterBase, 22, MUIMaster)
 #endif
 /*  FUNCTION
 

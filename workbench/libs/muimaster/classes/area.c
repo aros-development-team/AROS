@@ -26,6 +26,9 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 extern struct Library *MUIMasterBase;
 
@@ -156,7 +159,7 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -324,7 +327,7 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem             *tags  = msg->ops_AttrList;
     struct TagItem             *tag;
 
-    while ((tag = NextTagItem(&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -554,7 +557,7 @@ static ULONG Area_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     msg->MinMaxInfo->MinWidth = _subwidth(obj);
     if (data->mad_TitleText)
     {
-#waring FIXME: mAskMinMax
+#warning FIXME: mAskMinMax
 #if 0
 	GdkFont *obj_font = _font(obj);
 
@@ -645,6 +648,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
     _defwidth(obj) = MinMaxInfo->DefWidth;
     _defheight(obj) = MinMaxInfo->DefHeight;
 }
+
 
 /**************************************************************************
  MUIM_Draw
@@ -952,7 +956,7 @@ static void setup_control_char (struct MUI_AreaData *data, Object *obj, struct I
 	data->mad_ccn.ehn_Priority = 0;
 	data->mad_ccn.ehn_Object = obj;
 	data->mad_ccn.ehn_Class = cl;
-	DoMethod(_win(obj), MUIM_Window_AddControlCharHandler, &data->mad_ccn);
+	DoMethod(_win(obj), MUIM_Window_AddControlCharHandler, (IPTR)&data->mad_ccn);
     }    
 }
 
@@ -963,7 +967,7 @@ cleanup_control_char (struct MUI_AreaData *data, Object *obj)
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
 	DoMethod(_win(obj),
-		 MUIM_Window_RemControlCharHandler, &data->mad_ccn);
+		 MUIM_Window_RemControlCharHandler, (IPTR)&data->mad_ccn);
     }
 }
 
@@ -1027,7 +1031,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
 	DoMethod(_win(obj),
-		 MUIM_Window_AddEventHandler, &data->mad_ehn);
+		 MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
     }
     setup_control_char (data, obj, cl);
     setup_cycle_chain (data, obj);
@@ -1093,7 +1097,7 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 
     if (data->mad_InputMode != MUIV_InputMode_None)
     {
-	DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
     }
 
 #warning FIXME: mad_Background
@@ -1338,7 +1342,7 @@ handle_release(struct IClass *cl, Object *obj)
 	    set(obj, MUIA_Pressed, FALSE);
 	    set(obj, MUIA_Selected, FALSE);
 	}
-#if defined(_AROS) || (_AMIGA)
+#if defined(_AROS) || defined(_AMIGA)
 #warning FIXME: input timeout
 #else
 	if (data->mad_Timeout_id)
@@ -1378,9 +1382,9 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
             handle_press(cl, obj);
             if (data->mad_InputMode == MUIV_InputMode_RelVerify)
             {
-                DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+                DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
                 data->mad_ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-                DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+                DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
             }
             return MUI_EventHandlerRC_Eat;
         }
@@ -1389,9 +1393,9 @@ event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
     case SELECTUP:
         if (data->mad_ehn.ehn_Events & IDCMP_MOUSEMOVE)
         {
-            DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
+            DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
             data->mad_ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
-            DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
+            DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
             if (!in)
                 nnset(obj, MUIA_Pressed, FALSE);
             handle_release(cl, obj);
@@ -1659,7 +1663,7 @@ static ULONG Area_Export(struct IClass *cl, Object *obj, struct MUIP_Export *msg
 
     if ((id = muiNotifyData(obj)->mnd_ObjectID))
     {
-#waring FIXME: Export
+#warning FIXME: Export
 #if 0
 	DoMethod(msg->dataspace, MUIM_Dataspace_AddInt,
 		 id, "selected",

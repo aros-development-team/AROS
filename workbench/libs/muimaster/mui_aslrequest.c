@@ -7,6 +7,9 @@
 */
 
 #include <proto/asl.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "muimaster_intern.h"
 
@@ -16,14 +19,14 @@
 #ifndef _AROS
 __asm BOOL MUI_AslRequest(register __a0 APTR requester, register __a1 struct TagItem *tagList)
 #else
-	AROS_LH2(BOOL, MUI_RequestA,
+	AROS_LH2(BOOL, MUI_AslRequest,
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR, requester, A0),
 	AROS_LHA(struct TagItem *, tagList, A1),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 9, MUIMaster)
+	struct Library *, MUIMasterBase, 9, MUIMaster)
 #endif
 /*  FUNCTION
 

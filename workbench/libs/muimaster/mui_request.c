@@ -6,6 +6,10 @@
     Lang: english
 */
 
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
+
 #include "muimaster_intern.h"
 
 /*****************************************************************************
@@ -19,14 +23,14 @@ __asm LONG MUI_RequestA(register __d0 APTR app, register __d1 APTR win, register
 /*  SYNOPSIS */
 	AROS_LHA(APTR, app, D0),
 	AROS_LHA(APTR, win, D1),
-	AROS_LHA(LONGBITS, flags, D2),
+	AROS_LHA(LONG, flags, D2),
 	AROS_LHA(char *, title, A0),
 	AROS_LHA(char *, gadgets, A1),
 	AROS_LHA(char *, format, A2),
 	AROS_LHA(APTR, params, A3),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 7, MUIMaster)
+	struct Library *, MUIMasterBase, 7, MUIMaster)
 #endif
 /*  FUNCTION
 

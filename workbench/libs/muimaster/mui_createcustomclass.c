@@ -10,6 +10,9 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/dos.h>
+#ifdef _AROS
+#include <proto/muimaster.h>
+#endif
 
 #include "mui.h"
 #include "muimaster_intern.h"
@@ -31,7 +34,7 @@ __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library
 	AROS_LHA(APTR, dispatcher, A3),
 
 /*  LOCATION */
-	struct MUIMasterBase *, MUIMasterBase, 18, MUIMaster)
+	struct Library *, MUIMasterBase, 18, MUIMaster)
 #endif
 /*  FUNCTION
 
@@ -95,6 +98,8 @@ __asm struct MUI_CustomClass *MUI_CreateCustomClass(register __a0 struct Library
     cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC)dispatcher;
     cl->cl_Dispatcher.h_Data     = base;
 
+    return mcc;
+    
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_CreateCustomClass */
