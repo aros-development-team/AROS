@@ -30,7 +30,7 @@
 
 /* 
     With the following define a typical dispatcher will looks like this:
-    BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg) 
+    BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 */
 #define BOOPSI_DISPATCHER(rettype,name,cl,obj,msg) \
     AROS_UFH3(SAVEDS rettype, name,\
@@ -64,33 +64,33 @@ struct __MUIBuiltinClass {
     !defined(NO_INLINE_STDARG)           && \
     !defined(__SASC)
 
-#define MUIOBJMACRO_START(class)    \
-({                                  \
-     STRPTR __class = class;        \
+#define MUIOBJMACRO_START(class)   \
+({                                 \
+     STRPTR __class = class;       \
+     enum { __ismuiobjmacro = 1 }; \
      IPTR __tags[] = {0
-
-#define MUIOBJMACRO_END                                       \
-     TAG_DONE};                                               \
-     MUI_NewObjectA(__class, (struct TagItem *)(__tags + 1)); \
-})
 
 #define BOOPSIOBJMACRO_START(class) \
 ({                                  \
-     Class * __class = class;       \
+     Class  *__class = class;       \
+     enum { __ismuiobjmacro = 0 };  \
      IPTR __tags[] = {0
 
-#define BOOPSIOBJMACRO_END                                      \
-     TAG_DONE};                                                 \
-     NewObjectA(__class, NULL, (struct TagItem *)(__tags + 1)); \
+#define OBJMACRO_END                                                          \
+     TAG_DONE};                                                               \
+     (                                                                        \
+         __ismuiobjmacro                                                      \
+         ? MUI_NewObjectA((STRPTR)__class, (struct TagItem *)(__tags + 1))    \
+         : NewObjectA((Class *)__class, NULL, (struct TagItem *)(__tags + 1)) \
+     );                                                                       \
 })
 
 #else
 
 #define MUIOBJMACRO_START(class) MUI_NewObject(class
-#define MUIOBJMACRO_END TAG_DONE)
-
 #define BOOPSIOBJMACRO_START(class) NewObject(class, NULL
-#define BOOPSIOBJMACRO_END TAG_DONE)
+
+#define OBJMACRO_END TAG_DONE)
 
 #endif
 

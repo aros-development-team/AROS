@@ -61,7 +61,7 @@ int main(int argc, char **argv)
     application = ExecuteCommandObject,
         MUIA_ExecuteCommand_Parent,  (IPTR) parent,
         MUIA_ExecuteCommand_Initial, (IPTR) initial,
-    EndBoopsi;
+    End;
     
     if (application != NULL)
     {

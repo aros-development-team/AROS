@@ -669,7 +669,7 @@ STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
                             MUIA_IconWindow_IsRoot, FALSE,
                             MUIA_IconWindow_ActionHook, &hook_action,
                             MUIA_IconWindow_Drawer, buf,
-                        EndBoopsi;
+                        End;
         
                         if (drawerwnd)
                         {
@@ -1006,7 +1006,7 @@ AROS_UFH3(void, hook_func_action,
 		    MUIA_IconWindow_IsRoot, FALSE,
 		    MUIA_IconWindow_ActionHook, &hook_action,
 		    MUIA_IconWindow_Drawer, buf,
-		EndBoopsi;
+		End;
 
 		if (drawerwnd)
 		{
@@ -1145,8 +1145,8 @@ int main(void)
             MUIA_IconWindow_IsRoot, TRUE,
 	    MUIA_IconWindow_IsBackdrop, TRUE,
 	    MUIA_IconWindow_ActionHook, &hook_action,
-	    EndBoopsi,
-	EndBoopsi;
+	    End,
+	End;
 
     if (app)
     {

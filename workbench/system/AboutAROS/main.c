@@ -47,7 +47,7 @@ int main()
     if (!Locale_Initialize()) Cleanup("Locale!");
     if (!AboutAROS_Initialize()) Cleanup("Classes!");
     
-    if ((application = AboutAROSObject, EndBoopsi) != NULL)
+    if ((application = AboutAROSObject, End) != NULL)
     {
         DoMethod(application, MUIM_Application_Execute);
         

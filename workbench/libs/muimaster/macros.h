@@ -74,8 +74,7 @@
 #define PageGroupV          MUIOBJMACRO_START(MUIC_Virtgroup), MUIA_Group_PageMode, TRUE
 #define RegisterGroup(ts)   MUIOBJMACRO_START(MUIC_Register), MUIA_Register_Titles, ((IPTR) (ts))
 
-#define End                 MUIOBJMACRO_END
-#define EndBoopsi           BOOPSIOBJMACRO_END
+#define End                 OBJMACRO_END
 
 #define Child               MUIA_Group_Child
 #define SubWindow           MUIA_Application_Window
