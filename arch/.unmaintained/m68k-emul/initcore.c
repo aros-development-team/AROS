@@ -27,7 +27,7 @@ static void signals(int sig)
     AROS_UFC2(void,iv->iv_Code,
     	AROS_UFCA(APTR,iv->iv_Data,A1),
     	AROS_UFCA(struct ExecBase *,SysBase,A6));
-    AROS_ASMSYMNAME(disable)();
+    disable();
     supervisor--;
     if(SysBase->AttnResched&0x8000)
     {
