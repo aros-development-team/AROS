@@ -260,6 +260,7 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem       *tags  = msg->ops_AttrList;
     struct TagItem       *tag;
     BOOL forward = TRUE;
+    int virt_offx = data->virt_offx, virt_offy = data->virt_offy;
 
 /* There are many ways to find out what tag items provided by set()
 ** we do know. The best way should be using NextTagItem() and simply
@@ -295,12 +296,31 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Group_VertSpacing:
 		data->vert_spacing = tag->ti_Data;
 		break;
+	    case MUIA_Virtgroup_Left:
+	    	virt_offx = tag->ti_Data;
+	    	break;
+
+	    case MUIA_Virtgroup_Top:
+	    	virt_offy = tag->ti_Data;
+	    	break;
 	}
     }
 
     /* seems to be the documented behaviour, however it should be slow! */
     if (forward)
 	Group_DispatchMsg(cl, obj, (Msg)msg);
+
+    if (virt_offx != data->virt_offx || virt_offy != data->virt_offy)
+    {
+	if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
+	data->virt_offx = virt_offx;
+	data->virt_offy = virt_offy;
+	/* Relayout ourself, this will also relayout all the children */
+	DoMethod(obj,MUIM_Layout);
+	if (_flags(obj) & MADF_CANDRAW) Group_Show(cl,obj,NULL);
+	/* Needs to be optimized! */
+	MUI_Redraw(obj,MADF_DRAWOBJECT);
+    }
 
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
@@ -330,13 +350,24 @@ static ULONG Group_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	case MUIA_Virtgroup_Height: STORE = data->virt_mheight; return 1;
     }
 
-    /* seems to be the documented behaviour, however it should be slow! */
-    Group_DispatchMsg(cl, obj, (Msg)msg);
-
     /* our handler didn't understand the attribute, we simply pass
     ** it to our superclass now
     */
-    return DoSuperMethodA(cl, obj, (Msg) msg);
+    if (DoSuperMethodA(cl, obj, (Msg) msg)) return 1;
+
+    /* seems to be the documented behaviour, however it should be slow! */
+    {
+	struct MUI_GroupData *data = INST_DATA(cl, obj);
+	Object               *cstate;
+	Object               *child;
+	struct MinList       *ChildList;
+
+	get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+	cstate = (Object *)ChildList->mlh_Head;
+	while ((child = NextObject(&cstate)))
+	    if (DoMethodA(child, (Msg)msg)) return 1;
+    }
+    return 0;
 #undef STORE
 }
 
@@ -1098,6 +1129,10 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
      * pass 2 : distribute space. Minimum space is available,
      * bonus space is distributed according to weights
      */
+
+    /* The real height of the object */
+    data->virt_mheight = 0;
+
     cstate = (Object *)children->mlh_Head;
     while ((child = NextObject(&cstate)))
     {
@@ -1110,7 +1145,17 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	/* center child if group height is bigger than maxheight */
 	height = MIN(_maxheight(child), _mheight(obj));
 	height = MAX(height, _minheight(child));
+	if (height > data->virt_mheight) data->virt_mheight = height;
 	top = (_mheight(obj) - height) / 2;
+
+	if (data->flags & GROUP_VIRTUAL)
+	{
+	    /* This is alao true for non virtual groups, but if this would be the case
+	    ** then there is a bug in the layout function
+	    */
+	    if (top < 0) top = 0;
+	}
+
 	width = (_flags(child) & MADF_MAXSIZE) ?
 	    _maxwidth(child) : _minwidth(child);
 	if (has_variable_width && data->horiz_weight_sum)
@@ -1136,7 +1181,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
     if (data->flags & GROUP_VIRTUAL)
     {
 	data->virt_mwidth = left - data->horiz_spacing;
-	data->virt_mheight = _mheight(obj);
+//	data->virt_mheight = _mheight(obj);
     }
 }
 
@@ -1820,6 +1865,7 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 	switch (msg->imsg->Class)
 	{
 	    case    IDCMP_MOUSEBUTTONS:
+		    /* For virtual groups */
 	            if (msg->imsg->Code == SELECTDOWN)
 	            {
 	            	if (_between(_mleft(obj),msg->imsg->MouseX,_mright(obj)) && _between(_mtop(obj),msg->imsg->MouseY,_mbottom(obj)))
@@ -1871,14 +1917,11 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
 
 			if (new_virt_offx != data->virt_offx || new_virt_offy != data->virt_offy)
 			{
-			    if (_flags(obj) & MADF_CANDRAW) Group_Hide(cl,obj,NULL);
-			    data->virt_offx = new_virt_offx;
-			    data->virt_offy = new_virt_offy;
-			    /* Relayout ourself, this will also relayout all the children */
-			    DoMethod(obj,MUIM_Layout);
-			    if (_flags(obj) & MADF_CANDRAW) Group_Show(cl,obj,NULL);
-			    /* Needs to be optimized! */
-			    MUI_Redraw(obj,MADF_DRAWOBJECT);
+			    SetAttrs(obj,
+				MUIA_Virtgroup_Left, new_virt_offx,
+				MUIA_Virtgroup_Top, new_virt_offy,
+				MUIA_Group_Forward, FALSE,
+			    	TAG_DONE);
 			}
 	            }
 		    break;
