@@ -11,7 +11,6 @@
 #include <aros/machine.h>
 #include <aros/config.h>
 #include <proto/exec.h>
-#include "exec_pdefs.h"
 #include "etask.h"
 #include "exec_util.h"
 
