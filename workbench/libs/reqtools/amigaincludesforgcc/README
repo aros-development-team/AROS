@@ -1,0 +1,8 @@
+; To install this files do this:
+
+copy clib/reqtools_protos.h gg:os-include/clib
+copy libraries/reqtools.h gg:os-include/libraries
+
+copy inline/reqtools.h gg:include/inline
+copy proto/reqtools.h gg:include/proto
+

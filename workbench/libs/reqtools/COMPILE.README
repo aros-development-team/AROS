@@ -1,0 +1,36 @@
+How to compile reqtools.library for Amiga:
+
+NOTES:
+
+- This will compile a C only version. No assembly files are used.
+
+
+REQUIREMENTS:
+
+- Geek Gadgets. Might also work with older versions of GCC, but
+  you need at least one which supports registerized parameters.
+
+  
+COMPILING:
+
+- Make sure the GG environment is "initialized":
+
+    stack 500000
+    execute GG:Sys/S/GG-Startup
+  
+- First install the include files:
+
+    cd amigaincludesforgcc
+    multiview README
+    execute README
+
+- Then compile the library
+
+    cd /
+    make -f Makefile.gcc
+
+- This will create the reqtools.library file in RAM:
+
+
+--
+Georg Steger <georg.steger@rolmail.net>
