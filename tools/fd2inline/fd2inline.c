@@ -116,7 +116,7 @@ char*
 NewString(char** new, const char* old)
 {
    const char *high;
-   ulong len;
+   unsigned long len;
 
    while (*old && (*old==' ' || *old=='\t'))
       old++;
@@ -309,12 +309,12 @@ typedef enum {FD_PRIVATE=1, FD_SHADOW=2} fdflags;
 
 typedef struct
 {
-   FILE*    file;	      /* the file we're reading from	  */
-   char	    line[fF_BUFSIZE]; /* the current line		  */
-   ulong    lineno;	      /* current line number		  */
-   long	    offset;	      /* current fd offset (-bias)	  */
-   Error    error;	      /* is everything o.k.		  */
-   fdflags  flags;	      /* for ##private, ##shadow (p.OS)	  */
+   FILE*         file;	      /* the file we're reading from	  */
+   char	         line[fF_BUFSIZE]; /* the current line		  */
+   unsigned long lineno;      /* current line number		  */
+   long	         offset;      /* current fd offset (-bias)	  */
+   Error         error;	      /* is everything o.k.		  */
+   fdflags       flags;	      /* for ##private, ##shadow (p.OS)	  */
 } fdFile;
 
 fdFile*
@@ -1127,7 +1127,7 @@ fD_parsefd(fdDef* obj, fdFile* infile)
 {
    enum parse_info { name, params, regs, ready } parsing;
    char *buf, *bpoint, *bnext;
-   ulong index;
+   unsigned long index;
 
    if (obj && infile && fF_GetError(infile)==false)
    {
