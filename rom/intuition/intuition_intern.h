@@ -72,80 +72,80 @@
    
 struct LayerContext
 {
-    struct Region *clipregion;
-    WORD scroll_x;
-    WORD scroll_y;
-    WORD nestcount;
+    struct Region 		* clipregion;
+    WORD 			scroll_x;
+    WORD 			scroll_y;
+    WORD 			nestcount;
 };
 
 struct IntIntuitionBase
 {
-    struct IntuitionBase IBase;
+    struct IntuitionBase 	IBase;
 
     /* Put local shit here, invisible for the user */
-    struct GfxBase	   * GfxBase;
-    struct Library         * LayersBase;
-    struct ExecBase	   * SysBase;
-    struct UtilityBase	   * UtilBase;
-    struct Library	   * BOOPSIBase;
-    struct Library	   * KeymapBase;
-    struct Library         * DOSBase;
-    struct Library	   * TimerBase;
-    struct MsgPort	   * TimerMP;
-    struct timerequest	   * TimerIO;
+    struct GfxBase	   	* GfxBase;
+    struct Library         	* LayersBase;
+    struct ExecBase	   	* SysBase;
+    struct UtilityBase	   	* UtilBase;
+    struct Library	   	* BOOPSIBase;
+    struct Library	   	* KeymapBase;
+    struct Library         	* DOSBase;
+    struct Library	   	* TimerBase;
+    struct MsgPort	   	* TimerMP;
+    struct timerequest	   	* TimerIO;
 
-    struct MsgPort	   * WorkBenchMP;
-    struct Screen	   * WorkBench;
-    struct SignalSemaphore * IBaseLock;
+    struct MsgPort	   	* WorkBenchMP;
+    struct Screen	   	* WorkBench;
+    struct SignalSemaphore 	* IBaseLock;
 
     /* Intuition input handlers replyport. This one is set
     int rom/inputhandler.c/InitIIH()
     */
-    struct MsgPort	   * IntuiReplyPort;
-    struct MinList	   * IntuiDeferedActionQueue;
-    struct IOStdReq	   * InputIO;
-    struct MsgPort	   * InputMP;
-    BOOL		     InputDeviceOpen;
-    struct Interrupt	   * InputHandler;
+    struct MsgPort	   	* IntuiReplyPort;
+    struct MinList	  	* IntuiDeferedActionQueue;
+    struct IOStdReq	  	* InputIO;
+    struct MsgPort	  	* InputMP;
+    BOOL		     	InputDeviceOpen;
+    struct Interrupt	   	* InputHandler;
 
-    struct Hook		   *GlobalEditHook;
+    struct Hook		   	* GlobalEditHook;
     /* The default global edit hook */
-    struct Hook		   DefaultEditHook;
+    struct Hook		  	DefaultEditHook;
     
-    APTR		     DriverData; /* Pointer which the driver may use */
+    APTR		     	DriverData; /* Pointer which the driver may use */
 
-    struct Screen	    *DefaultPubScreen;
-    struct SignalSemaphore   PubScrListLock;
-    struct MinList	     PubScreenList;
-    UWORD                    pubScrGlobalMode;
+    struct Screen	    	* DefaultPubScreen;
+    struct SignalSemaphore   	PubScrListLock;
+    struct MinList	     	PubScreenList;
+    UWORD                    	pubScrGlobalMode;
 
-    struct SignalSemaphore   GadgetLock;
-    struct SignalSemaphore   MenuLock;
-    struct SignalSemaphore   DeferedActionLock;
-    struct LayerContext      BackupLayerContext;
+    struct SignalSemaphore   	GadgetLock;
+    struct SignalSemaphore   	MenuLock;
+    struct SignalSemaphore   	DeferedActionLock;
+    struct LayerContext      	BackupLayerContext;
     
-    struct IClass *dragbarclass;
-    struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
-    struct IClass *sizebuttonclass;
+    struct IClass 		* dragbarclass;
+    struct IClass 		* tbbclass; /* Titlebar button class. (close, zoom, depth) */
+    struct IClass 		* sizebuttonclass;
     
-    struct Preferences	    *DefaultPreferences;
-    struct Preferences	    *ActivePreferences;
+    struct Preferences	   	* DefaultPreferences;
+    struct Preferences	    	* ActivePreferences;
     
-    struct MsgPort	    *MenuHandlerPort;
-    BOOL		    MenusActive;
+    struct MsgPort	    	* MenuHandlerPort;
+    BOOL		    	MenusActive;
 };
 
 struct IntScreen
 {
-    struct Screen Screen;
+    struct Screen 		Screen;
 
     /* Private fields */
-    struct DrawInfo DInfo;
-    struct TextAttr textattr;
-    UWORD  Pens[NUMDRIPENS];
-    struct PubScreenNode *pubScrNode;
-    Object *depthgadget;
-    UWORD  SpecialFlags;
+    struct DrawInfo 		DInfo;
+    struct TextAttr 		textattr;
+    UWORD  			Pens[NUMDRIPENS];
+    struct PubScreenNode 	* pubScrNode;
+    Object 			* depthgadget;
+    UWORD  			SpecialFlags;
 };
 
 #define GetPrivScreen(s)	((struct IntScreen *)s)
@@ -157,10 +157,10 @@ struct IntScreen
 
 struct IntRequestUserData
 {
-    ULONG    IDCMP;
-    STRPTR * GadgetLabels;
-    struct Gadget *Gadgets;
-    UWORD NumGadgets;
+    ULONG    			IDCMP;
+    STRPTR 			* GadgetLabels;
+    struct Gadget 		* Gadgets;
+    UWORD 			NumGadgets;
 };
 
 
@@ -276,7 +276,7 @@ enum {
 	      
 struct IntWindow
 {
-    struct Window window;
+    struct Window		window;
     
     /* This message is sent to the intuition input handler when
        a window should be closed. We allocate it
@@ -284,34 +284,43 @@ struct IntWindow
        since CloseWindow() may not fail.
     */
        
-    struct DeferedActionMessage *closeMessage;
-    Object * sysgads[NUM_SYSGADS];
-    struct Image *AmigaKey;
-    struct Image *Checkmark;
-    
+    struct DeferedActionMessage * closeMessage;
+    Object 			* sysgads[NUM_SYSGADS];
+    struct Image		* AmigaKey;
+    struct Image 		* Checkmark;
+    struct Window		* menulendwindow;
+
     /* When the Zoom gadget is pressed the window will have the
        dimensions stored here. The old dimensions are backed up here
        again. */
-    WORD ZipLeftEdge;
-    WORD ZipTopEdge;
-    WORD ZipWidth;
-    WORD ZipHeight;
+    WORD 			ZipLeftEdge;
+    WORD 			ZipTopEdge;
+    WORD 			ZipWidth;
+    WORD 			ZipHeight;
     
     /* max. number of mousemove events to send to this window */
-    WORD mousequeue;
+    WORD 			mousequeue;
+    
     /* act. number of mousemove events sent to this window */
-    WORD num_mouseevents;
+    WORD 			num_mouseevents;
+    
     /* max. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
        messages to send to this window */
-    WORD repeatqueue;
+    WORD 			repeatqueue;
+    
     /* act. number of repeated IDCMP_RAWKEY, IDCMP_VANILLAKEY and IDCMP_IDCMPUPDATE
        messages sent to this window */
-    WORD num_repeatevents;
+    WORD 			num_repeatevents;
     
-    WORD sizeimage_width;
-    WORD sizeimage_height;
+    WORD 			sizeimage_width;
+    WORD 			sizeimage_height;
+    
+    ULONG			helpflags;
+    ULONG			helpgroup;
 };
 
+#define HELPF_ISHELPGROUP  1
+#define HELPF_GADGETHELP   2
 
 #define IS_NOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? TRUE  : FALSE)
 #define IS_DOCAREREFRESH(win) (((win)->Flags & WFLG_NOCAREREFRESH) ? FALSE : TRUE )
@@ -326,18 +335,18 @@ Another note: Maybe use a union here to save space.
 
 struct DeferedActionMessage
 {
-    struct Message  ExecMessage;
-    UWORD           Code; 
-    struct Window * Window;
-    struct Window * BehindWindow; /* only used by MoveWindowInFrontOf */
-    struct Gadget * Gadget;
-    struct Task   * Task;
-    WORD            dx;           /* used by MoveLayer, SizeLayer */
-    WORD            dy;           /* used by MoveLayer, SizeLayer */
-    LONG	    left;
-    LONG	    top;
-    LONG	    width;
-    LONG 	    height;
+    struct Message  		ExecMessage;
+    UWORD           		Code; 
+    struct Window 		* Window;
+    struct Window 		* BehindWindow; /* only used by MoveWindowInFrontOf */
+    struct Gadget 		* Gadget;
+    struct Task   		* Task;
+    WORD            		dx;           /* used by MoveLayer, SizeLayer */
+    WORD           		dy;           /* used by MoveLayer, SizeLayer */
+    LONG	    		left;
+    LONG	    		top;
+    LONG	    		width;
+    LONG 	    		height;
     
 };
 
@@ -364,6 +373,9 @@ enum
 					       it's depth arranged */
 
 #define WMFLG_DO_UNLOCKPUBSCREEN (1 << 1)
+#define WMFLG_MENUHELP		 (1 << 2)
+#define WMFLG_POINTERDELAY	 (1 << 3)
+#define WMFLG_TABLETMESSAGES	 (1 << 4)
 					      
 /* Called by intuition to free a window */
 VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase);
