@@ -74,7 +74,7 @@ $(SPECS) :
 mmake : $(TOP)/tools/MetaMake/Makefile $(MMAKE)
 
 $(TOP)/tools/MetaMake/configure : $(TOP)/tools/MetaMake/configure.in
-	cd $(TOP)/tools/MetaMake ; autoconf
+	cd $(TOP)/tools/MetaMake ; aclocal ; autoconf
 
 $(TOP)/tools/MetaMake/Makefile.in : $(TOP)/tools/MetaMake/Makefile.am
 	cd $(TOP)/tools/MetaMake ; automake
