@@ -88,7 +88,7 @@ int main( void )
     }
     
     application = ApplicationObject,
-        SubWindow, window = FPWindowObject,
+        SubWindow, (IPTR)window = FPWindowObject,
         EndBoopsi,
     End;
 
