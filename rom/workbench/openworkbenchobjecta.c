@@ -134,7 +134,11 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
                 
                 D(bug("OpenWorkbenchObject: it's a TOOL\n"));
                 
-                if (!isDefaultIcon)
+                if
+                (
+                       !isDefaultIcon 
+                    && FindToolType(icon->do_ToolTypes, "CLI") == NULL
+                )
                 {
                     /* It's a Workbench program */
                     D(bug("OpenWorkbenchObject: it's a WB program\n"));
