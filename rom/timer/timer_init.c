@@ -221,7 +221,12 @@ AROS_LH1(BPTR, close,
 
     tr->tr_node.io_Device = (struct Device *)-1;
     tr->tr_node.io_Unit = 0;
-    
+
+    if (!--TimerBase->tb_Device.dd_Library.lib_OpenCnt)
+    {
+	if (TimerBase->tb_Device.dd_Library.lib_Flags & LIBF_DELEXP)
+	    return AROS_LC0(BPTR, expunge, struct TimerBase *, TimerBase, 3, Timer);
+    }
     return 0;
 
     AROS_LIBFUNC_EXIT
@@ -232,7 +237,25 @@ AROS_LH1(BPTR, close,
 AROS_LH0(BPTR, expunge, struct TimerBase *, TimerBase, 3, Timer)
 {
     AROS_LIBFUNC_INIT
-    return 0;
+
+    BPTR ret;
+
+    RemIntServer(INTB_VERTB, &TimerBase->tb_VBlankInt);
+
+    if (TimerBase->tb_Device.dd_Library.lib_OpenCnt)
+    {
+	TimerBase->tb_Device.dd_Library.lib_Flags |= LIBF_DELEXP;
+    }
+
+    Remove(&TimerBase->tb_Device.dd_Library.lib_Node);
+
+    ret = TimerBase->tb_SegList;
+
+    FreeMem((char *)TimerBase-TimerBase->tb_Device.dd_Library.lib_NegSize,
+	    TimerBase->tb_Device.dd_Library.lib_NegSize
+	    + TimerBase->tb_Device.dd_Library.lib_PosSize);
+
+    return ret;
     AROS_LIBFUNC_EXIT
 }
 
