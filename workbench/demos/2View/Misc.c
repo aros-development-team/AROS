@@ -1,3 +1,7 @@
+/* Modified version for AROS - The Amiga Replacement OS
+** $Id$
+*/
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -163,7 +167,7 @@ ButtonTypes checkButton(void)
 {
    struct IntuiMessage *mesg;
    ButtonTypes Button=none;
-   static justActivated=FALSE;
+   static int justActivated=FALSE;
 
       /*This function disregards a select (left) mouse button click*/
       /*if the window's just been activated.  This is so that a user*/
@@ -205,6 +209,7 @@ ButtonTypes checkButton(void)
 	    break;
 	 case IDCMP_MOUSEBUTTONS:   /*Interpret a button click*/
 	    if(mesg->Code==SELECTDOWN) /*If the left button was pushed,*/
+            {
 	       if(justActivated)       /*and not so as to activate the*/
 	       {		       /*window, advance to the next*/
 		  justActivated=FALSE;	     /*screen*/
@@ -212,7 +217,7 @@ ButtonTypes checkButton(void)
 	       }
 	       else
 		  Button=select;
-	    else if(mesg->Code == MENUDOWN)  /*If the right button was*/
+	    } else if(mesg->Code == MENUDOWN)  /*If the right button was*/
 	       Button=menu;		     /*pushed, we'll want to*/
 	    break;			     /*abort*/
       }
@@ -397,6 +402,7 @@ UBYTE interpretCRNG(UBYTE *cycleTable,CRNG *crng,UBYTE *rate)
 
 	 /*If there are colors to cycle*/
       if(length!=0)
+      {
 	 if(crng->active==1)
 	       /*Forward cycling*/
 	    for(pos=0,color=crng->low;pos<length;pos++,color++)
@@ -405,6 +411,7 @@ UBYTE interpretCRNG(UBYTE *cycleTable,CRNG *crng,UBYTE *rate)
 	       /*Backward cycling*/
 	    for(pos=0,color=crng->high;pos<length;pos++,color--)
 	       cycleTable[pos]=color;
+      }
    }
    return(length);
 }

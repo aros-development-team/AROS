@@ -1,3 +1,6 @@
+/* Modified version for AROS - The Amiga Replacement OS
+** $Id$
+*/
 
 /***********************************************************************\
 *			     2View V1.50				*
@@ -491,11 +494,12 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
 
 
    if(crng==NULL)
+   {
       if(drng==NULL) /*No color cycling*/
 	 numCycleColors=0;
       else  /* DPaint-IV--style color cycling*/
 	 numCycleColors=interpretDRNG(cycleTable,(DRNG *)(drng->sp_Data),&rate);
-   else  /*DPaint I-III--style color cycling*/
+   } else  /*DPaint I-III--style color cycling*/
       numCycleColors=interpretCRNG( cycleTable,(CRNG *)(crng->sp_Data),&rate);
 
    if(numCycleColors != 0)
@@ -619,7 +623,9 @@ void ReadAndDisplay(char *filename,struct IFFHandle *iff)
    countDown=rate;
    if(ticks==0)   /*If ticks==0, this means that no delay was specified*/
    {		  /*by the user.  So just wait for him to click a button*/
+#if 0
       int prevTopEdge=prevScreen->TopEdge;
+#endif
 
       while((button=checkButton())==none && rexxAbort==none)
       {
