@@ -1,0 +1,164 @@
+## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## language svenska
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kan inte öppna %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kan inte låsa allmän skärm!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Kan inte läsa VisualInfo!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Kan inte skapa knappar!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Kan inte skapa menyer!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Kan inte placera menyer!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Kan inte skapa fönster!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Kan inte allokera programminne!\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Kan inte skapa meddelandeport!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Kan inte skapa CxBroker-objekt!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Kan inte skapa CxCustom-objekt!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Redigera
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Avsluta
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Kontrollerar systemets commodities
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Tillgängliga commodities
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Information
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Visa
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Göm
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Ta bort
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+Aktiv
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+Inaktiv
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+Systemets skärmsläckare
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Släcker skärmen vid inaktivitet
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+Fönsterlyftare
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Lyfter fönster längst fram
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Solida fönster
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Realtids fönsterförflyttning
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Autopekare
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Aktiverar fönstret under muspilen
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+Systemets programstartare
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Startar program från meny
+; Program launch commodity

@@ -1,0 +1,120 @@
+;
+MSG_CANT_OPEN_LIB (//)
+Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR (//)
+Can't lock public screen!\n
+;
+MSG_CANT_GET_VI (//)
+Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET (//)
+Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS (//)
+Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS (//)
+Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN (//)
+Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM (//)
+Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT (//)
+Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER (//)
+Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM (//)
+Can't create CxCustom object!\n
+;
+MSG_OK (//)
+Ok
+;
+MSG_MEN_PROJECT (//)
+Project
+;
+MSG_MEN_PROJECT_QUIT (//)
+Q\0Quit
+;
+MSG_EXCHANGE_CXNAME (//)
+Exchange
+;
+MSG_EXCHANGE_CXTITLE (//)
+Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR (//)
+Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE (//)
+Exchange
+;
+MSG_EXCHANGE_LISTVIEW (//)
+Available commodities
+;
+MSG_EXCHANGE_INFO (//)
+Information
+;
+MSG_EXCHANGE_GAD_SHOW (//)
+Show
+;
+MSG_EXCHANGE_GAD_HIDE (//)
+Hide
+;
+MSG_EXCHANGE_GAD_REMOVE (//)
+Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE (//)
+Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE (//)
+Inactive
+;
+MSG_BLANKER_CXNAME (//)
+Blanker
+;
+MSG_BLANKER_CXTITLE (//)
+System Screen Blanker
+;
+MSG_BLANKER_CXDESCR (//)
+Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME (//)
+ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE (//)
+Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR (//)
+Click windows to front
+;
+MSG_OPAQUE_CXNAME (//)
+Opaque
+;
+MSG_OPAQUE_CXTITLE (//)
+Solid Windows
+;
+MSG_OPAQUE_CXDESCR (//)
+Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME (//)
+AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE (//)
+Autopointer
+;
+MSG_AUTOPOINT_CXDESCR (//)
+Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME (//)
+StartMenu
+;
+MSG_STARTMENU_CXTITLE (//)
+System Program Starter
+;
+MSG_STARTMENU_CXDESCR (//)
+Program launch commodity
