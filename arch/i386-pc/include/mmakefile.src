@@ -16,14 +16,13 @@ DIRS :=	$(INCDIR) $(GENINCDIR) \
 MACHINE_H := $(GENINCDIR)/aros/machine.h
 
 #MM
-includes-pc-i386 : $(INCFILES) machine.i
+includes-pc-i386 : setup-includes $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
-includes-copy-pc-i386 : $(INCFILES) $(GENINCDIR)/sigcore.h
+includes-copy-pc-i386 : setup-includes $(INCFILES) $(GENINCDIR)/sigcore.h
 	@$(NOP)
 
-#MM
 setup-includes :
 	@$(FOR) dir in $(DIRS) ; do \
 	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ; \

@@ -27,10 +27,7 @@ STUBS       := $(LIBNAME)_stubs
 STUB_FILE   := $(LIBDIR)/libhidd$(LIBNAME)stubs.a
 STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 
-MY_INCLS    := $(wildcard include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
-
+INCLUDE_FILES    := $(wildcard include/*.h)
 
 ifeq ($(FLAVOUR),native)
 DEPLIBS := $(LIBDIR)/libhiddgraphicsstubs.a
@@ -88,21 +85,7 @@ $(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
 $(OBJDIR)/%.o : %.c	
 	%compile_q	
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
-
-
+%copy_includes path=hidd
 
 #MM
 clean ::

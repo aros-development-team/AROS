@@ -21,9 +21,7 @@ FILES       := hiddclass
 INIT_FILE   := $(LIBNAME)_init
 END_FILE    := $(OBJDIR)/endtag
 
-MY_INCLS    := $(wildcard include/*.h)
-DEST_INC    := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
-GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+INCLUDE_FILES   :=  $(wildcard include/*.h)
 
 ifeq ($(FLAVOUR),native)
 DEPLIBS := arossupport arosc
@@ -99,19 +97,7 @@ $(LIB): libdefs.h $(ALL_OBJS)
 	%mklib_q from=$(ALL_OBJS)
 	@$(RM) $(RMLIB)
 
-#MM
-includes-copy : $(DEST_INC) $(GEN_INC)
-	@$(NOP)
-
-$(INCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-$(GENINCDIR)/hidd/%.h : include/%.h
-	@$(CP) include/$(notdir $<) $@
-
-#MM
-setup-includes :
-	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+%copy_includes path=hidd
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf
