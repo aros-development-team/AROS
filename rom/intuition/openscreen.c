@@ -107,6 +107,7 @@ static const ULONG coltab[] = {
     ULONG            *errorPtr;	  /* Store error at user specified location */
     UWORD	     *customdripens = NULL;
     ULONG	     *colors32 = NULL;
+    WORD    	      sysfont = -1;
     UWORD	      numcolormapcols;
     BOOL	      ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
     BOOL	      frontbm_set = FALSE;
@@ -208,6 +209,9 @@ static const ULONG coltab[] = {
 		break;
 		
 	    case SA_SysFont:
+	    	sysfont = (WORD)tag->ti_Data;
+		break;
+		
 	    case SA_BitMap:
 		break;
 
@@ -463,7 +467,7 @@ static const ULONG coltab[] = {
         */
 	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
-	screen->Screen.WBorTop    = 7;  /* Amiga default is 2 */
+	screen->Screen.WBorTop    = 6;  /* Amiga default is 2 */
 	screen->Screen.WBorLeft   = 4;
 	screen->Screen.WBorRight  = 4;
 	screen->Screen.WBorBottom = 4;  /* Amiga default is 2 */
@@ -512,19 +516,39 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Resolution.Y = 44;
 	screen->DInfo.dri_Flags = 0;
 	
+	/* SA_SysFont overrides SA_Font! */
+	
+    	if (sysfont == 0)
+	{
+	    /* Is handled below */
+	}
+	else if (sysfont == 1)
+	{
 
-	if (ns.Font)
+#warning: Really hacky way of re-opening ScreenFont
+
+    	    Forbid();
+	    screen->DInfo.dri_Font = GetPrivIBase(IntuitionBase)->ScreenFont;
+	    screen->DInfo.dri_Font->tf_Accessors++;
+	    Permit();
+    	    
+	}
+	else if (ns.Font)
+	{
 	    screen->DInfo.dri_Font = OpenFont(ns.Font);
-
+    	}
+	
 	if (!screen->DInfo.dri_Font)
 	{
 	    /* GfxBase->DefaultFont is *not* always topaz 8. It
 	       can be set with the Font prefs program!! */
-	       
-	    SetFont(&screen->Screen.RastPort, GfxBase->DefaultFont);
-	    AskFont(&screen->Screen.RastPort, &screen->textattr);
-	    	    
-	    screen->DInfo.dri_Font = OpenFont(&screen->textattr);
+
+#warning: Really hacky way of re-opening system default font
+	    
+	    Forbid();
+	    screen->DInfo.dri_Font = GfxBase->DefaultFont;
+	    screen->DInfo.dri_Font->tf_Accessors++;
+	    Permit();
 	}
 	
 	if (!screen->DInfo.dri_Font) ok = FALSE;
