@@ -8,6 +8,7 @@
 
 #include <devices/trackdisk.h>
 #include <dos/filehandler.h>
+#include <utility/tagitem.h>
 #include <exec/lists.h>
 #include <exec/nodes.h>
 #include <exec/types.h>
@@ -67,21 +68,21 @@ struct PartitionType
 /* commands for DoPartition() */
 
 /* Tags for partition tables */
-#define PTT_TYPE             (1)  /* ULONG - partition table type */
-#define PTT_RESERVED         (32) /* ULONG - number of reserved blocks at
-                                             begining of a partition table */
-#define PTT_MAX_PARTITIONS   (33) /* ULONG - max number of partitions in table */
+#define PTT_TYPE           (TAG_USER |  1L) /* ULONG - partition table type */
+#define PTT_RESERVED       (TAG_USER | 32L) /* ULONG - number of reserved blocks at
+                                                       begining of a partition table */
+#define PTT_MAX_PARTITIONS (TAG_USER | 33L) /* ULONG - max number of partitions in table */
 
 
 /* Tags for partitions */
-#define PT_GEOMETRY   (1) /* struct DriveGeometry - geometry of partition */
-#define PT_DOSENVEC   (2) /* struct DosEnvec - partition layout info */
-#define PT_TYPE       (3) /* struct PartitionType - type of partition */
-#define PT_POSITION  (32) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
-#define PT_ACTIVE    (33) /* BOOL - MBR: set/get partition as active */
-#define PT_NAME      (34) /* STRPTR - name of partition */
-#define PT_BOOTABLE  (35) /* BOOL - partition is bootable */
-#define PT_AUTOMOUNT (36) /* BOOL - partition will be auto mounted */
+#define PT_GEOMETRY  (TAG_USER |  1L) /* struct DriveGeometry * - geometry of partition */
+#define PT_DOSENVEC  (TAG_USER |  2L) /* struct DosEnvec * - partition layout info */
+#define PT_TYPE      (TAG_USER |  3L) /* struct PartitionType * - type of partition */
+#define PT_POSITION  (TAG_USER | 32L) /* ULONG - 1st partition, 2nd ... (Linux: hdX0, hdX1, ... */
+#define PT_ACTIVE    (TAG_USER | 33L) /* BOOL - MBR: set/get partition as active */
+#define PT_NAME      (TAG_USER | 34L) /* STRPTR - name of partition */
+#define PT_BOOTABLE  (TAG_USER | 35L) /* BOOL - partition is bootable */
+#define PT_AUTOMOUNT (TAG_USER | 36L) /* BOOL - partition will be auto mounted */
 
 
 /* Attributes */
