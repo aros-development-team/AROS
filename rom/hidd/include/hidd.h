@@ -2,7 +2,7 @@
 #define HIDD_HIDD_H
 
 /*
-    Copyright (C) 1997 AROS - The Amiga Replacement OS
+    Copyright (C) 1997-1998 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Main HIDD Include File
@@ -40,8 +40,8 @@
  */
 
 #define HIDDA_Base		(TAG_USER + 0x800000)
-#define HIDDA_Type		(HIDDA_Base + 1)    /* --G-- ULONG */
-#define HIDDA_SubType		(HIDDA_Base + 2)    /* --G-- ULONG */
+#define HIDDA_Type		(HIDDA_Base + 1)    /* --G-- UWORD */
+#define HIDDA_SubType		(HIDDA_Base + 2)    /* --G-- UWORD */
 #define HIDDA_Producer		(HIDDA_Base + 3)    /* --G-- ULONG */
 #define HIDDA_Name		(HIDDA_Base + 4)    /* --G-- STRPTR */
 #define HIDDA_HardwareName	(HIDDA_Base + 5)    /* --G-- STRPTR */
@@ -60,7 +60,15 @@
 #define HIDDA_PrivateBase	(HIDDA_Base | HIDDV_PrivateAttribute)
 
 /* Values for the HIDD_Type Tag */
-#define HIDDV_Root		0
+#define HIDDV_Type_Any		-1	/* match any type */
+
+#define HIDDV_Type_Root		0	/* hiddclass */
+#define HIDDV_Type_Config	1	/* configuration plugins */
+#define HIDDV_Type_Timer	2	/* clocks and alarms */
+
+/* Values for the HIDDA_Subtype Tag */
+#define HIDDV_Subtype_Any	-1	/* match any subtype */
+#define HIDDV_Subtype_Root	0	/* main class of a type */
 
 /* Values for the HIDDA_Locking tag */
 #define HIDDV_LockShared	0
@@ -81,6 +89,7 @@
 #define HIDDM_Unlock		(HIDDM_Base + 7) /* void M ( hmLock *)           */
 #define HIDDM_AddHIDD		(HIDDM_Base + 8) /* BOOL M ( hmAdd *)            */
 #define HIDDM_RemoveHIDD	(HIDDM_Base + 9) /* void M ( hmAdd *)            */
+#define HIDDM_FindHIDD		(HIDDM_Base +10) /* HIDD *M ( hmFind *)          */ 
 
 /*
     This flag is set on uncommon methods. Uncommon methods are methods
@@ -124,5 +133,13 @@ typedef struct hmAdd
     STACKULONG		MethodID;
     Class	       *hma_Class;
 } hmAdd;
+
+/* Used for HIDDM_FindHIDD */
+typedef struct hmFind
+{
+    STACKULONG		MethodID;
+    STACKUWORD		hmf_Type;	/* Use HIDDV_Type_Any to match all */
+    STACKUWORD		hmf_Subtype;	/* Use HIDDV_Subtype_Any to match all */
+} hmFind;
 
 #endif /* HIDD_HIDD_H */
