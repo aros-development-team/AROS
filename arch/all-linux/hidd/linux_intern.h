@@ -14,6 +14,9 @@
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 #ifndef DOS_BPTR_H
 #   include <dos/bptr.h>
 #endif
@@ -44,8 +47,51 @@ enum {
     
 };
 
+/***** Linux Kbd HIDD *******************/
 
+/* IDs */
+#define IID_Hidd_LinuxKbd	"hidd.kbd.linux"
+#define CLID_Hidd_LinuxKbd	"hidd.kbd.linux"
+
+/* Methods */
+enum
+{
+    moHidd_LinuxKbd_HandleEvent
+};
+
+struct pHidd_LinuxKbd_HandleEvent
+{
+    MethodID mID;
+    UBYTE scanCode;
+};
+VOID HIDD_LinuxKbd_HandleEvent(Object *o, UBYTE scanCode);
+
+/***** Linux Mouse HIDD *******************/
+
+/* IDs */
+#define IID_Hidd_LinuxMouse	"hidd.mouse.linux"
+#define CLID_Hidd_LinuxMouse	"hidd.mouse.linux"
+
+
+/* Methods */
+enum
+{
+    moHidd_LinuxMouse_HandleEvent
+};
+
+struct pHidd_LinuxMouse_HandleEvent
+{
+    MethodID mID;
+    struct pHidd_Mouse_Event *mouseEvent;    
+};
+
+VOID HIDD_LinuxMouse_HandleEvent(Object *o, struct pHidd_Mouse_Event *mouseEvent);
+
+
+/*** Shared data ***/
 struct linux_staticdata {
+    struct SignalSemaphore sema;
+    
     struct ExecBase *sysbase;
     struct Library *oopbase;
     struct Library *utilitybase;
@@ -66,6 +112,9 @@ struct linux_staticdata {
     
     BOOL kbd_inited;
     int kbdfd;
+    
+    BOOL mouse_inited;
+    int mousefd;
     
     struct Task *input_task;
     Object *kbdhidd;
@@ -89,6 +138,9 @@ VOID kill_input_task(struct linux_staticdata *lsd);
 
 BOOL init_kbd(struct linux_staticdata *lsd);
 VOID cleanup_kbd(struct linux_staticdata *lsd);
+
+BOOL init_mouse(struct linux_staticdata *lsd);
+VOID cleanup_mouse(struct linux_staticdata *lsd);
 
 
 #define LSD(cl) ((struct linux_staticdata *)cl->UserData)

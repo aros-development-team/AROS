@@ -16,6 +16,7 @@
 
 #include <hidd/hidd.h>
 #include <hidd/keyboard.h>
+#include <devices/inputevent.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -28,10 +29,11 @@
 #include <aros/debug.h>
 #include <stdio.h>
 
+
 #define IID_Hidd_LinuxKbd	"hidd.kbd.linux"
 #define CLID_Hidd_LinuxKbd	"hidd.kbd.linux"
 
-static UBYTE keycode2rawkey[256];
+static UBYTE scancode2rawkey[256];
 static BOOL havetable;
 void setup_sighandling(void);
 void cleanup_sighandling();
@@ -50,7 +52,11 @@ static struct ABDescr attrbases[] =
     { NULL, NULL }
 };
 
-                        
+static UBYTE scancode2rawkey[256];
+static BOOL havetable = FALSE;
+
+static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd);
+
 /***** Kbd::New()  ***************************************/
 static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
@@ -61,10 +67,10 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
     
     EnterFunc(bug("Kbd::New()\n"));
  
- 
+ObtainSemaphore(&LSD(cl)->sema);
     if (LSD(cl)->kbdhidd)
     	has_kbd_hidd = TRUE;
-
+ReleaseSemaphore(&LSD(cl)->sema);
  
     if (has_kbd_hidd) /* Cannot open twice */
     	ReturnPtr("Kbd::New", Object *, NULL); /* Should have some error code here */
@@ -105,153 +111,98 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	data->kbd_callback = (VOID (*)(APTR, UWORD))callback;
 	data->callbackdata = callbackdata;
 	
+ObtainSemaphore(&LSD(cl)->sema);
 	LSD(cl)->kbdhidd = o;
+ReleaseSemaphore(&LSD(cl)->sema);
     }
     ReturnPtr("Kbd::New", Object *, o);
 }
 
-/***** Kbd::HandleEvent()  ***************************************/
-#if 0
-static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_Kbd_HandleEvent *msg)
+
+static Object *kbd_dispose(Class *cl, Object *o, Msg msg)
+{
+    ObtainSemaphore(&LSD(cl)->sema);
+    LSD(cl)->kbdhidd = NULL;
+    ReleaseSemaphore(&LSD(cl)->sema);
+    
+    DoSuperMethod(cl, o, msg);
+    
+}
+
+/***** LinuxKbd::HandleEvent()  ***************************************/
+
+static VOID kbd_handleevent(Class *cl, Object *o, struct pHidd_LinuxKbd_HandleEvent *msg)
 {
     struct linuxkbd_data * data;
-    
-    XKeyEvent *xk;
+    UBYTE scancode;
+    UWORD hiddcode;
 
     EnterFunc(bug("linuxkbd_handleevent()\n"));
-    xk = &(msg->event->xkey);
+    
     data = INST_DATA(cl, o);
-    if (msg->event->type == KeyPress)
-    {
-	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, LSD(cl)));
-		
-    }
-    else if (msg->event->type == KeyRelease)
-    {
-	data->kbd_callback(data->callbackdata
-		, (UWORD)xkey2hidd(xk, LSD(cl)) | IECODE_UP_PREFIX);
-    }
+    
+    scancode = msg->scanCode;
+    hiddcode = scancode2hidd(scancode, LSD(cl));
+    
+    if (hiddcode != 0xFF) {
+    
+	if (scancode >= 0x80)
+	    hiddcode |= IECODE_UP_PREFIX;
 
+	data->kbd_callback(data->callbackdata, hiddcode);
+    }
     
     ReturnVoid("Kbd::HandleEvent");
 }
-
-#endif
 
 
 #undef LSD
 #define LSD(cl) lsd
 
-#if 0
-long StateToQualifier (unsigned long state)
+/**************** scancode2hidd() ****************/
+#define DEF_TAB_SIZE 128
+const UBYTE deftable[] = {
+	  0xff, 0x43, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
+	, 0x09, 0x0a, 0x0b, 0x0c, 0x41, 0x42, 0x10, 0x11, 0x12, 0x13
+	, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x44, 0x63
+	, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29
+	, 0x2a, 0xff, 0x60, 0xff, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36
+	, 0x37, 0x38, 0x39, 0x3a, 0x61, 0xff, 0x64, 0x40, 0x62, 0x50
+	, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0xff
+	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x4b, 0x6f, 0xff
+	, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+	, 0x65, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+	, 0x47, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
+	, 0xff, 0xff, 0xff, 0xff, 0xff, 0x66, 0xff, 0x67
+};
+static UWORD scancode2hidd(UBYTE scancode, struct linux_staticdata *lsd)
 {
-    long result;
-
-    result = 0;
-
-    if (state & ShiftMask)
-	result |= SHIFT;
-
-    if (state & ControlMask)
-	result |= CTRL;
-
-    if (state & LockMask)
-	result |= CAPS;
-
-    if (state & Mod2Mask) /* Right Alt */
-	result |= LALT;
-
-    if (state & 0x2000) /* Mode switch */
-	result |= RALT;
-
-    if (state & Mod1Mask) /* Left Alt */
-	result |= AMIGAKEYS;
-
-    if (state & Button1Mask)
-	result |= IEQUALIFIER_LEFTBUTTON;
-
-    if (state & Button2Mask)
-	result |= IEQUALIFIER_RBUTTON;
-
-    if (state & Button3Mask)
-	result |= IEQUALIFIER_MIDBUTTON;
-
-    return (result);
-} /* StateToQualifier */
-
-
-WORD lookup_keytable(KeySym *ks, struct _keytable *keytable)
-{
-    short t;
-    WORD result = -1;
-    
-    for (t=0; keytable[t].hiddcode != -1; t++)
-    {
-	if (*ks == keytable[t].keysym)
-	{
-	    D(bug("xktac: found in key table\n"));
-	    result = keytable[t].hiddcode;
-	    break;
-	}
+    UWORD hiddcode;
+    if ((scancode & 0x80) == 0x80)
+	scancode &= ~0x80;
+	
+    if (havetable) {
+	hiddcode = scancode2rawkey[scancode];
+    } else {
+	if (scancode >= DEF_TAB_SIZE)
+	    hiddcode = 0xFF;
+	else
+	    hiddcode = deftable[scancode];
     }
-    
-    return result;
+    return hiddcode;
 }
 
+/****************  LoadScanCode2RawKeyTable()  ***************************/
 
-long xkey2hidd (XKeyEvent *xk, struct linux_staticdata *lsd)
-{
-    char buffer[10];
-    KeySym ks;
-    int count;
-    long result;
-
-
- 
-    D(bug("xkey2hidd\n"));
-   
-    if (havetable)
-    {
-        result = -1;
-	if ((xk->keycode >= 0) && (xk->keycode < 256))
-	{
-	    result = keycode2rawkey[xk->keycode];
-	    if (result == 255) result = -1;
-	}
-	return result;
-    }
-LX11
-    xk->state = 0;
-    count = XLookupString (xk, buffer, 10, &ks, NULL);
-UX11
-    D(bug("xk2h: Code %d (0x%x). Event was decoded into %d chars: %d (0x%x)\n",xk->keycode, xk->keycode, count,ks,ks));
-    
-    result = lookup_keytable(&ks, keytable);
-    if (result == -1) result = lookup_keytable(&ks, english_keytable);
-    
-    if (result != -1)
-    {
-	ReturnInt ("xk2h", long, result);
-    }
-    
-    D(bug("xk2h: Passing X keycode\n", xk->keycode & 0xffff));
-
-    result = xk->keycode & 0xffff;
-
-    ReturnInt ("xk2h", long, result);
-} /* XKeyToAmigaCode */
-
-/****************  LoadKeyCode2RawKeyTable()  ***************************/
-
-static void LoadKeyCode2RawKeyTable(struct linux_staticdata *lsd)
+static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 {
     char *filename = "DEVS:Keymaps/X11/keycode2rawkey.table";
     BPTR fh;
     
     if ((fh =Open(filename, MODE_OLDFILE)))
     {
-        if ((256 == Read(fh, keycode2rawkey, 256)))
+        if ((256 == Read(fh, scancode2rawkey, 256)))
 	{
 	    bug("LoadKeyCode2RawKeyTable: keycode2rawkey.table successfully loaded!\n");
 	    havetable = TRUE;
@@ -298,12 +249,11 @@ static void LoadKeyCode2RawKeyTable(struct linux_staticdata *lsd)
 	    "\n", filename);
     }
 }
-#endif
 
 /********************  init_kbdclass()  *********************************/
 
 
-#define NUM_ROOT_METHODS 1
+#define NUM_ROOT_METHODS 2
 #define NUM_LINUXKBD_METHODS 1
 
 Class *init_kbdclass (struct linux_staticdata *lsd)
@@ -312,22 +262,19 @@ Class *init_kbdclass (struct linux_staticdata *lsd)
 
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = {
     	{ METHODDEF(kbd_new),		moRoot_New },
+    	{ METHODDEF(kbd_dispose),	moRoot_Dispose },
 	{ NULL, 0UL }
     };
     
-#if 0
     struct MethodDescr kbdhidd_descr[NUM_LINUXKBD_METHODS + 1] = 
     {
     	{ METHODDEF(kbd_handleevent),	moHidd_LinuxKbd_HandleEvent },
 	{ NULL, 0UL }
     };
-#endif
     
     struct InterfaceDescr ifdescr[] = {
     	{ root_descr,	 IID_Root, 		NUM_ROOT_METHODS	},
-#if 0
     	{ kbdhidd_descr, IID_Hidd_LinuxKbd, 	NUM_LINUXKBD_METHODS	},
-#endif
 	{ NULL, NULL, 0 }
     };
     
@@ -341,9 +288,7 @@ Class *init_kbdclass (struct linux_staticdata *lsd)
 	{TAG_DONE, 0UL}
     };
 
-#if 0    
-    LoadKeyCode2RawKeyTable(lsd);
-#endif    
+    LoadScanCode2RawKeyTable(lsd);
     if (MetaAttrBase) {
     
     	cl = NewObject(NULL, CLID_HiddMeta, tags);
@@ -424,7 +369,6 @@ BOOL  mode_done	   = FALSE
 BOOL init_kbd(struct linux_staticdata *lsd)
 {
     BOOL ret = TRUE;
-    
     lsdata = lsd;
 kprintf("INIT_KBD\n");
     
@@ -438,7 +382,9 @@ kprintf("INIT_KBD\n");
 	
 	fd_done = TRUE;
 	
+
 	setup_sighandling();
+
 kprintf("SIGNALS SETUP\n");	
 	if ( (-1 == tcgetattr(kbdfd, &oldtio)) || (-1 == tcgetattr(kbdfd, &newtio))) {
 	    kprintf("!!! Could not get old termios attrs: %s\n", strerror(errno));
@@ -468,9 +414,11 @@ kprintf("KBD MODE SET\n");
 	    } /* if (termios attrs set) */
 	} /*  if (got old termios attrs) */
     }
+    
     if (!ret) {
     	cleanup_kbd(lsd);
     }
+
     return ret;
     
 }
@@ -495,8 +443,16 @@ VOID cleanup_kbd(struct linux_staticdata *lsd)
 const int signals[] = {
 	SIGHUP, SIGINT,	SIGQUIT, SIGILL,
 	SIGTRAP, SIGBUS, SIGFPE, SIGKILL,
-	/* SIGALRM, */  SIGSEGV, SIGTERM
+	/* SIGALRM, */  SIGSEGV , SIGTERM
 };
+
+
+void exit_sighandler(int sig)
+{
+    printf("PARENT EXITING VIA SIGHANDLER\n");
+    cleanup_kbd(lsdata);
+    exit(0);
+}
 
 void kbdsighandler(int sig)
 {
@@ -507,9 +463,39 @@ void kbdsighandler(int sig)
 void setup_sighandling(void)
 {
     ULONG i;
+    pid_t pid;
     
     for (i = 0; i < sizeof (signals); i ++) {
     	signal(signals[i], kbdsighandler);
+    }
+    
+    signal(SIGTERM, exit_sighandler);
+    
+    /* Sig alrm is is taken so we have to fork() to create a new process
+      that will kill us after a while */
+      
+    pid = fork();
+    
+    switch (pid) {
+	case -1:
+	    kprintf("!!!!!!!! ERROR FORKING !!!!!!!!!!!!!!\n");
+	    exit(1);
+
+	    
+	case 0: {
+	    int *status = 0;
+	    /* We are the child */
+	    kprintf("----- CHILD GOING TO SLEEP ....\n");
+	    sleep(120);
+	    kprintf("-------- CHILD EXITING ------------\n");
+	    kill(getppid(), SIGTERM);
+	    exit(0);
+	}
+
+	default:
+	    /* We are the parent */
+	    kprintf("------- PARENT: PID %d\n", getpid());
+	    break;
     }
     
 }
@@ -520,4 +506,22 @@ void cleanup_sighandling()
     for (i = 0; i < sizeof (signals); i ++) {
 	signal(signals[i], SIG_DFL);
     }	
+}
+
+
+#undef OOPBase
+#define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(o)))->UserData)
+
+VOID HIDD_LinuxKbd_HandleEvent(Object *o, UBYTE scanCode)
+{
+    static MethodID mid = 0;
+    struct pHidd_LinuxKbd_HandleEvent p;
+    
+    if (!mid)
+	mid = GetMethodID(IID_Hidd_LinuxKbd, moHidd_LinuxKbd_HandleEvent);
+	
+    p.mID	= mid;
+    p.scanCode	= scanCode;
+    
+    DoMethod(o, (Msg)&p);
 }

@@ -79,6 +79,7 @@ static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase)
     struct linux_staticdata *lsd = NULL;
     lsd = AllocMem( sizeof (struct linux_staticdata), MEMF_CLEAR|MEMF_PUBLIC );
     if (NULL != lsd) {
+	InitSemaphore(&lsd->sema);
         lsd->sysbase = SysBase;
 	
         lsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
@@ -88,18 +89,24 @@ static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase)
 	if (NULL == lsd->utilitybase) goto failure;
 
 kprintf("GOT LIBS\n");
-/* 	
+ 	
 	lsd->kbd_inited = init_kbd(lsd);
 	if (!lsd->kbd_inited) goto failure;
+
 kprintf("KBD INITED\n");
-*/
+
+	lsd->mouse_inited = init_mouse(lsd);
+	if (!lsd->mouse_inited) goto failure;
+kprintf("MOUSE INITED\n");
+
 	if (!ObtainAttrBases(abd))
 	    goto failure;
 kprintf("OBTAINED ATTRBASES\n");	    
-/*	lsd->input_task = init_input_task(lsd);
-	if (NULL != lsd->input_task) goto failure;
+
+	lsd->input_task = init_input_task(lsd);
+	if (NULL == lsd->input_task) goto failure;
 kprintf("GOT INPUT TASK\n");
-*/
+
 	lsd->gfxclass = init_gfxclass(lsd);
 	if (NULL == lsd->gfxclass) goto failure;
 
@@ -141,13 +148,16 @@ static VOID cleanup_linux_hidd(struct linux_staticdata *lsd)
 
 	ReleaseAttrBases(abd);
 
-/*
+
 	if (NULL != lsd->input_task)
 	    kill_input_task(lsd);
+	    
+	if (lsd->mouse_inited)
+	    cleanup_mouse(lsd);
 
 	if (lsd->kbd_inited)
 	    cleanup_kbd(lsd);
-*/		
+		
 	if (NULL != lsd->utilitybase)
 	    CloseLibrary(lsd->utilitybase);
 	    

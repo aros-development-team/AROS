@@ -96,7 +96,7 @@ static VOID bitmap_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 // kprintf("addr: %p\n", addr);
     /* Find the addr of the pixel */
     xoffset = msg->x * LSD(cl)->pf.bytes_per_pixel;
-    yoffset = msg-> y * LSD(cl)->fsi.line_length;
+    yoffset = msg->y * LSD(cl)->fsi.line_length;
 // kprintf("xoffset: %d, yoffset: %d\n", xoffset, yoffset);
     
     addr +=  xoffset + yoffset;

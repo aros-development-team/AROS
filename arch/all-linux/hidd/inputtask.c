@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <signal.h>
 
 #include <proto/exec.h>
 #include <proto/oop.h>
@@ -24,6 +25,7 @@
 
 #include <oop/oop.h>
 #include <hidd/unixio.h>
+#include <hidd/mouse.h>
 
 #include "linux_intern.h"
 
@@ -42,16 +44,77 @@ struct inputtask_params {
     struct linux_staticdata *lsd;
 };
 
+
+struct mouse_state {
+    BOOL buts[3];
+    BYTE dx;
+    BYTE dy;
+};
+
 #undef OOPBase
 #define OOPBase lsd->oopbase
+
+#undef LSD
+#define LSD lsd
+
+
+static void update_mouse_state(   struct mouse_state *oldstate
+				, struct mouse_state *newstate
+				, struct pHidd_Mouse_Event *mev)
+{
+    ULONG i;
+    ULONG hidd2but[] = {
+	vHidd_Mouse_Button1,
+	vHidd_Mouse_Button2,
+	vHidd_Mouse_Button3
+    };
+    
+    /* Discover the difference between the old and the new state */
+    for (i = 0; i < 3; i ++) {
+	if (oldstate->buts[i] != newstate->buts[i]) {
+	    mev->button = hidd2but[i];
+	    mev->type = ( oldstate->buts[i] ? vHidd_Mouse_Release : vHidd_Mouse_Press );
+	    return;
+	}
+    }
+    
+    
+    if (    (oldstate->dx != newstate->dx)
+	 || (oldstate->dy != newstate->dy) ) {
+	 
+	 mev->x	= newstate->dx;
+	 mev->y	= newstate->dy;
+	 mev->type = vHidd_Mouse_Motion;
+
+    }
+    
+}
+static void free_unixio_message(struct MsgPort *msgport, struct linux_staticdata *lsd)
+{
+    struct Message *msg;
+    
+    msg = GetMsg(msgport);
+    if (NULL == msg) {
+	kprintf("!!! linux input task: NO MSG FROM UNIXIO !!!\n");
+    } else {
+	FreeMem(msg, sizeof (struct uioMessage));
+    }
+}
+
 static VOID inputtask_entry(struct inputtask_params *inputparams)
 {
     struct linux_staticdata *lsd;
     struct inputtask_params itp;
+    UBYTE lastcode = 0xFF;
     
-    struct MsgPort *unixio_port = NULL;
+    struct MsgPort *kbd_port = NULL;
+    struct MsgPort *mouse_port = NULL;
+    
+    struct mouse_state oldstate = { { 0, 0, 0 }, 0, 0 };
+    struct pHidd_Mouse_Event mouse_event;
+    
     HIDD *unixio = NULL;
-    IPTR ret;
+    ULONG kbdsig, mousesig, sigs;
     /* We must copy the parameter struct because they are allocated
      on the parent's stack */
 kprintf("INSIDE INPUT TASK\n");
@@ -64,35 +127,128 @@ kprintf("UNIXIO %p\n", unixio);
     if (NULL == unixio) {
     	goto failexit;
     }
-
+    
+    kbd_port   = CreateMsgPort();
+    mouse_port = CreateMsgPort();
+    
+    if (NULL == kbd_port || NULL == mouse_port)
+	goto failexit;
+    
+    Signal(itp.parent, itp.ok_signal);
+    
+    kbdsig	= 1L << kbd_port->mp_SigBit;
+    mousesig	= 1L << mouse_port->mp_SigBit;
+kprintf("SIGS: %p, %p\n", kbdsig, mousesig);
+kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
+    
     for (;;) {
+	LONG err_kbd, err_mouse;
+	
 	kprintf("GETTING INPUT FROM UNIXIO\n");
 	/* Turn on kbd support */
 //	init_kbd(lsd);
-    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
+	
+	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Read);
+	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Read);
+	
+//    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
 	kprintf("GOT INPUT FROM UNIXIO\n");
 	
- 	for (;;) {
-	    char code;
-	    
-	    break;
-	    
-	    if (-1 == read(lsd->kbdfd, &code, 1)) {
-	    	kprintf("!!! COULD NOT READ FROM LINUX KBD DEVICE: %s\n"
-			, strerror(errno));
-	    } else {
-	    	/* Let the kbd hidd handle it */
-	    }
+	sigs = Wait( kbdsig | mousesig );
 
+	if (sigs & kbdsig) {
+	
+kprintf("---------- GOT KBD INPUT --------------------\n");
+ 	    for (;;) {
+		UBYTE code;
+		size_t bytesread;
+	    
+	    
+		bytesread = read(lsd->kbdfd, &code, 1);
+		if (-1 == bytesread)  {
+	    	    kprintf("!!! COULD NOT READ FROM LINUX KBD DEVICE: %s\n"
+			, strerror(errno));
+		    break;
+		
+		} else {
+	    	    /* Let the kbd hidd handle it */
+		    /* Key doewn ? */
+		    if (code < 0x80 && code == lastcode)
+			break;
+		    
+	    	    kprintf("GOT SCANCODE %d from kbd hidd\n", code);
+		    if (code == 1 || code == 81) {
+			    kill(getpid(), SIGTERM);
+		    }
+		
+		    /* Send code to the application */
+ObtainSemaphore(&lsd->sema);
+		    if (NULL != lsd->kbdhidd) {
+			HIDD_LinuxKbd_HandleEvent(lsd->kbdhidd, code);
+		    }
+ReleaseSemaphore(&lsd->sema);
+		    lastcode = code;
+		}
+		break;
+
+	    }	/* for (;;) */
+	    free_unixio_message(kbd_port, lsd);
+	} /* if (sigs & kbdsig) */
+	
+	if (sigs & mousesig) {
+	    ULONG i;
+	    LONG bytesread;
+	    UBYTE buf[3];
+	    BYTE dx = 0, dy = 0;
+	    struct mouse_state newstate;
+	    
+	    /* Got mouse event */
+	    kprintf("------------- MOUSE EVENT ------------\n");
+	    for (i = 0; i < 3; i ++) {
+	    	bytesread = read(lsd->mousefd, &buf[i], 1);
+		if (-1 == bytesread) {
+		    kprintf("!!! linux input task: Could not read from mouse device: %s\n", strerror(errno));
+		    goto end_mouse_event;    
+		}
+	    }
+	    
+	    kprintf("%d: %d: %d\n", buf[0], buf[1], buf[2]);
+	    /* Get button states */
+	    newstate.buts[0] = (buf[0] & 0x01) ? 1 : 0;
+	    newstate.buts[1] = (buf[0] & 0x02) ? 1 : 0;
+	    newstate.buts[2] = (buf[0] & 0x04) ? 1 : 0;
+	    
+	    if (buf[1] != 0) {
+		dx = (buf[0] & 0x10) ? buf[1] - 256 : buf[1];
+	    }
+	    
+	    if (buf[2] != 0) {
+		dy = (buf[0] & 0x20) ? buf[2] - 256 : buf[2];
+	    }
+		
+	    kprintf("EVENT: STATE 1:%d, 2:%d, 3:%d, dx:%d, dy:%d\n"
+		, newstate.buts[0], newstate.buts[1], newstate.buts[2]
+		, newstate.dx, newstate.dy);
+		
+	    update_mouse_state(&oldstate, &newstate, &mouse_event);
+ObtainSemaphore(&lsd->sema);
+	    HIDD_LinuxMouse_HandleEvent(lsd->mousehidd, &mouse_event);
+ReleaseSemaphore(&lsd->sema);
+	    
+end_mouse_event:
+	    free_unixio_message(mouse_port, lsd);
 	}
     	
     } /* Forever */
     
 failexit:
 
-    if (NULL != unixio_port)
-    	DeleteMsgPort(unixio_port);
+    if (NULL != kbd_port)
+    	DeleteMsgPort(kbd_port);
+
+    if (NULL != mouse_port)
+	DeleteMsgPort(mouse_port);
 	
     if (NULL != unixio)
     	DisposeObject((Object *)unixio);

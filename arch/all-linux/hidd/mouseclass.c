@@ -6,6 +6,13 @@
     Lang: English.
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+#include <string.h>
+
 #include <proto/utility.h>
 #include <proto/oop.h>
 #include <oop/oop.h>
@@ -35,37 +42,15 @@ static struct ABDescr attrbases[] =
 };
 
 
-#if 0
-static ULONG xbutton2hidd(XButtonEvent *xb)
-{
-    ULONG button;
-    switch (xb->button)
-    {
-	case Button1:
-	    button = vHidd_Mouse_Button1;
-	    break;
-/*	
-	case Button2:
-	    button = vHidd_Mouse_Button2;
-	    break;
-*/	    
-	case Button3:
-	    button = vHidd_Mouse_Button2;
-	    break;
-	
-    }
-    return button;
-    
-}
-
-#endif
 
 static Object *mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     BOOL has_mouse_hidd = FALSE;
-    
+
+ObtainSemaphore(&LSD(cl)->sema);    
     if (LSD(cl)->mousehidd)
     	has_mouse_hidd = TRUE;
+ReleaseSemaphore(&LSD(cl)->sema);
     
     if (has_mouse_hidd) /* Cannot open twice */
     	return NULL; /* Should have some error code here */
@@ -98,61 +83,40 @@ static Object *mouse_new(Class *cl, Object *o, struct pRoot_New *msg)
 	} /* while (tags to process) */
 	
 	/* Install the mouse hidd */
-	
+ObtainSemaphore(&LSD(cl)->sema);	
 	LSD(cl)->mousehidd = o;
-	
+ReleaseSemaphore(&LSD(cl)->sema);
     }
     return o;
 }
 
-#if 0
-static VOID x11mouse_handleevent(Class *cl, Object *o, struct pHidd_X11Mouse_HandleEvent *msg)
+static VOID mouse_dispose(Class *cl, Object *o, Msg msg)
+{
+    ObtainSemaphore(&LSD(cl)->sema);
+    LSD(cl)->mousehidd = NULL;
+    ReleaseSemaphore(&LSD(cl)->sema);
+    
+    DoSuperMethod(cl, o, msg);
+    
+}
+
+
+static VOID mouse_handleevent(Class *cl, Object *o, struct pHidd_LinuxMouse_HandleEvent *msg)
 {
 
-    struct x11mouse_data *data = INST_DATA(cl, o);
+    struct mouse_data *data = INST_DATA(cl, o);
     
-    struct pHidd_Mouse_Event e;
-
-    
-    XButtonEvent *xb = &(msg->event->xbutton);
-    
-
-    e.x = xb->x;
-    e.y = xb->y;
-   
-    
-    if (msg->event->type == ButtonRelease)
-    {
-    	e.button = xbutton2hidd(xb);
-	e.type =  vHidd_Mouse_Release;
-	 
-        data->mouse_callback(data->callbackdata, &e);
-    }
-    else if (msg->event->type == ButtonPress)
-    {
-    	e.button = xbutton2hidd(xb);
-	e.type =  vHidd_Mouse_Press;
-	
-        data->mouse_callback(data->callbackdata, &e);
-    }
-    else if (msg->event->type == MotionNotify)
-    {
-    	e.button = vHidd_Mouse_NoButton;
-	e.type = vHidd_Mouse_Motion;
-	
-        data->mouse_callback(data->callbackdata, &e);
-    }
+    data->mouse_callback(data->callbackdata, msg->mouseEvent);
     
     return;
 }
-#endif
 
 /********************  init_mouseclass()  *********************************/
 
 #undef LSD
 #define LSD(cl) lsd
 
-#define NUM_ROOT_METHODS 1
+#define NUM_ROOT_METHODS 2
 #define NUM_X11MOUSE_METHODS 1
 
 Class *init_mouseclass (struct linux_staticdata *lsd)
@@ -161,21 +125,18 @@ Class *init_mouseclass (struct linux_staticdata *lsd)
 
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] = 
     {
-    	{METHODDEF(mouse_new),		moRoot_New},
+    	{METHODDEF(mouse_new),			moRoot_New},
+    	{METHODDEF(mouse_dispose),		moRoot_Dispose},
 	{NULL, 0UL}
     };
-#if 0
     struct MethodDescr mousehidd_descr[NUM_X11MOUSE_METHODS + 1] = 
     {
-    	{METHODDEF(mouse_handleevent),	moHidd_X11Mouse_HandleEvent},
+    	{METHODDEF(mouse_handleevent),	moHidd_LinuxMouse_HandleEvent},
 	{NULL, 0UL}
     };
-#endif
     struct InterfaceDescr ifdescr[] = {
-    	{root_descr, 	IID_Root, 		NUM_ROOT_METHODS},
-#if 0	
-    	{mousehidd_descr, IID_Hidd_X11Mouse, 	NUM_X11MOUSE_METHODS},
-#endif
+    	{root_descr,	  IID_Root, 		NUM_ROOT_METHODS},
+    	{mousehidd_descr, IID_Hidd_LinuxMouse, 	NUM_X11MOUSE_METHODS},
 	{NULL, NULL, 0}
     };
     
@@ -232,4 +193,49 @@ VOID free_mouseclass(struct linux_staticdata *lsd)
 }
 
 
+#undef LSD
+#define LSD lsd
 
+static int mousefd = 0;
+
+#define MOUSE_DEVNAME "/dev/psaux"
+static BOOL file_opened = FALSE;
+
+BOOL init_mouse(struct linux_staticdata *lsd)
+{
+    mousefd = open(MOUSE_DEVNAME, O_RDONLY);
+    if (-1 == mousefd) {
+	kprintf("!!! init_mous(): COULD NOT OPEND MOUSE DEVICE %s: %s\n"
+	    , MOUSE_DEVNAME, strerror(errno));
+    } else {
+	file_opened = TRUE;
+	lsd->mousefd = mousefd;
+	
+	return TRUE;
+    }
+    return FALSE;
+}
+VOID cleanup_mouse(struct linux_staticdata *lsd)
+{
+    if (file_opened) {
+	close(mousefd);	
+    }
+    return;
+}
+
+#undef OOPBase
+#define OOPBase ((struct Library *)OCLASS(OCLASS(OCLASS(o)))->UserData)
+
+VOID HIDD_LinuxMouse_HandleEvent(Object *o, struct pHidd_Mouse_Event *mouseEvent)
+{
+    static MethodID mid = 0;
+    struct pHidd_LinuxMouse_HandleEvent p;
+    
+    if (!mid)
+	mid = GetMethodID(IID_Hidd_LinuxMouse, moHidd_LinuxMouse_HandleEvent);
+	
+    p.mID		= mid;
+    p.mouseEvent	= mouseEvent;
+    
+    DoMethod(o, (Msg)&p);
+}
