@@ -4,3 +4,19 @@
 #MM workbench : workbench-$(ARCH)
 workbench :
 	@$(NOP)
+
+#MM workbench-complete : workbench-c workbench-devs workbench-libs workbench-classes workbench-s
+workbench-complete:
+	@$(NOP)
+
+#MM workbench-libs : workbench-libs-asl workbench-libs-diskfont
+#MM workbench-libs : workbench-libs-gadtools workbench-libs-icon
+#MM workbench-libs : workbench-libs-iffparse workbench-libs-mathieeesptrans workbench-libs-mathtrans
+workbench-libs :
+	@$(NOP)
+
+#MM workbench-classes : workbench-classes-aroscheckbox workbench-classes-aroslist workbench-classes-aroslistview workbench-classes-arosmutualexclude
+workbench-classes :
+	@$(NOP)
+
+
