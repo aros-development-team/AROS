@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc:
@@ -28,8 +28,8 @@
 #include <aros/debug.h>
 
 STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs           *colattrs,
-				   struct LVData		*data,
-				   struct LVBase_intern 	*AROSListviewBase);
+				   struct LVData		*data
+);
 
 #define ForeachViewedCol(iterator, numcols) \
 	for (iterator = 0; iterator < numcols; iterator ++)
@@ -39,8 +39,8 @@ STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs           *colattrs,
 **  ParseFormatString()  **
 **************************/
 BOOL ParseFormatString( STRPTR                  formatstr,
-			struct LVData		*data,
-			struct LVBase_intern	*AROSListviewBase)
+			struct LVData		*data
+)
 {
     #undef NUMPARAMS
     #define NUMPARAMS 5
@@ -205,8 +205,8 @@ VOID RenderEntries( Class                   *cl,
 		    struct gpRender	    *msg,
 		    LONG		    startpos,
 		    UWORD		    num,
-		    BOOL		    erase,
-		    struct LVBase_intern    *AROSListviewBase)
+		    BOOL		    erase
+)
 {
     struct AROSP_List_GetEntry getentry_msg;
     APTR item;
@@ -355,8 +355,8 @@ D(bug("Render: left=%d,idx=%d,text=%s\n", left, idx, data->lvd_DHArray[idx]));
 ******************************/
 
 STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs           *colattrs,
-				   struct LVData		*data,
-				   struct LVBase_intern *AROSListviewBase)
+				   struct LVData		*data
+)
 {
     register UWORD i;
     register LONG pos;
@@ -413,8 +413,8 @@ STATIC VOID HandleSpecialMinWidth( struct ColumnAttrs           *colattrs,
 ************************/
 
 VOID ComputeColumnWidths(UWORD                      listwidth,
-			struct LVData		    *data,
-			struct LVBase_intern	    *AROSListviewBase)
+			struct LVData		    *data
+)
 {
 
     /* First handle columns that want their minwidth to be the
@@ -432,7 +432,7 @@ VOID ComputeColumnWidths(UWORD                      listwidth,
 		+ data->lvd_HorSpacing * (data->lvd_ViewedColumns + 1);
 
     if (data->lvd_Flags & LVFLG_SPECIALCOLWIDTH)
-	HandleSpecialMinWidth(colattrs, data, LVB(AROSListviewBase));
+	HandleSpecialMinWidth(colattrs, data);
 
     /* Compute the sum of the minwidths and the number of columns to be  */
     ForeachViewedCol(i, data->lvd_ViewedColumns)
@@ -528,8 +528,8 @@ VOID ComputeColLeftRight(UWORD gadleft, struct LVData *data)
 VOID DrawListBorder( struct RastPort                *rp,
 			    UWORD		    *pens,
 			    struct IBox 	    *bbox,
-			    BOOL		    recessed,
-			    struct LVBase_intern    *AROSListviewBase)
+			    BOOL		    recessed
+)
 {
     SetAPen (rp, pens[(recessed) ? SHINEPEN : SHADOWPEN]);
 
@@ -578,8 +578,8 @@ VOID DrawListBorder( struct RastPort                *rp,
 **  ShownEntries  **
 *******************/
 UWORD ShownEntries(struct LVData        *data,
-		   struct IBox		*container,
-		   struct LVBase_intern *AROSListviewBase)
+		   struct IBox		*container
+)
 
 {
     ULONG numentries;

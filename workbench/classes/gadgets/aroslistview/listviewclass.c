@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS specific listview class implementation.
@@ -33,10 +33,6 @@
 
 #include <aros/debug.h>
 
-#undef AROSListviewBase
-#define AROSListviewBase ((struct LVBase_intern *)(cl->cl_UserData))
-
-
 
 /*****************************************************************************/
 
@@ -48,13 +44,10 @@
     else				\
 	flagvar &= ~flag;
 
-/**********************
-**  Listview::Set()  **
-**********************/
 
-STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
+STATIC IPTR _OM_SET(Class *cl, Object *o,struct opSet *msg)
 {
-    IPTR retval = 0UL;
+    IPTR retval = (IPTR)0;
 
     const struct TagItem *tag, *tstate;
     struct LVData *data;
@@ -141,7 +134,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		ULONG colattrsz = UB(&colattrs[data->lvd_MaxColumns]) - UB(&colattrs[0]);
 
 		memset(colattrs, 0, colattrsz);
-		ParseFormatString((STRPTR)tag->ti_Data, data, LVB(AROSListviewBase));
+		ParseFormatString((STRPTR)tag->ti_Data, data);
 		retval = 1UL;
 	    } break;
 
@@ -264,11 +257,70 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 }
 
 /**********************
+**  Listview::Set()  **
+**********************/
+
+IPTR AROSListview__OM_SET(Class *cl, Object *o,struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+
+    retval += (IPTR)_OM_SET(cl, o, (struct opSet *)msg);
+    return retval;
+}
+
+/*************************
+**  Listview::Update()  **
+*************************/
+
+IPTR AROSListview__OM_UPDATE(Class *cl, Object *o,struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+    struct LVData *data = INST_DATA(cl, o);
+    
+    retval += (IPTR)_OM_SET(cl, o, (struct opSet *)msg);
+
+    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
+     * because it would circumvent the subclass from fully overriding it.
+     * The check of cl == OCLASS(o) should fail if we have been
+     * subclassed, and we have gotten here via DoSuperMethodA().
+     */
+    if (    retval
+	 && (cl == OCLASS(o))
+	 && (data->lvd_NotifyCount)
+    )
+    {
+	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+	    if (rp)
+	    {
+		struct IBox ibox;
+
+		GetGadgetIBox(o, gi, &ibox);
+		data->lvd_DamageOffset = 0;
+		data->lvd_NumDamaged = NumVisible(&ibox, data->lvd_EntryHeight);
+
+
+		D(bug("Major rerender: o=%d, n=%d\n",
+		      data->lvd_DamageOffset, data->lvd_NumDamaged)
+		);
+
+		DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
+		ReleaseGIRPort(rp);
+	    }
+	}
+    }
+    
+    return retval;
+}
+
+/**********************
 **  Listview::New()  **
 **********************/
 
 
-STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
+IPTR AROSListview__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     struct LVData *data;
     struct ColumnAttrs *colattrs;
@@ -331,13 +383,13 @@ D(bug("disphookarray allocated\n"));
     data->lvd_BackPen  = BACKGROUNDPEN;
 
     /* Handle our special tags - overrides defaults */
-    listview_set(cl, o, msg);
+    _OM_SET(cl, o, msg);
 
     /* If not font has been set, use our own. */
     if (!data->lvd_Font)
     {
         struct TextAttr tattr;
-        struct TextFont *tf = ((GraphicsBase *)GfxBase)->DefaultFont;
+        struct TextFont *tf = GfxBase->DefaultFont;
 
         memset(&tattr, 0, sizeof (struct TextAttr));
         tattr.ta_Name  = tf->tf_Message.mn_Node.ln_Name;
@@ -362,7 +414,7 @@ failure:
 /**********************
 **  Listview::Get()  **
 **********************/
-STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
+IPTR ARSOListview__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     IPTR retval = 1UL;
     struct LVData *data;
@@ -399,7 +451,7 @@ STATIC IPTR listview_get(Class *cl, Object *o, struct opGet *msg)
 /**************************
 **  Listview::Dispose()  **
 **************************/
-STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
+VOID AROSListview__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct LVData *data;
 
@@ -420,7 +472,7 @@ STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
 /**************************
 **  Listview::HitTest()  **
 **************************/
-STATIC IPTR listview_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR AROSListview__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
     IPTR retval;
     struct LVData *data = INST_DATA(cl, o);
@@ -443,7 +495,7 @@ STATIC IPTR listview_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 ***************************/
 
 
-STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSListview__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval = GMR_NOREUSE;
 
@@ -473,7 +525,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
     GetAttr(AROSA_List_Entries, data->lvd_List, &numentries);
 
     /* How many entries are currently shown in the listview ? */
-    shown = ShownEntries(data, &container, AROSListviewBase);
+    shown = ShownEntries(data, &container);
 
     /* offset from top of listview of the entry clicked */
     clickpos = (msg->gpi_Mouse.Y - LV_BORDERWIDTH_Y)
@@ -605,7 +657,7 @@ exit:
 **  Listview::HandleInput()  **
 ******************************/
 
-STATIC IPTR listview_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSListview__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     /* Default: stay active */
     IPTR retval = GMR_MEACTIVE;
@@ -618,7 +670,7 @@ STATIC IPTR listview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 **  Listview::Render()  **
 *************************/
 
-STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
+IPTR AROSListview__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct IBox container;
     struct LVData *data = INST_DATA(cl, o);
@@ -649,15 +701,15 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	    DrawListBorder(msg->gpr_RPort,
 		msg->gpr_GInfo->gi_DrInfo->dri_Pens,
 		&container,
-		(data->lvd_Flags & LVFLG_READONLY),
-		AROSListviewBase);
+		(data->lvd_Flags & LVFLG_READONLY)
+	    );
 
 
 	    RenderEntries(cl, o, msg,
 		data->lvd_First,
-		ShownEntries(data, &container, AROSListviewBase),
-		FALSE,
-		AROSListviewBase);
+		ShownEntries(data, &container),
+		FALSE
+	    );
 
 	    break;
 
@@ -671,8 +723,8 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 		RenderEntries(cl, o, msg,
 			data->lvd_First + offset,
 			1,
-			TRUE,
-			AROSListviewBase);
+			TRUE
+		);
 
 	    }
 
@@ -686,7 +738,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 /*************************
 **  Listview::Layout()  **
 **************************/
-STATIC VOID listview_layout(Class *cl, Object *o, struct gpLayout *msg)
+VOID AROSListview__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     #undef RELFLAGS
     #define RELFLAGS (GFLG_RELRIGHT|GFLG_RELWIDTH|GFLG_RELHEIGHT|GFLG_RELBOTTOM)
@@ -715,13 +767,13 @@ D(bug("data->lvd_List: %p\n", data->lvd_List));
 	    GetGadgetIBox(o, gi, &container);
 
 	    /* Compute widths of each column */
-	    ComputeColumnWidths(container.Width, data, LVB(AROSListviewBase));
+	    ComputeColumnWidths(container.Width, data);
 
 	    /* Compute left and right offsets for each column */
 	    ComputeColLeftRight(container.Left, data);
 
 
-	    tags[0].ti_Data  = ShownEntries(data, &container, AROSListviewBase);
+	    tags[0].ti_Data  = ShownEntries(data, &container);
 D(bug("Layot: notifying visible=%d, gi=%d\n", tags[0].ti_Data, gi));
 	    DoMethod(o, OM_SET, (IPTR) tags, (IPTR) gi);
 	} /* if (gadgetinfo supplied) */
@@ -734,178 +786,63 @@ D(bug("Layot: notifying visible=%d, gi=%d\n", tags[0].ti_Data, gi));
 /*****************************
 **  Listview::GoInActive()  **
 *****************************/
-STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
+IPTR AROSListview__GM_GOINACTIVE(Class *cl, Object *o, struct gpGoInactive *msg)
 {
-    IPTR retval = 0UL;
-
-    return (retval);
+    return (IPTR)0;
 }
 
-
-/*****************
-**  Dispatcher	**
-*****************/
-
-AROS_UFH3S(IPTR, dispatch_listviewclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
+/***********************
+** Listview::Insert() **
+***********************/
+IPTR AROSListview__AROSM_Listview_Insert
+(   
+    Class *cl,
+    Object *o,
+    struct AROSP_Listview_Insert *msg
 )
 {
-    AROS_USERFUNC_INIT
+    struct LVData *data = INST_DATA(cl, o);
 
-    IPTR retval = 0UL;
-
-D(bug("lv disph: %d\n", msg->MethodID));
-    switch(msg->MethodID)
-    {
-	case GM_RENDER:
-	    retval = listview_render(cl, o, (struct gpRender *)msg);
-	    break;
-
-	case GM_GOACTIVE:
-	    retval = listview_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case GM_HANDLEINPUT:
-	    retval = listview_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case GM_GOINACTIVE:
-	    retval = listview_goinactive(cl, o, (struct gpGoInactive *)msg);
-	    break;
-
-	case OM_NEW:
-	    retval = listview_new(cl, o, (struct opSet *)msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    retval += (IPTR)listview_set(cl, o, (struct opSet *)msg);
-	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	     * because it would circumvent the subclass from fully overriding it.
-	     * The check of cl == OCLASS(o) should fail if we have been
-	     * subclassed, and we have gotten here via DoSuperMethodA().
-	     */
-	    if (    retval
-		 && (msg->MethodID == OM_UPDATE)
-		 && (cl == OCLASS(o))
-		 && (!LVD(INST_DATA(cl, o))->lvd_NotifyCount) )
-	    {
-		struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-		if (gi)
-		{
-		    struct RastPort *rp = ObtainGIRPort(gi);
-		    if (rp)
-		    {
-			struct LVData *data = INST_DATA(cl, o);
-			struct IBox ibox;
-
-			GetGadgetIBox(o, gi, &ibox);
-			data->lvd_DamageOffset = 0;
-			data->lvd_NumDamaged = NumVisible(&ibox, data->lvd_EntryHeight);
-
-
-			D(bug("Major rerender: o=%d, n=%d\n",
-				data->lvd_DamageOffset, data->lvd_NumDamaged));
-
-			DoMethod(o, GM_RENDER, (IPTR) gi, (IPTR) rp, GREDRAW_UPDATE);
-			ReleaseGIRPort(rp);
-
-		    } /* if */
-		} /* if */
-	    } /* if */
-
-	    break;
-
-	case OM_GET:
-	    retval = (IPTR)listview_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	case OM_DISPOSE:
-	    listview_dispose(cl, o, msg);
-	    break;
-
-	case GM_LAYOUT:
-	    listview_layout(cl, o, (struct gpLayout *)msg);
-	    break;
-
-	case GM_HITTEST:
-	    retval = listview_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-
-
-	case AROSM_Listview_Insert:
-	{
-
-
-	    #undef LIP
-	    #define LIP(msg) ((struct AROSP_Listview_Insert *)msg)
-	    struct LVData *data = INST_DATA(cl, o);
-	    retval = (IPTR)DoMethod(    data->lvd_List,
-			AROSM_List_Insert,
-			(IPTR) LIP(msg)->ItemArray,
-			LIP(msg)->Position);
-	 } break;
-
-
-	case AROSM_Listview_InsertSingle:
-	{
-	    #undef LISP
-	    #define LISP(msg) ((struct AROSP_Listview_InsertSingle *)msg)
-
-	    struct LVData *data = INST_DATA(cl, o);
-	    retval = (IPTR)DoMethod(    data->lvd_List,
-			AROSM_List_InsertSingle,
-			(IPTR) LISP(msg)->Item,
-			LISP(msg)->Position);
-
-	} break;
-
-	case AROSM_Listview_Remove:
-	{
-	    #undef LRP
-	    #define LRP(msg) ((struct AROSP_Listview_Insert *)msg)
-
-	    struct LVData *data = INST_DATA(cl, o);
-	    retval = (IPTR)DoMethod(    data->lvd_List,
-			AROSM_List_InsertSingle,
-			LRP(msg)->Position);
-
-	} break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-    } /* switch */
-
-
-    ReturnPtr("lv disp", IPTR, retval);
-    AROS_USERFUNC_EXIT
-}  /* dispatch_listviewclass */
-
-
-#undef AROSListviewBase
-
-/****************************************************************************/
-
-/* Initialize our listview class. */
-struct IClass *InitListviewClass (struct LVBase_intern * AROSListviewBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the listviewclass...
-     */
-    if ((cl = MakeClass(AROSLISTVIEWCLASS, GADGETCLASS, NULL, sizeof(struct LVData), 0)))
-    {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_listviewclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSListviewBase;
-
-	AddClass (cl);
-    }
-
-    return (cl);
+    return (IPTR)DoMethod(data->lvd_List,
+			  AROSM_List_Insert,
+			  (IPTR) msg->ItemArray,
+			  msg->Position
+    );
 }
 
+/*****************************
+** Listview::InsertSingle() **
+*****************************/
+IPTR AROSListview__AROSM_Listview_InsertSingle
+(
+    Class *cl,
+    Object *o,
+    struct AROSP_Listview_InsertSingle *msg
+)
+{
+    struct LVData *data = INST_DATA(cl, o);
+
+    return (IPTR)DoMethod(data->lvd_List,
+			  AROSM_List_InsertSingle,
+			  (IPTR) msg->Item,
+			  msg->Position
+    );
+}
+
+/***********************
+** Listview::Remove() **
+***********************/
+IPTR AROSListview__AROSM_Listview_Remove
+(   
+    Class *cl,
+    Object *o,
+    struct AROSP_Listview_Insert *msg
+)
+{
+    struct LVData *data = INST_DATA(cl, o);
+
+    return (IPTR)DoMethod(data->lvd_List,
+			  AROSM_List_InsertSingle,
+			  msg->Position
+    );
+}

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -32,11 +32,6 @@
 #ifndef INTUITION_GADGETCLASS_H
 #   include <intuition/gadgetclass.h>
 #endif
-
-/* Predeclaration */
-struct LVBase_intern;
-
-#define GLOBAL_INTUIBASE
 
 #define TURN_OFF_DEBUG
 
@@ -147,70 +142,15 @@ struct ColumnAttrs
 
 
 /* Prototypes */
-BOOL ParseFormatString(STRPTR, struct LVData *, struct LVBase_intern *);
+BOOL ParseFormatString(STRPTR, struct LVData *);
 
-VOID RenderEntries(Class *, Object *, struct gpRender *, LONG, UWORD, BOOL, struct LVBase_intern *);
+VOID RenderEntries(Class *, Object *, struct gpRender *, LONG, UWORD, BOOL);
 
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
-VOID DrawListBorder(struct RastPort *, UWORD *, struct IBox *, BOOL, struct LVBase_intern *);
-VOID ComputeColumnWidths(UWORD, struct LVData *, struct LVBase_intern *);
+VOID DrawListBorder(struct RastPort *, UWORD *, struct IBox *, BOOL);
+VOID ComputeColumnWidths(UWORD, struct LVData *);
 VOID ComputeColLeftRight(UWORD, struct LVData *);
-UWORD ShownEntries(struct LVData *, struct IBox *, struct LVBase_intern *);
+UWORD ShownEntries(struct LVData *, struct IBox *);
 VOID NotifyAttrs(Class *, Object *, struct opSet *, struct TagItem *);
 
-
-
-/* Library stuff */
-struct LVBase_intern
-{
-    struct Library	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-    struct Library	*dosbase;
-
-    #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
-    #endif
-    struct GfxBase	*gfxbase;
-    struct Library	*utilitybase;
-
-    struct IClass	*classptr;
-
-};
-
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
-#undef LVB
-#define LVB(b) ((struct LVBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase	LVB(AROSListviewBase)->utilitybase
-
-
-#ifndef GLOBAL_INTUIBASE
-#undef IntuitionBase
-#define IntuitionBase	LVB(AROSListviewBase)->intuitionbase
-#endif
-
-#undef GfxBase
-#define GfxBase 	LVB(AROSListviewBase)->gfxbase
-
-/* On Linux-M68k SysBase has to be global! */
-extern struct ExecBase * SysBase;
-
-/*
-#undef SysBase
-#define SysBase 	LVB(AROSListviewBase)->sysbase
-*/
-#undef DOSBase
-#define DOSBase 	LVB(AROSListviewBase)->dosbase
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct LVBase_intern *, AROSListviewBase, 3, AROSListview)
-
-#endif /* ASL_INTERN_H */
+#endif /* AROSLISTVIEW_INTERN_H */

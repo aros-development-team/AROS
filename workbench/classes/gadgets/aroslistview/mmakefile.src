@@ -5,8 +5,7 @@ FILES := listviewclass helpfuncs
 
 #MM workbench-gadgets-aroslistview : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-aroslistview \
-  modname=aroslistview modtype=gadget files=$(FILES) \
-  conffile=lib.conf uselibs="amiga rom"
+%build_module mmake=workbench-gadgets-aroslistview \
+  modname=aroslistview modtype=gadget \
+  files=$(FILES) uselibs="amiga rom"
 
-%common
