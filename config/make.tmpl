@@ -690,21 +690,19 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    if CC="$(HOST_CC)" \
+	    CC="$(HOST_CC)" \
 	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	        $(%(mmake)-includedir) %(extraoptions); then \
-	        $(TOUCH) $@; \
-	    fi
+	        $(%(mmake)-includedir) %(extraoptions) &&
+	        $(TOUCH) $@
 else
 $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR); \
 	    $(RM) config.cache; \
-	    if CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
+	    CC="$(TARGET_CC) -nix" CC_FOR_BUILD="$(HOST_CC)" \
 	        %(srcdir)/configure $(%(mmake)-compile_prefix) $(%(mmake)-bindir) $(%(mmake)-libdir) \
-	        $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros; then \
-	        $(TOUCH) $@; \
-  	    fi
+	        $(%(mmake)-includedir) %(extraoptions) --host=$(AROS_TARGET_CPU)-aros && \
+	        $(TOUCH) $@
 endif
 	
 #MM
