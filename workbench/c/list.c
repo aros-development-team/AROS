@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/12 14:49:25  digulla
+    More checks
+    Better code to specify size of buffer
+
     Revision 1.3  1996/08/01 17:40:45  digulla
     Added standard header for all files
 
@@ -54,7 +58,7 @@ static LONG tinymain(void)
     static UBYTE buffer[4096];
     UBYTE flags[9];
     LONG argv[5];
-    LONG error=0;
+    LONG error=0, rc=RETURN_OK;
 
     rda=ReadArgs("DIR",(ULONG *)args,NULL);
     if(rda!=NULL)
@@ -69,7 +73,7 @@ static LONG tinymain(void)
 		eac->eac_LastKey=0;
 		do
 		{
-		    loop=ExAll(dir,(struct ExAllData *)buffer,4096,ED_COMMENT,eac);
+		    loop=ExAll(dir,(struct ExAllData *)buffer,sizeof(buffer),ED_COMMENT,eac);
 		    if(!loop&&IoErr()!=ERROR_NO_MORE_ENTRIES)
 		    {
 			error=RETURN_ERROR;
@@ -149,10 +153,21 @@ static LONG tinymain(void)
 	    }
 	    UnLock(dir);
 	}
+	else
+	{
+	    PrintFault(IoErr(),"List: Lock failed");
+	    rc = RETURN_ERROR;
+	}
+
 	FreeArgs(rda);
-    }else
+    }
+    else
+    {
 	error=RETURN_FAIL;
-    if(error)
+    }
+
+    if (error)
 	PrintFault(IoErr(),"List");
-    return error;
+
+    return rc;
 }
