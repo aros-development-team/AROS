@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2001/08/16 15:04:43  falemagn
+    Implemented nonblocking mode
+
     Revision 1.12  2001/07/16 19:22:41  falemagn
     The FSA_CREATE_DIRECTORY actoon didn't return a valid filehandle: FIXED. Implemented deleting.
 
@@ -98,6 +101,7 @@ struct filenode
     ULONG            numreaders;         /* Num of actual readers */
     struct List      pendingwrites;      /* List of pending write requestes */
     struct List      pendingreads;       /* List of pending read requestes */
+    ULONG            flags;              /* See below */
 };
 /*
    Abuse of pendingreads so that it's used as waiting list either for
@@ -106,6 +110,9 @@ struct filenode
 */
 #define waitinglist pendingreads
 
+/* Flags for filenodes */
+#define FNF_DELETEONCLOSE 1               /* Specify this flag when you want a pipe to be deleted
+                                             when it's closed. Useful for unnamed pipes */
 struct usernode
 {
     struct Node      node;
@@ -143,7 +150,7 @@ const struct Resident pipefs_handler_resident=
 
 static const char name[]="pipefs.handler";
 
-static const char version[]="$VER: pipefs-handler 41.1 (8.6.96)\r\n";
+static const char version[]="$VER: pipefs-handler 41.1 (" __DATE__ ")\r\n";
 
 static const APTR inittabl[4]=
 {
@@ -352,6 +359,7 @@ AROS_LH1(void, beginio,
 	case FSA_CLOSE:
 	case FSA_CREATE_DIR:
         case FSA_DELETE_OBJECT:
+	case FSA_FILE_MODE:
 	    error = SendRequest(pipefsbase, iofs);
 	    enqueued = !error;
 	    break;
@@ -527,6 +535,40 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
     #undef dn
 }
 
+static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filename, ULONG flags, struct dirnode *dn, ULONG *err)
+{
+    struct filenode *fn;
+
+    fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
+    if (fn)
+    {
+	fn->name = StrDup(pipefsbase, filename);
+
+	if (fn->name)
+	{
+	    fn->type = ST_PIPEFILE;
+
+	    DateStamp(&fn->datestamp);
+	    NEWLIST(&fn->pendingwrites);
+	    NEWLIST(&fn->pendingreads);
+
+	    fn->parent = dn;
+	    fn->flags  = flags;
+
+	    AddTail(&dn->files, (struct Node *)fn);
+	    kprintf("New file created and added to the list\n");
+
+	    return fn;
+	}
+
+	FreeVec(fn);
+    }
+
+    kprintf("AllocVec Failed. No more memory available\n");
+    *err = ERROR_NO_FREE_STORE;
+    return NULL;
+}
+
 static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err)
 {
     struct filenode *fn;
@@ -535,6 +577,11 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 
     kprintf("User wants to open file %S.\n", filename);
     kprintf("Current directory is %S\n", dn->name);
+
+    if (dn && !dn->parent && strcmp(filename, "//unnamedpipe//") == 0)
+    {
+	return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, &err);
+    }
 
     fn = FindFile(&dn, filename);
     if (!fn)
@@ -545,38 +592,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 	{
 	    kprintf("But the user wants it to be created.\n");
 
-	    fn = AllocVec(sizeof(*fn), MEMF_PUBLIC|MEMF_CLEAR);
-	    if (fn)
-	    {
-		fn->name = StrDup(pipefsbase, FilePart(filename));
-
-		if (fn->name)
-		{
-		    fn->type = ST_PIPEFILE;
-
-		    DateStamp(&fn->datestamp);
-		    NEWLIST(&fn->pendingwrites);
-		    NEWLIST(&fn->pendingreads);
-
-		    fn->parent = dn;
-
-		    AddTail(&dn->files, (struct Node *)fn);
-		    kprintf("New file created and added to the list\n");
-
-		    return fn;
-		}
-
-		FreeVec(fn);
-	    }
-
-	    kprintf("AllocVec Failed. No more memory available\n");
-	    *err = ERROR_NO_FREE_STORE;
-	    return NULL;
-	}
-	else
-	{
-            *err = ERROR_OBJECT_NOT_FOUND;
-	    return NULL;
+	    return NewFileNode(pipefsbase, FilePart(filename), 0, dn, &err);
 	}
     }
 
@@ -705,7 +721,7 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    if (!fn->numwriters || !fn->numreaders)
 		    {
-			if (un->mode&(FMF_WRITE|FMF_READ))
+			if (un->mode&(FMF_WRITE|FMF_READ) && !(un->mode&FMF_NONBLOCK))
 			{
 			    /*
 			       If we're lacking of writers or readers
@@ -785,6 +801,14 @@ AROS_UFH3(LONG, pipefsproc,
 		    }
 
 		    un->fn->numusers--;
+
+		    if (!un->fn->numusers && un->fn->type <= 0 && (un->fn->flags & FNF_DELETEONCLOSE))
+		    {
+ 		        Remove((struct Node *)fn);
+		        FreeVec(fn->name);
+		        FreeVec(fn);
+		    }
+
 		    FreeVec(un);
 		    SendBack(msg, 0);
 
@@ -1033,6 +1057,12 @@ AROS_UFH3(LONG, pipefsproc,
 			SendBack(msg, ERROR_BROKEN_PIPE);
 		        continue;
 		    }
+		    if (un->mode & FMF_NONBLOCK)
+		    {
+		        kprintf("The pipe is in non blocking mode, so don't enqueue the message\n");
+    		        SendBack(msg, ERROR_WOULD_BLOCK);
+		        continue;
+		    }
 		    kprintf("Enqueing the message\n");
 		    msg->curlen = msg->iofs->io_Union.io_READ_WRITE.io_Length;
 		    AddTail(&fn->pendingwrites, (struct Node *)msg);
@@ -1049,9 +1079,16 @@ AROS_UFH3(LONG, pipefsproc,
 		    {
 			kprintf("There's no data to read: send EOF\n");
 			msg->iofs->io_Union.io_READ_WRITE.io_Length = 0;
-			SendBack(msg, 0);
+		        SendBack(msg, 0);
 		        continue;
 		    }
+		    if (un->mode & FMF_NONBLOCK)
+		    {
+		        kprintf("The pipe is in non blocking mode, so don't enqueue the message\n");
+    		        SendBack(msg, ERROR_WOULD_BLOCK);
+		        continue;
+		    }
+
 		    kprintf("Enqueing the message\n");
 		    msg->curlen = msg->iofs->io_Union.io_READ_WRITE.io_Length;
 		    AddTail(&fn->pendingreads, (struct Node *)msg);
