@@ -27,8 +27,8 @@
 #include <proto/intuition.h>
 #include <devices/conunit.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
@@ -106,11 +106,11 @@ static const UBYTE datatable=0;
 *****************/
 static const struct TagItem win_tags[] =
 {
-    {WA_Width,		400},
+    {WA_Width,		500},
     {WA_Height,		300},
-    {WA_SmartRefresh,	TRUE},
+    {WA_SimpleRefresh,	TRUE},
     {WA_DragBar,	TRUE},
-    {WA_IDCMP,		IDCMP_REFRESHWINDOW | IDCMP_RAWKEY},
+    {WA_IDCMP,		IDCMP_REFRESHWINDOW | IDCMP_RAWKEY | IDCMP_MOUSEMOVE | IDCMP_MOUSEBUTTONS|IDCMP_GADGETUP|IDCMP_GADGETDOWN},
     {WA_Title,		(IPTR)"CON:"},
     {TAG_DONE,		0UL}
 };
@@ -147,7 +147,22 @@ static LONG open_con(struct conbase 	*conbase
 		    fh->conio->io_Length = sizeof (struct Window);
 	    	    if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conio), 0))
 		    {
-    	    	    	D(bug("device opend\n"));
+
+
+			const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
+			
+			D(bug("device opened\n"));
+			
+			/* Turn the console into LF+CR mode so that both
+			   linefeed and carriage return is done on 
+			*/
+			fh->conio->io_Command	= CMD_WRITE;
+			fh->conio->io_Data	= (APTR)lf_on;
+			fh->conio->io_Length	= 4;
+			
+			DoIO(ioReq(fh->conio));
+
+			
 		    	*fh_ptr = fh;
 		    	ReturnInt("open_conh", LONG, 0);
 		    
@@ -215,6 +230,7 @@ static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buff
     fh->conio->io_Data	  = buffer;
     fh->conio->io_Length  = *length_ptr;
     
+    for (;;) {err = err;}
     err = DoIO( ioReq(fh->conio) );
     *length_ptr = fh->conio->io_Actual;
     
@@ -225,6 +241,8 @@ static LONG con_write(struct conbase *conbase, struct filehandle *fh, UBYTE *buf
 {
     LONG err;
     
+    EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, buffer));
+    
     fh->conio->io_Command = CMD_WRITE;
     fh->conio->io_Data	  = buffer;
     fh->conio->io_Length  = *length_ptr;
@@ -232,7 +250,7 @@ static LONG con_write(struct conbase *conbase, struct filehandle *fh, UBYTE *buf
     err = DoIO( ioReq(fh->conio) );
     *length_ptr = fh->conio->io_Actual;
     
-    return err;
+   ReturnInt("con_write", LONG, err);
 }
 
 /************************ Library entry points ************************/
