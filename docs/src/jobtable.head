@@ -1,4 +1,0 @@
-<FORM ACTION="cgi-bin/jobserv.cgi" METHOD="POST">
-EMail: <INPUT TYPE="text" NAME="email" SIZE=50 MAXLENGTH=256><P>
-<TABLE BORDER=0>
-    <TR><TH>Action</TH><TH>Job</TH></TR>

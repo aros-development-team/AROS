@@ -1,7 +1,0 @@
-\if{html}
-{
-    \chapter{Jobserver}
-    \include{jobserv-free.src}
-    \include{jobserv-done.src}
-    \include{jobserv-work.src}
-}

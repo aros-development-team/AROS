@@ -1,8 +1,0 @@
-AuthUserFile /home/digulla/.htpasswd
-AuthGroupFile /dev/null
-AuthName ByPassword
-AuthType Basic
-
-<Limit GET>
-require user digulla matthias pgpeter iaint zino mreckt ldp quango geert turrican nlorentz ruppert vmc helios srittau laguest stepan juddc frv95tjn pcosta daniel mroth nico fasten jaxom ykoehler hansvi rycohen chexum
-</Limit>
