@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Beep
-    Lang: english
+    Lang: English
 */
 
 /*****************************************************************************
@@ -17,7 +17,7 @@
     SYNOPSIS
 
     LOCATION
-	Workbench:c
+	Workbench:C
 
     FUNCTION
 	BEEP produces a beep via Intuition DisplayBeep(NULL).
@@ -26,7 +26,7 @@
 	
     SEE ALSO
 
-**************************************************************************/
+******************************************************************************/
 
 #include <proto/exec.h>
 #include <intuition/intuition.h>
@@ -34,21 +34,26 @@
 #include <proto/intuition.h>
 #include <intuition/screens.h>
 
-static const char version[] = "$VER: Beep 1.0 (30.12.2000)";
+#include <stdio.h>
+
+static const char version[] = "$VER: Beep 41.0 (30.12.2000)";
 
 int main()
 {
-struct IntuitionBase *IntuitionBase;
+    struct IntuitionBase *IntuitionBase;
+    
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 
+							0);
 
-  IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
-  if ( IntuitionBase == NULL )
-  {
-    printf ( "Cannot open intuition.library!\n" );
-  }
+    if ( IntuitionBase == NULL )
+    {
+	printf( "Cannot open intuition.library!\n" );
+    }
+    
+    DisplayBeep( NULL );
+    
+    CloseLibrary( (struct Library *)IntuitionBase );
+    
+    return 0;
+}
 
-  DisplayBeep ( NULL );
-
-  CloseLibrary ( (struct Library *)IntuitionBase );
-
-return 0;
-}	    
