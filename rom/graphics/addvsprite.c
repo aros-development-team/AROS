@@ -55,7 +55,7 @@
 
   struct VSprite * CurVSprite;
   /* the Y-coordinate is most significant! */
-  LONG Koord = (vs->Y << 16) + vs->X;
+  LONG Koord = (((UWORD)vs->Y) << 16UL) + (UWORD)vs->X;
 
   /* Reset the Flags for this VSprite and set OldX/Y */
   vs -> Flags &= 0xFF;
@@ -68,8 +68,8 @@
      list of VSprites which is connected to the GelsInfo which was
      previously found in the rastport */
 
-  while ( (CurVSprite->NextVSprite->Y << 16) +
-           CurVSprite->NextVSprite->X        < Koord)
+  while ( ( ((UWORD)CurVSprite->NextVSprite->Y) << 16UL) +
+           (UWORD)CurVSprite->NextVSprite->X        < Koord)
     CurVSprite = CurVSprite->NextVSprite;
 
   /* insert the new VSprite *after* CurVSprite */
@@ -79,6 +79,7 @@
   vs -> PrevVSprite = CurVSprite;
   CurVSprite -> NextVSprite = vs;
 
+kprintf("\n\n======== added bob: prev = %x  next = %x\n\n", vs->PrevVSprite, vs->NextVSprite);
 
   AROS_LIBFUNC_EXIT
 } /* AddVSprite */
