@@ -283,11 +283,11 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type == MUIV_Imageadjust_Type_Image)
     {
 	external_group = ListviewObject,
-	    MUIA_Listview_List, external_list = ListObject,
-	    InputListFrame,
-	    MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
-	    MUIA_List_DestructHook, MUIV_List_DestructHook_String,
-	    End,
+	    MUIA_Listview_List, (IPTR)external_list = ListObject,
+	        InputListFrame,
+	        MUIA_List_ConstructHook, MUIV_List_ConstructHook_String,
+	        MUIA_List_DestructHook, MUIV_List_DestructHook_String,
+	        End,
 	    End;
     }
     
@@ -295,16 +295,18 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	adjust_type == MUIV_Imageadjust_Type_Background)
     {
 	bitmap_group = VGroup,
-	    Child, bitmap_image = ImagedisplayObject,
+	    Child, (IPTR)bitmap_image = ImagedisplayObject,
 	        TextFrame,
 	        InnerSpacing(0,0),
 	        MUIA_Imagedisplay_FreeHoriz, TRUE,
 	        MUIA_Imagedisplay_FreeVert, TRUE,
 	        End,
-	    Child, bitmap_popasl = PopaslObject,
-	        MUIA_Popstring_String, bitmap_string =
-	        StringObject, StringFrame, MUIA_CycleChain, 1, End,
-	        MUIA_Popstring_Button, PopButton(MUII_PopFile),
+	    Child, (IPTR)bitmap_popasl = PopaslObject,
+	        MUIA_Popstring_String, (IPTR)bitmap_string = StringObject,
+                    StringFrame,
+                    MUIA_CycleChain, 1,
+                    End,
+	        MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopFile),
 	        End,
 	    End;
     }
@@ -313,36 +315,36 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	case MUIV_Imageadjust_Type_All:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-				       MUIA_Register_Titles, labels_all,
+				       MUIA_Register_Titles, (IPTR)labels_all,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, HCenter((vector_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       Child, (IPTR)bitmap_group,
-				       TAG_MORE, msg->ops_AttrList);
+				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Background:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-				       MUIA_Register_Titles, labels_bg,
+				       MUIA_Register_Titles, (IPTR)labels_bg,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)bitmap_group,
-				       TAG_MORE, msg->ops_AttrList);
+				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Image:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-				       MUIA_Register_Titles, labels_image,
+				       MUIA_Register_Titles, (IPTR)labels_image,
 				       Child, HCenter((pattern_group = ColGroup(6), End)),
 				       Child, HCenter((vector_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
-				       TAG_MORE, msg->ops_AttrList);
+				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Pen:
 	    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-				       MUIA_Register_Titles, labels_color,
+				       MUIA_Register_Titles, (IPTR)labels_color,
 				       Child, (IPTR)color_group,
-				       TAG_MORE, msg->ops_AttrList);
+				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
     }
 
@@ -396,7 +398,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		    ButtonFrame,
 		    InnerSpacing(4,4),
 		    MUIA_CycleChain, 1,
-		    MUIA_Image_Spec, spec,
+		    MUIA_Image_Spec, (IPTR)spec,
 		    MUIA_InputMode, MUIV_InputMode_Immediate,
 		    MUIA_Weight, 0,
 		    End;
