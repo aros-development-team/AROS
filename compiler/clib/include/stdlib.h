@@ -45,17 +45,22 @@ void lcong48(unsigned short int param[7]);
 #   define RAND_MAX	   2147483647
 #endif
 
-void qsort (void * array, size_t count, size_t elementsize,
+void qsort(void * array, size_t count, size_t elementsize,
 	int (*comparefunction)(const void * element1, const void * element2));
-void * bsearch (const void * key, const void * base, size_t count,
+void * bsearch(const void * key, const void * base, size_t count,
 	size_t size, int (*comparefunction)(const void *, const void *));
 
-void * malloc (size_t size);
-void * calloc (size_t count, size_t size);
-void * realloc (void * oldmem, size_t newsize);
-void free (void * memory);
+void *malloc(size_t size);
+void *calloc(size_t count, size_t size);
+void *realloc(void *oldmem, size_t newsize);
+void  free(void *memory);
 
-char *getenv ( const char * name);
-char *mktemp ( char * buf);
+char *getenv(const char *name);
+char *setenv(const char *name, const char *value, int overwrite);
+int   putenv(const char *string);
+
+char *mktemp(char *buf);
+
+char *gcvt(double number, size_t ndigit, char *buf);
 
 #endif /* _STDLIB_H */

@@ -6,8 +6,10 @@
     Lang: english
 */
 
+#include <proto/exec.h>
 #include <proto/dos.h>
-#include <errno.h>
+
+#include "__env.h"
 
 /*****************************************************************************
 
@@ -27,7 +29,7 @@
 
     RESULT
 	Pointer to the variable's value, or NULL on failure.
-	
+
     NOTES
         This function must not be used in a shared library.
 
@@ -45,29 +47,27 @@
 
 ******************************************************************************/
 {
-    static char *var = NULL;
-    char    	c;
-    
-    /* 
+    __env_item *var = NULL;
+    char  c;
+
+    /*
       This will always return 0 if the var exists and EOF if it doesn't,
       then we'll be able to retrieve the var lenght with IoErr()
     */
     if (!GetVar((char *)name, &c, 1, GVF_BINARY_VAR))
     {
-    	LONG len = IoErr()+1;
-	
-	var = malloc(len);
-	
-	if (!var)
-	    errno = ENOMEM;
-    	else
+    	LONG len = IoErr();
+
+	var = __env_getvar(name, len);
+
+	if (var)
 	{
-    	    /*This should not fail, unless someone stealt our variable*/
-#warning FIXME: maybe this function should be atomic 	    
-    	    GetVar((char *)name, var, len, GVF_BINARY_VAR);
-	}       
+	    /*This should not fail, unless someone stealt our variable*/
+#warning FIXME: maybe this function should be atomic
+    	    GetVar((char *)name, var->value, len, GVF_BINARY_VAR);
+	}
     }
 
-    return var;
+    return (var?var->value:NULL);
 } /* getenv */
 
