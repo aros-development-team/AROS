@@ -385,8 +385,8 @@ static int relocate
         const ULONG           num_relocs  = (rel++)->num_entries;
 
         /* 
-           Use the Duff's device to the relocations, in order to improve
-           performances. More infos here: http://www.lysator.liu.se/c/duffs-device.html
+           Use the Duff's device to do the relocation, in order to improve
+           performances. More info here: http://www.lysator.liu.se/c/duffs-device.html
         */ 
          
         register long j = (num_relocs + 7) / 8;
