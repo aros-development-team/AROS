@@ -1716,8 +1716,8 @@ ifneq (%(install_target),)
     -C $(GENDIR)/$(CURDIR) uninstall && \
     $(RM) $(GENDIR)/$(CURDIR)/.installed
 else
-    %(mmake)-install_command   := $(TRUE)
-    %(mmake)-uninstall_command := $(TRUE)
+    %(mmake)-install_command   := true
+    %(mmake)-uninstall_command := true
 endif
 
 #MM- %(mmake)-quick : %(mmake)-build_and_install-quick %(postinstall)
