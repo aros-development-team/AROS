@@ -17,6 +17,10 @@
 #include "grwin32.h"
 #endif
 
+#ifdef DEVICE_AROS
+#include "graros.h"
+#endif
+
 #ifdef macintosh
 #include "grmac.h"
 #endif
