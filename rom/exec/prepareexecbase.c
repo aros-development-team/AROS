@@ -23,7 +23,6 @@
 #include "memory.h"
 #include "exec_intern.h"
 
-#define EXEC_NUMVECT    135
 #undef kprintf /* This can't be used in the code here */
 
 extern void *ExecFunctions[];
@@ -58,27 +57,43 @@ extern void *stderr;
 
 struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 {
-    ULONG neg, i;
-    /* 
-       basically this does not get anything useful, yet, but still
-       I need to have SysBase defined here...
-     */
+    ULONG   negsize = 0, i;
+    VOID  **fp      = ExecFunctions;
+    
+    /*
+       Basically this does not get anything useful, but I still need to have 
+       SysBase defined here...
+    */
     AROS_GET_SYSBASE
-
-    neg = AROS_ALIGN(LIB_VECTSIZE * EXEC_NUMVECT);
-
+    
+    /* Calculate the size of the vector table */
+    while (*fp++ != (VOID *) -1) negsize += LIB_VECTSIZE;
+    
+    /* Align library base */
+    negsize = AROS_ALIGN(negsize);
+    
+    /* Allocate memory for library base */
     SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocmem(mh, neg + sizeof(struct ExecBase)) + neg);
+	    ((UBYTE *)allocmem(mh, negsize + sizeof(struct ExecBase)) + negsize);
 
-    /* Zero out the memory. Makes below a bit smaller. */
+    /* Clear the library base */
     memset(SysBase, 0, sizeof(struct ExecBase));
 
-    for(i=1; i <= EXEC_NUMVECT; i++)
+    /* Setup function vectors */
+    i  = 1;
+    fp = ExecFunctions;
+    
+    while(*fp != (VOID *) -1)
     {
-	__AROS_INITVEC(SysBase, i);
-	__AROS_SETVECADDR(SysBase, i, ExecFunctions[i-1]);
+        /* Decrement vector pointer by one and install vector */
+        __AROS_INITVEC(SysBase, i);
+        if (*fp != NULL) __AROS_SETVECADDR(SysBase, i, *fp);
+
+        /* Use next array entry */
+        fp++; i++;
     }
 
+    
     AROS_LC0(void, CacheClearU,
 	struct ExecBase *, SysBase, 106, Exec);
 
@@ -89,7 +104,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->LibNode.lib_Version = VERSION_NUMBER;
     SysBase->LibNode.lib_Revision = REVISION_NUMBER;
     SysBase->LibNode.lib_OpenCnt = 1;
-    SysBase->LibNode.lib_NegSize = neg;
+    SysBase->LibNode.lib_NegSize = negsize;
     SysBase->LibNode.lib_PosSize = sizeof(struct ExecBase);
     SysBase->LibNode.lib_Flags = 0;
 
@@ -115,7 +130,7 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     SysBase->TaskWait.lh_Type = NT_SEMAPHORE;
     NEWLIST(&SysBase->ex_MemHandlers);
 
-    for(i=0; i<5; i++)
+    for (i = 0; i < 5; i++)
     {
 	NEWLIST(&SysBase->SoftInts[i].sh_List);
 	SysBase->SoftInts[i].sh_List.lh_Type = NT_INTERRUPT;
