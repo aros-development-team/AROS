@@ -102,17 +102,17 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 /* this macro generates the necessary symbols to open and close automatically
    a library. An error message will be shown if the library cannot be open.  */
-#define ADD2LIBS(name, ver, btype, bname)                \
-btype bname;                                             \
-                                                         \
-AROS_IMPORT_ASM_SYM(__includelibrarieshandling);         \
-                                                         \
-const LONG bname##_version __attribute__((weak)) = ver;  \
-                                                         \
-const struct libraryset libraryset_##bname =             \
-{                                                        \
-     name, &bname##_version, (void **)&bname             \
-};                                                       \
+#define ADD2LIBS(name, ver, btype, bname)                    \
+btype bname;                                                 \
+                                                             \
+AROS_IMPORT_ASM_SYM(int, dummy, __includelibrarieshandling); \
+                                                             \
+const LONG bname##_version __attribute__((weak)) = ver;      \
+                                                             \
+const struct libraryset libraryset_##bname =                 \
+{                                                            \
+     name, &bname##_version, (void **)&bname                 \
+};                                                           \
 ADD2SET(libraryset_##bname, libs, 0) 
 
 #define ASKFORLIBVERSION(bname, ver) \
@@ -140,6 +140,7 @@ for                                                                          \
    This is so to ensure that symbolsets are properly handled and thus things get
    properly initialized. */
 #define THIS_PROGRAM_HANDLES_SYMBOLSETS \
-    AROS_MAKE_ASM_SYM(__this_program_requires_symbol_sets_handling, 0);
+    AROS_MAKE_ASM_SYM(int, __this_program_requires_symbol_sets_handling, __this_program_requires_symbol_sets_handling, 0); \
+    AROS_EXPORT_ASM_SYM(__this_program_requires_symbol_sets_handling);
     
 #endif

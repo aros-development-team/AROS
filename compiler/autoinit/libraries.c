@@ -18,7 +18,8 @@
 
 DECLARESET(LIBS);
 
-AROS_MAKE_ASM_SYM(__includelibrarieshandling, 0);
+AROS_MAKE_ASM_SYM(int, dummy, __includelibrarieshandling, 0);
+AROS_EXPORT_ASM_SYM(__includelibrarieshandling);
                              
 int set_open_libraries(void)
 {
