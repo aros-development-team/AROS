@@ -9,6 +9,7 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
 #include <exec/lists.h>
+#include <exec/interrupts.h>
 #include <exec/execbase.h>
 #include <exec/semaphores.h>
 #include <exec/memory.h>
@@ -19,6 +20,8 @@
 #include <intuition/classusr.h>
 #include <intuition/classes.h>
 #include <hidd/unixio.h>
+#include <aros/asmcall.h>
+#include <hardware/intbits.h>
 
 #include <proto/exec.h>
 #include <proto/intuition.h>	/* for DoSuperMethodA() */
@@ -27,9 +30,10 @@
 #include <proto/alib.h>
 
 /* Unix includes */
-#include <unistd.h>
-#include <fcntl.h>
 #include <errno.h>
+#include "/usr/include/sys/types.h"
+#include "/usr/include/fcntl.h"
+#include "/usr/include/unistd.h"
 #define timeval sys_timeval
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -91,12 +95,13 @@ static const char unknown[] = "--unknown device--";
 
 /************************************************************************/
 
+/* instance data for the unixioclass */
 struct UnixIOData
 {
-    void *uio_Dummy;
+    struct MsgPort		* uio_ReplyPort;
 };
 
-/* Static Data for the unixioclass. */
+/* static data for the unixioclass */
 struct uio_data
 {
     struct Library		* ud_UtilityBase;
@@ -115,10 +120,22 @@ struct uioMessage
     int 	   result;
 };
 
+AROS_UFH5 (void, SigIO_IntServer,
+    AROS_UFHA (ULONG             ,dummy,  D0),
+    AROS_UFHA (struct Custom    *,custom, A0),
+    AROS_UFHA (struct List      *,intList,A1),
+    AROS_UFHA (APTR              ,ivCode, A5),
+    AROS_UFHA (struct ExecBase  *,SysBase,A6)
+)
+{
+    struct uio_data * ud = (struct uio_data *) intList;
+    Signal (ud -> ud_WaitForIO, SIGBREAKF_CTRL_C);
+}
+
 static void WaitForIO (void)
 {
     struct uio_data * ud = FindTask(NULL)->tc_UserData;
-    struct ExecBase *SysBase = ud->ud_SysBase;
+    struct ExecBase * SysBase = ud->ud_SysBase;
     int maxfd;
     int selecterr;
     int err;
@@ -127,6 +144,8 @@ static void WaitForIO (void)
     struct sys_timeval tv;
     struct List waitList;
     struct uioMessage * msg, * nextmsg;
+    ULONG rmask;
+    int flags;
 
     NEWLIST (&waitList);
 
@@ -134,18 +153,34 @@ static void WaitForIO (void)
 
     for (;;)
     {
-	if (IsListEmpty (&waitList))
+        if (IsListEmpty (&waitList))
 	{
-	    D(bug("wfio: Waiting for messages\n"));
+	    D(bug("wfio: Waiting for message\n"));
 	    WaitPort (ud->ud_Port);
 	    D(bug("wfio: Got messages\n"));
 	}
+        else
+	{
+	    D(bug("wfio: Waiting for message or signal\n"));
+	    rmask = Wait ((ULONG) 1 << ud->ud_Port -> mp_SigBit | SIGBREAKF_CTRL_C);
+	    if (rmask & SIGBREAKF_CTRL_C)
+	    {
+	        D(bug("wfio: Got signal\n"));
+	    }
+	    else if (rmask & 1 << ud->ud_Port -> mp_SigBit)
+	    {
+	        D(bug("wfio: Got message\n"));
+	    }
+	}
 
-fetchmsg:
 	while ((msg = (struct uioMessage *)GetMsg (ud->ud_Port)))
 	{
 	    D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
 	    AddTail (&waitList, (struct Node *)msg);
+
+	    fcntl (msg->fd, F_SETOWN, getpid());
+	    flags = fcntl (msg->fd, F_GETFL);
+	    fcntl (msg->fd, F_SETFL, flags | FASYNC);
 	}
 
 	FD_ZERO (&rfds);
@@ -156,11 +191,11 @@ fetchmsg:
 
 	maxfd = 0;
 
-D(bug("Waiting on fd "));
+	D(bug("Waiting on fd "));
 
 	ForeachNode (&waitList, msg)
 	{
-D(bug("%d, ", msg->fd));
+	    D(bug("%d, ", msg->fd));
 	    if (msg->mode == HIDDV_UnixIO_Read)
 	    {
 		FD_SET (msg->fd, &rfds);
@@ -178,40 +213,20 @@ D(bug("%d, ", msg->fd));
 	    if (maxfd < msg->fd)
 		maxfd = msg->fd;
 	}
-D(bug("\n"));
+	D(bug("\n"));
 
-	for (;;)
-	{
-	    tv.tv_sec  = 0;
-	    tv.tv_usec = 100000;
+        tv.tv_sec  = 0;
+	tv.tv_usec = 100000;
 
-#if 0
-	D(bug("wfio: waiting for io (maxfd=%ld)\n", maxfd));
-#endif
+	selecterr = select (maxfd+1, rp, wp, ep, &tv);
+	err = errno;
 
-	    selecterr = select (maxfd+1, rp, wp, ep, &tv);
-	    err = errno;
-
-#if 0
+#if 1
 	D(bug("wfio: got io sel=%ld err=%ld\n", selecterr, err));
 #endif
-	    if (selecterr == 0 || (selecterr < 0 && err == EINTR))
-	    {
-		if (!IsMsgPortEmpty (ud->ud_Port))
-		    goto fetchmsg;
 
-		Disable ();
-		SysBase->ThisTask->tc_State = TS_READY;
-		AddTail (&SysBase->TaskReady, &SysBase->ThisTask->tc_Node);
-		Enable ();
-		Switch ();
-	    }
-	    else
-		break;
-	}
-
-
-	D(bug("wfio: got io sel=%ld err=%ld\n", selecterr, err));
+	if (selecterr < 0 && err == EINTR)
+	    continue;
 
 	if (selecterr != 0)
 	{
@@ -231,8 +246,7 @@ D(bug("\n"));
 		{
 		    msg->result = 0;
 reply:
-		    D(bug("wfio: Reply: fd=%ld res=%ld\n", msg->fd, msg->result));
-
+		    D(bug("wfio: Reply: fd=%ld res=%ld\n", msg->fd, msg->result));		    
 		    Remove ((struct Node *)msg);
 		    ReplyMsg ((struct Message *)msg);
 		}
@@ -278,15 +292,16 @@ AROS_UFH3(static IPTR, dispatch_unixioclass,
 	id = INST_DATA(cl, retval);
 	if(id != NULL)
 	{
+	    id -> uio_ReplyPort = CreatePort (NULL, 0);
 	}
 	break;
 
     case HIDDM_WaitForIO:
 	{
 	    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
-	    struct MsgPort * port = CreatePort (NULL, 0);
+	    struct MsgPort * port = id -> uio_ReplyPort;
 
-	    if (msg && port)
+	    if (umsg && port)
 	    {
 		port->mp_Flags = PA_SIGNAL;
 		port->mp_SigTask = FindTask (NULL);
@@ -298,6 +313,7 @@ AROS_UFH3(static IPTR, dispatch_unixioclass,
 		D(bug("Sending msg fd=%ld mode=%ld\n", umsg->fd, umsg->mode));
 		PutMsg (ud->ud_Port, (struct Message *)umsg);
 		WaitPort (port);
+	        GetMsg (port);
 
 		D(bug("Get msg fd=%ld mode=%ld res=%ld\n", umsg->fd, umsg->mode, umsg->result));
 		retval = umsg->result;
@@ -307,17 +323,19 @@ AROS_UFH3(static IPTR, dispatch_unixioclass,
 
 	    if (umsg)
 		FreeMem (umsg, sizeof (struct uioMessage));
-	    if (port)
-		DeletePort (port);
 	}
 	break;
 
     case OM_DISPOSE:
-	/* We don't actually have anything to free - fall through. */
+        if (id -> uio_ReplyPort)
+            DeletePort (id -> uio_ReplyPort);
+	retval = DoSuperMethodA(cl, o, msg);
+	break;
 
     default:
 	/* No idea, send it to the superclass */
 	retval = DoSuperMethodA(cl, o, msg);
+	break;
     } /* switch(msg->MethodID) */
 
     return retval;
@@ -333,13 +351,14 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-    struct Library *BOOPSIBase;
-    struct IClass *cl;
-    struct uio_data *ud;
+    struct Library  * BOOPSIBase;
+    struct IClass   * cl;
+    struct uio_data * ud;
     struct Task     * newtask,
 		    * task2;
     struct newMemList nml;
     struct MemList  * ml;
+    struct Interrupt * is;
 
     /*
 	We map the memory into the shared memory space, because it is
@@ -428,6 +447,16 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, UnixIO),
 
     ud->ud_Port->mp_Flags   = PA_SIGNAL;
     ud->ud_Port->mp_SigTask = task2;
+
+    is=(struct Interrupt *)AllocMem(sizeof(struct Interrupt),MEMF_PUBLIC);
+    if (!is)
+    {
+	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+	return NULL;
+    }
+    is->is_Code=(void (*)())&SigIO_IntServer;
+    is->is_Data=(APTR)ud;
+    SetIntVector(INTB_DSKBLK,is);
 
     /* Create the class structure for the "unixioclass" */
     if((cl = MakeClass(UNIXIOCLASS, HIDDCLASS, NULL, sizeof(struct UnixIOData), 0)))
