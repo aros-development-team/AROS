@@ -209,6 +209,10 @@ extern void driver_WaitTOF (struct GfxBase *);
 extern BOOL driver_ExtendFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
 extern void driver_StripFont(struct TextFont *font, struct tfe_hashnode *hn, struct GfxBase *GfxBase);
 
+extern ULONG driver_GetDisplayInfoData(DisplayInfoHandle handle, UBYTE *buf, ULONG size, ULONG tagid, ULONG id2, struct GfxBase *GfxBase);
+extern DisplayInfoHandle driver_FindDisplayInfo(ULONG id, struct GfxBase *GfxBase);
+extern ULONG driver_NextDisplayInfo(ULONG lastid, struct GfxBase *GfxBase);
+
 
 /* functions in support.c */
 extern BOOL pattern_pen(struct RastPort *rp
