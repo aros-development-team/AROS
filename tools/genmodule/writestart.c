@@ -91,7 +91,12 @@ void writestart(void)
 		"    (APTR)&GM_UNIQUENAME(End),\n"
 		"    RESIDENTFLAGS,\n"
 		"    VERSION_NUMBER,\n"
-		"    NT_LIBRARY,\n"
+	);
+	if (modtype == DEVICE)
+	    fprintf(out, "    NT_DEVICE,\n");
+	else
+	    fprintf(out, "    NT_LIBRARY,\n");
+	fprintf(out,
 		"    RESIDENTPRI,\n"
 		"    (char *)&GM_UNIQUENAME(LibName)[0],\n"
 		"    (char *)&GM_UNIQUENAME(LibID)[6],\n"
