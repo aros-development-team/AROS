@@ -70,7 +70,6 @@
 
     LONG           *error = NULL;
     struct TagItem *tag, *tl = tagList;
-    APTR            lock;
 
     error = (LONG *)GetTagData(PLAYER_ErrorCode, NULL, tl);
 
