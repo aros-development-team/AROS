@@ -109,7 +109,7 @@ static void renderwin(void)
 {
     struct Region *oldshape;
     struct Rectangle rect;
-    WORD cx, cy, r, x, y;
+    WORD cx, cy, r, y;
 
     static WORD oldheight = 0;
     static WORD oldwidth  = 0;

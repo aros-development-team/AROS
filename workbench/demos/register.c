@@ -383,7 +383,7 @@ static BOOL handleregisterinput(struct Register *reg, struct IntuiMessage *msg)
 static void makewin(void)
 {
     win = OpenWindowTags(0, WA_PubScreen, (IPTR)scr,
-    	    	    	    WA_Title, "Register Tabs",
+    	    	    	    WA_Title, (IPTR) "Register Tabs",
 			    WA_InnerWidth, myregister.width + 8,
 			    WA_InnerHeight, myregister.height + 8,
 			    WA_CloseGadget, TRUE,

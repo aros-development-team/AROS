@@ -101,7 +101,7 @@ BOOL Init()
     			WA_Height,		300,
     			WA_SmartRefresh,	TRUE,
     			WA_DragBar,		TRUE,
-    			WA_Title,		"Console demo",
+    			WA_Title,		(IPTR)"Console demo",
     			WA_IDCMP,		IDCMP_REFRESHWINDOW|IDCMP_RAWKEY,
     			TAG_DONE);
     			

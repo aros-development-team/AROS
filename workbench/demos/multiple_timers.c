@@ -55,9 +55,7 @@ int CXBRK(void) { return(0); }  /* Disable Lattice CTRL/C handling */
 int chkabort(void) { return(0); }  /* really */
 #endif
 
-VOID main(VOID);
-
-void main(void)
+int main(void)
 {
 struct timerequest *TimerIO[3];
 struct MsgPort *TimerMP;
@@ -94,7 +92,7 @@ if ((TimerMP = CreatePort(0,0)))
                         {
                         TimerIO[x]->tr_time.tv_secs   = seconds[x];
                         TimerIO[x]->tr_time.tv_micro  = microseconds[x];
-                        printf("\nInitializing TimerIO[%d]",x);
+                        printf("\nInitializing TimerIO[%ld]",x);
                         }
 
                     printf("\n\nSending multiple requests\n\n");
@@ -147,4 +145,6 @@ if ((TimerMP = CreatePort(0,0)))
 
 else
     printf("\nError: Could not CreatePort\n");
+
+    return 0;
 }

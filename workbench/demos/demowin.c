@@ -569,16 +569,16 @@ int main (int argc, char ** argv)
 	, GA_RelBottom, -(GAD_HEI+BORDER)
 	, GA_Width,	GAD_WID
 	, GA_Height,	GAD_HEI
-	, GA_Previous,	&DemoGadget12
-	, GA_Text,	"_Exit"
+	, GA_Previous,	(IPTR)&DemoGadget12
+	, GA_Text,	(IPTR)"_Exit"
 	, GA_RelVerify, TRUE
 	, GA_ID,	1
-	, GA_Image,	frame
+	, GA_Image,	(IPTR)frame
 	, TAG_END
     );
 
     win = OpenWindowTags (NULL
-	, WA_Title,	    "Open a window demo"
+	, WA_Title,	    (IPTR)"Open a window demo"
 	, WA_Left,	    100
 	, WA_Top,	    50
 	, WA_Width,	    640
@@ -594,7 +594,7 @@ int main (int argc, char ** argv)
 			    | IDCMP_GADGETUP
 			    | IDCMP_CLOSEWINDOW
 	, WA_SimpleRefresh, TRUE
-	, WA_Gadgets,	    &ExitGadget
+	, WA_Gadgets,	    (IPTR)&ExitGadget
 	, TAG_END
     );
     D(printf("OpenWindow win=%p\n", win));
