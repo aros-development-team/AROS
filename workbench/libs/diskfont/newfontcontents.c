@@ -145,7 +145,6 @@ struct contentsBuffer
 	    BPTR  fontLock;
 	    UBYTE                 *fileDfh;  /* struct DiskFontHeader */ 
 	    struct contentsBuffer *cNode;
-	    struct TagItem        *item;
 	    
 	    // kprintf("Name: %s\n", fib->fib_FileName);
 
@@ -200,6 +199,7 @@ struct contentsBuffer
 	    {
 		struct TagItem *ti = (struct TagItem *)GetPtr(fileDfh+14+2+2); /* dfh_TagList */
 		struct TagItem *tPtr;
+	 	struct TagItem *item;
 		WORD   nTags = 0;
 		WORD   i;	        /* Loop variable */
 		
