@@ -84,13 +84,13 @@ create-mf-inc-again :
 ## kernel-boot-linklib seems broken
 
 ##MM kernel-devs = gamport+input+console
-#MM	    kernel-boot-linklib \
-#MM	    kernel-devs \
-#MM	    kernel-keymap-linklib \
-#MM		kernel-filesys-palm-m68000 \
-#MM		Drivers-irq \
-#MM		Drivers-kbd \
-#MM		Drivers-palm
+##MM	    kernel-boot-linklib \
+##MM	    kernel-devs \
+##MM	    kernel-keymap-linklib \
+##MM		kernel-filesys-palm-m68000 \
+##MM		Drivers-irq \
+##MM		Drivers-kbd \
+##MM		Drivers-palm
 
 
 # Setup
