@@ -12,8 +12,19 @@
 #include <proto/arossupport.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
+#include <string.h>
 
 extern struct DosLibrary * DOSBase;
+
+/* Debugging */
+#define PRINT_SECTION_NAMES	0
+#define PRINT_STRINGTAB 	0
+#define PRINT_SYMBOLTABLE	0
+#define PRINT_SYMBOLS		1
+#define LOAD_DEBUG_HUNKS	0
+#define PRINT_SECTIONS		0
+#define PRINT_HUNKS		0
+#define DEBUG_HUNKS		1
 
 #define SHT_PROGBITS	1
 #define SHT_SYMTAB	2
@@ -181,6 +192,22 @@ BPTR LoadSeg_ELF (BPTR file)
     {
 	sh = (struct sheader *)(shtab + t*eh.shentsize);
 
+#if PRINT_SECTIONS
+	kprintf ("sh[%d] = { name=%d type=%d flags=%x addr=%p offset=%d "
+		"size=%d link=%d info=%d addralign=%d entsize=%d\n",
+    t,
+    sh->name,
+    sh->type,
+    sh->flags,
+    sh->addr,
+    sh->offset,
+    sh->size,
+    sh->link,
+    sh->info,
+    sh->addralign,
+    sh->entsize);
+#endif
+
 	if (sh->type == SHT_SYMTAB)
 	    break;
     }
@@ -208,7 +235,16 @@ BPTR LoadSeg_ELF (BPTR file)
        all symbol references (ie. all hunks in which a symbol resides) */
     for (i=1; i<numsym; i++)
     {
-/* kprintf ("Symbol %d: index=%d\n", i, symtab[i].shindex); */
+#if PRINT_SYMBOLTABLE
+    kprintf ("Symbol %d: name=%d value=%d size=%d info=%d other=%d shindex=%d\n",
+    i,
+    symtab[i].name,
+    symtab[i].value,
+    symtab[i].size,
+    symtab[i].info,
+    symtab[i].other,
+    symtab[i].shindex);
+#endif
 
 	if (symtab[i].shindex < mint)
 	    mint = symtab[i].shindex;
@@ -240,7 +276,8 @@ BPTR LoadSeg_ELF (BPTR file)
 	if (read_block (file, sh->offset, shstrtab, sh->size))
 	    goto end;
 
-	/* {
+#if PRINT_SECTION_NAMES
+	{
 	    int n, t;
 
 	    for (n=t=0; t<sh->size; n++)
@@ -248,7 +285,8 @@ BPTR LoadSeg_ELF (BPTR file)
 		kprintf ("String %d@%d: \"%s\"\n", n, t, &shstrtab[t]);
 		t += strlen (&shstrtab[t]) + 1;
 	    }
-	} */
+	}
+#endif
     }
 
     /* Find the basic size for each hunk */
@@ -258,14 +296,22 @@ BPTR LoadSeg_ELF (BPTR file)
 
 	if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
 	{
+#if !LOAD_DEBUG_HUNKS
 	    /* Don't load debug hunks */
-	    /* if (!strncmp (".stab", &shstrtab[sh->name], 5)
-		|| !strcmp (".comment", &shstrtab[sh->name])
+	    if (!strncmp (&shstrtab[sh->name], ".stab", 5)
+		|| !strcmp (&shstrtab[sh->name], ".comment")
 	    )
-		sh->size = 0; */
+		sh->size = 0;
+#endif
 
 	    hunks[t].size = sh->size;
 	}
+#if !LOAD_DEBUG_HUNKS
+	else if (sh->type == SHT_REL
+	    && !strcmp (&shstrtab[sh->name], ".rel.stab")
+	)
+		sh->size = 0;
+#endif
     }
 
     /* Look for names of symbols */
@@ -290,7 +336,8 @@ BPTR LoadSeg_ELF (BPTR file)
 	if (read_block (file, sh->offset, strtab, sh->size))
 	    goto end;
 
-	/*{
+#if PRINT_STRINGTAB
+	{
 	    int n, t;
 
 	    for (n=t=0; t<sh->size; n++)
@@ -298,7 +345,8 @@ BPTR LoadSeg_ELF (BPTR file)
 		kprintf ("String %d@%d: \"%s\"\n", n, t, &strtab[t]);
 		t += strlen (&strtab[t]) + 1;
 	    }
-	} */
+	}
+#endif
     }
 
     /* kprintf ("    File has %d sections.\n", eh.shnum); */
@@ -331,6 +379,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 	}
     }
 
+#if PRINT_SYMBOLS
     /* Show the final addresses of global symbols */
     if (strtab)
     {
@@ -358,6 +407,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 	    }
 	}
     }
+#endif
 
     loaded = NULL;
 
@@ -365,6 +415,14 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     for (t=1; t<eh.shnum; t++)
     {
 	sh = (struct sheader *)(shtab + t*eh.shentsize);
+
+#if PRINT_HUNKS
+kprintf ("sh=%s hunk[%d] = { size=%d (%d) memory=%p }\n",
+&shstrtab[sh->name],
+t,
+hunks[t].size, sh->size,
+hunks[t].memory);
+#endif
 
 	if (!sh->size)
 	    continue;
@@ -377,6 +435,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 
 	    loaded = hunks[t].memory;
 
+#if DEBUG_HUNKS
 	    if (strtab
 	       /* && (
 		    !strcmp (".text", &shstrtab[sh->name])
@@ -391,6 +450,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
 		    , &shstrtab[sh->name]
 		);
 	    }
+#endif
 
 	    break;
 
