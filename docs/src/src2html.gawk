@@ -144,6 +144,8 @@ BEGIN {
     toc=0;
     while ((token=yylex()) != "")
     {
+#print "token="token" yytext=\""yytext"\"" >> "/dev/stderr";
+
 	if (token=="cmd")
 	{
 	    if (yytext=="chapter")
@@ -250,9 +252,41 @@ BEGIN {
 		}
 		else if (mode=="example")
 		{
-		    yytext="<UL><PRE>";
-		    skippar=1;
-		    keeplf=1;
+		    printf ("<UL><PRE>");
+
+		    while ((getline line) > 0)
+		    {
+			if (match(line,/\\end{example}/))
+			    break;
+			else if (match(line,/\\link{.*}{.*}/))
+			{
+			    printf ("%s", substr(line,1,RSTART-1));
+			    yyrest=substr(line,RSTART+5,RLENGTH-5);
+			    rest=substr(line,RSTART+RLENGTH);
+
+			    match(yyrest,/^{[^}]*}/);
+			    title=substr(yyrest,RSTART+1,RLENGTH-2);
+			    link=substr(yyrest,RSTART+RLENGTH+1);
+			    link=substr(link,1,length(link)-1);
+
+			    printf ("<A HREF=\""link"\">"title"</A>%s\n", rest);
+			}
+			else
+			{
+			    gsub(/&/,"\\&amp;",line);
+			    gsub(/</,"\\&lt;",line);
+			    gsub(/>/,"\\&gt;",line);
+			    gsub(/"/,"\\&quot;",line);
+
+			    print line;
+			}
+		    }
+
+		    print "</PRE></UL>";
+		    yytext="";
+		    yyrest="";
+		    sp --;
+		    mode=stack[sp];
 		}
 		else
 		    yytext="!!!! Unknown mode " yytext " !!!!\n";
@@ -305,7 +339,7 @@ BEGIN {
 		    gsub(/>/,"\\&gt;",yytext);
 		    gsub(/"/,"\\&quot;",yytext);
 
-		    yytext="\n<DT><B>"yytext"</B><DD>"
+		    yytext="<P>\n<DT><I>"yytext"</I><DD>"
 		}
 		else if (mode=="itemize")
 		{
@@ -317,6 +351,8 @@ BEGIN {
 		}
 		else
 		    yytext="";
+
+		showpar=0;
 	    }
 	    else if (yytext=="exec")
 	    {
@@ -425,8 +461,8 @@ BEGIN {
 	{
 	    if (showpar && !skippar)
 	    {
-		if (mode=="text")
-		{
+		#if (mode=="text")
+		#{
 		    gsub(/[ \t\n]+/," ",yytext);
 
 		    if (yytext != " ")
@@ -434,7 +470,7 @@ BEGIN {
 			showpar=0;
 			printf ("\n<P>");
 		    }
-		}
+		#}
 	    }
 	    if (mode=="example")
 	    {
@@ -569,7 +605,10 @@ function getarg(token) {
     while ((token=yylex()) != "")
     {
 	if (token=="arg")
+	{
+#print "token=arg yytext=\""yytext"\"" >> "/dev/stderr";
 	    return;
+	}
     }
 
     print "Missing argument in "FILENAME":"FN"\n" >>"/dev/stderr";

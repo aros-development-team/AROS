@@ -46,5 +46,7 @@ prompt \shell{Workbench:> }. Now type \shell{dir all}. If you
 get a list of all generated files, congratiulations, your copy
 is working.
 
+\end{itemize}
+
 \section{Compiling}
 

@@ -65,7 +65,7 @@ $(DEST)toc.html : $(SRCS) tochtml.gawk
 	@echo "" >> $@
 	chmod a+r $@
 
-$(DEST)links.html: links.src $(wildcard $(TOP)/dist/*)
+$(DEST)links.html: links.src $(wildcard $(TOP)/dist/*) src2html.gawk
 	touch links.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
@@ -76,12 +76,13 @@ $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 
 $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	    page_footer.html collectcontents.sh contents2html.gawk \
-	    makefile2html.gawk
+	    makefile2html.gawk src2html.gawk
 	touch devinfo-4.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
 
-$(DEST)background.html: background.src stathtml.gawk $(HOME)/Mail/jobs
+$(DEST)background.html: background.src stathtml.gawk $(HOME)/Mail/jobs \
+	    src2html.gawk
 	touch background.src
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
 	chmod a+r $@
