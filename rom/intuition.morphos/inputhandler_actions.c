@@ -39,6 +39,10 @@
 #include "inputhandler_actions.h"
 #include "menus.h"
 
+//FIXME: implement the functions...
+#define AllocVecPooled(pool, size) AllocVec(size, MEMF_ANY)
+#define FreeVecPooled(pool, ptr) FreeVec(ptr)
+
 #undef DEBUG
 #define DEBUG 0
 #include <aros/debug.h>

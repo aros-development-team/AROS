@@ -28,6 +28,8 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #ifndef __MORPHOS__
 #include <aros/asmcall.h>
 #include <proto/alib.h>

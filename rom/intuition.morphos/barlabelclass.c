@@ -40,9 +40,12 @@
 #include <proto/alib.h>
 #include "intuition_intern.h"
 #include "maybe_boopsi.h"
-#include "intuition_customize.h"
-#include "intuition_extend.h"
 #endif /* !__MORPHOS__ */
+
+#ifdef SKINS
+#   include "intuition_customize.h"
+#   include "intuition_extend.h"
+#endif
 
 #ifdef IntuitionBase
 #    undef IntuitionBase
