@@ -28,22 +28,27 @@
 IPTR observerNew(Class *cl, Object *obj, struct opSet *msg)
 {
     IPTR retval=0;
-    struct ObserverClassData *data;
+    struct ObserverClassData *data, *tstate=msg->ops_AttrList;
     struct TagItem *tag;
     Object *presentation=NULL, *parent=NULL;
 
-    tag=FindTagItem(OA_Presentation, msg->ops_AttrList);
-    if(tag)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
-        tag->ti_Tag=TAG_IGNORE;
-        presentation=(Object*)tag->ti_Data;
-    }
-
-    tag=FindTagItem(OA_Parent, msg->ops_AttrList);
-    if(tag)
-    {
-        tag->ti_Tag=TAG_IGNORE;
-        parent=(Object*)tag->ti_Data;
+        switch (tag->ti_Tag)
+        {
+            case: OA_Presentation:
+                presentation = (Object*) tag->ti_Data;
+                break;
+            
+            case OA_Parent:
+                parent = (Object*) tag->ti_Data;
+                break;
+            
+            default:
+                continue; /* Don't supress non-processed tags */
+        }
+        
+        tag->ti_Tag = TAG_IGNORE;              
     }
 
     retval=DoSuperMethodA(cl, obj, (Msg)msg);
