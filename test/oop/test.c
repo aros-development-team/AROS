@@ -47,6 +47,7 @@ int main(int argc, char **argv)
     	    if (timer)
     	    {
 		ULONG i;
+		ULONG methodid = M_Timer_TestMethod;
 		
 		Method *test_m;
 		
@@ -76,8 +77,6 @@ int main(int argc, char **argv)
     	    	
     	    	for (i = 0; i < NUM_ITERATIONS; i ++)
 		{
-		    ULONG methodid = M_Timer_TestMethod;
-		   
 		    CallMethodFast(timer, test_m, &methodid);
 		}
 		    
