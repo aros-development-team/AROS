@@ -119,7 +119,6 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 		    BOOL add, BOOL remove);
 static void showAssigns(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 			BOOL vols, BOOL dirs, BOOL devices);
-static int removeAssign(struct DosLibrary *DOSBase, STRPTR name);
 static STRPTR GetFullPath(struct ExecBase *SysBase, struct DosLibrary *DOSBase,
 			  BPTR lock);
 
@@ -382,7 +381,7 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
        and later in the loop the target assigns. */
     if(target == NULL || *target == NULL || remove)
     {
-	removeAssign(DOSBase, name);
+	AssignLock(name, NULL);
     }
 
     // The Loop over multiple targets starts here
@@ -403,7 +402,7 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
 
 	if (remove)
 	{
-	    removeAssign(DOSBase, target[i]);
+	    AssignLock(target[i], NULL);
 	    UnLock(lock);
 	}
 	else if(dismount)
@@ -466,35 +465,6 @@ static int doAssign(struct DosLibrary *DOSBase, STRPTR name, STRPTR *target,
     } /* loop through all targets */
 
     return error;
-}
-
-
-static int removeAssign(struct DosLibrary *DOSBase, STRPTR name)
-{
-    /* In case no target is given, the 'name' assign should be removed.
-       The AmigaDOS semantics for this is apparently that the error
-       code is never set even if the assign didn't exist. */
-
-    struct DosList *dl;
-    struct DosList *element;
-
-    dl = LockDosList(LDF_ASSIGNS | LDF_WRITE);
-
-    element = FindDosEntry(dl, name, LDF_ASSIGNS);
-
-    if (element != NULL)
-    {
-	UnLock(element->dol_Lock);
-    }
-
-    /* For now, we don't free any (possible) multiassign locks. Hopefully
-       RemAssignList() should be able to do this, but I'm not sure... */
-
-    RemDosEntry(element);
-
-    UnLockDosList(LDF_ASSIGNS | LDF_WRITE);
-
-    return RETURN_OK;
 }
 
 
