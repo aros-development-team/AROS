@@ -24,6 +24,9 @@
 #ifndef ADEBUG
 #   define ADEBUG 0
 #endif
+#ifndef MDEBUG
+#   define MDEBUG 0
+#endif
 
 
 /* Remove all macros. They get new values each time this file is
@@ -119,6 +122,14 @@
  *		Checks that the expression <x> points to a valid
  *		memory location, and outputs a debug message
  *		otherwise. A NULL pointer is considered NOT VALID.
+ *
+ *	ASSERT_VALID_TASK(t)
+ *		Checks that the pointer <t> points to a valid Task
+ *		structure and outputs a debug message otherwise.
+ *
+ *	ASSERT_VALID_PROCESS(p)
+ *		Checks that the pointer <p> points to a valid Process
+ *		structure and outputs a debug message otherwise.
  */
 #undef DBPRINTF
 #undef THIS_FILE
@@ -167,6 +178,58 @@
 #   define ASSERT_VALID_PROCESS(p)
 
 #endif /* ADEBUG */
+
+
+/* Memory munging macros
+ */
+#define MUNGWALL_SIZE	16
+#if AROS_SIZEOFULONG == 4
+#    define MEMFILL_FREE	0xDEADBEEFL
+#    define MEMFILL_ALLOC	0xC0DEDBADL
+#    define MEMFILL_WALL	0xABADC0DEL
+#elif AROS_SIZEOFULONG == 8
+#    define MEMFILL_FREE	0xDEADBEEFDEADBEEFL
+#    define MEMFILL_ALLOC	0xC0DEDBADC0DEDBADL
+#    define MEMFILL_WALL	0xABADC0DEABADC0DEL
+#else
+#    error sizeof ULONG is neither 4 nor 8 in this architecture
+#endif
+
+#undef MUNGE_BLOCK
+
+#if MDEBUG
+
+/* Fill the block pointed by <ptr> of size <size> with <fill>
+ */
+#   define MUNGE_BLOCK(ptr, size, fill)			\
+    {							\
+	ULONG *__p = (ULONG *)(ptr);			\
+	ULONG __s = size / AROS_SIZEOFULONG;		\
+	while (__s--) *__p++ = fill;			\
+    }
+#   define CHECK_WALL(ptr, size)			\
+    {							\
+	ULONG *__p = (ULONG *)(ptr);			\
+	ULONG __s = size / AROS_SIZEOFULONG;		\
+	while (__s--)					\
+	{						\
+	    if(*__p != MEMFILL_WALL)			\
+	    {						\
+		struct Task *__t = FindTask(NULL);	\
+		kprintf("\x07Broken wall detected in " __FUNCTION__ " at 0x%x, Task: 0x%x, Name: %s\n",	\
+			__p, __t, __t->tc_Node.ln_Name);\
+	    }						\
+	    __p++;					\
+	}						\
+    }
+
+#else
+
+#    define MUNGE_BLOCK(ptr, size, fill)
+#    define CHECK_WALL(ptr, size)
+
+#endif /* MDEBUG */
+
 
 #if DEBUG
 #   define D(x)     Indent x
