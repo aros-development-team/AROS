@@ -20,16 +20,8 @@ SYS_clibdummy = LIB_RESERVED
 #undef SYSTEM_CALL
 };
 
-#ifdef __GNUC__
-#   define syscall(name,args...)				    \
-    ({								    \
-	extern struct Library *aroscbase;			    \
-	register int (*_sc)() = __AROS_GETVECADDR(aroscbase, name); \
-	_sc (args);						    \
-    })
-#else
-/* Force an error! When syscall() is used*/
-#   define syscall(name,args...)    SYSCALL_BROKEN
-#endif
+extern struct Library *aroscbase;			   
+#define syscall(name,args...) \
+    ((int (*)())__AROS_GETVECADDR(aroscbase, name))(args)
 
 #endif /* _SYSCALL_H_ */
