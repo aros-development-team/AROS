@@ -85,7 +85,7 @@ static OOP_Object *onbitmap_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 		OOP_GetAttr(o,  aHidd_BitMap_PixFmt,	(IPTR *)&pf);
 		OOP_GetAttr(pf, aHidd_PixFmt_Depth,		&depth);
 	
-		assert (width != 0 && height != 0 && depth != 0);
+		ASSERT (width != 0 && height != 0 && depth != 0);
 	
 		/* 
 		   We must only create depths that are supported by the friend drawable
