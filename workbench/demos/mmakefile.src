@@ -68,6 +68,7 @@ FILES	:= \
     scrbackfill \
     screenmodereq \
     scrollerwin \
+    serialmousetest \
     serialtest \
     shadowborder \
     sift \
