@@ -35,7 +35,7 @@
 	struct IntuitionBase *, IntuitionBase, 34, Intuition)
 
 /*  FUNCTION
-	Opens a new window with the characteristiks specified in
+	Opens a new window with the characteristics specified in
 	newWindow.
 
     INPUTS
