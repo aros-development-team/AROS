@@ -31,10 +31,10 @@ CREATEDTDESC ?= createdtdesc
 all: $(OBJDIR) $(CREATEDTDESC) examinedtdesc
 
 $(CREATEDTDESC): $(OBJDIR)/createdtdesc.o c_iff/libc_iff.a
-	$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -L c_iff/ -lc_iff
+	$(HOST_CC) -o $(CREATEDTDESC) $(OBJDIR)/createdtdesc.o -Lc_iff/ -lc_iff
 
 examinedtdesc: $(OBJDIR)/examinedtdesc.o c_iff/libc_iff.a
-	$(HOST_CC) -o examinedtdesc $(OBJDIR)/examinedtdesc.o -L c_iff/ -lc_iff
+	$(HOST_CC) -o examinedtdesc $(OBJDIR)/examinedtdesc.o -Lc_iff/ -lc_iff
 
 $(OBJDIR)/%.o : %.c
 	$(HOST_CC) $(HOST_CFLAGS) $(GUI_CFLAGS) $(INCL) -c $< -o $@
