@@ -16,6 +16,7 @@
 #include <utility/tagitem.h>
 #include <oop/oop.h>
 #include <graphics/text.h>
+#include <graphics/scale.h>
 
 #include <hidd/graphics.h>
 
@@ -1440,7 +1441,6 @@ static VOID bitmap_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     struct HIDDBitMapData *data;
     
     OOP_Object *gc = msg->gc;
-    OOP_Object *pf;
     
     data = OOP_INST_DATA(cl, o);
     
@@ -1712,6 +1712,93 @@ static VOID bitmap_releasedirectaccess(OOP_Class *cl, OOP_Object *o, struct pHid
      return;
 }
 
+static VOID bitmap_scalebitmap(OOP_Class * cl, OOP_Object *o, struct pHidd_BitMap_BitMapScale * msg)
+{
+    struct BitScaleArgs * bsa = msg->bsa;
+    UWORD ys = bsa-> bsa_SrcY;
+    ULONG xs = bsa-> bsa_SrcX;
+    ULONG count = 0;
+    ULONG dxs = bsa->bsa_SrcWidth;
+    ULONG dys = bsa->bsa_SrcHeight;
+    LONG accuyd = - (dys >> 1);
+    LONG accuxd = - (dxs >> 1);
+    ULONG this_x;
+    ULONG y;
+    HIDDT_Color col;
+    HIDDT_PixelFormat * srcpf, * dstpf;
+    OOP_Object * gc = msg->gc;
+    OOP_Object * dst, * src;
+    HIDDT_Pixel pix;
+    UWORD * linepattern;
+
+    if (NULL != (linepattern = (UWORD *) AllocMem(2*bsa->bsa_DestHeight, 0)))
+    {
+        ULONG dyd = bsa->bsa_DestHeight;
+        ULONG dxd = bsa->bsa_DestWidth;
+        LONG accuys = dyd;
+        LONG accuxs = dxd;
+        UWORD DestHeight = bsa->bsa_DestHeight;
+        UWORD DestWidth  = bsa->bsa_DestWidth + bsa->bsa_DestX;
+        /*
+         * Fill in the LinePattern array that tells me which original
+         * line goes to which destination line.
+         */
+        while (count < DestHeight)
+        {
+            accuyd += dys;
+            while (accuyd > accuys)
+            {
+                ys++;
+                accuys += dyd;
+            }
+            linepattern[count] = ys;
+//kprintf("[%d]=%d\n",count, ys);
+            count++;
+        }
+
+    
+        src = msg->src;
+        dst = msg->dst;
+    
+        srcpf = (HIDDT_PixelFormat *)HBM(msg->src)->prot.pixfmt;
+        dstpf = (HIDDT_PixelFormat *)HBM(msg->dst)->prot.pixfmt;
+
+        count = bsa->bsa_DestX;
+    
+        while (count < DestWidth)
+        {
+            accuxd += dxs;
+            while (accuxd > accuxs)
+            {
+                 xs++;
+                 accuxs += dxd;
+            }
+      
+            /*
+             * I am copying pixel by pixel only!!!
+             */
+            for (y = 0; y < bsa->bsa_DestHeight; y++)
+            {
+//kprintf("Reading from source at %d/%d\t",xs,linepattern[y]);
+                pix = HIDD_BM_GetPixel(src, xs, linepattern[y]);
+                     
+                if (srcpf == dstpf)
+                    GC_FG(gc) = pix;
+                else
+                {
+                     HIDD_BM_UnmapPixel(src,pix,&col);
+                     GC_FG(gc) = HIDD_BM_MapColor(src, &col);
+                }
+//kprintf("Writing to destination at %d/%d\n",count,y);
+
+                HIDD_BM_DrawPixel(dst, gc, count, y);
+            } /* for (y =...) */
+            count++;
+        }/* while */
+        FreeMem(linepattern,2*bsa->bsa_DestHeight);
+    }
+}
+
 /******* PRIVATE ***************************/
 static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_SetBitMapTags *msg)
 {
@@ -1761,7 +1848,7 @@ static BOOL bitmap_setbitmaptags(OOP_Class *cl, OOP_Object *o, struct pHidd_BitM
 #define SysBase (csd->sysbase)
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 24
+#define NUM_BITMAP_METHODS 25
 
 OOP_Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -1799,6 +1886,7 @@ OOP_Class *init_bitmapclass(struct class_static_data *csd)
 	{(IPTR (*)())bitmap_unmappixel		, moHidd_BitMap_UnmapPixel	},
 	{(IPTR (*)())bitmap_obtaindirectaccess	, moHidd_BitMap_ObtainDirectAccess	},
 	{(IPTR (*)())bitmap_releasedirectaccess	, moHidd_BitMap_ReleaseDirectAccess	},
+	{(IPTR (*)())bitmap_scalebitmap         , moHidd_BitMap_BitMapScale     },
 
 	/* PRIVATE METHODS */	
 #warning This is a hack to make the late initialization of planar bitmaps work
