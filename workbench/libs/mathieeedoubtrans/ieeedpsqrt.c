@@ -103,31 +103,25 @@ AROS_LIBFUNC_INIT
   int z;
   ULONG Exponent;
 
-  if (is_eqC(y, 0, 0, 0ULL)) /* 0 == y */
+  if (is_eqC(y, 0, 0)) /* 0 == y */
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, 0, 0, 0ULL)
+    Set_Value64C(Res, 0, 0);
     return Res;
   }
   /* is fnum negative? */
-  if (is_lessSC(y, 0, 0, 0ULL)) /* y < 0 */
+  if (is_lessSC(y, 0, 0)) /* y < 0 */
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, IEEEDPNAN_Hi,
-		      IEEEDPNAN_Lo,
-		      IEEEDPNAN_64);
+    Set_Value64C(Res, IEEEDPNAN_Hi, IEEEDPNAN_Lo);
     return Res;
   }
 
   /* we can calculate the square-root now! */
 
   Set_Value64(y2, y);
-  AND64QC(y2,  IEEEDPMantisse_Mask_Hi,
-	       IEEEDPMantisse_Mask_Lo,
-	       IEEEDPMantisse_Mask_64 );
-  OR64QC(y2, 0x00100000,
-	     0x00000000,
-	     0x0010000000000000ULL);
+  AND64QC(y2, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+  OR64QC(y2, 0x00100000, 0x00000000 );
   SHL64(TargetMantisse, y2, 11);
 
   Exponent = (Get_High32of64(y) >> 1) & IEEEDPExponent_Mask_Hi;
@@ -143,8 +137,8 @@ AROS_LIBFUNC_INIT
     Exponent += 0x1ff00000;
 
 
-  Set_Value64C(Res,        0x0, 0x0, 0x0ULL);
-  Set_Value64C(ResSquared, 0x0, 0x0, 0x0ULL);
+  Set_Value64C(Res,        0x0, 0x0);
+  Set_Value64C(ResSquared, 0x0, 0x0);
   z = 0;
 
   /* this calculates the sqrt of the mantisse. It`s short, isn`t it?
@@ -153,9 +147,7 @@ AROS_LIBFUNC_INIT
   while ( is_neq(ResSquared, TargetMantisse) && z < 53)
   {
     QUAD Restmp, Deltatmp;
-    Set_Value64C(Delta, 0x80000000,
-			0x00000000,
-			0x8000000000000000ULL);
+    Set_Value64C(Delta, 0x80000000, 0x00000000);
     SHRU64(Delta, Delta, z); /* Delta >> = z */
 
     /* X = (Res+Delta)^2 =
@@ -175,14 +167,12 @@ AROS_LIBFUNC_INIT
     //printf("setting a bit!\n");
     //OUTPUT(X);OUTPUT(TargetMantisse);
       ADD64(Res, Res, Delta );     /* Res += Delta */
-      Set_Value64(ResSquared, X)   /* ResSquared = X; */
+      Set_Value64(ResSquared, X);   /* ResSquared = X; */
     }
   }
 
   SHRU64(Res, Res, 11);
-  AND64QC(Res, IEEEDPMantisse_Mask_Hi,
-	       IEEEDPMantisse_Mask_Lo,
-	       IEEEDPMantisse_Mask_64);
+  AND64QC(Res, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo );
   SHL32(tmp, Exponent, 32);
   OR64Q(Res, tmp);
 

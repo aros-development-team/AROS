@@ -233,7 +233,7 @@
 	Set_Value64(z, IEEEDPMul(IEEEDPSub(one_64,x),onehalf_64));
 	Set_Value64(s, IEEEDPSqrt(z));
 	Set_Value64(df,s);
-	AND64QC(df,0xffffffff,0x0,0xffffffff00000000ULL);
+	AND64QC(df,0xffffffff, 0x0);
 	Set_Value64(c, IEEEDPDiv(IEEEDPSub(z,IEEEDPMul(df,df)),IEEEDPAdd(s,df)));
 	Set_Value64(p, IEEEDPMul(z, IEEEDPAdd(pS0_64,
 		       IEEEDPMul(z, IEEEDPAdd(pS1_64,

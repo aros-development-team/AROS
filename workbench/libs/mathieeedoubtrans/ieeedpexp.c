@@ -204,20 +204,20 @@ int i, Offset;
 
 
   /* e^(+-0) = 1, e^(2^(<=-24)) = 1 */
-  if ( is_eqC(y, 0x0, 0x0, 0x0ULL) ||
-       is_eqC(y, 0x80000000, 0x0, 0x8000000000000000ULL) ||
+  if ( is_eqC(y, 0x0, 0x0) ||
+       is_eqC(y, 0x80000000, 0x0) ||
        Exponent < -52 )
   {
-    Set_Value64C(Res, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
+    Set_Value64C(Res, 0x3ff00000, 0x0);
     return Res;
   }
 
-  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL)) /* y < 0 */
+  if ( is_lessSC(y, 0x0, 0x0)) /* y < 0 */
   {
     if (Exponent >= 10)
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      Set_Value64C(Res , 0x0, 0x0, 0x0ULL);
+      Set_Value64C(Res , 0x0, 0x0);
       return Res;
     }
     Offset = 62;
@@ -227,9 +227,7 @@ int i, Offset;
     if (Exponent >= 10)
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      Set_Value64C(Res , IEEEDPPInfty_Hi,
-                         IEEEDPPInfty_Lo,
-                         IEEEDPPInfty_64);
+      Set_Value64C(Res , IEEEDPPInfty_Hi, IEEEDPPInfty_Lo);
       return Res;
     }
   Offset = 0;
@@ -241,30 +239,26 @@ int i, Offset;
 
   /* Mantisse = (y & IEEEDPMantisse_Mask) << 9; */
   Set_Value64(Mantisse, y);
-  AND64QC(y, IEEEDPMantisse_Mask_Lo,
-             IEEEDPMantisse_Mask_Hi,
-             IEEEDPMantisse_Mask_64);
+  AND64QC(y, IEEEDPMantisse_Mask_Lo, IEEEDPMantisse_Mask_Hi);
 
   SHL64(Mantisse, Mantisse, 12);
   Res = ExpTable[i++];
 
-  while ( is_neqC(Mantisse, 0x0, 0x0, 0x0ULL) && i <= (61+Offset) )
+  while ( is_neqC(Mantisse, 0x0, 0x0) && i <= (61+Offset) )
   {
     /* is the highest bit set? */
-    if ( is_lessSC(Mantisse, 0x0, 0x0, 0x0ULL) /* Mantisse < 0 */ )
+    if ( is_lessSC(Mantisse, 0x0, 0x0) /* Mantisse < 0 */ )
     {
       Res = IEEEDPMul(Res, ExpTable[i]);
 
 
-      if (is_eqC(Res, 0x0, 0x0, 0x0ULL) /* 0 == Res */ )
+      if (is_eqC(Res, 0x0, 0x0) /* 0 == Res */ )
       {
         SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return Res;
       }
 
-      if (is_eqC(Res, IEEEDPPInfty_Hi,
-                      IEEEDPPInfty_Lo,
-                      IEEEDPPInfty_64))
+      if (is_eqC(Res, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
       {
         SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
         return Res;

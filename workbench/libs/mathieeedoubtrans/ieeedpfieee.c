@@ -63,7 +63,7 @@ QUAD Res, tmpQ;
   if (0 == y)
   {
     SetSR( Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    Set_Value64C(Res,0x0,0x0,0x0ULL);
+    Set_Value64C(Res, 0x0, 0x0);
     return Res;
   }
 
@@ -80,9 +80,7 @@ QUAD Res, tmpQ;
 
   if (y < 0)
   {
-    OR64QC(Res,  IEEEDPSign_Mask_Hi,
-                 IEEEDPSign_Mask_Lo,
-                 IEEEDPSign_Mask_64);
+    OR64QC(Res,  IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
     SetSR( Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
   }
 

@@ -71,22 +71,21 @@ AROS_LIBFUNC_INIT
   QUAD Res, tmp;
 
   /* y^x is illegal if y<0 and x is not an integer-value */
-  if (is_lessSC(y, 0x0, 0x0, 0x0ULL) &&
+  if (is_lessSC(y, 0x0, 0x0) &&
       is_neq(x, IEEEDPCeil(x))            )
   {
-    Set_Value64C(Res, 0x0, 0x0, 0x0ULL);
+    Set_Value64C(Res, 0x0, 0x0);
     return Res;
   }
 
-  if (is_eqC(y, 0x0, 0x0, 0x0ULL))
+  if (is_eqC(y, 0x0, 0x0))
   {
-    Set_Value64C(Res, 0x3ff00000, 0x0, 0x3ff0000000000000ULL);
+    Set_Value64C(Res, 0x3ff00000, 0x0);
     return Res;
   }
   Set_Value64(tmp, y);
   AND64QC(tmp, (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
-               (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo),
-               (IEEEDPMantisse_Mask_64 + IEEEDPExponent_Mask_64) )
+               (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo) );
 
   Res = IEEEDPLog(tmp);
   Res = IEEEDPMul(Res, x);
@@ -95,32 +94,27 @@ AROS_LIBFUNC_INIT
   /* if y < 0 and x was and even integer, the result is positive, otherwise
   ** it is negative.
   */
-  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL) &&
+  if ( is_lessSC(y, 0x0, 0x0) &&
        TRUE == intern_IEEEDPisodd(x) )
-    OR64QC(Res, IEEEDPSign_Mask_Hi,
-                IEEEDPSign_Mask_Lo,
-                IEEEDPSign_Mask_64);
+    OR64QC(Res, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
 
-  if (is_eqC(Res, 0x0, 0x0, 0x0ULL))
+  if (is_eqC(Res, 0x0, 0x0))
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, 0x0, 0x0, 0x0ULL);
+    Set_Value64C(Res, 0x0, 0x0);
     return Res;
   }
 
   SetSR(0, Zero_Bit | Negative_Bit | Overflow_Bit);
 
-  if (is_lessSC(Res, 0x0, 0x0, 0x0ULL))
+  if (is_lessSC(Res, 0x0, 0x0))
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   Set_Value64(tmp, Res);
   AND64QC(tmp, (IEEEDPMantisse_Mask_Hi + IEEEDPExponent_Mask_Hi),
-               (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo),
-               (IEEEDPMantisse_Mask_64 + IEEEDPExponent_Mask_64));
+               (IEEEDPMantisse_Mask_Lo + IEEEDPExponent_Mask_Lo));
 
-  if ( is_eqC(Res, IEEEDPPInfty_Hi,
-                   IEEEDPPInfty_Lo,
-                   IEEEDPPInfty_64) )
+  if ( is_eqC(Res, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
   /* don`t touch the Negative_Bit now!*/
   SetSR(Overflow_Bit, Zero_Bit | Overflow_Bit);
 

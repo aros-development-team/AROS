@@ -60,7 +60,7 @@ LONG Res, tmp;
 
   SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
 
-  if (is_eqC(y, 0x0, 0x0, 0x0ULL))
+  if (is_eqC(y, 0x0, 0x0))
   {
     SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit );
     return 0;
@@ -75,7 +75,7 @@ LONG Res, tmp;
 
   Res |= (tmp & IEEESPMantisse_Mask);
 
-  if (is_lessSC(y, 0x0, 0x0, 0x0ULL))
+  if (is_lessSC(y, 0x0, 0x0))
   {
     SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit );
     Res |= IEEESPSign_Mask;

@@ -18,11 +18,11 @@ LONG intern_IEEEDPisodd(QUAD fnum)
 {
   LONG Exponent = ((Get_High32of64(fnum) & IEEEDPExponent_Mask_Hi) >> 20) - 0x3ff;
   QUAD Mask;
-  Set_Value64C(Mask, 0x00100000, 0x0, 0x0010000000000000ULL );
+  Set_Value64C(Mask, 0x00100000, 0x0 );
   SHRU64(Mask, Mask, Exponent); /* Mask = Mask >> Exponent*/
 
   AND64Q(fnum, Mask);
-  if (is_neqC(fnum, 0x0, 0x0, 0x0ULL))
+  if (is_neqC(fnum, 0x0, 0x0))
     return TRUE;
   else
     return FALSE;

@@ -123,7 +123,7 @@
       #else
 	#undef IEEEDPNAN_64
 	QUAD IEEEDPNAN_64;
-	Set_Value64C(IEEEDPNAN_64, IEEEDPNAN_Hi, IEEEDPNAN_Lo, 0x0UUL /* dummy - unused*/);
+	Set_Value64C(IEEEDPNAN_64, IEEEDPNAN_Hi, IEEEDPNAN_Lo);
       #endif
 
 	return IEEEDPNAN_64;	 /* acos(>1)= NAN */
@@ -208,8 +208,7 @@
       #endif
       /* 1 > |x| >= 0.5 */
       AND64QC(x, (IEEEDPMantisse_Mask_Hi|IEEEDPExponent_Mask_Hi),
-		 (IEEEDPMantisse_Mask_Lo|IEEEDPExponent_Mask_Lo),
-		 (IEEEDPMantisse_Mask_64|IEEEDPExponent_Mask_64));
+		 (IEEEDPMantisse_Mask_Lo|IEEEDPExponent_Mask_Lo) );
       Set_Value64(w, IEEEDPSub(one_64,x));
       Set_Value64(t, IEEEDPMul(w, onehalf_64));
       Set_Value64(p, IEEEDPMul(t,IEEEDPAdd(pS0_64,
@@ -238,7 +237,7 @@
       else
       {
 	Set_Value64(w,s);
-	AND64QC(w,0xffffffff,0x0,0xffffffff00000000ULL);
+	AND64QC(w,0xffffffff,0x0);
 	Set_Value64(c, IEEEDPDiv(IEEEDPSub(t,IEEEDPMul(w,w)),
 				 IEEEDPAdd(s,w)
 				)
@@ -257,9 +256,7 @@
 	return t;
       else
       {
-	OR64QC(t, IEEEDPSign_Mask_Hi,
-		  IEEEDPSign_Mask_Lo,
-		  IEEEDPSign_Mask_64);
+	OR64QC(t, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
 	return t;
       } /* else */
     }

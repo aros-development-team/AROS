@@ -58,22 +58,17 @@
   QUAD ysquared, ycubed, ypow5, one;
 
   AND64C(yabs, y, (IEEEDPMantisse_Mask_Hi | IEEEDPExponent_Mask_Hi), 
-                  (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo),
-                  (IEEEDPMantisse_Mask_64 | IEEEDPExponent_Mask_64))
+                  (IEEEDPMantisse_Mask_Lo | IEEEDPExponent_Mask_Lo) );
 
   /* check for +- infinity -> output: +-pi/2 */
-  if (is_eqC(yabs, IEEEDPPInfty_Hi,
-                   IEEEDPPInfty_Lo,
-                   IEEEDPPInfty_64))
+  if (is_eqC(yabs, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo))
   {
-    AND64QC(y, IEEEDPSign_Mask_Hi,
-               IEEEDPSign_Mask_Lo,
-               IEEEDPSign_Mask_64);
-    OR64QC(y, pio2_hi_Hi, pio2_hi_Lo, pio2_hi_64);
+    AND64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
+    OR64QC(y, pio2_hi_Hi, pio2_hi_Lo);
     return y;
   }
   /* atan(0) = 0 */
-  if (is_eqC(yabs, 0, 0, 0ULL) /* 0 == yabs */ )
+  if (is_eqC(yabs, 0, 0) /* 0 == yabs */ )
   {
      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
      return y;
@@ -82,14 +77,14 @@
   ysquared = IEEEDPMul(yabs, yabs);
   ycubed = IEEEDPMul(yabs, ysquared);
 
-  Set_Value64C(one, one_Hi, one_Lo, one_64);
+  Set_Value64C(one, one_Hi, one_Lo);
 
   /* atan(x >= 860) = pi/2 - 1/x + 1/(3*x^3) */
   if ( Get_High32of64(yabs)  >= 0x408ae000)
   {
     QUAD tmp1, onethird;
-    Set_Value64C(tmp1, pio2_hi_Hi, pio2_hi_Lo, pio2_hi_64);
-    Set_Value64C(onethird, onethird_Hi, onethird_Lo, onethird_64);
+    Set_Value64C(tmp1, pio2_hi_Hi, pio2_hi_Lo);
+    Set_Value64C(onethird, onethird_Hi, onethird_Lo);
 
     tmp1 = IEEEDPAdd(tmp1,IEEEDPDiv(IEEEDPSub(onethird, ysquared),ycubed)); 
 
@@ -101,7 +96,7 @@
     else
     {
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      OR64QC(tmp1, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo, IEEEDPSign_Mask_64);
+      OR64QC(tmp1, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
       return tmp1;
     }
   }
@@ -112,9 +107,9 @@
   if ( Get_High32of64(yabs) >= 0x40600000)
   {
     QUAD tmp1, onethird, onefifth;
-    Set_Value64C(tmp1, pio2_hi_Hi, pio2_hi_Lo, pio2_hi_64);
-    Set_Value64C(onethird, onethird_Hi, onethird_Lo, onethird_64);
-    Set_Value64C(onefifth, onefifth_Hi, onefifth_Lo, onefifth_64);
+    Set_Value64C(tmp1, pio2_hi_Hi, pio2_hi_Lo);
+    Set_Value64C(onethird, onethird_Hi, onethird_Lo);
+    Set_Value64C(onefifth, onefifth_Hi, onefifth_Lo);
     ypow5 = IEEEDPMul(ycubed, ysquared);
 
     tmp1 = IEEEDPAdd(tmp1, 
@@ -132,7 +127,7 @@
     else
     {
       SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      OR64QC(tmp1, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo, IEEEDPSign_Mask_64);
+      OR64QC(tmp1, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
       return tmp1;
     }
   }

@@ -92,29 +92,22 @@ AROS_LIBFUNC_INIT
 QUAD Res, tmp, Exponent64, ld_M;
 LONG Exponent;
   /* check for negative sign */
-  if ( is_lessSC(y, 0x0, 0x0, 0x0ULL) /* y<0 */)
+  if ( is_lessSC(y, 0x0, 0x0) /* y<0 */)
   {
     SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-    Set_Value64C(Res, IEEEDPNAN_Hi,
-                      IEEEDPNAN_Lo,
-                      IEEEDPNAN_64);
+    Set_Value64C(Res, IEEEDPNAN_Hi, IEEEDPNAN_Lo);
     return Res;
   }
 
-  if ( is_eqC(y, 0x0, 0x0, 0x0) )
+  if ( is_eqC(y, 0x0, 0x0) )
   {
     Set_Value64C(Res, (IEEEDPSign_Mask_Hi + IEEEDPExponent_Mask_Hi),
-                      (IEEEDPSign_Mask_Lo + IEEEDPExponent_Mask_Lo),
-                      (IEEEDPSign_Mask_64 + IEEEDPExponent_Mask_64));
+                      (IEEEDPSign_Mask_Lo + IEEEDPExponent_Mask_Lo) );
     return Res;
   }
   /* check for argument == 0 or argument == +infinity */
-  if ( is_eqC(y, IEEEDPPInfty_Hi,
-                 IEEEDPPInfty_Lo,
-                 IEEEDPPInfty_64) ||
-       is_eqC(y, IEEEDPExponent_Mask_Hi,
-                 IEEEDPExponent_Mask_Lo,
-                 IEEEDPExponent_Mask_64 ))
+  if ( is_eqC(y, IEEEDPPInfty_Hi, IEEEDPPInfty_Lo) ||
+       is_eqC(y, IEEEDPExponent_Mask_Hi, IEEEDPExponent_Mask_Lo ))
     return y;
 
   /* convert the Exponent of the argument (y) to the ieeedp-format */
@@ -122,10 +115,8 @@ LONG Exponent;
   Exponent64 = IEEEDPFlt(Exponent);
 
   Set_Value64(tmp, y);
-  AND64QC(tmp, IEEEDPMantisse_Mask_Hi,
-               IEEEDPMantisse_Mask_Lo,
-               IEEEDPMantisse_Mask_64);
-  OR64QC(tmp, 0x3fe00000, 0x0, 0x3fe0000000000000ULL);
+  AND64QC(tmp, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+  OR64QC(tmp, 0x3fe00000, 0x0);
   ld_M = intern_IEEEDPLd( (struct MathIeeeDoubTransBase *)
                                            MathIeeeDoubTransBase,
                           tmp );
@@ -133,7 +124,7 @@ LONG Exponent;
   ** log(fnum1) =  --------
   **                 ld e
   */
-  Set_Value64C(tmp, 0x3fe62e42, 0xfefa39ef, 0x3fe62e42fefa39efULL ); /* ln 2*/
+  Set_Value64C(tmp, 0x3fe62e42, 0xfefa39ef ); /* ln 2*/
   return IEEEDPMul( IEEEDPAdd(ld_M, Exponent64), tmp);
 AROS_LIBFUNC_EXIT
 } /* IEEEDPLog */
