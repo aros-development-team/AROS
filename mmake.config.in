@@ -12,8 +12,4 @@ genglobalvarfile sh $(TOP)/configure
 
 ignoredir CVS
 ignoredir bin
-ignoredir intuition2
-
-#uncomment next line if you have checked out contrib/regina
-
-
+ignoredir intuition.morphos
