@@ -1,7 +1,7 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-COUNTRIES := australia belgie belgique brasil canada canada_français \
+COUNTRIES := australia belgië belgique brasil canada canada_français \
     	     danmark deutschland españa france great_britain \
 	     italia nederland norge österreich polska portugal \
 	     schweiz suisse suomi sverige svizzera united_kingdom \
