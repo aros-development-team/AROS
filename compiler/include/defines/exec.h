@@ -265,7 +265,7 @@
 
 #define CloseLibrary(library) \
     AROS_LC1(void, CloseLibrary, \
-    AROS_LCA(struct Library *, library,A1), \
+    AROS_LCA(struct Library *, library, A1), \
     struct ExecBase *, SysBase, 69, Exec)
 
 #define ColdReboot() \
@@ -349,7 +349,7 @@
 
 #define FindPort(name) \
     AROS_LC1(struct MsgPort *, FindPort, \
-    AROS_LCA(STRPTR, name,A1), \
+    AROS_LCA(STRPTR, name, A1), \
     struct ExecBase *, SysBase, 65, Exec)
 
 #define FindResident(name) \
@@ -642,6 +642,11 @@
     AROS_LC1(void, SumLibrary, \
     AROS_LCA(struct Library *, library,A1), \
     struct ExecBase *, SysBase, 71, Exec)
+
+#define TaggedOpenLibrary(tag) \
+    AROS_LC1(APTR, TaggedOpenLibrary, \
+    AROS_LCA(LONG, tag, D0), \
+    struct ExecBase *, SysBase, 135, Exec)
 
 #define TypeOfMem(address) \
     AROS_LC1(ULONG, TypeOfMem, \

@@ -28,11 +28,34 @@
     AROS_LCA(struct TagItem *, tagList, A1), \
     struct UtilityBase *, UtilityBase, 38, Utility)
 
+#define Amiga2Date(seconds, result) \
+    AROS_LC2(void, Amiga2Date, \
+    AROS_LCA(ULONG             , seconds, D0), \
+    AROS_LCA(struct ClockData *, result, A0), \
+    struct Library *, UtilityBase, 20, Utility)
+
 #define ApplyTagChanges(list, changelist) \
     AROS_LC2(void, ApplyTagChanges, \
     AROS_LCA(struct TagItem *, list,       A0), \
     AROS_LCA(struct TagItem *, changelist, A1), \
     struct UtilityBase *, UtilityBase, 31, Utility)
+
+#define AttemptRemNamedObject(object) \
+    AROS_LC1(LONG, AttemptRemNamedObject, \
+    AROS_LCA(struct NamedObject *, object, A0), \
+    struct Library *, UtilityBase, 39, Utility)
+
+#define CallHookPkt(hook, object, paramPacket) \
+    AROS_LC3(ULONG, CallHookPkt, \
+    AROS_LCA(struct Hook *, hook, A0), \
+    AROS_LCA(APTR         , object, A2), \
+    AROS_LCA(APTR         , paramPacket, A1), \
+    struct Library *, UtilityBase, 17, Utility)
+
+#define CheckDate(date) \
+    AROS_LC1(ULONG, CheckDate, \
+    AROS_LCA(struct ClockData *, date, A0), \
+    struct Library *, UtilityBase, 22, Utility)
 
 #define CloneTagItems(tagList) \
     AROS_LC1(struct TagItem *, CloneTagItems, \
@@ -43,6 +66,20 @@
     AROS_LC1(ULONG, Date2Amiga, \
     AROS_LCA(struct ClockData *, date, A0), \
     struct UtilityBase *, UtilityBase, 21, Utility)
+
+#define FilterTagChanges(changeList, originalList, apply) \
+    AROS_LC3(void, FilterTagChanges, \
+    AROS_LCA(struct TagItem *, changeList, A0), \
+    AROS_LCA(struct TagItem *, originalList, A1), \
+    AROS_LCA(BOOL            , apply, D0), \
+    struct Library *, UtilityBase, 9, Utility)
+
+#define FilterTagItems(tagList, filterArray, logic) \
+    AROS_LC3(ULONG, FilterTagItems, \
+    AROS_LCA(struct TagItem *, tagList, A0), \
+    AROS_LCA(Tag            *, filterArray, A1), \
+    AROS_LCA(ULONG           , logic, D0), \
+    struct Library *, UtilityBase, 16, Utility)
 
 #define FindNamedObject(nameSpace, name, lastObject) \
     AROS_LC3(struct NamedObject *, FindNamedObject, \
@@ -78,10 +115,22 @@
     AROS_LC0(ULONG, GetUniqueID, \
     struct UtilityBase *, UtilityBase, 45, Utility)
 
+#define MapTags(tagList, mapList, mapType) \
+    AROS_LC3(void, MapTags, \
+    AROS_LCA(struct TagItem *, tagList, A0), \
+    AROS_LCA(struct TagItem *, mapList, A1), \
+    AROS_LCA(ULONG           , mapType, D0), \
+    struct Library *, UtilityBase, 10, Utility)
+
 #define NamedObjectName(object) \
     AROS_LC1(STRPTR, NamedObjectName, \
     AROS_LCA(struct NamedObject *, object, A0), \
     struct UtilityBase *, UtilityBase, 42, Utility)
+
+#define NextTagItem(tagListPtr) \
+    AROS_LC1(struct TagItem *, NextTagItem, \
+    AROS_LCA(struct TagItem **, tagListPtr, A0), \
+    struct Library *, UtilityBase, 8, Utility)
 
 #define PackBoolTags(initialFlags, tagList, boolMap) \
     AROS_LC3(ULONG, PackBoolTags, \
@@ -89,6 +138,13 @@
     AROS_LCA(struct TagItem *, tagList, A0), \
     AROS_LCA(struct TagItem *, boolMap, A1), \
     struct UtilityBase *, UtilityBase, 7, Utility)
+
+#define PackStructureTags(pack, packTable, tagList) \
+    AROS_LC3(ULONG, PackStructureTags, \
+    AROS_LCA(APTR            , pack, A0), \
+    AROS_LCA(ULONG          *, packTable, A1), \
+    AROS_LCA(struct TagItem *, tagList, A2), \
+    struct Library *, UtilityBase, 35, Utility)
 
 #define RefreshTagItemClones(clone, original) \
     AROS_LC2(void, RefreshTagItemClones, \
@@ -159,6 +215,13 @@
     AROS_LCA(ULONG        , arg1, D0), \
     AROS_LCA(ULONG        , arg2, D1), \
     struct UtilityBase *, UtilityBase, 34, Utility)
+
+#define UnpackStructureTags(pack, packTable, tagList) \
+    AROS_LC3(ULONG, UnpackStructureTags, \
+    AROS_LCA(APTR            , pack, A0), \
+    AROS_LCA(ULONG          *, packTable, A1), \
+    AROS_LCA(struct TagItem *, tagList, A2), \
+    struct Library *, UtilityBase, 36, Utility)
 
 
 #endif /* DEFINES_UTILITY_H */

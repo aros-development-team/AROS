@@ -218,7 +218,7 @@ AROS_LP1(void, CloseDevice,
     struct ExecBase *, SysBase, 75, Exec)
 
 AROS_LP1(void, CloseLibrary,
-    AROS_LPA(struct Library *, library,A1),
+    AROS_LPA(struct Library *, library, A1),
     struct ExecBase *, SysBase, 69, Exec)
 
 AROS_LP0(void, ColdReboot,
@@ -287,7 +287,7 @@ AROS_LP2I(struct Node *, FindName,
     struct ExecBase *, SysBase, 46, Exec)
 
 AROS_LP1(struct MsgPort *, FindPort,
-    AROS_LPA(STRPTR, name,A1),
+    AROS_LPA(STRPTR, name, A1),
     struct ExecBase *, SysBase, 65, Exec)
 
 AROS_LP1(struct Resident *, FindResident,
@@ -528,6 +528,10 @@ AROS_LP0(ULONG, SumKickData,
 AROS_LP1(void, SumLibrary,
     AROS_LPA(struct Library *, library,A1),
     struct ExecBase *, SysBase, 71, Exec)
+
+AROS_LP1(APTR, TaggedOpenLibrary,
+    AROS_LPA(LONG, tag, D0),
+    struct ExecBase *, SysBase, 135, Exec)
 
 AROS_LP1(ULONG, TypeOfMem,
     AROS_LPA(APTR, address, A1),

@@ -224,8 +224,8 @@ $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
 
 CLIBDIR=$(TOP)/apps/compiler/include/clib
 
-# include/clib/exec_protos.h
 includes: \
+	    $(CLIBDIR)/exec_protos.h \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
@@ -233,28 +233,28 @@ includes: \
 	    $(CLIBDIR)/console_protos.h
 
 $(CLIBDIR)/exec_protos.h: $(wildcard config/$(KERNEL)/*.s \
-	    config/$(KERNEL)/*.c rom/exec/*.c)
+	    config/$(KERNEL)/*.c rom/exec/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Exec \
 	config/$(KERNEL)/*.s config/$(KERNEL)/*.c rom/exec/*.c
 
-$(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c)
+$(CLIBDIR)/dos_protos.h: $(wildcard rom/dos/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Dos \
 	rom/dos/*.c
 
-$(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c)
+$(CLIBDIR)/utility_protos.h: $(wildcard rom/utility/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Utility \
 	rom/utility/*.c
 
-$(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c)
+$(CLIBDIR)/graphics_protos.h: $(wildcard rom/graphics/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Graphics \
 	rom/graphics/*.c
 
-$(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c)
+$(CLIBDIR)/intuition_protos.h: $(wildcard rom/intuition/*.c) scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Intuition \
 	rom/intuition/*.c
 
 $(CLIBDIR)/console_protos.h: rom/devs/cdinputhandler.c \
-	    rom/devs/rawkeyconvert.c
+	    rom/devs/rawkeyconvert.c scripts/genprotos.h
 	gawk -f scripts/genprotos.h --assign lib=Console \
 	rom/devs/cdinputhandler.c rom/devs/rawkeyconvert.c
 

@@ -27,29 +27,49 @@
 #
 
 BEGIN {
-    indir="apps/compiler/include/clib/"
+    indir="apps/compiler/include"
     outdir=indir;
 
-    basename=indir tolower(lib) "_protos."
-    infile=basename "h"
-    out=basename "new"
+    basename_lp=indir "/clib/" tolower(lib) "_protos."
+    basename_lc=indir "/defines/" tolower(lib) "."
+    infile_lp=basename_lp "h"
+    infile_lc=basename_lc "h"
+    out_lp=basename_lp "new"
+    out_lc=basename_lc "new"
 
     todo=2;
 
-    printf ("") > out;
+    printf ("") > out_lp;
+    printf ("") > out_lc;
 
-    while ((getline < infile) > 0 && todo)
+    while ((getline < infile_lp) > 0 && todo)
     {
 	if ($1 == "Prototypes")
 	    todo --;
-	else if ($1 == "#ifndef" && define=="")
+	else if ($1 == "#ifndef" && define_lp=="")
 	{
-	    define = $2;
+	    define_lp = $2;
 	}
 	else if (todo < 2)
 	    todo --;
 
-	print >> out;
+	print >> out_lp;
+    }
+
+    todo=2;
+
+    while ((getline < infile_lc) > 0 && todo)
+    {
+	if ($1 == "Defines")
+	    todo --;
+	else if ($1 == "#ifndef" && define_lc=="")
+	{
+	    define_lc = $2;
+	}
+	else if (todo < 2)
+	    todo --;
+
+	print >> out_lc;
     }
 }
 /^#?[ \t]*NAME[ \t]*(\*\/)?[ \t]*$/ {
@@ -109,29 +129,35 @@ BEGIN {
     line=f;
     gsub("@1","\n    ",line);
     gsub("AROS_LH","AROS_LP",line);
-    print line >> out;
+    print line >> out_lp;
+    print "" >> out_lp;
 
-    printf ("#define %s(", name) >> out;
+    printf ("#define %s(", name) >> out_lc;
     for (t=0; t<args; t++)
     {
-	printf ("%s", a[t]) >> out;
+	printf ("%s", a[t]) >> out_lc;
 
 	if (t+1<args)
-	    printf (", ") >> out;
+	    printf (", ") >> out_lc;
     }
-    printf (") \\\n") >> out
+    printf (") \\\n") >> out_lc
     line=f;
     gsub("@1"," \\\n    ",line);
     gsub("AROS_LH","AROS_LC",line);
-    print "    " line >> out;
-    print "" >> out;
+    print "    " line >> out_lc;
+    print "" >> out_lc;
 }
 END {
-    print "\n#endif /* " define " */" >> out
+    print "\n#endif /* " define_lc " */" >> out_lc
+    print "\n#endif /* " define_lp " */" >> out_lp
 
-    close (infile);
-    close (out);
+    close (infile_lc);
+    close (out_lc);
+    close (infile_lp);
+    close (out_lp);
 
-    system ("mv " basename "h " basename "bak");
-    system ("mv " basename "new " basename "h");
+    system ("mv " basename_lc "h " basename_lc "bak");
+    system ("mv " basename_lc "new " basename_lc "h");
+    system ("mv " basename_lp "h " basename_lp "bak");
+    system ("mv " basename_lp "new " basename_lp "h");
 }
