@@ -23,6 +23,7 @@ int isRegionWithinBounds(struct Region *r, int left, int top, int width, int hei
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
 BOOL DestroyClasses(struct Library *MUIMasterBase);
 struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase);
+ULONG ConvertKey(struct IntuiMessage *imsg);
 
 #ifdef _AROS
 AROS_UFP3(IPTR, metaDispatcher,
