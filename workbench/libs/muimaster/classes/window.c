@@ -1552,14 +1552,20 @@ static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Win
 	int id = 1;
 	struct MinNode *mn;
 
+        newnode->id = id;
+
+	if (IsListEmpty((struct List*)&data->wd_IDList))
+	{
+	    AddHead((struct List*)&data->wd_IDList,(struct Node*)&newnode->node);
+	    return (IPTR)id;
+	}
+
 	for (mn = data->wd_IDList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
 	    struct IDNode *idn = (struct IDNode *)mn;
 	    if (id < idn->id) break;
 	    id++;
 	}
-
-        newnode->id = id;
 	
 	Insert((struct List*)&data->wd_IDList,(struct Node*)&newnode->node,(struct Node*)mn);
 	return (IPTR)id;
@@ -1582,6 +1588,7 @@ static IPTR Window_FreeGadgetID(struct IClass *cl, Object *obj, struct MUIP_Wind
 	{
 	    Remove((struct Node*)idn);
 	    mui_free(idn);
+	    return 0;
 	}
     }
 
