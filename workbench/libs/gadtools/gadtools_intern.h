@@ -169,6 +169,25 @@ struct Gadget *makelistview(struct GadToolsBase_intern *GadToolsBase,
 #define LV_DEF_INTERNAL_SPACING 0
 
 
+struct Menu * makemenutitle(struct NewMenu * newmenu,
+                            struct TagItem * taglist);
+
+struct MenuItem * makemenuitem(struct NewMenu * newmenu,
+                               BOOL is_image,
+                               struct TagItem * taglist,
+                               struct GadToolsBase_intern * GadToolsBase);
+
+void appendmenu(struct Menu * firstmenu,
+                struct Menu * lastmenu);
+
+void appenditem(struct Menu * curmenu,
+                struct MenuItem * item);
+
+void appendsubitem(struct MenuItem * curitem,
+                   struct MenuItem * subitem);
+
+void freeitems(struct Menu * m);
+void freesubitems(struct MenuItem * mi);
 
 struct GadToolsBase_intern
 {

@@ -5,7 +5,7 @@ USER_INCLUDES	:= -I..
 
 LIBNAME 	:= gadtools
 ULIBNAME	:= GadTools
-FILES		:= functable basicfuncs classes gadgets
+FILES		:= functable basicfuncs classes gadgets menus
 FUNCTIONS	:= \
 	createcontext \
 	creategadgeta \

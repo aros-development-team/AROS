@@ -28,9 +28,9 @@
 	struct Library *, GadToolsBase, 7, GadTools)
 
 /*  FUNCTION
-        Refreshes the given window. This function must be used instead
-        of BeginRefresh(), if gadtools-gadgets are used. When you are
-        finished with refreshing the window, you must call GT_EndRefresh().
+        Change the attribute of the given gadget according to the
+        attributes chosen in the tag list. If an attribute is not
+        provided in the tag list, its value remains unchanged.
 
     INPUTS
 	gad -     Gadget, for which the specified attributes should be set for.
@@ -42,10 +42,6 @@
 	The gadget may be set to the specified attributes.
 
     NOTES
-	Note that there is no possibility to check, if the setting of an
-	attribute was successful, except by getting the attribute and
-	checking it. The setting of some attributes cannot fail. Refer to
-	the description of the tags to check this.
 
     EXAMPLE
 
@@ -66,4 +62,4 @@
     SetGadgetAttrsA(gad, win, req, tagList);
 
     AROS_LIBFUNC_EXIT
-} /* GT_BeginRefresh */
+} /* GT_SetGadgetAttrsA */

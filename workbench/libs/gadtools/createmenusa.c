@@ -6,6 +6,9 @@
     Lang: english
 */
 #include "gadtools_intern.h"
+#include <exec/types.h>
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*********************************************************************
 
@@ -54,10 +57,171 @@
 
 ***************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+ 
+  BOOL end = FALSE;
+  struct Menu * firstmenu = NULL;
+  struct Menu * curmenu;
+  struct MenuItem * curitem;
+  struct MenuItem * cursubitem;
+  ULONG menu_ctr = 0;
+  ULONG item_ctr = 0;
+  ULONG subitem_ctr = 0;
+  struct TagItem * ti;
+  BOOL fullmenu = GetTagData(GTMN_FullMenu, FALSE, tagList);
 
-    return NULL;
+#warning Variable 'fullmenu' should be used!!!
 
-    AROS_LIBFUNC_EXIT
+  ULONG err = 0;
+
+  D(bug("Entering %s\n",__FUNCTION__));
+ 
+  while (FALSE == end)
+  {
+    BOOL is_image = FALSE;
+    
+    switch (newmenu->nm_Type)
+    {
+      case NM_TITLE:
+        curmenu = makemenutitle(newmenu,
+                                tagList);
+        
+        if (NULL == curmenu)
+        {
+          err = GTMENU_NOMEM;
+          goto failexit;
+        }
+
+        /*
+        ** Append it to the list of menus or make it the
+        ** first entry. 
+        */        
+        if (NULL == firstmenu)
+          firstmenu = curmenu;
+        else
+          appendmenu(firstmenu, curmenu);
+        
+        menu_ctr ++;
+        item_ctr = 0;
+      break;
+
+      case IM_ITEM:
+        is_image = TRUE;
+        /* Fall through */
+      case NM_ITEM:
+        /*
+        ** There has to be a menu structure available
+        ** to create an item. 
+        */
+        
+        if (NULL == curmenu)
+        {
+          err = GTMENU_INVALID;
+          goto failexit;
+        }
+
+#warning What is the maximum possible number of MenuItems in a menu?
+        if (item_ctr > 16)
+        {
+          err = GTMENU_TRIMMED;
+          goto failexit;
+        }
+        
+        curitem = makemenuitem(newmenu,
+                               is_image,
+                               tagList,
+                               GTB(GadToolsBase));
+        
+        if (NULL == curitem)
+        {
+          err = GTMENU_NOMEM;
+          goto failexit;
+        }
+        
+        /*
+        ** Append this item to the current menu title
+        */
+        appenditem(curmenu, curitem);
+        
+        item_ctr ++;
+        subitem_ctr = 0;
+      break;
+      
+      case IM_SUB:
+        is_image = TRUE;
+        /* Fall through */
+      case NM_SUB:
+        /*
+        ** There has to be an item menu structure available
+        ** to create a sub item. 
+        */
+        if (NULL ==  curitem)
+        {
+          err = GTMENU_INVALID;
+          goto failexit;
+        }
+
+#warning What is the maximum possible number of SubItems of a MenuItem??
+        if (subitem_ctr > 16) /* ??? */
+        {
+          err = GTMENU_TRIMMED;
+          goto failexit;
+        }
+
+        cursubitem = makemenuitem(newmenu,
+                                  is_image,
+                                  tagList,
+                                  GTB(GadToolsBase));
+        
+        if (NULL == cursubitem)
+        {
+          err = GTMENU_NOMEM;
+          goto failexit;
+        }
+        /*
+        ** Append this item to the current menu item
+        */
+        appendsubitem(curitem, cursubitem);
+        
+        subitem_ctr ++;
+      break;
+      
+      case NM_IGNORE:
+        /*
+        ** Nothing to do in this case
+        */
+      break;
+      
+      case NM_END:
+        /*
+        ** The end.
+        */
+        end = TRUE;
+      break;
+    }
+    
+    newmenu += sizeof(struct NewMenu);
+  }
+
+  return firstmenu;
+
+
+failexit:
+  /*
+  ** Free all memory
+  */
+  FreeMenus(firstmenu);
+  
+  /*
+  ** Set the secondary error value if requested.
+  */
+  ti = FindTagItem(GTMN_SecondaryError, tagList);
+
+  if (NULL != ti)
+    ti->ti_Data = err;
+  
+  return NULL;
+
+  AROS_LIBFUNC_EXIT
 } /* CreateMenusA */

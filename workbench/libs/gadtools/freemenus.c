@@ -45,11 +45,22 @@
 
 ***************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-#warning TODO: Write gadtools/FreeMenus()
-    aros_print_not_implemented ("FreeMenus");
+  while (NULL != menu)
+  {
+    struct Menu * _menu = menu->NextMenu;
+    
+    /*
+    ** Free all items and subitems of this menu title
+    */
+    freeitems(menu);
 
-    AROS_LIBFUNC_EXIT
+    FreeMem(menu, sizeof(struct Menu)+sizeof(APTR));
+
+    menu = _menu;
+  }
+
+  AROS_LIBFUNC_EXIT
 } /* FreeMenus */
