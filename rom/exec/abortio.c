@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Abort an I/O request.
@@ -14,7 +14,7 @@
 
     NAME */
 
-	AROS_LH1I(LONG, AbortIO,
+	AROS_LH1(LONG, AbortIO,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct IORequest *, iORequest, A1),
