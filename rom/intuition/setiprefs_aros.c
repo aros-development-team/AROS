@@ -106,9 +106,13 @@ AROS_LH3(ULONG, SetIPrefs,
 		    OpenWorkBench();
 		else
 		{
+		    lock = LockIBase(0);
                     GetPrivIBase(IntuitionBase)->ScreenModePrefs = old_prefs;
+		    UnlockIBase(lock);
 		    Result = FALSE;
 		}
+		
+		return Result;
 		
 	    }
 	    
