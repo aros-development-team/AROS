@@ -16,8 +16,8 @@ Basic Installation of AROS-SOURCES
 	It is possible to build AROS in your main cvs-copy, as all
 	generated files should be ignored by the CVS server, but I think
 	it is better to leave your copy clean, if you can afford the disk
-	space. (A complete compilation has approx. 5000 files! and ~20MB
-	for -O2 optimized binaries)
+	space. A complete compilation has over 5000 files and ~40MB
+	for -O2 optimized binaries!
 
 3. Build all the necessary tools for compilation.
 	Get all non-AROS tools,
@@ -27,7 +27,7 @@ Basic Installation of AROS-SOURCES
 	a) MetaMake, short mmake.
 		cd AROS/tools/MetaMake
 		./configure
-		  (
+
 		  ./configure -v --prefix=/gg
 		    if you are using ADE/GG on the Amiga --- if configure
 		    doesn't work and you're using ADE just copy the
@@ -59,8 +59,16 @@ Basic Installation of AROS-SOURCES
 		This one should not be needed to be compiled first,
 		because it will be generated "on the fly" (if needed),
 		but just to mention it, because it is used:
-		cd AROS/tools/cpak
+			cd AROS/tools/cpak
+			make
+
+	d) The function archive utility, archtool.
+		Should be generated automatically, but there may
+		still be problems with mixing system and AROS headers
+		when archtool is made on the fly. Do the following:
+		cd AROS:tools/archtools
 		make
+
 
 4. Run ./configure in the source root.
 	Use "./configure --help" for all possible options.
