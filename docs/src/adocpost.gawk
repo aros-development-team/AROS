@@ -41,24 +41,26 @@ BEGIN {
 		cnt=1;
 	    }
 
+	    print "<FONT SIZE=6>"
+
 	    if ($2=="Utility functions")
 		print "<A HREF=\"#util\">"
 	    else
 		print "<A HREF=\"#lib"$2"\">"
 
-	    print "<FONT SIZE=6><B>A.2."cnt" "$2"</B></FONT></A> ("
+	    print "<B>A.2."cnt" "$2"</B></A> ("
 	    cnt ++;
 
 	    libini[$2]=$3;
 
 	    initials=$3;
-	    for (t=1; t<length(initials); t++)
+	    for (t=1; t<=length(initials); t++)
 	    {
 		c=substr(initials,t,1);
 		print "<A HREF=\"#lib"$2 c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
 	    }
 
-	    print ")<BR>"
+	    print ")</FONT><BR>"
 
 	    lib="";
 	    char="";
@@ -102,7 +104,7 @@ BEGIN {
 		cnt ++;
 
 		initials=libini[lib];
-		for (t=1; t<length(initials); t++)
+		for (t=1; t<=length(initials); t++)
 		{
 		    c=substr(initials,t,1);
 		    print "<A HREF=\"#lib"lib c"\"><FONT SIZE=6><B>"c"</B></FONT></A> "
@@ -166,7 +168,7 @@ BEGIN {
 	{
 	    print "<DT><A NAME=\"byname\"></A><FONT SIZE=7><B>A.3 Reference by name</B></FONT><DD>"
 
-	    for (t=1; t<length($2); t++)
+	    for (t=1; t<=length($2); t++)
 	    {
 		char=substr($2,t,1);
 		print "<A HREF=\"#name"char"\"><FONT SIZE=6><B>"char"</B></FONT></A> "
