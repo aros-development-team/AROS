@@ -1200,6 +1200,8 @@ AROS_LH1(struct Screen *, OpenScreen,
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Set first 4 colors\n"));
 
+#warning "FIXME: backport: #if'ed out"
+#if 0
         p = GetPrivIBase(IntuitionBase)->Colors;
         for (k = 0; k < 4 && k < numcolors; ++k)
         {
@@ -1231,6 +1233,7 @@ AROS_LH1(struct Screen *, OpenScreen,
 #endif
             }
         }
+#endif
 
         DEBUG_OPENSCREEN(dprintf("OpenScreen: Obtain Mousepointer colors\n"));
 
