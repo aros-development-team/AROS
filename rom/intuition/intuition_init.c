@@ -82,7 +82,7 @@ static const APTR inittabl[4]=
 
 static Class rootclass =
 {
-    { { NULL, NULL }, AROS_ASMFUNC_NAME(rootDispatcher), NULL, NULL },
+    { { NULL, NULL }, AROS_ASMSYMNAME(rootDispatcher), NULL, NULL },
     0,		/* reserved */
     NULL,	/* No superclass */
     (ClassID)ROOTCLASS,  /* ClassID */

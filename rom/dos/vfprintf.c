@@ -2,6 +2,13 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/11/18 13:20:14  aros
+    Compile assembler files with CPP
+
+    New macros: AROS_ASMSYMNAME() (replaces AROS_ASMFUNC_NAME()) and
+    AROS_CSYMNAME() which must be used to access assembler symbols from C and C
+    symbols from assembler.
+
     Revision 1.5  1996/10/24 15:50:38  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -91,7 +98,7 @@ AROS_UFH2(void,vfp_hook,
 
     (void) RawDoFmt (format,
 	argarray,
-	(VOID_FUNC)AROS_ASMFUNC_NAME(vfp_hook),
+	(VOID_FUNC)AROS_ASMSYMNAME(vfp_hook),
 	&vfp
     );
 

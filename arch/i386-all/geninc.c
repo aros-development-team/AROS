@@ -10,6 +10,10 @@
 
 int main (void)
 {
+    printf ("# Macros\n"
+	"#define AROS_CSYMNAME(n)   n\n"
+	"\n");
+
     printf ("# ExecBase\n");
     printf ("\tAttnResched   = %d\n", offsetof (struct ExecBase, AttnResched));
     printf ("\tIDNestCnt     = %d\n", offsetof (struct ExecBase, IDNestCnt));

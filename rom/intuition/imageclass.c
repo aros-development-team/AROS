@@ -468,7 +468,7 @@ struct IClass *InitImageClass (struct IntuitionBase * IntuitionBase)
 	*/
     if ((cl = MakeClass(IMAGECLASS, ROOTCLASS, NULL, sizeof(struct Image), 0)))
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMFUNC_NAME(dispatch_imageclass);
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_imageclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 

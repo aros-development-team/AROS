@@ -42,6 +42,7 @@ case "$type" in
 	KERNEL="i386-emul"
 	X11LIBDIR="/usr/X11R6/lib"
 	MKDEPEND="makedepend -D__GNUC__ -Di386 -f\$@ -- \$(CFLAGS) -- \$^"
+	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"

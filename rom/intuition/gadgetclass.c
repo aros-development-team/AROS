@@ -424,7 +424,7 @@ struct IClass *InitGadgetClass (struct IntuitionBase * IntuitionBase)
      */
     if ((cl = MakeClass(GADGETCLASS, ROOTCLASS, NULL, sizeof(struct ExtGadget), 0)))
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMFUNC_NAME(dispatch_gadgetclass);
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gadgetclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 

@@ -1,38 +1,40 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#
-#    Desc: Exec function Dispatch()
-#    Lang: english
+/*
+     (C) 1995-96 AROS - The Amiga Replacement OS
+     $Id$
 
-#*****************************************************************************
-#
-#   NAME
-#	AROS_LH0(void, Dispatch,
-#
-#   LOCATION
-#	struct ExecBase *, SysBase, 7, Exec)
-#
-#   FUNCTION
-#
-#   INPUTS
-#
-#   RESULT
-#
-#   NOTES
-#
-#   EXAMPLE
-#
-#   BUGS
-#
-#   SEE ALSO
-#
-#   INTERNALS
-#
-#   HISTORY
-#
-#******************************************************************************
+     Desc: Exec function Dispatch()
+     Lang: english
+*/
 
-	.include "machine.i"
+/******************************************************************************
+
+    NAME
+	AROS_LH0(void, Dispatch,
+
+    LOCATION
+	struct ExecBase *, SysBase, 7, Exec)
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
 
 	.text
 	.balign 16
@@ -122,7 +124,7 @@ _Exec_Dispatch:
 	cmpb	$0,tc_IDNestCnt(%edx)
 	jge	.noen
 	/* If called from the signal handler don't do it. */
-	cmpb	$0,supervisor
+	cmpb	$0,AROS_CSYMNAME(supervisor)
 	jne	.noen
 	call	en
 

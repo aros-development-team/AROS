@@ -494,7 +494,7 @@ struct IClass *InitFrameIClass (struct IntuitionBase * IntuitionBase)
 	*/
     if ((cl = MakeClass(FRAMEICLASS, IMAGECLASS, NULL, sizeof(struct FrameIData), 0)))
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMFUNC_NAME(dispatch_frameiclass);
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_frameiclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 

@@ -406,7 +406,7 @@ struct IClass *InitButtonGClass (struct IntuitionBase * IntuitionBase)
     */
     if ( (cl = MakeClass(BUTTONGCLASS, GADGETCLASS, NULL, 0, 0)) )
     {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMFUNC_NAME(dispatch_buttongclass);
+	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_buttongclass);
 	cl->cl_Dispatcher.h_SubEntry = NULL;
 	cl->cl_UserData 	     = (IPTR)IntuitionBase;
 
