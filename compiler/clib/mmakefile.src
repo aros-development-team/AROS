@@ -100,6 +100,7 @@ SHARED	:= \
 	erand48 \
 	errno \
 	exit \
+	fchmod \
 	fclose \
 	fcntl \
 	fdopen \
@@ -167,6 +168,9 @@ SHARED	:= \
 	setenv \
 	setlinebuf \
 	setvbuf \
+	sigaction \
+	sigaddset \
+	sigemptyset \
 	sleep \
 	snprintf \
 	sprintf \
