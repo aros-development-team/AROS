@@ -87,6 +87,13 @@ struct GfxBase_intern
 
 #define TFE(tfe) 		((struct TextFontExtension*)tfe)
 
+/* Defines for flags in areainfo->FlagPtr */
+
+#define AREAINFOFLAG_MOVE   	0x0
+#define AREAINFOFLAG_DRAW   	0x03
+#define AREAINFOFLAG_CLOSEDRAW	0x02
+#define AREAINFOFLAG_ELLIPSE	0x83
+
 /* Forward declaration */
 struct ViewPort;
 
@@ -227,6 +234,7 @@ void areafillellipse(struct RastPort   * rp,
                      UWORD               BytesPerRow,
                      struct GfxBase    * GfxBase);
 
+void areaclosepolygon(struct AreaInfo *areainfo);
 
 /* functions in color_support */
 ULONG color_distance(struct ColorMap * cm,

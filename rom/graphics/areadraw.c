@@ -1,5 +1,5 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Graphics function AreaDraw()
@@ -52,37 +52,32 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  struct AreaInfo * areainfo = rp->AreaInfo;
-  /* Is there still enough storage area in the areainfo-buffer?
-   * We only need on vector to store here.
-   */
+    struct AreaInfo * areainfo = rp->AreaInfo;
+    
+    /* Is there still enough storage area in the areainfo-buffer?
+     * We only need on vector to store here.
+     */
 
-  if (areainfo->Count < areainfo->MaxCount)
-  {
-    /* increment counter */
-    areainfo->Count++;
-    areainfo->VctrPtr[0] = x;
-    areainfo->VctrPtr[1] = y;
+    if (areainfo->Count + 1 <= areainfo->MaxCount)
+    {
+	/* increment counter */
+	
+	areainfo->Count++;
+	areainfo->VctrPtr[0] = x;
+	areainfo->VctrPtr[1] = y;
+    	areainfo->FlagPtr[0] = AREAINFOFLAG_DRAW;
+	
+	areainfo->VctrPtr    = &areainfo->VctrPtr[2];
+	areainfo->FlagPtr++;
+	
+	return 0;
+    }
 
-    /* did the previous AreaMove go to the same point? */
-    if (0    != areainfo->Count       &&
-        0x00 == areainfo->FlagPtr[-1] &&
-        x    == areainfo->VctrPtr[-2] &&
-        y    == areainfo->VctrPtr[-1]   )
-      areainfo->FlagPtr[0] = 0x02;
-    else
-      areainfo->FlagPtr[0] = 0x03;
+    return -1;
 
-    areainfo->VctrPtr    = &areainfo->VctrPtr[2];
-
-    areainfo->FlagPtr++;
-    return 0;
-  }
-  
-  return -1;
-
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
+    
 } /* AreaDraw */
