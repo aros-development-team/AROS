@@ -1341,14 +1341,26 @@ ifdef USE_REQTOOLSLIB
 %(libs) := $(%(libs)) -lreqtoolsstubs
 %(deps) := $(%(deps)) $(LIBDIR)/libreqtoolsstubs.a
 endif
-
 ifdef USE_CLIB
-%(libs) := $(%(libs)) -larosc
-%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+
+# uncomment this if you want to compile by default
+# against the shared version of the clib
+%(libs) := $(%(libs)) -larosc_shared
+%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
+
+# uncomment this if you want to compile by default
+# against the static version of the clib
+# %(libs) := $(%(libs)) -larosc
+# %(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
 else
     ifdef USE_CLIB_SHARED
 	%(libs) := $(%(libs)) -larosc_shared
 	%(deps) := $(%(deps)) $(LIBDIR)/libarosc_shared.a
+    else
+	ifdef USE_CLIB_STATIC
+		%(libs) := $(%(libs)) -larosc
+		%(deps) := $(%(deps)) $(LIBDIR)/libarosc.a
+	endif
     endif
 endif
 ifdef USE_MLIB
