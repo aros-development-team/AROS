@@ -7,6 +7,7 @@
 #include "var.h"
 #include "db.h"
 #include "func.h"
+#include "main.h"
 
 static const char version[] = "$VER: hpp 0.2 (19.11.1997)\r\n";
 
@@ -14,6 +15,7 @@ static int
 MyStdioPutCB (StdioStream * ss, int c, CBD data)
 {
     static int lastc = '\n';
+    static int size = 0;
 
     if (ss->out)
     {
@@ -21,6 +23,17 @@ MyStdioPutCB (StdioStream * ss, int c, CBD data)
 	    return 1;
 
 	lastc = c;
+
+	size ++;
+
+	if (size == 1024)
+	{
+	    int oc = atoi (Var_Get ("outputCount"));
+	    char buffer[32];
+	    sprintf (buffer, "%d", oc+1);
+	    Var_Set ("outputCount", buffer);
+	    size = 0;
+	}
 
 	return putc (c, ss->out);
     }
@@ -46,13 +59,62 @@ MyStdioPutsCB (StdioStream * ss, const char * str, CBD data)
     return -1;
 }
 
+static StdioStream * output = NULL;
+
+void WriteTo (const char * filename)
+{
+    if (output)
+    {
+	if (output->closeout)
+	{
+	    fclose (output->out);
+	    output->closeout = 0;
+	}
+
+	if (strcmp (filename, "-"))
+	{
+	    output->out = fopen (filename, "w");
+
+	    if (!output->out)
+	    {
+		PushStdError ("Can't open \"%s\" for writing\n", filename);
+		ErrorExit (10);
+	    }
+
+	    output->closeout = 1;
+	}
+	else
+	{
+	    output->out = stdout;
+	    output->closeout = 0;
+	}
+    }
+    else
+    {
+	output = StdStr_New (filename, "w");
+
+	if (!output)
+	{
+	    PushStdError ("Can't open \"%s\" for writing\n", filename);
+	    ErrorExit (10);
+	}
+    }
+
+    Var_Set ("outputName", filename);
+
+    output->stream.put	= (CB) MyStdioPutCB;
+    output->stream.puts = (CB) MyStdioPutsCB;
+}
+
 void main (int argc, char ** argv)
 {
     StdioStream * ss;
-    StdioStream * out;
     time_t tt;
     struct tm tm;
     char today[32];
+    char * infiles[64];
+    int    ninfiles = 0;
+    char * outfile;
     int t, rc;
 
     time (&tt);
@@ -68,10 +130,9 @@ void main (int argc, char ** argv)
 
     Var_Set ("outputFormat", "html");
     Var_Set ("today", today);
+    Var_Set ("outputCount", "0");
 
-    out = StdStr_New ("-", "w");
-    out->stream.put  = (CB) MyStdioPutCB;
-    out->stream.puts = (CB) MyStdioPutsCB;
+    outfile = "-";
 
     for (t=1; t<argc; t++)
     {
@@ -79,9 +140,7 @@ void main (int argc, char ** argv)
 	{
 	    char * name, * value;
 
-	    t++;
-
-	    name = argv[t];
+	    name = argv[++t];
 	    value = name;
 
 	    while (*value && *value != '=') value++;
@@ -91,28 +150,39 @@ void main (int argc, char ** argv)
 
 	    Var_Set (name, value);
 	}
+	else if (!strcmp (argv[t], "-o") || !strcmp (argv[t], "-output"))
+	{
+	    outfile = argv[++t];
+	}
 	else
 	{
-	    ss = StdStr_New (argv[t], "r");
-
-	    Var_Set ("filename", argv[t]);
-
-	    if (!ss)
-		PrintErrorStack ();
-	    else
-	    {
-		rc = HTML_Parse ((MyStream *) ss, (MyStream *) out, NULL);
-
-		if (rc == T_ERROR)
-		{
-		    PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
-		    PrintErrorStack ();
-		}
-
-		StdStr_Delete (ss);
-	    } /* if (ss) */
+	    infiles[ninfiles++] = argv[t];
 	}
     } /* for all args */
+
+    WriteTo (outfile);
+
+    for (t=0; t<ninfiles; t++)
+    {
+	ss = StdStr_New (infiles[t], "r");
+
+	Var_Set ("filename", infiles[t]);
+
+	if (!ss)
+	    PrintErrorStack ();
+	else
+	{
+	    rc = HTML_Parse ((MyStream *) ss, (MyStream *) output, NULL);
+
+	    if (rc == T_ERROR)
+	    {
+		PushError ("%s:%d:", Str_GetName (ss), Str_GetLine (ss));
+		PrintErrorStack ();
+	    }
+
+	    StdStr_Delete (ss);
+	} /* if (ss) */
+    } /* for all input files */
 
     HTML_Exit ();
     DB_Exit ();
