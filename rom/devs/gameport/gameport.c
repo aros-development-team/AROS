@@ -169,7 +169,9 @@ AROS_LH2(struct GameportBase *,  init,
     GPBase->gp_seglist = segList;
 
     for(i = 0; i < GP_NUNITS; i++)
+    {
 	GPBase->gp_cTypes[i] = GPCT_NOCONTROLLER;
+    }
     
     InitSemaphore(&GPBase->gp_QueueLock);
     InitSemaphore(&GPBase->gp_Lock);
@@ -197,8 +199,10 @@ AROS_UFH4(ULONG, gpVBlank,
 { 
     AROS_USERFUNC_INIT
 
-    if((*(ULONG *)data) < ~0)
+    if ((*(ULONG *)data) < ~0)
+    {
 	(*(ULONG *)data)++;
+    }
 
     return 0;
 
@@ -220,57 +224,66 @@ AROS_LH3(void, open,
     flags   = 0;
     
     /* Erroneous unit? */
-    if(unitnum > GP_MAXUNIT)
+    if (unitnum > GP_MAXUNIT)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
+
 	return;
     }
     
     if (ioreq->io_Message.mn_Length < sizeof(struct IOStdReq))
     {
-        D(bug("gameport.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+        D(bug("gameport.device/open: IORequest structure passed to OpenDevice "
+	      "is too small!\n"));
         ioreq->io_Error = IOERR_OPENFAIL;
+
 	return;
     }
     
-    if(GPBase->gp_eventBuffer == NULL)
+    if (GPBase->gp_eventBuffer == NULL)
     {
 	GPBase->gp_eventBuffer = AllocMem(sizeof(UWORD) * GP_BUFFERSIZE,
 					  MEMF_ANY);
     }
     
     /* No memory for key buffer? */
-    if(GPBase->gp_eventBuffer == NULL)
+    if (GPBase->gp_eventBuffer == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
+
 	return;
     }
     
-    if((ioreq->io_Unit = AllocMem(sizeof(GPUnit), MEMF_CLEAR)) == NULL)
+    if ((ioreq->io_Unit = AllocMem(sizeof(GPUnit), MEMF_CLEAR)) == NULL)
     {
 	ioreq->io_Error = IOERR_OPENFAIL;
+
 	return;
     }
     
     gpUn->gpu_unitNum = unitnum;
     
-    if(!GPBase->gp_OOPBase)
+    if (!GPBase->gp_OOPBase)
     {
 	GPBase->gp_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
+
 	if(!GPBase->gp_OOPBase)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
+
 	    return;
 	}
     }
     
-    if(!HiddMouseAB)
+    if (!HiddMouseAB)
     {
         HiddMouseAB = OOP_ObtainAttrBase(IID_Hidd_Mouse);
-	if(!HiddMouseAB)
+
+	if (!HiddMouseAB)
 	{
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	    D(bug("gameport.device: Could not get attrbase\n"));
+
 	    return;
 	}
     }
@@ -280,7 +293,7 @@ AROS_LH3(void, open,
 /******* nlorentz: End of stuff added by me ********/
 
     /* Is the vblank server installed? */
-    if(GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
+    if (GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
     {
 	GPBase->gp_VBlank.is_Code         = (APTR)&gpVBlank;
 	GPBase->gp_VBlank.is_Data         = (APTR)&GPBase->gp_nTicks;
@@ -312,8 +325,11 @@ AROS_LH1(BPTR, close,
     ioreq->io_Device = (struct Device *)-1;
 
     GPBase->gp_device.dd_Library.lib_OpenCnt--;
-    if(GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
+
+    if (GPBase->gp_device.dd_Library.lib_OpenCnt == 0)
+    {
 	expunge();
+    }
     
     return 0;
     AROS_LIBFUNC_EXIT
@@ -329,6 +345,7 @@ AROS_LH0(BPTR, expunge, struct GameportBase *, GPBase, 3, Gameport)
     RemIntServer(INTB_VERTB, &GPBase->gp_VBlank);
 
     GPBase->gp_device.dd_Library.lib_Flags |= LIBF_DELEXP;
+
     return 0;
     AROS_LIBFUNC_EXIT
 }
@@ -361,119 +378,126 @@ AROS_LH1(void, beginio,
     switch (ioreq->io_Command)
     {
 #if NEWSTYLE_DEVICE
-        case NSCMD_DEVICEQUERY:
-	    if(ioStd(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
-	    {
-		ioreq->io_Error = IOERR_BADLENGTH;
-	    }
-	    else
-	    {
-	        struct NSDeviceQueryResult *d;
-
-    		d = (struct NSDeviceQueryResult *)ioStd(ioreq)->io_Data;
-		
-		d->DevQueryFormat 	 = 0;
-		d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
-		d->DeviceType 	 	 = NSDEVTYPE_GAMEPORT;
-		d->DeviceSubType 	 = 0;
-		d->SupportedCommands 	 = (UWORD *)SupportedCommands;
-
-		ioStd(ioreq)->io_Actual   = sizeof(struct NSDeviceQueryResult);
-	    }
-	    break;
-#endif
+    case NSCMD_DEVICEQUERY:
+	if(ioStd(ioreq)->io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	}
+	else
+	{
+	    struct NSDeviceQueryResult *d;
 	    
-	case CMD_CLEAR:
-	    gpUn->gpu_readPos = GPBase->gp_writePos;
-	    break;
-
-	case GPD_ASKCTYPE:
-	    if(ioStd(ioreq)->io_Length < sizeof(UBYTE))
-	    {
-		ioreq->io_Error = IOERR_BADLENGTH;
-		break;
-	    }
-
-	    ObtainSemaphoreShared(&GPBase->gp_Lock);
-	    *((UBYTE *)(ioStd(ioreq)->io_Data)) = (GPBase->gp_cTypes)[gpUn->gpu_unitNum];
-	    ReleaseSemaphore(&GPBase->gp_Lock);
-	    break;
-
-	case GPD_SETCTYPE:
-	    if(ioStd(ioreq)->io_Length != sizeof(UBYTE))
-	    {
-		ioreq->io_Error = IOERR_BADLENGTH;
-		break;
-	    }
-
-	    ObtainSemaphore(&GPBase->gp_Lock);
-	    (GPBase->gp_cTypes)[gpUn->gpu_unitNum] = *((UBYTE *)(ioStd(ioreq)->io_Data));
-	    ReleaseSemaphore(&GPBase->gp_Lock);
-	    break;
-
-	case GPD_ASKTRIGGER:
-	    if(ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
-	    {
-		ioreq->io_Error = IOERR_BADLENGTH;
-		break;
-	    }
-
-	    *((struct GamePortTrigger *)(ioStd(ioreq)->io_Data)) = gpUn->gpu_trigger;
-	    break;
-
-	case GPD_SETTRIGGER:
-	    if(ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
-	    {
-		ioreq->io_Error = IOERR_BADLENGTH;
-		break;
-	    }
-
-	    gpUn->gpu_trigger = *((struct GamePortTrigger *)(ioStd(ioreq)->io_Data));
-	    break;
-
-	case GPD_READEVENT:
-#if 0
-	    if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
-	    {
-		D(bug("gpd: Bad address\n"));
-		ioreq->io_Error = IOERR_BADADDRESS;
-		break;
-	    }
+	    d = (struct NSDeviceQueryResult *)ioStd(ioreq)->io_Data;
+	    
+	    d->DevQueryFormat 	 = 0;
+	    d->SizeAvailable 	 = sizeof(struct NSDeviceQueryResult);
+	    d->DeviceType  	 = NSDEVTYPE_GAMEPORT;
+	    d->DeviceSubType 	 = 0;
+	    d->SupportedCommands = (UWORD *)SupportedCommands;
+	    
+	    ioStd(ioreq)->io_Actual   = sizeof(struct NSDeviceQueryResult);
+	}
+	break;
 #endif
-
-	    D(bug("gpd: Readpos: %d, Writepos: %d\n", gpUn->gpu_readPos,
-		  GPBase->gp_writePos));
-
-	    /* We queue the request if there are no events in the queue or if
-	       the unit didn't trig on the events thate were in the queue. */
-
-	    Disable(); /* !! */
-
-	    if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	
+    case CMD_CLEAR:
+	gpUn->gpu_readPos = GPBase->gp_writePos;
+	break;
+	
+    case GPD_ASKCTYPE:
+	if (ioStd(ioreq)->io_Length < sizeof(UBYTE))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+	
+	ObtainSemaphoreShared(&GPBase->gp_Lock);
+	*((UBYTE *)(ioStd(ioreq)->io_Data)) = (GPBase->gp_cTypes)[gpUn->gpu_unitNum];
+	ReleaseSemaphore(&GPBase->gp_Lock);
+	break;
+	
+    case GPD_SETCTYPE:
+	if (ioStd(ioreq)->io_Length != sizeof(UBYTE))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+	
+	ObtainSemaphore(&GPBase->gp_Lock);
+	(GPBase->gp_cTypes)[gpUn->gpu_unitNum] = *((UBYTE *)(ioStd(ioreq)->io_Data));
+	ReleaseSemaphore(&GPBase->gp_Lock);
+	break;
+	
+    case GPD_ASKTRIGGER:
+	if (ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+	
+	*((struct GamePortTrigger *)(ioStd(ioreq)->io_Data)) = gpUn->gpu_trigger;
+	break;
+	
+    case GPD_SETTRIGGER:
+	if (ioStd(ioreq)->io_Length != sizeof(struct GamePortTrigger))
+	{
+	    ioreq->io_Error = IOERR_BADLENGTH;
+	    break;
+	}
+	
+	gpUn->gpu_trigger = *((struct GamePortTrigger *)(ioStd(ioreq)->io_Data));
+	break;
+	
+    case GPD_READEVENT:
+#if 0
+	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
+	{
+	    D(bug("gpd: Bad address\n"));
+	    ioreq->io_Error = IOERR_BADADDRESS;
+	    break;
+	}
+#endif
+	
+	D(bug("gpd: Readpos: %d, Writepos: %d\n", gpUn->gpu_readPos,
+	      GPBase->gp_writePos));
+	
+	/* We queue the request if there are no events in the queue or if
+	   the unit didn't trig on the events thate were in the queue. */
+	
+	Disable(); /* !! */
+	
+	if (gpUn->gpu_readPos == GPBase->gp_writePos)
+	{
+	    request_queued = TRUE;
+	}
+	else
+	{
+	    BOOL trigged;
+	    
+	    fillrequest(ioreq, &trigged, GPBase);
+	    
+	    if (!trigged)
 	    {
 		request_queued = TRUE;
-	    } else {
-		BOOL trigged;
-
-		fillrequest(ioreq, &trigged, GPBase);
-		if (!trigged) request_queued = TRUE;
-	    } 
-	    if (request_queued)
-	    {
-		ioreq->io_Flags &= ~IOF_QUICK;
-
-		D(bug("gpd: No mouse events, putting request in queue\n"));
-
-		gpUn->gpu_flags |= GBUF_PENDING;
-		AddTail((struct List *)&GPBase->gp_PendingQueue,
-			(struct Node *)ioreq);
 	    }
-
-	    Enable();
-
-	    break;
-
-
+	}
+	
+	if (request_queued)
+	{
+	    ioreq->io_Flags &= ~IOF_QUICK;
+	    
+	    D(bug("gpd: No mouse events, putting request in queue\n"));
+	    
+	    gpUn->gpu_flags |= GBUF_PENDING;
+	    AddTail((struct List *)&GPBase->gp_PendingQueue,
+		    (struct Node *)ioreq);
+	}
+	
+	Enable();
+	
+	break;
+	
+	
 	/* nlorentz: This command lets the gameport.device initialize
 	   the HIDD to use. It must be done this way, because
 	   HIDDs might be loaded from disk, and gameport.device is
@@ -484,41 +508,45 @@ AROS_LH1(void, beginio,
 	   Also note that the below is just a temporary hack, should
 	   probably use IRQ HIDD instead to set the IRQ handler.
 	*/   
-
-	case CMD_HIDDINIT: {
-            struct TagItem tags[] =
-	    {
-		{ aHidd_Mouse_IrqHandler	, (IPTR)mouseCallback	},
-		{ aHidd_Mouse_IrqHandlerData	, (IPTR)GPBase 		},
-		{ TAG_DONE						}
-	    };
-	    
-	    D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
-		  (STRPTR)ioStd(ioreq)->io_Data ));
-
-	    GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
-	    if(!GPBase->gp_Hidd)
-	    {
-		D(bug("gameport.device: Failed to open hidd\n"));
-		ioreq->io_Error = IOERR_OPENFAIL;
-	    }
-	    break; }
-
-
-	default:
-	    ioreq->io_Error = IOERR_NOCMD;
+	
+    case CMD_HIDDINIT: {
+	struct TagItem tags[] =
+	{
+	    { aHidd_Mouse_IrqHandler	, (IPTR)mouseCallback	},
+	    { aHidd_Mouse_IrqHandlerData	, (IPTR)GPBase 		},
+	    { TAG_DONE						}
+	};
+	
+	D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
+	      (STRPTR)ioStd(ioreq)->io_Data ));
+	
+	GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
+	
+	if (!GPBase->gp_Hidd)
+	{
+	    D(bug("gameport.device: Failed to open hidd\n"));
+	    ioreq->io_Error = IOERR_OPENFAIL;
+	}
+	
 	    break;
-
+    }
+    
+    default:
+	ioreq->io_Error = IOERR_NOCMD;
+	break;
+	
     } /* switch (ioreq->io_Command) */
     
     /* If the quick bit is not set, send the message to the port */
-    if(!(ioreq->io_Flags & IOF_QUICK) && !request_queued)
+    if (!(ioreq->io_Flags & IOF_QUICK) && !request_queued)
+    {
 	ReplyMsg(&ioreq->io_Message);
+    }
     
     AROS_LIBFUNC_EXIT
 }
 
-/****************************************************************************************/
+/******************************************************************************/
 
 
 AROS_LH1(LONG, abortio,
@@ -530,24 +558,29 @@ AROS_LH1(LONG, abortio,
     LONG ret = -1;
     
     Disable();
-    if(gpUn->gpu_flags & GBUF_PENDING)
+
+    if (gpUn->gpu_flags & GBUF_PENDING)
     {	
         if (ioreq->io_Message.mn_Node.ln_Type == NT_MESSAGE)
 	{
 	    Remove((struct Node *)ioreq);
 	    ReplyMsg(&ioreq->io_Message);
-
+	    
 	    ioreq->io_Error = IOERR_ABORTED;
-
-	    if(IsListEmpty(&GPBase->gp_PendingQueue)) gpUn->gpu_flags &= ~GBUF_PENDING;
+	    
+	    if (IsListEmpty(&GPBase->gp_PendingQueue))
+	    {
+		gpUn->gpu_flags &= ~GBUF_PENDING;
+	    }
 	    
 	    ret = 0;
 	}
     }
+
     Enable();
-
+    
     return ret;
-
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -560,34 +593,34 @@ static VOID mouseCallback(struct GameportBase *GPBase,
     
     D(bug("mouseCallBack(GPBase=%p, button=%d, x=%d, y=%d, type=%d)\n",
 	  GPBase, ev->button, ev->x, ev->y, ev->type));
-		
+    
     /* Convert the event */
-    switch(ev->button)
+    switch (ev->button)
     {
-	    
-	case vHidd_Mouse_Button1:
-	    amigacode = IECODE_LBUTTON;
-	    break;
 	
-	case vHidd_Mouse_Button2:
-	    amigacode = IECODE_RBUTTON;
-	    break;
-	    
-	case vHidd_Mouse_Button3:
-	    amigacode = IECODE_MBUTTON;
-	    break;
-	    
+    case vHidd_Mouse_Button1:
+	amigacode = IECODE_LBUTTON;
+	break;
+	
+    case vHidd_Mouse_Button2:
+	amigacode = IECODE_RBUTTON;
+	break;
+	
+    case vHidd_Mouse_Button3:
+	amigacode = IECODE_MBUTTON;
+	break;
+	
     }
     
-    switch(ev->type)
+    switch (ev->type)
     {
-    	case vHidd_Mouse_Release:
-	    amigacode |= IECODE_UP_PREFIX;
-	    break;
-	    
-	case vHidd_Mouse_Motion:
-	    amigacode = IECODE_NOBUTTON;
-	    break;
+    case vHidd_Mouse_Release:
+	amigacode |= IECODE_UP_PREFIX;
+	break;
+	
+    case vHidd_Mouse_Motion:
+	amigacode = IECODE_NOBUTTON;
+	break;
     }
     
     Disable();
@@ -598,20 +631,22 @@ static VOID mouseCallback(struct GameportBase *GPBase,
     
     D(bug("Wrote to buffer\n"));
     
-    if(GPBase->gp_writePos == GP_NUMELEMENTS)
+    if (GPBase->gp_writePos == GP_NUMELEMENTS)
+    {
 	GPBase->gp_writePos = 0;
-
-
-    if(!IsListEmpty(&GPBase->gp_PendingQueue))
+    }
+    
+    
+    if (!IsListEmpty(&GPBase->gp_PendingQueue))
     {
 #if 0
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
 	Cause(&GPBase->gp_Interrupt);	
 #else
 	AROS_UFC3(VOID, gpSendQueuedEvents,
-	    AROS_UFCA(struct GameportBase *, GPBase  , A1),
-	    AROS_UFCA(APTR                 , NULL, A5),
-	    AROS_UFCA(struct ExecBase *    , SysBase , A6));
+		  AROS_UFCA(struct GameportBase *, GPBase  , A1),
+		  AROS_UFCA(APTR                 , NULL, A5),
+		  AROS_UFCA(struct ExecBase *    , SysBase , A6));
 #endif
     }
     
@@ -637,9 +672,9 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
     struct List 	*pendingList;
     
     pendingList = (struct List *)&GPBase->gp_PendingQueue;
-
+    
     D(bug("Inside software irq\n"));
-
+    
     ForeachNodeSafe(pendingList, ioreq, nextnode)
     {
         BOOL moreevents, trigged;
@@ -653,10 +688,16 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
  	    ReplyMsg((struct Message *)&ioreq->io_Message);
 	}
 	
-	if (!moreevents) break;
+	if (!moreevents)
+	{
+	    break;
+	}
     }
-
-    if (IsListEmpty(pendingList)) gpUn->gpu_flags &= ~GBUF_PENDING;
+    
+    if (IsListEmpty(pendingList))
+    {
+	gpUn->gpu_flags &= ~GBUF_PENDING;
+    }
 
     AROS_USERFUNC_EXIT
 }
@@ -666,7 +707,8 @@ AROS_UFH3S(VOID, gpSendQueuedEvents,
 /* When this function is called, there *must* be at least one event ready for
    processing. It returns TRUE as long as there are more events to preocess */
 
-static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportBase *GPBase)
+static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
+			struct GameportBase *GPBase)
 {
     BOOL   moreevents = TRUE;
     BOOL   down, up;
@@ -680,11 +722,12 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
     
     /* Number of InputEvents we can store in io_Data */
     nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
-    if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
+
+    if (nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
     {
 	ioreq->io_Error = IOERR_BADLENGTH;
-	
 	D(bug("gpd: Bad length\n"));
+
 	return TRUE;
     }
     
@@ -692,7 +735,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
     
     ioreq->io_Error = 0;
     
-    for(i = 0; i < nEvents; ) /* no i++ here, this is done if event is to report */
+    for (i = 0; i < nEvents; ) /* no i++ here, this is done if event is to report */
     {
     	UWORD code;
 	WORD  x;
@@ -705,7 +748,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	down = up = FALSE;	/* Reset states */
 
 	/* Take care of the qualifiers */
-	switch(code)
+	switch (code)
 	{
 	    case IECODE_LBUTTON:
 		gpUn->gpu_Qualifiers |= IEQUALIFIER_LEFTBUTTON;
@@ -738,8 +781,10 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 		break;
 	}
 	
-	if(gpUn->gpu_readPos == GP_NUMELEMENTS)
-	    gpUn->gpu_readPos = 0;	
+	if (gpUn->gpu_readPos == GP_NUMELEMENTS)
+	{
+	    gpUn->gpu_readPos = 0;
+	}
 	
 	D(bug("gpd: Adding event of code %d\n", code));
 
@@ -759,10 +804,12 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	{
 	    i++;
 	    
-	    if(*trigged == TRUE)
+	    if (*trigged == TRUE)
 	    {
 	        event = event->ie_NextEvent;
-	    } else {
+	    }
+	    else
+	    {
 	        *trigged = TRUE;
 	    }
 	    
@@ -789,13 +836,13 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	}
 	
 	/* No more keys in buffer? */
-	if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	if (gpUn->gpu_readPos == GPBase->gp_writePos)
 	{
 	    moreevents = FALSE;
 	    break;
 	}
-
     }
+    
     event->ie_NextEvent = NULL;
     
     return moreevents;
