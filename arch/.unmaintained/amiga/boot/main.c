@@ -528,7 +528,7 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 		    build a memlist to be put in KickMemPtr
 		*/
 		if( (memlist = BuildMemList(&ils_mem, modarray,
-		    (modlist->ml_Num+1)*sizeof(ULONG) )) )
+		    (modlist->ml_Num+2)*sizeof(ULONG) )) )
 		{
 		    StuffTags(memlist, modarray, nummods);
 		    return TRUE;
