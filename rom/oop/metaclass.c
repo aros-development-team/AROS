@@ -155,7 +155,7 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	        
 	}
 	
-	inst->base.public.OOPBasePtr	= OOPBase;
+	inst->base.public.OOPBasePtr	= (struct IntOOPBase *)OOPBase;
 	
 	inst->base.public.DoMethod	= domethod;
 	inst->base.public.CoerceMethod	= coercemethod;
@@ -514,7 +514,7 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
     D(bug("Got ifmeta classptr\n"));
        
     imo->inst.base.superclass = BASEMETAPTR;
-    imo->inst.base.public.OOPBasePtr = OOPBase;
+    imo->inst.base.public.OOPBasePtr = (struct OOPBase *)OOPBase;
     
     D(bug("Initialized ifmeta superclass\n"));
     

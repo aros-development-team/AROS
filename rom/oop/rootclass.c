@@ -141,7 +141,7 @@ static OOP_Object *basemeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	
 	D(bug("superptr=%p\n", superptr));
 
-    	data->public.OOPBasePtr = OOPBase;
+    	data->public.OOPBasePtr = (struct IntOOPBase *)OOPBase;
 
 	
 	/* Let subclass create an initialize dispatch tables for the new class object*/
