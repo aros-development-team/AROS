@@ -21,6 +21,17 @@
 
 #   include <aros/debug.h>
 
+/*** Prototypes *************************************************************/
+BOOL __FindDeviceName_WB(STRPTR buffer, LONG length, CONST_STRPTR volume, struct DosLibrary *DOSBase);
+struct DiskObject *__GetDefaultIconFromName_WB(CONST_STRPTR name, struct TagItem *tags, struct Library *IconBase);
+struct DiskObject *__GetDefaultIconFromType_WB(LONG type, struct TagItem *tags, struct Library *IconBase);
+
+/*** Macros *****************************************************************/
+#define FindDeviceName(buffer, length, volume) (__FindDeviceName_WB((buffer), (length), (volume), DOSBase))
+#define GetDefaultIconFromName(name, tags) (__GetDefaultIconFromName_WB((name), (tags), IconBase))
+#define GetDefaultIconFromType(type, tags) (__GetDefaultIconFromType_WB((type), (tags), IconBase))
+
+/*** Identification hook ****************************************************/
 #define SysBase       ((struct ExecBase *) iim->iim_SysBase)
 #define DOSBase       ((struct DosLibrary *) iim->iim_DOSBase)
 #define UtilityBase   (iim->iim_UtilityBase)
@@ -35,10 +46,7 @@ AROS_UFH3
     AROS_UFHA(struct IconIdentifyMsg *, iim,      A1) 
 )
 {
-    struct DiskObject *icon          = NULL;
-    
-    /* Parse taglist -------------------------------------------------------*/
-    STRPTR label = (STRPTR) GetTagData(ICONGETA_Label, NULL, iim->iim_Tags);
+    struct DiskObject *icon = NULL;
     
     /* Identify object -----------------------------------------------------*/
     if (DataTypesBase == NULL)
@@ -52,41 +60,58 @@ AROS_UFH3
         {
             // FIXME: not a very good way to detect it...
             /* It's a disk/volume/root -------------------------------------*/
-            if (label != NULL)
-            {
-                if (strcasecmp(label, "Ram Disk") == 0)
-                {
-                    icon = GetIconTags
-                    (
-                        NULL, 
-                        ICONGETA_GetDefaultName, (IPTR) "RAM", 
-                        TAG_MORE,                (IPTR) iim->iim_Tags
-                    );
-                }
-                else if
-                (
-                       strcasecmp(label, "System") == 0 
-                    || strcasecmp(label, "Home")   == 0
-                )
-                {
-                    icon = GetIconTags
-                    (
-                        NULL, 
-                        ICONGETA_GetDefaultName, (IPTR) "Harddisk", 
-                        TAG_MORE,                (IPTR) iim->iim_Tags       
-                    );
-                }
-            }
-            // FIXME: return specific icons for CD, harddisk, floppy, etc
+            TEXT device[MAXFILENAMELENGTH];
             
+            if
+            (
+                FindDeviceName
+                (
+                    device, MAXFILENAMELENGTH, 
+                    iim->iim_FIB->fib_FileName
+                )
+            )
+            {
+                if (strlen(device) == 4) 
+                {
+                    if (strcasecmp(device, "RAM:") == 0)
+                    {
+                        icon = GetDefaultIconFromName("RAM", iim->iim_Tags);
+                    }
+                    else if (strncasecmp(device, "DF", 2) == 0)
+                    {
+                        icon = GetDefaultIconFromName("Floppy", iim->iim_Tags);
+                    }
+                    else if (strncasecmp(device, "CD", 2) == 0)
+                    {
+                        icon = GetDefaultIconFromName("CDROM", iim->iim_Tags);
+                    }
+                    else if
+                    (
+                           strncasecmp(device, "DH",  2) == 0 
+                        || strncasecmp(device, "HD",  2) == 0
+                        || strncasecmp(device, "EMU", 3) == 0
+                    )
+                    {
+                        icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
+                    }
+                }
+                else if (strcasecmp(device, "HOME:") == 0)
+                {
+                    icon = GetDefaultIconFromName("Home", iim->iim_Tags);
+                    
+                    /* Fall back to generic harddisk icon */
+                    if (icon ==  NULL)
+                    {
+                        icon = GetDefaultIconFromName("Harddisk", iim->iim_Tags);
+                    }
+                }
+                
+            }
+            
+            /* Fall back to generic disk icon */
             if (icon == NULL)
             {
-                icon = GetIconTags
-                (
-                    NULL, 
-                    ICONGETA_GetDefaultType,        WBDISK, 
-                    TAG_MORE,                (IPTR) iim->iim_Tags
-                );
+                icon = GetDefaultIconFromType(WBDISK, iim->iim_Tags);
             }
             
             if (icon != NULL)
@@ -99,12 +124,7 @@ AROS_UFH3
         {
             /* It's a directory --------------------------------------------*/
             // FIXME: detect trashcan
-            icon = GetIconTags
-            (
-                NULL, 
-                ICONGETA_GetDefaultType,        WBDRAWER, 
-                TAG_MORE,                (IPTR) iim->iim_Tags
-            );
+            icon = GetDefaultIconFromType(WBDRAWER, iim->iim_Tags);
             
             if (icon != NULL)
             {
@@ -131,12 +151,7 @@ AROS_UFH3
                 )
                 {
                     /* It's a exutable file --------------------------------*/
-                    icon = GetIconTags
-                    (
-                        NULL,
-                        ICONGETA_GetDefaultType,        WBTOOL, 
-                        TAG_MORE,                (IPTR) iim->iim_Tags
-                    );
+                    icon = GetDefaultIconFromType(WBTOOL, iim->iim_Tags);
                     
                     if (icon != NULL)
                     {
@@ -147,13 +162,9 @@ AROS_UFH3
                 else
                 {
                     /* It's a project file of some kind --------------------*/
-                    icon = GetIconTags
-                    (
-                        NULL,
-                        ICONGETA_GetDefaultName, (IPTR) dth->dth_Name, 
-                        TAG_MORE,                (IPTR) iim->iim_Tags
-                    );
+                    icon = GetDefaultIconFromName(dth->dth_Name, iim->iim_Tags);
                     
+                    /* Fall back to generic filetype group icon */
                     if (icon == NULL)
                     {
                         STRPTR name = NULL;
@@ -173,23 +184,14 @@ AROS_UFH3
                         
                         if (name != NULL)
                         {
-                            icon = GetIconTags
-                            (
-                                NULL, 
-                                ICONGETA_GetDefaultName, (IPTR) name,
-                                TAG_MORE,                (IPTR) iim->iim_Tags
-                            );
+                            icon = GetDefaultIconFromName(name, iim->iim_Tags);
                         }
                     }
                     
+                    /* Fall back to generic project icon */
                     if (icon == NULL)
                     {
-                        icon = GetIconTags
-                        (
-                            NULL,
-                            ICONGETA_GetDefaultType,        WBPROJECT,
-                            TAG_MORE,                (IPTR) iim->iim_Tags
-                        );
+                        icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
                     }
                     
                     if (icon != NULL)
@@ -203,12 +205,7 @@ AROS_UFH3
             }
             else
             {
-                icon = GetIconTags
-                (
-                    NULL,
-                    ICONGETA_GetDefaultType,        WBPROJECT,
-                    TAG_MORE,                (IPTR) iim->iim_Tags
-                );
+                icon = GetDefaultIconFromType(WBPROJECT, iim->iim_Tags);
                 
                 if (icon != NULL)
                 {
@@ -227,3 +224,83 @@ AROS_UFH3
 #undef UtilityBase
 #undef IconBase
 #undef DataTypesBase
+
+/*** Support functions ******************************************************/
+BOOL __FindDeviceName_WB
+(
+    STRPTR buffer, LONG length, CONST_STRPTR volume, 
+    struct DosLibrary *DOSBase
+)
+{
+    struct DosList *dl      = LockDosList(LDF_DEVICES | LDF_READ);
+    BOOL            success = FALSE;
+    
+    if (dl != NULL)
+    {
+        struct DosList *dol = dl;
+        
+        while ((dol = NextDosEntry(dol, LDF_DEVICES | LDF_READ)) != NULL)
+        {
+            TEXT device[MAXFILENAMELENGTH];
+            
+            strlcpy(device, dol->dol_DevName, MAXFILENAMELENGTH);
+            
+            if (strlcat(device, ":", MAXFILENAMELENGTH) < MAXFILENAMELENGTH)
+            {
+                BPTR lock;
+                
+                if
+                (       
+                       IsFileSystem(device)
+                    && (lock = Lock(device, ACCESS_READ)) != NULL
+                )
+                {
+                    if (NameFromLock(lock, buffer, length))
+                    {
+                        if (strncasecmp(volume, buffer, strlen(buffer) - 1) == 0)
+                        {
+                            if (strlcpy(buffer, device, length) < length)
+                            {
+                                success = TRUE;
+                            }
+                            
+                            break;
+                        }
+                    }
+                    
+                    UnLock(lock);
+                }
+            }
+        }
+        
+        UnLockDosList(LDF_DEVICES | LDF_READ);
+    }
+    
+    return success;
+}
+
+struct DiskObject *__GetDefaultIconFromName_WB
+(
+    CONST_STRPTR name, struct TagItem *tags, struct Library *IconBase
+)
+{
+    return GetIconTags
+    (
+        NULL, 
+        ICONGETA_GetDefaultName, (IPTR) name, 
+        TAG_MORE,                (IPTR) tags
+    );
+}
+
+struct DiskObject *__GetDefaultIconFromType_WB
+(
+    LONG type, struct TagItem *tags, struct Library *IconBase
+)
+{
+    return GetIconTags
+    (
+        NULL,
+        ICONGETA_GetDefaultType,        type,
+        TAG_MORE,                (IPTR) tags
+    );
+}
