@@ -48,22 +48,25 @@
 
 ******************************************************************************/
 {
-#if BIG_ENDIAN
-    return
-    (
-	FPutC (fh, data >> 24) != EOF
-	&& FPutC (fh, data >> 16) != EOF
-	&& FPutC (fh, data >> 8) != EOF
-	&& FPutC (fh, data) != EOF
-    );
+    UBYTE * ptr;
+
+#if AROS_BIG_ENDIAN
+    ptr = (UBYTE *)&data;
+#   define NEXT ++
 #else
-    return
-    (
-	FPutC (fh, data) != EOF
-	&& FPutC (fh, data >> 8) != EOF
-	&& FPutC (fh, data >> 16) != EOF
-	&& FPutC (fh, data >> 24) != EOF
-    );
+    ptr = ((UBYTE *)&data) + 3;
+#   define NEXT --
 #endif
-} /* WriteWord */
+
+#define WRITE_ONE_CHAR			\
+    if (FPutC (fh, *ptr NEXT) == EOF)   \
+	return FALSE
+
+    WRITE_ONE_CHAR;
+    WRITE_ONE_CHAR;
+    WRITE_ONE_CHAR;
+    WRITE_ONE_CHAR;
+
+    return TRUE;
+} /* WriteLong */
 

@@ -50,16 +50,16 @@
 
 ******************************************************************************/
 {
-    ULONG   value[2];
+    DOUBLE  value;
     UBYTE * ptr;
-    ULONG * lptr;
     LONG    c;
 
-#if AROS_BIG_ENDIAN
     ptr = (UBYTE *)&value;
+
+#if AROS_BIG_ENDIAN
 #   define NEXT ++
 #else
-    ptr = ((UBYTE *)&value) + 3;
+    ptr += 7;
 #   define NEXT --
 #endif
 
@@ -79,9 +79,7 @@
     READ_ONE_BYTE;
     READ_ONE_BYTE;
 
-    lptr = (ULONG *)dataptr;
-    lptr[0] = value[0];
-    lptr[1] = value[1];
+    *dataptr = value;
 
     return TRUE;
 } /* ReadDouble */

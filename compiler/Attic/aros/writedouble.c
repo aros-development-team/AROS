@@ -52,7 +52,7 @@
     UBYTE * ptr;
     LONG    rc;
 
-#if BIG_ENDIAN
+#if AROS_BIG_ENDIAN
     ptr = (UBYTE *)&data;
 #   define NEXT ptr++
 #else

@@ -51,21 +51,17 @@
 {
     LONG value, c;
 
-    c = FGetC (fh);
+    c = FGetC (fh); /* High byte */
 
     if (c == EOF)
 	return FALSE;
 
-    value = FGetC (fh);
+    value = FGetC (fh); /* Low Byte */
 
     if (value == EOF)
 	return FALSE;
 
-#if AROS_BIG_ENDIAN
     *dataptr = (c << 8) + value;
-#else /* Little endian */
-    *dataptr = (value << 8) + c;
-#endif
 
     return TRUE;
 } /* ReadWord */

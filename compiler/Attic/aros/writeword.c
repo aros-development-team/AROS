@@ -48,10 +48,9 @@
 
 ******************************************************************************/
 {
-#if BIG_ENDIAN
-    return FPutC (fh, data >> 8) != EOF && FPutC (fh, data & 0xFF) != EOF;
-#else
-    return FPutC (fh, data & 0xFF) != EOF && FPutC (fh, data >> 8) != EOF;
-#endif
+    if (FPutC (fh, data >> 8) == EOF)
+	return FALSE;
+
+    return (FPutC (fh, data & 0xFF) != EOF);
 } /* WriteWord */
 

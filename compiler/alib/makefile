@@ -6,6 +6,10 @@ SPECIAL_CFLAGS = -D__AROS
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/alib
+EXEDIR=$(BINDIR)/test
+LIBS = -L$(LIBDIR) -larosc -lamiga -laros -larosc
+DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES=alib_util newobject setattrs openwindowtags openscreentags \
 	dogadgetmethod domethod dosupermethod readbyte readword \
@@ -20,6 +24,11 @@ setup :
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libamiga.a
+
+test: $(EXEDIR)/betest
+
+$(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
+	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
