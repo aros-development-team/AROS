@@ -1,6 +1,6 @@
 #!/bin/sh
 
-type=`grep "^struct sigcontext" /usr/include/asm/sigcontext.h | sed 's/\\{//'`
+type=`grep "^struct sigcontext" /usr/include/asm/sigcontext.h | sed 's/{//'`
 handler=__sighandler_t
 if [ `uname -m` = "m68k" ]; then
   sed "s/@sigcontext@/$type/" ${1-.}/../m68k/sigcore.h.src > ${2}
