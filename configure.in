@@ -422,11 +422,12 @@ AC_ARG_WITH(optimization,[  --with-optimization=N   Use optimization level N [de
 if test "$optimization" = "unknown"; then
     dnl default is -O2 for normal builds, -O0 for debug builds
     aros_target_cflags="$aros_target_cflags -O2"
-    aros_debug_cflags="$aros_debug_cflags -O0
+    aros_debug_cflags="$aros_debug_cflags -O0"
 else
     aros_target_cflags="$aros_target_cflags -O$optimization"
     aros_debug_cflags="$aros_debug_cflags -O$optimization"
-fi    
+fi
+AC_MSG_RESULT($withval)
 #-----------------------------------------------------------------------------
 
 # This is the target configuration switch.
