@@ -62,7 +62,12 @@
     struct Rectangle *clip_rect;
     ULONG disabled;
 
-    if (!(muiAreaData(obj)->mad_Flags & MADF_CANDRAW)) return;
+    if (!(_flags(obj) & MADF_CANDRAW)) return;
+
+    /* protect against recursive calls */
+    if (_flags(obj) & MADF_DRAWING)
+	return;
+    _flags(obj) |= MADF_DRAWING;
 
     get(obj,MUIA_WindowObject,&wnd);
     parent = obj;
@@ -212,6 +217,8 @@
 	/* This call actually also frees the region */
 	MUI_RemoveClipRegion(muiRenderInfo(obj),region);
     }
+
+    _flags(obj) &= ~MADF_DRAWING;
 
     AROS_LIBFUNC_EXIT
 
