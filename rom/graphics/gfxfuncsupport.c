@@ -896,16 +896,32 @@ kprintf("hidd2cyber stdpf = %d [%d]\n", stdpf, vHidd_StdPixFmt_BGR032);
 	    cpf = PIXFMT_RGB15;
 	    break;
 
+	case vHidd_StdPixFmt_RGB15_LE:
+	    cpf = PIXFMT_RGB15PC;
+	    break;
+
 	case vHidd_StdPixFmt_BGR15:
 	    cpf = PIXFMT_BGR15;
+	    break;
+
+	case vHidd_StdPixFmt_BGR15_LE:
+	    cpf = PIXFMT_BGR15PC;
 	    break;
 	
 	case vHidd_StdPixFmt_RGB16:
 	    cpf = PIXFMT_RGB16;
 	    break;
 
+	case vHidd_StdPixFmt_RGB16_LE:
+	    cpf = PIXFMT_RGB16PC;
+	    break;
+
 	case vHidd_StdPixFmt_BGR16:
 	    cpf = PIXFMT_BGR16;
+	    break;
+
+	case vHidd_StdPixFmt_BGR16_LE:
+	    cpf = PIXFMT_BGR16PC;
 	    break;
 	
 	case vHidd_StdPixFmt_RGB24:
@@ -957,16 +973,32 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 	    stdpf = vHidd_StdPixFmt_RGB15;
 	    break;
 
+	case PIXFMT_RGB15PC:
+	    stdpf = vHidd_StdPixFmt_RGB15_LE;
+	    break;
+
 	case PIXFMT_BGR15:
 	    stdpf = vHidd_StdPixFmt_BGR15;
+	    break;
+
+	case PIXFMT_BGR15PC:
+	    stdpf = vHidd_StdPixFmt_BGR15_LE;
 	    break;
 	
 	case PIXFMT_RGB16:
 	    stdpf = vHidd_StdPixFmt_RGB16;
 	    break;
 
+	case PIXFMT_RGB16PC:
+	    stdpf = vHidd_StdPixFmt_RGB16_LE;
+	    break;
+
 	case PIXFMT_BGR16:
 	    stdpf = vHidd_StdPixFmt_BGR16;
+	    break;
+
+	case PIXFMT_BGR16PC:
+	    stdpf = vHidd_StdPixFmt_BGR16_LE;
 	    break;
 	
 	case PIXFMT_RGB24:
