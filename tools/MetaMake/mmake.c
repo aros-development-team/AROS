@@ -937,7 +937,7 @@ finddirnode (Project * prj, const char * path)
     node = prj->topdir;
 
     if (!*ptr)
-	return node;
+	return NULL;
 
     subdir = NULL;
 
