@@ -14,8 +14,9 @@ LIBS=-L$(LIBDIR) \
 
 SUBDIRS = $(KERNEL) aros exec dos utility graphics intuition \
 	filesys libs c
-DIST_FILES = makefile arosshell.c README.CVS scripts/gendef.awk make.cfg \
-	configure
+DIST_FILES = makefile arosshell.c README.CVS make.cfg \
+	configure scripts/cint2.awk scripts/makefunctable.awk \
+	scripts/genprotos.h
 
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
@@ -45,13 +46,15 @@ dist-tar : FORCE
 	cd bin/$(ARCH) ; \
 	    tar cvvzf ../../dist/AROSbin-$(VERSION).tgz AROS
 	cd .. ; tar cvvzf AROS/dist/AROSdev-$(VERSION).tgz \
-		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES))
+		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES)) \
+		$(shell cd ..; find AROS/include -name "*.h")
 
 dist-lha : FORCE
 	cd bin/$(ARCH) ; \
 	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
 	cd .. ; lha a AROS/dist/AROSdev-$(VERSION).lha \
-		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES))
+		$(addprefix AROS/, $(SUBDIRS) $(DIST_FILES)) \
+		$(shell cd ..; find AROS/include -name "*.h")
 
 # Alwaye remake rules that depend on this one
 FORCE :
