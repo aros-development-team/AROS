@@ -1709,7 +1709,7 @@ char option;
 
   if( argc < 2 )
   {
-    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>\n", argv[0] );
+    fprintf( stderr, "Usage: %s [-h|-t|-c|-R] <parameter>\n", argv[0] );
     fprintf( stderr, "  -h help\n  -t genfunctable\n  -c genlibdefs\n  -R genarossource\n" );
     exit(-1);
   }
@@ -1733,7 +1733,7 @@ char option;
         break;
       case 'h':
       default:
-        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>\n", argv[0] );
+        fprintf( stdout, "Usage: %s [-h|-t|-c|-R] <parameter>\n", argv[0] );
         fprintf( stdout, "  -h help\n  -t genfunctable\n  -c genlibdefs\n  -R genarossource\n" );
         break;
     }

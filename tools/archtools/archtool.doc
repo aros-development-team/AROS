@@ -1,151 +1,39 @@
 Documentation for ArchTool
 --------------------------
 
+The name ArchTool comes from "archive".
+Archives are no longer used in AROS, so this part has been removed from
+archtool.
+
 [Note: All names are case-sensitive.]
 
-Structure of archive file
--------------------------
-An archive in embraced by '#Archive' and '#/Archive'.
-It usually contains a common header embraced with '#Header' and '#/Header'.
-
-This header is code -- usually common #includes -- which is prepended to
-generated source files.
-After the header definition of functions follow:
-
-A function is defined by '#Function MacroType ReturnType FunctionName' and
-closed by '#/Function'. MacroType is the type of the used macros for
-functions in the library, e.g. LHA (which will expand to
-AROS_LHn(AROS_LHA(),...) ) or LHAQUAD.
-[Note: We only distinguish LHA and LHAQUAD by now. Hope this is enough?]
-The ReturnType is the type of the return value of the function.
-FunctionName just does what it means ;-)
-
-Parameter definitions -- if any -- have to follow after this line.
-This is a single line option with syntax '#Parameter Type Name Register'
-
-The offset of the function is specified with '#LibOffset number'.
-
-Now we have the block for the AutoDocs embraced with '#AutoDoc' and
-'#/AutoDoc'. The substructure is not well-defined yet, but should look
-like '#Function' '#/Function' for the description, '#Inputs' '#/Inputs',
-'#Result' '#/Result, etc.
-
-Finally we have the code block for the function: '#Code' '#/Code'
 
 Integrated programs
 -------------------
 
-Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p|-i|-r|-I] <parameter>
+Usage: archtool [-h|-t|-c|-R] <parameter>
 
   -h help
 
-  -e extractfiles
-     Usage: archtool -e <destdir> <archfile>
-  -a genautodocs
-     Usage: archtool -a <destdir> <archfile>
   -t genfunctable
      Usage: archtool -t <archfile>
      for HIDDs with 'type hidd' in lib.conf: archtool -t
-  -s gensource
-     Usage: archtool -s <archfile> <sourcefile>
-  -m mergearch
-     Usage: archtool -m <arch1> <arch2> <archout>
-  -M mergearchs
-     Usage: archtool -M <outarch> <inarch>...
   -c genlibdefs
      Usage: archtool -c [-o libdefs.h] [lib.conf]
-  -d gendefines
-     Usage: archtool -d <incdir> <archfile>
-  -C genclib
-     Usage: archtool -C <incdir> <archfile>
-  -p genproto
-     Usage: archtool -p <incdir>
-  -i geninline
-     Usage: archtool -i <incdir>
-  -r pragmas
-     Usage: archtool -i <incdir>
-  -I genincludes
-     Usage: archtool -I <incdir>
+  -R genarossource
+     Usage: archtool -R  <source pragma file> <source c file> <dest c file> <output defines file>
 
- 1) Extract Files
-This module extracts all functions in the <archfile> archive to their
-own *.c files in the <destdir> directory.
-The name of the .c file is the lowercase function name.
-
- 2) Generate AutoDocs
-This module generates the AutoDocs of the <archfile> archive to <destdir>
-directory.
-[Note: This module is not fully functionally - It' is just a demo!]
-
- 3) Generate functable.c
+ 1) Generate functable.c
 This module generates functable.c in the current dir from the <archfile>
 archive. It reads in lib.conf and if type==hidd archfile is not needed.
 [Note: By now no(!) aliases for function names are allowed! However,
  aliases are only used in rom/dos. Therefore this lib can't be converted
  by now.]
 
- 4) Generate source file
-This module generates the compilable <sourcefile> sources out of the
-<archfile> archive.
-
- 5) Merge two Archives
-This module merges two archives <arch1> and <arch2> to the new archive
-<archout>. Headers 1 and 2 are appended (in this order), existing functions
-in both files will be replaced by 2nd arch's function. Functions which
-occurr only once will always be preserved.
-
- 6) Merge multiple Archives
-This module uses module 5 and merges one archive after the other from
-list <inarch>... to <outarch>. So all headers are appended in order and
-reoccurring functions will be relaced by last occurrence.
-[Internal: this uses a temporary archive file "__tmp.arch"]
-
- 7) Generate libdefs.h
+ 2) Generate libdefs.h
 This module generates "libdefs.h" file out of "lib.conf" file.
 The name of the output include file can be given with the -o switch.
 Any other argument is taken as the name of the config file.
 By default a libdefs.h file will be generated and the config file is
 lib.conf.
-
- 8) Generate defines/<basename>.h
-This module generates the include files in <incdir>/defines/
-It reads in ./headers.tmpl if available, adds lines between
-'##begin defines' and '##end defines' and defines the LCA macros for all
-functions in <archfile> archive.
-Be sure to have an existing subdir "defines" in <incdir>!
-
- 9) Generate clib/<basename>_protos.h
-This module generates the include files in <incdir>/clib/
-It reads in ./headers.tmpl if available, adds lines between
-'##begin clib' and '##end clib' and defines the LPA macros for all
-functions in <archfile> archive.
-Be sure to have an existing subdir "clib" in <incdir>!
-
-10) Generate proto/<basename>.h
-This module generates the include files in <incdir>/proto/
-Be sure to have an existing subdir "proto" in <incdir>!
-
-11) Generate inline/<basename>.h
-This module generates the include files in <incdir>/inline/
-It reads in ./headers.tmpl if available, adds lines between
-'##begin clib' and '##end clib' and defines the LP macros for all
-functions in <archfile> archive.
-Be sure to have an existing subdir "inline" in <incdir>!
-
-12) Generate pragmas/<basename>_pragmas.h
-This module generates the include files in <incdir>/pragmas/
-This is just one line including clib/<basename>_protos.h
-Be sure to have an existing subdir "pragmas" in <incdir>!
-
-13) Generate Includes
-This module generates all (ATM:clib/defines/proto/inline/pragmas) includes
-in the corresponding subdirs of <incdir>.
-It reads in ./headers.tmpl if available, adds lines between
-'##begin [clib|defines]' and '##end [clib|defines]' and defines
-the LPA/LCA macros for all functions in <archfile> archive.
-Be sure to have an existing <incdir> and all subdirs!
-
-[Compiling Notes: this program has to be built before(!) starting mmake,
- because mmake will try to compile it with AROS includes/libs.
- Hope this can be fixed.]
 
