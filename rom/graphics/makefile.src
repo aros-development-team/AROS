@@ -10,12 +10,19 @@ endif
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(OSGENDIR)/graphics
-LIB=$(LIBDIR)/libgraphics.so
+LIBNAME = graphics
 
-%prepare_shlib graphics $(SHARED_GRAPHICS)
+OBJDIR=$(OSGENDIR)/$(LIBNAME)
+LIB=$(LIBDIR)/lib$(LIBNAME).so
 
-FILES = graphics_init graphics_functable intregions
+%prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
+
+INIT_FILE = $(LIBNAME)_init
+
+FILES = $(LIBNAME)_functable intregions
+
+END_FILE = $(LIBNAME)_endtag
+
 FUNCTIONS = \
 	addfont \
 	allocbitmap \
@@ -70,7 +77,9 @@ FUNCTIONS = \
 	writepixelarray8 \
 	xorrectregion
 
-OBJS=$(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
+OBJS=$(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -88,12 +97,19 @@ clean::
 $(OBJDIR)/%.o: %.c
 	%compile_q
 
-graphics_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+$(LIBNAME)_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Graphics
+
+$(LIBNAME)_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q Graphics
+
+$(OBJDIR)/$(LIBNAME)_init.o: libdefs.h
+
+%libdefs_rule
 
 $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)

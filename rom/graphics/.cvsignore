@@ -1,2 +1,4 @@
 graphics_functable.c
+graphics_endtag.c
+libdefs.h
 makefile

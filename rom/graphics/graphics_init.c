@@ -15,18 +15,19 @@
 #include <proto/graphics.h>
 #include <utility/utility.h>
 #include "graphics_intern.h"
+#include "libdefs.h"
 
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];
-static void *const Graphics_functable[];
-struct GfxBase * AROS_SLIB_ENTRY(init,Graphics)();
-extern const char Graphics_end;
+static void *const FUNCTABLE[];
+struct LIBBASETYPE * INIT();
+extern const char END;
 
-extern int  driver_init (struct GfxBase *);
-extern int  driver_open (struct GfxBase *);
-extern void driver_close (struct GfxBase *);
-extern void driver_expunge (struct GfxBase *);
+extern int  driver_init (struct LIBBASETYPE *);
+extern int  driver_open (struct LIBBASETYPE *);
+extern void driver_close (struct LIBBASETYPE *);
+extern void driver_expunge (struct LIBBASETYPE *);
 
 int Graphics_entry(void)
 {
@@ -38,7 +39,7 @@ const struct Resident Graphics_resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&Graphics_resident,
-    (APTR)&Graphics_end,
+    (APTR)&END,
     RTF_AUTOINIT,
     39,
     NT_LIBRARY,
@@ -50,14 +51,14 @@ const struct Resident Graphics_resident=
 
 static const char name[]=GRAPHICSNAME;
 
-static const char version[]="$VER: graphics.library 39.0 (12.8.96)\n\015";
+static const char version[]=VERSION;
 
 static const APTR inittabl[4]=
 {
-    (APTR)sizeof(struct GfxBase),
-    (APTR)Graphics_functable,
+    (APTR)sizeof(struct LIBBASETYPE),
+    (APTR)FUNCTABLE,
     NULL,
-    &AROS_SLIB_ENTRY(init,Graphics)
+    &INIT
 };
 
 #ifndef SYSFONTNAME
@@ -66,8 +67,8 @@ static const APTR inittabl[4]=
 
 static struct TextAttr sysTA;
 
-AROS_LH2(struct GfxBase *, init,
- AROS_LHA(struct GfxBase *, GfxBase, D0),
+AROS_LH2(struct LIBBASETYPE *, init,
+ AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Graphics)
 {
@@ -76,7 +77,7 @@ AROS_LH2(struct GfxBase *, init,
     SysBase = sysBase;
 
     Disable();
-    if (!driver_init (GfxBase))
+    if (!driver_init (LIBBASE))
     {
 	Enable();
 	return NULL;
@@ -84,13 +85,13 @@ AROS_LH2(struct GfxBase *, init,
     Enable();
 
     /* You would return NULL if the init failed */
-    return GfxBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH1(struct GfxBase *, open,
+AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-	   struct GfxBase *, GfxBase, 1, Graphics)
+	   struct LIBBASETYPE *, LIBBASE, 1, Graphics)
 {
     AROS_LIBFUNC_INIT
     struct TextFont * def;
@@ -98,7 +99,7 @@ AROS_LH1(struct GfxBase *, open,
     /* Keep compiler happy */
     version=0;
 
-    if (!GfxBase->DefaultFont)
+    if (!LIBBASE->DefaultFont)
     {
 	sysTA.ta_Name  = (STRPTR)SYSFONTNAME;
 	sysTA.ta_YSize = 8;
@@ -110,7 +111,7 @@ AROS_LH1(struct GfxBase *, open,
 	if (!def)
 	    return NULL;
 
-	GfxBase->DefaultFont = def;
+	LIBBASE->DefaultFont = def;
 	sysTA.ta_YSize = def->tf_YSize;
     }
 
@@ -120,7 +121,7 @@ AROS_LH1(struct GfxBase *, open,
 	return NULL;
 
     Disable();
-    if (!driver_open (GfxBase))
+    if (!driver_open (LIBBASE))
     {
 	Enable();
 	return NULL;
@@ -128,26 +129,26 @@ AROS_LH1(struct GfxBase *, open,
     Enable();
 
     /* I have one more opener. */
-    GfxBase->LibNode.lib_OpenCnt++;
-    GfxBase->LibNode.lib_Flags&=~LIBF_DELEXP;
+    LIBBASE->LibNode.lib_OpenCnt++;
+    LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
 
     /* You would return NULL if the open failed. */
-    return GfxBase;
+    return LIBBASE;
     AROS_LIBFUNC_EXIT
 }
 
 AROS_LH0(BPTR, close,
-	   struct GfxBase *, GfxBase, 2, Graphics)
+	   struct LIBBASETYPE *, LIBBASE, 2, Graphics)
 {
     AROS_LIBFUNC_INIT
 
     /* I have one fewer opener. */
-    if(!--GfxBase->LibNode.lib_OpenCnt)
+    if(!--LIBBASE->LibNode.lib_OpenCnt)
     {
-	driver_close (GfxBase);
+	driver_close (LIBBASE);
 
 	/* Delayed expunge pending? */
-	if(GfxBase->LibNode.lib_Flags&LIBF_DELEXP)
+	if(LIBBASE->LibNode.lib_Flags&LIBF_DELEXP)
 	    /* Then expunge the library */
 	    return expunge();
     }
@@ -156,21 +157,21 @@ AROS_LH0(BPTR, close,
 }
 
 AROS_LH0(BPTR, expunge,
-	   struct GfxBase *, GfxBase, 3, Graphics)
+	   struct LIBBASETYPE *, LIBBASE, 3, Graphics)
 {
     AROS_LIBFUNC_INIT
 #ifndef DISK_BASED
-    if (!(GfxBase->LibNode.lib_OpenCnt) )
+    if (!(LIBBASE->LibNode.lib_OpenCnt) )
     {
-	if (GfxBase->DefaultFont)
+	if (LIBBASE->DefaultFont)
 	{
-	    CloseFont (GfxBase->DefaultFont);
+	    CloseFont (LIBBASE->DefaultFont);
 
-	    GfxBase->DefaultFont = NULL;
+	    LIBBASE->DefaultFont = NULL;
 	}
 
 	/* Allow the driver to release uneccessary memory */
-	driver_expunge (GfxBase);
+	driver_expunge (LIBBASE);
     }
 
     /* Don't delete this library. It's in ROM and therefore cannot be
@@ -180,22 +181,22 @@ AROS_LH0(BPTR, expunge,
     BPTR ret;
 
     /* Test for openers. */
-    if (GfxBase->LibNode.lib_OpenCnt)
+    if (LIBBASE->LibNode.lib_OpenCnt)
     {
 	/* Set the delayed expunge flag and return. */
-	GfxBase->LibNode.lib_Flags|=LIBF_DELEXP;
+	LIBBASE->LibNode.lib_Flags|=LIBF_DELEXP;
 	return 0;
     }
 
     /* Get rid of the library. Remove it from the list. */
-    Remove(&GfxBase->LibNode.lib_Node);
+    Remove(&LIBBASE->LibNode.lib_Node);
 
     /* Get returncode here - FreeMem() will destroy the field. */
     ret=0L;
 
     /* Free the memory. */
-    FreeMem((char *)GfxBase-GfxBase->LibNode.lib_NegSize,
-	    GfxBase->LibNode.lib_NegSize+GfxBase->LibNode.lib_PosSize);
+    FreeMem((char *)LIBBASE-LIBBASE->LibNode.lib_NegSize,
+	    LIBBASE->LibNode.lib_NegSize+LIBBASE->LibNode.lib_PosSize);
 
     return ret;
 #endif
@@ -203,7 +204,7 @@ AROS_LH0(BPTR, expunge,
 }
 
 AROS_LH0I(int, null,
-	    struct GfxBase *, GfxBase, 4, Graphics)
+	    struct LIBBASETYPE *, LIBBASE, 4, Graphics)
 {
     AROS_LIBFUNC_INIT
     return 0;
