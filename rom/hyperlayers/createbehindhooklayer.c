@@ -87,10 +87,10 @@
 
   struct Region * lr = NewRegion();
   struct Rectangle r;
-  struct TagItem tagList[5] = {{LA_PRIORITY    , 0},
-                               {LA_HOOK        , NULL},
-                               {LA_SUPERBITMAP , NULL},
-                               {LA_SHAPE       , (ULONG)lr},
+  struct TagItem tagList[5] = {{LA_Priority    , 0},
+                               {LA_Hook        , NULL},
+                               {LA_SuperBitMap , NULL},
+                               {LA_Shape       , (ULONG)lr},
                                {TAG_DONE       , 0UL}};
 
   tagList[0].ti_Data = (LAYERBACKDROP == (flags & LAYERBACKDROP)) ?
