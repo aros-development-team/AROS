@@ -33,7 +33,9 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     from = Open(SHArg(NAME), FMF_READ);
     if (!from)
     {
-        PrintFault(IoErr(), "Execute: couldn't open the script file");
+	IPTR data[] = { (IPTR)SHArg(NAME) };
+	VFPrintf(Error(), "EXECUTE: can't open %s\n", data);
+	PrintFault(IoErr(), NULL);
 	return RETURN_FAIL;
     }
 
@@ -62,7 +64,8 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 	    if (c)
 	    {
-	        PrintFault(c, "Execute: error while creating temporary file");
+		FPuts(Error(), "EXECUTE: error while creating temporary file\n");
+		PrintFault(c, NULL);
 		Close(tmpfile);
 		DeleteFile(tmpname);
 		return RETURN_FAIL;
@@ -77,8 +80,9 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 
 	    if (c)
 	    {
-	        PrintFault(c, "Execute: error while creating temporary file");
- 		Close(tmpfile);
+		FPuts(Error(), "EXECUTE: error while creating temporary file\n");
+		PrintFault(c, NULL);
+		Close(tmpfile);
 		DeleteFile(tmpname);
 		return RETURN_FAIL;
 	    }
