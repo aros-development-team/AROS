@@ -9,6 +9,7 @@
 
 #include <libraries/bgui.h>
 #include <libraries/bgui_macros.h>
+#include <libraries/locale.h>
 
 #include <dos/rdargs.h>
 
@@ -17,7 +18,12 @@
 #include <stdio.h>
 #include <math.h>
 
-struct Library    *BGUIBase   = NULL;
+#ifdef _AROS
+struct IntuitionBase 	*IntuitionBase;
+struct LocaleBase 	*LocaleBase;
+#endif
+
+struct Library    	*BGUIBase   = NULL;
 
 /* Is already defined in proto/locale.h: */
 /*                                       */
@@ -43,7 +49,10 @@ enum
     NUM_ARGS
 };
 
-const enum
+#ifndef _AROS
+const 
+#endif
+enum
 {
     /* Gadgets */
 
@@ -102,15 +111,24 @@ static struct ButtonInfo bi[ NUM_GADGETS - 1 ] =
     { "8"  , ID_8     , "8" ,  0  } ,
     { "9"  , ID_9     , "9" ,  0  } ,
     { "."  , ID_COMMA , "." , "," } ,
+#ifdef _AROS
+    { "«"  , ID_BS    , "\010",  0  } ,
+    { "CA" , ID_CA    , "A" , "\0177" } ,
+#else
     { "«"  , ID_BS    , "\8",  0  } ,
     { "CA" , ID_CA    , "A" , "\127" } ,
+#endif
     { "CE" , ID_CE    , "E" ,  0  } ,
     { "+"  , ID_ADD   , "+" ,  0  } ,
     { "-"  , ID_SUB   , "-" ,  0  } ,
     { "×"  , ID_MUL   , "*" , "X" } ,
     { "÷"  , ID_DIV   , "/" , ":" } ,
     { "±"  , ID_SIGN  , "S" , "±" } ,
+#ifdef _AROS
+    { "="  , ID_EQU   , "=" ,  "\015" }
+#else
     { "="  , ID_EQU   , "=" ,  "\13" }
+#endif
 };
 
 struct NewMenu menustrip[] =
@@ -164,6 +182,22 @@ static void OpenTape( void );
 
 /*** Functions ***************************************************************/
 
+#ifdef _AROS
+
+#undef AROS_TAGRETURNTYPE
+#define AROS_TAGRETURNTYPE Object *
+
+Object *BGUI_NewObject(ULONG num, Tag tag1, ...)
+{
+    AROS_SLOWSTACKTAGS_PRE(tag1)
+
+    retval = BGUI_NewObjectA(num, AROS_SLOWSTACKTAGS_ARG(tag1));
+
+    AROS_SLOWSTACKTAGS_POST
+}
+
+#endif
+
 /// static void DosError( void )
 static void DosError( void )
 {
@@ -204,12 +238,22 @@ static void OpenLibs( void )
     }
 
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library",39);
+    
+    #ifdef _AROS
+    IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39);
+    if (!IntuitionBase) Cleanup("Can't open intuition.librarv V39!");
+    #endif
+    
 } /// OpenLibs()
 /// static void CloseLibs( void )
 static void CloseLibs( void )
 {
     if( BGUIBase ) CloseLibrary( BGUIBase );
     if( LocaleBase ) CloseLibrary( (struct Library *) LocaleBase );
+    
+    #ifdef _AROS
+    if ( IntuitionBase ) CloseLibrary( (struct Library *) IntuitionBase);
+    #endif
 } /// CloseLibs()
 
 /// static void DoLocale(void)
