@@ -59,6 +59,10 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 			    struct TagItem stdgadtags[],
 			    struct VisualInfo *vi,
 			    struct TagItem *taglist);
+struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
+                         struct TagItem stdgadtags[],
+                         struct VisualInfo *vi,
+                         struct TagItem *taglist);
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
@@ -77,6 +81,7 @@ struct GadToolsBase_intern
     struct Library	 * boopsibase;
 
     struct Library	 * aroscbbase;
+    struct Library       * aroscybase;
     struct Library	 * arosmxbase;
 
     Class * buttonclass;

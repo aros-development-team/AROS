@@ -119,6 +119,12 @@
                                (struct VisualInfo *)ng->ng_VisualInfo,
                                taglist);
             break;
+        case CYCLE_KIND:
+            gad = makecycle((struct GadToolsBase_intern *)GadToolsBase,
+                            stdgadtags,
+                            (struct VisualInfo *)ng->ng_VisualInfo,
+                            taglist);
+            break;
         case MX_KIND:
             gad = makemx((struct GadToolsBase_intern *)GadToolsBase,
                          stdgadtags,

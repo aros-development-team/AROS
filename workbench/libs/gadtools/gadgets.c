@@ -20,6 +20,7 @@
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
 #include <gadgets/aroscheckbox.h>
+#include <gadgets/aroscycle.h>
 #include <gadgets/arosmx.h>
 #include "gadtools_intern.h"
 
@@ -79,6 +80,36 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 	stdgadtags[TAG_Height].ti_Data = CHECKBOX_HEIGHT;
     }
     obj = (struct Gadget *) NewObjectA(NULL, AROSCHECKBOXCLASS, tags);
+
+    return obj;
+}
+
+
+struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
+                         struct TagItem stdgadtags[],
+                         struct VisualInfo *vi,
+                         struct TagItem *taglist)
+{
+    struct Gadget *obj;
+    struct TagItem tags[] =
+    {
+	{GA_Disabled, FALSE},
+	{GTCY_Labels, FALSE},
+        {GTCY_Active, 0},
+	{TAG_MORE, (IPTR) NULL}
+    };
+
+    if (!GadToolsBase->aroscybase)
+        GadToolsBase->aroscybase = OpenLibrary("SYS:Classes/Gadgets/aroscycle.gadget", 0);
+    if (!GadToolsBase->aroscybase)
+        return NULL;
+
+    tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
+    tags[1].ti_Data = GetTagData(GTCY_Labels, FALSE, taglist);
+    tags[2].ti_Data = GetTagData(GTCY_Active, 0, taglist);
+    tags[3].ti_Data = (IPTR) stdgadtags;
+
+    obj = (struct Gadget *) NewObjectA(NULL, AROSCYCLECLASS, tags);
 
     return obj;
 }
