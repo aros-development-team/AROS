@@ -12,6 +12,7 @@
 */
 
 
+#include <asm/io.h>
 /* the rest are Amiga includes */
 #include <proto/exec.h>
 #include <proto/utility.h>
@@ -54,31 +55,6 @@ unsigned char get_fcr(ULONG baudrate);
 BOOL set_baudrate(struct HIDDSerialUnitData * data, ULONG speed);
 static void adapt_data(struct HIDDSerialUnitData * data,
                        struct Preferences * prefs);
-
-
-inline void outb(unsigned char value, unsigned short port)
-{
-  __asm__ __volatile__ ("outb %b0,%w1" : : "a" (value), "Nd"(port));
-}
-
-inline void outb_p(unsigned char value, unsigned short port)
-{
-  __asm__ __volatile__ ("outb %b0,%w1 \noutb %%al,$0x80" : : "a" (value), "Nd" (port));
-}
-
-inline unsigned char inb(unsigned short port)
-{
-  unsigned char _v;
-  __asm__ __volatile__ ("inb %w1,%b0" : "=a" (_v) : "Nd" (port) );
-  return _v;
-}
-
-inline unsigned char inb_p(unsigned short port)
-{
-  unsigned char _v;
-  __asm__ __volatile__ ("inb %w1,%b0 \noutb %%al,$0x80" : "=a" (_v) : "Nd" (port) );
-  return _v;
-}
 
 static inline void serial_out(struct HIDDSerialUnitData * data, 
                               int offset, 
