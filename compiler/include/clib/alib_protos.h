@@ -8,7 +8,9 @@
     Desc: Prototypes for amiga.lib
     Lang: english
 */
-
+#if defined(RT_ENABLE) && RT_ENABLE
+#   include <aros/rt.h>
+#endif
 #ifndef  EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -42,11 +44,13 @@ struct IORequest * CreateExtIO (struct MsgPort * port, ULONG iosize);
 struct IOStdReq * CreateStdIO (struct MsgPort * port);
 void DeleteExtIO (struct IORequest * ioreq);
 void DeleteStdIO (struct IOStdReq * ioreq);
-struct MsgPort * CreatePort (STRPTR name, LONG pri);
-void DeletePort (struct MsgPort * mp);
 struct Task * CreateTask (STRPTR name, LONG pri, APTR initpc, ULONG stacksize);
 void DeleteTask (struct Task * task);
 void NewList (struct List *);
+#if !defined(ENABLE_RT) || !ENABLE_RT
+struct MsgPort * CreatePort (STRPTR name, LONG pri);
+void DeletePort (struct MsgPort * mp);
+#endif
 
 /* Aros support */
 ULONG ArosInquire(ULONG tag1, ...);
