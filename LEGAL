@@ -1,0 +1,32 @@
+The majority of the software components that AROS consists of are distributed
+under the terms of version 1.1 of the AROS Public License (APL), as specified
+in the file "LICENSE". However, the components listed below are distributed
+under the terms of various other licenses. In the lists below, the location
+of the binaries is specified first (sometimes with AROS-style path pattern
+matching), followed by the location of the sources inside square brakets.
+Some components are not distributed as binaries.
+
+The following components are distributed under the terms of version 2 of the
+GNU General Public License, as specified in the file "LICENSE.GPL":
+
++ Tools/Edit [workbench/tools/Edit]
++ [workbench/prefs/Editor]
++ [tools/fd2inline]
++ [tools/FlexCat]
++ [tools/MetaMake]
++ [tools/mkfsaffs]
++ [tools/adflib]
+    
+The following components are distributed under the terms various different
+open source licenses, most of them similar to the BSD license. Please read the
+relevant "LEGAL" files that accompanies these components' sources.
+
++ Development/Lib/lib(arosc|rom).a, Libs/arosc.library [compiler/clib]
++ Development/Lib/libarosm.a [compiler/mlib]
++ Development/Lib/libarosz.a [compiler/zlib]
++ Development/Lib/libjpeg.a [compiler/libjpeg]
++ Development/Lib/libbz2.a [compiler/libbz2]
++ Development/Lib/libpng.a [compiler/libpng]
++ Development/Lib/libfreetype2(|shared).a, Libs/freetype2.library [workbench/libs/freetype]
++ Fonts/TrueType/#?.ttf [workbench/fonts/truetype/bitstream]
++ [tools/fd2pragma]
