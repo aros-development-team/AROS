@@ -3,13 +3,16 @@ TOP = ../../../..
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -D_AROS -I../include
+LIBCOREDIR = ../include/libcore
+LIBHEADER_SRC = $(LIBCOREDIR)/libheader.c
+LIBTAIL_SRC = $(LIBCOREDIR)/libtail.c
+USER_INCLUDES = -D_AROS -I. -I../include
 
 LIBS = -L$(LIBDIR) -lamiga -larossupport -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libarosc.a
 
-OBJS = StartUp.o LibInit.o SampleFuncs.o
+OBJS = libheader.o LibInit.o functable.o SampleFuncs.o libtail.o
 LIB = $(SLIBDIR)/example.library
 
 all : setup $(LIB)
@@ -24,18 +27,26 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 	$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
 	$(CHECKUDS) $@
 
-StartUp.o : StartUp.c SampleFuncs.h compiler.h intern.h libdefs.h
+libheader.o : $(LIBHEADER_SRC) libdefs.h
 	@echo "Compiling $<..."
-	@$(CC) $(CFLAGS) -c StartUp.c
+	@$(CC) $(CFLAGS) -c $< -o $@
 
-LibInit.o : LibInit.c compiler.h intern.h libdefs.h
+libtail.o : $(LIBTAIL_SRC) libdefs.h
 	@echo "Compiling $<..."
-	@$(CC) $(CFLAGS) -c LibInit.c
+	@$(CC) $(CFLAGS) -c $< -o $@
 
-SampleFuncs.o : SampleFuncs.c SampleFuncs.h compiler.h intern.h libdefs.h
+LibInit.o : LibInit.c intern.h libdefs.h
 	@echo "Compiling $<..."
-	@$(CC) $(CFLAGS) -c SampleFuncs.c
+	@$(CC) $(CFLAGS) -c $< -o $@
 
-libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
+functable.o : functable.c intern.h SampleFuncs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+SampleFuncs.o : SampleFuncs.c SampleFuncs.h intern.h libdefs.h
+	@echo "Compiling $<..."
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+libdefs.h : lib.conf ./genlibdefs.gawk
 	@echo "Generating $@..."
-	@$(AWK) -f $(TOP)/scripts/genlibdefs.gawk $< > $@
+	@$(AWK) -f ./genlibdefs.gawk $< > $@

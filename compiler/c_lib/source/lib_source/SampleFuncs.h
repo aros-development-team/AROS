@@ -1,18 +1,22 @@
 #ifndef _SAMPLEFUNCS_H
 #define _SAMPLEFUNCS_H
 /*
-**	$VER: SampleFuncs.h 37.14 (13.8.97)
+**	$VER: SampleFuncs.h 37.15 (14.8.97)
 **
 **	Demo functions for example.library
 **
 **	(C) Copyright 1996-97 Andreas R. Kleinert
 **	All Rights Reserved.
 */
-#include "compiler.h"
-#include "libdefs.h"
+#ifndef LIBCORE_COMPILER_H
+#   include <libcore/compiler.h>
+#endif
+#ifndef _LIBDEFS_H
+#   include "libdefs.h"
+#endif
 
 #ifndef EXAMPLE_EXAMPLEBASE_H
-struct LIBBASETYPE; /* Pre-Declaration if necessary */
+LIBBASETYPE; /* Pre-Declaration if necessary */
 #endif
 
 /* Declare functions for FuncTab[] */

@@ -21,7 +21,6 @@
 #include <intuition/intuition.h>
 #endif
 
-#include "compiler.h"
 #include "intern.h"
 #include "SampleFuncs.h"
 
