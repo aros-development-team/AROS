@@ -130,6 +130,7 @@
 #define EISNAM		120	/* Is a named type file */
 #define EREMOTEIO	121	/* Remote I/O error */
 #define EDQUOT		122	/* Quota exceeded */
+#define MAX_ERRNO	122	/* Last errno */
 
 #define EDEADLOCK	EDEADLK
 
