@@ -1063,6 +1063,42 @@ endif
 %end
 
 #------------------------------------------------------------------------------
+# Copy files from one directory to another.
+
+%define copy_files_q files=$(FILES) src=. dst=/A
+
+SRC_FILES := $(foreach f, %(files), %(src)/$(f))
+DST_FILES := $(foreach f, %(files), %(dst)/$(f))
+
+files-copy : setup $(DST_FILES)
+
+%(dst)/% : %(src)/%
+	@$(CP) $< $@
+	
+setup ::
+	%mkdirs_q %(dst)
+
+%end
+
+#------------------------------------------------------------------------------
+# Just as above, but noisy.
+
+%define copy_files files=$(FILES) src=. dst=/A
+
+SRC_FILES := $(foreach f, %(files), %(src)/$(f))
+DST_FILES := $(foreach f, %(files), %(dst)/$(f))
+
+files-copy : setup $(DST_FILES)
+
+%(dst)/% : %(src)/%
+	$(CP) $< $@
+	
+setup ::
+	%mkdirs_q %(dst)
+
+%end
+
+#------------------------------------------------------------------------------
 #   Copy include files into the includes directories. There are currently
 #   two include directories. One for building AROS $(AROS_INCLUDES) and one
 #   for building tools that need to run on the host system $(GENINCDIR). The
