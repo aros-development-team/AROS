@@ -49,7 +49,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 		  ds.ds_Days, ds.ds_Minute, ds.ds_Tick);
 
 
-	tmpfile = Open(tmpname, FMF_WRITE|FMF_READ|FMF_CREATE|FMF_CLEAR);
+	tmpfile = Open(tmpname, FMF_LOCK|FMF_WRITE|FMF_READ|FMF_CREATE|FMF_CLEAR);
 	if (tmpfile)
 	{
 	    LONG c;
@@ -93,7 +93,7 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
 	        CopyMem(tmpname, BADDR(cli->cli_CommandFile), len);
 	        AROS_BSTR_setstrlen(cli->cli_CommandFile, len);
 	    }
-	    
+
 	    cli->cli_CurrentInput = tmpfile;
 
 	    Seek(tmpfile, 0, OFFSET_BEGINNING);
