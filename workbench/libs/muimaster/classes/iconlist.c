@@ -570,23 +570,15 @@ static IPTR IconList_Add(struct IClass *cl, Object *obj, struct MUIP_IconList_Ad
     struct IconEntry *entry;
     struct DiskObject *dob;
     struct Rectangle rect;
+    const static struct TagItem geticon_tags[] = {
+	{ICONGETA_FailIfUnavailable, FALSE},
+	{TAG_DONE,0}
+    };
 
-#ifndef _AROS
-    if (!(dob = GetIconTagList(msg->filename,TAG_DONE)))
+    if (!(dob = GetIconTagList(msg->filename, geticon_tags)))
     {
-	if (!Stricmp(FilePart(msg->filename),"Disk"))
-	    dob = GetDefDiskObject(WBDISK);
-
-	if (!dob)
-	    return 0;
-    }
-#else
-    if (!(dob = GetDiskObjectNew(msg->filename)))
-    {
-	D(bug("Couldn't get the icon for %s\n",msg->filename));
 	return 0;
     }
-#endif
 
     if (!(entry = AllocPooled(data->pool,sizeof(struct IconEntry))))
     {
