@@ -8,6 +8,9 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <proto/exec.h>
+#include <signal.h>
+#include <unistd.h>
+#include <stdio.h>
 
 /******************************************************************************
 
@@ -51,7 +54,7 @@
 
 void _Switch (struct ExecBase * SysBase)
 {
-    struct Task * task = SysBase->ThisTask; /* FindTask(NULL); */
+    struct Task * task = FindTask (NULL);
 
     if (task->tc_State != TS_RUN && !(task->tc_Flags & TF_EXCEPT) )
     {
