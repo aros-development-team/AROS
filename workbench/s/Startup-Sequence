@@ -62,6 +62,15 @@ If EXISTS C:RexxMast
     Run <NIL: >NIL: C:RexxMast
 EndIf
 
+If EXISTS ENV:SYS/Packages
+    CD >ENV:OLDCD
+    List ENV:SYS/Packages NOHEAD FILES TO T:P LFORMAT="CD $SYS/Packages/%s*NExecute S/Package-Startup*N"
+    Execute T:P
+    Delete T:P QUIET
+    CD $OLDCD
+    UnsetEnv OLDCD
+EndIf
+
 If EXISTS S:User-Startup
     Execute S:User-Startup
 EndIf
