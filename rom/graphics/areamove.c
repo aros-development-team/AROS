@@ -63,6 +63,7 @@
   /* Is there still enough storage area in the areainfo-buffer?
    * We just need room for one entry.
    */
+
   if (areainfo->Count < areainfo->MaxCount)
   {
     /* is this the very first entry in the vector collection matrix */
@@ -70,7 +71,16 @@
     {
       areainfo->FirstX = x;
       areainfo->FirstY = y;
-      return AreaDraw(rp, x, y);
+
+      /* Insert the new point into the matrix */
+      areainfo->VctrPtr[0] = x;
+      areainfo->VctrPtr[1] = y;
+      areainfo->VctrPtr    = &areainfo->VctrPtr[2];
+
+      areainfo->FlagPtr[0] = 0x0;
+      areainfo->FlagPtr++;
+
+      areainfo->Count++;
     }
     else
     {
@@ -109,10 +119,11 @@
       }
     } /* if (0 == areainfo->Count) */
 
-    return 0;
   }
   else
     return -1;
+
+  return 0;
 
   AROS_LIBFUNC_EXIT
 } /* AreaMove */

@@ -108,6 +108,8 @@
         case 0x03:
           /* Draw a line to new position */
             Draw(rp, CurVctr[0], CurVctr[1]);
+            CurVctr = &CurVctr[2];
+            CurFlag = &CurFlag[1];
           break;
 
         case 0x83:
@@ -151,6 +153,10 @@
       Count--;
       
     }
+    /* restore areainfo structure for a new beginning */
+    areainfo->VctrPtr = areainfo->VctrTbl;
+    areainfo->FlagPtr = areainfo->FlagTbl;
+    areainfo->Count   = 0;
 
     /* restore old APen */
     SetAPen(rp, Rem_APen);    
