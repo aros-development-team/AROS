@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -397,6 +397,8 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	case PDTA_ClassBitMap:
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_ClassBitMap: Handled as PDTA_BitMap\n"));
 	case PDTA_BitMap:
+	    if( !pd->SrcBM )
+		ConvertChunky2Bitmap( pd );
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_BitMap: 0x%lx\n", (long)pd->SrcBM));
 	    *(msg->opg_Storage)=(ULONG) pd->SrcBM;
 	    break;
@@ -404,6 +406,12 @@ STATIC IPTR DT_GetMethod(struct IClass *cl, struct Gadget *g, struct opGet *msg)
 	case PDTA_DestBitMap:
 	    D(bug("picture.datatype/OM_GET: Tag PDTA_DestBitMap: 0x%lx\n", (long)pd->DestBM));
 	    *(msg->opg_Storage)=(ULONG) pd->DestBM;
+	    break;
+
+	case PDTA_MaskPlane:
+	    CreateMaskPlane( pd );
+	    D(bug("picture.datatype/OM_GET: Tag PDTA_MaskPlane: 0x%lx\n", (long)pd->MaskPlane));
+	    *(msg->opg_Storage)=(ULONG) pd->MaskPlane;
 	    break;
 
 	case PDTA_Screen:
@@ -712,6 +720,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     SrcHeight = pd->bmhd.bmh_Height;
     SrcDepth = pd->bmhd.bmh_Depth;
     D(bug("picture.datatype/DTM_ASYNCLAYOUT: Source Width %ld Height %ld Depth %ld\n", SrcWidth, SrcHeight, (long)SrcDepth));
+    D(bug("picture.datatype/DTM_ASYNCLAYOUT: Masking %d Transparent %d\n", (int)pd->bmhd.bmh_Masking, (int)pd->bmhd.bmh_Transparent));
     if( !SrcWidth || !SrcHeight || !SrcDepth )
     {
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Neccessary fields in BitMapHeader not set !\n"));
@@ -799,7 +808,10 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
             }
         } /* else(pd->TrueColorSrc) */
 	if( pd->FreeSource )
+	{
+	    CreateMaskPlane( pd );
 	    FreeSource( pd );
+	}
         pd->Layouted = TRUE;
         D(bug("picture.datatype/DTM_ASYNCLAYOUT: Initial layout done\n"));
     } /* if(msg->gpl_Initial) */
@@ -990,7 +1002,6 @@ STATIC IPTR PDT_WritePixelArray(struct IClass *cl, struct Gadget *g, struct pdtB
 
 /**************************************************************************************************/
 
-#if 0
 STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *msg)
 {
     struct Picture_Data *pd;
@@ -1021,8 +1032,6 @@ STATIC IPTR DT_FrameBox(struct IClass *cl, struct Gadget *g, struct dtFrameBox *
 
     return(RetVal);
 }
-#endif
-
 
 /**************************************************************************************************/
 
@@ -1110,14 +1119,12 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *o
             break;
         }
 
-#if 0
         case DTM_FRAMEBOX:
         {
             D(bug("picture.datatype/DT_Dispatcher: Method DTM_FRAMEBOX\n"));
             RetVal=(IPTR) DT_FrameBox(cl, (struct Gadget *) o, (struct dtFrameBox *) msg);
             break;
         }
-#endif
 
         case PDTM_WRITEPIXELARRAY:
         {

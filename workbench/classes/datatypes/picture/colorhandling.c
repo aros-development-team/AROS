@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,7 +31,6 @@
 #include "colorhandling.h"
 
 static UBYTE * AllocLineBuffer( long width, long height, int pixelbytes );
-static void FreeSourceBM( struct Picture_Data *pd );
 static void CopyColTable( struct Picture_Data *pd );
 static BOOL RemapCM2CM( struct Picture_Data *pd );
 static BOOL RemapTC2CM( struct Picture_Data *pd );
@@ -213,19 +212,18 @@ BOOL AllocDestBM( struct Picture_Data *pd, long width, long height, int depth )
 			      height,
 			      depth,
 //			      (BMF_INTERLEAVED | BMF_MINPLANES),
-			      BMF_MINPLANES | BMF_CLEAR,
+			      BMF_MINPLANES,
 			      pd->UseFriendBM ? pd->DestScreen->RastPort.BitMap : NULL );
     if( !pd->DestBM )
     {
 	D(bug("picture.datatype/AllocDestBM: DestBitmap allocation failed !\n"));
 	return FALSE;;
     }
-    D(bug("picture.datatype/AllocDestBM: Flags %ld Width %ld Height %ld Depth %ld\n", (long)GetBitMapAttr(pd->DestBM, BMA_FLAGS),
+    D(bug("picture.datatype/AllocDestBM: DestBM allocated: Flags %ld Width %ld Height %ld Depth %ld\n", (long)GetBitMapAttr(pd->DestBM, BMA_FLAGS),
 	(long)GetBitMapAttr(pd->DestBM, BMA_WIDTH), (long)GetBitMapAttr(pd->DestBM, BMA_HEIGHT), (long)GetBitMapAttr(pd->DestBM, BMA_DEPTH)));
     pd->DestWidth = width;
     pd->DestHeight = height;
     pd->DestDepth = depth;
-    D(bug("picture.datatype/AllocDestBM: DestBitmap allocated\n"));
     return TRUE;
 }
 
@@ -237,14 +235,9 @@ void FreeSource( struct Picture_Data *pd )
 	FreeVec( (void *) pd->SrcBuffer );
 	pd->SrcBuffer = NULL;
     }
-    FreeSourceBM( pd );
-}
-
-static void FreeSourceBM( struct Picture_Data *pd )
-{
     if( pd->SrcBM && !pd->KeepSrcBM )
     {
-	D(bug("picture.datatype/FreeSourceBM: Freeing SrcBitmap\n"));
+	D(bug("picture.datatype/FreeSource: Freeing SrcBitmap\n"));
 	FreeBitMap( pd->SrcBM );
 	pd->SrcBM = NULL;
     }
@@ -264,6 +257,13 @@ void FreeDest( struct Picture_Data *pd )
 	pd->NumAlloc=0;
     }
     
+    if( pd->MaskPlane )
+    {
+	D(bug("picture.datatype/FreeDest: Freeing MaskPlane\n"));
+	FreeVec( (void *) pd->MaskPlane );
+	pd->MaskPlane = NULL;
+    }
+
     if( pd->DestBM )
     {
 	D(bug("picture.datatype/FreeDest: Freeing DestBitmap\n"));
@@ -338,8 +338,6 @@ BOOL ConvertBitmap2Chunky( struct Picture_Data *pd )
     }
 #endif
 
-    D(bug("picture.datatype/Bitmap2Chunky: Conversion done\n"));
-    FreeSourceBM( pd );
     return TRUE;
 }
 
@@ -347,27 +345,83 @@ BOOL ConvertChunky2Bitmap( struct Picture_Data *pd )
 {
     struct RastPort SrcRP;
 
-    /* Allocate source Bitmap */
-    pd->SrcBM = AllocBitMap( pd->SrcWidth,
-			     pd->SrcHeight,
-			     pd->DestDepth,
-			     (BMF_INTERLEAVED | BMF_MINPLANES),
-			     pd->DestScreen->RastPort.BitMap );
+    if( !pd->SrcBuffer || pd->TrueColorSrc )
+	return FALSE;
     if( !pd->SrcBM )
     {
-	D(bug("picture.datatype/Chunky2Bitmap: Bitmap allocation failed !\n"));
-	return FALSE;;
-    }
-
-    /* Copy the Chunky source buffer to the source Bitmap */
-    InitRastPort( &SrcRP );
-    SrcRP.BitMap = pd->SrcBM;
-    WriteChunkyPixels( &SrcRP, 0, 0, pd->SrcWidth-1, pd->SrcHeight-1, pd->SrcBuffer, pd->SrcWidthBytes );
+	/* Allocate source Bitmap */
+	pd->SrcBM = AllocBitMap( pd->SrcWidth,
+				 pd->SrcHeight,
+				 pd->bmhd.bmh_Depth,
+				 BMF_STANDARD,
+				 NULL );
+	if( !pd->SrcBM )
+	{
+	    D(bug("picture.datatype/Chunky2Bitmap: Bitmap allocation failed !\n"));
+	    return FALSE;;
+	}
+	D(bug("picture.datatype/Chunky2Bitmap: SrcBM allocated; Flags %ld Width %ld Height %ld Depth %ld\n", (long)GetBitMapAttr(pd->SrcBM, BMA_FLAGS),
+	    (long)GetBitMapAttr(pd->SrcBM, BMA_WIDTH), (long)GetBitMapAttr(pd->SrcBM, BMA_HEIGHT), (long)GetBitMapAttr(pd->SrcBM, BMA_DEPTH)));
+    
+	/* Copy the Chunky source buffer to the source Bitmap */
+	InitRastPort( &SrcRP );
+	SrcRP.BitMap = pd->SrcBM;
+	WriteChunkyPixels( &SrcRP, 0, 0, pd->SrcWidth-1, pd->SrcHeight-1, pd->SrcBuffer, pd->SrcWidthBytes );
 #ifdef __AROS__
-    DeinitRastPort( &SrcRP );
+	DeinitRastPort( &SrcRP );
 #endif
+    }
+    return TRUE;
+}
 
-    D(bug("picture.datatype/Chunky2Bitmap: Conversion done\n"));
+BOOL CreateMaskPlane( struct Picture_Data *pd )
+{
+    if( !pd->SrcBuffer || !pd->DestBM || pd->SrcPixelBytes != 1 )
+	return FALSE;
+    if( !pd->MaskPlane && pd->bmhd.bmh_Masking == mskHasTransparentColor )
+    {
+	int x, y;
+	UBYTE transp = pd->bmhd.bmh_Transparent;
+	UBYTE *srcbuf = pd->SrcBuffer;
+	int srcwidth = pd->SrcWidth;
+	int srcheight = pd->SrcHeight;
+	int width16 = MOD16( GetBitMapAttr( pd->DestBM, BMA_WIDTH ) );
+	int height = GetBitMapAttr( pd->DestBM, BMA_HEIGHT );
+	UBYTE *maskptr;
+	ULONG maskwidth = width16 / 8;
+	ULONG srcwidthadd = pd->SrcWidthBytes - srcwidth * pd->SrcPixelBytes;
+
+	if( !(maskptr = AllocVec( maskwidth * height, MEMF_ANY )) )
+	{
+	    D(bug("picture.datatype/CreateMask: Mask allocation failed !\n"));
+	    return FALSE;
+	}
+	pd->MaskPlane = maskptr;
+	D(bug("picture.datatype/CreateMask: Mask allocated size %ld x %d\n", maskwidth, height));
+	
+	for(y = 0; y < srcheight; y++)
+	{
+	    UBYTE *maskx = maskptr;
+	    UBYTE mask = 0x80;
+	    UBYTE maskbyte = 0x00;
+
+	    for(x = 0; x < srcwidth; x++)
+	    {		    
+		if( *srcbuf++ != transp )
+		    maskbyte |= mask;
+
+		mask >>= 1;
+		if( !mask )
+		{
+		    mask = 0x80;
+		    *maskx++ = maskbyte;
+		    maskbyte = 0x00;
+		}
+	    }
+	    maskptr += maskwidth;
+	    srcbuf += srcwidthadd;
+	}
+    }
     return TRUE;
 }
 

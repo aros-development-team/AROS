@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,6 +21,7 @@ void FreeSource( struct Picture_Data *pd );
 void FreeDest( struct Picture_Data *pd );
 BOOL ConvertBitmap2Chunky( struct Picture_Data *pd );
 BOOL ConvertChunky2Bitmap( struct Picture_Data *pd );
+BOOL CreateMaskPlane( struct Picture_Data *pd );
 
 BOOL ConvertTC2TC( struct Picture_Data *pd );
 BOOL ConvertCM2TC( struct Picture_Data *pd );
