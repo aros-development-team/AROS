@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 
@@ -93,10 +90,6 @@
 
     INTERNALS
 
-    HISTORY
-
-	2001-01-12 ksvalast first created
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -110,7 +103,7 @@
 
 	struct MyMidiNode *mymidinode=(struct MyMidiNode *)midinode;
 
-	ULONG *ErrorCode=(ULONG *)GetTagData(MIDI_ErrorCode,NULL,tags);
+	ULONG *ErrorCode = (ULONG *) GetTagData(MIDI_ErrorCode, (IPTR) NULL, tags);
 
 	ObtainSemaphore(CB(CamdBase)->CLSemaphore);
 
