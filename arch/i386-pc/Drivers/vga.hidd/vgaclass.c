@@ -27,6 +27,7 @@
 
 #include "vga.h"
 #include "vgaclass.h"
+#include "bitmap.h"
 
 #define DEBUG 0
 #include <aros/debug.h>
@@ -427,7 +428,6 @@ static VOID gfxhidd_showhide(Class *cl, Object *o, struct pHidd_Gfx_ShowHide *ms
     draw_mouse(XSD(cl));
 }
 
-
 /*********  GfxHidd::CopyBox()  ***************************/
 
 static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
@@ -623,13 +623,68 @@ static VOID gfxhidd_copybox(Class *cl, Object *o, struct pHidd_Gfx_CopyBox *msg)
     ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
 
+/* stuff added by stegerg */
+
+/********** GfxHidd::SetCursorShape()  ****************************/
+
+static BOOL gfxhidd_setcursorshape(Class *cl, Object *o, struct pHidd_Gfx_SetCursorShape *msg)
+{
+    /* hmm ... moHidd_Gfx_SetCursorShape seems to have a HIDD bitmap in msg->shape, while
+       the old (obsolete?) native moHidd_Gfx_SetMouseShape seems to expect a simple
+       chunky array. So don't do anything for now (it would have to be done similiar as
+       in config/hidd/fakegfxhidd.c I guess */
+       
+    return TRUE;
+}
+
+/********** GfxHidd::SetCursorPos()  ****************************/
+
+static BOOL gfxhidd_setcursorpos(Class *cl, Object *o, struct pHidd_Gfx_SetCursorPos *msg)
+{
+    struct Box box = {0, 0, 0, 0};
+
+    box.x1 = XSD(cl)->mouseX;
+    box.y1 = XSD(cl)->mouseY;
+    box.x2 = box.x1 + XSD(cl)->mouseW;
+    box.y2 = box.y1 + XSD(cl)->mouseH;
+
+    if (XSD(cl)->visible)
+	vgaRefreshArea(XSD(cl)->visible, 1, &box);
+
+    XSD(cl)->mouseX = msg->x;
+    XSD(cl)->mouseY = msg->y;
+
+    if (XSD(cl)->visible)
+    {
+        if (XSD(cl)->mouseX < 0) XSD(cl)->mouseX = 0;
+	if (XSD(cl)->mouseY < 0) XSD(cl)->mouseY = 0;
+	if (XSD(cl)->mouseX >= XSD(cl)->visible->width) XSD(cl)->mouseX = XSD(cl)->visible->width - 1;
+	if (XSD(cl)->mouseY >= XSD(cl)->visible->height) XSD(cl)->mouseY = XSD(cl)->visible->height - 1;
+    }
+    
+    draw_mouse(XSD(cl));
+    
+    return TRUE;
+}
+
+/********** GfxHidd::SetCursorVisible()  ****************************/
+
+static VOID gfxhidd_setcursorvisible(Class *cl, Object *o, struct pHidd_Gfx_SetCursorVisible *msg)
+{
+    XSD(cl)->mouseVisible = msg->visible;
+    
+    draw_mouse(XSD(cl));
+}
+
+/* end of stuff added by stegerg */
+
 #undef XSD
 #define XSD(cl) xsd
 
 /********************  init_vgaclass()  *********************************/
 
 #define NUM_ROOT_METHODS 3
-#define NUM_VGA_METHODS 5
+#define NUM_VGA_METHODS 8 /* stegerg: was 5*/
 
 Class *init_vgaclass (struct vga_staticdata *xsd)
 {
@@ -650,6 +705,13 @@ Class *init_vgaclass (struct vga_staticdata *xsd)
 	{(IPTR (*)())gfxhidd_setmousexy,	moHidd_Gfx_SetMouseXY},
 	{(IPTR (*)())gfxhidd_showhide,		moHidd_Gfx_ShowHide},
 	{(IPTR (*)())gfxhidd_copybox,		moHidd_Gfx_CopyBox},
+
+/* stegerg */
+	{(IPTR (*)())gfxhidd_setcursorshape,	moHidd_Gfx_SetCursorShape},
+	{(IPTR (*)())gfxhidd_setcursorpos,	moHidd_Gfx_SetCursorPos},
+	{(IPTR (*)())gfxhidd_setcursorvisible,	moHidd_Gfx_SetCursorVisible},
+/* end stegerg */
+
 	{NULL, 0UL}
     };
     
