@@ -69,7 +69,15 @@ struct Rect32
 #define BMB_MINPLANES        4
 #define BMF_MINPLANES   (1L<<4)
 
-#define BMB_AROS_HIDD        7
+
+/* Cybergfx flag */
+#define BMB_SPECIALFMT	     7
+#define BMF_SPECIALFMT	(1L<<7)
+
+#define BMB_PIXFMT_SHIFTUP 24
+
+/* AROS specific flags */
+#define BMB_AROS_HIDD        8
 #define BMF_AROS_HIDD	(1L << 7)
 
 #define BMA_HEIGHT 0
