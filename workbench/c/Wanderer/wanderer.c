@@ -416,7 +416,7 @@ BOOPSI_DISPATCHER(IPTR,IconWindow_Dispatcher,cl,obj,msg)
 	case OM_SET: return IconWindow_Set(cl,obj,(struct opSet*)msg);
 	case OM_GET: return IconWindow_Get(cl,obj,(struct opGet*)msg);
 
-	case MUIM_IconWindow_Open: return IconWindow_Open(cl,obj,(APTR)msg);
+	case MUIM_IconWindow_Open: return IconWindow_Open(cl,obj,(APTR)msg);
 
 	/* private methods */
 	case MUIM_IconWindow_DoubleClicked: return IconWindow_DoubleClicked(cl,obj,msg);
