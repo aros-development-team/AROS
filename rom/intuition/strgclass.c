@@ -8,6 +8,7 @@
 
 #include <proto/intuition.h>
 #include <proto/utility.h>
+#include <proto/boopsi.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>

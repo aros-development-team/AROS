@@ -37,13 +37,16 @@
 #include <proto/utility.h>
 
 #ifdef _AROS
+#include <proto/boopsi.h>
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
 #include "gadgets.h"
-#endif
 
-#include "notify.h"
+/* These two come from $(TOP)/rom/boopsi */
+#include <icclass.h>
+#include <boopsi_private.h>
+#endif
 
 struct GadgetData
 {
@@ -457,11 +460,11 @@ AROS_UFH3(static IPTR, dispatch_gadgetclass,
 	break;
 	
     case OM_NOTIFY:
-    	DoNotification(cl, o, &(GD(o)->IC), (struct opUpdate *)msg);
+    	DoNotify(cl, o, &(GD(o)->IC), (struct opUpdate *)msg);
     	break;
     	
     case OM_DISPOSE:
-    	FreeICStuff(&(GD(o)->IC), IntuitionBase);
+    	FreeICData(&(GD(o)->IC));
     	break;    	
 
     default:

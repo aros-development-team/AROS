@@ -14,6 +14,7 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH1(APTR, NextObject,
 
@@ -56,6 +57,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* Pass call to the boopsi.library */
+    return NextObject(objectPtrPtr);
+
+#if 0
     APTR oldobject;
 
     oldobject = (APTR)(*((Object **)objectPtrPtr));
@@ -69,5 +75,7 @@
         *((Object **)objectPtrPtr) = NULL;
 
     return oldobject;
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* NextObject */

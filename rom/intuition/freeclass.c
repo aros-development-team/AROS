@@ -1,22 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:38  ldp
-    Polish
 
-    Revision 1.3  1996/12/10 14:00:03  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:19  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:34  digulla
-    Proportional gadgets
-    BOOPSI
-
-
-    Desc:
+    Desc: Free a BOOPSI Class (obs)
     Lang: english
 */
 #include <proto/exec.h>
@@ -27,6 +13,7 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH1(BOOL, FreeClass,
 
@@ -102,6 +89,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    return FreeClass(classPtr);
+
+#if 0
     /* Make sure no one creates another object from this class. For private
 	classes, this call does nothing. */
     RemoveClass (classPtr);
@@ -116,5 +106,7 @@
     }
 
     return (FALSE);
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* FreeClass */

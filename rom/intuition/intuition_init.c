@@ -14,6 +14,7 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
+#include <exec/alerts.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>
@@ -42,17 +43,10 @@ struct LIBBASETYPE *INIT();
 
 extern const char END;
 
-AROS_UFP3(static ULONG, rootDispatcher,
-    AROS_UFPA(Class *,  cl,  A0),
-    AROS_UFPA(Object *, obj, A2),
-    AROS_UFPA(Msg,      msg, A1)
-);
-
 /* There has to be a better way... */
 struct IClass *InitImageClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitSysIClass (struct LIBBASETYPE * LIBBASE);
-struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
@@ -70,7 +64,7 @@ const struct Resident Intuition_resident=
     RTC_MATCHWORD,
     (struct Resident *)&Intuition_resident,
     (APTR)&END,
-    RTF_AUTOINIT,
+    RTF_AUTOINIT|RTF_COLDSTART,
     LIBVERSION,
     NT_LIBRARY,
     0,
@@ -91,21 +85,6 @@ static const APTR inittabl[4]=
     &INIT
 };
 
-static Class rootclass =
-{
-    { { NULL, NULL }, AROS_ASMSYMNAME(rootDispatcher), NULL, NULL },
-    0,		/* reserved */
-    NULL,	/* No superclass */
-    (ClassID)ROOTCLASS,  /* ClassID */
-
-    0, 0,	/* No offset and size */
-
-    0,		/* UserData */
-    0,		/* SubClassCount */
-    0,		/* ObjectCount */
-    0,		/* Flags */
-};
-
 void intui_ProcessEvents (void);
 
 struct Process * inputDevice;
@@ -118,10 +97,18 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_INIT
     SysBase = sysBase;
 
-    NEWLIST (PublicClassList);
-
     if (!intui_init (LIBBASE))
 	return NULL;
+
+    /*  We have to open this here, but it doesn't do any allocations,
+	so it shouldn't fail...
+    */
+    if(!(BOOPSIBase = OpenLibrary("boopsi.library", 0)))
+    {
+	/* Intuition couldn't open unknown library */
+	Alert(AT_DeadEnd | AN_Intuition | AG_OpenLib | AO_Unknown);
+	return NULL;
+    }
 
     /* Create semaphore and initialize it */
     GetPrivIBase(LIBBASE)->IBaseLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
@@ -131,24 +118,10 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
     InitSemaphore (GetPrivIBase(LIBBASE)->IBaseLock);
 
-    /* Create semaphore and initialize it */
-    GetPrivIBase(LIBBASE)->ClassListLock = AllocMem (sizeof(struct SignalSemaphore), MEMF_PUBLIC|MEMF_CLEAR);
-
-    if (!GetPrivIBase(LIBBASE)->ClassListLock)
-	return NULL;
-
-    InitSemaphore (GetPrivIBase(LIBBASE)->ClassListLock);
-
-    /* The rootclass is created statically */
-    rootclass.cl_UserData = (IPTR) LIBBASE;
-    AddClass (&rootclass);
-
     /* Add all other classes */
     InitImageClass (LIBBASE); /* After ROOTCLASS */
     InitFrameIClass (LIBBASE); /* After IMAGECLASS */
     InitSysIClass (LIBBASE); /* After IMAGECLASS */
-
-    InitICClass (LIBBASE); /* After ROOTCLASS */
 
     InitGadgetClass (LIBBASE); /* After ROOTCLASS */
     InitButtonGClass (LIBBASE); /* After GADGETCLASS */
@@ -190,12 +163,17 @@ AROS_LH1(struct LIBBASETYPE *, open,
     /* TODO Create input.device. This is a bad hack. */
     if (!inputDevice)
     {
+	struct Task *idleT;
 	inputTask[0].ti_Data = (IPTR)LIBBASE;
 
 	inputDevice = CreateNewProc (inputTask);
 
 	if (!inputDevice)
 	    return NULL;
+
+	idleT = FindTask("Idle Task");
+	if( idleT )
+		Signal(idleT, SIGBREAKF_CTRL_F);
     }
 
     if (!GfxBase)
@@ -303,124 +281,3 @@ AROS_LH0I(int, null,
     return 0;
     AROS_LIBFUNC_EXIT
 }
-
-Class * FindClass (ClassID classID, struct LIBBASETYPE * LIBBASE)
-{
-    Class * classPtr;
-
-    if (!classID)
-	return NULL;
-
-    /* Lock the list */
-    ObtainSemaphoreShared (GetPrivIBase(LIBBASE)->ClassListLock);
-
-    /* Search for the class */
-    ForeachNode (PublicClassList, classPtr)
-    {
-	if (!strcmp (classPtr->cl_ID, classID))
-	    goto found;
-    }
-
-    classPtr = NULL; /* Nothing found */
-
-found:
-    /* Unlock list */
-    ReleaseSemaphore (GetPrivIBase(LIBBASE)->ClassListLock);
-
-    return classPtr;
-}
-
-#undef IntuitionBase
-#define IntuitionBase	((struct LIBBASETYPE *)(cl->cl_UserData))
-
-/******************************************************************************
-
-    NAME */
-	AROS_UFH3(static IPTR, rootDispatcher,
-
-/*  SYNOPSIS */
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, o,   A2),
-	AROS_UFHA(Msg,      msg, A1))
-
-/*  FUNCTION
-	internal !
-
-	Processes all messages sent to the RootClass. Unknown messages are
-	silently ignored.
-
-    INPUTS
-	cl - Pointer to the RootClass
-	o - This object was the destination for the message in the first
-		place
-	msg - This is the message.
-
-    RESULT
-	Processes the message. The meaning of the result depends on the
-	type of the message.
-
-    NOTES
-	This is a good place to debug BOOPSI objects since every message
-	should eventually show up here.
-
-    EXAMPLE
-
-    BUGS
-
-    SEE ALSO
-
-    HISTORY
-	14.09.93    ada created
-
-******************************************************************************/
-{
-    AROS_USERFUNC_INIT
-    IPTR retval = 0;
-    Class *objcl;
-
-    switch (msg->MethodID)
-    {
-    case OM_NEW: {
-	objcl = (Class *)o;
-
-	/* Get memory. The objects shows how much is needed.
-	   (The object is not an object, it is a class pointer!) */
-	o = (Object *) AllocVec (objcl->cl_InstOffset
-		+ objcl->cl_InstSize
-		+ sizeof (struct _Object)
-	    , MEMF_ANY
-	    );
-
-	((struct _Object *)o)->o_Class = objcl;
-	retval = (IPTR) BASEOBJECT(o);
-	break; }
-
-    case OM_DISPOSE:
-	/* Free memory. Caller is responsible that everything else
-	   is already cleared! */
-	FreeVec (_OBJECT(o));
-	break;
-
-    case OM_ADDTAIL:
-	/* Add <o> to list. */
-	AddTail (((struct opAddTail *)msg)->opat_List,
-		    (struct Node *) _OBJECT(o));
-	break;
-
-    case OM_REMOVE:
-	/* Remove object from list. */
-	Remove ((struct Node *) _OBJECT(o));
-	break;
-
-    default:
-	/* Ignore */
-	break;
-
-    } /* switch */
-
-    return (retval);
-    AROS_USERFUNC_EXIT
-} /* rootDispatcher */
-
-
-

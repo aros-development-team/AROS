@@ -11,6 +11,7 @@
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/boopsi.h>
 #include <intuition/intuition.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>

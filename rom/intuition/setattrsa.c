@@ -1,20 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:43  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:08  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:36  digulla
-    Proportional gadgets
-    BOOPSI
-
 
     Desc:
     Lang: english
@@ -27,8 +13,9 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
-	AROS_LH2(ULONG, SetAttrsA,
+	AROS_LH2(ULONG, oldSetAttrsA,
 
 /*  SYNOPSIS */
 	AROS_LHA(APTR            , object, A0),
@@ -72,6 +59,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* pass call to boopsi.library */
+    return SetAttrsA(object, tagList);
+
+#if 0
     struct opSet ops;
 
     ops.MethodID     = OM_SET;
@@ -79,5 +71,7 @@
     ops.ops_GInfo    = NULL;
 
     return (DoMethodA (object, (Msg)&ops));
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* SetAttrsA */

@@ -36,6 +36,7 @@
 #include <proto/utility.h>
 
 #ifdef _AROS
+#include <proto/boopsi.h>
 #include <aros/asmcall.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"

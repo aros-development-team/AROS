@@ -9,6 +9,7 @@
 #include <exec/types.h>
 
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>

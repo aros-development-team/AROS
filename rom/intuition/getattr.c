@@ -1,27 +1,8 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/01/27 00:36:38  ldp
-    Polish
 
-    Revision 1.4  1996/12/10 14:00:03  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.3  1996/11/08 11:28:02  aros
-    All OS function use now Amiga types
-
-    Moved intuition-driver protos to intuition_intern.h
-
-    Revision 1.2  1996/10/24 15:51:19  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:34  digulla
-    Proportional gadgets
-    BOOPSI
-
-
-    Desc:
+    Desc: GetAttr() get an attribute from an object.
     Lang: english
 */
 #include <proto/alib.h>
@@ -32,8 +13,9 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
-	AROS_LH3(ULONG, GetAttr,
+	AROS_LH3(ULONG, oldGetAttr,
 
 /*  SYNOPSIS */
 	AROS_LHA(ULONG   , attrID, D0),
@@ -85,6 +67,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* Really call boopsi.library */
+    return GetAttr(attrID, object, storagePtr);
+
+#if 0
     struct opGet get;
 
     get.MethodID    = OM_GET;
@@ -92,5 +79,6 @@
     get.opg_Storage = storagePtr;
 
     return (DoMethodA (object, (Msg)&get));
+#endif
     AROS_LIBFUNC_EXIT
 } /* GetAttr */

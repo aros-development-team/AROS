@@ -13,6 +13,7 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH1(void, AddClass,
 
@@ -57,10 +58,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    /* call boopsi.library function */
+    AddClass(classPtr);
+
+#if 0
     ObtainSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
     AddTail (PublicClassList, (struct Node *)classPtr);
     classPtr->cl_Flags |= CLF_INLIST;
     ReleaseSemaphore (GetPrivIBase(IntuitionBase)->ClassListLock);
-
+#endif
     AROS_LIBFUNC_EXIT
 } /* AddClass */

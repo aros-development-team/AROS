@@ -32,7 +32,6 @@
 #   include <intuition/screens.h>
 #endif
 #include "intuition_debug.h"
-#include "boopsi.h"
 
 struct IntIntuitionBase
 {
@@ -42,11 +41,10 @@ struct IntIntuitionBase
     struct GfxBase	   * GfxBase;
     struct ExecBase	   * SysBase;
     struct UtilityBase	   * UtilBase;
+    struct Library	   * BOOPSIBase;
+
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
-
-    struct MinList	     ClassList;
-    struct SignalSemaphore * ClassListLock;
 
     APTR		     DriverData; /* Pointer which the driver may use */
 
@@ -89,6 +87,10 @@ extern struct IntuitionBase * IntuitionBase;
 #undef UtilityBase
 #endif
 #define UtilityBase (GetPrivIBase(IntuitionBase)->UtilBase)
+#ifdef BOOPSIBase
+#undef BOOPSIBase
+#endif
+#define BOOPSIBase (GetPrivIBase(IntuitionBase)->BOOPSIBase)
 
 #define PublicClassList ((struct List *)&(GetPrivIBase(IntuitionBase)->ClassList))
 

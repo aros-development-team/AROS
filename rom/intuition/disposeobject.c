@@ -1,23 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/07/21 17:36:08  srittau
-    DisposeObject() accepts now NULL pointers.
-
-    Revision 1.4  1997/01/27 00:36:37  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:01  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:18  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:34  digulla
-    Proportional gadgets
-    BOOPSI
-
 
     Desc:
     Lang: english
@@ -31,6 +14,7 @@
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH1(void, DisposeObject,
 
@@ -77,6 +61,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* pass to boopsi.library */
+    DisposeObject(object);
+
+#if 0
     ULONG MethodID = OM_DISPOSE;
 
     if (!object)
@@ -85,6 +74,7 @@
     OCLASS (object)->cl_ObjectCount --;
 
     DoMethodA (object, (Msg)&MethodID);
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* DisposeObject */

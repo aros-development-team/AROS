@@ -10,13 +10,13 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "intuition_intern.h"
-#include "boopsi.h"
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH5(struct IClass *, MakeClass,
 
@@ -87,6 +87,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* Actually call boopsi.library function */
+    return MakeClass(classID, superClassID, superClassPtr, instanceSize, flags);
+
+#if 0
     Class * iclass;
 
     /* trust the user ;-) */
@@ -123,5 +128,7 @@
     }
 
     return (iclass);
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* MakeClass */

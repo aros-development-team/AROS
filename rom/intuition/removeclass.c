@@ -1,20 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.4  1997/01/27 00:36:43  ldp
-    Polish
-
-    Revision 1.3  1996/12/10 14:00:08  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/24 15:51:24  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.1  1996/08/28 17:55:36  digulla
-    Proportional gadgets
-    BOOPSI
-
 
     Desc:
     Lang: english
@@ -27,6 +13,7 @@
     NAME */
 #include <intuition/classes.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH1(void, RemoveClass,
 
@@ -69,6 +56,10 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+    /* Pass to boopsi.library */
+    RemoveClass(classPtr);
+
+#if 0
     /* Klasse da und noch/schon in der Liste ? */
     if (classPtr && (classPtr->cl_Flags & CLF_INLIST))
     {
@@ -80,6 +71,7 @@
 
 	classPtr->cl_Flags &= ~CLF_INLIST;
     }
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* RemoveClass */

@@ -1,13 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/07/21 17:41:07  srittau
-    Chenged handling of NewObjectA()/OM_NEW to be more AmigaOS like.
-
-    Revision 1.6  1997/03/20 16:05:08  digulla
-    Fixed bug: Added FindClass()
-
 
     Desc: Create a new BOOPSI object
     Lang: english
@@ -18,13 +11,13 @@
 #include <proto/exec.h>
 #include <proto/alib.h>
 #include "intuition_intern.h"
-#include "boopsi.h"
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classusr.h>
 #include <proto/intuition.h>
+#include <proto/boopsi.h>
 
 	AROS_LH3(APTR, NewObjectA,
 
@@ -78,6 +71,11 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+
+    /* Pass call to the BOOPSI.library */
+    return NewObjectA(classPtr, classID, tagList);
+
+#if 0
     Object * object;
 
     /* No classPtr ? */
@@ -93,5 +91,7 @@
 	classPtr->cl_ObjectCount ++;
 
     return (object);
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* NewObjectA */
