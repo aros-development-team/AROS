@@ -136,6 +136,7 @@ case "$host_os" in
 	aros_cc="$aros_cc -pipe"
 	aros_as="$aros_as -pipe"
 	aros_common_aflags="-x assembler-with-cpp"
+	aros_shared_ar="gcc"
 	;;
     amiga*)
 	SORT=/gg/bin/sort
@@ -194,6 +195,8 @@ case "$target_os" in
 	aros_ildflags="-nostartfiles -nostdlib -Wl,-r,-n,-e,_entry"
 	aros_mkdepend="$aros_mkdepend -D__GNUC__ -Di386"
 	aros_genmap="-Xlinker -assert -Xlinker" # FreeBSD doesn't support maps
+	aros_shared_ar="$aros_shared_ar -shared -o"
+	aros_shared_cflags="-fPIC"
 	strip_args="-x"
 
 	# If we have bash, use that, otherwise, /bin/sh
