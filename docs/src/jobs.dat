@@ -114,14 +114,20 @@ battmem00001;0;digulla;Write ReleaseBattSemaphore
 battmem00002;0;digulla;Write ReadBattMem
 battmem00003;0;digulla;Write WriteBattMem
 BOOPSI/boolgadgets;2;digulla;Implement BOOL Gadgets
-BOOPSI/ButtonGClass;2;digulla;Implement BOOPSI ButtonGadgetClass
-BOOPSI/FrameIClass;0;digulla;Implement BOOPSI FrameIClass
+BOOPSI/ButtonGClass;2;caldi;Implement BOOPSI ButtonGadgetClass
+BOOPSI/FrameIClass;2;;Implement BOOPSI FrameIClass
+BOOPSI/FrButtonClass;2;;Implement BOOPSI FrButtonClass
 BOOPSI/GadgetClass;2;digulla;Implement BOOPSI GadgetClass
-BOOPSI/ICClass;0;digulla;Implement BOOPSI ICClass
-BOOPSI/ImageClass;0;digulla;Implement BOOPSI ImageClass
+BOOPSI/GroupGClass;0;;Implement BOOPSI GroupGClass
+BOOPSI/ICClass;2;caldi;Implement BOOPSI ICClass
+BOOPSI/ITextIClass;0;;Implement BOOPSI ITextIClass
+BOOPSI/ImageClass;2;caldi;Implement BOOPSI ImageClass
+BOOPSI/ModelClass;0;;Implement BOOPSI ModelClass
 BOOPSI/PointerClass;0;digulla;Implement BOOPSI PointerClass
+BOOPSI/PropGClass;2;;Implement BOOPSI PropGClass
 BOOPSI/propgadgets;2;digulla;Implement PROP Gadgets
-BOOPSI/RootClass;2;digulla;Implement BOOPSI ROOTCLASS
+BOOPSI/RootClass;2;digulla;Implement BOOPSI RootClass
+BOOPSI/StrGClass;2;nlorentz;Implement BOOPSI StrGClass
 bullet00000;0;digulla;Write OpenEngine
 bullet00001;0;digulla;Write CloseEngine
 bullet00002;0;digulla;Write SetInfoA
@@ -148,54 +154,65 @@ cia00000;0;digulla;Write AddICRVector
 cia00001;0;digulla;Write RemICRVector
 cia00002;0;digulla;Write AbleICR
 cia00003;0;digulla;Write SetICR
+c/addbuffers;2;;Write C:AddBuffers
 c/alias;2;laguest;Write C:Alias
+c/ask;2;;Write C:Ask
+c/assign;1;;Write C:Assign
 c/avail;2;matthias;Write C:Avail
 c/break;2;iaint;Write C:Break
 c/cd;2;matthias;Write C:Cd
 c/copy;0;digulla;Write Copy
 c/cpu;1;laguest;Write C:CPU
-c/date;2;srittau;Write Date
+c/date;2;srittau;Write C:Date
+c/delete;1;laguest;Write C:Delete
 c/dir;0;digulla;Write C:Dir
 c/echo;2;matthias;Write C:Echo
-c/else;2;SDuvan;Write Else
-c/endif;2;SDuvan;Write Endif
-c/eval;1;validus@kamper.digimag.net;Write Eval
+c/else;2;SDuvan;Write C:Else
+c/endif;2;SDuvan;Write C:Endif
+c/endskip;2;SDuvan;Write C:EndSkip
+c/eval;1;validus@kamper.digimag.net;Write C:Eval
 c/execute;1;matthias;Write C:Execute
 c/fault;2;iaint;Write C:Fault
 c/filenote;1;laguest;Write Filenote
 c/get;2;laguest;Write C:Get
 c/getenv;2;laguest;Write C:GetEnv
-c/if;2;SDuvan;Write If
-c/info;0;digulla;Write Info
-c/join;2;chodorowski;Write Join
+c/if;2;SDuvan;Write C:If
+c/info;0;digulla;Write C:Info
+c/join;1;chodorowski;Write C:Join
+c/lab;2;SDuvan;Write C:Lab
 c/librarytest;1;matthias;librarytest
 c/list;1;matthias,bergers;Write C:List
 c/makelink;0;srittau;Write C:MakeLink
+c/makedir;2;;Write C:MakeDir
+c/mount;2;;Write C:Mount
 c/newshell;1;matthias;Write C:NewShell
-c/path;1;matthias;Write C:Path
+c/path;2;matthias;Write C:Path
 c/prompt;2;SDuvan;Write C:Prompt
-c/protect;1;laguest;Write Protect
-c/relabel;0;digulla;Write Relabel
-c/rename;1;laguest;Write Rename
+c/protect;1;laguest;Write C:Protect
+c/quit;2;SDuvan;Write C:Quit
+c/relabel;0;digulla;Write C:Relabel
+c/rename;1;laguest;Write C:Rename
 c/requestchoice;2;laguest;Write C:RequestChoice
 c/requestfile;2;laguest;Write C:RequestFile
 c/run;1;matthias;Write C:Run
-c/search;0;digulla;Write Search
+c/search;0;digulla;Write C:Search
 c/set;2;laguest;Write C:Set
-c/setclock;1;srittau;Write SetClock
+c/setclock;2;srittau;Write C:SetClock
 c/setdate;2;SDuvan;Write C:SetDate
 c/setenv;2;laguest;Write C:SetEnv
 c/shell;1;SDuvan;Write C:Shell
-c/sort;1;bergers;Write Sort
+c/skip;2;SDuvan;Write C:Skip
+c/sort;1;bergers;Write C:Sort
 c/stack;2;SDuvan;Write C:Stack
-c/status;1;bernie;Write C:Status
+c/status;1;laguest;Write C:Status
 c/type;2;matthias;Write C:Type
 c/unalias;2;laguest;Write C:UnAlias
 c/unset;2;laguest;Write C:UnSet
 c/unsetenv;2;laguest;Write C:UnSetEnv
-c/version;1;srittau;Write Version
+c/version;1;srittau;Write C:Version
 c/wait;0;digulla;Write C:Wait
-c/which;1;SDuvan;Write Which
+c/which;1;SDuvan;Write C:Which
+c/why;2;;Write C:Why
 colorwheel00000;0;digulla;Write ConvertHSBToRGB
 colorwheel00001;0;digulla;Write ConvertRGBToHSB
 commodities00000;2;SDuvan;Write CreateCxObj
@@ -259,6 +276,14 @@ datatypes00026;2;SDuvan;ReleaseDTDrawInfo
 datatypes00027;2;SDuvan;SaveDTObjectA
 datatypes00028;2;SDuvan;StartDragSelect
 datatypes00029;1;SDuvan;LaunchToolA
+DataType/8svx;0;;Implement 8svx.datatype
+DataType/amigaguide;0;;Implement amigaguide.datatype
+DataType/animation;0;;Implement animation.datatype
+DataType/ascii;0;;Implement ascii.datatype
+DataType/ilbm;0;;Implement ilbm.datatype
+DataType/picture;0;;Implement picture.datatype
+DataType/sound;0;;Implement sound.datatype
+DataType/text;0;;Implement text.datatype
 DevCMD00001;0;;Write ADCMD_ALLOCATE
 DevCMD00002;0;;Write ADCMD_FINISH
 DevCMD00003;0;;Write ADCMD_FREE
@@ -433,11 +458,11 @@ dos00029;2;matthias;Write IsInteractive
 dos00030;2;SDuvan;Write Execute
 dos00031;2;matthias;Write AllocDosObject
 dos00032;2;matthias;Write FreeDosObject
-dos00033;1;turrican;Write DoPkt
-dos00034;1;turrican;Write SendPkt
-dos00035;1;turrican;Write WaitPkt
-dos00036;1;turrican;Write ReplyPkt
-dos00037;1;turrican;Write AbortPkt
+dos00033;1;SDuvan;Write DoPkt
+dos00034;1;SDuvan;Write SendPkt
+dos00035;1;SDuvan;Write WaitPkt
+dos00036;1;SDuvan;Write ReplyPkt
+dos00037;1;SDuvan;Write AbortPkt
 dos00038;0;;Write LockRecord
 dos00039;0;;Write LockRecords
 dos00040;0;;Write UnLockRecord
@@ -464,7 +489,7 @@ dos00060;2;matthias;Write NameFromLock
 dos00061;2;matthias;Write NameFromFH
 dos00062;2;digulla;Write SplitName
 dos00063;1;srittau;Write SameLock
-dos00064;0;digulla;Write SetMode
+dos00064;2;iaint;Write SetMode
 dos00065;2;matthias;Write ExAll
 dos00066;2;srittau;Write ReadLink
 dos00067;2;srittau;Write MakeLink
@@ -498,7 +523,7 @@ dos00094;2;matthias;Write AssignLock
 dos00095;2;turrican;Write AssignLate
 dos00096;2;turrican;Write AssignPath
 dos00097;2;turrican;Write AssignAdd
-dos00098;0;;Write RemAssignList
+dos00098;2;;Write RemAssignList
 dos00099;2;iaint;Write GetDeviceProc
 dos00100;2;iaint;Write FreeDeviceProc
 dos00101;2;matthias;Write LockDosList
@@ -553,7 +578,7 @@ dos00149;2;matthias;Write ParsePatternNoCase
 dos00150;2;matthias;Write MatchPatternNoCase
 dos00151;0;digulla;Write SameDevice
 dos00152;2;matthias;Write ExAllEnd
-dos00153;1;srittau;Write SetOwner
+dos00153;2;srittau;Write SetOwner
 dtclass00000;2;SDuvan;Write ObtainEngine
 exec00000;2;matthias;Write Supervisor
 exec00001;2;ldp;Write InitCode
@@ -680,7 +705,7 @@ expansion00003;2;iaint;Write AllocConfigDev
 expansion00004;0;digulla;Write AllocExpansionMem
 expansion00005;0;digulla;Write ConfigBoard
 expansion00006;0;digulla;Write ConfigChain
-expansion00007;1;iaint;Write FindConfigDev
+expansion00007;2;iaint;Write FindConfigDev
 expansion00008;0;digulla;Write FreeBoardMem
 expansion00009;2;iaint;Write FreeConfigDev
 expansion00010;2;iaint;Write FreeExpansionMem
@@ -703,7 +728,7 @@ gadtools00005;2;bergers,stegerg;Write LayoutMenuItemsA
 gadtools00006;2;bergers,stegerg;Write LayoutMenusA
 gadtools00007;2;stegerg;Write GT_GetIMsg
 gadtools00008;2;srittau;Write GT_ReplyIMsg
-gadtools00009;1;srittau;Write GT_RefreshWindow
+gadtools00009;2;stegerg;Write GT_RefreshWindow
 gadtools00010;2;srittau;Write GT_BeginRefresh
 gadtools00011;2;srittau;Write GT_EndRefresh
 gadtools00012;2;stegerg;Write GT_FilterIMsg
@@ -1063,9 +1088,9 @@ intuition00093;2;srittau;Write BuildEasyRequestArgs
 intuition00094;2;srittau;Write SysReqHandler
 intuition00095;2;digulla;Write OpenWindowTagList
 intuition00096;2;digulla;Write OpenScreenTagList
-intuition00097;2;nlorentz;Write DrawImageState
-intuition00098;2;nlorentz;Write PointInImage
-intuition00099;2;nlorentz;Write EraseImage
+intuition00097;2;caldi;Write DrawImageState
+intuition00098;2;caldi;Write PointInImage
+intuition00099;2;caldi;Write EraseImage
 intuition00100;2;digulla;Write NewObjectA
 intuition00101;2;digulla;Write DisposeObject
 intuition00102;2;digulla;Write SetAttrsA
@@ -1130,7 +1155,7 @@ locale00000;2;iaint;Write CloseCatalog
 locale00001;2;iaint;Write CloseLocale
 locale00002;2;iaint;Write ConvToLower
 locale00003;2;iaint;Write ConvToUpper
-locale00004;2;iaint;Write FormatDate
+locale00004;2;SDuvan,bergers;Write FormatDate
 locale00005;2;bergers;Write FormatString
 locale00006;2;iaint;Write GetCatalogStr
 locale00007;2;iaint;Write GetLocaleStr
@@ -1264,12 +1289,6 @@ nonvolatile00006;0;digulla;Write SetNVProtection
 potgo00000;0;digulla;Write AllocPotBits
 potgo00001;0;digulla;Write FreePotBits
 potgo00002;0;digulla;Write WritePotgo
-pv00000;0;digulla;Write PP_InitPortPrint
-pv00001;0;digulla;Write PP_StopPortPrint
-pv00002;0;digulla;Write PP_ExecCommand
-pv00003;0;digulla;Write PP_DumpRegs
-pv00004;0;digulla;Write PP_Print
-pv00005;0;digulla;Write PP_PrintNum
 ramdrive00000;0;digulla;Write KillRAD
 ramdrive00001;0;digulla;Write KillRAD
 realtime00000;1;SDuvan;Write LockRealTime
