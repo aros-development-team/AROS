@@ -111,6 +111,7 @@ extern void * _xrealloc PARAMS ((void * ptr, size_t size, const char * file, int
 extern void _xfree PARAMS ((void * ptr, const char * file, int line));
 extern Node * FindNode PARAMS ((const List * l, const char * name));
 extern Node * FindNodeNC PARAMS ((const List * l, const char * name));
-extern void printlist PARAMS ((List * l));
+extern void printlist PARAMS ((const List * l));
+extern Node * RemHead PARAMS ((List * l));
 
 #endif /* _TOOLLIB_H */

@@ -95,7 +95,7 @@ FindNodeNC (const List * l, const char * name)
 }
 
 void
-printlist (List * l)
+printlist (const List * l)
 {
     Node * n;
 
@@ -144,4 +144,12 @@ execute (const char * cmd, const char * in,
     return !rc;
 }
 
+Node *
+RemHead (List * l)
+{
+    Node * node = GetHead (l);
 
+    Remove (node);
+
+    return node;
+}
