@@ -1,14 +1,18 @@
+#ifndef _MUI_CLASSES_STRING_H
+#define _MUI_CLASSES_STRING_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_STRING_H
-#define _MUI_CLASSES_STRING_H
+/*** Name *******************************************************************/
+#define MUIC_String                  "String.mui"
 
-#define MUIC_String "String.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_String                  (MUIB_ZUNE | 0x00003400)
 
-/* String attributes */
+/*** Attributes *************************************************************/
 #define MUIA_String_Accept           (MUIB_MUI|0x0042e3e1) /* V4  isg STRPTR        */
 #define MUIA_String_Acknowledge      (MUIB_MUI|0x0042026c) /* V4  ..g STRPTR        */
 #define MUIA_String_AdvanceOnCR      (MUIB_MUI|0x004226de) /* V11 isg BOOL          */
@@ -30,6 +34,7 @@ enum {
     MUIV_String_Format_Right,
 };
 
+
 extern const struct __MUIBuiltinClass _MUI_String_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_STRING_H */

@@ -1,14 +1,18 @@
+#ifndef _MUI_CLASSES_CYCLE_H
+#define _MUI_CLASSES_CYCLE_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_CYCLE_H
-#define _MUI_CLASSES_CYCLE_H
-
+/*** Name *******************************************************************/
 #define MUIC_Cycle "Cycle.mui"
 
-/* Cycle attributes */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Cycle         (MUIB_ZUNE | 0x00000a00)
+
+/*** Attributes *************************************************************/
 #define MUIA_Cycle_Active  (MUIB_MUI|0x00421788) /* MUI:V4  isg LONG      */
 #define MUIA_Cycle_Entries (MUIB_MUI|0x00420629) /* MUI:V4  i.. STRPTR    */
 
@@ -20,4 +24,4 @@ enum
 
 extern const struct __MUIBuiltinClass _MUI_Cycle_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_CYCLE_H */

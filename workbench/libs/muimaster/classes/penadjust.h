@@ -1,18 +1,23 @@
+#ifndef _MUI_CLASSES_PENADJUST_H
+#define _MUI_CLASSES_PENADJUST_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_PENADJUST_H
-#define _MUI_CLASSES_PENADJUST_H
-
+/*** Name *******************************************************************/
 #define MUIC_Penadjust "Penadjust.mui"
 
-/* Penadjust attributes */
-#define MUIA_Penadjust_PSIMode        (MUIB_MUI|0x00421cbb) /* MUI: V11  i.. BOOL       */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Penadjust         (MUIB_ZUNE | 0x00001f00)  
 
-#define MUIA_Penadjust_Spec 	      (MUIB_MUI|0x0062339b) /* PRIV */
+/*** Attributes *************************************************************/
+#define MUIA_Penadjust_PSIMode (MUIB_MUI|0x00421cbb) /* MUI: V11  i.. BOOL       */
+
+#define MUIA_Penadjust_Spec    (MUIB_MUI|0x0062339b) /* PRIV */
+
 
 extern const struct __MUIBuiltinClass _MUI_Penadjust_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_PENADJUST_H */

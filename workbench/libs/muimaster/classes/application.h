@@ -13,10 +13,13 @@
 #include <exec/semaphores.h>
 #endif
 
-/* Classname */
-#define MUIC_Application "Application.mui"
+/*** Name *******************************************************************/
+#define MUIC_Application                        "Application.mui"
 
-/* Method Ids */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Application                        (MUIB_ZUNE | 0x00000100)
+
+/*** Methods ****************************************************************/
 #define MUIM_Application_AboutMUI		(MUIB_MUI|0x0042d21d) /* MUI: V14 */
 #define MUIM_Application_AddInputHandler	(MUIB_MUI|0x0042f099) /* MUI: V11 */
 #define MUIM_Application_CheckRefresh		(MUIB_MUI|0x00424d68) /* MUI: V11 */
@@ -60,7 +63,7 @@ struct MUIP_Application_ShowHelp		{ ULONG MethodID; Object *window; char *name; 
 struct MUIP_Application_SetConfigdata		{ ULONG MethodID; APTR configdata; };
 struct MUIP_Application_OpenWindows		{ ULONG MethodID; };
 
-/* Attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Application_Active             	(MUIB_MUI|0x004260ab) /* MUI: V4  isg BOOL              */
 #define MUIA_Application_Author             	(MUIB_MUI|0x00424842) /* MUI: V4  i.g STRPTR            */
 #define MUIA_Application_Base               	(MUIB_MUI|0x0042e07a) /* MUI: V4  i.g STRPTR            */
@@ -167,4 +170,4 @@ struct MUI_GlobalInfo
 };
 
 
-#endif
+#endif /* _MUI_CLASSES_APPLICATION_H */

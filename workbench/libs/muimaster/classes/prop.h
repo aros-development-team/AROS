@@ -1,20 +1,24 @@
+#ifndef _MUI_CLASSES_PROP_H
+#define _MUI_CLASSES_PROP_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_PROP_H
-#define _MUI_CLASSES_PROP_H
+/*** Name *******************************************************************/
+#define MUIC_Prop           "Prop.mui"
 
-#define MUIC_Prop "Prop.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Prop           (MUIB_ZUNE | 0x00002900)  
 
-/* Prop methods */
+/*** Methods ****************************************************************/
 #define MUIM_Prop_Decrease  (MUIB_MUI|0x00420dd1) /* MUI: V16 */
 #define MUIM_Prop_Increase  (MUIB_MUI|0x0042cac0) /* MUI: V16 */
 struct  MUIP_Prop_Decrease  {ULONG MethodID; LONG amount;};
 struct  MUIP_Prop_Increase  {ULONG MethodID; LONG amount;};
 
-/* Prop attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Prop_Entries        (MUIB_MUI|0x0042fbdb) /* MUI: V4  isg LONG */
 #define MUIA_Prop_First          (MUIB_MUI|0x0042d4b2) /* MUI: V4  isg LONG */
 #define MUIA_Prop_Horiz          (MUIB_MUI|0x0042f4f3) /* MUI: V4  i.g BOOL */
@@ -37,6 +41,7 @@ enum
 #define MUIA_Prop_DeltaFactor    (MUIB_MUI|0x00427c5e) /* MUI:    is. LONG */
 #define MUIA_Prop_DoSmooth       (MUIB_MUI|0x004236ce) /* MUI: V4 i.. LONG */
 
+
 extern const struct __MUIBuiltinClass _MUI_Prop_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_PROP_H */

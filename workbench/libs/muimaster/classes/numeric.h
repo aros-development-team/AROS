@@ -1,14 +1,18 @@
+#ifndef _MUI_CLASSES_NUMERIC_H
+#define _MUI_CLASSES_NUMERIC_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _MUI_CLASSES_NUMERIC_H
-#define _MUI_CLASSES_NUMERIC_H
+/*** Name *******************************************************************/
+#define MUIC_Numeric               "Numeric.mui"
 
-#define MUIC_Numeric "Numeric.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Numeric               (MUIB_ZUNE | 0x00001e00)  
 
-/* Numeric methods */
+/*** Methods ****************************************************************/
 #define MUIM_Numeric_Decrease      (MUIB_MUI|0x004243a7) /* MUI: V11 */
 #define MUIM_Numeric_Increase      (MUIB_MUI|0x00426ecd) /* MUI: V11 */
 #define MUIM_Numeric_ScaleToValue  (MUIB_MUI|0x0042032c) /* MUI: V11 */
@@ -22,7 +26,7 @@ struct MUIP_Numeric_SetDefault     {ULONG MethodID;};
 struct MUIP_Numeric_Stringify      {ULONG MethodID; LONG value;};
 struct MUIP_Numeric_ValueToScale   {ULONG MethodID; LONG scalemin; LONG scalemax;};
 
-/* Numeric attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Numeric_CheckAllSizes (MUIB_MUI|0x00421594) /* MUI: V11 isg BOOL   */
 #define MUIA_Numeric_Default       (MUIB_MUI|0x004263e8) /* MUI: V11 isg LONG   */
 #define MUIA_Numeric_Format        (MUIB_MUI|0x004263e9) /* MUI: V11 isg STRPTR */
@@ -33,6 +37,7 @@ struct MUIP_Numeric_ValueToScale   {ULONG MethodID; LONG scalemin; LONG scalemax
 #define MUIA_Numeric_RevUpDown     (MUIB_MUI|0x004252dd) /* MUI: V11 isg BOOL   */
 #define MUIA_Numeric_Value         (MUIB_MUI|0x0042ae3a) /* MUI: V11 isg LONG   */
 
+
 extern const struct __MUIBuiltinClass _MUI_Numeric_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_NUMERIC_H */

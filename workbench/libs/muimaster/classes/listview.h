@@ -1,14 +1,18 @@
+#ifndef _CLASSES_LISTVIEW_H
+#define _CLASSES_LISTVIEW_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
-#ifndef _CLASSES_LISTVIEW_H
-#define _CLASSES_LISTVIEW_H
-
+/*** Name *******************************************************************/
 #define MUIC_Listview "Listview.mui"
 
-/* Listview attributes */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Listview                (MUIB_ZUNE | 0x00001900)
+
+/*** Attributes *************************************************************/
 #define MUIA_Listview_ClickColumn    (MUIB_MUI|0x0042d1b3) /* V7  ..g LONG    */
 #define MUIA_Listview_DefClickColumn (MUIB_MUI|0x0042b296) /* V7  isg LONG    */
 #define MUIA_Listview_DoubleClick    (MUIB_MUI|0x00424635) /* V4  i.g BOOL    */
@@ -41,6 +45,7 @@ enum
     MUIV_Listview_ScrollerPos_None,
 };
 
+
 extern const struct __MUIBuiltinClass _MUI_Listview_desc; /* PRIV */
 
-#endif
+#endif /* _CLASSES_LISTVIEW_H */

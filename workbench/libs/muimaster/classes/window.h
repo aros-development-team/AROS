@@ -1,3 +1,6 @@
+#ifndef _MUI_CLASSES_WINDOW_H
+#define _MUI_CLASSES_WINDOW_H
+
 /*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002-2003, The AROS Development Team.
@@ -6,12 +9,13 @@
     $Id$
 */
 
-#ifndef _MUI_CLASSES_WINDOW_H
-#define _MUI_CLASSES_WINDOW_H
+/*** Name *******************************************************************/
+#define MUIC_Window                 "Window.mui"
 
-#define MUIC_Window "Window.mui"
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Window                 (MUIB_ZUNE | 0x00003600)
 
-/* Window methods */
+/*** Methods ****************************************************************/
 #define MUIM_Window_ActionIconify   (MUIB_MUI|0x00422cc0) /* MUI: V18 undoc*/
 #define MUIM_Window_AddEventHandler (MUIB_MUI|0x004203b7) /* MUI: V16 */
 #define MUIM_Window_Cleanup         (MUIB_MUI|0x0042ab26) /* MUI: V18 undoc */ /* For custom classes only */
@@ -33,7 +37,7 @@ struct MUIP_Window_Snapshot         {ULONG MethodID; LONG flags;};
 struct MUIP_Window_ToBack           {ULONG MethodID;};
 struct MUIP_Window_ToFront          {ULONG MethodID;};
 
-/* Window attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Window_Activate                (MUIB_MUI|0x00428d2f) /* MUI: V4  isg BOOL                */
 #define MUIA_Window_ActiveObject            (MUIB_MUI|0x00427925) /* MUI: V4  .sg Object *            */
 #define MUIA_Window_AltHeight               (MUIB_MUI|0x0042cce3) /* MUI: V4  i.g LONG                */
@@ -228,4 +232,4 @@ struct  MUIP_Window_RemControlCharHandler   { ULONG MethodID; struct MUI_EventHa
 
 extern const struct __MUIBuiltinClass _MUI_Window_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_WINDOW_H */

@@ -1,10 +1,10 @@
+#ifndef _MUI_CLASSES_NOTIFY_H
+#define _MUI_CLASSES_NOTIFY_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
-
-#ifndef _MUI_CLASSES_NOTIFY_H
-#define _MUI_CLASSES_NOTIFY_H
 
 struct MUI_NotifyData
 {
@@ -19,9 +19,13 @@ struct MUI_NotifyData
     LONG                   mnd_HelpLine;/* priv4 */
 };
 
-#define MUIC_Notify "Notify.mui"
+/*** Name *******************************************************************/
+#define MUIC_Notify              "Notify.mui"
 
-/* Notify methods */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Notify              (MUIB_ZUNE | 0x00001d00)  
+
+/*** Methods ****************************************************************/
 #define MUIM_CallHook            (MUIB_MUI|0x0042b96b) /* MUI: V4  */
 #define MUIM_Export              (MUIB_MUI|0x00420f1c) /* MUI: V12 */
 #define MUIM_FindUData           (MUIB_MUI|0x0042c196) /* MUI: V8  */
@@ -57,7 +61,7 @@ struct MUIP_SetUDataOnce         {ULONG MethodID; ULONG udata; ULONG attr; ULONG
 struct MUIP_WriteLong            {ULONG MethodID; ULONG val; ULONG *memory;};
 struct MUIP_WriteString          {ULONG MethodID; char *str; char *memory;};
 
-/* Notify attributes */
+/*** Attributes *************************************************************/
 #define MUIA_ApplicationObject   (MUIB_MUI|0x0042d3ee) /* MUI: V4  ..g Object *            */
 #define MUIA_AppMessage          (MUIB_MUI|0x00421955) /* MUI: V5  ..g struct AppMessage * */
 #define MUIA_HelpLine            (MUIB_MUI|0x0042a825) /* MUI: V4  isg LONG                */
@@ -94,4 +98,4 @@ extern const struct __MUIBuiltinClass _MUI_Notify_desc; /* PRIV */
 struct MUIP_ConnectParent          {ULONG MethodID; Object *parent;};
 struct MUIP_DisconnectParent       {ULONG MethodID;};
 
-#endif
+#endif /* _MUI_CLASSES_NOTIFY_H */

@@ -21,10 +21,13 @@
 #include "classes/window.h" /* for MUI_EventHandlerNode, will be gone if this MUI_AreaData is moved to area.c */
 #endif
 
-/* Classname */
-#define MUIC_Area "Area.mui"
+/*** Name *******************************************************************/
+#define MUIC_Area                   "Area.mui"
 
-/* Area methods */
+/*** Identifier base (for Zune extensions) **********************************/
+#define MUIB_Area                   (MUIB_ZUNE | 0x00000200)
+
+/*** Methods ****************************************************************/
 #define MUIM_AskMinMax              (MUIB_MUI|0x00423874) /* MUI: V4  */ /* For Custom Classes only */ 
 #define MUIM_Cleanup                (MUIB_MUI|0x0042d985) /* MUI: V4  */ /* For Custom Classes only */
 #define MUIM_ContextMenuBuild       (MUIB_MUI|0x00429d2e) /* MUI: V11 */
@@ -88,7 +91,7 @@ struct MUI_DragImage
     ULONG flags; /* must be set to 0 */
 };
 
-/* Area attributes */
+/*** Attributes *************************************************************/
 #define MUIA_Background		(MUIB_MUI|0x0042545b) /* MUI: V4  is. LONG              */
 #define MUIA_BottomEdge		(MUIB_MUI|0x0042e552) /* MUI: V4  ..g LONG              */
 #define MUIA_ContextMenu		(MUIB_MUI|0x0042b704) /* MUI: V11 isg Object *          */
@@ -291,4 +294,4 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo);
 
 extern const struct __MUIBuiltinClass _MUI_Area_desc; /* PRIV */
 
-#endif
+#endif /* _MUI_CLASSES_AREA_H */
