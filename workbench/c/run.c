@@ -34,7 +34,7 @@ static LONG tinymain(void)
     struct Process *process;
     ULONG num;
     LONG error=0;
-    
+
     rda=ReadArgs("COMMAND/A/F",(ULONG *)args,NULL);
     if(rda!=NULL)
     {
@@ -58,8 +58,8 @@ static LONG tinymain(void)
 		    {
 			struct TagItem tags[]=
 			{
-			    { NP_Arguments, 0 },
 			    { NP_Name, (LONG)"Background task" },
+			    { NP_Arguments, 0 },
 			    { NP_Input, 0 },
 			    { NP_Output, 0 },
 			    { NP_Error, 0 },
@@ -67,10 +67,10 @@ static LONG tinymain(void)
 			    { NP_Cli, 1 },
 			    { TAG_END, 0 }
 			};
-			tags[0].ti_Data=(LONG)buf;
-			tags[1].ti_Data=in;
-			tags[2].ti_Data=out;
-			tags[4].ti_Data=shell;
+			tags[1].ti_Data=(LONG)buf;
+			tags[2].ti_Data=in;
+			tags[3].ti_Data=out;
+			tags[5].ti_Data=shell;
 			Forbid();
 			process=CreateNewProc(tags);
 			if(process!=NULL)
