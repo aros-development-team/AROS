@@ -98,7 +98,9 @@ static Object *quit_menuitem;
 static Object *main_wnd;
 static Object *main_page_list;
 static Object *main_page_group; /* contains the selelected group */
+static Object *main_page_group_displayed; /* The current displayed group */
 static Object *main_page_space; /* a space object */
+
 
 struct page_entry
 {
@@ -108,11 +110,31 @@ struct page_entry
     int (*init)(struct page_entry *); /* this function initializes the group, maybe NULL */
 };
 
+int init_window_page(struct page_entry *page)
+{
+    page->group = HGroup,
+    	Child, ColGroup(2),
+	    GroupFrameT("Fonts"),
+	    Child, MakeLabel("Normal"),
+	    Child, StringObject, StringFrame, End,
+
+	    Child, MakeLabel("Small"),
+	    Child, StringObject, StringFrame, End,
+
+	    Child, MakeLabel("Big"),
+	    Child, StringObject, StringFrame, End,
+	    End,
+	End;
+
+
+    return !!page->group;
+}
+
 struct page_entry main_page_entries[] =
 {
     {"Info",NULL,NULL},
     {"System",NULL,NULL},
-    {"Windows",NULL,NULL},
+    {"Windows",NULL,init_window_page},
 };
 
 /****************************************************************
@@ -135,6 +157,30 @@ __saveds __asm void main_page_list_display(register __a0 struct Hook *h, registe
     }
 }
 
+
+/****************************************************************
+ A new entry has been selected
+*****************************************************************/
+void main_page_active(void)
+{
+    int new_active = xget(main_page_list,MUIA_List_Active);
+    Object *new_group;
+
+    if (new_active == -1) new_group = main_page_space;
+    else
+    {
+	new_group = main_page_entries[new_active].group;
+	if (!new_group) new_group = main_page_space;
+    }
+
+    if (new_group == main_page_group_displayed) return;
+
+    DoMethod(main_page_group,MUIM_Group_InitChange);
+    DoMethod(main_page_group,OM_REMMEMBER,main_page_group_displayed);
+    DoMethod(main_page_group,OM_ADDMEMBER,new_group);
+    DoMethod(main_page_group,MUIM_Group_ExitChange);
+    main_page_group_displayed = new_group;
+}
 
 /****************************************************************
  Allocalte resources for gui
@@ -177,7 +223,7 @@ int init_gui(void)
 			    End,
 			End,
 		    Child, main_page_group = VGroup,
-			Child, main_page_space = HVSpace,
+			Child, main_page_group_displayed = main_page_space = HVSpace,
 		        End,
 		    End,
     	    	Child, HGroup,
@@ -204,6 +250,8 @@ int init_gui(void)
 	    if (p->init) p->init(p);
 	    DoMethod(main_page_list,MUIM_List_InsertSingle,p,MUIV_List_Insert_Bottom);
 	}
+
+	DoMethod(main_page_list, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime, app, 3, MUIM_CallHook, &hook_standard, main_page_active);
 
 	/* Activate first entry */
 	set(main_page_list,MUIA_List_Active,0);
