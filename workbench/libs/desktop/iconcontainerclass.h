@@ -19,17 +19,34 @@ struct MemberNode
 
 struct IconContainerClassData
 {
-	/* this list is sorted horizontally (rightwards), then
-	   vertically (downwards) */
+	// icons are ordered in the order they were added to the
+	// container... the layouter will lay icons in columns
+	// and will start a new column when there is no room
+	// left (for icon view)
 	struct MinList memberList;
-	BOOL searchForGaps;
+
+	// this is true if the user hasn't moved any icons about
+	// enables us to use a more optimized icon layouter if
+	// we know where everything is.. otherwise it will search
+	// for gaps
+	BOOL perfectLayout;
+
+	// only valid when perfectLayout is TRUE.. the current
+	// width & height of the
 	ULONG thisColumnWidth, thisColumnHeight;
-	ULONG virtualWidth, virtualHeight;
+
 	Object *vertProp, *horizProp;
 	LONG xView, yView;
 	LONG lastXView, lastYView;
+
+	// one of these is set to true after a scroll
 	BOOL horizScroll, vertScroll;
+
+	// visible size of the iconcontainer - same as _mwidth()/_mheight()
 	ULONG visibleWidth, visibleHeight;
+	// total size of the iconcontainer
+	ULONG virtualWidth, virtualHeight;
+
 	LONG heightAdjusted, widthAdjusted;
 	BOOL iconSelected;
 	BOOL justSelected;
