@@ -21,15 +21,15 @@
 	CONST_STRPTR    str)
 
 /*  FUNCTION
-	This function allocates enough space, and
-        copies the given nul-terminated string into it.
+	This function allocates enough space, and copies the given string 
+        into it.
 
     INPUTS
 	str - the string to duplicate
 
     RESULT
-	A NULL-terminated string copy of the original string (possibly
-	of zero length), or NULL if passed a NULL pointer.
+	A string copy of the original string (possibly of zero length) or 
+        NULL if passed a NULL pointer.
 
     NOTES
 	This functions allocates the new string memory with AllocVec().
