@@ -5,7 +5,7 @@ USER_INCLUDES := -I.
 
 FILES   :=      serial_init SerialUnitClass SerialClass functable
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
-LIBS	:=	-L$(LIBDIR) -lhiddstubs
+LIBS	:=	-L$(LIBDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
