@@ -4,12 +4,8 @@ configure
 config.cache
 config.log
 config.status
-crypt
-dist
-errors
 make.opts
 make.defaults
 mmake
 mmake.cache
 mmake.config
-*.log
