@@ -116,16 +116,16 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	}
     }
 
-    if (!data->spec && !data->old_image)
-    {
-	data->spec = StrDup("0:128");
-    }
+/*      if (!data->spec && !data->old_image) */
+/*      { */
+/*  	data->spec = StrDup("0:128"); */
+/*      } */
 
-    if (!data->spec && !data->old_image)
-    {
-	CoerceMethod(cl,obj,OM_DISPOSE);
-    	return NULL;
-    }
+/*      if (!data->spec && !data->old_image) */
+/*      { */
+/*  	CoerceMethod(cl,obj,OM_DISPOSE); */
+/*      	return NULL; */
+/*      } */
     
 /*      D(bug("Image_New(%lx) spec=%lx\n", obj, data->img)); */
     return (IPTR)obj;
@@ -138,7 +138,8 @@ static IPTR Image_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
-    zune_image_spec_free(data->spec);
+    if (data->spec)
+	zune_image_spec_free(data->spec);
     DoSuperMethodA(cl,obj,(Msg)msg);
     return 0;
 }
@@ -174,13 +175,13 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    zune_image_spec_free(data->spec);
 		data->spec = zune_image_spec_duplicate(tag->ti_Data);
 
-
-		if (_flags(obj) & MADF_CANDRAW)
+		if ((_flags(obj) & MADF_CANDRAW) && data->img)
 		    zune_imspec_hide(data->img);
 
 		if (_flags(obj) & MADF_SETUP)
 		{
-		    zune_imspec_cleanup(data->img);
+		    if (data->img)
+			zune_imspec_cleanup(data->img);
 		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
 #warning quick hack to not draw the background for gradients. It should really be generalized
                     if (data->img)
@@ -192,7 +193,7 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    }
                 }
 
-		if (_flags(obj)&MADF_CANDRAW)
+		if (_flags(obj) & MADF_CANDRAW)
 		    zune_imspec_show(data->img, obj);
 
 		MUI_Redraw(obj,MADF_DRAWOBJECT);
@@ -251,7 +252,7 @@ static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
 
-    if (data->spec)
+    if (data->img)
     {
 	zune_imspec_cleanup(data->img);
 	data->img = NULL;
@@ -330,16 +331,16 @@ static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
 	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
 	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
     }
-    else /* something's very wrong ! */
+    else /* no imagespec specified */
     {
 /*  	D(bug("*** Image_AskMinMax : no img, no old_img\n")); */
-	msg->MinMaxInfo->MinWidth += 8;
-	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
-	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
+/*  	msg->MinMaxInfo->MinWidth += 8; */
+/*  	msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth; */
+/*  	msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth; */
 
-	msg->MinMaxInfo->MinHeight += 8;
-	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
-	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;	
+/*  	msg->MinMaxInfo->MinHeight += 8; */
+/*  	msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight; */
+/*  	msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;	 */
     }
     return 1;
 }
@@ -391,7 +392,7 @@ static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 			_mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
 			0, 0, data->state);
     }
-    else
+    else if (data->old_image)
     {
 	DrawImage(_rp(obj), data->old_image, _mleft(obj),_mtop(obj));
     }
