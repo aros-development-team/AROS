@@ -156,10 +156,10 @@ static void renderimageframe(struct RastPort *rp, ULONG which, ULONG state, UWOR
 
 struct SysIData
 {
-    ULONG type;
-    struct DrawInfo *dri;
-    struct Image *frame;
-    UWORD flags;
+    ULONG 		type;
+    struct DrawInfo 	*dri;
+    struct Image 	*frame;
+    UWORD 		flags;
 };
 
 #define SYSIFLG_GADTOOLS 1
@@ -186,19 +186,25 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 {
     struct SysIData *data = INST_DATA(cl, obj);
     struct TagItem *taglist, *tag;
+    struct TextFont *reffont = NULL;
+    
     BOOL unsupported = FALSE;
 
     taglist = msg->ops_AttrList;
-    while ((tag = NextTagItem(&taglist)))
+    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
     {
 	switch(tag->ti_Tag)
 	{
 	case SYSIA_DrawInfo:
 	    data->dri = (struct DrawInfo *)tag->ti_Data;
+	    reffont = data->dri->dri_Font;
 	    break;
+	    
 	case SYSIA_Which:
 	    data->type = tag->ti_Data;
-D(bug("SYSIA_Which type: %d\n", data->type));
+	    
+	    D(bug("SYSIA_Which type: %d\n", data->type));
+	    
             switch (tag->ti_Data)
             {
 
@@ -219,15 +225,16 @@ D(bug("SYSIA_Which type: %d\n", data->type));
             case AMIGAKEY:
 	        break;
 		
-#warning FIXME: Missing Tags
             default:
                 unsupported = TRUE;
                 break;
             }
 	    break;
+	    
 	case SYSIA_ReferenceFont:
-#warning FIXME: Missing Tag
+	    if (tag->ti_Data) reffont = (struct TextFont *)tag->ti_Data;
 	    break;
+	    
 	case SYSIA_Size:
 #warning FIXME: Missing Tag
 	    break;
@@ -252,7 +259,7 @@ D(bug("SYSIA_Which type: %d\n", data->type));
 	
     } /* while ((tag = NextTagItem(&taglist))) */
 
-D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
+    D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
 
     if ((!data->dri) || (unsupported))
 	return FALSE;
@@ -277,17 +284,17 @@ D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
 	    break;
 
         case MENUCHECK:
-	    if (IM(obj)->Width  == 0) IM(obj)->Width  = data->dri->dri_Font->tf_XSize * 3 / 2;
-	    if (IM(obj)->Height == 0) IM(obj)->Height = data->dri->dri_Font->tf_YSize;
+	    if (IM(obj)->Width  == 0) IM(obj)->Width  = reffont->tf_XSize * 3 / 2;
+	    if (IM(obj)->Height == 0) IM(obj)->Height = reffont->tf_YSize;
 	    break;
 	    
         case AMIGAKEY:
 	    #if MENUS_AMIGALOOK
-	        if (IM(obj)->Width  == 0) IM(obj)->Width  = data->dri->dri_Font->tf_XSize * 2;
-	        if (IM(obj)->Height == 0) IM(obj)->Height = data->dri->dri_Font->tf_YSize;
+	        if (IM(obj)->Width  == 0) IM(obj)->Width  = reffont->tf_XSize * 2;
+	        if (IM(obj)->Height == 0) IM(obj)->Height = reffont->tf_YSize;
 	    #else
-	        if (IM(obj)->Width  == 0) IM(obj)->Width  = data->dri->dri_Font->tf_XSize * 2;
-	        if (IM(obj)->Height == 0) IM(obj)->Height = data->dri->dri_Font->tf_YSize + 1;
+	        if (IM(obj)->Width  == 0) IM(obj)->Width  = reffont->tf_XSize * 2;
+	        if (IM(obj)->Height == 0) IM(obj)->Height = reffont->tf_YSize + 1;
 	    #endif
 	    break;
     
@@ -302,12 +309,13 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct SysIData *data;
     Object *obj;
-D(bug("sysi_new()\n"));
+
+    D(bug("sysi_new()\n"));
     obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!obj)
         return NULL;
 	
-D(bug("sysi_new,: obj=%p\n", obj));
+    D(bug("sysi_new,: obj=%p\n", obj));
 
     data = INST_DATA(cl, obj);
     data->type = 0L;
@@ -320,7 +328,7 @@ D(bug("sysi_new,: obj=%p\n", obj));
         return NULL;
     }
 
-D(bug("sysi_setnew called successfully\n"));
+    D(bug("sysi_setnew called successfully\n"));
 
     switch (data->type)
     {
@@ -971,11 +979,11 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     case MENUCHECK: {
         UWORD *pens = data->dri->dri_Pens;
 	
-#if MENUS_AMIGALOOK
+    #if MENUS_AMIGALOOK
     	SetAPen(rport, pens[BARBLOCKPEN]);
-#else
+    #else
 	SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-#endif
+    #endif
 	RectFill(rport, left, top, right, bottom);
 
 	SetAPen(rport, pens[BARDETAILPEN]);
@@ -985,20 +993,20 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     	break; }
 
     case AMIGAKEY: {
+        UWORD *pens = data->dri->dri_Pens;
+
+    #if MENUS_AMIGALOOK
         struct TextFont *oldfont;
 	UBYTE oldstyle;
 	
-        UWORD *pens = data->dri->dri_Pens;
-
-#if MENUS_AMIGALOOK
     	SetAPen(rport, pens[BARDETAILPEN]);
-#else
+    #else
 	SetAPen(rport, pens[SHINEPEN]);
-#endif
+    #endif
 
 	RectFill(rport, left, top, right, bottom);
 
-#if MENUS_AMIGALOOK
+    #if MENUS_AMIGALOOK
 	SetAPen(rport, pens[BARBLOCKPEN]);
 
 	oldfont = rport->Font;
@@ -1015,7 +1023,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	SetFont(rport, oldfont);
 
 	SetAPen(rport, pens[BARBLOCKPEN]);
-#else
+    #else
 	SetAPen(rport, pens[SHADOWPEN]);
 
 	RectFill(rport, left + 1, top, right - 1, top);
@@ -1049,7 +1057,7 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
 	}	 
 
         SetAPen(rport, pens[(msg->imp_State == IDS_SELECTED) ? FILLPEN : BACKGROUNDPEN]);
-#endif
+    #endif
 	WritePixel(rport, left, top);
 	WritePixel(rport, right, top);
 	WritePixel(rport, right, bottom);
