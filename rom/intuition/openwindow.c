@@ -548,28 +548,46 @@
 
     lock = LockIBase (0);
 
-#if 0
-    w->Parent = NULL;
-    w->NextWindow = w->Descendant = w->WScreen->FirstWindow;
-    if (w->Descendant)
     {
-    	w->Descendant->Parent = w;
+        /* insert new window into parent/descendant list 
+	**
+	** before: parent win xyz
+	**            |
+	**            |
+	**            |
+	**        descendant win abc
+	**
+	** after:  parent win xyz
+	**              \
+	** 	         \
+	**	       newwindow w
+	**	        /
+	**	       /
+	**	      /
+	**	 descendant win abc 
+	*/
+	
+        struct Window *parent, *descendant_of_parent;
+	 
+	parent = IntuitionBase->ActiveWindow;
+	if (!parent) parent = w->WScreen->FirstWindow;
+	if (parent)
+	{
+            descendant_of_parent = parent->Descendant;
+	    parent->Descendant = w;
+	    if (descendant_of_parent) descendant_of_parent->Parent = w;
+	} else {
+            descendant_of_parent = NULL;
+	}
+
+	w->Descendant = descendant_of_parent;
+	w->Parent = parent;
+
+	w->NextWindow = w->WScreen->FirstWindow;
+	w->WScreen->FirstWindow = w;
+
     }
-    
-    w->WScreen->FirstWindow = w;
-    
-#else
-    w->NextWindow = w->WScreen->FirstWindow;
-    w->WScreen->FirstWindow = w;
- 
-    if (IntuitionBase->ActiveWindow)
-    {
-        w->Parent = IntuitionBase->ActiveWindow;
-	IntuitionBase->ActiveWindow->Descendant = w;
-    }
-    w->Descendant = 0;
         
-#endif
     w->WindowPort = GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
 

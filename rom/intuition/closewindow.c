@@ -2,6 +2,14 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.24  2000/05/30 17:18:25  stegerg
+    the descendant/parent list of windows was still not okay although it
+    was already fixed several times, including by me. And this stupid
+    bug also caused the strange things/crashes in DirectoryOpus when
+    for exampling hunting or searching for a file. I had been looking
+    for this bug in DirOpus (which as said turned out not to be a bug
+    in DirOpus) for many days. Arrgh :-(
+
     Revision 1.23  2000/04/07 19:44:49  stegerg
     call UnlockPubScreen only if window->MoreFlags has bit
     WMFLG_DO_UNLOCKPUBSCREEN set. Not each window on a public
@@ -233,33 +241,51 @@ VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *Int
 	IntuitionBase->ActiveWindow = NULL;
 
 
-    /* Remove window from the chain and find next active window */
+    /* Remove window from the parent/descendant chain and find next active window
+    **
+    **
+    ** before:  parent win xyz
+    **              \
+    ** 	             \
+    **	         deadwindow window
+    **	            /
+    **	           /
+    **	          /
+    **	    descendant win abc 
+    **
+    ** after: parent win xyz
+    **            |
+    **            |
+    **            |
+    **        descendant win abc
+    **
+    */
+
     if (window->Descendant)
     {
 	window->Descendant->Parent = window->Parent;
-	int_activatewindow (window->Descendant, IntuitionBase);
     }
     if (window->Parent)
     {
-	window->Parent->NextWindow =
-	    window->Parent->Descendant =
-	    window->Descendant;
+	window->Parent->Descendant = window->Descendant;
 
-	if (!IntuitionBase->ActiveWindow)
+	if (!IntuitionBase->ActiveWindow && window->Parent)
 	    int_activatewindow (window->Parent, IntuitionBase);
     }
 
-    /* Make sure the Screen is still valid */
+    /* Make sure the Screen's window list is still valid */
+    
     if (window == window->WScreen->FirstWindow)
+    {
 	window->WScreen->FirstWindow = window->NextWindow;
-
-    if ((win2 = window->WScreen->FirstWindow))
+    }
+    else if ((win2 = window->WScreen->FirstWindow))
     {
 	while (win2->NextWindow)
 	{
             if (win2->NextWindow == window)
 	    {
-		win2->NextWindow = win2->NextWindow->NextWindow;
+		win2->NextWindow = window->NextWindow;
 		break;
 	    }
 	    win2 = win2->NextWindow;
