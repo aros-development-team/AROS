@@ -17,6 +17,7 @@
 
 #include <aros/debug.h>
 
+#if !USE_BANDED_FUNCTIONS
 /* clears from rect the area that overlaps with clearrect
  * and returns the remaining RegionRectangles in *erg
  */
@@ -95,7 +96,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
     *erg = first;
     return TRUE;
 }  /* clearrectrect() */
-
+#endif
 
 void _DisposeRegionRectangleList
 (

@@ -61,6 +61,7 @@ BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 }
 
 #define _TranslateRegionRectangles(rr, dx, dy) \
+if (dx || dy)                                  \
 {                                              \
     struct RegionRectangle *_rr;               \
                                                \
