@@ -82,7 +82,7 @@
 		/*
 		 * Enable interrupt by allowing all of them.
 		 */
-		WREG_L(IMR) = ~(TMR2_F);
+		WREG_L(IMR) = ~(TMR2_F|UART1_F);
 	}
 
 	AROS_LIBFUNC_EXIT
