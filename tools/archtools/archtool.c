@@ -1135,7 +1135,7 @@ int numparams=0;
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( reg, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
       else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
@@ -1845,7 +1845,7 @@ int firstlvo;
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( reg, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
       else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
@@ -2084,7 +2084,7 @@ int firstlvo;
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( reg, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
       else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
@@ -2456,7 +2456,7 @@ int firstlvo;
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( reg, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
       else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
@@ -2852,7 +2852,7 @@ int firstlvo;
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( reg, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
       else if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
