@@ -52,7 +52,7 @@
 
     struct TagItem * tag, *tstate = tags;
 
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	switch (tag->ti_Tag)
 	{
