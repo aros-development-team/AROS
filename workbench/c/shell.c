@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/10/04 14:35:14  digulla
+    Search C: without path C: add
+
     Revision 1.8  1996/09/17 16:43:01  digulla
     Use general startup code
 
@@ -34,6 +37,8 @@
 #include <dos/rdargs.h>
 #include <clib/dos_protos.h>
 #include <utility/tagitem.h>
+
+BPTR cLock;
 
 static void printpath(void)
 {
@@ -165,6 +170,11 @@ BPTR loadseg(STRPTR name)
 	if(seg)
 	    break;
 	cur=(BPTR *)BADDR(cur[0]);
+    }
+    if (!seg)
+    {
+	(void)CurrentDir(cLock);
+	seg=LoadSeg(name);
     }
     CurrentDir(old);
     return seg;
@@ -326,6 +336,14 @@ int main (int argc, char ** argv)
     LONG error=0;
 
     lb.file=Input();
+
+    cLock = Lock("C:", SHARED_LOCK);
+    if (!cLock)
+    {
+	PrintFault (IoErr(), "Shell");
+	return RETURN_ERROR;
+    }
+
     rda=ReadArgs("FROM,COMMAND/K/F",(IPTR *)args,NULL);
     if(rda!=NULL)
     {
@@ -350,6 +368,8 @@ int main (int argc, char ** argv)
 	}
 	FreeArgs(rda);
     }
+
+    UnLock (cLock);
 
     return 0;
 }
