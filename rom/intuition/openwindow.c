@@ -84,6 +84,7 @@
     ULONG   innerWidth	= ~0L;
     ULONG   innerHeight = ~0L;
     WORD    mousequeue = DEFAULTMOUSEQUEUE;
+    WORD    repeatqueue = 3; /* stegerg: test on my Amiga suggests this */
     ULONG   moreFlags = 0;
     
     ULONG lock;
@@ -251,6 +252,9 @@
 		break;
 
 	    case WA_RptQueue:
+	    	repeatqueue = tag->ti_Data;
+		break;
+		
 	    case WA_MenuHelp:
 	    case WA_Checkmark:
 	    case WA_AmigaKey:
@@ -435,6 +439,7 @@
     }
     
     IW(w)->mousequeue = mousequeue;
+    IW(w)->repeatqueue = repeatqueue;
     
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap, backfillhook))
 	goto failexit;
