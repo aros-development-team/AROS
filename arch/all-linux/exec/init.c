@@ -57,15 +57,21 @@ static const struct Resident *romtagList[] =
     &HIDD_resident,			    /* ColdStart,   92	 */
     &UnixIO_resident,			    /* ColdStart,   91	 */
     &Graphics_resident, 		    /* ColdStart,   65	 */
-    &Timer_resident,			    /* ColdStart,   50   */
-    &Battclock_resident,		    /* ColdStart,   45   */
-    &Keymap_resident,		    	    /* ColdStart,   40   */
-    &Input_resident,			    /* ColdStart,   30   */	
+    &Timer_resident,			    /* ColdStart,   50	 */
+    &Battclock_resident,		    /* ColdStart,   45	 */
+    &Keymap_resident,			    /* ColdStart,   40	 */
+    &Input_resident,			    /* ColdStart,   30	 */
     &Intuition_resident,		    /* ColdStart,   10	 */
     &Console_resident,			    /* ColdStart,   5	 */
     &emul_handler_resident,		    /* ColdStart,   0	 */
-    &boot_resident,			    /* ColdStart,  -50	 */
     &Mathffp_resident,			    /* ColdStart,  -120  */
+
+    /*
+	NOTE: You must not put anything between these two; the code which
+	initialized boot_resident will directly call Dos_resident and
+	anything between the two will be skipped.
+    */
+    &boot_resident,			    /* ColdStart,  -50	 */
     &Dos_resident,			    /* None,	   -120  */
     NULL
 };
@@ -142,7 +148,7 @@ int main(int argc, char **argv)
     mh->mh_Node.ln_Name = "chip memory";
     mh->mh_Node.ln_Pri = -5;
     mh->mh_Attributes = MEMF_CHIP | MEMF_PUBLIC | MEMF_LOCAL |
-	                MEMF_24BITDMA | MEMF_KICK;
+			MEMF_24BITDMA | MEMF_KICK;
     mh->mh_First = (struct MemChunk *)((UBYTE *)mh+MEMHEADER_TOTAL);
     mh->mh_First->mc_Next = NULL;
     mh->mh_First->mc_Bytes = (memSize << 20) - MEMHEADER_TOTAL - psize;
