@@ -251,12 +251,12 @@ void gt_end()
 BOOL openwin()
 {
     win = OpenWindowTags(NULL,
-			 WA_PubScreen, scr,
+			 WA_PubScreen, (IPTR)scr,
 			 WA_Left, 0,
 			 WA_Top, 0,
 			 WA_Width, 700,
 			 WA_Height, 300 + topoffset,
-			 WA_Title, "GTDemo",
+			 WA_Title, (IPTR)"GTDemo",
 			 WA_IDCMP,
 			     BUTTONIDCMP |
 			     CHECKBOXIDCMP |
@@ -271,7 +271,7 @@ BOOL openwin()
 			     IDCMP_CLOSEWINDOW |
 			     IDCMP_REFRESHWINDOW,
 //			 WA_SimpleRefresh, TRUE,
-			 WA_Gadgets, glist,
+			 WA_Gadgets, (IPTR)glist,
 			 WA_DragBar, TRUE,
 			 WA_CloseGadget, TRUE,
 			 WA_DepthGadget, TRUE,
@@ -310,11 +310,11 @@ D(bug("Created button gadget: %p\n", gad));
                        TAG_DONE);
 D(bug("Created checkbox gadget: %p\n", gad));
     gad = CreateGadget(CYCLE_KIND, gad, &cyclegad,
-                       GTCY_Labels, &cyclelabels,
+                       GTCY_Labels, (IPTR)&cyclelabels,
                        TAG_DONE);
 D(bug("Created cycle gadget: %p\n", gad));
     gad = CreateGadget(MX_KIND, gad, &mxgad,
-		       GTMX_Labels, &mxlabels,
+		       GTMX_Labels, (IPTR)&mxlabels,
                        GTMX_Scaled, TRUE,
                        GTMX_TitlePlace, PLACETEXT_ABOVE,
 		       TAG_DONE);
@@ -328,7 +328,7 @@ D(bug("Created mx gadget: %p\n", gad));
 
 D(bug("Created palette gadget: %p\n", gad));
     gad = CreateGadget(TEXT_KIND, gad, &textgad,
-    		       GTTX_Text,	"Text display",
+    		       GTTX_Text,	(IPTR)"Text display",
     		       GTTX_CopyText,	TRUE,
     		       GTTX_Border,	TRUE,
     		       GTTX_Justification,	GTJ_CENTER,
@@ -347,7 +347,7 @@ D(bug("Created number gadget: %p\n", gad));
     		       GTSL_Max,		20,
     		       GTSL_Level,		12,
     		       GTSL_MaxLevelLen,	3,
-    		       GTSL_LevelFormat,	"%2ld",
+    		       GTSL_LevelFormat,	(IPTR)"%2ld",
     		       GTSL_LevelPlace,		PLACETEXT_RIGHT,
     		       GTSL_Justification,	GTJ_RIGHT,
     		       PGA_Freedom,		LORIENT_HORIZ,
@@ -366,7 +366,7 @@ D(bug("Created slider gadget: %p\n", gad));
 
 D(bug("Created scroller gadget: %p\n", gad));
     gad = strgad = CreateGadget(STRING_KIND, gad, &stringgad,
-    		       GTST_String,		"Blahblahblah",
+    		       GTST_String,		(IPTR)"Blahblahblah",
     		       GTST_MaxChars,		80,
     		       GTSC_Visible,		2,
     		       GA_Immediate,		TRUE,
@@ -426,7 +426,7 @@ void handlewin()
     BOOL ready = FALSE;
     struct IntuiMessage *msg;
 
-    GT_SetGadgetAttrs(strgad,win,NULL,GTST_String, "Hello",
+    GT_SetGadgetAttrs(strgad,win,NULL,GTST_String, (IPTR)"Hello",
     				      TAG_DONE);
 	
     GT_SetGadgetAttrs(integergadget,win,NULL,GTIN_Number,1000,TAG_DONE);

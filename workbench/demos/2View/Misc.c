@@ -279,7 +279,7 @@ void printError(char *fmt,...)
    /* Workbench), put up a requester */
    if(StdErr==NULL || Output()==NULL)
    {
-      EasyRequest(NULL,&erError1Line,NULL,error,"Exiting...");
+      EasyRequest(NULL,&erError1Line,NULL,(IPTR)error,(IPTR)"Exiting...");
    }
    else
    {

@@ -186,7 +186,9 @@ AROS_UFH3(IPTR, MyRenderFunc,
      {
      	retval = LVCB_UNKNOWN;
      }
-
+    
+    return TRUE;
+    
      AROS_LIBFUNC_EXIT
 }
 

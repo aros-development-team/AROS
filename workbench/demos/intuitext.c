@@ -116,7 +116,7 @@ if (IntuitionBase)
 	    */
 #ifdef __AROS__
 	    if ((win = OpenWindowTags(NULL,
-				WA_PubScreen,	 screen,
+				WA_PubScreen,	 (IPTR)screen,
 				WA_RMBTrap,	 TRUE,
 				WA_IDCMP,	 IDCMP_RAWKEY,
 				TAG_END)))

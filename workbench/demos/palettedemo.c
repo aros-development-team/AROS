@@ -79,7 +79,7 @@ int main(int argc, char **argv)
     	    	D(bug("Got screen %p\n", scr));
 
     	    	window = OpenWindowTags(NULL,
-			 WA_PubScreen, scr,
+			 WA_PubScreen, (IPTR) scr,
 			 WA_Left, 0,
 			 WA_Top, 0,
 			 WA_Width, 600,
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 			 WA_MinHeight, 100,
 			 WA_MaxWidth, 10000,
 			 WA_MaxHeight, 10000,
-			 WA_Title, "Try resize to another aspect ratio",
+			 WA_Title, (IPTR) "Try resize to another aspect ratio",
 			 WA_IDCMP, 
 			 	  IDCMP_GADGETUP 
 			 	| IDCMP_MOUSEMOVE
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
     	    		GA_ID,			GID_PALETTE,
     	    		AROSA_Palette_Depth,	3,
     	    		AROSA_Palette_IndicatorWidth,	40,
-    	    		GA_Text,		"Palette gadget",
+    	    		GA_Text,		(IPTR) "Palette gadget",
     	    		GA_LabelPlace,		GV_LabelPlace_Above,
     	    		TAG_DONE);
     	    		
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 		    	GA_RelBottom,	-(window->BorderBottom + 22),
     	    		GA_RelWidth,	-(window->BorderLeft + window->BorderRight + 10),
 		    	GA_Height,	18,
-		    	GA_Previous,	palette,
+		    	GA_Previous,	(IPTR) palette,
 		    	GA_ID,		GID_PROP,
 		    	PGA_Total,	8,
 		    	PGA_Visible,	1,

@@ -155,7 +155,7 @@ struct Window *openwindow(STRPTR title, LONG x, LONG y, LONG w, LONG h)
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
 			  WA_CloseGadget,	TRUE,
-			  WA_Title,		title,
+			  WA_Title,		(IPTR)title,
                           TAG_END
   );
 

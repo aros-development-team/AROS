@@ -160,7 +160,7 @@ static void makewin(void)
     */
     
     win = OpenWindowTags(NULL, WA_PubScreen 	, (IPTR)scr 	    	,
-    	    	    	       WA_Title     	, "Cool Button"     	,
+    	    	    	       WA_Title     	, (IPTR)"Cool Button"     	,
 			       WA_InnerWidth	, winwidth  	    	,
 			       WA_InnerHeight	, winheight 	    	,
 			       WA_CloseGadget	, TRUE	    	    	,

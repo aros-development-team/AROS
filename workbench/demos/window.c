@@ -107,9 +107,9 @@ struct Window *openwindow(LONG x, LONG y, LONG w, LONG h)
                           WA_Width, 	h,
 			  WA_Activate,		TRUE,
 			  WA_DepthGadget, 	TRUE,
-			  WA_Zoom,		&R,
+			  WA_Zoom,		(IPTR)&R,
 			  WA_CloseGadget,	TRUE,
-			  WA_Title,		"Windowing demo",
+			  WA_Title,		(IPTR)"Windowing demo",
                           TAG_END);
 
   printf("Window opened\n");

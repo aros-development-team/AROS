@@ -146,7 +146,7 @@ static void MakeWin(void)
 			   WA_Width,200,
 			   WA_Height,scr->WBorTop + scr->Font->ta_YSize + 1,
 			   WA_AutoAdjust,TRUE,
-			   WA_Title,"MenuDemo",
+			   WA_Title,(IPTR)"MenuDemo",
 			   WA_CloseGadget,TRUE,
 			   WA_DepthGadget,TRUE,
 			   WA_DragBar,TRUE,

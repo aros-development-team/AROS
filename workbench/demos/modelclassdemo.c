@@ -83,7 +83,7 @@ static void openlibs(void)
 static void makegadgets(void)
 {
     model = NewObject(0, MODELCLASS, ICA_TARGET, ICTARGET_IDCMP,
-    				     ICA_MAP, prop_to_idcmp,
+    				     ICA_MAP, (IPTR)prop_to_idcmp,
 				     TAG_DONE);
     
     if (!model) cleanup("can't create modelclass object!");
@@ -100,7 +100,7 @@ static void makegadgets(void)
 						     PGA_Top, 0,
 						     PGA_Total, 1000,
 						     PGA_Visible, 100,
-						     ICA_TARGET, model,
+						     ICA_TARGET, (IPTR)model,
 						     TAG_DONE);
     if (!gad1) cleanup("can't create gadget 1!");
     
@@ -112,7 +112,7 @@ static void makegadgets(void)
 						     PGA_Top, 0,
 						     PGA_Total, 1000,
 						     PGA_Visible, 100,
-						     GA_Previous, gad1,
+						     GA_Previous, (IPTR)gad1,
 						     TAG_DONE);
     if (!gad2) cleanup("can't create gadget 2!");
     
@@ -121,7 +121,7 @@ static void makegadgets(void)
 						    GA_Width, 100,
 						    GA_Height, 20,
 						    STRINGA_LongVal, 0,
-						    GA_Previous, gad2, 
+						    GA_Previous, (IPTR)gad2, 
 						    TAG_DONE);
 						    
     if (!gad3) cleanup("can't create gadget 3!");
@@ -134,17 +134,17 @@ static void makegadgets(void)
 						     PGA_Top, 0,
 						     PGA_Total, 1000,
 						     PGA_Visible, 100,
-						     GA_Previous, gad3,
+						     GA_Previous, (IPTR)gad3,
 						     TAG_DONE);
     if (!gad4) cleanup("can't create gadget 4!");
 						    
-    SetAttrs(ic1, ICA_TARGET, gad3,
-    		  ICA_MAP, prop_to_string,
+    SetAttrs(ic1, ICA_TARGET, (IPTR) gad3,
+    		  ICA_MAP, (IPTR) prop_to_string,
 		  TAG_DONE);
 		  						    
-    DoMethod(model, OM_ADDMEMBER, gad2);
-    DoMethod(model, OM_ADDMEMBER, ic1);
-    DoMethod(model, OM_ADDMEMBER, gad4);
+    DoMethod(model, OM_ADDMEMBER, (IPTR) gad2);
+    DoMethod(model, OM_ADDMEMBER, (IPTR) ic1);
+    DoMethod(model, OM_ADDMEMBER, (IPTR) gad4);
     
     gadgets_added_to_model = TRUE;
     				    		     
@@ -154,7 +154,7 @@ static void makegadgets(void)
 
 static void makewin(void)
 {
-    win = OpenWindowTags(0, WA_Title		, "Modelclass demo: Use first prop gadget!",
+    win = OpenWindowTags(0, WA_Title		, (IPTR) "Modelclass demo: Use first prop gadget!",
     			    WA_Left		, 20000,
 			    WA_Top		, 20,
 			    WA_Width		, 400,
@@ -165,7 +165,7 @@ static void makewin(void)
 			    WA_DragBar		, TRUE,
 			    WA_IDCMP		, IDCMP_CLOSEWINDOW | IDCMP_IDCMPUPDATE,
 			    WA_Activate		, TRUE,
-			    WA_Gadgets		, gad1,
+			    WA_Gadgets		, (IPTR) gad1,
 			    TAG_DONE
 			    );
 			    

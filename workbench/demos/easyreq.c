@@ -46,7 +46,7 @@ int main(void)
 	es.es_TextFormat = "Requester Text with args:\n\nArg 1: %ld  Arg 2: %ld  Arg 3: %ld\nStringarg: %s";
 	es.es_GadgetFormat = "Coooool";
 
-	EasyRequest(0, &es, 0, 10, 20, 30, "I'm the string");
+	EasyRequest(0, &es, 0, 10, 20, 30, (IPTR)"I'm the string");
 
 	es.es_Title = "Fifth Requester";
 	es.es_TextFormat = "I'm an asynchronous Requester.\nWatch shell output while\nrequester is open!";
