@@ -67,10 +67,10 @@ void LibDeletePool (APTR poolHeader);
 APTR LibAllocPooled (APTR poolHeader, ULONG memSize);
 void LibFreePooled (APTR poolHeader, APTR memory, ULONG memSize);
 
-AROS_UFH3(IPTR, HookEntry,
-    AROS_UFHA(struct Hook *, hook,  A0),
-    AROS_UFHA(APTR,          obj,   A2),
-    AROS_UFHA(APTR,          param, A1)
+AROS_UFP3(IPTR, HookEntry,
+    AROS_UFPA(struct Hook *, hook,  A0),
+    AROS_UFPA(APTR,          obj,   A2),
+    AROS_UFPA(APTR,          param, A1)
 );
 
 #ifndef AROS_METHODRETURNTYPE
