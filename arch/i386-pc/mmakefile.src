@@ -26,7 +26,6 @@ create-mf-inc-again :
 #MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
 #MM	    kernel-utility-linklib \
 #MM	    kernel-aros-linklib \
-#MM	    kernel-mathieeesingbas-linklib \
 #MM	    kernel-boopsi-linklib \
 #MM	    kernel-oop-linklib \
 #MM	    kernel-hidd-linklib \
@@ -38,11 +37,13 @@ create-mf-inc-again :
 #MM	    kernel-devs \
 #MM         kernel-intuition-native \
 #MM	    kernel-keymap-linklib \
-#MM	    kernel-mathffp-linklib \
-#MM	    kernel-workbench-linklib \
 #MM		Drivers-native-irq \
 #MM		Drivers-native-kbd \
 #MM		Drivers-native
+
+##MM	    kernel-mathieeesingbas-linklib \
+##MM	    kernel-mathffp-linklib \
+##MM	    kernel-workbench-linklib \
 
 
 # Setup
