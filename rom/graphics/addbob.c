@@ -61,8 +61,8 @@
 		 */
 		if (rp->GelsInfo->gelHead->NextVSprite ==
 		    rp->GelsInfo->gelTail) {
-			_CreateIntVSprite(rp->GelsInfo->gelHead, NULL);
-			_CreateIntVSprite(rp->GelsInfo->gelTail, NULL);
+			_CreateIntVSprite(rp->GelsInfo->gelHead, NULL, GfxBase);
+			_CreateIntVSprite(rp->GelsInfo->gelTail, NULL, GfxBase);
 		}
 		bob->Flags &= 0x00FF;
 		bob->Flags |= BWAITING;

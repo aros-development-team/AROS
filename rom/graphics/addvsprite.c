@@ -82,7 +82,7 @@
 	 * Create he IntVSprite structure for improved handling of
 	 * the VSprite ImageData.
 	 */
-	vs -> IntVSprite = _CreateIntVSprite(vs, rp);
+	vs -> IntVSprite = _CreateIntVSprite(vs, rp, GfxBase);
 
 	AROS_LIBFUNC_EXIT
 
