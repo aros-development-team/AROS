@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Find a BOOPSI Class in the class list.
@@ -14,7 +14,7 @@
 #undef SDEBUG
 #define SDEBUG 0
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /*****************************************************************************

@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Routines for BOOL Gadgets
@@ -15,7 +15,7 @@
 
 #include "intuition_intern.h"
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #	include <aros/debug.h>
 
 VOID DoGMLayout(struct Gadget		*glist,

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    (C) Copyright 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: 
@@ -33,7 +33,7 @@
 #include "menutask.h"
 
 #undef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /**************************************************************************************************/
