@@ -259,10 +259,23 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Export
 )
 {
     BOOL success = FALSE;
-    BPTR fh;
-
-    // FIXME: create intermediate directories if necessary
-    if ((fh = Open(message->filename, MODE_NEWFILE)) != NULL)
+    BPTR fh;     
+    
+    fh = Open(message->filename, MODE_NEWFILE);
+    
+    if (fh == NULL && IoErr() == ERROR_OBJECT_NOT_FOUND)
+    {
+        /* Attempt to create missing directories */
+        STRPTR tmp = StrDup(message->filename);
+        if (tmp != NULL)
+        {
+            MakeDirs(tmp);
+            fh = Open(message->filename, MODE_NEWFILE);
+            FreeVec(tmp);
+        }
+    }
+    
+    if (fh != NULL)
     {
         success = DoMethod(self, MUIM_PrefsEditor_ExportFH, (IPTR) fh);
         Close(fh);
@@ -294,8 +307,7 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
 {
     SETUP_INST_DATA;
     
-    Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING);
-    // FIXME: error handling?
+    if (Seek(data->ped_BackupFH, 0, OFFSET_BEGINNING) == -1) goto error;
     
     if
     (
@@ -308,7 +320,8 @@ IPTR PrefsEditor__MUIM_PrefsEditor_Revert
     
         return TRUE;
     }
-    
+
+error:    
     return FALSE;
 }
 
