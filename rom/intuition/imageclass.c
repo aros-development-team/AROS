@@ -34,6 +34,8 @@
 
 #include <clib/macros.h>
 
+#include <string.h>
+
 #ifdef _SASC
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -210,6 +212,7 @@ AROS_UFH3(static IPTR, dispatch_imageclass,
 			This is how Intuition knows an image is a boopsi
 			object!
 		    */
+		    memset ((void *)retval, 0, SIZEOF_INSTANCE(cl));
 		    IM(retval)->Depth = CUSTOMIMAGEDEPTH;
 		}
 	    }
