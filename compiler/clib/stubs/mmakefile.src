@@ -22,13 +22,13 @@ setup :
 	%mkdirs_q $(STUBSDIR)
 
 $(STUBSDIR)/%.o : $(STUBSDIR)/%.S
-	%compile_q
+	%assemble_q
 
 $(STUBSDIR)/%.S: $(STUBSDIR)/$(GENSTUBS)
 	@$(ECHO) Generating stub function for \'$$(basename $(notdir $@))\'...
 	@$(STUBSDIR)/$(GENSTUBS) $(basename $(notdir $@)) >$@
 
 $(STUBSDIR)/$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def $(AROS_INCLUDES)/aros/machine.h
-	@$(HOST_CC) $(HOST_CFLAGS) -I$(AROS_INCLUDES) $< -o $@
+	@$(HOST_CC) $(HOST_CFLAGS) -I$(GENINCDIR) $< -o $@
 
 %common
