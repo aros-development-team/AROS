@@ -64,7 +64,9 @@ typedef long fpos_t;
 
 #endif
 
-extern FILE *stdin, *stdout, *stderr;
+#ifndef _CLIB_KERNEL_
+    extern FILE *stdin, *stdout, *stderr;
+#endif
 
 extern FILE *fopen (const char * name, const char * mode);
 extern FILE *fdopen (int filedes, const char *mode);

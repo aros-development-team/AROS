@@ -5,7 +5,7 @@
     Desc: ANSI C function fopen()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
+
 #include <fcntl.h>
 #include "__stdio.h"
 

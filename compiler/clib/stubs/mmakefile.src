@@ -1,0 +1,42 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES		:= $(shell $(CAT) stubslist 2>/dev/null)
+STUBSDIR	:= $(GENDIR)/compiler/clib/stubs
+GENSTUBS	:= genstubs
+
+OBJS		:= $(foreach f,$(FILES), $(STUBSDIR)/$(f).o)
+
+#MM clib-stubs : clib-stubs-gen
+clib-stubs : $(OBJS)
+
+#MM
+clib-stubs-clean : clean
+
+#MM
+clib-stubs-gen :  stubslist
+	%mkdirs_q $(STUBSDIR)
+
+#MM
+clean ::
+	-$(RM) *.S stubslist $(GENSTUBS) stubsdeps
+
+$(STUBSDIR)/%.o : %.S
+	%compile_q
+
+stubsdeps :
+	./$(GENSTUBS) deps
+
+stubslist : $(GENSTUBS)
+	./$(GENSTUBS) list
+
+
+$(GENSTUBS) : $(GENSTUBS).c $(AROS_INCLUDES)/sys/syscall.def
+	$(HOST_CC) $(HOST_CFLAGS) -I$(AROS_INCLUDES) -I$(GENINCDIR) $< -o $@
+	./$(GENSTUBS) stubs
+
+%common
+
+ifeq ($(TARGET), clib-stubs)
+include stubsdeps
+endif

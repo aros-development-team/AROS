@@ -8,12 +8,13 @@
 #include <errno.h>
 #include <dos/dos.h>
 #include <exec/memory.h>
-#include <exec/semaphores.h>
 #include <proto/exec.h>
 #include <aros/symbolsets.h>
 
+#ifndef _CLIB_KERNEL_
 struct SignalSemaphore __startup_memsem;
-APTR __startup_mempool = NULL;
+APTR __startup_mempool;
+#endif
 
 /*****************************************************************************
 
@@ -55,6 +56,8 @@ APTR __startup_mempool = NULL;
 
 ******************************************************************************/
 {
+    GETUSER;
+
     UBYTE * mem = NULL;
 
     ObtainSemaphore(&__startup_memsem);
@@ -76,17 +79,23 @@ APTR __startup_mempool = NULL;
 } /* malloc */
 
 
-void __init_memstuff(void)
+int __init_memstuff(void)
 {
+    GETUSER;
+
     InitSemaphore(&__startup_memsem);
     __startup_mempool = CreatePool (MEMF_ANY, 4096L, 2000L);
     if (!__startup_mempool)
-	exit(RETURN_FAIL);
+	return RETURN_FAIL;
+
+    return 0;
 }
 
 
 void __exit_memstuff(void)
 {
+    GETUSER;
+
     if (__startup_mempool)
 	DeletePool(__startup_mempool);
 }

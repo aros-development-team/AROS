@@ -5,6 +5,7 @@
     Desc: ANSI C function fclose()
     Lang: english
 */
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <errno.h>

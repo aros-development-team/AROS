@@ -5,8 +5,8 @@
     Desc: Change the position in a stream
     Lang: english
 */
+
 #include <errno.h>
-#include <stdio.h>
 
 /*****************************************************************************
 
@@ -48,6 +48,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     int retval;
 
     if ( pos == NULL )

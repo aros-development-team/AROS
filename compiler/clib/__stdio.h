@@ -18,7 +18,9 @@ typedef struct
     FILE File;
 } FILENODE;
 
+#ifndef _CLIB_KERNEL_
 extern struct MinList __stdio_files;
+#endif
 
 #define FILENODE2FILE(fn)       (&((fn)->File))
 #define FILE2FILENODE(f)        ((FILENODE *)(((char *)(f))-offsetof(FILENODE,File)))

@@ -6,6 +6,7 @@
     Lang: english
 */
 /* Original source from libnix */
+
 #define AROS_ALMOST_COMPATIBLE
 
 /*****************************************************************************

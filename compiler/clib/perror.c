@@ -7,6 +7,7 @@
 */
 
 #include "errno.h"
+#include "string.h"
 /*****************************************************************************
 
     NAME */
@@ -39,18 +40,18 @@
     INTERNALS
 
     HISTORY
-	27.04.2001 digulla created
 
 ******************************************************************************/
 {
-    if (errno)
-    {
-        if (string)
-    	    printf("%s: ", string);
+    GETUSER;
 
-#warning TODO: complete perror()
-        printf("Unknown error %d\n", errno);
+    if (string)
+    {
+	fputs(stdout, string);
+	fputs(stdout, ": ");
     }
 
+    fputs(stdout, strerror(errno));
+    fputs(stdout, "\n");
 } /* perror */
 

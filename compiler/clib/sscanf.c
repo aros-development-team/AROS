@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define sscanf sscanf
+
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>

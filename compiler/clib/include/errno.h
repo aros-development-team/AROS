@@ -134,6 +134,8 @@
 
 #define EDEADLOCK	EDEADLK
 
-extern int errno;
+#ifndef _CLIB_KERNEL_
+    extern int errno;
+#endif
 
 #endif /* errno */

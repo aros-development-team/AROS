@@ -5,6 +5,7 @@
     Desc: Tell the position in a stream
     Lang: english
 */
+
 #include <errno.h>
 #include <dos/dos.h>
 #include <proto/dos.h>
@@ -47,6 +48,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     long cnt;
     BPTR fh;
     fdesc *fdesc = __getfdesc(stream->fd);

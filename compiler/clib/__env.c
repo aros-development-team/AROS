@@ -12,7 +12,9 @@
 
 #include "__env.h"
 
-__env_item *__env_list = NULL;
+#ifndef _CLIB_KERNEL_
+__env_item *__env_list;
+#endif
 
 static __env_item *__env_newvar(char *name, int valuesize)
 {
@@ -41,7 +43,9 @@ err1:
 
 static __env_item ** internal_findvar(register char *name)
 {
-   register __env_item **curr;
+   GETUSER;
+
+   __env_item **curr;
 
    for (
        curr = &__env_list;

@@ -5,6 +5,7 @@
     Desc: ANSI C function fflush()
     Lang: english
 */
+
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/types.h>
 #include <exec/lists.h>
@@ -52,6 +53,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     /* flush all streams opened for output */
     if (!stream)
     {

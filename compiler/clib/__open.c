@@ -24,23 +24,30 @@
 
 #include "__open.h"
 
+#ifndef _CLIB_KERNEL_
+int __numslots;
+fdesc **__fd_array;
 void *__stdfiles[3];
-
-int __numslots = 0;
-fdesc **__fd_array = NULL;
+#endif
 
 fdesc *__getfdesc(register int fd)
 {
+    GETUSER;
+
     return ((__numslots>=fd) && (fd>=0))?__fd_array[fd]:NULL;
 }
 
-void __setfdesc(register int fd, fdesc *fdesc)
+void __setfdesc(register int fd, fdesc *desc)
 {
-    __fd_array[fd] = fdesc;
+    GETUSER;
+
+    __fd_array[fd] = desc;
 }
 
 int __getfirstfd(register int startfd)
 {
+    GETUSER;
+
     for (
 	;
 	startfd < __numslots && __fd_array[startfd];
@@ -52,6 +59,8 @@ int __getfirstfd(register int startfd)
 
 int __getfdslot(int wanted_fd)
 {
+    GETUSER;
+
     if (wanted_fd>=__numslots)
     {
         void *tmp;
@@ -81,6 +90,8 @@ int __getfdslot(int wanted_fd)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
+    GETUSER;
+
     BPTR fh = NULL, lock = NULL;
     fdesc *currdesc = NULL;
     struct FileInfoBlock *fib = NULL;
@@ -211,8 +222,10 @@ err:
 
 
 #warning perhaps this has to be handled in a different way...
-void __init_stdfiles(void)
+int __init_stdfiles(void)
 {
+    GETUSER;
+
     struct Process *me;
     fdesc *indesc=NULL, *outdesc=NULL, *errdesc=NULL;
     int res = __getfdslot(2);
@@ -226,9 +239,8 @@ void __init_stdfiles(void)
     )
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-    	exit(20);
+    	return 20;
     }
-
 
     me = (struct Process *)FindTask (NULL);
     indesc->fh  = __stdfiles[STDIN_FILENO]  = Input();
@@ -244,11 +256,15 @@ void __init_stdfiles(void)
     __fd_array[STDIN_FILENO]  = indesc;
     __fd_array[STDOUT_FILENO] = outdesc;
     __fd_array[STDERR_FILENO] = errdesc;
+
+    return 0;
 }
 
 
 void __exit_stdfiles(void)
 {
+    GETUSER;
+
     int i = __numslots;
     while (i)
     {

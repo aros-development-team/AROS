@@ -53,6 +53,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     char pathname[FILENAME_MAX];
 
     if (GetCurrentDirName (pathname, FILENAME_MAX) == 0)
