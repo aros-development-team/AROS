@@ -13,7 +13,7 @@
 
     SYNOPSIS
 
-        CX_PRIORITY/N/K
+        CX_PRIORITY/N/K, LAG/S
 
     LOCATION
 
@@ -26,6 +26,8 @@
     INPUTS
 
         CX_PRIORITY  --  The priority of the commodity
+
+        LAG  --  Wait for the next timer event to activate the window
 
     RESULT
 
@@ -75,10 +77,11 @@
 
 UBYTE version[] = "$VER: AutoPoint 0.2 (13.10.2001)";
 
-#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
+#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,LAG/S"
 
 #define ARG_PRI   0
-#define NUM_ARGS  1
+#define ARG_LAG   1
+#define NUM_ARGS  2
 
 
 static struct NewBroker nb =
@@ -142,6 +145,7 @@ struct Library       *IconBase = NULL;
 
 static void freeResources(APState *as);
 static BOOL initiate(int argc, char **argv, APState *as);
+static void autoActivateLag(CxMsg *msg, CxObj *co);
 static void autoActivate(CxMsg *msg, CxObj *co);
 STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
 
@@ -152,7 +156,7 @@ STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 
     if (catalogPtr != NULL)
     {
-        string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+        string = (STRPTR)GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
     }
     else
     {
@@ -167,7 +171,8 @@ static BOOL initiate(int argc, char **argv, APState *as)
 {
     CxObj *customObj;
     struct LibTable *tmpLibTable = libTable;
-    
+    void (*activateFunc)(CxMsg *msg, CxObj *co);
+
     memset(as, 0, sizeof(APState));
 
     LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40);
@@ -206,7 +211,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
     if (Cli() != NULL)
     {
 	struct RDArgs *rda;
-	IPTR          *args[] = { NULL };
+	IPTR          *args[] = { NULL, (IPTR)FALSE };
 	
 	rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
 	
@@ -215,6 +220,14 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	    if (args[ARG_PRI] != NULL)
 	    {
 		nb.nb_Pri = *args[ARG_PRI];
+	    }
+	    if (args[ARG_LAG])
+	    {
+		activateFunc = autoActivateLag;
+	    }
+	    else
+	    {
+		activateFunc = autoActivate;
 	    }
 	}
 
@@ -262,7 +275,7 @@ static BOOL initiate(int argc, char **argv, APState *as)
 	return FALSE;
     }
     
-    customObj = CxCustom(autoActivate, 0);
+    customObj = CxCustom(activateFunc, 0);
 
     if (customObj == NULL)
     {
@@ -326,7 +339,7 @@ static void freeResources(APState *as)
 
 /* Our CxCustom() function that is invoked everytime an imputevent is
    routed to our broker */
-static void autoActivate(CxMsg *msg, CxObj *co)
+static void autoActivateLag(CxMsg *msg, CxObj *co)
 {
     struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
 
@@ -388,6 +401,45 @@ static void autoActivate(CxMsg *msg, CxObj *co)
 	{
 	    apInfo.ai_mouseHasMoved = TRUE;
 	}
+    }
+}
+
+static void autoActivate(CxMsg *msg, CxObj *co)
+{
+    struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
+
+    if (ie->ie_Class == IECLASS_RAWMOUSE)
+    {
+	struct Screen *screen;
+	struct Layer  *layer;
+	
+	if (ie->ie_Code != IECODE_NOBUTTON)
+	{
+	    return;
+	}
+
+	if (IntuitionBase->ActiveWindow != NULL)
+	{
+	    screen = IntuitionBase->ActiveWindow->WScreen;
+	}
+	else
+	{
+	    screen = IntuitionBase->ActiveScreen;
+	}
+	
+	layer = screen ? WhichLayer(&screen->LayerInfo, screen->MouseX, screen->MouseY) : NULL;
+		
+	apInfo.ai_thisWindow = (layer != NULL) ?
+	    (struct Window *)layer->Window : NULL;
+	
+	if (apInfo.ai_thisWindow != NULL &&
+	    apInfo.ai_thisWindow != IntuitionBase->ActiveWindow)
+	{
+	    ActivateWindow(apInfo.ai_thisWindow);
+	    D(bug("Activated window %s\n", apInfo.ai_thisWindow->Title));
+	}
+
+	return;
     }
 }
 
