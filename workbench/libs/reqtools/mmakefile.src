@@ -22,6 +22,8 @@ FUNCS :=	rtallocrequesta \
 		rtgetlonga \
 		rtgetstringa \
 		rtgetvscreensize \
+		rtinternalenterpassword \
+		rtinternalgetpassword \
 		rtlockwindow \
 		rtlockprefs \
 		rtpaletterequesta \
