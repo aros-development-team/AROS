@@ -1,16 +1,21 @@
-#ifndef _MACHINE_H_
-#define _MACHINE_H_
+#ifndef AROS_MACHINE_H
+#define AROS_MACHINE_H
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/19 17:12:24  aros
+    This file is now linked to aros/machine.h
+    Changed the #define to reflect this
+    ALLOCVEC_TOTAL is now here because I need it in malloc(), too.
+
     Revision 1.5  1996/10/10 13:25:09  digulla
     Handle BPTR
 
     Revision 1.4  1996/08/15 13:21:56  digulla
     BIG_ENDIAN is already defined in some system header file.
     New #define: SIZEOFULONG is the number of bytes in an ULONG (ie. the
-    	result of sizeof(ULONG)
+	result of sizeof(ULONG)
 
     Revision 1.3  1996/08/13 15:36:21  digulla
     machine.h is now local for each $(ARCH)
@@ -99,4 +104,10 @@ __AROS_LH0(LONG,__entry,struct ExecBase *,sysbase,,)    \
     __AROS_FUNC_EXIT					\
 }
 
-#endif /* _MACHINE_H_ */
+/* This is the extra memory needed by AllocVec() or any other function
+   which wants to store an ULONG in the first part of an memory allocation
+   and calculate the offset for the first byte to return. */
+#define ALLOCVEC_TOTAL \
+(DOUBLEALIGN>sizeof(ULONG)?DOUBLEALIGN:sizeof(ULONG))
+
+#endif /* AROS_MACHINE_H */
