@@ -9,6 +9,7 @@ CLASSES := \
     aboutmui \
     application \
     area \
+    balance \
     bitmap \
     bodychunk \
     boopsi \
