@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The main mouse class.
@@ -28,6 +28,8 @@
 #define MOUSE_PROTOCOL_MS_LT 1      /* if not defined MouseSystems Protocol is used */
 
 ULONG mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata);
+
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
 static OOP_AttrBase HiddMouseAB;
 
@@ -264,11 +266,13 @@ VOID free_mouseclass(struct vga_staticdata *xsd)
 #ifdef MOUSE_PROTOCOL_MS_LT
 ULONG  mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata)
 {
+    /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
+    
     static UBYTE inbuf[3];
-    static UBYTE cnt = 0;
+    static UBYTE cnt;
 
 #if OLD_GFXMOUSE_HACK
-    static OOP_MethodID mid = 0;
+    static OOP_MethodID mid;
     static struct pHidd_Gfx_SetMouseXY p;
 #else
     static struct mouse_data *mousedata;
@@ -368,8 +372,10 @@ ULONG  mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR us
 /* MouseSystems Test */
 ULONG  mouse_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userdata)
 {
+    /* Don't initialize static variables with "=0", otherwise they go into DATA segment */
+
     static UBYTE inbuf[5];
-    static UBYTE cnt = 0;
+    static UBYTE cn;
 
     static struct mouse_data *mousedata;
     static struct pHidd_Mouse_Event e;

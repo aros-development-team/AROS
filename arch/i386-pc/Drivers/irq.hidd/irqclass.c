@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: IRQ class
@@ -23,7 +23,9 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static OOP_AttrBase HiddIRQAttrBase	= 0;
+/* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
+
+static OOP_AttrBase HiddIRQAttrBase;
 
 static struct OOP_ABDescr attrbases[] =
 {

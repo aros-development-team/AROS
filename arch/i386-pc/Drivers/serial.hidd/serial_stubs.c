@@ -28,14 +28,18 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+#warning !!!!!!!OBSOLETE. Should use serial_stubs in workbench/hidds/serial/serial_stubs.c !!!!!!!
+
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
+
+#define STATIC_MID static OOP_MethodID mid
 
 /***************************************************************/
 
 OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_Serial_NewUnit p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_NewUnit);
@@ -49,7 +53,7 @@ OOP_Object * HIDD_Serial_NewUnit(OOP_Object *obj, ULONG unitnum)
 
 VOID HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_Serial_DisposeUnit p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_Serial, moHidd_Serial_DisposeUnit);
@@ -67,7 +71,7 @@ VOID HIDD_Serial_DisposeUnit(OOP_Object *obj, OOP_Object *unit)
 
 BOOL HIDD_SerialUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_SerialUnit_Init p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Init);
@@ -84,7 +88,7 @@ BOOL HIDD_SerialUnit_Init(OOP_Object *obj, VOID * DataReceived, VOID * DataRecei
 
 ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_SerialUnit_Write p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Write);
@@ -100,7 +104,7 @@ ULONG HIDD_SerialUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 
 BOOL HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_SerialUnit_SetBaudrate p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetBaudrate);
@@ -115,7 +119,7 @@ BOOL HIDD_SerialUnit_SetBaudrate(OOP_Object *obj, ULONG baudrate)
 
 BOOL HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem * tags)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_SerialUnit_SetParameters p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SetParameters);
@@ -130,7 +134,7 @@ BOOL HIDD_SerialUnit_SetParameters(OOP_Object *obj, struct TagItem * tags)
 
 BYTE HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_SerialUnit_SendBreak p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_SendBreak);
@@ -145,13 +149,13 @@ BYTE HIDD_SerialUnit_SendBreak(OOP_Object *obj, int duration)
 
 VOID HIDD_SerialUnit_GetCapabilities(OOP_Object *obj, struct TagItem * tags)
 {
-  static OOP_MethodID mid = 0;
-  struct pHidd_SerialUnit_GetCapabilities p;
-  
-  if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
+    STATIC_MID;
+    struct pHidd_SerialUnit_GetCapabilities p;
 
-  p.mID         = mid;
-  p.taglist     = tags;
-  
-  OOP_DoMethod(obj, (OOP_Msg) &p);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_GetCapabilities);
+
+    p.mID         = mid;
+    p.taglist     = tags;
+
+    OOP_DoMethod(obj, (OOP_Msg) &p);
 }

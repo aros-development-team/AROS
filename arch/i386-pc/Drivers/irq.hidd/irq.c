@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2000-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: i8259A stuff for native AROS
@@ -123,6 +123,8 @@ irq_desc_t irq_desc[NR_IRQS] __cacheline_aligned = { [0 ... NR_IRQS-1] = { 0, &n
 /*
  * This contains the irq mask for both 8259A irq controllers,
  */
+ 
+#warning CHECKME: global variable
 static unsigned int cached_irq_mask = 0xffff;
 
 #define __byte(x,y) 	(((unsigned char *)&(y))[x])
@@ -138,7 +140,7 @@ static unsigned int cached_irq_mask = 0xffff;
  * this 'mixed mode' IRQ handling costs nothing because it's only used
  * at IRQ setup time.
  */
-unsigned long io_apic_irqs = 0;
+unsigned long io_apic_irqs; /* don't initialize with "=0", otherwise it goes into data segment */
 
 /*
  * These have to be protected by the irq controller spinlock
@@ -412,6 +414,14 @@ __initfunc(void init_IRQ(struct irq_staticdata *Isd))
     isd = Isd;
 
 //    kprintf("IRQ: Init routine\n");
+
+#warning CHECKME: global variable cached_irq_mask!!!
+    /* stegerg: in case of a reset, DATA varibales do not get re-setup so one must do this by hand!
+       If possible this variable should be get rid of, and put into irq_staticdata, or something
+       similiar */
+       
+    cached_irq_mask = 0xffff;
+    
     init_ISA_irqs();
 //    kprintf("     ISA irqs done.\n");
 

@@ -31,11 +31,13 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
+#define STATIC_MID static OOP_MethodID mid
+
 /***************************************************************/
 
 BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_Id id)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_IRQ_AddHandler p;
     
     if(!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_AddHandler);
@@ -51,7 +53,7 @@ BOOL HIDD_IRQ_AddHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler, HIDDT_IRQ_
 
 VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_IRQ_RemHandler p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_IRQ_RemHandler);
@@ -66,7 +68,7 @@ VOID HIDD_IRQ_RemHandler(OOP_Object *obj, HIDDT_IRQ_Handler *handler)
 
 VOID HIDD_CauseIRQ(OOP_Object *obj, HIDDT_IRQ_Id id, HIDDT_IRQ_HwInfo *hwinfo)
 {
-    static OOP_MethodID mid = 0;
+    STATIC_MID;
     struct pHidd_CauseIRQ p;
 
     if (!mid) mid = OOP_GetMethodID(IID_Hidd_IRQ, moHidd_CauseIRQ);

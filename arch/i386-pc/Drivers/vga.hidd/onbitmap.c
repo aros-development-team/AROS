@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Bitmap class for VGA hidd.
@@ -26,9 +26,11 @@
 
 #include "bitmap.h"
 
-static OOP_AttrBase HiddBitMapAttrBase = 0;
-static OOP_AttrBase HiddVGAGfxAB = 0;
-static OOP_AttrBase HiddVGABitMapAB = 0;
+/* Don't initialize static variables with "=0", otherwise they go into DATA segment */
+
+static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddVGAGfxAB;
+static OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
