@@ -376,8 +376,8 @@ static ULONG Area_New(struct IClass *cl, Object *obj, struct opSet *msg)
     }
 
     data->mad_ehn.ehn_Events = 0; /* Will be filled on demand */
-    data->mad_ehn.ehn_Priority = 0;
-    data->mad_ehn.ehn_Flags    = 0;
+    data->mad_ehn.ehn_Priority = -5;
+    data->mad_ehn.ehn_Flags    = MUI_EHF_ALWAYSKEYS; /* Please also send mui key events to us, no idea if mui handles this like this */
     data->mad_ehn.ehn_Object   = obj;
     data->mad_ehn.ehn_Class    = cl;
 

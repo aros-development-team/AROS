@@ -965,6 +965,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     /* try ActiveObject */
     if ((active_object = data->wd_ActiveObject))
     {
+#if 0
 	/* sba: 
 	** Which method should be used for muikeys? MUIM_HandleInput or
 	** MUIM_HandleEvent. Also note that there is a flag MUI_EHF_ALWAYSKEYS
@@ -974,19 +975,17 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	** was earlier
 	*/
 
-#if 0
 	if (muikey != MUIKEY_NONE)
 	{
 	    res = DoMethod(data->wd_ActiveObject, MUIM_HandleEvent, (IPTR)event, muikey);
 	    if (res & MUI_EventHandlerRC_Eat) return;
 	}
 #endif
-
 	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if ((ehn->ehn_Object == active_object) && (ehn->ehn_Events & mask))
+	    if (ehn->ehn_Object == active_object && (ehn->ehn_Events & mask || (muikey != MUIKEY_NONE && (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)))) /* the last condition ??? */
 	    {
 		res = invoke_event_handler(ehn, (struct IntuiMessage *)event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
@@ -1791,6 +1790,9 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
     }
 
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+
+    /* If object is active send a initial MUIM_GoActive, note that no MUIM_GoInactive is send yet if window closes */
+    if (data->wd_ActiveObject) DoMethod(data->wd_ActiveObject, MUIM_GoActive);
     return TRUE;
 }
 
