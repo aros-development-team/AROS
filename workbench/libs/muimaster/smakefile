@@ -300,13 +300,13 @@ objs/test.o: test.c
 
 muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   -delete muimaster.lib
-  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) $(NLISTOBJS) ${NLISTVIEWOBJS)
+  oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) #$(NLISTOBJS) ${NLISTVIEWOBJS)
 
 test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   sc link lib lib:debug.lib to test with <<
 objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
-//classes/nlist/NListview_mcc/nlistview.mcc.lib
-//classes/nlist/NList_mcc/nlist.mcc.lib
+#//classes/nlist/NListview_mcc/nlistview.mcc.lib
+#//classes/nlist/NList_mcc/nlist.mcc.lib
 <
 
 demos: muimaster.lib
