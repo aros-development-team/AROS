@@ -39,7 +39,7 @@ struct SpecialResident
     UWORD maxslot;
 };
 
-#define SR_COOKIE 0x4afb4afc
+#define SR_COOKIE 0x4afa4afb
 
 struct Module *LoadModule(char *);
 void FreeModules(struct ModuleList *);
@@ -131,10 +131,11 @@ int main(int argc, char **argv)
     struct BootConfig *config;
     struct ModNode *modnode;
     struct Module *module;
-    struct ModuleList ModuleList;
     STRPTR modname;
     struct RDArgs *rdargs;
     int returnvalue = RETURN_OK;
+    BPTR oldcurrentdir, programdir;
+    struct ModuleList ModuleList;
     BOOL reset, simulate, force;
 
     debug = quiet = reset = simulate = force = FALSE;
@@ -277,12 +278,24 @@ int main(int argc, char **argv)
     }
 
     /*
+	First check if we actually have a program dir (aka PROGDIR:). If we
+	don't have one, we're in the resident list (hey, you shouldn't put
+	us there!), and we stay right in the dir we were started from.
+    */
+    if( (programdir = GetProgramDir()))
+    {
+	oldcurrentdir = CurrentDir(programdir);
+    }
+
+    /*
 	Construct a List of filenames to process.
     */
     if(!(config = ReadConfig((char *)cmdvec[CML_CONFIGFILE])))
     {
-	/* ReadConfig() prints it's own error string, just exit */
+	/* ReadConfig() prints it's own error string, just exit. */
 	FreeRDArgsAll(rdargs);
+	/* If we switched dirs, switch back. */
+	if(oldcurrentdir) CurrentDir(oldcurrentdir);
 	exit(RETURN_FAIL);
     }
 
@@ -292,6 +305,7 @@ int main(int argc, char **argv)
     if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
     {
 	FreeConfig(config);
+	if(oldcurrentdir) CurrentDir(oldcurrentdir);
 	PutStr("***Break\n");
 	exit(RETURN_WARN);
     }
@@ -321,6 +335,20 @@ int main(int argc, char **argv)
 	    modnode = NULL; /* on normal exit, this points to the last module processed */
 	    break;
 	}
+    }
+
+    /*
+	I duplicated a CTRL-C handler a few times, instead of making it a
+	subroutine. Else all local variables used here would have to be passed
+	to that subroutine. I should put common cleanup code into an atexit()
+	handler. Oh well, maybe next time.
+    */
+    if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
+    {
+	FreeConfig(config);
+	if(oldcurrentdir) CurrentDir(oldcurrentdir);
+	PutStr("***Break\n");
+	exit(RETURN_WARN);
     }
 
     if(modnode)
@@ -365,6 +393,9 @@ int main(int argc, char **argv)
 	Delay(100);
 	ColdReboot(); /* never returns */
     }
+
+    /* If we switched dirs, switch back. */
+    if(oldcurrentdir) CurrentDir(oldcurrentdir);
 
     exit(returnvalue);
 }
@@ -439,15 +470,17 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
     ULONG *cookieptr;
     struct ilsMemNode *cookienode;
 
-    D(bug("BuildTagPtrs()\n"));
+    D(bug("BuildTagPtrs...\n"));
 
     /*
 	Allocate memory for our KickTagPtr table:
 	number of modules loaded +2 (cookie and table terminator)
     */
+    D(bug("Allocating KickTagPtr memory (size %ld)\n", (modlist->ml_Num+2)*sizeof(ULONG)));
     if( (modarray = AllocVec((modlist->ml_Num+2)*sizeof(ULONG),
 			     memtype|MEMF_CLEAR|MEMF_REVERSE)) )
     {
+	D(bug(" ok\n"));
 	/*
 	    Fill the KickTagPtr array with pointers to our Resident modules.
 	*/
@@ -455,6 +488,7 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	    mod->m_Node.mln_Succ;
 	    mod = (struct Module *)mod->m_Node.mln_Succ, i++)
 	{
+	    D(bug("  modarray[%ld] = $%lx (module)\n", i, (ULONG)mod->m_Resident));
 	    modarray[i] = (ULONG)mod->m_Resident;
 	}
 	/* i will be incremented one last time before exiting */
@@ -464,11 +498,13 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	    /*
 		Add the cookie module.
 	    */
+	    D(bug("  modarray[%ld] = $%lx (cookie)\n", i, (ULONG)cookieptr));
 	    modarray[i] = (ULONG)cookieptr;
 
 	    /*
 		Terminate the module array.
 	    */
+	    D(bug("  modarray[%ld] = $%lx (termination)\n", i+1, (ULONG)NULL));
 	    modarray[i+1] = NULL;
 
 	    /*
@@ -527,7 +563,7 @@ ULONG *AllocMoveCookie(ULONG *cookie, ULONG size)
 	res->rt_IdString += (ULONG)&res->rt_IdString;
 	res->rt_Init     += (ULONG)&res->rt_Init;
 
-	D(bug("  res = $%lx, name = $%lx, idstring = $%lx\n",
+	D(bug("  cookie @ $%lx, name @ $%lx, idstring @ $%lx\n",
 	    (ULONG)res, (ULONG)res->rt_Name, (ULONG)res->rt_IdString));
 
 	if(!quiet) Printf("\t%s\n", (ULONG)res->rt_IdString);
@@ -625,11 +661,19 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 
     Forbid();
 
+    if(SysBase->KickCheckSum != (APTR)SumKickData())
+    {
+	/* Vectors had incorrect checksum. Just clear them now. */
+	D(bug("Vectors had incorrect checksum. Clearing before loading.\n"));
+	SysBase->KickTagPtr = SysBase->KickMemPtr = SysBase->KickCheckSum = NULL;
+    }
+
     if(SysBase->KickMemPtr)
     {
 	/*
 	    Prepend to an existing chain of MemLists.
 	*/
+	D(bug("Prepending to existing memlist (old ptr = $%lx)\n", (ULONG)SysBase->KickMemPtr));
 	memlist->ml_Node.ln_Succ = SysBase->KickMemPtr;
     }
     SysBase->KickMemPtr = memlist;
@@ -639,25 +683,10 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
 	/*
 	    Prepend to an existing chain of module lists.
 	*/
+	D(bug("Prepending to existing tagptr (old ptr = $%lx)\n", (ULONG)SysBase->KickTagPtr));
 	modlist[nummods] = (ULONG)SysBase->KickTagPtr | 0x80000000;
     }
     SysBase->KickTagPtr = modlist;
-
-    /*
-	Flush caches. I have some problems with having to boot twice to get
-	into AROS. Maybe this will help? Or it may be the BlizKick util I'm
-	using that gets in the way? Or maybe something totally unexpected? :)
-
-	Update: this didn't help. I still have to run boot twice to get AROSfA
-	loaded for the first time. If AROSfA is already loaded, I can just clear
-	the vectors and load boot again, and it will load correctly. Strange.
-
-	Update: It was MCP. I updated it to 1.22b4 and it now works the first
-	time. Then there was another problem: the "SSP to fastmem" option
-	flushed AROS out of memory after the first reset (reset, run AROS,
-	reset again, AROS gone). I disabled that option.
-    */
-    CacheClearU();
 
     /*
 	And checksum the KickPtrs. KickCheckSum is defined wrong in the include
