@@ -155,63 +155,57 @@ IPTR FPWindow$OM_NEW
     struct FPWindow_DATA *data = NULL;
     Object               *iconsString, *screenString, *systemString;
     Object               *importMI, *exportMI; /* menu items */
-        
-    struct TagItem tags[] =
-    {
-        { MUIA_Window_Title,     MSG(MSG_WINDOW_TITLE) },
-        { MUIA_Window_Activate,  TRUE          },
-        { MUIA_Window_Menustrip, 0             }, /* set later */
-        { WindowContents,        0             }, /* set later */
-        { TAG_DONE,              0             }
-    };
     
     /*
         WARNING: All FontPrefs structs must be initialized at this point!
     */
     
-    tags[2].ti_Data = (IPTR) MenustripObject,
-        Child, MenuObject,
-            MUIA_Menu_Title, MSG(MSG_MENU_PREFERENCES),
-            
-            Child, importMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_IMPORT)),
-            Child, exportMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_EXPORT)),
-        End,
-    End;
-
-    if (tags[2].ti_Data == NULL) goto error;
-    
-    tags[3].ti_Data = (IPTR) ColGroup(2),
-        Child, Label2(MSG(MSG_ICONS)),
-        Child, PopaslObject,
-            MUIA_Popasl_Type,              ASL_FontRequest,
-            MUIA_Popstring_String,  (IPTR) iconsString = TextObject, 
-                TextFrame,
-            End,
-            MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
-        End,
-        Child, Label2(MSG(MSG_SCREEN)),
-        Child, PopaslObject,
-            MUIA_Popasl_Type,              ASL_FontRequest,
-            MUIA_Popstring_String,  (IPTR) screenString = TextObject, 
-                TextFrame,
-            End,
-            MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
-        End,
-        Child, Label2(MSG(MSG_SYSTEM)),
-        Child, PopaslObject,
-            MUIA_Popasl_Type,              ASL_FontRequest,
-            MUIA_Popstring_String,  (IPTR) systemString = TextObject, 
-                TextFrame,
-            End,
-            MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
-        End,
-    End;
-    
-    if (tags[3].ti_Data == NULL) goto error;
+    self = (Object *) DoSuperNewTags
+    (
+        CLASS, self, NULL,
         
-    message->ops_AttrList = tags;
-          
-    self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
+        MUIA_Window_Title,    MSG(MSG_WINDOW_TITLE),
+        MUIA_Window_Activate, TRUE,
+        
+        MUIA_Window_Menustrip, (IPTR) MenustripObject,
+            Child, MenuObject,
+                MUIA_Menu_Title, MSG(MSG_MENU_PREFERENCES),
+                
+                Child, importMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_IMPORT)),
+                Child, exportMI = makeMenuitem(MSG(MSG_MENU_PREFERENCES_EXPORT)),
+            End,
+        End, 
+        
+        WindowContents, (IPTR) ColGroup(2),
+            Child, Label2(MSG(MSG_ICONS)),
+            Child, PopaslObject,
+                MUIA_Popasl_Type,              ASL_FontRequest,
+                MUIA_Popstring_String,  (IPTR) iconsString = TextObject, 
+                    TextFrame,
+                End,
+                MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
+            End,
+            Child, Label2(MSG(MSG_SCREEN)),
+            Child, PopaslObject,
+                MUIA_Popasl_Type,              ASL_FontRequest,
+                MUIA_Popstring_String,  (IPTR) screenString = TextObject, 
+                    TextFrame,
+                End,
+                MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
+            End,
+            Child, Label2(MSG(MSG_SYSTEM)),
+            Child, PopaslObject,
+                MUIA_Popasl_Type,              ASL_FontRequest,
+                MUIA_Popstring_String,  (IPTR) systemString = TextObject, 
+                    TextFrame,
+                End,
+                MUIA_Popstring_Button,  (IPTR) PopButton(MUII_PopUp),
+            End,
+        End,
+        
+        TAG_DONE
+    );
+    
     if (self == NULL) goto error;
     
     data = INST_DATA(CLASS, self);
@@ -236,9 +230,7 @@ IPTR FPWindow$OM_NEW
     return (IPTR) self;
     
 error:
-    if (tags[2].ti_Data != NULL) MUI_DisposeObject(tags[2].ti_Data);
-    if (tags[3].ti_Data != NULL) MUI_DisposeObject(tags[3].ti_Data);
-
+    
     return NULL;
 }
 
