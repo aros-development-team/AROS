@@ -177,7 +177,7 @@ static int charsinstring(STRPTR string, char c);
 					     WA_IDCMP, IDCMP_GADGETUP | IDCMP,
 					     WA_Gadgets, (IPTR)gadgets,
 					     WA_Title, (IPTR)reqtitle,
-					     WA_CustomScreen, (IPTR)scr,
+					     (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr,
 					     WA_Flags, WFLG_DRAGBAR |
 						       WFLG_DEPTHGADGET |
 						       WFLG_ACTIVATE |
@@ -186,6 +186,8 @@ static int charsinstring(STRPTR string, char c);
 					     TAG_DONE);
 			if (req)
 			{
+			    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
+			    
 			    req->UserData = (BYTE *)requserdata;
 			    requserdata->IDCMP = IDCMP;
 			    requserdata->GadgetLabels = gadgetlabels;
@@ -207,7 +209,7 @@ static int charsinstring(STRPTR string, char c);
 	}
 	intrequest_freelabels(gadgetlabels, IntuitionBase);
     }
-    UnlockPubScreen(NULL, lockedscr);
+    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
     return NULL;
     AROS_LIBFUNC_EXIT

@@ -75,7 +75,6 @@
     CloseWindow(window);
     intrequest_freegadgets(gadgets, IntuitionBase);
     intrequest_freelabels(gadgetlabels, IntuitionBase);
-    UnlockPubScreen(NULL, scr);
 
     return;
     AROS_LIBFUNC_EXIT

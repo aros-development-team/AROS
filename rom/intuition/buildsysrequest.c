@@ -179,7 +179,7 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 				     WA_IDCMP, IDCMP_GADGETUP | IDCMPFlags,
 				     WA_Gadgets, (IPTR)gadgets,
 				     WA_Title, (IPTR)reqtitle,
-				     WA_CustomScreen, (IPTR)scr,
+				     (lockedscr ? WA_PubScreen : WA_CustomScreen), (IPTR)scr,
 				     WA_Flags, WFLG_DRAGBAR |
 					       WFLG_DEPTHGADGET |
 					       WFLG_ACTIVATE |
@@ -188,6 +188,8 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 				     TAG_DONE);
 		if (req)
 		{
+		    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
+		    
 		    req->UserData = (BYTE *)requserdata;
 		    requserdata->IDCMP = IDCMPFlags;
 		    requserdata->GadgetLabels = NULL;
@@ -205,7 +207,7 @@ static void ReqPrintIText(struct Screen *scr, struct DrawInfo *dri,
 	}
     }
 
-    UnlockPubScreen(NULL, lockedscr);
+    if (lockedscr) UnlockPubScreen(NULL, lockedscr);
 
     return NULL;
 
