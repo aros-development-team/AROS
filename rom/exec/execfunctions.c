@@ -140,8 +140,9 @@ void AROS_SLIB_ENTRY(ObtainQuickVector,Exec)();
 void AROS_SLIB_ENTRY(RawIOInit,Exec)();
 void AROS_SLIB_ENTRY(RawMayGetChar,Exec)();
 void AROS_SLIB_ENTRY(RawPutChar,Exec)();
+void AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec)();
 
-void *ExecFunctions[131]=
+void *ExecFunctions[] =
 {
 /*  1 */&AROS_SLIB_ENTRY(open,Exec),
 	&AROS_SLIB_ENTRY(close,Exec),
@@ -273,5 +274,12 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(CachePostDMA,Exec),
 	&AROS_SLIB_ENTRY(AddMemHandler,Exec),
 /*130 */&AROS_SLIB_ENTRY(RemMemHandler,Exec),
-	&AROS_SLIB_ENTRY(ObtainQuickVector,Exec)
+	&AROS_SLIB_ENTRY(ObtainQuickVector,Exec),
+	NULL,
+	NULL,
+	NULL,
+	&AROS_SLIB_ENTRY(TaggedOpenLibrary,Exec),
+	NULL,
+	NULL,
+	(void *)-1
 };
