@@ -68,7 +68,7 @@
     iofs.io_Union.io_RELABEL.io_NewName = newname;
     iofs.io_Union.io_RELABEL.io_Result  = FALSE;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

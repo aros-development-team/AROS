@@ -160,7 +160,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
     iofs->io_Union.io_NamedFile.io_Filename = (STRPTR)pathname;
     
     /* Send the request. */
-    DoIO(&iofs->IOFS);
+    DosDoIO(&iofs->IOFS);
     
     if (iofs->io_DosError == ERROR_OBJECT_NOT_FOUND &&
 	dl->dol_Type == DLT_DIRECTORY)
@@ -174,7 +174,7 @@ LONG DoName(struct IOFileSys *iofs, CONST_STRPTR name,
 	    fh = BADDR(al->al_Lock);
 	    iofs->IOFS.io_Device = fh->fh_Device;
 	    iofs->IOFS.io_Unit = fh->fh_Unit;
-	    DoIO(&iofs->IOFS);
+	    DosDoIO(&iofs->IOFS);
 	}
     }
 

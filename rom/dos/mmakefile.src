@@ -38,7 +38,7 @@ ULIBNAME := Dos
 OSMODULE  := dos.library
 IMAGE_TYPES := aos aout elf
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
-	     filesystem_support match_misc newcliproc rootnode \
+	     filesystem_support match_misc newcliproc rootnode dosdoio\
 	     patternmatching \
 	     $(foreach img, $(IMAGE_TYPES), internalloadseg_$(img))
 
@@ -104,7 +104,7 @@ ALL_FUNCTIONS := $(FUNCTIONS)
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_DOS)"),"yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
+SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS) -g3
 endif
 %prepare_shlib dos $(SHARED_DOS)
 

@@ -68,7 +68,7 @@
     iofs.io_Union.io_SAME_LOCK.io_Same = LOCK_DIFFERENT;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);

@@ -85,7 +85,7 @@
     iofs.io_Union.io_WRITE.io_Length = length;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

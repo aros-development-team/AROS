@@ -64,7 +64,7 @@
     iofs.IOFS.io_Unit   = fh->fh_Unit;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Return */
     if(iofs.io_DosError != 0)

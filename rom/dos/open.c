@@ -122,7 +122,7 @@
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CIS))->fh_Unit;
 	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-	    DoIO(&iofs.IOFS);
+	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
 	else
@@ -131,7 +131,7 @@
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_COS))->fh_Unit;
 	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-	    DoIO(&iofs.IOFS);
+	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
 	else
@@ -140,7 +140,7 @@
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(me->pr_CES ? me->pr_CES : me->pr_COS))->fh_Unit;
 	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-	    DoIO(&iofs.IOFS);
+	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
 	else
@@ -149,7 +149,7 @@
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(con))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(con))->fh_Unit;
 	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-	    DoIO(&iofs.IOFS);
+	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
 	else
@@ -158,7 +158,7 @@
 	    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(ast))->fh_Device;
 	    iofs.IOFS.io_Unit   = ((struct FileHandle *)BADDR(ast))->fh_Unit;
 	    iofs.io_Union.io_OPEN_FILE.io_Filename = "";
-	    DoIO(&iofs.IOFS);
+	    DosDoIO(&iofs.IOFS);
 	    error = me->pr_Result2 = iofs.io_DosError;
 	}
 	else

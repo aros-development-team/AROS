@@ -89,7 +89,7 @@
     iofs.io_Union.io_EXAMINE_NEXT.io_fib = fileInfoBlock;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);

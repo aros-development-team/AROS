@@ -83,7 +83,7 @@
     iofs.io_Union.io_READ.io_Length = length;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);

@@ -75,7 +75,7 @@
     iofs.io_Union.io_RECORD.io_Offset = offset;
     iofs.io_Union.io_RECORD.io_Size = length;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
     
     SetIoErr(iofs.io_DosError);
     

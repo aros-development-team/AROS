@@ -76,7 +76,7 @@
     iofs.io_Union.io_WAIT_CHAR.io_Timeout = timeout;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

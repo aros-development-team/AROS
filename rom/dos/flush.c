@@ -66,7 +66,8 @@
 
 	/* Write the data. (In many pieces if the first one isn't enough). */
 	pos = fh->fh_Buf;
-        while(pos != fh->fh_Pos)
+
+	while(pos != fh->fh_Pos)
         {
             LONG size;
 

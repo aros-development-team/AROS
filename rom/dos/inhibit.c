@@ -69,7 +69,7 @@
 
     iofs.io_Union.io_INHIBIT.io_Inhibit = onoff == DOSTRUE ? TRUE : FALSE;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     return iofs.io_DosError == 0 ? DOSTRUE : DOSFALSE;
 

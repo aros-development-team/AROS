@@ -8,6 +8,7 @@
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H
 
+#include <exec/io.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -16,6 +17,11 @@
 
 /* Needed for aros_print_not_implemented macro */
 #include <aros/debug.h>
+
+BYTE DosDoIO(struct IORequest * iORequest,
+	     struct ExecBase * SysBase);
+
+#define DosDoIO(iorequest) DosDoIO(iorequest, SysBase)
 
 #ifdef SysBase
 #undef SysBase
@@ -85,11 +91,9 @@ struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit,
 struct Device *GetVolume(CONST_STRPTR name, struct Unit **unit,
 			 struct DosLibrary *DOSBase);
 
-BOOL ExecCommand(ULONG type, STRPTR command, STRPTR shell, BPTR input,
-		 BPTR output, struct TagItem *tl, struct DosLibrary *DOSBase);
-
 struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 				   struct DosLibrary *DOSBase);
+
 
 
 /* Cli dependent SetProgramName() for use in CreateNewProc() */

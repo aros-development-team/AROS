@@ -66,7 +66,7 @@
 
     iofs.io_Union.io_CONSOLE_MODE.io_ConsoleMode = mode;
 
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

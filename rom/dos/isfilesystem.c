@@ -101,7 +101,7 @@
 			iofs.IOFS.io_Unit   = dl->dol_Unit;
 			
 			/* Send the request. */
-			DoIO(&iofs.IOFS);
+			DosDoIO(&iofs.IOFS);
 			
 			/* Set return code */
 			if (!iofs.io_DosError)

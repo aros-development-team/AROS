@@ -87,7 +87,7 @@
     iofs.io_Union.io_SEEK.io_SeekMode = mode;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     SetIoErr(iofs.io_DosError);
 

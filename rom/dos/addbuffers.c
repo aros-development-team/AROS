@@ -76,7 +76,7 @@
     iofs.io_Union.io_MORE_CACHE.io_NumBuffers = numbuffers;
     
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
     
     /* Set error code */
     if(iofs.io_DosError == 0)

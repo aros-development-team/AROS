@@ -108,7 +108,7 @@
     iofs.io_Union.io_FILE_MODE.io_Mask     = mask;
 
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
 
     /* Set error code and return */
     SetIoErr(iofs.io_DosError);

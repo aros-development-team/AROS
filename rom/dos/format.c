@@ -79,7 +79,7 @@
     iofs.io_Union.io_FORMAT.io_DosType = dostype;
     
     /* Send the request. */
-    DoIO(&iofs.IOFS);
+    DosDoIO(&iofs.IOFS);
     
     /* Set error code */
     if (iofs.io_DosError == 0)
