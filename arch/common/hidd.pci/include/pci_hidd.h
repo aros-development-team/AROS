@@ -241,7 +241,7 @@ enum
     moHidd_PCIDriver_CPUtoPCI,
     moHidd_PCIDriver_PCItoCPU,
     moHidd_PCIDriver_MapPCI,
-    moHidd_PCIDriver_UnMapPCI,
+    moHidd_PCIDriver_UnmapPCI,
     moHidd_PCIDriver_AllocPCIMem,
     moHidd_PCIDriver_FreePCIMem,
 
@@ -338,7 +338,7 @@ struct pHidd_PCIDriver_MapPCI
     ULONG	    Length;	/* Length of mapped area */
 };
 
-struct pHidd_PCIDriver_UnMapPCI
+struct pHidd_PCIDriver_UnmapPCI
 {
     OOP_MethodID    mID;
     APTR	    CPUAddress;	/* Address as seen by the CPU of the PCI address space to unmap */
@@ -363,7 +363,7 @@ VOID HIDD_PCI_AddHardwareDriver(OOP_Object *obj, OOP_Class *driver);
 APTR HIDD_PCIDriver_CPUtoPCI(OOP_Object *obj, APTR address);
 APTR HIDD_PCIDriver_PCItoCPU(OOP_Object *obj, APTR address);
 APTR HIDD_PCIDriver_MapPCI(OOP_Object *obj, APTR address, ULONG length);
-VOID HIDD_PCIDriver_UnMapPCI(OOP_Object *obj, APTR address, ULONG length);
+VOID HIDD_PCIDriver_UnmapPCI(OOP_Object *obj, APTR address, ULONG length);
 APTR HIDD_PCIDriver_AllocPCIMem(OOP_Object *obj, ULONG length);
 VOID HIDD_PCIDriver_FreePCIMem(OOP_Object *obj, APTR address);
 

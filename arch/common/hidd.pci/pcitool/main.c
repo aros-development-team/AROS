@@ -224,7 +224,7 @@ AROS_UFH3(void, select_function,
 
 	if (vendor == 0x10de)
 	{
-	    HIDD_PCIDriver_UnMapPCI(drv, 
+	    HIDD_PCIDriver_UnmapPCI(drv, 
 		HIDD_PCIDriver_MapPCI(drv, 0xd0000000, 1000),
 		1000);
 	    

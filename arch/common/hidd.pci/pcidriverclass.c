@@ -245,11 +245,11 @@ static APTR pcidriver_map(OOP_Class *cl, OOP_Object *o,
 }
 
 /*
-    PCIDriver::UnMapPCI(Address, Length) unmaps the mapped PCI area previously
+    PCIDriver::UnmapPCI(Address, Length) unmaps the mapped PCI area previously
     allocated with MapPCI method.
 */
 static VOID pcidriver_umap(OOP_Class *cl, OOP_Object *o,
-    struct pHidd_PCIDriver_UnMapPCI *msg)
+    struct pHidd_PCIDriver_UnmapPCI *msg)
 {
     /* Generic driver has nothing to do here */
 }
@@ -355,7 +355,7 @@ OOP_Class *init_pcidriverclass(struct pci_staticdata *psd)
 	{ OOP_METHODDEF(pcidriver_c2p), moHidd_PCIDriver_CPUtoPCI },
 	{ OOP_METHODDEF(pcidriver_p2c), moHidd_PCIDriver_PCItoCPU },
 	{ OOP_METHODDEF(pcidriver_map), moHidd_PCIDriver_MapPCI },
-	{ OOP_METHODDEF(pcidriver_umap),moHidd_PCIDriver_UnMapPCI },
+	{ OOP_METHODDEF(pcidriver_umap),moHidd_PCIDriver_UnmapPCI },
 	{ OOP_METHODDEF(pcidriver_alloc),moHidd_PCIDriver_AllocPCIMem },
 	{ OOP_METHODDEF(pcidriver_free),moHidd_PCIDriver_FreePCIMem },
 	{ NULL, 0UL }
