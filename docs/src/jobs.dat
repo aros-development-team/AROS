@@ -109,7 +109,7 @@ c00020;2;laguest;Write C:Get
 c00021;2;laguest;Write C:GetEnv
 c00022;2;SDuvan;Write C:If
 c00023;1;Stephan Rupprecht,SDuvan;Write C:Info
-c00024;1;chodorowski;Write C:Join
+c00024;2;chodorowski,SDuvan;Write C:Join
 c00025;2;SDuvan;Write C:Lab
 c00026;1;matthias;librarytest
 c00027;1;matthias,bergers;Write C:List
