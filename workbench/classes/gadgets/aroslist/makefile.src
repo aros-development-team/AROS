@@ -1,0 +1,94 @@
+# $Id$
+TOP=../../../..
+CURDIR=workbench/classes/gadgets/aroslist
+
+USER_INCLUDES = -I..
+
+include $(TOP)/config/make.cfg
+
+# This should maube be set in $(TOP)/config/make.cfg instead
+GADGETDIR=$(BINDIR)/Classes/Gadgets
+
+# Main function for aroslist.class. Need this apart as an anchor for the link:
+INIT_FILE = aroslist_init
+
+FILES = aroslist_functable listclass helpfuncs
+
+# Guarantee that this will go at the end of the file:
+END_FILE = aroslist_endtag
+
+FUNCTIONS = 
+	
+
+OBJDIR=$(GENDIR)/workbench/classes/gadgets/aroslist
+
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+
+# The init and endskip object filenames
+INITFUNC = $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC = $(OBJDIR)/$(END_FILE).o
+
+all: setup $(GADGETDIR)/aroslist.class
+
+# ***** Native ***************
+ifeq ($(FLAVOUR),native)
+
+# Generate a map file
+MAPGEN = -Xlinker -M
+
+# Strip resulting binary
+STRIP = strip
+
+# ***** Not Native ***************
+else
+
+MAPGEN =
+STRIP = true
+
+# ***** END ***************
+endif
+
+%define_libs prelibs=-laroslist
+
+# The filename of the linklib
+LIB=$(LIBDIR)/libaroslist.a
+
+$(GADGETDIR)/aroslist.class: $(LIB) $(DEPLIBS) $(OBJS) $(INITFUNC) $(ENDFUNC)
+	@echo "Building $(notdir $@) ..."
+	@$(CC) $(ILDFLAGS) $(MAPGEN) $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslistlib.map
+	%checkuds
+	@if test ! -s aroslistlib.map; then rm aroslistlib.map ; else true ; fi
+	@$(STRIP) $@
+
+# Collect all functions in a linklib for fast linking:
+$(LIB): $(OBJS)
+	@echo "Adding functions to $(notdir $@) ..."
+	@$(AR) $@ $?
+	@$(RANLIB) $@
+
+setup :
+	@echo "CFLAGS=$(CFLAGS)"
+	%mkdirs_q $(OBJDIR) $(GADGETDIR)
+
+clean::
+	$(RM) $(OBJDIR) *.err
+
+$(OBJDIR)/%.o: %.c
+	%compile_q
+
+aroslist_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	%mkfunctable_q AROSList
+
+aroslist_endtag.c: $(TOP)/scripts/makeendtag.awk
+	%mkendtag_q AROSList
+
+$(OBJDIR)/aroslist_init.o: libdefs.h
+
+%libdefs_rule
+
+$(OBJDIR)/%.d: %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(INIT_FILE) $(END_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
