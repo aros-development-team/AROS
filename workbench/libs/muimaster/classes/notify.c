@@ -522,10 +522,16 @@ static ULONG mNotifySet(struct IClass *cl, Object *obj, struct MUIP_Set *msg)
 /*
  * MUIM_SetAsString : Set a (text kind) attribute to a string.
  */
-static ULONG mSetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
+static ULONG Notify_SetAsString(struct IClass *cl, Object *obj, struct MUIP_SetAsString *msg)
 {
-#warning FIXME: MUIM_SetAsString not yet implemented
+#ifndef _AROS
+    /* This is not very nice but can be changed later */
     char buf[2048];
+    static const ULONG tricky=0x16c04e75; /* move.b d0,(a3)+ ; rts */
+    RawDoFmt(msg->format,(ULONG *)&msg->val,(void (*)())&tricky,buf);
+    set(obj, msg->attr, buf);
+#else
+#endif
 
 /*      g_vsnprintf(buf, 2048, msg->format, (va_list)&msg->val); */
 /*      set(obj, msg->attr, (ULONG)buf); */
@@ -632,8 +638,7 @@ AROS_UFH3S(IPTR, MyDispatcher,
 	    return(mNotify(cl, obj, (APTR)msg));
 	case MUIM_Set :
 	    return(mNotifySet(cl, obj, (APTR)msg));
-	case MUIM_SetAsString :
-	    return(mSetAsString(cl, obj, (APTR)msg));
+	case MUIM_SetAsString: return Notify_SetAsString(cl, obj, (APTR)msg);
 	case MUIM_SetUData :
 	    return(mSetUData(cl, obj, (APTR)msg));
 	case MUIM_SetUDataOnce : /* use Notify_SetUData */
@@ -643,7 +648,7 @@ AROS_UFH3S(IPTR, MyDispatcher,
 	case MUIM_WriteString :
 	    return(mWriteString(cl, obj, (APTR)msg));
 	case MUIM_ConnectParent: return Notify_ConnectParent(cl,obj,(APTR)msg);
-	case MUIM_DisconnectParent: return Notify_ConnectParent(cl,obj,(APTR)msg);
+	case MUIM_DisconnectParent: return Notify_DisconnectParent(cl,obj,(APTR)msg);
     }
 
     return DoSuperMethodA(cl, obj, msg);
