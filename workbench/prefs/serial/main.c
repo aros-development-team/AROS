@@ -92,7 +92,7 @@ static void KillGadgets(void);
 
 /*********************************************************************************************/
 
-STRPTR BaudrateLabels[] =
+CONST_STRPTR BaudrateLabels[] =
 {
 	"50",
 	"75",
@@ -113,7 +113,7 @@ STRPTR BaudrateLabels[] =
 	NULL
 };
 
-STRPTR StopBitsLabels[] =
+CONST_STRPTR StopBitsLabels[] =
 {
 	"1",
 	"1.5",
@@ -121,7 +121,7 @@ STRPTR StopBitsLabels[] =
 	NULL
 };
 
-STRPTR DataBitsLabels[] =
+CONST_STRPTR DataBitsLabels[] =
 {
 	"8",
 	"7",
@@ -130,17 +130,17 @@ STRPTR DataBitsLabels[] =
 	NULL
 };
 
-STRPTR ParityLabels[] =
+CONST_STRPTR ParityLabels[] =
 {
-	(STRPTR)MSG_PARITY_NONE,
-	(STRPTR)MSG_PARITY_EVEN,
-	(STRPTR)MSG_PARITY_ODD,
-	(STRPTR)MSG_PARITY_MARK,
-	(STRPTR)MSG_PARITY_SPACE,
+	(CONST_STRPTR)MSG_PARITY_NONE,
+	(CONST_STRPTR)MSG_PARITY_EVEN,
+	(CONST_STRPTR)MSG_PARITY_ODD,
+	(CONST_STRPTR)MSG_PARITY_MARK,
+	(CONST_STRPTR)MSG_PARITY_SPACE,
 	NULL
 };
 
-STRPTR BufferSizeLabels[] =
+CONST_STRPTR BufferSizeLabels[] =
 {
 	"512",
 	"1024",
@@ -151,7 +151,7 @@ STRPTR BufferSizeLabels[] =
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 {
     struct EasyStruct es;
     
@@ -166,7 +166,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+void Cleanup(CONST_STRPTR msg)
 {
     if (msg)
     {
@@ -313,7 +313,7 @@ static void LayoutButtons(void)
 
 /*********************************************************************************************/
 
-WORD MaxStringsWidth(struct RastPort * rp, STRPTR * strings)
+WORD MaxStringsWidth(struct RastPort * rp, CONST_STRPTR * strings)
 {
 	WORD w, maxw = 0;
 	ULONG i = 0;
