@@ -133,7 +133,7 @@ static IPTR Listview_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ListviewData   *data;
     struct TagItem *tag, *tags;
     struct Hook *layout_hook;
-    Object *group, *vert, *horiz, *button;
+    Object *group, *vert/*  , *horiz, *button */;
     Object *list = (Object*)GetTagData(MUIA_Listview_List, NULL, msg->ops_AttrList);
     LONG entries,first,visible;
     if (!list) return NULL;
