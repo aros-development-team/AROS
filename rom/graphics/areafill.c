@@ -69,7 +69,8 @@ UWORD Include (UWORD lastused,
                UWORD scan, 
                UWORD * VctTbl)
 {
-  while (VctTbl[AreaBound[lastused+1].StartIndex+1] == scan)
+  while (lastused < lastindex &&
+         VctTbl[AreaBound[lastused+1].StartIndex+1] == scan)
   {
 /*
     kprintf("including new one! ");
@@ -382,7 +383,7 @@ BOOL areafillpolygon(struct RastPort  * rp,
     i2 = 0;
     /* 
     ** search for the place where to put this entry into the sorted 
-    ** (incresing start y-coordinates) list 
+    ** (increasing start y-coordinates) list 
     */
     if (i > -1)
     {
