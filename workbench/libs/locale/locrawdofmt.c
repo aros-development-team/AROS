@@ -2,7 +2,10 @@
     Copyright (C) 2001 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Locale_RawDoFmt - locale.library's private replacement of exec.library/RawDoFmt function.
+    Desc: Locale_RawDoFmt - locale.library's private replacement
+    	  of exec.library/RawDoFmt function. IPrefs will install
+	  the patch.
+	  
     Lang: english
 */
 
@@ -97,14 +100,14 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
     hook.h_SubEntry = (HOOKFUNC)PutChProc;
     hook.h_Data     = PutChData;
 
-//kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
+    //kprintf("LocRawDoFmt: FormatString = \"%s\"\n", FormatString);
  
     retval = FormatString(&(IntLB(LocaleBase)->lb_CurrentLocale->il_Locale),
     	    	    	  FormatString,
 			  DataStream,
 			  &hook);
 
-//kprintf("LocRawDoFmt: FormatString: returning %x\n", retval);
+    //kprintf("LocRawDoFmt: FormatString: returning %x\n", retval);
     
     return retval;
     
