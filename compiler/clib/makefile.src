@@ -125,6 +125,7 @@ DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 all: setup $(LIB)
 
 setup: make-dirs update-includes
+	@echo "APPCFLAGS=$(APPCFLAGS)"
 
 make-dirs:
 	%mkdirs_q $(INCDIR)/sys $(OBJDIR)
