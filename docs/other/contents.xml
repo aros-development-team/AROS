@@ -1,58 +1,5 @@
 <contents>
 <item>
-    <file>Digulla-1.jpg, Digulla-2.jpg</file>
-    These are pictures of Aaron Digulla.
-	The first one was made at the World of Computer '98 in Cologne with
-	lots of other Amiga fans for the press conference on which the news
-	about QNX were revealed. The second one was made at the Fachhochschule
-	Konstanz.
-
-</item>
-
-<item>
-    <file>Moria3D-1.jpg, Moria3D-2.jpg, Moria3D-3.jpg</file>
-    Screenshots of the game
-	Moria3D by Goswin Brederlow (Mrvn) which was ported to
-	AROS in a 1-2 hours. It's slow but works :-)
-
-</item>
-
-<item>
-    <file>gtdemo.gif</file>
-    Shows all gadtools gadgets which AROS supports, yet.
-
-</item>
-
-<item>
-    <file>ibmpc-1.jpg, ibmpc-2.jpg, ibmpc-3.jpg</file>
-    Shows AROS on an IBM compatible
-	PC (digital photographs).
-
-</item>
-
-<item>
-    <file>ibmpc-4.png, ibmpc-5.png</file>
-    Pictures of the AROS on an IBM compatible
-	PC (these are a dumps of the screen; they are "faked" in that
-	they were not made from the real screen but the contents are
-	1:1 from the real screen).
-
-</item>
-
-<item>
-    <file>ibmpc-6.jpg, ibmpc-7.jpg</file>
-    Similar to ibmpc-3.jpg but with better
-	quality and larger.
-
-</item>
-
-<item>
-    <file>layers-1.jpg, layers-2.jpg</file>
-    Shows AROS' layers library
-
-</item>
-
-<item>
     <file>posting</file>
     Where to spread news about AROS
 
