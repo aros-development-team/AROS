@@ -33,6 +33,14 @@
 #define SCR             0xfffff000
 #define PCR             0xfffff003
 
+/*
+ * Whatever is in chpater 6 in the downloadable 
+ * dragonball documentation seems to be wrong.
+ * Found the correct register description in the 
+ * xcopilot source.
+ */
+#if 0
+
 #define CSGBA		0xfffff100
 #define CSGBB		0xfffff102
 #define CSGBC		0xfffff104
@@ -43,6 +51,41 @@
 #define CSB		0xfffff112
 #define CSC		0xfffff114
 #define CSD		0xfffff116
+
+#else
+
+#define GRPBASEA	0xfffff100
+#define GRPBASEB	0xfffff102
+#define GRPBASEC	0xfffff104
+#define GRPBASED	0xfffff100
+
+#define GRPMASKA	0xfffff108
+#define GRPMASKB	0xfffff10A
+#define GRPMASKC	0xfffff10C
+#define GRPMASKD	0xfffff10E
+
+#define CSA0		0xfffff110
+#define CSA1		0xfffff114
+#define CSA2		0xfffff118
+#define CSA3		0xfffff11c
+
+#define CSC0		0xfffff130
+#define CSC1		0xfffff134
+#define CSC2		0xfffff138
+#define CSC3		0xfffff13c
+
+/*
+ * CSA0-3, CSC0-3:
+ *
+ * Bit 0-2  : Wait states
+ * Bit 3    : Read only (if '1')
+ * Bit 4-7  : reserved
+ * Bit 8-15 : AM (???)
+ * Bit 16   : bus width
+ * Bit 17-23: reserved
+ * Bit 24-31: AC (???)
+ */
+#endif
 
 #define PCTLR		0xfffff207
 #define IVR		0xfffff300
