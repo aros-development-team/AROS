@@ -33,6 +33,7 @@ The following components are distributed under the terms various different
 open source licenses, most of them similar to the BSD license. Please read the
 relevant "LEGAL" files that accompanies these components' sources.
 
++ Development/include/boost [compiler/boost]
 + Development/Lib/lib(arosc|rom).a, Libs/arosc.library [compiler/clib]
 + Development/Lib/libarosm.a [compiler/mlib]
 + Development/Lib/libarosz.a [compiler/zlib]
