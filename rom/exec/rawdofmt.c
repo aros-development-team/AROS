@@ -134,6 +134,9 @@
 				  and data fetching proceeds as if no %v had been specified
 				  at all.
 
+		            - 'V' it's like 'v', but requires an additional parameter which,
+			          if non NULL, instructs RawDoFmt to switch to another
+				  format string, whose address is the value of the parameter.
 
 	DataStream   - Array of the data items.
 	PutChProc    - Callback function. Called for each character, including
@@ -212,6 +215,41 @@
 
 	    /* Skip over '%' character */
 	    FormatString++;
+
+	    /* Possibly switch to a va_list type stream.  */
+	    if (*FormatString == 'v')
+	    {
+	        va_list *list_ptr = fetch_arg(DataStream, va_list *);
+		if (list_ptr != NULL)
+		{
+	            in_va_list = 1;
+		    DataStream = (APTR)list_ptr;
+		}
+
+		FormatString++;
+		continue;
+	    }
+
+	    /* Possibly switch to a va_list type stream and also to a new
+	       format string.  */
+	    if (*FormatString == 'V')
+	    {
+	        va_list *list_ptr   = fetch_arg(DataStream, va_list *);
+	        char    *new_format = fetch_arg(DataStream, char *);
+
+                FormatString++;
+
+		if (list_ptr != NULL)
+		{
+	            in_va_list = 1;
+		    DataStream = (APTR)list_ptr;
+		}
+
+		if (new_format != NULL)
+		    FormatString = new_format;
+
+		continue;
+	    }
 
 	    /* '-' modifier? (left align) */
 	    if(*FormatString=='-')
