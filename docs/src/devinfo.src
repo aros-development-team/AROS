@@ -66,8 +66,8 @@ this, we introduce this rule:
 
 \begin{emph}
 If you want to pass a structure with |DoMethod()| and |DoMethodA()|
-or similar functions, you must prepend "STCK" to each type, like
-this: |WORD| becomes |STCKWORD|, |ULONG| becomes |STCKULONG|, etc.
+or similar functions, you must prepend |STACK| to each type, like
+this: |WORD| becomes |STACKWORD|, |ULONG| becomes |STACKULONG|, etc.
 \end{emph}
 
 To solve special problems on certain CPUs, we try to get a compiler which
@@ -76,10 +76,10 @@ which replaces the dubious code by calls to the array versions.
 
 \section{One for all and all for one - CVS}
 
-CVS is a software to maintain a database which contains the sources of a
-project one works on. The software offers a list of commands to merge the
-most recent version of the project with the local sources and to publish
-changes on has made over the Internet.
+\label{CVS}CVS is a software to maintain a database which contains the
+sources of a project one works on. The software offers a list of commands
+to merge the most recent version of the project with the local sources and
+to publish changes on has made over the Internet.
 
 \subsection{CVS on Un*x}
 
@@ -263,4 +263,343 @@ files in the current directory.
 
 Well, CVS has man pages and info files and here is a nice
 \link{link}{http://www.loria.fr/~molli/cvs-index.html}.
+
+\section{The jobserver}
+
+\subsection{What is this ?}
+
+Well, it's more a task server. Its purpose is to allow multiple people to
+work at the same project at the same time without any two persons doing the
+same work twice. This is accomplished by the jobserver. It has a database
+with all tasks that are still to do, tasks that are currently under
+construction and tasks which are finished.
+
+\subsection{How does it work ?}
+
+Just send an EMail to
+
+\begin{example}
+aros@wi-pc44.fh-konstanz.de
+\end{example}
+
+with the \shell{Subject: jobserv} and in the body of the mail
+
+\begin{example}
+help
+\end{example}
+
+It will list all commands that jobserv currently understands. Note that
+this is an automated service so the subject must match. jobserv ignores all
+lines in an email that it doesn't understand and stops reading at the first
+\shell{end} or \shell{--} on a line of its own. jobserv will answer your EMails telling
+you what it did, what commands it did understand, which it did execute and
+which not and if not, why not. jobserv will also remember your EMail so
+other can see who added/requested/did which job - So don't worry you won't
+be credited for your work.
+
+\subsection{Some commands the jobserver understands}
+
+\begin{description}
+\item{add <id> <description>} Add a new job with the id <id> and the short text
+	    <description> as an explanation. <id> may contain any character
+	    except whitespace. Here is an example:
+
+\begin{example}
+add exec00001 Write AddHead
+\end{example}
+
+	    If the command was successful, the reply will tell you that a
+	    new job has been added to the database. If it wasn't
+	    successful, it will tell you why not (eg. because there is
+	    already a job with the same id).
+
+\item{req <id>} Allocate a task. This task will now be allocated by you. Your
+	    EMail will be stored with it so everyone can see who is working
+	    on that job and query you if you take too long or whatever.
+
+\item{done <id>} After you requested the job and finished it, you must tell
+	    jobserv that you're through.
+
+\item{show [free] [work] [done] [byme]} The most important command. It tell
+	    jobserv that you want to know what jobs are available and the
+	    like. All parameters are optional. "byme" is a flag which
+	    restricts the answer to jobs which match your EMail. The other
+	    flags are additive and restrict the reply to jobs which are
+	    still open, currently in progress or finished. So to see
+	    the jobs which were added and finished by you, use
+
+\begin{example}
+show free done byme
+\end{example}
+
+	    Note that jobserv doesn't remember that you added a task if
+	    someone else allocated it. The most useful variants will be:
+
+\begin{example}
+show free
+\end{example}
+
+	    which shows everything that's still open and
+
+\begin{example}
+show work byme
+\end{example}
+
+	    which shows what jobs you did allocate and haven't finished
+	    yet.
+\end{description}
+
+\section{Things that are missing}
+
+Yeah, there are some things which are not in this archive for this or
+that reason. Here we go:
+
+\begin{enumeration}
+\item The Amiga system header files are missing for obvious copyright
+reasons. You can use the files which come with your C-Compiler
+(DICE, SAS/C, StormC++ or Maxxon C++) or the ones from the Amiga
+Developer CD 1.1 (that's what I did).
+
+The Developer CD is available at
+
+\begin{example}
+Stefan Ossowskis Schatztruhe
+Gesellschaft für Software mbH
+Veronikastr. 33
+45131 Essen
+Germany
+
+Order Phone: ++49-(0)2 01-78 8778
+
+Fax: ++49-(0)2 01 - 79 84 47
+EMail: stefano@tchest.e.eunet.de
+WWW: \link{http://www.schatztruhe.de/}{http://www.schatztruhe.de/}
+Support-Mailbox: ++49-(0)2 08-20 25 09
+\end{example}
+
+for DM 25.- (about $15) plus P&P. The CD contains all includes you need
+and furthermore you can find there valuable information like: The autodocs,
+the examples for the various developer disk sets and the Rom Kernel Reference
+Manuals (RKRMs), several tools to help to develop code and more. At the
+price, it's a bargain.
+
+\item Linux 2.0 for Intel CPUs (1.2.13 might work, but I haven't tried and
+won't do it).
+
+\item GNU make 3.74 or better - A real make is neccessary and this is
+one (use "make --version" to find out which you have).
+
+\item GCC 2.7.0 or better (2.7.2 is recommended because of the magnitude
+of bugs fixed) (use "gcc --verion" to find out which you have).
+
+\item GAS/as from binutils 2.7 or better.
+
+\item GDB, the GNU debugger. It is no great help in our project because we do
+nasty things with the stack, but better than nothing anyway.
+
+\item GAWK to generate a couple of files (I have 3.0.0, but any version should
+work).
+
+\end{enumeration}
+
+\section{Things that are included}
+
+There are a couple of files and directories below AROS and here is
+a short overview of what they are and what you can do with them.
+
+\begin{description}
+\item{README*} Numerous READMEs which explain different aspects of AROS.
+	The information is currently beeing moved from the README's to the
+	docs.
+
+\item{arosshell.c} The main code for the shell which allows you to execute AROS
+	commands as you are used to it on you beloved Amiga. Also a very
+	small demo of how it works and also probably the most small demo
+	that does something useful.
+
+\item{crypt.c} This is a small program which allows you to create a password if
+	you want to use the CVS server (prefered). See the section about
+	\lref{CVS}{CVS} for how it works.
+
+\item{tpl.c} Template file for AROS system library functions. Each function
+	gets it's own file.
+
+\item{makefile} This is the magic file which holds the whole crap together.
+	It has the following rules:
+
+	\begin{description}
+	\item{clean} Delete all generated files.
+
+	\item{all} This is the default rule: Check (almost) all dependencies
+		and generate (almost) all files.
+
+	\item{includes} Generate/update some AROS include files, mostly
+		files in \filename{AROS/include/clib/}.
+
+	\item{dist} Generate \filename{.tar.gz} and \filename{.lha}
+		archives. They are put into \filename{AROS/dist/}. Make
+		sure you have set the version in \filename{AROS/config/make.cfg}
+		beforehand.
+
+	\end{description}
+
+\item{config/host.cfg} This is read by the Makefile to get the name of your
+	C compiler, options that I should use and more. If this file is
+	missing, make will generate it for you.
+
+\item{config/i386-emul/} Linux version of the kernel. It consists mainly of
+	a bunch of assembler files which implement functions that can't be
+	done in C (eg. semaphores, stack handling or task switching). Note
+	that this is the only directory which may contain assembler files
+	and which is different for every architecture. If you begin your
+	work on some new architecture, make such a directory for your
+	hardware and put all hardware dependend files in there. It is a
+	rule that you can do anything inside this directory as long as it
+	has no influence on the other files and diretories. The directory
+	must support the standard rules \shell{all} and \shell{clean} and
+	read \filename{AROS/config/make.cfg}. All files generated by the
+	makefile should go into \filename{$(OSGENDIR)}.
+
+	Some files in here might be of interest:
+
+	\begin{description}
+	\item{init.c} This file contains the real main() and sets up all
+		libraries, devices and all other stuff which must be
+		known before the first user process can begin to work.
+
+	\item{machine.h} Constants which allow Exec to adjust to the local
+		hardware.
+
+	\item {makefile} This is a good example of how sub-makefiles for
+		AROS should look like.
+
+	\end{description}
+
+\item{config/make.cfg} Global settings for the Makefiles. Each makefile reads this file
+	before it does anything else (well, almost... most makefiles set a
+	path to this file first :-) ) It sets up some interesting paths:
+
+	\begin{description}
+	\item{$(OSGENDIR)} Use this path for all files which should go into
+		the OS itself.
+	\end{description}
+
+\item{config/m68k-emul/} Untested assembler code for machines which have an
+	680x0 CPU but which are not Amigas (Mac, for example).
+
+\item{config/m68k-native/} Untested assembler code for Amiga hardwares.
+	Untested means: They might work but I haven't tried. They should be
+	a good basis for beginning the work to make AROS run on an Amiga
+	but you should first have a look at \filename{AROS/config/i386-emul/}
+	which is the most upto-date version.
+
+\item{configure} This is a small script which examines your system and
+	creates a file named \filename{AROS/config/host.cfg} which is used by
+	the makefiles.
+
+\item{purify} A small script which can be put in front of the C compiler
+	like this:
+
+\begin{example}
+purify cc ...
+\end{example}
+
+	It will modify some options to purify the code.
+
+\item{bin/} This directory contains all generated files under the name of your
+	OS (eg. \filename{AROS/bin/linux/}). This directory is called
+	\shell{$(ARCHDIR)}. Below this are two more directories:
+	\shell{$(BINDIR)} where the files should be put which the end user
+	should see and \shell{$(GENDIR)} where you can create a directory
+	to put all files one part of AROS needs (eg. \filename{libs/} or
+	\filename{os/}). The diretory \shell{$(OSGENDIR)} is below
+	\shell{$(GENDIR)} and all \filename{*.o} files in this directory
+	are collected to the \filename{AmigaOS.lib}.
+
+\item{c/} This directory contains a couple of applications for AROS and some
+	demos.
+
+\item{alib/} contains the source for the \filename{amiga.lib}.
+
+\item{amiga/} This is the directory where you can (and should) put things which
+	are copyrighted by someone and thus now part of the archive; right
+	now this means only the amiga header files which you get along with
+	your C-Compiler (eg. DICE, SAS/C, StormC++, Maxon C++) or from the
+	Amiga Developer CD 1.1 (recommended since it's the most simple and
+	inexpensive way to get them). The CD is available at your local
+	dealer or by mail order. Just put the includes into a subdir
+	\filename{include/} below this directory and AROS will find them
+	there.
+
+\item{aros/} contains code for the \filename{aros.lib}; this library
+	contains several function which make your life easier.
+
+\item{devs/} System devices: \filename{console.device}
+
+\item{dist/} \shell{make dist} will put an archive with all files for
+	developers and users in this directory. Make sure the version in
+	make.cfg is set to the correct value because it will be used to
+	determine the name of the archive.
+
+\item{dos/} \label{dos}The first library which is added to the OS by standard operations.
+	Use this one as a starting point if you want to develop own
+	libraries. Here is a list of interesting files:
+
+	\begin{description}
+	\item{dos_functable.c} An array which all functions of the library.
+		It is generated by a script from the headers of all
+		\filename{*.c}-files in this directory.
+
+	\item{dos_init.c} The init-code (|lib_init()|, |lib_open()|,
+		|lib_close()|, |lib_expunge()|).
+
+	\item{dos_intern.h} A common include-file for all
+		\filename{*.c}-files in this directory. It must not contain
+		anything which is necessary outside this directory.
+
+	\item{dos_debug.h} Enable and disable debugging for a function of
+		the library.
+
+	\item{makefile} This is a good example of how a makefile for a
+		library, which is linked into the system, should look like
+	\end{description}
+
+	All other files are functions of the library with one function
+	per file. Each file contains an AutoDoc-like header and some
+	extra infos which are needed by the scripts. If possible each
+	file should also contain a test which can be enabled with
+	\shell{-DTEST}. See \filename{AROS/dos/filepart.c} for a good example.
+
+\item{exec/} The source for the exec.library. This is no good starting point
+	for own libraries since Exec is not initialized like other
+	libraries and so some things are handled differently here.
+
+	Exec relies on some files which are in \filename{$(KERNEL)/}.
+
+\item{filesys/} A starting filesystem which uses the Linux ext2fs to emulate
+	a DOS device, the basics for a \filename{NULL:} device and the
+	beginning of a RAM Disk.
+
+\item{graphics/} Sourcecode for the \filename{graphics.library}. See
+	\lref{dos/}{dos} for more information.
+
+\item{include/} This directory contains all AROS specific includes as well as all
+	Amiga includes which have been modified for AROS. Note that these
+	files are searched *before* the files in \filename{amiga/include/}.
+	Most people will notice this when they compile some program which
+	uses a function which has not yet been implemented in AROS. The
+	compiler will complain about a function without a prototype despite
+	the fact that it is in \filename{amiga/include/clib/*_protos.h}.
+	That's because it doesn't look there and if you ever get an error
+	like this, have a look into include first.
+
+\item{intuition/} Sourcecode for the \filename{intuition.library}. See
+	\lref{dos/}{dos} for more information.
+
+\item{test/} Testcode which is more complex.
+
+\item{utility/} Sourcecode for the \filename{utility.library}. See
+	\lref{dos/}{dos} for more information.
+
+\end{description}
 
