@@ -57,7 +57,8 @@
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     struct Task *me = FindTask(NULL);
-
+    ULONG retval = TRUE;
+    
 #if CHECK_INITSEM
     if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
     {
@@ -87,12 +88,13 @@
     {
 	/* We can't get ownership, just return it. */
 	sigSem->ss_QueueCount--;
+	retval = FALSE;
     }
     
     /* All done. */
     Permit();
 
-    return (sigSem->ss_Owner == me ? TRUE : FALSE );
+    return retval;
 
     AROS_LIBFUNC_EXIT
 } /* AttemptSemaphoreShared */
