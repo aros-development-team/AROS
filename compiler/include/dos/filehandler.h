@@ -127,7 +127,7 @@ struct DeviceNode
 
     /* For the following two fields, see comments in <dos/dosextens.h>.
        Both fields specify the name of the handler. */
-    BPTR   dn_OldName;
+    BSTR   dn_OldName;
     STRPTR dn_NewName;
 
     struct Device *dn_Device;
