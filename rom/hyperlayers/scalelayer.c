@@ -13,6 +13,17 @@
 #include <proto/graphics.h>
 #include "basicfuncs.h"
 
+struct ScaleLayerParam
+{
+  ULONG factor;
+  ULONG numerator;
+  ULONG denominator;
+  ULONG centerx;
+  ULONG centery;
+};
+
+struct Region * ScaleLayerCallback();
+
 /*****************************************************************************
 
     NAME */
@@ -32,7 +43,7 @@
 
 /*  FUNCTION
         Scale the given layer. This function will use the
-        current shape of the layer and resize it aaccording to
+        current shape of the layer and resize it according to
         the parameters factor, numerator and denominator.
         See graphics/ScalerDiv() on how to use these parameters.
         centerx and centery are used as center for the scaling
@@ -65,7 +76,26 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
+  struct ScaleLayerParam parm = {factor, numerator, denominator, centerx, centery};
+  struct Region * oldshape;
+  
+  oldshape = ChangeLayerShape(l, 0, ScaleLayerCallback, &parm);
+  if (oldshape)
+  {
+    DisposeRegion(oldshape);
+    return TRUE;
+  }
+  
   return FALSE;
-
   AROS_LIBFUNC_EXIT
 } /* ScaleLayer */
+
+AROS_UFH5(struct Region *, ScaleLayerCallback,
+   AROS_UFHA(struct Region          *, newshape , A0),
+   AROS_UFHA(struct Layer           *, l        , A1),
+   AROS_UFHA(struct ClipRect        *, crlist   , A2),
+   AROS_UFHA(struct Region          *, region   , A3),
+   AROS_UFHA(struct ScaleLayerParam *, arg      , A4))
+{
+  return NULL;
+}
