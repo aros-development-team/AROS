@@ -90,21 +90,21 @@ VOID __DestroyWBHM_WB
             case WBHM_TYPE_OPEN:
                 if (message->wbhm_Data.Open.Name != NULL) 
                 {
-                    FreeVec(message->wbhm_Data.Open.Name);
+                    FreeVec((APTR) message->wbhm_Data.Open.Name);
                 }
                 break;
                 
             case WBHM_TYPE_UPDATE:
                 if (message->wbhm_Data.Update.Name != NULL)
                 {
-                    FreeVec(message->wbhm_Data.Update.Name);
+                    FreeVec((APTR) message->wbhm_Data.Update.Name);
                 }
                 break;
                 
             case WBHM_TYPE_SHOW:
             case WBHM_TYPE_HIDE:
-            default:
                 /* No additional resources to free */
+                break;
         }
     
         FreeMessage((struct Message *) message);
