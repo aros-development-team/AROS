@@ -70,7 +70,7 @@ for tool1 in $tools_list; do
         tool=`which $tool 2>/dev/null`
 
         if test "$tool" != ""; then
-            tool_targets_list=`$tool --help 2>&1 | grep "$tool: supported targets"`
+            tool_targets_list=`$tool --help 2>&1 | grep "$tool: "`
         else
             tool_targets_list=
         fi
