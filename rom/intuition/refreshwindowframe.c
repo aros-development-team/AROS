@@ -217,7 +217,7 @@ VOID int_refreshwindowframe(struct Window *window, BOOL onlytitle, struct Intuit
 		#ifdef __MORPHOS__
 		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 1);
 		#else
-		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 3);
+		    Move(rp, left + 3, dri->dri_Font->tf_Baseline + 2);
 		#endif
 		    Text(rp, window->Title, textlen);
 		}
