@@ -86,6 +86,12 @@ AROS_UFH3
                     TAG_MORE,                (IPTR) iim->iim_Tags
                 );
             }
+            
+            if (icon != NULL)
+            {
+                /* Force the icon type, in case we have a broken icon */
+                icon->do_Type = WBDISK;
+            }
         }
         else if (iim->iim_FIB->fib_DirEntryType > 0)
         {
@@ -97,6 +103,12 @@ AROS_UFH3
                 ICONGETA_GetDefaultType,        WBDRAWER, 
                 TAG_MORE,                (IPTR) iim->iim_Tags
             );
+            
+            if (icon != NULL)
+            {
+                /* Force the icon type, in case we have a broken icon */
+                icon->do_Type = WBDRAWER;
+            }
         }
         else
         {
@@ -123,6 +135,12 @@ AROS_UFH3
                         ICONGETA_GetDefaultType,        WBTOOL, 
                         TAG_MORE,                (IPTR) iim->iim_Tags
                     );
+                    
+                    if (icon != NULL)
+                    {
+                        /* Force the icon type, in case we have a broken icon */
+                        icon->do_Type = WBTOOL;
+                    }
                 }
                 else
                 {
@@ -171,6 +189,12 @@ AROS_UFH3
                             TAG_MORE,                (IPTR) iim->iim_Tags
                         );
                     }
+                    
+                    if (icon != NULL)
+                    {
+                        /* Force the icon type, in case we have a broken icon */
+                        icon->do_Type = WBPROJECT;
+                    }
                 }
                 
                 ReleaseDataType(dt);
@@ -183,6 +207,12 @@ AROS_UFH3
                     ICONGETA_GetDefaultType,        WBPROJECT,
                     TAG_MORE,                (IPTR) iim->iim_Tags
                 );
+                
+                if (icon != NULL)
+                {
+                    /* Force the icon type, in case we have a broken icon */
+                    icon->do_Type = WBPROJECT;
+                }
             }
         }
     }
