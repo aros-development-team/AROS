@@ -195,7 +195,7 @@ AROS_LH1(void, CloseWindow,
         DEBUG_CLOSEWINDOW(dprintf("CloseWindow: Reply UserPort Msgs\n"));
         while ((im = (struct IntuiMessage *) GetMsg (userport)))
         {
-            im->IDCMPWindow = 0;
+	    im->IDCMPWindow = 0;
             im->Code = 0;
             im->Qualifier = 0;
             ReplyMsg ((struct Message *)im);
@@ -211,6 +211,7 @@ AROS_LH1(void, CloseWindow,
 } /* CloseWindow */
 
 /******************************************************************************/
+
 
 /* This is called from the intuition input handler */
 VOID int_closewindow(struct CloseWindowActionMsg *msg,
@@ -312,7 +313,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
     **
     */
 
-#ifndef TIMEVALWINDOWACTIVATION
+//#ifndef TIMEVALWINDOWACTIVATION
 
     if (window->Descendant)
     {
@@ -325,7 +326,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         if (!IntuitionBase->ActiveWindow && window->Parent)
             ActivateWindow (window->Parent);
     }
-#endif
+//#endif
 
     /* Make sure the Screen's window list is still valid */
 
@@ -368,6 +369,7 @@ VOID int_closewindow(struct CloseWindowActionMsg *msg,
         }
 
         if (neww) ActivateWindow(neww);
+
     }
 #endif
 
@@ -451,4 +453,5 @@ void intui_CloseWindow (struct Window * w,
 
     if (IW(w)->free_pointer)
         DisposeObject(IW(w)->pointer);
+
 }
