@@ -16,30 +16,15 @@
 #ifndef LIBCORE_COMPILER_H
 #   include <libcore/compiler.h>
 #endif
-#ifndef LIBCORE_BASE_H
-#   include <libcore/base.h>
+#ifndef EXAMPLE_EXAMPLEBASE_H
+#   include <example/examplebase.h>
 #endif
-#ifndef LIBBASETYPE
+#ifndef _LIBDEFS_H
 #   include "libdefs.h"
 #endif
-
-struct ExampleBase
-{
-    struct LibHeader	   exb_LibHeader;
-    struct IntuitionBase  *exb_IntuitionBase;
-    struct GfxBase	  *exb_GfxBase;
-};
-
-extern ULONG SAVEDS STDARGS L_OpenLibs	(LIBBASETYPEPTR exb);
-extern void  SAVEDS STDARGS L_CloseLibs (LIBBASETYPEPTR exb);
-
-extern LIBBASETYPEPTR LIBBASE;
 
 extern struct ExecBase	    *SysBase;
 extern struct IntuitionBase *IntuitionBase;
 extern struct GfxBase	    *GfxBase;
-
-extern const struct InitTable InitTab;
-extern struct MyDataInit DataTab;
 
 #endif /* _INTERN_H */
