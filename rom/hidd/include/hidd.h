@@ -50,6 +50,15 @@
 #define HIDDA_ErrorCode 	(HIDDA_Base + 8)    /* --G-- ULONG */
 #define HIDDA_Locking		(HIDDA_Base + 9)    /* --G-- ULONG */
 
+/*
+    This flag is set on private attributes which external code should just
+    ignore. To define such tags, you can offset from HIDDA_PrivateBase.
+    Note that these tags are HIDD-specific; you should not try to apply
+    them on another HIDD than the one from which you got them.
+*/
+#define HIDDV_PrivateAttribute	0x40000000
+#define HIDDA_PrivateBase	(HIDDA_Base | HIDDV_PrivateAttribute)
+
 /* Values for the HIDD_Type Tag */
 #define HIDDV_Root		0
 
@@ -62,16 +71,31 @@
 #define HIDDV_StatusUnknown	-1
 
 /* Methods for all HIDD's */
-#define HIDDM_Root_Base 	0x80000
-#define HIDDM_Class_Get 	0x80001 /* LONG M (struct opGet *)      */
-#define HIDDM_Class_MGet	0x80002 /* LONG M (struct op??? *)      */
-#define HIDDM_BeginIO		0x80003 /* LONG M ( hmIO *)             */
-#define HIDDM_AbortIO		0x80004 /* LONG M ( hmIO *)             */
-#define HIDDM_LoadConfigPlugin	0x80005 /* HIDDT_Config M ( hmPlugin *) */
-#define HIDDM_Lock		0x80006 /* IPTR M ( hmLock *)           */
-#define HIDDM_Unlock		0x80007 /* void M ( hmLock *)           */
-#define HIDDM_AddHIDD		0x80008 /* BOOL M ( hmAdd *)            */
-#define HIDDM_RemoveHIDD	0x80009 /* void M ( hmAdd *)            */
+#define HIDDM_Base		0x80000
+#define HIDDM_Class_Get 	(HIDDM_Base + 1) /* LONG M (struct opGet *)      */
+#define HIDDM_Class_MGet	(HIDDM_Base + 2) /* LONG M (struct op??? *)      */
+#define HIDDM_BeginIO		(HIDDM_Base + 3) /* LONG M ( hmIO *)             */
+#define HIDDM_AbortIO		(HIDDM_Base + 4) /* LONG M ( hmIO *)             */
+#define HIDDM_LoadConfigPlugin	(HIDDM_Base + 5) /* HIDDT_Config M ( hmPlugin *) */
+#define HIDDM_Lock		(HIDDM_Base + 6) /* IPTR M ( hmLock *)           */
+#define HIDDM_Unlock		(HIDDM_Base + 7) /* void M ( hmLock *)           */
+#define HIDDM_AddHIDD		(HIDDM_Base + 8) /* BOOL M ( hmAdd *)            */
+#define HIDDM_RemoveHIDD	(HIDDM_Base + 9) /* void M ( hmAdd *)            */
+
+/*
+    This flag is set on uncommon methods. Uncommon methods are methods
+    which are really uncommon, ie. which are used by a specific HIDD.
+    Any method which is shared by a set of HIDDs should not have this
+    flag set (unless the method is really uncommon). Examples might be
+    methods which access a unique feature of the hardware which are not
+    available anywhere else (eg. CopperLists on the Amiga). Something
+    like 3D methods (ie. methods which are introduced by new hardware
+    but which seem to be common in the future) shouldn't have this
+    flag set.
+*/
+#define HIDDV_UncommonMethod	    0x80000000
+#define HIDDM_UncommonMethodBase    (HIDDM_Base | HIDDV_UncommonMethod)
+
 
 /* Used for HIDDM_BeginIO, HIDDM_AbortIO */
 typedef struct hmIO
