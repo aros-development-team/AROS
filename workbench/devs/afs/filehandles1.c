@@ -214,22 +214,25 @@ UBYTE buffer[32];
 				return NULL;
 			}
 			pos = buffer;
-			while ((*name) && (*name!='/'))
+			while ((*name != 0) && (*name != '/'))
 			{
 				*pos++ = *name++;
 			}
 			if (*name == '/')
 				name++;
 			*pos=0;
-			D(bug
-				(
-					"[afs]   findBlock: searching for header block of %s\n",
-					buffer
-				));
-			blockbuffer =
-				getHeaderBlock(afsbase, dirah->volume, buffer, blockbuffer, block);
-			if (blockbuffer == NULL)
-				break;		/* object not found or other error */
+			if (*name != '/') /* parent is handled above */
+			{
+				D(bug
+					(
+						"[afs]   findBlock: searching for header block of %s\n",
+						buffer
+					));
+				blockbuffer =
+					getHeaderBlock(afsbase, dirah->volume, buffer, blockbuffer, block);
+				if (blockbuffer == NULL)
+					break;		/* object not found or other error */
+			}
 		}
 	}
 	D(
