@@ -19,5 +19,8 @@
 #define INSTALL_IRQ_HANDLER(vectoraddress, routineaddress) \
 	*(ULONG *)vectoraddress = (ULONG)routineaddress
 
+#define INSTALL_TRAP_HANDLER(vectoraddress, routineaddress) \
+	*(ULONG *)vectoraddress = (ULONG)routineaddress
+
 
 #endif
