@@ -195,7 +195,7 @@
          Set_Low32of64 (Dest64, 0                       ); \
        } \
        else \
-         Set_Value64C(Dest64, 0 , 0, 0); \
+         Set_Value64C(Dest64, 0, 0); \
      } 
 #endif
 
@@ -550,8 +550,35 @@
    Dest64 = Var1_64 - Var2_64;
 #else
 #define SUB64(Dest64, Var1_64, Var2_64) \
-   printf("using SUB! still incomplete define!!\n"); 
+   if ((ULONG)Get_Low32of64(Var2_64) > (ULONG)Get_Low32of64(Var1_64)) \
+   { \
+     Set_Low32of64 ( Dest64, Get_Low32of64 (Var1_64)- Get_Low32of64 (Var2_64));   \
+     Set_High32of64( Dest64, Get_High32of64(Var1_64)- Get_High32of64(Var2_64)-1); \
+   } \
+   else \
+   { \
+     Set_Low32of64 ( Dest64, Get_Low32of64 (Var1_64) - Get_Low32of64 (Var2_64)); \
+     Set_High32of64( Dest64, Get_High32of64(Var1_64) - Get_High32of64(Var2_64)); \
+   } 
 #endif
+
+#if defined AROS_64BIT_TYPE || defined __GNUC__
+#define SUB64QC(Dest64, Const64_Hi, Const64_Lo ) \
+   Dest64 -= ConvertTo64(Const64_Hi, Const64_Lo);
+#else
+#define SUB64QC(Dest64, Const64_Hi, Const64_Lo ) \
+   if ((ULONG)Const64_Lo > (ULONG)Get_Low32of64(Dest64)) \
+   { \
+     Set_Low32of64 ( Dest64, Get_Low32of64 (Dest64)-Const64_Lo);   \
+     Set_High32of64( Dest64, Get_High32of64(Dest64)-Const64_Hi-1); \
+   } \
+   else \
+   { \
+     Set_Low32of64 ( Dest64, Get_Low32of64 (Dest64)-Const64_Lo); \
+     Set_High32of64( Dest64, Get_High32of64(Dest64)-Const64_Hi); \
+   } 
+#endif
+
 
 
 #if defined AROS_64BIT_TYPE || defined __GNUC__
