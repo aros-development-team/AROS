@@ -68,7 +68,9 @@ int set_open_libraries(void)
     AROS_GET_SYSBASE
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int n = 1;
+#if 0
     struct Process *me = (struct Process *)FindTask(0);
+#endif
 
     while(set[n])
     {
