@@ -18,7 +18,7 @@ AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
 SRCS = $(foreach f,$(FILES),$(f).src)
-HTML = $(DEST)index.html $(foreach f,$(FILES),$(DEST)$(f).html)
+HTML = $(foreach f,$(FILES),$(DEST)$(f).html) $(DEST)index.html
 
 all : $(DEST)srcs autodocs $(HTML) $(DEST)filesystems.doc \
 	$(DEST)jobserv.html cgi-scripte \
@@ -66,6 +66,9 @@ $(DEST)toc.html : $(SRCS) tochtml.gawk
 	chmod a+r $@
 
 $(DEST)links.html: $(wildcard $(TOP)/dist/*)
+	touch links.src
+	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
+	chmod a+r $@
 
 $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
@@ -74,8 +77,14 @@ $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	    page_footer.html collectcontents.sh contents2html.gawk \
 	    makefile2html.gawk
+	touch devinfo-4.src
+	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
+	chmod a+r $@
 
 $(DEST)background.html: stathtml.gawk $(HOME)/Mail/jobs
+	touch background.src
+	gawk -f src2html.gawk --assign TOP="$(TOP)" $< > $@
+	chmod a+r $@
 
 $(DEST)jobserv.html: $(HOME)/Mail/jobs jobtable.gawk jobtable.head \
 	    jobtable.tail

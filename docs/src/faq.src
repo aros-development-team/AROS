@@ -89,3 +89,48 @@ that code for UAE will appear in AROS and vice versa. For example, UAE is
 interested in the source for the OS because it could run some apps much
 faster if it could replace the OS calls by native code. On the other hand,
 AROS needs hardware drivers (eg. audio.device).
+
+\section{You should not use Linux or X11 ! *New*}
+
+The final version of AROS will not depend on Linux or X11 anymore (but
+it will run on them if you insist). Currently, we use Linux and X11 to
+speed up development. For example, if I write a new function to open
+a window, I can write that single function and need not wrote hundreds
+of other functions in layers, graphics, etc.
+
+\section{How do you want to make it portable ? *New*}
+
+One of the major new features of AROS will be the new Hardware
+Independent Device Drivers (HIDD). They will allow us to port AROS to
+any hardware with almost no fuzz. But that's a bit in the future. So
+don't worry that your old code won't work anymore, say, next month.
+
+\section{AROS won't make it *New*}
+
+Yeah, we hear that all the day form every person. But most of them
+either don't know what we are doing or they think the Amiga is already dead.
+After we explained what we do to the formers, most agreed that it
+is possible. The later make more problems. Well, is Amiga dead right
+now ? I really can't say. Just a few hints: Did you A500 or A4000 blew up
+when C= went bankrupt ? Or when AT did ?
+
+Fact is that there is only few new software for the Amiga (although Aminet
+has never seen better times) and that hardware is also developed at
+a lower speed (but the most amazing gadgets appear right now). I say,
+the Amiga community (which is still there) just sits and waits. And if
+someone releases something which is a bit like the Amiga back in 1984,
+then that machine will boom again. And who knows, maybe you will get
+a CD along with the machine labeled "AROS" :-)
+
+\section{AROS won't compile *New*}
+
+We have still trouble to generate the distribution lists. So if some
+file is missing, tell us and it will show up on the FTP site as soon
+as possible.
+
+There will also be an archive with all tools we have installed to develop
+for AROS for the Amiga any time now (Linux and other Unixes find their
+developer packages pre-installed or at least much more easy to install from
+the Internet, eg. from \link{www.suse.com} {http://www.suse.com} (Germany)
+or \link{www.redhat.com} {http://www.redhat.com} (USA)).
+
