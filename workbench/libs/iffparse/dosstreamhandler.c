@@ -29,7 +29,11 @@ ULONG DOSStreamHandler
     {
     case IFFCMD_READ:
 #if DEBUG
+#ifdef _AROS
 	VPrintf ("   Reading %ld bytes\n", &cmd->sc_NBytes);
+#else
+	dprintf ("   Reading %ld bytes\n", cmd->sc_NBytes);
+#endif
 	Flush (Output ());
 #endif
 
@@ -65,7 +69,11 @@ ULONG DOSStreamHandler
 
     case IFFCMD_SEEK:
 #if DEBUG
+#ifdef _AROS
 	VPrintf ("   Seeking %ld bytes\n", &cmd->sc_NBytes);
+#else
+	dprintf ("   Seeking %ld bytes\n", cmd->sc_NBytes);
+#endif
 	Flush (Output ());
 #endif
 

@@ -121,7 +121,11 @@ LONG ReadStreamLong (struct IFFHandle *iff,
     struct IFFParseBase_intern *IFFParseBase)
 {
     LONG val;
+#if AROS_BIG_ENDIAN
+#   define bytes valptr
+#else
     UBYTE bytes[4];
+#endif
 
     val = ReadStream (iff, bytes, sizeof(LONG), IFFParseBase);
 
@@ -130,7 +134,9 @@ LONG ReadStreamLong (struct IFFHandle *iff,
     else if (val != sizeof(LONG))
 	return IFFERR_EOF;
 
+#if !AROS_BIG_ENDIAN
     *(LONG *)valptr = bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
+#endif
 
     return sizeof(LONG);
 } /* ReadStreamLong */
@@ -139,13 +145,18 @@ LONG WriteStreamLong (struct IFFHandle *iff,
     APTR valptr,
     struct IFFParseBase_intern *IFFParseBase)
 {
-    LONG val = *(LONG *)valptr;
+    LONG val;
+#if AROS_BIG_ENDIAN
+#   define bytes valptr
+#else
     UBYTE bytes[4];
+    val = *(LONG *)valptr;
 
     bytes[0] = val >> 24;
     bytes[1] = val >> 16;
     bytes[2] = val >> 8;
     bytes[3] = val;
+#endif
 
     val = WriteStream (iff, bytes, sizeof(LONG), IFFParseBase);
 
@@ -246,7 +257,7 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
     LONG stepping_retval;
     ULONG param;
 
-    D(bug("InvokeHandlers (Iff=%p, mode=%d, ident=%d\n",
+    D(bug("InvokeHandlers (Iff=%p, mode=%d, ident=0x%08lx\n",
 	iff, mode, ident
     ));
 
@@ -339,22 +350,24 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
     /* For use with custom streams */
     struct IFFStreamCmd cmd;
 
-    /* Now we can do the actual reading of the stream */
-    cmd.sc_Command  = IFFCMD_READ;
-    cmd.sc_Buf	    = buf;
-    cmd.sc_NBytes   = bytestoread;
+    retval = bytestoread;
+    if (bytestoread)
+    {
+        /* Now we can do the actual reading of the stream */
+        cmd.sc_Command  = IFFCMD_READ;
+        cmd.sc_Buf      = buf;
+        cmd.sc_NBytes   = bytestoread;
 
-    err = CallHookPkt
-    (
-	GetIntIH(iff)->iff_StreamHandler,
-	iff,
-	&cmd
-    );
+        err = CallHookPkt
+        (
+	    GetIntIH(iff)->iff_StreamHandler,
+	    iff,
+	    &cmd
+        );
 
-    if (err)
-	retval = IFFERR_READ;
-    else
-	retval = bytestoread;
+        if (err)
+	    retval = IFFERR_READ;
+    }
 
     return (retval);
 }
@@ -374,21 +387,24 @@ LONG WriteStream(struct IFFHandle *iff, APTR buf, LONG bytestowrite,
 
     /* Call the custom hook with a write command */
 
-    cmd.sc_Command   = IFFCMD_WRITE;
-    cmd.sc_Buf	    = buf;
-    cmd.sc_NBytes    = bytestowrite;
+    retval = bytestowrite;
 
-    err = CallHookPkt
-    (
-	GetIntIH(iff)->iff_StreamHandler,
-	iff,
-	&cmd
-    );
+    if (bytestowrite)
+    {
+	cmd.sc_Command   = IFFCMD_WRITE;
+	cmd.sc_Buf	 = buf;
+	cmd.sc_NBytes    = bytestowrite;
 
-    if (err)
-	retval = IFFERR_WRITE;
-    else
-	retval = bytestowrite;
+        err = CallHookPkt
+        (
+	    GetIntIH(iff)->iff_StreamHandler,
+	    iff,
+	    &cmd
+        );
+
+        if (err)
+	    retval = IFFERR_WRITE;
+    }
 
     return (retval);
 }

@@ -7,6 +7,8 @@
 */
 #include "iffparse_intern.h"
 
+#define DEBUG_GOODID(x)
+
 /*****************************************************************************
 
     NAME */
@@ -57,9 +59,15 @@
     theId[2] = id >> 8;
     theId[3] = id;
 
+    DEBUG_GOODID(dprintf("theid: 0x%08lx [%c%c%c%c]\n",
+			 id, theId[0], theId[1], theId[2], theId[3]));
+
     /* If the ID starts with a space, but is not all spaces, then invalid */
     if((theId[0] == 0x20) && (id != 0x20202020))
-	return (FALSE);
+    {
+	DEBUG_GOODID(dprintf("badid 1\n"));
+        return (FALSE);
+    }
 
     /*
 	Check whether the ID is within the allowed character ranges.
@@ -67,14 +75,27 @@
     */
 
     if( (theId[0] < 0x20) || (theId[0] > 0x7e))
+    {
+	DEBUG_GOODID(dprintf("badid 2\n"));
 	return (FALSE);
+    }
     if( (theId[1] < 0x20) || (theId[1] > 0x7e))
+    {
+	DEBUG_GOODID(dprintf("badid 3\n"));
 	return (FALSE);
+    }
     if( (theId[2] < 0x20) || (theId[2] > 0x7e))
+    {
+	DEBUG_GOODID(dprintf("badid 4\n"));
 	return (FALSE);
+    }
     if( (theId[3] < 0x20) || (theId[3] > 0x7e))
+    {
+	DEBUG_GOODID(dprintf("badid 5\n"));
 	return (FALSE);
+    }
 
+    DEBUG_GOODID(dprintf("goodid\n"));
     return (TRUE);
 
     AROS_LIBFUNC_EXIT

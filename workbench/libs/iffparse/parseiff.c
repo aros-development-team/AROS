@@ -86,11 +86,17 @@
 
     /* Cannot parse iff when it is not opened yet */
     if (!(iff->iff_Flags & IFFF_OPEN))
+    {
+	D(bug("ParseIFF: syntax error (open)\n"));
 	ReturnInt ("ParseIFF",LONG,IFFERR_SYNTAX);
+    }
 
     /* Cannot parse iff file, when it is opened in write-mode */
     if (iff->iff_Flags & IFFF_WRITE)
+    {
+	D(bug("ParseIFF: syntax error (write)\n"));
 	ReturnInt ("ParseIFF",LONG,IFFERR_SYNTAX);
+    }
 
     /* Main loop for reading the iff file
 
@@ -100,7 +106,8 @@
 
     while (!done)
     {
-	switch ( GetIntIH(iff)->iff_CurrentState )
+	D(bug("ParseIFF: state %d\n", GetIntIH(iff)->iff_CurrentState));
+        switch ( GetIntIH(iff)->iff_CurrentState )
 	{
 	case IFFSTATE_COMPOSITE:
 
@@ -182,9 +189,12 @@
 	    if (cn->cn_Size & 1)
 		toseek ++;
 
-	    err = SeekStream(iff, toseek, IPB(IFFParseBase));
-	    if (err)
-		done = TRUE;
+	    if (toseek)
+	    {
+		err = SeekStream(iff, toseek, IPB(IFFParseBase));
+		if (err)
+		    done = TRUE;
+	    }
 
 	    break;
 
@@ -265,6 +275,8 @@
 
 
     }  /* End of while */
+
+    D(bug("ParseIFF: return %ld\n", err));
 
     ReturnInt ("ParseIFF",LONG,err);
     AROS_LIBFUNC_EXIT

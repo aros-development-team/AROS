@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -54,6 +56,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+#if DEBUG
+    bug ("StopOnExit (iff=%p, type=%c%c%c%c, id=%c%c%c%c)\n",
+	iff,
+	type>>24, type>>16, type>>8, type,
+	id>>24, id>>16, id>>8, id
+    );
+#endif
+
     /* Install an ExitHandler */
     return
     (
@@ -63,10 +73,25 @@
 	    type,
 	    id,
 	    IFFSLI_TOP,
-	    &IPB(IFFParseBase)->stophook,
+	    &IPB(IFFParseBase)->exitcontexthook,
 	    NULL
 	)
     );
 
     AROS_LIBFUNC_EXIT
 } /* StopOnExit */
+
+
+/**********************/
+/* Exit entry-handler */
+/**********************/
+
+LONG ExitContextFunc
+(
+    struct Hook *hook,
+     APTR         obj,
+     APTR         p
+)
+{
+    return (IFFERR_EOC);
+}

@@ -148,7 +148,7 @@ LONG CollectionFunc
 
 	/* Store the new LCI into top of stack */
 
-	err = StoreLocalItem(iff,lci,IFFSLI_ROOT);
+	err = StoreLocalItem(iff,lci,IFFSLI_PROP);
 
 	if (err)
 	{
