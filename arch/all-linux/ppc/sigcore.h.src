@@ -1,0 +1,136 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
+#ifndef _SIGCORE_H
+#define _SIGCORE_H
+
+#include <signal.h>
+#include "etask.h"
+
+/* Put a value of type SP_TYPE on the stack or get it off the stack. */
+
+#define _PUSH(sp,val)	(*--sp = (SP_TYPE)(val))
+#define _POP(sp)	(*sp++)
+
+#include <asm/sigcontext.h>
+
+/* sigcontext_t is the type of the signals' context. Linux offers no way
+   to get this context in a legal way, so I have to use tricks. */
+
+typedef @sigcontext@ sigcontext_t;
+ 
+/* name and type of the signal handler */
+#define SIGHANDLER	linux_sighandler
+#if defined(__GLIBC__) && (__GLIBC__ >= 2)
+#  define SIGHANDLER_T  __sighandler_t
+#else
+#  define SIGHANDLER_T  SignalHandler
+#endif
+
+#define GLOBAL_SIGNAL_INIT \
+	static void sighandler (int sig, sigcontext_t * sc);    \
+								\
+	extern void SIGHANDLER (int sig, long sigcode, sigcontext_t * scp);  \
+								\
+	void call_inthandlers(int sig) {			\
+	    struct IntVector *iv;				\
+								\
+	    iv = &SysBase->IntVects[sig2tab[sig]];		\
+	    if (iv->iv_Code)					\
+	    {							\
+		AROS_UFC5(void,iv->iv_Code,			\
+		    AROS_UFCA(ULONG, 0, D1),			\
+		    AROS_UFCA(ULONG, 0, A0),			\
+		    AROS_UFCA(APTR,iv->iv_Data,A1),		\
+		    AROS_UFCA(APTR,iv->iv_Code,A5),		\
+		    AROS_UFCA(struct ExecBase *,SysBase,A6)	\
+		);						\
+	    }							\
+	}
+
+/* Type of the values which can be stored on the stack. A variable
+   which is to be used as a stack pointer must be declared as
+   "SP_TYPE *". */
+
+#define SP_TYPE	long
+
+/* How many general purpose registers are to be saved on the stack
+   when a task switch happens. */
+
+#define CPU_NUMREGS	0
+
+/* This structure is used to save/restore registers, because the stack is too
+   small. */
+
+struct AROS_cpu_context
+{
+    sigcontext_t sc;	/* Signal context struct */
+	 struct pt_regs regs;
+    ULONG fpregs[4*32];	/* FP regs not in sigcontext_t */
+};
+
+#define SIZEOF_ALL_REGISTERS	(sizeof (struct AROS_cpu_context))
+#define GetCpuContext(task)	((struct AROS_cpu_context *)\
+				 (GetIntETask(task)->iet_Context))
+#define GetSP(task)		((SP_TYPE*)(task->tc_SPReg))
+
+
+/* Macros to access the stack pointer and program counter,
+   PC is the current address in the program code. */
+
+#define SP(sc)	(sc->regs->gpr[1])
+#define PC(sc)	(sc->regs->link)
+
+/* Macros to enable or disable all signals after the signal handler
+   has returned and the normal execution commences. */
+
+#define SC_DISABLE(sc)	(sc->oldmask = ~0L)
+#define SC_ENABLE(sc)	(sc->oldmask = 0L)
+
+/* This stuff is not used on Linux/m68k, because the signal handler context
+   doesn't contain enough registers. Some assembler is needed for the signal
+   handler instead. */
+
+#define SAVE_CPU(task,sc) /**/
+
+#define RESTORE_CPU(task,sc) /**/
+
+#define PREPARE_INITIAL_FRAME(sp,pc)	/**/
+
+/* Prepare the cpu context */
+
+#define PREPARE_INITIAL_CONTEXT(task,pc) \
+	 	GetCpuContext(task)->sc.regs=&GetCpuContext(task)->regs; \
+		GetCpuContext(task)->sc.regs->link = (LONG)pc;
+
+/* This macro is similar to PREPARE_INITIAL_FRAME() but also saves
+   all general purpose registers. Use this macro when you want to
+   leave the current tasks' context to save the registers. Note that
+   the argument "sp" of the macro is just the name of the stack
+   pointer. The macro will load it from the sigcontext "sc". You
+   must store the value of "sp" after the macro and hand it to
+   RESTOREREGS() below to restore this context. */
+
+#define SAVEREGS(task,sc)	/**/
+
+/* This macro does the opposite to SAVEREGS(). It restores all
+   general purpose registers. After that, you can enter the new
+   tasks' context. Both "sp" and "sc" must be initialized.
+   The macro will save the new SP into the sigcontext "sc". */
+
+#define RESTOREREGS(task,sc)	/**/
+
+/* This macro prints the current signals' context */
+
+#define PRINT_SC(sc) \
+	printf ("SC: SP=%08lx  PC=%08lx\n" \
+	    , SP(sc), PC(sc) \
+	)
+
+/* This macro prints the current stack (after SAVEREGS()) */
+
+#define PRINT_STACK(sp)	/**/
+
+#endif /* _SIGCORE_H */

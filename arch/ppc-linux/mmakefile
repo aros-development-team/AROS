@@ -1,0 +1,7 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+#MM- kernel-linux-ppc : kernel-linux kernel-ppc
+#MM- kernel-link-linux-ppc : kernel-link-emul
+
+#MM- setup-linux-ppc : setup-linux

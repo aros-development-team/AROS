@@ -1,0 +1,34 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES		:= longjmp setjmp
+CLIBDIR 	:= $(GENDIR)/compiler/clib
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/compiler/clib -I..
+CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
+AFLAGS2 	:= $(AFLAGS) -I..
+TESTS		:=
+
+#MM
+clib-linux-ppc : $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+	@$(NOP)
+
+#MM
+setup-clib-linux-ppc :
+	%mkdirs_q $(CLIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/clib/$(f))
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(CLIBDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(CLIBDIR)/%.o : %.s
+	%assemble_q opt=$(AFLAGS2)
+
+$(CLIBDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+

@@ -1,0 +1,45 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+GENINC		:= $(TOOLDIR)/geninc-ppc$(HOST_EXE_SUFFIX)
+OS_INCLUDES	:= -I$(GENINCDIR)
+MACHINE_H	:= $(GENINCDIR)/aros/machine.h
+INCFILES	:= $(GENINCDIR)/aros/machine.h \
+		   $(INCDIR)/aros/machine.h \
+		   $(GENINCDIR)/jmpdefs.h
+
+
+#MM includes-linux-ppc : kernel-exec-includes kernel-dos-includes compiler-includes \
+#MM	compiler-arossupport-includes
+
+#MM
+includes-linux-ppc : $(INCFILES) machine.i
+	@$(NOP)
+
+#MM
+clean::
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i $(GENINC)
+
+$(INCDIR)/aros/%.h : %.h
+	%mkdirs_q $(INCDIR)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/aros/%.h : %.h
+	%mkdirs_q $(GENINCDIR)/aros
+	$(CP) $< $@
+
+$(GENINCDIR)/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+GENINC_CFLAGS := $(OS_CFLAGS) -I$(GENINCDIR) $(HOST_CFLAGS)
+
+$(GENINC) : geninc.c
+	@echo "CFLAGS=$(GENINC_CFLAGS)"
+	@echo "Creating geninc..."
+	@$(HOST_CC) $(GENINC_CFLAGS) -o $@ $<
+
+machine.i: $(GENINC) $(MACHINE_H)
+	$(GENINC) > machine.i
+
+%common
