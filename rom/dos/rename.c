@@ -79,28 +79,25 @@
 	return DOSFALSE;
     }
 
-    DoName(&io,oldName,DOSBase); // We DO need the unit...
     /* Prepare I/O request. */
     io.IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
     io.IOFS.io_Message.mn_ReplyPort = &me->pr_MsgPort;
     io.IOFS.io_Message.mn_Length = sizeof(struct IOFileSys);
-//    io.IOFS.io_Device = olddev;
-//    io.IOFS.io_Unit = NULL;	/* No unit needed as all information is in the
-//				   io_RENAME struct. */
     io.IOFS.io_Flags = 0;
     io.IOFS.io_Command = FSA_RENAME;
     io.io_Union.io_RENAME.io_Filename = oldName;
     io.io_Union.io_RENAME.io_NewName = newName;
+    DoName(&io,oldName,DOSBase);
 
-    error = DoIO(&io.IOFS);
-
-    if(error)
+    SetIoErr(io.io_DosError);
+    if(io.io_DosError)
     {
-        SetIoErr(error);
 	return DOSFALSE;
     }
-
-    return DOSTRUE;
+    else
+    {
+	return DOSTRUE;
+    }
 
     AROS_LIBFUNC_EXIT
 } /* Rename */
