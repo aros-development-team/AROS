@@ -648,7 +648,9 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 
     sgw->EditOp = EO_NOOP;
     
-    if (numchars == 0)
+    /* RKRM say: key is vanilla key if it maps exactly to one char */
+    
+    if (numchars != 1)
     {
     	/* RAW Keys */
 	
@@ -694,7 +696,7 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 	{	
 	}
     }
-    else if (numchars > 0)
+    else
     {
         /* ANSI key */
 	
