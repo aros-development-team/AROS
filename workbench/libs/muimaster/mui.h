@@ -448,6 +448,10 @@ struct MUI_PenSpec {
 #include "classes/imageadjust.h"
 #endif
 
+#ifndef _MUI_CLASSES_POPIMAGE_H
+#include "classes/popimage.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Backgriund definition
 **************************************************************************/
