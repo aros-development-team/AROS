@@ -68,6 +68,7 @@ struct ide_Unit
     UWORD               au_PortAddr;        /* IO addres of drive */
     ULONG               au_NumLoop;         /* device timeout */
     ULONG               au_ChangeNum;       /* Number of disk changes */
+    ULONG		au_CurrSect;	    /* Current sector address */
 
     UBYTE               au_DevMask;         /* 0x00 - Master, 0x10 - Slave */
     UBYTE               au_OldDevMask;
