@@ -1,6 +1,6 @@
 BEGIN {
     FS=":";
-    file=ENVIRON["HOME"] "/CVSROOT/passwd.txt";
+    file=TOP "/../CVSROOT/passwd.txt";
 
     print "\\begin{itemize}"
 
@@ -11,7 +11,7 @@ BEGIN {
 
 	if ($5!="")
 	    print "\\item "$3" ("$5")"
-	else
+	else if ($3 != "")
 	    print "\\item "$3
     }
 
