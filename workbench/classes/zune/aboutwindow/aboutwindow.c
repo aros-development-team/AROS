@@ -388,7 +388,7 @@ IPTR AboutWindow__MUIM_Window_Setup
         string = data->awd_Title;
         if (string == NULL)
         {
-            GET(self, MUIA_AboutWindow_Title, (IPTR *) &string);
+            GET(self, MUIA_AboutWindow_Title, &string);
             
             if (string != IGNORE)
             {
@@ -440,22 +440,22 @@ IPTR AboutWindow__MUIM_Window_Setup
         /*- Setup default values -------------------------------------------*/
         if (title == NULL)
         {
-            GET(_app(self), MUIA_Application_Title, (IPTR *) &title);
+            GET(_app(self), MUIA_Application_Title, &title);
         }
         
         if (versionNumber == NULL)
         {
-            GET(_app(self), MUIA_Application_Version_Number, (IPTR *) &versionNumber);
+            GET(_app(self), MUIA_Application_Version_Number, &versionNumber);
         }
         
         if (versionDate == NULL)
         {
-            GET(_app(self), MUIA_Application_Version_Date, (IPTR *) &versionDate);
+            GET(_app(self), MUIA_Application_Version_Date, &versionDate);
         }
         
         if (versionExtra == NULL)
         {
-            GET(_app(self), MUIA_Application_Version_Extra, (IPTR *) &versionExtra);
+            GET(_app(self), MUIA_Application_Version_Extra, &versionExtra);
         }
         
         /* Simplify later checks a little */
@@ -539,7 +539,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup copyright ====================================================*/
     if (data->awd_Copyright == NULL)
     {
-        GET(_app(self), MUIA_Application_Copyright, (IPTR *) &data->awd_Copyright);
+        GET(_app(self), MUIA_Application_Copyright, &data->awd_Copyright);
     }
     
     if (data->awd_Copyright != IGNORE && data->awd_Copyright != NULL)
@@ -554,7 +554,7 @@ IPTR AboutWindow__MUIM_Window_Setup
     /*= Setup description ==================================================*/
     if (data->awd_Description == NULL)
     {
-        GET(_app(self), MUIA_Application_Description, (IPTR *) &data->awd_Description);
+        GET(_app(self), MUIA_Application_Description, &data->awd_Description);
     }
     
     if (data->awd_Description != IGNORE && data->awd_Description != NULL)
