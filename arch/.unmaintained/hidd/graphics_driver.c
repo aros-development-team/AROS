@@ -1019,6 +1019,7 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
     	return;
 
   if (rp->cp_x != x)
+  {
     if (rp->cp_x > x)
     {
       x_step = -1;
@@ -1029,8 +1030,10 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
       x_step = 1;
       dx = x - rp->cp_x;
     }
+  }
 
   if (rp->cp_y != y)
+  {
     if (rp->cp_y > y)
     {
       y_step = -1;
@@ -1041,7 +1044,8 @@ void driver_Draw (struct RastPort * rp, LONG x, LONG y,
       y_step = 1;
       dy = y - rp->cp_y;
     }
-  
+  }
+
   _x = 0;
   _y = 0;
   x = rp->cp_x;
@@ -1487,7 +1491,6 @@ ULOCK_HIDD(bm);
 
 
   /* if there was a layer I have to unlock it now */
-exit:
   if (NULL != L) 
     UnlockLayerRom(L);
 
