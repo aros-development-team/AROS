@@ -1,8 +1,8 @@
 /*** Rawkey.h : Some standard rawkey definitions. Why these ****
 **** fucking codes aren't in system includes?! RKM source.  ***/
 
-#ifndef	RAWKEY_H
-#define	RAWKEY_H
+#ifndef	_RAWKEY_H_
+#define	_RAWKEY_H_
 
 #ifdef __AROS__
 #include <devices/rawkeycodes.h>
@@ -65,4 +65,4 @@
 #define PGUP_KEY    0x48
 #define PGDOWN_KEY  0x49
 
-#endif
+#endif /* _RAWKEY_H_ */
