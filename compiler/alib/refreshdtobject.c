@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of datatypes.library/RefreshDTObjectA()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPEVOID
 #include <intuition/classusr.h>
 #include <utility/tagitem.h>

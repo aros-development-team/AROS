@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1997-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Obtain the closes pen to a given color
     Lang: english
 */
+
 #include <exec/types.h>
 #define AROS_TAGRETURNTYPE void
 #define AROS_TAGRETURNTYPEVOID

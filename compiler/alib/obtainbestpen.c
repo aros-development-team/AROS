@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1997-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Obtain the best pen available for a given color
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE LONG
 #include <graphics/view.h>
 #include <utility/tagitem.h>

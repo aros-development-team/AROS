@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Varargs version of OpenCatalog()
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE  struct Catalog *
 #include <utility/tagitem.h>
 

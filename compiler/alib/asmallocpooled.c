@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Simply call the exec function 
     Lang: english
 */
+
 #define AROS_TAGRETURNTYPE APTR
 
 #include "alib_intern.h"

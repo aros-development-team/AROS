@@ -1,11 +1,9 @@
 #ifndef _ALIB_INTERN_H
 #define _ALIB_INTERN_H
-/*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
-    $Id$
 
-    Desc:
-    Lang: english
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 */
 
 #ifndef EXEC_TYPES_H
