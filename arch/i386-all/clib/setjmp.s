@@ -66,7 +66,6 @@
 	.set	FirstArg, 4 /* Skip Return-Adress */
 	.set	env, FirstArg
 	.set	retaddr, 0
-	.set	reg_eax, 4
 
 AROS_CDEFNAME(setjmp):
 	/* Fetch the address of the env-structure off the stack.
@@ -86,7 +85,7 @@ AROS_CDEFNAME(setjmp):
 
 	pushl %ebx
 
-	movl retaddr(%esp), %ebx /* Save return address */
+	movl retaddr+4(%esp), %ebx /* Save return address (%esp has changed) */
 	movl %ebx,0(%eax)
 
 	popl %ebx

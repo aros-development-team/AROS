@@ -80,32 +80,26 @@ AROS_CDEFNAME(longjmp):
 
 	/* Read return value into %ebx and make sure it's not 0 */
 	movl val(%esp),%ebx
-	cmpl 0,%ebx
+	cmpl $0,%ebx
 	jne  .cont
 
-	movl 1,%ebx
+	movl $1,%ebx
 .cont:
 	/* Restore stack pointer and all registers from env */
-	movl (%eax),%ecx
+	movl 28(%eax),%esp /* Restore original stack */
+
+	movl 0(%eax),%ecx
 	movl %ecx,retaddr(%esp) /* Restore return address */
-	addl 4,%eax
 
 	pushl %ebx /* Save return value on new stack */
 
 	/* Restore all registers */
-	movl (%eax),%ebx /* %ebx */
-	addl 4,%eax
-	movl (%eax),%ecx /* %ecx */
-	addl 4,%eax
-	movl (%eax),%edx /* %edx */
-	addl 4,%eax
-	movl (%eax),%esi /* %esi */
-	addl 4,%eax
-	movl (%eax),%edi /* %edi */
-	addl 4,%eax
-	movl (%eax),%ebp /* %ebp */
-	addl 4,%eax
-	movl (%eax),%esp /* %esp */
+	movl 4(%eax),%ebx /* %ebx */
+	movl 8(%eax),%ecx /* %ecx */
+	movl 12(%eax),%edx /* %edx */
+	movl 16(%eax),%esi /* %esi */
+	movl 20(%eax),%edi /* %edi */
+	movl 24(%eax),%ebp /* %ebp */
 
 	popl %eax /* Fetch return value */
 	ret
