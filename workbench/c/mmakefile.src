@@ -20,7 +20,6 @@ FILES	:= \
     Filenote \
     Get \
     Getenv \
-    If \
     Info \
     Join \
     Lab \
