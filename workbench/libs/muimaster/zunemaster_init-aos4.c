@@ -39,7 +39,6 @@ struct Interface *IGadTools;
 struct Interface *ICyberGfx;
 struct Interface *ICommodities;
 struct Interface *IIFFParse;
-struct Interface *IColorWheel;
 struct Interface *IDiskfont;
 struct Interface *ITextClip;
 struct Interface *IDOS;
