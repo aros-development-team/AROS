@@ -116,11 +116,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
     AROS_LIBFUNC_INIT
     SysBase = sysBase;
 
-#if 0 /* intuition_driver stuff is dead */
-    if (!intui_init (LIBBASE))
-	return NULL;
-#endif
-
     /*  We have to open this here, but it doesn't do any allocations,
 	so it shouldn't fail...
     */
@@ -283,6 +278,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	TimerBase = (struct Library *)TimerIO->tr_node.io_Device;
     }
 
+#if 0
     if(!DOSBase)
     {
 	DOSBase = OpenLibrary("dos.library", 0);
@@ -296,9 +292,6 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	    SetFunction(DOSBase, -81*LIB_VECTSIZE,
 			AROS_SLIB_ENTRY(DisplayError, Intuition));
     }
-
-#if 0 /* intuition_driver stuff is dead */ 
-	return NULL;
 #endif
 
     /* I have one more opener. */
