@@ -1,12 +1,14 @@
 # $Id$
 TOP=../..
 
+SPECIAL_CFLAGS = -D__AROS -I$(TOP)/workbench/libs
+
 include $(TOP)/config/make.cfg
 
 #CC=$(PURIFY) $(SYS_CC)
 EXEDIR=$(BINDIR)/Demos
 
-OBJDIR = $(GENDIR)/demos
+OBJDIR = $(GENDIR)/workbench/demos
 LIBS = -L$(LIBDIR) -lamiga -laros -larosc
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a $(LIBDIR)/startup.o \
 	$(LIBDIR)/libarosc.a
@@ -45,10 +47,10 @@ $(EXEDIR)/forkbomb : forkbomb
 	$(CP) $< $@
 
 $(EXEDIR)/librarytest: $(OBJDIR)/librarytest.o $(DEPLIBS)
-	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
+	$(CC) $(ILDFLAGS) -L../libs $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/librarytest.o: librarytest.c $(TOP)/workbench/libs/dummylib_gcc.h
-	$(CC) $(APPCFLAGS) -I$(TOP)/workbench/libs -c $< -o $@
+	$(CC) $(APPCFLAGS) -c $< -o $@
 
 $(EXEDIR)/%: $(OBJDIR)/%.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
