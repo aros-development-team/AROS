@@ -109,7 +109,7 @@
 
 	    switch (*fmt)
 	    {
-	    case '%': break;
+	    case '%':
 		RawPutChar (*fmt);
 		ret ++;
 		break;
