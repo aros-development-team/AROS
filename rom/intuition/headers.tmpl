@@ -47,11 +47,12 @@ extern struct IntuitionBase * IntuitionBase;
 #endif
 
 /* Prototypes for stubs in amiga.lib */
-IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,	
-		    struct Requester * req, ULONG MethodID, ...);
+IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,  
+                    struct Requester * req, ULONG MethodID, ...);
 ULONG SetGadgetAttrs (struct Gadget * gad, struct Window * win,
-		    struct Requester * req, ULONG tag1, ...);
+                    struct Requester * req, ULONG tag1, ...);
 
+#ifndef AROS_USE_OOP
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 ULONG SetAttrs (APTR obj, ULONG tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, ULONG tag1, ...);
@@ -62,6 +63,10 @@ IPTR DoSuperMethodA (Class * cl, Object * obj, Msg message);
 IPTR DoSuperMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
 IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
+#endif
+#endif
+
+#ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
 #endif
@@ -72,3 +77,12 @@ struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 LONG EasyRequest (struct Window * window, struct EasyStruct * easyStruct, ULONG * idcmpPtr, ...);
 
 ##end clib
+
+##begin insert_fct
+PRE #ifndef AROS_USE_OOP
+POST #endif
+FCT AddClass
+FCT RemoveClass
+FCT GetAttr
+##end insert_fct
+
