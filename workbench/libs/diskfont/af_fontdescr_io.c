@@ -127,11 +127,28 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
      
      	strcat(tattr->tta_Name, ".font");  	
 #else
-    	strptr = FilePart(filename);
-    	if (!(tattr->tta_Name = AllocVec(strlen(strptr) + 1, MEMF_ANY)))
-	    goto failure;
+    	{
+    	    STRPTR filepart = FilePart(filename);
+	    LONG pathlen, len;
 	    
-	strcpy(tattr->tta_Name, strptr);
+	    pathlen = ((IPTR)filepart) - ((IPTR)filename);
+    	    len = oldstrlen + (pathlen ? pathlen : sizeof(FONTSDIR));
+	    
+	    if (!(tattr->tta_Name = AllocVec(len + 1, MEMF_ANY)))
+	    	goto failure;
+		
+	    if (pathlen)
+	    {
+	    	memcpy(tattr->tta_Name, filename, pathlen);
+		tattr->tta_Name[pathlen] = '\0';
+	    }
+	    else
+	    {
+	    	strcpy(tattr->tta_Name, FONTSDIR);
+	    }
+	    strcat(tattr->tta_Name, strbuf);
+	}
+
 #endif
        	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */

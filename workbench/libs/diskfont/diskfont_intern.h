@@ -197,7 +197,7 @@ VOID  UpdatePointers	(UBYTE *, ULONG, struct MinList *,              struct Disk
 
 
 
-struct TextFont *ReadDiskFont(struct TTextAttr *, struct DiskfontBase_intern *);
+struct TextFont *ReadDiskFont(struct TTextAttr *, STRPTR, struct DiskfontBase_intern *);
 /* Functions for .font file I/O */
 struct FontDescrHeader *ReadFontDescr(STRPTR,  struct DiskfontBase_intern *);
 VOID FreeFontDescr(struct FontDescrHeader *,    struct DiskfontBase_intern *);
