@@ -270,8 +270,8 @@ class XmlFile:
 		    raise 'Expected </%s>, got %s' % (token.name, subtree[-1])
 		if subtree[-1].name != token.name:
 		    print context
-		    raise 'Expected </%s> and found </%s>' % (
-			token.name, subtree[-1].name
+		    raise 'Expected </%s> and found </%s> (%s)' % (
+			token.name, subtree[-1].name, `subtree`
 		    )
 		#print 'Contents for',token.name,'=',subtree[:-1]
 		token.setContents (subtree[:-1])
