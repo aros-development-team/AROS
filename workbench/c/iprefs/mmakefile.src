@@ -8,21 +8,12 @@ FILES := main vars patches misc \
     	 localeprefs fontprefs serialprefs inputprefs icontrolprefs
 
 EXEDIR := $(AROS_C)
-EXE := $(EXEDIR)/IPrefs
-
-USE_DETACH := yes
-USE_AROSLIB := yes
-USE_CLIB := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
 
 #MM workbench-c : includes linklibs
 
-%make_prog_setup mmake=workbench-c
-
-workbench-c : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-c \
+    progname=IPrefs targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="arossupport amiga arosc_shared m" \
+    detach=yes
 
 %common
-%include_deps

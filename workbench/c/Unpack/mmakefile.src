@@ -6,22 +6,13 @@ include $(TOP)/config/make.cfg
 
 FILES 	    := unpack gui package bzip2 file support
 EXEDIR      := $(AROS_C)
-EXE 	    := $(EXEDIR)/Unpack
-
-USE_CLIB_STATIC := yes
-USE_AMIGALIB    := yes
-NO_AUTOINIT     := yes
 
 #MM- workbench-c : workbench-c-unpack
 #MM workbench-c-unpack : includes linklibs-bz2
 
-%make_prog_setup mmake=workbench-c-unpack startup=
-
-LIBS := -lbz2 $(LIBS)
-
-workbench-c-unpack : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-c-unpack \
+    progname=Unpack targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="bz2 amiga arosc" \
+    usestartup=no
 
 %common
-%include_deps

@@ -5,24 +5,12 @@ include $(TOP)/config/make.cfg
 FILES  := wanderer
 
 EXEDIR := $(AROS_C)
-EXE    := $(EXEDIR)/LoadWB
 
-USE_CLIB_SHARED := yes
-USE_AMIGALIB    := yes
-USE_MUILIB      := yes
-USE_AROSLIB     := yes
-USE_DETACH      := yes
+#MM workbench-c : includes linklibs
 
-#MM workbench-c : includes linklibs workbench-c-setup
-
-%make_prog_setup mmake=workbench-c
-
-workbench-c : $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE) 
-
-#MM workbench-c-setup
-%rule_makedirs dirs=$(EXEDIR) setuptarget=workbench-c-setup
+%build_prog mmake=workbench-c \
+    progname=LoadWB targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="mui arossupport amiga arosc_shared" \
+    detach=yes
 
 %common
-%include_deps

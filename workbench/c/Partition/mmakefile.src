@@ -5,21 +5,13 @@ include $(TOP)/config/make.cfg
 
 FILES  := main 
 EXEDIR := $(AROS_C)
-EXE    := $(EXEDIR)/Partition
-
-USE_CLIB_STATIC := yes
-USE_AMIGALIB    := yes
-USE_MLIB    := yes
-NO_AUTOINIT     := yes
 
 #MM- workbench-c : workbench-c-partition
 #MM workbench-c-partition : includes linklibs 
 
-%make_prog_setup mmake=workbench-c-partition startup=
-
-workbench-c-partition : setup $(EXE)
-
-%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+%build_prog mmake=workbench-c-partition \
+    progname=Partition targetdir=$(EXEDIR) \
+    files=$(FILES) uselibs="amiga arosc m" \
+    usestartup=no
 
 %common
-%include_deps
