@@ -75,11 +75,11 @@ arosboot CONFIGFILE,CHIP/S,FAST/S,KICK/S,LOCAL/S,CLEAR/S,CO=CLEARONLY/S,
   Chip/Fast/Kick/Local
 
     Force the modules to a particular type of memory. If your original
-    Kickstart is V37 (Release 2), the default if chip memory. If you have
+    Kickstart is V37 (Release 2), the default is chip memory. If you have
     fast memory on your motherboard, you can specify the option "fast" to
     force the modules to that fastmem. On Kickstart V39/V40 (Release 3/3.1)
     the default is "kick" memory. If you specify more than one memory
-    specifier, the order of precedence is kick->local->fast->chip.
+    type, the order of precedence is kick->local->fast->chip.
 
   Clear
 
@@ -168,6 +168,12 @@ FUNCTION lines
 
   If you don't specify ON or OFF, the function will be turned on. If you
   specify both ON and OFF, the function will be turned on.
+
+  Be very careful if you disable functions. Many functions are part of a
+  constructor/deconstructor pair. E.g. if you disable AllocVec, you also
+  _must_ disable FreeVec. Experience with the AmigaOS API is recommended
+  before you start turning functions on/off. If you are unsure about
+  something, you can always ask for our help.
 
 COMMENTS
 
