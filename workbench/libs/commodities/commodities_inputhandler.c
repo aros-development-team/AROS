@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Commodities input handler
@@ -86,7 +86,7 @@ AROS_UFH2(struct InputEvent *, CxTree,
     }
 
     CxBase->cx_IEvents = NULL;
-    CxBase->cx_EventExtra = NULL;
+    CxBase->cx_EventExtra = &CxBase->cx_IEvents;
     NEWLIST(&CxBase->cx_GeneratedInputEvents);
 
     /* Free all the replied messages */
@@ -141,24 +141,21 @@ AROS_UFH2(struct InputEvent *, CxTree,
 
 	// kprintf("Object %p\n", co);
 
-	if (co == NULL)
+	while (co == NULL && msg->cxm_Level != 0)
 	{
-	    if (msg->cxm_Level != 0)
-	    {
-		// kprintf("Next level %i\n", msg->cxm_Level - 1);
-		
-		msg->cxm_Level--;
-		co = msg->cxm_retObj[msg->cxm_Level];
-		co = (CxObj *)GetSucc(&co->co_Node);
-
-		// kprintf("Found return object %p\n", co);
-
-		// if (CXOBJType(co) == CX_BROKER)
-		// {
-		//     kprintf("Returnobj (broker) = %s\n",
-		//	       co->co_Ext.co_BExt->bext_Name);
-		// }
-	    }
+	    // kprintf("Next level %i\n", msg->cxm_Level - 1);
+	    
+	    msg->cxm_Level--;
+	    co = msg->cxm_retObj[msg->cxm_Level];
+	    co = (CxObj *)GetSucc(&co->co_Node);
+	    
+	    // kprintf("Found return object %p\n", co);
+	    
+	    // if (CXOBJType(co) == CX_BROKER)
+	    // {
+	    //     kprintf("Returnobj (broker) = %s\n",
+	    //	       co->co_Ext.co_BExt->bext_Name);
+	    // }
 	}
 
 	if (co != NULL)
@@ -235,7 +232,21 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    
 	case CX_CUSTOM:
 	    msg->cxm_ID = co->co_Ext.co_CustomExt->cext_ID;
-	    (co->co_Ext.co_CustomExt->cext_Action)(msg, co);
+
+	    /* The autodocs suggest the arguments should be passed on the
+	       stack. But they were also in a0/a1 and some things seem to
+	       rely on that. */
+#ifdef __MORPHOS__
+	    REG_A7 -= 8;
+	    *(CxMsg **)REG_A7 = msg;
+	    *(CxObj **)(REG_A7 + 4) = co;
+#endif
+	    AROS_UFC2(void, co->co_Ext.co_CustomExt->cext_Action,
+		      AROS_UFCA(CxMsg *, msg, A0),
+		      AROS_UFCA(CxObj *, co, A1));
+#ifdef __MORPHOS__
+	    REG_A7 += 8;
+#endif
 	    break;
 	    
 	case CX_ZERO:
@@ -264,15 +275,7 @@ static void ProduceEvent(CxMsg *msg, struct CommoditiesBase *CxBase)
 	/* Put the input event last in the ready list and update bookkeeping */
 	temp->ie.ie_NextEvent = NULL;
 
-	if (CxBase->cx_IEvents != NULL)
-	{
-	    *(CxBase->cx_EventExtra) = &temp->ie;
-	}
-	else
-	{
-	    CxBase->cx_IEvents = &temp->ie;
-	}
-
+	*(CxBase->cx_EventExtra) = &temp->ie;
 	CxBase->cx_EventExtra = &temp->ie.ie_NextEvent;
 	
 	AddTail((struct List *)&CxBase->cx_GeneratedInputEvents,
@@ -425,9 +428,9 @@ AROS_UFH2(struct InputEvent *, cxIHandler,
 {
     AROS_USERFUNC_INIT
 
-    return AROS_UFC2(struct InputEvent *, CxTree,
-	  	     AROS_UFCA(struct InputEvent *     , events , A0),
-		     AROS_UFCA(struct CommoditiesBase *, CxBase , A6));
+    AROS_UFC2(struct InputEvent *, CxTree,
+	      AROS_UFCA(struct InputEvent *     , events , A0),
+	      AROS_UFCA(struct CommoditiesBase *, CxBase , A6));
 
     AROS_USERFUNC_EXIT
 }
