@@ -115,3 +115,6 @@ else
 fi
 
 echo "MKDEPEND = $MKDEPEND" >> $1
+
+rm -f include/aros/machine.h
+ln $KERNEL/machine.h include/aros/machine.h
