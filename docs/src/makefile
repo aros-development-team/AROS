@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 DEST=../html/
 #DEST=../html.test/
 JOBDEST=$(DEST)jobserver/
+MIC=$(TOP)/scripts/moveifchanged
 
 FILES = main.src
 
@@ -208,6 +209,7 @@ autodoc.inc: gen/adoc_index.tmp adocpost.gawk adoc_header.html
 	gawk -F: -f adocpost.gawk --assign mode=pre_byname gen/adoc_index.tmp | \
 	sort -f | \
 	gawk -F: -f adocpost.gawk --assign mode=post_byname >> $@
+	touch autodoc.src
 	chmod a+r $@
 
 gen/adoc_index.tmp: $(AUTODOC_SRCS) adoc2html.gawk
@@ -219,23 +221,41 @@ $(DEST)inc_index.html: $(INCLUDE_SRCS)
 	echo gawk -f inc2html.gawk $(AUTODOC_SRCS) > $@
 	chmod a+r $@
 
-includes: devlist.inc status.inc jobserv-free.inc jobserv-work.inc \
-	jobserv-done.inc contents.inc
+includes: devlist.inc contents.inc
+
+dbincludes: status.inc jobserv-free.inc jobserv-work.inc \
+	jobserv-done.inc
 
 devlist.inc : devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
 	gawk -f $< > $@
 
-status.inc : stathtml.gawk jobserv-query.lite
-	gawk -f $< > $@
+status.inc :
+	gawk -f stathtml.gawk > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch background.src ; fi
 
-jobserv-free.inc : jobserv-showfree.cgi
-	jobserv-showfree.cgi > $@
+jobserv-free.inc :
+	jobserv-showfree.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-free.src ; fi
 
-jobserv-work.inc : jobserv-showwork.cgi
-	jobserv-showwork.cgi > $@
+jobserv-work.inc :
+	jobserv-showwork.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-work.src ; fi
 
-jobserv-done.inc : jobserv-showdone.cgi
-	jobserv-showdone.cgi > $@
+jobserv-done.inc :
+	jobserv-showdone.cgi > $@.new
+	@$(MIC) $@.new $@
+	@if test -e $@.new; then $(RM) $@.new ; else touch jobserv-done.src ; fi
+
+.PHONY : status.inc jobserv-free.inc jobserv-work.inc jobserv-done.inc
 
 contents.inc : collectcontents.sh contents2html.gawk makefile2html.gawk
 	collectcontents.sh $(TOP) > $@
+
+main.src : background.src faq.src devinfo-1.src devinfo-2.src devinfo-3.src \
+    devinfo-4.src devinfo-5.src devinfo_inside.src devinfo_outside.src \
+    autodoc.src history.src links.src jobserv.src
+
+autodoc.src : autodoc.inc
