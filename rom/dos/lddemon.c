@@ -41,7 +41,7 @@ struct LDDMsg
 {
     struct Message 	 ldd_Msg;	    /* Message link */
     struct MsgPort	 ldd_ReplyPort;	    /* Callers ReplyPort */
-    
+
     STRPTR		 ldd_Name;	    /* Name of thing to load */
     ULONG		 ldd_Version;	    /* Version of thing to load */
 
@@ -267,21 +267,21 @@ AROS_LH2(struct Library *, OpenLibrary,
 	task #2 won't ask for foobar.library until task #1 has got its
 	response back from the LDDemon process.
 
-  	falemag: I changed the implementation of all that.
-	         There's a list of "LDObjectNodes", that contain the name
-		 of the object being opened. Since the problem is that more
-		 processes can attempt to open the same device/library Instead of
-		 locking a global semaphore until the opening is done, we lock a
-		 per-object semaphore, so that others libraries/devices can be opened
-		 in the meantime. Beofore a deadlock could happen if there was a
-		 situation like this:
+  	falemagn: I changed the implementation of all that.
+	          There's a list of "LDObjectNodes", that contain the name
+		  of the object being opened. Since the problem is that more
+		  processes can attempt to open the same device/library Instead of
+		  locking a global semaphore until the opening is done, we lock a
+		  per-object semaphore, so that others libraries/devices can be opened
+		  in the meantime. Beofore a deadlock could happen if there was a
+		  situation like this:
 
-		 Process A opens L --------> LDDemon loads L and locks sem S
-		                             /                        \
-					    /                          \
-					 1 /                            \ 3
-					  /                              \
-					 /                   2            \
+		  Process A opens L --------> LDDemon loads L and locks sem S
+		                              /                        \
+					     /                          \
+					  1 /                            \ 3
+					   /                              \
+					  /                   2            \
 				L spawns a process B and ----------> The process opens
    				waits for it to respond             a library but gets loked
 				to a message            <----/---- because sem S is locked
@@ -354,9 +354,14 @@ AROS_LH2(struct Library *, OpenLibrary,
 	        We have to Forbid() here because we need to look through the list
 	        again, we also need to call the libOpen vector, which wants us
 	        under a Forbidden state.
+
+		falemagn: well, it doesn't want us under a Forbidden state, it just
+		          wants to besingle threaded, and it is, ifact, so no
+			  need of Forbid()/Permit() around open. I Hope... :)
 	    */
 	    Forbid();
 	    tmplib = (struct Library *)FindName(&SysBase->LibList, stripped_libname);
+	    Permit();
 	    if( tmplib != NULL )
 	        library = tmplib;
 
@@ -374,7 +379,6 @@ AROS_LH2(struct Library *, OpenLibrary,
 	    }
 	    else
 	       library = NULL;
-	    Permit();
 	}
     }
 
@@ -468,8 +472,9 @@ AROS_LH4(BYTE, OpenDevice,
 	if( device != NULL )
         {
 	    Forbid();
-
 	    tmpdev = (struct Device *)FindName(&SysBase->DeviceList, stripped_devname);
+	    Permit();
+
 	    if(tmpdev != NULL)
 	        device = tmpdev;
 
@@ -488,7 +493,6 @@ AROS_LH4(BYTE, OpenDevice,
 	    );
 
 	    D(bug("LDCaller: devOpen() returned\n"));
-	    Permit();
 
 	    ret = iORequest->io_Error;
 	    if( ret )
