@@ -2,11 +2,11 @@
 #define DOS_NOTIFY_H
 
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Notification handling.
-    Lang: english
+    Lang: English
 */
 #ifndef EXEC_PORTS_H
 #   include <exec/ports.h>
@@ -54,7 +54,11 @@ struct NotifyRequest
 
     /* The following fields are for PRIVATE use by handlers. */
     ULONG            nr_MsgCount; /* Number of unreplied messages. */
-    struct MsgPort * nr_Handler;
+
+    /* This used to be   struct MsgPort *nr_Handler   but as AROS filesystems
+       are different and this is a PRIVATE field anyway no Amiga programs
+       should use it, so I changed it   --  SDuvan */
+    struct Device   *nr_Device;
 };
 
 /* nr_Flags */
