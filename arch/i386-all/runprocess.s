@@ -39,7 +39,7 @@
 #define sss		FirstArg+4
 #define argptr		FirstArg+8
 #define argsize 	FirstArg+12
-#define entry		FirstArg+18
+#define entry		FirstArg+16
 #define DOSBase 	FirstArg+20
 
 	.text
