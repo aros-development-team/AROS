@@ -1,3 +1,4 @@
+# $Id$
 TOP=../..
 
 include $(TOP)/config/make.cfg
@@ -11,7 +12,8 @@ AUTODOC_SRCS = $(wildcard $(TOP)/config/m68k-native/*.s $(TOP)/rom/exec/*.c \
 	$(TOP)/rom/dos/*.c $(TOP)/rom/intuition/*.c $(TOP)/rom/graphics/*.c \
 	$(TOP)/rom/utility/*.c $(TOP)/apps/compiler/alib/*.c \
 	$(TOP)/apps/compiler/aros/*.c \
-	$(TOP)/rom/devs/*.c $(TOP)/apps/compiler/clib/*.c)
+	$(TOP)/rom/devs/*.c $(TOP)/apps/compiler/clib/*.c \
+	$(TOP)/workbench/libs/*/*.c)
 
 INCLUDE_SRCS = $(wildcard $(TOP)/include/*.h $(TOP)/include/*/*.h)
 
@@ -64,6 +66,8 @@ $(DEST)%.html : %.src src2html.gawk page_header.html page_footer.html
 $(DEST)devinfo-4.html : devinfo-4.src src2html.gawk page_header.html \
 	    page_footer.html collectcontents.sh contents2html.gawk \
 	    makefile2html.gawk
+
+$(DEST)background.html: stathtml.gawk
 
 $(DEST)links.html: $(TOP)/dist/AROS*.tgz
 
