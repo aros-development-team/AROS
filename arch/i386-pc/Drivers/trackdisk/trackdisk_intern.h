@@ -124,7 +124,7 @@ struct TDU
 #define FD_RECALIBRATE      0x07    /* move to track 0 */
 #define FD_SEEK         0x0F    /* seek track */
 #define FD_READ         0x66    /* read with MFM, SKip deleted */
-#define FD_WRITE        0x85    /* write with MFM */
+#define FD_WRITE        0x45    /* write with MFM */
 #define FD_SENSEI       0x08    /* Sense Interrupt Status */
 #define FD_SPECIFY      0x03    /* specify HUT etc */
 #define FD_FORMAT       0x4D    /* format one track */
