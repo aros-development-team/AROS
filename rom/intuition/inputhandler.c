@@ -835,7 +835,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    	
 		} /* if (a gadget is currently active) */
 
-
+		if (!(w->Flags & WFLG_REPORTMOUSE)) continue;
+		
 		/* Limit the number of IDCMP_MOUSEMOVE messages sent to intuition.
 		   note that this comes after handling gadgets, because gadgets should get all events.
 		*/
