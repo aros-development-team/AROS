@@ -203,7 +203,11 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 		
 	    	ld->ld_Window = win;
 	    	
-	    	D(bug("Window opened\n", win->Width));
+		ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
+		reqnode->rn_ReqWindow = win;
+		ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
+
+	    	D(bug("Window opened\n"));
 	    	
 	    	D(bug
 	    	(
@@ -268,6 +272,10 @@ BOOL HandleEvents(struct LayoutData *, struct AslReqInfo *, struct AslBase_inter
 	    
 	} /* if (CallHookPkt( &(reqinfo->GadgetryHook), ld, ASLB(AslBase))) */
 		
+	ObtainSemaphore( &(ASLB(AslBase)->ReqListSem) );
+	reqnode->rn_ReqWindow = NULL;
+	ReleaseSemaphore(&(ASLB(AslBase)->ReqListSem));
+
 	FreeCommon(ld, ASLB(AslBase));
 
     } /* if (ld) */
