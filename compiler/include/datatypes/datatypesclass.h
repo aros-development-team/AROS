@@ -124,6 +124,11 @@
 /* Indicate that the object should repeat playing -- defaults to FALSE (BOOL)*/
 #define  DTA_Repeat             (DTA_Dummy + 38)
 
+/* V44: Address of object if of type DTST_MEMORY */
+#define  DTA_SourceAddress   	(DTA_Dummy + 39)
+
+/* V44: Size of object if of type DTST_MEMORY */
+#define  DTA_SourceSize	    	(DTA_Dummy + 40)
 
 /* DTObject attributes */
 #define  DTA_Name         (DTA_Dummy + 100)
@@ -193,7 +198,7 @@
 #define  DTST_FILE        2
 #define  DTST_CLIPBOARD   3
 #define  DTST_HOTLINK     4
-
+#define  DTST_MEMORY	  5 /* V44 */
 
 /* This structure is attached to the Gadget.SpecialInfo field of the gadget.
    Use Get/Set calls to access it. */
