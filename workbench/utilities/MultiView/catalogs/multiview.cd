@@ -86,3 +86,12 @@ Select File to Open
 MSG_ASL_SAVE_TITLE (//)
 Select File to Save to
 ;
+MSG_ABOUT (//)
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE (//)
+MultiView
+;
+MSG_CONTINUE (//)
+Continue
+;

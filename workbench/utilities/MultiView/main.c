@@ -62,6 +62,8 @@ static struct libinfo
 
 static struct RDArgs 	*myargs;
 static IPTR 		args[NUM_ARGS];
+static WORD		winwidth, winheight;
+static WORD		sizeimagewidth, sizeimageheight;
 static BOOL		model_has_members;
 
 /*********************************************************************************************/
@@ -151,9 +153,11 @@ static void GetArguments(void)
     }
     
     filename = (STRPTR)args[ARG_FILE];
-    if (!filename) filename = GetFile();
-    
-    if (!filename) Cleanup(NULL);
+    if (!filename && !args[ARG_CLIPBOARD])
+    {
+        filename = GetFile();
+        if (!filename) Cleanup(NULL);
+    }
 }
 
 /*********************************************************************************************/
@@ -281,6 +285,9 @@ static void MakeGadgets(void)
 	GetAttr(IA_Height,(Object *)img[i],&imageh[i]);
     }
 
+    sizeimagewidth  = imagew[IMG_SIZE];
+    sizeimageheight = imageh[IMG_SIZE];
+    
     btop = scr->WBorTop + dri->dri_Font->tf_YSize + 1;
 
     v_offset = imagew[IMG_DOWNARROW] / 4;
@@ -418,11 +425,28 @@ static void AddDTOToWin(void)
 
 static void OpenDTO(void)
 {
+    IPTR  val;
+    ULONG *methods;
+    
     old_dto = dto;
-    dto = NewDTObject(filename, ICA_TARGET, (IPTR)model_obj,
-    				GA_ID	  , 1000	   ,
-    				TAG_DONE);
 
+    if (!old_dto && args[ARG_CLIPBOARD])
+    {
+        APTR clipunit = 0;
+	
+	if (args[ARG_CLIPUNIT]) clipunit = *(APTR *)args[ARG_CLIPUNIT];
+kprintf("-------------------------------------------------------------------------------------\n");	
+        dto = NewDTObject(clipunit, ICA_TARGET    , (IPTR)model_obj,
+				    GA_ID         , 1000	   ,
+				    DTA_SourceType, DTST_CLIPBOARD ,
+				    TAG_DONE);
+kprintf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+    } else {
+	dto = NewDTObject(filename, ICA_TARGET, (IPTR)model_obj,
+    				    GA_ID     , 1000	       ,
+    				    TAG_DONE);
+    }
+    
     if (!dto)
     {
         ULONG errnum = IoErr();
@@ -437,16 +461,37 @@ static void OpenDTO(void)
 	return;
     }
     
+    strncpy(filenamebuffer, filename, 299);
+    
     SetAttrs(vert_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
     SetAttrs(horiz_to_dto_ic_obj, ICA_TARGET, (IPTR)dto, TAG_DONE);
+
+    val = 0;
+    GetDTAttrs(dto, DTA_NominalHoriz, &val, TAG_DONE); winwidth  = (WORD)val;
+    GetDTAttrs(dto, DTA_NominalVert , &val, TAG_DONE); winheight = (WORD)val;
     
+    dto_supports_copy = FALSE;
+    dto_supports_clearselected = FALSE;
+    
+    if ((methods = GetDTMethods(dto)))
+    {
+        if (FindMethod(methods, DTM_COPY)) dto_supports_copy = TRUE;
+	if (FindMethod(methods, DTM_CLEARSELECTED)) dto_supports_clearselected = TRUE;
+    }
+        
     if (old_dto)
     {
         if (win) RemoveDTObject(win, old_dto);
 	DisposeDTObject(old_dto);
 
-	if (win) AddDTOToWin();
+	if (win)
+	{
+	    AddDTOToWin();
+	    SetWindowTitles(win, filenamebuffer, (UBYTE *)~0);
+	    SetMenuFlags();
+	}
     }
+    
 }
 
 /*********************************************************************************************/
@@ -465,8 +510,17 @@ static void CloseDTO(void)
 
 static void MakeWindow(void)
 {
-    win = OpenWindowTags(0, WA_PubScreen	, scr			,
-    			    WA_Title		, (IPTR)"MultiView"	,
+    WORD minwidth, minheight;
+    
+    if (!winwidth) winwidth = scr->Width;
+    if (!winheight) winheight = scr->Height - scr->BarHeight - 1 - 
+    				scr->WBorTop - scr->Font->ta_YSize - 1 - sizeimageheight;
+    
+    minwidth  = (winwidth  < 50) ? winwidth : 50;
+    minheight = (winheight < 50) ? winheight : 50;
+
+    win = OpenWindowTags(0, WA_PubScreen	, (IPTR)scr		,
+    			    WA_Title		, (IPTR)filenamebuffer	,
 			    WA_CloseGadget	, TRUE			,
 			    WA_DepthGadget	, TRUE			,
 			    WA_DragBar		, TRUE			,
@@ -475,13 +529,13 @@ static void MakeWindow(void)
 			    WA_SimpleRefresh	, TRUE			,
 			    WA_NoCareRefresh	, TRUE			,
 			    WA_NewLookMenus	, TRUE			,
-			    WA_Left		, 20			,
-			    WA_Top		, 20			,
-			    WA_Width		, 600			,
-			    WA_Height		, 300			,
+			    WA_Left		, 0			,
+			    WA_Top		, scr->BarHeight + 1	,
+			    WA_InnerWidth	, winwidth		,
+			    WA_InnerHeight	, winheight		,
 			    WA_AutoAdjust	, TRUE			,
-			    WA_MinWidth		, 50			,
-			    WA_MinHeight	, 50			,
+			    WA_MinWidth		, minwidth		,
+			    WA_MinHeight	, minheight		,
 			    WA_MaxWidth		, 16383			,
 			    WA_MaxHeight	, 16383			,
 			    WA_Gadgets		, (IPTR)gad[GAD_UPARROW],
@@ -513,6 +567,8 @@ static void KillWindow(void)
 	if (menus) ClearMenuStrip(win);
 	CloseWindow(win);
 	win = NULL;
+	
+	winwidth = winheight = 0;
     }
 }
 
@@ -675,6 +731,10 @@ static void HandleAll(void)
 			{
 			    switch((ULONG)GTMENUITEM_USERDATA(item))
 			    {
+			        case MSG_MEN_PROJECT_ABOUT:
+				    About();
+				    break;
+				    
 			        case MSG_MEN_PROJECT_QUIT:
 				    quitme = TRUE;
 				    break;
@@ -683,7 +743,29 @@ static void HandleAll(void)
 				    filename = GetFile();
 				    if (filename) OpenDTO();
 				    break;
-				    
+				
+				case MSG_MEN_EDIT_COPY:
+				    {
+				        struct dtGeneral dtg;
+					
+					dtg.MethodID = DTM_COPY;
+					dtg.dtg_GInfo = NULL;
+					
+					DoDTMethodA(dto, win, NULL, (Msg)&dtg);
+				    }
+				    break;
+				
+				case MSG_MEN_EDIT_CLEARSELECTED:
+				    {
+				        struct dtGeneral dtg;
+					
+					dtg.MethodID = DTM_CLEARSELECTED;
+					dtg.dtg_GInfo = NULL;
+					
+					DoDTMethodA(dto, win, NULL, (Msg)&dtg);
+				    }
+				    break;
+				
 			    } /* switch(GTMENUITEM_USERDATA(item)) */
 			    
 		            men = item->NextSelect;

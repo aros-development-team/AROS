@@ -89,3 +89,12 @@ Eingabedatei auswählen
 MSG_ASL_SAVE_TITLE
 Ausgabedatei auswählen
 ;
+MSG_ABOUT
+MultiView %ld.%ld (%s)\ndatatypes.library %s\n\n%s %s
+;
+MSG_ABOUT_TITLE
+MultiView - Universelles Anzeigeprogramm
+;
+MSG_CONTINUE
+Weiter
+;

@@ -9,6 +9,7 @@
 /*********************************************************************************************/
 
 #include "global.h"
+#include "version.h"
 
 #include <string.h>
 
@@ -96,8 +97,32 @@ void KillMenus(void)
 
 /*********************************************************************************************/
 
+void SetMenuFlags(void)
+{
+    struct MenuItem *item;
+    
+    if (win) ClearMenuStrip(win);
+
+    item = ItemAddress(menus, FULLMENUNUM(1, 1, NOSUB));
+    if (item)
+    {
+        if (dto_supports_copy) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+    }
+    
+    item = ItemAddress(menus, FULLMENUNUM(1, 4, NOSUB));
+    if (item)
+    {
+        if (dto_supports_clearselected) item->Flags |= ITEMENABLED; else item->Flags &= ~ITEMENABLED;
+    }
+    
+    if (win) ResetMenuStrip(win, menus);
+}
+
+/*********************************************************************************************/
+
 STRPTR GetFile(void)
 {
+    static UBYTE	 pathbuffer[300];
     static UBYTE	 filebuffer[300];
     struct FileRequester *req;
     STRPTR 		 retval = NULL;
@@ -105,14 +130,23 @@ STRPTR GetFile(void)
     AslBase = OpenLibrary("asl.library", 39);
     if (AslBase)
     {
-        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
-						   ASLFR_DoPatterns, TRUE			  ,
+        filebuffer[299] = 0;
+	pathbuffer[299] = 0;
+	
+        strncpy(filebuffer, FilePart(filenamebuffer), 299);
+	strncpy(pathbuffer, filenamebuffer, 299);
+	*(FilePart(pathbuffer)) = 0;
+	
+        req = AllocAslRequestTags(ASL_FileRequest, ASLFR_TitleText    , (IPTR)MSG(MSG_ASL_OPEN_TITLE),
+						   ASLFR_DoPatterns   , TRUE			     ,
+						   ASLFR_InitialFile  , (IPTR)filebuffer	     ,
+						   ASLFR_InitialDrawer, (IPTR)pathbuffer	     ,
 						   TAG_DONE);
 	if (req)
 	{
 	    if (AslRequest(req, NULL))
 	    {
-	        strcpy(filebuffer, req->fr_Drawer);
+	        strncpy(filebuffer, req->fr_Drawer, 299);
 		AddPart(filebuffer, req->fr_File, 299);
 		
 		retval = filebuffer;
@@ -128,6 +162,59 @@ STRPTR GetFile(void)
     } /* if (AslBase) */
     
     return retval;
+}
+
+/*********************************************************************************************/
+
+void About(void)
+{
+    struct DataType 	*dt = NULL;
+    struct EasyStruct	es;
+    STRPTR 		gid_string = NULL;
+    STRPTR		name_string = NULL;
+    STRPTR		sp;
+    WORD		i;
+    UBYTE		dtver_string[100];
+    
+    if (GetDTAttrs(dto, DTA_DataType, (IPTR)&dt, TAG_DONE))
+    {
+        if (dt)
+	{
+	    gid_string = GetDTString(dt->dtn_Header->dth_GroupID);
+kprintf("gid_string = \"%s\" groupid = %d\n", gid_string, dt->dtn_Header->dth_GroupID);
+	    name_string = dt->dtn_Header->dth_Name;
+	}
+    }
+    
+    if (!gid_string) gid_string = "";
+    if (!name_string) name_string = "";
+    
+    for(sp = DataTypesBase->lib_IdString;
+        (*sp != 0) && ((*sp < '0') || (*sp > '9'));
+	sp++)
+    {
+    }
+      
+    i = 0;
+    while ((*sp != 0) && (*sp != '\r') && (*sp != '\n') && (i < 99))
+    {
+        dtver_string[i++] = *sp++;
+    }
+    dtver_string[i++] = '\0';
+    
+    es.es_StructSize   = sizeof(es);
+    es.es_Flags        = 0;
+    es.es_Title        = MSG(MSG_ABOUT_TITLE);
+    es.es_TextFormat   = MSG(MSG_ABOUT);
+    es.es_GadgetFormat = MSG(MSG_CONTINUE);
+ 
+    EasyRequest(win, &es, NULL, VERSION,
+    				REVISION,
+				DATESTR, 
+				dtver_string,
+				name_string,
+				gid_string);
+
 }
 
 /*********************************************************************************************/

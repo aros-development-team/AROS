@@ -198,8 +198,10 @@ void Cleanup(STRPTR msg);
 void InitMenus(void);
 void MakeMenus(void);
 void KillMenus(void);
+void SetMenuFlags(void);
 
 STRPTR GetFile(void);
+void About(void);
 
 /*********************************************************************************************/
 
