@@ -71,9 +71,6 @@ static const char version[] = "$VER: WiMP 0.8 (1.5.2001)";
 #include <proto/gadtools.h>
 #include <libraries/gadtools.h>
 
-struct IntuitionBase *IntuitionBase;
-struct Library *GadToolsBase;
-struct GfxBase *GfxBase;
 struct Screen *Screen;
 struct Window *Window;
 struct Window *InfoWindow = NULL;
@@ -278,10 +275,8 @@ IPTR getsw(int *type);
 VOID update_actionglist();
 VOID makemenus();
 struct Gadget *makegadgets(struct Gadget *gad);
-VOID open_lib();
 VOID open_window();
 VOID close_window();
-VOID close_lib();
 VOID open_infowindow();
 VOID close_infowindow();
 VOID WindowInfo( struct Window *win );
@@ -594,15 +589,6 @@ struct NewGadget *buttons[] =
 return gad;
 }
 
-VOID open_lib()
-{
-  IntuitionBase = (struct IntuitionBase *) OpenLibrary ( "intuition.library", 0L );
-  GfxBase = (struct GfxBase *) OpenLibrary ( "graphics.library", 0L );
-  GadToolsBase = OpenLibrary ( "gadtools.library", 0L );
-
-return;
-}
-
 VOID open_window()
 {
   Window = OpenWindowTags ( NULL
@@ -637,15 +623,6 @@ VOID close_window()
   FreeGadgets ( glist );
   FreeVisualInfo ( vi );
   UnlockPubScreen ( NULL, Screen );
-
-return;
-}
-
-VOID close_lib()
-{
-  CloseLibrary ( (struct Library *)IntuitionBase );
-  CloseLibrary ( (struct Library *)GfxBase );
-  CloseLibrary ( GadToolsBase );
 
 return;
 }
@@ -689,7 +666,7 @@ struct NewGadget swinfogad =
   swinfogad.ng_Height -= InfoWindow->WScreen->Font->ta_YSize + 1;
   
   gad = CreateContext ( &igads );
-  igads = CreateGadget ( LISTVIEW_KIND, igads, &swinfogad,
+  gad = CreateGadget ( LISTVIEW_KIND, igads, &swinfogad,
 		GTLV_Labels,		(IPTR)&lv_infolist,
 		GTLV_ShowSelected,	NULL,
 		GTLV_ReadOnly,		FALSE,
@@ -704,6 +681,7 @@ return;
 VOID close_infowindow()
 {
   CloseWindow ( InfoWindow );
+  FreeGadgets ( igads );
   InfoWindow = NULL;
   iw_sigbit = 0L;
 
@@ -916,7 +894,6 @@ int type;
 int quit = 0;
 ULONG sec1, sec2, msec1, msec2, sel1, sel2;
 
-  open_lib();
   open_window();
 
   NewList (&lv_infolist);
@@ -1376,8 +1353,9 @@ ULONG sec1, sec2, msec1, msec2, sel1, sel2;
       ReplyMsg ( (struct Message *)msg );
     }
   }
+  freelvnodes( &lv_list );
+  freelvnodes ( &lv_infolist );
 
   close_window();
-  close_lib();
   return ( 0 );
 }
