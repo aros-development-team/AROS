@@ -667,9 +667,9 @@ endif
   linklibname=$(BD_MODNAME$(BDID)) uselibs= \
   compiler=target
 
-%buildid targets="%(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick"
+%buildid targets="%(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick %(mmake)-kobj"
 
-.PHONY : setup-module$(BDID) %(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick
+.PHONY : setup-module$(BDID) %(mmake) %(mmake)-includes %(mmake)-setup %(mmake)-clean %(mmake)-quick %(mmake)-kobj
 
 ifeq (%(modname),)
 $(error using %build_module: modname may not be empty)
@@ -768,6 +768,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 endif
 
 #MM %(mmake) : %(mmake)-includes
+#MM %(mmake)-kobj : %(mmake)-includes
 #MM %(mmake)-includes : %(mmake)-setup
 
 #MM
@@ -795,7 +796,7 @@ endif
 #MM
 %(mmake)-setup : setup-module$(BDID)
 
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick),) # Avoid conflicts
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Avoid conflicts
 ifneq ($(dir $(BD_FILES$(BDID))),./)
 vpath %.c $(filter-out ./,$(dir $(BD_FILES$(BDID))))
 endif
@@ -814,7 +815,7 @@ endif
 endif
 
 # Some include files need to be generated before the .c can be parsed.
-ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick),) # Only for this target these deps are wanted
+ifneq ($(filter $(TARGET),%(mmake) %(mmake)-includes %(mmake)-quick %(mmake)-kobj),) # Only for this target these deps are wanted
 $(BD_REFFILES$(BDID)) : $(BD_REFFILE_DEPS$(BDID))
 $(BD_DEPS$(BDID)) : $(BD_DFILE_DEPS$(BDID))
 endif
@@ -856,8 +857,16 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 %rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
 endif
 
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib $(BD_MODDIR$(BDID))" \
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib $(BD_MODDIR$(BDID)) $(KOBJSDIR)" \
 	       setuptarget=setup-module$(BDID)
+
+%(mmake)-kobj : $(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o
+
+$(KOBJSDIR)/$(BD_MODNAME$(BDID))_$(BD_MODTYPE$(BDID)).o : \
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.o \
+$(BD_OBJS$(BDID)) \
+$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end.o
+	@$(LD) -r -o $@ $^
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
