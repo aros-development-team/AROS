@@ -1,8 +1,6 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-LIB := freetype2
-
 FILESDIR := \
       aros/ftglyphengine \
       aros/kerning \
@@ -47,17 +45,14 @@ FILES := $(notdir $(FILESDIR))
 
 USER_INCLUDES := -I. -I../include $(addprefix -I,$(DIRS))
 
-#MM contrib-freetype-linklib : contrib-freetype-includes contrib-freetype-module
+#MM contrib-freetype-linklib : contrib-freetype-includes
 #MM contrib-freetype-module : contrib-freetype-includes
 
-%make_linklib_setup mmake=contrib-freetype-linklib
-%make_linklib mmake=contrib-freetype-linklib
+%build_linklib mmake=contrib-freetype-linklib libname=freetype2 \
+    files=$(FILES)
 
 %build_module mmake=contrib-freetype-module modname=freetype2 \
     modtype=library files="$(FILES) freetype2_init" linklibname=freetype2shared \
     linklibfiles=tagcall uselibs="arosc_shared amiga"
  
 %common
-ifeq ($(filter %setup,$(TARGET)),)
-%include_deps
-endif
