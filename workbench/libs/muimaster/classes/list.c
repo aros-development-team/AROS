@@ -378,7 +378,7 @@ static void CalcDimsOfEntry(struct IClass *cl, Object *obj, int pos)
 
     for (j = 0; j < data->columns; j++)
     {
-	ZText *text = zune_text_new(data->preparses[j], data->strings[j], ZTEXT_ARG_NONE, NULL);
+	ZText *text = zune_text_new(data->preparses[j], data->strings[j], ZTEXT_ARG_NONE, 0);
 	if (text != NULL)
 	{
 	    zune_text_get_bounds(text, obj);
@@ -482,7 +482,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->input = 1;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -548,7 +548,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	if (!data->pool)
 	{
 	    CoerceMethod(cl,obj,OM_DISPOSE);
-	    return NULL;
+	    return 0;
 	}
     }
 
@@ -556,14 +556,14 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!(ParseListFormat(data,format)))
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
-	return NULL;
+	return 0;
     }
 
     /* This is neccessary for at least the title */
     if (!SetListSize(data,0))
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
-	return NULL;
+	return 0;
     }
 
     if (data->title)
@@ -571,7 +571,7 @@ static IPTR List_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	if (!(data->entries[ENTRY_TITLE] = AllocListEntry(data)))
 	{
 	    CoerceMethod(cl,obj,OM_DISPOSE);
-	    return NULL;
+	    return 0;
 	}
     } else data->entries[ENTRY_TITLE] = NULL;
 
@@ -638,7 +638,7 @@ static IPTR List_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     struct TagItem  	    *tag, *tags;
 
     /* parse initial taglist */
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -934,8 +934,10 @@ static IPTR List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
     /* Calc the numbers of entries visible */
     CalcVertVisible(cl,obj);
 
+#if 0 /* Don't do this! */
     if (data->entries_active < new_entries_first)
 	new_entries_first = data->entries_active;
+#endif
 
     if (data->entries_active + 1 >= 
 	(data->entries_first + data->entries_visible))
@@ -953,7 +955,7 @@ static IPTR List_Layout(struct IClass *cl, Object *obj,struct MUIP_Layout *msg)
 	new_entries_first = 0;
 
     if (new_entries_first < 0) new_entries_first = 0;
-    
+
     set(obj, new_entries_first != data->entries_first ?
 	MUIA_List_First : TAG_IGNORE,
 	new_entries_first);
@@ -1024,7 +1026,7 @@ static VOID List_DrawEntry(struct IClass *cl, Object *obj, int entry_pos, int y)
             x1 += data->entries[entry_pos]->parents * data->parent_space;
         }
         
-	if ((text = zune_text_new(data->preparses[col], data->strings[col], ZTEXT_ARG_NONE, NULL)))
+	if ((text = zune_text_new(data->preparses[col], data->strings[col], ZTEXT_ARG_NONE, 0)))
 	{
             /* Could be made simpler, as we don't really need the bounds */
 	    zune_text_get_bounds(text, obj);
@@ -1688,7 +1690,7 @@ STATIC IPTR List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetEn
     if (pos < 0 || pos >= data->entries_num)
     {
     	*msg->entry = NULL;
-    	return NULL;
+    	return 0;
     }
     *msg->entry = data->entries[pos]->data;
     return (ULONG)*msg->entry;
@@ -1748,7 +1750,7 @@ STATIC IPTR List_Destruct(struct IClass *cl, Object *obj, struct MUIP_List_Destr
 STATIC IPTR List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compare *msg)
 {
     //struct MUI_ListData *data = INST_DATA(cl, obj);
-    return NULL;
+    return 0;
 }
 
 /**************************************************************************
@@ -1795,10 +1797,10 @@ STATIC IPTR List_CreateImage(struct IClass *cl, Object *obj, struct MUIP_List_Cr
 
     /* List must be already setup in Setup of your subclass */
     if (!(_flags(obj) & MADF_SETUP))
-	return NULL;
+	return 0;
     li = AllocPooled(data->pool, sizeof(struct ListImage));
     if (!li)
-	return NULL;
+	return 0;
     li->obj = msg->obj;
 
     AddTail((struct List *)&data->images, (struct Node *)li);
