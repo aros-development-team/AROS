@@ -16,11 +16,14 @@
 #include <aros/arossupportbase.h>
 #include <aros/asmcall.h>
 #include <string.h>
+#include <utility/name.h>
 
 #include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "libdefs.h"
 #include "memory.h"
+#include "exec_intern.h"
 
 #define EXEC_NUMVECT    135
 
@@ -57,10 +60,10 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
     neg = AROS_ALIGN(LIB_VECTSIZE * EXEC_NUMVECT);
 
     SysBase = (struct ExecBase *)
-	    ((UBYTE *)allocmem(mh, neg + sizeof(struct ExecBase)) + neg);
+	    ((UBYTE *)allocmem(mh, neg + sizeof(struct IntExecBase)) + neg);
 
     /* Zero out the memory. Makes below a bit smaller. */
-    memset(SysBase, 0, sizeof(struct ExecBase));
+    memset(SysBase, 0, sizeof(struct IntExecBase));
 
     for(i=1; i <= EXEC_NUMVECT; i++)
     {
@@ -118,8 +121,30 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 
     SysBase->Quantum = 4;
 
-    SysBase->DebugData = &AROSSupportBase;
-    AROSSupportBase.kprintf = (void *)kprintf;
+    AROS_PrepareExecBase ((struct IntExecBase *)SysBase);
 
     return SysBase;
+}
+
+void AROS_PrepareExecBase (struct IntExecBase * IntSysBase)
+{
+    IntSysBase->DebugAROSBase = (struct Library *)&AROSSupportBase;
+    AROSSupportBase.kprintf = (void *)kprintf;
+}
+
+void AROS_InitDebugging (struct ExecBase * SysBase, struct Library * UtilityBase)
+{
+    struct IntExecBase * IntSysBase = (struct IntExecBase *)SysBase;
+
+    IntSysBase->DebugUtilityBase = UtilityBase;
+
+    /* Init IntSysBase->DebugConfig. There are two problems here:
+       1. When is this function here called ? It can only be called after
+          UtilityBase has been initialized but someone might have wanted
+	  to call D(rbug()) already. Or I would have to duplicate the code
+	  from utility.library :-/
+       2. How can I read a config file at this time ? Is it safe to call
+          fgets() ? Probably not: If AROS is running native, there is no
+	  fgets().
+     */
 }

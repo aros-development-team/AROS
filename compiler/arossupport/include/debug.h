@@ -295,8 +295,17 @@
 #ifndef AROS_DEBUG_H
 #define AROS_DEBUG_H
 
-#define bug	 kprintf
+#define bug	kprintf
+#define rbug(main,sub,lvl,fmt,args...) \
+		rkprintf (DBG_MAINSYSTEM_ ## main, \
+			DBG_ ## main ## _SUBSYSTEM_ ## sub, \
+			lvl, fmt, ##args)
 
+/* Debugging constants. These should be defined outside and this
+   part should be generated. */
+#define DBG_MAINSYSTEM_INTUITION "intuition"
+#define DBG_INTUITION_SUBSYSTEM_INPUTHANDLER "inputhandler"
+		
 #define aros_print_not_implemented(name) \
 	kprintf("The function %s is not implemented.\n", name);
 

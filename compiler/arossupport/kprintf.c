@@ -19,7 +19,7 @@
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 #if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#define SysBase 	*(void **)4
+#   define SysBase 	*(void **)4
 #endif
 
 /* Can't use ctypt.h *sigh* */

@@ -9,3 +9,4 @@ make.defaults
 mmake
 mmake.cache
 mmake.config
+debug.opts
