@@ -29,7 +29,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     
     struct IntLocale *def;
 
-    globallocalebase = LIBBASE;
+    globallocalebase = (struct LocaleBase *) LIBBASE;
     
     /* Do whatever static initialisation you need here */
     InitSemaphore(&((struct IntLocaleBase *)LIBBASE)->lb_LocaleLock);
@@ -47,7 +47,7 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 	IntLB(LIBBASE)->lb_CurrentLocale = def;
 
 	/* Setup the languages - will not fail here. */
-	SetLocaleLanguage(def, LIBBASE);
+	SetLocaleLanguage(def, (struct LocaleBase *) LIBBASE);
 
 	def->il_Count = 0;
    	InstallPatches();

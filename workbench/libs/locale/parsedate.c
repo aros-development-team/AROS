@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 
 #include <exec/types.h>
@@ -101,10 +98,6 @@ BOOL _getnum(LONG numchars,
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -118,7 +111,7 @@ BOOL _getnum(LONG numchars,
     if (   (fmtTemplate == NULL)
 	|| (getCharFunc == NULL)
 	|| (locale == NULL)
-	|| (*fmtTemplate == NULL)
+	|| (*fmtTemplate == '\0')
        )
 	return FALSE;
 
@@ -126,7 +119,7 @@ BOOL _getnum(LONG numchars,
 	AROS_UFC3(ULONG, getCharFunc->h_Entry, \
 		AROS_UFCA(struct Hook *, getCharFunc, A0), \
 		AROS_UFCA(struct Locale *, locale, A2), \
-		AROS_UFCA(ULONG, NULL, A1))
+		AROS_UFCA(ULONG, 0, A1))
 
     while (*fmtTemplate)
     {

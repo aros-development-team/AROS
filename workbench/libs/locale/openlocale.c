@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: OpenLocale() - Give access to a new locale.
-    Lang: english
+    OpenLocale() - Give access to a new locale.
 */
 
 #include <exec/types.h>
@@ -73,10 +72,6 @@ extern void InitLocale(
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    locale_lib.fd and clib/locale_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -127,7 +122,7 @@ extern void InitLocale(
 
 	DEBUG_OPENLOCALE(dprintf("OpenLocale: stream 0x%lx\n",iff->iff_Stream));
 
-	if(iff->iff_Stream == NULL)
+	if(iff->iff_Stream == 0)
 	{
 		FreeMem(lp, sizeof(struct LocalePrefs));
 		FreeIFF(iff);

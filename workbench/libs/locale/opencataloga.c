@@ -290,7 +290,7 @@ struct header
 
 #undef FILENAMESIZE
 
-	if (NULL == iff->iff_Stream)
+	if (iff->iff_Stream == 0)
 	{
 	    DEBUG_OPENCATALOG(dprintf("OpenCatalogA: end..nostream\n"));
 	    FreeIFF(iff);
