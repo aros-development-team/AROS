@@ -1243,6 +1243,10 @@ LDFLAGS := $(TARGET_LDFLAGS) $(STATIC_LDFLAGS) $(USER_LDFLAGS)
 %(libs) := -L$(LIBDIR) %(prelibs)
 %(deps) :=
 STARTUP := %(startup)
+ifdef USE_DETACH
+STARTUP := $(LIBDIR)/detach.o $(STARTUP)
+endif
+%(deps) := $(STARTUP)
 ifdef USE_AROSLIB
 %(libs) := $(%(libs)) -larossupport
 %(deps) := $(%(deps)) $(LIBDIR)/libarossupport.a
