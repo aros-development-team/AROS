@@ -1,7 +1,7 @@
 
 PURIFY	= /home/digulla/AROS/compiler/purify/purify
 CC	= gcc
-CFLAGS	= -g -Wall -O -I.. -DHAVE_VSNPRINT
+CFLAGS	= -g -Wall -O -I.. -DHAVE_VSNPRINTF
 AR	= ar
 ARFLAGS = ru
 
