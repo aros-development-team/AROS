@@ -101,10 +101,10 @@ void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
 
 IPTR check_set(Class * cl, Object * obj, struct opSet * msg)
 {
-    struct CheckData *data = INST_DATA(cl, obj);
-    struct TagItem   *tag, *taglist = msg->ops_AttrList;
-    struct RastPort  *rport;
-    IPTR    	     retval = FALSE;
+    struct CheckData     *data = INST_DATA(cl, obj);
+    const struct TagItem *tag, *taglist = msg->ops_AttrList;
+    struct RastPort      *rport;
+    IPTR    	          retval = FALSE;
 
     if (data->flags & CF_CustomImage)
     {
@@ -282,7 +282,7 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 	    htmsg.gpht_Mouse.X = msg->gpi_Mouse.X;
 	    htmsg.gpht_Mouse.Y = msg->gpi_Mouse.Y;
 	    
-	    if (DoMethodA(obj, (Msg) & htmsg) != GMR_GADGETHIT)
+	    if (DoMethodA(obj, (Msg) &htmsg) != GMR_GADGETHIT)
 	    {
 		if (G(obj)->Flags & GFLG_SELECTED)
 		{
