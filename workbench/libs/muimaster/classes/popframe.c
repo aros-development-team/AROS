@@ -28,12 +28,7 @@ struct Popframe_DATA
     CONST_STRPTR wintitle;
 };
 
-
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Popframe_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Popframe__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Popframe_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -68,10 +63,7 @@ static IPTR Popframe_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Popframe_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Popframe__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Popframe_DATA *data = INST_DATA(cl, obj);
 
@@ -84,10 +76,7 @@ static ULONG Popframe_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);   
 }
 
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static IPTR Popframe_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Popframe__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
 #if 0
     struct Popframe_DATA *data = INST_DATA(cl, obj);
@@ -105,11 +94,7 @@ static IPTR Popframe_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-
-/**************************************************************************
- MUIM_Popframe_OpenWindow
-**************************************************************************/
-STATIC IPTR Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
+IPTR Popframe__MUIM_Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Popframe_DATA *data = INST_DATA(cl, obj);
 
@@ -180,11 +165,7 @@ STATIC IPTR Popframe_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-
-/**************************************************************************
- MUIM_Popframe_CloseWindow
-**************************************************************************/
-STATIC IPTR Popframe_CloseWindow(struct IClass *cl, Object *obj,
+IPTR Popframe__MUIM_Popframe_CloseWindow(struct IClass *cl, Object *obj,
 				 struct MUIP_Popframe_CloseWindow *msg)
 {
     struct Popframe_DATA *data = INST_DATA(cl, obj);
@@ -212,14 +193,13 @@ BOOPSI_DISPATCHER(IPTR, Popframe_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Popframe_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Popframe_Dispose(cl, obj, msg);
-	case MUIM_Hide: return Popframe_Hide(cl, obj, (APTR)msg);
-	case MUIM_Popframe_OpenWindow: return Popframe_OpenWindow(cl, obj, (APTR)msg);
-	case MUIM_Popframe_CloseWindow: return Popframe_CloseWindow(cl, obj, (APTR)msg);
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW: return Popframe__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Popframe__OM_DISPOSE(cl, obj, msg);
+	case MUIM_Hide: return Popframe__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_Popframe_OpenWindow: return Popframe__MUIM_Popframe_OpenWindow(cl, obj, (APTR)msg);
+	case MUIM_Popframe_CloseWindow: return Popframe__MUIM_Popframe_CloseWindow(cl, obj, (APTR)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
+    }    
 }
 
 const struct __MUIBuiltinClass _MUI_Popframe_desc =

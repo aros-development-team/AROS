@@ -26,10 +26,7 @@ struct Settingsgroup_DATA
     int dummy;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Settingsgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_Settingsgroup *data;
     struct TagItem  	    *tag, *tags;
@@ -52,19 +49,13 @@ static IPTR Settingsgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- MUIM_Settingsgroup_ConfigToGadgets
-**************************************************************************/
-static IPTR Settingsgroup_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+IPTR Settingsgroup__MUIM_Settingsgroup_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     //struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
     return 0;
 }
 
-/**************************************************************************
- MUIM_Settingsgroup_GadgetsToConfig
-**************************************************************************/
-static IPTR Settingsgroup_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+IPTR Settingsgroup__MUIM_Settingsgroup_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     //struct MUI_Settingsgroup *data = INST_DATA(cl, obj);
     return 0;
@@ -76,14 +67,17 @@ BOOPSI_DISPATCHER(IPTR, Settingsgroup_Dispatcher, cl, obj, msg)
     switch (msg->MethodID)
     {
 	case OM_NEW:
-	    return Settingsgroup_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Settingsgroup_ConfigToGadgets:
-	    return Settingsgroup_ConfigToGadgets(cl,obj,(APTR)msg);
-	case MUIM_Settingsgroup_GadgetsToConfig:
-	    return Settingsgroup_GadgetsToConfig(cl,obj,(APTR)msg);
+	    return Settingsgroup__OM_NEW(cl, obj, (struct opSet *)msg);
+	
+        case MUIM_Settingsgroup_ConfigToGadgets:
+	    return Settingsgroup__MUIM_Settingsgroup_ConfigToGadgets(cl,obj,(APTR)msg);
+	
+        case MUIM_Settingsgroup_GadgetsToConfig:
+	    return Settingsgroup__MUIM_Settingsgroup_GadgetsToConfig(cl,obj,(APTR)msg);
+        
+        default:
+            return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Settingsgroup_desc =

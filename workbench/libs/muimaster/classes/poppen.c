@@ -26,12 +26,7 @@ struct Poppen_DATA
     CONST_STRPTR wintitle;
 };
 
-
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Poppen_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Poppen__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Poppen_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -67,11 +62,7 @@ static IPTR Poppen_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static IPTR Poppen_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Poppen__MUIM_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Poppen_DATA *data = INST_DATA(cl, obj);
     
@@ -85,11 +76,7 @@ static IPTR Poppen_Hide(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-
-/**************************************************************************
- MUIM_Poppen_OpenWindow
-**************************************************************************/
-STATIC IPTR Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
+IPTR Poppen__MUIM_Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Poppen_DATA *data = INST_DATA(cl, obj);
 
@@ -150,11 +137,7 @@ STATIC IPTR Poppen_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
     return 1;
 }
 
-
-/**************************************************************************
- MUIM_Poppen_CloseWindow
-**************************************************************************/
-STATIC IPTR Poppen_CloseWindow(struct IClass *cl, Object *obj,
+IPTR Poppen__MUIM_Poppen_CloseWindow(struct IClass *cl, Object *obj,
 				 struct MUIP_Poppen_CloseWindow *msg)
 {
     struct Poppen_DATA *data = INST_DATA(cl, obj);
@@ -183,13 +166,12 @@ BOOPSI_DISPATCHER(IPTR, Poppen_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Poppen_New(cl, obj, (struct opSet *)msg);
-	case MUIM_Hide: return Poppen_Hide(cl, obj, (APTR)msg);
-	case MUIM_Poppen_OpenWindow: return Poppen_OpenWindow(cl, obj, (APTR)msg);
-	case MUIM_Poppen_CloseWindow: return Poppen_CloseWindow(cl, obj, (APTR)msg);
+	case OM_NEW: return Poppen__OM_NEW(cl, obj, (struct opSet *)msg);
+	case MUIM_Hide: return Poppen__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_Poppen_OpenWindow: return Poppen__MUIM_Poppen_OpenWindow(cl, obj, (APTR)msg);
+	case MUIM_Poppen_CloseWindow: return Poppen__MUIM_Poppen_CloseWindow(cl, obj, (APTR)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Poppen_desc =

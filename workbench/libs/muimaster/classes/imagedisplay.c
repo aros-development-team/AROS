@@ -42,10 +42,7 @@ struct Imagedisplay_DATA
 #define MIF_FREEHORIZ        (1<<1)
 
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Imagedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imagedisplay_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -98,10 +95,7 @@ static IPTR Imagedisplay_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static IPTR Imagedisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Imagedisplay__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -110,10 +104,7 @@ static IPTR Imagedisplay_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Imagedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Imagedisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
@@ -147,10 +138,7 @@ static IPTR Imagedisplay_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Imagedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Imagedisplay__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
@@ -163,10 +151,7 @@ static IPTR Imagedisplay_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Imagedisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Imagedisplay__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -178,10 +163,7 @@ static IPTR Imagedisplay_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static IPTR Imagedisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Imagedisplay__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -190,10 +172,7 @@ static IPTR Imagedisplay_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cle
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Imagedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Imagedisplay__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     DoSuperMethodA(cl,obj,(Msg)msg);
 
@@ -209,10 +188,7 @@ static IPTR Imagedisplay_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_A
     return 1;
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static IPTR Imagedisplay_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Imagedisplay__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -223,10 +199,7 @@ static IPTR Imagedisplay_Show(struct IClass *cl, Object *obj, struct MUIP_Show *
     return 1;
 }
 
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static IPTR Imagedisplay_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
+IPTR Imagedisplay__MUIM_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -236,10 +209,7 @@ static IPTR Imagedisplay_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *m
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Imagedisplay_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
+IPTR Imagedisplay__MUIM_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
@@ -296,19 +266,18 @@ BOOPSI_DISPATCHER(IPTR, Imagedisplay_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Imagedisplay_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Imagedisplay_Dispose(cl, obj, msg);
-	case OM_SET: return Imagedisplay_Set(cl, obj, (APTR)msg);
-	case OM_GET: return Imagedisplay_Get(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Imagedisplay_AskMinMax(cl,obj,(APTR)msg);
-	case MUIM_Setup: return Imagedisplay_Setup(cl,obj,(APTR)msg);
-	case MUIM_Cleanup: return Imagedisplay_Cleanup(cl,obj,(APTR)msg);
-	case MUIM_Show: return Imagedisplay_Show(cl,obj,(APTR)msg);
-	case MUIM_Hide: return Imagedisplay_Hide(cl,obj,(APTR)msg);
-	case MUIM_Draw: return Imagedisplay_Draw(cl,obj,(APTR)msg);
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW:         return Imagedisplay__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:     return Imagedisplay__OM_DISPOSE(cl, obj, msg);
+	case OM_SET:         return Imagedisplay__OM_SET(cl, obj, (APTR)msg);
+	case OM_GET:         return Imagedisplay__OM_GET(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax: return Imagedisplay__MUIM_AskMinMax(cl,obj,(APTR)msg);
+	case MUIM_Setup:     return Imagedisplay__MUIM_Setup(cl,obj,(APTR)msg);
+	case MUIM_Cleanup:   return Imagedisplay__MUIM_Cleanup(cl,obj,(APTR)msg);
+	case MUIM_Show:      return Imagedisplay__MUIM_Show(cl,obj,(APTR)msg);
+	case MUIM_Hide:      return Imagedisplay__MUIM_Hide(cl,obj,(APTR)msg);
+	case MUIM_Draw:      return Imagedisplay__MUIM_Draw(cl,obj,(APTR)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
+    }    
 }
 
 const struct __MUIBuiltinClass _MUI_Imagedisplay_desc =

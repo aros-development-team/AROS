@@ -39,10 +39,7 @@ struct Boopsi_DATA
     struct MUI_EventHandlerNode ehn;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
+ULONG Boopsi__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Boopsi_DATA *data;
     struct TagItem *tags,*tag;
@@ -134,10 +131,7 @@ static ULONG Boopsi_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
+ULONG Boopsi__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
@@ -146,10 +140,7 @@ static ULONG Boopsi_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return DoSuperMethodA(cl,obj,msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static ULONG Boopsi_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+ULONG Boopsi__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
@@ -229,11 +220,8 @@ static ULONG Boopsi_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
 #define STORE *(msg->opg_Storage)
-static ULONG Boopsi_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+ULONG Boopsi__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     switch (msg->opg_AttrID)
@@ -282,10 +270,7 @@ static ULONG Boopsi_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 }
 #undef STORE
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static ULONG Boopsi_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+ULONG Boopsi__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
 
@@ -304,10 +289,7 @@ static ULONG Boopsi_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMin
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+ULONG Boopsi__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
@@ -318,20 +300,14 @@ static ULONG Boopsi_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
     return 1;
 }
 
-/**************************************************************************
- MUIM_Cleanup
-**************************************************************************/
-static ULONG Boopsi_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+ULONG Boopsi__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoMethod(_win(obj),MUIM_Window_RemEventHandler,(IPTR)&data->ehn);
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static ULONG Boopsi_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+ULONG Boopsi__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     ULONG rc = DoSuperMethodA(cl, obj, (Msg)msg);
@@ -354,10 +330,7 @@ static ULONG Boopsi_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     return rc;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static ULONG Boopsi_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+ULONG Boopsi__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     DoSuperMethodA(cl, obj, (Msg)msg);
@@ -367,10 +340,7 @@ static ULONG Boopsi_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_Hide
-**************************************************************************/
-static ULONG Boopsi_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
+ULONG Boopsi__MUIM_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct Boopsi_DATA *data = INST_DATA(cl, obj);
     if (data->boopsi_object)
@@ -391,10 +361,7 @@ static ULONG Boopsi_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- MUIM_HandleEvent
-**************************************************************************/
-static ULONG Boopsi_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+ULONG Boopsi__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     //struct Boopsi_DATA *data = INST_DATA(cl, obj);
     
@@ -428,17 +395,17 @@ BOOPSI_DISPATCHER(IPTR, Boopsi_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Boopsi_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Boopsi_Dispose(cl, obj, msg);
-	case OM_GET: return Boopsi_Get(cl, obj, (struct opGet *)msg);
-	case OM_SET: return Boopsi_Set(cl, obj, (struct opSet *)msg);
-	case MUIM_Setup: return Boopsi_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Boopsi_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_Show: return Boopsi_Show(cl, obj, (APTR)msg);
-	case MUIM_Hide: return Boopsi_Hide(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Boopsi_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Boopsi_Draw(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Boopsi_HandleEvent(cl, obj, (APTR)msg);
+	case OM_NEW:           return Boopsi__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE:       return Boopsi__OM_DISPOSE(cl, obj, msg);
+	case OM_GET:           return Boopsi__OM_GET(cl, obj, (struct opGet *)msg);
+	case OM_SET:           return Boopsi__OM_SET(cl, obj, (struct opSet *)msg);
+	case MUIM_Setup:       return Boopsi__MUIM_Setup(cl, obj, (APTR)msg);
+	case MUIM_Cleanup:     return Boopsi__MUIM_Cleanup(cl, obj, (APTR)msg);
+	case MUIM_Show:        return Boopsi__MUIM_Show(cl, obj, (APTR)msg);
+	case MUIM_Hide:        return Boopsi__MUIM_Hide(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax:   return Boopsi__MUIM_AskMinMax(cl, obj, (APTR)msg);
+	case MUIM_Draw:        return Boopsi__MUIM_Draw(cl, obj, (APTR)msg);
+	case MUIM_HandleEvent: return Boopsi__MUIM_HandleEvent(cl, obj, (APTR)msg);
     }
     {
 	struct Boopsi_DATA *data = INST_DATA(cl, obj);

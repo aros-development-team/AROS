@@ -253,10 +253,7 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
     }
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -451,10 +448,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-STATIC IPTR Imageadjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Imageadjust__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 
@@ -464,10 +458,7 @@ STATIC IPTR Imageadjust_Dispose(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-STATIC IPTR Imageadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Imageadjust__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct TagItem *tags,*tag;
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
@@ -485,10 +476,7 @@ STATIC IPTR Imageadjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Imageadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
     struct pages {
@@ -590,10 +578,7 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return (DoSuperMethodA(cl, obj, (Msg) msg));
 }
 
-/**************************************************************************
- MUIM_Imageadjust_ReadExternal
-**************************************************************************/
-static IPTR Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
+IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
     DoMethod(data->external_list,MUIM_List_Clear);
@@ -606,15 +591,24 @@ BOOPSI_DISPATCHER(IPTR, Imageadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Imageadjust_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Imageadjust_Dispose(cl,obj,(APTR)msg);
-	case OM_SET: return Imageadjust_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Imageadjust_Get(cl,obj,(APTR)msg);
-
-        case MUIM_Imageadjust_ReadExternal: return Imageadjust_ReadExternal(cl,obj,(APTR)msg);
-    }
-    
-    return DoSuperMethodA(cl, obj, msg);
+	case OM_NEW:
+            return Imageadjust__OM_NEW(cl, obj, (struct opSet *)msg);
+	
+        case OM_DISPOSE:
+            return Imageadjust__OM_DISPOSE(cl,obj,(APTR)msg);
+	
+        case OM_SET:
+            return Imageadjust__OM_SET(cl, obj, (struct opSet *)msg);
+	
+        case OM_GET:
+            return Imageadjust__OM_GET(cl,obj,(APTR)msg);
+        
+        case MUIM_Imageadjust_ReadExternal: 
+            return Imageadjust__MUIM_Imageadjust_ReadExternal(cl,obj,(APTR)msg);
+        
+        default:
+            return DoSuperMethodA(cl, obj, msg);
+    }   
 }
 
 const struct __MUIBuiltinClass _MUI_Imageadjust_desc =

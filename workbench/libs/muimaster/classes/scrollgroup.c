@@ -175,10 +175,7 @@ AROS_UFH3(ULONG,Scrollgroup_Function,
     return 0;
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Scrollgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Scrollgroup_DATA *data;
     //struct TagItem *tags,*tag;
@@ -228,20 +225,14 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static ULONG Scrollgroup_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Scrollgroup__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
     mui_free(data->layout_hook);
     return DoSuperMethodA(cl,obj,msg);
 }
 
-/**************************************************************************
- MUIM_Show
-**************************************************************************/
-static ULONG Scrollgroup_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+IPTR Scrollgroup__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct Scrollgroup_DATA *data = INST_DATA(cl, obj);
     LONG top,left,width,height;
@@ -270,11 +261,11 @@ BOOPSI_DISPATCHER(IPTR, Scrollgroup_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Scrollgroup_New(cl, obj, (struct opSet *) msg);
-	case OM_DISPOSE: return Scrollgroup_Dispose(cl, obj, msg);
-	case MUIM_Show: return Scrollgroup_Show(cl, obj, (struct MUIP_Show*)msg);
+	case OM_NEW: return Scrollgroup__OM_NEW(cl, obj, (struct opSet *) msg);
+	case OM_DISPOSE: return Scrollgroup__OM_DISPOSE(cl, obj, msg);
+	case MUIM_Show: return Scrollgroup__MUIM_Show(cl, obj, (struct MUIP_Show*)msg);
+        default: return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Scrollgroup_desc =

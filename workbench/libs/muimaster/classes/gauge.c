@@ -46,10 +46,7 @@ struct Gauge_DATA
    LONG info_height;
 };
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Gauge__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Gauge_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -108,20 +105,14 @@ static IPTR Gauge_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static IPTR Gauge_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Gauge__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
     struct Gauge_DATA   *data = INST_DATA(cl,obj);
     if (data->dupinfo && data->info) FreeVec(data->info);
     return DoSuperMethodA(cl,obj,msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Gauge__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Gauge_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -213,10 +204,7 @@ static IPTR Gauge_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
+IPTR Gauge__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl, obj);
     ULONG *store               = msg->opg_Storage;
@@ -251,11 +239,7 @@ static ULONG  Gauge_Get(struct IClass *cl, Object * obj, struct opGet *msg)
     return TRUE;
 }
 
-
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Gauge__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl,obj);
 
@@ -289,10 +273,7 @@ static IPTR Gauge_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     return 1;
 }
 
-/**************************************************************************
- MUIM_AskMinMax
-**************************************************************************/
-static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Gauge__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl,obj);
     DoSuperMethodA(cl,obj,(Msg)msg);
@@ -326,10 +307,7 @@ static IPTR Gauge_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMa
     return 0;
 }
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static IPTR Gauge_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Gauge__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct Gauge_DATA *data = INST_DATA(cl,obj);
     //ULONG val;
@@ -387,16 +365,15 @@ BOOPSI_DISPATCHER(IPTR, Gauge_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Gauge_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Gauge_Dispose(cl, obj, (Msg)msg);
-	case OM_SET: return Gauge_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Gauge_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Gauge_Setup(cl, obj, (struct MUIP_Setup *)msg);
-	case MUIM_AskMinMax: return Gauge_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
-	case MUIM_Draw: return Gauge_Draw(cl, obj, (struct MUIP_Draw*)msg);
+	case OM_NEW:         return Gauge__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE:     return Gauge__OM_DISPOSE(cl, obj, (Msg)msg);
+	case OM_SET:         return Gauge__OM_SET(cl, obj, (struct opSet *)msg);
+	case OM_GET:         return Gauge__OM_GET(cl, obj, (struct opGet *)msg);
+	case MUIM_Setup:     return Gauge__MUIM_Setup(cl, obj, (struct MUIP_Setup *)msg);
+	case MUIM_AskMinMax: return Gauge__MUIM_AskMinMax(cl, obj, (struct MUIP_AskMinMax*)msg);
+	case MUIM_Draw:      return Gauge__MUIM_Draw(cl, obj, (struct MUIP_Draw*)msg);
+        default:             return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Gauge_desc = { 

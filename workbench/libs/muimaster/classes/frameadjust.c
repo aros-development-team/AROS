@@ -137,10 +137,7 @@ static Object *MakeFrameDisplay(int i, int state)
     return obj;
 }
 
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Frameadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Frameadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Frameadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
@@ -246,11 +243,7 @@ static IPTR Frameadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static ULONG Frameadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Frameadjust__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
     struct Frameadjust_DATA *data = INST_DATA(cl, obj);
 
@@ -270,11 +263,10 @@ BOOPSI_DISPATCHER(IPTR, Frameadjust_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Frameadjust_New(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Frameadjust_Get(cl,obj,(APTR)msg);
+	case OM_NEW: return Frameadjust__OM_NEW(cl, obj, (struct opSet *)msg);
+	case OM_GET: return Frameadjust__OM_GET(cl,obj,(APTR)msg);
+        default:     return DoSuperMethodA(cl, obj, msg);
     }
-    
-    return DoSuperMethodA(cl, obj, msg);
 }
 
 const struct __MUIBuiltinClass _MUI_Frameadjust_desc =
