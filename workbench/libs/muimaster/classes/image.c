@@ -187,7 +187,8 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 #warning quick hack to not draw the background for gradients. It should really be generalized
                     if (data->img)
                     {
-                        if (data->img->type == IST_GRADIENT)
+                        if (data->img->type == IST_SCALED_GRADIENT
+			    || data->img->type == IST_TILED_GRADIENT)
                             set(obj, MUIA_FillArea, FALSE);
                         else
                             set(obj, MUIA_FillArea, TRUE);
@@ -237,7 +238,8 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 #warning quick hack to not draw the background for gradients. It should really be generalized
         if (data->img)
         {
-            if (data->img->type == IST_GRADIENT)
+            if (data->img->type == IST_SCALED_GRADIENT
+		|| data->img->type == IST_TILED_GRADIENT)
                 set(obj, MUIA_FillArea, FALSE);
             else
                 set(obj, MUIA_FillArea, TRUE);
