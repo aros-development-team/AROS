@@ -32,5 +32,6 @@ void SetAttrs (Object * obj, ULONG tag1, ...);
 APTR NewObject (struct IClass * classPtr, UBYTE * classID, ULONG tag1, ...);
 
 struct Window * OpenWindowTags (struct NewWindow * newWindow, ULONG tag1, ...);
+struct Screen * OpenScreenTags (struct NewScreen * newScreen, ULONG tag1, ...);
 
 #endif /* CLIB_ALIB_PROTOS_H */
