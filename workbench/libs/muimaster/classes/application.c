@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <devices/timer.h>
 #include <dos/dostags.h>
+#include <stdio.h>
 
 #include <clib/alib_protos.h>
 #include <libraries/commodities.h>
@@ -279,9 +280,30 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
 
     /* Parse prefs */
+    data->app_SingleTask = (BOOL)GetTagData(MUIA_Application_SingleTask, FALSE, 
+					    msg->ops_AttrList);
     data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, NULL, msg->ops_AttrList);
     if (data->app_Base && strpbrk(data->app_Base, " :/()#?*.,"))
 	data->app_Base = NULL;
+    if (data->app_Base && !data->app_SingleTask)
+    {
+	/* must append .1, .2, ... to the base name */
+	int i;
+	char portname[255];
+
+	for (i = 1; i < 1000; i++)
+	{
+	    snprintf(portname, 255, "%s.%d", data->app_Base, i);
+	    if (!FindPort(portname))
+		break;
+	}
+	data->app_Base = StrDup(portname);
+    }
+    else if (data->app_Base)
+    {
+	data->app_Base = StrDup(data->app_Base);
+    }
+
     data->app_GlobalInfo.mgi_Configdata =
 	MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, obj, TAG_DONE);
     if (!data->app_GlobalInfo.mgi_Configdata)
@@ -341,7 +363,7 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    data->app_HelpFile = (STRPTR)tag->ti_Data;
 	    break;
 	case MUIA_Application_SingleTask:
-	    data->app_SingleTask = (BOOL)tag->ti_Data;
+	    /* moved before config parsing */
 	    break;
 	case MUIA_Application_Title:
 	    data->app_Title = (STRPTR)tag->ti_Data;
@@ -522,6 +544,9 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 
     if (data->app_GlobalInfo.mgi_UserPort)
     	DeleteMsgPort(data->app_GlobalInfo.mgi_UserPort);
+
+    if (data->app_Base)
+	FreeVec(data->app_Base);
 
     return DoSuperMethodA(cl, obj, msg);
 }
@@ -1148,10 +1173,16 @@ static ULONG Application_OpenConfigWindow(struct IClass *cl, Object *obj,
     {
 	{ SYS_Background, TRUE          },
 	{ SYS_Asynch,     TRUE          },
+	{ SYS_Input,   NULL},
+	{ SYS_Output,  NULL },
+	{ SYS_Error,  NULL },
 	{ TAG_DONE,       0             }
     };
+    char cmd[255];
 
-    if (SystemTagList("Zune wanderer", tags) == -1)
+    snprintf(cmd, 255, "Zune %s", data->app_Base ? data->app_Base : "");
+
+    if (SystemTagList(cmd, tags) == -1)
     {	
 	return 0;
     }
