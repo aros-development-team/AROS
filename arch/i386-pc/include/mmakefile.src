@@ -1,0 +1,49 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+_INCLUDES := $(foreach f,$(shell ls *.[hi]), $(f))             \
+            $(foreach f,$(shell ls aros/*.[hi]), $(f))    \
+            $(foreach f,$(shell ls asm/*.[hi]), $(f))      \
+            $(foreach f,$(shell ls libcore/*.c), $(f))          \
+            $(foreach f,$(shell ls exec/*.[hi]), $(f))
+
+INCFILES := $(foreach f,$(_INCLUDES), $(INCDIR)/$(f) $(GENINCDIR)/$(f))
+
+DIRS :=	$(INCDIR) $(GENINCDIR) \
+	$(foreach d, aros asm exec libcore, $(INCDIR)/$(d) $(GENINCDIR)/$(d))
+
+MACHINE_H := $(GENINCDIR)/aros/machine.h
+
+#MM
+includes-native-i386 : $(INCFILES) machine.i
+	@$(NOP)
+
+#MM
+includes-copy : $(INCFILES) $(GENINCDIR)/sigcore.h
+	@$(NOP)
+
+#MM
+setup-includes :
+	@$(FOR) dir in $(DIRS) ; do \
+	    $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ; \
+	done
+
+#MM
+clean ::
+	$(RM) $(MACHINE_H) $(DISTMACHINE_H) $(TESTS) machine.i geninc$(HOST_EXE_SUFFIX)
+
+$(INCDIR)/% : %
+	$(CP) $< $@
+
+$(GENINCDIR)/% : %
+	$(CP) $< $@
+
+geninc$(HOST_EXE_SUFFIX) : geninc.c
+	@echo "CFLAGS=$(CFLAGS)"
+	@echo "Creating geninc..."
+	@$(HOST_CC) $(CFLAGS) -o $@ $<
+
+machine.i : geninc$(HOST_EXE_SUFFIX) $(MACHINE_H)
+	./geninc$(HOST_EXE_SUFFIX) > machine.i
+
+%common
