@@ -9,6 +9,10 @@ FONTS=fixed
 
 #MM workbench-fonts : setup
 workbench-fonts: $(FONTS)
-	@$(FOR) dir in $(FONTS) ; do \
-		$(CP) -rpf $$dir $(FONTSDIR)/$$dir ; \
+	@$(FOR) dir in $(FONTS) ; do $(CP) -rpf $$dir $(FONTSDIR) ; \
 	done
+
+#MM
+setup :
+	$(IF) $(TEST) ! -d $(FONTSDIR) ; then $(MKDIR) $(FONTSDIR) ; else $(NOP) ; fi ;
+
