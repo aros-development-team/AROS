@@ -1,9 +1,9 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Return a pointer to after the directories in a path.
-    Lang: english
+    Lang: English
 */
 #ifndef TEST
 #    include "dos_intern.h"
@@ -58,23 +58,31 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
-    char * ptr;
+
+    char *ptr;
+
+    /* '/' at the begining of the string really is part of the path */
+    while (*path == '/')
+    {
+	++path;
+    }
 
     ptr = path;
 
-    if (*ptr)
+    while (*ptr)
     {
-	while (*ptr)
+	if (*ptr == '/')
 	{
-	    if (*ptr == '/')
-		path=ptr;
-	    else if (*ptr == ':')
-		path=ptr+1;
-
-	    ptr ++;
+	    path = ptr;
 	}
+	else if (*ptr == ':')
+	{
+	    path = ptr + 1;
+	}
+	
+	ptr++;
     }
-
+    
     return path;
     AROS_LIBFUNC_EXIT
 } /* PathPart */

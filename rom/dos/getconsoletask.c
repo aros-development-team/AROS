@@ -1,15 +1,17 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Get the "task" belonging to the process's console.
-    Lang: english
+    Lang: English
 */
+
 #include "dos_intern.h"
 
 /*****************************************************************************
 
     NAME */
+
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 
@@ -45,16 +47,20 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process *pr = (struct Process *)FindTask(NULL);
-    return BADDR(pr->pr_ConsoleTask);
+    struct Process *me = (struct Process *)FindTask(NULL);
+
+    if (__is_task(me))
+    {
+	return NULL;
+    }
+    
+    return (struct MsgPort *)me->pr_ConsoleTask;
 
     AROS_LIBFUNC_EXIT
 } /* GetConsoleTask */
