@@ -69,8 +69,8 @@ ENDFUNC := $(OBJDIR)/$(END_FILE).o
 
 $(OSMODDIR)/aros.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.map
-	@if test ! -s aroslib.map; then rm aroslib.map ; else true ; fi
+	@$(CC) $(ILDFLAGS) $(GENMAP) aroslib.map $(INITFUNC) $(LIBS) $(ENDFUNC) -o $@ 2>&1|tee aroslib.err
+	@if $(TEST) ! -s aroslib.err; then rm aroslib.err ; else true ; fi
 	@strip $@
 
 # ***** Not Native ***************

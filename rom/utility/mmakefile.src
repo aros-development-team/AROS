@@ -81,8 +81,8 @@ ENDFUNC :=
 
 $(OSMODDIR)/utility.library : $(INITFUNC) $(ENDFUNC) $(OBJS) $(LIBDEPS)
 	@$(ECHO) "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LINK_LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.map
-	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
+	@$(CC) $(ILDFLAGS) $(GENMAP) utilitylib.map $(INITFUNC) $(LINK_LIBS) $(ENDFUNC) -o $@ 2>&1|tee utilitylib.err
+	@if $(TEST) ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
 	@strip $@
 
 #MM

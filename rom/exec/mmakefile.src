@@ -97,8 +97,8 @@ kernel-exec-amiga-m68k : show-flags $(LIB) $(OSMODDIR)/exec.strap
 
 $(OSMODDIR)/exec.strap : $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/libarosc.a
 	@echo "Building $(notdir $@) ..."
-	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.map
-	@if $(TEST) ! -s execstrap.map; then rm execstrap.map ; else true ; fi
+	@$(CC) $(ILDFLAGS) $(GENMAP) execstrap.map $(INITFUNC) $(LIBS) -o $@ 2>&1|tee execstrap.err
+	@if $(TEST) ! -s execstrap.err; then rm execstrap.err ; else true ; fi
 	@strip $@
 
 # To study the assembler output for evaluation (can be helpful in tracking
