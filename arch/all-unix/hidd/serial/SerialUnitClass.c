@@ -475,6 +475,7 @@ ULONG serialunit_setparameters(OOP_Class *cl, OOP_Object *o, struct pHidd_Serial
       break;
       
       case TAG_SKIP:
+      case TAG_IGNORE:
       break;
       
       default: 
@@ -502,18 +503,20 @@ BYTE serialunit_sendbreak(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_
 /******* SerialUnit::Start() **********************************/
 VOID serialunit_start(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUnit_Start *msg)
 {
-  struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
+	struct HIDDSerialUnitData * data = OOP_INST_DATA(cl, o);
 
-  /*
-   * Allow or start feeding the UART with data. Get the data
-   * from upper layer.
-   */
-  if (NULL != data->DataWriteCallBack)
-     data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
-   /*
-    * Also mark the stopped flag as FALSE.
-    */
-   data->stopped = FALSE;
+	/*
+	 * Allow or start feeding the UART with data. Get the data
+	 * from upper layer.
+	 */
+	if (TRUE == data->stopped) { 
+		if (NULL != data->DataWriteCallBack)
+			 data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
+		/*
+		 * Also mark the stopped flag as FALSE.
+		 */
+		data->stopped = FALSE;
+	}
 }  
   
 
