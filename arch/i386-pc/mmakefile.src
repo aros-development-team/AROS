@@ -34,6 +34,8 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	    kernel-hidd-linklib \
 #MM	    kernel-utility-linklib \
 #MM	    kernel-workbench-linklib \
+#MM         kernel-intuition-native \
+#MM	    kernel-misc-linklib kernel-misc-native-i386 \
 #MM	    kernel-graphics-linux kernel-graphics-native-i386
 
 # Setup
@@ -118,6 +120,10 @@ kernel-timer-native-i386 :
 kernel-battclock-native-i386 :
 	%add_objects rom/boot/libbattclock
 
+#MM kernel-misc-native-i386 :
+kernel-misc-native-i386 :
+	%add_objects rom/boot/libmisc
+
 #MM kernel-graphics-native-i386 :
 kernel-graphics-native-i386 :
 	%add_objects rom/boot/libgraphics
@@ -132,6 +138,8 @@ kernel-devs-native-i386 :
 	%add_objects rom/boot/libgameport
 	%add_objects rom/boot/libinput
 	%add_objects rom/boot/libkeyboard
+	%add_objects rom/boot/libconsole
+	%add_objects rom/boot/libtrackdisk
 
 #MM
 includes-native-i386 : $(INCFILES) machine.i
