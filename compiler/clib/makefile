@@ -47,6 +47,7 @@ FILES = \
 	fputs \
 	fread \
 	free \
+	fseek \
 	fwrite \
 	gmtime \
 	labs \
@@ -91,6 +92,7 @@ FILES = \
 	strtoul \
 	time \
 	ungetc \
+	unlink \
 	vfprintf \
 	vfscanf \
 	vprintf \
