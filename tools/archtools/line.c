@@ -61,9 +61,9 @@ char **array;
 char *word;
 int num,len;
 
-  if(!outarray)
+  if(!outarray||!line)
   {
-    fprintf( stderr, "Passed invalid NULL pointer to words!\n" );
+    fprintf( stderr, "Passed invalid NULL pointer to get_words()!\n" );
     exit(-1);
   }
   array = *outarray;
@@ -100,6 +100,7 @@ int num,len;
   array[num] = NULL;
 
   *outarray = array;
+
 return num;
 }
 

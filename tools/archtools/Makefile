@@ -4,19 +4,25 @@ CC = gcc
 STRIP = strip
 ECHO = echo
 
-EXES = genfunctable genautodocs extractfiles mergearch
+EXES = genfunctable genautodocs extractfiles mergearch gensource
 
 ARCHIVE = spbase.arch
 SPECIAL = spenhanced.arch
 MERGE = spmerged.arch
 
-GENSRC = spadd.c spdiv.c spmul.c spneg.c spsub.c
+GENSRC = spadd.c spdiv.c spmul.c spneg.c spsub.c spsquare.c
+CSRC = spbase.c
 
 all   : $(EXES)
 
 genfunctable : line.o genfunctable.o
 	@$(ECHO) "Linking $@..."
 	@$(CC) $(CFLAGS) $(DEBUG) line.o genfunctable.o -o $@
+	@$(STRIP) $@
+
+gensource : line.o gensource.o
+	@$(ECHO) "Linking $@..."
+	@$(CC) $(CFLAGS) $(DEBUG) line.o gensource.o -o $@
 	@$(STRIP) $@
 
 genautodocs : line.o genautodocs.o
@@ -39,7 +45,7 @@ mergearch : line.o mergearch.o
 	@$(CC) $(CFLAGS) $(DEBUG) -c $< -o $@
 
 clean :
-	rm -f $(EXES) *.o functable.c *.adoc $(MERGE) $(GENSRC)
+	rm -f $(EXES) *.o functable.c *.adoc $(MERGE) $(GENSRC) $(CSRC)
 
 
 test : $(EXES)
@@ -51,4 +57,6 @@ test : $(EXES)
 	@genfunctable MathFFP $(ARCHIVE)
 	@$(ECHO) "Merging $(ARCHIVE) and $(SPECIAL) to $(MERGE)..."
 	@mergearch $(ARCHIVE) $(SPECIAL) $(MERGE)
+	@$(ECHO) "Extracting source from $(ARCHIVE) to $(CSRC)..."
+	@gensource $(ARCHIVE) $(CSRC)
 

@@ -9,3 +9,5 @@ spdiv.c
 spmul.c
 spneg.c
 spsub.c
+spsquare.c
+spbase.c

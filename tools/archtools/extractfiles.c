@@ -51,12 +51,12 @@ int numparams=0;
         in_autodoc = 1;
       if( strcmp(word,"/AutoDoc")==0 )
         in_autodoc = 0;
-      if( strcmp(word,"Parameter")==0 && in_archive && in_function && !in_header && !in_autodoc )
+      if( strcmp(word,"Parameter")==0 && in_archive && in_function && !in_autodoc && !in_code )
       {
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1)*sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[2] );
         type = realloc( type, (numparams+1)*sizeof(char *) );
         type[numparams] = strdup( words[1] );
         reg = realloc( reg, (numparams+1)*sizeof(char *) );
@@ -95,7 +95,7 @@ int numparams=0;
         }
         in_function = 1;
       }
-      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc )
+      if( strcmp(word,"/Function")==0 && in_archive && in_function && !in_autodoc && !in_code )
       {
       int i;
         fprintf( fdo, "%s\n", header);
@@ -107,12 +107,18 @@ int numparams=0;
         fprintf( fdo, "%s\n", code );
         in_function = 0;
         free(code);
+        for( i=0; i<=numparams; i++ )
+        {
+            free(name[i]);
+        }
+        free(name);
+        name = NULL;
         code = NULL;
       }
       if( strcmp(word,"LibOffset")==0 && in_archive && in_function && !in_autodoc && !in_code )
       {
         num = get_words(line,&words);
-        reg = realloc( type, sizeof(char *) );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
         reg[0] = strdup(words[1]);
       }
 
