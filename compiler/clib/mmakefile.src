@@ -180,7 +180,8 @@ SHARED	:= \
         getpwnam \
         getpwuid \
     getw \
-	gmtime \
+	getloadavg \
+    gmtime \
 	isatty \
 	jrand48 \
         kill \

@@ -159,6 +159,9 @@ int wctomb(char *s, wchar_t wchar);
 size_t mbstowcs(wchar_t * restrict pwcs, const char * restrict s, size_t n);
 size_t wcstombs(char * restrict s, const wchar_t * restrict pwcs, size_t n);
 
+/* Miscellaneous BSD functions */
+int getloadavg(double loadavg[], int n);
+
 /* The following are POSIX/SUS additions */
 #if !defined(_ANSI_SOURCE)
 long  a64l(const char *);
