@@ -336,7 +336,18 @@ void free_onbmclass(struct display_staticdata *xsd)
         xsd->onbmclass = NULL;
 
 #warning Change this!
-//	OOP_ReleaseAttrBases(attrbases);
+        if (NULL != __IHidd_BitMap)
+        	OOP_ReleaseAttrBase(IID_Hidd_BitMap);
+        if (NULL != __IHidd_PixFmt)
+        	OOP_ReleaseAttrBase(IID_Hidd_PixFmt);
+        if (NULL != __IHidd_Gfx)
+        	OOP_ReleaseAttrBase(IID_Hidd_Gfx);
+        if (NULL != __IHidd_Sync)
+        	OOP_ReleaseAttrBase(IID_Hidd_Sync);
+        if (NULL != __IHidd_DisplayGfx)
+        	OOP_ReleaseAttrBase(IID_Hidd_Displaygfx);
+        if (NULL != __IHidd_DisplayBitMap)
+        	OOP_ReleaseAttrBase(IID_Hidd_DisplayBitMap);
     }
 
     ReturnVoid("free_onbmclass");
