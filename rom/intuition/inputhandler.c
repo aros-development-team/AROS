@@ -688,19 +688,23 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		/* Check if there is already a MOUSEMOVE in the msg queue
 		** of the task
 		*/
-		msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
-
-		Forbid ();
-
-		while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
+		
+		if (w->UserPort)
 		{
-		    if (msg->Class == IDCMP_MOUSEMOVE)
-		    {
-#warning TODO: allow a number of such messages
-			break;
-		    }
+		    msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
 
-		    msg = succ;
+		    Forbid ();
+
+		    while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
+		    {
+			if (msg->Class == IDCMP_MOUSEMOVE)
+			{
+#warning TODO: allow a number of such messages
+			   break;
+			}
+
+			msg = succ;
+		    }
 		}
 
 		Permit ();
