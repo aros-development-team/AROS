@@ -1,0 +1,34 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES	:= input inputhandler peekqualifier processevents support
+OBJS	:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
+LIB	:= $(LIBDIR)/libinput.a
+
+#MM
+kernel-devs-$(ARCH)-$(CPU) : $(LIB)
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+#MM kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
+kernel-devs :
+	@$(NOP)
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OSGENDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OSGENDIR)
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt="$(SHARED_CFLAGS) $(CFLAGS)"
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
