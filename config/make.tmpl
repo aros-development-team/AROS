@@ -181,9 +181,9 @@ libdefs.h : lib.conf $(TOP)/scripts/genlibdefs.gawk
 %end
 
 # rule to generate asm files from c files (for debugging purposes)
-%define asm_rule
+%define asm_rule opt=$(GENASM)
 .PHONY : asm
-asm : $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+asm : $(foreach f,%(opt),$(f).s) all
 %end
 
 # generate asm files from c files (for debugging purposes)
