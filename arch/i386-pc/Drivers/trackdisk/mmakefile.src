@@ -22,7 +22,7 @@ clean ::
 	$(RM) $(OBJS) $(LIB) $(OBJDIR)
 
 #MM
-setup :
+setup-pc-i386 :
 	%mkdirs_q $(OBJDIR)
 
 

@@ -22,7 +22,7 @@ clean ::
 	-$(RM) $(OBJDIR) libdefs.h *.err
 
 #MM
-setup :
+setup-pp-m68k :
 	%mkdirs_q $(OBJDIR)
 
 $(OBJDIR)/%.o : %.S
