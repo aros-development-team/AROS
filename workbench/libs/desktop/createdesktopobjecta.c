@@ -75,13 +75,13 @@
     {
         case CDO_IconContainer:
             {
-                STRPTR          dir;
+                STRPTR          dir = NULL;
                 struct TagItem *tag;
 
                 tag = FindTagItem(ICOA_Directory, tags);
                 if (tag)
                 {
-                    dir = tag->ti_Data;
+                    dir = (STRPTR) tag->ti_Data;
                     tag->ti_Tag = TAG_IGNORE;
                 }
 
@@ -91,13 +91,13 @@
                 (
                     IconContainerObserver->mcc_Class, NULL,
 
-                    OA_Presentation, newObject,
-                    ICOA_Directory,  dir,
+                    OA_Presentation, (IPTR) newObject,
+                    ICOA_Directory,  (IPTR) dir,
 
                     TAG_END
                 );
 
-                set(newObject, PA_Observer, semanticObject);
+                set(newObject, PA_Observer, (IPTR) semanticObject);
 
                 break;
             }
@@ -118,8 +118,8 @@
                 (
                     DiskIconObserver->mcc_Class, NULL,
 
-                    IOA_Name,        label,
-                    OA_Presentation, newObject,
+                    IOA_Name,        (IPTR) label,
+                    OA_Presentation, (IPTR) newObject,
 
                     TAG_DONE
                 );
@@ -150,9 +150,9 @@
                 (
                     DrawerIconObserver->mcc_Class, NULL, 
                 
-                    IOA_Name,        label,
-                    OA_Presentation, newObject,
-                    IOA_Directory,   directory,
+                    IOA_Name,        (IPTR) label,
+                    OA_Presentation, (IPTR) newObject,
+                    IOA_Directory,   (IPTR) directory,
                 
                     TAG_DONE
                 );
@@ -165,7 +165,7 @@
             newObject = NewObjectA(ToolIcon->mcc_Class, NULL, tags);
 
             semanticObject = NewObject(ToolIconObserver->mcc_Class, NULL,
-                                       OA_Presentation, newObject, TAG_END);
+                                       OA_Presentation, (IPTR) newObject, TAG_END);
             break;
 
         case CDO_ProjectIcon:
@@ -174,7 +174,7 @@
             semanticObject = NewObject
             (
                 ProjectIconObserver->mcc_Class, NULL,
-                OA_Presentation, newObject, 
+                OA_Presentation, (IPTR) newObject, 
                 TAG_END
             );
             break;
@@ -185,7 +185,7 @@
             semanticObject = NewObject
             (
                 TrashcanIconObserver->mcc_Class, NULL,
-                OA_Presentation, newObject, 
+                OA_Presentation, (IPTR) newObject, 
                 TAG_END
             );
             break;
@@ -199,7 +199,7 @@
             semanticObject = NewObject
             (
                 DesktopObserver->mcc_Class, NULL,
-                OA_Presentation, newObject, 
+                OA_Presentation, (IPTR) newObject, 
                 TAG_END
             );
             
@@ -207,26 +207,26 @@
 
         case CDO_DirectoryWindow:
             {
-                Class  *windowClass  = NULL;
-                Object *windowObject = NULL;
+                STRPTR windowClass;
+                Object *windowObject;
 
                 if (DesktopBase->db_DefaultWindow) 
                 {
-                    windowClass = DesktopBase->db_DefaultWindow;
+                    windowClass = DesktopBase->db_DefaultWindow->cl_ID;
                 }
                 else
                 {
                     windowClass = MUIC_Window;
                 }
                 
-                windowObject = NewObject
+                windowObject = MUI_NewObject
                 (
-                    windowClass, NULL, 
-                
+                    windowClass, 
+                    
                     MUIA_Window_UseBottomBorderScroller, TRUE,
                     MUIA_Window_UseRightBorderScroller,  TRUE,
                     
-                    WindowContents, CreateDesktopObjectA
+                    WindowContents, (IPTR) CreateDesktopObjectA
                     (
                         CDO_IconContainer, tags
                     ),
