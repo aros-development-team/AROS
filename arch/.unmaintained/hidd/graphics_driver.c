@@ -4346,7 +4346,7 @@ D(bug("amiga2hidd_fast(xmin=%d, ymin=%d, destx=%d, desty=%d, w=%d, h=%d)\n"
 			, intersect.MaxY - intersect.MinY + 1
 		    ));
 		    amiga2hidd_fast( (APTR) &pi
-			, xMin, yMin 
+			, intersect.MinX, intersect.MinY
 			, BM_OBJ(bm)
 			, intersect.MinX, intersect.MinY
 			, intersect.MaxX - intersect.MinX + 1
@@ -4365,7 +4365,7 @@ D(bug("Done putting to hidd\n"));
 		    {
 		    	bltpattern_amiga( &pi
 		    		, CR->BitMap
-				, xMin, yMin
+				, intersect.MinX, intersect.MinY
 				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
