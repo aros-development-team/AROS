@@ -81,6 +81,16 @@ DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so
 else
 DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
 endif
+ifeq ("$(SHARED_EXPANSION)","yes")
+DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so
+else
+DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
+endif
+ifeq ("$(SHARED_BOOT)","yes")
+DEPLIB_BOOT=$(LIBDIR)/libboot.so
+else
+DEPLIB_BOOT=$(LIBDIR)/libboot.a
+endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
@@ -95,14 +105,16 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_BOOPSI) \
     $(DEPLIB_HIDDCLASS) \
     $(DEPLIB_UNIXIOCLASS) \
+    $(DEPLIB_EXPANSION) \
+    $(DEPLIB_BOOT) \
     $(LIBDIR)/libconsole.a \
     $(LIBDIR)/libaros.a
 
 LIBS=-L$(LIBDIR) \
-	$(GENDIR)/filesys/emul_handler.o -lAmigaOS \
-	-lintuition -lgraphics -ldos -lexec -lconsole \
+	$(GENDIR)/filesys/emul_handler.o -lexec -lAmigaOS \
+	-lboot -lintuition -lgraphics -ldos -lconsole \
 	-lhiddcl -lunixiocl -lboopsi -lutility \
-	-laros -lmathffp \
+	-laros -lmathffp -lexpansion \
 	-lamiga -larossupport
 
 # BEGIN_DESC{internaltarget}
