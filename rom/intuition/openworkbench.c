@@ -78,26 +78,30 @@ AROS_LH0(IPTR, OpenWorkBench,
     }
     else
     {
+        WORD width  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Width;
+        WORD height = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Height;
+        WORD depth  = GetPrivIBase(IntuitionBase)->ScreenModePrefs.smp_Depth;
+	 
         /* Open the Workbench screen if we don't have one. */
         struct TagItem screenTags[] =
         {   
-            { SA_Width,                AROS_DEFAULT_WBWIDTH  	},
-            { SA_Height,               AROS_DEFAULT_WBHEIGHT 	},
-            { SA_Depth,                AROS_DEFAULT_WBDEPTH  	},
-            { SA_LikeWorkbench,        TRUE                	},
-            { SA_Type,                 WBENCHSCREEN        	},
-            { SA_Title,         (IPTR) "Workbench Screen"       },
-            { SA_PubName,       (IPTR) "Workbench"   	        },
-            { SA_SharePens,            TRUE                	},
-            { TAG_END,                 0           	    	}
+            { SA_Width,                width              },
+            { SA_Height,               height             },
+            { SA_Depth,                depth              },
+            { SA_LikeWorkbench,        TRUE               },
+            { SA_Type,                 WBENCHSCREEN       },
+            { SA_Title,         (IPTR) "Workbench Screen" },
+            { SA_PubName,       (IPTR) "Workbench"   	  },
+            { SA_SharePens,            TRUE               },
+            { TAG_END,                 0           	  }
         };
     	struct TagItem modetags[] =
 	{
-	    { BIDTAG_DesiredWidth   , AROS_DEFAULT_WBWIDTH  },
-	    { BIDTAG_DesiredHeight  , AROS_DEFAULT_WBHEIGHT },
-	    { BIDTAG_Depth   	    , AROS_DEFAULT_WBDEPTH  },
-	    { TAG_DONE	    	    	    	    	    }
-	};	
+	    { BIDTAG_DesiredWidth,  width  },
+	    { BIDTAG_DesiredHeight, height },
+	    { BIDTAG_Depth,         depth  },
+	    { TAG_DONE,             0  	   }
+	};	                           
     	ULONG modeid;
 	
         modeid = BestModeIDA(modetags);
