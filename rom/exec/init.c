@@ -277,7 +277,7 @@ int main(int argc,char *argv[])
 	ml=(struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry),
 				      MEMF_PUBLIC|MEMF_CLEAR);
 	t =(struct Task *)   AllocMem(sizeof(struct Task),    MEMF_PUBLIC|MEMF_CLEAR);
-	s =(UBYTE *)         AllocMem(AROS_STACKSIZE,              MEMF_PUBLIC|MEMF_CLEAR);
+	s =(UBYTE *)         AllocMem(AROS_STACKSIZE,         MEMF_PUBLIC|MEMF_CLEAR);
 	ml->ml_NumEntries     =2;
 	ml->ml_ME[0].me_Addr  =t;
 	ml->ml_ME[0].me_Length=sizeof(struct Task);

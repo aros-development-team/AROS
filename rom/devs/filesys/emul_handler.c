@@ -1,63 +1,13 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.16  1996/11/14 22:39:11  aros
-    Fixed register conflict
 
-    Revision 1.15  1996/10/24 15:51:01  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.14  1996/10/23 14:21:32  aros
-    Renamed a few macros from XYZ to AROS_XYZ so we know which if from AROS and
-    which not.
-
-    Revision 1.13  1996/10/21 20:57:50	aros
-    ADE doesn't need to have the patch for timeval.
-
-    Revision 1.12  1996/10/14 02:38:39	iaint
-    FreeBSD patch no longer needed.
-
-    Revision 1.11  1996/10/10 13:23:55	digulla
-    Make handler work with timer (Fleischer)
-
-    Revision 1.10  1996/09/13 17:57:07	digulla
-    Use IPTR
-
-    Revision 1.9  1996/09/13 04:23:23  aros
-    Define FreeBSD should have been __FreeBSD__ (sorry my fault).
-
-    Revision 1.8  1996/09/11 16:54:24  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.7  1996/09/11 14:40:10  digulla
-    Integrated patch by I. Templeton: Under FreeBSD, there is a clash with
-	struct timeval
-
-    Revision 1.6  1996/09/11 13:05:34  digulla
-    Own function to open a file (M. Fleischer)
-
-    Revision 1.5  1996/08/31 12:58:11  aros
-    Merged in/modified for FreeBSD.
-
-    Revision 1.4  1996/08/30 17:02:06  digulla
-    Fixed a bug which caused the shell to exit if the timer sent a signal. This
-	fix is a very bad hack :(
-
-    Revision 1.3  1996/08/13 15:35:07  digulla
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:22  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Emulation filesystem.
+    Lang: english
 */
 #include <aros/system.h>
-#ifndef _AMIGA	/* ADE <sys/time.h> has provisions for this */
-#define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
+#ifndef _AMIGA	/* ADA <sys/time.h> has provisions for this */
+#   define DEVICES_TIMER_H /* avoid redefinition of struct timeval */
 #endif /* _AMIGA */
 #include <exec/resident.h>
 #include <exec/memory.h>
@@ -79,7 +29,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #ifdef __GNUC__
-    #include "emul_handler_gcc.h"
+#   include "emul_handler_gcc.h"
 #endif
 
 static const char name[];
@@ -688,7 +638,15 @@ AROS_LH1(void, beginio,
 	    if(fh->type==FHD_FILE)
 	    {
 		oldpos=lseek(fh->fd,0,SEEK_CUR);
-		if(lseek(fh->fd,iofs->io_Args[1],mode==OFFSET_BEGINNING?SEEK_SET:mode==OFFSET_CURRENT?SEEK_CUR:SEEK_END)<0)
+
+		if (mode == OFFSET_BEGINNING)
+		    mode = SEEK_SET;
+		else if (mode == OFFSET_CURRENT)
+		    mode = SEEK_CUR;
+		else
+		    mode = SEEK_END;
+
+		if(lseek(fh->fd,iofs->io_Args[1],mode)<0)
 		    error=err_u2a();
 		iofs->io_Args[0]=0;
 		iofs->io_Args[1]=oldpos;
