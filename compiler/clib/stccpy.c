@@ -50,7 +50,7 @@
 {
     char * ptr = dest;
 
-    while (n && *src)
+    while (n>1 && *src)
     {
         *ptr = *src;
 	ptr ++;
@@ -58,7 +58,7 @@
 	n--;
     }
 
-    *ptr = '\0';
+    *ptr++ = '\0';
 
     return (ptr-dest);
 } /* stccpy */
