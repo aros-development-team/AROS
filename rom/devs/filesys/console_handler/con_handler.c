@@ -25,6 +25,7 @@
 #include <dos/filesystem.h>
 #include <dos/exall.h>
 #include <dos/dosasl.h>
+#include <intuition/intuition.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
@@ -34,8 +35,10 @@
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
+#include "support.h"
 
-
+#include <string.h>
+#include <stdio.h>
 
 static const char name[];
 static const char version[];
@@ -104,8 +107,10 @@ static const UBYTE datatable=0;
 #define ioReq(x) ((struct IORequest *)x)
 
 /*****************
-**  open_con()  **
+**  open_con()  ** creates a con unit task
 *****************/
+
+#if 0
 static const struct TagItem win_tags[] =
 {
     {WA_Width,		500},
@@ -117,156 +122,151 @@ static const struct TagItem win_tags[] =
     {WA_Flags,		WFLG_DEPTHGADGET | WFLG_SIZEGADGET | WFLG_DRAGBAR | WFLG_CLOSEGADGET | WFLG_SIZEBRIGHT },
     {TAG_DONE,		0UL}
 };
+#endif
+
+static const struct NewWindow default_nw =
+{
+    0,				/* LeftEdge */
+    0,				/* TopEdge */
+    500,			/* Width */
+    300,			/* Height */
+    1,				/* DetailPen */
+    0,				/* BlockPen */
+    IDCMP_CLOSEWINDOW,		/* IDCMP */
+    WFLG_DEPTHGADGET |
+    WFLG_SIZEGADGET |
+    WFLG_DRAGBAR |
+    WFLG_SIZEBRIGHT |
+    WFLG_ACTIVATE,
+    0,				/* FirstGadget */
+    0,				/* CheckMark */
+    "CON:",			/* Title */
+    0,				/* Screen */
+    0,				/* Bitmap */
+    100,			/* MinWidth */
+    100,			/* MinHeight */
+    32767,			/* MaxWidth */
+    32767,			/* MaxHeight */
+    WBENCHSCREEN		/* type */
+};
 
 static LONG open_con(struct conbase 	*conbase
-	,struct filehandle 		**fh_ptr
-	,STRPTR				filename
-	,LONG				mode)
+        ,struct IOFileSys		*iofs)
 {
     LONG err = 0;
-    struct filehandle *fh;
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+#if DEBUG
+    STRPTR filename = iofs->io_Union.io_OPEN.io_Filename;
+    ULONG mode = iofs->io_Union.io_OPEN.io_FileMode;
+#endif
+    struct conTaskParams params;
+    struct Task *contask;
     
-    EnterFunc(bug("open_conh(fhptr=%p, filename=%s, mode=%d)\n",
-    	fh_ptr, filename, mode));
+    EnterFunc(bug("open_conh(filename=%s, mode=%d)\n",
+    	filename, mode));
 
-    fh = AllocMem(sizeof (struct filehandle), MEMF_ANY);
     if (fh)
     {
-    	D(bug("fh allocated\n"));
-    	/* Create msgport for console.device communication */
-	fh->conmp = AllocMem(sizeof (struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
-	if (fh->conmp)
+        /* DupLock */
+	fh->usecount++;
+    } else {
+
+	params.conbase = conbase;
+	params.iofs = iofs;
+	params.parentTask = FindTask(NULL);
+	params.initSignal = SIGF_DOS;
+
+	SetSignal(0, SIGF_DOS);
+
+	contask = createConTask(&params, conbase);
+	if (contask)
 	{
-	
-    	    D(bug("conmp created\n"));
-	    fh->conmp->mp_Flags = PA_SIGNAL;
-	    fh->conmp->mp_SigBit = SIGB_DOS;
-	    fh->conmp->mp_SigTask = FindTask(NULL);
-	    NEWLIST(&fh->conmp->mp_MsgList);
-	    
-	    fh->conio = (struct IOStdReq *)CreateIORequest(fh->conmp, sizeof (struct IOStdReq));
-	    if (fh->conio)
-	    {
-    	    	D(bug("conio created\n"));
-		fh->window = OpenWindowTagList(NULL, (struct TagItem *)win_tags);
-		if (fh->window)
-		{
-    	    	    D(bug("window opened\n"));
-		    fh->conio->io_Data	 = (APTR)fh->window;
-		    fh->conio->io_Length = sizeof (struct Window);
-	    	    if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conio), 0))
-		    {
-
-
-			const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
-			
-			D(bug("device opened\n"));
-			
-			/* Turn the console into LF+CR mode so that both
-			   linefeed and carriage return is done on 
-			*/
-			fh->conio->io_Command	= CMD_WRITE;
-			fh->conio->io_Data	= (APTR)lf_on;
-			fh->conio->io_Length	= 4;
-			
-			DoIO(ioReq(fh->conio));
-
-			
-		    	*fh_ptr = fh;
-		    	ReturnInt("open_conh", LONG, 0);
-		    
-		    }
-		    else
-		    {
-		        err = ERROR_INVALID_RESIDENT_LIBRARY;
-		    }
-		    CloseWindow(fh->window);
-		    
-		}
-		else
-		{
-		    err = ERROR_NO_FREE_STORE;
-		}
-		DeleteIORequest( ioReq(fh->conio) );
-	    
-	    }
-	    else
-	    {
-	    	err = ERROR_NO_FREE_STORE;
-	    }
-	    DeleteMsgPort(fh->conmp);
+	    Wait(SIGF_DOS);
+	    if (iofs->io_DosError) RemTask(contask);
 	}
-	else
-	{
-	    err = ERROR_NO_FREE_STORE;
-	}
-	
-	FreeMem(fh, sizeof (struct filehandle));
-	
+
+	err = iofs->io_DosError;
     }
-    else
-    	err = ERROR_NO_FREE_STORE;
-	
+    
     ReturnInt("open_conh", LONG, err);
 }
 
-static LONG close_con(struct conbase *conbase, struct filehandle *fh)
+
+static void close_con(struct conbase *conbase, struct IOFileSys *iofs)
 {
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+
     EnterFunc(bug("close_con(fh=%p)\n", fh));
+    
+    fh->usecount--;
+    if (fh->usecount > 0)
+    {
+        iofs->io_DosError = 0;
+	ReplyMsg(&iofs->IOFS.io_Message);
+	return;
+    }
+    
     /* Abort all pending requests */
-    if (!CheckIO( ioReq(fh->conio) ))
-    	AbortIO( ioReq(fh->conio) );
+    if (!CheckIO( ioReq(fh->conreadio) ))
+    	AbortIO( ioReq(fh->conreadio) );
 	
     /* Wait for abort */
-    WaitIO( ioReq(fh->conio) );
+    WaitIO( ioReq(fh->conreadio) );
     
     /* Clean up */
-    CloseDevice((struct IORequest *)fh->conio);
+    CloseDevice((struct IORequest *)fh->conreadio);
     CloseWindow(fh->window);
-    DeleteIORequest( ioReq(fh->conio) );
-    FreeMem(fh->conmp, sizeof (struct MsgPort));
+    DeleteIORequest( ioReq(fh->conreadio) );
+    FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
     
     FreeMem(fh, sizeof (struct filehandle));
+    if (fh->wintitle) FreeVec(fh->wintitle);
     
-    ReturnInt("close_con", LONG, 0);
+    iofs->io_DosError = 0;
+    iofs->IOFS.io_Unit = NULL;    
+    ReplyMsg(&iofs->IOFS.io_Message);
+    
+    /* let's kill ourselves */
+    RemTask(FindTask(NULL));
 }
 
-static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer, LONG *length_ptr)
+static void con_read(struct conbase *conbase, struct IOFileSys *iofs)
 {
-    LONG err;
-    
-    fh->conio->io_Command = CMD_READ;
-    fh->conio->io_Data	  = buffer;
-    fh->conio->io_Length  = *length_ptr;
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
+
+    if (fh->flags & FHFLG_CANREAD)
+    {
+        ULONG readlen = (fh->canreadsize < iofs->io_Union.io_READ.io_Length) ? fh->canreadsize :
+									       iofs->io_Union.io_READ.io_Length;
+	/* we must correct io_READ.io_Length, because answer_read_request
+	   would read until fh->inputsize if possible, but here it is allowed only
+	   to read max. fh->canreadsize chars */
+	   
+	iofs->io_Union.io_READ.io_Length = readlen;	
+	answer_read_request(conbase, fh, iofs);
 	
-    fh->conmp->mp_SigTask = FindTask(NULL);
-    fh->conmp->mp_SigBit = SIGB_DOS;
-    
-    err = DoIO( ioReq(fh->conio) );
-    *length_ptr = fh->conio->io_Actual;
-
-    return err;
+	fh->canreadsize -= readlen;	
+	if (fh->canreadsize == 0) fh->flags &= ~FHFLG_CANREAD;
+	
+    } else {    
+	AddTail((struct List *)&fh->pendingReads, (struct Node *)iofs);
+	fh->flags |= FHFLG_READPENDING;
+    }
 }
 
-static LONG con_write(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer, LONG *length_ptr)
+static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 {
-    LONG err;
-    
-    EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, buffer));
+    struct filehandle *fh = (struct filehandle *)iofs->IOFS.io_Unit;
 
+    EnterFunc(bug("con_write(fh=%p, buf=%s)\n", fh, iofs->io_Union.io_WRITE.io_Buffer));
     
-    fh->conio->io_Command = CMD_WRITE;
-    fh->conio->io_Data	  = buffer;
-    fh->conio->io_Length  = *length_ptr;
-
-    fh->conmp->mp_SigTask = FindTask(NULL);
-    fh->conmp->mp_SigBit = SIGB_DOS;
-    
-    err = DoIO( ioReq(fh->conio) );
-    
-    *length_ptr = fh->conio->io_Actual;
-    
-   ReturnInt("con_write", LONG, err);
+    if ((fh->inputsize - fh->inputstart) == 0)
+    {
+        answer_write_request(conbase, fh, iofs);
+    } else {
+    	AddTail((struct List *)&fh->pendingWrites, (struct Node *)iofs);
+	fh->flags |= FHFLG_WRITEPENDING;
+    }
 }
 
 /************************ Library entry points ************************/
@@ -314,10 +314,9 @@ AROS_LH2(struct conbase *, init,
 	    	    dn->dn_Startup	= NULL;
 	    	    dn->dn_OldName	= MKBADDR(s);
 	    	    dn->dn_NewName	= &s[1];
-	    
+
 	    	    if (AddDosEntry((struct DosList *)dn))
 		    {
-
 	    	    	return conbase;
 	    	    }
 	    	    FreeVec(s);
@@ -426,8 +425,10 @@ AROS_LH1(void, beginio,
 	   struct conbase *, conbase, 5, con_handler)
 {
     AROS_LIBFUNC_INIT
-    LONG error=0;
-    
+
+    LONG error = 0;
+    BOOL request_queued = FALSE;
+
     EnterFunc(bug("conhandler_BeginIO(iofs=%p)\n", iofs));
 
     /* WaitIO will look into this */
@@ -444,49 +445,38 @@ AROS_LH1(void, beginio,
     {
 	case FSA_OPEN_FILE:
 	case FSA_OPEN:
-	    error = open_con(conbase,
-			    (struct filehandle **)&iofs->IOFS.io_Unit,
+	    error = open_con(conbase, iofs);
+/*			    (struct filehandle **)&iofs->IOFS.io_Unit,
 			    iofs->io_Union.io_OPEN.io_Filename,
-			    iofs->io_Union.io_OPEN.io_FileMode);
+			    iofs->io_Union.io_OPEN.io_FileMode);*/
 	    break;
 	    
 	case FSA_CLOSE:	
-	    error = close_con(conbase, (struct filehandle *)iofs->IOFS.io_Unit);
+        case FSA_READ:
+	case FSA_WRITE:
+	    iofs->IOFS.io_Flags	&= ~IOF_QUICK;
+	    request_queued = TRUE;
+	    
+	    PutMsg(((struct filehandle *)iofs->IOFS.io_Unit)->contaskmp,
+	           (struct Message *)iofs);		   
 	    break;
 	    
-	
-
-	case FSA_READ:
- 	    error = con_read(	conbase,
-	    			(struct filehandle *)iofs->IOFS.io_Unit,
-				iofs->io_Union.io_READ.io_Buffer,
-				&(iofs->io_Union.io_READ.io_Length));
+	case FSA_IS_INTERACTIVE:
+	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = TRUE;
+	    error = 0;
 	    break;
 
-
-	case FSA_WRITE:
-	    error = con_write(	conbase,
-	    			(struct filehandle *)iofs->IOFS.io_Unit,
-				iofs->io_Union.io_WRITE.io_Buffer,
-				&(iofs->io_Union.io_WRITE.io_Length));
-	    break;
-				
 	case FSA_SEEK:
 	case FSA_SET_FILE_SIZE:
 	    error = ERROR_NOT_IMPLEMENTED;
 	    break;
-	    
+
 	case FSA_WAIT_CHAR:
 	    /* We could manually wait for a character to arrive, but this is
 	       currently not implemented. FIXME */
 	case FSA_FILE_MODE:
 #warning FIXME: not supported yet
 	    error=ERROR_ACTION_NOT_KNOWN;
-	    break;
-
-	case FSA_IS_INTERACTIVE:
-	    iofs->io_Union.io_IS_INTERACTIVE.io_IsInteractive = TRUE;
-	    error = 0;
 	    break;
 
 	case FSA_SAME_LOCK: 
@@ -521,7 +511,7 @@ AROS_LH1(void, beginio,
     iofs->io_DosError=error;
 
     /* If the quick bit is not set send the message to the port */
-    if(!(iofs->IOFS.io_Flags&IOF_QUICK))
+    if(!(iofs->IOFS.io_Flags&IOF_QUICK) && !request_queued)
 	ReplyMsg(&iofs->IOFS.io_Message);
 	
     ReturnVoid("conhandler_beginio");
@@ -540,6 +530,432 @@ AROS_LH1(LONG, abortio,
     /* Everything already done. */
     return 0;
     AROS_LIBFUNC_EXIT
+}
+
+/*******************
+**  conTaskEntry  **
+*******************/
+VOID conTaskEntry(struct conTaskParams *param)
+{
+    struct conbase *conbase = param->conbase;
+    
+    struct filehandle *fh;
+    struct IOFileSys *iofs = param->iofs;
+#if DEBUG
+    STRPTR filename = iofs->io_Union.io_OPEN.io_Filename;
+#endif
+    LONG err = 0;
+    
+    BOOL ok = FALSE;
+    
+    D(bug("conTaskEntry: taskparams = %x  conbase = %x  iofs = %x  filename = \"%s\"\n",
+    			param, conbase, iofs, filename));
+    
+        fh = AllocMem(sizeof (struct filehandle), MEMF_PUBLIC | MEMF_CLEAR);
+    if (fh)
+    {
+    	D(bug("contask: fh allocated\n"));
+
+        fh->contask = FindTask(NULL);	
+	
+	NEWLIST(&fh->pendingReads);
+	NEWLIST(&fh->pendingWrites);
+	
+    	/* Create msgport for console.device communication
+	   and for app <-> contask communication  */
+	fh->conreadmp = AllocMem(sizeof (struct MsgPort) * 3, MEMF_PUBLIC|MEMF_CLEAR);
+	if (fh->conreadmp)
+	{
+	
+    	    D(bug("contask: mem for conreadmp, conwritemp and contaskmp allocated\n"));
+
+	    fh->conreadmp->mp_Node.ln_Type = NT_MSGPORT;
+	    fh->conreadmp->mp_Flags = PA_SIGNAL;
+	    fh->conreadmp->mp_SigBit = AllocSignal(-1);
+	    fh->conreadmp->mp_SigTask = fh->contask;
+	    NEWLIST(&fh->conreadmp->mp_MsgList);
+
+	    fh->conwritemp = fh->conreadmp + 1;
+	    
+	    fh->conwritemp->mp_Node.ln_Type = NT_MSGPORT;
+	    fh->conwritemp->mp_Flags = PA_SIGNAL;
+	    fh->conwritemp->mp_SigBit = AllocSignal(-1);
+	    fh->conwritemp->mp_SigTask = fh->contask;
+	    NEWLIST(&fh->conwritemp->mp_MsgList);
+	    
+	    fh->contaskmp = fh->conwritemp + 1;
+
+	    fh->contaskmp->mp_Node.ln_Type = NT_MSGPORT;	    
+	    fh->contaskmp->mp_Flags = PA_SIGNAL;
+	    fh->contaskmp->mp_SigBit = AllocSignal(-1);
+	    fh->contaskmp->mp_SigTask = fh->contask;
+	    NEWLIST(&fh->contaskmp->mp_MsgList);
+	    
+	    fh->conreadio = (struct IOStdReq *)CreateIORequest(fh->conreadmp, sizeof (struct IOStdReq));
+	    if (fh->conreadio)
+	    {
+	        struct TagItem win_tags [] =
+		{
+		    {WA_PubScreen	,0		},
+		    {WA_AutoAdjust	,TRUE		},
+		    {TAG_DONE				}
+		};
+		struct NewWindow nw = default_nw; 
+		
+    	    	D(bug("contask: conreadio created\n"));
+		
+		parse_filename(conbase, fh, iofs, &nw);
+		
+		fh->window = OpenWindowTagList(&nw, (struct TagItem *)win_tags);
+		if (fh->window)
+		{
+    	    	    D(bug("contask: window opened\n"));
+		    fh->conreadio->io_Data   = (APTR)fh->window;
+		    fh->conreadio->io_Length = sizeof (struct Window);
+	    	    if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0))
+		    {
+			const UBYTE lf_on[] = {0x9B, 0x32, 0x30, 0x68 }; /* Set linefeed mode    */
+			
+			D(bug("contask: device opened\n"));
+			
+			fh->conwriteio = *fh->conreadio;
+			fh->conwriteio.io_Message.mn_ReplyPort = fh->conwritemp;
+			
+			/* Turn the console into LF+CR mode so that both
+			   linefeed and carriage return is done on 
+			*/
+			fh->conwriteio.io_Command	= CMD_WRITE;
+			fh->conwriteio.io_Data		= (APTR)lf_on;
+			fh->conwriteio.io_Length	= 4;
+			
+			DoIO(ioReq(&fh->conwriteio));
+
+			iofs->IOFS.io_Unit = (struct Unit *)fh;			
+			ok = TRUE;    
+		    } /* if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conreadio), 0)) */
+		    else
+		    {
+		        err = ERROR_INVALID_RESIDENT_LIBRARY;
+		    }
+		    if (!ok) CloseWindow(fh->window);
+		    
+		} /* if (fh->window) */
+		else
+		{
+		    err = ERROR_NO_FREE_STORE;
+		}
+		if (!ok) DeleteIORequest( ioReq(fh->conreadio) );
+	    
+	    } /* if (fh->conreadio) */
+	    else
+	    {
+	    	err = ERROR_NO_FREE_STORE;
+	    }
+	    if (!ok) FreeMem(fh->conreadmp, sizeof(struct MsgPort) * 3);
+	    
+	} /* if (fh->conreadmp) */
+	else
+	{
+	    err = ERROR_NO_FREE_STORE;
+	}
+	
+	if (!ok) FreeMem(fh, sizeof (struct filehandle));
+	
+    } /* if (fh) */
+    else
+    	err = ERROR_NO_FREE_STORE;
+	
+    iofs->io_DosError = err;
+    
+    Signal(param->parentTask, param->initSignal);
+    if (err)
+    {
+        D(bug("con task: initialization failed. waiting for parent task to kill me.\n"));
+        /* parent Task will kill us */
+        Wait(0);
+    }
+    
+    D(bug("con task: initialization okay. entering main loop.\n"));
+    
+    /* Main Loop */
+    
+    /* Send first read request to console.device */
+    
+    fh->conreadio->io_Command = CMD_READ;
+    fh->conreadio->io_Data    = fh->consolebuffer;
+    fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+
+    SendIO(ioReq(fh->conreadio));
+
+    for(;;)
+    {
+        ULONG conreadmask = 1L << fh->conreadmp->mp_SigBit;
+	ULONG contaskmask = 1L << fh->contaskmp->mp_SigBit;
+	ULONG sigs;
+
+	D(bug("contask: waiting for sigs %x\n",conreadmask | contaskmask));
+	sigs = Wait(conreadmask | contaskmask);
+
+	if (sigs & contaskmask)
+	{
+	    /* FSA mesages */
+	    D(bug("contask: recevied contask signal\n"));
+	    while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp)))
+	    {
+		switch(iofs->IOFS.io_Command)
+		{
+		    case FSA_CLOSE:
+	    		close_con(conbase, iofs);
+	    		break;
+
+		    case FSA_READ:
+ 			con_read(conbase, iofs);
+			break;
+
+		    case FSA_WRITE:
+			con_write(conbase, iofs);
+			break;
+
+		} /* switch(iofs->IOFS.io_Command) */
+
+	    } /* while((iofs = (struct IOFileSys *)GetMsg(fh->contaskmp))) */
+
+	} /* if (sigs & contaskmask) */
+
+	if (sigs & conreadmask)
+	{
+	    UBYTE c;
+	    WORD inp;
+
+	    /* console.device read request completed */
+	    D(bug("contask: received console device signal\n"));
+
+	    GetMsg(fh->conreadmp);
+
+	    fh->conbuffersize = fh->conreadio->io_Actual;
+	    fh->conbufferpos = 0;
+
+	    /* terminate with 0 char */
+	    fh->consolebuffer[fh->conbuffersize] = '\0';
+
+	    while((inp = scan_input(conbase, fh, &c)) != INP_DONE)
+	    {
+		D(bug("Input Code: %d\n",inp));
+
+		switch(inp)
+		{
+		    case INP_CURSORLEFT:
+			if (fh->inputpos > fh->inputstart)
+			{
+			    fh->inputpos--;
+			    do_movecursor(conbase, fh, CUR_LEFT, 1);
+			}
+			break;
+
+		    case INP_SHIFT_CURSORLEFT: /* move to beginning of line */
+			if (fh->inputpos > fh->inputstart)
+			{
+			    do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+			    fh->inputpos = fh->inputstart;
+			}
+			break;
+
+		    case INP_CURSORRIGHT:
+			if (fh->inputpos < fh->inputsize)
+			{
+			    fh->inputpos++;
+			    do_movecursor(conbase, fh, CUR_RIGHT, 1);
+			}
+			break;
+
+		    case INP_SHIFT_CURSORRIGHT: /* move to end of line */
+			if (fh->inputpos != fh->inputsize)
+			{
+			    do_movecursor(conbase, fh, CUR_RIGHT, fh->inputsize - fh->inputpos);
+			    fh->inputpos = fh->inputsize;
+			}
+			break;
+
+		    case INP_CURSORUP: /* walk through cmd history */
+		    case INP_CURSORDOWN:
+		    case INP_SHIFT_CURSORUP:
+		    case INP_SHIFT_CURSORDOWN:
+			history_walk(conbase, fh, inp);
+		    	break;
+			
+		    case INP_BACKSPACE:
+			if (fh->inputpos > fh->inputstart)
+			{
+			    do_movecursor(conbase, fh, CUR_LEFT, 1);
+
+			    if (fh->inputpos == fh->inputsize)
+			    {
+				do_deletechar(conbase, fh);
+
+				fh->inputsize--;
+				fh->inputpos--;
+			    } else {
+				WORD chars_right = fh->inputsize - fh->inputpos;
+
+				fh->inputsize--;
+				fh->inputpos--;
+
+				do_cursorvisible(conbase, fh, FALSE);
+				do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+				do_deletechar(conbase, fh);
+				do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+				do_cursorvisible(conbase, fh, TRUE);
+
+				memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right); 
+
+			    }
+			}
+			break;
+
+		    case INP_DELETE:
+			if (fh->inputpos < fh->inputsize)
+			{
+			    fh->inputsize--;
+
+			    if (fh->inputpos == fh->inputsize)
+			    {
+				do_deletechar(conbase, fh);
+			    } else {
+				WORD chars_right = fh->inputsize - fh->inputpos;
+
+				do_cursorvisible(conbase, fh, FALSE);
+				do_write(conbase, fh, &fh->inputbuffer[fh->inputpos + 1], chars_right);
+				do_deletechar(conbase, fh);
+				do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+				do_cursorvisible(conbase, fh, TRUE);
+
+				memmove(&fh->inputbuffer[fh->inputpos], &fh->inputbuffer[fh->inputpos + 1], chars_right);
+			    }
+			}
+			break;
+
+		    case INP_CONTROL_X:
+			if ((fh->inputsize - fh->inputstart) > 0)
+			{
+			    if (fh->inputpos > fh->inputstart)
+			    {
+				do_movecursor(conbase, fh, CUR_LEFT, fh->inputpos - fh->inputstart);
+			    }
+			    do_eraseinline(conbase, fh);
+
+			    fh->inputpos = fh->inputstart;
+			    fh->inputsize -= (fh->inputsize - fh->inputstart);
+			}
+			break;
+
+		    case INP_STRING:
+			if (fh->inputsize < INPUTBUFFER_SIZE)
+			{
+			    do_write(conbase, fh, &c, 1);
+
+			    if (fh->inputpos == fh->inputsize)
+			    {
+				fh->inputbuffer[fh->inputpos++] = c;
+				fh->inputsize++;
+			    } else {
+				WORD chars_right = fh->inputsize - fh->inputpos;
+
+				do_cursorvisible(conbase, fh, FALSE);
+				do_write(conbase, fh, &fh->inputbuffer[fh->inputpos], chars_right);
+				do_movecursor(conbase, fh, CUR_LEFT, chars_right);
+				do_cursorvisible(conbase, fh, TRUE);
+
+				memmove(&fh->inputbuffer[fh->inputpos + 1], &fh->inputbuffer[fh->inputpos], chars_right);		    
+				fh->inputbuffer[fh->inputpos++] = c;
+				fh->inputsize++;
+			    }
+			}
+			break;
+
+		    case INP_RETURN:
+		        if (fh->inputsize < INPUTBUFFER_SIZE)
+			{			    
+		            c = '\n';
+			    do_write(conbase, fh, &c, 1);
+			    
+			    add_to_history(conbase, fh);
+
+			    fh->inputbuffer[fh->inputsize++] = '\n';
+			    fh->inputstart = fh->inputsize;
+			    fh->inputpos = fh->inputstart;
+			    
+			    if (fh->flags & FHFLG_READPENDING)
+			    {			    
+			        struct IOFileSys *iofs, *next_iofs;
+    
+				ForeachNodeSafe(&fh->pendingReads, iofs, next_iofs)
+				{
+        			    Remove((struct Node *)iofs);
+				    answer_read_request(conbase, fh, iofs);
+				    
+				    if (fh->inputsize == 0) break;
+
+				} /* ForeachNodeSafe(&fh->pendingReads, iofs, nextiofs) */
+
+				if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
+			    }
+			    
+			    if (fh->inputsize)
+			    {
+			        fh->flags |= FHFLG_CANREAD;
+				fh->canreadsize = fh->inputsize;
+			    }
+			}
+			break;
+
+		    case INP_LINEFEED:
+		        if (fh->inputsize < INPUTBUFFER_SIZE)
+			{
+			    c = '\n';
+			    do_write(conbase, fh, &c, 1);
+			    
+			    add_to_history(conbase, fh);
+			    
+			    fh->inputbuffer[fh->inputsize++] = c;
+			    fh->inputstart = fh->inputsize;
+			    fh->inputpos = fh->inputsize;
+			}
+		    	break;
+			
+		} /* switch(inp) */
+
+	    } /* while((inp = scan_input(conbase, fh, &c)) != INP_DONE) */
+
+	    /* wait for next input from console.device */
+
+	    fh->conreadio->io_Command = CMD_READ;
+	    fh->conreadio->io_Data    = fh->consolebuffer;
+	    fh->conreadio->io_Length  = CONSOLEBUFFER_SIZE;
+
+	    SendIO(ioReq(fh->conreadio));
+	    
+	    /* pending writes ? */
+	    
+	    if ((fh->flags & FHFLG_WRITEPENDING) && (fh->inputpos == fh->inputstart))
+	    {
+	        struct IOFileSys *iofs, *iofs_next;
+		
+		ForeachNodeSafe(&fh->pendingWrites, iofs, iofs_next)
+		{
+		    Remove((struct Node *)iofs);
+		    
+		    answer_write_request(conbase, fh, iofs);
+		}
+		
+		fh->flags &= ~FHFLG_WRITEPENDING;
+	    }
+	    
+
+	} /* if (sigs & conmask) */
+
+    } /* for(;;) */
+
+    /* this point must never be reached */
 }
 
 static const char end=0;
