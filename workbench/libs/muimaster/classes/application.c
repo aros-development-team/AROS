@@ -52,6 +52,7 @@ struct MUI_ApplicationData
     struct MsgPort  	    *app_BrokerPort;
     struct MsgPort  	    *app_TimerPort;
     struct timerequest      *app_TimerReq;
+    struct Task     	    *app_Task;
     CxObj   	    	    *app_Broker;
     Object          	    *app_Menustrip;
     Object                  *app_AboutWin;
@@ -121,7 +122,7 @@ MUIA_Application_Menustrip [I..]          done
 MUIA_Application_RexxHook [ISG]           needs Arexx
 MUIA_Application_RexxMsg [..G]            needs Arexx
 MUIA_Application_RexxString [.S.]         needs Arexx
-MUIA_Application_SingleTask [I..]         todo
+MUIA_Application_SingleTask [I..]         done
 MUIA_Application_Sleep [.S.]              todo
 MUIA_Application_Title [I.G]              done
 MUIA_Application_UseCommodities [I..]     done
@@ -243,6 +244,28 @@ static BOOL application_do_pushed_method (struct MUI_ApplicationData *data)
     return FALSE;
 }
 
+static Object *find_application_by_base(struct IClass *cl, Object *obj, STRPTR base)
+{
+    struct TrackingNode *tn;
+    Object  	      	*retval = NULL;
+    
+    ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    ForeachNode(&MUIMB(MUIMasterBase)->Applications, tn)
+    {
+    	STRPTR tn_base = "";
+	
+	get(tn->tn_Application, MUIA_Application_Base, (IPTR *)&tn_base);
+	
+	if (tn_base && (strcmp(base, tn_base)) == 0)
+	{
+	    retval = tn->tn_Application;
+	    break;
+	}
+    }
+    ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    
+    return retval;
+}
 
 /**************************************************************************
  OM_NEW
@@ -284,14 +307,21 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return 0;
     }
 
+    data->app_Task = FindTask(NULL);
 
     /* Parse prefs */
     data->app_SingleTask = (BOOL)GetTagData(MUIA_Application_SingleTask, FALSE, 
 					    msg->ops_AttrList);
-    data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, 0, msg->ops_AttrList);
-    if (data->app_Base && strpbrk(data->app_Base, " :/()#?*.,"))
-	data->app_Base = NULL;
-    if (data->app_Base && !data->app_SingleTask)
+    data->app_Base = (STRPTR)GetTagData(MUIA_Application_Base, (IPTR)"UNNAMED", msg->ops_AttrList);
+    if (!data->app_Base || strpbrk(data->app_Base, " :/()#?*.,"))
+    {
+    	data->app_Base = NULL; /* don't remove */
+    	CoerceMethod(cl, obj, OM_DISPOSE);
+	
+	return 0;
+    }
+    
+    if (!data->app_SingleTask)
     {
 	/* must append .1, .2, ... to the base name */
 	int i;
@@ -300,16 +330,34 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	for (i = 1; i < 1000; i++)
 	{
 	    snprintf(portname, 255, "%s.%d", data->app_Base, i);
-	    if (!FindPort(portname))
+	    if (!find_application_by_base(cl, obj, portname))
 		break;
 	}
 	data->app_Base = StrDup(portname);
     }
-    else if (data->app_Base)
+    else
     {
+    	Object *other_app;
+	
+        ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+    	if ((other_app = find_application_by_base(cl, obj, data->app_Base)))
+	{
+	    #warning "Is calling MUIM_Application_PushMethod on an alien application object safe?"
+	    DoMethod(other_app, MUIM_Application_PushMethod, (IPTR)other_app, 3,
+		     MUIM_Set, MUIA_Application_DoubleStart, TRUE);
+	    data->app_Base = NULL;
+	}
+        ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
+	
 	data->app_Base = StrDup(data->app_Base);
     }
 
+    if (!data->app_Base)
+    {
+    	CoerceMethod(cl, obj, OM_DISPOSE);
+	return 0;    	
+    }
+    
     data->app_GlobalInfo.mgi_Configdata =
 	MUI_NewObject(MUIC_Configdata, MUIA_Configdata_Application, obj, TAG_DONE);
     if (!data->app_GlobalInfo.mgi_Configdata)
@@ -349,8 +397,11 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
     /* parse initial taglist */
 
     data->app_Active = 1;
+    data->app_Title = "Unnamed";
+    data->app_Version = "Unnamed 0.0";
+    data->app_Description = "?";
     
-    for (tags = msg->ops_AttrList; (tag = NextTagItem((struct TagItem **)&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -650,7 +701,7 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     ** we do know. The best way should be using NextTagItem() and simply
     ** browsing through the list.
     */
-    while ((tag = NextTagItem((struct TagItem **)&tags)) != NULL)
+    while ((tag = NextTagItem((const struct TagItem **)&tags)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
@@ -673,7 +724,7 @@ static ULONG Application_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		            data->app_Iconified = do_iconify;
                          
 			    nnset(obj, MUIA_ShowMe, !data->app_Iconified);
-		            #warning In case the WB is up, an appicon needs to be placed on the desktop
+		            #warning "In case the WB is up, an appicon needs to be placed on the desktop"
 		        }
 		    }
 		    break;
@@ -1111,6 +1162,10 @@ static ULONG Application_PushMethod(struct IClass *cl, Object *obj, struct MUIP_
     ObtainSemaphore(&data->app_MethodSemaphore);
     AddTail((struct List *)&data->app_MethodQueue, (struct Node *)mq);
     ReleaseSemaphore(&data->app_MethodSemaphore);
+    
+    /* CHECKME: to wake task up as soon as possible! */
+    Signal(data->app_Task, 1L << data->app_GlobalInfo.mgi_WindowsPort->mp_SigBit);
+    
     return TRUE;
 }
 
