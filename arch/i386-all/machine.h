@@ -77,7 +77,7 @@ struct JumpVec
 extern void _aros_not_implemented (char *);
 
 /* How much stack do we need ? Lots :-) */
-#define AROS_STACKSIZE	20000
+#define AROS_STACKSIZE	40960
 
 /* How to map function arguments to CPU registers */
 /*
