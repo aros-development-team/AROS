@@ -26,14 +26,21 @@ ULIBNAME	:= DataTypes
 FILES := functable helpfuncs class classfuncs
 
 FUNCTIONS := 	 adddtobject \
+		 copydtmethods \
+		 copydttriggermethods \
 		 disposedtobject \
 		 doasynclayout \
 		 dodtmethoda \
 		 drawdtobjecta \
+		 findmethod \
+		 findtriggermethod \
+		 freedtmethods \
 		 getdtattrsa \
 		 getdtmethods \
 		 getdtstring \
 		 getdttriggermethods \
+		 getdttriggermethoddataflags \
+		 lockdatatype \
 		 newdtobjecta \
 		 obtaindatatypea \
 		 obtaindtdrawinfoa \
