@@ -1,5 +1,5 @@
 /*
-**	$VER: libtail.c 37.14 (13.8.97)
+**	$VER: libtail.c 37.15 (14.8.97)
 **
 **	This file must be compiled and must be passed as the last
 **	object to link to the linker.
@@ -17,4 +17,4 @@
 /* Include the file with the #defines for this library */
 #include LIBDEFS_FILE
 
-int LIBEND;	     /* The end of the library */
+const int LIBEND = 1;	       /* The end of the library */
