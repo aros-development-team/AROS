@@ -295,7 +295,7 @@
     fflush (stderr);
 
     if (alertNum & AT_DeadEnd)
-	exit (20);
+	abort ();
 
     AROS_LIBFUNC_EXIT
 } /* Alert */
