@@ -33,7 +33,7 @@ struct GelsInfo
     BYTE               sprRsrvd;
     UBYTE              Flags;
     struct VSprite   * gelHead;
-    struct VSprite   * getTail;
+    struct VSprite   * gelTail;
     WORD             * nextLine;
     WORD            ** lastColor;
     struct collTable * collHandler;
