@@ -21,8 +21,8 @@
 #include <graphics/displayinfo.h>
 #include <graphics/modeid.h>
 #include <graphics/monitor.h>
-
 #include <graphics/gfx.h>
+#include <devices/rawkeycodes.h>
 #include <libraries/gadtools.h>
 #include <workbench/startup.h>
 #include <string.h>
@@ -802,8 +802,32 @@ STATIC ULONG SMHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    SMChangeActiveLVItem(ld, -1, imsg->Qualifier, AslBase);
 		    break;
 		    
+		case RAWKEY_PAGEUP:
+		    SMChangeActiveLVItem(ld, -1, IEQUALIFIER_LSHIFT, AslBase);
+		    break;
+		    
+		case RAWKEY_HOME:
+		    SMChangeActiveLVItem(ld, -1, IEQUALIFIER_LALT, AslBase);
+		    break;
+		    
+		case RAWKEY_NM_WHEEL_UP:
+		    SMChangeActiveLVItem(ld, -3, imsg->Qualifier, AslBase);
+		    break;
+		
 		case CURSORDOWN:
 		    SMChangeActiveLVItem(ld, 1, imsg->Qualifier, AslBase);
+		    break;
+		    
+		case RAWKEY_PAGEDOWN:
+		    SMChangeActiveLVItem(ld, 1, IEQUALIFIER_LSHIFT, AslBase);
+		    break;
+		    
+		case RAWKEY_END:
+		    SMChangeActiveLVItem(ld, 1, IEQUALIFIER_LALT, AslBase);
+		    break;
+		    
+		case RAWKEY_NM_WHEEL_DOWN:
+		    SMChangeActiveLVItem(ld, 3, imsg->Qualifier, AslBase);
 		    break;
 	    }
 	    break;

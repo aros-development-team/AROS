@@ -19,6 +19,7 @@
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
 #include <graphics/gfx.h>
+#include <devices/rawkeycodes.h>
 #include <libraries/gadtools.h>
 #include <workbench/startup.h>
 #include <string.h>
@@ -948,9 +949,34 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    FRChangeActiveLVItem(ld, -1, imsg->Qualifier, 0, AslBase);
 		    break;
 		    
+		case RAWKEY_PAGEUP:
+		    FRChangeActiveLVItem(ld, -1, IEQUALIFIER_LSHIFT, 0, AslBase);
+		    break;
+		    
+		case RAWKEY_HOME:
+		    FRChangeActiveLVItem(ld, -1, IEQUALIFIER_LALT, 0, AslBase);
+		    break;
+		    
+		case RAWKEY_NM_WHEEL_UP:
+		    FRChangeActiveLVItem(ld, -3, imsg->Qualifier, 0, AslBase);		    
+		    break;
+		    
 		case CURSORDOWN:
 		    FRChangeActiveLVItem(ld, 1, imsg->Qualifier, 0, AslBase);
 		    break;
+		    
+		case RAWKEY_PAGEDOWN:	
+		    FRChangeActiveLVItem(ld, 1, IEQUALIFIER_LSHIFT, 0, AslBase);
+		    break;
+
+		case RAWKEY_END:
+		    FRChangeActiveLVItem(ld, 1, IEQUALIFIER_LALT, 0, AslBase);
+		    break;
+		
+		case RAWKEY_NM_WHEEL_DOWN:
+		    FRChangeActiveLVItem(ld, 3, imsg->Qualifier, 0, AslBase);
+		    break;
+
 	    }
 	    break;
 	

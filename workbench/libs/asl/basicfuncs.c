@@ -26,6 +26,7 @@
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
 #include <graphics/gfxbase.h>
+#include <devices/rawkeycodes.h>
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
 #include <libraries/iffparse.h>
@@ -1013,6 +1014,17 @@ AROS_UFH3(ULONG, StringEditFunc,
 	    retcode = 1;
     	    switch(sgw->IEvent->ie_Code)
 	    {
+	    	case RAWKEY_PAGEUP:
+		case RAWKEY_PAGEDOWN:
+		case RAWKEY_HOME:
+		case RAWKEY_END:
+		case RAWKEY_ESCAPE:
+		case RAWKEY_NM_WHEEL_UP:
+		case RAWKEY_NM_WHEEL_DOWN:
+		    sgw->Code = STRINGCODE_NOP;
+		    sgw->Actions = SGA_END | SGA_REUSE;
+		    break;
+		    
 	        case CURSORUP:
 		    sgw->EditOp  = EO_SPECIAL;
 		    sgw->Code    = STRINGCODE_CURSORUP;
@@ -1023,12 +1035,6 @@ AROS_UFH3(ULONG, StringEditFunc,
 		    sgw->EditOp  = EO_SPECIAL;
 		    sgw->Code    = STRINGCODE_CURSORDOWN;
 		    sgw->Actions = SGA_END;
-		    break;
-		    
-		case 0x45: /* escape */
-		    sgw->EditOp  = EO_SPECIAL;
-		    sgw->Code    = 27;
-		    sgw->Actions = SGA_END | SGA_REUSE;
 		    break;
 	    }
     	    break;
