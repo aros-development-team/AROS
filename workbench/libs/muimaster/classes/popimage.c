@@ -143,10 +143,10 @@ STATIC IPTR Popimage_OpenWindow(struct IClass *cl, Object *obj, Msg msg)
 		    TAG_DONE),
 		Child, HGroup,
 	            MUIA_Group_SameWidth, TRUE,
-		    Child, ok_button = MUI_MakeObject(MUIO_Button,"_Ok"),
+		    Child, ok_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Ok"),
 		    Child, HVSpace,
 		    Child, HVSpace,
-		    Child, cancel_button = MUI_MakeObject(MUIO_Button,"_Cancel"),
+		    Child, cancel_button = MUI_MakeObject(MUIO_Button,(IPTR)"_Cancel"),
 		    End,
 		End,
 	    End;
