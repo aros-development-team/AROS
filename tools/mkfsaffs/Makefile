@@ -10,12 +10,12 @@ USER_CFLAGS := -Wall -Wunused -O2
 HOST_CC		?= $(CC)
 HOST_STRIP	?= strip
 MECHO		?= echo
-CREATEHDFILE	?= mkfsaffs
+MKFSAFFS	?= mkfsaffs
 HOST_CFLAGS	:= $(HOST_CFLAGS) -I$(ADFINC)
 
-all : $(CREATEHDFILE)
+all : $(MKFSAFFS)
 
-$(CREATEHDFILE) : mkfsaffs.c
+$(MKFSAFFS) : mkfsaffs.c
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $< -o $@ $(ADFLIB)
 	@$(HOST_STRIP) $(MKFSAFFS)
