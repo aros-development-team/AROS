@@ -7,15 +7,12 @@ FUNCS := abortio addtime beginio cmptime getsystime subtime
 #MM- kernel-timer : includes linklibs
 #MM- kernel-timer-linklib : includes linklibs
 
-%build_module_macro mmake=kernel-timer \
+%build_module mmake=kernel-timer \
   modname=timer modtype=device \
-  funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf
+  files="timer_init $(FUNCS) $(FILES)"
 
 #MM includes-copy
 
 INCLUDE_FILES := include/timer.h
 
 %copy_includes path=hidd
-
-%common
