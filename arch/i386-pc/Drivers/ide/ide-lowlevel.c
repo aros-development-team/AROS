@@ -78,7 +78,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 
 	if (pp)
 	{
-	    pp[0] = (ULONG)"afs.handler";
+    	    pp[0] = (ULONG) ((!unit->au_DevType) ? "afs.handler" : "cdrom.handler");
 	    pp[1] = (ULONG)name;
 	    pp[2] = unit->au_UnitNumber;
 	    pp[DE_TABLESIZE + 4] = DE_BOOTBLOCKS;
@@ -93,7 +93,7 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 	    pp[DE_BUFMEMTYPE + 4] = MEMF_PUBLIC | MEMF_CHIP;
 	    pp[DE_MAXTRANSFER + 4] = 0x00200000;
 	    pp[DE_MASK + 4] = 0x7FFFFFFE;
-	    pp[DE_BOOTPRI + 4] = 0;
+	    pp[DE_BOOTPRI + 4] = ((!unit->au_DevType) ? 0 : 10);
 	    pp[DE_DOSTYPE + 4] = 0x444F5301;
 	    pp[DE_BOOTBLOCKS + 4] = 2;
 	    devnode = MakeDosNode(pp);
@@ -103,9 +103,18 @@ BOOL AddVolume(ULONG StartCyl, ULONG EndCyl, struct ide_Unit *unit)
 		if ((devnode->dn_OldName =
 		     MKBADDR(AllocMem(5, MEMF_PUBLIC | MEMF_CLEAR))))
 		{
-		    AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
-		    AROS_BSTR_putchar(devnode->dn_OldName, 1, 'H');
-		    AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+		    if( !unit->au_DevType )
+		    {
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 0, 'D');
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 1, 'H');
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+		    }
+		    else
+		    {
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 0, 'C');
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 1, 'D');
+		    	AROS_BSTR_putchar(devnode->dn_OldName, 2, '0' + volnum);
+		    }
 		    AROS_BSTR_setstrlen(devnode->dn_OldName, 3);
 		    devnode->dn_NewName = AROS_BSTR_ADDR(devnode->dn_OldName);
 
@@ -492,7 +501,13 @@ void UnitInfo(struct ide_Unit *unit)
             /* Then get RigidDiskBlock info */
             RDBInfo(unit);
         }
-    return;
+	else /* Hmmm... It's probably a CDROM... */
+	{
+	    D(bug("Unit not a HDD, assuming CDROM...\n"));
+	    AddVolume( 0, 0, unit );
+	}
+
+        return;
     }
 }
 
