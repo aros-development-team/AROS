@@ -866,7 +866,9 @@ static IPTR List_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *ms
     zune_imspec_cleanup(data->list_selcur);
 
     DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-
+    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
+    data->mouse_click = 0;
+    
     return DoSuperMethodA(cl, obj, (Msg) msg);
 }
 
@@ -979,6 +981,7 @@ static IPTR List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
 
+#if 0
     if (data->ehn.ehn_Events & IDCMP_MOUSEMOVE)
     {
 	DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
@@ -986,6 +989,7 @@ static IPTR List_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 	DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     }
     data->mouse_click = 0;
+#endif
 
     zune_imspec_hide(data->list_cursor);
     zune_imspec_hide(data->list_select);
