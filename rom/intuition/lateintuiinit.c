@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Late initialization of intuition.
@@ -63,24 +63,29 @@
 	{ SA_Title, 	(IPTR)"Workbench"   	},
 	{ SA_Width, 	800			},
 	{ SA_Height,	600			},	
+	{ SA_PubName,   (IPTR)"Workbench"       },
 	{ TAG_END, 0 }
     };
     
     if (!GetPrivIBase(IntuitionBase)->WorkBench)
     {
-	struct Screen * screen;
+	struct Screen *screen;
 
 	screen = OpenScreenTagList (NULL, screenTags);
-	if (screen)
-	{
 
+	if(screen)
+	{
+	    /* Make the Workbench screen public... */
+	    PubScreenStatus(screen, 0);
+
+	    /* ...and make it the default */
+	    SetDefaultPubScreen(NULL);
 
 	    IntuitionBase->FirstScreen =   
 	    	IntuitionBase->ActiveScreen =   
-			GetPrivIBase(IntuitionBase)->WorkBench = screen;
+		GetPrivIBase(IntuitionBase)->WorkBench = screen;
 			
 	    return TRUE;
-			
 	}
     }
 
