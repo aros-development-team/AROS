@@ -115,24 +115,24 @@ static BOOL ReadBMP(Object *o)
     }
 
 	/* Read FileBitMapHeader struct entry by entry */
-	FRead(handle, file_bmhd->bfType,			2, 1);
-	FRead(handle, file_bmhd->bfSize,			4, 1);
-	FRead(handle, file_bmhd->bfReserved1,		2, 1);
-	FRead(handle, file_bmhd->bfReserved2,		2, 1);
-	FRead(handle, file_bmhd->bfOffBits,			4, 1);
+	FRead(handle, &file_bmhd->bfType,			2, 1);
+	FRead(handle, &file_bmhd->bfSize,			4, 1);
+	FRead(handle, &file_bmhd->bfReserved1,		2, 1);
+	FRead(handle, &file_bmhd->bfReserved2,		2, 1);
+	FRead(handle, &file_bmhd->bfOffBits,		4, 1);
 	
 	/* Read BitmapInfoHeader struct entry by entry */
-	FRead(handle, file_bihd->biSize,			4, 1);
-	FRead(handle, file_bihd->biWidth,			4, 1);
-	FRead(handle, file_bihd->biHeight,			4, 1);
-	FRead(handle, file_bihd->biPlanes,			2, 1);
-	FRead(handle, file_bihd->biBitCount,		2, 1);
-	FRead(handle, file_bihd->biCompression,		4, 1);
-	FRead(handle, file_bihd->biSizeImage,		4, 1);
-	FRead(handle, file_bihd->biXPelsPerMeter,	4, 1);
-	FRead(handle, file_bihd->biYPelsPerMeter,	4, 1);
-	FRead(handle, file_bihd->biClrUsed,			4, 1);
-	FRead(handle, file_bihd->biClrImportant,	4, 1);
+	FRead(handle, &file_bihd->biSize,			4, 1);
+	FRead(handle, &file_bihd->biWidth,			4, 1);
+	FRead(handle, &file_bihd->biHeight,			4, 1);
+	FRead(handle, &file_bihd->biPlanes,			2, 1);
+	FRead(handle, &file_bihd->biBitCount,		2, 1);
+	FRead(handle, &file_bihd->biCompression,	4, 1);
+	FRead(handle, &file_bihd->biSizeImage,		4, 1);
+	FRead(handle, &file_bihd->biXPelsPerMeter,	4, 1);
+	FRead(handle, &file_bihd->biYPelsPerMeter,	4, 1);
+	FRead(handle, &file_bihd->biClrUsed,		4, 1);
+	FRead(handle, &file_bihd->biClrImportant,	4, 1);
 D(bug("bmp.datatype/ReadBMP() --- done reading headers...\n"));
 /*
 D(bug("bmp.datatype/ReadBMP() --- before reading bmhd\n")); 
