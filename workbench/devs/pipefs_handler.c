@@ -5,6 +5,7 @@
 
 
 #define DEBUG 0
+#include <aros/debug.h>
 
 #include <exec/errors.h>
 #include <exec/resident.h>
@@ -25,10 +26,6 @@
 
 #include <string.h>
 #include <stddef.h>
-
-#if !DEBUG
-#    define kprintf(x...)
-#endif
 
 static const char name[];
 static const char version[];
@@ -92,10 +89,10 @@ struct usernode
 };
 
 static size_t           LenFirstPart (STRPTR path);
-static struct filenode *FindFile     (struct dirnode   **dn_ptr,      STRPTR path);
-static struct filenode *GetFile      (struct pipefsbase  *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
-static ULONG            SendRequest  (struct pipefsbase  *pipefsbase, struct IOFileSys *iofs, BOOL abort);
-static STRPTR           StrDup       (struct pipefsbase  *pipefsbase, STRPTR str);
+static struct filenode *FindFile     (struct pipefsbase *pipefsbase, struct dirnode   **dn_ptr,      STRPTR path);
+static struct filenode *GetFile      (struct pipefsbase *pipefsbase, STRPTR filename, struct dirnode *dn, ULONG mode, ULONG *err);
+static ULONG            SendRequest  (struct pipefsbase *pipefsbase, struct IOFileSys *iofs, BOOL abort);
+static STRPTR           StrDup       (struct pipefsbase *pipefsbase, STRPTR str);
 
 
 int entry(void)
@@ -318,7 +315,7 @@ AROS_LH1(void, beginio,
     LONG error=0;
     BOOL enqueued = FALSE;
 
-    kprintf("COMMAND %d\n", iofs->IOFS.io_Command);
+    D(bug("COMMAND %d\n", iofs->IOFS.io_Command));
     switch(iofs->IOFS.io_Command)
     {
 	case FSA_OPEN:
@@ -440,7 +437,7 @@ static size_t LenFirstPart(STRPTR path)
     return len;
 }
 
-static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
+static struct filenode *FindFile(struct pipefsbase *pipefsbase, struct dirnode **dn_ptr, STRPTR path)
 {
     #define dn (*dn_ptr)
 
@@ -460,7 +457,7 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 
     if (dn->type <= 0)
     {
-        kprintf("User wants %S to be a directory, but it's a file.\n", dn->name);
+        D(bug("User wants %S to be a directory, but it's a file.\n", dn->name));
 	dn = NULL;
 	return NULL;
     }
@@ -469,11 +466,11 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
     nextpart = &path[len];
     fn       = (struct filenode *)GetHead(&dn->files);
 
-    kprintf("Searching for %.*S.\n", len, path);
+    D(bug("Searching for %.*S.\n", len, path));
 
     while (fn)
     {
-	kprintf("Comparing %S with %.*S.\n", fn->name, len, path);
+	D(bug("Comparing %S with %.*S.\n", fn->name, len, path));
 	if
 	(
 	    strlen(fn->name) == len               &&
@@ -490,7 +487,7 @@ static struct filenode *FindFile(struct dirnode **dn_ptr, STRPTR path)
 	if (nextpart[0] == '/') nextpart++;
 
 	dn = (struct dirnode *)fn;
-	fn = FindFile(&dn, nextpart);
+	fn = FindFile(pipefsbase, &dn, nextpart);
     }
 
     return fn;
@@ -520,7 +517,7 @@ static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filena
 	    fn->flags  = flags;
 
 	    AddTail(&dn->files, (struct Node *)fn);
-	    kprintf("New file created and added to the list\n");
+	    D(bug("New file created and added to the list\n"));
 
 	    return fn;
 	}
@@ -528,7 +525,7 @@ static struct filenode *NewFileNode(struct pipefsbase *pipefsbase, STRPTR filena
 	FreeVec(fn);
     }
 
-    kprintf("AllocVec Failed. No more memory available\n");
+    D(bug("AllocVec Failed. No more memory available\n"));
     *err = ERROR_NO_FREE_STORE;
     return NULL;
 }
@@ -537,22 +534,22 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 {
     struct filenode *fn;
 
-    kprintf("User wants to open file %S.\n", filename);
-    kprintf("Current directory is %S\n", dn->name);
+    D(bug("User wants to open file %S.\n", filename));
+    D(bug("Current directory is %S\n", dn->name));
 
     if (dn && !dn->parent && strcmp(filename, "//unnamedpipe//") == 0)
     {
 	return NewFileNode(pipefsbase, "//unnamedpipe//", FNF_DELETEONCLOSE, dn, err);
     }
 
-    fn = FindFile(&dn, filename);
+    fn = FindFile(pipefsbase, &dn, filename);
     if (!fn)
     {
-	kprintf("The file couldn't be found.\n");
+	D(bug("The file couldn't be found.\n"));
 
 	if (dn && mode&FMF_CREATE)
 	{
-	    kprintf("But the user wants it to be created.\n");
+	    D(bug("But the user wants it to be created.\n"));
 
 	    return NewFileNode(pipefsbase, FilePart(filename), 0, dn, err);
 	}
@@ -560,7 +557,7 @@ static struct filenode *GetFile(struct pipefsbase *pipefsbase, STRPTR filename, 
 
     if (fn && fn->type > 0 && mode&(FMF_WRITE|FMF_READ))
     {
-	kprintf("The file is a directory, cannot be open for reading/writing\n");
+	D(bug("The file is a directory, cannot be open for reading/writing\n"));
 	*err = ERROR_OBJECT_WRONG_TYPE;
 	return NULL;
     }
@@ -606,7 +603,7 @@ AROS_UFH3(LONG, pipefsproc,
 	    (cont = (msg->iofs != 0))
 	)
 	{
-	    kprintf("Message received.\n");
+	    D(bug("Message received.\n"));
 
 	    un = (struct usernode *)msg->iofs->IOFS.io_Unit;
 	    fn = un->fn;
@@ -616,7 +613,7 @@ AROS_UFH3(LONG, pipefsproc,
 		struct pipefsmessage *msg2;
 		BOOL found = FALSE;
 
-		kprintf("The user wants to abort this request.\n");
+		D(bug("The user wants to abort this request.\n"));
 
 	        ForeachNode(&fn->waitinglist, msg2)
 		{
@@ -660,14 +657,14 @@ AROS_UFH3(LONG, pipefsproc,
 
 		if (found)
 		{
-		    kprintf("Aborting the request.\n");
+		    D(bug("Aborting the request.\n"));
 		    Remove((struct Node *)msg2);
 		    msg2->iofs->IOFS.io_Error = IOERR_ABORTED;
 		    SendBack(msg2, ERROR_INTERRUPTED);
 		}
 		else
 		{
-    		    kprintf("There was no I/O in process for this request.\n");
+    		    D(bug("There was no I/O in process for this request.\n"));
 		}
 
 		FreeVec(msg);
@@ -685,7 +682,7 @@ AROS_UFH3(LONG, pipefsproc,
 		    BOOL             stillwaiting;
 		    ULONG            err;
 
-		    kprintf("Command is OPEN\n");
+		    D(bug("Command is OPEN\n"));
 
 		    /*
 		       I would have liked to put this AFTER GetFile(),
@@ -710,11 +707,11 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
 		    }
 
-		    kprintf("File requested found.\n");
-		    kprintf("The requested file is %s.\n",
+		    D(bug("File requested found.\n"));
+		    D(bug("The requested file is %s.\n",
 		            fn->type <= 0  ?
 			    "a pipe":
-			    "a directory");
+			    "a directory"));
 
 		    msg->iofs->IOFS.io_Unit = (struct Unit *)un;
 		    fn->numusers++;
@@ -733,16 +730,16 @@ AROS_UFH3(LONG, pipefsproc,
 
 		    if (un->mode & FMF_READ)
 		    {
-			kprintf("User wants to read. ");
+			D(bug("User wants to read. "));
 			fn->numreaders++;
 		    }
 		    if (un->mode & FMF_WRITE)
 		    {
-			kprintf("User wants to write. ");
+			D(bug("User wants to write. "));
 		    	fn->numwriters++;
 		    }
 
-		    kprintf("There are %d readers and %d writers at the moment\n", fn->numreaders, fn->numwriters);
+		    D(bug("There are %d readers and %d writers at the moment\n", fn->numreaders, fn->numwriters));
 
 		    if (!fn->numwriters || !fn->numreaders)
 		    {
@@ -752,9 +749,9 @@ AROS_UFH3(LONG, pipefsproc,
 			       If we're lacking of writers or readers
 			       then add this message to a waiting list.
 			    */
-			    kprintf("There are no %s at the moment, so this %s must wait\n",
+			    D(bug("There are no %s at the moment, so this %s must wait\n",
 				     fn->numwriters?"readers":"writers",
-				     fn->numwriters?"writer":"reader");
+				     fn->numwriters?"writer":"reader"));
 
 			    AddTail(&fn->waitinglist, (struct Node *)msg);
        			}
@@ -770,8 +767,8 @@ AROS_UFH3(LONG, pipefsproc,
 		            */
 			    struct pipefsmessage *msg;
 
-			    kprintf("Finally there are enough readers and writers! "
-			            "Wake up all of them\n");
+			    D(bug("Finally there are enough readers and writers! "
+			            "Wake up all of them\n"));
 
 			    while ((msg = (struct pipefsmessage *)RemHead(&fn->waitinglist)))
 			        SendBack(msg, 0);
@@ -782,21 +779,21 @@ AROS_UFH3(LONG, pipefsproc,
 		    continue;
 		}
 		case FSA_CLOSE:
-		    kprintf("Command is FSA_CLOSE\n");
+		    D(bug("Command is FSA_CLOSE\n"));
 
 		    if (un->mode & FMF_READ)
 		    {
-			kprintf("User was a reader. ");
+			D(bug("User was a reader. "));
 			fn->numreaders--;
-			kprintf("There are %d readers at the moment\n", fn->numreaders);
+			D(bug("There are %d readers at the moment\n", fn->numreaders));
 			if (!fn->numreaders)
 			{
 			    struct pipefsmessage *msg;
 
-			    kprintf("There are no readers anymore. %s\n",
+			    D(bug("There are no readers anymore. %s\n",
 			            IsListEmpty(&fn->pendingwrites) ?
 				    "There are no pending writes"   :
-			            "Reply to all the waiting writers");
+			            "Reply to all the waiting writers"));
 
 			    while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingwrites)))
 			        SendBack(msg, 0);
@@ -804,18 +801,18 @@ AROS_UFH3(LONG, pipefsproc,
 		    }
 		    if (un->mode & FMF_WRITE)
 		    {
-			kprintf("User was a writer. ");
+			D(bug("User was a writer. "));
 			fn->numwriters--;
-			kprintf("There are %d writers at the moment\n", fn->numwriters);
+			D(bug("There are %d writers at the moment\n", fn->numwriters));
 
 			if (!fn->numwriters)
 			{
 			    struct pipefsmessage *msg;
 
-			    kprintf("There are no writers anymore. %s\n",
+			    D(bug("There are no writers anymore. %s\n",
 			            IsListEmpty(&fn->pendingreads) ?
 				    "There are no pending reads"   :
-			            "Reply to all the waiting readers");
+			            "Reply to all the waiting readers"));
 			    while ((msg = (struct pipefsmessage *)RemHead(&fn->pendingreads)))
 			    {
 			        msg->iofs->io_Union.io_READ_WRITE.io_Length =
@@ -857,12 +854,12 @@ AROS_UFH3(LONG, pipefsproc,
     			sizeof(struct ExAllData)
     		    };
 
-		    kprintf("Command is EXAMINE\n");
-		    kprintf("Examining file %S\n", fn->name);
+		    D(bug("Command is EXAMINE\n"));
+		    D(bug("Examining file %S\n", fn->name));
 
 		    if (type > ED_OWNER)
     		    {
-			kprintf("The user requested an invalid type\n");
+			D(bug("The user requested an invalid type\n"));
 			SendBack(msg, ERROR_BAD_NUMBER);
 			continue;
 		    }
@@ -945,16 +942,16 @@ AROS_UFH3(LONG, pipefsproc,
 		    struct FileInfoBlock *fib = msg->iofs->io_Union.io_EXAMINE_NEXT.io_fib;
                     struct filenode      *fn  = (struct filenode *)fib->fib_DiskKey;
 
-		    kprintf("Command is EXAMINE_NEXT\n");
+		    D(bug("Command is EXAMINE_NEXT\n"));
 
 		    if (!fn)
     		    {
-			kprintf("There are no more entries in this directory\n");
+			D(bug("There are no more entries in this directory\n"));
 			SendBack(msg, ERROR_NO_MORE_ENTRIES);
 			continue;
 		    }
 
-    		    kprintf("Current directory is %S. Current file is %S\n", fn->parent->name, fn->name);
+    		    D(bug("Current directory is %S. Current file is %S\n", fn->parent->name, fn->name));
 
 		    fib->fib_OwnerUID       = 0;
 		    fib->fib_OwnerGID       = 0;
@@ -979,21 +976,21 @@ AROS_UFH3(LONG, pipefsproc,
 		    struct dirnode *parent = (struct dirnode *)fn;
 		    struct dirnode *dn;
 
-		    kprintf("Command is FSA_CREATE_DIR\n");
-		    kprintf("Current directory is %S\n", parent->name);
-		    kprintf("User wants to create directory %S\n", filename);
+		    D(bug("Command is FSA_CREATE_DIR\n"));
+		    D(bug("Current directory is %S\n", parent->name));
+		    D(bug("User wants to create directory %S\n", filename));
 
-		    dn = (struct dirnode *)FindFile(&parent, filename);
+		    dn = (struct dirnode *)FindFile(pipefsbase, &parent, filename);
 		    if (dn)
 		    {
-			kprintf("The object %S already exists\n", filename);
+			D(bug("The object %S already exists\n", filename));
 			SendBack(msg, ERROR_OBJECT_EXISTS);
 			continue;
 		    }
 		    else
 		    if (!parent)
 		    {
-			kprintf("The path is not valid.\n");
+			D(bug("The path is not valid.\n"));
 			SendBack(msg, ERROR_OBJECT_NOT_FOUND);
 			continue;
 		    }
@@ -1009,7 +1006,7 @@ AROS_UFH3(LONG, pipefsproc,
 			continue;
    		    }
 
-		    kprintf("Ok, there's room for this directory.\n");
+		    D(bug("Ok, there's room for this directory.\n"));
 		    AddTail(&parent->files, (struct Node *)dn);
 		    dn->parent   = parent;
 		    dn->numusers = 0;
@@ -1025,13 +1022,13 @@ AROS_UFH3(LONG, pipefsproc,
 		    continue;
 		}
 		case FSA_FILE_MODE:
-		    kprintf("Command is FSA_FILE_MODE\n");
-		    kprintf("Current mode is 0x%08x\n", un->mode);
+		    D(bug("Command is FSA_FILE_MODE\n"));
+		    D(bug("Current mode is 0x%08x\n", un->mode));
 
 		    un->mode &= ~msg->iofs->io_Union.io_FILE_MODE.io_Mask;
 		    un->mode |= msg->iofs->io_Union.io_FILE_MODE.io_FileMode;
 
-		    kprintf("New mode is 0x%08x\n", un->mode);
+		    D(bug("New mode is 0x%08x\n", un->mode));
 
 		    SendBack(msg, 0);
 		    continue;
@@ -1040,37 +1037,37 @@ AROS_UFH3(LONG, pipefsproc,
 		    STRPTR filename    = msg->iofs->io_Union.io_DELETE_OBJECT.io_Filename;
 		    struct dirnode *dn = (struct dirnode *)fn;
 
-		    kprintf("Command is FSA_DELETE_OBJECT\n");
-		    kprintf("Current directory is %S\n", fn->name);
-		    kprintf("User wants to delete the object %S\n", filename);
+		    D(bug("Command is FSA_DELETE_OBJECT\n"));
+		    D(bug("Current directory is %S\n", fn->name));
+		    D(bug("User wants to delete the object %S\n", filename));
 
-		    fn = FindFile(&dn, filename);
+		    fn = FindFile(pipefsbase, &dn, filename);
 		    if (!fn)
 		    {
-		        kprintf("The object doesn't exist\n");
+		        D(bug("The object doesn't exist\n"));
 			SendBack(msg, ERROR_OBJECT_NOT_FOUND);
 			continue;
 		    }
 		    if (fn->type == ST_ROOT)
 		    {
-		        kprintf("The object is the root directory. Cannot be deleted\n");
+		        D(bug("The object is the root directory. Cannot be deleted\n"));
 			SendBack(msg, ERROR_OBJECT_WRONG_TYPE);
 			continue;
 		    }
 		    if (fn->numusers)
 		    {
-		        kprintf("The object is in use, cannot be deleted\n");
+		        D(bug("The object is in use, cannot be deleted\n"));
 			SendBack(msg, ERROR_OBJECT_IN_USE);
 			continue;
 		    }
 		    if (fn->type > 0 && !IsListEmpty(&((struct dirnode *)fn)->files))
 		    {
-		        kprintf("The object is a directory, but is not empty, thus cannot be deleted\n");
+		        D(bug("The object is a directory, but is not empty, thus cannot be deleted\n"));
 			SendBack(msg, ERROR_DIRECTORY_NOT_EMPTY);
 			continue;
 		    }
 
-		    kprintf("Removing the object from it's parent directory\n");
+		    D(bug("Removing the object from it's parent directory\n"));
 
 		    Remove((struct Node *)fn);
 		    FreeVec(fn->name);
@@ -1080,53 +1077,53 @@ AROS_UFH3(LONG, pipefsproc,
 		    continue;
       		}
 		case FSA_WRITE:
-		    kprintf("Command is FSA_WRITE. ");
+		    D(bug("Command is FSA_WRITE. "));
 		    if (!(un->mode & FMF_WRITE))
 		    {
-		        kprintf("User doesn't have permission to write.\n");
+		        D(bug("User doesn't have permission to write.\n"));
 			SendBack(msg, ERROR_BAD_STREAM_NAME);
 		        continue;
 		    }
 		    if (!fn->numreaders)
 		    {
-			kprintf("There are no more readers: PIPE BROKEN.\n");
+			D(bug("There are no more readers: PIPE BROKEN.\n"));
 			SendBack(msg, ERROR_BROKEN_PIPE);
 		        continue;
 		    }
 		    if (un->mode & FMF_NONBLOCK && IsListEmpty(&fn->pendingreads))
 		    {
-		        kprintf("There are no pending reads and the pipe is in nonblocking mode, so return EWOULDBLOCK\n");
+		        D(bug("There are no pending reads and the pipe is in nonblocking mode, so return EWOULDBLOCK\n"));
     		        SendBack(msg, ERROR_WOULD_BLOCK);
 		        continue;
 		    }
 
-		    kprintf("Enqueing the message\n");
+		    D(bug("Enqueing the message\n"));
 		    msg->curlen = msg->iofs->io_Union.io_READ_WRITE.io_Length;
 		    AddTail(&fn->pendingwrites, (struct Node *)msg);
 		    break;
 		case FSA_READ:
-		    kprintf("Command is FSA_READ. ");
+		    D(bug("Command is FSA_READ. "));
 		    if (!(un->mode & FMF_READ))
 		    {
-		        kprintf("User doesn't have permission to read.\n");
+		        D(bug("User doesn't have permission to read.\n"));
 			SendBack(msg, ERROR_BAD_STREAM_NAME);
 		        continue;
 		    }
 		    if (!fn->numwriters)
 		    {
-			kprintf("There's no data to read: send EOF\n");
+			D(bug("There's no data to read: send EOF\n"));
 			msg->iofs->io_Union.io_READ_WRITE.io_Length = 0;
 		        SendBack(msg, 0);
 		        continue;
 		    }
 		    if (un->mode & FMF_NONBLOCK  && IsListEmpty(&fn->pendingwrites))
 		    {
-		        kprintf("There are no pending writes and the pipe is in nonblocking mode, so return EWOULDBLOCK\n");
+		        D(bug("There are no pending writes and the pipe is in nonblocking mode, so return EWOULDBLOCK\n"));
     		        SendBack(msg, ERROR_WOULD_BLOCK);
 		        continue;
 		    }
 
-		    kprintf("Enqueing the message\n");
+		    D(bug("Enqueing the message\n"));
 		    msg->curlen = msg->iofs->io_Union.io_READ_WRITE.io_Length;
 		    AddTail(&fn->pendingreads, (struct Node *)msg);
 		    break;
@@ -1140,8 +1137,8 @@ AROS_UFH3(LONG, pipefsproc,
 		ULONG len = (rmsg->curlen > wmsg->curlen) ?
 		             wmsg->curlen : rmsg->curlen;
 
-	    	kprintf("Writer len = %d - Reader len = %d. Copying %d bytes\n",
-		         wmsg->curlen, rmsg->curlen, len);
+	    	D(bug("Writer len = %d - Reader len = %d. Copying %d bytes\n",
+		         wmsg->curlen, rmsg->curlen, len));
 
   		CopyMem
 		(
@@ -1159,23 +1156,23 @@ AROS_UFH3(LONG, pipefsproc,
 		wmsg->curlen -= len;
 		rmsg->curlen -= len;
 
-	        kprintf("Writer curlen is now %d - Reader curlen is now %d\n",
-		         wmsg->curlen, rmsg->curlen);
+	        D(bug("Writer curlen is now %d - Reader curlen is now %d\n",
+		         wmsg->curlen, rmsg->curlen));
 
 		if (!wmsg->curlen)
 		{
-		    kprintf("Writer: finished its job.\n");
+		    D(bug("Writer: finished its job.\n"));
 		    SendBack(wmsg, 0);
 		}
 		else
 		{
-		    kprintf("Writer: not finished yet. Enqueueing the request again.\n");
+		    D(bug("Writer: not finished yet. Enqueueing the request again.\n"));
 		    AddTail(&fn->pendingwrites, (struct Node *)wmsg);
 		}
 
 		if (!rmsg->curlen)
 		{
-		    kprintf("Reader: finished its job.\n");
+		    D(bug("Reader: finished its job.\n"));
 		    SendBack(rmsg, 0);
 		}
 		else
@@ -1185,18 +1182,18 @@ AROS_UFH3(LONG, pipefsproc,
 		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length > wmsg->iofs->io_Union.io_READ_WRITE.io_Length
 		)
 		{
-		    kprintf("Reader: wants to read more data than it's actually available, but since it's in nonblocking mode return anyway\n");
+		    D(bug("Reader: wants to read more data than it's actually available, but since it's in nonblocking mode return anyway\n"));
  		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length = len;
 		    SendBack(rmsg, 0);
 		}
 		else
 		{
-		    kprintf("Reader: not finished yet. Enqueueing the request again.\n");
+		    D(bug("Reader: not finished yet. Enqueueing the request again.\n"));
 		    AddTail(&fn->pendingreads, (struct Node *)rmsg);
 		}
 	    }
 	}
-	kprintf("Coming back to wait for a new message\n");
+	D(bug("Coming back to wait for a new message\n"));
 
     } while (cont);
 
