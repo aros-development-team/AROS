@@ -66,7 +66,7 @@ extern void idleTask(struct ExecBase *);
 static struct AROSSupportBase AROSSupportBase;
 
 /**************** GLOBAL SYSBASE ***************/
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
 struct ExecBase * SysBase = NULL;
 #endif
 

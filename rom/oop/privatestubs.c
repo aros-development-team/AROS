@@ -16,7 +16,7 @@
 
 #define OOPBase (OOP_OOPBASE(o))
 
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
 #  define STATIC_MID static OOP_MethodID mid
 #else
 #  define STATIC_MID OOP_MethodID mid = 0

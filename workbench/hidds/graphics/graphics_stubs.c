@@ -31,7 +31,7 @@
 #undef OOPBase
 #define OOPBase ((struct Library *)OOP_OCLASS(OOP_OCLASS(OOP_OCLASS(obj)))->UserData)
 
-#ifndef CREATE_ROM
+#ifndef AROS_CREATE_ROM
 #  define STATIC_MID static OOP_MethodID mid
 #else
 #  define STATIC_MID OOP_MethodID mid = 0
