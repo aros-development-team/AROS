@@ -619,6 +619,8 @@ void intui_ProcessEvents (void)
     intuiReplyPort = CreateMsgPort ();
     wait = 0;
 
+    gadget = NULL;
+
     gi = AllocMem (sizeof (struct GadgetInfo), MEMF_ANY|MEMF_CLEAR);
 
     for (;;)
@@ -1026,6 +1028,30 @@ void intui_ProcessEvents (void)
 
 	    case MotionNotify: {
 		XMotionEvent * xm = &event.xmotion;
+		struct IntuiMessage *msg, *succ;
+
+		/* Check if there is already a MOUSEMOVE in the msg queue
+		    of the task */
+		msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+		Forbid ();
+
+		while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
+		{
+		    if (msg->Class == IDCMP_MOUSEMOVE)
+		    {
+			/* TODO allow a number of such messages */
+			break;
+		    }
+
+		    msg = succ;
+		}
+
+		Permit ();
+
+		/* If there is, don't add another one */
+		if (succ)
+		    break;
 
 		im->Code = IECODE_NOBUTTON;
 		im->Class = IDCMP_MOUSEMOVE;
@@ -1240,7 +1266,10 @@ void intui_ProcessEvents (void)
 	}
 
 	if (im)
+	{
 	    FreeMem (im, sizeof (struct IntuiMessage));
+	    im = NULL;
+	}
 
 	Wait (1L << intuiReplyPort->mp_SigBit | SIGBREAKF_CTRL_F);
 
