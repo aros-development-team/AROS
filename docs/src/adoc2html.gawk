@@ -90,7 +90,7 @@ BEGIN {
 			    link="srcs/include/" hfile;
 
 			    if (exists("../html/" link))
-				line="<A HREF=\""link"\">"hfile"</A>";
+				line="<A HREF=\"../"link"\">"hfile"</A>";
 			    else
 				line=hfile;
 
