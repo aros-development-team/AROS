@@ -71,16 +71,17 @@ static const struct TagItem arrowdec_to_prop [] =
 
 static const struct TagItem prop_to_lv [] =
 {
-    {PGA_Top		, ASLLV_Top 	},
+    {PGA_Top		, ASLLV_TopPixel},
     {TAG_DONE		   		}
 };
 
 static const struct TagItem lv_to_prop [] =
 {
-    {ASLLV_Top		, PGA_Top   	},
-    {ASLLV_Total	, PGA_Total 	},
-    {ASLLV_Visible	, PGA_Visible	},
-    {TAG_DONE		    		}
+    {ASLLV_TopPixel	, PGA_Top   	    },
+    {ASLLV_TotalPixels	, PGA_Total 	    },
+    {ASLLV_VisiblePixels, PGA_Visible	    },
+    {ASLLV_DeltaFactor	, ASLSC_DeltaFactor },
+    {TAG_DONE		    		    }
     
 };
 

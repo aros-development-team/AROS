@@ -49,6 +49,7 @@ struct AslListViewData
     struct Hook		default_renderhook;
     struct Hook		*renderhook;
     struct TextFont 	*font;
+    struct Rectangle	*renderrect;
     ULONG  		clicksec;
     ULONG		clickmicro;
     WORD		minx;
@@ -59,11 +60,14 @@ struct AslListViewData
     WORD		height;
     WORD		itemheight;
     WORD		spacing;
-    WORD		lineheight;
-    WORD		visible;
-    WORD		top;
-    WORD		total;
-    WORD		active;
+    LONG		lineheight;
+    LONG		visible;
+    LONG		top;
+    LONG		total;
+    LONG		active;
+    LONG    	    	visiblepixels;
+    LONG    	    	toppixel;
+    LONG    	    	totalpixels;
     WORD		rendersingleitem;
     WORD		scroll;
     BYTE		layouted;
@@ -224,9 +228,15 @@ static void renderitem(Class *cl, Object *o, struct Node *node, WORD liney, stru
     msg.lvdm_DrawInfo = data->ld->ld_Dri;
     msg.lvdm_Bounds.MinX  = data->minx + BORDERLVSPACINGX;
     msg.lvdm_Bounds.MaxX  = data->maxx - BORDERLVSPACINGX;
-    msg.lvdm_Bounds.MinY  = data->miny + BORDERLVSPACINGY + liney * data->lineheight;
+    msg.lvdm_Bounds.MinY  = data->miny + BORDERLVSPACINGY + liney * data->lineheight -
+    	    	    	    (data->toppixel % data->lineheight);
     msg.lvdm_Bounds.MaxY  = msg.lvdm_Bounds.MinY + data->lineheight - 1;    
     msg.lvdm_State = node ? (IS_SELECTED(node) ? ASLLVR_SELECTED : ASLLVR_NORMAL) : ASLLVR_NORMAL;
+    
+    if (data->renderrect)
+    {
+    	if (!AndRectRect(data->renderrect, &msg.lvdm_Bounds, NULL)) return;
+    }
     
     CallHookPkt(data->renderhook, node, &msg);
 }
@@ -237,13 +247,19 @@ static void renderallitems(Class *cl, Object *o, struct RastPort *rp)
 {
     struct AslListViewData *data;
     struct Node *node;
-    WORD i;
+    LONG i, visible;
     
     data = INST_DATA(cl, o);
     
     node = findnode(cl, o, data->top);
     
-    for(i = 0; i < data->visible;i ++)
+    visible = data->visiblepixels + data->lineheight - 1 + (data->toppixel % data->lineheight);
+    visible /= data->lineheight;
+
+    //kprintf("renderallitem: lineheight %d visible %d visiblepixels %d  toppixel %d\n",
+    //        data->lineheight, visible, data->visiblepixels, data->toppixel);
+    
+    for(i = 0; i < visible; i++)
     {
         if (node) if (!node->ln_Succ) node = NULL;
 
@@ -261,10 +277,12 @@ static void rendersingleitem(Class *cl, Object *o, struct GadgetInfo *gi, WORD w
 
     data = INST_DATA(cl, o);
 
-    if (gi &&
-    	(which >= data->top) &&
-        (which < data->top + data->visible) &&
-	(which < data->total))
+    if (!gi) return;
+    if (which < data->top) return;
+    if (which >= data->total) return;
+        
+    if ((which - data->top) <
+        (data->visiblepixels + data->lineheight - 1 + (data->toppixel % data->lineheight)) / data->lineheight)
     {
 	struct RastPort *rp;
     	struct Node 	*node;
@@ -304,19 +322,28 @@ static WORD mouseitem(Class *cl, Object *o, WORD mousex, WORD mousey)
     if (mousey < BORDERLVSPACINGY)
     {
         result = -1;
-    } else if (mousey > data->maxy - data->miny - BORDERLVSPACINGY)
+    }
+    else if (mousey > data->maxy - data->miny - BORDERLVSPACINGY)
     {
         result = -2;
-    } else if (mousex < BORDERLVSPACINGX)
+    }
+    else if (mousex < BORDERLVSPACINGX)
     {
         result = -3;
-    } else if (mousex > data->maxx - data->minx - BORDERLVSPACINGX)
+    }
+    else if (mousex > data->maxx - data->minx - BORDERLVSPACINGX)
     {
         result = -4;
-    } else {
-        WORD i = (mousey - BORDERLVSPACINGY) / data->lineheight;
+    }
+    else
+    {
+        LONG i = (mousey - BORDERLVSPACINGY + (data->toppixel % data->lineheight)) / data->lineheight;
+    	LONG visible;
+	
+    	visible = data->visiblepixels + data->lineheight - 1 + (data->toppixel % data->lineheight);
+    	visible /= data->lineheight;
 
-	if (i < data->visible)
+	if (i < visible)
 	{
             struct Node *node;
 
@@ -328,6 +355,8 @@ static WORD mouseitem(Class *cl, Object *o, WORD mousex, WORD mousey)
 	    }
 	}
     }
+
+    //kprintf("mouseitem : %d\n", result);
     
     return result;
 }
@@ -339,10 +368,14 @@ static void notifyall(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
     struct AslListViewData 	*data = INST_DATA(cl, o);
     struct TagItem 		tags[] =
     {
-        {ASLLV_Top	, data->top 	},
-	{ASLLV_Total	, data->total	},
-	{ASLLV_Visible	, data->visible },
-	{TAG_DONE			}
+        {ASLLV_Top	    , data->top 	    },
+        {ASLLV_TopPixel	    , data->toppixel	    },
+	{ASLLV_Total	    , data->total	    },
+	{ASLLV_TotalPixels  , data->totalpixels     },
+	{ASLLV_Visible	    , data->visible 	    },
+	{ASLLV_VisiblePixels, data->visiblepixels   },
+	{ASLLV_DeltaFactor  , data->lineheight	    },
+	{TAG_DONE			    	    }
     };
     struct opUpdate		 opu;
     
@@ -351,10 +384,10 @@ static void notifyall(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
     opu.opu_GInfo    = gi;
     opu.opu_Flags    = flags;
     
-    D(bug("asl listview notify all: top = %d  total = %d  visible  = %d\n",
-    	 data->top,
-	 data->total,
-	 data->visible));
+    D(bug("asl listview notify all: top = %d (%d) total = %d (%d) visible  = %d (%d)\n",
+    	 data->top, data->toppixel,
+	 data->total, data->totalpixels,
+	 data->visible, data->visiblepixels));
 	 
     DoSuperMethodA(cl, o, (Msg)&opu);
     
@@ -368,6 +401,7 @@ static void notifytop(Class *cl, Object *o, struct GadgetInfo *gi, STACKULONG fl
     struct TagItem 		tags[] =
     {
         {ASLLV_Top	, data->top 	},
+	{ASLLV_TopPixel , data->toppixel},
 	{TAG_DONE			}
     };
     struct opUpdate 		opu;
@@ -391,7 +425,7 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
     struct TagItem 		*tag, *tstate = msg->ops_AttrList;
     IPTR 			retval, tidata;
     BOOL 			redraw = FALSE, notify_all = FALSE, notify_top = FALSE;
-    WORD 			newtop;
+    LONG 			newtop;
     
     retval = DoSuperMethod(cl, o, OM_SET, (IPTR) msg->ops_AttrList, (IPTR) msg->ops_GInfo);
 
@@ -402,53 +436,60 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
         switch(tag->ti_Tag)
 	{
             case ASLLV_Top:
+	    	tidata *= data->lineheight;
+		/* fall through */
+		
+            case ASLLV_TopPixel:
 		newtop = tidata;
-		if (newtop + data->visible > data->total)
+		if (newtop + data->visiblepixels > data->totalpixels)
 		{
-	            newtop = data->total - data->visible;
+	            newtop = data->totalpixels - data->visiblepixels;
 		}
 		if (newtop < 0) newtop = 0;
 
-		if (newtop != data->top)
+		if (newtop != data->toppixel)
 		{
-		    data->scroll = redraw ? 0 : newtop - data->top;
-	            data->top    = newtop;
-		    notify_top   = TRUE;
-	            redraw       = TRUE;
+		    data->scroll    = redraw ? 0 : newtop - data->toppixel;
+	            data->top       = newtop / data->lineheight;
+		    data->toppixel  = newtop;
+		    notify_top      = TRUE;
+	            redraw          = TRUE;
 		}
 		break;
 
 	    case ASLLV_MakeVisible:
-		newtop = (WORD)tidata;
+		newtop = (LONG)tidata * data->lineheight;
 		
 		if (newtop < 0)
 		{
 		    newtop = 0;
-		} else if (newtop >= data->total)
+		}
+		else if (newtop >= data->totalpixels)
 		{
-		    newtop = data->total - 1;
+		    newtop = data->totalpixels - 1;
 		    if (newtop < 0) newtop = 0;
 		}   
 		
 		/* No need to do anything if it is already visible */
 		
-		if (newtop < data->top)
+		if (newtop < data->toppixel)
 		{
 		    /* new_top already okay */ 
 
-		    data->scroll = redraw ? 0 : newtop - data->top;
-		    data->top    = newtop;
-		    notify_top   = TRUE;
-		    redraw	 = TRUE;
+		    data->scroll   = redraw ? 0 : newtop - data->toppixel;
+		    data->top      = newtop / data->lineheight;
+		    data->toppixel = newtop;
+		    notify_top     = TRUE;
+		    redraw	   = TRUE;
 		}
-		else if (newtop >= data->top + data->visible)
+		else if (newtop > data->toppixel + data->visiblepixels - data->lineheight)
 		{
-		    newtop -= (data->visible - 1);
-		    
-		    data->scroll = redraw ? 0 : newtop - data->top;
-		    data->top    = newtop;
-		    notify_top   = TRUE;
-		    redraw 	 = TRUE;
+		    newtop -= (data->visiblepixels - data->lineheight);
+		    data->scroll   = redraw ? 0 : newtop - data->toppixel;
+		    data->top      = newtop / data->lineheight;
+		    data->toppixel = newtop;
+		    notify_top     = TRUE;
+		    redraw 	   = TRUE;
 		}
 		break;
 		
@@ -494,16 +535,27 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
 	    case ASLLV_Labels:
 	    	data->labels = tidata ? (struct List *)tidata : &data->emptylist;
 		data->total = CountNodes(data->labels, 0);
+		data->totalpixels = data->total * data->lineheight;
 		data->active = -1;
 		
-		if (!data->layouted) data->visible = data->total;
-		
-		if (data->top + data->visible > data->total)
+		if (!data->layouted)
 		{
-		    data->top = data->total - data->visible;
+		    data->visible = data->total;
+		    data->visiblepixels = data->visible * data->lineheight;
 		}
-		if (data->top < 0) data->top = 0;
-		if (!data->layouted) data->visible = data->total;
+		
+		if (data->toppixel + data->visiblepixels > data->totalpixels)
+		{
+		    data->toppixel = data->totalpixels - data->visiblepixels;
+		}
+		if (data->toppixel < 0) data->toppixel = 0;
+		data->top = data->toppixel / data->lineheight;
+				
+		if (!data->layouted)
+		{
+		    data->visiblepixels = data->totalpixels;
+		    data->visible = data->total;
+		}
 		
 		makenodetable(cl, o);
 		
@@ -548,7 +600,8 @@ static IPTR asllistview_set(Class * cl, Object * o, struct opSet * msg)
     if (notify_all)
     {
 	notifyall(cl, o, msg->ops_GInfo, 0);
-    } else if (notify_top)
+    }
+    else if (notify_top)
     {
 	notifytop(cl, o, msg->ops_GInfo, 0);
     }
@@ -584,7 +637,9 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 	{
 	    CoerceMethod(cl, o, OM_DISPOSE);
 	    o = NULL;
-	} else {
+	}
+	else
+	{
 	   data->itemheight = GetTagData(ASLLV_ItemHeight, data->ld->ld_Font->tf_YSize, msg->ops_AttrList);
 	   data->spacing    = GetTagData(ASLLV_Spacing, BORDERLVITEMSPACINGY * 2, msg->ops_AttrList);
 
@@ -595,7 +650,7 @@ static IPTR asllistview_new(Class * cl, Object * o, struct opSet * msg)
 	   data->active = -1;
 	   data->rendersingleitem = -1;
 	   
-	   data->renderhook = (struct Hook *)GetTagData(ASLLV_CallBack, NULL, msg->ops_AttrList);
+	   data->renderhook = (struct Hook *)GetTagData(ASLLV_CallBack, 0, msg->ops_AttrList);
     	   data->default_renderhook.h_Entry = (APTR) AROS_ASMSYMNAME(ASLLVRenderHook);
     	   data->default_renderhook.h_SubEntry = NULL;
     	   data->default_renderhook.h_Data = (APTR)AslBase;
@@ -626,13 +681,25 @@ static IPTR asllistview_get(Class * cl, Object * o, struct opGet *msg)
 	case ASLLV_Top:
 	    *msg->opg_Storage = data->top;
 	    break;
+
+	case ASLLV_TopPixel:
+	    *msg->opg_Storage = data->toppixel;
+	    break;
 	
 	case ASLLV_Total:
 	    *msg->opg_Storage = data->total;
 	    break;
+
+	case ASLLV_TotalPixels:
+	    *msg->opg_Storage = data->totalpixels;
+	    break;
 	    
 	case ASLLV_Visible:
 	    *msg->opg_Storage = data->visible;
+	    break;
+
+	case ASLLV_VisiblePixels:
+	    *msg->opg_Storage = data->visiblepixels;
 	    break;
 	    
 	default:
@@ -686,7 +753,9 @@ static IPTR asllistview_goactive(Class *cl, Object *o, struct gpInput *msg)
 	    	(msg->gpi_IEvent->ie_Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)))
 	    {
 	        data->multiselecting = TRUE;
-	    } else {
+	    }
+	    else
+	    {
 	        data->multiselecting = FALSE;
 		
 		if (data->domultiselect)
@@ -769,7 +838,8 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		    retval = GMR_VERIFY | GMR_NOREUSE;
 		    break;
 		    
-		case IECODE_NOBUTTON: {	
+		case IECODE_NOBUTTON:
+		{	
 		    WORD n = mouseitem(cl, o, msg->gpi_Mouse.X, msg->gpi_Mouse.Y);
 		    
 		    if ((n == -1) && (data->active > 0)) n = data->active - 1;
@@ -806,11 +876,15 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			    if (n < data->top)
 			    {
 			        data->top--;
-				data->scroll = -1;
-			    } else {
+				data->scroll = data->top * data->lineheight - data->toppixel;				
+			    }
+			    else
+			    {
 			        data->top++;
-				data->scroll = 1;
+				data->scroll = data->top * data->lineheight - data->toppixel;
                             }
+
+			    data->toppixel = data->top * data->lineheight;
 			    
 			    if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
 			    {		    
@@ -831,7 +905,8 @@ static IPTR asllistview_handleinput(Class *cl, Object *o, struct gpInput *msg)
 			} /* if ((n < data->top) || (n >= data->top + data->visible)) */
 		    
 		    } /* if ((n >= 0) && (n != data->active)) */
-		    break; }
+		    break;
+		}
 		    
 	    } /* switch(msg->gpi_IEvent->ie_Code) */
 	    break;
@@ -852,25 +927,27 @@ static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
     
     if (msg->gpl_GInfo)
     {
-        WORD newtop = data->top;
-	WORD newvisible = data->visible;
+        LONG newtop = data->toppixel;
+	LONG newvisible = data->visiblepixels;
 	
 	getgadgetcoords(G(o), msg->gpl_GInfo, &data->minx, &data->miny, &data->width, &data->height);
 
 	data->maxx = data->minx + data->width  - 1;
 	data->maxy = data->miny + data->height - 1;
 
-	newvisible = (data->height - BORDERLVSPACINGY * 2) / data->lineheight;
-	if (newtop + newvisible > data->total)
+	newvisible = (data->height - BORDERLVSPACINGY * 2);
+	if (newtop + newvisible > data->totalpixels)
 	{
-	    newtop = data->total - newvisible;
+	    newtop = data->totalpixels - newvisible;
 	}
 	if (newtop < 0) newtop = 0;
 	
-	if ((newtop != data->top) || (newvisible != data->visible) || (!data->layouted))
+	if ((newtop != data->toppixel) || (newvisible != data->visiblepixels) || (!data->layouted))
 	{
-	    data->top = newtop;
-	    data->visible = newvisible;
+	    data->toppixel = newtop;
+	    data->top = newtop / data->lineheight;
+	    data->visiblepixels = newvisible;
+	    data->visible = newvisible / data->lineheight;
 	    
 	    notifyall(cl, o, msg->gpl_GInfo, 0);
 	}
@@ -888,6 +965,8 @@ static IPTR asllistview_layout(Class *cl, Object *o, struct gpLayout *msg)
 static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct AslListViewData 	*data;
+    struct Region   	    	*clip, *oldclip;
+    BOOL    	    	    	updating;
     IPTR 			retval = 0;
     
     data = INST_DATA(cl, o);
@@ -910,7 +989,6 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 		       data->miny,
 		       IDS_NORMAL,
 		       msg->gpr_GInfo->gi_DrInfo);
-
     #if AVOID_FLICKER
     	{
 	    struct IBox ibox, fbox;
@@ -923,7 +1001,7 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	    ibox.Left = data->minx + BORDERLVSPACINGX;
 	    ibox.Top = data->miny  + BORDERLVSPACINGY;
 	    ibox.Width = (data->maxx - data->minx + 1) - BORDERLVSPACINGX * 2;
-	    ibox.Height = data->lineheight * data->visible;
+	    ibox.Height = (data->maxy - data->miny + 1) - BORDERLVSPACINGY * 2;
 	    
 	    PaintInnerFrame(msg->gpr_RPort,
 	    	    	    msg->gpr_GInfo->gi_DrInfo,
@@ -936,7 +1014,25 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	}
 	
     #endif
+
+    }
     
+    if ((clip = NewRectRegion(data->minx + BORDERLVSPACINGX,
+    	    	    	      data->miny + BORDERLVSPACINGY,
+			      data->maxx - BORDERLVSPACINGX,
+			      data->maxy - BORDERLVSPACINGY)))
+    {
+    	struct Layer *lay = msg->gpr_GInfo->gi_Layer;
+	
+    	updating = (lay->Flags & LAYERUPDATING) != 0;
+
+    	if (updating) EndUpdate(lay, FALSE);	
+	oldclip = InstallClipRegion(lay, clip);	
+	if (updating) BeginUpdate(lay);
+    }
+    
+    if (msg->gpr_Redraw == GREDRAW_REDRAW)
+    {    
         renderallitems(cl, o, msg->gpr_RPort);
 
     } /* if (msg->gpr_Redraw == GREDRAW_REDRAW) */
@@ -949,36 +1045,38 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	    if ((abs_scroll == 0) || (abs_scroll > data->visible / 2))
 	    {
                 renderallitems(cl, o, msg->gpr_RPort);
-	    } else {
-	        WORD scrollx1 = data->minx + BORDERLVSPACINGX;
-		WORD scrolly1 = data->miny + BORDERLVSPACINGY;
-		WORD scrollx2 = data->maxx - BORDERLVSPACINGX;
-		WORD scrolly2 = scrolly1 + (data->visible * data->lineheight) - 1;
-		WORD i, first, last, step;
-		BOOL mustrefresh, update;
+	    }
+	    else
+	    {
+	    	struct Rectangle rect;
+	        WORD 	    	 scrollx1 = data->minx + BORDERLVSPACINGX;
+		WORD 	    	 scrolly1 = data->miny + BORDERLVSPACINGY;
+		WORD 	    	 scrollx2 = data->maxx - BORDERLVSPACINGX;
+		WORD 	    	 scrolly2 = data->maxy - BORDERLVSPACINGY;
+		BOOL 	    	 mustrefresh, update;
 		
-	        ScrollRaster(msg->gpr_RPort, 0, data->scroll * data->lineheight,
+	        ScrollRaster(msg->gpr_RPort, 0, data->scroll,
 			     scrollx1, scrolly1, scrollx2, scrolly2);
 	
 		mustrefresh = (msg->gpr_GInfo->gi_Layer->Flags & LAYERREFRESH) != 0;
 
+		rect.MinX = scrollx1;
+		rect.MaxX = scrollx2;
+    
 		if (data->scroll >= 0)
 		{
-		    first = data->visible - abs_scroll;
-		    last  = data->visible ;
-		    step  = 1;
-		} else {
-		    first = abs_scroll - 1;
-		    last  = -1;
-		    step  = -1;
+		    rect.MinY = scrolly2 - abs_scroll;
+		    rect.MaxY = scrolly2;
+		}
+		else
+		{
+		    rect.MinY = scrolly1;
+		    rect.MaxY = scrolly1 + abs_scroll;
 		}
 		
-		for(i = first; i != last; i += step)
-		{
-		    struct Node *node = findnode(cl, o, i + data->top);
-		    
-		    renderitem(cl, o, node, i, msg->gpr_RPort);
-		}
+		data->renderrect = &rect;
+                renderallitems(cl, o, msg->gpr_RPort);
+		data->renderrect = NULL;
 
 		/* the LAYERUPDATING check should not be necessary,
 		   as then we should always have a GREDRAW_REDRAW,
@@ -998,7 +1096,9 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 		}
 		
 	    }
-	} else {
+	}
+	else
+	{
 	    if (data->rendersingleitem >= data->top)
 	    {
 	        struct Node *node = findnode(cl, o, data->rendersingleitem);
@@ -1011,6 +1111,17 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 	data->rendersingleitem = -1;
 	
     } /* if (msg->gpr_Redraw == GREDRAW_UPDATE) */
+    
+    if (clip)
+    {
+    	struct Layer *lay = msg->gpr_GInfo->gi_Layer;
+    
+    	if (updating) EndUpdate(lay, FALSE);
+    	InstallClipRegion(lay, oldclip);
+	if (updating) BeginUpdate(lay);
+	
+    	DisposeRegion(clip);
+    }
     
     return retval;
 }
