@@ -419,7 +419,6 @@ enum {
     num_Hidd_BitMap_Attrs
 };    
 
-#define aHidd_BitMap_BitMap        (HiddBitMapAttrBase + aoHidd_BitMap_BitMap)
 #define aHidd_BitMap_Width         (HiddBitMapAttrBase + aoHidd_BitMap_Width)
 #define aHidd_BitMap_Height        (HiddBitMapAttrBase + aoHidd_BitMap_Height)
 #if 0
