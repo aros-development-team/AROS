@@ -4,33 +4,43 @@
 */
 
 #include <proto/muimaster.h>
+#include <proto/intuition.h>
+#include <proto/exec.h>
 #include "muimaster_intern.h"
+#include "support_classes.h"
 
 /*****************************************************************************
 
     NAME */
-	AROS_LH1(VOID, MUI_FreeClass,
+	AROS_LH1(BOOL, MUI_FreeClass,
 
 /*  SYNOPSIS */
-	AROS_LHA(struct IClass *, classptr, A0),
+	AROS_LHA(Class *, cl, A0),
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 14, MUIMaster)
 
 /*  FUNCTION
+	Frees a class returned by MUI_GetClass().
 
     INPUTS
+        cl - The pointer to the class.
 
     RESULT
+        BOOL - Unlike MUI's version of MUI_FreeClass(), Zune's MUI_FreeClass() returns
+	       a BOOL value indicating success or failure. This is mostly used for internal
+	       purposes and shouldn't be relied upon, rather, you should foget MUI_FreeClass()
+	       even exists and use MUI_DeleteCustomClass() & friends instead.
 
     NOTES
+        This function is obsolete, DO NOT use it.
 
     EXAMPLE
 
     BUGS
-	The function itself is a bug ;-) Remove it!
 
     SEE ALSO
+        MUI_GetClass(), MUI_CreateCustomClass(), MUI_DeleteCustomClass()
 
     INTERNALS
 
@@ -39,12 +49,29 @@
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
+    AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *, MUIMasterBase)
 
-#ifndef __MAXON__
-#warning FIXME: I should decrease the open count of library (use cl->hook->data)
-#endif
-    return;
+    struct Library *mb = cl->cl_Dispatcher.h_Data;
+
+    /* CLF_INLIST tells us that this class is a builtin class */
+    if (cl->cl_Flags & CLF_INLIST)
+        ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
+
+    if (!FreeClass(cl))
+    {
+        /* If it was a builtin class, readd it to the list since freeing it failed */
+#warning The class should actually be inserted at the same place it was before: Implement ZUNE_InsertBuiltinClass()
+        if (cl->cl_Flags & CLF_INLIST)
+            ZUNE_AddBuiltinClass(cl, MUIMasterBase);
+
+	return FALSE;
+    }
+    else
+    {
+        CloseLibrary(mb);
+
+	return TRUE;
+    }
 
     AROS_LIBFUNC_EXIT
 
