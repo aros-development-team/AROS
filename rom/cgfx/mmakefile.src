@@ -20,6 +20,7 @@ FUNCS := \
 	movepixelarray		\
 	readpixelarray		\
 	readrgbpixel		\
+	scalepixelarray		\
 	unlockbitmap		\
 	unlockbitmaptaglist	\
 	writelutpixelarray	\
