@@ -22,6 +22,21 @@
 /*
     Defines
 */
+#define Dispatch() \
+    AROS_LC0(void, Dispatch, \
+    struct ExecBase *, SysBase, 10, Exec)
+
+#define Exception() \
+    AROS_LC0(void, Exception, \
+    struct ExecBase *, SysBase, 11, Exec)
+
+#define PrepareContext(stackPointer, entryPoint, fallBack) \
+    AROS_LC3(APTR, PrepareContext, \
+    AROS_LCA(APTR, stackPointer,    A0), \
+    AROS_LCA(APTR, entryPoint,      A1), \
+    AROS_LCA(APTR, fallBack,        A2), \
+    struct ExecBase *, SysBase, 6, Exec)
+
 #define RawIOInit() \
     AROS_LC0(void, RawIOInit, \
     struct ExecBase *, SysBase, 84, Exec)
@@ -34,6 +49,11 @@
     AROS_LC1(void, RawPutChar, \
     AROS_LCA(UBYTE, chr, D0), \
     struct ExecBase *, SysBase, 86, Exec)
+
+#define Reschedule(task) \
+    AROS_LC1(void, Reschedule, \
+    AROS_LCA(struct Task *, task, A0), \
+    struct ExecBase *, SysBase, 8, Exec)
 
 #define TaggedOpenLibrary(tag) \
     AROS_LC1(APTR, TaggedOpenLibrary, \

@@ -19,11 +19,13 @@
 #endif
 #include <unistd.h>
 #include <stdio.h>
+#include <termios.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <proto/arossupport.h>
 #include <proto/exec.h>
+#include "exec_pdefs.h"
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
@@ -45,6 +47,7 @@ extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
 extern const struct Resident Mathffp_resident;
+
 extern void InitCore(void);
 
 #define MEMSIZE 1024*1024
@@ -87,8 +90,11 @@ static void boot(void)
     RemTask(NULL);
 }
 
-AROS_UFH2 (void, IntServer,
+AROS_UFH5 (void, IntServer,
+    AROS_UFHA (ULONG             ,dummy,  D0),
+    AROS_UFHA (struct Custom    *,custom, A0),
     AROS_UFHA (struct List      *,intList,A1),
+    AROS_UFHA (APTR              ,ivCode, A5),
     AROS_UFHA (struct ExecBase  *,SysBase,A6)
 )
 {
@@ -96,16 +102,20 @@ AROS_UFH2 (void, IntServer,
 
     ForeachNode (intList, irq)
     {
-	if (AROS_UFC2 (int, irq->is_Code,
+	if( AROS_UFC4( int, irq->is_Code,
+		AROS_UFCA (struct Custom *,   custom,       A0),
 		AROS_UFCA (APTR,              irq->is_Data, A1),
-		AROS_UFCA (struct ExecBase *, SysBase,      A6)
+		AROS_UFCA (APTR,	      irq->is_Code, A5),
+                AROS_UFCA (struct ExecBase *, SysBase,      A6)
 	))
 	    break;
     }
 }
 
-AROS_UFH2(int, Dispatcher,
+AROS_UFH4(int, Dispatcher,
+    AROS_UFHA (struct Custom   *, custom,  A0),
     AROS_UFHA (APTR,              is_Data, A1),
+    AROS_UFHA (APTR,              is_Code, A5),
     AROS_UFHA (struct ExecBase *, SysBase, A6)
 )
 {
@@ -351,7 +361,6 @@ printf ("SysBase = %p\n", SysBase);
     debugmem ();
 
     (void) InitResident((struct Resident *)&Utility_resident,0);
-
     DOSBase = (struct DosLibrary *)InitResident((struct Resident *)&Dos_resident,0);
 
     (void) InitResident((struct Resident *)&Graphics_resident,0);
@@ -427,8 +436,14 @@ printf ("SysBase = %p\n", SysBase);
 	CreateNewProc (bootprocess);
     }
 
+    {
+        /* last thing before we go, make ^H the erase character */
+	struct termios t;
+	tcgetattr(0, &t);
+	t.c_cc[VERASE] = '\b';
+	tcsetattr(0, TCSANOW|TCSASOFT, &t);
+    }
     RemTask(NULL); /* get rid of Boot task */
-
     Switch (); /* Rescedule */
 
     /* Should never get here... */

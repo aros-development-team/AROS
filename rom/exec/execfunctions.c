@@ -15,6 +15,7 @@ void AROS_SLIB_ENTRY(Switch,Exec)();
 void AROS_SLIB_ENTRY(Dispatch,Exec)();
 void AROS_SLIB_ENTRY(Exception,Exec)();
 void AROS_SLIB_ENTRY(PrepareContext,Exec)();
+void AROS_SLIB_ENTRY(Reschedule,Exec)();
 void AROS_SLIB_ENTRY(InitStruct,Exec)();
 void AROS_SLIB_ENTRY(MakeLibrary,Exec)();
 void AROS_SLIB_ENTRY(MakeFunctions,Exec)();
@@ -146,7 +147,7 @@ void *ExecFunctions[131]=
 	&AROS_SLIB_ENTRY(Supervisor,Exec),
 	&AROS_SLIB_ENTRY(PrepareContext,Exec),
 	NULL,		/* Private2 */
-	NULL,		/* Private3 */
+	&AROS_SLIB_ENTRY(Reschedule,Exec),
 	&AROS_SLIB_ENTRY(Switch,Exec),
 /* 10 */&AROS_SLIB_ENTRY(Dispatch,Exec),
 	&AROS_SLIB_ENTRY(Exception,Exec),

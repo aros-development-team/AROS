@@ -10,6 +10,7 @@
 #include <aros/libcall.h>
 #include <aros/machine.h>
 #include <proto/exec.h>
+#include "exec_pdefs.h"
 #include "etask.h"
 
 #include "exec_debug.h"

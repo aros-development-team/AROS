@@ -25,55 +25,65 @@ INIT_FILE = execstrap_init
 FILES =
 
 FUNCTIONS = \
-	initcode initstruct makelibrary makefunctions findresident	    \
-	initresident setintvector addintserver remintserver allocmem	    \
-	freemem availmem allocentry freeentry typeofmem addmemlist	    \
+	initcode initstruct makelibrary makefunctions findresident          \
+	initresident setintvector addintserver remintserver allocmem        \
+	freemem availmem allocentry freeentry typeofmem addmemlist          \
 	addmemhandler remmemhandler insert addhead addtail remove remhead   \
 	remtail enqueue findname setsignal allocsignal freesignal addport   \
 	remport waitport findport createmsgport deletemsgport putmsg getmsg \
-	replymsg doio sendio checkio waitio abortio createiorequest	    \
+	replymsg doio sendio checkio waitio abortio createiorequest         \
 	deleteiorequest addresource remresource openresource addlibrary     \
-	remlibrary oldopenlibrary closelibrary setfunction sumlibrary	    \
-	openlibrary taggedopenlibrary adddevice remdevice opendevice	    \
-	closedevice findtask rawdofmt allocvec freevec initsemaphore	    \
-	attemptsemaphore findsemaphore addsemaphore remsemaphore	    \
+	remlibrary oldopenlibrary closelibrary setfunction sumlibrary       \
+	openlibrary taggedopenlibrary adddevice remdevice opendevice        \
+	closedevice findtask rawdofmt allocvec freevec initsemaphore        \
+	attemptsemaphore findsemaphore addsemaphore remsemaphore            \
 	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
-	allocpooled freepooled
-
-# Functions that are written in asm and need to be linked into exec.strap.
-# These are in config/$(KERNEL).
-ASMFUNCTIONS = \
-	forbid disable getcc cacheclearu cachepredma cachepostdma coldreboot
+	allocpooled freepooled \
+	cacheclearu cachepredma cachepostdma \
+	disable forbid coldreboot getcc
 
 # ***** Not Native ***************
 else
 
 %prepare_shlib exec $(SHARED_EXEC)
 
-FILES = init execfunctions
+FILES = init execfunctions traphandler
 
 FUNCTIONS = \
 	allocmem freemem addhead addtask remtask wait signal allocsignal    \
 	freesignal alert freeentry remove remhead enqueue addmemhandler     \
-	setexcept setsignal settaskpri findtask findname getmsg putmsg	    \
-	replymsg addtail waitport allocate addport remport findport	    \
+	setexcept setsignal settaskpri findtask findname getmsg putmsg      \
+	replymsg addtail waitport allocate addport remport findport         \
 	addmemlist createmsgport deletemsgport createiorequest deallocate   \
-	availmem deleteiorequest allocvec freevec allocabs allocentry	    \
-	createpool deletepool allocpooled remmemhandler initstruct	    \
-	initsemaphore attemptsemaphore obtainsemaphore			    \
-	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore	    \
-	procure vacate addlibrary remlibrary makefunctions makelibrary	    \
-	sumlibrary openlibrary closelibrary setfunction oldopenlibrary	    \
-	copymemquick copymem freepooled remsemaphore addsemaphore	    \
+	availmem deleteiorequest allocvec freevec allocabs allocentry       \
+	createpool deletepool allocpooled remmemhandler initstruct          \
+	initsemaphore attemptsemaphore obtainsemaphore                      \
+	obtainsemaphoreshared attemptsemaphoreshared releasesemaphore       \
+	procure vacate addlibrary remlibrary makefunctions makelibrary      \
+	sumlibrary openlibrary closelibrary setfunction oldopenlibrary      \
+	copymemquick copymem freepooled remsemaphore addsemaphore           \
 	releasesemaphorelist obtainsemaphorelist typeofmem rawdofmt insert  \
 	remtail findsemaphore addresource remresource openresource adddevice\
 	remdevice opendevice closedevice doio sendio checkio abortio waitio \
-	initresident cause addintserver remintserver setintvector alloctrap \
-	childfree childorphan childstatus childwait coldreboot debug	    \
-	findresident freetrap initcode sumkickdata obtainquickvector
+	initresident addintserver remintserver setintvector alloctrap \
+	childfree childorphan childstatus childwait coldreboot debug        \
+	findresident freetrap initcode sumkickdata obtainquickvector \
+	supervisor superstate userstate stackswap \
+	cachecleare cacheclearu cachecontrol cachepredma cachepostdma \
+	cause disable dispatch enable forbid preparecontext permit switch \
+	coldreboot setsr getcc reschedule exception
 
 # ***** END ***************
 endif
+
+# Do the magic required for function replacement.
+# Keep this value for later
+ALL_FILES := $(FILES)
+ALL_FUNCTIONS := $(FUNCTIONS)
+
+%prepare_replace rom/exec
+%filter_replace $(FUNCTIONS)
+%filter_replace $(FILES)
 
 DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 
@@ -83,7 +93,7 @@ DEPS = $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
 ifeq ($(FLAVOUR),native)
 
 LIBS = -L$(LIBDIR) -lexec -larossupport -larosc
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASMFUNCTIONS),$(OBJDIR)/$(f).o)
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 INITFUNC = $(OBJDIR)/$(INIT_FILE).o
 
 all: setup $(LIB) $(OSMODDIR)/exec.strap
@@ -97,7 +107,7 @@ $(OSMODDIR)/exec.strap: $(LIB) $(INITFUNC) $(LIBDIR)/libarossupport.a $(LIBDIR)/
 # To study the assembler output for evaluation (can be helpful in tracking
 # down bugs):
 .PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(FILES),$(f).s) all
+asm: $(foreach f,$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES),$(f).s) all
 
 %.s: %.c
 	@echo "Generating $@ ..."
@@ -112,7 +122,7 @@ $(LIB): $(OBJS)
 # ***** Not Native ***************
 else
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -129,6 +139,8 @@ setup :
 
 clean::
 	$(RM) $(OBJDIR) *.err $(LIB)
+
+%additional_objs_rule
 
 $(OBJDIR)/%.o: %.c
 	%compile_q

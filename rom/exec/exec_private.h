@@ -28,6 +28,18 @@
 /*
     Prototypes
 */
+AROS_LP0(void, Dispatch,
+    struct ExecBase *, SysBase, 10, Exec)
+
+AROS_LP0(void, Exception,
+    struct ExecBase *, SysBase, 11, Exec)
+
+AROS_LP3(APTR, PrepareContext,
+    AROS_LPA(APTR, stackPointer,    A0),
+    AROS_LPA(APTR, entryPoint,      A1),
+    AROS_LPA(APTR, fallBack,        A2),
+    struct ExecBase *, SysBase, 6, Exec)
+
 AROS_LP0(void, RawIOInit,
     struct ExecBase *, SysBase, 84, Exec)
 
@@ -37,6 +49,10 @@ AROS_LP0(LONG, RawMayGetChar,
 AROS_LP1(void, RawPutChar,
     AROS_LPA(UBYTE, chr, D0),
     struct ExecBase *, SysBase, 86, Exec)
+
+AROS_LP1(void, Reschedule,
+    AROS_LPA(struct Task *, task, A0),
+    struct ExecBase *, SysBase, 8, Exec)
 
 AROS_LP1(APTR, TaggedOpenLibrary,
     AROS_LPA(LONG, tag, D0),

@@ -1,24 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1997/05/07 14:44:50  aros
-    Swap order of include files
 
-    Revision 1.4  1997/01/01 03:46:18  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.3  1996/12/09 10:54:49  aros
-    Added (almost empty) versions for all missing functions. If they are called,
-    they just print "Functions %s not implemented" and return an error if
-    possible.
-
-    Revision 1.2  1996/08/01 17:41:27  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Private data belonging to exec.library
     Lang:
 */
 #ifndef __EXEC_INTERN_H__
@@ -48,5 +32,17 @@ extern void __AROS_InitExecBase (void);
 #endif
 
 void aros_print_not_implemented (char * name);
+
+/* These are the bit definitions of the SysFlags and AttnResched flags.
+    They are listed here more as somewhere to list them.
+*/
+
+#define SFB_SoftInt         5   /* There is a software interrupt */
+#define SFF_SoftInt         (1L<<5)
+
+#define ARB_AttnSwitch      7   /* Delayed Switch() pending */
+#define ARF_AttnSwitch      (1L<<7)
+#define ARB_AttnDispatch   15   /* Delayed Dispatch() pending */
+#define ARF_AttnDispatch    (1L<<15)
 
 #endif /* __EXEC_INTERN_H__ */
