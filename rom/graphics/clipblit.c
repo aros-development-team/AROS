@@ -9,11 +9,11 @@
 #include <graphics/gfx.h>
 #include <proto/exec.h>
 #include "graphics_intern.h"
+#include <graphics/regions.h>
 
 /*****************************************************************************
 
     NAME */
-#include <graphics/gfx.h>
 #include <proto/graphics.h>
 
 	AROS_LH9(void, ClipBlit,
@@ -27,7 +27,7 @@
 	AROS_LHA(LONG             , yDest , D3),
 	AROS_LHA(LONG             , xSize , D4),
 	AROS_LHA(LONG             , ySize , D5),
-	AROS_LHA(ULONG            , minterm, D6),
+	AROS_LHA(UBYTE            , minterm, D6),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 92, Graphics)
@@ -91,11 +91,105 @@
 {
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+ 
+  /* overlapping and non-overlapping blits are handled differently. */
+  
+  /* check for overlapping blits */
+  if ( srcRP == destRP )
+  {
+    struct Region * R = NewRegion();
+    struct Rectangle Rect;
+    struct RegionRectangle * RR;
 
+    /* define the rectangle of the destination */
+    Rect.MinX = xDest;
+    Rect.MaxX = xDest+xSize;
+    Rect.MinY = yDest;
+    Rect.MaxY = yDest+ySize;
+    /* define the region with this rectangle */
+    OrRectRegion(R,&Rect);
+
+    /* define the rectangle of the source */
+    Rect.MinX = xSrc;
+    Rect.MaxX = xSrc+xSize;
+    Rect.MinY = ySrc;
+    Rect.MaxY = ySrc+ySize;
+    /* combine them to check for overlapping areas */
+    AndRectRegion(R,&Rect);
+
+    RR = R->RegionRectangle;
+
+    /* check whether they overlap */
+    if (NULL != RR)
+    {
+
+      /* it's overlapping, so I have to split this opertion up into
+         up to three calls to internal_ClipBlit */
+      /* first copy the overlapping part to its destination */
+      internal_ClipBlit(srcRP,
+                        xSrc+RR->bounds.MinX,
+                        ySrc+RR->bounds.MinY,
+                        destRP,
+                        xDest+RR->bounds.MinX,
+                        yDest+RR->bounds.MinY,
+                        RR->bounds.MaxX-RR->bounds.MinX+1,
+                        RR->bounds.MaxY-RR->bounds.MinY+1,
+                        minterm,
+                        GfxBase);
+
+      /* and now I invert the Region with the source rectangle */
+      XorRectRegion(R, &Rect);
+      RR = R->RegionRectangle;
+
+      while (NULL != RR)
+      {
+        internal_ClipBlit(srcRP,
+                          xSrc+RR->bounds.MinX,
+                          ySrc+RR->bounds.MinY,
+                          destRP,
+                          xDest+RR->bounds.MinX,
+                          yDest+RR->bounds.MinY,
+                          RR->bounds.MaxX-RR->bounds.MinX+1,
+                          RR->bounds.MaxY-RR->bounds.MinY+1,
+                          minterm,
+                          GfxBase);
+        RR = RR->Next;
+      } /* while */
+      /* That's all */
+      return ;
+    } /* if (NULL != RR)*/
+  } /* if (destRP == srcRP) */
+  /* here: process all cases that don't overlap */
+
+  internal_ClipBlit(srcRP,
+                    xSrc,
+                    ySrc,
+                    destRP,
+                    xDest,
+                    yDest,
+                    xSize,
+                    ySize,
+                    minterm,
+                    GfxBase);
+
+  AROS_LIBFUNC_EXIT
+} /* ClipBlit */
+
+void internal_ClipBlit(struct RastPort * srcRP,
+                       LONG xSrc,
+                       LONG ySrc,
+                       struct RastPort * destRP,
+                       LONG xDest,
+                       LONG yDest,
+                       LONG xSize,
+                       LONG ySize,
+                       UBYTE minterm,
+                       struct GfxBase * GfxBase)
+{
   struct ClipRect * srcCR  = NULL;
   struct ClipRect * destCR = NULL;
   struct BitMap   * srcBM  =  srcRP->BitMap;
-  struct BitMap   * destBM = destRP->BitMap;
+  struct BitMap   * destBM =  destRP->BitMap;
   struct Layer    * srcLayer =  srcRP->Layer;
   struct Layer    * destLayer= destRP->Layer;
   struct Rectangle destRect;
@@ -110,7 +204,7 @@
 
   if (NULL != srcLayer)
     srcCR  = srcLayer->ClipRect;
- 
+
   /* process all source and destination bitmaps */
   while (TRUE)
   {
@@ -220,6 +314,7 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
     } /* if() */
     else /* no layer in the source rastport */
     {
+      srcBM = srcRP->BitMap;
       destRect.MinX = xDest;
       destRect.MinY = yDest;
       destRect.MaxX = xDest+xSize-1;
@@ -363,5 +458,5 @@ kprintf("%d, %d\n",srcCR->bounds.MinX,srcCR->bounds.MaxX);
 
   return;
 
-  AROS_LIBFUNC_EXIT
-} /* ClipBlit */
+
+}

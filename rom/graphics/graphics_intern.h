@@ -88,6 +88,18 @@ struct ViewPort;
 /* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
 extern ULONG CalcHashIndex(ULONG n);
 
+/* a function needed by ClipBlit */
+void internal_ClipBlit(struct RastPort * srcRP,
+                       LONG xSrc,
+                       LONG ySrc,
+                       struct RastPort * destRP,
+                       LONG xDest,
+                       LONG yDest,
+                       LONG xSize,
+                       LONG ySize,
+                       UBYTE minterm,
+                       struct GfxBase * GfxBase);
+
 /* Driver prototypes */
 extern BOOL driver_LateGfxInit(APTR, struct GfxBase *GfxBase);
 
