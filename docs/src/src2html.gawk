@@ -334,6 +334,9 @@ BEGIN {
 		getarg();
 		file=yytext;
 
+		if (showpar)
+		    printf ("\n<P>");
+
 		yytext="<A HREF=\""file"\">"title"</A>";
 	    }
 	    else if (yytext=="bold")
