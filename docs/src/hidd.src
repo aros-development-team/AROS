@@ -238,12 +238,33 @@ if the device is active or if the device is ready to be activated.
 
 \end{taglist}
 
-\subsection{Sags for some HIDDs}
+\subsection{Tags for some HIDDs}
 
 \begin{taglist}
-\item{HIDDA_Shared,BOOL,ISG} Allow to share a HIDD with other
+\item{HIDDA_Shared,ULONG,ISG} Allow to share a HIDD with other
 applications or lock it for single use. This might be used
 in a sound HIDD or a serial HIDD or a graphics HIDD.
+
+Values for |HIDDA_Shared| are:
+
+\begin{description}
+\item{|HIDDV_Shared_Exclusive|} Try to get the HIDD exclusively.
+If someone else has locked the HIDD exclusive or shared already,
+this will fail.
+
+\item{|HIDDV_Shared_Shared|} Try to share the HIDD with other
+apps. This will fail if someone else has already locked the
+HIDD exclusively.
+
+\item{|HIDDV_Shared_NonExclusive|} Use this mode if it doesn't
+matter if you can't get it. This might be used for apps which
+want to play sounds in the background when someone inserts a disk
+into the drive or similar.
+
+\item{|HIDDV_Shared_NotAvailable|} This can only read back. If the
+attribute contains this value, the HIDD doesn't support sharing.
+
+\end{description}
 
 \end{taglist}
 
