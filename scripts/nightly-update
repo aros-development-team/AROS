@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 # Script that runs from cron every 30 minutes on the SourceForge shell server
 # and moves nightly build files from the uploads directory to the download
@@ -49,10 +49,12 @@ for file in $(find . -type f -not -name "*.md5" -printf "%p;"); do
             echo "> $file"
             
             dst="$DST/$(dirname $file)"
-            mkdir -p $dst
+            mkdir -p "$dst"
 	    if [ "${file:${#file}-4:4}" = ".xml" ]; then
-	        cl=${file:0:${#file}-4}
-	        xsltproc -o $dst/$(basename $cl).php /home/groups/a/ar/aros/scripts/cl2html.xslt $file
+	        cl="$(basename ${file:0:${#file}-4})"
+	        xsltproc -o $dst/$cl.php --stringparam date ${cl:5:8} --stringparam module ${cl:24} /home/groups/a/ar/aros/scripts/cl2html.xslt "$file"
+		rm "$file"
+		rm "$file.md5"
 	    else
                 mv -f "$file" $dst
                 mv -f "$file.md5" $dst
