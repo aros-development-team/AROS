@@ -10,7 +10,7 @@
 #   undef __KERNEL__
 #endif
 
-/* Put a value of type SP_TYPE on the stack or get it off the stack */
+/* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
 #define _POP(sp)            (*sp++)
 
@@ -22,6 +22,36 @@
     /* name and type of the signal handler */
 #   define SIGHANDLER	    linux_sighandler
 #   define SIGHANDLER_T     SignalHandler
+
+    /*
+	This macro contains some magic necessary to make it work.
+	The problem is that Linux offers no official way to obtain the
+	signals' context. Linux stores the signals' context on the
+	process' stack. It looks like this:
+
+		    |			       |
+		    +--------------------------+
+		    | last entry before signal |
+		    +--------------------------+
+		    |	    empty space        | <--- SP
+		    +--------------------------+
+		    |	   signal context      |
+		    +--------------------------+
+		    |	   signal number       |
+		    +--------------------------+
+		    |	   return address      |
+		    +--------------------------+
+		    |			       |
+
+	so the address of the signal context is &sig+1.
+    */
+#   define GLOBAL_SIGNAL_INIT \
+	static void sighandler (int sig, sigcontext_t * sc);    \
+								\
+	static void SIGHANDLER (int sig)                        \
+	{							\
+	    sighandler (sig, (sigcontext_t *)(&sig+1));         \
+	}
 
     /* Type of the values which can be stored on the stack. A variable
 	which is to be used as a stack pointer must be declared as
@@ -41,6 +71,13 @@
 #   define SP(sc)           (sc->esp)
 #   define FP(sc)           (sc->ebp)
 #   define PC(sc)           (sc->eip)
+
+    /*
+	Macros to enable or disable all signals after the signal handler
+	has returned and the normal execution commences.
+    */
+#   define SC_DISABLE(sc)   (sc->oldmask = ~0L)
+#   define SC_ENABLE(sc)    (sc->oldmask = 0L)
 
     /*
 	The names of the general purpose registers which are to be saved.
@@ -213,6 +250,7 @@
 	(PC(sc) = _POP(sp)), \
 	(SP(sc) = (long)sp))
 
+    /* This macro prints the current signals' context */
 #   define PRINT_SC(sc) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
@@ -223,6 +261,7 @@
 	    , R4(sc), R5(sc) \
 	)
 
+    /* This macro prints the current stack (after SAVEREGS()) */
 #   define PRINT_STACK(sp) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
@@ -254,6 +293,14 @@ typedef struct sigcontext sigcontext_t;
 #   define R3(sc)           (sc->sc_edx)
 #   define R4(sc)           (sc->sc_edi)
 #   define R5(sc)           (sc->sc_esi)
+
+#   define GLOBAL_SIGNAL_INIT \
+	static void sighandler (int sig, sigcontext_t * sc); \
+							     \
+	static void SIGHANDLER (int sig)                     \
+	{						     \
+	    sighandler( sig, (sigcontext_t*)(&sig+2));       \
+	}
 
 #   define PREPARE_INITIAL_FRAME(sp,pc) \
 	_PUSH(sp,pc), \
