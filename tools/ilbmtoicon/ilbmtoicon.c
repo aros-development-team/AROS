@@ -1821,7 +1821,7 @@ static void writepngiconchunk(void)
 	}
 	else
 	{
-	    flags |= drawershowasoption - 2;
+	    flags |= ((drawershowasoption - 2) << 2);
 	}
     	writepngiconattr(0x80001007, flags, &chunksize, &crc);	
     }
