@@ -15,7 +15,7 @@
 
 static const char version[] = "$VER: ask 41.3 (4.7.1997)\n";
 
-static struct UtilityBase *UtilityBase;
+static struct Library *UtilityBase;
 
 char * skipwhites(char * buffer)
 {
