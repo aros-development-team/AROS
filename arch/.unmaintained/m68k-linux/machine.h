@@ -21,7 +21,7 @@
      UseExecstubs has to be defined when UseRegisterArgs is used!
 */
 #if UseRegisterArgs
-#undef UseExecStubs
+#undef UseExecstubs
 #define UseExecstubs 1
 #endif
 
@@ -147,6 +147,8 @@ extern void _aros_not_implemented (char *X);
 #define __AROS_UFCA(type,name,reg)    name
 #define __AROS_UFDA(type,name,reg)    type
 #define __AROS_LHAQUAD(type,name,reg1,reg2)	type name
+#define __AROS_LPAQUAD(type,name,reg1,reg2)	type
+#define __AROS_LCAQUAD(type,name,reg1,reg2)	name
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
@@ -829,12 +831,12 @@ extern void _aros_not_implemented (char *X);
 	long _##n##_re;                             \
 	register t1 _n1 __asm(r1) = _##n##_n1;      \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %2,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##n##_re)                        \
-	    :"r"(_n1),"g"(bn)			    \
+	    :"g"(bn), "r"(_n1)			    \
 	    :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##n##_re;				    \
     }						    \
@@ -854,7 +856,7 @@ extern void _aros_not_implemented (char *X);
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)                     \
-	    :"g"(bn),"r"(_n1),"r"(_n2)		    \
+	    :"g"(bn), "r"(_n1), "r"(_n2)	    \
 	    :D0,D1,A0,A1,"memory","cc");            \
         (t)_##name##_re;                            \
     }						    \
@@ -871,13 +873,12 @@ extern void _aros_not_implemented (char *X);
 	register t2 _n2 __asm(r2) = _##name##_n2;   \
 	register t3 _n3 __asm(r3) = _##name##_n3;   \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %4,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)                     \
-	    :"r"(_n1),"r"(_n2),"r"(_n3),            \
-	     "g"(bn)				    \
+	    :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3)  \
 	    :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##name##_re;			    \
     }						    \
@@ -896,13 +897,13 @@ extern void _aros_not_implemented (char *X);
 	register t3 _n3 __asm(r3) = _##name##_n3;   \
 	register t4 _n4 __asm(r4) = _##name##_n4;   \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %5,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)                     \
-	    :"r"(_n1),"r"(_n2),"r"(_n3),      	    \
-	     "r"(_n4),"g"(bn)			    \
+	    :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4)				    \
 	    :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##name##_re;			    \
     }						    \
@@ -923,13 +924,13 @@ extern void _aros_not_implemented (char *X);
 	register t4 _n4 __asm(r4) = _##name##_n4;   \
 	register t5 _n5 __asm(r5) = _##name##_n5;   \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %6,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)                     \
-	    :"r"(_n1),"r"(_n2),"r"(_n3),            \
-	     "r"(_n4),"r"(_n5),"g"(bn)	    	    \
+	    :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5)			    \
 	    :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##name##_re;			    \
     }						    \
@@ -952,14 +953,13 @@ extern void _aros_not_implemented (char *X);
         register t5 _n5 __asm(r5) = _##name##_n5;   \
         register t6 _n6 __asm(r6) = _##name##_n6;   \
         __asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %7,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
             :"=g"(_##name##_re)                     \
-            :"r"(_n1),"r"(_n2),"r"(_n3),            \
-             "r"(_n4),"r"(_n5),"r"(_n6),            \
-             "g"(bn)				    \
+            :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6)	    \
             :A0,A1,D0,D1,"memory","cc");            \
         (t)_##name##_re;                            \
     }                                               \
@@ -984,14 +984,13 @@ extern void _aros_not_implemented (char *X);
 	register t6 _n6 __asm(r6) = _##name##_n6;   \
 	register t7 _n7 __asm(r7) = _##name##_n7;   \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %8,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)			    \
-	    :"r"(_n1),"r"(_n2),"r"(_n3),	    \
-	     "r"(_n4),"r"(_n5),"r"(_n6),	    \
-	     "r"(_n7),"g"(bn)			    \
+	    :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7) \
 	    :A0,A1,D0,D1,"memory","cc");	    \
 	(t)_##name##_re;			    \
     }						    \
@@ -1018,14 +1017,14 @@ extern void _aros_not_implemented (char *X);
 	register t7 _n7 __asm(r7) = _##name##_n7;   \
 	register t8 _n8 __asm(r8) = _##name##_n8;   \
 	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %9,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "move.l %%d0,%0"			    \
 	    :"=g"(_##name##_re)			    \
-	    :"r"(_n1),"r"(_n2),"r"(_n3),	    \
-	     "r"(_n4),"r"(_n5),"r"(_n6),	    \
-	     "r"(_n7),"r"(_n8),"g"(bn)		    \
+	    :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7),\
+	     "r"(_n8)				    \
 	    :A0,A1,D0,D1,"memory","cc");	    \
 	(t)_##name##_re;			    \
     }						    \
@@ -1054,14 +1053,13 @@ extern void _aros_not_implemented (char *X);
         register t8 _n8 __asm(r8) = _##name##_n8;   \
         register t9 _n9 __asm(r9) = _##name##_n9;   \
         __asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %9,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6"		    \
-            : /* no output */                       \
-            :"r"(_n1),"r"(_n2),"r"(_n3),            \
-             "r"(_n4),"r"(_n5),"r"(_n6),            \
-             "r"(_n7),"r"(_n8),"r"(_n9),            \
-             "g"(bn)				    \
+            :"=g"(_##name##_re)			    \
+            :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7),\
+	     "r"(_n8), "r"(_n9)			    \
             :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##name##_re;			    \
     }                                               \
@@ -1080,6 +1078,7 @@ extern void _aros_not_implemented (char *X);
     t9 _##name##_n9 = (n9);                         \
     t10 _##name##_n10 = (n10);                      \
     {                                               \
+	long _##name##_re;			    \
         register t1 _n1 __asm(r1) = _##name##_n1;   \
         register t2 _n2 __asm(r2) = _##name##_n2;   \
         register t3 _n3 __asm(r3) = _##name##_n3;   \
@@ -1091,19 +1090,57 @@ extern void _aros_not_implemented (char *X);
         register t9 _n9 __asm(r9) = _##name##_n9;   \
         register t10 _n10 __asm(r10) = _##name##_n10; \
         __asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
-	    "move.l %10,%%a6\n\t"		    \
+	    "move.l %1,%%a6\n\t"		    \
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6"		    \
-            : /* no output */                       \
-            :"r"(_n1),"r"(_n2),"r"(_n3),            \
-             "r"(_n4),"r"(_n5),"r"(_n6),            \
-             "r"(_n7),"r"(_n8),"r"(_n9),            \
-             "r"(_n10),                             \
-             "g"(bn)				    \
+            :"=g"(_##name##_re)			    \
+            :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7),\
+	     "r"(_n8), "r"(_n9), "r"(_n10)	    \
             :A0,A1,D0,D1,"memory","cc");            \
+	(t)_##name##_re;			    \
     }                                               \
 })
 
+#define __LC11(t,name,t1,n1,r1,t2,n2,r2,t3,n3,r3,t4,n4,r4,t5,n5,r5,t6,n6,r6,t7,n7,r7,t8,n8,r8,t9,n9,r9,t10,n10,r10,t11,n11,r11,bt,bn,o,s) \
+({                                                  \
+    t1 _##name##_n1 = (n1);                         \
+    t2 _##name##_n2 = (n2);                         \
+    t3 _##name##_n3 = (n3);                         \
+    t4 _##name##_n4 = (n4);                         \
+    t5 _##name##_n5 = (n5);                         \
+    t6 _##name##_n6 = (n6);                         \
+    t7 _##name##_n7 = (n7);                         \
+    t8 _##name##_n8 = (n8);                         \
+    t9 _##name##_n9 = (n9);                         \
+    t10 _##name##_n10 = (n10);                      \
+    t11 _##name##_n11 = (n11);                      \
+    {                                               \
+	long _##name##_re;			    \
+        register t1 _n1 __asm(r1) = _##name##_n1;   \
+        register t2 _n2 __asm(r2) = _##name##_n2;   \
+        register t3 _n3 __asm(r3) = _##name##_n3;   \
+        register t4 _n4 __asm(r4) = _##name##_n4;   \
+        register t5 _n5 __asm(r5) = _##name##_n5;   \
+        register t6 _n6 __asm(r6) = _##name##_n6;   \
+        register t7 _n7 __asm(r7) = _##name##_n7;   \
+        register t8 _n8 __asm(r8) = _##name##_n8;   \
+        register t9 _n9 __asm(r9) = _##name##_n9;   \
+        register t10 _n10 __asm(r10) = _##name##_n10; \
+        register t11 _n11 __asm(r11) = _##name##_n11; \
+        __asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
+	    "move.l %1,%%a6\n\t"		    \
+	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
+	    "move.l (%%sp)+,%%a6"		    \
+            :"=g"(_##name##_re)			    \
+            :"g"(bn), "r"(_n1), "r"(_n2), "r"(_n3), \
+	     "r"(_n4), "r"(_n5), "r"(_n6), "r"(_n7),\
+	     "r"(_n8), "r"(_n9), "r"(_n10),	    \
+	     "r"(_n11)				    \
+            :A0,A1,D0,D1,"memory","cc");            \
+	(t)_##name##_re;			    \
+    }                                               \
+})
 
 /****************************************************/
 
@@ -1118,7 +1155,7 @@ extern void _aros_not_implemented (char *X);
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "movem.l %%d0-%%d1,%0\n\t"		    \
-	    :"=g"(_##n##_re)                        \
+	    :"=m"(_##n##_re)                        \
 	    :"r"(_n1),"g"(bn)			    \
 	    :A0,A1,D0,D1,"memory","cc");            \
 	(t)_##n##_re;				    \
@@ -1138,7 +1175,7 @@ extern void _aros_not_implemented (char *X);
 	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
 	    "move.l (%%sp)+,%%a6\n\t"		    \
 	    "movem.l %%d0-%%d1,%0\n\t"		    \
-	    :"=g"(_##name##_re)                     \
+	    :"=m"(_##name##_re)                     \
 	    :"r"(_n1),"r"(_n2),"g"(bn)		    \
 	    :D0,D1,A0,A1,"memory","cc");            \
         (t)_##name##_re;                            \
@@ -1173,29 +1210,41 @@ extern void _aros_not_implemented (char *X);
 	__LC8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
 #define AROS_LC8I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s) \
 	__LC8(t,n,a1,a2,a3,a4,a5,a6,a7,a8,bt,bn,o,s)
+#if 0
 #define AROS_LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
 	__LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
 #define AROS_LC9I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
 	__LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s)
+#define AROS_LC10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+	__LC10(t,n,a1,a2,a3,a4,a5,a7,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_LC10I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
+	__LC10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s)
+#define AROS_LC11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+	__LC11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#define AROS_LC11I(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
+	__LC11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s)
+#endif
 
-/* AROS_LC10 and higher just don't work with gcc. gcc complains
+#if 1
+/* AROS_LC9 and higher just don't work with gcc. gcc complains
    about too many registers being used. So we have to fall back
-   to stack passing for these kind of calls 
+   to stubs for these kind of calls 
  */
+#define AROS_LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
+    n(\
+    __AROS_LCA(a1),\
+    __AROS_LCA(a2),\
+    __AROS_LCA(a3),\
+    __AROS_LCA(a4),\
+    __AROS_LCA(a5),\
+    __AROS_LCA(a6),\
+    __AROS_LCA(a7),\
+    __AROS_LCA(a8),\
+    __AROS_LCA(a9),\
+    __AROS_LC_BASE(bt,bn))
 
 #define AROS_LC10(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,bt,bn,o,s) \
-    (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LPA(a8),\
-    __AROS_LPA(a9),\
-    __AROS_LPA(a10),\
-    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    n(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1206,21 +1255,10 @@ extern void _aros_not_implemented (char *X);
     __AROS_LCA(a8),\
     __AROS_LCA(a9),\
     __AROS_LCA(a10),\
-    __AROS_LC_BASE(bt,bn)))
+    __AROS_LC_BASE(bt,bn))
+
 #define AROS_LC11(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,bt,bn,o,s) \
-    (((__AROS_LC_PREFIX t(*)(\
-    __AROS_LPA(a1),\
-    __AROS_LPA(a2),\
-    __AROS_LPA(a3),\
-    __AROS_LPA(a4),\
-    __AROS_LPA(a5),\
-    __AROS_LPA(a6),\
-    __AROS_LPA(a7),\
-    __AROS_LPA(a8),\
-    __AROS_LPA(a9),\
-    __AROS_LPA(a10),\
-    __AROS_LPA(a11),\
-    __AROS_LP_BASE(bt,bn)))__AROS_GETVECADDR(bn,o))(\
+    n(\
     __AROS_LCA(a1),\
     __AROS_LCA(a2),\
     __AROS_LCA(a3),\
@@ -1232,9 +1270,8 @@ extern void _aros_not_implemented (char *X);
     __AROS_LCA(a9),\
     __AROS_LCA(a10),\
     __AROS_LCA(a11),\
-    __AROS_LC_BASE(bt,bn)))
-
-
+    __AROS_LC_BASE(bt,bn))
+#endif
 
 #define AROS_LVO_CALL0(returntype,basetype,basename,offset,system) \
 __LC0(returntype,,basetype,basename,offset,system)
@@ -1676,15 +1713,13 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
     long _n3 = (long)(n3);\
     long _re;\
     __asm__ __volatile__(\
-        "move.l %%a5,-(%%sp)\n\t"\
-        "move.l %%a6,-(%%sp)\n\t"\
+	"movem.l %%d2-%%d7/%%a2-%%a6,-(%%sp)\n\t"\
         "move.l %3,%"##r1##"\n\t"\
         "move.l %4,%"##r2##"\n\t"\
         "move.l %5,%"##r3##"\n\t"\
 	"move.l %%sp,%1\n\t"\
         "jsr    (%2)\n\t"\
-        "move.l (%%sp)+,%%a6\n\t"\
-        "move.l (%%sp)+,%%a5\n\t"\
+	"movem.l (%%sp)+,%%d2-%%d7/%%a2-%%a6\n\t"\
         "move.l %%d0,%0"\
         :"=g"(_re),"=m"(*(APTR *)p)\
         :"ad"(n),"g"(_n1),"g"(_n2),"g"(_n3)\
@@ -1744,6 +1779,19 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
     (t)_re;\
 })
 #define AROS_UFC5(t,n,a1,a2,a3,a4,a5) __UFC5(t,n,a1,a2,a3,a4,a5)
+
+#else /* UseRegisterArgs */
+
+#define AROS_UFC3R(t,n,a1,a2,a3,p) \
+    (((__AROS_UFC_PREFIX t(*)(\
+    __AROS_UFPA(a1),\
+    __AROS_UFPA(a2),\
+    __AROS_UFPA(a3)\
+    ))n)(\
+    __AROS_UFCA(a1),\
+    __AROS_UFCA(a2),\
+    __AROS_UFCA(a3)\
+    ))
 
 #endif /* UseRegisterArgs */
 
