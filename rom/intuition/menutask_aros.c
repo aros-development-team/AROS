@@ -1548,8 +1548,12 @@ static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandl
 static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
                                 struct IntuitionBase *IntuitionBase)
 {
-    WORD maxwidth = mhd->dri->dri_Font->tf_XSize;
+    struct TextExtent te;
+    WORD maxwidth;
 
+    FontExtent(mhd->dri->dri_Font, &te);
+    maxwidth = te.te_Width;
+    
     if (win)
     {
         struct MenuItem *item;
@@ -1575,7 +1579,8 @@ static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd,
 
                     if ((font = OpenFont(it->ITextFont)))
                     {
-                        if (font->tf_XSize > maxwidth) maxwidth = font->tf_XSize;
+		    	FontExtent(font, &te);
+                        if (te.te_Width > maxwidth) maxwidth = te.te_Width;
 
                         CloseFont(font);
                     }
