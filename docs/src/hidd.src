@@ -32,30 +32,38 @@ The complete life cycle of a HIDD is like this:
 \begin{enumeration}
 \item The OS boots. HIDDs on external cards get installed by the
 OS in the global list of all available HIDDs.
+
 \item The OS reads the extended romtags from the HIDD and puts that
 information in the global list of all available HIDDs.
+
 \item Some application asks for a list with the informations about
 all HIDDs or a specific type of HIDD.
+
 \item The application loads the HIDD and the config plugin.
 This makes the HIDD initialize some internal data structures but
 not always the hardware. A HIDD might be the driver for several kinds
 of different hardwares which are all available.
+
 \item The application asks for the current config of the HIDD. If the
 config plugin has its own GUI, the application displays it. Otherwise,
 the application displays the information in an own window. For this,
 the application queries the config plugin for all available modes.
+
 \item Whenever the user changes something in the applications window,
 the application changes the HIDD and queries the config plugin for
 the current config plus the new list of available modes. This allows
 to have modes where certain other modes are not available (eg.
 24bit depth with more than 800x600).
+
 \item When the user presses ok, the application or config plugin closes
 the window/GUI. The Ok or Apply button must be ghosted as long as
 the HIDD says that the configuration is not ok. The application can
 now expunge the config plugin.
+
 \item When the device is explicitly activated or used for the first time
 (eg. data is written to it), it will use the configuration to initialize
 the hardware.
+
 \item The user can deactivate the device and change the config if the
 HIDD permits that.
 \end{enumeration}
@@ -64,7 +72,7 @@ HIDD permits that.
 
 \begin{code}
 /* Get a list with pointers to HIDD devices */
-ULONG HIDD_QueryHIDDList (ULONG type, HIDDT ** hiddArray);
+ULONG HIDD_FindHIDD (struct TagItem *, Class ** hiddArray);
 \end{code}
 
 You can then use the HIDD API to query the devices for their infos. Use
@@ -78,7 +86,9 @@ HIDDs are plain exec devices with an extended API which looks like this:
 \begin{description}
 \item{|HIDD_Get()|} Query information about the HIDD in gerenal (eg. its name
 and version) and the current status.
+
 \item{|HIDD_Set()|} Change the current status of a HIDD.
+
 \end{itemize}
 
 \subsection{|HIDD_Get()|}
@@ -117,19 +127,26 @@ an error code or the number of an offending tag in the taglist.
 \begin{description}
 \item{|HIDDA_Type|} [G] This is the basic type of the HIDD (eg. serial, parallel,
 graphics).
+
 \item{|HIDDA_SubType|} [G] This is a more specific type. If |HIDDA_Type| is
 |HIDDC_Type_Serial|, then this is a bitfield with one or more bits
 of |HIDDC_Type_Serial_RS232| or |HIDDC_Type_Serial_RS488| set.
+
 \item{|HIDDA_Producer|} [G] The ID of the producer as handed out by Amiga
 International.
+
 \item{|HIDDA_Name|} |char *| [G] The name of this device (eg. serial.device).
+
 \item{|HIDDA_HardwareName|} |char *| [G] The name of the hardware
 (eg. "Builtin Serial Port", "COM1", etc.).
+
 \item{|HIDDA_Active|} |BOOL| [ISG] Tells if the device is active or
 (de-)actives it when set.
+
 \item{|HIDDA_Status|} [G] The current status of a HIDD. This is a
 set of bits which show if the init of the hardware was successful,
 if the device is active or if the device is ready to be activated.
+
 \end{itemize}
 
 \section{The HIDD Config API}
@@ -162,6 +179,93 @@ The taglist of |HIDD_QueryModes()| consists of the types |BOOL|,
 string/value pairs or one-of-many selection) or |HIDDT_OptionList| (same as
 |HIDDT_List| but for some-of-many selection. The result is
 passed as a bitfield).
+
+\section{Random unsorted ideas}
+
+HIDDs must allow sharing when appropriate (eg. sound or screens).
+
+HIDDs as BOOPSI objects ?
+
+Okay, here are some examples, how a sound.hidd could be implemented on
+different hardware-bases. This is how the class would behave, if a method
+HIDDM_SendMIDI was sent (I don't know, if such a method would make sense,
+but it's only for illustration issues).
+
+Amiga with internal sound (subclass of hiddclass):
+
+There are two possibilities, how to handle it. The first is, not to handle
+it, so that the method is passes on to the hiddclass (which doesn't know
+this method either) and then on to the rootclass, which returns 0 (FALSE)
+on unknown methods. The second possibility is to implement it in
+soundhiddclass and return FALSE immediatly (because we know that the
+internal Amiga soundsystem can't handle MIDI).
+
+Amiga with sound-card on zorro-bus (subclass of zorroclass):
+
+The sound-card passes all methods through to its superclass, except methods
+for playing/receiving/whatever music. It can either implement them totally
+on its own or might use some features of its superclass, for example a
+general method for sending data to a zorro-card.
+
+Amiga with internal sound or soundcard and additional MIDI-card:
+
+This configuration would have two HIDDs, one for MIDI only and one for
+sound in general. For the implementation of the last one see above (either
+Amiga with internal sound or Amiga with sound-card). The MIDI HIDD-class
+could subclass the general sound class (without knowing, if it is capable
+of playing MIDI) and pass on all methods except MIDI relevant methods. It
+would fully overload these. Another solution would be to subclass hiddclass
+directly and ignore every non-MIDI sound command. While the general class
+would be unit 0, the MIDI class would be unit 1, so that an application can
+choose between the normal sound-system (either the internal Amiga
+soundsystem or a sound-card, which might have MIDI capabilities on its own)
+or the MIDI card. If the MIDI class would subclass the normal soundhidd, it
+would feature non-MIDI sound, too (by passing the methods on). Of course,
+it had to pass a query to a HIDDA_Capabilities attribute on to the
+superclass, so that the capabilities of the superclass can be recognized by
+the application for unit 1, too.
+
+PC with soundblaster-super-ultra-pro-whatever:
+
+This HIDD could(!) subclass a class, which handles soundblaster-cards in
+general, i.e. the functions that are common to all soundblaster-card (which
+itself could subclass something like a pcbusclass). Normally this class
+would pass all methods on to its superclass, but it could implement some
+methods on its own or partly overload some methods, where this specific
+soundblaster-card had advantages/different features than the other
+soundblaster-cards.
+
+o Some thoughts about the sound.hidd:
+
+  o An attribute HIDDA_Capabilities [..G], which could define things like:
+    o HIDDV_Sound_MIDI - sound-system is able to play MIDI sounds (possibly by
+      using an external MIDI device, such as a keyboard)
+    o HIDDV_Sound_SFX - sound-system is capable of playing simple sounds (e.g.
+      the internal pc-speaker)
+    o HIDDV_Sound_Music
+    o HIDDV_Sound_Speech
+
+  o An attribute HIDDA_Sound_Shared [IS.], which could take the following
+    values:
+    o HIDDV_Sound_NonExclusiveLocked - allow other application to make
+      instances (i.e. objects) of the same sound-unit
+    o HIDDV_Sound_NonExclusiveNotLocked - as above, but allow the
+      sound-system to temporarily disable access to the unit for that
+      application. This happens, if another application wants to overtake
+      the sound-system in an exclusive mode. This mode makes sense if an
+      application wants to play sound-effects of an informational
+      character, which are not important for program execution
+
+    o HIDDV_Sound_Exclusive - May be used, if an application wants to play
+      music, which shouldn't be disturbed by sound-effects. Of course it's
+      no problem to access other sound-units/-devices, while one is locked
+      exclusively.
+
+  o Possibly attributes HIDDA_Sound_ActivateHook, ..._InactivateHook [ISG]
+    These attributes could be used by an application to provide hooks, which
+    are called, if a not-locked unit is exclusively locked by another
+    application (or this exclusive lock is freed). So these attributes
+    makes only sense with HIDDV_Sound_NonExclusiveNotLocked.
 
 \end{new}
 
