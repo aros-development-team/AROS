@@ -31,8 +31,11 @@ IPTR Settingsgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_Settingsgroup *data;
     struct TagItem  	    *tag, *tags;
 
-    obj = (Object *)DoSuperNewTags(cl, obj, NULL,
-			TAG_MORE, msg->ops_AttrList);
+    obj = (Object *) DoSuperNewTags
+    (
+        cl, obj, NULL,
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
     if (!obj) return FALSE;
     
     data = INST_DATA(cl, obj);

@@ -23,17 +23,14 @@
 
 extern struct Library *MUIMasterBase;
 
-struct Virtgroup_DATA
-{
-   int dummy;
-};
-
 IPTR Virtgroup__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    //struct Virtgroup_DATA *data;
-    //int i;
-
-    return DoSuperNewTags(cl, obj, NULL, MUIA_Group_Virtual, TRUE, TAG_MORE, msg->ops_AttrList);
+    return DoSuperNewTags
+    (
+        cl, obj, NULL, 
+        MUIA_Group_Virtual, TRUE, 
+        TAG_MORE, (IPTR) msg->ops_AttrList
+    );
 }
 
 #if ZUNE_BUILTIN_VIRTGROUP
@@ -50,7 +47,7 @@ const struct __MUIBuiltinClass _MUI_Virtgroup_desc =
 { 
     MUIC_Virtgroup, 
     MUIC_Group, 
-    sizeof(struct Virtgroup_DATA), 
+    0, 
     (void*)Virtgroup_Dispatcher 
 };
 #endif /* ZUNE_BUILTIN_VIRTGROUP */
