@@ -44,8 +44,6 @@
 
 ******************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-
 #if 1
     return DoIO(iORequest);
 #else    
@@ -104,7 +102,5 @@ loop:
     return iORequest->io_Error;
 
 #endif
-
-    AROS_LIBFUNC_EXIT
 } /* DosDoIO */
 
