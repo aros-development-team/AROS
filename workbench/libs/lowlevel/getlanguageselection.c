@@ -5,11 +5,41 @@
     Desc: 
     Lang: english
 */
-#include "lowlevel_intern.h"
 
+#include <string.h>
 #include <aros/libcall.h>
 #include <exec/types.h>
 #include <libraries/lowlevel.h>
+#include <libraries/locale.h>
+#include <proto/locale.h>
+
+#include "lowlevel_intern.h"
+
+/*
+ * Put those in the same order as the LANG_* defines in libraries/lowlevel.h
+ */
+static char * langlist[] =
+{
+	"American",
+	"English",
+	"German",
+	"French",
+	"Spanish",
+	"Italian",
+	"Portuguese",
+	"Danish",
+	"Dutch",
+	"Norwegian",
+	"Finnish",
+	"Swedish",
+	"Japanese",
+	"Chinese",
+	"Arabic",
+	"Greek",
+	"Hebrew",
+	"Korean",
+	NULL
+};
 
 /*****************************************************************************
 
@@ -41,10 +71,27 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LowLevelBase *, LowLevelBase)
 
-#warning TODO: Write lowlevel/GetLanguageSelection()
-    aros_print_not_implemented ("lowlevel/GetLanguageSelection");
+  int index = 0;
+  /*
+   * Get the default locale
+   */
+  struct Locale * locale = OpenLocale("");
+  
+  if (NULL == locale)
+    return LANG_UNKNOWN;
+  
+  while (NULL != langlist[index])
+  {
+    if (0 == strcmp(locale->loc_LanguageName,(char *)langlist[index]))
+    {
+      CloseLocale(locale);
+      return index+1;
+    }
+    index++;
+  }
 
-    return 0L; // return "no language has been selected" until implemented
+  CloseLocale(locale);
+  return LANG_UNKNOWN;
 
   AROS_LIBFUNC_EXIT
 } /* GetLanguageSelection */
