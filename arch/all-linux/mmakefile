@@ -1,6 +1,6 @@
 # $Id$
 
-#MM AROS-linux : setup includes compiler kernel workbench demos apps shell
+#MM AROS-linux : setup setup-linux includes compiler kernel workbench demos apps-linux shell
 AROS-linux :
 	@$(NOP)
 
@@ -8,8 +8,8 @@ AROS-linux :
 kernel :
 	@$(NOP)
 
-#MM apps : Moria3D
-apps :
+#MM apps-linux : Moria3D games
+apps-linux :
 	@$(NOP)
 
 #MM setup-linux : setup-exec-linux setup-dos-linux setup-battclock-linux setup-x11 setup-clib-linux
