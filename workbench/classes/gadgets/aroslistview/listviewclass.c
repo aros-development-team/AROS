@@ -182,7 +182,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		    struct IBox box;
 
 		    steps = tag->ti_Data - old;
-		    abs_steps = abs(steps);
+		    abs_steps = steps < 0 ? -steps : steps;
 
 		    GetGadgetIBox(o, msg->ops_GInfo, &box);
 		    visible = NumVisible(&box, data->lvd_EntryHeight);
