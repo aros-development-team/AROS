@@ -5,6 +5,8 @@
 
 #include <proto/exec.h>
 
+#include <sys/time.h>
+
 #include <stdio.h>
 
 /* 
@@ -38,9 +40,11 @@ void verify( void )
 int main ( void )
 {
     ULONG x,y;
+    struct timeval tv1,tv2;
+    double elapsed;
     
     printf("ide.device test tool\n");
-    printf("Allocating two 128kB buffers\n");
+    printf("Allocating two 128 KiB buffers\n");
 
     buffer = AllocMem(131072,MEMF_PUBLIC);
     buff2 = AllocMem(131072,MEMF_PUBLIC);
@@ -118,9 +122,39 @@ int main ( void )
     io->iotd_Req.io_Length = 131072;
     io->iotd_Req.io_Data = buff2;
     io->iotd_Req.io_Offset = 0;
-    io->iotd_Req.io_Command = CMD_WRITE;
+    io->iotd_Req.io_Command = CMD_READ;
     DoIO((struct IORequest *)io);
 
     verify();
+
+    printf("Benching\n");
+
+    gettimeofday(&tv1,NULL);
+    for (x=0;x<80;x++)
+    {
+	io->iotd_Req.io_Length = 131072;
+	io->iotd_Req.io_Data = (buffer+(x*512));
+	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Command = CMD_READ;
+	DoIO((struct IORequest *)io);
+    }
+    gettimeofday(&tv2,NULL);
+    elapsed = ((double)(((tv2.tv_sec * 1000000) + tv2.tv_usec) - ((tv1.tv_sec * 1000000) + tv1.tv_usec)))/1000000.;
+
+    printf(" Read 10 MiB in %f seconds (%f MiB/s\n",elapsed,(10/elapsed));
+
+    gettimeofday(&tv1,NULL);
+    for (x=0;x<80;x++)
+    {
+	io->iotd_Req.io_Length = 131072;
+	io->iotd_Req.io_Data = (buffer+(x*512));
+	io->iotd_Req.io_Offset = x*512;
+	io->iotd_Req.io_Command = CMD_WRITE;
+	DoIO((struct IORequest *)io);
+    }
+    gettimeofday(&tv2,NULL);
+    elapsed = ((double)(((tv2.tv_sec * 1000000) + tv2.tv_usec) - ((tv1.tv_sec * 1000000) + tv1.tv_usec)))/1000000.;
+
+    printf("Wrote 10 MiB in %f seconds (%f MiB/s\n",elapsed,(10/elapsed));
 }
 
