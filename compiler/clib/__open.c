@@ -23,6 +23,8 @@
 #include <aros/debug.h>
 #include "__errno.h"
 #include "__open.h"
+#include "__upath.h"
+
 int c;
 
 fdesc *__getfdesc(register int fd)
@@ -111,6 +113,9 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     LONG  openmode = __oflags2amode(flags);
     AROS_GET_SYSBASE_OK
     AROS_GET_DOSBASE
+
+    pathname = __path_u2a(pathname);
+    if (!pathname) return -1;
 
     D(bug("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode));
 
@@ -280,11 +285,11 @@ void __updatestdio(void)
     AROS_GET_DOSBASE
 
     me = (struct Process *)FindTask(NULL);
-    
+
     fflush(stdin);
     fflush(stdout);
     fflush(stderr);
-    
+
     __fd_array[STDIN_FILENO]->fh  = __stdfiles[STDIN_FILENO]  = Input();
     __fd_array[STDOUT_FILENO]->fh = __stdfiles[STDOUT_FILENO] = Output();
     __fd_array[STDERR_FILENO]->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
