@@ -318,34 +318,67 @@ kprintf("error object_wrong_type 2\n");
 #endif
   }
 
-  /* Find the basic size for each hunk */
-  for (t=1; t<eh.shnum; t++)
-  {
-    sh = (struct sheader *)(shtab + t*eh.shentsize);
-
-    if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
+    /* Find the basic size for each hunk */
+    for (t=1; t<eh.shnum; t++)
     {
-#if !LOAD_DEBUG_HUNKS
-      /* Don't load debug hunks */
-      if ( !strncmp (&shstrtab[sh->name], ".stab", 5)
-         || !strcmp (&shstrtab[sh->name], ".comment")
-         )
-        sh->size = 0;
-#endif
+        sh = (struct sheader *)(shtab + t*eh.shentsize);
 
-      hunks[t].size = sh->size;
-    }
-#if !LOAD_DEBUG_HUNKS
-    else if (sh->type == SHT_REL
-        && !strcmp (&shstrtab[sh->name], ".rel.stab")
-        )
-        sh->size = 0;
-    else if (sh->type == SHT_RELA
-        && !strcmp (&shstrtab[sh->name], ".rela.stab")
-        )
-        sh->size = 0;
-#endif
-  }
+        switch (sh->type)
+        {
+             case SHT_PROGBITS:
+             case SHT_NOBITS:
+
+                 if (sh->type == SHT_PROGBITS || sh->type == SHT_NOBITS)
+                 {
+	             #if !LOAD_DEBUG_HUNKS
+                     /* Don't load debug hunks */
+                     if
+                     (
+                         !strncmp(&shstrtab[sh->name], ".stab",            5) ||
+                         !strncmp(&shstrtab[sh->name], ".debug",           6) ||
+                         !strncmp(&shstrtab[sh->name], ".line",            5) ||
+                         !strncmp(&shstrtab[sh->name], ".gnu.linkonce.wi", 5) ||
+                         !strcmp(&shstrtab[sh->name],  ".comment")
+                     )
+                     {
+                         sh->size = 0;
+                     }
+                     #endif
+
+                     hunks[t].size = sh->size;
+                 }
+		 break;
+
+             #if !LOAD_DEBUG_HUNKS
+	     case SHT_REL:
+
+                 if
+                 (
+                     !strncmp (&shstrtab[sh->name], ".rel.stab",  9)  ||
+                     !strncmp (&shstrtab[sh->name], ".rel.debug", 10)
+                 )
+                 {
+                     sh->size = 0;
+                 }
+                 break;
+
+             case SHT_RELA:
+
+                 if
+                 (
+                     !strncmp (&shstrtab[sh->name], ".rela.stab",  10) ||
+                     !strncmp (&shstrtab[sh->name], ".rela.debug", 11)
+                 )
+                 {
+                     sh->size = 0;
+                 }
+                 break;
+             #endif
+	}
+   }
+
+
+
 
   /* Look for names of symbols */
   for (t=eh.shnum; t>0; t--)
