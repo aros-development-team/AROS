@@ -63,7 +63,7 @@ docs/ - The source and the formatted docs (currently only in HTML
 makefile - This is the magic file which holds the whole thing together.
 	It has the following rules:
 
-	\exec{gawk -f makefile2html.gawk --assign secfilt="target" $(TOP)/makefile}
+	\filtermakefile{$(TOP)/makefile,target}
 
 make.defaults - File with options for the make. If you want to change
 	an option, create a file \filename{make.opts} and put your changes
