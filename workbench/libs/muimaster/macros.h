@@ -149,6 +149,7 @@
  MUI_MakeObject()
 **************************************************************************/
 #define SimpleButton(label) MUI_MakeObject(MUIO_Button,(IPTR)label)
+#define ImageButton(label, imagePath) MUI_MakeObject(MUIO_ImageButton, (IPTR) label, (IPTR) imagePath)
 
 #define CoolImageButton(label,image) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), (IPTR)(image), 0)
 #define CoolImageIDButton(label,imageid) MUI_MakeObject(MUIO_CoolButton, (IPTR)(label), imageid, MUIO_CoolButton_CoolImageID)
