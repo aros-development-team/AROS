@@ -55,7 +55,7 @@
 	if (fn->fd == fd)
 	{
 	    Remove ((struct Node *)fn);
-	    Close (fn->File.fh);
+	    Close ((BPTR)fn->File.fh);
 	    FreeMem (fn, sizeof (FILENODE));
 
 	    return 0;

@@ -57,7 +57,7 @@
 
     Remove ((struct Node *)fn);
 
-    err = Close (fn->File.fh);
+    err = Close ((BPTR)fn->File.fh);
 
     FreeMem (fn, sizeof (FILENODE));
 

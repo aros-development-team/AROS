@@ -81,7 +81,7 @@
 	    return EOF;
 	}
 
-	fh = fn->File.fh;
+	fh = (BPTR)fn->File.fh;
 
 	break; }
     }

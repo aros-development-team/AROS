@@ -71,7 +71,7 @@
 	break; }
 
     default:
-	fh = stream->fh;
+	fh = (BPTR)stream->fh;
 	break;
     }
 
