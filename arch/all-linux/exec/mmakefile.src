@@ -6,7 +6,7 @@ kernel-linux-sigcore : $(GENINCDIR)/sigcore.h
 
 $(GENINCDIR)/sigcore.h : sigcore.h.src
 	%mkdirs_q $(GENINCDIR)
-	$(SHELL) ./mksigcore.sh $(TOP)/config/linux/exec $(GENINCDIR)/sigcore.h
+	$(SHELL) ./mksigcore.sh $(TOP)/$(CURDIR) $(GENINCDIR)/sigcore.h
 
 OS_INCLUDES := -I$(SYS_INCLUDES) -I$(TOP)/rom/exec -I$(GENINCDIR)
 %build_archspecific \
