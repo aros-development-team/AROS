@@ -4,3 +4,4 @@ mmakefile
 *endtag.c
 functions.[ch]
 *.map
+*.err
