@@ -7,7 +7,9 @@
 */
 
 /*
-    Note: This whole thing may seem a bit kludgy. It is.
+    Note: This whole thing may seem a bit kludgy. It is. It was originally
+    designed to load only one module. It has been extended to read a config
+    file and to load multiple modules. It needs some polishing.
 */
 
 #include <exec/types.h>
@@ -61,6 +63,7 @@ int main(int argc, char **argv)
     struct Module *module;
     struct ModuleList ModuleList;
     STRPTR modname;
+    int returnvalue = RETURN_OK;
 
     debug = FALSE;
 
@@ -168,18 +171,21 @@ int main(int argc, char **argv)
 	}
 	else
 	{
+	    PutStr("\nError building KickTagPtrs!\n");
 	    FreeModules(&ModuleList);
+	    returnvalue = RETURN_FAIL;
 	}
     }
     else
     {
 	Printf("Error loading \"%s\"\n", modname);
 	FreeModules(&ModuleList);
+	returnvalue = RETURN_FAIL;
     }
 
     FreeConfig(filelist);
 
-    exit(RETURN_OK);
+    exit(returnvalue);
 }
 
 struct Module *LoadModule(char *filename)

@@ -6,9 +6,9 @@
 #   Lang: english
 #
 
-# The files is in this directory build a stand-alone executable, used to
+# The files in this directory build a stand-alone executable, used to
 # install AROS' modules in the system. These modules will become active
-# after a reset.
+# after a reset. More information in the source files.
 
 TOP=../../..
 
@@ -19,7 +19,7 @@ LDFLAGS = -noixemul
 
 FILES = main ils config
 
-all:	setup $(BINDIR)/boot
+all:	setup $(BINDIR)/boot $(BINDIR)/boot.config
 
 clean:
 	-rm -f $(BINDIR)/boot
@@ -35,6 +35,9 @@ $(BOOTGENDIR)/%.o: %.c
 $(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 	$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) -o $@
 	strip $@
+
+$(BINDIR)/boot.config: boot.config
+	$(CP) $< $@
 
 $(BOOTGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
