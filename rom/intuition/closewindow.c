@@ -180,8 +180,13 @@ void LateCloseWindow(struct MsgPort *userport,
 	struct IntuiMessage *im;
 	
     	while ((im = (struct IntuiMessage *) GetMsg (userport)))
+	{
+	    /* Prevent inputhandler/HandleIntuiReplyPort() from accessing
+	       dead window */
+	    im->Class = 0;
+	    im->Qualifier = 0;
 	    ReplyMsg ((struct Message *)im);
-	    
+	}   
 
 	/* Delete message port */
 	DeleteMsgPort (userport);
