@@ -1,14 +1,17 @@
 #ifndef AROS_SYSTEM_H
 #define AROS_SYSTEM_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
-    Desc: Analyse the current kind of system
+    Desc: Analyse the current kind of system and compiler.
     Lang: english
 */
 #ifndef _AROS
 #   define _AROS
+#endif
+#ifndef __AROS__
+#   define __AROS__
 #endif
 #ifndef AROS_MACHINE_H
 #   include <aros/machine.h>
@@ -24,7 +27,15 @@
 #   endif
 #endif
 
-/* 2. Analyze compiler */
+/*
+ * 2. Analyze compiler for STD C/C++.
+ *
+ * We test for the following:
+ * a.	extern "C" linkage required for programs.
+ * b.	inline, const, volatile, restrict keywords defined in
+ *	newer C/C++ standards.
+ */
+
 #if defined(__cplusplus)
 #   define EXTERN extern "C"
 #   define BEGIN_EXTERN     extern "C" {
@@ -35,7 +46,34 @@
 #   define END_EXTERN
 #endif
 
-/* 2. Makros for debugging and development */
+#if defined(__STDC__) || defined(__cplusplus)
+#define	    __const__	    const
+#define	    __inline__	    inline
+#define	    __volatile__    volatile
+
+/*
+ * C99 defines a new keyword restrict that can help do optimisation where
+ * pointers are used in programs. We'd like to support optimisation :-)
+ */
+#if defined(__STDC__VERSION__) &&  __STDC__VERSION__ >= 199901L
+#define	    __restrict__    restrict
+#else
+#define	    __restrict__
+#define	    restrict
+#endif
+
+#else
+#define	    __const__
+#define	    const
+#define	    __inline__
+#define	    inline
+#define	    __volatile__
+#define	    volatile
+#define	    __restrict__
+#define	    restrict
+#endif
+
+/* 3. Makros for debugging and development */
 #if defined(TEST) || defined(DEBUG)
 #   include <assert.h>
 #else
