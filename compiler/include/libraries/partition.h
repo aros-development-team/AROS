@@ -117,7 +117,7 @@ struct PartitionAttribute
 
 struct PartitionBase
 {
-    struct LibHeader lh;
+    struct Library lib;
     struct PartitionTableInfo **tables;
 };
 
