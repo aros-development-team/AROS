@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 14:04:33  digulla
+    Added intui_ProcessXEvents() to Idle-Task
+    Added graphics and intuition.library to system libraries
+    Renamed stdin, stdout and stderr to allow to use stdio.h
+
     Revision 1.3  1996/08/03 20:20:55  digulla
     Tried to add multitasking but that doesn't work right now
 
@@ -16,6 +21,7 @@
 #include <exec/memory.h>
 #include <exec/devices.h>
 #include <clib/exec_protos.h>
+#include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <clib/dos_protos.h>
@@ -25,6 +31,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define NEWLIST(l)                          \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
@@ -34,6 +41,8 @@
 extern void *ExecFunctions[];
 extern const struct Resident Utility_resident;
 extern const struct Resident Dos_resident;
+extern const struct Resident Graphics_resident;
+extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 
 #define MEMSIZE 1024*1024
@@ -43,15 +52,24 @@ static UBYTE memory[MEMSIZE+MEMCHUNK_TOTAL-1];
 #define NUMVECT 131
 
 struct ExecBase *SysBase;
+struct DosBase * DOSBase;
 
 #define STACKSIZE 4096
 
 static int returncode=20;
 
+void intui_ProcessXEvents (void);
+
 static void idleTask (void)
 {
     /* If the idle task ever gets CPU time the emulation is finished */
 /* exit(returncode); */
+    while (1)
+    {
+	intui_ProcessXEvents ();
+
+	Switch (); /* Rescedule */
+    }
 }
 
 int submain(int argc,char *argv[]);
@@ -203,14 +221,24 @@ int main(int argc,char *argv[])
 
     AddLibrary((struct Library *)InitResident((struct Resident *)&Utility_resident,0));
     AddLibrary((struct Library *)InitResident((struct Resident *)&Dos_resident,0));
+    AddLibrary((struct Library *)InitResident((struct Resident *)&Graphics_resident,0));
+    AddLibrary((struct Library *)InitResident((struct Resident *)&Intuition_resident,0));
+
+    DOSBase = (struct DosBase *) OpenLibrary (DOSNAME, 39);
+
+    if (!DOSBase)
+    {
+	fprintf (stderr, "Cannot open dos.library");
+	exit (10);
+    }
 
     {
 	struct emulbase
 	{
-	    struct Device device;
-	    struct Unit *stdin;
-	    struct Unit *stdout;
-	    struct Unit *stderr;
+	    struct Device eb_device;
+	    struct Unit *eb_stdin;
+	    struct Unit *eb_stdout;
+	    struct Unit *eb_stderr;
 	};
 
 	struct emulbase *emulbase;
@@ -218,14 +246,14 @@ int main(int argc,char *argv[])
 	struct TagItem fhtags[]=
 	{ { TAG_END, 0 } };
 
-	struct FileHandle *stdin=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
-	struct FileHandle *stdout=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
+	struct FileHandle *fh_stdin=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
+	struct FileHandle *fh_stdout=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,fhtags);
 
 	struct TagItem bootprocess[]=
 	{
 	    { NP_Entry, (ULONG)boot },
-	    { NP_Input, MKBADDR(stdin) },
-	    { NP_Output, MKBADDR(stdout) },
+	    { NP_Input, MKBADDR(fh_stdin) },
+	    { NP_Output, MKBADDR(fh_stdout) },
 	    { NP_Name, (ULONG)"Boot process" },
 	    { NP_StackSize, 8000 }, /* linux's printf needs that much. */
 	    { NP_Cli, 1 },
@@ -233,17 +261,17 @@ int main(int argc,char *argv[])
 	};
 
 	emulbase=(struct emulbase *)InitResident((struct Resident *)&emul_handler_resident,0);
-	AddDevice(&emulbase->device);
+	AddDevice(&emulbase->eb_device);
 
 	AssignLock("C",Lock("SYS:c",SHARED_LOCK));
 	AssignLock("S",Lock("SYS:s",SHARED_LOCK));
 	AssignLock("Libs",Lock("SYS:libs",SHARED_LOCK));
 	AssignLock("Devs",Lock("SYS:devs",SHARED_LOCK));
 
-	stdin->fh_Device=&emulbase->device;
-	stdin->fh_Unit	=emulbase->stdin;
-	stdout->fh_Device=&emulbase->device;
-	stdout->fh_Unit  =emulbase->stdout;
+	fh_stdin->fh_Device=&emulbase->eb_device;
+	fh_stdin->fh_Unit  =emulbase->eb_stdin;
+	fh_stdout->fh_Device=&emulbase->eb_device;
+	fh_stdout->fh_Unit  =emulbase->eb_stdout;
 
 	/* Start Multitasking (not yet) * /
 	signal (SIGALRM, timer);
