@@ -8,7 +8,7 @@
 */
 
 #include "utility_intern.h"
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 struct IntNamedObject *
 IntFindNamedObj(struct NameSpace *ns,

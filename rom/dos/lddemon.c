@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1997/01/27 00:36:23  ldp
+    Polish
+
     Revision 1.11  1997/01/16 17:42:13  digulla
     Polish
 
@@ -14,9 +17,9 @@
 #include <exec/memory.h>
 #include <exec/errors.h>
 #include <exec/libraries.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include "dos_intern.h"
 
 static BPTR LDLoad(STRPTR name, STRPTR basedir, struct DosLibrary *DOSBase)

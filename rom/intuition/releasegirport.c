@@ -6,13 +6,13 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
     NAME */
 #include <graphics/rastport.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(void, ReleaseGIRPort,
 

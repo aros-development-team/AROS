@@ -10,7 +10,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH4(BOOL, Fault,
 

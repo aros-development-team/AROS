@@ -5,13 +5,13 @@
     Desc:
     Lang: english
 */
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(ULONG, LockIBase,
 

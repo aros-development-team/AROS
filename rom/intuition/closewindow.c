@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1997/01/27 00:36:36  ldp
+    Polish
+
     Revision 1.8  1996/12/10 14:00:01  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -38,8 +41,8 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <clib/exec_protos.h>
-#include <clib/graphics_protos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
 
 #ifndef DEBUG_CloseWindow
 #   define DEBUG_CloseWindow 0
@@ -53,7 +56,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(void, CloseWindow,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:36:35  ldp
+    Polish
+
     Revision 1.5  1996/12/10 13:59:59  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -29,7 +32,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(void, ActivateWindow,
 

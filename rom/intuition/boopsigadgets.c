@@ -10,7 +10,7 @@
 #include <intuition/classusr.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/intuitionbase.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 void RefreshBoopsiGadget (struct Gadget * gadget, struct Window * win,
 	struct IntuitionBase * IntuitionBase)

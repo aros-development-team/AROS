@@ -6,10 +6,10 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosasl.h>
-#include <clib/dos_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/dos.h>
+#include <proto/aros.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
 

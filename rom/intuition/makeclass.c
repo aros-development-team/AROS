@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:36:40  ldp
+    Polish
+
     Revision 1.5  1996/12/10 14:00:05  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -27,14 +30,14 @@
 #define AROS_ALMOST_COMPATIBLE
 #include <exec/lists.h>
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include "intuition_intern.h"
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/classes.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH5(struct IClass *, MakeClass,
 

@@ -6,7 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 /*****************************************************************************
 
@@ -14,7 +14,7 @@
 #include <graphics/rastport.h>
 #include <graphics/rpattr.h>
 #include <utility/tagitem.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH2(void, SetRPAttrsA,
 

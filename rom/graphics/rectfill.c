@@ -12,7 +12,7 @@
 
     NAME */
 #include <graphics/rastport.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH5(void, RectFill,
 

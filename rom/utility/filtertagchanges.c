@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.3  1997/01/27 00:32:30  ldp
+    Polish
+
     Revision 1.2  1997/01/09 12:54:13  digulla
     Added parentheses around if (a=b)
 
@@ -15,7 +18,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 	AROS_LH3(void, FilterTagChanges,
 

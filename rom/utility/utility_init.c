@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 00:32:33  ldp
+    Polish
+
     Revision 1.6  1996/10/24 15:49:28  aros
     Use the new "AROS" macros
 
@@ -28,7 +31,7 @@
     Lang:
 */
 #include <exec/resident.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include "utility_intern.h"

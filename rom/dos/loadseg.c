@@ -6,7 +6,7 @@
     Lang: english
 */
 #include <dos/dos.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <dos/dosextens.h>
 #define DEBUG 1
 #include <aros/debug.h>
@@ -19,7 +19,7 @@ BPTR LoadSeg_AOUT(BPTR file);
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH1(BPTR, LoadSeg,
 

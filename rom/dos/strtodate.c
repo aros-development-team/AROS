@@ -11,7 +11,7 @@
 
     NAME */
 #include <dos/datetime.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH1(LONG, StrToDate,
 

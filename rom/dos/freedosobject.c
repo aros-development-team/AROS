@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:36:21  ldp
+    Polish
+
     Revision 1.5  1996/12/09 13:53:29  aros
     Added empty templates for all missing functions
 
@@ -21,14 +24,14 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/exall.h>
 #include "dos_intern.h"
 
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH2(void, FreeDosObject,
 

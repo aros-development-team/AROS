@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.6  1997/01/27 00:32:32  ldp
+    Polish
+
     Revision 1.5  1996/11/21 16:41:05  aros
     Includes must start in the first column
 
@@ -29,7 +32,7 @@
 
     NAME */
 #include <utility/tagitem.h>
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 	AROS_LH3(ULONG, PackBoolTags,
 

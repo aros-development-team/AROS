@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/01/27 00:36:21  ldp
+    Polish
+
     Revision 1.1  1996/11/25 15:50:57  aros
     Two new functions
 
@@ -13,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH4(LONG, FWrite,
 

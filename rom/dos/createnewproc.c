@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.11  1997/01/27 00:36:15  ldp
+    Polish
+
     Revision 1.10  1996/12/09 13:53:23  aros
     Added empty templates for all missing functions
 
@@ -31,13 +34,13 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 #include "dos_intern.h"
 
 #define NEWLIST(l)                          \
@@ -52,7 +55,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH1(struct Process *, CreateNewProc,
 

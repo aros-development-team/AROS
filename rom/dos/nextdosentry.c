@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/01/27 00:36:26  ldp
+    Polish
+
     Revision 1.2  1996/12/09 13:53:35  aros
     Added empty templates for all missing functions
 
@@ -20,7 +23,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH2I(struct DosList *, NextDosEntry,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1997/01/27 00:36:24  ldp
+    Polish
+
     Revision 1.1  1996/12/22 11:42:46  iaint
     Finally, support for loading binaries in a.out format.
 
@@ -10,10 +13,10 @@
     Lang: English.
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosasl.h>
-#include <clib/dos_protos.h>
-#include <clib/aros_protos.h>
+#include <proto/dos.h>
+#include <proto/aros.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
 #include <aros/machine.h>

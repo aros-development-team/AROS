@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/01/27 00:32:30  ldp
+    Polish
+
     Revision 1.4  1996/12/27 08:19:34  iaint
     Use UFC macro for registerized params
 
@@ -14,7 +17,7 @@
 
     NAME */
 #include <utility/hooks.h>
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 	AROS_LH3(ULONG, CallHookPkt,
 

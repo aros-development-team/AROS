@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1997/01/27 00:36:17  ldp
+    Polish
+
     Revision 1.9  1996/10/24 15:50:26  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -37,11 +40,11 @@
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <exec/libraries.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/libcall.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include <utility/tagitem.h>
 #include "dos_intern.h"
 

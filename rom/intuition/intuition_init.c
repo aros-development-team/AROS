@@ -11,13 +11,13 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
-#include <clib/exec_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/alib_protos.h>
+#include <proto/exec.h>
+#include <proto/intuition.h>
+#include <proto/alib.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif

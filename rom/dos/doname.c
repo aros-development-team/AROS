@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1997/01/27 00:36:17  ldp
+    Polish
+
     Revision 1.4  1996/10/24 15:32:56  aros
     Added missing include
 
@@ -18,11 +21,11 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
-#include <clib/dos_protos.h>
-#include <clib/utility_protos.h>
+#include <proto/dos.h>
+#include <proto/utility.h>
 #include <string.h>
 #include "dos_intern.h"
 

@@ -7,8 +7,8 @@
 */
 #include "intuition_intern.h"
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
-#include <clib/graphics_protos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
 
 #ifndef DEBUG_OpenScreen
 #   define DEBUG_OpenScreen 0
@@ -23,7 +23,7 @@
 
     NAME */
 #include <intuition/screens.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(struct Screen *, OpenScreen,
 

@@ -6,13 +6,13 @@
     Lang: english
 */
 #include <exec/resident.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <exec/execbase.h>
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 #include <utility/utility.h>
 #include "graphics_intern.h"
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 00:36:40  ldp
+    Polish
+
     Revision 1.6  1996/12/10 14:00:05  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -28,13 +31,13 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <intuition/intuition.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH2(BOOL, ModifyIDCMP,
 

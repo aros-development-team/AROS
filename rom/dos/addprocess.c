@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1997/01/27 00:36:13  ldp
+    Polish
+
     Revision 1.2  1996/08/01 17:40:47  digulla
     Added standard header for all files
 
@@ -9,7 +12,7 @@
     Lang: english
 */
 #include <dos/dosextens.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include "dos_intern.h"
 
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,

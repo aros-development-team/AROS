@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.4  1997/01/27 00:32:30  ldp
+    Polish
+
     Revision 1.3  1996/12/10 14:00:13  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -18,7 +21,7 @@
 /*****************************************************************************
 
     NAME */
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
         AROS_LH1(ULONG, Date2Amiga,
 

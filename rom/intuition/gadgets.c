@@ -9,7 +9,7 @@
 #include "gadgets.h"
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 #define EG(o) ((struct ExtGadget *)o)
 

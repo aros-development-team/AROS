@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/27 00:36:37  ldp
+    Polish
+
     Revision 1.6  1996/12/10 14:00:02  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -28,14 +31,14 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
     NAME */
 #include <graphics/rastport.h>
 #include <intuition/intuition.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH4(void, DrawBorder,
 

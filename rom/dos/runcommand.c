@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1997/01/27 00:36:29  ldp
+    Polish
+
     Revision 1.9  1996/12/09 13:53:40  aros
     Added empty templates for all missing functions
 
@@ -32,10 +35,10 @@
     Lang: english
 */
 #include <exec/memory.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/filesystem.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 #include "dos_intern.h"
 
 LONG AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
@@ -45,7 +48,7 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
 /*****************************************************************************
 
     NAME */
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH4(LONG, RunCommand,
 

@@ -8,13 +8,13 @@
 #include "graphics_intern.h"
 #include <exec/memory.h>
 #include <graphics/rastport.h>
-#include <clib/exec_protos.h>
+#include <proto/exec.h>
 
 /*****************************************************************************
 
     NAME */
 #include <graphics/rastport.h>
-#include <clib/graphics_protos.h>
+#include <proto/graphics.h>
 
 	AROS_LH1(struct RastPort *, CloneRastPort,
 

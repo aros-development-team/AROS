@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1997/01/27 00:36:41  ldp
+    Polish
+
     Revision 1.3  1996/12/10 14:00:06  aros
     Moved #include into first column to allow makedepend to see it.
 
@@ -16,14 +19,14 @@
     Lang: english
 */
 #include "intuition_intern.h"
-#include <clib/utility_protos.h>
+#include <proto/utility.h>
 
 /*****************************************************************************
 
     NAME */
 #include <utility/tagitem.h>
 #include <intuition/screens.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH2(struct Screen *, OpenScreenTagList,
 

@@ -8,8 +8,8 @@
 #include "intuition_intern.h"
 #include <exec/memory.h>
 #include <intuition/intuition.h>
-#include <clib/exec_protos.h>
-#include <clib/graphics_protos.h>
+#include <proto/exec.h>
+#include <proto/graphics.h>
 
 #ifndef DEBUG_OpenWindow
 #   define DEBUG_OpenWindow 0
@@ -24,7 +24,7 @@
 
     NAME */
 #include <intuition/intuition.h>
-#include <clib/intuition_protos.h>
+#include <proto/intuition.h>
 
 	AROS_LH1(struct Window *, OpenWindow,
 

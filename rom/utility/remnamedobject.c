@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1997/01/27 00:32:32  ldp
+    Polish
+
     Revision 1.1  1996/12/18 01:27:36  iaint
     NamedObjects
 
@@ -12,7 +15,7 @@
 /*****************************************************************************
 
     NAME */
-        #include <clib/utility_protos.h>
+        #include <proto/utility.h>
 
         AROS_LH2(void, RemNamedObject,
 

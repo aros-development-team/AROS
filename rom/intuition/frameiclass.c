@@ -21,23 +21,16 @@
 #include <utility/tagitem.h>
 #include <utility/hooks.h>
 
-#include <clib/macros.h>
+#include <proto/macros>
 
-#ifdef _SASC
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
-#elif __GNUC__
-#include <clib/exec_protos.h>
-#include <clib/intuition_protos.h>
-#include <clib/graphics_protos.h>
-#include <clib/utility_protos.h>
-#endif
 
 #ifdef _AROS
 #include <aros/asmcall.h>
-#include <clib/alib_protos.h>
+#include <proto/alib.h>
 #include "intuition_intern.h"
 #endif
 

@@ -11,7 +11,7 @@
 
     NAME */
 #include <utility/tagitem.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH2(LONG, SystemTagList,
 

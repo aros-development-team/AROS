@@ -1,6 +1,9 @@
 /*
     $Id$
     $Log$
+    Revision 1.2  1997/01/27 00:32:30  ldp
+    Polish
+
     Revision 1.1  1996/12/18 01:27:35  iaint
     NamedObjects
 
@@ -13,7 +16,7 @@
 
     NAME */
         #include <utility/name.h>
-        #include <clib/utility_protos.h>
+        #include <proto/utility.h>
 
         AROS_LH3(struct NamedObject *, FindNamedObject,
 

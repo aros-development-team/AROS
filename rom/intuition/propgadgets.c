@@ -5,8 +5,8 @@
     Desc: Code for PROP Gadgets
     Lang: english
 */
-#include <clib/graphics_protos.h>
-#include <clib/intuition_protos.h>
+#include <proto/graphics.h>
+#include <proto/intuition.h>
 #include "intuition_intern.h"
 #include "propgadgets.h"
 #include "gadgets.h"

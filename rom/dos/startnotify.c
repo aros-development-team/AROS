@@ -11,7 +11,7 @@
 
     NAME */
 #include <dos/notify.h>
-#include <clib/dos_protos.h>
+#include <proto/dos.h>
 
 	AROS_LH1(BOOL, StartNotify,
 
