@@ -19,20 +19,17 @@ FUNCS :=    addclass		\
 	    removeclass		\
 	    setattrs
 
-#MM- kernel-oop : includes linklibs
-#MM- kernel-oop-linklib : includes linklibs
-
 USER_CFLAGS := -DAROS_USE_OOP
 
-%build_module_macro mmake=kernel-oop \
+#MM kernel-oop-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-utility-includes
+
+%build_module mmake=kernel-oop \
   modname=oop modtype=library \
-  funcs=$(FUNCS) files=$(FILES) \
-  conffile=lib.conf \
-  uselibs=arosc
+  files="oop_init $(FUNCS) $(FILES)" \
 
 #MM includes-copy
 
 INCLUDE_FILES := $(wildcard include/*.h)
 %copy_includes path=oop
-
-%common
