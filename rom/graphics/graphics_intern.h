@@ -59,10 +59,10 @@ struct GfxBase_intern
 #define XCOORD_TO_WORDIDX( x ) 	(( x ) >> 4)
 
 #define COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-				( ((y) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
+				( ( ((LONG)(y)) * (bytes_per_row)) + XCOORD_TO_BYTEIDX(x))
 
 #define CHUNKY8_COORD_TO_BYTEIDX(x, y, bytes_per_row)	\
-				( ((y) * (bytes_per_row)) + (x) )
+				( ( ((LONG)(y)) * (bytes_per_row)) + (x) )
 		
 #define XCOORD_TO_MASK(x) 	(1L << (7 - ((x) & 0x07)))
 
