@@ -40,14 +40,19 @@ Sorry, no Amiga port at this time.
 If you want to contribute, read README.CVS. Right now, you need access
 to a Unix site to do this (or a friend you trust) to generate a password.
 
-Where to find more infos ? Look at these pages on WorldWideWaiting:
+Where to find more infos ? Look at these pages on WorldWideWait:
 
-http://www.lysator.liu.se/amiga/aros/ (official site)
-http://colombo.telis-sc.fr/AmigOS/ (AOS (_not_ AROS) site)
-http://ernie.mi.uni-koeln.de/AmigOS (AOS mirror)
+    http://www.lysator.liu.se/amiga/aros/ (official site)
+    http://colombo.telis-sc.fr/AmigOS/ (AOS (_not_ AROS) site)
+    http://ernie.mi.uni-koeln.de/AmigOS (AOS mirror)
 
 Please note that these pages are not under central control yet and therefore
 may contain quite different contents.
+
+If you have FTP, you can also get the most recent version as tar.gz files
+from
+
+    ftp://wi-pc44.fh-konstanz.de/pub/aros/
 
 This software is subject to the "Standard Amiga FD-Software Copyright Note".
 It is MAILWARE as defined in paragraph 4s.
