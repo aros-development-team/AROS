@@ -7,7 +7,7 @@
 
 extern struct ExecBase *SysBase;
 
-const UBYTE ver[] = "$VER: printresmodules 41.2 (15.3.97)\n\r";
+const UBYTE ver[] = "$VER: printresmodules 41.2 (15.3.1997)\n\r";
 const UBYTE nul[] = "(null)";
 
 void ResType(UBYTE);

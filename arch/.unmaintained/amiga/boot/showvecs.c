@@ -15,7 +15,7 @@
 
 extern struct ExecBase *SysBase;
 
-const UBYTE ver[] = "$VER: showvecs 41.2 (14.3.97)\n\r";
+const UBYTE ver[] = "$VER: showvecs 41.2 (14.3.1997)\n\r";
 
 int main(void)
 {
