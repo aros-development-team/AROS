@@ -35,9 +35,6 @@ UBYTE inputLoop()
 		menuNumber = intuiMessage->Code;
 		gadget = (struct Gadget *)intuiMessage->IAddress;
 
-		GT_ReplyIMsg(intuiMessage);
-		kprintf("GT_ReplyIMsg()!\n");
-
 		if(HandleRegisterTabInput(appGUIData->agd_RegisterTab, intuiMessage))
 		{
 		    processRegisterTab(); // Deal with register tab
@@ -214,12 +211,9 @@ UBYTE inputLoop()
 			    kprintf("IDCMP_REFRESHWINDOW!\n");
 
 			    GT_BeginRefresh(appGUIData->agd_Window);
-			    GT_RefreshWindow(appGUIData->agd_Window, NULL); // Do we really need to call GT_RefreshWindow() after actually openening the window? Look it up! 			GT_EndRefresh(appGUIData->agd_Window, TRUE);
+			    RenderRegisterTab(appGUIData->agd_Window->RPort, appGUIData->agd_RegisterTab, TRUE);
+			    GT_EndRefresh(appGUIData->agd_Window, TRUE);
 
-			    // TODO: "Font" currently calls RenderRegisterTab() at IDCMP_REFRESHWINDOW events - OK? (petah)
-			    kprintf("1: OK?\n");
-			    //RenderRegisterTab(appGUIData->agd_Window->RPort, appGUIData->agd_RegisterTab, TRUE);
-			    kprintf("2: OK?\n");
 			break;
 
 			default :
@@ -228,6 +222,9 @@ UBYTE inputLoop()
 		    } // switch(class)
 
 		} // else
+
+		GT_ReplyIMsg(intuiMessage);
+		kprintf("GT_ReplyIMsg()!\n");
 
 	    } // GetIMsg()
 
