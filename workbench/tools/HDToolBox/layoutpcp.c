@@ -392,7 +392,7 @@ struct creategadget pcpgadgets[] =
 		INTEGER_KIND,
 		{
 			155,180,80,15,
-			"Start Sec", NULL,
+			"Start Cyl", NULL,
 			ID_PCP_STARTCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcpstartcyltags
@@ -401,7 +401,7 @@ struct creategadget pcpgadgets[] =
 		INTEGER_KIND,
 		{
 			155,200,80,15,
-			"End Sec", NULL,
+			"End Cyl", NULL,
 			ID_PCP_ENDCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcpendcyltags
@@ -410,7 +410,7 @@ struct creategadget pcpgadgets[] =
 		INTEGER_KIND,
 		{
 			155,220,80,15,
-			"Total Sec", NULL,
+			"Total Cyl", NULL,
 			ID_PCP_TOTALCYL, PLACETEXT_LEFT, NULL, NULL
 		},
 		pcptotalcyltags
