@@ -860,7 +860,7 @@ struct pHidd_BitMap_FillMemRect24
     WORD    	 maxX;
     WORD    	 maxY;
     ULONG   	 dstMod;
-    UWORD   	 fill; 
+    ULONG   	 fill; 
 };
 
 /* Fill rect area in 32 bit memory chunky buffer with pixel */
@@ -1291,7 +1291,7 @@ VOID	HIDD_BM_FillMemRect24 (OOP_Object *obj,
 			       WORD maxX,
 			       WORD maxY,
 			       ULONG dstMod,
-			       UWORD fill);
+			       ULONG fill);
 
 VOID	HIDD_BM_FillMemRect32 (OOP_Object *obj,
     			       APTR dstBuf,
