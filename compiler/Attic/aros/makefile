@@ -49,6 +49,18 @@ $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err; else true ; fi
 
+$(OBJDIR)/kprintf.o: kprintf.c
+	$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err; else true ; fi
+
+$(OBJDIR)/rawputchars.o: rawputchars.c
+	$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err; else true ; fi
+
+$(OBJDIR)/_kprintf.o: _kprintf.c
+	$(SYS_CC) $(CFLAGS) -I$(TOP)/rom/exec $< -c -o $@ 2>&1|tee $*.err
+	@if test ! -s $*.err; then rm $*.err; else true ; fi
+
 $(OBJDIR)/rt_stubs.o: rt_stubs.s
 	$(SYS_AS) $(AFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err; else true ; fi
@@ -59,7 +71,7 @@ $(LIBDIR)/libaros.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
-	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -I$(TOP)/rom/exec -- $^ > $@
 
 ifeq ($(TARGET),clean)
 NODEPS:=yes

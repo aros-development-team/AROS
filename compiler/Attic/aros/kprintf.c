@@ -10,11 +10,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <aros/system.h>
-#define EXEC_PRIVATE_INLINES /* include exec debugging inlines */
 #include <proto/exec.h>
 #include <proto/aros.h>
 #undef kprintf
 #include <unistd.h>
+#include "exec_private.h"
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 

@@ -5,8 +5,8 @@
     Desc: Formats a message and makes sure the user will see it.
     Lang: english
 */
-#define EXEC_PRIVATE_INLINES /* include exec debugging inlines */
 #include <proto/exec.h>
+#include "exec_private.h"
 
 /*****************************************************************************
 
