@@ -68,11 +68,7 @@ static struct abdescr attrbases[] =
 #include "bitmap_common.c"
 
 
- 
-
 /*********** BitMap::New() *************************************/
-
-
 
 static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
@@ -84,6 +80,10 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (o)
     {
     	struct bitmap_data *data;
+	struct TagItem depth_tags[] = {
+	    { aHidd_BitMap_Depth, 0 },
+	    { TAG_DONE, 0 }
+	};
 	
         IPTR width, height, depth;
 	
@@ -112,7 +112,7 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
 	
-	/* Get the X11 window from the friend window */
+	/* Get the X11 window from the friend bitmap */
 	if (NULL != friend) {
 		GetAttr(friend, aHidd_X11BitMap_Drawable, &friend_drawable);
 	} else {
@@ -140,10 +140,15 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	if (depth != 1)
 	{
+LX11	
 	    depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
+UX11
 	}
 	
-	data->depth = depth;
+	/* Update the depth to the one we use */
+	depth_tags[0].ti_Data = depth;
+	SetAttrs(o, depth_tags);
+	
 	
 LX11	
 	DRAWABLE(data) = XCreatePixmap( data->display
@@ -162,14 +167,14 @@ UX11
 	
 	    XGCValues gcval;
 		    
-LX11	    
 
 	    /* Create X11 GC */
 	    D(bug("Creating GC\n"));
 	 
 	    gcval.plane_mask = AllPlanes;
-	    gcval.graphics_exposures = True;
+	    gcval.graphics_exposures = False;
 	 
+LX11	    
 	    data->gc = XCreateGC( data->display
 	 		, DRAWABLE(data)
 			, GCPlaneMask | GCGraphicsExposures
@@ -224,6 +229,7 @@ LX11
     	XFreeGC(data->display, data->gc);
 UX11	
     }
+    
     if (DRAWABLE(data))
     {
 LX11	

@@ -399,7 +399,7 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 	}	
 	else if (drmd & COMPLEMENT)
 	{
-	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_XOR;
+	    gc_tags[3].ti_Data = vHidd_GC_DrawMode_Invert;
 	}
 	else if ((drmd & (~INVERSVID)) == JAM1)
 	{
@@ -486,7 +486,7 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
     }	
     else if (mode & COMPLEMENT)
     {
-	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_XOR;
+	drmd_tags[1].ti_Data = vHidd_GC_DrawMode_Invert;
     }
     else if ((mode & (~INVERSVID)) == JAM1)
     {
@@ -2849,10 +2849,22 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 	    {
 		bm_obj = HIDD_Gfx_NewBitMap(gfxhidd, bm_tags);
 		D(bug("bitmap object: %p\n", bm_obj));
+		
+		
 
 		if (bm_obj)
 		{
-	    
+		   /* 	It is possible that the HIDD had to allocate
+		   	a larger depth than that supplied, so
+		   	we should get back the correct depth.
+		   	This is because layers.library might
+		   	want to allocate offscreen bimaps to
+		   	store obscured areas, and then those
+		   	offscreen bitmaps should be of the same depth as
+		   	the onscreen ones.
+		   */
+		    GetAttr(bm_obj, aHidd_BitMap_Depth, &depth);
+	    	    
 		    /* Store it in plane array */
 		    BM_OBJ(nbm) = bm_obj;
 		    nbm->Rows   = sizey;

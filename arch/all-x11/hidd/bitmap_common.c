@@ -1,4 +1,5 @@
 
+
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
 {
@@ -25,6 +26,13 @@ LX11
 		    XSetBackground(data->display, data->gc, data->hidd2x11cmap[tag->ti_Data]);
 UX11		    
 		    break;
+		    
+		case aoHidd_BitMap_DrawMode :		    
+
+LX11
+		    XSetFunction(data->display, data->gc, tag->ti_Data);
+UX11		    
+		    break;
             }
         }
     }
@@ -35,15 +43,18 @@ UX11
     return;
 }
 
+
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
 #warning Does not deallocate previously allocated colors
     
     
     struct bitmap_data *data = INST_DATA(cl, o);
+    
     ULONG xc_i, col_i;
     
     XColor xc;
+    
     
     EnterFunc(bug("X11Gfx.BitMap::SetColors(num=%d, first=%d)\n",
     		msg->numColors, msg->firstColor));
@@ -86,6 +97,7 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 {
      struct bitmap_data *data = INST_DATA(cl, o);
      ULONG old_fg;
+     
      
      GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
 LX11     
@@ -163,98 +175,31 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     ULONG mode;
+    
+    
     EnterFunc(bug("X11Gfx.BitMap::FillRect(%d,%d,%d,%d)\n",
     	msg->minX, msg->minY, msg->maxX, msg->maxY));
 	
     GetAttr(o, aHidd_BitMap_DrawMode, &mode);
     
     D(bug("Drawmode: %d\n", mode));
-    
-    
-    if (mode == vHidd_GC_DrawMode_Copy)
-    {
-LX11    
-	XFillRectangle(data->display
-		, DRAWABLE(data)
-		, data->gc
-		, msg->minX
-		, msg->minY
-		, msg->maxX - msg->minX + 1
-		, msg->maxY - msg->minY + 1
-	);
+
+// kprintf("fillrect, drmd %d\n", mode);
+
+LX11  
+    XFillRectangle(data->display
+	, DRAWABLE(data)
+	, data->gc
+	, msg->minX
+	, msg->minY
+	, msg->maxX - msg->minX + 1
+	, msg->maxY - msg->minY + 1
+    );
 UX11	
-    }
-    else
-    {
-    	XImage *image;
-	WORD x, y, width, height;
-	ULONG src;
-	GetAttr(o, aHidd_BitMap_Foreground, &src);
-	
-	width  = msg->maxX - msg->minX + 1;
-	height = msg->maxY - msg->minY + 1;
-    	/* Special drawmode */
-	
 
-LX11	
-	image = XGetImage(data->display
-		, DRAWABLE(data)
-		, msg->minX, msg->minY
-		, width, height
-		, AllPlanes
-		, ZPixmap);
-UX11
-		
-	if (!image)
-	    ReturnVoid("X11Gfx.BitMap::FillRect(Couldn't get XImage)");
-	    
-	for (y = 0; y < height; y ++)
-	{
-	    for (x = 0; x < width; x ++)
-	    {
-	        ULONG dest;
-		ULONG val = 0UL;
-		ULONG pixel;
-		
-
-		pixel = XGetPixel(image, x, y);
-		
-		
-		dest = map_x11_to_hidd(data->hidd2x11cmap,  pixel /* XGetPixel(image, x, y) */);
-
-
-		/* Apply drawmodes to pixel */
-	   	if(mode & 1) val = ( src &  dest);
-	   	if(mode & 2) val = ( src & ~dest) | val;
-	   	if(mode & 4) val = (~src &  dest) | val;
-	   	if(mode & 8) val = (~src & ~dest) | val;
-		
-		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
-
-	    }
-	    
-	}  
-	D(bug("Putting image at (%d, %d), w=%d, h=%d\n",
-		msg->minX, msg->minY, width, height ));
-		
-	/* Put image back into display */
-LX11
-	XPutImage(data->display
-    		, DRAWABLE(data)
-		, data->gc
-		, image
-		, 0, 0
-		, msg->minX, msg->minY
-		, width, height);
-	    
-	D(bug("image put\n"));
-
-	XDestroyImage(image);
-UX11	
-	D(bug("image destroyed\n"));
-    }
    
     D(bug("Flushing\n"));
+
 
 LX11
     XFlush(data->display);
@@ -315,134 +260,86 @@ UX11
 
 static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
 {
-    ULONG mode;
+    ULONG mode, depth;
     WORD x, y;
     ULONG *pixarray = msg->pixels;
     struct bitmap_data *data;
     XImage *image;
-    BOOL imdata_allocated_by_x;
+    int bperline;
+    void *imdata;
+    
 
     EnterFunc(bug("X11Gfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
     data = INST_DATA(cl, o);
     GetAttr(o, aHidd_BitMap_DrawMode, &mode);
+    GetAttr(o, aHidd_BitMap_Depth, &depth);
 
 
-    D(bug("drawmode: %d\n", mode));
-    if (mode == vHidd_GC_DrawMode_Copy)
-    {
-    	int bperline;
-	void *imdata;
 LX11	
-    	image = XCreateImage(data->display
-		, DefaultVisual(data->display, data->screen)
-		, data->depth
-		, ZPixmap
-		, 0
-		, NULL
-		, msg->width, msg->height
-		, 32
-		, 0
-	);
+    image = XCreateImage(data->display
+	, DefaultVisual(data->display, data->screen)
+	, depth
+	, ZPixmap
+	, 0
+	, NULL
+	, msg->width, msg->height
+	, 32
+	, 0
+    );
 UX11	
-	if (!image)
-    		ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
+    if (!image)
+    	ReturnVoid("X11Gfx.BitMap::PutImage(XCreateImage failed)");
 	    
-	bperline	= image->bytes_per_line;
+    bperline	= image->bytes_per_line;
 	
-	imdata = malloc((size_t)msg->height * bperline);
-	if (!imdata)
-	{
-	    XFree(image);
-    	    ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
-	}
-	
-	imdata_allocated_by_x = FALSE;
-	
-	image->data = (char *)imdata;
-	
-	
-        D(bug("Drawmode COPY\n"));
-    	/* Do plain copy, optimized */
-	for (y = 0; y < msg->height; y ++)
-	{
-	    for (x = 0; x < msg->width; x ++)
-	    {
-	    	if (data->depth == 1) {
-			XPutPixel(image, x, y, *pixarray ++);
-		} else {
-			XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
-		}
-		
-	    }
-	    
-	}
-	
-	
-    }
-    else
+    imdata = malloc((size_t)msg->height * bperline);
+    if (!imdata)
     {
-LX11    
-	image = XGetImage(data->display
-		, DRAWABLE(data)
+LX11	
+	XFree(image);
+UX11	    
+    	ReturnVoid("X11Gfx.BitMap::PutImage(malloc(image data) failed)");
+    }
+	
+    image->data = (char *)imdata;
+	
+    for (y = 0; y < msg->height; y ++)
+    {
+	for (x = 0; x < msg->width; x ++)
+	{
+	    if (depth == 1) {
+		XPutPixel(image, x, y, *pixarray ++);
+	    } else {
+		XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
+	    }
+		
+	}
+	    
+    }
+
+LX11
+
+   XSetFunction(data->display, data->gc, mode);
+   XPutImage(data->display
+    		, DRAWABLE(data)
+		, data->gc
+		, image
+		, 0, 0
 		, msg->x, msg->y
 		, msg->width, msg->height
-		, AllPlanes
-		, ZPixmap
-    	);
-UX11
-	if (!image)
-	    ReturnVoid("X11Gfx.BitMap::PutImage(couldn't get XImage)");
+   );
 
-	imdata_allocated_by_x = TRUE;
-     	   
-	for (y = 0; y < msg->height; y ++)
-	{
-	    for (x = 0; x < msg->width; x ++)
-	    {
-    		/* Drawmodes make things more complicated */
-		ULONG src;
-		ULONG dest;
-		ULONG val = 0;
-
-		src  = *pixarray ++;
-		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(image, x, y));
-		    
-		/* Apply drawmodes to hidd pen */
-	   	if(mode & 1) val = ( src &  dest);
-	   	if(mode & 2) val = ( src & ~dest) | val;
-	   	if(mode & 4) val = (~src &  dest) | val;
-	   	if(mode & 8) val = (~src & ~dest) | val;
-		
-		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
-	    }
-	}
-    }
-    /* Put image back into display */
-
-LX11    
-
-    XPutImage(data->display
-    	, DRAWABLE(data)
-	, data->gc
-	, image
-	, 0, 0
-	, msg->x, msg->y
-	, msg->width, msg->height
-    );
-    
-    if (imdata_allocated_by_x)
-    {
-	XDestroyImage(image);
-    }
-    else
-    {
-    	free(image->data);
-	XFree(image);
-    }
     XFlush(data->display);
+UX11    
+
+    free(image->data);
+    
+LX11    
+    XFree(image);
 UX11   
+
    ReturnVoid("X11Gfx.BitMap::PutImage");
 
    
@@ -490,11 +387,15 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
     
     if (0 != d)
     {
+
+// kprintf("D");
 LX11    
 	XSetForeground(data->display, data->gc, fg_pixel);
+UX11	
     	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
 //	    kprintf("XCP\n");
+LX11
 	    XSetBackground(data->display, data->gc, bg_pixel);
 	    
 	    XCopyPlane(data->display
@@ -505,6 +406,7 @@ LX11
 		, msg->destX, msg->destY
 		, 0x01
 	    );
+UX11	    
 	} else {
 	    /* Do transparent blit */
 	    
@@ -518,35 +420,27 @@ LX11
 
 //	    kprintf(" XSS\n");
 
+LX11
 	    XChangeGC(data->display
 	    	, data->gc
 		, GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle
 		, &val
 	    );
-/*
-	    XSetStipple(data->display, data->gc, d);
-	    XSetTSOrigin(data->display
-	    	, data->gc
-		, msg->destX - msg->srcX
-		, msg->destY - msg->srcY
-	    );
-	    XSetFillStyle(data->display, data->gc, FillStippled);
-*/
 	    XFillRectangle(data->display
 	    	, DRAWABLE(data)
 		, data->gc
 		, msg->destX, msg->destY
 		, msg->width, msg->height
 	    );
-	    
 	    XSetFillStyle(data->display, data->gc, FillSolid);
-	}
 
 UX11	
+	}
+
     }
     else
     {
-    	/* We now nothing about the format of the source bitmap
+    	/* We know nothing about the format of the source bitmap
 	   an must get single pixels
 	*/
 
@@ -602,13 +496,18 @@ LX11
     	XDestroyImage(dest_im);
 UX11
     }
-    
 
+#if 0    
 LX11
     XFlush(data->display);
-UX11    
+UX11 
+#endif   
     ReturnVoid("X11Gfx.BitMap::BlitColorExpansion");
 }
+
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
 
 /*********  BitMap::CopyBox()  *************************************/
 static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
@@ -643,93 +542,22 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     	dest = DRAWABLE(data);
     }
 
-    if (mode == vHidd_GC_DrawMode_Copy) /* Optimize this drawmode */
-    {
 LX11
-    	XCopyArea(data->display
-    		, DRAWABLE(data)	/* src	*/
-		, dest			/* dest */
-		, data->gc
-		, msg->srcX
-		, msg->srcY
-		, msg->width
-		, msg->height
-		, msg->destX
-		, msg->destY
-    	);
-    
-UX11
-    }
-    else
-    {
-	XImage *src_image, *dst_image;
-	WORD x, y;
-LX11	
-	src_image = XGetImage(data->display
-		, DRAWABLE(data)
-		, msg->srcX, msg->srcY
-		, msg->width, msg->height
-		, AllPlanes
-		, ZPixmap);
-UX11		
-	if (!src_image)
-	    ReturnVoid("X11Gfx.BitMap::CopyBox(Couldn't get source XImage)");
-	
-LX11	    
-	dst_image = XGetImage(data->display
-		, DRAWABLE(data)
-		, msg->destX, msg->destY
-		, msg->width, msg->height
-		, AllPlanes
-		, ZPixmap);
-UX11		
-	if (!dst_image)
-	{
-LX11
-	    XDestroyImage(src_image);
-UX11
-	    ReturnVoid("X11Gfx.BitMap::CopyBox(Couldn't get destination XImage)");
-	}
-     	   
-	for (y = 0; y < msg->height; y ++)
-	{
-	    for (x = 0; x < msg->width; x ++)
-	    {
-    		/* Drawmodes make things more complicated */
-		ULONG src;
-		ULONG dest;
-		ULONG val = 0;
-		
-		src  = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(src_image, x, y));
-		dest = map_x11_to_hidd(data->hidd2x11cmap, XGetPixel(dst_image, x, y));
-		    
-		/* Apply drawmodes to pixel */
-	   	if(mode & 1) val = ( src &  dest);
-	   	if(mode & 2) val = ( src & ~dest) | val;
-	   	if(mode & 4) val = (~src &  dest) | val;
-	   	if(mode & 8) val = (~src & ~dest) | val;
-		
-		XPutPixel(dst_image, x, y, data->hidd2x11cmap[val]);
-	    }
-	}
-	/* Put image back into display */
-LX11
-	XPutImage(data->display
-    		, dest
-		, data->gc
-		, dst_image
-		, 0, 0
-		, msg->destX, msg->destY
-		, msg->width, msg->height);
-	
 
-	XDestroyImage(src_image);
-	XDestroyImage(dst_image);
-UX11
+    XSetFunction(data->display, data->gc, mode);
+
+    XCopyArea(data->display
+    	, DRAWABLE(data)	/* src	*/
+	, dest			/* dest */
+	, data->gc
+	, msg->srcX
+	, msg->srcY
+	, msg->width
+	, msg->height
+	, msg->destX
+	, msg->destY
+    );
 	
-    }
-    
-LX11    
     XFlush(data->display);
 UX11    
     ReturnVoid("X11Gfx.BitMap::CopyBox");

@@ -34,9 +34,6 @@
 
 
 
-#define SDEBUG 0
-#define DEBUG 0
-#include <aros/debug.h>
 
 
 #include "bitmap.h"
@@ -64,9 +61,12 @@ static struct abdescr attrbases[] =
 
 /* !!! Include methods whose implementation is eqaul for windows and pixmaps
  (except the DRAWABLE) */
+
+#define SDEBUG 0
+#define DEBUG 0
+#include <aros/debug.h>
  
 #include "bitmap_common.c"
-
 
 /*********** BitMap::New() *************************************/
 
@@ -80,6 +80,11 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
     if (o)
     {
     	struct bitmap_data *data;
+	struct TagItem depth_tags[] = {
+	    { aHidd_BitMap_Depth, 0 },
+	    { TAG_DONE, 0 }
+	};
+	Window rootwin;
 	
         IPTR width, height, depth;
 	XSetWindowAttributes winattr;
@@ -120,23 +125,28 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    
 	/* Use backing store for now. (Uses lots of mem) */
 	winattr.backing_store = Always;
-	    
+LX11	
+    
 	winattr.cursor = GetSysCursor();
 	winattr.save_under = True;
 	winattr.background_pixel = WhitePixel(GetSysDisplay(), GetSysScreen());
+	rootwin = DefaultRootWindow (GetSysDisplay());
 	    
-	D(bug("Creating XWindow\n"));
+	D(bug("Creating XWindow: root win=%p\n", rootwin));
+	depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
 	
-	data->depth = DefaultDepth(GetSysDisplay(), GetSysScreen());
-LX11	
+	/* Update the depth to the one we use */
+	depth_tags[0].ti_Data = depth;
+	SetAttrs(o, depth_tags);
+	
 	DRAWABLE(data) = XCreateWindow( GetSysDisplay()
-	    		, DefaultRootWindow (GetSysDisplay())
+	    		, rootwin
 			, 0	/* leftedge 	*/
 			, 0	/* topedge	*/
 			, width
 			, height
 			, 0	/* BorderWidth	*/
-			, data->depth
+			, depth
 			, InputOutput
 			, DefaultVisual (GetSysDisplay(), GetSysScreen())
 			, CWBackingStore
@@ -159,7 +169,7 @@ LX11
 	    /* Create X11 GC */
 	 
 	    gcval.plane_mask = AllPlanes;
-	    gcval.graphics_exposures = True;
+	    gcval.graphics_exposures = False;
 	 
 	    data->gc = XCreateGC( data->display
 	 		, DRAWABLE(data)
