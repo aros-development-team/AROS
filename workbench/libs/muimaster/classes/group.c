@@ -2302,6 +2302,7 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
 #endif
     case MUIM_CallHook:
     case MUIM_DrawBackground:
+    case MUIM_DrawParentBackground:
     case MUIM_DragBegin:
     case MUIM_DragDrop: 
     case MUIM_DragQuery:

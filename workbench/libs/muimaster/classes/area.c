@@ -760,7 +760,7 @@ void __area_finish_minmax(Object *obj, struct MUI_MinMax *MinMaxInfo)
 /*
  * draw object background if MADF_FILLAREA.
  */
-static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data)
+static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data, ULONG flags)
 {
     struct MUI_ImageSpec_intern *background;
     int left,top,width,height;
@@ -802,6 +802,13 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data)
 /*  	D(bug(" Area_Draw(%p):%ld: zune_imspec_draw\n", obj, __LINE__)); */
 	zune_imspec_draw(background, data->mad_RenderInfo,
 			 left, top, width, height, left, top, 0);
+    }
+
+    if (top > _top(obj) && !(flags & MADF_DRAWALL))
+    {
+	/* Fill in the gap produced by the title with the background of the parent object but only if
+	 * the upper object hasn't drawn it already (which is the case if MADF_DRAWALL is setted) */
+	DoMethod(obj, MUIM_DrawParentBackground, left, _top(obj), width, top - _top(obj) + 1, left, top, data->mad_Flags);
     }
 }
 
@@ -958,7 +965,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
     /* Background drawing */
     if (data->mad_Flags & MADF_FILLAREA)
     {
-	Area_Draw__handle_background(obj, data);
+	Area_Draw__handle_background(obj, data, msg->flags);
     }
 
     /* Frame and frametitle drawing */
@@ -998,6 +1005,31 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 }
 
 /**************************************************************************
+ MUIM_DrawParentBackground
+**************************************************************************/
+static ULONG Area_DrawParentBackground(struct IClass *cl, Object *obj, struct MUIP_DrawParentBackground *msg)
+{
+    struct MUI_AreaData *data = INST_DATA(cl, obj);
+    Object *parent;
+
+    if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
+	return FALSE;
+
+    get(obj, MUIA_Parent, &parent);
+    if (parent)
+    {
+    	DoMethod(parent, MUIM_DrawBackground, msg->left, msg->top,
+		 msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+    }
+    else
+    {
+    	DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
+		 msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
+    }
+    return TRUE;
+}
+
+/**************************************************************************
  MUIM_DrawBackground
 **************************************************************************/
 static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
@@ -1024,20 +1056,11 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
 
     if (!bg)
     {
-    	Object *parent;
-    	get(obj, MUIA_Parent, &parent);
-    	if (parent)
-	{
-/*  	    D(bug("Area_DrawBackground(%p): to parent\n", obj)); */
-	    DoMethodA(parent, (Msg)msg);
-	}
-    	else
-	{
-/*  	    D(bug("Area_DrawBackground(%p): MUIM_Window_DrawBackground\n", obj)); */
-	    DoMethod(_win(obj), MUIM_Window_DrawBackground, msg->left, msg->top,
+	Object *parent;
+	get(obj, MUIA_Parent, &parent);
+
+	return DoMethod(obj, MUIM_DrawParentBackground, msg->left, msg->top,
 		     msg->width, msg->height, msg->xoffset, msg->yoffset, msg->flags);
-	}
-    	return TRUE;
     }
 
 /*      D(bug("Area_DrawBackground(%p): draw bg\n", obj)); */
@@ -1882,6 +1905,7 @@ BOOPSI_DISPATCHER(IPTR, Area_Dispatcher, cl, obj, msg)
 	case MUIM_AskMinMax: return Area_AskMinMax(cl, obj, (APTR)msg);
 	case MUIM_Draw: return Area_Draw(cl, obj, (APTR)msg);
 	case MUIM_DrawBackground: return Area_DrawBackground(cl, obj, (APTR)msg);
+	case MUIM_DrawParentBackground: return Area_DrawParentBackground(cl, obj, (APTR)msg);
 	case MUIM_Setup: return Area_Setup(cl, obj, (APTR)msg);
 	case MUIM_Cleanup: return Area_Cleanup(cl, obj, (APTR)msg);
 	case MUIM_Show: return Area_Show(cl, obj, (APTR)msg);

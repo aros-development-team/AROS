@@ -273,11 +273,14 @@ enum {
 
 /* The following stuff is Zune only and can is used by some zune subclasses */
 #define MUIM_Layout                 (TAG_USER|0x10429abb)
+#define MUIM_DrawParentBackground	(TAG_USER|0x10429abc)
 struct  MUIP_Layout                 {ULONG MethodID;};
+struct  MUIP_DrawParentBackground   {ULONG MethodID; LONG left; LONG top; LONG width; LONG height; LONG xoffset; LONG yoffset; LONG flags;};
 
 /* The following is considered as private and Zune only! */
 #define MUIM_DragQueryExtended	    (METHOD_USER|0x10092033) /* PRIV - returns a object or NULL */
 #define MUIM_Timer		    (METHOD_USER|0x10092032) /* PRIV */
+
 struct  MUIP_DragQueryExtended	    {ULONG MethodID; Object *obj; LONG x; LONG y;}; /* PRIV */
 struct  MUIP_Timer 		    {ULONG MethodID; }; /* PRIV */
 
