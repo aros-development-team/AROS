@@ -124,8 +124,8 @@ hardware if someone wants to do that.
 
 \begin{itemize}
 \item 
-\begin{new}{17.3.1999}
-Linux/i386 with 2.0.x kernel, 2.2.x not yet,
+\begin{new}{12.10.1999}
+Linux/i386 with 2.x kernel.
 \end{new}
 FreeBSD: Status: everything works. Flavours: Emulation
 \item Amiga/AmigaOS: Status: parts work (like a big SetPatch()). Flavours: Standalone
