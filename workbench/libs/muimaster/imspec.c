@@ -31,7 +31,7 @@
 #include <proto/dos.h>
 #include <clib/alib_protos.h>
 
-/* #define MYDEBUG 1 */
+//#define MYDEBUG 1
 #include "debug.h"
 
 #include "mui.h"
@@ -476,33 +476,46 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    break;
 
 	case IST_BRUSH:
-            {
-                int i;
+	{
+	    int i;
         
-                for (i = 0; i < 2; i++)
-                {
-                    if (spec->u.brush.filename[i])
-                    {
+	    for (i = 0; i < 2; i++)
+	    {
+		if (spec->u.brush.filename[i])
+		{
+		    int size;
+		    STRPTR fullpath;
+
+		    size = strlen(IMSPEC_EXTERNAL_PREFIX)
+			+ strlen(spec->u.brush.filename[i]) + 1;
+		    fullpath = (STRPTR)AllocVec(size, MEMF_ANY);
+		    if (fullpath != NULL)
+		    {
+			strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
+			strcat(fullpath, spec->u.brush.filename[i]);
+			fullpath[size - 1] = 0;
                         spec->u.brush.dt[i] = dt_load_picture
-                        (
-                            spec->u.brush.filename[i], mri->mri_Screen
-                        );
-                    }
-                    else
-                    {
-                        spec->u.brush.dt[i] = spec->u.brush.dt[0];
-                    }
-                }
-            }
-            break;
+			(
+			    fullpath, mri->mri_Screen
+			);
+			FreeVec(fullpath);
+		    }
+		}
+		else
+		{
+		    spec->u.brush.dt[i] = spec->u.brush.dt[0];
+		}
+	    }
+	}
+	break;
             
 	case IST_BITMAP:
 	    if (spec->u.bitmap.filename)
 	    {
 		spec->u.bitmap.dt = dt_load_picture
-                (
-                    spec->u.bitmap.filename, mri->mri_Screen
-                );
+		(
+		    spec->u.bitmap.filename, mri->mri_Screen
+		);
 	    }
 	    break;
 
@@ -567,8 +580,8 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 		if (spec->u.brush.filename[i])
 		{
 		    dt_dispose_picture(spec->u.brush.dt[i]);
-		    spec->u.brush.dt[i] = NULL;
 		}
+		spec->u.brush.dt[i] = NULL;
 	    }
 	    break;
 	}
