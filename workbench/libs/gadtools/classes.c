@@ -480,7 +480,7 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
     
     EnterFunc(bug("Text::Render()\n"));
     
-    if (data->toprint)
+    if (data->toprint || (data->gadgetkind != TEXT_KIND))
     {
 	/* preserve font */
 	oldfont = rp->Font;
@@ -546,7 +546,7 @@ VOID text_render(Class *cl, Object *o, struct gpRender *msg)
 
 	SetFont(rp, oldfont);
 
-    } /* if (data->toprint) */
+    } /* if (data->toprint || (data->gadgetkind != TEXT_KIND)) */
     
     ReturnVoid("Text::Render");
 }
