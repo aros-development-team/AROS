@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/03/16 14:57:53  bergers
+    Pass additional parameter to CheckRectFill.
+
     Revision 1.10  2000/01/19 19:05:01  stegerg
     renamed debug output (was "intui_RefreshWindowFrame")
 
@@ -106,46 +109,58 @@
 	                                              0,  
 	                                              0, 
 	                                              0, 
-	                                              window->Height - 1);
+	                                              window->Height - 1,
+	                                              IntuitionBase);
 
-	    if (window->BorderTop > 0)  CheckRectFill(rp, 0, 0, window->Width - 1, 0);
+	    if (window->BorderTop > 0)  CheckRectFill(rp, 
+	                                              0, 
+	                                              0, 
+	                                              window->Width - 1, 
+	                                              0,
+	                                              IntuitionBase);
 
 	    if (window->BorderRight > 1) CheckRectFill(rp, 
 	                                               window->Width - window->BorderRight,
 	                                               window->BorderTop,
 	    					       window->Width - window->BorderRight,
-	    					       window->Height - window->BorderBottom);
+	    					       window->Height - window->BorderBottom,
+	    					       IntuitionBase);
 	    					       
 	    if (window->BorderBottom > 1) CheckRectFill(rp,
 	                                                window->BorderLeft,
 	                                                window->Height - window->BorderBottom,
 	    					        window->Width - window->BorderRight,
-	    					        window->Height - window->BorderBottom);
+	    					        window->Height - window->BorderBottom,
+	    					        IntuitionBase);
 	    
 	    SetAPen(rp, dri->dri_Pens[SHADOWPEN]);
 	    if (window->BorderRight > 0) CheckRectFill(rp, 
 	                                               window->Width - 1, 
 	                                               1, 
 	                                               window->Width - 1, 
-	                                               window->Height - 1);
+	                                               window->Height - 1,
+	                                               IntuitionBase);
 	                                               
 	    if (window->BorderBottom > 0) CheckRectFill(rp, 
 	                                                1, 
 	                                                window->Height - 1, 
 	                                                window->Width - 1, 
-	                                                window->Height - 1);
+	                                                window->Height - 1,
+	                                                IntuitionBase);
 	                                                
 	    if (window->BorderLeft > 1) CheckRectFill(rp, 
 	                                              window->BorderLeft - 1, 
 	                                              window->BorderTop - 1,
 	    					      window->BorderLeft - 1, 
-	    					      window->Height - window->BorderBottom);
+	    					      window->Height - window->BorderBottom,
+	    					      IntuitionBase);
 	    					      
 	    if (window->BorderTop > 1) CheckRectFill(rp, 
 	                                             window->BorderLeft - 1, 
 	                                             window->BorderTop - 1,
 	    				       	     window->Width - window->BorderRight, 
-	    				       	     window->BorderTop - 1);
+	    				       	     window->BorderTop - 1,
+	    				       	     IntuitionBase);
 	    
 	   
 	    SetAPen(rp, dri->dri_Pens[(window->Flags & WFLG_WINDOWACTIVE) ? FILLPEN : BACKGROUNDPEN]);
@@ -153,25 +168,29 @@
 	                                              1, 
 	                                              1, 
 	                                              window->BorderLeft - 2,
-	                                              window->Height - 2);
+	                                              window->Height - 2,
+	                                              IntuitionBase);
 	                                              
 	    if (window->BorderTop > 2)  CheckRectFill(rp, 
 	                                              1, 
 	                                              1, 
 	                                              window->Width - 2, 
-	                                              window->BorderTop - 2);
+	                                              window->BorderTop - 2,
+	                                              IntuitionBase);
 	                                              
 	    if (window->BorderRight > 2) CheckRectFill(rp, 
 	                                               window->Width - window->BorderRight + 1, 
 	                                               1,
 	    					       window->Width - 2, 
-	    					       window->Height - 2);
+	    					       window->Height - 2,
+	    					       IntuitionBase);
 	    					       
 	    if (window->BorderBottom > 2) CheckRectFill(rp, 
 	                                                1, 
 	                                                window->Height - window->BorderBottom + 1,
 	    			   		        window->Width - 2, 
-	    					        window->Height - 2);
+	    					        window->Height - 2,
+	    					        IntuitionBase);
 						  
 	    InstallClipRegion(rp->Layer,old_clipregion);
 	    
