@@ -754,11 +754,13 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 
 BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, BOOL UpdateDamageList,
+	BOOL hasClipRegion,
 	struct GfxBase * GfxBase)
 {
   LONG xCorr1, xCorr2, yCorr1, yCorr2, absdx, absdy, xBlockSize, yBlockSize;
   struct BitMap * bm;
   struct Layer * L = rp->Layer;
+  ULONG AllocFlag;
   
   if (!CorrectDriverData (rp, GfxBase))
     return FALSE;
@@ -794,10 +796,19 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     this function.
   */
   
+  /* Only if the rastport has an incomplete list of rectangles
+     (because of a clipregion) then it is necessary to
+     clear the bitmap when allocating it 
+  */
+  if (TRUE == hasClipRegion)
+    AllocFlag = BMF_CLEAR;
+  else
+    AllocFlag = 0;
+  
   bm = AllocBitMap(xBlockSize,
                    yBlockSize,
                    GetBitMapAttr(rp->BitMap,BMA_DEPTH),
-                   0,
+                   AllocFlag,
                    rp->BitMap);
   if (NULL == bm)
     return FALSE;
