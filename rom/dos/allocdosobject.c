@@ -78,6 +78,14 @@
 
 	return mem;
 
+    case DOS_STDPKT:
+        mem = AllocMem(sizeof(struct StandardPacket), MEMF_CLEAR);
+        
+        if (mem == NULL)
+            SetIoErr(ERROR_NO_FREE_STORE);
+        
+        return &((struct StandardPacket *)mem)->sp_Pkt;
+
     case DOS_EXALLCONTROL:
 	mem = AllocMem(sizeof(struct ExAllControl), MEMF_CLEAR);
 

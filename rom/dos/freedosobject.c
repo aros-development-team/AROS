@@ -66,6 +66,10 @@
 	case DOS_FIB:
 	    FreeMem(ptr,sizeof(struct FileInfoBlock));
 	    break;
+	    
+	case DOS_STDPKT:
+	    FreeMem(ptr-(APTR)(&((struct StandardPacket *)0)->sp_Pkt),sizeof(struct StandardPacket));
+	    break;
 	case DOS_EXALLCONTROL:
 	    FreeMem(ptr,sizeof(struct ExAllControl));
 	    break;
