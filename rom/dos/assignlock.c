@@ -61,7 +61,6 @@
     BOOL success=1;
     struct DosList *dl, *newdl=NULL;
     struct Process *me=(struct Process *)FindTask(NULL);
-    struct IOFileSys io,*iofs=&io;
     struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
 
     if(lock)
@@ -69,24 +68,24 @@
 	newdl=MakeDosEntry(name,DLT_DIRECTORY);
 	if(newdl==NULL)
 	{
-	    UnLock(lock);
 	    return 0;
 	}
 	newdl->dol_Unit  =fh->fh_Unit;
 	newdl->dol_Device=fh->fh_Device;
-	FreeDosObject(DOS_FILEHANDLE,fh);
+	newdl->dol_Lock = lock;
     }
 
-    dl=LockDosList(LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
+    dl=LockDosList(LDF_ALL|LDF_WRITE);
 
-    dl=FindDosEntry(dl,name,LDF_DEVICES|LDF_ASSIGNS);
+    dl=FindDosEntry(dl,name,LDF_ALL);
     if(dl==NULL)
     {
 	if(newdl!=NULL)
 	    AddDosEntry(newdl);
-    }else if(dl->dol_Type==DLT_DEVICE)
+    }else if(dl->dol_Type==DLT_DEVICE || dl->dol_Type==DLT_VOLUME)
     {
-	dl=newdl;
+	dl=NULL;
+	FreeDosEntry(newdl);
 	me->pr_Result2=ERROR_OBJECT_EXISTS;
 	success=0;
     }else
@@ -98,22 +97,27 @@
 
     if(dl!=NULL)
     {
-	/* Prepare I/O request. */
-	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-	iofs->IOFS.io_Device =dl->dol_Device;
-	iofs->IOFS.io_Unit   =dl->dol_Unit;
-	iofs->IOFS.io_Command=FSA_CLOSE;
-	iofs->IOFS.io_Flags  =0;
+	if (dl->dol_Lock);
+	    UnLock(dl->dol_Lock);
 
-	/* Send the request. No errors possible. */
-	(void)DoIO(&iofs->IOFS);
+	if (dl->dol_misc.dol_assign.dol_List!=NULL)
+	{
+	    struct AssignList *al, *oal;
 
+	    for (al = dl->dol_misc.dol_assign.dol_List; al; )
+	    {
+		UnLock(al->al_Lock);
+		oal = al;
+		al = al->al_Next;
+		FreeVec(oal);
+	    }
+	}
+
+	FreeVec(dl->dol_misc.dol_assign.dol_AssignName);
 	FreeDosEntry(dl);
     }
 
-    UnLockDosList(LDF_DEVICES|LDF_ASSIGNS|LDF_WRITE);
+    UnLockDosList(LDF_ALL|LDF_WRITE);
 
     return success;
     AROS_LIBFUNC_EXIT
