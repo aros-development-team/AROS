@@ -1,9 +1,9 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Change order of screens.
-    Lang: english
+    Lang: English
 */
 #include "intuition_intern.h"
 
@@ -34,7 +34,7 @@
 		front or back.
 		If the screen is a child of another screen you may specify
 		SDEPTH_INFAMILY to move the screen within the family. If
-		not specified the whle family will move.
+		not specified the whole family will move.
 	reserved - For future use. MUST be NULL by now.	
 
     RESULT
