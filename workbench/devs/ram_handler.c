@@ -1425,6 +1425,9 @@ static LONG examine(struct fnode *file,
     next = (STRPTR)ead + sizes[type];
     end = (STRPTR)ead + size;
 
+    if(next>end) /* > is correct. Not >= */
+	return ERROR_BUFFER_OVERFLOW;
+
     /* Use *dirpos to store information for ExNext()
      * *dirpos is copied to fib->fib_DiskKey in Examine()
      */ 
