@@ -54,6 +54,7 @@ BEGIN {
     gsub(/.src$/,".info",fninfo);
 
     toc=0;
+    thischapter="";
 
     if (fninfo!="")
     {
@@ -64,7 +65,15 @@ BEGIN {
 	    else if ($1=="next")
 		next_doc=$2;
 	    else if ($1=="toc")
-		a_toc[toc++]=substr($0,5);
+	    {
+		a_toc[toc]=substr($0,5);
+		n=split(a_toc[toc],a,":");
+
+		if (thischapter=="" && match(a[2],/\.$/))
+		    thischapter=a[4];
+
+		toc ++;
+	    }
 	}
 
 	close (fninfo);
@@ -80,7 +89,10 @@ BEGIN {
 	file="page_header.html";
 
 	while ((getline < file) > 0)
+	{
+	    gsub(/\\thischapter/,thischapter);
 	    print
+	}
 
 	close (file);
     }
