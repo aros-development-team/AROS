@@ -1,5 +1,5 @@
 /*
-   (C) 1997-2000 AROS - The Amiga Research OS
+   (C) 1997-2001 AROS - The Amiga Research OS
    $Id$
 
    Desc: GadTools gadget creation functions
@@ -110,24 +110,33 @@ struct Gadget *makecheckbox(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
                          struct TagItem stdgadtags[],
                          struct VisualInfo *vi,
+		      	 struct TextAttr *tattr,
                          struct TagItem *taglist)
 {
     struct IClass *cl;
     struct Gadget *obj;
     struct TagItem tags[] =
     {
-	{GA_Disabled	, FALSE		},
-	{GTCY_Labels	, FALSE		},
-        {GTCY_Active	, 0		},
-	{GA_RelVerify	, TRUE		},
-	{TAG_MORE	, (IPTR)NULL	}
+	{GA_Disabled	, FALSE		}, /* 0 */
+	{GTCY_Labels	, FALSE		}, /* 1 */
+        {GTCY_Active	, 0		}, /* 2 */
+	{GA_RelVerify	, TRUE		}, /* 3 */
+	{GA_TextAttr	, 0 	    	}, /* 4 */
+	{TAG_MORE	, (IPTR)NULL	}  /* 5 */
     };
 
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
     tags[1].ti_Data = GetTagData(GTCY_Labels, FALSE, taglist);
     tags[2].ti_Data = GetTagData(GTCY_Active, 0, taglist);
-    tags[4].ti_Data = (IPTR) stdgadtags;
+
+    /* Be sure not to pass GA_TextAttr, NULL */
+    if (tattr)
+    	tags[4].ti_Data = (IPTR)tattr;
+    else
+    	tags[4].ti_Tag = TAG_IGNORE;
+
+    tags[5].ti_Data = (IPTR) stdgadtags;
 
     cl = makecycleclass(GadToolsBase);
     if (!cl)
@@ -143,6 +152,7 @@ struct Gadget *makecycle(struct GadToolsBase_intern *GadToolsBase,
 struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
 		      struct TagItem stdgadtags[],
 		      struct VisualInfo *vi,
+		      struct TextAttr *tattr,
 		      struct TagItem *taglist)
 {
     struct IClass *cl;
@@ -151,13 +161,14 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
     STRPTR *labellist;
     struct TagItem *tag, tags[] =
     {
-	{GA_Disabled		, FALSE			},
-	{AROSMX_Labels		, (IPTR) NULL		},
-	{AROSMX_Active		, 0			},
-	{AROSMX_Spacing		, 1			},
-        {AROSMX_TickHeight	, MX_HEIGHT		},
-        {AROSMX_TickLabelPlace	, GV_LabelPlace_Right	},
-	{TAG_MORE		, (IPTR) NULL		}
+	{GA_Disabled		, FALSE			}, /* 0 */
+	{AROSMX_Labels		, (IPTR) NULL		}, /* 1 */
+	{AROSMX_Active		, 0			}, /* 2 */
+	{AROSMX_Spacing		, 1			}, /* 3 */
+        {AROSMX_TickHeight	, MX_HEIGHT		}, /* 4 */
+        {AROSMX_TickLabelPlace	, GV_LabelPlace_Right	}, /* 5 */
+	{GA_TextAttr	    	, 0 	    	    	}, /* 6 */
+	{TAG_MORE		, (IPTR) NULL		}  /* 7 */
     };
 
     tags[0].ti_Data = GetTagData(GA_Disabled, FALSE, taglist);
@@ -183,7 +194,14 @@ struct Gadget *makemx(struct GadToolsBase_intern *GadToolsBase,
         tags[5].ti_Data = GV_LabelPlace_Below;
         break;
     }
-    tags[6].ti_Data = (IPTR) stdgadtags;
+
+    /* Be sure not to pass GA_TextAttr, NULL */
+    if (tattr)
+    	tags[6].ti_Data = (IPTR)tattr;
+    else
+    	tags[6].ti_Tag = TAG_IGNORE;
+
+    tags[7].ti_Data = (IPTR) stdgadtags;
 
     tag = FindTagItem(GTMX_TitlePlace, taglist);
     if (tag)
