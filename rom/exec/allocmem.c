@@ -304,14 +304,13 @@ end:
 	header->mwh_magicid = MUNGWALL_HEADER_ID;
 	header->mwh_allocsize = origSize;
 
-    	allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
-    	
-	/* Check whether list has been initialized. AllocMem() might have been
+	/* Check whether list does exist. AllocMem() might have been
 	   called before PrepareAROSSupportBase() which is responsible for
 	   initialization of AllocMemList */
 	   
-	if (allocmemlist->lh_Head && allocmemlist->lh_TailPred)
+	if (SysBase->DebugAROSBase)
 	{	
+    	    allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
     	    AddHead(allocmemlist, (struct Node *)&header->mwh_node);
 	}
 	else
