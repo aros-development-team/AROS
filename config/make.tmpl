@@ -600,7 +600,7 @@ BDID := $(BDTARGETID)
 
 %define build_with_configure mmake=/A srcdir=$(TOP)/$(CURDIR) prefix= \
     aros_prefix= bindir= libdir= includedir= extraoptions= nix=no host=no \
-    install_target=install
+    install_target=install postinstall=
 
 ifeq (%(nix),yes)
     %(mmake)-nix := -nix
@@ -644,7 +644,7 @@ ifeq ($(%(mmake)-PROGDIR),)
     %(mmake)-PROGDIR := %(prefix)/bin
 endif
 
-.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
+.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
 
 #MM- %(mmake) : setup includes linklibs-core %(mmake)-quick
 
@@ -665,8 +665,10 @@ else
     %(mmake)-uninstall_command := $(TRUE)
 endif
 
+#MM- %(mmake)-quick : %(mmake)-build_and_install-quick %(postinstall)
+
 #MM
-%(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
+%(mmake)-build_and_install-quick : $(GENDIR)/$(CURDIR)/.configured
 	if ! $(MAKE) PROGDIR="PROGDIR:" -q -C $(GENDIR)/$(CURDIR); then \
             $(RM) $(GENDIR)/$(CURDIR)/.installed; \
 	    $(MAKE) PROGDIR="PROGDIR:" -C $(GENDIR)/$(CURDIR); \
@@ -713,10 +715,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 endif
 	
 #MM
-%(mmake)-clean :
-	-@if [ -e $(GENDIR)/$(CURDIR)/Makefile ]; then \
-	    $(MAKE) PROGDIR="$(%(mmake)-PROGDIR)/" -C $(GENDIR)/$(CURDIR) uninstall; \
-        fi
+%(mmake)-clean : %(mmake)-uninstall
 	@$(RM) $(GENDIR)/$(CURDIR)
 %end
 
@@ -1844,31 +1843,45 @@ DEPS := $(DEPS) $(STUBS_DEP)
 #    - aros_prefix  = same meaning as the one for the %build_with_configure macro. Defaults to
 #                     /GNU.
 #    - extraoptions = same meaning as the one for the %build_with_configure macro.
+#    - postinstall  = same meaning as the one for the %build_with_configure macro.
 
-%define fetch_and_build_gnu mmake=/A package=/A version=/A suffixes="tar.bz2 tar.gz" \
+%define fetch_and_build_gnu mmake=/A package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(GNUDIR) \
-    aros_prefix=/GNU extraoptions= 
+    aros_prefix=/GNU extraoptions= postinstall= 
 
-#MM %(mmake)-quick : %(mmake)-fetch
-
+#MM- %(mmake)-quick : %(mmake)-%(subpackage)-quick
+#MM %(mmake)-%(subpackage)-quick : %(mmake)-%(subpackage)-fetch
+ 
 %(mmake)-archbase  := %(package)-%(version)
 
-ifeq (%(patch),yes)
-    %(mmake)-patches_specs := %(package)-%(version)-aros.diff:%(package)-%(version):-p1    
+ifneq (%(subpackage),)
+    %(mmake)-%(subpackage)-archbase  := %(package)-%(subpackage)-%(version)
 else
-    %(mmake)-patches_specs := ::
+    %(mmake)-%(subpackage)-archbase  := %(package)-%(version)
+endif
+
+ifeq (%(patch),yes)
+    %(mmake)-%(subpackage)-patches_specs := $(%(mmake)-%(subpackage)-archbase)-aros.diff:%(package)-%(version):-p1    
+else
+    %(mmake)-%(subpackage)-patches_specs := ::
 endif
 
 GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
 
-#MM
-%(mmake)-fetch :
-	%fetch archive=$(%(mmake)-archbase) suffixes="%(suffixes)" destination=%(destination)/%(package) \
-	    archive_origins=". %(package_repo) $(GNU_REPOSITORY)/%(package)" \
-	    patches_specs="$(%(mmake)-patches_specs)" patches_origins=". %(patch_repo)"
+#MM- %(mmake)-fetch : %(mmake)-%(subpackage)-fetch
 
-%build_with_configure mmake=%(mmake) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
-     nix=yes prefix=%(prefix) aros_prefix=%(aros_prefix) extraoptions="%(extraoptions)"
+#MM
+%(mmake)-%(subpackage)-fetch :
+	%fetch archive=$(%(mmake)-%(subpackage)-archbase) suffixes="%(suffixes)" \
+	    destination=%(destination)/%(package) \
+	    archive_origins=". %(package_repo) $(GNU_REPOSITORY)/%(package)" \
+	    patches_specs="$(%(mmake)-%(subpackage)-patches_specs)" patches_origins=". %(patch_repo)"
+
+#MM- %(mmake) : %(mmake)-%(subpackage)
+
+%build_with_configure mmake=%(mmake)-%(subpackage) srcdir=$(PORTSDIR)/%(package)/$(%(mmake)-archbase) \
+     nix=yes prefix=%(prefix) aros_prefix=%(aros_prefix) postinstall=%(postinstall) \
+     extraoptions="%(extraoptions)"
      
 %end
 
@@ -1884,15 +1897,16 @@ GNU_REPOSITORY := http://ftp.gnu.org/pub/gnu
 #
 #     #MM- development-%(package)
 
-%define fetch_and_build_gnu_development package=/A version=/A suffixes="tar.bz2 tar.gz" \
+%define fetch_and_build_gnu_development package=/A subpackage= version=/A suffixes="tar.bz2 tar.gz" \
     destination=$(PORTSDIR) package_repo= patch=no patch_repo= prefix=$(AROS_DEVELOPMENT) \
-    aros_prefix=/Development extraoptions= 
+    aros_prefix=/Development postinstall=  extraoptions= 
 
 #MM- development : development-%(package)
 
 
-%fetch_and_build_gnu mmake=development-%(package) package=%(package) version=%(version) \
-   suffixes="%(suffixes)" destination=%(destination) package_repo="%(package_repo)" \
+%fetch_and_build_gnu mmake=development-%(package) package=%(package) subpackage="%(subpackage)" \
+   version=%(version) suffixes="%(suffixes)" destination=%(destination) package_repo="%(package_repo)" \
    patch="%(patch)" patch_repo="%(patch_repo)" prefix=%(prefix) \
-   aros_prefix=%(aros_prefix) extraoptions="%(extraoptions)"   
+   aros_prefix=%(aros_prefix) postinstall=%(postinstall) extraoptions="%(extraoptions)"
+    
 %end
