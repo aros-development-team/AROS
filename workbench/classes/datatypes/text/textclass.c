@@ -2292,9 +2292,15 @@ STATIC VOID DT_SearchString(Class *cl,Object *obj,LONG direction,struct dttSearc
 
 	line = (struct Line *)list->lh_Head;
 
+	if (found == -1 && direction == -1)
+	{
+	  GetAttr(DTA_TotalVert,obj,(ULONG*)&found);
+	}
+
 	if (direction == -1)
 	    found--;
 
+	/* Find the correct line node */
 	while (y <= found && line->ln_Link.mln_Succ)
 	{
 	    if (line->ln_Flags & LNF_LF)
@@ -2388,13 +2394,30 @@ STATIC VOID DT_GetString(Class *cl,Object *g,struct dttGetString *msg)
 				   RT_Window     ,ginfo->gi_Window,
 				   RT_ReqPos     ,REQPOS_CENTERWIN,
 				   RT_LockWindow ,TRUE,
+				   RT_Underscore, '_',
+				   RTGS_GadFmt, "_Ok|_From Top|_From Bottom|_Cancel",
 				   TAG_DONE);
 	CloseLibrary(ReqToolsBase);
 
 	if (retval)
 	{
+	    ULONG search_method;
 	    Forbid();
-	    DoMethod(g,msg->dttgs_SearchMethod,ginfo,td->search_buffer,strlen(td->search_buffer));
+
+	    if (retval == 1 || retval == 2)
+	    {
+	    	search_method = DTTM_SEARCH_NEXT;
+	    }   else /* 3 */
+	    {
+		search_method = DTTM_SEARCH_PREV;
+	    }
+
+	    if (retval == 2 || retval == 3)
+	    {
+		td->search_line = -1;
+	    }
+
+	    DoMethod(g,search_method,ginfo,td->search_buffer,strlen(td->search_buffer));
 	    Permit();
 	}
     }
@@ -2531,7 +2554,7 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
 		     * creates this structure on the stack (Oh No) !
 		     */
 		    td->msg.dttgs_GInfo        = *((struct dtTrigger*)msg)->dtt_GInfo;
-		    td->msg.dttgs_SearchMethod = DTTM_SEARCH_NEXT;
+/*		    td->msg.dttgs_SearchMethod = DTTM_SEARCH_NEXT;*/
 
 		    td->search_proc = DoAsyncMethod(cl,o,(Msg) &td->msg,NP_Name,"text.datatype getstring process",TAG_DONE);
 		}

@@ -6,7 +6,7 @@ struct dttGetString
 {
   ULONG MethodID;
   struct GadgetInfo dttgs_GInfo;
-  LONG dttgs_SearchMethod;
+/*  LONG dttgs_SearchMethod;*/
 };
 
 struct dttSearchText
