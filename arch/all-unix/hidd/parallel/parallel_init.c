@@ -19,7 +19,7 @@
 #define LC_SYSBASE_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SysBase)
 #define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->hdg_SegList)
 #define LC_RESIDENTNAME         hiddparallel_resident
-#define LC_RESIDENTFLAGS        RTF_AUTOINIT
+#define LC_RESIDENTFLAGS        RTF_COLDSTART | RTF_AUTOINIT
 #define LC_RESIDENTPRI          0
 #define LC_LIBBASESIZE          sizeof(LIBBASETYPE)
 #define LC_LIBHEADERTYPEPTR     LIBBASETYPEPTR
