@@ -293,8 +293,6 @@ int         truncate(const char *path, off_t length);
 /* NOTIMPL int         fdatasync(int fd); */
 #endif
 
-int mknod(const char *pathname, mode_t mode, dev_t dev);
-
 __END_DECLS
 
 #endif /* _UNISTD_H_ */

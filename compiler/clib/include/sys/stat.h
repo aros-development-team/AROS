@@ -29,8 +29,8 @@ struct stat
     long            st_spare2;
     time_t          st_ctime;	    /* time of last file status change */
     long            st_spare3;
-    long            st_blksize;	    /* optimal blocksize for I/O */
-    long            st_blocks;	    /* blocks allocated for file */
+    blksize_t       st_blksize;	    /* optimal blocksize for I/O */
+    blkcnt_t        st_blocks;	    /* blocks allocated for file */
     unsigned long   st_flags;	    /* user defined flags for file */
     unsigned long   st_gen;         /* file generation number */
 };
@@ -82,12 +82,10 @@ struct stat
 
 __BEGIN_DECLS
 
-int mkdir(const char *path, mode_t mode);
-
-int stat(const char *path, struct stat *sb);
+int stat(const char * restrict path, struct stat * restrict sb);
 /*
     can this be implemented in AROS?
-   int lstat(const char *path, struct stat *sb);
+   int lstat(const char * restrict path, struct stat * restrict sb);
 */
 #define lstat stat
 int fstat(int fd, struct stat *sb);
@@ -95,6 +93,12 @@ int fstat(int fd, struct stat *sb);
 mode_t umask(mode_t numask);
 int chmod(const char *path, mode_t mode);
 int fchmod(int fildes, mode_t mode);
+
+int mkdir(const char *path, mode_t mode);
+int mkfifo(const char *path, mode_t mode);
+int mknod(const char *path, mode_t mode, dev_t dev);
+
+
 
 __END_DECLS
 
