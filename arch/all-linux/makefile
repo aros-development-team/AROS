@@ -1,19 +1,32 @@
 TOP=../..
 
+USER_INCLUDES=-I$(TOP)/graphics -I$(TOP)/intuition
+
 include $(TOP)/config/make.cfg
 
-all: $(TOP)/graphics/graphics_driver.c \
-	$(TOP)/intuition/intuition_driver.c
+FILES = graphics_driver intuition_driver
 
-$(TOP)/graphics/graphics_driver.c:
-	$(TOP)/scripts/makelinks . $(TOP)/graphics/ graphics_driver.c
+all: setup \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
-$(TOP)/intuition/intuition_driver.c:
-	$(TOP)/scripts/makelinks . $(TOP)/intuition/ intuition_driver.c
+setup :
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
 
 clean:
-	$(RM) $(TOP)/graphics/graphics_driver.c \
-	    $(TOP)/intuition/intuition_driver.c
+	$(RM) $(OSGENDIR) *.err
 
 config:
 	@echo "Configuring for Linux..."
+
+$(OSGENDIR)/%.o: %.c
+	$(CC) $(CFLAGS) $(X11CCFLAGS) $< -c -o $@ 2>&1|tee $*.err
+	if test ! -s $*.err; then rm $*.err ; else true ; fi
+
+$(OSGENDIR)/%.d: %.c
+	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
+	@$(RM) $@
+	@touch $@
+	$(MKDEPEND) -p$(OSGENDIR)/
+
+include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+
