@@ -7,10 +7,10 @@
 */
 
 /*
-    Note: This whole thing may seem a bit kludgy. It is. It was originally
-    designed to load only one module. It has been extended to read a config
-    file and to load multiple modules. It needs some polishing.
-*/
+ * Note: This whole thing may seem a bit kludgy. It is. It was originally
+ * designed to load only one module. It has been extended to read a config
+ * file and to load multiple modules. It needs some polishing.
+ */
 
 #include <exec/types.h>
 #include <exec/execbase.h>
@@ -154,9 +154,9 @@ int main(int argc, char **argv)
     }
 
     /*
-	The memory type MEMF_KICK has been added in V39 exec. Fall back to
-	MEMF_CHIP if we are on an earlier version.
-    */
+     * The memory type MEMF_KICK has been added in V39 exec. Fall back to
+     * MEMF_CHIP if we are on an earlier version.
+     */
     if(SysBase->LibNode.lib_Version < 39)
     {
 	memtype = MEMF_CHIP;
@@ -241,8 +241,8 @@ int main(int argc, char **argv)
     if(!quiet) PrintTagPtrs();
 
     /*
-	InternalLoadSeg use.
-    */
+     * InternalLoadSeg use.
+     */
     ils_table[0] = (ULONG)&ils_read;
     ils_table[1] = (ULONG)&ils_alloc;
     ils_table[2] = (ULONG)&ils_free;
@@ -279,22 +279,23 @@ int main(int argc, char **argv)
     }
 
     /*
-	First check if we actually have a program dir (aka PROGDIR:). If we
-	don't have one, we're in the resident list (hey, you shouldn't put
-	us there!), and we stay right in the dir we were started from.
-    */
+     * First check if we actually have a program dir (aka PROGDIR:). If we
+     * don't have one, we're in the resident list (hey, you shouldn't put
+     * us there!), and we stay right in the dir we were started from.
+     */
     if( (programdir = GetProgramDir()))
     {
 	oldcurrentdir = CurrentDir(programdir);
     }
 
     /*
-	Construct a List of filenames to process.
-    */
+     * Construct a List of filenames to process.
+     */
     if(!(config = ReadConfig((char *)cmdvec[CML_CONFIGFILE])))
     {
 	/* ReadConfig() prints it's own error string, just exit. */
 	FreeRDArgsAll(rdargs);
+
 	/* If we switched dirs, switch back. */
 	if(oldcurrentdir) CurrentDir(oldcurrentdir);
 	exit(RETURN_FAIL);
@@ -317,8 +318,8 @@ int main(int argc, char **argv)
     ModuleList.ml_Num = 0;
 
     /*
-	Traverse this list and load the modules into memory.
-    */
+     * Traverse this list and load the modules into memory.
+     */
     for(modnode = (struct ModNode *)config->bc_Modules.lh_Head;
 	modnode->mn_Node.ln_Succ;
 	modnode = (struct ModNode *)modnode->mn_Node.ln_Succ)
@@ -339,11 +340,11 @@ int main(int argc, char **argv)
     }
 
     /*
-	I duplicated a CTRL-C handler a few times, instead of making it a
-	subroutine. Else all local variables used here would have to be passed
-	to that subroutine. I should put common cleanup code into an atexit()
-	handler. Oh well, maybe next time.
-    */
+     * I duplicated a CTRL-C handler a few times, instead of making it a
+     * subroutine. Else all local variables used here would have to be passed
+     * to that subroutine. I should put common cleanup code into an atexit()
+     * handler. Oh well, maybe next time.
+     */
     if(SetSignal(0L,SIGBREAKF_CTRL_C) & SIGBREAKF_CTRL_C)
     {
 	FreeConfig(config);
@@ -357,9 +358,9 @@ int main(int argc, char **argv)
 	if(!simulate)
 	{
 	    /*
-		If we're here, all modules we're loaded normally. Build all
-		structures needed for the KickTag/Mem fields, and put them there.
-	    */
+	     * If we're here, all modules we're loaded normally. Build all
+	     * structures needed for the KickTag/Mem fields, and put them there.
+	     */
 	    if( (BuildTagPtrs(&ModuleList)) )
 	    {
 		if(!quiet & !reset) PutStr("\nAll modules loaded successfully, reset to activate.\n\n");
@@ -436,8 +437,8 @@ struct Module *LoadModule(char *filename)
     D(bug("  Resident = $%08lx\n", (ULONG)mod->m_Resident));
 
     /*
-	If this module contains a Resident structure, return it.
-    */
+     * If this module contains a Resident structure, return it.
+     */
     if ( (mod->m_Resident))
     {
 	return mod;
@@ -474,17 +475,17 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
     D(bug("BuildTagPtrs...\n"));
 
     /*
-	Allocate memory for our KickTagPtr table:
-	number of modules loaded +2 (cookie and table terminator)
-    */
+     * Allocate memory for our KickTagPtr table:
+     * number of modules loaded +2 (cookie and table terminator)
+     */
     D(bug("Allocating KickTagPtr memory (size %ld)\n", (modlist->ml_Num+2)*sizeof(ULONG)));
     if( (modarray = AllocVec((modlist->ml_Num+2)*sizeof(ULONG),
 			     memtype|MEMF_CLEAR|MEMF_REVERSE)) )
     {
 	D(bug(" ok\n"));
 	/*
-	    Fill the KickTagPtr array with pointers to our Resident modules.
-	*/
+	 * Fill the KickTagPtr array with pointers to our Resident modules.
+	 */
 	for(i = 0, mod = (struct Module *)modlist->ml_List.mlh_Head;
 	    mod->m_Node.mln_Succ;
 	    mod = (struct Module *)mod->m_Node.mln_Succ, i++)
@@ -497,20 +498,20 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	if( (cookieptr = AllocMoveCookie(rescookie, sizeof(rescookie))))
 	{
 	    /*
-		Add the cookie module.
-	    */
+	     * Add the cookie module.
+	     */
 	    D(bug("  modarray[%ld] = $%lx (cookie)\n", i, (ULONG)cookieptr));
 	    modarray[i] = (ULONG)cookieptr;
 
 	    /*
-		Terminate the module array.
-	    */
+	     * Terminate the module array.
+	     */
 	    D(bug("  modarray[%ld] = $%lx (termination)\n", i+1, (ULONG)NULL));
 	    modarray[i+1] = NULL;
 
 	    /*
-		Add the cookie's memory address + size on the memlist.
-	    */
+	     * Add the cookie's memory address + size on the memlist.
+	     */
 	    if( (cookienode = AllocMem(sizeof(struct ilsMemNode), MEMF_CLEAR)) )
 	    {
 		cookienode->imn_Addr = cookieptr;
@@ -520,14 +521,14 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 		ils_mem.iml_NewNum++;
 
 		/*
-		    Cache number of modules, since it will be modified in
-		    BuildMemList. +1 because of the cookie.
-		*/
+		 * Cache number of modules, since it will be modified in
+		 * BuildMemList. +1 because of the cookie.
+		 */
 		nummods = modlist->ml_Num + 1;
 
 		/*
-		    build a memlist to be put in KickMemPtr
-		*/
+		 * build a memlist to be put in KickMemPtr
+		 */
 		if( (memlist = BuildMemList(&ils_mem, modarray,
 		    (modlist->ml_Num+2)*sizeof(ULONG) )) )
 		{
@@ -587,57 +588,57 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
 
     D(bug("BuildMemList()\n"));
     /*
-	Calculate needed number of extra MemEntry fields that need to be
-	appended to the end of our MemList structure. This number+1 (there
-	already is one MemEntry in the MemList) is what we'll be putting in
-	memlist->ml_NumEntries later.
-    */
+     * Calculate needed number of extra MemEntry fields that need to be
+     * appended to the end of our MemList structure. This number+1 (there
+     * already is one MemEntry in the MemList) is what we'll be putting in
+     * memlist->ml_NumEntries later.
+     */
     numentries = prelist->iml_Num + 1;
     D(bug(" number of mem areas = %ld\n", numentries+1));
 
     size = ( sizeof(struct MemList) + (sizeof(struct MemEntry) * numentries) );
 
     /*
-	Allocate memory from the top of the memory list, to keep fragmentation
-	down, and hopefully to keep all our applications in one place.
-    */
+     * Allocate memory from the top of the memory list, to keep fragmentation
+     * down, and hopefully to keep all our applications in one place.
+     */
     if(!(memlist = AllocVec(size, memtype|MEMF_CLEAR|MEMF_REVERSE))) return(NULL);
 
     /*
-	We have the memory. Assure that this MemList is allocated during a
-	reset, and put it in the first MemEntry field.
-    */
+     * We have the memory. Assure that this MemList is allocated during a
+     * reset, and put it in the first MemEntry field.
+     */
     memlist->ml_ME[0].me_Addr = memlist;
     memlist->ml_ME[0].me_Length = size;
 
     /*
-	Indicate that this node is part of a KickMem MemList, and indicate how
-	many MemEntries there are.
-    */
+     * Indicate that this node is part of a KickMem MemList, and indicate how
+     * many MemEntries there are.
+     */
     memlist->ml_Node.ln_Type = NT_KICKMEM;
     memlist->ml_NumEntries = numentries+1;
 
     /*
-	Put the modlist in the next MemEntry.
-    */
+     * Put the modlist in the next MemEntry.
+     */
     me = (struct MemEntry *)( ((ULONG)memlist) + sizeof(struct MemList) );
     me->me_Addr = modlist;
     me->me_Length = modlistsize;
 
     /*
-	Increase to the next MemEntry.
-    */
+     * Increase to the next MemEntry.
+     */
     me = (struct MemEntry *)( ((ULONG)me) + sizeof(struct MemEntry) );
 
     /*
-	Now put the data from our prelist in the remaining MemEntry fields,
-	removing the nodes in our prelist and freeing them in the process.
-    */
+     * Now put the data from our prelist in the remaining MemEntry fields,
+     * removing the nodes in our prelist and freeing them in the process.
+     */
     while(prelist->iml_Num)
     {
 	/*
-	    pop a node off the list
-	*/
+	 * pop a node off the list
+	 */
 	node = (struct ilsMemNode *)RemHead((struct List *)prelist);
 
 	me->me_Addr = node->imn_Addr;
@@ -646,8 +647,8 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
 	FreeMem(node, sizeof(struct ilsMemNode));
 
 	/*
-	    Point to the next MemEntry, decrease our counter.
-	*/
+	 * Point to the next MemEntry, decrease our counter.
+	 */
 	me = (struct MemEntry *)(((ULONG)me) + sizeof(struct MemEntry));
 	prelist->iml_Num--;
     }
@@ -672,8 +673,8 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
     if(SysBase->KickMemPtr)
     {
 	/*
-	    Prepend to an existing chain of MemLists.
-	*/
+	 * Prepend to an existing chain of MemLists.
+	 */
 	D(bug("Prepending to existing memlist (old ptr = $%lx)\n", (ULONG)SysBase->KickMemPtr));
 	memlist->ml_Node.ln_Succ = SysBase->KickMemPtr;
     }
@@ -682,22 +683,22 @@ void StuffTags(struct MemList *memlist, ULONG *modlist, ULONG nummods)
     if(SysBase->KickTagPtr)
     {
 	/*
-	    Prepend to an existing chain of module lists.
-	*/
+	 * Prepend to an existing chain of module lists.
+	 */
 	D(bug("Prepending to existing tagptr (old ptr = $%lx)\n", (ULONG)SysBase->KickTagPtr));
 	modlist[nummods] = (ULONG)SysBase->KickTagPtr | 0x80000000;
     }
     SysBase->KickTagPtr = modlist;
 
     /*
-	And checksum the KickPtrs. KickCheckSum is defined wrong in the include
-        file exec/execbase.h. It is defined as APTR, but really is a ULONG.
-    */
+     * And checksum the KickPtrs. KickCheckSum is defined wrong in the include
+     * file exec/execbase.h. It is defined as APTR, but really is a ULONG.
+     */
     SysBase->KickCheckSum = (APTR)SumKickData();
 
     /*
-	Flush caches.
-    */
+     * Flush caches.
+     */
     CacheClearU();
 
     Permit();
@@ -712,17 +713,17 @@ void *FindResMod(struct ilsMemList *list)
     D(bug("Finding Resident Module..."));
 
     /*
-	Search all memory blocks for the Resident struct. Only new nodes
-	will be searched.
-    */
+     * Search all memory blocks for the Resident struct. Only new nodes
+     * will be searched.
+     */
     for(node = (struct ilsMemNode *)ils_mem.iml_List.mlh_Head, num = ils_mem.iml_NewNum;
 	node->imn_Node.mln_Succ || num;
 	node = (struct ilsMemNode *)node->imn_Node.mln_Succ, num--)
     {
 	/*
-	    In each block: skip to the magic word, if present.
-	    Searching by word: divide by 2
-	*/
+	 * In each block: skip to the magic word, if present.
+	 * Searching by word: divide by 2
+	 */
 	counter = node->imn_Size/2;
 
 	for(ptr = node->imn_Addr; counter; ptr++, counter--)
@@ -730,9 +731,9 @@ void *FindResMod(struct ilsMemList *list)
 	    if(RTC_MATCHWORD == *ptr)
 	    {
 		/*
-		    Reset the counter, so that next time only new nodes will
-		    be searched.
-		*/
+		 * Reset the counter, so that next time only new nodes will
+		 * be searched.
+		 */
 		ils_mem.iml_NewNum = 0;
 
 		D(bug(" at $%08lx\n", (ULONG)ptr));

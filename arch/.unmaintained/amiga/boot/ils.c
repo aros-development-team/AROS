@@ -5,9 +5,10 @@
     Desc: Amiga bootloader -- InternalLoadSeg support routines
     Lang: C
 */
+
 /*
-    For more information: autodocs/dos/InternalLoadSeg()
-*/
+ * For more information: autodocs/dos/InternalLoadSeg()
+ */
 
 #include <exec/types.h>
 #include <exec/execbase.h>
@@ -48,25 +49,25 @@ AROS_UFH3(void *, ils_alloc,
     D(bug(" ils_alloc: size %ld == ", size));
 
     /*
-	Memory to be used for Resident modules can not be any kind of memory
-	available. It must be of a special type, MEMF_KICK, which indicates
-	that this memory is available very early during the reset procedure.
-	Also allocate memory from the top of the memory list, MEMF_REVERSE,
-	to keep all our allocations in one place, and to keep potential early
-	memory fragmentation down.
-
-	Addition: Pre V39 exec doesn't know about MEMF_KICK, so fall back to
-	MEMF_CHIP (memtype is set in main()).
-    */
+     * Memory to be used for Resident modules can not be any kind of memory
+     * available. It must be of a special type, MEMF_KICK, which indicates
+     * that this memory is available very early during the reset procedure.
+     * Also allocate memory from the top of the memory list, MEMF_REVERSE,
+     * to keep all our allocations in one place, and to keep potential early
+     * memory fragmentation down.
+     *
+     * Addition: Pre V39 exec doesn't know about MEMF_KICK, so fall back to
+     * MEMF_CHIP (memtype is set in main()).
+     */
     attrib |= memtype|MEMF_REVERSE;
 
     result = AllocMem(size, attrib);
 
     /*
-	all memory that is allocated during the LoadSeg has to be entered
-	into the KickMemPtr for protection during reset. We keep a list of
-	our allocations so we can later make this MemList
-    */
+     * all memory that is allocated during the LoadSeg has to be entered
+     * into the KickMemPtr for protection during reset. We keep a list of
+     * our allocations so we can later make this MemList
+     */
     if(result)
     {
 	struct ilsMemNode *node;
@@ -78,14 +79,14 @@ AROS_UFH3(void *, ils_alloc,
 	    AddHead((struct List *)&ils_mem, (struct Node *)node);
 
 	    /*
-		Keep a counter so we don't have to count nodes later.
-	    */
+	     * Keep a counter so we don't have to count nodes later.
+	     */
 	    ils_mem.iml_Num++;
 
 	    /*
-		This counts number of nodes since the loading of the last
-		module. This field is reset in the FindResMod() routine.
-	    */
+	     * This counts number of nodes since the loading of the last
+	     * module. This field is reset in the FindResMod() routine.
+	     */
 	    ils_mem.iml_NewNum++;
 	}
 	D(bug("$%08lx\n", (ULONG)result));

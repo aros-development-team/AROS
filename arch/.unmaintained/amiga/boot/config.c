@@ -28,9 +28,11 @@
 #define D(x) if (debug) x
 #define bug Printf
 
-/* Maximum config file length. Is actually 100, but we add 2 for the newline
-   character and the \0 character. Add another character for the V36/V37 FGets
-   bug. All of this still implies a maximum line length of 100 to the user. */
+/*
+ * Maximum config file length. Is actually 100, but we add 2 for the newline
+ * character and the \0 character. Add another character for the V36/V37 FGets
+ * bug. All of this still implies a maximum line length of 100 to the user.
+ */
 #define MAX_LINE_LEN 103
 
 char txt_module[] = "MODULE";
@@ -388,9 +390,9 @@ struct Node *FindNameNC(struct List *list, UBYTE *name)
 	}
     }
     /*
-	If we found a node, this will contain the pointer to it. If we
-	didn't, this will be NULL (either because the list was
-	empty or because we tried all nodes in the list)
-    */
+     * If we found a node, this will contain the pointer to it. If we
+     * didn't, this will be NULL (either because the list was
+     * empty or because we tried all nodes in the list)
+     */
     return node;
 }
