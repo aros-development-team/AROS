@@ -16,6 +16,8 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
+#include <sys/types.h>
+
 struct AroscUserData
 {
     struct AroscUserData *olduserdata;
@@ -52,6 +54,8 @@ struct AroscUserData
 
     /*more stuff*/
     struct MinList atexit_list;
+    mode_t umask;
+
 };
 
 extern struct Library *aroscbase;
@@ -86,6 +90,7 @@ extern struct Library *aroscbase;
 #define __startup_datestamp                   (clib_userdata->startup_datestamp)
 #define __stdfiles                            (clib_userdata->stdfiles)
 #define __atexit_list                         (clib_userdata->atexit_list)
+#define __umask                               (clib_userdata->umask)
 
 #else
 
