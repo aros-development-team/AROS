@@ -1,7 +1,5 @@
 /* 
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -21,55 +19,21 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "prefs.h"
+#include "balance_private.h"
 
 /*  #define MYDEBUG 0 */
 #include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
-static const int __version = 1;
-static const int __revision = 1;
-
 /*
  *  [FirstBound .... <- balance -> .... SecondBound]
  */
 
-typedef enum {
-    NOT_CLICKED,
-    CLICKED,
-    SHIFT_CLICKED,
-} State;
 
-struct MUI_BalanceData
+IPTR Balance__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_EventHandlerNode ehn;
-    ULONG horizgroup;
-    State state;
-    LONG clickpos;
-    LONG lastpos;
-    LONG total_weight;
-    LONG first_bound;
-    LONG second_bound;
-    struct List *objs;
-    Object *obj_before;
-    Object *obj_after;
-    LONG lsum;
-    LONG oldWeightA;
-    LONG oldWeightB;
-    LONG rsum;
-    LONG lsize;
-    LONG rsize;
-    WORD lsiblings;
-    WORD rsiblings;
-    WORD lazy;
-};
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static ULONG Balance_New(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct MUI_BalanceData *data;
+    struct Balance_DATA *data;
     struct TagItem *tags,*tag;
 
     obj = (Object *)DoSuperMethodA(cl, obj, msg);
@@ -102,12 +66,9 @@ static ULONG Balance_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (ULONG)obj;
 }
 
-/**************************************************************************
- MUIM_Setup
-**************************************************************************/
-static ULONG Balance_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+IPTR Balance__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
 
     if (!(DoSuperMethodA(cl, obj, (Msg) msg)))
 	return FALSE;
@@ -120,12 +81,9 @@ static ULONG Balance_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *ms
     return TRUE;
 }
 
-/**************************************************************************
- MUIM_Cleanuo
-**************************************************************************/
-static ULONG Balance_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+IPTR Balance__MUIM_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
 
     DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 
@@ -135,9 +93,9 @@ static ULONG Balance_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static ULONG Balance_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+IPTR Balance__MUIM_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
@@ -160,12 +118,9 @@ static ULONG Balance_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMi
 }
 
 
-/**************************************************************************
- MUIM_Draw
-**************************************************************************/
-static ULONG  Balance_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+IPTR Balance__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
     struct MUI_RenderInfo *mri;
     LONG col1, col2;
 
@@ -234,7 +189,7 @@ static void draw_object_frame (Object *obj, Object *o, BOOL fixed)
     }
 }
 
-static LONG get_first_bound (struct MUI_BalanceData *data, Object *obj)
+static LONG get_first_bound (struct Balance_DATA *data, Object *obj)
 {
     ULONG spacing;
 
@@ -250,7 +205,7 @@ static LONG get_first_bound (struct MUI_BalanceData *data, Object *obj)
     }
 }
 
-static LONG get_second_bound (struct MUI_BalanceData *data, Object *obj)
+static LONG get_second_bound (struct Balance_DATA *data, Object *obj)
 {
     ULONG spacing;
 
@@ -267,7 +222,7 @@ static LONG get_second_bound (struct MUI_BalanceData *data, Object *obj)
 }
 
 
-static LONG get_first_bound_multi (struct MUI_BalanceData *data, Object *obj)
+static LONG get_first_bound_multi (struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
     {
@@ -279,7 +234,7 @@ static LONG get_first_bound_multi (struct MUI_BalanceData *data, Object *obj)
     }
 }
 
-static LONG get_second_bound_multi (struct MUI_BalanceData *data, Object *obj)
+static LONG get_second_bound_multi (struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
     {
@@ -291,7 +246,7 @@ static LONG get_second_bound_multi (struct MUI_BalanceData *data, Object *obj)
     }
 }
 
-static BOOL is_fixed_size (struct MUI_BalanceData *data, Object *obj)
+static BOOL is_fixed_size (struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
     {
@@ -304,7 +259,7 @@ static BOOL is_fixed_size (struct MUI_BalanceData *data, Object *obj)
 }
 
 
-static ULONG get_total_weight_2(struct MUI_BalanceData *data, Object *objA, Object *objB)
+static ULONG get_total_weight_2(struct Balance_DATA *data, Object *objA, Object *objB)
 {
     if (data->horizgroup)
     {
@@ -317,7 +272,7 @@ static ULONG get_total_weight_2(struct MUI_BalanceData *data, Object *objA, Obje
 }
 
 
-static void set_weight_2 (struct MUI_BalanceData *data, WORD current)
+static void set_weight_2 (struct Balance_DATA *data, WORD current)
 {
     LONG weightB;
     LONG weightA;
@@ -366,7 +321,7 @@ static void set_weight_2 (struct MUI_BalanceData *data, WORD current)
 
 static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mouse)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
 
     if ((data->total_weight == -1) || (data->first_bound == -1) || (data->second_bound == -1))
     {
@@ -409,7 +364,7 @@ static void recalc_weights_neighbours (struct IClass *cl, Object *obj, WORD mous
     set_weight_2(data, mouse);
 }
 
-static LONG get_weight (struct MUI_BalanceData *data, Object *obj)
+static LONG get_weight (struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
     {
@@ -421,7 +376,7 @@ static LONG get_weight (struct MUI_BalanceData *data, Object *obj)
     }
 }
 
-static void set_weight (struct MUI_BalanceData *data, Object *obj, LONG w)
+static void set_weight (struct Balance_DATA *data, Object *obj, LONG w)
 {
     if (data->horizgroup)
     {
@@ -433,7 +388,7 @@ static void set_weight (struct MUI_BalanceData *data, Object *obj, LONG w)
     }
 }
 
-static LONG get_size (struct MUI_BalanceData *data, Object *obj)
+static LONG get_size (struct Balance_DATA *data, Object *obj)
 {
     if (data->horizgroup)
     {
@@ -446,7 +401,7 @@ static LONG get_size (struct MUI_BalanceData *data, Object *obj)
 }
 
 #if 0
-static void set_interpolated_weight (struct MUI_BalanceData *data, Object *obj,
+static void set_interpolated_weight (struct Balance_DATA *data, Object *obj,
 				     LONG oldw, LONG neww)
 {
     if (data->horizgroup)
@@ -467,7 +422,7 @@ static void set_interpolated_weight (struct MUI_BalanceData *data, Object *obj,
 }
 #endif
 
-static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD current)
+static void set_weight_all (struct Balance_DATA *data, Object *obj, WORD current)
 {
     LONG weightB;
     LONG weightA;
@@ -603,7 +558,7 @@ static void set_weight_all (struct MUI_BalanceData *data, Object *obj, WORD curr
 
 static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
     Object *first = NULL;
     Object *last = NULL;
 
@@ -686,7 +641,7 @@ static void recalc_weights_all (struct IClass *cl, Object *obj, WORD mouse)
 
 static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
     
     if (data->state == CLICKED)
 	recalc_weights_all(cl, obj, mouse);
@@ -728,9 +683,9 @@ static void handle_move (struct IClass *cl, Object *obj, WORD mouse)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+IPTR Balance__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
-    struct MUI_BalanceData *data = INST_DATA(cl, obj);
+    struct Balance_DATA *data = INST_DATA(cl, obj);
 
     if (msg->imsg)
     {
@@ -809,25 +764,26 @@ static ULONG Balance_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Han
     return 0;
 }
 
-
+#if ZUNE_BUILTIN_BALANCE
 BOOPSI_DISPATCHER(IPTR, Balance_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Balance_New(cl, obj, (struct opSet *) msg);
-	case MUIM_Setup: return Balance_Setup(cl, obj, (APTR)msg);
-	case MUIM_Cleanup: return Balance_Cleanup(cl, obj, (APTR)msg);
-	case MUIM_AskMinMax: return Balance_AskMinMax(cl, obj, (APTR)msg);
-	case MUIM_Draw: return Balance_Draw(cl, obj, (APTR)msg);
-	case MUIM_HandleEvent: return Balance_HandleEvent(cl, obj, (APTR)msg);
+        case OM_NEW:           return Balance__OM_NEW(cl, obj, (struct opSet *) msg);
+        case MUIM_Setup:       return Balance__MUIM_Setup(cl, obj, (APTR)msg);
+        case MUIM_Cleanup:     return Balance__MUIM_Cleanup(cl, obj, (APTR)msg);
+        case MUIM_AskMinMax:   return Balance__MUIM_AskMinMax(cl, obj, (APTR)msg);
+        case MUIM_Draw:        return Balance__MUIM_Draw(cl, obj, (APTR)msg);
+        case MUIM_HandleEvent: return Balance__MUIM_HandleEvent(cl, obj, (APTR)msg);
+        default:               return DoSuperMethodA(cl, obj, msg);
     }
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-
-const struct __MUIBuiltinClass _MUI_Balance_desc = { 
+const struct __MUIBuiltinClass _MUI_Balance_desc =
+{ 
     MUIC_Balance,
     MUIC_Area,
-    sizeof(struct MUI_BalanceData),
+    sizeof(struct Balance_DATA),
     (void*)Balance_Dispatcher
 };
+#endif
