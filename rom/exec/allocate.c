@@ -138,7 +138,7 @@ AROS_LH2(APTR, Allocate,
 	    freeList->mh_Free-=byteSize;
 
 	    /* Fill the block with weird stuff to exploit bugs in applications */
-	    MUNGE_BLOCK(p2,byteSize,MEMFILL_ALLOC)
+	    MUNGE_BLOCK(p2,MEMFILL_ALLOC,byteSize);
 
 	    /* Return allocated block to caller */
 	    return p2;
