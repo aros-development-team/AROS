@@ -10,6 +10,7 @@
 #include <exec/devices.h>
 #include <exec/semaphores.h>
 #include <dos/dosextens.h>
+#include <devices/clipboard.h>
 #ifndef __MORPHOS__
 #include <dos/bptr.h>
 #endif
