@@ -63,6 +63,9 @@ struct FrameIData
 
     /* frame style? */
     WORD fid_FrameType;
+    
+    WORD fid_HOffset;
+    WORD fid_VOffset;
 };
 
 /****************************************************************************/
@@ -110,8 +113,9 @@ static void DrawFrame(
     /* Bottom/Right */
     SetAPen(rport, shadow);
     Draw(rport, left + width, top + height);
-    Draw(rport, left, top + height);
+    Draw(rport, left + 1, top + height);
 
+#if FRAME_SIZE == 1
     if (thicken != FALSE)
     {
 	/* Thicken Right Side */
@@ -122,7 +126,31 @@ static void DrawFrame(
 	SetAPen(rport, shine);
 	Move(rport, left + 1, top + height - 1);
 	Draw(rport, left + 1, top + 1);
+
     } /* if */
+    
+#elif FRAME_SIZE == 2
+    if (thicken != FALSE)
+    {
+	/* Thicken Right Side */
+	Move(rport, left + width - 1, top + 1);
+	Draw(rport, left + width - 1, top + height - 1);
+
+	/* Thicken Bottom Side */
+	Draw(rport, left + 2, top + height - 1);
+	
+	/* Thicken Left Side */
+	SetAPen(rport, shine);
+
+	Move(rport, left + 1, top + height - 1);
+	Draw(rport, left + 1, top + 1);
+
+	/* Thicken Top Side */	
+	Draw(rport, left + width - 2, top + 1);
+	
+    } /* if */
+ #endif
+
 } /* DrawFrame */
 
 /****************************************************************************/
@@ -154,7 +182,6 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
     if(msg->imp_RPort != NULL)
     {
 	UWORD *pens = default_pens;
-	UWORD loffset = 0, toffset = 0;
 	UWORD left, top;
 	UWORD shine, shadow;
 	BOOL selected;
@@ -231,8 +258,6 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	switch(fid->fid_FrameType)
 	{
 	case FRAME_DEFAULT:
-	    toffset = 1;
-	    loffset = 1;
 	    DrawFrame(
 		cl,
 		msg->imp_RPort,
@@ -244,8 +269,6 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    break;
 
 	case FRAME_BUTTON:
-	    toffset = 1;
-	    loffset = 2;
 	    DrawFrame(
 		cl,
 		msg->imp_RPort,
@@ -257,9 +280,6 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 	    break;
 
 	case FRAME_RIDGE:
-	    toffset = 1;
-	    loffset = 2;
-
 	    /* render outer pen-inverted thick bevel */
 	    DrawFrame(
 		cl,
@@ -275,19 +295,16 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 		cl,
 		msg->imp_RPort,
 		shadow, shine,
-		left + loffset, top + toffset,
-		IM(o)->Width - (loffset + loffset), IM(o)->Height - (toffset + toffset),
+		left + fid->fid_HOffset / 2, top + fid->fid_VOffset / 2,
+		IM(o)->Width - fid->fid_HOffset, IM(o)->Height - fid->fid_VOffset,
 		TRUE
 	    );
-
-	    toffset += 1;
-	    loffset += 2;
 	    break;
 
-	case FRAME_ICONDROPBOX:
-	    toffset = 2;
-	    loffset = 4;
-
+	case FRAME_ICONDROPBOX: {
+	    WORD hoffset = fid->fid_HOffset * 2 / 3;
+	    WORD voffset = fid->fid_VOffset * 2 / 3;
+	    
 	    /* render outer pen-inverted thick bevel */
 	    DrawFrame(
 		cl,
@@ -303,14 +320,11 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 		cl,
 		msg->imp_RPort,
 		shadow, shine,
-		left + loffset, top + toffset,
-		IM(o)->Width - (loffset + loffset), IM(o)->Height - (toffset + toffset),
+		left + hoffset, top + voffset,
+		IM(o)->Width - hoffset * 2, IM(o)->Height - voffset * 2,
 		TRUE
 	    );
-
-	    toffset += 2;
-	    loffset += 4;
-	    break;
+	    break; }
 	} /* switch */
 
 	if(fid->fid_EdgesOnly == FALSE)
@@ -324,10 +338,10 @@ static ULONG draw_frameiclass(Class *cl, Object *o, struct impDraw *msg)
 		SetABPenDrMd(msg->imp_RPort, pens[BACKGROUNDPEN], pens[BACKGROUNDPEN], JAM1);
 	    } /* if */
 	    RectFill(msg->imp_RPort,
-		left + loffset,
-		top  + toffset,
-		left + IM(o)->Width  - loffset - 1,
-		top  + IM(o)->Height - toffset - 1);
+		left + fid->fid_HOffset,
+		top  + fid->fid_VOffset,
+		left + IM(o)->Width  - fid->fid_HOffset - 1,
+		top  + IM(o)->Height - fid->fid_VOffset - 1);
 	} /* if */
 
 	retval = 1UL;
@@ -379,6 +393,36 @@ static ULONG set_frameiclass(Class *cl, Object *o, struct opSet *msg)
 			for areas in AppWindows where icons may be dropped.
 	    */
 	    fid->fid_FrameType = (WORD)tag->ti_Data;
+	    
+	    switch(fid->fid_FrameType)
+	    {
+	        case FRAME_DEFAULT:
+		    fid->fid_HOffset = fid->fid_VOffset = 1;
+		    break;
+		    
+		case FRAME_BUTTON:
+		    fid->fid_HOffset = 1;
+		    fid->fid_VOffset = 1;
+		    break;
+		
+		case FRAME_RIDGE:
+		    fid->fid_HOffset = 2;
+		    fid->fid_VOffset = 2;
+		    break;
+		    
+		case FRAME_ICONDROPBOX:
+		    fid->fid_HOffset = 3;
+		    fid->fid_VOffset = 3;
+		    break;
+
+	    } /* switch(fid->fid_FrameType) */
+	    
+#if FRAME_SIZE > 0
+	    fid->fid_HOffset *= 2;
+#endif
+#if FRAME_SIZE == 2
+	    fid->fid_VOffset *= 2;
+#endif
 	    break;
 
 	} /* switch */
@@ -394,46 +438,23 @@ static ULONG framebox_frameiclass(Class *cl, Object *o, struct impFrameBox *msg)
 {
     struct FrameIData *fid = INST_DATA(cl, o);
 
+    /* stegerg: the RKRM docs seem to be wrong. source box (around which
+       the frame goes) is imp_ContentsBox and dest box filled in by
+       this method is imp_FrameBox. */ 
+       
     if (msg->imp_FrameFlags & FRAMEF_SPECIFY)
     {
-	/*
-	    Would someone kindly explain RKM Libs page 898/899 in english :)
-	    I'll just forget about this for the time being until I have
-	    made more sence out of what is the "right thing" to do here.
-	*/
+	msg->imp_FrameBox->Left   = msg->imp_ContentsBox->Left +
+				    (msg->imp_ContentsBox->Width - msg->imp_FrameBox->Width) / 2;
+	msg->imp_FrameBox->Top    = msg->imp_ContentsBox->Top +
+				    (msg->imp_ContentsBox->Height - msg->imp_FrameBox->Height) / 2;
     }
     else
     {
-	switch(fid->fid_FrameType)
-	{
-	case FRAME_DEFAULT:
-	    msg->imp_ContentsBox->Top	 = msg->imp_FrameBox->Top    - 1;
-	    msg->imp_ContentsBox->Left	 = msg->imp_FrameBox->Left   - 1;
-	    msg->imp_ContentsBox->Height = msg->imp_FrameBox->Height + 2;
-	    msg->imp_ContentsBox->Width  = msg->imp_FrameBox->Width  + 2;
-	    break;
-
-	case FRAME_BUTTON:
-	    msg->imp_ContentsBox->Top	 = msg->imp_FrameBox->Top    - 1;
-	    msg->imp_ContentsBox->Left	 = msg->imp_FrameBox->Left   - 2;
-	    msg->imp_ContentsBox->Height = msg->imp_FrameBox->Height + 2;
-	    msg->imp_ContentsBox->Width  = msg->imp_FrameBox->Width  + 4;
-	    break;
-
-	case FRAME_RIDGE:
-	    msg->imp_ContentsBox->Top	 = msg->imp_FrameBox->Top    - 2;
-	    msg->imp_ContentsBox->Left	 = msg->imp_FrameBox->Left   - 4;
-	    msg->imp_ContentsBox->Height = msg->imp_FrameBox->Height + 4;
-	    msg->imp_ContentsBox->Width  = msg->imp_FrameBox->Width  + 8;
-	    break;
-
-	case FRAME_ICONDROPBOX:
-	    msg->imp_ContentsBox->Top	 = msg->imp_FrameBox->Top    - 6;
-	    msg->imp_ContentsBox->Left	 = msg->imp_FrameBox->Left   - 6;
-	    msg->imp_ContentsBox->Height = msg->imp_FrameBox->Height + 12;
-	    msg->imp_ContentsBox->Width  = msg->imp_FrameBox->Width  + 12;
-	    break;
-	}
+	msg->imp_FrameBox->Left   = msg->imp_ContentsBox->Left   - fid->fid_HOffset;
+	msg->imp_FrameBox->Top    = msg->imp_ContentsBox->Top    - fid->fid_VOffset;
+	msg->imp_FrameBox->Width  = msg->imp_ContentsBox->Width  + fid->fid_HOffset * 2;
+	msg->imp_FrameBox->Height = msg->imp_ContentsBox->Height + fid->fid_VOffset * 2;
     } /* if */
 
     return 1UL;
@@ -479,7 +500,9 @@ AROS_UFH3S(IPTR, dispatch_frameiclass,
 	    fid->fid_EdgesOnly = FALSE;
 	    fid->fid_Recessed  = FALSE;
 	    fid->fid_FrameType = FRAME_DEFAULT;
-
+	    fid->fid_HOffset = 1;
+	    fid->fid_VOffset = 1;
+	    
 	    /* Handle our special tags - overrides defaults */
 	    set_frameiclass(cl, (Object*)retval, (struct opSet *)msg);
 	}
