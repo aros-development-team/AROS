@@ -140,7 +140,7 @@ ULONG do_render_func(struct RastPort *rp
 	torender.MinY = rr->MinY + yrel;
 	torender.MaxX = rr->MaxX + xrel;
 	torender.MaxY = rr->MaxY + yrel;
-	
+
 	
 	CR = L->ClipRect;
 	
@@ -344,7 +344,6 @@ ULONG do_pixel_func(struct RastPort *rp
     }
     
     return retval;
-
 }
 
 /****************************************************************************************/
@@ -687,7 +686,7 @@ void amiga2hidd_fast(APTR src_info, OOP_Object *hidd_gc, LONG x_src , LONG y_src
 		     ULONG xsize, ULONG ysize, VOID (*fillbuf_hook)(),
 		     struct GfxBase * GfxBase)
 {
-    
+
     
     ULONG tocopy_w,
     	  tocopy_h;
@@ -888,7 +887,7 @@ void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_in
 UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 {
      UWORD cpf = (UWORD)-1;
-     
+
      switch (stdpf)
      {
 	case vHidd_StdPixFmt_RGB16:
@@ -1010,7 +1009,7 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 
 /****************************************************************************************/
 
-#define ENABLE_PROFILING   0
+#define ENABLE_PROFILING   1
 #define USE_OLD_MoveRaster 0
 
 #define rdtscll(val) \
@@ -1038,8 +1037,6 @@ void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
 #define AROS_END_PROFILING
 
 #endif
-
-#if USE_OLDMoveRaster
 
 BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
@@ -1080,11 +1077,9 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     }
     else
     {
-    	struct ClipRect *CR, *LastHiddenCR = NULL;
-        struct Region   *Damage;
-
+    	struct ClipRect *SrcCR;
+  
 	LockLayerRom(L);
-
 
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
@@ -1105,7 +1100,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
            The regions that we obtain after (2) is the new damage list
         */
-        
+
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 	    Rect = ScrollRect;
@@ -1166,25 +1161,31 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 	AROS_BEGIN_PROFILING(Blitting loop)
 
-        for (LastHiddenCR = NULL, CR = L->ClipRect; CR; CR = CR->Next)
-        {
-            CR->_p1 = LastHiddenCR;
+#if USE_OLDMoveRaster
 
-            if (CR->lobs)
-                LastHiddenCR = CR;
-	}
+	{
+            struct ClipREct *LastHiddenCR;
+
+            for (LastHiddenCR = NULL, SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next)
+            {
+                SrcCR->_p1 = LastHiddenCR;
+
+                if (SrcCR->lobs)
+                    LastHiddenCR = SrcCR;
+	    }
+        }
 
 
-        for (CR = L->ClipRect; CR; CR = CR->Next)
+        for (SrcCR = L->ClipRect; SrcCR; SrcCR = SrcCR->Next)
     	{
  	    int cando = 0;
 
-            if (CR->lobs && (L->Flags & LAYERSIMPLE))
+            if (SrcCR->lobs && (L->Flags & LAYERSIMPLE))
 	    {
                 continue;
 	    }
 
-            if (_AndRectRect(&ScrollRect, Bounds(CR), &Rect))
+            if (_AndRectRect(&ScrollRect, Bounds(SrcCR), &Rect))
 	    {
 		TranslateRect(&Rect, -dx, -dy);
 
@@ -1196,7 +1197,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 	    {
 		/* Rect.Min(X|Y) are the coordinates to wich the rectangle has to be moved
 		   Rect.Max(X|Y) - Rect.Max(X|Y) - 1 are the dimensions of this rectangle */
-		if (!CR->_p1 && !CR->lobs)
+		if (!SrcCR->_p1 && !SrcCR->lobs)
 		{
 		    /* there are no hidden/obscured rectangles this recrtangle has to deal with*/
 		    BltBitMap
@@ -1228,7 +1229,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		    if (!RectRegion)
 		        goto failexit;
 
- 		    if (CR->lobs)
+ 		    if (SrcCR->lobs)
 		    {
 			if (L->Flags & LAYERSUPER)
 		        {
@@ -1237,10 +1238,10 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		        }
 			else
 			{
-		            corrsrcx = - MinX(CR) + ALIGN_OFFSET(MinX(CR));
-		            corrsrcy = - MinY(CR);
+		            corrsrcx = - MinX(SrcCR) + ALIGN_OFFSET(MinX(SrcCR));
+		            corrsrcy = - MinY(SrcCR);
 		        }
-			srcbm = CR->BitMap;
+			srcbm = SrcCR->BitMap;
 		    }
 		    else
 		    {
@@ -1249,7 +1250,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 		        srcbm     = rp->BitMap;
 		    }
 
-		    for (HiddCR = CR->_p1; HiddCR; HiddCR = HiddCR->_p1)
+		    for (HiddCR = SrcCR->_p1; HiddCR; HiddCR = HiddCR->_p1)
 		    {
 			if (_AndRectRect(Bounds(RectRegion), Bounds(HiddCR), &Tmp))
 			{
@@ -1294,7 +1295,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 			}
 		    }
 
-		    if ((dosrcsrc = _AndRectRect(&CR->bounds, &Rect, &Tmp)))
+		    if ((dosrcsrc = _AndRectRect(Bounds(SrcCR), &Rect, &Tmp)))
 		    {
 			if (!ClearRectRegion(RectRegion, &Tmp))
 			{
@@ -1345,141 +1346,7 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 	    }
         }
 
-        AROS_END_PROFILING
-
-failexit:
-        UnlockLayerRom(L);
-    }
-
-    return TRUE;
-}
-
 #else
-
-BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
-    	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase)
-{
-    struct Layer     *L       = rp->Layer;
-    struct Rectangle  ScrollRect;
-    struct Rectangle  Rect;
-
-    if (!CorrectDriverData (rp, GfxBase))
-	return FALSE;
-
-    if (0 == dx && 0 == dy)
-    	return TRUE;
-
-    ScrollRect.MinX = x1;
-    ScrollRect.MinY = y1;
-    ScrollRect.MaxX = x2;
-    ScrollRect.MaxY = y2;
-
-    if (!L)
-    {
-        Rect = ScrollRect;
-	TranslateRect(&Rect, -dx, -dy);
-        if (_AndRectRect(&ScrollRect, &Rect, &Rect))
-        {
-            BltBitMap
-            (
-                rp->BitMap,
-                Rect.MinX + dx,
-                Rect.MinY + dy,
-	        rp->BitMap,
-                Rect.MinX,
-                Rect.MinY,
-                Rect.MaxX - Rect.MinX + 1,
-                Rect.MaxY - Rect.MinY + 1,
-		0xc0, /* copy */
-                0xff,
-                NULL
-	    );
-	}
-    }
-    else
-    {
-        struct ClipRect *SrcCR, *DstCR/*, *OldCR*/;
-
-        LockLayerRom(L);
-
-        AROS_BEGIN_PROFILING(SortLayerCR)
-
-        #define LayersBase (struct LayersBase *)(GfxBase->gb_LayersBase)
-	SortLayerCR(L, dx, dy);
-	#undef LayersBase
-
-        AROS_END_PROFILING
-
-        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
-        {
- 	    /* Scroll the old damagelist within the scroll area */
-	    ScrollRegion(L->DamageList, &ScrollRect, -dx, -dy);
-	}
-
-        /* The scrolling area is relative to the Layer, so make it relative to the screen */
-        TranslateRect(&ScrollRect, MinX(L), MinY(L));
-
-        /* The damage list will be formed by the now hidden layer's parts that will become visible due
-           to the scrolling procedure, thus we procede this way:
-
-           1) Calculate the invisible region out of the visible one, subtracting it from the
-              scrolling area
-
-           2) Scroll the invisible region by (-dx, dy-) and then subtract from it the not scrolled one
-
-           The regions that we obtain after (2) is the new damage list
-        */
-        if (L->Flags & LAYERSIMPLE && UpdateDamageList)
-        {
-	    Rect = ScrollRect;
-            TranslateRect(&Rect, dx, dy);
-
-	    if (_AndRectRect(&ScrollRect, &Rect, &Rect))
-            {
- 	        struct Region *Damage;
-
-                Damage = NewRectRegion(Rect.MinX, Rect.MinY, Rect.MaxX, Rect.MaxY);
-                if (Damage)
-                {
-        	    if
-                    (
-                        ClearRegionRegion(L->VisibleRegion, Damage)
-                        &&
-                        Damage->RegionRectangle
-                    )
-                    {
-                        struct Region Tmp;
-                        /*
-                           We play sort of dirty here, by making assumptions about the internals of the
-                           Region structure and the region handling functions, but we are allowed to do that,
-                           aren't we? ;-)
-      		        */
-
-                        Tmp = *Damage;
-
-                        TranslateRect(Bounds(Damage), -dx, -dy);
-
-                        if
-                        (
-                            ClearRegionRegion(&Tmp, Damage)
-                            &&
-                            Damage->RegionRectangle
-                        )
-              	        {
-		            /* Join the new damage list with the old one */
-                	    TranslateRect(Bounds(Damage), -MinX(L), -MinY(L));
-                	    OrRegionRegion(Damage, L->DamageList);
-
-                	    L->Flags |= LAYERREFRESH;
-            	        }
-		    }
-
-            	    DisposeRegion(Damage);
-             	}
-            }
-        }
-
-        AROS_BEGIN_PROFILING(Blitting loop)
 
         for (/*OldCR = NULL,*/ SrcCR = L->ClipRect; SrcCR; /*OldCR = SrcCR,*/ SrcCR = SrcCR->Next)
     	{
@@ -1491,9 +1358,10 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
 
 		if (_AndRectRect(&ScrollRect, &Rect, &Rect))
                 {
-                    struct BitMap *srcbm;
-	            LONG           corrsrcx, corrsrcy;
-                    ULONG          area;
+                    struct BitMap   *srcbm;
+		    struct ClipRect *DstCR;
+                    LONG             corrsrcx, corrsrcy;
+                    ULONG            area;
 
                     if (SrcCR->lobs)
 	            {
@@ -1573,16 +1441,14 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
         	}
 	    }
  	}
-
-	AROS_END_PROFILING
+#endif
+        AROS_END_PROFILING
 
         UnlockLayerRom(L);
     }
 
     return TRUE;
-
 }
-#endif
 
 /****************************************************************************************/
 /****************************************************************************************/
