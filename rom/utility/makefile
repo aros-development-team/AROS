@@ -12,7 +12,9 @@ FUNCTIONS = \
 	refreshtagitemclones taginarray maptags \
 	addnamedobject allocnamedobjecta attemptremnamedobject \
 	findnamedobject namedobjectname releasenamedobject \
-	remnamedobject freenamedobject
+	remnamedobject freenamedobject \
+	packstructuretags unpackstructuretags checkdate \
+	filtertagitems filtertagchanges
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \

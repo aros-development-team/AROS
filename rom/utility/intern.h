@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/01/08 03:36:14  iaint
+    A few more utility.lib functions
+
     Revision 1.7  1996/12/18 01:27:36  iaint
     NamedObjects
 
@@ -55,6 +58,9 @@
 #endif
 #ifndef UTILITY_DATE_H
 #include <utility/date.h>
+#endif
+#ifndef UTILITY_PACK_H
+#include <utility/pack.h>
 #endif
 #ifndef AROS_LIBCALL_H
 #include <aros/libcall.h>
