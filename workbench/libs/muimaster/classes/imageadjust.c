@@ -36,6 +36,11 @@ struct Imageadjust_DATA
     Object *bitmap_image;
     struct Hook bitmap_hook;
 
+    struct Hook gradient_hook;
+    Object *gradient_imagedisplay;
+    Object *gradient_start_poppen;
+    Object *gradient_end_poppen;
+
     Object *pattern_image[18];
     ULONG last_pattern_selected;
     struct Hook pattern_select_hook;
@@ -66,6 +71,22 @@ static void Bitmap_Function(struct Hook *hook, Object *obj, APTR msg)
 	snprintf(buf, 255, "5:%s", name);
 	set(data->bitmap_image, MUIA_Imagedisplay_Spec, (IPTR)buf);
     }
+}
+
+
+static void Gradient_Function(struct Hook *hook, Object *obj, APTR msg)
+{
+    struct Imageadjust_DATA *data = *(struct Imageadjust_DATA **)msg;
+    struct MUI_RGBcolor *start_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_start_poppen, MUIA_Pendisplay_RGBcolor);
+    struct MUI_RGBcolor *end_rgb = (struct MUI_RGBcolor*)XGET(data->gradient_end_poppen, MUIA_Pendisplay_RGBcolor);
+    char buf[200];
+
+    snprintf(buf, sizeof(buf), "7:%c,%08lx,%08lx,%08lx-%08lx,%08lx,%08lx",
+                 'v',
+                 start_rgb->red,start_rgb->green,start_rgb->blue,
+                 end_rgb->red,end_rgb->green,end_rgb->blue);
+
+    set(data->gradient_imagedisplay, MUIA_Imagedisplay_Spec, buf);
 }
 
 
@@ -250,6 +271,14 @@ STATIC VOID Imageadjust_SetImagespec(Object *obj, struct Imageadjust_DATA *data,
 //			return zune_imspec_copy(__zprefs.images[img]);
 	        }
 	        break;
+
+	case	'7':
+		Gradient_Function(NULL,obj,&data);
+		if (data->adjust_type == MUIV_Imageadjust_Type_All)
+		    set(obj,MUIA_Group_ActivePage,5);
+		else
+		    set(obj,MUIA_Group_ActivePage,3);
+		break;
     }
 }
 
@@ -257,22 +286,26 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct Imageadjust_DATA   *data;
     struct TagItem  	    *tag, *tags;
-    static const char *labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", NULL};
+    static const char *labels_all[] = {"Pattern", "Vector", "Color", "External", "Bitmap", "Gradient", NULL};
     static const char *labels_image[] = {"Pattern", "Vector", "Color", "External", NULL};
-    static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", NULL};
+    static const char *labels_bg[] = {"Pattern", "Color", "Bitmap", "Gradient", NULL};
     static const char *labels_color[] = {"Color", NULL};
     Object *pattern_group = NULL;
     Object *vector_group = NULL;
+    Object *external_list = NULL;
     Object *bitmap_string = NULL;
     Object *bitmap_image = NULL;
     Object *bitmap_popasl = NULL;
-    Object *external_list = NULL;
+    Object *gradient_imagedisplay = NULL;
+    Object *gradient_start_poppen = NULL;
+    Object *gradient_end_poppen = NULL;
     char *spec = NULL;
     LONG i;
     LONG adjust_type;
     Object *color_group = NULL;
     Object *external_group = NULL;
     Object *bitmap_group = NULL;
+    Object *gradient_group = NULL;
 
     adjust_type = GetTagData(MUIA_Imageadjust_Type, MUIV_Imageadjust_Type_All,
 			     msg->ops_AttrList);
@@ -309,6 +342,19 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 	        MUIA_Popstring_Button, (IPTR)PopButton(MUII_PopFile),
 	        End),
 	    End;
+
+	gradient_group = VGroup,
+	    Child, (IPTR)(gradient_imagedisplay = ImagedisplayObject,
+		TextFrame,
+		InnerSpacing(0,0),
+	        MUIA_Imagedisplay_FreeHoriz, TRUE,
+	        MUIA_Imagedisplay_FreeVert, TRUE,
+	        End),
+	    Child, HGroup,
+		Child, (IPTR)(gradient_start_poppen = PoppenObject, End),
+		Child, (IPTR)(gradient_end_poppen = PoppenObject, End),
+		End,
+	    End;
     }
 
     switch (adjust_type)
@@ -321,6 +367,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)external_group,
 				       Child, (IPTR)bitmap_group,
+				       Child, (IPTR)gradient_group,
 				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Background:
@@ -329,6 +376,7 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 				       Child, (IPTR)HCenter((pattern_group = ColGroup(6), End)),
 				       Child, (IPTR)color_group,
 				       Child, (IPTR)bitmap_group,
+				       Child, (IPTR)gradient_group,
 				       TAG_MORE, (IPTR)msg->ops_AttrList);
 	    break;
 	case MUIV_Imageadjust_Type_Image:
@@ -423,6 +471,24 @@ IPTR Imageadjust__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->bitmap_hook, (IPTR)data);
 	}
     } /* if (adjust_type != MUIV_Imageadjust_Type_Pen) */
+
+    if (gradient_imagedisplay)
+    {
+	data->gradient_imagedisplay = gradient_imagedisplay;
+	data->gradient_start_poppen = gradient_start_poppen;
+	data->gradient_end_poppen = gradient_end_poppen;
+
+	data->gradient_hook.h_Entry = HookEntry;
+	data->gradient_hook.h_SubEntry = (HOOKFUNC)Gradient_Function;
+	DoMethod(gradient_start_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,
+		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
+	DoMethod(gradient_end_poppen, MUIM_Notify, MUIA_Pendisplay_Spec, MUIV_EveryTime,
+		     (IPTR)obj, 3, MUIM_CallHook, (IPTR)&data->gradient_hook, (IPTR)data);
+
+	/* Set the gradient image to correct values (i.e. black) */
+	Gradient_Function(NULL,obj,&data);
+
+    } /* if (gradient_imagedisplay) */
 
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
