@@ -269,7 +269,8 @@ enum liboption
   o_noexpunge = 1,
   o_rom = 2,
   o_unique = 4,
-  o_nolibheader = 8
+  o_nolibheader = 8,
+  o_hasrt = 16
 };
 
 struct libconf
@@ -293,10 +294,7 @@ int num, len, i;
 char *line, *word;
 char **words = NULL;
 
-  if(file)
-    fd = fopen(file,"rb");
-  else
-    fd = fopen("lib.conf","rb");
+  fd = fopen((file?file:"lib.conf"),"rb");
   if(!fd)
   {
     fprintf( stderr, "Couldn't open %s!\n", (file?file:"lib.conf") );
@@ -444,6 +442,8 @@ char **words = NULL;
             lc->option |= o_unique;
           else if( strcmp(words[i],"nolibheader")==0 )
             lc->option |= o_nolibheader;
+          else if( strcmp(words[i],"hasrt")==0 )
+            lc->option |= o_hasrt;
         }
       }
     }
@@ -508,6 +508,7 @@ return 0;
 #				symbols.
 #		    nolibheader - We don't want to use the LibHeader prefixed
 #				functions in the function table.
+#		    hasrt - This library has resource tracking.
 #
 #		You can specify more than one option in a config file and
 #		more than one option per option line. Separate options by
@@ -615,6 +616,7 @@ char *word, **words;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, len, i;
 char **name = NULL, **type = NULL, **reg = NULL, *header = NULL, *code = NULL;
+char *macro[2];
 int numparams=0;
 
   if(argc != 3)
@@ -675,6 +677,16 @@ int numparams=0;
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          macro[0] = strdup("LHQUAD");
+          macro[1] = strdup("LHAQUAD");
+        }
+        else
+        {
+          macro[0] = strdup("LH");
+          macro[1] = strdup("LHA");
+        }
         numparams = 0;
         if(fdo)
           fclose(fdo);
@@ -694,9 +706,11 @@ int numparams=0;
       if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
       {
         fprintf( fdo, "%s\n", header);
-        fprintf( fdo, "AROS_LH%d(%s, %s,\n", numparams, type[0], name[0] );
+        fprintf( fdo, "AROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
         for( i = 1 ; i <= numparams ; i++ )
-          fprintf( fdo, "AROS_LHA(%s, %s, %s),\n", type[i], name[i], reg[i] );
+        {
+          fprintf( fdo, "%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
+        }
         fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
         fprintf( fdo, "%s\n", code );
         in_function = 0;
@@ -706,6 +720,8 @@ int numparams=0;
             free(name[i]);
         }
         free(name);
+        free(macro[0]);
+        free(macro[1]);
         name = NULL;
         code = NULL;
       }
@@ -825,7 +841,7 @@ int i;
 
 int genfunctable(int argc, char **argv)
 {
-FILE *fd, *fdo;
+FILE *fd = NULL, *fdo;
 struct libconf *lc;
 char *line = 0;
 char *word, **words;
@@ -836,16 +852,23 @@ char *funcname = NULL, **funcnames = NULL;
 /* Well, there are already 4 functions (open,close,expunge,null) */
 int numfuncs = 4;
 
-  if(argc != 2)
+  /* First check if we have a HIDD which does not have an archive */
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if(lc->type!=t_hidd)
   {
-    fprintf( stderr, "Usage: %s <archfile>\n", argv[0] );
-    exit(-1);
-  }
-  fd = fopen(argv[1],"rb");
-  if(!fd)
-  {
-    fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
-    exit(-1);
+    if(argc != 2)
+    {
+      fprintf( stderr, "Usage: %s <archfile>\n", argv[0] );
+      exit(-1);
+    }
+    fd = fopen(argv[1],"rb");
+    if(!fd)
+    {
+      fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
+      exit(-1);
+    }
   }
   fdo = fopen("functable.c.new","w");
   if(!fdo)
@@ -854,66 +877,68 @@ int numfuncs = 4;
     exit(-1);
   }
 
-  lc = calloc( 1, sizeof(struct libconf) );
-  if(parse_libconf(NULL,lc))
-    return(-1);
-
-  words = NULL;
-  in_archive = 0;
-  in_function = 0;
-  in_autodoc = 0;
-  in_code = 0;
-  in_header = 0;
-  while( (line = get_line(fd)) )
+  if(lc->type!=t_hidd)
   {
-    word = keyword(line);
-    if( word )
+    words = NULL;
+    in_archive = 0;
+    in_function = 0;
+    in_autodoc = 0;
+    in_code = 0;
+    in_header = 0;
+    while( (line = get_line(fd)) )
     {
-      if( strcmp(word,"Archive")==0 && !in_archive )
-        in_archive = 1;
-      if( strcmp(word,"/Archive")==0 && in_archive && ! in_function )
-        break;
-      if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
-        in_autodoc = 1;
-      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
-        in_autodoc = 0;
-      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
-        in_code = 1;
-      if( strcmp(word,"/Code")==0 && in_code )
-        in_code = 0;
-      if( strcmp(word,"Header")==0 && in_archive && !in_function )
-        in_header = 1;
-      if( strcmp(word,"/Header")==0 && in_header )
-        in_header = 0;
-      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      word = keyword(line);
+      if( word )
       {
-        num = get_words(line,&words);
-        funcname = strdup(words[num-1]);
-        in_function = 1;
-      }
-      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
-        in_function = 0;
-      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
-      {
-        num = get_words(line,&words);
-        num = atoi(words[1]);
-        if( num>numfuncs )
+        if( strcmp(word,"Archive")==0 && !in_archive )
+          in_archive = 1;
+        if( strcmp(word,"/Archive")==0 && in_archive && ! in_function )
+          break;
+        if( strcmp(word,"AutoDoc")==0 && in_function && !in_autodoc && !in_code )
+          in_autodoc = 1;
+        if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+          in_autodoc = 0;
+        if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+          in_code = 1;
+        if( strcmp(word,"/Code")==0 && in_code )
+          in_code = 0;
+        if( strcmp(word,"Header")==0 && in_archive && !in_function )
+          in_header = 1;
+        if( strcmp(word,"/Header")==0 && in_header )
+          in_header = 0;
+        if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
         {
-          funcnames = realloc( funcnames, (num-4) * sizeof(char *));
-          /* initialize new memory */
-          for( ;numfuncs<num; numfuncs++)
-            funcnames[numfuncs-4] = NULL;
+          num = get_words(line,&words);
+          funcname = strdup(words[num-1]);
+          in_function = 1;
         }
-        funcnames[num-5] = funcname;
-      }
+        if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+          in_function = 0;
+        if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+        {
+          num = get_words(line,&words);
+          num = atoi(words[1]);
+          if( num>numfuncs )
+          {
+            funcnames = realloc( funcnames, (num-4) * sizeof(char *));
+            /* initialize new memory */
+            for( ;numfuncs<num; numfuncs++)
+              funcnames[numfuncs-4] = NULL;
+          }
+          funcnames[num-5] = funcname;
+        }
 
-      free(word);
+        free(word);
+      }
+      free(line);
     }
-    free(line);
   }
   emit(fdo,lc,funcnames,numfuncs);
   fclose(fdo);
-  fclose(fd);
+  if(lc->type!=t_hidd)
+  {
+    fclose(fd);
+  }
   moveifchanged("functable.c","functable.c.new");
 
 return 0;
@@ -929,6 +954,7 @@ char *word = NULL, **words;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+char *macro[2];
 int numparams=0;
 
   if(argc != 3)
@@ -973,9 +999,11 @@ int numparams=0;
         in_autodoc = 0;
       if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
       {
-        fprintf( fdo, "\nAROS_LH%d(%s, %s,\n", numparams, type[0], name[0] );
+        fprintf( fdo, "\nAROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
         for( i = 1 ; i <= numparams ; i++ )
-          fprintf( fdo, "AROS_LHA(%s, %s, %s),\n", type[i], name[i], reg[i] );
+        {
+          fprintf( fdo, "AROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
+        }
         fprintf( fdo, "struct LIBBASETYPE *, LIBBASE, %s, BASENAME)\n", reg[0] );
         in_code = 1;
       }
@@ -997,11 +1025,25 @@ int numparams=0;
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          macro[0] = strdup("LHQUAD");
+          macro[1] = strdup("LHAQUAD");
+        }
+        else
+        {
+          macro[0] = strdup("LH");
+          macro[1] = strdup("LHA");
+        }
         numparams = 0;
         in_function = 1;
       }
       if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      {
+        free(macro[0]);
+        free(macro[1]);
         in_function = 0;
+      }
       if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
       {
         fprintf( fdo, "#include \"libdefs.h\"\n\n" );
@@ -1510,6 +1552,7 @@ char *word = NULL, **words;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+char *macro[2];
 int numparams=0;
 int firstlvo;
 
@@ -1647,6 +1690,16 @@ int firstlvo;
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          macro[0] = strdup("LCQUAD");
+          macro[1] = strdup("LCAQUAD");
+        }
+        else
+        {
+          macro[0] = strdup("LC");
+          macro[1] = strdup("LCA");
+        }
         numparams = 0;
         in_function = 1;
       }
@@ -1661,12 +1714,14 @@ int firstlvo;
               fprintf( fdo, ", " );
             fprintf( fdo, "%s", name[i] );
           }
-          fprintf( fdo, ") \\\n\tAROS_LC%d(%s, %s, \\\n", numparams, type[0], name[0] );
+          fprintf( fdo, ") \\\n\tAROS_%s%d(%s, %s, \\\n", macro[0], numparams, type[0], name[0] );
           for( i = 1 ; i <= numparams ; i++ )
-            fprintf( fdo, "\tAROS_LCA(%s, %s, %s), \\\n", type[i], name[i], reg[i] );
-          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+            fprintf( fdo, "\tAROS_%s(%s, %s, %s), \\\n", macro[1], type[i], name[i], reg[i] );
+          fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
         in_function = 0;
+        free(macro[0]);
+        free(macro[1]);
       }
       if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
         in_header = 1;
@@ -1702,7 +1757,7 @@ int firstlvo;
 
     free(line);
   }
-  fprintf( fdo, "#endif /* DEFINES_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo, "\n#endif /* DEFINES_%s_PROTOS_H */\n", upperbasename );
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
@@ -1723,6 +1778,7 @@ char *word = NULL, **words;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+char *macro[2];
 int numparams=0;
 int firstlvo;
 
@@ -1816,7 +1872,7 @@ int firstlvo;
     fclose(headerstempl);
     fprintf( fdo, "\n" );
   }
-  fprintf( fdo, "\n/* Prototypes */\n" );
+  fprintf( fdo, "/* Prototypes */\n" );
   
   in_archive = 0;
   in_header = 0;
@@ -1857,6 +1913,16 @@ int firstlvo;
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          macro[0] = strdup("LPQUAD");
+          macro[1] = strdup("LPAQUAD");
+        }
+        else
+        {
+          macro[0] = strdup("LP");
+          macro[1] = strdup("LPA");
+        }
         numparams = 0;
         in_function = 1;
       }
@@ -1864,18 +1930,15 @@ int firstlvo;
       {
         if( atoi(reg[0]) > firstlvo )
           {
-          fprintf( fdo, "\n#define %s(", name[0] );
+          fprintf( fdo, "\nAROS_%s%d(%s, %s,\n", macro[0], numparams, type[0], name[0] );
           for( i = 1 ; i <= numparams ; i++ )
           {
-            if( i!=1 )
-              fprintf( fdo, ", " );
-            fprintf( fdo, "%s", name[i] );
+            fprintf( fdo, "\tAROS_%s(%s, %s, %s),\n", macro[1], type[i], name[i], reg[i] );
           }
-          fprintf( fdo, ") \\\n\tAROS_LP%d(%s, %s, \\\n", numparams, type[0], name[0] );
-          for( i = 1 ; i <= numparams ; i++ )
-            fprintf( fdo, "\tAROS_LPA(%s, %s, %s), \\\n", type[i], name[i], reg[i] );
-          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+          fprintf( fdo, "\tstruct %s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
         }
+        free(macro[0]);
+        free(macro[1]);
         in_function = 0;
       }
       if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
@@ -1912,7 +1975,7 @@ int firstlvo;
 
     free(line);
   }
-  fprintf( fdo, "#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
+  fprintf( fdo, "\n#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
   fclose(fdo);
   fclose(fd);
   moveifchanged(filename,newname);
@@ -1971,13 +2034,13 @@ char *upperbasename;
   fprintf( fdo, "#else\n" );
   fprintf( fdo, "#   include <defines/%s.h>\n", lc->basename );
   fprintf( fdo, "#endif\n\n" );
-#warning TODO: Add hasrt option
-/*
-  fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
-  fprintf( fdo, "#   define ENABLE_RT_%s 1\n", upperbasename );
-  fprintf( fdo, "#   include <aros/rt.h>\n" );
-  fprintf( fdo, "#endif\n\n" );
-*/
+  if(lc->option & o_hasrt)
+  {
+    fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
+    fprintf( fdo, "#   define ENABLE_RT_%s 1\n", upperbasename );
+    fprintf( fdo, "#   include <aros/rt.h>\n" );
+    fprintf( fdo, "#endif\n\n" );
+  }
   fprintf( fdo, "#endif /* PROTO_%s_H */\n", upperbasename );
   fclose(fdo);
   moveifchanged(filename,newname);

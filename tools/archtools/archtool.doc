@@ -12,10 +12,11 @@ This header is code -- usually common #includes -- which is prepended to
 generated source files.
 After the header definition of functions follow:
 
-A function is defined by '#Function FType ReturnType FunctionName' and
-closed by '#/Function'. FType is the function type e.g. LHA (which will
-expand to AROS_LHn(AROS_LHA(),...) ).
-[Note: by now this is not checked, but provided for future use]
+A function is defined by '#Function MacroType ReturnType FunctionName' and
+closed by '#/Function'. MacroType is the type of the used macros for
+functions in the library, e.g. LHA (which will expand to
+AROS_LHn(AROS_LHA(),...) ) or LHAQUAD.
+[Note: We only distinguish LHA and LHAQUAD by now. Hope this is enough?]
 The ReturnType is the type of the return value of the function.
 FunctionName just does what it means ;-)
 
@@ -44,6 +45,7 @@ Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C] <parameter>
      Usage: archtool -a <destdir> <archfile>
   -t genfunctable
      Usage: archtool -t <archfile>
+     for HIDDs with 'type hidd' in lib.conf: archtool -t
   -s gensource
      Usage: archtool -s <archfile> <sourcefile>
   -m mergearch
@@ -71,7 +73,7 @@ directory.
 
  3) Generate functable.c
 This module generates functable.c in the current dir from the <archfile>
-archive.
+archive. It reads in lib.conf and if type==hidd archfile is not needed.
 [Note: By now no(!) aliases for function names are allowed! However,
  aliases are only used in rom/dos. Therefore this lib can't be converted
  by now.]

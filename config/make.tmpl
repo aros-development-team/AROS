@@ -86,11 +86,11 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 
 $(OBJDIR)/functions.c : $(TOP)/tools/archtools/archtool %(archive)
 	@$(TOP)/tools/archtools/archtool -s %(archive) functions.c
-	%mkdir_q $(OBJDIR)
+%mkdir_q $(OBJDIR)
 	@$(MV) functions.c $(OBJDIR)
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
-	%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
+%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 %end
 
 %define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from="$(OBJS)" cmd=$(CC) opt=$(CFLAGS) err=functions.err functions=$(FUNCTIONS)
@@ -106,11 +106,11 @@ $(OBJDIR)/functions.o : $(OBJDIR)/functions.c
 
 $(OBJDIR)/functions.c : $(TOP)/tools/cpak/cpak $(foreach f,%(functions),$(f).c)
 	@$(TOP)/tools/cpak/cpak %(functions)
-	%mkdir_q $(OBJDIR)
+%mkdir_q $(OBJDIR)
 	@$(MV) functions.c functions.h $(OBJDIR)
 
 $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
-	%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
+%mkdepend_q flags="$(CFLAGS) -I$(OBJDIR)"
 %end
 
 # Same but more noisy
@@ -317,7 +317,7 @@ libdefs.h : lib.conf $(GENLIBDEF_SCRIPT)
 	@$(AWK) -f $(GENLIBDEF_SCRIPT) $< > $@
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 %end
 
 %define gennames name=$(LIBNAME)
@@ -416,7 +416,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend opt=$(MKDEPEND_FLAGS)
+%mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
 %define genromlib flags=$(CFLAGS) cc=$(CC)
@@ -517,7 +517,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend opt=$(MKDEPEND_FLAGS)
+%mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
 # version of genromlib that allows you to use archtools
@@ -574,7 +574,7 @@ show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
+%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h $(OBJDIR)/functable.c endtag.c $(EXTRA_CLEAN) \
@@ -582,22 +582,19 @@ clean ::
 
 # Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
-	%mklib_arch from=$(ALL_OBJS) archive=%(archive)
+%mklib_arch from=$(ALL_OBJS) archive=%(archive)
 
 $(OBJDIR)/%.o : %.c
-	%compile_q
+%compile_q
 
 # Rule to create a .library in the local dir
-libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
+libdefs.h : $(TOP)/tools/archtools/archtool lib.conf
 	@$(ECHO) "Generating $@..."
 	@$(TOP)/tools/archtools/archtool -c
 
 ifndef NO_FUNCTABLE
-ifndef FUNCTABLE_SRCS
-FUNCTABLE_SRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
-endif
 
-functable.c : $(FUNCTABLE_SRCS) $(TOP)/tools/archtools/archtool libdefs.h
+functable.c : %(archive) $(TOP)/tools/archtools/archtool libdefs.h
 	@$(ECHO) "Generating $@..."
 	@$(TOP)/tools/archtools/archtool -t %(archive)
 endif
@@ -615,10 +612,10 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 
 # Generate include files
-%genlibincludes
+%genlibincludes_arch
 
 %end
 
@@ -679,7 +676,7 @@ show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
+%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h functable.c endtag.c $(EXTRA_CLEAN) \
@@ -687,10 +684,10 @@ clean ::
 
 # Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
-	%mklib_f from=$(ALL_OBJS) functions=%(functions)
+%mklib_f from=$(ALL_OBJS) functions=%(functions)
 
 $(OBJDIR)/%.o : %.c
-	%compile_q
+%compile_q
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
@@ -721,7 +718,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 
 # Generate include files
 %genlibincludes
@@ -785,7 +782,7 @@ show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 setup :
-	%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
+%mkdirs_q $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS)
 
 clean ::
 	$(RM) $(OBJDIR) *.err libdefs.h functable.c endtag.c $(EXTRA_CLEAN) \
@@ -793,10 +790,10 @@ clean ::
 
 # Collect all functions in a linklib for fast linking
 $(LIB) : $(ALL_OBJS)
-	%mklib_f from=$(ALL_OBJS) functions=%(functions)
+%mklib_f from=$(ALL_OBJS) functions=%(functions)
 
 $(OBJDIR)/%.o : %.c
-	%compile_q
+%compile_q
 
 # Rule to create a .library in the local dir
 libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
@@ -827,7 +824,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	%mkdepend_q opt=$(MKDEPEND_FLAGS)
+%mkdepend_q opt=$(MKDEPEND_FLAGS)
 
 # Generate include files
 %genlibincludesinline
@@ -847,6 +844,25 @@ $(OBJDIR)/headers.stamp : $(FSRCS) $(SCRIPTDIR)/genshared \
 	    $(SCRIPTDIR)/genclib.awk $(SCRIPTDIR)/gendefines.awk
 	@$(SCRIPTDIR)/genshared -clib -prefix $(GENINCDIR) $(FSRCS)
 	@$(SCRIPTDIR)/genshared -defines -prefix $(GENINCDIR) $(FSRCS)
+	@$(TOUCH) $@
+
+$(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h
+	$(CP) $< $@
+
+$(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
+	$(CP) $< $@
+%end
+
+%define genlibincludes_arch name=$(LIBNAME) archive=$(ARCHIVE)
+#MM includes-generate : setup-clib
+includes-generate : setup libdefs.h $(OBJDIR)/headers.stamp \
+			    $(INCDIR)/clib/%(name)_protos.h \
+			    $(INCDIR)/defines/%(name).h
+	@$(NOP)
+
+$(OBJDIR)/headers.stamp : $(ARCHIVE) $(TOP)/tools/archtools/archtool
+	@$(TOP)/tools/archtools/archtool -C $(GENINCDIR) %(archive)
+	@$(TOP)/tools/archtools/archtool -d $(GENINCDIR) %(archive)
 	@$(TOUCH) $@
 
 $(INCDIR)/clib/%(name)_protos.h : $(GENINCDIR)/clib/%(name)_protos.h

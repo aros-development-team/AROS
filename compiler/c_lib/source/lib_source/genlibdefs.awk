@@ -48,6 +48,7 @@
 #				symbols.
 #		    nolibheader - We don't want to use the LibHeader prefixed
 #				functions in the function table.
+#		    hasrt - This library has resource tracking.
 #
 #		You can specify more than one option in a config file and
 #		more than one option per option line. Separate options by
@@ -119,6 +120,8 @@ BEGIN {
 	    unique = 1;
 	else if ($t == "nolibheader")
 	    nolibheader = 1;
+	else if ($t == "hasrt")
+	    hasrt = 1;
 	else
 	{
 	    print "Unknown option \"" $t "\"" > "/dev/stderr";

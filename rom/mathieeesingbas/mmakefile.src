@@ -23,11 +23,11 @@ USER_INCLUDES := -I.
 #	contain internal functions of the library. You do not need to include
 #	the library init, function-table or end files.
 #
-# \item{FUNCTIONS} This is a list of all the functions that make
-#	up the library. The mmakefile will strip all the files in
-#	this list for which a special CPU dependant version exists.
-#	This list is concatenated into the file functions.c before
-#	compilation for a speed boost.
+# \item{ARCHIVE} This is the archive of functions that make
+#	up the library. The mmakefile will replace all the functions in
+#	this archive for which a special CPU dependant version exists.
+#	This archive is extracted into the file functions.c before
+#	compilation.
 # END_DESC{localmakevar}
 
 OBJDIR   := $(GENDIR)/$(CURDIR)
@@ -36,9 +36,7 @@ ULIBNAME := Mathieeesingbas
 
 OSMODULE  := mathieeesingbas.library
 FILES	  := 
-FUNCTIONS := ieeespabs ieeespadd ieeespceil ieeespcmp ieeespdiv \
-	     ieeespfix ieeespfloor ieeespflt ieeespmul ieeespneg \
-	     ieeespsub ieeesptst
+ARCHIVE   := mathieeesingbas.arch
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
@@ -71,10 +69,8 @@ endif
 # END_DESC{localmakevar}
 
 ALL_FILES := $(FILES)
-ALL_FUNCTIONS := $(FUNCTIONS)
 %prepare_replace rom/mathieeesingbas
 %filter_replace FILES
-%filter_replace FUNCTIONS
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_MATHIEEESINGBAS)"),"yes")
@@ -82,7 +78,7 @@ SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib $(LIBNAME) $(SHARED_MATHIEEESINGBAS)
 
-%genromlib_f
+%genromlib_arch
 
 #MM kernel-mathieeesingbas-linklib : setup includes kernel-mathieeesingbas-$(ARCH)-$(CPU)
 kernel-mathieeesingbas-linklib : show-flags $(LIB)
@@ -94,7 +90,7 @@ kernel-mathieeesingbas-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 
 #MM clean setup
 
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
+%asm_rule "$(INIT_FILE) $(ALL_FILES) $(END_FILE)"
 %ctoasm_q
 
 %common

@@ -1,4 +1,4 @@
-# $Id$
+#$Id$
 include $(TOP)/config/make.cfg
 
 # a make.tmpl for a hiddclass would be useful
@@ -117,9 +117,9 @@ setup-includes :
 	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
 
 # Rule to create a .library in the local dir
-libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
+libdefs.h : lib.conf $(TOP)/tools/archtools/archtool
 	@$(ECHO) "Generating $@..."
-	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+	@$(TOP)/tools/archtools/archtool -c
 
 $(END_FILE).c :
 	@$(ECHO) "Generating $@..."
@@ -127,28 +127,8 @@ $(END_FILE).c :
 
 # scripts/genfunctable.awk needs at least one function because a hidd
 # does not have functions the table is currently gerated with $(EDHO)
-functable.c : libdefs.h
-	@$(ECHO) "#ifndef LIBCORE_COMPILER_H"  > $@
-	@$(ECHO) "#   include <libcore/compiler.h>"  >> $@
-	@$(ECHO) "#endif"  >> $@
-	@$(ECHO) "#ifndef NULL"  >> $@
-	@$(ECHO) "#define NULL ((void *)0)"  >> $@
-	@$(ECHO) "#endif"  >> $@
-	@$(ECHO) ""  >> $@
-	@$(ECHO) '#include "libdefs.h"'  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);" >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);"  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);"  >> $@
-	@$(ECHO) "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);"  >> $@
-	@$(ECHO) ""  >> $@
-	@$(ECHO) "void *const LIBFUNCTABLE[]="  >> $@
-	@$(ECHO) "{"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),"  >> $@
-	@$(ECHO) "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),"  >> $@
-	@$(ECHO) "    (void *)-1L"  >> $@
-	@$(ECHO) "};"  >> $@
+functable.c : libdefs.h $(TOP)/tools/archtools/archtool
+	@$(TOP)/tools/archtools/archtool -t
 
 #MM
 clean ::
