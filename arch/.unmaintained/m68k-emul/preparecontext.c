@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/12/06 11:07:55  aros
+    Vector shuffle
+
     Revision 1.4  1996/12/05 15:31:00  aros
     Patches by Geert Uytterhoeven integrated
 
@@ -29,7 +32,7 @@
 	AROS_LHA(APTR, fallBack,     A2),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 9, Exec)
+	struct ExecBase *, SysBase, 6, Exec)
 
 /*  FUNCTION
 	Allocates the space required to hold a new set of registers on the

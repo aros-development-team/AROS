@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/12/06 11:07:54  aros
+    Vector shuffle
+
     Revision 1.5  1996/11/21 10:49:42  aros
     Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
     problems.
@@ -37,7 +40,7 @@
 	AROS_LHA(APTR, fallBack,     A2),
 
 /*  LOCATION */
-	struct ExecBase *, SysBase, 9, Exec)
+	struct ExecBase *, SysBase, 6, Exec)
 
 /*  FUNCTION
 	Allocates the space required to hold a new set of registers on the
