@@ -54,6 +54,13 @@ struct BoundLine
    WORD DeltaY;
    WORD Count;
    BOOL Valid;
+   WORD incrE;
+   WORD incrNE;
+   WORD s1;
+   WORD t;
+   WORD horiz;
+   WORD NLeftX;
+   WORD NRightX;
 };
 
 UWORD Include (UWORD lastused, 
@@ -170,7 +177,8 @@ UWORD UpdateXValues(UWORD StartIndex,
   while (i <= EndIndex)
   {
     /* Test whether this one is still to be considered */
-    if ( VctTbl[AreaBound[i].EndIndex+1] <= scan ||
+    // CHANGED <= to <
+    if ( VctTbl[AreaBound[i].EndIndex+1] <=  scan ||
          AreaBound[i].Valid == FALSE )
     {
 /*
@@ -186,9 +194,7 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
       AreaBound[i].Valid = FALSE;
       if (FALSE == foundvalid)
         StartIndex += 1; 
-    }
-    else
-    {
+    } else {
       /* It is still to be considered!! */
       foundvalid = TRUE;
       /* calculate the new x-coordinates for the new line */
@@ -198,84 +204,91 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
         i++;
         continue;
       }
-     
-      /* line towards right? */
-      if  (AreaBound[i].DeltaX > 0)
-      {
-        if (AreaBound[i].DeltaX > AreaBound[i].DeltaY)
-        {
-          /* more towards right than down */
-          AreaBound[i].RightX++;
-          AreaBound[i].LeftX = AreaBound[i].RightX;
 
-          while (TRUE)
-          {
-            /* Now search for the right X coord. */
-            AreaBound[i].Count += AreaBound[i].DeltaY;
-
-            if (AreaBound[i].Count > AreaBound[i].DeltaX)
-	    {
-              AreaBound[i].Count -= AreaBound[i].DeltaX;
-              break;
- 	    }
-
-            /* we're going towards the right in (almost) every step. */
-            AreaBound[i].RightX++;
-
-          }        
-	}
-        else
-        {
-          /* in every calculation we go down one scan line */
-          /* LeftX == RightX at all times!! */
-          AreaBound[i].Count += AreaBound[i].DeltaX;
-          
-          if (AreaBound[i].Count > AreaBound[i].DeltaY)
-	  {
-            AreaBound[i].Count -= AreaBound[i].DeltaY;
-            AreaBound[i].LeftX++;
-            AreaBound[i].RightX++;
-	  }
-	}
-      }
-      else /* line goes towards left */
-      {
-        if (-AreaBound[i].DeltaX > AreaBound[i].DeltaY)
-        {
-          /* more towards left than down */
-          AreaBound[i].LeftX--;
+      AreaBound[i].RightX += AreaBound[i].NRightX;
+      AreaBound[i].LeftX  += AreaBound[i].NLeftX;
+      AreaBound[i].NRightX = 0;
+      AreaBound[i].NLeftX  = 0;
+      /*
+       * If we're moving more in the horizontal
+       * than in the vertical, then the line
+       * has a pure horizontal component which I
+       * must take care of by not painting over it.
+       * This means that on a y coordinate the line
+       * can go from the LeftX to the RightX.
+       */
+      if (1 == AreaBound[i].horiz) {
+        /*
+         * More towards the horizontal than down
+         */
+        if (AreaBound[i].s1 > 0) {
+          AreaBound[i].LeftX  = AreaBound[i].RightX;
+        } else {
           AreaBound[i].RightX = AreaBound[i].LeftX;
-
-          while (TRUE)
-          {
-            /* Now search for the left X coord. */
-            AreaBound[i].Count += AreaBound[i].DeltaY;
-
-            if (AreaBound[i].Count >= -AreaBound[i].DeltaX)
-	    {
-              AreaBound[i].Count += AreaBound[i].DeltaX;
-              break;
- 	    }
-
-            /* we're going towards the left in (almost) every step. */
-            AreaBound[i].LeftX--;
-          }        
-	}
-        else
-        {
-          /* in every calculation we go down one scan line */
-          /* LeftX == RightX at all times!! */
-          AreaBound[i].Count -= AreaBound[i].DeltaX;
-          
-          if (AreaBound[i].Count >= AreaBound[i].DeltaY)
-	  {
-            AreaBound[i].Count -= AreaBound[i].DeltaY;
-            AreaBound[i].LeftX--;
-            AreaBound[i].RightX--;
-	  }
-	}
+        }
       }
 
+
+      while (1) {
+        if (AreaBound[i].Count <= 0) {
+          AreaBound[i].Count += AreaBound[i].incrE;
+          if (1 == AreaBound[i].t) {
+            if (AreaBound[i].s1 > 0) {
+              /*
+               * Towards right
+               */
+              AreaBound[i].RightX++;
+            } else {
+              /*
+               * Towards left
+               */
+              AreaBound[i].LeftX--;
+            }
+          } else {
+            /*
+             * Going to next Y coordinate 
+             */
+            break;
+          }
+        } else {
+          AreaBound[i].Count += AreaBound[i].incrNE;
+          /*
+           * Going to next Y coordinate 
+           */
+          if (AreaBound[i].s1 > 0) {
+            /*
+             * Towards right
+             */
+            AreaBound[i].NRightX = 1;
+          } else {
+            /*
+             * Towards left
+             */
+            AreaBound[i].NLeftX = -1;
+          }
+          break;
+        }
+      } /* while (1) */
+
+      /*
+       * If we're going more vertical than horizontal
+       * then the left and right are always the same.
+       */
+      if (0 == AreaBound[i].horiz) {
+        if (AreaBound[i].s1 > 0) {
+        /*
+          AreaBound[i].RightX += AreaBound[i].NRightX;
+          AreaBound[i].NRightX = 0;
+         */
+          AreaBound[i].LeftX  = AreaBound[i].RightX;
+        } else {
+        /*
+          AreaBound[i].LeftX += AreaBound[i].NLeftX;
+          AreaBound[i].NLeftX = 0;
+         */
+          AreaBound[i].RightX = AreaBound[i].LeftX;
+        }
+      }
     }
     i++;
   }
@@ -439,70 +452,40 @@ kprintf("at end!\n");
     int StartIndex = AreaBound[i].StartIndex;
     int EndIndex   = AreaBound[i].EndIndex;
 
-    AreaBound[i].DeltaX = StartVctTbl[EndIndex] - 
-                          StartVctTbl[StartIndex];
+    if ((StartVctTbl[EndIndex] - StartVctTbl[StartIndex]) > 0) {
+      AreaBound[i].s1 = 1;
+    } else {
+      AreaBound[i].s1 = -1;
+    }
+
+    AreaBound[i].DeltaX = abs(StartVctTbl[EndIndex] -
+                              StartVctTbl[StartIndex]);
+
+    AreaBound[i].DeltaY = abs(StartVctTbl[EndIndex+1] - 
+                              StartVctTbl[StartIndex+1]);
+
+    if (AreaBound[i].DeltaX > AreaBound[i].DeltaY) {
+      AreaBound[i].horiz = 1;
+    }
+
+
+    if (AreaBound[i].DeltaX < AreaBound[i].DeltaY) {
+      WORD d = AreaBound[i].DeltaX;
+      AreaBound[i].DeltaX = AreaBound[i].DeltaY;
+      AreaBound[i].DeltaY = d;
+      AreaBound[i].t = 0;
+    } else {
+      AreaBound[i].t = 1;
+    }
+
+    AreaBound[i].Count =  (AreaBound[i].DeltaY * 2) - AreaBound[i].DeltaX;
+    AreaBound[i].incrE  =  AreaBound[i].DeltaY * 2;
+    AreaBound[i].incrNE = (AreaBound[i].DeltaY - AreaBound[i].DeltaX) * 2;
 
     AreaBound[i].LeftX = AreaBound[i].RightX = StartVctTbl[StartIndex];
-
-    AreaBound[i].DeltaY = StartVctTbl[EndIndex+1] - 
-                          StartVctTbl[StartIndex+1]   + 1;
-
-    if (0 != AreaBound[i].DeltaX )
-    {
-      if (AreaBound[i].DeltaX > 0)
-      {
-        AreaBound[i].DeltaX++;
-
-        if (AreaBound[i].DeltaX > AreaBound[i].DeltaY)
-	{
-          while (TRUE)
-	  {
-            /* search for the right-hand X coord. */
-            AreaBound[i].Count += AreaBound[i].DeltaY;
-
-            if (AreaBound[i].Count > AreaBound[i].DeltaX)
-	    {
-              AreaBound[i].Count -= AreaBound[i].DeltaX;
-              break;
-	    }
-
-	    /* we're going towards the right in (almost) every step */
-            AreaBound[i].RightX++;
-	  }
-	}
-        else
-          AreaBound[i].Count = AreaBound[i].DeltaX;
-      }
-      else
-      {
-        AreaBound[i].DeltaX--;
-        if (-AreaBound[i].DeltaX > AreaBound[i].DeltaY)
-	{
-          AreaBound[i].Count = AreaBound[i].DeltaY;
-          while (TRUE)
-	  {
-            /* serach for the left X coord */
-            AreaBound[i].Count += AreaBound[i].DeltaY;
-            if (AreaBound[i].Count > -AreaBound[i].DeltaX)
-	    {
-              AreaBound[i].Count += AreaBound[i].DeltaX;
-              break;
-	    }
-
-            /* we're going towards the left in (almost) every step */
-            AreaBound[i].LeftX--;
-
-	  }
-	}
-        else
-          AreaBound[i].Count = -AreaBound[i].DeltaX;
-      }
-    }    
-
     AreaBound[i].Valid = TRUE;
     i++;
   }
-
   
   /* indexlist now contains i+1 indices into the vector table.
      Either the coordinate at the index as declared in the indexlist
@@ -514,6 +497,7 @@ kprintf("at end!\n");
 
   StartEdge = 0;
   EndEdge = Include(1, LastIndex, AreaBound, scan, StartVctTbl);
+  StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
 
   while (scan < bounds->MaxY)
   {
@@ -553,8 +537,8 @@ kprintf("at end!\n");
     }
 */
     scan++;
-    StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
     EndEdge = Include(EndEdge, LastIndex, AreaBound, scan, StartVctTbl);
+    StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
 /*
     kprintf("StartEdge: %d, EndEdge: %d\n",StartEdge,EndEdge);
 */
