@@ -81,7 +81,8 @@ all: setup $(OSMODDIR)/exec.strap
 
 $(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 			$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-			$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
+			$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
+			$(LIBDIR)/libaros.a $(LIBDIR)/libarosc.a
 	$(CC) $(ILDFLAGS)  -Xlinker -M \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
