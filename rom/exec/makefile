@@ -2,43 +2,43 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = execfunctions \
-	    allocmem freemem addhead \
-	    addtask remtask wait \
-	    signal allocsignal freesignal \
-	    alert freeentry remove \
-	    remhead enqueue addmemhandler \
-	    setexcept setsignal settaskpri \
-	    findtask findname getmsg \
-	    putmsg replymsg addtail \
-	    waitport allocate addport \
-	    remport findport addmemlist \
-	    createmsgport deletemsgport \
-	    createiorequest deallocate \
-	    availmem deleteiorequest allocvec \
-	    freevec allocabs allocentry \
-	    createpool deletepool allocpooled \
-	    remmemhandler initstruct \
-	    initsemaphore attemptsemaphore \
-	    obtainsemaphore obtainsemaphoreshared \
-	    attemptsemaphoreshared releasesemaphore \
-	    procure vacate \
-	    addlibrary remlibrary \
-	    makefunctions makelibrary \
-	    sumlibrary openlibrary \
-	    closelibrary setfunction \
-	    oldopenlibrary copymemquick \
-	    copymem freepooled \
-	    remsemaphore addsemaphore \
-	    releasesemaphorelist obtainsemaphorelist \
-	    typeofmem rawdofmt insert \
-	    remtail findsemaphore \
-	    addresource \
-	    remresource openresource \
-	    adddevice remdevice opendevice \
-	    closedevice doio sendio \
-	    checkio abortio waitio \
-	    initresident cause
+FILES = init execfunctions \
+	allocmem freemem addhead \
+	addtask remtask wait \
+	signal allocsignal freesignal \
+	alert freeentry remove \
+	remhead enqueue addmemhandler \
+	setexcept setsignal settaskpri \
+	findtask findname getmsg \
+	putmsg replymsg addtail \
+	waitport allocate addport \
+	remport findport addmemlist \
+	createmsgport deletemsgport \
+	createiorequest deallocate \
+	availmem deleteiorequest allocvec \
+	freevec allocabs allocentry \
+	createpool deletepool allocpooled \
+	remmemhandler initstruct \
+	initsemaphore attemptsemaphore \
+	obtainsemaphore obtainsemaphoreshared \
+	attemptsemaphoreshared releasesemaphore \
+	procure vacate \
+	addlibrary remlibrary \
+	makefunctions makelibrary \
+	sumlibrary openlibrary \
+	closelibrary setfunction \
+	oldopenlibrary copymemquick \
+	copymem freepooled \
+	remsemaphore addsemaphore \
+	releasesemaphorelist obtainsemaphorelist \
+	typeofmem rawdofmt insert \
+	remtail findsemaphore \
+	addresource \
+	remresource openresource \
+	adddevice remdevice opendevice \
+	closedevice doio sendio \
+	checkio abortio waitio \
+	initresident cause
 
 all: setup $(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 

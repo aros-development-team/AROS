@@ -2,7 +2,8 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-FILES = adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
+FILES = dos_init dos_functable lddemon errorlist loadseg_elf doname \
+	adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	cli close createnewproc currentdir datetostr delay duplock exall    \
 	examine fgetc findarg finddosentry flush fputc fputs freeargs	    \
 	freedosentry freedosobject getargstr input ioerr isinteractive	    \
@@ -15,12 +16,8 @@ FILES = adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	parsepattern parsepatternnocase setcomment setfiledate setfilesize  \
 	setprotection
 
-all: setup $(OSGENDIR)/dos_init.o $(OSGENDIR)/dos_functable.o \
+all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(OSGENDIR)/lddemon.o \
-	$(OSGENDIR)/errorlist.o \
-	$(OSGENDIR)/loadseg_elf.o \
-	$(OSGENDIR)/doname.o \
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
