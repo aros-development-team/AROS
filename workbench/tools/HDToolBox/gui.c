@@ -1426,6 +1426,12 @@ int i;
 	partitiontypegadgets.hook_hexidedit.h_Entry = (HOOKFUNC)hexidedit_function;
 
 	app = ApplicationObject,
+                MUIA_Application_Title      , "HDToolBox",
+                MUIA_Application_Version    , "$VER: HDToolbox 0.1 (09-Apr-2003)",
+                MUIA_Application_Copyright  , "(c) 1995-2003 by the AROS Development Team",
+                MUIA_Application_Author     , "Bearly, Ogun, Fats and others at AROS",
+                MUIA_Application_Description, "Partition your disks.",
+                MUIA_Application_Base       , "HDTOOLBOX",
 		MUIA_Application_Menustrip, MenuitemObject,
 			MUIA_Family_Child, MenuitemObject,
 				MUIA_Menuitem_Title, MSG(WORD_MENU_Project),
