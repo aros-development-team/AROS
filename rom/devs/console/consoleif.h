@@ -27,7 +27,9 @@ enum
     M_Console_Right,
     M_Console_Up,
     M_Console_Down,
-    M_Console_GetDefaultParams
+    M_Console_GetDefaultParams,
+    M_Console_RenderCursor,
+    M_Console_ClearCell
     
 };
 
@@ -80,6 +82,19 @@ struct P_Console_Down
     ULONG MethodID;
     UWORD Num;
 };
+
+struct P_Console_RenderCursor
+{
+    ULONG MethodID;
+};
+
+struct P_Console_ClearCell
+{
+    ULONG MethodID;
+    WORD  X;
+    WORD  Y;
+};
+
 
 struct P_Console_GetDefaultParams
 {
@@ -140,6 +155,22 @@ struct P_Console_GetDefaultParams
     DoMethodA((o), (Msg)&p);				\
 })
 
+
+#define Console_RenderCursor(o)			\
+({						\
+    struct P_Console_RenderCursor p;		\
+    p.MethodID	= M_Console_RenderCursor;	\
+    DoMethodA((o), (Msg)&p);			\
+})
+
+#define Console_ClearCell(o, x, y)		\
+({						\
+    struct P_Console_ClearCell p;		\
+    p.MethodID	= M_Console_ClearCell;		\
+    p.X		= x;				\
+    p.Y		= y;				\
+    DoMethodA((o), (Msg)&p);			\
+})
 
 
 

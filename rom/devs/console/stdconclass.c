@@ -30,9 +30,9 @@ struct stdcondata
 #define ConsoleDevice ((struct ConsoleBase *)cl->cl_UserData)
 
 
-/********************
-**  StdCon::New()  **
-********************/
+
+/***********  StdCon::New()  **********************/
+
 static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
 {
     EnterFunc(bug("StdCon::New()\n"));
@@ -57,9 +57,8 @@ static Object *stdcon_new(Class *cl, Object *o, struct opSet *msg)
     
 }
 
-/************************
-**  StdCon::Dispose()  **
-************************/
+/***********  StdCon::Dispose()  **************************/
+
 static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
 {
     struct stdcondata *data= INST_DATA(cl, o);
@@ -72,9 +71,9 @@ static VOID stdcon_dispose(Class *cl, Object *o, Msg msg)
     return;
 }
 
-/**************************
-**  StdCon::DoCommand()  **
-**************************/
+
+
+/*********  StdCon::DoCommand()  ****************************/
 
 static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 
@@ -95,11 +94,14 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     		params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
     		
     	SetAPen(rp, data->dri->dri_Pens[TEXTPEN]);
-    	SetDrMd(rp, JAM1);
+    	SetDrMd(rp, JAM2);
     	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
     	Text(rp, &params[0], 1);
     	
     	Console_Right(o, 1);
+	
+	/* Rerender the cursor */
+	Console_RenderCursor(o);
 
     	break;
 
@@ -133,6 +135,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	
     case C_LINEFEED:
     	D(bug("Got linefeed command\n"));
+	Console_ClearCell(o, XCCP, YCCP);
     	Console_Down(o, 1);
 	
 	/* Check for linefeed mode (LF or LF+CR) */
@@ -144,7 +147,9 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	    /* Do carriage return */
 	    Console_DoCommand(o, C_CARRIAGE_RETURN, &dummy);
 	}
+	Console_RenderCursor(o);
     	break;
+	
 
 /*    case C_VTAB:
     	break;
@@ -209,7 +214,7 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 	
     	D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
 		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), - rp->Font->tf_YSize));
-
+		
 	SetAPen( rp, 0); //data->dri->dri_Pens[ CU(o)->cu_BgPen ] );
 #warning LockLayers problem here ?    
     	ScrollRaster(rp
@@ -220,6 +225,8 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
 		, GFX_XMAX(o)
 		, GFX_YMAX(o) );
 	SetAPen(rp, oldpen);
+	
+	
 	break; }
 
 /*    case C_:
@@ -242,6 +249,34 @@ static VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *m
     ReturnVoid("StdCon::DoCommand");
 }
 
+/*********  StdCon::RenderCursor()  ****************************/
+static VOID stdcon_rendercursor(Class *cl, Object *o, struct P_Console_RenderCursor *msg)
+{
+     struct RastPort *rp = RASTPORT(o);
+     struct stdcondata *data = INST_DATA(cl, o);
+     
+     SetAPen(rp, data->dri->dri_Pens[FILLPEN]);
+     RectFill(rp
+     	, CP_X(o)
+	, CP_Y(o)
+	, CP_X(o) + rp->Font->tf_XSize
+	, CP_Y(o) + rp->Font->tf_YSize - 1
+     );
+}
+
+static VOID stdcon_clearcell(Class *cl, Object *o, struct P_Console_ClearCell *msg)
+{
+     struct RastPort *rp = RASTPORT(o);
+     struct stdcondata *data = INST_DATA(cl, o);
+     
+     SetAPen(rp, data->dri->dri_Pens[BACKGROUNDPEN]);
+     RectFill(rp
+     	, GFX_X(o, msg->X)
+	, GFX_Y(o, msg->Y)
+	, GFX_X(o, msg->X) + rp->Font->tf_XSize
+	, GFX_Y(o, msg->Y) + rp->Font->tf_YSize
+     );
+}
 
 AROS_UFH3S(IPTR, dispatch_stdconclass,
     AROS_UFHA(Class *,  cl,  A0),
@@ -263,6 +298,14 @@ AROS_UFH3S(IPTR, dispatch_stdconclass,
 	
     case M_Console_DoCommand:
     	stdcon_docommand(cl, o, (struct P_Console_DoCommand *)msg);
+	break;
+	
+    case M_Console_RenderCursor:
+    	stdcon_rendercursor(cl, o, (struct P_Console_RenderCursor *)msg);
+	break;
+	
+    case M_Console_ClearCell:
+    	stdcon_clearcell(cl, o, (struct P_Console_ClearCell *)msg);
 	break;
 	
     default:

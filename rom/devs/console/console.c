@@ -168,6 +168,13 @@ AROS_LH3(void, open,
 	    goto open_fail;
     }
     
+    if (!ConsoleDevice->keymapBase)
+    {
+    	ConsoleDevice->keymapBase = OpenLibrary("keymap.library", 37);
+	if (!ConsoleDevice->keymapBase)
+	    goto open_fail;
+    }
+    
     /* Create the console classes */
     if (!CONSOLECLASSPTR)
     {
@@ -309,6 +316,13 @@ AROS_LH1(BPTR, close,
     
     if (ioreq->io_Unit)
     {
+    	ULONG mid = OM_REMOVE;
+
+	/* Remove the consoe from the console list */
+	ObtainSemaphore(&ConsoleDevice->unitListLock);
+	DoMethodA((Object *)ioreq->io_Unit, (Msg)&mid);
+	ReleaseSemaphore(&ConsoleDevice->unitListLock);
+	
     	DisposeObject((Object *)ioreq->io_Unit);
     }
     
@@ -341,43 +355,73 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
-
+    
+    BOOL done_quick = TRUE;
     
     /* WaitIO will look into this */
     ioreq->io_Message.mn_Node.ln_Type=NT_MESSAGE;
     
     EnterFunc(bug("BeginIO(ioreq=%p)\n", ioreq));
 
-    /*
-	Do everything quick no matter what. This is possible
-	because I never need to Wait().
-    */
     switch (ioreq->io_Command)
     {
-    	case CMD_WRITE:
-    	    D(bug("CMD_WRITE\n"));
+    	case CMD_WRITE: {
+	    ULONG towrite;
 
-    	    ioreq->io_Actual = writeToConsole(ioreq, ConsoleDevice);
-    	    break;
+#if DEBUG	    
+	    {
+	    	char *str;
+	    	int i;
+	    	str = ioreq->io_Data;
+	    	for (i = 0; i < ioreq->io_Length; i ++)
+	    	{
+	    	    kprintf("%c\n", *str ++);
+	    	}
+	    }
+#endif    
+	    if (ioreq->io_Length == -1) {
+	    	towrite = strlen((STRPTR)ioreq->io_Data);
+	    } else {
+	    	towrite = ioreq->io_Length;
+	    }
+	     
+
+	    ioreq->io_Actual = writeToConsole((struct ConUnit *)ioreq->io_Unit
+	    	, ioreq->io_Data
+		, towrite
+		, ConsoleDevice
+	    );
+	    
+    	    break; }
+	    
+	case CMD_READ:
+	    done_quick = FALSE;
+	    
+	    break;
     	    
-    default:
-	error = ERROR_NOT_IMPLEMENTED;
-	break;
+	default:
+	    error = IOERR_NOCMD;
+	    break;
     }
 
-    /* If the quick bit is not set send the message to the port */
-    if(!(ioreq->io_Flags & IOF_QUICK))
-	ReplyMsg (&ioreq->io_Message);
-
-    /* Trigger a rescedule every now and then */
-/*    if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
-       SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
+    if (!done_quick)
     {
-	SysBase->ThisTask->tc_State=TS_READY;
-	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-	Switch();
+        /* Mark IO request to be done non-quick */
+    	ioreq->io_Flags &= ~IOF_QUICK;
+    	/* Send to input device task */
+    	PutMsg(ConsoleDevice->commandPort, (struct Message *)ioreq);
     }
-*/
+    else
+    {
+
+    	/* If the quick bit is not set but the IO request was done quick,
+    	** reply the message to tell we're throgh
+    	*/
+    	ioreq->io_Error = error;
+   	if (!(ioreq->io_Flags & IOF_QUICK))
+	    ReplyMsg (&ioreq->io_Message);
+    }
+
     ReturnVoid("BeginIO");
     AROS_LIBFUNC_EXIT
 }

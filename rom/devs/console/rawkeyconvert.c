@@ -16,9 +16,10 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
 /*****************************************************************************
 
     NAME */
-#include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include <proto/console.h>
+#include <proto/keymap.h>
+#include "console_gcc.h"
 
 	AROS_LH4(LONG, RawKeyConvert,
 
@@ -55,8 +56,8 @@ extern LONG intui_RawKeyConvert (struct InputEvent *, STRPTR, LONG,
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,ConsoleDevice)
-
-    return intui_RawKeyConvert (events, buffer, length, keyMap);
+    
+    return MapRawKey(events, buffer, length, keyMap);
 
     AROS_LIBFUNC_EXIT
 } /* RawKeyConvert */

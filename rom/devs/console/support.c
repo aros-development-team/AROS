@@ -23,8 +23,8 @@
 
 #include "consoleif.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UBYTE *p_tab, Object *unit, struct ConsoleBase *ConsoleDevice);
@@ -58,23 +58,19 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, LONG toparse, UB
 #define MAX_COMMAND_PARAMS 4
 
 
-ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
+ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite, struct ConsoleBase *ConsoleDevice)
 {
     UBYTE param_tab[MAX_COMMAND_PARAMS];
     
     BYTE command;
-    struct ConUnit *unit = (struct ConUnit *)ioreq->io_Unit;
     UBYTE *orig_write_str, *write_str;
-    LONG towrite = (LONG)ioreq->io_Length;
     LONG written, orig_towrite;
 
-    write_str = orig_write_str = (UBYTE *)ioreq->io_Data;
+    write_str = orig_write_str = (UBYTE *)buf;
     
     
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
     
-    if (towrite == -1L)
-    	towrite = strlen(write_str);
 	
     orig_towrite = towrite;
     
@@ -98,7 +94,7 @@ ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
     
     while (towrite > 0)
     {
-    	if (!string2command(&command, &write_str, towrite, param_tab, (Object *)ioreq->io_Unit, ConsoleDevice))
+    	if (!string2command(&command, &write_str, towrite, param_tab, (Object *)unit, ConsoleDevice))
     	    break;
     	
 	
@@ -629,8 +625,6 @@ static BOOL getparamcommand(BYTE 	*cmd_ptr
 	for (i = 0; i < params.numparams; i ++)
 	{
 	    /* Override with parsed values */
-	    
-
 	    D(bug("CMD %s: Setting param %d to %d\n"
 	    	, cmd_names[*cmd_ptr]
 		, params.tab[i].paramno
@@ -686,5 +680,13 @@ struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevic
 
 }
 
-
-
+VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice)
+{
+    while (len --)
+    {
+    	kprintf("%d/%c ", *string, *string);
+	string ++;
+    }
+    
+    kprintf("\n");
+}

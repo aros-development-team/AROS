@@ -87,7 +87,7 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
     {
 
 	/* A rawkey event ? */
-    	if (ie->ie_Class == IECLASS_RAWKEY)
+    	if (ie->ie_Class == IECLASS_RAWKEY && !(ie->ie_Code & 0x80))
 	{
 	    /* What console do we send it to ? */
 	    Object *unit;
@@ -112,7 +112,9 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 		if (actual != -1)
 	    	{
 
-		    D(bug("Event decoded into %s\n", message->inputBuf));
+		    kprintf("Event decoded into %d of len %d\n"
+		    	, *message->inputBuf, actual);
+			
 		    message->numBytes	= actual;
 		    message->unit 	= unit;
 
@@ -131,7 +133,7 @@ D(bug("CDInputHandler(events=%p, cdihdata=%p)\n", events, cdihdata));
 	{
 	    /* This function might be called by any task, not only
 	       by the input.device, so it is important that
-	       we initialize the replyport's task eac time.
+	       we initialize the replyport's task each time.
 	    */
 	    struct MsgPort *replyport;
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  1999/12/26 21:44:22  nlorentz
+    Now console works also for input, so you can run programs from newshell. Some current issues: cursor rendering does not work very well, and you have to press CTRL-Enter instead of just Enter to execute a command
+
     Revision 1.8  1999/09/20 17:33:09  stegerg
     GFX_XMAX/GFX_YMAX macro fixed
 
@@ -73,6 +76,12 @@ struct ConsoleBase;
 #define CHAR_YMAX(o) (CU(o)->cu_YMax)
 
 
+#define XCP (CU(o)->cu_XCP) /* Character X pos */
+#define YCP (CU(o)->cu_YCP) /* Character Y pos */
+
+#define XCCP (CU(o)->cu_XCCP) /* Cursor X pos */
+#define YCCP (CU(o)->cu_YCCP) /* Cusror Y pos */
+
 #define CP_X(o) (GFX_X(o, CU(o)->cu_XCCP))
 #define CP_Y(o) (GFX_Y(o, CU(o)->cu_YCCP))
 
@@ -97,6 +106,12 @@ struct ConsoleBase;
 
 #define ICU(x) ((struct intConUnit *)x)
 
+#define WINDOW(o)	CU(o)->cu_Window 
+#define RASTPORT(o)	WINDOW(o)->RPort
+
+
+#define MAX(a, b) ((a) > (b) ? a : b)
+#define MIN(a, b) ((a) < (b) ? a : b)
 
 /* Console write commands */
 enum 
@@ -163,7 +178,12 @@ struct intConUnit
     struct ConUnit unit;
     ULONG conFlags;
 
+    /* Buffer where characters received from the console input handler
+       will be stored
+    */
     UBYTE inputBuf[CON_INPUTBUF_SIZE];
+    /* Number of charcters currently stored in the buffer */
+    ULONG numStoredChars;
         
 };
 
@@ -237,10 +257,14 @@ BOOL  LastChar     (APTR map, UBYTE *char_ptr);
 BOOL  InsertChar   (APTR map, UBYTE c, struct ConsoleBase *ConsoleDevice);
 
 /* Prototypes */
-ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
+ULONG writeToConsole(struct ConUnit *unit, STRPTR buf, ULONG towrite
+	, struct ConsoleBase *ConsoleDevice);
 
 Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
+
+
+VOID printstring(STRPTR string, ULONG len, struct ConsoleBase *ConsoleDevice);
 
 struct ConsoleBase
 {
@@ -251,12 +275,17 @@ struct ConsoleBase
     struct IntuitionBase *intuitionBase;
     struct Library *boopsiBase;
     struct Library *utilityBase;
+    struct Library *keymapBase;
     
     struct MinList unitList;
     struct SignalSemaphore unitListLock;
     
-    struct Interrupt *inputHandler;
-    struct Task *consoleTask;
+    struct Interrupt	*inputHandler;
+    struct Task		*consoleTask;
+    struct MsgPort	*commandPort;
+    
+    /* Queued read requests */
+    struct MinList	readRequests;
     
     Class *consoleClass;
     Class *stdConClass;
@@ -274,30 +303,39 @@ typedef struct IntuitionBase IntuiBase;
 #define expunge() \
 __AROS_LC0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
 
+
+#undef CB
+#define CB(x) ((struct ConsoleBase *)x)
+
 #ifdef SysBase
 #   undef SysBase
 #endif
-#define SysBase ConsoleDevice->sysBase
+#define SysBase CB(ConsoleDevice)->sysBase
 
 #ifdef GfxBase
 #   undef GfxBase
 #endif
-#define GfxBase ConsoleDevice->gfxBase
+#define GfxBase CB(ConsoleDevice)->gfxBase
 
 #ifdef IntuitionBase
 #   undef IntuitionBase
 #endif
-#define IntuitionBase ConsoleDevice->intuitionBase
+#define IntuitionBase CB(ConsoleDevice)->intuitionBase
 
 #ifdef BOOPSIBase
 #   undef BOOPSIBase
 #endif
-#define BOOPSIBase ConsoleDevice->boopsiBase
+#define BOOPSIBase CB(ConsoleDevice)->boopsiBase
 
 #ifdef UtilityBase
 #   undef UtilityBase
 #endif
-#define UtilityBase ConsoleDevice->utilityBase
+#define UtilityBase CB(ConsoleDevice)->utilityBase
+
+#ifdef KeymapBase
+#   undef KeymapBase
+#endif
+#define KeymapBase  CB(ConsoleDevice)->keymapBase
 
 #endif /* CONSOLE_GCC_H */
 

@@ -92,6 +92,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 	unit->cu_YCCP = DEF_CHAR_YMIN;
 	
 	ICU(o)->conFlags = 0UL;
+	ICU(o)->numStoredChars = 0;
 
 	
     }
@@ -100,11 +101,6 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 }
  
 
-#define XCP (CU(o)->cu_XCP) /* Character X pos */
-#define YCP (CU(o)->cu_YCP) /* Character Y pos */
-
-#define XCCP (CU(o)->cu_XCCP) /* Cursor X pos */
-#define YCCP (CU(o)->cu_YCCP) /* Cusror U pos */
 
 /**********************
 **  Console::Left()  **
@@ -136,6 +132,7 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
     
     if (XCCP > CHAR_XMAX(o))
     {
+    	/* Destroy the old cursor */
     	XCCP = CHAR_XMIN(o);
     	Console_Down(o, 1);
     }
@@ -194,10 +191,7 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
     	case C_SET_LF_MODE:
 	     D(bug("Set LF mode ON\n"));
 	     /* LF==LF+CR */
-	D(bug("conflags: %d\n", ICU(o)->conFlags));
 	     ICU(o)->conFlags |= CF_LF_MODE_ON;
-	D(bug("conflags: %d\n", ICU(o)->conFlags));
-	     
 	     break;
 
     	case C_RESET_NEWLINE_MODE:
@@ -205,8 +199,6 @@ static VOID console_docommand(Class *cl, Object *o, struct P_Console_DoCommand *
 	     D(bug("Set LF mode OFF\n"));
 	     ICU(o)->conFlags &= ~CF_LF_MODE_ON;
 	     break;
-	     
-	   
 	     
     }
     
@@ -300,9 +292,6 @@ AROS_UFH3S(IPTR, dispatch_consoleclass,
 	
 }
 
-/************************
-**  Support functions  **
-************************/
 
 /************************
 **  normalizecoords()  **
