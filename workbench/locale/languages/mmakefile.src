@@ -12,8 +12,8 @@ LIBS = -L$(LIBDIR) -larossupport -lamiga -larosc -larosm
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a \
 	$(LIBDIR)/libarosc.a $(LIBDIR)/libarosm.a
 
-LANGUAGES = piglatin deutsch francais espanol nederlands polski italiano \
-	    dansk norsk suomi svenska
+LANGUAGES = dansk deutsch español français italiano nederlands norsk piglatin polski \
+	    português suomi svenska 
 
 LANGFILE=$(foreach f, $(LANGUAGES), $(LANGDIR)/$(f).language)
 
