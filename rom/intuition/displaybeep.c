@@ -51,85 +51,150 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct MsgPort *TimerMsgPort = NULL;
-    struct timerequest *MyTimerIO = NULL;
+    struct timerequest *BeepTimerIO = NULL;
     BOOL VisualBeep = TRUE;
     BOOL AllScreens = FALSE;
     
     TimerMsgPort = CreateMsgPort();
-    MyTimerIO = (struct timerequest *) CreateIORequest (TimerMsgPort, sizeof (struct timerequest));
-    OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *) MyTimerIO, 0);
+    BeepTimerIO = (struct timerequest *) CreateIORequest (TimerMsgPort, sizeof (struct timerequest));
+    OpenDevice ("timer.device", UNIT_VBLANK, (struct IORequest *) BeepTimerIO, 0);
     
-    MyTimerIO->tr_time.tv_secs = 0;
-    MyTimerIO->tr_time.tv_micro = 250000;
-    MyTimerIO->tr_node.io_Command = TR_ADDREQUEST;
-  
+    BeepTimerIO->tr_time.tv_secs = 0;
+    BeepTimerIO->tr_time.tv_micro = 250000;
+    BeepTimerIO->tr_node.io_Command = TR_ADDREQUEST;
+
+
+/* Start Beep */
     if (VisualBeep)
     {
 	if (! screen)
 	{
+	    //LockIBase();
             screen = IntuitionBase->FirstScreen;
-            AllScreens = TRUE;
+            //UnlockIBase();
+	    AllScreens = TRUE;
 	}
 
 	do
 	{
-	    if (screen->RastPort.BitMap->Depth <= 8)
-	    // visual beep on CLUT-screen
+	    if (!(screen->Flags & BEEPING))
 	    {
-        	struct DrawInfo *DInfo = NULL;
-        	UWORD BGPen;
-        	ULONG color[3];
+	        if (screen->RastPort.BitMap->Depth <= 8)
+	        // visual beep on CLUT-screen
+	        {
+ 	            /*
+	            struct DrawInfo *DInfo = NULL;
+ 	            UWORD BGPen;
+ 	            ULONG color[3];
 
-		DInfo = GetScreenDrawInfo (screen);
-		BGPen = DInfo->dri_Pens[BACKGROUNDPEN];
-
-		GetRGB32 (screen->ViewPort.ColorMap, BGPen, 1, color);
-
-		screen->Flags |= BEEPING;
-		SetRGB32 (&screen->ViewPort, BGPen, color[0] - 0x7FFFFFFF, color[1] - 0x7FFFFFFF, color[2] - 0x7FFFFFFF);
-		DoIO ((struct IORequest *) MyTimerIO);
-		SetRGB32 (&screen->ViewPort, BGPen, color[0], color[1], color[2]);
-		screen->Flags &= !BEEPING;
-
-		FreeScreenDrawInfo (screen, DInfo);
+	            DInfo = GetScreenDrawInfo (screen);
+	            BGPen = DInfo->dri_Pens[BACKGROUNDPEN];
+ 	            */
+	
+	            Forbid();
+	
+	            GetRGB32 (screen->ViewPort.ColorMap, 0, 1, GetPrivScreen(screen)->DisplayBeepColor0);
+ 	            screen->SaveColor0 = GetRGB4 (screen->ViewPort.ColorMap, 0);
+	
+	            SetRGB32 (&screen->ViewPort, 0,
+	        	      GetPrivScreen(screen)->DisplayBeepColor0[0] - 0x7FFFFFFF,
+	        	      GetPrivScreen(screen)->DisplayBeepColor0[1] - 0x7FFFFFFF,
+	        	      GetPrivScreen(screen)->DisplayBeepColor0[2] - 0x7FFFFFFF
+	        	     );
+ 	            screen->Flags |= BEEPING;
+	            Permit();
+	
+	            // FreeScreenDrawInfo (screen, DInfo);
+	        }
+	        else
+	        // visual beep on hi- and truecolor screens
+	        {
+	            // struct Window *BeepWindow;
+	            struct TagItem window_tags[] = {
+	        	    {WA_Left, 0},
+	        	    {WA_Top, 0},
+	        	    {WA_Width, -1},
+	        	    {WA_Height, -1},
+	        	    {WA_Flags, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS},
+	        	    {WA_CustomScreen, (IPTR) screen},
+	        	    {WA_Priority, 50},  // Place in front of all other windows!
+	        	    {TAG_DONE, 0}
+	            };
+	
+	            Forbid();
+	            GetPrivScreen(screen)->DisplayBeepWindow = (struct Window *) OpenWindowTagList (NULL, window_tags);
+	            screen->Flags |= BEEPING;
+	            Permit();
+	        }
+	
+	        //LockIBase();
+	        if (AllScreens) screen = screen->NextScreen;
+	        //UnlockIBase();
 	    }
-	    else
-	    // visual beep on hi- and truecolor screens
+	} while (AllScreens && screen);
+    }
+    
+/* Wait */
+    DoIO ((struct IORequest *) BeepTimerIO);
+    
+/* Stop Beep */
+    if (VisualBeep)
+    {
+	if (AllScreens)
+	{
+            //LockIBase();
+	    screen = IntuitionBase->FirstScreen;
+            //UnlockIBase();
+	}
+
+	do
+	{
+            if (screen->Flags & BEEPING)
 	    {
-		struct Window *BeepWindow;
-		struct TagItem window_tags[] = {
-			{WA_Left, 0},
-			{WA_Top, 0},
-			{WA_Width, -1},
-			{WA_Height, -1},
-			{WA_Flags, WFLG_SIMPLE_REFRESH | WFLG_BORDERLESS},
-			{WA_CustomScreen, (IPTR) screen},
-			{WA_Priority, 50},  // Place in front of all other windows! 
-			{TAG_DONE, 0}
-		};
-		BeepWindow = (struct Window *) OpenWindowTagList (NULL, window_tags);
-		if (BeepWindow)
+		if (screen->RastPort.BitMap->Depth <= 8)
+		// visual beep on CLUT-screen
 		{
-		    DoIO ((struct IORequest *) MyTimerIO);
-		    CloseWindow (BeepWindow);
+		    Forbid();
+		    // SetRGB4 (&screen->ViewPort, 0, screen->SaveColor0 & 0x000F, (screen->SaveColor0 & 0x00F0) >> 4, (screen->SaveColor0 & 0x0F00) >> 8);
+		    SetRGB32 (&screen->ViewPort, 0, 
+		    	      GetPrivScreen(screen)->DisplayBeepColor0[0],
+		    	      GetPrivScreen(screen)->DisplayBeepColor0[1],
+		    	      GetPrivScreen(screen)->DisplayBeepColor0[2]
+			     );
+		    screen->Flags &= !BEEPING;
+		    Permit();
 		}
-	    }
-	    screen = screen->NextScreen;
-	    if ( screen == NULL )
-	    {
-		AllScreens = FALSE;
-	    }
-	} while ( AllScreens == TRUE );
+		else
+		// visual beep on hi- and truecolor screens
+		{
+		    if (GetPrivScreen(screen)->DisplayBeepWindow)
+		    {
+			Forbid();
+			CloseWindow (GetPrivScreen(screen)->DisplayBeepWindow);
+			GetPrivScreen(screen)->DisplayBeepWindow = NULL;
+			screen->Flags &= !BEEPING;
+			Permit();
+		    }
+		}
+            }
+	    
+            //LockIBase();
+	    if (AllScreens) screen = screen->NextScreen;
+	    //UnlockIBase();
+	    
+	} while (AllScreens && screen);
     }
 
-    CloseDevice ((struct IORequest *) MyTimerIO);
-    DeleteIORequest ((struct IORequest *) MyTimerIO);
+
+    CloseDevice ((struct IORequest *) BeepTimerIO);
+    DeleteIORequest ((struct IORequest *) BeepTimerIO);
     DeleteMsgPort (TimerMsgPort);
 
+#warning TODO: Make this "multitasking proof"!
 #warning TODO: Produce beep according to prefs
-#warning TODO: Handle BEEPING flag correctly
+#warning TODO: Check if BEEPING flag is handled correctly
 #warning TODO: Make BeepWindow 50% transparent! :-) 
-#warning TODO: Use TimerIO (IntuitionBase->TimerIO) instead of self-made MyTimerIO!
+#warning TODO: Use TimerIO (IntuitionBase->TimerIO) instead of self-made BeepTimerIO?
 
     AROS_LIBFUNC_EXIT
 } /* DisplayBeep */

@@ -164,6 +164,8 @@ struct IntScreen
     Object 			* depthgadget;
     UWORD  			SpecialFlags;
     struct Layer                * rootLayer;
+    ULONG                       DisplayBeepColor0[3];
+    struct Window               * DisplayBeepWindow;
 };
 
 #define GetPrivScreen(s)	((struct IntScreen *)s)
