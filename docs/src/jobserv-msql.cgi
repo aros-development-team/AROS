@@ -11,12 +11,20 @@ if ($sock < 0)
 
 printf ("Content-type: text/html\n\n");
 
-debugenv(0,$argc,$argv);
+/* debugenv(0,$argc,$argv); */
 
 $login=getenv("REMOTE_USER");
 $query_string = getenv ("QUERY_STRING");
 $args = split ($query_string, "=");
 $query = urlDecode ($args[1]);
+
+if (1 == 0)
+{
+    $fd = open ("id", "<|");
+    $line = readln ($fd);
+    printf ("You are: %s<P>\n", $line);
+    close ($fd);
+}
 
 printf ("You have issued the following command:<P>\n", $res);
 
@@ -31,14 +39,16 @@ if ($res < 0)
     exit (10);
 }
 
+$query = msqlStoreResult ();
+$res = msqlNumRows ($query);
+/* printf ("res=|%d|<P>\n", $res); */
+
 if ($res == 0)
 {
     printf ("No results.\n");
 }
 else
 {
-    $query = msqlStoreResult ();
-
     $row = msqlFetchRow ($query);
 
     printf ("This is the result:<P>\n");
@@ -59,8 +69,8 @@ else
     }
 
     printf ("</TABLE>\n");
-
-    msqlFreeResult ($query);
 }
+
+msqlFreeResult ($query);
 
 msqlClose ($sock);
