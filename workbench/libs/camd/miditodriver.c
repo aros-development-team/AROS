@@ -163,6 +163,9 @@ ULONG Transmit_Status(struct DriverData *driverdata){
 			if(len>1){
 				driverdata->transmitfunc=Transmit_Datas;
 				driverdata->sendpos=2;
+			}else{
+			  IncBuffer(driverdata,&driverdata->buffercurrsend);
+			  driverdata->unsent--;
 			}
 			return buf[BUF1];
 		}
