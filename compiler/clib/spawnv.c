@@ -92,10 +92,7 @@
     if (!apath)
         return -1;
 
-    kprintf("----> spawning %s\n", apath);
     int ret = __spawnv(mode, LoadSeg(apath), argv);
-    kprintf("<---- spawned\n");
-
 
     return ret;
 }
