@@ -1,4 +1,4 @@
-BOOPSI/;BOOPSI
+boopsi;BOOPSI Classes
 alib_commodities;Amiga.lib - Commodities
 alib_stdio;Amiga.lib - Standard I/O
 alib;Amiga.lib
@@ -8,14 +8,16 @@ asl;Asl
 battclock;Battery backedup clock
 battmem;Battery backedup memory
 bullet;Bullet.library (Fonts)
-c/;CLI Tools
+c;CLI Tools
 cardres;Card.resource
 cia;Cia.resource
 clib;ANSI C link library
 colorwheel;Colorwheel Gadget
 commodities;Commodities.library
 console;Console.device
+DataType;Datatypes
 datatypes;Datatypes.library
+DevCMD;Device commands
 disk;Disk.resource
 diskfont;Diskfont.library
 dos;Dos.library
@@ -23,6 +25,7 @@ dtclass;DTClass
 exec;Exec.library
 expansion;Expansion.library
 gadtools;GadTools.library
+gradientslider;Gradientslider Gadget
 graphics;Graphics.library
 HID;Design a new HIDD
 HIDG;Graphics.HIDD
@@ -41,7 +44,9 @@ mathieeesingbas;MathIEEESingleBase
 mathieeesingtrans;MathIEEESingleTrans
 mathtrans;MathTrans
 misc;Misc.resource
+multiview;MultiView
 nonvolatile;NonVolatile.library
+other;Other Jobs
 potgo;Potgo.resource
 ramdrive;Ramdrive.device
 realtime;RealTime.library
@@ -51,4 +56,3 @@ timer;Timer.device
 translator;Translater.library
 utility;Utility.library
 wb;Workbench.library
-DevCMD;Device commands

@@ -1,4 +1,4 @@
-tealib_commodities00000;2;SDuvan;Write ArgArrayDone
+alib_commodities00000;2;SDuvan;Write ArgArrayDone
 alib_commodities00001;2;SDuvan;Write ArgArrayInit
 alib_commodities00002;2;SDuvan;Write ArgInt
 alib_commodities00003;2;SDuvan;Write ArgString
@@ -43,22 +43,22 @@ battmem00000;0;digulla;Write ObtainBattSemaphore
 battmem00001;0;digulla;Write ReleaseBattSemaphore
 battmem00002;0;digulla;Write ReadBattMem
 battmem00003;0;digulla;Write WriteBattMem
-BOOPSI/boolgadgets;2;digulla;Implement BOOL Gadgets
-BOOPSI/ButtonGClass;2;caldi;Implement BOOPSI ButtonGadgetClass
-BOOPSI/FrameIClass;2;;Implement BOOPSI FrameIClass
-BOOPSI/FrButtonClass;2;;Implement BOOPSI FrButtonClass
-BOOPSI/GadgetClass;2;digulla;Implement BOOPSI GadgetClass
-BOOPSI/GroupGClass;0;;Implement BOOPSI GroupGClass
-BOOPSI/ICClass;2;caldi;Implement BOOPSI ICClass
-BOOPSI/ITextIClass;0;;Implement BOOPSI ITextIClass
-BOOPSI/ImageClass;2;caldi;Implement BOOPSI ImageClass
-BOOPSI/ModelClass;2;stegerg;Implement BOOPSI ModelClass
-BOOPSI/PointerClass;0;digulla;Implement BOOPSI PointerClass
-BOOPSI/PropGClass;2;nlorentz;Implement BOOPSI PropGClass
-BOOPSI/propgadgets;2;digulla;Implement PROP Gadgets
-BOOPSI/RootClass;2;digulla;Implement BOOPSI RootClass
-BOOPSI/StrGClass;2;nlorentz;Implement BOOPSI StrGClass
-BOOPSI/FillRectClass;2;stegerg;Implement BOOPSI FillRectClass
+boopsi00000;2;digulla;Implement BOOL Gadgets
+boopsi00001;2;caldi;Implement BOOPSI ButtonGadgetClass
+boopsi00002;2;;Implement BOOPSI FrameIClass
+boopsi00003;2;;Implement BOOPSI FrButtonClass
+boopsi00004;2;digulla;Implement BOOPSI GadgetClass
+boopsi00005;0;;Implement BOOPSI GroupGClass
+boopsi00006;2;caldi;Implement BOOPSI ICClass
+boopsi00007;0;;Implement BOOPSI ITextIClass
+boopsi00008;2;caldi;Implement BOOPSI ImageClass
+boopsi00009;2;stegerg;Implement BOOPSI ModelClass
+boopsi00011;0;digulla;Implement BOOPSI PointerClass
+boopsi00012;2;nlorentz;Implement BOOPSI PropGClass
+boopsi00013;2;digulla;Implement PROP Gadgets
+boopsi00014;2;digulla;Implement BOOPSI RootClass
+boopsi00015;2;nlorentz;Implement BOOPSI StrGClass
+boopsi00016;2;stegerg;Implement BOOPSI FillRectClass
 bullet00000;0;digulla;Write OpenEngine
 bullet00001;0;digulla;Write CloseEngine
 bullet00002;0;digulla;Write SetInfoA
@@ -85,65 +85,65 @@ cia00000;0;digulla;Write AddICRVector
 cia00001;0;digulla;Write RemICRVector
 cia00002;0;digulla;Write AbleICR
 cia00003;0;digulla;Write SetICR
-c/addbuffers;2;srittau;Write C:AddBuffers
-c/alias;2;laguest;Write C:Alias
-c/ask;2;srittau;Write C:Ask
-c/assign;1;;Write C:Assign
-c/avail;2;matthias;Write C:Avail
-c/break;2;iaint;Write C:Break
-c/cd;2;matthias;Write C:Cd
-c/copy;2;hkiel;Write Copy
-c/cpu;1;laguest;Write C:CPU
-c/date;2;srittau;Write C:Date
-c/delete;1;laguest;Write C:Delete
-c/dir;2;digulla;Write C:Dir
-c/echo;2;matthias;Write C:Echo
-c/else;2;SDuvan;Write C:Else
-c/endif;2;SDuvan;Write C:Endif
-c/endskip;2;SDuvan;Write C:EndSkip
-c/eval;1;validus@kamper.digimag.net;Write C:Eval
-c/execute;1;matthias;Write C:Execute
-c/fault;2;iaint;Write C:Fault
-c/filenote;1;laguest;Write Filenote
-c/get;2;laguest;Write C:Get
-c/getenv;2;laguest;Write C:GetEnv
-c/if;2;SDuvan;Write C:If
-c/info;0;digulla;Write C:Info
-c/join;1;chodorowski;Write C:Join
-c/lab;2;SDuvan;Write C:Lab
-c/librarytest;1;matthias;librarytest
-c/list;1;matthias,bergers;Write C:List
-c/makelink;2;SDuvan;Write C:MakeLink
-c/makedir;2;matthias;Write C:MakeDir
-c/mount;2;matthias;Write C:Mount
-c/newshell;1;matthias;Write C:NewShell
-c/path;2;matthias;Write C:Path
-c/prompt;2;SDuvan;Write C:Prompt
-c/protect;1;laguest;Write C:Protect
-c/quit;2;SDuvan;Write C:Quit
-c/relabel;2;SDuvan;Write C:Relabel
-c/rename;1;laguest;Write C:Rename
-c/requestchoice;2;laguest;Write C:RequestChoice
-c/requestfile;2;laguest;Write C:RequestFile
-c/run;1;matthias;Write C:Run
-c/search;1;drieling;Write C:Search
-c/set;2;laguest;Write C:Set
-c/setclock;2;srittau;Write C:SetClock
-c/setdate;2;SDuvan;Write C:SetDate
-c/setenv;2;laguest;Write C:SetEnv
-c/shell;1;SDuvan;Write C:Shell
-c/skip;2;SDuvan;Write C:Skip
-c/sort;1;bergers;Write C:Sort
-c/stack;2;SDuvan;Write C:Stack
-c/status;1;laguest;Write C:Status
-c/type;2;matthias;Write C:Type
-c/unalias;2;laguest;Write C:UnAlias
-c/unset;2;laguest;Write C:UnSet
-c/unsetenv;2;laguest;Write C:UnSetEnv
-c/version;1;srittau;Write C:Version
-c/wait;2;hkiel;Write C:Wait
-c/which;1;SDuvan;Write C:Which
-c/why;2;srittau;Write C:Why
+c00000;2;srittau;Write C:AddBuffers
+c00001;2;laguest;Write C:Alias
+c00002;2;srittau;Write C:Ask
+c00003;1;;Write C:Assign
+c00004;2;matthias;Write C:Avail
+c00005;2;iaint;Write C:Break
+c00006;2;matthias;Write C:Cd
+c00007;2;hkiel;Write Copy
+c00008;1;laguest;Write C:CPU
+c00009;2;srittau;Write C:Date
+c00010;1;laguest;Write C:Delete
+c00011;2;digulla;Write C:Dir
+c00012;2;matthias;Write C:Echo
+c00013;2;SDuvan;Write C:Else
+c00014;2;SDuvan;Write C:Endif
+c00015;2;SDuvan;Write C:EndSkip
+c00016;1;validus@kamper.digimag.net;Write C:Eval
+c00017;1;matthias;Write C:Execute
+c00018;2;iaint;Write C:Fault
+c00019;1;laguest;Write Filenote
+c00020;2;laguest;Write C:Get
+c00021;2;laguest;Write C:GetEnv
+c00022;2;SDuvan;Write C:If
+c00023;0;digulla;Write C:Info
+c00024;1;chodorowski;Write C:Join
+c00025;2;SDuvan;Write C:Lab
+c00026;1;matthias;librarytest
+c00027;1;matthias,bergers;Write C:List
+c00028;2;SDuvan;Write C:MakeLink
+c00029;2;matthias;Write C:MakeDir
+c00030;2;matthias;Write C:Mount
+c00031;1;matthias;Write C:NewShell
+c00032;2;matthias;Write C:Path
+c00033;2;SDuvan;Write C:Prompt
+c00034;1;laguest;Write C:Protect
+c00035;2;SDuvan;Write C:Quit
+c00036;2;SDuvan;Write C:Relabel
+c00037;1;laguest;Write C:Rename
+c00038;2;laguest;Write C:RequestChoice
+c00039;2;laguest;Write C:RequestFile
+c00040;1;matthias;Write C:Run
+c00041;1;drieling;Write C:Search
+c00042;2;laguest;Write C:Set
+c00043;2;srittau;Write C:SetClock
+c00044;2;SDuvan;Write C:SetDate
+c00045;2;laguest;Write C:SetEnv
+c00046;1;SDuvan;Write C:Shell
+c00047;2;SDuvan;Write C:Skip
+c00048;1;bergers;Write C:Sort
+c00049;2;SDuvan;Write C:Stack
+c00050;1;laguest;Write C:Status
+c00051;2;matthias;Write C:Type
+c00052;2;laguest;Write C:UnAlias
+c00053;2;laguest;Write C:UnSet
+c00054;2;laguest;Write C:UnSetEnv
+c00055;1;srittau;Write C:Version
+c00056;2;hkiel;Write C:Wait
+c00057;1;SDuvan;Write C:Which
+c00058;2;srittau;Write C:Why
 colorwheel00000;2;lbischoff;Write ConvertHSBToRGB
 colorwheel00001;2;lbischoff;Write ConvertRGBToHSB
 colorwheel00002;2;stegerg;Write colorwheel.gadget class
@@ -209,15 +209,15 @@ datatypes00026;2;SDuvan;ReleaseDTDrawInfo
 datatypes00027;2;SDuvan;SaveDTObjectA
 datatypes00028;2;SDuvan;StartDragSelect
 datatypes00029;1;SDuvan;LaunchToolA
-DataType/8svx;0;;Implement 8svx.datatype
-DataType/amigaguide;0;;Implement amigaguide.datatype
-DataType/animation;0;;Implement animation.datatype
-DataType/ascii;2;stegerg;Implement ascii.datatype
-DataType/ilbm;0;;Implement ilbm.datatype
-DataType/picture;0;;Implement picture.datatype
-DataType/sound;0;;Implement sound.datatype
-DataType/text;2;sebauer;Implement text.datatype
-DataType/binary;2;stegerg;Implement binary.datatype
+DataType00000;0;;Implement 8svx.datatype
+DataType00001;0;;Implement amigaguide.datatype
+DataType00002;0;;Implement animation.datatype
+DataType00003;2;stegerg;Implement ascii.datatype
+DataType00004;0;;Implement ilbm.datatype
+DataType00005;0;;Implement picture.datatype
+DataType00006;0;;Implement sound.datatype
+DataType00007;2;sebauer;Implement text.datatype
+DataType00008;2;stegerg;Implement binary.datatype
 DevCMD00001;0;;Write ADCMD_ALLOCATE
 DevCMD00002;0;;Write ADCMD_FINISH
 DevCMD00003;0;;Write ADCMD_FREE
@@ -358,7 +358,6 @@ diskfont00001;1;nlorentz;Write AvailFonts
 diskfont00002;1;SDuvan;Write NewFontContents
 diskfont00003;2;SDuvan;Write DisposeFontContents
 diskfont00004;0;digulla;Write NewScaledDiskFont
-Doc;0;digulla;Convert docs to HTML
 dos00000;2;matthias;Write Open
 dos00001;2;matthias;Write Close
 dos00002;2;matthias;Write Read
@@ -1318,4 +1317,4 @@ wb00003;0;digulla;Write RemoveAppIcon
 wb00004;0;digulla;Write AddAppMenuItemA
 wb00005;0;digulla;Write RemoveAppMenuItem
 wb00006;0;digulla;Write WBInfo
-WB/MultiView;1;stegerg;Write MultiView
+multiview00000;1;stegerg;Write MultiView
