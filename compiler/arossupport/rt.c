@@ -312,7 +312,8 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     rtnew->File = file;
     rtnew->Line = line;
-
+    rtnew->Flags = 0;
+    
     va_start (args, line);
 
     success = FALSE;
