@@ -679,9 +679,9 @@ endif
 	fi; \
         $(%(mmake)-install_command)
 
-$(TOP)/$(CURDIR)/.files-touched:
-	find %(srcdir) -name \*.in -or -name \*.am -or -name \*.m4 -exec \
-	    $(TOUCH) -r %(srcdir)/configure '{}' \; && $(TOUCH) $@
+%(srcdir)/.files-touched:
+	find %(srcdir) -exec $(TOUCH) -r %(srcdir)/configure '{}' \; && \
+	$(TOUCH) $@
 
 #MM
 %(mmake)-uninstall :
@@ -692,7 +692,7 @@ ifneq ($(DEBUG),yes)
 endif
 
 ifeq (%(host),yes)
-$(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR) && \
@@ -702,7 +702,7 @@ $(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDI
 	    $(%(mmake)-includedir) %(extraoptions) && \
 	    $(TOUCH) $@
 else
-$(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+$(GENDIR)/$(CURDIR)/.configured : %(srcdir)/.files-touched $(TOP)/$(CURDIR)/mmakefile
 	$(RM) $@
 	%mkdirs_q $(GENDIR)/$(CURDIR)
 	cd $(GENDIR)/$(CURDIR) && \
