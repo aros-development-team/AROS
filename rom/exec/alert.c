@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/16 14:04:40  digulla
+    Show more infos about the task
+
     Revision 1.4  1996/08/13 13:55:57  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -62,14 +65,17 @@
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
+    struct Task * task;
+
+    task = FindTask (NULL);
 
     /* since this is an emulation, we just show the bug in the console */
     fprintf (stderr
-	, "GURU Meditation %04lx %04lx %s\nTask: %p\n"
+	, "GURU Meditation %04lx %04lx %s\nTask: %p (%s)\n"
 	, alertNum >> 16
 	, alertNum & 0xFFFF
 	, (alertNum & 0x80000000) ? "(DEADEND)" : ""
-	, FindTask (NULL)
+	, task, task->tc_Node.ln_Name
 	);
 
     if (alertNum & AT_DeadEnd)
