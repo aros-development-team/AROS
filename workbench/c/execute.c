@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -29,11 +29,11 @@ int main(int argc, char **argv)
 	s1=s2=(STRPTR)args[0];
 	while(*s2++)
 	    ;
-	buf=(STRPTR)AllocVec(9+2*(s2-s1),MEMF_ANY);
+	buf=(STRPTR)AllocVec(6+2*(s2-s1),MEMF_ANY);
 	if(buf!=NULL)
 	{
-	    CopyMem("COMMAND ",buf,8);
-	    s3=buf+8;
+	    CopyMem("FROM ",buf,8);
+	    s3=buf+5;
 	    s2=s1;
 	    *s3++='\"';
 	    while(*s1)
