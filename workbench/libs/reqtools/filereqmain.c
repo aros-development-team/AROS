@@ -109,7 +109,8 @@ ULONG ASM SAVEDS PropReqHandler (
     struct RealFontRequester 	*fontreq = NULL;
     struct BufferData 		*buff;
     struct DiskfontBase 	*DiskfontBase = glob->diskfontbase;
-    struct TagItem 		*tag, *tstate;
+    struct TagItem 		*tag;
+    const struct TagItem    *tstate = taglist;
     struct AvailFontsHeader 	*afh;
     struct AvailFonts 		*af;
     struct ReqEntry 		*entry;
@@ -145,7 +146,6 @@ ULONG ASM SAVEDS PropReqHandler (
     buff = glob->buff;
 
     /* parse tags */
-    tstate = taglist;
     while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
@@ -1507,7 +1507,7 @@ iterate:
 	{
 	    if (glob->selectedpos != -1)
 	    {
-		ClickDown (glob, (glob->selectedpos - glob->buff->pos), NULL, NULL);
+		ClickDown (glob, (glob->selectedpos - glob->buff->pos), NULL, 0);
 	    }
 	    glob->selectcurrpos = FALSE;
 	}

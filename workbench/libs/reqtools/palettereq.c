@@ -303,7 +303,8 @@ LONG ASM SAVEDS PaletteRequestA (
 {
     GlobData 		*glob;
     struct DisplayInfo 	displayinfo;
-    struct TagItem 	*tag, *tstate;
+    struct TagItem 	*tag;
+    const struct TagItem *tstate;
     struct TextFont 	*deffont = NULL;
     struct TextAttr 	*fontattr = NULL;
     struct Locale 	*locale = NULL;
@@ -330,7 +331,6 @@ LONG ASM SAVEDS PaletteRequestA (
     }
 
     /* parse tags */
-    tstate = taglist;
     while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
@@ -515,7 +515,8 @@ static LONG ASM SAVEDS PalReqHandler (
 {
     struct IntuiMessage *palmsg;
     struct Gadget 	*gad;
-    struct TagItem 	*tag, *tstate;
+    struct TagItem 	*tag;
+    const struct TagItem *tstate;
     ULONG 		rgb[3], rgbcol;
     ULONG 		tagdata, class;
     UWORD 		code, qual;
@@ -526,7 +527,6 @@ static LONG ASM SAVEDS PalReqHandler (
     //if (glob->rthi_DoNotWait) sigs = 0;
 
     /* parse tags */
-    tstate = taglist;
     while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;

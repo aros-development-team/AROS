@@ -854,7 +854,7 @@ retryopenwindow:
 	{
 	    if ((glob->appwinport = CreateMsgPort()))
 	    {
-		glob->appwindow = AddAppWindowA (0, NULL, glob->reqwin, glob->appwinport, NULL);
+		glob->appwindow = AddAppWindowA (0, 0, glob->reqwin, glob->appwinport, NULL);
 	    }
 	}
 
