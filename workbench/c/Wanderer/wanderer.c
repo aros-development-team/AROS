@@ -14,6 +14,7 @@
 
 #include <clib/alib_protos.h>
 #include <dos/dostags.h>
+#include <dos/notify.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <libraries/asl.h>
@@ -41,6 +42,7 @@ ULONG XGET(Object *obj, Tag attr);
 extern struct Hook hook_action;
 
 VOID DoAllMenuNotifies(Object *strip, char *path);
+VOID LoadPrefs(VOID);
 
 #ifndef __AROS__
 struct Library *MUIMasterBase;
@@ -491,10 +493,15 @@ struct Wanderer_Data
     struct MUI_InputHandlerNode timer_ihn;
     struct MUI_InputHandlerNode notify_ihn;
     struct MsgPort *notify_port;
+    
+    struct NotifyRequest         pnr;
+    struct MsgPort              *pnotify_port;
+    struct MUI_InputHandlerNode  pnotify_ihn;
 };
 
-#define MUIM_Wanderer_HandleTimer  0x8719129
-#define MUIM_Wanderer_HandleNotify 0x871912a
+#define MUIM_Wanderer_HandleTimer       0x8719129
+#define MUIM_Wanderer_HandleNotify      0x871912a
+#define MUIM_Wanderer_HandlePrefsNotify 0x871912b
 
 STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
@@ -511,12 +518,18 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	return NULL;
     }
     D(bug("Wanderer: notify port: %p\n", data->notify_port));
+
+    if ((data->pnotify_port = CreateMsgPort()) == NULL)
+    {
+        CoerceMethod(cl,obj,OM_DISPOSE);
+        return NULL;
+    }
     
 #ifdef __AROS__
     RegisterWorkbench(data->notify_port);
 #endif
 
-    /* Setup two input handlers */
+    /* Setup three input handlers */
 
     /* The first one is invoked every time we get a message from the Notify Port */
     data->notify_ihn.ihn_Signals = 1UL<<data->notify_port->mp_SigBit;
@@ -524,6 +537,7 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->notify_ihn.ihn_Object = obj;
     data->notify_ihn.ihn_Method = MUIM_Wanderer_HandleNotify;
     DoMethod(obj, MUIM_Application_AddInputHandler, &data->notify_ihn);
+
 
     /* The second one is a timer handler */
     data->timer_ihn.ihn_Flags = MUIIHNF_TIMER;
@@ -536,6 +550,26 @@ STATIC IPTR Wanderer_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     DoMethod(obj, MUIM_Application_AddInputHandler, &data->timer_ihn);
 
+    /* third one for prefs change notifies */
+    data->pnotify_ihn.ihn_Signals = 1UL<<data->pnotify_port->mp_SigBit;
+    bug("Wanderer: pnotify signal %ld\n", data->pnotify_ihn.ihn_Signals);
+    data->pnotify_ihn.ihn_Object = obj;
+    data->pnotify_ihn.ihn_Method = MUIM_Wanderer_HandlePrefsNotify;
+    DoMethod(obj, MUIM_Application_AddInputHandler, &data->pnotify_ihn);
+
+    data->pnr.nr_Name                 = "ENV:SYS/Wanderer.prefs";
+    data->pnr.nr_Flags                = NRF_SEND_MESSAGE;
+    data->pnr.nr_stuff.nr_Msg.nr_Port = data->pnotify_port;
+    
+    if (StartNotify(&data->pnr))
+    {
+        D(bug("Wanderer: prefs notification setup ok\n"));
+    }
+    else
+    {
+        D(bug("Wanderer: prefs notification setup FAILED\n"));
+    }
+    
     return (IPTR)obj;
 }
 
@@ -548,10 +582,13 @@ STATIC IPTR Wanderer_Dispose(struct IClass *cl, Object *obj, Msg msg)
 	 * successful */
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->timer_ihn);
 	DoMethod(obj, MUIM_Application_RemInputHandler, &data->notify_ihn);
+        DoMethod(obj, MUIM_Application_RemInputHandler, &data->pnotify_ihn);
 #ifdef __AROS__
 	UnregisterWorkbench(data->notify_port);
 #endif
-	DeleteMsgPort(data->notify_port);
+	EndNotify(&data->pnr);
+        DeleteMsgPort(data->pnotify_port);
+        DeleteMsgPort(data->notify_port);
 	data->notify_port = NULL;
     }
     return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
@@ -713,6 +750,24 @@ STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
     return 0;
 }
 
+
+STATIC IPTR Wanderer_HandlePrefsNotify(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct Wanderer_Data *data = (struct Wanderer_Data*) INST_DATA(cl,obj);
+    struct Message *notifyMessage;
+    
+    D(bug("Wanderer: got prefs change notify!\n"));
+    
+    while ((notifyMessage = GetMsg(data->pnotify_port)) != NULL)
+    {
+        ReplyMsg(notifyMessage);
+    }
+    
+    LoadPrefs();
+    
+    return 0;
+}
+
 /* Use this macro for dispatchers if you don't want #ifdefs */
 BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
 {
@@ -722,6 +777,7 @@ BOOPSI_DISPATCHER(IPTR,Wanderer_Dispatcher,cl,obj,msg)
 	case OM_DISPOSE: return Wanderer_Dispose(cl,obj,(APTR)msg);
 	case MUIM_Wanderer_HandleTimer: return Wanderer_HandleTimer(cl,obj,(APTR)msg);
 	case MUIM_Wanderer_HandleNotify: return Wanderer_HandleNotify(cl,obj,(APTR)msg);
+        case MUIM_Wanderer_HandlePrefsNotify: return Wanderer_HandlePrefsNotify(cl,obj,(APTR)msg);
     }
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -1121,6 +1177,19 @@ void DoDetach(void)
 }
 #endif
 
+BOOL ReadLine(BPTR fh, STRPTR buffer, ULONG size)
+{
+    if (FGets(fh, buffer, size) != NULL)
+    {
+        ULONG last = strlen(buffer) - 1;
+        if (buffer[last] == '\n') buffer[last] = '\0';
+        
+        return TRUE;
+    }
+    
+    return FALSE;
+}
+
 VOID LoadPrefs(VOID)
 {
     BPTR fh;
@@ -1128,23 +1197,63 @@ VOID LoadPrefs(VOID)
     if ((fh = Open("ENV:SYS/Wanderer.prefs", MODE_OLDFILE)) != NULL)
     {
         STRPTR buffer = NULL;
-        LONG   length;
+        LONG   size;
         
         Seek(fh, 0, OFFSET_END);
-        length = Seek(fh, 0, OFFSET_BEGINNING) + 2;
+        size = Seek(fh, 0, OFFSET_BEGINNING) + 2;
         
-        if ((buffer = AllocVec(length, MEMF_ANY)) != NULL)
+        if ((buffer = AllocVec(size, MEMF_ANY)) != NULL)
         {
-            // FIXME: error handling
-            FGets(fh, buffer, length);
-            if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
-            rootBG = StrDup(buffer);
+            if (!ReadLine(fh, buffer, size)) goto end;
+            if (rootBG == NULL)
+            {
+                rootBG = StrDup(buffer);
+            }
+            else if (strcmp(rootBG, buffer) != 0)
+            {
+                FreeVec(rootBG);
+                rootBG = StrDup(buffer);
+                
+                if (rootBG != NULL)
+                {
+                    SET
+                    (
+                        (Object *) XGET(root_iconwnd, MUIA_IconWindow_IconList),
+                        MUIA_Background, (IPTR) rootBG
+                    );
+                }
+            }
             
-            FGets(fh, buffer, length);
-            if (buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
-            dirsBG = StrDup(buffer);
+            if (!ReadLine(fh, buffer, size)) goto end;
+            if (dirsBG == NULL)
+            {
+                dirsBG = StrDup(buffer);
+            }
+            else if (strcmp(dirsBG, buffer) != 0)
+            {
+                FreeVec(dirsBG);
+                dirsBG = StrDup(buffer);
+                
+                if (dirsBG != NULL)
+                {
+                    Object *cstate = (Object*)(((struct List*)XGET(_app(root_iconwnd), MUIA_Application_WindowList))->lh_Head);
+                    Object *child;
+        
+                    while ((child = NextObject(&cstate)))
+                    {
+                        if (child != root_iconwnd && XGET(child, MUIA_UserData))
+                        {
+                            SET
+                            (
+                                (Object *) XGET(child, MUIA_IconWindow_IconList),
+                                MUIA_Background, (IPTR) dirsBG
+                            );
+                        }
+                    }
+                }
+            }
             
-            FreeVec(buffer);
+end:        FreeVec(buffer);
         }
         
         Close(fh);
