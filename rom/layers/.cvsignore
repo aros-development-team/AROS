@@ -1,3 +1,4 @@
 makefile
 *.s
 *.map
+libdefs.h
