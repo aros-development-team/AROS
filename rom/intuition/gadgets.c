@@ -371,6 +371,83 @@ void GetDomGadgetIBox(struct Gadget *gad, struct Window *win,
     box->Top  -= domain.Top;
 }
 
+
+
+/* gadget bounds in screen coords */
+void GetScrGadgetBounds(struct Gadget *gad, struct Window *win,
+		        struct Requester *req, struct IBox *box)
+{
+    struct IBox domain;
+    
+    if (gad->Flags & GFLG_EXTENDED)
+    {
+        if (EG(gad)->MoreFlags & GMORE_BOUNDS)
+	{
+	    GetGadgetDomain(gad, win, req, &domain);
+
+	    if (req)
+	    {
+    		/* leftedge, topedge members of window and requester
+		   are on the same offset */
+
+    		win = (struct Window *)req;
+	    }
+
+	    box->Left = domain.Left +
+    			EG(gad)->BoundsLeftEdge + ADDREL(gad, GFLG_RELRIGHT, (&domain), Width - 1) +
+			(win ? win->LeftEdge : 0);
+
+	    box->Top  = domain.Top +
+    			EG(gad)->BoundsTopEdge + ADDREL(gad, GFLG_RELBOTTOM, (&domain), Height - 1) +
+			(win ? win->TopEdge : 0);
+
+	    box->Width = EG(gad)->BoundsWidth + ADDREL(gad, GFLG_RELWIDTH, (&domain), Width);
+
+	    box->Height = EG(gad)->BoundsHeight + ADDREL(gad, GFLG_RELHEIGHT, (&domain), Height);
+
+	} /* if (gad->MoreFlags & GMORE_BOUNDS) */
+	
+    } /* if (gad->Flags & GFLG_EXTENDED) */
+    
+    /* if gadget does not have bounds return box */
+    
+    GetScrGadgetIBox(gad, win, req, box);
+}
+
+/* gadget bounds relative to upper left window edge */
+void GetWinGadgetBounds(struct Gadget *gad, struct Window *win,
+		        struct Requester *req, struct IBox *box)
+{
+    GetScrGadgetBounds(gad, win, req, box);
+    
+    if (req)
+    {
+        /* leftedge, topedge members of window and requester
+	   are on the same offset */
+	   
+    	win = (struct Window *)req;
+    }
+    
+    if (win)
+    {
+    	box->Left -= win->LeftEdge;
+    	box->Top  -= win->TopEdge;
+    }
+}
+
+/* gadget bounds in domain coords */
+void GetDomGadgetBounds(struct Gadget *gad, struct Window *win,
+		        struct Requester *req, struct IBox *box)
+{
+    struct IBox domain;
+    
+    GetWinGadgetBounds(gad, win, req, box);
+    GetGadgetDomain(gad, win, req, &domain);
+    
+    box->Left -= domain.Left;
+    box->Top  -= domain.Top;
+}
+
 void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase)
 {
     struct Gadget *gad;
@@ -398,7 +475,7 @@ void EraseRelGadgetArea(struct Window *win, struct IntuitionBase *IntuitionBase)
 	    if (gad->Flags & (GFLG_RELRIGHT | GFLG_RELBOTTOM |
 			      GFLG_RELWIDTH | GFLG_RELHEIGHT | GFLG_RELSPECIAL))
 	    {
-		GetDomGadgetIBox(gad, win, NULL, &box);
+		GetDomGadgetBounds(gad, win, NULL, &box);
 		EraseRect(win->RPort, box.Left,
 		    		      box.Top,
 				      box.Left + box.Width - 1,
