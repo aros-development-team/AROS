@@ -127,11 +127,11 @@ int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size, LONG * funcarr
 
   while (size)
   {
-    subsize = AROS_UFC4(LONG, funcarray[0] /* Read */,
-		AROS_UFCA(BPTR               , file   , D1),
-		AROS_UFCA(void *             , buf    , D2),
-		AROS_UFCA(LONG               , size   , D3),
-		AROS_UFCA(struct DosLibrary *, DOSBase, A6) );
+    subsize = AROS_CALL3(LONG, funcarray[0] /* Read */,
+		AROS_LCA(BPTR               , file   , D1),
+		AROS_LCA(void *             , buf    , D2),
+		AROS_LCA(LONG               , size   , D3),
+		struct DosLibrary *, DOSBase);
 
     if (subsize == 0)
     {
@@ -409,10 +409,10 @@ kprintf("error object_wrong_type 3\n");
     if (hunks[t].size)
     {
       hunks[t].memory =
-		AROS_UFC3(void *, functionarray[1] /* AllocMem */,
-		  AROS_UFCA(ULONG, hunks[t].size+sizeof(ULONG)+sizeof(BPTR) , D0),
-		  AROS_UFCA(ULONG, MEMF_CLEAR                               , D1),
-		  AROS_UFCA(struct Library *, (struct Library *)SysBase     , A6) );
+		AROS_CALL2(void *, functionarray[1] /* AllocMem */,
+		  AROS_LCA(ULONG, hunks[t].size+sizeof(ULONG)+sizeof(BPTR) , D0),
+		  AROS_LCA(ULONG, MEMF_CLEAR                               , D1),
+		  struct Library *, (struct Library *)SysBase);
 
       if (hunks[t].memory == NULL)
         ERROR (ERROR_NO_FREE_STORE);
@@ -610,10 +610,10 @@ end:
     {
       if (hunks[t].memory != NULL)
       {
-	AROS_UFC3(void , functionarray[2] /* FreeMem */,
-	  AROS_UFCA(void * , hunks[t].memory-sizeof(BPTR)-sizeof(ULONG) , A1),
-	  AROS_UFCA(ULONG  , hunks[t].size  +sizeof(BPTR)+sizeof(ULONG) , D0),
-	  AROS_UFCA(struct Library *, (struct Library *)SysBase         , A6) );
+	AROS_CALL2(void , functionarray[2] /* FreeMem */,
+	  AROS_LCA(void * , hunks[t].memory-sizeof(BPTR)-sizeof(ULONG) , A1),
+	  AROS_LCA(ULONG  , hunks[t].size  +sizeof(BPTR)+sizeof(ULONG) , D0),
+	  struct Library *, (struct Library *)SysBase);
 
       }
     }
