@@ -1,0 +1,140 @@
+## version $VER: fontprefs.catalog 1.0 (26.9.2001)
+## language svenska
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kan inte öppna %s V%ld!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kan inte låsa allmän skärm!
+; Can't lock public screen!
+;
+MSG_CANT_GET_DRI
+Kan inte skapa DrawInfo!
+; Can't get DrawInfo!
+;
+MSG_CANT_GET_VI
+Kan inte skapa VisualInfo!
+; Can't get VisualInfo!
+;
+MSG_CANT_CREATE_GADGET
+Kan inte skapa knappar!
+; Can't create gadgets!
+;
+MSG_CANT_CREATE_MENUS
+Kan inte skapa menyer!
+; Can't create menus!
+;
+MSG_CANT_CREATE_WIN
+Kan inte skapa fönster!
+; Can't create window!
+;
+MSG_CANT_CREATE_REQ
+Kan inte skapa fildialog!
+; Can't open create filerequester!
+;
+MSG_CANT_OPEN_STREAM
+Kan inte öppna IFF-ström!
+; Can't open IFF stream!
+;
+MSG_CANT_WRITE_PREFFILE
+Kan inte skriva inställningarna!
+; Can't write preferences!
+;
+MSG_CANT_READ_PREFFILE
+Kan inte läsa inställningarna!
+; Can't read preferences!
+;
+MSG_CANT_ALLOCATE_IFFPTR
+Kan inte allokera IFF-pekare!
+; Can't allocate IFF handle!
+;
+MSG_CANT_ALLOCATE_MEM
+Kan inte allokera programminne!
+; Can't allocate application memory!
+;
+MSG_WINTITLE
+Typstilsinställningar
+; Font Preferences
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_OPEN
+O\0Öppna...
+; O\0Open...
+;
+MSG_MEN_PROJECT_SAVEAS
+A\0Spara som...
+; A\0Save As...
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Avsluta
+; Q\0Quit
+;
+MSG_MEN_EDIT
+Redigera
+; Edit
+;
+MSG_MEN_EDIT_DEFAULT
+D\0Återgå till standard
+; D\0Reset to Defaults
+;
+MSG_MEN_EDIT_LASTSAVED
+L\0Senast sparade
+; L\0Last Saved
+;
+MSG_MEN_EDIT_RESTORE
+R\0Återställ
+; R\0Restore
+;
+MSG_MEN_SETTINGS
+Inställningar
+; Settings
+;
+MSG_MEN_SETTINGS_CREATEICONS
+I\0Skapa symboler?
+; I\0Create Icons?
+;
+MSG_ASL_OPEN_TITLE
+Ladda typstilsinställningar
+; Load Font Preferences
+;
+MSG_ASL_SAVE_TITLE
+Spara typstilsinställningar
+; Save Font Preferences
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MX_WORKBENCH
+Workbench
+; Workbench
+;
+MSG_MX_SYSTEM
+System
+; System
+;
+MSG_MX_SCREEN
+Skärm
+; Screen
+;
+MSG_GAD_GET
+Hämta...
+; Get...
+;
+MSG_GAD_SAVE
+Spara
+; Save
+;
+MSG_GAD_USE
+Använd
+; Use
+;
+MSG_GAD_CANCEL
+Avbryt
+; Cancel
