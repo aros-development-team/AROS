@@ -76,6 +76,14 @@ Object *MakePoppen(void)
 		     TAG_DONE);
 }
 
+Object *MakeString(void)
+{
+    return StringObject,
+	StringFrame,
+	MUIA_CycleChain, 1,
+        End;
+}
+
 Object *MakePopfont(Object **store, BOOL fixed)
 {
     Object *string;
@@ -86,10 +94,85 @@ Object *MakePopfont(Object **store, BOOL fixed)
         MUIA_Popasl_Type,              ASL_FontRequest,
         ASLFO_MaxHeight,               100,
         ASLFO_FixedWidthOnly,          fixed ? TRUE : FALSE,
-        MUIA_Popstring_String, (IPTR) *store = TextObject,
-            TextFrame,
-            MUIA_Background, MUII_TextBack,
-        End,
+        MUIA_Popstring_String, (IPTR) (*store = MakeString()),
         MUIA_Popstring_Button, (IPTR)  PopButton(MUII_PopUp),
     End;
+}
+
+void SliderToConfig (Object *slider, Object *configdata, ULONG cfg)
+{
+    DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
+	     XGET(slider, MUIA_Numeric_Value));
+}
+
+void CheckmarkToConfig (Object *checkmark, Object *configdata, ULONG cfg)
+{
+    DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
+	     XGET(checkmark, MUIA_Selected));
+}
+
+void FrameToConfig (Object *popframe, Object *configdata, ULONG cfg)
+{
+    CONST_STRPTR str;
+
+    str = (CONST_STRPTR)XGET(popframe, MUIA_Framedisplay_Spec);
+    DoMethod(configdata, MUIM_Configdata_SetFramespec, cfg, (IPTR)str);
+}
+
+void PenToConfig (Object *poppen, Object *configdata, ULONG cfg)
+{
+    CONST_STRPTR str;
+
+    str = (CONST_STRPTR)XGET(poppen, MUIA_Pendisplay_Spec);
+    DoMethod(configdata, MUIM_Configdata_SetPenspec, cfg, (IPTR)str);
+}
+
+void StringToConfig (Object *string, Object *configdata, ULONG cfg)
+{
+    CONST_STRPTR str;
+
+    str = (CONST_STRPTR)XGET(string, MUIA_String_Contents);
+    DoMethod(configdata, MUIM_Configdata_SetString, cfg, (IPTR)str);
+}
+
+void CycleToConfig (Object *cycle, Object *configdata, ULONG cfg)
+{
+    DoMethod(configdata, MUIM_Configdata_SetULong, cfg,
+	     XGET(cycle, MUIA_Cycle_Active));
+}
+
+void ConfigToSlider (Object *configdata, ULONG cfg, Object *slider)
+{
+    setslider(slider, DoMethod(configdata, MUIM_Configdata_GetULong, cfg));
+}
+
+void ConfigToCheckmark (Object *configdata, ULONG cfg, Object *checkmark)
+{
+    setcheckmark(checkmark, DoMethod(configdata, MUIM_Configdata_GetULong, cfg));
+}
+
+void ConfigToFrame (Object *configdata, ULONG cfg, Object *popframe)
+{
+    CONST_STRPTR spec;
+
+    spec = (CONST_STRPTR)DoMethod(configdata, MUIM_Configdata_GetString, cfg);
+    set(popframe, MUIA_Framedisplay_Spec, (IPTR)spec);
+}
+
+void ConfigToPen (Object *configdata, ULONG cfg, Object *poppen)
+{
+    STRPTR spec;
+
+    spec = (STRPTR)DoMethod(configdata, MUIM_Configdata_GetString, cfg);
+    set(poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
+}
+
+void ConfigToCycle (Object *configdata, ULONG cfg, Object *cycle)
+{
+    setcycle(cycle, DoMethod(configdata, MUIM_Configdata_GetULong, cfg));
+}
+
+void ConfigToString (Object *configdata, ULONG cfg, Object *string)
+{
+    setstring(string, DoMethod(configdata, MUIM_Configdata_GetString, cfg));
 }
