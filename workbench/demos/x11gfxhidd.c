@@ -10,6 +10,7 @@
 #include <string.h>
 #include <exec/types.h>
 #include <graphics/rastport.h>
+#include <graphics/gfxmacros.h>
 #include <intuition/intuition.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -31,6 +32,10 @@ struct Window * window;
 struct Screen * openscreen(void);
 void closescreen(struct Screen * screen); 
 
+VOID test_blttemplate( struct Window *w);
+VOID test_bltpattern(struct Window *w);
+VOID test_bltmask(struct Window *w);
+VOID test_flood(struct Window *w);
 
 int main(int argc, char **argv)
 {
@@ -45,7 +50,10 @@ int main(int argc, char **argv)
 	    {
               if ((screen = openscreen())) 
               {
-	      
+	       
+	        test_flood(window);
+		fflush(stdout);
+	       
 	      	/* Wait forever */
 		Wait(0L);
 		
@@ -105,4 +113,112 @@ void closescreen(struct Screen * screen)
 {
   CloseWindow(window);
   CloseScreen(screen);
+}
+
+#define RASSIZE(w,h)    ((ULONG)(h)*( ((ULONG)(w)+15)>>3&0xFFFE))
+
+VOID test_flood(struct Window *w)
+{
+
+    struct TmpRas tmpras;
+    BYTE *buffer;
+    
+D(bug("Window layer: %p\n", w->WLayer));    
+
+    buffer = AllocRaster(w->WLayer->Width, w->WLayer->Height);
+D(bug("buffer: %p\n", buffer));    
+    if (!buffer)
+    	return;
+	
+    InitTmpRas(&tmpras, buffer, RASSIZE(w->WLayer->Width, w->WLayer->Height));
+    w->RPort->TmpRas = &tmpras;
+    
+    SetOutlinePen(w->RPort, 1);
+    SetAPen(w->RPort, 1);
+    
+    SetDrPt(w->RPort, ~0L);
+    
+    Move(w->RPort, 50, 50);
+    Draw(w->RPort, 100, 100);
+    Draw(w->RPort, 50,  100);
+    Draw(w->RPort, 50, 50);
+    
+D(bug("Calling Flood()\n"));    
+    Flood(w->RPort, 0, 70, 80);   /* outline mode */
+
+    w->RPort->TmpRas = NULL;
+    
+}
+
+#define MASK_WIDTH 32
+#define MASK_HEIGHT 6
+
+#define SRC_X 50
+#define SRC_Y 50
+
+#define DEST_X 100
+#define DEST_Y 50
+
+VOID test_bltmask(struct Window *w)
+{
+    ULONG mask[] = {
+	0xAAAAAAAA,
+	0xAAAAAAAA,
+	0xFFFFFFFF,
+	0xFFFFFFFF,
+	0xAAAAAAAA,
+	0xAAAAAAAA
+    };
+    
+    /* Fill a area to blit from */
+    
+    SetAPen(w->RPort, 1);
+    
+    RectFill(w->RPort, SRC_X, SRC_Y, SRC_X + MASK_WIDTH - 1, SRC_Y + MASK_HEIGHT);
+    
+    /* Blit from source area */
+/*    BltMaskBitMapRastPort(
+    	, SRC_X, SRC_Y
+	, DEST_X, DEST_Y
+	, MASK_WIDTH, MASK_HEIGHT
+	, 0x00C0
+	, (PLANEPTR) mask
+    );
+*/
+				
+    return;
+}
+
+VOID test_blttemplate(struct Window *w)
+{
+    UBYTE template[] = { 0xAA, 0xAA, 0xAA, 0xAA
+			   , 0xAA, 0xAA, 0xAA, 0xAA };
+		
+    BltTemplate((PLANEPTR)template
+		, 0 /* xsrc */
+		, 4 /* modulo */
+		, w->RPort
+		, 50, 50  /* xdest, ydest */
+		, 16 , 2  /* width, height */
+    );
+
+    return;
+}
+
+VOID test_bltpattern(struct Window *w)
+{
+    UWORD afpt[] = { 0xAAAA , 0x5555 };
+
+
+    SetDrMd(w->RPort, JAM2);
+    SetAPen(w->RPort, 1);
+    SetBPen(w->RPort, 2);
+		
+		
+    SetAfPt(w->RPort, afpt, 1); 
+		
+    BltPattern(w->RPort, NULL, 50, 50, 100, 100, 0);
+    
+    return;
+
 }
