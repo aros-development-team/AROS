@@ -51,10 +51,11 @@
 {
     char * ptr = dest;
 
-    while (n-- && (*ptr = *src))
+    while (n && (*ptr = *src))
     {
 	ptr ++;
 	src ++;
+	n--;
     }
 
     while (n--)
