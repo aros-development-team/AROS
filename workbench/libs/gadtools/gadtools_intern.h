@@ -74,6 +74,7 @@ Class *makecheckboxclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makecycleclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makemxclass(struct GadToolsBase_intern *GadToolsBase);
 Class *makepaletteclass(struct GadToolsBase_intern *GadToolsBase);
+Class *makebarlabelclass(struct GadToolsBase_intern *GadToolsBase);
 
 /* Listview class has some data that must be freed */
 VOID freelistviewclass(Class *cl, struct GadToolsBase_intern *GadToolsBase);
@@ -186,8 +187,7 @@ void appenditem(struct Menu * curmenu,
 void appendsubitem(struct MenuItem * curitem,
                    struct MenuItem * subitem);
 
-void freeitems(struct Menu * m);
-void freesubitems(struct MenuItem * mi);
+void freeitems(struct Menu * m, struct GadToolsBase_intern * GadToolsBase);
 
 BOOL layoutmenuitems(struct MenuItem * menuitem,
                      struct VisualInfo * vi,
@@ -195,9 +195,9 @@ BOOL layoutmenuitems(struct MenuItem * menuitem,
                      struct GadToolsBase_intern * GadToolsBase);
 
 BOOL layoutsubitems(struct MenuItem * motheritem,
-                     struct VisualInfo * vi,
-                     struct TagItem * taglist,
-                     struct GadToolsBase_intern * GadToolsBase);
+                    struct VisualInfo * vi,
+                    struct TagItem * taglist,
+                    struct GadToolsBase_intern * GadToolsBase);
 
 
 struct GadToolsBase_intern
@@ -228,7 +228,8 @@ struct GadToolsBase_intern
     Class * cycleclass;
     Class * mxclass;
     Class * paletteclass;
-   
+    Class * barlabelclass; /* for menus */
+    
     /* Semaphore to protect the bevel object. */
     struct SignalSemaphore   bevelsema;
     /* Actually an Object *. The image used for bevel boxes. */
