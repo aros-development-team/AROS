@@ -19,8 +19,11 @@ includes-pc-i386 : setup-includes $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
-includes-copy-pc-i386 : setup-includes $(INCFILES) $(GENINCDIR)/sigcore.h
+includes-copy-pc-i386 : setup-includes $(INCFILES)
 	@$(NOP)
+
+#MM
+kernel-exec-includes-pc-i386 : $(GENINCDIR)/sigcore.h
 
 setup-includes :
 	@$(FOR) dir in $(DIRS) ; do \

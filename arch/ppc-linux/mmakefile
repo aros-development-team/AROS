@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 #MM- kernel-linux-ppc : kernel-linux kernel-ppc
 #MM- kernel-link-linux-ppc : kernel-link-emul
 
+#MM- kernel-exec-includes-linux-ppc : kernel-exec-includes-unix
+
 #MM- includes-copy-linux-ppc : includes-copy-ppc
 
 #MM- workbech-linux-ppc : workbench-linux
