@@ -120,8 +120,6 @@ struct MUI_IconData
 /**************************************************************************
  Checks weather we can place a icon with the given dimesions at the
  suggested positions
-
- TODO: Should also take the label dimensions into account
 **************************************************************************/
 static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, int atx, int aty, int width, int height)
 {
@@ -139,6 +137,7 @@ static int IconList_CouldPlaceIcon(Object *obj, struct MUI_IconData *data, int a
 
 	    /* also add the height of the icon's label */
 	    icon_bottom += _font(obj)->tf_YSize + 2;
+	    at_bottom += _font(obj)->tf_YSize + 2;
 
 	    if (!(atx >= icon_right || at_right <= icon->x || aty >= icon_bottom || at_bottom <= icon->y))
 		return 0;
@@ -339,8 +338,8 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     {
 	if (icon->dob && icon->x == NO_ICON_POSITION && icon->y == NO_ICON_POSITION)
 	{
-	    int cur_x = data->view_x;
-	    int cur_y = data->view_y;
+	    int cur_x = data->view_x + 4;
+	    int cur_y = data->view_y + 4;
 	    int loops = 0;
 
 	    while (!IconList_CouldPlaceIcon(obj, data, cur_x, cur_y, icon->width, icon->height) && loops < 5000)
@@ -349,7 +348,7 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
 		if (cur_y + icon->height > data->view_x + data->view_height) /* on both sides -1 */
 		{
 		    cur_x += 10;
-		    cur_y = data->view_y;
+		    cur_y = data->view_y + 4;
 		}
 	    }
 	    icon->x = cur_x;
