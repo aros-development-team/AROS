@@ -1,8 +1,5 @@
 #!/bin/sh
 
-counter=`cat counter.txt`
-if [ -z "$counter" ]; then
-	counter="1"
-fi
+counter=`ls -al counter.txt | cut -c30-41`
 printf "Content-type: text/html\n\n%06d\n" "$counter"
-echo `expr $counter + 1` > counter.txt
+echo >> counter.txt
