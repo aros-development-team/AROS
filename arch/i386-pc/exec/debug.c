@@ -9,9 +9,8 @@
 #include <proto/exec.h>
 #include <exec/types.h>
 #include <asm/ptrace.h>
+#include <asm/speaker.h>
 #include "etask.h"
-
-#include "../speaker.h"
 
 /****************************************************************************************/
 
@@ -170,13 +169,10 @@ int	get_irq_list(char *buf);
 			    GetIntETask(SysBase->ThisTask)->iet_Context;
 
 	    kprintf("Active task's registers dump:\n"
-			    "EAX=%p  EBX=%p  ECX=%p  EDX=%p\n"
-			    "ESI=%p  EDI=%p  EBP=%p\n"
-			    "ESP=%p  EIP=%p\n"
+			    "EAX=%p  ECX=%p  EDX=%p  EIP=%p\n"
 			    "CS=%04.4lx  DS=%04.4lx  ES=%04.4lx\n"
 			    "SS=%04.4lx  EFLAGS=%p\n",
-			    r->eax, r->ebx, r->ecx, r->edx,
-			    r->esi, r->edi, r->ebp, r->esp,
+			    r->eax, r->ecx, r->edx,
 			    r->eip, r->xcs, r->xds, r->xes,
 			    r->xss, r->eflags);				
 	}
@@ -202,9 +198,9 @@ int	get_irq_list(char *buf);
 	    
 	    kprintf("Available interrupts:\n");
 	    
-	    get_irq_list(&buf);
+//	    get_irq_list(&buf);
 
-	    kprintf(buf);
+//	    kprintf(buf);
 	}
 	/* ShowResources command */
 	else if (strcmp(comm, "SR") == 0)

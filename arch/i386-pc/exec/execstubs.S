@@ -5,7 +5,7 @@
     Desc: Stubs to call C functions while preserving all registers
     Lang: english
 */
-	#include "machine.i"
+	#include "include/machine.i"
 
 /*
     Macros:

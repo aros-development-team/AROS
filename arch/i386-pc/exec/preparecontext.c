@@ -27,10 +27,10 @@ AROS_LH3(BOOL, PrepareContext,
 {
     AROS_LIBFUNC_INIT
 
+    ULONG *regs;
+
     UBYTE *sp=(UBYTE *)task->tc_SPReg;
 
-//	kprintf("Prepare context\n");
-    
     /* Push fallBack address */
 
     sp-=sizeof(APTR);
@@ -39,32 +39,32 @@ AROS_LH3(BOOL, PrepareContext,
     if (!(task->tc_Flags & TF_ETASK) )
         return FALSE;
 
-//	kprintf("ETask...\n");
-
     GetIntETask (task)->iet_Context = AllocTaskMem (task
         , SIZEOF_ALL_REGISTERS
         , MEMF_PUBLIC|MEMF_CLEAR
     );
 
-//	kprintf("Allocated %d bytes for context at %p\n", SIZEOF_ALL_REGISTERS,
-//		GetIntETask(task)->iet_Context);
-
-    if (!GetIntETask (task)->iet_Context)
+    if (!(regs=(ULONG*)GetIntETask (task)->iet_Context))
         return FALSE;
 
     /* We have to prepare whole context right now so Dispatch()
      * would work propertly */
-	
-    Regs(task)->xds     = USER_DS;
-    Regs(task)->xes     = USER_DS;
-    Regs(task)->xss     = USER_DS;
-    Regs(task)->xcs     = USER_CS;
-    Regs(task)->eip     = entryPoint;
-    Regs(task)->esp     = sp;
-    Regs(task)->eflags  = 0x3202;
-    
-//	kprintf("Registers set up\n");
-	
+
+    *regs++ = 0;		/* ebx */
+    *regs++ = 0;		/* ecx */
+    *regs++ = 0;		/* edx */
+    *regs++ = 0;		/* esi */
+    *regs++ = 0;		/* edi */
+    *regs++ = 0;		/* ebp */
+    *regs++ = 0;		/* eax */
+    *regs++ = USER_DS;		/* xds */
+    *regs++ = USER_DS;		/* xes */
+    *regs++ = entryPoint;	/* eip */
+    *regs++ = USER_CS;		/* xcs */
+    *regs++ = 0x3202;		/* eflags */
+    *regs++ = sp;		/* esp */
+    *regs++ = USER_DS;		/* xss */
+
     task->tc_SPReg = sp;
     
     /* We return the new stack pointer back to the caller. */

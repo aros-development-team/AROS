@@ -45,11 +45,11 @@
 
 ******************************************************************************/
 
-#include "machine.i"
+#include "include/machine.i"
 
 	    .text
 	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec)
 	    _FUNCTION(AROS_SLIB_ENTRY(ColdReboot,Exec))
 AROS_SLIB_ENTRY(ColdReboot,Exec):
-		movl	$1,%eax
-		int		$0x80
+	    movl	$-1,%eax
+	    int		$0x80
