@@ -90,7 +90,7 @@ aros_host_ld="$CC"
 aros_host_make="make"
 aros_host_cflags=
 aros_host_ldflags=
-aros_host_debug="-g3 -O0"
+aros_host_debug="-g -O0"
 aros_host_mkdep="\$(TOP)/scripts/mkdep"
 aros_host_mkargs="--no-print-directory"
 aros_host_incl="/usr/include"
@@ -291,7 +291,7 @@ aros_target_strip="true"
 # XXX We don't do this yet.
 aros_target_cflags="-Wall -Werror-implicit-function-declaration"
 aros_target_aflags="-Wall -x assembler-with-cpp"
-aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
+aros_target_ldflags="-nostartfiles -nostdlib"
 
 aros_shared_default=yes
 
@@ -514,7 +514,7 @@ case "$target_os" in
 		aros_target_objdump="m68k-linux-objdump"
 		aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DAROS_NO_SIGNAL_H"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
-		aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
+		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_shared_default=no
 		aros_shared_cflags=""
 		aros_shared_aflags=""
