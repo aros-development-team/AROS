@@ -43,7 +43,7 @@ extern const struct Resident
     Graphics_ROMTag,
     Layers_ROMTag,
     Timer_ROMTag,
-    Battclock_resident,
+    Battclock_ROMTag,
     Keyboard_ROMTag,
     Gameport_ROMTag,
     Keymap_ROMTag,
@@ -87,7 +87,7 @@ static const struct Resident *romtagList[] =
     &Graphics_ROMTag, 			/* ColdStart,   65	 */
     &Layers_ROMTag,			/* ColdStart,   60   */
     &Timer_ROMTag,			/* ColdStart,   50	 */
-    &Battclock_resident,		/* ColdStart,   45	 */
+    &Battclock_ROMTag,			/* ColdStart,   45	 */
     &Keyboard_ROMTag,			/* ColdStart,   44	 */
     &Gameport_ROMTag,			/* ColdStart,   43	 */
     &Keymap_ROMTag,			/* ColdStart,   40	 */
