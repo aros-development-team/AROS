@@ -572,13 +572,13 @@ struct DosPacket
                     <dos/dos.h> for possible values. */
 
    /* The actual data. */
-   LONG dp_Arg1;
-   LONG dp_Arg2;
-   LONG dp_Arg3;
-   LONG dp_Arg4;
-   LONG dp_Arg5;
-   LONG dp_Arg6;
-   LONG dp_Arg7;
+   IPTR dp_Arg1;
+   IPTR dp_Arg2;
+   IPTR dp_Arg3;
+   IPTR dp_Arg4;
+   IPTR dp_Arg5;
+   IPTR dp_Arg6;
+   IPTR dp_Arg7;
 };
 #define dp_Action   dp_Type
 #define dp_Status   dp_Res1
