@@ -6,7 +6,6 @@ static int global = 0;
 
 int main(void)
 {
-	WREG_W(CSA) = RREG_W(CSA) & 0x01ff;
 	drawlinehoriz(30);
 	if (10 == global)
 		return 1;
