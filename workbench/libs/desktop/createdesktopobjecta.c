@@ -90,10 +90,10 @@
                 semanticObject = NewObject
                 (
                     IconContainerObserver->mcc_Class, NULL,
-                    
-                    OA_Presentation, newObject, 
+
+                    OA_Presentation, newObject,
                     ICOA_Directory,  dir,
-                    
+
                     TAG_END
                 );
 
@@ -106,21 +106,21 @@
             {
                 STRPTR          label   = NULL;
                 struct TagItem *labelTI = FindTagItem(IA_Label, tags);
-                
+
                 if (labelTI != NULL)
                 {
                     label = (STRPTR) labelTI->ti_Data;
                 }
-                
+
                 newObject = NewObjectA(DiskIcon->mcc_Class, NULL, tags);
-                
+
                 semanticObject = NewObject
-                (       
-                    DiskIconObserver->mcc_Class, NULL, 
-                    
-                    IOA_Name,        label, 
+                (
+                    DiskIconObserver->mcc_Class, NULL,
+
+                    IOA_Name,        label,
                     OA_Presentation, newObject,
-                                    
+
                     TAG_DONE
                 );
 

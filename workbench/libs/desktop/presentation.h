@@ -4,7 +4,9 @@
  */
 
 #ifndef PRESENTATION_H
-#    define PRESENTATION_H
+#define PRESENTATION_H
+
+#include <libraries/mui.h>
 
 #    define PA_InTree                 TAG_USER+101
 #    define PA_Disused                TAG_USER+102
@@ -14,7 +16,6 @@ struct PresentationClassData
 {
     Object         *observer;
 };
-
 
 struct __dummyPresentationData__
 {
