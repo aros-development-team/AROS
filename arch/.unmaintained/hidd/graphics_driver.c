@@ -27,6 +27,7 @@
 #include <graphics/clip.h>
 #include <graphics/gfxmacros.h>
 #include <graphics/regions.h>
+#include <graphics/scale.h>
 
 #include <oop/oop.h>
 #include <utility/tagitem.h>
@@ -132,6 +133,7 @@ static BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj
 	, struct BitMap *dstBitMap, OOP_Object *dstbm_obj
 	, LONG xDest, LONG yDest, LONG xSize, LONG ySize
 	, ULONG minterm, OOP_Object *gc, struct GfxBase *GfxBase);
+
 
 static BOOL init_cursor(struct GfxBase *GfxBase);
 static VOID cleanup_cursor(struct GfxBase *GfxBase);
@@ -3035,6 +3037,134 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     }
     
     return 8;
+}
+
+
+VOID driver_BitMapScale(struct BitScaleArgs * bsa,
+                        struct GfxBase * GfxBase) 
+{
+    ULONG srcflags = 0;
+    ULONG dstflags = 0;
+
+    BOOL src_colmap_set = FALSE;
+    BOOL dst_colmap_set = FALSE;
+    BOOL success = TRUE;
+    BOOL colmaps_ok = TRUE;
+
+    OOP_Object *srcbm_obj;
+    OOP_Object *dstbm_obj;
+    OOP_Object *tmp_gc;
+    
+
+    srcbm_obj = OBTAIN_HIDD_BM(bsa->bsa_SrcBitMap);
+    dstbm_obj = OBTAIN_HIDD_BM(bsa->bsa_DestBitMap);
+    tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+
+
+/* We must lock any HIDD_BM_SetColorMap calls */
+LOCK_BLIT
+    if (srcbm_obj && dstbm_obj && tmp_gc)
+    {
+        /* Try to get a CLUT for the bitmaps */
+        if (IS_HIDD_BM(bsa->bsa_SrcBitMap)) {
+            if (NULL != HIDD_BM_COLMAP(bsa->bsa_SrcBitMap))
+    	        srcflags |= FLG_HASCOLMAP;
+    	    dstflags |= GET_COLMOD_FLAGS(bsa->bsa_SrcBitMap);
+        } else {
+             /* Amiga BM */
+             srcflags |= FLG_PALETTE;
+        }
+
+        if (IS_HIDD_BM(bsa->bsa_DestBitMap)) {
+            if (NULL != HIDD_BM_COLMAP(bsa->bsa_DestBitMap))
+               dstflags |= FLG_HASCOLMAP;
+    	    dstflags |= GET_COLMOD_FLAGS(bsa->bsa_DestBitMap);
+        } else {
+            /* Amiga BM */
+            dstflags |= FLG_PALETTE;
+        }
+    	
+
+        if (    (srcflags == FLG_PALETTE || srcflags == FLG_STATICPALETTE)) {
+            /* palettized with no colmap. Neew to get a colmap from dest*/
+            if (dstflags == FLG_TRUECOLOR) {
+    	
+                kprintf("!!! NO WAY GETTING PALETTE FOR src IN BltBitMap\n");
+                colmaps_ok = FALSE;
+                success = FALSE;
+    	    
+            } else if (dstflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
+    	
+                /* Use the dest colmap for src */
+                HIDD_BM_SetColorMap(srcbm_obj, HIDD_BM_COLMAP(bsa->bsa_DestBitMap));
+
+            }
+        }
+
+        if (   (dstflags == FLG_PALETTE || dstflags == FLG_STATICPALETTE)) {
+    	    /* palettized with no pixtab. Nees to get a pixtab from dest*/
+            if (srcflags == FLG_TRUECOLOR) {
+                kprintf("!!! NO WAY GETTING PALETTE FOR dst IN BltBitMap\n");
+                colmaps_ok = FALSE;
+                success = FALSE;
+    	    
+            } else if (srcflags == (FLG_TRUECOLOR | FLG_HASCOLMAP)) {
+    	
+                /* Use the src colmap for dst */
+                HIDD_BM_SetColorMap(dstbm_obj, HIDD_BM_COLMAP(bsa->bsa_SrcBitMap));
+    	    
+                dst_colmap_set = TRUE;
+            }
+        }
+
+        if (TRUE == success && TRUE == colmaps_ok)
+        {
+            ULONG old_drmd;
+	    struct TagItem cbtags[] = {
+    		{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
+    		{ TAG_DONE, 0 }
+	    };
+	    
+	    OOP_GetAttr(tmp_gc, aHidd_GC_DrawMode, &old_drmd);
+	    
+	    OOP_SetAttrs(tmp_gc, cbtags);
+
+            bsa->bsa_DestWidth = ScalerDiv(bsa->bsa_SrcWidth,
+                                           bsa->bsa_XDestFactor,
+                                           bsa->bsa_XSrcFactor);     
+    
+            bsa->bsa_DestHeight = ScalerDiv(bsa->bsa_SrcHeight,
+                                            bsa->bsa_YDestFactor,
+                                            bsa->bsa_YSrcFactor);
+
+    	    HIDD_BM_BitMapScale(SDD(GfxBase)->pointerbm
+	    	, srcbm_obj
+    		, dstbm_obj
+    		, bsa
+		, tmp_gc
+    	    );
+    	    
+	    cbtags[0].ti_Data = old_drmd;
+	    OOP_SetAttrs(tmp_gc, cbtags);
+        } /* if () */
+    
+        if (src_colmap_set)
+            HIDD_BM_SetColorMap(srcbm_obj, NULL);
+        if (dst_colmap_set)
+            HIDD_BM_SetColorMap(dstbm_obj, NULL);
+    }
+
+    if (dstbm_obj)
+         RELEASE_HIDD_BM(dstbm_obj, bsa->bsa_DestBitMap);
+
+    if (srcbm_obj)
+         RELEASE_HIDD_BM(srcbm_obj, bsa->bsa_SrcBitMap);
+
+    if (tmp_gc)
+        release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
+
+ULOCK_BLIT
+
 }
 
 static BOOL int_bltbitmap(struct BitMap *srcBitMap, OOP_Object *srcbm_obj
