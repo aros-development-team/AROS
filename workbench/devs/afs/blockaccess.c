@@ -182,29 +182,40 @@ ULONG retval;
 UQUAD offset;
 
 	D(bug("afs.handler:    readDisk: reading block %ld\n",start));
-	volume->iorequest->iotd_Req.io_Command=cmd;
-	volume->iorequest->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
-	volume->iorequest->iotd_Req.io_Data=mem;
-
-	offset  = start+volume->startblock;
-	offset *= BLOCK_SIZE(volume);
-
-	volume->iorequest->iotd_Req.io_Offset=0xFFFFFFFF & offset;
-	volume->iorequest->iotd_Req.io_Actual=offset>>32;
-	retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
-	if (retval)
-		showError(afsbase, ERR_READWRITE, retval);
-	if (volume->flags & VOLF_TRACKDISK)
+	if (
+			((start>=volume->startblock) && (start<=volume->lastblock)) &&
+			((start+count-1)<=volume->lastblock)
+		)
 	{
-		if (volume->moff_time)
+		volume->iorequest->iotd_Req.io_Command=cmd;
+		volume->iorequest->iotd_Req.io_Length=count*BLOCK_SIZE(volume);
+		volume->iorequest->iotd_Req.io_Data=mem;
+
+		offset  = start+volume->startblock;
+		offset *= BLOCK_SIZE(volume);
+
+		volume->iorequest->iotd_Req.io_Offset=0xFFFFFFFF & offset;
+		volume->iorequest->iotd_Req.io_Actual=offset>>32;
+		retval=DoIO((struct IORequest *)&volume->iorequest->iotd_Req);
+		if (retval)
+			showError(afsbase, ERR_READWRITE, retval);
+		if (volume->flags & VOLF_TRACKDISK)
 		{
-			volume->moff_time=100;
+			if (volume->moff_time)
+			{
+				volume->moff_time=100;
+			}
+			else
+			{
+				volume->moff_time=100;
+				AddIntServer(INTB_VERTB, &volume->vbl_int);
+			}
 		}
-		else
-		{
-			volume->moff_time=100;
-			AddIntServer(INTB_VERTB, &volume->vbl_int);
-		}
+	}
+	else
+	{
+		showText(afsbase, "Attempted to read/write block outside range! (range: %ld-%ld, start: %ld, count: %ld", volume->startblock, volume->lastblock, start, count);
+		retval = 1;
 	}
 	return retval;
 }
