@@ -67,6 +67,8 @@
 	return EOF;
     }
 
+    /* Note: changes here might require changes in vfscanf.c!! */
+
     if (c < -1)
 	c = (unsigned int)c;
 
@@ -79,7 +81,7 @@
 	else
 	    stream->flags |= _STDIO_EOF;
 
-	return EOF;
+	c = EOF;
     }
 
     return c;
