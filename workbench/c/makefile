@@ -7,8 +7,9 @@ include $(TOP)/make.cfg
 #CC=$(PURIFY) $(SYS_CC)
 
 OBJDIR = $(GENDIR)/exe
-LIBS = -L$(LIBDIR) -lamiga -laros
-DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
+LIBS = -L$(LIBDIR) -larosc -lamiga -laros
+DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
+	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
 
 FILES = \
 	newshell \
