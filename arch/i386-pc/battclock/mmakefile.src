@@ -1,40 +1,9 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-OBJDIR		:= $(OSGENDIR)/battclock
-USER_INCLUDES	:= -I$(GENINCDIR)
-CFLAGS2 	:= $(CFLAGS) -I../.. -I$(GENDIR)/rom/battclock -include $(GENDIR)/rom/battclock/battclock_deflibdefs.h
-AFLAGS2 	:= $(AFLAGS) -I../.. -I$(GENINCDIR)
-TESTS		:=
-FILES		:= readbattclock
+USER_CFLAGS 	:= -I$(TOP)/rom/battclock
+%build_archspecific \
+  mainmmake=kernel-battclock maindir=rom/battclock arch=pc-i386 \
+  files=readbattclock modulename=battclock
 
-#MM kernel-battclock-pc-i386 : kernel-battclock-includes
-
-#MM
-kernel-battclock-pc-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
-	readbattclock.s $(OBJDIR)/battclock_init.o
-	@$(NOP)
-
-#MM-
-setup-battclock-pc-i386 :
-	%mkdirs_q $(OBJDIR)
-	%add_objects $(foreach f,$(FILES), rom/battclock/$(f))
-	%exclude_files $(foreach f,$(FILES), rom/battclock/$(f))
-
-#MM
-clean ::
-	-$(RM) $(TESTS) *.s
-
-$(OBJDIR)/%.o : %.c
-	%compile_q opt=$(CFLAGS2)
-
-$(OBJDIR)/%.o : %.S
-	%assemble_q opt=$(AFLAGS2)
-
-$(OBJDIR)/%.d : %.c
-	%mkdepend_q
-
-readbattclock.s : readbattclock.c
-	%ctoasm_q
-
-%common
+#MM- kernel-battclock-pc-i386 : kernel-battclock-includes
