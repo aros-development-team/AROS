@@ -1,18 +1,18 @@
 /*
     Copyright © 1995-2002, The AROS Development Team. All rights reserved.
 
-    Desc: function to write defines/modulename.h. Part of genmodule.
+    Desc: function to write module_autoinit.c. Part of genmodule.
 */
 #include "genmodule.h"
 
-void writeincdefines(void)
+void writestubs(void)
 {
     FILE *out;
     struct functionlist *funclistit;
     struct arglist *arglistit;
     unsigned int start;
 
-    snprintf(line, slen-1, "%s/defines/%s.h", genincdir, modulename);
+    snprintf(line, slen-1, "%s/%s_stubs.c", gendir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -20,50 +20,43 @@ void writeincdefines(void)
 	exit(20);
     }
     fprintf(out,
-	    "#ifndef DEFINES_%s_PROTOS_H\n"
-	    "#define DEFINES_%s_PROTOS_H\n"
-	    "\n"
 	    "/*\n"
 	    "    *** Automatically generated file. Do not edit ***\n"
 	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
-	    "\n"
-	    "    Desc: Prototype for %s\n"
 	    "*/\n"
-	    "\n"
-	    "#include <aros/libcall.h>\n"
+	    "#define NOLIBDEFINES\n"
+	    "#include <proto/%s.h>\n"
 	    "#include <exec/types.h>\n"
+	    "#include <aros/libcall.h>\n"
 	    "\n",
-	    modulenameupper, modulenameupper, modulename);
+	    modulename);
     for (funclistit = funclist, start=firstlvo;
 	 funclistit!=NULL;
 	 funclistit = funclistit->next, start++)
     {
 	fprintf(out,
 		"\n"
-		"#define %s(",
-		funclistit->name);
+		"%s %s(",
+		funclistit->type, funclistit->name);
 	for (arglistit = funclistit->arguments;
 	     arglistit!=NULL;
 	     arglistit = arglistit->next)
 	{
 	    if (arglistit != funclistit->arguments)
 		fprintf(out, ", ");
-	    fprintf(out, "%s", arglistit->name);
+	    fprintf(out, "%s %s", arglistit->type, arglistit->name);
 	}
 	fprintf(out,
-		") \\\n"
-		"        AROS_LC%d(%s, %s, \\\n",
+		")\n"
+		"{\n"
+		"    return AROS_LC%d(%s, %s,\n",
 		funclistit->argcount, funclistit->type, funclistit->name);
 	for (arglistit = funclistit->arguments;
 	     arglistit!=NULL;
 	     arglistit = arglistit->next)
-	    fprintf(out, "                  AROS_LCA(%s,%s,%s), \\\n",
+	    fprintf(out, "                    AROS_LCA(%s,%s,%s),\n",
 		    arglistit->type, arglistit->name, arglistit->reg);
-	fprintf(out, "        %s *, %s, %d, %s)\n", libbasetypeextern, libbase, start, basename);
+	fprintf(out, "                    %s *, %s, %d, %s);\n}\n", libbasetypeextern, libbase, start, basename);
     }
-    fprintf(out,
-	    "\n"
-	    "#endif /* DEFINES_%s_PROTOS_H*/\n",
-	    modulenameupper);
     fclose(out);
 }

@@ -23,7 +23,9 @@ SRCS := genmodule.c \
 	writeincdefines.c \
 	writeinclibdefs.c \
 	writestart.c \
-	writeend.c
+	writeend.c \
+	writeautoinit.c \
+	writestubs.c
 	
 INCS := genmodule.h
 

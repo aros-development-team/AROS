@@ -15,6 +15,7 @@ char *conffile, *gendir, *genincdir, *reffile;
 
 /* global variables that store the configuration of the module */
 enum modtype modtype = UNSPECIFIED;
+enum libcall libcall = STACK;
 
 char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, *libbase = NULL,
      *libbasetype = NULL, *libbasetypeextern = NULL, *datestring = "00.00.0000";
@@ -108,6 +109,8 @@ int main(int argc, char **argv)
     writeinclibdefs();
     writestart();
     writeend();
+    writeautoinit();
+    writestubs();
     
     return 0;
 }

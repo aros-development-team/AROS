@@ -4,6 +4,7 @@
     Desc: function to read in the function reference file. Part of genmodule.
 */
 #include "genmodule.h"
+#include <assert.h>
 
 void readref(void)
 {
@@ -44,6 +45,24 @@ void readref(void)
 	readline(in);
 	if (strlen(line)>0)
 	{
+	    if (infunction &&
+		(strncmp(line, "FILE", 4)==0 ||
+		 strncmp(line, "INCLUDES", 8)==0 ||
+		 strncmp(line, "DEFINES", 7)==0 ||
+		 strncmp(line, "VARIABLE", 8)==0 ||
+		 strncmp(line, "FUNCTION", 8)==0
+		) &&
+		libcall==REGISTER)
+	    {
+		/* About to leave function */
+		if ((*arglistptr)!=NULL)
+		{
+		    fprintf(stderr, "Error: too many registers specified for function \"%s\"\n",
+			    funclistit->name);
+		    exit(20);
+		}
+	    }
+	    
 	    if (infunction &&
 		(strncmp(line, "FILE", 4)==0 ||
 		 strncmp(line, "INCLUDES", 8)==0 ||
@@ -99,7 +118,30 @@ void readref(void)
 	    {
 		if (strncmp(line, "Arguments", 9)==0)
 		{
-		    (*arglistptr) = malloc(sizeof(struct arglist));
+		    switch (libcall)
+		    {
+		    case STACK:
+			assert(*arglistptr==NULL);
+			*arglistptr = malloc(sizeof(struct arglist));
+			(*arglistptr)->next = NULL;
+			(*arglistptr)->reg = "";
+			funclistit->argcount++;
+			break;
+			
+		    case REGISTER:
+			if (*arglistptr==NULL)
+			{
+			    fprintf(stderr, "Error: not enough register specified for function \"%s\"\n",
+				    funclistit->name);
+			    exit(20);
+			}
+			break;
+			
+		    default:
+			fprintf(stderr, "Internal error: unhandled libcall type in readref\n");
+			exit(20);
+			break;
+		    }
 		    begin = strchr(line, ':');
 		    if (begin==NULL)
 		    {
@@ -115,9 +157,7 @@ void readref(void)
 		    while (isspace(*(end-1))) end--;
 		    *end='\0';
 		    (*arglistptr)->type = strdup(begin);
-		    (*arglistptr)->next = NULL;
 		    arglistptr = &((*arglistptr)->next);
-		    funclistit->argcount++;
 		}
 		else if (strncmp(line, "Type", 4)==0)
 		{

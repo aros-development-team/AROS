@@ -36,9 +36,11 @@ void writeincproto(void)
 	fprintf(out, "%s\n", linelistit->line);
     fprintf(out,
 	    "#include <clib/%s_protos.h>\n"
-	    "#include <defined/%s.h>\n"
+	    "#if !defined(NOLIBDEFINES) && !defined(%s_NOLIBDEFINES)\n"
+	    "#   include <defines/%s.h>\n"
+	    "#endif\n"
 	    "\n"
 	    "#endif /* PROTO_%s_H */\n",
-	    modulename, modulename, modulenameupper);
+	    modulename, modulenameupper, modulename, modulenameupper);
     fclose(out);
 }
