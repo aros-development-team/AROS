@@ -47,9 +47,6 @@ extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, *l
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cliblines, *protolines;
 
-/* The next variable are bools */
-extern int hasinit, hasopen, hasclose, hasexpunge;
-
 /* global variables for reading lines from files */
 extern char *line; /* The current read file */
 extern unsigned int slen; /* The allocation length pointed to be line */

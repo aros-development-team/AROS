@@ -12,24 +12,6 @@ void readref(void)
     struct functionlist *funclistit = NULL;
     char *begin, *end;
     unsigned int len;
-    char *initfunction, *openfunction, *closefunction, *expungefunction, *s;
-
-    s = "_L_InitLib";
-    len = strlen(basename)+strlen(s)+1;
-    initfunction = malloc(len);
-    snprintf(initfunction, len, "%s%s", basename, s);
-    s = "_L_OpenLib";
-    len = strlen(basename)+strlen(s)+1;
-    openfunction = malloc(len);
-    snprintf(openfunction, len, "%s%s", basename, s);
-    s = "_L_CloseLib";
-    len = strlen(basename)+strlen(s)+1;
-    closefunction = malloc(len);
-    snprintf(closefunction, len, "%s%s", basename, s);
-    s = "_L_ExpungeLib";
-    len = strlen(basename)+strlen(s)+1;
-    expungefunction = malloc(len);
-    snprintf(expungefunction, len, "%s%s", basename, s);
 
     in = fopen(reffile, "r");
     if (in==NULL)
@@ -97,17 +79,7 @@ void readref(void)
 		    ;
 
 		if (funclistit==NULL)
-		{
 		    infunction = 0;
-		    if (strcmp(begin, initfunction)==0)
-			hasinit = 1;
-		    if (strcmp(begin, openfunction)==0)
-			hasopen = 1;
-		    if (strcmp(begin, closefunction)==0)
-			hasclose = 1;
-		    if (strcmp(begin, expungefunction)==0)
-			hasexpunge = 1;
-		}
 		else
 		{
 		    infunction = 1;
@@ -220,9 +192,4 @@ void readref(void)
 	    exit(20);
 	}
     }
-    
-    free(initfunction);
-    free(openfunction);
-    free(closefunction);
-    free(expungefunction);
 }
