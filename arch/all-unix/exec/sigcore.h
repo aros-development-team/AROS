@@ -313,7 +313,7 @@ typedef struct sigcontext sigcontext_t;
 	sp -= CPU_NUMREGS
 	  	  
 #   define SAVEREGS(sp,sc) \
-	sp = SP(sc), \
+	sp = (SP_TYPE *)SP(sc), \
 	sp -= 128, \
 	_PUSH(sp,PC(sc)), \
 	_PUSH(sp,FP(sc)), \
@@ -336,7 +336,7 @@ typedef struct sigcontext sigcontext_t;
 	FP(sc) = _POP(sp), \
 	PC(sc) = _POP(sp), \
 	sp += 128, \
-	SP(sc) = sp
+	SP(sc) = (int)sp
 
 #   define NO_FPU
 

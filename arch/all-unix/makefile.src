@@ -1,0 +1,19 @@
+# $Id$
+TOP=../..
+
+include $(TOP)/config/make.cfg
+
+SUBDIRS= exec dos
+
+all: setup subdirs
+
+setup:
+	%subdirs_q "Setting up" setup
+
+clean::
+	%subdirs_q "Cleaning" clean
+
+subdirs:
+	%subdirs_q target=all
+
+%common

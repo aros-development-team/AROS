@@ -1,0 +1,53 @@
+# $Id$
+TOP=../../..
+
+include $(TOP)/config/make.cfg
+
+FILES = cause disable enable kernel preparecontext stackswap switch\
+	rawioinit rawputchar rawmaygetchar
+
+REP_FILES= cause disable enable preparecontext stackswap switch \
+	   rawioinit rawputchar rawmaygetchar
+
+ADD_OBJS = $(foreach f,$(FILES),rom/exec/$(f))
+
+# You don't need to change anything after here unless you add new
+# directories to the above.
+
+SPECIAL_CFLAGS= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
+CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
+
+CFILES = $(foreach f,$(FILES),$(f).c)
+DEPS = $(patsubst %.c,$(OSGENDIR)/exec/%.d,$(CFILES))
+
+TESTS = stackswap coretest
+
+all: setup $(foreach f,$(FILES), $(OSGENDIR)/exec/$(f).o)
+
+setup:
+	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec
+	%add_objects $(ADD_OBJS)
+	%supp_files  $(foreach f,$(REP_FILES),rom/exec/$(f))
+	@echo "CFLAGS= $(CFLAGS2)"
+
+clean::
+	$(RM) $(TESTS)
+
+check: test
+
+test: $(TESTS)
+
+% : %.c
+	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+
+$(OSGENDIR)/exec/%.o : %.s
+	%assemble_q
+
+$(OSGENDIR)/exec/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OSGENDIR)/exec/%.d : %.c $(MACHINE_H)
+	%mkdepend_q
+
+%common
+%include_deps
