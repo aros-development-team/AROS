@@ -53,3 +53,8 @@ LONG FPrintf (BPTR fh, STRPTR format, ...);
 LONG Printf (STRPTR format, ...);
 
 ##end clib
+##begin proto
+#ifndef DOSBase
+extern struct DosLibrary *DOSBase;
+#endif
+##end proto

@@ -52,4 +52,12 @@ IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
 IPTR CallHook (struct Hook * hook, APTR obj, ...);
 #endif
 ##end clib
+##begin proto
+#define BOOPSINAME  "boopsi.library"
+
+#ifndef BOOPSIBase
+extern struct Library * BOOPSIBase;
+#endif
+
+##end proto
 

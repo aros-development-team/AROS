@@ -2,3 +2,9 @@
 ULONG ArosInquire (ULONG tag1, ...);
 
 ##end clib
+##begin proto
+#ifndef ArosBase
+extern struct Library * ArosBase;
+#endif
+
+##end proto
