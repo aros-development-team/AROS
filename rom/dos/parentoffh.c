@@ -1,8 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: Lock the directory a file is located in
     Lang: english
 */
 #include "dos_intern.h"
@@ -22,7 +22,7 @@
 	struct DosLibrary *, DOSBase, 64, Dos)
 
 /*  FUNCTION
-	Lock the directory a file is loacted in.
+	Lock the directory a file is located in.
 
     INPUTS
 	fh  - Filhandle of which you want to obtain the parent
@@ -73,13 +73,14 @@
       
       /* did it fail with a buffer overflow?? */
       if (DOSFALSE == success)
+      {
         if (ERROR_BUFFER_OVERFLOW == IoErr())
         {
           Attempts++;
           FreeMem(Buffer, Buffersize);
           Buffersize += DEF_BUFSIZESTEP;
         }
-      else /* another error occured -> exit */
+      } else /* another error occured -> exit */
       {
         FreeMem(Buffer, Buffersize);
         return NULL;
