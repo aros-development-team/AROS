@@ -1445,7 +1445,7 @@ $(BD_OBJDIR$(BDID))/%.o : %.S
 	%assemble_q opt=$(AFLAGS)
 endif
 
-%include_deps depstargets=%(mainmmake)-%(arch) deps=$(TMP_DEPS)
+%include_deps depstargets=%(mainmmake)-%(arch) deps=$(BD_DEPS$(BDID))
 %end
 #------------------------------------------------------------------------------
 
