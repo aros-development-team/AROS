@@ -75,13 +75,13 @@ static void LayoutTabItems(Object *obj, struct MUI_RegisterData *data)
 {
     WORD extra_space;
     WORD fitwidth;
-    WORD x;
+    WORD x = 0;
     WORD y = - data->tab_height;
     WORD item_width; /* from vertical line left to v l right */
     int i;
     int tabs_on_bottom = 0;
 
-    item_width = (_width(obj) - data->total_hspacing) / data->columns;//data->numitems;
+    item_width  = (_width(obj) - data->total_hspacing) / data->columns;//data->numitems;
     extra_space = (_width(obj) - data->total_hspacing) % data->columns;//data->numitems;
 
     D(bug("LayoutTabItems(%lx) : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",

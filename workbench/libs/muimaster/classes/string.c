@@ -111,8 +111,7 @@ static void Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
 **************************************************************************/
 static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
 {
-    STRPTR new_buf;
-    BOOL reallocated = FALSE;
+    STRPTR new_buf = NULL;
     STRPTR dst;
 
     // buffer realloc needed ?
@@ -120,10 +119,8 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     {
 	ULONG new_size = (data->NumChars + 8) * 2;
 	new_buf = (STRPTR)AllocVec(new_size * sizeof(char), MEMF_ANY);
-	if (NULL == new_buf)
-	    return FALSE;
+	if (new_buf == NULL) return FALSE;
 	data->BufferSize = new_size;
-	reallocated = TRUE;
 	strncpy(new_buf, data->Buffer, data->BufferPos);
 	dst = &new_buf[data->BufferPos + 1];
     }
@@ -133,7 +130,7 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
     memmove(dst, &data->Buffer[data->BufferPos],
 	    data->NumChars - data->BufferPos);
 
-    if (reallocated)
+    if (new_buf != NULL)
     {
 	FreeVec(data->Buffer);
 	data->Buffer = new_buf;

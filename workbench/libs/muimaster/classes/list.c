@@ -1250,27 +1250,25 @@ static ULONG List_Clear(struct IClass *cl, Object *obj, struct MUIP_List_Clear *
 static ULONG List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exchange *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    LONG pos1;
-    LONG pos2;
+    LONG                 pos1, 
+                         pos2; 
 
-    switch(msg->pos1)
+    switch (msg->pos1)
     {
-	case    MUIV_List_Exchange_Top: pos1 = 0; break;
-	case    MUIV_List_Exchange_Active: pos1 = data->entries_active;break;
-	case    MUIV_List_Exchange_Bottom: pos1 = data->entries_num - 1;break;
-	case    MUIV_List_Exchange_Next:break;
-	case    MUIV_List_Exchange_Previous:break;
-	default: pos1 = msg->pos1;
+	case MUIV_List_Exchange_Top:    pos1 = 0;                     break;
+	case MUIV_List_Exchange_Active: pos1 = data->entries_active;  break;
+	case MUIV_List_Exchange_Bottom: pos1 = data->entries_num - 1; break;
+        default:                        pos1 = msg->pos1;
     }
 
-    switch(msg->pos2)
+    switch (msg->pos2)
     {
-	case    MUIV_List_Exchange_Top: pos2 = 0; break;
-	case    MUIV_List_Exchange_Active: pos2 = data->entries_active;break;
-	case    MUIV_List_Exchange_Bottom: pos2 = data->entries_num - 1;break;
-	case    MUIV_List_Exchange_Next: pos2 = pos1 + 1; break;
-	case    MUIV_List_Exchange_Previous: pos2 = pos1 - 1;break;
-	default: pos2 = msg->pos2;
+	case MUIV_List_Exchange_Top:      pos2 = 0;                     break;
+	case MUIV_List_Exchange_Active:   pos2 = data->entries_active;  break;
+	case MUIV_List_Exchange_Bottom:   pos2 = data->entries_num - 1; break;
+	case MUIV_List_Exchange_Next:     pos2 = pos1 + 1;              break;
+	case MUIV_List_Exchange_Previous: pos2 = pos1 - 1;              break;
+	default:                          pos2 = msg->pos2;
     }
 
     if (pos1 >= 0 && pos1 < data->entries_num && pos2 >= 0 && pos2 <= data->entries_num && pos1 != pos2)
@@ -1278,16 +1276,21 @@ static ULONG List_Exchange(struct IClass *cl, Object *obj, struct MUIP_List_Exch
     	struct ListEntry *save = data->entries[pos1];
     	data->entries[pos1] = data->entries[pos2];
     	data->entries[pos2] = save;
-
+        
 	data->update = 2;
 	data->update_pos = pos1;
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
-
+        
 	data->update = 2;
 	data->update_pos = pos2;
 	MUI_Redraw(obj,MADF_DRAWUPDATE);
+    
+        return TRUE;
     }
-    return 0;
+    else
+    {
+        return FALSE;
+    }
 }
 
 /**************************************************************************
@@ -1554,6 +1557,9 @@ STATIC ULONG List_InsertSingleAsTree(struct IClass *cl, Object *obj, struct MUIP
 	case    MUIV_List_InsertSingleAsTree_Bottom:
 		pos = 0;
 		break;
+                
+        default:
+            pos = -1;
     }
 
     pos += msg->parent + 1;

@@ -927,7 +927,7 @@ static void Area_Draw__handle_background(Object *obj, struct MUI_AreaData *data,
 static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 				    struct ZuneFrameGfx *zframe, WORD frame_top)
 {
-    APTR textdrawclip;
+    APTR textdrawclip = NULL;
     struct Region *region;
     int tx;
     int tw, frame_height;
@@ -984,7 +984,7 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data,
 	    
     zframe->draw(muiRenderInfo(obj), _left(obj), frame_top, _width(obj), frame_height);
 
-    if (region)
+    if (region && textdrawclip != NULL)
     {
 	MUI_RemoveClipRegion(muiRenderInfo(obj),textdrawclip);
 /*		DisposeRegion(region);*/ /* sba: DisposeRegion happens in MUI_RemoveClipRegion, this seems wrong to me */
@@ -1039,8 +1039,8 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
     struct ZuneFrameGfx *zframe;
-    struct TextFont *obj_font;
-    WORD frame_top;
+    struct TextFont *obj_font = NULL;
+    WORD frame_top = _top(obj);
     //APTR areaclip;
 
 /*      D(bug("Area_Draw(0x%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
@@ -1089,13 +1089,7 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    case GROUP_TITLE_POSITION_CENTERED:
 		frame_top = _top(obj) + (data->mad_TitleText->height - zframe->itop) / 2;
 		break;
-	    default:
-		break;
 	}
-    }
-    else
-    {
-	frame_top = _top(obj);
     }
 
     /* Background drawing */

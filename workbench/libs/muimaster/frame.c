@@ -525,12 +525,12 @@ BOOL zune_frame_intern_to_spec (const struct MUI_FrameSpec_intern *intern,
     if (!intern || !spec)
 	return FALSE;
 
-    snprintf(&spec[0], 1, "%lx", intern->type);
-    snprintf(&spec[1], 1, "%lx", intern->state);
-    snprintf(&spec[2], 1, "%lx", intern->innerLeft);
-    snprintf(&spec[3], 1, "%lx", intern->innerRight);
-    snprintf(&spec[4], 1, "%lx", intern->innerTop);
-    snprintf(&spec[5], 1, "%lx", intern->innerBottom);
+    snprintf(&spec[0], 1, "%x", intern->type);
+    snprintf(&spec[1], 1, "%x", intern->state);
+    snprintf(&spec[2], 1, "%x", intern->innerLeft);
+    snprintf(&spec[3], 1, "%x", intern->innerRight);
+    snprintf(&spec[4], 1, "%x", intern->innerTop);
+    snprintf(&spec[5], 1, "%x", intern->innerBottom);
     spec[6] = 0;
     return TRUE;
 }
