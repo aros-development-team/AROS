@@ -8,12 +8,17 @@
 
 # The files in this directory build a stand-alone executable, used to
 # install AROS' modules in the system. These modules will become active
-# after a reset. More information in the source files.
+# after a reset. More information in the source and doc files.
 
 TOP=../../..
 
 include $(TOP)/config/make.cfg
 
+# Set this to "true" to prevent stripping of the executables.
+STRIP = strip
+
+# Directories where the resulting files will end up
+BOOTGENDIR = $(GENDIR)/boot
 TOOLDIR = $(BINDIR)/tools
 TOOLGENDIR = $(GENDIR)/tools
 
@@ -25,10 +30,13 @@ TOOLZ = printresmodules showvecs
 TOOLS = $(foreach f,$(TOOLZ),$(TOOLDIR)/$(f))
 LIBS = -L$(LIBDIR) -larosc
 
-all:	setup $(BINDIR)/boot $(BINDIR)/boot.config $(TOOLS)
+all:	setup \
+	$(BINDIR)/arosboot $(BINDIR)/arosboot.config $(BINDIR)/arosboot.doc \
+	$(TOOLS)
 
 clean:
-	-rm -f $(BINDIR)/boot
+	-rm -f $(BINDIR)/arosboot $(BINDIR)/arosboot.config $(BINDIR)/arosboot.doc
+	-rm -f $(TOOLS)
 
 setup :
 	@if [ ! -d $(BINDIR) ]; then $(MKDIR) $(BINDIR) ; else true ; fi
@@ -38,25 +46,31 @@ setup :
 
 $(BOOTGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
 $(TOOLGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
-	@if test ! -s $*.err; then rm $*.err ; else true ; fi
+	@if [ ! -s $*.err ]; then rm $*.err ; else true ; fi
 
-$(BINDIR)/boot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
+$(BINDIR)/arosboot: $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o)
 	$(CC) $(LDFLAGS) $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).o) $(LIBS) -o $@
-	strip $@
+	$(STRIP) $@
 
-$(BINDIR)/boot.config: boot.config
+$(BINDIR)/arosboot.config: arosboot.config
+	$(CP) $< $@
+
+$(BINDIR)/arosboot.doc: arosboot.doc
 	$(CP) $< $@
 
 $(TOOLDIR)/%: $(TOOLGENDIR)/%.o
 	$(CC) $(LDFLAGS) $< -o $@
-	strip $@
+	$(STRIP) $@
 
 $(BOOTGENDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
+# Don't try to include dependency files if we're cleaning up.
+ifneq ("$(TARGET)","clean")
 include $(foreach f,$(FILES),$(BOOTGENDIR)/$(f).d)
+endif
