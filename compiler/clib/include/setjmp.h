@@ -16,7 +16,7 @@
 #   define _JMPLEN 12
 #elif __i386__
 #   define _JMPLEN 7
-#elif ppc
+#elif ppc || __powerpc__
 #   define _JMPLEN 58
 #endif
 
