@@ -33,7 +33,7 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	AROS_LHA(APTR, data, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 120, Intuition)
+	struct IntuitionBase *, IntuitionBase, 150, Intuition)
 
 /*  FUNCTION
 	This function permits late initalization

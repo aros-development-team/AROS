@@ -18,7 +18,7 @@
 	AROS_LHA(struct Window *, window, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 96, Intuition)
+	struct IntuitionBase *, IntuitionBase, 148, Intuition)
 
 /*  FUNCTION
 	Private to AROS: allocate an IntuiMessage. IntuiMessage->Window

@@ -18,7 +18,7 @@
 	AROS_LHA(struct IntuiMessage *, imsg, A0),
 
 /*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 112, Intuition)
+	struct IntuitionBase *, IntuitionBase, 149, Intuition)
 
 /*  FUNCTION
 	Private to AROS: free an IntuiMessage previously allocated
