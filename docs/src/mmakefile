@@ -229,7 +229,7 @@ all-docs : includes docs docs-index
 includes : devlist.inc contents.inc status.inc \
 	jobserv-free.inc jobserv-work.inc jobserv-done.inc
 
-devlist.inc : devitemfilt.gawk $(HOME)/CVSROOT/passwd.txt
+devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< > $@
 
 status.inc :
