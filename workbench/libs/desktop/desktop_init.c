@@ -9,7 +9,7 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
-#include <aros/libcall.h>
+#include <aros/symbolsets.h>
 #include <libraries/desktop.h>
 #include <libraries/mui.h>
 
@@ -54,93 +54,16 @@
 #define DEBUG 1
 #include <aros/debug.h>
 
-struct inittable;
-extern const char name[];
-extern const char version[];
-extern const APTR inittabl[4];
-extern void    *const LIBFUNCTABLE[];
-extern const struct inittable datatable;
-
-extern struct DesktopBase *AROS_SLIB_ENTRY(init, Desktop) ();
-extern struct DesktopBase *AROS_SLIB_ENTRY(open, Desktop) ();
-extern BPTR     AROS_SLIB_ENTRY(close, Desktop) ();
-extern BPTR     AROS_SLIB_ENTRY(expunge, Desktop) ();
-extern int      AROS_SLIB_ENTRY(null, Desktop) ();
-extern ULONG    AROS_SLIB_ENTRY(add, Desktop) ();
-extern ULONG    AROS_SLIB_ENTRY(asl, Desktop) ();
-
-extern const char end;
-
-int entry(void)
-{
-/*
-   If the library was executed by accident return error code. 
- */
-    return -1;
-}
-
-const struct Resident resident = {
-    RTC_MATCHWORD,
-    (struct Resident *) &resident,
-    (APTR) & end,
-    RTF_AUTOINIT,
-    1,
-    NT_LIBRARY,
-    0,
-    (char *) name,
-    (char *) &version[6],
-    (ULONG *) inittabl
-};
-
-const char      name[] = "desktop.library";
-
-const char      version[] = "$VER: desktop.library 41.1 (29.08.02)\n\015";
-
-const APTR      inittabl[4] = {
-    (APTR) sizeof(struct DesktopBase),
-    (APTR) LIBFUNCTABLE,
-    (APTR) & datatable,
-    &AROS_SLIB_ENTRY(init, Desktop)
-};
-
-struct inittable
-{
-    S_CPYO(1, 1, B);
-    S_CPYO(2, 1, L);
-    S_CPYO(3, 1, B);
-    S_CPYO(4, 1, W);
-    S_CPYO(5, 1, W);
-    S_CPYO(6, 1, L);
-    S_END(end);
-};
-
-#define O(n) offsetof(struct DesktopBase,n)
-
-const struct inittable datatable = {
-    {{I_CPYO(1, B, O(db_Library.lib_Node.ln_Type)), {NT_LIBRARY}}},
-    {{I_CPYO(1, L, O(db_Library.lib_Node.ln_Name)), {(IPTR) name}}},
-    {{I_CPYO(1, B, O(db_Library.lib_Flags)), {LIBF_SUMUSED | LIBF_CHANGED}}},
-    {{I_CPYO(1, W, O(db_Library.lib_Version)), {1}}},
-    {{I_CPYO(1, W, O(db_Library.lib_Revision)), {0}}},
-    {{I_CPYO(1, L, O(db_Library.lib_IdString)), {(IPTR) & version[6]}}},
-    I_END()
-};
-
-#undef O
-
 struct DesktopBase *DesktopBase;
 
-#undef SysBase
-
-AROS_LH2(struct DesktopBase *, init,
-         AROS_LHA(struct DesktopBase *, desktopbase, D0),
-         AROS_LHA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, BASENAME)
+AROS_SET_LIBFUNC(Init, LIBBASETYPE, desktopbase)
 {
-    AROS_LIBFUNC_INIT
-    /*
-       This function is single-threaded by exec by calling Forbid. 
-     */
-        DesktopBase = desktopbase;
+/*
+   This function is single-threaded by exec by calling Forbid. If you break
+   the Forbid() another task may enter this function at the same time. Take
+   care. 
+ */
+    DesktopBase = desktopbase;
 
     InitSemaphore(&DesktopBase->db_BaseMutex);
     InitSemaphore(&DesktopBase->db_HandlerSafety);
@@ -148,12 +71,6 @@ AROS_LH2(struct DesktopBase *, init,
     D(bug("*** Entering DesktopBase::init...\n"));
 
     DesktopBase->db_libsOpen = FALSE;
-
-/*
-   Store arguments 
- */
-    DesktopBase->db_SysBase = SysBase;
-    DesktopBase->db_SegList = segList;
     DesktopBase->db_HandlerPort = NULL;
 /*
    these will be moved into a new DesktopContext area 
@@ -170,22 +87,13 @@ AROS_LH2(struct DesktopBase *, init,
 /*
    You would return NULL here if the init failed. 
  */
-    return DesktopBase;
-AROS_LIBFUNC_EXIT}
+    return TRUE;
+}
 
-/*
-   Use this from now on 
- */
-#ifdef SysBase
-#    undef SysBase
-#endif
-#define SysBase DesktopBase->db_SysBase
 
-AROS_LH1(struct DesktopBase *, open,
-         AROS_LHA(ULONG, version, D0),
-         struct DesktopBase *, desktopbase, 1, BASENAME)
+AROS_SET_LIBFUNC(Open, LIBBASETYPE, LIBBASE)
 {
-    AROS_LIBFUNC_INIT struct DesktopOperation *dob;
+    struct DesktopOperation *dob;
     struct List    *subList;
 
 /*
@@ -198,55 +106,44 @@ AROS_LH1(struct DesktopBase *, open,
 
     ObtainSemaphore(&DesktopBase->db_BaseMutex);
 
-/*
-   Keep compiler happy 
- */
-    version = 0;
-
-/*
-   I have one more opener. 
- */
-    DesktopBase->db_Library.lib_OpenCnt++;
-    DesktopBase->db_Library.lib_Flags &= ~LIBF_DELEXP;
-
     if (DesktopBase->db_libsOpen == FALSE)
     {
     // Any of these could potentially break the Forbid(),
     // so we have a semaphore
         DesktopBase->db_DOSBase = OpenLibrary("dos.library", 0);
         if (!DesktopBase->db_DOSBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_GfxBase = OpenLibrary("graphics.library", 0);
         if (!DesktopBase->db_GfxBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_IntuitionBase = OpenLibrary("intuition.library", 0);
         if (!DesktopBase->db_IntuitionBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_LayersBase = OpenLibrary("layers.library", 0);
         if (!DesktopBase->db_LayersBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_UtilityBase = OpenLibrary("utility.library", 0);
         if (!DesktopBase->db_UtilityBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_IconBase = OpenLibrary("icon.library", 0);
         if (!DesktopBase->db_IconBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_MUIMasterBase = OpenLibrary("muimaster.library", 0);
         if (!DesktopBase->db_MUIMasterBase)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_InputIO =
             AllocVec(sizeof(struct IORequest), MEMF_ANY);
         if (OpenDevice
             ("input.device", NULL,
              (struct IORequest *) DesktopBase->db_InputIO, NULL))
-            return NULL;
+            return FALSE;
         DesktopBase->db_InputBase =
             (struct Library *) DesktopBase->db_InputIO->io_Device;
 
@@ -255,14 +152,14 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct PresentationClassData),
                                   presentationDispatcher);
         if (!DesktopBase->db_Presentation)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_AbstractIconContainer =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Presentation,
                                   sizeof(struct AbstractIconContainerData),
                                   abstractIconContainerDispatcher);
         if (!DesktopBase->db_AbstractIconContainer)
-            return NULL;
+            return FALSE;
 
 
 
@@ -271,7 +168,7 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct IconContainerClassData),
                                   iconContainerDispatcher);
         if (!DesktopBase->db_IconContainer)
-            return NULL;
+            return FALSE;
 
 
         DesktopBase->db_Observer =
@@ -279,14 +176,14 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct ObserverClassData),
                                   observerDispatcher);
         if (!DesktopBase->db_Observer)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_IconObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer,
                                   sizeof(struct IconObserverClassData),
                                   iconObserverDispatcher);
         if (!DesktopBase->db_IconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_ContainerIconObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver,
@@ -294,7 +191,7 @@ AROS_LH1(struct DesktopBase *, open,
                                          ContainerIconObserverClassData),
                                   containerIconObserverDispatcher);
         if (!DesktopBase->db_ContainerIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_DiskIconObserver =
             MUI_CreateCustomClass(NULL, NULL,
@@ -302,7 +199,7 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct DiskIconObserverClassData),
                                   diskIconObserverDispatcher);
         if (!DesktopBase->db_DiskIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_DrawerIconObserver =
             MUI_CreateCustomClass(NULL, NULL,
@@ -310,21 +207,21 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct DrawerIconObserverClassData),
                                   drawerIconObserverDispatcher);
         if (!DesktopBase->db_DrawerIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_ToolIconObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver,
                                   sizeof(struct ToolIconObserverClassData),
                                   toolIconObserverDispatcher);
         if (!DesktopBase->db_ToolIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_ProjectIconObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver,
                                   sizeof(struct ProjectIconObserverClassData),
                                   projectIconObserverDispatcher);
         if (!DesktopBase->db_ProjectIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_TrashcanIconObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconObserver,
@@ -332,7 +229,7 @@ AROS_LH1(struct DesktopBase *, open,
                                          TrashcanIconObserverClassData),
                                   trashcanIconObserverDispatcher);
         if (!DesktopBase->db_TrashcanIconObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_IconContainerObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer,
@@ -340,67 +237,67 @@ AROS_LH1(struct DesktopBase *, open,
                                          IconContainerObserverClassData),
                                   iconContainerObserverDispatcher);
         if (!DesktopBase->db_IconContainerObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_DesktopObserver =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Observer,
                                   sizeof(struct DesktopObserverClassData),
                                   desktopObserverDispatcher);
         if (!DesktopBase->db_DesktopObserver)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_AbstractIcon=MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Presentation, sizeof(struct AbstractIconClassData), abstractIconDispatcher);
         if(!DesktopBase->db_AbstractIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_Icon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_AbstractIcon,
                                   sizeof(struct IconClassData),
                                   iconDispatcher);
         if (!DesktopBase->db_Icon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_DiskIcon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon,
                                   sizeof(struct DiskIconClassData),
                                   diskIconDispatcher);
         if (!DesktopBase->db_DiskIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_DrawerIcon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon,
                                   sizeof(struct DrawerIconClassData),
                                   drawerIconDispatcher);
         if (!DesktopBase->db_DrawerIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_TrashcanIcon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon,
                                   sizeof(struct TrashcanIconClassData),
                                   trashcanIconDispatcher);
         if (!DesktopBase->db_TrashcanIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_ToolIcon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon,
                                   sizeof(struct ToolIconClassData),
                                   toolIconDispatcher);
         if (!DesktopBase->db_ToolIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_ProjectIcon =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_Icon,
                                   sizeof(struct ProjectIconClassData),
                                   projectIconDispatcher);
         if (!DesktopBase->db_ProjectIcon)
-            return NULL;
+            return FALSE;
 
         DesktopBase->db_Desktop =
             MUI_CreateCustomClass(NULL, NULL, DesktopBase->db_IconContainer,
                                   sizeof(struct DesktopClassData),
                                   desktopDispatcher);
         if (!DesktopBase->db_Desktop)
-            return NULL;
+            return FALSE;
 
     // TEMPORARY! see note in DesktopOperation struct, in desktop_intern.h
         DesktopBase->db_Operation =
@@ -408,7 +305,7 @@ AROS_LH1(struct DesktopBase *, open,
                                   sizeof(struct OperationClassData),
                                   operationDispatcher);
         if (!DesktopBase->db_Operation)
-            return NULL;
+            return FALSE;
 
     // 1
         dob = AllocVec(sizeof(struct DesktopOperation), MEMF_ANY);
@@ -525,12 +422,12 @@ AROS_LH1(struct DesktopBase *, open,
 /*
    You would return NULL if the open failed. 
  */
-    return DesktopBase;
-AROS_LIBFUNC_EXIT}
+    return TRUE;
+}
 
-AROS_LH0(BPTR, close, struct DesktopBase *, DesktopBase, 2, Desktop)
+
+AROS_SET_LIBFUNC(Close, LIBBASETYPE, LIBBASE)
 {
-    AROS_LIBFUNC_INIT
     /*
        This function is single-threaded by exec by calling Forbid. If you
        break the Forbid() another task may enter this function at the same
@@ -540,33 +437,13 @@ AROS_LH0(BPTR, close, struct DesktopBase *, DesktopBase, 2, Desktop)
 
     handlerSubUser();
 
-/*
-   I have one fewer opener. 
- */
-    if (!--DesktopBase->db_Library.lib_OpenCnt)
-    {
-    /*
-       Delayed expunge pending? 
-     */
-        if (DesktopBase->db_Library.lib_Flags & LIBF_DELEXP)
-        /*
-           Then expunge the library 
-         */
-        /*
-           At this point the handler should have exited on its own, and
-           completed the final CloseLibrary() 
-         */
-            return expunge();
-    }
-
     D(bug("*** Exiting DesktopBase::close...\n"));
 
-    return 0;
-AROS_LIBFUNC_EXIT}
+    return TRUE;
+}
 
-AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
+AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
-    AROS_LIBFUNC_INIT BPTR ret;
     struct DesktopOperation *dob;
 
 /*
@@ -574,18 +451,6 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
    the Forbid() or strange things might happen. 
  */
     D(bug("*** Entering DesktopBase::expunge...\n"));
-
-/*
-   Test for openers. 
- */
-    if (DesktopBase->db_Library.lib_OpenCnt)
-    {
-    /*
-       Set the delayed expunge flag and return. 
-     */
-        DesktopBase->db_Library.lib_Flags |= LIBF_DELEXP;
-        return 0;
-    }
 
 // TEMPORARY!
     dob = (struct DesktopOperation *) DesktopBase->db_OperationList.lh_Head;
@@ -658,47 +523,10 @@ AROS_LH0(BPTR, expunge, struct DesktopBase *, DesktopBase, 3, BASENAME)
     if (DesktopBase->db_DOSBase)
         CloseLibrary(DesktopBase->db_DOSBase);
 
-/*
-   Get rid of the library. Remove it from the list. 
- */
-    Remove(&DesktopBase->db_Library.lib_Node);
+    return TRUE;
+}
 
-/*
-   Get returncode here - FreeMem() will destroy the field. 
- */
-    ret = DesktopBase->db_SegList;
-
-/*
-   Free the memory. 
- */
-    FreeMem((char *) DesktopBase - DesktopBase->db_Library.lib_NegSize,
-            DesktopBase->db_Library.lib_NegSize +
-            DesktopBase->db_Library.lib_PosSize);
-
-    D(bug("*** Exiting DesktopBase::expunge...\n"));
-
-    return ret;
-AROS_LIBFUNC_EXIT}
-
-AROS_LH0I(int, null, struct DesktopBase *, DesktopBase, 4, Desktop)
-{
-    AROS_LIBFUNC_INIT return 0;
-AROS_LIBFUNC_EXIT}
-
-AROS_LH2I(ULONG, add,
-          AROS_LHA(ULONG, a, D0),
-          AROS_LHA(ULONG, b, D1),
-          struct DesktopBase *, DesktopBase, 5, Desktop)
-{
-    AROS_LIBFUNC_INIT return a + b;
-AROS_LIBFUNC_EXIT}
-
-AROS_LH2I(ULONG, asl,
-          AROS_LHA(ULONG, a, D0),
-          AROS_LHA(ULONG, b, D1),
-          struct DesktopBase *, DesktopBase, 6, Desktop)
-{
-    AROS_LIBFUNC_INIT return a << b;
-AROS_LIBFUNC_EXIT}
-
-const char      end = 0;
+ADD2INITLIB(Init, 0);
+ADD2OPENLIB(Open, 0);
+ADD2CLOSELIB(Close, 0);
+ADD2EXPUNGELIB(Expunge, 0);

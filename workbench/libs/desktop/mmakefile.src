@@ -40,10 +40,23 @@ FUNCS := \
     dodesktopoperation \
     builddesktopmenus
 
-#MM- workbench-libs-desktop : includes linklibs
+#MM workbench-libs-desktop-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-input-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-layers-includes \
+#MM     workbench-libs-icon-includes \
+#MM     workbench-libs-muimaster-includes \
+#MM     includes-copy
+#MM- workbench-libs-desktop : linklibs
 
-%build_module_macro mmake=workbench-libs-desktop \
- modname=desktop modtype=library funcs=$(FUNCS) files=$(FILES) \
- uselibs="mui rom" conffile=lib.conf
+USER_CFLAGS := -D__DESKTOP_NOLIBBASE__
+%build_module mmake=workbench-libs-desktop \
+ modname=desktop modtype=library \
+ files="desktop_init $(FUNCS) $(FILES)" \
+ uselibs="mui rom"
 
 %common

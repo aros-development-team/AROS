@@ -11,6 +11,9 @@
 #    include <exec/libraries.h>
 #    include <dos/dos.h>
 #    include <intuition/intuitionbase.h>
+#    include <intuition/classes.h>
+
+#    include <libcore/base.h>
 
 // this is extremely temporary! This is part of the extensible
 // context menus.  Because new menuitems can be added by anyone
@@ -38,11 +41,8 @@ struct DesktopOperation
 
 struct DesktopBase
 {
-    struct Library  db_Library;
+    struct LibHeader db_LibHeader;
 
-    BPTR            db_SegList;
-
-    struct ExecBase *db_SysBase;
     struct Library *db_DOSBase;
     struct IntuitionBase *db_IntuitionBase;
     struct Library *db_GfxBase;
@@ -98,49 +98,34 @@ struct DesktopBase
 
 extern struct DesktopBase *DesktopBase;
 
-#    define init(dummybase, segList) \
-AROS_LC2(LIBBASETYPEPTR, init, AROS_LHA(LIBBASETYPEPTR, BASENAME, D0), AROS_LHA(BPTR, segList, A0), struct ExecBase *, SysBase, 0, BASENAME)
-
-#    define open(version) \
-AROS_LC1(LIBBASETYPEPTR, open, AROS_LHA(ULONG, version, D0), LIBBASETYPEPTR, LIBBASE, 1, BASENAME)
-
-#    define close() \
-AROS_LC0(BPTR, close, LIBBASETYPEPTR, LIBBASE, 2, BASENAME)
-
-#    define expunge() \
-AROS_LC0(BPTR, expunge, LIBBASETYPEPTR, LIBBASE, 3, BASENAME)
-
-#    define null() \
-AROS_LC0(int, null, LIBBASETYPEPTR, LIBBASE, 4, BASENAME)
-
 #    define add(a, b) \
 AROS_LC2(ULONG, add, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopBase *,DesktopBase,5,Desktop)
 
 #    define asl(a, b) \
 AROS_LC2(ULONG, asl, AROS_LHA(ULONG,a,D0), AROS_LHA(ULONG,b,D1), struct DesktopBase *,DesktopBase,6,Desktop)
 
-#    define SysBase DesktopBase->db_SysBase
-#    define DOSBase DesktopBase->db_DOSBase
-#    define GfxBase DesktopBase->db_GfxBase
-#    define IntuitionBase DesktopBase->db_IntuitionBase
-#    define LayersBase DesktopBase->db_LayersBase
-#    define UtilityBase DesktopBase->db_UtilityBase
-#    define MUIMasterBase DesktopBase->db_MUIMasterBase
-#    define InputBase DesktopBase->db_InputBase
-#    define IconBase DesktopBase->db_IconBase
-#    define IconContainer DesktopBase->db_IconContainer
-#    define IconContainerObserver DesktopBase->db_IconContainerObserver
-#    define DiskIcon DesktopBase->db_DiskIcon
-#    define DrawerIcon DesktopBase->db_DrawerIcon
-#    define TrashcanIcon DesktopBase->db_TrashcanIcon
-#    define ToolIcon DesktopBase->db_ToolIcon
-#    define ProjectIcon DesktopBase->db_ProjectIcon
-#    define IconObserver DesktopBase->db_IconObserver
-#    define DiskIconObserver DesktopBase->db_DiskIconObserver
-#    define DrawerIconObserver DesktopBase->db_DrawerIconObserver
-#    define ToolIconObserver DesktopBase->db_ToolIconObserver
-#    define ProjectIconObserver DesktopBase->db_ProjectIconObserver
-#    define TrashcanIconObserver DesktopBase->db_TrashcanIconObserver
-#    define DesktopObserver DesktopBase->db_DesktopObserver
+#    define SysBase ((struct LibHeader *)DesktopBase)->lh_SysBase
+#    define DOSBase ((struct DesktopBase *)DesktopBase)->db_DOSBase
+#    define GfxBase ((struct DesktopBase *)DesktopBase)->db_GfxBase
+#    define IntuitionBase ((struct DesktopBase *)DesktopBase)->db_IntuitionBase
+#    define LayersBase ((struct DesktopBase *)DesktopBase)->db_LayersBase
+#    define UtilityBase ((struct DesktopBase *)DesktopBase)->db_UtilityBase
+#    define MUIMasterBase ((struct DesktopBase *)DesktopBase)->db_MUIMasterBase
+#    define InputBase ((struct DesktopBase *)DesktopBase)->db_InputBase
+#    define IconBase ((struct DesktopBase *)DesktopBase)->db_IconBase
+#    define IconContainer ((struct DesktopBase *)DesktopBase)->db_IconContainer
+#    define IconContainerObserver ((struct DesktopBase *)DesktopBase)->db_IconContainerObserver
+#    define DiskIcon ((struct DesktopBase *)DesktopBase)->db_DiskIcon
+#    define DrawerIcon ((struct DesktopBase *)DesktopBase)->db_DrawerIcon
+#    define TrashcanIcon ((struct DesktopBase *)DesktopBase)->db_TrashcanIcon
+#    define ToolIcon ((struct DesktopBase *)DesktopBase)->db_ToolIcon
+#    define ProjectIcon ((struct DesktopBase *)DesktopBase)->db_ProjectIcon
+#    define IconObserver ((struct DesktopBase *)DesktopBase)->db_IconObserver
+#    define DiskIconObserver ((struct DesktopBase *)DesktopBase)->db_DiskIconObserver
+#    define DrawerIconObserver ((struct DesktopBase *)DesktopBase)->db_DrawerIconObserver
+#    define ToolIconObserver ((struct DesktopBase *)DesktopBase)->db_ToolIconObserver
+#    define ProjectIconObserver ((struct DesktopBase *)DesktopBase)->db_ProjectIconObserver
+#    define TrashcanIconObserver ((struct DesktopBase *)DesktopBase)->db_TrashcanIconObserver
+#    define DesktopObserver ((struct DesktopBase *)DesktopBase)->db_DesktopObserver
 
 #endif /* DESKTOP_INTERN_H */
