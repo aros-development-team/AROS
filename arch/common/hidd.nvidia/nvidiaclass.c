@@ -95,7 +95,7 @@ static VOID nv__set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
     OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
-#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal)	\
+#define MAKE_SYNC(name,clock,hdisp,hstart,hend,htotal,vdisp,vstart,vend,vtotal,descr)	\
 	struct TagItem sync_ ## name[]={			\
 		{ aHidd_Sync_PixelClock,	clock*1000	},	\
 		{ aHidd_Sync_HDisp,			hdisp 	},	\
@@ -106,6 +106,7 @@ static VOID nv__set(OOP_Class *cl, OOP_Object *o, struct pRoot_Set *msg)
 		{ aHidd_Sync_VSyncStart,	vstart	},	\
 		{ aHidd_Sync_VSyncEnd,		vend	},	\
 		{ aHidd_Sync_VTotal,		vtotal	},	\
+		{ aHidd_Sync_Description,   	(IPTR)descr},	\
 		{ TAG_DONE, 0UL }}
 
 static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
@@ -166,27 +167,33 @@ static OOP_Object *nv__new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
     MAKE_SYNC(640x480_60,   25174,
          640,  656,  752,  800,
-         480,  490,  492,  525);
+         480,  490,  492,  525,
+	 "NVIDIA:640x480");
 
     MAKE_SYNC(800x600_56,	36000,	// 36000
          800,  824,  896, 1024,
-         600,  601,  603,  625);
+         600,  601,  603,  625,
+	 "NVIDIA:800x600");
 
     MAKE_SYNC(1024x768_60, 65000,	//78654=60kHz, 75Hz. 65000=50kHz,62Hz
         1024, 1048, 1184, 1344,
-         768,  771,  777,  806);
+         768,  771,  777,  806,
+	 "NVIDIA:1024x768");
 	 
     MAKE_SYNC(1152x864_60, 80000,
 	1152, 1216, 1328, 1456,
-	 864,  870,  875,  916);
+	 864,  870,  875,  916,
+	 "NVIDIA:1152x864");
 
     MAKE_SYNC(1280x1024_60, 107991,
 	1280, 1328, 1440, 1688,
-	1024, 1025, 1028, 1066);    
+	1024, 1025, 1028, 1066,
+	"NVIDIA:1280x1024");    
     
     MAKE_SYNC(1600x1200_60, 155982,
 	1600, 1632, 1792, 2048,
-	1200, 1210, 1218, 1270);
+	1200, 1210, 1218, 1270,
+	"NVIDIA:1600x1200");
 
     struct TagItem modetags[] = {
 	{ aHidd_Gfx_PixFmtTags,	(IPTR)pftags_24bpp	},
