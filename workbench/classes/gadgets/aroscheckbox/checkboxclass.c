@@ -36,7 +36,6 @@ void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
     struct CheckData *data = INST_DATA(cl, (Object *)gad);
     struct Image *img;
     ULONG state = IDS_NORMAL;
-    IPTR supportsdisable = FALSE;
 
     if (checked)
     {
@@ -57,17 +56,16 @@ void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,
 
     if (disabled)
     {
-        GetAttr(IA_SupportsDisable, (Object *) img, &supportsdisable);
-        if ((supportsdisable) && (state == IDS_NORMAL))
+        if ((gad->Flags & GFLG_IMAGEDISABLE) && (state == IDS_NORMAL))
             state = IDS_DISABLED;
-        else if (supportsdisable)
+        else if (gad->Flags & GFLG_IMAGEDISABLE)
             state = IDS_SELECTEDDISABLED;
     }
 
     DrawImageState(rport, img, gad->LeftEdge, gad->TopEdge, state, data->dri);
 
     /* Draw disabled pattern, if not supported by imageclass. */
-    if ((disabled) && (!supportsdisable))
+    if ((disabled) && !(gad->Flags & GFLG_IMAGEDISABLE))
 	drawdisabledpattern(AROSCheckboxBase,
                             rport, data->dri->dri_Pens[SHADOWPEN],
 			    gad->LeftEdge, gad->TopEdge,
@@ -147,12 +145,6 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
     Object *obj;
     struct CheckData *data;
-    struct TagItem supertags[] =
-    {
-	{GA_RelVerify, TRUE},
-	{GA_Immediate, TRUE},
-	{TAG_MORE, (IPTR) msg->ops_AttrList}
-    };
     struct TagItem tags[] =
     {
 	{IA_Width, 0UL},
@@ -162,10 +154,11 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 	{TAG_DONE, 0L}
     };
 
-    obj = (Object *)DoSuperMethod(cl, (Object *)rootcl,
-                                  OM_NEW, supertags, msg->ops_GInfo);
+    obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!obj)
 	return NULL;
+
+    G(obj)->Activation |= GACT_RELVERIFY;
 
     data = INST_DATA(cl, obj);
     data->dri = NULL;
@@ -220,7 +213,7 @@ IPTR check_handleinput(Class * cl, Object * obj, struct gpInput * msg)
 		    data->flags &= ~CF_Checked;
 		else
 		    data->flags |= CF_Checked;
-		*msg->gpi_Termination = IDCMP_GADGETUP;
+		*msg->gpi_Termination = data->flags&CF_Checked?TRUE:FALSE;
 		retval = GMR_NOREUSE | GMR_VERIFY;
 	    } else
 		/* mouse is not over gadget */
