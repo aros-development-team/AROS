@@ -19,6 +19,9 @@
 #include <proto/utility.h>
 
 #include "dragndrop.h"
+#include "muimaster_intern.h"
+
+extern struct Library *MUIMasterBase;
 
 #ifdef __MAXON__
 #include <iostream.h>
