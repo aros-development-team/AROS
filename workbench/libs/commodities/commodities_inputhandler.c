@@ -158,14 +158,6 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    // }
 	}
 
-	if (co != NULL)
-	{
-	    /* Route the message to the next object */
-	    CxObj *nextObject = (CxObj *)GetSucc(&co->co_Node);
-
-	    ROUTECxMsg(msg, nextObject);
-	}
-
 	/* If there are no more objects that shall process the event, we
 	   link it in to the list of ready input events */
 
@@ -174,6 +166,10 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	    ProduceEvent(msg, CxBase);
 	    continue;
 	}
+
+	/* Route the message to the next object */
+
+	ROUTECxMsg(msg, (CxObj *)GetSucc(&co->co_Node));
 	
 	if (!(co->co_Flags & COF_ACTIVE))
 	{
@@ -233,20 +229,27 @@ AROS_UFH2(struct InputEvent *, CxTree,
 	case CX_CUSTOM:
 	    msg->cxm_ID = co->co_Ext.co_CustomExt->cext_ID;
 
-	    /* The autodocs suggest the arguments should be passed on the
-	       stack. But they were also in a0/a1 and some things seem to
-	       rely on that. */
+	    /* Action shouldn't be NULL, but well, sometimes it is...
+	     */
+	    if (co->co_Ext.co_CustomExt->cext_Action)
+	    {
+		/* The autodocs suggest the arguments should be passed on the stack.
+		 * But they were also in a0/a1 and some things seem to rely on that.
+		 * Let's also pass CxBase in a6 just in case.
+		 */
 #ifdef __MORPHOS__
-	    REG_A7 -= 8;
-	    *(CxMsg **)REG_A7 = msg;
-	    *(CxObj **)(REG_A7 + 4) = co;
+		REG_A7 -= 8;
+		*(CxMsg**)REG_A7 = msg;
+		*(CxObj**)(REG_A7 + 4) = co;
 #endif
-	    AROS_UFC2(void, co->co_Ext.co_CustomExt->cext_Action,
-		      AROS_UFCA(CxMsg *, msg, A0),
-		      AROS_UFCA(CxObj *, co, A1));
+		AROS_UFC3(void, co->co_Ext.co_CustomExt->cext_Action,
+		      AROS_UFCA(CxMsg*, msg, A0),
+		      AROS_UFCA(CxObj*, co, A1),
+		      AROS_UFCA(struct CommoditiesBase *, CxBase, A6));
 #ifdef __MORPHOS__
-	    REG_A7 += 8;
+		REG_A7 += 8;
 #endif
+	    }
 	    break;
 	    
 	case CX_ZERO:
