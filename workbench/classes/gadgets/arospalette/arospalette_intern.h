@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -31,8 +31,6 @@
 
 /* Predeclaration */
 struct PaletteBase_intern;
-
-//#define GLOBAL_INTUIBASE
 
 struct PaletteData
 {
@@ -120,51 +118,5 @@ void DisposeFont(struct RastPort *, struct TextFont *, struct TextFont *,
 BOOL RenderLabel( struct Gadget *gad, struct IBox *, 
 		 struct RastPort *, LONG labelplace,
                  struct PaletteBase_intern *);
-
-/********************
-**  Library stuff  **
-********************/
-struct PaletteBase_intern
-{
-    struct Library 	library;
-    struct ExecBase	*sysbase;
-    BPTR		seglist;
-
-    #ifndef GLOBAL_INTUIBASE
-    struct IntuitionBase *intuitionbase;
-    #endif
-    struct GfxBase	*gfxbase;
-    struct Library	*utilitybase;
-    
-    struct IClass	*classptr;
-	
-};
-
-/* The following typedefs are necessary, because the names of the global
-   variables storing the library base pointers	and the corresponding
-   structs are equal.
-   This is a hack, of course. */
-typedef struct GfxBase GraphicsBase;
-typedef struct IntuitionBase IntuiBase;
-
-#undef PB
-#define PB(b) ((struct PaletteBase_intern *)b)
-#undef UtilityBase
-#define UtilityBase 	PB(AROSPaletteBase)->utilitybase
-
-
-#ifndef GLOBAL_INTUIBASE
-#undef IntuitionBase
-#define IntuitionBase	PB(AROSPaletteBase)->intuitionbase
-#endif
-
-#undef GfxBase
-#define GfxBase		PB(AROSPaletteBase)->gfxbase
-#undef SysBase
-#define SysBase		PB(AROSPaletteBase)->sysbase
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct LVBase_intern *, AROSPaletteBase, 3, AROSPalette)
 
 #endif /* AROSPALETTE_INTERN_H */

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     AROS Palette gadget for use in gadtools.
@@ -28,13 +28,10 @@
 #include <clib/boopsistubs.h>
 
 
-/*********************
-**  Palette::Set()  **
-*********************/
-STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
+STATIC IPTR _OM_SET(Class *cl, Object *o, struct opSet *msg, BOOL render)
 {
     const struct TagItem *tag, *tstate;
-    IPTR retval = 0UL;
+    IPTR retval = (IPTR)0;
     struct PaletteData *data = INST_DATA(cl, o);
     
     BOOL labelplace_set = FALSE, relayout = FALSE;
@@ -57,7 +54,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
 
     		D(bug("Depth initialized to %d\n", tidata));
     		relayout = TRUE;
-    		retval = 1UL;
+    		retval++;
 	    }
     	    break;
     	    
@@ -67,13 +64,13 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	    data->pd_OldColor = data->pd_Color;
     	    data->pd_Color = (UBYTE)tidata;
     	    D(bug("Color set to %d\n", tidata));    	    
-    	    retval = 1UL;
+    	    retval++;
     	    break;
     	    
     	case AROSA_Palette_ColorOffset:		/* [I] */
     	    data->pd_ColorOffset = (UBYTE)tidata;
     	    D(bug("ColorOffset initialized to %d\n", tidata));
-    	    retval = 1UL;
+    	    retval++;
     	    break;
     	    
     	case AROSA_Palette_IndicatorWidth:	/* [I] */
@@ -157,15 +154,56 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	DoMethod(o, GM_LAYOUT, (IPTR)msg->ops_GInfo, FALSE);
     }
     
+    if ( render )
+    {
+	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
+
+	if (gi)
+	{
+	    struct RastPort *rp = ObtainGIRPort(gi);
+
+	    if (rp)
+	    {		        
+		DoMethod(o, 
+			 GM_RENDER,
+			 (IPTR)gi,
+			 (IPTR)rp,
+			 FindTagItem(GA_Disabled, ((struct opSet *)msg)->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE
+		);
+				 
+		ReleaseGIRPort(rp);
+	    }
+	}
+    }
+
     ReturnPtr ("Palette::Set", IPTR, retval);
+}
+
+/************************
+**  Palette::Update()  **
+************************/
+IPTR AROSPalette__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+    /* Only rerender when we are not subclassed */
+    return retval + _OM_SET(cl, o, msg, cl == OCLASS(o));
+}
+
+/*********************
+**  Palette::Set()  **
+*********************/
+IPTR AROSPalette__OM_SET(Class *cl, Object *o, struct opSet *msg)
+{
+    IPTR retval = DoSuperMethodA(cl, o, msg);
+    /* Always rerender for the OM_SET method */
+    return retval + _OM_SET(cl, o, msg, TRUE);
 }
 
 /*********************
 **  Palette::New()  **
 *********************/
-STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
+Object *AROSPalette__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
-
     struct opSet ops;
     struct TagItem tags[] =
     {
@@ -197,7 +235,7 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
     	data->pd_LabelPlace	= GV_LabelPlace_Above;
 
     	
-    	palette_set(cl, o, msg);
+    	_OM_SET(cl, o, msg, FALSE);
     	
     
     }
@@ -205,9 +243,9 @@ STATIC Object *palette_new(Class *cl, Object *o, struct opSet *msg)
 }
 
 /*********************
-**  Palette::Set()  **
+**  Palette::Get()  **
 *********************/
-STATIC IPTR palette_get(Class *cl, Object *o, struct opGet *msg)
+IPTR AROSPalette__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     IPTR retval = 1UL;
@@ -237,7 +275,7 @@ STATIC IPTR palette_get(Class *cl, Object *o, struct opGet *msg)
 /************************
 **  Palette::Render()  **
 ************************/
-STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
+VOID AROSPalette__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     
@@ -306,7 +344,7 @@ STATIC VOID palette_render(Class *cl, Object *o, struct gpRender *msg)
 /*************************
 **  Palette::Dispose()  **
 *************************/
-STATIC VOID palette_dispose(Class *cl, Object *o, Msg msg)
+VOID AROSPalette__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     
@@ -318,7 +356,7 @@ STATIC VOID palette_dispose(Class *cl, Object *o, Msg msg)
 /*************************
 **  Palette::HitTest()  **
 *************************/
-STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR AROSPalette__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
     WORD x, y;
     
@@ -353,7 +391,7 @@ STATIC IPTR palette_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 /************************
 **  Palette::GoActive  **
 ************************/
-STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSPalette__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     IPTR retval = 0UL;
     struct PaletteData *data = INST_DATA(cl, o);
@@ -405,7 +443,7 @@ STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
 /*****************************
 **  Palette::HandleInput()  **
 *****************************/
-STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR AROSPalette__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct PaletteData *data = INST_DATA(cl, o);
     IPTR retval = 0UL;
@@ -529,7 +567,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
 /************************
 **  Palette::Layout()  **
 ************************/
-STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
+VOID AROSPalette__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     
     /* The palette gadget has been resized and we need to update our layout */
@@ -677,122 +715,3 @@ STATIC VOID palette_layout(Class *cl, Object *o, struct gpLayout *msg)
     
     ReturnVoid("Palette::Layout");
 }
-
-
-/* paletteclass boopsi dispatcher
- */
-AROS_UFH3S(IPTR, dispatch_paletteclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
-)
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-    
-    switch(msg->MethodID)
-    {
-	case OM_NEW:
-	    retval = (IPTR)palette_new(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    palette_dispose(cl, o, msg);
-	    break;
-	    
-	case GM_RENDER:
-	    palette_render(cl, o, (struct gpRender *)msg);
-	    break;
-	    
-	case GM_LAYOUT:
-	    palette_layout(cl, o, (struct gpLayout *)msg);
-	    break;
-	    
-	case GM_HITTEST:
-	    retval = palette_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-
-	case GM_GOACTIVE:
-	    retval = palette_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case GM_HANDLEINPUT:
-	    retval = palette_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    retval += (IPTR)palette_set(cl, o, (struct opSet *)msg);
-	    /* If we have been subclassed, OM_UPDATE should not cause a GM_RENDER
-	     * because it would circumvent the subclass from fully overriding it.
-	     * The check of cl == OCLASS(o) should fail if we have been
-	     * subclassed, and we have gotten here via DoSuperMethodA().
-	     */
-	    if ( retval && ((msg->MethodID != OM_UPDATE) || (cl == OCLASS(o))) )
-	    {
-	    	struct GadgetInfo *gi = ((struct opSet *)msg)->ops_GInfo;
-
-	    	if (gi)
-	    	{
-		    struct RastPort *rp = ObtainGIRPort(gi);
-
-		    if (rp)
-		    {		        
-		        DoMethod(o, 
-				 GM_RENDER,
-				 (IPTR)gi,
-				 (IPTR)rp,
-				 FindTagItem(GA_Disabled, ((struct opSet *)msg)->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE
-				 );
-				 
-		        ReleaseGIRPort(rp);
-
-		    } /* if */
-		    
-	    	} /* if */
-		
-	    } /* if */
-
-	    break;
-
-	case OM_GET:
-	    retval = palette_get(cl, o, (struct opGet *)msg);
-	    break;
-
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-
-    } /* switch */
-
-    return (retval);
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_paletteclass */
-
-
-#undef AROSPaletteBase
-
-/****************************************************************************/
-
-/* Initialize our palette class. */
-struct IClass *InitPaletteClass (struct PaletteBase_intern * AROSPaletteBase)
-{
-    struct IClass *cl = NULL;
-
-    /* This is the code to make the paletteclass...
-     */
-    if ((cl = MakeClass(AROSPALETTECLASS, GADGETCLASS, NULL, sizeof(struct PaletteData), 0)))
-    {
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_paletteclass);
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)AROSPaletteBase;
-
-	AddClass (cl);
-    }
-
-    return (cl);
-}
-
