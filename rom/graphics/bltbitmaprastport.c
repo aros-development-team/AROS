@@ -78,7 +78,7 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 	{ TAG_DONE  	    	  }
     };
 
-    EnterFunc(bug("driver_BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
+    EnterFunc(bug("BltBitMapRastPort(%d %d %d, %d, %d, %d)\n"
     	, xSrc, ySrc, xDest, yDest, xSize, ySize));
 
     if (!CorrectDriverData(destRP, GfxBase))
@@ -111,6 +111,8 @@ static ULONG bitmap_render(APTR bitmap_rd, LONG srcx, LONG srcy,
 
     gc_tags[0].ti_Data = old_drmd;
     OOP_SetAttrs(gc, gc_tags);
+
+    ReturnVoid("BltBitMapRastPort");
 
     AROS_LIBFUNC_EXIT
     

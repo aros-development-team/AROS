@@ -7,6 +7,7 @@
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -54,7 +55,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-    driver_DeinitRastPort (rp, GfxBase);
+    D(bug("DeInitRP()\n"));
 
+    if ( rp->Flags & RPF_DRIVER_INITED )
+    {
+    	D(bug("RP inited, rp=%p, %flags=%d=\n", rp, rp->Flags));
+		 
+        if (GetDriverData(rp)->dd_RastPort == rp) 
+	{
+	    D(bug("Calling DeInitDriverData\n"));
+	    DeinitDriverData (rp, GfxBase);
+	}
+    }
+ 
     AROS_LIBFUNC_EXIT
+    
 } /* DeinitRastPort */
