@@ -38,10 +38,21 @@ FUNCS := \
     putdiskobject \
     puticontaglist
     
-#MM- workbench-libs-icon : includes linklibs
+#MM workbench-libs-icon-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     kernel-intuition-includes \
+#MM     kernel-graphics-includes \
+#MM     kernel-utility-includes \
+#MM     kernel-cfgx-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-datatypes-includes \
+#MM     includes-copy
+#MM- workbench-libs-icon : linklibs
 
-%build_module_macro mmake=workbench-libs-icon modname=icon modtype=library \
-  funcs=$(FUNCS) files=$(FILES) uselibs="arossupport amiga rom m" \
-  conffile=lib.conf
+%build_module mmake=workbench-libs-icon \
+    modname=icon modtype=library \
+    files="icon_init $(FUNCS) $(FILES)" \
+    uselibs="arossupport amiga rom m"
 
 %common

@@ -4,60 +4,20 @@
 
 */
 
-#define SAVEDS
 #include <utility/utility.h> /* this must be before icon_intern.h */
+
+#include <aros/symbolsets.h>
 
 #include "icon_intern.h"
 #include "identify.h"
 
 #include LC_LIBDEFS_FILE
 
-#define LC_SYSBASE_FIELD(lib)	(((LIBBASETYPEPTR       )(lib))->ib_SysBase)
-#define LC_SEGLIST_FIELD(lib)   (((LIBBASETYPEPTR       )(lib))->ib_SegList)
-#define LC_RESIDENTNAME		Icon_resident
-#ifdef __MORPHOS__
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT | RTF_PPC
-#else
-#define LC_RESIDENTFLAGS	RTF_AUTOINIT
-#endif
-#define LC_RESIDENTPRI		0
-#define LC_LIBBASESIZE		sizeof(LIBBASETYPE)
-#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR
-#define LC_LIB_FIELD(lib)       (((LIBBASETYPEPTR)(lib))->LibNode)
-
-#define LC_NO_CLOSELIB
-#define LC_NO_OPENLIB
-
-#include <libcore/libheader.c>
-
-#   define DEBUG 0
-#   include <aros/debug.h>
-
-#undef DOSBase
-#undef SysBase
-
-#ifdef __MORPHOS__
-    unsigned long __amigappc__ = 1;
-#endif
-
 /****************************************************************************************/
 
-struct ExecBase   * SysBase; /* global variable */
-struct DosLibrary * DOSBase;
-
-/****************************************************************************************/
-
-ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(Init, LIBBASETYPE, lh)
 {
     LONG i;
-    
-    SysBase = lh->ib_SysBase;
-    // FIXME: doesn't free resources if init fails...
-    
-    if (!(DOSBase = (struct DosLibrary *) OpenLibrary (DOSNAME, 39)))
-    {
-	return FALSE;
-    }
     
     if (!(LB(lh)->ib_UtilityBase = OpenLibrary (UTILITYNAME, 39)))
     {
@@ -118,14 +78,15 @@ ULONG SAVEDS L_InitLib (LC_LIBHEADERTYPEPTR lh)
     return TRUE;
 }
 
-void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
+AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, lh)
 {
-    if (DOSBase)
-	CloseLibrary((struct Library *) DOSBase);
-
     if (LB(lh)->ib_GfxBase)       CloseLibrary(LB(lh)->ib_GfxBase);
     if (LB(lh)->ib_IFFParseBase)  CloseLibrary(LB(lh)->ib_IFFParseBase);
     if (LB(lh)->ib_CyberGfxBase)  CloseLibrary(LB(lh)->ib_CyberGfxBase);
     if (LB(lh)->ib_IntuitionBase) CloseLibrary(LB(lh)->ib_IntuitionBase);
     if (LB(lh)->ib_UtilityBase)   CloseLibrary(LB(lh)->ib_UtilityBase);
 }
+
+
+ADD2INITLIB(Init, 0);
+ADD2EXPUNGELIB(Expunge, 0);
