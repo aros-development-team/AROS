@@ -42,7 +42,7 @@ BOOT_TAR_FILES := \
     Libs/locale.library \
     Libs/reqtools.library Libs/muimaster.library Libs/coolimages.library \
     Locale.info \
-    Locale/Countries Locale/Languages \
+    Locale/Countries Locale/Languages Locale/Help \
     Locale/Catalogs/deutsch/System Locale/Catalogs/italiano/System Locale/Catalogs/svenska/System \
     Prefs/Font Prefs/Font.info Prefs/Locale Prefs/ReqTools Prefs/ReqTools.info Prefs/Serial \
     Prefs/Input Prefs/Input.info Prefs/Time Prefs/Time.info \
