@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
     Return_Value = RETURN_OK;
 
-    rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
+    rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
     if (rda)
     {
         if (args[ARG_NAME] != NULL || args[ARG_STRING] != NULL)

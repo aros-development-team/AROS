@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
 {
     struct RDArgs       * rda;
     struct AnchorPath   * apath;
-    LONG                * args[TOTAL_ARGS] = {};
+    IPTR                * args[TOTAL_ARGS] = {};
     int                   Return_Value;
 
     Return_Value = RETURN_OK;
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
          */
         apath->ap_Strlen = MAX_PATH_LEN;
 
-        rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
+        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
         if (rda) {
             /* If you pass an array of strings (i.e. FILE/M) then pass it as:
              * (STRPTR *)args[ARG_FILE].

@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 39L);
     if (IntuitionBase != NULL)
     {
-        rda = ReadArgs(ARG_TEMPLATE, (LONG *)args, NULL);
+        rda = ReadArgs(ARG_TEMPLATE, (IPTR *)args, NULL);
         if (rda) {
             Return_Value = Do_RequestChoice((STRPTR)args[ARG_TITLE],
                                             (STRPTR)args[ARG_BODY],

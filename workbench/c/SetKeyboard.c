@@ -81,7 +81,7 @@ struct KeyMapResource *KeyMapResource;
 static struct RDArgs *myargs;
 static struct KeyMapNode *kmn;
 static BPTR seg;
-static LONG args[NOOFARGS];
+static IPTR args[NOOFARGS];
 static char s[256];
 static char *filename, *name;
 

@@ -186,7 +186,7 @@ static LONG mount(STRPTR name, STRPTR buf, LONG size, struct IOFileSys *iofs)
 	if(!Strnicmp(name,buffer,s2-buffer)&&
 	   (!name[s2-buffer]||(name[s2-buffer]==':'||!name[s2-buffer+1])))
 	{
-	    rd=ReadArgs((STRPTR)options,(LONG *)args,&rda);
+	    rd=ReadArgs((STRPTR)options,(IPTR *)args,&rda);
 	    if(rd==NULL)
 		return IoErr();
 	    vec[DE_TABLESIZE]	=19;

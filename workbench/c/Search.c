@@ -124,7 +124,7 @@ const TEXT abandon_msg[]    = "** File abandoned\n";
 
 int main()
 {
-    ULONG             *args;
+    IPTR              *args;
     struct RDArgs     *read_args;
     struct LocaleBase *locale_base;
     struct AnchorPath *anchor;

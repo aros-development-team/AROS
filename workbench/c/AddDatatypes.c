@@ -115,8 +115,8 @@ UBYTE Template[] = "FILES/M,QUIET/S,REFRESH/S";
 struct ArgArray
 {
     UBYTE **aa_Files;
-    ULONG   aa_Quiet;
-    ULONG   aa_Refresh;
+    IPTR    aa_Quiet;
+    IPTR   aa_Refresh;
 };
 
 #define  ID_DTCD  MAKE_ID('D','T','C','D')
