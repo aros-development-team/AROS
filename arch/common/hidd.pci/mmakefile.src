@@ -26,6 +26,12 @@ $(INCDIR)/libraries/pci.h: include/pci_lib.h
 $(GENINCDIR)/libraries/pci.h: include/pci_lib.h
 	$(CP) include/pci_lib.h  $(GENINCDIR)/libraries/pci.h
 
+#MM
+kernel-pci-ids : $(AROS_DEVS)/pci.ids
+
+$(AROS_DEVS)/pci.ids : pci.ids
+	@$(CP) $^ $@
+
 #unused MM- kernel-objs: kernel-pci-kobj
 
 %build_module_macro mmake=kernel-pci \
