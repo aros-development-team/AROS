@@ -1,12 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
-	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
-	     requesters strgadgets strgclass sysiclass windowclasses \
-	     intuition_misc inputhandler_support inputhandler_actions \
-	     menus menutask barlabelclass fillrectclass groupgclass wbtasktalk \
-	     rootclass icclass modelclass
+FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
+         gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
+         requesters strgadgets strgclass  pointerclass windowclasses \
+         intuition_misc inputhandler_support inputhandler_actions \
+         menus barlabelclass fillrectclass groupgclass wbtasktalk \
+         rootclass icclass modelclass itexticlass misc sysiclass menutask
 
 FUNCS := \
 	activategadget \
@@ -20,8 +20,8 @@ FUNCS := \
 	alohaworkbench \
 	autorequest \
 	beginrefresh \
-	buildeasyrequestargs \
-	buildsysrequest \
+	buildeasyrequestargs_aros \
+	buildsysrequest_aros \
 	changescreenbuffer \
 	changewindowbox \
 	changewindowshape \
@@ -98,7 +98,7 @@ FUNCS := \
 	queryoverscan \
 	refreshgadgets \
 	refreshglist \
-	refreshwindowframe \
+	refreshwindowframe_aros \
 	releasegirport \
 	remakedisplay \
 	removeclass \
@@ -120,7 +120,7 @@ FUNCS := \
 	setdmrequest \
 	setedithook \
 	setgadgetattrsa \
-	setiprefs \
+	setiprefs_aros \
 	setmenustrip \
 	setmousequeue \
 	setpointer \
@@ -131,7 +131,7 @@ FUNCS := \
 	showtitle \
 	showwindow \
 	sizewindow \
-	sysreqhandler \
+	sysreqhandler_aros \
 	timeddisplayalert \
 	unlockibase \
 	unlockpubscreen \
@@ -140,15 +140,16 @@ FUNCS := \
 	viewportaddress \
 	wbenchtoback \
 	wbenchtofront \
+        windowaction \
 	windowlimits \
 	windowtoback \
 	windowtofront \
 	zipwindow
 
+USER_INCLUDES := -I$(TOP)/rom/dos
+
 #MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
 #MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
-
-USER_INCLUDES := -I$(TOP)/rom/dos
 
 %build_module_macro mmake=kernel-intuition \
   modname=intuition modtype=library \

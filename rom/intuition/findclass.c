@@ -1,10 +1,11 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 2001-2003, The MorphOS Development Team. All Rights Reserved.
     $Id$
-
-    Desc: Find a BOOPSI Class in the class list.
-    Lang: english
+ 
+    Find a BOOPSI Class in the class list.
 */
+
 #include <string.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
@@ -18,37 +19,37 @@
 #include <aros/debug.h>
 
 /*****************************************************************************
-
+ 
     NAME */
 #include <intuition/classes.h>
-#include <proto/intuition.h>    
-	
-	AROS_LH1(struct IClass *, FindClass,
+#include <proto/intuition.h>
 
-/*  SYNOPSIS */
-	AROS_LHA(ClassID,	classID, A0),
+AROS_LH1(struct IClass *, FindClass,
 
-/*  LOCATION */
-	struct IntuitionBase *, IntuitionBase, 112, Intuition)
+         /*  SYNOPSIS */
+         AROS_LHA(ClassID,  classID, A0),
+
+         /*  LOCATION */
+         struct IntuitionBase *, IntuitionBase, 112, Intuition)
 
 /*  FUNCTION
-
+ 
     INPUTS
-
+ 
     RESULT
-
+ 
     NOTES
-
+ 
     EXAMPLE
-
+ 
     BUGS
-
+ 
     SEE ALSO
-
+ 
     INTERNALS
-
+ 
     HISTORY
-
+ 
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
@@ -56,10 +57,13 @@
 
     Class * classPtr = NULL;
 
+    DEBUG_FINDCLASS(dprintf("FindClass: ClassID <%s>\n",
+                            classID ? classID : (UBYTE*)"NULL"));
+
     EnterFunc(bug("intuition_boopsi::FindClass()\n"));
 
     if (!classID)
-	return NULL;
+        return NULL;
 
     D(bug("class to find: \"%s\"\n", classID));
 
@@ -70,8 +74,8 @@
     ForeachNode (&GetPrivIBase(IntuitionBase)->ClassList, classPtr)
     {
         D(bug("+\"%s\"\n", classPtr->cl_ID));
-	if (!strcmp (classPtr->cl_ID, classID))
-	    goto found;
+        if (!strcmp (classPtr->cl_ID, classID))
+            goto found;
     }
 
     classPtr = NULL; /* Nothing found */
@@ -81,8 +85,10 @@ found:
     /* Unlock list */
     ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
+    DEBUG_FINDCLASS(dprintf("FindClass: return 0x%lx\n", classPtr));
+
     ReturnPtr("intuition_boopsi::FindClass()", struct IClass *, classPtr);
-    
+
     AROS_LIBFUNC_EXIT
 }
 
