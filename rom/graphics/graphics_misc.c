@@ -23,7 +23,7 @@ BOOL pattern_pen(struct RastPort *rp, LONG x, LONG y, ULONG apen, ULONG bpen, UL
     
     ULONG drmd = GetDrMd(rp);
     ULONG pattern_height = 1L << ABS(rp->AreaPtSz);
-    UBYTE *apt = (UBYTE *)rp->AreaPtrn;
+    const UBYTE *apt = (UBYTE *)rp->AreaPtrn;
     
 		    
     idx = COORD_TO_BYTEIDX(x & 0x0F, y & (pattern_height - 1), 2);
@@ -68,7 +68,7 @@ BOOL pattern_pen(struct RastPort *rp, LONG x, LONG y, ULONG apen, ULONG bpen, UL
     {
 	UBYTE i, depth;
 	ULONG plane_size, pen_mask = 0;
-	UBYTE *plane;
+	const UBYTE *plane;
 			
 	plane_size = (/* bytesperrow = */ 2 ) * pattern_height;
 	depth = GetBitMapAttr(rp->BitMap, BMA_DEPTH);
