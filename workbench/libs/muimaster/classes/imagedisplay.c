@@ -49,13 +49,18 @@ IPTR Imagedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /* parse initial taglist */
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
 	    case MUIA_Imagedisplay_Spec:
 		data->spec = zune_image_spec_duplicate(tag->ti_Data);
 		break;
+		
+	    case MUIA_Imagedisplay_UseDefSize:
+		_handle_bool_tag(data->flags, (!tag->ti_Data), (MIF_FREEHORIZ | MIF_FREEVERT));
+	    	break;
+		
 	    case MUIA_Imagedisplay_FreeHoriz:
 		/* MUI implements some tag for optionnally prevent rescaling
 		 * of displayed image - without affecting imagedisplay resize -
@@ -66,6 +71,7 @@ IPTR Imagedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 		 */
 		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEHORIZ);
 		break;
+
 	    case MUIA_Imagedisplay_FreeVert:
 		_handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
 		break;
@@ -80,7 +86,7 @@ IPTR Imagedisplay__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     if (!data->spec)
     {
 	CoerceMethod(cl,obj,OM_DISPOSE);
-    	return NULL;
+    	return 0;
     }
     
     D(bug("Imagedisplay_New(%lx) spec=%lx\n", obj, data->img));
@@ -101,7 +107,7 @@ IPTR Imagedisplay__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
     struct TagItem  	    *tag, *tags;
 
-    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    for (tags = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tags)); )
     {
 	switch (tag->ti_Tag)
 	{
@@ -136,7 +142,7 @@ IPTR Imagedisplay__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
     switch (msg->opg_AttrID)
     {
 	case MUIA_Imagedisplay_Spec:
-	    *msg->opg_Storage = (ULONG)data->spec;
+	    *msg->opg_Storage = (IPTR)data->spec;
 	    return(TRUE);
     }
 
@@ -148,7 +154,7 @@ IPTR Imagedisplay__MUIM_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
     struct Imagedisplay_DATA *data = INST_DATA(cl, obj);
 
     if (!DoSuperMethodA(cl,obj,(Msg)msg))
-	return NULL;
+	return 0;
 
     if (data->spec)
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
