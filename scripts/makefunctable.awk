@@ -1,5 +1,6 @@
 BEGIN {
     maxlvo = 0;
+    stderr="/dev/stderr";
 
     oname=tolower(lib) "_functable.c";
 
@@ -41,6 +42,9 @@ BEGIN {
 	if (match ($0, /[0-9]+,/))
 	{
 	    lvo=int(substr($0,RSTART,RLENGTH-1));
+
+	    if (f[lvo] != "")
+		printf "Error: lvo "lvo" is used by "f[lvo]" and "name >> stderr;
 
 	    f[lvo] = name;
 	    if (lvo > maxlvo)
