@@ -41,6 +41,8 @@ APTR ssp=(APTR)-1;	/* System stack pointer */
 APTR usp=(APTR)-1;	/* User stack pointer */
 APTR esp=(APTR)-1;	/* Points to register set on stack */
 char supervisor=0;	/* Supervisor mode flag */
+void Exec_RawDoFmt(char *, void *, void *, void *);
+struct ExecBase * PrepareExecBase(struct MemHeader *);
 
 struct ExecBase *SysBase=NULL;
 struct MemHeader *mh;
@@ -164,7 +166,7 @@ int main()
     Memory=0x00100000;
     do
     {
-	Memory+=0x10;				/* Step by 16 bytes */
+	Memory+=0x10;	/* Step by 16 bytes. If it's too slow you can adjust it */
 	Memory24=*(ULONG *)Memory;	/* Memory24 is temporary now */
 	*(ULONG *)Memory=0xDEADBEEF;
 	temp=*(ULONG *)Memory;
@@ -234,6 +236,7 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
+    /* Enter SAD */
     Debug(0);
 
     /*

@@ -72,6 +72,22 @@ start_again:	cld
 		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
 		popf
 
+/* Clear BSS */
+		xorl	%eax,%eax
+		movl	$_data,%edi
+		movl	$_end,%ecx
+		subl	%edi,%ecx
+		cld
+		rep
+		stosb
+
+/* Clear Screen */
+		movl	$0xb8000,%edi
+		movl	$0,%eax
+		movl	$1200,%ecx
+		rep
+		stosl
+
 		sidt	idt
 
 		movl	$0x00000008,%eax
@@ -125,8 +141,11 @@ start:		cld
 		mov	%ax,%ss
 		mov	$0x0009f000,%esp	/* Put stack in safe place */
 						/* skip BIOS ext area */
-/* Clear BSS */
 
+		pushl	$0	/* Clear all unexcepted bits in EFLAGS */
+		popfl
+
+/* Clear BSS */
 		xorl	%eax,%eax
 		movl	$_edata,%edi
 		movl	$_end,%ecx
@@ -134,6 +153,13 @@ start:		cld
 		cld
 		rep
 		stosb		
+
+/* Clear Screen */
+		movl	$0xb8000,%edi
+		movl	$0,%eax
+		movl	$1200,%ecx
+		rep
+		stosl
 
 /* Get GDT and IDT so that you can change them */
 
