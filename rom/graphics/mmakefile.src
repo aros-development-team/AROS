@@ -256,7 +256,7 @@ PRE_FUNCS := $(FUNCTIONS)
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_GRAPHICS)","yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS) -g3
+SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib $(LIBNAME) $(SHARED_GRAPHICS)
 

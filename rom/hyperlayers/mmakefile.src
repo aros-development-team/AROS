@@ -152,7 +152,7 @@ PRE_FUNCS := $(FUNCTIONS)
 
 # Set up for shared library creation.
 ifeq ("$(SHARED_LAYERS)","yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS) -g3
+SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
 endif
 %prepare_shlib $(LIBNAME) $(SHARED_LAYERS)
 
