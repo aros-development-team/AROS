@@ -10,8 +10,6 @@
 
     NAME */
 
-
-
 #include "nvdisk_intern.h"
 
 #include <dos/dos.h>
@@ -65,6 +63,10 @@ AROS_LH1(struct MinList *, GetItemList,
 
 ******************************************************************************/
 
+     /* The size of a combined NVEntry and the name associated with it;
+        32 is due to the maximum length of the 'itemName' string being 31 */
+#define  NV_NODESIZE  (sizeof(struct NVEntry) + 32)
+
 {
     AROS_LIBFUNC_INIT    
 
@@ -72,7 +74,9 @@ AROS_LH1(struct MinList *, GetItemList,
     BPTR            oldCDir;
     struct MinList *minList = (struct MinList *)AllocVec(sizeof(struct MinList),
 							 MEMF_CLEAR);
+    ULONG                 length;
     struct FileInfoBlock *fib;
+    char                 *entries;
 
     if(minList == NULL)
 	return NULL;
@@ -80,7 +84,10 @@ AROS_LH1(struct MinList *, GetItemList,
     fib = AllocDosObject(DOS_FIB, NULL);
 
     if(fib == NULL)
+    {
+	FreeVec(minList);
 	return NULL;
+    }
 
     oldCDir = CurrentDir(GPB(nvdBase)->nvd_location);
     
@@ -97,8 +104,7 @@ AROS_LH1(struct MinList *, GetItemList,
 	        // Data is stored as _files_
 		if(fib->fib_DirEntryType < 0)
 		{
-		    /* Maximum filename length = 31 */
-		    struct NVEntry *entry = AllocVec(sizeof(struct NVEntry)+32,
+		    struct NVEntry *entry = AllocVec(NV_NODESIZE,
 						     MEMF_CLEAR);
 		    
 		    if(entry == NULL)
@@ -124,12 +130,48 @@ AROS_LH1(struct MinList *, GetItemList,
     
     CurrentDir(oldCDir);
 
-    return minList;
+    ListLength(minList, length);
+    entries = AllocVec(sizeof(struct MinList) + length*NV_NODESIZE,
+		       MEMF_ANY);
+
+
+    /* We store the whole list in one memory block to make it possible to
+       free the memory by calling nonvolatile.library/FreeNVData() */
+    if(entries != NULL)
+    {
+	struct Node *node;	/* Temporary variable */
+	ULONG        offset = sizeof(struct MinList); /* Offset into the memory
+							 allocated */
+	NEWLIST((struct List *)entries);
+
+	for(node = GetHead((struct List *)minList); node != NULL;
+	    node = GetSucc(node))
+	{
+	    /* 1. Copy the NVEntry plus string
+	       2. Add the memory as a node in the list
+	       3. Set the name to point to the copied memory */
+
+	    CopyMem(node, entries + offset, NV_NODESIZE);
+	    AddTail((struct List *)entries, (struct Node *)(entries + offset));
+	    SetNodeName(entries + offset, entries + offset +
+			sizeof(struct NVEntry));
+	    offset += NV_NODESIZE;
+	}
+    }
+    else
+    {
+	FreeAll(minList, nvdBase);
+	return NULL;
+    }
+
+    FreeAll(minList, nvdBase);
+    return (struct MinList *)entries;
 
     AROS_LIBFUNC_EXIT
 } /* GetItemList */
 
 
+/* Free all the nodes in a list together with the list structure itself. */
 void FreeAll(struct MinList *ml, struct Library *nvdBase)
 {
     struct Node *node;
@@ -142,3 +184,6 @@ void FreeAll(struct MinList *ml, struct Library *nvdBase)
 
     FreeVec(ml);
 }
+
+#undef  NV_NODESIZE
+
