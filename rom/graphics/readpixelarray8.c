@@ -6,6 +6,19 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
+
+struct rp8_render_data
+{
+    UBYTE *array;
+    ULONG modulo;
+    HIDDT_PixelLUT *pixlut;
+};
+
+static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
+    	    	    	OOP_Object *srcbm_obj, OOP_Object *gc,
+			LONG x1, LONG y1, LONG x2, LONG y2,
+			struct GfxBase *GfxBase);
 
 /*****************************************************************************
 
@@ -50,12 +63,62 @@
 {
     AROS_LIBFUNC_INIT
 
-    return driver_ReadPixelArray8(rp
-    		, xstart, ystart
-		, xstop, ystop
-		, array, temprp
-		, GfxBase
-    );
+    struct rp8_render_data  rp8rd;
+    struct Rectangle 	    rr;
+
+#   warning Do not use HIDD_BM_PIXTAB() for non-hidd bitmaps
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
+    
+    LONG pixread = 0;
+    
+    EnterFunc(bug("driver_ReadPixelArray8(%p, %d, %d, %d, %d)\n",
+    	rp, xstart, ystart, xstop, ystop));
+    
+    if (!CorrectDriverData (rp, GfxBase))
+	return 0;
+	
+    
+    rp8rd.array  = array;
+    rp8rd.modulo = xstop - xstart + 1;
+    rp8rd.pixlut = &pixlut;
+    
+    rr.MinX = xstart;
+    rr.MinY = ystart;
+    rr.MaxX = xstop;
+    rr.MaxY = ystop;
+    
+    pixread = do_render_func(rp, NULL, &rr, rp8_render, &rp8rd, FALSE, GfxBase);
+	
+    ReturnInt("driver_ReadPixelArray8", LONG, pixread);
 
     AROS_LIBFUNC_EXIT
+
 } /* ReadPixelArray8 */
+
+/****************************************************************************************/
+
+static ULONG rp8_render(APTR rp8r_data, LONG srcx, LONG srcy,
+    	    	        OOP_Object *srcbm_obj, OOP_Object *gc,
+			LONG x1, LONG y1, LONG x2, LONG y2,
+			struct GfxBase *GfxBase)
+{
+    struct rp8_render_data *rp8rd;
+    ULONG   	    	    width, height;
+    
+    rp8rd = (struct rp8_render_data *)rp8r_data;
+    
+    width  = x2 - x1 + 1;
+    height = y2 - y1 + 1;
+    
+    HIDD_BM_GetImageLUT(srcbm_obj
+	, rp8rd->array + CHUNKY8_COORD_TO_BYTEIDX(srcx, srcy, rp8rd->modulo)
+	, rp8rd->modulo
+	, x1, y1
+	, width, height
+	, rp8rd->pixlut
+    );
+    
+    return width * height;
+}
+
+/****************************************************************************************/

@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -51,12 +52,16 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    driver_WriteChunkyPixels(rp
-    	, xstart, ystart
+    #warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
+    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
+      
+    write_pixels_8(rp, array
+    	, bytesperrow
+	, xstart, ystart
 	, xstop, ystop
-	, array, bytesperrow
-	, GfxBase
-    );
+	, &pixlut
+	, GfxBase);
 
     AROS_LIBFUNC_EXIT
+    
 } /* WriteChunkyPixels */

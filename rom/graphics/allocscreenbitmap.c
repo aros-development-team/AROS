@@ -10,6 +10,7 @@
 #include <graphics/rastport.h>
 #include <proto/exec.h>
 #include <oop/oop.h>
+#include "gfxfuncsupport.h"
 
 /*****************************************************************************
 
@@ -52,7 +53,34 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
     
-    return driver_AllocScreenBitMap(modeid, GfxBase);
+    struct BitMap   *nbm = NULL;
+    HIDDT_ModeID    hiddmode;
+    
+    /* First get the the gfxmode for this modeid */
+    hiddmode = get_hiddmode_for_amigamodeid(modeid, GfxBase);
+    
+    if (vHidd_ModeID_Invalid != hiddmode)
+    {
+	/* Create the bitmap from the hidd mode */
+	OOP_Object *sync, *pf;
+	
+	if (HIDD_Gfx_GetMode(SDD(GfxBase)->gfxhidd, hiddmode, &sync, &pf))
+	{
+	    ULONG width, height, depth;
+	    
+	    OOP_GetAttr(sync, aHidd_Sync_HDisp,	&width);
+	    OOP_GetAttr(sync, aHidd_Sync_VDisp,	&height);
+	    OOP_GetAttr(pf,   aHidd_PixFmt_Depth,	&depth);
+	    
+	    /* Hack: a negative depth indicates to AllocBitMap, that
+	       the friend bitmap param actually is the hiddmode */
+	       
+	    nbm = AllocBitMap(width, height, -((LONG)depth), BMF_DISPLAYABLE, (struct BitMap *)hiddmode);    
+	}
+    }
+    
+    return nbm;
 
     AROS_LIBFUNC_EXIT
+    
 } /* AllocScreenBitMap */
