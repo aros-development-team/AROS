@@ -11,52 +11,43 @@
 #include <sys/time.h>
 #undef timeval
 
+/* Prototypes */
 void Dispatch (void);
 void Enqueue (struct List * list, struct Node * node);
 void AddTail (struct List * list, struct Node * node);
 void Switch (void);
 
+/* This is used to count the number of interrupts. */
 ULONG cnt;
 
-#ifdef __linux__
-static void sighandler (int sig, sigcontext_t * sc);
+/* Let the sigcore do it's magic */
+GLOBAL_SIGNAL_INIT
 
-static void SIGHANDLER (int sig)
-{
-    sighandler (sig, (sigcontext_t *)(&sig+1));
-}
-#endif /* __linux__ */
-
-#ifdef __FreeBSD__
-static void sighandler (int sig, sigcontext_t * sc);
-
-static void SIGHANDLER (int sig)
-{
-    sighandler( sig, (sigcontext_t*)(&sig+2));
-}
-#endif /* _FreeBSD */
-
+/* This flag means that a task switch is pending */
 #define SB_SAR 15
 #define SF_SAR 0x8000
 
+/* Dummy SysBase */
 struct ExecBase _SysBase, * SysBase = &_SysBase;
+
+/* Some tasks */
 struct Task Task1, Task2, Task3, TaskMain;
 
 /* List functions */
 void AddTail (struct List * list, struct Node * node)
 {
     ADDTAIL(list,node);
-}
+} /* AddTail */
 
 void AddHead (struct List * list, struct Node * node)
 {
     ADDHEAD (list, node);
-}
+} /* AddHead */
 
 void Remove (struct Node * node)
 {
     REMOVE(node);
-}
+} /* Remove */
 
 /* Enter a node into a sorted list */
 void Enqueue (struct List * list, struct Node * node)
@@ -75,10 +66,11 @@ void Enqueue (struct List * list, struct Node * node)
     next->ln_Pred->ln_Succ = node;
     next->ln_Pred	   = node;
     node->ln_Succ	   = next;
-}
+} /* Enqueue */
 
 #define STR(x)      (x && x->ln_Name ? (char *)x->ln_Name : "NULL")
 
+/* Print a list with nodes with names. */
 void PrintList (struct List * list)
 {
     struct Node * node;
@@ -102,15 +94,24 @@ void PrintList (struct List * list)
 
 #undef STR
 
+/* Macro to get a pointer to the current running task */
 #define THISTASK	(SysBase->ThisTask)
 
+/*
+    Disable and enable signals. Don't use these in the signal handler
+    because then some signal might break the signal handler and then
+    stack will overflow.
+*/
 #define DISABLE 	({sigset_t set; sigfillset(&set); sigprocmask (SIG_BLOCK, &set, NULL);})
 #define ENABLE		({sigset_t set; sigfillset(&set); sigprocmask (SIG_UNBLOCK, &set, NULL);})
 
 /* Enable/Disable interrupts */
 void Disable (void)
 {
-    /* Count the calls */
+    /*
+	Disable signals only if they are not already. The initial value of
+	IDNestCnt is -1.
+    */
     if (SysBase->IDNestCnt++ < 0)
     {
 	DISABLE;
@@ -119,7 +120,10 @@ void Disable (void)
 
 void Enable (void)
 {
-    /* Count the calls */
+    /*
+	Enable signals only if the number of calls of Enable() matches the
+	calls of Disable().
+    */
     if (--SysBase->IDNestCnt < 0)
     {
 	ENABLE;
@@ -129,6 +133,10 @@ void Enable (void)
 /* Allow/forbid task switches */
 void Forbid (void)
 {
+    /*
+	Task switches are only allowed if TDNestCnt is < 0. The initial
+	value of TDNestCnt is -1.
+    */
     ++ SysBase->TDNestCnt;
 } /* Forbid */
 
@@ -157,8 +165,26 @@ void Permit (void)
 /* Main routine: Insert a task into the list of tasks to run. */
 void Reschedule (struct Task * task)
 {
+    /*
+	The code in here defines how "good" the task switching is.
+	There are seveal things which should be taken into account:
+
+	1. No task should block the CPU forever even if it is an
+	    endless loop.
+
+	2. Tasks with a higher priority should get the CPU more often.
+
+	3. Tasks with a low priority should get the CPU every now and then.
+
+	Enqueue() fulfills 2 but not 1 and 3. AddTail() fulfills 1 and 3.
+
+	A better way would be to "deteriorate" a task, ie. decrease the
+	priority and use Enqueue() but at this time, I can't do this
+	because I have no good way to extend the task structure (I
+	need a variable to store the original prio).
+    */
     AddTail (&SysBase->TaskReady, (struct Node *)task);
-}
+} /* Reschedule */
 
 /* Switch to a new task if the current task is not running and no
     exception has been raised. */
@@ -169,34 +195,50 @@ void Switch (void)
     /* Check that the task is not running and no exception is pending */
     if (task->tc_State != TS_RUN && !(task->tc_Flags & TF_EXCEPT) )
     {
-	/* Reset the counter */
-	SysBase->IDNestCnt = 0;
-
-	/* Allow signals */
+	/* Allow signals. */
 	ENABLE;
 
-	/* make sure there is a signal */
+	/*
+	    Make sure there is a signal. This is somewhat tricky: The
+	    current task (which is excuting this funcion) will loose the
+	    CPU (ie. some code of another task will be executed). Then
+	    at some time in the future, the current task (ie. the one
+	    that has executed the kill()) will get the CPU back and
+	    continue with the code after the kill().
+	*/
 	kill (getpid(), SIGALRM);
     }
-}
+} /* Switch */
 
-/* This waits for a signal (it's a dummy right now. All it does is
-    switch to another task). */
+/*
+    This waits for a "signal". That's not a Unix signal but a flag set
+    by some other task (eg. if you send a command to a device, the
+    device will call you back when it has processes the command.
+    When this happens such a "signal" will be set). The task will be
+    suspended until any of the bits given to Wait() are set in the
+    tasks' signal mask. Again, this signal mask has nothing to do
+    with the Unix signal mask.
+
+    It's a dummy right now. All it does is switch to another task.
+*/
 ULONG Wait (ULONG sigmask)
 {
     struct Task * task = THISTASK;
 
-    /* Task is no longer running */
+    /*
+	Task is no longer running. If we didn't do this, Switch() would do
+	nothing.
+    */
     task->tc_State = TS_READY;
 
-    /* Let another task run */
+    /* Let another task run. */
     Switch ();
 
     /* When I get the CPU back, this code is executed */
     return 0;
 }
 
-/* Simple main for a task: Print a message and wait for a signal */
+/* Simple main for a task: Print a message and wait for a signal. */
 void Main1 (void)
 {
     struct Task * task = THISTASK;
@@ -206,11 +248,11 @@ void Main1 (void)
     {
 	printf ("Main1: %s\n", name);
 
-	Wait (0);
+	Wait (1);
     }
 }
 
-/* Another method of waiting (but a worse one) */
+/* Another method of waiting (but an inferior one). */
 void busy_wait (void)
 {
     int t;
@@ -228,17 +270,27 @@ void Main2 (void)
     {
 	printf ("Main2: %s\n", name);
 
+	/*
+	    Kids, don't do this at home. I'm a professional.
+
+	    This is to make sure even endless loops don't harm the
+	    system. Even if this task has a higher priority than any
+	    other task in the system, the other tasks will get the
+	    CPU every now and then.
+	*/
 	busy_wait();
     }
 }
 
 #define DEBUG_STACK	0
 
-/* The signal handler. It will store the current tasks context and
-    switch to another task if this is allowed right now. */
+/*
+    The signal handler. It will store the current tasks context and
+    switch to another task if this is allowed right now.
+*/
 static void sighandler (int sig, sigcontext_t * sc)
 {
-    SP_TYPE * SP;
+    SP_TYPE * sp;
 
     cnt ++;
 
@@ -246,27 +298,33 @@ static void sighandler (int sig, sigcontext_t * sc)
     if (SysBase->TDNestCnt < 0)
     {
 	/* Save all registers and the stack pointer */
-	SAVEREGS(SP,sc);
+	SAVEREGS(sp,sc);
 
 #if DEBUG_STACK
 	PRINT_SC(sc);
-	PRINT_STACK(SP);
+	PRINT_STACK(sp);
 #endif
 
-	THISTASK->tc_SPReg = SP;
+	THISTASK->tc_SPReg = sp;
 
 	/* Find a new task to run */
 	Dispatch ();
 
+	/* Restore signal mask */
+	if (SysBase->IDNestCnt < 0)
+	    SC_ENABLE(sc);
+	else
+	    SC_DISABLE(sc);
+
 	/* Restore stack pointer and registers of new task */
-	SP = THISTASK->tc_SPReg;
+	sp = THISTASK->tc_SPReg;
 
 #if DEBUG_STACK
 	PRINT_STACK(SP);
 	printf ("\n");
 #endif
 
-	RESTOREREGS(SP,sc);
+	RESTOREREGS(sp,sc);
     }
     else
     {
@@ -306,7 +364,7 @@ printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
 	/* Sort the old task into the list of tasks which want to run */
 	Reschedule (this);
 
-#if 0 /* TODO this doesn't work, yet */
+#if 1 /* TODO this doesn't work, yet */
 	/* Save disable counters */
 	this->tc_TDNestCnt = SysBase->TDNestCnt;
 	this->tc_IDNestCnt = SysBase->IDNestCnt;
@@ -325,8 +383,10 @@ printf ("Dispatch: Old = %s (Stack = %ld), new = %s\n",
     }
 } /* Dispatch */
 
-/* Initialize the system: Install an interrupt handler and make sure
-    it is called at 50Hz */
+/*
+    Initialize the system: Install an interrupt handler and make sure
+    it is called at 50Hz
+*/
 void InitCore(void)
 {
     struct sigaction sa;
@@ -349,25 +409,49 @@ void InitCore(void)
     setitimer (ITIMER_REAL, &interval, NULL);
 } /* InitCore */
 
+#define STACK_SIZE  4096
+
 /* Create a new task */
 void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
 {
     SP_TYPE * sp;
 
+    /* Init task structure */
     memset (task, 0, sizeof (struct Task));
 
+    /* Init fields with real values */
     task->tc_Node.ln_Pri = pri;
     task->tc_Node.ln_Name = name;
     task->tc_State = TS_READY;
-    sp = malloc (4096 * sizeof (long));
+
+    /* Allow task switches and signals */
+    task->tc_TDNestCnt = -1;
+    task->tc_IDNestCnt = -1;
+
+    /* Allocate a stack */
+    sp = malloc (STACK_SIZE * sizeof (SP_TYPE));
+
+    /*
+	Copy bounds of stack in task structure. Note that the stack
+	grows to small addresses (ie. storing something on the stack
+	decreases the stack pointer).
+    */
     task->tc_SPLower = sp;
-    sp += 4096;
+    sp += STACK_SIZE;
     task->tc_SPUpper = sp;
+
+    /*
+	Let the sigcore do it's magic. Create a frame from which an
+	initial task context can be restored from.
+    */
     PREPARE_INITIAL_FRAME(sp,pc);
+
+    /* Save new stack pointer */
     task->tc_SPReg = sp;
 
+    /* Add task to queue by priority */
     Enqueue (&SysBase->TaskReady, (struct Node *)task);
-}
+} /* AddTask */
 
 /*
     Main routine: Create four tasks (three with the Mains above and one
@@ -378,6 +462,8 @@ int main (int argc, char ** argv)
     /* Init SysBase */
     NEWLIST (&SysBase->TaskReady);
     NEWLIST (&SysBase->TaskWait);
+
+    /* Signals and task switches are not allowed right now */
     SysBase->IDNestCnt = 0;
     SysBase->TDNestCnt = 0;
 
@@ -391,6 +477,15 @@ int main (int argc, char ** argv)
 	Add main task. Make sure the stack check is ok. This task is *not*
 	added to the list. It is stored in THISTASK and will be added to
 	the list at the next call to Dispatch().
+
+	Also a trick with the stack: This is the stack of the Unix process.
+	We don't know where it lies in memory nor how big it is (it can
+	grow), so we use "reasonable" defaults. The upper bounds is the
+	first argument (or the last local variable but we don't have any
+	right now). If the stack ever passes by this, we begin to trash
+	data on our stack. The lower bounds is 0 (well, we could restrict
+	the stack to, say, STACK_SIZE from SPUpper, but Unix is responsible
+	for this stack, so I don't really care).
     */
     TaskMain.tc_Node.ln_Pri = 0;
     TaskMain.tc_Node.ln_Name = "Main";
@@ -398,6 +493,7 @@ int main (int argc, char ** argv)
     TaskMain.tc_SPLower = 0;
     TaskMain.tc_SPUpper = &argc;
 
+    /* The currently running task is me, myself and I */
     THISTASK = &TaskMain;
 
     /* Start interrupts and allow them. */
@@ -409,14 +505,16 @@ int main (int argc, char ** argv)
     while (cnt < 10000)
     {
 	printf ("%6ld\n", cnt);
-	busy_wait();
+
+	/* Wait for a "signal" from another task. */
+	Wait (1);
     }
 
     /* Make sure we don't get disturbed in the cleanup */
     Disable ();
 
     /* Show how many signals have been processed */
-    printf ("Exit %ld\n", cnt);
+    printf ("Exit after %ld signals\n", cnt);
 
     return 0;
 } /* main */
