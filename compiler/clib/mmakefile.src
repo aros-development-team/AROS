@@ -26,6 +26,7 @@ COMMONFILES := \
 	memmove \
 	memset \
 	putchar \
+	stpcpy \
 	strcasecmp \
 	strcat \
 	strchr \
@@ -47,6 +48,7 @@ COMMONFILES := \
 	strtok \
 	strtol \
 	strtoul
+	
 
 SFILES := \
 	__env \

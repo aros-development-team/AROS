@@ -2,7 +2,7 @@
 #define _STRING_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: ANSI-C header file string.h
@@ -30,6 +30,7 @@ char * strrchr (const char * s, int c);
 size_t strspn (const char * s1, const char * s2);
 char * strstr (const char * buf, const char * str);
 char * strtok (char * s1, const char * s2);
+char * stpcpy (char * dest, const char * src);
 
 char * strrev(char * s); /* SAS C */
 int stch_l(const char * in, long * lvalue); /* SAS C */
