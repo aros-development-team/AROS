@@ -3,7 +3,7 @@
 \section{AROS 1.11 (current)}
 
 NOTE: This is beta. If you want this code, then have a look at our
-\lref{Links}{Links} See also the
+\lref{Links}{Links}. See also the
 \lref{Section about CVS}{CVS}.
 
 \begin{itemize}
@@ -26,7 +26,11 @@ Things we currently work on:
 \begin{itemize}
 \item ANSI C library for AROS
 \item A own C compiler for AROS (VBCC)
-\item diskfont.library, datatypes and gadtools
+\item diskfont.library,
+\begin{new}{22.7.1997}
+math libs,
+\end{new}
+datatypes and gadtools
 \item AROS on Amiga (maybe even bootable)
 \item CLI commands
 \item Splitting AROS into small packages
