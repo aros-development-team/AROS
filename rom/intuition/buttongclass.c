@@ -174,13 +174,10 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 			ReleaseGIRPort(rp);
 		    }
 		    retval = GMR_NOREUSE | GMR_VERIFY;
-		    *msg->gpi_Termination = 1UL;
+		    *msg->gpi_Termination = IDCMP_GADGETUP;
 		}
 		else
-		{
 		    retval = GMR_NOREUSE;
-		    *msg->gpi_Termination = 0UL;
-		}
 		break;
 
 	    case IECODE_NOBUTTON:
