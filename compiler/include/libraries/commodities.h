@@ -2,11 +2,10 @@
 #define LIBRARIES_COMMODITIES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Includes for commodities.library
-    Lang: English
+    Includes for commodities.library.
 */
 
 #ifndef EXEC_PORTS_H
@@ -26,9 +25,9 @@ typedef LONG (*PFL)();
 struct NewBroker
 {
     BYTE             nb_Version;         /* see below */
-    STRPTR           nb_Name;
-    STRPTR           nb_Title;
-    STRPTR           nb_Descr;
+    CONST_STRPTR     nb_Name;
+    CONST_STRPTR     nb_Title;
+    CONST_STRPTR     nb_Descr;
     WORD             nb_Unique;          /* see below */
     WORD             nb_Flags;           /* see below */
     BYTE             nb_Pri;
