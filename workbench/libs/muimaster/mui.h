@@ -569,6 +569,10 @@ struct MUI_RGBcolor
 #include "classes/volumelist.h"
 #endif
 
+#ifndef _MUI_CLASSES_DIRLIST_H
+#include "classes/dirlist.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
