@@ -194,10 +194,7 @@ static ULONG Scrollgroup_New(struct IClass *cl, Object *obj, struct opSet *msg)
     	MUIA_Group_Horiz, FALSE,
     	Child, group = GroupObject,
 	    MUIA_Group_LayoutHook, layout_hook,
-	    Child, contents = HGroupV, /* Saves us one variable */
-		VirtualFrame,
-		Child, contents,
-		End,
+	    Child, contents,
 	    Child, vert = ScrollbarObject, MUIA_Group_Horiz, FALSE, End,
 	    Child, horiz = ScrollbarObject, MUIA_Group_Horiz, TRUE, End,
 	    Child, button = ScrollbuttonObject, End,
