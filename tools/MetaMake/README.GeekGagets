@@ -1,0 +1,24 @@
+Use the following commands to configure MetaMake on the Amiga with
+GeekGadgets:
+
+  stack 200000 ; always a good idea to set some big stack
+  cd MetaMake
+  sh configure -v --prefix=/gg m68k-amigaos
+
+This will create the required Makefile and config.h files. You can then
+build and install mmake with the following commands:
+
+  make
+  make install
+
+mmake will be installed in GeekGadget's bin directory as /gg/bin/mmake.
+
+You may also want to strip debug information with
+
+  strip mmake
+
+before you run `make install'.
+
+You don't need the *.amiga files, but they are more lightweight than the
+generated files. I haven't tested them. At first sight, they work, but
+they don't install mmake anywhere.
