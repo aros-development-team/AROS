@@ -165,7 +165,12 @@
 #else            
             LONG  width  = _width(obj);
             LONG  height = _height(obj);
-            LONG *buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
+            LONG *buffer = NULL;
+	    
+	    if (GetBitMapAttr(_rp(obj)->BitMap, BMA_DEPTH) >= 15)
+	    {
+	    	buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
+	    }
 
             if (buffer != NULL)
             {
