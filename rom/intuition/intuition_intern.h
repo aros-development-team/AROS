@@ -3,37 +3,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.8  1996/10/24 15:51:20  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.7  1996/10/15 15:45:32  digulla
-    Two new functions: LockIBase() and UnlockIBase()
-    Modified code to make sure that it is impossible to access illegal data (ie.
-	fields of a window which is currently beeing closed).
-
-    Revision 1.6  1996/09/21 15:53:28  digulla
-    IntScree structure to store private fields in a screen
-
-    Revision 1.5  1996/09/21 14:18:59  digulla
-    Use intuition_debug.h
-
-    Revision 1.4  1996/09/17 16:14:06  digulla
-    OpenWindowTagList() needs Utility.library
-
-    Revision 1.3  1996/08/29 13:33:31  digulla
-    Moved common code from driver to Intuition
-    More docs
-
-    Revision 1.2  1996/08/28 17:55:37  digulla
-    Proportional gadgets
-    BOOPSI
-
-    Revision 1.1  1996/08/13 15:37:26  digulla
-    First function for intuition.library
-
-    Desc:
-    Lang:
+    Desc: Intuitions internal structure
+    Lang: english
 */
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
