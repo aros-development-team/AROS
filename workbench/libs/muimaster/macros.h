@@ -53,6 +53,7 @@
 #define PopstringObject     MUIOBJMACRO_START(MUIC_Popstring)
 #define PopobjectObject     MUIOBJMACRO_START(MUIC_Popobject)
 #define PoplistObject       MUIOBJMACRO_START(MUIC_Poplist)
+#define PopscreenObject     MUIOBJMACRO_START(MUIC_Popscreen)
 #define PopaslObject        MUIOBJMACRO_START(MUIC_Popasl)
 #define PendisplayObject    MUIOBJMACRO_START(MUIC_Pendisplay)
 #define PoppenObject        MUIOBJMACRO_START(MUIC_Poppen)

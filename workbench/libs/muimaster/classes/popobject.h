@@ -23,15 +23,6 @@
 #define MUIA_Popobject_WindowHook   (MUIB_MUI|0x0042f194) /* MUI: V9  isg struct Hook * */
 
 
-
-/****************************************************************************/
-/*** Name *******************************************************************/
-#define MUIC_Popscreen              "Popscreen.mui"
-
-/*** Identifier base (for Zune extensions) **********************************/
-#define MUIB_Popscreen              (MUIB_ZUNE | 0x00002600)
-
-
 extern const struct __MUIBuiltinClass _MUI_Popobject_desc; /* PRIV */
 
 #endif /*_MUI_CLASSES_POPOBJECT_H */

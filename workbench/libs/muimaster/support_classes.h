@@ -176,6 +176,12 @@
 #   define ZUNE_POPLIST_DESC
 #endif
 
+#if ZUNE_BUILTIN_POPSCREEN
+#   define ZUNE_POPSCREEN_DESC (&_MUI_Popscreen_desc),
+#else
+#   define ZUNE_POPSCREEN_DESC
+#endif
+
 #if ZUNE_BUILTIN_CRAWLING
 #   define ZUNE_CRAWLING_DESC (&_MUI_Crawling_desc),
 #else
