@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  1999/09/29 16:54:38  stegerg
+    ock gadget semaphore to protect against race conditions between app task and input.device task
+
     Revision 1.9  1999/07/23 21:41:07  stegerg
     fixes, gzz
 
@@ -157,6 +160,11 @@
 	    } /* if (tw) */
 	} /* if (gi) */
 
+        /* Protect DoMethodA against race conditions between app task
+	   and input.device task (which executes Intuitions Inputhandler) */
+	
+	ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+	
 	switch (msg->MethodID)
 	{
 	case OM_NEW:
@@ -211,6 +219,8 @@
 
 	} /* switch */
 
+        ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
+	
 	if (gi)
 	{
 	    if (gi->gi_DrInfo)
