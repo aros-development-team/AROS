@@ -2,6 +2,9 @@
     (C) 1995 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/23 17:06:17  digulla
+    Added #include "dos_intern.h"
+
     Revision 1.1  1996/08/20 11:58:36  digulla
     FilePart by Martin Steigerwald
 
@@ -22,6 +25,7 @@
 #ifndef NO_AROS
 #include <aros/libcall.h>
 #include <clib/aros_protos.h>
+#include "dos_intern.h"
 #else
 #define __AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
 #define __AROS_LHA(t,n,r)                   t n
