@@ -66,7 +66,7 @@ END {
 	print "</OL>"
     if (chapter)
 	print "</OL>"
-    shiftfiles("");
+    shiftfiles("adoc_index.html");
 }
 
 function checkfile() {
