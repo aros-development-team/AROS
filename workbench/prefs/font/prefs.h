@@ -26,6 +26,7 @@ BOOL FP_LoadFrom(CONST_STRPTR filename);
 BOOL FP_Load(void);
 BOOL FP_Test(void);
 BOOL FP_Revert(void);
+BOOL FP_SaveTo(CONST_STRPTR filename);
 BOOL FP_Save(void);
 BOOL FP_Use(void);
 BOOL FP_Cancel(void);

@@ -196,10 +196,15 @@ BOOL FP_Revert(void)
     return FP_Use();
 }
 
+BOOL FP_SaveTo(CONST_STRPTR filename)
+{
+    return FP_Write(filename, fp_Current);
+}
+
 BOOL FP_Save(void)
 {
-    if (!FP_Write(FP_PATH_ENV, fp_Current)) return FALSE;
-    if (!FP_Write(FP_PATH_ENVARC, fp_Current)) return FALSE;
+    if (!FP_SaveTo(FP_PATH_ENV)) return FALSE;
+    if (!FP_SaveTo(FP_PATH_ENVARC)) return FALSE;
     
     return TRUE;
 }

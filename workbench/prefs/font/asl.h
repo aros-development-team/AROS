@@ -8,8 +8,14 @@
 
 #include <exec/types.h>
 
+/*** Modes ******************************************************************/
+enum
+{
+    ASL_MODE_IMPORT,
+    ASL_MODE_EXPORT
+};
+
 /*** Prototypes *************************************************************/
-STRPTR aslOpenPrefs(void);
-STRPTR aslSavePrefs(void);
+STRPTR ASL_SelectFile();
 
 #endif /* _ASL_H */

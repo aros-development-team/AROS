@@ -12,6 +12,7 @@
 #include <libraries/gadtools.h>
 #include <prefs/font.h>
 
+#include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
@@ -24,8 +25,13 @@
 
 #include "locale.h"
 #include "prefs.h"
+#include "asl.h"
 
 #define BUFFERSIZE 512
+
+/*** Private methods ********************************************************/
+#define MUIM_FPWindow_Import (TAG_USER | 0x20000000)
+#define MUIM_FPWindow_Export (TAG_USER | 0x20000001)
 
 /*** Instance data **********************************************************/
 struct FPWindow_DATA
@@ -124,6 +130,7 @@ IPTR FPWindow$OM_NEW
 {
     struct FPWindow_DATA *data = NULL;
     Object               *iconsString, *screenString, *systemString;
+    Object               *importMI, *exportMI; /* menu items */
     TEXT                  buffer[BUFFERSIZE];
         
     struct TagItem tags[] =
@@ -143,11 +150,11 @@ IPTR FPWindow$OM_NEW
         Child, MenuObject,
             MUIA_Menu_Title, "Preferences",
             
-            Child, MenuitemObject,
+            Child, importMI = MenuitemObject,
                 MUIA_Menuitem_Title,    "Import...",
                 MUIA_Menuitem_Shortcut, "I",
             End,            
-            Child, MenuitemObject,
+            Child, exportMI = MenuitemObject,
                 MUIA_Menuitem_Title,    "Export...",
                 MUIA_Menuitem_Shortcut, "E",
             End,
@@ -190,19 +197,24 @@ IPTR FPWindow$OM_NEW
     self = (Object *) DoSuperMethodA(CLASS, self, (Msg) message);
     if (self == NULL) goto error;
     
-    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_WBFONT]);
-    SetAttrs(iconsString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
-    
-    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_SYSFONT]);
-    SetAttrs(systemString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
-    
-    FontPrefs2FontString(buffer, BUFFERSIZE, fp_Current[FP_SCREENFONT]);
-    SetAttrs(screenString, MUIA_Text_Contents, (IPTR) buffer, TAG_DONE);
-    
     data = INST_DATA(CLASS, self);
     data->fpwd_IconsString  = iconsString;
     data->fpwd_SystemString = systemString;
     data->fpwd_ScreenString = screenString;
+    
+    FontPrefs2Gadgets(data, fp_Current);
+
+    DoMethod
+    (
+        importMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+        (IPTR) self, 1, MUIM_FPWindow_Import
+    );
+    
+    DoMethod
+    (
+        exportMI, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime,
+        (IPTR) self, 1, MUIM_FPWindow_Export
+    );
     
     return (IPTR) self;
     
@@ -286,6 +298,42 @@ IPTR FPWindow$MUIM_PreferencesWindow_Cancel
     return NULL;
 }
 
+IPTR FPWindow$MUIM_FPWindow_Import
+(     
+    struct IClass *CLASS, Object *self, Msg message 
+)
+{
+    struct FPWindow_DATA *data = INST_DATA(CLASS, self);
+    
+    STRPTR filename = ASL_SelectFile(ASL_MODE_IMPORT);
+    if (filename != NULL)
+    {
+        FP_LoadFrom(filename); /* FIXME: check error? */
+        FontPrefs2Gadgets(data, fp_Current);
+        FreeVec(filename);
+    }
+    
+    return NULL;
+}
+
+IPTR FPWindow$MUIM_FPWindow_Export
+(     
+    struct IClass *CLASS, Object *self, Msg message 
+)
+{
+    struct FPWindow_DATA *data = INST_DATA(CLASS, self);
+    
+    STRPTR filename = ASL_SelectFile(ASL_MODE_EXPORT);
+    if (filename != NULL)
+    {
+        Gadgets2FontPrefs(fp_Current, data);
+        FP_SaveTo(filename); /* FIXME: check error? */
+        FreeVec(filename);
+    }
+    
+    return NULL;
+}
+
 /*** Dispatcher *************************************************************/
 BOOPSI_DISPATCHER(IPTR, FPWindow_Dispatcher, CLASS, self, message)
 {
@@ -308,6 +356,12 @@ BOOPSI_DISPATCHER(IPTR, FPWindow_Dispatcher, CLASS, self, message)
         
         case MUIM_PreferencesWindow_Cancel:
             return FPWindow$MUIM_PreferencesWindow_Cancel(CLASS, self, message);
+        
+        case MUIM_FPWindow_Import:
+            return FPWindow$MUIM_FPWindow_Import(CLASS, self, message);
+        
+        case MUIM_FPWindow_Export:
+            return FPWindow$MUIM_FPWindow_Export(CLASS, self, message);
         
         default:     
             return DoSuperMethodA(CLASS, self, message);
