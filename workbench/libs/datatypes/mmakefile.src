@@ -30,6 +30,7 @@ FUNCTIONS := 	 adddtobject \
 		 copydttriggermethods \
 		 disposedtobject \
 		 doasynclayout \
+		 dodtdomaina \
 		 dodtmethoda \
 		 drawdtobjecta \
 		 findmethod \
@@ -49,7 +50,9 @@ FUNCTIONS := 	 adddtobject \
 		 releasedatatype \
 		 releasedtdrawinfo \
 		 removedtobject \
-		 setdtattrsa
+		 savedtobjecta \
+		 setdtattrsa \
+		 startdragselect
 
 %define_libs prelibs=-l$(LIBNAME)
 
