@@ -13,7 +13,7 @@
     NAME */
 #include <stdio.h>
 
-	int setlinebuf (
+	void setlinebuf (
 
 /*  SYNOPSIS */
 	FILE *stream)
@@ -40,7 +40,7 @@
 ******************************************************************************/
 {
 
-    return setvbuf(stream, (char *)NULL, _IOLBF, 0);
+    setvbuf(stream, (char *)NULL, _IOLBF, 0);
 
 } /* setlinebuf */
 

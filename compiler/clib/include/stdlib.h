@@ -145,13 +145,15 @@ void *bsearch(const void * key, const void * base, size_t count,
 /* Integer arithmetic functions */
 int abs (int j);
 long labs (long j);
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901 \
+    || defined(__GNUC__)
 long long int llabs(long long int j);
 #endif
 
 div_t div(int numer, int denom);
 ldiv_t ldiv(long int numer, long int denom);
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901 \
+    || defined(__GNUC__)
 lldiv_t lldiv(long long int numer, long long int denom);
 #endif
 
