@@ -22,11 +22,21 @@
 
 /*  FUNCTION
 
+    Wait for a packet to arrive at your process' pr_MsgPort. It will call
+    pr_PktWait if such a function is installed.
+
     INPUTS
 
     RESULT
 
+    The packet we received.
+
     NOTES
+
+    The packet will be released from the port.
+
+    This function should NOT be used. It's there only for AmigaOS
+    compatibility.
 
     EXAMPLE
 
@@ -37,32 +47,56 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    struct Process * me = (struct Process *)FindTask(NULL);
-    struct IOFileSys * iofs;
-    struct DosPacket * dp;
-    
-    if (me->pr_PktWait)
-    {
-#if 0
-      dp = me->pr_PktWait();
-#endif
-    }
-    else
-    {
-      WaitPort(&me->pr_MsgPort);
-      iofs = (struct IOFileSys *)GetMsg(&me->pr_MsgPort);
-//    dp = iofs->IOFS.io_oldpacket;
-    }
-    
+    struct Process   *me = (struct Process *)FindTask(NULL);
 
+    return internal_WaitPkt(&me->pr_MsgPort, DOSBase);
+
+    AROS_LIBFUNC_EXIT
+} /* WaitPkt */
+
+
+struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
+				   struct DosLibrary *DOSBase)
+{
+    struct Message   *msg;
+    struct DosPacket *packet;
+    struct Process   *me = (struct Process *)FindTask(NULL);
+ 
+    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+	/* Call the packet wait function if the user has one installed.
+	   Unfortunately, the user gets something completely different than
+	   a packet, but we cannot do anything about that... */
+#if 0
+	if (me->pr_PktWait != NULL)
+	{
+	    me->pr_PktWait();
+        }
+#endif
+    }	
+
+    /* Make sure we have a packet -- we may be woken up even if there is
+       not a packet for us as SIGF_DOS may be used and we may have another
+       message port that waits for packets, too. */
+    while ((msg = GetMsg(msgPort)) == NULL)
+    {
+	Wait(1 << msgPort->mp_SigBit);
+    }
+    
+    ReplyMsg(msg);
+    
+    /* TODO: Convert the whole thing back to a DosPacket */
+    
+    return (struct DosPacket *)msg;
+}
+
+#if 0
     /*
     ** The Result code 1 is most of the time a DOS boolean
     ** but unfortunately this is not always true...
@@ -77,5 +111,4 @@
     
     return dp;
 
-    AROS_LIBFUNC_EXIT
-} /* WaitPkt */
+#endif

@@ -56,27 +56,35 @@
      * SendPkt rewrite it.
      */
     LONG res;
-    struct Process * me = (struct Process *)FindTask(NULL);
-    struct DosPacket * dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT, NULL);
-    struct MsgPort * replyport;
+    struct Process   *me = (struct Process *)FindTask(NULL);
+    struct DosPacket *dp = (struct DosPacket *)AllocDosObject(DOS_STDPKT,
+							      NULL);
+    struct MsgPort   *replyPort;
+    struct IOFileSys *iofs;
+
     BOOL i_am_process = TRUE;
-    struct IOFileSys * iofs;
     
     if (NULL == dp)
-      return FALSE;
+    {
+	return FALSE;
+    }
 
     if (NT_PROCESS == me->pr_Task.tc_Node.ln_Type)
     {
-      replyport = &me->pr_MsgPort;
+	replyPort = &me->pr_MsgPort;
     }
     else
     {
-      replyport = CreateMsgPort();
-      if (NULL == replyport)
-        return FALSE;
-      i_am_process = FALSE;
-    }
+	replyPort = CreateMsgPort();
 
+	if (NULL == replyPort)
+	{
+	    return FALSE;
+	}
+
+	i_am_process = FALSE;
+    }
+    
     dp->dp_Type = action;
     dp->dp_Arg1 = arg1;
     dp->dp_Arg2 = arg2;
@@ -84,20 +92,9 @@
     dp->dp_Arg4 = arg4;
     dp->dp_Arg5 = arg5;
     
-    SendPkt(dp, port, replyport);
-
-    if (TRUE == i_am_process && NULL != me->pr_PktWait)
-    {
-#if 0
-      dp = me->pr_PktWait();
-#endif
-    }
-    else
-    {
-      WaitPort(replyport);
-      iofs = (struct IOFileSys *)GetMsg(replyport);
-//    dp = iofs->IOFS.io_oldPacket;
-    }
+    SendPkt(dp, port, replyPort);
+    
+    internal_WaitPkt(replyPort, DOSBase);
     
     dp->dp_Res1 = DOSTRUE;
     dp->dp_Res2 = iofs->io_DosError;
@@ -106,7 +103,9 @@
     res = dp->dp_Res1;
 
     if (FALSE == i_am_process)
-      DeleteMsgPort(replyport);
+    {
+	DeleteMsgPort(replyPort);
+    }
     
     FreeDosObject(DOS_STDPKT, dp);
 
@@ -114,3 +113,4 @@
 
     AROS_LIBFUNC_EXIT
 } /* DoPkt */
+
