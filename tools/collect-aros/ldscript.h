@@ -24,7 +24,15 @@
 "    *(.gnu.linkonce.t.*)\n"\
 "  } =0x90909090\n"\
 "\n"\
-"  .rodata  0 : { *(.rodata) *(.rodata.*) *(.gnu.linkonce.r.*) }\n"\
+"  .rodata  0 :\n"\
+"  {\n"\
+"    *(.rodata)\n"\
+"    *(.rodata.*)\n"\
+"    *(.gnu.linkonce.r.*)\n"
+
+
+#define LDSCRIPT_PART2 \
+"  }\n"\
 "  .rodata1 0 : { *(.rodata1) }\n"\
 "\n"\
 "  /*\n"\
@@ -40,9 +48,7 @@
 "  {\n"\
 "    *(.data)\n"\
 "    *(.data.*)\n"\
-"    *(.gnu.linkonce.d.*)\n"
-
-#define LDSCRIPT_PART2 \
+"    *(.gnu.linkonce.d.*)\n"\
 "  }\n"\
 "  .data1            0 : { *(.data1) }\n"\
 "  .eh_frame         0 : { KEEP (*(.eh_frame)) }\n"\
