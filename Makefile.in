@@ -7,7 +7,7 @@ default: all
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
-all: $(MMAKE)
+all: makedirs $(MMAKE)
 	$(MMAKE) AROS.AROS
 
 docs: $(MMAKE)
@@ -28,12 +28,12 @@ makedirs:
 	    $(CP) _gdbinit $(BINDIR)/.gdbinit ; \
 	else true ; fi
 
-$(MMAKE): makedirs $(GENMF)
+$(MMAKE): tools/MetaMake/mmake.c $(GENMF)
 	cd tools/MetaMake ; ./configure --prefix=$(TOOLDIR)
 	$(MAKE) -C tools/MetaMake
 	cp tools/MetaMake/mmake $(MMAKE)
 
-$(GENMF):
+$(GENMF): tools/genmf/genmf.c
 	$(MAKE) -C tools/genmf TOP=$(TOP)
 
 install:
