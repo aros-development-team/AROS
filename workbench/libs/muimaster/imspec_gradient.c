@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <proto/dos.h>
+#include <proto/exec.h>
 
 #include "mui.h"
 #include "imspec_intern.h"
@@ -144,7 +145,7 @@ STATIC int FillPixelArrayGradient(struct RastPort *rp, int xt, int yt, int xb, i
      *       Remove the use of floating point variables
      */
 
-    double rad = angle*PI/180;
+    double rad = angle*M_PI/180;
     double cosarc = cos(rad);
     double sinarc = sin(rad);
 
