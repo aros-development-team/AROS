@@ -1714,7 +1714,8 @@ static ULONG bgf_render(APTR bgfr_data
 }
     
 void blit_glyph_fast(struct RastPort *rp, OOP_Object *fontbm, WORD xsrc
-	, WORD destx, WORD desty, UWORD width, UWORD height)
+	, WORD destx, WORD desty, UWORD width, UWORD height
+	, struct GfxBase * GfxBase)
 {
     
     struct Rectangle rr;
@@ -1876,6 +1877,7 @@ void driver_Text (struct RastPort * rp, STRPTR string, LONG len,
 		, render_y
 		, charloc & 0xFFFF
 		, tf->tf_YSize
+		, GfxBase
 	    );
 	}
 	
@@ -2282,6 +2284,7 @@ static VOID amiga2hidd_fast(APTR src_info
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
 	, VOID (*fillbuf_hook)()
+	, struct GfxBase * GfxBase
 )
 {
     
@@ -2353,6 +2356,7 @@ LOCK_PIXBUF
 		, pixel_buf
 		, bm_obj
 		, IS_HIDD_BM(hidd_bm) ? HIDD_BM_PIXTAB(hidd_bm) : NULL
+		, GfxBase
 	);
 	
 	/* Put it to the HIDD */
@@ -2391,6 +2395,7 @@ static VOID hidd2buf_fast(struct BitMap *hidd_bm
 	, LONG x_dest, LONG y_dest
 	, ULONG xsize, ULONG ysize
 	, VOID (*putbuf_hook)()
+	, struct GfxBase * GfxBase
 )
 {
 
@@ -3296,6 +3301,7 @@ D(bug("Copying template to HIDD offscreen bitmap\n"));
 	, 0, 0
 	, xSize, ySize
 	, template_to_buf
+	, GfxBase
     );
     
     /* Reset to preserved state */
@@ -3478,6 +3484,7 @@ static ULONG bltpattern_render(APTR bpr_data
 	, x1, y1
 	, width, height
 	, pattern_to_buf
+	, GfxBase
     );
     
     return width * height;
@@ -3568,7 +3575,10 @@ struct layerhookmsg
 };
 
 
-VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg)
+VOID calllayerhook(struct Hook *h, 
+                   struct RastPort *rp, 
+                   struct layerhookmsg *msg,
+                   struct GfxBase * GfxBase)
 {
     struct BitMap *bm = rp->BitMap;
     OOP_Object *gc;
@@ -3680,7 +3690,7 @@ static ULONG eraserect_render(APTR err_data
 	    rp = errd->origrp;
 	}
         
-     	calllayerhook(msg.Layer->BackFill, rp, &msg);
+     	calllayerhook(msg.Layer->BackFill, rp, &msg, GfxBase);
     }
     
     return 0;
@@ -3734,6 +3744,7 @@ static VOID bltmask_to_buf(struct bltmask_info *bmi
 	, ULONG *buf
 	, OOP_Object *dest_bm
 	, HIDDT_Pixel *coltab
+	, struct GfxBase * GfxBase
 )
 {	
     /* x_src, y_src is the coordinates int the layer. */
@@ -3871,6 +3882,7 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 		, xSize
 		, ySize
 		, bltmask_to_buf
+		, GfxBase
 	);
 	
     }
@@ -3923,6 +3935,7 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 			, width
 			, height
 			, bltmask_to_buf
+			, GfxBase
 		     );
 		}
 		else
@@ -3948,6 +3961,7 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
 				, width
 				, height
 				, bltmask_to_buf
+				, GfxBase
 		     	);
 
 		    }
@@ -4028,6 +4042,7 @@ static OOP_Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBa
 		, 0, 0
 		, width, height
 		, template_to_buf
+		, GfxBase
 	);
 		
     }
@@ -4592,6 +4607,7 @@ static ULONG extcol_render(APTR funcdata
 	, x2 - x1 + 1
 	, y2 - y1 + 1
 	, buf_to_extcol
+	, GfxBase
     );
 		
     return (x2 - x1 + 1) * (y2 - y1 + 1);
