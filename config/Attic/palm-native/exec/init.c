@@ -34,11 +34,6 @@
 
 //extern const char Exec_end;
 
-//extern ULONG m68k_SSP;
-
-
-//ULONG GetMemSize();
-
 extern struct ExecBase * PrepareExecBase(struct MemHeader *);
 extern void switch_to_user_mode(void *, ULONG *);
 extern void Init_PalmHardware(void);
@@ -245,73 +240,13 @@ int main_init_cont()
 
 		while (1) {
 			ULONG i = 0;
-			ULONG z = 0;
 			clearscreen(0);
 			while (i < 160/2) {
 				drawlinevert(i);
 				drawlinevert(160-1-i);
-				z = 0;
-
-				while (z < 0x40000) {
-					z++;
-				}
 				i++;
 			}
 		}
 	}
 }
 
-#if 1
-void _drawlinehoriz(int y)
-{	
-	LONG lssa = RREG_L(LSSA);
-	LONG height = RREG_W(LYMAX);
-	LONG width = RREG_W(LXMAX)>>3;
-	LONG x = 0;
-	
-	if (y < 0 || y >= height)
-		return;
-
-	while (x <= width) {
-		*(BYTE *)(lssa+((width+1)*y)+x) = 0xff;
-		x++;
-	}
-	
-}
-#endif
-
-void _drawlinevert(int x)
-{	
-	LONG lssa = RREG_L(LSSA);
-	LONG height = RREG_W(LYMAX);
-	LONG width  = RREG_W(LXMAX);
-	LONG y = 0;
-	
-	if (x < 0 || x >= width)
-		return;
-	width >>= 3;
-	while (y < height) {
-		*(BYTE *)(lssa+((width+1)*y)+(x>>3)) |= 1<<(7-(x&7));
-		y++;
-	}
-	
-}
-
-#if 0
-void _clearscreen(int value)
-{
-	LONG lssa = RREG_L(LSSA);
-	LONG height = RREG_W(LYMAX);
-	LONG width = RREG_W(LXMAX)>>3;
-	LONG y = 0;
-	
-	while (y < height) {
-		LONG x = 0;
-		while (x <= width) {
-			*(BYTE *)(lssa+((width+1)*y)+x) = value;
-			x++;
-		}
-		y++;
-	}
-}
-#endif
