@@ -162,7 +162,7 @@ create-mf-inc-again :
 
 #MM- clib-native : clib-native-i386
 
-#MM- includes-native : includes-copy includes-native-i386
+#MM- includes-native : includes-copy-native-i386 includes-copy includes-native-i386
 
 #MM
 boot-disk : tmp $(OSGENDIR)/boot/aros.bin

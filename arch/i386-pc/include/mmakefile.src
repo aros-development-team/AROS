@@ -19,7 +19,7 @@ includes-native-i386 : $(INCFILES) machine.i
 	@$(NOP)
 
 #MM
-includes-copy : $(INCFILES) $(GENINCDIR)/sigcore.h
+includes-copy-native-i386 : $(INCFILES) $(GENINCDIR)/sigcore.h
 	@$(NOP)
 
 #MM

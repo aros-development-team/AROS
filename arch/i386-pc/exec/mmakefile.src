@@ -7,14 +7,6 @@ CFLAGS2 	:= $(CFLAGS) -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
 AFLAGS2 	:= $(AFLAGS) -I../ -I$(TOP)/rom/exec -I$(GENINCDIR)
 TESTS		:=
 
-INCFILES	:= \
-		   $(GENINCDIR)/asm/linkage.h \
-		   $(INCDIR)/asm/linkage.h \
-		   $(GENINCDIR)/asm/ptrace.h \
-		   $(INCDIR)/asm/ptrace.h \
-		   $(GENINCDIR)/asm/io.h \
-		   $(INCDIR)/asm/io.h
-
 FILES		:= \
 	disable enable switch preparecontext coldreboot stackswap \
 	rawputchar initresident addtask cause dispatch debug supervisor reschedule \
@@ -41,21 +33,8 @@ setup-exec-native-i386 :
 	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
 
 #MM
-includes-native-i386 : $(INCFILES)
-	@$(NOP)
-
-#MM
-$(GENINCDIR)/sigcore.h : ../sigcore.h
-	%mkdirs_q $(GENINCDIR)
-	$(CP) $< $@
-
-#MM
 clean ::
 	-$(RM) $(TESTS)
-
-$(INCDIR)/asm/%.h : %.h
-	%mkdirs_q $(INCDIR)
-	$(CP) $< $@
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
