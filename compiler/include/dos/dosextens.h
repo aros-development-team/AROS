@@ -35,7 +35,10 @@ struct DosLibrary
     LONG dl_LDReturn;
 
     ULONG dl_ProcCnt;
+    ULONG dl_Flags;
 };
+
+#define RNF_WILDSTAR 0x1000000
 
 struct CommandLineInterface
 {
