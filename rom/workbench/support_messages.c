@@ -58,6 +58,8 @@ VOID __DestroyWBS_WB
             if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
         }
         
+	FreeMem(message->sm_ArgList, message->sm_NumArgs * sizeof(struct WBArg));
+	
         FreeMessage((struct Message *) message);
     }
 }
