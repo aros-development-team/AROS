@@ -1,0 +1,91 @@
+# $Id$ 
+include $(TOP)/config/make.cfg
+
+FILES		:= exec/init
+DEPS		:= $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
+OS_INCLUDES	:= -I$(GENINCDIR)
+CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
+
+#MM- AROS-netbsd : setup setup-netbsd includes compiler kernel workbench \
+#MM 	demos games shell
+
+#MM- kernel-netbsd : \
+#MM	kernel-aros-linklib kernel-battclock-netbsd kernel-boopsi-linklib \
+#MM	kernel-boot-linklib kernel-devs \
+#MM	kernel-dos-netbsd kernel-exec-netbsd \
+#MM	kernel-expansion-linklib kernel-filesys kernel-hidd-netbsd \
+#MM	kernel-graphics-netbsd kernel-intuition-netbsd \
+#MM	kernel-keymap-linklib \
+#MM	kernel-mathffp-linklib kernel-mathieeesingbas-linklib \
+#MM	kernel-timer-linklib kernel-utility-netbsd kernel-oop-linklib \
+#MM     kernel-layers-linklib kernel-workbench-linklib	\
+#MM	kernel-cgfx-linklib
+
+# Setup the CLIB metatargets...
+#MM- setup-clib-netbsd : setup-clib-netbsd-i386
+
+#MM
+kernel :
+	@$(NOP)
+
+#MM setup-netbsd : setup-exec-netbsd setup-dos-unix \
+#MM	setup-battclock-unix setup-$(GFXSYSTEM)
+setup-netbsd : 
+	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
+	%add_objects rom/boot/strap_emul
+
+
+#MM setup-exec-netbsd : setup-exec-unix setup-exec-i386
+setup-exec-netbsd : 
+	%add_objects rom/exec/init
+
+#MM
+includes-copy : $(GENINCDIR)/sigcore.h
+	@$(NOP)
+
+$(GENINCDIR)/sigcore.h : $(TOP)/config/netbsd/exec/sigcore.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $^ $@
+
+#MM- kernel-exec-netbsd : exec-netbsd exec-i386 exec-unix \
+#MM	kernel-exec-linklib
+
+#MM
+exec-netbsd : $(OSGENDIR)/exec/init.o
+
+#MM- setup-dos-netbsd : setup-dos-unix
+
+#MM- kernel-dos-netbsd : dos-unix kernel-dos-linklib
+
+#MM- setup-battclock-netbsd : setup-battclock-unix
+
+#MM- kernel-graphics-netbsd : graphics-$(GFXSYSTEM) hidd-graphics-x11 kernel-graphics-linklib
+
+#MM- kernel-intuition-netbsd : intuition-$(GFXSYSTEM) kernel-intuition-linklib
+
+#MM- kernel-hidd-netbsd : kernel-hidd-linklib
+
+#MM- kernel-utility-netbsd : kernel-utility-linklib
+
+#MM- kernel-battclock-netbsd : battclock-unix kernel-battclock-linklib
+
+#MM- check : check-exec-unix
+
+#MM- clib-netbsd : clib-netbsd-i386
+
+#MM- includes-netbsd : includes-copy includes-netbsd-i386
+
+#MM- workbench-netbsd : workbench-complete
+
+#MM
+clean ::
+	-$(RM) $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) */*.err
+
+$(OSGENDIR)/%.o : %.c
+	%compile_q opt=$(CFLAGS2)
+
+$(OSGENDIR)/%.d : %.c
+	%mkdepend_q $(CFLAGS2)
+
+%include_deps
+%common
