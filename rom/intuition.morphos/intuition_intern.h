@@ -173,7 +173,7 @@ void * memclr(APTR, ULONG);
 #define BEGINUPDATEGADGETREFRESH
 //#define DAMAGECACHE
 
-#define USEWINDOWLOCK
+//#define USEWINDOWLOCK
 #ifdef USEWINDOWLOCK
 #define LOCKWINDOW ObtainSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
 #define UNLOCKWINDOW ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->WindowLock);
@@ -183,7 +183,7 @@ void * memclr(APTR, ULONG);
 #endif
 /* jDc: do NOT disable this! */
 
-//#define USEGADGETLOCK
+#define USEGADGETLOCK
 #ifdef USEGADGETLOCK
 #define LOCKGADGET ObtainSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);
 #define UNLOCKGADGET ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->GadgetLock);

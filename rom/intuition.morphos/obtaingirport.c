@@ -72,7 +72,7 @@ AROS_LH1(struct RastPort *, ObtainGIRPort,
         rp = CloneRastPort (gInfo->gi_RastPort);
         if (rp)
         {
-            if (rp->Layer) LockLayerInfo(rp->Layer->LayerInfo);
+
             LOCKGADGET
             /*bug("+++++++++++++ OBTAIN rp=%p lay=%p font=%p origfont=%p\n",rp,rp->Layer,rp->Font,gInfo->gi_RastPort->Font);*/
 

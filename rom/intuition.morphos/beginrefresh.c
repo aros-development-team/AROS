@@ -68,9 +68,6 @@ AROS_LH1(void, BeginRefresh,
     //jDc: makes sure we've got 1 refresing window at a time
     LockLayerInfo(&window->WScreen->LayerInfo);
 
-    /* jDc: MUST lock it here! */
-    LOCKGADGET
-
     /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
     if (BLAYER(window))
         LockLayer(0,BLAYER(window));
@@ -86,36 +83,6 @@ AROS_LH1(void, BeginRefresh,
     ** window's internal damage list and matched against actual damage here
     */
 
-    #ifdef DAMAGECACHE
-    if (IW(window)->specialflags & SPFLAG_LAYERREFRESH)
-    {
-        //match the existing layer damage againt the stored one
-        if (IW(window)->trashregion)
-        {
-
-            OrRegionRegion(IW(window)->trashregion,WLAYER(window)->DamageList);
-            ClearRegion(IW(window)->trashregion);
-
-        }
-
-        if (IW(window)->specialflags & SPFLAG_LAYERRESIZED) mode = DOUBLEBUFFER;
-
-        IW(window)->specialflags &= ~(SPFLAG_LAYERREFRESH|SPFLAG_LAYERRESIZED);
-        #ifdef BEGINUPDATEGADGETREFRESH
-        gadgetrefresh = TRUE;
-        #endif
-    }
-    #else
-    #ifdef BEGINUPDATEGADGETREFRESH
-    if (IW(window)->specialflags & SPFLAG_LAYERREFRESH)
-    {
-        gadgetrefresh = TRUE;
-        if (IW(window)->specialflags & SPFLAG_LAYERRESIZED) mode = DOUBLEBUFFER;
-        IW(window)->specialflags &= ~(SPFLAG_LAYERREFRESH|SPFLAG_LAYERRESIZED);
-    }
-    #endif
-    #endif
-
     if (IW(window)->specialflags & SPFLAG_WANTBUFFER) mode = DOUBLEBUFFER;
 
     /* I don't think I ever have to update the BorderRPort's layer */
@@ -130,25 +97,6 @@ AROS_LH1(void, BeginRefresh,
     /* jDc: because with opaque move window borders/gadgets are not refreshed to
     ** speed things up we do this here - this reduces cpu time spent in inputhandler
     */
-
-#ifdef BEGINUPDATEGADGETREFRESH
-    if (gadgetrefresh)
-    {
-
-        if (!IS_GZZWINDOW(window))
-        {
-            if (window->Flags & WFLG_BORDERLESS)
-            {
-                int_refreshglist(window->FirstGadget, window, NULL, -1, 0, 0, IntuitionBase);
-            } else {
-                int_RefreshWindowFrame(window,0,0,mode,IntuitionBase);
-            }
-        } else {
-            /* refresh all gadgets except border and gadtools gadgets */
-            int_refreshglist(window->FirstGadget, window, NULL, -1, 0, REFRESHGAD_BORDER , IntuitionBase);
-        }
-    }
-#endif
 
     /* let the user know that we're currently doing a refresh */
     window->Flags |= WFLG_WINDOWREFRESH;
