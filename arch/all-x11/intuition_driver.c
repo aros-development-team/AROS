@@ -826,7 +826,9 @@ VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
 	    /* Wait for input to arrive */
 	    ret = (int)Hidd_UnixIO_Wait(  unixio
 	    				, ConnectionNumber (sysDisplay)
-					, vHidd_UnixIO_Read);
+					, vHidd_UnixIO_Read
+					, NULL
+					, NULL);
 			
 
 	    Dipxe(bug("iWE: Got input %ld\n", ret));
