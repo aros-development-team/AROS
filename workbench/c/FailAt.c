@@ -1,9 +1,9 @@
 /*
-    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: FailAt - Set the failure level of a process
-    Lang: english
+    Lang: English
 */
 
 /**************************************************************************
@@ -15,10 +15,10 @@
 	FailAt <limit>
 
     SYNOPSIS
-	RCLIM/A/N
+	RCLIM/N
 
     LOCATION
-	INTERNAL
+	C:
 
     FUNCTION
 	FailAt sets the return code limit of the current shell script. If
@@ -61,40 +61,44 @@
 #include <proto/exec.h>
 #include <proto/dos.h>
 
-#define ARG_TEMPLATE	"RCLIM/A/N"
+#define ARG_TEMPLATE	"RCLIM/N"
 #define ARG_RCLIM	0
 #define TOTAL_ARGS	1
 
 static const char version[] = "$VER: FailAt 41.1 (3.1.1998)";
 static const char exthelp[] =
     "FailAt : Set the return code failure limit of the current script\n"
-    "\tRCLIM/A/N   The new return code limit\n";
+    "\tRCLIM/N   The new return code limit\n";
+
 
 int main(int argc, char **argv)
 {
     struct RDArgs *rd, *rda;
-    IPTR args[TOTAL_ARGS] = { 0 };
-    int error = 0;
+    IPTR           args[TOTAL_ARGS] = { (IPTR)NULL };
+    int            error = 0;
+    struct CommandLineInterface *cli = Cli();
+
+    if(cli == NULL)
+	return RETURN_FAIL;
 
     rda = AllocDosObject(DOS_RDARGS, NULL);
-    if( rda != NULL )
+    if(rda != NULL)
     {
 	rda->RDA_ExtHelp = (STRPTR)exthelp;
 
-	rd = ReadArgs( ARG_TEMPLATE, args, rda );
-	if( rd != NULL )
+	rd = ReadArgs(ARG_TEMPLATE, args, rda);
+	if(rd != NULL)
 	{
-	    struct CommandLineInterface *cli;
-
-	    /* Nice and easy this command... */
-	    cli = Cli();
-
-	    if( cli != NULL )
+	    /* Write current fail level */
+	    if(args[ARG_RCLIM] == NULL)
 	    {
-		cli->cli_FailLevel = args[ARG_RCLIM];
+		VPrintf("Fail limit: %ld\n", (IPTR *)&cli->cli_FailLevel);
 	    }
+	    /* Set new fail level */
 	    else
-		error = ERROR_OBJECT_WRONG_TYPE;
+	    {
+		cli->cli_FailLevel = *(LONG *)args[ARG_RCLIM];
+	    }
 
 	    FreeArgs(rd);
 	}
@@ -105,13 +109,13 @@ int main(int argc, char **argv)
     }
     else
 	error = IoErr();
-
-    if( error != 0 )
+    
+    if(error != 0)
     {
 	PrintFault(error, "FailAt");
 	return RETURN_FAIL;
     }
-    SetIoErr(0);
-    return 0;
+
+    return RETURN_OK;
 }
 	    
