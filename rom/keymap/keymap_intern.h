@@ -62,7 +62,7 @@ WORD GetDeadKeyIndex(UWORD code, UWORD qual, struct KeyMap *km);
 ** id can be 0, 1, 2, 3
 */
 #define GetMapChar(key_mapping, idx)    \
-	( (key_mapping >> ((idx) * 8)) & 0x000000FF )
+	( (key_mapping >> ((3 - (idx)) * 8)) & 0x000000FF )
     
 #define KMBase(x) ((struct KeymapBase *)x)
 
