@@ -272,7 +272,8 @@ static void HandleAction(void)
     WORD newx = actionwin->WScreen->MouseX - winoffx; 
     WORD newy = actionwin->WScreen->MouseY - winoffy;
     
-    MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge);
+//    MoveWindow(actionwin, newx - actionwin->LeftEdge, newy - actionwin->TopEdge);
+    ChangeWindowBox(actionwin, newx, newy, actionwin->Width, actionwin->Height);
 }
 
 /************************************************************************************/
