@@ -20,7 +20,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- workbench-native-i386 : workbench-complete workbench workbench-boot-native-i386
 
-#MM- contrib-native-i386 : contrib-complete
+#MM- contrib-native-i386 : contrib-complete aminet-disk-misc-format64
 
 #
 # Kernel modules
