@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /****************************************************************************************/
@@ -24,13 +21,13 @@ extern UBYTE			filenamebuffer[300];
 
 /* more.c */
 
-void Cleanup(char *msg);
+VOID Cleanup(CONST_STRPTR msg);
 
 /* locale.c */
 
 void InitLocale(STRPTR catname, ULONG version);
 void CleanupLocale(void);
-STRPTR MSG(ULONG id);
+CONST_STRPTR MSG(ULONG id);
 
 /* misc.c */
 
