@@ -44,7 +44,7 @@ BEGIN {
 	}
 
 	if ($self->{PROTO}) {
-	    printf "AROS_LD%d%s(", $prototype->{numargs}, $nb ? "I" : "";
+	    printf "AROS_LP%d%s(", $prototype->{numargs}, $nb ? "I" : "";
 	}
 	else {
 	    printf "AROS_LH%d%s(", $prototype->{numargs}, $nb ? "I" : "";
@@ -67,7 +67,7 @@ BEGIN {
 	}
 
 	if ($self->{PROTO}) {
-	    print "	AROS_LDA($argtype, $argname, " . (uc $argreg) . "),\n";
+	    print "	AROS_LPA($argtype, $argname, " . (uc $argreg) . "),\n";
 	}
 	else {
 	    print "	AROS_LHA($argtype, $argname, " . (uc $argreg) . "),\n";
