@@ -442,7 +442,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
      * the total size.
      */
     altdims.Width += data->wd_RenderInfo.mri_Screen->WBorLeft + data->wd_RenderInfo.mri_Screen->WBorRight;
-    altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 11;
+    altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 1;
     
     if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
 	backfill = WA_BackFill;
@@ -2494,6 +2494,16 @@ static IPTR Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->wd_Y = (LONG)MUIV_Window_TopEdge_Delta(0);
 		}
 		break;
+
+	    case MUIA_Window_LeftEdge:
+		data->wd_X = tag->ti_Data;
+		break;
+
+	    case MUIA_Window_TopEdge:
+		data->wd_Y = tag->ti_Data;
+		break;
+
+
 	}
     }
 
