@@ -42,7 +42,7 @@ AddHead.c : srcs/lists.src toc.inc ssrc.tmpl hpp
 	hpp -set functiontmpl=ssrc.tmpl toc.inc $< -o $@
 
 lists.c : srcs/lists.src toc.inc msrc.tmpl hpp
-	rm lists.h
+	-rm lists.h
 	hpp -set functiontmpl=msrc.tmpl toc.inc $< -o $@
 	sed -f toc.filter lists.h > lists.tmp
 	mv lists.tmp lists.h
