@@ -51,10 +51,6 @@ AROS_LP2(APTR, GetVisualInfoA,
     AROS_LPA(struct TagItem *, taglist, A1),
     struct Library *, GadtoolsBase, 21, Gadtools)
 
-AROS_LP1(struct IntuiMessage *, GT_GetIMsg,
-    AROS_LPA(struct MsgPort *, iport, A0),
-    struct Library *, GadtoolsBase, 12, Gadtools)
-
 AROS_LP1(void, GT_BeginRefresh,
     AROS_LPA(struct Window *, win, A0),
     struct Library *, GadtoolsBase, 15, Gadtools)
@@ -65,6 +61,10 @@ AROS_LP4(LONG, GT_GetGadgetAttrsA,
     AROS_LPA(struct Requester *, req, A2),
     AROS_LPA(struct TagItem *, taglist, A3),
     struct Library *, GadtoolsBase, 29, Gadtools)
+
+AROS_LP1(struct IntuiMessage *, GT_GetIMsg,
+    AROS_LPA(struct MsgPort *, iport, A0),
+    struct Library *, GadtoolsBase, 12, Gadtools)
 
 AROS_LP2(void, GT_EndRefresh,
     AROS_LPA(struct Window *, win, A0),
