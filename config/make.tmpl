@@ -343,11 +343,11 @@ endif
 #------------------------------------------------------------------------------
 # Link the %(objs) and %(endobj) to %(module) with errors in %(err) and using
 # the libraries in use_libs
-%define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs=
+%define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs= usehostlibs=
 
 %(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 	%link_module_q err="%(err)" endtag="%(endobj)" objs="%(objs)" \
-		       libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit"
+		       libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit -L/usr/lib $(addprefix -l,%(usehostlibs))"
 
 %end
 #------------------------------------------------------------------------------
@@ -657,7 +657,7 @@ endif
 %define build_module_macro mmake=/A modname=/A modtype=/A \
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
-  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= \
+  objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usehostlibs= \
   genfunctable= genincludes= compiler=target
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib %(mmake)-quick %(mmake)-kobj"
@@ -879,7 +879,8 @@ $(BD_ENDFILE$(BDID)).c :
 
 # The module is linked from all the compiled .o files
 %rule_linkmodule module=$(BD_MODULE$(BDID)) objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID))" \
-		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)"
+		 endobj=$(BD_ENDOBJ$(BDID)) err=$(BD_MODNAME).err uselibs="%(uselibs)" \
+		 usehostlibs="%(usehostlibs)"
 
 BD_HEADER_DEPS$(BDID) := $(wildcard headers.tmpl) $(BD_LIBDEFSINC$(BDID)) \
 	    $(BD_FUNCSRCS$(BDID)) \
