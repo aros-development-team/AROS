@@ -1,5 +1,6 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
+    $Id$
 
     Desc:
     Lang: english
@@ -254,12 +255,7 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 	{  
 	    set_tags[0].ti_Data = *width;
 	    
-	    if (ld->ld_Window)
-	    {
-        	SetGadgetAttrsA((struct Gadget *)udata->WidthGadget, ld->ld_Window, NULL, set_tags);
-	    } else {
-        	SetAttrsA(udata->WidthGadget, set_tags);
-	    }
+            SetGadgetAttrsA((struct Gadget *)udata->WidthGadget, ld->ld_Window, NULL, set_tags);
 	}
 	
     } /* if (width) */
@@ -280,12 +276,7 @@ void SMFixValues(struct LayoutData *ld, struct DisplayMode *dispmode,
 	{  
 	    set_tags[0].ti_Data = *height;
 	    
-	    if (ld->ld_Window)
-	    {
-        	SetGadgetAttrsA((struct Gadget *)udata->HeightGadget, ld->ld_Window, NULL, set_tags);
-	    } else {
-        	SetAttrsA(udata->HeightGadget, set_tags);
-	    }
+            SetGadgetAttrsA((struct Gadget *)udata->HeightGadget, ld->ld_Window, NULL, set_tags);
 	}
 	
     } /* if (height) */
@@ -314,12 +305,7 @@ void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBas
     
     set_tags[0].ti_Data = set_tags[1].ti_Data = which;
     
-    if (ld->ld_Window)
-    {
-        SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->Listview, set_tags);
-    }
+    SetGadgetAttrsA((struct Gadget *)udata->Listview, ld->ld_Window, NULL, set_tags);
      
     if (ismreq->ism_Flags & ISMF_DODEPTH)
     {   
@@ -334,12 +320,7 @@ void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBas
 
         if (depth == 0) depth = SMGetDepth(ld, 0, AslBase);
 	
-	if (ld->ld_Window)
-	{
-            SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
-	} else {
-            SetAttrsA(udata->DepthGadget, set_tags);
-	}
+        SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
 	
 	if (dispmode->dm_DimensionInfo.MaxDepth > 8)
 	{
@@ -428,13 +409,7 @@ void SMActivateMode(struct LayoutData *ld, WORD which, LONG depth, struct AslBas
 	    }
 	}
 	
-	if (ld->ld_Window)
-	{
-            SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
-	} else {
-            SetAttrsA(udata->DepthGadget, set_tags);
-	}
-
+        SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
 	
     } /* if (ismreq->ism_Flags & ISMF_DODEPTH) */
     
@@ -568,12 +543,7 @@ void SMSetDepth(struct LayoutData *ld, UWORD id, struct AslBase_intern *AslBase)
     
     ASSERT(udata->DepthGadget);
     
-    if (ld->ld_Window)
-    {
-        SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->DepthGadget, set_tags);
-    }
+    SetGadgetAttrsA((struct Gadget *)udata->DepthGadget, ld->ld_Window, NULL, set_tags);
     
 }
 
@@ -590,12 +560,7 @@ void SMSetOverscan(struct LayoutData *ld, UWORD oscan, struct AslBase_intern *As
     
     ASSERT(udata->OverscanGadget);
     
-    if (ld->ld_Window)
-    {
-        SetGadgetAttrsA((struct Gadget *)udata->OverscanGadget, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->OverscanGadget, set_tags);
-    }
+    SetGadgetAttrsA((struct Gadget *)udata->OverscanGadget, ld->ld_Window, NULL, set_tags);
     
 }
 
@@ -612,12 +577,7 @@ void SMSetAutoScroll(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *A
     
     ASSERT(udata->AutoScrollGadget);
     
-    if (ld->ld_Window)
-    {
-        SetGadgetAttrsA((struct Gadget *)udata->AutoScrollGadget, ld->ld_Window, NULL, set_tags);
-    } else {
-        SetAttrsA(udata->AutoScrollGadget, set_tags);
-    }
+    SetGadgetAttrsA((struct Gadget *)udata->AutoScrollGadget, ld->ld_Window, NULL, set_tags);
     
 }
 

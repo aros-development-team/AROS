@@ -1,5 +1,5 @@
 /*
-    (C) 1997 - 2001 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Font requester specific code.
@@ -28,7 +28,7 @@
 
 #include "asl_intern.h"
 #include "fontreqhooks.h"
-//#include "fontreqsupport.h"
+#include "fontreqsupport.h"
 #include "layout.h"
 #include "coolimages.h"
 
@@ -57,11 +57,93 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *, struct AslBase_intern *AslBa
 #define ID_SIZESTRING	4
 
 #undef NUMBUTS
-#define NUMBUTS 2L
+#define NUMBUTS     	2L
 
-#define CLASS_ASLBASE ((struct AslBase_intern *)cl->cl_UserData)
-#define HOOK_ASLBASE  ((struct AslBase_intern *)hook->h_Data)
+#define CLASS_ASLBASE 	((struct AslBase_intern *)cl->cl_UserData)
+#define HOOK_ASLBASE  	((struct AslBase_intern *)hook->h_Data)
 
+#define AslBase     	HOOK_ASLBASE
+
+/*****************************************************************************************/
+
+AROS_UFH3(IPTR, SizeListviewRenderFunc,
+    AROS_UFHA(struct Hook *,            hook,     	A0),
+    AROS_UFHA(struct Node *,    	node,           A2),
+    AROS_UFHA(struct ASLLVDrawMsg *,	msg,	        A1)
+)
+{
+    IPTR retval;
+
+    if (msg->lvdm_MethodID == LV_DRAW)
+    {
+    	struct DrawInfo *dri = msg->lvdm_DrawInfo;
+    	struct RastPort *rp  = msg->lvdm_RastPort;
+    	
+    	WORD min_x = msg->lvdm_Bounds.MinX;
+    	WORD min_y = msg->lvdm_Bounds.MinY;
+    	WORD max_x = msg->lvdm_Bounds.MaxX;
+    	WORD max_y = msg->lvdm_Bounds.MaxY;
+
+        UWORD erasepen = BACKGROUNDPEN;
+	UWORD textpen = TEXTPEN;
+
+     	SetDrMd(rp, JAM1);
+     	    
+    	
+     	switch (msg->lvdm_State)
+     	{
+     	    case ASLLVR_SELECTED:
+		erasepen = FILLPEN;
+		textpen = FILLTEXTPEN;
+		
+		/* Fall through */
+		
+     	    case ASLLVR_NORMAL:
+	    {
+    	    	struct TextExtent   te;
+    	    	WORD 	    	    numfit;
+    	    	UBYTE 	    	    s[10];
+		
+		SetAPen(rp, dri->dri_Pens[erasepen]);
+     	    	RectFill(rp, min_x, min_y, max_x, max_y);
+     	    	
+		if (node)
+		{
+		    sprintf(s, "%ld", (LONG)node->ln_Name);
+
+    	    	    numfit = TextFit(rp,
+				     s,
+				     strlen(s),
+    	    			     &te,
+				     NULL,
+				     1,
+				     max_x - min_x + 1 - BORDERLVITEMSPACINGX * 2, 
+				     max_y - min_y + 1);
+
+	    	    SetAPen(rp, dri->dri_Pens[textpen]);
+
+    	    	    /* Render text */
+    	    	    Move(rp, min_x + BORDERLVITEMSPACINGX,
+			     min_y + BORDERLVITEMSPACINGY + rp->Font->tf_Baseline);
+    	    	    Text(rp, s, numfit);
+		}
+    	    	
+     	    } break;
+       	}
+     	
+     	retval = ASLLVCB_OK;
+     }
+     else
+     {
+     	retval = ASLLVCB_UNKNOWN;
+     }
+     	
+     return retval;
+}
+
+/*****************************************************************************************/
+
+#undef AslBase
 
 /*****************************************************************************************/
 
@@ -272,6 +354,10 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     NEWLIST(&udata->NameListviewList);
     NEWLIST(&udata->SizeListviewList);
 
+    udata->SizeListviewRenderHook.h_Entry      = (APTR)AROS_ASMSYMNAME(SizeListviewRenderFunc);
+    udata->SizeListviewRenderHook.h_SubEntry   = NULL;
+    udata->SizeListviewRenderHook.h_Data       = AslBase;
+
     FOGetFonts(ld, AslBase);
     
 //    error = SMGetModes(ld, AslBase);
@@ -333,7 +419,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     /* make listview gadgets */
     
-    sizelvwidth = PROPSIZE + 3 * ld->ld_Font->tf_XSize + BORDERLVSPACINGX * 2;
+    sizelvwidth = PROPSIZE + 3 * ld->ld_Font->tf_XSize + BORDERLVSPACINGX * 2 + BORDERLVITEMSPACINGX * 2;
     
     x = ld->ld_WBorLeft + OUTERSPACINGX;
     y = ld->ld_WBorTop + OUTERSPACINGY;
@@ -354,6 +440,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_RelVerify	, TRUE						},
 	    {ASLLV_Labels	, (IPTR)&udata->NameListviewList		},
 	    {GA_Previous    	, 0 	    	    	    	    	    	},
+	    {TAG_IGNORE     	, (IPTR)&udata->SizeListviewRenderHook	    	},
 	    {TAG_DONE								}
 	};
 	
@@ -367,6 +454,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	lv_tags[5].ti_Data = ID_SIZELISTVIEW;
 	lv_tags[7].ti_Data = (IPTR)&udata->SizeListviewList;
 	lv_tags[8].ti_Data = (IPTR)gad;
+	lv_tags[9].ti_Tag  = ASLLV_CallBack;
 	
 	udata->SizeListview = gad = NewObjectA(AslBase->asllistviewclass, NULL, lv_tags);
 	if (!udata->SizeListview) goto failure;
@@ -657,11 +745,11 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    switch (imsg->Code)
 	    {
 	        case CURSORUP:
-//		    SMChangeActiveLVItem(ld, -1, imsg->Qualifier, AslBase);
+    		    FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
 		    break;
 		    
 		case CURSORDOWN:
-//		    SMChangeActiveLVItem(ld, 1, imsg->Qualifier, AslBase);
+		    FOChangeActiveFont(ld, 1, imsg->Qualifier, AslBase);
 		    break;
 	    }
 	    break;
@@ -687,10 +775,26 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 		    break;
 
 		case ID_BUTOK:
-//		    retval = SMGetSelectedMode(ld, AslBase);
+		    retval = FOGetSelectedFont(ld, AslBase);
 		    break;
 
 		case ID_NAMELISTVIEW:		
+		    {
+	        	struct ASLLVFontReqNode	*fontnode;
+			IPTR 			active;
+
+			GetAttr(ASLLV_Active, udata->NameListview, &active);
+
+			if ((fontnode = (struct ASLLVFontReqNode *)FindListNode(&udata->NameListviewList, (WORD)active)))
+			{
+			    FOActivateFont(ld, active, 0, AslBase);
+			
+			    if (imsg->Code) /* TRUE if double clicked */
+			    {
+				retval = FOGetSelectedFont(ld, AslBase);
+			    }
+			}
+		    }
 		    break;
 				    		         
 	    } /* switch (gadget ID) */
@@ -713,11 +817,11 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			    /* Control menu */
 			    
 			    case FOMEN_LASTFONT:
-//		    		SMChangeActiveLVItem(ld, -1, 0, AslBase);
+			    	FOChangeActiveFont(ld, -1, 0, AslBase);
 			        break;
 				
 			    case FOMEN_NEXTFONT:
-//		    		SMChangeActiveLVItem(ld, 1, 0, AslBase);
+		    		FOChangeActiveFont(ld, 1, 0, AslBase);
 			        break;
 			
 			    case FOMEN_RESTORE:
@@ -728,7 +832,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			        break;
 				
 			    case FOMEN_OK:
-//			        retval = SMGetSelectedMode(ld, AslBase);
+			        retval = FOGetSelectedFont(ld, AslBase);
 				break;
 
 			    case FOMEN_CANCEL:
@@ -788,6 +892,17 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 }
 
 /*****************************************************************************************/
+
+STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    /*struct FOUserData 	*udata = (struct FOUserData *)ld->ld_UserData;	*/
+    struct IntReq 		*intreq = ld->ld_IntReq;
+    struct IntFontReq 		*iforeq = (struct IntFontReq *)intreq;
+    struct FontRequester 	*req = (struct FontRequester *)ld->ld_Req;
+     
+    return GHRET_FINISHED_OK;    
+}
+
 /*****************************************************************************************/
 /*****************************************************************************************/
 /*****************************************************************************************/

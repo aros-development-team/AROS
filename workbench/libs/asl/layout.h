@@ -1,3 +1,11 @@
+/*
+    (C) 2000-2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+
 #ifndef LAYOUT_H
 #define LAYOUT_H
 
