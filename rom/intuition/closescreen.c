@@ -133,6 +133,9 @@
 	    /* Free the RastPort's contents */
 	    DeinitRastPort(&screen->RastPort);
 
+	    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_CheckMark);
+	    DisposeObject(((struct IntScreen *)screen)->DInfo.dri_AmigaKey);
+	    
 	    /* Close the font */
 	    CloseFont(((struct IntScreen *)screen)->DInfo.dri_Font);
 	    
