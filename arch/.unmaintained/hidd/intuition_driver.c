@@ -23,24 +23,34 @@
 
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include <proto/layers.h>
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
 #include <proto/alib.h>
-#include <proto/oop.h>
 #include "intuition_intern.h"
+
 #undef GfxBase
+#undef LayersBase
+
 #include "graphics_internal.h"
-#define GfxBase _GfxBase
 
+
+#undef DEBUG
+#undef SDEBUG
+#define SDEBUG 1
+#define DEBUG 1
+#include <aros/debug.h>
+
+static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
+static struct Library *LayersBase = NULL;
 
-static struct Library *OOPBase = NULL;
+
 
 
 int intui_init (struct IntuitionBase * IntuitionBase)
 {
-    int t;
     
 
 
@@ -56,13 +66,19 @@ int intui_open (struct IntuitionBase * IntuitionBase)
 {
     
     /* Hack */
-    if (!OOPBase)
+    if (!GfxBase)
     {
-    	OOPBase = OpenLibrary("oop.library", 0);
-    	if (!OOPBase)
+    	GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0);
+    	if (!GfxBase)
     	    return FALSE;
     }	    
     
+    if (!LayersBase)
+    {
+    	LayersBase = OpenLibrary("layers.library", 0);
+    	if (!LayersBase)
+    	    return FALSE;
+    }	    
 
 
     return TRUE;
@@ -90,14 +106,72 @@ int intui_GetWindowSize (void)
 int intui_OpenWindow (struct Window * w,
 	struct IntuitionBase * IntuitionBase)
 {
+    /* Create a layer for the window */
+    EnterFunc(bug("intui_OpenWindow(w=%p)\n", w));
+    
+    D(bug("screen: %p\n", w->WScreen));
+    D(bug("bitmap: %p\n", w->WScreen->RastPort.BitMap));
+    
+    w->WLayer = CreateUpfrontLayer( &w->WScreen->LayerInfo
+    		, w->WScreen->RastPort.BitMap
+		, w->LeftEdge
+		, w->TopEdge
+		, w->LeftEdge + w->Width
+		, w->TopEdge  + w->Height
+		, 0
+		, NULL);
 
-    return FALSE;
+     D(bug("Layer created: %p\n", w->WLayer));
+    if (w->WLayer)
+    {
+    
+        /* Window needs a rastport */
+	w->RPort = w->WLayer->rp;
+	
+    	/* Create some gadgets for window */
+	
+	
+	
+	/* Refresh window frame */
+	RefreshWindowFrame(w);
+	
+	ReturnBool("intui_OpenWindow", TRUE);
+	
+    }		
+    
+    ReturnBool("intui_OpenWindow", FALSE);
 }
 
 void intui_CloseWindow (struct Window * w,
 	    struct IntuitionBase * IntuitionBase)
 {
+    DeleteLayer(0, w->WLayer);
+    
+}
 
+void intui_RefreshWindowFrame(struct Window *w)
+{
+    /* Draw a frame around the window */
+    struct RastPort *rp = w->RPort;
+    
+    EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
+    
+    SetAPen(rp, 1);
+    D(bug("Pen set\n"));
+    Move(rp, 0, 0);
+    D(bug("RP moved set\n"));
+
+    D(bug("Window dims: (%d, %d, %d, %d)\n"
+    	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
+	
+    Draw(rp, w->Width - 1, 0);
+    D(bug("Line drawn\n"));
+    
+    Draw(rp, w->Width - 1, w->Height - 1);
+    Draw(rp, 0,  w->Height - 1);
+    Draw(rp, 0, 0);
+    
+    ReturnVoid("intui_RefreshWindowFrame");
 }
 
 void intui_WindowToFront (struct Window * window)

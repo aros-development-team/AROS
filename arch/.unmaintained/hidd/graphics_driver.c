@@ -16,6 +16,9 @@
 #include <graphics/gfxbase.h>
 #include <graphics/text.h>
 #include <graphics/view.h>
+#include <graphics/layers.h>
+#include <graphics/clip.h>
+
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
 #include <proto/oop.h>
@@ -28,8 +31,8 @@
 #include "graphics_internal.h"
 
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -143,6 +146,8 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
 {
     struct gfx_driverdata * dd;
     struct shared_driverdata *sdd;
+    
+    EnterFunc(bug("DeInitDriverData(rp=%p)\n", rp));
 		
     sdd = SDD(GfxBase);
 
@@ -152,6 +157,7 @@ void DeinitDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
     HIDD_Gfx_DisposeGC(sdd->gfxhidd, dd->dd_GC);
 
     FreeMem (dd, sizeof(struct gfx_driverdata));
+    ReturnVoid("DeinitDriverData");
 }
 
 BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase)
@@ -300,15 +306,41 @@ void driver_SetABPenDrMd (struct RastPort * rp, ULONG apen, ULONG bpen,
 void driver_SetAPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
-    pen &= PEN_MASK;
+    struct gfx_driverdata *dd;
+
+    EnterFunc(bug("driver_SetAPen(rp=%p, pen=%d)\n", rp, pen));
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+
+    dd = GetDriverData(rp);
+    if (dd)
+    {
+        struct TagItem col_tags[]= {
+		{ aHidd_GC_Foreground, pen & PEN_MASK},
+		{ TAG_DONE,	0UL}
+	};
+
+	
+	
+	SetAttrs( dd->dd_GC, col_tags );
+	
+    }
+    ReturnVoid("driver_SetAPen");
 }
 
 void driver_SetBPen (struct RastPort * rp, ULONG pen,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
-    pen &= PEN_MASK;
+    if (CorrectDriverData (rp, GfxBase))
+    {
+    	
+        struct TagItem col_tags[]= {
+		{ aHidd_GC_Background, pen & PEN_MASK},
+		{ TAG_DONE,	0UL}
+	};
+	
+	SetAttrs( GetDriverData(rp)->dd_GC, col_tags );
+    }
 }
 
 void driver_SetOutlinePen (struct RastPort * rp, ULONG pen,
@@ -372,7 +404,86 @@ void driver_Move (struct RastPort * rp, LONG x, LONG y,
 void driver_Draw (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
-    CorrectDriverData (rp, GfxBase);
+  /* Let's draw the line by using WritePixel() */
+  
+  LONG x_end = x;
+  LONG y_end = y;
+  LONG x_step = 0, y_step = 0;
+  LONG dx = 1, dy = 1;
+  LONG _x, _y;
+  LONG steps, counter;
+  
+  EnterFunc(bug("driver_Draw(rp=%p, x=%d, y=%d)\n", rp, x, y));
+
+    if (!CorrectDriverData (rp, GfxBase))
+    	return;
+
+  if (rp->cp_x != x)
+    if (rp->cp_x > x)
+    {
+      x_step = -1;
+      dx = rp->cp_x - x;
+    }
+    else
+    {
+      x_step = 1;
+      dx = x - rp->cp_x;
+    }
+
+  if (rp->cp_y != y)
+    if (rp->cp_y > y)
+    {
+      y_step = -1;
+      dy = rp->cp_y - y;
+    }
+    else
+    {
+      y_step = 1;
+      dy = y - rp->cp_y;
+    }
+  
+  _x = 0;
+  _y = 0;
+  x = rp->cp_x;
+  y = rp->cp_y;
+  rp->cp_x = x_end;
+  rp->cp_y = y_end;
+
+  if (dx > dy)
+    steps = dx;
+  else
+    steps = dy;
+    
+  counter = 0;  
+  while (counter <= steps)
+  {
+    counter++;
+    WritePixel(rp, x, y);
+
+    if (dx > dy)
+    {
+      x += x_step;
+      /* _x += dx; unnecessary in this case */
+      _y += dy;
+      if (_y >= dx)
+      {
+        _y -= dx;
+        y += y_step;
+      }
+    }
+    else
+    {
+      y += y_step;
+      _x += dx;
+      /* _y += dy; unnecessary in this case */
+      if (_x >= dy)
+      {
+        _x -= dy;
+        x += x_step;
+      }
+    }
+  }
+   ReturnVoid("driver_Draw");
 }
 
 ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
@@ -388,9 +499,205 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
 LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
 		    struct GfxBase * GfxBase)
 {
-    if(!CorrectDriverData (rp, GfxBase))
-	return ((ULONG)-1L);
-    return 0;
+
+  struct Layer * L = rp -> Layer;
+  ULONG pen;
+  BYTE Mask, pen_Mask, CLR_Mask;
+  LONG count;
+  struct BitMap * bm = rp->BitMap;
+  ULONG Width, Height;
+  ULONG i;
+  BYTE * Plane; 
+  struct gfx_driverdata *dd;
+  
+  EnterFunc(bug("driver_WritePixel(rp=%p, x=%d, y=%d)\n", rp, x, y));
+  if(!CorrectDriverData (rp, GfxBase))
+	ReturnInt("driver_WritePixel", LONG,  ((ULONG)-1L));
+	
+  dd = GetDriverData(rp);
+
+  /*  nlorentz: Only rasports without layers (screen rastports) have bitmaps (for now) 
+      Width and Height may now contain bogus values they won't be used for anything critical.
+  */
+  if (NULL == L)
+  {
+     Width = GetBitMapAttr(bm, BMA_WIDTH);  
+     Height = GetBitMapAttr(bm, BMA_HEIGHT);
+  }
+  /* 
+     Is there a layer. If not then it cannot be a regular window!!
+  */
+  if (NULL == L)
+  {  
+    /* is this pixel inside the rastport? */
+    if (x < 0 || x  > Width || 
+        y < 0 || y  > Height)
+    {
+      /* no, it's not ! I refuse to do anything :-))  */
+	ReturnInt("driver_WritePixel", LONG,  ((ULONG)-1L));
+    }
+  }
+
+  if (0 != (Width & 0x07))
+    Width = (Width >> 3) + 1;
+  else
+    Width = (Width >> 3);
+
+  /* does this rastport have a layer? */
+  if (NULL != L)
+  {
+  
+   
+   
+    /* more difficult part here as the layer might be partially 
+       hidden.
+       The coordinate x,y is relative to the layer.
+    */
+    struct ClipRect * CR = L -> ClipRect;
+    WORD YRel = L->bounds.MinY;
+    WORD XRel = L->bounds.MinX;
+    
+    D(bug("Layer coords: maxx=%d, maxy=%d, minx=%d, miny=%d\n",
+    	L->bounds.MaxX, L->bounds.MaxY, XRel, YRel)); 
+
+
+    /* Is this pixel inside the layer ?? */
+    if (x > (L->bounds.MaxX - XRel + 1) ||
+        y > (L->bounds.MaxY - YRel + 1)   )
+    {
+      /* ah, no it is not. So we exit */
+	ReturnInt("driver_WritePixel(not inside layer)", LONG,  ((ULONG)-1L));
+    }
+    
+    /* No one may interrupt me while I'm working with this layer */
+    /* But there is a problem: if this is called from a routine that 
+       already  locked  the layer is already I am stuck. 
+    */
+/* !!!
+    LockLayer(L);
+*/
+    /* search the list of ClipRects. If the cliprect where the pixel
+       goes into does not have an entry in lobs, we can directly
+       draw it to the bitmap, otherwise we have to draw it into the
+       bitmap of the cliprect. 
+    */
+    while (NULL != CR)
+    {
+      if (x >= (CR->bounds.MinX - XRel) &&
+          x <= (CR->bounds.MaxX - XRel) &&
+          y >= (CR->bounds.MinY - YRel) &&  
+          y <= (CR->bounds.MaxY - YRel)    )
+      {
+        /* that's our cliprect!! */
+        /* if it is not hidden, then we treat it as if we were
+           directly drawing to the BitMap  
+        */
+        LONG Offset;
+        if (NULL == CR->lobs)
+        {
+          i = (y + YRel) * Width + 
+             ((x + XRel) >> 3);
+          Mask = 1 << (7-((x + XRel) & 0x07));
+
+          /* and let the driver set the pixel to the X-Window also,
+             but this Pixel has a relative position!! */
+          if (bm->Flags & BMF_AROS_DISPLAYED)
+            HIDD_GC_WritePixel (dd->dd_GC, x+XRel, y+YRel);
+/*          if (bm->Flags & BMF_AROS_DISPLAYED)
+            driver_WritePixel (rp, x+XRel, y+YRel, GfxBase);
+*/	    
+        } 
+        else
+        {
+          /* we have to draw into the BitMap of the ClipRect, which
+             will be shown once the layer moves... 
+           */
+          bm = CR -> BitMap;
+          Width = GetBitMapAttr(bm, BMA_WIDTH);
+          /* Calculate the Width of the bitplane in bytes */
+          if (Width & 0x07)
+            Width = (Width >> 3) + 1;
+          else
+            Width = (Width >> 3);
+           
+          Offset = CR->bounds.MinX & 0x0f;
+          
+          i = (y - (CR->bounds.MinY - YRel)) * Width + 
+             ((x - (CR->bounds.MinX - XRel) + Offset) >> 3);   
+                /* Offset: optimization for blitting!! */
+          Mask = (1 << ( 7 - ((Offset + x - (CR->bounds.MinX - XRel) ) & 0x07)));
+          /* no pixel into the X window */
+        }       
+        break;
+        
+      } /* if */      
+      /* examine the next cliprect */
+      CR = CR->Next;
+    } /* while */
+       
+  } /* if */
+  else
+  { /* this is probably something like a screen */
+  
+
+    /* if it is an old window... */
+/*    if (bm->Flags & BMF_AROS_OLDWINDOW)
+         return driver_WritePixel (rp, x, y, GfxBase);
+*/
+
+    i = y * Width + (x >> 3);
+    Mask = (1 << (7-(x & 0x07)));
+
+    /* and let the driver set the pixel to the X-Window also */
+    if (bm->Flags & BMF_AROS_DISPLAYED)
+      HIDD_GC_WritePixel(dd->dd_GC, x, y);
+
+/*      driver_WritePixel (rp, x, y, GfxBase); */
+
+  }
+
+  /* nlorentz: For now don't mind writing into bitmap planes,
+     as HIDD bitmap object is stored in bm->Planes[0];
+  */
+  
+  ReturnInt("driver_WritePixel(at bottom)", LONG,  0);
+
+  /* get the pen for this rastport */
+  pen = GetAPen(rp);
+
+  pen_Mask = 1;
+  CLR_Mask = ~Mask;
+  
+  
+  /* we use brute force and write the pixel to
+     all bitplane, setting the bitplanes where the pen is
+     '1' and clearing the other ones */
+  for (count = 0; count < GetBitMapAttr(bm, BMA_DEPTH); count++)
+  {
+    Plane = bm->Planes[count];
+
+    /* are we supposed to clear this pixel or set it in this bitplane */
+    if (0 != (pen_Mask & pen))
+    {
+      /* in this bitplane we're setting it */
+      Plane[i] |= Mask;          
+    }
+    else
+    {
+      /* and here we clear it */
+      Plane[i] &= CLR_Mask;
+    }
+    pen_Mask = pen_Mask << 1;
+  } /* for */
+
+  /* if there was a layer I have to unlock it now */
+/*!!!
+  if (NULL != L) 
+    UnlockLayer(L);
+*/
+
+  ReturnInt("driver_WritePixel", LONG,  0);
+
 }
 
 void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
@@ -453,7 +760,7 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 	return NULL;
 
     if (!(tf = AllocMem (sizeof (struct ETextFont), MEMF_ANY)) )
-	return (NULL);
+	return NULL;
 
     return (struct TextFont *)tf;
 }
@@ -486,7 +793,6 @@ int driver_InitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 	CorrectDriverData(rp, GfxBase);
 
 */
-    rp->Flags |= 0x8000;
 
     return TRUE;
 }
@@ -501,10 +807,19 @@ int driver_CloneRastPort (struct RastPort * newRP, struct RastPort * oldRP,
 
 void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 {
+    D(bug("driver_DeInitRP()\n"));
 
-
-    if (GetDriverData(rp)->dd_RastPort == rp)
-	DeinitDriverData (rp, GfxBase);
+    if ( rp->Flags & RPF_DRIVER_INITED )
+    {
+    	D(bug("RP inited, rp=%p, %flags=%d=\n", rp, rp->Flags));
+		 
+        if (GetDriverData(rp)->dd_RastPort == rp) 
+	{
+	    D(bug("Calling DeInitDriverData\n"));
+	    DeinitDriverData (rp, GfxBase);
+	}
+    }
+    return;
 }
 
 void driver_InitView(struct View * View, struct GfxBase * GfxBase)
@@ -648,8 +963,10 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
 	ULONG mask, PLANEPTR tempA, struct GfxBase * GfxBase)
 {
     LONG planecnt = 0;
+    
+    EnterFunc(bug("driver_BltBitMap()\n"));
 
-    return planecnt;
+    ReturnInt("driver_BltBitMap", LONG, planecnt);
 }
 
 void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,
