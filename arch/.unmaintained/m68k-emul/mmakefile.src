@@ -46,7 +46,7 @@ DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
 TESTS =
 
-all: setup $(MACHINE_H) machine.i \
+all: $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
