@@ -9,7 +9,7 @@ PREFSDIR = $(BINDIR)/Prefs
 SETTINGS = nv_location font.prefs
 SETTINGFILES = $(foreach f, $(SETTINGS), $(PREFSDIR)/Env-Archive/Sys/$(f))
 
-#MM workbench-prefs : setup copyfiles
+#MM workbench-prefs : setup copyfiles workbench-prefs-zune
 workbench-prefs:
 	@$(NOP)
 
