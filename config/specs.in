@@ -23,7 +23,7 @@
 1
 
 .cd:
-@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %w%g%O %(aros_include) 
+@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %{S:-S} %{!S:-c} %{o: %{o*}} %{!o:-o %{S: %b.s} %{!S:%{c: %b%O} %{!c:%w%g%O}}} %(aros_include) 
 
 *linker:
 @TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros @ignore_undefined_symbols@
