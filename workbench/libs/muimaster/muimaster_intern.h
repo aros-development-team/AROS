@@ -85,6 +85,9 @@ struct MUIMasterBase_intern
     struct Library  	    	*diskfontbase;
     struct Library  	    	*iconbase;
     struct Library  	    	*cybergfxbase;
+#ifdef HAVE_COOLIMAGES
+    struct Library  	    	*coolimagesbase;
+#endif
     
 /*  struct Library  	    	*datatypesbase; */
 
@@ -144,6 +147,9 @@ struct MUIMasterBase_intern
 #undef CyberGfxBase
 #define CyberGfxBase  	(MUIMB(MUIMasterBase)->cybergfxbase)
 
+#undef CoolImagesBase
+#define CoolImagesBase	(MUIMB(MUIMasterBase)->coolimagesbase)
+
 /*
 #undef DataTypesBase
 #define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
@@ -189,6 +195,8 @@ struct MUIMasterBase_intern
 #undef CyberGfxBase
 #define CyberGfxBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->cybergfxbase)
 
+#undef CoolImagesBase
+#define CoolImagesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->coolimagesbase)
 
 /*
 #undef DataTypesBase
