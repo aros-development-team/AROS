@@ -9,6 +9,7 @@
 #include <exec/types.h>
 #include <exec/execbase.h>
 #include <exec/memory.h>
+#include <utility/tagitem.h>
 #include <sigcore.h>
 #include "etask.h"
 #include "exec_util.h"
@@ -19,7 +20,8 @@
 
 #define Regs(t) ((struct pt_regs *)(GetIntETask(t)->iet_Context))
 
-static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack, struct ExecBase *SysBase)
+static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fallBack,
+    	    	    	    	    struct TagItem *tagList, struct ExecBase *SysBase)
 {
     ULONG *regs;
 
@@ -64,27 +66,28 @@ static ULONG *PrepareContext_Common(struct Task *task, APTR entryPoint, APTR fal
     return regs;
 }
 
-AROS_LH3(BOOL, PrepareContext,
+AROS_LH4(BOOL, PrepareContext,
     AROS_LHA(struct Task *, task, A0),
     AROS_LHA(APTR, entryPoint, A1),
     AROS_LHA(APTR, fallBack, A2),
+    AROS_LHA(struct TagItem *, tagList, A3),
     struct ExecBase *, SysBase, 6, Exec)
 {
     AROS_LIBFUNC_INIT
 
-    return PrepareContext_Common(task, entryPoint, fallBack, SysBase) ? TRUE : FALSE;
+    return PrepareContext_Common(task, entryPoint, fallBack, tagList, SysBase) ? TRUE : FALSE;
 
     AROS_LIBFUNC_EXIT
 }
 
 #warning This needs to be fixed/updated if the way library params are passed is changed
 
-BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct ExecBase *SysBase)
+BOOL Exec_PrepareContext_FPU(struct Task *task, APTR entryPoint, APTR fallBack, struct TagItem *tagList, struct ExecBase *SysBase)
 {
     ULONG *regs;
     BOOL  retval = FALSE;
     
-    if ((regs = PrepareContext_Common(task, entryPoint, fallBack, SysBase)))    
+    if ((regs = PrepareContext_Common(task, entryPoint, fallBack, tagList, SysBase)))    
     {    
     	UBYTE this_fpustate[SIZEOF_FPU_STATE];
 	
