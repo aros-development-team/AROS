@@ -102,7 +102,7 @@
 	if ((tfe->tfe_Tags = CloneTagItems(fontTags)) != NULL)
 	{
 				
-	    tfe->tfe_MatchWord		= 0; /* unused */
+	    tfe->tfe_MatchWord		= TFE_MATCHWORD;
 	    tfe->tfe_BackPtr		= font;
 	    tfe->tfe_OrigReplyPort	= font->tf_Message.mn_ReplyPort;
 					
