@@ -583,7 +583,7 @@ ifeq ($(BD_MODTYPE$(BDID)),library)
 %rule_link_linklib libname=%(linklibname) objs=$(BD_LINKLIBOBJS$(BDID))
 endif
 
-%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib" \
+%rule_makedirs dirs="$(BD_OBJDIR$(BDID)) $(BD_OBJDIR$(BDID))/dummyinc/defines $(BD_OBJDIR$(BDID))/dummyinc/proto $(BD_OBJDIR$(BDID))/dummyinc/clib $(BD_MODDIR$(BDID))" \
 	       setuptarget=setup-module$(BDID)
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
