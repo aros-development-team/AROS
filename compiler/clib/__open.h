@@ -16,8 +16,10 @@ typedef struct
     unsigned int opencount;
 } fdesc;
 
-#ifndef _CLIB_KERNEL_
+#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
 extern void *__stdfiles[3];
+#else
+#include <libraries/arosc.h>
 #endif
 
 fdesc *__getfdesc(register int fd);

@@ -19,8 +19,10 @@ typedef struct
     FILE File;
 } FILENODE;
 
-#ifndef _CLIB_KERNEL_
+#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
 extern struct MinList __stdio_files;
+#else
+#include <libraries/arosc.h>
 #endif
 
 #define FILENODE2FILE(fn)       (&((fn)->File))

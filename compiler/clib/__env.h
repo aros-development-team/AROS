@@ -16,8 +16,10 @@ typedef struct __env_item
 	char *value;
 } __env_item;
 
-#ifndef _CLIB_KERNEL_
+#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
 extern __env_item *__env_list;
+#else
+#include <libraries/arosc.h>
 #endif
 
 __env_item *__env_getvar(const char *varname, int valuesize);

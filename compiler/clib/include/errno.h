@@ -134,8 +134,10 @@
 
 #define EDEADLOCK	EDEADLK
 
-#ifndef _CLIB_KERNEL_
+#if !defined(_CLIB_KERNEL_) && !defined(_CLIB_LIBRARY_)
     extern int errno;
+#else
+#include <libraries/arosc.h>
 #endif
 
 #endif /* errno */
