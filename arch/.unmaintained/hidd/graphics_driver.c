@@ -37,7 +37,7 @@
 #include "graphics_internal.h"
 
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 /* Default font for the HIDD driver */
