@@ -1162,21 +1162,13 @@ UX11
 
 void driver_DeinitRastPort (struct RastPort * rp, struct GfxBase * GfxBase)
 {
-    GC gc;
-
-    if ((gc = GetGC (rp, GfxBase)))
-    {
-/* LX11
-	XFreeGC (sysDisplay, gc);
-UX11 */
+    if (GetGC (rp, GfxBase))
 	SetGC (rp, NULL, GfxBase);
-    }
 
     if (rp->BitMap)
-    {
 	FreeMem (rp->BitMap, sizeof (struct BitMap));
-    }
-    if(GetDriverData(rp)->dd_RastPort==rp)
+
+    if (GetDriverData(rp)->dd_RastPort == rp)
 	DeinitDriverData (rp, GfxBase);
 }
 
