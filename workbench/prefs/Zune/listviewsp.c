@@ -106,9 +106,9 @@ static IPTR ListviewsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
             Child, (IPTR) ColGroup(2),
                 MUIA_Group_VertSpacing, 2,
                 Child, (IPTR) Label("Normal:"),
-                Child, (IPTR) MakePopfont(&d.fonts_normal_string, FALSE),
+                Child, (IPTR) d.fonts_normal_string = MakePopfont(FALSE),
                 Child, (IPTR) Label("Fixed:"),
-                Child, (IPTR) MakePopfont(&d.fonts_fixed_string, TRUE),
+                Child, (IPTR) d.fonts_fixed_string = MakePopfont(TRUE),
                 Child, (IPTR) Label("Leading:"),
                 Child, (IPTR) d.fonts_leading_slider = MakeListviewspSlider(),
             

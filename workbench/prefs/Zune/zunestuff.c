@@ -84,17 +84,13 @@ Object *MakeString(void)
         End;
 }
 
-Object *MakePopfont(Object **store, BOOL fixed)
+Object *MakePopfont(BOOL fixed)
 {
-    Object *string;
-    
-    if (store == NULL) store = &string;
-    
     return PopaslObject,
         MUIA_Popasl_Type,              ASL_FontRequest,
         ASLFO_MaxHeight,               100,
         ASLFO_FixedWidthOnly,          fixed ? TRUE : FALSE,
-        MUIA_Popstring_String, (IPTR) (*store = MakeString()),
+        MUIA_Popstring_String, (IPTR)  MakeString(),
         MUIA_Popstring_Button, (IPTR)  PopButton(MUII_PopUp),
     End;
 }

@@ -80,7 +80,7 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR) d.title_color_cycle =
                            MakeCycle("Color:", color_labels),
                 Child, (IPTR) Label("Font:"),
-                Child, (IPTR) MakePopfont(&d.font_title_string, FALSE),
+                Child, (IPTR) d.font_title_string = MakePopfont(FALSE),
             End, /* Title */
             Child, (IPTR) VSpace(0),
         End,
