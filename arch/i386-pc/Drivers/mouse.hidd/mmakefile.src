@@ -3,21 +3,22 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I. -I../../include
 
-FILES	:=	mouse_init mouseclass functable drv_usb drv_ps2 drv_com endtag
+FILES	:=	mouse_init mouseclass functable drv_usb drv_ps2 drv_com
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 LIBS    :=	-L$(LIBDIR) -lhiddserialstubs
+END_FILE :=	$(OBJDIR)/endtag
+ENDFUNC :=	$(END_FILE).o
 
 #MM Drivers-native : workbench-hidd-serial-stubs
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/hidd.bus.mouse
-	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
-	    $(LIBS) \
+	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) $(LIBS) \
 	    -o $(OSGENDIR)/boot/hidd.bus.mouse.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/hidd.bus.mouse.o
 
 #MM
 clean ::
-	-$(RM) $(OBJDIR) libdefs.h endtag.c *.err
+	-$(RM) $(OBJDIR) libdefs.h *.err
 
 #MM
 setup :
@@ -32,17 +33,13 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
-	
+%libdefs_rule
+
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_arch
 
-endtag.c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
