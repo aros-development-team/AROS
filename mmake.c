@@ -1,3 +1,10 @@
+/*
+    0.2 - Got rid of external program find
+	- Some bugfixes
+	- Renamed some variables
+
+    0.1 - First version
+*/
 #include <stdarg.h>
 #include <stdio.h>
 #include <assert.h>
