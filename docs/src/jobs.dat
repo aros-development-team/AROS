@@ -810,9 +810,9 @@ graphics00093;0;bergers;Write ScrollVPort
 graphics00094;2;bergers;Write UCopperListInit
 graphics00095;2;bergers;Write FreeGBuffers
 graphics00096;2;nlorentz;Write BltBitMapRastPort
-graphics00097;1;mreckt;Write OrRegionRegion
-graphics00098;1;mreckt;Write XorRegionRegion
-graphics00099;1;mreckt;Write AndRegionRegion
+graphics00097;2;mreckt;Write OrRegionRegion
+graphics00098;2;mreckt;Write XorRegionRegion
+graphics00099;2;mreckt;Write AndRegionRegion
 graphics00100;2;bergers;Write SetRGB
 graphics00101;2;nlorentz;Write BltMaskBitMapRastPort
 graphics00102;2;bergers;Write AttemptLockLayerRom
@@ -1118,7 +1118,7 @@ layers00020;2;ldp;Write DisposeLayerInfo
 layers00021;2;ldp;Write FattenLayerInfo
 layers00022;2;ldp;Write ThinLayerInfo
 layers00023;2;bergers;Write MoveLayerInFrontOf
-layers00024;1;bergers;Write InstallClipRegion
+layers00024;2;bergers;Write InstallClipRegion
 layers00025;2;bergers;Write MoveSizeLayer
 layers00026;2;bergers;Write CreateUpfrontHookLayer
 layers00027;2;bergers;Write CreateBehindHookLayer
@@ -1193,7 +1193,7 @@ mathieeedoubtrans00000;2;bergers;Write IEEEDPAtan
 mathieeedoubtrans00001;2;bergers;Write IEEEDPSin
 mathieeedoubtrans00002;2;bergers;Write IEEEDPCos
 mathieeedoubtrans00003;1;juddc;Write IEEEDPTan
-mathieeedoubtrans00004;1;juddc;Write IEEEDPSincos
+mathieeedoubtrans00004;2;bergers;Write IEEEDPSincos
 mathieeedoubtrans00005;2;bergers;Write IEEEDPSinh
 mathieeedoubtrans00006;2;bergers;Write IEEEDPCosh
 mathieeedoubtrans00007;2;bergers;Write IEEEDPTanh
