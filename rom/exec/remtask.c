@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/16 14:05:12  digulla
+    Added debug output
+
     Revision 1.4  1996/08/13 13:56:07  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -16,6 +19,16 @@
 #include <exec/execbase.h>
 #include <exec/tasks.h>
 #include <aros/libcall.h>
+
+#include "exec_debug.h"
+#ifndef DEBUG_RemTask
+#   define DEBUG_RemTask 0
+#endif
+#if DEBUG_RemTask
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -58,12 +71,13 @@
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
-
     struct MemList *mb;
 
     /* A value of NULL means current task */
-    if(task==NULL)
+    if (task==NULL)
 	task=SysBase->ThisTask;
+
+    D(bug("Call RemTask (%08lx (\"%s\"))\n", task, task->tc_Node.ln_Name));
 
     /*
 	Since it's possible that the following will free a task
@@ -103,6 +117,8 @@
     /* All done. */
     Enable();
     Permit();
+
+    ReturnVoid ("RemTask");
     __AROS_FUNC_EXIT
 }
 

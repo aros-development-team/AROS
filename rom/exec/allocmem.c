@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/16 14:05:12  digulla
+    Added debug output
+
     Revision 1.4  1996/08/13 13:55:57  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -19,13 +22,23 @@
 #include <machine.h>
 #include "memory.h"
 
+#include "exec_debug.h"
+#ifndef DEBUG_AllocMem
+#   define DEBUG_AllocMem 0
+#endif
+#if DEBUG_AllocMem
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+
 /*****************************************************************************
 
     NAME */
 	#include <exec/memory.h>
 	#include <clib/exec_protos.h>
 
-__AROS_LH2(APTR, AllocMem,
+	__AROS_LH2(APTR, AllocMem,
 
 /*  SYNOPSIS */
 	__AROS_LHA(ULONG, byteSize,     D0),
@@ -70,9 +83,11 @@ __AROS_LH2(APTR, AllocMem,
     struct Interrupt *lmh;
     struct MemHandlerData lmhd={ byteSize,requirements,0 };
 
+    D(bug("Call AllocMem (%d, %08lx)\n", byteSize, requirements));
+
     /* Zero bytes requested? May return everything ;-). */
     if(!byteSize)
-	return NULL;
+	ReturnPtr ("AllocMem", APTR, NULL);
 
     /* First round byteSize to a multiple of MEMCHUNK_TOTAL. */
     byteSize=(byteSize+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
@@ -202,7 +217,7 @@ __AROS_LH2(APTR, AllocMem,
 			    while(cnt--)
 				*p++=0;
 			}
-			return mc;
+			ReturnPtr ("AllocMem", APTR, mc);
 		    }
 		}
 	    }
@@ -214,7 +229,7 @@ __AROS_LH2(APTR, AllocMem,
 	if(requirements&MEMF_NO_EXPUNGE)
 	{
 	    Permit();
-	    return NULL;
+	    ReturnPtr ("AllocMem", APTR, NULL);
 	}
 
 	/* All memory headers done. Check low memory handlers. */
@@ -225,7 +240,7 @@ __AROS_LH2(APTR, AllocMem,
 	    {
 		/* No. return 'Not enough memory'. */
 		Permit();
-		return NULL;
+		ReturnPtr ("AllocMem", APTR, NULL);
 	    }
 	    /* Yes. Execute it. */
 	    lmhr=__AROS_ABS_CALL3(LONG,lmh->is_Code,&lmhd,A0,lmh->is_Data,A1,SysBase,A6);

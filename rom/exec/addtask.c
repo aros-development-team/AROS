@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/08/16 14:05:12  digulla
+    Added debug output
+
     Revision 1.4  1996/08/13 13:55:57  digulla
     Replaced __AROS_LA by __AROS_LHA
     Replaced some __AROS_LH*I by __AROS_LH*
@@ -16,6 +19,16 @@
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include "machine.h"
+
+#include "exec_debug.h"
+#ifndef DEBUG_AddTask
+#   define DEBUG_AddTask 0
+#endif
+#if DEBUG_AddTask
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 static void KillCurrentTask(void);
 void TrapHandler(void);
@@ -72,8 +85,14 @@ void TrapHandler(void);
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
-
     APTR sp;
+
+    D(bug("Call AddTask (%08lx (\"%s\"), %08lx, %08lx)\n"
+	, task
+	, task->tc_Node.ln_Name
+	, initialPC
+	, finalPC
+    ));
 
     /* Set node type to NT_TASK if not set to something else. */
     if(!task->tc_Node.ln_Type)
@@ -159,9 +178,9 @@ void TrapHandler(void);
 
     Enable();
 
-    return task;
+    ReturnPtr ("AddTask", struct Task *, task);
     __AROS_FUNC_EXIT
-}
+} /* AddTask */
 
 /* Default finalizer. */
 static void KillCurrentTask(void)

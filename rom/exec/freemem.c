@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/08/16 14:05:12  digulla
+    Added debug output
+
     Revision 1.6  1996/08/15 14:42:15  digulla
     Added comment
 
@@ -24,6 +27,16 @@
 #include <exec/execbase.h>
 #include "machine.h"
 #include "memory.h"
+
+#include "exec_debug.h"
+#ifndef DEBUG_FreeMem
+#   define DEBUG_FreeMem 0
+#endif
+#if DEBUG_FreeMem
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 #define NASTY_FREEMEM	0	/* Delete contents of free'd memory ? */
 
@@ -78,9 +91,11 @@ void PurgeChunk (ULONG *, ULONG);
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
 
+    D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
+
     /* If there is no memory free nothing */
     if(!byteSize)
-	return;
+	ReturnVoid ("FreeMem");
 
     /* Align size to the requirements */
     byteSize+=(ULONG)memoryBlock&(MEMCHUNK_TOTAL-1);
@@ -129,7 +144,7 @@ void PurgeChunk (ULONG *, ULONG);
 		p1->mc_Next=p3;
 		mh->mh_Free+=byteSize;
 		Permit ();
-		return;
+		ReturnVoid ("FreeMem");
 	    }
 
 	    /* Follow the list to find a place where to insert our memory. */
@@ -208,7 +223,7 @@ void PurgeChunk (ULONG *, ULONG);
 	    p3->mc_Bytes=p4-(UBYTE *)p3;
 	    mh->mh_Free+=byteSize;
 	    Permit();
-	    return;
+	    ReturnVoid ("FreeMem");
 	}
 	mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
     }
@@ -220,6 +235,7 @@ void PurgeChunk (ULONG *, ULONG);
     Permit();
 #endif
 
+    ReturnVoid ("FreeMem");
     __AROS_FUNC_EXIT
 } /* FreeMem */
 
