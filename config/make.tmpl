@@ -487,6 +487,50 @@ endif
 
 
 #------------------------------------------------------------------------------
+# Build an imported source tree which uses the configure script from the autoconf package.
+# This rule will try to "integrate" the produced files as much as possible in the AROS
+# build, for exampley by putting libraries in the standard library directory, includes
+# in the standard include directory, and so on. You can however override this behaviour.
+
+%define build_with_configure mmake=/A configure=$(TOP)/$(CURDIR)/configure prefix=$(CONTRIBDIR) \
+    bindir=$(CONTRIBDIR) libdir=$(LIBDIR) includedir=$(INCDIR) extraoptions=
+
+.PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-quick
+
+#MM- %(mmake) : setup includes linklibs %(mmake)-quick
+
+#MM
+%(mmake)-quick : $(GENDIR)/$(CURDIR)/.configured
+	@$(MAKE) -C $(GENDIR)/$(CURDIR)
+	@$(MAKE) -C $(GENDIR)/$(CURDIR) install
+
+$(TOP)/$(CURDIR)/.files-touched:
+	@find . | xargs $(TOUCH) -r configure 
+	@$(ECHO) YES > $@
+
+$(GENDIR)/$(CURDIR)/.configured : $(TOP)/$(CURDIR)/.files-touched $(TOP)/$(CURDIR)/mmakefile
+	%mkdirs_q $(GENDIR)/$(CURDIR)
+	cd $(GENDIR)/$(CURDIR); \
+	    $(RM) config.cache; \
+	    for AR2 in $(AR); do break; done; \
+	    for RANLIB2 in $(RANLIB); do break; done; \
+	    AR=$$AR2 RANLIB=$$RANLIB2 \
+	    CC=$(TOOLDIR)/$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros-gcc \
+	    CC_FOR_BUILD="$(HOST_CC)" \
+	    %(configure) --prefix=%(prefix) --bindir=%(bindir) --libdir=%(libdir) \
+	    --includedir=%(includedir)  %(extraoptions) \
+	    --host=$(AROS_TARGET_CPU)-$(AROS_TARGET_ARCH)-aros
+	$(ECHO) YES > $@
+
+#MM
+%(mmake)-clean :
+	@if [ -e $(GENDIR)/$(CURDIR)/Makefile ]; then \
+	    $(MAKE) -C $(GENDIR)/$(CURDIR) uninstall; \
+        fi
+	@$(RM) $(GENDIR)/$(CURDIR)
+%end
+
+#------------------------------------------------------------------------------
 # Build a program
 %define build_prog mmake=/A progname=/A files=$(BD_PROGNAME$(BDID)) asmfiles= \
     objdir=$(GENDIR)/$(CURDIR) targetdir=$(AROSDIR)/$(CURDIR) \
