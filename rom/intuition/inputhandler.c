@@ -1314,52 +1314,6 @@ D(bug("Window: %p\n", w));
     return (oldchain);
 }
 
-void windowneedsrefresh(struct Window * w, 
-                        struct IntuitionBase * IntuitionBase )
-{
-  /* Supposed to send a message to this window, saying that it needs a
-     refresh. I will check whether there is no such a message queued in
-     its messageport, though. It only needs one such message! 
-  */
-  struct IntuiMessage * IM;
-  BOOL found = FALSE;
-
-  if (NULL == w->UserPort)
-    return;
-  
-  /* Can use Forbid() for this */
-  
-  Forbid();
-  
-  IM = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
-
-  /* reset the flag in the layer */
-  w->WLayer->Flags &= ~LAYERREFRESH;
-
-  while ((NULL != IM) && !found)
-  {
-    /* Does the window already have such a message? */
-    if (IDCMP_REFRESHWINDOW == IM->Class)
-    {
-kprintf("Window %s already has a refresh message pending!!\n",w->Title);
-      found = TRUE;
-    }
-    IM = (struct IntuiMessage *)IM->ExecMessage.mn_Node.ln_Succ;
-  }
-  
-  Permit();
-
-kprintf("Sending a refresh message to window %s!!\n",w->Title);
-  if (!found)
-  {
-    IM = alloc_intuimessage(IntuitionBase);
-    if (NULL != IM)
-    {
-      IM->Class = IDCMP_REFRESHWINDOW;
-      send_intuimessage(IM, w, IntuitionBase);
-    }
-  }
-}
 
 inline VOID send_intuimessage(struct IntuiMessage *imsg, struct Window *w, struct IntuitionBase *IntuitionBase)
 {
