@@ -9,6 +9,7 @@
 #include <exec/tasks.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
+#include <aros/atomic.h>
 #include <proto/exec.h>
 
 #include <stdlib.h>
@@ -27,7 +28,10 @@ AROS_LH0(void, Disable,
     AROS_LIBFUNC_INIT
 
     sigprocmask(SIG_BLOCK, &sig_int_mask, NULL);
-    if (++SysBase->IDNestCnt < 0)
+    
+    AROS_ATOMIC_INCB(SysBase->IDNestCnt);
+    
+    if (SysBase->IDNestCnt < 0)
     {
 	/* If we get here we have big trouble. Someone called
 	   1x Disable() and 2x Enable(). IDNestCnt < 0 would
