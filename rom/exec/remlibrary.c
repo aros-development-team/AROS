@@ -1,33 +1,32 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.7  1997/01/01 03:46:14  ldp
-    Committed Amiga native (support) code
-
-    Changed clib to proto
-
-    Revision 1.6  1996/12/10 13:51:51  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.5  1996/10/24 15:50:55  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/08/13 13:56:06  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:16  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <aros/libcall.h>
 #include <dos/dos.h>
 #include <proto/exec.h>
+
+#include "exec_debug.h"
+#ifndef DEBUG_RemLibrary
+#   define DEBUG_RemLibrary 0
+#endif
+#if DEBUG_RemLibrary
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+#   define NATIVE(x)        x
+#else
+#   define NATIVE(x)        /* eps */
+#endif
 
 /*****************************************************************************
 
@@ -66,12 +65,17 @@
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
+    NATIVE(BPTR seglist;)
+
+    D(bug("RemLibrary $%lx (\"%s\") by \"%s\"\n", library,
+	library ? library->lib_Node.ln_Name : "(null)",
+	SysBase->ThisTask->tc_Node.ln_Name));
 
     /* Arbitrate for the library list */
     Forbid();
 
     /* Call expunge vector */
-    (void)AROS_LVO_CALL0(BPTR,struct Library *,library,3,);
+    NATIVE(seglist =) AROS_LVO_CALL0(BPTR,struct Library *,library,3,);
     /*
 	Normally you'd expect the library to be expunged if this returns
 	non-zero, but this is only exec which doesn't know anything about
@@ -81,6 +85,23 @@
 
     /* All done. */
     Permit();
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /*
+	Kludge to force the seglist to register d0. Ramlib patches this
+	vector for seglist expunge capability and expects the seglist in
+	d0 after it has called the original (this) function.
+	Also see CloseDevice().
+    */
+    {
+	/* Put the library base in register d0 */
+	register BPTR ret __asm("d0") = seglist;
+
+	/* Make sure the above assignment isn't optimized away */
+	asm volatile("": : "r" (ret));
+    }
+#endif
+
     AROS_LIBFUNC_EXIT
 } /* RemLibrary */
 
