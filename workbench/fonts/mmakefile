@@ -1,0 +1,14 @@
+# $Id$
+CURDIR=workbench/fonts
+
+include $(TOP)/config/make.cfg
+
+FONTSDIR=$(BINDIR)/Fonts
+
+FONTS=fixed
+
+#MM workbench-fonts : setup
+workbench-fonts: $(FONTS)
+	@$(FOR) dir in $(FONTS) ; do \
+		$(CP) -rpf $$dir $(FONTSDIR)/$$dir ; \
+	done
