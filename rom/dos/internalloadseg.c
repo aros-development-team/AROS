@@ -1,3 +1,4 @@
+
 /*
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
@@ -5,14 +6,16 @@
     Desc: DOS function InternalLoadSeg()
     Lang: english
 */
+
+
+#define DEBUG 0
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
 #include "dos_intern.h"
 #include "internalloadseg.h"
-
-
 
 /*****************************************************************************
 
@@ -67,60 +70,48 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  BPTR segs = 0;
-
-  /* Open the file */
-
-  if (fh)
-  {
-    /* Then try to load the different file formats */
-    if (!segs)
+    typedef struct _segfunc_t
     {
-      segs = InternalLoadSeg_ELF (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
-#if DEBUG > 1
-      if (segs)
-        bug("Loaded as ELF exe\n");
-#endif
-    }
-#if !defined(__mc68000__) && !defined(__arm__)
-    if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
-    {
-      segs = InternalLoadSeg_ELF_AROS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
-#if DEBUG > 1
-      if (segs)
-        bug("Loaded as ELF exe\n");
-#endif
-    }
-#endif
-    if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
-    {
-      segs = InternalLoadSeg_AOS (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
-#if DEBUG > 1
-      if (segs)
-        bug("Loaded as AmigaOS exe\n");
-#endif
-    }
-    if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
-    {
-      segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
-#if DEBUG > 1
-      if (segs)
-        bug("Loaded as a.out exe\n");
-#endif
-    }
-  }
+        BPTR (*func)(BPTR, BPTR, LONG *, LONG *, struct DosLibrary *);
+        D(CONST_STRPTR format;)
+    } segfunc_t;
 
-  if (segs)
-    SetIoErr (0);
-#if DEBUG > 1
-  else
-    bug ("Loading failed\n");
-#endif
+    #define SEGFUNC(format) { InternalLoadSeg_##format, D(#format)}
+    
+    static const segfunc_t funcs[] = 
+    {
+        SEGFUNC(ELF),
+    #if !defined(__mc68000__) && !defined(__arm__)
+        SEGFUNC(ELF_AROS),
+    #endif      
+        SEGFUNC(AOS),
+        SEGFUNC(AOUT)
+    };
+  
+    BPTR segs = 0;
 
-  /* And return */
-  return segs;
-  AROS_LIBFUNC_EXIT
+    if (fh)
+    {
+        int i = 0;
+	const int num_funcs = sizeof(funcs)/sizeof(funcs[0]);
+      
+	do
+	{
+	    SetIoErr(0);
+	   
+	    D(bug("[InternalLoadSeg] Trying to load %p as an %s object... ", BADDR(fh), funcs[i].format));
+         
+	    segs = (*funcs[i++].func)(fh, MKBADDR(NULL), (LONG *)functionarray, NULL, DOSBase);
+            
+	    D(bug(segs ? "succeeded.\n" : "FAILED\n"));
+ 	     
+	} while	(!segs && (IoErr() == ERROR_NOT_EXECUTABLE) && (i < num_funcs));
+    }
+
+    return segs;
+  
+    AROS_LIBFUNC_EXIT
 } /* InternalLoadSeg */
