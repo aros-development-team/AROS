@@ -56,7 +56,7 @@
 
 	/* Make sure it makes it to the user. Slow but save.
 	   On Linux this gives an error (stderr is already unbuffered) */
-#if !defined(__linux__)
+#if !(defined(__linux__) || defined(__FreeBSD__))
 	fsync (STDERR_FILENO);
 #endif
     }
