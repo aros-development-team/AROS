@@ -27,7 +27,7 @@ SHARED_OOP		= @aros_shared_default@
 SHARED_CGFX		= @aros_shared_default@
 
 # Include debugging information (so you can use gdb or similar)
-DEBUG = no
+DEBUG = @aros_debug@
 
 # By default, use cpak, it is faster.
-USE_CPAK_DEFAULT := yes
+USE_CPAK_DEFAULT := @aros_use_cpak@
