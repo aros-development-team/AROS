@@ -880,6 +880,8 @@ LX11
 	    rp->cp_y, string, len);
 
     rp->cp_x += TextLength (rp, string, len);
+    
+    XFlush(sysDisplay);
 UX11
     SIGID ();
 }
