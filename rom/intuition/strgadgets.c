@@ -514,7 +514,7 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     UWORD mousex;
     window = sgw->GadgetInfo->gi_Window;
     
-    GetGadgetDomain(sgw->Gadget, window, NULL, &bbox);
+    GetGadgetDomain(sgw->Gadget, window, NULL, (struct IBox *)&bbox);
     mousex = sgw->IEvent->ie_position.ie_xy.ie_x - window->LeftEdge - bbox.Left;
     
     EnterFunc(bug("DoSGHClick(sgw=%p)\n", sgw));
@@ -616,12 +616,11 @@ STATIC ULONG DoSGHClick(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
  #define DELETE		0x7F
  #define CSI		155
 #else
- #define HELP		95
- #define BACKSPACE	65
- #define TAB		66
- #define ENTER		67
- #define RETURN		68
- #define DELETE		70
+ #define HELP		95 /* Raw */
+ #define BACKSPACE	8 /* Vanilla */
+ #define TAB		9 /* Vanilla */
+ #define RETURN		13 /* Vanilla */
+ #define DELETE		127 /* Vanilla */
 #endif
 
 VOID MoveCharsLeft(STRPTR str, UWORD first, UWORD last, UWORD steps)
@@ -711,7 +710,14 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
 	else if (letter == HELP)
 	{	
 	}
-	else if (letter == BACKSPACE)
+    }
+    else if (numchars > 0)
+    {
+        /* ANSI key */
+	
+	letter = keybuf[0];
+	
+	if (letter == BACKSPACE)
 	{
     	    if (sgw->BufferPos != 0)
     	    {
@@ -753,86 +759,84 @@ STATIC ULONG DoSGHKey(struct SGWork *sgw, struct IntuitionBase *IntuitionBase)
     		sgw->EditOp = EO_DELFORWARD;
     	    }
 	}
-	else if (letter == ENTER || letter == RETURN)
+	else if (letter == RETURN)
 	{
     	    D(bug("sghkey: ENTER\n"));
     	    sgw->EditOp  = EO_ENTER;
     	    sgw->Actions = (SGA_USE|SGA_END);
 	}
-    }
-    else if (numchars > 0)
-    {
-        /* ANSI key */
-	
-	letter = keybuf[0];
-    	/* Validity check of letter */
-    	if (gad->Activation & GACT_LONGINT)
-    	{
-    	    if (letter == '-')
+	else
+	{
+
+    	    /* Validity check of letter */
+    	    if (gad->Activation & GACT_LONGINT)
     	    {
-    	    	if (sgw->BufferPos != 0)
+    		if (letter == '-')
+    		{
+    	    	    if (sgw->BufferPos != 0)
+    	    		sgw->EditOp = EO_BADFORMAT;
+
+    		}
+    		else if ((letter < 0x30) ||  (letter > 0x39))
+    		{
+    	     	    sgw->EditOp = EO_BADFORMAT;
+    		}
+    	    }
+    	    else /* Integer gadget ? */
+    	    {
+    		/* Is key a standard ASCII letter number or '-' ? */
+    		if (    (letter < 32) 
+    	             || (letter > 128)
+    	            )
+    		{
     	    	    sgw->EditOp = EO_BADFORMAT;
-    	
-    	    }
-    	    else if ((letter < 0x30) ||  (letter > 0x39))
+    		}
+            } /* if (integer or string gadget) */
+
+    	    if (sgw->EditOp != EO_BADFORMAT)
     	    {
-    	     	sgw->EditOp = EO_BADFORMAT;
-    	    }
-    	}
-    	else /* Integer gadget ? */
-    	{
-    	    /* Is key a standard ASCII letter number or '-' ? */
-    	    if (    (letter < 32) 
-    	         || (letter > 128)
-    	        )
-    	    {
-    	    	sgw->EditOp = EO_BADFORMAT;
-    	    }
-        } /* if (integer or string gadget) */
-    
-    	if (sgw->EditOp != EO_BADFORMAT)
-    	{
-    	
-    	    if (sgw->Modes & SGM_REPLACE)
-    	    {
-	    	D(bug("sghkey: replacing char at pos %d\n", sgw->BufferPos));
-	    
-    	    	sgw->WorkBuffer[sgw->BufferPos] = letter;
-    	    	sgw->EditOp = EO_REPLACECHAR;
-    	    
-    	    	if (sgw->BufferPos < strinfo->MaxChars - 1)
-    	    	    sgw->BufferPos ++;
-    	    	    
-    	    }
-    	    else 
-    	    {
-    	        /* Insert mode. Check if there is space for one more character 
-    	        ** NOTE: MaxChars inludes traing \0, so therefore the '- 1'
-    	        */
-    	        if (sgw->NumChars < (strinfo->MaxChars - 1))
-    	    	{
-		    register UWORD i;
-		
-		    D(bug("sghkey: inserting char at pos %d\n", sgw->BufferPos));
-		    /* Move characters to the right of insertion point one step to the right */
-		    for (i = sgw->NumChars; i > sgw->BufferPos; i --)
-	 	    {
-		    	sgw->WorkBuffer[i] = sgw->WorkBuffer[i - 1];
-		    }
-		
-		    /* Insert letter  */
-		    sgw->WorkBuffer[i] = letter;
-		    sgw->EditOp = EO_INSERTCHAR;
-		    sgw->NumChars ++;
-		    sgw->BufferPos ++;
-		    
-    	    	}
-    	    	else
-    	        {
-    	    	    sgw->EditOp = EO_NOOP;
-    	    	} /* if (enough space for ione mor letter) */
-    	    } /* if (Replace or Insert mode) */
-        } /* If (user pressed valid letter) */
+
+    		if (sgw->Modes & SGM_REPLACE)
+    		{
+	    	    D(bug("sghkey: replacing char at pos %d\n", sgw->BufferPos));
+
+    	    	    sgw->WorkBuffer[sgw->BufferPos] = letter;
+    	    	    sgw->EditOp = EO_REPLACECHAR;
+
+    	    	    if (sgw->BufferPos < strinfo->MaxChars - 1)
+    	    		sgw->BufferPos ++;
+
+    		}
+    		else 
+    		{
+    	            /* Insert mode. Check if there is space for one more character 
+    	            ** NOTE: MaxChars inludes traing \0, so therefore the '- 1'
+    	            */
+    	            if (sgw->NumChars < (strinfo->MaxChars - 1))
+    	    	    {
+			register UWORD i;
+
+			D(bug("sghkey: inserting char at pos %d\n", sgw->BufferPos));
+			/* Move characters to the right of insertion point one step to the right */
+			for (i = sgw->NumChars; i > sgw->BufferPos; i --)
+	 		{
+		    	    sgw->WorkBuffer[i] = sgw->WorkBuffer[i - 1];
+			}
+
+			/* Insert letter  */
+			sgw->WorkBuffer[i] = letter;
+			sgw->EditOp = EO_INSERTCHAR;
+			sgw->NumChars ++;
+			sgw->BufferPos ++;
+
+    	    	    }
+    	    	    else
+    	            {
+    	    		sgw->EditOp = EO_NOOP;
+    	    	    } /* if (enough space for ione mor letter) */
+    		} /* if (Replace or Insert mode) */
+            } /* If (user pressed valid letter) */
+	} /* Vanilla key but not backspace, delete, ... */
     } /* if (key or scancode) */
 
     /* Null-terminate the new string */
