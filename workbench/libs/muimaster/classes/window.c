@@ -258,6 +258,12 @@ BOOL DisplayWindow(struct MUI_WindowData *data)
     if (data->wd_Y == MUIV_Window_TopEdge_Centered)
     {
     	data->wd_Y = (data->wd_RenderInfo.mri_Screen->Height - data->wd_Height)/2;
+    } else
+    {
+	if (data->wd_Y <= MUIV_Window_TopEdge_Delta(0))
+	{
+	    data->wd_Y = data->wd_RenderInfo.mri_Screen->BarHeight + MUIV_Window_TopEdge_Delta(0) - data->wd_Y;
+	}
     }
 
     if ((visinfo = GetVisualInfoA(data->wd_RenderInfo.mri_Screen,NULL)))
@@ -1331,7 +1337,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_Window_RootObject:
 		window_change_root_object(data, obj, (Object *)tag->ti_Data);
 		break;
-	    
+
 	    case    MUIA_Window_Title:
 		    if (data->wd_Title) FreeVec(data->wd_Title);
 		    data->wd_Title = StrDup((STRPTR)tag->ti_Data);
