@@ -107,7 +107,7 @@
  */
 #define MATCHED_FILE    0
 
-static const char version[] = "$VER: Rename 41.0 (18.3.1997)\n";
+static const char version[] = "$VER: Rename 41.1 (22.3.1997)\n";
 
 void DumpStats(char *, char *);
 
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 
                 MatchEnd(apath);
 
-                *FromFiles++;
+                (*FromFiles)++;
             }
         }    
 
@@ -278,10 +278,10 @@ int main(int argc, char *argv[])
 
 void DumpStats(char *from, char *to)
 {
-    IPTR *args[2];
+    IPTR args[2];
 
-    args[0] = (IPTR *)from;
-    args[1] = (IPTR *)to;
+    args[0] = (IPTR)from;
+    args[1] = (IPTR)to;
 
     VPrintf("Renaming %s as %s\n", args);
 
