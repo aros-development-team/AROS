@@ -14,9 +14,13 @@ DEVS := $(DEVSDIR)/ram.handler \
 workbench-devs : $(DEVS) $(DEVSDIR)/Mountlist
 	@$(NOP)
 
+#MM workbench-devs-quick :
+workbench-devs-quick : $(DEVS) $(DEVSDIR)/Mountlist
+	@$(NOP)
+
 #MM
 setup :
-	%mkdirs_q $(OBJDIR) $(DEVSDIR)
+	%mkdirs_q $(OBJDIR) $(DEVSDIR) $(AROSDIR)/DiskImages
 
 #MM
 clean ::
