@@ -216,10 +216,10 @@ static void makegadgets(void)
     {
     	struct TagItem lv_tags[] =
 	{
-	    {GTLV_Labels    , (IPTR)&lvlist   	   },
-	    {GTLV_CallBack  , (IPTR)&myrenderhook  },
-	    {GTLV_ItemHeight, 12     	    	   },
-	    {TAG_DONE	    	    	    	   }
+	    {GTLV_Labels    , (IPTR)&lvlist   	    	    },
+	    {GTLV_CallBack  , (IPTR)&myrenderhook   	    },
+	    {GTLV_ItemHeight, dri->dri_Font->tf_YSize + 4   },
+	    {TAG_DONE	    	    	    	    	    }
 	};
 	
 	myrenderhook.h_Entry = AROS_ASMSYMNAME(MyRenderFunc);
