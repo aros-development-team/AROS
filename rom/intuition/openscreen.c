@@ -93,6 +93,7 @@ static const ULONG coltab[] = {
     struct TagItem   *tag, *tagList;
     struct IntScreen *screen;
     int               success;
+    struct Hook      *layer_info_hook;
     ULONG            *errorPtr;	  /* Store error at user specified location */
 
 #define COPY(x)     screen->Screen.x = ns.x
@@ -225,6 +226,10 @@ static const ULONG coltab[] = {
 		
 		screen->pubScrNode->psn_SigTask = (struct Task *)tag->ti_Data;
 		break;
+
+	    case SA_BackFill:
+	          layer_info_hook = (struct Hook *)tag->ti_Data;
+	        break;
 		
 	    case SA_DisplayID:
 	    case SA_DClip:
@@ -240,7 +245,6 @@ static const ULONG coltab[] = {
 	    case SA_Draggable:
 	    case SA_Exclusive:
 	    case SA_SharePens:
-	    case SA_BackFill:
 	    case SA_Interleaved:
 	    case SA_Colors32:
 	    case SA_VideoControl:
@@ -342,7 +346,10 @@ static const ULONG coltab[] = {
 	    IntuitionBase->ActiveScreen = &screen->Screen;
 
         D(bug("set active screen\n"));	    
+        
 	InitLayers(&screen->Screen.LayerInfo);
+	if (NULL != layer_info_hook)
+	  InstallLayerInfoHook(&screen->Screen.LayerInfo, layer_info_hook);
 
         D(bug("layers intited screen\n"));	    
 
