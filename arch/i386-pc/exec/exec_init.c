@@ -82,9 +82,9 @@
 #include "exec_util.h"
 #include "traps.h"
 
-#define SMP_SUPPORT
+#define SMP_SUPPORT 0
 
-#ifdef SMP_SUPPORT
+#if SMP_SUPPORT
     extern void prepare_primary_cpu(struct ExecBase *SysBase);      /* FUNCTION FROM "cpu.resource"!!!!!!! */
 #endif
 
@@ -821,7 +821,7 @@ void exec_cinit(unsigned long magic, unsigned long addr)
 
     ExecBase->DebugAROSBase = PrepareAROSSupportBase();
 
-#ifdef SMP_SUPPORT
+#if SMP_SUPPORT
     /* Early Boot CPU preperation.. */
     prepare_primary_cpu( ExecBase );
 #endif
