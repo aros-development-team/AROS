@@ -1,5 +1,5 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Obtain a certain pen
@@ -237,7 +237,7 @@
         	        pe->pe_FirstFree = (UWORD)-1;
         	    else
         	        pe->pe_FirstFree = pe->pe_AllocList[retval];
-        	    pe->pe_AllocList[retval] = -1;
+        	    pe->pe_AllocList[retval] = (UBYTE)-1;
         	    pe->pe_RefCnt[retval] = 0;
         	}
 		
@@ -280,6 +280,7 @@
         	    pe->pe_AllocList[retval] = pe->pe_FirstShared;
         	    pe->pe_FirstShared = retval;
         	    pe->pe_RefCnt[retval] = 1;
+		    pe->pe_NShared++;
         	}
 	      
 	    } /* shared access */ 
