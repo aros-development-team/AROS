@@ -37,10 +37,15 @@ struct TextFont
     APTR	   tf_CharSpace;
     APTR	   tf_CharKern;
 };
-#define tf_Extension ((struct TextFontExtension *)tf_Message.mn_ReplyPort)
+#define tf_Extension tf_Message.mn_ReplyPort
+#define GetTextFontExtension(font) \
+	((font->tf_Style & FSF_EXTENDED) \
+	    ? ((struct TextFontExtension *)(font->tf_Extension)) \
+	    : NULL \
+	)
 #define GetTextFontReplyPort(font) \
 	((font->tf_Style & FSF_EXTENDED) \
-	    ? font->tf_Extension->tfe_OrigReplyPort \
+	    ? ((struct TextFontExtension *)(font->tf_Extension))->tfe_OrigReplyPort \
 	    : font->tf_Message.mn_ReplyPort \
 	)
 
