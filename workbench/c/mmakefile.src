@@ -52,6 +52,7 @@ FILES := \
     Type \
     Version \
     Wait \
+    OpenPci \
     Which
 
 USER_CFLAGS     := -I$(TOP)/rom/dos
