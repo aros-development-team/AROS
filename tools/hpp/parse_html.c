@@ -419,12 +419,9 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
     if (c == EOF)
 	return str;
 
-    if (c != '\n')
-	VS_AppendChar (str, c);
-
     namelen = strlen (name);
 
-    while ((c = Str_Get (stream, data)) != EOF)
+    do
     {
 	if (c == '<')
 	{
@@ -475,6 +472,7 @@ HTML_ReadBody (MyStream * stream, CBD data, const char * name, int allowNest)
 
 	VS_AppendChar (str, c);
     }
+    while ((c = Str_Get (stream, data)) != EOF);
 
     if (level)
     {
