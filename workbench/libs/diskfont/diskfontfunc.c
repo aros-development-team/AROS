@@ -386,7 +386,7 @@ AROS_UFH3(IPTR, DiskFontFunc,
 		    MEMF_ANY);
 		if (filename)
 		{
-		    if (!(strchr(fhc->fhc_ReqAttr->tta_Name, ':')))
+		    if (FilePart(fhc->fhc_ReqAttr->tta_Name) == fhc->fhc_ReqAttr->tta_Name)
 		    {
 		    	strcpy(filename, FONTSDIR);
 		    }
@@ -440,9 +440,18 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    break;
 
 	case FHC_ODF_OPENFONT:
-	    fhc->fhc_TextFont = ReadDiskFont(fhc->fhc_ReqAttr, DFB(DiskfontBase));
+	    fhc->fhc_TextFont = ReadDiskFont(fhc->fhc_ReqAttr,
+	    	    	    	    	     fhc->fhc_DestTAttr.tta_Name,
+					     DiskfontBase);
 	    if (fhc->fhc_TextFont)
 	    {
+	    	/* PPaint's personal.font/8 has not set FPF_DISKFONT,
+		   (FPF_ROMFONT neither), but AmigaOS diskfont.library
+		   still shows FPF_DISKFONT set when opening this font */
+		   
+	    	fhc->fhc_TextFont->tf_Flags &= ~FPF_ROMFONT;
+		fhc->fhc_TextFont->tf_Flags |= FPF_DISKFONT;
+		
 	    	D(bug("Adding font: %p\n", fhc->fhc_TextFont));
 		
 		/* Forbid() must be called before AddFont, because AddFont clears

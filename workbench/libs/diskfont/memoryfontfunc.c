@@ -83,6 +83,17 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             /* Get current font */
             curfont = mfhd->CurrentFont;
            
+	    if (fhc->fhc_Command == FHC_ODF_GETMATCHINFO)
+	    {
+	    	STRPTR shortname = FilePart(fhc->fhc_ReqAttr->tta_Name);
+		
+	    	while(curfont && curfont->tf_Message.mn_Node.ln_Succ)
+		{
+		    if (strcmp(curfont->tf_Message.mn_Node.ln_Name, shortname) == 0) break;
+		    curfont = (struct TextFont *)curfont->tf_Message.mn_Node.ln_Succ;
+		}
+	    }
+	    
             /* Get a pointer to the next font. Are we at the end of the list ? */
             if (!(mfhd->CurrentFont = (struct TextFont*)curfont->tf_Message.mn_Node.ln_Succ))
             {
@@ -100,8 +111,9 @@ AROS_UFH3(IPTR, MemoryFontFunc,
         
             /* Does this font have an exstension structure ? */ 
             if (ExtendFont(curfont, 0L))
+	    {
             	tattr->tta_Tags = TFE(curfont->tf_Extension)->tfe_Tags;
-            
+            }
 
 	    retval |= FH_SUCCESS;
             break;

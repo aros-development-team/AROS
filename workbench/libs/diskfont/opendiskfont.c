@@ -75,6 +75,7 @@
     struct Hook 		*hook, *bestmatch_hook = NULL;
     struct TTextAttr 		best_so_far = {0}, *destattr;
     struct TextFont 		*tf = 0;
+    APTR    	    	    	bestmatch_userdata = 0;
     UWORD 			idx;
 
     BOOL 			finished = FALSE;
@@ -106,7 +107,6 @@
 
 	for (;;)
 	{				
-
 	    /* Reset tags field in case the hook doesn't do it */
 	    destattr->tta_Tags = 0;
 
@@ -116,12 +116,12 @@
 	    if (!retval || (retval & FH_SCANFINISHED))
 		break;
 
+    	#if 0
 	    /* WeightTAMatch does not compare the fontnames, so we do it here */
 	    if ( strcmp(FilePart(textAttr->ta_Name), destattr->tta_Name) != 0 )
 		continue;
-
-	    matchfound = TRUE;
-
+    	#endif
+	
 	    /* How well does this font match ? */
 	    new_match_weight = WeighTAMatch(textAttr, (struct TextAttr *)destattr, destattr->tta_Tags);
 
@@ -131,18 +131,29 @@
 
 	    if (new_match_weight > match_weight)
 	    {
-	    	match_weight = new_match_weight;
+	    	matchfound = TRUE;
 		
-		if (best_so_far.tta_Tags)
-		    FreeTagItems(best_so_far.tta_Tags);
-
-		best_so_far = *destattr;
-		if (best_so_far.tta_Tags)
+	    	match_weight = new_match_weight;
+				
+		if (bestmatch_hook && (bestmatch_hook != hook))
 		{
-		    best_so_far.tta_Tags = CloneTagItems(best_so_far.tta_Tags);
+		    /* Old bestmatch_hook is no longer best matching hook,
+		       so we send it the FHC_ODF_CLEANUP, which it initially
+		       did not got sent, because of --> [1] */
+		    
+		    struct FontHookCommand cleanup_fhc = fhc;
+		    
+		    cleanup_fhc.fhc_Command  = FHC_ODF_CLEANUP;
+		    cleanup_fhc.fhc_UserData = bestmatch_userdata;
+		    CallHookPkt(bestmatch_hook, &cleanup_fhc, DFB(DiskfontBase) );
+		    
 		}
-		bestmatch_hook 	= hook;
-
+		
+		best_so_far = *destattr;
+		
+		bestmatch_hook 	   = hook;
+    	    	bestmatch_userdata = fhc.fhc_UserData;
+		
 		/* Perfect match found ? */
 		if (new_match_weight == MAXFONTMATCHWEIGHT)
 		{
@@ -155,9 +166,19 @@
 
 	} /* for (;;) */ 
 
-	/* Tell the hook to cleanup */
-	fhc.fhc_Command = FHC_ODF_CLEANUP;
-	CallHookPkt(hook, &fhc, DFB(DiskfontBase) );
+    	if (bestmatch_hook != hook)
+	{
+	    /* Tell the hook to cleanup */
+	    fhc.fhc_Command = FHC_ODF_CLEANUP;
+	    CallHookPkt(hook, &fhc, DFB(DiskfontBase) );
+	}
+	else
+	{
+	    /*
+	    ** [1] The hook of the best matching font will get FHC_ODF_CLEANUP
+	    **     after FHC_ODF_OPENFONT
+	    */
+	}
 
 
     } /* for ( iterate hooktable ) */
@@ -166,13 +187,11 @@
     {
 
 	/* Open the font */
-	fhc.fhc_Command = FHC_ODF_OPENFONT;
-	fhc.fhc_ReqAttr = &best_so_far;
-
-	/* We cannot used the name returned by the hook earlier since it has
-	been freed during FHC_ODF_CLEANUP */
-	best_so_far.tta_Name = textAttr->ta_Name;
-
+	fhc.fhc_Command     	    = FHC_ODF_OPENFONT;
+	fhc.fhc_UserData    	    = bestmatch_userdata;
+	fhc.fhc_ReqAttr     	    = &best_so_far;
+    	fhc.fhc_DestTAttr.tta_Name  = FilePart(textAttr->ta_Name);
+		
 	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
 	tf = fhc.fhc_TextFont;
 
@@ -187,9 +206,14 @@
 		tfe->tfe_Flags0 |= TE0F_NOREMFONT;
 	    }
 	}
+	
+	
+    	/* cleanup only here, because of [1] */
+	 
+	fhc.fhc_Command = FHC_ODF_CLEANUP;
+	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
+	
     }
-
-    if (best_so_far.tta_Tags) FreeTagItems(best_so_far.tta_Tags);
 
     ReturnPtr("OpenDiskFont", struct TextFont *, tf);
 	

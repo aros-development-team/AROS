@@ -452,85 +452,27 @@ failure:
 
 /****************************************************************************************/
 
-#ifdef AROSAMIGA
-
-AROS_UFH2 (void, puttostr,
-	AROS_UFHA(UBYTE, chr, D0),
-	AROS_UFHA(STRPTR *,strPtrPtr,A3)
-)
-{
-    AROS_USERFUNC_INIT
-    *(*strPtrPtr)= chr;
-    (*strPtrPtr) ++;
-    AROS_USERFUNC_EXIT
-}
-
-#endif
-
 struct TextFont *ReadDiskFont(
-	struct TTextAttr *reqattr, 
+	struct TTextAttr *reqattr,
+	STRPTR realfontname,
 	struct DiskfontBase_intern *DiskfontBase)
 {	
-    STRPTR filename;
-    UWORD  len;
-    UBYTE  ysizebuf[4];
     struct TextFont *tf = NULL;
-	
+    STRPTR  	     filename;
+    BPTR    	     seglist;
+    
     EnterFunc(bug("ReadDiskFont(reqattr=%p, name=%s, ysize=%d)\n",
 		 reqattr, reqattr->tta_Name, reqattr->tta_YSize));
 	
-    /* Construct the font's path + filename */
-    len = strcspn(reqattr->tta_Name, ".");
+    filename = reqattr->tta_Name;
     
-#ifdef AROSAMIGA
+    if ((seglist = LoadSeg(filename)) != 0)
     {
-    	STRPTR buf = ysizebuf;
-    	IPTR val = reqattr->tta_YSize;
-    
-    	RawDoFmt("%ld", &val, (VOID_FUNC)AROS_ASMSYMNAME(puttostr), &buf);
-    }
-#else
-    snprintf( ysizebuf
-    	    , sizeof (ysizebuf)
-	    , "%d"
-	    , reqattr->tta_YSize );
-#endif
-			
-    /* Allocate mem for constructed filename */
-    filename = AllocVec(   sizeof (FONTSDIR) + len  + sizeof("/") 
-    				+ strlen(ysizebuf) + 1 + 1
-			 , MEMF_ANY);
-		
-    if (filename)
-    { 
-	BPTR fh, seglist;
-	
-	if (!(strchr(reqattr->tta_Name, ':')))
-	{
-	    strcpy (filename, FONTSDIR);
-	}
-	else
-	{
-	    filename[0] = 0;
-	}
-	
-	strncat(filename, reqattr->tta_Name, len);
-	strcat (filename, "/");
-	strcat (filename, ysizebuf);
-	if (reqattr->tta_Style & FSF_COLORFONT) strcat(filename, "c");
+	tf = ConvDiskFont(seglist, realfontname, DiskfontBase);
 
-	if ((fh = Open(filename, MODE_OLDFILE)) != 0)
-	{
-	    if ((seglist = LoadSeg(filename)) != 0)
-	    {
-		tf = ConvDiskFont(seglist, reqattr->tta_Name, DiskfontBase);
-			
-		UnLoadSeg(seglist);
-	    }
-	    Close(fh);
-	}
-	FreeVec(filename);
+	UnLoadSeg(seglist);
     }
+
     ReturnPtr("ReadDiskFont", struct TextFont *, tf);	
 }
 
