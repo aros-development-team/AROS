@@ -262,6 +262,13 @@ struct OTagList *OTAG_GetFile(STRPTR, struct DiskfontBase_intern *);
 VOID OTAG_KillFile(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetFontStyle(struct OTagList *, struct DiskfontBase_intern *);
 UBYTE OTAG_GetFontFlags(struct OTagList *, struct DiskfontBase_intern *);
+struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *, struct TTextAttr *, struct OTagList *, struct DiskfontBase_intern *);
+
+/* basicfuncs.c */
+
+#define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
+
+APTR AllocSegment(APTR, ULONG, ULONG, struct DiskfontBase_intern *);
 
 
 /********************/

@@ -502,10 +502,48 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    index = dfhd->TTextAttrIndex;
 
 	    /* Finished scanning ? */
-	    if (index == fdh->NumEntries)
-		    {retval = FH_SCANFINISHED; break; }
+	    if (index >= fdh->NumEntries)
+	    {
+	    	retval = FH_SCANFINISHED;
 
-	    fhc->fhc_DestTAttr = fdh->TAttrArray[index ++];
+	    	/* In case of an outline font, return a perfect
+		   matching (for what fontheight is concerned)
+		   outline entry, unless a bitmap/font entry
+		   of the same size already exists. */
+		   
+	    	if ((index == fdh->NumEntries) && 
+		    (fdh->ContentsID == OFCH_ID) &&
+		    (fdh->OTagList))
+		{
+		    UWORD i;
+		    
+		    for(i = 0; i < fdh->NumEntries; i++)
+		    {
+		    	if (fdh->TAttrArray[i].tta_YSize == fhc->fhc_ReqAttr->tta_YSize)
+			{
+			    break;
+			}
+		    }
+		    
+		    if (i == fdh->NumEntries)
+		    {
+		    	fhc->fhc_DestTAttr.tta_Name  = fdh->OTagList->filename;
+		    	fhc->fhc_DestTAttr.tta_YSize = fhc->fhc_ReqAttr->tta_YSize;
+			fhc->fhc_DestTAttr.tta_Flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+			fhc->fhc_DestTAttr.tta_Style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+			fhc->fhc_DestTAttr.tta_Tags  = NULL;
+			
+			retval = FH_SUCCESS;
+			index++;
+		    }
+		    
+		}
+		
+    	    } /* if (index >= fdh->NumEntries) */
+	    else
+	    {
+	    	fhc->fhc_DestTAttr = fdh->TAttrArray[index ++];
+	    }
 	    dfhd->TTextAttrIndex = index;
 
 	    break;
@@ -523,9 +561,21 @@ AROS_UFH3(IPTR, DiskFontFunc,
 	    break;
 
 	case FHC_ODF_OPENFONT:
-	    fhc->fhc_TextFont = ReadDiskFont(fhc->fhc_ReqAttr,
-	    	    	    	    	     fhc->fhc_DestTAttr.tta_Name,
-					     DiskfontBase);
+	    dfhd = (struct DFHData*)fhc->fhc_UserData;
+	    if ((fhc->fhc_DestTAttr.tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_OUTLINEFONT)
+	    {
+	    	fhc->fhc_TextFont = OTAG_ReadOutlineFont(&fhc->fhc_DestTAttr,
+		    	    	    	    	    	 fhc->fhc_ReqAttr,
+							 dfhd->CurrentFDH->OTagList,
+							 DiskfontBase);
+	    }
+	    else
+	    {
+		fhc->fhc_TextFont = ReadDiskFont(&fhc->fhc_DestTAttr,
+	    	    	    	    		 fhc->fhc_ReqAttr->tta_Name,
+						 DiskfontBase);
+	    }
+	    
 	    if (fhc->fhc_TextFont)
 	    {
 	    	/* PPaint's personal.font/8 has not set FPF_DISKFONT,

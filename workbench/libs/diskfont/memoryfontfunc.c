@@ -135,8 +135,8 @@ AROS_UFH3(IPTR, MemoryFontFunc,
             break;
         
         case FHC_ODF_OPENFONT:
-	    fhc->fhc_ReqAttr->tta_Name = (STRPTR)FilePart(fhc->fhc_ReqAttr->tta_Name);
-            fhc->fhc_TextFont = OpenFont((struct TextAttr *)fhc->fhc_ReqAttr);
+	    fhc->fhc_DestTAttr.tta_Name = (STRPTR)FilePart(fhc->fhc_DestTAttr.tta_Name);
+            fhc->fhc_TextFont = OpenFont((struct TextAttr *)&fhc->fhc_DestTAttr);
     	    retval = (fhc->fhc_TextFont != NULL);
     	    break;
 	    

@@ -189,8 +189,8 @@
 	/* Open the font */
 	fhc.fhc_Command     	    = FHC_ODF_OPENFONT;
 	fhc.fhc_UserData    	    = bestmatch_userdata;
-	fhc.fhc_ReqAttr     	    = &best_so_far;
-    	fhc.fhc_DestTAttr.tta_Name  = FilePart(textAttr->ta_Name);
+    	fhc.fhc_ReqAttr     	    = (struct TTextAttr*)textAttr;
+    	fhc.fhc_DestTAttr           = best_so_far;
 		
 	CallHookPkt(bestmatch_hook, &fhc, DFB(DiskfontBase) );
 	tf = fhc.fhc_TextFont;

@@ -74,37 +74,10 @@ SKIPPTR(ptr);
 /* ConvDiskFont */
 /****************/
 
-#define MAKE_REAL_SEGMENT(x) (MKBADDR(((IPTR)(x)) - sizeof(BPTR)))
-
 /****************************************************************************************/
 
-static APTR AllocSegment(APTR prevsegment, ULONG segmentsize, ULONG memflags,
-    	    	    	 struct DiskfontBase_intern *DiskfontBase)
-{
-    UBYTE *mem;
-    
-    if ((mem = AllocMem(segmentsize + sizeof(ULONG) + sizeof(BPTR), memflags)))
-    {
-    	*((ULONG *)mem)++ = segmentsize + sizeof(ULONG) + sizeof(BPTR);
-	
-	if (prevsegment)
-	{
-	    ((BPTR *)prevsegment)[-1] = MKBADDR(mem);
-	}
-
-	*((BPTR *)mem)++ = NULL;
-		
-    }
-    
-    return (APTR)mem;
-}
-
-/****************************************************************************************/
-
-struct TextFont *ConvDiskFont(
-	BPTR seglist, 
-	STRPTR fontname, 
-	struct DiskfontBase_intern *DiskfontBase)
+struct TextFont *ConvDiskFont(BPTR seglist, STRPTR fontname,
+    	    	    	      struct DiskfontBase_intern *DiskfontBase)
 {
     UWORD count, numchars;
     register int i;
