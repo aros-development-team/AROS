@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include <string.h>
+
 #include <proto/alib.h>
 #include <proto/exec.h>
 #include <proto/graphics.h>
