@@ -618,6 +618,7 @@ void SMOpenPropertyWindow(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_Height		, h - OUTERSPACINGY * 2			},
 	    {GA_UserData	, (IPTR)ld				},
 	    {ASLLV_ReadOnly	, TRUE					},
+	    {ASLLV_Font     	, (IPTR)ld->ld_Font 	    	    	},
 	    {TAG_DONE							}
 	};
 	

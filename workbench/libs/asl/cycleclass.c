@@ -395,7 +395,12 @@ static IPTR aslcycle_set(Class * cl, Object * o, struct opSet *msg)
 		
 		retval += 1;
 		break;
-
+    	    
+	    case ASLCY_Font:
+	    	data->font = (struct TextFont *)tidata;
+	    	retval += 1;
+		break;
+		
 	} /* switch(tag->ti_Tag) */
 	 
     } /* while((tag = NextTagItem(&tstate))) */ 
@@ -442,7 +447,7 @@ static IPTR aslcycle_layout(Class * cl, Object * o, struct gpLayout *msg)
 
     getgadgetcoords(G(o), msg->gpl_GInfo, &x, &y, &w, &h);
     
-    data->font = msg->gpl_GInfo->gi_DrInfo->dri_Font;
+    if (!data->font) data->font = msg->gpl_GInfo->gi_DrInfo->dri_Font;
     
     item = data->itemmemory;
     len = 0;
@@ -555,6 +560,8 @@ static IPTR aslcycle_render(Class * cl, Object * o, struct gpRender *msg)
 
 	    y  = gady + (gadh - data->font->tf_YSize) / 2 + data->font->tf_Baseline;
 
+    	    SetFont(rp, data->font);
+	    
 	    Move(rp, x, y);
 	    Text(rp, item->string, item->charlen);
 	}
@@ -589,8 +596,6 @@ static IPTR aslcycle_goactive(Class * cl, Object * o, struct gpInput *msg)
     
     IPTR 		rc = GMR_MEACTIVE;
 
-static int counter = 0;
-    
     if (!data->labels || !msg->gpi_IEvent) return GMR_NOREUSE;
         
     data->popup = FALSE;

@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Basic helpfuncs for Asl.
@@ -24,6 +24,7 @@
 #include <intuition/screens.h>
 #include <intuition/classusr.h>
 #include <intuition/imageclass.h>
+#include <graphics/gfxbase.h>
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
 #include <libraries/iffparse.h>
@@ -42,8 +43,10 @@
 
 STATIC BOOL GetRequesterFont(struct LayoutData *, struct AslBase_intern *);
 
+#if 0
 STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *);
 STATIC VOID FreeFontPrefs(struct FontPrefs *, struct AslBase_intern *);
+#endif
 
 /*****************************************************************************************/
 
@@ -261,6 +264,8 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	if (ld->ld_TextAttr.ta_Name)
 	    FreeVec(ld->ld_TextAttr.ta_Name);
 
+    	DeinitRastPort(&(ld->ld_DummyRP));
+
 	FreeMem(ld, sizeof (struct LayoutData));
     }
 
@@ -289,6 +294,8 @@ struct LayoutData *AllocCommon
       requester type specific hook may find them */
     ld->ld_IntReq	= intreq;
     ld->ld_Req		= requester;
+
+    InitRastPort(&(ld->ld_DummyRP));
 
     /* We need to lock the screen we should open on to be sure it
     doesn't go away
@@ -360,8 +367,6 @@ struct LayoutData *AllocCommon
     if (!GetRequesterFont(ld, ASLB(AslBase)))
 	goto failure;
 
-    InitRastPort(&(ld->ld_DummyRP));
-
     SetFont( &(ld->ld_DummyRP), ld->ld_Font );
 
     return (ld);
@@ -385,6 +390,8 @@ failure:
 		ptr += sizeof (WORD);
 
 /*****************************************************************************************/
+
+#if 0
 
 STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 {
@@ -475,7 +482,11 @@ STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 
 } /* GetFontPrefs() */
 
+#endif
+
 /*****************************************************************************************/
+
+#if 0
 
 STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
 {
@@ -486,6 +497,7 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
     return;
 }
 
+#endif
 
 /*****************************************************************************************/
 
@@ -493,7 +505,7 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
     struct TextFont 	*font = NULL;
 
-    struct TextAttr 	*usedattr;
+    struct TextAttr 	*usedattr, askattr;
 
     BOOL 		success = FALSE;
 
@@ -517,6 +529,18 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	font = OpenDiskFont (usedattr);
     }
 
+    /* If not, try screen font */
+    
+    if (!font)
+    {
+	usedattr = ld->ld_Screen->Font;
+	if (usedattr)
+	{
+    	    font = OpenDiskFont (usedattr);
+	}
+    }
+    
+#if 0
     /* If no font has been opened yet, try the preferences one */
     if (!font)
     {
@@ -538,7 +562,20 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    }
 	}
     }
+#endif
 
+    /* No success, so try system default font */
+    
+    if (!font)
+    {
+    	usedattr = &askattr;
+	
+    	SetFont(&(ld->ld_DummyRP), GfxBase->DefaultFont);
+   	AskFont(&(ld->ld_DummyRP), usedattr);
+	
+	font = OpenDiskFont(usedattr);
+    }
+    
     /* Yet no font, try topaz 8 */
 
     if (!font)

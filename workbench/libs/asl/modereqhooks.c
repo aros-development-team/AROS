@@ -365,15 +365,16 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     {
         struct TagItem lv_tags[] = 
 	{
-	    {GA_Left		, x						},
-	    {GA_Top		, y						},
-	    {GA_RelWidth	, w						},
-	    {GA_RelHeight	, h						},
-	    {GA_UserData	, (IPTR)ld					},
-	    {GA_ID		, ID_LISTVIEW					},
-	    {GA_RelVerify	, TRUE						},
-	    {ASLLV_Labels	, (IPTR)&udata->ListviewList			},
-	    {TAG_DONE								}
+	    {GA_Left		, x				},
+	    {GA_Top		, y				},
+	    {GA_RelWidth	, w				},
+	    {GA_RelHeight	, h				},
+	    {GA_UserData	, (IPTR)ld			},
+	    {GA_ID		, ID_LISTVIEW			},
+	    {GA_RelVerify	, TRUE				},
+	    {ASLLV_Labels	, (IPTR)&udata->ListviewList	},
+	    {ASLLV_Font     	, (IPTR)ld->ld_Font 	    	},
+	    {TAG_DONE						}
 	};
 	
 	udata->Listview = gad = NewObjectA(AslBase->asllistviewclass, NULL, lv_tags);
@@ -528,17 +529,18 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	{
 	    struct TagItem cycle_tags[] =
 	    {
-	        {GA_Previous		, (IPTR)gad			 },
-		{GA_Left		, x				 },
-		{GA_RelBottom		, y				 },
-		{GA_RelWidth		, w				 },
-		{GA_Height		, udata->ButHeight		 },
-		{GA_RelVerify		, TRUE				 },
-		{GA_UserData		, (IPTR)ld			 },
-		{GA_ID			, ID_OVERSCAN			 },
+	        {GA_Previous		, (IPTR)gad			  },
+		{GA_Left		, x				  },
+		{GA_RelBottom		, y				  },
+		{GA_RelWidth		, w				  },
+		{GA_Height		, udata->ButHeight		  },
+		{GA_RelVerify		, TRUE				  },
+		{GA_UserData		, (IPTR)ld			  },
+		{GA_ID			, ID_OVERSCAN			  },
 		{ASLCY_Labels		, (IPTR)&ismreq->ism_Overscan1Text},
-		{ASLCY_Active		, ismreq->ism_OverscanType - 1	 },
-		{TAG_DONE						 }
+		{ASLCY_Active		, ismreq->ism_OverscanType - 1	  },
+		{ASLCY_Font 	    	, (IPTR)ld->ld_Font 	    	  },
+		{TAG_DONE						  }
 		
 	    };
 
@@ -569,6 +571,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		{GA_UserData		, (IPTR)ld			 },
 		{GA_TabCycle		, TRUE				 },
 		{STRINGA_MaxChars	, 8				 },
+	    	{STRINGA_Font   	, (IPTR)ld->ld_Font 	    	 },
 		{TAG_DONE						 }
 	    };
 	    
@@ -611,6 +614,7 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 		{GA_Height		, udata->ButHeight	},
 		{GA_RelVerify		, TRUE			},
 		{GA_UserData		, (IPTR)ld		},
+		{ASLCY_Font 	    	, (IPTR)ld->ld_Font 	},
 		{TAG_DONE					}
 		
 	    };
@@ -677,9 +681,11 @@ STATIC BOOL SMGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus	, TRUE		},
-	    {TAG_DONE				}
+	    {GTMN_NewLookMenus  , TRUE  	    	    },
+	    {GTMN_TextAttr	, GetIR(ismreq)->ir_TextAttr },
+	    {TAG_DONE   	    	    	    	    }
 	};
+	    
 	
 	/* Don't fail, if menus cannot be created/layouted, because a requester
 	   without menus is still better than no requester at all */

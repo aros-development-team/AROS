@@ -719,6 +719,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_UserData	, (IPTR)ld			},
 	    {GA_TabCycle	, TRUE				},
 	    {STRINGA_EditHook   , (IPTR)&udata->StringEditHook	},
+	    {STRINGA_Font   	, (IPTR)ld->ld_Font 	    	},
 	    {TAG_DONE						}
 	};
 
@@ -791,8 +792,9 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	struct TagItem menu_tags[] =
 	{
-	    {GTMN_NewLookMenus	, TRUE		},
-	    {TAG_DONE				}
+	    {GTMN_NewLookMenus  , TRUE  	    	    },
+	    {GTMN_TextAttr	, GetIR(ifreq)->ir_TextAttr },
+	    {TAG_DONE   	    	    	    	    }
 	};
 	
 	nm[18 + ifreq->ifr_SortBy     ].nm_Flags |= CHECKED;
@@ -820,7 +822,7 @@ STATIC BOOL FRGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	   without menus is still better than no requester at all */
 	   
 	if ((ld->ld_Menu = CreateMenusA(nm, menu_tags)))
-	{
+	{	    
 	    if (!LayoutMenusA(ld->ld_Menu, ld->ld_VisualInfo, menu_tags))
 	    {
 	        FreeMenus(ld->ld_Menu);ld->ld_Menu = NULL;

@@ -106,6 +106,7 @@ struct AslBase_intern;
 #define ASLLV_DoMultiSelect	(ASLLV_Dummy + 9)
 #define ASLLV_MakeVisible	(ASLLV_Dummy + 10)
 #define ASLLV_ReadOnly		(ASLLV_Dummy + 11)
+#define ASLLV_Font  	    	(ASLLV_Dummy + 12)
 
 #define ASLBT_Dummy		(PGA_Top + 300)
 #define ASLBT_CoolImage		(ASLBT_Dummy + 1)
@@ -113,6 +114,7 @@ struct AslBase_intern;
 #define ASLCY_Dummy		(PGA_Top + 400)
 #define ASLCY_Labels		(ASLCY_Dummy + 1)
 #define ASLCY_Active		(ASLCY_Dummy + 2)
+#define ASLCY_Font  	    	(ASLCY_Dummy + 3)
 
 /*****************************************************************************************/
 
