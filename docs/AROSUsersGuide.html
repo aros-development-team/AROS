@@ -1,15 +1,15 @@
 <HTML>
 <HEAD>
-<TITLE>AROS User's Guide - Copyright &copy; 1995-2001, The AROS Development Team.</TITLE>
+<TITLE>AROS User's Guide - Copyright © 1995-2002, The AROS Development Team.</TITLE>
 </HEAD>
 
 <BODY>
 <PRE>
 -----------
-This is the AROS User's Guide version 0.1
-By Stefan Rieken <StefanRieken@SoftHome.net>
-Copyright (c) 2000 the AROS project
-Last update: 13-feb-2000
+This is the AROS User's Guide version 0.2
+By Stefan Rieken &amp; Matt Parsons <StefanRieken@SoftHome.net>
+Copyright © 2002 the AROS project
+Last update: 10-April-2002
 
 WARNING: This document is in development.
 -----------
@@ -24,14 +24,14 @@ CONTENTS
 
 3.1 An Operating System in an Operating System?
 3.2 Getting and installing AROS
-3.3 Using "native" AROS on i386 and m68k
+3.3 Using &quot;native&quot; AROS on i386 and m68k
 3.4 Using AROS on Linux and FreeBSD
 3.5 Is that all the User's Information available in this guide?
 
 4. DEVELOPING FOR THE AROS PLATFORM
 
 4.1 How AROS libraries work
-4.2 The AROS "Hello, World!" program
+4.2 The AROS &quot;Hello, World!&quot; program
 4.3 Compiling on Amiga
 4.4 Compiling on Linux with GCC
 4.5 Compiling for native-i386
@@ -54,12 +54,16 @@ This is the Amiga Research Operating System User's Guide. It is meant to get peo
 
 <H2>1.1 Who should read this guide</H2>
 
-This guide will help you getting used with AROS. It is written for everybody who is interested in AROS. AROS is now 65% finished, so keep in mind that you are actually using software that is BETA and in research. It is currently mostly fun to play with and cool to program for and program in. So I expect that your interest in AROS is explained by one of these reasons. If you came until here because you thought AROS was a Multimedia Internet-Ready Etc. OS, well, you might be right, but it is <I>not finished</I>, so you need to be patient, boy. If you thought AROS was a Grapefruit-Machine or a Free Money Project, you are entirely in the wrong place.
+This guide will help you getting used with AROS. It is written for everybody who is interested in AROS. AROS is now
+76.95% finished, so keep in mind that you are actually using software that is BETA and in research. It is currently mostly fun to play with and cool to program for and program in. So I expect that your interest in AROS is explained by one of these reasons. If you came until here because you thought AROS was a Multimedia Internet-Ready Etc. OS, well, you might be right, but it is <I>not finished</I>, so you need to be patient, boy. If you thought AROS was a Grapefruit-Machine or a Free Money Project, you are entirely in the wrong place.
 
 <H2>1.3 How you should read this guide</H2>
 
-I try to write this guide ordered from "simple" to "advanced". You can start reading at any chapter that contains information that is new to you. But maybe even more important, you should stop reading at any chapter that contains information going beyond your interest. In this way you can learn yourself the advanced topics starting from scratch, or you can stop earlier if you think you only want to use AROS, and not program it. People with an Amiga background can skip the introduction, and start at "Developing for the AROS platform" if they never programmed an Amiga before, or go directly to "Developing inside AROS" if they already did. So there is a starting point and a stop point for everyone.
-<P>It is important to realise that this guide is meant for AROS, not Amiga. So even if you owned an Amiga for years, you might need to read "Using AROS" too. This is not an embarassment: you will notice that using AROS is entirely different from using AmigaOS. (Just because we have no WorkBench yet! :-) Old Amiga programmers should read "differences with Amiga programming" from chapter 4 to get an overview of the differences. 
+I try to write this guide ordered from "simple" to "advanced". You can start reading at any chapter that contains information that is new to you. But maybe even more important, you should stop reading at any chapter that contains information going beyond your interest. In this way you can learn yourself the advanced topics starting from scratch, or you can stop earlier if you think you only want to use AROS, and not program it. People with an Amiga background can skip the introduction, and start at "Developing for the AROS platform" if they never programmed an Amiga before, or go directly to "Developing inside AROS" if they already did. So there is a starting point and a stop point for everyone.<P>It is important to realise that this guide is meant for AROS, not Amiga. So even if you owned an Amiga for years, you might need to read "Using AROS" too. This is not an embarassment: you will notice that using AROS is
+very slightly different from using AmigaOS. (This is because our Workbench is
+not finished :-). At the moment the whole system works through a AmigaDos shell
+(or Cli to older users), although we do have a Workbench, you can not navigate
+disks with it yet. Old Amiga programmers should read "differences with Amiga programming" from chapter 4 to get an overview of the differences. 
 
 <H1>2 SHORT AMIGA AND AROS HISTORY</H1>
 
@@ -69,38 +73,60 @@ AROS is the Amiga Research Operating System. That might require some further exp
 <DD>The Amiga is a computer made by Amiga, Inc. This computer has its own Operating System, referred to as AmigaOS. The Amiga has been a successful machine: being entirely GUI based, it has often been used to make music, (rendered) images and animations. However, in the beginning  Amiga was part of the computer manufacturer Commodore, and when Commodore bankrupted, Amiga went along with it. To make a long story short, the Amiga name and product has since then been bought time and time again by other companies, who then either bankrupted or showed no particular interest in the product. In this period of time the Amiga had a doubtful and almost unsupported status. To our great joy, Amiga is now bought <I>again</I>, but this time by a company set up by some good old-fashioned Amiga enthousiasts, and in such a way that Amiga can run as an entirely independent company.
 
 <DT>Amiga Research Operating System (AROS):
-<DD>The days that Amiga fell from one bankrupcy into the next were hard days for the Amiga community. A great deal of Amiga users adore their product and they weren't at all glad with the uncertain future of it. They thought of all kinds of solutions to this problem. The idea of an <A HREF="http://www.opensource.org/">Open Source</A> AmigaOS was a very attractive one. In the heat of the discussion, many projects were born and many died silently again. Finally, the AROS project by Aaron Digulla proved to be a project with a longer lifetime. Its aim is to make a free AmigaOS3.1-like operating system. It was first called the Amiga Replacement Operating System. But because Amiga, Inc. is not dead, and AROS doesn't want to be better than Amiga, AROS was later renamed to the Amiga Research Operating System. The latest developments are that AROS is supported by the <A HREF="http://www.savetheamiga.co.uk/">COA: Campaign to Open Source the Amiga</A>, and that COA as well as AROS are more and more acknowledged by Amiga, Inc. (is this the reason why COA has also been renamed lately, and is now known as the Open Amiga Group?) The plans for new developments from Amiga, Inc. are still open, and it is not yet known if AROS has a role in them. But Amiga, Inc. is currently helping AROS to get clear from complex patent problems, which shows that there is a good relationship between them.
+<DD>The days that Amiga fell from one bankrupcy into the next were hard days for the Amiga community. A great deal of Amiga users adore their product and they weren't at all glad with the uncertain future of it. They thought of all kinds of solutions to this problem. The idea of an <A HREF="http://www.opensource.org/">Open Source</A> AmigaOS was a very attractive one. In the heat of the discussion, many projects were born and many died silently again. Finally, the AROS project by Aaron Digulla proved to be a project with a longer lifetime. Its aim is to make a free AmigaOS3.1-like operating system. It was first called the Amiga Replacement Operating System. But because Amiga, Inc. is not dead, and AROS doesn't want to be better than Amiga, AROS was later renamed to the Amiga Research Operating System.
+  The plans for new developments from Amiga, Inc. are still open, and it is not yet known if AROS has a role in them. But Amiga, Inc. is currently helping AROS to get clear from complex patent problems, which shows that there is a good relationship between them.
+  AROS source code has been used in all the other AmigaOS Clone projects, and
+  has become a valuable resource for the Amiga community.
 </DL>
 <H1>3 USING AROS</H1>
 
 <H2>3.1 An Operating System in an Operating System?</H2>
 
-AROS is originally developed on <A HREF="http://www.linux.org/">Linux</A> running on an Intel-based computer. It runs on many more machines and Operating Systems, though. This may sound strange: an OS running on top of an other OS, that's emulation, right?
-<P>A nice term for what AROS does is "API emulation". API is a (Microsoft?) three-letter-acronym for Application Programmer's Interface. In plain English: an API provides (C Language) functions that a programmer can use. The AmigaOS API constists of a load of library calls that an Amiga programmer can use to make an Amiga program. AROS emulates the AmigaOS API: it tries to provide the same library calls as AmigaOS. An Amiga emulator, such as UAE (FIXME: Link?) emulates the amiga <I>computer</I>: the processor, the connected hardware, everything. This has its advantages, like being able to play binary Amiga games on different hardware, and its disadvantages, like not being able to use the emulator as a "real" OS, on a "real" processor. AROS runs on the "real" processor. But it isn't a "real" OS, <I>unless</I> you run in such a way that it doesn't require Linux. This is called "native" AROS.
-<P>AROS can run natively on the Intel and Amiga computers, but not yet as good as it runs on Linux. AROS library functions are made to run under Linux first, internally using Linux kernel and library calls. This way a programmer has got the opportunity to bother about the implementation of the whole system first, and to bother about the technical details in a later stadium. People are currently working on making the "native" AROS more impressive. The results are cool (although still quite useless).
-<P>Off course, AROS is not <I>only</I> an API emulator. It also tries to provide all the AmigaOS3.1 system software, and you will also find a few demos and games being shipped with AROS, just to show that they work - we might just be at 65% of the whole system, but we already have Quake running!
+AROS is originally developed on <A HREF="http://www.linux.org/">Linux</A> running on an Intel-based computer. It runs on many more machines and Operating Systems, though. This may sound strange: an OS running on top of an other OS, that's emulation, right?<P>A nice term for what AROS does is "API emulation". API is a (Microsoft?) three-letter-acronym for Application Programmer's Interface. In plain English: an API provides (C Language) functions that a programmer can use. The AmigaOS API constists of a load of library calls that an Amiga programmer can use to make an Amiga program. AROS emulates the AmigaOS API: it tries to provide the same library calls as AmigaOS. An Amiga emulator, such as
+<a href="http://www.freiburg.linux.de/~uae/"> UAE</a>&nbsp; emulates the amiga <I>computer</I>: the processor, the connected hardware, everything. This has its advantages, like being able to play binary Amiga games on different hardware, and its disadvantages, like not being able to use the emulator as a "real" OS, on a "real" processor. AROS runs on the "real" processor. But it isn't a "real" OS, <I>unless</I> you run in such a way that it doesn't require Linux. This is called "native" AROS.<P>AROS can run natively on the Intel and Amiga computers, but not
+quite as good as it runs on Linux. AROS library functions are made to run under Linux first, internally using Linux kernel and library calls. This way a programmer has got the opportunity to bother about the implementation of the whole system first, and to bother about the technical details in a later stadium. People are currently working on making the "native" AROS more impressive. The results are
+very impressive and it is perfectly possible to use AROS as a real (and only)
+Operating system on an IBM PC compatible machine.
+<P>Off course, AROS is not <I>only</I> an API emulator. It also tries to provide all the AmigaOS3.1 system software, and you will also find a few demos and games being shipped with AROS, just to show that they work - we might just be at
+77% of the whole system, but we already have Quake running!
 
 <H2>3.2 Getting and installing AROS</H2>
 
-AROS is currently under development. The result is that you have to choose between stable releases and up-to-date code before you can continue. The stable code is easy to download and try out, but it doesn't have all the new gizmo's that were added after the release date. The releases are available from <A HREF="http://www.aminet.net/aminet/">Aminet</A>. Read the description to find out which version you need to download for the platform of your choice. Up-to-date code, that is built overnight, can be dowloaded from <A HREF="ftp://ftp.aros.org/pub/aros/snapshots/">here</A>. This code is NOT intended to be any stable. There might even be times when the code for your platform is unavailable because there were problems building it. Please keep this in mind before you start trying this code. On the other hand, if you don't mind encountering a few errors now and then, you might enjoy this code more than the older release code.
-<P>If you wish to get the sources, they are also available through Aminet ("release" sources) and ftp.aros.org (the current sources). Reading the file doc/INSTALL should tell you how to compile the source code. For developers and (other) die-hards, the very latest sources are also available through CVS. The AROS home page (<A HREF="http://www.aros.org/">www.aros.org</A>) provides you with all the information to get the CVS code. When you have found a nice place to extract your archive, and you have compiled eventual source code, you are ready to run AROS.
+AROS is currently under development. The result is that you have to choose between stable releases and up-to-date code before you can continue. The stable code is easy to download and try out, but it doesn't have all the new gizmo's that were added after the release date. The
+binary (ready to run) releases are free to download from <a HREF="http://www.ahsodit.com/aros/">AhSoDiT
+Productions</a>, with the exception of the Linux version which is available
+(including source code) from <a href="http://www.sourceforge.net/">Source Forge</a>
+(search for &quot;AROS&quot;) . Read the description to find out which version you need to download for the platform of your choice.
+There might even be times when the code for your platform is unavailable because there were problems building it. Please keep this in mind before you start trying this code.<P>If you wish to get the sources, they are also available
+ftp.aros.org (the current sources). Reading the file doc/INSTALL should tell you how to compile the source code. For developers and (other) die-hards, the very latest sources are also available through CVS. The AROS home page (<A HREF="http://www.aros.org/">www.aros.org</A>) provides you with all the information to get the CVS code. When you have found a nice place to extract your archive, and you have compiled eventual source code, you are ready to run AROS.
 
 <H1>3.3 Using "native" AROS on i386 and m68k</H1>
 
 Native AROS is currently under heavy development. If you want to see cool tricks, try AROS on Linux. But if you're (also) interested in what a great job the programmers have done, you can try "native" too.
 <P>The instructions for installing native AROS are varying depending on which platform you use. Because "native" is still in great development, the <I>results</I> from installing native AROS can also vary depending on the age of the code that you use.
-<P>On an Amiga, you can place the native code somewhere on you harddisk, double-click the "boot" icon, do a reset and enjoy a complete Amiga system. This is because it is not <I>really</I> native. The boot program just temporarilly replaces a few AmigaOS libraries with AROS libraries. For testing purposes this is off course good, but in the end you still run good ol' AmigaOS and not plain native AROS.
-<P>On i386, you should write a boot image to a floppy. If you build from source code, this is done by "make install". If you downloaded binary code, there should be instructions in the archive for you. Once you have written your floppy, you can reboot the system. After the floppy is booted, you will find yourself in a debugging environment. Depending on the age of your code, this environment uses the built-in PC console or its own VGA graphics. You can fool around with the debugger a little until you get bored. For now this is all, but keep in touch, because hard work is currently being done here.
-
-<H2>3.4 Using AROS on Linux and FreeBSD (FIXME: are there any more OSes?)</H2>
+<P>On an Amiga, you can place the native code somewhere on you harddisk, double-click the "boot" icon, do a reset and enjoy a complete Amiga system. This is because it is not <I>really</I> native. The boot program just temporarilly replaces a few AmigaOS libraries with AROS libraries. For testing purposes this is
+of course good, but in the end you still run good ol' AmigaOS and not plain native
+AROS. This will change as we build a more complete 68k AROS system.<P>On i386, you should write a boot image to a
+floppy and the contrib (Contribution disk, containing games, demos and
+utilities) images to another two floppy disks. If you downloaded binary code, there should be instructions in the archive for you. Once you have written your
+floppies, you can reboot the system. After the floppy is booted, you will find yourself in
+AROS (looking very much like AmigaOS). You can fool around with the &quot;AmigaDOS
+Shell&quot; or play some games/demos found on the contrib disks (included in the
+archive) until you get bored. AROS can detect disk changes so you can insert one
+of the contrib disks in the floppy drive and explore them, running games and
+demos on the way. For now this is all, but keep in touch, because hard work is currently being done here.
+Soon we should have a Workbench which will allow graphical navigation of your
+Hard and Floppy disks.<H2>3.4 Using AROS on Linux and FreeBSD</H2>
 
 Once you got the binaries for your system, either by compiling or by downloading pre-compiled binaries, you should go down into the "bin/$TARGET/AROS" directory, where $TARGET is your system target (something like "linux-i386"). What you should do then, depends on the age of your code. If you have a file "arosshell" in the current directory, run it from within a terminal ("./arosshell"). A window will open with nothing interesting on it, and your terminal will have a strange new input prompt. If you do not have the file "arosshell", but instead a file called "aros", you should run that one instead ("./aros"). Now a window will open, and on that window you will see painted an Amiga-like window (if you're new to them, this is what they look like) with an input prompt on it.
 <P>In either way, you are faced by the already-infamous input prompt (sorry, we don't have a "Workbench" - yet). Now you should type in commands, and the most important command is "dir": it will show you a directory's contents. The directory named "C" contains all the commands, so it might be useful to display its contents with "dir C". (Note: Old Amigans, please note that this shell is case sensitive!) The shell behaves like an AmigaDOS shell, and the commands in "C" behave like their AmigaDOS equivalents. So if you have problems understanding the system, you should really take a look at the <A HREF="http://www.mentasm.com/~mramiga/dos1.shtml">AmigaDOS Online Reference Manual</A>. (Note to UNIX folks: to address the parent directory, use "/" and not "..": this will look ugly because AROS thinks that Linux's ".." is a normal directory. You shouldn't use "./" as a prefix to address a command within the current directory either, but leave this away instead.) Once you are used to it, try to execute a few programs (especially the "Demos" and "Games") to get an impression of AROS capabilities.
 
 <H2>3.5 Is that all the User's Information in this guide?</H2>
 
-This chapter should have told you how to get, install and use AROS. After having tried running every program in the directories C, Demos, Utilities, Tools, Games, etc., you might wonder if that is all. Yes, currently that is all a "User" can do with AROS! But when any new important user code will be ready, it will be added to this guide, off course.
-<P>If you think that I have not provided enough information here about compiling, installing, CVS, the shell, etc., it might be good to know that I have reasons for it. First, there is already much information available, and it would be unnecessary as well as unfair just to copy that information in this document. Second, we are talking about very particular information: some of the readers might be interested in compiling the source code, others might want to know all about the Amiga shell. So to keep this guide readable, I only point to places where you can find such information, instead of providing it here. You, the reader, can then decide if this is of interest to you. And if you are new to AROS and Amiga, you should really have followed the link to the AmigaDOS Online Reference Manual in paragraph 3.4. Believe me, it's good.
+This chapter should have told you how to get, install and use AROS. After having tried running every program in the directories C, Demos, Utilities, Tools, Games, etc., you might wonder if that is all. Yes, currently that is all a "User" can do with AROS! But when any new important user code will be ready, it will be added to this guide,
+of course.
+<P>If you think that I have not provided enough information here about compiling, installing, CVS, the shell, etc., it might be good to know that I have reasons for it. First, there is already much information available, and it would be unnecessary as well as unfair just to copy that information in this document. Second, we are talking about very particular
+information some of the readers might be interested in compiling the source code, others might want to know all about the Amiga shell. So to keep this guide readable, I only point to places where you can find such information, instead of providing it here. You, the reader, can then decide if this is of interest to you. And if you are new to AROS and Amiga, you should really have followed the link to the AmigaDOS Online Reference Manual in paragraph 3.4. Believe me, it's good.
 
 <H1>4 DEVELOPING FOR THE AROS PLATFORM</H1>
 
@@ -132,15 +158,19 @@ On Amiga, AROS can handle Amiga binaries. What you need is your favorite compile
 
 <H2>4.5 Compiling for native-i386</H2>
 
-Currently compiling for native-i386 is not a serious option because you haven't yet got the opportunity to run your programs from within native AROS.
+This is quite a complex precedure and more details will be added later, for now
+just down load the binary from <a HREF="http://www.ahsodit.com/aros/">AhSoDiT
+Productions</a> and enjoy the hard work which has gone into making it happen.
 
 <H2>4.6 Writing somewhat more useful programs</H2>
 
-"Hello, World!" is not a Museum of Programmer's Talent, so you might wonder if there is more to AROS than that. Why dear, off course there is. But this User's Guide is not a Programmer's Guide nor a Programmer's Reference Guide. Such guides might be written in the future, but for now, the best AROS Programmer's Guides you can find are the books that have been written for the Amiga, and the best reference for AROS are the AROS autodocs (autodocs are descriptions of AROS library functions that are created by parsing the AROS sources). The autodocs are available from the <A HREF="http://www.aros.org/">home page</A>. But they are mainly useful to advanced Amiga programmers: they only provide a very short explanation for each function. If you have to learn AROS programming from the beginning, you really should try to find that old Amiga book, or else mail-bomb me until I'll write some Guide.
+"Hello, World!" is not a Museum of Programmer's Talent, so you might wonder if there is more to AROS than that. Why dear,
+of course there is. But this User's Guide is not a Programmer's Guide nor a Programmer's Reference Guide. Such guides might be written in the future, but for now, the best AROS Programmer's Guides you can find are the books that have been written for the Amiga, and the best reference for AROS are the AROS autodocs (autodocs are descriptions of AROS library functions that are created by parsing the AROS sources). The autodocs are available from the <A HREF="http://www.aros.org/">home page</A>. But they are mainly useful to advanced Amiga programmers: they only provide a very short explanation for each function. If you have to learn AROS programming from the beginning, you really should try to find that old Amiga book, or else mail-bomb me until I'll write some Guide.
 
 <H2>4.7 Differences with Amiga programming</H2>
 
-The <A HREF="http://www.aros.org/">home page</A> has got valuable information about the differences between AROS and AmigaOS from a programmer's point of view. Additionally, there are the points that we came by when "compiling form native-i386" in chapter 4.
+The <A HREF="http://www.aros.org/">home page</A> has got valuable information about the
+slight differences between AROS and AmigaOS from a programmer's point of view. Additionally, there are the points that we came by when "compiling form native-i386" in chapter 4.
 
 <H1>5 DEVELOPING INSIDE AROS</H1>
 
@@ -150,7 +180,8 @@ Most of the current AROS documentation is about developing inside AROS. Just see
 
 Anarchy and chaos. Let's keep this short:
 <UL>
-<LI>Autodocs are generated. AROS developers should be aware of this, AROS ducumentators (FIXME: is this English, doc?) should not be bothered at all by them.
+<LI>Autodocs are generated. AROS developers should be aware of this, AROS documenters
+  should not be bothered at all by them.
 <LI>The Website is currently generated, from DocBook sources I believe. The underlying system is only clear in the mind of the person who made it. I have asked a question about this, and now all I can do is hope that he lives long enough to answer me. Otherwise, valuable information might be lost forever ;-)
 <LI>The "doc" directory also contains a few documents with a nearly-random title describing a nearly-random part of AROS. I have plans to de-randomize this information (descriptive titles, consistent contents, logical file hierarchy).
 <LI>This Guide will be part of CVS soon, I hope. I hope it will not become "RandomDoc the Next". For now, there's a big chance for this because I haven't taken time to make this doc fit in the distribution at all.
