@@ -134,7 +134,7 @@ static struct MUI_ImageSpec_intern *get_pen_imspec(CONST_STRPTR str)
     return NULL;
 }
 
-static struct MUI_ImageSpec_intern *get_gradient_imspec(CONST_STRPTR str)
+static struct MUI_ImageSpec_intern *get_scaled_gradient_imspec(CONST_STRPTR str)
 {
     struct MUI_ImageSpec_intern *spec;
 
@@ -146,7 +146,25 @@ static struct MUI_ImageSpec_intern *get_gradient_imspec(CONST_STRPTR str)
 	    mui_free(spec);
 	    return NULL;
 	}
-	spec->type = IST_GRADIENT;
+	spec->type = IST_SCALED_GRADIENT;
+    	return spec;
+    }
+    return NULL;
+}
+
+static struct MUI_ImageSpec_intern *get_tiled_gradient_imspec(CONST_STRPTR str)
+{
+    struct MUI_ImageSpec_intern *spec;
+
+    if ((spec = mui_alloc_struct(struct MUI_ImageSpec_intern)))
+    {
+	if (!zune_gradient_string_to_intern(str, spec))
+	{
+	    D(bug("*** zune_gradient_string_to_intern failed\n"));
+	    mui_free(spec);
+	    return NULL;
+	}
+	spec->type = IST_TILED_GRADIENT;
     	return spec;
     }
     return NULL;
@@ -277,8 +295,12 @@ static const char *zune_imspec_to_string(struct MUI_ImageSpec_intern *spec)
 	    sprintf(buf, "6:%ld", spec->u.cfg.muiimg);
 	    break;
 
-        case IST_GRADIENT:
-	    zune_gradient_intern_to_string(spec, buf);
+        case IST_SCALED_GRADIENT:
+	    zune_scaled_gradient_intern_to_string(spec, buf);
+	    break;
+
+        case IST_TILED_GRADIENT:
+	    zune_tiled_gradient_intern_to_string(spec, buf);
 	    break;
     }
     return buf;
@@ -358,8 +380,12 @@ static struct MUI_ImageSpec_intern *zune_image_spec_to_structure(IPTR in)
 		break;
 	    }
 
-            case '7': /* gradient */
-		spec = get_gradient_imspec(s+2);
+            case '7': /* scaled gradient */
+		spec = get_scaled_gradient_imspec(s+2);
+		break;
+
+            case '8': /* tiled gradient */
+		spec = get_tiled_gradient_imspec(s+2);
 		break;
 
 	} /* switch(*s) */
@@ -501,7 +527,8 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    break;
 	}
 
-        case IST_GRADIENT:
+        case IST_SCALED_GRADIENT:
+        case IST_TILED_GRADIENT:
             break;
     }
     return spec;
@@ -557,7 +584,8 @@ void zune_imspec_cleanup(struct MUI_ImageSpec_intern *spec)
 	    D(bug("*** zune_imspec_cleanup : IST_CONFIG\n"));
 	    break;
 
-        case IST_GRADIENT:
+        case IST_SCALED_GRADIENT:
+        case IST_TILED_GRADIENT:
             break;
 
     }
@@ -574,7 +602,8 @@ BOOL zune_imspec_askminmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax 
     switch (spec->type)
     {
 	case IST_PATTERN:
-        case IST_GRADIENT:
+        case IST_SCALED_GRADIENT:
+        case IST_TILED_GRADIENT:
 	case IST_COLOR:
 	    minmax->MinWidth = 3;
 	    minmax->MinHeight = 3;
@@ -648,7 +677,8 @@ void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj)
 	    D(bug("*** zune_imspec_show : IST_CONFIG\n"));
 	    break;
 
-        case IST_GRADIENT:
+        case IST_SCALED_GRADIENT:
+        case IST_TILED_GRADIENT:
             spec->u.gradient.obj = obj;
             break;
             
@@ -755,7 +785,11 @@ void zune_imspec_draw (struct MUI_ImageSpec_intern *spec, struct MUI_RenderInfo 
 	    D(bug("*** zune_imspec_draw : IST_CONFIG\n"));
 	    break;
 
-        case IST_GRADIENT:
+        case IST_SCALED_GRADIENT:
+            zune_gradient_draw(spec, mri, left, top, right, bottom, 0, 0);
+            break;
+
+        case IST_TILED_GRADIENT:
             zune_gradient_draw(spec, mri, left, top, right, bottom, xoffset, yoffset);
             break;
     }

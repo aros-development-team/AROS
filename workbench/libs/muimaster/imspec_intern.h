@@ -30,7 +30,8 @@ typedef enum {
     IST_BRUSH,    /* "3:%s", "4:%s" = small brushes */
     IST_BITMAP,   /* "5:%s" = a picture to tile in background */
     IST_CONFIG,   /* "6:%ld" = a configured image/background (indirection) */
-    IST_GRADIENT, /* "7:([Hh]|[Vv]),<IST_COLOR>-<IST_COLOR>" = a gradient */
+    IST_SCALED_GRADIENT, /* "7:([Hh]|[Vv]|angle),<IST_COLOR>-<IST_COLOR>" = a scaled gradient */
+    IST_TILED_GRADIENT, /* "8:([Hh]|[Vv]|angle),<IST_COLOR>-<IST_COLOR>" = a tiled gradient */
 } ImageSpecType;
 
 #define CHECKBOX_IMAGE 4
@@ -94,7 +95,9 @@ struct MUI_ImageSpec_intern /* _intern */
 struct MUI_ImageSpec_intern *zune_imspec_create_vector(LONG vect);
 BOOL zune_imspec_vector_get_minmax(struct MUI_ImageSpec_intern *spec, struct MUI_MinMax *minmax);
 
-VOID zune_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
+VOID zune_scaled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
+                                    STRPTR buf);
+VOID zune_tiled_gradient_intern_to_string(struct MUI_ImageSpec_intern *spec,
                                     STRPTR buf);
 BOOL zune_gradient_string_to_intern(CONST_STRPTR str,
                                      struct MUI_ImageSpec_intern *spec);
