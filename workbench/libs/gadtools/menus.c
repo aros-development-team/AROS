@@ -825,7 +825,7 @@ BOOL layoutmenuitems(struct MenuItem * firstitem,
 
 	    if (is_menubarlabelclass_image(im, GadToolsBase))
 	    {
-
+    	    	menuitem->Width = 10;
         	menuitem->Height = 7;
 
 	    }
