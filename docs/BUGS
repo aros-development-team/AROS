@@ -197,7 +197,7 @@ srittau@aros.org
 Disable does not work correctly with some gadtools-gadgets. At least
 the gadgets are not ghosted.
 
-BUG000028
+BUG000028 fixed
 srittau@aros.org
 The sliders next to listviews don't work.
 
