@@ -339,23 +339,26 @@ ULONG last=0xFFFFFFFF;
 	de->de_BlocksPerTrack = table->dg.dg_TrackSectors;
 	de->de_BufMemType = table->dg.dg_BufMemType;
 	pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
-	while (pn->listnode.ln.ln_Succ)
+	while (pn->listnode.ln.ln_Succ != NULL)
 	{
 	ULONG start;
 	ULONG end;
 
-		spc = pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
-		start = pn->de.de_LowCyl*spc;
-		end = ((pn->de.de_HighCyl+1)*spc)-1;
-		if (block<start)
+		if (pn->listnode.ln.ln_Type != LNT_Parent)
 		{
-			if (start<last)
-				last=start-1;
-		}
-		else if (block>end)
-		{
-			if (end>first)
-				first = end+1;
+			spc = pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
+			start = pn->de.de_LowCyl*spc;
+			end = ((pn->de.de_HighCyl+1)*spc)-1;
+			if (block<start)
+			{
+				if (start<last)
+					last=start-1;
+			}
+			else if (block>end)
+			{
+				if (end>first)
+					first = end+1;
+			}
 		}
 		pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
 	}
@@ -375,15 +378,18 @@ struct HDTBPartition *getActive(struct PTableData *data) {
 struct HDTBPartition *pn;
 
 	pn = (struct HDTBPartition *)data->table->listnode.list.lh_Head;
-	while (pn->listnode.ln.ln_Succ)
+	while (pn->listnode.ln.ln_Succ != NULL)
 	{
 	ULONG start;
 	ULONG end;
 
-		start = pn->de.de_LowCyl*pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
-		end = (pn->de.de_HighCyl+1)*pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
-		if ((data->block>=start) && (data->block<end))
-			return pn;
+		if (pn->listnode.ln.ln_Type != LNT_Parent)
+		{
+			start = pn->de.de_LowCyl*pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
+			end = (pn->de.de_HighCyl+1)*pn->de.de_Surfaces*pn->de.de_BlocksPerTrack;
+			if ((data->block>=start) && (data->block<end))
+				return pn;
+		}
 		pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
 	}
 	return (struct HDTBPartition *)findSpace(data->table,&data->gap,data->block);
