@@ -116,7 +116,7 @@ long __gmtoffset;
     if (tz)
     {
 	tz->tz_minuteswest = __gmtoffset;
-#warning TODO: set tz->tz_dsttime
+#warning FIXME: set tz->tz_dsttime
 	tz->tz_dsttime	   = DST_NONE;
     }
 

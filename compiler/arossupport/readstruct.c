@@ -344,9 +344,8 @@ struct ReadLevel
 error:
     curr = GetHead (list);
 
-#warning TODO:
-    /* TODO
-    if (curr && curr->s)
+#warning FIXME:
+    /* if (curr && curr->s)
 	FreeStruct (curr->s, curr->sd); */
 
     while ((curr = (struct ReadLevel *)RemTail (list)))
