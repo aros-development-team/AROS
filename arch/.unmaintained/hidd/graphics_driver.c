@@ -1978,7 +1978,6 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
              will be shown once the layer moves... 
            */
 	   
-	  found_offscreen = TRUE;
            
           bm = CR -> BitMap;
            
@@ -2016,6 +2015,7 @@ ULOCK_HIDD(bm);
           else
           {
             /* with superbitmap */
+	    found_offscreen = TRUE;
             i =  COORD_TO_BYTEIDX(x + L->Scroll_X, y + L->Scroll_Y, Width);
             Mask = XCOORD_TO_MASK(x + L->Scroll_X);
           }
