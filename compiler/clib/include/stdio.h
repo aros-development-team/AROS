@@ -25,6 +25,10 @@
 #   define EOF (-1)
 #endif
 
+#define _IOFBF 0 /* Fully buffered. */
+#define _IOLBF 1 /* Line buffered. */
+#define _IONBF 2 /* Not buffered. */
+
 #ifndef BUFSIZ
 #   define BUFSIZ 1024
 #endif
