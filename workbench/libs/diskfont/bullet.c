@@ -608,26 +608,40 @@ static VOID OTAG_BlitGlyph(struct GlyphMap *gm, struct TextFont *tf, LONG xpos,
     
     src = gm->glm_BitMap +
           gm->glm_BMModulo * srcy +
-	  gm->glm_BlackLeft / 8;
+	  gm->glm_BlackLeft / 8 +
+	  srcx / 8;
 	  
     dest = (UBYTE *)tf->tf_CharData + 
     	    	    ypos * tf->tf_Modulo +
-		    xpos / 8;
+		    xpos / 8 +
+		    destx / 8;
 		       
     for(y = 0; y < height; y++)
     {
+	LONG smask = 0x80 >> (srcx & 7);
+	LONG dmask = 0x80 >> (destx & 7);
+	UBYTE *srcxp = src;
+	UBYTE *destxp = dest;
+	
     	for(x = 0; x < width; x++)
-	{
-	    LONG sx = x + srcx;
-	    LONG dx = x + destx;
-	    
-	    if (src[sx / 8] & (0x80 >> (sx & 7)))
+	{	    
+	    if (*srcxp & smask)
 	    {
-	    	dest[dx / 8] |= (0x80 >> (dx & 7));
+	    	*destxp |= dmask;
 	    }
-	    else
+	    
+	    smask >>= 1;
+	    if (!smask)
 	    {
-	    	dest[dx / 8] &= ~(0x80 >> (dx & 7));
+	    	smask = 0x80;
+		srcxp++;
+	    }
+	    
+	    dmask >>= 1;
+	    if (!dmask)
+	    {
+	    	dmask = 0x80;
+		destxp++;
 	    }
 	}
 	src  += gm->glm_BMModulo;
