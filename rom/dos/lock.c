@@ -3,14 +3,19 @@
     $Id$
 
     Desc: Locks a file or directory.
-    Lang: english
+    Lang: English
 */
+
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
 #include <proto/dos.h>
 #include "dos_intern.h"
+
+#define  DEBUG  0
+#include <aros/debug.h>
+
 
 /*****************************************************************************
 
@@ -68,7 +73,7 @@
     /* Create filehandle */
     ret = (struct FileHandle *)AllocDosObject(DOS_FILEHANDLE, NULL);
 
-    if(ret != NULL)
+    if (ret != NULL)
     {
 	/* Get pointer to I/O request. Use stackspace for now. */
 	struct IOFileSys iofs;
@@ -77,7 +82,7 @@
 	InitIOFS(&iofs, FSA_OPEN, DOSBase);
 
 	/* io_Args[0] is the name which is set by DoName(). */
-	switch(accessMode)
+	switch (accessMode)
 	{
 	case EXCLUSIVE_LOCK:
 	    iofs.io_Union.io_OPEN.io_FileMode = FMF_LOCK | FMF_READ;
@@ -91,8 +96,8 @@
 	    iofs.io_Union.io_OPEN.io_FileMode = accessMode;
 	    break;
 	}
-	
-	if(!DoName(&iofs, name, DOSBase))
+
+	if (!DoName(&iofs, name, DOSBase))
 	{
 	    ret->fh_Device = iofs.IOFS.io_Device;
 	    ret->fh_Unit   = iofs.IOFS.io_Unit;
@@ -103,9 +108,11 @@
 	FreeDosObject(DOS_FILEHANDLE, ret);
     }
     else
+    {
 	SetIoErr(ERROR_NO_FREE_STORE);
+    }
 
-    return 0;
+    return NULL;
 
     AROS_LIBFUNC_EXIT
 } /* Lock */
