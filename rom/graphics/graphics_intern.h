@@ -127,6 +127,7 @@ struct shared_driverdata
     OOP_AttrBase    	     hiddPlanarBMAttrBase;
     OOP_AttrBase    	     hiddGfxAttrBase;
     OOP_AttrBase    	     hiddFakeGfxHiddAttrBase;
+    OOP_MethodID    	     hiddGfxShowImminentReset_MethodID;
     
     /* The frontmost screen's bitmap */
     struct BitMap   	     *frontbm;
