@@ -5,7 +5,7 @@
     Desc: Init of icon.library
     Lang: english
 */
-#define DEBUG 1
+#define DEBUG 0
 
 #include <stddef.h>
 #include <exec/types.h>
