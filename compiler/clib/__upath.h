@@ -14,6 +14,7 @@
 __BEGIN_DECLS
 
 const char * __path_u2a(const char *upath);
+const char * __path_a2u(const char *apath);
 
 __END_DECLS
 
