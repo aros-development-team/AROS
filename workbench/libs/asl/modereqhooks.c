@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: File requester specific code.
-    Lang: english
+    File requester specific code.
 */
 
 
@@ -86,8 +85,9 @@ AROS_UFH3(VOID, SMTagHook,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem 	*tag, *tstate;
-    struct IntSMReq 	*ismreq;
+    struct TagItem 	     *tag; 
+    const struct TagItem *tstate;
+    struct IntSMReq 	 *ismreq;
     
     EnterFunc(bug("SMTagHook(hook=%p, pta=%p)\n", hook, pta));
 

@@ -225,9 +225,10 @@ AROS_UFH3(VOID, FRTagHook,
 {
     AROS_USERFUNC_INIT
 
-    struct TagItem 	*tag, *tstate;
-    struct IntFileReq 	*ifreq;
-    IPTR		tidata;
+    struct       TagItem *tag;
+    const struct TagItem *tstate;
+    struct IntFileReq 	 *ifreq;
+    IPTR		          tidata;
     
     EnterFunc(bug("FRTagHook(hook=%p, pta=%p)\n", hook, pta));
 

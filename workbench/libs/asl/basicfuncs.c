@@ -81,9 +81,8 @@ VOID ParseCommonTags
     struct AslBase_intern	*AslBase
 )
 {
-    struct TagItem *tag, *tstate;
-
-    tstate = taglist;
+    struct       TagItem *tag;
+    const struct TagItem *tstate = taglist;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
