@@ -7,12 +7,12 @@
 
 #include "global.h"
 #include "version.h"
-#include "calendarclass.h"
 
 #include <libraries/coolimages.h>
 #include <aros/debug.h>
 
 #include <zune/clock.h>
+#include <zune/calendar.h>
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -482,12 +482,7 @@ static void MakeGUI(void)
     
     Object *menu, *yearaddobj, *yearsubobj, *timeaddobj, *timesubobj;
     Object *saveobj, *useobj, *cancelobj;
-    
-    if (!MakeCalendarClass())
-    {
-    	Cleanup(MSG(MSG_CANT_CREATE_APP));
-    }
-    
+        
 #if DO_SPECIAL_BUTTON_LAYOUT
     buttonlayouthook.h_Entry = HookEntry;
     buttonlayouthook.h_SubEntry = (HOOKFUNC)ButtonLayoutFunc;
@@ -567,8 +562,9 @@ static void MakeGUI(void)
 				MUIA_FixWidthTxt, (IPTR)"-",
 				End,
 			    End,
-    			Child, calobj = NewObject(calendarmcc->mcc_Class, NULL, TAG_DONE),
-			End,
+    			Child, calobj = CalendarObject,
+                        End,
+                    End,
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
 			MUIA_Background, MUII_GroupBack,
@@ -688,7 +684,6 @@ static void MakeGUI(void)
 static void KillGUI(void)
 {
     DisposeObject(app);
-    KillCalendarClass();
 }
 
 /*********************************************************************************************/
