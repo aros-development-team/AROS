@@ -8,6 +8,7 @@
 #include "Installer.h"
 #include "cleanup.h"
 #include "execute.h"
+#include "locale.h"
 #include "texts.h"
 #include "misc.h"
 #include "gui.h"
@@ -31,16 +32,48 @@ extern int doing_abort;
 #include <libraries/mui.h>
 #include <libraries/coolimages.h>
 
-#define AddContents(obj)			\
-	DoMethod(root, MUIM_Group_InitChange);	\
-	DoMethod(root, OM_ADDMEMBER, (IPTR)obj);\
-	DoMethod(root, MUIM_Group_ExitChange);
+Object *app;
+Object *wnd;
+Object *reqwnd, *helpwnd, *helptext;
+Object *reqroot, *root;
+Object *btproceed, *btabort, *btskip, *bthelp;
+Object *intermediate = NULL;
 
-#define DelContents(obj)			\
-	DoMethod(root, MUIM_Group_InitChange);	\
-	DoMethod(root, OM_REMMEMBER, (IPTR)obj);\
-	DoMethod(root, MUIM_Group_ExitChange);	\
-	MUI_DisposeObject(wc);
+enum
+{
+    Push_NULL,
+    Push_Proceed,
+    Push_Abort,
+    Push_Skip,
+    Push_Help,
+    Push_About,
+    Push_Ok,
+    Push_Cancel,
+    Push_Last
+};
+
+
+/* ######################################################################## */
+
+void AddContents(Object *obj)
+{
+    DoMethod(root, MUIM_Group_InitChange);
+    if(intermediate != NULL)
+    {
+	DoMethod(root, OM_REMMEMBER, (IPTR)intermediate);
+	MUI_DisposeObject(intermediate);
+	intermediate = NULL;
+    }
+    DoMethod(root, OM_ADDMEMBER, (IPTR)obj);
+    DoMethod(root, MUIM_Group_ExitChange);
+}
+void DelContents(Object *obj)
+{
+    DoMethod(root, MUIM_Group_InitChange);
+    DoMethod(root, OM_REMMEMBER, (IPTR)obj);
+    DoMethod(root, MUIM_Group_ExitChange);
+    MUI_DisposeObject(obj);
+}
 
 #define WaitCTRL(sigs)							\
 	if (sigs)							\
@@ -50,6 +83,7 @@ extern int doing_abort;
 	    if (sigs & SIGBREAKF_CTRL_D) break;				\
 	}
 
+#define disable_abort(val)	set(btabort, MUIA_Disabled, val)
 #define disable_skip(val)	set(btskip, MUIA_Disabled, val)
 #define disable_help(val)	set(bthelp, MUIA_Disabled, val)
 
@@ -90,22 +124,67 @@ extern int doing_abort;
 	FreeVec(out);						\
     }
 
-Object *app;
-Object *wnd;
-Object *helpwnd, *helptext;
-Object *root;
-Object *btproceed, *btabort, *btskip, *bthelp;
-
-enum
+/*
+ * Ask user if he really wants to abort
+ */
+void abort_install()
 {
-Push_NULL,
-Push_Proceed,
-Push_Abort,
-Push_Skip,
-Push_Help,
-Push_About,
-Push_Last
-};
+BOOL running = TRUE, quit = FALSE;
+LONG sigs = 0;
+Object *wc;
+Object *btok, *btcancel;
+
+    wc = VGroup,
+	Child, TextObject,
+	    GroupFrameT(_(MSG_MESSAGE)),
+	    MUIA_Text_Contents, (IPTR)ASKQUIT_STRING,
+	    MUIA_Text_Editable, FALSE,
+	    MUIA_Text_Multiline, TRUE,
+	End,
+	Child, HBar(TRUE),
+	Child, HGroup,
+	    MUIA_Group_SameSize, TRUE,
+	    Child, btok = CoolImageIDButton(_(MSG_OK), COOL_USEIMAGE_ID),
+	    Child, btcancel = CoolImageIDButton(_(MSG_CANCEL), COOL_CANCELIMAGE_ID),
+	End,
+    End;
+    set(btok,MUIA_CycleChain,1);
+    set(btcancel,MUIA_CycleChain,1);
+    DoMethod(btok, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2, MUIM_Application_ReturnID, Push_Ok);
+    DoMethod(btcancel, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2, MUIM_Application_ReturnID, Push_Cancel);
+    DoMethod(reqroot, OM_ADDMEMBER, (IPTR)wc);
+
+    set(reqwnd, MUIA_Window_Open, TRUE);
+    while (running)
+    {
+	switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+	{
+	    case Push_Cancel:
+		running = FALSE;
+		break;
+	    case Push_Ok:
+		quit = TRUE;
+		running = FALSE;
+		break;
+	    default:
+		break;
+	}
+	WaitCTRL(sigs);
+    }
+    set(reqwnd, MUIA_Window_Open, FALSE);
+
+    DoMethod(reqroot, OM_REMMEMBER, (IPTR)wc);
+    MUI_DisposeObject(wc);
+
+    if(quit)
+    {
+	error = USERABORT;
+	grace_exit = TRUE;
+	/* Execute trap(1) */
+	traperr( "User aborted!\n", NULL );
+    }
+}
+
 
 /* ######################################################################## */
 
@@ -138,16 +217,19 @@ LONG sigs = 0;
     }
     set(helpwnd, MUIA_Window_Open, FALSE);
 }
-#define helpwinpl(title, pl, what)	\
-	{				\
-	char *text;			\
-	    text = collatestrings(GetPL(pl, what).intval, GetPL(pl, what).arg);\
-	    if ( text != NULL )		\
-	    {				\
-		helpwin(title, text);	\
-		FreeVec(text);		\
-	    }				\
-	}
+
+
+void helpwinpl(char *title, struct ParameterList *pl, int what)
+{
+char *text;
+
+    text = collatestrings(GetPL(pl, what).intval, GetPL(pl, what).arg);
+    if ( text != NULL )
+    {
+	helpwin(title, text);
+	FreeVec(text);
+    }
+}
 
 
 /*
@@ -199,6 +281,16 @@ struct Screen *scr;
 		Child, VSpace(1),
 	    End,
 	End,
+   	SubWindow, reqwnd = WindowObject,
+	    MUIA_Window_Width,	WINDOWWIDTH,
+	    MUIA_Window_Height,	WINDOWHEIGHT,
+	    MUIA_Window_CloseGadget,	FALSE,
+	    MUIA_Window_SizeGadget,	FALSE,
+	    MUIA_Window_NoMenus,	TRUE,
+	    WindowContents, VGroup,
+		Child, reqroot = VGroup, End,
+	    End,
+	End,
     End;
     if (app == NULL)
     {
@@ -237,19 +329,55 @@ void deinit_gui()
 
 
 /*
- * Clean the GUI display
- */
-void clear_gui()
-{
-}
-
-
-/*
  * Show user that we are going to "(abort)" install
  * Don't confuse NOVICE...
  */
 void show_abort(char *msg)
 {
+BOOL running = TRUE;
+ULONG sigs = 0;
+Object *wc;
+
+    if ( get_var_int("@user-level") > _NOVICE )
+    {
+	disable_abort(TRUE);
+	disable_skip(TRUE);
+	disable_help(TRUE);
+
+	wc = VGroup,
+	    Child, TextObject,
+		GroupFrameT("Aborting Installation:"),
+		MUIA_Text_Contents, (IPTR)(msg),
+		MUIA_Text_Editable, FALSE,
+		MUIA_Text_Multiline, TRUE,
+	    End,
+	    End;
+
+	if (wc)
+	{
+	    AddContents(wc);
+
+	    while (running)
+	    {
+		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+		{
+		    case Push_Proceed:
+			running = FALSE;
+			break;
+		    default:
+			break;
+		}
+		WaitCTRL(sigs);
+	    }
+
+	    DelContents(wc);
+	}
+
+	disable_abort(FALSE);
+	disable_skip(FALSE);
+	disable_help(FALSE);
+    }
+
 }
 
 
@@ -276,6 +404,51 @@ char *text;
  */
 void show_exit(char *msg)
 {
+BOOL running = TRUE;
+ULONG sigs = 0;
+Object *wc;
+char *msg2;
+
+    msg2 = AllocVec((strlen(msg)+strlen(DONE_TEXT))*sizeof(char), MEMF_PUBLIC);
+    msg2[0] = 0;
+    strcat(msg2,msg);
+    strcat(msg2,DONE_TEXT);
+    disable_abort(TRUE);
+    disable_skip(TRUE);
+    disable_help(TRUE);
+
+    wc = VGroup,
+	    Child, TextObject,
+		GroupFrameT("Aborting Installation:"),
+		MUIA_Text_Contents, (IPTR)(msg2),
+		MUIA_Text_Editable, FALSE,
+		MUIA_Text_Multiline, TRUE,
+	    End,
+	End;
+
+    if (wc)
+    {
+	AddContents(wc);
+
+	while (running)
+	{
+	    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+	    {
+		case Push_Proceed:
+		    running = FALSE;
+		    break;
+		default:
+		    break;
+	    }
+	    WaitCTRL(sigs);
+	}
+
+	DelContents(wc);
+    }
+
+    disable_abort(FALSE);
+    disable_skip(FALSE);
+    disable_help(FALSE);
 }
 
 
@@ -293,6 +466,26 @@ void show_parseerror(char * msg, int errline)
  */
 void show_working(char *msg)
 {
+    if(intermediate != NULL)
+    {
+	DelContents(intermediate);
+    }
+    
+    intermediate = VGroup,
+	Child, TextObject,
+	GroupFrameT(_(MSG_MESSAGE)),
+	    MUIA_Text_Contents, (IPTR)(msg),
+	    MUIA_Text_Editable, FALSE,
+	    MUIA_Text_Multiline, TRUE,
+	End,
+    End;
+
+    if (intermediate)
+    {
+	DoMethod(root, MUIM_Group_InitChange);
+	DoMethod(root, OM_ADDMEMBER, (IPTR)intermediate);
+	DoMethod(root, MUIM_Group_ExitChange);
+    }
 }
 
 
@@ -316,7 +509,7 @@ Object *wc;
 
 	wc = VGroup,
 	    Child, TextObject,
-		GroupFrameT(MESSAGE),
+		GroupFrameT(_(MSG_MESSAGE)),
 		MUIA_Text_Contents, (IPTR)(msg),
 		MUIA_Text_Editable, FALSE,
 		MUIA_Text_Multiline, TRUE,
@@ -331,17 +524,11 @@ Object *wc;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			helpwinpl(HELP_ON_MESSAGE, pl, _HELP);
@@ -358,57 +545,6 @@ kprintf("Skip\n");
 	disable_skip(FALSE);
 	disable_help(FALSE);
     }
-}
-
-
-/*
- * Show the help-window for topic: User-Level
- */
-void show_help_userlevel()
-{
-#warning TODO: help for userlevel-requester
-
-  helpwin(HELP_ON_USERLEVEL, USERLEVEL_HELP);
-}
-
-
-/*
- * Show the help-window for topic: Log-File
- */
-void show_help_logfile()
-{
-char *helptext;
-
-#warning TODO: help for logfile-requester
-  helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
-  sprintf(helptext, LOG_HELP, preferences.transcriptfile);
-  helpwin(HELP_ON_LOGFILES, helptext);
-  FreeVec(helptext);
-}
-
-
-/*
- * Show the help-window for topic: Pretend to install
- */
-void show_help_pretend()
-{
-#warning TODO: help for pretend-requester
-  helpwin(HELP_ON_PRETEND, PRETEND_HELP);
-}
-
-
-/*
- * Show the help-window for topic: Installer
- */
-void show_help_installer()
-{
-char *helptext;
-
-#warning TODO: help/about for Installer
-  helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
-  sprintf(helptext, ABOUT_INSTALLER, INSTALLER_VERSION, INSTALLER_REVISION);
-  helpwin(ABOUT_ON_INSTALLER, helptext);
-  FreeVec(helptext);
 }
 
 
@@ -476,23 +612,25 @@ char **mxlabels;
 	{
 	    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 	    {
-		case MUIV_Application_ReturnID_Quit:
 		case Push_Abort:
-		    DelContents(wc);
-		    cleanup();
-		    exit(-1);
+		    abort_install();
 		    break;
 		case Push_Proceed:
 		    running = FALSE;
 		    break;
-		case Push_Skip:
-kprintf("Skip\n");
-		    break;
 		case Push_Help:
-		    show_help_userlevel();
+		    helpwin(HELP_ON_USERLEVEL, USERLEVEL_HELP);
 		    break;
 		case Push_About:
-		    show_help_installer();
+		    {
+		    char *helptext;
+
+#warning TODO: help/about for Installer
+			helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
+			sprintf(helptext, ABOUT_INSTALLER, INSTALLER_VERSION, INSTALLER_REVISION);
+			helpwin(ABOUT_ON_INSTALLER, helptext);
+			FreeVec(helptext);
+		    }
 		    break;
 		default:
 		    break;
@@ -532,20 +670,22 @@ kprintf("Skip\n");
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
 			break;
-		    case Push_Skip:
-kprintf("Skip\n");
-			break;
 		    case Push_Help:
-			show_help_logfile();
+			{
+			char *helptext;
+
+#warning TODO: help for logfile-requester
+			  helptext = AllocVec(512 * sizeof(char), MEMF_PUBLIC);
+			  sprintf(helptext, LOG_HELP, preferences.transcriptfile);
+			  helpwin(HELP_ON_LOGFILES, helptext);
+			    FreeVec(helptext);
+			}
 			break;
 		    default:
 			break;
@@ -596,20 +736,14 @@ kprintf("Skip\n");
 		{
 		    switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		    {
-			case MUIV_Application_ReturnID_Quit:
 			case Push_Abort:
-			    DelContents(wc);
-			    cleanup();
-			    exit(-1);
+			    abort_install();
 			    break;
 			case Push_Proceed:
 			    running = FALSE;
 			    break;
-			case Push_Skip:
-kprintf("Skip\n");
-			    break;
 			case Push_Help:
-			    show_help_pretend();
+			    helpwin(HELP_ON_PRETEND, PRETEND_HELP);
 			    break;
 			default:
 			    break;
@@ -668,18 +802,18 @@ int i, m;
 	else if (GetPL(pl, _CHOICES).intval == 1)
 	{
 	    mxlabels[0] = StrDup(GetPL(pl, _CHOICES).arg[0]);
-	    mxlabels[1] = StrDup(NO_TEXT);
+	    mxlabels[1] = StrDup(_(MSG_NO));
 	}
 	else
 	{
-	    mxlabels[0] = StrDup(YES_TEXT);
-	    mxlabels[1] = StrDup(NO_TEXT);
+	    mxlabels[0] = StrDup(_(MSG_YES));
+	    mxlabels[1] = StrDup(_(MSG_NO));
 	}
     }
     else
     {
-	mxlabels[0] = StrDup(YES_TEXT);
-	mxlabels[1] = StrDup(NO_TEXT);
+	mxlabels[0] = StrDup(_(MSG_YES));
+	mxlabels[1] = StrDup(_(MSG_NO));
     }
     mxlabels[2] = NULL;
 
@@ -717,17 +851,11 @@ int i, m;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			if (GetPL(pl, _HELP).intval)
@@ -839,11 +967,8 @@ char minmax[MAXARGSIZE];
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			GetAttr(MUIA_String_Integer, st, &retval);
@@ -851,9 +976,6 @@ char minmax[MAXARGSIZE];
 			{
 			    running = FALSE;
 			}
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			if (GetPL(pl, _HELP).intval)
@@ -944,17 +1066,11 @@ int i;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			if (GetPL(pl, _HELP).intval)
@@ -1064,17 +1180,11 @@ int i, max;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			if (GetPL(pl, _HELP).intval)
@@ -1128,6 +1238,8 @@ char *retval, *string;
     }
     string = GetPL(pl, _DEFAULT).arg[0];
 
+#warning TODO: write whole function request_dir()
+
     retval = addquotes(string);
 
 return retval;
@@ -1148,6 +1260,8 @@ char *retval, *string;
     }
     string = GetPL(pl, _DEST).arg[0];
 
+#warning TODO: write whole function request_disk()
+
     retval = addquotes(string);
 
 return retval;
@@ -1167,6 +1281,8 @@ char *retval, *string;
 	traperr("No default specified!", NULL);
     }
     string = GetPL(pl, _DEFAULT).arg[0];
+
+#warning TODO: write whole function request_file()
 
     retval = addquotes(string);
 
@@ -1262,17 +1378,11 @@ BOOL j;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
-			break;
-		    case Push_Skip:
-kprintf("Skip\n");
 			break;
 		    case Push_Help:
 			if (GetPL(pl, _HELP).intval)
@@ -1368,11 +1478,8 @@ char *out;
 	    {
 		switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
 		{
-		    case MUIV_Application_ReturnID_Quit:
 		    case Push_Abort:
-			DelContents(wc);
-			cleanup();
-			exit(-1);
+			abort_install();
 			break;
 		    case Push_Proceed:
 			running = FALSE;
@@ -1400,31 +1507,56 @@ return retval;
 
 
 /*
- * Ask user if he really wants to abort
- */
-void abort_install(VOID_FUNC destructor)
-{
-}
-
-
-/*
  * Give a short summary on what was done
  */
 void final_report()
 {
+#ifdef DEBUG
+    printf("Application has been installed in %s.\n", get_var_arg("@default-dest"));
+#endif /* DEBUG */
 }
 
 
 void display_text(char * msg)
 {
-}
+BOOL running = TRUE;
+LONG sigs = 0;
+Object *wc;
+Object *btok;
 
+    wc = VGroup,
+	Child, TextObject,
+	    GroupFrameT(_(MSG_MESSAGE)),
+	    MUIA_Text_Contents, (IPTR)msg,
+	    MUIA_Text_Editable, FALSE,
+	    MUIA_Text_Multiline, TRUE,
+	End,
+	Child, HBar(TRUE),
+	Child, HGroup,
+	    Child, btok = CoolImageIDButton(_(MSG_OK), COOL_USEIMAGE_ID),
+	End,
+    End;
+    set(btok,MUIA_CycleChain,1);
+    DoMethod(btok, MUIM_Notify, MUIA_Pressed, FALSE,(IPTR)app, 2, MUIM_Application_ReturnID, Push_Ok);
+    DoMethod(reqroot, OM_ADDMEMBER, (IPTR)wc);
 
-int user_confirmation(char *message)
-{
-int retval = FALSE;
+    set(reqwnd, MUIA_Window_Open, TRUE);
+    while (running)
+    {
+	switch (DoMethod(app,MUIM_Application_NewInput,(IPTR)&sigs))
+	{
+	    case Push_Ok:
+		running = FALSE;
+		break;
+	    default:
+		break;
+	}
+	WaitCTRL(sigs);
+    }
+    set(reqwnd, MUIA_Window_Open, FALSE);
 
-return retval;
+    DoMethod(reqroot, OM_REMMEMBER, (IPTR)wc);
+    MUI_DisposeObject(wc);
 }
 
 

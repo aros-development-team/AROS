@@ -38,10 +38,6 @@
 "   EXPERT\n"					\
 "     user must confirm all actions.\n"
 
-#define MESSAGE		"Message"
-#define PROMPT		"Prompt"
-#define YES_TEXT	"Yes"
-#define NO_TEXT		"No"
 #define LOG_QUESTION	"Installer can log all actions. What do you want?"
 #define LOG_FILE_TEXT	"Write to log file"
 #define LOG_PRINT_TEXT	"Log to printer (PRT:)"
@@ -115,7 +111,8 @@
 " to proceed or abort the installation with\n"		\
 " \"Abort\"."
 
-
+#define ASKQUIT_STRING "Do you really want to abort the installation?"
+#define DONE_TEXT "Done with Installation."
 
 /* Miscellaneous strings */
 

@@ -24,7 +24,6 @@ extern long int request_options( struct ParameterList *pl );
 extern int request_confirm( struct ParameterList * pl );
 extern void final_report( );
 extern void display_text( char * msg );
-extern int user_confirmation( char * );
 extern void init_gui();
 extern void deinit_gui();
 

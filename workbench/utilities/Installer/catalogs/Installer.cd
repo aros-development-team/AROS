@@ -6,3 +6,15 @@ OK
 MSG_CANCEL (//)
 Cancel
 ;
+MSG_MESSAGE (//)
+Message
+;
+MSG_PROMPT (//)
+Prompt
+;
+MSG_YES (//)
+Yes
+;
+MSG_NO (//)
+No
+;
