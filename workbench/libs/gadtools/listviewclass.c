@@ -13,6 +13,7 @@
 #include <proto/dos.h>
 #include <intuition/classes.h>
 #include <intuition/classusr.h>
+#include <intuition/gadgetclass.h>
 #include <intuition/imageclass.h>
 #include <intuition/intuition.h>
 #include <intuition/cghooks.h>
@@ -88,9 +89,10 @@ struct StaticLVData
 ** or the right hook draw states. The combinations of the flags can be used
 ** as an index into the table. This saves me from a LOT of if-else statements.
 ** As one can se, the 4 last ones is all LVR_NORMAL, cause it makes no sense
-** to mark entris selected or disabled in a readony listview.
+** to mark entries selected or disabled in a readonly listview.
 */
 
+#undef SELECTED
 #define NORMAL		0
 #define SELECTED	(1 << 0)
 #define DISABLED	(1 << 1)
@@ -128,6 +130,8 @@ AROS_UFH3(IPTR, RenderHook,
     EnterFunc(bug("RenderHook: hook=%p, node=%sm msg=%p)\n",
     	hook, node->ln_Name, msg));
     
+    D(bug("RenderHook: State %ld\n",msg->lvdm_State));
+
     if (msg->lvdm_MethodID == LV_DRAW)
     {
     	struct DrawInfo *dri = msg->lvdm_DrawInfo;
@@ -149,6 +153,7 @@ AROS_UFH3(IPTR, RenderHook,
      	    case LVR_SELECTED:
      	    case LVR_SELECTEDDISABLED:
      	    	/* We must fill the backgound with FILLPEN */
+		D(bug("RenderHook: LVR_SELECTED(DISABLED)\n"));
 		erasepen = FILLPEN;
 
 		/* Fall through */
@@ -257,26 +262,32 @@ STATIC VOID RenderEntries(Class *cl, Object *o, struct gpRender *msg,
     }
     	
     /* Start rerndering entries */
-    D(bug("About to render %d nodes\n", numentries));
-    
-    
+    D(bug("RenderEntries: About to render %d nodes\n", numentries));
+
+
+    D(bug("RenderEntries: Selected Entry %d\n", data->ld_Selected));
+    D(bug("RenderEntries: ShowSelected Gadget 0x%lx\n", data->ld_ShowSelected));
+    D(bug("RenderEntries: Flags 0x%lx\n", data->ld_Flags));
+      
     for ( ; node->ln_Succ && numentries; node = node->ln_Succ)
     {
     	ULONG retval;
+
+	D(bug("RenderEntries: Rendering entry %d: node %s\n", current_entry, node->ln_Name));
 
     	/* update state */
     	if ((current_entry == data->ld_Selected) &&
 	    ((data->ld_ShowSelected != LV_SHOWSELECTED_NONE) || (data->ld_Flags & LVFLG_FORCE_SELECT_STATE)))
 	{
+	    D(bug("RenderEntries: |= SELECTED\n"));
     	    state |= SELECTED;
         }
 	
-    	D(bug("Rendering entry %d: node %s\n", current_entry, node->ln_Name));
-
+ 
     	/* Call custom render hook */
     	    
     	/* Here comes the nice part about the state mechanism ! */
-    	D(bug("Rendering in state %d\n", state));
+	D(bug("RenderEntries: Rendering in state %d\n", state));
     	drawmsg.lvdm_State = statetab[state];
     	    
     	drawmsg.lvdm_Bounds.MinY = top;
@@ -305,8 +316,8 @@ STATIC WORD NumItemsFit(Object *o, struct LVData *data)
     UWORD numfit;
     
     EnterFunc(bug("NumItemsFit(o=%p, data=%p)\n",o, data));
-    D(bug("total spacing: %d\n", TotalItemHeight(data) ));
-    
+    D(bug("NumItemsFit: total spacing: %d\n", TotalItemHeight(data) ));
+   
     numfit = (G(o)->Height - 2 * LV_BORDER_Y) / 
     			TotalItemHeight(data);
     	
@@ -334,6 +345,7 @@ STATIC WORD ShownEntries(Object *o, struct LVData *data)
 
 STATIC VOID UpdateScroller(Object *o, struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
 {
+    ULONG Result;
     struct TagItem scrtags[] = 
     {
 	{PGA_Top	, 0L	},
@@ -346,17 +358,33 @@ STATIC VOID UpdateScroller(Object *o, struct LVData *data, struct GadgetInfo *gi
 
     if (data->ld_Scroller)
     {
+	D(bug("UpdateScroller: Scroller 0x%lx\n",data->ld_Scroller));
 	if (data->ld_NumEntries > 0)
 	{
 	    scrtags[0].ti_Data = data->ld_Top;
 	    scrtags[1].ti_Data = data->ld_NumEntries;
 	    scrtags[2].ti_Data = ShownEntries(o, data);
+	    D(bug("UpdateScroller: Top %ld NumEntries %ld ShownEntries %ld\n",data->ld_Top,data->ld_NumEntries,scrtags[2].ti_Data));
 	}
-
-	if (gi)
-    	    SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
 	else
-    	    SetAttrsA(data->ld_Scroller, scrtags);
+	{
+	    D(bug("UpdateScroller: no NumEntries\n"));
+	}
+	if (gi)
+	{
+	    D(bug("UpdateScroller: SetGadgetAttrs\n"));
+    	    Result = SetGadgetAttrsA((struct Gadget *)data->ld_Scroller, gi->gi_Window, NULL, scrtags);
+	}
+	else
+	{
+	    D(bug("UpdateScroller: SetAttrs (no gadgetinfo)\n"));
+    	    Result = SetAttrsA(data->ld_Scroller, scrtags);
+    	}
+	D(bug("UpdateScroller: Result 0x%lx\n",Result));
+    }
+    else
+    {
+	D(bug("UpdateScroller: no ld_Scroller\n"));
     }
     
     ReturnVoid("UpdateScroller");
@@ -412,6 +440,7 @@ STATIC VOID ScrollEntries(Object *o, struct LVData *data, WORD old_top, WORD new
 
 STATIC VOID DoShowSelected(struct LVData *data, struct GadgetInfo *gi, struct GadToolsBase_intern *GadToolsBase)
 {
+    D(bug("DoShowSelected:\n"));
     if (data->ld_ShowSelected && (data->ld_ShowSelected != LV_SHOWSELECTED_NONE))
     {
         struct TagItem set_tags[] =
@@ -462,7 +491,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     
     WORD 		new_top, old_top;
     
-    EnterFunc(bug("Listview::Set()\n"));
+    EnterFunc(bug("Listview::Set: Data 0x%lx\n",data));
 
     tstate = msg->ops_AttrList;
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
@@ -473,10 +502,12 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	{
 	    case GTA_Listview_Scroller:	/* [IS] */
 	    	data->ld_Scroller = (Object *)tidata;
+		D(bug("Listview::Set: GTA_Listview_Scroller Scroller 0x%lx\n",data->ld_Scroller));
 	    	update_scroller = TRUE;
 	    	break;
 	    	
 	    case GTLV_Top:	/* [IS]	*/
+		D(bug("Listview::Set: GTLV_Top\n"));
 	    	old_top = data->ld_Top;
 	    	new_top = (WORD)tidata;
 		
@@ -500,6 +531,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	break;
 
 	    case GTLV_MakeVisible: /* [IS] */
+		D(bug("Listview::Set: GTLV_MakeVisible\n"));
 	    	old_top = data->ld_Top;
 		new_top = (WORD)tidata;
 		
@@ -535,6 +567,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	break;
 		
 	    case GTLV_Labels:	/* [IS] */
+		D(bug("Listview::Set: GTLV_Labels\n"));
 	    	data->ld_Labels = (struct List *)tidata;
 //		data->ld_Selected = ~0;
 		data->ld_Top = 0;
@@ -552,7 +585,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     			    data->ld_NumEntries ++;
     			}
 		    }
-    		    D(bug("Number of items added: %d\n", data->ld_NumEntries));
+		    D(bug("Listview::Set: Number of items added: %d\n", data->ld_NumEntries));
 		}
 
 		DoShowSelected(data, msg->ops_GInfo, GadToolsBase);
@@ -563,6 +596,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	break;
 	    	
 	    case GTLV_ReadOnly:	/* [I] */
+		D(bug("Listview::Set: GTLV_ReadOnly\n"));
 	    	if (tidata)
 	    	    data->ld_Flags |= LVFLG_READONLY;
 	    	else
@@ -577,10 +611,13 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 		    struct RastPort *rp;
 		    WORD 	     old_selected = data->ld_Selected;
 		    
+		    D(bug("Listview::Set: GTLV_Selected 0x%lx\n",tidata));
+
 		    data->ld_Selected = (WORD)tidata;
 		    
 		    if (old_selected != data->ld_Selected)
 		    {
+			D(bug("Listview::Set: old_Selected %ld != Selected %ld\n",old_selected,data->ld_Selected));
 		        if ((rp = ObtainGIRPort(msg->ops_GInfo)))
 			{
 		            /* rerender old selected if it was visible */
@@ -588,6 +625,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			    if ((old_selected >= data->ld_Top) &&
 				(old_selected < data->ld_Top + NumItemsFit(o, data)))
 		            { 
+				D(bug("Listview::Set: rerender old_Selected\n"));
 		        	data->ld_FirstDamaged = old_selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 
@@ -599,6 +637,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			    if ((data->ld_Selected >= data->ld_Top) &&
 				(data->ld_Selected < data->ld_Top + NumItemsFit(o, data)))
 		            { 
+				D(bug("Listview::Set: rerender new Selected\n"));
 		        	data->ld_FirstDamaged = data->ld_Selected - data->ld_Top;
 	    			data->ld_NumDamaged = 1;
 
@@ -608,7 +647,10 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			    ReleaseGIRPort(rp);
 			    
 			} /* if ((rp = ObtainGIRPort(msg->ops_GInfo))) */
-			
+			else
+			{
+			    D(bug("Listview::Set: no rastport\n"));
+			}			
 			DoShowSelected(data, msg->ops_GInfo, GadToolsBase);
 			
 		    } /* if (old_selected != data->ld_Selected) */
@@ -618,18 +660,22 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	break;
 	    	
 	    case LAYOUTA_Spacing:	/* [I] */
+		D(bug("Listview::Set: LAYOUTA_Spacing\n"));
 	    	data->ld_Spacing = (UWORD)tidata;
 	    	break;
 	    	
 	    case GTLV_ItemHeight:	/* [I] */
+		D(bug("Listview::Set: GTLV_ItemHeight\n"));
 	    	data->ld_ItemHeight = (UWORD)tidata;
 	    	break;
 	    	
 	    case GTLV_CallBack:	/* [I] */
+		D(bug("Listview::Set: GTLV_CallBack\n"));
 	    	data->ld_CallBack = (struct Hook *)tidata;
 	    	break;
 	    	
 	    case GA_LabelPlace: /* [I] */
+		D(bug("Listview::Set: GTLV_LabelPlace\n"));
 	    	data->ld_LabelPlace = (LONG)tidata;
 	    	break;
 	    	
@@ -641,6 +687,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 			{TAG_DONE			}
 		    };
 		    
+		    D(bug("Listview::Set: GA_Disabled\n"));
 		    if (data->ld_Scroller)
 		    {
 		        if (msg->ops_GInfo)
@@ -663,8 +710,16 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	/* IMPORTANT! If this is an OM_UPDATE, we should NOT redraw the
 	** set the scroller, as we the scroller has allready been updated
     	*/
+	D(bug("Listview::Set: update_scroller flag\n"));
     	if (msg->MethodID != OM_UPDATE)
-    	    UpdateScroller(o, data, msg->ops_GInfo, GadToolsBase);
+    	{
+	    D(bug("Listview::Set: MethodID 0x%lx\n",msg->MethodID));
+	    UpdateScroller(o, data, msg->ops_GInfo, GadToolsBase);
+    	}
+	else
+	{
+	    D(bug("Listview::Set: don't update scroller as OM_UPDATE is used\n"));
+	}
     }
    
     if (scroll_entries && !refresh_all)
@@ -697,7 +752,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
     if (dri == NULL)
     	ReturnPtr ("Listview::New", IPTR, NULL);
     	
-    D(bug("Got dri: %p, dri font=%p, size=%d\n", dri, dri->dri_Font, dri->dri_Font->tf_YSize));
+    D(bug("listview_new: Got dri: %p, dri font=%p, size=%d\n", dri, dri->dri_Font, dri->dri_Font->tf_YSize));
     
     o = (Object *)DoSuperMethodA(cl, o, (Msg)msg);
 
@@ -752,6 +807,8 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 	    	&(((struct StaticLVData *)cl->cl_UserData)->ls_RenderHook);
 	
 	    data->ld_ShowSelected = (struct Gadget *)GetTagData(GTLV_ShowSelected, (IPTR)LV_SHOWSELECTED_NONE, msg->ops_AttrList);
+
+	    D(bug("listview_new: Selected %ld\n", data->ld_ShowSelected));
 	    
 	    listview_set(cl, o, msg);
 
@@ -982,7 +1039,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	    	{TAG_DONE		}
 	    };
 	
-	    D(bug("GREDRAW_REDRAW\n"));
+	    D(bug("listview_render: GREDRAW_REDRAW\n"));
 
 	     /* Erase the old gadget imagery */
 	    SetAPen(msg->gpr_RPort, data->ld_Dri->dri_Pens[BACKGROUNDPEN]);
@@ -1017,7 +1074,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 
 	case GREDRAW_UPDATE:
 
-	    D(bug("GREDRAW_UPDATE\n"));
+	    D(bug("listview_render: GREDRAW_UPDATE\n"));
 	
 	    /* Should we scroll the listview ? */
 	    if (data->ld_ScrollEntries)
@@ -1029,14 +1086,14 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	    	visible = NumItemsFit(o, data);
 		
 		/* We make the assumption that the listview
-		** is alvays 'full'. If it isn't, the
+		** is always 'full'. If it isn't, the
 		** Scroll gadget won't be scrollable, and
 		** we won't receive any OM_UPDATEs.
 		*/
 
 		dy = data->ld_ScrollEntries * TotalItemHeight(data);
 		
-		D(bug("Scrolling delta y: %d\n", dy));
+		D(bug("listview_render: Scrolling delta y: %d\n", dy));
 
 		ScrollRaster(msg->gpr_RPort, 0, dy,
 			G(o)->LeftEdge + LV_BORDER_X,
@@ -1055,7 +1112,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	    	
 	    } /* If (we should do a scroll) */
 	    
-	    D(bug("Rerendering entries: first damaged=%d, num=%d\n",
+	    D(bug("listview_render: Rerendering entries: first damaged=%d, num=%d\n",
 	    	data->ld_FirstDamaged, data->ld_NumDamaged));
 	    
 	    /* Redraw all damaged entries */
@@ -1121,46 +1178,55 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 
     IPTR retval;
 
+    D(bug("dispatch_listviewclass: cl 0x%lx o 0x%lx msg 0x%lx\n",cl,o,msg));
+
     switch(msg->MethodID)
     {
 	case GM_RENDER:
+	    D(bug("dispatch_listviewclass: GM_RENDER\n"));
 	    retval = listview_render(cl, o, (struct gpRender *)msg);
 	    break;
 
 	case GM_GOACTIVE:
+	    D(bug("dispatch_listviewclass: GM_GOACTIVE\n"));
 	case GM_HANDLEINPUT:
+	    D(bug("dispatch_listviewclass: GM_HANDLEINPUT\n"));
 	    retval = listview_input(cl, o, (struct gpInput *)msg);
 	    break;
 
 	case GM_GOINACTIVE:
+	    D(bug("dispatch_listviewclass: GM_GOINACTIVE\n"));
 	    retval = listview_goinactive(cl, o, (struct gpGoInactive *)msg);
 	    break;
 	    
 	case OM_NEW:
+	    D(bug("dispatch_listviewclass: OM_NEW\n"));
 	    retval = listview_new(cl, o, (struct opSet *)msg);
 	    break;
 
 	case OM_UPDATE:
 	    {
-
 	    #define opS(x) ((struct opSet *)x)
 	    LONG top;
 	    top = GetTagData(GTLV_Top, 148, opS(msg)->ops_AttrList);
-	    D(bug("Received OM_UPDATE: top=%d, attrs=%p, gi=%p\n",
+	    D(bug("dispatch_listviewclass: OM_UPDATE: top=%d, attrs=%p, gi=%p\n",
 		    top, opS(msg)->ops_AttrList, opS(msg)->ops_GInfo));
 	    }
 	    /* fall through */
 	    
 	case OM_SET:
+	    D(bug("dispatch_listviewclass: OM_SET\n"));
 	    retval = DoSuperMethodA(cl, o, msg);
 	    retval += (IPTR)listview_set(cl, o, (struct opSet *)msg);
 	    break;
 
 	case OM_GET:
+	    D(bug("dispatch_listviewclass: OM_GET\n"));
 	    retval = (IPTR)listview_get(cl, o, (struct opGet *)msg);
 	    break;
 
 	case OM_DISPOSE:
+	    D(bug("dispatch_listviewclass: OM_DISPOSE\n"));
 	    retval = listview_dispose(cl, o, msg);
 	    break;
 
@@ -1168,6 +1234,8 @@ AROS_UFH3S(IPTR, dispatch_listviewclass,
 	    retval = DoSuperMethodA(cl, o, msg);
 	    break;
     } /* switch */
+
+    D(bug("dispatch_listviewclass: retval 0x%lx\n",retval));
 
     return (retval);
 

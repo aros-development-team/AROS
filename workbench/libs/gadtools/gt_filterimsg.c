@@ -11,6 +11,11 @@
 #include <intuition/imageclass.h>
 #include <intuition/gadgetclass.h>
 #include "gadtools_intern.h"
+#if 0
+#define SDEBUG 1
+#define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 /*********************************************************************
 
@@ -66,6 +71,8 @@
     
     /* Find Context Gadget. Should be first GTYP_GADTOOLS gadget
        in window´s gadgetlist */
+
+    D(bug("FilterIMsg: imsg 0x%lx\n",imsg));
     
     contextgad = (struct GT_ContextGadget *)imsg->IDCMPWindow->FirstGadget;
     while (contextgad)
@@ -80,6 +87,8 @@
 	}
 	contextgad = (struct GT_ContextGadget *)contextgad->gad.NextGadget;
     }
+
+    D(bug("FilterIMsg: contextgad 0x%lx\n",contextgad));
     
     if (contextgad)
     {
@@ -94,9 +103,15 @@
 	switch(imsg->Class)
 	{
 	    case IDCMP_GADGETDOWN:
+		D(bug("FilterIMsg: IDCMP_GADGETDOWN\n"));
 	    	contextgad->activegadget = NULL;
 		
 	    	gad = (struct Gadget *)imsg->IAddress;
+
+		D(bug("FilterIMsg: GadgetType %ld (GTYP_GADTOOLS set ? %ld) (GTYP_GTYPEMASK == GTYP_CUSTOMGADGET ? %ld)\n",
+			gad->GadgetType,
+			gad->GadgetType & GTYP_GADTOOLS,
+			(gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET));
 
 		if ((gad->GadgetType & GTYP_GADTOOLS) &&
 		    ((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET))
@@ -108,26 +123,33 @@
 		    
 		    GetAttr(GTA_GadgetKind, (Object *)gad, &contextgad->gadgetkind);
 		    GetAttr(GTA_ChildGadgetKind, (Object *)gad, &contextgad->childgadgetkind);
-		    
+
+		    D(bug("FilterIMsg: gadgetkind %ld\n",contextgad->gadgetkind));		    
 		    switch(contextgad->gadgetkind)
 		    {
 		    	case SCROLLER_KIND:
+			    D(bug("FilterIMsg: SCROLLER_KIND\n"));
 			case LISTVIEW_KIND:
+			    D(bug("FilterIMsg: LISTVIEW_KIND\n"));
 			    msg_only_for_gadtools = TRUE;
+			    D(bug("FilterIMsg: childgadgetkind %ld\n",contextgad->childgadgetkind));
 			    switch(contextgad->childgadgetkind)
 			    {
 			    	case SCROLLER_KIND:
+				    D(bug("FilterIMsg: SCROLLER_KIND\n"));
 				    if (contextgad->gadgetkind == SCROLLER_KIND)
 				    {
 				    	/* listview gadgets don´t report scroller
 					   activity to app */
 					  
+				        D(bug("FilterIMsg: father is SCROLLER_KIND..send msg\n"));
 					contextgad->getattrtag = GTSC_Top;
 		    	    		GetAttr(GTSC_Top, (Object *)gad, &contextgad->gadget_value);
 					
 					msg_only_for_gadtools = FALSE;
 					
 					rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
+					D(bug("FilterIMsg: Return GTSC_TOP\n"));
 				    }
 			    	    break;
 				
@@ -139,6 +161,7 @@
 					{TAG_DONE}
 				    };			    
 				    
+				    D(bug("FilterIMsg: ARROW_KIND\n"));
 				    contextgad->getattrtag = GTSC_Top;
 				    
 				    GetAttr(GTA_Arrow_Type, (Object *)gad, (IPTR *)&contextgad->childinfo);
@@ -162,6 +185,7 @@
 				    {
 				    	/* nothing todo for listview kind */
 					
+				        D(bug("FilterIMsg: father is SCROLLER_KIND..send msg\n"));
 					GetAttr(GTSC_Top, (Object *)contextgad->parentgadget, &contextgad->gadget_value);
 					if (old_gadget_value != contextgad->gadget_value)
 					{
@@ -178,12 +202,14 @@
 			    break;
 			
 			case SLIDER_KIND:
+			    D(bug("FilterIMsg: SLIDER_KIND\n"));
 			    contextgad->getattrtag = GTSL_Level;
 			    GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
 			    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 			    break;
 			
 			case MX_KIND:
+			    D(bug("FilterIMsg: MX_KIND\n"));
 			    GetAttr(GTMX_Active, (Object *)gad, &contextgad->gadget_value);
 			    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 			    break;
@@ -191,16 +217,23 @@
 		    } /* switch(contextgad->gadgetkind) */
 		    
 		} /* if gadtools gadget and customgadget */ 
+		else
+		{
+		    D(bug("FilterIMsg: No Gadtools custom gadget\n"));
+		}
 		break;
 	
 	    case IDCMP_GADGETUP:
+		D(bug("FilterIMsg: IDCMP_GADGETUP\n"));
 	    	gad = (struct Gadget *)imsg->IAddress;
 		if (gad == contextgad->activegadget)
 		{
 		    switch(contextgad->gadgetkind)
 		    {
 		    	case SCROLLER_KIND:
+			    D(bug("FilterIMsg: SCROLLER_KIND\n"));
 			case SLIDER_KIND:
+			    D(bug("FilterIMsg: SLIDER_KIND\n"));
 			    msg_only_for_gadtools = TRUE;
 			    
 			    if (contextgad->gadgetkind == contextgad->childgadgetkind)
@@ -215,6 +248,7 @@
 			    break;
 
 			case LISTVIEW_KIND:
+			    D(bug("FilterIMsg: LISTVIEW_KIND\n"));
 			    if (contextgad->childgadgetkind != LISTVIEW_KIND)
 			    {
 			    	msg_only_for_gadtools = TRUE;
@@ -327,6 +361,7 @@
 	    /* it´s not really necessary to call GT_PFIMsg here
 	       , in the actual implementation */
 	       
+	    D(bug("FilterIMsg: Gadtools private msg\n"));
 	    GT_PostFilterIMsg((struct IntuiMessage *)rc);
 	    
 	    /* this tells GT_GetImsg that imsg was for GadTools
@@ -345,6 +380,7 @@
 	   because GT_PostFilterIMsg (which is called
 	   by GT_ReplyMsg) relies on this extended structure */
 	
+	D(bug("FilterIMsg: no context gadget\n"));
 	rc = AllocMem(sizeof(struct GT_IntuiMessage),MEMF_PUBLIC | MEMF_CLEAR);
 	if (rc)
 	{

@@ -82,18 +82,48 @@
 	{TAG_DONE				}
     };
 
+    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: Kind %d Prev 0x%lx NewGadget 0x%lx TagList 0x%lx\n",
+			    kind, previous, ng, taglist));
+
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
 	return (NULL);
 
-    /* Georg S: gadtools gadgets which consist of "child" gadgets
-       in AROS return pointer to the first child gadget, while
-       on Amiga the last child gadget is returned */
-    
-    while (previous->NextGadget)
-    {
-    	previous = previous->NextGadget;
-    }
+    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: previous->NextGadget 0x%lx\n",
+                            previous->NextGadget));
 
+    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: Left %d Top %d Width %d Height %d Text 0x%lx <%s>\n",
+                            ng->ng_LeftEdge, ng->ng_TopEdge,
+                            ng->ng_Width, ng->ng_Height,
+                            ng->ng_GadgetText, ng->ng_GadgetText ? ng->ng_GadgetText : "NULL"));
+    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: TextAttr 0x%lx ID %d Flags 0x%08lx VisualInfo 0x%x UserData 0x%x\n",
+                            ng->ng_TextAttr, ng->ng_GadgetID,
+                            ng->ng_Flags, ng->ng_VisualInfo, ng->ng_UserData));
+
+    DEBUG_CREATEGADGETA(if (taglist)
+	    {
+		struct TagItem *tag;
+		APTR state = taglist;
+		while (tag = NextTagItem(&state))
+		{
+		    dprintf("\t%08lx %08lx\n", tag->ti_Tag,tag->ti_Data);
+		}
+	    });
+
+    /* Emm: The makeXXX() functions expect this, and with 'normal' object creation,
+     * this is always true. However, with Triton previous->NextGadget is trashed
+     * after a window resize. What Triton does is somewhat questionable, but
+     * setting this pointer doesn't hurt, so...
+     */
+
+    previous->NextGadget = NULL;
+
+    /* Set the default label place according to the gadget type. */
+
+    if (kind == LISTVIEW_KIND)
+	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Above;
+    else if (kind != BUTTON_KIND)
+	stdgadtags[TAG_LabelPlace].ti_Data = GV_LabelPlace_Left;
+    
     stdgadtags[TAG_Left].ti_Data = ng->ng_LeftEdge;
     stdgadtags[TAG_Top].ti_Data = ng->ng_TopEdge;
     stdgadtags[TAG_Width].ti_Data = ng->ng_Width;
@@ -108,7 +138,10 @@
 	if (kind == BUTTON_KIND) ng->ng_Flags = old_ng_flags;
 	
     	if (!stdgadtags[TAG_IText].ti_Data)
+	{
+	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: can't make label\n"));
             return (NULL);
+	}
     } else {
     	stdgadtags[TAG_IText].ti_Tag = TAG_IGNORE;
     }
@@ -235,18 +268,34 @@
 
     if (gad)
     {
+#if 0
     	gad2 = gad;
 	while (gad2)
 	{
+	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: created gadget 0x%lx\n", gad2));
+	    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: mark GTYPE_GADTOOLS, GadgetID %ld UserData 0x%lx\n",gad->GadgetID,gad->UserData));
 	    gad2->GadgetType |= GTYP_GADTOOLS;
 	    gad2 = gad2->NextGadget;
 	}
+#endif
+
+	/*
+	 * Scan through all childgadgets and the return the last one, so we return
+	 * a ptr with no NextGadget which would collide with our triton fix above
+	 */
+	while (gad->NextGadget)
+	{
+	    gad = gad->NextGadget;
+	}
+	DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: return gadget 0x%lx\n", gad));
     }
     else
     {
-    	previous->NextGadget = 0;
+    	previous->NextGadget = NULL;
         FreeVec((APTR)stdgadtags[TAG_IText].ti_Data);
     }
+
+    DEBUG_CREATEGADGETA(dprintf("CreateGadgetA: Return 0x%x\n", gad));
     
     return (gad);
     AROS_LIBFUNC_EXIT

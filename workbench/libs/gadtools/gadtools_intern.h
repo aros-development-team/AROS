@@ -208,6 +208,29 @@ struct Gadget *makegeneric(struct GadToolsBase_intern *GadToolsBase,
 
 /****************************************************************************************/
 
+#define	NEWMENUCODE	TRUE
+
+#if NEWMENUCODE
+struct Menu * makemenutitle(struct NewMenu * newmenu,
+                            UBYTE		**MyMenuMemPtr,
+                            struct TagItem * taglist);
+
+struct MenuItem * makemenuitem(struct NewMenu * newmenu,
+                            UBYTE		**MyMenuMemPtr,
+                            struct Image	***MyBarTablePtr,
+                               BOOL is_image,
+                               struct TagItem * taglist,
+                               struct GadToolsBase_intern * GadToolsBase);
+
+ULONG	getmenutitlesize(struct NewMenu * newmenu,
+                          struct TagItem * taglist);
+ULONG	getmenuitemsize(struct NewMenu * newmenu,
+                                   BOOL is_image,
+                                   struct TagItem * taglist,
+                                   struct GadToolsBase_intern * GadToolsBase);
+
+#else
+
 struct Menu * makemenutitle(struct NewMenu * newmenu,
                             struct TagItem * taglist);
 
@@ -215,7 +238,7 @@ struct MenuItem * makemenuitem(struct NewMenu * newmenu,
                                BOOL is_image,
                                struct TagItem * taglist,
                                struct GadToolsBase_intern * GadToolsBase);
-
+#endif
 void appendmenu(struct Menu * firstmenu,
                 struct Menu * lastmenu);
 
@@ -225,7 +248,7 @@ void appenditem(struct Menu * curmenu,
 void appendsubitem(struct MenuItem * curitem,
                    struct MenuItem * subitem);
 
-void freeitems(struct Menu * m, struct GadToolsBase_intern * GadToolsBase);
+void freeitems(struct MenuItem * mi, struct GadToolsBase_intern * GadToolsBase);
 
 BOOL layoutmenuitems(struct MenuItem * menuitem,
                      struct VisualInfo * vi,
@@ -345,7 +368,11 @@ struct GT_GenericGadget
 #define TAG_FrontPen		5
 
 #define BORDERPROPSPACINGX 	4
+#ifdef __MORPHOS__
+#define BORDERPROPSPACINGY 	2
+#else
 #define BORDERPROPSPACINGY 	4
+#endif
 
 #define BORDERSTRINGSPACINGX 	4
 #define BORDERSTRINGSPACINGY 	2
@@ -393,7 +420,84 @@ AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
 #define DoSuperMethod(MyClass, MyObject, tags...) \
 	({ULONG _tags[] = { tags }; DoSuperMethodA((MyClass), (MyObject), (APTR)_tags);})
 
-#endif /*MorphOS*/
+/********************************************************************************/
+/* imageclass.h AROS extensions */
 
+#define SYSIA_WithBorder  IA_FGPen      /* default: TRUE */
+#define SYSIA_Style       IA_BGPen      /* default: SYSISTYLE_NORMAL */
+
+#define SYSISTYLE_NORMAL   0
+#define SYSISTYLE_GADTOOLS 1            /* to get arrow images in gadtools look */
+
+/********************************************************************************/
+/* gadgetclass.h AROS extenstions */
+
+/* This method is invoked to learn about the sizing requirements of your class,
+   before an object is created. This is AROS specific. */
+#define GM_DOMAIN 7
+struct gpDomain
+{
+    STACKULONG          MethodID;   /* GM_DOMAIN */
+    struct GadgetInfo * gpd_GInfo;  /* see <intuition/cghooks.h> */
+    struct RastPort   * gpd_RPort;  /* RastPort to calculate dimensions for. */
+    STACKLONG           gpd_Which;  /* see below */
+    struct IBox         gpd_Domain; /* Resulting domain. */
+    struct TagItem    * gpd_Attrs;  /* Additional attributes. None defined,
+                                       yet. */
+};
+
+/********************************************************************************/
+
+/* gpd_Which */
+#define GDOMAIN_MINIMUM 0 /* Calculate minimum size. */
+#define GDOMAIN_NOMINAL 1 /* Calculate nominal size. */
+#define GDOMAIN_MAXIMUM 2 /* Calculate maximum size. */
+
+/********************************************************************************/
+
+  /* [IS.] (struct TextAttr *) TextAttr structure (see <graphics/text.h>) to
+     use for gadget rendering. This attribute is not directly supported by
+     GadgetClass. */
+#define GA_TextAttr      (GA_Dummy + 40)
+
+  /* [I..] (LONG) Choose the placing of the label. GadgetClass does not support
+     this directly. Its subclasses have to take care of that. For possible
+     values see below. */
+#define GA_LabelPlace    (GA_Dummy + 100)
+
+
+/* Placetext values for GA_LabelPlace. */
+#define GV_LabelPlace_In    1
+#define GV_LabelPlace_Left  2
+#define GV_LabelPlace_Right 3
+#define GV_LabelPlace_Above 4
+#define GV_LabelPlace_Below 5
+
+/********************************************************************************/
+
+#define MENUBARLABELCLASS "menubarlabelclass"
+
+#define GTYP_GADTOOLS 0x0100
+
+#define	CORRECT_LISTVIEWHEIGHT	TRUE
+
+#else /*MorphOS*/
+
+#define	CORRECT_LISTVIEWHEIGHT	FALSE
+
+#endif
+
+#define DEBUG_CREATECONTEXT(x)	;
+#define DEBUG_CREATEGADGETA(x)	;
+#define DEBUG_CREATEMENUSA(x)   ;
+#define	DEBUG_CREATELISTVIEW(x)	;
+#define	DEBUG_CREATESCROLLER(x)	;
+#define DEBUG_FREEGADGETS(x)	;
+#define DEBUG_DUMPMENUS(x)	;
+#define DEBUG_ALLOCMENUS(x)	;
+#define DEBUG_FREEMENUS(x)	;
+#define DEBUG_REFRESHWINDOW(x)	;
+
+void	DumpMenu(struct Menu *menu);
 
 #endif /* GADTOOLS_INTERN_H */
