@@ -163,6 +163,10 @@ struct  MUIP_List_TestPos                   { ULONG MethodID; LONG x; LONG y; st
 #define MUIV_List_NextSelected_End      -1
 
 
+#define MUIA_List_Prop_Entries  0x8042a8f5 /* PRIV */
+#define MUIA_List_Prop_Visible  0x804273e9 /* PRIV */
+#define MUIA_List_Prop_First    0x80429df3 /* PRIV */
+
 /****************************************************************************/
 /** Floattext                                                              **/
 /****************************************************************************/
