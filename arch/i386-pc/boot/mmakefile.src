@@ -33,7 +33,7 @@ BOOT_TAR_FILES := \
     C/AddBuffers C/AddDatatypes C/Alias C/Ask C/Assign C/Avail C/Break C/CD \
     C/ChangeTaskPri C/ConClip C/Copy C/Date C/Delete C/Dir C/Echo C/Else \
     C/EndCli C/EndIf C/EndSkip C/Execute C/FailAt C/Fault C/Filenote C/Format \
-    C/Get C/Getenv C/HDTool C/IPrefs C/If C/Info C/Install C/Join C/Lab C/List \
+    C/Get C/Getenv C/IPrefs C/If C/Info C/Install C/Join C/Lab C/List \
     C/LoadWB C/Lock C/MakeDir C/MakeLink C/Mount C/NewShell C/Path C/Prompt \
     C/Protect C/Quit C/Reboot C/Relabel C/Rename C/RequestChoice \
     C/RequestFile C/Resident C/Run C/Search C/Set C/SetClock C/SetDate \
@@ -46,11 +46,19 @@ BOOT_TAR_FILES := \
     Classes/DataTypes/picture.datatype \
     Classes/DataTypes/ilbm.datatype \
     Classes/Gadgets/colorwheel.gadget Classes/Gadgets/gradientslider.gadget \
-    Classes/Zune \
+    Classes/Zune/AboutWindow.mcc Classes/Zune/Aboutmui.mui \
+    Classes/Zune/Balance.mui Classes/Zune/Boopsi.mui Classes/Zune/Calendar.mcc \
+    Classes/Zune/Clock.mcc Classes/Zune/Coloradjust.mui \
+    Classes/Zune/Colorfield.mui Classes/Zune/IconImage.mcc \
+    Classes/Zune/IconListview.mui Classes/Zune/Popasl.mui \
+    Classes/Zune/Popframe.mui Classes/Zune/Popimage.mui Classes/Zune/Poppen.mui \
+    Classes/Zune/PreferencesWindow.mcc Classes/Zune/Radio.mui \
+    Classes/Zune/Scrollgroup.mui Classes/Zune/Settingsgroup.mui \
+    Classes/Zune/Virtgroup.mui \
     Devs.info \
-    Devs/DataTypes Devs/Keymaps Devs/ramdrive.device Devs/clipboard.device \
-    Devs/parallel.device Devs/serial.device Devs/Mountlist \
-    Devs/pipefs.handler Devs/zero.handler \
+    Devs/DataTypes Devs/Keymaps Devs/clipboard.device \
+    Devs/serial.device Devs/Mountlist \
+    Devs/pipefs.handler \
     Fonts/fixed/8 Fonts/arial/13 Fonts/ttcourier/14 Fonts.info \
     Libs/arosc.library Libs/asl.library Libs/commodities.library Libs/datatypes.library \
     Libs/diskfont.library Libs/gadtools.library Libs/icon.library Libs/iffparse.library \
@@ -59,7 +67,7 @@ BOOT_TAR_FILES := \
     Locale.info \
     Locale/Countries Locale/Languages Locale/Help \
     Locale/Catalogs/deutsch/System Locale/Catalogs/italiano/System Locale/Catalogs/svenska/System \
-    Prefs/Font Prefs/Font.info Prefs/Locale Prefs/ReqTools Prefs/ReqTools.info Prefs/Serial \
+    Prefs/Font Prefs/Font.info Prefs/Locale Prefs/Serial \
     Prefs/Input Prefs/Input.info Prefs/Time Prefs/Time.info \
     Prefs/Zune Prefs/Zune.info Prefs.info \
     Prefs/Env-Archive Prefs/Presets \
@@ -68,9 +76,7 @@ BOOT_TAR_FILES := \
     Tools/calculator Tools/Editor Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info \
-    Themes \
-    test/printnativekeytable\
-    test/benchmarks
+    Themes
     
 
 BOOT_SRC_DIR    := $(AROSDIR)
