@@ -745,6 +745,14 @@ __AROS_LP4I(APTR,RawDoFmt,
     __AROS_LCA(APTR,      PutChData,    A3), \
     struct ExecBase *, SysBase, 87, Exec)
 
+__AROS_LP1(ULONG, RawPutChar,
+    __AROS_LPA(ULONG, character, D0),
+    struct ExecBase *, SysBase, 86, Exec)
+#define RawPutChar(character) \
+    __AROS_LC1(ULONG, RawPutChar, \
+    __AROS_LCA(ULONG, character, D0), \
+    struct ExecBase *, SysBase, 86, Exec)
+
 __AROS_LP1(void, ReleaseSemaphore,
     __AROS_LPA(struct SignalSemaphore *, sigSem, A0),
     struct ExecBase *, SysBase, 95, Exec)
