@@ -241,16 +241,34 @@ int main()
     	Object * file = NewObject(FILECLASS, ....);
 	if (file)
 	{
+	    // Get interface object for File interface
 	    Interface *file_if = GetInterface(file, I_File);
+	    
+	    ...
+	    
+	    
+	    // Now you can use this interface object to call all
+	    // methods of that interface.
 
-    	    struct FMsg_Read msg =
+    	    struct FMsg_Read read_msg =
     	    {
 		M_File_Read,
 		buffer,
 		count
     	    };
 	    
-	    file_if->CallIF(file_if, &msg);
+	    file_if->CallIF(file_if, &read_msg);
+	    
+	    ...
+	    
+
+    	    struct FMsg_Write write_msg =
+    	    {
+		M_File_Write,
+		buffer,
+		count
+	    };
+	    file_if->CallIF(file_if, &write_msg);
     
 	}
 	
@@ -267,7 +285,8 @@ Con: - 	Relatively slow normal method invocation, because of
 	about 1.5 - 2 times faster calling an *empty* method.
 
      -	Needs to initialize global vars. Could be somewhat
-        automated by reading linker output.
+        automated by reading linker output, parsing
+	it and generate a source file that does the job.
 	Could possibly use a classbase approach instead.
 	Note that in a typical app you wouldn't use that
 	many different interfaces, and it would be limited
