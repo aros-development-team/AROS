@@ -50,11 +50,6 @@
 #endif
 #include <aros/libcall.h>
 
-#ifdef __MORPHOS__
-#pragma pack(2)
-#endif
-
-
 /*****************************************************************************************/
 
 // #define TURN_OFF_DEBUG
@@ -65,6 +60,7 @@ struct AslBase_intern;
 #define GLOBAL_INTUIBASE
 #define GLOBAL_SYSBASE
 #define GLOBAL_DOSBASE
+
 
 /* Internal requester structure */
 struct IntReq
@@ -455,9 +451,6 @@ AROS_LC0(BPTR, expunge, struct AslBase_intern *, AslBase, 3, Asl)
 
 #define DoSuperMethod(MyClass, MyObject, tags...) \
 	({ULONG _tags[] = { tags }; DoSuperMethodA((MyClass), (MyObject), (APTR)_tags);})
-
-
-#pragma pack()
 
 #endif /*MorphOS*/
 
