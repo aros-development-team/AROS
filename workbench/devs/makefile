@@ -2,7 +2,7 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-OBJDIR = $(GENDIR)/exe
+OBJDIR = $(GENDIR)/devs
 
 DEVS = $(DEVSDIR)/ram.handler \
 	$(DEVSDIR)/nil.handler
@@ -12,6 +12,7 @@ all: setup $(OSGENDIR)/console.o $(OSGENDIR)/cdinputhandler.o \
 
 setup:
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 	@if [ ! -d $(DEVSDIR) ]; then $(MKDIR) $(DEVSDIR) ; fi
 
 clean:
