@@ -1019,67 +1019,89 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
-	case MUIA_Window_CloseGadget:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
-	    break;
-	case MUIA_Window_SizeGadget:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
-	    break;
-	case MUIA_Window_Backdrop:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
-	    break;
-	case MUIA_Window_Borderless:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
-	    break;
-	case MUIA_Window_DepthGadget:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
-	    break;
-	case MUIA_Window_DragBar:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
-	    break;
-	case MUIA_Window_SizeRight:
-	    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
-	    break;
-	case MUIA_Window_Height:
-	    data->wd_ReqHeight = (LONG)tag->ti_Data;
-	    break;
-	case MUIA_Window_Width:
-	    data->wd_ReqWidth = (LONG)tag->ti_Data;
-	    break;
-	case MUIA_Window_ID:
-	    set(obj, MUIA_Window_ID, tag->ti_Data);
-	    break;
-	case MUIA_Window_Title:
-	    set(obj, MUIA_Window_Title, tag->ti_Data);
-	    break;
-	case MUIA_Window_Activate:
-	    set(obj, MUIA_Window_Activate, tag->ti_Data);
-	    break;
-	case MUIA_Window_DefaultObject:
-	    set(obj, MUIA_Window_DefaultObject, tag->ti_Data);
-	    break;
-	case MUIA_Window_RootObject:
-	    if (!tag->ti_Data)
-	    {
-		CoerceMethod(cl, obj, OM_DISPOSE);
-		return 0;
-	    }
-	    set(obj, MUIA_Window_RootObject, tag->ti_Data);
-	    break;
-	case MUIA_Window_AltHeight:
-	    data->wd_AltDim.Height = (WORD)tag->ti_Data;
-	    break;
-	case MUIA_Window_AltWidth:
-	    data->wd_AltDim.Width = (WORD)tag->ti_Data;
-	    break;
-	case MUIA_Window_AltLeftEdge:
-	    data->wd_AltDim.Left = (WORD)tag->ti_Data;
-	    break;
-	case MUIA_Window_AltTopEdge:
-	    data->wd_AltDim.Top = (WORD)tag->ti_Data;
-	    break;
-	case MUIA_Window_AppWindow:
-	    break;
+	    case    MUIA_Window_CloseGadget:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
+		    break;
+
+	    case    MUIA_Window_SizeGadget:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
+		    break;
+
+	    case    MUIA_Window_Backdrop:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
+		    break;
+
+	    case     MUIA_Window_Borderless:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
+		    break;
+
+	    case    MUIA_Window_DepthGadget:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
+		    break;
+
+	    case    MUIA_Window_DragBar:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
+		    break;
+
+	    case    MUIA_Window_SizeRight:
+		    _handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
+		    break;
+
+	    case    MUIA_Window_Height:
+		    data->wd_ReqHeight = (LONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_Width:
+		    data->wd_ReqWidth = (LONG)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_ID:
+		    set(obj, MUIA_Window_ID, tag->ti_Data);
+		    break;
+
+	    case    MUIA_Window_Title:
+		    set(obj, MUIA_Window_Title, tag->ti_Data);
+		    break;
+
+	    case    MUIA_Window_Activate:
+		    set(obj, MUIA_Window_Activate, tag->ti_Data);
+		    break;
+
+	    case    MUIA_Window_DefaultObject:
+		    set(obj, MUIA_Window_DefaultObject, tag->ti_Data);
+		    break;
+
+	    case    MUIA_Window_Menustrip:
+		    data->wd_ChildMenustrip = (Object*)tag->ti_Data;
+		    break;
+
+   	    case    MUIA_Window_RootObject:
+		    if (!tag->ti_Data)
+		    {
+			CoerceMethod(cl, obj, OM_DISPOSE);
+			return 0;
+		    }
+		    set(obj, MUIA_Window_RootObject, tag->ti_Data);
+		    break;
+
+	    case    MUIA_Window_AltHeight:
+		    data->wd_AltDim.Height = (WORD)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_AltWidth:
+		    data->wd_AltDim.Width = (WORD)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_AltLeftEdge:
+		    data->wd_AltDim.Left = (WORD)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_AltTopEdge:
+		    data->wd_AltDim.Top = (WORD)tag->ti_Data;
+		    break;
+
+	    case    MUIA_Window_AppWindow:
+		    break;
 	}
     }
 
