@@ -102,7 +102,7 @@
     n = (IPTR)target-(IPTR)lastvec;
 
     /* Clear instruction cache for the whole jumptable */
-    CacheClearE(lastvec, n, CACRF_ClearI);
+    CacheClearE(lastvec, n, CACRF_ClearI|CACRF_ClearD);
 
     /* Return size of jumptable */
     return n;

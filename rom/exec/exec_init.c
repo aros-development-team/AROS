@@ -19,6 +19,7 @@
 #include <dos/dosextens.h>
 #include <stdlib.h>
 
+#include <aros/system.h>
 #include <aros/arossupportbase.h>
 #include <aros/machine.h>
 #include <aros/asmcall.h>
@@ -29,6 +30,9 @@
 #include <proto/exec.h>
 
 #include "exec_private.h"
+#include "exec_util.h"
+#include "etask.h"
+#include "sigcore.h"
 #include "libdefs.h"
 
 static const UBYTE name[];
@@ -61,7 +65,7 @@ struct ExecBase *SysBase;
 
 void _aros_not_implemented(char *X)
 {
-    kprintf("Unsupported function at offset -0x%hx in %s\n",
+    kprintf("Unsupported function at offset -0x%h in %s\n",
 	    abs(*(WORD *)((&X)[-1]-2)),
 	    ((struct Library *)(&X)[-2])->lib_Node.ln_Name);
 }
@@ -217,6 +221,31 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	t->tc_SigAlloc = 0xFFFF;
 	t->tc_SPLower = 0;	    /* This is the system's stack */
 	t->tc_SPUpper = (APTR)~0UL;
+	t->tc_Flags |= TF_ETASK;
+	if (t->tc_Flags & TF_ETASK)
+	{
+	    t->tc_UnionETask.tc_ETask = AllocTaskMem(t
+		, sizeof(struct IntETask)
+		, MEMF_ANY|MEMF_CLEAR
+	    );
+
+	    if (!t->tc_UnionETask.tc_ETask)
+	    {
+		kprintf("Not enough memory for first task\n");
+		exit(20);
+	    }
+
+	    GetIntETask(t)->iet_Context = AllocTaskMem(t
+		, SIZEOF_ALL_REGISTERS
+		, MEMF_PUBLIC|MEMF_CLEAR
+	    );
+
+	    if (!GetIntETask(t)->iet_Context)
+	    {
+		kprintf("Not enough memory for first task\n");
+		exit(20);
+	    }
+	}
 
 	SysBase->ThisTask = t;
     }
