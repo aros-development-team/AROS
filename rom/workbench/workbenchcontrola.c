@@ -118,11 +118,11 @@
                 break;
 
             case WBCTRLA_AddHiddenDeviceName:
-                AddHiddenDevice( &(WorkbenchBase->wb_HiddenDevices), (STRPTR) tag->ti_Data );
+                AddHiddenDevice((STRPTR) tag->ti_Data);
                 break;
 
             case WBCTRLA_RemoveHiddenDeviceName:
-                RemoveHiddenDevice( &(WorkbenchBase->wb_HiddenDevices), (STRPTR) tag->ti_Data );
+                RemoveHiddenDevice((STRPTR) tag->ti_Data);
                 break;
 
             case WBCTRLA_GetTypeRestartTime:
