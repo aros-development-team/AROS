@@ -614,6 +614,7 @@ kprintf("Unknown relocation type %d!\n",AROS_BE2LONG(reltab[i].info) & 0xFF);
             *startaddr = hunks[t].destination;
     }
   }
+#warning Must also free all code here!
   /* Free hunk information table */
   FreeVec (hunks+mint);
 

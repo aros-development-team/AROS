@@ -506,7 +506,7 @@ int write_mem(struct IOExtSer * IORequest, ULONG addr, char * buf, UWORD num_byt
 
 	memcpy(_buf, &_addr, sizeof(addr));
 	memcpy(_buf+sizeof(addr), buf, num_bytes);
-	while (ctr < 10) {
+	while (ctr < 20) {
 		struct Packet * packet;
 		if (TRUE == send) {
 			send_packet(IORequest, _buf, num_bytes+sizeof(addr), TYPE_WRITE_MEM);
@@ -544,11 +544,13 @@ int send_chunk(struct IOExtSer * IORequest, ULONG addr, char * buf, UWORD num_by
 {
 	printf("Sending chunk of size %d to address %x\n",num_bytes,addr);
 	while (num_bytes > 0) {
-		UWORD send = 120;
+		UWORD send = 100;
 		if (num_bytes < send)
 			send = num_bytes;
-		if (write_mem(IORequest, addr, buf, send) < 0)
+		if (write_mem(IORequest, addr, buf, send) < 0) {
+			printf("send_chunk failed!\n");
 			return -1;
+		}
 		addr += send;
 		buf  += send;
 		num_bytes -= send;
@@ -654,34 +656,49 @@ struct PalmMem
 
 struct registers
 {
-	UWORD	CSGBA;
-	UWORD	CSGBB;
-	UWORD	CSGBC;
-	UWORD	CSGBD;
-	UWORD	CSUGBA;
-	UWORD   empty1;
-	UWORD   empty2;
-	UWORD   empty3;
-	UWORD	CSA;
-	UWORD	CSB;
-	UWORD	CSC;
-	UWORD	CSD;
-	UWORD   EMUCS;
-	UWORD   CSCTRL1;
-	UWORD   CSCTRL2;	
-	UWORD   CSCTRL3;	
+	UWORD	GRPBASEA; /* 0xfffff100 */
+	UWORD	GRPBASEB; /* 0xfffff102 */
+	UWORD	GRPBASEC; /* 0xfffff104 */
+	UWORD	GRPBASED; /* 0xfffff106 */
+
+	UWORD	GRPMASKA; /* 0xfffff108 */
+	UWORD	GRPMASKB; /* 0xfffff10a */
+	UWORD	GRPMASKC; /* 0xfffff10c */
+	UWORD	GRPMASKD; /* 0xfffff10e */
+
+	ULONG	CSA0; /* 0xfffff110 */
+	ULONG	CSA1; /* 0xfffff114 */
+	ULONG	CSA2; /* 0xfffff118 */
+	ULONG	CSA3; /* 0xfffff11c */
+
+	ULONG	empty1; /* 0xfffff120 */
+	ULONG	empty2; /* 0xfffff124 */
+	ULONG	empty3; /* 0xfffff128 */
+	ULONG	empty4; /* 0xfffff12c */
+
+	ULONG	CSC0; /* 0xfffff130 */
+	ULONG	CSC1; /* 0xfffff134 */
+	ULONG	CSC2; /* 0xfffff138 */
+	ULONG	CSC3; /* 0xfffff13c */
+	
 	ULONG	LSSA;
 
 	struct	special_info	SI;	
-} Regs;
+} __attribute__((packed)) Regs;
 
+/*
+ * This function builds the current palm memory layout into a linked
+ * list of simple structures. Later on the relocator will look at this
+ * list and try to grab a chunk.
+ */
 void BuildPalmMem(struct registers * reg)
 {
 	struct PalmMem *pm;
 	
 	pm = AllocMem(sizeof(struct PalmMem),MEMF_CLEAR);
-	pm->start = 0x3000;
-	pm->end   = 0x3000+0x8000;
+#warning Should really build a much better list here!!!
+	pm->start = (AROS_LONG2BE(reg->SI.end) & 0xffff0000) + 0x4000;
+	pm->end   = pm->start+0x100000;
 	AddTail(&PalmMemList, &pm->node);
 }
 
@@ -741,10 +758,10 @@ int start_protocol(struct IOExtSer * IORequest, ULONG start, char * filename)
 		return err;
 	}
 	
-	buf = read_mem(IORequest,0xfffff100,0x20);
+	buf = read_mem(IORequest,0xfffff100,0x40);
 	if (buf) {
-		memcpy(&Regs, buf, 0x20);
-		FreeMem(buf,0x20);
+		memcpy(&Regs, buf, 0x40);
+		FreeMem(buf,0x40);
 	}
 
 	buf = read_mem(IORequest,0xfffffA00,0x4);
@@ -755,34 +772,54 @@ int start_protocol(struct IOExtSer * IORequest, ULONG start, char * filename)
 
 	err = get_special_info(IORequest,&Regs.SI);
 
-	printf("start: %x\n",AROS_LONG2BE(Regs.SI.start));
-	printf("end:   %x\n",AROS_LONG2BE(Regs.SI.end));
-	printf("ssp:   %x\n",AROS_LONG2BE(Regs.SI.ssp));
+	printf("start: %lx\n",AROS_LONG2BE(Regs.SI.start));
+	printf("end:   %lx\n",AROS_LONG2BE(Regs.SI.end));
+	printf("ssp:   %lx\n",AROS_LONG2BE(Regs.SI.ssp));
 
-	printf("CSGBA    : %x\n",AROS_WORD2BE(Regs.CSGBA));
-	printf("CSGBB    : %x\n",AROS_WORD2BE(Regs.CSGBB));
-	printf("CSGBC    : %x\n",AROS_WORD2BE(Regs.CSGBC));
-	printf("CSGBD    : %x\n",AROS_WORD2BE(Regs.CSGBD));
-	printf("CSUGBA   : %x\n",AROS_WORD2BE(Regs.CSGBD));
-	printf("CSA      : %x\n",AROS_WORD2BE(Regs.CSA));
-	printf("CSB      : %x\n",AROS_WORD2BE(Regs.CSB));
-	printf("CSC      : %x\n",AROS_WORD2BE(Regs.CSC));
-	printf("CSD      : %x\n",AROS_WORD2BE(Regs.CSD));
-	printf("EMUCS    : %x\n",AROS_WORD2BE(Regs.EMUCS));
-	printf("CSCTRL1  : %x\n",AROS_WORD2BE(Regs.CSCTRL1));
-	printf("CSCTRL2  : %x\n",AROS_WORD2BE(Regs.CSCTRL2));
-	printf("CSCTRL3  : %x\n",AROS_WORD2BE(Regs.CSCTRL3));
+	printf("GRPBASEA    : %x\n",AROS_WORD2BE(Regs.GRPBASEA));
+	printf("GRPBASEB    : %x\n",AROS_WORD2BE(Regs.GRPBASEB));
+	printf("GRPBASEC    : %x\n",AROS_WORD2BE(Regs.GRPBASEC));
+	printf("GRPBASED    : %x\n",AROS_WORD2BE(Regs.GRPBASED));
 
-	printf("Changing CSA register!\n");
-	Regs.CSA &= 0x7fff;
-	err = write_mem(IORequest, 0xfffff110, (char *)&Regs.CSA, 2);
+	printf("GRPMASKA    : %x\n",AROS_WORD2BE(Regs.GRPMASKA));
+	printf("GRPMASKB    : %x\n",AROS_WORD2BE(Regs.GRPMASKB));
+	printf("GRPMASKC    : %x\n",AROS_WORD2BE(Regs.GRPMASKC));
+	printf("GRPMASKD    : %x\n",AROS_WORD2BE(Regs.GRPMASKD));
+
+	printf("CSA0        : %lx\n",AROS_LONG2BE(Regs.CSA0));
+	printf("CSA1        : %lx\n",AROS_LONG2BE(Regs.CSA1));
+	printf("CSA2        : %lx\n",AROS_LONG2BE(Regs.CSA2));
+	printf("CSA3        : %lx\n",AROS_LONG2BE(Regs.CSA3));
+
+	printf("CSC0        : %lx\n",AROS_LONG2BE(Regs.CSC0));
+	printf("CSC1        : %lx\n",AROS_LONG2BE(Regs.CSC1));
+	printf("CSC2        : %lx\n",AROS_LONG2BE(Regs.CSC2));
+	printf("CSC3        : %lx\n",AROS_LONG2BE(Regs.CSC3));
+
+#if 0
+	Not doing this anymore. Will do this on the palm.
+	/*
+	 * Disable the read only bit in the CSA1 and CSA3 register.
+	 */
+	Regs.CSA1 &= AROS_LONG2BE(0xfffffff7);
+	printf("Changing CSA1 register to new value %x!\n",AROS_LONG2BE(Regs.CSA1));
+	err = write_mem(IORequest, 0xfffff110, (char *)&Regs.CSA1, sizeof(Regs.CSA1));
 	if (0 == err) {
-		printf("Successfully changed register CSA!\n");
+		printf("Successfully changed register CSA1!\n");
 	}
 
+	Regs.CSA3 &= AROS_LONG2BE(0xfffffff7);
+	printf("Changing CSA3 register to new value %x!\n",AROS_LONG2BE(Regs.CSA3));
+	err = write_mem(IORequest, 0xfffff110, (char *)&Regs.CSA3, sizeof(Regs.CSA3));
+	if (0 == err) {
+		printf("Successfully changed register CSA3!\n");
+	}
+#endif
 	BuildPalmMem(&Regs);
 	printf("Trying to upload program now!\n");
-	upload_program(IORequest,filename, &startaddr);
+	if (0 != upload_program(IORequest,filename, &startaddr)) {
+		printf("upload_program returned error!\n");
+	}
 
 	if (TRUE == start)
 		start_program(IORequest, startaddr);
