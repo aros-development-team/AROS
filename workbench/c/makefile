@@ -12,7 +12,7 @@ INCLUDES = -I$(BINDIR)/include -I$(TOP)/amiga/include
 OBJDIR = $(GENDIR)/workbench/c
 
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
+LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc 
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a 
 
@@ -67,7 +67,7 @@ $(EXEDIR)/%: $(OBJDIR)/%.o $(LIBDIR)/startup.o $(DEPLIBS)
 
 $(OBJDIR)/%.o: %.c
 	@$(ECHO) "Compiling $(CURDIR)/$<..."
-	@$(APPCFLAGS) $(CFLAGS) -c $< -o $@ 2>&1|tee $*.err
+	@$(CC) $(APPCFLAGS) -c $< -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OBJDIR)/%.d: %.c

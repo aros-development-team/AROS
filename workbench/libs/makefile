@@ -30,11 +30,11 @@ clean:
 		clean ) ; \
 	done
 
-$(SLIBDIR)/%.library: %lib.o
+$(SLIBDIR)/%.library: $(OBJDIR)/%lib.o
 	$(CC) $(ILDFLAGS) $^ -o $@
 
-$(OBJDIR)/%.o: %.c
-	$(CC) $(CCFLAGS) -I $(TOP) $< -c -o $@
+$(OBJDIR)/%lib.o: %lib.c
+	$(CC) $(CFLAGS) -I $(TOP) $< -c -o $@
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi

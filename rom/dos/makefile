@@ -14,7 +14,7 @@ EXEDIR=$(BINDIR)/test
 TESTOBJDIR = $(GENDIR)/rom/dos
 
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
+LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc 
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a 
 
@@ -106,8 +106,8 @@ $(OBJDIR)/%.o: %.c
 
 dos_functable.c : $(foreach f,$(FUNCTIONS),$(f).c) \
 	    $(TOP)/scripts/makefunctable.awk
-	@echo "Regenerating $(to)..."
-	@gawk -f $(TOP)/scripts/makefunctable.awk \
+	@$(ECHO) "Regenerating $(to)..."
+	@$(AWK) -f $(TOP)/scripts/makefunctable.awk \
 	    --assign lib="Dos" $^
 
 $(OBJDIR)/%.d: %.c

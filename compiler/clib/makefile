@@ -11,7 +11,7 @@ INCDIR=$(BINDIR)/include
 LIB = $(LIBDIR)/libarosc.a
 
 STARTUP = $(LIBDIR)/startup.o
-LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc $(postlibs)
+LIBS = -L$(LIBDIR)  -lamiga -larossupport -larosc 
 DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
 	$(LIBDIR)/libarosc.a 
 
