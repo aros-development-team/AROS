@@ -189,5 +189,28 @@ struct RasInfo
 
 #define EXTEND_VSTRUCT 0x1000
 
+#define CMAB_FULLPALETTE 	0
+#define CMAF_FULLPALETTE 	(1<<CMAB_FULLPALETTE)
+#define CMAB_NO_INTERMED_UPDATE 1
+#define CMAF_NO_INTERMED_UPDATE (1<<CMAB_NO_INTERMED_UPDATE)
+#define CMAB_NO_COLOR_LOAD 	2
+#define CMAF_NO_COLOR_LOAD 	(1 << CMAB_NO_COLOR_LOAD)
+#define CMAB_DUALPF_DISABLE 	3
+#define CMAF_DUALPF_DISABLE 	(1 << CMAB_DUALPF_DISABLE)
+
+
+struct PaletteExtra
+{
+	struct SignalSemaphore pe_Semaphore;
+	UWORD	pe_FirstFree;
+	UWORD	pe_NFree;
+	UWORD	pe_FirstShared;
+	UWORD	pe_NShared;
+	UBYTE	*pe_RefCnt;
+	UBYTE	*pe_AllocList;
+	struct ViewPort *pe_ViewPort;
+	UWORD	pe_SharableColors;
+};
+
 
 #endif /* GRAPHICS_VIEW_H */
