@@ -1,5 +1,6 @@
 mmake
 mmake.o
+mmake.cache
 Makefile
 config.h
 MetaMake-*.*.tar.gz
