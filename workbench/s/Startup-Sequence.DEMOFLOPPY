@@ -44,8 +44,6 @@ Mount PIPEFS:
 
 ;Mount DEVS:DOSDrivers/~(#?.info)
 
-; Activate selected gfx.hidd(s)
-
 ;SetEnv Workbench $Workbench
 ;SetEnv Kickstart $Kickstart
 
@@ -63,7 +61,6 @@ If EXISTS S:User-Startup
   Execute S:User-Startup
 EndIf
 
-;Echo "Starting file manager..."
 LoadWB
 
 Execute S:Shell-Startup
