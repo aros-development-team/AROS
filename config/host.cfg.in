@@ -57,7 +57,7 @@ NM_PLAIN	:= @NM_PLAIN@
 ifeq "$(DEBUG)" "yes"
     STRIP		:= $(NOP)
 else
-    STRIP		:= @STRIP@ --strip-unneeded -R.note -R.comment
+    STRIP		:= @STRIP@ --strip-unneeded -R.comment
 endif
 
 OBJCOPY		:= @OBJCOPY@
