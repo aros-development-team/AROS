@@ -1,5 +1,5 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: The main keyboard class.
@@ -25,8 +25,6 @@
 #include <hardware/custom.h>
 
 #include <devices/inputevent.h>
-
-#include <linux/pc_keyb.h>
 
 #include "kbd.h"
 #include "keys.h"
@@ -688,7 +686,7 @@ int kbd_reset(void)
 
     do
     {
-        kbd_write_output_w(KBD_CMD_RESET);
+        kbd_write_output_w(KBD_OUTCMD_RESET);
         status = kbd_wait_for_input();
         if (status == KBD_REPLY_ACK)
             break;
@@ -701,7 +699,7 @@ int kbd_reset(void)
     
     do
     {
-        kbd_write_output_w(KBD_CMD_DISABLE);
+        kbd_write_output_w(KBD_OUTCMD_DISABLE);
         status = kbd_wait_for_input();
         if (status == KBD_REPLY_ACK)
             break;
@@ -715,7 +713,7 @@ int kbd_reset(void)
 		     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
 		     KBD_MODE_SYS);
 
-    kbd_write_output_w(KBD_CMD_ENABLE);
+    kbd_write_output_w(KBD_OUTCMD_ENABLE);
     
     if (kbd_wait_for_input() != KBD_REPLY_ACK)
         return FALSE;
