@@ -406,6 +406,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     process->pr_ShellPrivate = 0;
 
 
+    SetSignal(0L, SIGF_SINGLE);
+    
     if
     (
         AddProcess
@@ -522,9 +524,7 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 {
-    task->tc_State = TS_WAIT;
-    Reschedule(task);
-    Switch();
+    Wait(SIGF_SINGLE);
 }
 
 
@@ -533,20 +533,9 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
     struct Task *task   = (struct Task *)tid;
     struct Task *parent = (struct Task *)(GetETask(task)->et_Parent);
 
-    // Parent may now run again
-    parent->tc_State = TS_READY;
+    D(bug("Awakening the parent task %p (called %s)\n", parent, parent->tc_Node.ln_Name));
 
-    kprintf("Setting parent task %p (called %s) to TS_READY\n",
-	    parent,
-	    parent->tc_Node.ln_Name);
-
-    // This is OK to do as we know that the parent is blocked
-    Forbid();
-    Remove(&(parent->tc_Node));
-    Permit();
-
-    Reschedule(parent);
-    Switch();
+    Signal(parent, SIGF_SINGLE);
 }
 
 
