@@ -575,9 +575,10 @@ static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
 		    SetIoErr(ERROR_NO_FREE_STORE);
 		    break;
 		}
-		
+	
 		ead = ead->ed_Next;
 	    } while(ead != NULL);
+	    
 	}
     } while((loop) && (error == RETURN_OK));
 

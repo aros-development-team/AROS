@@ -13,6 +13,7 @@ FILES := \
     CheckMem \
     ConClip \
     Copy \
+    CopyToPAR \
     CRList \
     DamageList \
     Date \
