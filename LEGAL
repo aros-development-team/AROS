@@ -6,6 +6,11 @@ of the binaries is specified first (sometimes with AROS-style path pattern
 matching), followed by the location of the sources inside square brakets.
 Some components are not distributed as binaries.
 
+The following components are distributed under the terms of version 2.1 of the
+GNU Lesser General Public License, as specified in the file "LICENSE.LGPL":
+
++ Classes/Zune/PrefsWindow.mcc [workbench/classes/zune/prefswindow]
+
 The following components are distributed under the terms of version 2 of the
 GNU General Public License, as specified in the file "LICENSE.GPL":
 
