@@ -333,8 +333,8 @@ AROS_LH0I(int, null,
     case OM_NEW: {
 	cl = _OBJECT(o)->o_Class;
 
-	/* Nur Speicher besorgen. Im Object steht, wieviel.
-	   (Das Object ist keines. Es ist der Class-Pointer selbst !) */
+	/* Get memory. The objects shows how much is needed.
+	   (The object is not an object, it is a class pointer!) */
 	retval = (IPTR) AllocMem (cl->cl_InstOffset
 		+ cl->cl_InstSize
 		+ sizeof (struct _Object)
@@ -345,8 +345,8 @@ AROS_LH0I(int, null,
 	break; }
 
     case OM_DISPOSE:
-	/* Speicher freigeben. Aufrufer ist verantwortlich,
-	   dass bereits alles andere freigegeben wurde ! */
+	/* Free memory. Caller is responsible that everything else
+	   is already cleared! */
 	FreeMem (_OBJECT(o)
 	    , cl->cl_InstOffset
 		+ cl->cl_InstSize
@@ -355,13 +355,13 @@ AROS_LH0I(int, null,
 	break;
 
     case OM_ADDTAIL:
-	/* Fuege <o> an Liste an. */
+	/* Add <o> to list. */
 	AddTail (((struct opAddTail *)msg)->opat_List,
 		    (struct Node *) _OBJECT(o));
 	break;
 
     case OM_REMOVE:
-	/* Entferne Object aus der Liste */
+	/* Remove object from list. */
 	Remove ((struct Node *) _OBJECT(o));
 	break;
 
