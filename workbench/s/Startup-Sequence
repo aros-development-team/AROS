@@ -18,9 +18,9 @@ Assign LOCALE:  SYS:Locale
 Assign LIBS:    SYS:Classes ADD
 Assign FONTS:   SYS:Fonts
 Assign HELP:    LOCALE:Help DEFER
-Assign THEMES:  SYS:Themes
+Assign THEMES:  SYS:System/Themes
 Assign THEME:   THEMES:Mason
-Assign IMAGES:  SYS:Images
+Assign IMAGES:  SYS:System/Images
 ;Assign PRINTERS: DEVS:Printers
 Assign WANDERER: SYS:System/Wanderer DEFER
 
