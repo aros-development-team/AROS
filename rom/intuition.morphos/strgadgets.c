@@ -261,7 +261,7 @@ STATIC UWORD GetTextLeft(struct Gadget      *gad,
     /* Gets left position of text in the string gadget */
 
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD       text_left;
+    UWORD       text_left = 0;
     STRPTR      dispstr = &(strinfo->Buffer[strinfo->DispPos]);
     UWORD       dispstrlen;
     BOOL        cursor_at_end;
@@ -310,7 +310,7 @@ STATIC UWORD GetTextRight(struct Gadget     *gad,
     /* Gets right offset of text in the string gadget */
 
     struct StringInfo   *strinfo = (struct StringInfo *)gad->SpecialInfo;
-    UWORD       text_right;
+    UWORD       text_right = 0;
     STRPTR      dispstr = &(strinfo->Buffer[strinfo->DispPos]);
     UWORD       dispstrlen;
     BOOL        cursor_at_end;
