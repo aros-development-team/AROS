@@ -43,8 +43,12 @@ extern struct Library *MUIMasterBase;
 #define dol_Name dol_OldName /* This doesn't work really */
 #endif
 
-#define UPDATE_SINGLEICON 1
-#define UPDATE_SCROLL	  2
+#define UPDATE_SINGLEICON   1
+#define UPDATE_SCROLL	    2
+
+#define LEFT_BUTTON 	    1
+#define RIGHT_BUTTON 	    2
+#define MIDDLE_BUTTON	    4
 
 struct IconEntry
 {
@@ -393,9 +397,10 @@ static IPTR IconList_Dispose(struct IClass *cl, Object *obj, Msg msg)
 **************************************************************************/
 static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_IconData   *data = INST_DATA(cl, obj);
-    struct TagItem  	    *tag, *tags;
-
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    struct TagItem  	*tag, *tags;
+    WORD    	    	 oldleft = data->view_x, oldtop = data->view_y;
+    
     /* parse initial taglist */
     for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
     {
@@ -404,29 +409,28 @@ static IPTR IconList_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case    MUIA_IconList_Left:
 		    if (data->view_x != tag->ti_Data)
 		    {
-		    	data->update = UPDATE_SCROLL;
-			data->update_scrolldx = (WORD)tag->ti_Data - data->view_x;
-			data->update_scrolldy = 0;
-			
 			data->view_x = tag->ti_Data;
-			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 		    break;
 
 	    case    MUIA_IconList_Top:
 		    if (data->view_y != tag->ti_Data)
 		    {
-		    	data->update = UPDATE_SCROLL;
-			data->update_scrolldx = 0;
-			data->update_scrolldy = (WORD)tag->ti_Data - data->view_y;
-			
 			data->view_y = tag->ti_Data;
-			MUI_Redraw(obj,MADF_DRAWUPDATE);
 		    }
 		    break;
     	}
     }
 
+    if ((oldleft != data->view_x) || (oldtop != data->view_y))
+    {
+    	data->update = UPDATE_SCROLL;
+	data->update_scrolldx = data->view_x - oldleft;
+	data->update_scrolldy = data->view_y - oldtop;
+	
+	MUI_Redraw(obj, MADF_DRAWUPDATE);
+    }
+    
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
 
@@ -482,6 +486,37 @@ static ULONG IconList_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *m
 
     return 1;
 }
+
+/**************************************************************************
+ MUIM_Show
+**************************************************************************/
+static IPTR IconList_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_IconData *data = INST_DATA(cl, obj);
+    WORD newleft, newtop;
+    IPTR rc;
+    
+    rc = DoSuperMethodA(cl, obj, (Msg)msg);
+
+    newleft = data->view_x;
+    newtop = data->view_y;
+    
+    if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+    if (newleft < 0) newleft = 0;
+    
+    if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+    if (newtop < 0) newtop = 0;
+
+    if ((newleft != data->view_x) || (newtop != data->view_y))
+    {    
+	SetAttrs(obj, MUIA_IconList_Left, newleft,
+    	    	      MUIA_IconList_Top, newtop,
+		      TAG_DONE);
+    }
+    
+    return rc;
+}
+
 
 /**************************************************************************
  MUIM_Cleanup
@@ -924,7 +959,7 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    if (DoubleClick(data->last_secs, data->last_mics, msg->imsg->Seconds, msg->imsg->Micros) && data->last_selected == new_selected)
 			    {
 				set(obj,MUIA_IconList_DoubleClick, TRUE);
-			    } else
+			    } else if (!data->mouse_pressed)
 			    {
 				data->last_selected = new_selected;
 				data->last_secs = msg->imsg->Seconds;
@@ -934,10 +969,16 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 				 * and since Zune doesn't not support the faking
 				 * of SELECTUP events only change the Events
 				 * if not doubleclicked */
-				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
-				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
-				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-				data->mouse_pressed = 1;
+				 
+				data->mouse_pressed |= LEFT_BUTTON;
+
+				if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+				{
+				    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+				    data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+				    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+				}
+				
 			    }
 
 			    data->click_x = mx;
@@ -945,21 +986,54 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 
 			    return MUI_EventHandlerRC_Eat;
 			}
-		    } else
+		    }
+		    else if (msg->imsg->Code == MIDDLEDOWN)
 		    {
-			if (msg->imsg->Code == SELECTUP && data->mouse_pressed)
+		    	if (!data->mouse_pressed)
+			{
+		    	    data->mouse_pressed |= MIDDLE_BUTTON;
+
+    	    	    	    data->click_x = data->view_x + mx;
+			    data->click_y = data->view_y + my;
+
+			    if (!(data->ehn.ehn_Events & IDCMP_MOUSEMOVE))
+			    {
+				DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+				data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+				DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+			    }
+			}			
+		    }
+		    else
+		    {
+		    	BOOL eat = FALSE;
+
+		    	if (msg->imsg->Code == SELECTUP)
+			{
+			    data->mouse_pressed &= ~LEFT_BUTTON;
+			    eat = TRUE;
+			}
+			
+			if (msg->imsg->Code == MIDDLEUP)
+			{
+			    data->mouse_pressed &= ~MIDDLE_BUTTON;
+			    eat = TRUE;
+			}
+			
+			if ((data->ehn.ehn_Events & IDCMP_MOUSEMOVE) && !data->mouse_pressed)
 			{
 			    DoMethod(_win(obj),MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
 			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
-			    data->mouse_pressed = 0;
-			    return MUI_EventHandlerRC_Eat;
 			}
+			
+    	    	    	if (eat) return MUI_EventHandlerRC_Eat;			
+		    
 		    }
 		    break;
 
 	    case    IDCMP_MOUSEMOVE:
-		    if (data->mouse_pressed)
+		    if (data->mouse_pressed & LEFT_BUTTON)
 		    {
 		    	int move_x = mx;
 		    	int move_y = my;
@@ -970,6 +1044,8 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 			    data->ehn.ehn_Events &= ~IDCMP_MOUSEMOVE;
 			    DoMethod(_win(obj),MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
+    	    	    	    data->mouse_pressed &= ~LEFT_BUTTON;
+			    
 			    data->touch_x = move_x + data->view_x - data->first_selected->x;
 			    data->touch_y = move_y + data->view_y - data->first_selected->y;
 			    DoMethod(obj,MUIM_DoDrag, data->touch_x, data->touch_y, 0);
@@ -977,6 +1053,29 @@ static ULONG IconList_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Ha
 
 			return MUI_EventHandlerRC_Eat;
 		    }
+		    else if (data->mouse_pressed & MIDDLE_BUTTON)
+		    {
+		    	WORD newleft, newtop;
+			
+			newleft = data->click_x - mx;
+			newtop = data->click_y - my;
+			
+			if (newleft + _mwidth(obj) > data->width) newleft = data->width - _mwidth(obj);
+			if (newleft < 0) newleft = 0;
+			
+			if (newtop + _mheight(obj) > data->height) newtop = data->height - _mheight(obj);
+			if (newtop < 0) newtop = 0;
+			
+			if ((newleft != data->view_x) || (newtop != data->view_y))
+			{
+			    SetAttrs(obj, MUIA_IconList_Left, newleft,
+			    	    	  MUIA_IconList_Top, newtop,
+					  TAG_DONE);
+			}
+			
+		    	return MUI_EventHandlerRC_Eat;
+		    }
+		    
 		    break;
 	}
     }
@@ -1189,6 +1288,7 @@ BOOPSI_DISPATCHER(IPTR,IconList_Dispatcher, cl, obj, msg)
 	case OM_SET: return IconList_Set(cl,obj,(struct opSet *)msg);
 	case OM_GET: return IconList_Get(cl,obj,(struct opGet *)msg);
 	case MUIM_Setup: return IconList_Setup(cl,obj,(struct MUIP_Setup *)msg);
+	case MUIM_Show: return IconList_Show(cl,obj,(struct MUIP_Show *)msg);
 	case MUIM_Cleanup: return IconList_Cleanup(cl,obj,(struct MUIP_Cleanup *)msg);
 	case MUIM_AskMinMax: return IconList_AskMinMax(cl,obj,(struct MUIP_AskMinMax *)msg);
 	case MUIM_Draw: return IconList_Draw(cl,obj,(struct MUIP_Draw *)msg);
