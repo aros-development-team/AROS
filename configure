@@ -91,7 +91,10 @@ case "$type" in
 	GUI_BASEDIR="/usr/X11R6"
 	GUI_LIBFLAGS="-lX11"
 	AS="gcc"
+	CC="gcc"
 	COMMON_AFLAGS="-x assembler-with-cpp"
+	SHARED_CFLAGS="-fpic"
+	SHARED_AR="ld -shared -o"
 	;;
 "AmigaOS" )
 	CC="gcc"
