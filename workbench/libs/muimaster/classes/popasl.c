@@ -23,6 +23,7 @@
 #include <proto/muimaster.h>
 #endif
 
+#include "compiler.h"
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
@@ -52,7 +53,11 @@ struct Asl_Startup
     Object *pop;
 };
 
+#ifndef _AROS
+__saveds static LONG Asl_Entry(void)
+#else
 static LONG Asl_Entry(void)
+#endif
 {
     struct Process *proc;
     struct Asl_Startup *msg;
@@ -81,7 +86,7 @@ static LONG Asl_Entry(void)
 }
 
 #ifndef _AROS
-static __asm ULONG Popasl_Popasl_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+static __asm ULONG Popasl_Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Popasl_Open_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
