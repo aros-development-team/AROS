@@ -17,10 +17,10 @@ FILES := amigademo \
 	messagetest \
 	scantest \
 	semaphoretest \
-	sift \
 	signaltest \
 	tasktest \
-	tasktest2
+	tasktest2 \
+	ExNext
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
