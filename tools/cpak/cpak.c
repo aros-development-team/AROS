@@ -18,6 +18,7 @@ int main(int argc,char **argv)
 int count;
 int i,filecount;
 char fbuf[50];
+char comment[3]={0x2f,0x2a,0x00};
 
 char ft[]="zyx";
 struct inclist first = { NULL, ft}, *current, *search;
@@ -42,56 +43,83 @@ char filename[50];
 	    fprintf(stderr,"\n%s - No such file !\n",argv[filecount]),exit(-1);
 
 	fprintf(fdo,"#line 1 \"%s\"\n", filename);
-	/* rbufc=0; */
 	count=_read(fd,fbuf,1);
 	while(count==1)
 	{
-	    if(fbuf[0]=='#')
+	    switch (fbuf[0])
 	    {
-		count=_read(fd,&fbuf[1],8);
-		fbuf[count+1]=0;
-		if(strcmp(fbuf,"#include ")==0)
-		{
-		    _read(fd,incname,1);
-		    if(incname[0]=='<'||incname[0]==0x22)
+		case '/':
+		    count=_read(fd,&fbuf[1],1);
+		    fbuf[count+1]=0;
+		    if(strcmp(fbuf,comment)==0)
 		    {
-			if(incname[0]=='<')
-			    bracket='>';
-			else
-			    bracket=0x22;
-			i=0;
-			do {
-			    i++;
-			    _read(fd,&incname[i],1);
-			} while(incname[i]!=bracket);
-			incname[i+1]=0;
-			search=&first;
-			while(search->next!=NULL&&strcmp(search->text,incname)!=0)
-			    search=search->next;
-			if(search->next==NULL&&strcmp(search->text,incname)!=0)
+			fprintf(fdo,comment);
+			count=_read(fd,fbuf,1);
+			putc (fbuf[0],fdo);
+			do
 			{
-			    current=malloc(sizeof(struct inclist));
-			    current->next=NULL;
-			    current->text=malloc(sizeof(char)*(i+2));
-			    strcpy(current->text,incname);
-			    search->next=current;
+			    while (count==1 && fbuf[0]!='*')
+			    {
+				count=_read(fd,fbuf,1);
+				putc (fbuf[0],fdo);
+			    }
+		    	    count=_read(fd,fbuf,1);
+			    putc (fbuf[0],fdo);
+			} while (count==1 && fbuf[0]!='/');
+		    }
+		    else
+		    {
+			fseek(fd,-count,SEEK_CUR);
+			putc (fbuf[0],fdo);
+		    }
+		    break;
+		case '#':
+		    count=_read(fd,&fbuf[1],8);
+		    fbuf[count+1]=0;
+		    if(strcmp(fbuf,"#include ")==0)
+		    {
+			_read(fd,incname,1);
+		        if(incname[0]=='<'||incname[0]==0x22)
+			{
+			    if(incname[0]=='<')
+				bracket='>';
+			    else
+				bracket=0x22;
+			    i=0;
+			    do {
+				i++;
+				_read(fd,&incname[i],1);
+			    } while(incname[i]!=bracket);
+			    incname[i+1]=0;
+			    search=&first;
+			    while(search->next!=NULL&&strcmp(search->text,incname)!=0)
+			        search=search->next;
+			    if(search->next==NULL&&strcmp(search->text,incname)!=0)
+			    {
+				current=malloc(sizeof(struct inclist));
+				current->next=NULL;
+				current->text=malloc(sizeof(char)*(i+2));
+				strcpy(current->text,incname);
+				search->next=current;
+			    }
+			}
+			else
+			{
+			    fprintf (fdo,"#include %s", &incname[0]);
 			}
 		    }
 		    else
 		    {
-			fprintf (fdo,"#include %s", &incname[0]);
+			fseek(fd,-count,SEEK_CUR);
+			putc (fbuf[0],fdo);
 		    }
-		}
-		else
-		{
-		    fseek(fd,-count,SEEK_CUR);
+		    if(count>0)
+			count=1;
+		    break;
+		default:
 		    putc (fbuf[0],fdo);
-		}
-		if(count>0)
-		    count=1;
+		    break;
 	    }
-	    else
-		putc (fbuf[0],fdo);
 	    count=_read(fd,fbuf,1);
 	}
 	fclose(fd);
