@@ -20,14 +20,14 @@
 #   endif
 #endif
 #ifdef __FreeBSD__
-#   define SP(env)	(*(APTR)&(env[0]._jb[2]))
-#   define FP(env)	(*(APTR)&(env[0]._jb[3]))
-#   define PC(env)	(*(APTR)&(env[0]._jb[0]))
+#   define SP(env)	(*(APTR*)&(env[0]._jb[2]))
+#   define FP(env)	(*(APTR*)&(env[0]._jb[3]))
+#   define PC(env)	(*(APTR*)&(env[0]._jb[0]))
 #endif
 #ifdef __NetBSD__
-#   define SP(env)      (*(APTR)&(env[2]))
-#   define FP(env)      (*(APTR)&(env[3]))
-#   define PC(env)      (*(APTR)&(env[0]))
+#   define SP(env)      (*(APTR*)&(env[2]))
+#   define FP(env)      (*(APTR*)&(env[3]))
+#   define PC(env)      (*(APTR*)&(env[0]))
 #endif
 #ifdef __OpenBSD__
 #   define SP(env)      (*(APTR*)&(env[2]))
