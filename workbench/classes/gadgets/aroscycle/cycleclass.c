@@ -44,10 +44,11 @@ Object *cycle_new(Class *cl, Class *rootcl, struct opSet *msg)
     struct CycleData *data;
     Object *o;
     struct TagItem imgtags[] = {
-        { IA_Width, 0 },
-        { IA_Height, 0 },
-        { IA_EdgesOnly, TRUE },
-        { TAG_DONE, 0UL }
+        { IA_Width	, 0 		},
+        { IA_Height	, 0 		},
+        { IA_EdgesOnly	, FALSE		},
+	{ IA_FrameType	, FRAME_BUTTON	},
+        { TAG_DONE	, 0UL 		}
     };
     STRPTR *labels;
 
@@ -181,11 +182,6 @@ VOID cycle_render(Class *cl, Object *o, struct gpRender *msg)
     struct CycleData *data = INST_DATA(cl, o);
 
     /* Full redraw: clear and draw border */
-    SetAPen(msg->gpr_RPort, msg->gpr_GInfo->gi_DrInfo->dri_Pens[EG(o)->Flags&GFLG_SELECTED?FILLPEN:BACKGROUNDPEN]);
-    SetDrMd(msg->gpr_RPort, JAM1);
-    RectFill(msg->gpr_RPort,
-             EG(o)->LeftEdge, EG(o)->TopEdge,
-             EG(o)->LeftEdge+EG(o)->Width-1, EG(o)->TopEdge+EG(o)->Height-1);
     DrawImageState(msg->gpr_RPort,IM(EG(o)->GadgetRender),
                    EG(o)->LeftEdge, EG(o)->TopEdge,
                    EG(o)->Flags&GFLG_SELECTED?IDS_SELECTED:IDS_NORMAL,
