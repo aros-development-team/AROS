@@ -5,15 +5,16 @@
 #define DEBUG 1
 #define DEBUG 1
 
-#include <proto/exec.h>
 #include <proto/dos.h>
-#include <exec/memory.h>
+#include <proto/exec.h>
 #include <dos/dos.h>
+#include <devices/newstyle.h>
 #include <devices/trackdisk.h>
-
-#include <string.h>
+#include <exec/errors.h>
+#include <exec/memory.h>
 #include <aros/debug.h>
 #include <aros/macros.h>
+#include <string.h>
 
 #include "volumes.h"
 #include "bitmap.h"
@@ -315,6 +316,62 @@ struct Volume *volume;
 								devicedef->de_LowCyl*
 								devicedef->de_Surfaces*
 								devicedef->de_BlocksPerTrack;
+						volume->cmdread=CMD_READ;
+						volume->cmdwrite=CMD_WRITE;
+						volume->cmdseek=TD_SEEK;
+						volume->cmdformat=TD_FORMAT;
+						if (
+								(
+									(volume->startblock+(volume->rootblock*2))*  /* last block */
+									(volume->SizeBlock*4/512)	/* 1 portion (block) equals 512 (bytes) */
+								)>8388608)
+						{
+						struct NSDeviceQueryResult nsdq;
+						UWORD *cmdcheck;
+							nsdq.SizeAvailable=0;
+							nsdq.DevQueryFormat=0;
+							volume->iorequest->iotd_Req.io_Command=NSCMD_DEVICEQUERY;
+							volume->iorequest->iotd_Req.io_Data=&nsdq;
+							volume->iorequest->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
+							if (DoIO(&volume->iorequest->iotd_Req)==IOERR_NOCMD)
+							{
+								D(bug("afs.handler: initVolume-NSD: device doesn't understand NSD-Query\n"));
+							}
+							if (
+									(volume->iorequest->iotd_Req.io_Actual>sizeof(struct NSDeviceQueryResult)) ||
+									(volume->iorequest->iotd_Req.io_Actual==0) ||
+									(volume->iorequest->iotd_Req.io_Actual!=nsdq.SizeAvailable)
+								)
+							{
+								D(bug("afs.handler: initVolume-NSD: WARNING wrong io_Actual using NSD\n"));
+							}
+							else
+							{
+								D(bug("afs.handler: initVolume-NSD: using NSD commands\n"));
+								if (nsdq.DeviceType != NSDEVTYPE_TRACKDISK)
+									D(bug("afs.handler: initVolume-NSD: WARNING no trackdisk type\n"));
+								for (cmdcheck=nsdq.SupportedCommands;*cmdcheck;cmdcheck++)
+								{
+									if (*cmdcheck == NSCMD_TD_READ64)
+										volume->cmdread = NSCMD_TD_READ64;
+									if (*cmdcheck == NSCMD_TD_WRITE64);
+										volume->cmdwrite = NSCMD_TD_WRITE64;
+									if (*cmdcheck == NSCMD_TD_SEEK64)
+										volume->cmdseek = NSCMD_TD_SEEK64;
+									if (*cmdcheck == NSCMD_TD_FORMAT64)
+										volume->cmdformat = NSCMD_TD_FORMAT64;
+								}
+								if (
+										(volume->cmdread!=NSCMD_TD_READ64) ||
+										(volume->cmdwrite!=NSCMD_TD_WRITE64)
+									)
+									D(bug("afs.handler: initVolume-NSD: WARNING no READ64/WRITE64\n")); 
+							}
+						}
+						else
+						{
+								D(bug("afs.handler: initVolume-NSD: no need for NSD\n"));
+						}
 						*error=newMedium(afsbase, volume);
 						if (!*error)
 						{

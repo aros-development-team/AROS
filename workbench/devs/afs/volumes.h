@@ -22,6 +22,11 @@ struct Volume {
 	struct IOExtTD *iorequest;
 	struct BlockCache *blockcache;
 	UWORD istrackdisk;			// do we use trackdisk.device ? if yes then we have to use some extra TD commands
+	UWORD cmdread;
+	UWORD cmdwrite;
+	UWORD cmdseek;
+	UWORD cmdformat;
+
 	ULONG usedblockscount;
 	ULONG rootblock;
 	ULONG startblock;
