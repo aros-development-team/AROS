@@ -15,7 +15,6 @@
 
 #include <exec_intern.h>
 
-
 #include <asm/ptrace.h>
 
 
@@ -93,8 +92,8 @@ void RestoreRegs(struct Task *task, struct pt_regs *regs)
 	task->tc_SPReg = (APTR)((ULONG)src + sizeof(struct pt_regs));
 }
 
-//#define SC_ENABLE(regs)	(regs.sr |= ???)
-//#define SC_DISABLE(regs)	(regs.sr &= ???)
+#define SC_ENABLE(regs)	 (regs->sr &= 0xf8ff)
+#define SC_DISABLE(regs) (regs->sr |= 0x0700)
 
 void sys_Dispatch(struct pt_regs * regs)
 {
@@ -107,9 +106,12 @@ void sys_Dispatch(struct pt_regs * regs)
 		return;
 	}
 
+
 #warning Enabling Multitasking here. Remove this!The Boot Task seems to run under Forbid().
+#if 1
 if (SysBase->TDNestCnt >= 0)
 	SysBase->TDNestCnt = -1;
+#endif
 
 	/* Check if a task switch is necessary */
 	/* 1. There has to be another task in the ready-list */
@@ -153,16 +155,13 @@ if (SysBase->TDNestCnt >= 0)
 
 		/* Get the registers of the old task */
 		RestoreRegs(SysBase->ThisTask, regs);
-
 		/* Make sure that the state of the interrupts is what the task
 		   expects.
 		*/
-#if 0
 		if (SysBase->IDNestCnt < 0)
 			SC_ENABLE(regs);
 		else
 			SC_DISABLE(regs);
-#endif
 		/* Ok, the next step is to either drop back to the new task, or
 		   give it its Exception() if it wants one... */
 
