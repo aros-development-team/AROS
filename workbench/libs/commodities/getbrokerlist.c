@@ -69,13 +69,19 @@
 
     ForeachNode(&GPB(CxBase)->cx_BrokerList, (struct Node *)tempObj)
     {
+	APTR  ptrSave;
+
 	if(CxObjType(tempObj) == CX_ZERO)
 	    break;
 
 	if(!(te2 = (CxObj *)AllocCxStructure(CX_OBJECT, CX_BROKER, CxBase)))
 	    break;
 
+	ptrSave = te2->co_Ext.co_BExt;
+	CopyMem(tempObj, te2, sizeof(CxObj));
+	te2->co_Ext.co_BExt = ptrSave;
         *te2->co_Ext.co_BExt = *tempObj->co_Ext.co_BExt;
+
         AddTail(CopyofList, (struct Node *)te2);
         count++;
     }
