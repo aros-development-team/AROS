@@ -134,6 +134,8 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
     	
     } /* for (each attr in attrlist) */
     
+    data->edgesOnly = (EG(o)->Flags & GFLG_DISABLED) ? FALSE : TRUE;
+    
     if (retval)
     {
         struct RastPort *rp;
@@ -265,12 +267,8 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 		
 		SetAttrsA(data->frame, fitags);
 		
-		/* Draw frame */
-		
-		DrawImageState(rp, (struct Image *)data->frame, gbox.Left, gbox.Top, IDS_NORMAL, dri);
-
 		/* Draw slider background */
-
+		
 		if ((sbox.Width >= 2) && (sbox.Height >= 2))
 		{
 	            if (data->numpens < 2)
@@ -301,12 +299,12 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 				data->savebm = NULL;
 			    }
 			}
-			
+
 		    	if ( (data->savebm != NULL) ||
 			     ((data->savebm = AllocBitMap(sbox.Width,
 	    			   			  sbox.Height,
 				       			  GetBitMapAttr(rp->BitMap, BMA_DEPTH),
-				       			  BMF_MINPLANES | BMF_CLEAR,
+				       			  BMF_MINPLANES,
 				       			  rp->BitMap))) )
 			{						
 			    InitRastPort(&trp);
