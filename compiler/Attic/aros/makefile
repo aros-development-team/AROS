@@ -18,6 +18,6 @@ $(OBJDIR)/%.o: %.c
 
 $(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
 	    $(OBJDIR)/strlen.o $(OBJDIR)/strcpy.o $(OBJDIR)/qsort.o \
-	    $(OBJDIR)/kprintf.o
-	$(AR) $@ $^
+	    $(OBJDIR)/kprintf.o $(OBJDIR)/nastyfreemem.o
+	$(AR) $@ $?
 
