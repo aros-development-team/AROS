@@ -17,6 +17,9 @@ STATIC_LD	:= @STATIC_LD@
 SHARED_LD	:= @SHARED_LD@
 KERNEL_LD	:= @KERNEL_LD@
 GENMAP		:= @aros_target_genmap@
+TARGET_OBJCOPY	:= @aros_target_objcopy@
+TARGET_STRIP	:= @aros_target_strip@
+TARGET_OBJDUMP	:= @aros_target_objdump@
 
 TARGET_CFLAGS	:= @aros_target_cflags@ -nostdinc -isystem @aros_target_cc_includes@
 TARGET_AFLAGS	:= @aros_target_aflags@
