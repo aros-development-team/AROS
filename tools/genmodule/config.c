@@ -10,12 +10,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "config.h"
 
 static char banner[256] = "\0";
 
-        
+
 const char*
 getBanner(struct config* config)
 {
@@ -31,6 +32,12 @@ getBanner(struct config* config)
 
     return(banner);
 }
+
+const static char usage[] =
+    "\n"
+    "Usage: genmodule [-c conffile] [-s suffix] [-d gendir] [-i genincdir]\n"
+    "       {writefiles|writedummy|writelibdefs} modname modtype\n"
+;
 
 static void readconfig(struct config *);
 static struct conffuncinfo *newconffuncinfo(const char *name, unsigned int lvo);
@@ -62,35 +69,11 @@ static const char *dtmprefix[] =
 /* Create a config struct. Initialize with the values from the programs command
  * line arguments and the contents of the modules .conf file
  */
-struct config *initconfig(int argc, char **argv, int command)
+struct config *initconfig(int argc, char **argv)
 {
     struct config *cfg;
     char *s, **argvit = argv + 1;
-    int hassuffix;
-    
-    switch (command)
-    {
-    case NORMAL:
-	if (argc!=7 && argc!=8)
-	{
-	    fprintf(stderr, "Usage: %s modname modtype [modsuffix] conffile gendir genincdir reffile\n", argv[0]);
-	    exit(20);
-	}
-	hassuffix = argc==8;
-	break;
-    case LIBDEFS:
-    case DUMMY:
-	if (argc!=5 && argc!=6)
-	{
-	    fprintf(stderr, "Usage: %s modname modtype [modsuffix] conffile gendir\n", argv[0]);
-	    exit(20);
-	}
-	hassuffix = argc==6;
-	break;
-    default:
-	fprintf(stderr, "Unknown command in initconfig\n");
-	exit(20);
-    }
+    int hassuffix, c;
     
     cfg = malloc(sizeof(struct config));
     if (cfg == NULL)
@@ -98,56 +81,103 @@ struct config *initconfig(int argc, char **argv, int command)
 	fprintf(stderr, "Out of memory\n");
 	exit(20);
     }
+
     memset(cfg, 0, sizeof(struct config));
-
-        time_t
-    now = time(NULL);
-
-        char
-    dateStringBuf[16];
     
-    strftime(dateStringBuf, sizeof(dateStringBuf), "%d.%m.%Y",
-        localtime(&now));
+    while ((c = getopt(argc, argv, ":c:s:d:i:r:")) != -1)
+    {
 
-    cfg->datestring = strdup(dateStringBuf);
+	if (c == ':' || *optarg == '-')
+	{
+	    fprintf(stderr, "Option -%c needs an argument\n",c);
+	    exit(20);
+	}
+
+	switch (c)
+	{
+	case 'c':
+	    cfg->conffile = optarg;
+	    break;
+	case 's':
+	    cfg->suffix = optarg;
+	    break;
+	case 'd':
+	    /* Remove / at end if present */
+	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
+	    cfg->gendir = optarg;
+	    break;
+	case 'i':
+	    /* Remove / at the end if present */
+	    if ((optarg)[strlen(*argvit)-1]=='/') (optarg)[strlen(optarg)-1]='\0';
+	    cfg->genincdir = optarg;
+	    break;
+	case 'r':
+	    cfg->reffile = optarg;
+	    break;
+	default:
+	    fprintf(stderr, "Internal error: Unhandled option\n");
+	    exit(20);
+	}
+    }
+
+    if (optind + 3 != argc)
+    {
+	fprintf(stderr, "Wrong number of arguments.\n%s", usage);
+	exit(20);
+    }
     
-    cfg->command = command;
-    
-    cfg->modulename = *argvit;
+    if (strcmp(argv[optind], "writefiles") == 0)
+    {
+	cfg->command = NORMAL;
+    }
+    else if (strcmp(argv[optind], "writelibdefs") == 0)
+    {
+	cfg->command = LIBDEFS;
+    }
+    else if (strcmp(argv[optind], "writedummy") == 0)
+    {
+	cfg->command = DUMMY;
+    }
+    else
+    {
+	fprintf(stderr, "Unrecognized argument \"%s\"\n%s", argv[optind], usage);
+	exit(20);
+    }
+
+    cfg->modulename = argv[optind+1];
     cfg->modulenameupper = strdup(cfg->modulename);
     for (s=cfg->modulenameupper; *s!='\0'; *s = toupper(*s), s++)
 	;
-    argvit++;
-    
-    if (strcmp(*argvit,"library")==0)
+
+    if (strcmp(argv[optind+2],"library")==0)
     {
     	cfg->modtype = LIBRARY;
     }
-    else if (strcmp(*argvit,"mcc")==0)
+    else if (strcmp(argv[optind+2],"mcc")==0)
     {
     	cfg->modtype = MCC;
     }
-    else if (strcmp(*argvit,"mui")==0)
+    else if (strcmp(argv[optind+2],"mui")==0)
     {
     	cfg->modtype = MUI;
     }
-    else if (strcmp(*argvit,"mcp")==0)
+    else if (strcmp(argv[optind+2],"mcp")==0)
     {
     	cfg->modtype = MCP;
     }
-    else if (strcmp(*argvit, "device")==0)
+    else if (strcmp(argv[optind+2], "device")==0)
     {
 	cfg->modtype = DEVICE;
     }
-    else if (strcmp(*argvit, "resource")==0)
+    else if (strcmp(argv[optind+2], "resource")==0)
     {
 	cfg->modtype = RESOURCE;
     }
-    else if (strcmp(*argvit, "gadget")==0)
+    else if (strcmp(argv[optind+2], "gadget")==0)
     {
 	cfg->modtype = GADGET;
     }
-    else if (strcmp(*argvit, "datatype")==0)
+    else if (strcmp(argv[optind+2], "datatype")==0)
     {
 	cfg->modtype = DATATYPE;
     }
@@ -156,9 +186,6 @@ struct config *initconfig(int argc, char **argv, int command)
 	fprintf(stderr, "Unknown modtype \"%s\" speficied for second argument\n", argv[2]);
 	exit(20);
     }
-    if (!hassuffix)
-	cfg->suffix = *argvit;
-    argvit++;
 
     cfg->boopsimprefix = NULL;
     switch (cfg->modtype)
@@ -191,42 +218,46 @@ struct config *initconfig(int argc, char **argv, int command)
 	exit(20);
     }
 
-    if (hassuffix)
+    if (cfg->command != NORMAL)
     {
-	cfg->suffix = *argvit;
-	argvit++;
-    }
-    
-    cfg->conffile = *argvit;
-    argvit++;
-    
-    if (strlen(*argvit)>200)
-    {
-	fprintf(stderr, "Ridiculously long path for gendir\n");
-	exit(20);
-    }
-    if ((*argvit)[strlen(*argvit)-1]=='/') (*argvit)[strlen(*argvit)-1]='\0';
-    cfg->gendir = *argvit;
-    argvit++;
-    
-    if (command == NORMAL)
-    {
-	if (strlen(*argvit)>200)
-	{
-	    fprintf(stderr, "Ridiculously long path for genincdir\n");
-	    exit(20);
-	}
-	if ((*argvit)[strlen(*argvit)-1]=='/') (*argvit)[strlen(*argvit)-1]='\0';
-	cfg->genincdir = *argvit;
-	argvit++;
-	
-	cfg->reffile = *argvit;
-    }
-    else if (command == DUMMY)
-    {
-	cfg->genincdir = cfg->gendir;
-    }
+	if (cfg->genincdir != NULL)
+	    fprintf(stderr, "WARNING ! Option -i ingored for %s\n", argv[optind]);
 
+	if (cfg->reffile != NULL)
+	    fprintf(stderr, "WARNING ! Option -r ingored for %s\n", argv[optind]);
+    }
+    
+    /* Fill fields with default value if not specified on the command line */
+    {
+	char tmpbuf[256];
+
+	if (cfg->conffile == NULL)
+	{
+	    snprintf(tmpbuf, sizeof(tmpbuf), "%s.conf", cfg->modulename);
+	    cfg->conffile = strdup(tmpbuf);
+	}
+
+	if (cfg->gendir == NULL)
+	    cfg->gendir = ".";
+	if (cfg->genincdir == NULL)
+	    cfg->genincdir = cfg->gendir;
+	
+	if (cfg->command == NORMAL && cfg->reffile == NULL)
+	{
+	    snprintf(tmpbuf, sizeof(tmpbuf), "%s.ref", cfg->modulename);
+	    cfg->reffile = strdup(tmpbuf);
+	}
+	
+	/* Set default date to current date */
+	{
+	    time_t now = time(NULL);
+
+	    strftime(tmpbuf, sizeof(tmpbuf), "%d.%m.%Y", localtime(&now));
+
+	    cfg->datestring = strdup(tmpbuf);
+	}
+    }
+    
     readconfig(cfg);
     
     return cfg;
@@ -247,7 +278,7 @@ static void readconfig(struct config *cfg)
 
     if (!fileopen(cfg->conffile))
     {
-	fprintf(stderr, "Could not open %s\n", cfg->conffile);
+	fprintf(stderr, "In readconfig: Could not open %s\n", cfg->conffile);
 	exit(20);
     }
 

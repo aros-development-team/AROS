@@ -92,7 +92,7 @@ struct config
 
 /* Function prototypes */
 
-struct config *initconfig(int, char **, int);
+struct config *initconfig(int, char **);
 
 const char* getBanner(struct config* config);
 

@@ -14,10 +14,8 @@ HOST_STRIP     ?= strip
 MECHO	       ?= echo
 HOST_CFLAGS    ?= $(USER_CFLAGS)
 GENMODULE      ?= genmodule
-GENLIBDEFS     ?= genlibdefs
-GENMODULEDUMMY ?= genmoduledummy
 
-all : $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY)
+all : $(GENMODULE)
 
 GENMODULEINCLUDE := $(dir $(GENMODULE))/genmod_inc/aros/libcall.h
 
@@ -26,21 +24,11 @@ $(GENMODULE) : $(GENMODULE_DEPS) $(GENMODULEINCLUDE)
 	@$(HOST_CC) -g $(HOST_CFLAGS) $(GENMODULE_SRCS) -o $@
 	@$(HOST_STRIP) $@
 
-$(GENLIBDEFS) : $(GENLIBDEFS_DEPS)
-	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(GENLIBDEFS_SRCS) -o $@
-	@$(HOST_STRIP) $@
-
-$(GENMODULEDUMMY) : $(GENMODULEDUMMY_DEPS)
-	@$(MECHO) "Compiling $(notdir $@)..."
-	@$(HOST_CC) $(HOST_CFLAGS) $(GENMODULEDUMMY_SRCS) -o $@
-	@$(HOST_STRIP) $@
-
 $(GENMODULEINCLUDE) : include/aros/libcall.h
 	@$(MKDIR) $(dir $@)
 	@$(CP) $< $@
 
 clean :
-	@$(RM) $(GENMODULE) $(GENLIBDEFS) $(GENMODULEDUMMY) $(GENMODULEINCLUDE)
+	@$(RM) $(GENMODULE) $(GENMODULEINCLUDE)
 
 .PHONY : all clean
