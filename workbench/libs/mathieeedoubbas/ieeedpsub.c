@@ -59,9 +59,7 @@
 {
 AROS_LIBFUNC_INIT
 
-  XOR64QC(z, IEEEDPSign_Mask_Hi,
-             IEEEDPSign_Mask_Lo,
-             IEEEDPSign_Mask_64);
+  XOR64QC(z, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
   return IEEEDPAdd(y,z);
 
 AROS_LIBFUNC_EXIT

@@ -58,7 +58,7 @@ AROS_LIBFUNC_INIT
   LONG TestMask = 0xFFFFFFFF;
   QUAD Res, yQuad, ExponentQuad;
 
-  Set_Value64C(Res,0,0,0);
+  Set_Value64C(Res,0,0);
 
   if (y == 0)
   {
@@ -68,9 +68,7 @@ AROS_LIBFUNC_INIT
 
   if (y < 0 )
   {
-    Set_Value64C(Res, IEEEDPSign_Mask_Hi,
-		      IEEEDPSign_Mask_Lo,
-		      IEEEDPSign_Mask_64);
+    Set_Value64C(Res, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
     y = -y;
   }
   /* find out which is the number of the highest set bit */
@@ -82,9 +80,7 @@ AROS_LIBFUNC_INIT
 
   SHL32(yQuad , y , (53 - Exponent) );
 
-  AND64QC(yQuad,  IEEEDPMantisse_Mask_Hi,
-		  IEEEDPMantisse_Mask_Lo,
-		  IEEEDPMantisse_Mask_64);
+  AND64QC(yQuad,  IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
 
   Exponent += 0x3fe;
 
@@ -92,7 +88,7 @@ AROS_LIBFUNC_INIT
   SHL32(ExponentQuad, Exponent, 52);
   OR64Q(Res, yQuad);
   OR64Q(Res, ExponentQuad);
-  if ( is_lessSC(Res,0,0,0) ) /* Res < 0 */
+  if ( is_lessSC(Res,0,0) ) /* Res < 0 */
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
 
   return Res;

@@ -59,21 +59,17 @@
 {
 AROS_LIBFUNC_INIT
   /* change the sign-bit */
-  XOR64QC(y, IEEEDPSign_Mask_Hi,
-	     IEEEDPSign_Mask_Lo,
-	     IEEEDPSign_Mask_64);
+  XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
 
-  if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
-      is_eqC(y, IEEEDPSign_Mask_Hi,
-		IEEEDPSign_Mask_Lo,
-		IEEEDPSign_Mask_64) )
+  if (is_eqC(y, 0x0, 0x0 ) ||
+      is_eqC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo) )
   {
     SetSR( Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
    return y;
   }
 
   /* if (y < 0) */
-  if(is_lessSC(y, 0x0, 0x0, 0x0ULL) )
+  if(is_lessSC(y, 0x0, 0x0) )
   /* result is negative */
     SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
   else

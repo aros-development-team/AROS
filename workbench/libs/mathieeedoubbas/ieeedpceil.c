@@ -55,28 +55,24 @@
 {
 AROS_LIBFUNC_INIT
 
-  if (is_eqC(y,0,0,0))
+  if (is_eqC(y,0,0))
   {
     SetSR(Zero_Bit, Negative_Bit|Overflow_Bit|Zero_Bit);
     return y;
   }
 
-  XOR64QC(y, IEEEDPSign_Mask_Hi,
-             IEEEDPSign_Mask_Lo,
-             IEEEDPSign_Mask_64);
+  XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo);
   /* Ceil(y) = -Floor(-y); */
   y = IEEEDPFloor(y);
-  if (is_eqC(y,0x0,0x0,0x0))
+  if (is_eqC(y,0x0,0x0))
   {
     QUAD tmp;
-    Set_Value64C(tmp, 0, 0, 0);
+    Set_Value64C(tmp, 0, 0);
     return tmp;
   }
   else
   {
-    XOR64QC(y, IEEEDPSign_Mask_Hi,
-               IEEEDPSign_Mask_Lo,
-               IEEEDPSign_Mask_64);
+    XOR64QC(y, IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo );
     return y;
   }
 

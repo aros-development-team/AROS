@@ -61,7 +61,7 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
 
   if ( tmp > 0x41d00000 )
   {
-    if( is_lessSC(y, 0x0, 0x0, 0x0ULL))
+    if( is_lessSC(y, 0x0, 0x0))
     {
       SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
       return 0x80000000;
@@ -74,10 +74,8 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   }
 
 
-  if (is_eqC(y, 0x0, 0x0, 0x0ULL) ||
-      is_eqC(y,IEEEDPSign_Mask_Hi,
-	       IEEEDPSign_Mask_Lo,
-	       IEEEDPSign_Mask_64)) /* y=+-0; */
+  if (is_eqC(y, 0x0, 0x0) ||
+      is_eqC(y,IEEEDPSign_Mask_Hi, IEEEDPSign_Mask_Lo)) /* y=+-0; */
   {
     SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     return 0;
@@ -86,12 +84,8 @@ tmp = Get_High32of64(y) & IEEEDPExponent_Mask_Hi;
   Shift = (Get_High32of64(y) & IEEEDPExponent_Mask_Hi) >> 20;
   Shift = 0x433 - Shift;
   tmp = Get_High32of64(y);
-  AND64QC(y, IEEEDPMantisse_Mask_Hi,
-	     IEEEDPMantisse_Mask_Lo,
-	     IEEEDPMantisse_Mask_64);
-  OR64QC(y,  0x00100000,
-	     0x00000000,
-	     0x0010000000000000ULL);
+  AND64QC(y, IEEEDPMantisse_Mask_Hi, IEEEDPMantisse_Mask_Lo);
+  OR64QC(y, 0x00100000, 0x00000000);
   SHRU64(y2, y , Shift);
   Res = Get_Low32of64(y2);
 
