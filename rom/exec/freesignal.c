@@ -47,6 +47,9 @@
 
     if(signalNum!=-1)
     {
+    	#warning "Forbid/Permit or atomic operation should not be needed here"
+	#warning "Because AllocSignal/FreeSignal access tc_SigAlloc only ever from same task?"
+	
 	/* Nobody guarantees that the compiler will make it atomic. */
 	Forbid();
 
