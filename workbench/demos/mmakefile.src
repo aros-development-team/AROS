@@ -18,14 +18,14 @@ ifeq ($(FLAVOUR),native)
 # 3) "fixed or forbidden register was spilled"
 #
 
-FILES := gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
+FILES := font2c gtdemo helloworld inquire intuitext librarytest listfonts keymaptest \
 	 mxgads oopdemo readicon regiontest shadowborder sift strtest \
 	 ooplib consoledemo x11gfxhidd
 	 
 
 else
 
-FILES := compleximage demowin gtdemo helloworld inquire intuitext \
+FILES := compleximage demowin font2c gtdemo helloworld inquire intuitext \
 	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
 	 strtest unixio ooplib consoledemo layerstest contexttest x11gfxhidd
@@ -33,6 +33,10 @@ endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
+#MM demos-quick : 
+demos-quick : demos
+	@$(NOP)
+	
 #MM demos : setup demo-setup includes linklibs
 demos : show-flags $(EXES) $(EXEDIR)/forkbomb
 	@$(NOP)
