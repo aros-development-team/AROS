@@ -20,6 +20,7 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
+
 static BOOL InitWasCalled;
 
 typedef struct
@@ -39,11 +40,58 @@ typedef struct
 }
 MemoryResource;
 
-static ULONG RT_Sizes[] =
+typedef struct __RTDesc RTDesc;
+
+typedef IPTR (* RT_AllocFunc) (RTNode *, va_list, BOOL * success);
+typedef IPTR (* RT_FreeFunc) (RTNode *);
+typedef IPTR (* RT_SearchFunc) (RTDesc *, RTNode **, va_list);
+typedef IPTR (* RT_ShowError) (RTDesc *, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
+
+struct __RTDesc
 {
-    sizeof (MemoryResource),
+    const ULONG    Size;
+    RT_AllocFunc   AllocFunc;
+    RT_FreeFunc    FreeFunc;
+    RT_SearchFunc  SearchFunc;
+    RT_ShowError   ShowError;
+    struct MinList ResList;
 };
 
+static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success);
+static IPTR RT_FreeMem (MemoryResource * rt);
+static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr, va_list args);
+static IPTR RT_ShowErrorMem (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success);
+static IPTR RT_FreeVec (MemoryResource * rt);
+static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr, va_list args);
+static IPTR RT_ShowErrorVec (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
+
+/* Return values of SearchFunc */
+#define RT_SEARCH_FOUND 	    0
+#define RT_SEARCH_NOT_FOUND	    1
+#define RT_SEARCH_SIZE_MISMATCH     2
+
+#define RT_FREE     0
+#define RT_CHECK    1
+#define RT_EXIT     2
+
+RTDesc RT_Resources[RTT_MAX] =
+{
+    { /* RTT_ALLOCMEM */
+	sizeof (MemoryResource),
+	(RT_AllocFunc) RT_AllocMem,
+	(RT_FreeFunc)  RT_FreeMem,
+	(RT_SearchFunc)RT_SearchMem,
+	(RT_ShowError) RT_ShowErrorMem,
+    },
+    { /* RTT_ALLOCVEC */
+	sizeof (MemoryResource),
+	(RT_AllocFunc) RT_AllocVec,
+	(RT_FreeFunc)  RT_FreeVec,
+	(RT_SearchFunc)RT_SearchVec,
+	(RT_ShowError) RT_ShowErrorVec,
+    }
+};
 
 typedef struct
 {
@@ -57,8 +105,6 @@ RTStack;
 
 ULONG RT_StackPtr = STACKDEPTH;
 static RTStack RT_CallStack[STACKDEPTH];
-
-struct MinList rtMemList;
 
 static void RT_FreeResource (int rtt, RTNode * rtnode);
 
@@ -96,12 +142,15 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
+    int t;
+
     if (InitWasCalled)
 	return;
 
     InitWasCalled = 1;
 
-    NEWLIST(&rtMemList);
+    for (t=0; t<RTT_MAX; t++)
+	NEWLIST(&RT_Resources[t].ResList);
 } /* RT_Init */
 
 /*****************************************************************************
@@ -139,13 +188,21 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    RTNode * rt;
+    RTNode * rt, * next;
+    int      t;
 
     if (!InitWasCalled)
 	return;
 
-    ForeachNode (&rtMemList, rt)
-	RT_FreeResource (RTT_MEMORY, rt);
+    for (t=0; t<RTT_MAX; t++)
+    {
+	for (next=GetHead(&RT_Resources[t].ResList); (rt=next); )
+	{
+	    next = GetSucc (rt);
+
+	    RT_FreeResource (t, rt);
+	}
+    }
 } /* RT_Exit */
 
 /*****************************************************************************
@@ -156,16 +213,16 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	IPTR RT_IntAdd (
 
 /*  SYNOPSIS */
-	int    rtt,
-	char * file,
-	int    line,
+	int	     rtt,
+	const char * file,
+	int	     line,
 	...)
 
 /*  FUNCTION
 	Adds a resource to be tracked. The arguments after
 	line depend on the type of resource to be traced:
 
-	RTT_MEMORY:	APTR	      memPtr,
+	RTT_ALLOCMEM:	  APTR		memPtr,
 			ULONG	      size)
 
     INPUTS
@@ -194,49 +251,47 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 ******************************************************************************/
 {
-    va_list args;
+    IPTR     ret;
+    va_list  args;
     RTNode * rtnew;
+    BOOL     success;
 
     if (!InitWasCalled)
 	return FALSE;
 
-    if (!(rtnew = AllocMem (RT_Sizes[rtt], MEMF_ANY)) )
+    if (!(rtnew = AllocMem (RT_Resources[rtt].Size, MEMF_ANY)) )
     {
 	kprintf ("RT_IntAdd: Out of memory\n");
 	return FALSE;
     }
+kprintf ("AllocMem(RTNode) = %p\n", rtnew);
 
     rtnew->File = file;
     rtnew->Line = line;
 
     va_start (args, line);
 
-    switch (rtt)
-    {
-	case RTT_MEMORY:
-	{
-	    MemoryResource * rt = (MemoryResource *)rtnew;
-
-	    rt->Size = va_arg (args, ULONG);
-	    rt->Flags = va_arg (args, ULONG);
-
-	    rt->Memory = AllocMem (rt->Size, rt->Flags);
-
-	    if (!rt->Memory)
-	    {
-		FreeMem (rtnew, RT_Sizes[rtt]);
-		return NULL;
-	    }
-kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node.Line);
-	    AddTail ((struct List *)&rtMemList, (struct Node *)rtnew);
-
-	    return (IPTR)(rt->Memory);
-	}
-    } /* switch */
+    ret = (*(RT_Resources[rtt].AllocFunc))
+    (
+	rtnew,
+	args,
+	&success
+    );
 
     va_end (args);
 
-    return 0;
+    if (success)
+    {
+	AddTail ((struct List *)&RT_Resources[rtt].ResList,
+	    (struct Node *)rtnew
+	);
+    }
+    else
+    {
+	FreeMem (rtnew, RT_Resources[rtt].Size);
+    }
+
+    return ret;
 } /* RT_IntAdd */
 
 /*****************************************************************************
@@ -247,9 +302,9 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 	IPTR RT_IntCheck (
 
 /*  SYNOPSIS */
-	int    rtt,
-	char * file,
-	int    line,
+	int	     rtt,
+	const char * file,
+	int	     line,
 	...)
 
 /*  FUNCTION
@@ -258,7 +313,7 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 	match. The arguments after line depend on the type of resource to
 	be traced:
 
-	RTT_MEMORY:	APTR	      memPtr,
+	RTT_ALLOCMEM:	  APTR		memPtr,
 			ULONG	      size)
 
     INPUTS
@@ -288,59 +343,39 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 
 ******************************************************************************/
 {
-    va_list args;
+    IPTR     ret;
+    va_list  args;
+    RTNode * rt;
 
     if (!InitWasCalled)
 	return FALSE;
 
     va_start (args, line);
 
-    switch (rtt)
+    ret = (*(RT_Resources[rtt].SearchFunc))
+    (
+	&RT_Resources[rtt],
+	&rt,
+	args
+    );
+
+    if (ret != RT_SEARCH_FOUND)
     {
-	case RTT_MEMORY:
-	{
-	    MemoryResource * rt;
-	    APTR memory;
-	    ULONG size;
-
-	    memory = va_arg (args, APTR);
-	    size = va_arg (args, ULONG);
-
-	    ForeachNode (&rtMemList, rt)
-	    {
-		if (rt->Memory == memory)
-		{
-		    if (rt->Size == size)
-			return TRUE;
-
-		    kprintf ("RTCheck: Size mismatch (Allocated=%ld, Check=%ld)\n"
-			    "    Check at %s:%d\n"
-			    "    Allocated at %s:%d\n"
-			    "    MemPtr=%p Size=%ld Flags=%08lx\n"
-			, rt->Size, size
-			, file, line
-			, rt->Node.File, rt->Node.Line
-			, rt->Memory, rt->Size, rt->Flags
-		    );
-
-		    return FALSE;
-		}
-	    }
-
-	    kprintf ("RTCheck: Memory not found\n"
-		    "    Check at %s:%d\n"
-		    "    MemPtr=%p Size=%ld\n"
-		, file, line
-		, memory, size
-	    );
-
-	    return FALSE;
-	}
+	ret = (*(RT_Resources[rtt].ShowError))
+	(
+	    &RT_Resources[rtt],
+	    rt,
+	    ret,
+	    RT_CHECK,
+	    file,
+	    line,
+	    args
+	);
     }
 
     va_end (args);
 
-    return FALSE;
+    return ret;
 } /* RT_IntCheck */
 
 /*****************************************************************************
@@ -351,16 +386,16 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 	IPTR RT_IntFree (
 
 /*  SYNOPSIS */
-	int    rtt,
-	char * file,
-	int    line,
+	int	     rtt,
+	const char * file,
+	int	     line,
 	...)
 
 /*  FUNCTION
 	Stops tracing of a resource. The arguments after
 	line depend on the type of resource to be traced:
 
-	RTT_MEMORY:	APTR	      memPtr,
+	RTT_ALLOCMEM:	  APTR		memPtr,
 			ULONG	      size)
 
     INPUTS
@@ -390,64 +425,47 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 
 ******************************************************************************/
 {
-    va_list args;
+    IPTR     ret;
+    va_list  args;
+    RTNode * rt;
 
     if (!InitWasCalled)
 	return FALSE;
 
     va_start (args, line);
 
-    switch (rtt)
+    ret = (*(RT_Resources[rtt].SearchFunc))
+    (
+	&RT_Resources[rtt],
+	&rt,
+	args
+    );
+
+    if (ret == RT_SEARCH_FOUND)
     {
-	case RTT_MEMORY:
-	{
-	    MemoryResource * rt;
-	    APTR memory;
-	    ULONG size;
+kprintf ("FreeMem (%p, %d)\n", rt, RT_Resources[rtt].Size);
+	ret = (*(RT_Resources[rtt].FreeFunc)) (rt);
 
-	    memory = va_arg (args, APTR);
-	    size = va_arg (args, ULONG);
-
-	    ForeachNode (&rtMemList, rt)
-	    {
-		if (rt->Memory == memory)
-		{
-		    if (rt->Size == size)
-		    {
-			Remove ((struct Node *)rt);
-			FreeMem (rt, RT_Sizes[rtt]);
-			FreeMem (memory, size);
-			return TRUE;
-		    }
-
-		    kprintf ("RTFree: Size mismatch (Allocated=%ld, Check=%ld)\n"
-			    "    Free at %s:%d\n"
-			    "    Allocated at %s:%d\n"
-			    "    MemPtr=%p Size=%ld Flags=%08lx\n"
-			, rt->Size, size
-			, file, line
-			, rt->Node.File, rt->Node.Line
-			, rt->Memory, rt->Size, rt->Flags
-		    );
-
-		    return FALSE;
-		}
-	    }
-
-	    kprintf ("RTFree: Memory not found\n"
-		    "    Free at %s:%d\n"
-		    "    MemPtr=%p Size=%ld\n"
-		, file, line
-		, memory, size
-	    );
-
-	    return FALSE;
-	}
-    } /* switch */
+	Remove ((struct Node *)rt);
+	FreeMem (rt, RT_Resources[rtt].Size);
+    }
+    else
+    {
+	ret = (*(RT_Resources[rtt].ShowError))
+	(
+	    &RT_Resources[rtt],
+	    rt,
+	    ret,
+	    RT_FREE,
+	    file,
+	    line,
+	    args
+	);
+    }
 
     va_end (args);
 
-    return FALSE;
+    return ret;
 } /* RT_IntFree */
 
 
@@ -459,9 +477,9 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
 	void RT_IntEnter (
 
 /*  SYNOPSIS */
-	char * function,
-	char * file,
-	int    line)
+	const char * function,
+	const char * file,
+	int	     line)
 
 /*  FUNCTION
 	Tells the RT that a new function is about to be entered. This is used
@@ -695,27 +713,216 @@ kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node
     if (!InitWasCalled)
 	return;
 
-    switch (rtt)
+kprintf ("FreeMem (%p, %d)\n", rtnode, RT_Resources[rtt].Size);
+    /* Print an error */
+    (void) (*(RT_Resources[rtt].ShowError))
+    (
+	&RT_Resources[rtt],
+	rtnode,
+	0UL,
+	RT_EXIT,
+	NULL,
+	0L,
+	NULL
+    );
+
+    /* free the resource */
+    (void) (*(RT_Resources[rtt].FreeFunc)) (rtnode);
+
+    /* Remove resource from list and free it */
+    Remove ((struct Node *)rtnode);
+    FreeMem (rtnode, RT_Resources[rtt].Size);
+
+} /* RT_FreeResource */
+
+static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
+{
+    rt->Size = va_arg (args, ULONG);
+    rt->Flags = va_arg (args, ULONG);
+
+    rt->Memory = AllocMem (rt->Size, rt->Flags);
+kprintf ("AllocMem(%d, %x) = %p\n", rt->Size, rt->Flags, rt->Memory);
+
+    if (!rt->Memory)
+	*success = FALSE;
+
+    return (IPTR)(rt->Memory);
+} /* RT_AllocMem */
+
+static IPTR RT_FreeMem (MemoryResource * rt)
+{
+    FreeMem (rt->Memory, rt->Size);
+
+    return TRUE;
+} /* RT_FreeMem */
+
+static IPTR RT_SearchMem (RTDesc * desc, MemoryResource ** rtptr,
+	va_list args)
+{
+    MemoryResource * rt;
+    APTR    memory;
+    ULONG   size;
+
+    memory = va_arg (args, APTR);
+    size   = va_arg (args, ULONG);
+
+    ForeachNode (&desc->ResList, rt)
     {
-	case RTT_MEMORY:
+	if (rt->Memory == memory)
 	{
-	    MemoryResource * rt = (MemoryResource *)rtnode;
+	    *rtptr = rt;
 
-	    /* Show the problem */
-	    kprintf ("RTExit: Freeing memory\n"
-		    "    Allocated at %s:%d\n"
-		    "    MemPtr=%p Size=%ld Flags=%08lx\n"
-		, rt->Node.File, rt->Node.Line
-		, rt->Memory, rt->Size, rt->Flags
-	    );
+	    if (rt->Size != size)
+		return RT_SEARCH_SIZE_MISMATCH;
 
-	    /* free the resource */
-	    FreeMem (rt->Memory, rt->Size);
-
-	    break;
+	    return RT_SEARCH_FOUND;
 	}
     }
 
-} /* RT_FreeResource */
+    return RT_SEARCH_NOT_FOUND;
+} /* RT_SearchMem */
+
+static IPTR RT_ShowErrorMem (RTDesc * desc, MemoryResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    const char * modestr = (mode == RT_FREE) ? "Free" : "Check";
+    APTR	 memory;
+    ULONG	 size;
+
+    if (mode != RT_EXIT)
+    {
+	memory = va_arg (args, APTR);
+	size   = va_arg (args, ULONG);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Memory not found\n"
+		    "    %s at %s:%d\n"
+		    "    MemPtr=%p Size=%ld\n"
+		, modestr
+		, modestr
+		, file, line
+		, memory, size
+	    );
+	    break;
+
+	case RT_SEARCH_SIZE_MISMATCH:
+	    kprintf ("RT%s: Size mismatch (Allocated=%ld, Check=%ld)\n"
+		    "    %s at %s:%d\n"
+		    "    AllocMem()'d at %s:%d\n"
+		    "    MemPtr=%p Size=%ld Flags=%08lx\n"
+		, modestr
+		, rt->Size, size
+		, modestr
+		, file, line
+		, rt->Node.File, rt->Node.Line
+		, rt->Memory, rt->Size, rt->Flags
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Memory was not freed\n"
+		"    AllocMem()'d at %s:%d\n"
+		"    MemPtr=%p Size=%ld Flags=%08lx\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Memory, rt->Size, rt->Flags
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorMem */
+
+static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success)
+{
+    rt->Size = va_arg (args, ULONG);
+    rt->Flags = va_arg (args, ULONG);
+
+    rt->Memory = AllocVec (rt->Size, rt->Flags);
+
+    if (!rt->Memory)
+	*success = FALSE;
+
+    return (IPTR)(rt->Memory);
+} /* RT_AllocVec */
+
+static IPTR RT_FreeVec (MemoryResource * rt)
+{
+    FreeVec (rt->Memory);
+
+    return TRUE;
+} /* RT_FreeVec */
+
+static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr,
+	va_list args)
+{
+    MemoryResource * rt;
+    APTR    memory;
+    ULONG   size;
+
+    memory = va_arg (args, APTR);
+    size   = va_arg (args, ULONG);
+
+    ForeachNode (&desc->ResList, rt)
+    {
+	if (rt->Memory == memory)
+	{
+	    *rtptr = rt;
+
+	    return RT_SEARCH_FOUND;
+	}
+    }
+
+    return RT_SEARCH_NOT_FOUND;
+} /* RT_SearchVec */
+
+static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    const char * modestr = (mode == RT_FREE) ? "Free" : "Check";
+    APTR	 memory;
+    ULONG	 size;
+
+    if (mode != RT_EXIT)
+    {
+	memory = va_arg (args, APTR);
+	size   = va_arg (args, ULONG);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: Memory not found\n"
+		    "    %s at %s:%d\n"
+		    "    MemPtr=%p Size=%ld\n"
+		, modestr
+		, modestr
+		, file, line
+		, memory, size
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: Memory was not freed\n"
+		"    AllocVec()'d at %s:%d\n"
+		"    MemPtr=%p Size=%ld Flags=%08lx\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->Memory, rt->Size, rt->Flags
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorVec */
 
 

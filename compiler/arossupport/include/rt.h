@@ -15,15 +15,16 @@
 #	include <exec/types.h>
 #   endif
 
-#   define RTT_MEMORY	   0
-#   define RTT_MAX	   1
+#   define RTT_ALLOCMEM     0
+#   define RTT_ALLOCVEC     1
+#   define RTT_MAX	    2
 
 void RT_Init (void);
 void RT_Exit (void);
-IPTR RT_IntAdd (int rtt, char * file, int line, ...); /* Add a resource for tracking */
-IPTR RT_IntCheck (int rtt, char * file, int line, ...); /* Check a resource before use */
-IPTR RT_IntFree (int rtt, char * file, int line, ...); /* Stop tracking of a resource */
-void RT_IntEnter (char * functionname, char * filename, int line);
+IPTR RT_IntAdd (int rtt, const char * file, int line, ...); /* Add a resource for tracking */
+IPTR RT_IntCheck (int rtt, const char * file, int line, ...); /* Check a resource before use */
+IPTR RT_IntFree (int rtt, const char * file, int line, ...); /* Stop tracking of a resource */
+void RT_IntEnter (const char * functionname, const char * filename, int line);
 void RT_Leave (void);
 
 #   if ENABLE_RT
@@ -36,9 +37,13 @@ void RT_Leave (void);
 #	    include <proto/exec.h>
 #	endif
 #	undef AllocMem
-#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_MEMORY,(ULONG)size,(ULONG)flags)
+#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_ALLOCMEM,(ULONG)size,(ULONG)flags)
 #	undef FreeMem
-#	define FreeMem(ptr,size)        (void)RT_Free(RTT_MEMORY,(APTR)ptr,(ULONG)size)
+#	define FreeMem(ptr,size)        (void)RT_Free(RTT_ALLOCMEM,(APTR)ptr,(ULONG)size)
+#	undef AllocVec
+#	define AllocVec(size,flags)     (APTR)RT_Add(RTT_ALLOCVEC,(ULONG)size,(ULONG)flags)
+#	undef FreeVec
+#	define FreeVec(ptr)             (void)RT_Free(RTT_ALLOCVEC,(APTR)ptr)
 #   endif
 #else
 #   define RT_Init()                /* eps */
