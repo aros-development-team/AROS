@@ -309,10 +309,10 @@ static void MakeICObjects(void)
 	Cleanup(MSG(MSG_CANT_CREATE_IC));
     }
 
-    DoMethod(model_obj, OM_ADDMEMBER, dto_to_vert_ic_obj);
-    DoMethod(model_obj, OM_ADDMEMBER, dto_to_horiz_ic_obj);
+    DoMethod(model_obj, OM_ADDMEMBER, (IPTR) dto_to_vert_ic_obj);
+    DoMethod(model_obj, OM_ADDMEMBER, (IPTR) dto_to_horiz_ic_obj);
 #if BACK_CONNECTION
-    DoMethod(model_obj, OM_ADDMEMBER, model_to_dto_ic_obj);
+    DoMethod(model_obj, OM_ADDMEMBER, (IPTR) model_to_dto_ic_obj);
 #endif
     
     model_has_members = TRUE;
@@ -1280,7 +1280,7 @@ static void HandleAll(void)
 
 		case IDCMP_IDCMPUPDATE:
 		    tstate = tags = (struct TagItem *)msg->IAddress;
-		    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+		    while ((tag = NextTagItem(&tstate)) != NULL)
 		    {
 			tidata = tag->ti_Data;
 //			D(bug("IDCMP UPDATE %08lx %08lx\n", (long)tag->ti_Tag, (long)tag->ti_Data));
