@@ -342,11 +342,15 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     /* Create the right border scrollers now if requested */
     if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
     {
+    	int voffset;
+	
+	voffset = IM(mri->mri_DownImage)->Width / 4;
+	
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
 	firstgad = prevgad = data->wd_VertProp = NewObject(NULL,"propgclass",
-		GA_RelRight, 1 - (IM(mri->mri_UpImage)->Width - 8 / 2),
+		GA_RelRight, 1 - (IM(mri->mri_UpImage)->Width - voffset),
 		GA_Top, mri->mri_BorderTop + 2,
-		GA_Width, IM(mri->mri_UpImage)->Width - 8,
+		GA_Width, IM(mri->mri_UpImage)->Width - voffset * 2,
 		GA_RelHeight, - (mri->mri_BorderTop + 2) - IM(mri->mri_UpImage)->Height - IM(mri->mri_DownImage)->Height - IM(mri->mri_SizeImage)->Height - 2,
 		GA_RightBorder, TRUE,
 		GA_ID, id,
@@ -385,11 +389,15 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     /* Create the bottom border scrollers now if requested */
     if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
     {
+    	int hoffset;
+	
+	hoffset = IM(mri->mri_RightImage)->Height / 4;
+
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
 	prevgad = data->wd_HorizProp = NewObject(NULL,"propgclass",
-		GA_RelBottom, 1 - (IM(mri->mri_LeftImage)->Height - 4 / 2),
+		GA_RelBottom, 1 - (IM(mri->mri_LeftImage)->Height - hoffset),
 		GA_Left, mri->mri_BorderLeft,
-		GA_Height, IM(mri->mri_LeftImage)->Height - 4,
+		GA_Height, IM(mri->mri_LeftImage)->Height - hoffset * 2,
 		GA_RelWidth, - (mri->mri_BorderLeft) - IM(mri->mri_LeftImage)->Width - IM(mri->mri_RightImage)->Width - IM(mri->mri_SizeImage)->Width - 2,
 		GA_BottomBorder, TRUE,
 		GA_ID, id,
