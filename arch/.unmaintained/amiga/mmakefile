@@ -27,9 +27,9 @@
 #MM	workbench-libs-diskfont \
 #MM	workbench-libs-gadtools \
 #MM	workbench-libs-icon \
-#MM	workbench-libs-iffparse \
-#MM workbench-libs-mathtrans \
+#MM	workbench-libs-iffparse
 
+# workbench-libs-mathtrans <- missing math functions (__addsf3 etc.)
 # workbench-libs-mathieeedoubtrans <- removed due to bogus AROS_LHQUAD* macros
 # workbench-libs-mathieeedoubbas <- removed due to bogus AROS_LHQUAD* macros
 
