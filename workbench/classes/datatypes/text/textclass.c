@@ -2653,6 +2653,9 @@ ASM ULONG DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * 
     }
 
     return 0;
+#ifdef _AROS
+    AROS_USERFUNC_EXIT
+#endif
 }
 
 struct IClass *DT_MakeClass(struct Library *textbase)
@@ -2672,9 +2675,6 @@ struct IClass *DT_MakeClass(struct Library *textbase)
 
     return cl;
 
-#ifdef _AROS
-    AROS_USERFUNC_EXIT
-#endif
 }
 
 #else
