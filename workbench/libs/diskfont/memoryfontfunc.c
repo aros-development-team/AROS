@@ -118,5 +118,4 @@ AROS_UFH3(IPTR, MemoryFontFunc,
     
     ReturnInt ("MemoryFontFunc", ULONG, retval);
 }
-    
-   
+ 

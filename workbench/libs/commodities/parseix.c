@@ -45,7 +45,7 @@ BOOL IsSeparator(char);
 
     [class] {[-] (qualifier|synonym)} [[-] upstroke] [HighMap|ANSICode]
 
-    For more information on this, consult "???/CxParse.doc".
+    For more information on this, consult "xxx/CxParse.doc".
 
     INPUTS
 

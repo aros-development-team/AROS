@@ -4,6 +4,7 @@
 #include <proto/dos.h>
 #include <proto/iffparse.h>
 #include <proto/intuition.h>
+#include <proto/locale.h>
 #include <utility/name.h>
 #include <intuition/cghooks.h>
 #include <libraries/locale.h>

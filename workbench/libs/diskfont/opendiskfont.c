@@ -6,14 +6,15 @@
     Lang: english
 */
 
-#include <proto/utility.h>
-#include <proto/graphics.h>
-#include "diskfont_intern.h"
-
 #ifndef TURN_OFF_DEBUG
 #define DEBUG 1
 #endif
 #  include <aros/debug.h>
+
+#include <proto/utility.h>
+#include <proto/graphics.h>
+#include "diskfont_intern.h"
+
 
 /*****************************************************************************
 
