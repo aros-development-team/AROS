@@ -9,6 +9,8 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
+#define CHECK_INITSEM 1
+
 /*****************************************************************************
 
     NAME */
@@ -55,6 +57,14 @@
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
     struct Task *me = FindTask(NULL);
+
+#if CHECK_INITSEM
+    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
+    {
+        kprintf("\n\nAttemptSemaphore called on an unintialized semaphore!!! "
+	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
+    }
+#endif
 
     /* Arbitrate for semaphore nesting count and owner fields */
     Forbid();

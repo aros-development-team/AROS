@@ -10,6 +10,8 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
+#define CHECK_INITSEM 1
+
 /*****************************************************************************/
 #ifndef UseExecstubs
 
@@ -64,6 +66,14 @@ void _Exec_ObtainSemaphore (struct SignalSemaphore * sigSem,
     /* Get pointer to current task */
     me=SysBase->ThisTask;
 
+#if CHECK_INITSEM
+    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
+    {
+        kprintf("\n\nObtainSemaphore called on a not intialized semaphore!!! "
+	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
+    }
+#endif
+
     /* Arbitrate for the semaphore structure */
     Forbid();
 
@@ -108,6 +118,8 @@ void _Exec_ObtainSemaphore (struct SignalSemaphore * sigSem,
 	    waiters list of the semaphore. We were the last to
 	    request, so we must be the last to get the semaphore.
 	*/
+
+#warning This must be atomic!
 	me->tc_SigRecvd &= ~SIGF_SINGLE;
 	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)&sr);
 

@@ -10,6 +10,8 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
+#define CHECK_INITSEM 1
+
 /*****************************************************************************/
 #ifndef UseExecstubs
 
@@ -65,6 +67,14 @@ void _Exec_ObtainSemaphoreShared (struct SignalSemaphore * sigSem,
 
     /* Get pointer to current task */
     me=SysBase->ThisTask;
+
+#if CHECK_INITSEM
+    if (sigSem->ss_Link.ln_Type != NT_SIGNALSEM)
+    {
+        kprintf("\n\nObtainSemaphoreShared called on a not intialized semaphore!!! "
+	        "sem = %x  task = %x (%s)\n\n", sigSem, me, me->tc_Node.ln_Name);
+    }
+#endif
 
     /* Arbitrate for the semaphore structure */
     Forbid();
