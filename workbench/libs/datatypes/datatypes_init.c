@@ -59,9 +59,6 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("datatypes.library correctly initialized\n"));
 
     return TRUE;
-
-error:
-    return FALSE;
 }
 
 
