@@ -106,7 +106,7 @@ BUG000015
 digulla@fh-konstanz.de
 After rtdemo, dir doesn't work anymore. I get "Object not found".
 
-BUG000016
+BUG000016 fixed
 digulla@fh-konstanz.de
 The path of the inital shell is wrong. Instead of "Workbench:" it
 reads "Workbench:.". If you CD into a subdir (say libs), then
@@ -143,11 +143,11 @@ Fault. The output of listfonts looks like garbage at some lines.
 
 BUG000023
 berger@cip.e-technik.uni-erlangen.de
-Demos/sift kill the shell with a GURU-Meditation saying that memory was
+Demos/sift crashes with a GURU-Meditation saying that memory was
 freed twice.
 
 BUG000024
-hkiel@aros.org
+hkiel@aros.org fixed
 The prompt of the shell does not show the complete path anymore, it just
 shows the last subdirectory of the path (ie. "Workbench:Locale/Countries"
 becomes "Countries"). This however is only on ffs_device, ram_device is okay.
