@@ -52,6 +52,7 @@ String;
 typedef struct
 {
     Node     node;
+    int      argcount;
     List     args;
     String * body;
 }
@@ -61,8 +62,9 @@ typedef struct
 {
     Node   node;
     char * defval;
-    char * value;
+    /* char * value; */
     int    flags;
+    int    pos;
 #define ARGF_MULTI  1
 }
 Arg;
@@ -171,7 +173,12 @@ void
 _xfree (void * ptr, const char * file, int line)
 {
     if (ptr)
+    {
+#if 0
+        ((int *)ptr)[0] = 0xDEADBEEF;
+#endif
 	free (ptr);
+    }
     else
 	fprintf (stderr, "Illegal free(NULL) in %s:%d", file, line);
 }
@@ -434,6 +441,7 @@ void read_templates (const char * fn)
 	    argv = getargs (line->value, &argc);
 
 	    tmpl->node.name = xstrdup (argv[1]);
+	    tmpl->argcount = argc-2;
 
 	    for (t=2; t<argc; t++)
 	    {
@@ -465,6 +473,7 @@ void read_templates (const char * fn)
 		arg = new (Arg);
 
 		arg->node.name = xstrdup (argv[t]);
+		arg->pos = t-2;
 
 		if (*defval)
 		{
@@ -558,6 +567,7 @@ void replace_template (const char * string)
     Template * tmpl;
     Arg * arg;
     char * argnptr, * value, * ptr;
+    char ** values, * freeflags;
 
     argv = getargs (string, &argc);
 
@@ -571,8 +581,17 @@ void replace_template (const char * string)
     }
     else
     {
+	values = xmalloc (sizeof (values[0]) * tmpl->argcount);
+	freeflags = xmalloc (sizeof (freeflags[0]) * tmpl->argcount);
+
+	t = 0;
 	ForeachNode (&tmpl->args, arg)
-	    arg->value = arg->defval ? arg->defval : "";
+	{
+	    freeflags[t] = 0;
+	    values[t] = arg->defval ? arg->defval : "";
+	    t ++;
+	}
+	assert (t == tmpl->argcount);
 
 	arg = GetHead (&tmpl->args);
 
@@ -615,13 +634,15 @@ void replace_template (const char * string)
 		    append_string (vals, argv[t]);
 		}
 
-		arg->value = vals->value;
+		values[arg->pos] = vals->value;
+		freeflags[arg->pos] = 1;
 		vals->value = NULL;
 		free_string (vals);
 	    }
 	    else
 	    {
-		arg->value = value;
+		values[arg->pos] = xstrdup (value);
+		freeflags[arg->pos] = 1;
 		arg = GetNext (arg);
 	    }
 	}
@@ -632,7 +653,7 @@ void replace_template (const char * string)
 	    {
 		arg = findArg (tmpl, &ptr);
 		if (arg)
-		    output (arg->value);
+		    output (values[arg->pos]);
 	    }
 	    else if (*ptr == '%')
 	    {
@@ -647,7 +668,7 @@ void replace_template (const char * string)
 		    {
 			arg = findArg (tmpl, &ptr);
 			if (arg)
-			    append_string (str, arg->value);
+			    append_string (str, values[arg->pos]);
 		    }
 		    else
 		    {
@@ -659,7 +680,6 @@ void replace_template (const char * string)
 			break;
 		}
 
-		/* be careful ! This has side effects ! */
 		replace_template (str->value);
 		free_string (str);
 	    }
@@ -676,6 +696,15 @@ void replace_template (const char * string)
 		ptr ++;
 	    }
 	}
+
+	for (t=0; t<tmpl->argcount; t++)
+	{
+	    if (freeflags[t])
+		xfree (values[t]);
+	}
+
+	xfree (values);
+	xfree (freeflags);
     }
 }
 
