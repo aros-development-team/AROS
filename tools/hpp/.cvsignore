@@ -13,3 +13,8 @@ pics
 *.tex
 *.cb
 *.log
+AddHead.c
+AddTail.c
+lists.c
+lists.h
+file.list
