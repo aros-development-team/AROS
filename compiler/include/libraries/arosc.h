@@ -16,8 +16,21 @@
 #include <exec/semaphores.h>
 #include <proto/exec.h>
 
-struct AroscUserdata
+struct AroscUserData
 {
+    /*
+       This field store the old value of tc_UserData
+       In future we'll use an ETask Field
+    */
+    APTR oldtc_UserData;
+
+    /*
+      This will be useful in case the structure will be extended.
+      In this way the library will always know what can "offer" to the
+      program
+    */
+    ULONG usersize;
+
     /* these fields are initialized by the program */
     void *errnoptr;
     void **stdinptr;
@@ -48,7 +61,7 @@ extern struct Library *aroscbase;
 
 #ifdef _CLIB_KERNEL_
 
-#define GETUSER struct AroscUserdata *clib_userdata = (struct ArosUserdata *)(FindTask(0)->tc_UserData)
+#define GETUSER struct AroscUserData *clib_userdata = (struct AroscUserData *)(FindTask(0)->tc_UserData)
 
 #define errno               (*(int *)         (clib_userdata->errnoptr))
 #define stdin               (*(FILE **)       (clib_userdata->stdinptr))
