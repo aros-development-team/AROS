@@ -183,7 +183,7 @@
 #endif
 
 #ifndef NULL
-#   define NULL    ((void *)0L)
+#   define NULL    0L
 #endif
 
 #ifndef VOID

@@ -15,6 +15,9 @@
 /**************************************
 		Includes
 **************************************/
+#ifndef AROS_CONFIG_H
+#   include <aros/config.h>
+#endif
 #ifndef AROS_SYSTEM_H
 #   include <aros/system.h>
 #endif
@@ -26,6 +29,21 @@
 /**************************************
 	       Structures
 **************************************/
+
+#if AROS_FLAVOUR == AROS_FLAVOUR_NATIVE
+struct Node
+{
+    struct Node * ln_Succ,
+		* ln_Pred;
+    UBYTE	  ln_Type;
+    BYTE	  ln_Pri;
+    /* AROS: pointer should be 32bit aligned, but we can not do this on
+       the native machine because of binary compatibility.
+    */
+    char	* ln_Name;
+};
+
+#else
 struct Node
 {
     struct Node * ln_Succ,
@@ -35,6 +53,7 @@ struct Node
     UBYTE	  ln_Type;
     BYTE	  ln_Pri;
 };
+#endif /* AROS_FLAVOUR */
 
 struct MinNode
 {
