@@ -15,9 +15,11 @@
 
 #define UNIXIOCLASS		"unixioclass"
 
-/* WaitForIO Method: Should this be defined here? */
+#define HIDDM_UnixIO_Wait   (HIDDM_UncommonMethodBase + 1)  /* LONG M ( uioMsg *)		*/
+#define HIDDM_UnixIO_Select (HIDDM_UncommonMethodBase + 2)  /* for async IO, unused		*/
 
-#define HIDDM_WaitForIO 	0x80042 /* LONG M ( uioMsg *)		*/ 
+/* obsolete */
+#define HIDDM_WaitForIO     HIDDM_UnixIO_Wait
 
 struct uioMsg
 {
