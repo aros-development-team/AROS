@@ -61,7 +61,8 @@ FILES := amiga2date \
 	portsend \
 	portreceive \
 	makelib \
-	weightamatch
+	weightamatch \
+	printnativekeytable
 
 EXEDIR := $(AROSDIR)/test
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
