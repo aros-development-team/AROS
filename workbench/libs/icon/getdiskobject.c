@@ -10,6 +10,8 @@
 #include <dos/dos.h>
 #include "icon_intern.h"
 
+#include <aros/debug.h>
+
 extern const IPTR IconDesc[];
 
 /*****************************************************************************
@@ -51,7 +53,7 @@ extern const IPTR IconDesc[];
     struct DiskObject * dobj;
     char * iconname;
     BPTR   icon;
-
+    
     /* Name with correct extension ? */
     if (strrncasecmp (name, ".info", 5))
     {
@@ -72,6 +74,7 @@ extern const IPTR IconDesc[];
     }
     else
 	icon = Open (name, MODE_OLDFILE);
+
 
     if (!icon)
 	return NULL;

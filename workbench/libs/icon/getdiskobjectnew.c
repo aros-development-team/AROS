@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <aros/debug.h>
 #include <proto/dos.h>
 #include "icon_intern.h"
 
@@ -104,8 +105,10 @@
 	    UnLock(lock);
 	} else
 	{
-#warning TODO: If above lock fails what to do then if we lock for a Disk.info?
-	    return NULL;
+	    if (Stricmp("Disk",FilePart(name)))
+		return NULL;
+
+	    def_type = WBDISK;
 	}
 
 	/* Try to open the default icon */
