@@ -21,7 +21,6 @@
 #include <devices/keymap.h>
 #include <devices/input.h>
 
-
 #include <proto/exec.h>
 #include <proto/layers.h>
 
@@ -164,7 +163,7 @@ int intui_OpenWindow (struct Window * w,
     if (w->WLayer)
     {
         /* Layer gets pointer to the window */
-        w->WLayer->Window = (APTR)Window; 
+        w->WLayer->Window = (APTR)w; 
 	/* Window needs a rastport */
 	w->RPort = w->WLayer->rp;
 	
@@ -226,6 +225,7 @@ void intui_WindowToFront (struct Window * window,
 }
 
 void intui_WindowToBack (struct Window * window,
+                         struct IntuitionBase * IntuitionBase)
 {
   /* Depth arrange only non backdrop windows */
   if (0 == (window->Flags & WFLG_BACKDROP))
