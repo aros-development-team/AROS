@@ -26,6 +26,7 @@ FILES := \
 	vstring
 
 #MM- linklibs : linklibs-toollib
+#MM linklibs-toollib : includes
 
 %build_linklib mmake=linklibs-toollib libname=toollib files=$(FILES)
 

@@ -9,5 +9,5 @@
 #MM    workbench-fs-nil-kobj \
 #MM    workbench-fs-ram-kobj
 
-#MM- includes : \
+#MM- includes-generate : \
 #MM      kernel-input-includes

@@ -35,8 +35,16 @@ GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
 INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
                  $(foreach dir,$(INCSUBDIRS),$(GENINCDIR)/$(dir))
 
-#MM- includes : includes-copy  includes-$(ARCH)-$(CPU)
-#MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU) includes-generate
+#MM- includes : includes-generate
+#MM- includes-generate : includes-generate-deps
+#MM- includes-generate-deps : includes-copy includes-$(ARCH)-$(CPU)
+#MM- includes-copy : compiler-includes includes-copy-$(ARCH)-$(CPU)
+
+#MM- includes-$(ARCH)-$(CPU) : \
+#MM     includes-copy-$(ARCH)-$(CPU) \
+#MM     includes-generate-$(ARCH)-$(CPU)
+#MM- includes-generate-$(ARCH)-$(CPU) : includes-copy-$(ARCH)-$(CPU)
+#MM- includes-copy-$(ARCH)-$(CPU) :
 
 #MM
 compiler-includes : setup $(DEST_INCLUDES) $(GEN_INCLUDES)

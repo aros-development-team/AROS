@@ -10,6 +10,4 @@
 
 #MM- workbench-unix : workbench-hidd-unix
 
-#MM- workbench-hidd-unix : \
-#MM    workbench-hidd-unix-parallel-kobj \
-#MM    workbench-hidd-unix-serial-kobj
+#MM- workbench-hidd-unix :

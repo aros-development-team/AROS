@@ -383,8 +383,10 @@ FILES         := $(FILES) $(CLASSFILES)
 BUILDINCTOOL := $(GENDIR)/$(CURDIR)/buildincludes
 INCLUDEFILES := $(AROS_INCLUDES)/libraries/mui.h $(GENINCDIR)/libraries/mui.h
 
-#MM includes-generate
-includes-generate :: includes-mui-setup $(INCLUDEFILES)
+#MM- includes-generate-deps : includes-libraries-mui
+
+#MM
+includes-libraries-mui : includes-mui-setup $(INCLUDEFILES)
 	@$(NOP)
 
 includes-mui-setup : $(GENINCDIR)/libraries $(AROS_INCLUDES)/libraries

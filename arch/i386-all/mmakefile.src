@@ -5,43 +5,14 @@ GENINC		:= $(TOOLDIR)/geninc-i386$(HOST_EXE_SUFFIX)
 OS_INCLUDES	:= -I$(GENINCDIR)
 MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 INCFILES	:= $(GENINCDIR)/aros/machine.h \
-		   $(INCDIR)/aros/machine.h \
+		   $(AROS_INCLUDES)/aros/machine.h \
 		   $(GENINCDIR)/jmpdefs.h
 
+# The dependancies here are for compiling geninc.c
+#MM includes-common-i386 : \
+#MM     kernel-exec-includes compiler-includes compiler-arossuport-includes
 
-#MM includes-linux-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
-#MM   compiler-arossupport-includes
-#MM includes-freebsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
-#MM   compiler-arossupport-includes
-#MM includes-netbsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
-#MM   compiler-arossupport-includes
-#MM includes-openbsd-i386 : kernel-exec-includes kernel-dos-includes compiler-includes \
-#MM   compiler-arossupport-includes
-
-#MM
-includes-linux-i386 : $(INCFILES) machine.i
-	@$(NOP)
-
-#MM
-includes-copy-linux-i386 : $(INCFILES) machine.i
-
-#MM-
-includes-freebsd-i386 :
-
-#MM
-includes-copy-freebsd-i386 : $(INCFILES) machine.i
-
-#MM
-includes-netbsd-i386 : $(INCFILES) machine.i
-	@$(NOP)
-
-#MM
-includes-openbsd-i386 : $(INCFILES) machine.i
-	@$(NOP)
-	
-#MM
-includes-cygwin-i386 : $(INCFILES) machine.i
-	@$(NOP)
+includes-common-i386 : $(INCFILES) machine.i
 
 #MM
 kernel-i386-machine_i : machine.i

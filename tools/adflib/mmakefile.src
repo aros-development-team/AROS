@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),palmnative)
 
-#MM
+#MM linklibs-adf : includes
 linklibs-adf :
 	@$(NOP)
 
