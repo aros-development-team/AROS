@@ -86,6 +86,7 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	BootLoaderBase->bl_Node.ln_Type = NT_RESOURCE;
 	BootLoaderBase->bl_Node.ln_Name = (STRPTR)name;
 	NEWLIST(&(BootLoaderBase->Args));
+	NEWLIST(&(BootLoaderBase->DriveInfo));
 
 	MakeFunctions(BootLoaderBase, (APTR)LIBFUNCTABLE, NULL);
 	AddResource(BootLoaderBase);
@@ -159,30 +160,43 @@ AROS_UFH3(struct BootLoaderBase *, AROS_SLIB_ENTRY(init,BASENAME),
 	    BootLoaderBase->Vesa.Shifts[VI_Green] = 32 - mb->vmi.green_field_position - mb->vmi.green_mask_size;
 	    BootLoaderBase->Vesa.Shifts[VI_Alpha] = 32 - mb->vmi.reserved_field_position - mb->vmi.reserved_mask_size;
 	    BootLoaderBase->Flags |= MB_FLAGS_GFX;
-	    D(bug("[BootLdr] Init: Vesa mode %x @ 0x%08x type (%dx%dx%d)\n",
-			BootLoaderBase->Vesa.ModeNumber,
-			BootLoaderBase->Vesa.FrameBuffer,
-			BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
-			BootLoaderBase->Vesa.BitsPerPixel));
+	    if (BootLoaderBase->Vesa.ModeNumber != 3)
+	    {
+	    	D(bug("[BootLdr] Init: Vesa mode %x @ 0x%08x type (%dx%dx%d)\n",
+				BootLoaderBase->Vesa.ModeNumber,
+				BootLoaderBase->Vesa.FrameBuffer,
+				BootLoaderBase->Vesa.XSize,BootLoaderBase->Vesa.YSize,
+				BootLoaderBase->Vesa.BitsPerPixel));
+	    }
+	    else
+	    {
+		D(bug("[BootLdr] Init: Textmode graphics\n"));
+	    }
 	}
 
 	if (mb->flags & MB_FLAGS_DRIVES)
 	{
 	    struct mb_drive *curr;                                                                                                  
+	    struct DriveInfoNode *node;
 
-	    kprintf(" Drive info at: 0x%08x length 0x%08x\n",mb->drives_addr,mb->drives_len);                               
-	    for (curr = (struct mb_drive *) mb->drives_addr;                                                                    
-		    (unsigned long) curr < mb->drives_addr + mb->drives_len;                                                
+	    for (curr = (struct mb_drive *) mb->drives_addr;
+		    (unsigned long) curr < mb->drives_addr + mb->drives_len;
 		    curr = (struct mb_drive *) ((unsigned long) curr + curr->size))                                                 
-	    {                                                                                                                       
-		kprintf("  Drive %02x, CHS (%d/%d/%d) mode %s\n",                                                                   
-			curr->number,                                                                                               
-			curr->cyls,curr->heads,curr->secs,                                                                          
-			curr->mode?"CHS":"LBA");                                                                                    
-	    }                                                                                                                       
+	    {
+		node = AllocMem(sizeof(struct DriveInfoNode),MEMF_ANY|MEMF_CLEAR);
+		node->Number = curr->number;
+		node->Mode = curr->mode;
+		node->Cylinders = curr->cyls;
+		node->Heads = curr->heads;
+		node->Sectors = curr->secs;
+		ADDTAIL(&(BootLoaderBase->DriveInfo),(struct Node *)node);
 
+		D(bug("[BootLdr] Init: Drive %02x, CHS (%d/%d/%d) mode %s\n",
+			curr->number,
+			curr->cyls,curr->heads,curr->secs,
+			curr->mode?"CHS":"LBA"));
+	    }
 	    BootLoaderBase->Flags |= MB_FLAGS_DRIVES;
-
 	}
     }
     return BootLoaderBase;
