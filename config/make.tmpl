@@ -104,14 +104,14 @@ $(OBJDIR)/functions.d : $(OBJDIR)/functions.c
 %define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
-	@$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
+	@$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
 # Same but more noisy
 %define mkdepend flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
 	@$(IF) [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else $(NOP) ; fi
 	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
-	$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
+	$(MKDEPEND) %(flags) %(from) -o %(to)
 %end
 
 # Add section with all necessary libs and dependencies for linking
@@ -297,9 +297,7 @@ libdefs.h : lib.conf $(GENLIBDEF_SCRIPT)
 	@$(AWK) -f $(GENLIBDEF_SCRIPT) $< > $@
 
 $(OBJDIR)/%.d : %.c
-	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
+	%mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
 %define gennames name=$(LIBNAME)
@@ -398,9 +396,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
+	%mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
 %define genromlib flags=$(CFLAGS) cc=$(CC)
@@ -501,9 +497,7 @@ $(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
 endif
 
 $(OBJDIR)/%.d : %.c
-	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
-	@$(ECHO) "Makedepend $(CURDIR)/$<..."
-	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
+	%mkdepend opt=$(MKDEPEND_FLAGS)
 %end
 
 # version of genromlib that allows you to use cpak

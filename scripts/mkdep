@@ -15,13 +15,6 @@ while [ $# != 0 ]; do
 	    args="$args '$1' '$2'"
 	    shift
 	    ;;
-	-f)
-	    depfile="$2"
-	    shift
-	    ;;
-	-f*)
-	    depfile="`echo $1 | cut -c3-`"
-	    ;;
 	*.c)
 	    files="$files '$1'"
 	    ;;
@@ -41,12 +34,7 @@ if [ "x$dest" = x ]; then
     exit 1
 fi
 
-if [ "x$depfile" = x ]; then
-    depfile="`dirname "$dest"`/`basename "$dest" .o`.d"
-fi
+CMD="gcc -M $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
+#echo $CMD
 
-CMD="gcc -M $args $files | sed 's#^.*\.o:#$dest:#'"
-echo $CMD
-echo "depfile=$depfile"
-
-eval $CMD > $depfile
+eval $CMD > $dest
