@@ -6,11 +6,13 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include <clib/alib_protos.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/icclass.h>
 #include <gadgets/colorwheel.h>
+#include <libraries/asl.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/dos.h>
@@ -53,6 +55,9 @@ Object *g_slider;
 Object *b_slider;
 Object *hue_gauge;
 Object *group;
+Object *editor_text;
+Object *filename_string;
+Object *save_button;
 
 ULONG xget(Object *obj, Tag attr)
 {
@@ -117,6 +122,21 @@ __saveds __asm void display_function(register __a0 struct Hook *h, register __a2
     }
 }
 
+void save_function(void)
+{
+    char *text = (char*)xget(editor_text, MUIA_Text_Contents);
+    char *filename = (char*)xget(filename_string, MUIA_String_Contents);
+    BPTR fh;
+
+    if (!strlen(filename)) return;
+
+    if ((fh = Open(filename,MODE_NEWFILE)))
+    {
+    	Write(fh,text,strlen(text));
+	Close(fh);
+    }
+}
+
 /* The custom class */
 
 struct DropText_Data
@@ -163,6 +183,16 @@ struct MUI_CustomClass *CL_DropText;
 
 /* Main prog */
 
+static struct Hook hook_standard;
+
+__saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
+{
+	void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
+//	putreg(REG_A4,(long)h->h_Data);
+
+	if (func)
+		func(funcptr + 1);
+}
 void main(void)
 {
     Object *app;
@@ -191,6 +221,9 @@ void main(void)
     struct Hook hook_slider;
     struct Hook hook_objects;
     struct Hook hook_display;
+
+    hook_standard.h_Entry = (HOOKFUNC)hook_func_standard;
+//    hook_standard.h_Data = (void*)getreg(REG_A4);
 
 #ifndef COMPILE_WITH_MUI
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
@@ -260,10 +293,6 @@ void main(void)
     	    	    	    End,
 			End,
     	    	    End,
-    	    	Child, PopaslObject,
-    	    	    MUIA_Popstring_String, MUI_MakeObject(MUIO_String, NULL, 200),
-    	    	    MUIA_Popstring_Button, PopButton(MUII_PopFile),
-		    End,
     	    	Child, RegisterGroup(pages),
 		    Child, HGroup,
 		        GroupFrameT("A horizontal group"),
@@ -279,7 +308,7 @@ void main(void)
 		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),
 			    Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Drop Here", MUIA_Dropable, TRUE, MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, DropTextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Dropable, TRUE, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			   End,
 		       End,
 
@@ -375,12 +404,18 @@ End,
 			    End,
 		    	End,
 		    Child, VGroup,
-			Child, TextObject,
+			Child, editor_text = TextObject,
 			    StringFrame,
 			    MUIA_Text_Editable, TRUE,
 			    MUIA_Text_Multiline, TRUE,
 			    End,
-		    	End,
+		    	Child, PopaslObject,
+		    	    ASLFR_DoSaveMode, TRUE,
+    		    	    MUIA_Popstring_String, filename_string = MUI_MakeObject(MUIO_String, NULL, 200),
+    	    		    MUIA_Popstring_Button, PopButton(MUII_PopFile),
+			    End,
+			Child, save_button = MUI_MakeObject(MUIO_Button, "Save"),
+			End,
 		    End,
 #endif
 		Child, RectangleObject,
@@ -441,6 +476,8 @@ End,
 	DoMethod(r_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
 	DoMethod(g_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
 	DoMethod(b_slider, MUIM_Notify, MUIA_Numeric_Value, MUIV_EveryTime, app, 2, MUIM_CallHook, &hook_slider);
+
+	DoMethod(save_button, MUIM_Notify, MUIA_Pressed, FALSE, app, 3, MUIM_CallHook, &hook_standard, save_function);
 
 	DoMethod(quit_item, MUIM_Notify, MUIA_Menuitem_Trigger, MUIV_EveryTime, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
