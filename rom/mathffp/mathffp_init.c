@@ -1,6 +1,6 @@
 /* This file is derived from graphics_init with
 ** all unnecessary stuff erased
-*/ 
+*/
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
@@ -15,6 +15,10 @@
 #include <exec/execbase.h>
 #include "mathffp_intern.h"
 #include "libdefs.h"
+
+/* Basename != Libname */
+#define Math_functable	Mathffp_functable
+#define Math_end	Mathffp_end
 
 static const char name[];
 static const char version[];
