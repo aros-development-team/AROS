@@ -356,7 +356,7 @@ void FreeObjects(Object **first, Object **last, struct AslBase_intern *AslBase)
 {
     Object **objptr;
     
-    for(objptr = first; objptr != last; objptr++)
+    for(objptr = first; objptr != last + 1; objptr++)
     {
         if (*objptr)
 	{
