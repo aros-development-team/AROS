@@ -22,6 +22,7 @@ extern struct DosLibrary *DOSBase;
 
 /* Forward definitions */
 struct DevProc;
+struct TagItem;
 
 /*
     Prototypes
