@@ -257,3 +257,6 @@ srittau@aros.org
 Resource Tracking is disabled on native platforms. See file
 compiler/arossupport/include/rt.h
 
+BUG000038
+bergers@aros.org
+We seem to have a serious memory leak problem with just about all programs.
