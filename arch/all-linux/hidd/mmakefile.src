@@ -14,9 +14,9 @@ FILES	   := gfxclass bmclass kbdclass mouseclass inputtask
 
 # Install Linux specific hidd.prefs file
 #MM workbench-s-hiddprefs-linux-$(CPU) : workbench-s-setup
-workbench-s-hiddprefs-linux-$(CPU) : $(SDIR)/hidd.prefs
+workbench-s-hiddprefs-linux-$(CPU) : $(AROS_S)/hidd.prefs
 	
-$(SDIR)/hidd.prefs : hidd.prefs
+$(AROS_S)/hidd.prefs : hidd.prefs
 	@$(CP) $< $@
 
 %common
