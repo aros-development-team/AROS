@@ -37,7 +37,8 @@ pi [] =
     {LIB_UTILITY, 27 , LIB_LOCALE, 33}, /* Stricmp   */
     {LIB_UTILITY, 30 , LIB_LOCALE, 34}, /* ToLower   */
     {LIB_UTILITY, 29 , LIB_LOCALE, 35}, /* ToUpper   */
-    {LIB_DOS	, 124, LIB_LOCALE, 36}, /* DateToSTr */
+    {LIB_DOS	, 124, LIB_LOCALE, 36}, /* DateToStr */
+    {LIB_DOS	, 125, LIB_LOCALE, 37}, /* StrToDate */
     {NULL   	    	    	     }
 };
 
