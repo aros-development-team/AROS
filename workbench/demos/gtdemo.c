@@ -32,8 +32,8 @@
 
 #include <aros/rt.h>
 
-#define SDEBUG 0
-#define DEBUG 0
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 struct IntuitionBase *IntuitionBase;
 struct Library *GadToolsBase;
@@ -45,6 +45,7 @@ struct Gadget *glist = NULL;
 
 struct Gadget *button;
 
+
 #define ID_BUTTON 1
 #define ID_CHECKBOX 2
 #define ID_MX 3
@@ -54,6 +55,7 @@ struct Gadget *button;
 #define ID_SCROLLER 7
 #define ID_STRING 8
 #define ID_INTEGER 9
+#define ID_LISTVIEW 10
 
 struct NewGadget buttongad =
 {
@@ -132,6 +134,20 @@ struct NewGadget integergad =
     ID_INTEGER, PLACETEXT_ABOVE, NULL, NULL
 };
 
+struct NewGadget listviewgad =
+{
+    530, 30, 120, 100,
+    "Listview (10)", NULL,
+    ID_LISTVIEW, PLACETEXT_ABOVE, NULL, NULL
+};
+
+#define NUMLVNODES  13
+struct Node lv_nodes[NUMLVNODES];
+struct List lv_list;
+STRPTR lv_texts[] = {"This", "is", "a", "demo", "of", "the", "GadTools", "listview.",
+	"Try", "scrolling", "and", "selecting", "entries"};
+
+
 STRPTR mxlabels[] =
 {
     "Label 1",
@@ -148,6 +164,19 @@ STRPTR cyclelabels[] =
     NULL
 };
 
+VOID initlvnodes(struct List *list, struct Node *nodes, STRPTR *texts, WORD numnodes)
+{
+    WORD i;
+    NewList(list);
+    
+    for (i = 0; i < numnodes; i ++)
+    {
+    	AddTail(list, &(nodes[i]));
+    	nodes[i].ln_Name = texts[i];
+    	
+    }
+    return;
+}
 
 BOOL openlibs()
 {
@@ -202,7 +231,7 @@ BOOL openwin()
 			 WA_PubScreen, scr,
 			 WA_Left, 0,
 			 WA_Top, 0,
-			 WA_Width, 600,
+			 WA_Width, 700,
 			 WA_Height, 300,
 			 WA_Title, "GTDemo",
 			 WA_IDCMP,
@@ -242,6 +271,7 @@ struct Gadget *makegadgets(struct Gadget *gad)
     scrollergad.ng_VisualInfo = vi;
     stringgad.ng_VisualInfo = vi;
     integergad.ng_VisualInfo = vi;
+    listviewgad.ng_VisualInfo = vi;
 
     gad = CreateGadget(BUTTON_KIND, gad, &buttongad,
                        GA_Immediate, TRUE,
@@ -327,6 +357,15 @@ D(bug("Created string gadget: %p\n", gad));
 
 D(bug("Created integer gadget: %p\n", gad));
 
+    
+    initlvnodes(&lv_list, lv_nodes, lv_texts, NUMLVNODES);
+    gad = CreateGadget(LISTVIEW_KIND, gad, &listviewgad,
+    		GTLV_Labels,	(IPTR)&lv_list,
+    		GTLV_ReadOnly,	FALSE,
+		TAG_DONE);
+
+D(bug("Created listview gadget: %p\n", gad));
+
     if (!gad) {
         FreeGadgets(glist);
         printf("GTDemo: Error creating gadgets\n");
@@ -369,6 +408,7 @@ void handlewin()
 		GT_BeginRefresh(win);
 		draw_bevels(win, vi);
 		GT_EndRefresh(win, TRUE);
+		D(bug("Got IDCMP_REFRESHWINDOW msg\n"));
 		break;
             case IDCMP_VANILLAKEY:
                 if (msg->Code != 0x1B) /* if escape, quit */
