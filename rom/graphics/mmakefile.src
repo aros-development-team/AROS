@@ -58,6 +58,7 @@ FUNCTIONS := \
 	bltbitmap \
 	bltbitmaprastport \
 	bltclear \
+	bltpattern \
 	blttemplate \
 	cleareol \
 	clearrectregion \
