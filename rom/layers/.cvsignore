@@ -1,4 +1,5 @@
 makefile
+mmakefile
 *.s
 *.map
 libdefs.h
