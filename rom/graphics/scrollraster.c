@@ -68,6 +68,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+  BYTE old_fgpen = GetAPen(rp);
   BOOL hasClipRegion = FALSE;
   /* 
      This function will simply call ScrollRaster() and fill the empty
@@ -111,7 +112,9 @@
      The raster is scrolled and I fill the empty area with the 
      RectFill()
    */
-   
+  
+  SetAPen(rp, GetBPen(rp));
+  
   /* was it scrolled left or right? */
   if (0 != dx)
   {
@@ -157,6 +160,7 @@
     }
   }
   
-
+  SetAPen(rp, old_fgpen);
+  
     AROS_LIBFUNC_EXIT
 } /* ScrollRaster */
