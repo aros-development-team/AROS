@@ -3,7 +3,7 @@
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include <proto/exec.h>
 #include "dos_intern.h"
@@ -31,12 +31,12 @@
 	the error code given.
 
     INPUTS
-	code   - Error code.
-	header - Text to print before the error message. This may be NULL
-                 in which case only the error message is printed.
+	code    --  Error code.
+	header  --  Text to print before the error message. This may be NULL
+                    in which case only the error message is printed.
 
     RESULT
-	!=0 if all went well. 0 on failure.
+	!= 0 if all went well. 0 on failure.
 
     NOTES
 
@@ -45,13 +45,11 @@
     BUGS
 
     SEE ALSO
-	Fault()
+	IoErr(), Fault(), SetIoErr()
 
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -69,24 +67,28 @@
     /* Fault() will do all the formatting of the string */
     Fault(code, NULL, buffer, 80);
     
-    if(header != NULL)
+    if (header != NULL)
     {
-	if(!FPuts(stream, header) && !FPuts(stream, ":") && 
+	if(!FPuts(stream, header) && !FPuts(stream, ": ") && 
 	   !FPuts(stream, buffer) && !FPuts(stream, "\n"))
 	{
-	    ret = TRUE;
+	    ret = DOSTRUE;
 	}
 	else
 	{
-	    ret = FALSE;
+	    ret = DOSFALSE;
 	}
     }
     else
     {
-	if(!FPuts(stream,buffer) && !FPuts(stream,"\n"))
-	    ret = TRUE;
+	if (!FPuts(stream, buffer) && !FPuts(stream,"\n"))
+	{
+	    ret = DOSTRUE;
+	}
 	else
-	    ret = FALSE;
+	{
+	    ret = DOSFALSE;
+	}
     }
     
     /* All done. */
