@@ -854,11 +854,15 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		    && (_width(child) > 0)
 		    && (_height(child) > 0))
 		{
-		    rect.MinX = _left(child);
-		    rect.MinY = _top(child);
-		    rect.MaxX = _right(child);
-		    rect.MaxY = _bottom(child);
-		    ClearRectRegion(region, &rect);
+		    rect.MinX = MAX(_left(child)  , _mleft  (obj));
+		    rect.MinY = MAX(_top(child)   , _mtop   (obj));
+		    rect.MaxX = MIN(_right(child) , _mright (obj));
+		    rect.MaxY = MIN(_bottom(child), _mbottom(obj));
+		    
+		    if ((rect.MaxX >= rect.MinX) && (rect.MaxY >= rect.MinY))
+		    {
+		    	ClearRectRegion(region, &rect);
+		    }
 		}
 	    }
 
@@ -937,15 +941,25 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		    if (diff_virt_offx > 0)
 		    {
 		    	rect.MinX = right - diff_virt_offx + 1;
+			if (rect.MinX < left) rect.MinX = left;
 		    	rect.MaxX = right;
 		    } else
 		    {
 		    	rect.MinX = left;
 		    	rect.MaxX = left - diff_virt_offx - 1;
+			if (rect.MaxX > right) rect.MaxX = right;
 		    }
 
 		    if (rect.MinX <= rect.MaxX)
+		    {
+		    	DoMethod(obj, MUIM_DrawBackground,
+		    	    	 rect.MinX, rect.MinY,
+				 rect.MaxX - rect.MinX + 1,
+				 rect.MaxY - rect.MinY + 1,
+				 rect.MinX, rect.MinY, 0);
+
 			OrRectRegion(region,&rect);
+		    }
 		}
 
 	    	if (diff_virt_offy)
@@ -956,14 +970,24 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 		    if (diff_virt_offy > 0)
 		    {
 		    	rect.MinY = bottom - diff_virt_offy + 1;
+			if (rect.MinY < top) rect.MinY = top;
 		    	rect.MaxY = bottom;
 		    } else
 		    {
 		    	rect.MinY = top;
 		    	rect.MaxY = top - diff_virt_offy - 1;
+			if (rect.MaxY > bottom) rect.MaxY = bottom;
 		    }
 		    if (rect.MinY <= rect.MaxY)
+		    {
+		    	DoMethod(obj, MUIM_DrawBackground,
+		    	    	 rect.MinX, rect.MinY,
+				 rect.MaxX - rect.MinX + 1,
+				 rect.MaxY - rect.MinY + 1,
+				 rect.MinX, rect.MinY, 0);
+		    
 			OrRectRegion(region,&rect);
+		    }
 		}
 	    }
 
@@ -2326,7 +2350,7 @@ static ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
     wnd = _win(child);
     obj = child;
 
-    while (get(obj,MUIA_Parent, &obj))
+    while (get(obj,MUIA_Parent, (IPTR *)&obj))
     {
     	if (!obj) break;
 	if (obj == wnd) break;
