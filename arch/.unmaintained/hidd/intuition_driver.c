@@ -17,17 +17,17 @@
 #include <utility/tagitem.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/gadgetclass.h>
 #include <devices/keymap.h>
 #include <devices/input.h>
 
 
 #include <proto/exec.h>
-#include <proto/intuition.h>
 #include <proto/layers.h>
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
-#include <proto/alib.h>
+/* #include <proto/alib.h> */
 #include "intuition_intern.h"
 
 #undef GfxBase
@@ -35,12 +35,36 @@
 
 #include "graphics_internal.h"
 
+#include <proto/intuition.h>
 
 #undef DEBUG
 #undef SDEBUG
 #define SDEBUG 1
 #define DEBUG 1
 #include <aros/debug.h>
+
+enum {
+    DRAGBAR = 0,
+    CLOSEGAD,
+    DEPTHGAD,
+    SIZEGAD,
+    ZOOMGAD,
+    NUM_SYSGADS
+};
+    
+	
+struct IntWindow
+{
+    struct Window window;
+    
+    /* Some direct-pointers to the window system gadgets */
+    Object * sysgads[NUM_SYSGADS];
+    
+
+};
+
+#define IW(x) ((struct IntWindow *)x)
+#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
 
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
@@ -100,7 +124,7 @@ void intui_SetWindowTitles (struct Window * win, UBYTE * text, UBYTE * screen)
 
 int intui_GetWindowSize (void)
 {
-    return sizeof (struct Window);
+    return sizeof (struct IntWindow);
 }
 
 int intui_OpenWindow (struct Window * w,
@@ -124,20 +148,112 @@ int intui_OpenWindow (struct Window * w,
      D(bug("Layer created: %p\n", w->WLayer));
     if (w->WLayer)
     {
-    
-        /* Window needs a rastport */
-	w->RPort = w->WLayer->rp;
+        struct DrawInfo *dri;
 	
-    	/* Create some gadgets for window */
+	dri = GetScreenDrawInfo(w->WScreen);
+	if (dri)
+	{
+	
+	    struct TagItem dragbar_tags[] = {
+		{GA_Left,	1},
+		{GA_Top,	1},
+		{GA_Width,	w->Width - 12 },
+		{GA_Height,	10 },
+		{TAG_DONE,	0UL}
+	    };
+	
+	    BOOL sysgads_ok = TRUE;
 	
 	
 	
-	/* Refresh window frame */
-	RefreshWindowFrame(w);
+            /* Window needs a rastport */
+	    w->RPort = w->WLayer->rp;
 	
-	ReturnBool("intui_OpenWindow", TRUE);
+	    /* Now find out what gadgets the window want */
+	    if (    w->Flags & WFLG_CLOSEGADGET 
+	     	 || w->Flags & WFLG_DEPTHGADGET
+	     	 || w->Flags & WFLG_HASZOOM
+	    )
+	    {
+	    	/* If any of titlebar gadgets are present, me might as well just
+	       	insert a dragbar too */
+	       
+	    	w->Flags |= WFLG_DRAGBAR;
+	    }
 	
-    }		
+	    /* Now try to create the various gadgets */
+	    if (w->Flags & WFLG_DRAGBAR)
+	    {
+
+	    	SYSGAD(w, DRAGBAR) = NewObjectA(
+	     			GetPrivIBase(IntuitionBase)->dragbarclass
+				, NULL
+				, dragbar_tags );
+				
+	    	if (!SYSGAD(w, DRAGBAR))
+	    	    sysgads_ok = FALSE;
+				
+	    }
+	
+	    if (w->Flags & WFLG_DEPTHGADGET)
+	    {
+	    	struct TagItem depth_tags[] = {
+	            {GA_RelRight,	- 11 		},
+		    {GA_Top,		1  		},
+		    {GA_Width,		10 		},
+		    {GA_Height,		10		},
+		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
+		    {GA_SysGadget,	TRUE		},
+		    {GA_SysGType,	GTYP_WDEPTH 	},
+		    {TAG_DONE,		0UL }
+	    	};
+	    
+	        SYSGAD(w, DEPTHGAD) = NewObjectA(
+	     			GetPrivIBase(IntuitionBase)->tbbclass
+				, NULL
+				, depth_tags );
+
+	    	if (!SYSGAD(w, DEPTHGAD))
+	    	    sysgads_ok = FALSE;
+	    
+	    
+	    }  
+	    
+
+	    D(bug("Dragbar: %p\n",  SYSGAD(w, DRAGBAR) ));
+	    D(bug("Depthgad: %p\n", SYSGAD(w, DEPTHGAD) ));
+	    
+	    /* Don't need drawinfo anymore */
+	    FreeScreenDrawInfo(w->WScreen, dri);
+	
+	
+	    if (sysgads_ok)
+	    {
+		UWORD i;
+	
+	
+	    	/* Refresh window frame */
+	    	D(bug("Adding gadgets\n"));
+		for (i = 0; i < NUM_SYSGADS; i ++)
+		{
+		    if (SYSGAD(w, i))
+	    	    	AddGList(w, (struct Gadget *)SYSGAD(w, i), 0, 1, NULL);
+		}
+	    
+	    	D(bug("Refreshing frame\n"));
+	    	RefreshWindowFrame(w);
+
+	    	ReturnBool("intui_OpenWindow", TRUE);
+	    
+	    }
+	
+	
+	} /* if (got DrawInfo) */
+	
+	/* Not OK. Free resources */
+	intui_CloseWindow(w, IntuitionBase);
+	
+    } /* if (layer created) */
     
     ReturnBool("intui_OpenWindow", FALSE);
 }
@@ -145,8 +261,17 @@ int intui_OpenWindow (struct Window * w,
 void intui_CloseWindow (struct Window * w,
 	    struct IntuitionBase * IntuitionBase)
 {
-    DeleteLayer(0, w->WLayer);
+    /* Free system gadges */
+    UWORD i;
     
+    for (i = 0; i < NUM_SYSGADS; i ++)
+    {
+        if (SYSGAD(w, i))
+	    DisposeObject( SYSGAD(w, i) );
+    }
+    
+    if (w->WLayer)
+    	DeleteLayer(0, w->WLayer);
 }
 
 void intui_RefreshWindowFrame(struct Window *w)
