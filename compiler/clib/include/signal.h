@@ -9,7 +9,6 @@
 */
 
 #include <sys/_types.h>
-#include <sys/_posix.h>
 #include <sys/cdefs.h>
 
 typedef void __sighandler_t (int);

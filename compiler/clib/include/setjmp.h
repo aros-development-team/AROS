@@ -9,8 +9,7 @@
     Lang: english
 */
 
-#include <aros/system.h>
-#include <sys/_posix.h>
+#include <sys/cdefs.h>
 
 #ifdef __mc68000__
 #   define _JMPLEN 12

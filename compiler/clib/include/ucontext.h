@@ -8,7 +8,8 @@
     Define the portable version of the execution context.
 */
 
-#include <aros/system.h>
+#include <aros/cpu.h>
+#include <sys/cdefs.h>
 #include <signal.h>
 
 /* XXX Need to include the CPU specific version. */

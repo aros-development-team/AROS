@@ -9,7 +9,6 @@
     Lang: english
 */
 #include <sys/_types.h>
-#include <sys/_posix.h>
 #include <sys/cdefs.h>
 #include <sys/arosc.h>
 
