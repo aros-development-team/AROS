@@ -35,6 +35,7 @@ struct LVBase_intern;
 
 #define GLOBAL_INTUIBASE
 
+#define TURN_OFF_DEBUG
 
 struct LVData
 {
@@ -60,6 +61,9 @@ struct LVData
     UBYTE	lvd_MaxColumns;
     /* Number of colomns to view. Depends on AROSA_List_Format */
     UBYTE	lvd_ViewedColumns;
+    
+    UBYTE	lvd_BackPen;
+    UBYTE	lvd_FrontPen;
     
     /* To prevent 'echo' OM_UPDATEs (double redraws) */
     UBYTE	lvd_NotifyCount;
@@ -142,14 +146,14 @@ struct ColumnAttrs
 /* Prototypes */
 BOOL ParseFormatString(STRPTR, struct LVData *, struct LVBase_intern *);
 
-VOID RenderEntries(   Object *, struct gpRender *, LONG, UWORD, BOOL, struct LVBase_intern *);
+VOID RenderEntries(Class *, Object *, struct gpRender *, LONG, UWORD, BOOL, struct LVBase_intern *);
 
 VOID GetGadgetIBox(Object *, struct GadgetInfo *, struct IBox *);
 VOID DrawListBorder(struct RastPort *, UWORD *, struct IBox *, BOOL, struct LVBase_intern *);
 VOID ComputeColumnWidths(UWORD,	struct LVData *, struct LVBase_intern *);
 VOID ComputeColLeftRight(UWORD, struct LVData *);
 UWORD ShownEntries(struct LVData *, struct IBox *, struct LVBase_intern *);
-VOID NotifyAttrs(Object *, struct opSet *, struct TagItem *);
+VOID NotifyAttrs(Class *, Object *, struct opSet *, struct TagItem *);
 
 
 

@@ -19,7 +19,7 @@
 
 #include "aroslistview_intern.h"
 
-#define TURN_OFF_DEBUG
+//#define TURN_OFF_DEBUG
 
 #ifndef TURN_OFF_DEBUG
 #define DEBUG 1
@@ -78,13 +78,11 @@ BOOL ParseFormatString(	STRPTR			formatstr,
             memset(argsarray, 0, UB(&argsarray[NUMPARAMS]) - UB(&argsarray[0]));
             
             /* An example of format string is ",PREPARSE=c9, ," */
-D(bug("Template str=%s\n", str));            
             while (*str && *str != ',')
             {
             	len ++;
             	str ++;
             }
-D(bug("PFS: len=%d\n", len));
             if (!*str)
             	morecolumns = FALSE;
             	
@@ -107,10 +105,8 @@ D(bug("PFS: len=%d\n", len));
     	    {
     	    
     	    	/* Insert parsed info into colattr array */
-D(bug("curcol=%d\n", curcol));
     	    	/* A COL argument specified ? */
     	    	colattrs[curcol].ca_DHIndex = (UBYTE)((argsarray[0]) ? *((ULONG *)argsarray[0]) : curcol);
-D(bug("PFS: idx=%d, argsarray[0]=%p\n", colattrs[curcol].ca_DHIndex, argsarray[0]));
     	    	if (argsarray[1]) /* BAR */
     	    	    colattrs[curcol].ca_Flags |= CAFLG_BAR;
     	    	if (argsarray[2]) /* PREPARSE */
@@ -118,7 +114,6 @@ D(bug("PFS: idx=%d, argsarray[0]=%p\n", colattrs[curcol].ca_DHIndex, argsarray[0
     	    	    /* Parse the preparse string */
     	    	    str = (STRPTR)argsarray[2];
     	    	    
-D(bug("Preparse string found: %s\n", str));
     	    	    while (*str)
     	    	    {
     	    	    	if (*str == 'c') /* Centre align text */
@@ -205,7 +200,8 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
 /**********************
 **  RenderEntries()  **
 **********************/
-VOID RenderEntries( Object 		    *o,
+VOID RenderEntries( Class		    *cl,
+		    Object 		    *o,
 		    struct gpRender	    *msg,
 		    LONG		    startpos,
 		    UWORD		    num,
@@ -220,17 +216,17 @@ VOID RenderEntries( Object 		    *o,
     LONG activepos;
     LONG pos;
 
-    struct LVData *data = INST_DATA(OCLASS(o), o);
+    struct LVData *data = INST_DATA(cl, o);
     UWORD *pens = msg->gpr_GInfo->gi_DrInfo->dri_Pens;
-        
+
     GetGadgetIBox(o, msg->gpr_GInfo, &container);
 
     top = container.Top + LV_BORDERWIDTH_Y 
     		+ (startpos - data->lvd_First) * data->lvd_EntryHeight;
 
-    
-    SetAPen(msg->gpr_RPort, pens[TEXTPEN]);
+    SetAPen(msg->gpr_RPort, pens[data->lvd_FrontPen]);
     SetDrMd(msg->gpr_RPort, JAM1);
+    
     oldfont = msg->gpr_RPort->Font;
     SetFont(msg->gpr_RPort, data->lvd_Font);
     
@@ -244,13 +240,12 @@ VOID RenderEntries( Object 		    *o,
     for (pos = startpos; num --; pos ++)
     {
     
-    
     	register UWORD col;
     	struct TextExtent te;
     	struct ColumnAttrs *colattrs = data->lvd_ColAttrs;
     	
     	BOOL erase_this_entry = erase;
-	UWORD erasepen = BACKGROUNDPEN;
+	UWORD erasepen = data->lvd_BackPen;
 	
 	if (!(data->lvd_Flags & LVFLG_READONLY))
 	{
@@ -282,17 +277,18 @@ VOID RenderEntries( Object 		    *o,
 	{
     	     /* Erase the old text line */
     	    SetAPen(msg->gpr_RPort, pens[erasepen]);
-    	    	    
+
     	    RectFill(msg->gpr_RPort,
 	    	container.Left + LV_BORDERWIDTH_X,
 	    	top,
 	    	container.Left + container.Width - LV_BORDERWIDTH_X - 1,
 		top + data->lvd_EntryHeight - 1);
 
-    	    SetAPen(msg->gpr_RPort, pens[TEXTPEN]);
+    	    SetAPen(msg->gpr_RPort, pens[data->lvd_FrontPen]);
 
 	}
-	
+
+
 	getentry_msg.Position = pos;
    	DoMethodA(data->lvd_List, (Msg)&getentry_msg);
     	if (!item)
@@ -301,6 +297,7 @@ VOID RenderEntries( Object 		    *o,
     	CallHookPkt( data->lvd_DisplayHook,
 	             data->lvd_DHArray,
 		     item);
+
     	ForeachViewedCol(col, data->lvd_ViewedColumns)
     	{
             UWORD idx, len;
@@ -606,7 +603,7 @@ UWORD ShownEntries(struct LVData 	*data,
 **  NotifyAttrs  **
 ******************/
 
-VOID NotifyAttrs(Object *o, struct opSet *msg, struct TagItem *tags)
+VOID NotifyAttrs(Class *cl, Object *o, struct opSet *msg, struct TagItem *tags)
 {
     struct TagItem idtags[] =
     {
@@ -615,10 +612,10 @@ VOID NotifyAttrs(Object *o, struct opSet *msg, struct TagItem *tags)
     };
     
     struct opUpdate nmsg =  {OM_NOTIFY, idtags, msg->ops_GInfo, 0};
-    struct LVData *data = INST_DATA(OCLASS(o), o);
+    struct LVData *data = INST_DATA(cl, o);
     
     data->lvd_NotifyCount ++;
-    DoSuperMethodA(OCLASS(o), o,  (Msg)&nmsg);
+    DoSuperMethodA(cl, o,  (Msg)&nmsg);
     data->lvd_NotifyCount --;
     return;
 }

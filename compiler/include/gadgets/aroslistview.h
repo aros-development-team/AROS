@@ -41,6 +41,9 @@
 #define AROSA_Listview_DoubleClick	AROSLV_TAGBASE + 9  /* [G]	*/
 #define AROSA_Listview_Visible		AROSLV_TAGBASE + 10 /* [N]	*/
 #define AROSA_Listview_Total		AROSLV_TAGBASE + 11 /* [N]	*/
+#define AROSA_Listview_FrontPen		AROSLV_TAGBASE + 12 /* [IS]	*/
+#define AROSA_Listview_BackPen		AROSLV_TAGBASE + 13 /* [IS]	*/
+
 
 /* These methods are merely aliases for the List ones.
  * These are needed because I must include that damn
@@ -50,6 +53,11 @@
 #define AROSM_Listview_Insert	    AROSM_List_Insert
 #define AROSM_Listview_InsertSingle AROSM_List_InsertSingle
 #define AROSM_Listview_Remove	    AROSM_List_Remove
+
+#define AROSM_Listview_DoubleClick	AROSLV_TAGBASE + 50
+#define AROSM_Listview_SingleClick	AROSLV_TAGBASE + 51
+
+
 
 struct AROSP_Listview_Insert
 {
@@ -68,6 +76,20 @@ struct AROSP_Listview_InsertSingle
 };
 
 struct AROSP_Listview_Remove
+{
+    STACKULONG		MethodID;
+    struct GadgetInfo 	*GInfo;
+    STACKLONG		Position;
+};
+
+struct AROSP_Listview_DoubleClick
+{
+    STACKULONG		MethodID;
+    struct GadgetInfo 	*GInfo;
+    STACKLONG		Position;
+};
+
+struct AROSP_Listview_SingleClick
 {
     STACKULONG		MethodID;
     struct GadgetInfo 	*GInfo;

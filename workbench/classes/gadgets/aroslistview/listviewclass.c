@@ -74,6 +74,17 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	    	retval = 1UL;
     	    	break;
     	    	
+    	    case AROSA_Listview_FrontPen:
+    	    	data->lvd_FrontPen = (UBYTE)tag->ti_Data;
+    	    	retval = 1UL;
+    	    	break;
+
+    	    case AROSA_Listview_BackPen:
+    	    	data->lvd_BackPen = (UBYTE)tag->ti_Data;
+    	    	retval = 1UL;
+    	    	break;
+    	    	
+    	    	
     	    case AROSA_Listview_Visible:
     	    case AROSA_Listview_Total:
     	    {
@@ -83,7 +94,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	    	    {TAG_END}
     	    	};
     	    	
-    	    	NotifyAttrs(o, msg, tags);
+    	    	NotifyAttrs(cl, o, msg, tags);
     	    } break;
     	    	
     	    case AROSA_Listview_List:
@@ -155,7 +166,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
    	    	retval = 1UL;
     	    	data->lvd_First = (LONG)tag->ti_Data;
 
-    	    	if (	( msg->MethodID == OM_UPDATE       )
+    	    	if (	( msg->MethodID == OM_UPDATE )
     	    	     && ( old  != data->lvd_First ))
     	    	{
     	    	    struct RastPort *rp;
@@ -208,7 +219,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	    	
     	    	
     	    	/* Notify change */
-    	    	NotifyAttrs(o, msg, tags);
+    	    	NotifyAttrs(cl, o, msg, tags);
 
     	    } break;
     	   
@@ -268,7 +279,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
     ops.ops_GInfo	= NULL; 
     
     tags[1].ti_Data = (IPTR)msg->ops_AttrList;
-    D(bug("Left: %d\n", GetTagData(GA_Left, 0, tags)));
+
     o = (Object *)DoSuperMethodA(cl, o, (Msg)&ops);
 
     if (o)
@@ -285,6 +296,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
 	data->lvd_MaxColumns = GetTagData(AROSA_Listview_MaxColumns, 0, msg->ops_AttrList);
 	if (!data->lvd_MaxColumns)
 	    goto failure;
+D(bug("Maxcolumns found: %d\n", data->lvd_MaxColumns));	   
 			    	
    	/* Allocate mem for storing info parsed from Listview_Format. Do this
    	 * before listview_set() call, because it needs this for parsing the 
@@ -295,7 +307,7 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
    	if (!colattrs)
    	    goto failure;
 	data->lvd_ColAttrs = colattrs;   	    
-
+D(bug("Colattrs allocated\n"));	   
 	
 	/* Only view first column */
 	data->lvd_ViewedColumns = 1;
@@ -306,11 +318,14 @@ STATIC IPTR listview_new(Class *cl, Object *o, struct opSet *msg)
    	if (!dharray)
    	    goto failure;
    	data->lvd_DHArray = dharray;
-	
+D(bug("disphookarray allocated\n"));	   	
 
     	/* Set some defaults */
     	data->lvd_HorSpacing  = LV_DEFAULTHORSPACING;
     	data->lvd_VertSpacing = LV_DEFAULTVERTSPACING;
+    	
+    	data->lvd_FrontPen = TEXTPEN;
+    	data->lvd_BackPen  = BACKGROUNDPEN;
 	
     	/* Handle our special tags - overrides defaults */
    	listview_set(cl, o, msg);
@@ -403,6 +418,23 @@ STATIC VOID listview_dispose(Class *cl, Object *o, Msg msg)
 /**************************
 **  Listview::HitTest()  **
 **************************/
+STATIC IPTR listview_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+{
+    IPTR retval;
+    struct LVData *data = INST_DATA(cl, o);
+    
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    if (retval == GMR_GADGETHIT)
+    {
+    	/* If the listview is readonly, we should never reach GM_GOACTIVE */
+    	if (data->lvd_Flags & LVFLG_READONLY)
+    	{
+    	    retval = 0UL;
+
+    	}   
+    }
+    return (retval);
+}
 
 /***************************
 **  Listview::GoActive()  **
@@ -425,6 +457,7 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
     WORD updateoldactive = -1;
     
     BOOL rerender = FALSE;
+    BOOL singleclick = FALSE, doubleclick = FALSE;
     
 
     if (data->lvd_Flags & LVFLG_READONLY)
@@ -454,17 +487,22 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
    	activepos = active - data->lvd_First;
    	if (activepos == clickpos)
    	{
+
+   	    
    	    if (DoubleClick(data->lvd_StartSecs,
    	    		    data->lvd_StartMicros,
    	    		    msg->gpi_IEvent->ie_TimeStamp.tv_secs,	
    	    		    msg->gpi_IEvent->ie_TimeStamp.tv_micro))
    	    {
    	    	data->lvd_Flags |= LVFLG_DOUBLECLICK;
+   	    	doubleclick = TRUE;
    	    	D(bug("\tlv: doubleclick at pos %d\n", clickpos));
    	    }
    	}
    	else
    	{
+   	    singleclick = TRUE;
+   	    
    	    data->lvd_StartSecs   = msg->gpi_IEvent->ie_TimeStamp.tv_secs;
    	    data->lvd_StartMicros = msg->gpi_IEvent->ie_TimeStamp.tv_micro;
    	    
@@ -485,17 +523,14 @@ STATIC IPTR listview_goactive(Class *cl, Object *o, struct gpInput *msg)
     	}
     	else
     	{
-D(bug("\tGA:Singleselect\n"));
    	    if (activepos != clickpos)
    	    {
-D(bug("\tGA:Not reclick\n"));
 
     	   	/* Active entry inside lv ? */
-    	    	if (    active >= data->lvd_First
-    	    	   	&&  active < (data->lvd_First + shown))
+    	    	if (    (active >= data->lvd_First)
+    	    	     && (active < (data->lvd_First + shown)))
     	    	{
 
-D(bug("\tGA:old active inside visible\n"));
 	    	    
     	    	    updateoldactive = activepos;
     	    	}
@@ -535,6 +570,25 @@ D(bug("\tGA:old active inside visible\n"));
     	    	
     	    	ReleaseGIRPort(rp);
     	    }
+    	}
+
+	/* Tell subclasses that a singleclick occured */
+    	if (singleclick)
+    	{
+    	    DoMethod(	o, 
+    	    		AROSM_Listview_SingleClick,
+    	    		msg->gpi_GInfo, 
+    	    		clickpos + data->lvd_First);
+    	}
+    	
+
+	/* Tell subclasses that a doubleclick occured */
+    	if (doubleclick)
+    	{
+    	    DoMethod(	o, 
+    	    		AROSM_Listview_DoubleClick,
+    	    		msg->gpi_GInfo, 
+    	    		clickpos + data->lvd_First);
     	}
 
     } /* if (entry is shown) */
@@ -580,7 +634,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 
     	     /* Erase the old gadget imagery */
     	    SetAPen(msg->gpr_RPort, 
-    	    	    msg->gpr_GInfo->gi_DrInfo->dri_Pens[BACKGROUNDPEN]);
+    	    	    msg->gpr_GInfo->gi_DrInfo->dri_Pens[data->lvd_BackPen]);
     	    	    
     	    	    
     	    RectFill(msg->gpr_RPort,
@@ -596,8 +650,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 	     	AROSListviewBase);
 
 	    	     
-    	    RenderEntries(o,
-    	    	msg,
+    	    RenderEntries(cl, o, msg,
     	    	data->lvd_First,
 		ShownEntries(data, &container, AROSListviewBase),
 		FALSE,
@@ -612,8 +665,7 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
     	    
     	    for (offset = data->lvd_DamageOffset; data->lvd_NumDamaged --; offset ++)
     	    {
-    	    	RenderEntries(o,
-    	    		msg,
+    	    	RenderEntries(cl, o, msg,
     	    		data->lvd_First + offset,
     	    		1,
     	    		TRUE,
@@ -656,7 +708,7 @@ STATIC VOID listview_layout(Class *cl, Object *o, struct gpLayout *msg)
 	    	{TAG_END}
     	    };
     	
-    	    
+D(bug("data->lvd_List: %p\n", data->lvd_List));    	    
     	    GetGadgetIBox(o, gi, &container);
 
     	    /* Compute widths of each column */
@@ -699,6 +751,7 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 {
     IPTR retval = 0UL;
 
+D(bug("lv disph: %d\n", msg->MethodID));
     switch(msg->MethodID)
     {
     	case GM_RENDER:
@@ -773,6 +826,11 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
 	    listview_layout(cl, o, (struct gpLayout *)msg);
 	    break;
 	    
+	case GM_HITTEST:
+	    retval = listview_hittest(cl, o, (struct gpHitTest *)msg);
+	    break;
+	
+	    
 	case AROSM_Listview_Insert:
 	{
 
@@ -818,7 +876,7 @@ AROS_UFH3(STATIC IPTR, dispatch_listviewclass,
     } /* switch */
     
 
-    return (retval);
+    ReturnPtr("lv disp", IPTR, retval);
 }  /* dispatch_listviewclass */
 
 
