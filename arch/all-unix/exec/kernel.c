@@ -53,6 +53,12 @@ static void sighandler(int sig, sigcontext_t * sc)
     struct IntVector *iv;
     /* SP_TYPE *sp; */
 
+    if(sig == SIGINT)
+    {
+	fprintf(stderr, "\n\nAbout to die, bye bye...\n");
+	exit(0);
+    }
+
     /* Hmm, interrupts are nesting, not a good idea... */
     if(supervisor)
     {
@@ -215,6 +221,7 @@ void InitCore(void)
 	sig2tab[sig2int[i][0]] = sig2int[i][1];
 	sigaction( sig2int[i][0], &sa, NULL );
     }
+    sigaction( SIGINT, &sa, NULL );
 
     /* Set up the "pseudo" vertical blank interrupt. */
     interval.it_interval.tv_sec = interval.it_value.tv_sec = 0;
