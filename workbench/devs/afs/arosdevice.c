@@ -98,7 +98,7 @@ AROS_LH2(struct afsbase *, init,
 		{
 			NEWLIST(&afsbase->port.mp_MsgList);
 			afsbase->port.mp_Node.ln_Type = NT_MSGPORT;
-			afsbase->port.mp_SigBit = SIGB_SINGLE;
+			afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
 			NEWLIST(&afsbase->rport.mp_MsgList);
 			afsbase->rport.mp_Node.ln_Type = NT_MSGPORT;
 			afsbase->rport.mp_Flags = PA_SIGNAL;
@@ -166,8 +166,11 @@ AROS_LH3(void, open,
 		iofs->IOFS.io_Device = &afsbase->device;
 		afsbase->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
 		iofs->IOFS.io_Error = 0;
+
 		return;
 	}
+
+
 /*	iofs->IOFS.io_Command = -1;
 	PutMsg(&afsbase->port, &iofs->IOFS.io_Message);
 	WaitPort(&afsbase->rport);

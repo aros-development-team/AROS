@@ -176,7 +176,7 @@ struct IOFileSys *iofs;
 struct Volume *volume;
 LONG retval;
 
-	afsbase->port.mp_SigBit = AllocSignal(-1);
+	afsbase->port.mp_SigBit = SIGBREAKB_CTRL_F;
 	afsbase->port.mp_Flags = PA_SIGNAL;
 	for (;;) {
 		while ((iofs=(struct IOFileSys *)GetMsg(&afsbase->port))!=NULL)
