@@ -169,11 +169,13 @@ static BOOL LoadGIF(struct IClass *cl, Object *o)
     unsigned int            scrnumplanes, scrnumcolors, numplanes, numcolors, fillcolor, colrez, colsorted;
     int                     havecolmap, interlaced;
     struct BitMapHeader     *bmhd;
-    struct BitMap           *bm;
-    struct RastPort         rp;
     struct ColorRegister    *colormap;
     ULONG                   *colorregs;
     STRPTR                  name;
+#if LEGACY
+    struct BitMap           *bm;
+    struct RastPort         rp;
+#endif
 
     D(bug("gif.datatype/LoadGIF()\n"));
 
@@ -509,10 +511,12 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
     UBYTE                   *filebuf;
     unsigned int            width, height, widthxheight, numplanes, numcolors;
     struct BitMapHeader     *bmhd;
-    struct BitMap           *bm;
-    struct RastPort         rp;
     long                    *colorregs;
     int                     i, j, ret;
+#if LEGACY
+    struct BitMap           *bm;
+    struct RastPort         rp;
+#endif
 
     D(bug("gif.datatype/SaveGIF()\n"));
 
@@ -534,28 +538,34 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
     }
     gifhandle->filehandle = dtw->dtw_FileHandle;
 
-    /* Get BitMap and color palette */
-    if( GetDTAttrs( o,  PDTA_BitMapHeader, (&bmhd),
-			PDTA_BitMap,       (&bm),
-			PDTA_CRegs,        (&colorregs),
-			PDTA_NumColors,    (&numcolors),
+#if LEGACY
+    /* Get BitMap, BitMapHeader and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR) &bmhd,
+			PDTA_BitMap,       (IPTR) &bm,
+			PDTA_CRegs,        (IPTR) &colorregs,
+			PDTA_NumColors,    (IPTR) &numcolors,
 			TAG_DONE ) != 4UL ||
 	!bmhd || !bm || !colorregs || !numcolors)
     {
 	D(bug("gif.datatype/SaveGIF() --- missing attributes\n"));
-	GIF_Exit(gifhandle, ERROR_OBJECT_NOT_FOUND);
-	return FALSE;
-    }
-#if 0
-    /* Check if this is a standard BitMap */
-    if( !( GetBitMapAttr(bm, BMA_FLAGS) & BMF_STANDARD ) )
-    {
-	D(bug("gif.datatype/SaveGIF() --- wrong BitMap type\n"));
 	GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
 	return FALSE;
     }
-#endif
-    /* initialize buffered file reads */
+#else
+    /* Get BitMapHeader and color palette */
+    if( GetDTAttrs( o,  PDTA_BitMapHeader, (IPTR) &bmhd,
+			PDTA_CRegs,        (IPTR) &colorregs,
+			PDTA_NumColors,    (IPTR) &numcolors,
+			TAG_DONE ) != 3UL ||
+	!bmhd || !colorregs || !numcolors)
+    {
+	D(bug("gif.datatype/SaveGIF() --- missing attributes\n"));
+	GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+#endif /* LEGACY */
+
+    /* initialize buffered file writes */
     gifhandle->filebufsize = FILEBUFSIZE;
     gifhandle->filebufbytes = gifhandle->filebufsize;
     if( !(gifhandle->filebuf = gifhandle->filebufpos = AllocMem(gifhandle->filebufsize, MEMF_ANY)) )
@@ -577,8 +587,8 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	filebuf[i] = GIFheader[i];
 
     /* set screen descriptor attributes (from BitMapHeader) */
-    width = bmhd->bmh_PageWidth;
-    height = bmhd->bmh_PageHeight;
+    width = bmhd->bmh_Width;
+    height = bmhd->bmh_Height;
     numplanes = bmhd->bmh_Depth - 1;
     numcolors = 1 << (numplanes + 1);
     D(bug("gif.datatype/SaveGIF() --- GIF-Image %d x %d x %d, cols %d\n", width, height, numplanes+1, numcolors));
@@ -620,7 +630,7 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
     filebuf[8] = height >> 8;
     filebuf[9] = numplanes & 0x07; /* set numplanes, havecolmap=0, interlaced=0 */
 
-    /* Now read the picture data from the bitplanes and write it to a chunky buffer */
+    /* Now read the picture data and write it to a chunky buffer */
     /* For now, we use a full picture pixel buffer, not a single line */
     widthxheight = width*height;
     gifhandle->linebufsize = gifhandle->linebufbytes = widthxheight;
@@ -629,6 +639,7 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	GIF_Exit(gifhandle, ERROR_NO_FREE_STORE);
 	return FALSE;
     }
+#if LEGACY
     InitRastPort(&rp);
     rp.BitMap=bm;
     for (j=0; j<height; j++)
@@ -640,6 +651,22 @@ static BOOL SaveGIF(struct IClass *cl, Object *o, struct dtWrite *dtw )
 	}
     }
     gifhandle->linebufpos = gifhandle->linebuf;
+#else
+    if(!DoSuperMethod(cl, o,
+		    PDTM_READPIXELARRAY,	// Method_ID
+		    (IPTR)gifhandle->linebuf,	// PixelData
+		    PBPAFMT_LUT8,		// PixelFormat
+		    width,			// PixelArrayMod (number of bytes per row)
+		    0,				// Left edge
+		    0,				// Top edge
+		    width,			// Width
+		    height))			// Height
+    {
+	D(bug("gif.datatype/SaveGIF() --- READPIXELARRAY failed !\n"));
+	GIF_Exit(gifhandle, ERROR_OBJECT_WRONG_TYPE);
+	return FALSE;
+    }
+#endif /* LEGACY */
 
     /* write the chunky buffer to file, after encoding */
     ret = EncodeInit(gifhandle, numplanes+1);
