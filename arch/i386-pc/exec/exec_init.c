@@ -807,6 +807,7 @@ void exec_cinit()
 
 #warning TODO: Write CPU detailed detection scheme. Patch proper functions
 
+    Init_Traps();
     irqSetup();
     rkprintf("IRQ services initialized\n");
 
@@ -1190,7 +1191,7 @@ ULONG **exec_RomTagScanner()
     /* Initialize list */
     NEWLIST(&rtList);
 
-    rkprintf("Resident modules (addr: pri version name):\n");
+    kprintf("Resident modules (addr: pri version name):\n");
     
     /* Look in whole kernel for resident modules */
     do
@@ -1278,7 +1279,7 @@ ULONG **exec_RomTagScanner()
         for (j=0; j<i; j++)
         {
             n = (struct rt_node *)RemHead(&rtList);
-            rkprintf("+ 0x%08.8lx: %4d %3d \"%s\"\n",
+            kprintf("+ 0x%08.8lx: %4d %3d \"%s\"\n",
                 n->module,
                 n->node.ln_Pri,
                 n->module->rt_Version,
