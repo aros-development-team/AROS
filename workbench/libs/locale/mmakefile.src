@@ -16,7 +16,13 @@ FUNCS := \
 	loctolower loctoupper locdatetostr locstrtodate \
 	locdosgetlocalizedstring
 
-#MM- workbench-libs-locale : includes linklibs
+#MM workbench-libs-locale-includes : \
+#MM     kernel-exec-includes \
+#MM     kernel-dos-includes \
+#MM     workbench-libs-iffparse-includes \
+#MM     workbench-libs-rexxsyslib-includes \
+#MM     includes-copy
+#MM- workbench-libs-locale : linklibs
 
 %build_module mmake=workbench-libs-locale \
     modname=locale modtype=library \
