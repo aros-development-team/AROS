@@ -2193,6 +2193,7 @@ int main(void)
 		SubWindow, win = WindowObject,
 			MUIA_Window_ID, MAKE_ID('F','T','2','M'),
 			MUIA_Window_Title, "Freetype font manager",
+                        MUIA_Window_Width, 400,
 			MUIA_Window_RootObject,VGroup,
 				Child, fontlv = ListviewObject,
 					MUIA_Listview_List, fontlist = FontListObject,
@@ -2204,7 +2205,8 @@ int main(void)
 						MUIA_Popasl_Type, ASL_FileRequest,
 						MUIA_Popstring_String, src = StringObject,
 							StringFrame,
-							MUIA_String_AdvanceOnCR, TRUE,
+							MUIA_String_Contents, "Fonts:TrueType",
+                                                        MUIA_String_AdvanceOnCR, TRUE,
 							MUIA_CycleChain, TRUE,
 							End,
 						MUIA_Popstring_Button, PopButton(MUII_PopDrawer),
@@ -2261,9 +2263,9 @@ int main(void)
 
 		DoMethod(win, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
 				app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
-	//	set(dest, MUIA_String_Contents, "Fonts:");
-
+                
+                DoMethod(fontlist, MUIM_FontList_AddDir, XGET(src, MUIA_String_Contents));
+                
 		set(win, MUIA_Window_Open, TRUE);
 		get(win, MUIA_Window_Open, &t);
 		if (t)
@@ -2271,7 +2273,7 @@ int main(void)
 			BOOL running = TRUE;
 			ULONG sigs = 0;
 			ULONG id;
-
+                        
 			do
 			{
 				id = DoMethod(app, MUIM_Application_NewInput, &sigs);
