@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1997/02/13 23:49:14  ldp
+    Added extra check: take no signalling action if mp_SigTask==0. This fixes
+    streams of Enforcer hits coming from input.device (does input.device make
+    assumptions about ReplyMsg()/PutMsg() internal functioning?
+
     Revision 1.7  1997/01/01 03:46:15  ldp
     Committed Amiga native (support) code
 
@@ -86,22 +91,25 @@
 	/* Add it to the replyport's list */
 	AddTail(&port->mp_MsgList,&message->mn_Node);
 
-	/* And trigger the arrival action. */
-	switch(port->mp_Flags&PF_ACTION)
+	if(port->mp_SigTask)
 	{
-	    case PA_SIGNAL:
-		/* Send a signal */
-		Signal((struct Task *)port->mp_SigTask,1<<port->mp_SigBit);
-		break;
+	    /* And trigger the arrival action. */
+	    switch(port->mp_Flags&PF_ACTION)
+	    {
+		case PA_SIGNAL:
+		    /* Send a signal */
+		    Signal((struct Task *)port->mp_SigTask,1<<port->mp_SigBit);
+		    break;
 
-	    case PA_SOFTINT:
-		/* Raise a software interrupt */
-		Cause((struct Interrupt *)port->mp_SoftInt);
-		break;
+		case PA_SOFTINT:
+		    /* Raise a software interrupt */
+		    Cause((struct Interrupt *)port->mp_SoftInt);
+		    break;
 
-	    case PA_IGNORE:
-		/* Do nothing */
-		break;
+		case PA_IGNORE:
+		    /* Do nothing */
+		    break;
+	    }
 	}
     }
 
