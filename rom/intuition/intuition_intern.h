@@ -162,6 +162,9 @@ void * memclr(APTR, ULONG);
 #define MENULOOK_CLASSIC       1
 
 #define MENUS_UNDERMOUSE       (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_POPUPMENUS)
+
+#define AVOID_WINBORDERERASE   (GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_AVOIDWINBORDERERASE)
+
 /* --- Values --- */
 /* TRUE, FALSE */
 

@@ -82,7 +82,9 @@ void GetWinGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *w
 void GetDomGadgetBounds(struct Gadget *gad, struct Screen *scr, struct Window *win,
                         struct Requester *req, struct IBox *box);
 
-void EraseRelGadgetArea(struct Window *win, BOOL onlydamagelist, struct IntuitionBase *IntuitionBase);
+void EraseRelGadgetArea(struct Window *win, struct Rectangle *clipto,
+    	    	    	BOOL onlydamagelist, struct IntuitionBase *IntuitionBase);
+			
 void RenderDisabledPattern(struct RastPort *rp, struct DrawInfo *dri, WORD x1, WORD y1,
                            WORD x2, WORD y2, struct IntuitionBase *IntuitionBase);
 
