@@ -1,5 +1,5 @@
 # $Id$
-TOP=../..
+TOP=../../..
 CURDIR=workbench/libs/mathieeesptrans
 
 USER_INCLUDES = -I..
@@ -38,8 +38,6 @@ FUNCTIONS = \
 	ieeespsin \
 	ieeespcos \
 	ieeesptan
-
-
 
 ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
 
