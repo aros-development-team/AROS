@@ -187,6 +187,11 @@
     AROS_LCA(LONG            , arg5, D7), \
     struct DosLibrary *, DOSBase, 40, Dos)
 
+#define DosGetString(stringNum) \
+    AROS_LC1(STRPTR, DosGetString, \
+    AROS_LCA(ULONG, stringNum, D0), \
+    struct DosLibrary *, DOSBase, 163, Dos)
+
 #define DupLock(lock) \
     AROS_LC1(BPTR, DupLock, \
     AROS_LCA(BPTR, lock, D1), \

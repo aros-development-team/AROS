@@ -169,6 +169,10 @@ AROS_LP7(LONG, DoPkt,
     AROS_LPA(LONG            , arg5, D7),
     struct DosLibrary *, DOSBase, 40, Dos)
 
+AROS_LP1(STRPTR, DosGetString,
+    AROS_LPA(ULONG, stringNum, D0),
+    struct DosLibrary *, DOSBase, 163, Dos)
+
 AROS_LP1(BPTR, DupLock,
     AROS_LPA(BPTR, lock, D1),
     struct DosLibrary *, DOSBase, 16, Dos)

@@ -43,7 +43,8 @@ FUNCTIONS = \
 	setprogramname setprompt setprotection setvar setvbuf splitname      \
 	startnotify strtodate strtolong systemtaglist ungetc	      \
 	unloadseg unlockdoslist unlockrecord unlockrecords vfprintf   \
-	vfwritef vprintf waitforchar waitpkt write writechars
+	vfwritef vprintf waitforchar waitpkt write writechars \
+	dosgetstring
 
 all: setup \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
