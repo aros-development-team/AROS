@@ -9,7 +9,7 @@
     Lang: English.
 */
 
-#include <linux/linkage.h>
+#include <asm/linkage.h>
 #include <asm/init.h>
 
 #include <asm/segments.h>
@@ -23,6 +23,8 @@
 #ifndef OOP_OOP_H
 #   include <oop/oop.h>
 #endif
+
+#include <asm/ptrace.h>
 
 /***** IRQ system HIDD *******************/
 
@@ -60,58 +62,25 @@ VOID free_irqclass  ( struct irq_staticdata * );
 #define __sti() __asm__ __volatile__ ("sti": : :"memory")
 #define __cli() __asm__ __volatile__ ("cli": : :"memory")
 
-/* this struct defines the way the registers are stored on the 
-   stack during an interrupt and system call (SoftIRQ?). */
+/******************************************************************************/
 
-struct pt_regs {
-	long edi;
-	long esi;
-	long ebp;
-	long dummy;
-	long ebx;
-	long edx;
-	long ecx;
-	long eax;
-	long orig_eax;
-	long eip;
-	int  xcs;
-	long eflags;
-//	long esp;	<-- These two will be defined when MP is done!
-//	int  xss;
-};
-
-/*******************************************************************************
-    These macros are used to SAVE/RESTORE stack inside interrupt.
-    They also are used to emulate supervisor mode.
-    
-    I will remove this section as soon as AROS gets a kind of MP.
-*******************************************************************************/
+#define __STR(x) #x
+#define STR(x) __STR(x)
 
 #define SAVE_ALL \
 	"cld\n\t" \
-	"pushal\n\t" \
-	"movl %esp,esp\n\t"
-
-#define RESTORE_ALL \
-	"movl esp,%esp\n\t" \
-	"popal\n\t" \
-	"addl $4,%esp\n\t"
-
-#define SUPER \
-	"cmpb $0,supervisor\n\t" \
-	"jne 1f\n\t" \
-	"movl %esp,usp\n\t" \
-	"movl ssp,%esp\n\t" \
-	"movb $1,supervisor\n" \
-	"1:\t"
-
-#define USER \
-	"cmpb $0,supervisor\n\t" \
-	"je 1f\n\t" \
-	"movl %esp,ssp\n\t" \
-	"movl usp,%esp\n\t" \
-	"movb $0,supervisor\n" \
-	"1:\t"
+	"pushl %es\n\t" \
+	"pushl %ds\n\t" \
+	"pushl %eax\n\t" \
+	"pushl %ebp\n\t" \
+	"pushl %edi\n\t" \
+	"pushl %esi\n\t" \
+	"pushl %edx\n\t" \
+	"pushl %ecx\n\t" \
+	"pushl %ebx\n\t" \
+	"movl $" STR(KERNEL_DS) ",%edx\n\t" \
+	"movl %dx,%ds\n\t" \
+	"movl %dx,%es\n\t"
 
 /*
  * IDT vectors usable for external interrupt sources start
@@ -189,9 +158,7 @@ __asm__( \
 	"common_interrupt:\n\t" \
 	SAVE_ALL \
 	"call "SYMBOL_NAME_STR(do_IRQ)"\n\t" \
-	RESTORE_ALL \
-	USER \
-	"iret");
+	"jmp restore_all\n");
 
 /*
  * subtle. orig_eax is used by the signal code to distinct between
@@ -205,7 +172,6 @@ asmlinkage void IRQ_NAME(nr); \
 __asm__( \
 "\n"__ALIGN_STR"\n" \
 SYMBOL_NAME_STR(IRQ) #nr "_interrupt:\n\t" \
-	SUPER \
 	"pushl $"#nr"-256\n\t" \
 	"jmp common_interrupt");
 

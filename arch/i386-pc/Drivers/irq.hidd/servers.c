@@ -18,6 +18,8 @@
 #include <utility/utility.h>
 #include <hardware/intbits.h>
 
+#include <asm/ptrace.h>
+
 #include <proto/exec.h>
 #include <proto/oop.h>
 
@@ -29,12 +31,16 @@
 
 void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd);
 
+void SaveRegs(struct Task *task, struct pt_regs *regs);
+void RestoreRegs(struct Task *task, struct pt_regs *regs);
+
 struct irqaction timer_int = { global_server, "timer", NULL, NULL};
 struct irqaction kbd_int = { global_server, "keyboard", NULL, NULL};
 struct irqaction com1_int = { global_server, "serial 1", NULL, NULL};
 struct irqaction com2_int = { global_server, "serial 2", NULL, NULL};
 struct irqaction floppy_int = { global_server, "floppy", NULL, NULL};
 struct irqaction rtc_int = { global_server, "rtc", NULL, NULL};
+struct irqaction mice_int = { global_server, "ps/2 mouse", NULL, NULL};
 struct irqaction ide0_int = { global_server, "ide0", NULL, NULL};
 struct irqaction ide1_int = { global_server, "ide1", NULL, NULL};
 
@@ -52,6 +58,7 @@ void init_Servers(struct irq_staticdata *isd)
     setup_x86_irq(4, &com1_int);
     setup_x86_irq(6, &floppy_int);
     setup_x86_irq(8, &rtc_int);
+    setup_x86_irq(12, &mice_int);
     setup_x86_irq(14, &ide0_int);
     setup_x86_irq(15, &ide1_int);
     
@@ -114,6 +121,12 @@ void timer_interrupt(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
     defined ids.
 *******************************************************************************/
 
+#undef SysBase
+#define SysBase (isd->sysbase)
+
+#define SC_ENABLE(regs)		(regs->eflags |= 0x200)
+#define SC_DISABLE(regs)	(regs->eflags &= ~0x200)
+
 void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_staticdata *isd)
 {
     HIDDT_IRQ_Id	id;
@@ -140,6 +153,9 @@ void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_stati
 	case 8: /* RTC */
 	    id = vHidd_IRQ_RTC;
 	    break;
+	case 12: /* PS/2 mouse */
+	    id = vHidd_IRQ_Mouse;
+	    break;
 	case 14: /* HDD1 */
 	    id = vHidd_IRQ_HDD1;
 	    break;
@@ -163,4 +179,41 @@ void global_server(int cpl, void *dev_id, struct pt_regs *regs, struct irq_stati
     {
 	handler->h_Code(handler, &hwinfo);
     }
+
+    /* Has an interrupt told us to dispatch when leaving */
+    if (SysBase->AttnResched & 0x8000)
+    {
+        SysBase->AttnResched &= ~0x8000;
+
+        /* Save registers for this task (if there is one...) */
+        if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
+            SaveRegs(SysBase->ThisTask, regs);
+
+        /* Tell exec that we have actually switched tasks... */
+        Dispatch ();
+
+        /* Get the registers of the old task */
+        RestoreRegs(SysBase->ThisTask, regs);
+
+        /* Make sure that the state of the interrupts is what the task
+           expects.
+        */
+        if (SysBase->IDNestCnt < 0)
+            SC_ENABLE(regs);
+        else
+            SC_DISABLE(regs);
+
+        /* Ok, the next step is to either drop back to the new task, or
+            give it its Exception() if it wants one... */
+
+        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
+        {
+            Disable();
+            Exception();
+            Enable();
+        }
+    }
+
+    /* Leave the interrupt. */
+
 }

@@ -9,8 +9,8 @@ GEN_INC	    := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
 FILES	    := irq_init irqclass functable servers irq stubs endtag
 OBJDIR	    := $(GENDIR)/$(CURDIR)
 
-#MM Drivers-native : 
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+#MM Drivers-native-irq : 
+Drivers-native-irq : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/hidd.kernel.irq
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/hidd.kernel.irq.o

@@ -9,9 +9,11 @@
 #include "irq.h"
 
 #include <asm/io.h>
-#include <linux/linkage.h>
+#include <asm/linkage.h>
 
 static struct irq_staticdata *isd;
+
+void set_intr_gate(unsigned int n, void *addr);
 
 /*******************************************************************************
     Lowlevel IRQ section                                                       
@@ -398,24 +400,6 @@ void init_ISA_irqs ()
             irq_desc[i].handler = &no_irq_type;
         }
     }
-}
-
-#define _set_gate(gate_addr,type,dpl,addr) \
-do { \
-  int __d0, __d1; \
-  __asm__ __volatile__ ("movw %%dx,%%ax\n\t" \
-	"movw %4,%%dx\n\t" \
-	"movl %%eax,%0\n\t" \
-	"movl %%edx,%1" \
-	:"=m" (*((long *) (gate_addr))), \
-	 "=m" (*(1+(long *) (gate_addr))), "=&a" (__d0), "=&d" (__d1) \
-	:"i" ((short) (0x8000+(dpl<<13)+(type<<8))), \
-	 "3" ((char *) (addr)),"2" (KERNEL_CS << 16)); \
-} while (0)
-
-void set_intr_gate(unsigned int n, void *addr)
-{
-    _set_gate(8 + (n << 3),14,0,addr);
 }
 
 #define HZ	50

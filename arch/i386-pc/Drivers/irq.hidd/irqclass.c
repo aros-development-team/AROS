@@ -20,7 +20,7 @@
 
 #include "irq.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 static AttrBase HiddIRQAttrBase	= 0;
