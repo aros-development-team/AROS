@@ -207,6 +207,23 @@ static int ParseListFormat(struct MUI_ListData *data, char *format)
 }
 
 /**************************************************************************
+ Call the MUIM_List_Display for the given entry. It fills out
+ data->string and data->preparses
+**************************************************************************/
+static void DisplayEntry(struct IClass *cl, Object *obj, int entry_pos)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    struct ListEntry *entry = data->entries[entry_pos];
+    int col;
+
+    /* Preparses are not required to be set, so we clear them first */
+    for (col=0;col<data->columns;col++) data->preparses[col] = NULL;
+
+    /* Get the display formation */
+    DoMethod(obj, MUIM_List_Display, entry->data, entry_pos, data->strings, data->preparses);
+}
+
+/**************************************************************************
  Determine the widths of the entries
 **************************************************************************/
 static void CalcWidths(struct IClass *cl, Object *obj)
@@ -224,11 +241,7 @@ static void CalcWidths(struct IClass *cl, Object *obj)
     	struct ListEntry *entry = data->entries[i];
     	if (!entry) break;
 
-	/* Preparses are not required to be set, so we clear them first */
-    	for (j=0;j<data->columns;j++) data->preparses[j] = NULL;
-
-	/* Get the display formation */
-    	DoMethod(obj,MUIM_List_Display,entry->data,i /* entry_pos */, data->strings, data->preparses);
+	DisplayEntry(cl,obj,i);
 
 	/* Clear the height */
 	data->entries[i]->height = 0;
@@ -428,6 +441,47 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 }
 
 /**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static ULONG List_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    int entry_pos,col,x,y;
+    APTR clip;
+
+    DoSuperMethodA(cl, obj, (Msg) msg);
+
+    clip = MUI_AddClipping(muiRenderInfo(obj), _mleft(obj), _mtop(obj),
+			   _mwidth(obj), _mheight(obj));
+
+    y = _mtop(obj);
+
+    for (entry_pos = 0; entry_pos < data->entries_num; entry_pos++)
+    {
+    	struct ListEntry *entry = data->entries[entry_pos];
+    	DisplayEntry(cl,obj,entry_pos);
+
+    	for (col = 0; col < data->columns; col++)
+    	{
+	    ZText *text = zune_text_new(data->strings[col],data->preparses[col], ZTEXT_ARG_NONE, NULL);
+	    if (text)
+	    {
+	    	/* Could be made simpler, as we don't need really the bounds */
+		zune_text_get_bounds(text, obj);
+		zune_text_draw(text, obj, _mleft(obj),_mright(obj),y); /* totally wrong! */
+		zune_text_destroy(text);
+	    }
+    	}
+
+    	y += entry->height;
+    }
+
+    MUI_RemoveClipping(muiRenderInfo(obj),clip);
+
+    return 0;
+}
+
+/**************************************************************************
  MUIM_List_Insert
 **************************************************************************/
 STATIC ULONG List_Insert(struct IClass *cl, Object *obj, struct MUIP_List_Insert *msg)
@@ -521,6 +575,25 @@ STATIC ULONG List_InsertSingle(struct IClass *cl, Object *obj, struct MUIP_List_
 }
 
 /**************************************************************************
+ MUIM_List_GetEntry
+**************************************************************************/
+STATIC ULONG List_GetEntry(struct IClass *cl, Object *obj, struct MUIP_List_GetEntry *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    int pos = msg->pos;
+
+    if (pos == MUIV_List_GetEntry_Active) pos = data->entries_active;
+
+    if (pos < 0 && pos >= data->entries_num)
+    {
+    	*msg->entry = NULL;
+    	return NULL;
+    }
+    *msg->entry = data->entries[pos]->data;
+    return (ULONG)*msg->entry;
+}
+
+/**************************************************************************
  MUIM_List_Construct
 **************************************************************************/
 STATIC ULONG List_Construct(struct IClass *cl, Object *obj, struct MUIP_List_Construct *msg)
@@ -606,8 +679,10 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 	case OM_SET: return List_Set(cl,obj,(struct opSet *)msg);
 	case OM_GET: return List_Get(cl,obj,(struct opGet *)msg);
 	case MUIM_Setup: return List_Setup(cl,obj,(struct MUIP_Setup *)msg);
+	case MUIM_Draw: return List_Draw(cl,obj,(struct MUIP_Draw *)msg);
 	case MUIM_List_Insert: return List_Insert(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingle: return List_InsertSingle(cl,obj,(APTR)msg);
+	case MUIM_List_GetEntry: return List_GetEntry(cl,obj,(APTR)msg);
 	case MUIM_List_Construct: return List_Construct(cl,obj,(APTR)msg);
 	case MUIM_List_Destruct: return List_Destruct(cl,obj,(APTR)msg);
 	case MUIM_List_Compare: return List_Compare(cl,obj,(APTR)msg);
