@@ -10,6 +10,7 @@
 
 Object *MakeLabel(STRPTR str);
 Object *MakeButton(STRPTR str);
+Object *MakeSpacingSlider (void);
 Object *MakeBackgroundPopimage(void);
 Object *MakePopframe(void);
 ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...);

@@ -64,15 +64,6 @@ static CONST_STRPTR redraw_labels[] =
 };
 
 
-static Object*MakeSpacingSlider (void)
-{
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
-
-    set(obj, MUIA_CycleChain, 1);
-    return obj;
-}
-
-
 static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
@@ -82,8 +73,9 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	Child, HGroup,
 	   Child, VGroup,
 	       Child, ColGroup(2),
+		   MUIA_Group_VertSpacing, 2,
                    GroupFrameT("Control"),
-			       MUIA_Disabled, TRUE,
+		   MUIA_Disabled, TRUE,
                    Child, HVSpace,
                    Child, HVSpace,
 		   Child, MakeLabel("Positions:"),
@@ -96,6 +88,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                    Child, HVSpace,
 		   End,
    	       Child, ColGroup(2),
+		   MUIA_Group_VertSpacing, 2,
    		   GroupFrameT("Fonts"),
 	           Child, HVSpace,
 	           Child, HVSpace,
@@ -103,6 +96,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
    		       MUIA_Popstring_String, d.font_normal_string = StringObject,
+			       MUIA_CycleChain, 1,
 			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
@@ -111,6 +105,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
    		       MUIA_Popstring_String, d.font_tiny_string = StringObject,
+			       MUIA_CycleChain, 1,
 			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
@@ -119,6 +114,7 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
    		       MUIA_Popstring_String, d.font_big_string = StringObject,
+			       MUIA_CycleChain, 1,
 			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
