@@ -317,7 +317,7 @@ that uses that class. This pratically means that method IDs are actually FIXED
 during the life cycle of a given program, although they are not fixed in
 general, thus we can get at startup-time all the method ID's that the program is
 gonna use and consequently not waste cpu cycles every time a method has to be
-invoked. This can be somehow automated by the means of a special linker that
+invoked. This can be somehow automated by mean of a special linker that
 recognize the IDs names and automatically writed the needed code to get their
 values.
 
