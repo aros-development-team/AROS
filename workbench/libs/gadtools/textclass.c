@@ -1,10 +1,10 @@
 /*
-   (C) 1997 AROS - The Amiga Research OS
-   $Id$
-
-   Desc: Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
-   Lang: English
- */
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: Internal GadTools text class (NUMERIC_KIND and TEXT_KIND) .
+    Lang: English
+*/
  
 #undef AROS_ALMOST_COMPATIBLE
 #define AROS_ALMOST_COMPATIBLE 1

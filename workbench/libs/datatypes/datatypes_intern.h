@@ -1,7 +1,8 @@
 #ifndef DATATYPES_INTERN_H
 #define DATATYPES_INTERN_H
+
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Internal datatypes.library definitions.

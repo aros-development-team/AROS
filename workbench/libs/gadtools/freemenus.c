@@ -1,5 +1,5 @@
 /*
-    (C) 1999 - 2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Free memory allocated by CreateMenusA()

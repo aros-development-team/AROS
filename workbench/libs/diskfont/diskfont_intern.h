@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifndef DISKFONT_INTERN_H
 #define DISKFONT_INTERN_H
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2001 AROS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Default Locale Preferences

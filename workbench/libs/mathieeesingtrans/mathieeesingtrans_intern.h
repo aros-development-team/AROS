@@ -1,38 +1,11 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.3  1998/10/20 16:48:20  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1998/05/17 16:17:13  bergers
-    Update
-
-    Revision 1.1  1998/02/25 22:41:43  bergers
-    Moved functions to new dir. atan.c is new. Library now completed. :-))
-
-    Revision 1.7  1998/02/02 21:08:15  bergers
-    Changed LONGs to floats. The define in mathieeesingtrans_intern.h does the trick.
-
-    Revision 1.6  1997/12/05 18:54:26  bergers
-    Update for acos, asin.
-
-    Revision 1.5  1997/09/28 11:37:08  bergers
-    Updated version - again
-
-    Revision 1.3  1997/07/28 20:43:04  bergers
-    Some bug-fixes and changes
-
-    Revision 1.2  1997/07/27 21:47:24  bergers
-    Initial revision - yet more math stuff!
-
-    Revision 1.1  1997/07/24 17:25:49  bergers
-    Initial revision
-
 
     Desc:
     Lang: english
 */
+
 #ifndef __MATHIEEESINGTRANS_INTERN_H__
 #define __MATHIEEESINGTRANS_INTERN_H__
 

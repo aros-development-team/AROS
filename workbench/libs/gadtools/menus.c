@@ -1,9 +1,9 @@
 /*
-   Copyright (C) 1997-2001 AROS - The Amiga Research OS
-   $Id$
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
 
-   Desc: GadTools menu creation functions
-   Lang: English
+    Desc: GadTools menu creation functions
+    Lang: English
 */
 
 /**************************************************************************************************/

@@ -1,10 +1,10 @@
 /*
-   Copyright (C) 1997 - 2001 AROS - The Amiga Research OS
-   $Id$
-
-   Desc: Internal GadTools palette class.
-   Lang: English
- */
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+ 
+    Desc: Internal GadTools palette class.
+    Lang: English
+*/
  
 #undef AROS_ALMOST_COMPATIBLE
 #define AROS_ALMOST_COMPATIBLE 1
