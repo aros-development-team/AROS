@@ -32,7 +32,7 @@
 "   AVERAGE\n"					\
 "     user will have to interact sometimes.\n"	\
 "     This usually includes important\n"	\
-"     decisions, but not unportant ones like\n"	\
+"     decisions, but not unimportant ones like\n"\
 "     copying files or creating directories.\n"	\
 "\n"						\
 "   EXPERT\n"					\
