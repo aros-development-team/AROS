@@ -59,7 +59,7 @@ int printdate(STRPTR filename)
         file = Open(filename, MODE_NEWFILE);
         ownfile = 1;
     }
-    if (file != NULL)
+    if (file != (BPTR)NULL)
     {
         int pos = 0;
 

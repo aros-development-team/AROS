@@ -288,7 +288,7 @@ int makefilever(STRPTR name)
     char buffer[BUFFERSIZE];
 
     file = Open(name, MODE_OLDFILE);
-    if (file != NULL)
+    if (file != (BPTR)NULL)
     {
 	int len = BUFFERSIZE - 1;
 
