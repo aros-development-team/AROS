@@ -24,6 +24,7 @@
 #include <proto/muimaster.h>
 #include <proto/freetype2.h>
 #include <aros/debug.h>
+#include <aros/macros.h>
 
 #include "etask.h"
 
