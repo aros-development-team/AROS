@@ -199,7 +199,8 @@
 
         <PARA>Here is a list of some important libraries and their function.
         You don't have to remember all of these, as they will be discussed
-        later in detail.
+        later in detail.</PARA>
+
         <ITEMIZEDLIST>
           <LISTITEM><PARA><FILENAME role="library"><LINK linkend="exec-library">exec.library</LINK></FILENAME>
           is the most important library. It is responsible for handling the
@@ -236,7 +237,7 @@
           <LISTITEM><PARA><FILENAME role="library"><LINK linkend="boopsi-library">boopsi.library</LINK></FILENAME>
           handles <LINK linkend="chap-boopsi"><ACRONYM role="aros">AROS</ACRONYM>' internal
           object oriented system (<ACRONYM>BOOPSI</ACRONYM>)</LINK>.</PARA></LISTITEM>
-        </ITEMIZEDLIST></PARA>
+        </ITEMIZEDLIST>
       </SECT1>
 
 <!-- ================ -->
@@ -266,8 +267,9 @@
           the library. Normally this is just the plain name, but this can
           also be a complete (absolute or relative) path to the library.</PARA>
           <NOTE><PARA>Paths do not work with kernel-based libraries
-          (<ABBREV>ie</ABBREV> libraries that are included in the kernel). You should use
-          paths only, if the library can't be found in the usual places.</PARA></NOTE></LISTITEM>
+          (<ABBREV>ie</ABBREV> libraries that are included in the kernel).
+          Use absolute path only, if you know exactly, what you are doing!
+          </PARA></NOTE></LISTITEM>
 
           <LISTITEM><PARA><PARAMETER>version</PARAMETER> is the minimal
           version of the library to open. If the named library is found, but
@@ -286,7 +288,8 @@
           <PARA>The following procedure is used to load the library to open:</PARA>
           <STEP>
             <PARA>First, the name of the library is searched for in the
-            list of already loaded libraries (resident list). If this library
+            list of already loaded libraries (<GLOSSTERM><FIRSTTERM>resident
+            list</FIRSTTERM></GLOSSTERM>). If this library
             was loaded into memory before (eg by a different program) and still
             is there, everything is fine and <FUNCTION>OpenLibrary()</FUNCTION>
             returns now.</PARA>
@@ -299,7 +302,7 @@
             <PARA>If the library was not found in the resident list and
             a path was supplied with <PARAMETER>name</PARAMETER>, the given
             file is tried to be opened. If this fails,
-            <FUNCTION>OpenLibrary</FUNCTION> returns an error.
+            <FUNCTION>OpenLibrary()</FUNCTION> returns an error.
           </STEP>
           <STEP>
             <PARA>If only the plain library-name was given, the library is
@@ -342,7 +345,7 @@
         does nothing.</PARA>
 
         <PARA>We will demonstrate the use of libraries by creating a small
-        graphical hello-world program. Instead of printing "Hello World!" to
+        graphical hello-world program. Instead of printing <COMPUTEROUTPUT>Hello World!</COMPUTEROUTPUT> to
         the console, we will display it in a requester. A function to display
         a requester is <FUNCTION><LINK linkend="intuition-easyrequestargsa">EasyRequestArgs()</LINK></FUNCTION>,
         being a function of <FILENAME role="library">intuition.library</FILENAME>.
@@ -420,29 +423,34 @@ int main(int argc, char *argv[])
         way of providing arguments to a function.</PARA>
 
         <PARA>There are some special tags that all functions understand
-        (defined in <FILENAME class="headerfile"><LINK linkend="utility-tagitem-h">utility/tagitem.h</LINK></FILENAME>):
+        (defined in <FILENAME class="headerfile"><LINK linkend="utility-tagitem-h">utility/tagitem.h</LINK></FILENAME>):</PARA>
+
         <ITEMIZEDLIST>
           <LISTITEM><PARA><SYMBOL>TAG_DONE</SYMBOL> and <SYMBOL>TAG_END</SYMBOL>
           define the end of a taglist. Every taglist must be terminated with
-          one of it. <STRUCTFIELD>ti_Data</STRUCTFIELD> is ignored. The field
-          doesn't even have to exist physically.</PARA></LISTITEM>
+          one of it. <STRUCTFIELD>ti_Data</STRUCTFIELD> must be ignored by
+          the called function, so it doesn't have to exist in memory.</PARA></LISTITEM>
+
           <LISTITEM><PARA><SYMBOL>TAG_IGNORE</SYMBOL> means that the contents
           of <STRUCTFIELD>ti_Data</STRUCTFIELD> is to be ignored. This tag is
           especially useful for conditional inclusion of tags.</PARA></LISTITEM>
+
           <LISTITEM><PARA><SYMBOL>TAG_MORE</SYMBOL>: By using this tag, you
           can link taglists together. <STRUCTFIELD>ti_Data</STRUCTFIELD>
           points to another taglist. Processing of the current taglist will
           be stopped and instead the new one will be processed. This tag also
           terminates the current taglist.</PARA></LISTITEM>
+
           <LISTITEM><PARA><SYMBOL>TAG_SKIP</SYMBOL> forces the parser to
           skip the next <STRUCTFIELD>ti_Data</STRUCTFIELD> tags. They will
           not be processed.</PARA></LISTITEM>
-        </ITEMIZEDLIST></PARA>
+        </ITEMIZEDLIST>
 
         <PARA>You may always provide <SYMBOL>NULL</SYMBOL> instead of a pointer
         to a taglist. All functions must be able to handle
-        <SYMBOL>NULL</SYMBOL> pointers. They are equal to a taglist with
+        <SYMBOL>NULL</SYMBOL> pointers. They are equal to taglists with
         <SYMBOL>TAG_DONE</SYMBOL> as first tag.</PARA>
+
         <PARA>A function that requires a taglist is:
         <FUNCSYNOPSIS>
           <FUNCSYNOPSISINFO>#include &lt;proto/intuition.h></FUNCSYNOPSISINFO>
@@ -453,8 +461,8 @@ int main(int argc, char *argv[])
           </FUNCPROTOTYPE>
         </FUNCSYNOPSIS>
         This function will be discussed in detail in the
-        <LINK linkend="chap-windows">chapter about windows</LINK>. For our purpose
-        the only important thing to know is that this function opens a window.
+        <LINK linkend="chap-windows">chapter about windows</LINK>. For
+        now you only have to know that this function opens a new window.
         We set the argument <PARAMETER>newwin</PARAMETER> to
         <SYMBOL>NULL</SYMBOL>. The only tags looked at for now are:
         <INFORMALTABLE colsep="0" rowsep="0" frame="none">
@@ -492,7 +500,10 @@ int main(int argc, char *argv[])
         </FUNCSYNOPSIS>
         This function is used to close an opened window.</PARA>
 
-        <PARA>Now let's have a look at another small hello-world-program:
+        <PARA>Now let's have a look at another small hello-world-program.
+        This opens window, which says "Hello World!" in the title-bar,
+        for two seconds.</PARA>
+
         <EXAMPLE><TITLE>Usage of taglists</TITLE>
           <PROGRAMLISTING>
 #include &lt;proto/exec.h>
@@ -546,10 +557,10 @@ int main(int argc, char *argv[])
     return error;
 }
           </PROGRAMLISTING>
-        </EXAMPLE></PARA>
+        </EXAMPLE>
 
-        <PARA>Of course, the way of setting up the taglist is quite
-        complicated. So for most functions, which are using taglists,
+        <PARA>Of course, this method of setting up the taglist is quite
+        complicated. So for most functions that use taglists
         short-cuts are available. The link-library
         <FILENAME role="library">amiga.lib</FILENAME> provides these short-cuts for all
         internal <ACRONYM role="aros">AROS</ACRONYM> functions. These
@@ -600,8 +611,8 @@ int main(int argc, char *argv[])
       <SECT1 id="sect-lists"><TITLE>Exec Lists</TITLE>
         <PARA><ACRONYM role="aros">AROS</ACRONYM> implements a system of
         <FIRSTTERM>linked lists</FIRSTTERM>, so-called <FIRSTTERM>exec lists</FIRSTTERM>.
-        A linked-list is a number of <FIRSTTERM>nodes</FIRSTTERM> that point to
-        each other. Two types of nodes are defined in
+        A linked-list consists of a number of <FIRSTTERM>nodes</FIRSTTERM>
+        that point to each other. Two types of nodes are defined in
         <LINK linkend="exec-nodes-h"><FILENAME class="headerfile">exec/nodes.h</FILENAME></LINK>:
         <ITEMIZEDLIST>
           <LISTITEM><PARA>struct <STRUCTNAME>MinNode</STRUCTNAME> is the basic
@@ -641,7 +652,7 @@ int main(int argc, char *argv[])
         <STRUCTFIELD>ln_Pri</STRUCTFIELD> reflects the
         <EMPHASIS>importance</EMPHASIS> of a library.</PARA>
 
-        <PARA>Of course, we need a list container. This is defined in
+        <PARA>Of course, we need a list containers. These are defined in
         <LINK linkend="exec-lists-h"><FILENAME class="headerfile">exec/lists.h</FILENAME></LINK>.
         Like nodes, we have two different kind of lists:
         <ITEMIZEDLIST>
@@ -706,7 +717,7 @@ int main(int argc, char *argv[])
           </FUNCSYNOPSIS>
           With <FUNCTION>AddHead()</FUNCTION> and <FUNCTION>AddTail()</FUNCTION>
           <PARAMETER>node</PARAMETER> is inserted at the beginning or the end
-          of <PARAMETER>list</PARAMETER> respectively. <FUNCTION>Enqueue</FUNCTION>
+          of <PARAMETER>list</PARAMETER> respectively. <FUNCTION>Enqueue()</FUNCTION>
           inserts <PARAMETER>node</PARAMETER> according to its
           <STRUCTFIELD>ln_Pri</STRUCTFIELD> field. A node can be inserted after
           another by using <FUNCTION>Insert()</FUNCTION>. A pointer to the
@@ -733,9 +744,9 @@ int main(int argc, char *argv[])
           While <FUNCTION>RemHead()</FUNCTION> and <FUNCTION>RemTail()</FUNCTION>
           remove the first or last node of a <PARAMETER>list</PARAMETER>
           respectively and return a pointer to it, <FUNCTION>Remove()</FUNCTION>
-          removes <PARAMETER>node</PARAMETER> from the list it is in.</PARA>
+          removes <PARAMETER>node</PARAMETER> from whatever list it is in.</PARA>
 
-          <PARA>Of course all list functions (except <FUNCTION>Enqueue())</FUNCTION>
+          <PARA>Of course, all list functions (except <FUNCTION>Enqueue())</FUNCTION>
           can process struct <STRUCTNAME>MinList</STRUCTNAME>s and
           struct <STRUCTNAME>MinNode</STRUCTNAME>s, too.</PARA>
 
@@ -755,12 +766,13 @@ int main(int argc, char *argv[])
           field, a pointer to the corresponding node is returned. If no field
           matches, <SYMBOL>NULL</SYMBOL> is returned.
 
-          <NOTE><PARA>A list used with <FUNCTION>FindName()</FUNCTION>must not
+          <NOTE><PARA>A list used with <FUNCTION>FindName()</FUNCTION> must not
           contain any struct <STRUCTNAME>MinList</STRUCTNAME> entries. If it
           does, memory could get corrupted!</PARA></NOTE>
 
           <PARA>In the following example, we create a list, add three nodes to
-          it, search a named node and then remove it.
+          it, search a named node and then remove it.</PARA>
+
           <EXAMPLE><TITLE>List example</TITLE>
             <PROGRAMLISTING>
 #include &lt;proto/alib.h>
@@ -775,7 +787,7 @@ struct List list;
 /* Our nodes */
 struct Node node1 =
 {
-    NULL, NULL,    /* No predecessor and successort, yet */
+    NULL, NULL,    /* No predecessor and successor, yet */
     NT_UNKNOWN, 0, /* Unknown type, priority ignored */
     "First node"   /* Name of the node */
 };
@@ -899,10 +911,12 @@ int main(int argc, char *argv[])
             unused memory, for example by flushing unused libraries out of the
             memory. If this flag is set, this behaviour is turned off.</PARA></LISTITEM>
           </VARLISTENTRY>
-        </VARIABLELIST>.
-        Memory allocated with these functions <EMPHASIS>must be freed</EMPHASIS>
+        </VARIABLELIST></PARA>
+
+        <PARA>Memory allocated with these functions <EMPHASIS>must be freed</EMPHASIS>
         after use with one of the following functions. <EMPHASIS>Note well that
-        you must not use memory that was already freed.</EMPHASIS>
+        you must not use memory that was already freed.</EMPHASIS></PARA>
+
         <FUNCSYNOPSIS>
           <FUNCSYNOPSISINFO>#include &lt;proto/exec.h></FUNCSYNOPSISINFO>
           <FUNCPROTOTYPE>
@@ -916,7 +930,8 @@ int main(int argc, char *argv[])
             <PARAMDEF>ULONG <PARAMETER>size</PARAMETER></PARAMDEF>
           </FUNCPROTOTYPE>
         </FUNCSYNOPSIS>
-        Of course, <FUNCTION>FreeMem()</FUNCTION> must be used for memory
+
+        <PARA>Of course, <FUNCTION>FreeMem()</FUNCTION> must be used for memory
         allocated with <FUNCTION>AllocMem()</FUNCTION> and
         <FUNCTION>FreeVec()</FUNCTION> for memory allocated with
         <FUNCTION>AllocVec()</FUNCTION>. The synopsis for these two functions
@@ -1117,7 +1132,7 @@ struct MemList
             deletes all the memory of a pool, why should I ever use
             <FUNCTION>FreePooled()</FUNCTION>?</QUOTE> The answer is easy: to
             save memory. Normally it's good style to free memory as soon as
-            you don't need it anymore. But sometimes it is easier to just
+            you don't need it anymore. But sometimes it is easier just to
             free a memory-pool after a bunch of allocations. Nevertheless
             you should not use this feature, if you are not sure, when the
             memory-pool will be deleted. Imagine a program like this (do not
@@ -1257,12 +1272,12 @@ int main(int argc, char *argv[])
           requested block is already allocated or is not available in the
           system, <SYMBOL>NULL</SYMBOL> is returned, instead.</PARA>
 
-          <WARNING><PARA>The beginning of the memory block requested will
+          <WARNING><SIMPARA>The beginning of the memory block requested will
           be used by exec to store its node-data (the exact size is calculated
           by (2*sizeof (void *)) ). Therefore, you <EMPHASIS>must not
           write</EMPHASIS> to the beginning of the memory-block! Because of
           these obstacles you should not use <FUNCTION>AllocAbs()</FUNCTION>,
-          except if you really need it.</PARA></WARNING>
+          except if you really need it.</SIMPARA></WARNING>
 
           <PARA>Memory allocated with <FUNCTION>AllocAbs()</FUNCTION> must
           be freed, using <FUNCTION>FreeMem()</FUNCTION>.
@@ -2540,6 +2555,13 @@ int main(int argc, char *argv[])
       <GLOSSDEF>
         <PARA>FIXME</PARA>
         <GLOSSSEEALSO>Absolute Path</GLOSSSEEALSO>
+      </GLOSSDEF>
+    </GLOSSENTRY>
+
+    <GLOSSENTRY>
+      <GLOSSTERM id="glos-resident-list">Resident List</GLOSSTERM>
+      <GLOSSDEF>
+        <PARA>FIXME</PARA>
       </GLOSSDEF>
     </GLOSSENTRY>
 
