@@ -7,6 +7,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 struct Node
 {
@@ -509,9 +511,13 @@ void buildmflist (Project * prj)
 {
     char * mfn, * mfnsrc;
     struct stat st;
-    char line[256], * ptr;
-    int len;
-    FILE * find;
+    char path[256];
+    int len, offset;
+    struct List dirs;
+    struct Node * cd;
+    DIR * dirh;
+    struct dirent * dirent;
+    int foundmf;
 
     if (!prj->buildmflist)
 	return;
@@ -526,8 +532,96 @@ void buildmflist (Project * prj)
     len = strlen (mfn);
     strcpy (mfnsrc+len, ".src");
 
-    chdir (prj->top);
+    NEWLIST(&dirs);
+    cd = (struct Node *)newnode (".", NULL);
+    ADDTAIL(&dirs,cd);
 
+    while ((cd = GetHead(&dirs)))
+    {
+	REMOVE (cd);
+
+	chdir (prj->top);
+
+	strcpy (path, cd->name);
+	offset = strlen (path);
+	path[offset ++] = '/';
+	path[offset] = 0;
+
+/* printf ("Entering \"%s\"\n", path); */
+
+	dirh = opendir (path);
+	if (!dirh)
+	{
+	    error ("opendir(%s)", path);
+	    exit (10);
+	}
+
+	foundmf = 0;
+
+	while ((dirent = readdir (dirh)))
+	{
+	    if (!strcmp (dirent->d_name, mfnsrc))
+	    {
+		foundmf = 2;
+		continue;
+	    }
+
+	    if (!foundmf)
+	    {
+		mfnsrc[len] = 0;
+
+		if (!strcmp (dirent->d_name, mfnsrc))
+		{
+		    foundmf = 1;
+		    mfnsrc[len] = '.';
+		    continue;
+		}
+
+		mfnsrc[len] = '.';
+	    }
+
+	    strcpy (path+offset, dirent->d_name);
+
+	    if (lstat (path, &st) == -1)
+	    {
+		error ("stat(%s)", path);
+		exit (10);
+	    }
+
+	    if (S_ISDIR (st.st_mode) && strcmp(dirent->d_name, "CVS")
+		&& strcmp (dirent->d_name, ".")
+		&& strcmp (dirent->d_name, "..")
+		&& !S_ISLNK (st.st_mode)
+	    )
+	    {
+		addnodeonce (&dirs, path, NULL);
+/* printf ("Adding %s for later\n", path); */
+	    }
+
+	    path[offset] = 0;
+	}
+
+	if (foundmf == 2)
+	{
+	    strcpy (path+offset, mfnsrc);
+	    addnodeonce (&prj->makefiles, path+2, NULL);
+	    path[offset] = 0;
+	}
+	else if (foundmf == 1)
+	{
+	    mfnsrc[len] = 0;
+	    strcpy (path+offset, mfnsrc);
+	    addnodeonce (&prj->makefiles, path+2, NULL);
+	    path[offset] = 0;
+	    mfnsrc[len] = '.';
+	}
+
+	closedir (dirh);
+
+	free (cd);
+    }
+
+#if 0
     find = popen ("find . -type d -print", "r");
     if (!find)
     {
@@ -551,12 +645,13 @@ void buildmflist (Project * prj)
 	}
     }
 
-#if 0
+    pclose (find);
+#endif
+
+#if 1
     printf ("project %s.makefiles=", prj->node.name);
     printlist (&prj->makefiles);
 #endif
-
-    pclose (find);
 }
 
 void progress (int max, int curr, int * data)
