@@ -117,6 +117,37 @@
 	    mh=(struct MemHeader *)mh->mh_Node.ln_Succ;
 	}
     /* All done. Permit dispatches and return. */
+
+#if AROS_MUNGWALL_DEBUG
+    if (attributes & MEMF_CLEAR)
+    {
+    	struct List 	    	*allocmemlist;
+   	struct MungwallHeader 	*allocnode;
+	ULONG	    	    	 alloccount = 0;
+	ULONG	    	    	 allocsize = 0;
+	
+	allocmemlist = (struct List *)&((struct AROSSupportBase *)SysBase->DebugAROSBase)->AllocMemList;
+    
+    	kprintf("\n=== MUNGWALL MEMORY CHECK ============\n");
+	ForeachNode(allocmemlist, allocnode)
+	{
+	    BOOL badheader = FALSE;
+
+	    if (allocnode->mwh_magicid != MUNGWALL_HEADER_ID)
+	    {
+		kprintf(" #%05x BAD MUNGWALL_HEADER_ID\n", alloccount);
+	    }
+	    
+	    CHECK_WALL((UBYTE *)allocnode + MUNGWALLHEADER_SIZE, 0xDB, MUNGWALL_SIZE);
+	    CHECK_WALL((UBYTE *)allocnode + MUNGWALLHEADER_SIZE + MUNGWALL_SIZE + allocnode->mwh_allocsize, 0xDB,
+		MUNGWALL_SIZE + AROS_ROUNDUP2(allocnode->mwh_allocsize, MEMCHUNK_TOTAL) - allocnode->mwh_allocsize);
+	    	    
+	    allocsize += allocnode->mwh_allocsize;
+	    alloccount++;
+	}
+	kprintf("\n Num allocations: %d   Memory allocated %d\n", alloccount, allocsize);
+    }
+#endif
     Permit();
     return ret;
     AROS_LIBFUNC_EXIT
