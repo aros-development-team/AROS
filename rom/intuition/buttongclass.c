@@ -239,7 +239,17 @@ IPTR buttong_handleinput(Class * cl, Object * o, struct gpInput * msg)
 
 	case IECLASS_TIMER:
 	    if (EG(o)->Flags & GFLG_SELECTED)
-		DoMethod(o, OM_NOTIFY, NULL, gi, OPUF_INTERIM);
+	    {
+	        /* MUST pass tags for notification to work */
+	        struct TagItem ntags[] = {
+	            {GA_ID,	0},
+	            {TAG_DONE,}
+	        };
+	        
+	        ntags[0].ti_Data = EG(o)->GadgetID;
+	    
+		DoMethod(o, OM_NOTIFY, ntags, gi, OPUF_INTERIM);
+	    }
 	    break;
 	}
     }
