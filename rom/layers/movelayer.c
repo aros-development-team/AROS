@@ -79,6 +79,9 @@
       l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
       l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
     return FALSE; 
+
+  if (0 == dx && 0 == dy)
+    return TRUE;
   
   /* 
      Here's how I do it:
@@ -312,6 +315,7 @@
     DeleteLayer(0, l_tmp);
 
     /* That's it folks! */
+    CleanupLayers(LI);
 
     /* Now everybody else may play with the layers again */
     UnlockLayers(LI);

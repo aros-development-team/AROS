@@ -111,5 +111,7 @@ void FreeLayerResources(struct Layer_Info *  li,
 /*                              MISCELLANEOUS                              */
 /***************************************************************************/
 
+void CleanTopLayer(struct Layer_Info * LI);
+void CleanupLayers(struct Layer_Info * LI);
 
 /*-----------------------------------END-----------------------------------*/

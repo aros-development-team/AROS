@@ -641,6 +641,8 @@ if (NULL == CR_tmp)
     } /* while (NULL != CR) */
   }
 
+  CleanupLayers(LI);
+ 
   UnlockLayers(LI);
 
   return TRUE;

@@ -82,7 +82,9 @@
       l->bounds.MaxX+dx > GetBitMapAttr(l->rp->BitMap, BMA_WIDTH) ||
       l->bounds.MaxY+dy > GetBitMapAttr(l->rp->BitMap, BMA_HEIGHT))
     return FALSE; 
-  
+
+  if (0 == dx && 0 == dy && 0 == dw && 0 == dh)
+    return TRUE;  
 
   /* Lock all other layers while I am moving this layer */
   LockLayers(LI);
@@ -425,9 +427,10 @@
    
 
     /* That's it folks! */
+    CleanupLayers(LI);
 
     /* Now everybody else may play with the layers again */
-    UnlockLayers(l->LayerInfo);
+    UnlockLayers(LI);
     return TRUE;
   } 
   else /* not enough memory */

@@ -57,31 +57,30 @@ void CreateClipRectsSelf(struct Layer * L, BOOL notdisplayed)
     if (L_other != L)
       LayerSplitsLayer(L_other, L, notdisplayed);
 
-    L_other = L_other -> back; 
+    L_other = L_other -> back;
   }
 }
 
 /*
-   Let all other layers that are in the list with the layer L split
-   the cliprects of the layer L
+ *  Let all other layers that are in the list with the top layer split
+ *  the cliprects of the top layer
  */
 void CreateClipRectsTop(struct Layer_Info * li, BOOL notdisplayed)
 {
-  struct Layer * L = li->top_layer;
-  struct Layer * L_other = L->back;
+  struct Layer * L_top   = li->top_layer;
+  struct Layer * L_other = L_top->back;
 
   while (NULL != L_other)
   {
-    /* The Layer L is split by all other Layers */
-    if (L_other != L)
-      LayerSplitsLayer(L_other, L, notdisplayed);
+    /* The Layer L_top is split by all other Layers */
+    LayerSplitsLayer(L_other, L_top, notdisplayed);
 
-    L_other = L_other -> back; 
+    L_other = L_other -> back;
   }
 }
 
 /*
-   The Layer L splits all other layers.
+ *  The Layer L splits all other layers.
  */
 
 void CreateClipRectsOther(struct Layer * L)
@@ -179,10 +178,11 @@ void LayerSplitsLayer(struct Layer * L_active,
     struct ClipRect * CR = L_passive -> ClipRect;
 
     /* 
-      Examine all cliprects of the behind-layer whether they are
-      overlapped somehow by the new layer. Only treat those
-      layers that were not previously hidden by some other layer. 
-    */
+     * Examine all cliprects of the behind-layer whether they are
+     * overlapped somehow by the new layer. Only treat those
+     * layers that were not previously hidden by some other layer. 
+     */
+     
     while (NULL != CR)
     {
       if (x0 > CR->bounds.MaxX || 
@@ -319,14 +319,10 @@ void ClipRectSplitsLayer(struct ClipRect * CR_active, struct Layer * L_passive)
     */
     while (NULL != CR)
     {
-      if (x0 > CR->bounds.MaxX || 
-          x1 < CR->bounds.MinX ||
-          y0 > CR->bounds.MaxY ||
-          y1 < CR->bounds.MinY   )
-      {
-        /* skip this cliprect */
-      }
-      else
+      if (!(x0 > CR->bounds.MaxX || 
+            x1 < CR->bounds.MinX ||
+            y0 > CR->bounds.MaxY ||
+            y1 < CR->bounds.MinY   ))
       {
         /* hm, it can also only be partially overlapped */
         /* 
@@ -370,6 +366,8 @@ void ClipRectSplitsLayer(struct ClipRect * CR_active, struct Layer * L_passive)
               y1 <  CR->bounds.MaxY )
             OverlapIndex |= 1;
         }
+
+        L_passive->Flags |= LAYERUPDATING;
 
         /* 
            Let's call the routine that treats that particular case 

@@ -122,7 +122,7 @@ struct ClipRect * Case_0(struct Rectangle * R,
   {
     /*
       All data are already backed up. I only need to set the lobs-pointer
-      to the new layer, if this one is farther in th front than the
+      to the new layer, if this one is farther in the front than the
       previous layer that was hiding me. This is done for all types
       of layers.
     */
@@ -198,8 +198,14 @@ struct ClipRect * Case_0(struct Rectangle * R,
             NULL
           );
       } /* if (not a simple layer) */
-      
-      CR -> lobs = newlayer;
+    
+      /* 
+       * Only update the lobs entry in the CR if the lobs pointer is NULL
+       * or if the newlayer is further in the front than the previous layer
+       * hiding this cliprect.
+       */
+      if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+        CR -> lobs = newlayer;
     }
   } /* else */
   return CR;
@@ -363,7 +369,13 @@ struct ClipRect * Case_1(struct Rectangle * R,
               0xff,                   /* Mask */
               NULL);
         } /* if (not a simple layer) */
-        CR -> lobs     = newlayer;
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
 
       } /* if */
     }
@@ -540,7 +552,13 @@ struct ClipRect * Case_2(struct Rectangle * R,
              );
         } /* if (not a simple layer) */
         
-        CR->lobs     = newlayer;
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
       }
     }
     /* leave this code down here, otherwise the DEFs will go wrong */
@@ -721,7 +739,15 @@ struct ClipRect * Case_3(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -897,7 +923,15 @@ struct ClipRect * Case_4(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer)*/
-        CR -> lobs = newlayer;
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
+
       }
     }
 
@@ -1078,7 +1112,15 @@ struct ClipRect * Case_5(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -1259,7 +1301,15 @@ struct ClipRect * Case_6(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -1451,7 +1501,16 @@ struct ClipRect * Case_7(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
+
       }
     }
 
@@ -1624,7 +1683,16 @@ struct ClipRect * Case_8(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
+
       }
     }
 
@@ -1801,7 +1869,15 @@ struct ClipRect * Case_9(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer)*/ 
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -1983,7 +2059,15 @@ struct ClipRect * Case_10(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -2175,7 +2259,15 @@ struct ClipRect * Case_11(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -2356,7 +2448,15 @@ struct ClipRect * Case_12(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -2552,7 +2652,15 @@ struct ClipRect * Case_13(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer; 
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -2746,7 +2854,15 @@ struct ClipRect * Case_14(struct Rectangle * R,
               NULL
             );
         } /* if not a simple layer */
-        CR -> lobs = newlayer;
+
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }
     }
 
@@ -2964,7 +3080,14 @@ struct ClipRect * Case_15(struct Rectangle * R,
               NULL
             );
         } /* if (not a simple layer) */
-        CR -> lobs = newlayer;
+        /* 
+         * Only update the lobs entry in the CR if the lobs pointer is NULL
+         * or if the newlayer is further in the front than the previous layer
+         * hiding this cliprect.
+         */
+        if (NULL == CR->lobs || CR->lobs->priority < newlayer->priority )   
+          CR -> lobs = newlayer;
+
       }      
     }
 

@@ -432,9 +432,10 @@
     }
    
     /* That's it folks! */
+    CleanupLayers(LI);
 
     /* Now everybody else may play with the layers again */
-    UnlockLayers(l->LayerInfo);
+    UnlockLayers(LI);
     return TRUE;
   } 
   else /* not enough memory */

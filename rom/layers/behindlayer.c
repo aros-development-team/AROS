@@ -93,13 +93,17 @@
   SetLayerPriorities(LI);
 
   if (LI->top_layer == L)
+  {
     CreateClipRectsTop(LI, FALSE);
+  }
   else
-    CreateClipRectsSelf(L, FALSE);    
+  {
+    CreateClipRectsSelf(L, FALSE);
+  }
 
   /*
-      Take the layer out of the list and put it in at the approriate
-      place in the new layer.
+   *  Take the layer out of the list and put it in at the approriate
+   *  place in the new layer.
    */
 
   if (LI->top_layer == L)
@@ -290,7 +294,7 @@
                /* the part to become visible belongs to a simple layer,
                   I add that part to the damage list and clear the part. */
                OrRectRegion(_L->DamageList, &CR->bounds);
-               L->Flags |= LAYERREFRESH;
+               _L->Flags |= LAYERREFRESH;
                BltBitMap(_L->rp->BitMap,
                          0,
                          0,
@@ -342,6 +346,8 @@
     } /* if */
     CR = CR -> Next;
   } /* while */
+
+  CleanupLayers(LI);
 
   UnlockLayers(LI);
 

@@ -491,6 +491,94 @@ void FreeLayerResources(struct Layer_Info * li,
 /*                              MISCELLANEOUS                              */
 /***************************************************************************/
 
+/*
+ * Makes sure that the top most layer only consists of one cliprect 
+ */
 
+void CleanTopLayer(struct Layer_Info * LI)
+{
+  struct Layer * L_top = LI->top_layer;
+  struct ClipRect * CR;
+  if (NULL == L_top)
+    return;
+  
+  L_top->Flags &= ~LAYERUPDATING;
+  
+  CR = L_top->ClipRect;
+  if (NULL != CR->Next)
+  {
+    struct ClipRect * _CR = CR->Next;
+    /* the topmost layer should only have one ClipRect */
+    CR->bounds = L_top->bounds;
+    CR->Next = NULL;
+    
+    CR = _CR;
+    while (CR != NULL)
+    {
+      _CR = CR->Next;
+      _FreeClipRect(CR, L_top);
+      
+      CR = _CR;
+    }
+  }
+}
+
+
+void CleanupLayers(struct Layer_Info * LI)
+{
+  struct Layer * L;
+  if (NULL == LI->top_layer)
+    return;
+    
+  CleanTopLayer(LI);
+  
+  L = LI->top_layer->back;
+  
+  while (L != NULL)
+  {
+    /* Was this layer affected at all? */
+    if (0 != (L->Flags & LAYERUPDATING))
+    {    
+      BOOL is_hidden = FALSE;
+      struct ClipRect * CR = L->ClipRect;
+ 
+      /* Clear the updating flag */
+      L->Flags &= ~LAYERUPDATING;
+    
+      while (NULL != CR)
+      {
+        if (NULL != CR->lobs)
+        {
+          is_hidden = TRUE;
+          break;
+        }
+        CR = CR->Next;
+      }
+    
+      if (FALSE == is_hidden)
+      {
+        struct ClipRect * _CR;
+        CR = L->ClipRect;
+      
+        _CR = CR->Next;
+
+        CR->bounds = L->bounds;
+        CR->Next   = NULL;
+      
+        CR = _CR;
+        while (NULL != CR)
+        {
+          _CR = CR->Next;
+        
+          _FreeClipRect(CR, L);
+         
+          CR = _CR;
+        }
+      
+      }
+    }
+    L = L->back;
+  }
+}
 
 /*-----------------------------------END-----------------------------------*/

@@ -197,6 +197,8 @@
   if (NULL != L->back)
     CreateClipRectsSelf(L->back, FALSE);
 
+  CleanupLayers(LI);
+
   /* Ok, I am done now. */
   UnlockLayers(LI);
 

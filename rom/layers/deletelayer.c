@@ -386,6 +386,8 @@
 
   FreeMem(LD, sizeof(struct Layer));
 
+  CleanupLayers(LI);
+
   /* ok, I'm done */
   UnlockLayers(LI);
   return TRUE;
