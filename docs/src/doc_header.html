@@ -22,107 +22,86 @@ since 12. October 1999.
 <H2>NEWS</H2>
 <TABLE>
 
+<TR><TD VALIGN=TOP>03.02.2001</TD><TD>
+Georg Steger added the country specific files for all countries
+which are supported by the AmigaOS and some more languages.
+In the last few days, he made also many demo programs from
+Aminet, Fish Disks and other sources work much better (or
+at all :-).<P>
+
+Stefan Berger finished GetLanguageSelection() in lowlevel.library.<P>
+
+Johan Alfredsson improved realtime.library and Swedish locale
+files.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>31.01.2001</TD><TD>
+Georg Steger improved CreateNewProc() and implemented the
+"open options" for console windows (AUTO/INACTIVE/NOSIZE/etc).
+He also fixed a bug in the LD-Demon and some bugs related
+to DefaultPubScreen handling. There is now C:SetDefaultFont
+with which you can set the default font for the system (AROS
+uses a much nicer font now than the default Topaz/8). The code
+in Intuition has been improved to use this font. Also, AROS
+will not open the boot shell anymore if the Startup-Sequence
+doesn't print anything. SetLocale now opens the specified prefs
+file plus some a lot of bugfixes in locale.library. Lastly,
+he added a lot of font-sensitive code in various places.<P>
+
+Notification is implemented but there is no filesystem
+which supports it, yet. I sure hope that we get the SFS
+sources, soon !<P>
+
+Kjetil Svalastog Matheussen finished the port for PlayMF
+(compiles now without error) and fixed a couple of typos
+on the MIDI include files. Next, he ported Fireworks,
+a tool by Christian Buchner that displays the MIDI data
+processed by camd nicely.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>27.01.2001</TD><TD>
+Georg Steger improved the default stack size handling and
+fixed a couple of refresh related bugs in Intuition.
+He made user specified fonts work correctly with ASL
+requesters, various gadgets and MultiView. He also
+fixed Ctrl-C/D/E/F breaking in CON: windows.<P>
+
+Stefan Berger added code which allows to scale a layer (ie.
+zoom into it :-). Check the winshape and roundshape demo
+(use +/- to zoom it; it's slow, though).<P>
+
+Johan Alfredsson finished realtime.library and committed
+a demo for the library to test it.<P>
+
+Kjetil Svalastog Matheussen committed a MIDI player (PlayMF
+from Aminet) which allows to test the camd.library. He
+also fixed some bugs in realtime.library.<P>
+
+Joerg Dietrich backported MultiView to the Amiga and began
+working on V44 datatypes and improved his picture.datatype.
+</TD></TR>
+
+<TR><TD VALIGN=TOP>21.01.2001</TD><TD>
+Kjetil Svalastog Matheussen fixed a couple of bugs in the
+new camd.library and wrote an example MIDI driver for it.
+Johan Alfredsson began work on the last datatypes.library function
+(LaunchToolA()).<P>
+
+Georg Steger fixed a really very old bug in the task switching
+core of AROS (FPU context wasn't correctly saved).
+</TD></TR>
+
+<TR><TD VALIGN=TOP>17.01.2001</TD><TD>
+Johan Alfredsson completed C:Run and Kjetil Svalastog Matheussen
+commited a first version of a camd.library (MIDI) and fixed
+a few bugs in realtime.library.
+</TD></TR>
+
 <TR><TD VALIGN=TOP>15.01.2001</TD><TD>
 Georg Steger fixed a bug (moving&sizing a window at the same time)
 in the new layers.library and improved font copying by the build
 process. Johan Alfredsson improved C:Run. Henning Kiel fixed a
 couple of bugs in his games. 
-</TD></TR>
-
-<TR><TD VALIGN=TOP>12.01.2001</TD><TD>
-Adam Chodorowski made C:Ping compile (it would work if there
-were a TCP/IP stack :-). Also, the About window of LoadWB shows
-the AROS license now. Georg Steger improved the Graphics.HIDD,
-font handling, DOpus and DataTypes. He and Johan Alfredsson fixed the
-RAW: bug in console.device.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>09.01.2001</TD><TD>
-Aaron Digulla fixed a bug which broke the nightly builds and Michael
-Schulz began to commit the new AROS i386/Native core. AROS uses now
-GRUB to boot. Georg Steger began to implement the ASL Font requester.
-He and Johan Alfredsson also fixed a few compiler warnings.
-To test the new font requester, Georg committed some PD TrueType
-fonts.
-Peter Hans van den Muijzenberg improved the ideas for a MMU.HIDD.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>06.01.2001</TD><TD>
-Johan Alfredsson improved C:Info and FPutC() and fixed a bug
-in DOS. Flavio Stanchina improved INSTALL.amiga and 
-Adam Chodorowski worked a bit in the new socket.library.
-He committed the network includes from OpenBSD 2.7, so we
-at least have an interface definition for a 100% compatible
-TCP/IP stack. Only the stack itself is still missing :-)
-Iain Templeton made AROS compile on FreeBSD again, 
-Johan Alfredsson completed C:NewShell, Georg Steger fixed
-a bug in MultiView, the text.datatype and Intuition.
-Lars Bischoff added support for hi- and true-color screens
-in DisplayBeep().<P>
-
-Adam Chodorowski committed some tools from the GPL:ed AmiTCP-3.0b
-sources as found on AmiNET and used these to fix bugs in the
-new network includes. bsdsocket.library compiles now without
-errors but still doesn't do anything useful. Georg Steger made
-the new layers.library a bit more compatible with the AmigaOS
-and Henning Kiel fixed a bug with DisplayBeep().
-</TD></TR>
-
-<TR><TD VALIGN=TOP>03.01.2001</TD><TD>
-Adam Chodorowski ported the new V44+ prefs header files to AROS.
-Georg Steger and Flavio Stanchina fixed a couple of bugs.
-Johan Alfredsson committed C:Eval and Henning Kiel added the
-neccessary code to compile it. They also fixed some more bugs
-in the docs and DOS.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>01.01.2001</TD><TD>
-Happy New Year, everyone ! :-)<P>
-
-Adam Chodorowski began to hunt a bug in RAW: and committed a skeleton
-for a skeleton for bsdsocket.library. The includes are there but
-all functions are empty. Then, he improved his LoadWB command. Henning Kiel
-helped him and then fixed all the lint in the docs (email addresses, etc).
-Georg Steger began to improve the RAW mode of the console. Johan Alfredsson
-fixed a bug in the c.lib and C:Dir.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>28.12.2000</TD><TD>
-Georg Steger worked a bit more in the backport of reqtools to AmigaOS.
-Johan Alfredsson implemented DisplayError() and Stefan Berger improved
-his layers.library. DisplayBeep() works now and Henning Kiel committed
-a small utility (C:Beep) to use it from the shell. Adam Chodorowski
-continued his work on the workbench.library.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>26.12.2000</TD><TD>
-Johan Alfredsson rewrote C:List (everything except the ALL option works
-now). WiMP can now show some info about windows and screens, thanks
-to Henning Kiel. Flavio Stanchina continues in his quest to squish
-bugs in header and the build process and Stefan Berger applied some
-refactoring to his layers.library. Georg Steger did the same with
-the serial, parallel and UnixIO HIDDs. Stefan Berger supported this
-by adding a couple of skeletons for the hardware interfaces of the
-HIDDs.
-</TD></TR>
-
-<TR><TD VALIGN=TOP>24.12.2000</TD><TD>
-Flavio Stanchina fixed bugs in the build process and some header files.
-Johan Alfredsson finished the C:Info command. Georg Steger improved
-the shape window demo (you can now switch the shape on and off) and
-fixed a bug in AmigaTerm. Stefan Berger found a couple of patents
-which seem to apply on child windows so he removed the child window
-code again. If someone knows that this is free technology, we
-would be grateful for the information !
-</TD></TR>
-
-<TR><TD VALIGN=TOP>22.12.2000</TD><TD>
-Since I'll go to holidays now, I'd like to thank everyone for
-their open and also not-so-open support which makes all this
-possible. :-) Thanks a lot, Merry Christmas and a Happy New
-Year !<P>
-
-Aaron "Optimizer" Digulla
 </TD></TR>
 
 <TR><TD><A HREF="oldnews.html">Older News</A></TD></TR>
