@@ -68,6 +68,7 @@
     ULONG level;
     UBYTE a, b, c, t;
     LONG error;
+#undef ERROR
 #define ERROR(a) { error=(a); goto end; }
 
     ma.next=ma.prev=NULL;

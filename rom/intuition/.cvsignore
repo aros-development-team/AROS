@@ -1,7 +1,7 @@
 functions.[ch]
 intuition_functable.c
 intuition_endtag.c
-makefile
 libdefs.h
+makefile
 mmakefile
 *.err

@@ -6,6 +6,7 @@
     Lang: english
 */
 #include <exec/memory.h>
+#include <exec/lists.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/filesystem.h>
@@ -14,11 +15,6 @@
 #include <utility/tagitem.h>
 #include <proto/utility.h>
 #include "dos_intern.h"
-
-#define NEWLIST(l)                          \
-((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,                         \
- (l)->lh_TailPred=(struct Node *)(l))
 
 static void KillCurrentProcess(void);
 struct Process *AddProcess(struct Process *process, STRPTR argPtr,

@@ -128,6 +128,7 @@
 
     /* Error recovery. C has no exceptions. This is a simple replacement. */
     LONG error;
+#undef ERROR
 #define ERROR(a) { error=a; goto end; }
 
 /* Template options */

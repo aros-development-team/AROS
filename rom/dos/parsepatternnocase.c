@@ -59,6 +59,7 @@
     LONG iswild=0;
 
     LONG *result=&((struct Process *)FindTask(NULL))->pr_Result2;
+#undef ERROR
 #define ERROR(a) { *result=a; return -1; }
     stack=end=Dest+DestLength;
 #define PUT(a) { if(Dest>=stack) ERROR(ERROR_BUFFER_OVERFLOW); *Dest++=(a); }
