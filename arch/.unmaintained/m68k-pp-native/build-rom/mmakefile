@@ -24,6 +24,7 @@ LIBS = -L$(LIBDIR)    \
 	-larossupport \
 	-lbattclock   \
 	-lboot        \
+	-lcon         \
 	-lconsole     \
 	-ldos         \
 	-lexpansion   \
@@ -59,7 +60,7 @@ entrycode.o : entrycode.s
 	@$(ECHO) Compiling $^...
 	@$(CC) -c $^ -o $@ $(CFLAGS)
 
-aros_rom : entrycode.o gfx.o reset.o
+aros_rom : entrycode.o reset.o
 	@$(ECHO) Linking $^...
 	$(CC) $^ $(OBJS) -o $@ -Wl,-T,linkerscript $(LIBS) -nostdlib
 
