@@ -2,8 +2,8 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: ANSI C function ftruncate()
-    Lang: english
+    Desc: POSIX function ftruncate()
+    Lang: English
 */
 
 #include <dos/dos.h>
