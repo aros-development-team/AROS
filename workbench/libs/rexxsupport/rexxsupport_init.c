@@ -22,9 +22,13 @@ int errno;
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     NewList(&RSBI(LIBBASE)->openports);
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

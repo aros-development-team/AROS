@@ -34,9 +34,11 @@ struct GlyphEngine *OpenEngine(void)
 
 static AROS_SET_LIBFUNC(getbase, struct Library *, FTBase)
 {
+    AROS_SET_LIBFUNC_INIT;
     mylib = FTBase;
     
     return TRUE;
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(getbase, 0);

@@ -50,6 +50,8 @@ static struct EmulLibEntry    HookEntry_Gate=
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /* This function is single-threaded by exec by calling Forbid. */
 
     EasyHook(stophook,             StopFunc           );
@@ -63,6 +65,8 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     EasyHook(exitcontexthook,      ExitContextFunc    );
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

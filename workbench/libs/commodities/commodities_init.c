@@ -35,6 +35,8 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase);
 
 AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     BOOL ok = TRUE;
     
     /*
@@ -76,6 +78,8 @@ AROS_SET_LIBFUNC(Init, struct CommoditiesBase, CxBase)
     D(bug("commodities_open: Library correctly opened.\n"));
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
@@ -144,9 +148,13 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase)
 
 AROS_SET_LIBFUNC(Expunge, struct CommoditiesBase, CxBase)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     ShutDownCx(CxBase);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

@@ -24,16 +24,18 @@
 
 /****************************************************************************************/
 
-AROS_UFH3(int, CleanMem,
-    AROS_UFHA(struct MemHandlerData *, mhdata, A0),
-    AROS_UFHA(LIBBASETYPEPTR, LIBBASE, A1),
-    AROS_UFHA(struct ExecBase *, SysBase, A6)
+AROS_UFP3(int, CleanMem,
+    AROS_UFPA(struct MemHandlerData *, mhdata, A0),
+    AROS_UFPA(LIBBASETYPEPTR, LIBBASE, A1),
+    AROS_UFPA(struct ExecBase *, SysBase, A6)
 );
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /* This function is single-threaded by exec by calling Forbid. */
     D(bug("Inside initfunc\n"));
 
@@ -54,6 +56,8 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("diskfont.library initialized succesfully\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
@@ -61,6 +65,8 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	Never break the Forbid() or strange things might happen.
@@ -74,6 +80,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     D(bug("diskfont.library expunged\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
@@ -84,6 +92,8 @@ AROS_UFH3(int, CleanMem,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
+    AROS_USERFUNC_INIT;
+    
     struct DiskFontHeader *dfh, *dfh2;
 
     D(bug("Inside CleanMem\n"));
@@ -112,6 +122,8 @@ AROS_UFH3(int, CleanMem,
     D(bug("CleanMem Finished\n"));
     
     return MEM_ALL_DONE;
+    
+    AROS_USERFUNC_EXIT;
 }
 
 /****************************************************************************************/

@@ -25,16 +25,24 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
-    D(bug("Inside Init func of ecurity.library\n"));
+    AROS_SET_LIBFUNC_INIT;
+    
+    D(bug("Inside Init func of security.library\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

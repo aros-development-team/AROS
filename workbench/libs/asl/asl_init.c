@@ -173,6 +173,8 @@ VOID InitReqInfo(struct AslBase_intern *);
 
 AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("Inside InitBase of asl.library\n"));
 
     D(bug("SysBase: %p lh_SysBase %p\n", SysBase, LIBBASE->lh.lh_SysBase));
@@ -234,12 +236,16 @@ AROS_SET_LIBFUNC(InitBase, LIBBASETYPE, LIBBASE)
         return FALSE;
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /*****************************************************************************************/
 
 AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     if (LIBBASE->aslpropclass)
     {
 	FreeClass(LIBBASE->aslpropclass);
@@ -301,6 +307,8 @@ AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
     }
 	
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(InitBase, 0);

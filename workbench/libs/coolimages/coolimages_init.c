@@ -22,6 +22,8 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("Inside Init func of coolimages.library\n"));
 
     if (!cool_buttonclass)
@@ -41,18 +43,24 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     }
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 /****************************************************************************************/
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("Inside Expunge func of coolimages.library\n"));
 
     CleanupCoolImageClass();
     CleanupCoolButtonClass();
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

@@ -23,6 +23,8 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /* This function is single-threaded by exec by calling Forbid. */
 
     D(bug("Opening implementation library (NVDisk)\n"));
@@ -38,11 +40,15 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
     D(bug("Nonvolatile library successfully inialized\n"));
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     /*
 	This function is single-threaded by exec by calling Forbid.
 	If you break the Forbid() another task may enter this function
@@ -52,6 +58,8 @@ AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
     CloseLibrary(nvBase->nv_ImplementationLib);
 
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);

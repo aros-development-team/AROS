@@ -25,9 +25,13 @@
 
 AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     D(bug("Inside Init func of camd.library\n"));
 
     return InitCamd((struct CamdBase *)LIBBASE);
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 
@@ -36,9 +40,13 @@ AROS_SET_LIBFUNC(Init, LIBBASETYPE, LIBBASE)
 
 AROS_SET_LIBFUNC(Expunge, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT;
+    
     UninitCamd(LIBBASE);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT;
 }
 
 ADD2INITLIB(Init, 0);
