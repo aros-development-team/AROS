@@ -446,7 +446,7 @@ LONG interact(void)
 	    PutStr
 	    (
 	    	"AROS - The Amiga® Research Operating System\n"
-		"Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
+		"Copyright © 1995-2003, The AROS Development Team. All rights reserved.\n"
 		"AROS is licensed under the terms of the AROS Public License (APL),\n"
 		"a copy of which you should have received with this distribution.\n"
 		"Visit http://www.aros.org/ for more information.\n"
