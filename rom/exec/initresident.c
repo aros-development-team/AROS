@@ -12,6 +12,17 @@
 #include <exec/devices.h>
 #include <proto/exec.h>
 
+#include "exec_debug.h"
+#ifndef DEBUG_InitResident
+#   define DEBUG_InitResident 0
+#endif
+#if DEBUG_InitResident
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
+#undef kprintf
+
 /*****************************************************************************
 
     NAME */
@@ -53,6 +64,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    D(bug("InitResident $%lx (\"%s\")\n", resident, resident->rt_Name));
+
     /* Check for validity */
     if(resident->rt_MatchWord != RTC_MATCHWORD ||
        resident->rt_MatchTag != resident)
@@ -71,6 +84,11 @@
 	};
 	struct init *init = (struct init *)resident->rt_Init;
 	struct Library *library;
+
+	/*
+	    Make the library. Don't call the Init routine yet, but delay
+	    that until we can copy stuff from the tag to the libbase.
+	*/
 	library = MakeLibrary(init->vectors, init->structure,
 			      NULL, init->dSize, segList);
 
@@ -80,6 +98,9 @@
 		Copy over the interesting stuff from the ROMtag, and set the
 		library state to indicate that this lib has changed and
 		should be checksummed at the next opportunity.
+
+		Don't copy the priority, because a tag's priority doesn't
+		mean the same as a lib's priority.
 	    */
 	    library->lib_Node.ln_Type = resident->rt_Type;
 	    library->lib_Node.ln_Name = resident->rt_Name;
