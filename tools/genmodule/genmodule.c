@@ -10,6 +10,11 @@
  */
 struct functionlist *funclist = NULL;
 
+/* In forcelist a list of basenames is present that need to be present in the
+ * static link library so that certain libraries are opened by a program
+ */
+struct forcelist *forcelist = NULL;
+
 /* global variables that store filename and paths derived from argv */
 char *conffile, *gendir, *genincdir, *reffile;
 

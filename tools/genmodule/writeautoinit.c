@@ -26,5 +26,27 @@ void writeautoinit(void)
 	    "\n"
 	    "ADD2LIBS(\"%s.library\",%u, LIBSET_USER_PRI, %s*, %s, NULL, NULL);\n",
 	    modulename, modulename, majorversion, libbasetypeextern, libbase);
+    if (forcelist!=NULL)
+    {
+	struct forcelist * forcelistit;
+	
+	fprintf(out, "\n");
+	for (forcelistit = forcelist;
+	     forcelistit!=NULL;
+	     forcelistit = forcelistit->next
+	    )
+	{
+	    fprintf(out, "extern struct Library *%s;\n", forcelistit->basename);
+	}
+	fprintf(out, "\nvoid __%s_forcelibs(void)\n{\n", modulename);
+	for (forcelistit = forcelist;
+	     forcelistit!=NULL;
+	     forcelistit = forcelistit->next
+	    )
+	{
+	    fprintf(out, "    %s = NULL;\n", forcelistit->basename);
+	}
+	fprintf(out, "}\n");
+    }
     fclose(out);
 }
