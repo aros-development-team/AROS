@@ -20,26 +20,18 @@
 		    which gets two arguments
 */
 
-#define NUM_REGS    7
+#define NUM_REGS    3
 #define FIRST_ARG   ((NUM_REGS+2)*4)
 #define SECOND_ARG  (FIRST_ARG+4)
 
 #define PUSH			      \
 	pushl %eax		    ; \
-	pushl %ebx		    ; \
 	pushl %ecx		    ; \
-	pushl %edx		    ; \
-	pushl %esi		    ; \
-	pushl %edi		    ; \
-	pushl %ebp
+	pushl %edx		    ;
 
 #define POP			      \
-	popl  %ebp		    ; \
-	popl  %edi		    ; \
-	popl  %esi		    ; \
 	popl  %edx		    ; \
 	popl  %ecx		    ; \
-	popl  %ebx		    ; \
 	popl  %eax
 
 #define STUB_ARG0(name)               \
@@ -104,8 +96,8 @@ cname:				    ; \
 #ifdef  UseExecstubs
 	STUB1(AROS_SLIB_ENTRY(Forbid,Exec),AROS_CSYMNAME(_Exec_Forbid))
 	STUB1(AROS_SLIB_ENTRY(Permit,Exec),AROS_CSYMNAME(_Exec_Permit))
-/*	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Exec_Disable))	*/
-/*	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Exec_Enable))		*/
+	STUB1(AROS_SLIB_ENTRY(Disable,Exec),AROS_CSYMNAME(_Exec_Disable))	
+	STUB1(AROS_SLIB_ENTRY(Enable,Exec),AROS_CSYMNAME(_Exec_Enable))		
 
 	STUB2(AROS_SLIB_ENTRY(ObtainSemaphore,Exec),AROS_CSYMNAME(_Exec_ObtainSemaphore))
 	STUB2(AROS_SLIB_ENTRY(ReleaseSemaphore,Exec),AROS_CSYMNAME(_Exec_ReleaseSemaphore))
