@@ -114,11 +114,6 @@ LONG AROS_SLIB_ENTRY(RunProcess,Dos)
 
     oldresult=me->pr_Result2;
 
-    if(me->pr_COS)
-	Flush(me->pr_COS);
-    if(me->pr_CES)
-	Flush(me->pr_CES);
-
     me->pr_Result2=oldresult;
 
     FreeMem(stack,stacksize);
