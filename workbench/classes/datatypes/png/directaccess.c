@@ -42,6 +42,13 @@ struct PNGHandle
     APTR    	    pal;
 };
 
+struct MyMemHandle
+{
+    UBYTE *address;
+    ULONG  pos;
+    ULONG  size;
+};
+
 /***************************************************************************************************/
 
 png_voidp my_malloc_fn(png_structp png_ptr, png_size_t size);
@@ -89,16 +96,31 @@ AROS_LH1(LONG, PNG_CheckSig,
 
 /***************************************************************************************************/
 
-AROS_LH4(APTR, PNG_LoadImageFH,
-    AROS_LHA(BPTR, fh, A0),
-    AROS_LHA(STRPTR *, chunkstoread, A1),
-    AROS_LHA(APTR *,  chunkstore, A2),
-    AROS_LHA(BOOL, makeARGB, D0),
-    struct Library *, PNGBase, 7, PNG)
+#define HANDLETYPE_FILE 0
+#define HANDLETYPE_MEM  1
+
+/**************************************************************************************************/
+
+void my_readmem_fn(png_structp png_ptr, png_bytep data, png_size_t length)
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+    struct MyMemHandle *mh = png_get_io_ptr(png_ptr);
     
+    if (mh->pos + length > mh->size)
+    {
+    	png_error(png_ptr, "Read mem error!");
+    }
+    else
+    {
+    	memcpy(data, mh->address + mh->pos, length);
+	mh->pos += length;
+    }  
+}
+
+/***************************************************************************************************/
+
+static APTR PNG_LoadImageInternal(APTR handle, STRPTR *chunkstoread, APTR *chunkstore,
+    	    	    	    	  BOOL makeARGB, LONG handletype)
+{
     struct PNGStuff   png;
     struct PNGHandle *pnghandle = NULL;
     APTR    	      buffer = NULL;
@@ -106,10 +128,38 @@ AROS_LH4(APTR, PNG_LoadImageFH,
     APTR    	      retval = 0;
     BOOL    	      ok = TRUE;
     
-    if (!fh) return NULL;
+    if (!handle) return NULL;
     
-    if (Read(fh, header, sizeof(header)) != sizeof(header)) ok = FALSE;
-
+    D(bug("PNG_LoadImageInternal: Handle type %d\n", handletype));
+    
+    if (handletype == HANDLETYPE_FILE)
+    {
+    	if (Read((BPTR)handle, header, sizeof(header)) != sizeof(header)) ok = FALSE;
+    }
+    else if (handletype == HANDLETYPE_MEM)
+    {
+    	struct MyMemHandle *mh = (struct MyMemHandle *)handle;
+	
+	if (mh->size < 8)
+	{
+    	    D(bug("PNG_LoadImageInternal: Memory file to small: %d\n", mh->size));
+	    ok = FALSE;
+	}
+	else
+	{
+	    memcpy(header, mh->address, 8);
+	    mh->pos = 8;
+	}
+    }
+    else
+    {
+    	ok = FALSE;
+    }
+    
+    D(bug("PNG_LoadImageInternal: Header %02x%02x%02x%02x%02x%02x%02x%02x\n",
+    	  header[0], header[1], header[2], header[3],
+	  header[4], header[5], header[6], header[7]));
+	  
     memset(&png, 0, sizeof(png));
     
     if (ok)
@@ -119,6 +169,7 @@ AROS_LH4(APTR, PNG_LoadImageFH,
     
     if (ok)
     {
+    	D(bug("PNG_LoadImageInternal: signature okay\n"));
     	memset(&png, 0, sizeof(png));
 	    
 	png.png_ptr = png_create_read_struct_2(PNG_LIBPNG_VER_STRING,
@@ -147,8 +198,11 @@ AROS_LH4(APTR, PNG_LoadImageFH,
     }
     
     if (ok)
-    {
-    	png_set_read_fn(png.png_ptr, fh, my_read_fn);
+    {   	
+    	png_set_read_fn(png.png_ptr,
+	    	    	handle,
+			(handletype == HANDLETYPE_FILE) ? my_read_fn : my_readmem_fn);
+			
     	png_set_sig_bytes(png.png_ptr, sizeof(header));
 	
     }
@@ -407,6 +461,22 @@ AROS_LH4(APTR, PNG_LoadImageFH,
     }
 	    
     return retval;
+
+}
+
+/***************************************************************************************************/
+
+AROS_LH4(APTR, PNG_LoadImageFH,
+    AROS_LHA(BPTR, fh, A0),
+    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(APTR *,  chunkstore, A2),
+    AROS_LHA(BOOL, makeARGB, D0),
+    struct Library *, PNGBase, 7, PNG)
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+        
+    return PNG_LoadImageInternal(fh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
     
     AROS_LIBFUNC_EXIT
 }
@@ -423,14 +493,43 @@ AROS_LH4(APTR, PNG_LoadImage,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
     
-    BPTR    	      fh;
-    APTR    	      retval = 0;
+    BPTR fh;
+    APTR retval = 0;
     
     if ((fh = Open(name, MODE_OLDFILE)))
     {
-    	retval = PNG_LoadImageFH(fh, chunkstoread, chunkstore, makeARGB);
+    	retval = PNG_LoadImageInternal(fh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_FILE);
 	Close(fh);
     }
+   
+    return retval;
+    
+    AROS_LIBFUNC_EXIT
+}
+
+/***************************************************************************************************/
+
+AROS_LH5(APTR, PNG_LoadImageMEM,
+    AROS_LHA(APTR, mem, A0),
+    AROS_LHA(ULONG, memsize, D0),
+    AROS_LHA(STRPTR *, chunkstoread, A1),
+    AROS_LHA(APTR *,  chunkstore, A2),
+    AROS_LHA(BOOL, makeARGB, D1),
+    struct Library *, PNGBase, 9, PNG)
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
+    
+    struct MyMemHandle mh;    
+    APTR retval = 0;
+    
+    mh.address = mem;
+    mh.size    = memsize;
+    mh.pos     = 0;
+
+    D(bug("PNG_LoadImageMEM: address 0x%x size %d\n", mem, memsize));
+        
+    retval = PNG_LoadImageInternal(&mh, chunkstoread, chunkstore, makeARGB, HANDLETYPE_MEM);
    
     return retval;
     
@@ -445,7 +544,7 @@ AROS_LH5(void, PNG_GetImageInfo,
     AROS_LHA(LONG *, heightptr, A2),
     AROS_LHA(LONG *, depthptr, A3),
     AROS_LHA(LONG *, typeptr, A4),
-    struct Library *, PNGBase, 9, PNG)
+    struct Library *, PNGBase, 10, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -468,7 +567,7 @@ AROS_LH3(void, PNG_GetImageData,
     AROS_LHA(APTR, pnghandle, A0),
     AROS_LHA(APTR *, gfxdataptr, A1),
     AROS_LHA(APTR *, paldataptr, A2),
-    struct Library *, PNGBase, 10, PNG)
+    struct Library *, PNGBase, 11, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -487,7 +586,7 @@ AROS_LH3(void, PNG_GetImageData,
 
 AROS_LH1(void, PNG_FreeImage,
     AROS_LHA(APTR, pnghandle, A0),
-    struct Library *, PNGBase, 11, PNG)
+    struct Library *, PNGBase, 12, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -501,7 +600,7 @@ AROS_LH1(void, PNG_FreeImage,
 
 AROS_LH1(void, PNG_FreeChunk,
     AROS_LHA(APTR, chunk, A0),
-    struct Library *, PNGBase, 12, PNG)
+    struct Library *, PNGBase, 13, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
@@ -517,7 +616,7 @@ AROS_LH3(void, PNG_GetChunkInfo,
     AROS_LHA(APTR, chunk, A0),
     AROS_LHA(APTR *, dataptr, A1),
     AROS_LHA(ULONG *, sizeptr, A2),
-    struct Library *, PNGBase, 13, PNG)
+    struct Library *, PNGBase, 14, PNG)
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(LIBBASETYPEPTR, LIBBASE)
