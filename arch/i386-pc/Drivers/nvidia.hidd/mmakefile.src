@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	nv_init functable riva_hw
+FILES	:=	nv_init functable riva_hw nvclass onbitmap offbitmap accel
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
