@@ -152,7 +152,7 @@ static const UWORD SupportedCommands[] =
 VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode);
 AROS_UFP3(VOID, kbdSendQueuedEvents,
     AROS_UFPA(struct KeyboardBase *, KBBase, A1),
-    AROS_UFPA(APTR, thisfunc, A1),
+    AROS_UFPA(APTR, thisfunc, A5),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
 static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
@@ -759,7 +759,7 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 
 AROS_UFH3(VOID, kbdSendQueuedEvents,
     AROS_UFHA(struct KeyboardBase *, KBBase, A1),
-    AROS_UFHA(APTR, thisfunc, A1),
+    AROS_UFHA(APTR, thisfunc, A5),
     AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
     /* Broadcast keys */
