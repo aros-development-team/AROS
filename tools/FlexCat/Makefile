@@ -21,7 +21,6 @@ $(FLEXCAT) : flexcat.c
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $(HOST_LDFLAGS) $< -o $@
 	@$(STRIP) $@
-	@ln -sf $@ $(TOOLDIR)/flexcat
 
 copy_sd_files : $(SD_OUT)
 
