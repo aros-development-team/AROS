@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/02/01 21:47:20  bergers
+    Use float instead of LONG when calling these functions now.
+    A define in mathffp_intern.h does the trick.
+
     Revision 1.4  1998/01/23 11:49:00  hkiel
     Made GCC-2.8.0 happy (Changed return type of main() to int, added braces
     to avoid ambiguous ´else´)
@@ -33,7 +37,7 @@
         AROS_LH1(LONG, SPFix,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, fnum, D0),
+        AROS_LHA(float, fnum, D0),
 
 /*  LOCATION */
         struct MathBase *, MathBase, 5, Mathffp)

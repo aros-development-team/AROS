@@ -2,6 +2,10 @@
     (C) 1995-97 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1998/02/01 21:47:20  bergers
+    Use float instead of LONG when calling these functions now.
+    A define in mathffp_intern.h does the trick.
+
     Revision 1.6  1997/09/16 23:00:46  bergers
     Added the missing AROS_LIBFUNC_INITs and EXITs
 
@@ -33,11 +37,11 @@
 
     NAME */
 
-        AROS_LH2(LONG, SPMul,
+        AROS_LH2(float, SPMul,
 
 /*  SYNOPSIS */
-        AROS_LHA(LONG, fnum1, D1),
-        AROS_LHA(LONG, fnum2, D0),
+        AROS_LHA(float, fnum1, D1),
+        AROS_LHA(float, fnum2, D0),
 
 /*  LOCATION */
         struct MathBase *, MathBase, 13, Mathffp)

@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1998/02/01 21:47:20  bergers
+    Use float instead of LONG when calling these functions now.
+    A define in mathffp_intern.h does the trick.
+
     Revision 1.4  1997/07/21 20:56:40  bergers
     *** empty log message ***
 
@@ -20,6 +24,12 @@
 */
 #ifndef __MATHFFP_INTERN_H__
 #define __MATHFFP_INTERN_H__
+
+/* the following line is necessary so that the function headers are
+   created correctly and the functions can be compiled properly */
+
+#define float LONG
+
 
 /* This is a short file that contains a few things every mathffp function
     needs */
