@@ -12,7 +12,10 @@ MACHINE_H	:= $(GENINCDIR)/aros/machine.h
 SIGCORE_H	:= $(GENINCDIR)/sigcore.h
 
 #MM
-setup-linux-m68k : $(INCFILES) machine.i
+setup: $(INCFILES) machine.i
+
+#MM
+includes-linux-m68k : $(INCFILES) machine.i
 
 #MM
 clean::

@@ -4,14 +4,21 @@ include $(TOP)/config/make.cfg
 FILES		:= execstubs sighandler cache
 REPFILES	:= cachecleare cacheclearu
 OBJDIR		:= $(OSGENDIR)/exec
-OS_INCLUDES	:= -I$(OSINCDIR)
 SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
 CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
 AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=
 
 #MM
+exec-linux : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+
+#MM
 exec-linux-m68k : $(foreach f,$(FILES), $(OBJDIR)/$(f).o)
+
+#MM
+setup-exec-m68k :
+	%mkdirs_q $(OBJDIR)
+	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 
 #MM
 setup-exec-linux-m68k :
