@@ -74,6 +74,7 @@
 
 #define INP_UNKNOWN		99
 #define	INP_STRING		100
+#define INP_ECHO_STRING	    	101
 
 struct Task *createConTask(APTR taskparams, struct conbase *conbase);
 void parse_filename(struct conbase *conbase, struct filehandle *fh, struct IOFileSys *iofs, struct NewWindow *nw);

@@ -709,6 +709,10 @@ VOID conTaskEntry(struct conTaskParams *param)
 			    }
 			    break;
 
+    	    	    	case INP_ECHO_STRING:
+			    do_write(conbase, fh, &c, 1);
+			    break;
+			    
 			case INP_STRING:
 			    if (fh->inputsize < INPUTBUFFER_SIZE)
 			    {
