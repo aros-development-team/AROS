@@ -120,12 +120,13 @@ typedef struct
 {
     struct Node node;
 
+    char * maketool;
     char * defaultmakefilename;
     char * top;
     char * defaulttarget;
     char * genmakefilescript;
     char * genmakefiledeps;
-    char * globalvariables;
+    char * globalvarfile;
 
     int readvars;
     int buildmflist;
@@ -347,15 +348,17 @@ Project * initproject (char * name)
 
     if (!defaultprj)
     {
+	prj->maketool = xstrdup ("make");
 	prj->defaultmakefilename = xstrdup ("Makefile");
 	prj->top = getcwd (NULL, 1024);
 	prj->defaulttarget = xstrdup ("all");
 	prj->genmakefilescript = NULL;
 	prj->genmakefiledeps = NULL;
-	prj->globalvariables = NULL;
+	prj->globalvarfile = NULL;
     }
     else
     {
+	prj->maketool = xstrdup (defaultprj->maketool);
 	prj->defaultmakefilename = xstrdup (defaultprj->defaultmakefilename);
 	prj->top = xstrdup (defaultprj->top);
 	prj->defaulttarget = xstrdup (defaultprj->defaulttarget);
@@ -363,8 +366,8 @@ Project * initproject (char * name)
 	    ? xstrdup (defaultprj->genmakefilescript) : NULL;
 	prj->genmakefiledeps = defaultprj->genmakefiledeps
 	    ? xstrdup (defaultprj->genmakefiledeps) : NULL;
-	prj->globalvariables = defaultprj->globalvariables
-	    ? xstrdup (defaultprj->globalvariables) : NULL;
+	prj->globalvarfile = defaultprj->globalvarfile
+	    ? xstrdup (defaultprj->globalvarfile) : NULL;
     }
 
     prj->node.name = xstrdup (name);
@@ -391,14 +394,37 @@ void init (void)
     char line[256];
     FILE * optfh;
 
-    optionfile = malloc (strlen(home)+sizeof("/.mmake.config")+1);
-    sprintf (optionfile, "%s/.mmake.config", home);
-
     NEWLIST(&projects);
     defaultprj = project = initproject ("default");
     ADDTAIL(&projects, project);
 
+    if ((optionfile = getenv ("MMAKE_CONFIG")))
+    {
+	optionfile = strdup (optionfile);
+    }
+    else
+    {
+	optionfile = malloc (strlen(home)+sizeof("/.mmake.config")+1);
+	sprintf (optionfile, "%s/.mmake.config", home);
+    }
+
     optfh = fopen (optionfile, "r");
+
+    if (!optfh)
+    {
+	free (optionfile);
+	optionfile = strdup (".mmake.config");
+
+	optfh = fopen (optionfile, "r");
+    }
+
+    if (!optfh)
+    {
+	free (optionfile);
+	optionfile = strdup ("mmake.config");
+
+	optfh = fopen (optionfile, "r");
+    }
 
     if (!optfh)
     {
@@ -482,9 +508,13 @@ printf ("name=%s\n", name);
 	    {
 		SETSTR(project->genmakefiledeps,args);
 	    }
-	    else if (!strcmp (cmd, "globalvariables"))
+	    else if (!strcmp (cmd, "globalvarfile"))
 	    {
-		SETSTR(project->globalvariables,args);
+		SETSTR(project->globalvarfile,args);
+	    }
+	    else if (!strcmp (cmd, "maketool"))
+	    {
+		SETSTR(project->maketool,args);
 	    }
 	    else
 	    {
@@ -840,14 +870,14 @@ void readvars (Project * prj)
     setvar (prj, "TOP", prj->top);
     setvar (prj, "CURDIR", "");
 
-    if (prj->globalvariables)
+    if (prj->globalvarfile)
     {
 	char * fn;
 	FILE * fh;
 	char line[256];
 	char * name, * value, * ptr;
 
-	fn = substvars (prj, prj->globalvariables);
+	fn = substvars (prj, prj->globalvarfile);
 	fh = fopen (fn, "r");
 
 	if (!fh)
@@ -1028,7 +1058,7 @@ void callmake (Project * prj, const char * tname, const char * mforig)
 
     printf ("Making %s in %s\n", tname, dir);
 
-    if (!execute (prj, "make", "-", "-", buffer))
+    if (!execute (prj, prj->maketool, "-", "-", buffer))
     {
 	fprintf (stderr, "Error while running make in %s\n", dir);
 	exit (10);
