@@ -11,13 +11,13 @@ FILES		:= \
 	cachecleare cacheclearu cachecontrol cachepredma \
 	cachepostdma coldreboot disable dispatch enable \
 	forbid getcc permit setsr stackswap \
-	supervisor switch debug addintserver addtask \
+	supervisor switch debug addtask \
 	alloctrap cause freetrap preparecontext \
-	rawputchar remintserver alert initresident idletask
+	rawputchar alert initresident idletask
 	
 COREFILES	:= \
-	andimask intserver irq orimask restorefpu restorecpu \
-	storefpu storecpu init semaphores cpu
+	restorefpu restorecpu storefpu storecpu init cpu \
+	semaphores
 
 #MM
 exec-native-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \

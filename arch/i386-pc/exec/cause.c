@@ -41,7 +41,7 @@ AROS_LH1(void, Cause,
 	Enable();
 
 	/* We now cause a software interrupt. */
-	__asm__ __volatile__ ("int $0x30");
+	__asm__ __volatile__ ("int $0x80");
     }
 
     AROS_LIBFUNC_EXIT

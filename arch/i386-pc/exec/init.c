@@ -252,7 +252,7 @@ int main()
 		    MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
     }
 
-    MakeInt();  /* Init IRQ core */
+//    MakeInt();  /* Init IRQ core */
 
     if (!(ssp=AllocMem(4096,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
     {

@@ -92,6 +92,41 @@ void _aros_not_implemented(char *X)
 #define kprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->kprintf)
 #define rkprintf (((struct AROSSupportBase *)(SysBase->DebugAROSBase))->rkprintf)
 
+/* IntServer:
+    This interrupt handler will send an interrupt to a series of queued
+    interrupt servers. Servers should return D0 != 0 (Z clear) if they
+    believe the interrupt was for them, and no further interrupts will
+    be called. This will only check the value in D0 for non-m68k systems,
+    however it SHOULD check the Z-flag on 68k systems.
+
+    Hmm, in that case I would have to separate it from this file in order
+    to replace it...
+*/
+AROS_UFH5S(void, IntServer,
+    AROS_UFHA(ULONG, intMask, D0),
+    AROS_UFHA(struct Custom *, custom, A0),
+    AROS_UFHA(struct List *, intList, A1),
+    AROS_UFHA(APTR, intCode, A5),
+    AROS_UFHA(struct ExecBase *, SysBase, A6))
+{
+    struct Interrupt * irq;
+
+    kprintf("O");
+
+    ForeachNode(intList, irq)
+    {
+	kprintf("!");
+	if( AROS_UFC4(int, irq->is_Code,
+		AROS_UFCA(struct Custom *, custom, A0),
+		AROS_UFCA(APTR, irq->is_Data, A1),
+		AROS_UFCA(APTR, irq->is_Code, A5),
+		AROS_UFCA(struct ExecBase *, SysBase, A6)
+	))
+	    break;
+    }
+}
+
+
 AROS_UFH4(int, Dispatcher,
     AROS_UFHA(struct Custom *, custom, A0),
     AROS_UFHA(APTR, is_Data, A1),
@@ -155,8 +190,6 @@ AROS_LH2(struct LIBBASETYPE *, init,
     struct ExecBase *, SysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
-
-    OrIMask(-1);	/* Disable all interrupts */
 
     SysBase->VBlankFrequency = 50;
 
@@ -306,11 +339,11 @@ AROS_LH2(struct LIBBASETYPE *, init,
 	    Alert( AT_DeadEnd | AN_IntrMem );
 	}
 	is->is_Code = (void (*)())&Dispatcher;
-	AddIntServer(0x80000000,is);	//<-- int_vertb
+	AddIntServer(INTB_VERTB,is);	//<-- int_vertb
     }
 
     /* We now start up the interrupts */
-    Enable();
+//    Enable();
 
     /* This will cause everything else to run. This call will not return.
 	This is because it eventually falls into strap, which will call
