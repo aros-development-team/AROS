@@ -51,15 +51,6 @@ struct MUI_ColoradjustData
 
 #define ColorWheelBase data->colorwheelbase
 
-static IPTR xget(Object *obj, Tag attr)
-{
-    IPTR storage = 0;
-    
-    GetAttr(attr, obj, &storage);
-    
-    return storage;
-}
-
 static void NotifyGun(Object *obj, struct MUI_ColoradjustData *data, LONG gun)
 {
     static Tag guntotag[3] = 
