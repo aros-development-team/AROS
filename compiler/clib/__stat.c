@@ -1,6 +1,15 @@
+/*
+    (C) 2001 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: 
+    Lang: English
+*/
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 
+#include <string.h>
 #include <errno.h>
 
 #include "__time.h"
@@ -8,6 +17,11 @@
 #include "__stat.h"
 
 #include <sys/stat.h>
+
+
+static mode_t __prot_a2u(ULONG protect);
+static uid_t  __amiga2unixid(UWORD id);
+
 
 int __stat(BPTR lock, struct stat *sb)
 {
@@ -19,6 +33,7 @@ int __stat(BPTR lock, struct stat *sb)
     if (!fib)
     {
         errno = IoErr2errno(IoErr());
+
 	return -1;
     }
     memset(fib, 0, sizeof(*fib));
@@ -27,6 +42,7 @@ int __stat(BPTR lock, struct stat *sb)
     {
         errno = IoErr2errno(IoErr());
 	FreeDosObject(DOS_FIB, fib);
+
 	return -1;
     }
 
@@ -75,6 +91,7 @@ int __stat(BPTR lock, struct stat *sb)
     return 0;
 }
 
+
 static mode_t __prot_a2u(ULONG protect)
 {
     mode_t uprot = 0000;
@@ -104,16 +121,20 @@ static mode_t __prot_a2u(ULONG protect)
     return uprot;
 }
 
+
 static uid_t __amiga2unixid(UWORD id)
 {
     switch(id)
     {
 	case (UWORD)-1:
 	    return 0;
+
  	case (UWORD)-2:
 	    return (UWORD)-1;
+
     	case 0:
 	    return (UWORD)-2;
+
 	default:
 	    return id;
     }
