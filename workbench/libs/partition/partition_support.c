@@ -15,7 +15,7 @@
 #ifndef DEBUG
 #define DEBUG 1
 #endif
-#include <aros/debug.h>
+#include "debug.h"
 
 extern struct PTFunctionTable PartitionMBR;
 extern struct PTFunctionTable PartitionRDB;
@@ -111,15 +111,29 @@ LONG readBlock
 	)
 {
 struct IOExtTD *ioreq;
+#ifdef __AMIGAOS__
+ULONG lo, hi;
+#else
 QUAD offset;
+#endif
 
 	ioreq = ph->bd->ioreq;
 	ioreq->iotd_Req.io_Command=ph->bd->cmdread;
 	ioreq->iotd_Req.io_Length=ph->de.de_SizeBlock<<2;
 	ioreq->iotd_Req.io_Data=mem;
+#ifdef __AMIGAOS__
+	lo = getStartBlock(ph)+block;
+	hi = lo>>16;  /* high 16 bits into "hi" */
+	lo &= 0xFFFF; /* low 16 bits stay in "lo" */
+	lo *= (ph->de.de_SizeBlock<<2); /* multiply lo part */
+	hi *= (ph->de.de_SizeBlock<<2); /* multiply hi part */
+	ioreq->iotd_Req.io_Offset = lo+(hi<<16); /* compose first low 32 bit */
+	ioreq->iotd_Req.io_Actual = hi>>16; /* high 32 bits (at least until bit 48 */
+#else
 	offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
 	ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	ioreq->iotd_Req.io_Actual=offset>>32;
+#endif
 	return DoIO((struct IORequest *)&ioreq->iotd_Req);
 }
 
@@ -136,15 +150,29 @@ LONG PartitionWriteBlock
 	)
 {
 struct IOExtTD *ioreq;
+#ifdef __AMIGAOS__
+ULONG lo, hi;
+#else
 QUAD offset;
+#endif
 
 	ioreq = ph->bd->ioreq;
 	ioreq->iotd_Req.io_Command=ph->bd->cmdwrite;
 	ioreq->iotd_Req.io_Length=ph->de.de_SizeBlock<<2;
 	ioreq->iotd_Req.io_Data=mem;
+#ifdef __AMIGAOS__
+	lo = getStartBlock(ph)+block;
+	hi = lo>>16;  /* high 16 bits into "hi" */
+	lo &= 0xFFFF; /* low 16 bits stay in "lo" */
+	lo *= (ph->de.de_SizeBlock<<2); /* multiply lo part */
+	hi *= (ph->de.de_SizeBlock<<2); /* multiply hi part */
+	ioreq->iotd_Req.io_Offset = lo+(hi<<16); /* compose first low 32 bit */
+	ioreq->iotd_Req.io_Actual = hi>>16; /* high 32 bits (at least until bit 48 */
+#else
 	offset=(getStartBlock(ph)+block)*(ph->de.de_SizeBlock<<2);
 	ioreq->iotd_Req.io_Offset=0xFFFFFFFF & offset;
 	ioreq->iotd_Req.io_Actual=offset>>32;
+#endif
 	return DoIO((struct IORequest *)&ioreq->iotd_Req);
 }
 

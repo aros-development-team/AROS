@@ -7,19 +7,17 @@
 #include <proto/exec.h>
 #include <proto/partition.h>
 
-#include <aros/macros.h>
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
 
 #include "partition_support.h"
+#include "platform.h"
 
 #ifndef DEBUG
 #define DEBUG 1
 #endif
-#include <aros/debug.h>
-
-#warning "FIXME: we need AROS_LE2LONG(), AROS_LE2WORD() on big endian machines"
+#include "debug.h"
 
 #define MBR_MAX_PARTITIONS (4)
 #define MBRT_EXTENDED      (0x05)
@@ -60,7 +58,7 @@ struct MBRData *data;
 	if (readBlock(PartitionBase, root, 0, &mbr) == 0)
 	{
 		if (
-				(mbr.magic == 0xAA55) &&
+				(AROS_LE2WORD(mbr.magic) == 0xAA55) &&
 				(((mbr.pcpt[0].status & 0x0F)==0) || (mbr.pcpt[0].status & 0x80)) &&
 				(((mbr.pcpt[1].status & 0x0F)==0) || (mbr.pcpt[1].status & 0x80)) &&
 				(((mbr.pcpt[2].status & 0x0F)==0) || (mbr.pcpt[2].status & 0x80)) &&
@@ -114,23 +112,24 @@ ULONG cylsecs;
 				ph->data = data;
 				CopyMem(&root->de, &ph->de, sizeof(struct DosEnvec));
 				if (
-						(data->entry->first_sector % cylsecs) ||
-						(data->entry->count_sector % cylsecs)
+						(AROS_LE2LONG(data->entry->first_sector) % cylsecs) ||
+						(AROS_LE2LONG(data->entry->count_sector) % cylsecs)
 					)
 				{
-				ULONG r = data->entry->first_sector % cylsecs;
+				ULONG r = AROS_LE2LONG(data->entry->first_sector) % cylsecs;
 #warning "This has only effect on one partition!"
 #warning "Changing this partition causes setting it on cyl boundary (root->de)"
 					ph->de.de_Surfaces = 1;
-					if (data->entry->count_sector % r)
+					if (AROS_LE2LONG(data->entry->count_sector) % r)
 						ph->de.de_BlocksPerTrack = 1;
 					else
 						ph->de.de_BlocksPerTrack = r;
 					cylsecs = ph->de.de_BlocksPerTrack*ph->de.de_Surfaces;
 				}
-				ph->de.de_LowCyl = data->entry->first_sector/cylsecs;
+				ph->de.de_LowCyl = AROS_LE2LONG(data->entry->first_sector)/cylsecs;
 				ph->de.de_HighCyl =
-					ph->de.de_LowCyl+(data->entry->count_sector/cylsecs)-1;
+					ph->de.de_LowCyl+
+					(AROS_LE2LONG(data->entry->count_sector)/cylsecs)-1;
 				ph->de.de_TableSize = 10; // only until de_HighCyl
 				ph->ln.ln_Pri = MBR_MAX_PARTITIONS-1-position;
 				return ph;
@@ -231,7 +230,7 @@ UBYTE i;
 				mbr->pcpt[i].first_sector = 0;
 				mbr->pcpt[i].count_sector = 0;
 			}
-			mbr->magic = AROS_WORD2BE(0x55AA);
+			mbr->magic = AROS_WORD2LE(0xAA55);
 			NEWLIST(&ph->table->list);
 			return 0;
 		}
@@ -252,17 +251,20 @@ ULONG track;
 ULONG cyl;
 
 	entry->first_sector =
-		de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack;
-	entry->count_sector =
-		(de->de_HighCyl-de->de_LowCyl+1)*
-		de->de_Surfaces*
-		de->de_BlocksPerTrack;
-	track = entry->first_sector/root->de.de_BlocksPerTrack;
+		AROS_LONG2LE(de->de_LowCyl*de->de_Surfaces*de->de_BlocksPerTrack);
+	entry->count_sector = AROS_LONG2LE
+		(
+			(de->de_HighCyl-de->de_LowCyl+1)*
+			de->de_Surfaces*
+			de->de_BlocksPerTrack
+		);
+	track = AROS_LE2LONG(entry->first_sector)/root->de.de_BlocksPerTrack;
 	cyl = track/root->de.de_Surfaces;
 	if (cyl<255)
 	{
 		entry->start_head = track % root->de.de_Surfaces;
-		entry->start_sector=(entry->first_sector % root->de.de_BlocksPerTrack)+1;
+		entry->start_sector =
+			(AROS_LE2LONG(entry->first_sector) % root->de.de_BlocksPerTrack)+1;
 		entry->start_cylinder = cyl;
 	}
 	else
@@ -271,7 +273,7 @@ ULONG cyl;
 		entry->start_sector = 0xFF;
 		entry->start_cylinder = 0xFF;
 	}
-	end = entry->first_sector+entry->count_sector;
+	end = AROS_LE2LONG(entry->first_sector)+AROS_LE2LONG(entry->count_sector);
 	track = end/root->de.de_BlocksPerTrack;
 	cyl = track/root->de.de_Surfaces-1;
 	if (cyl<255)
@@ -321,7 +323,7 @@ struct TagItem *tag;
 			tag = findTagItem(PT_TYPE, taglist);
 			if (tag)
 			{
-			struct PartitionType *ptype = tag->ti_Data;
+			struct PartitionType *ptype = (struct PartitionType *)tag->ti_Data;
 
 				entry->type = ptype->id[0];
 			}
@@ -426,7 +428,7 @@ LONG PartitionMBRGetPartitionAttrs
 			break;
 		case PT_TYPE:
 			{
-			struct PartitionType *ptype = taglist[0].ti_Data;
+			struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
 
 				ptype->id[0] = (LONG)data->entry->type;
 				ptype->id_len = 1;
@@ -468,7 +470,7 @@ LONG PartitionMBRSetPartitionAttrs
 			break;
 		case PT_TYPE:
 			{
-			struct PartitionType *ptype = taglist[0].ti_Data;
+			struct PartitionType *ptype=(struct PartitionType *)taglist[0].ti_Data;
 
 				data->entry->type = ptype->id[0];
 			}

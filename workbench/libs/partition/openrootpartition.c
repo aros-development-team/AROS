@@ -9,6 +9,7 @@
 
 #include "partition_intern.h"
 #include "partition_support.h"
+#include "platform.h"
 
 /*****************************************************************************
 

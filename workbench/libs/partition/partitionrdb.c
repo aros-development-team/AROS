@@ -9,18 +9,18 @@
 #include <proto/exec.h>
 #include <proto/partition.h>
 
-#include <aros/macros.h>
 #include <devices/hardblocks.h>
 #include <exec/memory.h>
 #include <exec/types.h>
 #include <libraries/partition.h>
 
 #include "partition_support.h"
+#include "platform.h"
 
 #ifndef DEBUG
 #define DEBUG 1
 #endif
-#include <aros/debug.h>
+#include "debug.h"
 
 struct RDBData {
 	struct RigidDiskBlock rdb;

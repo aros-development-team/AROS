@@ -6,6 +6,7 @@
 #include <exec/memory.h>
 #include <proto/exec.h>
 #include "partition_support.h"
+#include "platform.h"
 
 /*****************************************************************************
 

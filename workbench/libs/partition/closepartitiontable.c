@@ -8,6 +8,7 @@
 #include <proto/exec.h>
 #include "partition_support.h"
 #include "partition_intern.h"
+#include "platform.h"
 
 /*****************************************************************************
 

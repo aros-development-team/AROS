@@ -6,6 +6,7 @@
 #include <utility/tagitem.h>
 #include "partition_intern.h"
 #include "partition_support.h"
+#include "platform.h"
 
 /*****************************************************************************
 
@@ -16,7 +17,7 @@
 
 /*  SYNOPSIS */
    AROS_LHA(struct PartitionHandle *, root,       A1),
-   AROS_LHA(struct TagItem *        , taglist,    A1),
+   AROS_LHA(struct TagItem *        , taglist,    A2),
 
 /*  LOCATION */
    struct Library *, PartitionBase, 11, Partition)

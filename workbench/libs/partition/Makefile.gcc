@@ -1,0 +1,54 @@
+CC 	:= gcc
+LD	:= gcc
+RM  	:= rm
+CFLAGS	:= -Wall -DNO_INLINE_STDARG -D__AMIGAOS__ -O2 -m68020
+LDFLAGS := -noixemul -nostartfiles -s
+LIBFILE := /libs/partition.library
+FILES	:= \
+	partition_support \
+	partitionmbr \
+	partitionrdb
+
+FUNCS := \
+	openrootpartition \
+	closerootpartition \
+	openpartitiontable \
+	closepartitiontable \
+	writepartitiontable \
+	createpartitiontable \
+	addpartition \
+	deletepartition \
+	getpartitiontableattrs \
+	setpartitiontableattrs \
+	getpartitionattrs \
+	setpartitionattrs \
+	querypartitiontableattrs \
+	querypartitionattrs
+
+CFILES := partitionami_init $(FILES) $(FUNCS)
+
+COBJS	:= $(foreach f, $(CFILES), $(f).o)
+DEPS    := $(foreach f, $(CFILES), $(f).d)
+#EXTRALIB:= $(shell $(CC) --print-libgcc-file)
+
+.PHONY : all depend clean library
+	   
+all : $(LIBFILE)
+
+depend	: $(DEPS)
+
+clean	:
+	rm -f *.o *.d $(LIBFILE)
+	
+$(LIBFILE) : $(COBJS)
+	$(LD) $(LDFLAGS) $^ $(EXTRALIB) -o $@
+
+%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.d : %.c
+	$(CC) $(CFLAGS) -M $< -o $@
+
+ifeq (,$(filter clean depend,$(TARGET)))
+-include $(DEPS)
+endif
