@@ -98,6 +98,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
 	{ aHidd_PixFmt_BytesPerPixel,	0	}, /* 10 */
 	{ aHidd_PixFmt_BitsPerPixel,	0	}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	0	}, /* 12 */
+	{ aHidd_PixFmt_CLUTShift,	0	}, /* 13 */
+	{ aHidd_PixFmt_CLUTMask,	0	}, /* 14 */    
 	{ TAG_DONE, 0UL }
     };
         
@@ -173,7 +175,19 @@ ReleaseSemaphore(&XSD(cl)->sema);
 	    pftags[6].ti_Data = XSD(cl)->vi.blue_mask;
 	    pftags[7].ti_Data = 0x00000000;
 	    
-	    pftags[8].ti_Data = vHidd_GT_TrueColor;
+	    /* stegerg */
+	    if (XSD(cl)->vi.class == TrueColor)
+	    {
+	        pftags[8].ti_Data = vHidd_GT_TrueColor;
+	    }
+	    else if (XSD(cl)->vi.class == PseudoColor)
+	    {
+	        pftags[8].ti_Data = vHidd_GT_Palette;
+		pftags[13].ti_Data = XSD(cl)->clut_shift;
+		pftags[14].ti_Data = XSD(cl)->clut_mask;		
+	    }
+	    /* end stegerg */
+	    
 	    pftags[9].ti_Data = XSD(cl)->size;
 	    pftags[10].ti_Data = XSD(cl)->bytes_per_pixel;
 	    pftags[11].ti_Data = XSD(cl)->size;
@@ -224,6 +238,7 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
 	{ aHidd_X11Gfx_SysScreen,	0UL },
 	{ aHidd_X11Gfx_SysCursor,	0UL},
 	{ aHidd_X11Gfx_ColorMap,	0UL},
+	{ aHidd_X11Gfx_VisualClass,	0UL},
 	{ TAG_MORE, (IPTR) NULL }
     };
     
@@ -235,7 +250,8 @@ static Object *gfxhidd_newbitmap(Class *cl, Object *o, struct pHidd_Gfx_NewBitMa
     tags[1].ti_Data = data->screen;
     tags[2].ti_Data = (IPTR)data->cursor;
     tags[3].ti_Data = data->colmap;
-    tags[4].ti_Data = (IPTR)msg->attrList;
+    tags[4].ti_Data = XSD(cl)->vi.class;
+    tags[5].ti_Data = (IPTR)msg->attrList;
     
     /* Displayeable bitmap ? */
     
@@ -497,7 +513,14 @@ LX11
 	        break;
 		
 	    case PseudoColor:
-	    	/* Do nothing for now */
+	        /* stegerg */
+	    	xsd->vi.red_mask   = ((1 << xsd->vi.bits_per_rgb) - 1) << (xsd->vi.bits_per_rgb * 2);
+		xsd->vi.green_mask = ((1 << xsd->vi.bits_per_rgb) - 1) << (xsd->vi.bits_per_rgb * 1);
+		xsd->vi.blue_mask  = ((1 << xsd->vi.bits_per_rgb) - 1);
+		xsd->red_shift	 = mask_to_shift(xsd->vi.red_mask);
+		xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
+		xsd->blue_shift	 = mask_to_shift(xsd->vi.blue_mask);
+		/* end stegerg */
 	    	break;
 		
 	    default:
@@ -576,9 +599,10 @@ kill(getpid(), SIGSTOP);
    	   , BlackPixel(data->display, data->screen)
     );
 
-
+kprintf("\n1\n");
     if (0 == xsd->dummy_window_for_creating_pixmaps)
     {
+kprintf("\n2 ----\n");
 	ok = FALSE;
     }
 #if USE_XSHM
@@ -587,6 +611,7 @@ kill(getpid(), SIGSTOP);
     xsd->xshm_info = init_shared_mem(data->display);
     if (NULL == xsd->xshm_info)
     {
+kprintf("\n3\n");
     	ok = FALSE;
 kprintf("INITIALIZATION OF XSHM FAILED !!\n");	    
     }
@@ -598,7 +623,8 @@ kprintf("INITIALIZATION OF XSHM FAILED !!\n");
     }    	
 #endif
 
-	
+	kprintf("\n3 %d \n",ok);
+
 UX11
     
     ReturnBool("initx11stuff", ok);

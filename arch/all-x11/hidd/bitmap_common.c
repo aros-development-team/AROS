@@ -10,7 +10,7 @@
 
 static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-#warning Does not deallocate previously allocated colors
+//#warning Does not deallocate previously allocated colors
     
     
     struct bitmap_data *data = INST_DATA(cl, o);
@@ -23,15 +23,43 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     pf = BM_PIXFMT(o);
     
     if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
-    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf) ) {
+    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf)) {
 	 
 	 /* Superclass takes care of this case */
 	 
 	 return DoSuperMethod(cl, o, (Msg)msg);
     }
-	
-    
+
     /* Ve have a vHidd_GT_Palette bitmap */    
+	
+#if 1
+    /* stegerg: dont do any allocation stuff!! */
+    
+    if (!DoSuperMethod(cl, o, (Msg)msg)) return FALSE;
+    
+LX11	
+
+    for ( xc_i = msg->firstColor, col_i = 0;
+    		col_i < msg->numColors; 
+		xc_i ++, col_i ++ )
+    {
+        XColor xcol;
+	
+	xcol.red   = msg->colors[col_i].red;
+	xcol.green = msg->colors[col_i].green;
+	xcol.blue  = msg->colors[col_i].blue;
+	xcol.pad   = 0;
+	xcol.pixel = xc_i;
+	
+	xcol.flags = DoRed | DoGreen | DoBlue;
+	XStoreColor(data->display, data->colmap, &xcol);
+
+    }
+UX11	
+    
+    return TRUE;
+       
+#else    
     
     for ( xc_i = msg->firstColor, col_i = 0;
     		col_i < msg->numColors; 
@@ -53,6 +81,7 @@ UX11
 	msg->colors[col_i].pixval = xc.pixel;
 #warning Also set pixval in internal baseclass colormap in some way
     }
+#endif
 
     return TRUE;
 }

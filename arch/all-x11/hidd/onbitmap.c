@@ -83,6 +83,8 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
         IPTR width, height, depth;
 	XSetWindowAttributes winattr;
+	int visualclass;
+	unsigned long valuemask;
 	
         data = INST_DATA(cl, o);
 	
@@ -94,6 +96,22 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	data->screen  =            GetTagData(aHidd_X11Gfx_SysScreen,  0, msg->attrList);
 	data->cursor  = (Cursor)   GetTagData(aHidd_X11Gfx_SysCursor,  0, msg->attrList);
 	data->colmap  = (Colormap) GetTagData(aHidd_X11Gfx_ColorMap,   0, msg->attrList);
+
+	/* stegerg*/
+
+	visualclass   =		   GetTagData(aHidd_X11Gfx_VisualClass, TrueColor, msg->attrList);
+		
+        if ( visualclass == PseudoColor)
+	{
+LX11
+	    data->colmap = XCreateColormap(GetSysDisplay(),
+					   RootWindow(GetSysDisplay(), GetSysScreen()),
+					   XSD(cl)->vi.visual,
+					   AllocAll);
+UX11
+	}
+	
+	/* end stegerg */
 	
 	/* Get attr values */
 	GetAttr(o, aHidd_BitMap_Width,		&width);
@@ -134,6 +152,21 @@ LX11
 	/* Update the depth to the one we use */
 	depth_tags[0].ti_Data = depth;
 	SetAttrs(o, depth_tags);
+	
+/* stegerg */
+	valuemask = CWBackingStore
+		    	| CWCursor
+		    	| CWSaveUnder
+		   	| CWEventMask
+		    	| CWBackPixel;
+	
+	if ((visualclass == PseudoColor) && (data->colmap))
+	{
+	    winattr.colormap = data->colmap;
+	    valuemask |= CWColormap;
+	}
+/* end stegerg */
+	
 	DRAWABLE(data) = XCreateWindow( GetSysDisplay()
 	    		, rootwin
 			, 0	/* leftedge 	*/
@@ -144,11 +177,7 @@ LX11
 			, depth
 			, InputOutput
 			, DefaultVisual (GetSysDisplay(), GetSysScreen())
-			, CWBackingStore
-		    		| CWCursor
-		    		| CWSaveUnder
-		   		| CWEventMask
-		    		| CWBackPixel
+			, valuemask
 			, &winattr
 	   	 );
 UX11	    

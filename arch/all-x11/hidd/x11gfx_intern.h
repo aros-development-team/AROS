@@ -48,6 +48,7 @@ enum {
     aoHidd_X11Gfx_Hidd2X11CMap,
     aoHidd_X11Gfx_SysCursor,
     aoHidd_X11Gfx_ColorMap,
+    aoHidd_X11Gfx_VisualClass, /* stegerg */
     
     num_Hidd_X11Gfx_Attrs
     
@@ -58,6 +59,7 @@ enum {
 #define aHidd_X11Gfx_Hidd2X11CMap	(HiddX11GfxAB + aoHidd_X11Gfx_Hidd2X11CMap)
 #define aHidd_X11Gfx_SysCursor		(HiddX11GfxAB + aoHidd_X11Gfx_SysCursor)
 #define aHidd_X11Gfx_ColorMap		(HiddX11GfxAB + aoHidd_X11Gfx_ColorMap)
+#define aHidd_X11Gfx_VisualClass	(HiddX11GfxAB + aoHidd_X11Gfx_VisualClass) /* stegerg */
 
 
 #define PEN_BITS    4
