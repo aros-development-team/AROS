@@ -129,8 +129,6 @@ struct MUI_WindowData
 #define MUIWF_ICONIFIED       (1<<1) /* window currently iconified */
 #define MUIWF_ACTIVE          (1<<2) /* window currently active */
 #define MUIWF_RESIZING        (1<<4) /* window currently resizing, for simple refresh */
-#define MUIWF_HANDLEMESSAGE   (1<<5) /* window is in a message handler */
-#define MUIWF_CLOSEME         (1<<6) /* close the window after processing the message */
 #define MUIWF_DONTACTIVATE    (1<<7) /* do not activate the window when opening */
 #define MUIWF_USERIGHTSCROLLER (1<<8) /* window should have a right scroller */
 #define MUIWF_USEBOTTOMSCROLLER (1<<9) /* windiw should have a bottom scroller */
@@ -1098,7 +1096,7 @@ void HandleDragging (Object *oWin, struct MUI_WindowData *data,
     }
 }
 
-
+/* Reply to imsg if handled */
 BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
 			struct IntuiMessage *imsg)
 {
@@ -1337,56 +1335,20 @@ BOOL HandleWindowEvent (Object *oWin, struct MUI_WindowData *data,
     return is_handled;
 }
 
-/* process window message, this does a ReplyMsg() to the message */
-/* Called from application.c */
-void _zune_window_message(struct IntuiMessage *imsg)
-{
-    struct Window *iWin;
-    Object        *oWin;
-    struct MUI_WindowData *data;
-
-    iWin = imsg->IDCMPWindow;
-    oWin = (Object *)iWin->UserData;
-    data = muiWindowData(oWin);
-
-/*      D(bug("win %p, imsg->Class = %d\n", oWin, imsg->Class)); */
-
-    if (data->wd_DragObject)
-    {
-	HandleDragging(oWin, data, imsg);
-	ReplyMsg((struct Message*)imsg);
-	return;
-    }
-
-    data->wd_Flags |= MUIWF_HANDLEMESSAGE;
-
-    if (!HandleWindowEvent(oWin, data, imsg))
-	HandleInputEvent(oWin, data, imsg);
-
-    data->wd_Flags &= ~MUIWF_HANDLEMESSAGE;
-    ReplyMsg((struct Message*)imsg);
-
-    if (data->wd_Flags & MUIWF_CLOSEME)
-    {
-    	/* Now it's safe to close the window */
-/*      	D(bug("Detected delayed closing. Going to close the window now.\n")); */
-    	nnset(oWin,MUIA_Window_Open,FALSE);
-    }
-
-}
-
-
 static ULONG InvokeEventHandler (struct MUI_EventHandlerNode *ehn,
 				 struct IntuiMessage *event, ULONG muikey)
 {
     ULONG res;
 
     if (!(_flags(ehn->ehn_Object) & MADF_CANDRAW)) return 0;
+    if (!(_flags(ehn->ehn_Object) & MADF_SHOWME)) return 0;
 
     if
     (
-           event->Class == IDCMP_MOUSEBUTTONS && event->Code == SELECTDOWN 
-        && (_flags(ehn->ehn_Object) & MADF_INVIRTUALGROUP)
+	event != NULL
+	&& event->Class == IDCMP_MOUSEBUTTONS
+	&& event->Code == SELECTDOWN 
+	&& (_flags(ehn->ehn_Object) & MADF_INVIRTUALGROUP)
     )
     {
 	/* 
@@ -1437,20 +1399,21 @@ static ULONG InvokeEventHandler (struct MUI_EventHandlerNode *ehn,
     return res;
 }
 
-static void HandleInputEvent(Object *win, struct MUI_WindowData *data, 
+static void HandleRawkey(Object *win, struct MUI_WindowData *data, 
 			     struct IntuiMessage *event)
 {
     struct MinNode              *mn;
     struct MUI_EventHandlerNode *ehn;
     ULONG                        res;
     LONG                         muikey = MUIKEY_NONE;
-    ULONG                        mask = event->Class;
     Object                      *active_object = NULL;
     IPTR                         disabled;
 
-    if (mask == IDCMP_RAWKEY)
+    /* check if imsg translate to predefined keystroke */
     {
 	struct InputEvent ievent;
+	BOOL matched = FALSE;
+
 	ievent.ie_NextEvent    = NULL;
 	ievent.ie_Class        = IECLASS_RAWKEY;
 	ievent.ie_SubClass     = 0;
@@ -1458,31 +1421,33 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	ievent.ie_Qualifier    = event->Qualifier;
 	ievent.ie_EventAddress = (APTR *) *((ULONG *)(event->IAddress));
 
-	for (muikey=MUIKEY_COUNT-1;muikey >= 0;muikey--) /* 0 == MUIKEY_PRESS */
+	for (muikey = MUIKEY_COUNT - 1; muikey >= MUIKEY_PRESS; muikey--)
 	{
-	    if
-            (
-                   muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well 
-                && MatchIX
-                   (
-                       &ievent, 
-                       &muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix
-                   )
-            )
+	    if (muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix_well != NULL
+		&& MatchIX(&ievent, &muiGlobalInfo(win)->mgi_Prefs->muikeys[muikey].ix))
 	    {
+		matched = TRUE;
 		break;
 	    }
 	}
-	if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX))
-	    muikey = MUIKEY_RELEASE;
-    }
+
+	if (matched)
+	{
+	    if (muikey == MUIKEY_PRESS && (event->Code & IECODE_UP_PREFIX))
+		muikey = MUIKEY_RELEASE;
+	}
+	else
+	{
+	    muikey = MUIKEY_NONE;
+	}
+    } /* check if imsg translate to predefined keystroke */
 
     active_object = data->wd_ActiveObject;
-    if (active_object)
+    if (active_object != NULL)
 	get(active_object, MUIA_Disabled, &disabled);
 
     /* try ActiveObject */
-    if (active_object && !disabled)
+    if ((active_object != NULL) && !disabled)
     {
 #if 0
 	/* sba:
@@ -1504,43 +1469,29 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if
-            (
-		(ehn->ehn_Object == active_object)
-	    && 
-                (
-                    (ehn->ehn_Events & mask)
-		|| 
-                    (
-                        (muikey != MUIKEY_NONE)
-		    &&
-			(ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS)
-                    )
-                )
-            ) /* the last condition ??? */
+	    if ((ehn->ehn_Object == active_object)
+		&& ((ehn->ehn_Events & IDCMP_RAWKEY)
+		    || ((muikey != MUIKEY_NONE)
+			&& (ehn->ehn_Flags & MUI_EHF_ALWAYSKEYS))))
 	    {
-		res = InvokeEventHandler(ehn, (struct IntuiMessage *)event, muikey);
+		res = InvokeEventHandler(ehn, event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 
-		/* Leave the loop if a differnt object has been activated */
+		/* Leave the loop if a different object has been activated */
 		if (active_object != data->wd_ActiveObject)
 		    break;
 	    }
 	} /* for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ) */
+
     } /* if (active_object && !disabled) */
 
     /* try DefaultObject */
-    if (data->wd_DefaultObject)
+    if (data->wd_DefaultObject != NULL)
 	get(data->wd_DefaultObject, MUIA_Disabled, &disabled);
 
-    if (
-	   (data->wd_DefaultObject != NULL)
-       &&
-	   (active_object != data->wd_DefaultObject)
-       &&
-	   (!disabled)
-       )
+    if ((data->wd_DefaultObject != NULL) && !disabled
+	&& (active_object != data->wd_DefaultObject))
     {
     	/* No, we only should do this if the object actually has requested this via RequestIDCMP()! */
 //    	if (muikey != MUIKEY_NONE && (_flags(data->wd_DefaultObject) & MADF_CANDRAW))
@@ -1553,21 +1504,18 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	{
 	    ehn = (struct MUI_EventHandlerNode *)mn;
 
-	    if
-            (
-                   (ehn->ehn_Object == data->wd_DefaultObject) 
-                && (ehn->ehn_Events & mask)
-            )
+	    if ((ehn->ehn_Object == data->wd_DefaultObject) 
+		&& (ehn->ehn_Events & IDCMP_RAWKEY))
 	    {
-		res = InvokeEventHandler(ehn, (struct IntuiMessage *)event, muikey);
+		res = InvokeEventHandler(ehn, event, muikey);
 		if (res & MUI_EventHandlerRC_Eat)
 		    return;
 	    }
 	}
-    }
+
+    } /* if ... default object */
 
     /* try Control Chars */
-    if (mask == IDCMP_RAWKEY)
     {
     	struct IntuiMessage imsg;
     	ULONG key;
@@ -1586,7 +1534,7 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 		if (ehn->ehn_Events == key)
 		{
 		    IPTR disabled;
-		    LONG muikey = ehn->ehn_Flags;
+		    LONG muikey2 = ehn->ehn_Flags;
 
 		    get(ehn->ehn_Object, MUIA_Disabled, &disabled);
 		    if (disabled)
@@ -1594,54 +1542,32 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 
 		    if (event->Code & IECODE_UP_PREFIX)
 		    {
-			if (muikey == MUIKEY_PRESS) muikey = MUIKEY_RELEASE;
-			else muikey = MUIKEY_RELEASE;
+			/* simulate a release */
+			if (muikey2 == MUIKEY_PRESS)
+			    muikey2 = MUIKEY_RELEASE;
+			else
+			    return;
 		    }
 
-		    if ((muikey != MUIKEY_NONE) && (_flags(ehn->ehn_Object) & MADF_CANDRAW))
+		    if ((muikey2 != MUIKEY_NONE)
+			&& (_flags(ehn->ehn_Object) & MADF_CANDRAW)
+			&& (_flags(ehn->ehn_Object) & MADF_SHOWME))
 		    {
 			res = CoerceMethod
-                        (
-                            ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
-                            (IPTR)event, muikey
-                        );
-			if (res & MUI_EventHandlerRC_Eat) return;
+			    (
+				ehn->ehn_Class, ehn->ehn_Object, MUIM_HandleEvent, 
+				NULL, muikey2
+				);
+			if (res & MUI_EventHandlerRC_Eat)
+			    return;
 		    }
 		}
 	    }
 	}
-    }
+    } /* try control chars */
 
-
-    /* try eventhandlers of other objects, only if we didnt get a MUIKEY,
-     * because only the active or default object should get keyboard
-     * input.
-     */
-    if (muikey == MUIKEY_NONE)
-    {
-	for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
-	{
-	    ehn = (struct MUI_EventHandlerNode *)mn;
-	    
-	    if (ehn->ehn_Events & mask)
-	    {
-		IPTR disabled;
-
-		get(ehn->ehn_Object, MUIA_Disabled, &disabled);
-		if (disabled)
-		    continue;
-
-		/* non-active and non-default objects dont get the MUIKEY because
-		 * they dont have focus.
-		 */
-		res = InvokeEventHandler(ehn, event, MUIKEY_NONE);
-		if (res & MUI_EventHandlerRC_Eat)
-		    return;
-	    }
-	}
-    }
-
-    if (!(data->wd_DisabledKeys & (1<<muikey)))
+    if ((muikey != MUIKEY_NONE)
+	&& !(data->wd_DisabledKeys & (1<<muikey)))
     {
 	/* nobody has eaten the message so we can try ourself */
 	switch (muikey)
@@ -1660,16 +1586,86 @@ static void HandleInputEvent(Object *win, struct MUI_WindowData *data,
 	    case MUIKEY_WORDRIGHT: break;
 	    case MUIKEY_LINESTART: break;
 	    case MUIKEY_LINEEND: break;
-	    case MUIKEY_GADGET_NEXT: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);break;
-	    case MUIKEY_GADGET_PREV: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);break;
-	    case MUIKEY_GADGET_OFF: set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);break;
-	    case MUIKEY_WINDOW_CLOSE: set(win, MUIA_Window_CloseRequest, TRUE);break;
+	    case MUIKEY_GADGET_NEXT:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Next);
+		break;
+	    case MUIKEY_GADGET_PREV:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_Prev);
+		break;
+	    case MUIKEY_GADGET_OFF:
+		set(win, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
+		break;
+	    case MUIKEY_WINDOW_CLOSE:
+		set(win, MUIA_Window_CloseRequest, TRUE);
+		break;
 	    case MUIKEY_WINDOW_NEXT: break;
 	    case MUIKEY_WINDOW_PREV: break;
 	    case MUIKEY_HELP: break;
 	    case MUIKEY_POPUP: break;
 	    default: break;
 	}
+    }
+}
+
+/* forward non-keystroke events to event handlers */
+static void HandleInputEvent(Object *win, struct MUI_WindowData *data, 
+			     struct IntuiMessage *event)
+{
+    struct MinNode              *mn;
+    struct MUI_EventHandlerNode *ehn;
+    ULONG                        res;
+    ULONG                        mask = event->Class;
+
+    for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
+    {
+	ehn = (struct MUI_EventHandlerNode *)mn;
+	    
+	if (ehn->ehn_Events & mask)
+	{
+	    IPTR disabled;
+
+	    get(ehn->ehn_Object, MUIA_Disabled, &disabled);
+	    if (disabled)
+		continue;
+
+	    res = InvokeEventHandler(ehn, event, MUIKEY_NONE);
+	    if (res & MUI_EventHandlerRC_Eat)
+		return;
+	}
+    }
+}
+
+
+/* process window message, this does a ReplyMsg() to the message */
+/* Called from application.c */
+void _zune_window_message(struct IntuiMessage *imsg)
+{
+    struct Window *iWin;
+    Object        *oWin;
+    struct MUI_WindowData *data;
+    struct IntuiMessage imsg_copy;
+    BOOL handled;
+
+    iWin = imsg->IDCMPWindow;
+    oWin = (Object *)iWin->UserData;
+    data = muiWindowData(oWin);
+
+    imsg_copy = *imsg;
+    ReplyMsg((struct Message*)imsg);
+
+    if (data->wd_DragObject)
+    {
+	HandleDragging(oWin, data, &imsg_copy);
+	return;
+    }
+
+    handled = HandleWindowEvent(oWin, data, &imsg_copy);
+    if (!handled)
+    {
+	if (IDCMP_RAWKEY == imsg->Class)
+	    HandleRawkey(oWin, data, &imsg_copy);
+	else
+	    HandleInputEvent(oWin, data, &imsg_copy);
     }
 }
 
@@ -1876,7 +1872,8 @@ static void window_select_dimensions (struct MUI_WindowData *data)
     if (!data->wd_Width)
     {
 	if (data->wd_ReqWidth > 0) data->wd_Width = data->wd_ReqWidth;
-	else if (data->wd_ReqWidth == MUIV_Window_Width_Default) data->wd_Width = data->wd_MinMax.DefWidth;
+	else if (data->wd_ReqWidth == MUIV_Window_Width_Default)
+	    data->wd_Width = data->wd_MinMax.DefWidth;
 	else if (_between(MUIV_Window_Width_MinMax(100),
 			  data->wd_ReqWidth,
 			  MUIV_Window_Width_MinMax(0)))
@@ -1901,7 +1898,8 @@ static void window_select_dimensions (struct MUI_WindowData *data)
 	}
 
 	if (data->wd_ReqHeight > 0) data->wd_Height = data->wd_ReqHeight;
-	else if (data->wd_ReqHeight == MUIV_Window_Height_Default) data->wd_Height = data->wd_MinMax.DefHeight;
+	else if (data->wd_ReqHeight == MUIV_Window_Height_Default)
+	    data->wd_Height = data->wd_MinMax.DefHeight;
 	else if (_between(MUIV_Window_Height_MinMax(100),
 			  data->wd_ReqHeight,
 			  MUIV_Window_Height_MinMax(0)))
@@ -2144,7 +2142,7 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 /*      D(bug("Window_Dispose(%p)\n", obj)); */
     if (muiGlobalInfo(obj) && _app(obj))
     {
-	D(bug(" Window_Dispose(%p) : calling app->OM_REMMEMBER\n", obj));
+/*  	D(bug(" Window_Dispose(%p) : calling app->OM_REMMEMBER\n", obj)); */
 	DoMethod(_app(obj), OM_REMMEMBER, (IPTR)obj);
     }
     if (data->wd_RootObject)
@@ -2187,7 +2185,7 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_Window_ActiveObject:
-		D(bug("MUIA_Window_ActiveObject %ld (%p)\n", tag->ti_Data, tag->ti_Data));
+/*  		D(bug("MUIA_Window_ActiveObject %ld (%p)\n", tag->ti_Data, tag->ti_Data)); */
 		window_set_active_object(data, obj, tag->ti_Data);
 		break;
 	    case MUIA_Window_DefaultObject:
@@ -2462,6 +2460,9 @@ static void window_minmax(Object *obj, struct MUI_WindowData *data)
 /*  	  data->wd_MinMax.MinHeight, */
 /*  	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
     __area_finish_minmax(data->wd_RootObject, &data->wd_MinMax);
+/*      D(bug("*** root minmax2 = %ld,%ld => %ld,%ld\n", data->wd_MinMax.MinWidth, */
+/*  	  data->wd_MinMax.MinHeight, */
+/*  	  data->wd_MinMax.MaxWidth, data->wd_MinMax.MaxHeight)); */
 }
 
 
@@ -2596,16 +2597,6 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    D(bug("in window_Close %ld\n", __LINE__));
-
-    if (data->wd_Flags & MUIWF_HANDLEMESSAGE)
-    {
-/*      	D(bug("Window should be closed while handling it's messages. Closing delayed.\n")); */
-	data->wd_Flags |= MUIWF_CLOSEME;
-	return TRUE;
-    }
-    D(bug("in window_Close %ld\n", __LINE__));
-
     data->wd_OldActive = data->wd_ActiveObject;
     set(obj, MUIA_Window_ActiveObject, MUIV_Window_ActiveObject_None);
 
@@ -2618,12 +2609,9 @@ static ULONG window_Close(struct IClass *cl, Object *obj)
     HideRenderInfo(&data->wd_RenderInfo);
 
     /* close here ... */
-    D(bug("in window_Close %ld\n", __LINE__));
     UndisplayWindow(obj,data);
-    D(bug("in window_Close %ld\n", __LINE__));
 
     data->wd_Flags &= ~MUIWF_OPENED;
-    data->wd_Flags &= ~MUIWF_CLOSEME;
     data->wd_Menustrip = NULL;
 
     /* free display dependant data */
