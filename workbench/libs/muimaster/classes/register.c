@@ -161,7 +161,7 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHADOW]);
     WritePixel(_rp(obj), right_item_bar_x - 1, top_item_bar_y + 2);
     RectFill(_rp(obj), right_item_bar_x, top_item_bar_y + 4, right_item_bar_x, bottom_item_bar_y);
-    SetAPen(_rp(obj), _pens(obj)[MPEN_FILL]);
+    SetAPen(_rp(obj), _pens(obj)[MPEN_HALFSHADOW]);
     WritePixel(_rp(obj), right_item_bar_x - 2, top_item_bar_y + 1);
     WritePixel(_rp(obj), right_item_bar_x - 1, top_item_bar_y + 3);
     WritePixel(_rp(obj), right_item_bar_x, top_item_bar_y + 3);
