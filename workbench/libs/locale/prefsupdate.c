@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#include <string.h>
 #include <exec/types.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
