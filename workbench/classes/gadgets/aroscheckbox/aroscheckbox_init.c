@@ -62,11 +62,6 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
     if (!IntuitionBase)
 	return (NULL);
 
-    if (!DOSBase)
-    	DOSBase = OpenLibrary("dos.library", 37);
-    if (!DOSBase)
-	return (NULL);
-
     /* ------------------------- */
     /* Create the class itself */
 
@@ -102,9 +97,6 @@ VOID SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 
     CloseLibrary((struct Library *)IntuitionBase);
     IntuitionBase = NULL;
-
-    CloseLibrary(DOSBase);
-    DOSBase = NULL;
 
     return;
 }

@@ -1,4 +1,5 @@
 
+#define USE_BOOPSI_STUBS
 #include <datatypes/datatypes.h>
 #include <proto/utility.h>
 #include <proto/dos.h>
@@ -10,6 +11,7 @@
 #include <libraries/locale.h>
 #include <datatypes/datatypesclass.h>
 #include "datatypes_intern.h"
+#include <clib/boopsistubs.h>
 
 
 

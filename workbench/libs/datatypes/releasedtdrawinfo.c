@@ -6,9 +6,12 @@
     Lang: English
 */
 
+#define USE_BOOPSI_STUBS
 #include "datatypes_intern.h"
 #include <proto/alib.h>
 #include <datatypes/datatypesclass.h>
+#include <clib/boopsistubs.h>
+
 
 /*****************************************************************************
 

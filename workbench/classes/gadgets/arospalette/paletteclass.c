@@ -6,6 +6,7 @@
     Lang: english
 */
 
+#define USE_BOOPSI_STUBS
 #include <proto/utility.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -24,6 +25,9 @@
 #include <aros/debug.h>
 
 #define AROSPaletteBase ((struct PaletteBase_intern *)(cl->cl_UserData))
+
+#include <clib/boopsistubs.h>
+
 
 /*********************
 **  Palette::Set()  **

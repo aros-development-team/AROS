@@ -6,12 +6,14 @@
     Lang: English
 */
 
+#define USE_BOOPSI_STUBS
 #include "datatypes_intern.h"
 #include <proto/exec.h>
 #include <proto/alib.h>
 #include <utility/tagitem.h>
 #include <datatypes/datatypesclass.h>
 #include <intuition/classusr.h>
+#include <clib/boopsistubs.h>
 
 /*****************************************************************************
 

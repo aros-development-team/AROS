@@ -5,6 +5,8 @@
     Desc: AROS specific mutualexclude class implementation.
     Lang: english
 */
+
+#define USE_BOOPSI_STUBS
 #include <exec/libraries.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -31,6 +33,8 @@
 
 #undef AROSMutualExcludeBase
 #define AROSMutualExcludeBase ((struct MXBase_intern *)(cl->cl_UserData))
+
+#include <clib/boopsistubs.h>
 
 
 

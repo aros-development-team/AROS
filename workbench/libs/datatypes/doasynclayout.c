@@ -5,6 +5,8 @@
     Desc:
     Lang: English
 */
+
+#define USE_BOOPSI_STUBS
 #include "datatypes_intern.h"
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
@@ -13,6 +15,7 @@
 #include <intuition/intuition.h>
 #include <intuition/gadgetclass.h>
 #include <intuition/cghooks.h>
+#include <clib/boopsistubs.h>
 
 struct LayoutMessage
 {

@@ -6,6 +6,13 @@
     Lang: english
 */
 
+#undef SDEBUG
+#define SDEBUG 0
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
+#define USE_BOOPSI_STUBS
 #include <proto/exec.h>
 #include <exec/libraries.h>
 #include <proto/intuition.h>
@@ -23,17 +30,13 @@
 #include <libraries/gadtools.h>
 #include <proto/alib.h>
 
-#undef SDEBUG
-#define SDEBUG 0
-#undef DEBUG
-#define DEBUG 0
-#include <aros/debug.h>
-
 #include "aroscheckbox_intern.h"
-
 
 #undef AROSCheckboxBase
 #define AROSCheckboxBase ((struct CBBase_intern *)(cl->cl_UserData))
+
+#include <clib/boopsistubs.h>
+
 
 
 void drawimage(Class *cl, struct Gadget *gad, struct RastPort *rport,

@@ -5,10 +5,12 @@
     Desc:
     Lang: English
 */
+#define USE_BOOPSI_STUBS
 #include "datatypes_intern.h"
 #include <proto/intuition.h>
 #include <intuition/classusr.h>
 #include <datatypes/datatypesclass.h>
+#include <clib/boopsistubs.h>
 
 /*****************************************************************************
 

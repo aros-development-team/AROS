@@ -5,6 +5,8 @@
     Desc: AROS specific cycle class implementation.
     Lang: english
 */
+
+#define USE_BOOPSI_STUBS
 #include <exec/libraries.h>
 #include <proto/dos.h>
 #include <proto/intuition.h>
@@ -36,6 +38,9 @@
 
 #undef AROSCycleBase
 #define AROSCycleBase ((struct CycleBase_intern *)(cl->cl_UserData))
+
+
+#include <clib/boopsistubs.h>
 
 
 

@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#define USE_BOOPSI_STUBS
 #include "datatypes_intern.h"
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -13,6 +14,7 @@
 #include <intuition/intuition.h>
 #include <datatypes/datatypesclass.h>
 #include <utility/tagitem.h>
+#include <clib/boopsistubs.h>
 
 
 struct PrintMessage

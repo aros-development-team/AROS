@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#define USE_BOOPSI_STUBS
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/tasks.h>
@@ -27,6 +28,8 @@
 #include <datatypes/datatypesclass.h>
 #include <datatypes/datatypes.h>
 #include "datatypes_intern.h"
+
+#include <clib/boopsistubs.h>
 
 /* #include <devices/printer.h>  --  No printer stuff yet... */
 

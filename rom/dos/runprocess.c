@@ -112,16 +112,17 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
    /* The AROS_UFC3R() macro doesn't work on my system (gcc 2.95.1, Linux 2.3.50)
     * this is the workaround I'm currently using:
-    *	*retptr = entry(argptr,argsize,SysBase);
     */
 
-    *retptr = AROS_UFC3R(ULONG, entry,
+    *retptr = entry(argptr,argsize,SysBase);
+
+/*    *retptr = AROS_UFC3R(ULONG, entry,
 		AROS_UFCA(STRPTR, argptr, A0),
 		AROS_UFCA(ULONG, argsize, D0),
 		AROS_UFCA(struct ExecBase *, SysBase, A6),
 		&proc->pr_ReturnAddr, (sss->stk_Upper - (ULONG)sss->stk_Lower)
 	      );
-
+*/
     StackSwap(sss);
 
     proc->pr_ReturnAddr = oldReturnAddr;

@@ -66,7 +66,6 @@ struct CBBase_intern
     struct Library 	library;
     struct ExecBase	*sysbase;
     BPTR		seglist;
-    struct Library	*dosbase;
 
     #ifndef GLOBAL_INTUIBASE
     struct IntuitionBase *intuitionbase;
@@ -100,8 +99,6 @@ typedef struct IntuitionBase IntuiBase;
 #define GfxBase		CBB(AROSCheckboxBase)->gfxbase
 #undef SysBase
 #define SysBase		CBB(AROSCheckboxBase)->sysbase
-#undef DOSBase
-#define DOSBase		CBB(AROSCheckboxBase)->dosbase
 
 
 #define expunge() \
