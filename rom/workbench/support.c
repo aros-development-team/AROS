@@ -6,28 +6,14 @@
 */
 
 #define DEBUG 1
+#include <aros/debug.h>
 
+#include <aros/atomic.h>
 #include <dos/dostags.h>
 #include <string.h>
 
 #include "workbench_intern.h"
-#include "handler.h"
-
-BOOL __StartHandler(struct WorkbenchBase *WorkbenchBase)
-{
-    struct Process *proc;
-    
-    proc = CreateNewProcTags
-    (
-        NP_Entry,     (IPTR) WorkbenchHandler,
-        NP_StackSize,        8129,
-        NP_Name,      (IPTR) "Workbench Handler",
-        NP_UserData,  (IPTR) WorkbenchBase,
-        TAG_DONE
-    );
-
-    return proc != NULL ? TRUE : FALSE;
-}
+#include "support.h"
 
 void __AddHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
 {

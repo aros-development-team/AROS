@@ -29,15 +29,14 @@
 #include <proto/dos.h>
 #include <proto/icon.h>
 
-#include <aros/debug.h>
-
 /*
-    This is the WorkbenchBase structure. It is documented here because
-    it is completely private. Applications should treat it as a struct
-    Library, and use the workbench.library functions to get information.
+    This is the WorkbenchBase structure. It is defined here because it is 
+    completely private. Applications should treat it as a struct Library, and
+    use the workbench.library functions to get information.
 */
 
-struct WorkbenchBase {
+struct WorkbenchBase
+{
     struct Library          LibNode;
     BPTR                    wb_SegList;
 
@@ -47,19 +46,22 @@ struct WorkbenchBase {
     struct Library         *wb_IntuitionBase;
     struct Library         *wb_IconBase;
     
-    struct MsgPort         *wb_HandlerPort;       /* The Workbench Handler's message port. */
-    struct MsgPort         *wb_AppPort;           /* The Workbench App's message port. */
+    struct MsgPort         *wb_HandlerPort;       /* The Workbench Handler's message port */
+    struct SignalSemaphore  wb_HandlerSemaphore;  /* Arbitrates initialization of the handler */
+    ULONG                   wb_HandlerError;      /* Handler error code if initialization fails */    
+    
+    struct MsgPort         *wb_AppPort;           /* The Workbench App's message port */
 
     struct List             wb_AppWindows;
     struct List             wb_AppIcons;
     struct List             wb_AppMenuItems;
 
-    struct List             wb_HiddenDevices;     /* List of devices that Workbench will not show. */
+    struct List             wb_HiddenDevices;     /* List of devices that Workbench will not show */
     ULONG                   wb_DefaultStackSize;
     ULONG                   wb_TypeRestartTime;
 
-    struct SignalSemaphore  wb_InitializationSemaphore; /* Semaphore for single-tasking library initializtion. */
-    struct SignalSemaphore  wb_BaseSemaphore; /* Semaphore to arbitrate library base access */
+    struct SignalSemaphore  wb_InitializationSemaphore; /* Arbitrates library initializtion */
+    struct SignalSemaphore  wb_BaseSemaphore;           /* Arbitrates library base access */
     
     BOOL                    wb_LibsOpened;        /* Are the libraries opened? */
 };
@@ -77,7 +79,8 @@ struct WorkbenchBase {
  * Defintion of internal structures.
  */
 
-struct AppIcon {
+struct AppIcon
+{
     struct Node        ai_Node;
 
     ULONG              ai_ID;
@@ -108,7 +111,8 @@ struct AppIcon {
 #define WBAPPICONF_PropagatePosition       (1<<12)
 #define WBAPPICONF_NotifySelectState       (1<<13)
 
-struct AppWindow {
+struct AppWindow
+{
     struct Node     aw_Node;
 
     ULONG           aw_ID;
@@ -130,7 +134,8 @@ struct AppWindow {
 #define  AWDZFlag_relHeight  6
 
 
-struct AppWindowDropZone {
+struct AppWindowDropZone
+{
     struct Node       awdz_Node;
 
     ULONG             awdz_ID;
@@ -146,7 +151,8 @@ struct AppWindowDropZone {
     struct Hook      *awdz_Hook;
 };
 
-struct AppMenuItem {
+struct AppMenuItem
+{
     struct Node     ami_Node;
 
     ULONG           ami_ID;
@@ -158,5 +164,4 @@ struct AppMenuItem {
     struct MsgPort *ami_MsgPort;
 };
 
-#endif /* __WORKBENCH_INTERN_H__  */
-
+#endif /* __WORKBENCH_INTERN_H__ */

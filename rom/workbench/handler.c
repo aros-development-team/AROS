@@ -1,15 +1,14 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: The Workbench Handler process and associated functions
-    Lang: English
+    The Workbench Handler process and associated functions.
 */
 
 #define DEBUG 1
+#include <aros/debug.h>
 
-#include <intuition/intuition.h>
-#include <utility/tagitem.h>
+#include <exec/ports.h>
 #include <utility/hooks.h>
 #include <dos/dosextens.h>
 
@@ -24,69 +23,228 @@
 #include <workbench/startup.h>
 
 #include "workbench_intern.h"
+#include "support.h"
+#include "handler.h"
 
-/* This is the main entry point for the Workbench Handler process. */
 
-void WorkbenchHandler( void ) {
-    struct WorkbenchBase *WorkbenchBase = NULL;
+struct HandlerContext
+{
+    struct MsgPort *hc_CommandPort;   /* commands from the library */
+    ULONG           hc_CommandSignal;
+    struct MsgPort *hc_StartupPort;   /* for WBStartup message replies */
+    ULONG           hc_StartupSignal;
+};
 
-    struct MsgPort       *port =  NULL;
+/*** Prototypes *************************************************************/
+static BOOL __initialize(struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
+static VOID __deinitialize(struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
 
-    ULONG                 openCount = 0;
-    struct WBStartup     *incoming;
-#if 0
-    struct WBStartup     *outgoing;
-#endif
+static VOID __handleLaunch(struct LaunchMessage *message, struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
+static VOID __handleDrawer(struct DrawerMessage *message, struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase);
 
-    D(bug( "WBHandler: I'm alive! Alive I tell you!\n" ));
+/*** Macros *****************************************************************/
+#define initialize() (__initialize(hc, WorkbenchBase))
+#define deinitialize() (__deinitialize(hc, WorkbenchBase))
 
-    /* First of all, we need to open workbench.library. */
-    if( !(WorkbenchBase = (struct WorkbenchBase *) OpenLibrary( WORKBENCHNAME, 37L )) ) {
-        D(bug( "WBHandler: Could not open workbench.library!\n" ));
-        goto exit;
-    }
+#define handleLaunch(message) (__handleLaunch((message), hc, WorkbenchBase))
+#define handleDrawer(message) (__handleDrawer((message), hc, WorkbenchBase))
 
-    /* Allocate a message port. */
-    if( !(port = CreateMsgPort()) ) {
-        D(bug( "WBHandler: Could not create message port!\n" ));
-        goto exit;
-    }
+#define SET_ERROR(error) (WorkbenchBase->wb_HandlerError = (error))
 
-    /* Tell Workbench library we're here... */
-    WorkbenchBase->wb_HandlerPort = port;
-
-    /* Main event loop */
-    do {
-        WaitPort( port );
-
-        while( (incoming = (struct WBStartup *) GetMsg( port )) != NULL ) {
-            if( incoming->sm_Message.mn_Node.ln_Type == NT_REPLYMSG ) {
-                /* This is a replied message from a WB Program that has finished */
-                /* Deallocate it and the locks ands strings in WBArgs */
-
-                openCount--;
-            } else { /* Start a program */
-                /* Allocate mem for message */
-                /* Copy strings and duplicate locks */
-                /* Load program and start it */
-                /* Send message */
-
-                openCount++;
-
-                ReplyMsg( (struct Message *) incoming );
+/*** Entry point ************************************************************/
+#undef SysBase
+AROS_UFH3
+(
+    LONG, WorkbenchHandler,
+    AROS_UFHA(STRPTR,            args,       A0),
+    AROS_UFHA(ULONG,             argsLength, D0),
+    AROS_UFHA(struct ExecBase *, SysBase,    A6)
+)
+{
+    struct WorkbenchBase  *WorkbenchBase = FindTask(NULL)->tc_UserData;
+    struct HandlerContext  context       = { 0 };
+    struct HandlerContext *hc            = &context;
+    
+    /*-- Initialization ----------------------------------------------------*/
+    if (initialize())
+    {
+        /* Prevent the library to be expunged while the handler is running */
+        OpenLibrary("workbench.library", 0L);
+        
+        /* We're now ready to accept messages */
+        WorkbenchBase->wb_HandlerPort = hc->hc_CommandPort;
+        
+        D(bug("Workbench Handler: entering message loop\n"));
+        
+        while (TRUE)
+        {
+            ULONG signals = Wait(hc->hc_CommandSignal | hc->hc_StartupSignal);
+            D(bug("Workbench Handler: Got message(s)...\n"));
+            
+            if (signals & hc->hc_CommandSignal)
+            {
+                struct HandlerMessage *message;
+                
+                D(bug("Workbench Handler: Got message(s) at command port\n"));
+                
+                while 
+                (
+                    (
+                        message = (struct HandlerMessage *) GetMsg
+                        (
+                            hc->hc_CommandPort
+                        )
+                    ) != NULL
+                )
+                {
+                    switch (message->hm_Type)
+                    {
+                        case HM_TYPE_LAUNCH:
+                            D(bug("Workbench Handler: Got launch message\n"));
+                            handleLaunch((struct LaunchMessage *) message);
+                            break;
+                            
+                        case HM_TYPE_DRAWER:
+                            handleDrawer((struct DrawerMessage *) message);
+                            break;
+                    }
+                }
             }
-
+            
+            if (signals & hc->hc_StartupSignal)
+            {
+                struct WBStartup *message;
+                
+                D(bug("Workbench Handler: Got message(s) at startup port\n"));
+                
+                while 
+                (
+                    (
+                        message = (struct WBStartup *) GetMsg
+                        (
+                            hc->hc_StartupPort
+                        )
+                    ) != NULL
+                )
+                {
+                    ULONG i;
+                    
+                    D(bug("Workbench Handler: Deallocating WBStartup message and arguments\n"));
+                    
+                    for (i = 0; i < message->sm_NumArgs; i++)
+                    {
+                        if (message->sm_ArgList[i].wa_Lock != NULL) UnLock(message->sm_ArgList[i].wa_Lock);
+                        if (message->sm_ArgList[i].wa_Name != NULL) FreeVec(message->sm_ArgList[i].wa_Name);
+                    }
+                    
+                    FreeMem(message, sizeof(struct WBStartup));
+                }
+            }
         }
-    } while( openCount > 0 );
-
-exit:
-    WorkbenchBase->wb_HandlerPort = NULL;
-
-    if( port ) {
-        DeleteMsgPort( port );
     }
+    
+    //FIXME: shutdown not properly implemented
+    
+    deinitialize();
+    
+    return 0;
+}
+#define SysBase (WorkbenchBase->wb_SysBase)
 
-    if( WorkbenchBase ) {
-        CloseLibrary( (struct Library *) WorkbenchBase );
+
+static BOOL __initialize
+(
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    if
+    (
+           (hc->hc_CommandPort = CreateMsgPort()) == NULL
+        || (hc->hc_StartupPort = CreateMsgPort()) == NULL
+    )
+    {
+        SET_ERROR(HE_MSGPORT);
+        return FALSE;
     }
+    
+    hc->hc_CommandSignal = 1 << hc->hc_CommandPort->mp_SigBit;
+    hc->hc_StartupSignal = 1 << hc->hc_StartupPort->mp_SigBit;
+
+    return TRUE;
+}
+
+static VOID __deinitialize
+(
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    if (hc->hc_CommandPort != NULL) DeleteMsgPort(hc->hc_CommandPort);
+    if (hc->hc_StartupPort != NULL) DeleteMsgPort(hc->hc_StartupPort);
+}
+
+static VOID __handleLaunch
+(
+    struct LaunchMessage *message, 
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    struct WBStartup *startup = message->lm_StartupMessage;
+    STRPTR            name    = startup->sm_ArgList[0].wa_Name;
+    BPTR              lock    = startup->sm_ArgList[0].wa_Lock;
+    BPTR              cd      = NULL;
+    struct Process   *process = NULL;
+    
+    /* Free memory of launch message (don't need it anymore) */
+    FreeMem(message, sizeof(struct LaunchMessage));
+    
+    
+    /* Change directory to where the program resides */
+    cd = CurrentDir(lock);
+    
+    /* Load the program from disk */
+    startup->sm_Segment = LoadSeg(name);
+    if (startup->sm_Segment != NULL)
+    {
+        /* Launch the program */
+        process = CreateNewProcTags
+        (
+            NP_Seglist,     startup->sm_Segment,
+            NP_Name,        name,
+            NP_StackSize,   WorkbenchBase->wb_DefaultStackSize // FIXME: should be read from icon
+        );
+                
+        if (process != NULL)
+        {
+            D(bug("Workbench Handler: handleLaunch: Process created successfully\n"));
+                        
+            /* Setup startup message */
+            MESSAGE(startup)->mn_ReplyPort = hc->hc_StartupPort;
+            startup->sm_Process = &process->pr_MsgPort;
+            
+            /* Send startup message to program */ 
+            PutMsg(startup->sm_Process, startup);
+        }
+        else
+        {
+            //FIXME: free startup msg mem
+            D(bug("Workbench Handler: handleLaunch: Failed to create process\n"));
+        }
+        
+    }
+    else
+    {
+        //FIXME: handle error
+    }
+    
+    /* Restore current directory */
+    CurrentDir(cd);
+}
+
+static VOID __handleDrawer
+(
+    struct DrawerMessage *message, 
+    struct HandlerContext *hc, struct WorkbenchBase *WorkbenchBase
+)
+{
+    // FIXME
 }
