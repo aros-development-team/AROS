@@ -1,13 +1,11 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := asciiclass libfunc
-FUNCS := obtainengine
+FILES := asciiclass
 
 #MM workbench-datatypes-ascii : includes linklibs
 
-%build_module_macro mmake=workbench-datatypes-ascii modname=ascii \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs=amiga
+%build_module mmake=workbench-datatypes-ascii \
+    modname=ascii modtype=datatype \
+    files=$(FILES)
 
-%common

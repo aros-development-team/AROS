@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -45,7 +45,7 @@ static IPTR NotifyAttrChanges(Object * o, VOID * ginfo, ULONG flags, ULONG tag1,
 
 /**************************************************************************************************/
 
-static IPTR Ascii_New(Class * cl, Object *o, struct opSet *msg)
+IPTR Ascii__OM_NEW(Class * cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -101,7 +101,7 @@ static IPTR Ascii_New(Class * cl, Object *o, struct opSet *msg)
 
 /**************************************************************************************************/
 
-static IPTR Ascii_Dispose(Class *cl, Object *o, Msg msg)
+IPTR Ascii__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct AsciiData 	*data;
     struct List 	*linelist = 0;
@@ -124,7 +124,7 @@ static IPTR Ascii_Dispose(Class *cl, Object *o, Msg msg)
 
 /**************************************************************************************************/
 
-static IPTR Ascii_Set(Class *cl, Object *o, struct opSet *msg)
+IPTR Ascii__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     IPTR retval;
     
@@ -155,10 +155,14 @@ static IPTR Ascii_Set(Class *cl, Object *o, struct opSet *msg)
  
     return retval;  
 }
+IPTR Ascii__OM_UPDATE(Class *cl, Object *o, struct opSet *msg)
+{
+    return Ascii__OM_SET(cl, o, msg);
+}
 
 /**************************************************************************************************/
 
-static IPTR Ascii_Layout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR Ascii__GM_LAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     IPTR retval;
     
@@ -179,7 +183,7 @@ static IPTR Ascii_Layout(Class *cl, Object *o, struct gpLayout *msg)
 
 /**************************************************************************************************/
 
-static IPTR Ascii_ProcLayout(Class *cl, Object *o, struct gpLayout *msg)
+IPTR Ascii__DTM_PROCLAYOUT(Class *cl, Object *o, struct gpLayout *msg)
 {
     IPTR retval;
     
@@ -197,7 +201,7 @@ static IPTR Ascii_ProcLayout(Class *cl, Object *o, struct gpLayout *msg)
 	
 /**************************************************************************************************/
 
-static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
+IPTR Ascii__DTM_ASYNCLAYOUT(Class *cl, Object *o, struct gpLayout *gpl)
 {
     struct DTSpecialInfo 	*si = (struct DTSpecialInfo *) G (o)->SpecialInfo;
     struct AsciiData 		*data = INST_DATA (cl, o);
@@ -510,77 +514,4 @@ static IPTR Ascii_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 
 /**************************************************************************************************/
 /**************************************************************************************************/
-/**************************************************************************************************/
-
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-	   AROS_UFHA(Class *, cl, A0),
-	   AROS_UFHA(Object *, o, A2),
-	   AROS_UFHA(Msg, msg, A1))
-{
-    AROS_USERFUNC_INIT
-#else
-IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-{
-#endif
-    IPTR retval = 0;
-
-    switch(msg->MethodID)
-    {
-        case OM_NEW:
-	    retval = Ascii_New(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    retval = Ascii_Dispose(cl, o, msg);
-	    break;
-	    
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = Ascii_Set(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case GM_LAYOUT:
-	    retval = Ascii_Layout(cl, o, (struct gpLayout *)msg);
-	    break;
-	
-	case DTM_PROCLAYOUT:
-	    retval = Ascii_ProcLayout(cl, o, (struct gpLayout *)msg);
-	    /* fall through */
-	    
-	case DTM_ASYNCLAYOUT:
-	    retval = Ascii_AsyncLayout(cl, o, (struct gpLayout *)msg);
-	    break;
-	
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	    
-    } /* switch(msg->MethodID) */
-    
-    return retval;
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
-}
-
-/**************************************************************************************************/
-
-struct IClass *DT_MakeClass(struct Library *asciibase)
-{
-    struct IClass *cl = MakeClass("ascii.datatype", "text.datatype", 0, sizeof(struct AsciiData), 0);
-
-    if (cl)
-    {
-#ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
-	cl->cl_UserData = (IPTR)asciibase; /* Required by datatypes (see disposedtobject) */
-    }
-
-    return cl;
-}
-
 /**************************************************************************************************/
