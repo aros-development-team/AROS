@@ -103,7 +103,7 @@ extern const char *z_errmsg[10]; /* indexed by 2-zlib_error */
 #endif
 
 #ifdef AMIGA
-#  warning FIXME: Should AROS have it's own OS_CODE?
+   /* FIXME: Should AROS have it's own OS_CODE? */
 #  define OS_CODE  0x01
 #endif
 
