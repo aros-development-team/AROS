@@ -108,76 +108,58 @@ IPTR PreferencesWindow__OM_NEW
         TAG_MORE, (IPTR) message->ops_AttrList
     );
 
-    if (self == NULL) goto error;
-    
-    data = INST_DATA(CLASS, self);
-    data->pwd_Catalog = catalog;
-
-    /* Disable the save button if ENVARC: is write-protected */
-    lock = Lock("ENVARC:", SHARED_LOCK);
-    if (lock != NULL)
+    if (self != NULL)
     {
-        struct InfoData id;
+        data = INST_DATA(CLASS, self);
+        data->pwd_Catalog      = catalog;
+        data->pwd_TestButton   = testButton;
+        data->pwd_RevertButton = revertButton;
+        data->pwd_SaveButton   = saveButton;
+        data->pwd_UseButton    = useButton;
+        data->pwd_CancelButton = cancelButton;
         
-        if (Info(lock, &id))
-        {
-            if (id.id_DiskState == ID_WRITE_PROTECTED)
-            {
-                enableSave = FALSE;
-            }
-        }
+        /*-- Handle initial attribute values -------------------------------*/
+        SetAttrsA(self, message->ops_AttrList);
+       
+        /*-- Setup notifications -------------------------------------------*/
+        DoMethod
+        ( 
+            self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Cancel 
+        );
         
-        UnLock(lock);
+        DoMethod
+        ( 
+            testButton, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Test 
+        );
+        DoMethod
+        ( 
+            revertButton, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Revert
+        );
+        DoMethod
+        ( 
+            saveButton, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Save
+        );
+        DoMethod
+        ( 
+            useButton, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Use
+        );
+        DoMethod
+        ( 
+            cancelButton, MUIM_Notify, MUIA_Pressed, FALSE, 
+            (IPTR) self, 1, MUIM_PreferencesWindow_Cancel
+        );
     }
     else
     {
-        enableSave = FALSE;
+        if (catalog != NULL) CloseCatalog(catalog);
     }
-    
-    if (!enableSave)
-    {
-        set(saveButton, MUIA_Disabled, TRUE);
-    }
-
-    /* Setup notifications */
-    DoMethod
-    ( 
-        self, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Cancel 
-    );
-    
-    DoMethod
-    ( 
-        testButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Test 
-    );
-    DoMethod
-    ( 
-        revertButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Revert
-    );
-    DoMethod
-    ( 
-        saveButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Save
-    );
-    DoMethod
-    ( 
-        useButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Use
-    );
-    DoMethod
-    ( 
-        cancelButton, MUIM_Notify, MUIA_Pressed, FALSE, 
-        (IPTR) self, 1, MUIM_PreferencesWindow_Cancel
-    );
     
     return (IPTR) self;
-    
-error:
-    if (catalog != NULL) CloseCatalog(catalog);
-    
-    return (IPTR) NULL;
 }
 
 IPTR PreferencesWindow__OM_DISPOSE
@@ -190,4 +172,80 @@ IPTR PreferencesWindow__OM_DISPOSE
     if (data->pwd_Catalog != NULL) CloseCatalog(data->pwd_Catalog);
     
     return DoSuperMethodA(CLASS, self, message);
+}
+
+IPTR PreferencesWindow__OM_SET
+(
+    Class *CLASS, Object *self, struct opSet *message
+)
+{
+    struct PreferencesWindow_DATA *data   = INST_DATA(CLASS, self);
+    struct TagItem                *tstate = message->ops_AttrList,
+                                  *tag;
+                                  
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+            case MUIA_PreferencesWindow_Test_Disabled:
+                SET(data->pwd_TestButton, MUIA_Disabled, tag->ti_Data);
+                break;
+                
+            case MUIA_PreferencesWindow_Revert_Disabled:
+                SET(data->pwd_RevertButton, MUIA_Disabled, tag->ti_Data);
+                break;
+                
+            case MUIA_PreferencesWindow_Save_Disabled:
+                SET(data->pwd_SaveButton, MUIA_Disabled, tag->ti_Data);
+                break;
+                
+            case MUIA_PreferencesWindow_Use_Disabled:
+                SET(data->pwd_UseButton, MUIA_Disabled, tag->ti_Data);
+                break;
+                
+            case MUIA_PreferencesWindow_Cancel_Disabled:
+                SET(data->pwd_CancelButton, MUIA_Disabled, tag->ti_Data);
+                break;
+        }
+    }
+    
+    return DoSuperMethodA(CLASS, self, (Msg) message);
+}
+
+IPTR PreferencesWindow__OM_GET
+(
+    Class *CLASS, Object *self, struct opGet *message
+)
+{
+    struct PreferencesWindow_DATA *data  = INST_DATA(CLASS, self);
+    IPTR                          *store = message->opg_Storage;
+    IPTR                           rv    = TRUE;
+    
+    switch (message->opg_AttrID)
+    {
+        case MUIA_PreferencesWindow_Test_Disabled:
+            *store = XGET(data->pwd_TestButton, MUIA_Disabled);
+            break;
+            
+        case MUIA_PreferencesWindow_Revert_Disabled:
+            *store = XGET(data->pwd_RevertButton, MUIA_Disabled);
+            break;
+            
+        case MUIA_PreferencesWindow_Save_Disabled:
+            *store = XGET(data->pwd_SaveButton, MUIA_Disabled);
+            break;
+            
+        case MUIA_PreferencesWindow_Use_Disabled:
+            *store = XGET(data->pwd_UseButton, MUIA_Disabled);
+            break;
+            
+        case MUIA_PreferencesWindow_Cancel_Disabled:
+            *store = XGET(data->pwd_CancelButton, MUIA_Disabled);
+            break;
+            
+        default:
+            rv = DoSuperMethodA(CLASS, self, (Msg) message);
+    }
+    
+    return rv;
 }
