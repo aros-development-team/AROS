@@ -285,9 +285,9 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.muipens[MPEN_BACKGROUND].green = 0xa0000000;
     data->prefs.muipens[MPEN_BACKGROUND].blue = 0xa0000000;
 
-    data->prefs.muipens[MPEN_HALFSHADOW].red = 0x50000000;
-    data->prefs.muipens[MPEN_HALFSHADOW].green = 0x50000000;
-    data->prefs.muipens[MPEN_HALFSHADOW].blue = 0x50000000;
+    data->prefs.muipens[MPEN_HALFSHADOW].red = 0x80000000;
+    data->prefs.muipens[MPEN_HALFSHADOW].green = 0x80000000;
+    data->prefs.muipens[MPEN_HALFSHADOW].blue = 0x80000000;
 
     data->prefs.muipens[MPEN_SHADOW].red = 0x00000000;
     data->prefs.muipens[MPEN_SHADOW].green = 0x00000000;
