@@ -3,29 +3,28 @@
 \section{What is AROS ?}
 
 Some time back in the year 1993, the situation for the Amiga looked
-somewhat worse (doesn't it always ?) and some Amiga fans got together and
-argued about what was to do to increase the acceptance for our beloved
-machine. Immediately the main reason for the missing success of the Amiga
-has been found: It's propagation or the lack thereof. The Amiga must become
-a more widespread basis to make it more attractive for everyone - for the
-users and the developers. So plans were made to reach this goal. During
-this effort, all bugs of the OS of the Amiga should be fixed and it should
-become an OS of the 90s. AOS was born.
+somewhat worse than usual (doesn't it always?) and some Amiga fans got
+together and argued about what should be done to increase the
+acceptance of our beloved machine.  Immediately the main reason for the 
+missing success of the Amiga became clear: it was propagation  - or the
+lack thereof.  The Amiga should get a more widespread basis to make it 
+more attractive for everyone to use and to develop for.  So plans were 
+made to reach this goal.  One of the plans was to fix all bugs of the
+AmigaOS, another was to make it an OS of the 90s.  AOS was born.
 
-But what is a bug ? And how should they be fixed ? What's the thing a
-so-called \italics{modern} OS must have ? And how should they be
-implemented into the Amiga OS ?
+But what is a bug?  And how should bugs be fixed?  What are the
+features a so-called \italics{modern} OS must have?  And how should 
+they be implemented into the AmigaOS?
 
 Two years later, people were still arguing about this and not even one line
-of code had been written (or at least no one had ever seen that code). And
-discussions were still of the pattern "we must have..." and someone
-answered "read the old mails" or "this is impossible to do, because" which
-was shortly followed by "you're wrong because" and this one was ripped
-apart and so on.
+of code had been written (or at least no one had ever seen that code).  
+Discussions were still of the pattern "we must have ..." and someone
+answered "read the old mails" or "this is impossible to do, because ..."
+which was shortly followed by "you're wrong because ..." and so on.
 
 In the winter of 1995, I (Aaron Digulla) was fed up with it and I posted an
 RFC (request for comments) to the AOS mailing list in which I asked what the
-minimal common ground might be. Several options were given and the
+minimal common ground might be.  Several options were given and the
 conclusion was that almost everyone would like to see an OS which is
 compatible to OS 3.1 (Kickstart 40.68) on which further discussions could
 be based upon to see what is possible and what is not.
@@ -54,19 +53,20 @@ AmigaOS
 
 \end{itemize}
 
-To reach this goal, we use a number of techniques. First of all, we make
-heavy use of the Internet. You can participate in our project even if you
-can write only one single OS function. The most current version of the
-source is accessible 24h per day and patches can be merged into it at any
-time. A small database with open tasks prevents all developers from doing
-something twice.
+To reach this goal, we use a number of techniques.  First of all, we make
+heavy use of the Internet.  You can participate in our project even if you
+can write only one single OS function.  The most current version of the
+source is accessible 24 hours per day and patches can be merged into it at
+any time.  A small database with open tasks prevents all developers from
+doing something twice.
 
 \section{Who does AROS ?}
 
-This is the current developer list. Please note that the EMail addresses of
-all developers but the coordinator are missing. The reason for this is that
-we want to protect the developers from junk mail. If you have something to
-ask or say, contact coordinator \email{digulla@aros.fh-konstanz.de}.
+This is the current developer list.  Please note that the e-mail addresses
+of all developers but the coordinator are missing.  The reason for this is
+that we want to protect the developers from junk mail.  If you have
+something to ask or say, contact the coordinator
+\email{digulla@aros.fh-konstanz.de}.
 
 \include{devlist.inc}
 
@@ -90,9 +90,9 @@ Here is a list of programs which have been tried on Amiga-Linux/m68k:
 \filename{C:Assign},
 \filename{C:Info},
 \filename{C:Status} and
-\filename{C:SetPatch} (It doesn't install any patches, though :-) ). All
+\filename{C:SetPatch} (It doesn't install any patches though). All
 of them work, others don't, yet.
-\item zoo (packer) works, gzip V 1.1.2 (only packing though :-/ ) , LhA and LZX not yet.
+\item zoo (packer) works, gzip V 1.1.2 (only packing though), LhA and LZX not yet.
 \item UUxT (uuencoder/-decoder by Asher Feldman)
 \item TeX: bibtex and bm2font work.
 \item OMA2.0 assembler works. Linker hasn't been tried yet.
@@ -120,21 +120,21 @@ of them work, others don't, yet.
 
 \largepic{A snapshot of the window of demowin}{pics/demowin.gif}
 
-This window is opened with the \shell{demowin} demo program. It opens a
-window and renders some graphics in it. You can click on the gadgets and
-the program will tell you which gadget has been pressed. If you press the
+This window is opened with the \shell{demowin} demo program.  It opens a
+window and renders some graphics in it.  You can click on the gadgets and
+the program will tell you which gadget has been pressed.  If you press the
 gadget with the label "Complement", the sizes for the PropGadgets will
-change. You can press a key and the program will show you the string which
-is associated with that key. You can press the left, middle and right
-mousebutton to draw lines in the window. To exit the demo, press the Escape
-key or click on one of the "Exit" gadgets at the bottom.
+change.  You can press a key and the program will show you the string
+which is associated with that key.  You can press the left, middle and
+right mouse button to draw lines in the window.  To exit the demo, press
+the Escape key or click on one of the "Exit" gadgets at the bottom.
 
 \largepic{A snapshot of readicon}{pics/readicon.gif}
 
-This shows the output of readicon. In the big window, you can see debugging
-and informational output of the program. The small window shows the normal
-and selected state of an icon and contains a gadget which has the icons'
-images for its normal and selected images.
+This shows the output of readicon.  In the big window, you can see
+debugging and informational output of the program.  The small window shows
+the normal and selected state of an icon and contains a gadget which has 
+the icons' images for its normal and selected images.
 
 \section{The future}
 
@@ -149,6 +149,6 @@ These are things which are still to do:
 
 \begin{new}{7.1.1998}
 Since the new situation (we must have a license from Amiga Int/Inc), this
-has to be overworked. Right now, it's not possible to license AROS. Watch
-this space for further updates.
+has to be overworked.  Right now, it is not possible to license AROS. 
+Watch this space for further updates.
 \end{new}

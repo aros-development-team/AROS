@@ -2,7 +2,7 @@
 \subsection{Background}
 
 There are two kinds of multitasking: Preemptive and Non-preemptive (also known
-as cooperative). Preemptive means, that you get a certain amount of CPU time
+as cooperative). Preemptive means that you get a certain amount of CPU time
 and then another task gets the CPU. Non-preemptive means that a task has to
 call a function which allows another task to run. Preemptive multitasking
 (PMT) has these advantages:
@@ -39,12 +39,12 @@ if it keeps the CPU forever, all you can do is turn the computer off).
 \end{itemize}
 
 It seems obvious that CMT is better than PMT but that's not true. CMT is
-better when you have only a few tasks and a single user. Powerful OSs
+better when you have only a few tasks and a single user. Powerful OSes
 like Unix and AmigaOS have PMT because it's more simple to use.
 
 \subsection{How does it work ?}
 
-The idea is pretty simple. Every computer has clock and this clock can
+The idea is pretty simple. Every computer has a clock and this clock can
 generate interrupts. An interrupt means that the CPU saves its current
 state on the stack of the current task and starts a special routine
 called the interrupt handler. Basically this handler now checks for
