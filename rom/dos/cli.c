@@ -46,10 +46,18 @@
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
     /* Get pointer to process structure */
-    struct Process *me = (struct Process *)FindTask(NULL);
-
-    /* Nothing spectacular */
-    return (struct CommandLineInterface *)BADDR(me->pr_CLI);
-
+    struct Process *me = (struct Process *) FindTask(NULL);
+    
+    /* Make sure this is a process */
+    if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+    {
+        /* Nothing spectacular */
+        return (struct CommandLineInterface *) BADDR(me->pr_CLI);
+    }
+    else
+    {
+        return NULL;
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* Cli */
