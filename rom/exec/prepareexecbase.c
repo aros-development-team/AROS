@@ -56,6 +56,8 @@ static APTR allocmem(struct MemHeader *mh, ULONG size)
     PrepareExecBase() will initialize the ExecBase to default values,
     and not add anything yet (except for the MemHeader).
 */
+extern void *stderr;
+
 struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 {
     ULONG neg, i;
@@ -74,8 +76,8 @@ struct ExecBase *PrepareExecBase(struct MemHeader *mh)
 	__AROS_SETVECADDR(SysBase, i, ExecFunctions[i-1]);
     }
 
-    AROS_UFC1(void, AROS_SLIB_ENTRY(CacheClearU,Exec),
-	AROS_UFCA(struct ExecBase *, SysBase, A6));
+    AROS_LC0(void, CacheClearU,
+	struct ExecBase *, SysBase, 106, Exec);
 
     SysBase->LibNode.lib_Node.ln_Type = NT_LIBRARY;
     SysBase->LibNode.lib_Node.ln_Pri  = -100;
