@@ -955,6 +955,11 @@ UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase)
 	    cpf = PIXFMT_BGRA32;
 	    break;
 	    
+	case vHidd_StdPixFmt_ABGR32:
+	case vHidd_StdPixFmt_0BGR32:
+	    cpf = PIXFMT_ABGR32;
+	    break;
+	
 	case vHidd_StdPixFmt_LUT8:
 	    cpf = PIXFMT_LUT8;
 	    break;
@@ -1027,6 +1032,10 @@ HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase)
 	
 	case PIXFMT_BGRA32:
 	    stdpf = vHidd_StdPixFmt_BGRA32;
+	    break;
+	
+	case PIXFMT_ABGR32:
+	    stdpf = vHidd_StdPixFmt_ABGR32;
 	    break;
 	
 	case PIXFMT_LUT8:
