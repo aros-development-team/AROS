@@ -528,7 +528,7 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
     	, cl, bm, buf, image, width, height, depth, msg);
     
 */
-    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, msg->width)) {
+    if (msg->modulo == HIDD_BM_BytesPerLine(bm, msg->pixFmt, width)) {
     	use_modulo = FALSE;
 	
     }
@@ -537,13 +537,13 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
     switch (msg->pixFmt) {
     case vHidd_StdPixFmt_Native:
     	if (!use_modulo) {
-	    memcpy(image->data, buf, msg->modulo * msg->height);
+	    memcpy(image->data, buf, msg->modulo * height);
 	} else {
 	    LONG y;
             UBYTE *imdata = image->data;
 
 	
-	    for (y = 0; y < msg->height; y ++) {
+	    for (y = 0; y < height; y ++) {
 		memcpy(imdata, buf, msg->modulo);
 
 #if 0			
@@ -587,11 +587,11 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	    
 	    pf = BM_PIXFMT(bm);
 	    
-	    for (y = 0; y < msg->height; y ++) {
+	    for (y = 0; y < height; y ++) {
 	    
 	    	HIDDT_Pixel *p = buf;
 		
-	    	for (x = 0; x < msg->width; x ++) {
+	    	for (x = 0; x < width; x ++) {
 		     register HIDDT_Pixel pix;
 		     
 		     pix = *p ++;
@@ -614,11 +614,11 @@ static ULONG *buf_to_ximage(Class *cl, Object *bm
 	    LONG x, y;
 
 LX11	    
-	    for (y = 0; y < msg->height; y ++) {
+	    for (y = 0; y < height; y ++) {
 	    	HIDDT_Pixel *p;
 	    
 	    	p = buf;
-	    	for (x = 0; x < msg->width; x ++) {
+	    	for (x = 0; x < width; x ++) {
 		     XPutPixel(image, x, y, *p ++);
 		}
 		((UBYTE *)buf) += msg->modulo;
@@ -637,14 +637,14 @@ UX11
 	Object *srcpf, *dstpf, *gfxhidd;
 	APTR srcPixels = buf, dstBuf = image->data;
 		
-	kprintf("DEFAULT PIXEL CONVERSION\n");
+	//kprintf("DEFAULT PIXEL CONVERSION\n");
 	
 	GetAttr(bm, aHidd_BitMap_GfxHidd, (IPTR *)&gfxhidd);
 	srcpf = HIDD_Gfx_GetPixFmt(gfxhidd, msg->pixFmt);
 	
 	GetAttr(bm, aHidd_BitMap_PixFmt, (IPTR *)&dstpf);
 	
-	kprintf("CALLING ConvertPixels()\n");
+	//kprintf("CALLING ConvertPixels()\n");
 	
      	HIDD_BM_ConvertPixels(bm, &srcPixels
 		, (HIDDT_PixelFormat *)srcpf
@@ -652,14 +652,14 @@ UX11
 		, &dstBuf
 		, (HIDDT_PixelFormat *)dstpf
 		, image->bytes_per_line
-		, msg->width, msg->height
+		, width, height
 		, NULL /* We have no CLUT */
 	);
 	
-	kprintf("CONVERTPIXELS DONE\n");
+	//kprintf("CONVERTPIXELS DONE\n");
 	
 	
-	((UBYTE *)buf) += msg->modulo * msg->height;
+	((UBYTE *)buf) += msg->modulo * height;
 	break; }
 
     } /* switch (msg->pixFmt) */
@@ -761,7 +761,6 @@ UX11
     
     /* Calculate how many scanline can be stored in the buffer */
     maxlines = XSHM_MEMSIZE / image->bytes_per_line; 
-    
     
     if (0 == maxlines)
     {
