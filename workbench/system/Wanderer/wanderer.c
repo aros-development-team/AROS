@@ -56,6 +56,13 @@ enum
     MEN_WANDERER_GUISETTINGS,
     MEN_WANDERER_ABOUT,
     MEN_WANDERER_QUIT,
+    MEN_WINDOW_UPDATE,
+    MEN_WINDOW_SORT_NAME,
+    MEN_WINDOW_SORT_TYPE,
+    MEN_WINDOW_SORT_DATE,
+    MEN_WINDOW_SORT_SIZE,
+    MEN_WINDOW_SORT_REVERSE,
+    MEN_WINDOW_SORT_TOPDRAWERS,
     MEN_ICON_OPEN,
     MEN_ICON_INFORMATION,
     MEN_ICON_DELETE,
@@ -74,8 +81,18 @@ static struct NewMenu nm[] =
     {NM_ITEM,  "About...",           "?", 0,               0, (APTR) MEN_WANDERER_ABOUT},
     {NM_ITEM,  "Quit...",            "Q", 0,               0, (APTR) MEN_WANDERER_QUIT},
 
-  /*{NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
-    {NM_ITEM,  "New Drawer", "N"},
+  {NM_TITLE, "Window",          NULL, NM_MENUDISABLED},
+    {NM_ITEM,  "Update",           NULL, 0, 0, (APTR) MEN_WINDOW_UPDATE},
+    {NM_ITEM, NM_BARLABEL},
+    {NM_ITEM,  "Sort By Name",           NULL, CHECKIT|CHECKED,8+16+32, (APTR) MEN_WINDOW_SORT_NAME},
+    {NM_ITEM,  "Sort By Date",           NULL, CHECKIT,4+16+32, (APTR) MEN_WINDOW_SORT_DATE},
+    {NM_ITEM,  "Sort By Size",           NULL, CHECKIT,4+8+32, (APTR) MEN_WINDOW_SORT_SIZE},
+    /*{NM_ITEM,  "Sort By Type",           NULL, CHECKIT,4+8+16, (APTR) MEN_WINDOW_SORT_TYPE},*/
+	{NM_ITEM, NM_BARLABEL},
+    {NM_ITEM,  "Reverse Sort",           NULL, CHECKIT|MENUTOGGLE, 0, (APTR) MEN_WINDOW_SORT_REVERSE},
+    {NM_ITEM,  "Drawers First",           NULL, CHECKIT|MENUTOGGLE|CHECKED, 0, (APTR) MEN_WINDOW_SORT_TOPDRAWERS},
+  /*  {NM_ITEM,  "New Drawer", "N"},
+
     {NM_ITEM,  "Open Parent" },
     {NM_ITEM,  "Close", "K"},
     {NM_ITEM,  "Update" },
@@ -174,6 +191,149 @@ void wanderer_backdrop(Object **pstrip)
     	SET(window, MUIA_Window_Open, FALSE);
 	SET(window, MUIA_IconWindow_IsBackdrop, XGET(item, MUIA_Menuitem_Checked));
     	SET(window, MUIA_Window_Open, TRUE);
+    }
+}
+
+void window_update()
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if (iconList != NULL)
+    {
+    	DoMethod(iconList, MUIM_IconList_Update);
+    }
+}
+
+void window_sort_name(Object **pstrip)
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if ( iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		/*name = date and size bit both NOT set*/
+		if( (sort_bits & ICONLIST_SORT_BY_DATE) || (sort_bits & ICONLIST_SORT_BY_SIZE) )
+		{
+			sort_bits &= ~(ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
+		}
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+void window_sort_date(Object **pstrip)
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if ( iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		/*exclude size bit*/
+		if( sort_bits & ICONLIST_SORT_BY_SIZE )
+		{
+			sort_bits &= ~ICONLIST_SORT_BY_SIZE;
+		}
+
+		sort_bits |= ICONLIST_SORT_BY_DATE;
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+void window_sort_size(Object **pstrip)
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if ( iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		/*exclude date bit*/
+		if( sort_bits & ICONLIST_SORT_BY_DATE )
+		{
+			sort_bits &= ~ICONLIST_SORT_BY_DATE;
+		}
+
+		sort_bits |= ICONLIST_SORT_BY_SIZE;
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+void window_sort_type(Object **pstrip)
+{
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if ( iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		/*type = both date and size bits both set*/
+		sort_bits |= (ICONLIST_SORT_BY_DATE | ICONLIST_SORT_BY_SIZE);
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+
+void window_sort_reverse(Object **pstrip)
+{
+    Object *strip = *pstrip;
+    Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_REVERSE);
+    Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+    Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if (item != NULL && iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		if( XGET(item, MUIA_Menuitem_Checked) )
+		{
+			sort_bits |= ICONLIST_SORT_REVERSE;
+		}
+		else
+		{
+			sort_bits &= ~ICONLIST_SORT_REVERSE;
+		}
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
+    }
+}
+
+void window_sort_topdrawers(Object **pstrip)
+{
+	Object *strip = *pstrip;
+	Object *item = FindMenuitem(strip, MEN_WINDOW_SORT_TOPDRAWERS);
+	Object *window = (Object *) XGET(app, MUIA_Wanderer_ActiveWindow);
+	Object *iconList = (Object *) XGET(window, MUIA_IconWindow_IconList);
+
+    if (item != NULL && iconList != NULL)
+    {
+		ULONG sort_bits = DoMethod(iconList, MUIM_IconList_GetSortBits);
+
+		if( XGET(item, MUIA_Menuitem_Checked) )
+		{
+			sort_bits &= !ICONLIST_SORT_DRAWERS_MIXED;
+		}
+		else
+		{
+			sort_bits |= ICONLIST_SORT_DRAWERS_MIXED;
+		}
+
+    	DoMethod(iconList, MUIM_IconList_SetSortBits, sort_bits);
+    	DoMethod(iconList, MUIM_IconList_Sort);
     }
 }
 
@@ -444,6 +604,13 @@ VOID DoAllMenuNotifies(Object *strip, char *path)
     DoMenuNotify(strip,MEN_WANDERER_GUISETTINGS,wanderer_guisettings,NULL);
     DoMenuNotify(strip,MEN_WANDERER_ABOUT,wanderer_about,NULL);
     DoMenuNotify(strip,MEN_WANDERER_QUIT,wanderer_quit,NULL);
+    DoMenuNotify(strip,MEN_WINDOW_UPDATE,window_update,NULL);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_NAME,window_sort_name,strip);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_TYPE,window_sort_type,strip);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_DATE,window_sort_date,strip);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_SIZE,window_sort_size,strip);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_REVERSE,window_sort_reverse,strip);
+    DoMenuNotify(strip,MEN_WINDOW_SORT_TOPDRAWERS,window_sort_topdrawers,strip);
     DoMenuNotify(strip,MEN_ICON_OPEN,icon_open,NULL);
     DoMenuNotify(strip,MEN_ICON_INFORMATION,icon_information,NULL);
     DoMenuNotify(strip,MEN_ICON_DELETE,icon_delete,NULL);
