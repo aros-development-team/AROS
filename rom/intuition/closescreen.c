@@ -67,7 +67,6 @@
 
     D(bug("CloseScreen (%p)\n", screen));
 
-
     /* If this is a public screen, free related information if there are
        no windows left on the screen */
     if(GetPrivScreen(screen)->pubScrNode != NULL)
@@ -91,7 +90,6 @@
 	UnlockPubScreenList();
     }
     
-
     /* Trick: Since NextScreen is the first field of the structure,
 	we can use the pointer in the IntuitionBase as a screen with
 	the structure-size of one pointer */
@@ -103,6 +101,7 @@
 	/* If the screen to close is the next screen... */
 	if (parent->NextScreen == screen)
 	{
+
 	    /* Unlink it */
 	    parent->NextScreen = screen->NextScreen;
 
@@ -147,6 +146,8 @@
 
 	    ReturnBool("CloseScreen",TRUE);
 	}
+	
+	parent = parent->NextScreen;
     }
 
     ReturnBool("CloseScreen",FALSE);
