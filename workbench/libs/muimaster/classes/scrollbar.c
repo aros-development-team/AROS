@@ -16,12 +16,18 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "prefs.h"
+
+//#define MYDEBUG 1
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
 struct MUI_ScrollbarData
 {
-    int dummy;
+    Object *prop;
+    Object *up_arrow;
+    Object *down_arrow;
 };
 
 /**************************************************************************
@@ -29,35 +35,58 @@ struct MUI_ScrollbarData
 **************************************************************************/
 static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_PropData *data;
+    struct MUI_ScrollbarData *data;
     //struct TagItem *tags,*tag;
     int horiz = GetTagData(MUIA_Group_Horiz, 0, msg->ops_AttrList);
     int usewinborder = GetTagData(MUIA_Prop_UseWinBorder, 0, msg->ops_AttrList);
-    Object *prop = MUI_NewObject(MUIC_Prop,MUIA_Prop_Horiz, horiz, TAG_MORE, msg->ops_AttrList);
-    Object *but;
+    Object *prop = MUI_NewObject(MUIC_Prop, MUIA_Prop_Horiz, horiz, TAG_MORE, msg->ops_AttrList);
 
-    obj = (Object *)DoSuperNew(cl, obj, MUIA_Group_Spacing, 0, MUIA_Group_Child, prop, MUIA_Background, MUII_BACKGROUND, TAG_MORE, msg->ops_AttrList);
+    obj = (Object *)DoSuperNew(cl, obj,
+			       MUIA_Group_Spacing, 0,
+			       MUIA_Background, MUII_BACKGROUND,
+			       Child, (IPTR)prop,
+			       TAG_MORE, msg->ops_AttrList);
     if (!obj)
 	return FALSE;
 
     data = INST_DATA(cl, obj);
+    data->prop = prop;
+
+    D(bug("Scrollbar_New %p usewinborder=%d\n", obj, usewinborder));
 
     if (!usewinborder)
     {
-	but = ImageObject, MUIA_Background, MUII_ButtonBack, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowLeft:MUII_ArrowUp, End;
-	if (but)
+	data->up_arrow = ImageObject,
+	    MUIA_Background, MUII_ButtonBack,
+	    horiz ? MUIA_Image_FreeVert : MUIA_Image_FreeHoriz, TRUE,
+	    MUIA_Weight, 0,
+	    ImageButtonFrame,
+	    MUIA_InputMode, MUIV_InputMode_RelVerify,
+	    MUIA_Image_Spec, horiz ? MUII_ArrowLeft : MUII_ArrowUp,
+	    End;
+	if (data->up_arrow)
 	{
-	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Decrease, 1);
-	    DoMethod(obj, OM_ADDMEMBER, (IPTR)but);
+	    DoMethod(data->up_arrow, MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
+		     (IPTR)prop, 2, MUIM_Prop_Decrease, 1);
+	    DoMethod(obj, OM_ADDMEMBER, (IPTR)data->up_arrow);
         }
 
-	but = ImageObject, MUIA_Background, MUII_ButtonBack, horiz?MUIA_Image_FreeVert:MUIA_Image_FreeHoriz, TRUE, MUIA_Weight, 0, ImageButtonFrame, MUIA_InputMode, MUIV_InputMode_RelVerify, MUIA_Image_Spec, horiz?MUII_ArrowRight:MUII_ArrowDown, End;
-	if (but)
+	data->down_arrow = ImageObject,
+	    MUIA_Background, MUII_ButtonBack,
+	    horiz ? MUIA_Image_FreeVert : MUIA_Image_FreeHoriz, TRUE,
+	    MUIA_Weight, 0,
+	    ImageButtonFrame,
+	    MUIA_InputMode, MUIV_InputMode_RelVerify,
+	    MUIA_Image_Spec, horiz ? MUII_ArrowRight : MUII_ArrowDown,
+	    End;
+	if (data->down_arrow)
 	{
-	    DoMethod(but, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, (IPTR)prop, 2, MUIM_Prop_Increase, 1);
-	    DoMethod(obj, OM_ADDMEMBER, (IPTR)but);
+	    DoMethod(data->down_arrow, MUIM_Notify, MUIA_Timer, MUIV_EveryTime,
+		     (IPTR)prop, 2, MUIM_Prop_Increase, 1);
+	    DoMethod(obj, OM_ADDMEMBER, (IPTR)data->down_arrow);
         }
-    }   else
+    }
+    else
     {
 	_flags(obj) |= MADF_BORDERGADGET;
     }
@@ -66,11 +95,52 @@ static ULONG Scrollbar_New(struct IClass *cl, Object *obj, struct opSet *msg)
 }
 
 
+static IPTR Scrollbar_Setup(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_ScrollbarData *data = INST_DATA(cl, obj);
+
+    if (!DoSuperMethodA(cl, obj, msg))
+	return FALSE;
+
+    if (!(_flags(obj) & MADF_BORDERGADGET))
+    {
+	switch (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_arrangement)
+	{
+	    case SCROLLBAR_ARRANGEMENT_TOP:
+		DoMethod(obj, MUIM_Group_Sort, (IPTR)data->prop,
+			 (IPTR)data->up_arrow, (IPTR)data->down_arrow, (IPTR)NULL);
+		break;
+	    case SCROLLBAR_ARRANGEMENT_MIDDLE:
+		DoMethod(obj, MUIM_Group_Sort, (IPTR)data->up_arrow,
+			 (IPTR)data->prop, (IPTR)data->down_arrow, (IPTR)NULL);
+		break;
+	    case SCROLLBAR_ARRANGEMENT_BOTTOM:
+		DoMethod(obj, MUIM_Group_Sort, (IPTR)data->up_arrow,
+			 (IPTR)data->down_arrow, (IPTR)data->prop, (IPTR)NULL);
+		break;	    
+	}
+
+	switch (muiGlobalInfo(obj)->mgi_Prefs->scrollbar_type)
+	{
+	    case SCROLLBAR_TYPE_STANDARD:
+		break;
+	    case SCROLLBAR_TYPE_NEWLOOK:
+		break;
+	    case SCROLLBAR_TYPE_CUSTOM:
+		break;
+	}
+    }
+
+    return TRUE;
+}
+
+
 BOOPSI_DISPATCHER(IPTR, Scrollbar_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
 	case OM_NEW: return Scrollbar_New(cl, obj, (struct opSet *) msg);
+	case MUIM_Setup: return Scrollbar_Setup(cl, obj, msg);
     }
     return DoSuperMethodA(cl, obj, msg);
 }
