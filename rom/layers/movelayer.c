@@ -115,6 +115,7 @@
     l_tmp->Flags      = l->Flags;
     l_tmp->LayerInfo  = LI;
     l_tmp->DamageList = l->DamageList;
+    l_tmp->SuperBitMap= l->SuperBitMap;
 
     /* init the rastport structure of the temporary layer */
     InitRastPort(RP);
