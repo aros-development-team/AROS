@@ -9,7 +9,6 @@
 ;SetClock LOAD
 
 Mount RAM:
-Mount NIL:
 
 ;-----------------------------------------------
 ; Copy System to RAM:
@@ -26,6 +25,8 @@ Assign S: SYS:S
 
 ;Version >NIL:
 FailAt 21
+
+Mount NIL:
 
 MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys
 
