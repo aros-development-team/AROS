@@ -61,8 +61,8 @@ struct ide_Unit
     char                au_SerNumber[12];   /* Serial number */
     ULONG               au_Blocks;          /* Total number of blocks */
     ULONG               au_SectSize;        /* Sector size in bytes */
-    UBYTE               au_Heads;           /* Number of heads */
-    UBYTE               au_SectorsT;        /* Sectors/Track */
+    UWORD               au_Heads;           /* Number of heads */
+    UWORD               au_SectorsT;        /* Sectors/Track */
     UWORD               au_Cylinders;
     UWORD               au_SectorsC;        /* Sectors/Cyl */
     UWORD               au_PortAddr;        /* IO addres of drive */
