@@ -86,7 +86,7 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    	{
 			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
 			    {
-				sprintf(spec_buf,"O:%ld",tag->ti_Data);
+				sprintf(spec_buf,"0:%ld",tag->ti_Data);
 				spec = spec_buf;
 			    } else spec = (char*)tag->ti_Data;
 		    	}
@@ -143,7 +143,7 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    	{
 			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
 			    {
-				sprintf(spec_buf,"O:%ld",tag->ti_Data);
+				sprintf(spec_buf,"0:%ld",tag->ti_Data);
 				spec = spec_buf;
 			    } else spec = (char*)tag->ti_Data;
 		    	}
