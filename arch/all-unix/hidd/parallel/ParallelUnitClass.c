@@ -42,7 +42,7 @@
 void parallelunit_receive_data();
 void parallelunit_write_more_data();
 
-char * unitname[] =
+static char * unitname[] =
 {
 	"/dev/lp0",
 	"/dev/lp1",

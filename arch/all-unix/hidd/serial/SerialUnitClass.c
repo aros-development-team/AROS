@@ -52,7 +52,7 @@ static void settermios(struct HIDDSerialUnitData * data);
 static void adapt_termios(struct termios * termios,
                           struct Preferences * prefs);
 
-char * unitname[] =
+static char * unitname[] =
 {
  "/dev/ttyS0",
  "/dev/ttyS1",
