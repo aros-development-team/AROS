@@ -9,7 +9,7 @@
 
 
 /* Must always be a multiple of 3 since one event consists of code, x and y */
-#define GP_NUMELEMENTS (2 * 3)
+#define GP_NUMELEMENTS (100 * 3)
 #define GP_BUFFERSIZE  (sizeof (UWORD) * GP_NUMELEMENTS) 
 
 struct GameportBase
