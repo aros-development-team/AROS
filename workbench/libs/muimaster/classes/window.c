@@ -185,11 +185,11 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
     /* TODO: set MUIMRI_TRUECOLOR */
     /* TODO: set MUIMRI_THINFRAMES */
 
-#if 0    
+#if 0
     mri->mri_FocusPixel = MUI_ObtainPen (mri, &__zprefs.active_object_color, 0);
 #endif
 
-   
+
     for (i=0;i<MPEN_COUNT;i++)
 	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, prefs->muipens[i].red, prefs->muipens[i].green, prefs->muipens[i].blue, NULL);
     mri->mri_Pens = mri->mri_PensStorage;
@@ -355,9 +355,9 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
     {
     	int voffset;
-	
+
 	voffset = IM(mri->mri_DownImage)->Width / 4;
-	
+
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
 	firstgad = prevgad = data->wd_VertProp = NewObject(NULL,"propgclass",
 		GA_RelRight, 1 - (IM(mri->mri_UpImage)->Width - voffset),
@@ -402,7 +402,7 @@ BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
     {
     	int hoffset;
-	
+
 	hoffset = IM(mri->mri_RightImage)->Height / 4;
 
 	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
@@ -776,7 +776,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
                         	  data->wd_MinMax.MaxWidth  + hborders,
                         	  data->wd_MinMax.MaxHeight + vborders);
     	    	}
-		
+
 		if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
 		{
 		    data->wd_Width  = iWin->GZZWidth;
@@ -820,8 +820,8 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
 			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top;
 
-//			zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
-//				 left, top, width, height, left, top, 0);
+			zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
+				 left, top, width, height, left, top, 0);
 		    }
 
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
@@ -942,7 +942,7 @@ static ULONG invoke_event_handler (struct MUI_EventHandlerNode *ehn,
 		}
 	    }
 	}
-	
+
     }
 
     if (ehn->ehn_Flags & MUI_EHF_HANDLEINPUT)
@@ -994,7 +994,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
     if ((active_object = data->wd_ActiveObject))
     {
 #if 0
-	/* sba: 
+	/* sba:
 	** Which method should be used for muikeys? MUIM_HandleInput or
 	** MUIM_HandleEvent. Also note that there is a flag MUI_EHF_ALWAYSKEYS
 	** which probably means that all keys events are requested??
@@ -1084,7 +1084,7 @@ static void handle_event(Object *win, struct IntuiMessage *event)
 	    }
 	}
     }
-    
+
 
     /* try eventhandler */
     for (mn = data->wd_EHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -1171,7 +1171,7 @@ static struct ObjNode *FindObjNode(struct MinList *list, Object *obj)
 
 /**************************************************************************
  Code for setting MUIA_Window_ActiveObject
- If the current active object is not in a cycle chain it handles 
+ If the current active object is not in a cycle chain it handles
  MUIV_Window_ActiveObject_Next and MUIV_Window_ActiveObject_Prev
  cureently as there is no active object
 **************************************************************************/
@@ -1507,13 +1507,13 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
-    
+
     if ((data->wd_Flags & MUIWF_OPENED))
 	set(obj, MUIA_Window_Open, FALSE);
 
     if (data->wd_RootObject)
 	MUI_DisposeObject(data->wd_RootObject);
-	
+
     if (data->wd_Title)
 	FreeVec(data->wd_Title);
 
@@ -1860,7 +1860,7 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 	width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
 	height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
 
-	zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
+	zune_draw_image(&data->wd_RenderInfo, data->wd_Background,
 		 left, top, width, height, left, top, 0);
     }
 
@@ -2017,7 +2017,7 @@ static ULONG Window_AddControlCharHandler(struct IClass *cl, Object *obj, struct
 }
 
 /**************************************************************************
- 
+
 **************************************************************************/
 static ULONG Window_RemControlCharHandler(struct IClass *cl, Object *obj, struct MUIP_Window_RemControlCharHandler *msg)
 {
@@ -2094,7 +2094,7 @@ static ULONG Window_DragObject(struct IClass *cl, Object *obj, struct MUIP_Windo
 }
 
 /**************************************************************************
- 
+
 **************************************************************************/
 static IPTR Window_AllocGadgetID(struct IClass *cl, Object *obj, struct MUIP_Window_AllocGadegtID *msg)
 {
@@ -2290,9 +2290,9 @@ AROS_UFH3S(IPTR, Window_Dispatcher,
  * Class descriptor.
  */
 const struct __MUIBuiltinClass _MUI_Window_desc = {
-    MUIC_Window, 
-    MUIC_Notify, 
-    sizeof(struct MUI_WindowData), 
-    (void*)Window_Dispatcher 
+    MUIC_Window,
+    MUIC_Notify,
+    sizeof(struct MUI_WindowData),
+    (void*)Window_Dispatcher
 };
 
