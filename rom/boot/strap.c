@@ -78,7 +78,8 @@ void addPartitionVolume
 	struct PartitionBase *PartitionBase,
 	struct FileSysStartupMsg *fssm,
 	struct PartitionHandle *table,
-	struct PartitionHandle *pn
+	struct PartitionHandle *pn,
+	struct ExecBase * SysBase
     )
 {
 UBYTE name[32];
@@ -137,7 +138,8 @@ BOOL checkTables
 	struct ExpansionBase *ExpansionBase,
 	struct PartitionBase *PartitionBase,
 	struct FileSysStartupMsg *fssm,
-	struct PartitionHandle *table
+	struct PartitionHandle *table,
+	struct ExecBase * SysBase
     )
 {
 BOOL retval = FALSE;
@@ -148,8 +150,8 @@ struct PartitionHandle *ph;
 		ph = (struct PartitionHandle *)table->table->list.lh_Head;
 		while (ph->ln.ln_Succ)
 		{
-			checkTables(ExpansionBase, PartitionBase, fssm, ph);
-			addPartitionVolume(ExpansionBase, PartitionBase, fssm, table, ph);
+			checkTables(ExpansionBase, PartitionBase, fssm, ph, SysBase);
+			addPartitionVolume(ExpansionBase, PartitionBase, fssm, table, ph, SysBase);
 			ph = (struct PartitionHandle *)ph->ln.ln_Succ;
 		}
 		retval = TRUE;
@@ -193,7 +195,7 @@ struct FileSysStartupMsg *fssm;
 			}
 			else
 			{
-				if (!checkTables(ExpansionBase, PartitionBase, fssm, pt))
+				if (!checkTables(ExpansionBase, PartitionBase, fssm, pt, SysBase))
 				{
 					/* no partition table found, so reinsert node */
 					Enqueue(&ExpansionBase->MountList, bn);
