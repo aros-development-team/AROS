@@ -7,3 +7,5 @@ stamp-h
 config.cache
 config.log
 config.status
+.deps
+.pure
