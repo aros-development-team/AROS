@@ -69,7 +69,6 @@ AROS_SH0(Lab,41.1)
 
     struct CommandLineInterface *cli = Cli();
 
-    (void)Lab_version;
 
     if((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {

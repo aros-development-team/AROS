@@ -116,7 +116,6 @@ AROS_SHA(STRPTR,COM=,COMMAND,/K,NULL))
     ULONG  processNum = 0;
     STRPTR command    = SHArg(COMMAND);
 
-    (void)Status_version;
 
     if (SHArg(PROCESS) != NULL)
     {

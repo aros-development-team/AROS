@@ -140,7 +140,6 @@ AROS_SHA(BOOL, ,DEVICES,/S,FALSE))
     AROS_SHCOMMAND_INIT
     int error = RETURN_OK;
 
-    (void)Assign_version;
 
     if (SHArg(ADD) + SHArg(REMOVE) + SHArg(PATH) + SHArg(DEFER) > 1)
     {

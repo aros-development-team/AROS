@@ -69,7 +69,6 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
     BPTR cis = NULL, cos = NULL, ces = NULL;
     LONG CliNum;
 
-    (void)Run_version;
 
     if (cli)
     {

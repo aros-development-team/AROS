@@ -30,7 +30,6 @@ AROS_SHA(STRPTR, ,PROMPT,/A,NULL))
     struct UtilityBase *UtilityBase =
 	(struct UtilityBase *)OpenLibrary("utility.library", 37);
 
-    (void)Ask_version;
 
     if (!UtilityBase)
     {

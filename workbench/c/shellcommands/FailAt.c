@@ -71,7 +71,6 @@ AROS_SHAH(LONG *, , RCLIM,/M, NULL, "The new return code limit"))
 
     struct CommandLineInterface *cli = Cli();
 
-    (void)FailAt_version;
 
     if (cli == NULL)
     {

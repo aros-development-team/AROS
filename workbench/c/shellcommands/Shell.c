@@ -385,7 +385,7 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 
     P(kprintf("Executing shell\n"));
 
-    UtilityBase = OpenLibrary("utility.library", 39);
+    UtilityBase = (struct UtilityBase *)OpenLibrary("utility.library", 39);
     if (!UtilityBase) return RETURN_FAIL;
 
     setupResidentCommands();

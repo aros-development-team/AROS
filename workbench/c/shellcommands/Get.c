@@ -76,7 +76,6 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     char            Var_Value[BUFFER_SIZE];
     IPTR            Display_Args[1];
 
-    (void)Get_version;
 
     Var_Length = GetVar(SHArg(NAME), &Var_Value[0], BUFFER_SIZE,
 			GVF_LOCAL_ONLY);

@@ -99,7 +99,6 @@ AROS_SHA(STRPTR, ,STRING, /F, NULL))
     BPTR    lock;
     TEXT    progname[108];
     
-    (void)Setenv_version;
 
     GetProgramName(progname, sizeof(progname));
     Return_Value = RETURN_OK;

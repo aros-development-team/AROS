@@ -61,7 +61,6 @@ AROS_SH0(Why, 41.3)
     LONG  lasterror;
     int   error = RETURN_OK;
     
-    (void)Why_version;
 
     if ((cli = Cli()) != NULL)
     {

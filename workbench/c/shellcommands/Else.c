@@ -67,7 +67,6 @@ AROS_SH0(Else,41.1)
 
     struct CommandLineInterface *cli = Cli();
 
-    (void)Else_version;
 
     if ((cli != NULL) && (cli->cli_CurrentInput != cli->cli_StandardInput))
     {

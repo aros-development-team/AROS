@@ -54,7 +54,6 @@ AROS_SHA(LONG *, , SIZE,/N,NULL))
     int            retval = RETURN_OK;
     struct CommandLineInterface *cli = Cli();
 
-    (void)Stack_version;
 
     /* We must be a Shell to do this operation */
     if (cli == NULL)

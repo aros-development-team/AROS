@@ -27,7 +27,6 @@ AROS_SHA(STRPTR, ,NAME,/A,NULL))
     BPTR from;
     struct CommandLineInterface *cli = Cli();
 
-    (void)Execute_version;
 
     if (!cli)
     {

@@ -72,7 +72,6 @@ AROS_SHA(STRPTR, ,PROMPT, , "%N.%S> "))
 {
     AROS_SHCOMMAND_INIT
 
-    (void)Prompt_version;
 
     if (SetPrompt(SHArg(PROMPT)) == DOSFALSE)
     {
