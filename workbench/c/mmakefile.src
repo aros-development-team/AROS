@@ -26,6 +26,7 @@ FILES	    := \
 	newshell \
 	path \
 	rename \
+	reslist \
 	run \
 	shell \
 	setclock \
