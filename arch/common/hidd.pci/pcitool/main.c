@@ -16,10 +16,19 @@
 #include <proto/oop.h>
 #include <proto/utility.h>
 #include <proto/intuition.h>
+#include "pciids.h"
 
 #include <aros/debug.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include "locale.h"
+#include "support.h"
+
+#define APPNAME "PCITool"
+#define VERSION "pcitool 0.1 (23.01.04)"
+
+static const char version[] = "$VER: " VERSION "\n";
 
 struct Library *OOPBase = NULL;
 struct Library *MUIMasterBase = NULL;
@@ -41,6 +50,7 @@ int openLibs()
 	{
 	    if ((UtilityBase=(struct UtilityBase*)OpenLibrary("utility.library", 0)) != NULL)
 	    {
+		pciids_Open();
 		return 1;
 	    }
 	}
@@ -50,6 +60,8 @@ int openLibs()
 
 void closeLibs()
 {
+    pciids_Close();
+
     OOP_ReleaseAttrBase(IID_Hidd_PCIDevice);
     OOP_ReleaseAttrBase(IID_Hidd_PCIDriver);
     OOP_ReleaseAttrBase(IID_Hidd);
@@ -66,6 +78,21 @@ void closeLibs()
     MUIMasterBase = NULL;
     UtilityBase = NULL;
     OOPBase = NULL;
+}
+
+void cleanup(CONST_STRPTR message)
+{
+    Locale_Deinitialize();
+
+    if (message != NULL)
+    {
+        ShowError(NULL, NULL, message, TRUE);
+        exit(RETURN_FAIL);
+    }
+    else
+    {
+        exit(RETURN_OK);
+    }
 }
 
 Object *MakeLabel(STRPTR str)
@@ -86,6 +113,7 @@ Object *DriverList;
 Object *StrDriverName, *StrDriverHWName, *StrDriverDirect;
 
 Object *StrDescription, *VendorID, *ProductID, *RevisionID;
+Object *VendorName, *ProductName;
 Object *Interface, *_Class, *SubClass, *IRQLine;
 Object *ROMBase, *ROMSize;
 Object *RangeList;
@@ -158,6 +186,7 @@ AROS_UFH3(void, select_function,
     ULONG active;
     OOP_Object *obj, *drv;
     STRPTR class, subclass, interface, str;
+    UWORD vendor;
 
     active = xget(object, MUIA_List_Active);
     if (active != MUIV_List_Active_Off)
@@ -174,7 +203,7 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(drv, aHidd_HardwareName, (APTR)&str);
 	set(StrDriverHWName, MUIA_Text_Contents, str);
 	OOP_GetAttr(drv, aHidd_PCIDriver_DirectBus, (APTR)&val);
-	set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?"yes":"no"));
+	set(StrDriverDirect, MUIA_Text_Contents, (IPTR)((val)?_(MSG_YES):_(MSG_NO)));
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_ClassDesc, (APTR)&class);
 	OOP_GetAttr(obj, aHidd_PCIDevice_SubClassDesc, (APTR)&subclass);
@@ -185,10 +214,13 @@ AROS_UFH3(void, select_function,
 	OOP_GetAttr(obj, aHidd_PCIDevice_VendorID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(VendorID, MUIA_Text_Contents, buf);
+	set(VendorName, MUIA_Text_Contents, pciids_GetVendorName(val, buf, 79));
+	vendor = val;
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_ProductID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
 	set(ProductID, MUIA_Text_Contents, buf);
+	set(ProductName, MUIA_Text_Contents, pciids_GetDeviceName(vendor, val, buf, 79));
  
 	OOP_GetAttr(obj, aHidd_PCIDevice_RevisionID, (APTR)&val);
 	snprintf(buf, 79, "0x%04x", val);
@@ -216,7 +248,7 @@ AROS_UFH3(void, select_function,
 	{
 	    snprintf(buf, 79, "%d (%c)", val2, val + 'A' - 1);
 	}
-	else snprintf(buf, 79, "N/A");
+	else snprintf(buf, 79, _(MSG_NA));
 	set(IRQLine, MUIA_Text_Contents, buf);
 
 	OOP_GetAttr(obj, aHidd_PCIDevice_RomBase, (APTR)&val);
@@ -230,12 +262,12 @@ AROS_UFH3(void, select_function,
 		snprintf(buf, 79, "0x%08x", val);
 		set(ROMBase, MUIA_Text_Contents, buf);
 	    }
-	    else set(ROMBase, MUIA_Text_Contents, "--unused--");
+	    else set(ROMBase, MUIA_Text_Contents, _(MSG_UNUSED));
 	}
 	else
 	{
-	    set(ROMBase, MUIA_Text_Contents, "N/A");
-	    set(ROMSize, MUIA_Text_Contents, "N/A");
+	    set(ROMBase, MUIA_Text_Contents, _(MSG_NA));
+	    set(ROMSize, MUIA_Text_Contents, _(MSG_NA));
 	}
 
 	DoMethod(RangeList, MUIM_List_Clear);
@@ -310,28 +342,29 @@ AROS_UFH3(void, select_function,
 	    OOP_GetAttr(obj, aHidd_PCIDevice_ISAEnable, (APTR)&val2);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_VGAEnable, (APTR)&val3);
 
-	    snprintf(ranges[2], 59, "Bridge handles bus %d (ISA %senabled, VGA %senabled)",
-		val, (val2)?" ":"not ", (val3)?" ":"not ");
+	    snprintf(ranges[2], 59, _(MSG_BRIDGE),
+		     val, (val2) ? (CONST_STRPTR)" " : _(MSG_NOT),
+		     (val3) ? (CONST_STRPTR)" " : _(MSG_NOT));
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[2], MUIV_List_Insert_Bottom);
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_MemoryLimit, (APTR)&val2);
 	    
-	    snprintf(ranges[3], 59, "Memory ranges from %08x to %08x",
+	    snprintf(ranges[3], 59, _(MSG_MEMORY_RANGE),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[3], MUIV_List_Insert_Bottom);
 
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_PrefetchableLimit, (APTR)&val2);
 	    
-	    snprintf(ranges[4], 59, "Prefetchable ranges memory from %08x to %08x",
+	    snprintf(ranges[4], 59, _(MSG_PREFETCHABLE_MEMORY),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[4], MUIV_List_Insert_Bottom);
 	    
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOBase, (APTR)&val);
 	    OOP_GetAttr(obj, aHidd_PCIDevice_IOLimit, (APTR)&val2);
 	    
-	    snprintf(ranges[5], 59, "IO ranges from %04x to %04x",
+	    snprintf(ranges[5], 59, _(MSG_IO_RANGE),
 		val, val2);
 	    DoMethod(RangeList, MUIM_List_InsertSingle, (IPTR)ranges[5], MUIV_List_Insert_Bottom);
 
@@ -344,12 +377,12 @@ AROS_UFH3(void, select_function,
 		OOP_GetAttr(obj, aHidd_PCIDevice_paletteSnoop, (APTR)&snoop);
 		OOP_GetAttr(obj, aHidd_PCIDevice_is66MHz, (APTR)&is66);
 
-		snprintf(buf, 79, "IO: %s, MEM: %s, Master: %s, PaletteSnoop: %s, 66MHz capable: %s",
-		    io ? "yes":"no",
-		    mem ? "yes":"no",
-		    master ? "yes":"no",
-		    snoop ? "yes":"no",
-		    is66 ? "yes":"no");
+		snprintf(buf, 79, _(MSG_IO_MSG),
+		    io ? _(MSG_YES):_(MSG_NO),
+		    mem ? _(MSG_YES):_(MSG_NO),
+		    master ? _(MSG_YES):_(MSG_NO),
+		    snoop ? _(MSG_YES):_(MSG_NO),
+		    is66 ? _(MSG_YES):_(MSG_NO));
 		set(Status, MUIA_Text_Contents, buf);
     }
     }
@@ -362,15 +395,15 @@ BOOL GUIinit()
     BOOL retval = FALSE;
     
     app = ApplicationObject,
-	    MUIA_Application_Title,	    (IPTR)"PCI Tool",
-	    MUIA_Application_Version,	    (IPTR)"$VER: pcitool 0.0.1 (23.01.04)",
+	    MUIA_Application_Title,	    (IPTR)APPNAME,
+	    MUIA_Application_Version,	    (IPTR)VERSION,
 	    MUIA_Application_Copyright,	    (IPTR)"© 2004, The AROS Development Team",
 	    MUIA_Application_Author,	    (IPTR)"Michal Schulz",
-	    MUIA_Application_Base,	    (IPTR)"PCITool",
-	    MUIA_Application_Description,   (IPTR)"PCI querying and managment",
+	    MUIA_Application_Base,	    (IPTR)APPNAME,
+	    MUIA_Application_Description,   __(MSG_DESCRIPTION),
 
 	    SubWindow, MainWindow = WindowObject,
-                MUIA_Window_Title,	(IPTR) "PCI Tool",
+                MUIA_Window_Title,	__(MSG_WINTITLE),
 //		MUIA_Window_Height,	MUIV_Window_Height_Visible(50),
 //		MUIA_Window_Width,	MUIV_Window_Width_Visible(60),
 
@@ -385,11 +418,11 @@ BOOL GUIinit()
 			End, // List
 		    End, // ListView
 		    Child, VGroup,
-			Child, VGroup, GroupFrameT("Driver info"),
+			Child, VGroup, GroupFrameT(_(MSG_DRIVER_INFO)),
 			    Child, HGroup,
 				Child, ColGroup(2),
 				    MUIA_Weight, 100,
-				    Child, Label("Driver name:"),
+				    Child, Label(_(MSG_DRIVER_NAME)),
 				    Child, StrDriverName = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -398,7 +431,7 @@ BOOL GUIinit()
 				End,
 				Child, ColGroup(2),
 				    MUIA_Weight, 100,
-				    Child, Label("Direct Bus:"),
+				    Child, Label(_(MSG_DIRECT_BUS)),
 				    Child, StrDriverDirect = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -408,7 +441,7 @@ BOOL GUIinit()
 			    End,
 			    Child, ColGroup(2),
 				MUIA_Weight, 180,
-				Child, Label("Hardware info:"),
+				Child, Label(_(MSG_HARDWARE_INFO)),
 				Child, StrDriverHWName = TextObject,
 				    StringFrame,
 				    MUIA_Text_SetMax, FALSE,
@@ -416,7 +449,7 @@ BOOL GUIinit()
 				End,
 			    End,
 			End, // HGroup
-			Child, VGroup, GroupFrameT("PCI device info"),
+			Child, VGroup, GroupFrameT(_(MSG_PCI_DEVICE_INFO)),
 			    Child, ColGroup(2),
 				Child, Label("Description:"),
 				Child, StrDescription = TextObject,
@@ -425,9 +458,25 @@ BOOL GUIinit()
 				    MUIA_Text_Contents, "",
 				End,
 			    End,
+			    Child, ColGroup(2),
+				Child, Label(_(MSG_VENDORNAME)),
+				Child, VendorName = TextObject,
+				    StringFrame,
+				    MUIA_Text_SetMax, FALSE,
+				    MUIA_Text_Contents, "",
+				End,
+			    End,
+			    Child, ColGroup(2),
+				Child, Label(_(MSG_PRODUCTNAME)),
+				Child, ProductName = TextObject,
+				    StringFrame,
+				    MUIA_Text_SetMax, FALSE,
+				    MUIA_Text_Contents, "",
+				End,
+			    End,
 			    Child, HGroup,
 				Child, ColGroup(2),
-				    Child, Label("VendorID:"),
+				    Child, Label(_(MSG_VENDORID)),
 				    Child, VendorID = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -435,7 +484,7 @@ BOOL GUIinit()
 				    End,
 				End,
 				Child, ColGroup(2),
-				    Child, Label("ProductID:"),
+				    Child, Label(_(MSG_PRODUCTID)),
 				    Child, ProductID = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -443,7 +492,7 @@ BOOL GUIinit()
 				    End,
 				End,
 				Child, ColGroup(2),
-				    Child, Label("RevisionID:"),
+				    Child, Label(_(MSG_REVISIONID)),
 				    Child, RevisionID = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -454,7 +503,7 @@ BOOL GUIinit()
 			    Child, HGroup,
 				Child, ColGroup(2),
 				    MUIA_Weight, 0,
-				    Child, Label("Interface:"),
+				    Child, Label(_(MSG_INTERFACE)),
 				    Child, Interface = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -463,7 +512,7 @@ BOOL GUIinit()
 				End,
 				Child, ColGroup(2),
 				    MUIA_Weight, 0,
-				    Child, Label("Class:"),
+				    Child, Label(_(MSG_CLASS)),
 				    Child, _Class = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -472,7 +521,7 @@ BOOL GUIinit()
 				End,
 				Child, ColGroup(2),
 				    MUIA_Weight, 0,
-				    Child, Label("SubClass:"),
+				    Child, Label(_(MSG_SUBCLASS)),
 				    Child, SubClass = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -480,7 +529,7 @@ BOOL GUIinit()
 				    End,
 				End,
 				Child, ColGroup(2),
-				    Child, Label("IRQ:"),
+				    Child, Label(_(MSG_IRQ)),
 				    Child, IRQLine = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -491,7 +540,7 @@ BOOL GUIinit()
 			    Child, HGroup,
 				Child, ColGroup(2),
 				    MUIA_Weight, 0,
-				    Child, Label("ROM Base:"),
+				    Child, Label(_(MSG_ROM_BASE)),
 				    Child, ROMBase = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -500,7 +549,7 @@ BOOL GUIinit()
 				End,
 				Child, ColGroup(2),
 				    MUIA_Weight, 0,
-				    Child, Label("ROM Size:"),
+				    Child, Label(_(MSG_ROM_SIZE)),
 				    Child, ROMSize = TextObject,
 					StringFrame,
 					MUIA_Text_SetMax, FALSE,
@@ -511,7 +560,7 @@ BOOL GUIinit()
 			    End,
 			    Child, HGroup,
 				Child, RangeList =  ListviewObject,
-				    MUIA_Listview_List, DriverList = ListObject,
+				    MUIA_Listview_List, ListObject,
 				    ReadListFrame,
 				    MUIA_List_AdjustWidth, FALSE,
 				    End, // List
@@ -535,10 +584,9 @@ BOOL GUIinit()
 	         (IPTR)app, 2, 
 		 MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-	DoMethod(DriverList, MUIM_Notify, MUIA_Listview_SelectChange, TRUE,
+	DoMethod(DriverList, MUIM_Notify, MUIA_List_Active, MUIV_EveryTime,
 		(IPTR)DriverList, 2,
 		MUIM_CallHook, (IPTR)&select_hook);
-
 	retval=TRUE;
     }
 
@@ -567,6 +615,9 @@ int main(int argc, char *argv[])
     display_hook.h_Entry = (APTR)display_function;
     select_hook.h_Entry = (APTR)select_function;
 
+    if (!Locale_Initialize())
+	cleanup(_(MSG_ERROR_LOCALE));
+
     if(openLibs())
     {
     	if(GUIinit())
@@ -593,5 +644,7 @@ int main(int argc, char *argv[])
 	
 	closeLibs();
     }
+    cleanup(NULL);
+
     return 0;
 } /* main(int argc, char *argv[]) */
