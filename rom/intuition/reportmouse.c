@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -55,7 +55,7 @@
     if (flag)
 	window->Flags |= WFLG_REPORTMOUSE;
     else
-	window->Flags &= WFLG_REPORTMOUSE;
+	window->Flags &= ~WFLG_REPORTMOUSE;
 
     AROS_LIBFUNC_EXIT
 } /* ReportMouse */
