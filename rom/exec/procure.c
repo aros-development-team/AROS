@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Try to lock a semaphore.
@@ -61,13 +61,17 @@
 
     /* Prepare semaphore message to be a sent message */
     bidMsg->ssm_Message.mn_Length=sizeof(struct SemaphoreMessage);
-    bidMsg->ssm_Message.mn_Node.ln_Type=NT_MESSAGE;
-    bidMsg->ssm_Semaphore = (struct SignalSemaphore *)FindTask(NULL);
 
+    /*
+     *	If ln_Name field of message == 1, then this is a shared message, so
+     *	we set the field to NULL. Otherwise, set it to the task requesting
+     *	the semaphore. By the end, the ssm_Semaphore field contains the new
+     *	owner of the semaphore.
+     */
     if( (IPTR)(bidMsg->ssm_Message.mn_Node.ln_Name) == SM_SHARED )
-    {
 	bidMsg->ssm_Semaphore = NULL;
-    }
+    else
+	bidMsg->ssm_Semaphore = (struct SignalSemaphore *)FindTask(NULL);
 
     /* Arbitrate for the semaphore structure - following like ObtainSema() */
     Forbid();
@@ -100,12 +104,31 @@
     */
     else
     {
+	struct SemaphoreRequest *sr;
 	/*
-	    We already have a structure for waiting, and we can't
-	    allocate on the stack, so we use it instead. Note that
-	    the SemaphoreRequest structure must be designed so that
-	    it matches the SemapohreMessage structure
-	*/
+	 *  Unholy Hack v1.
+	 *
+	 *  Whoever came up with this obviously has a twisted mind. We
+	 *  pretend that the SemaphoreMessage is really a SemaphoreRequest.
+	 *  Now, the code in ReleaseSemaphore that deals with this checks
+	 *  (after clearing bit 0) whether the sr_Waiter field is NULL. If
+	 *  so then it is really a SemaphoreMessage and should be returned.
+	 *
+	 *  Now the bad part about this is what we are doing. There are two
+	 *  cases, in the Amiga case (bincompat), we are overwriting the
+	 *  ln_Type, ln_Pri and (half the) ln_Name fields. In the other
+	 *  case we are overwriting the ln_Name field completely. Now, in
+	 *  either case this doesn't matter as they do not contain any
+	 *  useful information that we haven't already claimed.
+	 *
+	 *  Thank goodness C is so type unsafe.
+	 */
+	sr = (struct SemaphoreRequest *)bidMsg;
+	if (bidMsg->ssm_Semaphore != NULL)
+	    sr->sr_Waiter = NULL;
+	else
+	    (IPTR)sr->sr_Waiter = SM_SHARED;
+
 	AddTail((struct List *)&sigSem->ss_WaitQueue, (struct Node *)bidMsg);
     }
     /* All done. */

@@ -1,14 +1,16 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Release a lock obtained with Procure().
     Lang: english
 */
-#include "exec_intern.h"
-#include "semaphores.h"
+#define AROS_ALMOST_COMPATIBLE
+#include <exec/lists.h>
 #include <exec/semaphores.h>
 #include <proto/exec.h>
+#include "semaphores.h"
+#include "exec_intern.h"
 
 /*****************************************************************************
 
@@ -54,24 +56,36 @@
 {
     AROS_LIBFUNC_INIT
 
+    struct SemaphoreRequest *sr = NULL;
+
     /* Arbitrate for the semaphore structure */
     Forbid();
+    bidMsg->ssm_Semaphore = NULL;
 
-    ((struct SemaphoreRequest *)bidMsg)->sr_Waiter = NULL;
-
-    /* Check if the message is still posted. */
-    if(bidMsg->ssm_Message.mn_Node.ln_Type==NT_MESSAGE)
+    /*
+     *	Two cases, the request is in the list, which means it hasn't been
+     *	granted, or the request is not in the list, in which case it has
+     *	been granted. We need to check if the request is in the list.
+     */
+    ForeachNode(&sigSem->ss_WaitQueue, sr)
     {
-	/* Yes. Remove it from the semaphore's waiting queue. */
-	Remove(&bidMsg->ssm_Message.mn_Node);
-	sigSem->ss_QueueCount--;
+	if (sr == (struct SemaphoreRequest *)bidMsg)
+	{
+	    /* Found it. Remove it from the semaphore's waiting queue. */
+	    Remove(&bidMsg->ssm_Message.mn_Node);
+	    sigSem->ss_QueueCount--;
 
-	/* And reply the message. */
-	ReplyMsg(&bidMsg->ssm_Message);
+	    /* And reply the message. */
+	    ReplyMsg(&bidMsg->ssm_Message);
+
+	    /* All done */
+	    Permit();
+	    return;
+	}
     }
-    else
-	/* The semaphore is already locked. Release the lock. */
-	ReleaseSemaphore(sigSem);
+
+    /* No, it must have been fulfilled. Release the semaphore and done. */
+    ReleaseSemaphore(sigSem);
 
     /* All done. */
     Permit();
