@@ -38,8 +38,15 @@
 #define PKCTRL_FLIPBIT    0x98000000
 
 /* Macros (don't use!) */
-#define PK_WORDOFFSET(flag) ((flag) < 0x0100 ? 1 : 0)
-#define PK_LONGOFFSET(flag) ((flag) < 0x0100 ? 3 : (flag) < 0x010000 ? 2 : (flag) < 0x01000000 ? 1 : 0)
+
+#if AROS_BIG_ENDIAN
+ #define PK_WORDOFFSET(flag) ((flag) < 0x0100 ? 1 : 0)
+ #define PK_LONGOFFSET(flag) ((flag) < 0x0100 ? 3 : (flag) < 0x010000 ? 2 : (flag) < 0x01000000 ? 1 : 0)
+#else
+ #define PK_WORDOFFSET(flag) ((flag) < 0x0100 ? 0 : 1)
+ #define PK_LONGOFFSET(flag) ((flag) < 0x0100 ? 0 : (flag) < 0x010000 ? 1 : (flag) < 0x01000000 ? 2 : 3)
+#endif
+
 #define PK_CALCOFFSET(type,field) ((IPTR)(&((struct type *)0)->field))
 #define PK_BITNUM1(flag) ((flag) == 0x01 ? 0 : (flag) == 0x02 ? 1 : (flag) == 0x04 ? 2 : (flag) == 0x08 ? 3 : (flag) == 0x10 ? 4 : (flag) == 0x20 ? 5 : (flag) == 0x40 ? 6 : 7)
 #define PK_BITNUM2(flag) ((flag) < 0x0100 ? PK_BITNUM1(flag) : 8 + PK_BITNUM1((flag)>>8))
