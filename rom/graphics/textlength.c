@@ -54,7 +54,7 @@
     struct TextFont *tf = rp->Font;
     WORD    	    strlen;
 
-    if (tf->tf_Flags & FPF_PROPORTIONAL)
+    if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern || tf->tf_CharSpace)
     {
     	WORD  idx;
 	WORD  defaultidx = NUMCHARS(tf) - 1; /* Last glyph is the default glyph */
@@ -75,13 +75,14 @@
 	    	    
    	    strlen += ((WORD *)tf->tf_CharKern)[idx];
 	    strlen += ((WORD *)tf->tf_CharSpace)[idx];
+	    strlen += rp->TxSpacing;
 	}
     }
     else
     {
-    	strlen = count * tf->tf_XSize;
+    	strlen = count * (tf->tf_XSize + rp->TxSpacing);
     }
-
+    
     return strlen;
     
     AROS_LIBFUNC_EXIT
