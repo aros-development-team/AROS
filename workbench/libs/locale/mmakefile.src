@@ -69,6 +69,9 @@ endif
 #MM workbench-libs-locale : setup includes linklibs
 workbench-libs-locale : show-flags $(SLIB)
 
+#MM workbench-libs-locale-quick:
+workbench-libs-locale-quick : show-flags $(SLIB)
+
 #MM
 setup :
 	%mkdirs_q $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS)
