@@ -25,6 +25,7 @@
 #   ifndef AROS_ASMCALL_H
 #       include <aros/asmcall.h>
 #   endif
+#   include <aros/macros.h>
 #   define IMSPEC_EXTERNAL_PREFIX "IMAGES:Zune/"
 #else
 #   include "support_amigaos.h"
