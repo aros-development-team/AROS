@@ -8,7 +8,8 @@ include $(TOP)/config/make.cfg
 OBJDIR=$(GENDIR)/clib
 
 FILES = ctype printf strcmp stricmp strlen strcpy qsort \
-	strdup malloc free calloc realloc memcpy bcopy
+	strdup malloc free calloc realloc memcpy bcopy \
+	bzero
 
 all: setup $(OBJDIR)/links $(LIBDIR)/libarosc.a
 
