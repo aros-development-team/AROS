@@ -1,0 +1,2 @@
+CFG_PACKAGES=(hosted)
+CFG_MAIL_ENABLE=yes
