@@ -51,6 +51,7 @@ extern const struct Resident Intuition_resident;
 extern const struct Resident emul_handler_resident;
 extern const struct Resident Console_resident;
 extern const struct Resident Mathffp_resident;
+extern const struct Resident Mathieeesingbas_resident;
 extern const struct Resident Aros_resident;
 extern const struct Resident BOOPSI_resident;
 extern const struct Resident HIDD_resident;
@@ -416,8 +417,9 @@ printf ("SysBase = %p\n", SysBase);
 
     (void) InitResident((struct Resident *)&Graphics_resident,0);
     (void) InitResident((struct Resident *)&Intuition_resident,0);
+    (void) InitResident((struct Resident *)&Mathieeesingbas_resident,0);
     (void) InitResident((struct Resident *)&Mathffp_resident,0);
-
+    
     {
 	struct consolebase
 	{

@@ -40,6 +40,7 @@ extern const struct Resident
     Intuition_resident,
     Console_resident,
     Mathffp_resident,
+    Mathieeesingbas_resident,
     Dos_resident,
     LDDemon_resident,
     emul_handler_resident,
@@ -54,6 +55,7 @@ static const struct Resident *romtagList[] =
     &Exec_resident,			    /* SingleTask,  105  */
     &Utility_resident,			    /* ColdStart,   103  */
     &Aros_resident,			    /* ColdStart,   102  */
+    &Mathieeesingbas_resident,              /* ColdStart,   101  */
     &BOOPSI_resident,			    /* ColdStart,   95	 */
     &HIDD_resident,			    /* ColdStart,   92	 */
     &UnixIO_resident,			    /* ColdStart,   91	 */
