@@ -287,36 +287,26 @@ void driver_expunge (struct GfxBase * GfxBase)
 BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
 {
 
-    Class *cl;
-    
     /* Supplied data is really the librarybase of a HIDD */
-    struct Library *hiddbase = (struct Library *)data;
+    STRPTR gfxhiddname = (STRPTR)data;
+    struct TagItem tags[] = { {TAG_DONE, 0UL} };    
+    Object *gfxhidd;
     
-    EnterFunc(bug("driver_LateGfxInit(hiddbase=%p)\n", hiddbase));
+    EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", hiddbase));
     
-    /* Get HIDD class from library base (allways vector 5) */
-    cl = AROS_LVO_CALL0(Class *, struct Library *, hiddbase, 5, );
-    D(bug("driver_LateGfxInit: class=%p\n", cl));
-    if (cl)
+    /* Create a new GfxHidd object */
+	
+    gfxhidd = NewObject(NULL, gfxhiddname, tags);
+    D(bug("driver_LateGfxInit: gfxhidd=%p\n", gfxhidd));
+	
+    if (gfxhidd)
     {
-        Object *gfxhidd;
-    	/* Create a new GfxHidd object */
-	
-	struct TagItem tags[] = { {TAG_DONE, 0UL} };
-	
-	gfxhidd = NewObject(cl, NULL, tags);
-    	D(bug("driver_LateGfxInit: gfxhidd=%p\n", gfxhidd));
-	
-	if (gfxhidd)
-	{
 	    /* Store it in GfxBase so that we can find it later */
 	    SDD(GfxBase)->gfxhidd = (APTR)gfxhidd;
 	    ReturnBool("driver_LateGfxInit", TRUE);
 	    
-	}
-	
-	
     }
+	
     
     ReturnBool("driver_LateGfxInit", FALSE);
 
