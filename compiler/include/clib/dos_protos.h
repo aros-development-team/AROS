@@ -511,13 +511,13 @@ __AROS_LP3(LONG, Read,
 
 __AROS_LP3(struct RDArgs *, ReadArgs,
     __AROS_LPA(STRPTR,          template, D1),
-    __AROS_LPA(LONG *,          array,    D2),
+    __AROS_LPA(IPTR *,          array,    D2),
     __AROS_LPA(struct RDArgs *, rdargs,   D3),
     struct DosLibrary *, DOSBase, 133, Dos)
 #define ReadArgs(template, array, rdargs) \
     __AROS_LC3(struct RDArgs *, ReadArgs, \
     __AROS_LCA(STRPTR,          template, D1), \
-    __AROS_LCA(LONG *,          array,    D2), \
+    __AROS_LCA(IPTR *,          array,    D2), \
     __AROS_LCA(struct RDArgs *, rdargs,   D3), \
     struct DosLibrary *, DOSBase, 133, Dos)
 
@@ -682,23 +682,23 @@ __AROS_LP1(void, UnLockDosList,
 __AROS_LP3(LONG, VFPrintf,
     __AROS_LPA(BPTR,   file,     D1),
     __AROS_LPA(STRPTR, format,   D2),
-    __AROS_LPA(LONG *, argarray, D3),
+    __AROS_LPA(IPTR *, argarray, D3),
     struct DosLibrary *, DOSBase, 59, Dos)
 #define VFPrintf(file, format, argarray) \
     __AROS_LC3(LONG, VFPrintf, \
     __AROS_LCA(BPTR,   file,     D1), \
     __AROS_LCA(STRPTR, format,   D2), \
-    __AROS_LCA(LONG *, argarray, D3), \
+    __AROS_LCA(IPTR *, argarray, D3), \
     struct DosLibrary *, DOSBase, 59, Dos)
 
 __AROS_LP2(LONG, VPrintf,
     __AROS_LPA(STRPTR, format,   D1),
-    __AROS_LPA(LONG *, argarray, D2),
+    __AROS_LPA(IPTR *, argarray, D2),
     struct DosLibrary *, DOSBase, 159, Dos)
 #define VPrintf(format, argarray) \
     __AROS_LC2(LONG, VPrintf, \
     __AROS_LCA(STRPTR, format,   D1), \
-    __AROS_LCA(LONG *, argarray, D2), \
+    __AROS_LCA(IPTR *, argarray, D2), \
     struct DosLibrary *, DOSBase, 159, Dos)
 
 __AROS_LP3(LONG, Write,
