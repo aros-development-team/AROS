@@ -67,7 +67,7 @@ struct linux_base
 #define OOPBase lsd->oopbase
 
 
-AttrBase HiddPixFmtAttrBase = 0;
+static AttrBase HiddPixFmtAttrBase = 0;
 
 struct ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},

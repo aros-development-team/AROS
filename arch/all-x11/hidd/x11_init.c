@@ -68,7 +68,7 @@ static VOID freeclasses( struct x11_staticdata *xsd );
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase);
 VOID x11task_entry(struct x11task_params *xtp);
 
-AttrBase HiddPixFmtAttrBase = 0;
+static AttrBase HiddPixFmtAttrBase = 0;
 
 struct ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
