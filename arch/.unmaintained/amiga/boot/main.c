@@ -60,6 +60,7 @@ int main(int argc, char **argv)
     struct Node *node;
     struct Module *module;
     struct ModuleList ModuleList;
+    STRPTR modname;
 
     debug = FALSE;
 
@@ -141,6 +142,7 @@ int main(int argc, char **argv)
     */
     for(node = filelist->fl_List.lh_Head; node->ln_Succ; node = node->ln_Succ)
     {
+	modname = node->ln_Name;
 	if( (module = LoadModule(node->ln_Name)) )
 	{
 	    AddTail((struct List *)&ModuleList, (struct Node *)module);
@@ -171,7 +173,7 @@ int main(int argc, char **argv)
     }
     else
     {
-	PutStr("Error loading one of the modules\n");
+	Printf("Error loading \"%s\"\n", modname);
 	FreeModules(&ModuleList);
     }
 
@@ -182,8 +184,8 @@ int main(int argc, char **argv)
 
 struct Module *LoadModule(char *filename)
 {
-    BPTR fh = 0, seglist = 0;
-    struct Module *mod = 0;
+    BPTR fh, seglist;
+    struct Module *mod;
 
     D(bug("LoadModule(\"%s\")\n", filename));
     if(!(fh = Open(filename, MODE_OLDFILE)))
