@@ -1,21 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.5  1996/10/24 15:50:26  aros
-    Use the official AROS macros over the __AROS versions.
 
-    Revision 1.4  1996/09/21 14:14:23  digulla
-    Hand DOSBase to DoName()
-
-    Revision 1.3  1996/09/11 12:57:32  digulla
-    Pattern support by M. Fleischer
-
-    Revision 1.2  1996/08/01 17:40:49  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Internal types and stuff for dos
+    Lang: english
 */
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H
