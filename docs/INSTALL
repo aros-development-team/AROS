@@ -27,7 +27,10 @@ Basic Installation of AROS-SOURCES
 	a) MetaMake, short mmake.
 		cd AROS/tools/MetaMake
 		./configure
+		  if configure doesn't work and you're using ADE just copy the
+		  Makefile.amiga to Makefile and config.h.amiga to config.h
 		make
+		  if make doesn't work just do a "gcc mmake.c -o mmake"
 		make install
 		cd ../..
 		cp mmake.config.in $HOME/.mmake.config
