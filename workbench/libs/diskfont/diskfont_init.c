@@ -1,5 +1,5 @@
 /*
-    (C) 1997 - 2000 AROS - The Amiga Research OS
+    (C) 1997 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Diskfont initialization code.
@@ -220,10 +220,15 @@ AROS_LH0(BPTR, close, struct DiskfontBase_intern *, LIBBASE, 2, BASENAME)
     {
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
+	UtilityBase = NULL;
+	
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
+	GfxBase = NULL;
+	
 	if (DOSBase)
 	    CloseLibrary(DOSBase);
+	DOSBase = NULL;
 
 	/* Delayed expunge pending? */
 	if(LIBBASE->library.lib_Flags&LIBF_DELEXP)
