@@ -46,6 +46,14 @@
 static int GCC_HEADER = sizeof(struct exec);
 #endif
 
+/*
+** Ugly hack to make vmware happy
+** Define this to pad the output to exactly 1474560 bytes,
+** which means you can point vmware to the aros.bin
+** directly as a floppy image
+*/
+#undef VMWARE_HACK
+
 #define SYS_SIZE DEF_SYSSIZE << 5
 
 /* max nr of sectors of setup: don't change unless you also change
@@ -226,5 +234,23 @@ int main(int argc, char ** argv)
 		sz -= l;
 	}
 	close(id);
+
+#ifdef VMWARE_HACK
+	/* Yes this is ugly, but I am tired */
+	fprintf(stderr,"Padding for VMWare\n");
+	tmp_long = lseek(1,0,SEEK_CUR);
+	tmp_int = 1474560 - tmp_long;	
+
+	for (c=0 ; c<sizeof(buf) ; c++)
+		buf[c] = '\0';
+	tmp_long = tmp_int / sizeof(buf);
+	for (i=0;i<tmp_long;i++)
+		write(1,buf,sizeof(buf));
+
+	tmp_long = lseek(1,0,SEEK_CUR);
+	tmp_int = 1474560 - tmp_long;	
+	for (i = 0; i<tmp_int;i++)
+		write(1,buf,1);
+#endif
 	return(0);
 }
