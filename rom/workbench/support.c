@@ -80,3 +80,52 @@ void RemoveHiddenDevice(STRPTR name, struct WorkbenchBase *WorkbenchBase)
         /* TODO: Notify WB App. Maybe not here...*/
     }
 }
+
+STRPTR __AllocateNameFromLock(BPTR lock, struct WorkbenchBase *WorkbenchBase)
+{
+    ULONG  length = 512;
+    STRPTR buffer = NULL;
+    BOOL   done   = FALSE;
+    
+    while (!done)
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        
+        buffer = AllocVec(length, MEMF_ANY);
+        if (buffer != NULL)
+        {
+            if (NameFromLock(lock, buffer, length))
+            {
+                done = TRUE;
+                break;
+            }
+            else
+            {
+                if (IoErr() == ERROR_LINE_TOO_LONG)
+                {
+                    length += 512;
+                    continue;
+                }
+                else
+                {
+                    break;
+                }                
+            }
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            break;
+        }
+    }
+    
+    if (done)
+    {
+        return buffer;
+    }
+    else
+    {
+        if (buffer != NULL) FreeVec(buffer);
+        return NULL;
+    }
+}
