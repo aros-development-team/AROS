@@ -55,7 +55,7 @@
 ** and ALWAYS match these with a Returnxxxx type macro
 ** at the end of the func.
 ** Inside the func you can use the normal D(bug()) macro.
-** 
+**
 ** To enable the macros, just add a #define SDEBUG 1
 */
 
@@ -77,13 +77,13 @@
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
    	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); }
-   	
+
 /* Internal */
 #define ExitFunc { 				\
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
    	((ULONG)sd_task->tc_UserData) -= SDEBUG_INDENT;		\
-   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); } 
+   	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); }
 
 
 #else
@@ -149,5 +149,8 @@
 #define AROS_DEBUG_H
 
 #define bug	 kprintf
+
+#define aros_print_not_implemented(name) \
+	kprintf("The function %s is not implemented.\n", name);
 
 #endif /* AROS_DEBUG_H */
