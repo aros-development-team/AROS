@@ -73,6 +73,7 @@
 #define	AGA_Reserved3		(AGA_Dummy+8)
 #define	AGA_ARexxPort		(AGA_Dummy+9)	/* (struct MsgPort *) Pointer to the ARexx message port */
 #define	AGA_ARexxPortName	(AGA_Dummy+10)	/* (STRPTR) Used to specify the ARexx port name (not copied) */
+#define AGA_Secure  	    	(AGA_Dummy+11)
 
 typedef void * AMIGAGUIDECONTEXT;
 
