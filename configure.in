@@ -95,7 +95,7 @@ aros_flavour="emulation"
 aros_shell_ldflags=""
 aros_genmap="-Xlinker -Map -Xlinker"
 aros_ildflags="-nostartfiles -nostdlib"
-aros_debug_cflags="-g"
+aros_debug_cflags="-g -O0 -DADEBUG=1"
 aros_mkdepend="makedepend"
 aros_gfxsystem="x11"
 
