@@ -10,7 +10,9 @@ workbench-libs :
 #MM workbench-libs-complete : workbench-libs-asl workbench-libs-diskfont
 #MM workbench-libs-complete : workbench-libs-gadtools workbench-libs-icon
 #MM workbench-libs-complete : workbench-libs-iffparse workbench-libs-mathieeesingtrans
-#MM workbench-libs-complete : workbench-libs-mathtrans
+#MM workbench-libs-complete : workbench-libs-mathtrans 
+#MM workbench-libs-complete : workbench-libs-mathieeedoubbas
+#MM workbench-libs-complete : workbench-libs-mathieeedoubtrans
 workbench-libs-complete :
 	@$(NOP)
 
