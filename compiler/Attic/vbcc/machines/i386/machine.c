@@ -82,7 +82,7 @@ static long loff,stackoffset,notpopped;
 static char *ccs[]={"z","nz","l","ge","le","g","mp"};
 static char *ccu[]={"z","nz","b","ae","be","a","mp"};
 static char *logicals[]={"or","xor","and"};
-static char *arithmetics[]={"shl","shr","add","sub","imul","div","mod"};
+static char *arithmetics[]={"sal","sar","add","sub","imul","div","mod"};
 static char *farithmetics[]={"f?","f?","fadd","fsub","fmul","fdiv","fsubr","fdivr"};
 static char *dct[]={"","byte","short","long","long","long","long","long","long"};
 static pushedsize,pushorder=2;
