@@ -11,7 +11,7 @@ AFLAGS3		:= $(AFLAGS2) -I.. $(OS_INCLUDES) -traditional
 FILES		:= head
 LIB		:= $(LIBDIR)/boot/header.a
 LLINK		:= ld -r
-BLINK		:= ld -e startup_32 -Ttext 0x1000 -Map aros.map
+BLINK		:= ld -e startup_32 -Ttext 0x1000 -Map $(OBJDIR)/aros.map
 LINKLIBS	:= \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libarosm.a $(LIBDIR)/libarossupport.a
