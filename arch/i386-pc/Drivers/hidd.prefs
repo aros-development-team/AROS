@@ -2,7 +2,7 @@
 library mouse.hidd
 library kbd.hidd
 library graphics.hidd
-library vga.hidd
-gfx hidd.gfx.vga
+library vesagfx.hidd
+gfx hidd.gfx.vesa
 mouse hidd.bus.mouse
 kbd hidd.kbd.hw

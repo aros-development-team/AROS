@@ -125,11 +125,13 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilityBase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilityBase)
 	    {
-		initVesaGfxHW(&xsd->data);
-		if (initclasses(xsd))
+		if (initVesaGfxHW(&xsd->data))
 		{
-		    D(bug("[VESA] Init: Everything OK\n"));
-		    return TRUE;
+		    if (initclasses(xsd))
+		    {
+			D(bug("[VESA] Init: Everything OK\n"));
+			return TRUE;
+		    }
 		}
 		CloseLibrary(xsd->utilityBase);
 	    }

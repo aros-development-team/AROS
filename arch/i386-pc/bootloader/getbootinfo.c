@@ -1,0 +1,62 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Desc: GetBootInfo() function.
+    Lang: english
+*/
+#include "bootloader_intern.h"
+#include <proto/bootloader.h>
+#include <proto/utility.h>
+#include <aros/multiboot.h>
+
+/*****************************************************************************
+
+    NAME */
+	AROS_LH1(APTR, GetBootInfo,
+
+/*  SYNOPSIS */
+	AROS_LHA(ULONG, infoType, D0),
+
+/*  LOCATION */
+	struct BootLoaderBase *, BootLoaderBase, 1, Bootloader)
+
+/*  FUNCTION
+	Return information from the bootloader
+
+    INPUTS
+	infoType - The type of information requestes
+
+    RESULT
+	Pointer to resource or NULL if failed
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    
+    switch (infoType)
+    {
+	case BL_Video:
+	    if (BootLoaderBase->Flags && MB_FLAGS_GFX)
+		return (APTR)&(BootLoaderBase->Vesa);
+	    break;
+	case BL_Args:
+	    if (BootLoaderBase->Flags && MB_FLAGS_CMDLINE)
+		return (APTR)&(BootLoaderBase->Args);
+	    break;
+    }
+
+    return NULL;
+
+    AROS_LIBFUNC_EXIT
+} /* GetBootInfo */

@@ -61,6 +61,7 @@
 #include <aros/asmcall.h>
 #include <aros/config.h>
 #include <aros/debug.h>
+#include <aros/multiboot.h>
 
 #include <hardware/custom.h>
 
@@ -73,7 +74,6 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "traps.h"
-#include "multiboot.h"
 
 /* As long as we don't have CPU detection routine, assume FPU to be present */
 
@@ -438,6 +438,9 @@ void exec_cinit(unsigned long magic, unsigned long addr)
      * This messy bit here will store away useful information we receive from
      * the boorloader. It will happen when we are loaded, and not on when we
      * are here from ColdReboot().
+     * This is just the first stage of it. Later this information will be extracted
+     * by bootloader.resource, but we do this here anyway. Both to keep the info
+     * safe, and also since we will use some of it in here.
      */
     arosmb = (struct arosmb *)0x1000;
     if (arosmb->magic != MBRAM_VALID)
@@ -988,81 +991,6 @@ void exec_cinit(unsigned long magic, unsigned long addr)
     {
         void (*p)() = ExecBase->CoolCapture;
         (*p)();
-    }
-
-    /* Print multiboot information */
-    if (arosmb->magic == MBRAM_VALID)
-    {
-	kprintf("Multiboot information found:\n");
-	if (arosmb->flags && MB_FLAGS_LDRNAME)
-	{
-	    kprintf(" Bootloader: %s\n",arosmb->ldrname);
-	}
-	if (arosmb->flags && MB_FLAGS_CMDLINE)
-	{
-	    kprintf(" Commandline: %s\n",arosmb->cmdline);
-	}
-	if (arosmb->flags && MB_FLAGS_MEM)
-	{
-	    kprintf(" Amount of memory: %d kB lower, %d kB upper\n",arosmb->mem_lower,arosmb->mem_upper);
-	}
-	if (arosmb->flags && MB_FLAGS_MMAP)
-	{
-	    struct mb_mmap *curr;
-
-	    kprintf(" Memory map info at: 0x%08x length 0x%08x\n",arosmb->mmap_addr,arosmb->mmap_len);
-
-	    for (curr = (struct mb_mmap *) arosmb->mmap_addr;
-		    (unsigned long) curr < arosmb->mmap_addr + arosmb->mmap_len;
-		    curr = (struct mb_mmap *) ((unsigned long) curr + curr->size + sizeof (curr->size)))
-	    {
-		kprintf("  Memory: Addr: 0x%08x%08x, Length: 0x%08x%08x, Type: ",
-			curr->addr_high,curr->addr_low,
-			curr->len_high,curr->len_low);
-		switch(curr->type)
-		{
-		    case 1:
-			kprintf("Usable RAM\n");
-			break;
-		    case 2:
-			kprintf("Reserved\n");
-			break;
-		    case 3:
-			kprintf("ACPI Data\n");
-			break;
-		    case 4:
-			kprintf("ACPI NVS\n");
-			break;
-		    default:
-			kprintf("Unknown type\n");
-		}
-	    }
-	}
-	if (arosmb->flags && MB_FLAGS_DRIVES)
-	{
-	    struct mb_drive *curr;
-	    
-	    kprintf(" Drive info at: 0x%08x length 0x%08x\n",arosmb->drives_addr,arosmb->drives_len);
-	    for (curr = (struct mb_drive *) arosmb->drives_addr;
-		    (unsigned long) curr < arosmb->drives_addr + arosmb->drives_len;
-		    curr = (struct mb_drive *) ((unsigned long) curr + curr->size))
-	    {
-		kprintf("  Drive %02x, CHS (%d/%d/%d) mode %s\n",
-			curr->number,
-			curr->cyls,curr->heads,curr->secs,
-			curr->mode?"CHS":"LBA");
-	    }
-	}
-	if (arosmb->flags && MB_FLAGS_GFX)
-	{
-	    kprintf(" Received VESA mode info:\n");
-	    kprintf("  VESA mode %04x\n",arosmb->vbe_mode);
-	    kprintf("  Resolution %dx%d with depth %d bits\n",arosmb->vmi.x_resolution,arosmb->vmi.y_resolution,arosmb->vmi.bits_per_pixel);
-	}
-    }
-    else
-    {
-	kprintf("No Multiboot information discovered\n");
     }
 
     InitCode(RTF_SINGLETASK, 0);

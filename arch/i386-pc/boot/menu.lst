@@ -5,29 +5,29 @@ timeout 5
 fallback 0
 
 title AROS VGA
-kernel /boot/aros-pc-i386.gz gfx=vga
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vga lib=vga.hidd
 
 title AROS VBE 640x480 16
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 640 480 16
 
 title AROS VBE 800x600 16
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 800 600 16
 
 title AROS VBE 1024x768 16
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 1024 1024 16
 
 title AROS VBE 640x480 32
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 640 480 32
 
 title AROS VBE 800x600 32
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 800 600 32
 
 title AROS VBE 1024x768 32
-kernel /boot/aros-pc-i386.gz gfx=vesa
+kernel /boot/aros-pc-i386.gz gfx=hidd.gfx.vesa lib=vesagfx.hidd
 setvbe 1024 768 32
 

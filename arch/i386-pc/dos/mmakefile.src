@@ -10,7 +10,7 @@ CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
 AFLAGS2 :=
 TESTS :=
 
-FILES := boot aros
+FILES := boot aros inithidds
 
 #MM
 dos-pc-i386 : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
