@@ -629,6 +629,9 @@ VOID keyCallback(struct KeyboardBase *KBBase, UWORD keyCode)
 {
     D(bug("keyCallBack(KBBase=%p, keyCode=%d)\n"
     		, KBBase, keyCode));
+		
+    Disable();
+    
     KBBase->kb_keyBuffer[(KBBase->kb_writePos)++] = keyCode;
 
 D(bug("Wrote to buffer\n"));
@@ -648,6 +651,8 @@ D(bug("doing software irq\n"));
     
 	Cause(&KBBase->kb_Interrupt);
     }
+    
+    Enable();
 }
 
 #undef  BVBITSET

@@ -496,6 +496,8 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 	    break;
     }
     
+    Disable();
+    
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = amigacode;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->x;
     GPBase->gp_eventBuffer[GPBase->gp_writePos++] = ev->y;
@@ -513,6 +515,8 @@ D(bug("doing software irq, node type=%d\n",
 
 	Cause(&GPBase->gp_Interrupt);	
     }
+    
+    Enable();
 }
 
 
