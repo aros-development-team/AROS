@@ -1,0 +1,92 @@
+/*
+    (C) 2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: (AROS only) Graphics function AndRectRect()
+    Lang: english
+*/
+#include "graphics_intern.h"
+#include <graphics/regions.h>
+#include <clib/macros.h>
+#include "intregions.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <clib/graphics_protos.h>
+
+	AROS_LH3(BOOL, AndRectRect,
+
+/*  SYNOPSIS */
+    	AROS_LHA(struct Rectangle *, rect1, A0),
+	AROS_LHA(struct Rectangle *, rect2, A1),
+	AROS_LHA(struct Rectangle *, intersect, A2),
+		
+/*  LOCATION */
+	struct GfxBase *, GfxBase, 193, Graphics)
+
+/*  FUNCTION
+    	Calculate the intersection rectangle between the
+	given Rectangle rect1 and the given Rectangle rect2
+	leaving the result in intersect (if intersect != NULL).
+	
+    INPUTS
+    	rect1 - pointer to 1st Rectangle
+	rect2 - pointer to 2nd Rectangle
+	intersect -> pointer to rectangle which will hold result. May be NULL.
+	
+    RESULT
+	TRUE if rect1 and rect2 do intersect. In this case intersect (unless NULL)
+	will contain the intersection rectangle.
+	
+	FALSE if rect1 and rect2 do not overlap. "intersect" will
+	then be left unchanged.
+
+    NOTES
+	This function does not exist in AmigaOS.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+	AndRectRegion() AndRegionRegion()
+
+    INTERNALS
+
+    HISTORY
+	15-12-2000  stegerg implemented
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+
+    ASSERT_VALID_PTR(rect1);
+    ASSERT_VALID_PTR(rect2);
+    ASSERT_VALID_PTR_OR_NULL(intersect);
+
+    if (rect1->MinX <= rect2->MaxX)
+    {
+	if (rect1->MinY <= rect2->MaxY)
+	{
+	    if (rect1->MaxX >= rect2->MinX)
+	    {
+		if (rect1->MaxY >= rect2->MinY)
+		{
+		    if (intersect)
+		    {
+			intersect->MinX = MAX(rect1->MinX, rect2->MinX);
+			intersect->MinY = MAX(rect1->MinY, rect2->MinY);
+			intersect->MaxX = MIN(rect1->MaxX, rect2->MaxX);
+			intersect->MaxY = MIN(rect1->MaxY, rect2->MaxY);
+		    }
+		    return TRUE;
+		}
+	    }
+	}
+    }
+    return FALSE;
+    
+    AROS_LIBFUNC_EXIT
+    
+} /* AndRectRect */

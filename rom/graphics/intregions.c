@@ -14,31 +14,6 @@
 #include <clib/macros.h>
 #include "intregions.h"
 
-
-
-/* Return the intersection area of a and b in intersect.
- * Return value is TRUE if a and b have such an area,  
- * else FALSE - the coordinates in intersect are not     
- * changed in this case.
- */
-BOOL andrectrect(const struct Rectangle* a, const struct Rectangle* b, struct Rectangle* intersect)
-{
-    if (a->MinX <= b->MaxX) {
-	if (a->MinY <= b->MaxY) {
-	  if (a->MaxX >= b->MinX) {
-		if (a->MaxY >= b->MinY) {
-		    intersect->MinX = MAX(a->MinX, b->MinX);
-		    intersect->MinY = MAX(a->MinY, b->MinY);
-		    intersect->MaxX = MIN(a->MaxX, b->MaxX);
-		    intersect->MaxY = MIN(a->MaxY, b->MaxY);
-		    return TRUE;
-		}
-	    }
-	}
-    }
-    return FALSE;
-} /* andrectrect() */
-
 /* clears from rect the area that overlaps with clearrect
  * and returns the remaining RegionRectangles in *erg
  */
