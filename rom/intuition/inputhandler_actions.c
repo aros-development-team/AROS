@@ -829,7 +829,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	        _L->Flags &= ~LAYERREFRESH;
 	      }
 	      else
-	        windowneedsrefresh((struct Window *)_L->Window,
+	        WindowNeedsRefresh((struct Window *)_L->Window,
 	                           IntuitionBase);
 	    }
 	   _L = _L->back;
@@ -868,7 +868,7 @@ void HandleDeferedActions(struct IIHData *iihdata,
 	        L->Flags &= ~LAYERREFRESH;
 	      }
 	      else
-	        windowneedsrefresh((struct Window *)L->Window,
+	        WindowNeedsRefresh((struct Window *)L->Window,
 	                           IntuitionBase);
 	    }
 

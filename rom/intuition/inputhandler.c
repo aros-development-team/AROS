@@ -207,7 +207,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     	old_w = IntuitionBase->ActiveWindow;
 	if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
 	{
-	    w = intui_FindActiveWindow(ie, &swallow_event, IntuitionBase);
+	    w = FindActiveWindow(ie, &swallow_event, IntuitionBase);
 	}
 	else
 	{
