@@ -297,8 +297,6 @@ VOID UpdateActiveColor( struct PaletteData	*data,
 **  DrawDisabledPattern()  **
 ****************************/
 
-UWORD disabledpattern[2] = {0x4444, 0x1111};
-
 /* draws a disabled pattern */
 void DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
 			 struct PaletteBase_intern *AROSPaletteBase)
