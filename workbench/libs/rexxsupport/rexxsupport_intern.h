@@ -36,6 +36,7 @@
 
 /* Some external stuff (rexxsupport_init.c) */
 extern struct RxsLib *RexxSysBase;
+extern struct DosLibrary *DOSBase;
 
 struct RexxSupportBase_intern; /* prereference */
 
