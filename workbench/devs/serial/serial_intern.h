@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  2000/11/03 23:37:44  stegerg
+    oop renaming stuff
+
     Revision 1.7  2000/09/11 19:15:04  stegerg
     changes because of callback functions now having an additional param.
 
@@ -94,14 +97,14 @@ struct serialbase
     struct Library    *SerialHidd;
     struct Library    *oopBase;
     
-    Object            *SerialObject;
+    OOP_Object        *SerialObject;
 };
 
 
 struct SerialUnit
 {
   struct MinNode      su_Node;
-  Object            * su_Unit;
+  OOP_Object        * su_Unit;
 
   struct SignalSemaphore su_Lock;
 

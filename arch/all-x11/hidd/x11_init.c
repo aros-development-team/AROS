@@ -68,9 +68,9 @@ static VOID freeclasses( struct x11_staticdata *xsd );
 struct Task *create_x11task( struct x11task_params *params, struct ExecBase *ExecBase);
 VOID x11task_entry(struct x11task_params *xtp);
 
-static AttrBase HiddPixFmtAttrBase = 0;
+static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
-struct ABDescr abd[] = {
+struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
@@ -80,7 +80,7 @@ static BOOL initclasses(struct x11_staticdata *xsd)
 
     /* Get some attrbases */
     
-    if (!ObtainAttrBases(abd))
+    if (!OOP_ObtainAttrBases(abd))
     	goto failure;
 
     xsd->x11class = init_x11class(xsd);
@@ -140,7 +140,7 @@ static VOID freeclasses(struct x11_staticdata *xsd)
     if (xsd->x11class)
     	free_x11class(xsd);
 	
-    ReleaseAttrBases(abd);
+    OOP_ReleaseAttrBases(abd);
 	
     return;
 }

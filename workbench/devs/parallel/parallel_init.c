@@ -158,7 +158,7 @@ AROS_LH2(struct parallelbase *, init,
     if (NULL != ParallelDevice->ParallelHidd && 
         NULL != ParallelDevice->oopBase)
     {
-      ParallelDevice->ParallelObject = NewObject(NULL, CLID_Hidd_Parallel, NULL);
+      ParallelDevice->ParallelObject = OOP_NewObject(NULL, CLID_Hidd_Parallel, NULL);
       D(bug("parallelHidd Object: 0x%x\n",ParallelDevice->ParallelObject));
     }
   }
@@ -343,7 +343,7 @@ AROS_LH0(BPTR, expunge, struct parallelbase *, ParallelDevice, 3, Parallel)
       /*
       ** Throw away the HIDD object and close the library
       */
-      DisposeObject(ParallelDevice->ParallelObject);
+      OOP_DisposeObject(ParallelDevice->ParallelObject);
       CloseLibrary(ParallelDevice->ParallelHidd);
       ParallelDevice->ParallelHidd   = NULL;
       ParallelDevice->ParallelObject = NULL;

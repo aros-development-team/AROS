@@ -159,7 +159,7 @@ AROS_LH2(struct serialbase *, init,
     if (NULL != SerialDevice->SerialHidd && 
         NULL != SerialDevice->oopBase)
     {
-      SerialDevice->SerialObject = NewObject(NULL, CLID_Hidd_Serial, NULL);
+      SerialDevice->SerialObject = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL);
       D(bug("serialHidd Object: 0x%x\n",SerialDevice->SerialObject));
     }
   }
@@ -360,7 +360,7 @@ AROS_LH0(BPTR, expunge, struct serialbase *, SerialDevice, 3, Serial)
       /*
       ** Throw away the HIDD object and close the library
       */
-      DisposeObject(SerialDevice->SerialObject);
+      OOP_DisposeObject(SerialDevice->SerialObject);
       CloseLibrary(SerialDevice->SerialHidd);
       SerialDevice->SerialHidd   = NULL;
       SerialDevice->SerialObject = NULL;

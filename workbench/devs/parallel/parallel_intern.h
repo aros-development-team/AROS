@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.3  2000/11/03 23:37:44  stegerg
+    oop renaming stuff
+
     Revision 1.2  2000/09/21 16:44:56  stegerg
     same fixes as in serial routines.
 
@@ -77,14 +80,14 @@ struct parallelbase
     struct Library    *ParallelHidd;
     struct Library    *oopBase;
     
-    Object            *ParallelObject;
+    OOP_Object        *ParallelObject;
 };
 
 
 struct ParallelUnit
 {
   struct MinNode      pu_Node;
-  Object            * pu_Unit;
+  OOP_Object        * pu_Unit;
 
   struct SignalSemaphore pu_Lock;
 
