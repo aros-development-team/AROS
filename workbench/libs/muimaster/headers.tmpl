@@ -8,6 +8,10 @@
 #   include <utility/tagitem.h>
 #endif
 
+#ifndef MUIMasterBase
+extern struct Library *MUIMasterBase;
+#endif
+
 /* Prototypes for stubs in mui.lib */
 
 APTR 	MUI_AllocAslRequestTags(unsigned long reqType, Tag tag1, ...);
