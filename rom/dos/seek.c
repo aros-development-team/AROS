@@ -70,6 +70,18 @@
     /* Get pointer to I/O request. Use stackspace for now. */
     struct IOFileSys io,*iofs=&io;
 
+    /* If the file is in write mode flush it */
+    if(fh->fh_Flags&FHF_WRITE)
+	Flush(file);
+    else
+    {
+	/*
+	   Read mode. Just reinit the buffers. We can't call
+	   Flush() in this case as that would end up in recursion.
+	*/
+	fh->fh_Pos=fh->fh_End=fh->fh_Buf;
+    }
+
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
     iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
