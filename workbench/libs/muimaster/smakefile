@@ -1,4 +1,4 @@
-CFLAGS = NOVERS gst=all.gst
+CFLAGS = NOVERS gst=all.gst idlen=40
 LIBCODE =
 
 SUPPORTOBJS = \
