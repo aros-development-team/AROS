@@ -119,14 +119,13 @@ ULONG CopyTagItems
         desttaglist++;
         numtags++;
     }
-
-    /* Count TAG_DONE */
-    desttaglist++;
-    numtags++;
     
     /* Insert TAG_DONE */
     desttaglist->ti_Tag   = TAG_DONE;
     desttaglist->ti_Data  = 0L;
+
+    /* Count TAG_DONE */
+    numtags++;
   
     ReturnInt ("CopyTagItems", ULONG, numtags);
 }
