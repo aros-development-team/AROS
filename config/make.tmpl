@@ -627,11 +627,49 @@ endif
 
 %include_deps depstargets=%(mmake) deps=$(BD_DEPS$(BDID))
 %end
+
 #------------------------------------------------------------------------------
+# Build catalogs.
+# - mmake is the mmaketarget
+# - catalogs is the list of catalogs, without the .ct suffix (default *.ct)
+# - description is the catalog description file (.cd) (default *.cd)
+# - subdir is the destination subdir of the catalogs
+# - name is the name of the destination catalog, without the .catalog suffix
+# - include is the path to the generated include file 
+# - dir is the base destination directory (default $(AROS_CATALOGS))
 
+%define build_catalogs mmake=/A name=/A subdir=/A \
+ catalogs="$(basename $(wildcard *.ct))" include="../strings.h" \
+ description="$(basename $(wildcard *.cd))" dir=$(AROS_CATALOGS)
 
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
 
+BD_SRCS$(BDID) := $(foreach name, %(catalogs), $(name).ct)
+BD_OBJS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir)/%(name).catalog)
+BD_DIRS$(BDID) := $(foreach name, %(catalogs), %(dir)/$(name)/%(subdir))
 
+#MM %(mmake) : %(mmake)-setup
+
+%(mmake) : $(BD_OBJS$(BDID)) %(include)
+
+#MM %(mmake)-setup
+%rule_makedirs dirs=$(BD_DIRS$(BDID)) setuptarget=%(mmake)-setup
+
+%(dir)/%/%(subdir)/%(name).catalog : %.ct %(description).cd
+	@$(ECHO) "Creating %(name) catalog for language $*."
+	@$(IF) $(FLEXCAT) %(description).cd $*.ct CATALOG=%(dir)/$*/%(subdir)/%(name).catalog ; then $(NOP) ; else $(NOP) ; fi ;
+
+%(include) : %(description).cd
+	@$(ECHO) "Creating %(name) catalog include file %(include)"
+	@$(FLEXCAT) %(description).cd %(include)=$(TOOLDIR)/C_h_orig.sd
+
+#MM
+%(mmake)-clean :
+	$(RM) $(BD_OBJS$(BDID)) %(include)
+
+%end
+
+#-----------------------------------------------------------------------------
 
 
 
