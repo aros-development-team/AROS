@@ -2,8 +2,8 @@
 
 <section title="General style">
 
-This code is used by many people and therefore you should keep some things
-in mind when you submit source code:
+<p>This code is used by many people and therefore you should keep some things
+in mind when you submit source code:</p>
 
 <ul>
 <li>Keep things simple</li>
@@ -17,18 +17,18 @@ by many people</li>
 </section>
 <section title="Comments">
 
-AROS uses some of the comments in the source to generate the documentation.
+<p>AROS uses some of the comments in the source to generate the documentation.
 Therefore it's neccessary to keep a certain format so the tools can find
 their information. Other comments are ignored but they should explain what
 you thought when you wrote the code. If you really can't think of an
-explanation, then don't write the code a second time like this:
+explanation, then don't write the code a second time like this:</p>
 
 <code>
 /* This adds 1 to t */
 t ++;
 </code>
 
-What we think of is this:
+<p>What we think of is this:</p>
 
 <code>
 /* Go on with next element */
@@ -38,16 +38,16 @@ t ++;
 </section>
 <section title="Function prototypes and headers">
 
-Every function in AROS must have a full ANSI C prototype. Prototypes should
+<p>Every function in AROS must have a full ANSI C prototype. Prototypes should
 be collected in in one header per file if it is needed by only a few files
 (no need to recompile the whole project if you change a function which used
 only once), in one header per directory if it's a commonly used function in
 that directory or in one header per logical group (ie. one header for all
-functions in a library).
+functions in a library).</p>
 
-The function header (ie. the comment before the function) must be of a
+<p>The function header (ie. the comment before the function) must be of a
 special format because the AutoDocs are generated from it. Here is an
-example for it (from <filename>AROS/exec/addhead.c</filename>):
+example for it (from <filename>AROS/exec/addhead.c</filename>):</p>
 
 <code>
 /*****************************************************************************
@@ -100,8 +100,8 @@ example for it (from <filename>AROS/exec/addhead.c</filename>):
 {
 </code>
 
-As you can see, comments are used to merge the function prototype and the
-header into one.
+<p>As you can see, comments are used to merge the function prototype and the
+header into one.</p>
 
 <description>
 <li><item>NAME</item> This field contains all neccessary prototypes to use the function
@@ -112,12 +112,12 @@ parameters and whether the function needs the library base. <code>AddHead()</cod
 does not and therefore an "I" is appended to the macros name. If it need
 the library base (like <code>AddTask()</code>), then the "I" is omitted.
 
-If the function is not part of a shared library and it's arguments must be
+<p>If the function is not part of a shared library and it's arguments must be
 passed in certain registers (eg. callback hooks), you must use
 <code>AROS_UFH*()</code> macros (User Function Header) instead of <code>AROS_LH*()</code>. Append
 the number of arguments to this macro. Since it has never a base, the field
 LOCATION must be omitted and it's not neccessary to append the "I" to the
-macros name. An example for a callback hook <code>foo()</code> would be:
+macros name. An example for a callback hook <code>foo()</code> would be:</p>
 
 <code>
 AROS_UFH3(ULONG, foo,
@@ -127,10 +127,10 @@ AROS_UFH3(ULONG, foo,
 )
 </code>
 
-(note that the registers need not have a particular order).
+<p>(note that the registers need not have a particular order).</p>
 
-If the function is not part of a shared library and it's arguments need not
-be in specific registers, you need no <code>AROS_*H*()</code> macros:
+<p>If the function is not part of a shared library and it's arguments need not
+be in specific registers, you need no <code>AROS_*H*()</code> macros:</p>
 
 <code>
 /*****************************************************************************
@@ -160,10 +160,10 @@ the type of the parameter followed by the name of the parameter and the
 register the parameter is expected in. Valid names for registers are D0,
 D1, D2 upto D7 and A0 upto A6.
 
-If the function is not part of a library but the arguments must be passed
+<p>If the function is not part of a library but the arguments must be passed
 to it in registers, then use <code>AROS_UFHA()</code> macros (User Function Header
 Argument) which take the same parameters as the <code>AROS_LHA()</code> macros. Don't
-forget the closing parenthese for the AROS_UFC
+forget the closing parenthese for the <code>AROS_UFC</code>.</p>
 
 If the function is not part of a library and the arguments need not be
 passed in registers, no macros are neccessary.
@@ -245,7 +245,7 @@ You can delete it, if you encounter it.
 </section>
 <section title="Formatting">
 
-Here is an example of how to format AROS code:
+<p>Here is an example of how to format AROS code:</p>
 
 <code>
 {
@@ -289,9 +289,7 @@ Here is an example of how to format AROS code:
 }
 </code>
 
-Looks ugly, eh ? :-)
-
-Ok, here are the rules:
+<p>Looks ugly, eh ? :-) Ok, here are the rules:</p>
 
 <ul>
 <li>If several lines contain similar code, put similar things below each
@@ -309,13 +307,13 @@ the code between is small (c)
 
 <li>Indent by 4 Spaces. Two indent levels may be abbreviated by one tab.
 
-The reasons for this are: 1. While some editors can use an arbitrary
+<p>The reasons for this are: 1. While some editors can use an arbitrary
 sizes for tabs, it's a bit complicated to tell another editor which
 tab size was used by the one used to write the code. 2. Most code in
 AROS was written this way and you're code should look like the
 rest. 3. You can print this code on any printer without special
 tools to "fix" the tabs. 4. Most editors have smart tabs which do
-exactly this. If your editor doesn't, write a bug report.
+exactly this. If your editor doesn't, write a bug report.</p>
 </li>
 
 <li>If you have a function with many arguments (d, e) you should put the
@@ -337,11 +335,11 @@ put before the code they explain with only one blank line before them.
 </section>
 <section title="Writing ROM-able code">
 
-Code in AROS modules should be written in a way that makes it suitable
+<p>Code in AROS modules should be written in a way that makes it suitable
 for embedding into a ROM, FlashRAM or other kinds read-only
 memory. The following coding style rules are meant to make it
 possible. Of course they apply to all Kickstart modules and to code
-that may be made resident, shared or linked to other modules.
+that may be made resident, shared or linked to other modules.</p>
 
 <ul>
 <li>
@@ -376,7 +374,7 @@ Barthel has finally switched to using <code>const</code> in
 </li>
 
 <li>
-NEVER, NEVER touch buffers passed in by the user as an "input"
+<strong>NEVER EVER</strong> touch buffers passed in by the user as an "input"
 parameter. The concept of input parameters is often implicit
 in the function description. For instance, the filename passed
 to <code>Open()</code> is clearly an input variable and
