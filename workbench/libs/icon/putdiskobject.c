@@ -1,10 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
+
 #include <proto/arossupport.h>
 #include <proto/dos.h>
 #include "icon_intern.h"
@@ -41,44 +39,63 @@ extern const IPTR IconDesc[];
 
     INTERNALS
 
-    HISTORY
-	27-11-96    digulla automatically created from
-			    icon_lib.fd and clib/icon_protos.h
-
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-    char * iconname;
-    BPTR   icon;
-    BOOL   success;
+    
+    BPTR   icon = NULL;
+    BOOL   success = FALSE;
 
     /* Name with correct extension ? */
-    if (strrncasecmp (name, ".info", 5))
+    if (name[strlen(name) - 1] == ':')
     {
-	/* Create the final filename */
-	if (!(iconname = AllocVec (strlen (name) + 5 + 1, MEMF_ANY)) )
-	    return NULL;
-
-	strcpy (iconname, name);
-	strcat (iconname, ".info");
-
-	/* Try to open that file */
-	icon = Open (iconname, MODE_NEWFILE);
-
-	FreeVec (iconname);
+        ULONG  length = strlen(name) + 9 /* strlen("Disk.info") */ + 1;
+        STRPTR volume = AllocVec(length, MEMF_ANY);
+        
+        if (volume != NULL)
+        {
+            strlcpy(volume, name, length);
+            strlcat(volume, "Disk.info", length);
+            
+            icon = Open(volume, MODE_NEWFILE);
+            
+            FreeVec(volume);
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
     }
-    else
-	icon = Open (name, MODE_NEWFILE);
+    else if (strrncasecmp(name, ".info", 5))
+    {
+	ULONG  length = strlen(name) + 5 /* strlen(".info") */ + 1;
+        STRPTR file   = AllocVec(length, MEMF_ANY);
+        
+        if (file != NULL)
+        {
+            strlcpy(file, name, length);
+            strlcpy(file, ".info", length);
+            
+            icon = Open(file, MODE_NEWFILE);
+            
+            FreeVec(file);
+        }
+        else
+        {
+            SetIoErr(ERROR_NO_FREE_STORE);
+            return NULL;
+        }
+    }
+    
+    if (icon == NULL) return FALSE;
 
-    if (!icon)
-	return FALSE;
+    success = WriteStruct(&LB(IconBase)->dsh, (APTR) diskobj, icon, IconDesc);
 
-    /* Read the file in */
-    success = WriteStruct (&LB(IconBase)->dsh, (APTR)diskobj, icon, IconDesc);
-
-    Close (icon);
+    Close(icon);
 
     return success;
+    
     AROS_LIBFUNC_EXIT
 } /* PutDiskObject */
