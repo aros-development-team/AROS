@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -84,27 +84,29 @@
 	return FALSE;
     }
     
+    temp = event->ie_Qualifier;
+
     if ((qual = ix->ix_QualSame) != 0)
     {
-	if ((qual & ~IXSYM_SHIFT) != 0)
+	if ((qual & IXSYM_SHIFT) != 0)
 	{
-	    if ((event->ie_Qualifier & IXSYM_SHIFTMASK) != 0)
+	    if ((temp & IXSYM_SHIFTMASK) != 0)
 	    {
 		temp |= IXSYM_SHIFTMASK;
 	    }
 	}
 
-	if ((qual & ~IXSYM_CAPS) != 0)
+	if ((qual & IXSYM_CAPS) != 0)
 	{
-	    if ((event->ie_Qualifier & IXSYM_CAPSMASK) != 0)
+	    if ((temp & IXSYM_CAPSMASK) != 0)
 	    {
 		temp |= IXSYM_CAPSMASK;
 	    }
 	}
 
-	if ((qual & ~IXSYM_ALT) != 0)
+	if ((qual & IXSYM_ALT) != 0)
 	{
-	    if ((event->ie_Qualifier & IXSYM_ALTMASK) != 0)
+	    if ((temp & IXSYM_ALTMASK) != 0)
 	    {
 	        temp |= IXSYM_ALTMASK;
 	    }

@@ -1,5 +1,5 @@
 /*
-    (C) 1997-99 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Commodities initialization code.
@@ -9,7 +9,7 @@
 #define  AROS_ALMOST_COMPATIBLE
 
 #ifndef  DEBUG
-#define  DEBUG 1
+#define  DEBUG 0
 #endif
 
 #include <aros/debug.h>
@@ -53,12 +53,35 @@ int entry(void)
     return -1;
 }
 
+#ifdef __MORPHOS__
+
+ULONG HookEntry(void)
+{
+	struct Hook *h=(struct Hook *)REG_A0;
+    Msg msg=(Msg) REG_A1;
+    Object *obj=(Object*) REG_A2;
+
+    return h->h_SubEntry(h,obj,msg);
+}
+
+static struct EmulLibEntry    HookEntry_Gate=
+{
+	TRAP_LIB, 0, (void (*)(void))HookEntry
+};
+
+
+#endif /* __MORPHOS__ */
+
 const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&LIBEND,
+#ifndef __MORPHOS__
     RTF_AUTOINIT,
+#else
+    RTF_PPC | RTF_AUTOINIT,
+#endif
     VERSION_NUMBER,
     NT_LIBRARY,
     0,
@@ -75,9 +98,16 @@ const APTR inittabl[4]=
 {
     (APTR)sizeof(struct CommoditiesBase),
     (APTR)LIBFUNCTABLE,
+#ifdef __MORPHOS__
+    NULL,
+#else
     (APTR)&datatable,
+#endif
     &INIT
 };
+
+
+#ifndef __MORPHOS__
 
 struct inittable
 {
@@ -105,13 +135,20 @@ const struct inittable datatable=
 
 #undef O
 
+#endif /* ifndef __MORPHOS__ */
+
 BOOL InitCx(struct CommoditiesBase *CxBase);
 VOID ShutDownCx(struct CommoditiesBase *CxBase);
 
+#ifdef __MORPHOS__
+struct CommoditiesBase *LIB_init(struct CommoditiesBase *CxBase, BPTR segList,
+				 struct ExecBase *sysBase)
+#else
 AROS_LH2(struct CommoditiesBase *, init,
  AROS_LHA(struct CommoditiesBase *, CxBase, D0),
  AROS_LHA(BPTR,               segList,   A0),
 	   struct ExecBase *, sysBase, 0, Commodities)
+#endif
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
@@ -119,6 +156,7 @@ AROS_LH2(struct CommoditiesBase *, init,
     /* Store arguments */
     CxBase->cx_SysBase = sysBase;
     CxBase->cx_SegList = segList;
+    CxBase->cx_LibNode.lib_Revision = REVISION_NUMBER;
 
     return CxBase;
 
@@ -249,11 +287,13 @@ VOID ShutDownCx(struct CommoditiesBase *CxBase)
     CxMsg *msg;
  
     /* Free messages */
-    while((msg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
+    while ((msg = (CxMsg *)GetMsg(&CxBase->cx_MsgPort)) != NULL)
+    {
 	FreeCxStructure(msg, CX_MESSAGE, (struct Library *)CxBase);
+    }
     
     /* Free input events */
-    while(CxBase->cx_IEvents != NULL)
+    while (CxBase->cx_IEvents != NULL)
     {
 	temp = CxBase->cx_IEvents->ie_NextEvent;
 	FreeCxStructure(CxBase->cx_IEvents, CX_INPUTEVENT,
@@ -278,15 +318,20 @@ AROS_LH0(BPTR, close, struct CommoditiesBase *, CxBase, 2, Commodities)
     */
 
     /* I have one fewer opener. */
-    if(--(CxBase->cx_LibNode.lib_OpenCnt) == 0)
+    if (--(CxBase->cx_LibNode.lib_OpenCnt) == 0)
+    {
 	ShutDownCx(CxBase);
+    }
     
-    if((CxBase->cx_LibNode.lib_Flags & LIBF_DELEXP) != 0)
+    if ((CxBase->cx_LibNode.lib_Flags & LIBF_DELEXP) != 0)
     {
 	if(CxBase->cx_LibNode.lib_OpenCnt == 0)
+	{
 	    return expunge();
+	}
 	
 	CxBase->cx_LibNode.lib_Flags &= ~LIBF_DELEXP;
+
 	return NULL;
     }
 
@@ -307,10 +352,11 @@ AROS_LH0(BPTR, expunge, struct CommoditiesBase *, CxBase, 3, Commodities)
     */
 
     /* Test for openers. */
-    if(CxBase->cx_LibNode.lib_OpenCnt != 0)
+    if (CxBase->cx_LibNode.lib_OpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
 	CxBase->cx_LibNode.lib_Flags |= LIBF_DELEXP;
+
 	return 0;
     }
 
@@ -328,6 +374,7 @@ AROS_LH0(BPTR, expunge, struct CommoditiesBase *, CxBase, 3, Commodities)
 	    CxBase->cx_LibNode.lib_NegSize + CxBase->cx_LibNode.lib_PosSize);
 
     return ret;
+
     AROS_LIBFUNC_EXIT
 }
 
