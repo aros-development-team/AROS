@@ -1,13 +1,12 @@
+#ifndef _MUI_MACROS_H
+#define _MUI_MACROS_H
+
 /*
     Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
+
+    Macros available in original MUI and also some additional ones.
 */
-
-
-/* This file contains the macros which orgignial MUI has provied + some extra one */
-
-#ifndef _MUI_MACROS_H
-#define _MUI_MACROS_H
 
 /* Some nice macrodefinitions for creating your object tree */
 #define MenustripObject     MUIOBJMACRO_START(MUIC_Menustrip)
@@ -333,4 +332,4 @@ struct __dummyAreaData__
 
 
 
-#endif
+#endif /* _MUI_MACROS_H */
