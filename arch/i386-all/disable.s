@@ -1,6 +1,9 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.7  1996/10/18 01:12:52  aros
+#    Added small patch to tell FreeBSD to use _sigprocmask not sigprocmask.
+#
 #    Revision 1.6  1996/10/10 13:24:47  digulla
 #    Make timer work (Fleischer)
 #
@@ -49,6 +52,11 @@
 #   HISTORY
 #
 #******************************************************************************
+
+#if defined(__FreeBSD__)
+#define sigprocmask _sigprocmask
+#endif
+
 	IDNestCnt   =	302
 
 	.text
@@ -74,7 +82,7 @@ dis:
 	leal 4(%esp),%eax
 	pushl %eax
 	pushl $0
-	call sigprocmask
+	call _sigprocmask
 	addl $16,%esp
 	popl %edx
 	popl %ecx
