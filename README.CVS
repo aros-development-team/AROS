@@ -15,6 +15,58 @@ server, you must have some way to connect to the Internet, anyway, so it
 might be a good idea to install AmiTCP (no idea if Miami works, too.
 Anyone ?).
 
+    > cd AmiTCP:bin
+    > login username
+    > passwd
+    Old password: *******
+    New password: *****
+    Retype new password: *****
+
+(replace the "*" by your password). After this, open the file AmiTCP:db/passwd
+and look for "username". The encrypted password can be found in the second
+field:
+
+    username|hrGxherytY|1000|1000|name|home:|shell
+	     ^^^^^^^^^^
+
+This is the password you can send to me (see next section).
+
+NOTE: Don't forget to change the password back to your original password,
+or clear the password field if you didn't have an AmiTCP password !
+If you don't want to mess with your original user, do this:
+
+    username|hrGxherytY|1000|1000|name|home:|shell
+
+make a copy of the line
+
+    username|hrGxherytY|1000|1000|name|home:|shell
+    username|hrGxherytY|1000|1000|name|home:|shell
+
+erase the password and change the login name and user id:
+
+    username|hrGxherytY|1000|1000|name|home:|shell
+    aros||1001|1000|name|home:|shell
+
+login:
+
+    > login aros
+    > passwd
+    Old password:
+
+Just press Return here
+
+    New password: ******
+    Retype new password: ******
+
+And then type the AROS password twice. After that, edit the passwd-file
+again:
+
+    username|hrGxherytY|1000|1000|name|home:|shell
+    aros|xyJSD87sdfk|1001|1000|name|home:|shell
+
+Now you can send me the password ("xyJSD87sdfk") and simply delete the
+dummy "aros" user. That's it :-)
+
 2. Mail that password to
 
     digulla@wi-pc44.fh-konstanz.de
