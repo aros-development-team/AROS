@@ -60,6 +60,7 @@
 {
     UBYTE * mem, * newmem;
     size_t oldsize;
+    AROS_GET_SYSBASE
 
     if (!oldmem)
 	return malloc (size);

@@ -71,6 +71,7 @@
     FILENODE *fn;
 
     GETUSER;
+    AROS_GET_SYSBASE
 
     if (!(fdesc = __getfdesc(filedes)))
     {
