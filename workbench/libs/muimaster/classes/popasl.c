@@ -5,6 +5,8 @@
     $Id$
 */
 
+#include <stdio.h>
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <dos/dostags.h>
@@ -140,6 +142,31 @@ AROS_UFH3(ULONG,Popasl_Open_Function,
 	    data->tag_list[7].ti_Tag = TAG_DONE;
 	    data->tag_list[7].ti_Data = 0;
 	}
+
+	if (data->type == ASL_FontRequest)
+	{
+	    char *str, *name_end;
+	    LONG size;
+	    get(string,MUIA_String_Contents,&str);
+
+	    if (str)
+	    {
+		name_end = PathPart(str);
+		buf = (char*)AllocVec(name_end - str + 2, MEMF_PUBLIC);
+		if (!buf) return 0;
+
+		strncpy(buf,str,name_end - str);
+		buf[name_end - str] = 0;
+		StrToLong(FilePart(str),&size);
+
+		data->tag_list[5].ti_Tag = ASLFO_InitialName;
+		data->tag_list[5].ti_Data = (IPTR)buf;
+		data->tag_list[6].ti_Tag = ASLFO_InitialSize;
+		data->tag_list[6].ti_Data = size;
+		data->tag_list[7].ti_Tag = TAG_DONE;
+		data->tag_list[7].ti_Data = 0;
+	    }
+	}
     }
 
     if (!(msg_port = CreateMsgPort())) return 0;
@@ -217,6 +244,25 @@ AROS_UFH3(ULONG,Popasl_Close_Function,
 		    set(string,MUIA_String_Contents,buf);
 		    FreeVec(buf);
 		}
+	    }   else
+	    {
+	    	if (data->type == ASL_FontRequest)
+	    	{
+		    struct FontRequester *font_req = (struct FontRequester*)data->asl_req;
+		    char *name = font_req->fo_Attr.ta_Name;
+		    int size = font_req->fo_Attr.ta_YSize;
+		    int len = strlen(name)+20;
+		    char *buf = (char*)AllocVec(len,MEMF_CLEAR);
+		    if (buf)
+		    {
+		    	char num_buf[20];
+		        strcpy(buf,name);
+		        sprintf(num_buf,"%ld",size);
+		        AddPart(buf,num_buf,len);
+		        set(string,MUIA_String_Contents,buf);
+		        FreeVec(buf);
+		    }
+	    	}
 	    }
 	}
     }
@@ -268,6 +314,7 @@ static IPTR Popasl_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->close_hook.h_Entry = (HOOKFUNC)Popasl_Close_Function;
     data->close_hook.h_Data = data;
     data->asl_req = asl_req;
+    data->type = asl_type;
     
     SetAttrs(obj,
 	MUIA_Popstring_OpenHook, &data->open_hook,
