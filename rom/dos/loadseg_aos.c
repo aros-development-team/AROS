@@ -11,7 +11,7 @@
 #include <dos/dosasl.h>
 #include <dos/doshunks.h>
 #include <proto/dos.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include "dos_intern.h"
 #undef DEBUG
 #define DEBUG 1
