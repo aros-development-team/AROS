@@ -100,7 +100,7 @@ BEGIN {
 
 	if ($$prototype{'type'} eq 'function') {
 	    if (!$prototype->{nb}) {
-		print ",\\\n	, (___base)\n";
+		print ", ,(___base)\\\n";
 	    }
 
 	    if ($self->{FUNCARGTYPE} ne '') {
