@@ -88,9 +88,8 @@ struct MethodDescr
 
 #define NUM_ROOT_METHODS 2
 
-#define RootInterface (0 << NUM_METHOD_BITS)
-#define M_New 		(RootInterface + 0)
-#define M_Dispose	(RootInterface + 1)
+#define M_New 		0
+#define M_Dispose	1
 
 struct P_New
 {

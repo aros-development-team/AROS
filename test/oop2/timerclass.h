@@ -13,7 +13,7 @@
 
 #define TIMERCLASS "timerclass"
 
-#define Timer_Base (NUM_ROOT_METHODS << NUM_METHOD_BITS)
+#define Timer_Base (NUM_ROOT_METHODS)
 
 #define M_Timer_Start 		(Timer_Base + 0)
 #define M_Timer_Stop  		(Timer_Base + 1)

@@ -11,9 +11,7 @@
 
 #define CallMethod(cl, o, msg) 				\
 {							\
-    register struct Method *mtable = cl->MTable;	\
-    register ULONG mid = msg->MethodID;			\
-    return ( (&(mtable[mid >> NUM_METHOD_BITS]))[mid & METHOD_MASK].MethodFunc(cl, o, msg)); \
+    return ( cl->MTable[msg->MethodID].MethodFunc(cl, o, msg)); \
 }
 
 IPTR CoerceMethodA(Class *cl, Object *o, Msg msg)
