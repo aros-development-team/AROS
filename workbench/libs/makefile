@@ -3,11 +3,23 @@ TOP=../..
 
 include $(TOP)/config/make.cfg
 
-OBJDIR=$(GENDIR)/libs
+ifeq ($(FLAVOUR),native)
+SUBDIRS=
+else
+SUBDIRS=icon iffparse
+endif
 
+OBJDIR = $(GENDIR)/libs
 FILES = dummy
 
 all: setup $(foreach f,$(FILES),$(SLIBDIR)/$f.library)
+	@for dir in $(SUBDIRS) ; do \
+	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+		all ) ; \
+	    then echo -n ; else exit 1 ; fi ; \
+	done
 
 setup :
 	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; else true ; fi
@@ -15,6 +27,12 @@ setup :
 
 clean:
 	-$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)
+	@for dir in $(SUBDIRS) ; do \
+	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    ( cd $$dir ; \
+	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+		clean ) ; \
+	done
 
 $(SLIBDIR)/%.library: %lib.o
 	$(CC) $(ILDFLAGS) $^ -o $@
