@@ -132,22 +132,22 @@ do                                        \
 
 #   define GetHead(l)                                                                            \
     (                                                                                            \
-        ((struct List *)(l))->lh_Head->ln_Succ ? ((struct List *)l)->lh_Head : (struct Node *)0; \
+        ((struct List *)(l))->lh_Head->ln_Succ ? ((struct List *)l)->lh_Head : (struct Node *)0  \
     )
 
 #   define GetTail(l)                                                                                      \
     (                                                                                                      \
-        ((struct List *)(l))->lh_TailPred->ln_Pred ? ((struct List *)(l))->lh_TailPred : (struct Node *)0; \
+        ((struct List *)(l))->lh_TailPred->ln_Pred ? ((struct List *)(l))->lh_TailPred : (struct Node *)0  \
     )
 
 #   define GetSucc(n)                                                                          \
     (                                                                                          \
-        ((struct Node *)n)->ln_Succ->ln_Succ ? ((struct Node *)n)->ln_Succ : (struct Node *)0; \
+        ((struct Node *)n)->ln_Succ->ln_Succ ? ((struct Node *)n)->ln_Succ : (struct Node *)0  \
     )
 
 #   define GetPred(n)                                                                          \
     (                                                                                          \
-        ((struct Node *)n)->ln_Pred->ln_Pred ? ((struct Node *)n)->ln_Pred : (struct Node *)0; \
+        ((struct Node *)n)->ln_Pred->ln_Pred ? ((struct Node *)n)->ln_Pred : (struct Node *)0  \
     )
 #endif
 
