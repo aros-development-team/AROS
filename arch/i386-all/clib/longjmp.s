@@ -81,10 +81,10 @@ AROS_CDEFNAME(longjmp):
 	/* Read return value into %ebx and make sure it's not 0 */
 	movl val(%esp),%ebx
 	cmpl $0,%ebx
-	jne  .cont
+	jne  1f
 
 	movl $1,%ebx
-.cont:
+1:
 	/* Restore stack pointer and all registers from env */
 	movl 28(%eax),%esp /* Restore original stack */
 
