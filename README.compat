@@ -40,3 +40,14 @@ to create two clones and set them to the two states you need. But your code
 should not depend on certain gains or losses of speed due to cloned RastPorts
 since the behaviour of the underlying graphics system is undefined.
 
+* Tag values
+
+The original AmigaOS doesn't use the tags below USER_TAG (have a look at
+utility/tagitem.h if you don't belive me) which means, you shouldn't use
+tags at or near USER_TAG because then they might interfere with the OS's
+own tags. To solve this, AROS *does* use the tags *below* USER_TAG and the
+various implementators need not fear that their tags may overlap with the
+one from the system. The file include/utility/tagitem.h now contains the
+basic offsets for the various parts of the OS. In the future, it might be
+possible for users to allocate ranges of tags for specific uses.
+
