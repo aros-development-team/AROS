@@ -1228,7 +1228,7 @@ extern void _aros_not_implemented (char *X);
 #if 1
 /* AROS_LC9 and higher just don't work with gcc. gcc complains
    about too many registers being used. So we have to fall back
-   to stubs for these kind of calls 
+   to stubs for this kind of calls.
  */
 #define AROS_LC9(t,n,a1,a2,a3,a4,a5,a6,a7,a8,a9,bt,bn,o,s) \
     n(\
@@ -1306,6 +1306,11 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 	".type " #name ",@function\n"\
 	#name ":\n\t"\
 
+#define __ASM_PREFIX_US(name) \
+    __asm__(".text\n\t.balign 16\n\t"\
+	".type " #name ",@function\n"\
+	#name ":\n\t"\
+
 #ifdef __PIC__
 #define __ASM_POSTFIX_U(type,name,argc) \
 	"bsr.l _" #name "@PLTPC\n\t"\
@@ -1354,6 +1359,17 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
     __AROS_UFHA(a2),\
     __AROS_UFHA(a3))
 
+#define AROS_UFH3S(t,n,a1,a2,a3) \
+    t n ();\
+    __ASM_PREFIX_US(n)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX_U(t,n,3)\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2),\
+    __AROS_UFHA(a3))
+
 #define AROS_UFH4(t,n,a1,a2,a3,a4) \
     t n ();\
     __ASM_PREFIX_U(n)\
@@ -1370,6 +1386,21 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 #define AROS_UFH5(t,n,a1,a2,a3,a4,a5) \
     t n ();\
     __ASM_PREFIX_U(n)\
+    __ASM_ARG(a5)\
+    __ASM_ARG(a4)\
+    __ASM_ARG(a3)\
+    __ASM_ARG(a2)\
+    __ASM_ARG(a1)\
+    __ASM_POSTFIX_U(t,n,5)\
+    __AROS_UFHA(a1),\
+    __AROS_UFHA(a2),\
+    __AROS_UFHA(a3),\
+    __AROS_UFHA(a4),\
+    __AROS_UFHA(a5))
+
+#define AROS_UFH5S(t,n,a1,a2,a3,a4,a5) \
+    t n ();\
+    __ASM_PREFIX_US(n)\
     __ASM_ARG(a5)\
     __ASM_ARG(a4)\
     __ASM_ARG(a3)\
@@ -1706,7 +1737,7 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
     (t)_re;\
 })
 #define AROS_UFC3(t,n,a1,a2,a3) __UFC3(t,n,a1,a2,a3)
-#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p) \
+#define __UFC3R(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,p,ss) \
 ({\
     long _n1 = (long)(n1);\
     long _n2 = (long)(n2);\
@@ -1717,16 +1748,19 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
         "move.l %3,%"##r1##"\n\t"\
         "move.l %4,%"##r2##"\n\t"\
         "move.l %5,%"##r3##"\n\t"\
+	"move.l %%sp,-(%%sp)\n\t"\
+	"move.l %6,-(%%sp)\n\t"\
 	"move.l %%sp,%1\n\t"\
         "jsr    (%2)\n\t"\
+	"movea.l 4(%%sp),%%sp\n\t"\
 	"movem.l (%%sp)+,%%d2-%%d7/%%a2-%%a6\n\t"\
         "move.l %%d0,%0"\
         :"=g"(_re),"=m"(*(APTR *)p)\
-        :"ad"(n),"g"(_n1),"g"(_n2),"g"(_n3)\
+        :"ad"(n),"g"(_n1),"g"(_n2),"g"(_n3),"g"(ss)\
         :A0,A1,D0,D1,r1,r2,r3,"cc","memory");\
     (t)_re;\
 })
-#define AROS_UFC3R(t,n,a1,a2,a3,p) __UFC3R(t,n,a1,a2,a3,p)
+#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) __UFC3R(t,n,a1,a2,a3,p,ss)
 #define __UFC4(t,n,t1,n1,r1,t2,n2,r2,t3,n3,r3,t4,n4,r4) \
 ({\
     long _n1 = (long)(n1);\
@@ -1782,7 +1816,7 @@ __LC4(t,,a1,a2,a3,a4,bt,bn,o,s)
 
 #else /* UseRegisterArgs */
 
-#define AROS_UFC3R(t,n,a1,a2,a3,p) \
+#define AROS_UFC3R(t,n,a1,a2,a3,p,ss) \
     (((__AROS_UFC_PREFIX t(*)(\
     __AROS_UFPA(a1),\
     __AROS_UFPA(a2),\
