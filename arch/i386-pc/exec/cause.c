@@ -10,13 +10,22 @@
 #include <aros/asmcall.h>
 #include <exec/interrupts.h>
 #include <hardware/custom.h>
+#include <hardware/intbits.h>
 #include <proto/exec.h>
 
 #include <exec_intern.h>
 
-#include <stdlib.h>
-#include <signal.h>
-#include <unistd.h>
+#include <asm/linkage.h>
+#include <asm/ptrace.h>
+
+#include "etask.h"
+
+static char softblock;
+
+#define get_cs() \
+	({  short __value; \
+	__asm__ __volatile__ ("mov %%ds,%%ax":"=a"(__value)); \
+	(__value & 0x03);	})
 
 AROS_LH1(void, Cause,
     AROS_LHA(struct Interrupt *, softint, A1),
@@ -29,23 +38,176 @@ AROS_LH1(void, Cause,
     /* Check to ensure that this node is not already in a list. */
     if( softint->is_Node.ln_Type != NT_SOFTINT )
     {
-	/* Scale the priority down to a number between 0 and 4 inclusive
-	   We can use that to index into exec's software interrupt lists. */
-	pri = (softint->is_Node.ln_Pri + 0x20) >> 4;
+        /* Scale the priority down to a number between 0 and 4 inclusive
+        We can use that to index into exec's software interrupt lists. */
+        pri = (softint->is_Node.ln_Pri + 0x20) >> 4;
 
-	/* We are accessing an Exec list, protect ourselves. */
-	Disable();
-	AddTail((struct List *)&SysBase->SoftInts[pri], (struct Node *)softint);
-	softint->is_Node.ln_Type = NT_SOFTINT;
-	SysBase->SysFlags |= SFF_SoftInt;
-	Enable();
+        /* We are accessing an Exec list, protect ourselves. */
+        Disable();
+        AddTail((struct List *)&SysBase->SoftInts[pri], (struct Node *)softint);
+        softint->is_Node.ln_Type = NT_SOFTINT;
+        SysBase->SysFlags |= SFF_SoftInt;
+        Enable();
 
-	/* We now cause a software interrupt. */
-	__asm__ __volatile__ ("int $0x80");
+        if (!softblock)
+		{
+			/* If we are in supervisor mode we simply call InterruptServer.
+			Cause software interrupt (int 0x80) otherwise */
+			if (get_cs())
+			{
+				/* Called from user mode. We can do Cause in normal way */
+				__asm__ __volatile__ ("movl $0,%%eax\n\tint $0x80":::"eax","memory");
+			}
+			else
+			{
+				/* Cause() inside supervisor mode. We will call IntServer directly
+				no matter it is normal irq or Supervisor() call */
+				struct IntVector *iv;
+				iv = &SysBase->IntVects[INTB_SOFTINT];
+
+			    if (iv->iv_Code)
+			    {
+			        AROS_UFC5(void, iv->iv_Code,
+			            AROS_UFCA(ULONG, 0, D1),
+			            AROS_UFCA(ULONG, 0, A0),
+			            AROS_UFCA(APTR, NULL, A1),
+			            AROS_UFCA(APTR, iv->iv_Code, A5),
+			            AROS_UFCA(struct ExecBase *, SysBase, A6)
+			        );
+			    }
+			}
+		}
     }
 
     AROS_LIBFUNC_EXIT
 } /* Cause() */
+
+#ifdef SysBase
+#undef SysBase
+#endif
+#define SysBase (*(struct ExecBase **)4UL)
+
+void SaveRegs(struct Task *task, struct pt_regs *regs)
+{
+	/* Copy registers from struct pt_regs into iet_Context */
+    ULONG *dst = (ULONG*)GetIntETask(task)->iet_Context;
+    ULONG *src = (ULONG*)regs;
+    int i;
+
+	/* Save task's SP register */
+	task->tc_SPReg = regs->esp;
+
+    for (i=0; i<(SIZEOF_ALL_REGISTERS/4); i++, src++, dst++)
+        *dst = *src;
+
+#warning: TODO: Add FPU handling
+}
+
+void RestoreRegs(struct Task *task, struct pt_regs *regs)
+{
+    /* Copy registers from iet_Context into struct pt_regs */
+    ULONG *src = (ULONG*)GetIntETask(task)->iet_Context;
+    ULONG *dst = (ULONG*)regs;
+    int i;
+
+    for (i=0; i<(SIZEOF_ALL_REGISTERS/4); i++, src++, dst++)
+        *dst = *src;
+
+#warning: TODO: Add FPU handling
+}
+
+#define SC_ENABLE(regs)		(regs.eflags |= 0x200)
+#define SC_DISABLE(regs)	(regs.eflags &= ~0x200)
+
+asmlinkage void sys_Cause(struct pt_regs regs)
+{
+    struct IntVector *iv;
+
+    /* Hmm, interrupts are nesting, not a good idea... */
+    if(!user_mode(&regs))
+    {
+#if NOISY
+        kprintf("Illegal Supervisor\n");
+#endif
+        return;
+    }
+
+    iv = &SysBase->IntVects[INTB_SOFTINT];
+
+    if (iv->iv_Code)
+    {
+        /*  Call it. I call with all these parameters for a reason.
+
+        In my `Amiga ROM Kernel Reference Manual: Libraries and
+        Devices' (the 1.3 version), interrupt servers are called
+        with the following 5 parameters.
+
+        D1 - Mask of INTENAR and INTREQR
+        A0 - 0xDFF000 (base of custom chips)
+        A1 - Interrupt Data
+        A5 - Interrupt Code vector
+        A6 - SysBase
+
+        It is quite possible that some code uses all of these, so
+        I must supply them here. Obviously I will dummy some of these
+        though.
+	*/
+        AROS_UFC5(void, iv->iv_Code,
+            AROS_UFCA(ULONG, 0, D1),
+            AROS_UFCA(ULONG, 0, A0),
+            AROS_UFCA(APTR, &regs, A1),
+            AROS_UFCA(APTR, iv->iv_Code, A5),
+            AROS_UFCA(struct ExecBase *, SysBase, A6)
+        );
+    }
+
+    /* Has an interrupt told us to dispatch when leaving */
+    if (SysBase->AttnResched & 0x8000)
+    {
+        SysBase->AttnResched &= ~0x8000;
+
+        /* Save registers for this task (if there is one...) */
+        if (SysBase->ThisTask && SysBase->ThisTask->tc_State != TS_REMOVED)
+            SaveRegs(SysBase->ThisTask, &regs);
+
+        /* Tell exec that we have actually switched tasks... */
+        Dispatch ();
+
+        /* Get the registers of the old task */
+        RestoreRegs(SysBase->ThisTask, &regs);
+
+        /* Make sure that the state of the interrupts is what the task
+           expects.
+        */
+        if (SysBase->IDNestCnt < 0)
+            SC_ENABLE(regs);
+        else
+            SC_DISABLE(regs);
+
+        /* Ok, the next step is to either drop back to the new task, or
+            give it its Exception() if it wants one... */
+
+        if (SysBase->ThisTask->tc_Flags & TF_EXCEPT)
+        {
+            Disable();
+            Exception();
+            Enable();
+        }
+
+
+#if DEBUG_TT
+        if (lastTask != SysBase->ThisTask)
+        {
+            kprintf (stderr, "TT %s\n", SysBase->ThisTask->tc_Node.ln_Name);
+            lastTask = SysBase->ThisTask;
+        }
+#endif
+    }
+
+    /* Leave the interrupt. */
+}
+
+#undef SysBase
 
 /*
     This is the dispatcher for software interrupts. We go through the
@@ -61,8 +223,6 @@ AROS_LH1(void, Cause,
     in the kernel.
 */
 
-extern char softdisable;
-
 AROS_UFH5(void, SoftIntDispatch,
     AROS_UFHA(ULONG, intReady, D1),
     AROS_UFHA(struct Custom *, custom, A0),
@@ -75,27 +235,28 @@ AROS_UFH5(void, SoftIntDispatch,
 
     if( SysBase->SysFlags & SFF_SoftInt )
     {
-	/* Disable software interrupts */
-	softdisable=1;
-	
-	/* Clear the Software interrupt pending flag. */
-	SysBase->SysFlags &= ~(SFF_SoftInt);
+        /* Disable software interrupts */
+        softblock = 1;
 
-	for(i=0; i < 4; i++)
-	{
-	    while( (intr = (struct Interrupt *)RemHead((struct List *)&SysBase->SoftInts[i])) )
-	    {
-		intr->is_Node.ln_Type = NT_INTERRUPT;
+        /* Clear the Software interrupt pending flag. */
+        SysBase->SysFlags &= ~(SFF_SoftInt);
 
-		/* Call the software interrupt. */
-		AROS_UFC3(void, intr->is_Code,
-		    AROS_UFCA(APTR, intr->is_Data, A1),
-		    AROS_UFCA(APTR, intr->is_Code, A5),
-		    AROS_UFCA(struct ExecBase *, SysBase, A6));
-	    }
-	}
+        for(i=0; i < 4; i++)
+        {
+            while( (intr = (struct Interrupt *)RemHead((struct List *)&SysBase->SoftInts[i])) )
+            {
+        	intr->is_Node.ln_Type = NT_INTERRUPT;
 
-	/* We now re-enable software interrupts. */
-	softdisable=0;
+        	/* Call the software interrupt. */
+        	AROS_UFC3(void, intr->is_Code,
+                AROS_UFCA(APTR, intr->is_Data, A1),
+                AROS_UFCA(APTR, intr->is_Code, A5),
+                AROS_UFCA(struct ExecBase *, SysBase, A6));
+            }
+        }
+
+        /* We now re-enable software interrupts. */
+        softblock = 0;
     }
 }
+

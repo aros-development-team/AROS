@@ -24,123 +24,115 @@
 #define AROS_USE_OOP
 #define AROS_ALMOST_COMPATIBLE 1
 
+#include <exec/io.h>
 #include <exec/types.h>
 #include <exec/nodes.h>
 #include <exec/memory.h>
 #include <exec/resident.h>
 #include <exec/libraries.h>
 #include <exec/execbase.h>
-#include <exec/io.h>
 #include <proto/oop.h>
 #include <proto/exec.h>
 
-#include <graphics/gfx.h>
-#include <intuition/intuition.h>
-#include <utility/tagitem.h>
-#include <proto/graphics.h>
-#include <proto/intuition.h>
+//#include <graphics/gfx.h>
+//#include <intuition/intuition.h>
+//#include <utility/tagitem.h>
+//#include <proto/graphics.h>
+//#include <proto/intuition.h>
 #include <devices/keyboard.h>
 
 #include <hidd/hidd.h>
 #include <hidd/serial.h>
+#include <hidd/irq.h>
 
 #include <memory.h>
 
+#include "traps.h"
+
+void Handler(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
+
+void hidd_demo();
+
 unsigned long Memory;	/* Size of whole memory */
 unsigned long Memory24; /* Size of DMA memory (24 bit) */
-APTR ssp=(APTR)-1;      /* System stack pointer */
-APTR usp=(APTR)-1;      /* User stack pointer */
-APTR esp=(APTR)-1;      /* Points to register set on stack */
-char supervisor=0;	/* Supervisor mode flag */
-char softdisable=0;	/* =1 -> softints disabled */
-
-struct ExecBase *SysBase=NULL;
-struct MemHeader *mh;
-
-void bzero(void * ptr,int len);
-void kprintf(const char * string,...);
-extern struct ExecBase * PrepareExecBase(struct MemHeader * mh);
-
-/* External functions */
-
-extern void InitGfxAROS();
-extern void AROS_InfoText(int num, char * text);
 
 extern ULONG GetCPUSpeed();
 extern char* GetCPUName();
 extern void DetectCPU();
 
+extern ULONG SSP;
+
+struct ExecBase *SysBase=NULL;
+struct MemHeader *mh;
+
+//struct Library *IntuitionBase=NULL;
+
 extern int sprintf(char *,const char *,...);
 
-extern int GetMemSize();
+ULONG GetMemSize();
 
 extern const struct Resident
     Expansion_resident,
     Exec_resident,
     Utility_resident,
     Aros_resident,
+    Mathieeesingbas_resident,
     BOOPSI_resident,
     OOP_resident,
     HIDD_resident,
+    irqHidd_resident,
     Graphics_resident,
     Layers_resident,
     Timer_resident,
+    Misc_resident,
     Battclock_resident,
     Keyboard_resident,
     Gameport_resident,
     Keymap_resident,
     Input_resident,
     Intuition_resident,
+    hiddgraphics_resident,
     kbdHidd_resident,
+    vgaHidd_resident,
+    hiddserial_resident,
+    pciHidd_resident,
     Console_resident,
-    Mathffp_resident,
-    Mathieeesingbas_resident,
     TrackDisk_resident,
     ide_resident,
-    Misc_resident,
-    Cybergraphics_resident,
-    hiddgraphics_resident,
-    hiddserial_resident,
-    vgaHidd_resident,
-    pciHidd_resident,
-    irqHidd_resident,
-    Workbench_resident;
-//    Dos_resident,
-//    LDDemon_resident,
-//    emul_handler_resident,
-//    con_handler_resident;
+    Workbench_resident,
+    Mathffp_resident;
 
 /* This list MUST be in the correct order (priority). */
 static const struct Resident *romtagList[] =
 {
-    &Expansion_resident,		    /* SingleTask,  110  */
-    &Exec_resident,			    /* SingleTask,  105  */
-    &Utility_resident,			    /* ColdStart,   103  */
-    &Aros_resident,			    /* ColdStart,   102  */
-    &Mathieeesingbas_resident,              /* ColdStart,   101  */
-    &BOOPSI_resident,			    /* ColdStart,   95	 */
-    &OOP_resident,			    /* ColdStart,   94	 */
-    &HIDD_resident,			    /* ColdStart,   92	 */
-    &irqHidd_resident,                      /* ColdStart,   90   */	// IRQ Hidd!
-    &Graphics_resident, 		    /* ColdStart,   65	 */
-    &Layers_resident,			    /* ColdStart,   60   */
-    &Timer_resident,			    /* ColdStart,   50	 */
-    &Misc_resident,			    /* ColdStart,   45   */
-    &Battclock_resident,		    /* ColdStart,   45	 */
-    &Keyboard_resident,			    /* ColdStart,   44	 */
-    &Gameport_resident,			    /* ColdStart,   43	 */
+    &Expansion_resident,            /* SingleTask,  110  */
+    &Exec_resident,                 /* SingleTask,  105  */
+    &Utility_resident,              /* ColdStart,   103  */
+    &Aros_resident,                 /* ColdStart,   102  */
+    &Mathieeesingbas_resident,      /* ColdStart,   101  */
+    &BOOPSI_resident,               /* ColdStart,   95	 */
+    &OOP_resident,                  /* ColdStart,   94	 */
+    &HIDD_resident,                 /* ColdStart,   92	 */
+    &irqHidd_resident,              /* ColdStart,   90   */	// IRQ Hidd!
+    &Graphics_resident,             /* ColdStart,   65	 */
+    &Layers_resident,               /* ColdStart,   60   */
+    &Timer_resident,                /* ColdStart,   50	 */
+    &Misc_resident,                 /* ColdStart,   45   */
+    &Battclock_resident,            /* ColdStart,   45	 */
+    &Keyboard_resident,             /* ColdStart,   44	 */
+    &Gameport_resident,             /* ColdStart,   43	 */
     &Keymap_resident,			    /* ColdStart,   40	 */
-    &Input_resident,			    /* ColdStart,   30	 */
-    &Intuition_resident,		    /* ColdStart,   10	 */
+    &Input_resident,                /* ColdStart,   30	 */
+    &Intuition_resident,            /* ColdStart,   10   */	
     &hiddgraphics_resident,		    /* ColdStart,   9    */
-    &kbdHidd_resident,			    /* ColdStart,   9    */
+    &kbdHidd_resident,              /* ColdStart,   9    */
     &vgaHidd_resident,			    /* ColdStart,   9    */
     &hiddserial_resident,		    /* ColdStart,   9    */
     &pciHidd_resident,                      /* ColdStart,   9    */
-    &Cybergraphics_resident,		    /* ColdStart,   8    */
-    &Console_resident,			    /* ColdStart,   5	 */
+    &Console_resident,              /* ColdStart,   5	 */
     &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
-    &ide_resident,			    /* Coldsatrt,   4    */	//IDE device
+    &ide_resident,                  /* Coldsatrt,   4    */	//IDE device
+
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
     &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
@@ -155,30 +147,33 @@ static const struct Resident *romtagList[] =
 //    &LDDemon_resident,			    /* AfterDOS,   -125  */
 //    &con_handler_resident,		    /* AfterDOS,   -126  */
 
+
     NULL
 };
 
-void MakeInt();
+/************************************************************************************/
 
-void __bzero(void * ptr,int len)
+struct scr
 {
-    bzero(ptr,len);
+	unsigned char sign;
+	unsigned char attr;
+};
+
+static void callback(UBYTE chr, UBYTE *i)
+{
+	struct scr	*view = (struct scr *)0xb8000;
+
+	if (chr)
+	{
+		view[(*i)++].sign = chr;
+	}
 }
 
-int abs(int x)
-{
-    if (x<0)
-	return -x;
-    else
-	return x;
-}
+/************************************************************************************/
 
-/*void _aros_not_implemented()
-{
-    puts("This function is unfortunately not implemented yet...\n");
-}*/
-
-ULONG InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum);
+#ifdef kprintf
+#undef kprintf
+#endif /* kprintf */
 
 int main()
 {
@@ -186,30 +181,32 @@ int main()
     char text1[60];
     char text2[] = "\nOops! Kernel under construction...\n";
 
+    Object *o;
+
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */
 
     Memory=GetMemSize();    
     Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
 
-    supervisor=0;                                                                                                  
+    Init_Traps();
 
     InitGfxAROS();
-    
     DetectCPU();
 
     AROS_InfoText(0,(char*)&text0);
-    AROS_InfoText(1,"4.0 ROM\n");
+    sprintf((char*)&text1,"4.0 ROM (%s)\n",__DATE__);
+    AROS_InfoText(1,(char*)&text1);
     sprintf((char*)&text1,"CPU: %s %ldMHz\n",
-		    GetCPUName(),
-		    GetCPUSpeed()/1000000);
+		GetCPUName(),
+		GetCPUSpeed()/1000000);
     AROS_InfoText(2,(char*)&text1);
     sprintf((char*)&text1,"RAM size: %dMB\n",(int)Memory>>20);
     AROS_InfoText(3,(char*)&text1);
-
+    
     /*
-	Prepare first memory list. Our memory will statr at 0x00100000. First
-	1MB is reserved for kernel use only. DO NOT use it please.
+        Prepare first memory list. Our memory will statr at 0x00100000. First
+        1MB is reserved for kernel use only. DO NOT use it please.
     */
 
     mh=(struct MemHeader*)0x00100000;
@@ -226,56 +223,48 @@ int main()
     mh->mh_Free = mh->mh_First->mc_Bytes;
 
     /*
-	We have to put somewhere in this function checking for ColdStart,
-	CoolStart and many other Exec vectors!
+        We have to put somewhere in this function checking for ColdStart,
+        CoolStart and many other Exec vectors!
     */
 
     /*
-	It is OK to place ExecBase here. Remember that interrupt table starts
-	at 8UL address, so 4UL is quite safe.
-	Even with MP this addr is OK for ExecBase. We may write an int handler
-	which detects "read from 4UL" commands.
+        It is OK to place ExecBase here. Remember that interrupt table starts
+        at 0x0100UL address, so 4UL is quite safe.
+        Even with MP this addr is OK for ExecBase. We may write an int handler
+        which detects "read from 4UL" commands.
     */
     SysBase=(struct ExecBase*)PrepareExecBase(mh);
     *(APTR *)4=SysBase;
 
     /*
-	Setup ChkBase (checksum for base ptr), ChkSum (for library)
-	SysBase+ChkBase should be -1 otherwise somebody has destroyed ExecBase!
+        Setup ChkBase (checksum for base ptr), ChkSum (for library)
+        SysBase+ChkBase should be -1 otherwise somebody has destroyed ExecBase!
     */
     SysBase->ChkBase=~(ULONG)SysBase;
-    /* TODO: SysBase->ChkSum=..... */
+#warning TODO: SysBase->ChkSum=.....
 
     if (Memory>Memory24)
     {
-	AddMemList(Memory-Memory24, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK |
-		    MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
+        AddMemList(Memory-Memory24, MEMF_FAST | MEMF_PUBLIC | MEMF_KICK |
+            MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
     }
 
-//    MakeInt();  /* Init IRQ core */
-
-    if (!(ssp=AllocMem(4096,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
+    if (!(SSP=AllocMem(4096,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
     {
-	kprintf("Supervisor init failed!!!!\nSystem halted...");
-	return -1;
+        kprintf("Supervisor init failed!!!!\nSystem halted...");
+        do {} while(1);
     }
-    ssp+=4096;
+    SSP+=4088;  /* Leave 2 longwords in case we would have to jump 
+                   directly from IOPL0 to IOPL3 */
 
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
-/* Here goes test area... */
-
-    kprintf("irq.hidd = %08.8lx\n",OpenLibrary("irq.hidd",0));
-    kprintf("pci.hidd = %08.8lx\n",OpenLibrary("pci.hidd",0));
-
     kprintf("Starting SAD\n");
 
-    /* Enter SAD */
-    Debug(0);
+	Debug(0);
 
     #define ioStd(x) ((struct IOStdReq *)x)
-
     /* Small kbdhidd test */
     {
 	struct IORequest *io;
@@ -296,157 +285,18 @@ int main()
 	    ioStd(io)->io_Data=data;
 	    ioStd(io)->io_Length=strlen(data);
 	    DoIO(io);
-	    kprintf("Got io_ERROR=%d",io->io_Error);
+	    kprintf("Got io_ERROR=%d",ioStd(io)->io_Error);
 	    kprintf("Doing kbd reads...\n");
 	}
     }
-
-#if 0
-
-    kprintf("graphics.hidd = %08.8lx\n",OpenLibrary("graphics.hidd",0));
-    kprintf("vga.hidd = %08.8lx\n",OpenLibrary("vga.hidd",0));
     
-    {
-	struct GfxBase *GfxBase;
-	BOOL success = FALSE;
-    
-        kprintf("init_gfx(hiddbase=%s)\n", "hidd.gfx.vga");
-    
-        GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 37);
-        if (GfxBase)
-        {
-
-	    /*  Call private gfx.library call to init the HIDD.
-	        Gfx library is responsable for closing the HIDD
-	        library (although it will probably not be neccesary).
-	    */
-
-	    kprintf("calling private gfx LateGfxInit()\n");
-	    if (LateGfxInit("hidd.gfx.vga"))
-	    {
-	        struct IntuitionBase *IntuitionBase;
-	        kprintf("success\n");
-			    
-	        /* Now that gfx. is guaranteed to be up & working, let intuition open WB screen */
-	        IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-	        if (IntuitionBase)
-	        {
-	    	    if (LateIntuiInit(NULL))
-	    	    {
-			success = TRUE;
-		    }
-		    CloseLibrary((struct Library *)IntuitionBase);
-		}
-	    }
-	    kprintf("Closing gfx\n");
-	
-	    CloseLibrary((struct Library *)GfxBase);
-
-	    if (success == FALSE)
-	    {
-	    	kprintf("There is something wrong with hidd subsystem...");
-		while(1) {};
-	    }
-	
-	}
-    }
-
-    {
-	struct IORequest *io;
-	struct MsgPort *mp;
-
-	mp=CreateMsgPort();
-	io=CreateIORequest(mp,sizeof(struct IOStdReq));
-	kprintf("Result of opening device %d\n",
-	    OpenDevice("gameport.device",0,io,0));
-	kprintf("Doing CMD_HIDDINIT...\n");
-	{
-	    UBYTE *data;
-	    data = AllocMem(100, MEMF_PUBLIC);
-	    strcpy(data, "hidd.mouse.hw");
-	    ioStd(io)->io_Command=32000;
-	    ioStd(io)->io_Data=data;
-	    ioStd(io)->io_Length=strlen(data);
-	    DoIO(io);
-	    kprintf("Got io_ERROR=%d",io->io_Error);
-	}
-    }
-
-    {
-        struct IntuitionBase *IntuitionBase;
-        struct Window * win;
-        int x = 100;
-        int y = 100;
-
-
-	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
-	if (IntuitionBase)
-	{
-	    struct TagItem tags[] = {
-		{WA_Width,			320},
-		{WA_Height,			240},
-		{WA_Left,			100},
-		{WA_Top,			100},
-		{WA_Title,  (ULONG)"AROS Dream :-)"},
-		{WA_Activate,			  1},
-		{WA_SizeGadget,                TRUE},
-		{WA_DepthGadget,               TRUE},
-		{TAG_DONE,			  0}};
-	    win = OpenWindowTagList(0, tags);
-	}
-
-        DrawEllipse(win->RPort,160,120,80,80);
-        DrawEllipse(win->RPort,185,90,15,15);
-        DrawEllipse(win->RPort,135,90,15,15);
-        
-        Move(win->RPort,125,140);
-        Draw(win->RPort,140,150);
-        Draw(win->RPort,180,150);
-        Draw(win->RPort,195,140);
-        	
-	if (win)
-	{
-	  while (x < 200)
-	  {
-	    MoveWindow(win,1,0);
-	    x++;
-	  }
-	  
-	  while (y < 200)
-	  {
-	    MoveWindow(win,0,1);
-	    y++;
-	  }
-	  
-	  while (x >= 100)
-	  {
-	    MoveWindow(win,-1,0);
-	    x--;
-	  }
-	  
-	  while (y >= 100)
-	  {
-	    MoveWindow(win,0,-1);
-	    y--;
-	  }
-	}
-    }
-    
-#endif
+    hidd_demo();
 
     /*
 	All done. In normal cases CPU should never reach this instuctions
     */
 
-    kprintf(text2);
-return 0;
-}
+	kprintf(text2);
 
-ULONG InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum)
-{
-    kprintf("%d bytes: ", length);
-    
-    while(length--) {kprintf("%02.2x ", *data++);};
-    
-    kprintf("\n");
+	do {} while(1);
 }

@@ -3,25 +3,28 @@ include $(TOP)/config/make.cfg
 
 OBJDIR		:= $(OSGENDIR)/exec
 OS_INCLUDES	:= -I$(GENINCDIR)
-SPECIAL_CFLAGS	:= -I$(TOP)/rom/exec -I..
-CFLAGS2 	:= $(CFLAGS)
-AFLAGS2 	:= $(AFLAGS) -I.. -I$(GENINCDIR)
+CFLAGS2 	:= $(CFLAGS) -I.. -I$(TOP)/rom/exec
+AFLAGS2 	:= $(AFLAGS) -I.. -I$(TOP)/rom/exec -I$(GENINCDIR)
 TESTS		:=
+
+INCFILES	:= \
+		   $(GENINCDIR)/asm/linkage.h \
+		   $(INCDIR)/asm/linkage.h \
+		   $(GENINCDIR)/asm/ptrace.h \
+		   $(INCDIR)/asm/ptrace.h \
+		   $(GENINCDIR)/asm/io.h \
+		   $(INCDIR)/asm/io.h
+
 FILES		:= \
-	cachecleare cacheclearu cachecontrol cachepredma \
-	cachepostdma coldreboot disable dispatch enable \
-	forbid getcc permit setsr stackswap \
-	supervisor switch debug addtask \
-	alloctrap cause freetrap preparecontext \
-	rawputchar alert initresident idletask
+	cause disable enable switch preparecontext coldreboot stackswap rawputchar \
+	debug initresident allocmem freemem
 	
 COREFILES	:= \
-	restorefpu restorecpu storefpu storecpu init cpu \
-	semaphores
+	init traps ints execstubs screen cpu hidds
 
 #MM
 exec-native-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
-	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o) $(OBJDIR)/exec_init.o
+	$(foreach f,$(COREFILES), $(OBJDIR)/$(f).o) cpu.s
 	@$(NOP)
 
 #MM
@@ -32,6 +35,10 @@ setup-exec-native-i386 : $(GENINCDIR)/sigcore.h
 	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
 
 #MM
+includes-native-i386 : $(INCFILES)
+	@$(NOP)
+
+#MM
 $(GENINCDIR)/sigcore.h : ../sigcore.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $< $@
@@ -39,6 +46,14 @@ $(GENINCDIR)/sigcore.h : ../sigcore.h
 #MM
 clean ::
 	-$(RM) $(TESTS)
+
+$(GENINCDIR)/asm/%.h : %.h
+	%mkdirs_q $(GENINCDIR)
+	$(CP) $< $@
+
+$(INCDIR)/asm/%.h : %.h
+	%mkdirs_q $(INCDIR)
+	$(CP) $< $@
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
@@ -49,10 +64,7 @@ $(OBJDIR)/%.o : %.S
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 
-init.s : init.c
-    %ctoasm_q
-
-cpu.s : cpu.c
-    %ctoasm_q
+cpu.s: cpu.c
+	%ctoasm_q
 
 %common

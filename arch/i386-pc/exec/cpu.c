@@ -23,8 +23,7 @@
 #include <exec/execbase.h>
 #include <proto/exec.h>
 
-extern char *strcpy(char *,const char *);
-extern int sprintf(char *,const char *,...);
+#include <strings.h>
 
 static char	CPUName[48];	/* This one will keep CPU name */
 static ULONG	CPUSpeed;	/* This one will keep CPU speed.
@@ -71,7 +70,7 @@ extern inline void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx)
 ULONG CalcCPUSpeed()
 {
     /* Check if we have something better than 80486 */
-    if (*(BYTE*)0x000009a0 > 4)
+    if (*(BYTE*)0x00000020 > 4)
     {
 	/* Set the Gate high, disable speaker */
 	outb((inb(0x61) & ~0x02) | 0x01, 0x61);
@@ -170,7 +169,7 @@ static int get_amd_model_name()
 	cpuid(0x80000000, &n, &dummy, &dummy, &dummy);
 	if (n < 4)
 		return 0;
-	cpuid(0x80000001, &dummy, &dummy, &dummy, (int*)0x000009ac);
+	cpuid(0x80000001, &dummy, &dummy, &dummy, (int*)0x0000002c);
 	v = (unsigned int *) &CPUName;
 	cpuid(0x80000002, &v[0], &v[1], &v[2], &v[3]);
 	cpuid(0x80000003, &v[4], &v[5], &v[6], &v[7]);
@@ -221,7 +220,7 @@ static struct cpu_model_info cpu_models[] = {
 
 void DetectCPU()
 {
-    char *vendor=(char*)0x000009b0;
+    char *vendor=(char*)0x00000030;
     int i;
     char *p=NULL;
     
@@ -242,9 +241,9 @@ void DetectCPU()
     else
     	CPUVendor = CPUV_UNKNOWN;
 
-    if (*(LONG*)0x000009a8 > 0 && CPUVendor == CPUV_INTEL)
+    if (*(LONG*)0x00000028 > 0 && CPUVendor == CPUV_INTEL)
     {
-	if(*(LONG*)0x000009ac & (1<<18))
+	if(*(LONG*)0x0000002c & (1<<18))
 	{
 	    /* Disable processor serial number on Intel Pentium III 
 	       from code by Phil Karn */
@@ -257,10 +256,10 @@ void DetectCPU()
 
     if (CPUVendor == CPUV_AMD && get_amd_model_name())
 	return;
-    
+
     for (i = 0; i < sizeof(cpu_models)/sizeof(struct cpu_model_info); i++)
     {
-	if (*(LONG*)0x000009a8 > 1)
+	if (*(LONG*)0x00000028 > 1)
 	{
 	    /* supports eax=2  call */
 	    int edx, cache_size, dummy;
@@ -304,15 +303,15 @@ void DetectCPU()
 	}
 
 	if (cpu_models[i].vendor == CPUVendor &&
-	    cpu_models[i].x86 == (int)*(BYTE*)0x000009a0)
+	    cpu_models[i].x86 == (int)*(BYTE*)0x00000020)
 	{
-	    if (*(BYTE*)0x000009a2 <= 16)
-		p = cpu_models[i].model_names[*(BYTE*)0x000009a2];
+	    if (*(BYTE*)0x00000022 <= 16)
+		p = cpu_models[i].model_names[*(BYTE*)0x00000022];
 
 	    /* Names for the Pentium II processors */
 	    if ((cpu_models[i].vendor == CPUV_INTEL)
 	            && (cpu_models[i].x86 == 6) 
-	            && (*(BYTE*)0x000009a2 == 5)
+	            && (*(BYTE*)0x00000022 == 5)
 	            && (CPU_cache_size == 0))
 	    {
 		p = "Celeron (Covington)";
@@ -320,8 +319,9 @@ void DetectCPU()
 	}
     }
 
+
     if (p)
         strcpy((char*)&CPUName, p);
     else
-	sprintf((char*)&CPUName,"80%d86",(int)*(BYTE*)0x000009a0);
+	sprintf((char*)&CPUName,"80%d86",(int)(*(BYTE*)0x00000020));
 }

@@ -1,5 +1,5 @@
 /*
-    (C) 1999-2000 AROS - The Amiga Research OS
+    (C) 1999 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Start the internal debugger.
@@ -8,10 +8,13 @@
 #include "exec_intern.h"
 #include <proto/exec.h>
 #include <exec/types.h>
+#include <asm/ptrace.h>
+#include "etask.h"
 
 #define Prompt kprintf("SAD(%ld,%ld)>",SysBase->TDNestCnt,SysBase->IDNestCnt)
 char	GetK();
 void	UnGetK();
+void	DumpRegs();
 ULONG	GetL(char*);
 UWORD	GetW(char*);
 UBYTE	GetB(char*);
@@ -122,6 +125,47 @@ int	get_irq_list(char *buf);
 	/* Disable command */
 	else if (strcmp(comm,"DI")==0)
 		Disable();
+	/* Dump regs command */
+	else if (strcmp(comm,"DU")==0)
+		DumpRegs();
+	else if (strcmp(comm,"MO")==0)
+		asm("movb $0xa8,%%al;outb %%al,$0x64":::"eax");
+	/* Show active task information */
+	else if (strcmp(comm,"TI")==0)
+	{
+		struct Task *t = SysBase->ThisTask;
+		
+		kprintf("Active task (%p = '%s'):\n"
+				"tc_Node.ln_Pri = %d\n"
+				"tc_SigAlloc = %04.4lx\n"
+				"tc_SPLower = %p\n"
+				"tc_SPUpper = %p\n"
+				"tc_Flags = %08.8lx\n"
+				"tc_SPReg = %p\n",
+				t, t->tc_Node.ln_Name,
+				t->tc_Node.ln_Pri,
+				t->tc_SigAlloc,
+				t->tc_SPLower,
+				t->tc_SPUpper,
+				t->tc_Flags,
+				t->tc_SPReg);				
+	}
+	else if (strcmp(comm,"RI")==0)
+	{
+		struct pt_regs *r = (struct pt_regs *)
+				GetIntETask(SysBase->ThisTask)->iet_Context;
+		
+		kprintf("Active task's registers dump:\n"
+				"EAX=%p  EBX=%p  ECX=%p  EDX=%p\n"
+				"ESI=%p  EDI=%p  EBP=%p\n"
+				"ESP=%p  EIP=%p\n"
+				"CS=%04.4lx  DS=%04.4lx  ES=%04.4lx\n"
+				"SS=%04.4lx  EFLAGS=%p\n",
+				r->eax, r->ebx, r->ecx, r->edx,
+				r->esi, r->edi, r->ebp, r->esp,
+				r->eip, r->xcs, r->xds, r->xes,
+				r->xss, r->eflags);				
+	}
 	/* Enable command */
 	else if (strcmp(comm,"EN")==0)
 		Enable();
@@ -181,19 +225,22 @@ int	get_irq_list(char *buf);
 
 	    kprintf("Task List:\n");
 
-	    kprintf("0x%08.8lx T %s\n",SysBase->ThisTask,
+	    kprintf("0x%08.8lx T %d %s\n",SysBase->ThisTask,
+		SysBase->ThisTask->tc_Node.ln_Pri,
 		SysBase->ThisTask->tc_Node.ln_Name);
 
 	    /* Look through the list */
 	    for (node=GetHead(&SysBase->TaskReady); node; node=GetSucc(node))
 	    {
-		kprintf("0x%08.8lx R %s\n",node,node->ln_Name);
+		kprintf("0x%08.8lx R %d %s\n",node,node->ln_Pri,node->ln_Name);
 	    }
 
 	    for (node=GetHead(&SysBase->TaskWait); node; node=GetSucc(node))
 	    {
-		kprintf("0x%08.8lx W %s\n",node,node->ln_Name);
+		kprintf("0x%08.8lx W %d %s\n",node,node->ln_Pri,node->ln_Name);
 	    }
+
+		kprintf("Idle called %d times\n", SysBase->IdleCount);
 	}
 	/* Help command */
 	else if (strcmp(comm,"HE")==0)
@@ -205,6 +252,10 @@ int	get_irq_list(char *buf);
 		    "PE - Permit()\n"
 		    "DI - Disable()\n"
 		    "EN - Enable()\n"
+		    "DU - Dump most important registers\n"
+			"SI - Show IRQ lines status\n"
+			"TI - Show Active task info\n"
+			"RI - Show registers inside task's context\n"
 		    "AM xxxxxxxx yyyyyyyy - AllocVec - size=xxxxxxxx, "
 		    "requiments=yyyyyyyy\n"
 		    "FM xxxxxxxx - FreeVec from xxxxxxxx\n"
@@ -382,4 +433,24 @@ UBYTE GetB(char* string)
 	ret=(ret<<4)+digit;
     }
     return(ret);
+}
+
+void DumpRegs()
+{
+	int ds,cs,ss,eflags,esp;
+
+	asm("push %%ds\n\t"
+		"popl %0\n\t"
+		"push %%cs\n\t"
+		"popl %1\n\t"
+		"push %%ss\n\t"
+		"popl %2\n\t"
+		"pushfl\n\t"
+		"popl %3\n\t"
+		"pushl %%esp\n\t"
+		"popl %4"
+		:"=m"(ds),"=m"(cs),"=m"(ss),"=m"(eflags),"=m"(esp));
+
+	kprintf("DS=%04.4x CS=%04.4x SS=%04.4x ESP=%08.8x EFLAGS=%08.8x\n",
+			ds, cs, ss, esp, eflags);
 }

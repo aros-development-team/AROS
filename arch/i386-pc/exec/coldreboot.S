@@ -51,4 +51,5 @@
 	    .globl	AROS_SLIB_ENTRY(ColdReboot,Exec)
 	    .type	AROS_SLIB_ENTRY(ColdReboot,Exec),@function
 AROS_SLIB_ENTRY(ColdReboot,Exec):
-	    jmp		start_again
+		movl	$1,%eax
+		int		$0x80
