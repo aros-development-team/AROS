@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Support functions for the gradientslider class
@@ -129,8 +129,9 @@ const UBYTE Rectangular[3][3] =
 
 /***************************************************************************************************/
 
-STATIC VOID DitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		    struct GradientSliderBase_intern *GradientSliderBase)
+STATIC VOID DitherV(struct RastPort *rp,
+		    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
+)
 {
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
@@ -183,8 +184,9 @@ STATIC VOID DitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
 
 /***************************************************************************************************/
 
-STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		    struct GradientSliderBase_intern *GradientSliderBase)
+STATIC VOID DitherH(struct RastPort *rp,
+		    WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2
+)
 {
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
@@ -238,8 +240,8 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
 /***************************************************************************************************/
 
 STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, ULONG *pen2_rgb, 
-		    LONG *delta_r, LONG *delta_g, LONG *delta_b,
-		    struct GradientSliderBase_intern *GradientSliderBase)
+		    LONG *delta_r, LONG *delta_g, LONG *delta_b
+)
 {
     GetRGB32(cm, pen1, 1, (ULONG *)pen1_rgb);
     GetRGB32(cm, pen2, 1, (ULONG *)pen2_rgb);
@@ -259,8 +261,10 @@ STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, 
 
 /***************************************************************************************************/
 
-STATIC VOID TrueDitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		        struct ColorMap *cm, struct GradientSliderBase_intern *GradientSliderBase)
+STATIC VOID TrueDitherV(struct RastPort *rp,
+			WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+		        struct ColorMap *cm
+)
 {
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
@@ -282,7 +286,7 @@ STATIC VOID TrueDitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     
     if (height <= 2) return;
     
-    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b, GradientSliderBase);
+    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b);
        
     for(y = 0; y < height; y++)
     {
@@ -296,8 +300,10 @@ STATIC VOID TrueDitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 
 /***************************************************************************************************/
 
-STATIC VOID TrueDitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
-		        struct ColorMap *cm, struct GradientSliderBase_intern *GradientSliderBase)
+STATIC VOID TrueDitherH(struct RastPort *rp,
+			WORD x1, WORD y1, WORD x2, WORD y2, WORD pen1, WORD pen2,
+		        struct ColorMap *cm
+)
 {
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
@@ -319,7 +325,7 @@ STATIC VOID TrueDitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     
     if (width <= 2) return;
      
-    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b, GradientSliderBase);
+    CalcRGB(cm, pen1, pen2, pen1_rgb, pen2_rgb, &delta_r, &delta_g, &delta_b);
    
     for(x = 0; x < width; x++)
     {
@@ -334,8 +340,8 @@ STATIC VOID TrueDitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 /***************************************************************************************************/
 
 VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD *penarray,
-		  WORD numpens, WORD orientation, struct ColorMap *cm,
-		  struct GradientSliderBase_intern *GradientSliderBase)
+		  WORD numpens, WORD orientation, struct ColorMap *cm
+)
 {
     UWORD *pen = penarray;
     ULONG step, pos = 0;
@@ -365,9 +371,9 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		{
 		    if (truecolor)
 		    {
-		        TrueDitherV(rp, x1, oldy, x2, endy, pen1, pen2, cm, GradientSliderBase);		        
+		        TrueDitherV(rp, x1, oldy, x2, endy, pen1, pen2, cm);		        
 		    } else {
-		        DitherV(rp, x1, oldy, x2, endy, pen1, pen2, GradientSliderBase);
+		        DitherV(rp, x1, oldy, x2, endy, pen1, pen2);
 		    }
 		    pen1 = pen2;
 		    oldy = y;
@@ -389,9 +395,9 @@ VOID DrawGradient(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, UWORD
 		{
 		    if (truecolor)
 		    {
-		        TrueDitherH(rp, oldx, y1, endx, y2, pen1, pen2, cm, GradientSliderBase);
+		        TrueDitherH(rp, oldx, y1, endx, y2, pen1, pen2, cm);
 		    } else {
-		        DitherH(rp, oldx, y1, endx, y2, pen1, pen2, GradientSliderBase);
+		        DitherH(rp, oldx, y1, endx, y2, pen1, pen2);
 		    }
 		    pen1 = pen2;
 		    oldx = x;
@@ -460,7 +466,8 @@ VOID GetKnobBox(struct GradientSliderData *data, struct IBox *sliderbox, struct 
 /***************************************************************************************************/
 
 VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawInfo *dri, 
-	      struct IBox *box, WORD state, struct GradientSliderBase_intern *GradientSliderBase)
+	      struct IBox *box, WORD state
+)
 {
     if ((box->Width > 2) && (box->Height > 2))
     {
@@ -498,8 +505,7 @@ VOID DrawKnob(struct GradientSliderData *data, struct RastPort *rp, struct DrawI
 
 /***************************************************************************************************/
 
-VOID DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen,
-			 struct GradientSliderBase_intern *GradientSliderBase)
+VOID DrawDisabledPattern(struct RastPort *rport, struct IBox *gadbox, UWORD pen)
 {
     UWORD pattern[] = { 0x8888, 0x2222 };
 

@@ -189,6 +189,12 @@ ULONG __saveds  LibClose(REG(a6, struct GradientSliderBase_intern *GradientSlide
 
 /****************************************************************************/
 
+struct GfxBase *GfxBase;
+struct IntuitionBase *IntuitionBase;
+struct Library *LayersBase;
+struct UtilityBase *UtilityBase;
+struct Library *CyberGfxBase;
+
 BOOL __regargs L_OpenLibs( struct GradientSliderBase_intern *GradientSliderBase )
 {
 	if(	( GfxBase = OpenLibrary( "graphics.library", 39L ) ) &&
@@ -223,3 +229,75 @@ Class * __saveds ObtainClass(REG(a6, struct GradientSliderBase_intern *GradientS
 }
 
 /****************************************************************************/
+
+ULONG __saveds dispatch_gradientsliderclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
+{
+    IPTR retval = 0UL;
+    
+    switch(msg->MethodID)
+    {
+	case GM_HANDLEINPUT:
+	    retval = GradientSlider__GM_HANDLEINPUT(cl, o, (struct gpInput *)msg);
+	    break;
+
+	case OM_SET:
+	case OM_UPDATE:
+	    retval = (IPTR)GradientSlider__OM_SET(cl, o, (struct opSet *)msg);
+	    break;
+
+	case GM_RENDER:
+	    GradientSlider__GM_RENDER(cl, o, (struct gpRender *)msg);
+	    break;
+	    
+	case GM_HITTEST:
+	    retval = GradientSlider__GM_HITTEST(cl, o, (struct gpHitTest *)msg);
+	    break;
+	    
+	case GM_GOACTIVE:
+	    retval = GradientSlider__GM_GOACTIVE(cl, o, (struct gpInput *)msg);
+	    break;
+
+	case OM_GET:
+	    retval = GradientSlider__OM_GET(cl, o, (struct opGet *)msg);
+	    break;
+	    
+	case OM_NEW:
+	    retval = (IPTR)GradientSlider__OM_NEW(cl, o, (struct opSet *)msg);
+	    break;
+	
+	case OM_DISPOSE:
+	    GradientSlider__OM_DISPOSE(cl, o, msg);
+	    break;
+
+	case GM_DOMAIN:
+	    retval = GradientSlider__GM_DOMAIN(cl, o, (struct gpDomain *)msg);
+	    break;
+	    
+	default:
+	    retval = DoSuperMethodA(cl, o, msg);
+	    break;
+	    
+    } /* switch */
+
+    return (retval);
+}  /* dispatch_gradientsliderclass */
+
+/***************************************************************************************************/
+
+struct IClass *InitGradientSliderClass (struct GradientSliderBase_intern * GradientSliderBase)
+{
+    struct IClass *cl = NULL;
+
+    if ((cl = MakeClass("gradientslider.gadget", GADGETCLASS, NULL, sizeof(struct GradientSliderData), 0)))
+    {
+	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatch_gradientsliderclass;
+	cl->cl_Dispatcher.h_SubEntry = NULL;
+	cl->cl_UserData 	     = (IPTR)GradientSliderBase;
+
+	AddClass (cl);
+    }
+
+    return (cl);
+}
+
+/***************************************************************************************************/

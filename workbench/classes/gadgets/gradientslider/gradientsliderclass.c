@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2005, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: AROS gradientslider gadget.
@@ -30,8 +30,6 @@
 #define DEBUG 0
 
 #include <aros/debug.h>
-
-#define GradientSliderBase ((struct GradientSliderBase_intern *)(cl->cl_UserData))
 
 #else /* !AROS */
 
@@ -105,7 +103,7 @@ STATIC VOID notify_curval(Class *cl, Object *o, struct GadgetInfo *gi, BOOL inte
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
+IPTR GradientSlider__OM_SET(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem 		*tag, *tstate;
     IPTR 			retval;
@@ -213,7 +211,7 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
 
 /***************************************************************************************************/
 
-STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
+Object *GradientSlider__OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
     EnterFunc(bug("GradientSlider::New()\n"));
     
@@ -237,7 +235,7 @@ STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
 
 	    InitRastPort( &data->trp );
 	    
-    	    gradientslider_set(cl, o, msg);
+    	    GradientSlider__OM_SET(cl, o, msg);
 	    
 	} else {
 	    CoerceMethod(cl, o, OM_DISPOSE);
@@ -250,7 +248,7 @@ STATIC Object *gradientslider_new(Class *cl, Object *o, struct opSet *msg)
 
 /***************************************************************************************************/
 
-STATIC VOID gradientslider_dispose(Class *cl, Object *o, Msg msg)
+VOID GradientSlider__OM_DISPOSE(Class *cl, Object *o, Msg msg)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     
@@ -280,7 +278,7 @@ STATIC VOID gradientslider_dispose(Class *cl, Object *o, Msg msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_get(Class *cl, Object *o, struct opGet *msg)
+IPTR GradientSlider__OM_GET(Class *cl, Object *o, struct opGet *msg)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     IPTR 			retval = 1UL;
@@ -310,7 +308,7 @@ STATIC IPTR gradientslider_get(Class *cl, Object *o, struct opGet *msg)
 
 /***************************************************************************************************/
 
-STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
+VOID GradientSlider__GM_RENDER(Class *cl, Object *o, struct gpRender *msg)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);    
     struct DrawInfo 		*dri = msg->gpr_GInfo->gi_DrInfo;
@@ -352,7 +350,7 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
     	    	    #endif
 			 data->trp.BitMap = data->savebm;
 
-			 DrawKnob(data, &data->trp, dri, &kbox, 0, GradientSliderBase);
+			 DrawKnob(data, &data->trp, dri, &kbox, 0);
 			 //BltBitMapRastPort( data->savebm, kbox.Left,kbox.Top, rp, gbox.Left+kbox.Left,gbox.Top+kbox.Top, kbox.Width,kbox.Height, 0xc0 );
 			 BltBitMapRastPort( data->savebm, sbox.Left,sbox.Top, rp, gbox.Left+sbox.Left,gbox.Top+sbox.Top, sbox.Width,sbox.Height, 0xc0 );
 		    } /* if (!data->savebm || (kbox.Left != data->savefromx) || (kbox.Top != data->savefromy)) */
@@ -450,8 +448,8 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 				     sbox.Left + sbox.Width - 1,
 				     sbox.Top + sbox.Height - 1,
 				     data->penarray, data->numpens, data->freedom,
-				     msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap,
-				     GradientSliderBase);
+				     msg->gpr_GInfo->gi_Screen->ViewPort.ColorMap
+			);
 		    } /* data->numpens >= 2 */
 		} /* if ((sbox.Width >= 2) && (sbox.Height >= 2)) */
 
@@ -469,7 +467,7 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
 		    data->savefromy    = kbox.Top;
 
 	    	    /* Render knob */
-		    DrawKnob(data, trp, dri, &kbox, 0, GradientSliderBase);
+		    DrawKnob(data, trp, dri, &kbox, 0);
 		} /* if ((kbox.Width > 0) && (kbox.Height > 0) && (kbox.Width <= sbox.Width) && (kbox.Height <= sbox.Height)) */
 
 		BltBitMapRastPort( data->savebm, 0,0, rp, gbox.Left,gbox.Top,gbox.Width,gbox.Height, 0xc0 );
@@ -478,14 +476,14 @@ STATIC VOID gradientslider_render(Class *cl, Object *o, struct gpRender *msg)
     } /* switch (redraw) */
 
     if( EG(o)->Flags & GFLG_DISABLED )
-	    DrawDisabledPattern( rp, &gbox, dri->dri_Pens[SHADOWPEN], GradientSliderBase );
+	    DrawDisabledPattern( rp, &gbox, dri->dri_Pens[SHADOWPEN]);
             	
     ReturnVoid("GradientSlider::Render");
 }
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_hittest(Class *cl, Object *o, struct gpHitTest *msg)
+IPTR GradientSlider__GM_HITTEST(Class *cl, Object *o, struct gpHitTest *msg)
 {
 //  struct GradientSliderData 	*data = INST_DATA(cl, o);
     struct IBox			gbox, sbox;
@@ -516,7 +514,7 @@ STATIC IPTR gradientslider_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
+IPTR GradientSlider__GM_GOACTIVE(Class *cl, Object *o, struct gpInput *msg)
 {
     struct GradientSliderData 	*data = INST_DATA(cl, o);
     struct IBox			gbox, sbox, kbox;
@@ -602,7 +600,7 @@ STATIC IPTR gradientslider_goactive(Class *cl, Object *o, struct gpInput *msg)
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_handleinput(Class *cl, Object *o, struct gpInput *msg)
+IPTR GradientSlider__GM_HANDLEINPUT(Class *cl, Object *o, struct gpInput *msg)
 {
     struct GradientSliderData	*data = INST_DATA(cl, o);
     struct IBox			gbox, sbox, kbox;
@@ -691,7 +689,7 @@ STATIC IPTR gradientslider_handleinput(Class *cl, Object *o, struct gpInput *msg
 
 /***************************************************************************************************/
 
-STATIC IPTR gradientslider_domain(Class *cl, Object *o, struct gpDomain *msg)
+IPTR GradientSlider__GM_DOMAIN(Class *cl, Object *o, struct gpDomain *msg)
 {
     struct GradientSliderData *data = INST_DATA(cl, o);
     struct DrawInfo	      *dri = (struct DrawInfo *) GetTagData( GA_DrawInfo, NULL, msg->gpd_Attrs );
@@ -752,97 +750,6 @@ STATIC IPTR gradientslider_domain(Class *cl, Object *o, struct gpDomain *msg)
     msg->gpd_Domain.Height 	= height;
 
     return 1L;
-}
-
-/***************************************************************************************************/
-
-#ifdef __AROS__
-AROS_UFH3S(IPTR, dispatch_gradientsliderclass,
-    AROS_UFHA(Class *,  cl,  A0),
-    AROS_UFHA(Object *, o,   A2),
-    AROS_UFHA(Msg,      msg, A1)
-)
-#else
-ULONG __saveds dispatch_gradientsliderclass( REG(a0, Class *cl), REG(a2, Object *o), REG(a1, Msg msg ) )
-#endif
-{
-    AROS_USERFUNC_INIT
-
-    IPTR retval = 0UL;
-    
-    switch(msg->MethodID)
-    {
-	case GM_HANDLEINPUT:
-	    retval = gradientslider_handleinput(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case OM_SET:
-	case OM_UPDATE:
-	    retval = (IPTR)gradientslider_set(cl, o, (struct opSet *)msg);
-	    break;
-
-	case GM_RENDER:
-	    gradientslider_render(cl, o, (struct gpRender *)msg);
-	    break;
-	    
-	case GM_HITTEST:
-	    retval = gradientslider_hittest(cl, o, (struct gpHitTest *)msg);
-	    break;
-	    
-	case GM_GOACTIVE:
-	    retval = gradientslider_goactive(cl, o, (struct gpInput *)msg);
-	    break;
-
-	case OM_GET:
-	    retval = gradientslider_get(cl, o, (struct opGet *)msg);
-	    break;
-	    
-	case OM_NEW:
-	    retval = (IPTR)gradientslider_new(cl, o, (struct opSet *)msg);
-	    break;
-	
-	case OM_DISPOSE:
-	    gradientslider_dispose(cl, o, msg);
-	    break;
-
-	case GM_DOMAIN:
-	    retval = gradientslider_domain(cl, o, (struct gpDomain *)msg);
-	    break;
-	    
-	default:
-	    retval = DoSuperMethodA(cl, o, msg);
-	    break;
-	    
-    } /* switch */
-
-    return (retval);
-
-    AROS_USERFUNC_EXIT
-}  /* dispatch_gradientsliderclass */
-
-
-#undef GradientSliderBase
-
-/***************************************************************************************************/
-
-struct IClass *InitGradientSliderClass (struct GradientSliderBase_intern * GradientSliderBase)
-{
-    struct IClass *cl = NULL;
-
-    if ((cl = MakeClass("gradientslider.gadget", GADGETCLASS, NULL, sizeof(struct GradientSliderData), 0)))
-    {
-    #ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry    = (APTR)AROS_ASMSYMNAME(dispatch_gradientsliderclass);
-    #else
-	cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)dispatch_gradientsliderclass;
-    #endif
-	cl->cl_Dispatcher.h_SubEntry = NULL;
-	cl->cl_UserData 	     = (IPTR)GradientSliderBase;
-
-	AddClass (cl);
-    }
-
-    return (cl);
 }
 
 /***************************************************************************************************/

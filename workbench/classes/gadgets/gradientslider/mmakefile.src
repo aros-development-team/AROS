@@ -5,8 +5,6 @@ FILES := gradientsliderclass support
 
 #MM workbench-gadgets-gradientslider : includes linklibs
 
-%build_module_macro mmake=workbench-gadgets-gradientslider \
-  modname=gradientslider modtype=gadget files=$(FILES) \
-  conffile=lib.conf
-
-%common
+%build_module mmake=workbench-gadgets-gradientslider \
+  modname=gradientslider modtype=gadget \
+  files=$(FILES)
