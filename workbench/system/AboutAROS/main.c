@@ -26,8 +26,7 @@
 VOID Cleanup(CONST_STRPTR error)
 {
     Locale_Deinitialize();
-    AboutAROS_Deinitialize();
-    
+
     if (error != NULL)
     {
         PutStr(error);
@@ -45,19 +44,18 @@ int main()
     Object *application;
 
     if (!Locale_Initialize()) Cleanup("Locale!");
-    if (!AboutAROS_Initialize()) Cleanup("Classes!");
-    
+
     if ((application = AboutAROSObject, End) != NULL)
     {
         DoMethod(application, MUIM_Application_Execute);
-        
+
         MUI_DisposeObject(application);
     }
     else
     {
         Cleanup("Objects!");
     }
-    
+
     Cleanup(NULL);
 
     return 0; /* keep compiler happy */
