@@ -1,7 +1,11 @@
 #define AROS_CDEFNAME(n)       _ ## n
 #define AROS_SLIB_ENTRY(n,s)   s ## _ ## n
 
-# Exec functions
+/*
+ * Exec functions
+ * Their offset depends on the size of the FullJumpVec structure in 
+ * machine.h
+ */
 #define Supervisor    -30
 #define Reschedule    -48
 #define Switch        -54
