@@ -61,7 +61,7 @@ static Object *MakeCheckmark()
 
 static Object*MakeLevelSlider (void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 2, 20);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 2, 20);
     set(obj, MUIA_CycleChain, 1);
     return obj;
 }
@@ -69,7 +69,7 @@ static Object*MakeLevelSlider (void)
 
 static Object*MakeSpeedSlider (void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 50);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 50);
     set(obj, MUIA_CycleChain, 1);
     return obj;
 }
@@ -94,7 +94,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 					 MUIA_MaxHeight, 28,
 					 MUIA_Imagedisplay_FreeHoriz, FALSE,
 					 MUIA_Imagedisplay_FreeVert, FALSE,
-					 MUIA_Window_Title, "Cycle",
+					 MUIA_Window_Title, (IPTR)"Cycle",
 					 TAG_DONE),
 			       Child, HVSpace,
 			       End, /* Cycle Gadget Design */
@@ -106,7 +106,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, HVSpace,
 			       Child, MakeLabel("Position:"),
 			       Child, d.menu_position_cycle =
-			       MUI_MakeObject(MUIO_Cycle, "Position:",
+			       MUI_MakeObject(MUIO_Cycle, (IPTR)"Position:",
 					      positions_labels),
 			       Child, MakeLabel("Level:"),
 			       Child, d.menu_level_slider = MakeLevelSlider(),
@@ -123,7 +123,7 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.menu_popframe = MakePopframe(),
-			       Child, MUI_MakeObject(MUIO_Label, "Frame",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Frame",
 						     MUIO_Label_Centered),
 			       End, /* VGroup Frame */
 			       Child, VGroup,
@@ -132,9 +132,9 @@ static IPTR CyclesP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       NewObject(CL_ImageClipboard->mcc_Class, NULL,
 					 MUIA_Draggable, TRUE,
 					 MUIA_CycleChain, 1,
-					 MUIA_Window_Title, "Adjust Background",
+					 MUIA_Window_Title, (IPTR)"Adjust Background",
 					 TAG_DONE),
-			       Child, MUI_MakeObject(MUIO_Label, "Background",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
 						     MUIO_Label_Centered),
 			       End, /* VGroup BG */
 			       End, /* HGroup Frame/BG */

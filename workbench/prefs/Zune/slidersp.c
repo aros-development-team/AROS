@@ -41,7 +41,7 @@ struct MUI_SlidersPData
 
 static Object *MakeSmallHorizSlider(void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 9);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 9);
     set(obj, MUIA_CycleChain, 1);
     set(obj, MUIA_Numeric_Value, 5);
     return obj;
@@ -49,7 +49,7 @@ static Object *MakeSmallHorizSlider(void)
 
 static Object *MakeBigHorizSlider(void)
 {
-    Object *obj = MUI_MakeObject(MUIO_Slider, "", 0, 99);
+    Object *obj = MUI_MakeObject(MUIO_Slider, (IPTR)"", 0, 99);
     set(obj, MUIA_CycleChain, 1);
     set(obj, MUIA_Numeric_Value, 42);
     return obj;
@@ -92,13 +92,13 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.container_background_popimage = MakeBackgroundPopimage(),
-			       Child, MUI_MakeObject(MUIO_Label, "Background",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
 						     MUIO_Label_Centered),
 			       End, /* VGroup BG */
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.container_popframe = MakePopframe(),
-			       Child, MUI_MakeObject(MUIO_Label, "Frame",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Frame",
 						     MUIO_Label_Centered),
 			       End, /* VGroup Frame */
 			       End, /* HGroup Frame/BG */
@@ -110,13 +110,13 @@ static IPTR SlidersP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.knob_background_popimage = MakeBackgroundPopimage(),
-			       Child, MUI_MakeObject(MUIO_Label, "Background",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Background",
 						     MUIO_Label_Centered),
 			       End, /* VGroup BG */
 			       Child, VGroup,
 			       MUIA_Group_VertSpacing, 1,
 			       Child, d.knob_popframe = MakePopframe(),
-			       Child, MUI_MakeObject(MUIO_Label, "Frame",
+			       Child, MUI_MakeObject(MUIO_Label, (IPTR)"Frame",
 						     MUIO_Label_Centered),
 			       End, /* VGroup Frame */
 			       End, /* HGroup Frame/BG */
