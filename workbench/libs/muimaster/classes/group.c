@@ -799,51 +799,53 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /*      D(bug("Group_Draw(%lx) %ldx%ldx%ldx%ld\n",obj,_left(obj),_top(obj),_right(obj),_bottom(obj))); */
 /*      D(bug("Group_Draw(%p) msg=0x%08lx flags=0x%08lx\n", obj, msg->flags, _flags(obj))); */
 
-#if REDUCE_FLICKER_TEST
-    region = NewRegion();
-    if (region)
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
     {
-    	struct Rectangle rect;
-	
-	rect.MinX = _left(obj);
-	rect.MinY = _top(obj);
-	rect.MaxX = _right(obj);
-	rect.MaxY = _bottom(obj);
-	
-	OrRectRegion(region, &rect);
-	
-	get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
-	cstate = (Object *)ChildList->mlh_Head;
-	while ((child = NextObject(&cstate)))
+	region = NewRegion();
+	if (region)
 	{
-	    if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
-		continue;
-
-    	    if (muiAreaData(obj)->mad_Flags & MADF_CANDRAW)
+	    struct Rectangle rect;
+	    
+	    rect.MinX = _left(obj);
+	    rect.MinY = _top(obj);
+	    rect.MaxX = _right(obj);
+	    rect.MaxY = _bottom(obj);
+	
+	    OrRectRegion(region, &rect);
+	
+	    get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
+	    cstate = (Object *)ChildList->mlh_Head;
+	    while ((child = NextObject(&cstate)))
 	    {
-	    	rect.MinX = _left(child);
-		rect.MinY = _top(child);
-		rect.MaxX = _right(child);
-		rect.MaxY = _bottom(child);
-    	    	ClearRectRegion(region, &rect);
+		if ((data->flags & GROUP_PAGEMODE) && (page != data->active_page))
+		    continue;
+
+		if (muiAreaData(obj)->mad_Flags & MADF_CANDRAW)
+		{
+		    rect.MinX = _left(child);
+		    rect.MinY = _top(child);
+		    rect.MaxX = _right(child);
+		    rect.MaxY = _bottom(child);
+		    ClearRectRegion(region, &rect);
+		}
 	    }
+
+	    clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
+
 	}
 
-	clip = MUI_AddClipRegion(muiRenderInfo(obj), region);
-
-    }
+	DoSuperMethodA(cl, obj, (Msg)msg);
     
-#endif
-    DoSuperMethodA(cl, obj, (Msg)msg);
-    
-#if REDUCE_FLICKER_TEST
-    if (region)
+	if (region)
+	{
+	    MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
+	    region = NULL;
+	}
+    }    
+    else
     {
-    	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
-	region = NULL;
+	DoSuperMethodA(cl, obj, (Msg)msg);
     }
-#endif
-
 /*      D(bug("Group_Draw(%p) (after dsma) msg=0x%08lx flags=0x%08lx\n", */
 /*  	  obj, msg->flags, _flags(obj))); */
 
@@ -1372,8 +1374,12 @@ static ULONG Group_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinM
 
 	if (lm.lm_MinMax.MaxHeight < lm.lm_MinMax.MinHeight)
 	    lm.lm_MinMax.MaxHeight = lm.lm_MinMax.MinHeight;
+	if (lm.lm_MinMax.DefHeight < lm.lm_MinMax.MinHeight)
+	    lm.lm_MinMax.DefHeight = lm.lm_MinMax.MinHeight;
 	if (lm.lm_MinMax.MaxWidth < lm.lm_MinMax.MinWidth)
 	    lm.lm_MinMax.MaxWidth = lm.lm_MinMax.MinWidth;
+	if (lm.lm_MinMax.DefWidth < lm.lm_MinMax.MinWidth)
+	    lm.lm_MinMax.DefWidth = lm.lm_MinMax.MinWidth;
 
 	msg->MinMaxInfo->MinWidth += lm.lm_MinMax.MinWidth;
 	msg->MinMaxInfo->MinHeight += lm.lm_MinMax.MinHeight;

@@ -368,6 +368,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     ULONG flags = data->wd_CrtFlags;
     struct MUI_RenderInfo *mri = &data->wd_RenderInfo;
     struct IBox altdims;
+    ULONG backfill;
 
     struct Menu *menu = NULL;
     struct NewMenu *newmenu = NULL;
@@ -729,6 +730,11 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
     altdims.Width += data->wd_RenderInfo.mri_Screen->WBorLeft + data->wd_RenderInfo.mri_Screen->WBorRight;
     altdims.Height += data->wd_RenderInfo.mri_Screen->WBorTop + data->wd_RenderInfo.mri_Screen->WBorBottom + data->wd_RenderInfo.mri_DrawInfo->dri_Font->tf_YSize + 11;
     
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+	backfill = WA_BackFill;
+    else
+	backfill = TAG_IGNORE;
+
     win = OpenWindowTags
     (
         NULL,
@@ -752,9 +758,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
             TAG_IGNORE,         (IPTR) TRUE,
         WA_Gadgets,             (IPTR) data->wd_VertProp,
         WA_Zoom,                (IPTR) &altdims,
-        REDUCE_FLICKER_TEST ? 
-        WA_BackFill         : 
-        TAG_IGNORE,             (IPTR) LAYERS_NOBACKFILL,
+        backfill,               (IPTR) LAYERS_NOBACKFILL,
         TAG_DONE
     );
 
@@ -1182,7 +1186,10 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 				     left, top, width, height, left, top, 0);
 		}
-		MUI_Redraw(data->wd_RootObject, REDUCE_FLICKER_TEST?MADF_DRAWOBJECT:MADF_DRAWALL);
+		if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+		else
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 	    }
 	}
 	break;
@@ -1203,8 +1210,7 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		DoMethod(data->wd_RootObject, MUIM_Layout);
 		DoMethod(data->wd_RootObject, MUIM_Show);
 
-#if REDUCE_FLICKER_TEST
-#else
+		if (muiGlobalInfo(oWin)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITH_CLEAR)
 		{
 		    LONG left,top,width,height;
 
@@ -1218,9 +1224,10 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
 					 left, top, width, height, left, top, 0);
 		    }
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		}
-#endif
-		MUI_Redraw(data->wd_RootObject, REDUCE_FLICKER_TEST?MADF_DRAWOBJECT:MADF_DRAWALL);
+		else
+		    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
 	    }
 	    else
 	    {
@@ -1980,11 +1987,6 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->wd_ReqWidth = MUIV_Window_Width_Default;
     data->wd_RootObject = NULL;
     data->wd_DefaultObject = NULL;
-#if REDUCE_FLICKER_TEST
-    data->wd_Flags = 0;
-#else
-    data->wd_Flags = MUIWF_ERASEAREA;
-#endif
 
 /* alternate dimensions */
 /* no change in coordinates */
@@ -2681,13 +2683,14 @@ static ULONG Window_RecalcDisplay(struct IClass *cl, Object *obj, struct MUIP_Wi
 /*  	D(bug("zune_imspec_draw %s %d : %d %d %d %d\n", __FILE__, __LINE__, */
 /*  	      left, top, width, height)); */
 
-#if REDUCE_FLICKER_TEST
-	MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
-#else
-	zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
-			 left, top, width, height, left, top, 0);
-	MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
-#endif
+	if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITHOUT_CLEAR)
+	    MUI_Redraw(data->wd_RootObject, MADF_DRAWOBJECT);
+	else
+	{
+	    zune_imspec_draw(data->wd_Background, &data->wd_RenderInfo,
+			     left, top, width, height, left, top, 0);
+	    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
+	}
     }
     return TRUE;
 }
@@ -2734,6 +2737,9 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 	return FALSE;
 
     data->wd_Background = zune_imspec_setup(MUII_WindowBack, &data->wd_RenderInfo);
+
+    if (muiGlobalInfo(obj)->mgi_Prefs->window_redraw == WINDOW_REDRAW_WITH_CLEAR)
+	data->wd_Flags |= MUIWF_ERASEAREA;
 
     return TRUE;
 }
