@@ -37,9 +37,9 @@
 #ifdef AROS_FAST_BPTR
 #   define AROS_BSTR_ADDR(s)        ((STRPTR)(s))
 #   define AROS_BSTR_strlen(s)      (strlen (s))
-#   define AROS_BSTR_setstrlen(s,l) (s[l] = 0)
-#   define AROS_BSTR_getchar(s,l)   (s[l])
-#   define AROS_BSTR_putchar(s,l,c) (s[l] = c)
+#   define AROS_BSTR_setstrlen(s,l) (((BSTR)s)[l] = 0)
+#   define AROS_BSTR_getchar(s,l)   (((BSTR)s)[l])
+#   define AROS_BSTR_putchar(s,l,c) (((BSTR)s)[l] = c)
 #else
 #   define AROS_BSTR_ADDR(s)        (((STRPTR)BADDR(s))+1)
 #   define AROS_BSTR_strlen(s)      (AROS_BSTR_ADDR(s)[-1])
