@@ -2,23 +2,29 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Switch CPU in supervisor state (if supported)
+    Lang: english
 */
 
 /******************************************************************************
 
-    NAME
-	AROS_LH0(void, GetCC,
+    NAME */
+#include <proto/exec.h>
 
-    LOCATION
-	struct ExecBase *, SysBase, 88, Exec)
+	AROS_LH0(void, SuperState,
 
-    FUNCTION
+/*  LOCATION */
+	struct ExecBase *, SysBase, 25, Exec)
+
+/*  FUNCTION
+	If the CPU supports this, this function activates the supervisor
+	mode.
 
     INPUTS
+	None.
 
     RESULT
+	None.
 
     NOTES
 
@@ -33,14 +39,6 @@
     HISTORY
 
 ******************************************************************************/
-
-	#include "machine.i"
-
-	.text
-	.balign 16
-	.globl	AROS_SLIB_ENTRY(GetCC,Exec)
-	.type	AROS_SLIB_ENTRY(GetCC,Exec),@function
-AROS_SLIB_ENTRY(GetCC,Exec):
-	/* Dummy */
-	ret
+{
+} /* SuperState */
 

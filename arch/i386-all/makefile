@@ -9,36 +9,31 @@ CLIBDIR=$(GENDIR)/clib
 MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = \
-	supervisor \
-	switch \
-	dispatch \
+	cache \
 	disable \
+	dispatch \
 	enable \
+	exception \
 	forbid \
+	getcc \
+	initcore \
 	permit \
 	preparecontext \
-	special \
-	semaphoreglue \
-	exception \
-	cachecleare \
-	cacheclearu \
-	cachecontrol \
-	cachepostdma \
-	cachepredma \
-	setsr \
-	getcc \
-	superstate \
-	userstate \
-	stackswap \
 	runprocess \
-	initcore
+	semaphoreglue \
+	setsr \
+	special \
+	stackswap \
+	superstate \
+	supervisor \
+	switch \
+	userstate
 
-CFILES = setjmp longjmp
-
+CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
+DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
 all: setup $(MACHINE_H) machine.i \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(CFILES),$(CLIBDIR)/$(f).o)
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
@@ -51,7 +46,7 @@ clean:
 	$(RM) $(MACHINE_H) machine.i geninc
 
 machine.i: geninc.c
-	$(CC) $(CFLAGS) -o geninc geninc.c
+	$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
 
 $(CLIBDIR)/%.o: %.s machine.i
@@ -66,10 +61,10 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(SHARED_CFLAGS) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
-$(OSGENDIR)/%.d: %.c $(TOP)/compiler/include/aros/machine.h
+$(OSGENDIR)/%.d: %.c $(MACHINE_H)
 	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
 	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 ifneq ("$(TARGET)","clean")
--include $(OSGENDIR)/geninc.d $(OSGENDIR)/preparecontext.d
+include $(DEPS)
 endif

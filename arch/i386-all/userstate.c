@@ -2,23 +2,28 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
-    Lang:
+    Desc: Switch CPU to userstate (if supported)
+    Lang: english
 */
 
 /******************************************************************************
 
-    NAME
-	AROS_LH0(void, CacheControl,
+    NAME */
+#include <proto/exec.h>
 
-    LOCATION
-	struct ExecBase *, SysBase, 108, Exec)
+	AROS_LH0(void, UserState,
 
-    FUNCTION
+/*  LOCATION */
+	struct ExecBase *, SysBase, 26, Exec)
+
+/*  FUNCTION
+	Switch CPU to userstate if the CPU supports this.
 
     INPUTS
+	None.
 
     RESULT
+	None.
 
     NOTES
 
@@ -33,14 +38,6 @@
     HISTORY
 
 ******************************************************************************/
-
-	#include "machine.i"
-
-	.text
-	.balign 16
-	.globl	AROS_SLIB_ENTRY(CacheControl,Exec)
-	.type	AROS_SLIB_ENTRY(CacheControl,Exec),@function
-AROS_SLIB_ENTRY(CacheControl,Exec):
-	/* Dummy */
-	ret
+{
+} /* UserState */
 

@@ -51,11 +51,11 @@ AROS_SLIB_ENTRY(Dispatch,Exec):
 	pushl	%esi
 	pushl	%ebp
 
-	/* Get SysBase */
-	movl	32(%esp),%ecx
-
 	/* block all signals */
 	call	AROS_CSYMNAME(disable)
+
+	/* Get SysBase again */
+	movl	32(%esp),%ecx
 
 	/* Store sp */
 	movl	ThisTask(%ecx),%edx
