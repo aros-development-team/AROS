@@ -161,9 +161,7 @@ AROS_UFH3(VOID, LocRawDoFmtFormatStringFunc,
 
 *****************************************************************************/
 {
-#ifndef __MORPHOS__
     AROS_LIBFUNC_INIT
-#endif
 
 #define LocaleBase globallocalebase
 

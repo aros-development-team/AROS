@@ -56,9 +56,7 @@ char HEXarray [] = "0123456789ABCDEF";
 
 *****************************************************************************/
 {
-#ifndef __MORPHOS__
   AROS_LIBFUNC_INIT
-#endif
   AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
   enum {OUTPUT = 0,

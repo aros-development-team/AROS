@@ -59,9 +59,7 @@
 
 *****************************************************************************/
 {
-#ifndef __MORPHOS__
     AROS_LIBFUNC_INIT
-#endif
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     STRPTR str = defaultString;
