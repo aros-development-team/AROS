@@ -54,7 +54,7 @@ const struct Resident Utility_resident=
 
 const UBYTE name[]="utility.library";
 
-const UBYTE version[]="$VER: AROS utility 41.9 (2.2.97)";
+const UBYTE version[]="$VER: AROS utility 41.10 (10.2.97)";
 
 const APTR inittabl[4]=
 {
