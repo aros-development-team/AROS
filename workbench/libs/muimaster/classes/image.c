@@ -183,11 +183,14 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    zune_imspec_cleanup(data->img);
 		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
 #warning quick hack to not draw the background for gradients. It should really be generalized
-                    if (data->img->type == IST_GRADIENT)
-                        set(obj, MUIA_FillArea, FALSE);
-                    else
-                        set(obj, MUIA_FillArea, TRUE);
-		}
+                    if (data->img)
+                    {
+                        if (data->img->type == IST_GRADIENT)
+                            set(obj, MUIA_FillArea, FALSE);
+                        else
+                            set(obj, MUIA_FillArea, TRUE);
+		    }
+                }
 
 		if (_flags(obj)&MADF_CANDRAW)
 		    zune_imspec_show(data->img, obj);
@@ -230,10 +233,13 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     {
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
 #warning quick hack to not draw the background for gradients. It should really be generalized
-        if (data->img->type == IST_GRADIENT)
-            set(obj, MUIA_FillArea, FALSE);
-        else
-            set(obj, MUIA_FillArea, TRUE);
+        if (data->img)
+        {
+            if (data->img->type == IST_GRADIENT)
+                set(obj, MUIA_FillArea, FALSE);
+            else
+                set(obj, MUIA_FillArea, TRUE);
+        }
     }
     return 1;
 }
