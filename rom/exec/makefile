@@ -12,12 +12,12 @@ LIBS = -L$(LIBDIR) -larosc
 FILES = execstrap_res execstrap_init execstrap_end
 
 FUNCTIONS = \
-	addintserver remintserver \
+	setintvector addintserver remintserver \
 	typeofmem \
 	addmemlist addmemhandler remmemhandler \
 	insert addhead addtail remove remhead remtail enqueue findname \
 	setsignal \
-	addport remport waitport findport \
+	addport remport waitport findport createmsgport deletemsgport \
 	putmsg getmsg \
 	doio sendio checkio waitio abortio createiorequest deleteiorequest \
 	addresource remresource openresource \
@@ -25,7 +25,7 @@ FUNCTIONS = \
 	sumlibrary openlibrary taggedopenlibrary \
 	adddevice \
 	findtask \
-	attemptsemaphore findsemaphore addsemaphore remsemaphore \
+	initsemaphore attemptsemaphore findsemaphore addsemaphore remsemaphore \
 	obtainsemaphoreshared attemptsemaphoreshared
 
 # Functions that are written in asm and need to be linked into exec.strap.
