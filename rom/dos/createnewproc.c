@@ -129,7 +129,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
 	cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,tags);
 	ENOMEM_IF(cli==NULL);
 	Forbid();
-	process->pr_TaskNum=DOSBase->dl_ProcCnt++;
+	process->pr_TaskNum=++(DOSBase->dl_ProcCnt);
 	Permit();
 	oldpath=NULL;
 	cli->cli_DefaultStack=defaults[9].ti_Data>>2;
