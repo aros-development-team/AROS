@@ -2,6 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/24 15:36:47  aros
+    Named all macros which the user/developer can use as "AROS".
+
+    For some strange reason, GCC produces incorrect code for "x /= -5;". "x = (-x)
+    / 5" works...
+
     Revision 1.6  1996/10/23 14:28:54  aros
     Use the respective macros to access and manipulate a libraries' jumptable
 
@@ -9,8 +15,8 @@
     Include <aros/machine.h> instead of machine.h
 
     Revision 1.4  1996/08/13 13:56:08  digulla
-    Replaced __AROS_LA by __AROS_LHA
-    Replaced some __AROS_LH*I by __AROS_LH*
+    Replaced AROS_LA by AROS_LHA
+    Replaced some AROS_LH*I by AROS_LH*
     Sorted and added includes
 
     Revision 1.3  1996/08/01 17:41:19  digulla
@@ -28,12 +34,12 @@
     NAME */
 	#include <clib/exec_protos.h>
 
-	__AROS_LH3(APTR, SetFunction,
+	AROS_LH3(APTR, SetFunction,
 
 /*  SYNOPSIS */
-	__AROS_LHA(struct Library *, library,     A1),
-	__AROS_LHA(LONG,             funcOffset,  A0),
-	__AROS_LHA(APTR,             newFunction, D0),
+	AROS_LHA(struct Library *, library,     A1),
+	AROS_LHA(LONG,             funcOffset,  A0),
+	AROS_LHA(APTR,             newFunction, D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 70, Exec)
@@ -71,10 +77,10 @@
 
 ******************************************************************************/
 {
-    __AROS_FUNC_INIT
+    AROS_LIBFUNC_INIT
     APTR ret;
 
-    funcOffset /= -LIB_VECTSIZE;
+    funcOffset = (-funcOffset) / LIB_VECTSIZE;
 
     /*
 	Arbitrate for the jumptable. This isn't enough for interrupt callable
@@ -102,6 +108,6 @@
 
     /* All done. */
     return ret;
-    __AROS_FUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* SetFunction */
 
