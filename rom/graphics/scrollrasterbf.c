@@ -1,12 +1,13 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
-    $Id$	$Log
+    (C) 1999 AROS - The Amiga Research OS
+    $Id$
 
-    Desc: Graphics function ScrollRaster()
+    Desc: Graphics function ScrollRasterBF()
     Lang: english
 */
 #include "graphics_intern.h"
 #include <graphics/rastport.h>
+#include <graphics/gfx.h>
 
 /*****************************************************************************
 
@@ -14,7 +15,7 @@
 #include <graphics/rastport.h>
 #include <proto/graphics.h>
 
-	AROS_LH7(void, ScrollRaster,
+	AROS_LH7(void, ScrollRasterBF,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct RastPort *, rp, A1),
@@ -26,11 +27,11 @@
 	AROS_LHA(LONG             , yMax, D5),
 
 /*  LOCATION */
-	struct GfxBase *, GfxBase, 66, Graphics)
+	struct GfxBase *, GfxBase, 167, Graphics)
 
 /*  FUNCTION
       Scroll the contents of a rastport (dx,dy) towards (0,0).
-      The empty spaces is filled by a call to RectFill().
+      The empty spaces is filled by a call to EraseRect().
       Only the pixel in the rectangle (xMin,yMin)-(xMax,yMax)
       will be affected. The lower right corner (xMax, yMax) is
       automatically adjusted to the lower right corner in case
@@ -60,17 +61,15 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    graphics_lib.fd and clib/graphics_protos.h
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
   /* 
      This function will simply call ScrollRaster() and fill the empty
-     space with calls to RectFill
+     space with calls to EraseRect()
    */
 
   /* 
@@ -97,14 +96,14 @@
     if (yMax > height)
       yMax = height;
   }
-
-  if (FALSE == driver_ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax, 
+  
+  if (FALSE == driver_ScrollRaster(rp, dx, dy, xMin, yMin, xMax, yMax,
                                    GfxBase))
     return;
 
   /* 
      The raster is scrolled and I fill the empty area with the 
-     RectFill()
+     EraseRect()
    */
    
   /* was it scrolled left or right? */
@@ -113,7 +112,7 @@
     if (dx > 0)
     {
       /* scrolled towards left, clearing on the right */
-      RectFill (rp,
+      EraseRect(rp,
                 xMax - dx + 1,
                 yMin,
                 xMax,
@@ -122,7 +121,7 @@
     else
     {
       /* scrolled towards right, clearing on the left */
-      RectFill (rp,
+      EraseRect(rp,
                 xMin,
                 yMin,
                 xMin - dx - 1,  /* a scroll by -1 should only erase a row of width 1 */ 
@@ -135,7 +134,7 @@
     if (dy > 0)
     {
       /* scrolled up, clearing on the bottom */
-      RectFill (rp,
+      EraseRect(rp,
                 xMin,
                 yMax - dy + 1,
                 xMax,
@@ -144,7 +143,7 @@
     else
     {
       /* scrolled down, clearing on the top */
-      RectFill (rp,
+      EraseRect(rp,
                 xMin,
                 yMin,
                 xMax, 
@@ -153,5 +152,5 @@
   }
   
 
-    AROS_LIBFUNC_EXIT
-} /* ScrollRaster */
+  AROS_LIBFUNC_EXIT
+} /* ScrollRasterBF */

@@ -135,6 +135,7 @@ FUNCTIONS := \
 	remvsprite \
 	scalerdiv \
 	scrollraster \
+	scrollrasterbf \
 	setabpendrmd \
 	setapen \
 	setbpen \
