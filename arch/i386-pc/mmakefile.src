@@ -33,6 +33,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM- kernel-module-pc-i386 : 				\
 #MM	kernel-exec-module-pc-i386			\
 #MM	kernel-expansion-module-pc-i386			\
+#MM	kernel-bootmenu-module-pc-i386 \
 #MM	kernel-utility-linklib			\
 #MM	kernel-dos-module-pc-i386			\
 #MM	kernel-boot-linklib			\
@@ -74,6 +75,7 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 
 #MM- kernel-exec-module-pc-i386 : exec-pc-i386 kernel-exec-linklib
 #MM- kernel-expansion-module-pc-i386 : kernel-expansion-pc-i386 kernel-expansion-linklib
+#MM- kernel-bootmenu-module-pc-i386 : kernel-bootmenu-pc-i386 kernel-bootmenu-linklib
 #MM- kernel-dos-module-pc-i386 : dos-pc-i386 kernel-dos-linklib
 #MM- kernel-aros-module-pc-i386 : kernel-aros-pc-i386 kernel-aros-linklib
 #MM- kernel-oop-module-pc-i386 : kernel-oop-pc-i386 kernel-oop-linklib
@@ -95,6 +97,10 @@ OS_INCLUDES	:= -I$(GENINCDIR)
 #MM kernel-expansion-pc-i386 :
 kernel-expansion-pc-i386 :
 	%add_objects rom/boot/libexpansion
+
+#MM kernel-bootmenu-pc-i386 :
+kernel-bootmenu-pc-i386 :
+	%add_objects rom/boot/libbootmenu
 
 #MM kernel-utility-pc-i386 :
 kernel-utility-pc-i386 :
