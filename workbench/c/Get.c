@@ -38,18 +38,20 @@
 
         Get Result2
 
-            This will retrieve the return code of the last command.
+            This will retrieve the secondary return code of the last command
+            that was executed.
 
     BUGS
 
     SEE ALSO
 
-    INTERNALS
+        Set, Unset
 
-        GetVar(), GFF_LOCAL_ONLY, LV_VAR
+    INTERNALS
 
     HISTORY
 
+        30-Jul-1997     laguest     Corrected a few things in the source
         27-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
@@ -67,7 +69,7 @@
 
 #define BUFFER_SIZE     256
 
-static const char version[] = "$VER: Get 41.0 (03.07.1997)\n";
+static const char version[] = "$VER: Get 41.1 (03.07.1997)\n";
 
 int main(int argc, char *argv[])
 {
@@ -86,7 +88,7 @@ int main(int argc, char *argv[])
         Var_Length = GetVar((STRPTR)args[ARG_NAME],
                &Var_Value[0],
                BUFFER_SIZE,
-               GVF_LOCAL_ONLY | LV_VAR
+               GVF_LOCAL_ONLY
         );
 
         if (Var_Length != -1)

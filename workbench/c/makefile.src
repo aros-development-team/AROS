@@ -43,7 +43,11 @@ FILES = \
 	Get \
 	Getenv \
 	Protect \
-	RequestChoice
+	RequestChoice \
+	Alias \
+	Unalias \
+	Set \
+	Setenv
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)

@@ -44,12 +44,13 @@
 
     SEE ALSO
 
-    INTERNALS
+        Setenv, Unsetenv
 
-        GetVar(), GVF_GLOBAL_ONLY, LV_VAR
+    INTERNALS
 
     HISTORY
 
+        30-Jul-1997     laguest     Corrected a few things in the source
         27-Jul-1997     laguest     Initial inclusion into the AROS tree
 
 ******************************************************************************/
@@ -67,7 +68,7 @@
 
 #define BUFFER_SIZE     256
 
-static const char version[] = "$VER: Getenv 41.0 (03.07.1997)\n";
+static const char version[] = "$VER: Getenv 41.1 (03.07.1997)\n";
 
 int main(int argc, char *argv[])
 {
