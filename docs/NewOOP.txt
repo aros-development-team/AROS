@@ -407,7 +407,8 @@ Then to invoke a method we use the macro
 
 
     #define DoMethod(Obj, Interface, Method, Args...) \
-        (((Interface ## _ ## Method ## _type)((Interface)(Obj)).vtable[Interface ## _ ## Method ## _ ## id])(Obj, Args))
+        (((Interface ## _ ## Method ## _type)((Interface)(Obj)).vtable[Interface
+ ## _ ## Method ## _ ## id])(Obj, Args))
 
 With a wise use of the preprocessor and of the type casting it's IMPOSSIBLE
 invoking a method on the wrong object.
@@ -420,7 +421,9 @@ thus making more natural and readable the code. The macro could infact look like
 this:
 
     #define DoMethod(Obj, Method, Args...) \
-        (((nameoftype(typeof(Obj)) ## _ ## Method ## _type)(Obj)).vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Obj, Args))
+        (((nameoftype(typeof(Obj)) ## _ ## Method ##
+ _type)(Obj)).vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Obj,
+ Args))
 
 So this is definitely something that must be looked into.
 
@@ -483,7 +486,8 @@ will instead be shifted by some places.
 In all those cases that it's not possible using StaticCast(), then DynamicCast()
 must be used [not definitive]:
 
-    #define DynamicCast(Interface, Obj)((Interface){GetVTable(Obj, Interface ## _id), Obj.data})
+    #define DynamicCast(Interface, Obj)((Interface){GetVTable(Obj, Interface ##
+ _id), Obj.data})
 
 GetVTable is a function/macro [still to be defined] that gets an object
 reference and an interface ID and gives back the related vtable for the given
@@ -662,28 +666,28 @@ be revised, perhaps].
 
 This is how the macro is suposed to look like [it's just the first thought]:
 
-    #define THROW(ExceptionX, tags...) \
-    {
-        /* Dispose the old exception, if there's any */
-        if (currexception.data) DisposeObject(currexception);
-
-        if (HasInterface(ExceptionX ## _id, Exception ## _id))
-        {
-	    /* Create a new one */
-            currexception = StaticCast(Exception, NewObject(ExceptionX, ##tags));
-
-	    /* Return to the previous saved state */
-            longjmp(&currentexceptbuf, 1);
-        }
-        else
-        {
-	    /* Create a new one */
-            currexception = StaticCast(Exception, NewObject(ExceptionNotValid));
-
-	    /* Return to the previous saved state */
-            longjmp(&currentexceptbuf, 1);
-        }
-    }
+    #define THROW(ExceptionX, tags...)                                            \
+    {                                                                             \
+        /* Dispose the old exception, if there's any */                           \
+        if (currexception.data) DisposeObject(currexception);                     \
+                                                                                  \
+        if (HasInterface(ExceptionX ## _id, Exception ## _id))                    \
+        {                                                                         \
+	    /* Create a new one */                                                \
+            currexception = StaticCast(Exception, NewObject(ExceptionX, ##tags)); \
+                                                                                  \
+	    /* Return to the previous saved state */                              \
+            longjmp(&currentexceptbuf, 1);                                        \
+        }                                                                         \
+        else                                                                      \
+        {                                                                         \
+	    /* Create a new one */                                                \
+            currexception = StaticCast(Exception, NewObject(ExceptionNotValid));  \
+                                                                                  \
+	    /* Return to the previous saved state */                              \
+            longjmp(&currentexceptbuf, 1);                                        \
+        }                                                                         \
+    }                                                                             
 
 [What if while throwing an exception we run out of memory? Does the
 "OutOfMemory" exception have to be handled separately, perhaps?]
@@ -724,6 +728,10 @@ Fabio Alemagna <falemagn@studenti.unina.it> - The ideator
 C - ChangeLog
 
 $Log$
+Revision 1.7  2001/12/11 18:55:25  falemagn
+Corrected some typos
+
 Revision 1.6  2001/12/11 18:50:54  falemagn
-Added the sections regarding the exceptions handling. Please give me your comments...
+Added the sections regarding the exceptions handling. Please give me your
+ comments...
 
