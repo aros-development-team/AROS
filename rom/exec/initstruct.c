@@ -2,12 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:56:03  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:13  digulla
     Added standard header for all files
 
     Desc:
     Lang: english
 */
+#include "exec_intern.h"
 #include <aros/libcall.h>
 #include <exec/alerts.h>
 #include "machine.h"
@@ -20,9 +26,9 @@
 	__AROS_LH3(void, InitStruct,
 
 /*  SYNOPSIS */
-	__AROS_LA(APTR,  initTable, A1),
-	__AROS_LA(APTR,  memory,    A2),
-	__AROS_LA(ULONG, size,      D0),
+	__AROS_LHA(APTR,  initTable, A1),
+	__AROS_LHA(APTR,  memory,    A2),
+	__AROS_LHA(ULONG, size,      D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 13, Exec)

@@ -2,12 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:56:00  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:09  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
+#include "exec_intern.h"
 #include <aros/libcall.h>
 #include <clib/alib_protos.h>
 #include "machine.h"
@@ -15,7 +21,7 @@
 
 #define NEWLIST(l) \
 ((l)->lh_Head=(struct Node *)&(l)->lh_Tail, \
- (l)->lh_Tail=NULL,			    \
+ (l)->lh_Tail=NULL,                         \
  (l)->lh_TailPred=(struct Node *)(l))
 
 /*****************************************************************************
@@ -27,9 +33,9 @@
 	__AROS_LH3(APTR, CreatePool,
 
 /*  SYNOPSIS */
-	__AROS_LA(ULONG, requirements, D0),
-	__AROS_LA(ULONG, puddleSize,   D1),
-	__AROS_LA(ULONG, threshSize,   D2),
+	__AROS_LHA(ULONG, requirements, D0),
+	__AROS_LHA(ULONG, puddleSize,   D1),
+	__AROS_LHA(ULONG, threshSize,   D2),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 116, Exec)

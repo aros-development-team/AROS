@@ -2,26 +2,32 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:56:03  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:12  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
-#include <exec/resident.h>
 #include <dos/dos.h>
 #include <aros/libcall.h>
+#include "exec_intern.h"
 
 /*****************************************************************************
 
     NAME */
+	#include <exec/resident.h>
 	#include <clib/exec_protos.h>
 
 __AROS_LH2(APTR, InitResident,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct Resident *, resident, A1),
-	__AROS_LA(BPTR,              segList,  D1),
+	__AROS_LHA(struct Resident *, resident, A1),
+	__AROS_LHA(BPTR,              segList,  D1),
 
 /* LOCATION */
 	struct ExecBase *, SysBase, 17, Exec)
@@ -53,25 +59,25 @@ __AROS_LH2(APTR, InitResident,
 ******************************************************************************/
 {
     __AROS_FUNC_INIT
-    
+
     /* Check for validity */
     if(resident->rt_MatchWord!=RTC_MATCHWORD||
        resident->rt_MatchTag!=resident)
-        return NULL;
+	return NULL;
 
     /* Depending on the autoinit flag... */
     if(resident->rt_Flags&RTF_AUTOINIT)
     {
 	/* ...initialize automatically... */
-        struct init
-        {
-            ULONG dSize;
-            APTR vectors;
-            APTR structure;
-            ULONG_FUNC init;
-        };
-        struct init *init=(struct init *)resident->rt_Init;
-        struct Library *library;
+	struct init
+	{
+	    ULONG dSize;
+	    APTR vectors;
+	    APTR structure;
+	    ULONG_FUNC init;
+	};
+	struct init *init=(struct init *)resident->rt_Init;
+	struct Library *library;
 	library=MakeLibrary(init->vectors,init->structure,
 			    init->init,init->dSize,segList);
 	if(library!=NULL)

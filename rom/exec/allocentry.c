@@ -2,12 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:55:57  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:04  digulla
     Added standard header for all files
 
     Desc:
     Lang:
 */
+#include "exec_intern.h"
 #include <aros/libcall.h>
 
 /*****************************************************************************
@@ -19,7 +25,7 @@
 __AROS_LH1(struct MemList *, AllocEntry,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct MemList *, entry, A0),
+	__AROS_LHA(struct MemList *, entry, A0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 37, Exec)

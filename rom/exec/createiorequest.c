@@ -2,12 +2,18 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:55:59  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:08  digulla
     Added standard header for all files
 
     Desc:
     Lang: english
 */
+#include "exec_intern.h"
 #include <exec/io.h>
 #include <exec/ports.h>
 #include <exec/memory.h>
@@ -16,13 +22,15 @@
 /*****************************************************************************
 
     NAME */
+	#include <exec/io.h>
+	#include <exec/ports.h>
 	#include <clib/exec_protos.h>
 
 	__AROS_LH2(struct IORequest *, CreateIORequest,
 
 /*  SYNOPSIS */
-	__AROS_LA(struct MsgPort *, ioReplyPort, A0),
-	__AROS_LA(ULONG,            size,        D0),
+	__AROS_LHA(struct MsgPort *, ioReplyPort, A0),
+	__AROS_LHA(ULONG,            size,        D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 109, Exec)

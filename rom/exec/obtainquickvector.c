@@ -14,7 +14,7 @@
 	__AROS_LH1(ULONG, ObtainQuickVector,
 
 /*  SYNOPSIS */
-	__AROS_LA(APTR, interruptCode, A0),
+	__AROS_LHA(APTR, interruptCode, A0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 131, Exec)

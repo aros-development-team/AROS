@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/08/13 13:55:59  digulla
+    Replaced __AROS_LA by __AROS_LHA
+    Replaced some __AROS_LH*I by __AROS_LH*
+    Sorted and added includes
+
     Revision 1.3  1996/08/01 17:41:07  digulla
     Added standard header for all files
 
@@ -19,9 +24,9 @@
 	__AROS_LH3I(void, CopyMem,
 
 /*  SYNOPSIS */
-	__AROS_LA(APTR,  source, A0),
-	__AROS_LA(APTR,  dest,   A1),
-	__AROS_LA(ULONG, size,   D0),
+	__AROS_LHA(APTR,  source, A0),
+	__AROS_LHA(APTR,  dest,   A1),
+	__AROS_LHA(ULONG, size,   D0),
 
 /*  LOCATION */
 	struct ExecBase *, SysBase, 104, Exec)
