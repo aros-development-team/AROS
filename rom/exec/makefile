@@ -38,7 +38,7 @@ all: setup $(OSGENDIR)/execfunctions.o \
 	    $(OSGENDIR)/adddevice.o $(OSGENDIR)/remdevice.o $(OSGENDIR)/opendevice.o \
 	    $(OSGENDIR)/closedevice.o $(OSGENDIR)/doio.o $(OSGENDIR)/sendio.o \
 	    $(OSGENDIR)/checkio.o $(OSGENDIR)/abortio.o $(OSGENDIR)/waitio.o \
-	    $(OSGENDIR)/initresident.o
+	    $(OSGENDIR)/initresident.o $(OSGENDIR)/cause.o
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
