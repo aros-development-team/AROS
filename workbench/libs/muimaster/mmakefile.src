@@ -15,6 +15,7 @@ CLASSES   := application \
 	     numeric \
 	     prop \
 	     rectangle \
+	     scrollbar \
 	     slider \
 	     string \
 	     text \
