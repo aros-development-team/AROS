@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/21 14:14:23  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.1  1996/09/11 12:54:47  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -66,14 +69,14 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Flags=0;
     iofs->IOFS.io_Command=FSA_SET_DATE;
     /* io_Args[0] is the name which is set by DoName(). */
     iofs->io_Args[1]=date->ds_Days;
     iofs->io_Args[2]=date->ds_Minute;
     iofs->io_Args[3]=date->ds_Tick;
-    return !DoName(iofs,name);
+    return !DoName(iofs,name,DOSBase);
     __AROS_FUNC_EXIT
 } /* SetFileDate */

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/21 14:14:22  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.1  1996/09/11 12:54:45  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -35,7 +38,7 @@
 	exclusive lock on the new diretory is returned.
 
     INPUTS
-	name       - NUL terminated name.
+	name	   - NUL terminated name.
 
     RESULT
 	Exclusive lock to the new directory or 0 if couldn't be created.
@@ -72,21 +75,21 @@
     ret=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
     if(ret!=NULL)
     {
-        /* Prepare I/O request. */
-        iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-        iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-        iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-        iofs->IOFS.io_Flags=0;
-        iofs->IOFS.io_Command=FSA_CREATE_DIR;
-        /* io_Args[0] is the name which is set by DoName(). */
-        iofs->io_Args[1]=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
-        if(!DoName(iofs,name))
-        {
-            ret->fh_Unit  =iofs->IOFS.io_Unit;
-            ret->fh_Device=iofs->IOFS.io_Device;
-            return MKBADDR(ret);
-        }
-        FreeDosObject(DOS_FILEHANDLE,ret);
+	/* Prepare I/O request. */
+	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+	iofs->IOFS.io_Flags=0;
+	iofs->IOFS.io_Command=FSA_CREATE_DIR;
+	/* io_Args[0] is the name which is set by DoName(). */
+	iofs->io_Args[1]=FIBF_READ|FIBF_WRITE|FIBF_EXECUTE|FIBF_DELETE;
+	if(!DoName(iofs,name,DOSBase))
+	{
+	    ret->fh_Unit  =iofs->IOFS.io_Unit;
+	    ret->fh_Device=iofs->IOFS.io_Device;
+	    return MKBADDR(ret);
+	}
+	FreeDosObject(DOS_FILEHANDLE,ret);
     }else
 	me->pr_Result2=ERROR_NO_FREE_STORE;
     return 0;

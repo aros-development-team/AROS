@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/21 14:14:23  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.1  1996/09/11 12:54:46  digulla
     A couple of new DOS functions from M. Fleischer
 
@@ -35,7 +38,7 @@
 	Locked files or directories may not be deleted.
 
     INPUTS
-	name       - NUL terminated name of the file or directory.
+	name	   - NUL terminated name of the file or directory.
 	accessMode - One of SHARED_LOCK
 			    EXCLUSIVE_LOCK
 
@@ -75,35 +78,35 @@
     ret=(struct FileHandle *)AllocDosObject(DOS_FILEHANDLE,NULL);
     if(ret!=NULL)
     {
-        /* Get pointer to I/O request. Use stackspace for now. */
-        struct IOFileSys io,*iofs=&io;
+	/* Get pointer to I/O request. Use stackspace for now. */
+	struct IOFileSys io,*iofs=&io;
 
-        /* Prepare I/O request. */
-        iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-        iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-        iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
-        iofs->IOFS.io_Flags=0;
-        iofs->IOFS.io_Command=FSA_OPEN;
-        /* io_Args[0] is the name which is set by DoName(). */
-        switch(accessMode)
-        {
-            case EXCLUSIVE_LOCK:
-                iofs->io_Args[1]=FMF_LOCK|FMF_READ;
-                break;
-            case SHARED_LOCK:
-                iofs->io_Args[1]=FMF_READ;
-                break;
-            default:
-                iofs->io_Args[1]=accessMode;
-                break;
-        }
-        if(!DoName(iofs,name))
-        {
-            ret->fh_Device=iofs->IOFS.io_Device;
-            ret->fh_Unit  =iofs->IOFS.io_Unit;
-            return MKBADDR(ret);
-        }
-        FreeDosObject(DOS_FILEHANDLE,ret);
+	/* Prepare I/O request. */
+	iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
+	iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
+	iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+	iofs->IOFS.io_Flags=0;
+	iofs->IOFS.io_Command=FSA_OPEN;
+	/* io_Args[0] is the name which is set by DoName(). */
+	switch(accessMode)
+	{
+	    case EXCLUSIVE_LOCK:
+		iofs->io_Args[1]=FMF_LOCK|FMF_READ;
+		break;
+	    case SHARED_LOCK:
+		iofs->io_Args[1]=FMF_READ;
+		break;
+	    default:
+		iofs->io_Args[1]=accessMode;
+		break;
+	}
+	if(!DoName(iofs,name,DOSBase))
+	{
+	    ret->fh_Device=iofs->IOFS.io_Device;
+	    ret->fh_Unit  =iofs->IOFS.io_Unit;
+	    return MKBADDR(ret);
+	}
+	FreeDosObject(DOS_FILEHANDLE,ret);
     }else
 	me->pr_Result2=ERROR_NO_FREE_STORE;
     return 0;

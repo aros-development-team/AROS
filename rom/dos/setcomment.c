@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 14:14:23  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.2  1996/09/13 17:50:09  digulla
     Use IPTR
 
@@ -77,6 +80,6 @@
     iofs->IOFS.io_Command=FSA_SET_COMMENT;
     /* io_Args[0] is the name which is set by DoName(). */
     iofs->io_Args[1]=(IPTR)comment;
-    return !DoName(iofs,name);
+    return !DoName(iofs,name,DOSBase);
     __AROS_FUNC_EXIT
 } /* SetComment */

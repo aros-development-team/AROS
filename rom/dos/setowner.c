@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/21 14:14:24  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.3  1996/09/11 13:03:08  digulla
     Wrote functions (M. Fleischer)
 
@@ -31,7 +34,7 @@
 /*  FUNCTION
 
     INPUTS
-	name       - name of the file
+	name	   - name of the file
 	owner_info - (UID<<16)+GID
 
     RESULT
@@ -65,13 +68,13 @@
 
     /* Prepare I/O request. */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_REPLYMSG;
-    iofs->IOFS.io_Message.mn_ReplyPort   =&me->pr_MsgPort;
-    iofs->IOFS.io_Message.mn_Length      =sizeof(struct IOFileSys);
+    iofs->IOFS.io_Message.mn_ReplyPort	 =&me->pr_MsgPort;
+    iofs->IOFS.io_Message.mn_Length	 =sizeof(struct IOFileSys);
     iofs->IOFS.io_Flags=0;
     iofs->IOFS.io_Command=FSA_SET_OWNER;
     /* io_Args[0] is the name which is set by DoName(). */
     iofs->io_Args[1]=owner_info>>16;
     iofs->io_Args[2]=owner_info&0xffff;
-    return !DoName(iofs,name);
+    return !DoName(iofs,name,DOSBase);
     __AROS_FUNC_EXIT
 } /* SetOwner */

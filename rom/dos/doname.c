@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 14:14:23  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.2  1996/09/13 17:50:06  digulla
     Use IPTR
 
@@ -19,9 +22,9 @@
 #include <clib/utility_protos.h>
 #include "dos_intern.h"
 
-LONG DoName(struct IOFileSys *iofs, STRPTR name)
+LONG DoName(struct IOFileSys *iofs, STRPTR name, struct DosLibrary * DOSBase)
 {
-    extern struct DosLibrary *DOSBase;
+    /* extern struct DosLibrary *DOSBase; */
     STRPTR volname, pathname, s1;
     BPTR cur;
     struct DosList *dl;

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/21 14:14:23  digulla
+    Hand DOSBase to DoName()
+
     Revision 1.7  1996/09/17 16:17:23  digulla
     BADDR() instead of MKBADDR()
 
@@ -141,7 +144,7 @@
 	    iofs->io_Args[0]=(IPTR)"";
 	    (void)DoIO(&iofs->IOFS);
 	}else
-	    (void)DoName(iofs,name);
+	    (void)DoName(iofs,name,DOSBase);
 	if(!(me->pr_Result2=iofs->io_DosError))
 	{
 	    ret->fh_Device=iofs->IOFS.io_Device;
