@@ -16,6 +16,9 @@
 #ifndef PROTO_INTUITION_H
 #   include <proto/intuition.h>
 #endif
+#ifndef PROTO_GRAPHICS_H
+#   include <proto/graphics.h>
+#endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
 #endif
@@ -90,6 +93,7 @@ struct Image35
 {
     UBYTE *imagedata;
     UBYTE *palette;
+    UBYTE *mask;
     WORD  numcolors;
     WORD  depth;
     WORD  flags;
@@ -118,6 +122,7 @@ struct NativeIcon
     APTR    	      pool;
     struct DiskObject dobj;
     struct Icon35     icon35;
+    APTR    	      iconbase;
     struct BitMap    *iconbm1;
     struct BitMap    *iconbm2;
     struct Screen    *iconscr;
@@ -138,8 +143,9 @@ struct IconBase
 
     struct Library  	    *utilitybase;
     struct Hook       	     dsh;
-    struct Library  	    *intuitionbase;
+    struct IntuitionBase    *intuitionbase;
     struct Library  	    *iffparsebase;
+    struct GfxBase  	    *gfxbase;
     struct Library  	    *cybergfxbase;
     
     struct SignalSemaphore   iconlistlock;
@@ -168,8 +174,12 @@ VOID AddIconToList(struct NativeIcon *icon, struct IconBase *IconBase);
 VOID RemoveIconFromList(struct NativeIcon *icon, struct IconBase *IconBase);
 struct NativeIcon *GetNativeIcon(struct DiskObject *dobj, struct IconBase *IconBase);
 BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, struct IconBase *IconBase);
+VOID FreeIcon35(struct NativeIcon *icon, struct IconBase *IconBase);
 
 /****************************************************************************************/
+
+typedef struct IntuitionBase IntuitionBase_T;
+typedef struct GfxBase GfxBase_T;
 
 #define LB(icon)        ((IconBase_T *)icon)
 #undef UtilityBase
@@ -183,6 +193,9 @@ BOOL ReadIcon35(struct NativeIcon *icon, struct Hook *streamhook, void *stream, 
 
 #undef CyberGfxBase
 #define CyberGfxBase	(((IconBase_T *)IconBase)->cybergfxbase)
+
+#undef GfxBase
+#define GfxBase	    	(((IconBase_T *)IconBase)->gfxbase)
 
 /****************************************************************************************/
 
