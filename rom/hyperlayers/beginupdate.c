@@ -68,7 +68,7 @@
   LockLayer(0, l);
 
   l->cr2 = l->ClipRect;
-//  l->ClipRect = CopyClipRectsInRegion(l, l->cr2, l->DamageList);
+  l->ClipRect = CopyClipRectsInRegion(l, l->cr2, l->DamageList);
 
   /*
   ** Must not set flag before InstallClipRegion!!! Keep this order!!!

@@ -33,8 +33,6 @@
     INPUTS
         li    - pointer to LayerInfo structure
         bm    - pointer to common bitmap
-        x0, y0- upper left corner of the layer
-        x1, y1- lower right corner of the layer
         flags - choose the type of layer by setting some flags
         
     RESULT
@@ -42,6 +40,8 @@
         created (Probably out of memory).
         
     NOTES
+       You MUST provide LA_PRIORITY!
+
 
     EXAMPLE
 
@@ -63,7 +63,7 @@
   int i = 0;
   struct BitMap * superbitmap = NULL;
   struct Hook * hook = NULL;
-  int priority = 0;
+  int priority = UPFRONTPRIORITY;
   int visible = TRUE;
   struct Layer * behind = NULL, * infrontof = NULL, * parent = NULL; 
   struct Layer * l;
@@ -95,13 +95,13 @@ kprintf("%s entered!\n",__FUNCTION__);
       case LA_INFRONTOF:
         if (infrontof)
           return NULL;
-        behind = (struct Layer *)tagItem[i].ti_Data;
+        infrontof = (struct Layer *)tagItem[i].ti_Data;
       break;
       
       case LA_BEHIND:
         if (behind)
           return NULL;
-        infrontof = (struct Layer *)tagItem[i].ti_Data;
+        behind = (struct Layer *)tagItem[i].ti_Data;
       break;
       
       case LA_VISIBLE:
@@ -121,15 +121,21 @@ kprintf("%s entered!\n",__FUNCTION__);
   
   if ((flags & LAYERSUPER) && (NULL == superbitmap)) 
   {
-    kprintf("%s: LAYERSUPER but not bitmap!\n",__FUNCTION__);
+//    kprintf("%s: LAYERSUPER but not bitmap!\n",__FUNCTION__);
     return NULL;
   }
     
   if (!layershape)
   {
-    kprintf("No layer shape!\n");
+//    kprintf("No layer shape!\n");
     return NULL;
   }
+
+  if (infrontof && infrontof->priority > priority)
+    return NULL;
+    
+  if (behind && behind->priority < priority)
+    return NULL;
 
   l = AllocMem(sizeof(struct Layer), MEMF_CLEAR|MEMF_PUBLIC);
   rp = CreateRastPort();
@@ -174,6 +180,28 @@ kprintf("%s entered!\n",__FUNCTION__);
     l->parent = parent;
 
     LockLayers(li);
+    
+    /*
+     * If neither a layer in front or behind is
+     * given the search for the place according to
+     * the priority and insert it there. I
+     * determine behind or infrontof here!
+     */
+    if (!infrontof && !behind)
+    {
+      infrontof = li->top_layer;
+      while (infrontof && infrontof->priority > priority)
+      {
+        if (NULL == infrontof->back)
+        {
+          behind = infrontof;
+          infrontof = NULL;
+          break;
+        }
+        infrontof = infrontof->back;
+      }
+    }
+    
 
     if (infrontof || (NULL == behind))
     {
@@ -182,7 +210,7 @@ kprintf("%s entered!\n",__FUNCTION__);
 
       if (li->top_layer == infrontof)
       {
-kprintf("Creating a layer on top!\n");
+//kprintf("Creating a layer on top!\n");
         li->top_layer = l;
         l->front  = NULL;
         l->back   = infrontof;
@@ -201,11 +229,18 @@ kprintf("Creating a layer on top!\n");
     {
       l->front = behind;
       l->back  = behind->back;
-      l->back->front = l;
+      if (l->back)
+        l->back->front = l;
       behind->back = l;
     }
     
     
+    /*
+     * Does this layer have a layer in front of it?
+     * If yes, then take that layer's VisibleRegion and
+     * cut out that layer's shape. This is then the 
+     * VisibleRegion of my layer.
+     */
     if (l->front)
     {
 #warning Write a function to duplicate a region.
@@ -213,17 +248,8 @@ kprintf("Creating a layer on top!\n");
       ClearRegionRegion(l->front->shape, l->VisibleRegion);
     }
     else
-      if (parent)
-      {
-        OrRegionRegion(parent->shape, l->VisibleRegion);
-        l->nesting = parent->nesting+1;
-      }
-      else
-      {
-        OrRegionRegion(l->shape, l->VisibleRegion);
-        l->nesting = 0;
-      }
-    
+      OrRegionRegion(li->check_lp->shape, l->VisibleRegion);
+
     if (IS_VISIBLE(l))
     {
       /*
@@ -240,8 +266,8 @@ kprintf("Creating a layer on top!\n");
       {
         if (IS_VISIBLE(_l))
         {
-kprintf("\t\tbacking up parts of layer %p!\n",_l);
-          _BackupPartsOfLayer(_l, l->shape);
+//kprintf("\t\tbacking up parts of layer %p!\n",_l);
+          _BackupPartsOfLayer(_l, l->shape, 0, FALSE);
         }
         _l = _l->back;
       }
@@ -257,7 +283,7 @@ kprintf("\t\tbacking up parts of layer %p!\n",_l);
   else
     goto failexit;
 
-  kprintf("Leaving %s l=%p\n",__FUNCTION__,l);
+//  kprintf("Leaving %s l=%p\n",__FUNCTION__,l);
   
   UnlockLayers(li);
   
@@ -278,7 +304,7 @@ failexit:
     FreeRastPort(rp);
   }
 
-  kprintf("Leaving %s - faiure!\n",__FUNCTION__);
+//  kprintf("Leaving %s - faiure!\n",__FUNCTION__);
   
   return NULL;
 

@@ -87,7 +87,7 @@
 
   struct Region * lr = NewRegion();
   struct Rectangle r;
-  struct TagItem tagList[5] = {{LA_PRIORITY    , 0x254UL},
+  struct TagItem tagList[5] = {{LA_PRIORITY    , BACKDROPPRIORITY},
                                {LA_HOOK        , NULL},
                                {LA_SUPERBITMAP , NULL},
                                {LA_SHAPE       , (ULONG)lr},

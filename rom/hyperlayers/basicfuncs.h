@@ -131,3 +131,19 @@ void InstallClipRegionClipRects(struct Layer_Info * LI);
                               ((r1)->MaxX < (r2)->MinX) ||	\
                               ((r1)->MaxY < (r2)->MinY) ))
                               
+int _BackupPartsOfLayer(struct Layer * l, 
+                        struct Region * hide_region,
+                        int dx,
+                        int backupsimplerefresh);
+
+int _ShowPartsOfLayer(struct Layer * l, 
+                      struct Region * show_region);
+
+int _ShowLayer(struct Layer * l);
+
+int ClearRegionRegion(struct Region * rd, struct Region * r);
+
+struct Layer * _FindFirstFamilyMember(struct Layer * l);
+
+void _BackFillRegion(struct Layer * l, 
+                     struct Region * r);

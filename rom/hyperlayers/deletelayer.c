@@ -67,48 +67,33 @@
   /*
    * all children must have been destroyed before.
    */
+  LockLayers(l->LayerInfo);
+  
   if (l != _FindFirstFamilyMember(l))
   {
     kprintf("%s: There are still children around! Cannot destroy layer %p\n",
             __FUNCTION__,
             l);
+    UnlockLayers(l->LayerInfo);
     return FALSE;
   }
   
   if (IS_VISIBLE(l))
   { 
-    struct Region * show_region = NewRegion();
+    struct Region * r = NewRegion();
 
-    if (l->back)
-    {
-      /*
-       * The layer to be deleted has the VisibleRegion
-       * excluding the ones in front of him.
-       * The layer beihind it as the VisibleRegion
-       * excluding the ones in front of him and the layer
-       * that is to be deleted.
-       * If I calc the VisibleRegion of the current layer
-       * minus the VisibleRegion of the layer behind it
-       * I get the area that the current layer is hiding and
-       * that can now be made visible.
-       */ 
-      OrRegionRegion(l->VisibleRegion, show_region);
-      ClearRegionRegion(l->back->VisibleRegion, show_region);
-    }
-    else
-    {
-      /*
-       * This is the front most layer.
-       */
-      OrRegionRegion(l->shape, show_region);
-    }
+    OrRegionRegion(l->VisibleRegion, r);
+    
     /*
      * Visit all layers behind this layer until my parent comes
      * I also visit my parent.
      */
-    while ((NULL != _l) && !IS_EMPTYREGION(show_region))
+    while ((NULL != _l) && !IS_EMPTYREGION(r))
     {
-      _ShowPartsOfLayer(_l, show_region);
+      if (IS_VISIBLE(_l))
+        _ShowPartsOfLayer(_l, r);
+      
+      AndRegionRegion(_l->VisibleRegion, l->shape);
 
       if (_l == l->parent)
         break;
@@ -117,18 +102,15 @@
        * visible on the layers behind it. Therefore I
        * have to take it out.
        */
-      ClearRegionRegion(_l->shape, show_region);
-      
-        
+      ClearRegionRegion(_l->shape, r);
+
       _l = _l->back;
     }
-    /*
-     * Whatever is left in the show_region is to be cleared
-     * with the backfill hook of the parent!
-     */
-    if (!IS_EMPTYREGION(show_region))
-      BackFillRegion(l->parent, show_region);
-    DisposeRegion(show_region);
+
+    DisposeRegion(r);
+
+    if (!IS_EMPTYREGION(l->shape))
+      _BackFillRegion(l->parent, l->shape);
   }
   
   /*
@@ -152,7 +134,15 @@
   if (l->back)
     l->back->front = l->front;
   
+  UnlockLayers(l->LayerInfo);
+
+  DisposeRegion(l->DamageList);
+  DisposeRegion(l->VisibleRegion);
+  DisposeRegion(l->shape);
+
   FreeMem(l, sizeof(struct Layer));
+
+  return TRUE;
   
   AROS_LIBFUNC_EXIT
 } /* DeleteLayer */

@@ -11,6 +11,7 @@
 #include <exec/types.h>
 #include <aros/libcall.h>
 #include <utility/tagitem.h>
+#include <graphics/clip.h>
 #include "layers_intern.h"
 
 
@@ -90,7 +91,7 @@
 
   struct Region * lr = NewRegion();
   struct Rectangle r;
-  struct TagItem tagList[5] = {{LA_PRIORITY    , 255UL},
+  struct TagItem tagList[5] = {{LA_PRIORITY    , UPFRONTPRIORITY},
                                {LA_HOOK        , NULL},
                                {LA_SUPERBITMAP , NULL},
                                {LA_SHAPE       , NULL},

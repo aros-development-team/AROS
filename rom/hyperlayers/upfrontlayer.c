@@ -63,7 +63,7 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Layer * first, * _l, * lbehind = NULL;
+  struct Layer * first, * _l, * lbehind = NULL, * lfront = NULL;
   int found = FALSE;
   struct Region * r = NewRegion();
 
@@ -119,6 +119,7 @@ kprintf("\t\t%s called!\n",__FUNCTION__);
    * Remember the layer that will come behind l
    */
   lbehind = _l;
+  lfront = lbehind->front;
 
   /*
    * Unlink the family of layers from its old place.
@@ -132,10 +133,10 @@ kprintf("\t\t%s called!\n",__FUNCTION__);
   OrRegionRegion(lbehind->VisibleRegion,r);
     
   /*
-   * Now I have to move the layer family in front of layer _l.
-   * Nothing changes for the layers in front of layer _l, but
-   * the layers behind (including _l) I must back up some of 
-   * their parts that the new one might be hiding.
+   * Now I have to move the layer family in front of layer lbehind.
+   * Nothing changes for the layers in front of layer lbehind, but on
+   * the layers behind (including first->front) I must back up some of 
+   * their parts that the new family might be hiding no.
    * Once I step on the layer that was behind the layer l
    * I can stop because those layers are already hidden well
    * enough.
@@ -143,17 +144,19 @@ kprintf("\t\t%s called!\n",__FUNCTION__);
   do
   {
 kprintf("\t\t%s: backing up parts of layer %p!\n",__FUNCTION__,_l);
-    _BackupPartsOfLayer(_l, 
-                        l->shape);
+    _BackupPartsOfLayer(_l,
+                        l->shape,
+                        0,
+                        FALSE);
     _l = _l->back;
-  }  
+  }
   while (_l != l->back);
 
   /*
-   * Now I must make the layer family of l visible and l itself
+   * Now I must make the layer family of l visible 
+   * (lfirst to and including l)
    */
   _l = first;
-  
     
   while (1)
   {
@@ -173,16 +176,19 @@ kprintf("\t\t%s: Showing parts of layer %p\n",__FUNCTION__,_l);
    * Link the family into its new place.
    * First the frontmost kid and then l.
    */
-  if (NULL != lbehind->front)
-    lbehind->front->back = first;
+  if (NULL != lfront)
+    lfront->back = first;
   else
     l->LayerInfo->top_layer = first;
     
-  first->front = lbehind->front;
+  first->front = lfront;
 
   l->back = lbehind;
   lbehind->front = l;
 
+  /*
+   * Unlock all locked layers.
+   */
   UnlockLayers(l->LayerInfo);
 
   return TRUE;
