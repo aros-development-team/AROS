@@ -1,4 +1,5 @@
 #include <string.h>
+#include <errno.h>
 #include <toollib/error.h>
 #include <toollib/stdiocb.h>
 
