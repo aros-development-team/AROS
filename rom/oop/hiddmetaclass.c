@@ -118,14 +118,14 @@ static OOP_Object *hiddmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *
 	       an instance of the HIDDMetaClass
 	    */
 	    if (OOP_OCLASS(MD(o)->superclass) != (OOP_Class *)cl)
-	    	dosupermethod = MD(o)->superclass->DoSuperMethod;
+	    	dosupermethod = MD(o)->superclass->cl_DoSuperMethod;
 	    else
 	    	dosupermethod = HIDD_DoSuperMethod;
 	}
 	
-	((OOP_Class *)o)->DoMethod	= domethod;
-	((OOP_Class *)o)->CoerceMethod	= coercemethod;
-	((OOP_Class *)o)->DoSuperMethod	= dosupermethod;
+	((OOP_Class *)o)->cl_DoMethod	= domethod;
+	((OOP_Class *)o)->cl_CoerceMethod	= coercemethod;
+	((OOP_Class *)o)->cl_DoSuperMethod	= dosupermethod;
 		  
     }
     

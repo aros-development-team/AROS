@@ -138,7 +138,7 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	    	{
 	    	    D(bug("superptr has different meta\n"));
 
-	    	    dosupermethod = superptr->DoSuperMethod;
+	    	    dosupermethod = superptr->cl_DoSuperMethod;
 	    	}
 	    	else
 	    	{
@@ -157,9 +157,9 @@ static OOP_Object *ifmeta_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	
 	inst->base.public.OOPBasePtr	= (struct IntOOPBase *)OOPBase;
 	
-	inst->base.public.DoMethod	= domethod;
-	inst->base.public.CoerceMethod	= coercemethod;
-	inst->base.public.DoSuperMethod	= dosupermethod;
+	inst->base.public.cl_DoMethod	= domethod;
+	inst->base.public.cl_CoerceMethod	= coercemethod;
+	inst->base.public.cl_DoSuperMethod	= dosupermethod;
 	    
 	D(bug("Classes' functions set\n"));
     }
@@ -526,7 +526,7 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
     /* It must also have a valid DoSuperMethod(), more exatly
        the DoSuperMethod() of the BaseMeta class
     */
-    imo->inst.base.public.DoSuperMethod = BASEMETAPTR->DoSuperMethod;
+    imo->inst.base.public.cl_DoSuperMethod = BASEMETAPTR->cl_DoSuperMethod;
     
     
     D(bug("Allocating ifmeta disptabs\n"));
@@ -541,8 +541,8 @@ BOOL init_ifmetaclass(struct IntOOPBase *OOPBase)
 	imo->inst.base.public.InstOffset 	= sizeof (struct metadata);
 	
 	D(bug("IFMeta DoMethod=%p\n", Meta_DoMethod));
-	imo->inst.base.public.DoMethod		= Meta_DoMethod;
-	imo->inst.base.public.CoerceMethod	= Meta_CoerceMethod;
+	imo->inst.base.public.cl_DoMethod		= Meta_DoMethod;
+	imo->inst.base.public.cl_CoerceMethod	= Meta_CoerceMethod;
 
 	imo->inst.base.instsize   = sizeof (struct ifmeta_data);
 	imo->inst.base.subclasscount	= 0UL;

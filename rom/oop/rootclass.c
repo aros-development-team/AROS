@@ -441,9 +441,9 @@ BOOL init_basemeta(struct IntOOPBase *OOPBase)
     bmo->inst.data.public.OOPBasePtr	= (struct Library *)OOPBase;
     bmo->inst.data.public.InstOffset 	= 0UL;
     bmo->inst.data.public.UserData 	= OOPBase;
-    bmo->inst.data.public.DoSuperMethod = basemeta_dosupermethod;
-    bmo->inst.data.public.CoerceMethod 	= basemeta_coercemethod;
-    bmo->inst.data.public.DoMethod 	= basemeta_domethod;
+    bmo->inst.data.public.cl_DoSuperMethod = basemeta_dosupermethod;
+    bmo->inst.data.public.cl_CoerceMethod 	= basemeta_coercemethod;
+    bmo->inst.data.public.cl_DoMethod 	= basemeta_domethod;
     	
     bmo->inst.data.superclass  		= ROOTCLASSPTR;
     bmo->inst.data.subclasscount 	= 0UL;
@@ -572,11 +572,11 @@ BOOL init_rootclass(struct IntOOPBase *OOPBase)
     rco->inst.data.public.InstOffset	= NULL;
     rco->inst.data.public.UserData	= (APTR)OOPBase;
     
-    rco->inst.data.public.DoMethod	= NULL;
-    rco->inst.data.public.CoerceMethod	= NULL;
-    rco->inst.data.public.DoSuperMethod	= basemeta_dosupermethod;
-    rco->inst.data.public.CoerceMethod	= basemeta_coercemethod;
-    rco->inst.data.public.DoMethod	= basemeta_domethod;
+    rco->inst.data.public.cl_DoMethod	= NULL;
+    rco->inst.data.public.cl_CoerceMethod	= NULL;
+    rco->inst.data.public.cl_DoSuperMethod	= basemeta_dosupermethod;
+    rco->inst.data.public.cl_CoerceMethod	= basemeta_coercemethod;
+    rco->inst.data.public.cl_DoMethod	= basemeta_domethod;
     
     D(bug("Root stuff: dosupermethod %p, coeremethod %p, domethod %p\n",
 	basemeta_dosupermethod, basemeta_coercemethod, basemeta_domethod));
