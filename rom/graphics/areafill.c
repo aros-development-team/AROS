@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <proto/alib.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/graphics.h>
@@ -6,6 +7,17 @@
 #include <graphics/rastport.h>
 #include <graphics/gfx.h>
 #include <graphics/gfxbase.h>
+
+/*
+  The algorithm was taken from 
+  Computer Graphics
+  A programming approach, 2n edition
+  Steven Harrington
+  Xerox Corp.
+  
+  pages 79-91.
+
+ */
 
 struct BoundLine
 {
@@ -25,14 +37,15 @@ UWORD Include (UWORD lastused,
                UWORD scan, 
                UWORD * VctTbl)
 {
-  int remember = lastused;
   while (VctTbl[AreaBound[lastused+1].StartIndex+1] == scan)
   {
+/*
     kprintf("including new one! ");
     kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[lastused+1].StartIndex],
                                 VctTbl[AreaBound[lastused+1].StartIndex+1],
                                 VctTbl[AreaBound[lastused+1].EndIndex],
                                 VctTbl[AreaBound[lastused+1].EndIndex]);
+*/
     lastused++;
   }
   return lastused;
@@ -46,26 +59,31 @@ void FillScan(UWORD StartIndex,
               struct GfxBase * GfxBase)
 {
   int i = StartIndex;
+  int x1;
   while (i < EndIndex)
   {
     /* simply draw a line */
-kprintf("y: %d  x from %d to %d\n",scanline,AreaBound[i].RightX,AreaBound[i+1].LeftX);
-     while (FALSE == AreaBound[i].Valid)
+      while (FALSE == AreaBound[i].Valid)
       {
         i++;
         if (i > EndIndex) return;
       }
-      Move(rp, AreaBound[i].RightX+1,  scanline);
+      x1=AreaBound[i].RightX+1;
+      Move(rp, x1,  scanline);
 
-      //SetAPen(rp,(BYTE)scanline & 0x0F);
+      SetAPen(rp,8);
 
       while (FALSE == AreaBound[i+1].Valid)
       {
         i++;
         if (i > EndIndex) return;
       }
-kprintf("Drawing!!\n");
-      Draw(rp, AreaBound[i+1].LeftX-1, scanline);
+
+      if (x1 <= AreaBound[i+1].LeftX-1)
+        Draw(rp, AreaBound[i+1].LeftX-1, scanline);
+      else
+        kprintf("Refusing to draw from %d to %d\n",x1,AreaBound[i+1].LeftX-1);
+
     i+=2;
   }
 }
@@ -77,19 +95,19 @@ void XSort(UWORD StartIndex,
 {
   /* a simple bubble sort */
   struct BoundLine tmpAreaBound;
-  int i = StartIndex + 1;
+  int i = StartIndex+1;
 
   //kprintf("%d,%d\n",StartIndex,EndIndex);
 
 //kprintf("%d  ",AreaBound[StartIndex].LeftX);
 
-  while (i < EndIndex)
+  while (i <= EndIndex)
   {
-    i++;
     if (AreaBound[i].LeftX < AreaBound[i-1].LeftX)
     {
       /* The one at index i needs to go more to smaller indices */
       int i2 = i;
+      //kprintf("sorting!!\n");
       tmpAreaBound = AreaBound[i];
       while (TRUE)
       {
@@ -103,6 +121,7 @@ void XSort(UWORD StartIndex,
 	}
       }
     }
+    i++;
     //kprintf("%d  ",AreaBound[i].LeftX);
 
   }
@@ -122,9 +141,10 @@ UWORD UpdateXValues(UWORD StartIndex,
   while (i <= EndIndex)
   {
     /* Test whether this one is still to be considered */
-    if ( VctTbl[AreaBound[i].EndIndex+1] < scan ||
+    if ( VctTbl[AreaBound[i].EndIndex+1] <= scan ||
          AreaBound[i].Valid == FALSE )
     {
+/*
 if (AreaBound[i].Valid == FALSE)
   kprintf ("already amrked as invalid! ");
 else
@@ -133,6 +153,7 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
                             VctTbl[AreaBound[i].StartIndex+1],
                             VctTbl[AreaBound[i].EndIndex],
                             VctTbl[AreaBound[i].EndIndex+1]);
+*/
       AreaBound[i].Valid = FALSE;
       if (FALSE == foundvalid)
         StartIndex += 1; 
@@ -153,35 +174,16 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
       {
         if (AreaBound[i].DeltaX > AreaBound[i].DeltaY)
         {
-          /* more towards right than down  */
-          if (AreaBound[i].LeftX == AreaBound[i].RightX)
-	  {
-            while (TRUE)
-	    {
-              /* First search for the left X coord. */ 
-              AreaBound[i].Count += AreaBound[i].DeltaY;
-              /* we're going towards the right in every step. */
-              AreaBound[i].LeftX++;
-              if (AreaBound[i].Count > AreaBound[i].DeltaX)
-  	      {
-                AreaBound[i].Count -= AreaBound[i].DeltaX;
-                break;
-	      }
-	    }
-	  }
-          else
-	  {
-            AreaBound[i].LeftX = AreaBound[i].RightX + 1;
-	  }
+          /* more towards right than down */
+          AreaBound[i].RightX++;
+          AreaBound[i].LeftX = AreaBound[i].RightX;
 
-          AreaBound[i].RightX = AreaBound[i].LeftX;
           while (TRUE)
           {
             /* Now search for the right X coord. */
             AreaBound[i].Count += AreaBound[i].DeltaY;
             if (AreaBound[i].Count > AreaBound[i].DeltaX)
 	    {
-              /* take back that last step. */
               AreaBound[i].Count -= AreaBound[i].DeltaX;
               break;
  	    }
@@ -204,31 +206,12 @@ kprintf("(%d,%d)-(%d,%d)\n",VctTbl[AreaBound[i].StartIndex],
       }
       else
       {
-        if (AreaBound[i].DeltaY > -AreaBound[i].DeltaX)
+        if (-AreaBound[i].DeltaX > -AreaBound[i].DeltaY)
         {
-          /* more towards down than left  */
-          if (AreaBound[i].RightX == AreaBound[i].LeftX)
-	  {
-            while (TRUE)
-	    {
-              /* First search for the right X coord. */ 
-              AreaBound[i].Count += AreaBound[i].DeltaY;
-              /* we're going towards the left in every step. */
-              AreaBound[i].RightX--;
-              if (AreaBound[i].Count > -AreaBound[i].DeltaX)
-  	      {
-                AreaBound[i].Count += AreaBound[i].DeltaX;
-                break;
-	      }
-	    }
-	  }
-          else
-	  {
-            AreaBound[i].RightX == AreaBound[i].LeftX-1;
-	  }
+          /* more towards left than down */
+          AreaBound[i].LeftX--;
+          AreaBound[i].RightX = AreaBound[i].LeftX;
 
-
-          AreaBound[i].LeftX = AreaBound[i].RightX;
           while (TRUE)
           {
             /* Now search for the left X coord. */
@@ -290,11 +273,11 @@ BOOL areafillpolygon(struct RastPort  * rp,
    return FALSE;
 
   /* first clear the buffer of the temporary rastport as far as necessary  */
-  /*
+  
   memset(rp->TmpRas->RasPtr, 
          0, 
          BytesPerRow * (bounds->MaxY - bounds->MinY + 1));
-  */
+  
 /*
   kprintf("first: %d, last: %d\n",first_idx,last_idx);
   kprintf("(%d,%d)-(%d,%d)\n",bounds->MinX,bounds->MinY,
@@ -340,13 +323,13 @@ BOOL areafillpolygon(struct RastPort  * rp,
       ymin = StartVctTbl[c+3];
     }
 
-    /**/
+/*
     kprintf("line: (%d,%d)-(%d,%d)  ",StartVctTbl[c],
                                       StartVctTbl[c+1],
                                       StartVctTbl[c+2],
                                       StartVctTbl[c+3]);
     kprintf("miny: %d\n",ymin);
-    /**/
+*/
     i2 = 0;
     /* 
     ** search for the place where to put this entry into the sorted 
@@ -356,14 +339,18 @@ BOOL areafillpolygon(struct RastPort  * rp,
     {
       while (TRUE)
       {      
+/*
 kprintf("ymin: %d< %d?\n",ymin,StartVctTbl[AreaBound[i2].StartIndex+1]);
+*/
         if (ymin < StartVctTbl[AreaBound[i2].StartIndex+1])
         {
           int i3 = i+1;
           /* found the place! */
           while (i3 > i2) 
 	  {
+/*
 kprintf("moving!\n");
+*/
             AreaBound[i3].StartIndex = AreaBound[i3-1].StartIndex;
             AreaBound[i3].EndIndex   = AreaBound[i3-1].EndIndex;
 	    i3--;
@@ -375,7 +362,9 @@ kprintf("moving!\n");
         i2++;
         if (i2 > i)
 	{
+/*
 kprintf("at end!\n");
+*/
           AreaBound[i+1].StartIndex = tmpAreaBound.StartIndex;
           AreaBound[i+1].EndIndex   = tmpAreaBound.EndIndex;
           break;
@@ -394,6 +383,7 @@ kprintf("at end!\n");
   LastIndex = i;
   i = 0;
 
+/*
   {
     int i2 = 0;
     while (i2 <= LastIndex)
@@ -406,7 +396,7 @@ kprintf("at end!\n");
       i2++;
     }
   }
-
+*/
 
   while (i <= LastIndex)
   {
@@ -426,8 +416,22 @@ kprintf("at end!\n");
       if (AreaBound[i].DeltaX > 0)
       {
         AreaBound[i].DeltaX++;
+
         if (AreaBound[i].DeltaX > AreaBound[i].DeltaY)
-          AreaBound[i].Count = AreaBound[i].DeltaY;
+	{
+          while (TRUE)
+	  {
+            /* search for the right-hand X coord. */
+            AreaBound[i].Count += AreaBound[i].DeltaY;
+            if (AreaBound[i].Count > AreaBound[i].DeltaX)
+	    {
+              AreaBound[i].Count -= AreaBound[i].DeltaX;
+              break;
+	    }
+	    /* we're going towards the right in (almost) every step */
+            AreaBound[i].RightX++;
+	  }
+	}
         else
           AreaBound[i].Count = AreaBound[i].DeltaX;
       }
@@ -435,7 +439,21 @@ kprintf("at end!\n");
       {
         AreaBound[i].DeltaX--;
         if (-AreaBound[i].DeltaX > AreaBound[i].DeltaY)
+	{
           AreaBound[i].Count = AreaBound[i].DeltaY;
+          while (TRUE)
+	  {
+            /* serach for the left X coord */
+            AreaBound[i].Count += AreaBound[i].DeltaY;
+            if (AreaBound[i].Count > -AreaBound[i].DeltaX)
+	    {
+              AreaBound[i].Count += AreaBound[i].DeltaX;
+              break;
+	    }
+            /* we're going towards the left in (almost) every step */
+            AreaBound[i].LeftX--;
+	  }
+	}
         else
           AreaBound[i].Count = -AreaBound[i].DeltaX;
       }
@@ -464,7 +482,9 @@ kprintf("at end!\n");
     if (scan > bounds->MinY)
       FillScan(StartEdge, EndEdge, AreaBound, scan, rp, GfxBase);
 
+/*
     kprintf("scanline: %d   StartEdge: %d, EndEdge: %d\n",scan,StartEdge,EndEdge);
+
     {
       int x = StartEdge;
       while (x <= EndEdge)
@@ -484,23 +504,17 @@ kprintf("at end!\n");
         x++;
       }
     }
-
+*/
     scan++;
-kprintf("A\n");
     StartEdge = UpdateXValues(StartEdge, EndEdge, scan, AreaBound, StartVctTbl);
-kprintf("B\n");
     EndEdge = Include(EndEdge, LastIndex, AreaBound, scan, StartVctTbl);
-kprintf("C\n");
+/*
     kprintf("StartEdge: %d, EndEdge: %d\n",StartEdge,EndEdge);
-
+*/
   }
 
-  //  FreeMem( AreaBound, sizeof(struct BoundLine) * LastEdge); 
+  FreeMem( AreaBound, sizeof(struct BoundLine) * LastEdge); 
 
-  //   while (TRUE)
-  //      {}
-
-  /*   */
   return TRUE;
 }
 
