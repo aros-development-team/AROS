@@ -1,5 +1,5 @@
 /*
-    (C) 1998-99 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Clipboard device
@@ -666,6 +666,12 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	return;
     }
 
+    if (ioClip(ioreq)->io_Data == NULL)
+    {
+    	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Length;
+	ioClip(ioreq)->io_Actual = ioClip(ioreq)->io_Length;
+    }
+    
     if(ioClip(ioreq)->io_Offset >= CBUn->cu_clipSize)
     {
     	D(bug("clipboard.device/readCb: detected \"end of file\". Closing clipfile and releasing semaphore\n"));
@@ -675,26 +681,29 @@ static void readCb(struct IORequest *ioreq, struct ClipboardBase *CBBase)
 	return;
     }
 
-    D(bug("clipboard.device/readCb: Doing read Seek() at offset %i.\n",
-	  ioClip(ioreq)->io_Offset));
+    if (ioClip(ioreq)->io_Data)
+    {
+	D(bug("clipboard.device/readCb: Doing read Seek() at offset %i.\n",
+	      ioClip(ioreq)->io_Offset));
 
-    Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
+	Seek(CBUn->cu_clipFile, ioClip(ioreq)->io_Offset, OFFSET_BEGINNING);
 
-    ioClip(ioreq)->io_Actual = Read(CBUn->cu_clipFile, ioClip(ioreq)->io_Data,
-				    ioClip(ioreq)->io_Length);
+	ioClip(ioreq)->io_Actual = Read(CBUn->cu_clipFile, ioClip(ioreq)->io_Data,
+					ioClip(ioreq)->io_Length);
 
-    D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
-    	ioClip(ioreq)->io_Length,
-	((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	((UBYTE *)ioClip(ioreq)->io_Data)[3],
-	((UBYTE *)ioClip(ioreq)->io_Data)[0],
-	((UBYTE *)ioClip(ioreq)->io_Data)[1],
-	((UBYTE *)ioClip(ioreq)->io_Data)[2],
-	((UBYTE *)ioClip(ioreq)->io_Data)[3]));
+	D(bug("clipboard.device/readCb: Did Read: data length = %d  data = %02x%02x%02x%02x (%c%c%c%c)\n",
+    	    ioClip(ioreq)->io_Length,
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[3],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[0],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[1],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[2],
+	    ((UBYTE *)ioClip(ioreq)->io_Data)[3]));
 
-    ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
+	ioClip(ioreq)->io_Offset += ioClip(ioreq)->io_Actual;
+    }
 }
 
 /****************************************************************************************/
