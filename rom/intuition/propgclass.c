@@ -26,7 +26,45 @@
 #include "maybe_boopsi.h"
 #include "propgadgets.h"
 
-/****************************************************************************************/
+/*****************************************************************************************
+
+stegerg: Tested behaviour under AmigaOS:
+                     
+propgclass object:    
+    renders itself during OM_SET(PGA_Top)    : yes, method retval = 0
+    renders itself during OM_UPDATE(PGA_Top) : yes, method retval = 0
+    sends OM_NOTIFY during OM_SET(PGA_Top)   : no
+    sends OM_NOTIFY during OM_UPDATE(PGA_Top): no
+    sends OM_NOTIFY when user drags knob     : yes
+    
+    -> only when user uses gadget, OM_NOTIFY is sent
+
+propgclass subclass object:
+    renders itself during OM_SET(PGA_Top)    : no, method retval = 1 [*]
+    renders itself during OM_UPDATE(PGA_Top) : no, method retval = 1 [*]
+    sends OM_NOTIFY during OM_SET(PGA_Top)   : no
+    sends OM_NOTIFY during OM_UPDATE(PGA_Top): no
+    sends OM_NOTIFY when user drags knob     : yes
+    
+Here [*], another weird behaviour is, that the ~internal (??) PGA_Top value
+stays at the old value, so you can click at the knob where you see it
+(although because of the real PGA_Top it could in reality be in some
+completely different place) and use it. Only when the gadget is re-rendered
+(completely?), or you click somewhere in the prop box to cause a ~one page knob
+move, the ~internal PGA_Top gets updated to the real value. Note, that
+GetAttr(PGA_Top) will always be correct, so when I say ~internal PGA_Top,
+this must be some internal variable only for inputhandling of gadget!!
+BTW: With PGA_Total (and most likely also PGA_Visible) it's exactly the
+same: imagine before the OM_SET/OM_UPDATE the prop knob was 10 % of the
+size of the prop box. And after the OM_SET/OM_UPDATE(PGA_Total) the prop knob
+would be 50 % of the size of the prop box -> again - before a rerendering of
+the gadget happens, or a jump-one-page click by user - the gadget behaves
+like it was still having the old PGA_Total value (-> knob size == 10 % of
+prop box).
+
+AROS propgclass at the moment does not copy this behaviour!!!!
+
+*****************************************************************************************/
 
 #undef IntuitionBase
 #define IntuitionBase 	((struct IntuitionBase *)(cl->cl_UserData))
