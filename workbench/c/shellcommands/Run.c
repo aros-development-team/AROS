@@ -104,25 +104,29 @@ AROS_SHA(STRPTR, ,COMMAND,/F,NULL))
 	}
     }
 
-    struct TagItem tags[] =
     {
-	{ SYS_Input,      (IPTR)cis     },
-	{ SYS_Output,     (IPTR)cos     },
-	{ SYS_Error,      (IPTR)ces     },
-	{ SYS_Background, TRUE          },
-	{ SYS_Asynch,     TRUE          },
-	{ SYS_CliNumPtr,  (IPTR)&CliNum },
-	{ SYS_UserShell,  TRUE          },
-	{ TAG_DONE,       0             }
-    };
+        struct TagItem tags[] =
+        {
+	    { SYS_Input,      (IPTR)cis     },
+	    { SYS_Output,     (IPTR)cos     },
+	    { SYS_Error,      (IPTR)ces     },
+	    { SYS_Background, TRUE          },
+	    { SYS_Asynch,     TRUE          },
+	    { SYS_CliNumPtr,  (IPTR)&CliNum },
+	    { SYS_UserShell,  TRUE          },
+	    { TAG_DONE,       0             }
+        };
 
-    if (SystemTagList(SHArg(COMMAND), tags) == -1)
-    {
-	PrintFault(IoErr(), "Run");
-	Close(cis);
-	Close(cos);
-	Close(ces);
-	return RETURN_FAIL;
+
+        if (SystemTagList(SHArg(COMMAND), tags) == -1)
+        {
+	    PrintFault(IoErr(), "Run");
+	    Close(cis);
+	    Close(cos);
+	    Close(ces);
+
+	    return RETURN_FAIL;
+        }
     }
 
     {
