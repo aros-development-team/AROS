@@ -56,6 +56,8 @@ void GUI_Close()
 {
     if( window != NULL ) CloseWindow( window );
     if( screen != NULL ) UnlockPubScreen( NULL, screen );
+
+    CloseWorkBench();
 }
 
 void GUI_Update( LONG position, LONG max )
