@@ -84,18 +84,18 @@
 	switch(accessMode)
 	{
 	case MODE_OLDFILE:
-	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_WRITE | FMF_READ;
+	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_OLDFILE;
 	    ast = con = me->pr_CIS;
 	    break;
 
 	case MODE_NEWFILE:
-	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_LOCK | FMF_CREATE | FMF_CLEAR | FMF_WRITE | FMF_READ;
+	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_NEWFILE;
 	    con = me->pr_COS;
 	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
 	    break;
 
 	case MODE_READWRITE:
-	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_CREATE | FMF_WRITE | FMF_READ;
+	    iofs.io_Union.io_OPEN_FILE.io_FileMode = FMF_MODE_READWRITE;
 	    con = me->pr_COS;
 	    ast = me->pr_CES ? me->pr_CES : me->pr_COS;
 	    break;
