@@ -10,7 +10,7 @@ USER_CFLAGS   := -DBZ_NO_STDIO
 #MM linklibs-bz2 : includes
 #MM includes-copy
 
-%copy_includes_cwd path=.
+%copy_includes path=. dir=
 
 FILES         := blocksort huffman crctable randtable compress decompress bzlib
 %build_linklib mmake=linklibs-bz2 libname=bz2 files=$(FILES)
