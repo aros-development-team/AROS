@@ -1,0 +1,27 @@
+# $Id$
+#
+# Makefile to build Unpack program.
+
+include $(TOP)/config/make.cfg
+
+FILES 	    := unpack package bzip2 file support
+EXEDIR      := $(AROS_C)
+EXE 	    := $(EXEDIR)/Unpack
+
+USE_AROSLIB     := yes
+USE_CLIB_STATIC := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+
+#MM workbench-c-unpack : includes linklibs 
+
+%make_prog_setup mmake=workbench-c-unpack
+
+LIBS := -lbz2 $(LIBS)
+
+workbench-c-unpack : setup $(EXE)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+%common
+%include_deps
