@@ -303,7 +303,39 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
     bmhd->bmh_Width = png.png_width;
     bmhd->bmh_Height = png.png_height;
     bmhd->bmh_Depth = png.png_depth;
-        
+
+    /* Mask? */
+    if (png.png_type == PNG_COLOR_TYPE_PALETTE)
+    {
+    	png_bytep trans;
+	int 	  num_trans;
+	
+    	if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL))
+	{
+	    png_byte best_trans = 255;
+	    int      i, best_index = 0;
+	    
+	    for(i = 0; i < num_trans; i++, trans++)
+	    {
+	    	if (*trans < best_trans)
+		{
+		    best_trans = *trans;
+		    best_index = i;
+		}
+	    }
+	    
+	    if (best_trans < 128) /* 128 = randomly choosen */
+	    {
+	    	bmhd->bmh_Masking = mskHasTransparentColor;
+		bmhd->bmh_Transparent = best_index;
+	    }
+	    
+	} /* if (png_get_tRNS(png.png_ptr, png.png_info_ptr, &trans, &num_trans, NULL)) */
+		
+    } /* if (png.png_type == PNG_COLOR_TYPE_PALETTE) */
+
+    /* Palette? */
+            
     if ((png.png_type == PNG_COLOR_TYPE_PALETTE) ||
     	(png.png_type == PNG_COLOR_TYPE_GRAY) ||
 	(png.png_type == PNG_COLOR_TYPE_GRAY_ALPHA))
@@ -361,7 +393,7 @@ static BOOL LoadPNG(struct IClass *cl, Object *o)
 	} /* if (GetDTAttrs(o, ... */
 	
     } /* if image needs palette */
-    
+        
     {
     	ULONG buffersize, modulo, y;
 	UBYTE *buf;
