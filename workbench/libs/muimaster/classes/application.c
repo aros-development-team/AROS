@@ -177,12 +177,17 @@ static BOOL application_do_pushed_method (struct MUI_ApplicationData *data)
 {
     struct MQNode  *mq;
 
+    ObtainSemaphore(&data->app_MethodSemaphore);
+
     if ((mq = (struct MQNode *)RemHead((struct List *)&data->app_MethodQueue)))
     {
+    	ReleaseSemaphore(&data->app_MethodSemaphore);
+
 	DoMethodA(mq->mq_Dest, (Msg)mq->mq_Msg);
 	DeleteMQNode(mq);
 	return TRUE;
     }
+    ReleaseSemaphore(&data->app_MethodSemaphore);
     return FALSE;
 }
 
@@ -247,6 +252,8 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	CoerceMethod(cl,obj,OM_DISPOSE);
 	return 0;
     }
+
+    InitSemaphore(&data->app_MethodSemaphore);
 
     muiNotifyData(obj)->mnd_GlobalInfo = &data->app_GlobalInfo;
 
@@ -723,20 +730,18 @@ static ULONG Application_Input(struct IClass *cl, Object *obj, struct MUIP_Appli
     return Application_NewInput(cl, obj, (APTR)msg);
 }
 
-/*
- * Add a method in the method FIFO. Will be executed in the next
- * event loop.
- */
-static ULONG mPushMethod(struct IClass *cl, Object *obj,
-	    struct MUIP_Application_PushMethod *msg)
+/**************************************************************************
+ MUIM_Application_PushMethod: Add a method in the method FIFO. Will
+ be executed in the next event loop.
+**************************************************************************/
+static ULONG Application_PushMethod(struct IClass *cl, Object *obj, struct MUIP_Application_PushMethod *msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
     struct MQNode *mq;
     LONG          i;
 
     mq = CreateMQNode(msg->count);
-    if (!mq)
-	return FALSE;
+    if (!mq) return 0;
     mq->mq_Dest = msg->dest;
 
     /* fill msg */
@@ -744,7 +749,9 @@ static ULONG mPushMethod(struct IClass *cl, Object *obj,
 	mq->mq_Msg[i] = (ULONG)*(&msg->count + 1 + i);
 
     /* enqueue method */
+    ObtainSemaphore(&data->app_MethodSemaphore);
     AddTail((struct List *)&data->app_MethodQueue, (struct Node *)mq);
+    ReleaseSemaphore(&data->app_MethodSemaphore);
     return TRUE;
 }
 
@@ -874,8 +881,7 @@ AROS_UFH3S(IPTR, Application_Dispatcher,
     case MUIM_Application_InputBuffered :
 	return(mInputBuffered(cl, obj, (APTR)msg));
     case MUIM_Application_NewInput: return Application_NewInput(cl, obj, (APTR)msg);
-    case MUIM_Application_PushMethod :
-	return(mPushMethod(cl, obj, (APTR)msg));
+    case MUIM_Application_PushMethod: return Application_PushMethod(cl, obj, (APTR)msg);
     case MUIM_Application_ReturnID :
 	return(mReturnID(cl, obj, (APTR)msg));
 

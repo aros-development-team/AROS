@@ -28,8 +28,8 @@ struct MUI_PopobjectData
     int light;
     int vol;
     int follow;
-    struct Hook *objstr_hook;
     struct Hook *strobj_hook;
+    struct Hook *objstr_hook;
     struct Hook *window_hook;
     struct Hook open_hook;
     struct Hook close_hook;
@@ -38,7 +38,7 @@ struct MUI_PopobjectData
 };
 
 #ifndef _AROS
-__asm ULONG Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+static __asm ULONG Open_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Open_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
@@ -85,7 +85,7 @@ AROS_UFH3(ULONG,Open_Function,
 
 
 #ifndef _AROS
-__asm ULONG Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
+static __asm ULONG Close_Function(register __a0 struct Hook *hook, register __a2 Object *obj, register __a1 void **msg)
 #else
 AROS_UFH3(ULONG,Close_Function,
 	AROS_UFHA(struct Hook *, hook,  A0),
