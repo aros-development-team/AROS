@@ -371,6 +371,51 @@ mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUDataOnce *msg)
     return FALSE;
 }
 
+/**************************************************************************
+ MUIM_ConnectParent
+**************************************************************************/
+static ULONG Family_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    muiNotifyData(obj)->mnd_ParentObject = msg->parent;
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethod(child, MUIM_ConnectParent, obj);
+    }
+    return TRUE;
+}
+
+/**************************************************************************
+ MUIM_DisconnectParent
+**************************************************************************/
+static ULONG Family_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
+{
+    struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
+
+    get(obj, MUIA_Family_List, (ULONG *)&(ChildList));
+    cstate = (Object *)ChildList->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	DoMethodA(child, (Msg)msg);
+	_flags(child) &= ~MADF_INVIRTUALGROUP;
+    }
+    muiNotifyData(obj)->mnd_ParentObject = NULL;
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    return TRUE;
+}
+
 
 /*
  * The class dispatcher
@@ -421,6 +466,8 @@ AROS_UFH3S(IPTR, MUI_FamilyDispatcher,
 	return(mSetUData(cl, obj, (APTR)msg));
     case MUIM_SetUDataOnce :
 	return(mSetUDataOnce(cl, obj, (APTR)msg));
+    case MUIM_ConnectParent: return Family_ConnectParent(cl, obj, (APTR)msg);
+    case MUIM_DisconnectParent: return Family_DisconnectParent(cl, obj, (APTR)msg);
     }
 
     /*
