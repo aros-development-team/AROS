@@ -1,10 +1,6 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.11  1997/03/19 16:35:42  digulla
-    Removed log
-
 
     Desc: Execute a loaded command synchonously
     Lang: english
@@ -16,9 +12,15 @@
 #include <proto/dos.h>
 #include "dos_intern.h"
 
-LONG AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
-	struct StackSwapStruct *sss, STRPTR argptr, ULONG argsize,
-	LONG_FUNC entry, struct DosLibrary *DOSBase);
+LONG AROS_SLIB_ENTRY(RunProcess,Dos)
+(
+	struct Process	       * proc,
+	struct StackSwapStruct * sss,
+	STRPTR			 argptr,
+	ULONG			 argsize,
+	LONG_FUNC		 entry,
+	struct DosLibrary      * DOSBase
+);
 
 /*****************************************************************************
 
