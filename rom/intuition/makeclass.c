@@ -91,40 +91,44 @@
 
 #if INTERNAL_BOOPSI
 
-    Class * iclass;
+    Class * iclass = NULL;
 
     /* trust the user ;-) */
     if (!superClassID && !superClassPtr)
 	return (NULL);
 
+    ObtainSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
+
     /* Does this class already exist ? */
-    if (FindClass (classID))
-	return (NULL);
-
-    /* Has the user specified a classPtr ? */
-    if (!superClassPtr)
+    if (FindClass (classID) == NULL)
     {
-	/* Search for the class ... */
-	superClassPtr = FindClass (superClassID);
-
+	/* Has the user specified a classPtr ? */
 	if (!superClassPtr)
-	    return (NULL);  /* nothing found */
+	{
+	    /* Search for the class ... */
+	    superClassPtr = FindClass (superClassID);
+	}
+
+    	if (superClassPtr)
+	{
+	    /* Get some memory */
+	    if ((iclass = (Class *) AllocMem (sizeof (Class), MEMF_PUBLIC|MEMF_CLEAR)))
+	    {
+		/* Felder init */
+		iclass->cl_Super      = superClassPtr;
+		iclass->cl_ID	      = classID;
+		iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
+					superClassPtr->cl_InstSize;
+		iclass->cl_InstSize   = instanceSize;
+		iclass->cl_Flags      = flags;
+
+		/* SuperClass is used one more time now */
+		superClassPtr->cl_SubclassCount ++;
+	    }
+	}
     }
 
-    /* Get some memory */
-    if ((iclass = (Class *) AllocMem (sizeof (Class), MEMF_PUBLIC|MEMF_CLEAR)))
-    {
-	/* Felder init */
-	iclass->cl_Super      = superClassPtr;
-	iclass->cl_ID	      = classID;
-	iclass->cl_InstOffset = superClassPtr->cl_InstOffset +
-				superClassPtr->cl_InstSize;
-	iclass->cl_InstSize   = instanceSize;
-	iclass->cl_Flags      = flags;
-
-	/* SuperClass is used one more time now */
-	superClassPtr->cl_SubclassCount ++;
-    }
+    ReleaseSemaphore (&GetPrivIBase(IntuitionBase)->ClassListLock);
 
     return (iclass);
     
