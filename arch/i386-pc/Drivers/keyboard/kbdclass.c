@@ -239,7 +239,7 @@ static Object * kbd_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    is->is_Node.ln_Pri=127;		/* Set the highest pri */
 	    is->is_Code = (void (*)())&kbd_keyint;
 	    is->is_Data = (APTR)o;
-	    AddIntServer(0x80000001,is);	//<-- int_keyb
+//	    AddIntServer(0x80000001,is);	//<-- int_keyb
 	}
 	kbd_updateleds();
 	ObtainSemaphore( &XSD(cl)->sema);

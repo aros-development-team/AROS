@@ -111,7 +111,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
 		    is->is_Code = (void (*)())&serial_int_13;
 		    is->is_Data = (APTR)csd;
-		    AddIntServer(0x80000004,is);	//<-- int_ser13
+//		    AddIntServer(0x80000004,is);	//<-- int_ser13
 
 		    /* Install COM2 and COM4 interrupt */
 		    is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
@@ -123,7 +123,7 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 		    is->is_Node.ln_Pri=127;		/* Set the highest pri */
 		    is->is_Code = (void (*)())&serial_int_24;
 		    is->is_Data = (APTR)csd;
-		    AddIntServer(0x80000003,is);	//<-- int_ser24
+//		    AddIntServer(0x80000003,is);	//<-- int_ser24
 
 		    D(bug("  Got Interrupts\n"));
 		    ReturnInt("SerialHIDD_Init", ULONG, TRUE);
@@ -175,7 +175,7 @@ int init_interrupts(struct class_static_data *csd)
     is->is_Node.ln_Pri=127;		/* Set the highest pri */
     is->is_Code = (void (*)())&serial_int_13;
     is->is_Data = (APTR)csd;
-    AddIntServer(0x80000004,is);	//<-- int_ser13
+//    AddIntServer(0x80000004,is);	//<-- int_ser13
 
     /* Install COM2 and COM4 interrupt */
     is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
@@ -187,7 +187,7 @@ int init_interrupts(struct class_static_data *csd)
     is->is_Node.ln_Pri=127;		/* Set the highest pri */
     is->is_Code = (void (*)())&serial_int_24;
     is->is_Data = (APTR)csd;
-    AddIntServer(0x80000003,is);	//<-- int_ser24
+//    AddIntServer(0x80000003,is);	//<-- int_ser24
 
     return 1;
 }

@@ -132,7 +132,7 @@ AROS_LH2(struct TrackDiskBase *,  init,
 		is->is_Node.ln_Pri=127;		/* Set the highest pri */
 		is->is_Code = (void (*)())&td_floppyint;
 		is->is_Data = (APTR)TDBase;
-		AddIntServer(0x80000006,is);	//<-- int_floppy
+//		AddIntServer(0x80000006,is);	//<-- int_floppy
 
 		/* Install timer interrupt */
 		is = (struct Interrupt *)AllocMem(sizeof(struct Interrupt), MEMF_CLEAR|MEMF_PUBLIC);
@@ -143,7 +143,7 @@ AROS_LH2(struct TrackDiskBase *,  init,
 		is->is_Node.ln_Pri=126;		/* Lower than timer.device */
 		is->is_Code = (void (*)())&td_floppytimer;
 		is->is_Data = (APTR)TDBase;
-		AddIntServer(0x80000000,is);	//<-- int_timer
+//		AddIntServer(0x80000000,is);	//<-- int_timer
 	}
 
     /* Get installed drives info */
