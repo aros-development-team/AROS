@@ -10,15 +10,26 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 #MM 	demos games shell
 
 #MM- kernel-netbsd : \
-#MM	kernel-aros-linklib kernel-battclock-netbsd \
-#MM	kernel-boot-linklib kernel-devs \
-#MM	kernel-dos-netbsd kernel-exec-netbsd \
-#MM	kernel-expansion-linklib kernel-filesys kernel-hidd-netbsd \
-#MM	kernel-graphics-netbsd kernel-intuition-netbsd \
+#MM	kernel-aros-linklib \
+#MM	kernel-battclock-netbsd \
+#MM	kernel-boot-linklib \
+#MM	kernel-devs \
+#MM	kernel-dos-netbsd \
+#MM	kernel-exec-netbsd \
+#MM	kernel-expansion-linklib \
+#MM	kernel-filesys \
+#MM	kernel-filesys-unix \
+#MM	kernel-hidd-netbsd \
+#MM	kernel-graphics-netbsd \
+#MM	kernel-intuition-netbsd \
 #MM	kernel-keymap-linklib \
-#MM	kernel-mathffp-linklib kernel-mathieeesingbas-linklib \
-#MM	kernel-timer-linklib kernel-utility-netbsd kernel-oop-linklib \
-#MM     kernel-layers-linklib kernel-workbench-linklib	\
+#MM	kernel-mathffp-linklib \
+#MM	kernel-mathieeesingbas-linklib \
+#MM	kernel-timer-linklib \
+#MM	kernel-utility-netbsd \
+#MM	kernel-oop-linklib \
+#MM	kernel-layers-linklib \
+#MM	kernel-workbench-linklib	\
 #MM	kernel-cgfx-linklib
 
 # Setup the CLIB metatargets...
@@ -28,8 +39,11 @@ CFLAGS2		:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec $(CFLAGS)
 kernel :
 	@$(NOP)
 
-#MM setup-netbsd : setup-exec-netbsd setup-dos-unix \
-#MM	setup-battclock-unix setup-$(GFXSYSTEM)
+#MM setup-netbsd : \
+#MM	setup-exec-netbsd \
+#MM	setup-dos-unix \
+#MM	setup-battclock-unix \
+#MM	setup-$(GFXSYSTEM)
 setup-netbsd : 
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec $(OSGENDIR)/boot
 	%add_objects rom/boot/strap_emul
@@ -43,7 +57,10 @@ $(GENINCDIR)/sigcore.h : $(TOP)/config/netbsd/exec/sigcore.h
 	%mkdirs_q $(GENINCDIR)
 	$(CP) $^ $@
 
-#MM- kernel-exec-netbsd : exec-netbsd exec-$(CPU) exec-unix \
+#MM- kernel-exec-netbsd : \
+#MM	exec-netbsd \
+#MM	exec-$(CPU) \
+#MM	exec-unix \
 #MM	kernel-exec-linklib
 
 #MM
