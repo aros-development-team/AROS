@@ -53,8 +53,8 @@ AROS_SLIB_ENTRY(Enable,Exec):
 	bsr.w	AROS_CSYMNAME(en)
 
 	/* return if there are no delayed switches pending. */
-	tst.b	AttnResched+1(%a6)
-	jpl	.noswch
+	btst	#7,AttnResched+1(%a6)
+	jeq	.noswch
 
 	/* if TDNestCnt is not -1 taskswitches are still forbidden */
 	tst.b	TDNestCnt(%a6)
@@ -74,7 +74,7 @@ AROS_SLIB_ENTRY(Enable,Exec):
 	.globl	AROS_CDEFNAME(en)
 	.type	AROS_CDEFNAME(en),@function
 AROS_CDEFNAME(en):
-	movem.l	%d0-%d1,%a0-%a1,-(%sp)
+	movem.l	%d0-%d1/%a0-%a1,-(%sp)
 
 	move.l	#-1,-(%sp)
 	clr.l	-(%sp)
@@ -84,5 +84,5 @@ AROS_CDEFNAME(en):
 	addq.w	#8,%sp
 	addq.w	#8,%sp
 
-	movem.l	(%sp)+,%d0-%d1,%a0-%a1
+	movem.l	(%sp)+,%d0-%d1/%a0-%a1
 	rts
