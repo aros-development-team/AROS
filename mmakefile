@@ -135,6 +135,7 @@ endif
 
 DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(GENDIR)/filesys/emul_handler.o \
+    $(LIBDIR)/libcon_handler.a \
     $(LIBDIR)/libamiga.a \
     $(LIBDIR)/libarossupport.a \
     $(DEPLIB_DOS) \
@@ -161,13 +162,13 @@ DEP_LIBS= $(DEPLIB_AMIGAOS) \
     $(DEPLIB_AROS)
 
 LIBS=-L$(LIBDIR) \
-	$(GENDIR)/filesys/con_handler.o $(GENDIR)/filesys/emul_handler.o \
+	 $(GENDIR)/filesys/emul_handler.o \
 	-lexec -lAmigaOS \
 	-lboot -lintuition -lgraphics -llayers -ldos -lconsole \
 	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-lamiga -larossupport -linput -lkeymap -loop -lx11cl \
-	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench
+	-lhiddgraphicsstubs -lkeyboard -lgameport -lworkbench -lcon_handler
 
 # BEGIN_DESC{internaltarget}
 # \item{$(BINDIR)/arosshell} Create the AROS shell for systems which
