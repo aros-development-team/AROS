@@ -15,7 +15,7 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/exec.h>
 
-	AROS_UFH4(APTR, AsmFreePooled,
+	AROS_UFH4(void, AsmFreePooled,
 
 /*  SYNOPSIS */
 	AROS_UFHA(APTR, poolHeader, A0),
@@ -43,5 +43,5 @@
 
 *****************************************************************************/
 {
-	FreePooled(poolHeader,Memory,MemSize);	
+    FreePooled(poolHeader,Memory,MemSize);	
 } /* AsmFreePooled */

@@ -15,7 +15,7 @@
 #define NO_INLINE_STDARG /* turn off inline def */
 #include <proto/exec.h>
 
-	AROS_UFH2(APTR, AsmDeletePool,
+	AROS_UFH2(void, AsmDeletePool,
 
 /*  SYNOPSIS */
 	AROS_UFHA(APTR, poolHeader, A0),
@@ -41,5 +41,5 @@
 
 *****************************************************************************/
 {
-	DeletePool(poolHeader);	
+    DeletePool(poolHeader);	
 } /* AsmDeletePool */
