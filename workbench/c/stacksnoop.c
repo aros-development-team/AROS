@@ -11,14 +11,19 @@
 #include <stdio.h>
 #include <string.h>
 
-#define ARG_TEMPLATE "TASK/K"
+#define ARG_TEMPLATE "TASK/K,STDOUT/S"
 
 #define ARG_TASK    0
-#define NUM_ARGS    1
+#define ARG_STDOUT  1
+#define NUM_ARGS    2
 
 static struct RDArgs *MyArgs;
 static IPTR Args[NUM_ARGS];
 static char s[256];
+
+static UBYTE outbuffer[20000];
+static LONG outbuffer_size;
+static BOOL to_stdout;
 
 static void Cleanup(char *msg)
 {
@@ -39,6 +44,7 @@ static void Cleanup(char *msg)
 
 static void OpenLibs(void)
 {
+
 }
 
 static void GetArguments(void)
@@ -48,7 +54,30 @@ static void GetArguments(void)
     	Fault(IoErr(),0,s,255);
 	Cleanup(s);
     }
+    
+    if (Args[ARG_STDOUT]) to_stdout = TRUE;
 }
+
+static int out (const UBYTE * fmt, ...)
+{
+    va_list	 ap;
+    int		 result;
+
+    va_start (ap, fmt);
+    if (to_stdout)
+    {
+    	result = vsprintf(&outbuffer[outbuffer_size], fmt, ap);
+	outbuffer_size += result;
+    }
+    else
+    {
+    	result = vkprintf(fmt, ap);
+    }
+    va_end (ap);
+
+    return result;
+}
+
 
 static void CheckTaskStack(struct Task *task)
 {
@@ -73,7 +102,7 @@ static void CheckTaskStack(struct Task *task)
 	unusedstack++;
     }
     
-    bug("Task %x (%s\t)  Stack-Size = %6d\tUnused stack = %6d\tStack Usage %s %6d: %s\n",
+    out("Task %x (%s\t)  Stack-Size = %6d\tUnused stack = %6d\tStack Usage %s %6d: %s\n",
    		task,
     		task->tc_Node.ln_Name ? task->tc_Node.ln_Name : "<NONAME>",
 		stacksize,
@@ -90,7 +119,7 @@ static void Action(void)
     
     Disable();
 
-    bug("\n------------------------------------------------------------------------------\n\n");
+    out("\n------------------------------------------------------------------------------\n\n");
     
     task = (struct Task *)SysBase->TaskReady.lh_Head;
     for(i = 0; i < 2;i++)
@@ -105,11 +134,13 @@ static void Action(void)
         task = (struct Task *)SysBase->TaskWait.lh_Head;
 	
     } /* for(i = 0; i < 2;i++) */
-    bug("\n");
+    out("\n");
     CheckTaskStack(FindTask(NULL));
-    bug("\n------------------------------------------------------------------------------\n\n");
+    out("\n------------------------------------------------------------------------------\n\n");
     
     Enable();
+    
+    if (to_stdout) puts(outbuffer);
 }
 
 int main(void)
