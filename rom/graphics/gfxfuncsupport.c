@@ -1101,10 +1101,11 @@ BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
            1) Calculate the invisible region out of the visible one, subtracting it from the
               scrolling area
 
-           2) Scroll the invisible region by (-dx, dy-) and then subtract from it the not scrolled one
+           2) Scroll the invisible region by (-dx, -dy) and then subtract from it the not scrolled equivalent
 
            The regions that we obtain after (2) is the new damage list
         */
+        
         if (L->Flags & LAYERSIMPLE && UpdateDamageList)
         {
 	    Rect = ScrollRect;
