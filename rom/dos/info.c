@@ -3,7 +3,7 @@
     $Id$
 
     Desc:
-    Lang: english
+    Lang: English
 */
 #include "dos_intern.h"
 
@@ -11,6 +11,7 @@
 
     NAME */
 #include <proto/dos.h>
+#include <dos/filesystem.h>
 
 	AROS_LH2(LONG, Info,
 
@@ -38,17 +39,33 @@
     INTERNALS
 
     HISTORY
-	27-11-96    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-#warning TODO: Write dos/Info()
-    aros_print_not_implemented ("Info");
+#warning Add documentation
 
-    return DOSFALSE;
+    LONG error;
+
+    struct IOFileSys iofs;
+
+    /* Prepare I/O request. */
+    InitIOFS(&iofs, FSA_DISK_INFO, DOSBase);
+
+    iofs.IOFS.io_Device = ((struct FileHandle *)BADDR(lock))->fh_Device;
+    iofs.IOFS.io_Unit   = (struct Unit *)parameterBlock;
+
+    error = DoIO(&iofs.IOFS);
+
+    if(error != 0)
+    {
+        SetIoErr(error);
+	return DOSFALSE;
+    }
+
+    return DOSTRUE;
+
     AROS_LIBFUNC_EXIT
 } /* Info */
