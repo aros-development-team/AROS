@@ -12,6 +12,7 @@
 #include "html.h"
 #include "expr.h"
 #include "main.h"
+#include "img.h"
 
 typedef struct
 {
@@ -431,7 +432,8 @@ HTML_FreeMacro (HTMLMacro * macro)
 {
     HTMLOptArg * node, * next;
 
-    VS_Delete (macro->body);
+    if (macro->body)
+	VS_Delete (macro->body);
 
     ForeachNodeSafe (&macro->args, node, next)
     {
@@ -786,7 +788,7 @@ HTML_OtherTag (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 		return T_ERROR;
 	    }
 
-	    Var_SetLocal ("@body", body->buffer);
+	    Var_SetLocal ("body", body->buffer);
 
 	    rc = FillVarsFromArgs (tag->node.name, &block->args, &tag->args);
 
@@ -903,6 +905,13 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		HTMLTag * tag;
 
 		tag = HTML_ParseTag ((MyStream *)strs, NULL);
+
+		if (!tag)
+		{
+		    Str_SetLine (in, line);
+		    Str_PushError (in, "HTML_Parse() failed in \"%s\"", str->buffer);
+		    return T_ERROR;
+		}
 
 #if 0
     HTML_PrintTag (tag);
@@ -1025,7 +1034,7 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 
 		    if (rc != T_OK)
 		    {
-			Str_PushError (in, "Error parsing body of TEMPLATE");
+			Str_PushError (in, "Error parsing TEXT for EXPAND");
 			return T_ERROR;
 		    }
 
@@ -1185,6 +1194,7 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    StdioStream  * stdstr;
 		    String	   name;
 		    String	   body;
+		    int 	   len;
 
 		    name = HTML_GetArg (&tag->args, "TEMPLATE", "NAME");
 
@@ -1223,7 +1233,21 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			return T_ERROR;
 		    }
 
+		    len = name->len;
+		    VS_AppendString (name, ".template");
+
 		    stdstr = StdStr_New (name->buffer, "r");
+
+		    if (!stdstr)
+		    {
+			ClearErrorStack ();
+
+			/* Cut off extension */
+			name->buffer[len] = 0;
+			name->len = len;
+
+			stdstr = StdStr_New (name->buffer, "r");
+		    }
 
 		    if (!stdstr)
 		    {
@@ -1248,6 +1272,75 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    || !strcmp (tag->node.name, "/ENV"))
 		{
 		    if (HTML_ENV (tag, in, out, data) != T_OK)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "HTML_Parse() failed in %s", tag->node.name);
+			return T_ERROR;
+		    }
+		}
+		else if (!strcmp (tag->node.name, "IMG"))
+		{
+		    String src = HTML_GetArg (&tag->args, "IMG", "SRC");
+		    int HasWidth, HasHeight;
+
+		    if (!src)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error in argument");
+			return T_ERROR;
+		    }
+
+		    HasWidth  = (FindNodeNC (&tag->args, "WIDTH")  != NULL);
+		    HasHeight = (FindNodeNC (&tag->args, "HEIGHT") != NULL);
+
+		    if (!HasWidth || !HasHeight)
+		    {
+			int w, h, rc;
+
+			rc = IMG_GetSize (src->buffer, &w, &h);
+
+#if 0
+    printf ("file=%s rc=%d w=%d h=%d\n", src->buffer, rc, w, h);
+#endif
+
+			if (rc < 0)
+			    PrintErrorStack ();
+			else if (rc > 0)
+			{
+			    char buffer[32];
+			    HTMLTagArg * arg;
+
+			    arg = (HTMLTagArg *) FindNodeNC (&tag->args, "WIDTH");
+
+			    if (!arg)
+			    {
+				arg = new (HTMLTagArg);
+
+				arg->node.name = xstrdup ("WIDTH");
+				arg->value = NULL;
+				AddTail (&tag->args, arg);
+			    }
+
+			    sprintf (buffer, "%d", w);
+			    setstr (arg->value, buffer);
+
+			    arg = (HTMLTagArg *) FindNodeNC (&tag->args, "HEIGHT");
+
+			    if (!arg)
+			    {
+				arg = new (HTMLTagArg);
+
+				arg->node.name = xstrdup ("HEIGHT");
+				arg->value = NULL;
+				AddTail (&tag->args, arg);
+			    }
+
+			    sprintf (buffer, "%d", h);
+			    setstr (arg->value, buffer);
+			}
+		    }
+
+		    if (HTML_OtherTag (tag, in, out, data) != T_OK)
 		    {
 			Str_SetLine (in, line);
 			Str_PushError (in, "HTML_Parse() failed in %s", tag->node.name);
