@@ -226,7 +226,7 @@ enum{
 #define CMF_Channel (CMF_Note|CMF_Prog|CMF_PitchBend|CMF_Ctrl|CMF_Mode|CMF_ChanPress|CMF_PolyPress)
 #define CMD_All (CMF_Ctrl|CMF_Channel|CMF_SysCom|CMF_SysEx)
 
-#define PutMidiMsg(midilink,msg) Putmidi((midilink),(msg)->mm_Msg)
+#define PutMidiMsg(midilink,msg) PutMidi((midilink),(msg)->mm_Msg)
 
 enum{
 	CMEB_MsgErr,
