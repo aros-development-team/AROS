@@ -185,21 +185,29 @@ int GetSysScreen (void)
     return sysScreen;
 }
 
-void driver_SetAPen (struct RastPort * rp, unsigned long pen)
+void driver_SetAPen (struct RastPort * rp, unsigned long pen,
+		    struct GfxBase * GfxBase)
 {
     pen &= PEN_MASK;
 
     XSetForeground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
 
-void driver_SetBPen (struct RastPort * rp, unsigned long pen)
+void driver_SetBPen (struct RastPort * rp, unsigned long pen,
+		    struct GfxBase * GfxBase)
 {
     pen &= PEN_MASK;
 
     XSetBackground (sysDisplay, GetGC (rp), sysCMap[pen]);
 }
 
-void driver_SetDrMd (struct RastPort * rp, unsigned long mode)
+void driver_SetOutlinePen (struct RastPort * rp, unsigned long pen,
+		    struct GfxBase * GfxBase)
+{
+}
+
+void driver_SetDrMd (struct RastPort * rp, unsigned long mode,
+		    struct GfxBase * GfxBase)
 {
     if (mode & COMPLEMENT)
 	XSetFunction (sysDisplay, GetGC(rp), GXxor);
@@ -207,7 +215,15 @@ void driver_SetDrMd (struct RastPort * rp, unsigned long mode)
 	XSetFunction (sysDisplay, GetGC(rp), GXcopy);
 }
 
-void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2)
+void driver_EraseRect (struct RastPort * rp, long x1, long y1, long x2, long y2,
+		    struct GfxBase * GfxBase)
+{
+    XClearArea (sysDisplay, GetXWindow (rp),
+		x1, y1, x2-x1+1, y2-y1+1, False);
+}
+
+void driver_RectFill (struct RastPort * rp, long x1, long y1, long x2, long y2,
+		    struct GfxBase * GfxBase)
 {
     if (rp->DrawMode & COMPLEMENT)
     {
@@ -301,6 +317,14 @@ void driver_ScrollRaster (struct RastPort * rp, long dx, long dy,
     SetAPen (rp, apen);
 }
 
+void driver_DrawEllipse (struct RastPort * rp, long x, long y, long rx, long ry,
+		struct GfxBase * GfxBase)
+{
+    XDrawArc (sysDisplay, GetXWindow(rp), GetGC(rp),
+	    x-rx, y-ry, rx*2, ry*2,
+	    0, 360*64);
+}
+
 void driver_Text (struct RastPort * rp, char * string, long len,
 		struct GfxBase * GfxBase)
 {
@@ -314,7 +338,8 @@ void driver_Text (struct RastPort * rp, char * string, long len,
     rp->cp_x += TextLength (rp, string, len);
 }
 
-WORD driver_TextLength (struct RastPort * rp, char * string, long len)
+WORD driver_TextLength (struct RastPort * rp, char * string, long len,
+		    struct GfxBase * GfxBase)
 {
     struct ETextFont * etf;
 
@@ -323,25 +348,29 @@ WORD driver_TextLength (struct RastPort * rp, char * string, long len)
     return XTextWidth (&etf->etf_XFS, string, len);
 }
 
-void driver_Move (struct RastPort * rp, long x, long y)
+void driver_Move (struct RastPort * rp, long x, long y,
+		    struct GfxBase * GfxBase)
 {
     return;
 }
 
-void driver_Draw (struct RastPort * rp, long x, long y)
+void driver_Draw (struct RastPort * rp, long x, long y,
+		    struct GfxBase * GfxBase)
 {
     XDrawLine (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    rp->cp_x, rp->cp_y,
 	    x, y);
 }
 
-void driver_WritePixel (struct RastPort * rp, long x, long y)
+void driver_WritePixel (struct RastPort * rp, long x, long y,
+		    struct GfxBase * GfxBase)
 {
     XDrawPoint (sysDisplay, GetXWindow(rp), GetGC(rp),
 	    x, y);
 }
 
-void driver_SetRast (struct RastPort * rp, unsigned long color)
+void driver_SetRast (struct RastPort * rp, unsigned long color,
+		    struct GfxBase * GfxBase)
 {
     XClearArea (sysDisplay, GetXWindow(rp),
 	    0, 0,
@@ -349,7 +378,8 @@ void driver_SetRast (struct RastPort * rp, unsigned long color)
 	    FALSE);
 }
 
-void driver_SetFont (struct RastPort * rp, struct ETextFont * font)
+void driver_SetFont (struct RastPort * rp, struct ETextFont * font,
+		    struct GfxBase * GfxBase)
 {
     if (GetGC(rp))
 	XSetFont (sysDisplay, GetGC(rp), font->etf_XFS.fid);
