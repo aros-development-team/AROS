@@ -2,7 +2,7 @@
     Copyright © 1995-2004 The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Generic ACPI Parseing functions.
+    Desc: Tool to test openlib closelib functions.
     Lang: english
 */
 #define  DEBUG  1
