@@ -512,6 +512,7 @@ void emit_html (int token, va_list args)
 	    if (file)
 		emit_special ("</A>");
 	    emit_special ("</I></B>");
+	    lastemit = let_char;
 	}
 	break;
 
@@ -676,10 +677,22 @@ void emit_text (const unsigned char * str)
 
     if (isspace (*str))
     {
-	while (isspace (*str))
-	    str ++;
+	haspar = 0;
 
-	if (lastemit == let_special || pendingspace)
+	while (isspace (*str))
+	{
+	    if (*str == '\n' && str[1] == '\n')
+	    {
+		haspar = 1;
+		str += 2;
+	    }
+	    else
+		str ++;
+	}
+
+	if (lastemit == let_char && haspar)
+	    emit_string ("<P>\n\n");
+	else if (lastemit == let_special || pendingspace)
 	    emit_char (' ');
     }
 
