@@ -177,6 +177,8 @@ struct MUI_AreaData
 // offset 40
     UWORD              mad_HorizWeight;    /* weight values for layout. default 100 */
     UWORD              mad_VertWeight;
+// offset 44
+// ?
 // offset 48
     ULONG              mad_IDCMP;          /* IDCMP flags this listens to (for HandleInput) */
 // offset 52
@@ -186,16 +188,21 @@ struct MUI_AreaData
 // offset 76
     CONST_STRPTR       mad_FrameTitle;     /* for groups. Req. mad_Frame > 0 */
 // Inner values at offset 88 in MUI:
-    BYTE               mad_HardILeft;      /* hardcoded inner values */
-    BYTE               mad_HardITop;
-    BYTE               mad_HardIRight;
-    BYTE               mad_HardIBottom;
+    BYTE               mad_InnerLeft;      /* frame or hardcoded */
+    BYTE               mad_InnerTop;
+    BYTE               mad_InnerRight;
+    BYTE               mad_InnerBottom;
 // offset 94
     BYTE               mad_Frame;          /* frame setting -- private */
 // offset 95
     BYTE               mad_InputMode;      /* how to react to events */
 // offset 96
     TEXT               mad_ControlChar;   /* key shortcut */
+    BYTE               mad_TitleHeightAdd;/* frame title height = mad_TitleBelow + mad_TitleBaseline */
+    BYTE               mad_TitleHeightBelow; /* height below frame */
+    BYTE               mad_TitleHeightAbove; /* height above frame */
+// 100
+// ?
 
     WORD               mad_HardHeight;     /* if harcoded dim (see flags)  */
     WORD               mad_HardWidth;      /* if harcoded dim (see flags)  */
@@ -210,7 +217,6 @@ struct MUI_AreaData
     ULONG              mad_Timeval;       /* just to trigger notifications */
     struct MUI_EventHandlerNode mad_ccn;  /* gross hack for control char */
     Object            *mad_ContextMenu;   /* menu strip */
-    struct ZText      *mad_TitleText;     /* frame title */
     LONG               mad_ClickX;        /* x position of the initial SELECTDOWN click */
     LONG               mad_ClickY;        /* y position of the intiial SELECTDOWN click */
     struct ZMenu      *mad_ContextZMenu;
