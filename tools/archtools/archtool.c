@@ -4,6 +4,56 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <time.h>
+#include <sys/stat.h>
+
+struct libconf;
+
+/* Prototypes of reusable functions */
+
+/* Read in one line from file
+   - mallocs needed space					*/
+char *get_line(FILE *file);
+
+/* Search for '#Keyword' in string
+  - mallocs needed space
+  - returns 'Keyword'						*/
+char *keyword(char *line);
+
+/* Searches line for whitespace separated words
+  - outarray = pointer to array of found words (strings)
+  - mallocs needed space
+  - frees previously allocated space before !
+  - for first use pass
+      char **words=NULL; get_words(line,&words)			*/
+int get_words(char *line, char ***outarray);
+
+/* Converts string to lower case				*/
+void strlower(char *string);
+
+/* Converts string to upper case				*/
+void strupper(char *string);
+
+/* Compares two files
+   returns 0 for equal files,
+   1 for different files,
+   -1 if file1 is not present,
+   -2 if file2 is not present					*/
+int fdiffer( char *file1, char *file2 );
+
+/* Compares old and new file,
+   if old file is not found or different from new
+   new file will be renamed to name of old
+   old will be named old.bak					*/
+void moveifchanged(char *old, char *new);
+
+/* Copies file src to dest, returns 0 on success		*/
+int copy(char *src, char *dest);
+
+/* Parses file or lib.conf if file==NULL
+   puts values in struct libconf
+   returns 0 on success						*/
+int parse_libconf(char *file, struct libconf *lc);
+
 
 char *get_line(FILE *fd)
 {
@@ -109,6 +159,101 @@ void strlower(char *string)
     *string = tolower(*string);
     string++;
   }
+}
+
+void strupper(char *string)
+{
+  while(*string)
+  {
+    *string = toupper(*string);
+    string++;
+  }
+}
+
+int fdiffer( char *file1, char *file2 )
+{
+FILE *fd1, *fd2;
+int cnt1,cnt2;
+char buffer1[1], buffer2[1];
+int retval = 0;
+
+  fd1 = fopen(file1,"rb");
+  if(!fd1)
+    return -1;
+  fd2 = fopen(file2,"rb");
+  if(!fd2)
+    return -2;
+  do
+  {
+    cnt1 = fread(buffer1,1,1,fd1);
+    cnt2 = fread(buffer2,1,1,fd2);
+  } while( cnt1 && cnt2 && buffer1[0]==buffer2[0] );
+  if( buffer1[0]!=buffer2[0] || cnt1 != cnt2 )
+    retval = 1;
+
+  fclose(fd1);
+  fclose(fd2);
+
+return retval;
+}
+
+void moveifchanged(char *old, char *new)
+{
+struct stat *statold, *statnew;
+char *bakname;
+
+  statold = calloc(1, sizeof(struct stat) );
+  statnew = calloc(1, sizeof(struct stat) );
+  if(stat(old,statold))
+  {
+    /* Couldn't stat old file -- assume non-existent */
+    rename(new,old);
+    return;
+  }
+  if(stat(new,statnew))
+  {
+    /* Couldn't stat new file -- this shouldn't happen */
+    fprintf( stderr, "Couldn't stat() file %s!\n", new );
+    exit(-1);
+  }
+  bakname = malloc( (strlen(old)+5) * sizeof(char) );
+  sprintf( bakname, "%s.bak", old );
+  if(statold->st_size != statnew->st_size)
+  {
+    rename(old,bakname);
+    rename(new,old);
+  }
+  else if( fdiffer(old,new) )
+  {
+    rename(old,bakname);
+    rename(new,old);
+  }
+  else
+    remove(new);
+  free(bakname);
+}
+
+int copy(char *src, char *dest)
+{
+FILE *in, *out;
+int count;
+char buffer[1024];
+
+  in = fopen(src,"rb");
+  if(!in)
+    return -1;
+  out = fopen(dest,"w");
+  if(!out)
+    return -1;
+  do
+  {
+    count = fread(buffer,1,1024,in);
+    fwrite(buffer,1,count,out);
+  } while( count==1024 );
+  fclose(in);
+  fclose(out);
+
+return 0;
 }
 
 enum libtype
@@ -381,10 +526,10 @@ time_t t;
   tm = localtime(&t);
   date = malloc( 11 * sizeof(char) );
   sprintf( date, "%02d.%02d.%4d", tm->tm_mday, tm->tm_mon+1, tm->tm_year+1900 );
-  fd = fopen("libdefs.h","w");
+  fd = fopen("libdefs.h.new","w");
   if(!fd)
   {
-    fprintf( stderr, "Couldn't open libdefs.h!\n" );
+    fprintf( stderr, "Couldn't open file %s!\n", "libdefs.h.new" );
     return -1;
   }
   lc = calloc( 1, sizeof(struct libconf) );
@@ -456,6 +601,7 @@ time_t t;
   fprintf( fd, "#endif /* %s */\n", lc->define );
 
   fclose(fd);
+  moveifchanged("libdefs.h","libdefs.h.new");
 
 return 0;
 }
@@ -701,10 +847,10 @@ int numfuncs = 4;
     fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
     exit(-1);
   }
-  fdo = fopen("functable.c","w");
+  fdo = fopen("functable.c.new","w");
   if(!fdo)
   {
-    fprintf( stderr, "Couldn't open file functable.c!\n" );
+    fprintf( stderr, "Couldn't open file %s!\n", "functable.c.new" );
     exit(-1);
   }
 
@@ -768,6 +914,7 @@ int numfuncs = 4;
   emit(fdo,lc,funcnames,numfuncs);
   fclose(fdo);
   fclose(fd);
+  moveifchanged("functable.c","functable.c.new");
 
 return 0;
 }
@@ -776,6 +923,7 @@ return 0;
 int gensource(int argc, char **argv)
 {
 FILE *fd, *fdo = NULL;
+char *newfile;
 char *line = 0;
 char *word = NULL, **words;
 int in_archive, in_header, in_function, in_autodoc, in_code;
@@ -794,10 +942,12 @@ int numparams=0;
     fprintf( stderr, "Couldn't open file %s!\n", argv[1] );
     exit(-1);
   }
-  fdo = fopen(argv[2],"w");
+  newfile = malloc( (strlen(argv[2])+5) * sizeof(char) );
+  sprintf( newfile, "%s.new", argv[2] );
+  fdo = fopen(newfile,"w");
   if(!fdo)
   {
-    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
+    fprintf( stderr, "Couldn't open file %s!\n", newfile );
     exit(-1);
   }
 
@@ -893,6 +1043,8 @@ int numparams=0;
   }
   fclose(fdo);
   fclose(fd);
+  moveifchanged(argv[2],newfile);
+  free(newfile);
 
 return 0;
 }
@@ -1347,28 +1499,494 @@ return 0;
 }
 
 
-int copy(char *src, char *dest)
+int gendefines(int argc, char **argv)
 {
-FILE *in, *out;
-int count;
-char buffer[1024];
+FILE *fd, *fdo = NULL, *headerstempl;
+char *filename, *newname;
+struct libconf *lc;
+char *upperbasename;
+char *line = 0;
+char *word = NULL, **words;
+int in_archive, in_header, in_function, in_autodoc, in_code;
+int num, i, len;
+char **name = NULL, **type = NULL, **reg = NULL;
+int numparams=0;
+int firstlvo;
 
-  in = fopen(src,"rb");
-  if(!in)
-    return -1;
-  out = fopen(dest,"w");
-  if(!out)
-    return -1;
-  do
+  if(argc != 3)
   {
-    count = fread(buffer,1,1024,in);
-    fwrite(buffer,1,count,out);
-  } while( count==1024 );
-  fclose(in);
-  fclose(out);
+    fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+  fd = fopen(argv[2],"rb");
+  if(!fd)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
+    return(-1);
+  }
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+12) * sizeof(char) );
+  sprintf( filename, "%s/defines/%s.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( newname, "%s/defines/%s.h.new", argv[1], lc->libname );
+  fdo = fopen(newname,"w");
+  if(!fdo)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname );
+    return(-1);
+  }
+
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef DEFINES_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo, "#define DEFINES_%s_PROTOS_H\n\n", upperbasename );
+  fprintf( fdo, "/*\n" );
+  fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo, "    Desc: Prototypes for %s.", lc->basename );
+  switch( lc->type )
+  {
+    case t_resource:
+      fprintf( fdo, "resource" );
+      firstlvo = 0;
+      break;
+    case t_device:
+      fprintf( fdo, "device" );
+      firstlvo = 6;
+      break;
+    case t_hidd:
+      fprintf( fdo, "hidd" );
+      firstlvo = 4;
+      break;
+    case t_library:
+    default:
+      fprintf( fdo, "library" );
+      firstlvo = 4;
+      break;
+  }
+  fprintf( fdo, "\n    Lang: english\n" );
+  fprintf( fdo, "*/\n\n" );
+  fprintf( fdo, "#ifndef AROS_LIBCALL_H\n" );
+  fprintf( fdo, "#   include <aros/libcall.h>\n" );
+  fprintf( fdo, "#endif\n" );
+  fprintf( fdo, "#ifndef EXEC_TYPES_H\n" );
+  fprintf( fdo, "#   include <exec/types.h>\n" );
+  fprintf( fdo, "#endif\n\n" );
+  words = NULL;
+  headerstempl = fopen( "headers.tmpl", "rb" );
+  if( headerstempl )
+  {
+  int cnt = 0;
+    in_header = 0;
+    while( (line = get_line(headerstempl)) )
+    {
+      num = get_words(line,&words);
+      if( num == 2 && strcmp(words[0],"##begin")==0 && strcmp(words[1],"defines")==0 )
+      {
+        in_header = 1;
+      }
+      else if( num == 2 && strcmp(words[0],"##end")==0 && strcmp(words[1],"defines")==0 )
+      {
+        in_header = 0;
+      }
+      else if( in_header )
+      {
+        fprintf( fdo, "%s\n", line );
+        cnt++;
+      }
+      free(line);
+    }
+    fclose(headerstempl);
+    fprintf( fdo, "\n" );
+  }
+  fprintf( fdo, "\n/* Defines */\n" );
+  
+  in_archive = 0;
+  in_header = 0;
+  in_function = 0;
+  in_autodoc = 0;
+  in_code = 0;
+  while( (line = get_line(fd)) )
+  {
+    free(word);
+    word = keyword(line);
+    if( word && (isupper(word[0]) || isupper(word[1])) )
+    {
+      if( strcmp(word,"Archive")==0 && !in_archive )
+        in_archive = 1;
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+        break;
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+        in_autodoc = 1;
+      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+        in_autodoc = 0;
+      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
+      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      {
+        num = get_words(line,&words);
+        name = realloc( name, sizeof(char *) );
+        name[0] = strdup(words[num-1]);
+        type = realloc( type, sizeof(char *) );
+        len = 0;
+        for( i=2 ; i < num-1 ; i++ )
+          len += strlen(words[i]);
+        type[0] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[0], words[2]);
+        for( i=3 ; i < num-1 ; i++ )
+        {
+          strcat( type[0], " " );
+          strcat( type[0], words[i] );
+        }
+        numparams = 0;
+        in_function = 1;
+      }
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      {
+        if( atoi(reg[0]) > firstlvo )
+        {
+          fprintf( fdo, "\n#define %s(", name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+          {
+            if( i!=1 )
+              fprintf( fdo, ", " );
+            fprintf( fdo, "%s", name[i] );
+          }
+          fprintf( fdo, ") \\\n\tAROS_LC%d(%s, %s, \\\n", numparams, type[0], name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+            fprintf( fdo, "\tAROS_LCA(%s, %s, %s), \\\n", type[i], name[i], reg[i] );
+          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+        }
+        in_function = 0;
+      }
+      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+        in_header = 1;
+      if( strcmp(word,"/Header")==0 && in_header )
+        in_header = 0;
+      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      {
+        num = get_words(line,&words);
+        reg = realloc( reg, sizeof(char *) );
+        reg[0] = strdup(words[1]);
+      }
+      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      {
+        numparams++;
+        num = get_words( line, &words );
+        name = realloc( name, (numparams+1) * sizeof(char *) );
+        name[numparams] = strdup( words[num-2] );
+        type = realloc( type, (numparams+1) * sizeof(char *) );
+        len = 0;
+        for( i=1 ; i < num-2 ; i++ )
+          len += strlen(words[i]);
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[numparams], words[1]);
+        for( i=2 ; i < num-2 ; i++ )
+        {
+          strcat( type[numparams], " " );
+          strcat( type[numparams], words[i] );
+        }
+        reg = realloc( reg, (numparams+1) * sizeof(char *) );
+        reg[numparams] = strdup( words[num-1] );
+      }
+    }
+
+    free(line);
+  }
+  fprintf( fdo, "#endif /* DEFINES_%s_PROTOS_H */\n", upperbasename );
+  fclose(fdo);
+  fclose(fd);
+  moveifchanged(filename,newname);
+  free(newname);
+  free(filename);
 
 return 0;
 }
+
+int genclib(int argc, char **argv)
+{
+FILE *fd, *fdo = NULL, *headerstempl;
+char *filename, *newname;
+struct libconf *lc;
+char *upperbasename;
+char *line = 0;
+char *word = NULL, **words;
+int in_archive, in_header, in_function, in_autodoc, in_code;
+int num, i, len;
+char **name = NULL, **type = NULL, **reg = NULL;
+int numparams=0;
+int firstlvo;
+
+  if(argc != 3)
+  {
+    fprintf( stderr, "Usage: %s <incdir> <archfile>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+  fd = fopen(argv[2],"rb");
+  if(!fd)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", argv[2] );
+    return(-1);
+  }
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+16) * sizeof(char) );
+  sprintf( filename, "%s/clib/%s_protos.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+20) * sizeof(char) );
+  sprintf( newname, "%s/clib/%s_protos.h.new", argv[1], lc->libname );
+  fdo = fopen(newname,"w");
+  if(!fdo)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname );
+    return(-1);
+  }
+
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef CLIB_%s_PROTOS_H\n", upperbasename );
+  fprintf( fdo, "#define CLIB_%s_PROTOS_H\n\n", upperbasename );
+  fprintf( fdo, "/*\n" );
+  fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo, "    Desc: Prototypes for %s.", lc->basename );
+  switch( lc->type )
+  {
+    case t_resource:
+      fprintf( fdo, "resource" );
+      firstlvo = 0;
+      break;
+    case t_device:
+      fprintf( fdo, "device" );
+      firstlvo = 6;
+      break;
+    case t_hidd:
+      fprintf( fdo, "hidd" );
+      firstlvo = 4;
+      break;
+    case t_library:
+    default:
+      fprintf( fdo, "library" );
+      firstlvo = 4;
+      break;
+  }
+  fprintf( fdo, "\n    Lang: english\n" );
+  fprintf( fdo, "*/\n\n" );
+  fprintf( fdo, "#ifndef AROS_LIBCALL_H\n" );
+  fprintf( fdo, "#   include <aros/libcall.h>\n" );
+  fprintf( fdo, "#endif\n\n" );
+  words = NULL;
+  headerstempl = fopen( "headers.tmpl", "rb" );
+  if( headerstempl )
+  {
+  int cnt = 0;
+    in_header = 0;
+    while( (line = get_line(headerstempl)) )
+    {
+      num = get_words(line,&words);
+      if( num == 2 && strcmp(words[0],"##begin")==0 && strcmp(words[1],"clib")==0 )
+      {
+        in_header = 1;
+      }
+      else if( num == 2 && strcmp(words[0],"##end")==0 && strcmp(words[1],"clib")==0 )
+      {
+        in_header = 0;
+      }
+      else if( in_header )
+      {
+        fprintf( fdo, "%s\n", line );
+        cnt++;
+      }
+      free(line);
+    }
+    fclose(headerstempl);
+    fprintf( fdo, "\n" );
+  }
+  fprintf( fdo, "\n/* Prototypes */\n" );
+  
+  in_archive = 0;
+  in_header = 0;
+  in_function = 0;
+  in_autodoc = 0;
+  in_code = 0;
+  while( (line = get_line(fd)) )
+  {
+    free(word);
+    word = keyword(line);
+    if( word && (isupper(word[0]) || isupper(word[1])) )
+    {
+      if( strcmp(word,"Archive")==0 && !in_archive )
+        in_archive = 1;
+      if( strcmp(word,"/Archive")==0 && in_archive && !in_header && ! in_function )
+        break;
+      if( strcmp(word,"AutoDoc")==0 && in_function && !in_code && !in_autodoc )
+        in_autodoc = 1;
+      if( strcmp(word,"/AutoDoc")==0 && in_autodoc )
+        in_autodoc = 0;
+      if( strcmp(word,"Code")==0 && in_function && !in_code && !in_autodoc )
+        in_code = 1;
+      if( strcmp(word,"/Code")==0 && in_code )
+        in_code = 0;
+      if( strcmp(word,"Function")==0 && in_archive && !in_function && !in_header )
+      {
+        num = get_words(line,&words);
+        name = realloc( name, sizeof(char *) );
+        name[0] = strdup(words[num-1]);
+        type = realloc( type, sizeof(char *) );
+        len = 0;
+        for( i=2 ; i < num-1 ; i++ )
+          len += strlen(words[i]);
+        type[0] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[0], words[2]);
+        for( i=3 ; i < num-1 ; i++ )
+        {
+          strcat( type[0], " " );
+          strcat( type[0], words[i] );
+        }
+        numparams = 0;
+        in_function = 1;
+      }
+      if( strcmp(word,"/Function")==0 && in_function && !in_autodoc && !in_code )
+      {
+        if( atoi(reg[0]) > firstlvo )
+          {
+          fprintf( fdo, "\n#define %s(", name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+          {
+            if( i!=1 )
+              fprintf( fdo, ", " );
+            fprintf( fdo, "%s", name[i] );
+          }
+          fprintf( fdo, ") \\\n\tAROS_LP%d(%s, %s, \\\n", numparams, type[0], name[0] );
+          for( i = 1 ; i <= numparams ; i++ )
+            fprintf( fdo, "\tAROS_LPA(%s, %s, %s), \\\n", type[i], name[i], reg[i] );
+          fprintf( fdo, "\t%s, %s, %s, %s)\n", lc->libbasetypeptr, lc->libbase, reg[0], lc->basename );
+        }
+        in_function = 0;
+      }
+      if( strcmp(word,"Header")==0 && in_archive && !in_function && !in_header )
+        in_header = 1;
+      if( strcmp(word,"/Header")==0 && in_header )
+        in_header = 0;
+      if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
+      {
+        num = get_words(line,&words);
+        reg = realloc( reg, sizeof(char *) );
+        reg[0] = strdup(words[1]);
+      }
+      if( strcmp(word,"Parameter")==0 && in_function && !in_autodoc && !in_code )
+      {
+        numparams++;
+        num = get_words( line, &words );
+        name = realloc( name, (numparams+1) * sizeof(char *) );
+        name[numparams] = strdup( words[num-2] );
+        type = realloc( type, (numparams+1) * sizeof(char *) );
+        len = 0;
+        for( i=1 ; i < num-2 ; i++ )
+          len += strlen(words[i]);
+        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        strcpy( type[numparams], words[1]);
+        for( i=2 ; i < num-2 ; i++ )
+        {
+          strcat( type[numparams], " " );
+          strcat( type[numparams], words[i] );
+        }
+        reg = realloc( reg, (numparams+1) * sizeof(char *) );
+        reg[numparams] = strdup( words[num-1] );
+      }
+    }
+
+    free(line);
+  }
+  fprintf( fdo, "#endif /* CLIB_%s_PROTOS_H */\n", upperbasename );
+  fclose(fdo);
+  fclose(fd);
+  moveifchanged(filename,newname);
+  free(newname);
+  free(filename);
+
+return 0;
+}
+
+int genproto(int argc, char **argv)
+{
+FILE *fdo = NULL;
+char *filename, *newname;
+struct libconf *lc;
+char *upperbasename;
+
+  if(argc != 2)
+  {
+    fprintf( stderr, "Usage: %s <incdir>\n", argv[0] );
+    exit(-1);
+  }
+  lc = calloc( 1, sizeof(struct libconf) );
+  if(parse_libconf(NULL,lc))
+    return(-1);
+  if( lc->libbasetypeptr == NULL )
+  {
+    lc->libbasetypeptr = malloc( (strlen(lc->libbasetype)+3) * sizeof(char) );
+    sprintf( lc->libbasetypeptr, "%s *", lc->libbasetype );
+  }
+  filename = malloc( (strlen(argv[1])+strlen(lc->libname)+10) * sizeof(char) );
+  sprintf( filename, "%s/proto/%s.h", argv[1], lc->libname );
+  newname = malloc( (strlen(argv[1])+strlen(lc->libname)+14) * sizeof(char) );
+  sprintf( newname, "%s/proto/%s.h.new", argv[1], lc->libname );
+  fdo = fopen(newname,"w");
+  if(!fdo)
+  {
+    fprintf( stderr, "Couldn't open file %s!\n", newname );
+    return(-1);
+  }
+
+  upperbasename = strdup( lc->basename );
+  strupper( upperbasename );
+  fprintf( fdo, "#ifndef PROTO_%s_H\n", upperbasename );
+  fprintf( fdo, "#define PROTO_%s_H\n\n", upperbasename );
+  fprintf( fdo, "/*\n" );
+  fprintf( fdo, "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS\n" );
+  fprintf( fdo, "    *** Automatic generated file. Do not edit ***\n" );
+  fprintf( fdo, "    Lang: english\n" );
+  fprintf( fdo, "*/\n\n" );
+  fprintf( fdo, "#ifndef AROS_SYSTEM_H\n" );
+  fprintf( fdo, "#   include <aros/system.h>\n" );
+  fprintf( fdo, "#endif\n\n" );
+  fprintf( fdo, "#include <clib/%s_protos.h>\n\n", lc->basename );
+  fprintf( fdo, "#if defined(_AMIGA) && defined(__GNUC__)\n" );
+  fprintf( fdo, "#   include <inline/%s.h>\n", lc->basename );
+  fprintf( fdo, "#else\n" );
+  fprintf( fdo, "#   include <defines/%s.h>\n", lc->basename );
+  fprintf( fdo, "#endif\n\n" );
+#warning TODO: Add hasrt option
+/*
+  fprintf( fdo, "#if defined(ENABLE_RT) && ENABLE_RT && !defined(ENABLE_RT_%s)\n", upperbasename );
+  fprintf( fdo, "#   define ENABLE_RT_%s 1\n", upperbasename );
+  fprintf( fdo, "#   include <aros/rt.h>\n" );
+  fprintf( fdo, "#endif\n\n" );
+*/
+  fprintf( fdo, "#endif /* PROTO_%s_H */\n", upperbasename );
+  fclose(fdo);
+  moveifchanged(filename,newname);
+  free(newname);
+  free(filename);
+
+return 0;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -1377,8 +1995,8 @@ char option;
 
   if( argc < 2 )
   {
-    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c] <parameter>\n", argv[0] );
-    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n" );
+    fprintf( stderr, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p] <parameter>\n", argv[0] );
+    fprintf( stderr, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n" );
     exit(-1);
   }
 
@@ -1390,10 +2008,6 @@ char option;
     sprintf( argv[1], "%s -%c", argv[0], option );
     switch( option )
     {
-      case 'h':
-        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c] <parameter>\n", argv[0] );
-        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n" );
-        break;
       case 'e':
         retval = extractfiles( argc, &argv[1] );
         break;
@@ -1444,11 +2058,22 @@ char option;
       case 'c':
         retval = genlibdefs( argc, &argv[1] );
         break;
+      case 'd':
+        retval = gendefines( argc, &argv[1] );
+        break;
+      case 'C':
+        retval = genclib( argc, &argv[1] );
+        break;
+      case 'p':
+        retval = genproto( argc, &argv[1] );
+        break;
+      case 'h':
       default:
+        fprintf( stdout, "Usage: %s [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C|-p] <parameter>\n", argv[0] );
+        fprintf( stdout, "  -h help\n  -e extractfiles\n  -a genautodocs\n  -t genfunctable\n  -s gensource\n  -m mergearch\n  -M mergearchs\n  -c genlibdefs\n  -d gendefines\n  -C genclib\n  -p genproto\n" );
         break;
     }
   }
-
 
 return retval;
 }

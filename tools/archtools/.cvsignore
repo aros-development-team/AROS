@@ -10,3 +10,6 @@ spneg.c
 spsub.c
 spsquare.c
 spbase.c
+clib
+defines
+proto

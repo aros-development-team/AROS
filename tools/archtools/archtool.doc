@@ -34,7 +34,7 @@ Finally we have the code block for the function: '#Code' '#/Code'
 Integrated programs
 -------------------
 
-Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c] <parameter>
+Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c|-d|-C] <parameter>
 
   -h help
 
@@ -52,6 +52,12 @@ Usage: archtool [-h|-e|-a|-t|-s|-m|-M|-c] <parameter>
      Usage: archtool -M <outarch> <inarch>...
   -c genlibdefs
      Usage: archtool -c [lib.conf]
+  -d gendefines
+     Usage: archtool -d <incdir> <archfile>
+  -C genclib
+     Usage: archtool -C <incdir> <archfile>
+  -p genproto
+     Usage: archtool -p <incdir>
 
  1) Extract Files
 This module extracts all functions in the <archfile> archive to their
@@ -89,6 +95,24 @@ reoccurring functions will be relaced by last occurrence.
  7) Generate libdefs.h
 This module generates "libdefs.h" file out of "lib.conf" file.
 If an argument is specified this name will be taken as config file.
+
+ 8) Generate defines/<basename>.h
+This module generates the include files in <incdir>/defines/
+It reads in ./headers.tmpl if available, adds lines between
+'##begin defines' and '##end defines' and defines the LCA macros for all
+functions in <archfile> archive.
+Be sure to have an existing subdir "defines" in <incdir>!
+
+ 9) Generate clib/<basename>_protos.h
+This module generates the include files in <incdir>/clib/
+It reads in ./headers.tmpl if available, adds lines between
+'##begin clib' and '##end clib' and defines the LPA macros for all
+functions in <archfile> archive.
+Be sure to have an existing subdir "clib" in <incdir>!
+
+10) Generate proto/<basename>.h
+This module generates the include files in <incdir>/proto/
+Be sure to have an existing subdir "proto" in <incdir>!
 
 [Compiling Notes: this program has to be built before(!) starting mmake,
  because mmake will try to compile it with AROS includes/libs.

@@ -3,6 +3,8 @@ CFLAGS = -Wall -Wunused -O2
 CC = gcc
 STRIP = strip
 ECHO = echo
+MKDIR = mkdir
+RM = rm
 
 EXE = archtool
 
@@ -23,7 +25,9 @@ $(EXE) : archtool.c
 
 
 clean :
-	rm -f $(EXE) *.o functable.c *.adoc $(MERGE) $(GENSRC) $(CSRC) $(MMERGE) libdefs.h
+	@$(ECHO) "Cleaning sources..."
+	@$(RM) -f $(EXE) *.o functable.c *.adoc $(MERGE) $(GENSRC) $(CSRC) $(MMERGE) libdefs.h libdefs.h.bak
+	@$(RM) -rf clib defines proto
 
 
 test : $(EXE)
@@ -32,7 +36,7 @@ test : $(EXE)
 	@$(ECHO) "Generating AutoDocs of all functions from $(ARCHIVE)..."
 	@$(EXE) -a . $(ARCHIVE)
 	@$(ECHO) "Generating functable.c from $(ARCHIVE)..."
-	@$(EXE) -t MathFFP $(ARCHIVE)
+	@$(EXE) -t $(ARCHIVE)
 	@$(ECHO) "Merging $(ARCHIVE) and $(SPECIAL) to $(MERGE)..."
 	@$(EXE) -m $(ARCHIVE) $(SPECIAL) $(MERGE)
 	@$(ECHO) "Extracting source from $(ARCHIVE) to $(CSRC)..."
@@ -41,4 +45,11 @@ test : $(EXE)
 	@$(EXE) -M $(MMERGE) $(MERGE) $(SPECIAL) $(ARCHIVE)
 	@$(ECHO) "Generating libdefs.h from lib.conf..."
 	@$(EXE) -c
+	@$(MKDIR) -p clib defines proto
+	@$(ECHO) "Generating clib/mathffp_protos.h..."
+	@$(EXE) -C . $(ARCHIVE)
+	@$(ECHO) "Generating defines/mathffp.h..."
+	@$(EXE) -d . $(ARCHIVE)
+	@$(ECHO) "Generating proto/mathffp.h..."
+	@$(EXE) -p .
 
