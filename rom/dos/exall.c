@@ -273,7 +273,7 @@
 		    if (control->eac_MatchFunc &&
 			!AROS_UFC3(LONG, control->eac_MatchFunc,
 				   AROS_UFCA(struct Hook *, control->eac_MatchFunc, A0),
-				   AROS_UFCA(struct ExAllData *, buffer, A2),
+				   AROS_UFCA(struct ExAllData *, curr, A2),
 				   AROS_UFCA(LONG *, &data, A1)))
 			continue;
 
