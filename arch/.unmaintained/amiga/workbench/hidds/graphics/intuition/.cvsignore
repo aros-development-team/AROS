@@ -1,0 +1,7 @@
+*.err
+*.bak
+*.map
+mmakefile
+graphics_amiga_intui_end.c
+functable.c
+libdefs.h
