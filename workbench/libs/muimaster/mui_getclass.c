@@ -20,6 +20,7 @@
 static CONST_STRPTR searchpaths[] = {
     "PROGDIR:Zune/%s",
     "Zune/%s",
+    "Classes/Zune/%s",
     NULL,
 };
 
