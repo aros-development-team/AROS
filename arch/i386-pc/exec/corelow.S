@@ -166,7 +166,8 @@ Exec_Schedule_x:    movl    4,%edx
 
 1:                  pushl   %edx
                     pushl   %eax
-                    pushl   TaskReady(%edx)
+                    lea     TaskReady(%edx),%ecx
+                    pushl   %ecx
                     call    *Enqueue(%edx)
                     popl    %eax
                     popl    %eax
