@@ -3,19 +3,21 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	pcibios pci_init functable endtag
+FILES	:=	pcibios pci_init functable
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
+END_FILE :=	$(OBJDIR)/endtag
+ENDFILE :=	$(END_FILE).o
 
 #MM Drivers-native : 
-Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+Drivers-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/pci_driver
-	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
+	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/pci_driver.o
 	@objcopy -R .note -R .comment $(OSGENDIR)/boot/pci_driver.o
 
 #MM
 clean ::
-	-$(RM) $(OBJDIR) libdefs.h endtag.c *.err
+	-$(RM) $(OBJDIR) libdefs.h *.err
 
 #MM
 setup :
@@ -32,18 +34,14 @@ $(OBJDIR)/%.d : %.c
 
 onbitmap.s: onbitmap.c
 	%ctoasm_q
-	
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+
+%libdefs_rule
 	
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 
 %mkfunctable_arch
 
-endtag.c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
+%mkendtag_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
