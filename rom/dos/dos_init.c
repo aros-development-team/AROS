@@ -18,6 +18,8 @@
 #include "libdefs.h"
 #include "dos_intern.h"
 
+#define INIT	AROS_SLIB_ENTRY(init,Dos)
+
 static const char name[];
 static const char version[];
 static const APTR Dos_inittabl[4];

@@ -33,7 +33,11 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const FUNCTABLE[];
-struct LIBBASETYPE *INIT ();
+AROS_LH2(struct LIBBASETYPE *, init,
+    AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
+    AROS_LHA(BPTR,                 segList, A0),
+    struct ExecBase *, sysBase, 0, Intuition
+);
 extern const char END;
 
 AROS_UFP3(static ULONG, rootDispatcher,
@@ -80,7 +84,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct IntIntuitionBase),
     (APTR)FUNCTABLE,
     NULL,
-    &INIT
+    &AROS_SLIB_ENTRY(init,Intuition)
 };
 
 static Class rootclass =
@@ -371,7 +375,7 @@ found:
     switch (msg->MethodID)
     {
     case OM_NEW: {
-        objcl = (Class *)o;
+	objcl = (Class *)o;
 
 	/* Get memory. The objects shows how much is needed.
 	   (The object is not an object, it is a class pointer!) */

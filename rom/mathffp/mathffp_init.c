@@ -20,6 +20,8 @@
 #define Math_functable	Mathffp_functable
 #define Math_end	Mathffp_end
 
+#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+
 static const char name[];
 static const char version[];
 static const APTR inittabl[4];

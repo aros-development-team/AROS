@@ -19,6 +19,8 @@
 #include "utility_intern.h"
 #include "libdefs.h"
 
+#define INIT	AROS_SLIB_ENTRY(init,Utility)
+
 extern const UBYTE name[];
 extern const UBYTE version[];
 extern const APTR inittabl[4];
