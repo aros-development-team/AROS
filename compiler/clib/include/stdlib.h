@@ -9,23 +9,14 @@
     Lang: English
 */
 
-#include <sys/_types.h>
 #include <sys/_posix.h>
 #include <sys/arosc.h>
 
 /* It seems that also stdlib.h defines alloca() */
 #include <alloca.h>
 
-/* The following two types can be declared elsewhere */
-#ifndef __AROS_SIZE_T_DECLARED
-#define __AROS_SIZE_T_DECLARED
-typedef __size_t            size_t;
-#endif
-
-#ifndef __AROS_WCHAR_T_DECLARED
-#define __AROS_WCHAR_T_DECLARED
-typedef __wchar_t           wchar_t;
-#endif
+/* For wchar_t and size_t */
+#include <stddef.h>
 
 /* Types for div and ldiv */
 typedef struct div_t {
@@ -49,8 +40,8 @@ typedef struct lldiv_t {
 #define NULL	    0
 #endif
 
-#define EXIT_SUCCESS	0 /* Success exit status */
-#define EXIT_FAILURE	1 /* Failing exit status */
+#define EXIT_SUCCESS	0  /* Success exit status */
+#define EXIT_FAILURE	20 /* Failing exit status */
 
 /* Gives the largest size of a multibyte character for the current locale */
 #define MB_CUR_MAX      (__get_arosc_userdata()->acud_mb_cur_max)
