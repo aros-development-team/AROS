@@ -1,3 +1,7 @@
 html.lab
 gen
 support.lib
+src2html*
+decode.lite
+jobserv-test.lite
+old
