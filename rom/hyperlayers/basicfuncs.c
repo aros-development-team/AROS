@@ -22,9 +22,9 @@
 #include <proto/graphics.h>
 #include <proto/layers.h>
 
+#include "../graphics/intregions.h"
 #include "layers_intern.h"
 #include "basicfuncs.h"
-#include "../graphics/intregions.h"
 
 extern struct ExecBase * SysBase;
 
@@ -341,14 +341,14 @@ void SafeFreeExtLI(struct Layer_Info * li,
 
 #define MAX(a,b)    ((a) > (b) ? (a) : (b))
 #define MIN(a,b)    ((a) < (b) ? (a) : (b))
-
+/*
 void _TranslateRect(struct Rectangle *rect, WORD dx, WORD dy)
 {
     rect->MinX += dx;
     rect->MinY += dy;
     rect->MaxX += dx;
     rect->MaxY += dy;
-}
+}*/
 
 
 /***************************************************************************/

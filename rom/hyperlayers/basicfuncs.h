@@ -86,7 +86,7 @@ void SafeFreeExtLI
 /*                                RECTANGLE                                */
 /***************************************************************************/
 
-void _TranslateRect(struct Rectangle *rect, WORD dx, WORD dy);
+//void _TranslateRect(struct Rectangle *rect, WORD dx, WORD dy);
 struct ClipRect * internal_WhichClipRect(struct Layer * L, WORD x, WORD y);
 
 
