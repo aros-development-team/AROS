@@ -74,20 +74,14 @@
 void _Exec_Enable(struct ExecBase * SysBase)
 #endif
 {
-    AROS_LIBFUNC_INIT
+	AROS_LIBFUNC_INIT
 
-    /* Only disable interrupts if they are not already disabled. The
-       initial (enabled) value of IDNestCnt is -1
-    */
-    if( --SysBase->IDNestCnt < 0)
-    {
-	WREG_L(IMR) = ((ULONG)RREG_L(IMR) & (~(ULONG)0x400010));
-	
-	if ((BYTE)(SysBase->AttnResched & 0x80)) {
-		SysBase->AttnResched &= 0xff7f;
-		Switch();
+	if( --SysBase->IDNestCnt < 0) {
+		/*
+		 * Enable interrupt by unmasking them
+		 */
+		WREG_L(IMR) = ~((1 << 1) | (1 << 5));
 	}
-    }
 
-    AROS_LIBFUNC_EXIT
+	AROS_LIBFUNC_EXIT
 } /* Enable() */

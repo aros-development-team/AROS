@@ -75,12 +75,13 @@ void _Exec_Disable(struct ExecBase * SysBase)
 {
 	AROS_LIBFUNC_INIT
 
-	/* Only disable interrupts if they are not already disabled. The
-	   initial (enabled) value of IDNestCnt is -1
+	/*
+	 * Disable interrupts by setting masking all interrupt sources.
 	 */
-	if( SysBase->IDNestCnt++ < 0) {
-		WREG_L(IMR) = ((ULONG)RREG_L(IMR) | (ULONG)0x400010);
-	}
+	WREG_L(IMR) = ~0;
+	
+	SysBase->IDNestCnt++;
+
 	AROS_LIBFUNC_EXIT
 
 } /* Disable() */
