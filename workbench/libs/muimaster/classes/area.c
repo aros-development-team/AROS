@@ -1325,7 +1325,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 }
 
 /* either lmb or release key */
-static void handle_release(struct IClass *cl, Object *obj)
+static void handle_release(struct IClass *cl, Object *obj, int cancel)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
 /*  g_print("handle release\n"); */
@@ -1334,7 +1334,9 @@ static void handle_release(struct IClass *cl, Object *obj)
     {
 	if (data->mad_Flags & MADF_SELECTED)
 	{
-	    set(obj, MUIA_Pressed, FALSE);
+	    if (cancel) nnset(obj, MUIA_Pressed, FALSE);
+	    else set(obj, MUIA_Pressed, FALSE);
+
 	    set(obj, MUIA_Selected, FALSE);
 	}
     }
@@ -1381,7 +1383,7 @@ static ULONG event_button(Class *cl, Object *obj, struct IntuiMessage *imsg)
 	            data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
 		    if (!in) nnset(obj, MUIA_Pressed, FALSE);
-		    handle_release(cl, obj);
+		    handle_release(cl, obj, FALSE /*cancel*/ );
 		    return MUI_EventHandlerRC_Eat;
 		}
 		break;
@@ -1502,7 +1504,7 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 		    return MUI_EventHandlerRC_Eat;
 
 	    case    MUIKEY_RELEASE:
-		    handle_release(cl, obj);
+		    handle_release(cl, obj, FALSE /* cancel */);
 		    if (data->mad_ehn.ehn_Events) DoMethod(_win(obj), MUIM_Window_RemEventHandler, &data->mad_ehn);
 		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->mad_ehn);
@@ -1524,8 +1526,7 @@ static ULONG Area_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 		    DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 		    data->mad_ehn.ehn_Events = IDCMP_MOUSEBUTTONS;
 		    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->mad_ehn);
-		    nnset(obj, MUIA_Pressed, FALSE); /* aborted */
-		    handle_release(cl,obj);
+		    handle_release(cl,obj, TRUE /*cancel */);
 		}
 		return MUI_EventHandlerRC_Eat;
 	    }
