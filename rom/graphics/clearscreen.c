@@ -70,11 +70,11 @@
 
     if(height >= ymin)
     {
-	UBYTE      oldFgPen = rp->FgPen;
+	ULONG      oldDrMd = GetDrMd(rp);
 
-	SetAPen(rp, (rp->DrawMode == JAM2) ? rp->BgPen : 0);
+	SetDrMd(rp, oldDrMd ^ INVERSVID);
 	RectFill(rp, 0, ymin, width - 1, height - 1);	
-	SetAPen(rp, oldFgPen);
+	SetDrMd(rp, oldDrMd);
     }
 	
     AROS_LIBFUNC_EXIT
