@@ -12,6 +12,14 @@ conflicts between AROS includes and system includes */
 #include <string.h>
 #include "xshm.h"
 
+/* stegerg: maybe more safe, even if Unix malloc is used and not AROS malloc */
+#define NO_MALLOC 1
+
+#if NO_MALLOC
+#include <exec/memory.h>
+#include <proto/exec.h>
+#endif
+
 static void dummy_func()
 {
 	return;
@@ -35,8 +43,12 @@ void *init_shared_mem(Display *display)
     
     if (XShmQueryVersion(display, &xshm_major, &xshm_minor, &xshm_pixmaps))
     {
-		
+	#if NO_MALLOC
+	shminfo = (XShmSegmentInfo *)AllocVec(sizeof(*shminfo), MEMF_PUBLIC);
+	#else
 	shminfo = (XShmSegmentInfo *)malloc(sizeof(*shminfo));
+	#endif
+	
 	if (NULL != shminfo)
 	{
 
@@ -63,7 +75,11 @@ void *init_shared_mem(Display *display)
 		}
 		shmctl(shminfo->shmid, IPC_RMID, NULL);
 	    }
+	    #if NO_MALLOC
+	    FreeVec(shminfo);
+	    #else	    
 	    free(shminfo);
+	    #endif
 	    
 	 }
     
@@ -82,7 +98,11 @@ void cleanup_shared_mem(Display *display, void *meminfo)
     XShmDetach(display, shminfo);
     shmdt(shminfo->shmaddr);
     shmctl(shminfo->shmid, IPC_RMID, 0);
+    #if NO_MALLOC
+    FreeVec(shminfo);
+    #else
     free(shminfo);
+    #endif
     return;
 }
 
