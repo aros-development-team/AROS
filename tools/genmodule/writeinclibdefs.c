@@ -33,22 +33,21 @@ void writeinclibdefs(void)
 	    "#define VERSION_STRING   \"$VER: %s %u.%u (%s)\\r\\n\"\n"
 	    "#define LIBEND           %s_end\n"
 	    "#define LIBFUNCTABLE     %s_functable\n"
-	    "#define COPYRIGHT_STRING \"\"\n",
+	    "#define AROS_LC_SETFUNCS\n"
+	    "#define COPYRIGHT_STRING \"\"\n"
+	    "#define LC_NO_INITLIB\n"
+	    "#define LC_NO_OPENLIB\n"
+	    "#define LC_NO_CLOSELIB\n"
+	    "#define LC_NO_EXPUNGELIB\n"
+	    "#endif /* _%s_LIBDEFS_H */\n",
 	    modulenameupper, modulenameupper, modulename,
 	    basename, basename,
 	    libbase, libbasetype, libbasetype,
 	    majorversion, minorversion,
 	    basename, basename,
 	    modulename, majorversion, minorversion, datestring,
-	    modulename, modulename);
-    if (!hasinit)
-	fprintf(out, "#define LC_NO_INITLIB\n");
-    if (!hasopen)
-	fprintf(out, "#define LC_NO_OPENLIB\n");
-    if (!hasclose)
-	fprintf(out, "#define LC_NO_CLOSELIB\n");
-    if (!hasexpunge)
-	fprintf(out, "#define LC_NO_EXPUNGELIB\n");
-    fprintf(out, "#endif /* _%s_LIBDEFS_H */\n", modulenameupper);
+	    modulename, modulename,
+	    modulenameupper
+	   );
     fclose(out);
 }

@@ -13,7 +13,7 @@ MECHO	    ?= echo
 HOST_CFLAGS ?= $(USER_CFLAGS)
 GENMODULE   ?= genmodule
 
-all : $(GENMODULE)
+all : $(GENMODULE) $(GENLIBDEFS)
 
 SRCS := genmodule.c \
         readconfig.c \
@@ -21,7 +21,6 @@ SRCS := genmodule.c \
 	writeincclib.c \
 	writeincproto.c \
 	writeincdefines.c \
-	writeinclibdefs.c \
 	writestart.c \
 	writeend.c \
 	writeautoinit.c \
@@ -29,9 +28,19 @@ SRCS := genmodule.c \
 	
 INCS := genmodule.h
 
+
 $(GENMODULE) : $(SRCS) $(INCS)
 	@$(MECHO) "Compiling $(notdir $@)..."
 	@$(HOST_CC) $(HOST_CFLAGS) $(SRCS) -o $@
+	@$(HOST_STRIP) $@
+
+SRCS2 := genlibdefs.c \
+         readconfig.c \
+	 writeinclibdefs.c
+	
+$(GENLIBDEFS) : $(SRCS2) $(INCS)
+	@$(MECHO) "Compiling $(notdir $@)..."
+	@$(HOST_CC) $(HOST_CFLAGS) $(SRCS2) -o $@
 	@$(HOST_STRIP) $@
 
 
