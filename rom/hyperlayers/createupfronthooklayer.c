@@ -89,7 +89,6 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
-  struct Rectangle r;
   struct TagItem tagList[5] = {{LA_Priority    , 0},
                                {LA_Hook        , NULL},
                                {LA_SuperBitMap , NULL},
