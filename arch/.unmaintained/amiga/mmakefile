@@ -2,7 +2,9 @@
 
 #MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games utilities
 
-#MM- kernel-amiga : kernel-hidd kernel-aros \
+# The "kernel" dependency in "AROS-amiga" wraps back onto this target:
+#MM- kernel-amiga : \
+#MM	kernel-hidd kernel-aros \
 #MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
 #MM	kernel-boopsi-module \
@@ -10,21 +12,24 @@
 #MM	kernel-expansion-module \
 #MM	kernel-keymap-module \
 #MM	kernel-devs \
-#MM     kernel-oop-module \
-#MM     hidd-graphics-module \
-#MM     hidd-graphics-amiga-intui-module
+#MM     kernel-oop-module
 
+# hidd-graphics-module <- missing files/includes?
+# hidd-graphics-amiga-intui-module <- missing files/includes?
 # kernel-dos-module <- removed due to spilled register bug in egcs
 # kernel-graphics-module <- removed due to spilled register bug in egcs
 
-#MM- workbench-amiga : workbench-c \
+# The "workbench" dependency in "AROS-amiga" wraps back onto this target:
+#MM- workbench-amiga : \
+#MM	workbench-c \
 #MM	workbench-devs \
 #MM	workbench-libs \
 #MM	workbench-classes \
 #MM	workbench-s \
 #MM	workbench-locale
 
-#MM- workbench-libs-amiga : workbench-libs-asl \
+#MM- workbench-libs-amiga : \
+#MM	workbench-libs-asl \
 #MM	workbench-libs-diskfont \
 #MM	workbench-libs-gadtools \
 #MM	workbench-libs-icon \
@@ -34,13 +39,17 @@
 # workbench-libs-mathieeedoubtrans <- removed due to bogus AROS_LHQUAD* macros
 # workbench-libs-mathieeedoubbas <- removed due to bogus AROS_LHQUAD* macros
 
-
 #MM- workbench-classes-amiga : workbench-classes-complete
 
+# The "apps" dependency in "AROS-amiga" wraps back onto this target:
 #MM- apps-amiga : fish Moria3D
 
-#MM- setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga \
-#MM	setup-layers-amiga setup-hidd-graphics-amiga
+#MM- setup-amiga : \
+#MM	setup-clib-amiga \
+#MM	setup-exec-amiga \
+#MM	setup-utility-amiga \
+#MM	setup-layers-amiga \
+#MM	setup-hidd-graphics-amiga
 
 #MM- setup-exec-amiga : setup-exec-amiga-$(CPU)
 
@@ -60,9 +69,9 @@
 
 #MM- setup-hidd-graphics-amiga : setup-hidd-graphics-amiga-$(CPU)
 
-#MM- check :
-check :
-	@$(NOP)
+##MM- check :
+#check :
+#	@$(NOP)
 
 #MM- setup-clib-amiga : setup-clib-amiga-$(CPU)
 
