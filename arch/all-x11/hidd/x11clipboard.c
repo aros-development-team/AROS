@@ -2,7 +2,7 @@
     Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: X11 hidd. Connects to the X server and receives events.
+    Desc: X11 hidd. Host clipboard support.
     Lang: English.
 */
 
@@ -56,7 +56,9 @@
 
 /****************************************************************************************/
 
-#define REQ_CMD(msg) 	    ((msg)->mn_Node.ln_Name)
+#define REQ_CMD(msg) 	    ((msg)->mn_Node.ln_Pri)
+#define REQ_PARAM(msg)	    ((msg)->mn_Node.ln_Name)
+
 #define REQ_RETVAL(msg)     ((msg)->mn_Node.ln_Name)
 #define REQ_SUCCESS(msg)    ((msg)->mn_Node.ln_Pri)
 
@@ -87,7 +89,7 @@ STATIC VOID listen_for_xevent(struct x11_staticdata *xsd, long event, BOOL yesno
 
 STATIC VOID reply_async_request(struct x11_staticdata *xsd, void *primary_retval, int success)
 {
-    xsd->hostclipboardstate = HOSTCLIPBOARDSTATE_IDLE;
+    xsd->hostclipboard_readstate = HOSTCLIPBOARDSTATE_IDLE;
     REQ_SUCCESS(xsd->hostclipboardmsg) = success;
     REQ_RETVAL(xsd->hostclipboardmsg) = (char *)primary_retval;
     ReplyMsg(xsd->hostclipboardmsg);
@@ -127,16 +129,16 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
     D(bug("X11CLIPBOARD: handle_commands\n"));
     while((msg = GetMsg(xsd->hostclipboardmp)))
     {
-	char *cmd = REQ_CMD(msg);
+	char cmd = REQ_CMD(msg);
 	BOOL  async = FALSE;
 
 	REQ_SUCCESS(msg) = FALSE;
 
-	if (strcmp(cmd, "READ") == 0)
+	if (cmd == 'R')
 	{
-    	    D(bug("X11CLIPBOARD: handle_commands: READ\n"));
+    	    D(bug("X11CLIPBOARD: handle_commands - READ\n"));
 
-	    if ((xsd->hostclipboardstate == HOSTCLIPBOARDSTATE_IDLE))
+	    if ((xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_IDLE))
 	    {
 		LX11
 		XConvertSelection(xsd->display,
@@ -148,11 +150,46 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
 
 		UX11
 
-		xsd->hostclipboardstate = HOSTCLIPBOARDSTATE_READ;
+		xsd->hostclipboard_readstate = HOSTCLIPBOARDSTATE_READ;
     	    	async = TRUE;
 	    }
 	}
+    	else if (cmd == 'W')
+	{
+	    unsigned char *srcbuffer = (unsigned char *)REQ_PARAM(msg);
+	    ULONG   	   size = strlen(srcbuffer);
+	    unsigned char *newbuffer;
 
+    	    D(bug("X11CLIPBOARD: handle_commands: WRITE\n"));
+	    
+	    newbuffer = AllocVec(size, MEMF_ANY);
+	    if (newbuffer)
+	    {
+	    	memcpy(newbuffer, srcbuffer, size);
+		
+		if (xsd->hostclipboard_writebuffer)
+		{
+	    	    FreeVec(xsd->hostclipboard_writebuffer);
+		}
+		
+	    	xsd->hostclipboard_writebuffer = newbuffer;
+		xsd->hostclipboard_writebuffer_size = size;
+		
+		LX11
+		XSetSelectionOwner(xsd->display, xsd->clipboard_atom,
+		    	    	   xsd->dummy_window_for_creating_pixmaps, xsd->x_time);
+		UX11
+		
+		REQ_SUCCESS(msg) = TRUE;
+		REQ_RETVAL(msg) = NULL;
+	    }
+	    else
+	    {
+	    	REQ_SUCCESS(msg) = FALSE;
+		REQ_RETVAL(msg) = NULL;
+	    }
+	}
+	
 	if (async)
 	{
 	    xsd->hostclipboardmsg = msg;
@@ -167,8 +204,12 @@ VOID x11clipboard_handle_commands(struct x11_staticdata *xsd)
 
 BOOL x11clipboard_want_event(XEvent *event)
 {
-    if ((event->type == SelectionNotify) || (event->type == PropertyNotify))
+    if ((event->type == SelectionNotify) ||
+    	(event->type == PropertyNotify) ||
+	(event->type == SelectionRequest))
+    {
     	return TRUE;
+    }
     
     return FALSE;    
 }
@@ -182,7 +223,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 	case SelectionNotify:
 	    D(bug("X11CLIPBOARD: SelectionNotify Event\n"));
 
-	    if (xsd->hostclipboardmsg && (xsd->hostclipboardstate == HOSTCLIPBOARDSTATE_READ))
+	    if (xsd->hostclipboardmsg && (xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_READ))
 	    {
 		Atom    	    actual_type;
 		int     	    actual_format;
@@ -216,7 +257,7 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
     	    	    XFlush(xsd->display);
 		    UX11;
 
-		    xsd->hostclipboardstate = HOSTCLIPBOARDSTATE_READ_INCR;
+		    xsd->hostclipboard_readstate = HOSTCLIPBOARDSTATE_READ_INCR;
 
     	    	    D(bug("X11CLIPBOARD: SelectionNotify - INCR protocol\n"));
 		    break;
@@ -261,13 +302,13 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 
     	    	reply_async_request(xsd, arosbuffer, arosbuffer ? TRUE : FALSE);
 		
-	    } /* if (xsd->hostclipboardmsg && (xsd->hostclipboardstate == HOSTCLIPBOARDSTATE_READ))*/
+	    } /* if (xsd->hostclipboardmsg && (xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_READ))*/
 	    break;
 
 	case PropertyNotify:
 	    D(bug("X11CLIPBOARD: PropertyNotify Event\n"));
 
-	    if (xsd->hostclipboardmsg && (xsd->hostclipboardstate == HOSTCLIPBOARDSTATE_READ_INCR))
+	    if (xsd->hostclipboardmsg && (xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_READ_INCR))
 	    {
 		if ((event->xproperty.atom == xsd->clipboard_property_atom) &&
 		    (event->xproperty.state == PropertyNewValue))
@@ -402,8 +443,92 @@ VOID x11clipboard_handle_event(struct x11_staticdata *xsd, XEvent *event)
 		    
 		} /* if it's right property and the property has new value */
 		
-	    } /* if (xsd->hostclipboardmsg && (xsd->hostclipboardstate == HOSTCLIPBOARDSTATE_READ_INCR)) */
+	    } /* if (xsd->hostclipboardmsg && (xsd->hostclipboard_readstate == HOSTCLIPBOARDSTATE_READ_INCR)) */
 
+	    break;
+
+	case SelectionRequest:
+	    D(bug("X11CLIPBOARD: SelectionRequest Event\n"));
+
+	    if (xsd->hostclipboard_writebuffer)
+	    {
+	    	XEvent e;
+
+	    	D(bug("X11CLIPBOARD: SelectionRequest Event - state okay\n"));
+
+		e.xselection.type   	= SelectionNotify;
+		e.xselection.display 	= event->xselectionrequest.display;
+		e.xselection.requestor  = event->xselectionrequest.requestor;
+		e.xselection.selection  = event->xselectionrequest.selection;
+		e.xselection.target 	= event->xselectionrequest.target;
+		e.xselection.property 	= event->xselectionrequest.property;
+		e.xselection.time   	= event->xselectionrequest.time;
+		
+		xsd->hostclipboard_writerequest_window = event->xselectionrequest.requestor;
+		xsd->hostclipboard_writerequest_property = event->xselectionrequest.property;
+
+		if (event->xselectionrequest.target == xsd->clipboard_targets_atom)
+		{
+		    long supported_targets[] = {XA_STRING};
+
+		    LX11
+		    XChangeProperty(xsd->display,
+		    	    	    xsd->hostclipboard_writerequest_window,
+				    xsd->hostclipboard_writerequest_property,
+				    xsd->clipboard_targets_atom,
+				    32,
+				    PropModeReplace,
+				    (unsigned char *)supported_targets,
+				    sizeof(supported_targets) / sizeof(supported_targets[0]));
+		    UX11
+		    
+		}
+		else if (event->xselectionrequest.target == XA_STRING)
+		{
+
+		    LX11
+		    xsd->hostclipboard_write_chunks = XMaxRequestSize(xsd->display) * 4 / 2;
+		    
+		    /* FIXME TODO: Use INCR protocol for large requests */
+		    if (1)// && xsd->hostclipboard_writebuffer_size <= xsd->hostclipboard_write_chunks)
+		    {
+	    		D(bug("X11CLIPBOARD: SelectionRequest Event - one chunk is enough\n"));
+
+			//D(bug("[%s]\n", xsd->hostclipboard_writebuffer));
+
+			XChangeProperty(xsd->display,
+		    	    		xsd->hostclipboard_writerequest_window,
+					xsd->hostclipboard_writerequest_property,
+					XA_STRING,
+					8,
+					PropModeReplace,
+					(unsigned char *)xsd->hostclipboard_writebuffer,
+					(int)xsd->hostclipboard_writebuffer_size);
+		    }
+		    else
+		    {
+		    	/* FIXME TODO: Use INCR protocol for large requests */
+			
+		    	e.xselection.property = None;
+		    }
+		    UX11
+		}
+		else
+		{
+		    e.xselection.property = None;
+		}
+			
+    	    	D(bug("X11CLIPBOARD: SelectionRequest Event - sending SelectionNotify event to clipboard requestor\n"));
+					
+		LX11
+		XSendEvent(xsd->display,
+		    	   xsd->hostclipboard_writerequest_window,
+			   False,
+			   NoEventMask,
+			   &e);
+		XFlush(xsd->display);
+		UX11
+	    }
 	    break;
 	    
     } /* switch(event->type) */

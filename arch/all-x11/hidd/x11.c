@@ -581,8 +581,27 @@ D(bug("Got input from unixio\n"));
     		#endif
 
 	    	    case ButtonPress:
-	            case ButtonRelease:
+		    	xsd->x_time = event.xbutton.time;
+			D(bug("ButtonPress event\n"));
+
+	    		ObtainSemaphoreShared( &xsd->sema );
+			if (xsd->mousehidd)
+			    Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+			ReleaseSemaphore( &xsd->sema );
+			break;
+
+	    	    case ButtonRelease:
+		    	xsd->x_time = event.xbutton.time;
+			D(bug("ButtonRelease event\n"));
+
+	    		ObtainSemaphoreShared( &xsd->sema );
+			if (xsd->mousehidd)
+			    Hidd_X11Mouse_HandleEvent(xsd->mousehidd, &event);
+			ReleaseSemaphore( &xsd->sema );
+			break;
+			
 	    	    case MotionNotify:
+		    	xsd->x_time = event.xmotion.time;
 			D(bug("Motionnotify event\n"));
 
 	    		ObtainSemaphoreShared( &xsd->sema );
@@ -620,6 +639,7 @@ D(bug("Got input from unixio\n"));
 			break;
 
 	    	    case KeyPress:
+		    	xsd->x_time = event.xkey.time;
     	    	    	LX11
     			XAutoRepeatOff(XSD(cl)->display);
     	    	    	UX11	
@@ -635,6 +655,7 @@ D(bug("Got input from unixio\n"));
 
 
 	    	    case KeyRelease:
+		    	xsd->x_time = event.xkey.time;
     	    	    	LX11
 			XAutoRepeatOn(XSD(cl)->display);
     	    	    	UX11

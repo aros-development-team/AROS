@@ -199,7 +199,8 @@ struct x11_staticdata
     Atom    	    	     clipboard_atom;
     Atom    	    	     clipboard_property_atom;
     Atom    	    	     clipboard_incr_atom;
-    
+    Atom    	    	     clipboard_targets_atom;
+    Time    	    	     x_time;
 #if 0
     VOID	    	     (*activecallback)(APTR, OOP_Object *, BOOL);
     APTR	    	     callbackdata;
@@ -207,9 +208,14 @@ struct x11_staticdata
 
     struct MsgPort  	    *hostclipboardmp;
     struct Message  	    *hostclipboardmsg;
-    ULONG   	    	     hostclipboardstate;
+    ULONG   	    	     hostclipboard_readstate;
     unsigned char   	    *hostclipboard_incrbuffer;
     ULONG   	    	     hostclipboard_incrbuffer_size;
+    unsigned char   	    *hostclipboard_writebuffer;
+    ULONG   	    	     hostclipboard_writebuffer_size;
+    Window    	    	     hostclipboard_writerequest_window;
+    Atom    	    	     hostclipboard_writerequest_property;
+    ULONG   	    	     hostclipboard_write_chunks;
 };
 
 #define HOSTCLIPBOARDSTATE_IDLE     	0
