@@ -23,9 +23,9 @@ typedef struct _HashTable
     ULONG size;
     ULONG nElems;
 
-    ULONG (*hash)(void *key);
-    int  (*compare)(void *key1, void *key2);
-    void (*delete)(struct rambase *rambase, void *key, struct List *list);
+    ULONG (*hash)(struct rambase *rambase, const void *key);
+    int  (*compare)(struct rambase *rambase, const void *key1, const void *key2);
+    void (*delete)(struct rambase *rambase, const void *key, struct List *list);
 } HashTable;
 
 
@@ -35,21 +35,25 @@ typedef struct _HashTable
  * Purpose:  Create a new hash table.
  *
  * Input:    ULONG size  --  number of hash positions in the hash table
- *           ULONG (*hash)(void *key) 
+ *           ULONG (*hash)(struct rambase *rambase, const void *key)
  *                      --  hash function for the elements
- *           int  (*compare)(void *key1, void *key2)
+ *           int  (*compare)(struct rambase *rambase,
+ *				const void *key1, const void *key2)
  *                      --  comparison function over keys
- *           void (*delete)(void *key, void *data)
+ *           void (*delete)(struct rambase *rambase,
+ *				const void *key, void *data)
  *                      --  deletion function for an <key, data> pair
- *                                        
+ *
  * Output:   HashTable *  --  the new hash table
  *
  */
 HashTable *HashTable_new(struct rambase *rambase, ULONG size,
-			 ULONG (*hash)(void *key),
-			 int (*compare)(void *key1, void *key2),
-			 void (*delete)(struct rambase *rambase, void *key,
-					struct List *list));
+			 ULONG (*hash)(struct rambase *rambase,
+					const void *key),
+			 int (*compare)(struct rambase *rambase,
+					const void *key1, const void *key2),
+			 void (*delete)(struct rambase *rambase,
+					const void *key, struct List *list));
 
 
 /* HashTable_delete

@@ -226,11 +226,11 @@ const struct Resident ram_handler_resident=
     (ULONG *)inittabl
 };
 
-const char name[] = "ram.handler";
+static const char name[] = "ram.handler";
 
-const char version[] = "$VER: ram-handler 41.3 (11.10.1997)\r\n";
+static const char version[] = "$VER: ram-handler 41.3 (11.10.1997)\r\n";
 
-const APTR inittabl[4]=
+static const APTR inittabl[4]=
 {
     (APTR)sizeof(struct rambase),
     (APTR)functable,
@@ -238,7 +238,7 @@ const APTR inittabl[4]=
     &AROS_SLIB_ENTRY(init,ramdev)
 };
 
-void *const functable[]=
+static void *const functable[]=
 {
     &AROS_SLIB_ENTRY(open,ramdev),
     &AROS_SLIB_ENTRY(close,ramdev),
@@ -249,7 +249,7 @@ void *const functable[]=
     (void *)-1
 };
 
-const UBYTE datatable = 0;
+static const UBYTE datatable = 0;
 
 /* Use This from now on */
 #ifdef SysBase
@@ -408,7 +408,7 @@ AROS_LH2(struct rambase *, init,
 
 /***************************************************************************/
 
-void nullDelete(struct rambase *rambase, void *key, struct List *list)
+void nullDelete(struct rambase *rambase, const void *key, struct List *list)
 {
     struct Receiver *rr;
     struct Node     *tempNode;
@@ -425,18 +425,24 @@ void nullDelete(struct rambase *rambase, void *key, struct List *list)
 }
 
 
-ULONG stringHash(void *key)
+ULONG stringHash(struct rambase *rambase, const void *key)
 {
     STRPTR str = (STRPTR)key;
     ULONG  val = 1;
 
     while (*str != 0)
     {
-	val *= tolower(*str++);
+	val *= ToLower(*str++);
 	val <<= 2;
     }
 
     return val;
+}
+
+static int
+my_strcasecmp(struct rambase *rambase, const void *s1, const void *s2)
+{
+    return strcasecmp(s1, s2);
 }
 
 /****************************************************************************/
@@ -537,7 +543,7 @@ AROS_LH3(void, open,
 
 			    rambase->notifications =
 				HashTable_new(rambase, 100, stringHash,
-					      strncasecmp, nullDelete);
+					      my_strcasecmp, nullDelete);
 
 			    return;
 			}
@@ -2730,13 +2736,18 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 }
 
 
-HashNode *find(HashTable *ht, void *key, struct List *list);
+HashNode *find(struct rambase *rambase, HashTable *ht,
+    void *key, struct List *list);
 
 
 HashTable *HashTable_new(struct rambase *rambase, ULONG size,
-			 ULONG (*hash)(void *key),
-			 int (*compare)(void *key1, void *key2),
-			 void (*delete)(struct rambase *rambase, void *key, 
+			 ULONG (*hash)(struct rambase *rambase,
+					const void *key),
+			 int (*compare)(struct rambase *rambase,
+					const void *key1,
+					const void *key2),
+			 void (*delete)(struct rambase *rambase,
+					const void *key,
 					struct List *list))
 {
     ULONG       i;		/* Loop variable */
@@ -2797,9 +2808,9 @@ void HashTable_insert(struct rambase *rambase, HashTable *ht, void *key,
     ULONG      pos;
     HashNode *hn;
 
-    pos = ht->hash(key) % ht->size;
+    pos = ht->hash(rambase, key) % ht->size;
 
-    hn = find(ht, key, &ht->array[pos]);
+    hn = find(rambase, ht, key, &ht->array[pos]);
 
     if (hn == NULL)
     {
@@ -2836,12 +2847,12 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
     struct Node *tempNode;
     struct List *list;
 
-    pos = ht->hash(key) % ht->size;
+    pos = ht->hash(rambase, key) % ht->size;
     list = &ht->array[pos];
 
     ForeachNodeSafe(list, (struct Node *)hn, tempNode)
     {
-	if (ht->compare(key, hn->key) == 0)
+	if (ht->compare(rambase, key, hn->key) == 0)
 	{
 	    Remove(&hn->node);
 	    ht->delete(rambase, hn->key, (void *)&hn->requests);
@@ -2852,13 +2863,15 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
 }
 
 
-HashNode *find(HashTable *ht, void *key, struct List *list)
+HashNode *find(
+    struct rambase *rambase, HashTable *ht,
+    void *key, struct List *list)
 {
     HashNode *hn;		/* Loop variable */
 
     ForeachNode(list, (struct Node *)hn)
     {
-	if (ht->compare(key, hn->key) == 0)
+	if (ht->compare(rambase, key, hn->key) == 0)
 	{
 	    return hn;
 	}
@@ -2873,8 +2886,8 @@ struct List *HashTable_find(struct rambase *rambase, HashTable *ht, void *key)
     HashNode *hn;
     ULONG      pos;
 
-    pos = ht->hash(key) % ht->size;
-    hn = find(ht, key, &ht->array[pos]);
+    pos = ht->hash(rambase, key) % ht->size;
+    hn = find(rambase, ht, key, &ht->array[pos]);
 
     if (hn != NULL)
     {
@@ -2895,4 +2908,4 @@ inline ULONG HashTable_size(HashTable *ht)
 }
 
 
-const char end = 0;
+static const char end = 0;
