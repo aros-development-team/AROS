@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1996/10/23 14:26:05  aros
+    Renamed AROS macros from XYZ to AROS_XYZ, so we know what they are
+
+    Removed UDIVMOD10()
+
     Revision 1.6  1996/10/19 17:07:27  aros
     Include <aros/machine.h> instead of machine.h
 
@@ -187,8 +192,8 @@
 		/* BCPL string */
 		case 'b':
 		    /* Get address, but align datastream first */
-		    if(LONGALIGN>WORDALIGN)
-			stream=(stream+LONGALIGN-1)&~(LONGALIGN-1);
+		    if(AROS_LONGALIGN>AROS_WORDALIGN)
+			stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
 		    buf=(UBYTE *)BADDR(*(BPTR *)stream);
 		    stream+=sizeof(BPTR);
 
@@ -211,8 +216,8 @@
 			if(larg)
 			{
 			    /* Align datastream */
-			    if(LONGALIGN>WORDALIGN)
-				stream=(stream+LONGALIGN-1)&~(LONGALIGN-1);
+			    if(AROS_LONGALIGN>AROS_WORDALIGN)
+				stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
 			    /*
 				For longs reading signed and unsigned
 				doesn't make a difference.
@@ -251,14 +256,12 @@
 			buf=&cbuf[CBUFSIZE];
 			do
 			{
-			    ULONG r;
-
 			    /*
 				divide 'n' by 10 and get quotient 'n'
 				and remainder 'r'
 			    */
-			    UDIVMOD10(n,n,r);
-			    *--buf=r+'0';
+			    *--buf=(n%10)+'0';
+			    n/=10;
 			    width++;
 			}while(n);
 		    }
@@ -273,8 +276,8 @@
 			if(larg)
 			{
 			    /* Align datastream */
-			    if(LONGALIGN>WORDALIGN)
-				stream=(stream+LONGALIGN-1)&~(LONGALIGN-1);
+			    if(AROS_LONGALIGN>AROS_WORDALIGN)
+				stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
 			    n=*(ULONG *)stream;
 			    stream+=sizeof(ULONG);
 			}else
@@ -304,8 +307,8 @@
 			UBYTE *buffer;
 
 			/* Get address, but align datastream first */
-			if(PTRALIGN>WORDALIGN)
-			    stream=(stream+PTRALIGN-1)&~(PTRALIGN-1);
+			if(AROS_PTRALIGN>AROS_WORDALIGN)
+			    stream=(stream+AROS_PTRALIGN-1)&~(AROS_PTRALIGN-1);
 			buf=*(UBYTE **)stream;
 			stream+=sizeof(UBYTE *);
 
@@ -331,8 +334,8 @@
 		    if(larg)
 		    {
 			/* Align datastream */
-			if(LONGALIGN>WORDALIGN)
-			    stream=(stream+LONGALIGN-1)&~(LONGALIGN-1);
+			if(AROS_LONGALIGN>AROS_WORDALIGN)
+			    stream=(stream+AROS_LONGALIGN-1)&~(AROS_LONGALIGN-1);
 			*buf=*(ULONG *)stream;
 			stream+=sizeof(ULONG);
 		    }else
