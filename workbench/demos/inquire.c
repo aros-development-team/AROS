@@ -17,10 +17,6 @@
 
 static const char version[]= "$VER: inquire 41.1 (29.3.1997)\n\r";
 
-ULONG major, minor, vers;
-ULONG kickb, kicks;
-UWORD kickver, kickrev;
-
 struct Library *ArosBase;
 
 int main(int argc, char **argv)
