@@ -97,7 +97,7 @@
         bug("Loaded as AmigaOS exe\n");
 #endif
     }
-    if (!segs && IoErr()!=ERROR_NO_FREE_STORE)
+    if (!segs && IoErr()==ERROR_NOT_EXECUTABLE)
     {
       segs = InternalLoadSeg_AOUT (fh, MKBADDR(NULL), functionarray, NULL, DOSBase);
 #if DEBUG > 1
