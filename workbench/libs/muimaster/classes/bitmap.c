@@ -13,7 +13,9 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
+#ifndef __MAXON__
 #warning TODO: MUIA_BitMap_Transparent handling (mask creation)
+#endif
 
 extern struct Library *MUIMasterBase;
 

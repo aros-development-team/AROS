@@ -17,11 +17,15 @@
  * Boston, MA 02111-1307, USA.
  */
 
+#include <string.h>
+
 #include <exec/types.h>
 
+#include <clib/alib_protos.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/exec.h>
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif

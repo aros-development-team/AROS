@@ -1,3 +1,4 @@
+#include <string.h>
 #include <exec/memory.h>
 #include <intuition/icclass.h>
 #include <intuition/gadgetclass.h>
@@ -83,7 +84,7 @@ static void RenderRegisterTabItem(struct IClass *cl, Object *obj,  WORD item)
     
     if (ri->image)
     {
-    	DrawImageState(_rp(obj), ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, muiRenderInfo(obj)->mri_DrawInfo);
+    	DrawImageState(_rp(obj), (struct Image*)ri->image, x + ri->ix, y + ri->iy, IDS_NORMAL, muiRenderInfo(obj)->mri_DrawInfo);
     }
     
     /* upper / at left side */
