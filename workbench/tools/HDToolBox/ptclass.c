@@ -26,6 +26,11 @@
 
 #define G(a) ((struct Gadget *)a)
 
+#define DPTYPE_EMPTY 	      0
+#define DPTYPE_EMPTY_SELECTED 1
+#define DPTYPE_USED 	      2
+#define DPTYPE_USED_SELECTED  3
+
 struct PTableData {
 	struct DrawInfo *dri;
 	struct Image *frame;
@@ -263,7 +268,8 @@ void DrawPartition
 		struct RastPort *rport,
 		struct Gadget *gadget,
 		struct HDTBPartition *table,
-		struct DosEnvec *pn
+		struct DosEnvec *pn,
+		WORD drawtype
 	)
 {
 ULONG start;
@@ -273,6 +279,8 @@ ULONG spc;
 ULONG cyls;
 ULONG skipcyl;
 
+    	if (!rport) return;
+	
 #if 0
 	blocks =
 		(table->table->de_HighCyl+1)*
@@ -307,12 +315,44 @@ ULONG skipcyl;
 	start += gadget->LeftEdge;
 	end   += gadget->LeftEdge;
 #endif
-	DrawFilledBox
-	(
-		rport,
-		start, gadget->TopEdge+1+(gadget->Height/2),
-		end, gadget->TopEdge+(gadget->Height)-1
-	);
+    	switch(drawtype)
+	{
+	    case DPTYPE_EMPTY:
+	    	SetAPen(rport, 0);
+		break;
+	    
+	    case DPTYPE_EMPTY_SELECTED:
+	    	SetAPen(rport, 1);
+		break;
+		
+	    case DPTYPE_USED:
+	    	SetAPen(rport, 2);
+		break;
+		
+	    case DPTYPE_USED_SELECTED:
+	    	SetAPen(rport, 3);
+		break;
+	}
+	
+    	SetBPen(rport, 0);
+	SetDrMd(rport, JAM2);
+	
+	if (drawtype == DPTYPE_EMPTY)
+	{
+	    RectFill(rport, start, gadget->TopEdge+1+(gadget->Height/2),
+		    	    end, gadget->TopEdge+(gadget->Height)-1);
+	}
+	else
+	{
+	    SetPattern(rport, &pattern, 2);
+	    DrawFilledBox
+	    (
+		    rport,
+		    start, gadget->TopEdge+1+(gadget->Height/2),
+		    end, gadget->TopEdge+(gadget->Height)-1
+	    );
+	    SetPattern(rport, NULL, 0);
+	}
 }
 
 void ErasePartition
@@ -373,7 +413,9 @@ ULONG skipcyl;
 }
 ULONG getBlock(UWORD mousex, UWORD width, struct HDTBPartition *table) {
 ULONG block;
-
+    	
+	if ((WORD)mousex < 0) mousex = 0;
+	
 	block = mousex*table->table->de.de_HighCyl/width;
 	block *= table->table->de.de_Surfaces*table->table->de.de_BlocksPerTrack;
 	block += table->table->reserved;
@@ -408,36 +450,35 @@ IPTR retval = GMR_MEACTIVE;
 struct PTableData *data;
 struct DosEnvec *de;
 struct RastPort *rport;
+WORD	    	 drawtype;
 
 	data = INST_DATA(cl, obj);
 	data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width,data->table);
-	rport = msg->gpi_GInfo->gi_RastPort;
+	rport = ObtainGIRPort(msg->gpi_GInfo);
 	if (data->active != NULL)
 	{
 		/* draw previous active as unselected */
 		if ((struct DosEnvec *)data->active == &data->gap)
 		{
-			SetAPen(rport, 0);
+			drawtype = DPTYPE_EMPTY;
 			de = &data->gap;
 		}
 		else
 		{
-			SetAPen(rport, 2);
+		    	drawtype = DPTYPE_USED;
 			de = &data->active->de;
 		}
-		SetPattern(rport, &pattern, 2);
-		DrawPartition(rport, (struct Gadget *)obj, data->table, de);
-		SetPattern(rport, 0, 0);
+		DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
 	}
 	data->active = getActive(data);
 	if ((struct DosEnvec *)data->active == &data->gap)
 	{
-		SetAPen(rport, 1);
+	    	drawtype = DPTYPE_EMPTY_SELECTED;
 		de = &data->gap;
 	}
 	else
 	{
-		SetAPen(rport, 3);
+		drawtype = DPTYPE_USED_SELECTED;
 		de = &data->active->de;
 		if (data->flags & PTCTF_EmptySelectOnly)
 			data->active=0;
@@ -445,10 +486,13 @@ struct RastPort *rport;
 	data->selected = TRUE;
 	notify_all(cl, obj, msg->gpi_GInfo, TRUE, TRUE);
 	data->selected = FALSE;
-	if (data->active)
+	if (data->active && rport)
 	{
-		DrawPartition(rport, (struct Gadget *)obj, data->table, de);
+		DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
 	}
+	
+	if (rport) ReleaseGIRPort(rport);
+	
 	return retval;
 }
 
@@ -457,6 +501,7 @@ IPTR retval = TRUE;
 struct PTableData *data;
 struct DosEnvec *de;
 struct RastPort *rport;
+WORD drawtype;
 
 	data = INST_DATA(cl, obj);
 	if (data->active)
@@ -464,20 +509,22 @@ struct RastPort *rport;
 //		data->block = getBlock(msg->gpi_Mouse.X, G(obj)->Width, data->table);
 		if (getActive(data) == data->active)
 		{
-			rport = msg->gpi_GInfo->gi_RastPort;
-			if ((struct DosEnvec *)data->active == &data->gap)
+			if ((rport = ObtainGIRPort(msg->gpi_GInfo)))
 			{
-				SetAPen(rport, 1);
-				de = &data->gap;
+			    if ((struct DosEnvec *)data->active == &data->gap)
+			    {
+				    drawtype = DPTYPE_EMPTY_SELECTED;
+				    de = &data->gap;
+			    }
+			    else
+			    {
+			    	    drawtype = DPTYPE_USED_SELECTED;
+				    de = &data->active->de;
+			    }
+			    DrawPartition(rport, (struct Gadget *)obj, data->table, de, drawtype);
+			    
+			    ReleaseGIRPort(rport);
 			}
-			else
-			{
-				SetAPen(rport, 3);
-				de = &data->active->de;
-			}
-			SetPattern(rport, &pattern, 2);
-			DrawPartition(rport, (struct Gadget *)obj, data->table, de);
-			SetPattern(rport, 0, 0);
 		}
 	}
 	return retval;
@@ -596,6 +643,7 @@ STATIC IPTR pt_handleinput(Class *cl, Object *obj, struct gpInput *msg) {
 IPTR retval = GMR_MEACTIVE;
 struct InputEvent *ie;
 struct PTableData *data;
+struct RastPort *rport;
 
 	data = INST_DATA(cl, obj);
 	ie = msg->gpi_IEvent;
@@ -634,27 +682,34 @@ struct PTableData *data;
 						if (validValue(data->table, data->active, tocheck))
 						{
 #endif
-#endif
+#endif							
+							rport = ObtainGIRPort(msg->gpi_GInfo);
+							
 							start = start/spc;
 							end = ((end+1)/spc)-1;
-							ErasePartition
+							if (rport) ErasePartition
 							(
-								msg->gpi_GInfo->gi_RastPort,
+								rport,
 								(struct Gadget *)obj,
 								data->table, &data->active->de
 							);
 							data->active->de.de_LowCyl=start;
 							data->active->de.de_HighCyl=end;
-							SetAPen(msg->gpi_GInfo->gi_RastPort, 3);
+							
 							DrawPartition
 							(
-								msg->gpi_GInfo->gi_RastPort,
+								rport,
 								(struct Gadget *)obj,
-								data->table, &data->active->de
+								data->table,
+								&data->active->de,
+								DPTYPE_USED_SELECTED
 							);
+
 							data->block = block;
 							data->move = TRUE;
 							notify_all(cl, obj, msg->gpi_GInfo, TRUE, TRUE);
+							
+							if (rport) ReleaseGIRPort(rport);
 #ifdef DEBUG
 #if DEBUG>0
 						}
@@ -678,13 +733,13 @@ struct PTableData *data;
 }
 
 void DrawLegend(struct RastPort *rport, LONG sx, LONG sy, LONG ex, LONG ey, char *text) {
-struct TextAttr tattr;
-
 	RectFill(rport, sx+1, sy+1, ex-1, ey-1);
 	DrawBox(rport, sx, sy, ex, ey);
+
 	SetAPen(rport, 1);
-	AskFont(rport, &tattr);
-	Move(rport, sx, ey+tattr.ta_YSize+1);
+	SetDrMd(rport, JAM1);
+
+	Move(rport, sx, ey+rport->TxHeight+1);
 	Text(rport, text, strlen(text));
 }
 
@@ -769,29 +824,26 @@ IPTR retval = 0;
 		{
 			if (pn->listnode.ln.ln_Type == LNT_Partition)
 			{
-				if (data->active==pn)
-					SetAPen(msg->gpr_RPort, 3);
-				else
-					SetAPen(msg->gpr_RPort, 2);
 				DrawPartition
 				(
 					msg->gpr_RPort,
 					(struct Gadget *)obj,
 					data->table,
-					&pn->de
+					&pn->de,
+					(data->active == pn) ? DPTYPE_USED_SELECTED : DPTYPE_USED
 				);
 			}
 			pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
 		}
 		if ((struct DosEnvec *)data->active == &data->gap)
 		{
-			SetAPen(msg->gpr_RPort, 1);
 			DrawPartition
 			(
 				msg->gpr_RPort,
 				(struct Gadget *)obj,
 				data->table,
-				&data->gap
+				&data->gap,
+				DPTYPE_EMPTY_SELECTED
 			);
 		}
 		SetPattern(msg->gpr_RPort, 0, 0);
