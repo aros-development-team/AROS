@@ -391,7 +391,7 @@ AROS_LP1(void, ScreenToFront,
     AROS_LPA(struct Screen *, screen, A0),
     struct IntuitionBase *, IntuitionBase, 42, Intuition)
 
-AdROS_LP2(ULONG, SetAttrsA,
+AROS_LP2(ULONG, SetAttrsA,
     AROS_LPA(APTR            , object, A0),
     AROS_LPA(struct TagItem *, tagList, A1),
     struct IntuitionBase *, IntuitionBase, 108, Intuition)
