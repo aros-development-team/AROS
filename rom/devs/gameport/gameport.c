@@ -604,15 +604,14 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 
     if(!IsListEmpty(&GPBase->gp_PendingQueue))
     {
+#if 0
         D(bug("doing software irq, node type=%d\n", GPBase->gp_Interrupt.is_Node.ln_Type));
-
-#if 1
 	Cause(&GPBase->gp_Interrupt);	
 #else
-AROS_UFC3(VOID, gpSendQueuedEvents,
-	   AROS_UFCA(struct GameportBase *, GPBase  , A1),
-	   AROS_UFCA(APTR                 , NULL, A5),
-	   AROS_UFCA(struct ExecBase *    , SysBase , A6));
+	AROS_UFC3(VOID, gpSendQueuedEvents,
+	    AROS_UFCA(struct GameportBase *, GPBase  , A1),
+	    AROS_UFCA(APTR                 , NULL, A5),
+	    AROS_UFCA(struct ExecBase *    , SysBase , A6));
 #endif
     }
     
