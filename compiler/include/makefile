@@ -5,9 +5,9 @@ include $(TOP)/config/make.cfg
 
 AMIGADIR=$(TOP)/amiga
 
-INCLUDES = $(wildcard *.h */*.h)
-DEST_INCLUDES = $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
-INCSUBDIRS =	aros \
+INCLUDES := $(wildcard *.h */*.h)
+DEST_INCLUDES := $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
+INCSUBDIRS :=	aros \
 		clib \
 		defines \
 		devices \
