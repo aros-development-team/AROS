@@ -44,6 +44,10 @@ FUNCTIONS	:= \
 	getbpen \
 	getdrmd \
 	getoutlinepen \
+	gfxassociate \
+	gfxfree \
+	gfxlookup \
+	gfxnew \
 	initrastport \
 	loadrgb32 \
 	loadrgb4 \
