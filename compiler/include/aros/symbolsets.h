@@ -118,7 +118,7 @@ const LONG bname##_version __attribute__((weak)) = ver;      \
                                                              \
 const struct libraryset libraryset_##bname =                 \
 {                                                            \
-     name, &bname##_version, (void **)&bname                 \
+     name, &bname##_version, (void *)&bname                  \
 };                                                           \
 ADD2SET(libraryset_##bname, libs, 0) 
 
