@@ -187,7 +187,7 @@ install-native-i386 :
 
 #MM- contrib-native-i386 : contrib-complete
 
-#MM- workbench-native-i386 : workbench-complete
+#MM- workbench-native-i386 : workbench-complete workbench
 
 #MM
 includes-copy : $(GENINCDIR)/sigcore.h
