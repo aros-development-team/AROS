@@ -81,6 +81,10 @@ static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase)
     if (NULL != lsd) {
 	InitSemaphore(&lsd->sema);
         lsd->sysbase = SysBase;
+
+    #if BUFFERED_VRAM
+	InitSemaphore(&lsd->framebufferlock);
+    #endif
 	
         lsd->oopbase = OpenLibrary(AROSOOP_NAME, 0);
 	if (NULL == lsd->oopbase) goto failure;

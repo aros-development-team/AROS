@@ -32,6 +32,8 @@
 #include <linux/kd.h>
 #include <termio.h>
 
+#define BUFFERED_VRAM 1
+
 /* Private Attrs and methods for the X11Gfx Hidd */
 
 #define CLID_Hidd_LinuxFB	"hidd.gfx.linuxfb"
@@ -120,6 +122,9 @@ struct linux_staticdata {
     struct Task *input_task;
     OOP_Object *kbdhidd;
     OOP_Object *mousehidd;
+#if BUFFERED_VRAM
+    struct SignalSemaphore framebufferlock;
+#endif    
 };
 
 OOP_Class *init_linuxgfxclass (struct linux_staticdata *lsd);
@@ -143,6 +148,14 @@ VOID cleanup_linuxkbd(struct linux_staticdata *lsd);
 BOOL init_linuxmouse(struct linux_staticdata *lsd);
 VOID cleanup_linuxmouse(struct linux_staticdata *lsd);
 
+struct BitmapData;
+
+VOID fbRefreshArea(struct BitmapData *data, LONG x1, LONG y1, LONG x2, LONG y2);
+
+#if BUFFERED_VRAM
+#define LOCK_FRAMEBUFFER(lsd)	ObtainSemaphore(&lsd->framebufferlock)
+#define UNLOCK_FRAMEBUFFER(lsd) ReleaseSemaphore(&lsd->framebufferlock)
+#endif
 
 #define LSD(cl) ((struct linux_staticdata *)cl->UserData)
 
