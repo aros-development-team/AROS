@@ -167,7 +167,8 @@ AROS_LH1(struct CommoditiesBase *, open,
 	NEWLIST(&CxBase->cx_TimerMP.mp_MsgList);
 
 	CxBase->cx_TimerIO.tr_node.io_Message.mn_ReplyPort = &CxBase->cx_TimerMP;
-
+	CxBase->cx_TimerIO.tr_node.io_Message.mn_Length = sizeof(struct timerequest);
+	
 	if(OpenDevice(TIMERNAME, UNIT_VBLANK,
 		      (struct IORequest *)&CxBase->cx_TimerIO, 0) == 0)
 	    CxBase->cx_TimerBase = 
