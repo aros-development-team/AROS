@@ -82,6 +82,7 @@ SHARED	:= \
 	atol \
 	bsearch \
 	calloc \
+	chdir \
 	chmod \
 	clearerr \
 	ctime \
