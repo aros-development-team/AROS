@@ -92,6 +92,7 @@ extern const struct Resident
     Mathffp_resident,
     Mathieeesingbas_resident,
     TrackDisk_resident,
+    ide_resident,
     Misc_resident,
     Cybergraphics_resident,
     hiddgraphics_resident,
@@ -123,12 +124,13 @@ static const struct Resident *romtagList[] =
     &Keymap_resident,			    /* ColdStart,   40	 */
     &Input_resident,			    /* ColdStart,   30	 */
     &Intuition_resident,		    /* ColdStart,   10	 */
+    &hiddgraphics_resident,		    /* ColdStart,   9    */
     &kbdHidd_resident,			    /* ColdStart,   9    */
     &vgaHidd_resident,			    /* ColdStart,   9    */
-    &hiddgraphics_resident,		    /* ColdStart,   9    */
     &Cybergraphics_resident,		    /* ColdStart,   8    */
     &Console_resident,			    /* ColdStart,   5	 */
     &TrackDisk_resident,		    /* Coldsatrt,   4    */	//Trackdisk		
+    &ide_resident,			    /* Coldsatrt,   4    */	//IDE device
 //    &emul_handler_resident,		    /* ColdStart,   0	 */
     &Workbench_resident,		    /* ColdStart,  -120  */
     &Mathffp_resident,			    /* ColdStart,  -120  */
@@ -295,6 +297,12 @@ int main()
 	    kprintf("Closing gfx\n");
 	
 	    CloseLibrary((struct Library *)GfxBase);
+
+	    if (success == FALSE)
+	    {
+	    	kprintf("There is something wrong with hidd subsystem...");
+		while(1) {};
+	    }
 	
 	}
     }
@@ -383,7 +391,6 @@ int main()
 	    ioStd(io)->io_Length=strlen(data);
 	    DoIO(io);
 	    kprintf("Got io_ERROR=%d",io->io_Error);
-	    kprintf(text2);
 	    kprintf("Doing kbd reads...\n");
 	}
     }
