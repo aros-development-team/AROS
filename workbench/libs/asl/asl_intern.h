@@ -92,6 +92,7 @@ struct ReqNode
     struct MinNode	rn_Node;
     APTR		rn_Req;
     struct IntReq	*rn_IntReq;
+    struct Window   	*rn_ReqWindow;
 };
 
 /*****************************************************************************************/
