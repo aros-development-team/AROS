@@ -34,13 +34,18 @@ int entry(void)
     return -1;
 }
 
+#define LIBVERSION	41
+#define LIBREVISION	0
+#define LIBVER(name,ver,rev,date) \
+	#name " " #ver "." #rev " (" #date ")\n\r";
+
 const struct Resident resident=
 {
     RTC_MATCHWORD,
     (struct Resident *)&resident,
     (APTR)&Icon_end,
     RTF_AUTOINIT,
-    1,
+    LIBVERSION,
     NT_LIBRARY,
     0,
     (char *)name,
@@ -50,7 +55,7 @@ const struct Resident resident=
 
 const char name[]=ICONNAME;
 
-const char version[]="$VER: icon 1.0 (28.3.96)\n\015";
+const char version[]=LIBVER(icon,LIBVERSION,LIBREVISION,__DATE__);
 
 const APTR inittabl[4]=
 {
@@ -78,34 +83,32 @@ const struct inittable datatable=
     { { I_CPYO(1,B,O(library.lib_Node.ln_Type)), { NT_LIBRARY } } },
     { { I_CPYO(1,L,O(library.lib_Node.ln_Name)), { (IPTR)name } } },
     { { I_CPYO(1,B,O(library.lib_Flags       )), { LIBF_SUMUSED|LIBF_CHANGED } } },
-    { { I_CPYO(1,W,O(library.lib_Version     )), { 1 } } },
+    { { I_CPYO(1,W,O(library.lib_Version     )), { LIBVERSION } } },
     { { I_CPYO(1,W,O(library.lib_Revision    )), { 0 } } },
     { { I_CPYO(1,L,O(library.lib_IdString    )), { (IPTR)&version[6] } } },
   I_END ()
 };
 
 #undef O
-#undef SysBase
+
+struct ExecBase * SysBase; /* global variable */
 
 AROS_LH2(struct IconBase *, init,
  AROS_LHA(struct IconBase *, IconBase, D0),
  AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, SysBase, 0, Icon)
+     struct ExecBase *, sysBase, 0, Icon)
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    IconBase->sysbase=SysBase;
+    SysBase=sysBase;
     IconBase->seglist=segList;
 
     /* You would return NULL here if the init failed. */
     return IconBase;
     AROS_LIBFUNC_EXIT
 }
-
-/* Use This from now on */
-#define SysBase IconBase->sysbase
 
 AROS_LH1(struct IconBase *, open,
  AROS_LHA(ULONG, version, D0),
@@ -132,6 +135,9 @@ AROS_LH1(struct IconBase *, open,
 
     if (!UtilityBase)
 	return NULL;
+
+    IconBase->dsh.h_Entry = (void *)dosstreamhook;
+    IconBase->dsh.h_Data = DOSBase;
 
     /* I have one more opener. */
     IconBase->library.lib_OpenCnt++;
