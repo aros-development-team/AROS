@@ -28,7 +28,7 @@ docs : setup src2html autodocs $(DEST)srcs $(DEST)index.html \
 #MM
 setup-docs :
 	@for dir in $(DEST) $(DEST)/autodocs $(DEST)/cgi-bin \
-		$(JOBDEST) $(JOBDEST)/cgi-bin ; do \
+		$(JOBDEST) $(JOBDEST)/cgi-bin gen ; do \
 	    if [ ! -d $$dir ]; then \
 		mkdir $$dir ; \
 	    else true ; fi \
