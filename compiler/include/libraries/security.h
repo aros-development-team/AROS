@@ -478,12 +478,12 @@ struct secVolume
 
 };
 
-/* MultiUser Configuration */
+/* Security Configuration */
 
 struct secConfig
 {
-    ULONG                               Flags;				/* See definitions below */
-    ULONG                               LogFlags;			/* See definitions below */
+    ULONG                               Flags;				/* See definitions*/
+    ULONG                               LogFlags;			/* See definitions*/
     UWORD                               PasswduidLevel;			/* Lowest uid for users who can */
 									/* change their passwords */
     UWORD                               PasswdgidLevel;			/* Lowest gid for users who can */
@@ -545,7 +545,7 @@ struct secBase
 
     BOOL                                SecurityViolation;
 
-    /* MultiUser Volumes */
+    /* Volumes */
 
     struct SignalSemaphore              VolumesSem;
     struct secVolume                    *Volumes;
