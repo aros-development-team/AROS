@@ -1,0 +1,15 @@
+sbin_PROGRAMS = grub
+
+if SERIAL_SPEED_SIMULATION
+SERIAL_FLAGS = -DSUPPORT_SERIAL=1 -DSIMULATE_SLOWNESS_OF_SERIAL=1
+else
+SERIAL_FLAGS = -DSUPPORT_SERIAL=1 
+endif
+
+AM_CFLAGS = $(GRUB_CFLAGS) -DGRUB_UTIL=1 -DFSYS_EXT2FS=1 -DFSYS_FAT=1 \
+	-DFSYS_FFS=1 -DFSYS_MINIX=1 $(SERIAL_FLAGS) \
+	-fwritable-strings -I$(top_srcdir)/stage2 \
+	-I$(top_srcdir)/stage1 -I$(top_srcdir)/lib
+
+grub_SOURCES = main.c asmstub.c
+grub_LDADD = ../stage2/libgrub.a  ../lib/libcommon.a $(GRUB_LIBS)

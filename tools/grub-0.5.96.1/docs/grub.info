@@ -1,0 +1,138 @@
+This is grub.info, produced by makeinfo version 4.0 from grub.texi.
+
+INFO-DIR-SECTION Kernel
+START-INFO-DIR-ENTRY
+* GRUB: (grub).                 The GRand Unified Bootloader
+* grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
+* mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
+END-INFO-DIR-ENTRY
+
+   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000 Free
+Software Foundation, Inc.
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, provided also
+that the entire resulting derived work is distributed under the terms
+of a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions.
+
+
+Indirect:
+grub.info-1: 1008
+grub.info-2: 50771
+grub.info-3: 99387
+grub.info-4: 149297
+
+Tag Table:
+(Indirect)
+Node: Top1008
+Node: Overview3297
+Node: Overview-Footnotes5266
+Ref: Overview-Footnote-15327
+Node: Naming convention5488
+Node: Installation8389
+Node: Creating a GRUB boot floppy9518
+Node: Installing GRUB natively10329
+Node: Installing GRUB natively-Footnotes12481
+Ref: Installing GRUB natively-Footnote-112574
+Node: Installing GRUB using grub-install12759
+Node: Booting15049
+Node: General boot methods15366
+Node: Loading an operating system directly16097
+Node: Chain-loading17302
+Node: Chain-loading-Footnotes18492
+Ref: Chain-loading-Footnote-118563
+Node: OS-specific notes18635
+Node: GNU/Hurd18964
+Node: GNU/Linux19539
+Node: FreeBSD20759
+Node: NetBSD21263
+Node: OpenBSD21859
+Node: DOS/Windows22050
+Node: SCO UnixWare23775
+Node: Configuration24150
+Node: Network28548
+Node: General usage of network support29046
+Node: Diskless30538
+Node: Serial terminal32487
+Node: Security34775
+Node: Introduction36727
+Node: History37202
+Node: Features38298
+Node: Features-Footnotes43923
+Ref: Features-Footnote-143984
+Ref: Features-Footnote-244129
+Node: Role of a boot loader44288
+Node: Role of a boot loader-Footnotes45621
+Ref: Role of a boot loader-Footnote-145708
+Node: GRUB images45787
+Node: Filesystem47969
+Node: Device syntax48657
+Node: Filename syntax50057
+Node: Blocklist syntax50771
+Node: Interface51490
+Node: Command line52309
+Node: Command line-Footnotes54114
+Ref: Command line-Footnote-154183
+Node: Menu interface54278
+Node: Menu entry editor55108
+Node: Commands56150
+Node: Menu-specific commands56716
+Node: Command-line and menu commands59163
+Node: Command-line and menu entry commands66925
+Node: Command-line and menu entry commands-Footnotes80034
+Ref: Command-line and menu entry commands-Footnote-180151
+Ref: Command-line and menu entry commands-Footnote-280208
+Node: Troubleshooting80305
+Node: Stage1 errors80840
+Node: Stage1.5 errors82210
+Node: Stage2 errors82641
+Node: Invoking the grub shell89733
+Node: Basic usage90483
+Node: Installation under UNIX92732
+Node: Device map94410
+Node: Invoking grub-install95566
+Node: Invoking mbchk96946
+Node: Hacking97433
+Node: Memory map97811
+Node: Memory map-Footnotes99097
+Ref: Memory map-Footnote-199162
+Node: Embedded data99387
+Node: Filesystem interface104270
+Node: Bootstrap tricks107645
+Node: I/O ports detection109807
+Node: Memory detection111479
+Node: Query System Address Map112048
+Node: Get Large Memory Size122397
+Node: Get Extended Memory Size123719
+Node: Low-level disk I/O124504
+Node: CHS Translation125026
+Node: CHS mode disk I/O132192
+Node: LBA mode disk I/O134205
+Node: LBA mode disk I/O-Footnotes139373
+Ref: LBA mode disk I/O-Footnote-1139452
+Node: MBR139591
+Node: MBR-Footnotes142155
+Ref: MBR-Footnote-1142206
+Ref: MBR-Footnote-2142271
+Node: Partition table142341
+Node: Partition basics142741
+Node: Partition types144379
+Node: Partition types-Footnotes147109
+Ref: Partition types-Footnote-1147184
+Ref: Partition types-Footnote-2147289
+Node: Partition entry format147367
+Node: Partition table rules149297
+Node: FAQ152271
+Node: Obtaining and Building GRUB158699
+Node: Reporting bugs160546
+Node: Index161936
+
+End Tag Table

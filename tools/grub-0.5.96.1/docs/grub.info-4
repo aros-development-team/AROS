@@ -1,0 +1,408 @@
+This is grub.info, produced by makeinfo version 4.0 from grub.texi.
+
+INFO-DIR-SECTION Kernel
+START-INFO-DIR-ENTRY
+* GRUB: (grub).                 The GRand Unified Bootloader
+* grub-install: (grub)Invoking grub-install.    Install GRUB on your drive
+* mbchk: (grub)Invoking mbchk.  Check for the format of a Multiboot kernel
+END-INFO-DIR-ENTRY
+
+   Copyright (C) 1996 Erich Boleyn Copyright (C) 1999, 2000 Free
+Software Foundation, Inc.
+
+   Permission is granted to make and distribute verbatim copies of this
+manual provided the copyright notice and this permission notice are
+preserved on all copies.
+
+   Permission is granted to copy and distribute modified versions of
+this manual under the conditions for verbatim copying, provided also
+that the entire resulting derived work is distributed under the terms
+of a permission notice identical to this one.
+
+   Permission is granted to copy and distribute translations of this
+manual into another language, under the above conditions for modified
+versions.
+
+
+File: grub.info,  Node: Partition table rules,  Prev: Partition entry format,  Up: Partition table
+
+Some basic rules for partition table
+====================================
+
+   Keep in mind that there are _no_ written rules and _no_ industry
+standards on how FDISK should work but here are some basic rules that
+seem to be followed by most versions of FDISK:
+
+  1. In the MBR there can be 0-4 "primary" partitions, OR, 0-3 primary
+     partitions and 0-1 extended partition entry.
+
+  2. In an extended partition there can be 0-1 "secondary" partition
+     entries and 0-1 extended partition entries.
+
+  3. Only 1 primary partition in the MBR can be marked "active" at any
+     given time.
+
+  4. In most versions of FDISK, the first sector of a partition will be
+     aligned such that it is at head 0, sector 1 of a cylinder. This
+     means that there may be unused sectors on the track(s) prior to
+     the first sector of a partition and that there may be unused
+     sectors following a partition table sector.
+
+     For example, most new versions of FDISK start the first partition
+     (primary or extended) at cylinder 0, head 1, sector 0. This leaves
+     the sectors at cylinder 0, head 0, sectors 2...n as unused
+     sectors. This same layout may be seen on the first track of an
+     extended partition.  See example 2 below.
+
+     Also note that software drivers like Ontrack's Disk Manager depend
+     on these unused sectors because these drivers will "hide" their
+     code there (in cylinder 0, head 0, sectors 2...n). This is also a
+     good place for boot sector virus programs to hang out.
+
+  5. The partition table entries (slots) can be used in any order. Some
+     versions of FDISK fill the table from the bottom up and some
+     versions of FDISK fill the table from the top down. Deleting a
+     partition can leave an unused entry (slot) in the middle of a
+     table.
+
+  6. And then there is the "hack" that some newer OS's (OS/2 and Linux)
+     use in order to place a partition spanning or passed cylinder 1024
+     on a system that does not have a CHS translating BIOS. These
+     systems create a partition table entry with the partition's
+     starting and ending CHS information set to all FFH. The starting
+     and ending LBA information is used to describe the location of the
+     partition. The LBA can be converted back to a CHS -- most likely a
+     CHS with more than 1024 cylinders. Since such a CHS can't be used
+     by the system BIOS, these partitions can not be booted or accessed
+     until the OS's kernel and hard disk device drivers are loaded.  It
+     is not known if the systems using this "hack" follow the same
+     rules for the creation of these type of partitions.
+
+   There are _no_ written rules as to how an OS scans the partition
+table entries so each OS can have a different method. For DOS, this
+means that different versions could assign different drive letters to
+the same FAT file system partitions.
+
+
+File: grub.info,  Node: FAQ,  Next: Obtaining and Building GRUB,  Prev: Partition table,  Up: Top
+
+Frequently asked questions
+**************************
+
+How does GNU GRUB differ from Erich's original GRUB?
+     GNU GRUB is the successor of Erich's great GRUB. He couldn't work
+     on GRUB because of some other tasks, so the current maintainers
+     OKUJI Yoshinori and Gordon Matzigkeit took over the
+     maintainership, and opened the development in order for everybody
+     to participate it.
+
+     Technically speaking, GNU GRUB has many features that are not seen
+     in the original GRUB. For example, GNU GRUB can be installed on
+     UNIX-like operating system (such as GNU/Hurd) via the grub shell
+     `/sbin/grub' (or `/usr/sbin/grub' on older systems), it supports
+     Logical Block Address (LBA) mode that solves the 1024 cylinders
+     problem, and `<TAB>' completes a filename when it's unique. Of
+     course, many bug fixes are done as well, so it is recommended to
+     use GNU GRUB.
+
+Can GRUB boot my operating system from over 8GB hard disks?
+     That depends on your BIOS and your operating system. You must make
+     sure that your drive is accessible in LBA mode. Generally, that is
+     configurable in BIOS setting utility. Read the manual for your BIOS
+     for more information.
+
+     Furthermore, some operating systems (i.e. DOS) cannot access any
+     large disk, so the problem is not solved by any kind of boot
+     loader. GNU/Hurd and GNU/Linux can surely boot from such a large
+     disk.
+
+Can I put Stage2 into a partition which is over 1024 cylinders?
+     Yes, if your BIOS supports the LBA mode.
+
+How to create a GRUB boot floppy with the menu interface?
+     The easiest way is:
+
+       1. Create filesystem in your floppy disk. For example:
+
+               $ mke2fs /dev/fd0
+
+       2. Mount it on somewhere, say, `/mnt'.
+
+       3. Copy the GRUB images to `/mnt/boot/grub'. Only `stage1',
+          `stage2' and `menu.lst' are necessary. You may not copy
+          "stage1.5"s.
+
+       4. Run the following command (substitute `/usr/sbin/grub' for
+          `/sbin/grub' if you are using an older system):
+
+               $ /sbin/grub --batch <<EOT
+               root (fd0)
+               setup (fd0)
+               quit
+               EOT
+
+How to specify a partition?
+     *Note Device syntax::.
+
+GRUB does not recognize my GNU/Hurd partition.
+     I don't know why, but the authors of FDISK programs have assigned
+     the partition type `0x63' to GNU Hurd incorrectly. A partition type
+     should mean what format is used in the partition, such as
+     filesystem and BSD slices, and should not be used to represent
+     what operating system owns the partition. So use `0x83' if the
+     partition contains ext2fs filesystem, and use `0xA5' if the
+     partition contains ffs filesystem, whether the partition owner is
+     Hurd or not. We will use `0x63' for GNU Hurd filesystem that has
+     not been implemented yet.
+
+I've installed a recent version of binutils, but GRUB still crashes.
+     Please check for the version of your binutils by this command:
+
+          $ ld -v
+
+     This will show two versions, but only the latter is important. If
+     the version is identical with what you have installed, the
+     installation was not bad.
+
+     Well, please try:
+
+          $ gcc -Wl,-v 2>&1 | grep "GNU ld"
+
+     If this is not identical with the result above, you should specify
+     the directory where you have installed binutils for the script
+     configure, like this:
+
+          $ ./configure --with-binutils=/usr/local/bin
+
+     If you follow the instructions above but GRUB still crashes,
+     probably there is a serious bug in GRUB. *Note Reporting bugs::.
+
+GRUB hangs up when accessing my SCSI disk.
+     Check if you have turned on the support for INT 13 extension
+     (LBA). If so, disable the support and see if GRUB can now access
+     your SCSI disk. This will make it clear that your SCSI BIOS sucks.
+
+     For now, we know the following doesn't provide working LBA mode:
+
+
+          Adaptec AIC-7880
+
+     In the case where you have such a SCSI controller unfortunately,
+     you cannot use the LBA mode, though GRUB still works fine in the
+     CHS mode (so the well-known 1024 cylinders problem comes again to
+     you).
+
+     *Caution:* Actually it has not been verified yet if this bug is
+     due to the SCSI BIOS or GRUB itself, frankly speaking. Because the
+     developers haven't seen it by their own eyes. This is why it is
+     desirable that you investigate the cause seriously if you have the
+     skill.
+
+How can I specify an arbitrary memory size to Linux?
+     Pass a `mem=' option to your Linux kernel, like this:
+
+          grub> kernel /vmlinuz mem=128M
+
+     You may pass other options in the same way. See *Note GNU/Linux::,
+     for more details.
+
+I have a separate boot partition and GRUB doesn't recognize it.
+     This is often reported as a "bug", but this is not a bug really.
+     This is a feature.
+
+     Because GRUB is a boot loader and it normally runs under no
+     operating system, it doesn't know where a partition is mounted
+     under your operating systems. So, if you have the partition
+     `/boot' and you install GRUB images into the directory
+     `/boot/grub', GRUB recognizes that the images lies under the
+     directory `/grub' but not `/boot/grub'. That's fine, since there
+     is no guarantee that all of your operating systems mount the same
+     partition as `/boot'.
+
+     There are several solutions for this situation.
+
+       1. Install GRUB into the directory `/boot/boot/grub' instead of
+          `/boot/grub'. This may sound ugly but should work fine.
+
+       2. Create a symbolic link before installing GRUB, like `cd /boot
+          && ln -s . boot'. This works only if the filesystem of the
+          boot partition supports symbolic links and GRUB supports the
+          feature as well.
+
+       3. Install GRUB with the command `install', to specify the paths
+          of GRUB images explicitly. Here is an example:
+
+               grub> root (hd0,1)
+               grub> install /grub/stage1 d (hd0) /grub/stage2 p /grub/menu.lst
+
+Why don't Linux, FreeBSD, NetBSD, etc. become Multiboot-compliant?
+     Please ask the relevant maintainers. If all free kernels were
+     Multiboot-compliant (*note Multiboot Specification:
+     (multiboot)Top.), the world would be an utopia...
+
+
+File: grub.info,  Node: Obtaining and Building GRUB,  Next: Reporting bugs,  Prev: FAQ,  Up: Top
+
+How to obtain and build GRUB
+****************************
+
+     *Caution:* GRUB requires binutils-2.9.1.0.23 or later because the
+     GNU assembler has been changed so that it can produce real 16bits
+     machine code between 2.9.1 and 2.9.1.0.x. See
+     <http://sourceware.cygnus.com/binutils/>, to obtain information on
+     how to get the latest version.
+
+   GRUB is available from the GNU alpha archive site
+<alpha.gnu.org:/gnu/grub> or any of its mirrors. The file will be named
+grub-version.tar.gz. The current version is 0.5.96.1, so the file you
+should grab is:
+
+   <ftp://alpha.gnu.org/gnu/grub/grub-0.5.96.1.tar.gz>
+
+   To unbundle GRUB use the instruction:
+
+     zcat grub-0.5.96.1.tar.gz | tar xvf -
+
+   which will create a directory called `grub-0.5.96.1' with all the
+sources. You can look at the file `INSTALL' for detailed instructions
+on how to build and install GRUB, but you should be able to just do:
+
+     $ cd grub-0.5.96.1
+     $ ./configure
+     $ make install
+
+   This will install the grub shell `grub' (*note Invoking the grub
+shell::), the Multiboot checker `mbchk' (*note Invoking mbchk::), and
+the GRUB images It will also install the GRUB manual.
+
+   Also, the latest version is available from the CVS. The repository
+is:
+
+   `:pserver:anoncvs@subversions.gnu.org:/home/cvs'
+
+   and the module is:
+
+   `grub'
+
+   The password for anoncvs is empty. So the instruction is:
+
+     $ cvs -d :pserver:anoncvs@subversions.gnu.org:/home/cvs \
+         login
+     Password: <ENTER>
+     $ cvs -d :pserver:anoncvs@subversions.gnu.org:/home/cvs \
+         checkout grub
+
+   Get the recent version of GNU Automake from the CVS to regenerate
+`Makefile.in's. See <http://sourceware.cygnus.com/automake/>, for more
+information.
+
+
+File: grub.info,  Node: Reporting bugs,  Next: Index,  Prev: Obtaining and Building GRUB,  Up: Top
+
+Reporting bugs
+**************
+
+   When you encounter any problem or bug, please submit it to
+<bug-grub@gnu.org> with information about your computer and what you
+did _as much as possible_. Take a look at this list before you send
+e-mail to the address:
+
+   * Write what you did and what messages were printed on the screen in
+     detail. Don't paraphrase them. Please describe them as they were.
+
+   * Explain what you wanted to do. It is very useful to know your
+     purpose and your wish, and how GRUB didn't satisfy you.
+
+   * Inform us of the information about your GRUB. What version were you
+     using? Which were you using the grub shell or the boot images? If
+     using the grub shell, tell us what operating system was used to
+     run it. And, if you ran `configure' with some options when
+     building GRUB, it would be a good thing to let us know how to
+     build it.
+
+   * The information on your hardware is also essential. These are
+     especially important: the geometries and the partition tables of
+     your hard disk drives and your BIOS.
+
+   * Write down anything that you think might be related. If you are
+     not sure whether to state a fact or leave it out, state it!
+     Reporting too many things is quite better than omitting an
+     important thing.
+
+
+File: grub.info,  Node: Index,  Prev: Reporting bugs,  Up: Top
+
+Index
+*****
+
+* Menu:
+
+* blocklist:                             Command-line and menu entry commands.
+* boot:                                  Command-line and menu entry commands.
+* bootp:                                 Command-line and menu commands.
+* cat:                                   Command-line and menu entry commands.
+* chainloader:                           Command-line and menu entry commands.
+* cmp:                                   Command-line and menu entry commands.
+* color:                                 Command-line and menu commands.
+* configfile:                            Command-line and menu entry commands.
+* current_drive:                         Filesystem interface.
+* current_partition:                     Filesystem interface.
+* current_slice:                         Filesystem interface.
+* debug:                                 Command-line and menu entry commands.
+* default:                               Menu-specific commands.
+* device:                                Command-line and menu commands.
+* devread:                               Filesystem interface.
+* dhcp:                                  Command-line and menu commands.
+* disk_read_func:                        Filesystem interface.
+* displaymem:                            Command-line and menu entry commands.
+* embed:                                 Command-line and menu entry commands.
+* fallback:                              Menu-specific commands.
+* filemax:                               Filesystem interface.
+* filepos:                               Filesystem interface.
+* find:                                  Command-line and menu entry commands.
+* fstest:                                Command-line and menu entry commands.
+* FSYS_BUF:                              Filesystem interface.
+* geometry:                              Command-line and menu entry commands.
+* grub_read:                             Filesystem interface.
+* halt:                                  Command-line and menu entry commands.
+* help:                                  Command-line and menu entry commands.
+* hiddenmenu:                            Menu-specific commands.
+* hide:                                  Command-line and menu commands.
+* impsprobe:                             Command-line and menu entry commands.
+* initrd:                                Command-line and menu entry commands.
+* install:                               Command-line and menu entry commands.
+* ioprobe:                               Command-line and menu entry commands.
+* kernel:                                Command-line and menu entry commands.
+* lock:                                  Command-line and menu entry commands.
+* makeactive:                            Command-line and menu entry commands.
+* map:                                   Command-line and menu entry commands.
+* module:                                Command-line and menu entry commands.
+* modulenounzip:                         Command-line and menu entry commands.
+* part_length:                           Filesystem interface.
+* part_new:                              Command-line and menu commands.
+* part_start:                            Filesystem interface.
+* part_type:                             Command-line and menu commands.
+* password:                              Menu-specific commands.
+* pause:                                 Command-line and menu entry commands.
+* print_possibilities:                   Filesystem interface.
+* quit:                                  Command-line and menu entry commands.
+* rarp:                                  Command-line and menu commands.
+* read:                                  Command-line and menu entry commands.
+* reboot:                                Command-line and menu entry commands.
+* root:                                  Command-line and menu entry commands.
+* rootnoverify:                          Command-line and menu entry commands.
+* saved_drive:                           Filesystem interface.
+* saved_partition:                       Filesystem interface.
+* savedefault:                           Command-line and menu entry commands.
+* serial:                                Command-line and menu commands.
+* setkey:                                Command-line and menu commands.
+* setup:                                 Command-line and menu entry commands.
+* terminal:                              Command-line and menu commands.
+* testload:                              Command-line and menu entry commands.
+* tftpserver:                            Command-line and menu commands.
+* timeout:                               Menu-specific commands.
+* title:                                 Menu-specific commands.
+* unhide:                                Command-line and menu commands.
+* uppermem:                              Command-line and menu entry commands.
+
+
