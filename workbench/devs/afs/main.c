@@ -4,7 +4,7 @@
 */
 
 #ifndef DEBUG
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 #include <proto/dos.h>
@@ -63,6 +63,8 @@ LONG retval;
 						);
 					if (volume != NULL)
 						iofs->IOFS.io_Unit = (struct Unit *)&volume->ah;
+					else
+						iofs->IOFS.io_Unit = NULL;
 					PutMsg(&afsbase->rport, &iofs->IOFS.io_Message);
 				}
 				continue;
