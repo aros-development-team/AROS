@@ -19,21 +19,30 @@
 /****************************************************************************************/
 
 #include <devices/trackdisk.h>
+#include <devices/newstyle.h>
 #include <exec/resident.h>
 #include <exec/errors.h>
 #include <exec/memory.h>
+#include <exec/initializers.h>
 #include <proto/exec.h>
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <aros/asmcall.h>
 #include <aros/machine.h>
+#include <aros/macros.h>
+#include <string.h>
+
 #ifdef __GNUC__
 #include "ramdrive_device_gcc.h"
 #endif
 
 #define DEBUG 1
 #include <aros/debug.h>
+
+/****************************************************************************************/
+
+#define NEWSTYLE_DEVICE 1
 
 /****************************************************************************************/
 
@@ -86,7 +95,7 @@ const struct Resident resident =
 
 const char name[] = "ramdrive.device";
 
-const char version[] = "$VER: ramdrive.device 41.0 (01.08.2001)\r\n";
+const char version[] = "$VER: ramdrive.device 41.1 (19.07.2001)\r\n";
 
 const APTR inittabl[4] = 
 {
@@ -110,6 +119,49 @@ void *const functable[] =
 };
 
 const UBYTE datatable = 0;
+
+/****************************************************************************************/
+
+#if NEWSTYLE_DEVICE
+
+static const UWORD SupportedCommands[] =
+{
+    CMD_FLUSH,
+    CMD_READ,
+    CMD_WRITE,
+    CMD_UPDATE,
+    CMD_CLEAR,
+    TD_CHANGENUM,
+    TD_CHANGESTATE,
+    TD_PROTSTATUS,
+    TD_REMOVE,
+    TD_ADDCHANGEINT,
+    TD_REMCHANGEINT,
+    TD_GETDRIVETYPE,
+    TD_GETNUMTRACKS,    
+    TD_FORMAT,
+    TD_RAWREAD,
+    TD_RAWWRITE,
+    TD_SEEK,
+    TD_MOTOR,
+    ETD_READ,
+    ETD_WRITE,
+    ETD_UPDATE,
+    ETD_CLEAR,
+    ETD_MOTOR,
+    ETD_SEEK,
+    ETD_FORMAT,
+    ETD_RAWREAD,
+    ETD_RAWWRITE,
+    NSCMD_DEVICEQUERY,
+    0
+};
+
+#endif
+
+/****************************************************************************************/
+
+static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit);
 
 /****************************************************************************************/
 
@@ -181,6 +233,13 @@ AROS_LH3(void, open,
     struct unit *unit;
 
     D(bug("ramdrive_device: in libopen func.\n"));
+
+    if (iotd->iotd_Req.io_Message.mn_Length < sizeof(struct IOExtTD))
+    {
+	D(bug("ramdrive.device/open: IORequest structure passed to OpenDevice is too small!\n"));
+	iotd->iotd_Req.io_Error = IOERR_OPENFAIL;
+	return;
+    }
 
     /* Keep compiler happy */
     flags = 0;
@@ -361,8 +420,33 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
 
-    switch(iotd->iotd_Req.io_Command & ~TDF_EXTCOM)
+    switch(iotd->iotd_Req.io_Command)
     {
+#if NEWSTYLE_DEVICE
+      	case NSCMD_DEVICEQUERY:
+	    if(iotd->iotd_Req.io_Length < ((LONG)OFFSET(NSDeviceQueryResult, SupportedCommands)) + sizeof(UWORD *))
+	    {
+		iotd->iotd_Req.io_Error = IOERR_BADLENGTH;
+	    }
+	    else
+	    {
+		struct NSDeviceQueryResult *d;
+
+		d = (struct NSDeviceQueryResult *)iotd->iotd_Req.io_Data;
+
+		d->DevQueryFormat 	    = 0;
+		d->SizeAvailable 	    = sizeof(struct NSDeviceQueryResult);
+		d->DeviceType 	    = NSDEVTYPE_TRACKDISK;
+		d->DeviceSubType 	    = 0;
+		d->SupportedCommands    = (UWORD *)SupportedCommands;
+
+		iotd->iotd_Req.io_Actual = sizeof(struct NSDeviceQueryResult);
+		iotd->iotd_Req.io_Error  = 0;
+
+	    }
+	    break;
+#endif
+ 
     	case TD_CHANGENUM:
 	    /* result: io_Actual = disk change counter */
 	    
@@ -376,7 +460,9 @@ AROS_LH1(void, beginio,
 	    iotd->iotd_Req.io_Error = 0;
 	    break;
 	    
+	case ETD_UPDATE:
 	case CMD_UPDATE:
+	case ETD_CLEAR:
 	case CMD_CLEAR:
 	case TD_REMOVE:
 	case TD_ADDCHANGEINT:
@@ -409,12 +495,19 @@ AROS_LH1(void, beginio,
 	    }
 	    break;
 	   
+	case ETD_READ:
 	case CMD_READ:
+	case ETD_WRITE:
 	case CMD_WRITE:
+	case ETD_FORMAT:
 	case TD_FORMAT:
+	case ETD_RAWREAD:
 	case TD_RAWREAD:
+	case ETD_RAWWRITE:
 	case TD_RAWWRITE:
+	case ETD_SEEK:
 	case TD_SEEK:
+	case ETD_MOTOR:
 	case TD_MOTOR:
 	    /* Not done quick */
 	    iotd->iotd_Req.io_Flags &= ~IOF_QUICK;
@@ -600,6 +693,8 @@ AROS_UFH3(LONG, unitentry,
 
     D(bug("ramdrive_device/unitentry: Memory allocation okay :-) Replying startup msg.\n"));
 
+    FormatOFS(unit->mem, unit->unitnum, unit);
+    
     ReplyMsg(&unit->msg);
 
     D(bug("ramdrive_device/unitentry: Now entering main loop\n"));
@@ -618,8 +713,9 @@ AROS_UFH3(LONG, unitentry,
 		return 0;
 	    }
 
- 	    switch(iotd->iotd_Req.io_Command & ~TDF_EXTCOM)
+ 	    switch(iotd->iotd_Req.io_Command)
  	    {
+	    	case ETD_RAWREAD:
 	    	case TD_RAWREAD:
 	    	    /*
 		    ** same as CMD_READ, but offset does not have to be multiple of
@@ -627,12 +723,14 @@ AROS_UFH3(LONG, unitentry,
 		    **
 		    ** fall through
 		    */
-		    	    
+		
+		case ETD_READ:	    
  		case CMD_READ:
      		    D(bug("ramdrive_device/unitentry: received CMD_READ.\n"));
 		    err = read(unit, iotd);
  		    break;
-		    
+		
+		case ETD_RAWWRITE:    
 	    	case TD_RAWWRITE:
 	    	    /*
 		    ** same as CMD_WRITE, but offset does not have to be multiple of
@@ -640,13 +738,16 @@ AROS_UFH3(LONG, unitentry,
 		    **
 		    ** fall through
 		    */
-		    
+		
+		case ETD_WRITE:
  		case CMD_WRITE:
+		case ETD_FORMAT:
  		case TD_FORMAT:
     		    D(bug("ramdrive_device/unitentry: received %s\n", (iotd->iotd_Req.io_Command == CMD_WRITE) ? "CMD_WRITE" : "TD_FORMAT"));
  		    err = write(unit, iotd);
  		    break;
 		    
+		case ETD_MOTOR:
 		case TD_MOTOR:
 		    /*
 		    ** DOS wants the previous state in io_Actual.
@@ -657,6 +758,7 @@ AROS_UFH3(LONG, unitentry,
 		    err = 0;
 		    break;
 		    
+		case ETD_SEEK:
 		case TD_SEEK:
 		    unit->headpos = iotd->iotd_Req.io_Actual;
 		    err = 0;
@@ -672,6 +774,164 @@ AROS_UFH3(LONG, unitentry,
 	WaitPort(&unit->port);
 	
     } /* for(;;) */
+}
+
+/****************************************************************************************/
+
+/* The following routines are based on TurboDevice by Thomas Dreibholz */
+
+/****************************************************************************************/
+
+static ULONG CalcRootBlock(void)
+{
+    return NUM_CYL * NUM_HEADS * NUM_SECS / 2;
+}
+
+/****************************************************************************************/
+
+static ULONG CalcBitMap(void)
+{
+    return CalcRootBlock() + 1;
+}
+
+/****************************************************************************************/
+
+VOID RootBlockCheckSum(UBYTE *buf)
+{
+    LONG checksum, *long_ptr;
+    LONG  i;
+    
+    long_ptr = (ULONG *)buf;
+    checksum = 0;
+    
+    for(i = 0; i < TD_SECTOR / 4; i++)
+    {
+        checksum += AROS_BE2LONG(long_ptr[i]);
+    }
+    long_ptr[5] = AROS_LONG2BE(-checksum);
+}
+
+/****************************************************************************************/
+
+VOID CalcBitMapCheckSum(UBYTE *buf)
+{
+    LONG checksum, i;
+    LONG *long_ptr = (LONG *)buf;
+
+    for(i = 1, checksum = 0; i < TD_SECTOR / 4; i++)
+    {
+	checksum += AROS_BE2LONG(long_ptr[i]);
+    }
+    long_ptr[0] = AROS_LONG2BE(-checksum);
+}
+
+/****************************************************************************************/
+
+VOID InstallRootBlock(UBYTE *buf, STRPTR diskname, ULONG bitmap,
+    	    	      struct unit *unit)
+{
+    struct DateStamp ds;    
+    ULONG   	     *long_ptr;
+    LONG    	     i;
+    
+    long_ptr 	  = (ULONG *)buf;
+    long_ptr[0]   = AROS_LONG2BE(2);
+    long_ptr[3]   = AROS_LONG2BE(72);
+    long_ptr[78]  = AROS_LONG2BE(-1);
+    long_ptr[79]  = AROS_LONG2BE(bitmap);
+    long_ptr[127] = AROS_LONG2BE(1);
+    
+    DateStamp(&ds);
+    
+    long_ptr[121] = AROS_LONG2BE(ds.ds_Days);
+    long_ptr[122] = AROS_LONG2BE(ds.ds_Minute);
+    long_ptr[123] = AROS_LONG2BE(ds.ds_Tick);
+
+    long_ptr[105] = AROS_LONG2BE(ds.ds_Days);
+    long_ptr[106] = AROS_LONG2BE(ds.ds_Minute);
+    long_ptr[107] = AROS_LONG2BE(ds.ds_Tick);
+    
+    buf[432] = (UBYTE)strlen(diskname);
+    
+    for(i = 0; i < strlen(diskname); i++)
+    {
+	buf[433+i] = diskname[i];
+    }
+    
+    RootBlockCheckSum(buf);
+}
+
+/****************************************************************************************/
+
+static ULONG CalcBlocks(void)
+{
+    return NUM_CYL * NUM_HEADS * NUM_SECS - 1;
+}
+
+/****************************************************************************************/
+
+static void AllocBitMapBlock(LONG block, UBYTE *buf)
+{
+    ULONG *long_ptr = (ULONG *)buf;
+    LONG  longword, bit;
+    LONG  old_long, new_long;
+    
+    longword = (block - 2) / 32;
+    bit = block - 2 - longword * 32;
+    old_long = AROS_BE2LONG(long_ptr[longword + 1]);
+    new_long = old_long & (0xFFFFFFFF - (1L << bit));
+    
+    long_ptr[longword + 1] = AROS_LONG2BE(new_long);
+}
+
+/****************************************************************************************/
+
+static void FreeBitMapBlock(LONG block, UBYTE *buf)
+{
+    ULONG *long_ptr = (ULONG *)buf;
+    LONG  longword, bit;
+    LONG  old_long, new_long;
+    
+    longword = (block - 2) / 32;
+    bit = block - 2 - longword * 32;
+    old_long = AROS_BE2LONG(long_ptr[longword + 1]);
+    new_long = old_long | (1L << bit);
+    
+    long_ptr[longword + 1] = AROS_LONG2BE(new_long);
+}
+
+/****************************************************************************************/
+
+static void FormatOFS(UBYTE *mem, ULONG number, struct unit *unit)
+{
+    ULONG a,b,c,d;
+    UBYTE *cmem;
+    UBYTE Name[6];
+
+    mem[0]='D';
+    mem[1]='O';
+    mem[2]='S';
+    mem[3]=0x00;
+
+    a = CalcRootBlock();
+    b = CalcBitMap();
+
+    cmem = mem + (a * TD_SECTOR);
+    strcpy(Name, "RAM_#");
+    Name[4] = '0' + number;
+
+    InstallRootBlock(cmem, Name, b, unit);
+    cmem = mem + (b * TD_SECTOR);
+    d = CalcBlocks();
+    for(c = 2; c <= d; c++)
+    {
+	FreeBitMapBlock(c, cmem);
+    }
+    
+    AllocBitMapBlock(a, cmem);
+    AllocBitMapBlock(b, cmem);
+    
+    CalcBitMapCheckSum(cmem);
 }
 
 /****************************************************************************************/
