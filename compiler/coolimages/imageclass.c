@@ -157,6 +157,8 @@ AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1))
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
     
     switch (msg->MethodID)
@@ -180,6 +182,8 @@ AROS_UFH3S(IPTR, cool_imageclass_dispatcher,
     } /* switch (msg->MethodID) */
     
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/

@@ -51,7 +51,10 @@
 
 static const UBYTE name[];
 static const UBYTE version[];
+
 static void * AROS_SLIB_ENTRY(init,UnixIO)();
+
+
 extern const char UnixIO_End;
 
 int unixio_entry(void)
@@ -194,7 +197,7 @@ static void WaitForIO (void)
 	{
 	    if (msg->mode != vHidd_UnixIO_Abort)
 	    {
-	
+
 	      D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
 	      AddTail (&waitList, (struct Node *)msg);
 
@@ -337,7 +340,7 @@ static OOP_Object *unixio_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *ms
 	
 	id = OOP_INST_DATA(cl, o);
 	D(bug("inst: %p, o: %p\n", id, o));
-	
+
 	id->uio_ReplyPort = CreatePort (NULL, 0);
 	if (id->uio_ReplyPort)
 	{
@@ -361,7 +364,7 @@ kprintf("\tUnixIO::New(): Task %s (%x) Replyport: %x\n",FindTask(NULL)->tc_Node.
 static IPTR unixio_dispose(OOP_Class *cl, OOP_Object *o, OOP_Msg msg)
 {
     struct UnixIOData *id = OOP_INST_DATA(cl, o);
-    
+
     if (id -> uio_ReplyPort)
 	DeletePort (id->uio_ReplyPort);
 	
@@ -409,7 +412,7 @@ kprintf("\tUnixIO::Wait() Task %s (%x) waiting on port %x\n",FindTask(NULL)->tc_
 
     if (umsg)
 	FreeMem (umsg, sizeof (struct uioMessage));
-	
+
     return retval;
 }
 
@@ -443,7 +446,7 @@ static IPTR unixio_asyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAsyncIO *m
 
         /*
         ** Just send the message and leave
-        ** When the message arrives on the port the user must free 
+        ** When the message arrives on the port the user must free
         ** the message!
         */
 	PutMsg (ud->ud_Port, (struct Message *)umsg);
@@ -495,11 +498,16 @@ static VOID unixio_abortasyncio(OOP_Class *cl, OOP_Object *o, struct uioMsgAbort
 #define NUM_ROOT_METHODS 2
 #define NUM_UNIXIO_METHODS 3
 
+/*
 AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     AROS_UFHA(ULONG, dummy1, D0),
     AROS_UFHA(ULONG, dummy2, A0),
     AROS_UFHA(struct ExecBase *, SysBase, A6)
-)
+) */
+AROS_LH2(static void *, init,
+    AROS_LHA(ULONG, dummy1, D0),
+    AROS_LHA(ULONG, dummy2, A0),
+    struct ExecBase *, SysBase, 0, UnixIO)
 {
     AROS_USERFUNC_INIT
 
@@ -511,7 +519,7 @@ AROS_UFH3S(void *, AROS_SLIB_ENTRY(init, UnixIO),
     struct newMemList nml;
     struct MemList  * ml;
     struct Interrupt * is;
-    
+
     struct OOP_MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
     	{ (IPTR (*)())unixio_new,	moRoot_New	},

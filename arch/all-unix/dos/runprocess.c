@@ -111,6 +111,7 @@ extern void StackSwap (struct StackSwapStruct *, struct ExecBase *);
 
     oldSP = (APTR *)&DOSBase;
 
+    fprintf(stderr, "CIAOAOAOAOAO\n");
     /* Copy stack + locals + regs + everything */
     while (oldSP != (APTR *)&ret)
 	*--sp = *oldSP --;

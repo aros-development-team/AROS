@@ -245,6 +245,8 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     struct ExecBase *, sysBase, 0, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
+
     LC_SYSBASE_FIELD(lh) = sysBase;
     LC_SEGLIST_FIELD(lh) = segList;
 
@@ -269,7 +271,9 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     return (NULL);
 #else
     return (lh);
+
 #endif /* LC_NO_INITLIB */
+    AROS_LIBFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -289,6 +293,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     LC_LIBHEADERTYPEPTR, lh, 1, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
 #ifdef __MAXON__
     GetBaseReg();
     InitModules();
@@ -308,6 +313,8 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     }
 
     return NULL;
+
+    AROS_LIBFUNC_EXIT
 }
 
 
@@ -327,6 +334,8 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
     LC_LIBHEADERTYPEPTR, lh, 2, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
+
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
 
@@ -345,6 +354,8 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
+
+    AROS_LIBFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -365,6 +376,8 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
     struct ExecBase *, sysBase, 3, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
+
 #ifndef NOEXPUNGE
     BPTR seglist;
 
@@ -397,6 +410,8 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
+
+    AROS_LIBFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -408,7 +423,9 @@ AROS_LH0 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(ExtFuncLib),
     LC_LIBHEADERTYPEPTR, lh, 4, LibHeader
 )
 {
+    AROS_LIBFUNC_INIT
     return(NULL);
+    AROS_LIBFUNC_EXIT
 }
 
 #ifdef __LC_OWN_SYSBASE

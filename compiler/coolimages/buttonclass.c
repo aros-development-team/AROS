@@ -278,22 +278,24 @@ AROS_UFH3S(IPTR, cool_buttonclass_dispatcher,
 	  AROS_UFHA(Object *, obj, A2),
 	  AROS_UFHA(Msg, msg, A1))
 {
+    AROS_USERFUNC_INIT
+
     IPTR retval;
-    
+
     switch (msg->MethodID)
     {
         case OM_NEW:
 	    retval = coolbutton_new(cl, obj, (struct opSet *)msg);
 	    break;
-	    
+
 	case OM_DISPOSE:
 	    retval = coolbutton_dispose(cl, obj, msg);
 	    break;
-	
+
 	case GM_HITTEST:
 	    retval = coolbutton_hittest(cl, obj, (struct gpHitTest *)msg);
 	    break;
-	    
+
 	case GM_RENDER:
 	    retval = coolbutton_render(cl, obj, (struct gpRender *)msg);
 	    break;
@@ -303,8 +305,10 @@ AROS_UFH3S(IPTR, cool_buttonclass_dispatcher,
 	    break;
 
     } /* switch (msg->MethodID) */
-    
+
     return retval;
+
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
