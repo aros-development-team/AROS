@@ -1,3 +1,4 @@
+
 #include <aros/asmcall.h>
 #include <aros/libcall.h>
 #include <stdio.h>
@@ -6,6 +7,8 @@
 #include <exec/types.h>
 #include <exec/interrupts.h>
 #include <hidd/serial.h>
+#include <devices/serial.h>
+#include <string.h>
 #include "serial_intern.h"
 
 #define DEBUG 0
@@ -133,3 +136,76 @@ D(bug("%d %d %d\n",SU->su_InputNextPos,SU->su_InBufLength,tmp));
   return length;
 }
 
+/*
+ * The write buffer empty interrupt handler
+ */
+ULONG WBE_InterruptHandler( ULONG unitnum, APTR userdata)
+{
+	ULONG total = 0;
+	struct SerialUnit * SU;
+
+	SU = findUnit(pubSerialBase, unitnum);
+    
+	if (NULL != SU) {
+		/*
+		 * First get any active write 
+		 */
+		struct IOExtSer * ioserreq = (struct IOExtSer *)SU->su_ActiveWrite;
+		
+		while (1) {
+			/*
+			 * Try to transmit the active write request
+			 */
+			if (NULL != ioserreq) {
+				ULONG writtenbytes;
+				writtenbytes = HIDD_SerialUnit_Write(SU->su_Unit,
+				                                     &((char *)ioserreq->IOSer.io_Data)[SU->su_NextToWrite],
+				                                     SU->su_WriteLength);
+				/*
+				 * Check whether this was written completely.
+				 */
+				total += writtenbytes;
+				if (writtenbytes >= SU->su_WriteLength) {
+					/* This one is done */
+					ReplyMsg(&ioserreq->IOSer.io_Message);
+				} else {
+					/*
+					 * Not completed, yet.
+					 */
+					SU->su_WriteLength -= writtenbytes;
+					SU->su_NextToWrite += writtenbytes;
+					/*
+					 * Get out of the loop
+					 */
+					break;
+				}
+			}
+			/* 
+			 * Get the next request from the queue.
+			 */
+			ioserreq = (struct IOExtSer *)GetMsg(&SU->su_QWriteCommandPort);
+			SU->su_ActiveWrite = (struct Message *)ioserreq;
+			if (NULL == ioserreq) {
+				/*
+				 * No more request left. Done.
+				 */
+				SU->su_Status &= ~STATUS_WRITES_PENDING;
+				break;
+			}
+			
+			/*
+			 * There is a new request.
+			 */
+			SU->su_NextToWrite = 0;
+			if (-1 == ioserreq->IOSer.io_Length) {
+				SU->su_WriteLength = strlen(ioserreq->IOSer.io_Data);
+			} else {
+				SU->su_WriteLength = ioserreq->IOSer.io_Length;
+			}
+			/*
+			 * And repeat the loop with this request
+			 */
+		}
+	}
+	return total;
+}
