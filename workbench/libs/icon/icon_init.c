@@ -10,6 +10,7 @@
 #include "icon_intern.h"
 #include "libdefs.h"
 
+#define LC_NO_CLOSELIB
 #define LC_RESIDENTPRI	    -120
 
 #include <libcore/libheader.c>
@@ -58,7 +59,7 @@ ULONG SAVEDS L_OpenLib (LC_LIBHEADERTYPEPTR lh)
     return TRUE;
 } /* L_OpenLib */
 
-void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
+void SAVEDS L_ExpungeLib (LC_LIBHEADERTYPEPTR lh)
 {
     if (DOSBase)
 	CloseLibrary ((struct Library *)DOSBase);
@@ -66,5 +67,5 @@ void SAVEDS L_CloseLib (LC_LIBHEADERTYPEPTR lh)
     if (LB(lh)->utilitybase)
 	CloseLibrary (LB(lh)->utilitybase);
 
-} /* L_CloseLib */
+} /* L_ExpungeLib */
 
