@@ -133,7 +133,7 @@
 			Remove((struct Node *)sr);
 
 			/* Clear the bit, and update the owner count */
-			(IPTR)sr->sr_Waiter &= ~1;
+			sr->sr_Waiter = (APTR)((IPTR)sr->sr_Waiter & ~1);
 			sigSem->ss_NestCount++;
 
 			if(sr->sr_Waiter != NULL)
