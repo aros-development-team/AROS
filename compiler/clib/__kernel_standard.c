@@ -506,7 +506,7 @@ static double zero = 0.0;	/* used as const */
 		exc.type = OVERFLOW;
 		exc.name = "gamma";
 		if (_LIB_VERSION == _SVID_)
-		  exc.retval = HUGE;
+		  exc.retval = HUGE_VAL;
 		else
 		  exc.retval = HUGE_VAL;
 		if (_LIB_VERSION == _POSIX_)
@@ -520,7 +520,7 @@ static double zero = 0.0;	/* used as const */
 		exc.type = SING;
 		exc.name = "gamma";
 		if (_LIB_VERSION == _SVID_)
-		  exc.retval = HUGE;
+		  exc.retval = HUGE_VAL;
 		else
 		  exc.retval = HUGE_VAL;
 		if (_LIB_VERSION == _POSIX_)
