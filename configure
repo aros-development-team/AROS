@@ -65,7 +65,7 @@ case "$type" in
 	;;
 "AmigaOS" )
 	CC="gcc"
-	COMMON_CFLAGS="-Wall -g -O0"
+	COMMON_CFLAGS="-Wall -O0 -m68020"
 	ILDFLAGS="-nostartfiles -nostdlib"
 	ARCH="amiga"
 	KERNEL="m68k-native"
