@@ -71,6 +71,11 @@
 
 #include "aiff.h"
 
+#ifdef __AROS__
+#define DEBUG 1
+#include <aros/debug.h>
+#endif
+
 #if !defined(__MAXON__) && !defined(__AROS__)
 #define IntuitionBase	cb->cb_IntuitionBase
 #define GfxBase		cb->cb_GfxBase
@@ -126,13 +131,19 @@
 #define SDiv( x, y )		( (x) / (y) )
 #endif
 
+#ifdef __AROS__
+#define Period2Freq( x ) 	( UDiv( UMult(709379, 5L ), (x) ) )
+#else
 #define Period2Freq( x ) 	( UDiv( UMult( ((struct ExecBase *)SysBase)->ex_EClockFrequency, 5L ), (x) ) )
+#endif
+
 #define Freq2Period( x )	Period2Freq( x )
 #define IsStereo( x )		( (BOOL) ( ( x ) & 1 ) )
 
 #ifndef SHRT_MAX
 #define SHRT_MAX	0x7fff
 #endif
+
 //#define DEBUG
 #ifdef DEBUG
 #define dbug( x )	x
@@ -333,8 +344,8 @@ IPTR Dispatcher(REG(a0,Class *cl), REG(a2,Object *o), REG(a1,Msg msg))
 			
 			dbug( kprintf( "DTM_OBTAINDRAWINFO\n" ); )
 			
-			retval =	(	( id->Screen = (struct Screen *) GetTagData( PDTA_Screen, NULL, ((struct opSet *)msg)->ops_AttrList ) ) ||
-						( id->DrawInfo = (struct DrawInfo *) GetTagData( GA_DrawInfo, NULL, ((struct opSet *)msg)->ops_AttrList ) ) );
+			retval =	(	( id->Screen = (struct Screen *) GetTagData( PDTA_Screen, 0, ((struct opSet *)msg)->ops_AttrList ) ) ||
+						( id->DrawInfo = (struct DrawInfo *) GetTagData( GA_DrawInfo, 0, ((struct opSet *)msg)->ops_AttrList ) ) );
 		}
 		break;
 		
@@ -579,7 +590,11 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
 	
 	/* set default settings */
 	dbug( kprintf( "Setting default values\n" ); )
+#ifdef __AROS__
+	cb->cb_AHI = TRUE;
+#else
 	cb->cb_AHI = FALSE;
+#endif
 	cb->cb_AHIModeID = AHI_DEFAULT_ID;
 	cb->cb_ForceAHIMode = FALSE;
 	cb->cb_AHIMixFrequency = AHI_DEFAULT_FREQ;
@@ -745,7 +760,7 @@ void __regargs GetSoundDTPrefs( struct ClassBase *cb )
 			else
 			{
 				extern TEXT		LibName[];
-				struct EasyStruct	es = { sizeof(struct EasyStruct), NULL, LibName, buf, "Okay" };
+				struct EasyStruct	es = { sizeof(struct EasyStruct), 0, LibName, buf, "Okay" };
 				
 				if( Fault( IoErr(), "Error in prefs file", buf, sizeof( buf ) ) )
 				{
@@ -1107,7 +1122,7 @@ dbug( kprintf( "NextTagItem\n" ); )
 			case DTA_Immediate:
 				if( ! ( id->Immediate = data ) )
 				{
-					CoerceMethod( cl, o, DTM_TRIGGER, NULL, STM_STOP, NULL );
+					CoerceMethod( cl, o, DTM_TRIGGER, 0, STM_STOP, 0 );
 				}
 				else
 				{
@@ -1186,7 +1201,7 @@ dbug( kprintf( "NextTagItem done.\n" ); )
 		else if( id->Immediate && id->DelayedImmed )
 		{
 			id->DelayedImmed = FALSE;
-			CoerceMethod( cl, o, DTM_TRIGGER, NULL, STM_PLAY, NULL );
+			CoerceMethod( cl, o, DTM_TRIGGER, 0, STM_PLAY, 0 );
 		}
 	}
 	dbug( kprintf( "NextTagItem4\n" ); )
@@ -2192,7 +2207,7 @@ IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 					
 					if( stm )
 					{	
-						CoerceMethod( cl, o, DTM_TRIGGER, NULL, stm, NULL );
+						CoerceMethod( cl, o, DTM_TRIGGER, 0, stm, 0 );
 					}
 				}
 			}
@@ -2290,7 +2305,7 @@ IPTR __regargs Sound_HANDLEINPUT( Class *cl, Object *o, struct gpInput *gpi )
 					struct timeval		tv = gpi->gpi_IEvent->ie_TimeStamp;
 					STATIC ULONG	stm[] = { STM_PLAY, STM_STOP };
 					
-					CoerceMethod( cl, o, DTM_TRIGGER, NULL, stm[ DoubleClick( id->LastClick.tv_secs, id->LastClick.tv_micro, tv.tv_secs, tv.tv_micro ) ], 0L );
+					CoerceMethod( cl, o, DTM_TRIGGER, 0, stm[ DoubleClick( id->LastClick.tv_secs, id->LastClick.tv_micro, tv.tv_secs, tv.tv_micro ) ], 0L );
 					
 					id->LastClick = tv;
 				}
@@ -2583,7 +2598,7 @@ LONG __regargs WriteSVX( struct ClassBase *cb, Object *o, struct IFFHandle *iff,
 				{DTA_ObjAuthor, ID_AUTH, NULL},
 				{DTA_ObjCopyright, ID_Copyright, NULL},
 				{DTA_ObjVersion, ID_FVER, NULL},
-				{NULL}
+				{0}
 			};
 			LONG	i;
 			
@@ -3094,7 +3109,7 @@ void PlayerProc( void )
 	struct ClassBase	*cb;
 	struct InstanceData *id;
 	LONG			numChAllocated, samples, buffersize, length, cycles, 
-					loops, audiompmsk, mpmsk;
+					loops, audiompmsk = 0, mpmsk;
 	BOOL			releaseAudio = FALSE, restart, paused = FALSE;
 	BYTE			*sample, *buffer[4] = {};
 	
@@ -4119,7 +4134,7 @@ void PlayerProcAHI( void )
 										audioID = cb->cb_AHIModeID;
 									}
 									else
-									{
+									{									
 										if( ( audioID = AHI_BestAudioID( 
 											( cb->cb_AHIModeID ? AHIDB_AudioID : TAG_IGNORE ), cb->cb_AHIModeID,
 											AHIDB_Volume, TRUE,
@@ -4207,14 +4222,14 @@ void PlayerProcAHI( void )
 													AHIP_Vol, vol,
 													AHIP_Pan, id->Panning,
 													AHIP_Sound, 0,
-													AHIP_EndChannel, NULL,
+													AHIP_EndChannel, 0,
 													( stereo ? TAG_IGNORE : TAG_END ), 0L,
 													AHIP_BeginChannel, 1,
 													AHIP_Freq, freq,
 													AHIP_Vol, vol,
 													AHIP_Pan, id->Panning,
 													AHIP_Sound, 0,
-													AHIP_EndChannel, NULL,
+													AHIP_EndChannel, 0,
 													TAG_DONE );
 												
 												failed = FALSE;
