@@ -28,6 +28,7 @@
 #include "support.h"
 #include "classes/window.h"
 #include "classes/area.h"
+#include "imspec.h"
 
 #include "muimaster_intern.h"
 
@@ -87,6 +88,7 @@ struct MUI_WindowData
     UWORD          wd_innerRight;
     UWORD          wd_innerTop;
     UWORD          wd_innerBottom;
+    struct MUI_ImageSpec *wd_Background;
 
     Object *       wd_DragObject; /* the object which is being dragged */
     struct Window *wd_DropWindow; /* the destiantion window, for faster access */
@@ -592,11 +594,19 @@ void _zune_window_message(struct IntuiMessage *imsg)
 		    _height(data->wd_RootObject) = data->wd_Height - (data->wd_innerBottom + data->wd_innerTop);
 		    DoMethod(data->wd_RootObject, MUIM_Layout);
 		    DoMethod(data->wd_RootObject, MUIM_Show);
-		    left = data->wd_RenderInfo.mri_Window->BorderLeft;
-		    top = data->wd_RenderInfo.mri_Window->BorderTop,
-		    right = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - 1;
-		    bottom = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - 1,
-		    EraseRect(data->wd_RenderInfo.mri_Window->RPort,left,top,right,bottom);
+
+		    {
+			LONG left,top,width,height;
+
+			left = data->wd_RenderInfo.mri_Window->BorderLeft;
+			top = data->wd_RenderInfo.mri_Window->BorderTop,
+			width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
+			height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
+
+			zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
+				 left, top, width, height, 0, 0, 0);
+		    }
+
 		    MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
 		} else
 		{
@@ -1210,6 +1220,9 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	}
     }
 
+    /* Background stuff */
+    data->wd_Background = zune_image_spec_to_structure(MUII_WindowBack);
+
     D(bug("muimaster.library/window.c: Window Object created at 0x%lx\n",obj));
 
     return (ULONG)obj;
@@ -1221,6 +1234,8 @@ static ULONG Window_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    if (data->wd_Background) zune_imspec_free(data->wd_Background);
 
     if ((data->wd_Flags & MUIWF_OPENED))
     {
@@ -1505,6 +1520,18 @@ static ULONG window_Open(struct IClass *cl, Object *obj)
 
     window_show(data);
 
+    {
+	LONG left,top,width,height;
+
+	left = data->wd_RenderInfo.mri_Window->BorderLeft;
+	top = data->wd_RenderInfo.mri_Window->BorderTop,
+	width = data->wd_RenderInfo.mri_Window->Width - data->wd_RenderInfo.mri_Window->BorderRight - left;
+	height = data->wd_RenderInfo.mri_Window->Height - data->wd_RenderInfo.mri_Window->BorderBottom - top,
+
+	zune_draw_image(&data->wd_RenderInfo, data->wd_Background, 
+		 left, top, width, height, 0, 0, 0);
+    }
+
     MUI_Redraw(data->wd_RootObject, MADF_DRAWALL);
     return TRUE;
 }
@@ -1595,6 +1622,8 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     if (!SetupRenderInfo(&data->wd_RenderInfo))
 	return FALSE;
 
+    zune_imspec_setup(&data->wd_Background,&data->wd_RenderInfo);
+
     return TRUE;
 }
 
@@ -1604,6 +1633,8 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
 static ULONG Window_Cleanup(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_WindowData *data = INST_DATA(cl, obj);
+
+    zune_imspec_cleanup(&data->wd_Background,&data->wd_RenderInfo);
 
     if (data->wd_dnd)
     {

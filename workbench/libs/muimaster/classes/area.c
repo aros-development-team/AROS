@@ -793,9 +793,12 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	}
 	else
 	{
-	    zune_draw_image(data->mad_RenderInfo, background,
+	    if (background)
+	    {
+		zune_draw_image(data->mad_RenderInfo, background,
                            _left(obj),_top(obj),_width(obj),_height(obj),
 			    _left(obj), _top(obj), 0);
+	    }
 	}
     }
 
