@@ -10,6 +10,8 @@ New this time:
 - Some bugfixes
 - FreeBSD/i386 support
 - Amiga users can now participate. Read README.CVS for more info.
+- Even more easy to port to a new hardware
+- HTML docs
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
