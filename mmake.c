@@ -1,4 +1,5 @@
 /*
+    0.3 - Purified mmake
     0.2 - Got rid of external program find
 	- Some bugfixes
 	- Renamed some variables
@@ -50,7 +51,7 @@ struct List
 	((struct List *)l)->prelast->next = ((struct Node *)n), \
 	((struct List *)l)->prelast          = ((struct Node *)n) ))
 
-#   define REMOVE(n)        ((void)(\
+#   define Remove(n)        ((void)(\
 	((struct Node *)n)->prev->next = ((struct Node *)n)->next,\
 	((struct Node *)n)->next->prev = ((struct Node *)n)->prev ))
 
@@ -70,6 +71,10 @@ struct List
 	for (n=(void *)(((struct List *)(l))->first); \
 	    ((struct Node *)(n))->next; \
 	    n=(void *)(((struct Node *)(n))->next))
+#   define ForeachNodeSafe(l,node,next) \
+	for (node=(void *)(((struct List *)(l))->first); \
+	    ((next)=(void*)((struct Node *)(node))->next); \
+	    (node)=(void *)(next))
 
 char * xstrdup (const char * str)
 {
@@ -99,6 +104,8 @@ void xfree (void * ptr)
 
     free (ptr);
 }
+
+#define cfree(x)        if (x) free (x)
 
 struct Node * FindNode (const struct List * l, const char * name)
 {
@@ -222,9 +229,7 @@ Var * addnodeonce (struct List * l, const char * name, const char * value)
 
     if (n)
     {
-	if (n->value)
-	    free (n->value);
-
+	cfree (n->value);
 	n->value = value ? xstrdup (value) : NULL;
     }
     else
@@ -299,8 +304,10 @@ char ** getargs (Project * prj, const char * line, int * argc)
     char * src;
     int arg;
 
-    if (buffer)
-	free (buffer);
+    cfree (buffer);
+
+    if (!prj)
+	return NULL;
 
     assert (line);
 
@@ -339,7 +346,7 @@ char ** getargs (Project * prj, const char * line, int * argc)
 
     argv[arg] = NULL;
 
-    if (*argc)
+    if (argc)
 	*argc = arg;
 
     return argv;
@@ -392,8 +399,77 @@ Project * initproject (char * name)
     return prj;
 }
 
+void freelist (struct List * l)
+{
+    struct Node * node, * next;
+
+    ForeachNodeSafe(l,node,next)
+    {
+	Remove (node);
+
+	cfree (node->name);
+	free (node);
+    }
+}
+
+void freevarlist (struct List * l)
+{
+    Var * node, * next;
+
+    ForeachNodeSafe(l,node,next)
+    {
+	Remove (node);
+
+	xfree (node->node.name);
+	cfree (node->value);
+	xfree (node);
+    }
+}
+
+void freetarget (Target * target)
+{
+    xfree (target->node.name);
+
+    freelist (&target->makefiles);
+    freelist (&target->deps);
+
+    xfree (target);
+}
+
+void freetargetlist (struct List * l)
+{
+    struct Node * node, * next;
+
+    ForeachNodeSafe(l,node,next)
+    {
+	Remove (node);
+	freetarget ((Target *)node);
+    }
+}
+
+void freeproject (Project * prj)
+{
+    assert (prj);
+
+    cfree (prj->node.name);
+    cfree (prj->maketool);
+    cfree (prj->defaultmakefilename);
+    cfree (prj->top);
+    cfree (prj->defaulttarget);
+    cfree (prj->genmakefilescript);
+    cfree (prj->genmakefiledeps);
+    cfree (prj->globalvarfile);
+
+    freelist (&prj->ignoredirs);
+    freevarlist (&prj->vars);
+    freelist (&prj->makefiles);
+    freetargetlist (&prj->targets);
+
+    xfree (prj);
+}
+
 #define SETSTR(str,val) \
-    if (str) free (str); \
+    cfree (str); \
     str = val ? xstrdup (val) : NULL
 
 void init (void)
@@ -496,13 +572,13 @@ printf ("name=%s\n", name);
 	    if (!strcmp (cmd, "add"))
 	    {
 		struct Node * n;
-		n = newnode(args,NULL);
+		n = (struct Node *)newnode(args,NULL);
 		ADDTAIL(&project->makefiles, n);
 	    }
 	    else if (!strcmp (cmd, "ignoredir"))
 	    {
 		struct Node * n;
-		n = newnode(args,NULL);
+		n = (struct Node *)newnode(args,NULL);
 		ADDTAIL(&project->ignoredirs, n);
 	    }
 	    else if (!strcmp (cmd, "defaultmakefilename"))
@@ -585,7 +661,7 @@ void buildmflist (Project * prj)
 
     while ((cd = GetHead(&dirs)))
     {
-	REMOVE (cd);
+	Remove (cd);
 
 	chdir (prj->top);
 
@@ -666,8 +742,11 @@ void buildmflist (Project * prj)
 
 	closedir (dirh);
 
+	free (cd->name);
 	free (cd);
     }
+
+    xfree (mfnsrc);
 
 #if 0
     printf ("project %s.makefiles=", prj->node.name);
@@ -708,7 +787,7 @@ void appendtarget (Project * prj, const char * tname, const char * mf, char ** d
 
     addnodeonce(&target->makefiles, mf, NULL);
 
-#if 1
+#if 0
 printf ("add %s.%s mf=%s\n", prj->node.name, target->node.name, mf);
 #endif
 
@@ -716,7 +795,7 @@ printf ("add %s.%s mf=%s\n", prj->node.name, target->node.name, mf);
     {
 	while (*deps)
 	{
-#if 1
+#if 0
 printf ("   add dep %s\n", *deps);
 #endif
 	    addnodeonce (&target->deps, *deps, NULL);
@@ -982,7 +1061,7 @@ void callmake (Project * prj, const char * tname, const char * mforig)
     }
 
     chdir (prj->top);
-    if (*dir)
+    if (file != mf)
     {
 	file[-1] = 0;
 	chdir (dir);
@@ -1021,8 +1100,8 @@ void callmake (Project * prj, const char * tname, const char * mforig)
 	    }
 	}
 
-	if (depfile)
-	    free (depfile);
+	cfree (depfile);
+	xfree (dest);
     }
 
     setvar (prj, "CURDIR", dir);
@@ -1127,6 +1206,7 @@ void maketarget (char * metatarget)
 
 int main (int argc, char ** argv)
 {
+    Project * prj, * next;
     char * currdir;
     int t;
 
@@ -1160,9 +1240,18 @@ int main (int argc, char ** argv)
 	maketarget (targets[t]);
     }
 
+    ForeachNodeSafe (&projects, prj, next)
+    {
+	Remove (prj);
+	freeproject (prj);
+    }
+
     chdir (currdir);
 
     free (currdir);
+
+    /* Free internal memory */
+    getargs (NULL, NULL, NULL);
 
     return 0;
 }
