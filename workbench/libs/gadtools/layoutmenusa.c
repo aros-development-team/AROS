@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #include "gadtools_intern.h"
 
@@ -69,19 +66,19 @@
     struct TagItem 	stdlayouttags[] =
     {
 	{GTMN_Menu		, (IPTR)menu},
-	{GTMN_TextAttr		, NULL	    },
-	{GTMN_NewLookMenus	, TRUE	    },
-	{GTMN_Checkmark		, NULL	    },
-	{GTMN_AmigaKey		, NULL	    },
-	{GTMN_FrontPen		, 0L	    },
-	{TAG_DONE	    	    	    }
+	{GTMN_TextAttr		, (IPTR) NULL	    },
+	{GTMN_NewLookMenus	,        TRUE	    },
+	{GTMN_Checkmark		, (IPTR) NULL	    },
+	{GTMN_AmigaKey		, (IPTR) NULL	    },
+	{GTMN_FrontPen		,        0L	        },
+	{TAG_DONE	    	    	            }
     };
 
     if (NULL == textfont)
         return FALSE;
 
     stdlayouttags[TAG_TextAttr].ti_Data     = GetTagData(GTMN_TextAttr,
-                                                	 NULL, 
+                                                	 (IPTR) NULL, 
                                                 	 tagList);
 
     stdlayouttags[TAG_NewLookMenus].ti_Data = GetTagData(GTMN_NewLookMenus, 
@@ -89,11 +86,11 @@
                                                 	 tagList);
 
     stdlayouttags[TAG_CheckMark].ti_Data    = GetTagData(GTMN_Checkmark,
-                                                	 NULL, 
+                                                	 (IPTR) NULL, 
                                                 	 tagList);
 
     stdlayouttags[TAG_AmigaKey].ti_Data     = GetTagData(GTMN_AmigaKey,
-                                                	 NULL, 
+                                                	 (IPTR) NULL, 
                                                 	 tagList);
 
     /*

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-200¤, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Internal GadTools slider class.
-    Lang: English
+    Internal GadTools slider class.
 */
  
 
@@ -159,7 +158,7 @@ STATIC IPTR slider_new(Class * cl, Object * o, struct opSet *msg)
     {
     	struct SliderData *data = INST_DATA(cl, o);
   
-	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+	dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
 	
 	fitags[0].ti_Data = GetTagData(GA_Width, 0, msg->ops_AttrList) + BORDERPROPSPACINGX * 2;
 	fitags[1].ti_Data = GetTagData(GA_Height, 0, msg->ops_AttrList) + BORDERPROPSPACINGY * 2;

@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Internal GadTools arrow classe.
-    Lang: English
+    Internal GadTools arrow class.
 */
  
 
@@ -54,9 +53,9 @@ struct ArrowData
 
 /**********************************************************************************************/
 
-STATIC IPTR arrow_new(Class * cl, Object * o, struct opSet *msg)
+STATIC Object *arrow_new(Class * cl, Object * o, struct opSet *msg)
 {
-     struct DrawInfo	*dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, NULL, msg->ops_AttrList);
+     struct DrawInfo	*dri = (struct DrawInfo *)GetTagData(GA_DrawInfo, (IPTR) NULL, msg->ops_AttrList);
      Object 		*frame = NULL, *arrowimage = NULL;
      struct TagItem 	fitags[] =
      {
@@ -156,7 +155,7 @@ STATIC IPTR arrow_new(Class * cl, Object * o, struct opSet *msg)
     atags[1].ti_Data = (IPTR)frame;
     atags[2].ti_Data = (IPTR)msg->ops_AttrList;
     
-    o = (Object *)DoSuperMethod(cl, o, OM_NEW, (IPTR) atags, NULL);
+    o = (Object *)DoSuperMethod(cl, o, OM_NEW, (IPTR) atags, (IPTR) NULL);
     if (o)
     {
     	struct ArrowData *data = INST_DATA(cl, o);
@@ -164,7 +163,7 @@ STATIC IPTR arrow_new(Class * cl, Object * o, struct opSet *msg)
         D(bug("Arrow::New(): Got object from superclass: %p\n", o));
 	data->gadgetkind = GetTagData(GTA_GadgetKind, 0, msg->ops_AttrList);
 	data->arrowtype = arrowtype;
-    	data->scroller = (Object *)GetTagData(GTA_Arrow_Scroller, NULL,  msg->ops_AttrList);
+    	data->scroller = (Object *)GetTagData(GTA_Arrow_Scroller, (IPTR) NULL,  msg->ops_AttrList);
     	if (!data->scroller)
      	    goto failure;
      	    
@@ -172,7 +171,7 @@ STATIC IPTR arrow_new(Class * cl, Object * o, struct opSet *msg)
      	data->frame      = frame;
     	
     }
-    ReturnPtr("Arrow::New", IPTR, (IPTR)o);
+    ReturnPtr("Arrow::New", Object *, o);
     
 failure:
     if (frame)
@@ -182,7 +181,7 @@ failure:
     if (o)
     	CoerceMethod(cl, o, OM_DISPOSE);
     
-    ReturnPtr("Arrow::New", IPTR, NULL);
+    ReturnPtr("Arrow::New", Object *, NULL);
     
 }
 
@@ -255,7 +254,7 @@ AROS_UFH3S(IPTR, dispatch_arrowclass,
     {
 	case OM_NEW:
     	    D(bug("dispatch_arrowclass: OM_NEW\n"));
-	    retval = arrow_new(cl, o, (struct opSet *) msg);
+	    retval = (IPTR) arrow_new(cl, o, (struct opSet *) msg);
 	    break;
 
 	case OM_GET:

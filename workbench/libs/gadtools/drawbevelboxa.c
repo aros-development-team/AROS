@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Draw a bevelled box.
-    Lang: english
+    Draw a bevelled box.
 */
 #include <proto/exec.h>
 #include <intuition/classusr.h>
@@ -68,7 +67,7 @@
     struct VisualInfo 	*vi;
     struct TagItem 	tags[5];
 
-    vi = (struct VisualInfo *)GetTagData(GT_VisualInfo, NULL, taglist);
+    vi = (struct VisualInfo *) GetTagData(GT_VisualInfo, (IPTR) NULL, taglist);
     if (vi == NULL)
 	return;
 
