@@ -254,7 +254,7 @@ static ULONG Popasl_Close_Function(struct Hook *hook, Object *obj, void **msg)
     }
 
     data->asl_proc = NULL;
-    set(obj, MUIA_Popasl_Active, FALSE);
+    nfset(obj, MUIA_Popasl_Active, FALSE);
 
     return 0;
 }
