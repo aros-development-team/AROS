@@ -19,106 +19,126 @@ shell : $(BINDIR)/aros
 #	newer than the executable, then the executable is linked anew).
 #
 # END_DESC{localmakevar}
+
 ifeq ("$(SHARED_AR)","")
 DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.a
 else
 DEPLIB_AMIGAOS = $(LIBDIR)/libAmigaOS.so
 endif
+
 ifeq ("$(SHARED_EXEC)","yes")
 DEPLIB_EXEC=$(LIBDIR)/libexec.so
 LIBEXEC=-lexec
 else
 DEPLIB_EXEC=$(LIBDIR)/libexec.a
 endif
+
 ifeq ("$(SHARED_DOS)","yes")
 DEPLIB_DOS=$(LIBDIR)/libdos.so
 LIBDOS=-ldos
 else
 DEPLIB_DOS=$(LIBDIR)/libdos.a
 endif
+
 ifeq ("$(SHARED_INTUITION)","yes")
 DEPLIB_INTUITION=$(LIBDIR)/libintuition.so
 LIBINTUITION=-lintuition
 else
 DEPLIB_INTUITION=$(LIBDIR)/libintuition.a
 endif
+
 ifeq ("$(SHARED_GRAPHICS)","yes")
 DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.so
 LIBGRAPHICS=-lgraphics
 else
 DEPLIB_GRAPHICS=$(LIBDIR)/libgraphics.a
 endif
+
 ifeq ("$(SHARED_UTILITY)","yes")
 DEPLIB_UTILITY=$(LIBDIR)/libutility.so
 LIBUTILITY=-lutility
 else
 DEPLIB_UTILITY=$(LIBDIR)/libutility.a
 endif
+
 ifeq ("$(SHARED_LAYERS)","yes")
 DEPLIB_LAYERS=$(LIBDIR)/liblayers.so
 else
 DEPLIB_LAYERS=$(LIBDIR)/liblayers.a
 endif
+
 ifeq ("$(SHARED_MATHFFP)","yes")
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.so
 else
 DEPLIB_MATHFFP=$(LIBDIR)/libmathffp.a
 endif
+
 ifeq ("$(SHARED_MATHIEEESINGBAS)","yes")
 DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.so
 else
 DEPLIB_MATHIEEESINGBAS=$(LIBDIR)/libmathieeesingbas.a
 endif
+
 ifeq ("$(SHARED_BOOPSI)","yes")
 DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.so
 else
 DEPLIB_BOOPSI=$(LIBDIR)/libboopsi.a
 endif
+
 ifeq ("$(SHARED_WORKBENCH)","yes")
 DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.so
 else
 DEPLIB_BOOPSI=$(LIBDIR)/libworkbench.a
 endif
+
 ifeq ("$(SHARED_HIDDCLASS)","yes")
 DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.so
 else
 DEPLIB_HIDDCLASS=$(LIBDIR)/libhiddclass.a
 endif
+
 ifeq ("$(SHARED_UNIXIOCLASS)","yes")
 DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.so
 else
 DEPLIB_UNIXIOCLASS=$(LIBDIR)/libunixiocl.a
 endif
+
 ifeq ("$(SHARED_EXPANSION)","yes")
 DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.so
 else
 DEPLIB_EXPANSION=$(LIBDIR)/libexpansion.a
 endif
+
 ifeq ("$(SHARED_TIMER)","yes")
 DEPLIB_TIMER=$(LIBDIR)/libtimer.so
 else
 DEPLIB_TIMER=$(LIBDIR)/libtimer.a
 endif
+
 ifeq ("$(SHARED_BATTCLOCK)","yes")
 DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.so
 else
 DEPLIB_BATTCLOCK=$(LIBDIR)/libbattclock.a
 endif
+
 ifeq ("$(SHARED_BOOT)","yes")
 DEPLIB_BOOT=$(LIBDIR)/libboot.so
 else
 DEPLIB_BOOT=$(LIBDIR)/libboot.a
 endif
+
 ifeq ("$(SHARED_AROS)","yes")
 DEPLIB_AROS=$(LIBDIR)/libaros.so
 else
 DEPLIB_AROS=$(LIBDIR)/libaros.a
 endif
+
 ifeq ("$(SHARED_OOP)","yes")
 DEPLIB_OOP=$(LIBDIR)/liboop.so
 else
 DEPLIB_OOP=$(LIBDIR)/liboop.a
 endif
+
 ifeq ("$(SHARED_CGFX)","yes")
 DEPLIB_CGFX=$(LIBDIR)/libcybergraphics.so
 else
@@ -156,7 +176,7 @@ DEP_LIBS = \
 	$(DEPLIB_AROS)
 
 LIBS =	-L$(LIBDIR) $(GENDIR)/filesys/emul_handler.o \
-	-lexec -lAmigaOS -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
+	-lexec -lboot -lintuition -lgraphics -llayers -ldos -lconsole \
 	-lhiddclass -lunixiocl -lboopsi -lutility -ltimer \
 	-laros -lmathffp -lmathieeesingbas -lexpansion -lbattclock \
 	-larossupport -lamiga -linput -lkeymap -loop -lx11cl \
