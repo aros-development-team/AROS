@@ -336,9 +336,12 @@ static IPTR new_propgclass(Class *cl, Object *o, struct opSet *msg)
   	  memset(&(data->propinfo), 0, sizeof (struct PropInfo));
   	*/
     	data->propinfo.Flags	= PROPNEWLOOK|AUTOKNOB|FREEVERT;
-    	data->propinfo.VertPot	= MAXPOT;
-    	data->propinfo.VertBody = 20000;
-	    	
+    	data->propinfo.VertPot	= 0;
+    	data->propinfo.VertBody = MAXBODY;
+	data->top     = 0;
+	data->visible = 1;
+	data->total   = 1;
+	   	
     	/* Handle our special tags - overrides defaults */
    	set_propgclass(cl, o, msg);
 	    
