@@ -74,7 +74,7 @@ void PrintErrorMsg (ULONG errnum, STRPTR name)
 
 /*****************************************************************************/
 
-void main (int argc, char **argv)
+int main (int argc, char **argv)
 {
     Object *dto;
     STRPTR name;
@@ -118,14 +118,14 @@ void main (int argc, char **argv)
 		/* Get information about the object */
 		if (GetDTAttrs (dto,
 				/* Get the name of the object */
-				DTA_ObjName,		(ULONG) & name,
+				DTA_ObjName,		(IPTR) &name,
 
 				/* Get the desired size */
-				DTA_NominalHoriz,	&nomwidth,
-				DTA_NominalVert,	&nomheight,
+				DTA_NominalHoriz,	(IPTR) &nomwidth,
+				DTA_NominalVert,	(IPTR) &nomheight,
 
 				/* Get the mode ID for graphical objects */
-				PDTA_ModeID,		&modeid,
+				PDTA_ModeID,		(IPTR) &modeid,
 				TAG_DONE))
 		{
 
@@ -148,17 +148,17 @@ void main (int argc, char **argv)
 		dtf.dtf_ContentsInfo = &fri;
 		dtf.dtf_SizeFrameInfo = sizeof (struct FrameInfo);
 
-		if (DoDTMethodA (dto, NULL, NULL, &dtf) && fri.fri_Dimensions.Depth)
+		if (DoDTMethodA (dto, NULL, NULL, (Msg) &dtf) && fri.fri_Dimensions.Depth)
 		{
 		    printf ("PropertyFlags : 0x%lx\n", fri.fri_PropertyFlags);
-		    printf ("RedBits       : 0x%lx\n", fri.fri_RedBits);
-		    printf ("GreenBits     : 0x%lx\n", fri.fri_GreenBits);
-		    printf ("BlueBits      : 0x%lx\n", fri.fri_BlueBits);
+		    printf ("RedBits       : 0x%x\n", fri.fri_RedBits);
+		    printf ("GreenBits     : 0x%x\n", fri.fri_GreenBits);
+		    printf ("BlueBits      : 0x%x\n", fri.fri_BlueBits);
 		    printf ("Width         : %ld\n", (ULONG) fri.fri_Dimensions.Width);
 		    printf ("Height        : %ld\n", (ULONG) fri.fri_Dimensions.Height);
 		    printf ("Depth         : %ld\n", (ULONG) fri.fri_Dimensions.Depth);
-		    printf ("Screen        : 0x%lx\n", fri.fri_Screen);
-		    printf ("ColorMap      : 0x%lx\n", fri.fri_ColorMap);
+		    printf ("Screen        : 0x%p\n", fri.fri_Screen);
+		    printf ("ColorMap      : 0x%p\n", fri.fri_ColorMap);
 
 		    if ((fri.fri_PropertyFlags & DIPF_IS_HAM) ||
 			(fri.fri_PropertyFlags & DIPF_IS_EXTRAHALFBRITE))
@@ -192,7 +192,7 @@ void main (int argc, char **argv)
 		    if ((win = OpenWindowTags (NULL,
 					      WA_InnerWidth,	nomwidth,
 					      WA_InnerHeight,	nomheight,
-					      WA_Title,		name,
+					      WA_Title,		(IPTR) name,
 					      WA_IDCMP,		IDCMP_FLAGS,
 					      WA_DragBar,	TRUE,
 					      WA_DepthGadget,	TRUE,
@@ -259,7 +259,7 @@ void main (int argc, char **argv)
 
 				    case IDCMP_IDCMPUPDATE:
 					tstate = tags = (struct TagItem *) imsg->IAddress;
-					while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+					while ((tag = NextTagItem(&tstate)))
 					{
 					    tidata = tag->ti_Data;
 					    switch (tag->ti_Tag)
@@ -330,4 +330,6 @@ void main (int argc, char **argv)
     }
     else
 	PrintErrorMsg (IoErr (), NULL);
+    
+    return 0;
 }
