@@ -77,16 +77,14 @@ endif
 ifeq ($(FLAVOUR),native)
 LIBS = -L$(LIBDIR) -larosc
 
-all: setup \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(FUNCTIONS),$(f).s) \
-	$(OSMODDIR)/exec.strap
+all: setup $(OSMODDIR)/exec.strap
+
+asm: all $(foreach f,$(FUNCTIONS),$(f).s)
 
 $(OSMODDIR)/exec.strap: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-		       $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-		       $(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
-	$(CC) $(ILDFLAGS) \
+			$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+			$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o)
+	$(CC) $(ILDFLAGS)  -Xlinker -M \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(ASMFUNCTIONS),$(OSGENDIR)/$(f).o) \
