@@ -114,7 +114,7 @@
     recth.MaxY = dy+recth.MinY + dh - 1;
   }
 
-  _SetRegion(newshape, &cutnewshape);
+  SetRegion(newshape, &cutnewshape);
   AndRegionRegion(l->parent->visibleshape, &cutnewshape);
 
   first = GetFirstFamilyMember(l);
@@ -127,7 +127,7 @@
   {
     if (IS_VISIBLE(_l))
     {
-      _SetRegion(_l->VisibleRegion, &r);
+      SetRegion(_l->VisibleRegion, &r);
       break;
     }
     
@@ -170,7 +170,7 @@ kprintf("\t\t%s: Backing up parts of layers that are behind the layer!\n",
     _l = _l->back;
   }
 
-   _SetRegion(&cutnewshape, l->visibleshape);
+   SetRegion(&cutnewshape, l->visibleshape);
   ClearRegion(&cutnewshape);
 
   /*
@@ -226,7 +226,7 @@ kprintf("\t\t%s: BACKING up parts of THE LAYER TO BE MOVED!\n",
       /*
        * Also calculate the visible shape!
        */
-      _SetRegion(_l->shape, _l->visibleshape);
+      SetRegion(_l->shape, _l->visibleshape);
       AndRegionRegion(_l->parent->visibleshape, _l->visibleshape);
     }
 
@@ -275,7 +275,7 @@ kprintf("\t\t%s: SHOWING parts of THE LAYER TO BE MOVED (children)!\n",
    * Now make those parts of the layers after l up to and including
    * its parent visible.
    */
-  _SetRegion(l->VisibleRegion, &r);
+  SetRegion(l->VisibleRegion, &r);
   ClearRegionRegion(l->visibleshape, &r);
   _l = l->back;
   lparent = l->parent;
@@ -294,7 +294,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
       _ShowPartsOfLayer(_l, &r, LayersBase);
     }
     else
-      _SetRegion(&r, _l->VisibleRegion);
+      SetRegion(&r, _l->VisibleRegion);
 
     if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
       AndRegionRegion(_l->VisibleRegion, oldshape);
@@ -329,7 +329,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
   {
     if (lparent &&
         (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-      _BackFillRegion(l->parent, oldshape, TRUE);
+      _BackFillRegion(l->parent, oldshape, TRUE, LayersBase);
   }
 
   DisposeRegion(oldshape);
@@ -346,7 +346,7 @@ kprintf("\t\t%s: SHOWING parts of the layers behind the layer to be moved!\n",
     
     if (dh > 0)
       OrRectRegion(&r, &recth);
-    _BackFillRegion(l, &r, TRUE);
+    _BackFillRegion(l, &r, TRUE, LayersBase);
   }
 
   ClearRegion(&r);

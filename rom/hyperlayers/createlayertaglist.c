@@ -143,6 +143,10 @@
         layershape = (struct Region *)tagList[i].ti_Data;
       break;
 
+      case TAG_IGNORE:
+      case TAG_SKIP:
+      break;
+
       default:
         kprintf("%s: Unknown option %d!\n",__FUNCTION__,tagList[i].ti_Tag);
         return NULL;
@@ -327,7 +331,7 @@
 
     
     
-    _SetRegion(l->shape, l->visibleshape);
+    SetRegion(l->shape, l->visibleshape);
     if (l->parent)
       AndRegionRegion(l->parent->shape, l->visibleshape);
 
@@ -348,11 +352,11 @@
        */
       if (l->front)
       {
-        _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
+        SetRegion(l->front->VisibleRegion, l->VisibleRegion);
         ClearRegionRegion(l->front->visibleshape, l->VisibleRegion);
       }
       else
-        _SetRegion(li->check_lp->shape, l->VisibleRegion);
+        SetRegion(li->check_lp->shape, l->VisibleRegion);
      
      
       /*

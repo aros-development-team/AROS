@@ -76,7 +76,7 @@
 	/* non-layered rastport */
 
 	/* You MUST supply a rect to clip the hook's actions! */
-	_CallLayerHook(hook, rport, NULL, rect, rect->MinX, rect->MinY);
+	_CallLayerHook(hook, rport, NULL, rect, rect->MinX, rect->MinY, LayersBase);
     }
     else
     {
@@ -180,13 +180,13 @@
                 		rport->BitMap = CR->BitMap;
 			    }
 
-        		    _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY);
+        		    _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY, LayersBase);
         		    rport->BitMap = bm;
 			    
 			} /* hidden cliprect */
         		else
 			{
-               	           _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY);
+               	           _CallLayerHook(hook, rport, L, &bounds, offsetX, offsetY, LayersBase);
 			} /* visible cliprect */
 			
         	    } /* if (cliprect intersects rect in screen coords) */

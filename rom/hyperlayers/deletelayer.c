@@ -82,7 +82,7 @@
     struct Region r;
     r.RegionRectangle = NULL; // min. initialization
 
-    _SetRegion(l->VisibleRegion, &r);
+    SetRegion(l->VisibleRegion, &r);
     _l = l->back;
     lparent = l->parent;
 
@@ -99,7 +99,7 @@
         _ShowPartsOfLayer(_l, &r, LayersBase);
       }
       else
-        _SetRegion(&r,_l->VisibleRegion);
+        SetRegion(&r,_l->VisibleRegion);
 
       if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
         AndRegionRegion(_l->VisibleRegion, l->shape);
@@ -129,7 +129,7 @@
 kprintf("lparent: %p, l->parent: %p\n",lparent,l->parent);
       if (lparent && 
           (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-        _BackFillRegion(lparent, l->shape, FALSE);
+        _BackFillRegion(lparent, l->shape, FALSE, LayersBase);
     }
     else
       kprintf("NOTHING TO CLEAR!\n");

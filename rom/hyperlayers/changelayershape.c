@@ -87,8 +87,10 @@
        * Backup everything that is visible right now into 
        * cliprects.
        */
-      _SetRegion(l->shape, &cutoldshape);
-      AndRegionRegion(l->parent->shape, &cutoldshape);
+      lfirst = GetFirstFamilyMember(l);
+      SetRegion(lfirst->VisibleRegion, &r);
+
+      SetRegion(l->visibleshape, &cutoldshape);
       _BackupPartsOfLayer(l, &cutoldshape, 0, TRUE, LayersBase);
     }
 
@@ -109,7 +111,7 @@
        * The user can manipulate the cliprects of the layer
        * l and can have a look at the current shape.
        */
-      l->shaperegion = CallHookPkt(callback, l, &clsm);
+      l->shaperegion = (struct Region *)CallHookPkt(callback, l, &clsm);
     }
     else
     {
@@ -119,7 +121,7 @@
       l->shaperegion = newshape;
     }
     
-    ClearRegion(l->shape);
+    DisposeRegion(l->shape);
     /*
      * At this point l->shaperegion holds the layer that is to be 
      * installed. Let's cut it down to the actually visible part.
@@ -130,29 +132,29 @@
     if (l->shaperegion)
       AndRegionRegion(l->shaperegion, l->shape);
 
-    _TranslateRect(&l->shape->bounds, l->bounds.MinX, l->bounds.MinY);      
-      
-    _SetRegion(l->shape, &cutnewshape);
-    AndRegionRegion(l->parent->shape, &cutnewshape);
-
+    _TranslateRect(&l->shape->bounds, l->bounds.MinX, l->bounds.MinY);
+    
+    SetRegion(l->shape, l->visibleshape);
+    AndRegionRegion(l->parent->visibleshape, l->visibleshape);
 
     if (IS_VISIBLE(l))
     {
       /*
        * Let me backup parts of the layers that are behind the
-       * layer l and in front of it.
+       * layer l and the layers that are its family.
        */
+
       lparent = l->parent;
-      lfirst = GetFirstFamilyMember(l);
       _l = lfirst;
     
       while (1)
       {
-        if ((l != _l) && IS_VISIBLE(_l) && DO_OVERLAP(&cutnewshape.bounds, &l->shape->bounds))
-          _BackupPartsOfLayer(_l, &cutnewshape, 0, FALSE, LayersBase);
-        else
-          ClearRegionRegion(&cutnewshape, _l->VisibleRegion);
-         
+        if ((l != _l))
+        {
+          if(IS_VISIBLE(_l) && DO_OVERLAP(&l->visibleshape->bounds, &_l->visibleshape->bounds))
+            _BackupPartsOfLayer(_l, l->visibleshape, 0, FALSE, LayersBase);
+        }
+        
         if (_l == lparent)
         {
           if (IS_VISIBLE(_l) || (NULL == lparent->parent))
@@ -165,16 +167,6 @@
       } /* while (1) */
 
       
-      if (lfirst->front)
-      {
-        _SetRegion(lfirst->front->VisibleRegion, &r);
-        _SetRegion(lfirst->front->shape, &rtmp);
-        AndRegionRegion(lfirst->front->parent->shape, &rtmp);
-        ClearRegionRegion(&rtmp, &r);
-      }
-      else
-        _SetRegion(l->LayerInfo->check_lp->shape, &r);
-
       /*
        * Make the new layer and its family visible
        * Since the parent might have become bigger more
@@ -186,14 +178,14 @@
       while (1)
       {
         if (IS_VISIBLE(_l) && 
-            (DO_OVERLAP(&cutnewshape.bounds, &_l->shape->bounds) ||
-             DO_OVERLAP(&cutoldshape.bounds, &_l->shape->bounds)))
+            (DO_OVERLAP(&cutnewshape.bounds, &_l->visibleshape->bounds) ||
+             DO_OVERLAP(&cutoldshape.bounds, &_l->visibleshape->bounds)))
         {
-          ClearRegion(l->VisibleRegion);
-          _ShowPartsOfLayer(l, &r, LayersBase);
+          ClearRegion(_l->VisibleRegion);
+          _ShowPartsOfLayer(_l, &r, LayersBase);
         }
         else
-          _SetRegion(&r, _l->VisibleRegion);
+          SetRegion(&r, _l->VisibleRegion);
           
 
         if ((TRUE == behind_l) && (IS_VISIBLE(_l) || IS_ROOTLAYER(_l)))
@@ -206,17 +198,19 @@
           else
             lparent = lparent->parent;
         }
+        
+         if (l == _l)
+          behind_l = TRUE;
+ 
+        if (FALSE == behind_l)
+        {
+          SetRegion(_l->shape, _l->visibleshape);
+          AndRegionRegion(_l->parent->visibleshape, _l->visibleshape);
+        }
           
         if (IS_VISIBLE(_l))
-        {
-          _SetRegion(_l->shape, &rtmp);
-          AndRegionRegion(_l->parent->shape, &rtmp);
-          ClearRegionRegion(&rtmp, &r);
-        }
+          ClearRegionRegion(_l->visibleshape, &r);
 
-        if (l == _l)
-          behind_l = TRUE;
-      
         _l = _l->back;
       } /* while(1) */
 
@@ -227,7 +221,7 @@
       {
         if (lparent &&
             (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
-              _BackFillRegion(l->parent, &cutoldshape, TRUE);
+              _BackFillRegion(l->parent, &cutoldshape, TRUE, LayersBase);
       }
 
       ClearRegion(&cutoldshape);

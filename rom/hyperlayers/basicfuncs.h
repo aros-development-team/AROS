@@ -31,11 +31,13 @@
 
 void BltRPtoCR(struct RastPort *    rp,
                struct ClipRect *    cr,
-               ULONG                Mode);
+               ULONG                Mode,
+               struct LayersBase  * LayersBase);
 
 void BltCRtoRP(struct RastPort *    rp,
                struct ClipRect *    cr,
-               ULONG                Mode);
+               ULONG                Mode,
+               struct LayersBase  * LayersBase);
 
 /***************************************************************************/
 /*                                  HOOK                                   */
@@ -46,7 +48,8 @@ void _CallLayerHook(struct Hook * h,
                     struct Layer * L,
                     struct Rectangle * R,
                     WORD offsetx,
-                    WORD offsety);
+                    WORD offsety,
+                    struct LayersBase * LayersBase);
 
 
 /***************************************************************************/
@@ -170,15 +173,14 @@ struct Layer * _FindFirstFamilyMember(struct Layer * l);
 
 void _BackFillRegion(struct Layer * l, 
                      struct Region * r,
-                     int addtodamagelist);
+                     int addtodamagelist,
+                     struct LayersBase * LayersBase);
 
 struct ClipRect * _CreateClipRectsFromRegion(struct Region *r,
                                              struct Layer * l,
                                              int invisible,
                                              struct Region *inverter,
 					     struct LayersBase *LayersBase);
-
-int _SetRegion(struct Region *, struct Region *);
 
 struct Region *_InternalInstallClipRegion(struct Layer *l, struct Region *region,
     	    	    	    	    	  WORD srcdx, WORD destdx,
