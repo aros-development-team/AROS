@@ -14,6 +14,8 @@
 #include <proto/graphics.h>
 #include <proto/utility.h>
 
+#include <string.h>
+
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
