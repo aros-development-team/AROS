@@ -52,7 +52,8 @@
 
 /****************************************************************************************/
 
-#define NOUNIXIO 1
+#define NOUNIXIO    	    	1
+#define BETTER_REPEAT_HANDLING  1
 
 #define XTASK_NAME "x11hidd task"
 
@@ -131,7 +132,6 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     struct MinList  	     xwindowlist;    
     struct x11task_params    xtp;
     ULONG   	    	     hostclipboardmask;
-    
 #if NOUNIXIO
     struct Interrupt 	     myint;
 #else
@@ -193,6 +193,10 @@ VOID x11task_entry(struct x11task_params *xtpparam)
     for (;;)
     {
 	XEvent      	     event;	
+    #if BETTER_REPEAT_HANDLING
+	XEvent  	     keyrelease_event;
+	BOOL    	     keyrelease_pending = FALSE;
+    #endif        
 	struct notify_msg   *nmsg;	
 	ULONG 	    	     notifysig = 1L << xsd->x11task_notify_port->mp_SigBit;
 	ULONG 	    	     sigs;
@@ -388,21 +392,70 @@ D(bug("Got input from unixio\n"));
     	    UNLOCK_X11
 	    
 	    if (pending == 0)
+	    {
+	    #if BETTER_REPEAT_HANDLING
+	    	if (keyrelease_pending)
+		{
+	    	    ObtainSemaphoreShared( &xsd->sema );
+		    if (xsd->kbdhidd)
+		    {
+			Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+		    }
+		    ReleaseSemaphore( &xsd->sema );
+		}		
+	    #endif
+	    
+	    	/* Get out of for(;;) loop */
 		break;
-
+	    }
+	    
     	    LOCK_X11
 	    XNextEvent(xsd->display, &event);
     	    UNLOCK_X11
 
 	    D(bug("Got Event for X=%d\n", event.xany.window));
 
+    	#if BETTER_REPEAT_HANDLING
+	    if (keyrelease_pending)
+	    {
+	    	BOOL repeated_key = FALSE;
+		
+		/* Saw this in SDL/X11 code, where a comment says that
+		   the idea for this was coming from GII, whatever that
+		   is. */
+		   
+		if ((event.xany.window == keyrelease_event.xany.window) &&
+		    (event.type == KeyPress) &&
+		    (event.xkey.keycode == keyrelease_event.xkey.keycode) &&
+		    ((event.xkey.time - keyrelease_event.xkey.time) < 2))
+		{
+		    repeated_key = TRUE;
+		}
+		
+		keyrelease_pending = FALSE;
+		
+		if (repeated_key)
+		{
+		    /* Drop both previous keyrelease and this keypress event. */
+		    continue;
+		}
+		
+	    	ObtainSemaphoreShared( &xsd->sema );
+		if (xsd->kbdhidd)
+		{
+		    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &keyrelease_event);
+		}
+		ReleaseSemaphore( &xsd->sema );		
+	    }	    
+	#endif
+	
 	    if (event.type == MappingNotify)
 	    {
-    	    	    LOCK_X11
-		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
-    	    	    UNLOCK_X11
-		    
-		    continue;
+    	    	LOCK_X11
+		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+    	    	UNLOCK_X11
+
+		continue;
 	    }
 	    
     	#if ADJUST_XWIN_SIZE
@@ -503,10 +556,12 @@ D(bug("Got input from unixio\n"));
 			break;
 
 		    case FocusOut:
+		    #if !BETTER_REPEAT_HANDLING
     	    	    	LOCK_X11
 			XAutoRepeatOn(xsd->display);
     	    	    	UNLOCK_X11
-					    
+		    #endif
+		    
     	    	    #if 0
     	    	    	ObtainSemaphoreShared(&xsd->sema);
 			/* Call the user supplied callback func, if supplied */
@@ -532,35 +587,41 @@ D(bug("Got input from unixio\n"));
 
 	    	    case KeyPress:
 		    	xsd->x_time = event.xkey.time;
+			
+		    #if !BETTER_REPEAT_HANDLING
     	    	    	LOCK_X11
     			XAutoRepeatOff(XSD(cl)->display);
     	    	    	UNLOCK_X11	
-				    
+		    #endif
+		    
 	    		ObtainSemaphoreShared( &xsd->sema );
 			if (xsd->kbdhidd)
 			{
 			    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
 			}
-
 			ReleaseSemaphore( &xsd->sema );
 			break;
 
 
 	    	    case KeyRelease:
 		    	xsd->x_time = event.xkey.time;
+			
+		    #if BETTER_REPEAT_HANDLING
+		    	keyrelease_pending = TRUE;
+			keyrelease_event = event;
+		    #else		    
     	    	    	LOCK_X11
 			XAutoRepeatOn(XSD(cl)->display);
     	    	    	UNLOCK_X11
-					    
+
 	    		ObtainSemaphoreShared( &xsd->sema );
 			if (xsd->kbdhidd)
 			{
 			    Hidd_X11Kbd_HandleEvent(xsd->kbdhidd, &event);
 			}
-
 			ReleaseSemaphore( &xsd->sema );
+		    #endif
 			break;
-
 
 	   	    case EnterNotify:
 			break;
