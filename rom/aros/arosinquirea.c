@@ -77,8 +77,6 @@ IPTR kickbase(void);
 
     INTERNALS
 
-    HISTORY
-
 ******************************************************************************/
 {
     AROS_LIBFUNC_INIT
