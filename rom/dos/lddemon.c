@@ -100,7 +100,7 @@ struct ExecBase *,sysbase,0,Dos)
 {
     AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
-    struct Library *library;
+    struct Library *library, *tmplib;
     Forbid();
     library=(struct Library *)FindName(&SysBase->LibList,libName);
     if(library==NULL)
@@ -116,7 +116,9 @@ struct ExecBase *,sysbase,0,Dos)
     }
     if(library!=NULL)
     {
-	library=(struct Library *)FindName(&SysBase->LibList,libName);
+	tmplib=(struct Library *)FindName(&SysBase->LibList,libName);
+	if (tmplib!=NULL)
+	    library=tmplib;
 	if(library && library->lib_Version>=version)
 	    library=AROS_LVO_CALL1(struct Library *,
 		AROS_LCA(ULONG,version,D0),
@@ -139,7 +141,7 @@ AROS_LH4(BYTE,OpenDevice,
 {
     AROS_LIBFUNC_INIT
     extern struct DosLibrary *DOSBase;
-    struct Device *device;
+    struct Device *device, *tmpdev;
     UBYTE ret=IOERR_OPENFAIL;
     Forbid();
     device=(struct Device *)FindName(&SysBase->DeviceList,devName);
@@ -154,9 +156,11 @@ AROS_LH4(BYTE,OpenDevice,
 	device=(struct Device *)DOSBase->dl_LDPtr;
 	ReleaseSemaphore(&DOSBase->dl_LDSigSem);
     }
-    if(device!=NULL&&
-       (device=(struct Device *)FindName(&SysBase->DeviceList,devName)))
+    if(device!=NULL)
     {
+	tmpdev=(struct Device *)FindName(&SysBase->DeviceList,devName);
+	if(tmpdev!=NULL)
+	    device=tmpdev;
 	iORequest->io_Error=0;
 	iORequest->io_Device=device;
 	iORequest->io_Flags=flags;
