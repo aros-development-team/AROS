@@ -18,37 +18,35 @@ struct Catalog *catalog;
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
-STRPTR _(ULONG id)
+CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
 /* Setup ********************************************************************/
-BOOL Locale_Initialize(void)
+VOID Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
-	catalog = OpenCatalog
-	( 
-	    NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
-	);
+        catalog = OpenCatalog
+        ( 
+            NULL, CATALOG_NAME, OC_Version, CATALOG_VERSION, TAG_DONE 
+        );
     }
     else
     {
-	catalog = NULL;
+        catalog = NULL;
     }
-    
-    return TRUE;
 }
 
-void Locale_Deinitialize(void)
+VOID Locale_Deinitialize(VOID)
 {
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
