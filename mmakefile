@@ -101,9 +101,9 @@ dist-src :
 #
 # END_DESC{target}
 #MM
-clean:
-	-$(RM) $(ARCHDIR) mmake Makefile mmake.cache config.cache config.status config.log \
-		errors crypt
+clean :
+	-$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
+		config.log errors crypt
 
 
 $(GENDIR)/%.o: %.c
