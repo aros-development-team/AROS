@@ -1,6 +1,6 @@
 /* 
     Copyright © 1999, David Le Corfec.
-    Copyright © 2002, The AROS Development Team.
+    Copyright © 2002-2003, The AROS Development Team.
     All rights reserved.
 
     $Id$
@@ -106,7 +106,7 @@ int main (int argc, char **argv)
 	    MUIA_Window_Title, (IPTR)"Input modes",
 	    WindowContents, VGroup,
 	        Child, MUI_MakeObject(MUIO_BarTitle, (IPTR)_U("MUIV_InputMode_RelVerify")),
-                Child, SimpleChainedButton((IPTR)"Hello world, \33u\33iyo\n"
+                Child, SimpleChainedButton("Hello world, \33u\33iyo\n"
 					   "\33l\33iHello \33bworld\33n, yo\n"
 					   "\33iHello world, yo\n"
 					   "_Hello \33uwo\0331r\33bl\33n\33ud\33n, \33iyo\n"
