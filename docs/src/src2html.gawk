@@ -50,7 +50,7 @@ BEGIN {
     cmd | getline today;
     close (cmd);
 
-    fninfo=ARGV[1];
+    fninfo="gen/"ARGV[1];
     gsub(/.src$/,".info",fninfo);
 
     toc=0;
