@@ -9,6 +9,7 @@
 
 #include <aros/arosbase.h>
 #include <aros/inquire.h>
+#include <dos/dos.h>
 
 #include <proto/exec.h>
 #include <proto/aros.h>
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
     }
 
     ArosInquire(
-	AI_ArosVersion,		(IPTR)&vers,
+	AI_ArosVersion, 	(IPTR)&vers,
 	AI_ArosReleaseMajor,	(IPTR)&relMajor,
 	AI_ArosReleaseMinor,	(IPTR)&relMinor,
 	AI_KickstartBase,	(IPTR)&kickbase,
