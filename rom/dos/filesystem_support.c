@@ -21,9 +21,9 @@ struct Device *GetDosType(ULONG type, CONST_STRPTR name, struct Unit **unit,
 			  struct DosLibrary *DOSBase);
 
 
-inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
-		     struct DosLibrary *DOSBase)
-{ 
+void InitIOFS(struct IOFileSys *iofs, ULONG type,
+	      struct DosLibrary *DOSBase)
+{
     struct Process *me = (struct Process *)FindTask(NULL);
 
     iofs->IOFS.io_Message.mn_Node.ln_Type = NT_REPLYMSG;
@@ -32,9 +32,6 @@ inline void InitIOFS(struct IOFileSys *iofs, ULONG type,
     iofs->IOFS.io_Command                 = type;
     iofs->IOFS.io_Flags                   = 0;
 }
-
-
-
 
 struct Device *GetDevice(CONST_STRPTR name, struct Unit **unit, 
 			 struct DosLibrary *DOSBase)
