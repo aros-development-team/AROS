@@ -7,7 +7,7 @@ $VER: arosboot.doc 41.7 (29.3.97)
                          Amiga Replacement OS (AROS)
 
                                  Written by
-                  Lennard voor den Dag <ldp@worldonline.nl>
+                    Lennard voor den Dag <ldp@xs4all.nl>
 
                         Last revised: March 29, 1997
 *****************************************************************************
@@ -262,7 +262,7 @@ More information on these pages on the WorldWideWait:
 
     http://www.lysator.liu.se/amiga/aros/ (Sweden Mirror)
     http://aros.fh-konstanz.de/~digulla/  (German Mirror)
-    http://home.worldonline.nl/~ldp/aros/ (AROS for Amiga)
+    http://www.xs4all.nl/~ldp/aros/ (AROS for Amiga)
 
 If you have FTP, you can also get the most recent version as tar.gz files
 (quite smaller than lha) from:
@@ -297,7 +297,7 @@ following address:
 
     Lennard voor den Dag
 
-    EMail: ldp@worldonline.nl
+    EMail: ldp@xs4all.nl
 
 For more information please read "AFD-COPYRIGHT" (Version 1 or higher).
 
