@@ -221,6 +221,15 @@ struct staticdata {
     ULONG		    rect_format;
     ULONG		    line_format;
 
+    OOP_MethodID	    mid_CopyMemBox8;
+    OOP_MethodID	    mid_CopyMemBox16;
+    OOP_MethodID	    mid_CopyMemBox32;
+    OOP_MethodID	    mid_PutMem32Image8;
+    OOP_MethodID	    mid_PutMem32Image16;
+    OOP_MethodID	    mid_GetMem32Image8;
+    OOP_MethodID	    mid_GetMem32Image16;
+    
+
     IPTR		    scratch_buffer;
 };
 

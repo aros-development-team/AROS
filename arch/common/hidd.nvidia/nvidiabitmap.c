@@ -1054,11 +1054,300 @@ static VOID bm__drawpoly(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_DrawP
     }
 }
 
+static VOID bm__putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutImage *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
+	VideoData += (IPTR)sd->Card.FrameBuffer;
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(bm->bpp)
+	    {
+	    	case 1:
+		    {
+			struct pHidd_BitMap_CopyMemBox8 __m = {
+				    sd->mid_CopyMemBox8,
+				    msg->pixels,
+				    0,
+				    0,
+				    (APTR)VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    bm->pitch		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		    
+		case 2:
+		    {
+			struct pHidd_BitMap_CopyMemBox16 __m = {
+				    sd->mid_CopyMemBox16,
+				    msg->pixels,
+				    0,
+				    0,
+				    (APTR)VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    bm->pitch		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		   
+		case 4:	
+		    {
+			struct pHidd_BitMap_CopyMemBox32 __m = {
+				    sd->mid_CopyMemBox32,
+				    msg->pixels,
+				    0,
+				    0,
+				    (APTR)VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    bm->pitch		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+	
+    	case vHidd_StdPixFmt_Native32:
+	    switch(bm->bpp)
+	    {
+	    	case 1:
+		    {
+			struct pHidd_BitMap_PutMem32Image8 __m = {
+					    sd->mid_PutMem32Image8,
+					    msg->pixels,
+					    (APTR)VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    bm->pitch
+			    }, *m = &__m;
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }	
+		    break;
+		    
+		case 2:
+		    {
+			struct pHidd_BitMap_PutMem32Image16 __m = {
+					    sd->mid_PutMem32Image16,
+					    msg->pixels,
+					    (APTR)VideoData,
+					    msg->x,
+					    msg->y,
+					    msg->width,
+					    msg->height,
+					    msg->modulo,
+					    bm->pitch
+			    }, *m = &__m;
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }	
+		    break;
+
+		case 4:
+		    {
+			struct pHidd_BitMap_CopyMemBox32 __m = {
+				    sd->mid_CopyMemBox32,
+				    msg->pixels,
+				    0,
+				    0,
+				    (APTR)VideoData,
+				    msg->x,
+				    msg->y,
+				    msg->width,
+				    msg->height,
+				    msg->modulo,
+				    bm->pitch		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+}
+
+static VOID bm__getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
+	VideoData += (IPTR)sd->Card.FrameBuffer;
+
+    switch(msg->pixFmt)
+    {
+    	case vHidd_StdPixFmt_Native:
+	    switch(bm->bpp)
+	    {
+	    	case 1:
+		    {
+			struct pHidd_BitMap_CopyMemBox8 __m = {
+				        sd->mid_CopyMemBox8,
+			   		(APTR)VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					bm->pitch,
+					msg->modulo
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		    
+		case 2:
+		    {
+			struct pHidd_BitMap_CopyMemBox16 __m = {
+				        sd->mid_CopyMemBox16,
+			   		(APTR)VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					bm->pitch,
+					msg->modulo
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+
+		case 4:
+		    {
+			struct pHidd_BitMap_CopyMemBox32 __m = {
+				        sd->mid_CopyMemBox32,
+			   		(APTR)VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					bm->pitch,
+					msg->modulo
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		     
+    	    } /* switch(data->bytesperpix) */
+	    break;
+
+    	case vHidd_StdPixFmt_Native32:
+	    switch(bm->bpp)
+	    {
+	    	case 1:
+		    {
+			struct pHidd_BitMap_GetMem32Image8 __m = {
+			    sd->mid_GetMem32Image8,
+			    (APTR)VideoData,
+			    msg->x,
+			    msg->y,
+			    msg->pixels,
+			    msg->width,
+			    msg->height,
+			    bm->pitch,
+			    msg->modulo		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		    
+		case 2:
+		    {
+			struct pHidd_BitMap_GetMem32Image16 __m = {
+			    sd->mid_GetMem32Image16,
+			    (APTR)VideoData,
+			    msg->x,
+			    msg->y,
+			    msg->pixels,
+			    msg->width,
+			    msg->height,
+			    bm->pitch,
+			    msg->modulo		    
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+
+		case 4:		
+		    {
+			struct pHidd_BitMap_CopyMemBox32 __m = {
+				        sd->mid_CopyMemBox32,
+			   		(APTR)VideoData,
+					msg->x,
+					msg->y,
+					msg->pixels,
+					0,
+					0,
+					msg->width,
+					msg->height,
+					bm->pitch,
+					msg->modulo
+			}, *m = &__m;
+
+			OOP_DoMethod(o, (OOP_Msg)m);
+		    }
+		    break;
+		    
+	    } /* switch(data->bytesperpix) */
+	    break;
+	    
+	default:
+	    OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
+	    break;
+	    
+    } /* switch(msg->pixFmt) */
+	    
+}
+
 #undef sd
 /* Class related functions */
 
 #define NUM_ROOT_METHODS    3
-#define	NUM_BM_METHODS	    10
+#define	NUM_BM_METHODS	    12
 
 OOP_Class *init_onbitmapclass(struct staticdata *sd)
 {
@@ -1082,6 +1371,8 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__blitcolexp),moHidd_BitMap_BlitColorExpansion },
 	{ OOP_METHODDEF(bm__drawrect),	moHidd_BitMap_DrawRect },
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
+	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
+	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
 	{ NULL, 0 }
     };
 
@@ -1106,6 +1397,14 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
     {
 	cl = OOP_NewObject(NULL, CLID_HiddMeta, tags);
 
+	sd->mid_CopyMemBox8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox8);
+	sd->mid_CopyMemBox16	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox16);
+	sd->mid_CopyMemBox32	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_CopyMemBox32);
+	sd->mid_PutMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMem32Image8);
+	sd->mid_PutMem32Image16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_PutMem32Image16);
+	sd->mid_GetMem32Image8	= OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image8);
+	sd->mid_GetMem32Image16 = OOP_GetMethodID(CLID_Hidd_BitMap, moHidd_BitMap_GetMem32Image16);
+
 	if (cl)
 	{
 	    cl->UserData = sd;
@@ -1123,7 +1422,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 }
 
 #define NUM_OFFROOT_METHODS	3
-#define	NUM_OFFBM_METHODS	10
+#define	NUM_OFFBM_METHODS	12
 
 OOP_Class *init_offbitmapclass(struct staticdata *sd)
 {
@@ -1147,6 +1446,8 @@ OOP_Class *init_offbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__blitcolexp),moHidd_BitMap_BlitColorExpansion },
 	{ OOP_METHODDEF(bm__drawrect),	moHidd_BitMap_DrawRect },
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
+	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
+	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
 	{ NULL, 0 }
     };
 
