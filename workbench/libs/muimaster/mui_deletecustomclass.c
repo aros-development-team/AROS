@@ -46,13 +46,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-    if (mcc && FreeClass(mcc->mcc_Class))
+    if (mcc)
     {
-	mui_free(mcc);
+        Class *super = mcc->mcc_Super;
+	
+	if (FreeClass(mcc->mcc_Class))
+        {
+	    mui_free(mcc);
 
-        MUI_FreeClass(mcc->mcc_Super);
+            MUI_FreeClass(super);
 
-	return TRUE;
+  	    return TRUE;
+        }
     }
 
     return FALSE;
