@@ -18,7 +18,7 @@
 /*** Methods ****************************************************************/
 #define MUIM_Group_ExitChange      (MUIB_MUI|0x0042d1cc) /* MUI: V11 */
 #define MUIM_Group_InitChange      (MUIB_MUI|0x00420887) /* MUI: V11 */
-#define MUIM_Group_Sort            (MUIB_MUI|0x80427417) /* MUI: V4  */
+#define MUIM_Group_Sort            (MUIB_MUI|0x00427417) /* MUI: V4  */
 struct MUIP_Group_ExitChange       {ULONG MethodID;};
 struct MUIP_Group_InitChange       {ULONG MethodID;};
 struct MUIP_Group_Sort             {ULONG MethodID; Object *obj[1];};
