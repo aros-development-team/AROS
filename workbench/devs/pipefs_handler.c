@@ -2,6 +2,9 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.15  2001/08/21 19:02:59  falemagn
+    The nonblocking mode was broken, now should work, although I haven't tested it
+
     Revision 1.14  2001/08/16 16:18:24  falemagn
     Implemented FSA_FILE_MODE. At the moment only handles FMF_NONBLOCK, in future it'll have to handle also FMF_RAW and the whole handler will have to be modified to be able to dispatch more requestes simultaneously. Implemented also a way to request unnamed pipes. They're not really unnamed, since you can see them, but they do the trick pretty well. Just open PIPEFS://unnamedpipe// with the mode you want, then CD to it and open "" with the mode you want as many times you want. Every opening of PIPEFS://unnamedpipe// will result in a NEW file opened (this is the only difference between this kind of pipe and the other ones). To be able to implement the ipe() funxtion it's been enough to open  PIPEFS://unnamedpipe// for reading, cd'ing to it, and then opening "" for writing
 
@@ -1068,9 +1071,9 @@ AROS_UFH3(LONG, pipefsproc,
 			SendBack(msg, ERROR_BROKEN_PIPE);
 		        continue;
 		    }
-		    if (un->mode & FMF_NONBLOCK)
+		    if (un->mode & FMF_NONBLOCK && IsListEmpty(&fn->pendingreads))
 		    {
-		        kprintf("The pipe is in non blocking mode, so don't enqueue the message\n");
+		        kprintf("There are no pending reads and the pipe is in nonblocking mode, so return EWOULDBLOCK\n");
     		        SendBack(msg, ERROR_WOULD_BLOCK);
 		        continue;
 		    }
@@ -1093,9 +1096,9 @@ AROS_UFH3(LONG, pipefsproc,
 		        SendBack(msg, 0);
 		        continue;
 		    }
-		    if (un->mode & FMF_NONBLOCK)
+		    if (un->mode & FMF_NONBLOCK  && IsListEmpty(&fn->pendingwrites))
 		    {
-		        kprintf("The pipe is in non blocking mode, so don't enqueue the message\n");
+		        kprintf("There are no pending writes and the pipe is in nonblocking mode, so return EWOULDBLOCK\n");
     		        SendBack(msg, ERROR_WOULD_BLOCK);
 		        continue;
 		    }
@@ -1149,9 +1152,19 @@ AROS_UFH3(LONG, pipefsproc,
 		    Remove((struct Node *)rmsg);
 		    SendBack(rmsg, 0);
 		}
-
+		else
+		if
+		(
+		    ((struct usernode *)rmsg->iofs->IOFS.io_Unit)->mode & FMF_NONBLOCK &&
+		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length > wmsg->iofs->io_Union.io_READ_WRITE.io_Length
+		)
+		{
+		    kprintf("The reader wants to read more data than it's actually available, but since it's in nonblocking mode return anyway\n");
+ 		    rmsg->iofs->io_Union.io_READ_WRITE.io_Length = len;
+		    Remove((struct Node *)rmsg);
+		    SendBack(rmsg, 0);
+		}
 	    }
-
 	}
 	kprintf("Coming back to wait for a new message\n");
 
