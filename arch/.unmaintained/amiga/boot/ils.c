@@ -20,6 +20,7 @@
 #include <proto/dos.h>
 
 #include "boot.h"
+#include "main.h"
 
 extern struct ilsMemList ils_mem;
 
@@ -46,8 +47,11 @@ AROS_UFH3(void *, ils_alloc,
 	Also allocate memory from the top of the memory list, MEMF_REVERSE,
 	to keep all our allocations in one place, and to keep potential early
 	memory fragmentation down.
+
+	Addition: Pre V39 exec doesn't know about MEMF_KICK, so fall back to
+	MEMF_CHIP (memtype is set in main()).
     */
-    attrib |= MEMF_KICK|MEMF_REVERSE;
+    attrib |= memtype|MEMF_REVERSE;
 
     result = AllocMem(size, attrib);
 

@@ -39,10 +39,18 @@ char *version = "$VER: " BANNER " " VERSIONSTRING " " DATE;
 char *configfile = "boot.config";
 
 ULONG stack = 16384;
+ULONG memtype;
 ULONG ils_table[3];
 struct ilsMemList ils_mem;
 
-int main(void)
+char usage[] =
+{
+    " -c -- force to chipmem\n"
+    " -f -- force to fastmem\n"
+    " -k -- force to kickmem\n"
+};
+
+int main(int argc, char **argv)
 {
     struct FileList *filelist;
     struct Node *node;
@@ -55,6 +63,42 @@ int main(void)
     {
 	PutStr("This utility is for AmigaOS 2.04 (V37) and higher\n\n");
 	exit(RETURN_WARN);
+    }
+
+    /*
+	The memory type MEMF_KICK has been added in V39 exec. Fall back to
+	MEMF_CHIP if we are on an earlier version.
+    */
+    if(SysBase->LibNode.lib_Version < 39)
+    {
+	memtype = MEMF_CHIP;
+    } else
+    {
+	memtype = MEMF_KICK;
+    }
+
+    for (argc--, argv++; argc; argc--, argv++)
+    {
+	if (**argv != '-')
+	{
+	    continue;
+	}
+	switch(argv[0][1])
+	{
+	    case 'h':
+		PutStr(usage);
+		exit(RETURN_OK);
+		break;
+	    case 'c':
+		memtype = MEMF_CHIP;
+		break;
+	    case 'f':
+		memtype = MEMF_FAST;
+		break;
+	    case 'k':
+		memtype = MEMF_KICK;
+		break;
+	}
     }
 
     PrintTagPtrs();
@@ -180,7 +224,7 @@ BOOL BuildTagPtrs(struct ModuleList *modlist)
 	number of modules loaded + 1 (table terminator)
     */
     if( (modarray = AllocVec((modlist->ml_Num+1)*sizeof(ULONG),
-			     MEMF_CLEAR|MEMF_KICK|MEMF_REVERSE)) )
+			     memtype|MEMF_CLEAR|MEMF_REVERSE)) )
     {
 	/*
 	    Fill the KickTagPtr array with pointers to our Resident modules.
@@ -236,11 +280,8 @@ struct MemList *BuildMemList(struct ilsMemList *prelist,
     /*
 	Allocate memory from the top of the memory list, to keep fragmentation
 	down, and hopefully to keep all our applications in one place.
-
-	TODO: The MEMF_KICK may cause boot to fail on <V39 OS. If this is a
-	problem, I could drop back to MEMF_CHIP if on <V39 OS.
     */
-    if(!(memlist = AllocVec(size, MEMF_CLEAR|MEMF_KICK|MEMF_REVERSE))) return(NULL);
+    if(!(memlist = AllocVec(size, memtype|MEMF_CLEAR|MEMF_REVERSE))) return(NULL);
 
     /*
 	We have the memory. Assure that this MemList is allocated during a
