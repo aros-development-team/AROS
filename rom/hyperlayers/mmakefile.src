@@ -90,6 +90,7 @@ FUNCTIONS := \
 	installclipregion \
 	installlayerhook \
 	installlayerinfohook \
+	islayervisible \
 	locklayer \
 	locklayerinfo \
 	locklayers \
