@@ -9,13 +9,12 @@ ULIBNAME	:= Asl
 FILES := functable basicfuncs \
 	 filereqhooks filereqsupport \
 	 modereqhooks modereqsupport \
-         fontreqhooks \
+         fontreqhooks specialreq \
 	 propclass arrowclass listviewclass \
 	 buttonclass stringclass cycleclass \
 	 gadgets coolimagedata 
 
-FUNCTIONS := \
-	allocfilerequest	\
+FUNCTIONS := allocfilerequest	\
 	allocaslrequest 	\
 	aslrequest		\
 	freeaslrequest		\

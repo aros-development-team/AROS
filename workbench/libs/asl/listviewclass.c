@@ -7,6 +7,7 @@
 #include <proto/boopsi.h>
 #include <proto/graphics.h>
 #include <proto/cybergraphics.h>
+#include <proto/layers.h>
 #include <exec/memory.h>
 #include <intuition/screens.h>
 #include <intuition/icclass.h>
@@ -915,10 +916,13 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 		WORD scrollx2 = data->maxx - BORDERLVSPACINGX;
 		WORD scrolly2 = scrolly1 + (data->visible * data->lineheight) - 1;
 		WORD i, first, last, step;
+		BOOL mustrefresh, update;
 		
 	        ScrollRaster(msg->gpr_RPort, 0, data->scroll * data->lineheight,
 			     scrollx1, scrolly1, scrollx2, scrolly2);
 	
+		mustrefresh = (msg->gpr_GInfo->gi_Layer->Flags & LAYERREFRESH) != 0;
+
 		if (data->scroll >= 0)
 		{
 		    first = data->visible - abs_scroll;
@@ -936,6 +940,24 @@ static IPTR asllistview_render(Class *cl, Object *o, struct gpRender *msg)
 		    
 		    renderitem(cl, o, node, i, msg->gpr_RPort);
 		}
+
+		/* the LAYERUPDATING check should not be necessary,
+		   as then we should always have a GREDRAW_REDRAW,
+		   while here we are in GREDRAW_UPDATE. But just
+		   to be sure ... */
+		   
+		if (mustrefresh && !(msg->gpr_GInfo->gi_Layer->Flags & LAYERUPDATING))
+		{
+	    	    if(!(update = BeginUpdate(msg->gpr_GInfo->gi_Layer)))
+		    {
+		        EndUpdate(msg->gpr_GInfo->gi_Layer, FALSE);
+		    }
+	    	    
+		    renderallitems(cl, o, msg->gpr_RPort);
+		    
+	    	    if(update) EndUpdate(msg->gpr_GInfo->gi_Layer, TRUE);
+		}
+		
 	    }
 	} else {
 	    if (data->rendersingleitem >= data->top)

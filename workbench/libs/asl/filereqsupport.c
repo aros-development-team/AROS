@@ -24,6 +24,7 @@
 #include "asl_intern.h"
 #include "filereqsupport.h"
 #include "filereqhooks.h"
+#include "specialreq.h"
 #include "layout.h"
 
 #define SDEBUG 0
@@ -901,6 +902,148 @@ void FRSetPattern(STRPTR pattern, struct LayoutData *ld, struct AslBase_intern *
     } else {
         SetAttrsA(udata->PatternGad, set_tags);
     }    
+}
+
+/*****************************************************************************************/
+
+void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    STRPTR 		oldpattern = udata->SelectPattern;
+
+    udata->SelectPattern = REQ_String(ifreq->ifr_Select_TitleText,
+				      oldpattern ? oldpattern : (STRPTR)"#?", 
+				      ifreq->ifr_Select_OkayText,
+				      ifreq->ifr_Select_CancelText,
+				      ld,
+				      AslBase);
+
+    if (oldpattern) FreeVecPooled(oldpattern, AslBase);
+
+    if (udata->SelectPattern)
+    {
+	LONG patternlen = strlen(udata->SelectPattern);
+
+	if (patternlen > 0)
+	{
+	    STRPTR parsedpattern;
+
+	    parsedpattern = AllocVecPooled(ld->ld_IntReq->ir_MemPool, patternlen * 2 + 3, AslBase);
+	    if (parsedpattern)
+	    {
+		if (ParsePatternNoCase(udata->SelectPattern, parsedpattern, patternlen * 2 + 3) != -1)
+		{
+		    struct ASLLVFileReqNode *node;
+
+		    if (udata->Flags & FRFLG_SHOWING_VOLUMES)
+		    {
+		    	UBYTE *dir;
+
+			GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&dir);
+			FRGetDirectory(dir, ld, AslBase);
+		    }
+		    		    
+		    SetGadgetAttrs((struct Gadget *)udata->Listview, ld->ld_Window, NULL, ASLLV_Active, -1,
+		    									  TAG_DONE);
+
+		    ForeachNode(&udata->ListviewList, node)
+		    {
+			if (node->node.ln_Name)
+			{
+			    if (MatchPatternNoCase(parsedpattern, node->node.ln_Name))
+			    {
+				MARK_SELECTED(node);
+			    } else {
+				MARK_UNSELECTED(node);
+			    }
+			}
+		    }
+
+		    RefreshGList((struct Gadget *)udata->Listview, ld->ld_Window, NULL, 1);
+
+		}
+		FreeVecPooled(parsedpattern, AslBase);
+
+	    } /* if (parsedpattern) */
+
+	} /* if (udata->SelectPattern[0]) */
+
+    } /* if (udata->SelectPattern) */
+
+} /**/
+
+/*****************************************************************************************/
+
+void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FRUserData 	*udata = (struct FRUserData *)ld->ld_UserData;	
+    struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+    STRPTR 		name = NULL, name2, s;
+
+    GetAttr(STRINGA_TextVal, udata->PathGad, (IPTR *)&name);
+
+    if (ifreq->ifr_Flags2 & FRF_DRAWERSONLY)
+    {
+	name = VecPooledCloneString(name, NULL, ld->ld_IntReq->ir_MemPool, AslBase);
+    } else {
+        GetAttr(STRINGA_TextVal, udata->FileGad, (IPTR *)&name2);
+	
+	if ((s = AllocVecPooled(ld->ld_IntReq->ir_MemPool, strlen(name) + strlen(name2) + 4, AslBase)))
+	{
+	    strcpy(s, name);
+	    AddPart(s, name2, 10000);
+	    name = s;
+	}
+    }
+    
+    if (name) if (name[0])
+    {
+	 struct EasyStruct es;
+
+	 es.es_StructSize   = sizeof(es);
+	 es.es_Flags 	    = 0;
+	 es.es_Title 	    = ifreq->ifr_Delete_TitleText;
+	 es.es_TextFormat   = ifreq->ifr_Delete_Message;
+	 es.es_GadgetFormat = ifreq->ifr_Delete_OkayCancelText;
+
+	 if (EasyRequestArgs(ld->ld_Window, &es, NULL, &name) == 1)
+	 {
+	     /* Delete it */
+	 }
+
+    } /* if (name) if (name[0]) */
+
+    if (name) FreeVecPooled(name, AslBase);
+}		
+
+/*****************************************************************************************/
+
+void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+			    	
+    REQ_String(ifreq->ifr_Create_TitleText,
+	       ifreq->ifr_Create_DefaultName, 
+	       ifreq->ifr_Create_OkayText,
+	       ifreq->ifr_Create_CancelText,
+	       ld,
+	       AslBase);
+}
+
+/*****************************************************************************************/
+
+void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct IntFileReq   *ifreq = (struct IntFileReq *)ld->ld_IntReq;
+			    	
+    REQ_String(ifreq->ifr_Rename_TitleText,
+	       "", 
+	       ifreq->ifr_Rename_OkayText,
+	       ifreq->ifr_Rename_CancelText,
+	       ld,
+	       AslBase);
+
 }
 
 /*****************************************************************************************/

@@ -28,6 +28,7 @@
 #include "filereqhooks.h"
 #include "layout.h"
 #include "filereqsupport.h"
+#include "specialreq.h"
 #include "coolimages.h"
 
 #define SDEBUG 0
@@ -1175,15 +1176,19 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 			        break;
 				
 			    case FRMEN_DELETE:
+			        FRDeleteRequester(ld, AslBase);		
 			        break;
 				
 			    case FRMEN_NEWDRAWER:
+			    	FRNewDrawerRequester(ld, AslBase);
 			        break;
 				
 			    case FRMEN_RENAME:
+			        FRRenameRequester(ld, AslBase);
 			        break;
 				
 			    case FRMEN_SELECT:
+				FRSelectRequester(ld, AslBase);
 			        break;
 					
 			    case FRMEN_OK:

@@ -59,7 +59,7 @@ struct IntReq
     struct TextAttr	*ir_TextAttr;
     struct Locale	*ir_Locale;
     APTR		ir_MemPool;
-    ULONG		ir_MemPoolPuddle;  /* if 0, no pool is created */
+    ULONG		ir_MemPoolPuddle;  	/* if 0, no pool is created */
     ULONG		ir_MemPoolThresh;
     STRPTR		ir_TitleText;
     STRPTR		ir_PositiveText;
@@ -116,6 +116,33 @@ struct IntFileReq
     STRPTR		ifr_LVDrawerText;
     STRPTR		ifr_LVAssignText;
 
+    /* Delete Requester */
+    
+    STRPTR		ifr_Delete_TitleText;
+    STRPTR		ifr_Delete_OkayCancelText;
+    STRPTR		ifr_Delete_Message;
+    
+    /* Rename Requester */
+    
+    STRPTR		ifr_Rename_TitleText;
+    STRPTR		ifr_Rename_OkayText;
+    STRPTR		ifr_Rename_CancelText;
+    
+    /* Create Drawer Requester */
+    
+    STRPTR		ifr_Create_TitleText;
+    STRPTR		ifr_Create_OkayText;
+    STRPTR		ifr_Create_CancelText;
+    STRPTR		ifr_Create_DefaultName;
+    
+    /* Select Requester */
+    
+    STRPTR		ifr_Select_TitleText;
+    STRPTR		ifr_Select_OkayText;
+    STRPTR		ifr_Select_CancelText;
+    
+    /* Menus */
+    
     STRPTR		ifr_Menu_Control;
     STRPTR		ifr_Item_Control_LastName;
     STRPTR		ifr_Item_Control_NextName;
@@ -289,6 +316,7 @@ struct AslBase_intern
 #endif
 
     struct GfxBase		*gfxbase;
+    struct Library		*layersbase;
     struct Library		*cybergfxbase;
     struct Library		*boopsibase;
     struct Library		*utilitybase;
@@ -429,6 +457,8 @@ typedef struct IntuitionBase IntuiBase;
 #define GadToolsBase	ASLB(AslBase)->gadtoolsbase
 
 #define CyberGfxBase	ASLB(AslBase)->cybergfxbase
+
+#define LayersBase	ASLB(AslBase)->layersbase
 
 #ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase

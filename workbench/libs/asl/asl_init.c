@@ -31,6 +31,8 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/*****************************************************************************************/
+
 struct inittable;
 extern const char name[];
 extern const char version[];
@@ -127,6 +129,7 @@ const struct inittable datatable=
 /* #undef O
 #undef SysBase */
 
+/*****************************************************************************************/
 
 /* Requester type specific default data */
 const struct IntFileReq def_filereq =
@@ -174,6 +177,33 @@ const struct IntFileReq def_filereq =
     "Drawer",			/* LVDrawerText  	*/
     "Assign",			/* LVAssignText  	*/
     
+    /* Delete Requester */
+    
+    "Delete File",
+    "Delete|Cancel",
+    "Warning: you cannot get back\n"
+    "what you delete! Ok to delete\n"
+    "%s?",
+    
+    /* Rename Requester */
+    
+    "Rename",
+    "Rename",
+    "Cancel",
+    
+    /* Create Drawer Requester */
+    
+    "Create Drawer",
+    "Create",
+    "Cancel",
+    "Rename_Me",
+    
+    /* Select Requester */
+    
+    "Select by pattern",
+    "Select",
+    "Cancel",
+    
     /* Menus */
     
     "Control",
@@ -203,6 +233,8 @@ const struct IntFileReq def_filereq =
     "6\0Show drawers last"
     
 };
+
+/*****************************************************************************************/
 
 const struct IntSMReq def_smreq =
 {
@@ -285,6 +317,8 @@ const struct IntSMReq def_smreq =
         
 };
 
+/*****************************************************************************************/
+
 const struct IntFontReq def_fontreq =
 {
     {
@@ -323,9 +357,11 @@ const struct IntFontReq def_fontreq =
 
 };
 
-
+/*****************************************************************************************/
 
 VOID InitReqInfo(struct AslBase_intern *);
+
+/*****************************************************************************************/
 
 /* I have to make IntuitionBase global to make use of NewObject() */
 #ifdef GLOBAL_INTUIBASE
@@ -341,6 +377,7 @@ struct ExecBase *SysBase;
 struct DosLibrary *DOSBase;
 #endif
 
+/*****************************************************************************************/
 
 AROS_LH2(struct AslBase_intern *, init,
     AROS_LHA(struct AslBase_intern *, LIBBASE, D0),
@@ -362,7 +399,7 @@ AROS_LH2(struct AslBase_intern *, init,
     AROS_LIBFUNC_EXIT
 }
 
-
+/*****************************************************************************************/
 
 AROS_LH1(struct AslBase_intern *, open,
     AROS_LHA(ULONG, version, D0),
@@ -390,6 +427,11 @@ AROS_LH1(struct AslBase_intern *, open,
     if (!GfxBase)
 	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
+	return(NULL);
+
+    if (!LayersBase)
+	LayersBase = OpenLibrary("layers.library", 37);
+    if (!LayersBase)
 	return(NULL);
 
     if (!CyberGfxBase)
@@ -467,6 +509,8 @@ AROS_LH1(struct AslBase_intern *, open,
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
+
 AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
@@ -520,6 +564,10 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
 	    CloseLibrary(CyberGfxBase);
 	CyberGfxBase = NULL;
 	
+	if (LayersBase)
+	    CloseLibrary(LayersBase);
+	LayersBase = NULL;
+	
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
 	GfxBase = NULL;
@@ -540,6 +588,8 @@ AROS_LH0(BPTR, close, struct AslBase_intern *, LIBBASE, 2, BASENAME)
     return 0;
     AROS_LIBFUNC_EXIT
 }
+
+/*****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct AslBase_intern *, LIBBASE, 3, BASENAME)
 {
@@ -573,6 +623,8 @@ AROS_LH0(BPTR, expunge, struct AslBase_intern *, LIBBASE, 3, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
+
 AROS_LH0I(int, null, struct AslBase_intern *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
@@ -580,11 +632,14 @@ AROS_LH0I(int, null, struct AslBase_intern *, LIBBASE, 4, BASENAME)
     AROS_LIBFUNC_EXIT
 }
 
+/*****************************************************************************************/
 
 #include <string.h>
 #include "filereqhooks.h"
 #include "fontreqhooks.h"
 #include "modereqhooks.h"
+
+/*****************************************************************************************/
 
 VOID InitReqInfo(struct AslBase_intern *AslBase)
 {
@@ -631,3 +686,5 @@ VOID InitReqInfo(struct AslBase_intern *AslBase)
 
     return;
 }
+
+/*****************************************************************************************/

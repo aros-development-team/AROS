@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
 
     Desc:
     Lang: english
@@ -32,6 +32,10 @@ void FRChangeActiveLVItem(struct LayoutData *ld, WORD delta, UWORD quali, struct
 void FRActivateMainStringGadget(struct LayoutData *ld, struct AslBase_intern *AslBase);
 void FRMultiSelectOnOff(struct LayoutData *ld, BOOL onoff, struct AslBase_intern *AslBase);
 void FRSetPattern(STRPTR pattern, struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FRSelectRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FRDeleteRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FRNewDrawerRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
+void FRRenameRequester(struct LayoutData *ld, struct AslBase_intern *AslBase);
 
 
 

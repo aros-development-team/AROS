@@ -665,7 +665,7 @@ void SMRefreshPropertyWindow(struct LayoutData *ld, struct DisplayMode *dispmode
     };
     struct Node 	*node = udata->PropertyNodes;
 
-    #define OF(x) (OFFSET(IntSMReq, ism_PropertyList_ ## x))
+    #define OF(x) (ULONG)(OFFSET(IntSMReq, ism_PropertyList_ ## x))
     
     static struct propertyinfo
     {

@@ -52,6 +52,7 @@ struct FRUserData
     struct List			ListviewList;
     struct Hook			ListviewHook;
     struct Hook			StringEditHook;
+    STRPTR			SelectPattern;
     UWORD 			ButWidth;
     UWORD 			ButHeight;
     WORD			LVColumnWidth[ASLLV_MAXCOLUMNS];
