@@ -169,6 +169,7 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 {
     struct MXData *data = INST_DATA(cl, obj);
     WORD ypos = G(obj)->TopEdge;
+    UWORD maxtextwidth;
     int y;
 
     if (msg->gpr_Redraw == GREDRAW_UPDATE) {
@@ -182,7 +183,8 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
     } else {
         /* Full redraw */
         STRPTR *labels;
-
+	WORD minx, miny, maxx, maxy;
+	
         /* Draw ticks */
         for (y=0; y<data->numlabels; y++)
         {
@@ -198,6 +200,82 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
             ypos += data->fontheight + data->spacing;
         }
 
+        /* Draw labels */
+        SetABPenDrMd(msg->gpr_RPort,
+                     data->dri->dri_Pens[TEXTPEN],
+                     data->dri->dri_Pens[BACKGROUNDPEN],
+                     JAM1);
+
+        ypos = G(obj)->TopEdge;
+
+	maxtextwidth = 0;
+	
+	minx = G(obj)->LeftEdge;
+	miny = G(obj)->TopEdge;
+	maxx = minx + G(obj)->Width - 1;
+	maxy = miny + G(obj)->Height - 1;
+	
+        for (labels=data->labels; *labels; labels++) {
+	    struct TextExtent te;
+	    WORD x, y, width, height, len;
+	    
+	    x = G(obj)->LeftEdge;
+	    y = ypos;
+
+            len = strlen(*labels);
+            TextExtent(msg->gpr_RPort, *labels, len, &te);
+            width  = te.te_Width;
+            height = te.te_Height;
+ 	    
+	    if (width > maxtextwidth) maxtextwidth = width;
+	    
+	    switch(data->ticklabelplace)
+	    {
+	        case GV_LabelPlace_Right:
+        	    x += data->mximage->Width + 5;
+        	    y += (data->mximage->Height - height) / 2 + 1;
+		    break;
+		
+		case GV_LabelPlace_Above:
+        	    x += (data->mximage->Width - width) / 2;
+        	    y -= (height + 2);
+		    break;
+		
+		case GV_LabelPlace_Below:
+        	    x += (data->mximage->Width - width) / 2;
+        	    y += (data->mximage->Height + 3);
+		    break;
+		
+		case GV_LabelPlace_In:
+        	    x += (data->mximage->Width - width) / 2;
+        	    y += (data->mximage->Height - height) / 2;
+		    break;
+		
+		default: /* GV_LabelPlace_Left: */
+        	    x -= (width + 4);
+        	    y += (data->mximage->Height - height) / 2 + 1;
+		    break;
+            }
+
+	    
+            Move(msg->gpr_RPort, x, y + msg->gpr_RPort->Font->tf_Baseline);
+            Text(msg->gpr_RPort, *labels, len);
+	    
+	    if (x < minx) minx = x;
+	    if (y < miny) miny = y;
+	    if (x + width - 1 > maxx) maxx = x + width - 1;
+	    if (y + height - 1 > maxy) maxy = y + height - 1;
+	    
+            ypos += data->fontheight + data->spacing;
+        }
+
+        data->bbox.MinX = minx;
+	data->bbox.MinY = miny;
+	data->bbox.MaxX = maxx;
+	data->bbox.MaxY = maxy;
+	
+	data->maxtextwidth = maxtextwidth;
+	
         /* Draw main label */
 
         /* bug: this will not be rendered at the correct
@@ -213,54 +291,8 @@ IPTR mx_render(Class * cl, Object * obj, struct gpRender * msg)
 	
         renderlabel(AROSMutualExcludeBase,
                     G(obj), msg->gpr_RPort,
-                    data->labelplace, data->ticklabelplace);
+                    data);
 
-        /* Draw labels */
-        SetABPenDrMd(msg->gpr_RPort,
-                     data->dri->dri_Pens[TEXTPEN],
-                     data->dri->dri_Pens[BACKGROUNDPEN],
-                     JAM1);
-        ypos = G(obj)->TopEdge + msg->gpr_RPort->Font->tf_Baseline;
-
-        for (labels=data->labels; *labels; labels++) {
-	    struct TextExtent te;
-	    WORD x, y, width, height, len;
-	    
-	    x = G(obj)->LeftEdge;
-	    y = ypos;
-
-            len = strlen(*labels);
-            TextExtent(msg->gpr_RPort, *labels, len, &te);
-            width  = te.te_Width;
-            height = te.te_Height;
- 	    
-            if (data->ticklabelplace == GV_LabelPlace_Right)
-            {
-        	x += data->mximage->Width + 5;
-        	y += (data->mximage->Height - height) / 2 + 1;
-            } else if (data->ticklabelplace == GV_LabelPlace_Above)
-            {
-        	x += (data->mximage->Width - width) / 2;
-        	y -= (height + 2);
-            } else if (data->ticklabelplace == GV_LabelPlace_Below)
-            {
-        	x += (data->mximage->Width - width) / 2;
-        	y += (data->mximage->Height + 3);
-            } else if (data->ticklabelplace == GV_LabelPlace_In)
-            {
-        	x += (data->mximage->Width - width) / 2;
-        	y += (data->mximage->Height - height) / 2;
-            } else /* GV_LabelPlace_Left */
-            {
-        	x -= (width + 4);
-        	y += (data->mximage->Height - height) / 2 + 1;
-            }
-
-	    
-            Move(msg->gpr_RPort, x, y);
-            Text(msg->gpr_RPort, *labels, len);
-            ypos += data->fontheight + data->spacing;
-        }
     }
 
     /* Draw disabled pattern */

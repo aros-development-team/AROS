@@ -71,7 +71,7 @@ void closefont(struct MXBase_intern *AROSMutualExcludeBase,
 
 BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
 		 struct Gadget *gad, struct RastPort *rport,
-                 LONG labelplace, LONG ticklabelplace)
+                 struct MXData *data)
 {
     struct TextFont *font = NULL, *oldfont;
     struct TextExtent te;
@@ -108,42 +108,32 @@ BOOL renderlabel(struct MXBase_intern *AROSMutualExcludeBase,
             height = ((struct Image *)gad->GadgetText)->Height;
         }
 
-        if (labelplace == GV_LabelPlace_Right)
+        if (data->labelplace == GV_LabelPlace_Right)
         {
-            x = gad->LeftEdge + gad->Width + 5;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
-        } else if (labelplace == GV_LabelPlace_Above)
+            x = data->bbox.MaxX + 5;
+            y = (data->bbox.MinY + data->bbox.MaxY - height) / 2;
+        } else if (data->labelplace == GV_LabelPlace_Above)
         {
-            if (ticklabelplace == GV_LabelPlace_Left)
-                x = gad->LeftEdge - width - 1;
-            else if (ticklabelplace == GV_LabelPlace_Right)
-                x = gad->LeftEdge;
-            else
-                x = gad->LeftEdge - (width - gad->Width) / 2;
-            y = gad->TopEdge - height - 2;
-        } else if (labelplace == GV_LabelPlace_Below)
+	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
+            y = data->bbox.MinY - height - 2;
+        } else if (data->labelplace == GV_LabelPlace_Below)
         {
-            if (ticklabelplace == GV_LabelPlace_Left)
-                x = gad->LeftEdge - width - 1;
-            else if (ticklabelplace == GV_LabelPlace_Right)
-                x = gad->LeftEdge;
-            else
-                x = gad->LeftEdge - (width - gad->Width) / 2;
+	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
             y = gad->TopEdge + gad->Height + 3;
-        } else if (labelplace == GV_LabelPlace_In)
+        } else if (data->labelplace == GV_LabelPlace_In)
         {
-            x = gad->LeftEdge - (width - gad->Width) / 2;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+	    x = (data->bbox.MinX + data->bbox.MaxX - width) / 2;
+            y = (data->bbox.MinY + data->bbox.MaxY - height) / 2;
         } else /* GV_LabelPlace_Left */
         {
-            x = gad->LeftEdge - width - 4;
-            y = gad->TopEdge + (gad->Height - height) / 2 + 1;
+            x = data->bbox.MinX - width - 4;
+            y = (data->bbox.MinY + data->bbox.MaxY - height) / 2;
         }
 
         if (gad->Flags & GFLG_LABELSTRING)
         {
             SetABPenDrMd(rport, 1, 0, JAM1);
-            Move(rport, x, y);
+            Move(rport, x, y + rport->TxBaseline);
             Text(rport, text, len);
         } else if (gad->Flags & GFLG_LABELIMAGE)
             DrawImage(rport, (struct Image *)gad->GadgetText, x, y);
