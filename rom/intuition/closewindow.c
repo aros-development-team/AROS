@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.21  2000/01/21 23:09:14  stegerg
+    screen windowlist (scr->FirstWindow, win->NextWindow) was
+    not always correct. Maybe (!) it is now.
+
     Revision 1.20  2000/01/19 19:00:40  stegerg
     moved intui_closewindow from intuition_driver.c to
     here.
@@ -206,7 +210,7 @@ VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBa
     /* Free everything except the applications messageport */
     ULONG lock;
     
-    struct Window *window = msg->Window;
+    struct Window *window = msg->Window, *win2;
 
 
     D(bug("CloseWindow (%p)\n", window));
@@ -237,6 +241,19 @@ VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBa
     if (window == window->WScreen->FirstWindow)
 	window->WScreen->FirstWindow = window->NextWindow;
 
+    if ((win2 = window->WScreen->FirstWindow))
+    {
+	while (win2->NextWindow)
+	{
+            if (win2->NextWindow == window)
+	    {
+		win2->NextWindow = win2->NextWindow->NextWindow;
+		break;
+	    }
+	    win2 = win2->NextWindow;
+	}
+    }
+    
     UnlockIBase (lock);
 
     /* Free resources */
