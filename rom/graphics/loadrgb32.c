@@ -6,17 +6,22 @@
     Lang: english
 */
 #include "graphics_intern.h"
+#include <clib/graphics_protos.h>
+
+#if DEBUG
+#undef THIS_FILE
+static const char THIS_FILE[] = __FILE__;
+#endif
 
 /*****************************************************************************
 
     NAME */
-	#include <clib/graphics_protos.h>
 
 	AROS_LH2(void, LoadRGB32,
 
 /*  SYNOPSIS */
 	AROS_LHA(struct ViewPort *, vp, A0),
-	AROS_LHA(ULONG           *, table, A1),
+	AROS_LHA(const ULONG     *, table, A1),
 
 /*  LOCATION */
 	struct GfxBase *, GfxBase, 147, Graphics)
@@ -45,6 +50,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    ASSERT_VALID_PTR(table);
+    ASSERT_VALID_PTR(table);
 
     driver_LoadRGB32 (vp, table, GfxBase);
 

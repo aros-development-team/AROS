@@ -90,6 +90,9 @@ struct ViewPort;
 /* a function needed by GfxAssocate(), GfxLookUp(), GfxFree() */
 extern ULONG CalcHashIndex(ULONG n);
 
+/* a function needed by Draw() */
+BOOL CorrectDriverData (struct RastPort * rp, struct GfxBase * GfxBase);
+
 /* a function needed by ClipBlit */
 void internal_ClipBlit(struct RastPort * srcRP,
                        LONG xSrc,
@@ -143,7 +146,7 @@ extern int  driver_InitRastPort (struct RastPort *, struct GfxBase *);
 extern void driver_InitView (struct View *, struct GfxBase *);
 extern void driver_InitVPort (struct ViewPort *, struct GfxBase *);
 extern void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count, struct GfxBase *);
-extern void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table, struct GfxBase *);
+extern void driver_LoadRGB32 (struct ViewPort * vp, const ULONG * table, struct GfxBase *);
 extern void driver_Move (struct RastPort *, LONG, LONG, struct GfxBase *);
 extern struct TextFont * driver_OpenFont (struct TextAttr *,
 			    struct GfxBase *);

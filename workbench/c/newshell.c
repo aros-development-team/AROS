@@ -19,10 +19,12 @@ int main (int argc, char ** argv)
 {
     STRPTR args[2] = { "CON:", "S:Shell-Startup" };
     struct RDArgs  *rda;
-    BPTR            lock, in, out, shell;
+    BPTR            in, out, shell; /* lock */
     STRPTR          s1, s2, s3, buf;
     struct Process *process;
     LONG            error = RETURN_ERROR;
+
+	PutStr("newshell\n");
 
     rda = ReadArgs("WINDOW,FROM", (IPTR *)args, NULL);
     if(rda != NULL)

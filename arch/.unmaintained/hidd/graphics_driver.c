@@ -519,31 +519,6 @@ void driver_SetDrMd (struct RastPort * rp, ULONG mode,
 }
 
 
-/* Return the intersection area of a and b in intersect.
- * Return value is TRUE if a and b have such an area,  
- * else FALSE - the coordinates in intersect are not     
- * changed in this case.
- */
-static BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectangle* intersect)
-{
-    if (a->MinX <= b->MaxX) {
-	if (a->MinY <= b->MaxY) {
-	  if (a->MaxX >= b->MinX) {
-		if (a->MaxY >= b->MinY) {
-		    intersect->MinX = MAX(a->MinX, b->MinX);
-		    intersect->MinY = MAX(a->MinY, b->MinY);
-		    intersect->MaxX = MIN(a->MaxX, b->MaxX);
-		    intersect->MaxY = MIN(a->MaxY, b->MaxY);
-		    return TRUE;
-		}
-	    }
-	}
-    }
-    return FALSE;
-} /* andrectrect() */
-
-
-
 
 static VOID setbitmappixel(struct BitMap *bm
 	, LONG x, LONG y
@@ -2737,12 +2712,12 @@ void driver_LoadRGB4 (struct ViewPort * vp, UWORD * colors, LONG count,
     }
 } /* driver_LoadRGB4 */
 
-void driver_LoadRGB32 (struct ViewPort * vp, ULONG * table,
+void driver_LoadRGB32(struct ViewPort * vp, const ULONG * table,
 	    struct GfxBase * GfxBase)
 {
     LONG t;
     
-    EnterFunc(bug("driver_LoadRGB32(vp=%p, table=%p)\n"));
+    EnterFunc(bug("driver_LoadRGB32(vp=%p, table=%p)\n", vp, table));
     
     
     while (*table)

@@ -21,7 +21,7 @@
  * else FALSE - the coordinates in intersect are not     
  * changed in this case.
  */
-BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectangle* intersect)
+BOOL andrectrect(const struct Rectangle* a, const struct Rectangle* b, struct Rectangle* intersect)
 {
     if (a->MinX <= b->MaxX) {
 	if (a->MinY <= b->MaxY) {

@@ -7,7 +7,7 @@
 */
 #include <graphics/gfxbase.h>
 
-BOOL andrectrect(struct Rectangle* a, struct Rectangle* b, struct Rectangle* intersect);
+BOOL andrectrect(const struct Rectangle* a, const struct Rectangle* b, struct Rectangle* intersect);
 void disposerrects(struct RegionRectangle* rr);
 BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
