@@ -15,15 +15,6 @@
 #define EXIT_SUCCESS	0 /* Success exit status */
 #define EXIT_FAILURE	1 /* Failing exit status */
 
-#ifndef __ldiv_t_defined
-typedef struct
-{
-  long int quot;  /* Quotient */
-  long int rem;   /* Remainder */
-} ldiv_t;
-#define ldiv_t_defined 1
-#endif
-
 void __attribute__ ((noreturn)) exit (int code);
 void __attribute__ ((noreturn)) abort (void);
 
@@ -80,5 +71,8 @@ char *mktemp(char *buf);
 int   system(const char *string);
 
 char *gcvt(double number, size_t ndigit, char *buf);
+
+div_t div(int numer, int denom);
+ldiv_t ldiv(long int numer, long int denom);
 
 #endif /* _STDLIB_H */

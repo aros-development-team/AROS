@@ -128,5 +128,16 @@ typedef struct fd_set {
 #define	FD_COPY(f, t)   memcpy(t, f, sizeof(*(f)))
 #define	FD_ZERO(p)      memset(p, 0, sizeof(*(p)))
 
+/* Types for div and ldiv */
+typedef struct div_t {
+    int quot;
+    int rem;
+} div_t;
+
+typedef struct ldiv_t {
+    long int quot;
+    long int rem;
+} ldiv_t;
+
 #endif /* _SYS_TYPES_H */
 
