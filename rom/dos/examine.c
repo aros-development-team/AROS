@@ -119,11 +119,14 @@
     /* Set error code and return */
     SetIoErr(iofs->io_DosError);
     if(iofs->io_DosError)
-	return 0;
+	return DOSFALSE;
     else
     {
-	fib->fib_DiskKey=0;
-	fib->fib_DirEntryType=ead->ed_Type;
+        /* in fib_DiskKey the result from telldir is being stored which
+           gives us important info for a call to ExNext() */
+	fib->fib_DiskKey	=iofs->io_DirPos;
+	fib->fib_DirEntryType	=ead->ed_Type;
+
 	src=ead->ed_Name;
 	dst=fib->fib_FileName;
 	if(src!=NULL)
@@ -131,12 +134,14 @@
 		if(!(*dst++=*src++))
 		    break;
 	*dst++=0;
-	fib->fib_Protection=ead->ed_Prot;
-	fib->fib_EntryType=ead->ed_Type;
-	fib->fib_Size=ead->ed_Size;
-	fib->fib_Date.ds_Days=ead->ed_Days;
-	fib->fib_Date.ds_Minute=ead->ed_Mins;
-	fib->fib_Date.ds_Tick=ead->ed_Ticks;
+
+	fib->fib_Protection	=ead->ed_Prot;
+	fib->fib_EntryType	=ead->ed_Type;
+	fib->fib_Size		=ead->ed_Size;
+	fib->fib_Date.ds_Days	=ead->ed_Days;
+	fib->fib_Date.ds_Minute	=ead->ed_Mins;
+	fib->fib_Date.ds_Tick	=ead->ed_Ticks;
+
 	src=ead->ed_Comment;
 	dst=fib->fib_Comment;
 	if(src!=NULL)
@@ -144,9 +149,9 @@
 		if(!(*dst++=*src++))
 		    break;
 	*dst++=0;
-	fib->fib_OwnerUID=ead->ed_OwnerUID;
-	fib->fib_OwnerGID=ead->ed_OwnerGID;
-	return 1;
+	fib->fib_OwnerUID	=ead->ed_OwnerUID;
+	fib->fib_OwnerGID	=ead->ed_OwnerGID;
+	return DOSTRUE;
     }
 
     AROS_LIBFUNC_EXIT

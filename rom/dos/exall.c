@@ -82,13 +82,13 @@
     if (iofs->io_DosError != 0)
     {
 	control->eac_Entries=0;
-	return 0;
+	return DOSFALSE;
     }
 
     for (size=1; buffer!=NULL; size++)
 	buffer = buffer->ed_Next;
     control->eac_Entries = size;
 
-    return 1;
+    return DOSTRUE;
     AROS_LIBFUNC_EXIT
 } /* ExAll */
