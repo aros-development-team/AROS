@@ -902,11 +902,18 @@ char *funcname = NULL, **funcnames = NULL;
 /* Well, there are already 4 functions (open,close,expunge,null) */
 int numfuncs = 4;
 
+int has_arch = 1;
+
+
   /* First check if we have a HIDD which does not have an archive */
   lc = calloc( 1, sizeof(struct libconf) );
   if(parse_libconf(NULL,lc))
     return(-1);
-  if(lc->type!=t_hidd)
+
+  if (lc->type==t_hidd || lc->type==t_gadget)
+    has_arch = 0;
+
+  if(has_arch)
   {
     if(argc != 2)
     {
@@ -927,7 +934,7 @@ int numfuncs = 4;
     exit(-1);
   }
 
-  if(lc->type!=t_hidd)
+  if(has_arch)
   {
     in_archive = 0;
     in_function = 0;
@@ -984,7 +991,7 @@ int numfuncs = 4;
   }
   emit(fdo,lc,funcnames,numfuncs);
   fclose(fdo);
-  if(lc->type!=t_hidd)
+  if(has_arch)
   {
     fclose(fd);
   }
