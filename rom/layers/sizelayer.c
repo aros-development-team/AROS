@@ -55,6 +55,7 @@
 
     D(bug("SizeLayer(layer @ $%lx, dx %ld, dy %ld)\n", layer, dx, dy));
 
-    return NULL;
+    return MoveSizeLayer(layer, 0L, 0L, dx, dy);
+
     AROS_LIBFUNC_EXIT
 } /* SizeLayer */
