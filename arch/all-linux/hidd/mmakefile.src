@@ -12,16 +12,18 @@ else
 USER_INCLUDES := -I.
 endif
 
-FILES	   := linux_init gfxclass bmclass kbdclass mouseclass inputtask functable endtag
-FUNCTIONS  := 
 OBJDIR := $(GENDIR)/$(CURDIR)
-OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+FILES	   := linux_init gfxclass bmclass kbdclass mouseclass inputtask functable
+FUNCTIONS  := 
+END_FILE := $(OBJDIR)/endtag
+ENDFUNC := $(END_FILE).o
+OBJS	:= $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o) $(ENDFUNC)
 LIB	:= $(LIBDIR)/liblinux.a
 
 
-# ###MM hidd-graphics-linklib-quick
-# ##hidd-graphics-linklib-quick : $(LIB)
-# #	@$(NOP)
+#MM hidd-graphics-linklib-quick
+hidd-graphics-linklib-quick : $(LIB)
+	@$(NOP)
 
 # Install Linux specific hidd.prefs file
 #MM
@@ -39,7 +41,7 @@ $(LIB) : $(OBJS)
 
 #MM
 clean ::
-	$(RM) $(OBJS) $(LIB) $(OBJDIR) libdefs.h endtag.c *.err
+	$(RM) $(LIB) $(OBJDIR) libdefs.h *.err
 
 #MM
 setup :
@@ -51,23 +53,13 @@ $(OBJDIR)/%.o : %.c
 $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 	
-libdefs.h : lib.conf
-	@$(ECHO) "Generating $@..."
-	@$(ARCHTOOL) -c
+%libdefs_rule
 	
 FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
 	
-functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
-	libdefs.h
-	@$(ECHO) "Generating $@..."
-#	$(GAWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) >functable.c
-#	$(ARCHTOOL) -t
+%mkfunctable_arch
 
-endtag.c :
-	@$(ECHO) "Generating $@..."
-	@$(ECHO) "#include <libcore/libtail.c>" > $@
-	
-
+%mkendtag_q
 
 %common
-%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).d) $(END_FILE).d
