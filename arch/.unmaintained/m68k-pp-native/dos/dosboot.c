@@ -83,7 +83,11 @@ AROS_UFH3(void, intBoot,
             bootNode, bootNode->bn_DeviceNode,
 	    deviceName ? deviceName : "(null)" 
 	));
-#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+//#if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
+#if 0
+#warning !!! Cannot have this part activated. I do define AROS_FLAVOUR_EMULATION
+#warning in order no to have to deal with things in boot/strap.c like
+#warning partition.library.
 	AddDosEntry( (struct DosList *) bootNode->bn_DeviceNode );
 #else
     	/* 
