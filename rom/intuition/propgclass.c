@@ -115,32 +115,28 @@ static UWORD FindScrollerTop(UWORD total, UWORD visible, UWORD pot)
 
 /****************************************************************************************/
 
-static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, UWORD top, BOOL final)
+static VOID NotifyTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
 {
     struct PropGData *data = INST_DATA(cl, o);
     
-    if (data->top != top) /* A new value for top ? */
-    {
+    struct opUpdate notifymsg;
+    struct TagItem  notifyattrs[3];
 
-    	struct opUpdate notifymsg;
-    	struct TagItem  notifyattrs[3];
-	
-	D(bug("NotifyTop(top=%d, final=%d)\n",
-		top, final));
-    	
-    	notifyattrs[0].ti_Tag	= PGA_Top;
-    	notifyattrs[0].ti_Data 	= top;
-    	notifyattrs[1].ti_Tag	= GA_ID;
-    	notifyattrs[1].ti_Data	= EG(o)->GadgetID;
-    	notifyattrs[2].ti_Tag	= TAG_END;
-	
-    	notifymsg.MethodID	    = OM_NOTIFY;
-    	notifymsg.opu_AttrList  = notifyattrs;
-    	notifymsg.opu_GInfo	    = gi;
-    	notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
-	
-    	DoSuperMethodA(cl, o, (Msg)&notifymsg);
-    }
+    D(bug("NotifyTop(top=%d, final=%d)\n",
+	  top, final));
+
+    notifyattrs[0].ti_Tag	= PGA_Top;
+    notifyattrs[0].ti_Data 	= data->top;
+    notifyattrs[1].ti_Tag	= GA_ID;
+    notifyattrs[1].ti_Data	= EG(o)->GadgetID;
+    notifyattrs[2].ti_Tag	= TAG_END;
+
+    notifymsg.MethodID	    = OM_NOTIFY;
+    notifymsg.opu_AttrList  = notifyattrs;
+    notifymsg.opu_GInfo	    = gi;
+    notifymsg.opu_Flags	    = (final != FALSE) ? 0 : OPUF_INTERIM;
+
+    DoSuperMethodA(cl, o, (Msg)&notifymsg);
     
     return;
 }
@@ -169,10 +165,9 @@ static VOID UpdateTop(Class *cl, Object *o, struct GadgetInfo *gi, BOOL final)
     if (top != data->top)
     {
     	D(bug("top != data->top, calling NotifyTop\n"));
-      	NotifyTop(cl, o, gi, top, final);
-	
-	/* Set this afterwards, since NotifyTop checks top != data->top */
-    	data->top = top;
+
+	data->top = top;	
+      	NotifyTop(cl, o, gi, final);
     }
     return;
 }
@@ -216,7 +211,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     }
     
     newtop = data->top; /* !! */
-    
+
     /* Set to 1 to signal visual changes */
     while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
     {
@@ -326,10 +321,12 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
 	    newtop = 0;
 	}
 	
-	NotifyTop(cl, o, msg->ops_GInfo, newtop, TRUE);
-	/* Set this afterwards, since NotifyTop checks top != data->top */
-	data->top = newtop;
- 	
+	if (data->top != newtop)
+	{
+	    data->top = newtop;
+	    NotifyTop(cl, o, msg->ops_GInfo, TRUE);
+    	}
+	 	
     	if (data->propinfo.Flags & FREEVERT)
     	{
     	    bodyptr = &(data->propinfo.VertBody);
@@ -351,6 +348,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     	    potptr
     	);
     }
+
 
     /* The two last tests below may be redundant */
     if ((retval || full_redraw) && (OM_NEW != msg->MethodID) && (NULL != msg->ops_GInfo))
