@@ -117,9 +117,15 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		End,
 	    Child, ColGroup(3),
 		GroupFrameT("Background"),
-		Child, d.background_framed_popimage = PopimageObject, MUIA_Draggable, TRUE, End,
-		Child, d.background_page_popimage = PopimageObject, MUIA_Draggable, TRUE, End,
-		Child, d.background_register_popimage = PopimageObject, MUIA_Draggable, TRUE, End,
+		Child, d.background_framed_popimage =
+		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			      MUIA_Draggable, TRUE, End,
+		Child, d.background_page_popimage =
+		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			      MUIA_Draggable, TRUE, End,
+		Child, d.background_register_popimage =
+		    NewObject(CL_ImageClipboard->mcc_Class, NULL,
+			      MUIA_Draggable, TRUE, End,
 		Child, MakeLabel("Framed"),
 		Child, MakeLabel("Page"),
 		Child, MakeLabel("Register"),
