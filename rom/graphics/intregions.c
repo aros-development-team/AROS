@@ -33,6 +33,98 @@
    and tell me whether it's fast or not :))
 */
 
+
+#    define SIZECHUNKBUF 20
+
+struct ChunkExt
+{
+    struct RegionRectangleExtChunk  Chunk;
+    struct ChunkPool               *Owner;
+};
+
+struct ChunkPool
+{
+    struct MinNode  Node;
+    struct ChunkExt Chunks[SIZECHUNKBUF];
+    struct MinList  ChunkList;
+    LONG            NumChunkFree;
+};
+
+inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
+(
+    struct GfxBase *GfxBase
+)
+{
+    struct ChunkPool *Pool;
+    struct ChunkExt  *ChunkE;
+
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+    Pool = GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
+
+    if (!Pool || !Pool->NumChunkFree)
+    {
+	int i;
+
+        Pool = AllocMem(sizeof(struct ChunkPool), MEMF_ANY);
+
+        if (!Pool)
+        {
+	    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+            return NULL;
+        }
+
+        NEWLIST(&Pool->ChunkList);
+
+        Pool->NumChunkFree = SIZECHUNKBUF;
+
+        for (i=0; i<SIZECHUNKBUF; i++)
+        {
+            ADDTAIL(&Pool->ChunkList, &Pool->Chunks[i]);
+        }
+
+        ADDHEAD(&PrivGBase(GfxBase)->ChunkPoolList, Pool);
+    }
+
+    ChunkE = GetHead(&Pool->ChunkList);
+    REMOVE(ChunkE);
+
+    if (!--Pool->NumChunkFree)
+    {
+        REMOVE(Pool);
+        ADDTAIL(&PrivGBase(GfxBase)->ChunkPoolList, Pool);
+    }
+
+    ChunkE->Owner = Pool;
+
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+    return &ChunkE->Chunk;
+}
+
+void __DisposeRegionRectangleExtChunk
+(
+    struct RegionRectangleExtChunk *Chunk,
+    struct GfxBase *GfxBase
+)
+{
+    struct ChunkPool *Pool = ((struct ChunkExt *)Chunk)->Owner;
+
+    ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+    if (++Pool->NumChunkFree == SIZECHUNKBUF)
+    {
+        REMOVE(Pool);
+        FreeMem(Pool, sizeof(struct ChunkPool));
+    }
+    else
+    {
+        ADDTAIL(&Pool->ChunkList, Chunk);
+    }
+
+    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+}
+
 #if LINTEST
 #    include <stdlib.h>
 #    include <stdio.h>
@@ -45,6 +137,7 @@
 #    undef  _DisposeRegionRectangleExtChunk
 #    define _DisposeRegionRectangleExtChunk(mem) free(mem)
 
+#    undef  _NewRegionRectangleExtChunk
 #    undef  NewRegion
 #    define NewRegion()                                      \
      ({                                                      \
@@ -288,20 +381,6 @@ BOOL _LinkRegionRectangleList
     {                                \
         MaxX(*DstPtr) = maxx;        \
     }                                \
-}
-
-#define FIXLASTBAND(first, last)                      \
-if (!first)                                           \
-{                                                     \
-    first = last;                                     \
-}                                                     \
-else                                                  \
-{                                                     \
-    struct RegionRectangle *newlastrect = last->Prev; \
-                                                      \
-    first->Prev->Next = last;                         \
-    last->Prev = first->Prev;                         \
-    first->Prev = newlastrect;                        \
 }
 
 #define DOBANDCHECKS(firstlastdst, lastdst, curdst)                        \
@@ -1324,5 +1403,6 @@ int main(void)
     DisposeRegion(R1);
     return 0;
 }
+
 #endif
 

@@ -111,11 +111,13 @@ AROS_LH2(LIBBASETYPEPTR, init,
 #if REGIONS_USE_MEMPOOL
     InitSemaphore( &PrivGBase(GfxBase)->regionsem );
     if (!(PrivGBase(GfxBase)->regionpool = CreatePool(MEMF_PUBLIC | MEMF_CLEAR,
-    	    	    	    	    	    	      sizeof(struct RegionRectangleExtChunk) * 20,
-    	    	    	    	    	    	      sizeof(struct RegionRectangleExtChunk) * 20)))
+    	    	    	    	    	    	      sizeof(struct Region) * 20,
+    	    	    	    	    	    	      sizeof(struct Region) * 20)))
     {
     	return NULL;
     }
+
+    NEWLIST(&PrivGBase(GfxBase)->ChunkPoolList);
 #endif
 
     Disable();

@@ -85,6 +85,7 @@ struct GfxBase_intern
 #if REGIONS_USE_MEMPOOL
     struct SignalSemaphore  	regionsem;
     APTR    	    	    	regionpool;
+    struct MinList              ChunkPoolList;
 #endif
 };
 
@@ -352,10 +353,10 @@ BOOL _LinkRegionRectangleList
 #endif
 
 #define _NewRegionRectangleExtChunk() \
-    ((struct RegionRectangleExtChunk *)GFX_ALLOC(sizeof(struct RegionRectangleExtChunk)))
+    __NewRegionRectangleExtChunk(GfxBase)
 
 #define _DisposeRegionRectangleExtChunk(_chunk) \
-    GFX_FREE(_chunk, sizeof(struct RegionRectangleExtChunk))
+    __DisposeRegionRectangleExtChunk(_chunk, GfxBase)
 
 #endif /* GRAPHICS_INTERN_H */
 
