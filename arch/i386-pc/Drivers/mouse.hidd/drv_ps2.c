@@ -151,11 +151,18 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
 
     while ((info & KBD_STATUS_OBF))             /* data from information port */
     {
-        if ((info & KBD_STATUS_MOUSE_OBF) && !(info & (KBD_STATUS_GTO | KBD_STATUS_PERR)))       /* If bit 5 set data from mouse. */
+        if (info & KBD_STATUS_MOUSE_OBF)   /* If bit 5 set data from mouse. */
         {
             UBYTE *mouse_data=data->u.ps2.mouse_data;
-            
+            	    
             UBYTE mousecode = kbd_read_input();
+
+	    if (info & (KBD_STATUS_GTO | KBD_STATUS_PERR))
+	    {
+    	    	info = kbd_read_status();
+	    	continue;
+	    }
+
 //            if (0xfa == mousecode)
 //            /* Check whether we are excepting ACK */
 //            if (data->u.ps2.expected_mouse_acks)
