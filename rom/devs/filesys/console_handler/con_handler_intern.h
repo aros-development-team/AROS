@@ -51,6 +51,7 @@ struct filehandle
     struct MsgPort	*conwritemp;
     struct Window	*window;
     struct Task 	*contask;
+    struct Task		*breaktask;
     struct MsgPort      *contaskmp;
     struct MinList	pendingReads;
     struct MinList	pendingWrites;
