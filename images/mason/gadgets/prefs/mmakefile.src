@@ -2,11 +2,11 @@ include $(TOP)/config/make.cfg
 
 FILES := Test Revert Save Use Cancel
 
-#MM- themes-mason-images-gadgets : themes-mason-images-gadgets-preferences
-#MM themes-mason-images-gadgets-preferences : setup
-themes-mason-images-gadgets-preferences : files-copy
+#MM- themes-mason-images-gadgets : themes-mason-images-gadgets-prefs
+#MM themes-mason-images-gadgets-prefs : setup
+themes-mason-images-gadgets-prefs : files-copy
 
-%copy_files_q files=$(FILES) dst=$(AROS_THEMES)/Mason/Images/Gadgets/Preferences
+%copy_files_q files=$(FILES) dst=$(AROS_THEMES)/Mason/Images/Gadgets/Prefs
 
 %common
 
