@@ -51,7 +51,7 @@
      *	them one at a time.
      */
 
-    ForeachNode(sigSem,(struct Node *)ss)
+    ForeachNode(sigSem, ss)
     {
 	ReleaseSemaphore(ss);
     }
