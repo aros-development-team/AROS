@@ -1,4 +1,4 @@
-alib_commodities00000;2;SDuvan;Write ArgArrayDone
+tealib_commodities00000;2;SDuvan;Write ArgArrayDone
 alib_commodities00001;2;SDuvan;Write ArgArrayInit
 alib_commodities00002;2;SDuvan;Write ArgInt
 alib_commodities00003;2;SDuvan;Write ArgString
@@ -282,11 +282,11 @@ datatypes00029;1;SDuvan;LaunchToolA
 DataType/8svx;0;;Implement 8svx.datatype
 DataType/amigaguide;0;;Implement amigaguide.datatype
 DataType/animation;0;;Implement animation.datatype
-DataType/ascii;0;;Implement ascii.datatype
+DataType/ascii;2;stegerg;Implement ascii.datatype
 DataType/ilbm;0;;Implement ilbm.datatype
 DataType/picture;0;;Implement picture.datatype
 DataType/sound;0;;Implement sound.datatype
-DataType/text;0;;Implement text.datatype
+DataType/text;2;sebauer;Implement text.datatype
 DevCMD00001;0;;Write ADCMD_ALLOCATE
 DevCMD00002;0;;Write ADCMD_FINISH
 DevCMD00003;0;;Write ADCMD_FREE
