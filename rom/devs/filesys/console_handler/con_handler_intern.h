@@ -1,7 +1,7 @@
 #ifndef __CON_HANDLER_INTERN_H
 #define __CON_HANDLER_INTERN_H
 /*
-    Copyright (C) 1998 AROS - The Amiga Research OS
+    Copyright (C) 1998-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Internal header-file for emulation-handler.
@@ -103,6 +103,7 @@ struct filehandle
 #define FHFLG_ASYNCCONSOLEREAD	32  /* There is a pending async console.device CMD_READ request */
 #define FHFLG_AUTO  	    	64  /* filename contained AUTO */
 #define FHFLG_CONSOLEDEVICEOPEN 128
+#define FHFLG_EOF   	    	256
 
 typedef struct IntuitionBase IntuiBase;
 

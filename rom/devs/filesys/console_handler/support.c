@@ -468,7 +468,7 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
     if (fh->conbufferpos < fh->conbuffersize)
     {
         c = fh->consolebuffer[fh->conbufferpos++];
-	D(bug("scan_input: check char %d\n",c));
+	(bug("scan_input: check char %d\n",c));
 	switch(c)
 	{
 	    case 3:
@@ -510,6 +510,10 @@ WORD scan_input(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer)
 	
 	    case 24:
 	        result = INP_CONTROL_X;
+		break;
+	
+	    case 28: /* CTRL-\ */
+	    	result = INP_EOF;
 		break;
 		
 	    case 0x9B: /* CSI */

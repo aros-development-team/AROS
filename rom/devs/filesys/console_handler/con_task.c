@@ -158,9 +158,24 @@ static void con_read(struct conbase *conbase, struct IOFileSys *iofs)
 	fh->canreadsize -= readlen;	
 	if (fh->canreadsize == 0) fh->flags &= ~FHFLG_CANREAD;
 	
-    } else {    
-	AddTail((struct List *)&fh->pendingReads, (struct Node *)iofs);
-	fh->flags |= FHFLG_READPENDING;
+    }
+    else
+    {    
+    	if (fh->flags & FHFLG_EOF)
+	{
+	    iofs->io_Union.io_READ.io_Length = 0;
+	    iofs->IOFS.io_Error     	     = 0;
+	    iofs->io_DosError 	    	     = 0;
+
+	    ReplyMsg(&iofs->IOFS.io_Message);
+
+	    fh->flags &= ~FHFLG_EOF;
+	}
+	else
+	{
+	    AddTail((struct List *)&fh->pendingReads, (struct Node *)iofs);
+	    fh->flags |= FHFLG_READPENDING;
+	}
     }
 }
 
@@ -735,15 +750,22 @@ VOID conTaskEntry(struct conTaskParams *param)
 			}
 			break;
 
+    	    	    case INP_EOF:
+		    	fh->flags |= FHFLG_EOF;
+    	    	    	/* fall through */
+			
 		    case INP_RETURN:
 		        if (fh->inputsize < INPUTBUFFER_SIZE)
-			{			    
-		            c = '\n';
-			    do_write(conbase, fh, &c, 1);
-			    
-			    add_to_history(conbase, fh);
+			{
+			    if (inp != INP_EOF)
+			    {			    
+		        	c = '\n';
+				do_write(conbase, fh, &c, 1);
 
-			    fh->inputbuffer[fh->inputsize++] = '\n';
+				add_to_history(conbase, fh);
+
+				fh->inputbuffer[fh->inputsize++] = '\n';
+			    }
 			    fh->inputstart = fh->inputsize;
 			    fh->inputpos = fh->inputstart;
 			    
@@ -760,7 +782,8 @@ VOID conTaskEntry(struct conTaskParams *param)
 
 				} /* ForeachNodeSafe(&fh->pendingReads, iofs, nextiofs) */
 
-				if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
+			    	if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
+
 			    }
 			    
 			    if (fh->inputsize)
@@ -768,7 +791,26 @@ VOID conTaskEntry(struct conTaskParams *param)
 			        fh->flags |= FHFLG_CANREAD;
 				fh->canreadsize = fh->inputsize;
 			    }
-			}
+			    
+			    if ((fh->flags & FHFLG_EOF) && (fh->flags & FHFLG_READPENDING))
+			    {
+			    	struct IOFileSys *iofs = (struct IOFileSys *)RemHead((struct List *)&fh->pendingReads);
+				
+				if (iofs)
+				{
+				    iofs->io_Union.io_READ.io_Length = 0;
+				    iofs->IOFS.io_Error     	     = 0;
+				    iofs->io_DosError 	    	     = 0;
+				    
+				    ReplyMsg(&iofs->IOFS.io_Message);
+				    
+				    fh->flags &= ~FHFLG_EOF;
+				}
+				
+			    	if (IsListEmpty(&fh->pendingReads)) fh->flags &= ~FHFLG_READPENDING;
+			    }
+			    
+			} /* if (fh->inputsize < INPUTBUFFER_SIZE) */
 			break;
 
 		    case INP_LINEFEED:
