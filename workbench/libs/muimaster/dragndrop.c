@@ -842,9 +842,7 @@ VOID DrawBitMapNode( struct BitMapNode *bmn, LONG x, LONG y )
 */
 				BltBitMapNode(bmn, 0,0,rp,x,y,width,height);
 			}
-#ifdef __AROS__
 			DeinitRastPort(&temp_rp);
-#endif
 		}
 	}
 
@@ -894,9 +892,7 @@ struct DragNDrop *CreateDragNDropA( struct TagItem *tlist )
 
 			if(dnd->dnd_Layer = CreateBehindLayer(dnd->dnd_LayerInfo,
 		
-#ifdef __AROS__
                         DeinitRastPort(rp);
-#endif
 			return dnd;
 		}
 		FreeMem( dnd, sizeof(struct DragNDrop ));*/
@@ -1254,10 +1250,9 @@ struct BitMap *CreateBitmapFromIcon(struct Screen *scr, struct DiskObject *dobj,
 			rp.BitMap = bmap;
 			SetRast(&rp,1);
 			DrawIconStateA(&rp,dobj,NULL,0,0,IDS_SELECTED,draw_tags);
-#ifdef __AROS__
 			DeinitRastPort(&rp);
-#endif
-			return bmap;
+			
+                        return bmap;
 		}
 	}
 
