@@ -1,6 +1,7 @@
-#   $Id$
+# Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+# $Id$
 #
-#   Makefile to make MultiView.
+# Makefile to make MultiView.
 
 include $(TOP)/config/make.cfg
 
@@ -14,11 +15,12 @@ USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 
+#MM- workbench-utilities : workbench-utilities-multiview
 #MM workbench-utilities : includes linklibs setup-multiview-catalogs
 
-%make_prog_setup mmake=workbench-utilities
+%make_prog_setup mmake=workbench-utilities-multiview
 
-workbench-utilities : setup $(EXE)
+workbench-utilities-multiview : setup $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 

@@ -1,6 +1,7 @@
-#   $Id$
+# Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+# $Id$
 #
-#   Makefile to make the Installer
+# Makefile to make the Installer
 
 include $(TOP)/config/make.cfg
 
@@ -15,11 +16,12 @@ USE_AMIGALIB := yes
 USE_AROSLIB := yes
 USE_MLIB := yes
 
-#MM workbench-utilities : includes linklibs
+#MM- workbench-utilities : workbench-utilities-installer
+#MM workbench-utilities-installer : includes linklibs
 
-%make_prog_setup mmake=workbench-utilities
+%make_prog_setup mmake=workbench-utilities-installer
 
-workbench-utilities : setup $(EXE) $(EXEDIR)/$(SCRIPT)
+workbench-utilities-installer : setup $(EXE) $(EXEDIR)/$(SCRIPT)
 
 $(EXEDIR)/$(SCRIPT) : $(SCRIPT)
 	@$(CP) $? $@
