@@ -60,10 +60,6 @@ If EXISTS C:RexxMast
     Run <NIL: >NIL: C:RexxMast
 EndIf
 
-If EXISTS ENVARC:SYS/def_RAM.info
-    Copy ENVARC:SYS/def_RAM.info RAM:Disk.info QUIET
-EndIf
-
 If EXISTS S:User-Startup
     Execute S:User-Startup
 EndIf
