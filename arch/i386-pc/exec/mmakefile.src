@@ -27,7 +27,6 @@ exec-native-i386 : $(foreach f,$(FILES), $(OBJDIR)/$(f).o) \
 #MM
 setup-exec-native-i386 :
 	%mkdirs_q $(OBJDIR)
-	%mkdirs_q $(OSGENDIR)/exec
 	%add_objects $(foreach f,$(FILES), rom/exec/$(f))
 	%add_objects $(foreach f,$(COREFILES), rom/exec/$(f))
 	%exclude_files $(foreach f,$(FILES), rom/exec/$(f))
