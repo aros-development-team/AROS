@@ -55,40 +55,45 @@ AROS_LH1(float, SPFloor,
 {
     AROS_LIBFUNC_INIT
     
-  LONG Mask = 0x80000000;
-
-  if (((char)y & FFPExponent_Mask)  <= 0x40)
-  {
-    if ((char)y < 0)
+    LONG Mask = 0x80000000;
+    
+    if (((char)y & FFPExponent_Mask)  <= 0x40)
     {
-      SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0x800000C1; /* -1 */
+        if ((char)y < 0)
+        {
+            SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0x800000C1; /* -1 */
+        }
+        else
+        {
+            SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+            return 0;
+        }
     }
-    else
+    
+    /* |fnum| >= 1 */
+    Mask >>= ( ((char) y & FFPExponent_Mask) - 0x41);
+    Mask |= FFPSign_Mask | FFPExponent_Mask;
+    
+    /* fnum is negative */
+    if ((char) y < 0)
     {
-      SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-      return 0;
+        /* is there anything behind the dot? */
+        if (0 != (y & (~Mask)) )
+        {
+            Mask = 0x80000000;
+            y    = SPAdd(y, 0x800000c1); /* y = y -1; */
+            Mask >>= ((char) y & FFPExponent_Mask) - 0x41;
+            Mask |= FFPSign_Mask | FFPExponent_Mask;
+        }
     }
-  }
-
-  /* |fnum| >= 1 */
-  Mask >>= ( ((char) y & FFPExponent_Mask) - 0x41);
-  Mask |= FFPSign_Mask | FFPExponent_Mask;
-
-  /* fnum is negative */
-  if ((char) y < 0)
-  /* is there anything behind the dot? */
-    if (0 != (y & (~Mask)) )
+    
+    if((char) y < 0)
     {
-      Mask = 0x80000000;
-      y    = SPAdd(y, 0x800000c1); /* y = y -1; */
-      Mask >>= ((char) y & FFPExponent_Mask) - 0x41;
-      Mask |= FFPSign_Mask | FFPExponent_Mask;
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
     }
-
-  if((char) y < 0)
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-
-  return y & Mask;
+    
+    return y & Mask;
+    
     AROS_LIBFUNC_EXIT
 }

@@ -40,9 +40,9 @@ AROS_LH1(float, SPCeil,
 {
     AROS_LIBFUNC_INIT
     
-  /* Ceil(y) = -Floor(-y) */
-  y = SPFloor(y ^ FFPSign_Mask);
-  return (y ^ FFPSign_Mask);
+    /* Ceil(y) = -Floor(-y) */
+    y = SPFloor(y ^ FFPSign_Mask);
+    return (y ^ FFPSign_Mask);
 
     AROS_LIBFUNC_EXIT
 }

@@ -45,23 +45,24 @@ AROS_LH1(LONG, SPTst,
 )
 {
     AROS_LIBFUNC_INIT
-  /* fnum1 is negative */
-  if ((char) fnum < 0)
-  {
-    SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return -1;
-  }
-
-  /* fnum1 is zero */
-  if (0 == fnum)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
-    return 0;
-  }
-
-  /* fnum1 is positive */
-  SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
-  return 1;
+    /* fnum1 is negative */
+    if ((char) fnum < 0)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return -1;
+    }
+    
+    /* fnum1 is zero */
+    if (0 == fnum)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Overflow_Bit | Negative_Bit);
+        return 0;
+    }
+    
+    /* fnum1 is positive */
+    SetSR(0, Zero_Bit | Overflow_Bit | Negative_Bit );
+    
+    return 1;
 
     AROS_LIBFUNC_EXIT
 }

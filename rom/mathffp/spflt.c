@@ -48,52 +48,54 @@ AROS_LH1(float, SPFlt,
 {
     AROS_LIBFUNC_INIT
   
-  BYTE Exponent = 0;
-  LONG TestMask = 0xFFFFFFFF;
-  LONG Res = 0;
-
-kprintf("SPFlt(%d)=",inum);
-
-  if (inum == 0)
-  {
-    SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-kprintf("0\n");
-    return 0;
-  }
-
-  if (inum < 0)
-  {
-    Res = FFPSign_Mask;
-    inum = -inum;
-  }
-  /* find out which is the number of the highes set bit */
-  while (TestMask & inum)
-  {
-    Exponent ++;
-    TestMask <<= 1;
-  }
-
-  /* Exponent = number of highest set bit + 1 */
-
-  inum <<= (32 - Exponent);
-  if ((char) inum < 0)
-    inum +=0x100;
-  inum &= FFPMantisse_Mask;
-
-  /* adapt the exponent to the ffp format */
-  Exponent += 0x40;
-  Res |= inum | Exponent;
-  if ((char) Res < 0)
-    SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-
-  if (Exponent > (25 + 0x40))
-  {
-    Res |= 0x80000000;
-    SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
-  }
-
-kprintf("%x\n",Res);
-
-  return Res;
+    BYTE Exponent = 0;
+    LONG TestMask = 0xFFFFFFFF;
+    LONG Res = 0;
+    
+    kprintf("SPFlt(%d)=",inum);
+    
+    if (inum == 0)
+    {
+        SetSR(Zero_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+        kprintf("0\n");
+        return 0;
+    }
+    
+    if (inum < 0)
+    {
+        Res = FFPSign_Mask;
+        inum = -inum;
+    }
+    /* find out which is the number of the highes set bit */
+    while (TestMask & inum)
+    {
+        Exponent ++;
+        TestMask <<= 1;
+    }
+    
+    /* Exponent = number of highest set bit + 1 */
+    
+    inum <<= (32 - Exponent);
+    if ((char) inum < 0) inum +=0x100;
+    inum &= FFPMantisse_Mask;
+    
+    /* adapt the exponent to the ffp format */
+    Exponent += 0x40;
+    Res |= inum | Exponent;
+    if ((char) Res < 0)
+    {
+        SetSR(Negative_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    
+    if (Exponent > (25 + 0x40))
+    {
+        Res |= 0x80000000;
+        SetSR(Overflow_Bit, Zero_Bit | Negative_Bit | Overflow_Bit);
+    }
+    
+    kprintf("%x\n",Res);
+    
+    return Res;
+    
     AROS_LIBFUNC_EXIT
 }
