@@ -9,7 +9,4 @@ include $(TOP)/config/make.cfg
 #MM linklibs-libinit : includes
 
 %build_linklib mmake=linklibs-libinit \
-    libname=libinit files="libinit setsysbase"
-
-%common
-
+    libname=libinit files="libinit"
