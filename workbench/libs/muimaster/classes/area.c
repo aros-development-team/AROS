@@ -554,14 +554,11 @@ static ULONG Area_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		}
 		break;
 
-	    case MUIA_Selected:
-		if (tag->ti_Data)
-		    data->mad_Flags |= MADF_SELECTED;
-		else
-		    data->mad_Flags &= ~MADF_SELECTED;
-		if (data->mad_InputMode != MUIV_InputMode_None)
+	    case    MUIA_Selected:
+		    if (tag->ti_Data) data->mad_Flags |= MADF_SELECTED;
+		    else data->mad_Flags &= ~MADF_SELECTED;
 		    MUI_Redraw(obj, MADF_DRAWOBJECT);
-		break;
+		    break;
 
 	    case MUIA_Timer:
 		data->mad_Timeval = tag->ti_Data;
@@ -850,7 +847,6 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    /* TODO: Fill the Area not covered here */
 	}
 
-
 	if (!background)
 	{
 	    /* This will do the rest, TODO: on MADF_DRAWALL we not really need to draw this */
@@ -1064,7 +1060,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure((IPTR)data->mad_BackgroundSpec,obj);
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 
-    if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
+    if (data->mad_Flags & MADF_SHOWSELSTATE)
     {
 	data->mad_SelBack = zune_image_spec_to_structure(MUII_SelectedBack,obj);
 	zune_imspec_setup(&data->mad_SelBack, muiRenderInfo(obj));
@@ -1152,12 +1148,10 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     if (data->mad_ehn.ehn_Events)
 	DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->mad_ehn);
 
-    if (data->mad_Flags & MADF_SHOWSELSTATE && data->mad_InputMode != MUIV_InputMode_None)
-    {
-	zune_imspec_cleanup(&data->mad_SelBack, muiRenderInfo(obj));
-	zune_imspec_free(data->mad_SelBack);
-	data->mad_SelBack = NULL;
-    }
+    /* It's save to call the following function with NULL */
+    zune_imspec_cleanup(&data->mad_SelBack, muiRenderInfo(obj));
+    zune_imspec_free(data->mad_SelBack);
+    data->mad_SelBack = NULL;
 
     zune_imspec_cleanup(&data->mad_Background, muiRenderInfo(obj));
     zune_imspec_free(data->mad_Background);
