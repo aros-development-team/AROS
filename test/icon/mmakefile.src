@@ -1,0 +1,29 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES  := examine writetooltypes
+
+EXEDIR := $(TESTDIR)/Icon
+EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
+
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
+USE_AROSLIB     := yes
+
+#MM- test : test-icon
+#MM test-icon
+
+%make_prog_setup mmake=test-icon
+
+test-icon : setup $(EXES)
+
+setup ::
+	%mkdir_q $(EXEDIR)
+	
+%make_prog_single dir=$(EXEDIR)
+
+%common
+%include_deps
