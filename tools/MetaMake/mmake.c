@@ -43,6 +43,7 @@ Boston, MA 02111-1307, USA.  */
 #include <errno.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <time.h>
 #ifdef HAVE_STRING_H
 #   include <string.h>
 #else
