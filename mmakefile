@@ -105,7 +105,8 @@ $(GENDIR)/%.o: %.c
 # \item{cleandep} Remove all generated dependency files.
 #
 # END_DESC{target}
-cleandep:
+#MM
+cleandep :
 	find $(GENDIR) -name "*.d" -exec $(RM) "{}" \;
 
 # BEGIN_DESC{target}
