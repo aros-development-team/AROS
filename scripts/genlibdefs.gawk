@@ -79,16 +79,20 @@ END {
     if (libbasetypeptr=="")
 	libbasetypeptr="struct "libbasetype" *";
 
-    print "#define LIBNAME        \""libname".library\""
-    print "#define DEVNAME        \""libname".device\""
-    print "#define RESNAME        \""libname".resource\""
-    print "#define LIBBASE        "libbase
-    print "#define LIBBASETYPE    "libbasetype
-    print "#define LIBBASETYPEPTR "libbasetypeptr
-    print "#define LIBVERSION     "version
-    print "#define LIBREVISION    "revision
-    print "#define BASENAME       "basename
-    print "#define VERSION        \"$VER: "libname" "version"."revision" ("date")\\r\\n\""
-    print "#define END            "basename"_end"
-    print "#define FUNCTABLE      "basename"_functable"
+	print "#define LIBNAME		\""libname".library\""
+	print "#define DEVNAME		\""libname".device\""
+	print "#define RESNAME		\""libname".resource\""
+	print "#define GADGETNAME	\""libname".gadget\""
+	print "#define IMAGENAME	\""libname".image\""
+	print "#define CLASSNAME	\""libname".class\""
+	print "#define DTYPENAME	\""libname".datatype\""
+	print "#define LIBBASE		"libbase
+	print "#define LIBBASETYPE	"libbasetype
+	print "#define LIBBASETYPEPTR	"libbasetypeptr
+	print "#define LIBVERSION	"version
+	print "#define LIBREVISION	"revision
+	print "#define BASENAME		"basename
+	print "#define VERSION		\"$VER: "libname" "version"."revision" ("date")\\r\\n\""
+	print "#define END		"basename"_end"
+	print "#define FUNCTABLE	"basename"_functable"
 }
