@@ -415,7 +415,7 @@ static IPTR hikeymap[] =
     BYTES(8, 8, 8, 8),		/* 41 BACKSPACE*/
     STRING(tab_descr),		/* 42 TAB */
     BYTES(13, 13, 13, 13),	/* 43 ENTER */
-    BYTES(0, 0, 10, 13),	/* 44 RETURN */
+    BYTES(0, 0, 10, 10),	/* 44 RETURN */
     BYTES(0, 0, 0x9B, 27),	/* 45 ESCAPE */
     BYTES(127, 127, 127, 127),	/* 46 DEL */
     BYTES(0, 0, 0, 0),		/* 47 */
