@@ -28,8 +28,8 @@
 
 #include <libcore/libheader.c>
 
-#define DEBUG 0
-#include <aros/debug.h>
+#   define DEBUG 0
+#   include <aros/debug.h>
 
 #undef DOSBase
 #undef SysBase

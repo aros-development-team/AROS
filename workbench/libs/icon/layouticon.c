@@ -3,13 +3,14 @@
     $Id$
 */
 
-#include <aros/debug.h>
 #include <exec/types.h>
 #include <workbench/icon.h>
 #include <utility/tagitem.h>
 #include <proto/icon.h>
 
 #include "icon_intern.h"
+
+#   include <aros/debug.h>
 
 /*****************************************************************************
 

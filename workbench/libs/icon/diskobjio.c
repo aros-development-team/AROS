@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Read an icon from an .info file
-    Lang: English
+    Read an icon from an .info file
 */
 
 #ifdef __MORPHOS__
@@ -19,7 +18,6 @@
 #include <exec/memory.h>
 #include <aros/bigendianio.h>
 #include <aros/asmcall.h>
-#include <aros/debug.h>
 #include <aros/macros.h>
 #include <workbench/workbench.h>
 
@@ -30,6 +28,8 @@
 #include <proto/intuition.h>
 
 #include "icon_intern.h"
+
+#   include <aros/debug.h>
 
 /****************************************************************************************/
 
