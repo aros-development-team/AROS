@@ -808,6 +808,12 @@ int numparams=0;
     {
       if(in_header)
       {
+	/* Skip this line. It splits the header in a part which is global
+	 * (for the autodocs) and a local part which is only necessary
+	 * to compile the code. */
+        if (!strcmp (word, "Local"))
+	  continue;
+	
         i = (header?strlen(header):0);
         header = realloc( header, (i+strlen(line)+2)*sizeof(char) );
         sprintf( &header[i], "%s\n", line );

@@ -8,9 +8,10 @@
 #Archive
 #Header
 #include <libraries/mathffp.h>
-#include <aros/libcall.h>
 #include <proto/mathffp.h>
+#Local
 #include <proto/exec.h>
+#include <aros/libcall.h>
 #include <exec/types.h>
 #include "mathffp_intern.h"
 #/Header
@@ -910,7 +911,7 @@
     BUGS
 
     SEE ALSO
-
+	SPAdd()
 
     INTERNALS
       ALGORITHM:
