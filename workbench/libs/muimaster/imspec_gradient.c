@@ -10,12 +10,11 @@
 #include <proto/cybergraphics.h>
 
 #include <stdio.h>
+#include <proto/dos.h>
 
 #include "mui.h"
 #include "imspec_intern.h"
 #include "support.h"
-
-#include <aros/debug.h>
 
 extern struct Library *MUIMasterBase;
 
@@ -23,16 +22,12 @@ STATIC VOID TrueDitherV
 (
     struct RastPort *rp,
     WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD xoff, WORD yoff,
+    WORD oy1, WORD oy2,
     ULONG *start_rgb, ULONG *end_rgb
 )
 {
-    LONG width;
-    LONG height_minus_one;
-
-    ULONG red   = start_rgb[0];
-    ULONG green = start_rgb[1];
-    ULONG blue  = start_rgb[2];
+    LONG max_delta_y = oy2 - oy1;
+    LONG width       = x2  - x1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
     LONG delta_g = end_rgb[1] - start_rgb[1];
@@ -40,29 +35,19 @@ STATIC VOID TrueDitherV
 
     LONG y;
 
-    x1 += yoff;
-    if (x1 > x2) x1 = x2;
-
-    width           = x2 - x1 + 1;
-    height_minus_one= y2 - y1;
-
-    if (yoff == 0)
+    for(y = y1; y <= y2; y++)
     {
-        FillPixelArray(rp, x1, y1, width, 1, (red << 16) + (green << 8) + blue);
-        yoff = 1;
-    }
+        const LONG delta_y = y - oy1;
 
-    for(y = yoff; y <= height_minus_one; y++)
-    {
-        red   += (y * delta_r)/height_minus_one;
-        green += (y * delta_g)/height_minus_one;
-        blue  += (y * delta_b)/height_minus_one;
+        LONG red   = start_rgb[0];
+	LONG green = start_rgb[1];
+	LONG blue  = start_rgb[2];
 
-        FillPixelArray(rp, x1 , y1 + y, width, 1, (red << 16) + (green << 8) + blue);
+        red   += (delta_y * delta_r)/max_delta_y;
+        green += (delta_y * delta_g)/max_delta_y;
+        blue  += (delta_y * delta_b)/max_delta_y;
 
-        red   = start_rgb[0];
-	green = start_rgb[1];
-	blue  = start_rgb[2];
+        FillPixelArray(rp, x1, y, width, 1, (red << 16) + (green << 8) + blue);
     }
 }
 
@@ -70,16 +55,12 @@ STATIC VOID TrueDitherH
 (
     struct RastPort *rp,
     WORD x1, WORD y1, WORD x2, WORD y2,
-    WORD xoff, WORD yoff,
+    WORD ox1, WORD ox2,
     ULONG *start_rgb, ULONG *end_rgb
 )
 {
-    LONG width_minus_one;
-    LONG height;
-
-    ULONG red   = start_rgb[0];
-    ULONG green = start_rgb[1];
-    ULONG blue  = start_rgb[2];
+    LONG max_delta_x = ox2 - ox1;
+    LONG height      = y2  - y1 + 1;
 
     LONG delta_r = end_rgb[0] - start_rgb[0];
     LONG delta_g = end_rgb[1] - start_rgb[1];
@@ -87,30 +68,33 @@ STATIC VOID TrueDitherH
 
     LONG x;
 
-    y1 += yoff;
-    if (y1 > y2) y1 = y2;
-
-    width_minus_one = x2 - x1;
-    height          = y2 - y1 + 1;
-
-    if (xoff == 0)
+    for(x = x1; x <= x2; x++)
     {
-        FillPixelArray(rp, x1, y1, 1, height, (red << 16) + (green << 8) + blue);
+        const LONG delta_x = x - ox1;
 
-        xoff = 1;
-    }
+        LONG red   = start_rgb[0];
+	LONG green = start_rgb[1];
+	LONG blue  = start_rgb[2];
 
-    for(x = xoff; x <= width_minus_one; x++)
-    {
-        red   += (x * delta_r)/width_minus_one;
-        green += (x * delta_g)/width_minus_one;
-        blue  += (x * delta_b)/width_minus_one;
+        red   += (delta_x * delta_r)/max_delta_x;
+        green += (delta_x * delta_g)/max_delta_x;
+        blue  += (delta_x * delta_b)/max_delta_x;
 
-        FillPixelArray(rp, x1 + x, y1, 1, height, (red << 16) + (green << 8) + blue);
+        FillPixelArray(rp, x, y1, 1, height, (red << 16) + (green << 8) + blue);
+#if 0
+        kprintf("r = %08lx\n"
+                "g = %08lx\n"
+                "b = %08lx\n"
+                "ox1 = %d\n"
+                "ox2 = %d\n"
+                "x1 = %d\n"
+                "x2 = %d\n"
+                "x   = %ld\n"
+                "max_delta_x = %ld\n"
+                "delta_x     = %ld\n\n", red, green, blue, ox1, ox2, x1, x2, x, max_delta_x, delta_x);
 
-        red   = start_rgb[0];
-	green = start_rgb[1];
-	blue  = start_rgb[2];
+        Delay(100);
+#endif
     }
 }
 
@@ -127,8 +111,6 @@ VOID zune_gradient_draw
     if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
         return;
 
-    xoff = yoff = 0;
-
     switch(spec->u.gradient.orientation)
     {
         case 'v':
@@ -136,7 +118,7 @@ VOID zune_gradient_draw
             (
                 mri->mri_RastPort,
                 x1, y1, x2, y2,
-                xoff, yoff,
+                spec->u.gradient.y1, spec->u.gradient.y2,
                 spec->u.gradient.start_rgb, spec->u.gradient.end_rgb
             );
             break;
@@ -146,7 +128,7 @@ VOID zune_gradient_draw
             (
                 mri->mri_RastPort,
                 x1, y1, x2, y2,
-                xoff, yoff,
+                spec->u.gradient.x1, spec->u.gradient.x2,
                 spec->u.gradient.start_rgb, spec->u.gradient.end_rgb
             );
             break;

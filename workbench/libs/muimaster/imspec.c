@@ -629,6 +629,14 @@ void zune_imspec_show(struct MUI_ImageSpec_intern *spec, Object *obj)
 	case IST_CONFIG:
 	    D(bug("*** zune_imspec_show : IST_CONFIG\n"));
 	    break;
+
+        case IST_GRADIENT:
+            spec->u.gradient.x1 = _left(obj);
+            spec->u.gradient.y1 = _top(obj);
+            spec->u.gradient.x2 = _right(obj);
+            spec->u.gradient.y2 = _bottom(obj);
+            break;
+            
 	default:
 	    break;
     }
