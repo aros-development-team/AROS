@@ -342,7 +342,7 @@ headers.
 \item
 NEVER, NEVER touch buffers passed in by the user as an "input"
 parameter. The concept of input parameters is often implicit
-in the function description. For istance, the filename passed
+in the function description. For instance, the filename passed
 to Open() is clearly an input variable and Open() must not
 mess with it, even if it is going to fix it back later. Keep
 in mind that the buffer might be in read-only memory or shared
