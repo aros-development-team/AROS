@@ -193,14 +193,17 @@ __asm Object *MUI_MakeObjectA(register __d0 LONG type, register __a0 IPTR *param
 
 	case MUIO_Checkmark: /* STRPTR label */
 	{
-	    return MUI_NewObject(MUIC_Text, //Image
+	    return MUI_NewObject(MUIC_Image,
 		    ButtonFrame,
 		    MUIA_Weight,0,
-//	            MUIA_Image_Spec, MUII_CheckMark,
-		    MUIA_Text_Contents, "C",
+	            MUIA_Image_Spec, MUII_CheckMark,
+//		    MUIA_Text_Contents, "C",
 	            MUIA_InputMode, MUIV_InputMode_Toggle,
+	            MUIA_Image_FreeVert, TRUE,
+	            MUIA_Image_FreeHoriz, TRUE,
+
 //	            MUIA_Frame, MUIV_Frame_None,
-//	            MUIA_ShowSelState, FALSE,
+	            MUIA_ShowSelState, FALSE,
 		    TAG_DONE);
 
 #if 0

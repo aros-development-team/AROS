@@ -620,13 +620,13 @@ static ULONG Area_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    STORE = (ULONG)_left(obj);
 	    return(TRUE);
 	case MUIA_Pressed:
-	    STORE = (data->mad_Flags & MADF_PRESSED);
+	    STORE = !!(data->mad_Flags & MADF_PRESSED);
 	    return(TRUE);
 	case MUIA_RightEdge:
 	    STORE = (ULONG)_right(obj);
 	    return(TRUE);
 	case MUIA_Selected:
-	    STORE = (data->mad_Flags & MADF_SELECTED);
+	    STORE = !!(data->mad_Flags & MADF_SELECTED);
 	    return(TRUE);
 	case MUIA_ShortHelp:
 	    STORE = (ULONG)data->mad_ShortHelp;

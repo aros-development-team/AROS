@@ -41,4 +41,10 @@ void zune_link_rebind (struct MUI_ImageSpec *img, struct MUI_ImageSpec *new_link
 
 /***************/
 
+/* Bitnums used for the flags for zune_draw_image() */
+#define IMSPEC_SELECTED (0)
+
+/* Flags for zune_draw_image() */
+#define IMSPECF_SELECTED (1<<IMSPEC_SELECTED) 
+
 #endif

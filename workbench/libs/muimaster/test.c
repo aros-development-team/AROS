@@ -324,6 +324,8 @@ void main(void)
 			    Child, TextObject, MUIA_ContextMenu, context_menu, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Press Right", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, objects_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Add Objects", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			    Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			    Child, MUI_MakeObject(MUIO_Label,"_Checkmark",0),
+			    Child, MUI_MakeObject(MUIO_Checkmark,"_Checkmark"),
 			    End,
 		        Child, group = VGroup,
 			    GroupFrameT("A vertical group"),

@@ -13,6 +13,7 @@
 #include <proto/exec.h>
 #include <proto/graphics.h>
 #include <proto/utility.h>
+#include <proto/intuition.h>
 
 #ifdef _AROS
 #include <proto/muimaster.h>
@@ -273,11 +274,14 @@ static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 {
     struct MUI_ImageData *data = INST_DATA(cl, obj);
+    LONG selected;
     DoSuperMethodA(cl,obj,(Msg)msg);
+
+    get(obj,MUIA_Selected,&selected);
 
     zune_draw_image(muiRenderInfo(obj), data->img,
 		    _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-		    0, 0, 0);
+		    0, 0, selected << IMSPEC_SELECTED);
     return 1;
 }
 
