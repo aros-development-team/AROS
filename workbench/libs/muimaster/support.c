@@ -143,9 +143,14 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Popimage_desc,
     &_MUI_Scale_desc,
     &_MUI_Radio_desc,
+#ifndef __AROS__
     &_MUI_IconList_desc,
     &_MUI_IconDrawerList_desc,
     &_MUI_IconVolumeList_desc,
+#else
+#   warning Implement the V49 API to be able to compile and link the iconlist class.
+#endif
+
 };
 
 #define NUM_BUILTINS  sizeof(builtins) / sizeof(struct __MUIBuiltinClass *)
