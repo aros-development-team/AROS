@@ -48,15 +48,17 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+	AROS_LIBFUNC_INIT
+	AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-  if (NULL != prefbuffer && 0 != size)
-    memcpy(prefbuffer,
-           GetPrivIBase(IntuitionBase)->ActivePreferences, 
-           size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+	if (NULL != prefbuffer && 0 != size) {
+		LockIBase(0);
+		memcpy(prefbuffer,
+		       GetPrivIBase(IntuitionBase)->ActivePreferences, 
+		       size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+		UnlockIBase(0);
+	}
+	return (struct Preferences *)prefbuffer;
 
-  return (struct Preferences *)prefbuffer;
-
-    AROS_LIBFUNC_EXIT
+	AROS_LIBFUNC_EXIT
 } /* GetPrefs */
