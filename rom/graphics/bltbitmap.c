@@ -125,6 +125,11 @@ static void copyonepixel (PLANEPTR src, ULONG xsrc, PLANEPTR dest,
 	wDest = destBitMap->BytesPerRow * 8;
 	temp = NULL;
 
+	depth = GetBitMapAttr ( srcBitMap, BMA_DEPTH);
+	x     = GetBitMapAttr (destBitMap, BMA_DEPTH);
+	if (x < depth)
+	    depth = x;
+
 	/* Clip X and Y */
 	if (xSrc < 0)
 	{
