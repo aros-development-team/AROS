@@ -508,6 +508,7 @@ static LONG timezone_makegadgets(void)
     ng.ng_Width      = domwidth - w * 2 - SPACE_X * 2;
 #endif
     ng.ng_GadgetID   = GAD_TEXT;
+    ng.ng_GadgetText = NULL;
     
     gad = textgad = CreateGadget(TEXT_KIND, gad, &ng, GTTX_Border   	, TRUE	    	,
     	    	    	    	    	    	      GTTX_Clipped  	, TRUE	    	,
