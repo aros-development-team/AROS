@@ -229,10 +229,10 @@ extern void sys_Dispatch(struct pt_regs * regs);
 		
 		case 4:
 			if (isr & TMR2_F) {
-				UWORD tstat2;
+				volatile UWORD tstat2;
 				treated = TRUE;
 				/* This is WRONG, but that's the IRQ I get for timer2 */
-*(UBYTE *)0xdddddebc = '!';
+//*(UBYTE *)0xdddddebc = '!';
 				irq_desc[vHidd_IRQ_Timer].id_count++;
 				irq_desc[vHidd_IRQ_Timer].id_handler->ic_handle(vHidd_IRQ_Timer, regs);
 #warning Remove later on - but leave for now to enable multitasking!
@@ -245,7 +245,7 @@ sys_Dispatch(regs);
 				 */
 				tstat2 = RREG_W(TSTAT2);
 				WREG_W(TSTAT2) = 0;
-				D(bug("%x ",tstat2));
+				//D(bug("%x ",tstat2));
 			}
 			if (isr & UART1_F) {
 				/* UART 1 */
