@@ -9,7 +9,7 @@ CFLAGS2 	:= $(SHARED_CFLAGS) -I/$(TOP)/rom/exec \
 
 
 #MM- AROS-linux : setup setup-linux includes compiler kernel workbench \
-#MM	    demos games shell
+#MM	    demos apps shell
 
 #MM- kernel-linux : kernel-exec-linux \
 #MM	    kernel-aros-linklib \
@@ -95,6 +95,8 @@ exec-linux : $(OSGENDIR)/exec/init.o
 #MM- includes-linux : includes-copy includes-linux-$(CPU)
 
 #MM- workbench-linux : workbench-complete
+
+#MM- apps-linux : games Moria3D fish utilities
 
 #MM
 clean ::
