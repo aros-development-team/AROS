@@ -90,6 +90,8 @@ FUNCTIONS	:= \
 	sysreqhandler \
 	unlockibase \
 	unlockpubscreen \
+	viewaddress \
+	viewportaddress \
 	windowlimits \
 	windowtoback \
 	windowtofront
