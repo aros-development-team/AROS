@@ -12,12 +12,17 @@ int main (int argc, char ** argv)
     LONG error=0;
 
     rda=ReadArgs("FILE/A",(IPTR *)args,NULL);
+
     if(rda!=NULL)
     {
-	DeleteFile(args[0]);
+	if (!DeleteFile(args[0]))
+	    error = RETURN_ERROR;
+
 	FreeArgs(rda);
-    }else
+    }
+    else
 	error=RETURN_FAIL;
+
     if(error)
 	PrintFault(IoErr(),"Delete");
     return error;
