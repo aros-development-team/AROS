@@ -363,12 +363,30 @@ static BOOL init_cursor(struct GfxBase *GfxBase)
 	    
 	    HIDDT_Color col[DEF_POINTER_DEPTH];
 	    
-	    col[0].red		= 0xFFFF;
-	    col[0].green	= 0xFFFF;
-	    col[0].blue		= 0xFFFF;
+	    col[0].red		= 0x0000;
+	    col[0].green	= 0x0000;
+	    col[0].blue		= 0x0000;
 	    col[0].alpha	= 0x0000;
+	    col[1].red		= 0x0800;
+	    col[1].green	= 0x0800;
+	    col[1].blue		= 0x0800;
+	    col[1].alpha	= 0x0000;
+	    col[2].red		= 0xFFFF;
+	    col[2].green	= 0xFFFF;
+	    col[2].blue		= 0xFFFF;
+	    col[2].alpha	= 0x0000;
+	    col[6].red		= 0xFFFF;
+	    col[6].green	= 0x2000;
+	    col[6].blue		= 0x2000;
+	    col[6].alpha	= 0x0000;
 
-	    for (i = 1; i < DEF_POINTER_DEPTH; i ++) {
+	    for (i = 3; i < 6; i ++) {
+	    	col[i].red	= 0x0000;
+		col[i].green	= 0x0000;
+	    	col[i].blue	= 0x0000;
+	    	col[i].alpha	= 0x0000;
+	    }
+	    for (i = 7; i < DEF_POINTER_DEPTH; i ++) {
 	    	col[i].red	= 0x0000;
 		col[i].green	= 0x0000;
 	    	col[i].blue	= 0x0000;
