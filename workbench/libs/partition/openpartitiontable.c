@@ -56,7 +56,7 @@
 	pst = PartitionSupport;
 	while (pst[0])
 	{
-		if (pst[0]->CheckPartitionTable(PartitionBase, root))
+		if (pst[0]->checkPartitionTable(PartitionBase, root))
 		{
 			root->table = AllocMem
 				(	
@@ -69,7 +69,7 @@
 
 				root->table->type = pst[0]->type;
 				root->table->handler = *pst;
-				retval = pst[0]->OpenPartitionTable(PartitionBase, root);
+				retval = pst[0]->openPartitionTable(PartitionBase, root);
 				if (retval!=0)
 				{
 					FreeMem(root->table, sizeof(struct PartitionTableHandler));

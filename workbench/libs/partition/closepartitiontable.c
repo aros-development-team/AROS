@@ -53,8 +53,8 @@
 	{
 	struct PTFunctionTable *handler = root->table->handler;
 
-		if (handler->ClosePartitionTable)
-			handler->ClosePartitionTable(PartitionBase, root);
+		if (handler->closePartitionTable)
+			handler->closePartitionTable(PartitionBase, root);
 		FreeMem(root->table, sizeof(struct PartitionTableHandler));
 		root->table = 0;
 	}

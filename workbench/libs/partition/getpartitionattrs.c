@@ -61,8 +61,8 @@
 	{
 	struct PTFunctionTable *handler = ph->root->table->handler;
 
-		if (handler->GetPartitionAttrs)
-			return handler->GetPartitionAttrs(PartitionBase, ph, taglist);
+		if (handler->getPartitionAttrs)
+			return handler->getPartitionAttrs(PartitionBase, ph, taglist);
 	}
 	else
 	{

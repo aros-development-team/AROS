@@ -48,8 +48,8 @@
 	{
 	struct PTFunctionTable *handler = ph->root->table->handler;
 
-		if (handler->DeletePartition)
-			return handler->DeletePartition(PartitionBase, ph);
+		if (handler->deletePartition)
+			return handler->deletePartition(PartitionBase, ph);
 	}
 	AROS_LIBFUNC_EXIT
 }

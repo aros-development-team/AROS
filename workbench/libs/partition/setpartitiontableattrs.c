@@ -56,8 +56,8 @@
 	{
 	struct PTFunctionTable *handler = root->table->handler;
 
-		if (handler->SetPartitionTableAttrs)
-			return handler->SetPartitionTableAttrs(PartitionBase, root, taglist);
+		if (handler->setPartitionTableAttrs)
+			return handler->setPartitionTableAttrs(PartitionBase, root, taglist);
 	}
 	return 1;
 	AROS_LIBFUNC_EXIT

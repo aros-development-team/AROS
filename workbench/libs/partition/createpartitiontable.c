@@ -61,7 +61,7 @@
 		{
 			if (pst[0]->type == type)
 			{
-				if (pst[0]->CreatePartitionTable)
+				if (pst[0]->createPartitionTable)
 				{
 					root->table = AllocMem
 						(
@@ -72,7 +72,7 @@
 					{
 						root->table->type = type;
 						root->table->handler = *pst;
-						retval = pst[0]->CreatePartitionTable(PartitionBase, root);
+						retval = pst[0]->createPartitionTable(PartitionBase, root);
 						if (retval != 0)
 						{
 							FreeMem(root->table, sizeof(struct PartitionTableHandler));

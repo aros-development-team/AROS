@@ -16,20 +16,20 @@
 struct PTFunctionTable {
 	ULONG		type; /* Partition Table Type */
 	STRPTR	name;
-	LONG		(*CheckPartitionTable)	(struct Library *, struct PartitionHandle *);
-	LONG		(*OpenPartitionTable)	(struct Library *, struct PartitionHandle *);
-	void		(*ClosePartitionTable)	(struct Library *, struct PartitionHandle *);
-	LONG		(*WritePartitionTable)	(struct Library *, struct PartitionHandle *);
-	LONG		(*CreatePartitionTable)	(struct Library *, struct PartitionHandle *);
-	struct PartitionHandle *(*AddPartition)(struct Library *, struct PartitionHandle *, struct TagItem *);
-	void 		(*DeletePartition)		(struct Library *, struct PartitionHandle *);
-	LONG 		(*GetPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
-	LONG 		(*SetPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
-	LONG 		(*GetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
-	LONG 		(*SetPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
-	struct PartitionAttribute *	(*QueryPartitionTableAttrs)(struct Library *);
-	struct PartitionAttribute *	(*QueryPartitionAttrs)	(struct Library *);
-	ULONG    (*DestroyPartitionTable) (struct Library *, struct PartitionHandle *);
+	LONG		(*checkPartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*openPartitionTable)	(struct Library *, struct PartitionHandle *);
+	void		(*closePartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*writePartitionTable)	(struct Library *, struct PartitionHandle *);
+	LONG		(*createPartitionTable)	(struct Library *, struct PartitionHandle *);
+	struct PartitionHandle *(*addPartition)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	void 		(*deletePartition)		(struct Library *, struct PartitionHandle *);
+	LONG 		(*getPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*setPartitionTableAttrs)(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*getPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
+	LONG 		(*setPartitionAttrs)		(struct Library *, struct PartitionHandle *, struct TagItem *);
+	struct PartitionAttribute *	(*queryPartitionTableAttrs)(struct Library *);
+	struct PartitionAttribute *	(*queryPartitionAttrs)	(struct Library *);
+	ULONG    (*destroyPartitionTable) (struct Library *, struct PartitionHandle *);
 };
 
 extern struct PTFunctionTable *PartitionSupport[];

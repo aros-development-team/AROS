@@ -52,8 +52,8 @@
 	{
 	struct PTFunctionTable *handler = ph->table->handler;
 
-		if (handler->ClosePartitionTable)
-			handler->ClosePartitionTable(PartitionBase, ph);
+		if (handler->closePartitionTable)
+			handler->closePartitionTable(PartitionBase, ph);
 	}
 	DeleteIORequest((struct IORequest *)ph->bd->ioreq);
 	DeleteMsgPort(ph->bd->port);
