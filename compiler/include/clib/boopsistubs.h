@@ -1,5 +1,6 @@
 #ifndef BOOPSISTUBS_H
 #define BOOPSISTUBS_H
+
 /*
 **	$Id$
 **
@@ -12,10 +13,12 @@
 **	validate the parameters you pass in.
 */
 
-/* The USE_BOOPSI_STUBS symbol prevents redefinition of the following stubs with
- * their amiga.lib equivalents. In AmigaOS, this trick works only if you are using
- * a patched version of <clib/alib_protos.h>
- */
+/* 
+    The USE_BOOPSI_STUBS symbol prevents redefinition of the following stubs 
+    with their amiga.lib equivalents. In AmigaOS, this trick works only if you
+    are using patched version of <clib/alib_protos.h>
+*/
+
 #ifndef USE_BOOPSI_STUBS
 #define USE_BOOPSI_STUBS
 #endif /* USE_BOOPSI_STUBS */
@@ -157,87 +160,102 @@
 	}
 
 #elif defined(__GNUC__)
-
-	#define CoerceMethodA(cl, o, msg) \
-	({ \
-		ASSERT_VALID_PTR(cl); \
-		ASSERT_VALID_PTR_OR_NULL(o); \
-		_CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg); \
-	})
-
-	#define DoSuperMethodA(cl, o, msg) \
-	({ \
-		Class *_cl; \
-		ASSERT_VALID_PTR(cl); \
-		ASSERT_VALID_PTR_OR_NULL(o); \
-		_cl = cl->cl_Super; \
-		ASSERT_VALID_PTR(_cl); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
-	})
-
-	#define DoMethodA(o, msg) \
-	({ \
-		Class *_cl; \
-		ASSERT_VALID_PTR(o); \
-		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
-	})
-
-	#define CoerceMethod(cl, o, msg...) \
-	({ \
-		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(cl); \
-		ASSERT_VALID_PTR_OR_NULL(o); \
-		_CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, _msg); \
-	})
-
-	#define DoSuperMethod(cl, o, msg...) \
-	({ \
-		Class *_cl; \
-		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(cl); \
-		ASSERT_VALID_PTR_OR_NULL(o); \
-		_cl = cl->cl_Super; \
-		ASSERT_VALID_PTR(_cl); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
-	})
-
-	#define DoMethod(o, msg...) \
-	({ \
-		Class *_cl; \
-		IPTR _msg[] = { msg }; \
-		ASSERT_VALID_PTR(o); \
-		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR_OR_NULL(_cl); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
-	})
-
-	/* Var-args stub for the OM_NOTIFY method */
-	#define NotifyAttrs(o, gi, flags, attrs...) \
-	({ \
-		Class *_cl; \
-		IPTR _attrs[] = { attrs }; \
-		IPTR _msg[] = { OM_NOTIFY, (IPTR)_attrs, (IPTR)gi, flags }; \
-		ASSERT_VALID_PTR(o); \
-		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl); \
-		ASSERT_VALID_PTR_OR_NULL(gi); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
-	})
-
-	/* Var-args stub for the OM_UPDATE method */
-	#define UpdateAttrs(o, gi, flags, attrs...) \
-	({ \
-		Class *_cl; \
-		IPTR _attrs[] = { attrs }; \
-		IPTR _msg[] = { OM_UPDATE, (IPTR)_attrs, (IPTR)gi, flags }; \
-		ASSERT_VALID_PTR(o); \
-		_cl = OCLASS(o); \
-		ASSERT_VALID_PTR(_cl); \
-		ASSERT_VALID_PTR_OR_NULL(gi); \
-		_CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
-	})
+    #ifndef CoerceMethodA
+        #define CoerceMethodA(cl, o, msg) \
+        ({ \
+                ASSERT_VALID_PTR(cl); \
+                ASSERT_VALID_PTR_OR_NULL(o); \
+                _CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, msg); \
+        })
+    #endif
+    
+    #ifndef DoSuperMethodA
+        #define DoSuperMethodA(cl, o, msg) \
+        ({ \
+                Class *_cl; \
+                ASSERT_VALID_PTR(cl); \
+                ASSERT_VALID_PTR_OR_NULL(o); \
+                _cl = cl->cl_Super; \
+                ASSERT_VALID_PTR(_cl); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
+        })
+    #endif
+    
+    #ifndef DoMethodA
+        #define DoMethodA(o, msg) \
+        ({ \
+                Class *_cl; \
+                ASSERT_VALID_PTR(o); \
+                _cl = OCLASS(o); \
+                ASSERT_VALID_PTR(_cl); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, msg); \
+        })
+    #endif
+    
+    #ifndef CoerceMethod
+        #define CoerceMethod(cl, o, msg...) \
+        ({ \
+                IPTR _msg[] = { msg }; \
+                ASSERT_VALID_PTR(cl); \
+                ASSERT_VALID_PTR_OR_NULL(o); \
+                _CALL_DISPATCHER(cl->cl_Dispatcher.h_Entry, cl, o, _msg); \
+        })
+    #endif
+    
+    #ifndef DoSuperMethod
+        #define DoSuperMethod(cl, o, msg...) \
+        ({ \
+                Class *_cl; \
+                IPTR _msg[] = { msg }; \
+                ASSERT_VALID_PTR(cl); \
+                ASSERT_VALID_PTR_OR_NULL(o); \
+                _cl = cl->cl_Super; \
+                ASSERT_VALID_PTR(_cl); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
+        })
+    #endif
+    
+    #ifndef DoMethod
+        #define DoMethod(o, msg...) \
+        ({ \
+                Class *_cl; \
+                IPTR _msg[] = { msg }; \
+                ASSERT_VALID_PTR(o); \
+                _cl = OCLASS(o); \
+                ASSERT_VALID_PTR_OR_NULL(_cl); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
+        })
+    #endif
+    
+    #ifndef NotifyAttrs
+        /* Var-args stub for the OM_NOTIFY method */
+        #define NotifyAttrs(o, gi, flags, attrs...) \
+        ({ \
+                Class *_cl; \
+                IPTR _attrs[] = { attrs }; \
+                IPTR _msg[] = { OM_NOTIFY, (IPTR)_attrs, (IPTR)gi, flags }; \
+                ASSERT_VALID_PTR(o); \
+                _cl = OCLASS(o); \
+                ASSERT_VALID_PTR(_cl); \
+                ASSERT_VALID_PTR_OR_NULL(gi); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
+        })
+    #endif
+    
+    #ifndef UpdateAttrs
+        /* Var-args stub for the OM_UPDATE method */
+        #define UpdateAttrs(o, gi, flags, attrs...) \
+        ({ \
+                Class *_cl; \
+                IPTR _attrs[] = { attrs }; \
+                IPTR _msg[] = { OM_UPDATE, (IPTR)_attrs, (IPTR)gi, flags }; \
+                ASSERT_VALID_PTR(o); \
+                _cl = OCLASS(o); \
+                ASSERT_VALID_PTR(_cl); \
+                ASSERT_VALID_PTR_OR_NULL(gi); \
+                _CALL_DISPATCHER(_cl->cl_Dispatcher.h_Entry, _cl, o, _msg); \
+        })
+    #endif
 #endif
 
 #endif /* !BOOPSISTUBS_H */
