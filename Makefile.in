@@ -32,7 +32,7 @@ makedirs:
 tools : makedirs $(TOOLLIB) $(GENMF) $(ARCHTOOL) \
 	$(FLEXCAT) $(GENSKELETON) $(CREATEDTDESC) $(ILBMTOC) $(ILBMTOICON) \
 	$(COLLECT-AROS) $(ADFLIB) $(CREATEHDFILE) $(AFSLIB) $(COPYTOAFS) \
-	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA)
+	$(MKFSAFFS) $(FD2INLINE) $(FD2PRAGMA) $(SFDC)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
 	@$(ECHO) Building toollib...
@@ -98,6 +98,10 @@ $(FD2PRAGMA) : $(TOP)/tools/fd2pragma/fd2pragma.c
 	@$(ECHO) Building fd2pragma...
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma TOP=$(TOP)
 
+$(SFDC) : $(TOP)/tools/sfdc/main.pl 
+	@$(ECHO) Building sfdc...
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc TOP=$(TOP)
+
 # MetaMake apparently requires a slighty different compilation. Probably
 # because it is sort-of an external package as well.
 
@@ -136,6 +140,7 @@ arch-clean: clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2inline clean
 	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/fd2pragma clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/sfdc clean
         
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
