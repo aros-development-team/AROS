@@ -49,7 +49,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-#if AROS_PALM_DEBUG_HACK
+#ifdef AROS_PALM_DEBUG_HACK
     /* This requires a patched XCopilot which turns writes to
        address 0xdddddebc into output going to Linux shell
        through a fprintf(stderr, chr). */
