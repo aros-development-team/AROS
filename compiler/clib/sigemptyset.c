@@ -44,7 +44,6 @@
 	}
 
 	return -1; /* return failure */
-
 } /* sigemptyset */
 
 #endif
