@@ -42,4 +42,7 @@ VAR UBYTE   	    	    	s[256];
 
 VAR LONG    	    	    	prog_exitcode;
 
-VAR Object  	    	    	*app, *wnd, *cal, *clock, *monthobj, *yearobj;
+VAR Object  	    	    	*app, *wnd, *calobj, *clockobj;
+VAR Object  	    	    	*monthobj, *yearobj;
+VAR Object  	    	    	*hourobj, *minobj, *secobj;
+

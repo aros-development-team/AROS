@@ -432,6 +432,7 @@ IPTR Clock_Timer(Class *cl, Object *obj, Msg msg)
     Amiga2Date(tv.tv_secs, &cd);
 
     set(obj, MUIA_Clock_Time, &cd);
+    set(obj, MUIA_Clock_Ticked, TRUE);
     
     return 0;
 }
