@@ -1333,7 +1333,7 @@ static void handle_press(struct IClass *cl, Object *obj)
 	    set(obj, MUIA_Timer, ++muiAreaData(obj)->mad_Timeval);
 	    if (!data->mad_Timer.ihn_Millis)
 	    {
-	    	data->mad_Timer.ihn_Millis = 150;
+	    	data->mad_Timer.ihn_Millis = 300;
 		DoMethod(_app(obj), MUIM_Application_AddInputHandler, &data->mad_Timer);
 	    }
 	    set(obj, MUIA_Selected, TRUE);
