@@ -663,7 +663,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    	if (ie->ie_X >= scr->Width)  ie->ie_X = scr->Width - 1;
 			if (ie->ie_Y >= scr->Height) ie->ie_Y = scr->Height - 1;
 		    }
-		    
+		    else
+		    {
+		    	if (ie->ie_X >= 320) ie->ie_X = 320 - 1;
+			if (ie->ie_Y >= 200) ie->ie_Y = 200 - 1;
+		    }
    		    UnlockIBase(lock);
 
 		}
