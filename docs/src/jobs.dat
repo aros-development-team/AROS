@@ -1483,7 +1483,7 @@ rexxsupport00005;2;verhaegs;Write OPENPORT
 rexxsupport00006;2;verhaegs;Write REPLY
 rexxsupport00007;2;verhaegs;Write SHOWDIR
 rexxsupport00008;2;verhaegs;Write SHOWLIST
-rexxsupport00009;1;verhaegs;Write STATEF
+rexxsupport00009;2;verhaegs;Write STATEF
 rexxsupport00010;2;verhaegs;Write WAITPKT
 rexxsyslib00000;2;verhaegs;Write CreateArgstring
 rexxsyslib00001;2;verhaegs;Write DeleteArgstring

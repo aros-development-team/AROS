@@ -17,4 +17,5 @@ LONG rxsupp_openport(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_reply(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_showdir(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_showlist(struct Library *, struct RexxMsg *, UBYTE **);
+LONG rxsupp_statef(struct Library *, struct RexxMsg *, UBYTE **);
 LONG rxsupp_waitpkt(struct Library *, struct RexxMsg *, UBYTE **);
