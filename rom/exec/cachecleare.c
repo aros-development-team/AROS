@@ -63,7 +63,7 @@
     BUGS
 
     SEE ALSO
-	CacheClearE(), CacheControl()
+	CacheClearU(), CacheControl()
 
     INTERNALS
 	This is a rather CPU dependant function. You should replace it
@@ -73,7 +73,37 @@
 {
     AROS_LIBFUNC_INIT
 
-#warning TODO: Write exec/CacheClearE()
+#if defined(FLUSH_CACHES)
+    {
+	ULONG blocks;
+
+	// cache block alignment
+	ULONG align = (ULONG) address & ~(CACHE_BLOCK_SIZE - 1);
+	
+	// round up
+	length = length + CACHE_BLOCK_SIZE - 1;
+	blocks = length / CACHE_BLOCK_SIZE;
+	if (caches & CACRF_ClearD)
+	{
+	    ULONG i;
+	    for (i = 0; i < blocks; i++)
+		DATA_CACHE_BST(align + i * CACHE_BLOCK_SIZE);
+	    
+	    SYNC;
+	}
+
+	if (caches && CACRF_ClearI)
+	{
+	    ULONG i;
+	    for (i = 0; i < blocks; i++)
+		INSTR_CACHE_BINV(align + i * CACHE_BLOCK_SIZE);
+	    
+	    // SYNC for G4
+	    SYNC;
+	    ISYNC;
+	}
+    }
+#endif
 
 /* iaint: I am sick of this continually printing out... */
 #if DEBUG
