@@ -49,6 +49,9 @@ INCLUDE_FILES	    := $(wildcard include/*.h)
 %copy_includes path=aros
 
 # These files need special CFLAGS
+# Putting these rules here override the implicit rules defined in
+# %make_linklib
+
 CFLAGS2 := $(CFLAGS) -I$(TOP)/rom/exec
 $(OBJDIR)/kprintf.o : kprintf.c
 	%compile_q cmd=$(TARGET_CC) opt=$(CFLAGS2)
