@@ -1,7 +1,7 @@
 # $Id$
-TOP=..
+TOP=../..
 
-include $(TOP)/make.cfg
+include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/m68k-emul
 
