@@ -73,23 +73,30 @@ extern struct Library *aroscbase;
 
 #define AROSCNAME "arosc.library"
 
-#if defined(_CLIB_KERNEL_) || defined(_CLIB_LIBRARY_)
+#if defined(_CLIB_KERNEL_) || defined(_CLIB_LIBRARY_) || defined(_CLIB_USERDATA_)
 
 #define CLIB_USES_ETASK 1
 
 #if CLIB_USES_ETASK
-#   include "etask.h"
-#   define AROSC_USERDATA(task) (struct AroscUserData *)(GetIntETask(FindTask(task))->iet_AroscUserData)
+#  include "etask.h"
+#  define AROSC_USERDATA(task) (struct AroscUserData *)(GetIntETask(task==NULL ? FindTask(NULL) : task)->iet_AroscUserData)
 #else
-#   define AROSC_USERDATA(task) (struct AroscUserData *)(FindTask(task)->tc_UserData)
+#  define AROSC_USERDATA(task) (struct AroscUserData *)(task==NULL ? FindTask(NULL) : task)->tc_UserData)
 #endif
 
 #define GETUSER struct AroscUserData *clib_userdata = AROSC_USERDATA(0)
+
+#else
+
+#define GETUSER const char clib_dummyvar __attribute__((unused))
+
+#endif
 
 #ifdef _CLIB_LIBRARY_
 #define clib_userdata (AROSC_USERDATA(0))
 #endif
 
+#if defined(_CLIB_KERNEL_) || defined(_CLIB_LIBRARY_)
 #define errno               (*(int *)         (clib_userdata->errnoptr))
 #define stdin               (*(FILE **)       (clib_userdata->stdinptr))
 #define stdout              (*(FILE **)       (clib_userdata->stdoutptr))
@@ -114,10 +121,6 @@ extern struct Library *aroscbase;
 
 /* Special, there is a type called timezone as well */
 #define _timezone                             (clib_userdata->timezone)
-
-#else
-
-#define GETUSER const char clib_dummyvar __attribute__((unused))
 
 #endif
 
