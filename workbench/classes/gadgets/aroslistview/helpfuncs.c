@@ -134,7 +134,7 @@ BOOL ParseFormatString( STRPTR                  formatstr,
 			}
 			else if (*str >= '0' && *str <= 9) /* Text background pen */
 			{
-			    colattrs[curcol].ca_Pen = *str - '0';
+			    colattrs[curcol].ca_Pen = *str - '0';;
 			}
 			str ++;
 

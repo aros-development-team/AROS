@@ -79,6 +79,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
     {
 	switch (gadget->Flags & GFLG_LABELMASK)
 	{
+
 	case GFLG_LABELITEXT:
 	    PrintIText (window->RPort
 		, gadget->GadgetText

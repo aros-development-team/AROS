@@ -924,7 +924,8 @@ VOID UpdateStringInfo(struct Gadget *gad)
     
     strinfo->NumChars = strlen(strinfo->Buffer);
     
-    D(bug("String contains buffer %s of length %d\n",
+    D(bug("%s gadget contains buffer %s of length %d\n",
+        (gad->Activation & GACT_LONGINT) ? "Integer" : "String",
     	strinfo->Buffer, strinfo->NumChars));
     
     ReturnVoid("UpdateStringInfo");

@@ -26,11 +26,11 @@ VOID CleanupIIH(struct Interrupt *iihandler, struct IntuitionBase *IntuitionBase
 #define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH ,w,Width)  + gad->Width)
 #define GetHeight(gad,w)         (ADDREL(gad,GFLG_RELHEIGHT,w,Height) + gad->Height)
 
+
 #define InsideGadget(w,gad,x,y)   \
 	    ((x) >= GetLeft(gad,w) && (y) >= GetTop(gad,w) \
 	     && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
 	     && (y) < GetTop(gad,w) + GetHeight(gad,w))
-
 
 AROS_UFP2(struct InputEvent *, IntuiInputHandler,
     AROS_UFPA(struct InputEvent *,      oldchain,       A0),

@@ -95,8 +95,7 @@
     	/* Get info on keypress */
     	if (!GetKeyInfo(&ki, code, qual, keyMap))
     	    continue; /* Invalid key mapping (like CTRL-ALT-A if a doesn't support CTRL-ALT */
-    	
-    	    	
+ 	
     	/* Handle decoding of the the different keytypes (normal, KCF_STRING, KCF_DEAD and KCF_NOP) */
     	    
     	switch (ki.Key_MapType & (KC_NOQUAL|KCF_STRING|KCF_DEAD|KCF_NOP))
