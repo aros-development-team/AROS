@@ -119,13 +119,6 @@ cia00000;0;digulla;Write AddICRVector
 cia00001;0;digulla;Write RemICRVector
 cia00002;0;digulla;Write AbleICR
 cia00003;0;digulla;Write SetICR
-clib00000;2;flavio;Write __assert.
-clib00001;2;hkiel;Write __getfilenode4fd.
-clib00002;2;falemagn;Write __ioerr2errno.
-clib00003;2;hkiel;Write __isinf.
-clib00004;1;falemagn;Write __stdio.
-clib00005;2;flavio;Write __vcformat.
-clib00006;2;hkiel;Write __vcscan.
 clib00007;1;stegerg;Write abort.
 clib00008;2;hkiel;Write abs.
 clib00009;2;hkiel;Write asctime.
@@ -136,7 +129,7 @@ clib00013;2;hkiel;Write bcopy.
 clib00014;2;hkiel;Write bsearch.
 clib00015;2;hkiel;Write bzero.
 clib00016;1;stegerg;Write calloc.
-clib00017;1;hkiel;Write clearerr.
+clib00017;1;falemagn;Write clearerr.
 clib00018;2;falemagn;Write clock.
 clib00019;1;stegerg;Write close.
 clib00020;1;stegerg;Write creat.
@@ -154,7 +147,7 @@ clib00031;1;falemagn;Write fflush.
 clib00032;1;falemagn;Write fgetc.
 clib00033;1;falemagn;Write fgets.
 clib00034;1;stegerg;Write fopen.
-clib00035;1;hkiel;Write fprintf.
+clib00035;1;falemagn;Write fprintf.
 clib00036;1;falemagn;Write fputc.
 clib00037;1;falemagn;Write fputs.
 clib00038;1;falemagn;Write fread.
@@ -183,13 +176,13 @@ clib00060;1;stegerg;Write mrand48.
 clib00061;1;bergers;Write nrand48.
 clib00062;1;stegerg;Write open.
 clib00063;2;hkiel;Write printf.
-clib00064;1;hkiel;Write puts.
+clib00064;1;falemagn;Write puts.
 clib00065;2;hkiel;Write qsort.
 clib00066;2;stegerg;Write rand.
-clib00067;1;hkiel;Write read.
+clib00067;1;falemagn;Write read.
 clib00068;1;stegerg;Write realloc.
 clib00069;1;stegerg;Write remove.
-clib00070;1;hkiel;Write rewind.
+clib00070;1;falemagn;Write rewind.
 clib00071;2;hkiel;Write scanf.
 clib00072;2;stegerg;Write seed48.
 clib00073;2;hkiel;Write snprintf.
@@ -230,7 +223,7 @@ clib00107;2;hkiel;Write vprintf.
 clib00108;2;hkiel;Write vsnprintf.
 clib00109;2;hkiel;Write vsprintf.
 clib00110;2;SDuvan;Write vsscanf.
-clib00111;1;hkiel;Write write.
+clib00111;1;falemagn;Write write.
 clib00112;2;falemagn;Write gcvt.
 clib00113;2;hkiel;Write fgetpos.
 clib00114;2;falemagn;Write setenv.
