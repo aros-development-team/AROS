@@ -118,9 +118,10 @@ IPTR abstractIconConAdd(Class *cl, Object *obj, struct opMember *msg)
     mn->m_Object=msg->opam_Object;
 
     muiNotifyData(msg->opam_Object)->mnd_ParentObject=obj;
-    DoMethod(msg->opam_Object, MUIM_ConnectParent, obj);
+    DoMethod(msg->opam_Object, MUIM_ConnectParent, (IPTR) obj);
 
-    DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, MUIV_EveryTime, obj, 3, AICM_UpdateSelectList, msg->opam_Object, MUIV_TriggerValue);
+    DoMethod(msg->opam_Object, MUIM_Notify, IA_Selected, MUIV_EveryTime, 
+    (IPTR) obj, 3, AICM_UpdateSelectList, (IPTR) msg->opam_Object, MUIV_TriggerValue);
 
     data->memberCount++;
     AddTail((struct List*)&data->memberList, (struct Node*)mn);

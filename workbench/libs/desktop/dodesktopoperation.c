@@ -71,7 +71,7 @@
     Object         *newObject;
     Object         *target;
 
-    dop = DesktopBase->db_OperationList.lh_Head;
+    dop = (struct DesktopOperation *) DesktopBase->db_OperationList.lh_Head;
     while (dop->do_Node.ln_Succ && !found)
     {
         if (operationCode == dop->do_Code)
@@ -79,11 +79,11 @@
             newObject = NewObjectA(dop->do_Impl->mcc_Class, NULL, NULL);
             if (newObject)
             {
-                target = GetTagData(DDO_Target, NULL, tags);
+                target = (Object *) GetTagData(DDO_Target, NULL, tags);
                 if (target)
                 {
                     result =
-                        DoMethod(newObject, OPM_Execute, target,
+                        DoMethod(newObject, OPM_Execute, (IPTR) target,
                                  operationCode);
                 }
                 DisposeObject(newObject);
@@ -94,7 +94,7 @@
 
         if (!IsListEmpty(&dop->do_SubItems))
         {
-            subdop = dop->do_SubItems.lh_Head;
+            subdop = (struct DesktopOperation *) dop->do_SubItems.lh_Head;
             while (subdop->do_Node.ln_Succ && !found)
             {
                 if (operationCode == subdop->do_Code)
@@ -103,11 +103,11 @@
                         NewObjectA(subdop->do_Impl->mcc_Class, NULL, NULL);
                     if (newObject)
                     {
-                        target = GetTagData(DDO_Target, NULL, tags);
+                        target = (Object *) GetTagData(DDO_Target, NULL, tags);
                         if (target)
                         {
                             result =
-                                DoMethod(newObject, OPM_Execute, target,
+                                DoMethod(newObject, OPM_Execute, (IPTR) target,
                                          operationCode);
                         }
                         DisposeObject(newObject);
@@ -116,7 +116,7 @@
                     found = TRUE;
                 }
 
-                subdop = subdop->do_Node.ln_Succ;
+                subdop = (struct DesktopOperation *) subdop->do_Node.ln_Succ;
             }
 
         }

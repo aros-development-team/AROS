@@ -25,7 +25,7 @@ IPTR trashcanIconNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
     struct TrashcanIconClassData *data;
-    struct TagItem *tag;
+    //struct TagItem *tag;
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)

@@ -30,7 +30,7 @@ IPTR internalWindowOpsNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
     struct InternalWindowOpsClassData *data;
-    struct TagItem *tag;
+    //struct TagItem *tag;
 
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)
@@ -44,7 +44,7 @@ IPTR internalWindowOpsNew(Class * cl, Object * obj, struct opSet * msg)
 
 IPTR internalWindowOpsSet(Class * cl, Object * obj, struct opSet * msg)
 {
-    struct InternalIconOpsClassData *data;
+    struct InternalWindowOpsClassData *data;
     IPTR            retval = 1;
     struct TagItem *tag,
                    *tstate = msg->ops_AttrList;
@@ -95,12 +95,12 @@ IPTR internalWindowOpsExecute(Class * cl, Object * obj,
                               struct opExecute * msg)
 {
     IPTR            retval = 0;
-    struct InternalIconOpsClassData *data;
+    struct InternalWindowOpsClassData *data;
     Object         *iconcontainer = NULL;
 
     data = (struct InternalWindowOpsClassData *) INST_DATA(cl, obj);
 
-    GetAttr(MUIA_Window_RootObject, msg->target, &iconcontainer);
+    GetAttr(MUIA_Window_RootObject, msg->target, (IPTR *) &iconcontainer);
 
     switch (msg->operationCode)
     {

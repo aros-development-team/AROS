@@ -73,9 +73,9 @@
     LONG            items = 0,
         index = 0,
         subindex = 0;
-    LONG            itemNumber = 1;
+    //LONG            itemNumber = 1;
 
-    dop = DesktopBase->db_OperationList.lh_Head;
+    dop = (struct DesktopOperation *) DesktopBase->db_OperationList.lh_Head;
     while (dop->do_Node.ln_Succ)
     {
         items++;
@@ -92,7 +92,7 @@
     else
         return doi;
 
-    dop = DesktopBase->db_OperationList.lh_Head;
+    dop = (struct DesktopOperation *) DesktopBase->db_OperationList.lh_Head;
     while (dop->do_Node.ln_Succ)
     {
         if (dop->do_Code & operationType)
@@ -118,7 +118,7 @@
             items = 0;
             subindex = 0;
         // subdop=DesktopBase->db_OperationList.lh_Head;
-            subdop = dop->do_SubItems.lh_Head;
+            subdop = (struct DesktopOperation *) dop->do_SubItems.lh_Head;
             if (subdop->do_Node.ln_Succ)
                 items++;
             while (subdop->do_Node.ln_Succ)
@@ -135,7 +135,7 @@
                     AllocVec(sizeof(struct DesktopOperationItem) * (items),
                              MEMF_ANY);
 
-                subdop = dop->do_SubItems.lh_Head;
+                subdop = (struct DesktopOperation *) dop->do_SubItems.lh_Head;
                 while (subdop->do_Node.ln_Succ)
                 {
                     doi[index].doi_SubItems[subindex].doi_Code =

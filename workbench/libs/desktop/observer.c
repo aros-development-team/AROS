@@ -30,9 +30,9 @@
 IPTR observerNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
-    struct ObserverClassData *data,
-                   *tstate = msg->ops_AttrList;
-    struct TagItem *tag;
+    struct ObserverClassData *data;
+    struct TagItem *tstate = msg->ops_AttrList,
+                   *tag;
     Object         *presentation = NULL,
         *parent = NULL;
 
@@ -65,7 +65,7 @@ IPTR observerNew(Class * cl, Object * obj, struct opSet * msg)
         NEWLIST((struct List *) &data->freeList);
         data->inTree = FALSE;
 
-        DoMethod(presentation, MUIM_Notify, PA_InTree, MUIV_EveryTime, obj, 3,
+        DoMethod(presentation, MUIM_Notify, PA_InTree, MUIV_EveryTime, (IPTR) obj, 3,
                  MUIM_Set, OA_InTree, TRUE);
     }
 
@@ -90,7 +90,7 @@ IPTR observerSet(Class * cl, Object * obj, struct opSet * msg)
                     Object         *pparent = NULL;
 
                     data->inTree = tag->ti_Data;
-                    GetAttr(MUIA_Parent, data->presentation, &pparent);
+                    GetAttr(MUIA_Parent, data->presentation, (IPTR *) &pparent);
                 // something has to be at the top of the tree...
                 // the top object won't have a parent
                     if (data->parent)
@@ -98,19 +98,19 @@ IPTR observerSet(Class * cl, Object * obj, struct opSet * msg)
                         data->parent = _observer(pparent);
                         if (data->parent)
                             DoMethod(obj, MUIM_Notify, OA_Disused, TRUE,
-                                     MUIV_EveryTime, data->parent, 2,
-                                     OM_Delete, obj);
+                                     MUIV_EveryTime, (IPTR) data->parent, 2,
+                                     OM_Delete, (IPTR) obj);
                     }
                     DoMethod(data->presentation, MUIM_Notify, PA_Disused,
-                             TRUE, MUIV_EveryTime, obj, 3, MUIM_Set,
+                             TRUE, MUIV_EveryTime, (IPTR) obj, 3, MUIM_Set,
                              OA_Disused, TRUE);
                     break;
                 }
             case OA_Parent:
-                data->parent = tag->ti_Data;
+                data->parent = (Object *) tag->ti_Data;
                 if (data->inTree)
                     DoMethod(obj, MUIM_Notify, OA_Disused, TRUE,
-                             MUIV_EveryTime, data->parent, 2, OM_Delete, obj);
+                             MUIV_EveryTime, (IPTR) data->parent, 2, OM_Delete, (IPTR) obj);
                 break;
             default:
                 break;

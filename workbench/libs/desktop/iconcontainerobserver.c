@@ -38,7 +38,7 @@ IPTR iconConObsNew(Class * cl, Object * obj, struct opSet * msg)
     struct IconContainerObserverClassData *data;
     struct TagItem *tag,
                    *tstate = msg->ops_AttrList;
-    UBYTE          *directory;
+    UBYTE          *directory = NULL;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -152,7 +152,7 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
 
     data = (struct IconContainerObserverClassData *) INST_DATA(cl, obj);
 
-    GetAttr(AICA_Desktop, _presentation(obj), &desktop);
+    GetAttr(AICA_Desktop, _presentation(obj), (IPTR *) &desktop);
 
     for (i = 0; i < msg->wsr_Results; i++)
     {
@@ -189,28 +189,28 @@ IPTR iconConObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
         (
             kind,
             
-            IOA_Name,         msg->wsr_ResultsArray[i].sr_Name,
-            IOA_Directory,    data->directory,
-            IOA_Comment,      msg->wsr_ResultsArray[i].sr_Comment,
-            IOA_Script,       msg->wsr_ResultsArray[i].sr_Script,
-            IOA_Pure,         msg->wsr_ResultsArray[i].sr_Pure,
-            IOA_Readable,     msg->wsr_ResultsArray[i].sr_Read,
-            IOA_Writeable,    msg->wsr_ResultsArray[i].sr_Write,
-            IOA_Archived,     msg->wsr_ResultsArray[i].sr_Archive,
-            IOA_Executable,   msg->wsr_ResultsArray[i].sr_Execute,
-            IOA_Deleteable,   msg->wsr_ResultsArray[i].sr_Delete,
-            IA_DiskObject,    msg->wsr_ResultsArray[i].sr_DiskObject,
-            IA_Label,         msg->wsr_ResultsArray[i].sr_Name,
-            IA_Size,          msg->wsr_ResultsArray[i].sr_Size,
-            IA_LastModified, &msg->wsr_ResultsArray[i].sr_LastModified,
-            IA_Type,          msg->wsr_ResultsArray[i].sr_Type,
-            IA_Desktop,       desktop,
+            IOA_Name,         (IPTR) msg->wsr_ResultsArray[i].sr_Name,
+            IOA_Directory,    (IPTR) data->directory,
+            IOA_Comment,      (IPTR) msg->wsr_ResultsArray[i].sr_Comment,
+            IOA_Script,       (IPTR) msg->wsr_ResultsArray[i].sr_Script,
+            IOA_Pure,         (IPTR) msg->wsr_ResultsArray[i].sr_Pure,
+            IOA_Readable,     (IPTR) msg->wsr_ResultsArray[i].sr_Read,
+            IOA_Writeable,    (IPTR) msg->wsr_ResultsArray[i].sr_Write,
+            IOA_Archived,     (IPTR) msg->wsr_ResultsArray[i].sr_Archive,
+            IOA_Executable,   (IPTR) msg->wsr_ResultsArray[i].sr_Execute,
+            IOA_Deleteable,   (IPTR) msg->wsr_ResultsArray[i].sr_Delete,
+            IA_DiskObject,    (IPTR) msg->wsr_ResultsArray[i].sr_DiskObject,
+            IA_Label,         (IPTR) msg->wsr_ResultsArray[i].sr_Name,
+            IA_Size,          (IPTR) msg->wsr_ResultsArray[i].sr_Size,
+            IA_LastModified,  (IPTR) &msg->wsr_ResultsArray[i].sr_LastModified,
+            IA_Type,          (IPTR) msg->wsr_ResultsArray[i].sr_Type,
+            IA_Desktop,       (IPTR) desktop,
             MUIA_Draggable,   TRUE,
             
             TAG_DONE
         );
 
-        DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
+        DoMethod(_presentation(obj), OM_ADDMEMBER, (IPTR) newIcon);
     }
 
     FreeVec(msg->wsr_ResultsArray);

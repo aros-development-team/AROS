@@ -37,13 +37,13 @@ IPTR desktopObsNew(Class * cl, Object * obj, struct opSet *msg)
     IPTR            retval = 0;
     struct DesktopObserverClassData *data;
     struct TagItem *tag;
-    struct Class   *defaultWindowClass = NULL;
+    Class   *defaultWindowClass = NULL;
     struct TagItem *defaultWindowArgs = NULL;
 
     tag = FindTagItem(DOA_DefaultWindowClass, msg->ops_AttrList);
     if (tag)
     {
-        defaultWindowClass = tag->ti_Data;
+        defaultWindowClass = (Class *) tag->ti_Data;
     // this will change, save the variable in a new
     // desktopcontext area
         DesktopBase->db_DefaultWindow = defaultWindowClass;
@@ -53,7 +53,7 @@ IPTR desktopObsNew(Class * cl, Object * obj, struct opSet *msg)
     tag = FindTagItem(DOA_DefaultWindowArguments, msg->ops_AttrList);
     if (tag)
     {
-        defaultWindowArgs = tag->ti_Data;
+        defaultWindowArgs = (struct TagItem *) tag->ti_Data;
     // this will change, save the variable in a new
     // desktopcontext area
         DesktopBase->db_DefaultWindowArguments = defaultWindowArgs;
@@ -179,16 +179,16 @@ IPTR desktopObsAddIcons(Class * cl, Object * obj, struct icoAddIcon * msg)
         (
             kind, 
         
-            IA_DiskObject,  msg->wsr_ResultsArray[i].sr_DiskObject,
-            IA_Label,       msg->wsr_ResultsArray[i].sr_Name,
-            IA_Desktop,     _presentation(obj),
+            IA_DiskObject,  (IPTR) msg->wsr_ResultsArray[i].sr_DiskObject,
+            IA_Label,       (IPTR) msg->wsr_ResultsArray[i].sr_Name,
+            IA_Desktop,     (IPTR) _presentation(obj),
             // IA_Directory,   data->directory,
             MUIA_Draggable, TRUE,
             
             TAG_DONE
         );
         
-        DoMethod(_presentation(obj), OM_ADDMEMBER, newIcon);
+        DoMethod(_presentation(obj), OM_ADDMEMBER, (IPTR) newIcon);
     }
 
     FreeVec(msg->wsr_ResultsArray);

@@ -52,7 +52,6 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
                    *dirWindow,
                    *iconcontainer,
                    *strip;
-    BYTE            terminator;
     struct NewMenu *menuDat;
     Object         *desktop = NULL;
     STRPTR          title = NULL;
@@ -94,21 +93,21 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
 
     menuDat = BuildDesktopMenus();
 
-    GetAttr(IA_Desktop, _presentation(obj), &desktop);
+    GetAttr(IA_Desktop, _presentation(obj), (IPTR *) &desktop);
 
     iconcontainer = CreateDesktopObject
     (
         CDO_IconContainer,
 
-        ICOA_Directory, newDir,
-        AICA_Desktop,       desktop,
-        ICA_VertScroller,  vert,
-        ICA_HorizScroller, horiz,
-        MUIA_FillArea, FALSE,
-        MUIA_InnerLeft, 0,
-        MUIA_InnerTop, 0,
-        MUIA_InnerRight, 0,
-        MUIA_InnerBottom, 0,
+        ICOA_Directory,    (IPTR) newDir,
+        AICA_Desktop,      (IPTR) desktop,
+        ICA_VertScroller,  (IPTR) vert,
+        ICA_HorizScroller, (IPTR) horiz,
+        MUIA_FillArea,            FALSE,
+        MUIA_InnerLeft,           0,
+        MUIA_InnerTop,            0,
+        MUIA_InnerRight,          0,
+        MUIA_InnerBottom,         0,
         
         TAG_DONE
     );
@@ -117,27 +116,27 @@ IPTR containerIconObserverExecute(Class * cl, Object * obj, Msg msg)
     dirWindow = WindowObject,
         MUIA_Window_Width, 300,
         MUIA_Window_Height, 300,
-        MUIA_Window_Title,  title,
-        MUIA_Window_Menustrip, strip = MUI_MakeObject(MUIO_MenustripNM, menuDat, 0),
+        MUIA_Window_Title,  (IPTR) title,
+        MUIA_Window_Menustrip, (IPTR) strip = MUI_MakeObject(MUIO_MenustripNM, (IPTR) menuDat, 0),
         MUIA_Window_UseBottomBorderScroller, TRUE,
         MUIA_Window_UseRightBorderScroller,  TRUE,
         MUIA_Window_EraseArea,               FALSE,
         
-        WindowContents, iconcontainer,
+        WindowContents, (IPTR) iconcontainer,
     End;
 
-    DoMethod(_app(_presentation(obj)), OM_ADDMEMBER, dirWindow);
+    DoMethod(_app(_presentation(obj)), OM_ADDMEMBER, (IPTR) dirWindow);
 
     DoMethod(dirWindow, MUIM_Notify, MUIA_Window_CloseRequest, TRUE,
-             dirWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+             (IPTR) dirWindow, 3, MUIM_Set, MUIA_Window_Open, FALSE);
 
     DoMethod(vert, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime,
-             iconcontainer, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
+             (IPTR) iconcontainer, 3, MUIM_Set, ICA_ScrollToVert, MUIV_TriggerValue);
     DoMethod(horiz, MUIM_Notify, MUIA_Prop_First, MUIV_EveryTime,
-             iconcontainer, 3, MUIM_Set, ICA_ScrollToHoriz,
+             (IPTR) iconcontainer, 3, MUIM_Set, ICA_ScrollToHoriz,
              MUIV_TriggerValue);
-    DoMethod(dirWindow, MUIM_Notify, MUIA_Window_Activate, TRUE, desktop, 3,
-             MUIM_Set, DA_ActiveWindow, dirWindow);
+    DoMethod(dirWindow, MUIM_Notify, MUIA_Window_Activate, TRUE, (IPTR) desktop, 3,
+             MUIM_Set, DA_ActiveWindow, (IPTR) dirWindow);
     SetAttrs(dirWindow, MUIA_Window_Open, TRUE, TAG_END);
 
     return 1;
@@ -147,8 +146,7 @@ IPTR containerIconObserverNew(Class * cl, Object * obj, struct opSet * msg)
 {
     IPTR            retval = 0;
     struct ContainerIconObserverClassData *data;
-    struct TagItem *tag;
-
+    
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)
     {

@@ -79,7 +79,7 @@ struct DesktopBase
 /*
    these will be moved into a new desktop context area 
  */
-    struct Class   *db_DefaultWindow;
+    Class   *db_DefaultWindow;
     struct TagItem *db_DefaultWindowArguments;
 
     struct SignalSemaphore db_BaseMutex;

@@ -44,7 +44,7 @@ static ULONG DoSetupMethod(Object * obj, struct MUI_RenderInfo *info)
  */
     muiRenderInfo(obj) = info;
 
-    return DoMethod(obj, MUIM_Setup, info);
+    return DoMethod(obj, MUIM_Setup, (IPTR) info);
 }
 
 IPTR iconNew(Class * cl, Object * obj, struct opSet * msg)
@@ -374,7 +374,7 @@ IPTR iconSetup(Class * cl, Object * obj, struct MUIP_Setup * msg)
             DoSetupMethod(data->lastModifiedPart, muiRenderInfo(obj));
     }
 
-    DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
+    DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR) &data->ehn);
 
     return retval;
 }
@@ -386,7 +386,7 @@ IPTR iconCleanup(Class * cl, Object * obj, struct MUIP_Cleanup * msg)
 
     data = (struct IconClassData *) INST_DATA(cl, obj);
 
-    DoMethod(obj, MUIM_Window_RemEventHandler, &data->ehn);
+    DoMethod(obj, MUIM_Window_RemEventHandler, (IPTR) &data->ehn);
 
     DoMethodA(data->imagePart, (Msg) msg);
     DoMethodA(data->labelPart, (Msg) msg);
@@ -484,7 +484,7 @@ IPTR iconAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
     minMax.MinHeight = 0;
     minMax.DefHeight = 0;
     minMax.MaxHeight = 0;
-    DoMethod(data->imagePart, MUIM_AskMinMax, &minMax);
+    DoMethod(data->imagePart, MUIM_AskMinMax, (IPTR) &minMax);
 
     _minwidth(data->imagePart) = iconWidth;
     _minheight(data->imagePart) = iconHeight;
@@ -500,7 +500,7 @@ IPTR iconAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
     minMax.MinHeight = 0;
     minMax.DefHeight = 0;
     minMax.MaxHeight = 0;
-    DoMethod(data->labelPart, MUIM_AskMinMax, &minMax);
+    DoMethod(data->labelPart, MUIM_AskMinMax, (IPTR) &minMax);
 
     _minwidth(data->labelPart) = minMax.MinWidth;
     _minheight(data->labelPart) = minMax.MinHeight;
@@ -523,7 +523,7 @@ IPTR iconAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
             minMax.MinHeight = 0;
             minMax.DefHeight = 0;
             minMax.MaxHeight = 0;
-            DoMethod(data->sizePart, MUIM_AskMinMax, &minMax);
+            DoMethod(data->sizePart, MUIM_AskMinMax, (IPTR) &minMax);
 
             _minwidth(data->sizePart) = minMax.MinWidth;
             _minheight(data->sizePart) = minMax.MinHeight;
@@ -546,7 +546,7 @@ IPTR iconAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
             minMax.MinHeight = 0;
             minMax.DefHeight = 0;
             minMax.MaxHeight = 0;
-            DoMethod(data->typePart, MUIM_AskMinMax, &minMax);
+            DoMethod(data->typePart, MUIM_AskMinMax, (IPTR) &minMax);
 
             _minwidth(data->typePart) = minMax.MinWidth;
             _minheight(data->typePart) = minMax.MinHeight;
@@ -568,7 +568,7 @@ IPTR iconAskMinMax(Class * cl, Object * obj, struct MUIP_AskMinMax * msg)
             minMax.MinHeight = 0;
             minMax.DefHeight = 0;
             minMax.MaxHeight = 0;
-            DoMethod(data->lastModifiedPart, MUIM_AskMinMax, &minMax);
+            DoMethod(data->lastModifiedPart, MUIM_AskMinMax, (IPTR) &minMax);
 
             _minwidth(data->lastModifiedPart) = minMax.MinWidth;
             _minheight(data->lastModifiedPart) = minMax.MinHeight;
@@ -686,7 +686,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
 
     if (!data->labelPart)
     {
-        data->labelPart = TextObject, MUIA_Text_Contents, data->label, End;
+        data->labelPart = TextObject, MUIA_Text_Contents, (IPTR) data->label, End;
     }
 
     if (data->viewMode == IAVM_DETAIL)
@@ -706,7 +706,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             __sprintf(buffer, "%u", data->size);
             
             data->sizePart = TextObject, 
-                MUIA_Text_Contents, buffer, 
+                MUIA_Text_Contents, (IPTR) buffer, 
             End;
             
             FreeVec(buffer);
@@ -726,7 +726,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             else                     description = "Unknown";
 
             data->typePart = TextObject, 
-                MUIA_Text_Contents, description, 
+                MUIA_Text_Contents, (IPTR) description, 
             End;
         }
 
@@ -773,7 +773,7 @@ IPTR iconConnectParent(Class * cl, Object * obj,
             }
             
             data->lastModifiedPart = TextObject,
-                MUIA_Text_Contents, buffer,
+                MUIA_Text_Contents, (IPTR) buffer,
             End;
             
             FreeVec(buffer);
@@ -785,9 +785,9 @@ IPTR iconConnectParent(Class * cl, Object * obj,
     data = (struct IconClassData *) INST_DATA(cl, obj);
 
     muiNotifyData(data->imagePart)->mnd_ParentObject = obj;
-    DoMethod(data->imagePart, MUIM_ConnectParent, obj);
+    DoMethod(data->imagePart, MUIM_ConnectParent, (IPTR) obj);
     muiNotifyData(data->labelPart)->mnd_ParentObject = obj;
-    DoMethod(data->labelPart, MUIM_ConnectParent, obj);
+    DoMethod(data->labelPart, MUIM_ConnectParent, (IPTR) obj);
 
     if (data->viewMode == IAVM_DETAIL)
     {
@@ -944,7 +944,7 @@ BOOPSI_DISPATCHER(IPTR, iconDispatcher, cl, obj, msg)
             retval = iconCleanup(cl, obj, (struct MUIP_Cleanup *) msg);
             break;
         case MUIM_Show:
-            retval = iconShow(cl, obj, (struct MUIP_Setup *) msg);
+            retval = iconShow(cl, obj, msg);
             break;
         case MUIM_Draw:
             retval = iconDraw(cl, obj, (struct MUIP_Draw *) msg);

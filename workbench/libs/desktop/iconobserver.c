@@ -41,14 +41,14 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
     UBYTE          *name = NULL,
         *directory = NULL;
     BOOL            selected = FALSE;
-    UBYTE          *comment;
-    BOOL            script,
-                    pure,
-                    archived,
-                    readable,
-                    writeable,
-                    executable,
-                    deleteable;
+    UBYTE          *comment = NULL;
+    BOOL            script = FALSE,
+                    pure = FALSE,
+                    archived = FALSE,
+                    readable = TRUE,
+                    writeable = TRUE,
+                    executable = FALSE,
+                    deleteable = TRUE;
 
     while ((tag = NextTagItem(&tstate)) != NULL)
     {
@@ -108,8 +108,6 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
     retval = DoSuperMethodA(cl, obj, (Msg) msg);
     if (retval)
     {
-        UBYTE          *fullPath;
-
         obj = (Object *) retval;
         data = INST_DATA(cl, obj);
         data->selected = selected;
@@ -124,32 +122,32 @@ IPTR iconObserverNew(Class * cl, Object * obj, struct opSet * msg)
         data->executable = executable;
         data->deleteable = deleteable;
 
-        DoMethod(_presentation(obj), MUIM_Notify, IA_Executed, TRUE, obj, 1,
+        DoMethod(_presentation(obj), MUIM_Notify, IA_Executed, TRUE, (IPTR) obj, 1,
                  IOM_Execute);
         DoMethod(_presentation(obj), MUIM_Notify, IA_Selected, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Selected, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Selected, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, IA_Directory,
-                 MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Directory,
+                 MUIV_EveryTime, (IPTR) obj, 3, MUIM_Set, IOA_Directory,
                  MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Comment, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Comment, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Comment, MUIV_TriggerValue);
 
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Script, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Script, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Script, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Pure, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Pure, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Pure, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Archived, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Archived, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Archived, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Readable, MUIV_EveryTime,
-                 obj, 3, MUIM_Set, IOA_Readable, MUIV_TriggerValue);
+                 (IPTR) obj, 3, MUIM_Set, IOA_Readable, MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Writeable,
-                 MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Writeable,
+                 MUIV_EveryTime, (IPTR) obj, 3, MUIM_Set, IOA_Writeable,
                  MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Executable,
-                 MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Executable,
+                 MUIV_EveryTime, (IPTR) obj, 3, MUIM_Set, IOA_Executable,
                  MUIV_TriggerValue);
         DoMethod(_presentation(obj), MUIM_Notify, AIA_Deleteable,
-                 MUIV_EveryTime, obj, 3, MUIM_Set, IOA_Deleteable,
+                 MUIV_EveryTime, (IPTR) obj, 3, MUIM_Set, IOA_Deleteable,
                  MUIV_TriggerValue);
 	}
 
@@ -170,13 +168,13 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
         switch (tag->ti_Tag)
         {
             case IOA_Comment:
-                data->comment = tag->ti_Data;
+                data->comment = (UBYTE *) tag->ti_Data;
             /*
                was this OM_SET triggered by a notify? 
              */
 				if (strcmp(_comment(_presentation(obj)), data->comment))
                     DoMethod(_presentation(obj), MUIM_NoNotifySet, AIA_Comment,
-                             data->comment);
+                             (IPTR) data->comment);
 				break;
             // TODO: When one of these bits is set, send a request to the
             // handler to do the change
@@ -226,7 +224,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
                              AIA_Writeable, data->writeable);
                 break;
             case IOA_Executable:
-                data->comment = tag->ti_Data;
+                data->comment = (UBYTE *) tag->ti_Data;
             /*
                was this OM_SET triggered by a notify?
              */
@@ -235,7 +233,7 @@ IPTR iconObserverSet(Class * cl, Object * obj, struct opSet * msg)
                              AIA_Executable, data->executable);
                 break;
             case IOA_Deleteable:
-                data->comment = tag->ti_Data;
+                data->comment = (UBYTE *) tag->ti_Data;
             /*
                was this OM_SET triggered by a notify?
              */
@@ -263,7 +261,7 @@ IPTR iconObserverGet(Class * cl, Object * obj, struct opGet * msg)
     switch (msg->opg_AttrID)
     {
         case IOA_Name:
-            *msg->opg_Storage = data->name;
+            *msg->opg_Storage = (IPTR) data->name;
             break;
         case IOA_Script:
             *msg->opg_Storage = data->script;
