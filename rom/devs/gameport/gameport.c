@@ -280,9 +280,9 @@ AROS_LH3(void, open,
 
 	return;
     }
-    
+
     gpUn->gpu_unitNum = unitnum;
-    
+        
     if (!GPBase->gp_OOPBase)
     {
 	GPBase->gp_OOPBase = OpenLibrary(AROSOOP_NAME, 0);
@@ -529,27 +529,36 @@ AROS_LH1(void, beginio,
 	   probably use IRQ HIDD instead to set the IRQ handler.
 	*/   
 	
-    case CMD_HIDDINIT: {
+    case CMD_HIDDINIT:
+    {
 	struct TagItem tags[] =
 	{
 	    { aHidd_Mouse_IrqHandler	, (IPTR)mouseCallback	},
 	    { aHidd_Mouse_IrqHandlerData	, (IPTR)GPBase 		},
 	    { TAG_DONE						}
 	};
+	IPTR relativecoords = FALSE;
 	
 	D(bug("gameport.device: Received CMD_HIDDINIT, hiddname=\"%s\"\n",
 	      (STRPTR)ioStd(ioreq)->io_Data ));
 	
 	if (GPBase->gp_Hidd != NULL)
 	    OOP_DisposeObject(GPBase->gp_Hidd);
-	GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);
+	
+	GPBase->gp_Hidd = OOP_NewObject(NULL, (STRPTR)ioStd(ioreq)->io_Data, tags);	
 	if (!GPBase->gp_Hidd)
 	{
 	    D(bug("gameport.device: Failed to open hidd\n"));
 	    ioreq->io_Error = IOERR_OPENFAIL;
 	}
 	
-	    break;
+	OOP_GetAttr(GPBase->gp_Hidd, aHidd_Mouse_RelativeCoords, &relativecoords);
+
+	if (relativecoords)
+	{
+    	    GPBase->gp_RelativeMouse = TRUE;
+	}
+	break;
     }
     
     default:
@@ -756,7 +765,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
     
     ioreq->io_Error = 0;
-    
+
     for (i = 0; i < nEvents; ) /* no i++ here, this is done if event is to report */
     {
     	UWORD code;
@@ -865,6 +874,7 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
 	    event->ie_SubClass  = 0;          /* Only port 0 for now */
 	    event->ie_Code  	= code;
 	    event->ie_Qualifier = gpUn->gpu_Qualifiers;
+	    if (GPBase->gp_RelativeMouse) event->ie_Qualifier |= IEQUALIFIER_RELATIVEMOUSE;
 	    
 	    event->ie_X = x;
 	    event->ie_Y = y;
