@@ -35,7 +35,7 @@
 
 
 #ifndef __MATHIEEE64BIT_DEFINES_H__
-#   include "mathieee64bitdefines.h"
+#   include <aros/mathieee64bitdefines.h>
 #endif
 
 
