@@ -68,7 +68,7 @@
    
     opGet.MethodID = OM_GET;
    
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	opGet.opg_AttrID  = tag->ti_Tag;
 	opGet.opg_Storage = (ULONG *)tag->ti_Data;
