@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 USER_INCLUDES := -I.
 
 FILES	:=	vga_init functable vgaclass vgahw \
-		offbitmap onbitmap endtag
+		offbitmap onbitmap mouseclass endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native : 

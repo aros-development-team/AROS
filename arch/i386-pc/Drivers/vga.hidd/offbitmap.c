@@ -34,7 +34,7 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddVGAGfxAB = 0;
 static AttrBase HiddVGABitMapAB = 0;
 
-static struct abdescr attrbases[] = 
+static struct ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -117,7 +117,11 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 	    if (data->Regs)
 	    {
-		set_pixelformat(o, XSD(cl));
+		set_pixelformat(o);
+
+		if (XSD(cl)->activecallback)
+		    XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
+
 		ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
 	    }
 	} /* if got data->VideoData */
@@ -148,41 +152,11 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
 
-static BOOL offbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
-{
-    return bitmap_setcolors(cl, o, msg);
-}
-
-
-BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
-{
-    struct bitmap_data *data = INST_DATA(cl, o);
-    
-    ULONG xc_i,col_i;
-    
-    EnterFunc(bug("VGAGfx.BitMap::SetColors(num=%d, first=%d)\n",
-    		msg->numColors, msg->firstColor));
-    
-    if (data->Regs)
-    {
-        for ( xc_i = msg->firstColor, col_i = 0;
-    		col_i < msg ->numColors; 
-		xc_i ++, col_i ++ )
-	{
-	    data->Regs->DAC[xc_i*3+0] = msg->colors[col_i].red >> 10;
-	    data->Regs->DAC[xc_i*3+1] = msg->colors[col_i].green >> 10;
-	    data->Regs->DAC[xc_i*3+2] = msg->colors[col_i].blue >> 10;
-	}
-    }
-
-    ReturnBool("VGAGfx.BitMap::SetColors",  TRUE);
-}
-
 
 #undef SDEBUG
 #undef DEBUG
 #define SDEBUG 0
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -192,9 +166,9 @@ BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 #undef XSD
 #define XSD(cl) xsd
 
-//#define NUM_BITMAP_METHODS 14
-#define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 10
+
+#define NUM_ROOT_METHODS   3
+#define NUM_BITMAP_METHODS 3
 
 
 Class *init_offbmclass(struct vga_staticdata *xsd)
@@ -203,7 +177,9 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(new), 	moRoot_New    },
         {(IPTR (*)())MNAME(dispose),	moRoot_Dispose},
+#if 0
         {(IPTR (*)())MNAME(set),	moRoot_Set},
+#endif
         {(IPTR (*)())MNAME(get),	moRoot_Get},
         {NULL, 0UL}
     };
@@ -212,16 +188,14 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
     {
       {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
-    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
+//    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
-    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
-    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
+//    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
+//    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
+//    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
+//    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
-    	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
-    	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
 //    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
 //    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
         {NULL, 0UL}
@@ -265,7 +239,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
             {
                 AddClass(cl);
             }
@@ -296,7 +270,7 @@ void free_offbmclass(struct vga_staticdata *xsd)
         if(xsd->offbmclass) DisposeObject((Object *) xsd->offbmclass);
         xsd->offbmclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
     }
     ReturnVoid("free_bmclass");
 }

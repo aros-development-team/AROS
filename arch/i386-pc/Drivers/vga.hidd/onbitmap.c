@@ -30,7 +30,7 @@ static AttrBase HiddBitMapAttrBase = 0;
 static AttrBase HiddVGAGfxAB = 0;
 static AttrBase HiddVGABitMapAB = 0;
 
-static struct abdescr attrbases[] = 
+static struct ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
     /* Private bases */
@@ -55,7 +55,7 @@ extern unsigned long __draw_enable;
 #define DEBUG 0
 #include <aros/debug.h>
 
-#define OnBitmap
+#define OnBitmap 1
 #include "bitmap_common.c"
 
 /*********** BitMap::New() *************************************/
@@ -64,8 +64,6 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
     EnterFunc(bug("VGAGfx.BitMap::New()\n"));
 
-//    kprintf("...\n");
-    
     o = (Object *)DoSuperMethod(cl, o, (Msg) msg);
     if (o)
     {
@@ -149,7 +147,12 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 		    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
-		    set_pixelformat(o, XSD(cl));
+		    set_pixelformat(o);
+
+		    if (XSD(cl)->activecallback)
+			XSD(cl)->activecallback(XSD(cl)->callbackdata, o, TRUE);
+
+		    XSD(cl)->visible = data;	/* Set created object as visible */
 
 		    ReturnPtr("VGAGfx.BitMap::New()", Object *, o);
 		}
@@ -187,26 +190,14 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
 
-static BOOL onbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
-{
-    struct bitmap_data *data = INST_DATA(cl, o);
-    BOOL ret;
-    
-    ret = bitmap_setcolors(cl, o, msg);
-
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaRestore(data->Regs);
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-    return ret;
-}
-
 /*** init_onbmclass *********************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
 
-#define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 10
+#define NUM_ROOT_METHODS   3
+#define NUM_BITMAP_METHODS 3
+//12
 
 Class *init_onbmclass(struct vga_staticdata *xsd)
 {
@@ -214,7 +205,9 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(new)    , moRoot_New    },
         {(IPTR (*)())MNAME(dispose), moRoot_Dispose},
+#if 0
         {(IPTR (*)())MNAME(set)	   , moRoot_Set},
+#endif
         {(IPTR (*)())MNAME(get)	   , moRoot_Get},
         {NULL, 0UL}
     };
@@ -223,16 +216,14 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(setcolors),		moHidd_BitMap_SetColors},
     	{(IPTR (*)())MNAME(putpixel),		moHidd_BitMap_PutPixel},
-    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
+//    	{(IPTR (*)())MNAME(clear),		moHidd_BitMap_Clear},
     	{(IPTR (*)())MNAME(getpixel),		moHidd_BitMap_GetPixel},
-    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
-    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
-    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
+//    	{(IPTR (*)())MNAME(drawpixel),		moHidd_BitMap_DrawPixel},
+//    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
+//    	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
+//    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
-    	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
-    	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
 //    	{(IPTR (*)())MNAME(putimagelut),	moHidd_BitMap_PutImageLUT},
 //    	{(IPTR (*)())MNAME(getimagelut),	moHidd_BitMap_GetImageLUT},
         {NULL, 0UL}
@@ -274,7 +265,7 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
             cl->UserData     = (APTR) xsd;
            
             /* Get attrbase for the BitMap interface */
-	    if (obtainattrbases(attrbases, OOPBase))
+	    if (ObtainAttrBases(attrbases))
             {
                 AddClass(cl);
             }
@@ -304,7 +295,7 @@ void free_onbmclass(struct vga_staticdata *xsd)
         if(xsd->onbmclass) DisposeObject((Object *) xsd->onbmclass);
         xsd->onbmclass = NULL;
 	
-	releaseattrbases(attrbases, OOPBase);
+	ReleaseAttrBases(attrbases);
     }
 
     ReturnVoid("free_onbmclass");

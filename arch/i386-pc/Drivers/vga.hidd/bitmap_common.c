@@ -4,28 +4,13 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-static VOID set_pixelformat(Object *bm, struct vga_staticdata *xsd)
-{
-    HIDDT_PixelFormat *pf = BM_PIXFMT(bm);
-    
-    pf->red_mask	= 0x000000ff;
-    pf->green_mask	= 0x0000ff00;
-    pf->blue_mask	= 0x00ff0000;
-    
-    pf->red_shift	= 24;
-    pf->green_shift	= 16;
-    pf->blue_shift	= 8;
-}
-
 /*********  BitMap::Clear()  *************************************/
 static VOID MNAME(clear)(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 {
-    ULONG width, height, bg;
+    ULONG width, height;
     struct bitmap_data *data = INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
     
-    GetAttr(o, aHidd_BitMap_Background, &bg);
-
     /* Get width & height from bitmap superclass */
 
     GetAttr(o, aHidd_BitMap_Width,  &width);
@@ -34,48 +19,14 @@ static VOID MNAME(clear)(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
     box.x2 = width - 1;
     box.y2 = height - 1;
 
-    memset(data->VideoData, bg, width*height);
+    memset(data->VideoData, GC_BG(msg->gc), width*height);
 
 #ifdef OnBitmap
     ObtainSemaphore(&XSD(cl)->HW_acc);
     vgaRefreshArea(data, 1, &box);
     ReleaseSemaphore(&XSD(cl)->HW_acc);
+    draw_mouse(XSD(cl));
 #endif /* OnBitmap */
-    
-    return;
-}
-
-/**************  BitMap::Set()  *********************************/
-static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
-{
-    struct bitmap_data *data = INST_DATA(cl, o);
-    struct TagItem *tag, *tstate;
-    ULONG idx;
-    
-    tstate = msg->attrList;
-    while((tag = NextTagItem(&tstate)))
-    {
-        if(IS_BM_ATTR(tag->ti_Tag, idx))
-        {
-            switch(idx)
-            {
-                case aoHidd_BitMap_Foreground :
-		    data->fg = tag->ti_Data;
-		    break;
-		    
-                case aoHidd_BitMap_Background :
-		    data->bg = tag->ti_Data;
-		    break;
-		    
-		case aoHidd_BitMap_DrawMode :		    
-		    data->drmd = tag->ti_Data;
-		    break;
-            }
-        }
-    }
-    
-    /* Let supermethod take care of other attrs */
-    DoSuperMethod(cl, o, (Msg)msg);
     
     return;
 }
@@ -119,7 +70,7 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
 	}
 	else i++;	    
     } while (f && (i<16));
-    
+
     return i;
 }
 
@@ -149,6 +100,59 @@ static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
 	}
 	else i++;	    
     } while (f && (i<16));
+}
+
+static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    HIDDT_PixelFormat *pf;
+    
+    ULONG xc_i, col_i;
+    
+    HIDDT_Pixel	red, green, blue;
+    
+    pf = BM_PIXFMT(o);
+
+    if (    vHidd_GT_StaticPalette == HIDD_PF_GRAPHTYPE(pf)
+    	 || vHidd_GT_TrueColor == HIDD_PF_GRAPHTYPE(pf) ) {
+	 
+	 /* Superclass takes care of this case */
+	 
+	 return DoSuperMethod(cl, o, (Msg)msg);
+    }
+
+    /* We have a vHidd_GT_Palette bitmap */    
+    
+    if ((msg->firstColor + msg->numColors) > (1 << data->bpp))
+	return FALSE;
+    
+    for ( xc_i = msg->firstColor, col_i = 0;
+    		col_i < msg->numColors; 
+		xc_i ++, col_i ++ )
+    {
+	red   = msg->colors[col_i].red   >> 8;
+	green = msg->colors[col_i].green >> 8;
+	blue  = msg->colors[col_i].blue  >> 8;
+
+	/* Set given color as allocated */
+	data->cmap[xc_i] = 0x01000000 | red | (green << 8) | (blue << 16);
+
+	/* Update DAC registers */
+	data->Regs->DAC[xc_i*3] = red >> 2;
+	data->Regs->DAC[xc_i*3+1] = green >> 2;
+	data->Regs->DAC[xc_i*3+2] = blue >> 2;
+	
+	msg->colors[col_i].pixval = xc_i;
+    }
+
+    /* Restore palette if OnBitmap */
+#ifdef OnBitmap
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+    vgaRestore(data->Regs);
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
+#endif /* OnBitmap */
+
+    return TRUE;
 }
 
 /*********  BitMap::PutPixel()  ***************************/
@@ -184,7 +188,13 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
     *ptr2 |= 1;		// This or'ed value isn't important
 
     ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+    if (((msg->x >= XSD(cl)->mouseX) && (msg->x <= (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
+	((msg->y >= XSD(cl)->mouseY) && (msg->y <= (XSD(cl)->mouseY + XSD(cl)->mouseH))))
+	draw_mouse(XSD(cl));
+
 #endif /* OnBitmap */
+
     return;
 }
 
@@ -206,7 +216,7 @@ static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_Get
 
 /*********  BitMap::DrawPixel()  ***************************/
 
-static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     HIDDT_Pixel fg;
@@ -218,7 +228,8 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel 
     unsigned char *ptr2;
 #endif /* OnBitmap */
 
-    GetAttr(o, aHidd_BitMap_Foreground, &fg);
+    fg = GC_FG(msg->gc);
+
     ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
     *ptr = (char) fg;
 
@@ -237,7 +248,13 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel 
     *ptr2 |= 1;		// This or'ed value isn't important
 
     ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+    if (((msg->x >= XSD(cl)->mouseX) && (msg->x <= (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
+	((msg->y >= XSD(cl)->mouseY) && (msg->y <= (XSD(cl)->mouseY + XSD(cl)->mouseH))))
+	draw_mouse(XSD(cl));
+
 #endif /* OnBitmap */
+
     return;
 }
 
@@ -245,12 +262,15 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel 
 
 static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
 {
-    ULONG mode;
+//    ULONG mode;
     unsigned char *dest;
     struct bitmap_data *data = INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
 
-    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
+//    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
+
+    EnterFunc(bug("VGAGfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
+    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 
     if (o != msg->dest)
     {
@@ -325,29 +345,16 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     	    box.x2 = box.x1 + msg->width;
     	    box.y2 = box.y1 + msg->height;
     	    vgaRefreshArea(ddata, 1, &box);
+
+	    if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
+		 ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+		draw_mouse(XSD(cl));
 	}
     }
+    ReturnVoid("VGAGfx.BitMap::CopyBox");
 }
 
 /*********  BitMap::PutImage()  ***************************/
-
-unsigned char MNAME(best_color)(struct bitmap_data *data, unsigned long color)
-{
-    int i;
-    unsigned pixel = -1;
-    
-    i=0;
-    
-    do
-    {
-	if ((data->cmap[i] & 0xffffff) == color)	/* Find color */
-	    pixel = i;
-	i++;
-    } while ((pixel == -1) && (i<16));
-    
-    return pixel;
-}
-    
 
 static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
 {
@@ -365,12 +372,14 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 
     unsigned long *s_start = msg->pixels;
 
+    EnterFunc(bug("VGAGfx.BitMap::PutImage(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
+
     while (cnt > 0)
     {
         i = msg->width;
         while (i)
         {
-//            *buff++ = MNAME(best_color)(data, *s_start++);
             *buff++ = (unsigned char)*s_start++;
             i--;
         }
@@ -384,6 +393,118 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
         box.x2 = box.x1 + msg->width;
         box.y2 = box.y1 + msg->height;
         vgaRefreshArea(data, 1, &box);
+
+	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
+	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+	    draw_mouse(XSD(cl));
+    }
+    ReturnVoid("VGAGfx.BitMap::PutImage");
+}
+
+/*********  BitMap::GetImage()  ***************************/
+
+static VOID MNAME(getimage)(Class *cl, Object *o, struct pHidd_BitMap_GetImage *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+
+    int i;
+
+    // start of Source data
+    unsigned char *buff = data->VideoData +
+                                 msg->x + (msg->y * data->width);
+    // adder for each line
+    ULONG add = data->width - msg->width;
+    ULONG cnt = msg->height;
+
+    unsigned long *s_start = msg->pixels;
+
+    while (cnt > 0)
+    {
+        i = msg->width;
+        while (i)
+        {
+	    *s_start++ = (unsigned long)*buff++;
+            i--;
+        }
+        buff += add;
+        cnt--;
+    }
+}
+
+/*********  BitMap::PutImageLUT()  ***************************/
+
+static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImageLUT *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct Box box = {0, 0, 0, 0};
+
+    int i;
+
+    // start of Source data
+    unsigned char *buff = data->VideoData +
+                                 msg->x + (msg->y * data->width);
+    // adder for each line
+    ULONG add = data->width - msg->width;
+    ULONG cnt = msg->height;
+
+    unsigned char *s_start = msg->pixels;
+
+    EnterFunc(bug("VGAGfx.BitMap::PutImageLUT(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
+
+    while (cnt > 0)
+    {
+        i = msg->width;
+        while (i)
+        {
+            *buff++ = *s_start++;
+            i--;
+        }
+        buff += add;
+        cnt--;
+    }
+    if (data->disp)
+    {
+        box.x1 = msg->x;
+        box.y1 = msg->y;
+        box.x2 = box.x1 + msg->width;
+        box.y2 = box.y1 + msg->height;
+        vgaRefreshArea(data, 1, &box);
+
+	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
+	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+	    draw_mouse(XSD(cl));
+    }
+    ReturnVoid("VGAGfx.BitMap::PutImageLUT");
+}
+
+/*********  BitMap::GetImageLUT()  ***************************/
+
+static VOID MNAME(getimagelut)(Class *cl, Object *o, struct pHidd_BitMap_GetImageLUT *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+
+    int i;
+
+    // start of Source data
+    unsigned char *buff = data->VideoData +
+                                 msg->x + (msg->y * data->width);
+    // adder for each line
+    ULONG add = data->width - msg->width;
+    ULONG cnt = msg->height;
+
+    unsigned char *s_start = msg->pixels;
+
+    while (cnt > 0)
+    {
+        i = msg->width;
+        while (i)
+        {
+	    *s_start++ = *buff++;
+            i--;
+        }
+        buff += add;
+        cnt--;
     }
 }
 
@@ -393,7 +514,7 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     struct Box box = {0, 0, 0, 0};
-    HIDDT_Pixel fg;
+    HIDDT_Pixel fg = GC_FG(msg->gc);
     int i, phase, j;
 
     ULONG width = msg->maxX - msg->minX + 1;
@@ -405,7 +526,8 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
     ULONG s_add = data->width - width;
     ULONG cnt = msg->maxY - msg->minY + 1;
 
-    GetAttr(o, aHidd_BitMap_Foreground, &fg);
+    EnterFunc(bug("VGAGfx.BitMap::FillRect(%d,%d,%d,%d)\n",
+    	msg->minX, msg->minY, msg->maxX, msg->maxY));
 
     fg |= ((char)fg) << 8;
     fg |= ((short)fg) << 16;
@@ -444,7 +566,88 @@ static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *
         box.x2 = msg->maxX;
         box.y2 = msg->maxY;
         vgaRefreshArea(data, 1, &box);
+
+	if ( ((XSD(cl)->mouseX >= box.x1) && (XSD(cl)->mouseX <= box.x2)) ||
+	     ((XSD(cl)->mouseY >= box.y1) && (XSD(cl)->mouseY <= box.y2)) )
+	    draw_mouse(XSD(cl));
     }
+    ReturnVoid("VGAGfx.BitMap::FillRect");
+}
+
+static VOID PutPixel(Class *cl, struct bitmap_data *data, int x, int y, unsigned long fg)
+{
+    unsigned char *ptr;
+
+#ifdef OnBitmap
+    int pix;
+    int i;
+    unsigned char *ptr2;
+#endif /* OnBitmap */
+
+    ptr = (char *)(data->VideoData + x + (y * data->width));
+    *ptr = (char) fg;
+
+#ifdef OnBitmap
+    ptr2 = (char *)(0xa0000 + (x + (y * data->width)) / 8);
+    pix = 0x8000 >> (x % 8);
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+
+    outw(0x3c4,0x0f02);
+    outw(0x3ce,pix | 8);
+    outw(0x3ce,0x0005);
+    outw(0x3ce,0x0003);
+    outw(0x3ce,(fg << 8));
+    outw(0x3ce,0x0f01);
+
+    *ptr2 |= 1;		// This or'ed value isn't important
+
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
+
+    if (((x >= XSD(cl)->mouseX) && (x <= (XSD(cl)->mouseX + XSD(cl)->mouseW))) ||
+	((y >= XSD(cl)->mouseY) && (y <= (XSD(cl)->mouseY + XSD(cl)->mouseH))))
+	draw_mouse(XSD(cl));
+
+#endif /* OnBitmap */
+    return;
+}
+
+/*** BitMap::BlitColorExpansion() **********************************************/
+static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_BlitColorExpansion *msg)
+{
+    ULONG cemd;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    HIDDT_Pixel fg, bg;
+    LONG x, y;
+
+    EnterFunc(bug("VGAGfx.BitMap::BlitColorExpansion(%p, %d, %d, %d, %d, %d, %d)\n"
+    	, msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+    
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    cemd = GC_COLEXP(msg->gc);
+
+    for (y = 0; y < msg->height; y ++)
+    {
+        for (x = 0; x < msg->width; x ++)
+        {
+	    ULONG is_set;
+	    
+	    is_set = HIDD_BM_GetPixel(msg->srcBitMap, x + msg->srcX, y + msg->srcY);
+	    
+	    if (is_set)
+	    {
+	        PutPixel(cl, data, x + msg->destX, y + msg->destY, fg);
+	    }
+	    else
+	    {
+		if (cemd & vHidd_GC_ColExp_Opaque)
+		{
+		    PutPixel(cl, data, x + msg->destX, y + msg->destY, bg);
+		}
+	    }
+	} /* for (each x) */
+    } /* for (each y) */
+    ReturnVoid("VGAGfx.BitMap::BlitColorExpansion");
 }
 
 /*** BitMap::Get() *******************************************/

@@ -10,6 +10,8 @@
 #include <exec/types.h>
 #include <exec/lists.h>
 #include <proto/exec.h>
+#include <proto/oop.h>
+#include <oop/oop.h>
 #include <utility/utility.h>
 
 #include "vga.h"
@@ -53,6 +55,71 @@ extern struct vgaModeDesc vgaDefMode[];
 #define SysBase      (LC_SYSBASE_FIELD(lh))
 
 #undef SysBase
+#undef OOPBase
+
+
+#define OOPBase xsd->oopbase
+
+extern AttrBase HiddPixFmtAttrBase;	// = 0;
+
+static struct ABDescr abd[] = {
+	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
+	{ NULL, NULL }
+};
+
+static BOOL initclasses(struct vga_staticdata *xsd)
+{
+
+    /* Get some attrbases */
+    
+    if (!ObtainAttrBases(abd))
+    	goto failure;
+
+    xsd->vgaclass = init_vgaclass(xsd);
+    if (NULL == xsd->vgaclass)
+    	goto failure;
+
+    xsd->onbmclass = init_onbmclass(xsd);
+    if (NULL == xsd->onbmclass)
+    	goto failure;
+
+    xsd->offbmclass = init_offbmclass(xsd);
+    if (NULL == xsd->offbmclass)
+    	goto failure;
+
+    xsd->mouseclass = init_mouseclass(xsd);
+    if (NULL == xsd->mouseclass)
+    	goto failure;
+
+    return TRUE;
+        
+failure:
+    freeclasses(xsd);
+
+    return FALSE;
+    
+}
+
+static VOID freeclasses(struct vga_staticdata *xsd)
+{
+
+    if (xsd->mouseclass)
+    	free_mouseclass(xsd);
+
+    if (xsd->vgaclass)
+    	free_vgaclass(xsd);
+
+    if (xsd->offbmclass)
+    	free_offbmclass(xsd);
+
+    if (xsd->onbmclass)
+    	free_onbmclass(xsd);
+
+    ReleaseAttrBases(abd);
+	
+    return;
+}
+
 
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 {
@@ -87,16 +154,10 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
 	    xsd->utilitybase = OpenLibrary(UTILITYNAME, 37);
 	    if (xsd->utilitybase)
 	    {
-	        if (init_vgaclass(xsd))
-	        {
-		    if (init_onbmclass(xsd))
-		    {
-			if (init_offbmclass(xsd))
-			{
-			    D(bug("Everything OK\n"));
-			    return TRUE;
-			}
-		    }
+		if (initclasses(xsd))
+		{
+		    D(bug("Everything OK\n"));
+		    return TRUE;
 		}
 		CloseLibrary(xsd->utilitybase);
 	    }
