@@ -8,8 +8,8 @@ OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
 
-#MM Drivers-native-i386 : hidd-graphics-module
-Drivers-native-i386 : $(OSGENDIR)/boot/hidd_graphics.o
+#MM Drivers-pc-i386 : hidd-graphics-module
+Drivers-pc-i386 : $(OSGENDIR)/boot/hidd_graphics.o
 
 $(OSGENDIR)/boot/hidd_graphics.o : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/hidd_graphics

@@ -9,10 +9,10 @@ LIBS	:=	-L$(LIBDIR) -lhiddstubs
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC	:=	$(END_FILE).o
 
-#MM- Drivers-native-i386: Serial-native-i386
+#MM- Drivers-pc-i386: Serial-pc-i386
 
-#MM Serial-native-i386 : workbench-hidd-serial-stubs
-Serial-native-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
+#MM Serial-pc-i386 : workbench-hidd-serial-stubs
+Serial-pc-i386 : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC)
 	%add_objects rom/boot/serial_driver
 	ld -r $(LIBS) $(foreach f,$(FILES),$(OBJDIR)/$(f).o) $(ENDFUNC) \
 	    -o $(OSGENDIR)/boot/serial_driver.o

@@ -4,7 +4,7 @@ include $(TOP)/config/make.cfg
 ## STARTUP 	:= $(LIBDIR)/startup.o
 ## 
 ## #MM
-## alib-native-i386 : $(STARTUP)
+## alib-pc-i386 : $(STARTUP)
 ## 	@$(NOP)
 ## 
 ## #MM
