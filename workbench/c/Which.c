@@ -6,34 +6,64 @@
     Lang: English
 */
 
+/******************************************************************************
 
-/* FUNCTION
+    NAME
 
-   Format:    Which (command) [NORES] [RES] [ALL]
-   Template:  FILE/A, NORES/S, RES/S, ALL/S
+        Which
 
-   Which finds a specific program or directory and prints its
-   location if found. Resident programs are marked as RESIDENT
-   if they are not internal in which case they are marked as
-   INTERNAL.
-       Which searches the resident list, the current directory
-   the command paths and the C: directory/directories. If the
-   item wasn't found, Which sets the condition flag to WARN (5)
-   but does not print any error message.
-       The option NORES will make Which not search through the
-   resident list; specifying RES will only scan the resident list.
-   The ALL switch corresponds to printing all occurencies of an
-   item. This may lead to multiple listings of the same program,
-   for instance if the current directory is C:.
+    SYNOPSIS
 
-   HISTORY  980902 SDuvan  implemented
-            001111 SDuvan  rewrote most of the code and added 
-                           correct path support */
+        FILE/A, NORES/S, RES/S, ALL/S
 
-/* NOTES: * Executable files in AROS currently haven't got the
-            e-flag set, which makes Which unusable for now in
-	    emulated mode.
- */
+    LOCATION
+
+        Workbench:C
+
+    FUNCTION
+
+        Find and print the location of a specific program or directory.
+	Resident programs are marked as RESIDENT if they are not
+	interal resident in which case they are marked as INTERNAL.
+
+	Which searches the resident list, the current directory,
+        the command paths and the C: assign. If the item was not
+	found the condition flag is set to WARN but no error is
+	printed.
+
+    INPUTS
+
+        FILE   --  the command/directory to search for
+        NORES  --  don't include resident programs in the search
+	RES    --  consider resident programs only
+	ALL    --  find all locations of the FILE. This may cause the
+                   printing of the same location several times, for
+		   instance if the current directory is C: and the
+		   FILE was found in C:
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+        Executable files in AROS currently haven't got the e-flag set,
+	which makes Which unusable for now in emulated mode.
+
+    HISTORY
+
+        09.02.1998  SDuvan  --  implemented
+        11.11.2000  SDuvan  --  rewrote most of the code and added 
+	                        correct path support
+
+******************************************************************************/
+ 
 
 #include <aros/debug.h>
 #include <proto/exec.h>
@@ -151,7 +181,7 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
     BOOL            found = FALSE;    /* Object found? */
     struct DevProc *dp = NULL, *dp2;  /* For GetDeviceProc() call */
     BPTR            oldCurDir;        /* Temporary holder of old current dir */
-    //    struct MsgPort *oldFST;           /* Temporary holder of old FileSysTask */
+    // struct MsgPort *oldFST;        /* Temporary holder of old FileSysTask */
     
     /* If FilePart(name) is not name itself, it can't be in the C: directory;
        or rather, it isn't in the C: directory or we found it in
@@ -159,12 +189,12 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
     if(FilePart(name) != name)
 	return FALSE;
     
-    oldCurDir = CurrentDir(NULL);        /* Just to save the old current dir... */
-    //    oldFST    = GetFileSysTask();        /* ... and the filesystem task */
+    oldCurDir = CurrentDir(NULL);     /* Just to save the old current dir... */
+    // oldFST    = GetFileSysTask();  /* ... and the filesystem task */
     
     while(((dp2 = GetDeviceProc("C:", dp)) != NULL) && (!found || checkAll))
     {
-	//	SetFileSysTask(dp2->dvp_Port);
+	// SetFileSysTask(dp2->dvp_Port);
 	CurrentDir(dp2->dvp_Lock);
 	found |= CheckDirectory(name, fib);
 	
@@ -175,7 +205,7 @@ BOOL FindCommandinC(STRPTR name, BOOL checkAll, struct FileInfoBlock *fib)
 	dp = dp2;
     }
     
-    //    SetFileSysTask(oldFST);
+    // SetFileSysTask(oldFST);
     CurrentDir(oldCurDir);
     FreeDeviceProc(dp);
     
@@ -259,7 +289,7 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 		    found = TRUE;
 		}
 
-		FreeVec(pathName);		/* Free memory holding the full path name */
+		FreeVec(pathName); /* Free memory holding the full path name */
 	    }
 	}
 	
@@ -272,8 +302,8 @@ BOOL CheckDirectory(STRPTR name, struct FileInfoBlock *fib)
 
 STRPTR GetFullPath(BPTR lock)
 {
-    UBYTE  *buf;             /* Pointer to the memory allocated for the string */
-    ULONG   size;            /* Holder of the (growing) size of the string */
+    UBYTE  *buf;           /* Pointer to the memory allocated for the string */
+    ULONG   size;          /* Holder of the (growing) size of the string */
 
     for(size = 512; ; size += 512)
     {
@@ -329,4 +359,3 @@ BOOL FindResidentCommand(STRPTR name)
     
     return found;
 }
-
