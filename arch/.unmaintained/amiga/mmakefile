@@ -11,7 +11,8 @@
 #MM	kernel-keymap-module \
 #MM	kernel-devs \
 #MM     kernel-oop-module \
-#MM     hidd-graphics-module
+#MM     hidd-graphics-module \
+#MM     hidd-graphics-amiga-intui-module
 
 # kernel-dos-module <- removed due to spilled register bug in egcs
 # kernel-graphics-module <- removed due to spilled register bug in egcs
