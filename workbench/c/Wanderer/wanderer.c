@@ -27,6 +27,8 @@
 #include <proto/utility.h>
 #include <proto/muimaster.h>
 
+#include <string.h>
+
 #ifdef __AROS__
 #include <libraries/mui.h>
 #include <proto/workbench.h>
@@ -556,80 +558,136 @@ STATIC IPTR Wanderer_HandleTimer(struct IClass *cl, Object *obj, Msg msg)
 
 STATIC IPTR Wanderer_HandleNotify(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct Wanderer_Data *data = (struct Wanderer_Data*)INST_DATA(cl,obj);
-    struct WBHandlerMessage *message;
+    struct Wanderer_Data    *data = (struct Wanderer_Data*) INST_DATA(cl,obj);
+    struct WBHandlerMessage *wbhm;
     
-    bug("Wanderer: Got message from workbench handler\n");
+    D(bug("Wanderer: Recieved signal at notify port\n"));
     
-    while ((message = WBHM(GetMsg(data->notify_port))) != NULL)
+    while ((wbhm = WBHM(GetMsg(data->notify_port))) != NULL)
     {
-        switch (message->wbhm_Type)
+        D(bug("Wanderer: Recieved message from handler, type = %ld\n", wbhm->wbhm_Type));
+        
+        switch (wbhm->wbhm_Type)
         {
-            case WBHM_TYPE_OPEN:
-                D(bug("Wanderer: Got WBHM_Open message\n"));
-            
-            {
-                Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
-                Object *child;
-                char *buf = message->wbhm_Data.Open.Name;
-                
-                while ((child = NextObject(&cstate)))
+            case WBHM_TYPE_UPDATE:
+                D(bug("Wanderer: WBHM_TYPE_UPDATE\n"));
                 {
-                    if (XGET(child, MUIA_UserData))
+                    STRPTR name   = wbhm->wbhm_Data.Update.Name;
+                    ULONG  length;
+                    
+                    switch (wbhm->wbhm_Data.Update.Type)
                     {
-                        char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
-                        if (child_drawer && !Stricmp(buf,child_drawer))
+                        case WBDISK:
+                        case WBDRAWER:
+                        case WBGARBAGE:
+                            length = strlen(name);
+                            break;
+                            
+                        default:
+                            length = PathPart(name) - name;
+                            break;
+                    }
+                    
+                    D(bug("Wanderer: name = %s, length = %ld\n", name, length));
+                    
+                    {
+                        Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+                        Object *child;
+                        
+                        while ((child = NextObject(&cstate)))
                         {
-                            int is_open = XGET(child, MUIA_Window_Open);
-                            if (!is_open)
-                                DoMethod(child, MUIM_IconWindow_Open);
-                            else
+                            if (XGET(child, MUIA_UserData))
                             {
-                                DoMethod(child, MUIM_Window_ToFront);
-                                set(child, MUIA_Window_Activate, TRUE);
+                                char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+                                
+                                if
+                                (
+                                       child_drawer != NULL 
+                                    && strncmp(name, child_drawer, length) == 0
+                                    && strlen(child_drawer) == length
+                                )
+                                {
+                                    Object *iconlist = XGET(child, MUIA_IconWindow_IconList);
+                                    
+                                    D(bug("Wanderer: Drawer found: %s!\n", child_drawer));
+                                    
+                                    if (iconlist != NULL)
+                                    {
+                                        DoMethod(iconlist,MUIM_IconList_Update);
+                                    }
+                                    break;
+                                }
                             }
-                            return 0; 
                         }
                     }
                 }
-    
+                break;
+                
+            case WBHM_TYPE_OPEN:
+                D(bug("Wanderer: WBHM_TYPE_OPEN\n"));
+            
                 {
-                    /* Check if the window for this drawer is already opened */
-                    Object *menustrip;
-    
-                    /* Create a new icon drawer window with the correct drawer being set */
-                    Object *drawerwnd = IconWindowObject,
-                        MUIA_UserData, 1,
-                        MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
-                        MUIA_IconWindow_IsRoot, FALSE,
-                        MUIA_IconWindow_ActionHook, &hook_action,
-                        MUIA_IconWindow_Drawer, buf,
-                    EndBoopsi;
-    
-                    if (drawerwnd)
+                    Object *cstate = (Object*)(((struct List*)XGET(app, MUIA_Application_WindowList))->lh_Head);
+                    Object *child;
+                    char *buf = wbhm->wbhm_Data.Open.Name;
+                    
+                    while ((child = NextObject(&cstate)))
                     {
-                        /* Get the drawer path back so we can use it also outside this function */
-                        char *drw = (char*)XGET(drawerwnd,MUIA_IconWindow_Drawer);
-    
-                        /* We simply close the window here in case somebody like to to this...
-                         * the memory is not freed until wb is closed however */
-                        DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
-    
-                        /* If "Execute Command" entry is clicked open the execute window */
-                        DoAllMenuNotifies(menustrip,drw);
-    
-                        /* Add the window to the application */
-                        DoMethod(app,OM_ADDMEMBER,drawerwnd);
-    
-                        /* And now open it */
-                        DoMethod(drawerwnd, MUIM_IconWindow_Open);
+                        if (XGET(child, MUIA_UserData))
+                        {
+                            char *child_drawer = (char*)XGET(child, MUIA_IconWindow_Drawer);
+                            if (child_drawer && !Stricmp(buf,child_drawer))
+                            {
+                                int is_open = XGET(child, MUIA_Window_Open);
+                                if (!is_open)
+                                    DoMethod(child, MUIM_IconWindow_Open);
+                                else
+                                {
+                                    DoMethod(child, MUIM_Window_ToFront);
+                                    set(child, MUIA_Window_Activate, TRUE);
+                                }
+                                return 0; 
+                            }
+                        }
+                    }
+        
+                    {
+                        /* Check if the window for this drawer is already opened */
+                        Object *menustrip;
+        
+                        /* Create a new icon drawer window with the correct drawer being set */
+                        Object *drawerwnd = IconWindowObject,
+                            MUIA_UserData, 1,
+                            MUIA_Window_Menustrip, menustrip = MUI_MakeObject(MUIO_MenustripNM,nm,NULL),
+                            MUIA_IconWindow_IsRoot, FALSE,
+                            MUIA_IconWindow_ActionHook, &hook_action,
+                            MUIA_IconWindow_Drawer, buf,
+                        EndBoopsi;
+        
+                        if (drawerwnd)
+                        {
+                            /* Get the drawer path back so we can use it also outside this function */
+                            char *drw = (char*)XGET(drawerwnd,MUIA_IconWindow_Drawer);
+        
+                            /* We simply close the window here in case somebody like to to this...
+                             * the memory is not freed until wb is closed however */
+                            DoMethod(drawerwnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, drawerwnd, 3, MUIM_Set, MUIA_Window_Open, FALSE);
+        
+                            /* If "Execute Command" entry is clicked open the execute window */
+                            DoAllMenuNotifies(menustrip,drw);
+        
+                            /* Add the window to the application */
+                            DoMethod(app,OM_ADDMEMBER,drawerwnd);
+        
+                            /* And now open it */
+                            DoMethod(drawerwnd, MUIM_IconWindow_Open);
+                        }
                     }
                 }
-            }
-            break;
-        }
+                break;
+        } /* switch */
         
-        ReplyMsg((struct Message *) message);
+        ReplyMsg((struct Message *) wbhm);
     }
     
     return 0;
