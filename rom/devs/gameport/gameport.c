@@ -723,7 +723,15 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged,
     *trigged = FALSE;
     
     /* Number of InputEvents we can store in io_Data */
-    nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
+    /* be careful, the io_Length might be the size of the InputEvent structure,
+       but it can be that the ALIGN() returns a larger size and then nEvents would
+       be 0.
+     */
+    if (sizeof(struct InputEvent) == ioStd(ioreq)->io_Length) {
+        nEvents = 1;
+    } else {
+        nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
+    }
 
     if (nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
     {
