@@ -20,6 +20,7 @@
 #define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def.=1) */
 #define MUICFG_Group_HSpacing           0x07  /* ULONG, horiz pixels (def.=6) */
 #define MUICFG_Group_VSpacing           0x08  /* ULONG, vertical pixels (def.=3) */
+#define MUICFG_Scrollbar_Arrangement    0x09  /* ULONG, top = 0 (def), middle, bottom */
 #define MUICFG_List_FontLeading         0x0b  /* ULONG, vertical pixels (def.=1) */
 #define MUICFG_GroupTitle_Position      0x0f  /* ULONG, 1=centered */
 #define MUICFG_GroupTitle_Color         0x10  /* ULONG, 0=normal */
@@ -88,6 +89,7 @@
 #define MUICFG_Image_TapeUp             0x5d
 #define MUICFG_Image_TapeDown           0x5e
 #define MUICFG_Font_Button              0x80
+#define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (default), newlook, custom */
 #define MUICFG_String_Background        0x84
 #define MUICFG_String_Text              0x85
 #define MUICFG_String_ActiveBackground  0x86

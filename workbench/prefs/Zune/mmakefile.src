@@ -4,7 +4,8 @@
 
 include $(TOP)/config/make.cfg
 
-FILES  := zune zunestuff prefsio windowp buttonsp groupsp cyclesp slidersp
+FILES  := zune zunestuff prefsio windowp buttonsp groupsp cyclesp slidersp \
+scrollbarsp
 
 EXEDIR := $(AROSDIR)/Prefs
 EXE    := $(EXEDIR)/Zune
