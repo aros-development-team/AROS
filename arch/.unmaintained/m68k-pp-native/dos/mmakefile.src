@@ -7,7 +7,7 @@ CFLAGS2 := $(CFLAGS) -I.. -I$(TOP)/rom/dos
 AFLAGS2 :=
 TESTS :=
 
-FILES := createnewproc aros dosboot boot hidds
+FILES := aros dosboot boot hidds
 
 #MM
 dos-pp-m68k : $(foreach f, $(FILES), $(OBJDIR)/$(f).o)
