@@ -16,7 +16,8 @@
 /* Reverse the bits in a byte */
 #define AROS_SWAP_BITS_BYTE_GENERIC(_b)        \
 ({                                             \
-    UBYTE __t = _b, b = __t;                   \
+    UBYTE __aros_swap_tmp = _b,                \
+          b = __aros_swap_tmp;                 \
                                                \
     b = ((b >> 1) & 0x55) | ((b << 1) & 0xaa); \
     b = ((b >> 2) & 0x33) | ((b << 2) & 0xcc); \
@@ -26,7 +27,8 @@
 /* Reverse the bits in a word */
 #define AROS_SWAP_BITS_WORD_GENERIC(_w)            \
 ({                                                 \
-    UWORD __t = _w, w = __t;                       \
+    UWORD __aros_swap_tmp = _w,                    \
+          w = __aros_swap_tmp;                     \
                                                    \
     w = ((w >> 1) & 0x5555) | ((w << 1) & 0xaaaa); \
     w = ((w >> 2) & 0x3333) | ((w << 2) & 0xcccc); \
@@ -37,7 +39,7 @@
 /* Reverse the bits in a long */
 #define AROS_SWAP_BITS_LONG_GENERIC(_l)                          \
 ({                                                               \
-    ULONG __t = _l, l = __t;                                     \
+    ULONG __aros_swap_tmp = _l, l = __aros_swap_tmp;             \
 	                                                         \
     l = ((l >>  1) & 0x55555555UL) | ((l <<  1) & 0xaaaaaaaaUL); \
     l = ((l >>  2) & 0x33333333UL) | ((l <<  2) & 0xccccccccUL); \
@@ -49,7 +51,7 @@
 /* Reverse the bits in a quad */
 #define AROS_SWAP_BITS_QUAD_GENERIC(_q)                                            \
 ({                                                                                 \
-    UQUAD __t = _q, q = __t;                                                       \
+    UQUAD __aros_swap_tmp = _q, q = __aros_swap_tmp;                               \
 	                                                                           \
     q = ((q >>  1) & 0x5555555555555555ULL) | ((q <<  1) & 0xaaaaaaaaaaaaaaaaULL); \
     q = ((q >>  2) & 0x3333333333333333ULL) | ((q <<  2) & 0xccccccccccccccccULL); \
@@ -62,7 +64,8 @@
 /* Reverse the bytes in a word */
 #define AROS_SWAP_BYTES_WORD_GENERIC(_w)                \
 ({                                                      \
-    const UWORD __t = _w, w = __t;                      \
+    const UWORD __aros_swap_tmp = _w,                   \
+                w = __aros_swap_tmp;                    \
                                                         \
     (UWORD)(((w >> 8) & 0x00FF) | ((w << 8) & 0xFF00)); \
 })
@@ -70,7 +73,8 @@
 /* Reverse the bytes in a long */
 #define AROS_SWAP_BYTES_LONG_GENERIC(_l)              \
 ({                                                    \
-    const ULONG __t = _l, l = __t;                    \
+    const ULONG __aros_swap_tmp = _l,                 \
+                l = __aros_swap_tmp;                  \
                                                       \
     ((ULONG)AROS_SWAP_BYTES_WORD(l & 0xFFFF) << 16) | \
     (AROS_SWAP_BYTES_WORD((l >> 16) & 0xFFFF));       \
@@ -79,7 +83,8 @@
 /* Reverse the bytes in a quad */
 #define AROS_SWAP_BYTES_QUAD_GENERIC(_q)                     \
 ({                                                           \
-    const UQUAD __t = _q, q = __t;                           \
+    const UQUAD __aros_swap_tmp = _q,                        \
+                q = __aros_swap_tmp;                         \
                                                              \
     ((UQUAD)AROS_SWAP_BYTES_LONG(q & 0xFFFFFFFFULL) << 32) | \
     (AROS_SWAP_BYTES_LONG(q >> 32) & 0xFFFFFFFFULL);         \
@@ -88,7 +93,7 @@
 /* Reverse the words in a long */
 #define AROS_SWAP_WORDS_LONG_GENERIC(_l)                              \
 ({                                                                    \
-    const ULONG __t = _l, l = __t;                                    \
+    const ULONG __aros_swap_tmp = _l, l = __aros_swap_tmp;            \
                                                                       \
     (ULONG)(((l >> 16) & 0x0000FFFFUL) | ((l << 16) & 0xFFFF0000UL)); \
 })
@@ -96,18 +101,18 @@
 /* Reverse the words in a quad */
 #define AROS_SWAP_WORDS_QUAD_GENERIC(_q)                     \
 ({                                                           \
-    const UQUAD __t = _q, q = __t;                           \
+    const UQUAD __aros_swap_tmp = _q, q = __aros_swap_tmp;   \
                                                              \
     ((UQUAD)AROS_SWAP_WORDS_LONG(q & 0xFFFFFFFFULL) << 32) | \
     (AROS_SWAP_WORDS_LONG(q >> 32) & 0xFFFFFFFFULL);         \
 })
 
 /* Reverse the longs in a quad */
-#define AROS_SWAP_LONGS_QUAD_GENERIC(_q)                                       \
-({                                                                             \
-    const UQUAD __t = _q, q = __t;                                             \
-                                                                               \
-    (UQUAD)(((q >> 32) & 0xFFFFFFFFULL) | ((q << 32) & 0xFFFFFFFF00000000ULL));\
+#define AROS_SWAP_LONGS_QUAD_GENERIC(_q)                                        \
+({                                                                              \
+    const UQUAD __aros_swap_tmp = _q, q = __aros_swap_tmp;                      \
+                                                                                \
+    (UQUAD)(((q >> 32) & 0xFFFFFFFFULL) | ((q << 32) & 0xFFFFFFFF00000000ULL)); \
 })
 
 /* Use the CPU-specific definitions of the above macros, if they exist, but reuse
