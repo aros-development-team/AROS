@@ -203,7 +203,7 @@ void * memclr(APTR, ULONG);
 #define WLAYER(w) (((struct IntWindow *)(w))->wlayer)
 #define BLAYER(w) (((struct IntWindow *)(w))->borderlayer)
 
-#define TIMEVALWINDOWACTIVATION
+//#define TIMEVALWINDOWACTIVATION
 
 /* If PROP_RENDER_OPTIMIZATION is set to 1, propgadget code tries to optimize rendering
    during prop gadget knob movement. Only area of the propgadget that is affected by
