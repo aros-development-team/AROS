@@ -162,10 +162,21 @@ UX11
 	if (DRAWABLE(data))
 	{
 	    XGCValues gcval;
+    	    XSizeHints hint;
 		    
 	    D(bug("Calling XMapRaised\n"));
 LX11	    
 	    XMapRaised (GetSysDisplay(), DRAWABLE(data));
+
+	    hint.flags  = PMinSize | PMaxSize;
+	    hint.min_width = width;
+	    hint.min_height = height;
+	    hint.max_width = width;
+	    hint.max_height = height;
+	    XSetWMNormalHints (GetSysDisplay(), DRAWABLE(data), &hint);
+
+	    XStoreName (GetSysDisplay(), DRAWABLE(data), "AROS");
+	    XSetIconName (GetSysDisplay(), DRAWABLE(data), "AROS Screen");
 
 	    /* Create X11 GC */
 	 
