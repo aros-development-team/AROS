@@ -147,7 +147,12 @@ IPTR ExecuteCommand__OM_NEW
     if (freeInitial) FreeVec((APTR) initial); 
     
     /* Check if object creation succeeded */
-    if (self == NULL) return NULL;
+    if (self == NULL)
+    {
+    	if (unlockParent) UnLock(parent);
+	
+    	return NULL;
+    }
     
     /* Store instance data -------------------------------------------------*/
     data = INST_DATA(CLASS, self);
