@@ -16,6 +16,11 @@
 
 #include "aroscycle_intern.h"
 
+/***********************************************************************************/
+
+#define CYCLEIMAGEWIDTH 19
+
+/***********************************************************************************/
 
 UWORD disabledpattern[2] = {0x4444, 0x1111};
 
@@ -30,7 +35,8 @@ void drawdisabledpattern(struct CycleBase_intern *AROSCycleBase,
     RectFill(rport, left, top, left+width-1, top+height-1);
 }
 
-#define CYCLEIMAGEWIDTH 19
+
+/***********************************************************************************/
 
 void renderlabel(struct CycleBase_intern *AROSCycleBase,
                  struct Gadget *gad,
@@ -76,3 +82,20 @@ void renderlabel(struct CycleBase_intern *AROSCycleBase,
 		       gad->TopEdge + h + y + 1); 
     }
 }
+
+/***********************************************************************************/
+
+BOOL pointingadget(struct Gadget *gad, struct GadgetInfo *gi, WORD x, WORD y)
+{
+    WORD gadw, gadh;
+    
+    gadw = gad->Width;
+    if (gad->Flags & GFLG_RELWIDTH) gadw += gi->gi_Domain.Width;
+    
+    gadh = gad->Height;
+    if (gad->Flags & GFLG_RELHEIGHT) gadh += gi->gi_Domain.Height;
+    
+    return ((x >= 0) && (y >= 0) && (x < gadw) && (y < gadh)) ? TRUE : FALSE;
+}
+
+/***********************************************************************************/

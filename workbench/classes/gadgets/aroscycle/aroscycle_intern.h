@@ -54,6 +54,7 @@ struct CycleData
 /* Prototypes */
 void drawdisabledpattern(struct CycleBase_intern *AROSCycleBase, struct RastPort *rport, UWORD pen, WORD left, WORD top, UWORD width, UWORD height);
 void renderlabel (struct CycleBase_intern *AROSCycleBase, struct Gadget *gad, STRPTR label, struct RastPort *rport, struct GadgetInfo *ginfo);
+BOOL pointingadget(struct Gadget *gad, struct GadgetInfo *gi, WORD x, WORD y);
 
 
 /* Library stuff */
