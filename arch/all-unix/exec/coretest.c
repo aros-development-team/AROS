@@ -444,7 +444,7 @@ void AddTask (struct Task * task, STRPTR name, BYTE pri, APTR pc)
     GetCpuContext(task) = malloc(SIZEOF_ALL_REGISTERS);
 
     PREPARE_INITIAL_FRAME(sp,pc); 
-    PREPARE_INITIAL_CONTEXT(task);
+    PREPARE_INITIAL_CONTEXT(task,pc);
 		
     /* Save new stack pointer */
     task->tc_SPReg = sp;

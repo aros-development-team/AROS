@@ -44,7 +44,7 @@ AROS_LH3(BOOL, PrepareContext,
 
     /* Then set up the frame to be used by Dispatch() */
     PREPARE_INITIAL_FRAME(GetSP(task), entryPoint);
-    PREPARE_INITIAL_CONTEXT(task);
+    PREPARE_INITIAL_CONTEXT(task, entryPoint);
 
     /* We return the new stack pointer back to the caller. */
     return TRUE;
