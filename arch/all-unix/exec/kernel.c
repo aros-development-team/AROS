@@ -13,6 +13,8 @@
 #include <aros/asmcall.h>
 #include <hardware/intbits.h>
 
+#include "sigcore.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/signal.h>
@@ -22,8 +24,6 @@
 
 #include <proto/exec.h>
 #include <exec_pdefs.h>
-
-#include "sigcore.h"
 
 /* Don't do any debugging. At 50Hz its far too quick to read anyway :-) */
 #define NOISY   0
