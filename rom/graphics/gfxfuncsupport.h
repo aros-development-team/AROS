@@ -86,19 +86,23 @@ do                                  \
    backpointer: wordreserved[0],wordreserved[1],wordreserved[2],wordreserved[3]
    fgcolor:     wordreserved[4],wordreserved[5]
    bgcolor: 	wordreserved[6],reserved[0],reserved[1]
+   patoriginx:  reserved[2], reserved[3]
+   patoriginy:  reserved[4], reserved[5]
    
    Pointers above use 8 byte/64 bit, because that's what
    would be required on AROS 64 bit.
    
    Still unused fields:
    
-   UBYTE reserved[2 .. 7]
+   UBYTE reserved[6 .. 7]
 
 */   
 
-#define RP_FGCOLOR(rp)	    (*(ULONG **)&((rp)->wordreserved[4]))
-#define RP_BGCOLOR(rp)	    (*(ULONG **)&((rp)->wordreserved[6]))
-   
+#define RP_FGCOLOR(rp)	    (*(ULONG *)&((rp)->wordreserved[4]))
+#define RP_BGCOLOR(rp)	    (*(ULONG *)&((rp)->wordreserved[6]))
+#define RP_PATORIGINX(rp)   (*(WORD *)&((rp)->reserved[2]))
+#define RP_PATORIGINY(rp)   (*(WORD *)&((rp)->reserved[4]))
+
 #define RP_BACKPOINTER(rp)  (*(struct RastPort **)&((rp)->wordreserved[0]))
 #define RP_DRIVERDATA(rp)   (*(struct gfx_driverdata **)&((rp)->longreserved[0]))
 #define GetDriverData(rp)   RP_DRIVERDATA(rp)

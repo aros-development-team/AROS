@@ -138,6 +138,14 @@
 	    	*((IPTR *)tag->ti_Data) = RP_BGCOLOR(rp);
 		break;
 		
+	    case RPTAG_PatternOriginX:
+	    	*((IPTR *)tag->ti_Data) = RP_PATORIGINX(rp);
+	    	break;
+		
+	    case RPTAG_PatternOriginY:
+	    	*((IPTR *)tag->ti_Data) = RP_PATORIGINY(rp);
+		break;
+	    
 	} /* switch(tag->ti_Tag) */
 	
     } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */

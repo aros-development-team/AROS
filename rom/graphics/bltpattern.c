@@ -91,8 +91,8 @@ struct bp_render_data
 	bprd.maskmodulo     = byteCnt;
 	bprd.patterndepth   = (rp->AreaPtSz >= 0) ? 1 : rp->BitMap->Depth;
 	bprd.patternheight  = 1L << ((rp->AreaPtSz >= 0) ? rp->AreaPtSz : -rp->AreaPtSz);
-	bprd.renderx1	    = xMin;
-	bprd.rendery1	    = yMin;	
+	bprd.renderx1	    = xMin - RP_PATORIGINX(rp);
+	bprd.rendery1	    = yMin - RP_PATORIGINY(rp);	
 	bprd.invertpattern  = (rp->DrawMode & INVERSVID) ? TRUE : FALSE;
     	bprd.pixlut.entries = bprd.patterndepth;
 	bprd.pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
@@ -140,7 +140,7 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
 {
     struct bp_render_data  *bprd;
     ULONG   	    	    width, height;
-    WORD    	    	    x;
+    WORD    	    	    patsrcx, patsrcy;
     UBYTE   	    	   *mask;
     
     width  = x2 - x1 + 1;
@@ -150,9 +150,14 @@ static ULONG bltpattern_render(APTR bpr_data, LONG srcx, LONG srcy,
      
     mask = bprd->mask + bprd->maskmodulo * srcy;
     
+    patsrcx = (srcx + bprd->renderx1) % 16;
+    patsrcy = (srcy + bprd->rendery1) % bprd->patternheight;
+    if (patsrcx < 0) patsrcx += 16;
+    if (patsrcy < 0) patsrcy += bprd->patternheight;
+    
     HIDD_BM_PutPattern(dstbm_obj, dst_gc, bprd->pattern,
-    	    	       srcx + bprd->renderx1,
-		       srcy + bprd->rendery1,
+    	    	       patsrcx,
+		       patsrcy,
 		       bprd->patternheight, bprd->patterndepth,
 		       &bprd->pixlut,
 		       bprd->invertpattern,

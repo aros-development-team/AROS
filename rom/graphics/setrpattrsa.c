@@ -135,6 +135,14 @@
 		break;
 		
 	    } /**/
+	    
+	    case RPTAG_PatternOriginX:
+	    	RP_PATORIGINX(rp) = (WORD)tag->ti_Data;
+		break;
+		
+	    case RPTAG_PatternOriginY:
+	    	RP_PATORIGINY(rp) = (WORD)tag->ti_Data;
+		break;
 		
 	} /* switch (tag) */
 	
