@@ -32,7 +32,8 @@ struct CountryEntry
 extern struct CountryPrefs
     australiaPrefs,
     germanyPrefs,
-    greatBritainPrefs;
+    greatBritainPrefs,
+    nederlandPrefs;
 
 /* Please keep this in alphabetical order, ie the order of Latin 1 */
 struct CountryEntry CountryArray[] =
@@ -40,6 +41,7 @@ struct CountryEntry CountryArray[] =
     { "australia",          &australiaPrefs },
     { "germany",            &germanyPrefs },
     { "great_britain",      &greatBritainPrefs },
+    { "nederland",          &nederlandPrefs },
     { NULL, NULL }
 };
 
