@@ -12,7 +12,7 @@ FILES := disable forbid getcc cacheclearu cachepredma cachepostdma coldreboot
 TESTS :=
 
 #MM
-exec-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
+kernel-exec-amiga-m68k : $(foreach f,$(FILES),$(OBJDIR)/$(f).o) 
 	@$(NOP)
 
 #MM
