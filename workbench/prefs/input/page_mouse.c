@@ -11,6 +11,7 @@
 #include "global.h"
 #include <aros/debug.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "computermouse_image.c"
 
