@@ -5,8 +5,6 @@
 # neccessary.
 #
 BEGIN {
-    stderr="/dev/stderr";
-
     # Here is a list of special items in the sources which should be
     # replaced by a link
     special_item["NEWLIST()"]="<A HREF=\"../srcs/include/exec/lists.h\">NEWLIST()</A>";
@@ -117,7 +115,10 @@ BEGIN {
 			    if (!(lib in LIBS) )
 			    {
 				# Print a warning.
-				print "Unknown lib: "lib" in file "file >> stderr;
+				# Disabled because of problems when run
+				# as a cron job.
+				#print "Unknown lib: "lib" in file "file >> "/dev/stderr";
+				print "Unknown lib: "lib" in file "file
 			    }
 			    else
 			    {
