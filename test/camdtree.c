@@ -9,12 +9,17 @@
 
 struct Library *CamdBase=NULL;
 
+#ifndef GetMidiLinkAttrs
 ULONG GetMidiLinkAttrs(struct MidiLink *ml, Tag tag, ...){
 	return GetMidiLinkAttrsA(ml, (struct TagItem *)&tag );
 }
+#endif
+
+#ifndef GetMidiAttrs
 ULONG GetMidiAttrs(struct MidiNode *ml, Tag tag, ...){
 	return GetMidiAttrsA(ml, (struct TagItem *)&tag );
 }
+#endif
 
 struct MidiLink *GetMidiLinkFromOwnerNode(struct MinNode *node){
 	struct MidiLink dummy;
