@@ -105,7 +105,7 @@ const void * SETNAME(set)[] __attribute__((weak))={0,0};
 #define ADD2LIBS(name, ver, btype, bname)                \
 btype bname;                                             \
                                                          \
-AROS_IMPORT_ASM_SYM(__includelibrarieshandling)          \
+AROS_IMPORT_ASM_SYM(__includelibrarieshandling);         \
                                                          \
 const ULONG bname##_version __attribute__((weak)) = ver; \
                                                          \
