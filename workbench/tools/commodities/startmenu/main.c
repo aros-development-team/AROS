@@ -24,10 +24,11 @@
 
 /************************************************************************************/
 
-#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K"
+#define ARG_TEMPLATE "CX_PRIORITY=PRI/N/K,HIDE/S"
 
 #define ARG_PRI   0
-#define NUM_ARGS  1
+#define ARG_HIDE  1
+#define NUM_ARGS  2
 
 struct IntuitionBase *IntuitionBase;
 struct GfxBase *GfxBase;
@@ -63,7 +64,7 @@ static ULONG *logopal;
 static UWORD *scrpens;
 static ULONG cxmask, panelmask;
 static WORD scrfontw, scrfonth, logowidth, logoheight, logocols, logomod;
-static WORD logobutwidth, logobutheight, panelbutheight, panelwidth, panelheight;
+static WORD logobutwidth, logobutheight, panelbutheight, panelwidth, panelheight, visiblepanelheight;
 static WORD panelstuffy, logobutposx, logobutposy, logoposx, logoposy;
 static WORD scrwidth, scrheight, scrdepth, shinepen, shadowpen, bgpen;
 static WORD textpen, hitextpen;
@@ -71,6 +72,39 @@ static BOOL quitme, disabled, is_truecolor, panellogodown;
 
 static LONG args[NUM_ARGS];
 static char s[256];
+
+static struct Task *maintask;
+static ULONG actionbit;
+static ULONG actionmask;
+
+static BOOL tohide;
+static BOOL hidden;
+#define MINIMUM_VISIBLE 3
+
+static void HideAction(CxMsg *msg,CxObj *obj)
+{
+	struct InputEvent *ie = (struct InputEvent *)CxMsgData(msg);
+	
+	if (ie->ie_Class == IECLASS_RAWMOUSE)
+	{
+		tohide = ie->ie_position.ie_xy.ie_y < (scrheight - visiblepanelheight);
+		if (tohide != hidden)
+		{
+			hidden = tohide;
+		 	Signal(maintask, actionmask);
+    	}
+    }
+}
+
+static void HandleHide(void)
+{
+	if (tohide)
+		while (--visiblepanelheight > MINIMUM_VISIBLE)
+			MoveWindow(panelwin, 0, 1);
+	else
+		while (++visiblepanelheight < panelheight)
+			MoveWindow(panelwin, 0, -1);
+}
 
 /************************************************************************************/
 
@@ -105,6 +139,7 @@ static void Cleanup(char *msg)
     if (CyberGfxBase) CloseLibrary(CyberGfxBase);
     if (GfxBase) CloseLibrary((struct Library *)GfxBase);
     if (IntuitionBase) CloseLibrary((struct Library *)IntuitionBase);
+	if (actionbit) FreeSignal(actionbit);
 
     exit(0);
 }
@@ -179,7 +214,7 @@ static void GetArguments(void)
 	DosError();
     }
     
-    if (args[ARG_PRI]) nb.nb_Pri = *(LONG *)args[ARG_PRI];
+    if (args[ARG_PRI])  nb.nb_Pri = *(LONG *)args[ARG_PRI];
 }
 
 /************************************************************************************/
@@ -200,7 +235,16 @@ static void InitCX(void)
         Cleanup("Can't create CxBroker object!\n");
     }
     
-    ActivateCxObj(cxbroker, 1);
+	if (args[ARG_HIDE])
+	{
+		if (!(cxcust = CxCustom(HideAction, 0)))
+    	{
+        	Cleanup("Can't create CxCustom object!\n");
+    	}
+
+    	AttachCxObj(cxbroker, cxcust);
+	}
+	ActivateCxObj(cxbroker, 1);
     
 }
 
@@ -318,13 +362,28 @@ static void MakePanelWin(void)
 				 WA_Height, panelheight,
 				 WA_Borderless, TRUE,
 				 WA_RMBTrap, TRUE,
-				 WA_SimpleRefresh, TRUE,
+				 WA_SimpleRefresh, FALSE,
 				 WA_BackFill, LAYERS_NOBACKFILL,
 				 WA_IDCMP, IDCMP_MOUSEBUTTONS | IDCMP_REFRESHWINDOW,
 				 TAG_DONE);
-
+     
     if (!panelwin) Cleanup("Can't open panel window!");
-    
+	visiblepanelheight = panelheight;
+
+	if (args[ARG_HIDE] && (panelwin->WLayer->LayerInfo->Flags & LIFLG_SUPPORTS_OFFSCREEN_LAYERS))
+	{
+		maintask   = FindTask(0);
+		actionbit  = AllocSignal(-1);
+		actionmask = 1 << actionbit;
+		 
+		tohide = TRUE;
+		hidden = TRUE;
+		HandleHide();
+	}
+	else
+		args[ARG_HIDE] = actionbit = actionmask = 0;
+
+	    
     panelmask = 1L << panelwin->UserPort->mp_SigBit;
     panelrp = panelwin->RPort;
     
@@ -381,10 +440,10 @@ static void HandlePanel(void)
         switch(msg->Class)
 	{
 	    case IDCMP_REFRESHWINDOW:
-	        BeginRefresh(panelwin);
-		RenderPanelWin();
-		EndRefresh(panelwin, TRUE);
-	        break;
+	    	BeginRefresh(panelwin);
+			RenderPanelWin();
+			EndRefresh(panelwin, TRUE);
+	  		break;
 		
 	} /* switch(msg->Class) */
 	
@@ -396,14 +455,14 @@ static void HandlePanel(void)
 static void HandleAll(void)
 {
     ULONG sigs;
-    
-    while(!quitme)
-    {
-        sigs = Wait(cxmask | panelmask | SIGBREAKF_CTRL_C);
+
+	while(!quitme)
+	{
+        sigs = Wait(cxmask | panelmask | actionmask | SIGBREAKF_CTRL_C);
 	
+	if (sigs & actionmask) HandleHide();
 	if (sigs & cxmask) HandleCx();
 	if (sigs & panelmask) HandlePanel();
-	
 	if (sigs & SIGBREAKF_CTRL_C) quitme = TRUE;
 	
     } /* while(!quitme) */
@@ -417,10 +476,10 @@ int main(void)
     Init();
     OpenLibs();
     GetArguments();
-    InitCX();
     GetVisual();
     MakePanelWin();
-    HandleAll();
+    InitCX();
+	HandleAll();
     Cleanup(0);
     
     return 0;
