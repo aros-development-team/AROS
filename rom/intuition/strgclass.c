@@ -485,6 +485,22 @@ AROS_UFH3S(IPTR, dispatch_strgclass,
 		HandleStrInput((struct Gadget *)o, gpI(msg)->gpi_GInfo,
 			gpI(msg)->gpi_IEvent, &imsgcode, IntuitionBase);
 
+	    } else {
+	        struct StrGData *data = INST_DATA(cl, o);
+		struct RastPort *rp;
+		struct GadgetInfo *gi = gpI(msg)->gpi_GInfo;
+		
+	    	EG(o)->Flags |= GFLG_SELECTED;
+		if (data->StrInfo.UndoBuffer)
+		{
+		    strcpy(data->StrInfo.UndoBuffer, data->StrInfo.Buffer);
+		}
+		
+		if ((rp = ObtainGIRPort(gi)))
+		{
+		    DoMethod(o, GM_RENDER, gi, rp, GREDRAW_REDRAW);
+		    ReleaseGIRPort(rp);
+		}		  
 	    }
 	    retval = GMR_MEACTIVE;
 	    break;
