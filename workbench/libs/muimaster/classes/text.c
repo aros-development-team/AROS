@@ -35,6 +35,7 @@ struct MUI_TextData {
     STRPTR preparse;
     TEXT   hichar;
     ZText *ztext;
+    LONG xpixel; /* needed for cursor up/down movements, can be -1 */
     LONG xpos;
     LONG ypos;
     struct MUI_EventHandlerNode ehn;
@@ -148,6 +149,8 @@ static ULONG Text_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
+
+    data->xpixel = -1;
 
     return (ULONG)obj;
 }
@@ -565,6 +568,8 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 
     if (!code) return 0;
 
+    data->xpixel = -1;
+
     if (code == '\r')
     {
 	if (!(data->mtd_Flags & MTDF_MULTILINE))
@@ -727,23 +732,74 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 		    	switch (msg->imsg->Code)
 		    	{
 		    	    case    CURSORLEFT:
+				    if (data->xpos > zune_text_get_line_len(data->ztext,obj,data->ypos)) data->xpos = zune_text_get_line_len(data->ztext,obj,data->ypos);
 				    if (data->xpos)
 				    {
 					data->xpos--;
 					update = 1;
 					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 				    }
+				    data->xpixel = -1;
 				    retval = MUI_EventHandlerRC_Eat;
 				    break;
 
 		    	    case    CURSORRIGHT:
+				    if (data->xpos > zune_text_get_line_len(data->ztext,obj,data->ypos)) data->xpos = zune_text_get_line_len(data->ztext,obj,data->ypos);
 				    if (data->xpos < zune_text_get_line_len(data->ztext,obj,data->ypos))
 				    {
 					data->xpos++;
 					update = 1;
 					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
 				    }
+				    data->xpixel = -1;
 				    retval = MUI_EventHandlerRC_Eat;
+				    break;
+
+			    case    CURSORUP:
+				    if (data->mtd_Flags & MTDF_MULTILINE)
+				    {
+				    	if (data->xpixel == -1)
+				    	{
+					    struct ZTextLine *line;
+					    struct ZTextChunk *chunk;
+					    int offx,len;
+					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len);
+					    data->xpixel = offx;
+					}
+
+					if (data->ypos)
+					{
+					    data->ypos--;
+					    data->xpos = zune_get_xpos_of_line(data->ztext, obj, data->ypos, data->xpixel);
+					}
+
+					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
+					update = 1;
+					retval = MUI_EventHandlerRC_Eat;
+				    };
+				    break;
+
+			    case    CURSORDOWN:
+				    if (data->mtd_Flags & MTDF_MULTILINE)
+				    {
+				    	if (data->xpixel == -1)
+				    	{
+					    struct ZTextLine *line;
+					    struct ZTextChunk *chunk;
+					    int offx,len;
+					    zune_text_get_char_pos(data->ztext, obj, data->xpos, data->ypos, &line, &chunk, &offx, &len);
+					    data->xpixel = offx;
+					}
+
+				    	if (data->ypos + 1 < zune_text_get_lines(data->ztext))
+				    	{
+					    data->ypos++;
+					    data->xpos = zune_get_xpos_of_line(data->ztext, obj, data->ypos, data->xpixel);
+					}
+					zune_make_cursor_visible(data->ztext, obj, data->xpos, data->ypos, _mleft(obj),_mtop(obj),_mright(obj),_mbottom(obj));
+					update = 1;
+					retval = MUI_EventHandlerRC_Eat;
+				    }
 				    break;
 
 			    default:

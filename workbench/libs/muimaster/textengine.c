@@ -1162,6 +1162,44 @@ int zune_text_get_line_len(ZText *text, Object *obj, LONG y)
     return len;
 }
 
+int zune_get_xpos_of_line(ZText *text, Object *obj, LONG y, LONG xpixel)
+{
+    int i,len=0,xpos=0;
+    struct ZTextLine *line;
+    struct ZTextChunk *chunk;
+
+    /* find the line */
+    for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ && i<y; line = (ZTextLine*)line->node.mln_Succ,i++);
+
+    if (!line->node.mln_Succ) return -1;
+
+    for (chunk = (ZTextChunk*)line->chunklist.mlh_Head; chunk->node.mln_Succ; chunk = (ZTextChunk*)chunk->node.mln_Succ)
+    {
+    	if (xpixel < chunk->cwidth)
+    	{
+	    struct RastPort rp;
+	    struct TextExtent te;
+	    InitRastPort(&rp);
+	    SetFont(&rp,_font(obj));
+
+	    xpos += TextFit(&rp,chunk->str,strlen(chunk->str),&te,NULL,1,xpixel,_font(obj)->tf_YSize);
+	    return xpos;
+    	}
+    	xpixel -= chunk->cwidth;
+    	xpos += strlen(chunk->str);
+    }
+    return xpos;
+}
+
+int zune_text_get_lines(ZText *text)
+{
+    int i;
+    struct ZTextLine *line;
+
+    for (i=0,line = (ZTextLine *)text->lines.mlh_Head; line->node.mln_Succ; line = (ZTextLine*)line->node.mln_Succ,i++);
+    return i;
+}
+
 int zune_make_cursor_visible(ZText *text, Object *obj, LONG cursorx, LONG cursory, LONG left, LONG top, LONG right, LONG bottom)
 {
     struct RastPort rp;
