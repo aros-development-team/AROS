@@ -76,37 +76,53 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    LONG result = -2;
+    LONG result;
     struct IntuiMessage *msg;
 
-    if (WaitInput)
-	WaitPort(window->UserPort);
 
-    while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
+
+    if (window == 0)
     {
-	switch (msg->Class)
-	{
-	case IDCMP_GADGETUP:
-	    result = ((struct Gadget *)msg->IAddress)->GadgetID;
-	    break;
+    	result = 0;
+    }
+    else if (window == (struct Window *)1)
+    {
+    	result = 1;
+    }
+    else
+    {
+    	result = -2;
+
+    	if (WaitInput)
+	    WaitPort(window->UserPort);	
 	    
-	default:
-	    if (result == -2)
+	while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort)))
+	{
+	    switch (msg->Class)
 	    {
-		if (msg->Class &
-		    ((struct EasyRequestUserData *)window->UserData)->IDCMP)
+	    case IDCMP_GADGETUP:
+		result = ((struct Gadget *)msg->IAddress)->GadgetID;
+		break;
+
+	    default:
+		if (result == -2)
 		{
-		    if (IDCMPFlagsPtr)
-			*IDCMPFlagsPtr = msg->Class;
-		    result = -1;
+		    if (msg->Class &
+			((struct IntRequestUserData *)window->UserData)->IDCMP)
+		    {
+			if (IDCMPFlagsPtr)
+			    *IDCMPFlagsPtr = msg->Class;
+			result = -1;
+		    }
 		}
+		break;
 	    }
-	    break;
-	}
-	ReplyMsg((struct Message *)msg);
+	    ReplyMsg((struct Message *)msg);
 
-    } /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
+	} /* while ((msg = (struct IntuiMessage *)GetMsg(window->UserPort))) */
 
+    }
+    
     return result;
     AROS_LIBFUNC_EXIT
 } /* SysReqHandler() */

@@ -56,14 +56,14 @@
     struct Gadget *gadgets;
     STRPTR *gadgetlabels;
     
-    struct EasyRequestUserData *requserdata;
+    struct IntRequestUserData *requserdata;
 
     if ((window == NULL) || (window == (void *)1L))
 	return;
 
     scr = window->WScreen;
     
-    requserdata = (struct EasyRequestUserData *)window->UserData;
+    requserdata = (struct IntRequestUserData *)window->UserData;
     gadgets = requserdata->Gadgets;
     
     /* Remove gadgets before closing window to avoid conflicts with system gadgets */
@@ -73,8 +73,8 @@
 
     FreeVec(window->UserData);
     CloseWindow(window);
-    easyrequest_freegadgets(gadgets);
-    easyrequest_freelabels(gadgetlabels);
+    intrequest_freegadgets(gadgets, IntuitionBase);
+    intrequest_freelabels(gadgetlabels, IntuitionBase);
     UnlockPubScreen(NULL, scr);
 
     return;

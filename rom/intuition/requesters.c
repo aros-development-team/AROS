@@ -15,15 +15,18 @@
 
 
 /* free the array of gadgetlabels made in BuildEasyRequestArgs() */
-void easyrequest_freelabels(STRPTR *gadgetlabels)
+void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase)
 {
-    FreeVec(gadgetlabels[0]);
-    FreeVec(gadgetlabels);
+    if (gadgetlabels)
+    {
+	FreeVec(gadgetlabels[0]);
+	FreeVec(gadgetlabels);
+    }
 }
 
 
 /* free the gadgets made in BuildEasyRequestArgs() */
-void easyrequest_freegadgets(struct Gadget *gadgets)
+void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase)
 {
     struct Image *frame = gadgets->GadgetRender;
 

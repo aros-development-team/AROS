@@ -71,10 +71,11 @@
 
     req = BuildEasyRequestArgs(window, easyStruct,
 	    IDCMP_ptr != NULL ? *IDCMP_ptr : NULL, argList);
-    if (!req)
-	return 0L;
 
-    while ((result = SysReqHandler(req, IDCMP_ptr, TRUE)) == -2);
+    /* req = 0/1 is handled by SysReqHandler */
+    while ((result = SysReqHandler(req, IDCMP_ptr, TRUE)) == -2)
+    {
+    }
 
     FreeSysRequest(req);
 

@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <strings.h>
 #include <clib/macros.h>
+#include <aros/asmcall.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/graphics.h>
@@ -38,6 +39,7 @@ struct reqdims
     UWORD height;      /* height of the requester */
     UWORD fontheight;  /* height of the default font */
     UWORD fontxheight; /* extra height */
+    UWORD textleft;
     int   gadgets;     /* number of gadgets */
     UWORD gadgetwidth; /* width of a gadget */
 };
@@ -125,7 +127,7 @@ static int charsinstring(STRPTR string, char c);
     STRPTR formattedtext;
     STRPTR *gadgetlabels;
     struct reqdims dims;
-    struct EasyRequestUserData *requserdata;
+    struct IntRequestUserData *requserdata;
 
     if (!easyStruct)
 	return FALSE;
@@ -135,6 +137,8 @@ static int charsinstring(STRPTR string, char c);
     if ((!reqtitle) && (RefWindow))
 	reqtitle = RefWindow->Title;
 
+    if (!reqtitle) reqtitle = "System Request"; /* stegerg: should be localized */
+    
     /* get screen and screendrawinfo */
     if (RefWindow)
 	scr = RefWindow->WScreen;
@@ -163,7 +167,7 @@ static int charsinstring(STRPTR string, char c);
 		gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr, IntuitionBase);
 		if (gadgets)
 		{
-		    requserdata = AllocVec(sizeof(struct EasyRequestUserData),
+		    requserdata = AllocVec(sizeof(struct IntRequestUserData),
 					   MEMF_ANY);
 		    if (requserdata)
 		    {
@@ -177,8 +181,8 @@ static int charsinstring(STRPTR string, char c);
 					     WA_Flags, WFLG_DRAGBAR |
 						       WFLG_DEPTHGADGET |
 						       WFLG_ACTIVATE |
-						       WFLG_RMBTRAP |
-						       WFLG_SIMPLE_REFRESH,
+						       WFLG_RMBTRAP /*|
+						       WFLG_SIMPLE_REFRESH*/,
 					     TAG_DONE);
 			if (req)
 			{
@@ -196,12 +200,12 @@ static int charsinstring(STRPTR string, char c);
 			/* opening requester failed -> free everything */
 			FreeVec(requserdata);
 		    }
-		    easyrequest_freegadgets(gadgets);
+		    intrequest_freegadgets(gadgets, IntuitionBase);
 		}
 	    }
 	    FreeVec(formattedtext);
 	}
-	easyrequest_freelabels(gadgetlabels);
+	intrequest_freelabels(gadgetlabels, IntuitionBase);
     }
     UnlockPubScreen(NULL, lockedscr);
 
@@ -268,7 +272,7 @@ static void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 	else
 	    length = strlen(text);
 	Move(req->RPort,
-	     req->BorderLeft + OUTERSPACING_X + TEXTBOXBORDER_X,
+	     dims->textleft,
 	     req->BorderTop + (dims->fontheight + dims->fontxheight) * (currentline - 1) +
 	       OUTERSPACING_Y + TEXTBOXBORDER_Y + req->RPort->Font->tf_Baseline);
 	Text(req->RPort, text, length);
@@ -329,12 +333,52 @@ static STRPTR *buildeasyreq_makelabels(struct reqdims *dims,
 }
 
 
+AROS_UFH2 (void, EasyReqPutChar,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(UBYTE **,buffer,A3)
+)
+{
+    AROS_LIBFUNC_INIT
+
+    *(*buffer)++=chr;
+
+    AROS_LIBFUNC_EXIT
+}
+
+AROS_UFH2 (void, EasyReqCountChar,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(ULONG *,counter,A3)
+)
+{
+    AROS_LIBFUNC_INIT
+
+    (*counter)++;
+    
+    AROS_LIBFUNC_EXIT
+}
+
 
 /* format the supplied text string by using the supplied args */
 static STRPTR buildeasyreq_formattext(STRPTR textformat,
 				      APTR args,
 				      struct IntuitionBase *IntuitionBase)
 {
+#if 1
+    STRPTR buffer;
+    STRPTR buf;
+    ULONG len = 0;
+    
+    RawDoFmt(textformat, args, (VOID_FUNC)EasyReqCountChar, &len);
+
+    buffer = AllocVec(len + 1, MEMF_ANY | MEMF_CLEAR);
+    if (!buffer) return NULL;
+    
+    buf = buffer;
+    RawDoFmt(textformat, args, (VOID_FUNC)EasyReqPutChar, &buf);
+    
+    return buffer;
+    
+#else
     int len;
     STRPTR buffer;
 
@@ -349,6 +393,8 @@ static STRPTR buildeasyreq_formattext(STRPTR textformat,
 	FreeVec(buffer);
 	len += 256;
     }
+#endif
+
 }
 
 
@@ -423,9 +469,19 @@ static BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     dims->gadgetwidth += BUTTONBORDER_X * 2;
     gadgetswidth = (dims->gadgetwidth + GADGETGADGETSPACING) * dims->gadgets - GADGETGADGETSPACING;
     
-    /* calculate width of requester */
-    dims->width = MAX(textboxwidth, gadgetswidth) + OUTERSPACING_X * 2 +
-                  scr->WBorLeft + scr->WBorRight;
+    /* calculate width of requester and position of requester text */
+    dims->textleft = scr->WBorLeft + OUTERSPACING_X + TEXTBOXBORDER_X;
+    if (textboxwidth > gadgetswidth)
+    {
+    	dims->width = textboxwidth;
+    }
+    else
+    {
+    	dims->textleft += (gadgetswidth - textboxwidth) / 2;
+    	dims->width = gadgetswidth;
+    }
+    dims->width += OUTERSPACING_X * 2 + scr->WBorLeft + scr->WBorRight;
+    
     if (dims->width > scr->Width)
 	return FALSE;
 
@@ -495,7 +551,7 @@ static struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
 
 	if (!thisgadget)
 	{
-	    easyrequest_freegadgets(gadgetlist);
+	    intrequest_freegadgets(gadgetlist, IntuitionBase);
 	    return NULL;
 	}
 	

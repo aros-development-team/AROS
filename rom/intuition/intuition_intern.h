@@ -129,7 +129,7 @@ struct IntScreen
 #define SF_IsChild	(0x0002)
 
 
-struct EasyRequestUserData
+struct IntRequestUserData
 {
     ULONG    IDCMP;
     STRPTR * GadgetLabels;
@@ -242,8 +242,8 @@ void intui_ScrollWindowRaster(struct Window * win, WORD dx, WORD dy, WORD xmin,
                            WORD ymin, WORD xmax, WORD ymax, struct IntuitionBase * IntuitionBase);
 
 /* Miscellaneous prototypes */
-void easyrequest_freelabels(STRPTR *gadgetlabels);
-void easyrequest_freegadgets(struct Gadget *gadgets);
+void intrequest_freelabels(STRPTR *gadgetlabels, struct IntuitionBase *IntuitionBase);
+void intrequest_freegadgets(struct Gadget *gadgets, struct IntuitionBase *IntuitionBase);
 
 void windowneedsrefresh(struct Window * w, struct IntuitionBase * IntuitionBase);
 
