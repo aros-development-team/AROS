@@ -28,10 +28,10 @@ typedef struct __ucontext
 
 __BEGIN_DECLS
 
-int  getcontext(ucontext_t *);
-int  setcontext(const ucontext_t *);
-void makecontext(ucontext_t *, (void *)(), int, ...);
-int  swapcontext(ucontext_t *, const ucontext_t *);
+int  getcontext(ucontext_t *ucp);
+int  setcontext(const ucontext_t *ucp);
+void makecontext(ucontext_t *ucp, void (*function)(), int argc, ...);
+int  swapcontext(ucontext_t *oucp, const ucontext_t *nucp);
 
 __END_DECLS
 
