@@ -136,10 +136,10 @@ char filename[50];
                             )
 			    {
                                 /* don't put <> includes after "" ones */
-                                if ( bracket == '>' && search->text[0] != '<')
+                                if ( bracket == '>' && search->next->text[0] != '<')
                                     break;
 
-                                if ( strcmp ( search->text, incname) == 0 )
+                                if ( strcmp ( search->next->text, incname) == 0 )
                                 {
                                     found = 1;
                                     break;
