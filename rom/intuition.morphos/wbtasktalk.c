@@ -8,8 +8,6 @@
 
 /******************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE /* NEWLIST macro */
-
 #include <string.h>
 
 #include "intuition_intern.h"

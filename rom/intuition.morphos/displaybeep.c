@@ -5,7 +5,6 @@
     Desc: Intuition function DisplayBeep()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
 #include <proto/graphics.h>
 #include "intuition_intern.h"
 

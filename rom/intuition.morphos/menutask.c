@@ -7,8 +7,6 @@
 
 */
 
-#define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
-
 #include <proto/exec.h>
 #include <proto/intuition.h>
 #include <proto/alib.h>

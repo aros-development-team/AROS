@@ -5,7 +5,7 @@
     Desc: Intuition function ChangeWindowShape()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
+
 #include <proto/layers.h>
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"

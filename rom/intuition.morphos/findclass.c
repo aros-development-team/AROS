@@ -5,7 +5,7 @@
     Desc: Find a BOOPSI Class in the class list.
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/lists.h>
 #include <proto/exec.h>
 

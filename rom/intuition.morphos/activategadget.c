@@ -5,7 +5,6 @@
     Desc: Intuition function ActivateGadget()
     Lang: english
 */
-#define AROS_ALMOST_COMPATIBLE 1 /* NEWLIST macro */
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 #include "inputhandler.h"

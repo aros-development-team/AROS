@@ -8,8 +8,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE
-
 #define INIT AROS_SLIB_ENTRY(init,Intuition)
 
 #include <string.h>

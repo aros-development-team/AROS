@@ -9,8 +9,6 @@
 
 /****************************************************************************************/
 
-#define AROS_ALMOST_COMPATIBLE 1    /* NEWLIST macro */
-
 #include <exec/types.h>
 
 #include <dos/dos.h>
