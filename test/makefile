@@ -40,9 +40,7 @@ $(OBJDIR)/%.o: %.c
 
 $(OBJDIR)/%.d: %.c
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f- -p$(OBJDIR)/ -- $(CFLAGS) -- $^ > $@
 
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 

@@ -7,10 +7,10 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 SUBDIRS = boot
 
-FILES = 
+FILES =
 
 else
-SUBDIRS = 
+SUBDIRS =
 
 FILES = graphics_driver intuition_driver
 endif
@@ -32,10 +32,8 @@ $(OSGENDIR)/%.o: %.c
 	@if test ! -s $*.err; then rm $*.err ; else true ; fi
 
 $(OSGENDIR)/%.d: %.c
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(CFLAGS) -- $^ > $@
 
 subdirs:
 	@for dir in $(SUBDIRS) ; do \
