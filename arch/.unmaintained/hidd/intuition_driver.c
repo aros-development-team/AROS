@@ -193,7 +193,7 @@ int intui_OpenWindow (struct Window * w,
                            , w->TopEdge
                            , w->LeftEdge + w->Width - 1
                            , w->TopEdge  + w->Height - 1
-                           , LAYERSIMPLE /* Georg Steger: ??? | (layerflags & LAYERBACKDROP) */
+                           , LAYERSIMPLE | (layerflags & LAYERBACKDROP)
                            , LAYERS_NOBACKFILL
                            , SuperBitMap);
                            
