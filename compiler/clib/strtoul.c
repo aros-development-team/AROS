@@ -109,8 +109,12 @@
 	{
 	    if (*str == '0') /* Base 8 or 16 */
 	    {
-		if (tolower(str[1]) == 'x')
+		str++;
+		if (tolower(*str) == 'x')
+		{
+		    str++;
 		    base = 16;
+		}
 		else
 		    base = 8;
 	    }
