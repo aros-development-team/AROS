@@ -430,6 +430,8 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LHA(a15)\
     )
 
+#endif
+
 /* Call a library function which requires the libbase */
 #define AROS_LC0(t,n,bt,bn,o,s) \
     (((__AROS_LC_PREFIX t(*)(\
@@ -1195,7 +1197,7 @@ typedef unsigned long (*ULONG_FUNC)();
     __AROS_LCA(a5),\
     bn))
 #endif
-#endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
+//!#endif /* !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) */
 
 #ifdef __AROS_USE_MACROS_FOR_LIBCALL
 #   define AROS_LP0(t,n,bt,bn,o,s)

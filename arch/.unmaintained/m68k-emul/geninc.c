@@ -75,9 +75,8 @@ int main (void)
     printf ("#define AT_DeadEnd    0x%08X\n", AT_DeadEnd);
     printf ("#define AN_StackProbe 0x%08X\n", AN_StackProbe);
 
-#ifdef UseRegisterArgs
-    printf ("#define UseRegisterArgs 1\n");
+#ifdef UseExecstubs
+    printf ("#define UseExecstubs 1\n");
 #endif
-
     return 0;
 }
