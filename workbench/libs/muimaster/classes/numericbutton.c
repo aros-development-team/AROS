@@ -417,7 +417,7 @@ IPTR Numericbutton__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 
     if (!msg->imsg)
     {
-    	return DoSuperMethodA(cl, obj, (Msg)msg);
+    	return 0;
     }
     
     switch(msg->imsg->Class)
@@ -474,7 +474,7 @@ IPTR Numericbutton__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP
 	    
     } /* switch(msg->imsg->Class) */
        
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return 0;
 }
 
 #if ZUNE_BUILTIN_NUMERICBUTTON

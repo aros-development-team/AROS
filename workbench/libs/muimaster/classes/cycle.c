@@ -577,7 +577,7 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
     if (!msg->imsg ||
          data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
     {
-    	return DoSuperMethodA(cl, obj, (Msg)msg);
+    	return 0;
     }
     
     switch(msg->imsg->Class)
@@ -654,9 +654,8 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 	    break;
 	    
     } /* switch(msg->imsg->Class) */
-    
-    
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+        
+    return 0;
     
 }
 

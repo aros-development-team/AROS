@@ -112,7 +112,7 @@ IPTR Crawling__MUIM_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Hand
 	}
     }
     
-    return DoSuperMethodA(cl, obj, (Msg)msg);
+    return 0;
 }
 
 #if ZUNE_BUILTIN_CRAWLING
