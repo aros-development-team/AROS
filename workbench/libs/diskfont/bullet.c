@@ -884,12 +884,14 @@ struct TextFont *OTAG_ReadOutlineFont(struct TTextAttr *attr, struct TTextAttr *
     ge = OpenEngine();
     if (!ge)
     {
+	D(bug("Error opening engine %s\n", enginename));
 	CloseLibrary(BulletBase);
 	return NULL;
     }
 
     if (!OTAG_SetupFontEngine(attr, reqattr, otag, ge, &xdpi, &ydpi, BulletBase, DiskfontBase))
     {
+	D(bug("Error calling SetupFontengine %s\n", enginename));
 	CloseEngine(ge);
 	CloseLibrary(BulletBase);
 	return NULL;
