@@ -643,7 +643,8 @@ static ULONG IconList_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     	#if 1
             DoMethod(obj, MUIM_DrawBackground, rect.MinX, rect.MinY,
 		     rect.MaxX - rect.MinX + 1, rect.MaxY - rect.MinY + 1,
-		     data->view_x, data->view_y, 0);
+		     data->view_x + (rect.MinX - _mleft(obj)),
+		     data->view_y + (rect.MinY - _mtop(obj)), 0);
 	#else
             DoMethod(obj, MUIM_DrawBackground, _mleft(obj), _mtop(obj),
 		     _mwidth(obj), _mheight(obj),
