@@ -8,6 +8,7 @@
 #include "iffparse_intern.h"
 #include <exec/io.h>
 
+#include <aros/debug.h>
 
 /***********************/
 /* Port initialization */
@@ -22,7 +23,7 @@ BOOL InitPort (struct MsgPort *mp, struct Task *t,
 {
     LONG sigbit;
 
-    if ((sigbit = AllocSignal(-1L) == -1)) return (FALSE);
+    if ((sigbit = AllocSignal(-1L)) == -1) return (FALSE);
 
     mp->mp_Node.ln_Type = NT_MSGPORT;
     mp->mp_Flags	=  PA_SIGNAL;
