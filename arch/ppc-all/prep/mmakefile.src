@@ -41,9 +41,6 @@ $(OBJDIR)/%.d : %.c
 preplink: preplink.c
 	$(HOST_CC) -O2 -o $@ $<
 
-test.s: test.c
-	%ctoasm_q
-
 #MM
 clean ::
 	$(RM) preplink *.err
