@@ -29,8 +29,7 @@ FILES := compleximage demowin font2c gtdemo helloworld inquire intuitext \
 	 librarytest listfonts keymaptest mxgads oopdemo palettedemo readicon regiontest \
 	 rtdemo shadowborder sift simpleimage mathtest filereq \
 	 strtest unixio ooplib consoledemo layerstest\
-	 x11gfxhidd cleartest cbtest petest \
-	 serialtest window cxtest
+	 x11gfxhidd serialtest window cxtest
 endif
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
