@@ -40,7 +40,7 @@
 static const UBYTE name[];
 static const UBYTE version[];
 extern const char LIBEND;
-static struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
+struct ExecBase *AROS_SLIB_ENTRY(init,BASENAME)();
 
 const struct Resident Exec_resident =
 {

@@ -182,7 +182,7 @@ VOID free_x11class(struct x11_staticdata *xsd)
 }
 
 
-int unixio_callback(int displayfd, struct x11_staticdata *xsd)
+static int unixio_callback(int displayfd, struct x11_staticdata *xsd)
 {
     int pending;
     
