@@ -15,6 +15,7 @@
 #include <proto/iffparse.h>
 #include <proto/diskfont.h>
 #include <proto/graphics.h>
+#include <proto/gadtools.h>
 #include <proto/dos.h>
 
 #include <exec/lists.h>
@@ -22,6 +23,7 @@
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
 #include <intuition/classusr.h>
+#include <intuition/imageclass.h>
 #include <prefs/prefhdr.h>
 #include <prefs/font.h>
 #include <libraries/iffparse.h>
@@ -36,11 +38,14 @@
 
 #include <aros/debug.h>
 
+/*****************************************************************************************/
+
 STATIC BOOL GetRequesterFont(struct LayoutData *, struct AslBase_intern *);
 
 STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *);
 STATIC VOID FreeFontPrefs(struct FontPrefs *, struct AslBase_intern *);
 
+/*****************************************************************************************/
 
 /****************/
 /* FindReqNode	*/
@@ -68,6 +73,8 @@ struct ReqNode *FindReqNode(APTR req, struct AslBase_intern *AslBase)
 
     return (foundreqnode);
 }
+
+/*****************************************************************************************/
 
 /********************/
 /* ParseCommonTags	*/
@@ -161,6 +168,7 @@ VOID ParseCommonTags
 	    case ASLSM_PositiveText:
 	    case ASL_OKText: */ /* Obsolete */
 		intreq->ir_PositiveText = (STRPTR)tag->ti_Data;
+		intreq->ir_Flags |= IF_USER_POSTEXT;
 		break;
 
 	    case ASLFR_NegativeText:
@@ -168,6 +176,7 @@ VOID ParseCommonTags
 	    case ASLSM_NegativeText:
 	    case ASL_CancelText: */ /* Obsolete */
 		intreq->ir_NegativeText = (STRPTR)tag->ti_Data;
+		intreq->ir_Flags |= IF_USER_NEGTEXT;
 		break;
 
 	    case ASLFR_InitialLeftEdge:
@@ -204,6 +213,10 @@ VOID ParseCommonTags
     }
     return;
 }
+
+/*****************************************************************************************/
+
+
 /****************/
 /* FreeCommon	*/
 /****************/
@@ -213,8 +226,6 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
     if (ld)
     {
 
-/* Only needed if we use gadtools menus !!!
-
 	if (ld->ld_Menu)
 	{
 	    if (ld->ld_Window)
@@ -222,12 +233,16 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 	    FreeMenus(ld->ld_Menu);
 	}
-*/
+
 	if (ld->ld_Window)
 	    CloseWindow(ld->ld_Window);
 
 	D(bug("Window freed\n"));
 
+	if (ld->ld_VisualInfo) FreeVisualInfo(ld->ld_VisualInfo);
+	
+	if (ld->ld_Dri) FreeScreenDrawInfo(ld->ld_Screen, ld->ld_Dri);
+	
 	if (ld->ld_ScreenLocked)
 	    UnlockPubScreen(NULL, ld->ld_Screen);
 
@@ -240,12 +255,13 @@ VOID FreeCommon(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	if (ld->ld_TextAttr.ta_Name)
 	    FreeVec(ld->ld_TextAttr.ta_Name);
 
-
 	FreeMem(ld, sizeof (struct LayoutData));
     }
 
     return;
 }
+
+/*****************************************************************************************/
 
 /********************/
 /* AllocCommon		*/
@@ -261,7 +277,6 @@ struct LayoutData *AllocCommon
 {
 
     struct Screen *screen = NULL;
-    STRPTR screentitle = NULL;
 
     struct LayoutData *ld;
 
@@ -269,7 +284,6 @@ struct LayoutData *AllocCommon
     ld = AllocMem(sizeof (struct LayoutData), MEMF_ANY|MEMF_CLEAR);
     if (!ld)
 	goto failure;
-
 
     /* Save the internal and public requester struct, so that the
       requester type specific hook may find them */
@@ -280,38 +294,66 @@ struct LayoutData *AllocCommon
     doesn't go away
     */
 
-    /* If a window opened us, the screen is allready locked by that window */
-    if (intreq->ir_Window)
+    /* Find screen on which to open window */
+    
+    screen = intreq->ir_Screen;
+    if (!screen && intreq->ir_PubScreenName)
     {
-	screen = intreq->ir_Window->WScreen;
+	if ((screen = LockPubScreen(intreq->ir_PubScreenName)))
+	{
+	    ld->ld_ScreenLocked = TRUE;
+	}
+    }    
+    if (!screen && intreq->ir_Window)
+    {
+        screen = intreq->ir_Window->WScreen;
     }
-    else if (intreq->ir_Screen)
+    if (!screen && !intreq->ir_PubScreenName)
     {
-	screentitle = intreq->ir_Screen->Title;
-    }
-    else if (intreq->ir_PubScreenName)
-    {
-	screentitle = intreq->ir_PubScreenName;
-    }
-    else
-    {
-	/* Use workbench screen */
-	screentitle = NULL;
+        if ((screen = LockPubScreen(NULL)))
+	{
+	    ld->ld_ScreenLocked = TRUE;
+	}
     }
 
-    /* No screen locked allready ? */
-    if (!screen)
-    {
-	screen = LockPubScreen(screentitle);
-	if (!screen)
-	    goto failure;
-	else
-	    ld->ld_ScreenLocked = TRUE;
-    }
-    /* Remeber the screen we should open on */
+    if (!screen) goto failure;
+
     ld->ld_Screen = screen;
 
-
+    if (!(ld->ld_Dri = GetScreenDrawInfo(screen))) goto failure;
+    
+    if (!(ld->ld_VisualInfo = GetVisualInfoA(screen, NULL))) goto failure;
+    
+    ld->ld_WBorLeft  = screen->WBorLeft;
+    ld->ld_WBorTop   = screen->WBorTop + screen->Font->ta_YSize + 1;
+    ld->ld_WBorRight = screen->WBorRight;
+    ld->ld_WBorBottom = 16;
+    
+    {
+        struct TagItem sysi_tags[] =
+	{
+	    {SYSIA_DrawInfo	, (IPTR)ld->ld_Dri	},
+	    {SYSIA_Which	, SIZEIMAGE		},
+	    {TAG_DONE					}
+	};
+	
+        Object *im;
+	 
+	if ((im = NewObjectA(NULL, SYSICLASS, sysi_tags)))
+	{
+	    IPTR height;
+	    
+	    if (GetAttr(IA_Height, im, &height))
+	    {
+	        ld->ld_WBorBottom = height;
+	    }
+	    DisposeObject(im);
+	}
+	
+    }
+        
+    if(GetBitMapAttr(screen->RastPort.BitMap, BMA_DEPTH) > 8) ld->ld_TrueColor = TRUE;
+    
     if (!(ld->ld_UserData = AllocVec(udatasize, MEMF_ANY|MEMF_CLEAR)))
 	goto failure;
 
@@ -331,6 +373,7 @@ failure:
 }
 
 
+/*****************************************************************************************/
 
 
 /****************/
@@ -436,6 +479,8 @@ STATIC struct FontPrefs *GetFontPrefs(struct AslBase_intern *AslBase)
 
 } /* GetFontPrefs() */
 
+/*****************************************************************************************/
+
 /******************/
 /* FreeFontPrefs  */
 /******************/
@@ -449,6 +494,8 @@ STATIC VOID FreeFontPrefs(struct FontPrefs *fp, struct AslBase_intern *AslBase)
     return;
 }
 
+
+/*****************************************************************************************/
 
 /************/
 /* GetFont  */
@@ -547,6 +594,8 @@ BOOL GetRequesterFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
     }
     return (success);
 }
+
+/*****************************************************************************************/
 
 /****************/
 /* HandleEvents */
@@ -658,6 +707,8 @@ BOOL HandleEvents(struct LayoutData *ld, struct AslReqInfo *reqinfo, struct AslB
     ReturnBool ("HandleEvents", success);
 } /* HandleEvents() */
 
+/*****************************************************************************************/
+
 /************************
 **  BiggestTextLength  **
 ************************/
@@ -680,6 +731,8 @@ UWORD BiggestTextLength(STRPTR          *strarray,
     return (w);
 }
 
+/*****************************************************************************************/
+
 /*********************
 **  StripRequester  **
 *********************/
@@ -694,28 +747,28 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
 	    #undef GetFR
 	    #define GetFR(r) ((struct FileRequester *)r)
 
+	    FreeVecPooled(GetFR(req)->fr_Drawer);
+	    GetFR(req)->fr_Drawer = NULL;
 
-	    if (GetFR(req)->fr_Drawer)
-	    {
-		FreeVec(GetFR(req)->fr_Drawer);
-		GetFR(req)->fr_Drawer = NULL;
-	    }
+	    FreeVecPooled(GetFR(req)->fr_File);
+	    GetFR(req)->fr_File = NULL;
 
-	    if (GetFR(req)->fr_File)
-	    {
-		FreeVec(GetFR(req)->fr_File);
-		GetFR(req)->fr_File = NULL;
-	    }
+	    FreeVecPooled(GetFR(req)->fr_Pattern);
+	    GetFR(req)->fr_Pattern = NULL;
+	    
 	    if (GetFR(req)->fr_ArgList)
 	    {
 		struct WBArg *wbarg;
-
+		BPTR lock = GetFR(req)->fr_ArgList->wa_Lock;
+		
+		if (lock) UnLock(lock);
+		
 		for (wbarg = GetFR(req)->fr_ArgList; GetFR(req)->fr_NumArgs --; wbarg ++)
 		{
-		    if (wbarg->wa_Name)
-			FreeVec(wbarg->wa_Name);
+		    FreeVecPooled(wbarg->wa_Name);
 		}
-		FreeVec(GetFR(req)->fr_ArgList);
+		
+		FreeVecPooled(GetFR(req)->fr_ArgList);
 		GetFR(req)->fr_ArgList = NULL;
 	    }
 
@@ -730,3 +783,223 @@ VOID StripRequester(APTR req, UWORD reqtype, struct AslBase_intern *AslBase)
     }
     return;
 }
+
+/*****************************************************************************************/
+
+WORD CountNodes(struct List *list, WORD flag)
+{
+    struct Node *node;
+    WORD result = 0;
+    
+    ForeachNode(list, node)
+    {
+        if ((node->ln_Pri & flag) == flag) result++;
+    }
+    
+    return result;
+}
+
+/*****************************************************************************************/
+
+struct Node *FindListNode(struct List *list, WORD which)
+{
+    struct Node *node = NULL;
+    
+    if (which >= 0)
+    {
+	for(node = list->lh_Head; node->ln_Succ && which; node = node->ln_Succ, which--)
+	{
+	}
+	if (!node->ln_Succ) node = NULL;
+    }
+    
+    return node;
+}
+
+/*****************************************************************************************/
+
+static struct Node *FindPriNode(struct List *list, WORD pri, WORD (*getpri)(APTR))
+{
+    struct Node *node, *result = NULL;
+    
+    ForeachNode(list, node)
+    {
+        result = node;
+        if (pri >= getpri(node))
+        {
+	    break;
+	}
+    }
+    
+    return result;
+}
+
+/*****************************************************************************************/
+
+void SortInNode(struct List *list, struct Node *node, WORD (*getpri)(APTR))
+{
+    struct Node *checknode = list->lh_Head;
+    WORD nodepri = getpri(node);
+    
+    checknode = FindPriNode(list, nodepri, getpri);
+    
+    if (!checknode)
+    {
+        AddHead(list, node);
+    } else {
+	if (getpri(checknode) > nodepri)
+	{
+            Insert(list, node, checknode);
+	} else {
+	    for(;checknode->ln_Succ;)
+	    {
+        	if (getpri(checknode) != nodepri) break;
+		if (stricmp(node->ln_Name, checknode->ln_Name) <= 0) break;
+		checknode = checknode->ln_Succ;	    
+	    }
+            Insert(list, node, checknode->ln_Pred);
+        }
+    }
+
+#if 0    
+    bug("---------------------\n");
+    bug("prinode = %d: %s\n\n",(prinode ? getpri(prinode) : -1) ,(prinode ? prinode->ln_Name : "<NOP>"));
+    ForeachNode(list, node)
+    {
+        bug("%d: %s\n",getpri(node),node->ln_Name);
+    }
+#endif
+}
+
+/*****************************************************************************************/
+
+APTR AllocVecPooled(APTR pool, IPTR size)
+{
+    IPTR *mem;
+    
+    size += sizeof(APTR) * 2;
+
+    if ((mem = AllocPooled(pool, size)))
+    {
+        *mem++ = (IPTR)pool;
+	*mem++ = size;
+    }
+    
+    return mem;
+}
+
+/*****************************************************************************************/
+
+void FreeVecPooled(APTR mem)
+{
+    IPTR *imem = (IPTR *)mem;
+    
+    if (mem)
+    {
+        IPTR size = *--imem;
+        APTR pool = *--imem;
+	
+	FreePooled(pool, imem, size);
+    }
+}
+
+/*****************************************************************************************/
+
+char *PooledCloneString(const char *name1, const char *name2, APTR pool,
+			struct AslBase_intern *AslBase)
+{
+    char *clone;
+    WORD len1 = strlen(name1) + 1;
+    WORD len2 = name2 ? strlen(name2) : 0;
+
+    if ((clone = AllocPooled(pool, len1 + len2)))
+    {
+        CopyMem(name1, clone, len1);
+	if (name2) strcat(clone, name2);
+    }
+    
+    return clone;
+}
+
+/*****************************************************************************************/
+
+char *VecCloneString(const char *name1, const char *name2, struct AslBase_intern *AslBase)
+{
+    char *clone;
+    WORD len1 = strlen(name1) + 1;
+    WORD len2 = name2 ? strlen(name2) : 0;
+
+    if ((clone = AllocVec(len1 + len2, MEMF_PUBLIC)))
+    {
+        CopyMem(name1, clone, len1);
+	if (name2) strcat(clone, name2);
+    }
+    
+    return clone;
+}
+
+/*****************************************************************************************/
+
+char *VecPooledCloneString(const char *name1, const char *name2, APTR pool, struct AslBase_intern *AslBase)
+{
+    char *clone;
+    WORD len1 = strlen(name1) + 1;
+    WORD len2 = name2 ? strlen(name2) : 0;
+
+    if ((clone = AllocVecPooled(pool, len1 + len2)))
+    {
+        CopyMem(name1, clone, len1);
+	if (name2) strcat(clone, name2);
+    }
+    
+    return clone;
+}
+
+/*****************************************************************************************/
+
+AROS_UFH2 (void, puttostr,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(STRPTR *,strPtrPtr,A3)
+)
+{
+    AROS_LIBFUNC_INIT
+    *(*strPtrPtr)= chr;
+    (*strPtrPtr) ++;
+    AROS_LIBFUNC_EXIT
+}
+
+char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBase)
+{
+    char buffer[30];
+    char *str = buffer;
+    char *clone;
+    WORD len;
+    
+    /* Create the text */
+
+    RawDoFmt("%ld", &value, (VOID_FUNC)puttostr, &str);
+
+    len = strlen(buffer) + 1;
+    
+    if ((clone = AllocPooled(pool, len)))
+    {
+        CopyMem(buffer, clone, len);
+    }
+    
+    return clone;
+}
+
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
+/*****************************************************************************************/
