@@ -212,6 +212,7 @@ kprintf("dto 9\n");
 					      WA_Activate,	TRUE,
 					      TAG_DONE))
 		    {
+kprintf("dto 10\n");
 			/* Set the dimensions of the DataType object. */
 			SetDTAttrs (dto, NULL, NULL,
 				    GA_Left,	win->BorderLeft,
@@ -220,12 +221,15 @@ kprintf("dto 9\n");
 				    GA_Height,	win->Height - win->BorderTop - win->BorderBottom,
 				    ICA_TARGET,	ICTARGET_IDCMP,
 				    TAG_DONE);
+kprintf("dto 11\n");
 
 			/* Add the object to the window */
 			AddDTObject (win, NULL, dto, -1);
+kprintf("dto 12\n");
 
 			/* Refresh the DataType object */
 			RefreshDTObjects (dto, win, NULL, NULL);
+kprintf("dto 13\n");
 
 			/* Keep going until we're told to stop */
 			while (going)
@@ -297,11 +301,14 @@ kprintf("dto 9\n");
 			    }
 			}
 
+kprintf("dto: 96\n");    
 			/* Remove the object from the window */
 			RemoveDTObject (win, dto);
+kprintf("dto: 97\n");    
 
 			/* Close the window now */
 			CloseWindow (win);
+kprintf("dto: 98\n");    
 		    }
 		    else
 			printf ("couldn't open window\n");
@@ -311,6 +318,7 @@ kprintf("dto 9\n");
 		}
 		else
 		    printf ("couldn't lock default public screen\n");
+kprintf("dto: 99\n");    
 
 		/* Dispose of the DataType object */
 		DisposeDTObject (dto);
