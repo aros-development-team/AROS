@@ -34,7 +34,7 @@ $(EXEDIR)/rstest: readstruct.c $(LIBDIR)/startup.o $(DEPLIBS)
 $(EXEDIR)/wstest: writestruct.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
-$(EXEDIR)/betest: $(OBJDIR)/betest.o $(LIBDIR)/startup.o $(DEPLIBS)
+$(EXEDIR)/betest: betest.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
 $(OBJDIR)/%.o: %.c
