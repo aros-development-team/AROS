@@ -7,7 +7,7 @@ BEGIN {
     print "/*" > oname;
     print "        (C) 1995-96 AROS - The Amiga Replacement OS" >> oname
     print "        *** Automatic generated file. Do not edit ***" >> oname
-    print "        Desc: Funktion table for " lib >> oname
+    print "        Desc: Function table for " lib >> oname
     print "        Lang: english" >> oname
     print "*/" >> oname;
     print "#ifndef AROS_LIBCALL_H\n#   include <aros/libcall.h>\n#endif" >> oname;
@@ -97,7 +97,5 @@ END {
 
     print "    (void *)-1L" >> oname;
     print "};" >> oname;
-
-    print "\nconst char " lib "_end = 0;" >> oname;
 }
 
