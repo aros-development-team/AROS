@@ -43,6 +43,7 @@
 #endif
 
 #ifdef _AROS
+#include <aros/asmcall.h>
 #include "reqtools_intern.h"
 #endif
 
@@ -392,11 +393,20 @@ void BuildColStr (char *, LONG, ULONG);
 
 void REGARGS SetDrawerAndFileFields (GlobData *);
 void REGARGS ResetDrawerAndFileFields (GlobData *);
+#ifdef _AROS
+AROS_UFP3(void, IntuiMsgFunc,
+    AROS_UFPA(struct Hook *, hook, A0),
+    AROS_UFPA(APTR, req, A2),
+    AROS_UFPA(struct IntuiMessage *, imsg, A1));
+
+#else
 void ASM SAVEDS IntuiMsgFunc (
 	register __a0 struct Hook *,
 	register __a2 APTR,
 	register __a1 struct IntuiMessage *
 );
+#endif
+
 int REGARGS FindEntryPos (GlobData *, char *, int);
 void REGARGS DeselectFiles (GlobData *, int, int);
 int REGARGS ClickDown (GlobData *, int, struct IntuiMessage *, int);

@@ -162,8 +162,10 @@ struct RealHandlerInfo
 
 /****************************************************************************************/
 
+#ifndef _AROS
 extern ULONG ASM MakeColVal (register __d0 ULONG, register __d4 ULONG);
 extern void REGARGS SpreadColors (GlobData *, int, int, ULONG *);
+#endif
 
 static int REGARGS SetupPalWindow (GlobData *, char *);
 static void REGARGS SelectColor (GlobData *, int);
@@ -183,6 +185,84 @@ static LONG ASM SAVEDS PalReqHandler (
 #ifdef COLORWHEEL
 #define ColorWheelBase		glob->ColorWheelBase
 #define GradientSliderBase	glob->GradientSliderBase
+#endif
+
+
+/****************************************************************************************/
+
+#ifdef _AROS
+
+/****************************************************************************************/
+
+static ULONG MakeColVal(ULONG val, ULONG bits)                          
+{
+    ULONG val2;
+    
+    val2 = val << (32 - bits);
+    val = val2;
+    do
+    {
+        val2 >>= bits;
+	val |= bits;
+    } while(val2);
+    
+    return val;
+}
+
+/****************************************************************************************/
+
+static void SpreadColors (GlobData *glob, int from, int to, long *rgb2)
+{
+    LONG colstep;
+    LONG step[3];
+    LONG rgb[3];
+    WORD actcol, steps, gun;
+    
+    colstep = 1;
+
+    steps = to - from;
+    if (!steps) return;
+
+    if (steps < 0)
+    {
+        steps = -steps;
+	colstep = -1;
+    }
+    
+    for(gun = 0; gun < 3; gun++)
+    {
+        LONG diff = rgb2[gun] - glob->cols[gun];
+	step[gun] = (diff << 16L) / steps;
+	rgb[gun] = glob->cols[gun] << 16;
+    }
+    
+    actcol = from;
+           
+    for(actcol = from;
+        actcol != to;
+        actcol += colstep, rgb[0] += step[0], rgb[1] += step[1], rgb[2] += step[2])
+    {
+        ULONG red   = (((ULONG)rgb[0]) + 0x8000) >> 16;
+	ULONG green = (((ULONG)rgb[1]) + 0x8000) >> 16;
+	ULONG blue  = (((ULONG)rgb[2]) + 0x8000) >> 16;
+	
+	if (GfxBase->LibNode.lib_Version >= 39)
+	{
+	    SetRGB32(glob->vp, actcol, MakeColVal(red, glob->col.colbits[0]),
+	    			       MakeColVal(green, glob->col.colbits[1]),
+				       MakeColVal(blue, glob->col.colbits[2]));
+	}
+	else
+	{
+	    SetRGB4(glob->vp, actcol, red, green, blue);
+	}
+        
+    }
+    
+}
+
+/****************************************************************************************/
+
 #endif
 
 /****************************************************************************************/
@@ -662,7 +742,7 @@ UpdateGrad( GlobData *glob )
     {
 	LONG	i;
 
-	GetAttr( WHEEL_HSB, glob->wheel, ( ULONG * ) &glob->wheel_hsb );
+	GetAttr( WHEEL_HSB, (Object *)glob->wheel, ( IPTR * ) &glob->wheel_hsb );
 
 	for( i = 0; i < glob->numgradpens; ++i )
 	{
@@ -708,7 +788,7 @@ SetWheelColor( GlobData *glob, struct TagItem *tag )
     {
 	ULONG i;
 
-	GetAttr( WHEEL_HSB, glob->wheel, ( ULONG * ) &glob->wheel_hsb );
+	GetAttr( WHEEL_HSB, (Object *)glob->wheel, ( IPTR * ) &glob->wheel_hsb );
 	ConvertHSBToRGB( &glob->wheel_hsb, &glob->wheel_rgb );
 	glob->cols[ RED_ID ]	= glob->wheel_rgb.cw_Red >> ( 32 - glob->redbits );
 	glob->cols[ GREEN_ID ]	= glob->wheel_rgb.cw_Green >> ( 32 - glob->greenbits );

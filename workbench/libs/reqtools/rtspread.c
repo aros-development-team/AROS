@@ -86,13 +86,13 @@
     ULONG gadgap;
     UWORD i;
 
-    gadgap = (max - min - totalsize) / (num - 1); 
+    gadgap = ((max - min - totalsize) << 16) / (num - 1); 
 
     posarray[0] = min;
 
     for(i = 1; i < num - 1; i++)
     {
-	gadpos += (sizearray[i] << 16) + gadgap;
+	gadpos += (sizearray[i - 1] << 16) + gadgap;
 	posarray[i] = gadpos >> 16;
     }
 

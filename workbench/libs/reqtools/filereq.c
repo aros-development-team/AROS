@@ -572,10 +572,17 @@ void REGARGS ResetDrawerAndFileFields (GlobData *glob)
 
 /****************************************************************************************/
 
+#ifdef _AROS
+AROS_UFH3(void, IntuiMsgFunc,
+    AROS_UFHA(struct Hook *, hook, A0),
+    AROS_UFHA(APTR, req, A2),
+    AROS_UFHA(struct IntuiMessage *, imsg, A1))
+#else
 void ASM SAVEDS IntuiMsgFunc (
     register __a0 struct Hook *hook,
     register __a2 APTR req,
     register __a1 struct IntuiMessage *imsg)
+#endif
 {
     GlobData *glob = (GlobData *)hook->h_Data;
 

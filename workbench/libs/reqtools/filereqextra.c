@@ -170,7 +170,12 @@ void REGARGS PrintEntry (GlobData *glob, int i)
 	}
 	else if (type == FONT || (type == glob->file_id))
 	{
+#ifdef _AROS
+#warning AROS LocaleLibrary does not yet patch RawDoFmt. So "%lD" (uppercase D) does not work yet here!
+	    Dofmt (sizestr, " %ld", &size);
+#else
 	    Dofmt (sizestr, LocaleBase ? " %lD" : " %ld", &size);
+#endif
 	    if (type == FONT)
 	    {
 		StrCat (tempstr, sizestr);
