@@ -11,11 +11,6 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
-#define get_cs() \
-	({  short __value; \
-	__asm__ __volatile__ ("mov %%ds,%%ax":"=a"(__value)); \
-	(__value & 0x03);	})
-
 AROS_LH0(void, Enable,
     struct ExecBase *, SysBase, 21, Exec)
 {
@@ -23,11 +18,7 @@ AROS_LH0(void, Enable,
 
     if(--SysBase->IDNestCnt < 0)
     {
-		/* We can do sti only in user mode!! */
-		if (get_cs())
-		{
-        	__asm__ __volatile__ ("sti");
-		}
+    	__asm__ __volatile__ ("sti");
     }
 
     AROS_LIBFUNC_EXIT
