@@ -18,7 +18,7 @@ struct Catalog *catalog;
 
 /*** Functions **************************************************************/
 /* Main *********************************************************************/
-STRPTR MSG(ULONG id)
+STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {

@@ -51,8 +51,8 @@ STRPTR ASL_SelectFile(ULONG mode)
             request,
             
             ASL_Hail, mode == ASL_MODE_EXPORT ? 
-                      (IPTR) MSG(MSG_ASL_SAVE_TITLE) : 
-                      (IPTR) MSG(MSG_ASL_OPEN_TITLE),
+                __(MSG_ASL_SAVE_TITLE) : 
+                __(MSG_ASL_OPEN_TITLE),
             
             TAG_DONE
         )

@@ -13,7 +13,8 @@
 
 /*** Prototypes *************************************************************/
 /* Main *********************************************************************/
-STRPTR MSG(ULONG id);
+STRPTR  _(ULONG ID);            /* Get a message, as a STRPTR */
+#define __(id) ((IPTR) _(id))   /* Get a message, as an IPTR */
 
 /* Setup ********************************************************************/
 BOOL Locale_Initialize(void);
