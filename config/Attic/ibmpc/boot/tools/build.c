@@ -1,7 +1,7 @@
 /*
     (C) 1997-98 AROS - The Amiga Research OS
     $Id$
-    
+
     Desc: linux-based kernel builder.
     Land: English
 */
@@ -13,11 +13,11 @@
 	- bootsect: exactly 512 bytes of 8086 machine code, loads the rest
 	- setup: 8086 machine code, sets up system parm
 	- system: 80386 kernel code
-    
+
 	It does some checking that all files are of the correct type, and
 	just writes the result to stdout, removing headers and padding to
 	the right amount.
-    
+
     NOTES
 	Original code by Linus Torvalds
 
@@ -37,6 +37,7 @@
 #include <linux/a.out.h>
 #include <linux/config.h>
 #include <errno.h>
+#include <asm/boot.h>
 
 #define MINIX_HEADER 32
 
@@ -76,10 +77,10 @@ int intel_int(int i)
 	conv t;
 
 	t.b[0] = i & 0xff; i >>= 8;
-        t.b[1] = i & 0xff; i >>= 8;
-        t.b[2] = i & 0xff; i >>= 8;
-        t.b[3] = i & 0xff; i >>= 8;
-        return t.i;
+	t.b[1] = i & 0xff; i >>= 8;
+	t.b[2] = i & 0xff; i >>= 8;
+	t.b[3] = i & 0xff; i >>= 8;
+	return t.i;
 }
 
 short intel_short(short l)
@@ -142,7 +143,7 @@ int main(int argc, char ** argv)
 	if (i!=512)
 		die("Write call failed");
 	close (id);
-	
+
 	if ((id=open(argv[2],O_RDONLY,0))<0)
 		die("Unable to open 'setup'");
 	if (read(id,buf,MINIX_HEADER) != MINIX_HEADER)
@@ -179,7 +180,7 @@ int main(int argc, char ** argv)
 			die("Write call failed");
 		i += c;
 	}
-	
+
 	if ((id=open(argv[3],O_RDONLY,0))<0)
 		die("Unable to open 'system'");
 #ifndef __BFD__
@@ -214,7 +215,7 @@ int main(int argc, char ** argv)
 		if (l > sizeof(buf))
 			l = sizeof(buf);
 		if ((n=read(id, buf, l)) != l) {
-			if (n == -1) 
+			if (n == -1)
 				perror(argv[1]);
 			else
 				fprintf(stderr, "Unexpected EOF\n");

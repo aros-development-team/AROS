@@ -1,18 +1,18 @@
 /*
     (C) 1997-1999 AROS - The Amiga Research OS
     $Id$
-    
+
     Desc: Kernel header for standalone AROS on PC
     Lang: English
 */
 
 /*
     Memory in AROS looks like this:
-    
+
     0x00000000.l		nothing
     0x00000004.l		ExecBase
 
-    *** start of SYSTEM USE ONLY area ***    
+    *** start of SYSTEM USE ONLY area ***
 
     0x00000008 - 0x00000808	int vectors
     0x00000900 - 0x00000b00	data from setup
@@ -28,7 +28,7 @@
 
     History
 
-    1.4		Removed reload_flag. It's useless.
+    1.4 	Removed reload_flag. It's useless.
 
 */
 
@@ -53,7 +53,7 @@ startup_32:
 		.ascii	"ALPHA "
 		.byte	0
 
-		.balign	16
+		.balign 16
 
 /* Restart after soft reset here */
 
@@ -74,7 +74,7 @@ start_again:	cld
 
 /* Clear BSS */
 		xorl	%eax,%eax
-		movl	$_data,%edi
+		movl	$_edata,%edi
 		movl	$_end,%ecx
 		subl	%edi,%ecx
 		cld
@@ -91,7 +91,7 @@ start_again:	cld
 		sidt	idt
 
 		movl	$0x00000008,%eax
- 		movl	%eax,(idt_base)
+		movl	%eax,(idt_base)
 		movw	$0x07ff,%ax
 		mov	%ax,(idt)
 
@@ -105,7 +105,7 @@ start_again:	cld
 		movl	(int_entry),%eax
 		movl	(4+int_entry),%ebx
 		movl	$256,%ecx
-		
+
 /* Fill interrupt table */
 
 copy_idts_2:	movl	%eax,(%edi)
@@ -133,9 +133,9 @@ start:		cld
 
 /* Set segment registers up */
 
-		movl	$KERNEL_DS,%eax		/* Fill segment registers */
-		mov	%ax,%ds			/* All are the same - one */
-		mov	%ax,%es			/* 4GB data segment */
+		movl	$KERNEL_DS,%eax 	/* Fill segment registers */
+		mov	%ax,%ds 		/* All are the same - one */
+		mov	%ax,%es 		/* 4GB data segment */
 		mov	%ax,%fs
 		mov	%ax,%gs
 		mov	%ax,%ss
@@ -152,7 +152,7 @@ start:		cld
 		subl	%edi,%ecx
 		cld
 		rep
-		stosb		
+		stosb
 
 /* Clear Screen */
 		movl	$0xb8000,%edi
@@ -180,9 +180,9 @@ start:		cld
 		movsl
 
 /* Set IDT base up */
-		
+
 		movl	$0x00000008,%eax
- 		movl	%eax,(idt_base)
+		movl	%eax,(idt_base)
 		movw	$0x7ff,%ax	/* Store IDT size */
 		movw	%ax,(idt)
 
@@ -200,7 +200,7 @@ start:		cld
 		movl	(int_entry),%eax
 		movl	(4+int_entry),%ebx
 		movl	$256,%ecx
-		
+
 /* Fill interrupt table */
 
 copy_idts:	movl	%eax,(%edi)
@@ -231,7 +231,7 @@ copy_idts:	movl	%eax,(%edi)
 
 		mov	$23864,%eax	/* 1193180/50 */
 		outb	%al,$0x40	/* We don't need sending any comands */
-		xchg	%ah,%al		/* BIOS did it for us */
+		xchg	%ah,%al 	/* BIOS did it for us */
 		outb	%al,$0x40	/* It was a bit dangerous ... */
 
 /* OK, head has finished its job. Go to the exec now */
@@ -254,8 +254,8 @@ make_ientry:	lea	(empty_int),%edx
 
 		movw	%dx,(%edi)
 		rorl	$16,%edx		/* Split offset */
-		movw	$KERNEL_CS,2(%edi)	/* Code segment */
-		movw	$0x8e00,4(%edi)		/* Type = interrupt */
+		movw	$KERNEL_CS,2(%edi)      /* Code segment */
+		movw	$0x8e00,4(%edi)         /* Type = interrupt */
 		movw	%dx,6(%edi)
 		ret
 
@@ -292,7 +292,7 @@ Set_cursor:	pushl	%ebp
 /* Here are some well known standard C functions written in asm */
 
 		.globl	strcpy
-strcpy:		pushl	%ebp
+strcpy: 	pushl	%ebp
 		movl	%esp,%ebp
 		pushl	%esi
 		pushl	%edi
@@ -313,7 +313,7 @@ strcpy:		pushl	%ebp
 		ret
 
 		.globl	memset
-memset:		pushl	%ebp
+memset: 	pushl	%ebp
 		movl	%esp,%ebp
 		pushl	%edi
 		movl	16(%ebp),%ecx

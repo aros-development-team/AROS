@@ -1,7 +1,7 @@
 /*
     (C) 1997-1999 AROS - The Amiga Research OS
     $Id$
-    
+
     Desc: Begining of AROS kernel
     Lang: English
 */
@@ -11,7 +11,7 @@
     FUNCTION
 	This is the main file in Native PC AROS. The main function is called
 	by head.S file. All this code is in flat 32-bit mode.
-	
+
 	This file will make up the exec base, memory and other stuff. We don't
 	need any malloc functions, because there is no OS yet. To be honest:
 	while main is running Native PC AROS is the only OS on our PC.
@@ -20,7 +20,7 @@
 	acceptable at this moment!!
 
 	At this moment there are following C functions:
-	strcmp, strcpy, memset	
+	strcmp, strcpy, memset
 
 *****************************************************************************/
 
@@ -36,10 +36,10 @@
 #include "logo.h"
 
 unsigned long Memory;	/* Size of whole memory */
-unsigned long Memory24;	/* Size of DMA memory (24 bit) */
-APTR ssp=(APTR)-1;	/* System stack pointer */
-APTR usp=(APTR)-1;	/* User stack pointer */
-APTR esp=(APTR)-1;	/* Points to register set on stack */
+unsigned long Memory24; /* Size of DMA memory (24 bit) */
+APTR ssp=(APTR)-1;      /* System stack pointer */
+APTR usp=(APTR)-1;      /* User stack pointer */
+APTR esp=(APTR)-1;      /* Points to register set on stack */
 char supervisor=0;	/* Supervisor mode flag */
 void Exec_RawDoFmt(char *, void *, void *, void *);
 struct ExecBase * PrepareExecBase(struct MemHeader *);
@@ -57,11 +57,12 @@ extern const struct Resident
 
 static const struct Resident *romtagList[] =
 {
-    &Expansion_resident,		/* SingleTask,  110 */
+    &Expansion_resident,		/* SingleTask,	110 */
     &Exec_resident,			/* SingleTask,	105 */
     &Utility_resident,			/* ColdStart,	103 */
     &Aros_resident,			/* ColdStart,	102 */
-    &Mathieeesingbas_resident,		/* ColdStart,	101 */
+#warning FIXME Disabled because it must be compiled with archtool
+/*    &Mathieeesingbas_resident,	  / * ColdStart,   101 */
     &BOOPSI_resident,			/* ColdStart,	 95 */
     NULL
 };
@@ -74,7 +75,7 @@ int abs(int x)
 	return -x;
     else
 	return x;
-}    
+}
 
 void put(char a)
 {
@@ -167,13 +168,13 @@ int main()
     do
     {
 	Memory+=0x10;	/* Step by 16 bytes. If it's too slow you can adjust it */
-	Memory24=*(ULONG *)Memory;	/* Memory24 is temporary now */
+	Memory24=*(ULONG *)Memory;      /* Memory24 is temporary now */
 	*(ULONG *)Memory=0xDEADBEEF;
 	temp=*(ULONG *)Memory;
 	*(ULONG *)Memory=Memory24;
     } while (temp==0xDEADBEEF);
     Memory24=(Memory>0x01000000) ? 0x01000000 : Memory;
-  
+
     showlogo();
     gotoxy(0,0);
     puts_fg(text);
@@ -224,9 +225,9 @@ int main()
 		    MEMF_LOCAL, 10, (APTR)0x01000000, "fast memory");
     }
 
-    MakeInt();	/* Init IRQ core */    
+    MakeInt();  /* Init IRQ core */
 
-    if (!(ssp=AllocMem(4096,MEMF_PUBLIC)))	// Alloc 4kb supervisor stack
+    if (!(ssp=AllocMem(4096,MEMF_PUBLIC)))      // Alloc 4kb supervisor stack
     {
 	kprintf("Supervisor init failed!!!!\nSystem halted...");
 	return -1;
@@ -246,10 +247,10 @@ int main()
 
     kprintf("If multitasking works you should see two flashing letters...\n");
     kprintf("Letter 'I' shows working init code loop, letter 'T' shows working TestTask\n");
-    
+
     *(char*)0xb8092=73;
     *(char*)0xb8093=0x0f;
-    
+
     while(1)
     {
 	if (*(char*)0xb8092==73) *(char*)0xb8092=32; else *(char*)0xb8092=73;

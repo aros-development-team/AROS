@@ -33,6 +33,7 @@ UTILITY =	$(OBJDIR)/utility.o
 AROS	=	$(OBJDIR)/aros.o
 BOOPSI	=	$(OBJDIR)/boopsi.o
 MATHIEEESINGBAS= $(OBJDIR)/mathieeesingbas.o
+AMIGALIB = $(TOP)/bin/$(ARCH)-$(CPU)/AROS/lib/libamiga.a
 
 OBJECTS =	$(HEADER) $(CORE) $(EXEC) $(EXPANSION) $(UTILITY) $(AROS) \
     $(BOOPSI) #$(MATHIEEESINGBAS)
@@ -54,7 +55,7 @@ $(IMAGE): $(BOOTSECT) $(SETUP) $(KERNEL) $(BUILD)
 
 $(KERNEL): $(OBJECTS)
 	@echo -n Linking kernel...
-	@$(LD) -o $@ $(OBJECTS) -noinhibit-exec
+	@$(LD) -o $@ $(OBJECTS) $(AMIGALIB) -noinhibit-exec
 	@objcopy -O binary $@
 	@echo Done!
 
