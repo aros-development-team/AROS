@@ -81,7 +81,8 @@ struct MUIMasterBase_intern
     struct Library  	    	*cxbase;
     struct Library  	    	*keymapbase;
     struct Library		*gadtoolsbase;
-
+/*  struct Library  	    	*datatypesbase; */
+    
     struct SignalSemaphore ZuneSemaphore; /* Used when accessing global data */
 
     struct IClass **Classes;
@@ -126,6 +127,10 @@ struct MUIMasterBase_intern
 #undef GadToolsBase
 #define GadToolsBase  	(MUIMB(MUIMasterBase)->gadtoolsbase)
 
+/*
+#undef DataTypesBase
+#define DataTypesBase	(MUIMB(MUIMasterBase)->datatypesbase)
+*/
 #else
 
 #undef SysBase
@@ -157,6 +162,11 @@ struct MUIMasterBase_intern
 
 #undef GadToolsBase
 #define GadToolsBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->gadtoolsbase)
+
+/*
+#undef DataTypesBase
+#define DataTypesBase	(((struct MUIMasterBase_intern *)MUIMasterBase)->datatypesbase)
+*/
 
 #ifndef _COMPILER_H
 #include "compiler.h"
