@@ -120,7 +120,13 @@ ULONG bufsize=4096L;
                 do{
                  if (ead->ed_Type>0) {
                   len=strlen(ead->ed_Name);
-                  if (len<=MAXFONTLEN) {
+                  if
+                  (
+                         len <= MAXFONTLEN 
+                      && strncmp(ead->ed_Name, "TrueType", len) != 0
+                  )
+                  {
+                      PutStr(ead->ed_Name);
                    /* check for user abort */
                    if (CheckSignal(SIGBREAKF_CTRL_C)) {
                         rc=ERROR_BREAK;
