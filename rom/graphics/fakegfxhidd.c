@@ -858,6 +858,35 @@ static IPTR fakefb_putimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_Pu
     BITMAP_METHOD_EXIT
 }
 
+static IPTR fakefb_putalphaimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaImage *msg)
+{
+    BITMAP_METHOD_INIT
+    
+    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
+    {
+    	REMOVE_CURSOR(data);
+	inside = TRUE;
+    }
+    
+    FORWARD_METHOD
+    
+    BITMAP_METHOD_EXIT
+}
+
+static IPTR fakefb_putalphatemplate(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_PutAlphaTemplate *msg)
+{
+    BITMAP_METHOD_INIT
+    
+    if (WRECT_INSIDE(fgh, msg->x, msg->y, msg->width, msg->height))
+    {
+    	REMOVE_CURSOR(data);
+	inside = TRUE;
+    }
+    
+    FORWARD_METHOD
+    
+    BITMAP_METHOD_EXIT
+}
 
 static IPTR fakefb_getimagelut(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetImageLUT *msg)
 {
@@ -1195,6 +1224,8 @@ static OOP_Class *init_fakefbclass(struct class_static_data *csd)
         {(IPTR (*)())fakefb_fillspan		, moHidd_BitMap_FillSpan	    },
         {(IPTR (*)())fakefb_clear		, moHidd_BitMap_Clear		    },
         {(IPTR (*)())fakefb_putimage		, moHidd_BitMap_PutImage	    },
+        {(IPTR (*)())fakefb_putalphaimage	, moHidd_BitMap_PutAlphaImage	    },
+        {(IPTR (*)())fakefb_putalphatemplate	, moHidd_BitMap_PutAlphaTemplate    },
         {(IPTR (*)())fakefb_getimage		, moHidd_BitMap_GetImage	    },
         {(IPTR (*)())fakefb_putimagelut		, moHidd_BitMap_PutImageLUT	    },
         {(IPTR (*)())fakefb_getimagelut		, moHidd_BitMap_GetImageLUT	    },
