@@ -27,6 +27,7 @@ create-mf-inc-again :
 #MM	    kernel-expansion-linklib kernel-expansion-native-i386 \
 #MM	    kernel-utility-linklib \
 #MM	    kernel-dos-native \
+#MM	    kernel-boot-linklib \
 #MM	    kernel-aros-linklib \
 #MM	    kernel-boopsi-linklib \
 #MM	    kernel-oop-linklib \
@@ -129,6 +130,10 @@ kernel-utility-native-i386 :
 #MM kernel-dos-native-i386 :
 kernel-dos-native-i386 :
 	%add_objects rom/boot/libdos
+
+#MM kernel-boot-native-i386 :
+kernel-boot-native-i386 :
+	%add_objects rom/boot/libboot
 
 #MM kernel-timer-native-i386 :
 kernel-timer-native-i386 :
