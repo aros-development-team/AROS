@@ -52,14 +52,14 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 
 static BOOL SetupRenderInfo(struct MUI_RenderInfo *mri)
 {
+    int i;
+
     if (!(mri->mri_Screen = LockPubScreen(NULL))) return FALSE;
     if (!(mri->mri_DrawInfo = GetScreenDrawInfo(mri->mri_Screen)))
     {
 	UnlockPubScreen(NULL,mri->mri_Screen);
 	return FALSE;
     }
-
-    mri->mri_Pens = mri->mri_Pixels;
 
     mri->mri_Colormap     = mri->mri_Screen->ViewPort.ColorMap;
     mri->mri_ScreenWidth  = mri->mri_Screen->Width;
@@ -69,34 +69,22 @@ static BOOL SetupRenderInfo(struct MUI_RenderInfo *mri)
     /* TODO: set MUIMRI_THINFRAMES */
 
 #if 0    
-    /* use prefs pens as a temp to alloc pixels, copy pixels to mri */
-    gdk_colormap_alloc_colors(mri->mri_Colormap, __zprefs.muipens, MPEN_COUNT,
-			      FALSE, TRUE, success);
-
     mri->mri_FocusPixel = MUI_ObtainPen (mri, &__zprefs.active_object_color, 0);
- 
-    for (i = 0; i < MPEN_COUNT; i++)
-    {
-	mri->mri_Pens[i] = __zprefs.muipens[i].pixel;
-	mri->mri_DrawInfo->dri_Pens[i+2] = mri->mri_Pens[i];
-    }
 #endif
 
-#warning FIXME: allocate correct pens here
-    mri->mri_Pixels[MPEN_SHINE     ] = mri->mri_DrawInfo->dri_Pens[SHINEPEN];
-    mri->mri_Pixels[MPEN_HALFSHINE ] = mri->mri_DrawInfo->dri_Pens[SHINEPEN];
-    mri->mri_Pixels[MPEN_BACKGROUND] = mri->mri_DrawInfo->dri_Pens[BACKGROUNDPEN];
-    mri->mri_Pixels[MPEN_HALFSHADOW] = mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
-    mri->mri_Pixels[MPEN_SHADOW    ] = mri->mri_DrawInfo->dri_Pens[SHADOWPEN];
-    mri->mri_Pixels[MPEN_TEXT      ] = mri->mri_DrawInfo->dri_Pens[TEXTPEN];
-    mri->mri_Pixels[MPEN_FILL      ] = mri->mri_DrawInfo->dri_Pens[FILLPEN];
-    mri->mri_Pixels[MPEN_MARK      ] = mri->mri_DrawInfo->dri_Pens[HIGHLIGHTTEXTPEN];
-
+   
+    for (i=0;i<MPEN_COUNT;i++)
+	mri->mri_PensStorage[i] = ObtainBestPenA(mri->mri_Colormap, __zprefs.muipens[i].red, __zprefs.muipens[i].green, __zprefs.muipens[i].blue, NULL);
+    mri->mri_Pens = mri->mri_PensStorage;
     return TRUE;
 }
 
 void CleanupRenderInfo(struct MUI_RenderInfo *mri)
 {
+    int i;
+    for (i=0;i<MPEN_COUNT;i++)
+	ReleasePen(mri->mri_Colormap, mri->mri_PensStorage[i]);
+
     FreeScreenDrawInfo(mri->mri_Screen, mri->mri_DrawInfo);
     mri->mri_DrawInfo = NULL;
 
