@@ -599,35 +599,35 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	/* Take care of the qualifiers */
 	switch(code)
 	{
-	case IECODE_LBUTTON:
-	    gpUn->gpu_Qualifiers |= IEQUALIFIER_LEFTBUTTON;
-	    down = TRUE;
-	    break;
-	    
-	case IECODE_LBUTTON | IECODE_UP_PREFIX:
-	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_LEFTBUTTON;
-	    up = TRUE;
-	    break;
-	    
-	case IECODE_MBUTTON:
-	    gpUn->gpu_Qualifiers |= IEQUALIFIER_MIDBUTTON;
-	    down = TRUE;
-	    break;
-	    
-	case IECODE_MBUTTON | IECODE_UP_PREFIX:
-	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_MIDBUTTON;
-	    up = TRUE;
-	    break;
-	    
-	case IECODE_RBUTTON:
-	    gpUn->gpu_Qualifiers |= IEQUALIFIER_RBUTTON;
-	    down = TRUE;
-	    break;
-	    
-	case IECODE_RBUTTON | IECODE_UP_PREFIX:
-	    gpUn->gpu_Qualifiers &= ~IEQUALIFIER_RBUTTON;
-	    up = TRUE;
-	    break;
+	    case IECODE_LBUTTON:
+		gpUn->gpu_Qualifiers |= IEQUALIFIER_LEFTBUTTON;
+		down = TRUE;
+		break;
+
+	    case IECODE_LBUTTON | IECODE_UP_PREFIX:
+		gpUn->gpu_Qualifiers &= ~IEQUALIFIER_LEFTBUTTON;
+		up = TRUE;
+		break;
+
+	    case IECODE_MBUTTON:
+		gpUn->gpu_Qualifiers |= IEQUALIFIER_MIDBUTTON;
+		down = TRUE;
+		break;
+
+	    case IECODE_MBUTTON | IECODE_UP_PREFIX:
+		gpUn->gpu_Qualifiers &= ~IEQUALIFIER_MIDBUTTON;
+		up = TRUE;
+		break;
+
+	    case IECODE_RBUTTON:
+		gpUn->gpu_Qualifiers |= IEQUALIFIER_RBUTTON;
+		down = TRUE;
+		break;
+
+	    case IECODE_RBUTTON | IECODE_UP_PREFIX:
+		gpUn->gpu_Qualifiers &= ~IEQUALIFIER_RBUTTON;
+		up = TRUE;
+		break;
 	}
 	
 	if(gpUn->gpu_readPos == GP_NUMELEMENTS)
@@ -645,9 +645,11 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	    i++;
 	    
 	    if(*trigged == TRUE)
-		event = event->ie_NextEvent;
-
-	    *trigged = TRUE;
+	    {
+	        event = event->ie_NextEvent;
+	    } else {
+	        *trigged = TRUE;
+	    }
 	    
 	    event->ie_Class = IECLASS_RAWMOUSE;
 	    event->ie_SubClass = 0;          /* Only port 0 for now */
@@ -666,16 +668,18 @@ static BOOL fillrequest(struct IORequest *ioreq, BOOL *trigged, struct GameportB
 	    /* Reset frame delta counter */
 	    GPBase->gp_nTicks = 0;
 	    
-	    /* No more keys in buffer? */
-	    if(gpUn->gpu_readPos == GPBase->gp_writePos)
-	    {
-	        moreevents = FALSE;
-	        break;
-	    }
 	    
 	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
 				     + ALIGN(sizeof(struct InputEvent)));
 	}
+	
+	/* No more keys in buffer? */
+	if(gpUn->gpu_readPos == GPBase->gp_writePos)
+	{
+	    moreevents = FALSE;
+	    break;
+	}
+
     }
     event->ie_NextEvent = NULL;
     
