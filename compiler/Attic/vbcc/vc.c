@@ -29,12 +29,12 @@ struct NameList{
 #define OBJ 4
 
 /*  Namen der einzelnen Phasen	*/
-char *ppname="vcpp -D__STDC__=1 -D__STRICT_ANSI__ -I/usr/include %s %s %s",
-     *ccname="vbcc -quiet -no-preprocessor -cpu=i386 -fpu=68881",
+char *ppname="vcpp -D__STDC__=1 -D__STRICT_ANSI__ -I/usr/lib/gcc-lib/i486-linux/2.7.2.1/include -I/usr/include %s %s %s",
+     *ccname="vbcc -quiet -no-preprocessor -elf -cpu=i386",
      *asname="as %s -o %s",
      *ldname="ld -dp -m elf_i386 -dynamic-linker /lib/ld-linux.so.1 \
 /usr/lib/crt1.o /usr/lib/crti.o /usr/lib/crtbegin.o \
--L/usr/lib/gcc-lib/i486-linux/2.7.2 -L/usr/i486-linux/lib \
+-L/usr/lib/gcc-lib/i486-linux/2.7.2.1 -L/usr/i486-linux/lib \
 %s %s -lgcc -lc -lgcc /usr/lib/crtend.o /usr/lib/crtn.o -o %s",
      *l2name="ld -dp %s %s -o %s",
      *rmname="rm %s";
@@ -126,7 +126,7 @@ int read_config(void)
     int i,count;
     FILE *file=0;
     long size;
-    char *configname,*p;
+    char *p;
     for(i=0;i<sizeof(config_names)/sizeof(config_names[0]);i++){
 	file=fopen(config_names[i],"rb");
 	if(file) break;
@@ -157,7 +157,7 @@ int read_config(void)
 
 int main(int argc,char *argv[])
 {
-    int tfl,i,opt=1,len=10,pm,count;char *parm;
+    int tfl,i,opt=1,len=10,count;char *parm;
     char oldfile[NAMEBUF+2];
     count=read_config();
     for(i=1;i<argc+count;i++){
@@ -292,6 +292,7 @@ int main(int argc,char *argv[])
     }
     if(!(flags&KEEPSCRATCH)) del_scratch(first_scratch);
     raus(0);
+    return 0;
 }
 
 int typ(char *p)
