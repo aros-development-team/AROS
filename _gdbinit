@@ -197,7 +197,33 @@ define findaddr
     end
 end
 document findaddr
-Shows the module that contains the given address
+-Shows the module that contains the given address
+-
+-To use this to debug a problem in AROS, do this:
+-
+-1. Get a stacktrace with bt or similar.
+-2. Use findaddr with such an address to find out in which shared
+-   module it is:
+-3. Use add-symbol-file to load that modules symbols.
+-4. Now you can run bt (or similar) again and you should see the
+-   addresses resolved as symbols.
+-
+-Example:
+-
+-0x4058d45b in ?? ()
+-
+-(gdb) findaddr 0x4058d45b
+-
+-Searching in the loaded modules...
+-Address found in Workbench:contrib/Zune/Libs/muimaster.library, which is loaded at 0x405379a4
+-(gdb) add-symbol-file contrib/Zune/Libs/muimaster.library 0x405379a4
+-add symbol table from file "contrib/Zune/Libs/muimaster.library" at
+-        .text_addr = 0x405379a4
+-(y or n) y
+-Reading symbols from contrib/Zune/Libs/muimaster.library...done.
+-(gdb) bt
+-#0  0x4058d45b in strlen (ptr=0x80 <Address 0x80 out of bounds>) at strlen.c:45
+-#1  0x00000000 in lastx.78 ()
 end
 
 define printtaglist
