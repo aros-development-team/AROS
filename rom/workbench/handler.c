@@ -39,23 +39,16 @@ void WorkbenchHandler( void ) {
         return;
     }
 
-    /* Notify Intuition that we are alive. */
-    AlohaWorkbench( port );
-
     /* Main event loop */
     while( running ) {
         WaitPort( port );
 
         while( (message = (struct IntuiMessage *) GetMsg( port )) != NULL ) {
-            if( message->Class == IDCMP_WBENCHMESSAGE ) {
-                switch( message->Code ) {
-                    case WBENCHOPEN:
-                        /* Notify WB apps to open windows */
-                        break;
+            if( message->ExecMessage.mn_Node.ln_Type = NT_REPLYMSG ) {
 
-                    case WBENCHCLOSE:
-                        /* Notify WB apps to close windows */
-                        break;
+
+            } else if( message->Class == IDCMP_WBENCHMESSAGE ) {
+                switch( message->Code ) {
 
                     /* TODO: More messages... */
                 }
@@ -65,8 +58,7 @@ void WorkbenchHandler( void ) {
         }
     }
 
-    /* Shutting down... */
-    AlohaWorkbench( NULL );
+    WorkbenchBase->wb_HandlerPort = NULL;
 
     if( WorkbenchBase ) {
         CloseLibrary( (struct Library *) WorkbenchBase );
