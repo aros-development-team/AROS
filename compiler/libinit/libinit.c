@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: libinit library - functions calling when opening/closing libs
@@ -22,18 +22,20 @@ AROS_UFH3(int, set_call_libfuncs,
 
     if (order>=0)
     {
-	int ret;
-
-	n = 1;
-	while(list[n])
-	    if (!list[n++](libbase)) return FALSE;
+        n = 1;
+        while(list[n])
+        {
+            if (!list[n++](libbase)) return FALSE;
+        }
     }
     else
     {
-	n = ((int *)list)[0];
-
-	while (n)
-	    (void)list[n--](libbase);
+        n = ((int *)list)[0];
+        
+        while (n)
+        {
+            (void)list[n--](libbase);
+        }
     }
 
     return TRUE;
