@@ -169,13 +169,13 @@ the argument to the \shell{-d} option in the environment
 variable \shell{CVSROOT}. Use
 
 \begin{example}
-setenv CVSROOT :pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+setenv CVSROOT :pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
 \end{example}
 
 on Amiga or if you have a C shell (csh) and
 
 \begin{example}
-export CVSROOT=:pserver:user@wi-pc44.fh-konstanz.de:/home/AROS/CVS
+export CVSROOT=:pserver:user@aros.fh-konstanz.de:/home/AROS/CVS
 \end{example}
 
 for Bourne/Korn shells (bash, ksh).
@@ -279,7 +279,7 @@ construction and tasks which are finished.
 Just send an EMail to
 
 \begin{example}
-aros@wi-pc44.fh-konstanz.de
+aros@aros.fh-konstanz.de
 \end{example}
 
 with the \shell{Subject: jobserv} and in the body of the mail
