@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/10/23 16:30:09  aros
+    Ooops.. PublicClassList is a MinNode list :-)
+
     Revision 1.1  1996/08/28 17:55:35  digulla
     Proportional gadgets
     BOOPSI
@@ -10,6 +13,8 @@
     Desc:
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE
+#include <exec/lists.h>
 #include <exec/memory.h>
 #include <clib/exec_protos.h>
 #include "intuition_intern.h"
@@ -103,7 +108,16 @@
     if (!superClassPtr)
     {
 	/* Search for the class ... */
-	if (!(superClassPtr = (Class *)FindName (PublicClassList, superClassID)) )
+	for (superClassPtr=GetHead(PublicClassList);
+	    superClassPtr;
+	    superClassPtr=GetSucc(superClassPtr)
+	)
+	{
+	    if (!strcmp(superClassPtr->cl_ID, superClassID))
+		break;
+	}
+
+	if (!superClassPtr)
 	    return (NULL);  /* nothing found */
     }
 
