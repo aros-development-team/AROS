@@ -59,6 +59,9 @@ struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitPropGClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitStrGClass (struct LIBBASETYPE * LIBBASE);
 
+struct IClass *InitDragBarClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitTitleBarButClass (struct LIBBASETYPE * LIBBASE);
+
 int Intuition_entry(void)
 {
     /* If the library was executed by accident return error code. */
@@ -130,6 +133,14 @@ AROS_LH2(struct LIBBASETYPE *, init,
     InitFrButtonClass (LIBBASE); /* After BUTTONGCLASS */
     InitPropGClass (LIBBASE);    /* After GADGETCLASS */
     InitStrGClass (LIBBASE);    /* After GADGETCLASS */
+    
+    GetPrivIBase(LIBBASE)->dragbarclass = InitDragBarClass (LIBBASE); /* After GADGETCLASS */
+    if (!GetPrivIBase(LIBBASE)->dragbarclass)
+    	return NULL;
+
+    GetPrivIBase(LIBBASE)->tbbclass = InitTitleBarButClass (LIBBASE); /* After GADGETCLASS */
+    if (!GetPrivIBase(LIBBASE)->tbbclass)
+    	return NULL;
     
     /* Initialize global stringgadget edit hook */
     GetPrivIBase(LIBBASE)->DefaultEditHook.h_Entry	= (APTR)AROS_ASMSYMNAME(GlobalEditFunc);

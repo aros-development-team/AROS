@@ -28,6 +28,10 @@
 #include <aros/asmcall.h>
 #include "intuition_intern.h"
 
+#undef DEBUG
+#define DEBUG 1
+#include <aros/debug.h>
+
 /* Image data */
 #define ARROWDOWN_WIDTH    18
 #define ARROWDOWN_HEIGHT   11
@@ -127,8 +131,15 @@ UWORD ArrowRight1Data[] =
  */
 #define IM(o) ((struct Image *)o)
 
+static UWORD getbgpen(ULONG state, UWORD *pens);
+static VOID drawrect(struct RastPort *rp
+	, WORD x1, WORD y1
+	, WORD x2, WORD y2
+	, struct IntuitionBase *IntuitionBase);
+
 #undef IntuitionBase
 #define IntuitionBase	((struct IntuitionBase *)(cl->cl_UserData))
+
 
 /****************************************************************************/
 
@@ -170,6 +181,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	    break;
 	case SYSIA_Which:
 	    data->type = tag->ti_Data;
+D(bug("SYSIA_Which type: %d\n", data->type));
             switch (tag->ti_Data)
             {
             /* The following images are not scalable, yet! */
@@ -202,6 +214,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
                 break;
 
             case DEPTHIMAGE:
+	        break;
             case ZOOMIMAGE:
             case SIZEIMAGE:
             case CLOSEIMAGE:
@@ -223,6 +236,7 @@ BOOL sysi_setnew(Class *cl, Object *obj, struct opSet *msg)
 	}
     }
 
+D(bug("dri: %p, unsupported: %d\n", data->dri, unsupported));
     if ((!data->dri) || (unsupported))
 	return FALSE;
     return TRUE;
@@ -233,10 +247,12 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
 {
     struct SysIData *data;
     Object *obj;
-
+D(bug("sysi_new()\n"));
     obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!obj)
         return NULL;
+	
+D(bug("sysi_new,: obj=%p\n", obj));
 
     data = INST_DATA(cl, obj);
     data->type = 0L;
@@ -247,6 +263,8 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
         CoerceMethod(cl, obj, OM_DISPOSE);
         return NULL;
     }
+
+D(bug("sysi_setnew called successfully\n"));
 
     switch (data->type)
     {
@@ -274,6 +292,8 @@ Object *sysi_new(Class *cl, Class *rootcl, struct opSet *msg)
     case UPIMAGE:
     case RIGHTIMAGE:
     case DOWNIMAGE:
+    
+    case DEPTHIMAGE:
         break;
     
     default:
@@ -377,6 +397,80 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
     	Move(rport, rport->cp_x + 1, rport->cp_y);
     	Draw(rport, left + width - SPACING - 1, top + SPACING);
     	break;
+	
+    case DEPTHIMAGE: {
+        UWORD *pens = data->dri->dri_Pens;
+	UWORD bg;
+
+        WORD h_spacing = width  / 3;
+	WORD v_spacing = height / 3;
+	
+	WORD right, bottom;
+	
+	
+	
+	bg = getbgpen(msg->imp_State, pens);
+	
+	/* Clear background into correct color */
+	SetAPen(rport, bg);
+	RectFill(rport, left, top, left + width - 1, top + height - 1);
+	
+	/* Draw a image of two partly overlapped tiny windows, 
+	*/
+	
+	left += h_spacing / 2;
+	top  += v_spacing / 2;
+	
+	width  -= h_spacing;
+	height -= v_spacing;
+	
+	right  = left + width  - 1;
+	bottom = top  + height - 1;
+	
+	/* Render bottom left window  */
+	
+	SetAPen(rport, pens[SHADOWPEN]);
+        drawrect(rport
+		, left
+		, top + (height / 3)
+		, right - (width / 3 )
+		, top + height
+		, IntuitionBase);
+	
+	/* Render top right window  */
+	drawrect(rport
+		, left + (width / 3)
+		, top
+		, right
+		, bottom - (height / 3)
+		, IntuitionBase);
+		
+	
+	/* Fill top right window (inside of the frame above) */
+	SetAPen(rport, pens[SHINEPEN]);
+	RectFill(rport
+		, left + (width / 3) 	+ 1
+		, top 			+ 1
+		, right 		- 1
+		, bottom - (height / 3) - 1);
+
+        
+        break; }
+         
+	
+    case SIZEIMAGE:
+        break;
+	
+    case ZOOMIMAGE:
+    
+        break;
+	
+    case CLOSEIMAGE:
+        break;
+	
+	
+    
+    
     } /* switch (image type) */
     return;
 }
@@ -443,4 +537,41 @@ struct IClass *InitSysIClass (struct IntuitionBase * IntuitionBase)
     AddClass (cl);
 
     return (cl);
+}
+
+
+static UWORD getbgpen(ULONG state, UWORD *pens)
+{
+    UWORD bg;
+    
+    switch (state)
+    {
+	
+	case IDS_NORMAL:
+	    bg = pens[FILLPEN];
+	    break;
+	    
+	case IDS_INACTIVENORMAL:
+	    bg = pens[BACKGROUNDPEN];
+	    break;
+	default:
+	    bg = pens[BACKGROUNDPEN];
+	    break;
+    }
+    return bg;
+}
+
+static VOID drawrect(struct RastPort *rp
+	, WORD x1, WORD y1
+	, WORD x2, WORD y2
+	, struct IntuitionBase *IntuitionBase)
+{
+    Move(rp, x1, y1);
+    
+    Draw(rp, x2, y1);
+    Draw(rp, x2, y2);
+    Draw(rp, x1, y2);
+    Draw(rp, x1, y1);
+    
+    return;
 }

@@ -34,6 +34,9 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#ifndef INTUITION_CLASSES_H
+#   include <intuition/classes.h>
+#endif
 #ifndef INTUITION_SCREENS_H
 #   include <intuition/screens.h>
 #endif
@@ -77,6 +80,9 @@ struct IntIntuitionBase
     struct SignalSemaphore * PubScreenListLock;
 */
     struct Library         * LayersBase;
+    
+    struct IClass *dragbarclass;
+    struct IClass *tbbclass; /* Titlebar button class. (close, zoom, depth) */
 };
 
 struct IntScreen
@@ -93,6 +99,9 @@ struct EasyRequestUserData
     ULONG    IDCMP;
     STRPTR * GadgetLabels;
 };
+
+
+
 
 extern struct IntuitionBase * IntuitionBase;
 
