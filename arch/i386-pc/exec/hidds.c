@@ -159,6 +159,7 @@ void hidd_demo()
 	  struct Screen	 *screen;
 	  struct DrawInfo  *drawinfo;
 	  struct Window	 *win2;
+	  struct IntuiMessage *msg;
 	  struct IntuiText  myIText;
 	  struct TextAttr   myTextAttr;
 	  char MyText[512];
@@ -175,10 +176,12 @@ void hidd_demo()
 		{WA_Height,			100},
 		{WA_Left,			  0},
 		{WA_Top,			379},
-		{WA_Title,  (ULONG)"AROS Text"     },
+		{WA_Title,  (ULONG)"AROS !ext"     },
 		{WA_Activate,			  1},
 		{WA_SizeGadget,                TRUE},
 		{WA_DepthGadget,               TRUE},
+		{WA_IDCMP, IDCMP_MOUSEMOVE | IDCMP_RAWKEY},
+		{WA_ReportMouse,	       TRUE},
 		{TAG_DONE,			 0}};
 	      win2 = OpenWindowTagList(0, tags);
 
@@ -205,9 +208,84 @@ void hidd_demo()
 
 		PrintIText(win2->RPort,&myIText,10,30);
 
-		/* Wait for keypress */
-		Wait (1L << win2->UserPort->mp_SigBit);
+		for(;;)
+		{
+		  BOOL quitme = FALSE;
+		  
+		  WaitPort(win2->UserPort);
+		  while((msg = ((struct IntuiMessage *)GetMsg(win2->UserPort))))
+		  {
+		    switch(msg->Class)
+		    {
+		      case IDCMP_RAWKEY:
+		        {
+			  static char hex[] = "0123456789ABCDEF";
+			  char s[8];
+			  
+			  s[0] = 'K';
+			  s[1] = 'e';
+			  s[2] = 'y';
+			  s[3] = ' ';
+			  s[4] = hex[(msg->Code >> 12) & 0xF];
+			  s[5] = hex[(msg->Code >> 8) & 0xF];
+			  s[6] = hex[(msg->Code >> 4) & 0xF];
+			  s[7] = hex[(msg->Code >> 0) & 0xF];
+			  
+			  Move(win2->RPort, 20, 60);
+			  SetAPen(win2->RPort, 2);
+			  SetBPen(win2->RPort, 1);
+			  SetDrMd(win2->RPort, JAM2);
+			  Text(win2->RPort, s, 8);
+			  
+			  if (msg->Code == 0x45) quitme = TRUE;
+			}
+			break;
+			
+		      case IDCMP_MOUSEMOVE:
+		        {
+			  WORD mx = win2->WScreen->MouseX;
+			  WORD my = win2->WScreen->MouseY;
 
+			  static char hex[] = "0123456789ABCDEF";
+			  char s[15];
+			  
+			  s[0] = 'M';
+			  s[1] = 'o';
+			  s[2] = 'u';
+			  s[3] = 's';
+			  s[4] = 'e';
+			  s[5] = ' ';
+			  s[6] = hex[(mx >> 12) & 0xF];
+			  s[7] = hex[(mx >> 8) & 0xF];
+			  s[8] = hex[(mx >> 4) & 0xF];
+			  s[9] = hex[(mx >> 0) & 0xF];
+			  s[10] = ',';
+			  s[11] = hex[(my >> 12) & 0xF];
+			  s[12] = hex[(my >> 8) & 0xF];
+			  s[13] = hex[(my >> 4) & 0xF];
+			  s[14] = hex[(my >> 0) & 0xF];
+			  
+			  Move(win2->RPort, 20, 80);
+			  SetAPen(win2->RPort, 1);
+			  SetBPen(win2->RPort, 2);
+			  SetDrMd(win2->RPort, JAM2);
+			  Text(win2->RPort, s, 15);
+			  
+			  mx &= 511;
+			  my &= 255;
+			  
+			  SetAPen(&win2->WScreen->RastPort, 1);
+			  SetDrMd(&win2->WScreen->RastPort, JAM2);
+			  WritePixel(&win2->WScreen->RastPort, mx, my);
+			}
+			break;
+		      
+		    }
+		    ReplyMsg((struct Message *)msg);
+		  }
+		  
+		  if (quitme) break;
+		}
 		CloseWindow(win2);
 	      }
 	      FreeScreenDrawInfo(screen,drawinfo);
