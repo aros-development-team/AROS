@@ -72,65 +72,64 @@
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-  ULONG n = 0, MaxPen, z;
-  while (TAG_DONE != tags[n].ti_Tag)
-  {
-    switch(tags[n].ti_Tag)
+    struct TagItem * tag, *tstate = tags;
+    ULONG MaxPen, z;
+
+    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
     {
-      case RPTAG_Font :
-        *((LONG *)tags[n].ti_Data) = (LONG)rp->Font;
-      break;
+	switch(tag->ti_Tag)
+	{
+	    case RPTAG_Font :
+            	*((IPTR *)tag->ti_Data) = (IPTR)rp->Font;
+	    	break;
 
-      case RPTAG_APen :
-        *((LONG *)tags[n].ti_Data) = (LONG)GetAPen(rp);
-      break;
+	    case RPTAG_APen :
+            	*((IPTR *)tag->ti_Data) = (IPTR)GetAPen(rp);
+	    	break;
 
-      case RPTAG_BPen :
-        *((LONG *)tags[n].ti_Data) = (LONG)GetBPen(rp);
-      break;
+	    case RPTAG_BPen :
+            	*((IPTR *)tag->ti_Data) = (IPTR)GetBPen(rp);
+	    	break;
 
-      case RPTAG_DrMd :
-        *((LONG *)tags[n].ti_Data) = (LONG)GetDrMd(rp);
-      break;
+	    case RPTAG_DrMd :
+            	*((IPTR *)tag->ti_Data) = (IPTR)GetDrMd(rp);
+	    	break;
 
-      case RPTAG_OutlinePen :
-        *((LONG *)tags[n].ti_Data) = (LONG)GetOutlinePen(rp);
-      break;
+	    case RPTAG_OutlinePen :
+            	*((IPTR *)tag->ti_Data) = (IPTR)GetOutlinePen(rp);
+	    	break;
 
-      case RPTAG_WriteMask :
-        *((LONG *)tags[n].ti_Data) = (LONG)rp->Mask;
-      break;
+	    case RPTAG_WriteMask :
+            	*((IPTR *)tag->ti_Data) = (IPTR)rp->Mask;
+	    	break;
 
-      case RPTAG_MaxPen :
-        MaxPen = 0x01;
-        z = (LONG)rp->Mask;
-        if (0 == z)
-          MaxPen = 0x100;
-        else
-          while (z != 0)
-          {
-            z >>= 1;
-            MaxPen <<= 1;
-          }
-        *((LONG *)tags[n].ti_Data) = MaxPen;
-      break;
+	    case RPTAG_MaxPen :
+        	MaxPen = 0x01;
+        	z = (LONG)rp->Mask;
+        	if (0 == z)
+        	    MaxPen = 0x100;
+        	else
+        	    while (z != 0)
+        	    {
+        	    	z >>= 1;
+        	    	MaxPen <<= 1;
+        	    }
+        	*((IPTR *)tag->ti_Data) = MaxPen;
+	    	break;
 
-      case RPTAG_DrawBounds :
-	((struct Rectangle *)tags[n].ti_Data)->MinX = 0;
-	((struct Rectangle *)tags[n].ti_Data)->MinY = 0;
-	((struct Rectangle *)tags[n].ti_Data)->MaxX = 0;
-	((struct Rectangle *)tags[n].ti_Data)->MaxY = 0;
-      break;
+	    case RPTAG_DrawBounds :
+	    	((struct Rectangle *)tag->ti_Data)->MinX = 0;
+	    	((struct Rectangle *)tag->ti_Data)->MinY = 0;
+	    	((struct Rectangle *)tag->ti_Data)->MaxX = 0;
+	    	((struct Rectangle *)tag->ti_Data)->MaxY = 0;
+	    	break;
 
-      default: /* there's an error in the taglist -> exit */
-      return;
-    }
-    /* advance to next tagitem */
-    n++;
-  }
+	} /* switch(tag->ti_Tag) */
+	
+    } /* while ((tag = NextTagItem ((const struct TagItem **)&tstate))) */
 
-  AROS_LIBFUNC_EXIT
+    AROS_LIBFUNC_EXIT
 } /* GetRPAttrsA */
