@@ -26,7 +26,7 @@
 typedef int ssize_t;
 #endif
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(_AMIGA)
 #if !defined(_TIME_T) && !defined(__typedef_time_t)
 #define _TIME_T
 typedef long time_t;
