@@ -23,6 +23,7 @@
 #include <graphics/layers.h>
 #include <graphics/clip.h>
 #include <graphics/gfxmacros.h>
+#include <graphics/regions.h>
 
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
@@ -736,7 +737,6 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
 	LONG x1, LONG y1, LONG x2, LONG y2, struct GfxBase * GfxBase)
 {
-  BOOL allocatedTmpRas = FALSE;
   LONG xCorr1, xCorr2, yCorr1, yCorr2, absdx, absdy, xBlockSize, yBlockSize;
   struct BitMap * bm;
   struct Layer * L = rp->Layer;
@@ -1019,7 +1019,6 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     ydown  -= dy;
     
     /* Move the region, if it's a simple layer  */
-/*
     if (0 != (L->Flags & LAYERSIMPLE))
     {
       R->bounds.MinX -= dx;
@@ -1027,7 +1026,7 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
       R->bounds.MaxX -= dx;
       R->bounds.MaxY -= dy;
     }
-*/    
+    
     /* now copy from the bitmap bm into the destination */
     CR = L->ClipRect;
     while (NULL != CR)
@@ -1141,7 +1140,16 @@ BOOL driver_ScrollRaster (struct RastPort * rp, LONG dx, LONG dy,
     
     
     if (0 != (L->Flags & LAYERSIMPLE))
+    {
+      /* Add the damagelist to the layer's damage list and set the
+         LAYERREFRESH flag, but of course only if it's necessary */
+      if (NULL != R->RegionRectangle)
+      {
+        OrRegionRegion(R, L->DamageList);
+        L->Flags |= LAYERREFRESH;
+      }
       DisposeRegion(R);
+    }
     
     UnlockLayerRom(L); 
   }  
