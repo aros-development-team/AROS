@@ -1,5 +1,5 @@
 /*
-    (C) 1997 - 2000 AROS - The Amiga Research OS
+    (C) 1997 - 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Diskfont function OpenDiskFont()
@@ -80,7 +80,6 @@
 
     D(bug("OpenDiskFont(textAttr=%p)\n", textAttr));
 
-
     /* PerfectMatch info should be passed to hook */
 
     fhc.fhc_ReqAttr = (struct TTextAttr*)textAttr;
@@ -130,6 +129,8 @@
 
 	    if (new_match_weight > match_weight)
 	    {
+	    	match_weight = new_match_weight;
+		
 		if (best_so_far.tta_Tags)
 		    FreeTagItems(best_so_far.tta_Tags);
 
