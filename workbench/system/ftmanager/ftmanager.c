@@ -1,6 +1,8 @@
 /*
  * Based on source from ftmanager from MorphOS for their ft2.library
  */
+#define _CLIB_USERDATA_
+#include <libraries/arosc.h>
 #include <stdlib.h>
 #include <string.h>
 #include <dos/exall.h>
@@ -1141,7 +1143,7 @@ ULONG fiSetOTags(Class *cl, Object *o)
 	++tag;
 
 	tag->ti_Tag = OT_Engine;
-	tag->ti_Data = (ULONG)"ft2";
+	tag->ti_Data = (ULONG)"freetype2";
 	++tag;
 
 	tag->ti_Tag = OT_Family;
@@ -1235,9 +1237,9 @@ ULONG fiSetOTags(Class *cl, Object *o)
 
 	tag->ti_Tag = TAG_END;
 
-	dat->AvailSizes[0] = 2;   // <- number of entries...
-	dat->AvailSizes[1] = 10;
-	dat->AvailSizes[2] = 15;
+	dat->AvailSizes[0] = AROS_WORD2BE(2);   // <- number of entries...
+	dat->AvailSizes[1] = AROS_WORD2BE(10);
+	dat->AvailSizes[2] = AROS_WORD2BE(15);
 
 	return tag - dat->OTags;
 }
@@ -1307,7 +1309,7 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 		UBYTE *buffer;
 		int num_sizes;
 
-		size = sizeof(tag->ti_Tag) + (fiSetOTags(cl, o) + 1) * sizeof(*tag);
+		size = sizeof(tag->ti_Tag) + (fiSetOTags(cl, o) + 2) * sizeof(*tag);
 		indirect_size = 0;
 
 		for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
@@ -1336,7 +1338,8 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 		if (buffer)
 		{
 			size_t offset = 0;
-
+		    struct TagItem *write_tags;
+		    
 			memset(buffer, 0, indirect_size);
 
 			for (tag = dat->OTags; tag->ti_Tag != TAG_END; ++tag)
@@ -1364,13 +1367,23 @@ ULONG fiWriteFiles(Class *cl, Object *o)
 			tag->ti_Tag = OT_AvailSizes;
 			tag->ti_Data = size + offset;
 			++tag;
-
+		    
 			tag->ti_Tag = TAG_END;
 
 			memcpy(buffer + offset, dat->AvailSizes, num_sizes * sizeof(UWORD));
 			offset += num_sizes * sizeof(UWORD);
 
-			Write(file, dat->OTags, size);
+		    write_tags = malloc(size);
+		    memcpy(write_tags, dat->OTags, size);
+		    for (tag = write_tags; tag->ti_Tag != TAG_END; tag++)
+		    {
+			tag->ti_Tag = AROS_LONG2BE(tag->ti_Tag);
+			tag->ti_Data = AROS_LONG2BE(tag->ti_Data);
+		    }
+		    tag->ti_Tag = AROS_LONG2BE(TAG_END);
+		    
+			Write(file, write_tags, size);
+		    free(write_tags);
 			Write(file, buffer, offset);
 
 			free(buffer);
@@ -1811,9 +1824,13 @@ void ScanDirTask(void)
 	BPTR olddir;
 	FT_Library ftlibrary;
 
+#warning FIXME: Possible thread race conflicts not checked !!!
+    void *test = AROSC_USERDATA(parent);
+        AROSC_USERDATA(0) = test;
+    
 	Signal(parent, SIGBREAKF_CTRL_F);
 
-    DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
+        DEBUG_ADDDIR(dprintf("flScanDirTask: dir <%s>\n", info->DirName));
 
 	if (FT_Init_FreeType(&ftlibrary) == 0)
 	{
