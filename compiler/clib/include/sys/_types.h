@@ -65,6 +65,20 @@ typedef char *                  __va_list;
 typedef __uint32_t              __wchar_t;
 typedef __int32_t               __wint_t;
 
+/*
+ * HACK!
+ * BSD derived systems take their locale handling from Plan9. This means
+ * that they expect <sys/_types.h> to typedef __rune_t. Unfortunately since
+ * we use the compilers <stddef.h> for BSD systems (for now), this means
+ * it wants __rune_t to be valid.
+ *
+ * I tried to handle this in configure.in as a #define, but that just broke
+ * something else.
+ *
+ * XXX This should be removed when we always use our own compiler.
+ */
+typedef int                     __rune_t;
+
 
 /* Both <stddef.h> and <sys/types.h> define this type */
 #define __offsetof(type,field)          ((size_t)(&((type *)0)->field))
