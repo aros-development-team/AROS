@@ -68,7 +68,7 @@ int main(int argc, char ** argv)
 	    pargs[0] = (IPTR)afptr->af_Attr.ta_Name;
 	    pargs[1] = afptr->af_Attr.ta_YSize;
 
-	    VPrintf ("Font name: %s\t\t\tFont YSize: %d\n", pargs);
+	    VPrintf ("Font name: %-30.s Font YSize: %d\n", pargs);
 
 	    afptr ++;
 	}
