@@ -560,7 +560,6 @@ static int CheckDir(BPTR lock, struct ExAllData *ead, ULONG eadSize,
 {
     int   error = RETURN_OK;
     BOOL  loop;
-    LONG  ioErr;
     struct ExAllData *oldEad = ead;
 
     do
