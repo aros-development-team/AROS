@@ -138,7 +138,7 @@ static void FreePens(void)
 
 /************************************************************************************/
 
-static void Cleanup(char *msg)
+static void Cleanup(CONST_STRPTR msg)
 {
     struct Message  *cxmsg;
     struct LibTable *tmpLibTable = libTable;
@@ -203,16 +203,16 @@ static void Cleanup(char *msg)
 
 /************************************************************************************/
 
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 {
-    STRPTR string;
-
-    if(catalogPtr)
-	string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    if(catalogPtr) 
+    {
+        return GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    }
     else
-	string = CatCompArray[id].cca_Str;
-
-    return(string);
+    {
+        return CatCompArray[id].cca_Str;
+    }
 }
 
 /************************************************************************************/

@@ -168,9 +168,9 @@ BOOL    initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeigh
 BOOL    readShellArgs(struct ExchangeState *ec);
 BOOL    readWBArgs(int argc, char **argv, struct ExchangeState *ec);
 BOOL    getResources(struct ExchangeState *es);
-STRPTR  getCatalog(struct Catalog *catalogPtr, ULONG id);
+CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id);
 void    setupMenus(struct Catalog *catalogPtr);
-void    showSimpleMessage(struct ExchangeState *ec, STRPTR msgString);
+void    showSimpleMessage(struct ExchangeState *ec, CONST_STRPTR msgString);
 
 int main(int argc, char **argv)
 {
@@ -467,8 +467,8 @@ BOOL getResources(struct ExchangeState *ec)
 		ec->ec_screen->WBorBottom;
     
     ec->ec_window = OpenWindowTags(NULL,
-				   WA_PubScreen,    NULL,
-				   WA_Gadgets,      (Tag)ec->ec_context,
+				   WA_PubScreen,    (Tag) NULL,
+				   WA_Gadgets,      (Tag) ec->ec_context,
 				   WA_Left,         0,
 				   WA_Top,          0,
 				   WA_Width,        500,
@@ -614,7 +614,7 @@ struct NewGadget textGad2 =
 
 /* Cycle gadget texts */
 //STRPTR  strings[] = { "Active", "Inactive", NULL };
-STRPTR strings[3];
+CONST_STRPTR strings[3];
 
 BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
 {
@@ -666,8 +666,8 @@ BOOL initGadgets(struct ExchangeState *ec, struct Screen *scr, LONG fontHeight)
     
     ec->ec_listView = gad =  CreateGadget(LISTVIEW_KIND, gad,
 					  &listView,
-					  GTLV_Labels, NULL,
-					  GTLV_ShowSelected, NULL,
+					  GTLV_Labels, (IPTR) NULL,
+					  GTLV_ShowSelected, (IPTR) NULL,
 					  TAG_DONE);
     
     ec->ec_showBut = gad = CreateGadget(BUTTON_KIND, gad,
@@ -1086,16 +1086,16 @@ void redrawList(struct ExchangeState *ec)
 }
 
 
-STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
+CONST_STRPTR getCatalog(struct Catalog *catalogPtr, ULONG id)
 {
-    STRPTR string;
-
-    if(catalogPtr)
-	string = GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    if (catalogPtr != NULL)
+    {
+        return GetCatalogStr(catalogPtr, id, CatCompArray[id].cca_Str);
+    }
     else
-	string = CatCompArray[id].cca_Str;
-
-    return(string);
+    {
+        return CatCompArray[id].cca_Str;
+    }
 }
 
 void setupMenus(struct Catalog *catalogPtr)
@@ -1124,7 +1124,7 @@ void setupMenus(struct Catalog *catalogPtr)
 }
 
 
-void showSimpleMessage(struct ExchangeState *ec, STRPTR msgString)
+void showSimpleMessage(struct ExchangeState *ec, CONST_STRPTR msgString)
 {
     struct EasyStruct easyStruct;
 

@@ -224,13 +224,13 @@ static BOOL initiate(int argc, char **argv, CFState *cs)
     if (Cli() != NULL)
     {
 	struct RDArgs *rda;
-	IPTR           args[] = { NULL, NULL, (IPTR)FALSE };
+	IPTR           args[] = { (IPTR) NULL, (IPTR) NULL, FALSE };
 
 	rda = ReadArgs(ARG_TEMPLATE, args, NULL);
 
 	if (rda != NULL)
 	{
-	    if (args[ARG_PRI] != NULL)
+	    if (args[ARG_PRI] != (IPTR) NULL)
 	    {
 		nb.nb_Pri = *(LONG *)args[ARG_PRI];
 	    }

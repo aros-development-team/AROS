@@ -161,7 +161,7 @@ static UBYTE	      	 s[257];
 
 /*********************************************************************************************/
 
-STRPTR MSG(ULONG id);
+CONST_STRPTR MSG(ULONG id);
 void FreeArguments(void);
 void CleanupLocale(void);
 void KillCX(void);
@@ -171,7 +171,7 @@ void StringToKey(void);
 
 /*********************************************************************************************/
 
-WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
+WORD ShowMessage(CONST_STRPTR title, CONST_STRPTR text, CONST_STRPTR gadtext)
 {
     struct EasyStruct es;
     
@@ -186,7 +186,7 @@ WORD ShowMessage(STRPTR title, STRPTR text, STRPTR gadtext)
 
 /*********************************************************************************************/
 
-void Cleanup(STRPTR msg)
+void Cleanup(CONST_STRPTR msg)
 {
     if (msg)
     {
@@ -244,18 +244,16 @@ void CleanupLocale(void)
 
 /*********************************************************************************************/
 
-STRPTR MSG(ULONG id)
+CONST_STRPTR MSG(ULONG id)
 {
-    STRPTR retval;
-    
-    if (catalog)
+    if (catalog != NULL)
     {
-	retval = GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
-    } else {
-	retval = CatCompArray[id].cca_Str;
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     }
-    
-    return retval;
+    else 
+    {
+        return CatCompArray[id].cca_Str;
+    }
 }
 
 /*********************************************************************************************/
@@ -283,7 +281,7 @@ void InitMenus(void)
 	if (actnm->nm_Label != NM_BARLABEL)
 	{
 	    ULONG  id = (ULONG)actnm->nm_Label;
-	    STRPTR str = MSG(id);
+	    CONST_STRPTR str = MSG(id);
 	    
 	    if (actnm->nm_Type == NM_TITLE)
 	    {
@@ -403,25 +401,25 @@ AROS_UFH2S(void, custom_func,
 
 static void MakeGUI(void)
 {
-    static UBYTE *cmdarray[] =
+    static CONST_STRPTR cmdarray[] =
     {
-    	(UBYTE *)MSG_FKEY_CMD_CYCLE_WIN,
-    	(UBYTE *)MSG_FKEY_CMD_CYCLE_SCR,
-    	(UBYTE *)MSG_FKEY_CMD_ENLARGE_WIN,
-    	(UBYTE *)MSG_FKEY_CMD_SHRINK_WIN,
-    	(UBYTE *)MSG_FKEY_CMD_TOGGLE_WIN_SIZE,
-    	(UBYTE *)MSG_FKEY_CMD_INSERT_TEXT,
-    	(UBYTE *)MSG_FKEY_CMD_RUN_PROG,
-    	(UBYTE *)MSG_FKEY_CMD_RUN_AREXX,
+    	(CONST_STRPTR)MSG_FKEY_CMD_CYCLE_WIN,
+    	(CONST_STRPTR)MSG_FKEY_CMD_CYCLE_SCR,
+    	(CONST_STRPTR)MSG_FKEY_CMD_ENLARGE_WIN,
+    	(CONST_STRPTR)MSG_FKEY_CMD_SHRINK_WIN,
+    	(CONST_STRPTR)MSG_FKEY_CMD_TOGGLE_WIN_SIZE,
+    	(CONST_STRPTR)MSG_FKEY_CMD_INSERT_TEXT,
+    	(CONST_STRPTR)MSG_FKEY_CMD_RUN_PROG,
+    	(CONST_STRPTR)MSG_FKEY_CMD_RUN_AREXX,
 	0,
     };
-    static UBYTE wintitle[100];
+    static TEXT wintitle[100];
     WORD i;
     Object *menu, *newkey, *delkey;
     
     for(i = 0; cmdarray[i]; i++)
     {
-    	cmdarray[i] = MSG((ULONG)cmdarray[i]);
+    	cmdarray[i] = MSG((ULONG) cmdarray[i]);
     }
     
     keylist_construct_hook.h_Entry = HookEntry;
