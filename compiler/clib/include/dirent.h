@@ -18,15 +18,18 @@
 #define NAME_MAX 255
 #endif
 
-struct dirent {
+struct dirent
+{
 #define	MAXNAMLEN NAME_MAX
     char d_name[MAXNAMLEN + 1];	/* name must be no longer than this */
 };
 
 /* structure describing an open directory. */
-typedef struct _dirdesc {
+typedef struct _dirdesc
+{
    int    fd;
    struct dirent ent;
+   off_t  pos;
    void   *priv;
 } DIR;
 
@@ -36,7 +39,7 @@ struct dirent *readdir (DIR *dir);
 void rewinddir (DIR *dir);
 int closedir (DIR *dir);
 
-long telldir (const DIR *dir);
+off_t telldir (const DIR *dir);
 void seekdir (DIR *dir, off_t offset);
 int scandir (const char *dir, struct dirent ***namelist,
               int (*select)(const struct dirent *),
