@@ -4,6 +4,8 @@ include $(TOP)/config/make.cfg
 
 FILES := funcs
 
+#MM includes : workbench-libs-oss-unix-includes
+
 #MM workbench-libs-oss-unix-includes : \
 #MM     kernel-exec-includes \
 #MM     kernel-oop-includes \
