@@ -77,9 +77,9 @@ const struct Resident con_handler_resident=
     (ULONG *)inittabl
 };
 
-static const char name[]="con.handler";
+static const char name[]="con-handler";
 
-static const char version[]="$VER: con_handler 41.0 (02.09.1998)\r\n";
+static const char version[]="$VER: con-handler 41.1 (22.1.2000)\n";
 
 static const APTR inittabl[4]=
 {
