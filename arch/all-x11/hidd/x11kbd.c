@@ -40,7 +40,7 @@ static struct abdescr attrbases[] =
     { NULL, NULL }
 };
 
-struct _keytable
+static struct _keytable
 {
     KeySym keysym;
     WORD   hiddcode;
@@ -303,7 +303,7 @@ UX11
     
     D(bug("xk2h: Passing X keycode\n", xk->keycode & 0xffff));
 
-    result |= xk->keycode & 0xffff;
+    result = xk->keycode & 0xffff;
 
     ReturnInt ("xk2h", long, result);
 } /* XKeyToAmigaCode */

@@ -101,7 +101,7 @@ struct IntWindow
     Region	  iw_Region;
 };
 
-struct _keytable
+static struct _keytable
 {
     KeySym keysym;
     WORD   amiga;
@@ -199,7 +199,7 @@ keytable[] =
     {XK_y,		0x15, 0,},
     {XK_z,		0x31, 0,},
 */    
-    {0, -1, 0, },
+    {0, -1, 0, NULL, NULL, 0},
 };
 
 #define SHIFT	(IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT)
