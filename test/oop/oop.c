@@ -97,7 +97,11 @@ UnlockCL;
     	    strcpy(cl->ClassID, classID);
     	    D(bug("class ID copied\n"));
 
-	    /* Must be done before calling AllocHash() */
+	    /* Must be done before calling AllocHash().
+	    ** This is because AllocHash() must know the number
+	    ** of methods in this class and suoerclasses, so it can
+	    ** allocate a hashtable of a sane size-
+	    */
     	    cl->SuperClass = supercl;
 	    cl->NumMethods = numNewMethods;
 
@@ -106,8 +110,10 @@ UnlockCL;
     	    /* Allocate interfaces for class */
     	    if ( (cl->HashTable = AllocHash(cl, numNewMethods)) )
     	    {
+	        /* Initialize hash table with methods */
 	    	if (InitHash(cl, mDescr))
 		{
+		    /* Well, same as in BOOPSI */
 		    cl->InstOffset = supercl->InstOffset + supercl->InstSize;
 		    cl->InstSize   = instDataSize;
 		    
@@ -143,10 +149,12 @@ UnlockCL;
 */
 static ULONG NumHashEntries(ULONG initial)
 {
+
     /* Calulates hashsize as 2^n - 1 so that htsize >= 2*initial */
     ULONG temp = 1;
     BYTE i;
     
+    /* Find the highest bit in 'initial' */
     for (i = 31; i >= 0; i --)
     {
     	if ((temp << i) & initial)
@@ -173,22 +181,28 @@ static struct Bucket **AllocHash(Class *cl, ULONG numNewMethods)
     D(bug("AllocHash(class=%s, numNewMethods=%ld)\n",
     	cl->ClassID, numNewMethods));
     
-    /* Count the number of methods for superclasses */
+    /* Count the number of methods for superclasses and their interfaces.
+    ** Note that the same methods are NOT counted twice as
+    ** class->NumMethods is the number of methods that are new for 'class'.
+    */
     nummethods = numNewMethods;
     for (super = cl->SuperClass; super; super = super->SuperClass)
     	nummethods += super->NumMethods;
 	
     D(bug("Total number of methods: %ld\n", nummethods));
     
+    /* Calculate hash table size, counted in entries */
     numentries = NumHashEntries(nummethods);
 	
-    /* Create hash table so that it gets 50 % full, so there are fewer collisions */
+    /* Calculate hash table size, counted in bytes */
     htable_size = UB(&htable[numentries]) - UB(&htable[0]);
 
     D(bug("Hash table size: %ld\n", htable_size));
-    /* Save hash table size */
+
+    /* Save hash table size, counted in entries */
     cl->HashTableSize = numentries;
     
+    /* Allocate hash table */
     htable = malloc(htable_size);
     if (htable)
     	memset(htable, 0, htable_size);
@@ -198,18 +212,20 @@ static struct Bucket **AllocHash(Class *cl, ULONG numNewMethods)
 
 static BOOL AddMethods(Class *cl, struct Bucket **desthtable, ULONG htable_size)
 {
-    /* Moves all of the copies superclass' methods into the hash table */
+    /* The class's methods into the supplied hashtable */
     
     ULONG i;
     
     D(bug("AddMethods(cl=%s, desthtable=%p, htable_size=%ld)\n",
     	cl->ClassID, desthtable, htable_size));
 	
+    /* For each entry in the class' hashtable */
     for (i = 0; i < cl->HashTableSize; i ++)
     {
     	struct Bucket *b;
 	D(bug("Adding methods at idx %ld\n", i));
 	
+	/* For each bucket at the current entry */
     	for (b = cl->HashTable[i]; b; b = b->Next)
 	{
 	    ULONG idx;
@@ -217,20 +233,21 @@ static BOOL AddMethods(Class *cl, struct Bucket **desthtable, ULONG htable_size)
 	    
 	    D(bug("Adding method %ld\n", b->MethodID));
 	    
-	    /* Allocate new bucket */
+	    /* Allocate new bucket into which the method is copied */
 	    new_b = malloc( sizeof (struct Bucket) );
 	    if (!new_b)
 	    	ReturnBool ("AddMethods", FALSE);
 		
-	    /* Initialize bucket */
+	    /* Copuy methid info into new bucket */
 	    new_b->MethodID   = b->MethodID;
 	    new_b->MethodFunc = b->MethodFunc;
 	    new_b->Class      = b->Class;
 	    
 	    
-	    /* Add bucket to start of hash entry */
+	    /* Add bucket to destination hashtable */
 	    idx = CalcHash(b->MethodID, htable_size);
 	    
+	    /* Adding it at the first position in the bucket linked list */
 	    temp_b = desthtable[idx];
 	    desthtable[idx] = new_b;
 	    new_b->Next = temp_b;
@@ -247,21 +264,23 @@ static BOOL InitHash(Class *cl, struct MethodDescr *mDescr)
     if (cl->SuperClass) /* This test is so we can use this function to initalize ROOTCLASS */
     {
         D(bug("Superclass found: %s\n", cl->SuperClass->ClassID));
+	
         /* Put all superclass' methods into our hash table */
     	if (!AddMethods(cl->SuperClass, cl->HashTable, cl->HashTableSize))
 	   ReturnBool ("InitHash", FALSE);
     }
     
-    /* Override with the new methods for this class */
-    
+    /* Override/insert the methods supplied in MakeClass() */
     D(bug("Ovverriding methods\n"));
     
+    /* For each entry in the method description array supplied to MakeClass() */
     for (; mDescr->MethodFunc; mDescr ++)
     {
     	ULONG idx;
 	struct Bucket *b;
 	BOOL must_allocate_new = TRUE;
 	
+	/* Look at which entry in the hdestination hashtable to put the ID */
 	idx = CalcHash(mDescr->MethodID, cl->HashTableSize);
 	
 	/* Search for allready existing bucket containing the ID */
@@ -269,7 +288,8 @@ static BOOL InitHash(Class *cl, struct MethodDescr *mDescr)
 	{
 	    if (b->MethodID == mDescr->MethodID)
 	    {
-		/* Overwrite this old bucket */
+	    
+		/* The method existed in the superclass. Override it */
 		b->MethodFunc = mDescr->MethodFunc;
 		b->Class = cl;
 		    
@@ -300,6 +320,7 @@ static BOOL InitHash(Class *cl, struct MethodDescr *mDescr)
 	    temp_b = cl->HashTable[idx];
 		
 	    cl->HashTable[idx] = new_b;
+	    
 	    /* If there are no buckets in this table entry,
 	    ** dest_b will be NULL, and new_b->Next becomes NULL
 	    */
@@ -315,6 +336,7 @@ static VOID FreeHash(struct Bucket **htable, ULONG htablesize)
 {
     ULONG i;
     
+    /* Well, frees a hashtable + the buckets */
     for (i = 0; i < htablesize; i ++)
     {
     	struct Bucket *b, *next_b;

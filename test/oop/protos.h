@@ -27,6 +27,6 @@ VOID CleanupOOP();
 IPTR CoerceMethodA(Class *cl, Object *o, Msg msg);
 IPTR DoMethodA(Object *o, Msg msg);
 IPTR DoSuperMethodA(Class *cl, Object *o, Msg msg);
-Method *GetMethod(Object *o, ULONG methodID);
+BOOL GetMethod(Object *o, ULONG methodID, IPTR (**methodPtrPtr)(), Class **classPtrPtr);
 
 #endif /* PROTOS_H */

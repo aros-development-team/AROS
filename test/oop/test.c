@@ -10,6 +10,7 @@
 #include "timerclass.h"
 #include "protos.h"
 #include "support.h"
+#include "intern.h"
 #include <stdio.h>
 
 extern struct List ClassList;
@@ -22,8 +23,11 @@ IPTR TestFunc(Class *cl, Object *o, Msg msg)
      return (12345678);
 }
 
+		    Class *cl;
+
 int main(int argc, char **argv)
 {
+    IPTR (*method)();
    
     if (InitOOP())
     {
@@ -39,6 +43,7 @@ int main(int argc, char **argv)
 	
 	    struct Node *n;
 	    Object *timer;
+	    ULONG i;
 	    
     	    printf("Class list:\n");
     	    ForeachNode(&ClassList, n)
@@ -46,6 +51,25 @@ int main(int argc, char **argv)
     	    	printf("%s\n", n->ln_Name);
     	    }
     	    printf("\n\n");
+	    
+	    printf("Hash table:\n");
+	    
+	    for (i = 0; i < timercl->HashTableSize; i ++)
+	    {
+	    	struct Bucket *b;
+		printf("%ld: ", i);
+		
+		for (b = timercl->HashTable[i]; b; b = b->Next)
+		{
+		    printf("%s, %ld  "
+		    	,b->Class->ClassNode.ln_Name
+			,b->MethodID);
+			
+		}
+		printf("\n");
+		
+	    }
+	    
     	
     	    /* Create a new instance */
     	    timer = NewObject(NULL, TIMERCLASS, NULL);
@@ -53,8 +77,6 @@ int main(int argc, char **argv)
     	    {
 		ULONG i;
 		ULONG methodid = M_Timer_TestMethod;
-		
-		Method *test_m;
 		
     	    	printf("Timer object: %p\n", timer);
     	
@@ -75,26 +97,27 @@ int main(int argc, char **argv)
 		printf("Time elapsed: ");
 		Timer_PrintElapsed(timer);
 
-
-		/*  Fast ivocation test */
-		printf ("\nUsing fast invocation\n");
-		
-		test_m = GetMethod(timer, M_Timer_TestMethod);
-
-		Timer_Start(timer);
-    	    	
-    	    	for (i = 0; i < NUM_ITERATIONS; i ++)
 		{
-		    CallMethodFast(timer, test_m, &methodid);
-		}
-		    
-		Timer_Stop(timer);
-		printf("Time elapsed: ");
-		Timer_PrintElapsed(timer);
-
-
-		/*  Function test */
+		/*  Fast ivocation test */
 		
+		    printf ("\nUsing fast invocation\n");
+		
+		    GetMethod(timer, M_Timer_TestMethod, &method, &cl);
+
+		    Timer_Start(timer);
+    	    	
+    	    	    for (i = 0; i < NUM_ITERATIONS; i ++)
+		    {
+		    	method(timercl, timer, (Msg)&methodid);
+		    }
+		    
+		    Timer_Stop(timer);
+		    printf("Time elapsed: ");
+		    Timer_PrintElapsed(timer);
+		    
+		    printf("Method output: %ld\n", method(cl, timer, (Msg)&methodid));
+		}
+		/*  Function test */		
 		printf("\nTen billion calls to empty *function*\n");
 		Timer_Start(timer);
     	    	
@@ -102,14 +125,15 @@ int main(int argc, char **argv)
 		{
 		    TestFunc(timercl, timer, (Msg)&methodid);
 		}
+		
 		    
 		Timer_Stop(timer);
 		printf("Time elapsed: ");
 		Timer_PrintElapsed(timer);
 		
+		
 
 		/*  Loop test */
-		
 		printf("\nLooping ten billion times\n");
 		Timer_Start(timer);
     	    	
@@ -122,7 +146,6 @@ int main(int argc, char **argv)
 		Timer_Stop(timer);
 		printf("Time elapsed: ");
 		Timer_PrintElapsed(timer);
-		
 		
 		printf("\n\nTestMethod output: %ld\n", Timer_TestMethod(timer));
 		

@@ -15,8 +15,8 @@
 struct Bucket
 {
     struct Bucket *Next;
-    APTR   MethodFunc;
     ULONG  MethodID;
+    APTR   MethodFunc;
     Class *Class; /* This is to be able to skip class calls */
 };
 

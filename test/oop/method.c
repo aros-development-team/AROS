@@ -14,11 +14,12 @@
 #define CallMethod(cl, o, msg) 				\
 {				    			\
     register struct Bucket *b;				\
+    register ULONG mid = msg->MethodID;			\
 							\
-    for (b = cl->HashTable[CalcHash(msg->MethodID, cl->HashTableSize)]; \
+    for (b = cl->HashTable[CalcHash(mid, cl->HashTableSize)]; \
               b; b = b->Next)						\
     {							\
-       	if (b->MethodID == msg->MethodID)		\
+       	if (b->MethodID == mid)		\
 	{						\
 	    IPTR (*method)(Class *, Object *, Msg);	\
 	    method = b->MethodFunc;			\
@@ -35,7 +36,7 @@ IPTR CoerceMethodA(Class *cl, Object *o, Msg msg)
 
 IPTR DoMethodA(Object *o, Msg msg)
 {
-    Class *cl = OCLASS(o);
+    register Class *cl = OCLASS(o);
     CallMethod(cl, o, msg);
 }
 
@@ -45,7 +46,7 @@ IPTR DoSuperMethodA(Class *cl, Object *o, Msg msg)
     CallMethod(super, o, msg)
 }
 
-Method *GetMethod(Object *o, ULONG methodID)
+BOOL GetMethod(Object *o, ULONG methodID, APTR *methodPtrPtr, Class **classPtrPtr)
 {
     ULONG idx;
     struct Bucket *b;
@@ -56,9 +57,12 @@ Method *GetMethod(Object *o, ULONG methodID)
     {
        	if (b->MethodID == methodID)
 	{
-	    return ((Method *)b);
+	    *methodPtrPtr = b->MethodFunc;
+	    *classPtrPtr  = b->Class;
+	    return (TRUE);
 	}
 	b = b->Next;
     }
-    return (NULL);
+    return (FALSE);
 }
+
