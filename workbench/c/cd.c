@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/10 13:12:11  digulla
+    Wrong parameter for Lock()
+
     Revision 1.5  1996/09/17 16:42:59  digulla
     Use general startup code
 
@@ -39,7 +42,7 @@ int main (int argc, char ** argv)
     {
 	if(args[0])
 	{
-	    dir=Lock(args[0],ACCESS_READ);
+	    dir=Lock(args[0],SHARED_LOCK);
 	    if(dir)
 	    {
 		fib=AllocDosObject(DOS_FIB,NULL);
