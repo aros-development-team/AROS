@@ -62,6 +62,9 @@ Object *filename_string;
 Object *save_button;
 Object *list2;
 
+Object *drawer_iconlist;
+Object *volume_iconlist;
+
 ULONG xget(Object *obj, Tag attr)
 {
   ULONG storage;
@@ -180,6 +183,32 @@ void add_child_function(void)
     int act = xget(list2,MUIA_List_Active);
 
     DoMethod(list2,MUIM_List_InsertSingleAsTree, id++, act /* parent */, MUIV_List_InsertSingleAsTree_Bottom, 0);
+}
+
+/* IconList callbacks */
+void volume_doubleclicked(void)
+{
+    char buf[200];
+    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+    DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
+    if ((int)ent == MUIV_IconList_NextSelected_End) return;
+
+    strcpy(buf,ent->name);
+    strcat(buf,":");
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
+}
+
+void drawer_doubleclicked(void)
+{
+    static char buf[1024];
+    struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
+    char *drw = (char*)xget(drawer_iconlist,MUIA_IconDrawerList_Drawer);
+    DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
+    if ((int)ent == MUIV_IconList_NextSelected_End) return;
+
+    strcpy(buf,drw);
+    AddPart(buf,ent->name,sizeof(buf));
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
 }
 
 /* The custom class */
@@ -531,8 +560,8 @@ End,
 
 /* iconlist */
 	            Child, HGroup,
-	            	Child, MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
-	            	Child, MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
+	            	Child, volume_iconlist = MUI_NewObject(MUIC_IconVolumeList, GroupFrame, TAG_DONE),
+	            	Child, drawer_iconlist = MUI_NewObject(MUIC_IconDrawerList, GroupFrame, MUIA_IconDrawerList_Drawer,"SYS:",TAG_DONE),
 	            	End,
 
 	            End,
@@ -617,6 +646,10 @@ End,
 	/* radio */
 	DoMethod(country_radio[0], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[1], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
 	DoMethod(country_radio[1], MUIM_Notify, MUIA_Radio_Active, MUIV_EveryTime, country_radio[0], 3, MUIM_NoNotifySet, MUIA_Radio_Active, MUIV_TriggerValue);
+
+        /* iconlist */
+        DoMethod(volume_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, volume_iconlist, 3, MUIM_CallHook, &hook_standard, volume_doubleclicked);
+        DoMethod(drawer_iconlist, MUIM_Notify, MUIA_IconList_DoubleClick, TRUE, drawer_iconlist, 3, MUIM_CallHook, &hook_standard, drawer_doubleclicked);
 
 	set(wnd,MUIA_Window_Open,TRUE);
 
