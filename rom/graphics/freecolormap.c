@@ -71,8 +71,8 @@
 	/* free a PaletteExtra structure that might be connected to this */
 	if (NULL != colormap->PalExtra)
 	{
-	    FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count);
-	    FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count);
+	    FreeMem(colormap->PalExtra->pe_RefCnt   , colormap->Count * sizeof(PalExtra_RefCnt_Type));
+	    FreeMem(colormap->PalExtra->pe_AllocList, colormap->Count * sizeof(PalExtra_AllocList_Type));
 	    FreeMem(colormap->PalExtra, sizeof(struct PaletteExtra));
 	}
 	/* free the structure itself */
