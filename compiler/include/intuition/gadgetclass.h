@@ -435,6 +435,22 @@ struct gpDomain
      rendering. */
 #define PGA_NewLook    (PGA_Dummy + 10)
 
+/* AROS extensions */
+
+ /* [I] (UWORD) If set to PG_BEHAVIOUR_NICE OM_NOTIFY messages are sent
+    also during OM_SET/OM_UPDATE, not just when user drags the knob,
+    which is the default behaviour (PG_BEHAVIOUR_COMPATIBLE) */
+#define PGA_NotifyBehaviour (PGA_Dummy + 30)
+
+ /* [I] (UWORD) If set to PG_BEHAVIOUR_NICE the gadget is re-rendered
+    during OM_SET/OM_UPDATE even when being a subclass of propgclass.
+    The default behaviour (PG_BEHAVIOUR_COMPATIBLE) is that subclasses
+    of propgclass don't render in OM_SET/OM_UPDATE */
+#define PGA_RenderBehaviour (PGA_Dummy + 31)
+
+#define PG_BEHAVIOUR_COMPATIBLE 0
+#define PG_BEHAVIOUR_NICE       1
+
 /**********************************************************************
  ****************************** StrGClass *****************************
  **********************************************************************/
