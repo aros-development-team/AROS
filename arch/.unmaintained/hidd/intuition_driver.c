@@ -38,13 +38,14 @@
 
 #undef DEBUG
 #undef SDEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
 static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
 static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase);
+
 
 
 enum {
@@ -69,6 +70,7 @@ struct IntWindow
 };
 
 #define IW(x) ((struct IntWindow *)x)
+#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
 
 static struct GfxBase *GfxBase = NULL;
 static struct IntuitionBase * IntuiBase;
@@ -187,7 +189,6 @@ int intui_OpenWindow (struct Window * w,
 	if (createsysgads(w, IntuitionBase))
 	{
 
-	    RefreshWindowFrame(w);
 
     	    ReturnBool("intui_OpenWindow", TRUE);
 	}
@@ -211,6 +212,7 @@ void intui_RefreshWindowFrame(struct Window *w)
 {
     /* Draw a frame around the window */
     struct RastPort *rp = w->RPort;
+    UWORD i;
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
     
@@ -228,6 +230,15 @@ void intui_RefreshWindowFrame(struct Window *w)
     Draw(rp, w->Width - 1, w->Height - 1);
     Draw(rp, 0,  w->Height - 1);
     Draw(rp, 0, 0);
+    
+    /* Refersh all the sytem gadgets */
+    
+    for (i = 0; i < NUM_SYSGADS; i ++)
+    {
+        if (SYSGAD(w, i))
+	    RefreshGList((struct Gadget *)SYSGAD(w, i), w, NULL, 1 );
+    }
+    
     
     ReturnVoid("intui_RefreshWindowFrame");
 }
@@ -287,37 +298,53 @@ void intui_ActivateWindow (struct Window * win)
 
 }
 
-struct Window *intui_FindActiveWindow(struct InputEvent *ie, struct IntuitionBase *IntuitionBase)
+struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event, struct IntuitionBase *IntuitionBase)
 {
     /* The caller has checked that the input event is a IECLASS_RAWMOUSE, SELECTDOWN event */
     struct Screen *scr;
     struct Layer *l;
-    struct Window *new_w;
+    struct Window *new_w = NULL;
     ULONG lock;
+    
+    *swallow_event = FALSE;
 
 #warning Fixme: Find out what screen the click was in.
+
     lock = LockIBase(0UL);
     scr = IntuitionBase->ActiveScreen;
     UnlockIBase(lock);
     
-    D(bug("screen: %p\n", scr));
-
-    /* What layer ? */
-    D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
-    l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
-    if (!l)
+    if (ie->ie_Class == IECLASS_RAWMOUSE && ie->ie_Code == SELECTDOWN)
     {
-	D(bug("iih: Click not inside layer\n"));
-	return NULL;
-    }
-
-    new_w = (struct Window *)l->Window;
-    if (!new_w)
-    {
-	D(bug("iih: Selected layer is not a window\n"));
-    }
+	/* What layer ? */
+	D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
+	LockLayerInfo(&scr->LayerInfo);
+	
+	l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
+	
+	UnlockLayerInfo(&scr->LayerInfo);
+	
+	if (!l)
+	{
+	    D(bug("iih: Click not inside layer\n"));
+	}
+	else
+	{
+	
+	    new_w = (struct Window *)l->Window;
+	    if (!new_w)
+	    {
+		D(bug("iih: Selected layer is not a window\n"));
+	    }
+    
     D(bug("Found layer %p\n", l));
+    
+        }
+    
+    
+    }
     return new_w;
+
     
 }
 
@@ -342,7 +369,6 @@ void intui_EndRefresh (struct Window * win, BOOL free,
 
 
 
-#define SYSGAD(w, idx) (IW(w)->sysgads[idx])
 
 
 static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
@@ -515,6 +541,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
     ReturnBool("createsysgads", FALSE);
 
 }
+
 
 static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 {
