@@ -280,5 +280,22 @@ void __exit_stdfiles(void)
     }
 }
 
+#include <stdio.h>
+
+void __updatestdio(void)
+{
+    GETUSER;
+
+    struct Process *me = (struct Process *)FindTask(NULL);
+    
+    fflush(stdin);
+    fflush(stdout);
+    fflush(stderr);
+    
+    __fd_array[STDIN_FILENO]->fh  = __stdfiles[STDIN_FILENO]  = Input();
+    __fd_array[STDOUT_FILENO]->fh = __stdfiles[STDOUT_FILENO] = Output();
+    __fd_array[STDERR_FILENO]->fh = __stdfiles[STDERR_FILENO] = me->pr_CES ? me->pr_CES : me->pr_COS;
+}
+
 ADD2INIT(__init_stdfiles, 2);
 ADD2EXIT(__exit_stdfiles, 2);
