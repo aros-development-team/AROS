@@ -45,7 +45,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *, SocketBase)
 
-    aros_print_not_implemented ("accept")
+    aros_print_not_implemented ("accept");
 #warning TODO: Write BSDSocket/accept
 
     return NULL;
