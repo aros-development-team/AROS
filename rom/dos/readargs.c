@@ -162,11 +162,11 @@
     else
     {
 	lcs.CS_Buffer = (me->pr_Arguments ? me->pr_Arguments : (UBYTE *)"");
- 	s1 = lcs.CS_Buffer;
+ 	cs1 = lcs.CS_Buffer;
 
-	while(*s1++);
+	while(*cs1++);
 
-	lcs.CS_Length = (IPTR)s1 - (IPTR)lcs.CS_Buffer - 1;
+	lcs.CS_Length = (IPTR)cs1 - (IPTR)lcs.CS_Buffer - 1;
 	lcs.CS_CurChr = 0;
 	cs = &lcs;
     }
@@ -175,21 +175,21 @@
     if(!(rdargs->RDA_Flags & RDAF_NOPROMPT))
     {
 	/* Check commandline for a single '?' */
-	s1 = cs->CS_Buffer;
+	cs1 = cs->CS_Buffer;
 
 	/* Skip leading whitespace */
-	while(*s1 == ' ' || *s1 == '\t')
-	    s1++;
+	while(*cs1 == ' ' || *cs1 == '\t')
+	    cs1++;
 
 	/* Check for '?' */
-	if(*s1++ == '?')
+	if(*cs1++ == '?')
 	{
 	    /* Skip whitespace */
-	    while(*s1 == ' ' || *s1 == '\t')
-		s1++;
+	    while(*cs1 == ' ' || *cs1 == '\t')
+		cs1++;
 
 	    /* Check for EOL */
-	    if(*s1 == '\n' || !*s1)
+	    if(*cs1 == '\n' || !*cs1)
 	    {
 		/* Only a single '?' on the commandline. */
 		BPTR  input = Input();
@@ -299,7 +299,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 
 	/* In case of a '/' use the next character as option. */
 	if(*cs1++ == '/')
-	    *s2 |= argflags[*s1-'A'];
+	    *s2 |= argflags[*cs1-'A'];
     }
 
     /* Add a dummy so that the whole line is processed. */
