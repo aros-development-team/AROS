@@ -21,33 +21,6 @@ else
 SUBDIRS = config rom apps/compiler workbench apps
 endif
 
-# Extra files which should go in the developer dist
-DIST_FILES = \
-	.cvsignore \
-	AFD-COPYRIGHT \
-	arosshell.c \
-	BUGS \
-	configure \
-	crypt.c \
-	makefile \
-	README* \
-	CVS \
-	scripts/CVS \
-	scripts/checkmem.awk \
-	scripts/cint2.awk \
-	scripts/copyright.awk \
-	scripts/gendef.awk \
-	scripts/genprotos.h \
-	scripts/jobclient.awk \
-	scripts/makefunctable.awk \
-	scripts/makelinks \
-	scripts/purify \
-	scripts/purify.awk \
-	scripts/relpath \
-	scripts/stat.awk \
-	workbench/s/CVS \
-	workbench/s/Startup-Sequence
-
 TESTDIR = $(BINDIR)/test
 TESTS = $(TESTDIR)/tasktest \
 	$(TESTDIR)/signaltest \
@@ -68,32 +41,28 @@ endif
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
-dist : dist-dir dist-tar dist-lha
-	cp README dist/AROSbin-$(VERSION).readme
-	cp README dist/AROSdev-$(VERSION).readme
+BINARCHIVE = AROS-$(ARCH)-$(KERNEL)-$(VERSION)
+DEVARCHIVE = AROSdev-$(VERSION)
+
+dist : dist-dir dist-tar dist-lha dist-src
+	cp README dist/$(BINARCHIVE).readme
+	cp README dist/$(DEVARCHIVE).readme
 
 dist-dir : FORCE
 	@if [ ! -d dist ]; then $(MKDIR) dist ; else true ; fi
 
 dist-tar : FORCE
 	cd $(ARCHDIR) ; \
-	    $(RM) ../../dist/AROSbin-$(VERSION).tgz ; \
-	    tar chvzf ../../dist/AROSbin-$(VERSION).tgz AROS
-	cd .. ; \
-	    $(RM) AROS/dist/AROSdev-$(VERSION).tgz ; \
-	    tar cvzf AROS/dist/AROSdev-$(VERSION).tgz \
-		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
-		$(shell cd ..; find AROS/include -name "*.h")
+	    $(RM) ../../dist/$(BINARCHIVE).tgz ; \
+	    tar chvzf ../../dist/$(BINARCHIVE).tgz AROS
 
 dist-lha : FORCE
 	cd $(ARCHDIR) ; \
-	    $(RM) ../../dist/AROSbin-$(VERSION).lha ; \
-	    lha a ../../dist/AROSbin-$(VERSION).lha AROS
-	cd .. ; \
-	    $(RM) AROS/dist/AROSdev-$(VERSION).lha ; \
-	    lha a AROS/dist/AROSdev-$(VERSION).lha \
-		$(addprefix AROS/, $(sort $(SUBDIRS) $(DIST_FILES))) \
-		$(shell cd ..; find AROS/include -name "*.h")
+	    $(RM) ../../dist/$(BINARCHIVE).lha ; \
+	    lha a ../../dist/$(BINARCHIVE).lha AROS
+
+dist-src : FORCE
+	$(TOP)/scripts/makedist src $(DEVARCHIVE)
 
 # Alwaye remake rules that depend on this one
 FORCE :

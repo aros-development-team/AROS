@@ -1,0 +1,6 @@
+*.html
+*.gawk
+*.src
+*.cgi
+*.doc
+makefile

@@ -1,0 +1,12 @@
+cint2.awk
+gendef.awk
+genprotos.h
+jobclient.awk
+makedocs
+makefunctable.awk
+purify
+purify.awk
+makelinks
+relpath
+stat.awk
+makedist

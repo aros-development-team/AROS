@@ -4,6 +4,7 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 SUBDIRS=include aros alib clib
+#SUBDIRS=include aros alib clib vcpp vbcc
 
 all:
 	@for dir in $(SUBDIRS) ; do \
