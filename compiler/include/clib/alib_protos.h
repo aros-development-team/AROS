@@ -35,6 +35,12 @@
 #ifndef LIBRARIES_GADTOOLS_H
 #   include <libraries/gadtools.h>
 #endif
+#ifndef DEVICES_KEYMAP_H
+#   include <devices/keymap.h>
+#endif
+#ifndef DEVICES_INPUTEVENT_H
+#   include <devices/inputevent.h>
+#endif
 
 struct MsgPort;
 struct IORequest;
@@ -68,8 +74,13 @@ LONG TimeDelay (LONG unit, ULONG secs, ULONG microsecs);
 void waitbeam (LONG pos);
 
 /* Commodities */
-CxObj * HotKey (STRPTR description, struct MsgPort *port, LONG id);
-void FreeIEvents (volatile struct InputEvent *events);
+CxObj  *HotKey (STRPTR description, struct MsgPort *port, LONG id);
+VOID    FreeIEvents (volatile struct InputEvent *events);
+UBYTE **ArgArrayInit(ULONG argc, UBYTE **argv);
+VOID    ArgArrayDone(VOID);
+LONG    ArgInt(UBYTE **tt, STRPTR entry, LONG defaultVal);
+STRPTR  ArgString(UBYTE **tt, STRPTR entry, STRPTR defaultstring);
+struct InputEvent *InvertString(STRPTR str, struct KeyMap *km);
 
 /* Gadtools */
 APTR GetVisualInfo (struct Screen * screen, ULONG tag1, ...);
