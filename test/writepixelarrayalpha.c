@@ -101,7 +101,7 @@ static void makewin(void)
 			       WA_ReportMouse   , TRUE,
 			       WA_MouseQueue	, 1,
 			       WA_IDCMP		, IDCMP_CLOSEWINDOW | IDCMP_MOUSEMOVE,
-			       WA_BackFill  	, LAYERS_NOBACKFILL,
+			       WA_BackFill  	, (IPTR)LAYERS_NOBACKFILL,
 			       TAG_DONE);
 			       
     if (!win) cleanup("Can't open window");
@@ -132,6 +132,7 @@ static void makewin(void)
 
 /***********************************************************************************/
 
+#if 0
 static void getevents(void)
 {
     struct IntuiMessage *msg;
@@ -158,6 +159,7 @@ static void getevents(void)
     }
 
 }
+#endif
 
 /***********************************************************************************/
 
@@ -307,13 +309,15 @@ static void action(void)
 
 /***********************************************************************************/
 
-void main(void)
+int main(void)
 {
     openlibs();
     getvisual();
     makewin();
     action();
     cleanup(0);
+
+    return 0; /* keep compiler happy */
 }
 
 /***********************************************************************************/

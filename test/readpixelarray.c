@@ -84,7 +84,7 @@ static void getvisual(void)
 	
 	val = GetCyberMapAttr(scr->RastPort.BitMap,CYBRMATTR_PIXFMT);
 	
-	printf("cgfx attribute = %d\n", val); 
+	printf("cgfx attribute = %ld\n", val); 
     }
 
     if (GetBitMapAttr(scr->RastPort.BitMap, BMA_DEPTH) <= 8)
@@ -203,13 +203,15 @@ static void action(void)
 
 /***********************************************************************************/
 
-void main(void)
+int main(void)
 {
     openlibs();
     getvisual();
     makewin();
     action();
     cleanup(0);
+
+    return 0; /* keep compiler happy */
 }
 
 /***********************************************************************************/
