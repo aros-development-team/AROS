@@ -1,7 +1,7 @@
 #ifndef OOP_OOP_H
 #define OOP_OOP_H
 /*
-    Copyright 1995-2000 AROS - The Amiga Research OS
+    Copyright 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -16,11 +16,16 @@
 #   include <exec/nodes.h>
 #endif
 
+#ifndef EXEC_LIBRARIES_H
+#   include <exec/libraries.h>
+#endif
+
 #ifndef UTILITY_TAGITEM_H
 #   include <utility/tagitem.h>
 #endif
 
 #define AROSOOP_NAME "oop.library"
+
 typedef ULONG OOP_Object;
 
 typedef ULONG OOP_MethodID;
@@ -43,7 +48,7 @@ typedef ULONG OOP_AttrCheck;
     pre_tag ## _attrcheck
     
 enum {
-    errOOP_ParseAttrs_TooManyAttrs = 1
+    ooperr_ParseAttrs_TooManyAttrs = 1
 };
 
 typedef struct
@@ -54,8 +59,8 @@ typedef struct
 
 struct OOP_ABDescr
 {
-    STRPTR interfaceID;
-    OOP_AttrBase *attrBase;
+    STRPTR  	    interfaceID;
+    OOP_AttrBase    *attrBase;
 };
 
 typedef struct OOP_IClass OOP_Class;
@@ -64,14 +69,13 @@ struct OOP_IClass
 {
 
     /* Array of pointers to methodtables for this class */
-    struct Node 	ClassNode;
-    
-    
-    ULONG InstOffset;
-    APTR UserData;
-    IPTR (*DoMethod)(OOP_Object *, OOP_Msg);
-    IPTR (*CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
-    IPTR (*DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
+    struct Node 	ClassNode;    
+    struct Library  	*OOPBasePtr;
+    ULONG   	    	InstOffset;
+    APTR    	    	UserData;
+    IPTR    	    	(*DoMethod)(OOP_Object *, OOP_Msg);
+    IPTR    	    	(*CoerceMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
+    IPTR    	    	(*DoSuperMethod)(OOP_Class *, OOP_Object *, OOP_Msg);
 
 };
 
@@ -97,6 +101,8 @@ struct _OOP_Object
 #define OOP_OCLASS(obj) \
 	(_OOP_OBJECT(obj)->o_Class)
 
+#define OOP_OOPBASE(obj) \
+    	(OOP_OCLASS(obj)->OOPBasePtr)
 
 #define OOP_DoMethod(o, msg) ( (OOP_OCLASS(o))->DoMethod((o), (msg)) )
 #define OOP_DoSuperMethod(cl, o, msg) ((cl)->DoSuperMethod(cl, o, msg))
@@ -109,15 +115,15 @@ struct _OOP_Object
 
 struct OOP_InterfaceDescr
 {
-    struct OOP_MethodDescr *MethodTable;
-    STRPTR InterfaceID;
-    ULONG NumMethods; /* Number of methods in the methodtable */
+    struct OOP_MethodDescr  *MethodTable;
+    STRPTR  	    	    InterfaceID;
+    ULONG   	    	    NumMethods; /* Number of methods in the methodtable */
 };
 
 struct OOP_MethodDescr
 {
-    IPTR (*MethodFunc)();
-    ULONG MethodIdx;
+    IPTR    (*MethodFunc)();
+    ULONG   MethodIdx;
 };
 
 
@@ -258,7 +264,7 @@ enum {
 
 typedef struct OOP_InterfaceStruct
 {
-    IPTR (*callMethod)(struct OOP_InterfaceStruct *, OOP_Msg);
+    IPTR    	(*callMethod)(struct OOP_InterfaceStruct *, OOP_Msg);
     OOP_Object	*targetObject;
     
 } OOP_Interface;
