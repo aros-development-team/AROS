@@ -105,12 +105,15 @@ filehandler system.
 BUG000015
 digulla@fh-konstanz.de
 After rtdemo, dir doesn't work anymore. I get "Object not found".
+Changing dirs or using assigns causes segfaults. However, this only affects
+the hd filesystem, you can change to RAM: where everything works okay.
 
-BUG000016 fixed
+BUG000016 partial fix
 digulla@fh-konstanz.de
 The path of the inital shell is wrong. Instead of "Workbench:" it
 reads "Workbench:.". If you CD into a subdir (say libs), then
 it doesn't change.
+Still using the "cd" command the prompt does not change.
 
 BUG000017
 bergers@cip.e-technik.uni-erlangen.de
@@ -127,9 +130,11 @@ test/matchtest: when unlocking dirlock at the end of the program the dirlock
 should still exist and not create a GURU-Meditation saying that this memory 
 has already been freed.
 
-BUG000020
+BUG000020 fixed
 bergers@cip.e-technik.uni-erlangen.de
 Demos/2View causes a Segmentation Fault before any output occurs.
+The problem was that programs with mutiple object files must have $(STARTUP)
+before $(OBJS) in mmakefile when linking
 
 BUG000021
 bergers@cip.e-technik.uni-erlangen.de
