@@ -122,6 +122,9 @@ struct ColorRegister
 #define PDTA_MaxDitherPens      (DTA_Dummy + 221)
 #define PDTA_DitherQuality      (DTA_Dummy + 222)
 #define PDTA_AllocatedPens      (DTA_Dummy + 223)
+#define PDTA_ScaleQuality	(DTA_Dummy + 224)
+#define PDTA_DelayRead		(DTA_Dummy + 225)
+#define PDTA_DelayedRead	(DTA_Dummy + 226)
 
 #define PDTA_SourceMode         (DTA_Dummy + 250)
 #define PDTA_DestMode           (DTA_Dummy + 251)
@@ -131,6 +134,7 @@ struct ColorRegister
 #define PDTM_Dummy              (DTM_Dummy + 0x60)
 #define PDTM_WRITEPIXELARRAY    (PDTM_Dummy + 0)
 #define PDTM_READPIXELARRAY     (PDTM_Dummy + 1)
+#define PDTM_SCALE              (PDTM_Dummy + 2)
 
 struct pdtBlitPixelArray
 {
@@ -142,6 +146,14 @@ struct pdtBlitPixelArray
 	ULONG   pbpa_Top;
 	ULONG   pbpa_Width;
 	ULONG   pbpa_Height;
+};
+
+struct pdtScale
+{
+	ULONG MethodID;
+	ULONG ps_NewWidth;
+	ULONG ps_NewHeight;
+	ULONG ps_Flags;
 };
 
 #define PBPAFMT_RGB     0
