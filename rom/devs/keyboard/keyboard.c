@@ -345,8 +345,7 @@ AROS_LH1(void, beginio,
 	if(KBBase->kb_ResetPhase == TRUE)
 	{
 	    if(--(KBBase->kb_nHandlers) == 0)
-		/* ResetSystem();  Function in Aros.library? */
-		;
+		ColdReboot();	/* Shut down system */
 	}
 	else
 	{
@@ -445,7 +444,7 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
     UWORD  trueCode;            /* Code without possible keypress addition */
     int    i;			/* Loop variable */
     struct InputEvent *event;   /* Temporary variable */
-
+    (void)trueCode;		/* Supress warning */
 
     event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
 
@@ -484,7 +483,6 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    /* Key released ? ... */
 	    if(code & KEYUPMASK)
 	    {
-		/* kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);*/
 		kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
 	    }
 	    else  /* ... or pressed? */
@@ -496,7 +494,6 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 		}
 		else
 		{
-		    /* kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST)); */
 		    kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST); 
 		}
 	    }
@@ -531,11 +528,32 @@ static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
 			      + ALIGN(sizeof(struct InputEvent)));
 
+	if(code == 0x78)
+	    KBBase->kb_ResetPhase = TRUE;
     }
 
     D(bug("Done writing events!"));
-
     event->ie_NextEvent = NULL;
+
+    if(KBBase->kb_ResetPhase)
+    {
+	struct Interrupt *node;
+
+	if(!IsListEmpty(&KBBase->kb_ResetHandlerList))
+	    /* We may want to install a timer here so that ColdReboot()
+	       will eventually be called even if a reset handler hang. */
+	    ForeachNode(&KBBase->kb_ResetHandlerList, (struct Node *)node)
+	    {
+		/* We may be inside an interrupt when we come here. Maybe
+		   we shall use some other technique? */
+		AROS_UFC3(VOID, node->is_Code,
+			  AROS_UFCA(APTR, node->is_Data, A1),
+			  AROS_UFCA(APTR, node->is_Code, A5),
+			  AROS_UFCA(struct ExecBase *, SysBase, A6));
+	    }
+	else
+	    ColdReboot();	/* Bye bye AROS */
+    }
 }
 
 

@@ -9,7 +9,7 @@
 
 
 #define KB_MAXKEYS     256
-#define KB_MATRIXSIZE  (KB_MAXKEYS/sizeof(UBYTE))
+#define KB_MATRIXSIZE  (KB_MAXKEYS/(sizeof(UBYTE)*8))
 
 #define KB_BUFFERSIZE  128
 
@@ -35,9 +35,8 @@ struct KeyboardBase
     BOOL    kb_ResetPhase;	        /* True if reset has begun */
     UBYTE  *kb_Matrix;
     
-    Object	*kb_Hidd;	        /* Hidd object to use */
+    Object	   *kb_Hidd;	        /* Hidd object to use */
     struct Library *kb_OOPBase;
-    
 };
 
 
