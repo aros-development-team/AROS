@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/10/23 14:24:23  aros
+    Make sure the Alert is shown to the user
+
     Revision 1.5  1996/08/16 14:04:40  digulla
     Show more infos about the task
 
@@ -77,6 +80,7 @@
 	, (alertNum & 0x80000000) ? "(DEADEND)" : ""
 	, task, task->tc_Node.ln_Name
 	);
+    fflush (stderr);
 
     if (alertNum & AT_DeadEnd)
 	exit (20);
