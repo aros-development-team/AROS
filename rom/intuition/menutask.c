@@ -55,7 +55,7 @@ static const char *subitemindicator = "»";
 static void HandleMouseMove(struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 			     struct IntuitionBase *IntuitionBase);
-static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD itemnum,
+static void HandleCheckItem(struct Window *win, struct MenuItem *item,
 			    struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase);
 
 static void HighlightMenuTitle(struct Menu *menu, struct MenuHandlerData *mhd,
@@ -440,7 +440,6 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 	    {	
 		struct Window *win = (struct Window *)lay->Window;
 		struct MenuItem *item = NULL;
-		WORD itemnum;
 
         	win = (struct Window *)lay->Window;
 
@@ -456,7 +455,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 		
 		if (item) if (item->Flags & CHECKIT)
 		{
-		    HandleCheckItem(win, item, itemnum, mhd, IntuitionBase);
+		    HandleCheckItem(win, item, mhd, IntuitionBase);
 		}
 		
 		AddToSelection(mhd, IntuitionBase);
@@ -486,7 +485,7 @@ static void HandleMouseClick(struct InputEvent *ie, struct MenuHandlerData *mhd,
 
 /**************************************************************************************************/
 
-static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD itemnum,
+static void HandleCheckItem(struct Window *win, struct MenuItem *item,
 			    struct MenuHandlerData *mhd, struct IntuitionBase *IntuitionBase)
 {
     /* Note: If you change something here, you probably must also change
@@ -538,7 +537,7 @@ static void HandleCheckItem(struct Window *win, struct MenuItem *item, WORD item
 
 	for(i = 0; (i < 32) && checkitem; i++, checkitem = checkitem->NextItem)
 	{
-	    if ((i != itemnum) && (item->MutualExclude & (1L << i)) &&
+	    if ((item->MutualExclude & (1L << i)) &&
 		((checkitem->Flags & (CHECKED | CHECKIT)) == (CHECKIT | CHECKED)))
 	    {
 		checkitem->Flags &= ~CHECKED;
