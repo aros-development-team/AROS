@@ -16,6 +16,7 @@ $(OBJDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
-$(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o
+$(LIBDIR)/libaros.a: $(OBJDIR)/calcchecksum.o $(OBJDIR)/strcmp.o \
+	    $(OBJDIR)/strlen.o $(OBJDIR)/strcpy.o $(OBJDIR)/qsort.o
 	$(AR) $@ $^
 
