@@ -74,7 +74,7 @@ case "$type" in
 	# Command to generate shared libs
 	SHARED_AR="gcc -shared -o"
 	# Required to link shared libraries in at runtime
-	SHELL_LDFLAGS= -Xlinker -rpath -Xlinker ./lib
+	SHELL_LDFLAGS="-Xlinker -rpath -Xlinker ./lib"
 	;;
 "HP-UX" )
 	COMMON_CFLAGS="-Aa -g"
