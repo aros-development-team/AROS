@@ -90,12 +90,16 @@ FILES := \
 
 USER_CFLAGS	:= -O2 -Wall -D_IEEE_LIBM -Iinclude
 
-#MM- linklibs : linklibs-arosm
-#MM- linklibs-mlib : linklibs-arosm
-#MM linklibs-arosm : includes
+#MM- linklibs : linklibs-arosm-$(CPU)
+#MM- linklibs-mlib : linklibs-arosm-$(CPU)
+#MM- linklibs-arosm-i386 : linklibs-arosm-hasfpu
+#MM linklibs-arosm-hasfpu : includes
 
-%make_linklib_setup mmake=linklibs-arosm
+%make_linklib_setup mmake=linklibs-arosm-hasfpu
 %make_linklib
+
+linklibs-$(LIB)-hasfpu: setup $(LIBDIR)/lib$(LIB).a
+	@$(NOP)
 
 %common
 %include_deps
