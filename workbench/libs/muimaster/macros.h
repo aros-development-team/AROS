@@ -255,7 +255,21 @@
 
 
 /* Some macros */
+#ifdef __GNUC__
+#define get(obj,attr,store)                      \
+({                                               \
+    IPTR  _localstore;                           \
+    ULONG _ret;                                  \
+    typeof (store) _store = (store);             \
+    extern int GetAttrs__IPTR_storage_size_mismatch[(sizeof(*_store) == sizeof(IPTR))?1:-1] __unused; \
+    _ret = GetAttr((attr), (obj), &_localstore); \
+    *_store = (typeof (*_store)) _localstore;    \
+    _ret;                                        \
+})
+#else  /* !__GNUC__ */
 #define get(obj,attr,store) GetAttr(attr,obj,(IPTR *)store)
+#endif /* !__GNUC__ */
+
 #define set(obj,attr,value) SetAttrs(obj,attr,value,TAG_DONE)
 #define nnset(obj,attr,value) SetAttrs(obj,MUIA_NoNotify,TRUE,attr,value,TAG_DONE)
 
