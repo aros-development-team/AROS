@@ -43,15 +43,15 @@ struct reqdims
 STRPTR *buildeasyreq_makelabels(struct reqdims *dims,STRPTR labeltext);
 STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args);
 BOOL buildeasyreq_calculatedims(struct reqdims *dims,
-                                struct Screen *scr,
-                                STRPTR formattedtext,
-                                STRPTR *gadgetlabels);
+				struct Screen *scr,
+				STRPTR formattedtext,
+				STRPTR *gadgetlabels);
 struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
-                                        STRPTR *gadgetlabels,
-                                        struct Screen *scr);
+					STRPTR *gadgetlabels,
+					struct Screen *scr);
 void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
-                       struct Window *win, struct Screen *scr,
-                       struct Gadget *gadgets);
+		       struct Window *win, struct Screen *scr,
+		       struct Gadget *gadgets);
 
 int charsinstring(STRPTR string, char c);
 
@@ -81,11 +81,11 @@ int charsinstring(STRPTR string, char c);
 
     INPUTS
 	RefWindow - A reference window. If NULL, the requester opens on
-	            the default public screen.
+		    the default public screen.
 	easyStruct - The EasyStruct structure (<intuition/intuition.h>),
-	             which describes the requester.
+		     which describes the requester.
 	IDCMP - IDCMP flags, which should satisfy the requester, too. This is
-	        useful for requesters, which want to listen to disk changes,
+		useful for requesters, which want to listen to disk changes,
 		etc. Note that this is not a pointer to the flags as in
 		EasyRequestArgs().
 	Args - The arguments for easyStruct->es_TextFormat.
@@ -122,76 +122,76 @@ int charsinstring(STRPTR string, char c);
     struct EasyRequestUserData *requserdata;
 
     if (!easyStruct)
-        return FALSE;
+	return FALSE;
 
     /* get requester title */
     reqtitle = easyStruct->es_Title;
     if ((!reqtitle) && (RefWindow))
-        reqtitle = RefWindow->Title;
+	reqtitle = RefWindow->Title;
 
     /* get screen and screendrawinfo */
     if (RefWindow)
-        scr = RefWindow->WScreen;
+	scr = RefWindow->WScreen;
     if (!scr)
     {
-        scr = LockPubScreen(NULL);
-        if (!scr)
-            return FALSE;
-        lockedscr = scr;
+	scr = LockPubScreen(NULL);
+	if (!scr)
+	    return FALSE;
+	lockedscr = scr;
     }
 
     /* create everything */
     gadgetlabels = buildeasyreq_makelabels(&dims,
-                                           easyStruct->es_GadgetFormat);
+					   easyStruct->es_GadgetFormat);
     if (gadgetlabels)
     {
-        formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
-                                                Args);
-        if (formattedtext)
+	formattedtext = buildeasyreq_formattext(easyStruct->es_TextFormat,
+						Args);
+	if (formattedtext)
 	{
-            if (buildeasyreq_calculatedims(&dims, scr,
-                                           formattedtext, gadgetlabels))
-            {
-                gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr);
-                if (gadgets)
-                {
-                    requserdata = AllocVec(sizeof(struct EasyRequestUserData),
-                                           MEMF_ANY);
-                    if (requserdata)
+	    if (buildeasyreq_calculatedims(&dims, scr,
+					   formattedtext, gadgetlabels))
+	    {
+		gadgets = buildeasyreq_makegadgets(&dims, gadgetlabels, scr);
+		if (gadgets)
+		{
+		    requserdata = AllocVec(sizeof(struct EasyRequestUserData),
+					   MEMF_ANY);
+		    if (requserdata)
 		    {
-                        req = OpenWindowTags(NULL,
-                                             WA_Width, dims.width,
-                                             WA_Height, dims.height,
-                                             WA_IDCMP, IDCMP_GADGETUP | IDCMP,
-                                             WA_Gadgets, (IPTR)gadgets,
-                                             WA_Title, (IPTR)reqtitle,
-                                             WA_CustomScreen, (IPTR)scr,
-                                             WA_Flags, WFLG_DRAGBAR |
-                                                       WFLG_DEPTHGADGET |
-                                                       WFLG_ACTIVATE |
-                                                       WFLG_RMBTRAP |
-                                                       WFLG_SIMPLE_REFRESH,
-                                             TAG_DONE);
-                        if (req)
+			req = OpenWindowTags(NULL,
+					     WA_Width, dims.width,
+					     WA_Height, dims.height,
+					     WA_IDCMP, IDCMP_GADGETUP | IDCMP,
+					     WA_Gadgets, (IPTR)gadgets,
+					     WA_Title, (IPTR)reqtitle,
+					     WA_CustomScreen, (IPTR)scr,
+					     WA_Flags, WFLG_DRAGBAR |
+						       WFLG_DEPTHGADGET |
+						       WFLG_ACTIVATE |
+						       WFLG_RMBTRAP |
+						       WFLG_SIMPLE_REFRESH,
+					     TAG_DONE);
+			if (req)
 			{
-                            req->UserData = (BYTE *)requserdata;
-                            requserdata->IDCMP = IDCMP;
-                            requserdata->GadgetLabels = gadgetlabels;
-                            buildeasyreq_draw(&dims, formattedtext,
-                                              req, scr, gadgets);
-                            FreeVec(formattedtext);
-                            return req;
+			    req->UserData = (BYTE *)requserdata;
+			    requserdata->IDCMP = IDCMP;
+			    requserdata->GadgetLabels = gadgetlabels;
+			    buildeasyreq_draw(&dims, formattedtext,
+					      req, scr, gadgets);
+			    FreeVec(formattedtext);
+			    return req;
 			}
 
-                        /* opening requester failed -> free everything */
-                        FreeVec(requserdata);
+			/* opening requester failed -> free everything */
+			FreeVec(requserdata);
 		    }
-                    easyrequest_freegadgets(gadgets);
-                }
-            }
-            FreeVec(formattedtext);
-        }
-        easyrequest_freelabels(gadgetlabels);
+		    easyrequest_freegadgets(gadgets);
+		}
+	    }
+	    FreeVec(formattedtext);
+	}
+	easyrequest_freelabels(gadgetlabels);
     }
     UnlockPubScreen(NULL, lockedscr);
 
@@ -205,8 +205,8 @@ UWORD BgPattern[2]  = { 0xAAAA, 0x5555 };
 
 /* draw the contents of the requester */
 void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
-                       struct Window *req, struct Screen *scr,
-                       struct Gadget *gadgets)
+		       struct Window *req, struct Screen *scr,
+		       struct Gadget *gadgets)
 {
     struct DrawInfo *dri;
     struct Image *frame;
@@ -214,56 +214,56 @@ void buildeasyreq_draw(struct reqdims *dims, STRPTR text,
 
     dri = GetScreenDrawInfo(scr);
     if (!dri)
-        return;
+	return;
 
     /* draw background pattern */
     SetABPenDrMd(req->RPort,
-                 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
-                 JAM1);
+		 dri->dri_Pens[SHINEPEN], dri->dri_Pens[BACKGROUNDPEN],
+		 JAM1);
     SetAfPt(req->RPort, BgPattern, 1);
     RectFill(req->RPort, scr->WBorLeft,
-                         scr->WBorTop + dims->fontheight - 1,
-                         req->Width - scr->WBorRight - 1,
-                         req->Height - scr->WBorBottom - 1);
+			 scr->WBorTop + dims->fontheight - 1,
+			 req->Width - scr->WBorRight - 1,
+			 req->Height - scr->WBorBottom - 1);
     SetAfPt(req->RPort, NULL, 0);
 
     /* draw textframe */
     frame = (struct Image *)NewObject(NULL, FRAMEICLASS,
-        IA_Left, scr->WBorLeft + HSPACE,
-        IA_Top, scr->WBorTop + dims->fontheight - 1 + VSPACE,
-        IA_Width, req->Width - scr->WBorLeft - scr->WBorRight - HSPACE * 2,
-        IA_Height, req->Height - scr->WBorTop - scr->WBorBottom -
-                   dims->fontheight * 2 - VSPACE * 3 - VBORDER * 2 + 1,
-        IA_Recessed, TRUE,
-        IA_EdgesOnly, FALSE,
-        TAG_DONE);
+	IA_Left, scr->WBorLeft + HSPACE,
+	IA_Top, scr->WBorTop + dims->fontheight - 1 + VSPACE,
+	IA_Width, req->Width - scr->WBorLeft - scr->WBorRight - HSPACE * 2,
+	IA_Height, req->Height - scr->WBorTop - scr->WBorBottom -
+		   dims->fontheight * 2 - VSPACE * 3 - VBORDER * 2 + 1,
+	IA_Recessed, TRUE,
+	IA_EdgesOnly, FALSE,
+	TAG_DONE);
     if (frame)
     {
-        DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
-        DisposeObject((Object *)frame);
+	DrawImageState(req->RPort, frame, 0, 0, IDS_NORMAL, dri);
+	DisposeObject((Object *)frame);
     }
 
     /* draw text */
     SetABPenDrMd(req->RPort,
-                 dri->dri_Pens[TEXTPEN], dri->dri_Pens[BACKGROUNDPEN], JAM1);
+		 dri->dri_Pens[TEXTPEN], dri->dri_Pens[BACKGROUNDPEN], JAM1);
     for (currentline = 1; text[0] != '\0'; currentline++)
     {
-        STRPTR strend;
-        int length;
+	STRPTR strend;
+	int length;
 
-        strend = strchr(text, '\n');
-        if (strend)
-            length = strend - text;
-        else
-            length = strlen(text);
-        Move(req->RPort,
-             scr->WBorLeft + HSPACE + HBORDER,
-             scr->WBorTop + dims->fontheight * currentline - 1 +
-               VSPACE + VBORDER + req->RPort->Font->tf_Baseline);
-        Text(req->RPort, text, length);
-        text += length;
-        if (text[0] == '\n')
-            text++;
+	strend = strchr(text, '\n');
+	if (strend)
+	    length = strend - text;
+	else
+	    length = strlen(text);
+	Move(req->RPort,
+	     scr->WBorLeft + HSPACE + HBORDER,
+	     scr->WBorTop + dims->fontheight * currentline - 1 +
+	       VSPACE + VBORDER + req->RPort->Font->tf_Baseline);
+	Text(req->RPort, text, length);
+	text += length;
+	if (text[0] == '\n')
+	    text++;
     }
 
     /* draw gadgets */
@@ -286,7 +286,7 @@ STRPTR *buildeasyreq_makelabels(struct reqdims *dims, STRPTR labeltext)
     dims->gadgets = charsinstring(labeltext, '|') + 1;
     gadgetlabels = AllocVec((dims->gadgets + 1) * sizeof(STRPTR), MEMF_ANY);
     if (!gadgetlabels)
-        return NULL;
+	return NULL;
     gadgetlabels[dims->gadgets] = NULL;
 
     /* copy label-string */
@@ -294,22 +294,22 @@ STRPTR *buildeasyreq_makelabels(struct reqdims *dims, STRPTR labeltext)
     label = AllocVec(len, MEMF_ANY);
     if (!label)
     {
-        FreeVec(gadgetlabels);
-        return NULL;
+	FreeVec(gadgetlabels);
+	return NULL;
     }
     CopyMem(labeltext, label, len);
 
     /* set up the pointers and insert null-bytes */
     for (currentgadget = 0; currentgadget < dims->gadgets; currentgadget++)
     {
-        gadgetlabels[currentgadget] = label;
-        if (currentgadget != (dims->gadgets - 1))
-        {
-            while (label[0] != '|')
-                label++;
-            label[0] = '\0';
-            label++;
-        }
+	gadgetlabels[currentgadget] = label;
+	if (currentgadget != (dims->gadgets - 1))
+	{
+	    while (label[0] != '|')
+		label++;
+	    label[0] = '\0';
+	    label++;
+	}
     }
 
     return gadgetlabels;
@@ -326,13 +326,13 @@ STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args)
     len = strlen(textformat) + 256;
     for (;;)
     {
-        buffer = AllocVec(len, MEMF_ANY);
-        if (!buffer)
-            return NULL;
-        if (vsnprintf(buffer, len, textformat, args) < len)
-            return buffer;
-        FreeVec(buffer);
-        len += 256;
+	buffer = AllocVec(len, MEMF_ANY);
+	if (!buffer)
+	    return NULL;
+	if (vsnprintf(buffer, len, textformat, args) < len)
+	    return buffer;
+	FreeVec(buffer);
+	len += 256;
     }
 }
 
@@ -340,9 +340,9 @@ STRPTR buildeasyreq_formattext(STRPTR textformat, APTR args)
 
 /* calculate dimensions of the requester */
 BOOL buildeasyreq_calculatedims(struct reqdims *dims,
-                                struct Screen *scr,
-                                STRPTR formattedtext,
-                                STRPTR *gadgetlabels)
+				struct Screen *scr,
+				STRPTR formattedtext,
+				STRPTR *gadgetlabels)
 {
     STRPTR textline;
     int textlines, line; /* number of lines in es_TextFormat */
@@ -353,30 +353,30 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     dims->fontheight = scr->RastPort.Font->tf_YSize;
     textlines = charsinstring(formattedtext, '\n') + 1;
     dims->height = (textlines + 2) * dims->fontheight +
-                   scr->WBorTop + scr->WBorBottom - 1 +
-                   VSPACE * 3 + VBORDER * 4;
+		   scr->WBorTop + scr->WBorBottom - 1 +
+		   VSPACE * 3 + VBORDER * 4;
     if (dims->height > scr->Height)
-        return FALSE;
+	return FALSE;
 
     /* calculate width of text-box */
     textline = formattedtext;
     for (line = 0; line<textlines; line++)
     {
-        int linelen; /* length of current text line */
-        UWORD linewidth; /* width (pixel) of current text line */
+	int linelen; /* length of current text line */
+	UWORD linewidth; /* width (pixel) of current text line */
 
-        if (line == (textlines - 1))
-            linelen = strlen(textline);
-        else
-        {
-            linelen = 0;
-            while (textline[linelen] != '\n')
-                linelen++;
-        }
-        linewidth = TextLength(&scr->RastPort, textline, linelen);
-        if (linewidth > textboxwidth)
-            textboxwidth = linewidth;
-        textline = textline + linelen + 1;
+	if (line == (textlines - 1))
+	    linelen = strlen(textline);
+	else
+	{
+	    linelen = 0;
+	    while (textline[linelen] != '\n')
+		linelen++;
+	}
+	linewidth = TextLength(&scr->RastPort, textline, linelen);
+	if (linewidth > textboxwidth)
+	    textboxwidth = linewidth;
+	textline = textline + linelen + 1;
     }
     textboxwidth += HBORDER * 2;
 
@@ -384,13 +384,13 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     dims->gadgetwidth = 0;
     while (gadgetlabels[currentgadget])
     {
-        UWORD gadgetwidth; /* width of current gadget */
+	UWORD gadgetwidth; /* width of current gadget */
 
-        gadgetwidth = TextLength(&scr->RastPort, gadgetlabels[currentgadget],
-                                 strlen(gadgetlabels[currentgadget]));
-        if (gadgetwidth > dims->gadgetwidth)
-            dims->gadgetwidth = gadgetwidth;
-        currentgadget++;
+	gadgetwidth = TextLength(&scr->RastPort, gadgetlabels[currentgadget],
+				 strlen(gadgetlabels[currentgadget]));
+	if (gadgetwidth > dims->gadgetwidth)
+	    dims->gadgetwidth = gadgetwidth;
+	currentgadget++;
     }
     dims->gadgetwidth += HBORDER * 2 + HSPACE;
     gadgetswidth = (dims->gadgetwidth + HSPACE) * dims->gadgets - HSPACE;
@@ -398,7 +398,7 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
     /* calculate width of requester */
     dims->width = MAX(textboxwidth, gadgetswidth) + HSPACE * 2;
     if (dims->width > scr->Width)
-        return FALSE;
+	return FALSE;
 
     return TRUE;
 }
@@ -407,8 +407,8 @@ BOOL buildeasyreq_calculatedims(struct reqdims *dims,
 
 /* make all the gadgets */
 struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
-                                        STRPTR *gadgetlabels,
-                                        struct Screen *scr)
+					STRPTR *gadgetlabels,
+					struct Screen *scr)
 {
     struct Gadget *gadgetlist, *thisgadget = NULL;
     struct Image *gadgetframe;
@@ -416,57 +416,64 @@ struct Gadget *buildeasyreq_makegadgets(struct reqdims *dims,
     UWORD xoffset, restwidth;
 
     if (gadgetlabels[0] == NULL)
-        return NULL;
+	return NULL;
 
     gadgetframe = (struct Image *)NewObject(NULL, FRAMEICLASS,
-                                            IA_FrameType, FRAME_BUTTON,
-                                            IA_EdgesOnly, TRUE,
-                                            TAG_DONE);
+					    IA_FrameType, FRAME_BUTTON,
+					    IA_EdgesOnly, TRUE,
+					    TAG_DONE);
     if (!gadgetframe)
-        return NULL;
+	return NULL;
 
     restwidth = dims->width - scr->WBorLeft - scr->WBorRight - HSPACE * 2;
     if (dims->gadgets == 1)
-        xoffset = scr->WBorLeft + HSPACE + (restwidth - dims->gadgetwidth) / 2;
+	xoffset = scr->WBorLeft + HSPACE + (restwidth - dims->gadgetwidth) / 2;
     else
     {
-        xoffset = scr->WBorLeft + HSPACE;
-        restwidth -= dims->gadgets * dims->gadgetwidth;
+	xoffset = scr->WBorLeft + HSPACE;
+	restwidth -= dims->gadgets * dims->gadgetwidth;
     }
+
+    gadgetlist = NULL;
+
     for (currentgadget = 0; gadgetlabels[currentgadget]; currentgadget++)
     {
-        IPTR gadgetid;
+	IPTR gadgetid;
 
-        if (currentgadget == (dims->gadgets - 1))
-            gadgetid = 0;
-        else
-            gadgetid = currentgadget + 1;
-        thisgadget = NewObject(NULL, FRBUTTONCLASS,
-                               GA_ID, gadgetid,
-                               GA_Previous, thisgadget,
-                               GA_Left, xoffset,
-                               GA_Width, dims->gadgetwidth,
-                               GA_Top, dims->height -
-                                       scr->WBorBottom - dims->fontheight -
-                                       VSPACE - VBORDER * 2,
-                               GA_Height, dims->fontheight + VBORDER * 2,
-                               GA_Text, (IPTR)gadgetlabels[currentgadget],
-                               GA_Image, (IPTR)gadgetframe,
-                               GA_RelVerify, TRUE,
-                               TAG_DONE);
-        if (currentgadget == 0)
-            gadgetlist = thisgadget;
-        if (!thisgadget)
-        {
-            easyrequest_freegadgets(gadgetlist);
-            return NULL;
-        }
-        if ((currentgadget + 1) != dims->gadgets)
-        {
-            xoffset += dims->gadgetwidth +
-                       restwidth / (dims->gadgets - currentgadget - 1);
-            restwidth -= restwidth / (dims->gadgets - currentgadget - 1);
-        }
+	if (currentgadget == (dims->gadgets - 1))
+	    gadgetid = 0;
+	else
+	    gadgetid = currentgadget + 1;
+
+	thisgadget = NewObject(NULL, FRBUTTONCLASS,
+		GA_ID,		gadgetid,
+		GA_Previous,	thisgadget,
+		GA_Left,	xoffset,
+		GA_Width,	dims->gadgetwidth,
+		GA_Top, 	dims->height -
+				scr->WBorBottom - dims->fontheight
+				- VSPACE - VBORDER * 2,
+		GA_Height,	dims->fontheight + VBORDER * 2,
+		GA_Text,	(IPTR)gadgetlabels[currentgadget],
+		GA_Image,	(IPTR)gadgetframe,
+		GA_RelVerify,	TRUE,
+		TAG_DONE
+	);
+
+	if (currentgadget == 0)
+	    gadgetlist = thisgadget;
+
+	if (!thisgadget)
+	{
+	    easyrequest_freegadgets(gadgetlist);
+	    return NULL;
+	}
+	if ((currentgadget + 1) != dims->gadgets)
+	{
+	    xoffset += dims->gadgetwidth +
+		       restwidth / (dims->gadgets - currentgadget - 1);
+	    restwidth -= restwidth / (dims->gadgets - currentgadget - 1);
+	}
     }
 
     return gadgetlist;
@@ -481,9 +488,9 @@ int charsinstring(STRPTR string, char c)
 
     while (string[0])
     {
-        if (string[0] == c)
-            count++;
-        string++;
+	if (string[0] == c)
+	    count++;
+	string++;
     }
     return count;
 }

@@ -303,7 +303,7 @@ D(bug("Maxcolumns found: %d\n", data->lvd_MaxColumns));
 	 * before listview_set() call, because it needs this for parsing the
 	 * format string.
 	 */
-	colattrsz = UB(&colattrs[data->lvd_MaxColumns]) - UB(&colattrs[0]);
+	colattrsz = data->lvd_MaxColumns * sizeof (struct ColumnAttrs);
 	colattrs = AllocVec(colattrsz, MEMF_ANY|MEMF_CLEAR);
 	if (!colattrs)
 	    goto failure;
@@ -315,7 +315,7 @@ D(bug("Colattrs allocated\n"));
 	colattrs[0].ca_DHIndex = 0;
 
 	/* Alloc mem for array to pass to _Listview_DisplayHook */
-	dharray = AllocVec(UB(&dharray[data->lvd_MaxColumns]) - UB(&dharray[0]), MEMF_ANY);
+	dharray = AllocVec(data->lvd_MaxColumns * sizeof (STRPTR), MEMF_ANY);
 	if (!dharray)
 	    goto failure;
 	data->lvd_DHArray = dharray;

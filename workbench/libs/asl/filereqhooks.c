@@ -191,23 +191,28 @@ AROS_UFH3(ULONG, FRGadgetryHook,
 
     switch (ld->ld_Command)
     {
-	case LDCMD_INIT:
-	    retval = (ULONG)FRGadInit(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_INIT:
+	retval = (ULONG)FRGadInit(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_LAYOUT:
-	    retval = (ULONG)FRGadLayout(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_LAYOUT:
+	retval = (ULONG)FRGadLayout(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_HANDLEEVENTS:
-	    retval = (ULONG)FRHandleEvents(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_HANDLEEVENTS:
+	retval = (ULONG)FRHandleEvents(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_CLEANUP:
-	    FRGadCleanup(ld, ASLB(AslBase));
-	    retval = GHRET_OK;
-	    break;
+    case LDCMD_CLEANUP:
+	FRGadCleanup(ld, ASLB(AslBase));
+	retval = GHRET_OK;
+	break;
+
+    default:
+	retval = GHRET_FAIL;
+	break;
     }
+
     return (retval);
 }
 
@@ -597,7 +602,6 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 
 	    strcpy(req->fr_Drawer, udata->CurPath);
 	    strcpy(req->fr_File, ead->ed_Name);
-
 	}
 	else
 	{
@@ -613,12 +617,9 @@ STATIC ULONG GetSelectedFiles(  struct FRUserData       *udata,
 		AROSV_List_Select_Ask,
 		&selcount);
 
-	    #undef UB
-	    #define UB(x) ((UBYTE *)x)
-
 	    /* Allocate WBArg structures */
 	    req->fr_ArgList = wbarg = AllocVec(
-				UB(&wbarg[selcount]) - UB(&wbarg[0]),
+				selcount * sizeof (struct WBArg),
 				MEMF_ANY|MEMF_CLEAR);
 	    if (!req->fr_ArgList)
 		{ retval = FALSE; goto bye; }

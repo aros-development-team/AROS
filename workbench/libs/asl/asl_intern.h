@@ -174,8 +174,9 @@ AROS_UFP3(ULONG, FOGadgetryHook,
 );
 
 /* Return values for the gadgetry hooks */
-#define GHRET_FINISHED_OK 2
-#define GHRET_OK	1
+#define GHRET_FINISHED_OK   2
+#define GHRET_OK	    1
+#define GHRET_FAIL	    0
 
 /* Handy macros */
 #define SETFLAG(flagvar, boolvar, flag) \

@@ -210,23 +210,27 @@ AROS_UFH3(ULONG, FOGadgetryHook,
 
     switch (ld->ld_Command)
     {
-	case LDCMD_INIT:
-	    retval = (ULONG)FOGadInit(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_INIT:
+	retval = (ULONG)FOGadInit(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_LAYOUT:
-	    retval = (ULONG)FOGadLayout(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_LAYOUT:
+	retval = (ULONG)FOGadLayout(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_HANDLEEVENTS:
-	    retval = (ULONG)FOHandleEvents(ld, ASLB(AslBase));
-	    break;
+    case LDCMD_HANDLEEVENTS:
+	retval = (ULONG)FOHandleEvents(ld, ASLB(AslBase));
+	break;
 
-	case LDCMD_CLEANUP:
-	    FOGadCleanup(ld, ASLB(AslBase));
-	    retval = GHRET_OK;
-	    break;
+    case LDCMD_CLEANUP:
+	FOGadCleanup(ld, ASLB(AslBase));
+	retval = GHRET_OK;
+	break;
+
+    default:
+	retval = GHRET_FAIL;
     }
+
     return (retval);
 }
 
@@ -638,7 +642,7 @@ STATIC struct AvailFontsHeader *GetAF(LONG flags, struct AslBase_intern *AslBase
 		afh = (struct AvailFontsHeader*)(-1L);
 	    }
 	}
-    } while (afshortage && afh);
+    } while (afh && afshortage);
 
     /* Sort the availfonts array */
 

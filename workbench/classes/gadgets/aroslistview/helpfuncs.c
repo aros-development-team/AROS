@@ -322,17 +322,17 @@ D(bug("Textfit len: %d\n", len));
 	    /* Where do we place the len characters ? */
 	    switch (colattrs[col].ca_Flags & CA_ALIGN_MASK)
 	    {
-		case CA_ALIGN_LEFT:
-		    left = colattrs[col].ca_Left;
-		    break;
+	    case CA_ALIGN_LEFT:
+		left = colattrs[col].ca_Left;
+		break;
 
-		case CA_ALIGN_RIGHT:
-		    left = colattrs[col].ca_Right - te.te_Width;
-		    break;
+	    case CA_ALIGN_RIGHT:
+		left = colattrs[col].ca_Right - te.te_Width;
+		break;
 
-		case CA_ALIGN_CENTRE:
-		    left = colattrs[col].ca_Left + ((colattrs[col].ca_Width - te.te_Width) >> 1);
-		    break;
+	    default:
+		left = colattrs[col].ca_Left + ((colattrs[col].ca_Width - te.te_Width) >> 1);
+		break;
 	    }
 
 D(bug("Render: left=%d,idx=%d,text=%s\n", left, idx, data->lvd_DHArray[idx]));
