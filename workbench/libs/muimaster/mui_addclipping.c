@@ -59,9 +59,10 @@ __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct MUIMasterBase *,MUIMasterBase)
 
-    struct Rectangle rect;
-    struct Region *r;
-
+    struct Region   	*r;
+    struct Rectangle 	 rect;
+    APTR    	    	 handle;
+    
     if ((width >= MUI_MAXMAX) || (height >= MUI_MAXMAX))
         return (APTR)-1;
 
@@ -80,8 +81,15 @@ __asm APTR MUI_AddClipping(register __a0 struct MUI_RenderInfo *mri, register __
     rect.MaxY = top  + height - 1;
     OrRectRegion(r, &rect);
 
-    return MUI_AddClipRegion(mri, r);
+    handle = MUI_AddClipRegion(mri, r);
 
+    if (handle == (APTR)-1)
+    {
+    	DisposeRegion(r);
+    }
+    
+    return handle;
+    
     AROS_LIBFUNC_EXIT
 
 } /* MUIA_AddClipping */
