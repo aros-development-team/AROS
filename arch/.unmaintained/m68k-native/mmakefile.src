@@ -4,7 +4,6 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 OS_INCLUDES	:= -I$(GENINCDIR)
-SUBDIRS         := layers exec utility clib
 MACHINE_H       := $(GENINCDIR)/aros/machine.h
 DISTMACHINE_H	:= $(INCDIR)/aros/machine.h
 SPECIAL_CFLAGS  := -I $(TOP)/exec
