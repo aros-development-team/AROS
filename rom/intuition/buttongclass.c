@@ -74,6 +74,32 @@ VOID notifypressed(Class *cl, Object *o, struct GadgetInfo *ginfo, ULONG flags)
 
 /***********************************************************************************/
 
+IPTR buttong_new(Class *cl, Object *o, struct opSet *msg)
+{
+    struct TagItem *ti;
+    IPTR    	    retval;
+        
+    retval = DoSuperMethodA(cl, o, (Msg)msg);
+    if (retval)
+    {
+	ti = FindTagItem(GA_Image, msg->ops_AttrList);
+	if (ti)
+	{
+    	    struct Image *im = (struct Image *)G(retval)->GadgetRender;
+
+    	    if (im)
+	    {
+		G(retval)->Width  = im->Width;
+		G(retval)->Height = im->Height;
+	    }
+	};  
+    }
+    
+    return retval;
+}
+
+/***********************************************************************************/
+
 IPTR buttong_set(Class *cl, Object *o, struct opSet *msg)
 {
     struct TagItem *ti;
@@ -421,6 +447,10 @@ AROS_UFH3S(IPTR, dispatch_buttongclass,
 
     switch(msg->MethodID)
     {
+    	case OM_NEW:
+	    retval = buttong_new(cl, o, (struct opSet *)msg);
+	    break;
+	    
 	case OM_SET:
 	case OM_UPDATE:
 	    retval = buttong_set(cl, o, (struct opSet *)msg);
