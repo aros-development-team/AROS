@@ -100,6 +100,8 @@ Therefore ASM must be used. */
 #   else
 #     ifdef __GNUC__
 
+#       define TEXT_SECTION __attribute__((section(".text")))
+
 #	ifndef __AROS__ /* No AROS ? */
 
 #	    define REG(r)
@@ -109,8 +111,6 @@ Therefore ASM must be used. */
 #	    define REGARGS	__regargs
 #	    define STDARGS	__stdargs
 #	    define ALIGNED	__aligned
-
-#           define TEXT_SECTION __attribute__((section(".text")))
 
 #	else /* __AROS__ */
 
