@@ -50,6 +50,7 @@ FUNCTIONS	:= \
 	extendfont \
 	eraserect \
 	freebitmap \
+	freecolormap \
 	freecoplist \
 	freecprlist \
 	freegbuffers \
@@ -60,8 +61,11 @@ FUNCTIONS	:= \
 	getapen \
 	getbitmapattr \
 	getbpen \
+	getcolormap \
 	getdrmd \
 	getgbuffers \
+	getrgb32 \
+	getrgb4 \
 	getoutlinepen \
 	getsprite \
 	gfxassociate \
@@ -97,8 +101,9 @@ FUNCTIONS	:= \
 	setmaxpen \
 	setoutlinepen \
 	setrast \
-	setrgb4 \
 	setrgb32 \
+	setrgb32cm \
+	setrgb4cm \
 	setrpattrsa \
 	setwritemask \
 	sortglist \
