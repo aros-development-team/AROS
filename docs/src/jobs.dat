@@ -1208,7 +1208,7 @@ intuition00123;2;stegerg;Write HelpControl
 keymap00000;2;nlorentz;Write SetKeyMapDefault
 keymap00001;2;nlorentz;Write AskKeyMapDefault
 keymap00002;2;nlorentz;Write MapRawKey
-keymap00003;1;nlorentz;Write MapANSI
+keymap00003;2;stegerg;Write MapANSI
 layers00000;2;ldp;Write InitLayers
 layers00001;2;ldp;Write CreateUpfrontLayer
 layers00002;2;ldp;Write CreateBehindLayer
