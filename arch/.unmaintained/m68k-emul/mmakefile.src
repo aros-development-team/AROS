@@ -11,31 +11,13 @@ CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 MACHINE_H = $(INCDIR)/aros/machine.h
 
 FILES = \
-	cache \
-	disable \
-	dispatch \
-	enable \
-	exception \
-	execstubs \
-	forbid \
-	getcc \
-	initcore \
-	permit \
-	preparecontext \
-	runprocess \
+	execstubs 
 	sdivmod32 \
-	setsr \
 	smult32 \
 	smult64 \
-	special \
-	stackswap \
-	superstate \
-	supervisor \
-	switch \
 	udivmod32 \
 	umult32 \
 	umult64 \
-	userstate
 
 CLIBFILES = \
 	longjmp \
