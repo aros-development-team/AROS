@@ -30,6 +30,7 @@
 #define __asm    /* */
 #define __saveds /* */
 
+#include <aros/macros.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/diskfont.h>
@@ -133,6 +134,53 @@ ULONG bufsize=4096L;
                    fhead=NewFontContents(lock,fullname);
                    if (fhead) {
                     if (fhead->fch_NumEntries>0) {
+#ifdef _AROS
+#if !AROS_BIG_ENDIAN
+		     WORD i;
+		     
+		     for(i = 0; i < fhead->fch_NumEntries; i++)
+		     {
+		      if(fhead->fch_FileID == FCH_ID)
+		      {
+		       struct FontContents *fc;
+
+		       fc = (struct FontContents *)(fhead + 1);
+		       fc += i;
+
+		       fc->fc_YSize = AROS_WORD2BE(fc->fc_YSize);
+		      }
+		      else if ((fhead->fch_FileID == TFCH_ID) ||
+		      	       (fhead->fch_FileID == OFCH_ID))
+		      {
+		       struct TFontContents *tfc;
+
+		       tfc = (struct TFontContents *)(fhead + 1);
+		       tfc += i;
+
+		       if (tfc->tfc_TagCount)
+		       {
+			ULONG *tags;
+			WORD t;
+
+			tags = (ULONG *)(&tfc->tfc_FileName[MAXFONTPATH-(tfc->tfc_TagCount*8)]);
+			for (t = 0; t < tfc->tfc_TagCount * 2; t++)
+			{
+			 tags[t] = AROS_LONG2BE(tags[t]);
+			}
+
+		       }
+		       tfc->tfc_TagCount = AROS_WORD2BE(tfc->tfc_TagCount);
+		       tfc->tfc_YSize = AROS_WORD2BE(tfc->tfc_YSize);
+
+		      }
+		      
+		     } /* for(i = 0; i < fhead->fch_NumEntries; i++) */
+		     
+		     fhead->fch_FileID = AROS_WORD2BE(fhead->fch_FileID);
+		     fhead->fch_NumEntries = AROS_WORD2BE(fhead->fch_NumEntries);
+		     
+#endif
+#endif
                      file=Open(fullname,MODE_NEWFILE);
                      if (file) {
                      /* Find the size of the header. This is definitely a hack... */
