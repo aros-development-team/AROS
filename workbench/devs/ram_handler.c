@@ -2315,7 +2315,8 @@ void Notify_fileChange(struct rambase *rambase, NType type, struct fnode *file)
 
 	    FreeVec(fullName);
 	}
-
+    	break;
+	
     case NOTIFY_Delete:
 	/* It's the same thing as for directories... */
 	Notify_directoryChange(rambase, NOTIFY_Delete, (struct dnode *)file);
