@@ -8,15 +8,15 @@ OK
 MSG_CANCEL
 Abbruch
 ;
-MSG_MESSAGE (//)
+MSG_MESSAGE
 Nachricht
 ;
-MSG_PROMPT (//)
+MSG_PROMPT
 Frage
 ;
-MSG_YES (//)
+MSG_YES
 Ja
 ;
-MSG_NO (//)
+MSG_NO
 Nein
 ;
