@@ -113,9 +113,7 @@ static ULONG Balance_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *ms
 	return FALSE;
 
     if (_parent(obj))
-    {
-	ASSERT(get(_parent(obj), MUIA_Group_Horiz, &data->horizgroup));
-    }
+	get(_parent(obj), MUIA_Group_Horiz, &data->horizgroup);
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
 
