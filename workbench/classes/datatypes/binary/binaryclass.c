@@ -281,10 +281,6 @@ static IPTR Binary_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 	    
 	    D(bug("BinaryDataType_AsyncLayout: Temp RastPort initialized\n"));
 
-	    /* Calculate the nominal size */
-	    nomheight = (ULONG) (24 * font->tf_YSize);
-	    nomwidth  = (ULONG) (80 * font->tf_XSize);
-
 	    /* We only need to perform layout if we are doing word wrap, or this
 	     * is the initial layout call. [for now we don't support word wrap in
 	     * binary.datatype] */
@@ -403,6 +399,16 @@ static IPTR Binary_AsyncLayout(Class *cl, Object *o, struct gpLayout *gpl)
 	/* Release the global data lock */
 	ReleaseSemaphore (&si->si_Lock);
 
+	/* Calculate the nominal size */
+	
+	#if 0
+	nomheight = (ULONG) (24 * font->tf_YSize);
+	nomwidth  = (ULONG) (80 * font->tf_XSize);
+	#endif
+	
+        nomwidth  = linelen * font->tf_XSize;
+	nomheight = lines * font->tf_YSize;
+	
 	/* Were we aborted? */
 	if (bsig == 0)
 	{
