@@ -47,6 +47,8 @@
     AROS_LIBFUNC_INIT
     struct Node *n;
 
+#warning !!!!!!!!!! ReleaseSemaphoreList must be rewritten !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     /*
 	There's no arbitration needed - the first semaphore in the list
 	arbitrates for the full list.
