@@ -8,6 +8,7 @@
 #ifndef DOS_INTERN_H
 #define DOS_INTERN_H
 
+#include <aros/system.h>
 #include <exec/io.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
