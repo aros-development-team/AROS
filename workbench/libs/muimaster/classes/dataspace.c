@@ -58,6 +58,7 @@ struct MUI_DataspaceData
     struct MinList list;
     APTR pool;
     APTR pool_allocated;
+    APTR current_pool;
 };
 
 static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
@@ -90,6 +91,11 @@ static ULONG Dataspace_New (struct IClass *cl, Object *obj, struct opSet *msg)
 	    CoerceMethod(cl,obj,OM_DISPOSE);
 	    return NULL;
 	}
+	data->current_pool = data->pool_allocated;
+    }
+    else
+    {
+	data->current_pool = data->pool;
     }
 
     return (ULONG)obj;
@@ -108,7 +114,10 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
 {
     struct MUI_DataspaceData *data = INST_DATA(cl, obj);
     struct Dataspace_Node *replace;
-    struct Dataspace_Node *node = (struct Dataspace_Node*)AllocVec(sizeof(struct Dataspace_Node)+msg->len,0);
+    struct Dataspace_Node *node;
+
+    node = (struct Dataspace_Node*)AllocVecPooled(data->current_pool,
+						  sizeof(struct Dataspace_Node)+msg->len);
     if (!node) return 0;
 
     replace = (struct Dataspace_Node *)List_First(&data->list);
@@ -117,7 +126,7 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
 	if (replace->id == msg->id)
 	{
 	    Remove((struct Node*)replace);
-	    FreePooled(data->pool,replace,replace->len + sizeof(struct Dataspace_Node));
+	    FreeVecPooled(data->current_pool, replace);
 	    break;
 	}
 	replace = (struct Dataspace_Node*)Node_Next(replace);
@@ -132,6 +141,18 @@ static ULONG Dataspace_Add(struct IClass *cl, Object *obj, struct MUIP_Dataspace
 
 static ULONG Dataspace_Clear(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Clear *msg)
 {
+    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *node;
+
+    node = (struct Dataspace_Node *)List_First(&data->list);
+    while (node)
+    {
+	struct Dataspace_Node *tmp = node;
+	node = (struct Dataspace_Node*)Node_Next(node);
+
+	FreeVecPooled(data->current_pool, tmp);
+    }
+	
     return 1;
 }
 
@@ -146,7 +167,6 @@ static ULONG Dataspace_Find(struct IClass *cl, Object *obj, struct MUIP_Dataspac
 	if (find->id == msg->id)
 	{
 	    return (ULONG)(find + 1);
-	    break;
 	}
 	find = (struct Dataspace_Node*)Node_Next(find);
     }
@@ -210,12 +230,28 @@ static LONG Dataspace_ReadIFF(struct IClass *cl, Object *obj, struct MUIP_Datasp
         DoMethod(obj,MUIM_Dataspace_Add,(IPTR)p,len,id);
         p += len;
     }
+    FreeVec(buffer);
     return 0;
 }
 
 static ULONG Dataspace_Remove(struct IClass *cl, Object *obj, struct MUIP_Dataspace_Remove *msg)
 {
-    return 1;
+    struct MUI_DataspaceData *data = INST_DATA(cl, obj);
+    struct Dataspace_Node *node;
+
+    node = (struct Dataspace_Node *)List_First(&data->list);
+    while (node)
+    {
+	if (node->id == msg->id)
+	{
+	    Remove((struct Node*)node);
+	    FreeVecPooled(data->current_pool, node);
+	    return 1;
+	}
+	node = (struct Dataspace_Node*)Node_Next(node);
+    }
+
+    return 0;
 }
 
 static LONG Dataspace_WriteIFF(struct IClass *cl, Object *obj, struct MUIP_Dataspace_WriteIFF *msg)
