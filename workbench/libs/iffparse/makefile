@@ -10,7 +10,7 @@ DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
 
 FILES = iffparse_init iffparse_functable basicfuncs bufferingfuncs \
-	clipboardfuncs collectionhooks prophooks
+	clipboardfuncs collectionhooks prophooks stophook
 
 FUNCTIONS = \
 	allociff \
@@ -50,7 +50,6 @@ FUNCTIONS = \
 	setlocalitempurge \
 	stopchunk \
 	stopchunks \
-	stophook \
 	stoponexit \
 	storeitemincontext \
 	storelocalitem \
