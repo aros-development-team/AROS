@@ -443,7 +443,7 @@ ReleaseSemaphore(&db->sema);
 	    ni = (struct NameInfo *)buf;
 	    
 	    snprintf(ni->Name, DISPLAYNAMELEN
-	    	, "AROS: %dx%dx%d"
+	    	, "AROS: %ldx%ldx%ld"
 		, width, height, depth
 	    );
 	    break; }
@@ -729,7 +729,7 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    
 	snprintf( cmnode->ModeText
 		, DISPLAYNAMELEN
-		, "AROS: %dx%dx%d"
+		, "AROS: %ldx%ldx%ld"
 		, width, height, depth
 	);
 		
