@@ -57,15 +57,22 @@
   AROS_LIBBASE_EXT_DECL(struct LayersBase *,LayersBase)
 
   struct Layer * _l, * lparent;
-  struct Region rtmp;
+  struct Region rtmp, r;
   rtmp.RegionRectangle = NULL;
+  r.RegionRectangle = NULL;
 
+kprintf("%s called!\n",__FUNCTION__);
   if (l->visible == visible)
     return TRUE;
+
+kprintf("%s called 2nd!\n",__FUNCTION__);
 
   LockLayers(l->LayerInfo);
 
   l->visible = visible;
+  
+  _SetRegion(l->shape, &rtmp);
+  AndRegionRegion(l->parent->shape, &rtmp);
   
   if (TRUE == visible)
   {
@@ -77,8 +84,8 @@
     _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
-        _BackupPartsOfLayer(_l, l->shape, 0, FALSE, LayersBase);
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&rtmp.bounds, &_l->shape->bounds))
+        _BackupPartsOfLayer(_l, &rtmp, 0, FALSE, LayersBase);
       
       if (_l == lparent)
       {
@@ -94,24 +101,25 @@
      * For the layer to become visible I must recalculate its
      * visible area.
      */
+    ClearRegion(l->VisibleRegion);
     if (l->front)
     {
-      _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
+      _SetRegion(l->front->VisibleRegion, &r);
       _SetRegion(l->front->shape, &rtmp);
       AndRegionRegion(l->front->parent->shape, &rtmp);
-      ClearRegionRegion(&rtmp, l->VisibleRegion);
+      ClearRegionRegion(&rtmp, &r);
     }
     else
     {
       /*
        * This is the frontmost layer...
        */
-      _SetRegion(l->LayerInfo->check_lp->shape, l->VisibleRegion);
+      _SetRegion(l->LayerInfo->check_lp->shape, &r);
     }
     /*
      * Let me show the layer in its full beauty...
      */
-    _ShowPartsOfLayer(l, l->VisibleRegion, LayersBase);
+    _ShowPartsOfLayer(l, &r, LayersBase);
   }
   else
   {
@@ -134,13 +142,13 @@
     _l = l->back;
     while (1)
     {
-      if (IS_VISIBLE(_l) || NULL == lparent->parent)
+      if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
       {
-        ClearRegion(l->VisibleRegion);
-        _ShowPartsOfLayer(l, &r, LayersBase);
+        ClearRegion(_l->VisibleRegion);
+        _ShowPartsOfLayer(_l, &r, LayersBase);
       }
       else
-        _SetRegion(&r, l->VisibleRegion);
+        _SetRegion(&r, _l->VisibleRegion);
 
       if (IS_VISIBLE(_l) || IS_ROOTLAYER(_l))
         AndRegionRegion(_l->VisibleRegion, &clearr);
