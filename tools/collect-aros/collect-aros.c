@@ -29,6 +29,8 @@ int main(int argc, char *argv[])
 {
     int cnt;
     char *output, **ldargs;
+    /* incremental = 1 -> don't do final linking.
+       incremental = 2 -> don't do final linking AND STILL produde symbol sets.  */
     int incremental = 0, ignore_undefined_symbols = 0;
     int strip_all   = 0;
     char *do_verbose = NULL;
@@ -50,8 +52,17 @@ int main(int argc, char *argv[])
             else
 	    /* Incremental linking is requested */
             if ((argv[cnt][1]=='r' || argv[cnt][1]=='i') && argv[cnt][2]=='\0')
-	        incremental = 1;
+	        incremental  = 1;
 	    else
+	    /* Incremental, but produce the symbol sets */
+	    if (strncmp(&argv[cnt][1], "Ur", 3) == 0)
+	    {
+                incremental  = 2;
+                
+		argv[cnt][1] = 'r';  /* Just some non-harming option... */
+		argv[cnt][2] = '\0';
+	    }
+            else
 	    /* Ignoring of missing symbols is requested */
 	    if (strncmp(&argv[cnt][1], "ius", 4) == 0)
 	    {
@@ -93,7 +104,7 @@ int main(int argc, char *argv[])
     for (cnt = 1; cnt < argc; cnt++)
     	ldargs[cnt+1] = argv[cnt];
 
-    if (!incremental)
+    if (incremental != 1)
     {
         atexit(exitfunc);
 
@@ -116,7 +127,7 @@ int main(int argc, char *argv[])
 
     docommandvp("ld", ldargs);
 
-    if (incremental)
+    if (incremental == 1)
         return EXIT_SUCCESS;
 
     collect_sets(tempoutput, &setlist);
@@ -133,6 +144,9 @@ int main(int argc, char *argv[])
 
     docommandlp("ld", "ld", "-r", "-o", output, tempoutput, "-T", ldscriptname, do_verbose, NULL);
 
+    if (incremental != 0)
+        return EXIT_SUCCESS;
+        
     if (!ignore_undefined_symbols && check_and_print_undefined_symbols(output))
     {
         remove(output);
