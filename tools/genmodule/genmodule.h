@@ -24,6 +24,11 @@ struct functionlist {
     struct arglist *arguments;
 };
 
+struct forcelist {
+    struct forcelist *next;
+    char *basename;
+};
+
 struct linelist {
     struct linelist *next;
     char *line;
@@ -33,6 +38,11 @@ struct linelist {
  * The list has to be sorted on the lvonum field
  */
 extern struct functionlist *funclist;
+
+/* In forcelist a list of basenames is present that need to be present in the
+ * static link library so that certain libraries are opened by a program
+ */
+extern struct forcelist *forcelist;
 
 /* global variables that store filename and paths derived from argv */
 extern char *conffile, *gendir, *genincdir, *reffile;

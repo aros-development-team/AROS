@@ -98,6 +98,7 @@ static void readsectionconfig(FILE *in)
 {
     int atend = 0, i;
     char *s, *s2;
+    struct forcelist **forcelistptr = &forcelist;
     
     while (!atend)
     {
@@ -110,7 +111,7 @@ static void readsectionconfig(FILE *in)
 	}
 	if (strncmp(line, "##", 2)!=0)
 	{
-	    const char *names[] = {"basename", "libbase", "libbasetype", "libbasetypeextern", "version", "date", "libcall" };
+	    const char *names[] = {"basename", "libbase", "libbasetype", "libbasetypeextern", "version", "date", "libcall", "forcebase" };
 	    const unsigned int namenums = sizeof(names)/sizeof(char *);
 	    unsigned int namenum;
 	    
@@ -216,6 +217,14 @@ static void readsectionconfig(FILE *in)
 			    conffile, lineno);
 		    exit(20);
 		}
+		break;
+		
+	    case 8: /* forcebase */
+		*forcelistptr = malloc(sizeof(struct forcelist));
+		(*forcelistptr)->next = NULL;
+		(*forcelistptr)->basename = strdup(s);
+		forcelistptr = &(*forcelistptr)->next;
+		break;
 	    }
 	}
 	else /* Line starts with ## */
