@@ -178,7 +178,7 @@ ULONG error,i,block;
 		if (!headerblock)
 			return ERROR_UNKNOWN;
 	}
-	headerblock->flags &= ~BCF_USED;
+	headerblock->flags |= BCF_USED;
 	for (;i<=BLK_TABLE_END(ah->volume);i++)
 	{
 		if (headerblock->buffer[i])
