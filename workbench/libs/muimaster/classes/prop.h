@@ -36,7 +36,7 @@ enum
     MUIV_Prop_UseWinBorder_Bottom,
 };
 
-#define MUIA_Prop_Release        (MUIB_MUI|0x00429839) /* MUI: */
+#define MUIA_Prop_Release        (MUIB_MUI|0x00429839) /* MUI:    ..g BOOL  PRIV */
 #define MUIA_Prop_DeltaFactor    (MUIB_MUI|0x00427c5e) /* MUI:    is. LONG */
 #define MUIA_Prop_DoSmooth       (MUIB_MUI|0x004236ce) /* MUI: V4 i.. LONG */
 

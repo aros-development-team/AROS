@@ -174,9 +174,9 @@ enum
 #define MUIV_List_NextSelected_End    (-1)
 
 /* MUI Private stuff */
-#define MUIA_List_Prop_Entries  (MUIB_MUI|0x0042a8f5) /* PRIV */
-#define MUIA_List_Prop_Visible  (MUIB_MUI|0x004273e9) /* PRIV */
-#define MUIA_List_Prop_First    (MUIB_MUI|0x00429df3) /* PRIV */
+#define MUIA_List_Prop_Entries  (MUIB_MUI|0x0042a8f5) /* .sg LONG  PRIV */
+#define MUIA_List_Prop_Visible  (MUIB_MUI|0x004273e9) /* .sg LONG  PRIV */
+#define MUIA_List_Prop_First    (MUIB_MUI|0x00429df3) /* .sg LONG  PRIV */
 
 
 /* The following stuff is only availabe with zune and considered as private for now! */
