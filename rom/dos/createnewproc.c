@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/10/23 14:22:23  aros
+    Use the systems' stacksize
+
     Revision 1.7  1996/10/10 13:19:33  digulla
     Several IPTR/BPTR-Casts (Fleischer)
 
@@ -102,7 +105,7 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     /* 6 */    { NP_Error,	   0 },
     /* 7 */    { NP_CloseError,    1 },
     /* 8 */    { NP_CurrentDir,    ~0ul },
-    /* 9 */    { NP_StackSize,	   20000 },
+    /* 9 */    { NP_StackSize,	   AROS_STACKSIZE },
     /*11 */    { NP_Name,	   (IPTR)"New Process" },
     /*12 */    { NP_Priority,	   me->pr_Task.tc_Node.ln_Pri },
     /*13 */    { NP_Arguments,	   (IPTR)NULL },
