@@ -85,7 +85,9 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
     
     cursor_at_end = (strinfo->BufferPos == strinfo->NumChars);
 
-    EnterFunc(bug("MaxDispPos(current length: %d)\n", strinfo->NumChars));
+    EnterFunc(bug("MaxDispPos(current length: %d, bufferpos=%d)\n", strinfo->NumChars, strinfo->BufferPos));
+    
+    D(bug("cursor_at_end: %d\n", cursor_at_end));
     
     if (cursor_at_end) /* Cursor at end of string ? */
     {
@@ -115,9 +117,9 @@ STATIC WORD MaxDispPos(struct StringInfo *strinfo, struct BBox *bbox,
     			
     max_disppos = numchars - numfit;
     
-    if ((max_disppos > 0) && (!cursor_at_end))
+/*    if ((max_disppos > 0) && (!cursor_at_end))
     	max_disppos --;
-    
+  */  
 
     D(bug("Numchars w/cursor: %d, Numfit: %d, maxdisppos=%d\n", numchars, numfit, max_disppos));
 
