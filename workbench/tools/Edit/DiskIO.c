@@ -233,7 +233,7 @@ char myFClose( BPTR file )
 #define	FClose(x)			myFClose(x)
 
 /*** Write the lines svg in the file `name', returns 1 if all's OK ***/
-BYTE save_file(UBYTE *name, LINE *svg, unsigned char eol)
+BYTE save_file(STRPTR name, LINE *svg, unsigned char eol)
 {
 	register STRPTR buf;
 	register LONG   i;
