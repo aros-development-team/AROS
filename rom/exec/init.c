@@ -100,6 +100,13 @@ static char **gargv;
 
 static void boot(void)
 {
+    AssignLock ("SYS",  Lock ("Workbench:", SHARED_LOCK));
+    AssignLock ("C",    Lock ("SYS:c",      SHARED_LOCK));
+    AssignLock ("S",    Lock ("SYS:s",      SHARED_LOCK));
+    AssignLock ("LIBS", Lock ("SYS:libs",   SHARED_LOCK));
+    AssignLock ("DEVS", Lock ("SYS:devs",   SHARED_LOCK));
+    AssignLate ("ENVARC", "sys:prefs/env-archive");
+
     returncode=submain(gargc,gargv);
     RemTask(NULL);
 }
@@ -463,13 +470,6 @@ printf ("SysBase = %p\n", SysBase);
 	    0
 	);
 	/* AddDevice (&emulbase->eb_device); */
-
-	AssignLock ("SYS",  Lock ("Workbench:", SHARED_LOCK));
-	AssignLock ("C",    Lock ("SYS:c",      SHARED_LOCK));
-	AssignLock ("S",    Lock ("SYS:s",      SHARED_LOCK));
-	AssignLock ("LIBS", Lock ("SYS:libs",   SHARED_LOCK));
-	AssignLock ("DEVS", Lock ("SYS:devs",   SHARED_LOCK));
-	AssignLate ("ENVARC", "sys:prefs/env-archive");
 
 	fh_stdin->fh_Device  =&emulbase->eb_device;
 	fh_stdin->fh_Unit    =emulbase->eb_stdin;
