@@ -13,9 +13,8 @@ include $(TOP)/config/make.cfg
 ifeq ($(FLAVOUR),native)
 FILES	:= \
     font2c gtdemo helloworld inquire intuitext librarytest listfonts \
-    keymaptest mxgads oopdemo readicon regiontest shadowborder sift strtest \
-    consoledemo serialtest window test_text \
-    clippingtest
+    keymaptest mxgads  readicon regiontest shadowborder sift strtest \
+    consoledemo serialtest window test_text 
 
 else
 FILES	:= \
@@ -36,7 +35,6 @@ FILES	:= \
     fontreq \
     gtdemo \
     gtmultiselect \
-    helloworld \
     intuitext \
     listfonts \
     menudemo \
@@ -61,9 +59,6 @@ FILES	:= \
     rtpalette \
     scrbackfill \
     screenmodereq \
-    scrollerwin \
-    serialmousetest \
-    serialtest \
     shadowborder \
     sift \
     simple_timer \
@@ -71,7 +66,6 @@ FILES	:= \
     strtest \
     sysreq \
     test_text \
-    unixio \
     winbackfill \
     window \
     winshape
