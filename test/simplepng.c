@@ -17,6 +17,14 @@ struct Window *win;
 LONG width, height, depth, type;
 APTR paldata, gfxdata;
 
+STRPTR wantedchunks[] =
+{
+    "icOn",
+    NULL
+};
+
+APTR chunks[1];
+
 static void showimage(void)
 {
     win = OpenWindowTags(0, WA_Title, (IPTR)"SimplePNG",
@@ -128,7 +136,7 @@ int main(int argc, char **argv)
 	return 0;
     }
     
-    if ((handle = PNG_LoadImage(argv[1], TRUE)))
+    if ((handle = PNG_LoadImage(argv[1], wantedchunks, chunks, TRUE)))
     {	
     	printf("PNG_LoadImage ok\n");
 	
@@ -138,6 +146,110 @@ int main(int argc, char **argv)
 	printf("Width %ld    Height %ld    Depth %ld    Type    %ld\n",
 	    	width, height, depth, type);
 	printf("GfxData %p  PalData %p\n", gfxdata, paldata);
+	
+	if (chunks[0])
+	{
+	    UBYTE *data;
+	    ULONG size;
+	    
+	    PNG_GetChunkInfo(chunks[0], &data, &size);
+	    
+	    printf("\nICON chunk found. Size %d\n", size);
+	    {
+	    	while(size >= 4)
+		{
+		    ULONG tag = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+		    size -= 4;
+		    data += 4;
+		    
+		    switch(tag)
+		    {
+		    	case 0x80001001:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Icon X Position: %d\n", val);
+			    }
+			    break;
+			    
+		    	case 0x80001002:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Icon Y Position: %d\n", val);
+			    }
+			    break;
+
+		    	case 0x80001003:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Drawer X Position: %d\n", val);
+			    }
+			    break;
+
+		    	case 0x80001004:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Drawer Y Position: %d\n", val);
+			    }
+			    break;
+
+		    	case 0x80001005:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Drawer Width: %d\n", val);
+			    }
+			    break;
+
+		    	case 0x80001006:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Drawer Height: %d\n", val);
+			    }
+			    break;
+
+		    	case 0x80001007:
+			    if (size >= 4)
+			    {
+		    	    	LONG val = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3];
+				size -= 4;
+				data += 4;
+				
+				printf("Drawer View/Type Flags: %x\n", val);
+			    }
+			    break;
+
+			    
+		    }
+		    
+		}
+		
+	    }
+	    
+	    PNG_FreeChunk(chunks[0]);
+	}
 	
 	if (gfxdata) showimage();
 	
