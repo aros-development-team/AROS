@@ -63,16 +63,22 @@ dnl copying files around and the like.
 # The first step is to find the host binaries.
 # Check for a compiler.
 AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_CPP
+AC_PROG_CXXCPP
 
-# Check for X and a few other programs.
+# We don't yet support cross-compiling, but we may later on.
+AC_CYGWIN
+AC_EXEEXT
+AC_OBJEXT
+
+# Check for awk and a few other programs.
 AC_PROG_AWK
 AROS_PROG(MMAKE,mmake)
 
-# Check for some includes
-AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
-
 # Perform some default variable assignments. Note all of these will be
 # Regenerated from the script, so there is no need to cache them.
+
 aros_host_cc="$CC"
 aros_host_ld="$CC"
 aros_host_cflags=
@@ -135,32 +141,6 @@ case "$host_os" in
 	AC_MSG_ERROR([Unsupported host architecture $host])
 	;;
 esac
-
-# See if we can compile SHM support
-HAVE_XSHM_SUPPORT=0
-if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
-  AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
-  LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
-  AC_TRY_LINK([
-#include <sys/types.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/keysym.h>
-#include <X11/cursorfont.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <X11/extensions/XShm.h>],[
-static XShmSegmentInfo shminfo;
-static Display *display;
-XShmAttach(display, &shminfo);
-XSync(display,0);
-shmctl(shminfo.shmid, IPC_RMID, 0);
-],
-HAVE_XSHM_SUPPORT=1
-AC_MSG_RESULT(yes),
-HAVE_XSHM_SUPPORT=0
-AC_MSG_RESULT(no))
-fi
 
 AROS_PROG(HOST_AR,[ar],[cru])
 AROS_PROG(HOST_RANLIB,ranlib)
@@ -248,6 +228,9 @@ aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
 aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
+
+# Check for some includes
+AC_CHECK_HEADERS(sys/ipc.h sys/shm.h)
 
 # This is the target configuration switch.
 
@@ -353,6 +336,34 @@ AROS_TOOL(OBJCOPY,$aros_target_objcopy)
 # Find X
 AC_PATH_X
 
+# See if we can compile SHM support
+HAVE_XSHM_SUPPORT=0
+if [[ "x$no_x" != "xyes" -a "x$ac_cv_header_sys_ipc_h" = "xyes" -a "x$ac_cv_header_sys_shm_h" = "xyes" ]]; then
+  AC_MSG_CHECKING(whether the X11 MIT-SHM extension can be compiled in)
+  CFLAGS="-I $x_includes"
+  LIBS="-L/usr/X11/lib -L/usr/X11R6/lib -lX11 -lXext"
+  AC_TRY_LINK([
+#include <sys/types.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <X11/keysym.h>
+#include <X11/cursorfont.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <X11/extensions/XShm.h>],[
+static XShmSegmentInfo shminfo;
+static Display *display;
+XShmAttach(display, &shminfo);
+XSync(display,0);
+shmctl(shminfo.shmid, IPC_RMID, 0);
+],
+HAVE_XSHM_SUPPORT=1
+AC_MSG_RESULT(yes),
+HAVE_XSHM_SUPPORT=0
+AC_MSG_RESULT(no))
+fi
+
+
 # Find the system include path. We can suggest that an alternative is
 # used if we don't get it correct. The default is to use /usr/include.
 # Which is set in the aros_target_incl_def variable.
@@ -400,10 +411,6 @@ AC_SUBST(aros_arch)
 AC_SUBST(aros_cpu)
 AC_SUBST(aros_flavour)
 AC_SUBST(aros_flavour_uc)
-AC_SUBST(aros_default_wbwidth)
-AC_SUBST(aros_default_wbheight)
-AC_SUBST(aros_default_wbdepth)
-AC_SUBST(HAVE_XSHM_SUPPORT)
 
 # Host related
 AC_SUBST(aros_host_arch)
@@ -437,11 +444,17 @@ AC_SUBST(aros_debug_aflags)
 AC_SUBST(aros_debug_ldflags)
 AC_SUBST(aros_target_genmap)
 
+# Graphics Related
 AC_SUBST(aros_gui_libdir)
 AC_SUBST(aros_gui_ldflags)
 AC_SUBST(aros_gui_libflags)
 AC_SUBST(aros_gui_incdir)
 AC_SUBST(aros_gui_ccflags)
+
+AC_SUBST(aros_default_wbwidth)
+AC_SUBST(aros_default_wbheight)
+AC_SUBST(aros_default_wbdepth)
+AC_SUBST(HAVE_XSHM_SUPPORT)
 
 dnl Prepare for output, make up all the generated patches
 case "$aros_flavour" in
