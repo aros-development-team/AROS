@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define INFOIMAGE_WIDTH 16
-#define INFOIMAGE_HEIGHT 16
-#define INFOIMAGE_DEPTH 4
+#define INFOIMAGE_WIDTH     16
+#define INFOIMAGE_HEIGHT    16
+#define INFOIMAGE_COLORS    4
 
 static const UBYTE infoimage_data[] =
 {
@@ -44,5 +44,5 @@ const struct CoolImage cool_infoimage =
 	infoimage_pal,
 	INFOIMAGE_WIDTH,
 	INFOIMAGE_HEIGHT,
-	INFOIMAGE_DEPTH
+	INFOIMAGE_COLORS
 };

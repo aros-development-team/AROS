@@ -8,9 +8,9 @@
 
 #include "coolimages.h"
 
-#define MONITORIMAGE_WIDTH 15
+#define MONITORIMAGE_WIDTH  15
 #define MONITORIMAGE_HEIGHT 16
-#define MONITORIMAGE_DEPTH 8
+#define MONITORIMAGE_COLORS 8
 
 static const UBYTE monitorimage_data[] =
 {
@@ -46,5 +46,5 @@ const struct CoolImage cool_monitorimage =
 	monitorimage_pal,
 	MONITORIMAGE_WIDTH,
 	MONITORIMAGE_HEIGHT,
-	MONITORIMAGE_DEPTH
+	MONITORIMAGE_COLORS
 };

@@ -100,14 +100,12 @@ static IPTR coolbutton_new(Class * cl, Object * o, struct opSet * msg)
 	} else {
 	    if (CyberGfxBase && data->image)
 	    {
-	        WORD numcols = 1 << data->image->depth;
-		
-	        if ((data->pal = AllocVec(numcols * sizeof(ULONG), MEMF_PUBLIC)))
+	        if ((data->pal = AllocVec(data->image->numcolors * sizeof(ULONG), MEMF_PUBLIC)))
 		{
 		    ULONG *p = data->pal;
 		    WORD  i;
 		    
-		    for(i = 0; i < numcols; i++)
+		    for(i = 0; i < data->image->numcolors; i++)
 		    {
 		        *p++ = (data->image->pal[i * 3] << 16) |
 			       (data->image->pal[i * 3 + 1] << 8) |
@@ -323,7 +321,11 @@ BOOL InitCoolButtonClass(struct Library *CyberGfxBase)
     
     if (IntuitionBase && GfxBase && UtilityBase && SysBase)
     {
-   	cool_buttonclass = MakeClass(NULL, BUTTONGCLASS, NULL, sizeof(struct CoolButtonData), 0UL);	
+    	if (!cool_buttonclass)
+	{
+   	    cool_buttonclass = MakeClass(NULL, BUTTONGCLASS, NULL, sizeof(struct CoolButtonData), 0UL);
+	}
+	
     	if (cool_buttonclass)
 	{
     	    cool_buttonclass->cl_Dispatcher.h_Entry = (HOOKFUNC)cool_buttonclass_dispatcher;
