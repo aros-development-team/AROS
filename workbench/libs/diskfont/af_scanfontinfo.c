@@ -156,20 +156,36 @@ BOOL ScanFontInfo
 				AFF_SCALED check.
         	    */
 		    		
-		    #define IS_SCALED_FONT(ta) (((ta)->tta_Flags & (FPF_ROMFONT | FPF_DISKFONT)) == 0)
+		    #define IS_SCALED_FONT(ta) (((ta)->tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_SCALEDFONT)
+		    #define IS_OUTLINE_FONT(ta) (((ta)->tta_Flags & FONTTYPE_FLAGMASK) == FONTTYPE_OUTLINEFONT)
 		    
-        	    if (!(userflags & AFF_SCALED) && IS_SCALED_FONT(srcattr))
+        	    if (IS_SCALED_FONT(srcattr) && !(userflags & AFF_SCALED))
         	    {
 		        sfi_state = SFI_READDESCR;
 			break;
 		    }
  
+    	    	    if (IS_OUTLINE_FONT(srcattr) && (userflags & AFF_BITMAP))
+		    {
+		    	sfi_state = SFI_READDESCR;
+			break;
+		    }
+		    
         	    /* Everything went OK, now process the info we read */
 
         	    destattr->tta_YSize = srcattr->tta_YSize;
         	    destattr->tta_Style = srcattr->tta_Style;
         	    destattr->tta_Flags = srcattr->tta_Flags;
 
+    	    	    if (IS_OUTLINE_FONT(srcattr))
+		    {
+		    	/* FONTTYPE_OUTLINE is just a hack. It has both FPF_ROMFONT and
+			   FPF_DISKFONT set so that one can distinguish between outline
+			   disk fonts and bitmap disk fonts. But the user must still get
+			   only FPF_DISKFONT! */
+			   
+		    	destattr->tta_Flags = (destattr->tta_Flags & ~FONTTYPE_FLAGMASK) | FONTTYPE_DISKFONT;
+		    }
 
         	    /* Set AvailFonts type */
 		    
