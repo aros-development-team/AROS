@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function fwrite()
@@ -11,6 +11,7 @@
 #include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
+#include <aros/debug.h>
 #include "__errno.h"
 #include "__stdio.h"
 #include "__open.h"
@@ -60,7 +61,7 @@
     size_t cnt;
 
     fdesc *fdesc = __getfdesc(stream->fd);
-
+    kprintf("clib/fwrite: entering\n");
     if (!fdesc)
     {
         GETUSER;
@@ -79,6 +80,7 @@
 
 	cnt = 0;
     }
+    kprintf("clib/fwrite: exiting\n" );
 
     return cnt;
 } /* fwrite */

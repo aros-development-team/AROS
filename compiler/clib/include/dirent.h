@@ -1,7 +1,8 @@
 #ifndef _DIRENT_H_
 #define _DIRENT_H_
+
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: header file dirent.h

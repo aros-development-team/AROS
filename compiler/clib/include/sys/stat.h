@@ -2,7 +2,7 @@
 #define _SYS_STAT_H
 
 /*
-    Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file sys/stat.h

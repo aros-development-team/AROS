@@ -2,7 +2,7 @@
 #define _SYS_TIME_H
 
 /*
-    (C) 1997-98 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI-C header file sys/time.h

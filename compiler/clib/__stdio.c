@@ -1,10 +1,11 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: stdio internals
     Lang: English
 */
+
 #define AROS_ALMOST_COMPATIBLE
 
 #include <stdio.h>

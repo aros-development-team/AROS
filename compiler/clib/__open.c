@@ -1,5 +1,5 @@
 /*
-    Copyright 2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: file descriptors handling internals
@@ -18,7 +18,7 @@
 #include <dos/dos.h>
 #include <dos/filesystem.h>
 #include <aros/symbolsets.h>
-
+#include <aros/debug.h>
 #include "__errno.h"
 #include "__open.h"
 
@@ -38,14 +38,14 @@ fdesc *__getfdesc(register int fd)
 void __setfdesc(register int fd, fdesc *desc)
 {
     GETUSER;
-
+    /* FIXME: Check if fd is in valid range... */
     __fd_array[fd] = desc;
 }
 
 int __getfirstfd(register int startfd)
 {
     GETUSER;
-
+    /* FIXME: Check if fd is in valid range... */
     for (
 	;
 	startfd < __numslots && __fd_array[startfd];
@@ -118,17 +118,20 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     struct FileInfoBlock *fib = NULL;
     LONG  openmode = __oflags2amode(flags);
 
+    kprintf("__open: entering, wanted fd = %d, path = %s, flags = %d, mode = %d\n", wanted_fd, pathname, flags, mode);
+
     if (openmode == -1)
     {
         errno = EINVAL;
+        kprintf( "__open: exiting with error EINVAL\n");
 	return -1;
     }
 
     currdesc = malloc(sizeof(fdesc));
-    if (!currdesc) goto err;
+    if (!currdesc) { kprintf("__open: no memory [1]\n"); goto err; }
 
     wanted_fd = __getfdslot(wanted_fd);
-    if (wanted_fd == -1) goto err;
+    if (wanted_fd == -1) { kprintf("__open: no free fd\n"); goto err; }
 
     lock = Lock((char *)pathname, SHARED_LOCK);
     if (!lock)
@@ -208,6 +211,8 @@ success:
 
     __setfdesc(wanted_fd, currdesc);
 
+    kprintf("__open: exiting\n");
+
     return wanted_fd;
 
 err:
@@ -215,6 +220,8 @@ err:
     if (currdesc) free(currdesc);
     if (fh && fh != lock) Close(fh);
     if (lock) UnLock(lock);
+
+    kprintf("__open: exiting with error %d\n", errno );
 
     return -1;
 }

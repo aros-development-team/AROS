@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <time.h>
 /* #include <locale.h>
 #include <libraries/locale.h>

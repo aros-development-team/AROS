@@ -1,7 +1,8 @@
 #ifndef _VALUES_H
 #define _VALUES_H
+
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Sizes of c(++) types

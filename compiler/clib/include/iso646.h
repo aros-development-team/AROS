@@ -2,7 +2,7 @@
 #define _ISO646_H
 
 /*
-    Copyright (C) 2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Alternate spellings. This is designed to be used by people who use

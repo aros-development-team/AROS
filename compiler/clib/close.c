@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: ANSI C function close()
     Lang: english
 */
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <proto/exec.h>
