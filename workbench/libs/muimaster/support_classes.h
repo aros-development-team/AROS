@@ -22,6 +22,18 @@
 
 #include "support.h"
 
+#if ZUNE_EVERYTHING_BUILTIN
+#   define ZUNE_BUILTIN_ABOUTMUI 1
+#else
+#   define ZUNE_BUILTIN_ABOUTMUI 0
+#endif
+
+#if ZUNE_BUILTIN_ABOUTMUI
+#   define ZUNE_ABOUTMUI_DESC (&_MUI_Aboutmui_desc),
+#else
+#   define ZUNE_ABOUTMUI_DESC
+#endif
+
 struct IClass *GetPublicClass(CONST_STRPTR className, struct Library *mb);
 BOOL DestroyClasses(struct Library *MUIMasterBase);
 struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMasterBase);
@@ -29,9 +41,10 @@ struct IClass *CreateBuiltinClass(CONST_STRPTR className, struct Library *MUIMas
 AROS_UFP3
 (
     IPTR, metaDispatcher,
-    AROS_UFPA(struct IClass  *, cl,  A0),
-    AROS_UFPA(Object *,         obj, A2),
-    AROS_UFPA(Msg     ,         msg, A1)
+    AROS_UFPA(struct IClass *, cl,  A0),
+    AROS_UFPA(Object *,        obj, A2),
+    AROS_UFPA(Msg     ,        msg, A1)
 );
 
 #endif /* _MUIMASTER_SUPPORT_CLASSES_H */
+

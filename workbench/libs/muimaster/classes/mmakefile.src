@@ -1,0 +1,22 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+USER_CFLAGS := -I.. -DZUNE_BUILTIN_ABOUTMUI=0
+
+#MM- workbench-libs-muimaster : workbench-classes-zune-aboutmui
+#MM- workbench-libs-muimaster-quick : workbench-classes-zune-aboutmui-quick
+
+#MM- workbench-classes-zune-aboutmui : includes workbench-classes-zune-aboutmui-module
+#MM- workbench-classes-zune-aboutmui-quick : workbench-classes-zune-aboutmui-module
+
+#MM workbench-classes-zune-aboutmui-module
+%build_module \
+    mmake=workbench-classes-zune-aboutmui-module \
+    modname=Aboutmui modtype=mui files=aboutmui \
+    conffile=aboutmui.conf \
+    uselibs="amiga"
+
+%common
+%include_deps

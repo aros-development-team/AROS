@@ -3,6 +3,8 @@
     $Id$
 */
 
+#define MUIMASTER_YES_INLINE_STDARG
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -14,9 +16,13 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "support_classes.h"
 
-#define ZUNE_BUILTIN_ABOUTMUI 1
-#define USE_INTERNAL_IMAGE    0
+#if ZUNE_BUILTIN_ABOUTMUI
+#   define USE_INTERNAL_IMAGE 0
+#else
+#   define USE_INTERNAL_IMAGE 1
+#endif
 
 extern struct Library *MUIMasterBase;
 

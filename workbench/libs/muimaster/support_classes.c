@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002-2003, The AROS Development Team. 
-    All rights reserved.
-    
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -116,7 +114,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Popasl_desc,
     &_MUI_Popobject_desc,
     &_MUI_Gauge_desc,
-    &_MUI_Aboutmui_desc,
+    ZUNE_ABOUTMUI_DESC
     &_MUI_Settingsgroup_desc,
     &_MUI_Imageadjust_desc,
     &_MUI_Popimage_desc,
