@@ -92,6 +92,7 @@ FUNCTIONS := \
 	lendmenus \
 	lockibase \
 	lockpubscreen \
+	lockpubscreenlist \
 	makeclass \
 	makescreen \
 	modifyidcmp \
@@ -115,6 +116,8 @@ FUNCTIONS := \
 	openworkbench \
 	pointinimage \
 	printitext \
+	pubscreenstatus \
+	queryoverscan \
 	refreshgadgets \
 	refreshglist \
 	refreshwindowframe \
@@ -131,6 +134,7 @@ FUNCTIONS := \
 	screenposition \
 	screentoback \
 	screentofront \
+	scrollwindowraster \
 	setattrsa \
 	setdefaultpubscreen \
 	setdmrequest \
@@ -140,12 +144,16 @@ FUNCTIONS := \
 	setmousequeue \
 	setpointer \
 	setprefs \
+	setpubscreenmodes \
+	setwindowpointera \
 	setwindowtitles \
 	showtitle \
 	sizewindow \
 	sysreqhandler \
+	timeddisplayalert \
 	unlockibase \
 	unlockpubscreen \
+	unlockpubscreenlist \
 	viewaddress \
 	viewportaddress \
 	wbenchtoback \
