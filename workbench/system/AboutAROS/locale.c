@@ -26,16 +26,16 @@ CONST_STRPTR _(ULONG id)
 {
     if (LocaleBase != NULL && catalog != NULL)
     {
-	return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
+        return GetCatalogStr(catalog, id, CatCompArray[id].cca_Str);
     } 
     else 
     {
-	return CatCompArray[id].cca_Str;
+        return CatCompArray[id].cca_Str;
     }
 }
 
 /* Setup ********************************************************************/
-BOOL Locale_Initialize(void)
+BOOL Locale_Initialize(VOID)
 {
     if (LocaleBase != NULL)
     {
@@ -52,7 +52,7 @@ BOOL Locale_Initialize(void)
     return TRUE;
 }
 
-void Locale_Deinitialize(void)
+VOID Locale_Deinitialize(VOID)
 {
     if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
