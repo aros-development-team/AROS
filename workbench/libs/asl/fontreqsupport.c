@@ -58,6 +58,8 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     ULONG   	    	 afshortage, afsize = 100;
     WORD   	    	 i;
     
+    FOFreeFonts(ld, AslBase);
+    
     do
     {
     	udata->AFH = (struct AvailFontsHeader *)AllocVec(afsize, MEMF_ANY);
@@ -117,7 +119,21 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	
 	if (fontnode)
 	{
-	    strcpy(fontnode->Name, avf_start->af_Attr.ta_Name);
+	    char *sp;
+	    WORD len;
+	    
+	    sp = strchr(avf_start->af_Attr.ta_Name, '.');
+	    if (sp)
+	    {
+	    	len = (IPTR)sp - (IPTR)avf_start->af_Attr.ta_Name - 1;;
+	    }
+	    else
+	    {
+	    	/* Paranoia: Should never happen */
+		len = strlen(avf_start->af_Attr.ta_Name);
+	    }
+	    
+	    strncpy(fontnode->Name, avf_start->af_Attr.ta_Name, len + 1);
 	    fontnode->node.ln_Name = fontnode->Name;
 	    fontnode->NumSizes = num_sizes;
 	    
@@ -142,6 +158,38 @@ LONG FOGetFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
     
     return IsListEmpty(&udata->NameListviewList) ? ERROR_NO_MORE_ENTRIES : 0;
         
+}
+
+/*****************************************************************************************/
+
+void FOFreeFonts(struct LayoutData *ld, struct AslBase_intern *AslBase)
+{
+    struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
+    struct ASLVFontReqNode  *node, *succ;    
+    struct TagItem  	    set_tags[] =
+    {
+    	{ASLLV_Labels,	NULL},
+	{TAG_DONE   	    }
+    };
+    
+    udata->ActiveFont = NULL;
+
+    if (udata->NameListview) SetGadgetAttrsA((struct Gadget *)udata->NameListview, ld->ld_Window, NULL, set_tags);
+    if (udata->SizeListview) SetGadgetAttrsA((struct Gadget *)udata->SizeListview, ld->ld_Window, NULL, set_tags);
+   
+    ForeachNodeSafe(&udata->NameListviewList, node, succ)
+    {
+    	FreeVecPooled(node, AslBase);
+    }
+    
+    NEWLIST(&udata->NameListviewList);
+    NEWLIST(&udata->SizeListviewList);
+    
+    if (udata->AFH)
+    {
+    	FreeVec(udata->AFH);
+	udata->AFH = NULL;
+    }
 }
 
 /*****************************************************************************************/
@@ -189,11 +237,43 @@ void FOChangeActiveFont(struct LayoutData *ld, WORD delta, UWORD quali, struct A
 
 /*****************************************************************************************/
 
+void FOChangeActiveSize(struct LayoutData *ld, WORD delta, UWORD quali, struct AslBase_intern *AslBase)
+{
+    struct FOUserData 	*udata = (struct FOUserData *)ld->ld_UserData;    
+    IPTR 		active, total, visible;
+   
+    GetAttr(ASLLV_Active , udata->SizeListview, &active );
+    GetAttr(ASLLV_Total  , udata->SizeListview, &total  );
+    GetAttr(ASLLV_Visible, udata->SizeListview, &visible);
+    
+    if (total)
+    {
+	if (quali & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
+	{
+            delta *= (visible - 1);
+	}
+	else if (quali & (IEQUALIFIER_LALT | IEQUALIFIER_RALT | IEQUALIFIER_CONTROL))
+	{
+            delta *= total;
+	}
+
+	active += delta;
+
+	if (((LONG)active) < 0) active = 0;
+	if (active >= total) active = total - 1;
+
+	FOActivateSize(ld, active, AslBase);
+    }
+}
+
+/*****************************************************************************************/
+
 void FOActivateFont(struct LayoutData *ld, WORD which, LONG size, struct AslBase_intern *AslBase)
 {
     struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;    
-    struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
+//  struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
     struct ASLLVFontReqNode *fontnode;
+    struct Node     	    *node;
     struct TagItem 	    name_tags[] =
     {
         {ASLLV_Active		, 0		},
@@ -210,13 +290,42 @@ void FOActivateFont(struct LayoutData *ld, WORD which, LONG size, struct AslBase
     
     if (!fontnode) return;
     
-    name_tags[0].ti_Data = name_tags[1].ti_Data = which;
-    size_tags[0].ti_Data = (IPTR)&fontnode->SizeList;
+    udata->ActiveFont = fontnode;
     
+    name_tags[0].ti_Data = name_tags[1].ti_Data = which;
     SetGadgetAttrsA((struct Gadget *)udata->NameListview, ld->ld_Window, NULL, name_tags);
+
+    size_tags[0].ti_Data = (IPTR)&fontnode->SizeList;        
+    ForeachNode(&fontnode->SizeList, node)
+    {
+	MARK_UNSELECTED(node);
+    }
     SetGadgetAttrsA((struct Gadget *)udata->SizeListview, ld->ld_Window, NULL, size_tags);
     
     FOSetFontString(fontnode->node.ln_Name, ld, AslBase);	
+}
+
+/*****************************************************************************************/
+
+void FOActivateSize(struct LayoutData *ld, WORD which, struct AslBase_intern *AslBase)
+{
+    struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;    
+//  struct IntFontReq 	    *iforeq = (struct IntFontReq *)ld->ld_IntReq;
+    struct Node     	    *node;
+    struct TagItem 	    size_tags[] =
+    {
+        {ASLLV_Active		, 0		},
+	{ASLLV_MakeVisible	, 0		},
+	{TAG_DONE				}
+    };
+    
+    if (!udata->ActiveFont) return;
+    
+    node = FindListNode(&udata->ActiveFont->SizeList, which);    
+    if (!node) return;
+    
+    size_tags[0].ti_Data = size_tags[1].ti_Data = which;
+    SetGadgetAttrsA((struct Gadget *)udata->SizeListview, ld->ld_Window, NULL, size_tags);
 }
 
 /*****************************************************************************************/

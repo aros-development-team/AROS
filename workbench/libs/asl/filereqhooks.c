@@ -1429,7 +1429,7 @@ STATIC ULONG FRGetSelectedFiles(struct LayoutData *ld, struct AslBase_intern *As
     retval = GHRET_FINISHED_OK;
     
 bye:    
-    return (retval);
+    return retval;
 }
 
 /*****************************************************************************************/

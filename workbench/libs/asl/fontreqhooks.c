@@ -349,7 +349,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     LONG		error;
     WORD 		gadrows, x, y, w, h, i, y2;
     WORD		sizelvwidth, labelwidth = 0, maxcyclewidth = 0;
-    
+    UBYTE   	    	initialfontname[MAXFONTNAME + 2];
     
     NEWLIST(&udata->NameListviewList);
     NEWLIST(&udata->SizeListviewList);
@@ -358,10 +358,11 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     udata->SizeListviewRenderHook.h_SubEntry   = NULL;
     udata->SizeListviewRenderHook.h_Data       = AslBase;
 
+    udata->StringEditHook.h_Entry    = (APTR)AROS_ASMSYMNAME(StringEditFunc);
+    udata->StringEditHook.h_SubEntry = NULL;
+    udata->StringEditHook.h_Data     = AslBase;
+
     FOGetFonts(ld, AslBase);
-    
-//    error = SMGetModes(ld, AslBase);
-//    if (error) goto failure;
     
     error = ERROR_NO_FREE_STORE;
     
@@ -419,14 +420,18 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     /* make listview gadgets */
     
-    sizelvwidth = PROPSIZE + 3 * ld->ld_Font->tf_XSize + BORDERLVSPACINGX * 2 + BORDERLVITEMSPACINGX * 2;
+    sizelvwidth = PROPSIZE +
+    	    	  FOREQ_VISIBILE_SIZE_CHARS * ld->ld_Font->tf_XSize +
+		  BORDERLVSPACINGX * 2 +
+		  BORDERLVITEMSPACINGX * 2;
     
     x = ld->ld_WBorLeft + OUTERSPACINGX;
     y = ld->ld_WBorTop + OUTERSPACINGY;
     w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2 - PROPSIZE - GADGETSPACINGX - sizelvwidth;
     h = -ld->ld_WBorBottom - ld->ld_WBorTop - OUTERSPACINGY * 2 -
     	udata->ButHeight * gadrows -
-	GADGETSPACINGY * gadrows;
+	GADGETSPACINGY * gadrows +
+	GADGETSPACINGY; /* because the string gadgets are attached to listview gadgets */
     
     {
         struct TagItem lv_tags[] = 
@@ -468,7 +473,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
     w = PROPSIZE;
     h = -ld->ld_WBorBottom - ld->ld_WBorTop - OUTERSPACINGY * 2 -
     	udata->ButHeight * gadrows -
-	GADGETSPACINGY * gadrows;
+	GADGETSPACINGY * gadrows +
+	GADGETSPACINGY;
     {
 	struct TagItem scroller_tags[] =
 	{
@@ -509,9 +515,8 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
     x = ld->ld_WBorLeft + OUTERSPACINGX;
     y = -ld->ld_WBorBottom - OUTERSPACINGY - udata->ButHeight - 
-    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1 -
-	GADGETSPACINGY; /* to have them vertically attached to the listviews */
-	
+    	(udata->ButHeight + GADGETSPACINGY) * (gadrows - 1) + 1;
+		
     w = -ld->ld_WBorRight - ld->ld_WBorLeft - OUTERSPACINGX * 2 - GADGETSPACINGX - sizelvwidth;
     
     {
@@ -522,14 +527,19 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	    {GA_RelWidth    	, w 	    	    	    	    },
 	    {GA_Height	    	, udata->ButHeight  	    	    },
 	    {GA_Previous    	, (IPTR)gad 	    	    	    },
-	    {STRINGA_TextVal	, (IPTR)iforeq->ifo_TextAttr.ta_Name},
+	    {STRINGA_TextVal	, (IPTR)initialfontname     	    },
 	    {STRINGA_MaxChars	, 200	    	    	    	    },
+	    {STRINGA_EditHook	, (IPTR)&udata->StringEditHook	    },
 	    {GA_ID  	    	, ID_NAMESTRING     	    	    },
 	    {GA_RelVerify   	, TRUE	    	    	    	    },
 	    {GA_UserData    	, (IPTR)ld  	    	    	    },
 	    {GA_TabCycle    	, TRUE	    	    	    	    },
 	    {TAG_DONE	    	    	    	    	    	    }
 	};
+	char *sp;
+	
+	strncpy(initialfontname, iforeq->ifo_TextAttr.ta_Name, MAXFONTNAME + 1);
+	if ((sp = strchr(initialfontname, '.'))) *sp = '\0';
 	
 	udata->NameString = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
 	if (!gad) goto failure;
@@ -542,7 +552,7 @@ STATIC BOOL FOGadInit(struct LayoutData *ld, struct AslBase_intern *AslBase)
 	string_tags[5].ti_Tag  = STRINGA_LongVal;
 	string_tags[5].ti_Data = iforeq->ifo_TextAttr.ta_YSize;
 	string_tags[6].ti_Data = 6;
-	string_tags[7].ti_Data = ID_SIZESTRING;
+	string_tags[8].ti_Data = ID_SIZESTRING;
 
 	udata->SizeString = gad = NewObjectA(AslBase->aslstringclass, NULL, string_tags);
 	if (!gad) goto failure;
@@ -745,7 +755,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	    switch (imsg->Code)
 	    {
 	        case CURSORUP:
-    		    FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
+   		    FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
 		    break;
 		    
 		case CURSORDOWN:
@@ -766,7 +776,7 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 	case IDCMP_GADGETUP:
 	    gadid = ((struct Gadget *)imsg->IAddress)->GadgetID;
 
-	    D(bug("GADGETUP! gadgetid=%d\n", gadid));
+	    D(bug("GADGETUP! gadgetid=%d code=%d\n", gadid, imsg->Code));
 
 	    switch (gadid)
 	    {
@@ -794,9 +804,69 @@ STATIC ULONG FOHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
 				retval = FOGetSelectedFont(ld, AslBase);
 			    }
 			}
+			ActivateGadget((struct Gadget *)udata->NameString, ld->ld_Window, NULL);
 		    }
 		    break;
-				    		         
+		
+		case ID_SIZELISTVIEW:
+		    if (udata->ActiveFont)
+		    {
+	        	struct Node	*node;
+			IPTR 	    active;
+
+			GetAttr(ASLLV_Active, udata->SizeListview, &active);
+
+			if ((node = FindListNode(&udata->ActiveFont->SizeList, (WORD)active)))
+			{
+			    FOSetSizeString((LONG)node->ln_Name, ld, AslBase);
+			    
+			    if (imsg->Code) /* TRUE if double clicked */
+			    {
+				retval = FOGetSelectedFont(ld, AslBase);
+			    }
+			}
+			ActivateGadget((struct Gadget *)udata->SizeString, ld->ld_Window, NULL);
+		    }
+		    break;
+		    
+		case ID_NAMESTRING:
+		    if (imsg->Code == STRINGCODE_CURSORUP)
+		    {
+		    	FOChangeActiveFont(ld, -1, imsg->Qualifier, AslBase);
+			ActivateGadget((struct Gadget *)udata->NameString, ld->ld_Window, NULL);
+			break;
+		    }
+		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
+		    {
+		    	FOChangeActiveFont(ld, 1, imsg->Qualifier, AslBase);
+			ActivateGadget((struct Gadget *)udata->NameString, ld->ld_Window, NULL);
+			break;
+		    }
+		    else if ((imsg->Code == 0) || (imsg->Code == 9))
+		    {
+		    	break;
+		    }
+		    break;
+		
+		case ID_SIZESTRING:
+		    if (imsg->Code == STRINGCODE_CURSORUP)
+		    {
+		    	FOChangeActiveSize(ld, -1, imsg->Qualifier, AslBase);
+			ActivateGadget((struct Gadget *)udata->SizeString, ld->ld_Window, NULL);
+			break;
+		    }
+		    else if (imsg->Code == STRINGCODE_CURSORDOWN)
+		    {
+		    	FOChangeActiveSize(ld, 1, imsg->Qualifier, AslBase);
+			ActivateGadget((struct Gadget *)udata->SizeString, ld->ld_Window, NULL);
+			break;
+		    }
+		    else if ((imsg->Code == 0) || (imsg->Code == 9))
+		    {
+		    	break;
+		    }
+		    break;
+		 
 	    } /* switch (gadget ID) */
 
 	    break; /* case IDCMP_GADGETUP: */
@@ -879,7 +949,9 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
     killscrollergadget(&udata->SizeScrollGad, AslBase);
 
     FreeObjects(&FOREQ_FIRST_OBJECT(udata), &FOREQ_LAST_OBJECT(udata), AslBase);
-        		
+    
+    FOFreeFonts(ld, AslBase);
+    		
     if (ld->ld_Window)
     {
 	req->fo_LeftEdge = intreq->ir_LeftEdge = ld->ld_Window->LeftEdge;
@@ -895,12 +967,26 @@ STATIC VOID FOGadCleanup(struct LayoutData *ld, struct AslBase_intern *AslBase)
 
 STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *AslBase)
 {
-    /*struct FOUserData 	*udata = (struct FOUserData *)ld->ld_UserData;	*/
-    struct IntReq 		*intreq = ld->ld_IntReq;
-    struct IntFontReq 		*iforeq = (struct IntFontReq *)intreq;
-    struct FontRequester 	*req = (struct FontRequester *)ld->ld_Req;
-     
-    return GHRET_FINISHED_OK;    
+    struct FOUserData 	    *udata = (struct FOUserData *)ld->ld_UserData;
+    struct IntReq 	    *intreq = ld->ld_IntReq;
+    struct IntFontReq 	    *iforeq = (struct IntFontReq *)intreq;
+    struct FontRequester    *req = (struct FontRequester *)ld->ld_Req;
+    STRPTR  	    	    name;
+    IPTR    	    	    val;
+    ULONG   	    	    retval = GHRET_OK;
+    
+    GetAttr(STRINGA_TextVal, udata->NameString, (IPTR *)&name);
+    if (!(req->fo_TAttr.tta_Name = VecPooledCloneString(name, ".font", intreq->ir_MemPool, AslBase))) goto bye;
+    iforeq->ifo_TextAttr.ta_Name = req->fo_TAttr.tta_Name;
+    
+    GetAttr(STRINGA_LongVal, udata->SizeString, &val);
+    req->fo_TAttr.tta_YSize = iforeq->ifo_TextAttr.ta_YSize = (UWORD)val;
+    
+    
+    retval = GHRET_FINISHED_OK;
+
+bye:
+    return retval;
 }
 
 /*****************************************************************************************/

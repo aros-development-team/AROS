@@ -28,9 +28,8 @@ struct Library *AslBase = NULL;
 
 struct TagItem fotags1[] =
 {
-    {ASLFO_TitleText	, (IPTR)"Also showing disk fonts"   },
-    {ASLFO_InitialFlags , 0 	    	    	    	    },
-    {TAG_DONE	    	    	    	    	    	    }
+    {ASLFO_TitleText	, (IPTR)"ASL Font requester"   },
+    {TAG_DONE	    	    	    	    	       }
 };
 
 static void showrequester(char *msg, struct TagItem *tags)
@@ -43,6 +42,10 @@ static void showrequester(char *msg, struct TagItem *tags)
     {
 	if (AslRequest(freq, NULL))
 	{
+	    printf("\n-------------------------------------------------------\n\n");
+	    printf("FontName = %s\n", freq->fo_TAttr.tta_Name);
+	    printf("FontSize = %d\n", freq->fo_TAttr.tta_YSize);
+	    
 	} else printf("\nRequester was aborted\n");
 	FreeAslRequest(freq);
     }
