@@ -215,6 +215,8 @@ static void RenderRegisterTab(struct IClass *cl, Object *obj, ULONG flags)
     SetDrMd(_rp(obj), JAM1);
     SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);   
     SetFont(_rp(obj), _font(obj));
+    SetSoftStyle(_rp(obj), FS_NORMAL, AskSoftStyle(_rp(obj)));
+    
 
 /*
  * Draw new graphics
