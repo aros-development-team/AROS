@@ -2,7 +2,7 @@
 #define LIBRARIES_REALTIME_H
 
 /*
-    (C) 1999-2000 AROS - The Amiga Research OS
+    (C) 1999-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Includes for realtime.library
@@ -30,6 +30,10 @@
 #include <utility/hooks.h>
 #endif
 
+#ifndef   EXEC_SEMAPHORES_H
+#include <exec/semaphores.h>
+#endif
+
 
 /* A conductor is an abstraction that represent a group of applications
    that want to be syncronized. */
@@ -40,18 +44,19 @@
 struct Conductor
 {
     struct  Node     cdt_Link;
-    UWORD             cdt_Reserved0;
-    struct  MinList  cdt_Players;        /* The players linked to this
-					     conductor */
-    ULONG             cdt_ClockTime;
-    ULONG             cdt_StartTime;
-    ULONG             cdt_ExternalTime;   /* Time from external synchronizer */
-    ULONG             cdt_MaxExternalTime;
-    ULONG             cdt_Metronome;      /* MetricTime highest priority
-					     node */
-    UWORD             cdt_Reserved1;
-    UWORD             cdt_Flags;          /* Conductor flags; see below */
-    UBYTE             cdt_State;          /* Conductor state; see below */
+    UWORD            cdt_Reserved0;
+    struct  MinList  cdt_Players;         /* The players linked to this
+					      conductor */
+    ULONG            cdt_ClockTime;
+    ULONG            cdt_StartTime;
+    ULONG            cdt_ExternalTime;    /* Time from external synchronizer */
+    ULONG            cdt_MaxExternalTime; 
+    ULONG            cdt_Metronome;       /* Current musical time */
+    UWORD            cdt_Reserved1;
+    UWORD            cdt_Flags;           /* Conductor flags; see below */
+    UBYTE            cdt_State;           /* Conductor state; see below */
+    struct Task     *cdt_Barrier;         /* Private, don't touch */
+    struct SignalSemaphore cdt_Lock;      /* Private, don't touch */
 };
 
 /* Conductor flags */
