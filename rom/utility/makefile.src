@@ -86,6 +86,9 @@ LIBLIST = utility arosc
 # The filenames of the linklibs this depends on
 LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
 
+# All source files to make dependencies for
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
 # The object filenames
 OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
 
