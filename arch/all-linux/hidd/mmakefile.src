@@ -9,7 +9,7 @@ include $(TOP)/config/make.cfg
 ifeq ("$(ARCH)","freebsd")
 USER_INCLUDES := -I. -I$(SYS_INCLUDES) -I$(GUI_INCDIR)
 else
-USER_INCLUDES := -I.
+USER_INCLUDES := -I. -I$(SYS_INCLUDES)
 endif
 
 OBJDIR := $(GENDIR)/$(CURDIR)

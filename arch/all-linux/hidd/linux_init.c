@@ -69,7 +69,7 @@ struct linux_base
 
 static OOP_AttrBase HiddPixFmtAttrBase = 0;
 
-struct OOP_ABDescr abd[] = {
+static struct OOP_ABDescr abd[] = {
 	{ IID_Hidd_PixFmt,	&HiddPixFmtAttrBase	},
 	{ NULL, NULL }
 };
@@ -90,12 +90,12 @@ static struct linux_staticdata *init_linux_hidd(struct ExecBase *SysBase)
 
 kprintf("GOT LIBS\n");
  	
-	lsd->kbd_inited = init_kbd(lsd);
+	lsd->kbd_inited = init_linuxkbd(lsd);
 	if (!lsd->kbd_inited) goto failure;
 
 kprintf("KBD INITED\n");
 
-	lsd->mouse_inited = init_mouse(lsd);
+	lsd->mouse_inited = init_linuxmouse(lsd);
 	if (!lsd->mouse_inited) goto failure;
 kprintf("MOUSE INITED\n");
 
@@ -103,21 +103,21 @@ kprintf("MOUSE INITED\n");
 	    goto failure;
 kprintf("OBTAINED ATTRBASES\n");	    
 
-	lsd->input_task = init_input_task(lsd);
+	lsd->input_task = init_linuxinput_task(lsd);
 	if (NULL == lsd->input_task) goto failure;
 kprintf("GOT INPUT TASK\n");
 
-	lsd->gfxclass = init_gfxclass(lsd);
+	lsd->gfxclass = init_linuxgfxclass(lsd);
 	if (NULL == lsd->gfxclass) goto failure;
 
-	lsd->bmclass = init_bmclass(lsd);
+	lsd->bmclass = init_linuxbmclass(lsd);
 	if (NULL == lsd->bmclass) goto failure;
 kprintf("GOT GFX CLASS\n");
 	
-	lsd->kbdclass = init_kbdclass(lsd);
+	lsd->kbdclass = init_linuxkbdclass(lsd);
 	if (NULL == lsd->kbdclass) goto failure;
 kprintf("GOT KBD CLASS\n");
-	lsd->mouseclass = init_mouseclass(lsd);
+	lsd->mouseclass = init_linuxmouseclass(lsd);
 	if (NULL == lsd->mouseclass) goto failure;
 kprintf("GOT MOUSECLASS\n");
     }
@@ -135,28 +135,28 @@ static VOID cleanup_linux_hidd(struct linux_staticdata *lsd)
 {
     if (NULL != lsd) {
 	if (NULL != lsd->mouseclass)
-	    free_mouseclass(lsd);
+	    free_linuxmouseclass(lsd);
 
 	if (NULL != lsd->kbdclass)
-	    free_kbdclass(lsd);
+	    free_linuxkbdclass(lsd);
     
 	if (NULL != lsd->bmclass)
-	    free_bmclass(lsd);
+	    free_linuxbmclass(lsd);
 
 	if (NULL != lsd->gfxclass)
-	    free_gfxclass(lsd);
+	    free_linuxgfxclass(lsd);
 
 	OOP_ReleaseAttrBases(abd);
 
 
 	if (NULL != lsd->input_task)
-	    kill_input_task(lsd);
+	    kill_linuxinput_task(lsd);
 	    
 	if (lsd->mouse_inited)
-	    cleanup_mouse(lsd);
+	    cleanup_linuxmouse(lsd);
 
 	if (lsd->kbd_inited)
-	    cleanup_kbd(lsd);
+	    cleanup_linuxkbd(lsd);
 		
 	if (NULL != lsd->utilitybase)
 	    CloseLibrary(lsd->utilitybase);

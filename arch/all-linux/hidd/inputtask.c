@@ -119,9 +119,11 @@ static VOID inputtask_entry(struct inputtask_params *inputparams)
 kprintf("INSIDE INPUT TASK\n");
     itp = *inputparams;
     lsd = itp.lsd;
+kprintf("in inputtask: lsd = %p\n", lsd);
 
-kprintf("CREATING UNIXIO, OOPBase=%p, %s\n", lsd->oopbase->lib_Node.ln_Name);
-    unixio = (HIDD)New_UnixIO(lsd->oopbase);
+kprintf("CREATING UNIXIO,,, OOPBase=%p\n", lsd->oopbase);
+kprintf("now\n");
+    unixio = (HIDD)New_UnixIO(lsd->oopbase, SysBase);
 kprintf("UNIXIO %p\n", unixio);
     if (NULL == unixio) {
     	goto failexit;
@@ -147,8 +149,8 @@ kprintf("FDS: %d, %d\n", lsd->kbdfd, lsd->mousefd);
 	/* Turn on kbd support */
 //	init_kbd(lsd);
 	
-	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Read);
-	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Read);
+	err_kbd		= Hidd_UnixIO_AsyncIO(unixio, lsd->kbdfd,   kbd_port,	vHidd_UnixIO_Read, SysBase);
+	err_mouse	= Hidd_UnixIO_AsyncIO(unixio, lsd->mousefd, mouse_port,	vHidd_UnixIO_Read, SysBase);
 	
 //    	ret = (int)Hidd_UnixIO_Wait( unixio, lsd->kbdfd, vHidd_UnixIO_Read, NULL, NULL);
 //	cleanup_kbd(lsd);
@@ -304,7 +306,7 @@ static struct Task *create_inputtask( struct inputtask_params *params, struct Ex
     return NULL;
 }
 
-struct Task *init_input_task(struct linux_staticdata *lsd)
+struct Task *init_linuxinput_task(struct linux_staticdata *lsd)
 {
     struct inputtask_params p;
     p.ok_signal = AllocSignal(-1L);
@@ -312,6 +314,8 @@ struct Task *init_input_task(struct linux_staticdata *lsd)
     p.kill_signal = SIGBREAKF_CTRL_C;
     p.lsd = lsd;
     p.parent = FindTask(NULL);
+
+kprintf("init_input_task: p.lsd = %p\n", p.lsd);
     
     kprintf("SIGNALS ALLOCATED\n");
     
@@ -325,7 +329,7 @@ struct Task *init_input_task(struct linux_staticdata *lsd)
     return lsd->input_task;
 }
 
-VOID kill_input_task(struct linux_staticdata *lsd)
+VOID kill_linuxinput_task(struct linux_staticdata *lsd)
 {
 #warning This will not work since the task does not Wait() for this signal.
 #warning Also we should wait for the child task to exit

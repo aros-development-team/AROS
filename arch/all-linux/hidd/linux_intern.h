@@ -122,26 +122,26 @@ struct linux_staticdata {
     OOP_Object *mousehidd;
 };
 
-OOP_Class *init_gfxclass (struct linux_staticdata *lsd);
-VOID free_gfxclass(struct linux_staticdata *lsd);
+OOP_Class *init_linuxgfxclass (struct linux_staticdata *lsd);
+VOID free_linuxgfxclass(struct linux_staticdata *lsd);
 
-OOP_Class *init_bmclass(struct linux_staticdata *lsd);
-VOID free_bmclass(struct linux_staticdata *lsd);
+OOP_Class *init_linuxbmclass(struct linux_staticdata *lsd);
+VOID free_linuxbmclass(struct linux_staticdata *lsd);
 
-OOP_Class *init_mouseclass(struct linux_staticdata *lsd);
-VOID free_mouseclass(struct linux_staticdata *lsd);
+OOP_Class *init_linuxmouseclass(struct linux_staticdata *lsd);
+VOID free_linuxmouseclass(struct linux_staticdata *lsd);
 
-OOP_Class *init_kbdclass(struct linux_staticdata *lsd);
-VOID free_kbdclass(struct linux_staticdata *lsd);
+OOP_Class *init_linuxkbdclass(struct linux_staticdata *lsd);
+VOID free_linuxkbdclass(struct linux_staticdata *lsd);
 
-struct Task *init_input_task(struct linux_staticdata *lsd);
-VOID kill_input_task(struct linux_staticdata *lsd);
+struct Task *init_linuxinput_task(struct linux_staticdata *lsd);
+VOID kill_linuxinput_task(struct linux_staticdata *lsd);
 
-BOOL init_kbd(struct linux_staticdata *lsd);
-VOID cleanup_kbd(struct linux_staticdata *lsd);
+BOOL init_linuxkbd(struct linux_staticdata *lsd);
+VOID cleanup_linuxkbd(struct linux_staticdata *lsd);
 
-BOOL init_mouse(struct linux_staticdata *lsd);
-VOID cleanup_mouse(struct linux_staticdata *lsd);
+BOOL init_linuxmouse(struct linux_staticdata *lsd);
+VOID cleanup_linuxmouse(struct linux_staticdata *lsd);
 
 
 #define LSD(cl) ((struct linux_staticdata *)cl->UserData)

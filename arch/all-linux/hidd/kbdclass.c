@@ -17,6 +17,9 @@
 #include <hidd/keyboard.h>
 #include <devices/inputevent.h>
 
+/* hack: prevent linux include header <bits/time.h> to re-define timeval struct */
+#  define _STRUCT_TIMEVAL 1
+
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/signal.h>
@@ -255,7 +258,7 @@ static void LoadScanCode2RawKeyTable(struct linux_staticdata *lsd)
 #define NUM_ROOT_METHODS 2
 #define NUM_LINUXKBD_METHODS 1
 
-OOP_Class *init_kbdclass (struct linux_staticdata *lsd)
+OOP_Class *init_linuxkbdclass (struct linux_staticdata *lsd)
 {
     OOP_Class *cl = NULL;
 
@@ -299,7 +302,7 @@ OOP_Class *init_kbdclass (struct linux_staticdata *lsd)
 		
 	    	OOP_AddClass(cl);
 	    } else {
-	    	free_kbdclass(lsd);
+	    	free_linuxkbdclass(lsd);
 		cl = NULL;
 	    }
 	}
@@ -312,7 +315,7 @@ OOP_Class *init_kbdclass (struct linux_staticdata *lsd)
 
 
 /*************** free_kbdclass()  **********************************/
-VOID free_kbdclass(struct linux_staticdata *lsd)
+VOID free_linuxkbdclass(struct linux_staticdata *lsd)
 {
     EnterFunc(bug("free_kbdclass(lsd=%p)\n", lsd));
 
@@ -365,7 +368,7 @@ BOOL  mode_done	   = FALSE
     
 #define KBD_DEVNAME "/dev/console"
 
-BOOL init_kbd(struct linux_staticdata *lsd)
+BOOL init_linuxkbd(struct linux_staticdata *lsd)
 {
     BOOL ret = TRUE;
     lsdata = lsd;
@@ -415,14 +418,14 @@ kprintf("KBD MODE SET\n");
     }
     
     if (!ret) {
-    	cleanup_kbd(lsd);
+    	cleanup_linuxkbd(lsd);
     }
 
     return ret;
     
 }
 
-VOID cleanup_kbd(struct linux_staticdata *lsd)
+VOID cleanup_linuxkbd(struct linux_staticdata *lsd)
 {
     /* Reset the kbd mode */
     if (mode_done)
@@ -449,13 +452,13 @@ const int signals[] = {
 void exit_sighandler(int sig)
 {
     printf("PARENT EXITING VIA SIGHANDLER\n");
-    cleanup_kbd(lsdata);
+    cleanup_linuxkbd(lsdata);
     exit(0);
 }
 
 void kbdsighandler(int sig)
 {
-    cleanup_kbd(lsdata);
+    cleanup_linuxkbd(lsdata);
 }
 
 /* Avoid that some signal kills us without resetting the keyboard */

@@ -119,7 +119,7 @@ static VOID mouse_handleevent(OOP_Class *cl, OOP_Object *o, struct pHidd_LinuxMo
 #define NUM_ROOT_METHODS 2
 #define NUM_X11MOUSE_METHODS 1
 
-OOP_Class *init_mouseclass (struct linux_staticdata *lsd)
+OOP_Class *init_linuxmouseclass (struct linux_staticdata *lsd)
 {
     OOP_Class *cl = NULL;
 
@@ -161,7 +161,7 @@ OOP_Class *init_mouseclass (struct linux_staticdata *lsd)
 		
 	    	OOP_AddClass(cl);
 	    } else {
-	    	free_mouseclass(lsd);
+	    	free_linuxmouseclass(lsd);
 		cl = NULL;
 	    }
 	}
@@ -175,7 +175,7 @@ OOP_Class *init_mouseclass (struct linux_staticdata *lsd)
 
 
 /*************** free_mouseclass()  **********************************/
-VOID free_mouseclass(struct linux_staticdata *lsd)
+VOID free_linuxmouseclass(struct linux_staticdata *lsd)
 {
 
     if(NULL != lsd) {
@@ -201,7 +201,7 @@ static int mousefd = 0;
 #define MOUSE_DEVNAME "/dev/psaux"
 static BOOL file_opened = FALSE;
 
-BOOL init_mouse(struct linux_staticdata *lsd)
+BOOL init_linuxmouse(struct linux_staticdata *lsd)
 {
     mousefd = open(MOUSE_DEVNAME, O_RDONLY);
     if (-1 == mousefd) {
@@ -215,7 +215,7 @@ BOOL init_mouse(struct linux_staticdata *lsd)
     }
     return FALSE;
 }
-VOID cleanup_mouse(struct linux_staticdata *lsd)
+VOID cleanup_linuxmouse(struct linux_staticdata *lsd)
 {
     if (file_opened) {
 	close(mousefd);	
