@@ -1,5 +1,6 @@
 #include <string.h>
 #include <toollib/mystream.h>
+#include <toollib/error.h>
 
 int
 Str_Init (MyStream * ms, const char * name)
@@ -35,4 +36,25 @@ Str_Puts (MyStream * ms, const char * str, CBD data)
 
     return c;
 }
+
+void
+Str_PushError (MyStream * ms, const char * fmt, ...)
+{
+    va_list args;
+    VA_START (args, fmt);
+    PushMsg ("    ", fmt, args, NULL);
+    va_end (args);
+    PushError ("in %s:%d:", Str_GetName(ms), Str_GetLine(ms));
+}
+
+void
+Str_PushWarn (MyStream * ms, const char * fmt, ...)
+{
+    va_list args;
+    VA_START (args, fmt);
+    PushMsg ("    ", fmt, args, NULL);
+    va_end (args);
+    PushWarn ("in %s:%d:", Str_GetName(ms), Str_GetLine(ms));
+}
+
 

@@ -26,10 +26,13 @@ MyStream;
 
 #define Str_GetName(str)    (((MyStream *)str)->name)
 #define Str_GetLine(str)    (((MyStream *)str)->line)
+#define Str_SetLine(str,l)  ((((MyStream *)str)->line) = (l))
 #define Str_NextLine(str)   (((MyStream *)str)->line ++)
 
 extern int Str_Init PARAMS ((MyStream * ms, const char * name));
 extern void Str_Delete PARAMS ((MyStream * ms));
 extern int Str_Puts PARAMS ((MyStream * ms, const char * str, CBD data));
+extern void Str_PushError PARAMS ((MyStream * ms, const char * fmt, ...));
+extern void Str_PushWarn PARAMS ((MyStream * ms, const char * fmt, ...));
 
 #endif /* TOOLLIB_MYSTREAM_H */
