@@ -24,8 +24,6 @@
 #include <proto/utility.h>
 #include <utility/tagitem.h>
 #include <libraries/gadtools.h>
-#include <gadgets/aroscheckbox.h>
-#include <gadgets/arospalette.h>
 
 #define SDEBUG 1
 #define DEBUG 1
