@@ -1,7 +1,7 @@
 
 CC		= i386-linux-aros-gcc
 CC_NATIVE	= gcc
-CFLAGS		= -g -W -Wall -Wno-unused
+CFLAGS		= -g -W -Wall -Wno-unused -D__AMIGA__
 CFLAGS_NATIVE	= -g -W -Wall -Wno-unused $(shell pkg-config --cflags --libs dbus-glib-1)
 
 TARGETS		= dbus-dcop-bridge dbus-dcop dbus-ping-send dbus-ping-listen dbus-dcop.aros dbus-ping.aros
