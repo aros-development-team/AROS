@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/05/06 17:41:11  nlorentz
+    Use macro to set gadgetinfo rastport correctly (win->RPort/BorderPort)
+
     Revision 1.6  1999/05/01 05:19:36  bergers
     All system gadgets are drawn into the BorderRPort of the window.
 
@@ -140,10 +143,8 @@
                 /* All system gadgets go into the BorderRPort of the
                    window
                 */
-                if (gad->GadgetType & GTYP_SYSGADGET)
-                  gi->gi_RastPort = tw->BorderRPort;
-                else
-                  gi->gi_RastPort = tw->RPort;
+		
+		SET_GI_RPORT(gi, tw, gad);
 
 		switch (gad->GadgetType & GTYP_GTYPEMASK)
 		{
