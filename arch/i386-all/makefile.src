@@ -9,7 +9,7 @@ SUBDIRS= clib exec
 
 MACHINE_H = $(INCDIR)/aros/machine.h
 
-all: setup machine.i subdirs
+all: machine.i subdirs
 
 setup: $(MACHINE_H)
 	%subdirs_q "Setting up" setup

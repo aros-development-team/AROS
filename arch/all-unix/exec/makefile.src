@@ -22,7 +22,7 @@ DEPS = $(patsubst %.c,$(OSGENDIR)/exec/%.d,$(CFILES))
 
 TESTS = stackswap coretest
 
-all: setup $(foreach f,$(FILES), $(OSGENDIR)/exec/$(f).o)
+all: $(foreach f,$(FILES), $(OSGENDIR)/exec/$(f).o)
 
 setup:
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec

@@ -13,7 +13,7 @@ AFLAGS2 = $(AFLAGS) -I..
 
 TESTS=
 
-all: setup $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
+all: $(foreach f,$(FILES), $(CLIBDIR)/$(f).o)
 
 setup:
 	%mkdirs_q $(CLIBDIR)

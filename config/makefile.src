@@ -8,7 +8,7 @@ SUBDIRS= $(CPU) $(ARCH)
 
 CONFIG_H = $(INCDIR)/aros/config.h
 
-all: setup
+all: 
 	@echo "Creating mf.inc files..."
 	@$(SORT) +1 $(GENDIR)/config.files -o $(GENDIR)/config.files.sort
 	@$(UNIQ) $(GENDIR)/config.files.sort $(GENDIR)/config.files

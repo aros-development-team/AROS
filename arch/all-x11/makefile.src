@@ -11,7 +11,7 @@ FILES = graphics_driver intuition_driver
 DEPS = $(OSGENDIR)/graphics/graphics_driver.d \
        $(OSGENDIR)/intuition/intuition_driver.d
 
-all: setup $(OSGENDIR)/graphics/graphics_driver.o \
+all: $(OSGENDIR)/graphics/graphics_driver.o \
 	   $(OSGENDIR)/intuition/intuition_driver.o
 
 setup:

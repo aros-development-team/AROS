@@ -16,7 +16,7 @@ DEPS = $(patsubst %.c,$(OSGENDIR)/dos/%.d,$(CFILES))
 
 TESTS = runprocess
 
-all: setup $(foreach f,$(FILES), $(OSGENDIR)/dos/$(f).o)
+all: $(foreach f,$(FILES), $(OSGENDIR)/dos/$(f).o)
 
 setup:
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/dos

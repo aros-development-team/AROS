@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 SUBDIRS= exec dos
 
-all: setup subdirs
+all: subdirs
 
 setup:
 	%subdirs_q "Setting up" setup
