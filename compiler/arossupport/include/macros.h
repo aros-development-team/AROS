@@ -133,9 +133,4 @@
 	)
 #endif
 
-#if defined(__GNUC__)
-#   define AROS_MAKE_ALIAS(old, new) \
-        typeof(old) new __attribute__((alias(AROS_ASMSYMNAME(#old))))
-#endif
-
 #endif /* AROS_MACROS_H */
