@@ -23,7 +23,8 @@ FILES = helloworld \
 	sift \
 	regiontest \
 	inquire \
-	rtdemo
+	rtdemo \
+	listfonts
 
 IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 IMAGEFILES = $(foreach f,$(IMAGES),images/$(f)0.h images/$(f)1.h)

@@ -22,6 +22,7 @@ case "$Lib" in
     "Console" ) basedir="$TOP/rom/devs" ;;
     "Icon" ) basedir="$TOP/workbench/libs/icon" ;;
     "IFFParse" ) basedir="$TOP/workbench/libs/iffparse" ;;
+    "Diskfont" ) basedir="$TOP/workbench/libs/diskfont" ;;
 esac
 
 privclib="$basedir/${lib}_private.h"
@@ -47,4 +48,7 @@ for file in "$pubclib" "$privclib" "$pubdef" "$privdef" ; do
 	fi
     fi
 done
+
+
+
 

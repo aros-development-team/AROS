@@ -1,0 +1,178 @@
+/*
+    (C) 1997 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc:
+    Lang: english
+*/
+#include "diskfont_intern.h"
+
+/*****************************************************************************
+
+    NAME */
+#include <clib/diskfont_protos.h>
+
+	AROS_LH3(LONG, AvailFonts,
+
+/*  SYNOPSIS */
+	AROS_LHA(STRPTR, buffer, A0),
+	AROS_LHA(LONG  , bufBytes, D0),
+	AROS_LHA(LONG  , flags, D1),
+
+/*  LOCATION */
+	struct Library *, DiskfontBase, 6, Diskfont)
+
+/*  FUNCTION
+        Fill the supplied buffer with info about the available fonts.
+        The buffer will after function execution first contains a 
+        struct AvailFontsHeader, and then an array of struct AvailFonts 
+        element (or TAvailFonts elements if AFF_TAGGED is specified in the
+        flags parameter). If the buffer is not big enough for the
+        descriptions than the additional length needed will be returned.
+
+    INPUTS
+        buffer    - pointer to a buffer in which the font descriptions
+                    should be placed.
+                    
+        bufBytes  - size of the supplied buffer.
+        
+        flags     - flags telling what kind of fonts to load,
+                    for example AFF_TAGGED for tagged fonts also,
+                    AFF_MEMORY for fonts in memory, AFF_DISK for fonts
+                    on disk.
+
+    RESULT
+        shortage  - 0 if buffer was big enough or a number telling
+                    how much additional place is needed.
+
+    NOTES
+        If the routine failes, then the afh_Numentries field
+        in the AvailFontsHeader will be 0.
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        OpenDiskfont(), <diskfont/diskfont.h>
+
+    INTERNALS
+
+    HISTORY
+	27-11-96    digulla automatically created from
+			    diskfont_lib.fd and clib/diskfont_protos.h
+
+*****************************************************************************/
+{
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
+
+	#include  "diskfont_intern.h"
+
+    LONG retval = 0;  
+    struct AF_Lists   lists;
+    BOOL  rebuild_cache = FALSE;
+    
+  
+  
+    /* Initialize the lists */
+  
+    NEWLIST( &(lists.FontInfoList) );
+    NEWLIST( &(lists.FontNameList) );
+    NEWLIST( &(lists.FontTagsList) );
+    
+    /* Shall we read fonts from disk ? If so, read from cache */
+    
+    if (flags & AFF_DISK)
+    {
+        /* OK to read cahce ? */
+        if (OKToReadCache( DFB(DiskfontBase) ))
+        {
+            if (!ReadCache(flags, &lists,  DFB(DiskfontBase) ))
+            {
+                
+                /* If reading the cache failed we must free everything that was read
+                    and try scanning manually. Also the cache should be rebuilt 
+                */
+                    
+                 FreeAFLists(&lists, DFB(DiskfontBase) );
+                 rebuild_cache = TRUE;
+            }
+            else
+                /* Everything went successfull. No nead to scan for disk fonts
+                  anymore
+                */
+                flags ^= AFF_DISK;
+        }
+        else
+            /*Set a flag to tell that cache must be rebuilt */
+            rebuild_cache = TRUE;
+        
+            
+    }
+    
+    /* Scan for all available fontinfos. If the cache nees to be rebuilt,
+    then also scan for tags */
+    if 
+    (
+        !ScanFontInfo
+        (
+        	/* If the cache is going to be rebuilt we should scan for tags too */
+            rebuild_cache ? flags | AFF_TAGGED : flags,
+            &(lists.FontInfoList),
+            &(lists.FontNameList),
+            &(lists.FontTagsList),
+            DFB(DiskfontBase)
+        )
+    )
+    {
+        retval = 0L;
+        AFH(buffer)->afh_NumEntries = 0;
+    }
+    else
+    {
+        /* If necessary, write the cache */
+        if (rebuild_cache)
+            WriteCache( &lists, DFB(DiskfontBase) );
+    
+        /* Copy the fontdescriptions into the font buffer */
+        if 
+        (
+            !CopyDescrToBuffer
+            (
+                UB(buffer),
+                bufBytes,
+                flags,
+                &lists,
+                DFB(DiskfontBase) 
+            )
+        )
+        {
+            /* To little buffer. Count how many more bytes are needed */
+        
+            retval = CountBytesNeeded
+            (
+                UB(buffer) + bufBytes,
+                flags,
+                &lists,
+                DFB(DiskfontBase) 
+            );
+        
+            AFH(buffer)->afh_NumEntries = 0;
+        }
+        else
+        {
+            /* Update the pointers to fontnames and tags inside the buffer */
+            UpdatePointers( UB(buffer), flags, &lists, DFB(DiskfontBase) );
+            retval = 0L;
+        }
+            
+    }
+    
+    /* Free the fontinfo lists */
+    FreeAFLists( &lists, DFB(DiskfontBase) );
+    
+    return (retval);
+
+    AROS_LIBFUNC_EXIT
+} /* AvailFonts */

@@ -23,6 +23,7 @@ make-dirs:
 		$(INCDIR)/clib        \
 		$(INCDIR)/defines     \
 		$(INCDIR)/devices     \
+		$(INCDIR)/diskfont    \
 		$(INCDIR)/dos         \
 		$(INCDIR)/exec        \
 		$(INCDIR)/graphics    \

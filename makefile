@@ -281,6 +281,7 @@ DEFINEDIR=$(TOP)/compiler/include/defines
 includes: \
 	    $(CLIBDIR)/exec_protos.h \
 	    $(CLIBDIR)/aros_protos.h \
+	    $(CLIBDIR)/diskfont_protos.h \
 	    $(CLIBDIR)/dos_protos.h \
 	    $(CLIBDIR)/utility_protos.h \
 	    $(CLIBDIR)/graphics_protos.h \
@@ -332,6 +333,9 @@ $(CLIBDIR)/iffparse_protos.h: $(wildcard workbench/libs/iffparse/*.c) scripts/ge
 $(CLIBDIR)/mathffp_protos.h: $(wildcard rom/mathffp/*.c) scripts/genprotos.h
 	$(GENPROTOS) Mathffp "$(TOP)" rom/mathffp/*.c
 
+$(CLIBDIR)/diskfont_protos.h: $(wildcard workbench/libs/diskfont/*.c) scripts/genprotos.h
+	$(GENPROTOS) Diskfont "$(TOP)" \
+	    workbench/libs/diskfont/*.c
 $(GENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $< -c -o $@
 

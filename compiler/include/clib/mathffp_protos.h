@@ -72,4 +72,5 @@ AROS_LP1(LONG, SPTst,
     AROS_LPA(LONG, fnum, D1),
     struct MathBase *, MathBase, 8, Mathffp)
 
+
 #endif /* CLIB_MATHFFP_PROTOS_H */
