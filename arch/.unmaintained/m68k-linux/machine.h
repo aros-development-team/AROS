@@ -42,6 +42,7 @@
 
 #define AROS_GET_SYSBASE	extern struct ExecBase * SysBase;
 #define AROS_GET_DOSBASE        extern struct DosLibrary * DOSBase;
+#define AROS_GET_SYSBASE_OK	extern struct ExecBase * SysBase;
 
 /*
     How much do I have to add to sp to get the address of the first
