@@ -1,0 +1,28 @@
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+FILES       := main 
+EXEDIR      := $(AROS_WANDERER)/Tools
+EXE         := $(EXEDIR)/Delete
+ICONS       := Delete
+ICONFILES   := $(foreach f, $(ICONS), $(EXEDIR)/$(f).info)
+
+USE_AROSLIB     := yes
+USE_CLIB_SHARED := yes
+USE_AMIGALIB    := yes
+
+#MM workbench-system-wanderer-tools-delete : includes linklibs 
+
+%make_prog_setup mmake=workbench-system-wanderer-tools-delete
+
+workbench-system-wanderer-tools-delete : setup $(EXE) $(ICONFILES)
+
+%make_prog_multi dir=$(EXEDIR) target=$(EXE)
+
+$(EXEDIR)/%.info : icons/%.info.src icons/%_N.png icons/%_S.png
+	%makeicon2
+
+%common
+%include_deps
