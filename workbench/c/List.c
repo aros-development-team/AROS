@@ -528,7 +528,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 	    printf("\n");
 	    
 	    *files += 1;
-	    *nBlocks += size;
+	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
         else
         {
@@ -580,7 +580,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 	    
 	    printf("\n");
 	    *files  += 1;
-	    *nBlocks += size;
+	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
     }
     
