@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Basic helpfuncs for Asl.
@@ -958,18 +958,23 @@ char *PooledIntegerToString(IPTR value, APTR pool, struct AslBase_intern *AslBas
 void CloseWindowSafely(struct Window *window, struct AslBase_intern *AslBase)
 {
     struct IntuiMessage *msg;
+    struct Node     	*succ;
 
     Forbid();
 
     if(window->UserPort != NULL)
     {
-	while((msg = (struct IntuiMessage *)GetMsg(window->UserPort)) != NULL)
+    	msg = (struct IntuiMessage *)window->UserPort->mp_MsgList.lh_Head;
+	
+	while((succ = msg->ExecMessage.mn_Node.ln_Succ))
 	{
 	    if(msg->IDCMPWindow == window)
 	    {
 		Remove((struct Node *)msg);
 		ReplyMsg((struct Message *)msg);
 	    }
+	    
+	    msg = (struct IntuiMessage *)succ;
 	}
     }
 
