@@ -28,7 +28,12 @@
 
 #include "asl_intern.h"
 #include "layout.h"
+
+#if USE_SHARED_COOLIMAGES
+#include <libraries/coolimages.h>
+#else
 #include "coolimages.h"
+#endif
 
 #define SDEBUG 0
 #define DEBUG 0
@@ -90,8 +95,12 @@ static IPTR aslbutton_new(Class * cl, Object * o, struct opSet * msg)
 	} else {
 	    if (data->coolimage && data->ld->ld_TrueColor && CyberGfxBase)
 	    {
+	    #if SHARED_COOLIMAGES_LIBRARY
+	    	WORD numcols = data->coolimage->numcolors;
+	    #else
 	        WORD numcols = 1 << data->coolimage->depth;
-		
+	    #endif
+	    
 	        if ((data->coolimagepal = AllocVec(numcols * sizeof(ULONG), MEMF_PUBLIC)))
 		{
 		    ULONG *p = data->coolimagepal;
