@@ -246,28 +246,28 @@ static void DrawHand
 {
     WORD x, y;
     
-    x = cx + cos(angle + MY_PI) * radius1;
-    y = cy - sin(angle + MY_PI) * radius1;
+    x = cx + (WORD)(cos(angle + MY_PI) * radius1);
+    y = cy - (WORD)(sin(angle + MY_PI) * radius1);
     
     AreaMove(rp, x, y);
 
-    x = cx + cos(angle + MY_PI / 2.0) * radius1;
-    y = cy - sin(angle + MY_PI / 2.0) * radius1;
+    x = cx + (WORD)(cos(angle + MY_PI / 2.0) * radius1);
+    y = cy - (WORD)(sin(angle + MY_PI / 2.0) * radius1);
     
     AreaDraw(rp, x, y);
     
-    x = cx + cos(angle) * radius2;
-    y = cy - sin(angle) * radius2;
+    x = cx + (WORD)(cos(angle) * radius2);
+    y = cy - (WORD)(sin(angle) * radius2);
     
     AreaDraw(rp, x, y);
     
-    x = cx + cos(angle - MY_PI / 2.0) * radius1;
-    y = cy - sin(angle - MY_PI / 2.0) * radius1;
+    x = cx + (WORD)(cos(angle - MY_PI / 2.0) * radius1);
+    y = cy - (WORD)(sin(angle - MY_PI / 2.0) * radius1);
      
     AreaDraw(rp, x, y);
     
-    x = cx + cos(angle + MY_PI) * radius1;
-    y = cy - sin(angle + MY_PI) * radius1;
+    x = cx + (WORD)(cos(angle + MY_PI) * radius1);
+    y = cy - (WORD)(sin(angle + MY_PI) * radius1);
     
     AreaDraw(rp, x, y);
     
@@ -281,8 +281,8 @@ static void DrawThinHand(struct RastPort *rp, WORD cx, WORD cy, DOUBLE angle, WO
     
     Move(rp, cx, cy);
     
-    x = cx + cos(angle) * radius;
-    y = cy - sin(angle) * radius;
+    x = cx + (WORD)(cos(angle) * radius);
+    y = cy - (WORD)(sin(angle) * radius);
     
     Draw(rp, x, y);
 }
@@ -395,13 +395,13 @@ IPTR Clock__MUIM_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     {
 	for(angle = 0.0, i = 0; angle < 2.0 * MY_PI; angle += 2 * MY_PI / 60.0, i++)
 	{
-    	    x = cx + cos(angle) * r;
-	    y = cy - sin(angle) * r;
+    	    x = cx + (WORD)(cos(angle) * r);
+	    y = cy - (WORD)(sin(angle) * r);
 
 	    if ((i % 5) == 0)
 	    {
-		x2 = cx + cos(angle) * (r * 90 / 100);
-		y2 = cy - sin(angle) * (r * 90 / 100);
+		x2 = cx + (WORD)(cos(angle) * (r * 90 / 100));
+		y2 = cy - (WORD)(sin(angle) * (r * 90 / 100));
 		Move(_rp(obj), x, y); Draw(_rp(obj), x2, y2);
 	    }
 	    else
