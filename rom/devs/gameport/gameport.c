@@ -297,12 +297,14 @@ AROS_LH1(void, beginio,
 	
     case GPD_READEVENT:
 		
+#if 0
 	if(((IPTR)(&(ioStd(ioreq)->io_Data)) & (__AROS_STRUCTURE_ALIGNMENT - 1)) != 0)
 	{
 	    D(bug("gpd: Bad address\n"));
 	    ioreq->io_Error = IOERR_BADADDRESS;
 	    break;
 	}
+#endif
 
 	D(bug("gpd: Readpos: %d, Writepos: %d\n", gpUn->gpu_readPos, GPBase->gp_writePos));
 	
