@@ -71,7 +71,7 @@
 #include <hidd/hidd.h>
 #include <hidd/graphics.h>
 
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -580,6 +580,9 @@ AROS_UFH3(void, Enumerator,
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_ProductID, &ProductID);
     OOP_GetAttr(pciDevice, aHidd_PCIDevice_VendorID, &VendorID);
 
+    D(bug("[NVidia] Enumerator: checking productid %d vendorid %d  sd->Deivce %x\n",
+    	  ProductID, VendorID, sd->Device));
+
     /* And try to match it with supported cards */
     while (sup->VendorID)
     {
@@ -596,7 +599,7 @@ AROS_UFH3(void, Enumerator,
 	    	found = TRUE;
 	    }
 	}
-	
+
 	if (found)
 	{
 	    /* Matching card found */
@@ -612,6 +615,10 @@ AROS_UFH3(void, Enumerator,
 		{ aHidd_PCIDevice_isMaster, TRUE },	/* Can work in BusMaster */
 		{ TAG_DONE, 0UL },
 	    };
+
+    	    D(bug("[NVidia] Enumerator: found productid %d vendorid %d masked_check %d\n",
+	    	  sup->ProductID, sup->VendorID, sup->masked_check));
+	
 
 	    sd->Card.ProductID = ProductID;
 	    sd->Card.VendorID = VendorID;
@@ -872,7 +879,10 @@ AROS_UFH3(LIBBASETYPEPTR, nv_init,
     FreeMem(negptr, totalsize);
     LIBBASE = NULL;
 
-    D(bug("[NVidia] nvBase=%x\n", LIBBASE));
+    D(bug("[NVidia] nvBase=%x. FAILURE! Now freezing so you can check debug output!\n", LIBBASE));
+    
+    Disable(); for(;;) ;
+    
     return LIBBASE;
 
     AROS_USERFUNC_EXIT
