@@ -23,6 +23,7 @@ typedef struct ZTextChunk {
     struct MUI_ImageSpec_intern *image;
     Object               *obj; /* Area subclass, see List_CreateImage */
     LONG                  dripen;
+    LONG                  pen;
     UBYTE                 style;
     WORD                  cwidth;
     WORD                  cheight;
