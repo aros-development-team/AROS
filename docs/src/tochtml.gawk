@@ -4,6 +4,7 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
     file3="";
     fnhtml="";
     toc=0;
+    newfile=0;
     printf ("") > "html.lab";
 }
 /\\chapter/ {
@@ -19,8 +20,14 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	prefix=chapter".";
 	a[toc]="0:"prefix":"toc":"title;
 	print "<OL>"
-	date=getfiledate(fn);
-	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A> ("date")</H1>";
+	if (newfile)
+	{
+	    newfile=0;
+	    date=" ("getfiledate(fn)")";
+	}
+	else
+	    date="";
+	print "<H1><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H1>";
 	section=0; subsection=0;
 	toc++;
     }
@@ -36,7 +43,14 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	title=substr($0,RSTART+9,RLENGTH-10);
 	prefix=chapter"."section;
 	a[toc]="1:"prefix":"toc":"title;
-	print "<H2><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H2>";
+	if (newfile)
+	{
+	    newfile=0;
+	    date=" ("getfiledate(fn)")";
+	}
+	else
+	    date="";
+	print "<H2><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H2>";
 	toc++;
 	subsection=0;
     }
@@ -49,7 +63,14 @@ BEGIN { chapter=0; section=0; subsection=0; fn="";
 	title=substr($0,RSTART+12,RLENGTH-13);
 	prefix=chapter"."section"."subsection;
 	a[toc]="2:"prefix":"toc":"title;
-	print "<H3><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A></H3>";
+	if (newfile)
+	{
+	    newfile=0;
+	    date=" ("getfiledate(fn)")";
+	}
+	else
+	    date="";
+	print "<H3><A HREF=\""fnhtml"#"toc"\">"prefix" "title"</A>"date"</H3>";
 	toc++;
     }
 }
@@ -73,6 +94,7 @@ END {
 function checkfile() {
     if (fn!=FILENAME)
     {
+	newfile=1;
 	fn=FILENAME;
 	fnhtml=fn;
 	fninfo=fn;
@@ -92,7 +114,7 @@ function shiftfiles(fn      ,fninfo) {
 
     if (file2!="")
     {
-	fninfo=file2;
+	fninfo="gen/"file2;
 	sub(/.html$/,".info",fninfo);
 
 	print "prev " file1 > fninfo;
