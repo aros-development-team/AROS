@@ -1,104 +1,34 @@
-#   $Id$
+# $Id$
 #
-#   Makefile for AROS Demos
+# Makefile for MUI Demos
 
 include $(TOP)/config/make.cfg
 
-#   Some files cause problems for native compiles:
-#
-#   1) No working __chip keyword in the standard cc/ld
-#   2) Missing functions because we don't link with libc.a
-#   3) "Fixed or forbidden register was spilled"
-
-ifeq ($(FLAVOUR),native)
-FILES	:= \
-    font2c gtdemo helloworld inquire intuitext librarytest listfonts \
-    keymaptest mxgads  readicon regiontest shadowborder sift strtest \
-    consoledemo serialtest window test_text 
-
-else
-FILES	:= \
-    childchild \
-    childwindow \
-    colorwheel \
-    compleximage \
-    consoledemo \
-    coolbutton \
-    cxtest \
-    demowin \
-    dto \
-    easyreq \
-    filereq \
-    forkbomb \
-    font2c \
-    fontreq \
-    gtdemo \
-    gtmultiselect \
-    intuitext \
-    listfonts \
-    menudemo \
-    modelclassdemo \
+FILES := \
     mui_input1 \
     mui_layout1 \
     mui_notify1 \
     mui_notify2 \
     mui_pages \
-    mui_slider \
-    multiple_timers \
-    mxgads \
-    notify \
-    palettedemo \
-    readicon \
-    regiontest \
-    register \
-    realtdemo \
-    roundshape \
-    rtdemo \
-    rtezrequest \
-    rtfont \
-    rtlong \
-    rtfile \
-    rtscreen \
-    rtstring \
-    rtpalette \
-    scrbackfill \
-    screenmodereq \
-    shadowborder \
-    sift \
-    simple_timer \
-    simpleimage \
-    strtest \
-    sysreq \
-    test_text \
-    winbackfill \
-    window \
-    winshape
-endif
+    mui_slider
 
-EXEDIR := $(AROSDIR)/Demos
-EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
-USER_CFLAGS := -D__AROS -I$(TOP)/workbench/libs
+EXEDIR := $(AROSDIR)/MUIDemos
+EXES   := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
 USE_CLIB_SHARED := yes
 USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
-USE_COOLIMAGESLIB := yes
 
-##MM demos :includes linklibs demos-images-setup 
+USER_CFLAGS := -D_AROS
 
-%make_prog_setup mmake=demos
+#MM mui-demos : includes linklibs  
 
-demos : setup $(EXES) $(EXEDIR)/forkbomb
+%make_prog_setup mmake=mui-demos
+
+mui-demos : setup $(EXES)
 
 %make_prog_single dir=$(EXEDIR)
-
-# Don't need to compile this, so it gets a rule to itself.
-$(EXEDIR)/forkbomb : forkbomb
-	@$(CP) $< $@
-
-# librarytest depends upon this extra file.
-$(OBJDIR)/librarytest.o : $(TOP)/workbench/libs/dummylib_gcc.h
 
 %common
 %include_deps
