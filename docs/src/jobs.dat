@@ -245,6 +245,7 @@ clib00127;2;chodorowski;Write stpblk
 clib00128;2;chodorowski;Write stpbrk
 clib00129;2;chodorowski;Write stpchr
 clib00130;2;chodorowski;Write sleep
+clib00131;1;chodorowski;Write chdir
 c00000;2;srittau;Write C:AddBuffers
 c00001;2;laguest;Write C:Alias
 c00002;2;srittau;Write C:Ask
