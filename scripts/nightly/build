@@ -118,8 +118,10 @@ if [ "$CFG_MAIL_ENABLE" = "yes" ]; then
 fi
 
 #-- Remove uploaded files ----------------------------------------------------
-# This is the old way.
-rm -rf Archive/*
-# The rm below is UNSAFE. If ARCHIVE_ROOT is undefined somehow, bye-bye 
-# to everything the build user can delete, from / on down.
-#rm -rf $(ARCHIVE_ROOT)/*
+if [[ "$CFG_UPLOAD_ENABLE" = "yes" && "$CFG_UPLOAD_PRUNE" = "yes" ]]; then
+    # This is the old way.
+    rm -rf Archive/*
+    # The rm below is UNSAFE. If ARCHIVE_ROOT is undefined somehow, bye-bye 
+    # to everything the build user can delete, from / on down.
+    #rm -rf $(ARCHIVE_ROOT)/*
+fi
