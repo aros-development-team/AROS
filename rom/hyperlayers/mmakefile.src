@@ -119,20 +119,20 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_finline
 
-#MM kernel-layers-linklib : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-linklib : $(LIB)
+#MM kernel-hyperlayers-linklib : setup includes kernel-hyperlayers-$(ARCH)-$(CPU)
+kernel-hyperlayers-linklib : $(LIB)
 	@$(NOP)
 
-#MM kernel-layers-linklib-quick : kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-linklib-quick : $(LIB)
+#MM kernel-hyperlayers-linklib-quick : kernel-hyperlayers-$(ARCH)-$(CPU)
+kernel-hyperlayers-linklib-quick : $(LIB)
 	@$(NOP)
 
-#MM kernel-layers-module : setup includes kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-hyperlayers-module : setup includes kernel-hyperlayers-$(ARCH)-$(CPU)
+kernel-hyperlayers-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
-#MM kernel-layers-module-quick : kernel-layers-$(ARCH)-$(CPU)
-kernel-layers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
+#MM kernel-hyperlayers-module-quick : kernel-hyperlayers-$(ARCH)-$(CPU)
+kernel-hyperlayers-module-quick : $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 
 #MM clean setup
