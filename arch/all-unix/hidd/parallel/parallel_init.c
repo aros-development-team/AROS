@@ -39,13 +39,10 @@
 
 #define sysBase      (LC_SYSBASE_FIELD(lh))
 
-struct ExecBase * SysBase;
-
 ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     struct class_static_data *csd; /* ParallelHidd static data */
 
-    SysBase = sysBase;    
     EnterFunc(bug("ParallelHIDD_Init()\n"));
 
     /*
