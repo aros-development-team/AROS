@@ -392,7 +392,7 @@ void vgaRefreshArea(struct bitmap_data *bmap, int num, struct Box *pbox)
     {
 	left = pbox->x1 & ~7;
         width = ((pbox->x2 - left) + 7) >> 3;
-        height = pbox->y2 - pbox->y1;
+        height = pbox->y2 - pbox->y1 + 1;
         src = (unsigned long*)bmap->VideoData + (pbox->y1 * SRCPitch) + (left >> 2); 
         dst = (unsigned char*)0x000a0000 + (pbox->y1 * FBPitch) + (left >> 3);
 
