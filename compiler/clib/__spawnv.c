@@ -145,7 +145,7 @@ static char *join_args(char * const *argv);
 
 	    tags[4].ti_Data = (IPTR)join_args(&argv[1]);
 	    if (!tags[4].ti_Data)
-	        goto err;
+	        break;
 
 	    D(bug("Args joined = %s\n", (char *)tags[4].ti_Data));
 
@@ -173,8 +173,6 @@ static char *join_args(char * const *argv);
 	    D(bug("Process created successfully: %s\n", ret == -1 ? "NO" : "YES"))
 
 	    Close(in); Close(out); Close(err);
-
-	    err:
 
 	    D(bug("Command unloaded\n"));
             break;
@@ -228,6 +226,7 @@ err2:
 
 err1:
     childdata->returncode = rc;
+
     return rc;
 }
 
@@ -251,7 +250,9 @@ static BPTR DupFHFromfd(int fd, ULONG mode)
    all elements chained one after the other one.
 
    The resulting string's pointer is valid only until a subsequent call
-   to this function.  */
+   to this function.
+
+   NOTE: the algorithm used is not very efficient.  */
 static char *join_args(char * const *argv)
 {
   char *last_arg_ptr, *args;
@@ -269,7 +270,8 @@ static char *join_args(char * const *argv)
 
 
   for (argc = 0; argv[argc] != NULL; argc++)
-      size += strlen(argv[argc]);
+      /*      "      argument          "  */
+      size += 1 + strlen(argv[argc]) + 1;
 
   #define __args (__get_arosc_privdata()->acpd_joined_args)
   args = __args = realloc_nocopy(__args, size+argc);
@@ -279,11 +281,18 @@ static char *join_args(char * const *argv)
   last_arg_ptr = args;
   for (argc = 0; argv[argc] != NULL; argc++)
   {
+      int needs_quotes = strchr(argv[argc], ' ') != NULL;
+
       size = strlen(argv[argc]);
 
-      memcpy(last_arg_ptr, argv[argc], size);
+      if (needs_quotes)
+          last_arg_ptr++[0] ='"';
 
+      memcpy(last_arg_ptr, argv[argc], size);
       last_arg_ptr += size + 1;
+
+      if (needs_quotes)
+          last_arg_ptr++[-1] ='"';
 
       last_arg_ptr[-1] = ' ';
   }
