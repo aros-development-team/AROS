@@ -73,6 +73,7 @@ struct filehandle
     struct MsgPort      *contaskmp;
     struct MinList	pendingReads;
     struct MinList	pendingWrites;
+    struct NewWindow	nw;
     UBYTE		*wintitle;
 #if BETTER_WRITE_HANDLING
     LONG		partlywrite_actual;
@@ -104,6 +105,8 @@ struct filehandle
 #define FHFLG_WAIT	    	8   /* filename contained WAIT */
 #define FHFLG_RAW   	    	16  /* in RAW mode */
 #define FHFLG_ASYNCCONSOLEREAD	32  /* There is a pending async console.device CMD_READ request */
+#define FHFLG_AUTO  	    	64  /* filename contained AUTO */
+#define FHFLG_CONSOLEDEVICEOPEN 128
 
 typedef struct IntuitionBase IntuiBase;
 
