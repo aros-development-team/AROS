@@ -2,21 +2,30 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-all: setup $(SLIBDIR)/dummy.library
+OBJDIR=$(GENDIR)/libs
+
+FILES = dummy
+
+all: setup $(foreach f,$(FILES),$(SLIBDIR)/$f.library)
 
 setup :
 	@if [ ! -d $(SLIBDIR) ]; then $(MKDIR) $(SLIBDIR) ; fi
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 
 clean:
-	$(RM) $(SLIBDIR)/dummy.library
+	$(RM) $(SLIBDIR)/dummy.library $(OBJDIR)
 
-$(SLIBDIR)/dummy.library: dummylib.c
-	$(CC) $(CFLAGS) -I $(TOP) $< -c -o $@
+$(SLIBDIR)/%.library: %lib.o
+	$(CC) $(ILDFLAGS) $^ -o $@
 
-$(SLIBDIR)/%.d: %.c
+$(OBJDIR)/%.o: %.c
+	$(CC) $(CCFLAGS) -I $(TOP) $< -c -o $@
+
+$(OBJDIR)/%.d: %.c
+	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; fi
 	@$(RM) $@
 	@touch $@
-	$(MKDEPEND) -f$@ -p$(SLIBDIR)/ -- $(CFLAGS) -- $^
+	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
 
-include $(SLIBDIR)/dummylib.d
+include $(foreach f,$(FILES),$(OBJDIR)/$(f)lib.d)
 
