@@ -157,6 +157,10 @@ struct MUIMasterBase_intern
 #undef GadToolsBase
 #define GadToolsBase  	(((struct MUIMasterBase_intern *)MUIMasterBase)->gadtoolsbase)
 
+#ifndef _COMPILER_H
+#include "compiler.h"
+#endif
+
 #endif
 
 /****************************************************************************************/
