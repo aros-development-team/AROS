@@ -28,7 +28,8 @@ BEGIN {
     print "    Desc: Function table for " lib;
     print "    Lang: english";
     print "*/";
-    print "#ifndef __MORPHOS__\n#ifndef LIBCORE_COMPILER_H\n#   include <libcore/compiler.h>\n#endif\n#endif";
+    print "#ifdef __MORPHOS__\n#include <exec/libraries.h>\n#include <aros/libcall.h>"
+    print "#else\n#ifndef LIBCORE_COMPILER_H\n#   include <libcore/compiler.h>\n#endif\n#endif";
     print "#ifndef NULL\n#define NULL ((void *)0)\n#endif\n";
     print "#include \"libdefs.h\"";
 
