@@ -53,7 +53,7 @@
 			  used to queue the task in Wait() */
 
     wait.ln_Name = (char *)FindTask(NULL);
-    SetSignal(0, SIGB_SINGLE);
+    SetSignal(0, SIGF_SINGLE);
 
     Disable();
 
