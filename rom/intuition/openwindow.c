@@ -328,14 +328,7 @@
 	        nw.Screen = LockPubScreen(pubScreenName);
 		if (!nw.Screen && pubScreenFallBack)
 		{
-		    char buffer[MAXPUBSCREENNAME + 1];
-		    
-		    LockPubScreenList();
-		    
-		    GetDefaultPubScreen(buffer);
-		    nw.Screen = LockPubScreen(buffer);
-		    
-		    UnlockPubScreenList();
+		    nw.Screen = LockPubScreen(NULL);
 		}
 	    }
 	    else

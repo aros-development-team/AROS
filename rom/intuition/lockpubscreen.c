@@ -1,7 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.13  2001/01/31 23:07:30  stegerg
+    various little pubscreen related fixes/improvements.
+
     Revision 1.12  2000/12/10 20:57:24  stegerg
     strcmp returns 0 if the strings are identical
 
@@ -118,29 +121,45 @@
 
 *****************************************************************************/
 {
-    struct Screen *screen = NULL;
-
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    if( !name ) {
-        LockPubScreenList();
-        if( (screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen) ) {
+    struct Screen *screen = NULL;
+    struct List *list;
+
+    list = LockPubScreenList();
+
+    if( !name )
+    {
+
+	screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
+
+	/* If IntuitionBase->DefaultPubScreen is NULL, then Workbench screen
+	   is default public screen. But note that, Workbench screen might
+	   here not be open either. */
+	
+	if (!screen) screen = GetPrivIBase(IntuitionBase)->WorkBench;
+	
+        if (screen)
+	{
             ASSERT_VALID_PTR(screen);
             GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
         }
-        UnlockPubScreenList();
-
-    } else {
+	
+    }
+    else
+    {
         struct PubScreenNode *psn;
         ASSERT_VALID_PTR(name);
 
         /* Browse the public screen list */
-        if( (psn = (struct PubScreenNode *) FindName( LockPubScreenList(), (UBYTE *)name )) ) {
+        if( (psn = (struct PubScreenNode *) FindName(list, (UBYTE *)name )) )
+	{
             ASSERT_VALID_PTR(psn);
 
             /* Don't lock screens in private state */
-            if( (psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE) ) {
+            if( (psn != NULL) && !(psn->psn_Flags & PSNF_PRIVATE) )
+	    {
                 /* Increment screen lock count */
                 psn->psn_VisitorCount++;
                 screen = psn->psn_Screen;
@@ -148,16 +167,19 @@
             }
         }
 
-        UnlockPubScreenList();
     }
+
+    UnlockPubScreenList();
 
     /* If no screen was found and the requested one was the Workbench screen or
      * the default public screen, open the Workbench screen and lock it. */
-    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ) == 0)) ) {
+    if( (screen == NULL) && ((name == NULL) || (strcmp( name, "Workbench" ) == 0)) )
+    {
         OpenWorkBench();
 
         LockPubScreenList();
-        if( (screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen) ) {
+        if( (screen = GetPrivIBase(IntuitionBase)->WorkBench) )
+	{
             ASSERT_VALID_PTR(screen);
             GetPrivScreen(screen)->pubScrNode->psn_VisitorCount++;
         }
