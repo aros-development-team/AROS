@@ -36,12 +36,8 @@ setup-netbsd :
 
 
 #MM setup-exec-netbsd : setup-exec-unix setup-exec-i386
-setup-exec-netbsd : 
+setup-exec-netbsd : $(GENINCDIR)/sigcore.h 
 	%add_objects rom/exec/init
-
-#MM
-includes-copy : $(GENINCDIR)/sigcore.h
-	@$(NOP)
 
 $(GENINCDIR)/sigcore.h : $(TOP)/config/netbsd/exec/sigcore.h
 	%mkdirs_q $(GENINCDIR)
