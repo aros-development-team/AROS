@@ -1,17 +1,49 @@
-#    (C) 1995-96 AROS - The Amiga Replacement OS
-#    $Id$
-#    $Log$
-#    Revision 1.3  1996/12/05 15:31:01  aros
-#    Patches by Geert Uytterhoeven integrated
-#
-#    Revision 1.2  1996/08/01 17:41:32  digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
 
-	.globl	_Exec_Supervisor
-	.type	_Exec_Supervisor,@function
-_Exec_Supervisor:
-	# The emulation has no real supervisor mode.
-	jmp %a5@
+    Desc: Exec function Supervisor
+    Lang: english
+*/
+
+/******************************************************************************
+
+    NAME
+        AROS_LH1(void, Supervisor,
+
+    SYNOPSIS
+	AROS_LHA(ULONG_FUNC, userFunction, A5),
+
+    LOCATION
+        struct ExecBase *, SysBase, 5, Exec)
+
+    FUNCTION
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+
+******************************************************************************/
+
+	#include "machine.i"
+
+	.text
+	.balign 16
+	.globl	AROS_SLIB_ENTRY(Supervisor,Exec)
+	.type	AROS_SLIB_ENTRY(Supervisor,Exec),@function
+AROS_SLIB_ENTRY(Supervisor,Exec):
+        /* The emulation has no real supervisor mode. */
+	jmp (%a5)
+
