@@ -58,8 +58,6 @@ static int __putc(int c, BPTR fh);
 
     if (!fdesc)
     {
-        GETUSER;
-
 	errno = EBADF;
 	return 0;
     }
@@ -74,8 +72,6 @@ static int __putc(int c, BPTR fh)
     AROS_GET_DOSBASE
     if (FPutC(fh, c) == EOF)
     {
-    	GETUSER;
-
 	errno = IoErr2errno(IoErr());
 	return EOF;
     }

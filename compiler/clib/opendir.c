@@ -52,56 +52,36 @@
 	09.06.2001 falemagn created
 ******************************************************************************/
 {
-    GETUSER;
-
     DIR *dir;
     int fd;
     fdesc *desc;
-#if 0
-    char *dupname;
-#endif
 
     if (!name)
     {
     	errno = EFAULT;
 	goto err1;
     }
-/*
-    dupname = strdup(name);
-    if (!dupname) goto err1;
 
-    if (name[0] == '.')
-    {
-    	if (name[1] == '\0')
-	{
-	    name = getcwd(NULL, 0);
-	    if (!name) goto err1;
-	}
-	else
-	if (name[1] == '/')
-	{
-	    name +=
-*/
     dir = malloc(sizeof(DIR));
-    if (!dir) goto err2;
+    if (!dir) goto err1;
 
     dir->priv = malloc(sizeof(struct FileInfoBlock));
-    if (!dir->priv) goto err3;
+    if (!dir->priv) goto err2;
 
     fd = open(name, O_RDONLY);
     desc = __getfdesc(fd);
-    if (!desc) goto err4;
+    if (!desc) goto err3;
 
     if (!ExamineFH(desc->fh, dir->priv))
     {
         errno = IoErr2errno(IoErr());
-        goto err5;
+        goto err4;
     }
 
     if (((struct FileInfoBlock *)dir->priv)->fib_DirEntryType<=0)
     {
 	errno = ENOTDIR;
-	goto err5;
+	goto err4;
     }
 
     dir->fd = fd;
@@ -110,14 +90,12 @@
 
     return dir;
 
-err5:
-    close(fd);
 err4:
-    free(dir->priv);
+    close(fd);
 err3:
-    free(dir);
+    free(dir->priv);
 err2:
-//    free(dupname);
+    free(dir);
 err1:
     return NULL;
 }

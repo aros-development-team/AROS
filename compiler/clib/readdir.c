@@ -61,8 +61,6 @@
 	09.06.2001 falemagn created
 ******************************************************************************/
 {
-    GETUSER;
-
     int const max = MAXFILENAMELENGTH > NAME_MAX ? NAME_MAX : MAXFILENAMELENGTH;
     fdesc *desc;
 

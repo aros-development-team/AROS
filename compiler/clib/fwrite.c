@@ -63,8 +63,6 @@
     fdesc *fdesc = __getfdesc(stream->fd);
     if (!fdesc)
     {
-        GETUSER;
-
 	errno = EBADF;
 	return 0;
     }
@@ -73,8 +71,6 @@
 
     if (cnt == -1)
     {
-    	GETUSER;
-
 	errno = IoErr2errno (IoErr ());
 
 	cnt = 0;

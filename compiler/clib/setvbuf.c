@@ -48,8 +48,6 @@
 
     if (!stream)
     {
-        GETUSER;
-
 	errno = EFAULT;
 	return EOF;
     }
@@ -60,19 +58,13 @@
 	case _IOLBF: mode = BUF_LINE; break;
 	case _IONBF: mode = BUF_NONE; break;
 	default:
-	{
-	    GETUSER;
-
-	    errno = EINVAL;
+            errno = EINVAL;
 	    return EOF;
-	}
     }
 
     desc = __getfdesc(stream->fd);
     if (!desc)
     {
-	GETUSER;
-
 	errno = EBADF;
 	return EOF;
     }

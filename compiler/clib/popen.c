@@ -72,8 +72,6 @@
 
     if (!mode || (mode[0] != 'r' && mode[0] != 'w') || mode[1] != '\0')
     {
-        GETUSER;
-
 	errno = !mode ? EFAULT : EINVAL;
 	return NULL;
     }

@@ -30,8 +30,8 @@ struct __vfscanf_handle
     fdesc *fdesc;
 };
 
-static int __getc(struct __vfscanf_handle *h);
-static int __ungetc(int c, struct __vfscanf_handle *h);
+static int __getc(void *_h);
+static int __ungetc(int c, void *_h);
 
 #endif
 
@@ -82,8 +82,6 @@ static int __ungetc(int c, struct __vfscanf_handle *h);
 
     if (!h.fdesc)
     {
-        GETUSER;
-
 	errno = EBADF;
 	return 0;
     }
@@ -99,8 +97,6 @@ static int __ungetc(int c, struct __vfscanf_handle *h);
 
     if (!fdesc)
     {
-        GETUSER;
-
 	errno = EBADF;
 	return 0;
     }
@@ -114,8 +110,9 @@ static int __ungetc(int c, struct __vfscanf_handle *h);
 
 #if VFSCANF_DIRECT_DOS
 
-static int __ungetc(int c, struct __vfscanf_handle *h)
+static int __ungetc(int c, void *_h)
 {
+    struct __vfscanf_handle *h = _h;
     /* Note: changes here might require changes in ungetc.c!! */
 
     if (c < -1)
@@ -123,8 +120,6 @@ static int __ungetc(int c, struct __vfscanf_handle *h)
 
     if (!UnGetC((BPTR)h->fdesc->fh, c))
     {
-    	GETUSER;
-
 	errno = IoErr2errno(IoErr());
 
 	if (errno)
@@ -142,8 +137,9 @@ static int __ungetc(int c, struct __vfscanf_handle *h)
     return c;
 }
 
-static int __getc(struct __vfscanf_handle *h)
+static int __getc(void *_h)
 {
+    struct __vfscanf_handle *h = _h;
     int c;
 
     /* Note: changes here might require changes in fgetc.c!! */
@@ -152,8 +148,6 @@ static int __getc(struct __vfscanf_handle *h)
     
     if (c == EOF)
     {
-    	GETUSER;
-
     	c = IoErr();
 	
 	if (c)

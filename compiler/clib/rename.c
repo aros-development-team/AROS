@@ -46,8 +46,6 @@
 {
     if (!Rename ((STRPTR)oldpath,(STRPTR)newpath))
     {
-	GETUSER;
-
 	errno = IoErr2errno (IoErr());
 	return -1;
     }

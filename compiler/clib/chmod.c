@@ -15,8 +15,6 @@ ULONG prot_u2a(mode_t protect);
 
 int chmod(const char *path, mode_t mode)
 {
-    GETUSER;
-
     if (!SetProtection(path, prot_u2a(mode)))
     {
     	errno = IoErr2errno(IoErr());

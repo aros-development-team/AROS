@@ -22,8 +22,6 @@ static uid_t  __id_a2u(UWORD id);
 
 int __stat(BPTR lock, struct stat *sb)
 {
-    GETUSER;
-
     struct FileInfoBlock *fib;
 
     fib = AllocDosObject(DOS_FIB, NULL);

@@ -30,8 +30,6 @@ struct MinList __stdio_files;
 
 int __smode2oflags(const char *mode)
 {
-    GETUSER;
-
     int ret = -1;
     int theresb = 0;
 
@@ -82,8 +80,6 @@ int __smode2oflags(const char *mode)
 
 int __oflags2sflags(int omode)
 {
-    GETUSER;
-
     int ret;
 
     switch (omode & O_ACCMODE)
