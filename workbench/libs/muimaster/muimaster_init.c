@@ -14,6 +14,8 @@
 #include <proto/exec.h>
 
 #include "muimaster_intern.h"
+#include "mui.h"
+#include "prefs.h"
 #include "libdefs.h"
 
 /****************************************************************************************/
@@ -39,8 +41,11 @@
 #include <aros/debug.h>
 
 /* Global libbase vars */
+#undef IntuitionBase
+
 struct ExecBase *SysBase;
 struct Library *MUIMasterBase;
+struct IntuitionBase *IntuitionBase;
 
 struct ExecBase **SysBasePtr = &SysBase;
 struct Library  **MUIMasterBasePtr = &MUIMasterBase;
@@ -56,6 +61,11 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     *SysBasePtr = SysBase;
     *MUIMasterBasePtr = MUIMasterBase;
     
+    if (!DOSBase)
+        (struct Library *)DOSBase = OpenLibrary("dos.library", 37);
+    if (!DOSBase)
+        return FALSE;
+    
     if (!UtilityBase)
         (struct Library *)UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
@@ -70,12 +80,21 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR MUIMasterBase)
     	(struct Library *)GfxBase = OpenLibrary("graphics.library", 37);
     if (!GfxBase)
     	return FALSE;
+ 
+    if (!LayersBase)
+    	LayersBase = OpenLibrary("layers.library", 37);
+    if (!LayersBase)
+    	return FALSE;
 	
     if (!IntuitionBase)
     	(struct Library *)IntuitionBase = OpenLibrary("intuition.library", 37);
     if (!IntuitionBase)
     	return FALSE;
-	
+
+    MUIMB(MUIMasterBase)->intuibase = IntuitionBase;
+    
+    __zune_prefs_init(&__zprefs);
+    
     return TRUE;
 }
 
@@ -103,6 +122,9 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
 
     /* CloseLibrary() checks for NULL-pointers */
 
+    CloseLibrary((struct Library *)DOSBase);
+    DOSBase = NULL;
+    
     CloseLibrary((struct Library *)UtilityBase);
     UtilityBase = NULL;
     
@@ -111,9 +133,12 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR MUIMasterBa
     
     CloseLibrary((struct Library *)GfxBase);
     GfxBase = NULL;
+
+    CloseLibrary(LayersBase);
+    LayersBase = NULL;
     
-    CloseLibrary((struct Library *)IntuitionBase);
-    IntuitionBase = NULL;
+    CloseLibrary((struct Library *)MUIMB(MUIMasterBase)->intuibase);
+    MUIMB(MUIMasterBase)->intuibase = IntuitionBase = NULL;
 }
 
 /****************************************************************************************/
