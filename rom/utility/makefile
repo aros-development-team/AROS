@@ -2,10 +2,10 @@ TOP=..
 
 include $(TOP)/make.cfg
 
-all: setup $(OSGENDIR)/utility_init.o \
-	    $(OSGENDIR)/stricmp.o $(OSGENDIR)/strnicmp.o $(OSGENDIR)/applytagchanges.o \
-	    $(OSGENDIR)/findtagitem.o $(OSGENDIR)/tolower.o \
-	    $(OSGENDIR)/utility_functable.o
+FILES = stricmp strnicmp applytagchanges findtagitem tolower
+
+all: setup $(OSGENDIR)/utility_init.o $(OSGENDIR)/utility_functable.o \
+	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
 	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; fi
@@ -17,3 +17,8 @@ $(OSGENDIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@ 2>&1|tee $*.err
 	if test ! -s $*.err; then rm $*.err; fi
 
+utility_functable.c: $(foreach f,$(FILES),$(f).c) \
+	    $(TOP)/scripts/makefunctable.awk
+	gawk -f $(TOP)/scripts/makefunctable.awk \
+	    --assign lib=Utility \
+	    $(foreach f,$(FILES),$(f).c)
