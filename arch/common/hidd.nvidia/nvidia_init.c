@@ -323,6 +323,8 @@ static BOOL GenericInit(struct staticdata *sd)
 	sd->Card.fpHeight= sd->Card.PRAMDAC[0x0800/4] + 1;
     }
 
+    sd->Card.PRAMDAC[0x0300/4] = 0;
+
     D(bug("[NVidia] Configuration received.\n"));
     D(bug("[NVidia] Card has %dMB of video memory\n",
 	sd->Card.RamAmountKBytes >> 10));

@@ -337,8 +337,6 @@ static OOP_Object *nv__show(OOP_Class *cl, OOP_Object *o,
 		fb = bm->BitMap;
 		NVShowHideCursor(sd, sd->Card.cursorVisible);
 	    
-		sd->Card.PRAMDAC[0x0300 / 4] = 0;
-
 		UNLOCK_HW
 	    }
 	}
