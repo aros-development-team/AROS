@@ -16,6 +16,9 @@
 extern void AROS_SLIB_ENTRY(GetCC_10,Exec)();
 extern void AROS_SLIB_ENTRY(CacheClearU_20,Exec)();
 extern void AROS_SLIB_ENTRY(CacheClearU_40,Exec)();
+extern void AROS_SLIB_ENTRY(CachePreDMA_40,Exec)();
+extern void AROS_SLIB_ENTRY(CachePostDMA_30,Exec)();
+extern void AROS_SLIB_ENTRY(CachePostDMA_40,Exec)();
 
 /*
     TODO:
@@ -30,6 +33,12 @@ int start(void)
     UWORD *color00 = (void *)0xdff180;
     UWORD cpuflags;
 
+    if(SysBase->LibNode.lib_Version < 37)
+    {
+	/* Refuse to run on anything less than ROM 2.04 */
+	return 0;
+    }
+
     /*
 	High-tech display tricks (blue effects) :-)
     */
@@ -41,6 +50,14 @@ int start(void)
 
     SysBase = *(void **)4;
     cpuflags = SysBase->AttnFlags;
+
+    /* First patch SetFunction itself. */
+#if 0
+    /* Produces very strange code. "c:version" prints
+       "Kickstart 39.106. Could not find version information for ''" and fails:
+    */
+    SetFunc( 70, SetFunction);
+#endif
 
     /*
 	The biggie: SetFunction() as many library vectors as possible.
@@ -81,6 +98,7 @@ int start(void)
     SetFunc( 49, FindTask);
     SetFunc( 65, FindPort);
     SetFunc( 61, PutMsg);
+    SetFunc( 63, ReplyMsg);
 
 #if 0
     /* The "move.w ccr,d0" should really be implemented as part of the jumptable, for speed.
@@ -102,22 +120,33 @@ int start(void)
              things up considerably (if nothing breaks).
        BTW5: For the MC68060, we could also enable the Branch Cache at this point.
     */
+
+    /* Pre-stuff these vectors for 68000/68010 use. */
+    SetFunc(106, CacheClearU);
+    SetFunc(127, CachePreDMA);
+    SetFunc(128, CachePostDMA);
+
+    /*
+	Test for increasing processor types. We could also let these functions
+	test ExecBase->AttnFlags for themselves and decide which action to take.
+	That would mean less work here, but more work in the function that has
+	to be repeated everytime it's called.
+    */
     if ((cpuflags & AFF_68020) == AFF_68020)
     {
-	/* If 68040 is set, it implies 020 and 030 bits also set. */
-	if ((cpuflags & AFF_68040) == AFF_68040)
+	SetFunc(106, CacheClearU_20);
+
+	if ((cpuflags & AFF_68030) == AFF_68030)
 	{
-	    SetFunc(106, CacheClearU_40);
+	    SetFunc(128, CachePostDMA_30);
+
+	    if ((cpuflags & AFF_68040) == AFF_68040)
+	    {
+		SetFunc(106, CacheClearU_40);
+		SetFunc(127, CachePreDMA_40);
+		SetFunc(128, CachePostDMA_40);
+	    }
 	}
-	else SetFunc(106, CacheClearU_20);
-    }
-    else
-    {
-	/*
-	    We are on a 68000/010. These have no caches, so this default call is
-	    essentially a no-op (rts).
-	*/
-	SetFunc(106, CacheClearU);
     }
     Enable();
 
@@ -127,6 +156,7 @@ int start(void)
 #endif
     SetFunc( 14, MakeLibrary);
     SetFunc( 15, MakeFunctions);
+    SetFunc( 16, FindResident);
     SetFunc( 17, InitResident);
     SetFunc( 27, SetIntVector);
     SetFunc( 28, AddIntServer);
@@ -139,26 +169,29 @@ int start(void)
     SetFunc( 35, FreeMem);
 #endif
     SetFunc( 36, AvailMem);
+#if 0
+    /* "Could not mount PC0:": */
+    SetFunc( 37, AllocEntry);
+    /* Also disabled, as a dtor to AllocEntry */
+    SetFunc( 38, FreeEntry);
+#endif
     SetFunc( 51, SetSignal);
     SetFunc( 55, AllocSignal);
     SetFunc( 56, FreeSignal);
     SetFunc( 59, AddPort);
     SetFunc( 60, RemPort);
     SetFunc( 62, GetMsg);
-    SetFunc( 63, ReplyMsg);
+#if 0
+    /* Essentially works, but for some reason is not fast enough to detect a
+       CONNECT string from my modem with ppp.device. Or something. */
     SetFunc( 64, WaitPort);
+#endif
     SetFunc( 66, AddLibrary);
     SetFunc( 67, RemLibrary);
     SetFunc( 68, OldOpenLibrary);
 #if 0
     /* Guru 01 00 00 0f (AN_BadFreeAddr): */
     SetFunc( 69, CloseLibrary);
-#endif
-#if 0
-    /* Produces very strange code. "c:version" prints
-       "Kickstart 39.106. Could not find version information for ''" and fails:
-    */
-    SetFunc( 70, SetFunction);
 #endif
     SetFunc( 71, SumLibrary);
     SetFunc( 72, AddDevice);
@@ -199,9 +232,15 @@ int start(void)
     SetFunc(114, AllocVec);
     SetFunc(115, FreeVec);
     SetFunc(120, AttemptSemaphoreShared);
-    SetFunc(129, AddMemHandler);
-    SetFunc(130, RemMemHandler);
-    SetFunc(135, TaggedOpenLibrary);
+
+    if(SysBase->LibNode.lib_Version >= 39)
+    {
+	/* V39+ functions: */
+	SetFunc(129, AddMemHandler);
+	SetFunc(130, RemMemHandler);
+	SetFunc(135, TaggedOpenLibrary);
+    }
+    /* We don't have to clear any caches, SetFunction takes care of them. */
 
     /*
 	High-tech display tricks (green effects) :-)
