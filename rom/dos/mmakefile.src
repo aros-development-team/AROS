@@ -61,8 +61,8 @@ PRE_FUNCS := $(FUNCTIONS)
 %filter_replace FILES
 %filter_replace FUNCTIONS
 
-DEPS	    := $(foreach f,$(INIT_FILE) $(FILES) functions $(END_FILE),$(OBJDIR)/$(f).d)
-ALL_FILES   := $(INIT_FILE) $(FILES) $(ADDITIONAL_OBJS) $(END_FILE)
+DEPS	    := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+ALL_FILES   := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 OBJS	    := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 #MM
@@ -91,8 +91,8 @@ TESTS := datetostr strtodate splitname readargs
 #MM
 check : setup-check $(foreach f,$(TESTS),$(EXEDIR)/$(f))
 
-$(LIB) : $(OBJDIR)/functions.o $(OBJS)
-	%mklib_f from="$(OBJDIR)/functions.o $(OBJS)"
+$(LIB) : $(OBJS)
+	%mklib_q
 	@$(RM) $(RMLIB)
 
 $(EXEDIR)/% : %.c $(DEPLIBS)
