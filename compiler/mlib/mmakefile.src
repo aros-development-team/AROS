@@ -6,6 +6,7 @@ include $(TOP)/config/make.cfg
 
 LIB :=	arosm
 
+# Not implemented yet: w_cabs.c, w_cabsf.c
 FILES := \
         e_acos \
         e_acosf \
@@ -128,8 +129,6 @@ FILES := \
         w_atan2f \
         w_atanh \
         w_atanhf \
-        w_cabs \
-        w_cabsf \
         w_cosh \
         w_coshf \
         w_drem \
