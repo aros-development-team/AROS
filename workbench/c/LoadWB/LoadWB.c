@@ -120,16 +120,17 @@ int InitWB()
     vi = GetVisualInfoA(wbscreen, NULL);
 
     wbwindow = OpenWindowTags(NULL,
-	WA_Title,	"AROS Workbench Alpha Version 0.1 (No file navigation)",
-//	WA_Flags,	(WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
-	WA_Flags,	(WFLG_BACKDROP | WFLG_ACTIVATE) ,
-	WA_IDCMP,	(IDCMP_MENUPICK),
-	WA_Left,	0,
-	WA_Top,		wbscreen->BarHeight + 1,
-	WA_Width,	wbscreen->Width,
-	WA_Height,	wbscreen->Height - wbscreen->BarHeight -1,
-//	WA_Width,	128,
-//	WA_Height,	96,
+    WA_ScreenTitle, "AROS Workbench Alpha 0.1 (No file navigation) FreeMem-xxxxxxx",
+	WA_Title,	    "AROS Workbench Alpha Version 0.1 (No file navigation)",
+	WA_Flags,	   (WFLG_BACKDROP | WFLG_BORDERLESS | WFLG_ACTIVATE) ,
+//	WA_Flags,	   (WFLG_BACKDROP | WFLG_ACTIVATE) ,
+	WA_IDCMP,	   (IDCMP_MENUPICK),
+	WA_Left,	   0,
+	WA_Top,		   wbscreen->BarHeight + 1,
+	WA_Width,	   wbscreen->Width,
+	WA_Height,	   wbscreen->Height - wbscreen->BarHeight -1,
+//	WA_Width,	   128,
+//	WA_Height,	   96,
 	TAG_DONE
 	);
 
