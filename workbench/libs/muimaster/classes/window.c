@@ -227,11 +227,31 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI
 	mri->mri_Fonts[i] = NULL;
     }
 
-    mri->mri_LeftImage  = CreateSysimage(mri->mri_DrawInfo, LEFTIMAGE);
-    mri->mri_RightImage = CreateSysimage(mri->mri_DrawInfo, RIGHTIMAGE);
-    mri->mri_UpImage    = CreateSysimage(mri->mri_DrawInfo, UPIMAGE);
-    mri->mri_DownImage  = CreateSysimage(mri->mri_DrawInfo, DOWNIMAGE);
-    mri->mri_SizeImage  = CreateSysimage(mri->mri_DrawInfo, SIZEIMAGE);
+    if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
+    {
+	mri->mri_LeftImage  = CreateSysimage(mri->mri_DrawInfo, LEFTIMAGE);
+	mri->mri_RightImage = CreateSysimage(mri->mri_DrawInfo, RIGHTIMAGE);
+    }
+    else
+    {
+	mri->mri_LeftImage = mri->mri_RightImage = NULL;
+    }
+
+    if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
+    {
+	mri->mri_UpImage   = CreateSysimage(mri->mri_DrawInfo, UPIMAGE);
+	mri->mri_DownImage = CreateSysimage(mri->mri_DrawInfo, DOWNIMAGE);
+    }
+    else
+    {
+	mri->mri_UpImage = mri->mri_DownImage = NULL;
+    }
+
+    if ((data->wd_Flags & MUIWF_USEBOTTOMSCROLLER) ||
+	(data->wd_Flags & MUIWF_USERIGHTSCROLLER))
+	mri->mri_SizeImage = CreateSysimage(mri->mri_DrawInfo, SIZEIMAGE);
+    else
+	mri->mri_SizeImage = NULL;
 
     if (data->wd_CrtFlags & WFLG_BORDERLESS)
     {
@@ -345,6 +365,7 @@ static void _zune_window_change_events (struct MUI_WindowData *data, ULONG new_e
 }
 
 static void CalcWindowPosition(Object *obj, struct MUI_WindowData *data);
+static void CreateWindowScrollbars(Object *obj, struct MUI_WindowData *data);
 static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data);
 static void UndisplayWindow(Object *obj, struct MUI_WindowData *data);
 
@@ -352,17 +373,12 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 {
     struct Window *win;
     ULONG flags = data->wd_CrtFlags;
-    struct MUI_RenderInfo *mri = &data->wd_RenderInfo;
     struct IBox altdims;
     ULONG backfill;
 
     struct Menu *menu = NULL;
     struct NewMenu *newmenu = NULL;
     APTR visinfo = NULL;
-
-    Object *firstgad = NULL;
-    Object *prevgad = NULL;
-    LONG id;
 
     if (!(data->wd_Flags & MUIWF_DONTACTIVATE))
         flags |= WFLG_ACTIVATE;
@@ -400,140 +416,7 @@ static BOOL DisplayWindow(Object *obj, struct MUI_WindowData *data)
 	FreeVisualInfo(visinfo);
     }
 
-    /* Create the right border scrollers now if requested */
-    if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
-    {
-    	int voffset;
-
-	voffset = IM(mri->mri_DownImage)->Width / 4;
-
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	firstgad = prevgad = data->wd_VertProp = NewObject
-        (
-            NULL, "propgclass",
-            
-            GA_RelRight,    1 - (IM(mri->mri_UpImage)->Width - voffset),
-            GA_Top,         mri->mri_BorderTop + 2,
-            GA_Width,       IM(mri->mri_UpImage)->Width - voffset * 2,
-            GA_RelHeight,   - (mri->mri_BorderTop + 2) 
-                            - IM(mri->mri_UpImage)->Height 
-                            - IM(mri->mri_DownImage)->Height 
-                            - IM(mri->mri_SizeImage)->Height - 2,
-            GA_RightBorder, TRUE,
-            GA_ID,          id,
-            PGA_Borderless, TRUE,
-            PGA_NewLook,    TRUE,
-            PGA_Freedom,    FREEVERT,
-            PGA_Top,        0,
-            PGA_Total,      2,
-            PGA_Visible,    1,
-            ICA_TARGET,     ICTARGET_IDCMP,
-            TAG_DONE
-        );
-
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_UpButton = NewObject
-        (
-            NULL, "buttongclass",
-            
-            GA_Image,       (IPTR)mri->mri_UpImage,
-            GA_RelRight,    1 - IM(mri->mri_UpImage)->Width,
-            GA_RelBottom,   1 - IM(mri->mri_UpImage)->Height 
-                              - IM(mri->mri_DownImage)->Height 
-                              - IM(mri->mri_SizeImage)->Height,
-            GA_RightBorder, TRUE,
-            GA_Previous,    (IPTR)prevgad,
-            GA_ID,          id,
-            ICA_TARGET,     ICTARGET_IDCMP,
-            TAG_DONE
-        );
-
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_DownButton = NewObject
-        (
-            NULL, "buttongclass",
-            
-            GA_Image,       (IPTR)mri->mri_DownImage,
-            GA_RelRight,    1 - IM(mri->mri_DownImage)->Width,
-            GA_RelBottom,   1 - IM(mri->mri_DownImage)->Height 
-                              - IM(mri->mri_SizeImage)->Height,
-            GA_RightBorder, TRUE,
-            GA_Previous,    (IPTR)prevgad,
-            GA_ID,          id,
-            ICA_TARGET,     ICTARGET_IDCMP,
-            TAG_DONE
-        );
-    }
-
-    /* Create the bottom border scrollers now if requested */
-    if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
-    {
-    	int hoffset;
-
-	hoffset = IM(mri->mri_RightImage)->Height / 4;
-
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_HorizProp = NewObject
-        (
-            NULL, "propgclass",
-            
-            GA_RelBottom,                       1 - (IM(mri->mri_LeftImage)->Height - hoffset),
-            GA_Left,                            mri->mri_BorderLeft,
-            GA_Height,                          IM(mri->mri_LeftImage)->Height 
-                                                - hoffset * 2,
-            GA_RelWidth,                        - (mri->mri_BorderLeft) 
-                                                - IM(mri->mri_LeftImage)->Width 
-                                                - IM(mri->mri_RightImage)->Width 
-                                                - IM(mri->mri_SizeImage)->Width 
-                                                - 2,
-            GA_BottomBorder,                    TRUE,
-            GA_ID,                              id,
-            prevgad ? GA_Previous : TAG_IGNORE, (IPTR)prevgad,
-            PGA_Borderless,                     TRUE,
-            PGA_NewLook,                        TRUE,
-            PGA_Freedom,                        FREEHORIZ,
-            PGA_Top,                            0,
-            PGA_Total,                          2,
-            PGA_Visible,                        1,
-            ICA_TARGET,                         ICTARGET_IDCMP,
-            TAG_DONE
-        );
-
-	if (!firstgad) firstgad = prevgad;
-
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_LeftButton = NewObject
-        (
-            NULL, "buttongclass",
-            
-            GA_Image,        (IPTR)mri->mri_LeftImage,
-            GA_RelRight,     1 - IM(mri->mri_LeftImage)->Width 
-                               - IM(mri->mri_RightImage)->Width 
-                               - IM(mri->mri_SizeImage)->Width,
-            GA_RelBottom,    1 - IM(mri->mri_LeftImage)->Height,
-            GA_BottomBorder, TRUE,
-            GA_Previous,     (IPTR)prevgad,
-            GA_ID,           id,
-            ICA_TARGET,      ICTARGET_IDCMP,
-            TAG_DONE
-        );
-        
-	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
-	prevgad = data->wd_RightButton = NewObject
-        (
-            NULL, "buttongclass",
-            
-            GA_Image,        (IPTR)mri->mri_RightImage,
-            GA_RelRight,     1 - IM(mri->mri_RightImage)->Width 
-                               - IM(mri->mri_SizeImage)->Width,
-            GA_RelBottom,    1 - IM(mri->mri_RightImage)->Height,
-            GA_BottomBorder, TRUE,
-            GA_Previous,     (IPTR)prevgad,
-            GA_ID,           id,
-            ICA_TARGET,      ICTARGET_IDCMP,
-            TAG_DONE);
-    }
-
+    CreateWindowScrollbars(obj, data);
     CalcAltDimensions(obj, data);
     altdims = data->wd_AltDim;
     /* hack to account for border size, as we only know the innersize and must give
@@ -864,6 +747,149 @@ static void CalcAltDimensions(Object *obj, struct MUI_WindowData *data)
     );
 }
 
+
+/* Create horiz/vert window scrollbars for DisplayWindow */
+static void CreateWindowScrollbars(Object *obj, struct MUI_WindowData *data)
+{
+    struct MUI_RenderInfo *mri = &data->wd_RenderInfo;
+    Object *firstgad = NULL;
+    Object *prevgad = NULL;
+    LONG id;
+
+    /* Create the right border scrollers now if requested */
+    if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
+    {
+    	int voffset;
+
+	voffset = IM(mri->mri_DownImage)->Width / 4;
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	firstgad = prevgad = data->wd_VertProp = NewObject
+        (
+            NULL, "propgclass",
+            
+            GA_RelRight,    1 - (IM(mri->mri_UpImage)->Width - voffset),
+            GA_Top,         mri->mri_BorderTop + 2,
+            GA_Width,       IM(mri->mri_UpImage)->Width - voffset * 2,
+            GA_RelHeight,   - (mri->mri_BorderTop + 2) 
+                            - IM(mri->mri_UpImage)->Height 
+                            - IM(mri->mri_DownImage)->Height 
+                            - IM(mri->mri_SizeImage)->Height - 2,
+            GA_RightBorder, TRUE,
+            GA_ID,          id,
+            PGA_Borderless, TRUE,
+            PGA_NewLook,    TRUE,
+            PGA_Freedom,    FREEVERT,
+            PGA_Top,        0,
+            PGA_Total,      2,
+            PGA_Visible,    1,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_UpButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,       (IPTR)mri->mri_UpImage,
+            GA_RelRight,    1 - IM(mri->mri_UpImage)->Width,
+            GA_RelBottom,   1 - IM(mri->mri_UpImage)->Height 
+                              - IM(mri->mri_DownImage)->Height 
+                              - IM(mri->mri_SizeImage)->Height,
+            GA_RightBorder, TRUE,
+            GA_Previous,    (IPTR)prevgad,
+            GA_ID,          id,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_DownButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,       (IPTR)mri->mri_DownImage,
+            GA_RelRight,    1 - IM(mri->mri_DownImage)->Width,
+            GA_RelBottom,   1 - IM(mri->mri_DownImage)->Height 
+                              - IM(mri->mri_SizeImage)->Height,
+            GA_RightBorder, TRUE,
+            GA_Previous,    (IPTR)prevgad,
+            GA_ID,          id,
+            ICA_TARGET,     ICTARGET_IDCMP,
+            TAG_DONE
+        );
+    } // if (data->wd_Flags & MUIWF_USERIGHTSCROLLER)
+
+    /* Create the bottom border scrollers now if requested */
+    if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
+    {
+    	int hoffset;
+
+	hoffset = IM(mri->mri_RightImage)->Height / 4;
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_HorizProp = NewObject
+        (
+            NULL, "propgclass",
+            
+            GA_RelBottom,                       1 - (IM(mri->mri_LeftImage)->Height - hoffset),
+            GA_Left,                            mri->mri_BorderLeft,
+            GA_Height,                          IM(mri->mri_LeftImage)->Height 
+                                                - hoffset * 2,
+            GA_RelWidth,                        - (mri->mri_BorderLeft) 
+                                                - IM(mri->mri_LeftImage)->Width 
+                                                - IM(mri->mri_RightImage)->Width 
+                                                - IM(mri->mri_SizeImage)->Width 
+                                                - 2,
+            GA_BottomBorder,                    TRUE,
+            GA_ID,                              id,
+            prevgad ? GA_Previous : TAG_IGNORE, (IPTR)prevgad,
+            PGA_Borderless,                     TRUE,
+            PGA_NewLook,                        TRUE,
+            PGA_Freedom,                        FREEHORIZ,
+            PGA_Top,                            0,
+            PGA_Total,                          2,
+            PGA_Visible,                        1,
+            ICA_TARGET,                         ICTARGET_IDCMP,
+            TAG_DONE
+        );
+
+	if (!firstgad) firstgad = prevgad;
+
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_LeftButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,        (IPTR)mri->mri_LeftImage,
+            GA_RelRight,     1 - IM(mri->mri_LeftImage)->Width 
+                               - IM(mri->mri_RightImage)->Width 
+                               - IM(mri->mri_SizeImage)->Width,
+            GA_RelBottom,    1 - IM(mri->mri_LeftImage)->Height,
+            GA_BottomBorder, TRUE,
+            GA_Previous,     (IPTR)prevgad,
+            GA_ID,           id,
+            ICA_TARGET,      ICTARGET_IDCMP,
+            TAG_DONE
+        );
+        
+	id = DoMethod(obj, MUIM_Window_AllocGadgetID);
+	prevgad = data->wd_RightButton = NewObject
+        (
+            NULL, "buttongclass",
+            
+            GA_Image,        (IPTR)mri->mri_RightImage,
+            GA_RelRight,     1 - IM(mri->mri_RightImage)->Width 
+                               - IM(mri->mri_SizeImage)->Width,
+            GA_RelBottom,    1 - IM(mri->mri_RightImage)->Height,
+            GA_BottomBorder, TRUE,
+            GA_Previous,     (IPTR)prevgad,
+            GA_ID,           id,
+            ICA_TARGET,      ICTARGET_IDCMP,
+            TAG_DONE);
+    } // if (data->wd_Flags & MUIWF_USEBOTTOMSCROLLER)
+}
 
 /* return FALSE only if no resize (dx=dy=0) occured */
 static BOOL
