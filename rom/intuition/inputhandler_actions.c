@@ -345,11 +345,13 @@ static void DoMoveSizeWindow(struct Window *targetwindow, WORD NewLeftEdge, WORD
 	    WindowSizeWillChange(targetwindow, size_dx, size_dy, IntuitionBase);
 	}
 
-	targetwindow->LeftEdge = NewLeftEdge;
-	targetwindow->TopEdge  = NewTopEdge;
-	targetwindow->Width    = NewWidth;
-	targetwindow->Height   = NewHeight; 
-
+	targetwindow->LeftEdge  = NewLeftEdge;
+	targetwindow->TopEdge   = NewTopEdge;
+	targetwindow->Width     = NewWidth;
+	targetwindow->Height    = NewHeight; 
+	targetwindow->GZZWidth  = targetwindow->Width  - targetwindow->BorderLeft - targetwindow->BorderRight;
+	targetwindow->GZZHeight = targetwindow->Height - targetwindow->BorderTop  - targetwindow->BorderBottom;
+ 
 	/* check for GZZ window */
 	if (IS_GZZWINDOW(targetwindow))
 	{
@@ -740,6 +742,8 @@ void HandleIntuiActions(struct IIHData *iihdata,
 
                 targetwindow->Width  += size_dx;
                 targetwindow->Height += size_dy;
+		targetwindow->GZZWidth  = targetwindow->Width  - targetwindow->BorderLeft - targetwindow->BorderRight;
+		targetwindow->GZZHeight = targetwindow->Height - targetwindow->BorderTop  - targetwindow->BorderBottom;
 
                 /* I first resize the outer window if a GZZ window */
                 if (IS_GZZWINDOW(targetwindow))
