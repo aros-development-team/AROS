@@ -124,10 +124,46 @@
         
 	if (disabled)
 	{
+#if 0
+            /*
+                This aproach might be faster *provided* that the buffer is
+                allocated and filled *once* at startup of muimaster.library.
+                
+                In reality, the WritePixelArray() call has quite a big 
+                overhead, so you should only use this buffer if the gadget
+                completely fits inside, and fall back to allocating a new
+                buffer if the gadget is too big.
+                
+                Perhaps a future optimization...
+            */
+            LONG  width  = 200;
+            LONG  height = 100;
+            LONG *buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
+            LONG  x, y;
+            
+            memset(buffer, 0xAA, width * height * sizeof(LONG));
+            
+            for (y = 0; y < _height(obj); y += height)
+            {
+                for (x = 0; x < _width(obj); x += width)
+                {
+                    WritePixelArrayAlpha
+                    (
+                        buffer, 0, 0, width * sizeof(LONG),
+                        _rp(obj), _left(obj) + x, _top(obj) + y, 
+                        x + width  > _width(obj)  ? _width(obj)  - x : width,
+                        y + height > _height(obj) ? _height(obj) - y : height,
+                        0
+                    );
+                }
+            }
+
+#else
+            
             LONG  width  = _width(obj);
             LONG  height = _height(obj);
             LONG *buffer = AllocVec(width * height * sizeof(LONG), MEMF_ANY);
-            
+
             if (buffer != NULL)
             {
 #if 1
@@ -153,6 +189,7 @@
                 
                 FreeVec(buffer);
             }
+#endif
         }
     }
 
