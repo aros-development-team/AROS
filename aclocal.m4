@@ -1,6 +1,6 @@
-# generated automatically by aclocal 1.7.8 -*- Autoconf -*-
+# generated automatically by aclocal 1.8.3 -*- Autoconf -*-
 
-# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002
+# Copyright (C) 1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004
 # Free Software Foundation, Inc.
 # This file is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
@@ -11,60 +11,9 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
-dnl Some autoconf macros for AROS
-dnl
-dnl Search for a file, and place the result into the cache.
 
-dnl AROS_REQUIRED(name,var)
-dnl Checks if var is defined, and aborts otherwise
-AC_DEFUN(AROS_REQUIRED,
-[if test "$2" = ""; then
-    AC_MSG_ERROR($1 is required to build AROS. Please install and run configure again.)
-fi])
-
-dnl AROS_PROG(var,prog,args)
-AC_DEFUN(AROS_PROG,
-[AC_CHECK_PROG([$1],[$2],[$2])
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
-
-dnl AROS_TOOL(var,prog,args)
-dnl This will later on check the $target-$(tool) stuff, but at the
-dnl moment it only does the same as AROS_PROG
-dnl
-AC_DEFUN(AROS_TOOL,
-[AC_PATH_PROG([$1],[$2],[$2])
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
-
-dnl AROS_TOOL_CC(var,prog,args)
-dnl This is effectively the same as AROS_TOOL, but only does the 
-dnl test when we are cross compiling.
-dnl
-AC_DEFUN(AROS_TOOL_CC,
-[if test "$cross_compile" = "yes" ; then
-    AC_PATH_PROG([$1],[$2],[$2])
-else
-    $1="$2"
-fi
-ifelse($3, ,, $1="$$1 $3")
-AC_SUBST($1)])
-
-dnl AROS_CACHE_CHECK(message, var, check)
-dnl This is similar to the AC_CACHE_CHECK macro, but it hides the
-dnl prefix and stuff from the coders. We will get aros_$2 on the
-dnl variable, and aros_cv_$2 on the cache variable.
-AC_DEFUN(AROS_CACHE_CHECK,
-[AC_MSG_CHECKING([$1])
-AC_CACHE_VAL(aros_cv_[$2],
-[$3
-aros_cv_[$2]="[$]aros_[$2]"
-])
-aros_[$2]="[$]aros_cv_[$2]"
-AC_MSG_RESULT([$]aros_$2)])
-
-
-# Copyright 1999, 2000, 2001, 2002, 2003  Free Software Foundation, Inc.
+# Copyright (C) 1999, 2000, 2001, 2002, 2003, 2004
+# Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,7 +30,7 @@ AC_MSG_RESULT([$]aros_$2)])
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
 # 02111-1307, USA.
 
-# AM_PATH_PYTHON([MINIMUM-VERSION])
+# AM_PATH_PYTHON([MINIMUM-VERSION], [ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 
 # Adds support for distributing Python modules and packages.  To
 # install modules, copy them to $(pythondir), using the python_PYTHON
@@ -111,12 +60,16 @@ AC_DEFUN([AM_PATH_PYTHON],
   dnl $prefix/lib/site-python in 1.4 to $prefix/lib/python1.5/site-packages
   dnl in 1.5.
   m4_define([_AM_PYTHON_INTERPRETER_LIST],
-	    [python python2 python2.3 python2.2 python2.1 python2.0 python1.6 python1.5])
+            [python python2 python2.4 python2.3 python2.2 dnl
+python2.1 python2.0 python1.6 python1.5])
 
   m4_if([$1],[],[
     dnl No version check is needed.
     # Find any Python interpreter.
-    AC_PATH_PROGS([PYTHON], _AM_PYTHON_INTERPRETER_LIST)
+    if test -z "$PYTHON"; then
+      PYTHON=:
+      AC_PATH_PROGS([PYTHON], _AM_PYTHON_INTERPRETER_LIST)
+    fi
     am_display_PYTHON=python
   ], [
     dnl A version check is needed.
@@ -131,17 +84,24 @@ AC_DEFUN([AM_PATH_PYTHON],
       # VERSION.
       AC_CACHE_CHECK([for a Python interpreter with version >= $1],
 	[am_cv_pathless_PYTHON],[
-	for am_cv_pathless_PYTHON in _AM_PYTHON_INTERPRETER_LIST : ; do
-          if test "$am_cv_pathless_PYTHON" = : ; then
-            AC_MSG_ERROR([no suitable Python interpreter found])
-	  fi
-          AM_PYTHON_CHECK_VERSION([$am_cv_pathless_PYTHON], [$1], [break])
-        done])
+	for am_cv_pathless_PYTHON in _AM_PYTHON_INTERPRETER_LIST none; do
+	  test "$am_cv_pathless_PYTHON" = none && break
+	  AM_PYTHON_CHECK_VERSION([$am_cv_pathless_PYTHON], [$1], [break])
+	done])
       # Set $PYTHON to the absolute path of $am_cv_pathless_PYTHON.
-      AC_PATH_PROG([PYTHON], [$am_cv_pathless_PYTHON])
+      if test "$am_cv_pathless_PYTHON" = none; then
+	PYTHON=:
+      else
+        AC_PATH_PROG([PYTHON], [$am_cv_pathless_PYTHON])
+      fi
       am_display_PYTHON=$am_cv_pathless_PYTHON
     fi
   ])
+
+  if test "$PYTHON" = :; then
+  dnl Run any user-specified action, or abort.
+    m4_default([$3], [AC_MSG_ERROR([no suitable Python interpreter found])])
+  else
 
   dnl Query Python for its version number.  Getting [:3] seems to be
   dnl the best way to do this; it's what "site.py" does in the standard
@@ -202,6 +162,11 @@ AC_DEFUN([AM_PATH_PYTHON],
   dnl pkgpyexecdir -- $(pyexecdir)/$(PACKAGE)
 
   AC_SUBST([pkgpyexecdir], [\${pyexecdir}/$PACKAGE])
+
+  dnl Run any user-specified action.
+  $2
+  fi
+
 ])
 
 
@@ -223,7 +188,7 @@ for i in xrange(0, 4): minverhex = (minverhex << 8) + minver[[i]]
 sys.exit(sys.hexversion < minverhex)"
   AS_IF([AM_RUN_LOG([$1 -c "$prog"])], [$3], [$4])])
 
-# Copyright 2001 Free Software Foundation, Inc.             -*- Autoconf -*-
+# Copyright (C) 2001, 2003 Free Software Foundation, Inc.     -*- Autoconf -*-
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -251,3 +216,4 @@ AC_DEFUN([AM_RUN_LOG],
    echo "$as_me:$LINENO: \$? = $ac_status" >&AS_MESSAGE_LOG_FD
    (exit $ac_status); }])
 
+m4_include([acinclude.m4])
