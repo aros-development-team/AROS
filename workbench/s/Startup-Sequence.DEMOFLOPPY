@@ -12,8 +12,7 @@
 ; Copy System to RAM:
 RAM:
 
-SYS:contrib/aminet/untgz SYS:AROS.tgz GUI CLOSEWB
-Copy >NIL: SYS:contrib/aminet/untgz RAM:Utilities
+SYS:C/Unpack SYS:AROS.pkg RAM:
 
 C/Assign SYS: RAM:
 C/Assign C: SYS:C
