@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.12  1997/01/10 04:06:49  ldp
+    Added <aros/libcall.h>
+
     Revision 1.11  1997/01/01 03:46:05  ldp
     Committed Amiga native (support) code
 
@@ -38,6 +41,7 @@
 */
 #include <exec/alerts.h>
 #include <exec/execbase.h>
+#include <aros/libcall.h>
 #include <aros/asmcall.h>
 #include <aros/rt.h>
 #include <aros/machine.h>
