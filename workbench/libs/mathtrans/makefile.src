@@ -10,7 +10,7 @@ LIBNAME = mathtrans
 
 %define_libs prelibs=-l$(LIBNAME)
 
-OBJDIR=$(OSGENDIR)/$(LIBNAME)
+OBJDIR=$(GENDIR)/$(CURDIR)
 LIB=$(LIBDIR)/lib$(LIBNAME).a
 
 INIT_FILE = $(LIBNAME)_init
