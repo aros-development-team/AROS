@@ -2,11 +2,8 @@
 #define DATATYPES_DATATYPES_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: Includes for datatypes.library
-    Lang: English
 */
 
 #ifndef    EXEC_TYPES_H
@@ -50,52 +47,52 @@ struct DataTypeHeader
 #define	 DTHSIZE       sizeof(struct DataTypeHeader)
 
 /* Types */
-#define  DTF_TYPE_MASK  0x000F
-#define  DTF_BINARY     0x0000
-#define  DTF_ASCII      0x0001
-#define  DTF_IFF        0x0002
-#define  DTF_MISC       0x0003
+#define DTF_TYPE_MASK  0x000F
+#define DTF_BINARY     0x0000
+#define DTF_ASCII      0x0001
+#define DTF_IFF        0x0002
+#define DTF_MISC       0x0003
 
-#define  DTF_CASE       0x0010      /* Case is important */
+#define DTF_CASE       0x0010      /* Case is important */
 
-#define  DTF_SYSTEM1    0x1000      /* For system use only */
+#define DTF_SYSTEM1    0x1000      /* For system use only */
 
 
 /*****   Group ID and ID   ************************************************/
 
 /* System file -- executable, directory, library, font and so on. */
-#define	 GID_SYSTEM      MAKE_ID('s','y','s','t')
-#define  ID_EXECUTABLE   MAKE_ID('e','x','e','c')
+#define	GID_SYSTEM      MAKE_ID('s','y','s','t')
+#define ID_EXECUTABLE   MAKE_ID('e','x','e','c')
 
 /* Text, formatted or not */
-#define	 GID_TEXT        MAKE_ID('t','e','x','t')
+#define	GID_TEXT        MAKE_ID('t','e','x','t')
 
 /* Formatted text combined with graphics or other DataTypes */
-#define  GID_DOCUMENT    MAKE_ID('d','o','c','u')
+#define GID_DOCUMENT    MAKE_ID('d','o','c','u')
 
 /* Sound */
-#define  GID_SOUND       MAKE_ID('s','o','u','n')
+#define GID_SOUND       MAKE_ID('s','o','u','n')
 
 /* Musical instrument */
-#define  GID_INSTRUMENT  MAKE_ID('i','n','s','t')
+#define GID_INSTRUMENT  MAKE_ID('i','n','s','t')
 
 /* Musical score */
-#define  GID_MUSIC       MAKE_ID('m','u','s','i')
+#define GID_MUSIC       MAKE_ID('m','u','s','i')
 
 /* Picture */
-#define  GID_PICTURE     MAKE_ID('p','i','c','t')
+#define GID_PICTURE     MAKE_ID('p','i','c','t')
 
 /* Animated pictures */
-#define  GID_ANIMATION   MAKE_ID('a','n','i','m')
+#define GID_ANIMATION   MAKE_ID('a','n','i','m')
 
 /* Animation with audio */
-#define  GID_MOVIE       MAKE_ID('m','o','v','i')
+#define GID_MOVIE       MAKE_ID('m','o','v','i')
 
 
 /**************************************************************************/
 
 
-#define  ID_CODE         MAKE_ID('D','T','C','D')
+#define ID_CODE         MAKE_ID('D','T','C','D')
 
 
 struct DTHookContext
@@ -138,21 +135,21 @@ enum
 };
 
 
-#define  TF_LAUNCH_MASK       0x000F
-#define  TF_SHELL             0x0001
-#define  TF_WORKBENCH         0x0002
-#define  TF_RX                0x0003
+#define TF_LAUNCH_MASK       0x000F
+#define TF_SHELL             0x0001
+#define TF_WORKBENCH         0x0002
+#define TF_RX                0x0003
 
 
 /* Tags for use with FindToolNodeA(), GetToolAttrsA() and so on */
 
-#define  TOOLA_Dummy          TAG_USER
-#define  TOOLA_Program        (TOOLA_Dummy + 1)
-#define  TOOLA_Which          (TOOLA_Dummy + 2)
-#define  TOOLA_LaunchType     (TOOLA_Dummy + 3)
+#define TOOLA_Dummy          TAG_USER
+#define TOOLA_Program        (TOOLA_Dummy + 1)
+#define TOOLA_Which          (TOOLA_Dummy + 2)
+#define TOOLA_LaunchType     (TOOLA_Dummy + 3)
 
 
-#define  ID_TAGS      MAKE_ID('D','T','T','G')
+#define ID_TAGS      MAKE_ID('D','T','T','G')
 
 
 /*************************************************************************/
@@ -182,28 +179,28 @@ struct ToolNode
     ULONG	 tn_Length;  /* Length of the memory block */
 };
 
-#define  TNSIZE  sizeof(struct ToolNode)
+#define TNSIZE  sizeof(struct ToolNode)
 
 
-#ifndef  ID_NAME
-#define  ID_NAME   MAKE_ID('N','A','M','E')
+#ifndef ID_NAME
+#define ID_NAME   MAKE_ID('N','A','M','E')
 #endif
 
 
 /* Text ID:s */
-#define  DTERROR_UNKNOWN_DATATYPE        2000
-#define  DTERROR_COULDNT_SAVE            2001
-#define  DTERROR_COULDNT_OPEN            2002
-#define  DTERROR_COULDNT_SEND_MESSAGE    2003
+#define DTERROR_UNKNOWN_DATATYPE        2000
+#define DTERROR_COULDNT_SAVE            2001
+#define DTERROR_COULDNT_OPEN            2002
+#define DTERROR_COULDNT_SEND_MESSAGE    2003
 
 /* new for V40 */
-#define  DTERROR_COULDNT_OPEN_CLIPBOARD  2004
-#define  DTERROR_Reserved                2005
-#define  DTERROR_UNKNOWN_COMPRESSION     2006
-#define  DTERROR_NOT_ENOUGH_DATA         2007
-#define  DTERROR_INVALID_DATA            2008
+#define DTERROR_COULDNT_OPEN_CLIPBOARD  2004
+#define DTERROR_Reserved                2005
+#define DTERROR_UNKNOWN_COMPRESSION     2006
+#define DTERROR_NOT_ENOUGH_DATA         2007
+#define DTERROR_INVALID_DATA            2008
 
-#define  DTMSG_TYPE_OFFSET               2100
+#define DTMSG_TYPE_OFFSET               2100
 
 
 #endif /* DATATYPES_DATATYPES_H */
