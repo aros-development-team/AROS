@@ -8,8 +8,12 @@
 
 /****************************************************************************************/
 
-#include <proto/arossupport.h>
+#include <diskfont/diskfonttag.h>
+#include <aros/macros.h>
+
 #include <proto/dos.h>
+#include <proto/utility.h>
+#include <proto/arossupport.h>
 #include <string.h>
 #include "diskfont_intern.h"
 
@@ -30,17 +34,13 @@
 
 struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_intern *DiskfontBase)
 {
-    UWORD aword,
-          numentries,
-          numtags;
-          
-    struct FontDescrHeader *fdh = 0;
-    
-    struct TTextAttr *tattr;
-
-    UBYTE strbuf[MAXFONTNAME];
-
-    BPTR fh;
+    struct FontDescrHeader  *fdh = 0;
+    struct TTextAttr 	    *tattr;
+    BPTR    	    	     fh;
+    UWORD   	    	     aword, numentries, numtags;
+    UWORD   	    	    *availsizes = NULL;
+    UWORD   	    	     numoutlineentries = 0;
+    UBYTE   	    	     strbuf[MAXFONTNAME];
 
     D(bug("ReadFontDescr(filename=%s\n", filename));
     
@@ -48,7 +48,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     if (!(fh = Open(filename, MODE_OLDFILE)))
     	goto failure;
 
-    if (!(fdh = AllocMem(sizeof (struct FontDescrHeader), MEMF_ANY|MEMF_CLEAR)) )
+    if (!(fdh = AllocMem(sizeof (struct FontDescrHeader), MEMF_ANY | MEMF_CLEAR)) )
         goto failure;
 
     /* First read the file id (FCH_ID or TFCH_ID) */
@@ -60,28 +60,42 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     if ( (aword != FCH_ID) && (aword != TFCH_ID) && (aword != OFCH_ID) )
         goto failure;
         
+    fdh->ContentsID = aword;
+    
     fdh->Tagged = ((aword == TFCH_ID) || (aword == OFCH_ID));
     
      /* Read number of (T)FontContents structs in the file */
     if (!ReadWord( &DFB(DiskfontBase)->dsh, &numentries , (void *)fh ))
+    {
         goto failure;
-    
-    fdh->NumEntries = numentries;
-    
-    if (!numentries)
-    {    
-    	/* not really an error. outline fonts often have a
-	   .font wiht 0 numentries, because of none of
-	   the sizes having been converted to bitmap fonts
-	*/
-	   
-    	goto failure;
     }
     
+    fdh->NumEntries = numentries;
+
+    if (fdh->ContentsID == OFCH_ID)
+    {
+    	fdh->OTagList = OTAG_GetFile(filename, DiskfontBase);
+	if (fdh->OTagList)
+	{
+	    availsizes = (UWORD *)GetTagData(OT_AvailSizes, NULL, fdh->OTagList->tags);
+	    if (availsizes)
+	    {
+	    	/* OT_AvailSizes points to an UWORD array, where the first UWORD
+                   is the number of entries, and the following <numentry> UWORD's
+		   are the sizes */
+		   
+	    	numoutlineentries = AROS_BE2WORD(*availsizes);
+		availsizes++;
+		
+	    }
+	}
+    }
+    
+    if (!(numentries + numoutlineentries)) goto failure;
+    
     /* Allocate mem for array of TTextAttrs */
-    fdh->TAttrArray = AllocVec(fdh->NumEntries * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
-    if (!fdh->TAttrArray)
-        goto failure;
+    fdh->TAttrArray = AllocVec((fdh->NumEntries + numoutlineentries) * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
+    if (!fdh->TAttrArray) goto failure;
     
     tattr = fdh->TAttrArray;
         
@@ -104,29 +118,9 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         }
         while (*strptr ++);
 
-#if 0     
-        /* We don't want a "topaz/9" like name here, but "topaz.font" */
-       	strptr = strpbrk(strbuf, "/");
-
-       	/* End string at '/' */
-       	if (strptr)
-	{
-	    *strptr = 0;
-	}
-	else
-	{
-	    strptr = strbuf + strlen(strbuf);
-	}
-       	
-       	
-       	/* Allocate space for fontname */
-       	if ( !(tattr->tta_Name = AllocVec(strptr - strbuf + sizeof(".font") + 1, MEMF_ANY)))
-            goto failure;
-     	
-     	strcpy(tattr->tta_Name, strbuf);
-     
-     	strcat(tattr->tta_Name, ".font");  	
-#else
+    	/* We set tattr->tta_Name to the real font name, for
+	   example FONTS:helvetica/15 */
+	   
     	{
     	    STRPTR filepart = FilePart(filename);
 	    LONG pathlen, len;
@@ -148,8 +142,6 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
 	    }
 	    strcat(tattr->tta_Name, strbuf);
 	}
-
-#endif
        	    
         /* Seek to the end of the fontnamebuffer ( - 2 if tagged) */
         Flush(fh);
@@ -219,10 +211,62 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
         
     } /* for (; numentries --; ) */
     
-    ReturnPtr ("ReadFontDescr", struct FontDescrHeader*, fdh);
+    Close(fh); fh = 0;
+      
+    if (numoutlineentries)
+    {
+    	UBYTE flags = OTAG_GetFontFlags(fdh->OTagList, DiskfontBase);
+	UBYTE style = OTAG_GetFontStyle(fdh->OTagList, DiskfontBase);
+	
+	while(numoutlineentries--)
+	{
+	    UWORD size;
+	    UWORD i;
+	    BOOL  exists = FALSE;
+	    
+	    size = AROS_BE2WORD(*availsizes);
+	    availsizes++;
+	    
+	    /* Check if this size already exists as bitmap
+	       font. If it does, then ignore it */
+	       
+	    for(i = 0; i < fdh->NumEntries; i++)
+	    {
+	    	if (fdh->TAttrArray[i].tta_YSize == size)
+		{
+		    exists = TRUE;
+		    break;
+		}
+	    }
+	    
+	    if (exists) continue;
+	    
+	    /* NumEntries contains the total number of entries, ie.
+	       bitmap fonts and outline fonts included. NumOutlineEntries
+	       tells how many among these (at the end of the array) are
+	       outline fonts */
+	       
+	    fdh->NumEntries++;
+	    fdh->NumOutlineEntries++;
+	    
+	    tattr->tta_Name  = fdh->OTagList->filename;
+	    tattr->tta_YSize = size;
+	    tattr->tta_Flags = flags;
+	    tattr->tta_Style = style;
+	    tattr->tta_Tags  = NULL;
+	    
+	    tattr++;
+	    
+	} /* while(numoutlineentries--) */
+	
+    } /* if (numoutlineentries) */
+    
+    ReturnPtr ("ReadFontDescr", struct FontDescrHeader *, fdh);
 
 failure:
     /* Free all allocated memory */
+    
+    if (fh) Close(fh);
     
     if (fdh)
         FreeFontDescr(fdh, DFB(DiskfontBase) );
@@ -250,12 +294,18 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
     if (fdh)
     {       
         tattr       = fdh->TAttrArray;
-        numentries  = fdh->NumEntries;
+        numentries  = fdh->NumEntries - fdh->NumOutlineEntries;
     
         if (tattr)
         {
-            /* Go through the whole array freeing strings and tags */
-            for (; numentries --; )
+            /* Go through the whole array of bitmap font entries
+	       freeing strings and tags. Outline font entries
+	       always have the tta_Name pointing to the otag file
+	       and must not get the tta_Name freed. They also have
+	       tta_Tags always being NULL. Therefore the loop below
+	       goes only through the bitmap font entries */
+	       
+            while(numentries--)
             {
                 if (tattr->tta_Name)
                     FreeVec(tattr->tta_Name);
@@ -269,6 +319,8 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
             FreeVec(fdh->TAttrArray);
         } 
     
+    	if (fdh->OTagList) OTAG_KillFile(fdh->OTagList, DiskfontBase);
+	
         FreeMem(fdh, sizeof (struct FontDescrHeader));
     }
     
