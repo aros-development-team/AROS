@@ -15,15 +15,15 @@
 #define DEF_Y1   R->MaxY
 
 
-#define DEF_DO_THE_BLIT(CR_New, LAYER)                       \
+#define DEF_DO_THE_BLIT(CR_New, LAYER, FRIEND_BM)            \
   (CR_New)->BitMap = AllocBitMap(                            \
      (CR_New)->bounds.MaxX - (CR_New)->bounds.MinX + 1 + 16, \
      (CR_New)->bounds.MaxY - (CR_New)->bounds.MinY + 1,      \
      bm_old->Depth,                                          \
      0,                                                      \
-     NULL);                                                  \
+     (FRIEND_BM));                                           \
                                                              \
-  BltBitMap(                                                \
+  BltBitMap(                                                 \
     bm_old,                                                  \
     (CR_New)->bounds.MinX - DEF_MINX + (DEF_MINX & 0x0F),    \
     (CR_New)->bounds.MinY - DEF_MINY,                        \
@@ -39,13 +39,13 @@
   (CR_New) -> lobs = (LAYER);
 
 
-#define DEF_DO_THE_BLIT_CR(X0, Y0, X1, Y1)                   \
+#define DEF_DO_THE_BLIT_CR(X0, Y0, X1, Y1, FRIEND_BM)        \
   CR->BitMap = AllocBitMap(                                  \
      (X1) - (X0) + 1,                                        \
      (Y1) - (Y0) + 1,                                        \
      bm_old->Depth,                                          \
      0,                                                      \
-     NULL);                                                  \
+     (FRIEND_BM));                                           \
                                                              \
   BltBitMap(                                                \
     bm_old,                                                  \
@@ -202,10 +202,10 @@ struct ClipRect * Case_1(struct Rectangle * R,
     { /* get two new bitmap structures */
 
       /* the "upper" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_MAXX, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_MAXX, DEF_Y1,display_bm);
 
       /* the "lower" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR -> lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR -> lobs,display_bm);
 
       CR -> lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -324,10 +324,10 @@ struct ClipRect * Case_2(struct Rectangle * R,
        */
 
       /* the "left" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
 
       /* the "right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR-> lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR-> lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -448,11 +448,11 @@ struct ClipRect * Case_3(struct Rectangle * R,
       */
 
       /* the "upper left" one (n's) */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
       /* the "upper right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs)
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm)
       /* the "lower" one (O's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
 
       CR -> lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -572,10 +572,10 @@ struct ClipRect * Case_4(struct Rectangle * R,
     { /* get two new bitmap structures */
 
       /* the "upper" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
       /* the "lower" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_MAXY );
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm );
 
       CR->lobs = newlayer;
      /* dispose the old bitmap structure as everything
@@ -696,13 +696,13 @@ struct ClipRect * Case_5(struct Rectangle * R,
       */
 
       /* the "upper" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
       /* the "middle" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
 
       /* the "lower" one (o's) */
-      DEF_DO_THE_BLIT(CR_New2, CR-> lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR-> lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -825,11 +825,11 @@ struct ClipRect * Case_6(struct Rectangle * R,
       */
 
       /* the "upper " one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "lower left" one (o's), Cliprect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
       /* the "lower right" one (O's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -958,13 +958,13 @@ struct ClipRect * Case_7(struct Rectangle * R,
       */
 
       /* the "upper " one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "middle left" one (o's), Cliprect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_MINX, DEF_Y0, DEF_X1, DEF_Y1, display_bm);
       /* the "middle right" one (O's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
       /* the "lower" one (o's) */
-      DEF_DO_THE_BLIT(CR_New3, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1081,10 +1081,10 @@ struct ClipRect * Case_8(struct Rectangle * R,
       */
 
       /* the "left" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
 
       /* the "right" one (n's) , ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_MAXY, display_bm);
 
       CR->lobs = newlayer;
      /* dispose the old bitmap structure as everything
@@ -1204,11 +1204,11 @@ struct ClipRect * Case_9(struct Rectangle * R,
       */
 
       /* the "upper " one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "lower left" one (o's), Cliprect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_MAXX, DEF_Y1, display_bm);
       /* the "lower right" one (O's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1332,11 +1332,11 @@ struct ClipRect * Case_10(struct Rectangle * R,
       */
 
       /* the "left" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "middle" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_MAXY, display_bm);
       /* the "right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1465,13 +1465,13 @@ struct ClipRect * Case_11(struct Rectangle * R,
       */
 
       /* the "upper left" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "upper middle " one (n's), Cliprect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_MINY, DEF_X1, DEF_Y1, display_bm);
       /* the "upper right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
       /* the "lower" one (O's) */
-      DEF_DO_THE_BLIT(CR_New3, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1596,11 +1596,11 @@ struct ClipRect * Case_12(struct Rectangle * R,
       */
 
       /* the "left" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "middle" one (n's), ClipRect CR will hold it */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_MAXY, display_bm);
       /* the "right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1731,13 +1731,13 @@ struct ClipRect * Case_13(struct Rectangle * R,
       */
 
       /* the "upper" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "middle left" one (O's)*/
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
       /* the "upper right" one (o's), Cliprect CR will hold it  */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_MAXX, DEF_Y1, display_bm);
       /* the "lower" one (o's) */
-      DEF_DO_THE_BLIT(CR_New3, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -1868,13 +1868,13 @@ struct ClipRect * Case_14(struct Rectangle * R,
       */
 
       /* the "upper" one (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* the "lower left" one (O's)*/
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
       /* the "lower middle" one (n's), Cliprect CR will hold it  */
-      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_X1, DEF_MAXY);
+      DEF_DO_THE_BLIT_CR(DEF_X0, DEF_Y0, DEF_X1, DEF_MAXY, display_bm);
       /* the "lower right" one (o's) */
-      DEF_DO_THE_BLIT(CR_New3, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
       /* dispose the old bitmap structure as everything
@@ -2020,15 +2020,15 @@ struct ClipRect * Case_15(struct Rectangle * R,
       */
 
       /* upper part (o's) */
-      DEF_DO_THE_BLIT(CR_New1, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New1, CR->lobs, display_bm);
       /* middle left part (O's) */
-      DEF_DO_THE_BLIT(CR_New2, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New2, CR->lobs, display_bm);
       /* middle part (n's) */
-      DEF_DO_THE_BLIT_CR(DEF_X0,DEF_Y0,DEF_X1,DEF_Y1);
+      DEF_DO_THE_BLIT_CR(DEF_X0,DEF_Y0,DEF_X1,DEF_Y1, display_bm);
       /* middle left part (O's) */
-      DEF_DO_THE_BLIT(CR_New3, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New3, CR->lobs, display_bm);
       /* lower part (o's) */
-      DEF_DO_THE_BLIT(CR_New4, CR->lobs);
+      DEF_DO_THE_BLIT(CR_New4, CR->lobs, display_bm);
 
       CR->lobs = newlayer;
     /* dispose the old bitmap structure as everything

@@ -23,7 +23,7 @@
     NAME */
 #include <proto/layers.h>
 
-        AROS_LH9(struct Layer *, _CreateUpfrontHookLayer,
+        AROS_LH9(struct Layer *, CreateUpfrontHookLayer,
 
 /*  SYNOPSIS */
         AROS_LHA(struct Layer_Info *, li, A0),

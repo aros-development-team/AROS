@@ -22,7 +22,7 @@
 //#include "layers_intern.h"
 #include <aros/libcall.h>
 
-	AROS_LH2(LONG, _DeleteLayer,
+	AROS_LH2(LONG, DeleteLayer,
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG          , dummy, A0),

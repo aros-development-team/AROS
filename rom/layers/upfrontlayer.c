@@ -20,7 +20,7 @@
     NAME */
 #include <proto/layers.h>
 
-	AROS_LH2(LONG, _UpfrontLayer,
+	AROS_LH2(LONG, UpfrontLayer,
 
 /*  SYNOPSIS */
 	AROS_LHA(LONG          , dummy, A0),

@@ -12,7 +12,6 @@
 #include <graphics/layers.h>
 #include <utility/hooks.h>
 #include <proto/layers.h>
-#include <proto/layers.h>
 #include "layers_intern.h"
 
 #define DEBUG 0
@@ -66,10 +65,7 @@
   D(bug("CreateUpfrontLayer(li@$lx, bm@$lx, x0 %ld, y0 %ld, x1 %ld, y1 %ld, flags %ld, bm2@$lx)\n",
      li, bm, x0, y0, x1, y1, flags, bm2));
 
-  CreateUpfrontHookLayer(li, bm, x0, y0, x1, y1, flags, NULL, bm2);
+  return CreateUpfrontHookLayer(li, bm, x0, y0, x1, y1, flags, NULL, bm2);
 
-#warning Wrong value is passed back!
-  return NULL;
-  
   AROS_LIBFUNC_EXIT
 } /* CreateUpfrontLayer */
