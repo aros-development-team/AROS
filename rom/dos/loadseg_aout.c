@@ -330,6 +330,8 @@ BPTR LoadSeg_AOUT(BPTR file)
        next hunk pointer from the text hunk.
      */
 
+	D(bug("Text Address = %p\tData Address = %p\n", texthunk, datahunk));
+
     if(header.a_entry != 0)
     {
 	/* jumphunk is the address of the next hunk pointer. */
