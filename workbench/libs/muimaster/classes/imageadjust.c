@@ -250,7 +250,7 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
     Object *bitmap_string = NULL;
     Object *external_list = NULL;
     char *spec = NULL;
-    int i;
+    LONG i;
     LONG adjust_type;
     Object *color_group = NULL;
     Object *external_group = NULL;
@@ -364,11 +364,8 @@ static IPTR Imageadjust_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    for (i=0;i<24;i++)
 	    {
 		char spec[10];
-#ifdef __AROS__
-		sprintf(spec,"1:%d",i);
-#else
-		sprintf(spec,"1:%ld",i);
-#endif
+
+		snprintf(spec, sizeof(spec), "1:%ld", i);
 		data->vector_image[i] = ImageObject,
 		    ButtonFrame,
 		    MUIA_CycleChain, 1,
@@ -498,7 +495,8 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(40,0)))
 				{
 				    if (data->last_pattern_selected != -1)
-					sprintf(data->imagespec,"0:%ld",data->last_pattern_selected+128);
+					snprintf(data->imagespec, 40, "0:%ld",
+						 data->last_pattern_selected+128);
 				    else
 					strcpy(data->imagespec,"0:128");
 				}
@@ -508,7 +506,8 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				if ((data->imagespec = AllocVec(20,0)))
 				{
 				    if (data->last_vector_selected != -1)
-					sprintf(data->imagespec,"1:%ld",data->last_vector_selected);
+					snprintf(data->imagespec, 20, "1:%ld",
+						 data->last_vector_selected);
 				    else
 					strcpy(data->imagespec,"0:128");
 				}
@@ -521,9 +520,11 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 			    get(data->color_group, MUIA_Penadjust_Spec, (IPTR)&penspec);
 			    if (penspec)
 			    {
+				LONG len;
 				D(bug("imageadjust: penspec = %s\n", penspec));
-				if ((data->imagespec = AllocVec(strlen((STRPTR)penspec)+3, 0)))
-				    sprintf(data->imagespec, "2:%s", penspec->ps_buf);
+				len = strlen((STRPTR)penspec) + 3;
+				if ((data->imagespec = AllocVec(len, 0)))
+				    snprintf(data->imagespec, len, "2:%s", penspec->ps_buf);
 			    }
 			}
 			break;
@@ -534,8 +535,10 @@ static IPTR Imageadjust_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 				    get(data->bitmap_string,MUIA_String_Contents,&str);
 				    if (str)
 				    {
-					if ((data->imagespec = AllocVec(strlen(str)+10,0)))
-					    sprintf(data->imagespec,"5:%s",str);
+					LONG len;
+					len = strlen(str) + 10;
+					if ((data->imagespec = AllocVec(len, 0)))
+					    snprintf(data->imagespec, len, "5:%s", str);
 				    }
 				}
 				break;
