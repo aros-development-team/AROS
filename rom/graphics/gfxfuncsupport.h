@@ -131,16 +131,6 @@ struct gfx_driverdata
     BOOL    	      dd_NoAutoKill;
 };
 
-/* for template_to_buf */
-
-struct template_info
-{
-    PLANEPTR source;
-    LONG x_src;
-    LONG modulo;
-    BOOL invertsrc;
-};
-
 /****************************************************************************************/
 
 OOP_Object *get_planarbm_object(struct BitMap *bitmap, struct GfxBase *GfxBase);
@@ -178,10 +168,6 @@ void hidd2buf_fast(struct BitMap *hidd_bm, LONG x_src , LONG y_src, APTR dest_in
 HIDDT_StdPixFmt cyber2hidd_pixfmt(UWORD cpf, struct GfxBase *GfxBase);
 
 UWORD hidd2cyber_pixfmt(HIDDT_StdPixFmt stdpf, struct GfxBase *GfxBase);
-
-void template_to_buf(struct template_info *ti, LONG x_src, LONG y_src,
-    	    	     LONG x_dest, LONG y_dest, ULONG xsize, ULONG ysize,
-		     ULONG *buf, struct BitMap *dest_bm);
 
 BOOL MoveRaster (struct RastPort * rp, LONG dx, LONG dy, LONG x1, LONG y1,
     	    	 LONG x2, LONG y2, BOOL UpdateDamageList, struct GfxBase * GfxBase);
