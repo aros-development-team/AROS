@@ -11,6 +11,7 @@
 
 #include "dos_intern.h"
 #include <dos/filesystem.h>
+#include <dos/notify.h>
 #include <proto/exec.h>
 
 /*****************************************************************************
@@ -201,8 +202,43 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
     case FSA_IS_FILESYSTEM:
     case FSA_LOCK_RECORD:
     case FSA_UNLOCK_RECORD:
+    case FSA_ADD_NOTIFY:
+    case FSA_MAKE_LINK:
 	packet->dp_Res1 = iofs->io_DosError == 0;
  	packet->dp_Res2 = iofs->io_DosError;
+	break;
+
+    case FSA_REMOVE_NOTIFY:
+	{
+	    struct NotifyRequest *notify = iofs->io_Union.io_NOTIFY.io_NotificationRequest;
+
+	    if (notify->nr_Flags & NRF_SEND_MESSAGE)
+	    {
+		struct Node          *tempNode;
+		struct NotifyMessage *nm;
+		
+		Disable();
+		
+		ForeachNodeSafe(&notify->nr_stuff.nr_Msg.nr_Port->mp_MsgList,
+				(struct Node *)nm, tempNode)
+		    {
+			if (notify->nr_MsgCount == 0)
+			{
+			    break;
+			}
+			
+			if (nm->nm_NReq == notify)
+			{
+			    notify->nr_MsgCount--;
+			    Remove((struct Node *)nm);
+			    ReplyMsg((struct Message *)nm);		
+			}
+		    }
+		
+		Enable();
+	    }
+	}
+
 	break;
 
     case FSA_CREATE_DIR:
@@ -254,8 +290,6 @@ struct DosPacket *internal_WaitPkt(struct MsgPort *msgPort,
 
 
 	/* TODO */
-    case FSA_ADD_NOTIFY:
-    case FSA_REMOVE_NOTIFY:
     case FSA_READ_SOFTLINK:
     case FSA_FILE_MODE:
     default:
