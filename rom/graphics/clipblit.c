@@ -286,14 +286,21 @@ void internal_ClipBlit(struct RastPort * srcRP,
   struct Rectangle destRect;
   ULONG bltSrcX, bltSrcY, bltDstX, bltDstY, bltWidth, bltHeight;
   ULONG SrcOffsetX;
-  UBYTE bltMask;
+  ULONG bltMask;
   UBYTE useminterm;
+  
+  
+/* nlorentz: The below did not work because bitmaps may be more than 8 bit.
+   Just setting it to 0xFFFFFFF should work fine for copying all planes
+
   UBYTE MaskTab[] = {0x00, 0x01, 0x03, 0x07, 0x0F,
                            0x1F, 0x3F, 0x7F, 0xFF};
   LONG i1 = GetBitMapAttr(srcBM , BMA_DEPTH);
   LONG i2 = GetBitMapAttr(destBM, BMA_DEPTH);
   bltMask = MaskTab[i1] & MaskTab[i2]; 
-
+*/			   
+  bltMask = 0xFFFFFFFF;
+  
   if (NULL != srcLayer)
     srcCR  = srcLayer->ClipRect;
 
