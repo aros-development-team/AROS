@@ -217,6 +217,15 @@ STATIC struct Image *ImageDupPooled(APTR pool, struct Image *src)
 	
 	mem->iconPNG = srcnativeicon->iconPNG;
 	
+	if (srcnativeicon->iconPNG.filebuffer)
+	{
+	    mem->iconPNG.filebuffer = MemDupPooled(pool,
+	    	    	    	    	     	   srcnativeicon->iconPNG.filebuffer,
+					     	   srcnativeicon->iconPNG.filebuffersize);
+					     
+    	    if (!mem->iconPNG.filebuffer) goto fail;
+	}
+	
 	if (srcnativeicon->iconPNG.img1)
 	{
 	    mem->iconPNG.img1 = MemDupPooled(pool,

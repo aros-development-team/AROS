@@ -157,7 +157,16 @@ struct DiskObject *__ReadIcon_WB(BPTR file, struct IconBase *IconBase)
 
 BOOL __WriteIcon_WB(BPTR file, struct DiskObject *icon, struct IconBase *IconBase)
 {
-    return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, file, IconDesc);
+    struct NativeIcon *nativeicon = GetNativeIcon(icon, IconBase);
+    
+    if (nativeicon && nativeicon->iconPNG.handle)
+    {
+    	return WriteIconPNG(file, icon, IconBase);
+    }
+    else
+    {
+    	return WriteStruct(&(LB(IconBase)->dsh), (APTR) icon, file, IconDesc);
+    }
 }
 
 CONST_STRPTR GetDefaultIconName(LONG type)
