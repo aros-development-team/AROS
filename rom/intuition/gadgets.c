@@ -127,6 +127,7 @@ VOID GetGadgetIBox(Object *o, struct GadgetInfo *gi, struct IBox *ibox)
 	if (EG(o)->Flags & GFLG_RELHEIGHT)
 	    ibox->Height += gi->gi_Domain.Height;
     }
+    
 }
 
 ULONG LabelWidth (struct RastPort * rp, STRPTR label, ULONG len,
