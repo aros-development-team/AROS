@@ -1,0 +1,27 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES		:= stubs
+ALIBDIR 	:= $(GENDIR)/compiler/alib
+TESTS		:=
+
+#MM
+alib-linux-m68k : $(foreach f,$(FILES), $(ALIBDIR)/$(f).o)
+	@$(NOP)
+
+#MM
+setup-alib-linux-m68k :
+	%mkdirs_q $(ALIBDIR)
+	%add_objects $(foreach f,$(FILES), compiler/alib/$(f))
+
+#MM
+clean ::
+	-$(RM) $(TESTS)
+
+$(ALIBDIR)/%.o : %.s
+	%assemble_q cmd=$(SYS_AS)
+
+$(ALIBDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
