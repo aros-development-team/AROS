@@ -21,6 +21,17 @@ struct InitData
     ULONG 		idata_Underscore;
 };
 
+/* AROS: taken from boopsigads.i */
+
+struct LocalObjData
+{
+    struct InitData	lod_IData;
+    UWORD		lod_UnderOff;
+    UWORD		lod_UnderWidth;
+    UWORD		lod_UnderY;
+    UWORD		lod_RestLen;
+};
+
 #define KEYB_SHORTCUT			1
 #define FILESTR_CHANGED			2
 

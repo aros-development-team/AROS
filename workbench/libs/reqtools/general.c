@@ -387,6 +387,8 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     UWORD maxpen = 0;
     int i;
 
+kprintf("--++OpenWindowBF\n");
+
     hook->h_Entry = (ULONG (*)())WinBackFill;
     hook->h_Data = (void *)pens;
     tags[0] = WA_BackFill;
@@ -409,9 +411,11 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     {
 	tags[2] = TAG_IGNORE;
     }
+kprintf("--++OpenWindowBF 2\n");
 
     if ((win = OpenWindowTagList (nw, (struct TagItem *)tags)))
     {
+kprintf("--++OpenWindowBF 3\n");
 	rp = win->RPort;
 	for (i = 0; i <= HIGHLIGHTTEXTPEN; i++)
 		if (pens[i] > maxpen) maxpen = pens[i];
@@ -428,6 +432,8 @@ struct Window *REGARGS OpenWindowBF (struct NewWindow *nw,
     }
     
     return (win);
+kprintf("--++OpenWindowBF 10: returning %x\n", win);
+
 }
 
 int CheckReqPos (int reqpos, int reqdefnum, struct NewWindow *newwin)

@@ -6,22 +6,36 @@
     Lang: English.
 */
 
+/****************************************************************************************/
+
 #define  AROS_ALMOST_COMPATIBLE
 
 #include "reqtools_intern.h"
 #include <exec/types.h>
 #include <exec/resident.h>
+#include <intuition/intuition.h>
 #include <devices/conunit.h>
 #include <utility/utility.h>
 #include <proto/exec.h>
+#include <proto/intuition.h>
+#include <intuition/classes.h>
 #include <aros/libcall.h>
+#include <aros/asmcall.h>
 
 #include "initstruct.h"
 #include <stddef.h>
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <exec/libraries.h>
 #include <exec/alerts.h>
 #include "libdefs.h"
+
+#include "general.h"
+#include "boopsigads.h"
+
+/****************************************************************************************/
 
 #define INIT	AROS_SLIB_ENTRY(init, ReqTools)
 
@@ -38,11 +52,15 @@ extern BPTR AROS_SLIB_ENTRY(expunge, ReqTools)();
 extern int AROS_SLIB_ENTRY(null, ReqTools)();
 extern const char LIBEND;
 
+/****************************************************************************************/
+
 int entry(void)
 {
     /* If the library was executed by accident return error code. */
     return -1;
 }
+
+/****************************************************************************************/
 
 const struct Resident resident=
 {
@@ -96,6 +114,17 @@ const struct inittable datatable=
 
 #undef O
 
+/****************************************************************************************/
+
+#ifdef _AROS
+AROS_UFP3(IPTR, myBoopsiDispatch,
+	  AROS_UFPA(Class *, cl, A0),
+	  AROS_UFPA(struct Image *, im, A2),
+	  AROS_UFPA(Msg, msg, A1));
+#endif
+
+/****************************************************************************************/
+
 struct ReqToolsBase 	*ReqToolsBase, *RTBase;
 struct ReqToolsBase	**RTBasePtr = &RTBase;
 
@@ -109,6 +138,9 @@ struct Library 		*LayersBase;
 struct Library 		*GadToolsBase;
 struct Device 		*ConsoleDevice;
 struct IOStdReq		iorequest;
+Class			*ButtonImgClass;
+
+/****************************************************************************************/
 
 AROS_LH2(struct IntReqToolsBase *, init,
  AROS_LHA(struct IntReqToolsBase *, RTBase, D0),
@@ -125,6 +157,8 @@ AROS_LH2(struct IntReqToolsBase *, init,
     RTBase->rt_SysBase = SysBase = sysBase;
     RTBase->rt.SegList = segList;
 
+    D(bug("reqtools.library: Inside libinit func\n"));
+    
     InitSemaphore(&RTBase->rt.ReqToolsPrefs.PrefsSemaphore);
     RTBase->rt.ReqToolsPrefs.PrefsSize = RTPREFS_SIZE;
 
@@ -176,6 +210,7 @@ AROS_LH2(struct IntReqToolsBase *, init,
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 AROS_LH1(struct IntReqToolsBase *, open,
  AROS_LHA(ULONG, version, D0),
@@ -183,6 +218,8 @@ AROS_LH1(struct IntReqToolsBase *, open,
 {
     AROS_LIBFUNC_INIT
     
+    D(bug("reqtools.library: Inside libopen func\n"));
+ 
     /*
       This function is single-threaded by exec by calling Forbid.
       If you break the Forbid() another task may enter this function
@@ -227,15 +264,37 @@ AROS_LH1(struct IntReqToolsBase *, open,
     if(LocaleBase == NULL)
 	return NULL;
 
+    D(bug("reqtools.library: Inside libopen func. Libraries opened successfully.\n"));
+
     if (ConsoleDevice == NULL)
     {
+        iorequest.io_Message.mn_Length = sizeof(iorequest);
+	
         if (OpenDevice("console.device", CONU_LIBRARY, (struct IORequest *)&iorequest, 0))
 	{
 	    return NULL;
 	}
 	ConsoleDevice = iorequest.io_Device;
     }
+    if (ConsoleDevice == NULL)
+        return NULL;
 
+    D(bug("reqtools.library: Inside libopen func. Console.device opened successfully.\n"));
+	
+    if (ButtonImgClass == NULL)
+    {
+        ButtonImgClass = MakeClass(NULL, IMAGECLASS, NULL, sizeof(struct LocalObjData), 0);
+	if (ButtonImgClass)
+	{
+	    ButtonImgClass->cl_Dispatcher.h_Entry = (APTR)AROS_ASMSYMNAME(myBoopsiDispatch);
+	    ButtonImgClass->cl_Dispatcher.h_SubEntry = NULL;
+	    ButtonImgClass->cl_UserData = RTBase;
+	}
+    }
+    if (ButtonImgClass == NULL)
+        return NULL;
+    
+    D(bug("reqtools.library: Inside libopen func. ButtonImgClass create successfully.\n"));
 
     /* I have one more opener. */
     RTBase->rt.LibNode.lib_Flags &= ~LIBF_DELEXP;
@@ -243,9 +302,12 @@ AROS_LH1(struct IntReqToolsBase *, open,
 
     return RTBase;
 
+    D(bug("reqtools.library: Inside libopen func. Returning success.\n"));
+
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
 {
@@ -255,6 +317,8 @@ AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
     */
+
+    D(bug("reqtools.library: Inside libclose func.\n"));
 
     /* I have one fewer opener. */
     RTBase->rt.RealOpenCnt--;
@@ -272,6 +336,7 @@ AROS_LH0(BPTR, close, struct IntReqToolsBase *, RTBase, 2, ReqTools)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
 {
@@ -284,6 +349,9 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
     */
 
     /* Test for openers. */
+ 
+    D(bug("reqtools.library: Inside libexpunge func.\n"));
+
     if(RTBase->rt.RealOpenCnt != 0)
     {
 	/* Set the delayed expunge flag and return. */
@@ -297,15 +365,25 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
     /* Get returncode here - FreeMem() will destroy the field. */
     ret = RTBase->rt.SegList;
 
+    D(bug("reqtools.library: Inside libexpunge func. Freeing ButtonImgClass.\n"));
+
+    if (ButtonImgClass) FreeClass(ButtonImgClass);
+
+    D(bug("reqtools.library: Inside libexpunge func. Closing console.device.\n"));
+    
     if (ConsoleDevice) CloseDevice((struct IORequest *)&iorequest);
+
+    D(bug("reqtools.library: Inside libexpunge func. Closing libraries.\n"));
     
     CloseLibrary((struct Library *)DOSBase);
     CloseLibrary((struct Library *)IntuitionBase);
-    CloseLibrary((struct LIbrary *)UtilityBase);
+    CloseLibrary((struct Library *)UtilityBase);
     CloseLibrary((struct Library *)GfxBase);
     CloseLibrary((struct Library *)LocaleBase);
     CloseLibrary(GadToolsBase);
     CloseLibrary(LayersBase);
+
+    D(bug("reqtools.library: Inside libexpunge func. Freeing libbase.\n"));
 
     /* Free the memory. */
     FreeMem((char *)RTBase-RTBase->rt.LibNode.lib_NegSize,
@@ -315,6 +393,7 @@ AROS_LH0(BPTR, expunge, struct IntReqToolsBase *, RTBase, 3, ReqTools)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/
 
 AROS_LH0I(int, null, struct ReqToolsBase *, RTBase, 4, ReqTools)
 {
@@ -323,3 +402,4 @@ AROS_LH0I(int, null, struct ReqToolsBase *, RTBase, 4, ReqTools)
     AROS_LIBFUNC_EXIT
 }
 
+/****************************************************************************************/

@@ -64,10 +64,12 @@ extern struct Device *ConsoleDevice;
 extern void ShortDelay (void);
 extern APTR STDARGS DofmtArgs (char *, char *,...);
 
+#ifndef _AROS
 extern ULONG ASM myBoopsiDispatch (
 	register __a0 Class *,
 	register __a2 struct Image *,
 	register __a1 struct impDraw *);
+#endif
 
 extern Class *ButtonImgClass;
 
@@ -84,9 +86,11 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 	struct Image *image;
 	char *label;
 
+kprintf("--++my_CreateButtonGadget\n");
 	label = ng->ng_GadgetText;
 	ng->ng_GadgetText = NULL;
 	if ((gad = myCreateGadget (GENERIC_KIND, gad, ng, TAG_END))) {
+kprintf("--++my_CreateButtonGadget 2\n");
 		/* set gadget attributes */
 		gad->Flags |= GFLG_GADGIMAGE|GFLG_GADGHIMAGE;
 		gad->GadgetType |= GTYP_BOOLGADGET;
@@ -100,10 +104,13 @@ struct Gadget * REGARGS my_CreateButtonGadget (
 		idata.idata_Underscore = underscorechar;
 
 		/* create image */
+kprintf("--++my_CreateButtonGadget 3: label = [%s]\n", idata.idata_Label);
 		image = NewObject (ButtonImgClass, NULL, IA_Data, &idata, TAG_END);
+kprintf("--++my_CreateButtonGadget 4\n");
 		gad->GadgetRender = gad->SelectRender = image;
 		}
 	ng->ng_GadgetText = label;
+kprintf("--++my_CreateButtonGadget 5: returning %x\n", gad);
 	return (gad);
 }
 

@@ -60,7 +60,37 @@ AROS_UFH2 (void, puttostr,
 
 /****************************************************************************************/
 
-APTR STDARGS DofmtArgs (char *buff, char *fmt ,...)
+AROS_UFH2 (void, CountBarsAndChars,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(ULONG *,ptr,A3)
+)
+{
+    AROS_LIBFUNC_INIT
+    
+    if (chr == '|') (ptr[0])++;
+    (ptr[1])++;
+    
+    AROS_LIBFUNC_EXIT
+}
+
+/****************************************************************************************/
+
+AROS_UFH2 (void, CountNewLinesAndChars,
+	AROS_UFHA(UBYTE, chr, D0),
+	AROS_UFHA(ULONG *,ptr,A3)
+)
+{
+    AROS_LIBFUNC_INIT
+    
+    if (chr == '\n') (ptr[0])++;
+    (ptr[1])++;
+    
+    AROS_LIBFUNC_EXIT
+}
+
+/****************************************************************************************/
+
+APTR DofmtArgs (char *buff, char *fmt ,...)
 {
     char *str = buff;
 
@@ -71,12 +101,24 @@ APTR STDARGS DofmtArgs (char *buff, char *fmt ,...)
 
 /****************************************************************************************/
 
-APTR ASM Dofmt (char *buff, char *fmt, APTR args)
+APTR Dofmt (char *buff, char *fmt, APTR args)
 {
     char *str = buff;
 
     return RawDoFmt(fmt, args, (VOID_FUNC)puttostr, &str);
    
+}
+
+/****************************************************************************************/
+
+APTR DofmtCount (char *fmt, APTR args, ULONG *ptr, int mode)
+{
+    ptr[0] = ptr[1] = 1;
+    
+    return RawDoFmt(fmt,
+    		    args,
+		    (mode ? ((VOID_FUNC)CountBarsAndChars) : ((VOID_FUNC)CountNewLinesAndChars) ),
+		    ptr); 
 }
 
 /****************************************************************************************/
@@ -125,6 +167,8 @@ void DoWaitPointer(struct Window *win, int doit, int setpointer)
 
 APTR DoLockWindow(struct Window *win, int doit, APTR lock, int lockit)
 {
+    if (!doit || !win) return NULL;
+    
     if (lockit) return rtLockWindow(win);
     
     rtUnlockWindow(win, lock);
@@ -133,7 +177,13 @@ APTR DoLockWindow(struct Window *win, int doit, APTR lock, int lockit)
 }
 
 /****************************************************************************************/
-/****************************************************************************************/
+
+void SetWinTitleFlash(struct Window *win, char *str)
+{
+    DisplayBeep(win->WScreen);
+    SetWindowTitles(win, str, (UBYTE *)-1);
+}
+
 /****************************************************************************************/
 /****************************************************************************************/
 /****************************************************************************************/

@@ -75,10 +75,13 @@
 
     struct rtWindowLock *winLock;
 
+kprintf("--++rtlockwindow. window = %x\n", window);
     /* Is this window already locked? */
     if(window->FirstRequest != NULL)
     {
 	struct rtWindowLock *wLock = (struct rtWindowLock *)window->FirstRequest;
+
+kprintf("--++rtlockwindow2 \n");
 
 	while(wLock != NULL)
 	{
@@ -96,14 +99,19 @@
 	    wLock = (struct rtWindowLock *)wLock->rtwl_Requester.OlderRequest;
 	}
     }
+kprintf("--++rtlockwindow 3\n");
 
     winLock = (struct rtWindowLock *)AllocVec(sizeof(struct rtWindowLock),
 					      MEMF_CLEAR);
     
+kprintf("--++rtlockwindow 4\n");
+
     /* No memory? */
     if(winLock == NULL)
 	return NULL;
-    
+
+kprintf("--++rtlockwindow 5\n");
+
     winLock->rtwl_Magic = 'r' << 24 | 't' << 16 | 'W' << 8 | 'L';
     winLock->rtwl_RequesterPtr = winLock;
     
