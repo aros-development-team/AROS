@@ -21,7 +21,7 @@ int main()
     
     for(i = 0; i < count; i++)
     {    
-        object = NewObject(Test_CLASS->mcc_Class, NULL, NULL);
+        object = TestObject, End;
         DisposeObject(object);
     }
     

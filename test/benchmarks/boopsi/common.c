@@ -32,7 +32,7 @@ struct Test_DATA
 /*** Methods ****************************************************************/
 #define MUIM_Test_Dummy (TAG_USER | 0x42)
 
-IPTR Test$OM_NEW
+Object *Test__OM_NEW
 (
     Class *CLASS, Object *self, struct opSet *message 
 )
@@ -48,14 +48,14 @@ IPTR Test$OM_NEW
     data->td_Dummy3 = 42;
     data->td_Dummy4 = 42;
        
-    return (IPTR) self;
+    return self;
     
 error:
     
     return NULL;
 }
 
-IPTR Test$MUIM_Test_Dummy
+IPTR Test__MUIM_Test_Dummy
 (
     Class *CLASS, Object *self, Msg message
 )
@@ -77,12 +77,12 @@ BOOPSI_DISPATCHER(IPTR, Test_Dispatcher, CLASS, self, message)
 {
     switch (message->MethodID)
     {
-        case OM_NEW:          return Test$OM_NEW(CLASS, self, (struct opSet *) message);
-        case MUIM_Test_Dummy: return Test$MUIM_Test_Dummy(CLASS, self, message);
+        case OM_NEW:          return (IPTR) Test__OM_NEW(CLASS, self, (struct opSet *) message);
+        case MUIM_Test_Dummy: return Test__MUIM_Test_Dummy(CLASS, self, message);
         default:              return DoSuperMethodA(CLASS, self, message);
     }
     
-    return NULL;
+    return (IPTR) NULL;
 }
 
 /*** Setup ******************************************************************/
@@ -96,10 +96,8 @@ BOOL Test_Initialize()
         sizeof(struct Test_DATA), Test_Dispatcher
     );
 
-    if (Test_CLASS != NULL)
-        return TRUE;
-    else
-        return FALSE;
+    if (Test_CLASS != NULL) return TRUE;
+    else                    return FALSE;
 }
 
 void Test_Deinitialize()
