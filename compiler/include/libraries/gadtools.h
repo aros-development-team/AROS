@@ -105,7 +105,7 @@ struct NewGadget
 #define SLIDERIDCMP   (IDCMP_GADGETUP | \
                        IDCMP_GADGETDOWN | \
                        IDCMP_MOUSEMOVE)
-#define STRINGIDMCP   (IDCMP_GADGETUP)
+#define STRINGIDCMP   (IDCMP_GADGETUP)
 #define TEXTIDCMP     (0L)
 
 #define MX_WIDTH  17
