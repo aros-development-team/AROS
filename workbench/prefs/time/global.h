@@ -162,6 +162,7 @@ STRPTR MSG(ULONG id);
 /* prefs.c */
 
 void InitPrefs(BOOL use, BOOL save);
+BOOL UsePrefs(void);
 BOOL SavePrefs(void);
 void RestorePrefs(void);
 

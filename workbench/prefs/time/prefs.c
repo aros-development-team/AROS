@@ -32,15 +32,33 @@ void InitPrefs(BOOL use, BOOL save)
 
 /*********************************************************************************************/
 
+BOOL UsePrefs(void)
+{
+    ULONG secs;
+    
+    secs = Date2Amiga(&clockdata);
+    
+    TimerIO->tr_node.io_Command = TR_SETSYSTIME;
+    TimerIO->tr_time.tv_secs 	= secs;
+    TimerIO->tr_time.tv_micro 	= 0;
+    
+    DoIO(&TimerIO->tr_node);
+    
+    return TRUE;
+}
+
+/*********************************************************************************************/
+
 BOOL SavePrefs(void)
 {
- 
+    return TRUE;
 }
 
 /*********************************************************************************************/
 
 void RestorePrefs(void)
 {
+    InitPrefs(FALSE, FALSE);
 }
 
 /*********************************************************************************************/

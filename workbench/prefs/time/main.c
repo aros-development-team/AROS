@@ -37,6 +37,9 @@
 
 #define SPACING_BUTTONGROUP 4
 
+#define RETURNID_USE 	1
+#define RETURNID_SAVE 	2
+
 /*********************************************************************************************/
 
 static struct libinfo
@@ -57,7 +60,7 @@ libtable[] =
 
 /*********************************************************************************************/
 
-static struct Hook  	    	yearhook, clockhook, activehook;
+static struct Hook  	    	yearhook, clockhook, activehook, restorehook;
 #if DO_SPECIAL_BUTTON_LAYOUT
 static struct Hook  	    	buttonlayouthook;	    	
 #endif
@@ -357,12 +360,27 @@ static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
 static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
 {
     Object *active;
-
+    WORD hand = -1;
+    
     active = *(Object **)param;
     
-    if ((active == hourobj) || (active == minobj) || (active == secobj))
+    if (active == hourobj)
+    {
+    	hand = EDITHAND_HOUR;
+    }
+    else if (active == minobj)
+    {
+	hand = EDITHAND_MIN;
+    }
+    else if (active == secobj)
+    {
+	hand = EDITHAND_SEC;
+    }
+    
+    if (hand != -1)
     {
     	activetimestrobj = active;
+	set(clockobj, MUIA_Clock_EditHand, hand);
     }
 
 }
@@ -447,6 +465,19 @@ static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 
 /*********************************************************************************************/
 
+static void RestoreFunc(struct Hook *hook, Object *obj, APTR msg)
+{
+    RestorePrefs();
+    
+    set(calobj, MUIA_Calendar_Date, (IPTR)&clockdata);
+    set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
+    set(yearobj, MUIA_String_Integer, clockdata.year);
+    set(clockobj, MUIA_Clock_Frozen, FALSE);
+    
+}
+
+/*********************************************************************************************/
+
 static void MakeGUI(void)
 {
     extern struct NewMenu nm;
@@ -471,6 +502,9 @@ static void MakeGUI(void)
     
     activehook.h_Entry = HookEntry;
     activehook.h_SubEntry = (HOOKFUNC)ActiveFunc;
+
+    restorehook.h_Entry = HookEntry;
+    restorehook.h_SubEntry = (HOOKFUNC)RestoreFunc;
     
     if (LocaleBase)
     {
@@ -621,9 +655,14 @@ static void MakeGUI(void)
     if (!app) Cleanup(MSG(MSG_CANT_CREATE_APP));
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
+    DoMethod(cancelobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(saveobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, RETURNID_SAVE);
+    DoMethod(useobj, MUIM_Notify, MUIA_Pressed, FALSE, app, 2, MUIM_Application_ReturnID, RETURNID_USE);
+
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, app, 2, MUIM_CallHook, (IPTR)&restorehook);
+        
     DoMethod(wnd, MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, app, 3, MUIM_CallHook, (IPTR)&activehook, MUIV_TriggerValue);
     DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
     DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
@@ -657,11 +696,17 @@ static void KillGUI(void)
 static void HandleAll(void)
 {
     ULONG sigs = 0;
+    LONG returnid;
     
     set (wnd, MUIA_Window_Open, TRUE);
     
-    while((LONG) DoMethod(app, MUIM_Application_NewInput, &sigs) != MUIV_Application_ReturnID_Quit)
+    for(;;)
     {
+    	returnid = (LONG) DoMethod(app, MUIM_Application_NewInput, &sigs);
+
+	if ((returnid == MUIV_Application_ReturnID_Quit) ||
+	    (returnid == RETURNID_SAVE) || (returnid == RETURNID_USE)) break;
+	
 	if (sigs)
 	{
 	    sigs = Wait(sigs | SIGBREAKF_CTRL_C);
@@ -669,6 +714,45 @@ static void HandleAll(void)
 	}
     }
 
+    switch(returnid)
+    {
+	case RETURNID_SAVE:
+    	case RETURNID_USE:
+	    {
+	    	struct ClockData cal_date, clock_time, *dateptr;
+		IPTR frozen = 0;
+		
+	    	get(calobj, MUIA_Calendar_Date, (IPTR *)&dateptr);
+		cal_date = *dateptr;
+		
+		get(clockobj, MUIA_Clock_Frozen, (IPTR *)&frozen);
+		if (frozen)
+		{
+		    get(clockobj, MUIA_Clock_Time, (IPTR *)&dateptr);
+		    clock_time = *dateptr;
+		}
+		else
+		{
+		    struct timeval tv;
+		    
+    	    	    GetSysTime(&tv);
+		    Amiga2Date(tv.tv_secs, &clock_time);
+		}
+		
+		clockdata.sec   = clock_time.sec;
+		clockdata.min   = clock_time.min;
+		clockdata.hour  = clock_time.hour;
+		clockdata.mday  = cal_date.mday;
+		clockdata.month = cal_date.month;
+		clockdata.year  = cal_date.year;
+		clockdata.wday  = cal_date.wday;
+
+	    	UsePrefs();
+		
+	    }
+	    break;
+	    
+    }
 }
 
 /*********************************************************************************************/

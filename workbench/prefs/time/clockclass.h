@@ -14,6 +14,11 @@
 #define MUIA_Clock_Time	    	(TAG_USER | (0xA303 << 16) | 0x0014)
 #define MUIA_Clock_Ticked   	(TAG_USER | (0xA303 << 16) | 0x0015)
 #define MUIA_Clock_Frozen  	(TAG_USER | (0xA303 << 16) | 0x0016)
+#define MUIA_Clock_EditHand	(TAG_USER | (0xA303 << 16) | 0x0017)
+
+#define EDITHAND_HOUR 0
+#define EDITHAND_MIN  1
+#define EDITHAND_SEC  2
 
 #define MUIM_Clock_Timer    	0x785A09
 
