@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/21 14:16:26  digulla
+    Debug code
+    Only change the ActiveWindow is it is beeing closed
+    Search for a new ActiveWindow
+
     Revision 1.2  1996/08/29 13:33:30  digulla
     Moved common code from driver to Intuition
     More docs
@@ -16,6 +21,15 @@
 #include "intuition_intern.h"
 #include <clib/exec_protos.h>
 #include <clib/graphics_protos.h>
+
+#ifndef DEBUG_CloseWindow
+#   define DEBUG_CloseWindow 0
+#endif
+#if DEBUG_CloseWindow
+#   undef DEBUG
+#   define DEBUG 1
+#endif
+#include <aros/debug.h>
 
 extern void intui_CloseWindow (struct Window *, struct IntuitionBase *);
 extern int  intui_GetWindowSize (void);
@@ -66,13 +80,16 @@ extern int  intui_GetWindowSize (void);
     __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     struct IntuiMessage * im;
 
-    IntuitionBase->ActiveWindow = NULL;
+    D(bug("CloseWindow (%p)\n", window));
+
+    if (window == IntuitionBase->ActiveWindow)
+	IntuitionBase->ActiveWindow = NULL;
 
     /* Remove window from the chain and find next active window */
     if (window->Descendant)
     {
 	window->Descendant->Parent = window->Parent;
-	IntuitionBase->ActiveWindow = window->Descendant;
+	ActivateWindow (window->Descendant);
     }
     if (window->Parent)
     {
@@ -81,7 +98,7 @@ extern int  intui_GetWindowSize (void);
 	    window->Descendant;
 
 	if (!IntuitionBase->ActiveWindow)
-	    IntuitionBase->ActiveWindow = window->Parent;
+	    ActivateWindow (window->Parent);
     }
 
     /* Make sure the Screen is still valid */
@@ -113,5 +130,6 @@ extern int  intui_GetWindowSize (void);
     /* Free memory for the window */
     FreeMem (window, intui_GetWindowSize ());
 
+    ReturnVoid ("CloseWindow");
     __AROS_FUNC_EXIT
 } /* CloseWindow */
