@@ -321,7 +321,7 @@ static ULONG  Rectangle_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *m
 	}
 	else /* black or white */
 	{
-	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_WHITE)
+	    if (muiGlobalInfo(obj)->mgi_Prefs->group_title_color == GROUP_TITLE_COLOR_HILITE)
 		SetAPen(_rp(obj), _pens(obj)[MPEN_SHINE]);
 	    
 	    tw = data->ztext->width;
