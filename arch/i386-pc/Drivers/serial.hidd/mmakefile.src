@@ -6,6 +6,8 @@ USER_INCLUDES := -I.
 FILES	:=	serial_init serial_stubs functable SerialClass SerialUnitClass endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
+#MM- Drivers-native: Serial-native
+
 #MM Serial-native : 
 Serial-native : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	%add_objects rom/boot/serial_driver
