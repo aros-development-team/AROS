@@ -75,7 +75,7 @@ void internal_ChildFree(APTR tid);
 
     /* Allocated resources */
     struct Process  	    	*process = NULL;
-    BPTR            	    	 input = 0, output = 0, curdir = 0;
+    BPTR            	    	 input = 0, output = 0, curdir = 0, homedir = 0;
     STRPTR          	    	 stack = NULL, name = NULL, argptr = NULL;
     ULONG           	    	 namesize = 0, argsize = 0;
     struct MemList  	    	*memlist = NULL;
@@ -84,7 +84,7 @@ void internal_ChildFree(APTR tid);
     STRPTR          	    	 s;
     BPTR            	    	*oldpath, *newpath, *nextpath;
 
-    /* TODO: NP_CommandName, NP_HomeDir, NP_ConsoleTask, NP_NotifyOnDeath */
+    /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
 #define TAGDATA_NOT_SPECIFIED ~0ul
 
@@ -111,6 +111,7 @@ void internal_ChildFree(APTR tid);
     /*18 */    { NP_CopyVars	, (IPTR)TRUE  	    	    	},
     /*19 */    { NP_Synchronous , (IPTR)FALSE 	    	    	},
     /*20 */    { NP_FreeSeglist , (IPTR)TRUE  	    	    	},
+    /*21 */    { NP_HomeDir 	, TAGDATA_NOT_SPECIFIED     	},
 	       { TAG_END    	, 0           	    	    	}
     };
 
@@ -122,10 +123,14 @@ void internal_ChildFree(APTR tid);
     if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
     {
 	struct CommandLineInterface *cli = Cli();
-    	LONG 	    	    	    parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
 	
-	if(cli != NULL && parentstack > AROS_STACKSIZE)
-	    defaults[9].ti_Data = parentstack;
+	if (cli)
+	{
+    	    LONG parentstack = cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT;
+	
+	    if(parentstack > AROS_STACKSIZE)
+	        defaults[9].ti_Data = parentstack;
+	}
     }
     
     ApplyTagChanges(defaults, tags);
@@ -200,6 +205,8 @@ void internal_ChildFree(APTR tid);
 	}
     }
 
+    /* NP_Input */
+    
     if(defaults[2].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
@@ -213,6 +220,8 @@ void internal_ChildFree(APTR tid);
 	    defaults[2].ti_Data = 0;
     }
 
+    /* NP_Output */
+    
     if(defaults[4].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
@@ -226,6 +235,8 @@ void internal_ChildFree(APTR tid);
 	    defaults[4].ti_Data = 0;
     }
 
+    /* NP_CurrentDir */
+    
     if(defaults[8].ti_Data == TAGDATA_NOT_SPECIFIED)
     {
 	if(me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
@@ -239,6 +250,24 @@ void internal_ChildFree(APTR tid);
 	    defaults[8].ti_Data = 0;
     }
 
+    /* NP_HomeDir */
+    
+    if(defaults[21].ti_Data == TAGDATA_NOT_SPECIFIED)
+    {
+    	defaults[21].ti_Data = 0;
+    	
+    	if (me->pr_Task.tc_Node.ln_Type == NT_PROCESS)
+	{
+	    if (me->pr_HomeDir)
+	    {
+	    	homedir = DupLock(me->pr_HomeDir);
+		ERROR_IF(!homedir);
+		
+		defaults[21].ti_Data = (IPTR)homedir;
+	    }
+	}
+    }
+    
     CopyMem((APTR)defaults[10].ti_Data, name, namesize);
     CopyMem((APTR)defaults[12].ti_Data, argptr, argsize);
 
@@ -289,7 +318,7 @@ void internal_ChildFree(APTR tid);
 
     process->pr_PktWait = NULL;
     process->pr_WindowPtr = (struct Window *)defaults[17].ti_Data; 
-/*  process->pr_HomeDir=; */
+    process->pr_HomeDir = (BPTR)defaults[21].ti_Data;
     process->pr_Flags = (defaults[3].ti_Data  ? PRF_CLOSEINPUT  : 0) |
 		        (defaults[5].ti_Data  ? PRF_CLOSEOUTPUT : 0) |
 		        (defaults[7].ti_Data  ? PRF_CLOSEERROR  : 0) |
@@ -337,6 +366,9 @@ enomem:
 error:
     if(cli)
 	FreeDosObject(DOS_CLI, cli);
+
+    if(homedir)
+    	UnLock(homedir);
 
     if(curdir)
 	UnLock(curdir);
@@ -412,6 +444,9 @@ static void KillCurrentProcess(void)
 
     if(me->pr_Flags & PRF_FREECURRDIR)
 	UnLock(me->pr_CurrentDir);
+
+    P(kprintf("Unlocking home dir\n"));
+    UnLock(me->pr_HomeDir);
 
     P(kprintf("Freeing cli structure\n"));
 
