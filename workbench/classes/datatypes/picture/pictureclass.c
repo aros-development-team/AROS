@@ -749,7 +749,7 @@ STATIC IPTR DT_AsyncLayout(struct IClass *cl, struct Gadget *g, struct gpLayout 
     *  Neu allozieren
     */
    pd->DestBM=AllocBitMap(BM_Width, BM_Height, DestDepth,
-			  (BMF_CLEAR | BMF_DISPLAYABLE | BMF_INTERLEAVED | BMF_MINPLANES),
+			  (BMF_CLEAR | BMF_INTERLEAVED | BMF_MINPLANES),
 			  pd->TheScreen->RastPort.BitMap);
    if(!pd->DestBM)
    {
