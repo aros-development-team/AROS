@@ -1,3 +1,8 @@
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <proto/dos.h>
 #include <dos/dos.h>
 
@@ -45,3 +50,4 @@ LONG FILE_Position( BPTR file )
 {
     return Seek( file, 0, OFFSET_CURRENT );
 }
+

@@ -1,3 +1,8 @@
+/*
+    Copyright © 2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <dos/dos.h>
 
@@ -46,3 +51,4 @@ BOOL MakeDirs( STRPTR path )
         }
     }
 }
+
