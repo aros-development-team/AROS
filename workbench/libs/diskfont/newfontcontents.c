@@ -24,12 +24,17 @@
 #define  GetWord(x)  ((x)[1] | ((x)[0] << 8))
 #define  GetPtr(x)   (((x)[0] << 24) | ((x)[1] << 16) | ((x)[2] << 8) | ((x)[3]))
 
+struct AmiTagItem
+{
+    ULONG ti_Tag;
+    ULONG ti_Data;
+};
+
 /****************************************************************************************/
 
 VOID  CopyContents(struct List *list, APTR mem);
 VOID  FreeBuffers(struct List *list);
-ULONG Get4Bytes(UBYTE *bytes);
-struct TagItem *myNextTagItem(struct TagItem **ti);
+struct AmiTagItem *AmiNextTagItem(struct AmiTagItem **ti);
 
 /****************************************************************************************/
 
@@ -184,46 +189,41 @@ struct contentsBuffer
 	    
 	    AddTail((struct List *)&contentsList, (struct Node *)cNode);
 	    
-#if 1
 	    strcpy(cNode->fc.fc_FileName, name);
 	    strcat(cNode->fc.fc_FileName, "/");
 	    strcat(cNode->fc.fc_FileName, fib->fib_FileName);
-#else
-	    strcpy(cNode->fc.fc_FileName, (char *)(fileDfh + 14+2+2+4)); /* dfh_Name */	 
-#endif
 
-
-#if 0	    /* TODO: Factor out the code in diskfont_io.c that extracts
+#if 1	    /* TODO: Factor out the code in diskfont_io.c that extracts
 	             tags and make it a function... */
 
 	    /* Embedded tags? */
 	    if(GetByte(fileDfh+14+2+2+4+32+20+2) & FSF_TAGGED) /* dfh_TF.tf_Style */
 	    {
-		struct TagItem *ti = (struct TagItem *)GetPtr(fileDfh+14+2+2); /* dfh_TagList */
-		struct TagItem *tPtr;
-	 	struct TagItem *item;
+		struct AmiTagItem *ti = (struct AmiTagItem *)(*(ULONG *)(fileDfh+14+2+2)); /* dfh_TagList */
+		struct AmiTagItem *tPtr;
+	 	struct AmiTagItem *item;
 		WORD   nTags = 0;
 		WORD   i;	        /* Loop variable */
 		
 		/* We cannot use the standard function here as the
 		   TagItems saved on disk may not correspond very
 		   well to those on this particular architecture. */
-		while(myNextTagItem(&ti) != NULL)
+		while(AmiNextTagItem(&ti) != NULL)
 		    nTags++;
 		nTags++;	/* Include TAG_DONE */
 		
 		TFC(cNode)->tfc_TagCount = nTags;
 		fch.fch_FileID = TFCH_ID;
 		
-		tPtr = (struct TagItem *)(TFC(cNode).tfc_TagCount - nTags*sizeof(struct TagItem));
+		tPtr = (struct AmiTagItem *)((IPTR)&(TFC(cNode)->tfc_TagCount) + 2 - nTags*sizeof(struct AmiTagItem));
 		
-		ti = (struct TagItem *)GetPtr(fileDfh+14+2+2); /* dfh_TagList */
+		ti = (struct AmiTagItem *)(*(ULONG *)(fileDfh+14+2+2)); /* dfh_TagList */
 		
 		i = 0;
-		while((item = myNextTagItem(&ti)) != NULL)
+		while((item = AmiNextTagItem(&ti)) != NULL)
 		{
-		    tPtr[i].ti_Tag  = (Tag)Get4Bytes((UBYTE *)item + i*8);
-		    tPtr[i].ti_Data = (STACKIPTR)Get4Bytes((UBYTE *)item + i*8+4);
+		    tPtr[i].ti_Tag  = AROS_LONG2BE(item->ti_Tag);
+		    tPtr[i].ti_Data = AROS_LONG2BE(item->ti_Data);
 		    i++;
 		}
 		/* Add TAG_DONE tag, but no data (to avoid writing over the
@@ -234,10 +234,9 @@ struct contentsBuffer
 	    } /* if(this was a tagged font) */
 	    
 #endif
-	    
 	    cNode->fc.fc_YSize = GetWord(fileDfh+14+2+2+4+32+20);  /* dfh_TF.tf_YSize */
 	    cNode->fc.fc_Style = GetByte(fileDfh+14+2+2+4+32+20+2); /* dfh_TF.tf_Style */
-	    cNode->fc.fc_Flags = GetByte(fileDfh+14+2+2+4+32+20+2+1); /* dfh_TF.tf_Flags */
+	    cNode->fc.fc_Flags = GetByte(fileDfh+14+2+2+4+32+20+2+1) & ~FPF_REMOVED; /* dfh_TF.tf_Flags */
 
 	    fch.fch_NumEntries++;
 	    
@@ -301,24 +300,12 @@ VOID CopyContents(struct List *list, APTR mem)
 
 /****************************************************************************************/
 
-struct TagItem *myNextTagItem(struct TagItem **ti)
+struct AmiTagItem *AmiNextTagItem(struct AmiTagItem **ti)
 {
-    UBYTE *ptr = (UBYTE *)*ti;
-    ULONG  tag = GetPtr(ptr);
-
-    if(tag == TAG_DONE)
+    if((*ti)->ti_Tag == TAG_DONE)
 	return NULL;
 
-    ((UBYTE *)*ti) += 4 + 4;	/* Get next TagItem */
-
-    return *ti;
-}
-
-/****************************************************************************************/
-
-ULONG Get4Bytes(UBYTE *bytes)
-{
-    return bytes[0] << 24 | bytes[1] << 16 | bytes[2] << 8 | bytes[3];
+    return (*ti)++;
 }
 
 /****************************************************************************************/
