@@ -15,6 +15,7 @@
 #include <proto/arossupport.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
+#include <aros/asmcall.h>
 #include <aros/machine.h>
 
 extern struct DosLibrary * DOSBase;
@@ -148,7 +149,7 @@ static LONG relocate(   struct aout_hdr *head,
 
 BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR table,
-                          void * functionarray,
+                          LONG * functionarray,
                           LONG * stack)
 {
 /* Currently the only parameter passed to this function that is
@@ -169,7 +170,12 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   /* In case we have already had something attempt to load the file. */
   Seek(file, 0, OFFSET_BEGINNING);
 
-  if(Read(file, &header, sizeof(struct aout_hdr)) != sizeof(struct aout_hdr))
+  if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
+  	 AROS_UFCA(BPTR  , file                   , D1),
+  	 AROS_UFCA(void *, &header                , D2),
+  	 AROS_UFCA(LONG  , sizeof(struct aout_hdr), D3),
+  	 AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+       sizeof(struct aout_hdr))
   {
     D(bug("LoadSeg_AOUT: Can't read all of header\n"));
     ERROR(ERROR_FILE_NOT_OBJECT);
@@ -194,13 +200,19 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
      over those strings to the actual entry. To do this I will use
      a struct JumpVec (yes the same as in the the library bases).
   */
-  jumphunk = AllocMem(sizeof(struct JumpHunk), MEMF_CLEAR|MEMF_ANY);
+  jumphunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
+  		AROS_UFCA(ULONG, sizeof(struct JumpHunk), D0),
+  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY    , D1),
+  		AROS_UFCA(struct Library *, SysBase     , A6) );
   if(jumphunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
 
   /* Text segment is required. */
-  texthunk = AllocMem(header.a_text + sizeof(ULONG) + sizeof(BPTR),
-                      MEMF_CLEAR|MEMF_ANY);
+  texthunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
+  		AROS_UFCA(ULONG, header.a_text+sizeof(ULONG)+sizeof(BPTR), D0),
+  		AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
+  		AROS_UFCA(struct Library *, SysBase                      , A6));
+
   if(texthunk == NULL)
     ERROR(ERROR_NO_FREE_STORE);
 
@@ -213,7 +225,12 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   jumphunk->vec.jmp = __AROS_ASMJMP;
   __AROS_SET_VEC(&jumphunk->vec, texthunk + header.a_entry);
 
-  if(Read(file, texthunk, header.a_text) != header.a_text)
+  if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
+  	 AROS_UFCA(BPTR  , file                   , D1),
+  	 AROS_UFCA(void *, texthunk               , D2),
+  	 AROS_UFCA(LONG  , header.a_text          , D3),
+  	 AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+       header.a_text)
   {
     D(bug("LoadSeg_AOUT: Can't read all of text segment\n"));
     ERROR(ERROR_BAD_HUNK);
@@ -226,8 +243,11 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   if(header.a_data)
   {
     /* Include BSS with the data hunk. */
-    datahunk = AllocMem(header.a_data + header.a_bss + sizeof(ULONG) + sizeof(BPTR),
-                        MEMF_CLEAR|MEMF_ANY);
+    datahunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
+		 AROS_UFCA(ULONG, header.a_data+header.a_bss+sizeof(ULONG)+sizeof(BPTR), D0),
+  		 AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
+  		 AROS_UFCA(struct Library *, SysBase                      , A6));
+
     if(datahunk == NULL)
       ERROR(ERROR_NO_FREE_STORE);
     /* write the size of allocated memory */
@@ -235,7 +255,12 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
 
     datahunk += sizeof(ULONG) + sizeof(BPTR);
 
-    if(Read(file, datahunk, header.a_data) != header.a_data)
+    if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
+	   AROS_UFCA(BPTR  , file                   , D1),
+  	   AROS_UFCA(void *, datahunk               , D2),
+  	   AROS_UFCA(LONG  , header.a_data          , D3),
+  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+         header.a_data)
     {
       D(bug("LoadSeg_AOUT: Can't read all of data segment\n"));
       ERROR(ERROR_BAD_HUNK);
@@ -243,8 +268,11 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   }
   else if(header.a_bss)
   {
-    datahunk = AllocMem(header.a_bss + sizeof(ULONG) + sizeof(BPTR),
-                        MEMF_CLEAR|MEMF_ANY);
+    datahunk = AROS_UFC3(void *, functionarray[1] /* AllocMem */,
+		 AROS_UFCA(ULONG, header.a_bss+sizeof(ULONG)+sizeof(BPTR) , D0),
+  		 AROS_UFCA(ULONG, MEMF_CLEAR|MEMF_ANY                     , D1),
+  		 AROS_UFCA(struct Library *, SysBase                      , A6));
+
     if(datahunk == NULL)
       ERROR(ERROR_NO_FREE_STORE);
     /* write the size of allocated memory */
@@ -263,7 +291,13 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   rel_remain = header.a_trsize / sizeof(struct reloc);
   for(; rel_remain > 0; rel_remain-- )
   {
-    if(Read(file, &rel, sizeof(struct reloc)) != sizeof(struct reloc))
+    if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
+	   AROS_UFCA(BPTR  , file                   , D1),
+  	   AROS_UFCA(void *, &rel                   , D2),
+  	   AROS_UFCA(LONG  , sizeof(struct reloc)   , D3),
+  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+         sizeof(struct reloc))
+
     {
       D(bug("LoadSeg_AOUT: Can't load a text relocation.\n"));
       ERROR(ERROR_BAD_HUNK);
@@ -303,7 +337,12 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   rel_remain = header.a_drsize / sizeof(struct reloc);
   for(; rel_remain > 0; rel_remain-- )
   {
-    if(Read(file, &rel, sizeof(struct reloc)) != sizeof(struct reloc))
+    if ( AROS_UFC4(LONG, functionarray[0] /* Read */,
+	   AROS_UFCA(BPTR  , file                   , D1),
+  	   AROS_UFCA(void *, &rel                   , D2),
+  	   AROS_UFCA(LONG  , sizeof(struct reloc)   , D3),
+  	   AROS_UFCA(struct Library *, DOSBase      , A6)) != 
+         sizeof(struct reloc))
     {
       D(bug("LoadSeg_AOUT: Can't load a text relocation.\n"));
       ERROR(ERROR_BAD_HUNK);
@@ -362,22 +401,33 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   else
   {
     /* We don't need it */
-    FreeMem(jumphunk, sizeof(struct JumpHunk));
+    AROS_UFC3(void *, functionarray[2] /* FreeMem */,
+      AROS_UFCA(void *, jumphunk               , A1),
+      AROS_UFCA(ULONG , sizeof(struct JumpHunk), D0),
+      AROS_UFCA(struct Library *, SysBase      , A6));
+
     return MKBADDR((BPTR *)texthunk - 1);
   }
 
 end:
   /* If we allocated a text or data hunk, then we should free them */
   if(datahunk)
-    FreeMem(                   datahunk - sizeof(BPTR) - sizeof(ULONG),
-            *(ULONG *) ((ULONG)datahunk - sizeof(BPTR) - sizeof(ULONG)));
+    AROS_UFC3(void *, functionarray[2] /* FreeMem */,
+      AROS_UFCA(void *,                   datahunk - sizeof(BPTR) - sizeof(ULONG) , A1),
+      AROS_UFCA(ULONG , *(ULONG *)((ULONG)datahunk - sizeof(BPTR) - sizeof(ULONG)), D0),
+      AROS_UFCA(struct Library *, SysBase                                         , A6) );
 
   if(texthunk)
-    FreeMem(                   texthunk - sizeof(BPTR) - sizeof(ULONG),
-            *(ULONG *) ((ULONG)texthunk - sizeof(BPTR) - sizeof(ULONG)));
+    AROS_UFC3(void *, functionarray[2] /* FreeMem */,
+      AROS_UFCA(void *,                   texthunk - sizeof(BPTR) - sizeof(ULONG) , A1),
+      AROS_UFCA(ULONG , *(ULONG *)((ULONG)texthunk - sizeof(BPTR) - sizeof(ULONG)), D0),
+      AROS_UFCA(struct Library *, SysBase                                         , A6));
 
   if(jumphunk)
-    FreeMem(jumphunk, sizeof(struct JumpHunk));
+    AROS_UFC3(void *, functionarray[2] /* FreeMem */,
+      AROS_UFCA(void *, jumphunk                , A1),
+      AROS_UFCA(ULONG , sizeof(struct JumpHunk) , D0),
+      AROS_UFCA(struct Library *, SysBase       , A6));
 
   return (BPTR)NULL;
 }

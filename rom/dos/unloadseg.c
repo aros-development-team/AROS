@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1998/04/17 08:08:36  bergers
+    AllocMem, FreeMem and Read are called from an array of pointers to functions as
+    supposed to in the internal* functions.
+
     Revision 1.8  1997/12/14 20:21:18  hkiel
     Changed to use cpak.
 
@@ -35,6 +39,7 @@
 */
 #include <proto/exec.h>
 #include <dos/dos.h>
+#include <exec/types.h>
 #include "dos_intern.h"
 
 extern void Exec_FreeMem();

@@ -15,17 +15,17 @@
 
 BPTR InternalLoadSeg_AOS(BPTR file,
                          BPTR hunk_table,
-                         void * FuncArray,
+                         LONG_FUNC FuncArray,
                          LONG * stack);
 
 BPTR InternalLoadSeg_ELF(BPTR file,
                          BPTR hunk_table,
-                         void * FuncArray,
+                         LONG_FUNC FuncArray,
                          LONG * stack);
 
 BPTR InternalLoadSeg_AOUT(BPTR file,
                           BPTR hunk_table,
-                          void * FuncArray,
+                          LONG_FUNC FuncArray,
                           LONG * stack);
 
 
@@ -38,10 +38,10 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
         AROS_LH4(BPTR, InternalLoadSeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(BPTR, fh, D0),
-        AROS_LHA(BPTR, table, A0),
-        AROS_LHA(LONG *, functionarray, A1),
-        AROS_LHA(LONG *, stack, A2),
+        AROS_LHA(BPTR     , fh           , D0),
+        AROS_LHA(BPTR     , table        , A0),
+        AROS_LHA(LONG_FUNC, functionarray, A1),
+        AROS_LHA(LONG *   , stack        , A2),
 
 /*  LOCATION */
         struct DosLibrary *, DOSBase, 126, Dos)

@@ -18,9 +18,8 @@
 #include "dos_intern.h"
 
 extern LONG Dos_Read();
-extern APTR Exec_AllocMem();
+extern void * Exec_AllocMem();
 extern void Exec_FreeMem();
-
 
 /*****************************************************************************
 

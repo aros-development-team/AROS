@@ -7,6 +7,12 @@
 */
 #include "dos_intern.h"
 #include <proto/exec.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
+#include <aros/machine.h>
+#include <exec/libraries.h>
+
+extern void Exec_FreeMem();
 
 /*****************************************************************************
 
@@ -16,7 +22,7 @@
         AROS_LH2(BOOL, InternalUnLoadSeg,
 
 /*  SYNOPSIS */
-        AROS_LHA(BPTR     , seglist, D1),
+        AROS_LHA(BPTR     , seglist , D1),
         AROS_LHA(VOID_FUNC, freefunc, A1),
 
 /*  LOCATION */
@@ -54,8 +60,13 @@
     while (seglist)
     {
       next = *(BPTR *)BADDR(seglist);
-      FreeMem(  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG))  ,
-              * (LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)) );
+
+      AROS_UFC3(void, freefunc,
+        AROS_UFCA(APTR ,  (BPTR *)((LONG)BADDR(seglist) - sizeof(ULONG)), A1),
+        AROS_UFCA(ULONG, *(LONG *)((LONG)BADDR(seglist) - sizeof(ULONG)), D0),
+        AROS_UFCA(struct Library *, SysBase                             , A6)
+      );
+      
       seglist = next;
     }
     return TRUE;

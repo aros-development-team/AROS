@@ -13,11 +13,14 @@
 #include <dos/dosasl.h>
 #include <proto/dos.h>
 #include <proto/arossupport.h>
+#include <aros/asmcall.h>
+#include <aros/machine.h>
 #include "dos_intern.h"
 #include <aros/debug.h>
 #include <string.h>
 
 extern struct DosLibrary * DOSBase;
+
 
 /* Debugging */
 #define PRINT_SECTION_NAMES     0
@@ -112,7 +115,8 @@ struct hunk
     UBYTE * memory; /* First byte */
 };
 
-int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size)
+
+int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size, LONG * funcarray)
 {
   LONG    subsize;
   UBYTE * buf     = (UBYTE *)buffer;
@@ -122,7 +126,11 @@ int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size)
 
   while (size)
   {
-    subsize = Read (file, buf, size);
+    subsize = AROS_UFC4(LONG, funcarray[0] /* Read */,
+		AROS_UFCA(BPTR               , file   , D1),
+		AROS_UFCA(void *             , buf    , D2),
+		AROS_UFCA(LONG               , size   , D3),
+		AROS_UFCA(struct DosLibrary *, DOSBase, A6) );
 
     if (subsize == 0)
     {
@@ -142,7 +150,7 @@ int read_block (BPTR file, ULONG offset, APTR buffer, ULONG size)
 
 BPTR InternalLoadSeg_ELF (BPTR file,
                           BPTR table,
-                          void * functionarray,
+                          LONG * functionarray,
                           LONG * stack)
 {
 /* Currently the only parameter passed to this function that is
@@ -174,7 +182,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
   *error = 0;
 
   /* Load the header */
-  if (read_block (file, 0, &eh, sizeof (eh)))
+  if (read_block (file, 0, &eh, sizeof (eh), functionarray))
     goto end;
 
   /* Check the header of the file */
@@ -196,7 +204,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     ERROR (ERROR_NO_FREE_STORE);
 
   /* Read section table */
-  if (read_block(file, eh.shoff, shtab, eh.shentsize * eh.shnum))
+  if (read_block(file, eh.shoff, shtab, eh.shentsize * eh.shnum, functionarray))
     goto end;
 
   /* Look up the symbol table */
@@ -234,7 +242,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     ERROR (ERROR_NO_FREE_STORE);
 
   /* Read the symbol table */
-  if (read_block (file, sh->offset, symtab, sh->size))
+  if (read_block (file, sh->offset, symtab, sh->size, functionarray))
     goto end;
 
   numsym = sh->size / sizeof (struct symbol);
@@ -284,7 +292,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     if (shstrtab == NULL)
       ERROR (ERROR_NO_FREE_STORE);
 
-    if (read_block (file, sh->offset, shstrtab, sh->size))
+    if (read_block (file, sh->offset, shstrtab, sh->size, functionarray))
       goto end;
 
 #if PRINT_SECTION_NAMES
@@ -348,7 +356,7 @@ BPTR InternalLoadSeg_ELF (BPTR file,
 
     /* kprintf ("Reading StrTab at %d (offset=%ld, size=%ld)\n", eh.shstrndx, sh->offset, sh->size); */
 
-    if (read_block (file, sh->offset, strtab, sh->size))
+    if (read_block (file, sh->offset, strtab, sh->size, functionarray))
       goto end;
 
 #if PRINT_STRINGTAB
@@ -388,9 +396,11 @@ BPTR InternalLoadSeg_ELF (BPTR file,
     /* Don't allocate memory for hunks which don't need any */
     if (hunks[t].size)
     {
-      /* use AllocMem instead of AllocVec here! */
-      hunks[t].memory = AllocMem (hunks[t].size + sizeof(ULONG) + sizeof(BPTR),
-                                  MEMF_CLEAR);
+      hunks[t].memory =
+		AROS_UFC3(void *, functionarray[1] /* AllocMem */,
+		  AROS_UFCA(ULONG, hunks[t].size+sizeof(ULONG)+sizeof(BPTR), D0),
+		  AROS_UFCA(ULONG, MEMF_CLEAR                                , D1),
+		  AROS_UFCA(struct Library *, SysBase                        , A6) );
 
       if (hunks[t].memory == NULL)
         ERROR (ERROR_NO_FREE_STORE);
@@ -454,7 +464,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
     switch(sh->type)
     {
       case SHT_PROGBITS: /* Code */
-          if (read_block (file, sh->offset, hunks[t].memory, sh->size))
+          if (read_block (file, sh->offset, hunks[t].memory, sh->size, functionarray))
             goto end;
 
           loaded = hunks[t].memory;
@@ -490,7 +500,7 @@ D(bug("   Hunk %3d: 0x%p - 0x%p\n", t, hunks[t].memory, hunks[t].memory+hunks[t]
             ERROR (ERROR_NO_FREE_STORE);
 
           /* Load it */
-          if (read_block (file, sh->offset, reltab, sh->size))
+          if (read_block (file, sh->offset, reltab, sh->size, functionarray))
             goto end;
 
           numrel = sh->size / sizeof (struct relo);
@@ -584,8 +594,13 @@ end:
     for (t=mint; t<=maxt; t++)
     {
       if (hunks[t].memory != NULL)
-        FreeMem (hunks[t].memory - sizeof(BPTR) - sizeof(ULONG),
-                 hunks[t].size   + sizeof(BPTR) + sizeof(ULONG) );
+      {
+	AROS_UFC3(void , functionarray[2] /* FreeMem */,
+	  AROS_UFCA(void * , hunks[t].memory-sizeof(BPTR)-sizeof(ULONG), A1),
+	  AROS_UFCA(ULONG  , hunks[t].size  +sizeof(BPTR)+sizeof(ULONG), D0),
+	  AROS_UFCA(struct Library *, SysBase                          , A6) );
+
+      }
     }
 
     FreeVec (hunks + mint);

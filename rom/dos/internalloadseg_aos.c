@@ -10,15 +10,18 @@
 #include <exec/memory.h>
 #include <dos/dosasl.h>
 #include <dos/doshunks.h>
+#include <dos/dosextens.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <proto/arossupport.h>
+#include <aros/asmcall.h>
+#include <aros/machine.h>
 #include "dos_intern.h"
 #undef DEBUG
 #define DEBUG 1
 #include <aros/debug.h>
 
-static int read_block(BPTR file, APTR buffer, ULONG size);
+static int read_block(BPTR file, APTR buffer, ULONG size, LONG * funcarry);
 
 struct hunk
 {
@@ -30,7 +33,7 @@ struct hunk
 
 BPTR InternalLoadSeg_AOS(BPTR fh,
                          BPTR table,
-                         void * funcarray,
+                         LONG * funcarray,
                          LONG * stack)
 {
   AROS_LIBFUNC_INIT
@@ -54,7 +57,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
   if (Seek(fh, 0, OFFSET_BEGINNING) < 0)
     goto end;
 
-  while(!read_block(fh, &hunktype, sizeof(hunktype)))
+  while(!read_block(fh, &hunktype, sizeof(hunktype), funcarray))
   {
     switch(hunktype & 0xFFFFFF)
     {
@@ -76,7 +79,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
              --------------------   */
 
         D(bug("HUNK_SYMBOL (skipping)\n"));
-          while(!read_block(fh, &count, sizeof(count)) && count)
+          while(!read_block(fh, &count, sizeof(count), funcarray) && count)
           {
             if (Seek(fh, (count+1)*4, OFFSET_CURRENT) < 0)
               goto end;
@@ -84,10 +87,10 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       break;
 
       case HUNK_UNIT:
-        if (read_block(fh, &count, sizeof(count)))
+        if (read_block(fh, &count, sizeof(count), funcarray))
           goto end;
         count /= 4;
-        if (read_block(fh, name_buf, count))
+        if (read_block(fh, name_buf, count, funcarray))
           goto end;
         D(bug("HUNK_UNIT: \"%.*s\"\n", count, name_buf));
         break;
@@ -96,32 +99,32 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         D(bug("HUNK_HEADER:\n"));
         while (1)
         {
-          if (read_block(fh, &count, sizeof(count)))
+          if (read_block(fh, &count, sizeof(count), funcarray))
             goto end;
           if (count == 0L)
             break;
           count *= 4;
-          if (read_block(fh, name_buf, count))
+          if (read_block(fh, name_buf, count, funcarray))
             goto end;
           D(bug("\tlibname: \"%.*s\"\n", count, name_buf));
         }
-        if (read_block(fh, &numhunks, sizeof(numhunks)))
+        if (read_block(fh, &numhunks, sizeof(numhunks), funcarray))
           goto end;
         D(bug("\tHunk count: %ld\n", numhunks));
         hunktab = (struct hunk *)AllocVec(sizeof(struct hunk) * numhunks,
                                           MEMF_CLEAR);
         if (hunktab == NULL)
           ERROR(ERROR_NO_FREE_STORE);
-        if (read_block(fh, &first, sizeof(first)))
+        if (read_block(fh, &first, sizeof(first), funcarray))
           goto end;
         D(bug("\tFirst hunk: %ld\n", first));
         curhunk = 0 /* first */;
-        if (read_block(fh, &last, sizeof(last)))
+        if (read_block(fh, &last, sizeof(last), funcarray))
           goto end;
         D(bug("\tLast hunk: %ld\n", last));
         for (i = 0 /* first */; i < numhunks /* last */; i++)
         {
-          if (read_block(fh, &count, sizeof(count)))
+          if (read_block(fh, &count, sizeof(count), funcarray))
             goto end;
           tmp = count & 0xFF000000;
           count &= 0xFFFFFF;
@@ -142,7 +145,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
             case HUNKF_ADVISORY:
               D(bug("ADVISORY"));
-              if (read_block(fh, &req, sizeof(req)))
+              if (read_block(fh, &req, sizeof(req), funcarray))
                 goto end;
             break;
 
@@ -157,7 +160,11 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
              for a pointer to the next hunk
           */
           hunktab[i].size = count * 4 + sizeof(ULONG) + sizeof(BPTR);
-          hunktab[i].memory = (UBYTE *)AllocMem(hunktab[i].size, req);
+          hunktab[i].memory =(UBYTE *)
+		AROS_UFC3(void *, funcarray[1] /* AllocMem */,
+		  AROS_UFCA(ULONG           , hunktab[i].size, D0),
+		  AROS_UFCA(ULONG           , req            , D1),
+		  AROS_UFCA(struct Library *, SysBase        , A6) );
 
           if (hunktab[i].memory == NULL)
             ERROR(ERROR_NO_FREE_STORE);
@@ -182,7 +189,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
       case HUNK_CODE:
       case HUNK_DATA:
       case HUNK_BSS:
-        if (read_block(fh, &count, sizeof(count)))
+        if (read_block(fh, &count, sizeof(count), funcarray))
           goto end;
         D(bug("HUNK_%s(%d): Length: 0x%06lx bytes in ",
           segtypes[(hunktype & 0xFFFFFF)-HUNK_CODE], curhunk, count*4));
@@ -201,7 +208,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
           case HUNKF_ADVISORY:
             D(bug("ADVISORY"));
-            if (read_block(fh, &req, sizeof(req)))
+            if (read_block(fh, &req, sizeof(req), funcarray))
               goto end;
           break;
 
@@ -213,7 +220,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
 
         D(bug(" memory\n"));
         if ((hunktype & 0xFFFFFF) != HUNK_BSS && count)
-          if (read_block(fh, hunktab[curhunk].memory, count*4))
+          if (read_block(fh, hunktab[curhunk].memory, count*4, funcarray))
             goto end;
       break;
 
@@ -223,17 +230,17 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         {
           ULONG *addr;
 
-          if (read_block(fh, &count, sizeof(count)))
+          if (read_block(fh, &count, sizeof(count), funcarray))
             goto end;
           if (count == 0L)
             break;
           i = count;
-          if (read_block(fh, &count, sizeof(count)))
+          if (read_block(fh, &count, sizeof(count), funcarray))
             goto end;
           D(bug("\tHunk #%ld:\n", count));
           while (i > 0)
           {
-            if (read_block(fh, &offset, sizeof(offset)))
+            if (read_block(fh, &offset, sizeof(offset), funcarray))
               goto end;
             D(bug("\t\t0x%06lx\n", offset));
             addr = (ULONG *)(hunktab[curhunk].memory + offset);
@@ -250,19 +257,19 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
           {
             ULONG *addr;
 
-            if (read_block(fh, &count, sizeof(count)))
+            if (read_block(fh, &count, sizeof(count), funcarray))
               goto end;
             if (count == 0L)
               break;
             i = count;
-            if (read_block(fh, &count, sizeof(count)))
+            if (read_block(fh, &count, sizeof(count), funcarray))
               goto end;
             D(bug("\tHunk #%ld:\n", count));
             while (i > 0)
             {
               Wordcount++;
               /* read a 16bit number (2 bytes) */
-              if (read_block(fh, &offset, 2))
+              if (read_block(fh, &offset, 2, funcarray))
                 goto end;
               /* offset now contains the byte offset in it`s 16 highest bits.
                  These 16 highest bits have to become the 16 lowest bits so
@@ -304,7 +311,7 @@ BPTR InternalLoadSeg_AOS(BPTR fh,
         ERROR(ERROR_BAD_HUNK);
 
       case HUNK_DEBUG:
-        if (read_block(fh, &count, sizeof(count)))
+        if (read_block(fh, &count, sizeof(count), funcarray))
           goto end;
         D(bug("HUNK_DEBUG (%x Bytes)\n",count));
         if (Seek(fh, count * 4, OFFSET_CURRENT ) < 0 )
@@ -348,8 +355,13 @@ end:
   {
     for (t = 0 /* first */; t < numhunks /* last */; t++)
       if (hunktab[t].memory != NULL)
-        FreeMem(hunktab[t].memory - sizeof(ULONG) - sizeof(BPTR),
-                hunktab[t].size);
+      {
+	AROS_UFC3(void , funcarray[2] /* FreeMem*/,
+	  AROS_UFCA(void * , hunktab[t].memory-sizeof(ULONG)-sizeof(BPTR), A1),
+	  AROS_UFCA(ULONG  , hunktab[t].size                             , D0),
+	  AROS_UFCA(struct Library *, SysBase                            , A6) );
+      }
+      
     FreeVec(hunktab);
   }
   return last_p;
@@ -358,15 +370,18 @@ end:
 } /* InternalLoadSeg */
 
 
-
-static int read_block(BPTR file, APTR buffer, ULONG size)
+static int read_block(BPTR file, APTR buffer, ULONG size, LONG * funcarray)
 {
   LONG subsize;
   UBYTE *buf=(UBYTE *)buffer;
 
   while(size)
   {
-    subsize=Read(file,buf,size);
+    subsize = AROS_UFC4(LONG, funcarray[0] /* Read */,
+		AROS_UFCA(BPTR               , file   , D1),
+		AROS_UFCA(void *             , buf    , D2),
+		AROS_UFCA(LONG               , size   , D3),
+		AROS_UFCA(struct DosLibrary *, DOSBase, A6) );
     if(subsize==0)
     {
       ((struct Process *)FindTask(NULL))->pr_Result2=ERROR_BAD_HUNK;
