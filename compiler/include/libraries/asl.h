@@ -41,8 +41,8 @@
 
 
 /* Requester types */
-#define ASL_FileRequest		0
-#define ASL_FontRequest		1
+#define ASL_FileRequest 	0
+#define ASL_FontRequest 	1
 #define ASL_ScreenModeRequest	2
 
 /* Filerequester structure */
@@ -78,7 +78,7 @@ struct FileRequester
 
 #define ASLFR_TextAttr		ASL_TB + 51
 #define ASLFR_Locale		ASL_TB + 50
-#define ASLFR_TitleText		ASL_TB + 1
+#define ASLFR_TitleText 	ASL_TB + 1
 #define ASLFR_PositiveText	ASL_TB + 18
 #define ASLFR_NegativeText	ASL_TB + 19
 
@@ -122,13 +122,13 @@ struct FileRequester
 
 /* Flags for ASLSM_Flags2 */
 
-#define FRB_DRAWERSONLY		0
+#define FRB_DRAWERSONLY 	0
 #define FRB_FILTERDRAWERS	1
-#define FRB_REJECTICONS		2
+#define FRB_REJECTICONS 	2
 
-#define FRF_DRAWERSONLY		(1L << FRB_DRAWERSONLY)
+#define FRF_DRAWERSONLY 	(1L << FRB_DRAWERSONLY)
 #define FRF_FILTERDRAWERS	(1L << FRB_FILTERDRAWERS)
-#define FRF_REJECTICONS		(1L << FRB_REJECTICONS)
+#define FRF_REJECTICONS 	(1L << FRB_REJECTICONS)
 
 /* Fontrequester structure */
 struct FontRequester
@@ -159,7 +159,7 @@ struct FontRequester
 
 #define ASLFO_TextAttr		ASL_TB + 51
 #define ASLFO_Locale		ASL_TB + 50
-#define ASLFO_TitleText		ASL_TB + 1
+#define ASLFO_TitleText 	ASL_TB + 1
 #define ASLFO_PositiveText	ASL_TB + 18
 #define ASLFO_NegativeText	ASL_TB + 19
 
@@ -177,20 +177,20 @@ struct FontRequester
 
 #define ASLFO_Flags		ASL_TB + 20
 #define ASLFO_DoFrontPen	ASL_TB + 44
-#define ASLFO_DoBackPen		ASL_TB + 45
+#define ASLFO_DoBackPen 	ASL_TB + 45
 #define ASLFO_DoStyle		ASL_TB + 46
 #define ASLFO_DoDrawMode	ASL_TB + 47
 
 #define ASLFO_FixedWidthOnly	ASL_TB + 48
-#define ASLFO_MinHeight		ASL_TB + 16
-#define ASLFO_MaxHeight		ASL_TB + 17
+#define ASLFO_MinHeight 	ASL_TB + 16
+#define ASLFO_MaxHeight 	ASL_TB + 17
 #define ASLFO_FilterFunc	ASL_TB + 49
 #define ASLFO_HookFunc		ASL_TB + 7
 #define ASLFO_MaxFrontPen	ASL_TB + 66
 #define ASLFO_MaxBackPen	ASL_TB + 67
 
 #define ASLFO_ModeList		ASL_TB + 21
-#define ASLFO_FrontPens		ASL_TB + 64
+#define ASLFO_FrontPens 	ASL_TB + 64
 #define ASLFO_BackPens		ASL_TB + 65
 
 /* Flags for ASLFO_Flags */
@@ -224,15 +224,15 @@ struct ScreenModeRequester
     UWORD	sm_DisplayDepth;
     UWORD	sm_OverscanType;
     BOOL	sm_AutoScroll;
-    
+
     ULONG	sm_BitMapWidth;
     ULONG	sm_BitMapHeight;
-    
+
     WORD	sm_LeftEdge;
     WORD	sm_TopEdge;
     WORD	sm_Width;
     WORD	sm_Height;
-    
+
     BOOL	sm_InfoOpened;
     WORD	sm_InfoLeftEdge;
     WORD	sm_InfoTopEdge;
@@ -246,10 +246,10 @@ struct ScreenModeRequester
 /* Structure for adding custom display modes to the requester list */
 struct DisplayMode
 {
-    struct Node		 dm_Node;
+    struct Node 	 dm_Node;
     struct DimensionInfo dm_DimensionInfo;
     ULONG		 dm_PropertyFlags;
-    
+
 };
 
 /* ScreenModerequester tags */
@@ -264,7 +264,7 @@ struct DisplayMode
 
 #define ASLSM_TextAttr		ASL_TB + 51
 #define ASLSM_Locale		ASL_TB + 50
-#define ASLSM_TitleText		ASL_TB + 1
+#define ASLSM_TitleText 	ASL_TB + 1
 #define ASLSM_PositiveText	ASL_TB + 18
 #define ASLSM_NegativeText	ASL_TB + 19
 
@@ -278,8 +278,8 @@ struct DisplayMode
 #define ASLSM_InitialDisplayHeight	ASL_TB + 102
 #define ASLSM_InitialDisplayDepth	ASL_TB + 103
 #define ASLSM_InitialOverscanType	ASL_TB + 104
-#define ASLSM_InitialAutoScroll		ASL_TB + 105
-#define ASLSM_InitialInfoOpened		ASL_TB + 106
+#define ASLSM_InitialAutoScroll 	ASL_TB + 105
+#define ASLSM_InitialInfoOpened 	ASL_TB + 106
 #define ASLSM_InitialInfoLeftEdge	ASL_TB + 107
 #define ASLSM_InitialInfoTopEdge	ASL_TB + 108
 
@@ -293,18 +293,18 @@ struct DisplayMode
 #define ASLSM_PropertyMask	ASL_TB + 115
 #define ASLSM_MinWidth		ASL_TB + 116
 #define ASLSM_MaxWidth		ASL_TB + 117
-#define ASLSM_MinHeight		ASL_TB + 118
-#define ASLSM_MaxHeight		ASL_TB + 119
+#define ASLSM_MinHeight 	ASL_TB + 118
+#define ASLSM_MaxHeight 	ASL_TB + 119
 #define ASLSM_MinDepth		ASL_TB + 120
 #define ASLSM_MaxDepth		ASL_TB + 121
-#define ASLSM_FiltreFun		ASL_TB + 122
+#define ASLSM_FiltreFun 	ASL_TB + 122
 
 #define ASLSM_CustomSMList	ASL_TB + 123
 
 /****************************/
 
 /* Obsolete pre-V38 ASL defienitions. Only here for source
-compatibility. DO NOT USE iN NEW CODE. 
+compatibility. DO NOT USE iN NEW CODE.
 
 To make sure you not use them, #define ASL_V38_NAMES_ONLY
 
@@ -314,7 +314,7 @@ To make sure you not use them, #define ASL_V38_NAMES_ONLY
 
 /* !!! DO NOT USE !!! */
 
-#define rf_File		fr_File
+#define rf_File 	fr_File
 #define rf_Dir		fr_Drawer
 #define rf_LeftEdge	fr_LeftEdge
 #define rf_TopEdge	fr_TopEdge
@@ -327,7 +327,7 @@ To make sure you not use them, #define ASL_V38_NAMES_ONLY
 
 /* !!! DO NOT USE !!! */
 
-#define ASL_DUMMY	(TAG_USER + 0x80000)
+#define ASL_Dummy	(TAG_USER + 0x80000)
 #define ASL_Hail	ASL_Dummy + 1
 #define ASL_Window	ASL_Dummy + 2
 #define ASL_LeftEdge	ASL_Dummy + 3
@@ -336,7 +336,7 @@ To make sure you not use them, #define ASL_V38_NAMES_ONLY
 #define ASL_Height	ASL_Dummy + 6
 #define ASL_HookFunc	ASL_Dummy + 7
 #define ASL_File	ASL_Dummy + 8
-#define ASL_Dir		ASL_Dummy + 9
+#define ASL_Dir 	ASL_Dummy + 9
 #define ASL_FontName	ASL_Dummy + 10
 #define ASL_FontHeight	ASL_Dummy + 11
 #define ASL_FontStyles	ASL_Dummy + 12
@@ -354,39 +354,39 @@ To make sure you not use them, #define ASL_V38_NAMES_ONLY
 
 /* !!! DO NOT USE !!! */
 
-#define FILB_DOWILDFUNC		7L
+#define FILB_DOWILDFUNC 	7L
 #define FILB_DOMSGFUNC		6L
 #define FILB_SAVE		5L
 #define FILB_NEWIDCMP		4L
-#define FILB_MULTISELECT 	3L
+#define FILB_MULTISELECT	3L
 #define FILB_PATGAD		0L
 
-#define FILF_DOWILDFUNC		(1L << FILB_DOWILDFUNC)
+#define FILF_DOWILDFUNC 	(1L << FILB_DOWILDFUNC)
 #define FILF_DOMSGFUNC		(1L << FILB_DOMSGFUNC)
 #define FILF_SAVE		(1L << FILB_SAVE)
 #define FILF_NEWIDCMP		(1L << FILB_NEWIDCMP)
 #define FILF_MULTISELECT	(1L << FILB_MULTISELECT)
 #define FILF_PADTGAD		(1L << FILB_PATGAD)
 #define FIL1B_NOFILES	0L
-#define FIL1B_MATCHDIRS	1L
+#define FIL1B_MATCHDIRS 1L
 #define FIL1F_NOFILES	(1L << FIL1B_NOFILES)
-#define FIL1F_MATCHDIRS	(1L << FIL1B_MATCHDIRS)
-#define FONB_FRONTCOLOR	0L
+#define FIL1F_MATCHDIRS (1L << FIL1B_MATCHDIRS)
+#define FONB_FRONTCOLOR 0L
 #define FONB_BACKCOLOR	1L
 #define FONB_STYLES	2L
 #define FONB_DRAWMODE	3L
-#define FONB_FIXEDWIDTH	4L
+#define FONB_FIXEDWIDTH 4L
 #define FONB_NEWIDCMP	5L
 #define FONB_DOMSGFUNC	6L
 #define FONB_WILDFUNC	7L
-#define FONF_FRONTCOLOR	(1L << FONB_FRONTCOLOR)
+#define FONF_FRONTCOLOR (1L << FONB_FRONTCOLOR)
 #define FONF_BACKCOLOR	(1L << FONB_BACKCOLOR)
 #define FONF_STYLES	(1L << FONB_STYLES)
 #define FONF_DRAWMODE	(1L << FONB_DRAWMODE)
-#define FONF_FIXEDWIDTH	(1L << FONB_FIXEDWIDTH)
+#define FONF_FIXEDWIDTH (1L << FONB_FIXEDWIDTH)
 #define FONF_NEWIDCMP	(1L << FONB_NEWIDCMP)
 #define FONF_DOMSGFUNC	(1L << FONB_DOMSGFUNC)
-#define FONF_DOWILDFUNC	(1L << FONB_DOWILDFUNC)
+#define FONF_DOWILDFUNC (1L << FONB_DOWILDFUNC)
 
 #endif /* ASL_V38_NAMES_ONLY */
 
