@@ -11,8 +11,7 @@
 #include <asm/registers.h>
 
 #include "traps.h"
-
-extern void _sys_trap1_handler(void);
+#include "pp_exec_internal.h"
 
 void do_TRAP(struct pt_regs regs)
 {
