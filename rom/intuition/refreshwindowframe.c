@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/01/19 19:05:01  stegerg
+    renamed debug output (was "intui_RefreshWindowFrame")
+
     Revision 1.9  2000/01/11 16:05:00  bergers
     Update. Move some code from intuition_driver to this directoy.
 
@@ -80,7 +83,7 @@
     WORD  old_scroll_x, old_scroll_y;
     ULONG ilock;
     
-    EnterFunc(bug("intui_RefreshWindowFrame(window=%p)\n", window));
+    EnterFunc(bug("RefreshWindowFrame(window=%p)\n", window));
     
     if (!(window->Flags & WFLG_BORDERLESS))
     {
@@ -219,7 +222,7 @@
 	
     } /* if (!(win->Flags & WFLG_BORDERLESS)) */
     
-    ReturnVoid("intui_RefreshWindowFrame");
+    ReturnVoid("RefreshWindowFrame");
 
     AROS_LIBFUNC_EXIT
 } /* RefreshWindowFrame */
