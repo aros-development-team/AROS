@@ -1,0 +1,52 @@
+There are now new AROS source and binary snapshots up on 
+the SourceForge download page, which you can find at 
+http://sourceforge.net/project/showfiles.php?group_id=43586.
+
+The following files are available:
+
+o AROS-20020126-source.tar.gz
+
+  The main AROS sources.  
+
+o AROS-20020126-contrib-source.tar.gz
+
+  The contrib sources.
+
+o AROS-20020126-i386-linux.tar.gz
+
+  The hosted version for Linux/i386. This is the most complete
+  and mature port, which means that you can run almost all 
+  included programs and demos with it. This archive contains
+  all AROS and contrib binaries compiled from the CVS tree.
+  
+o AROS-20020126-i386-freebsd.tar.gz
+
+  The hosted version for FreeBSD/i386. This is a fairly new port
+  for which binary snapshots haven't been available for until now,
+  so it might not be as mature as the Linux/i386 port. For example,
+  this archive does not contain contrib binaries.
+
+o AROS-20020126-i386-pc.tar.gz
+
+  The native version for i386-based PC AT computers and compatibles.
+  It works quite well, but the driver support is very limited at the
+  moment. This archive contains all AROS and contrib binaries compiled 
+  from the CVS tree, but not boot floppy or cdrom images which are 
+  available separately.
+  
+o AROS-20020126-i386-pc-floppies.tar.gz
+
+  The native version for i386-based PC AT computers and compatibles.
+  This archive contains the boot and contrib disk floppies which you
+  can quickly write to a disk and boot AROS with.
+
+o AROS-20020126-i386-pc-cdrom.iso.gz
+
+  The native version for i386-based PC AT computers and compatibles.
+  This is the bootable CDROM ISO image, which contains all programs
+  in AROS-20020126-i386-pc.tar.gz. The image is a bit experimental,
+  which means that eg. the Startup-Sequence hasn't been adapted
+  properly yet (although you can boot into AROS). Also, this version
+  WILL NOT work with computer that have more than one CDROM drive.
+  
+For more information, see http://www.aros.org/.
