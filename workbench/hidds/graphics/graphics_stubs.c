@@ -34,13 +34,17 @@
 
 /* A small utility function for using varargs when setting attrs */
 
-IPTR SetAttrsTags(Object *obj, IPTR tag1,...)
+#warning SetAttrsTags is defined in inline/oop.h
+
+#ifndef SetAttrsTags
+IPTR SetAttrsTags(Object *obj, IPTR tag1, ...)
 {
     AROS_SLOWSTACKTAGS_PRE(tag1)
     retval = SetAttrs(obj, AROS_SLOWSTACKTAGS_ARG(tag1));
     AROS_SLOWSTACKTAGS_POST
 
 }
+#endif
 
 /***************************************************************/
 
@@ -108,10 +112,10 @@ BOOL HIDD_BM_SetColors (Object *obj, HIDDT_Color *colors, ULONG firstColor, ULON
     
     if(!mid) mid = GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_SetColors);
         
-    p.mID	 = mid;
-    p.colors	 = colors;
+    p.mID        = mid;
+    p.colors     = colors;
     p.firstColor = firstColor;
-    p.numColors	 = numColors;
+    p.numColors  = numColors;
 
     return DoMethod(obj, (Msg) &p);
 }
@@ -348,7 +352,7 @@ VOID HIDD_BM_Clear (Object *obj)
 
 /***************************************************************/
 
-VOID     HIDD_BM_GetBox	 (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_GetBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_GetBox p;
@@ -368,7 +372,7 @@ VOID     HIDD_BM_GetBox	 (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width
 
 /***************************************************************/
 
-VOID     HIDD_BM_PutBox	 (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
+VOID     HIDD_BM_PutBox  (Object *obj, ULONG *pixels, WORD x, WORD y, WORD width, WORD height)
 {
     static MethodID mid = 0;
     struct pHidd_BitMap_PutBox p;
