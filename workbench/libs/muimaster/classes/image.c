@@ -25,6 +25,9 @@
 #include "support.h"
 #include "imspec.h"
 
+#warning quick hack to not draw the background for gradients. It should really be generalized
+#include "imspec_intern.h"
+
 extern struct Library *MUIMasterBase;
 
 #define MIF_FREEVERT         (1<<0)
@@ -179,6 +182,11 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		{
 		    zune_imspec_cleanup(data->img);
 		    data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
+#warning quick hack to not draw the background for gradients. It should really be generalized
+                    if (data->img->type == IST_GRADIENT)
+                        set(obj, MUIA_FillArea, FALSE);
+                    else
+                        set(obj, MUIA_FillArea, TRUE);
 		}
 
 		if (_flags(obj)&MADF_CANDRAW)
@@ -221,6 +229,11 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->spec)
     {
 	data->img = zune_imspec_setup((IPTR)data->spec, muiRenderInfo(obj));
+#warning quick hack to not draw the background for gradients. It should really be generalized
+        if (data->img->type == IST_GRADIENT)
+            set(obj, MUIA_FillArea, FALSE);
+        else
+            set(obj, MUIA_FillArea, TRUE);
     }
     return 1;
 }
