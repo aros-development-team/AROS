@@ -2,14 +2,16 @@ setclock LOAD
 path SYS:Demos ADD QUIET
 mount RAM:
 mount NIL:
-makedir ram:T
-assign T: ram:t
-assign LOCALE: sys:Locale
+makedir RAM:T
+assign T: RAM:T
+assign LOCALE: SYS:Locale
 
-makedir ram:env
-assign ENV: ram:env
-assign Libs: Sys:Classes ADD
+makedir RAM:ENV
+assign ENV: RAM:ENV
+assign LIBS: SYS:Classes ADD
+assign FONTS: SYS:Fonts
 
+path SYS:Utilities SYS:System SYS:Tools ADD QUIET 
 
 ;
 ; To mount unit /dev/fd0 as drive FDSK: make a link from
