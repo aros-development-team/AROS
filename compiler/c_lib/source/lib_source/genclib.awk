@@ -102,12 +102,13 @@ BEGIN {
     print "/* Prototypes */"
 }
 /AROS_LH[0-9]/ { isprivate=0; }
+/AROS_NTLH[0-9]/ { isprivate=0; }
 /AROS_PLH[0-9]/ { isprivate=1; }
-/AROS_LH(A|(QUAD)?[0-9])/ {
+/AROS_(NT)?LH(A|(QUAD)?[0-9])/ {
     line=$0;
     
     isarg=match(line,/AROS_LHA/);
-    gsub(/AROS_LH/,"AROS_LP",line);
+    gsub(/AROS_(NT)?LH/,"AROS_LP",line);
     gsub(/^[ \t]+/,"",line);
     if (!isarg)
     {
