@@ -56,6 +56,13 @@ APTR __startup_mempool;
 
 ******************************************************************************/
 {
+    struct memheader
+    {
+        struct SignalSemaphore *memsem;
+        APTR                    mempool;
+        size_t                  memsize;
+    };
+
     GETUSER;
 
     UBYTE * mem = NULL;
@@ -63,14 +70,20 @@ APTR __startup_mempool;
     ObtainSemaphore(&__startup_memsem);
 
     /* Allocate the memory */
-    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(size_t)));
+    mem = AllocPooled (__startup_mempool, size + AROS_ALIGN(sizeof(struct memheader)));
     if (mem)
     {
-	*((size_t *)mem) = size;
-	mem += AROS_ALIGN(sizeof(size_t));
+	struct memheader *mh = mem;
+
+	mh->memsem  = &__startup_memsem;
+	mh->mempool = __startup_mempool;
+	mh->memsize = size;
+
+	mem += AROS_ALIGN(sizeof(struct memheader));
     }
     else
         errno = ENOMEM;
+
 
     ReleaseSemaphore(&__startup_memsem);
 
