@@ -41,7 +41,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     UBYTE strbuf[MAXFONTNAME];
 
     BPTR fh;
-    
+
     D(bug("ReadFontDescr(filename=%s\n", filename));
     
     /* Allocate the FontDescrHeader */
@@ -51,24 +51,33 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
     if (!(fdh = AllocMem(sizeof (struct FontDescrHeader), MEMF_ANY|MEMF_CLEAR)) )
         goto failure;
 
-
     /* First read the file id (FCH_ID or TFCH_ID) */
     if (!ReadWord( &DFB(DiskfontBase)->dsh, &aword, fh ))
         goto failure;
     
     /* Check that this is a .font file */
     
-    if ( (aword != FCH_ID) && (aword != TFCH_ID) )
+    if ( (aword != FCH_ID) && (aword != TFCH_ID) && (aword != OFCH_ID) )
         goto failure;
         
-    fdh->Tagged = (aword == TFCH_ID);
+    fdh->Tagged = ((aword == TFCH_ID) || (aword == OFCH_ID));
     
      /* Read number of (T)FontContents structs in the file */
     if (!ReadWord( &DFB(DiskfontBase)->dsh, &numentries ,fh ))
         goto failure;
     
     fdh->NumEntries = numentries;
-        
+    
+    if (!numentries)
+    {    
+    	/* not really an error. outline fonts often have a
+	   .font wiht 0 numentries, because of none of
+	   the sizes having been converted to bitmap fonts
+	*/
+	   
+    	goto failure;
+    }
+    
     /* Allocate mem for array of TTextAttrs */
     fdh->TAttrArray = AllocVec(fdh->NumEntries * sizeof(struct TTextAttr), MEMF_ANY|MEMF_CLEAR);
     if (!fdh->TAttrArray)
@@ -130,25 +139,35 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
                 
             
             if (numtags)
-            {
-                
-	        /* Seek back and read the tags */
+            {               
+	        /* Seek back and read the tags. Note, that the TAG_DONE
+		   tagitem "goes over" the numtags, ie. it's ti_Data will
+		   contain the numtags in the lower WORD:
+		   
+		             TAGLIST start
+		            /
+		   00000000 80000008 00370000 80000001
+		   003F003F 80000002 00640064 00000000
+		   00000004 00378022          \TAG_DONE
+		       |||| ||||||||
+		   TagCount ||||||Flags
+		            |||||| 
+			    ||||Style
+			    ||||
+			    YSize
+	    	*/
+		
                 Flush(fh);
                 Seek
                 (
                     fh, 
-                    - ( (numtags << 3) + sizeof (UWORD) ), /*  sizeof (struct TagItem) = 8 */
+                    -(numtags * 8), /*  sizeof (struct TagItem) = 8 */
                     OFFSET_CURRENT
                 );
 
                 if (!(tattr->tta_Tags = ReadTags(fh, numtags, DFB(DiskfontBase) )))
                     goto failure;
                 
-                /* Seek past the tagcount */
-                if (!ReadWord( &DFB(DiskfontBase)->dsh, &aword, fh ))
-                    goto failure;
-                
-
             } /* if (numtags) */
             
         
@@ -216,7 +235,7 @@ VOID FreeFontDescr(struct FontDescrHeader *fdh, struct DiskfontBase_intern *Disk
             }
             
             FreeVec(fdh->TAttrArray);
-        }
+        } 
     
         FreeMem(fdh, sizeof (struct FontDescrHeader));
     }
