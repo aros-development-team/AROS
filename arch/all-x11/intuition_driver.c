@@ -7,6 +7,7 @@
 #define XCurrentTime 0L
 
 #define DEBUG_FreeMem 1
+#define AROS_ALMOST_COMPATIBLE 1
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -54,13 +55,17 @@ static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
 
 #define DEBUG	0
-#define DEBUG_ProcessXEvents	0
+#define DEBUG_ProcessXEvents 0
 
+#include <aros/debug.h>
+
+/*
 #if DEBUG
 #   define D(x)     x
 #else
-#   define D(x)     /* eps */
+#   define D(x)
 #endif
+*/
 
 #if DEBUG_ProcessXEvents
 #   define Dipxe(x) x
@@ -80,7 +85,7 @@ static int MySysErrorHandler (Display *);
 #   define Dicw(x) /* eps */
 #endif
 
-#define bug	    kprintf
+/* #define bug	    kprintf */
 
 struct IntWindow
 {
@@ -578,88 +583,112 @@ void intui_EndRefresh (struct Window * win, BOOL free,
 } /* intui_EndRefresh */
 
 
-#define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
-#define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
-#define GetTop(gad,w)            (ADDREL(gad,GFLG_RELBOTTOM,w,Height) + gad->TopEdge)
-#define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH,w,Width)   + gad->Width)
-#define GetHeight(gad,w)         (ADDREL(gad,GFLG_RELHEIGHT,w,Height) + gad->Height)
+/* Intuition input handler prototype
+** Note: The input handler get an extra struct Window *parameter
+** that isn't there in a real input handler. But until we have an
+** intuition.hidd, the inputhandler cannot get hold of the active window
+** any other way
+*/
 
-#define InsideGadget(w,gad,x,y)   \
-	    ((x) >= GetLeft(gad,w) && (y) >= GetTop(gad,w) \
-	    && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
-	    && (y) < GetTop(gad,w) + GetHeight(gad,w))
+#include <aros/asmcall.h>
 
-
-struct Gadget * FindGadget (struct Window * window, int x, int y,
-			struct GadgetInfo * gi)
+struct IIHData
 {
-    struct Gadget * gadget;
-    struct gpHitTest gpht;
-    int gx, gy;
+    struct IntuitionBase	*IntuitionBase;
+    struct MsgPort		*IntuiReplyPort;
+    struct Gadget		*ActiveGadget;
+    WORD			LastMouseX;
+    WORD			LastMouseY;
+};
 
-    gpht.MethodID     = GM_HITTEST;
-    gpht.gpht_GInfo   = gi;
-    gpht.gpht_Mouse.X = x;
-    gpht.gpht_Mouse.Y = y;
+AROS_UFP3(struct InputEvent *, IntuiInputHandler,
+    AROS_UFPA(struct InputEvent *,	oldchain,	A0),
+    AROS_UFPA(struct IIHData *,		iihdata,	A1),
+    AROS_UFPA(struct Window *,		w,		A2)
+);
 
-    for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
-    {
-	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
-	{
-	    gx = x - GetLeft(gadget,window);
-	    gy = y - GetTop(gadget,window);
-
-	    if (gx >= 0
-		&& gy >= 0
-		&& gx < GetWidth(gadget,window)
-		&& gy < GetHeight(gadget,window)
-	    )
-		break;
-	}
-	else
-	{
-	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
-		break;
-	}
-    }
-
-    return gadget;
-} /* FindGadget */
+STATIC VOID intui_WaitEvent(struct InputEvent *, struct Window **);
+struct Interrupt *InitIIH(struct IntuitionBase *);
+/**************************
+**  intui_ProcessEvents  **
+**************************/
 
 #undef IntuitionBase
 #define IntuitionBase IntuiBase
 
 void intui_ProcessEvents (void)
 {
-    struct IntuiMessage * im;
+    
     struct Window	* w;
-    struct IntWindow	* iw;
-    struct Gadget	* gadget;
-    struct MsgPort	* intuiReplyPort;
-    struct Screen	* screen;
-    struct GadgetInfo	* gi;
-    char * ptr;
-    int    mpos_x, mpos_y;
-    int    wait;
-    XEvent event;
-    ULONG  lock;
-    ULONG  waitmask;
+    
+    struct  MinList inputhandlerlist;
+    struct Interrupt *ih; /* Intuition InputHandler */
+    
+    struct InputEvent ie = {0,};
+    
+    D(bug("intui_ProcessEvents()\n"));
+    
+    NEWLIST(&inputhandlerlist);
+    ih = InitIIH(IntuitionBase);
+    
 
-    intuiReplyPort = CreateMsgPort ();
-    wait = 0;
-
-    gadget = NULL;
-
-    gi = AllocMem (sizeof (struct GadgetInfo), MEMF_ANY|MEMF_CLEAR);
-
-    waitmask = (1L << intuiReplyPort->mp_SigBit) | SIGBREAKF_CTRL_F;
+    /* Should check for success, but this is a hack anyway */
+    
+    AddTail((struct List *)&inputhandlerlist, (struct Node *)ih);
+    
 
     for (;;)
     {
-	im = NULL;
-	w = NULL;
+    	struct Interrupt *ihiterator;
+    	
+	D(bug("ipe : waiting for event\n"));
+	intui_WaitEvent(&ie, &w);
+	D(bug("ipe: Got event of class %d for window %s\n",
+		ie.ie_Class, w->Title));
 
-	while (XPending (sysDisplay))
+	D(bug("ipe: inputhandler %s at %p\n",
+	    	ih->is_Node.ln_Name, ih->is_Code));
+	
+	ForeachNode(&inputhandlerlist, ihiterator);
+	{
+	    D(bug("ipe: calling inputhandler %s at %p\n",
+	    	ih->is_Node.ln_Name, ih->is_Code));
+	    AROS_UFC3(struct InputEvent *, ih->is_Code,
+	    	AROS_UFCA(struct InputEvent *,	&ie,		A0),
+	    	AROS_UFCA(APTR,			ih->is_Data,	A1),
+	    	AROS_UFCA(struct Window *,	w,		A2));
+	    D(bug("ipe: returned from inputhandler\n"));	    	
+	}
+
+    } /* for (;;) */
+    
+} /* intui_ProcessEvents */
+
+
+/**********************
+**  intui_WaitEvent  **
+**********************/
+VOID intui_WaitEvent(struct InputEvent		*ie,
+		struct Window 			**wstorage)
+{
+
+    
+    XEvent event;
+    struct Window *w;
+    struct Screen *screen;
+
+    struct IntWindow	* iw;
+    ULONG  lock;
+    
+    D(bug("intui_WaitEvent(ie=%p, wstorage=%p)\n", ie, wstorage));
+    
+    for (;;)
+    {
+    	/* Here we are actually busywaiting for an event to occur.
+    	** This is just a kludge until we get a UnixIO hidd dedicated
+    	** for communicating with the underlying Unix/X11.
+    	*/
+    	while (XPending (sysDisplay))
 	{
 	    XNextEvent (sysDisplay, &event);
 
@@ -701,37 +730,26 @@ void intui_ProcessEvents (void)
 		Dipxe(bug("X=%d is not asocciated with a Window\n",
 		    event.xany.window));
 
-	    UnlockIBase (lock);
-
+	    /* We unlock IBase now that we have assured that the window won't
+	    ** close while we are working on it. (IBase should be locked as little
+	    ** time as possible
+	    */
+	    UnlockIBase (lock); 
+	    
+	    /* If this wasn't an event for AROS, then get next event in the queue */
 	    if (!w)
-		continue;
-
-	    gi->gi_Screen	  = screen;
-	    gi->gi_Window	  = w;
-	    gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
-	    gi->gi_RastPort	  = w->RPort;
-	    gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
-	    gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
-	    gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
-
+	    	continue;
+	    	
 	    iw = (struct IntWindow *)w;
-
-	    if (!im)
-	    {
-		im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
-	    }
-
-	    im->Class	    = 0L;
-	    im->IDCMPWindow = w;
-	    im->MouseX	    = mpos_x;
-	    im->MouseY	    = mpos_y;
-
+	    	
+	    ie->ie_Class = 0;
+	    	
 	    switch (event.type)
 	    {
 	    case GraphicsExpose:
 	    case Expose: {
 		XRectangle rect;
-		UWORD	   count;
+	    	UWORD	   count;
 
 		if (event.type == Expose)
 		{
@@ -754,13 +772,10 @@ void intui_ProcessEvents (void)
 
 		if (count == 0)
 		{
-		    RefreshGadgets (w->FirstGadget, w, NULL);
-
-		    im->Class = IDCMP_REFRESHWINDOW;
-		    ptr       = "REFRESHWINDOW";
+		    ie->ie_Class = IECLASS_REFRESHWINDOW;
 		}
-	    } break;
-
+	    	break; }
+	    
 	    case ConfigureNotify:
 		if (w->Width != event.xconfigure.width ||
 			w->Height != event.xconfigure.height)
@@ -768,113 +783,414 @@ void intui_ProcessEvents (void)
 		    w->Width  = event.xconfigure.width;
 		    w->Height = event.xconfigure.height;
 
-		    im->Class = IDCMP_NEWSIZE;
-
-		    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
-		    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
-
-		    ptr       = "NEWSIZE";
+		    ie->ie_Class = IECLASS_SIZEWINDOW;
 		}
-
 		break;
 
 	    case ButtonPress: {
 		XButtonEvent * xb = &event.xbutton;
 
-		im->Class = IDCMP_MOUSEBUTTONS;
-		im->Qualifier = StateToQualifier (xb->state);
-		im->MouseX = xb->x;
-		im->MouseY = xb->y;
-		D(bug("ipe: GADGETDOWN\n"));
+		ie->ie_Class	 = IECLASS_RAWMOUSE;
+		ie->ie_Qualifier = StateToQualifier (xb->state);
+		ie->ie_X 	 = xb->x;
+		ie->ie_Y	 = xb->y;
+
 		switch (xb->button)
 		{
-		case Button1: {
-		    struct Gadget *newgad;
+		case Button1:
+		    ie->ie_Code = SELECTDOWN;
+		    break;
 		    
-		    im->Code = SELECTDOWN;
+		case Button2:
+		    ie->ie_Code = MIDDLEDOWN;
+		    break;
 
-		    newgad = FindGadget (w, xb->x, xb->y, gi);
+		case Button3:
+		    ie->ie_Code = MENUDOWN;
+		    break;
+		} /* switch (which button was clicked ?) */
+		
+		break; }
+	    case ButtonRelease: {
+		XButtonEvent * xb = &event.xbutton;
+
+		ie->ie_Class = IECLASS_RAWMOUSE;
+		ie->ie_Qualifier = StateToQualifier (xb->state);
+
+		switch (xb->button)
+		{
+		case Button1:
+		    ie->ie_Code = SELECTUP;
+		    break;
 		    
-		    /* If the active gadget was a stringgadget, and we clicked
-		    ** outside it, then deactivate it. Make sure that there
-		    ** was an active gadget to begin with.
-		    */
-		    if (gadget && gadget != newgad)
+		case Button2:
+		    ie->ie_Code = MIDDLEUP;
+		    break;
+		    
+		case Button3:
+		    ie->ie_Code = MENUUP;
+		    break;
+		}
+	 	break; }
+	 	
+	    case KeyPress: {
+		XKeyEvent * xk = &event.xkey;
+		ULONG result;
+
+		ie->ie_Class = IECLASS_RAWKEY;
+		result = XKeyToAmigaCode(xk);
+		ie->ie_Code = xk->keycode;
+		ie->ie_Qualifier = result >> 16;
+		break; }
+
+	    case KeyRelease: {
+		XKeyEvent * xk = &event.xkey;
+		ULONG result;
+
+		ie->ie_Class = IECLASS_RAWKEY;
+		result = XKeyToAmigaCode(xk);
+		ie->ie_Code = xk->keycode | 0x8000;
+		ie->ie_Qualifier = result >> 16;
+		break; }
+
+	    case MotionNotify: {
+		XMotionEvent * xm = &event.xmotion;
+		
+		ie->ie_Code = IECODE_NOBUTTON;
+		ie->ie_Class = IECLASS_RAWMOUSE;
+		ie->ie_Qualifier = StateToQualifier (xm->state);
+		ie->ie_X = xm->x;
+		ie->ie_Y = xm->y;
+		break; }
+
+	   case EnterNotify: {
+		XCrossingEvent * xc = &event.xcrossing;
+
+		ie->ie_Class	= IECLASS_ACTIVEWINDOW;
+		ie->ie_X	= xc->x;
+		ie->ie_Y	= xc->y;
+		break; }
+		
+	    case LeaveNotify: {
+		XCrossingEvent * xc = &event.xcrossing;
+
+		ie->ie_Class = IECLASS_INACTIVEWINDOW;
+		ie->ie_X = xc->x;
+		ie->ie_Y = xc->y;
+	    	break; }
+
+		    		    
+	    } /* switch (X11 event type) */
+	    
+	    *wstorage = w;
+	    
+	    return;
+	    
+	} /* while (there are events in the event queue) */
+	
+	/* We have to Wait() here to let other taks run, but the idle
+	** task will wake us up again from time to time.
+	*/
+	Wait(SIGBREAKF_CTRL_F);
+
+    }	/* for (;;) Endless busy-wait loop */
+
+    ReturnVoid ("intui_WaitEvent");
+} /* intui_WaitEvent() */
+
+
+#undef IntuitionBase
+/***************
+**  InitIIH   **
+***************/
+
+struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase)
+{
+    struct Interrupt *iihandler;
+    struct IIHData *iihdata;
+    
+    D(bug("InitIIH(IntuitionBase=%p)\n", IntuitionBase));
+    
+    iihandler = AllocMem(sizeof (struct Interrupt), MEMF_PUBLIC|MEMF_CLEAR);
+    if (iihandler)
+    {
+    	iihdata = AllocMem(sizeof (struct IIHData), MEMF_ANY|MEMF_CLEAR);
+    	if (iihdata)
+    	{
+    	    iihdata->IntuiReplyPort = CreatePort(NULL, 0);
+    	    if (iihdata->IntuiReplyPort)
+    	    {
+    	    	iihandler->is_Code = (APTR)AROS_ASMSYMNAME(IntuiInputHandler);
+    	    	iihandler->is_Data = iihdata;
+    	    	iihandler->is_Node.ln_Pri	= 100;
+    	    	iihandler->is_Node.ln_Name	= "Intuition InputHandler";
+    	    
+    	    	iihdata->IntuitionBase = IntuitionBase;
+
+		ReturnPtr ("InitIIH", struct Interrupt *, iihandler);
+    	    }
+    	    DeletePort(iihdata->IntuiReplyPort);
+    	}
+    	FreeMem(iihandler, sizeof (struct Interrupt));
+    }
+    ReturnPtr ("InitIIH", struct Interrupt *, NULL);
+}
+
+/****************
+** CleanupIIH  **
+****************/
+
+VOID CleanupIIH(struct Interrupt *iihandler)
+{
+    DeletePort(((struct IIHData *)iihandler->is_Data)->IntuiReplyPort);
+    FreeMem(iihandler->is_Data, sizeof (struct IIHData));
+    FreeMem(iihandler, sizeof (struct Interrupt));
+    
+    return;
+}
+
+
+#define ADDREL(gad,flag,w,field) ((gad->Flags & (flag)) ? w->field : 0)
+#define GetLeft(gad,w)           (ADDREL(gad,GFLG_RELRIGHT,w,Width)   + gad->LeftEdge)
+#define GetTop(gad,w)            (ADDREL(gad,GFLG_RELBOTTOM,w,Height) + gad->TopEdge)
+#define GetWidth(gad,w)          (ADDREL(gad,GFLG_RELWIDTH,w,Width)   + gad->Width)
+#define GetHeight(gad,w)         (ADDREL(gad,GFLG_RELHEIGHT,w,Height) + gad->Height)
+
+#define InsideGadget(w,gad,x,y)   \
+	    ((x) >= GetLeft(gad,w) && (y) >= GetTop(gad,w) \
+	    && (x) < GetLeft(gad,w) + GetWidth(gad,w) \
+	    && (y) < GetTop(gad,w) + GetHeight(gad,w))
+
+
+/*****************
+**  FindGadget  **
+*****************/
+struct Gadget * FindGadget (struct Window * window, int x, int y,
+			struct GadgetInfo * gi)
+{
+    struct Gadget * gadget;
+    struct gpHitTest gpht;
+    int gx, gy;
+    
+    D(bug("FindGaget(window=%s, x=%d, y=%d, gi=%p)\n",
+    	window->Title, x, y, gi));
+
+    gpht.MethodID     = GM_HITTEST;
+    gpht.gpht_GInfo   = gi;
+    gpht.gpht_Mouse.X = x;
+    gpht.gpht_Mouse.Y = y;
+
+    for (gadget=window->FirstGadget; gadget; gadget=gadget->NextGadget)
+    {
+	if ((gadget->GadgetType & GTYP_GTYPEMASK) != GTYP_CUSTOMGADGET)
+	{
+	    gx = x - GetLeft(gadget,window);
+	    gy = y - GetTop(gadget,window);
+
+	    if (gx >= 0
+		&& gy >= 0
+		&& gx < GetWidth(gadget,window)
+		&& gy < GetHeight(gadget,window)
+	    )
+		break;
+	}
+	else
+	{
+	    if (DoMethodA ((Object *)gadget, (Msg)&gpht) == GMR_GADGETHIT)
+		break;
+	}
+    }
+
+    ReturnPtr ("FindGadget", struct Gadget *, gadget);
+} /* FindGadget */
+
+
+#undef IntuitionBase
+
+#undef DEBUG
+#define DEBUG 0
+#include <aros/debug.h>
+
+/************************
+**  IntuiInputHandler  **
+************************/
+AROS_UFH3(struct InputEvent *, IntuiInputHandler,
+    AROS_UFHA(struct InputEvent *,	oldchain,	A0),
+    AROS_UFHA(struct IIHData *,		iihdata,	A1),
+    AROS_UFHA(struct Window *,		w,		A2)
+)
+{
+    struct InputEvent 	*ie;
+    struct IntuiMessage *im = NULL;
+    struct Screen	* screen;
+    struct Gadget *gadget = iihdata->ActiveGadget;
+    struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
+    ULONG  lock;
+    UWORD wait = 0;
+    
+    UWORD count = 0;
+    
+    char *ptr = NULL;
+    
+    WORD mpos_x = iihdata->LastMouseX, mpos_y = iihdata->LastMouseY;
+    
+    struct GadgetInfo stackgi, *gi = &stackgi;
+    
+    
+    BOOL reuse_event = FALSE;
+    
+    D(bug("IntuiInputHandler(oldchain=%p, iihdata=%p, w=%s)\n",
+    	oldchain, iihdata, w->Title));
+        
+    for (ie = oldchain; ie; ie = ((reuse_event) ? ie : ie->ie_NextEvent))
+    {
+	reuse_event = FALSE;
+	ptr = NULL;
+	
+	count ++;
+	
+	D(bug("iih: reuse_event = %d, coun = %d\n", reuse_event, count));
+
+	/* If the last InputEvent was swallowed, we can reuse the IntuiMessage */
+	if (!im)
+	{
+	    im = AllocMem (sizeof (struct IntuiMessage), MEMF_CLEAR);
+	}
+
+	im->Class	= 0L;
+	im->MouseX	= mpos_x;
+	im->MouseY	= mpos_y;
+	im->IDCMPWindow	= w;
+    	
+	screen = w->WScreen;
+
+	gi->gi_Screen	  = screen;
+	gi->gi_Window	  = w;
+	gi->gi_Domain	  = *((struct IBox *)&w->LeftEdge);
+	gi->gi_RastPort	  = w->RPort;
+	gi->gi_Pens.DetailPen = gi->gi_Screen->DetailPen;
+	gi->gi_Pens.BlockPen  = gi->gi_Screen->BlockPen;
+	gi->gi_DrInfo	  = &(((struct IntScreen *)screen)->DInfo);
+
+	    
+	switch (ie->ie_Class)
+	{
+	case IECLASS_REFRESHWINDOW:
+	    ptr       = "REFRESHWINDOW";
+	    im->Class = IDCMP_REFRESHWINDOW;
+	    
+	    D(bug("ipe:Refreshwindow\n"));		    
+	    RefreshGadgets (w->FirstGadget, w, NULL);
+	    break;
+
+	case IECLASS_SIZEWINDOW:
+	    ptr       = "NEWSIZE";
+	    im->Class = IDCMP_NEWSIZE;
+	    
+	    /* Send GM_LAYOUT to all GA_RelSpecial BOOPSI gadgets */
+	    DoGMLayout(w->FirstGadget, w, NULL, -1, FALSE, IntuitionBase);
+	    break;
+	    
+	case IECLASS_RAWMOUSE:
+	    im->Code	= ie->ie_Code;
+	    im->MouseX	= ie->ie_X;
+	    im->MouseY	= ie->ie_Y;
+	    
+	    ptr = "RAWMOUSE";
+	    D(bug("iih: Rawmouse\n"));
+	    
+	    switch (ie->ie_Code)
+	    {
+	    case SELECTDOWN: {
+		BOOL new_gadget = FALSE;
+		
+		im->Class = IDCMP_MOUSEBUTTONS;
+		ptr = "MOUSEBUTTONS";
+		
+		if (!gadget)
+		{
+		    D(bug("No gadget currently active\n"));
+		    gadget = FindGadget (w, ie->ie_X, ie->ie_Y, gi);
+		    if (gadget)
 		    {
-		    	if (gadget->GadgetType & GTYP_STRGADGET)
-		    	{
+		    	new_gadget = TRUE;
+		    	D(bug("iih: Got new acive gadget\n"));
+		    }	
+		}    
+
+		if (gadget)
+		{
+		    if (gadget->Activation & GACT_IMMEDIATE)
+		    {
+			im->Class	= IDCMP_GADGETDOWN;
+			im->IAddress	= gadget;
+			ptr		= "GADGETDOWN";
+		    }
+
+		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		    case GTYP_BOOLGADGET:
+			if (gadget->Activation & GACT_TOGGLESELECT)
+			    gadget->Flags ^= GFLG_SELECTED;
+			else
+			    gadget->Flags |= GFLG_SELECTED;
+
+			RefreshGList (gadget, w, NULL, 1);
+
+			break;
+
+		    case GTYP_PROPGADGET:
+			HandlePropSelectDown(gadget, w, NULL, ie->ie_X, ie->ie_Y, IntuitionBase);
+			break;
+			    
+		    case GTYP_STRGADGET:
+		        /* If the click was inside the active strgad,
+		    	** then let it update cursor pos,
+		    	** else deactivate stringadget and reuse event.
+			*/
+	
+			if (InsideGadget(w, gadget, ie->ie_X, ie->ie_Y))
+			{
+		    	    UWORD imsgcode;
+	    
+			    HandleStrInput(gadget, gi, ie, &imsgcode, IntuitionBase);
+			}
+			else
+			{
 		    	    gadget->Flags &= ~GFLG_SELECTED;
 		    	    
 		    	    RefreshStrGadget(gadget, w, IntuitionBase);
+		    	    /* Gadget not active anymore */
+		    	    gadget = NULL;
+		    	    reuse_event = TRUE;
 		    	}
-		    }
-		    gadget = newgad;
+			break;
 
-		    if (gadget)
-		    {
-			if (gadget->Activation & GACT_IMMEDIATE)
-			{
-			    im->Class = IDCMP_GADGETDOWN;
-			    im->IAddress = gadget;
-			    ptr       = "GADGETDOWN";
-			}
-
-			switch (gadget->GadgetType & GTYP_GTYPEMASK)
-			{
-			case GTYP_BOOLGADGET:
-			    if (gadget->Activation & GACT_TOGGLESELECT)
-				gadget->Flags ^= GFLG_SELECTED;
-			    else
-				gadget->Flags |= GFLG_SELECTED;
-
-			    RefreshGList (gadget, w, NULL, 1);
-
-			    break;
-
-			case GTYP_PROPGADGET:
-			    HandlePropSelectDown(gadget, w, NULL, xb->x, xb->y, IntuitionBase);
-			    break;
-			    
-			case GTYP_STRGADGET:
-			{
-			    struct InputEvent ie;
-			    UWORD imsgcode;
-			    
-			    ie.ie_Class = IECLASS_RAWMOUSE;
-			    ie.ie_Code	= SELECTDOWN;
-			    ie.ie_position.ie_xy.ie_x = xb->x;
-			    ie.ie_position.ie_xy.ie_y = xb->y;
-			    
-			    HandleStrInput(gadget, gi, &ie, &imsgcode, IntuitionBase);
-			    
-			} break;
-			    
-
-			case GTYP_CUSTOMGADGET: {
-			    struct gpInput gpi;
-			    struct InputEvent ie; /* TODO */
-			    IPTR retval;
-			    ULONG termination;
-
-			    ie.ie_Class = IECLASS_RAWMOUSE;
-			    ie.ie_Code	= SELECTDOWN;
-		    	    gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
+		    case GTYP_CUSTOMGADGET: {
+			struct gpInput gpi;
+			IPTR retval;
+			ULONG termination;
 		    	    
-			    gpi.MethodID	= GM_GOACTIVE;
-			    gpi.gpi_GInfo	= gi;
-			    gpi.gpi_IEvent	= &ie;
-			    gpi.gpi_Termination = &termination;
-			    gpi.gpi_Mouse.X	= xb->x;
-			    gpi.gpi_Mouse.Y	= xb->y;
-			    gpi.gpi_TabletData	= NULL;
+			gpi.MethodID	= ((new_gadget) ? GM_GOACTIVE : GM_HANDLEINPUT);
+			gpi.gpi_GInfo	= gi;
+			gpi.gpi_IEvent	= ie;
+			gpi.gpi_Termination = &termination;
+			gpi.gpi_Mouse.X	= im->MouseX;
+			gpi.gpi_Mouse.Y	= im->MouseY;
+			gpi.gpi_TabletData	= NULL;
 
-			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
 
-			    D(bug("\tProcessing GADGETDOWN\n"));
+			D(bug("iih: Processing custom gadget SELECTDOWN\n"));
 
-			    if (retval & GMR_VERIFY)
+			if (retval != GMR_MEACTIVE)
+			{
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
+
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
 			    {
-				D(bug("GMR_VERIFY gotten\n"));
 				im->Class = IDCMP_GADGETUP;
 				im->IAddress = gadget;
 				ptr	 = "GADGETUP";
@@ -882,154 +1198,231 @@ void intui_ProcessEvents (void)
 			    }
 			    else
 			    {
-				if (retval != GMR_MEACTIVE)
-				{
-				    im->Class = 0L;
-				    gadget = NULL;
-				}
+			    	im->Class = 0; /* Swallow event */
 			    }
+			    gadget = NULL;
+			}
 
-			    break; }
+			break; }
+			
 
-			} /* GadgetType */
-		    } /* Over some gadget ? */
-
-		}break;
-
-		case Button2:
-		    im->Code = MIDDLEDOWN;
-		    break;
-
-		case Button3:
-		    im->Code = MENUDOWN;
-		    break;
-		}
+		    } /* switch (GadgetType) */
+			
+		} /* if (a gadget is active) */
 
 		if (im->Class == IDCMP_MOUSEBUTTONS)
 		    ptr = "MOUSEBUTTONS";
-	    } break;
 
-	    case ButtonRelease: {
-		XButtonEvent * xb = &event.xbutton;
-
+		}break; /* SELECTDOWN */
+	    
+	    case SELECTUP:
 		im->Class = IDCMP_MOUSEBUTTONS;
-		im->Qualifier = StateToQualifier (xb->state);
-		im->MouseX = xb->x;
-		im->MouseY = xb->y;
-
-		switch (xb->button)
-		{
-		case Button1:
-		    im->Code = SELECTUP;
-
-		    if (gadget)
+		ptr = "MOUSEBUTTONS";
+				
+		if (gadget)
+	    	{
+		    int inside = InsideGadget(w,gadget, ie->ie_X, ie->ie_Y);
+		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+    
+		    if (inside && (gadget->Activation & GACT_RELVERIFY))
 		    {
-			int inside = InsideGadget(w,gadget,xb->x,xb->y);
-			int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+			im->Class    = IDCMP_GADGETUP;
+			im->IAddress = gadget;
+			ptr	     = "GADGETUP";
+		    }
 
-			if (inside && (gadget->Activation & GACT_RELVERIFY))
+		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		    case GTYP_BOOLGADGET:
+			if (!(gadget->Activation & GACT_TOGGLESELECT) )
+			    gadget->Flags &= ~GFLG_SELECTED;
+
+			if (selected)
+			    RefreshGList (gadget, w, NULL, 1);
+			gadget = NULL;
+			break;
+
+		    case GTYP_PROPGADGET:
+			HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
+			gadget = NULL;
+			break;
+			
+		    /* String gadgets don't care about SELECTUP */
+
+		    case GTYP_CUSTOMGADGET: {
+			struct gpInput gpi;
+			IPTR retval;
+			ULONG termination;
+			    
+			gpi.MethodID	= GM_HANDLEINPUT;
+			gpi.gpi_GInfo	= gi;
+			gpi.gpi_IEvent	= ie;
+			gpi.gpi_Termination = &termination;
+			gpi.gpi_Mouse.X	= im->MouseX;
+			gpi.gpi_Mouse.Y	= im->MouseY;
+			gpi.gpi_TabletData	= NULL;
+
+			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+				
+			D(bug("iih: Processing custom gadget SELECTUP\n"));
+
+			if (retval != GMR_MEACTIVE)
 			{
-			    im->Class	 = IDCMP_GADGETUP;
-			    im->IAddress = gadget;
-			    ptr 	 = "GADGETUP";
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
+
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    {
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
+				im->Code = termination & 0x0000FFFF;
+			    }
+			    else
+			    {
+			    	im->Class = 0; /* Swallow event */
+			    }
+			    gadget = NULL;
 			}
 
-			switch (gadget->GadgetType & GTYP_GTYPEMASK)
+			break; }
+
+		    } /* switch GadgetType */
+
+		} /* if (a gadget is currently active) */
+
+
+
+		break; /* SELECTUP */
+		
+	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
+	    	struct IntuiMessage *msg, *succ;
+
+	    	im->Class = IDCMP_MOUSEMOVE;
+	    	ptr = "MOUSEMOVE";
+		iihdata->LastMouseX = ie->ie_X;
+		iihdata->LastMouseY = ie->ie_Y;
+	    	
+
+	    	/* Check if there is already a MOUSEMOVE in the msg queue
+	    	** of the task 
+	    	*/
+	    	msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
+
+	    	Forbid ();
+
+	    	while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
+	    	{
+		    if (msg->Class == IDCMP_MOUSEMOVE)
+		    {
+		    	/* TODO allow a number of such messages */
+		    	break;
+		    }
+
+		    msg = succ;
+	    	}
+
+	    	Permit ();
+
+	    	/* If there is, don't add another one */
+	    	if (succ)
+		    break;
+
+
+	    	if (gadget)
+	    	{
+		    int inside = InsideGadget(w,gadget,im->MouseX, im->MouseY);
+		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
+
+		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
+		    {
+		    case GTYP_BOOLGADGET:
+		    	if  (inside != selected)
+		    	{
+		            gadget->Flags ^= GFLG_SELECTED;
+		            RefreshGList (gadget, w, NULL, 1);
+		    	}
+		    	break;
+
+		    case GTYP_PROPGADGET:
+		    	HandlePropMouseMove(gadget
+				,w
+			   	,NULL
+			    	/* Delta movement */
+			    	,ie->ie_X - mpos_x
+			    	,ie->ie_Y - mpos_y
+			    	,IntuitionBase);
+
+		    	break;
+
+		    case GTYP_CUSTOMGADGET: {
+		    	struct gpInput gpi;
+		    	IPTR retval;
+		    	ULONG termination;
+
+		    	gpi.MethodID	= GM_HANDLEINPUT;
+		    	gpi.gpi_GInfo	= gi;
+		    	gpi.gpi_IEvent	= ie;
+		    	gpi.gpi_Termination = &termination;
+		    	gpi.gpi_Mouse.X     = im->MouseX;
+		    	gpi.gpi_Mouse.Y     = im->MouseY;
+		    	gpi.gpi_TabletData  = NULL;
+
+		    	retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
+
+			if (retval != GMR_MEACTIVE)
 			{
-			case GTYP_BOOLGADGET:
-			    if (!(gadget->Activation & GACT_TOGGLESELECT) )
-				gadget->Flags &= ~GFLG_SELECTED;
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
 
-			    if (selected)
-				RefreshGList (gadget, w, NULL, 1);
-			    gadget = NULL;
-			    break;
-
-			case GTYP_PROPGADGET:
-			    HandlePropSelectUp(gadget, w, NULL, IntuitionBase);
-			    gadget = NULL;
-			    break;
-
-			case GTYP_CUSTOMGADGET: {
-			    struct gpInput gpi;
-			    struct InputEvent ie; /* TODO */
-			    IPTR retval;
-			    ULONG termination;
-
-			    ie.ie_Class = IECLASS_RAWMOUSE;
-			    ie.ie_Code	= SELECTUP;
-			    gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
-			    
-			    gpi.MethodID	= GM_HANDLEINPUT;
-			    gpi.gpi_GInfo	= gi;
-			    gpi.gpi_IEvent	= &ie;
-			    gpi.gpi_Termination = &termination;
-			    gpi.gpi_Mouse.X	= xb->x;
-			    gpi.gpi_Mouse.Y	= xb->y;
-			    gpi.gpi_TabletData	= NULL;
-
-			    retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
-
-			    if (retval & GMR_NOREUSE && !(retval & GMR_VERIFY))
-				im->Class = 0L; /* Swallow event */
-
-			    if (retval & GMR_VERIFY)
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    {
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
 				im->Code = termination & 0x0000FFFF;
-				
-			    /* This is a temporary kludge. We should NOT do this
-			    ** if GMR_MEACTIVE is returned. Example of
-			    ** a BOOPSI gadget that stays active after 
-			    ** SELECTUP is strgclass gagdets.
-			    */
+			    }
+			    else
+			    {
+			    	im->Class = 0; /* Swallow event */
+			    }
 			    gadget = NULL;
+			}
 
-			    break; }
 
-			} /* switch GadgetType */
 
-		    } /* if (gadget) */
+		    	break; }
 
-		    break;
+		} /* switch GadgetType */
+	    } /* if (a gadget is currently active) */
 
-		case Button2:
-		    im->Code = MIDDLEUP;
-		    break;
+	    break; }
+	    
+	    } /* switch (im->im_Code)  (what button was pressed ?) */
+	    break;
+	    
+	
+	
+	case IECLASS_RAWKEY:
+	    im->Class	    = IDCMP_RAWKEY;
+	    im->Code	    = ie->ie_Code;
+	    im->Qualifier   = ie->ie_Qualifier;
 
-		case Button3:
-		    im->Code = MENUUP;
-		    break;
-		}
+	    if (!(ie->ie_Code & 0x8000))
+	    {
+	    	ptr = "RAWKEY PRESSED";
 
-		ptr = "MOUSEBUTTONS";
-	    } break;
-
-	    case KeyPress: {
-		XKeyEvent * xk = &event.xkey;
-		ULONG result;
-
-		im->Class = IDCMP_RAWKEY;
-		result = XKeyToAmigaCode(xk);
-		im->Code = xk->keycode;
-		im->Qualifier = result >> 16;
-		
-		D(bug("ipe: RAWKEY Press: gadget=%p\n", gadget));
-		
-		if (gadget)
-		{
-		    /* Both GTYP_STRGADGET and GTYP_CUSTOMGADGET
-		    ** requires a struct InputEvent.
-		    */
-		    
-		    struct InputEvent ie;
-		    ie.ie_Class 	= IECLASS_RAWKEY;
-		    ie.ie_Code		= im->Code;
-		    ie.ie_Qualifier	= im->Qualifier;
+	    
+	    	if (gadget)
+	    	{
 		    
 		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
 		    {
 		    case GTYP_STRGADGET: {
 		    	UWORD imsgcode;
-		    	ULONG ret = HandleStrInput(gadget, gi, &ie, &imsgcode, IntuitionBase);
+		    	ULONG ret = HandleStrInput(gadget, gi, ie, &imsgcode, IntuitionBase);
 		    	if (ret == SGA_END)
 		    	{
 		    	    if (gadget->Activation & GACT_RELVERIFY)
@@ -1038,234 +1431,140 @@ void intui_ProcessEvents (void)
 		    	    	im->Code  = imsgcode;
 		    	    	im->IAddress = gadget;
 		    	    	gadget = NULL;
+		    	    
+		    	    	ptr = "GADGETUP";
 		    	    }
-		    	}
-		    } break;
+		        }
+		    	break; }
 		    	
 		    case GTYP_CUSTOMGADGET: {
 		    	struct gpInput gpi;
-			IPTR retval;
-			ULONG termination;
-
-			XButtonEvent * xb = &event.xbutton;		    	
+		    	IPTR retval;
+		    	ULONG termination;
 			
-			gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
-			gpi.MethodID	    = GM_HANDLEINPUT;
-			gpi.gpi_GInfo	    = gi;
-			gpi.gpi_IEvent	    = &ie;
-			gpi.gpi_Termination = &termination;
-			/* These _should_ be set to suitable values */
-			gpi.gpi_Mouse.X	    = xb->x;
-			gpi.gpi_Mouse.Y	    = xb->y;
-			gpi.gpi_TabletData  = NULL;
+		    	gettimeofday ((struct sys_timeval *)&ie->ie_TimeStamp, NULL);
+		    	gpi.MethodID	    = GM_HANDLEINPUT;
+		    	gpi.gpi_GInfo	    = gi;
+		    	gpi.gpi_IEvent	    = ie;
+		    	gpi.gpi_Termination = &termination;
+		    	gpi.gpi_Mouse.X	    = im->MouseX;
+		    	gpi.gpi_Mouse.Y	    = im->MouseY;
+		    	gpi.gpi_TabletData  = NULL;
 					
-			retval = DoMethodA((Object *)gadget, (Msg)&gpi);
-			if (!(retval & GMR_MEACTIVE))
+		    	retval = DoMethodA((Object *)gadget, (Msg)&gpi);
+
+			if (retval != GMR_MEACTIVE)
 			{
+			    if (retval & GMR_REUSE)
+			    	reuse_event = TRUE;
+
+			    if (    (retval & GMR_VERIFY)
+			    	 && (gadget->Activation & GACT_RELVERIFY))
+			    {
+				im->Class = IDCMP_GADGETUP;
+				im->IAddress = gadget;
+				ptr	 = "GADGETUP";
+				im->Code = termination & 0x0000FFFF;
+			    }
+			    else
+			    {
+			    	im->Class = 0; /* Swallow event */
+			    }
 			    gadget = NULL;
-			    if (retval & GMR_NOREUSE)
-			    	im->Class = 0L;
 			}
-			 
+
 		    
-		    	} break;
-		    }
+		    	break;}  /* case BOOPSI custom gadget type */
+		    	
+		    } /* switch (gadget type) */
 		
-		}
-		
-
-		ptr = NULL;
-	    } break;
-
-	    case KeyRelease: {
-		XKeyEvent * xk = &event.xkey;
-		ULONG result;
-
-		im->Class = IDCMP_RAWKEY;
-		result = XKeyToAmigaCode(xk);
-		im->Code = xk->keycode | 0x8000;
-		im->Qualifier = result >> 16;
-
-		D(bug("ipe: RAWKEY Release: gadget=%p\n", gadget));
-		
-		ptr = NULL;
-	    } break;
-
-	    case MotionNotify: {
-		XMotionEvent * xm = &event.xmotion;
-		struct IntuiMessage *msg, *succ;
-
-		/* Check if there is already a MOUSEMOVE in the msg queue
-		    of the task */
-		msg = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_Head;
-
-		Forbid ();
-
-		while ((succ = (struct IntuiMessage *)msg->ExecMessage.mn_Node.ln_Succ))
-		{
-		    if (msg->Class == IDCMP_MOUSEMOVE)
-		    {
-			/* TODO allow a number of such messages */
-			break;
-		    }
-
-		    msg = succ;
-		}
-
-		Permit ();
-
-		/* If there is, don't add another one */
-		if (succ)
-		    break;
-
-		im->Code = IECODE_NOBUTTON;
-		im->Class = IDCMP_MOUSEMOVE;
-		im->Qualifier = StateToQualifier (xm->state);
-		im->MouseX = xm->x;
-		im->MouseY = xm->y;
-
-		if (gadget)
-		{
-		    int inside = InsideGadget(w,gadget,xm->x,xm->y);
-		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
-
-		    switch (gadget->GadgetType & GTYP_GTYPEMASK)
-		    {
-		    case GTYP_BOOLGADGET:
-			if (inside != selected)
-			{
-			    gadget->Flags ^= GFLG_SELECTED;
-
-			    RefreshGList (gadget, w, NULL, 1);
-			}
-
-			break;
-
-		    case GTYP_PROPGADGET:
-
-			HandlePropMouseMove
-			(
-			    gadget,
-			    w,
-			    NULL,
-			    /* Delta movement */
-			    xm->x - mpos_x,
-			    xm->y - mpos_y,
-			    IntuitionBase
-			);
-
-			break;
-			/* PROPGADGET */
-
-
-		    case GTYP_CUSTOMGADGET: {
-			struct gpInput gpi;
-			struct InputEvent ie; /* TODO */
-			IPTR retval;
-			ULONG termination;
-
-			ie.ie_Class = IECLASS_RAWMOUSE;
-			ie.ie_Code  = IECODE_NOBUTTON;
-			gettimeofday ((struct sys_timeval *)&ie.ie_TimeStamp, NULL);
-			
-			gpi.MethodID	    = GM_HANDLEINPUT;
-			gpi.gpi_GInfo	    = gi;
-			gpi.gpi_IEvent	    = &ie;
-			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = xm->x;
-			gpi.gpi_Mouse.Y     = xm->y;
-			gpi.gpi_TabletData  = NULL;
-
-			retval = DoMethodA ((Object *)gadget, (Msg)&gpi);
-
-			if (retval == GMR_MEACTIVE)
-			{
-			    im->Class = 0L;
-			}
-
-			if (retval & GMR_NOREUSE)
-			    im->Class = 0L; /* Swallow event */
-
-			break; }
-
-		    } /* switch GadgetType */
-		} /* if (gadget) */
-
-		ptr = "MOUSEMOVE";
-	    } break; /* MotioNotify */
-
-	    case EnterNotify: {
-		XCrossingEvent * xc = &event.xcrossing;
-
-		im->Class = IDCMP_ACTIVEWINDOW;
-		im->MouseX = xc->x;
-		im->MouseY = xc->y;
-
-		ptr = "ACTIVEWINDOW";
-	    } break;
-
-	    case LeaveNotify: {
-		XCrossingEvent * xc = &event.xcrossing;
-
-		im->Class = IDCMP_ACTIVEWINDOW;
-		im->MouseX = xc->x;
-		im->MouseY = xc->y;
-
-		ptr = "INACTIVEWINDOW";
-	    } break;
-
-	    default:
-		ptr = NULL;
-	    break;
-	    } /* switch */
-
-	    mpos_x = im->MouseX;
-	    mpos_y = im->MouseY;
-
-	    if (ptr)
-		Dipxe(bug("Msg=%s\n", ptr));
-
-	    if (im->Class)
-	    {
-		if ((im->Class & w->IDCMPFlags) && w->UserPort)
-		{
-		    im->ExecMessage.mn_ReplyPort = intuiReplyPort;
-
-		    lock = LockIBase (0L);
-
-		    w->MoreFlags &= ~EWFLG_DELAYCLOSE;
-
-		    if (w->MoreFlags & EWFLG_CLOSEWINDOW)
-			CloseWindow (w);
-		    else
-		    {
-			gettimeofday ((struct sys_timeval *)&im->Seconds, NULL);
-			PutMsg (w->UserPort, (struct Message *)im);
-			im = NULL;
-			wait ++;
-		    }
-
-		    UnlockIBase (lock);
-		}
-		else
-		    im->Class = 0;
+	    	} /* if (a gadget is currently active) */
 	    }
-	} /* while */
+	    else /* key released */
+	    {
+	    	ptr = "RAWKEY RELEASED";
+	    }	
+	    break; /* case IECLASS_RAWKEY */
 
-	if (im)
-	{
-	    FreeMem (im, sizeof (struct IntuiMessage));
-	    im = NULL;
+	case IECLASS_ACTIVEWINDOW:
+	    im->Class = IDCMP_ACTIVEWINDOW;
+	    ptr = "ACTIVEWINDOW";
+	    break;
+	   
+	case IDCMP_INACTIVEWINDOW:
+	    im->Class = IDCMP_INACTIVEWINDOW;
+	    ptr = "INACTIVEWINDOW";
+	    break;
+
+	default:
+	    ptr = NULL;
+	    break;
+	} /* switch (im->Class) */
+
+	
+	if (ptr)
+	     Dipxe(bug("Msg=%s\n", ptr));
+
+	 if (im->Class)
+	 {
+	    if ((im->Class & w->IDCMPFlags) && w->UserPort)
+	    {
+		im->ExecMessage.mn_ReplyPort = iihdata->IntuiReplyPort;
+
+		lock = LockIBase (0L);
+
+		w->MoreFlags &= ~EWFLG_DELAYCLOSE;
+
+		if (w->MoreFlags & EWFLG_CLOSEWINDOW)
+		    CloseWindow (w);
+		else
+		{
+		    gettimeofday ((struct sys_timeval *)&im->Seconds, NULL);
+		    PutMsg (w->UserPort, (struct Message *)im);
+		    im = NULL;
+		    wait ++;
+		}
+
+		UnlockIBase (lock);
+	    }
+	    else
+		im->Class = 0;
 	}
 
-	Wait (waitmask);
+    } /* for (each event in the chain) */
+    
 
-	/* Empty port */
-	while ((im = (struct IntuiMessage *)GetMsg (intuiReplyPort)))
-	{
+    iihdata->ActiveGadget = gadget;
+
+    /* If InputEvents have been swallowed, there is a free IntuiMessage
+    ** struct (eg. not sent to the apps messageport,
+    ** and we must free it here
+    */
+    
+    if (im)
+    {
+	FreeMem (im, sizeof (struct IntuiMessage));
+	im = NULL;
+    }
+
+    /* Wait for the app to reply. We will only receive on event at a time,
+    ** since input.device has high pri, and will allways be woke up before
+    ** any other app, so we will recieve one event at a time, and have to wait
+    ** for each one.
+    */
+     
+    while (wait)
+    {
+    	Wait (1L << iihdata->IntuiReplyPort->mp_SigBit);
+
+    	/* Empty port */
+    	while ((im = (struct IntuiMessage *)GetMsg (iihdata->IntuiReplyPort)))
+    	{
 	    FreeMem (im, sizeof (struct IntuiMessage));
 	    wait --;
-	}
+    	}
     }
-}
+    
+    ReturnPtr ("IntuiInputHandler", struct InputEvent *, oldchain);
+}				     
 
