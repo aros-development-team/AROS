@@ -135,9 +135,9 @@ void writemccinit(void)
             "\n"
             "\n"
             "/*** Dispatcher *************************************************************/\n"
-            "BOOPSI_DISPATCHER( IPTR, %s_Dispatcher, CLASS, self, message )\n"
+            "BOOPSI_DISPATCHER(IPTR, %s_Dispatcher, CLASS, self, message)\n"
             "{\n"
-            "    switch( message->MethodID )\n"
+            "    switch (message->MethodID)\n"
             "    {\n",
             modulename
         );
@@ -151,7 +151,7 @@ void writemccinit(void)
             fprintf
             (
                 out, 
-                "        case %s: return %s__%s( ", 
+                "        case %s: return %s__%s(", 
                 methlistit->name, modulename, methlistit->name
             );
             
@@ -172,7 +172,7 @@ void writemccinit(void)
         fprintf
         (
             out,
-            "        default: return DoSuperMethodA( CLASS, self, message );\n"
+            "        default: return DoSuperMethodA(CLASS, self, message);\n"
             "    }\n"
             "    \n"
             "    return NULL;\n"
@@ -198,7 +198,7 @@ void writemccinit(void)
         "\n"
         "\n"
         "/*** Library startup and shutdown *******************************************/\n"
-        "AROS_SET_LIBFUNC( MCC_Startup, LIBBASETYPE, LIBBASE )\n"
+        "AROS_SET_LIBFUNC(MCC_Startup, LIBBASETYPE, LIBBASE)\n"
         "{\n"
         "    SysBase = LIBBASE->lh_SysBase;\n"
         "    \n"
@@ -208,22 +208,22 @@ void writemccinit(void)
         "    IntuitionBase = NULL;\n"
         "    MUIMasterBase = NULL;\n"
         "    \n"
-        "    UtilityBase = (struct UtilityBase *) OpenLibrary( \"utility.library\", 0 );\n"
-        "    if( UtilityBase == NULL ) goto error;\n"
+        "    UtilityBase = (struct UtilityBase *) OpenLibrary(\"utility.library\", 0);\n"
+        "    if (UtilityBase == NULL) goto error;\n"
         "    \n"
-        "    DOSBase = (struct DosLibrary *) OpenLibrary( \"dos.library\", 0 );\n"
-        "    if( DOSBase == NULL ) goto error;\n"
+        "    DOSBase = (struct DosLibrary *) OpenLibrary(\"dos.library\", 0);\n"
+        "    if (DOSBase == NULL) goto error;\n"
         "    \n"
-        "    GfxBase = (struct GfxBase *) OpenLibrary( \"graphics.library\", 0 );\n"
-        "    if( GfxBase == NULL ) goto error;\n"
+        "    GfxBase = (struct GfxBase *) OpenLibrary(\"graphics.library\", 0);\n"
+        "    if (GfxBase == NULL) goto error;\n"
         "    \n"
-        "    IntuitionBase = (struct IntuitionBase *) OpenLibrary( \"intuition.library\", 0 );\n"
-        "    if( IntuitionBase == NULL ) goto error;\n"
+        "    IntuitionBase = (struct IntuitionBase *) OpenLibrary(\"intuition.library\", 0);\n"
+        "    if (IntuitionBase == NULL) goto error;\n"
         "    \n"
-        "    MUIMasterBase = OpenLibrary( \"muimaster.library\", 0 );\n"
-        "    if( MUIMasterBase == NULL ) goto error;\n"
+        "    MUIMasterBase = OpenLibrary(\"muimaster.library\", 0);\n"
+        "    if (MUIMasterBase == NULL) goto error;\n"
         "    \n"
-        "    MCC = MUI_CreateCustomClass( (struct Library *) LIBBASE, \"%s\", NULL, ",
+        "    MCC = MUI_CreateCustomClass((struct Library *) LIBBASE, \"%s\", NULL, ",
         superclass
     );
     
@@ -235,35 +235,35 @@ void writemccinit(void)
     fprintf
     (
         out,
-        ", %s_Dispatcher );\n"
-        "    if( MCC == NULL ) goto error;\n"
+        ", %s_Dispatcher);\n"
+        "    if (MCC == NULL) goto error;\n"
         "    \n"
         "    return TRUE;\n"
         "\n"
         "error:\n"
-        "    if( MUIMasterBase != NULL ) CloseLibrary( MUIMasterBase );\n"
-        "    if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );\n"
-        "    if( GfxBase != NULL ) CloseLibrary( (struct Library *) GfxBase );\n"
-        "    if( DOSBase != NULL ) CloseLibrary( (struct Library *) DOSBase );\n"
-        "    if( UtilityBase != NULL ) CloseLibrary( (struct Library *) UtilityBase );\n"
+        "    if (MUIMasterBase != NULL) CloseLibrary(MUIMasterBase);\n"
+        "    if (IntuitionBase != NULL) CloseLibrary((struct Library *) IntuitionBase);\n"
+        "    if (GfxBase != NULL) CloseLibrary((struct Library *) GfxBase);\n"
+        "    if (DOSBase != NULL) CloseLibrary((struct Library *) DOSBase);\n"
+        "    if (UtilityBase != NULL) CloseLibrary((struct Library *) UtilityBase);\n"
         "    \n"
         "    return FALSE;\n"
         "}\n"
         "\n"
-        "AROS_SET_LIBFUNC( MCC_Shutdown, LIBBASETYPE, LIBBASE )\n"
+        "AROS_SET_LIBFUNC(MCC_Shutdown, LIBBASETYPE, LIBBASE)\n"
         "{\n"
-        "    if( MUIMasterBase != NULL ) CloseLibrary( MUIMasterBase );\n"
-        "    if( IntuitionBase != NULL ) CloseLibrary( (struct Library *) IntuitionBase );\n"
-        "    if( GfxBase != NULL ) CloseLibrary( (struct Library *) GfxBase );\n"
-        "    if( DOSBase != NULL ) CloseLibrary( (struct Library *) DOSBase );\n"
-        "    if( UtilityBase != NULL ) CloseLibrary( (struct Library *) UtilityBase );\n"
+        "    if (MUIMasterBase != NULL) CloseLibrary(MUIMasterBase);\n"
+        "    if (IntuitionBase != NULL) CloseLibrary((struct Library *) IntuitionBase);\n"
+        "    if (GfxBase != NULL) CloseLibrary((struct Library *) GfxBase);\n"
+        "    if (DOSBase != NULL) CloseLibrary((struct Library *) DOSBase);\n"
+        "    if (UtilityBase != NULL) CloseLibrary((struct Library *) UtilityBase);\n"
         "    \n"
-        "    MUI_DeleteCustomClass( MCC );\n"
+        "    MUI_DeleteCustomClass(MCC);\n"
         "    return TRUE;\n"
         "}\n"
         "\n"
-        "ADD2INITLIB( MCC_Startup, 0 );\n"
-        "ADD2EXPUNGELIB( MCC_Shutdown, 0 );\n",
+        "ADD2INITLIB(MCC_Startup, 0);\n"
+        "ADD2EXPUNGELIB(MCC_Shutdown, 0);\n",
         modulename            
     );
     
