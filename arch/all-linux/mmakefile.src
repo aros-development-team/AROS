@@ -13,6 +13,8 @@ MM- check : check-exec-unix
 
 #MM- contrib-linux : contrib-complete
 
-#MM- workbench-linux : workbench-unix
+#MM- workbench-linux : \
+#MM      workbench-unix \
+#MM      workbench-libs-oss-unix
 
 %common
