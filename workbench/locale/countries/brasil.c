@@ -17,14 +17,8 @@ struct CountryPrefs brasilPrefs =
     /* Reserved */
     { 0, 0, 0, 0 },
 
-    /* The country codes in the past have been rather inconsistant,
-       sometimes they are 1 character, 2 chars or 3. It would be nice
-       to have some consistency. Maybe use the 3 character name from
-       ISO 3166?
-    */
-
-    /* Country code, telephone code, measuring (system BRZ = ?)*/
-    MAKE_ID('B','R','Z',0), 55, MS_ISO,
+    /* Country code (licence plate number), telephone code, measuring (system BRZ = ?)*/
+    MAKE_ID('B','R',0,0), 55, MS_ISO,
 
     /* Date time format (dd de mmm de yyyy - h:m = ?), date format (dd de mmm de yyyy =?), time format */
     "%A %B %e de %Y - %H:%M",
@@ -59,7 +53,7 @@ struct CountryPrefs brasilPrefs =
     2, 2,
 
     /* Currency symbol, Small currency symbol */
-    "Real $", "Centavos",
+    "R$", "Centavos",
 
     /* Int CS, this is the ISO 4217 symbol, followed by the character to
        separate that symbol from the rest of the money. (\x00 for none).
