@@ -103,10 +103,12 @@ void SetWindowPointer( struct Window * window, ULONG tag1, ...);
 #endif
 
 /* Locale */
+#ifndef OpenCatalog
 struct Catalog *OpenCatalog(	struct Locale * locale,
 				STRPTR name,
 				ULONG tag1,
 				...);
+#endif
 
 /* Pools */
 APTR LibCreatePool (ULONG requirements, ULONG puddleSize, ULONG threshSize);
