@@ -14,15 +14,41 @@ BEGIN {
 
 		for (t=3; t<=NF; t++)
 		{
-		    arg[cmd,t-2] = $t;
+		    n = split($t,opt,"=");
+#print "n="n " opt[1]="opt[1] " opt[2]="opt[2]
+		    arg[cmd,t-2] = opt[1];
+
+		    if (n == 2)
+		    {
+			n = index(opt[2],"/");
+			if (!n)
+			{
+			    default[cmd,t-2]=opt[2];
+			    flags[cmd,t-2]="";
+			}
+			else
+			{
+			    default[cmd,t-2]=substr(opt[2],1,n-1);
+			    flags[cmd,t-2]=toupper(substr(opt[2],n+1));
+			}
+		    }
+		    else
+		    {
+			default[cmd,t-2]="";
+			flags[cmd,t-2]="";
+		    }
+
+		    gsub("/","",flags[cmd,t-2]);
 		}
 
 		narg[cmd] = NF-2;
 
-#printf ("Args=%d\n", NF-2);
-#for (t=1; t<=NF-2; t++)
-#    printf ("Arg[%d] = %s\n", t, arg[cmd,t]);
-
+#printf ("Args=%d\n", narg[cmd]);
+#for (t=1; t<=narg[cmd]; t++)
+#{
+#    printf ("Arg[%d] = %s default=%s flags=%s\n", t, arg[cmd,t],
+#	 default[cmd,t], flags[cmd,t]);
+#}
 		t = 1;
 
 		while ((getline < file) > 0)
@@ -41,6 +67,8 @@ BEGIN {
 	    }
 	}
     }
+
+#    exit (0);
 }
 /%[a-zA-Z_]+/ {
     if (match($0,/%[a-zA-Z_]+/))
@@ -55,13 +83,55 @@ BEGIN {
 #print "Argstr="argstr
 	    sub("^[ \t]+","",argstr);
 #print "Argstr2="argstr
-	    nargs=split(argstr,args);
+	    nargs=split(argstr,userargs);
 #print "nargs="nargs
 
 	    # Fill in defaults
-	    for (t=nargs; t<=narg[name]; t++)
+	    for (t=1; t<=narg[name]; t++)
 	    {
-		args[t] = arg[name,t];
+		args[t] = default[name,t];
+	    }
+
+	    argc = 1;
+
+	    for (t=1; t<=nargs; t++)
+	    {
+		n = split(userargs[t],opt,"=");
+
+		if (n==1)
+		{
+		    args[argc] = userargs[t];
+
+		    if (index(flags[name,argc],"M"))
+		    {
+			for (t++; t<=nargs; t++)
+			{
+			    args[argc] = args[argc] " " userargs[t];
+			}
+		    }
+
+		    argc ++;
+		}
+		else
+		{
+		    for (x=1; x<narg[name]; x++)
+		    {
+			if (opt[1] == arg[name,x])
+			{
+			    args[x] = opt[2];
+
+			    if (index(flags[name,x],"M"))
+			    {
+				for (t++; t<=nargs; t++)
+				{
+				    args[x] = args[x] " " userargs[t];
+				}
+			    }
+
+			    break;
+			}
+		    }
+		}
 	    }
 
 	    if (narg[name] > nargs)
@@ -78,9 +148,9 @@ BEGIN {
 		str=body[name,t];
 #printf ("Body[%d] = %s\n", t, body[name,t]);
 
-		for (a=1; a<=10; a++)
+		for (a=1; a<=nargs; a++)
 		{
-		    gsub("%"a,args[a],str);
+		    gsub("%[(]"arg[name,a]"[)]",args[a],str);
 		}
 
 		print str

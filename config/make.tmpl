@@ -1,38 +1,106 @@
-%define mkdir_q
-	@if [ ! -d %1 ]; then $(MKDIR) %1 ; else true ; fi
+# GNU Make automatic variables
+# $@ current target
+# $< First dependency
+# $? All newer dependencies
+# $^ All dependencies
+# $* The stem (ie. target is dir/a.foo.b and the pattern is
+#    a.%.b, then the stem is dir/foo)
+
+# Create one directory without any output
+%define mkdir_q dir=.
+	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
 %end
 
-%define assemble_q $< $@ $*.err $(AFLAGS)
-	@echo "Assembling $(CURDIR)/%1..."
-	@$(AS) %4 -c %1 -o %2 2>&1|tee %3
-	@if test ! -s %3; then rm %3 ; else true ; fi
+# Create several directories without any output
+%define mkdirs_q dirs=/M
+	@for dir in %(dirs) ; do \
+	    if [ ! -d $$dir ]; then $(MKDIR) $$dir ; else true ; fi ; \
+	done
 %end
 
-%define compile_q $< $@ $*.err $(CFLAGS)
-	@echo "Compiling $(CURDIR)/%1..."
-	@$(CC) %4 -c %1 -o %2 2>&1|tee %3
-	@if test ! -s %3; then rm %3 ; else true ; fi
+# Assemble the file %(from) to %(to) with %(cmd). Write any errors to %(err)
+# and use the options in %(opt).
+%define assemble_q cmd=$(AS) opt=$(AFLAGS) from=$< to=$@ err=$*.err
+	@$(ECHO) "Assembling $(CURDIR)/%(from)..."
+	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
+	@if test ! -s %(err); then rm %(err) ; else true ; fi
 %end
 
-%define mkdepend_q $< $@ $(@D)
-	@if [ ! -d %3 ]; then $(MKDIR) %3 ; else true ; fi
-	@echo "Makedepend $(CURDIR)/%1..."
-	@$(MKDEPEND) -f- -p%3/ -- $(CFLAGS) -- %1 > %2
+# Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
+# and use the options in %(opt).
+%define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ err=$*.err
+	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
+	@%(cmd) %(opt) -c %(from) -o %(to) 2>&1|tee %(err)
+	@if test ! -s %(err); then rm %(err) ; else true ; fi
 %end
 
-%define include_deps $(DEPS)
+%define link_q cmd=$(CC) opt=$(ILDFLAGS) startup=$(STARTUP) from=$< to=$@ err=$(@F)-x.err libs=$(LIBS)
+	@$(ECHO) "Linking %(to)..."
+	@%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs) 2>&1|tee %(err)
+	@if test ! -s %(err); then rm %(err) ; else true ; fi
+%end
+
+# Create the library
+%define mklib_q ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJS)
+	@$(ECHO) "Creating library %(to)..."
+	@%(ar) %(to) %(from)
+	@%(ranlib) %(to)
+%end
+
+# Create the dependency file %(to) for %(from) in the directory %(dir)
+%define mkdepend_q flags=$(CFLAGS) from=$< to=$@ dir=$(@D) opt=
+	@if [ ! -d %(dir) ]; then $(MKDIR) %(dir) ; else true ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/%(from)..."
+	@$(MKDEPEND) -f- -p%(dir)/ %(opt) -- %(flags) -- %(from) > %(to)
+%end
+
+# Add section with all necessary libs and dependencies for linking
+%define define_libs prelibs= postlibs= deplibs=
+STARTUP = $(LIBDIR)/startup.o
+LIBS = -L$(LIBDIR) %(prelibs) -lamiga -larossupport -larosc $(postlibs)
+DEPLIBS = $(LIBDIR)/libamiga.a $(LIBDIR)/libarossupport.a $(STARTUP) \
+	$(LIBDIR)/libarosc.a %(deplibs)
+%end
+
+# Prepare creation of a shared lib
+%define prepare_shlib lib=dummy shflag=$(SHARED_DUMMY)
+OBJDIR=$(OSGENDIR)/%(lib)
+ifeq ("%(shflag)","yes")
+LIB=$(LIBDIR)/lib%(lib).so
+RMLIB=$(LIBDIR)/lib%(lib).a
+AR=$(SHARED_AR)
+RANLIB=true
+else
+LIB=$(LIBDIR)/lib%(lib).a
+RMLIB=$(LIBDIR)/lib%(lib).so
+endif
+%end
+
+# Generate function table
+%define mkfunctable_q lib=dummy from=$^ to=$@
+	@echo "Regenerating $(to)..."
+	@gawk -f $(TOP)/scripts/makefunctable.awk \
+	    --assign lib="%(lib)" %(from)
+%end
+
+# Include the dependency files and add some internal rules
+%define include_deps deps=$(DEPS)
+# Also check if the makefile itself must be remade
 all : makefile
 
+# Remake makefile
 makefile : makefile.src $(TOP)/scripts/genmf.gawk \
 	    $(TOP)/config/make.tmpl
-	@echo "Regenerating makefile..."
-	@mv makefile makefile.bak
-	@gawk -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
-	    makefile.src > makefile
+	@$(ECHO) "Regenerating makefile..."
+	@$(MV) $@ $@.bak
+	@$(AWK) -f $(TOP)/scripts/genmf.gawk --assign TOP="$(TOP)" \
+	    $< > $@
 
+# Include these files but only if the current target is neither
+# setup nor clean.
 ifneq ("$(TARGET)","clean")
 ifneq ("$(TARGET)","setup")
-include %1 %2 %3 %4 %5
+include %(deps)
 endif
 endif
 %end
