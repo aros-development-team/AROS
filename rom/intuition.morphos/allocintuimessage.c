@@ -50,7 +50,6 @@ AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
     struct IntuiMessage *msg;
 
     ASSERT_VALID_PTR(window);
-
     SANITY_CHECKR(window,0)
 
     if ((msg = AllocPooled(GetPrivIBase(IntuitionBase)->IDCMPPool,sizeof(struct IntIntuiMessage))))
@@ -59,7 +58,7 @@ AROS_LH1(struct IntuiMessage *, AllocIntuiMessage,
 
         msg->ExecMessage.mn_Node.ln_Type = NT_MESSAGE;
         msg->ExecMessage.mn_Length       = sizeof(struct ExtIntuiMessage);
-        msg->ExecMessage.mn_ReplyPort    = window->WindowPort;
+        msg->ExecMessage.mn_ReplyPort    = window ? window->WindowPort : GetPrivIBase(IntuitionBase)->IntuiReplyPort;
 
         msg->IDCMPWindow         = window;
     }
