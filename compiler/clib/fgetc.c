@@ -67,12 +67,18 @@
 
     if (c == EOF)
     {
-	errno = IoErr2errno (IoErr ());
+	c = IoErr ();
 
-	if (errno)
+	if (c)
+	{
+	    errno = IoErr2errno (c);
+
 	    stream->flags |= _STDIO_FILEFLAG_ERROR;
+	}
 	else
 	    stream->flags |= _STDIO_FILEFLAG_EOF;
+
+	c = EOF;
     }
 
     return c;
