@@ -48,11 +48,23 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
-    
-    rectangle->MinX = 0;
-    rectangle->MinY = 0;
-    rectangle->MaxX = icon->do_Gadget.Width - 1;
-    rectangle->MaxY = icon->do_Gadget.Height - 1;
+
+    struct NativeIcon *nativeicon;
+
+    nativeicon = GetNativeIcon(icon, LB(IconBase));
+    if (nativeicon && nativeicon->icon35.img1.imagedata)
+    {
+	rectangle->MinX = 0;
+	rectangle->MinY = 0;
+	rectangle->MaxX = nativeicon->icon35.width - 1;
+	rectangle->MaxY = nativeicon->icon35.height - 1;
+    } else
+    {
+	rectangle->MinX = 0;
+	rectangle->MinY = 0;
+	rectangle->MaxX = icon->do_Gadget.Width - 1;
+	rectangle->MaxY = icon->do_Gadget.Height - 1;
+    }
 
 #warning GetIconRectangleA() is only very limited implemented
 
