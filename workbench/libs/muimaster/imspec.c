@@ -478,27 +478,36 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	case IST_BRUSH:
 	{
 	    int i;
-        
+
 	    for (i = 0; i < 2; i++)
 	    {
 		if (spec->u.brush.filename[i])
 		{
-		    int size;
-		    STRPTR fullpath;
+                    spec->u.brush.dt[i] = dt_load_picture
+		    (
+			spec->u.brush.filename[i], mri->mri_Screen
+		    );
 
-		    size = strlen(IMSPEC_EXTERNAL_PREFIX)
-			+ strlen(spec->u.brush.filename[i]) + 1;
-		    fullpath = (STRPTR)AllocVec(size, MEMF_ANY);
-		    if (fullpath != NULL)
+		    if (!spec->u.brush.dt[i] &&  !strchr(spec->u.brush.filename[i], ':'))
 		    {
-			strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
-			strcat(fullpath, spec->u.brush.filename[i]);
-			fullpath[size - 1] = 0;
-                        spec->u.brush.dt[i] = dt_load_picture
-			(
-			    fullpath, mri->mri_Screen
-			);
-			FreeVec(fullpath);
+ 		        int size;
+			STRPTR fullpath;
+
+		        size = strlen(IMSPEC_EXTERNAL_PREFIX)
+			    + strlen(spec->u.brush.filename[i]) + 1;
+		        fullpath = (STRPTR)AllocVec(size, MEMF_ANY);
+
+		        if (fullpath != NULL)
+		        {
+			    strcpy(fullpath, IMSPEC_EXTERNAL_PREFIX);
+			    strcat(fullpath, spec->u.brush.filename[i]);
+			    fullpath[size - 1] = 0;
+                            spec->u.brush.dt[i] = dt_load_picture
+			    (
+			        fullpath, mri->mri_Screen
+			    );
+			    FreeVec(fullpath);
+		        }
 		    }
 		}
 		else
@@ -508,7 +517,7 @@ struct MUI_ImageSpec_intern *zune_imspec_setup(IPTR s, struct MUI_RenderInfo *mr
 	    }
 	}
 	break;
-            
+
 	case IST_BITMAP:
 	    if (spec->u.bitmap.filename)
 	    {
@@ -843,4 +852,3 @@ void zune_image_spec_free(CONST_STRPTR spec)
 {
     if (spec) FreeVec((APTR)spec);
 }
-
