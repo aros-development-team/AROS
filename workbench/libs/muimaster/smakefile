@@ -101,7 +101,7 @@ NLISTOBJS= \
 NLISTVIEWOBJS= \
   //classes/nlist/NListview_mcc/NListview.o
 
-all: dirs all.gst test
+all: dirs all.gst test wb
 
 dirs:
   execute  <<
@@ -342,6 +342,9 @@ objs/classes/prop.o: classes/prop.c
 objs/test.o: test.c
   sc $(CFLAGS) $(CLASSESDIRS) test.c objname=$@
 
+objs/wb.o: //test/wb.c
+  sc $(CFLAGS) $(CLASSESDIRS) //test/wb.c objname=$@
+
 muimaster.lib: $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
   -delete muimaster.lib
   oml muimaster.lib A $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS) #$(NLISTOBJS) ${NLISTVIEWOBJS)
@@ -351,6 +354,11 @@ test: objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 objs/test.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 #//classes/nlist/NListview_mcc/nlistview.mcc.lib
 #//classes/nlist/NList_mcc/nlist.mcc.lib
+<
+
+wb: objs/wb.o  $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
+  sc link lib lib:debug.lib to wb with <<
+objs/wb.o $(SUPPORTOBJS) $(LIBOBJS) $(CLASSESOBJS)
 <
 
 demos: muimaster.lib
