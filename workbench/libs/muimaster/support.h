@@ -72,6 +72,7 @@ char *StrDup(char *x);
 #endif
 
 ULONG DoSetupMethod(Object *obj, struct MUI_RenderInfo *info);
+IPTR xget(Object *obj, Tag attr);
 APTR AllocVecPooled (APTR pool, ULONG memsize);
 void FreeVecPooled (APTR pool, APTR mem);
 

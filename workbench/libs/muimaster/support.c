@@ -285,6 +285,12 @@ ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
   return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
+IPTR xget(Object *obj, Tag attr)
+{
+  IPTR storage;
+  GetAttr(attr, obj, &storage);
+  return storage;
+}
 
 /**************************************************************************
  Call the Setup Method of an given object, but before set the renderinfo
