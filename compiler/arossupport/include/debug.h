@@ -7,9 +7,13 @@
 #ifndef CLIB_AROS_PROTOS_H
 #   include <proto/arossupport.h>
 #endif
+#ifndef PROTO_EXEC_H
+#   include <proto/exec.h> /* For FindTask() */
+#endif
 #ifndef EXEC_TASKS_H
 #   include <exec/tasks.h>
 #endif
+
 
 #ifndef DEBUG
 #   define DEBUG 0
@@ -40,6 +44,10 @@
 
 #if SDEBUG
 
+#   ifndef SDEBUG_INDENT
+#	define SDEBUG_INDENT 2
+#   endif
+
 /* This is some new macros for making debug output more readable,
 ** by indenting for each functioncall made.
 ** Usage: Call the SDInit() macro before anything else in your main().
@@ -56,7 +64,7 @@
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
    	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); \
-   	((ULONG)sd_task->tc_UserData) ++;		} \
+   	((ULONG)sd_task->tc_UserData) += SDEBUG_INDENT;		} \
 	x
 
 /* User macro. Add into start of your main() routine */
@@ -74,7 +82,7 @@
 #define ExitFunc { 				\
 	struct Task *sd_task = FindTask(NULL);	\
    	int sd_spaceswritten;					\
-   	((ULONG)sd_task->tc_UserData) --;		\
+   	((ULONG)sd_task->tc_UserData) -= SDEBUG_INDENT;		\
    	for (sd_spaceswritten = 0; sd_spaceswritten < (ULONG)sd_task->tc_UserData; sd_spaceswritten ++) kprintf(" "); } 
 
 
