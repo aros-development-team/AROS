@@ -55,17 +55,17 @@ AROS_SLIB_ENTRY(Switch,Exec):
 	/* call switch in supervisor mode
 	   this is necessary to determine if the current context is user or
 	   supervisor mode */
-	movel	a5,-(sp)
-	movel	#switch,a5
+	move.l	a5,-(sp)
+	move.l	#switch,a5
 	jsr	Supervisor(a6)
-	movel	(sp)+,a5
+	move.l	(sp)+,a5
 	rts
 
 switch:
 	/* test if called from supervisor mode
 	   (supervisor bit is bit 8+5 of sr when calling Switch() ) */
 	btst	#5,(sp)
-	jeq	nosup
+	beq	nosup
 
 	/* called from supervisor mode (grrrr)
 	   since I can only Dispatch() when falling down to user mode I
@@ -75,26 +75,26 @@ end:	rte
 
 	/* Called from user mode
 	   Always disable interrupts when testing task lists */
-nosup:	movew	#0x2700,sr
+nosup:	move.w	#0x2700,sr
 
 	/* Preserve scratch registers */
-	moveml	d0/d1/a0/a1,-(sp)
+	movem.l	d0/d1/a0/a1,-(sp)
 
 	/* If not in state TS_RUN the current task is part of one of the
 	   task lists. */
-	movel	ThisTask(a6),a1
-	cmpb	#TS_RUN,tc_State(a1)
-	jne	disp
+	move.l	ThisTask(a6),a1
+	cmp.b	#TS_RUN,tc_State(a1)
+	bne	disp
 
 	/* If TB_EXCEPT is not set... */
 	btst	#TB_EXCEPT,tc_Flags(a1)
-	jne	disp
+	bne	disp
 
 	/* ...Move task to the ready list */
-	moveb	#TS_READY,tc_State(a1)
-	leal	TaskReady(a6),a0
+	move.b	#TS_READY,tc_State(a1)
+	lea.l	TaskReady(a6),a0
 	jsr	Enqueue(a6)
 
 	/* dispatch */
-disp:	moveml	(sp)+,d0/d1/a0/a1
+disp:	movem.l	(sp)+,d0/d1/a0/a1
 	jmp	Dispatch(a6)
