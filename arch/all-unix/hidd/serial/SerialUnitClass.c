@@ -33,6 +33,8 @@
 #include <hidd/unixio.h>
 
 #include <devices/serial.h>
+#include <intuition/preferences.h>
+
 
 #include "serial_intern.h"
 #undef timeval
@@ -47,8 +49,9 @@ void serialunit_receive_data();
 void serialunit_write_more_data();
 
 /* Some utility functions */
-void settermios(struct HIDDSerialUnitData * data);
-
+static void settermios(struct HIDDSerialUnitData * data);
+static void adapt_termios(struct termios * termios,
+                          struct Preferences * prefs);
 
 char * unitname[] =
 {
@@ -118,26 +121,29 @@ static OOP_Object *serialunit_new(OOP_Class *cl, OOP_Object *obj, struct pRoot_N
     {
       struct IntuitionBase * IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library",0);
 
-      if (NULL != IntuitionBase) {
-          struct Preferences prefs;
-          GetPrefs(&prefs,sizeof(prefs));
-          data->baudrate       = prefs.BaudRate;
-          CloseLibrary((struct Library *)IntuitionBase);
-      } else {
-//          data->baudrate       = 
-      }
       /*
       ** Configure the tty driver
       */
       tcgetattr(data->filedescriptor, &data->orig_termios);
       tcgetattr(data->filedescriptor, &_termios); 
       cfmakeraw(&_termios);
-      D(bug("Setting baudrate to %d.\n",data->baudrate));
-      cfsetspeed(&_termios, data->baudrate);
 
-/* !!! untested
-      _termios.c_iflag |= (IXON|IXOFF);
-*/
+      /* 
+       * Get the preferences information from intuition library.
+       * If intuition could not be opened (?) then I will just
+       * use the default termios.
+       */
+      if (NULL != IntuitionBase) {
+        struct Preferences prefs;
+        GetPrefs(&prefs,sizeof(prefs));
+        data->baudrate       = prefs.BaudRate;
+        adapt_termios(&_termios, &prefs);
+        CloseLibrary((struct Library *)IntuitionBase);
+      } else {
+//          data->baudrate       = 
+      }
+      D(bug("Setting baudrate to %d.\n",data->baudrate));
+
       if (tcsetattr(data->filedescriptor, TCSANOW, &_termios) >=0)
       {
         data->replyport_read = AllocMem(sizeof(struct MsgPort), MEMF_PUBLIC|MEMF_CLEAR);
@@ -375,15 +381,16 @@ ULONG serialunit_setbaudrate(OOP_Class *cl, OOP_Object *o, struct pHidd_SerialUn
       {
         struct termios _termios;
         tcgetattr(data->filedescriptor, &_termios); 
-        cfsetspeed(&_termios, data->baudrate);
+        cfsetspeed(&_termios, msg->baudrate);
 
-        if (tcsetattr(data->filedescriptor, TCSADRAIN, &_termios) <0)
+        if (tcsetattr(data->filedescriptor, TCSANOW, &_termios) <0)
         {
-          D(bug("Failed to set to new baudrate"));
+          D(bug("Failed to set to new baudrate %d\n",msg->baudrate));
         }
         else
         {
-          D(bug("Adjusted to new baudrate!\n"));
+          data->baudrate = msg->baudrate;
+          D(bug("Adjusted to new baudrate %d!\n",msg->baudrate));
           valid = TRUE;
         }
       }
@@ -720,7 +727,7 @@ void free_serialunitclass(struct class_static_data *csd)
 
 /**************************************************************/
 
-void settermios(struct HIDDSerialUnitData * data)
+static void settermios(struct HIDDSerialUnitData * data)
 {
 
   struct termios _termios;
@@ -755,4 +762,87 @@ void settermios(struct HIDDSerialUnitData * data)
 //    D(bug("Adjusted to new termios!\n"));
   }
 
-}
+} /* settermios */
+
+/**************************************************************/
+
+/*
+ * Adapt the termios structure to the preferences
+ */
+static void adapt_termios(struct termios * termios,
+                          struct Preferences * prefs)
+{
+	cfmakeraw(termios);
+	/*
+	 * Parity.
+	 */
+	termios->c_cflag &= ~(PARENB|PARODD);
+	switch ((prefs->SerParShk >> 4) & 0x0f) {
+		case SPARITY_NONE:
+			termios->c_cflag &= ~(PARENB|PARODD);
+		break;
+		
+		case SPARITY_EVEN:
+			termios->c_cflag |= PARENB;
+		break;
+		
+		case SPARITY_ODD:
+			termios->c_cflag |= (PARODD|PARENB);
+		break;
+
+		case SPARITY_MARK:
+		case SPARITY_SPACE:
+		default:
+	}
+	
+	/*
+	 * Bit per character 
+	 */
+	termios->c_cflag &= ~CSIZE;
+	switch ((prefs->SerRWBits & 0x0f)) {
+		default: /* 8 bit */
+		case 0:
+			termios->c_cflag |= CS8;
+		break;
+		
+		case 1: /* 7 bit */
+			termios->c_cflag |= CS7;
+		break;
+		
+		case 2: /* 6 bit */
+			termios->c_cflag |= CS6;
+		break;
+		
+		case 3: /* 5 bit */
+			termios->c_cflag |= CS5;
+		break;
+	}
+
+	/*
+	 * 2 stop bits ? default is '1'.
+	 */
+	if (1 == (prefs->SerStopBuf >> 4))
+		termios->c_cflag |= CSTOPB;
+	else
+		termios->c_cflag &= ~CSTOPB;
+	
+	/*
+	 * Handshake to be used.
+	 */
+	termios->c_iflag &= ~(IXON|IXOFF);
+	termios->c_cflag &= ~CRTSCTS;
+	switch((prefs->SerParShk & 0x0f)) {
+		case SHSHAKE_XON:
+			termios->c_iflag |= (IXON|IXOFF);
+		break;
+		
+		case SHSHAKE_RTS:
+			termios->c_cflag |= CRTSCTS;
+		break;
+		
+		default:
+	}
+
+	cfsetspeed(termios, prefs->BaudRate);
+	
+} /* adapt_termios */
