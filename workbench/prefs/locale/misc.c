@@ -146,14 +146,24 @@ struct Node *FindListNode(struct List *list, WORD which)
 void SortInNode(struct List *list, struct Node *node)
 {
     struct Node *sort, *prev = NULL;
+    struct Locale *loc;
+
+    loc = OpenLocale(NULL);
 
     ForeachNode(list, sort)
     {
-	if (Stricmp(node->ln_Name, sort->ln_Name) < 0) break;
+        if (StrnCmp(loc,
+                node->ln_Name, sort->ln_Name,
+                strlen(node->ln_Name), SC_COLLATE2)
+            < 0)
+        {
+            break;
+        }
 	prev = sort;
     }
 
     Insert(list, node, prev);
+    CloseLocale(loc);
 }
 
 /*********************************************************************************************/
