@@ -4522,7 +4522,7 @@ static ULONG wpa_render(APTR wpar_data
     array = wpard->array + wpard->modulo * srcy + wpard->bppix * srcx;
     
     HIDD_BM_PutImage(dstbm_obj
-    	, dst_gc, wpard->array
+    	, dst_gc, array
 	, wpard->modulo
 	, x1, y1
 	, width, height
@@ -4559,7 +4559,7 @@ static ULONG rpa_render(APTR rpar_data
     array = rpard->array + rpard->modulo * srcy + rpard->bppix * srcx;
     
     HIDD_BM_GetImage(dstbm_obj
-    	, rpard->array
+    	, array
 	, rpard->modulo
 	, x1, y1
 	, width, height
@@ -4952,7 +4952,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
     GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
-    start_offset = srcy * srcmod + srcx * bppix;
+    start_offset = ((ULONG)srcy) * srcmod + srcx * bppix;
         
     wpard.array	 = ((UBYTE *)src) + start_offset;
     wpard.pixfmt = srcfmt_hidd;
@@ -5025,7 +5025,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
     GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
-    start_offset = srcy * dstmod + srcx * bppix;
+    start_offset = ((ULONG)srcy) * dstmod + srcx * bppix;
         
     rpard.array	 = ((UBYTE *)dst) + start_offset;
     rpard.pixfmt = dstfmt_hidd;
