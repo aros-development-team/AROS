@@ -415,6 +415,7 @@ struct IFS_RELABEL
 #define FMF_NONBLOCK (1L<<7)  /* Don't block Open() in case it would
                                  and return an error in case Write()/Read()
 				 would block */
+#define FMF_APPEND   (1L<<8)  /* Every write will happen always at the end of the file */
 
 #define FMF_AMIGADOS (1L<<9) /* Identifies the old AmigaDOS modes */
 #define FMF_MODE_OLDFILE   (FMF_AMIGADOS | FMF_WRITE | FMF_READ)
