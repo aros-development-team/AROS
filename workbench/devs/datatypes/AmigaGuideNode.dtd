@@ -1,0 +1,8 @@
+Name=AmigaGuideNode
+BaseName=amigaguidenode
+Pattern=#?
+Mask=0x40 'n' 'o' 'd' 'e'
+GroupID=text
+ID=amig
+Flags=DTF_ASCII
+Priority=0

@@ -5,7 +5,7 @@ include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(AROS_DEVS)/DataTypes
 FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP JPEG PNG ELF ELF_EXE \
-		   8SVX HTML
+		   8SVX HTML AmigaGuide AmigaGuideNode AmigaGuideMOS
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM- workbench-devs-complete : workbench-devs-datatypes
