@@ -18,6 +18,8 @@ struct IIHData
     struct GadgetInfo		GadgetInfo;
     WORD			LastMouseX;
     WORD			LastMouseY;
+    WORD			DeltaMouseX;
+    WORD			DeltaMouseY;
     UWORD			ActQualifier;
 };
 
