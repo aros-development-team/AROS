@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 OBJDIR=$(GENDIR)/compiler/arossupport
 
 FILES = calcchecksum kprintf nastyfreemem \
-	purify removeslist debugmem rt \
+	purify removeslist debugmem \
 	_kprintf hexdump \
 	freestruct \
 	readbyte \
@@ -24,7 +24,11 @@ FILES = calcchecksum kprintf nastyfreemem \
 	writestruct \
 	writeword \
 	strrncasecmp \
-	rawputchars
+	rawputchars \
+	rt \
+	rt_exec \
+	rt_dos \
+	rt_intuition \
 
 DEPS = $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
 
@@ -49,9 +53,6 @@ make-dirs :
 clean::
 	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libarossupport.a
 
-$(OBJDIR)/%.o: %.c
-	%compile_q
-
 CFLAGS2 = $(CFLAGS) -I$(TOP)/rom/exec
 
 $(OBJDIR)/kprintf.o: kprintf.c
@@ -63,11 +64,14 @@ $(OBJDIR)/rawputchars.o: rawputchars.c
 $(OBJDIR)/_kprintf.o: _kprintf.c
 	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
 
+$(OBJDIR)/rt%.o: rt%.c
+	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
+
 $(OBJDIR)/rt.o: rt.c
 	%compile_q cmd=$(SYS_CC) opt=$(CFLAGS2)
 
-$(OBJDIR)/rt_stubs.o: rt_stubs.s
-	%assemble_q cmd=$(SYS_AS)
+$(OBJDIR)/%.o: %.c
+	%compile_q
 
 OBJS = $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 
