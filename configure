@@ -17,7 +17,7 @@ ILDFLAGS="-nostartfiles -nostdlib"
 case "$type" in
 "Linux" )
 	CC="gcc"
-	COMMON_CFLAGS="-Wall -g"
+	COMMON_CFLAGS="-Wall -g -O0"
 	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
 	ARCH="linux"
 	KERNEL="i386-emul"
