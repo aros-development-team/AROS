@@ -76,6 +76,19 @@ int VARARGS68K SPrintf(char *buf, const char *fmt, ...);
 ASM ULONG HookEntry(REG(a0, struct Hook *hook),REG(a2, APTR obj), REG(a1, APTR msg));
 #endif
 
+/*** OS4 Exec Interface support *********************************************/
+#ifdef __amigaos4__
+#define EXEC_INTERFACE_DECLARE(x) x
+#define EXEC_INTERFACE_GET_MAIN(interface,libbase) (interface = (void*)GetInterface(libbase,"main",1,NULL))
+#define EXEC_INTERFACE_DROP(interface) DropInterface((struct Interface*)interface)
+#define EXEC_INTERFACE_ASSIGN(a,b) (a = b)
+#else
+#define EXEC_INTERFACE_DECLARE(x)
+#define EXEC_INTERFACE_GET_MAIN(interface,libbase) 1
+#define EXEC_INTERFACE_DROP(interface)
+#define EXEC_INTERFACE_ASSIGN(a,b)
+#endif
+
 /*** AROS Exec extensions ***************************************************/
 #ifndef __amigaos4__
 APTR AllocVecPooled(APTR pool, ULONG size);
