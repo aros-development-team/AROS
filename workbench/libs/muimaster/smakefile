@@ -66,6 +66,7 @@ CLASSESOBJS= \
   objs/classes/rectangle.o \
   objs/classes/register.o \
   objs/classes/semaphore.o \
+  objs/classes/scale.o \
   objs/classes/scrollbar.o \
   objs/classes/scrollbutton.o \
   objs/classes/scrollgroup.o \
@@ -290,6 +291,9 @@ objs/classes/popstring.o: classes/popstring.c
 
 objs/classes/slider.o: classes/slider.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/slider.c objname=$@
+
+objs/classes/scale.o: classes/scale.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/scale.c objname=$@
 
 objs/classes/semaphore.o: classes/semaphore.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/semaphore.c objname=$@
