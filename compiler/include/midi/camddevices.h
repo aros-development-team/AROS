@@ -20,34 +20,46 @@
 
 
 struct MidiPortData{
-	void (*ActivateXmit)(void);
+	void (* ASM ActivateXmit)(ULONG REG(d0) portnum);
 };
 
 struct MidiDeviceData{
-	ULONG Magic;
+  ULONG Magic;
+  
+  char *Name;
+  char *IDString;
+  
+  UWORD Version;
+  UWORD Revision;
 
-	char *Name;
-	char *IDString;
+  /* Called right after LoadSeg() */
+  BOOL (ASM *Init)(
+		   /* Added. -Kjetil M. */
+		   REG(a6) APTR SysBase
+		   );
+  
 
-	UWORD Version;
-	UWORD Revision;
+  /* Called right before UnLoadSeg() */
+  void (*Expunge)(void);
 
-	BOOL (*Init)(void);
-	void (*Expunge)(void);
-	struct MidiPortData *(ASM *OpenPort)(
+  struct MidiPortData *(ASM *OpenPort)(
 	 	REG(a3) struct MidiDeviceData *data,
 		REG(d0) LONG portnum,
-		REG(a0) APTR transmitfunc,
-		REG(a1) APTR recievefunc,
+		REG(a0) ULONG (* ASM transmitfunc)(APTR REG(a2) userdata),
+		REG(a1) void (* ASM recievefunc)(UWORD REG(d0) input, APTR REG(a2) userdata),
 		REG(a2) APTR userdata
-	);
-	void (ASM *ClosePort)(
-	  	REG(a3) struct MidiDeviceData *data,
-		REG(d0) LONG portnum
-	);
+		);
 
-	UBYTE NPorts;
-	UBYTE Flags;
+  void (ASM *ClosePort)(
+			REG(a3) struct MidiDeviceData *data,
+			REG(d0) LONG portnum
+			);
+  
+  /* Number of ports. Cam be set in the Init-function if prefered. */
+  UBYTE NPorts;
+
+  /* 0=Old format, 1=new. Aros only supports the new format, so set this flag (ie. Flags=1) for now. */
+  UBYTE Flags;
 };
 
 
