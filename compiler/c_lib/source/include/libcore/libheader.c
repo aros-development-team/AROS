@@ -274,7 +274,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 
 
 #ifdef AROS_LC_SETFUNCS
-    ok = !set_open_libraries() && !set_call_funcs(SETNAME(INIT), 1);
+    ok = !set_open_libraries(sysBase) && !set_call_funcs(SETNAME(INIT), 1);
     if ( ok )
     {
 	/* ctors get called in inverse order than init funcs */
@@ -299,7 +299,7 @@ AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries();
+	set_close_libraries(sysBase);
 #endif
 
 	{
@@ -437,7 +437,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 	    while (SETNAME(DTORS)[n]) ((VOID_FUNC)(SETNAME(DTORS)[n++]))();
 	}
 	set_call_funcs(SETNAME(EXIT), -1);
-	set_close_libraries();
+	set_close_libraries(sysBase);
 #endif
 
 	negsize  = LC_LIB_FIELD(lh).lib_NegSize;
