@@ -99,8 +99,14 @@ int ser_Init(short, LONG, BYTE);
 {
    AROS_LIBFUNC_INIT
    AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
-	if (ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
+#if AROS_SERIAL_DEBUG == 1
+	if (ser_Init(0x3F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
+		ser_FIFOLevel(0x3F8, 0);
+#endif
+#if AROS_SERIAL_DEBUG == 2
+   	if (ser_Init(0x2F8, 9600,SER_LCR_8BITS | SER_LCR_1STOPBIT | SER_LCR_NOPARITY))
 		ser_FIFOLevel(0x2F8, 0);
+#endif
    return;
    AROS_LIBFUNC_EXIT
 } /* RawIOInit */
@@ -239,7 +245,12 @@ int ser_IsWritingPossible(short);
 	{
     	    //if (chr==0x0A)
     	    //	ser_WriteByte(0x2F8, 0x0D, 1, 0, 0);
+#if AROS_SERIAL_DEBUG == 1
+	    ser_WriteByte(0x3F8, chr, 0, 0, 0);
+#endif
+#if AROS_SERIAL_DEBUG == 2
 	    ser_WriteByte(0x2F8, chr, 0, 0, 0);
+#endif
 	}
 
     	__restore_flags(flags);
