@@ -435,6 +435,17 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	if(flags[arg]&REQUIRED&&argbuf[arg]==NULL&&
 	   (flags[arg]&TYPEMASK)!=MULTIPLE)
 	{
+	    if (flags[arg]&KEYWORD)
+	    {
+	    	/* /K/A argument, which inisits on keyword
+		   being used, cannot be satisfied */
+		   
+	    	ERROR(ERROR_TOO_MANY_ARGS); /* yes, strange error number,
+		                               but it translates to "wrong
+					       number of arguments" */
+		
+	    }
+	    
 	    if(!multnum)
 		/* No arguments left? Oh dear! */
 		ERROR(ERROR_REQUIRED_ARG_MISSING);
