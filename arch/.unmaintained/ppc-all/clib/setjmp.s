@@ -59,9 +59,10 @@
 #include "include/machine.i"
 
 	.text
-	.balign 16
+	_ALIGNMENT
 	.global AROS_CDEFNAME(setjmp)
-	.type AROS_CDEFNAME(setjmp),@function
+	_FUNCTION(AROS_CDEFNAME(setjmp))
+	
 AROS_CDEFNAME(setjmp):
 	stw  %r1,(0*4)(3)
 	mflr %r0
