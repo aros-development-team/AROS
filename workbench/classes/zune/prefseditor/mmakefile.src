@@ -12,7 +12,7 @@ INCLUDE_FILES := prefseditor.h
     mmake=workbench-classes-zune-prefseditor \
     modname=PrefsEditor modtype=mcc \
     conffile=prefseditor.conf \
-    uselibs="amiga arosc"
+    uselibs="amiga rom m"
     
 %copy_includes path=zune dir=
     
