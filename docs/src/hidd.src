@@ -672,7 +672,7 @@ changed with the normal BOOPSI API.
 \item{void HIDDV_Graphics_Cmd_DeleteGC (HIDDT_GC gc)} Return a gc for
 reuse. You can also dispose the GC with |DisposeObject()|.
 
-\item{BOOL HIDDV_Graphics_Cmd_CopyArea (HIDDT_BitMap src, WORD
+\item{BOOL HIDDV_Graphics_Cmd_CopyArea (HIDDT_GC src, WORD
 srcX, WORD srcY, UWORD width, UWORD height, HIDDT_GC dest, WORD destX,
 WORD destY)} Copy a rectangular area from the drawing area |src| to the
 drawing area stored in |dest| (which may be |src|). The source area is not
@@ -682,7 +682,8 @@ determines how the copy takes place.
 In quick mode, the following restrictions are not checked: It's not checked
 whether the source or destination rectangle is completely inside the valid
 area or whether the areas overlap. If they overlap, the results are
-unpredictable.
+unpredictable. Also drawing modes are ignored. If the two bitmaps in the
+GCs have a different depth, copying might be slow.
 
 When copying bitmaps between two different HIDDs, the following pseudo
 algorithm is executed: First the destination HIDD is queried whether it
