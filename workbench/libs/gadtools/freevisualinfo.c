@@ -5,15 +5,14 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <proto/intuition.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
 
     NAME */
 #include <proto/gadtools.h>
-#include <intuition/intuition.h>
-#include <libraries/gadtools.h>
-#include <utility/tagitem.h>
 
 	AROS_LH1(void, FreeVisualInfo,
 
@@ -24,11 +23,11 @@
 	struct Library *, GadToolsBase, 22, GadTools)
 
 /*  FUNCTION
-	FreeVisualInfo() frees a visual info structure create with
+	FreeVisualInfo() frees a visual info structure created with
 	GetVisualInfo().
 
     INPUTS
-	vi - the visual info structure to free.
+	vi - the visual info structure to free, may be NULL.
 
     RESULT
 
@@ -49,6 +48,12 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
+
+    if (!vi)
+        return;
+
+    FreeScreenDrawInfo(((struct VisualInfo *)vi)->vi_screen, ((struct VisualInfo *)vi)->vi_dri);
+    FreeVec(vi);
 
     AROS_LIBFUNC_EXIT
 } /* FreeVisualInfo */

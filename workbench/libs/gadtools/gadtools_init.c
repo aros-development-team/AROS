@@ -28,6 +28,8 @@ extern BPTR AROS_SLIB_ENTRY(expunge,GadTools)();
 extern int AROS_SLIB_ENTRY(null,GadTools)();
 extern const char END;
 
+void storelibbases(struct GadToolsBase_intern *GadToolsBase);
+
 int entry(void)
 {
     /* If the library was executed by accident return error code. */
@@ -42,7 +44,8 @@ const struct Resident resident=
     RTF_AUTOINIT,
     LIBVERSION,
     NT_LIBRARY,
-    -120,	/* priority */
+    0,
+/*    -120,*/	/* priority */
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
@@ -127,19 +130,21 @@ AROS_LH1(struct GadToolsBase_intern *, open,
         return(NULL);
 
     if (!DOSBase)
-        DOSBase = OpenLibrary("dos.library", 37);
+        DOSBase = OpenLibrary(DOSNAME, 37);
     if (!DOSBase)
-        return(NULL);
+        return NULL;
 
     if (!GfxBase)
 	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
-	return(NULL);
+	return NULL;
 
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
-	return(NULL);
+	return NULL;
+
+    storelibbases(LIBBASE);
 
     /* I have one more opener. */
     LIBBASE->library.lib_OpenCnt++;
@@ -217,4 +222,13 @@ AROS_LH0I(int, null, struct GadToolsBase_intern *, LIBBASE, 4, BASENAME)
     AROS_LIBFUNC_INIT
     return 0;
     AROS_LIBFUNC_EXIT
+}
+
+#undef IntuitionBase
+
+struct IntuitionBase *IntuitionBase;
+
+void storelibbases(struct GadToolsBase_intern *GadToolsBase)
+{
+    IntuitionBase = GTB(GadToolsBase)->intuibase;
 }

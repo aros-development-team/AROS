@@ -22,10 +22,10 @@
 	struct Library *, GadToolsBase, 6, GadTools)
 
 /*  FUNCTION
-	Frees all gadtools gadgets from a linked list of gadgets.
+	Frees all gadtools gadgets in a linked list of gadgets.
 
     INPUTS
-	glist - pointer to the first gadget to be freed
+	glist - pointer to the first gadget to be freed, may be NULL.
 
     RESULT
 
@@ -49,7 +49,7 @@
 
     struct Gadget *lastgad = NULL, *nextgad;
 
-    if (glist == NULL)
+    if (!glist)
 	return;
 
     for (;nextgad;glist=nextgad)

@@ -5,14 +5,16 @@
     Desc:
     Lang: english
 */
+#include <proto/exec.h>
+#include <exec/memory.h>
+#include <proto/intuition.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
 
     NAME */
 #include <proto/gadtools.h>
-#include <intuition/intuition.h>
-#include <libraries/gadtools.h>
+#include <intuition/screens.h>
 #include <utility/tagitem.h>
 
 	AROS_LH2(APTR, GetVisualInfoA,
@@ -55,10 +57,19 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
+    struct VisualInfo *vi;
+
     if (screen == NULL)
 	return NULL;
 
-    return((APTR)screen);
+    vi = AllocVec(sizeof(struct VisualInfo), MEMF_ANY);
+    if (!vi)
+        return NULL;
+
+    vi->vi_screen = screen;
+    vi->vi_dri = GetScreenDrawInfo(screen);
+
+    return vi;
 
     AROS_LIBFUNC_EXIT
 } /* GetVisualInfoA */

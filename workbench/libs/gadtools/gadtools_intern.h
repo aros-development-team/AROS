@@ -20,6 +20,9 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#ifndef INTUITION_SCREENS_H
+#   include <intuition/screens.h>
+#endif
 #ifndef PROTO_UTILITY_H
 #   include <proto/utility.h>
 #endif
@@ -27,13 +30,16 @@
 #   include <libraries/gadtools.h>
 #endif
 
+struct VisualInfo;
+
 /* Some external stuff (gadtools_init.c) */
-
-
 struct GadToolsBase_intern; /* prerefrence */
 
 /* Internal prototypes */
-
+struct Gadget *makebutton(struct GadToolsBase_intern *GadToolsBase,
+                          struct TagItem stdgadtags[],
+			  struct VisualInfo *vi,
+                          struct TagItem *taglist);
 
 struct GadToolsBase_intern
 {
@@ -68,5 +74,22 @@ typedef struct GfxBase GraphicsBase;
 
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct GadToolsBase_intern *, GadToolsBase, 3, GadTools)
+
+struct VisualInfo
+{
+    struct Screen   * vi_screen;
+    struct DrawInfo * vi_dri;
+};
+
+#define TAG_Left     0
+#define TAG_Top      1
+#define TAG_Width    2
+#define TAG_Height   3
+#define TAG_Text     4
+#define TAG_TextAttr 5
+#define TAG_Previous 6
+#define TAG_ID       7
+#define TAG_DrawInfo 8
+
 
 #endif /* GADTOOLS_INTERN_H */

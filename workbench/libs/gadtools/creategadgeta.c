@@ -5,9 +5,10 @@
     Desc:
     Lang: english
 */
-#include <proto/intuition.h>
 #include <exec/memory.h>
+#include <proto/intuition.h>
 #include <intuition/gadgetclass.h>
+#include <proto/utility.h>
 #include "gadtools_intern.h"
 
 /*********************************************************************
@@ -61,35 +62,42 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
 
-    BOOL error = TRUE;
     struct Gadget *gad;
-    STRPTR classname;
-
-    return NULL;
+    struct TagItem stdgadtags[] = {
+        {GA_Left, 0L},
+	{GA_Top, 0L},
+	{GA_Width, 0L},
+	{GA_Height, 0L},
+	{GA_Text, (IPTR)NULL},
+	{GA_TextAttr, (IPTR)NULL},
+	{GA_Previous, (IPTR)previous},
+	{GA_ID, 0L},
+	{GA_DrawInfo, (IPTR)NULL},
+	{TAG_END, 0L}
+    };
 
     if (previous == NULL || ng == NULL || ng->ng_VisualInfo == NULL)
 	return NULL;
 
+    stdgadtags[0].ti_Data = ng->ng_LeftEdge;
+    stdgadtags[1].ti_Data = ng->ng_TopEdge;
+    stdgadtags[2].ti_Data = ng->ng_Width;
+    stdgadtags[3].ti_Data = ng->ng_Height;
+    stdgadtags[4].ti_Data = (IPTR)ng->ng_GadgetText;
+    stdgadtags[5].ti_Data = (IPTR)ng->ng_TextAttr;
+    stdgadtags[6].ti_Data = (IPTR)previous;
+    stdgadtags[7].ti_Data = ng->ng_GadgetID;
+    stdgadtags[8].ti_Data = (IPTR)(((struct VisualInfo *)(ng->ng_VisualInfo))->vi_dri);
+
     switch(kind)
     {
     case BUTTON_KIND:
-	classname = BUTTONGCLASS;
-	error = FALSE;
-	break;
+        gad = makebutton((struct GadToolsBase_intern *)GadToolsBase, 
+            stdgadtags, (struct VisualInfo *)ng->ng_VisualInfo, taglist);
+        break;
+    default:
+        return NULL;
     }
-
-    if (error)
-	return NULL;
-
-    gad = (struct Gadget *)NewObject(NULL, classname,
-	GA_Left, ng->ng_LeftEdge,
-	GA_Top, ng->ng_TopEdge,
-	GA_Width, ng->ng_Width,
-	GA_Height, ng->ng_Height,
-	GA_Text, ng->ng_GadgetText,
-	GA_TextAttr, ng->ng_TextAttr,
-	GA_Previous, previous,
-	TAG_END);
 
     if (gad)
 	gad->GadgetType |= GTYP_GADTOOLS;

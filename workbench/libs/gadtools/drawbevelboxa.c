@@ -62,21 +62,20 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GadToolsBase *,GadToolsBase)
-    struct Screen *scr;
-    struct DrawInfo *dri;
+    struct VisualInfo *vi;
     UWORD pen1, pen2;
 
-    if ((scr = (struct Screen *)GetTagData(GT_VisualInfo, NULL, taglist)) == NULL)
+    vi = (struct VisualInfo *)GetTagData(GT_VisualInfo, NULL, taglist);
+    if (vi == NULL)
 	return;
-    dri = GetScreenDrawInfo(scr);
     if (((BOOL)GetTagData(GTBB_Recessed, FALSE, taglist)) == FALSE)
     {
-	pen1 = dri->dri_Pens[SHINEPEN];
-	pen2 = dri->dri_Pens[SHADOWPEN];
+	pen1 = vi->vi_dri->dri_Pens[SHINEPEN];
+	pen2 = vi->vi_dri->dri_Pens[SHADOWPEN];
     } else
     {
-	pen1 = dri->dri_Pens[SHADOWPEN];
-	pen2 = dri->dri_Pens[SHINEPEN];
+	pen1 = vi->vi_dri->dri_Pens[SHADOWPEN];
+	pen2 = vi->vi_dri->dri_Pens[SHINEPEN];
     }
 
     SetDrMd(rport, JAM1);
@@ -123,7 +122,6 @@
 	Draw(rport, left + width - 2, top + 2);
 	break;
     }
-    FreeScreenDrawInfo(scr, dri);
 
     AROS_LIBFUNC_EXIT
 } /* DrawBevelBoxA */
