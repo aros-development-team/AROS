@@ -38,7 +38,7 @@ static ULONG DoSetupMethod(Object * obj, struct MUI_RenderInfo *info)
 {
 /*
    MUI set the correct render info *before* it calls MUIM_Setup so please
-   only use this function instead of DoMethodA() 
+   only use this function instead of DoMethodA()
  */
     muiRenderInfo(obj) = info;
 
@@ -1053,8 +1053,13 @@ BOOPSI_DISPATCHER(IPTR, iconDispatcher, cl, obj, msg)
                 struct IconClassData *data;
 
                 data = INST_DATA(cl, obj);
-                DoMethodA(data->imagePart, msg);
-                DoMethodA(data->labelPart, msg);
+
+                if(data->imagePart)
+                    DoMethodA(data->imagePart, msg);
+                if(data->labelPart)
+                    DoMethodA(data->labelPart, msg);
+
+
                 if (data->viewMode == IAVM_DETAIL)
                 {
                     if (data->sizePart)
