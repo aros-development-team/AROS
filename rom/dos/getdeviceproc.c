@@ -298,6 +298,8 @@ if (volname)
 		    
 			    if (volname)
 				FreeMem(volname, s1-name);
+
+		    	    FreeMem(dp, sizeof(struct DevProc));
 				
 			    return NULL;
 
@@ -312,6 +314,10 @@ if (volname)
 		    
 		    	if (volname)
 		    	    FreeMem(volname, s1-name);
+
+
+		    	FreeMem(dp, sizeof(struct DevProc));
+			
 		    	return NULL;
 		    }
 		    
