@@ -1422,6 +1422,142 @@ VOID	HIDD_BM_GetMem32Image24(OOP_Object *obj,
     OOP_DoMethod(obj, (OOP_Msg) &p);
 }
 
+VOID	HIDD_BM_PutMemTemplate8	(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemTemplate8 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate8);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.template = template;
+    p.modulo = modulo;
+    p.srcx = srcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    p.inverttemplate = inverttemplate;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_PutMemTemplate16(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemTemplate16 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate16);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.template = template;
+    p.modulo = modulo;
+    p.srcx = srcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    p.inverttemplate = inverttemplate;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_PutMemTemplate24(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemTemplate24 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate24);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.template = template;
+    p.modulo = modulo;
+    p.srcx = srcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    p.inverttemplate = inverttemplate;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
+VOID	HIDD_BM_PutMemTemplate32(OOP_Object *obj,
+    	    	    	    	 OOP_Object *gc,
+				 UBYTE *template,
+				 ULONG modulo,
+				 WORD srcx,
+				 APTR dst,
+				 ULONG dstMod,
+				 WORD x,
+				 WORD y,
+				 WORD width,
+				 WORD height,
+				 BOOL inverttemplate)
+{
+    STATIC_MID;
+    struct pHidd_BitMap_PutMemTemplate32 p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_BitMap, moHidd_BitMap_PutMemTemplate32);
+    
+    p.mID = mid;
+    p.gc = gc;
+    p.template = template;
+    p.modulo = modulo;
+    p.srcx = srcx;
+    p.dst = dst;
+    p.dstMod = dstMod;
+    p.x = x;
+    p.y = y;
+    p.width = width;
+    p.height = height;
+    p.inverttemplate = inverttemplate;
+    
+    OOP_DoMethod(obj, (OOP_Msg) &p);
+}
+
 OOP_Object * HIDD_BM_SetColorMap(OOP_Object *obj, OOP_Object *colorMap)
 {
     STATIC_MID;
