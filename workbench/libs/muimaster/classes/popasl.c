@@ -50,11 +50,7 @@ struct Asl_Startup
     Object *pop;
 };
 
-#ifndef __AROS__
-__saveds static LONG Asl_Entry(void)
-#else
-static LONG Asl_Entry(void)
-#endif
+SAVEDS static LONG Asl_Entry(void)
 {
     struct Process *proc;
     struct Asl_Startup *msg;
