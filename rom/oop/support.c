@@ -27,6 +27,11 @@
 #define UB(x) ((UBYTE *)x)
 
 #define ClassID PPart.ClassNode.ln_Name
+
+/* This file contains support functions for allocating
+  and initializing dispatch tables
+*/
+
 /* Hooks */
 VOID FreeBucket(struct Bucket *b, struct IntOOPBase *OOPBase);
 struct Bucket *CopyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OOPBase);
@@ -38,6 +43,9 @@ static struct IFBucket *CreateBucket(struct InterfaceDescr *ifDescr, struct IntO
 **  CalcHTSize()  **
 *******************/
 
+/* Calculates the number of interfaces the new class has
+   ( == number of buckets in the hashtable)
+*/
 static ULONG CalcHTEntries(struct IntClass *cl
 		,struct InterfaceDescr *ifDescr
 		,struct IntOOPBase *OOPBase)
@@ -46,11 +54,11 @@ static ULONG CalcHTEntries(struct IntClass *cl
     struct IntClass *super = cl->SuperClass;
     
     EnterFunc(bug("CalcHTEntries(cl=%p, ifDescr=%p, super=%p)\n", cl, ifDescr, super));
-    
-    /* Count the number of interfaces of superclass */
-    
+  
+ 
     if (super)
     {
+    	/* Get number of interfaces (method tables) in superclass */
     	num_if = super->NumInterfaces;
 	D(bug("Super-interfaces: %ld\n", num_if));
     
@@ -58,9 +66,13 @@ static ULONG CalcHTEntries(struct IntClass *cl
     	for (; ifDescr->MethodTable; ifDescr ++)
     	{
 	    D(bug("Checking for interface %s\n", ifDescr->InterfaceID));
+	    
+	    /* Look up in interface hashtable to see if it exists in superclass */
 	    if ( NULL == super->IFTable->Lookup(super->IFTable, (IPTR)GetID(ifDescr->InterfaceID), OOPBase) )
 	    {
 	        D(bug("Found new interface: %s\n", ifDescr->InterfaceID));
+		
+		/* If it didn't then we have a new interface for this class */
 	    	num_if ++;
 	    }
 	
@@ -69,7 +81,7 @@ static ULONG CalcHTEntries(struct IntClass *cl
     }
     else
     {
-    	/* This is rootclass, count the interfaces */
+    	/* This is a baseclass, count the interfaces */
     	for (; ifDescr->MethodTable; ifDescr ++)
     	{
 	    num_if ++;
@@ -85,6 +97,7 @@ static ULONG CalcHTEntries(struct IntClass *cl
 **  AllocDispatchTables()  **
 ****************************/
 
+/* Allocates and initializes the interface hashtable, and the methodtables */
 BOOL AllocDispatchTables(
 		struct IntClass 	*cl,
 		struct InterfaceDescr 	*ifDescr,
@@ -95,13 +108,15 @@ BOOL AllocDispatchTables(
     EnterFunc(bug("AllocDispatchTables(cl=%p,ifDescr=%p)\n",
     	cl, ifDescr));
     
-     /* Get hash table size */
+    /* Get number of needed hash entries */
     num_if = CalcHTEntries(cl, ifDescr, OOPBase);
     cl->NumInterfaces = num_if;
     
+    /* Create a new integer hashtable, with a reasonable size */
     cl->IFTable = NewHash(num_if, HT_INTEGER, OOPBase);
     if (cl->IFTable)
     {
+    	/* Save hashmask for use in method lookup */
 	cl->HashMask = HashMask(cl->IFTable);
 	
 	/* Copy parent interfaces into the new class */
@@ -125,7 +140,7 @@ BOOL AllocDispatchTables(
 	    struct IFBucket *ifb;
 	    ULONG i;
 	    
-	    
+	    /* Lookup hashtable to see if interface has been copied from superclass */
 	    ifb = (struct IFBucket *)cl->IFTable->Lookup(cl->IFTable, (IPTR)ifDescr->InterfaceID, OOPBase);
 	    if (!ifb)
 	    {
@@ -141,6 +156,7 @@ BOOL AllocDispatchTables(
 	    
 	    D(bug("Inserting methods\n"));
 
+	    /* Ovveride the superclass methods with our new ones */
 	    for (i = 0; ifDescr->MethodTable[i].MethodFunc; i ++)
 	    {
    	    	if (ifDescr->MethodTable[i].MethodFunc)
@@ -152,7 +168,7 @@ BOOL AllocDispatchTables(
 	    
 	} /* for (each interface to add to class) */
 	
-	/* For speedub in method lookup */
+	/* For speedup in method lookup */
 	cl->IFTableDirectPtr = (struct IFBucket **)cl->IFTable->Table;
 	
     }
@@ -168,6 +184,7 @@ failure:
 ***************************/
 VOID FreeDispatchTables(struct IntClass *cl, struct IntOOPBase *OOPBase)
 {
+    /* This frees the hashtable + all buckets */
     FreeHash(cl->IFTable, FreeBucket, OOPBase);
     
     return;
@@ -177,6 +194,7 @@ VOID FreeDispatchTables(struct IntClass *cl, struct IntOOPBase *OOPBase)
 /*********************
 **  CreateBucket()  **
 *********************/
+/* Creates a new interface bucket */
 static struct IFBucket *CreateBucket(
 				struct InterfaceDescr 	*ifDescr,
 				struct IntOOPBase 	*OOPBase)
@@ -191,12 +209,15 @@ static struct IFBucket *CreateBucket(
     ifb = (struct IFBucket *)AllocMem( sizeof (struct IFBucket), MEMF_ANY );
     if (ifb)
     {
+    	/* Allocate method table for this interface */
     	ifb->MethodTable = (struct IFMethod *)AllocVec(mtab_size, MEMF_ANY);
 	if (ifb->MethodTable)
 	{
+	    /* Get correct ID for the interface (string ID => interface ID mapping) */
 	    ifb->InterfaceID = GetID(ifDescr->InterfaceID);
 	    if (ifb->InterfaceID)
 	    {
+	    	/* Save number of methods in the interface */
 	    	ifb->NumMethods  = ifDescr->NumMethods;
 		return (ifb);
 
@@ -215,34 +236,41 @@ static struct IFBucket *CreateBucket(
 
 VOID FreeBucket(struct Bucket *b, struct IntOOPBase *OOPBase)
 {
-//    D(bug("FreeBucket(b=%p)\n", b));
+
+    /* Free methodtable */
     FreeVec(IB(b)->MethodTable);
-//    D(bug("Freeing bucket\n"));
+
+    /* Free the bucket itself */
     FreeMem(b, sizeof (struct IFBucket));
     
-//    ReturnVoid("FreeBucket");
+
     return;
 }
 
+/* Copies a hashtable bucket */
 struct Bucket *CopyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OOPBase)
 {
     struct IFBucket *new_b;
     
     EnterFunc(bug("CopyBucket(old_b=%p)\n", old_b));
     
+    /* Allocate memory for the new interface bucket */
     new_b = (struct IFBucket *)AllocMem(sizeof (struct IFBucket), MEMF_ANY );
     if (new_b)
     {
     	struct IFMethod *ifm = NULL;
         ULONG mtab_size;
+	
+	/* Get number of methods in source methodtable */
 	ULONG numentries = IB(old_b)->NumMethods;
 	
 	mtab_size = UB(&ifm[numentries]) - UB(&ifm[0]);
 	
+	/* Allocate memory for methodtable of same size as source one */
     	new_b->MethodTable = (struct IFMethod *)AllocVec(mtab_size, MEMF_ANY);
 	if (new_b->MethodTable)
 	{
-	    /* Copy methodtable */
+	    /* Copy methodtable to destination */
 	    CopyMem(IB(old_b)->MethodTable, new_b->MethodTable, mtab_size);
 	    
     	    /* Initialize bucket */
@@ -262,6 +290,7 @@ struct Bucket *CopyBucket(struct Bucket *old_b, APTR data, struct IntOOPBase *OO
 **  GetIDs()  **
 ***************/
 
+/* Used to do several string interface ID to numeric interface ID mappings in one call */
 BOOL GetIDs(struct IDDescr *idDescr, struct IntOOPBase *OOPBase)
 {
     while (idDescr->ID)

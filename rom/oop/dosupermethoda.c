@@ -26,10 +26,16 @@
 	struct Library *, OOPBase, 7, OOP)
 
 /*  FUNCTION
+	Pass a method to the superclass.
 
     INPUTS
+    	class	- The class of whose superclass, the method wil
+		  dispatch the method.
+	object	- The object the method is invoked on.
+	msg	- The parameters passed to the method.
 
     RESULT
+    	Dependent on the method implementation.
 
     NOTES
 
@@ -50,6 +56,7 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library*,OOPBase)
     
+    /* this macro is defined in intern.h */
     IntCallMethod(((struct IntClass *)class)->SuperClass, object, msg);
     
     AROS_LIBFUNC_EXIT

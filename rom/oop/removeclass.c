@@ -21,8 +21,11 @@
 	struct Library *, OOPBase, 11, OOP)
 
 /*  FUNCTION
-
+	Remove a class from the list of public classes.
+	The class must have previously added with AddClass().
+	
     INPUTS
+    	classPtr - Pointer to class that should be removed.
 
     RESULT
 	None.
@@ -34,6 +37,7 @@
     BUGS
 
     SEE ALSO
+    	AddClass()
 
     INTERNALS
 
@@ -48,7 +52,6 @@
 
     if (classPtr)
     {
-	/* Changed to Semaphores during boopsi.library creation */
 	ObtainSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );
 	Remove ((struct Node *)classPtr);
 	ReleaseSemaphore( &GetOBase(OOPBase)->ob_ClassListLock );

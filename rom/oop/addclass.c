@@ -25,18 +25,25 @@
 	struct Library *, OOPBase, 8, OOP)
 
 /*  FUNCTION
+	Adds a class to the public list of classes.
+	This means that any process can create objects of this
+	class.
 
     INPUTS
+    	classPtr - Pointer to the class to make public.
 
     RESULT
+    	None.
 
     NOTES
 
     EXAMPLE
 
     BUGS
+    	Would be faster to use a hashtable to look up class IDs
 
     SEE ALSO
+    	RemoveClass()
 
     INTERNALS
 

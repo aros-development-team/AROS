@@ -27,18 +27,27 @@
 	struct Library *, OOPBase, 14, OOP)
 
 /*  FUNCTION
+	Find a public server object previously installed with
+	AddServer(). You can use the obtained object to
+	access objects that server is responsible for.
 
     INPUTS
+    	serverID	- The servers public identifier.
 
     RESULT
+    	Pointer to the server object.
 
     NOTES
+    	Probably not a good API. Implemented
+	just to show how one can call methods
+	across process-borders.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+    	AddServer(), RemoveServer()
 
     INTERNALS
 

@@ -2,7 +2,7 @@
    (C) 1997-98 AROS - The Amiga Replacement OS
    $Id$
 
-   Desc: 
+   Desc: Common code for handling hashing.
    Lang: english
 */
 
@@ -35,19 +35,21 @@
 struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
 {
 
-    /* Calulates hashsize as 2^n - 1 so that htsize >= 2*initial */
+
     ULONG temp = 1;
     BYTE i;
     ULONG size;
     struct HashTable *ht;
     
     EnterFunc(bug("NewHash(entries=%ld, type=%ld)\n", entries, type));
+
+    /* Allocate hashtable struct */
     
     ht = AllocMem(sizeof (struct HashTable), MEMF_ANY);
     if (ht)
     {
-	
-    	/* Find the highest bit in 'initial' */
+	/* Allocate table of size 2^n - 1	*/
+    	/* Find the highest bit in 'initial'	*/
     	for (i = 31; i >= 0; i --)
     	{
 	    if ((temp << i) & entries)
@@ -62,14 +64,19 @@ struct HashTable *NewHash(ULONG entries, UBYTE type, struct IntOOPBase *OOPBase)
     	entries = (temp << i);
 	entries --; /* 2^n - 1 */
     
+    	/* Get table size */
     	size = UB( &ht[entries] ) - UB( &ht[0] );
-    
+    	
+	/* Allocate the table */
     	ht->Table = AllocVec(size, MEMF_ANY|MEMF_CLEAR);
     	if (ht)
     	{
 	    ht->HashMask = entries - 1;
 	    ht->Type	 = type;
 	    
+	    /* Initialize the hashtable's Lookup and CalcHash
+	    ** accordint to if we want to hash integers or strings
+	    */
 	    switch (type)
 	    {
 	    case HT_INTEGER:
@@ -112,14 +119,14 @@ VOID FreeHash(struct HashTable *ht, VOID (*freebucket)(), struct IntOOPBase *OOP
 	
 	for (b = ht->Table[i]; b; b = next_b)
 	{
-	    D(bug("Freeing bucket %p of id %ld\n", b, b->ID));
 	    next_b = b->Next;
-	    D(bug("Calling freebucket\n"));
+	    /* USe usersupplied func to free bucket */
 	    freebucket(b, OOPBase);
-	    D(bug("Freebucket called\n"));
 	}
     }
+    /* Free the table */
     FreeVec(ht->Table);
+    /* Free the hashtable struct */
     FreeMem(ht, sizeof (struct HashTable));
     
     ReturnVoid("FreeHash");
@@ -132,6 +139,7 @@ struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase 
 {
     struct Bucket *b;
     
+    /* Function for looking up integers in the table */
     for (b = ht->Table[CalcHashULONG(ht, id)]; b; b = b->Next)
     {
     	if (b->ID == id)
@@ -144,6 +152,8 @@ struct Bucket *HashLookupULONG(struct HashTable *ht, IPTR id, struct IntOOPBase 
 struct Bucket *HashLookupStr(struct HashTable *ht, IPTR id, struct IntOOPBase *OOPBase)
 {
     struct Bucket *b;
+    
+    /* Function for looking up strings in the table */
     EnterFunc(bug("HashLookupStr(ht=%p, id=%s)\n", ht, (STRPTR)id));
     for (b = ht->Table[CalcHashStr(ht, id)]; b; b = b->Next)
     {
@@ -165,15 +175,19 @@ BOOL CopyHash(struct HashTable *dest_ht
 {
     ULONG i;
     
+    /* Copies all buckets of src_ht into dest_ht */
+    
     EnterFunc(bug("CopyHash(dest_ht=%p, src_ht=%p, copybucket=%p,data = %p)\n",
     	dest_ht, src_ht, copybucket, data));
     
+    /* for each entry in the table */
     for (i = 0; i < HashSize(src_ht); i ++ )
     {
     	struct Bucket *b;
 	        
 	D(bug("idx: %ld\n", i));
-
+	
+	/* for each bucket at curent entry */
     	for (b = src_ht->Table[i]; b; b = b->Next)
 	{
 	    /* Rehash bucket into destination hashtable */
@@ -181,10 +195,12 @@ BOOL CopyHash(struct HashTable *dest_ht
 	    
 	    D(bug("Bucket: %p\n", b));
 	    
+	    /* use user-supllied func to copy the bucket */
 	    new_b = copybucket(b, data, OOPBase);
 	    if (!new_b)
 	    	ReturnBool ("CopyHash", FALSE);
 	    
+	    /* insert the new bucket into detsination table */
 	    InsertBucket(dest_ht, new_b, OOPBase);
 	    
 	    
@@ -200,7 +216,7 @@ BOOL CopyHash(struct HashTable *dest_ht
 *********************/
 VOID InsertBucket(struct HashTable *ht, struct Bucket *b, struct IntOOPBase *OOPBase)
 {
-    /* Inserts bucket into hashtable accordibg to the ID */
+    /* Inserts bucket into hashtable according to its ID */
     ULONG idx;
     
     EnterFunc(bug("InsertBucket(ht=%p, b=%p)\n", ht, b));
@@ -214,9 +230,10 @@ VOID InsertBucket(struct HashTable *ht, struct Bucket *b, struct IntOOPBase *OOP
     
 }
 
-/* id is an interface ID */
+
 ULONG CalcHashULONG(struct HashTable *ht, IPTR id)
 {
+    /* Return idx into hashtable for an integer */
     return  (HashMask(ht) & id);
 }
 
@@ -224,6 +241,7 @@ ULONG CalcHashStr(struct HashTable *ht, IPTR id)
 {
     STRPTR str = (STRPTR)id;
     ULONG val, i;
+    /* Return idx into hashtable for a string */    
     for (i = 0, val = 0; (i < MAX_HASH_CHARS) && *str; str ++)
     	{val += *str; i ++; }
 	

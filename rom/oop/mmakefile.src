@@ -54,7 +54,7 @@ ULIBNAME := OOP
 
 OSMODULE  := oop.library
 FILES	  := support hash rootclass metaclass methodclass method \
-	serverclass proxyclass
+	serverclass proxyclass interfaceclass
 	
 FUNCTIONS := newobjecta getid dosupermethoda coercemethoda \
 	disposeobject addclass removeclass addserver removeserver findserver

@@ -27,21 +27,32 @@
 	struct Library *, OOPBase, 5, OOP)
 
 /*  FUNCTION
+	Creates a new object of given clas based on the TagItem
+	parameters passed.
 
     INPUTS
+    	classPtr - pointer to a class. Use this if the class to
+		   create an instance of is private.
+	classID  - Public ID of the class to create an instance of.
+		   Use this if the class is public.
+	tagList  - List of TagItems (creation time attributes),
+		   that specifies what initial properties the new
+		   object should have.
+
 
     RESULT
+    	Pointer to the new object, or NULL if object creation failed.
 
     NOTES
+    	You should supply one of classPtr and classID, never
+	both. Use NULL for the unspecified one.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
-	DisposeObject(), SetAttrs(), GetAttr(), MakeClass(),
-	"Basic Object-Oriented Programming System for Intuition" and
-	"boopsi Class Reference" Dokument.
+	DisposeObject()
 
     INTERNALS
 
@@ -59,17 +70,19 @@
     
     EnterFunc(bug("NewObjectA(classPtr=%p, classID=%s, tagList=%p)\n",
     		classPtr, ((classID != NULL) ? classID : (UBYTE *)"(null)"), tagList));
-
+		
+    /* Class list is public, so we must avoid race conditions */
     ObtainSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
     
     if (!classPtr)
     {
-	
+	/* If a public ID was given, find pointer to class */
 	classPtr = (Class *)FindName((struct List *)&(GetOBase(OOPBase)->ob_ClassList), classID);
 	if (classPtr)
 	   IntCl(classPtr)->ObjectCount ++; /* We don't want the class to be freed while we work on it */
     }
     
+    /* Release lock on list */
     ReleaseSemaphore(&GetOBase(OOPBase)->ob_ClassListLock);
 
     if (!classPtr)
@@ -82,6 +95,7 @@
     p.MethodID = (IPTR)M_Root_New;
     p.AttrList = tagList;
 
+    /* Call the New() method of the specified class */
     o = (Object *)CoerceMethodA(classPtr, (Object *)classPtr, (Msg)&p);
     if (!o)
     {

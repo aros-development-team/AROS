@@ -23,14 +23,30 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
+/* The server class, allows you to make objects public,
+   obtain proxy objects for them from other processes.
+   Method calls on the proxies will be transferred
+   to the server using IPC, and will then be executed
+   on the proxied object. This means method invocation
+   will be threadsafe.
+*/
+   
+   
+/* Instance data */
 struct ServerData
 {
+    /* List of public objects */
     struct List ObjectList;
+    
+    /* The MsgPort from which the server recieves invocation requests */
     struct MsgPort *ReceivePort;
+    
+    /* The public object list needs protection */
     struct SignalSemaphore ObjectListLock;
 
 };
 
+/* structure for making a list of objects */
 struct  ServerObjectNode
 {
     struct Node so_Node;
@@ -51,9 +67,11 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	
 	/* Clear so we can test what resources are allocated in Dispose() */
 	memset(data, 0, sizeof (struct ServerData));
+	
 	NEWLIST(&data->ObjectList);
 	InitSemaphore(&data->ObjectListLock);
 	
+	/* Set up port for receiving incoming invocation requests */
 	data->ReceivePort = CreateMsgPort();
 	if (data->ReceivePort)
 	{
@@ -75,14 +93,17 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
     
     node = data->ObjectList.lh_Head;
     
+    /* Free all nodes in the list */
     while ((nextnode = node->ln_Succ))
     {
+    	Remove(node);
     	FreeVec(node->ln_Name);
 	FreeMem(node, sizeof (struct ServerObjectNode));
 	
 	node = nextnode;
     }
     
+    /* Free the invocation request port */
     if(data->ReceivePort)
     	DeleteMsgPort(data->ReceivePort);
     
@@ -94,6 +115,8 @@ static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
 **  IServer implementation  **
 *****************************/
 
+/* Add an object to the list of public objects. */
+
 static BOOL _Server_AddObject(Class *cl, Object *o, struct P_Server_AddObject *msg)
 {
     struct ServerData *data = INST_DATA(cl, o);
@@ -101,16 +124,19 @@ static BOOL _Server_AddObject(Class *cl, Object *o, struct P_Server_AddObject *m
     struct ServerObjectNode *so;
     
     EnterFunc(bug("Server::AddObject(obj=%p, id=%s)\n", msg->Object, msg->ObjectID));
-     
+
+    /* Allocate list node */     
     so = AllocMem(sizeof (struct ServerObjectNode), MEMF_ANY);
     if (so)
     {
+    	/* Copy the object ID */
         so->so_Node.ln_Name = AllocVec(strlen(msg->ObjectID) + 1, MEMF_ANY);
 	if (so->so_Node.ln_Name)
 	{
 	    strcpy(so->so_Node.ln_Name, msg->ObjectID);
 	    so->so_Object = msg->Object;
 	    
+	    /* Add it to the list */
 	    ObtainSemaphore(&data->ObjectListLock);
 	    AddTail(&data->ObjectList, (struct Node *)so);
 	    ReleaseSemaphore(&data->ObjectListLock);
@@ -122,6 +148,7 @@ static BOOL _Server_AddObject(Class *cl, Object *o, struct P_Server_AddObject *m
     ReturnBool ("Server::AddObject", FALSE);
 }
 
+/* Remove a previosly added object */
 static VOID _Server_RemoveObject(Class *cl, Object *o, struct P_Server_RemoveObject *msg)
 {
     struct ServerData *data = INST_DATA(cl, o);
@@ -131,9 +158,12 @@ static VOID _Server_RemoveObject(Class *cl, Object *o, struct P_Server_RemoveObj
     EnterFunc(bug("Server::RemoveObject(objid=%s)\n", msg->ObjectID));
 
     ObtainSemaphore(&data->ObjectListLock);
+    
+    /* Find the object */
     so = (struct ServerObjectNode *)FindName(&data->ObjectList, msg->ObjectID);
     if (so)
     {
+    	/* ..and remove it */
    	Remove((struct Node *)so);
    	FreeVec(so->so_Node.ln_Name);
 	FreeMem(so, sizeof (struct ServerObjectNode) );
@@ -143,6 +173,7 @@ static VOID _Server_RemoveObject(Class *cl, Object *o, struct P_Server_RemoveObj
     ReturnVoid("Server::RemoveObject");
 }
 
+/* Find a public object */
 static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObject *msg)
 {
     struct ServerObjectNode *so;
@@ -152,12 +183,13 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
     
     /* See if the server knows about the object */
     ObtainSemaphoreShared(&data->ObjectListLock);
+    /* Search for object */
     so = (struct ServerObjectNode *)FindName(&data->ObjectList, msg->ObjectID);
    ReleaseSemaphore(&data->ObjectListLock);
 
     if (so)
     {
-    	/* Create a proxy for the object */
+    	/* If found, create a proxy for the object */
 	struct TagItem proxy_tags[] =
 	{
 	    {A_Proxy_RealObject,	(IPTR)so->so_Object},
@@ -176,15 +208,17 @@ static Object * _Server_FindObject(Class *cl, Object *o, struct P_Server_FindObj
     
     ReturnPtr("Server::FindObject", Object *, NULL);
 }
-
+/* Let the server wait forevere, executing and replying
+   answering to all incoming method invocation requests
+*/   
 static VOID _Server_Run(Class *cl, Object *o, Msg msg)
 {
      struct ServerData *data = INST_DATA(cl, o);
      
-     /* Wait for something to happen */
      for (;;)
      {
      	struct ProxyMsg *pm;
+	/* Wait for incoming invocation request */
      	WaitPort(data->ReceivePort);
 	
 	while ( (pm = (struct ProxyMsg *)GetMsg(data->ReceivePort)) )
@@ -192,6 +226,7 @@ static VOID _Server_Run(Class *cl, Object *o, Msg msg)
 	    /* Execute method */
 	    pm->pm_RetVal = DoMethod(pm->pm_Object, pm->pm_ObjMsg);
 	    
+	    /* Reply back to task invoking */
 	    ReplyMsg((struct Message *)pm);
 	}
 	

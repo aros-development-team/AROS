@@ -25,18 +25,26 @@
 	struct Library *, OOPBase, 13, OOP)
 
 /*  FUNCTION
+	Remove a pulic server object that has previously
+	been added to the public server list by AddServer().
 
     INPUTS
+    	serverID - ID of server object to remove.
 
     RESULT
+    	None.
 
     NOTES
+    	Probably not a good API. Implemented
+	just to show how one can call methods
+	across process-borders.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+    	AddServer(), FindServer()
 
     INTERNALS
 
@@ -53,15 +61,20 @@
     {
     	struct Node *sn;
 	
+	/* This is a public list that must be protected */
     	ObtainSemaphore( &GetOBase(OOPBase)->ob_ServerListLock );
+	
+	/* Try to find the server */
 	sn = FindName((struct List *)&GetOBase(OOPBase)->ob_ServerList
 		,serverID);
 	
 	if (sn)
 	{
+	    /* If found, remove the node */
 	    Remove(sn);
+	    /* Free the copied ID */
 	    FreeVec(sn->ln_Name);
-	    
+	    /* Free the servernode */
 	    FreeMem(sn, sizeof (struct ServerNode));
 	}
     

@@ -27,17 +27,25 @@
 
 #define OOPBase	(GetOBase(((Class *)cl)->UserData))
 
-/************************
-**  Metaclass methods  **
-************************/
+/*
+   The metaclass is used to create class. That means,
+   classes are instances of the meta class.
+   The meta class is itself both a class (you can
+   create instances of it), and an object (you can invoke
+   methods on it. 
+*/   
+   
+   
 
-
+/************
+**  New()  **
+************/
 static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 {
     struct IntClass *data;
 
-    struct InterfaceDescr *ifdescr;
-    STRPTR superid, clid;
+    struct InterfaceDescr *ifdescr = NULL;
+    STRPTR superid = NULL, clid = NULL;
     struct IntClass *superptr = NULL;
     struct TagItem *tag, *tstate;
     ULONG instsize = (ULONG)-1L;
@@ -63,29 +71,37 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 	    
 	    case AIDX_Class_SuperID:
 	        D(bug("Got superID\n"));
+		/* ID of superclass */
 		superid = (STRPTR)tag->ti_Data;
 		break;
 		    
 	    case AIDX_Class_InterfaceDescr:
 	        D(bug("Got ifdescr\n"));
+		/* What interfaces does the class support ? */
 		ifdescr = (struct InterfaceDescr *)tag->ti_Data;
 		break;
 		    
 	    case AIDX_Class_ID:
 	        D(bug("Got classID\n"));
+		/* The new class' ID */
 		clid = (STRPTR)tag->ti_Data;
 		break;
 		    
 	    case AIDX_Class_SuperPtr:
 	        D(bug("Got superPtr\n"));
+		/* If the super class is private, than we must have
+		   a pointer to it.
+		*/
 		superptr = (struct IntClass *)tag->ti_Data;
 		break;
 		
 	    case AIDX_Class_InstSize:
+	        /* Instance data size for the new class */
 	        instsize = (ULONG)tag->ti_Data;
 		break;
 		
 	    case AIDX_Class_DoMethod:
+	        /* The user can override the class' default DoMethod() call */
 	        domethod = (IPTR(*)(Object *, Msg))tag->ti_Data;
 		break;
 	    }
@@ -94,13 +110,15 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 	
     }
     
-    /* Check if instaize was passed */
+    /* The user must supply instance size */
     if (instsize == (ULONG)-1)
     	ReturnPtr ("Meta::New, no instsize", Object *, NULL);
     
+    /* The new class must have interfaces */
     if (!ifdescr)
     	ReturnPtr ("Meta::New, no ifdescr", Object *, NULL);
 
+    /* The new class must have a superclass */
     if (!superptr)
     {
 	if (superid)
@@ -122,17 +140,24 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 	data = (struct IntClass *)INST_DATA(cl, o);
 	
 	D(bug("superptr=%p\n", superptr));
-
+	
+	/* Set new class' superclass. This MUST be done
+	   before calling AllocDispatchTables(), cause this
+	   function has to copy the dispatch tables of the superclass
+	 */
 	data->SuperClass = superptr;
 	
-	
+	/* Allocate dispatch tables for the new class (see support.c) */
 	if (AllocDispatchTables(data, ifdescr, OOPBase))
 	{
+	    /* Copy the class' ID */
 	    data->PPart.ClassNode.ln_Name = AllocVec(strlen (clid) + 1, MEMF_ANY);
 	    if (data->PPart.ClassNode.ln_Name)
 	    {
 	    
 	    	/* Initialize class fields */
+		
+		/* Instoffset */
 		if (superptr)
 	    	    data->PPart.InstOffset = superptr->PPart.InstOffset + superptr->PPart.InstSize;
 		else
@@ -148,6 +173,7 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
 	    
 	    	data->SuperClass	= superptr;
 		
+		/* Copy class ID */
 		strcpy(data->PPart.ClassNode.ln_Name, clid);
 		
 	    	/* NumInterfaces, HashTable, IFTableDirectPtr and HashMask allready set
@@ -166,6 +192,9 @@ static Object *_Root_New(struct IntClass *cl, Object *o, struct P_Root_New *msg)
     ReturnPtr ("Meta::New", Object *, NULL);   
 }
 
+/****************
+**  Dispose()  **
+****************/
 static VOID _Root_Dispose(struct IntClass *cl, Object *o, Msg msg)
 {
     struct IntClass *data = (struct IntClass *)INST_DATA(cl, o);
@@ -173,13 +202,18 @@ static VOID _Root_Dispose(struct IntClass *cl, Object *o, Msg msg)
     EnterFunc(bug("Meta::Dispose(o=%p, oclass=%s)\n", o, _OBJECT(o)->o_Class->ClassNode.ln_Name));
     
     D(bug("Freeing dispatch table\n"));
+    
+    /* Free the dispatch tables */
     FreeDispatchTables(data, OOPBase);
 
     D(bug("Freeing class id\n"));
-
+    
+    /* Free the class ID */
     FreeVec(data->PPart.ClassNode.ln_Name);
     
-    D(bug("Calling superclass\n"));    
+    D(bug("Calling superclass\n"));
+    
+    /* And let the rootclass free the object */
     DoSuperMethodA((Class *)cl, o, msg);
     ReturnVoid("Meta::Dispose");
 }
@@ -205,11 +239,15 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase)
     struct IntClass *MetaClass = &(OOPBase->ob_MetaClass.InstanceData);
     
     EnterFunc(bug("InitMetaClass()\n"));
-    
+
+    /* The metaclass needs some special handling when being initialized */
+
+    /* Superclass must be initialized before calling AllocDispatchTables() */
     MetaClass->SuperClass = &OOPBase->ob_RootClass;
     
     if (AllocDispatchTables(MetaClass, _Meta_Descr, OOPBase))
     {
+    	/* initialize Class ID */
     	MetaClass->PPart.ClassNode.ln_Name   	= METACLASS;
 	MetaClass->PPart.InstOffset 	= 0UL;
 	MetaClass->PPart.InstSize   	= sizeof (struct IntClass);
@@ -225,7 +263,7 @@ BOOL InitMetaClass(struct IntOOPBase *OOPBase)
 	*/
 	OOPBase->ob_MetaClass.Class = (Class *)&(OOPBase->ob_MetaClass.InstanceData);
 	
-	
+	/* Make it public */
 	AddClass((Class *)MetaClass);
 	ReturnBool ("InitMetaClass", TRUE);
     }

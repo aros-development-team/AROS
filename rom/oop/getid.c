@@ -26,12 +26,22 @@
 	struct Library *, OOPBase, 6, OOP)
 
 /*  FUNCTION
+	Maps a globally unique string interface ID into
+	a numeric interface ID that is unique on
+	pr. machine basis.
+	The interface ID is also used as a part of the method ID.
+	Programmers must use this to
+	initialize global vars that are used for
+	as part of methodIDs.
 
     INPUTS
+    	stringID	- globally unique interface identifier.
 
     RESULT
+    	Numeric interface identifier that is unique for this machine.
 
     NOTES
+    	Can also be used for initializing attribute bases.
 
     EXAMPLE
 
@@ -55,16 +65,27 @@
     
     EnterFunc(bug("GetID(stringID=%s)\n", stringID));
     
+    
+    /* Has ID allready been mapped to a numeric ID ? */
     idb = (struct IDBucket *)idtable->Lookup(idtable, (IPTR)stringID, (struct IntOOPBase *)OOPBase);
     if (idb)
     {
+
+    	/* If so, it has been stored in the hashtable, and we have 
+    	** to return the same numeric ID now.
+	*/
     	id = idb->NumericID;
 	D(bug("Bucket found: id=%ld\n", id));
     }
     else
     {
+    
     	D(bug("No existing bucket\n"));
-    	/* Must create a new bucket */
+	
+	
+    	/* If not, then map it and create a new bucket in the
+	** hashtable to store it
+	*/
 	idb = AllocMem(sizeof (struct IDBucket), MEMF_ANY);
 	if (idb)
 	{
@@ -74,10 +95,10 @@
 	    	D(bug("Allocated bucket\n"));
 	    	strcpy(idb->StrID, stringID);
 		
-		/* Set ID and increase */
+		/* Get next free ID, and increase the free ID to mark it as used */
 		id = idb->NumericID = ++ GetOBase(OOPBase)->ob_CurrentID;
 		
-		
+		/* Insert bucket into hash table */
 		InsertBucket(idtable, (struct Bucket *)idb, (struct IntOOPBase *)OOPBase);
 	    }
 	    else
@@ -87,6 +108,7 @@
 	}
     }
     
+    /* The ID must be left-shifted to make place for method offsets */
     ReturnInt ("GetID", ULONG, id << NUM_METHOD_BITS);
     
     AROS_LIBFUNC_EXIT

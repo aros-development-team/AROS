@@ -27,18 +27,29 @@
 	struct Library *, OOPBase, 12, OOP)
 
 /*  FUNCTION
+	Adds a server object to to the list of public servers.
+	Other processes might then obtain a pointer to the server,
+	and use the server to obtain proxies for objects the
+	server controls.
 
     INPUTS
+    	serverPtr - Pointer to a valid server object.
+	serverID - ID that identifies the server.
 
     RESULT
+    	TRUE if successfull, FALSE otherwise.
 
     NOTES
+    	Probably not a good API. Implemented
+	just to show how one can call methods
+	across process-borders.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+    	FindServer(), RemoveServer()
 
     INTERNALS
 
@@ -58,9 +69,13 @@
     {
     	struct ServerNode *sn;
 	
+	/* Allocate a listnode, so we can add the server to the list.
+	** If objects have a node by default, then this won't be necessary.
+	*/
 	sn = AllocMem(sizeof (struct ServerNode), MEMF_PUBLIC);
     	if (sn)
 	{
+	    /* Copy the ID */
 	    sn->sn_Node.ln_Name = AllocVec(strlen (serverID) + 1, MEMF_ANY);
 	    if (sn->sn_Node.ln_Name)
 	    {

@@ -23,6 +23,11 @@
 
 #define OOPBase	(GetOBase(root_cl->PPart.UserData))
 
+/* Root class is the base class of all classes.
+   (Well, one can create new baseclasses, but all classes must
+   implement the root interface).
+*/    
+
 /************************
 **  Rootclass methods  **
 ************************/
@@ -35,6 +40,9 @@ struct RootData
 
 #define NUMROOTMETHODS 2
 
+/************
+**  New()  **
+************/
 Object *_Root_New(struct IntClass *root_cl, struct IntClass *cl, struct P_Root_New *param)
 {
     struct _Object *o;
@@ -53,6 +61,7 @@ Object *_Root_New(struct IntClass *root_cl, struct IntClass *cl, struct P_Root_N
     	
     	data = (struct RootData *)BASEOBJECT(o);
     	
+	/* Class has one more object */
     	cl->ObjectCount ++;
     	
     	ReturnPtr ("Root::New", Object *, BASEOBJECT(o) );
@@ -61,12 +70,17 @@ Object *_Root_New(struct IntClass *root_cl, struct IntClass *cl, struct P_Root_N
     ReturnPtr ("Root::New", Object *, NULL);
 }
 
+/****************
+**  Dispose()  **
+****************/
 VOID _Root_Dispose(struct IntClass *root_cl, Object *o, Msg msg)
 {
     EnterFunc(bug("Root::Dispose(o=%p, oclass=%s)\n", o, _OBJECT(o)->o_Class->ClassNode.ln_Name));
 
     ((struct IntClass *)_OBJECT(o)->o_Class)->ObjectCount --;
     D(bug("Object mem: %p, size: %ld\n", _OBJECT(o), ((ULONG *)_OBJECT(o))[-1] ));
+    
+    /* Free object's memory */
     FreeVec(_OBJECT(o));
     
     ReturnVoid("Root::Dispose");
@@ -91,6 +105,9 @@ BOOL InitRootClass(struct IntOOPBase *OOPBase)
     
     struct IntClass *RootClass = &(OOPBase->ob_RootClass);
     
+    /* Rootclass must be initialized by hand */
+    
+    /* AllocDispatchTables() must know the class' superclass */
     RootClass->SuperClass = NULL;
     if (AllocDispatchTables(RootClass, _Root_Descr, OOPBase))
     {
@@ -104,6 +121,7 @@ BOOL InitRootClass(struct IntOOPBase *OOPBase)
 	RootClass->NumInterfaces 		= 1UL;
 	RootClass->PPart.UserData		= (APTR)OOPBase;
 	
+	/* Make it public */
 	AddClass((Class *)RootClass);
 	
 	return (TRUE);

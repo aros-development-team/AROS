@@ -26,19 +26,35 @@
 
 #define OOPBase (GetOBase(((Class *)cl)->UserData))
 
+/* This proxyclass is used to create a proxy object for
+   another object owned by another process. You can then call
+   methods on the object through the proxy, using IPC.
+   This makes methodcalls threadsafe.
+
+   Note the API of this class sucks (It's not OS-independent).
+   This implementation is  mainly there to show that the idea works.
+
+*/
 
 struct ProxyData
 {
+    /* The object this is a proxy for */
     Object *RealObject;
+
+    /* Server's Msgport to which we send requests */
     struct MsgPort *ServerPort;
+    
+    /* The server replies to this port */
     struct MsgPort *ReplyPort;
+    
+    /* Mem used for passing the message */
     struct ProxyMsg *Message;
 };
 
-/*************************
-**  ProxyClass methods  **
-*************************/
 
+/************
+**  New()  **
+************/
 static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 {
     /* Get the attributes */
@@ -47,10 +63,19 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     
     EnterFunc(bug("Proxy::New()\n"));
     
+    /* Pares params */
+
+    /* Object from other process which we create a proxy for */
     realobject = (Object *)GetTagData(A_Proxy_RealObject,	NULL, msg->AttrList);
+    
+    /* MsgPort to pass method invocation throgh.
+       Note that one could very well use a socket or a pipe to pass
+       the methods
+    */
+    
     serverport = (struct MsgPort *)GetTagData(A_Proxy_Port, 	NULL, msg->AttrList);
     
-    
+    /* Those two params MUST be supplied */
     if ( !(realobject && serverport) )
     	return (NULL);
     
@@ -62,6 +87,7 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	    
 	data = (struct ProxyData *)INST_DATA(cl, o);
 	
+	/* Clear the instance data */
 	memset(data, 0, sizeof (struct ProxyData));
 	
 	/* This is ugly, as we will soon run out of sigbits */
@@ -74,9 +100,11 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
 	    {
 	    	struct ProxyMsg *pm = data->Message;
 		
+		/* Save the instance data */
 	    	data->RealObject = realobject;
 	    	data->ServerPort = serverport;
 		
+		/* Preinitialize some fields in the message struct */
     		pm->pm_Message.mn_Length    = sizeof (struct ProxyMsg);
     		pm->pm_Message.mn_ReplyPort = data->ReplyPort;
     		pm->pm_Object = realobject;
@@ -94,39 +122,58 @@ static Object *_Root_New(Class *cl, Object *o, struct P_Root_New *msg)
     ReturnPtr("Proxy::New", Object *, NULL);
 }
 
+/****************
+**  Dispose()  **
+****************/
 static VOID _Root_Dispose(Class *cl, Object *o, Msg msg)
 {
     struct ProxyData *data = INST_DATA(cl, o);
     
+    /* Delete the replyport.. */
     if (data->ReplyPort)
     	DeleteMsgPort(data->ReplyPort);
 	
+    /* .. the message struct.. */
     if (data->Message)
     	FreeMem(data->Message, sizeof (struct ProxyMsg));
+
+    /* .. and the object itself. */
+    DoSuperMethodA(cl, o, msg);
     
     ReturnVoid("Proxy::Dispose");
 }
 
+#undef OOPBase
+#define OOPBase ((struct Library *)(OCLASS(o)->UserData))
 
 /*****************
 **  DoMethod()  **
 *****************/
-#undef OOPBase
-#define OOPBase ((struct Library *)(OCLASS(o)->UserData))
+/* The proxy has a custom DoMethod() call that
+   handles passing the method on to the server's MsgPort.
+*/   
+
 static IPTR _Proxy_DoMethod(Object *o, Msg msg)
 {
     struct ProxyData *data = INST_DATA(cl, o);
     
     EnterFunc(bug("Proxy_DoMethod()\n"));
     
+    /* Pass a pointer to the message */
     data->Message->pm_ObjMsg = msg;
     
     /* Send to server */
     PutMsg(data->ServerPort, (struct Message *)data->Message);
     
-    /* Wait for server to reply */
+    /* Wait for server to reply. Note that this is prone to deadlocks,
+       and that this must be fixed. (For example the task calling
+       the remote obj through the proxy, is also server.
+       And the server receiving the call tries to call *us*.
+    */
     WaitPort(data->ReplyPort);
     
+    /* Get the reply, so we can reuse the memory to send new requests.
+     */
     GetMsg(data->ReplyPort);
     
     ReturnInt("Proxy_DoMethod", IPTR, data->Message->pm_RetVal);

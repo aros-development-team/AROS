@@ -14,6 +14,7 @@ IPTR LocalDoMethod(Object *object, Msg msg)
 {
     struct IntClass *cl = (struct IntClass *)OCLASS(object);
     
+    /* Macro below defined in intern.h */
     IntCallMethod(cl, object, msg);
 
 }

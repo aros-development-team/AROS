@@ -25,10 +25,13 @@
 	struct Library *, OOPBase, 10, OOP)
 
 /*  FUNCTION
+	Delete an obeject that was previously allocated with NewObjectA().
 
     INPUTS
+    	obj	- pointer to object to dispose.
 
     RESULT
+    	None.
 
     NOTES
 
@@ -37,6 +40,7 @@
     BUGS
 
     SEE ALSO
+    	NewObjectA()
 
     INTERNALS
 
@@ -55,10 +59,10 @@
     		OCLASS(obj)->ClassNode.ln_Name));
 
 
-    D(bug("Reducing ObjectCount\n"));    		
+
     ((struct IntClass *)OCLASS(obj))->ObjectCount --;
 		
-    D(bug("Calling DoMethodA\n"));    		
+
     DoMethod(obj, (Msg)&mid);
 
         
