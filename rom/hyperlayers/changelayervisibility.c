@@ -120,6 +120,23 @@ kprintf("%s called 2nd!\n",__FUNCTION__);
      * Let me show the layer in its full beauty...
      */
     _ShowPartsOfLayer(l, &r, LayersBase);
+  
+    if (IS_SIMPLEREFRESH(l))
+    {
+      /*
+       * Add the whole visible area of the layer to the
+       * damage list since for those kind of layers
+       * nothing was backed up.
+       */
+      _SetRegion(l->shape, l->DamageList);
+      AndRegionRegion(l->VisibleRegion, l->DamageList);
+      /*
+       * Since the Damagelist is relative to the layer I have to make
+       * some adjustments to the coordinates here.
+       */
+      TranslateRect(&l->DamageList->bounds,l->bounds.MinX,l->bounds.MinY);
+      l->Flags |= LAYERREFRESH;
+    }
   }
   else
   {
@@ -182,7 +199,9 @@ kprintf("%s called 2nd!\n",__FUNCTION__);
           (IS_SIMPLEREFRESH(lparent) || IS_ROOTLAYER(lparent)))
         _BackFillRegion(lparent, &clearr, FALSE);
     }
-    
+
+    l->Flags &= ~LAYERREFRESH;
+    ClearRegion(l->DamageList);
     ClearRegion(&clearr);
   }
 
