@@ -329,6 +329,15 @@ static LONG timezone_input(struct IntuiMessage *msg)
 	    timezoneid += (timezonergb & 0x00C000) >> (8 + 4);
 	    timezoneid += (timezonergb & 0x0000C0) >> (0 + 6);
 	    
+	    if ((timezoneid >= 0) && (timezoneid < NUM_TIMEZONES))
+	    {
+	    	active_timezone = timezoneid;
+		
+		/* AmigaOS seems to have the sign the other way round, therefore the "-" */
+
+		localeprefs.lp_GMTOffset = -timezone_table[active_timezone].minoffset;
+	    }
+	    
 	    //printf("You clicked on timezone: %d\n", timezoneid);
 	}
     }
@@ -367,7 +376,9 @@ static void timezone_prefs_changed(void)
     
     for(i = 0; i < NUM_TIMEZONES; i++)
     {
-    	if (localeprefs.lp_GMTOffset == timezone_table[i].minoffset)
+    	/* AmigaOS seems to have the sign the other way round, therefore the "-" */
+	
+    	if (-localeprefs.lp_GMTOffset == timezone_table[i].minoffset)
 	{
 	    active_timezone = i;
 	    break;

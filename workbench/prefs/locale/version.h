@@ -1,5 +1,5 @@
 /*
-    (C) 1997-2000 AROS - The Amiga Research OS
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -8,6 +8,6 @@
 
 
 #define VERSION 	1
-#define REVISION 	1
-#define DATESTR 	"19.09.2000"
-#define VERSIONSTR	"$VER: MultiView 1.1 (" DATESTR ")"
+#define REVISION 	0
+#define DATESTR 	"25.02.2001"
+#define VERSIONSTR	"$VER: Locale 1.0 (" DATESTR ")"

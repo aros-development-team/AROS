@@ -236,7 +236,7 @@ void SetMenuFlags(void);
 struct Node *FindListNode(struct List *list, WORD which);
 void SortInNode(struct List *list, struct Node *node);
 
-STRPTR GetFile(void);
+STRPTR GetFile(STRPTR title, STRPTR dir, BOOL savemode);
 
 /* page_language.c */
 
@@ -260,9 +260,11 @@ STRPTR MSG(ULONG id);
 
 void InitPrefs(void);
 void CleanupPrefs(void);
+BOOL LoadCountry(STRPTR name, struct CountryPrefs *country);
 BOOL LoadPrefs(STRPTR filename);
+BOOL SavePrefs(STRPTR filename);
 BOOL DefaultPrefs(void);
-void GetActualPrefs(void);
+void RestorePrefs(void);
 
 /*********************************************************************************************/
 /*********************************************************************************************/

@@ -81,7 +81,7 @@ static struct button
 buttontable[NUM_BUTTONS] =
 {
     {MSG_GAD_SAVE  , &cool_saveimage  },
-    {MSG_GAD_USE   , &cool_useimage   },
+    {MSG_GAD_USE   , &cool_dotimage   },
     {MSG_GAD_CANCEL, &cool_cancelimage}
 };
 
@@ -89,7 +89,6 @@ buttontable[NUM_BUTTONS] =
 
 static struct RegisterTabItem 	regitems[NUM_PAGES + 1];
 static struct RegisterTab   	reg;
-static struct Gadget	    	*okgad, *usegad, *cancelgad;
 static struct RDArgs        	*myargs;
 static WORD 	    	    	activetab;
 static IPTR                 	args[NUM_ARGS];
@@ -359,6 +358,7 @@ static void MakeGadgets(void)
 	{GA_ID	    	    , 0     	    },
 	{GA_Previous	    , 0     	    },
 	{COOLBT_CoolImage   , 0     	    },
+	{GA_RelVerify	    , TRUE  	    },
 	{TAG_DONE   	    	    	    }
     };
     
@@ -446,23 +446,24 @@ static void MakeWin(void)
     wx = (scr->Width - (winwidth + scr->WBorLeft + scr->WBorTop)) / 2;
     wy = (scr->Height - (winheight + scr->WBorTop + scr->Font->ta_YSize + 1 + scr->WBorBottom)) / 2;
     
-    win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr,
-    	    	    	    WA_Left 	    , wx,
-			    WA_Top  	    , wy,
-			    WA_InnerWidth   , winwidth,
-			    WA_InnerHeight  , winheight,
-			    WA_Title	    , (IPTR)MSG(MSG_WINTITLE),
-			    WA_CloseGadget  , TRUE,
-			    WA_DragBar	    , TRUE,
-			    WA_DepthGadget  , TRUE,
-			    WA_Activate     , TRUE,
-			    WA_Gadgets	    , (IPTR)buttontable[0].gad,
-			    WA_NewLookMenus , TRUE,
+    win = OpenWindowTags(0, WA_PubScreen    , (IPTR)scr     	    	,
+    	    	    	    WA_Left 	    , wx    	    	    	,
+			    WA_Top  	    , wy    	    	    	,
+			    WA_InnerWidth   , winwidth	    	    	,
+			    WA_InnerHeight  , winheight     	    	,
+			    WA_Title	    , (IPTR)MSG(MSG_WINTITLE)	,
+			    WA_CloseGadget  , TRUE  	    	    	,
+			    WA_DragBar	    , TRUE  	    	    	,
+			    WA_DepthGadget  , TRUE  	    	    	,
+			    WA_Activate     , TRUE  	    	    	,
+			    WA_Gadgets	    , (IPTR)buttontable[0].gad	,
+			    WA_NewLookMenus , TRUE  	    	    	,
 			    WA_IDCMP	    , REGISTERTAB_IDCMP |
 			    	      	      BUTTONIDCMP   	|
 				      	      LISTVIEWIDCMP 	|
 				      	      IDCMP_CLOSEWINDOW |
-					      IDCMP_MENUPICK,
+					      IDCMP_VANILLAKEY  |
+					      IDCMP_MENUPICK	    	,
 			    TAG_DONE);
 
     SetMenuStrip(win, menus);
@@ -500,6 +501,7 @@ static void HandleAll(void)
 {
     struct IntuiMessage *msg;
     struct MenuItem     *item;
+    struct Gadget   	*gad;
     UWORD               men;
     BOOL                quitme = FALSE;
     
@@ -532,21 +534,51 @@ static void HandleAll(void)
 		    } /* switch(msg->Code) */
 		    break;
 
+    	    	case IDCMP_GADGETUP:
+    	    	    gad = (struct Gadget *)msg->IAddress;
+		    switch(gad->GadgetID)
+		    {
+		    	case MSG_GAD_SAVE:
+			    if (!SavePrefs("ENVARC:Sys/locale.prefs")) break;
+			    /* fall through */
+			    
+			case MSG_GAD_USE:
+			    if (!SavePrefs("ENV:Sys/locale.prefs")) break;
+			    /* fall through */
+			    
+			case MSG_GAD_CANCEL:
+			    quitme = TRUE;
+			    break;
+			    
+		    }		    
+		    break;
+		    
 		case IDCMP_MENUPICK:
 		    men = msg->Code;            
 		    while(men != MENUNULL)
 		    {
 			if ((item = ItemAddress(menus, men)))
 			{
+			    STRPTR filename;
+			    
 			    switch((ULONG)GTMENUITEM_USERDATA(item))
 			    {
 			    	case MSG_MEN_PROJECT_OPEN:
+				    if ((filename = GetFile(MSG(MSG_ASL_OPEN_TITLE), "SYS:Prefs/Presets", FALSE)))
+				    {
+				    	LoadPrefs(filename);
+				    }
 				    break;
 				
 				case MSG_MEN_PROJECT_SAVEAS:
+				    if ((filename = GetFile(MSG(MSG_ASL_SAVE_TITLE), "SYS:Prefs/Presets", TRUE)))
+				    {
+				    	SavePrefs(filename);
+				    }
 				    break;
 				    
 			    	case MSG_MEN_PROJECT_QUIT:
+				    quitme = TRUE;
 				    break;
 				
 				case MSG_MEN_EDIT_DEFAULT:
@@ -554,17 +586,16 @@ static void HandleAll(void)
 				    break;
 				
 				case MSG_MEN_EDIT_LASTSAVED:
+				    LoadPrefs("ENVARC:Sys/locale.prefs");
 				    break;
 				    
 				case MSG_MEN_EDIT_RESTORE:
+				    RestorePrefs();
 				    break;
 				    
 				case MSG_MEN_SETTINGS_CREATEICONS:
 				    break;
 				    
-    	    	    	    	default:
-				    break;
-				
 			    } /* switch(GTMENUITEM_USERDATA(item)) */
 			    
 			    men = item->NextSelect;
