@@ -1,11 +1,20 @@
 /*
-**	$VER: libheader.c 37.15 (14.8.97)
+**    © Copyright 1996-97 Andreas R. Kleinert
+**    All Rights Reserved.
+** 
+**    Copyright © 1997-2001, The AROS Development Team. All rights reserved.
+**    $Id$
 **
-**	This file must be compiled and must be passed as the first
-**	object to link to the linker.
+**    This file needs to be at the start of a compiled module. Most of the
+**    time this is done by including it in the *_init.c of the module.
 **
-**	(C) Copyright 1996-97 Andreas R. Kleinert
-**	All Rights Reserved.
+**    This file is based on a file from the CLib37x.lha package of Andreas R.
+**    Kleinert (of which a more recent version is available on aminet) and
+**    adapted to fit in the AROS build framework.
+** 
+**    To be able to compile modules with a license incompatible with the AROS
+**    Public License users may relicense this file under any license of their
+**    choice.
 */
 
 #define __USE_SYSBASE	     /* perhaps only recognized by SAS/C */
@@ -25,6 +34,15 @@
 #endif
 #include <libcore/compiler.h>
 #include <libcore/base.h>
+
+/* If the file with the #defines for this library is not "libdefs.h",
+    then you can redefine it. */
+#ifndef LC_LIBDEFS_FILE
+#   define LC_LIBDEFS_FILE "libdefs.h"
+#endif
+
+/* Include the file with the #defines for this library */
+#include LC_LIBDEFS_FILE
 
 #ifndef LC_LIBHEADERTYPEPTR
 #   define LC_LIBHEADERTYPEPTR	       struct LibHeader *
@@ -50,14 +68,6 @@
 #ifndef LC_LIBBASESIZE
 #   define LC_LIBBASESIZE  sizeof (struct LibHeader)
 #endif
-/* If the file with the #defines for this library is not "libdefs.h",
-    then you can redefine it. */
-#ifndef LC_LIBDEFS_FILE
-#   define LC_LIBDEFS_FILE "libdefs.h"
-#endif
-
-/* Include the file with the #defines for this library */
-#include LC_LIBDEFS_FILE
 
 #define	TEXT_SECTION __attribute__((section(".text")))
 
@@ -89,7 +99,7 @@
  * (moveq #-1,d0 ; rts) in a constant variable.
  */
 #if (defined(__mc68000__) && (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE))
-const LONG entry = 0x70FF4E75;
+const LONG LC_BUILDNAME(entry) = 0x70FF4E75;
 #else
 LONG ASM LC_BUILDNAME(entry) (void)
 {
@@ -107,12 +117,12 @@ extern const char ALIGNED LC_BUILDNAME(LibName)   [] TEXT_SECTION;
 extern const char ALIGNED LC_BUILDNAME(LibID)     [] TEXT_SECTION;
 extern const char ALIGNED LC_BUILDNAME(Copyright) [] TEXT_SECTION;
 
-AROS_LD2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
+AROS_UFP3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
     AROS_LDA(BPTR,                segList, A0),
-    struct ExecBase *, sysBase, 0, LibHeader
+    AROS_LDA(struct ExecBase *,	  sysBase, A6)
 );
-AROS_LD1 (BPTR, LC_BUILDNAME(ExpungeLib),
+AROS_LP1 (BPTR, LC_BUILDNAME(ExpungeLib),
     AROS_LDA(LC_LIBHEADERTYPEPTR, lh,      D0),
     struct ExecBase *, sysBase, 0, LibHeader
 );
@@ -157,7 +167,7 @@ const LC_BUILDNAME(InitTab) TEXT_SECTION =
     LC_LIBBASESIZE,
     &LIBFUNCTABLE[0],
     &LC_BUILDNAME(DataTab),
-    (APTR) AROS_SLIB_ENTRY(LC_BUILDNAME(InitLib), LibHeader)
+    (APTR)LC_BUILDNAME(InitLib)
 };
 
 static struct DataTable 		   /* do not change */
@@ -224,10 +234,6 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh);
 #   define __L_ExpungeLib(x)        /* eps */
 #endif
 
-#ifndef SysBase
-#   define SysBase	(LC_SYSBASE_FIELD(lh))
-#   define __LC_OWN_SYSBASE
-#endif
 
 #ifdef AROS_LC_SETFUNCS
 #include <aros/symbolsets.h>
@@ -239,6 +245,16 @@ DECLARESET(INITLIB)
 DECLARESET(EXPUNGELIB)
 DECLARESET(OPENLIB)
 DECLARESET(CLOSELIB)
+
+#ifdef SysBase
+#undef SysBase
+#endif
+struct ExecBase *SysBase;
+#else
+#ifndef SysBase
+#   define SysBase	(LC_SYSBASE_FIELD(lh))
+#   define __LC_OWN_SYSBASE
+#endif
 #endif
 
 /* -----------------------------------------------------------------------
@@ -251,20 +267,23 @@ DECLARESET(CLOSELIB)
     (which open other libraries, that open other libraries, that...)
 ----------------------------------------------------------------------- */
 
-AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
-    AROS_LHA(LC_LIBHEADERTYPEPTR, lh,      D0),
-    AROS_LHA(BPTR,                segList, A0),
-    struct ExecBase *, sysBase, 0, LibHeader
+AROS_UFH3 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
+    AROS_UFHA(LC_LIBHEADERTYPEPTR,  lh,		D0),
+    AROS_UFHA(BPTR,		    segList,	A0),
+    AROS_UFHA(struct ExecBase *,    sysBase,	A6)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
 
     int ok = TRUE;
- 
+
     LC_SYSBASE_FIELD(lh) = sysBase;
     LC_SEGLIST_FIELD(lh) = segList;
 
+
 #ifdef AROS_LC_SETFUNCS
+    SysBase = sysBase;
+
     ok = !set_open_libraries() && !set_call_funcs(SETNAME(INIT), 1);
     if ( ok )
     {
@@ -309,7 +328,8 @@ AROS_LH2 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(InitLib),
     }
     else
 	return (lh);
-    AROS_LIBFUNC_EXIT
+
+    AROS_USERFUNC_EXIT
 }
 
 /* -----------------------------------------------------------------------
@@ -349,7 +369,7 @@ AROS_LH1 (LC_LIBHEADERTYPEPTR, LC_BUILDNAME(OpenLib),
     }
 
     return NULL;
-
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -371,7 +391,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 )
 {
     AROS_LIBFUNC_INIT
-
+    
 #ifndef NOEXPUNGE
     LC_LIB_FIELD(lh).lib_OpenCnt--;
 
@@ -390,7 +410,7 @@ AROS_LH0 (BPTR, LC_BUILDNAME(CloseLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
-
+    
     AROS_LIBFUNC_EXIT
 }
 
@@ -413,7 +433,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 )
 {
     AROS_LIBFUNC_INIT
-
+    
 #ifndef NOEXPUNGE
     BPTR seglist;
 
@@ -457,7 +477,7 @@ AROS_LH1 (BPTR, LC_BUILDNAME(ExpungeLib),
 #endif /* NOEXPUNGE */
 
     return (NULL);
-
+    
     AROS_LIBFUNC_EXIT
 }
 
