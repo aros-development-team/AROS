@@ -1006,6 +1006,14 @@ STATIC ULONG FOGetSelectedFont(struct LayoutData *ld, struct AslBase_intern *Asl
     req->fo_TAttr.tta_YSize = iforeq->ifo_TextAttr.ta_YSize = (UWORD)val;
     
     
+    /* Hmm ... there is also a struct TextAttr fo_Attr in
+       FontRequester structure. Just put the same values in!? */
+       
+    req->fo_Attr.ta_Name  = req->fo_TAttr.tta_Name;
+    req->fo_Attr.ta_YSize = req->fo_TAttr.tta_YSize;
+    req->fo_Attr.ta_Style = req->fo_TAttr.tta_Style;
+    req->fo_Attr.ta_Flags = req->fo_TAttr.tta_Flags;
+    
     retval = GHRET_FINISHED_OK;
 
 bye:
