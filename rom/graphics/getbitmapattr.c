@@ -57,22 +57,43 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
+    IPTR retval;
+    
     switch(attribute)
     {
-    case BMA_HEIGHT:
-        return (IPTR)bitmap->Rows;
-    case BMA_WIDTH:
-      /* must return width in pixel! */
-        return ((IPTR)bitmap->BytesPerRow * 8);
-    case BMA_DEPTH:
-        return (IPTR)bitmap->Depth;
-    case BMA_FLAGS:
-        return (IPTR)(bitmap->Flags & (BMF_DISPLAYABLE |
-				       BMF_INTERLEAVED |
-				       BMF_STANDARD));
-    default:
-        return (IPTR)0UL;
+	case BMA_HEIGHT:
+            retval = (IPTR)bitmap->Rows;
+	    break;
+	    
+	case BMA_WIDTH:
+	  /* must return width in pixel! */
+            retval = (IPTR)(bitmap->BytesPerRow * 8);
+	    break;
+	    
+	case BMA_DEPTH:
+	    if (IS_HIDD_BM(bitmap))
+	    {
+	    	retval = (IPTR)HIDD_BM_REALDEPTH(bitmap);
+	    }
+	    else
+	    {
+            	retval = (IPTR)bitmap->Depth;
+	    }
+	    break;
+	    
+	case BMA_FLAGS:
+            retval = (IPTR)(bitmap->Flags & (BMF_DISPLAYABLE |
+					     BMF_INTERLEAVED |
+					     BMF_STANDARD));
+	    break;
+	    
+	default:
+            retval = 0;
+	    break;
     }
 
+    return retval;
+
     AROS_LIBFUNC_EXIT
+        
 } /* GetBitMapAttr */
