@@ -148,7 +148,8 @@ $(LIBDIR)/libAmigaOS.a : $(wildcard $(OSGENDIR)/*.o) \
 $(SDIR)/Startup-Sequence : s/Startup-Sequence
 	$(CP) $^ $@
 
-includes: include/clib/exec_protos.h \
+# include/clib/exec_protos.h
+includes: \
 	    include/clib/dos_protos.h \
 	    include/clib/utility_protos.h \
 	    include/clib/graphics_protos.h \

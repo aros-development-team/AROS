@@ -112,18 +112,18 @@ AROS_LP0(void, SuperState,
     struct ExecBase *, SysBase, 25, Exec)
 
 AROS_LP1(void, Supervisor,
-    AROS_LPA(void *, userFunc, A5),
+    AROS_LPA(ULONG_FUNC, userFunction, A5),
     struct ExecBase *, SysBase, 5, Exec)
-#define Supervisor() \
+#define Supervisor(userFunction) \
     AROS_LC1(void, Supervisor, \
-    AROS_LCA(void *, userFunc, A5), \
+    AROS_LCA(ULONG_FUNC, userFunction, A5), \
     struct ExecBase *, SysBase, 5, Exec)
 
 AROS_LP0(void, Switch,
-    struct ExecBase *, SysBase, 9, Exec)
+    struct ExecBase *, SysBase, 6, Exec)
 #define Switch() \
     AROS_LC0(void, Switch, \
-    struct ExecBase *, SysBase, 9, Exec)
+    struct ExecBase *, SysBase, 6, Exec)
 
 AROS_LP0(void, UserState,
     struct ExecBase *, SysBase, 26, Exec)
@@ -321,6 +321,14 @@ AROS_LP1(BYTE, AllocSignal,
     AROS_LCA(LONG, signalNum, D0), \
     struct ExecBase *, SysBase, 55, Exec)
 
+AROS_LP1(LONG, AllocTrap,
+    AROS_LPA(long, trapNum, D0),
+    struct ExecBase *, SysBase, 57, Exec)
+#define AllocTrap(trapNum) \
+    AROS_LC1(LONG, AllocTrap, \
+    AROS_LCA(long, trapNum, D0), \
+    struct ExecBase *, SysBase, 57, Exec)
+
 AROS_LP2(APTR, AllocVec,
     AROS_LPA(ULONG, byteSize,     D0),
     AROS_LPA(ULONG, requirements, D1),
@@ -371,6 +379,38 @@ AROS_LP1I(struct IORequest *, CheckIO,
     AROS_LCA(struct IORequest *, iORequest, A1), \
     struct ExecBase *, SysBase, 78, Exec)
 
+AROS_LP1(void, ChildFree,
+    AROS_LPA(APTR, tid, D0),
+    struct ExecBase *, SysBase, 123, Exec)
+#define ChildFree(tid) \
+    AROS_LC1(void, ChildFree, \
+    AROS_LCA(APTR, tid, D0), \
+    struct ExecBase *, SysBase, 123, Exec)
+
+AROS_LP1(void, ChildOrphan,
+    AROS_LPA(APTR, tid, D0),
+    struct ExecBase *, SysBase, 124, Exec)
+#define ChildOrphan(tid) \
+    AROS_LC1(void, ChildOrphan, \
+    AROS_LCA(APTR, tid, D0), \
+    struct ExecBase *, SysBase, 124, Exec)
+
+AROS_LP1(void, ChildStatus,
+    AROS_LPA(APTR, tid, D0),
+    struct ExecBase *, SysBase, 125, Exec)
+#define ChildStatus(tid) \
+    AROS_LC1(void, ChildStatus, \
+    AROS_LCA(APTR, tid, D0), \
+    struct ExecBase *, SysBase, 125, Exec)
+
+AROS_LP1(void, ChildWait,
+    AROS_LPA(APTR, tid, D0),
+    struct ExecBase *, SysBase, 126, Exec)
+#define ChildWait(tid) \
+    AROS_LC1(void, ChildWait, \
+    AROS_LCA(APTR, tid, D0), \
+    struct ExecBase *, SysBase, 126, Exec)
+
 AROS_LP1(void, CloseDevice,
     AROS_LPA(struct IORequest *, iORequest, A1),
     struct ExecBase *, SysBase, 75, Exec)
@@ -386,6 +426,12 @@ AROS_LP1(void, CloseLibrary,
     AROS_LC1(void, CloseLibrary, \
     AROS_LCA(struct Library *, library,A1), \
     struct ExecBase *, SysBase, 69, Exec)
+
+AROS_LP0(void, ColdReboot,
+    struct ExecBase *, SysBase, 121, Exec)
+#define ColdReboot() \
+    AROS_LC0(void, ColdReboot, \
+    struct ExecBase *, SysBase, 121, Exec)
 
 AROS_LP3I(void, CopyMem,
     AROS_LPA(APTR,  source, A0),
@@ -451,6 +497,14 @@ AROS_LP3(void, Deallocate,
     AROS_LCA(ULONG,              byteSize,    D0), \
     struct ExecBase *, SysBase, 32, Exec)
 
+AROS_LP1(void, Debug,
+    AROS_LPA(unsigned long, flags, D0),
+    struct ExecBase *, SysBase, 19, Exec)
+#define Debug(flags) \
+    AROS_LC1(void, Debug, \
+    AROS_LCA(unsigned long, flags, D0), \
+    struct ExecBase *, SysBase, 19, Exec)
+
 AROS_LP1(void, DeleteIORequest,
     AROS_LPA(struct IORequest *, iorequest, A0),
     struct ExecBase *, SysBase, 110, Exec)
@@ -511,6 +565,14 @@ AROS_LP1(struct MsgPort *, FindPort,
     AROS_LCA(STRPTR, name,A1), \
     struct ExecBase *, SysBase, 65, Exec)
 
+AROS_LP1(struct Resident *, FindResident,
+    AROS_LPA(UBYTE *, name, A1),
+    struct ExecBase *, SysBase, 16, Exec)
+#define FindResident(name) \
+    AROS_LC1(struct Resident *, FindResident, \
+    AROS_LCA(UBYTE *, name, A1), \
+    struct ExecBase *, SysBase, 16, Exec)
+
 AROS_LP1(struct SignalSemaphore *, FindSemaphore,
     AROS_LPA(STRPTR, name, A1),
     struct ExecBase *, SysBase, 99, Exec)
@@ -565,6 +627,14 @@ AROS_LP1(void, FreeSignal,
     AROS_LCA(LONG, signalNum, D0), \
     struct ExecBase *, SysBase, 56, Exec)
 
+AROS_LP1(void, FreeTrap,
+    AROS_LPA(long, trapNum, D0),
+    struct ExecBase *, SysBase, 58, Exec)
+#define FreeTrap(trapNum) \
+    AROS_LC1(void, FreeTrap, \
+    AROS_LCA(long, trapNum, D0), \
+    struct ExecBase *, SysBase, 58, Exec)
+
 AROS_LP1(void, FreeVec,
     AROS_LPA(APTR, memoryBlock, A1),
     struct ExecBase *, SysBase, 115, Exec)
@@ -580,6 +650,16 @@ AROS_LP1(struct Message *, GetMsg,
     AROS_LC1(struct Message *, GetMsg, \
     AROS_LCA(struct MsgPort *, port, A0), \
     struct ExecBase *, SysBase, 62, Exec)
+
+AROS_LP2(void, InitCode,
+    AROS_LPA(unsigned long, startClass, D0),
+    AROS_LPA(unsigned long, version, D1),
+    struct ExecBase *, SysBase, 12, Exec)
+#define InitCode(startClass, version) \
+    AROS_LC2(void, InitCode, \
+    AROS_LCA(unsigned long, startClass, D0), \
+    AROS_LCA(unsigned long, version, D1), \
+    struct ExecBase *, SysBase, 12, Exec)
 
 AROS_LP2(APTR, InitResident,
     AROS_LPA(struct Resident *, resident, A1),
@@ -948,6 +1028,12 @@ AROS_LP2(void, Signal,
     AROS_LCA(struct Task *,     task,      A1), \
     AROS_LCA(ULONG,             signalSet, D0), \
     struct ExecBase *, SysBase, 54, Exec)
+
+AROS_LP0(ULONG, SumKickData,
+    struct ExecBase *, SysBase, 102, Exec)
+#define SumKickData() \
+    AROS_LC0(ULONG, SumKickData, \
+    struct ExecBase *, SysBase, 102, Exec)
 
 AROS_LP1(void, SumLibrary,
     AROS_LPA(struct Library *, library,A1),
