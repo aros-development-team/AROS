@@ -47,7 +47,7 @@ AROS_UFH2S(void, len_func,
 /*  SYNOPSIS */
 	AROS_LHA(APTR, app, D0),
 	AROS_LHA(APTR, win, D1),
-	AROS_LHA(LONG, flags, D2),
+	AROS_LHA(LONGBITS, flags, D2),
 	AROS_LHA(char *, title, A0),
 	AROS_LHA(char *, gadgets, A1),
 	AROS_LHA(char *, format, A2),
