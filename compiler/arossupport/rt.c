@@ -29,6 +29,9 @@
 #include <proto/arossupport.h>
 #include <proto/exec.h>
 
+/* iaint: Use the debugging macros from now on. */
+#include <aros/debug.h>
+
 RTData * intRTD = NULL; /* Internal pointer in case no ETask is available */
 RTDesc const * RT_Resources[RTT_MAX];
 
@@ -70,13 +73,13 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     if ((rtd = GetRTData ()))
     {
-	kprintf ("RT_Init() called twice %p\n", rtd);
+	D(bug ("RT_Init() called twice %p\n", rtd) );
 	return;
     }
 
     if (!(rtd = AllocMem (sizeof (RTData), MEMF_ANY)) )
     {
-	kprintf ("RT_Init(): No memory\n");
+	D(bug ("RT_Init(): No memory\n") );
 	return;
     }
 
@@ -133,9 +136,9 @@ RTDesc const * RT_Resources[RTT_MAX];
 	}
     }
 
-    kprintf ("RT_Init(): RT up and kicking in %s mode\n"
+    D(bug ("RT_Init(): RT up and kicking in %s mode\n"
 	, intRTD ? "internal" : "ETask"
-    );
+    ) );
 } /* RT_IntInitE */
 
 /*****************************************************************************
@@ -302,7 +305,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     if (!(rtnew = AllocMem (GetRTSize(rtt), MEMF_ANY)) )
     {
-	kprintf ("RT_IntAdd: Out of memory\n");
+	D(bug ("RT_IntAdd: Out of memory\n") );
 	return FALSE;
     }
 
@@ -390,7 +393,7 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     if (!(rtnew = AllocMem (GetRTSize(rtt), MEMF_ANY|MEMF_CLEAR)) )
     {
-	kprintf ("RT_IntAdd: Out of memory\n");
+	D(bug("RT_IntAdd: Out of memory\n"));
     }
     else
     {
@@ -747,11 +750,11 @@ RTDesc const * RT_Resources[RTT_MAX];
 	return;
 
     for (t=0; t<KEEPDEPTH && node->Stack[t].Function; t++)
-	kprintf ("    %s (%s:%d)\n"
+	D(bug(("    %s (%s:%d)\n"
 	    , node->Stack[t].Function
 	    , node->Stack[t].File
 	    , node->Stack[t].Line
-	);
+	));
 #endif
 } /* RT_ShowStack */
 
@@ -799,11 +802,11 @@ RTDesc const * RT_Resources[RTT_MAX];
 
     for (t=0; t<=rtd->rtd_StackPtr; t++)
     {
-	kprintf ("    %s (%s:%d)\n"
+	D(bug("    %s (%s:%d)\n"
 	    , rtd->rtd_CallStack[t].Function
 	    , rtd->rtd_CallStack[t].File
 	    , rtd->rtd_CallStack[t].Line
-	);
+	));
     }
 } /* RT_ShowRTStack */
 
