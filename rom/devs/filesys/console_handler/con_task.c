@@ -194,43 +194,26 @@ static void con_write(struct conbase *conbase, struct IOFileSys *iofs)
 
 /****************************************************************************************/
 
-struct Window *ConOpenWindowTagListA(struct conbase *conbase,struct NewWindow *nw,Tag tag,...){
-  return OpenWindowTagList(nw,(struct TagItem *)&tag);
-}
-
 LONG MakeConWindow(struct filehandle *fh, struct conbase *conbase)
 {
     LONG err = 0;
 
-#if 0
     struct TagItem win_tags [] =
     {
 	{WA_PubScreen	,0		},
 	{WA_AutoAdjust	,TRUE		},
+	{WA_PubScreenName,0 },
 	{TAG_DONE			}
     };
-    fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
-#endif
 
-    if(fh->screentitle==NULL){
-      fh->window = ConOpenWindowTagListA(
-					 conbase,
-					 &fh->nw,
-					 WA_PubScreen	,0,		
-					 WA_AutoAdjust	,TRUE,
-					 TAG_DONE			
-					 );
+    if(fh->screenname != NULL){
+      win_tags[2].ti_Data=fh->screenname;
     }else{
-      fh->window = ConOpenWindowTagListA(
-					 conbase,
-					 &fh->nw,
-					 WA_PubScreen	,0,		
-					 WA_AutoAdjust	,TRUE,
-					 WA_PubScreenName, fh->screentitle,
-					 TAG_DONE			
-					 );
+      win_tags[2].ti_Tag=TAG_DONE;
     }
+
+    fh->window = OpenWindowTagList(&fh->nw, (struct TagItem *)win_tags);
 
     if (fh->window)
     {
@@ -893,7 +876,7 @@ VOID conTaskEntry(struct conTaskParams *param)
     DeleteIORequest( ioReq(fh->conreadio) );
     FreeMem(fh->conreadmp, sizeof (struct MsgPort) * 3);
 
-    if (fh->screentitle) FreeVec(fh->screentitle);
+    if (fh->screenname) FreeVec(fh->screenname);
     if (fh->wintitle) FreeVec(fh->wintitle);
 
     FreeMem(fh, sizeof (struct filehandle));
