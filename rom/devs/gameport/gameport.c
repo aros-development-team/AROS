@@ -566,6 +566,10 @@ static VOID mouseCallback(struct GameportBase *GPBase,
 	    amigacode = IECODE_RBUTTON;
 	    break;
 	    
+	case vHidd_Mouse_Button3:
+	    amigacode = IECODE_MBUTTON;
+	    break;
+	    
     }
     
     switch(ev->type)
