@@ -52,6 +52,8 @@
 #endif
 #include <aros/libcall.h>
 
+#include <libcore/base.h>
+
 /*****************************************************************************************/
 
 #ifdef __MORPHOS__
@@ -66,10 +68,6 @@
 
 /* Predeclaration */
 struct AslBase_intern;
-
-#define GLOBAL_INTUIBASE
-#define GLOBAL_SYSBASE
-#define GLOBAL_DOSBASE
 
 
 /* Internal requester structure */
@@ -276,16 +274,10 @@ struct AslReqInfo
 
 struct AslBase_intern
 {
-    struct Library		library;
-    struct ExecBase		*sysbase;
-    BPTR			seglist;
+    struct LibHeader            lh;
 
-#ifndef GLOBAL_DOSBASE
-    struct Library		*dosbase;
-#endif
-#ifndef GLOBAL_INTUIBASE
+    struct DosLibrary		*dosbase;
     struct IntuitionBase 	*intuitionbase;
-#endif
 
     struct GfxBase		*gfxbase;
     struct Library		*layersbase;
@@ -453,40 +445,16 @@ typedef struct IntuitionBase IntuiBase;
 
 #define CoolImagesBase	ASLB(AslBase)->coolimagesbase
 
-#ifndef GLOBAL_INTUIBASE
 #undef IntuitionBase
 #define IntuitionBase	ASLB(AslBase)->intuitionbase
-#endif
 
 #undef GfxBase
 #define GfxBase 	ASLB(AslBase)->gfxbase
 
-#ifndef GLOBAL_DOSBASE
 #undef DOSBase
 #define DOSBase 	ASLB(AslBase)->dosbase
-#endif
 
-#ifndef GLOBAL_SYSBASE
 #undef SysBase
-#define SysBase 	ASLB(AslBase)->sysbase
-#endif
-
-
-#define expunge() \
-AROS_LC0(BPTR, expunge, struct AslBase_intern *, AslBase, 3, Asl)
-
-#ifdef __MORPHOS__
-#define DeinitRastPort(x) ((void)0)
-
-#define DoMethod(MyObject, tags...) \
-	({ULONG _tags[] = { tags }; DoMethodA((MyObject), (APTR)_tags);})
-
-#define CoerceMethod(MyClass, MyObject, tags...) \
-	({ULONG _tags[] = { tags }; CoerceMethodA((MyClass), (MyObject), (APTR)_tags);})
-
-#define DoSuperMethod(MyClass, MyObject, tags...) \
-	({ULONG _tags[] = { tags }; DoSuperMethodA((MyClass), (MyObject), (APTR)_tags);})
-
-#endif /*MorphOS*/
+#define SysBase 	ASLB(AslBase)->lh.lh_SysBase
 
 #endif /* ASL_INTERN_H */
