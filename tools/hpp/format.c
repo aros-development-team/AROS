@@ -36,6 +36,9 @@ static const char * ModeDelim[] =
 
 static DB * symbols;
 static int  label = 1;
+#define LABELSTACKMAX	256
+static int  labelstack[LABELSTACKMAX+1];
+static int  labelsp = LABELSTACKMAX;
 
 static void
 emit_html_char (int c, FILE * out)
@@ -157,10 +160,30 @@ main (int argc, char ** argv)
 	    column ++;
 	    break;
 	case '.': case '!': case '^': case '%':
-	case '(': case ')': case '=': case '?': case '{':
-	case '[': case ']': case '}': case '+': case '*':
+	case '(': case ')': case '=': case '?':
+	case '[': case ']': case '+': case '*':
 	case '~': case '-': case ':': case ',':
 	case ';': case '|':
+	    NEWMODE(m_punct);
+	    putchar (c);
+	    column ++;
+	    break;
+
+	case '{':
+	    if (labelsp)
+	    {
+		labelstack[--labelsp] = -1;
+	    }
+
+	    NEWMODE(m_punct);
+	    putchar (c);
+	    column ++;
+	    break;
+
+	case '}':
+	    if (labelsp != LABELSTACKMAX)
+		labelsp ++;
+
 	    NEWMODE(m_punct);
 	    putchar (c);
 	    column ++;
@@ -233,12 +256,12 @@ rem_again:
 			}
 			else
 			{
-			    emit_html_char ('/', stdout);
+			    putchar ('/');
 			    goto rem_again;
 			}
 		    }
 		    else
-			emit_html_char (c, stdout);
+			putchar (c);
 		}
 	    }
 	    else
@@ -421,6 +444,12 @@ rem_again:
 		if (!data)
 		    data = DB_FindData ("c-html", ident->buffer);
 
+		if (!strcmp (ident->buffer, "typedef"))
+		{
+		    printf ("<A NAME=\"%d\">", label);
+		    labelstack[labelsp] = label++;
+		}
+
 		if (data)
 		{
 		    NEWMODE(m_space);
@@ -428,6 +457,14 @@ rem_again:
 		}
 		else
 		{
+		    if (labelstack[labelsp] != -1)
+		    {
+			char buffer[256];
+			sprintf (buffer, "<A HREF=\"#%d\"><cusertype>%s<cusertype></A>", labelstack[labelsp], ident->buffer);
+			DB_AddData (symbols, ident->buffer, buffer);
+			labelstack[labelsp] = -1;
+		    }
+
 		    NEWMODE(m_identifier);
 		    fputs (ident->buffer, stdout);
 		}
