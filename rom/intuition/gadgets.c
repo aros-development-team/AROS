@@ -189,10 +189,15 @@ VOID drawrect(struct RastPort *rp
 {
     Move(rp, x1, y1);
     
-    Draw(rp, x2, y1);
-    Draw(rp, x2, y2);
-    Draw(rp, x1, y2);
-    Draw(rp, x1, y1);
+    /* We RectFill() because it is generally faster than Draw()
+       (Draw() uses Set/GetPixel() while RectFill() can do higherlevel
+       clipping. Also it is MUCH faster in the x11gfx hidd.
+    */
+       
+    RectFill(rp, x1, y1, x2 - 1, y1);	/* Top		*/
+    RectFill(rp, x2, y1, x2, y2 - 1);	/* Right	*/
+    RectFill(rp, x1 + 1, y2, x2, y2);	/* Bottom	*/
+    RectFill(rp, x1, y1 + 1, x1, y2);	/* Left		*/
     
     return;
 }
