@@ -1,11 +1,13 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
     Lang: english
 */
 #include "dos_intern.h"
+
+#include <string.h>
 
 /*****************************************************************************
 
@@ -78,6 +80,102 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
+#if 1
+    /* stegerg: a bit simple, but since the other code does not
+                work correctly. And then even AmigaOS AddPart()
+		does not seem to do things like eliminating
+		"dead" path components like:
+		
+		    "test/test2//test3" --> "test/test3"
+		    
+		It just makes sure that the path is correct
+    */
+
+    char *stringpos;
+    LONG stringlen;
+    WORD mustaddslash = 0;
+    
+    stringpos = strchr(filename, ':');
+    if (stringpos)
+    {
+    	if (stringpos == (char *)filename)
+	{
+	    /* The first char of filename is a ':' */
+	    
+	    /* Find dirname position to where we copy filename later */
+	    
+	    stringpos = strchr(dirname, ':');
+	    if (!stringpos) stringpos = dirname;
+	}	
+	else
+	{
+	    /* Filename is a fully qualified path including
+	       volume/device name -> replace dirname with filename */
+	       
+	    stringpos = dirname;
+	}
+    }
+    else
+    {
+    	/* filename did not contain ':' */
+	
+	stringlen = strlen(dirname);
+	stringpos = dirname + stringlen;
+	
+	/* Check if we must add a slash */
+	
+	if (stringlen > 0)
+	{
+	    if ((stringpos[-1] != ':') && (stringpos[-1] != '/'))
+	    	mustaddslash = 1;
+	}
+    }
+    
+    /* Check if dirname buffer is big enough */
+    
+    stringlen = ((LONG)(stringpos - (char *)dirname)) + strlen(filename) + 1 + mustaddslash;
+    if (stringlen <= size)
+    {
+    	if (mustaddslash) *stringpos++ = '/';
+	strcpy(stringpos, filename);
+    	return DOSTRUE;
+    }
+    else
+    {
+    	return DOSFALSE;
+    }
+    
+#else
+    		
+    /* stegerg: this is buggy, because in some places it accesses
+                chars in dirname behind the (initial) string in
+		there (after the 0 char). For example:
+		
+		char buffer[256];
+		
+		strcpy(buffer, "LOCALE:Catalogs");
+		AddPart(buffer, "deutsch", 256);
+		
+	    	gives correct "LOCALE:Catalogs/deutsch"
+		
+	   but: exactly the same, but buffer before was used for
+	        something else:
+		
+		char buffer[256];
+
+		strcpy(buffer, "PROGDIR:Catalogs");
+		AddPart(buffer, "deutsch", 256);
+		
+	    	gives correct "PROGDIR:Catalogs/deutsch"
+		
+		strcpy(buffer, "LOCALE:Catalogs");
+		AddPart(buffer, "deutsch", 256);
+		
+	    	gives wrong "LOCALE:Catalogs//deutsch"
+		                            ^^
+		
+    */
+    
     LONG didx, fidx;
     BOOL gotfull = FALSE;
 
@@ -193,6 +291,7 @@
 	dirname[didx] = '\0';
     }
     return DOSTRUE;
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* AddPart */
