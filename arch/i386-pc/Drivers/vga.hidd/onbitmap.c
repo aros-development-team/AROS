@@ -43,9 +43,11 @@ void vgaRestore(struct vgaHWRec *);
 void * vgaSave(struct vgaHWRec *);
 int vgaInitMode(struct vgaModeDesc *, struct vgaHWRec *);
 void vgaLoadPalette(struct vgaHWRec *, unsigned char *);
-void vgaUpdateVideo(struct bitmap_data *);
+void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
 void free_onbmclass(struct vga_staticdata *);
+
+extern unsigned long __draw_enable;
 
 #define MNAME(x) onbitmap_ ## x
 
@@ -108,11 +110,11 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	data->bpp = depth;
 	data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
 	data->disp = -1;
+	width=(width+15) & ~15;
 
 	if (data->Regs)
 	{
-	    width=width>>3;
-	    data->VideoData = AllocVec(width*depth*height,MEMF_PUBLIC|MEMF_CLEAR);
+	    data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 	    if (data->VideoData)
 	    {
 		struct vgaModeEntry *mode,*sel = NULL;
@@ -127,11 +129,15 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 
 		if (sel)
 		{
+		    struct Box box = {0, 0, width-1, height-1};
 		    ObtainSemaphore(&XSD(cl)->HW_acc);
 
 		    /* Now, when the best display mode is chosen, we can build it */
 		    vgaInitMode(sel->Desc, data->Regs);
 		    vgaLoadPalette(data->Regs,(unsigned char *)NULL);
+
+		    /* Lock the lowlevel vga driver so it cannot mess anything */
+		    __draw_enable = 0;
 
 		    /*
 		       Because of not defined BitMap_Show method show 
@@ -139,7 +145,7 @@ static Object *onbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    */
 		
 		    vgaRestore(data->Regs);
-		    vgaUpdateVideo(data);
+		    vgaRefreshArea(data, 1, &box);
 
 		    ReleaseSemaphore(&XSD(cl)->HW_acc);
 
@@ -181,19 +187,6 @@ static VOID onbitmap_dispose(Class *cl, Object *o, Msg msg)
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
 
-/*********  BitMap::Clear()  *************************************/
-static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
-{
-    struct bitmap_data *data = INST_DATA(cl, o);
-
-    bitmap_clear(cl, o, msg);
-
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-    vgaUpdateVideo(data);
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
-    return;
-}
-
 static BOOL onbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
@@ -207,14 +200,13 @@ static BOOL onbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColo
     return ret;
 }
 
-
 /*** init_onbmclass *********************************************************/
 
 #undef XSD
 #define XSD(cl) xsd
 
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 8
+#define NUM_BITMAP_METHODS 9
 
 Class *init_onbmclass(struct vga_staticdata *xsd)
 {
@@ -237,7 +229,7 @@ Class *init_onbmclass(struct vga_staticdata *xsd)
 //    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
     	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-//    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
+    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
     	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
     	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},

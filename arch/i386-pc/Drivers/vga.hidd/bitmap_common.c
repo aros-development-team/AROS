@@ -17,6 +17,34 @@ static VOID set_pixelformat(Object *bm, struct vga_staticdata *xsd)
     pf->blue_shift	= 8;
 }
 
+/*********  BitMap::Clear()  *************************************/
+static VOID MNAME(clear)(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
+{
+    ULONG width, height, bg;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct Box box = {0, 0, 0, 0};
+    
+    GetAttr(o, aHidd_BitMap_Background, &bg);
+
+    /* Get width & height from bitmap superclass */
+
+    GetAttr(o, aHidd_BitMap_Width,  &width);
+    GetAttr(o, aHidd_BitMap_Height, &height);
+
+    box.x2 = width - 1;
+    box.y2 = height - 1;
+
+    memset(data->VideoData, bg, width*height);
+
+#ifdef OnBitmap
+    ObtainSemaphore(&XSD(cl)->HW_acc);
+    vgaRefreshArea(data, 1, &box);
+    ReleaseSemaphore(&XSD(cl)->HW_acc);
+#endif /* OnBitmap */
+    
+    return;
+}
+
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
 {
@@ -129,48 +157,32 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     HIDDT_Pixel fg;
-
-    unsigned char mask,pix,notpix;
-    int size,i;
-    ULONG depth;
     unsigned char *ptr;
+
 #ifdef OnBitmap
+    int pix;
+    int i;
     unsigned char *ptr2;
 #endif /* OnBitmap */
-     
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+
     fg = msg->pixel;
-    
-    ptr = (char *)(data->VideoData + (msg->x + (msg->y * data->width)) / 8);
+    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
+    *ptr = (char) fg;
+
 #ifdef OnBitmap
     ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
-#endif /* OnBitmap */
-    pix = 128 >> (msg->x % 8);
-    size = (data->width * data->height) / 8;
-    notpix = ~pix;
-    mask = 1;
-#ifdef OnBitmap
+    pix = 0x8000 >> (msg->x % 8);
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    outw(0x3ce,0x0000);
-    outw(0x3ce,0x0001);
+
+    outw(0x3c4,0x0f02);
+    outw(0x3ce,pix | 8);
     outw(0x3ce,0x0005);
-#endif /* OnBitmap */
-    
-    for (i=0; i < depth; i++)
-    {
-#ifdef OnBitmap
-	outw(0x3c4,(UWORD)((UWORD)(256 << i) | 0x02));
-#endif /* OnBitmap */
-	*ptr = *ptr & notpix;
-	if (fg & mask)
-	    *ptr = *ptr | pix;
-#ifdef OnBitmap
-	*ptr2 = *ptr;
-#endif /* OnBitmap */
-	ptr = (char *)(ptr + size);
-	mask = mask << 1;
-    }
-#ifdef OnBitmap
+    outw(0x3ce,0x0003);
+    outw(0x3ce,(fg << 8));
+    outw(0x3ce,0x0f01);
+
+    *ptr2 |= 1;		// This or'ed value isn't important
+
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
     return;
@@ -179,27 +191,14 @@ static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *
 /*********  BitMap::GetPixel()  *********************************/
 static HIDDT_Pixel MNAME(getpixel)(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
 {
-    HIDDT_Pixel pixel;
+    HIDDT_Pixel pixel=0;
     struct bitmap_data *data = INST_DATA(cl, o);
     
-    unsigned char pix;
-    int size,i;
-    ULONG depth;
     unsigned char *ptr;
 
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
+    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
 
-    pixel = 0;
-    size = (data->width * data->height) / 8;
-    ptr = (char *)(data->VideoData + (msg->x + (msg->y * data->width)) / 8);
-    pix = 128 >> (msg->x % 8);
-
-    for (i=0; i < depth; i++)
-    {
-        if ((*ptr & pix)!=0)
-    	    pixel |= (1 << i);
-	ptr = (char *)(ptr + size);
-    }
+    pixel = *(char*)ptr;
 
     /* Get pen number from colortab */
     return pixel;
@@ -211,65 +210,257 @@ static VOID MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel 
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     HIDDT_Pixel fg;
-
-    unsigned char mask,pix,notpix;
-    int size,i;
-    ULONG depth;
     unsigned char *ptr;
+
 #ifdef OnBitmap
+    int pix;
+    int i;
     unsigned char *ptr2;
 #endif /* OnBitmap */
-     
+
     GetAttr(o, aHidd_BitMap_Foreground, &fg);
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
-    
-    ptr = (char *)(data->VideoData + (msg->x + (msg->y * data->width)) / 8);
+    ptr = (char *)(data->VideoData + msg->x + (msg->y * data->width));
+    *ptr = (char) fg;
+
 #ifdef OnBitmap
     ptr2 = (char *)(0xa0000 + (msg->x + (msg->y * data->width)) / 8);
-#endif /* OnBitmap */
-    pix = 128 >> (msg->x % 8);
-    size = (data->width * data->height) / 8;
-    notpix = ~pix;
-    mask = 1;
-#ifdef OnBitmap
+    pix = 0x8000 >> (msg->x % 8);
     ObtainSemaphore(&XSD(cl)->HW_acc);
-    outw(0x3ce,0x0000);
-    outw(0x3ce,0x0001);
-    outw(0x3ce,0x0005);
-#endif /* OnBitmap */
 
-    for (i=0; i < depth; i++)
-    {
-#ifdef OnBitmap
-	outw(0x3c4,(mask << 8) | 2);
-#endif /* OnBitmap */
-	*ptr = *ptr & notpix;
-	if ((fg & (1 << i))!=0)
-	{
-	    *ptr = *ptr | pix;
-	}
-#ifdef OnBitmap
-	*ptr2 = *ptr;
-#endif /* OnBitmap */
-	ptr = (char *)(ptr + size);
-	mask <<= 1;
-    }
-#ifdef OnBitmap
+    outw(0x3c4,0x0f02);
+    outw(0x3ce,pix | 8);
+    outw(0x3ce,0x0005);
+    outw(0x3ce,0x0003);
+    outw(0x3ce,(fg << 8));
+    outw(0x3ce,0x0f01);
+
+    *ptr2 |= 1;		// This or'ed value isn't important
+
     ReleaseSemaphore(&XSD(cl)->HW_acc);
 #endif /* OnBitmap */
     return;
+}
+
+/*********  BitMap::CopyBox()  ***************************/
+
+static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
+{
+    ULONG mode;
+    unsigned char *dest;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct Box box = {0, 0, 0, 0};
+
+    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
+
+    if (o != msg->dest)
+    {
+
+    	GetAttr(msg->dest, aHidd_VGABitMap_Drawable, (IPTR *)&dest);
+	
+	if (0 == dest)
+	{
+	    /* The destination object is no VGA bitmap, onscreen nor offscreen.
+	       Let the superclass do the copying in a more general way
+	    */
+	    DoSuperMethod(cl, o, (Msg)msg);
+	    return;
+	}
+	
+    }
+    else
+    {
+    	dest = data->VideoData;
+    }
+
+    {
+        struct bitmap_data *ddata = INST_DATA(cl, msg->dest);
+        int i, width, phase, j;
+
+        // start of Source data
+        unsigned char *s_start = data->VideoData +
+                                 msg->srcX + (msg->srcY * data->width);
+        // adder for each line
+        ULONG s_add = data->width - msg->width;
+        ULONG cnt = msg->height;
+
+        unsigned char *d_start = ddata->VideoData +
+                                 msg->destX + (msg->destY * ddata->width);
+        ULONG d_add = ddata->width - msg->width;
+
+	width = msg->width;
+
+	if ((phase = (long)s_start & 3L))
+	{
+	    phase = 4 - phase;
+	    if (phase > width) phase = width;
+	    width -= phase;
+	}
+
+        while (cnt--)
+        {
+	    i = width;
+	    j = phase;
+            while (j--)
+            {
+                *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+            }
+	    while (i >= 4)
+	    {
+		*((unsigned long*)d_start) = *((unsigned long*)s_start);
+		d_start += 4;
+		s_start += 4;
+		i -= 4;
+	    }
+	    while (i--)
+            {
+                *(unsigned char*)d_start++ = *(unsigned char*)s_start++;
+            }
+            d_start += d_add;
+            s_start += s_add;
+        }
+	if (ddata->disp)
+	{
+    	    box.x1 = msg->destX;
+    	    box.y1 = msg->destY;
+    	    box.x2 = box.x1 + msg->width;
+    	    box.y2 = box.y1 + msg->height;
+    	    vgaRefreshArea(ddata, 1, &box);
+	}
+    }
+}
+
+/*********  BitMap::PutImage()  ***************************/
+
+unsigned char MNAME(best_color)(struct bitmap_data *data, unsigned long color)
+{
+    int i;
+    unsigned pixel = -1;
+    
+    i=0;
+    
+    do
+    {
+	if ((data->cmap[i] & 0xffffff) == color)	/* Find color */
+	    pixel = i;
+	i++;
+    } while ((pixel == -1) && (i<16));
+    
+    return pixel;
+}
+    
+
+static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct Box box = {0, 0, 0, 0};
+
+    int i;
+
+    // start of Source data
+    unsigned char *buff = data->VideoData +
+                                 msg->x + (msg->y * data->width);
+    // adder for each line
+    ULONG add = data->width - msg->width;
+    ULONG cnt = msg->height;
+
+    unsigned long *s_start = msg->pixels;
+
+    while (cnt > 0)
+    {
+        i = msg->width;
+        while (i)
+        {
+//            *buff++ = MNAME(best_color)(data, *s_start++);
+            *buff++ = (unsigned char)*s_start++;
+            i--;
+        }
+        buff += add;
+        cnt--;
+    }
+    if (data->disp)
+    {
+        box.x1 = msg->x;
+        box.y1 = msg->y;
+        box.x2 = box.x1 + msg->width;
+        box.y2 = box.y1 + msg->height;
+        vgaRefreshArea(data, 1, &box);
+    }
+}
+
+/*********  BitMap::FillRect()  ***************************/
+
+static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct Box box = {0, 0, 0, 0};
+    HIDDT_Pixel fg;
+    int i, phase, j;
+
+    ULONG width = msg->maxX - msg->minX + 1;
+
+    // start of video data
+    unsigned char *s_start = data->VideoData +
+                                 msg->minX + (msg->minY * data->width);
+    // adder for each line
+    ULONG s_add = data->width - width;
+    ULONG cnt = msg->maxY - msg->minY + 1;
+
+    GetAttr(o, aHidd_BitMap_Foreground, &fg);
+
+    fg |= ((char)fg) << 8;
+    fg |= ((short)fg) << 16;
+
+    if ((phase = (long)s_start & 3L))
+    {
+        phase = 4 - phase;
+        if (phase > width) phase = width;
+        width -= phase;
+    }
+
+    while (cnt--)
+    {
+        i = width;
+        j = phase;
+	while (j--)
+        {
+            *(unsigned char*)s_start++ = (char)fg;
+        }
+	while (i >= 4)
+	{
+	    *((unsigned long*)s_start) = fg;
+	    s_start += 4;
+	    i -= 4;
+        }
+	while (i--)
+        {
+            *(unsigned char*)s_start++ = (char)fg;
+        }
+        s_start += s_add;
+    }
+    if (data->disp)
+    {
+        box.x1 = msg->minX;
+        box.y1 = msg->minY;
+        box.x2 = msg->maxX;
+        box.y2 = msg->maxY;
+        vgaRefreshArea(data, 1, &box);
+    }
 }
 
 /*** BitMap::Get() *******************************************/
 
 static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
 {
-//    struct bitmap_data *data = INST_DATA(cl, o);
+    struct bitmap_data *data = INST_DATA(cl, o);
     ULONG idx;
     if (IS_VGABM_ATTR(msg->attrID, idx))
     {
 	switch (idx)
 	{
+	    case aoHidd_VGABitMap_Drawable:
+	    	*msg->storage = (ULONG)data->VideoData;
+		break;
+		
 	    default:
 	    	DoSuperMethod(cl, o, (Msg)msg);
 		break;
@@ -281,148 +472,4 @@ static VOID MNAME(get)(Class *cl, Object *o, struct pRoot_Get *msg)
     }
 
     return;
-}
-
-
-
-
-static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
-{
-  /*
-    Attributes of msg:
-      srcX, srcY, dest, destX, destY, width, height
-    Object o is source BitMap object.
-   */
-  struct bitmap_data * data_src = INST_DATA(cl, o);
-  struct bitmap_data * data_dst = INST_DATA(cl, msg->dest);
-
-  unsigned char * ptr_src = (char *)(data_src->VideoData + (msg->srcX + (msg->srcY * data_src->width)) / 8);
-  unsigned char * ptr_dst = (char *)(data_dst->VideoData + (msg->destX + (msg->destY * data_dst->width)) / 8);
-  unsigned char * ptr_dst_v = (char *)(0xa0000 + (msg->destX + (msg->destY * data_dst->width)) / 8 );
-  
-  ULONG size_src = (data_src->width * data_src->height) >> 3;
-  ULONG size_dst = (data_dst->width * data_dst->height) >> 3;
-  
-  ULONG depth;
-  ULONG depth2;
-  UWORD mask = 0x100;
-
-  ULONG shift_src = msg->srcX & 7;
-  
-  ULONG shift_dst = msg->destX & 7;
-  UBYTE shiftmask_dst = 0;
-  
-  LONG w;
-  ULONG h = 0;
-  UBYTE pix;
-  ULONG i = 0;
-  ULONG j = 0;
- 
-  int d;
-
-  if (shift_dst)
-    shiftmask_dst = ((BYTE)0x80 >> (shift_dst - 1));
-  
-  GetAttr(o, aHidd_BitMap_Depth, &depth);
-
-  if (-1 == data_dst->disp)
-  {
-    ObtainSemaphore(&XSD(cl)->HW_acc);
-    outw(0x3ce,0x0000);
-    outw(0x3ce,0x0001);
-    outw(0x3ce,0x0005);
-  }
-
-  for (d=0; d < depth; d++)
-  {
-    if (-1 == data_dst->disp)
-    {
-      outw(0x3c4, mask | 2);
-      mask = mask << 1;
-    }
-
-    while (h < msg->height)
-    {
-      i = h * data_src->width >> 3;
-      j = h * data_dst->width >> 3;
-      /*
-      ** Read 8 pixels
-      */
-      w = msg->width;
-      pix = ptr_src[i++];
-      if (0 != shift_src)
-        pix = (pix << shift_src) | (ptr_src[i] >> (8 - shift_src));
-      
-      if (w >= 8)
-      {
-        do
-        {
-          /* Now distribute these 8 bits to the destination */
-          if (0 != shift_dst)
-          {
-            ptr_dst[j] = (ptr_dst[j] & shiftmask_dst) | (pix >> shift_dst);
-            j++;
-            ptr_dst[j] = (pix << (8 - shift_dst)) | (ptr_dst[j] & ~shiftmask_dst);
-            if (-1 == data_dst->disp)
-            {
-              /* also write it to video mem! */
-              ptr_dst_v[j-1] = ptr_dst[j-1];
-              ptr_dst_v[j  ] = ptr_dst[j  ];
-            } 
-          }
-          else
-	  { 
-            ptr_dst[j] = pix;
-            if (-1 == data_dst->disp)
-              ptr_dst_v[j] = pix;
-            j++;
-          }
-          w-=8;
-          pix = ptr_src[i++];
-          if (0 != shift_src)
-            pix = (pix << shift_src) | (ptr_src[i] >> (8 - shift_src));
-        }
-        while (w >= 8);
-      }
-      
-      /* There are still some pixels to distribute but less than 8 */
-      if (w > 0)
-      {
-        WORD pixmask = ((WORD)0xff80 >> (w-1));
-        pix &= pixmask;
-        pixmask ^= 0xff;
-        if (0 != shift_dst)
-        {
-          ptr_dst[j] = (ptr_dst[j] & (pixmask >> shift_dst)) | 
-                       (pix >> shift_dst);
-          if (-1 == data_dst->disp)
-            ptr_dst_v[j] = ptr_dst[j];
-          w = w - (8 - shift_dst);
-          if (w > 0)
-          {
-            j++;
-            pixmask = (pixmask << 8) | 0xff;
-            pixmask = pixmask << (8 - shift_dst);
-            pixmask >>= 8;
-            ptr_dst[j] = (pix << (8 - shift_dst)) | 
-                         (ptr_dst[j] & pixmask);
-            if (-1 == data_dst->disp)
-              ptr_dst_v[j] = ptr_dst[j];
-          }
-        }
-        else
-        {
-          ptr_dst[j] = pix | (ptr_dst[j] & pixmask);
-          if (-1 == data_dst->disp)
-            ptr_dst_v[j] = ptr_dst[j];
-        }
-      }
-      h++;
-    } /* while (h  < msg->height) */
-    ptr_src = (char *)(ptr_src + size_src);
-    ptr_dst = (char *)(ptr_dst + size_dst);
-  } /* for () */
-
-  if (-1 == data_dst->disp)
-    ReleaseSemaphore(&XSD(cl)->HW_acc);
 }

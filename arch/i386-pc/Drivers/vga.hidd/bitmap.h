@@ -47,6 +47,12 @@ struct bitmap_data
     char		disp;		/* !=0 - displayable */
 };
 
+struct Box
+{
+    int x1, y1;
+    int x2, y2;
+};
+
 VOID bitmap_clear(Class *, Object *, struct pHidd_BitMap_Clear *);
 BOOL bitmap_setcolors(Class *, Object *, struct pHidd_BitMap_SetColors *);
 VOID bitmap_putpixel(Class *, Object *, struct pHidd_BitMap_PutPixel *);

@@ -44,6 +44,7 @@ static struct abdescr attrbases[] =
 };
 
 void free_offbmclass(struct vga_staticdata *);
+void vgaRefreshArea(struct bitmap_data *, int , struct Box *);
 
 #define MNAME(x) offbitmap_ ## x
 
@@ -80,6 +81,14 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
+
+	/* If you got a friend bitmap, copy its colormap */
+	if (friend)
+	{
+	    struct bitmap_data *src = INST_DATA(cl, friend);
+	    
+	    CopyMem(&src->cmap, &data->cmap, 4*16);
+	}
 	
 	assert (width != 0 && height != 0 && depth != 0);
 	
@@ -100,8 +109,9 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	data->width = width;
 	data->height = height;
 	data->bpp = depth;
-	width=(width+15)>>3;
-	data->VideoData = AllocVec(width*depth*height,MEMF_PUBLIC|MEMF_CLEAR);
+	data->disp = 0;
+	width=(width+15) & ~15;
+	data->VideoData = AllocVec(width*height,MEMF_PUBLIC|MEMF_CLEAR);
 	if (data->VideoData)
 	{
 	    data->Regs = AllocVec(sizeof(struct vgaHWRec),MEMF_PUBLIC|MEMF_CLEAR);
@@ -138,12 +148,6 @@ static VOID offbitmap_dispose(Class *cl, Object *o, Msg msg)
     ReturnVoid("VGAGfx.BitMap::Dispose");
 }
 
-/*********  BitMap::Clear()  *************************************/
-static VOID offbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
-{
-    bitmap_clear(cl, o, msg);
-}
-
 static BOOL offbitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
     return bitmap_setcolors(cl, o, msg);
@@ -174,39 +178,6 @@ BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
     ReturnBool("VGAGfx.BitMap::SetColors",  TRUE);
 }
 
-VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
-{
-    ULONG width, height, bg, depth;
-    struct bitmap_data *data = INST_DATA(cl, o);
-    
-    GetAttr(o, aHidd_BitMap_Background, &bg);
-
-    /* Get width & height from bitmap superclass */
-
-    GetAttr(o, aHidd_BitMap_Width,  &width);
-    GetAttr(o, aHidd_BitMap_Height, &height);
-
-    GetAttr(o, aHidd_BitMap_Depth, &depth);
-
-    if (depth == 8)
-    {
-	memset(data->VideoData, bg, width*height);
-    }
-    else
-    {
-	int i;
-	APTR ptr = data->VideoData;
-	
-	for (i=0; i<depth; i++)
-	{
-	    memset(ptr, ((bg>>i)&1) == 0 ? 0 : 255, width*height>>3);
-	    ptr+=width*height>>3;
-	}
-    }
-    
-    return;
-}
-
 
 #undef SDEBUG
 #undef DEBUG
@@ -223,7 +194,7 @@ VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 
 //#define NUM_BITMAP_METHODS 14
 #define NUM_ROOT_METHODS   4
-#define NUM_BITMAP_METHODS 8
+#define NUM_BITMAP_METHODS 9
 
 
 Class *init_offbmclass(struct vga_staticdata *xsd)
@@ -247,7 +218,7 @@ Class *init_offbmclass(struct vga_staticdata *xsd)
 //    	{(IPTR (*)())MNAME(fillrect),		moHidd_BitMap_FillRect},
     	{(IPTR (*)())MNAME(copybox),		moHidd_BitMap_CopyBox},
 //    	{(IPTR (*)())MNAME(getimage),		moHidd_BitMap_GetImage},
-//    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
+    	{(IPTR (*)())MNAME(putimage),		moHidd_BitMap_PutImage},
 //    	{(IPTR (*)())MNAME(blitcolorexpansion),	moHidd_BitMap_BlitColorExpansion},
     	{(IPTR (*)())MNAME(mapcolor),		moHidd_BitMap_MapColor},
     	{(IPTR (*)())MNAME(unmappixel),		moHidd_BitMap_UnmapPixel},
@@ -329,4 +300,3 @@ void free_offbmclass(struct vga_staticdata *xsd)
     }
     ReturnVoid("free_bmclass");
 }
-
