@@ -372,14 +372,38 @@ struct DosList
     LONG             dol_Type;
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
-    /* The next two fields are not used by AROS. Their original name was:
-       dol_Task and dol_Lock */
-    APTR dol_NoAROS1;
-    BPTR dol_NoAROS2;
+      /* The next field is not used by AROS. Its original name was:
+         dol_Task */
+    APTR             dol_NoAROS1;
 #endif
+      /* The lock passed to AssignLock(). Only set if the type is
+         DLT_DIRECTORY. */
+    BPTR             dol_Lock;
 
-    IPTR             dol_Union1[3];
-    LONG             dol_Union2[3];
+      /* This union combines all the different types. */
+    union {
+          /* See struct DevInfo below. */
+        struct {
+            BSTR    dol_Handler;
+            LONG    dol_NoAROS2[2];
+            BPTR    dol_Startup;
+            BPTR    dol_NoAROS3[2];
+        } dol_handler;
+          /* See struct DeviceList below. */
+        struct {
+            struct DateStamp dol_VolumeDate;
+            BPTR             dol_LockList;
+            LONG             dol_DiskType;
+            IPTR             dol_unused;
+        } dol_volume;
+          /* Structure used for assigns. */
+        struct {
+              /* The name for the late or nonbinding assign. */
+            UBYTE             *dol_AssignName;
+              /* A list of locks, used by AssignAdd(). */
+            struct AssignList *dol_List;
+        } dol_assign;
+    } dol_misc;
 
       /* This field is called dol_Name in AmigaOS. It is now named dol_OldName
          to give you a hint that something has changed. Additionally to the
@@ -424,8 +448,8 @@ struct DeviceList
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     struct MsgPort * dl_NoAROS1;
-    BPTR             dl_NoAROS2;
 #endif
+    BPTR             dl_Lock;
 
       /* Embedded DateStamp structured as defined in <dos/dos.h>. At this
          date the volume was created. */
@@ -454,8 +478,8 @@ struct DevInfo
 
 #if (AROS_FLAVOUR & AROS_FLAVOUR_BINCOMPAT)
     struct MsgPort * dvi_NoAROS1;
-    BPTR             dvi_NoAROS2;
-#endif
+#endIF
+    BPTR             dvi_Lock;
 
     BSTR dvi_Handler;    /* Device name for handler. */
     LONG dvi_NoAROS3[2]; /* PRIVATE */
