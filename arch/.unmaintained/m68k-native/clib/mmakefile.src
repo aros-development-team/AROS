@@ -6,7 +6,10 @@ include $(TOP)/config/make.cfg
 SPECIAL_AFLAGS = -I../
 CLIBDIR=$(GENDIR)/compiler/clib
 
-FILES = setjmp longjmp
+FILES = setjmp longjmp \
+	__divsi3 __udivsi3 \
+	__mulsi3 \
+	__fixunsdfsi __fixunssfsi
 
 TESTS =
 
@@ -24,5 +27,11 @@ clean::
 
 $(CLIBDIR)/%.o: %.s ../machine.i
 	%assemble_q
+
+$(CLIBDIR)/%.o: %.c
+	%compile_q
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
 
 %common
