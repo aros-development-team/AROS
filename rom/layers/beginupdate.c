@@ -119,7 +119,10 @@
   l->ClipRect   = FirstCR;
   
   if (NULL == FirstCR)
+  {
+    l->Flags &= ~LAYERREFRESH;
     return FALSE;
+  }
   
   return TRUE;
 

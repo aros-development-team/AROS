@@ -70,7 +70,8 @@
   struct BitMap * SimpleBackupBM = NULL;
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
-  BOOL retVal;
+  BOOL retval;
+  struct Region * oldclipregion = NULL;
 
   /* Check coordinates as there's no support for layers outside the displayed
      bitmap. I might add this feature later. */
@@ -103,20 +104,16 @@
      new position.
    */
 
-  /* restore the regular ClipRects in case this one has a ClipRegion
-     (and a ClipRect list) installed
-   */
-
-  if (NULL != l->ClipRegion && NULL != l->_cliprects)
-  {
-    CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
-    l->ClipRect = l->_cliprects;
-    l->_cliprects = NULL;
-  }
+  /*
+  ** Restore the regular ClipRects in case this one has a ClipRegion
+  ** (and a ClipRect list) installed
+  */
+  
+  oldclipregion = InstallClipRegion(l, NULL);
   
   /*
-    Is it a simple layer and will areas overlap with the layer at the new
-    position?
+  ** Is it a simple layer and will areas overlap with the layer at the new
+  ** position?
   */
 
   
@@ -245,6 +242,8 @@
     RP -> Layer  = l_tmp;
     RP -> BitMap = l->rp->BitMap;
 
+    UninstallClipRegionClipRects(LI);
+
     /* I have to go through all the cliprects of the layers that are 
        behind this layer and have an enty in lobs pointing to l. I
        have to change this pointer to l_tmp, so that everything still
@@ -354,16 +353,20 @@
         _CR = _CR->Next;
       }
       /* a necessary adjustment to the Damagelist's base coordinates! */
+      /* 
+      ** At this moment it only contains the cliprects of the layer at its old
+      ** position. 
+      */
       l->DamageList->bounds.MinX += dx;
       l->DamageList->bounds.MinY += dy;
       l->DamageList->bounds.MaxX += dx;
       l->DamageList->bounds.MaxY += dy;
-      l->Flags |= LAYERREFRESH;
       
-      /* Comparison with layer at new position is absolutely necessary!! 
+      /*  
+      **  Comparison with layer at new position is absolutely necessary!! 
       **  Collect all visible(!) cliprects in the new layer and make
       **  a logical AND with both areas. The result will be the areas
-      **  that need to be update in the new layer.
+      **  that need to be updated in the new layer.
       */
       _CR = l->ClipRect;
       while (NULL != _CR)
@@ -377,11 +380,18 @@
         }
         _CR = _CR->Next;
       }
-      /* Determine the valid parts */
+      /* Determine the *valid* parts with a logical and connection */
 
       /* both regions are relative to the screen */      
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
+      
+      /*
+      ** See whether there's something in the final region and then
+      ** set the REFRESH flag
+      */
+      if (NULL != l->DamageList->RegionRectangle)
+        l->Flags |= LAYERREFRESH;
 
       /* If I was certain that the damagelist in the old layer is correct
       ** I wouldn't have to do all of the above!! This just be tried later.
@@ -433,9 +443,12 @@
     /* That's it folks! */
     CleanupLayers(LI);
     
+    if (NULL != oldclipregion)
+      InstallClipRegion(l, oldclipregion);
+    
     InstallClipRegionClipRects(LI);
     
-    retVal = TRUE;
+    retval = TRUE;
   } 
   else /* not enough memory */
   {
@@ -443,17 +456,16 @@
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
     if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
-    if (NULL != l->ClipRegion)
-    {
-      l->_cliprects = l->ClipRect;
-      l->ClipRect   = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
-    }
-    retVal = FALSE;
+    if (NULL != oldclipregion)
+      InstallClipRegion(l, oldclipregion);
+
+    retval = FALSE;
   }
 
   /* Now everybody else may play with the layers again */
   UnlockLayers(LI);
-  return retVal;
+
+  return retval;
 
   AROS_LIBFUNC_EXIT
 } /* MoveLayer */

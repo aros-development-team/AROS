@@ -76,6 +76,7 @@
   struct Rectangle Rect;  /* The area with the backed up data if it is a
                              simple layer */
   BOOL retVal; 
+  struct Region * oldclipregion = NULL;
 
   /* Check coordinates as there's no suport for layers outside the displayed
      bitmap. I might add this feature later. */
@@ -93,12 +94,12 @@
   /* Lock all other layers while I am moving and resizing this layer */
   LockLayers(LI);
 
-  if (NULL != l->ClipRegion)
-  {
-    CopyAndFreeClipRectsClipRects(l, l->ClipRect, l->_cliprects);
-    l->ClipRect = l->_cliprects;
-    l->_cliprects = NULL;
-  }
+  /*
+  ** Restore the regular ClipRects in case this one has a ClipRegion
+  ** (and a ClipRect list) installed
+  */
+  
+  oldclipregion = InstallClipRegion(l, NULL);
                       
   /* 
      Here's how I do it:
@@ -675,13 +676,9 @@
     if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
     if (NULL != SimpleBackupBM) FreeBitMap(SimpleBackupBM);
+    if (NULL != oldclipregion)
+      InstallClipRegion(l, oldclipregion);
     
-    if (NULL != l->ClipRegion)
-    {
-      l->_cliprects = l->ClipRect;
-      l->ClipRect   = CopyClipRectsInRegion(l, l->_cliprects, l->ClipRegion);
-    }
-                             
     retVal = FALSE;
   }
 
