@@ -9,8 +9,9 @@ int _MoveLayerBehind(struct Layer *l,
                      struct LayersBase * LayersBase)
 {
   struct Layer * lbackold, *_l, *first;
-  struct Region * hide = NewRegion(), show;
+  struct Region * hide = NewRegion(), show, rtmp;
   show.RegionRectangle = NULL; // min. initialization;
+  rtmp.RegionRectangle = NULL;
 
   first = GetFirstFamilyMember(l);
 
@@ -98,11 +99,16 @@ int _MoveLayerBehind(struct Layer *l,
     if (_l == lfront)
       break;
 
-    ClearRegionRegion(_l->shape, &show);
-    
+    if (IS_VISIBLE(_l))
+    {
+      _SetRegion(_l->shape, &rtmp);
+      AndRegionRegion(_l->parent->shape, &rtmp);
+      ClearRegionRegion(&rtmp, &show);
+    }
     _l = _l->back; 
   }
 
+  ClearRegion(&rtmp);
   ClearRegion(&show);
 
   /*
@@ -123,8 +129,9 @@ int _MoveLayerToFront(struct Layer * l,
                       struct LayersBase * LayersBase)
 {
   struct Layer * lfront, * first, * _l;
-  struct Region r;
+  struct Region r, rtmp;
   r.RegionRectangle = NULL;
+  rtmp.RegionRectangle = NULL;
   
   first = GetFirstFamilyMember(l);
 
@@ -185,8 +192,12 @@ int _MoveLayerToFront(struct Layer * l,
     if (_l == l)
       break;
 
-    ClearRegionRegion(_l->shape, &r);
-
+    if (IS_VISIBLE(_l))
+    {
+      _SetRegion(_l->shape, &rtmp);
+      AndRegionRegion(_l->parent->shape, &rtmp);
+      ClearRegionRegion(&rtmp, &r);
+    }
     _l = _l->back;
   }
 

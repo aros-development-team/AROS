@@ -79,7 +79,8 @@
     
   if (IS_VISIBLE(l))
   { 
-    struct Region r;
+    struct Region r, rtmp;
+    rtmp.RegionRectangle = NULL;
     r.RegionRectangle = NULL; // min. initialization
 
     _SetRegion(l->VisibleRegion, &r);
@@ -117,11 +118,15 @@
        * have to take it out.
        */
       if (IS_VISIBLE(_l))
-        ClearRegionRegion(_l->shape, &r);
-
+      {
+        _SetRegion(_l->shape, &rtmp);
+        AndRegionRegion(_l->parent->shape, &rtmp);
+        ClearRegionRegion(&rtmp, &r);
+      }
       _l = _l->back;
     }
 
+    ClearRegion(&rtmp);
     ClearRegion(&r);
 
     if (!IS_EMPTYREGION(l->shape))

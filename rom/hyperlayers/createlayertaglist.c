@@ -283,6 +283,8 @@
        */
       struct Layer * _l = l->back;
       struct Layer * lparent = l->parent;
+      struct Region rtmp;
+      rtmp.RegionRectangle = NULL;
 
       /*
        * Does this layer have a layer in front of it?
@@ -293,10 +295,15 @@
       if (l->front)
       {
         _SetRegion(l->front->VisibleRegion, l->VisibleRegion);
-        ClearRegionRegion(l->front->shape, l->VisibleRegion);
+        _SetRegion(l->front->shape, &rtmp);
+        AndRegionRegion(l->front->parent->shape, &rtmp);
+        ClearRegionRegion(&rtmp, l->VisibleRegion);
       }
       else
         _SetRegion(li->check_lp->shape, l->VisibleRegion);
+     
+      _SetRegion(l->shape, &rtmp);
+      AndRegionRegion(l->parent->shape, &rtmp);
      
       /*
        * First tell all layers behind this layer to
@@ -308,7 +315,7 @@
         if (IS_VISIBLE(_l) && DO_OVERLAP(&l->shape->bounds, &_l->shape->bounds))
           _BackupPartsOfLayer(_l, l->shape, 0, FALSE, LayersBase);
         else
-          ClearRegionRegion(l->shape, _l->VisibleRegion);
+          ClearRegionRegion(&rtmp, _l->VisibleRegion);
         
         if (_l == lparent)
         {
@@ -320,6 +327,7 @@
         _l = _l->back;
       }
 
+      ClearRegion(&rtmp);
     }
     /*
      * Show the layer according to its visible area
