@@ -60,6 +60,7 @@ struct DriveInfoNode {
 
 struct VesaInfo {
     APTR	FrameBuffer;
+    ULONG	FrameBufferSize;
     ULONG	XSize;
     ULONG	YSize;
     ULONG	BytesPerLine;
