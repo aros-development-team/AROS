@@ -48,6 +48,14 @@ __AROS_LP3(ULONG, CallHookPkt,
     __AROS_LCA(APTR         , paramPacket, A1), \
     struct Library *, UtilityBase, 17, Utility)
 
+__AROS_LP1(struct TagItem *, CloneTagItems,
+    __AROS_LPA(struct TagItem *, tagList, A0),
+    struct UtilityBase *, UtilityBase, 12, Utility)
+#define CloneTagItems(tagList) \
+    __AROS_LC1(struct TagItem *, CloneTagItems, \
+    __AROS_LCA(struct TagItem *, tagList, A0), \
+    struct UtilityBase *, UtilityBase, 12, Utility)
+
 __AROS_LP1(ULONG, Date2Amiga,
     __AROS_LPA(struct ClockData *, date, A0),
     struct UtilityBase *, UtilityBase, 21, Utility)
@@ -74,6 +82,18 @@ __AROS_LP1(void, FreeTagItems,
     __AROS_LCA(struct TagItem *, tagList, A0), \
     struct UtilityBase *, UtilityBase, 13, Utility)
 
+__AROS_LP3(ULONG, GetTagData,
+    __AROS_LPA(Tag             , tagValue, D0),
+    __AROS_LPA(unsigned long   , defaultVal, D1),
+    __AROS_LPA(struct TagItem *, tagList, A0),
+    struct UtilityBase *, UtilityBase, 6, Utility)
+#define GetTagData(tagValue, defaultVal, tagList) \
+    __AROS_LC3(ULONG, GetTagData, \
+    __AROS_LCA(Tag             , tagValue, D0), \
+    __AROS_LCA(unsigned long   , defaultVal, D1), \
+    __AROS_LCA(struct TagItem *, tagList, A0), \
+    struct UtilityBase *, UtilityBase, 6, Utility)
+
 __AROS_LP0(ULONG, GetUniqueID,
     struct UtilityBase *, UtilityBase, 45, Utility)
 #define GetUniqueID() \
@@ -87,6 +107,28 @@ __AROS_LP1(struct TagItem *, NextTagItem,
     __AROS_LC1(struct TagItem *, NextTagItem, \
     __AROS_LCA(struct TagItem **, tagListPtr, A0), \
     struct Library *, UtilityBase, 8, Utility)
+
+__AROS_LP3(ULONG, PackBoolTags,
+    __AROS_LPA(unsigned long   , initialFlags, D0),
+    __AROS_LPA(struct TagItem *, tagList, A0),
+    __AROS_LPA(struct TagItem *, boolMap, A1),
+    struct UtilityBase *, UtilityBase, 7, Utility)
+#define PackBoolTags(initialFlags, tagList, boolMap) \
+    __AROS_LC3(ULONG, PackBoolTags, \
+    __AROS_LCA(unsigned long   , initialFlags, D0), \
+    __AROS_LCA(struct TagItem *, tagList, A0), \
+    __AROS_LCA(struct TagItem *, boolMap, A1), \
+    struct UtilityBase *, UtilityBase, 7, Utility)
+
+__AROS_LP2(void, RefreshTagItemClones,
+    __AROS_LPA(struct TagItem *, clone, A0),
+    __AROS_LPA(struct TagItem *, original, A1),
+    struct UtilityBase *, UtilityBase, 14, Utility)
+#define RefreshTagItemClones(clone, original) \
+    __AROS_LC2(void, RefreshTagItemClones, \
+    __AROS_LCA(struct TagItem *, clone, A0), \
+    __AROS_LCA(struct TagItem *, original, A1), \
+    struct UtilityBase *, UtilityBase, 14, Utility)
 
 __AROS_LP2(LONG, SMult32,
     __AROS_LPA(long, arg1, D0),
@@ -129,6 +171,16 @@ __AROS_LP3(LONG, Strnicmp,
     __AROS_LCA(STRPTR, string2, A1), \
     __AROS_LCA(LONG,   length,  D0), \
     struct UtilityBase *, UtilityBase, 28, Utility)
+
+__AROS_LP2(BOOL, TagInArray,
+    __AROS_LPA(Tag  , tagValue, D0),
+    __AROS_LPA(Tag *, tagArray, A0),
+    struct UtilityBase *, UtilityBase, 15, Utility)
+#define TagInArray(tagValue, tagArray) \
+    __AROS_LC2(BOOL, TagInArray, \
+    __AROS_LCA(Tag  , tagValue, D0), \
+    __AROS_LCA(Tag *, tagArray, A0), \
+    struct UtilityBase *, UtilityBase, 15, Utility)
 
 __AROS_LP1I(UBYTE, ToLower,
     __AROS_LPA(ULONG, character, D0),
