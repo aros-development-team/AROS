@@ -1,7 +1,12 @@
-/* AROS buttongclass implementation
- * (frameless button, no window border support yet)
- * 10/26/96 caldi@usa.nai.net
- */
+/*
+    (C) 1996-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: AROS buttongclass implementation
+    Lang: english
+
+    Original version 10/26/96 by caldi@usa.nai.net
+*/
 
 #include <exec/types.h>
 

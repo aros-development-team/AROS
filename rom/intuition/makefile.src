@@ -17,7 +17,8 @@ INIT_FILE = intuition_init
 
 FILES = intuition_functable gadgets \
 	boolgadgets propgadgets boopsigadgets \
-	imageclass frameiclass icclass buttongclass gadgetclass
+	imageclass frameiclass icclass buttongclass gadgetclass \
+	frbuttonclass
 
 END_FILE = intuition_endtag
 
@@ -56,6 +57,7 @@ FUNCTIONS = \
 	modifyprop \
 	movescreen \
 	movewindow \
+	nextobject \
 	newmodifyprop \
 	newobjecta \
 	obtaingirport \

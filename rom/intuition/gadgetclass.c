@@ -1,6 +1,12 @@
-/* AROS gadgetclass implementation
- * 10/25/96 caldi@usa.nai.net
- */
+/*
+    (C) 1996-97 AROS - The Amiga Replacement OS
+    $Id$
+
+    Desc: AROS gadgetclass implementation
+    Lang: english
+
+    Original version 10/25/96 by caldi@usa.nai.net
+*/
 
 #include <exec/types.h>
 
@@ -174,7 +180,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 		EG(o)->GadgetType &= ~GTYP_SYSGADGET;
 	    break;
 
-	case GA_Disabled:
+	case GA_Selected:
 	    if ( (BOOL)tidata != FALSE )
 		EG(o)->Flags |= GFLG_SELECTED;
 	    else
@@ -182,7 +188,7 @@ static ULONG set_gadgetclass(Class *cl, Object *o, struct opSet *msg)
 	    retval = 1UL;
 	    break;
 
-	case GA_Selected:
+	case GA_Disabled:
 	    if ( (BOOL)tidata != FALSE )
 		EG(o)->Flags |= GFLG_DISABLED;
 	    else

@@ -48,6 +48,7 @@ struct IClass *InitFrameIClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitICClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitGadgetClass (struct LIBBASETYPE * LIBBASE);
 struct IClass *InitButtonGClass (struct LIBBASETYPE * LIBBASE);
+struct IClass *InitFrButtonClass (struct LIBBASETYPE * LIBBASE);
 
 int Intuition_entry(void)
 {
