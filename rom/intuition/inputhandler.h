@@ -14,6 +14,7 @@ struct IIHData
     struct IntuitionBase	*IntuitionBase;
     struct MsgPort		*IntuiReplyPort;
     struct MinList		IntuiDeferedActionQueue;
+    struct MinList		GeneratedInputEventList;
     struct Gadget		*ActiveGadget;
     struct GadgetInfo		GadgetInfo;
     struct InputEvent		*ActInputEvent; /* will be NULL outside Intuition's InputEvent handling loop */
@@ -27,6 +28,12 @@ struct IIHData
     WORD			DeltaMouseY;
     UWORD			ActQualifier;
     BOOL			ActInputEventUsed;
+};
+
+struct GeneratedInputEvent
+{
+    struct InputEvent ie;
+    struct MinNode    node;
 };
 
 struct Interrupt *InitIIH(struct IntuitionBase *IntuitionBase);
