@@ -19,15 +19,12 @@
 #include <math.h>
 
 #ifdef _AROS
-struct IntuitionBase 	*IntuitionBase;
-struct LocaleBase 	*LocaleBase;
+struct IntuitionBase    *IntuitionBase;
+struct LocaleBase       *LocaleBase;
 #endif
 
-struct Library    	*BGUIBase   = NULL;
+struct Library          *BGUIBase   = NULL;
 
-/* Is already defined in proto/locale.h: */
-/*                                       */
-/* struct LocaleBase *LocaleBase = NULL; */
 
 #define MAX_VAL_LEN 13
 
@@ -111,24 +108,15 @@ static struct ButtonInfo bi[ NUM_GADGETS - 1 ] =
     { "8"  , ID_8     , "8" ,  0  } ,
     { "9"  , ID_9     , "9" ,  0  } ,
     { "."  , ID_COMMA , "." , "," } ,
-#ifdef _AROS
-    { "«"  , ID_BS    , "\x8",  0  } ,
+    { "«"  , ID_BS    , "\x8", 0  } ,
     { "CA" , ID_CA    , "A" , "\x7F" } ,
-#else
-    { "«"  , ID_BS    , "\8",  0  } ,
-    { "CA" , ID_CA    , "A" , "\127" } ,
-#endif
     { "CE" , ID_CE    , "E" ,  0  } ,
     { "+"  , ID_ADD   , "+" ,  0  } ,
     { "-"  , ID_SUB   , "-" ,  0  } ,
     { "×"  , ID_MUL   , "*" , "X" } ,
     { "÷"  , ID_DIV   , "/" , ":" } ,
     { "±"  , ID_SIGN  , "S" , "±" } ,
-#ifdef _AROS
-    { "="  , ID_EQU   , "=" ,  "\xD" }
-#else
-    { "="  , ID_EQU   , "=" ,  "\13" }
-#endif
+    { "="  , ID_EQU   , "=" , "\xD" }
 };
 
 struct NewMenu menustrip[] =
