@@ -130,7 +130,7 @@ IPTR mname(Class *CLASS, Object *self, m_msg_type message)                \
 {                                                                         \
     struct cname ## _DATA *data __unused = INST_DATA(CLASS, self);        \
                                                                           \
-    return m_code;                                                        \
+    (void)m_code;                                                         \
 }
 
 #define __ZUNE_CUSTOMCLASS_INSTDATA(cname, inst_data) \
