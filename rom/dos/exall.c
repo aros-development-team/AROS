@@ -103,8 +103,6 @@
 
     BUGS
 
-    No ExAll() emulation using Examine()/ExNext() is currently provided.
-
     SEE ALSO
 
     Examine(), ExNext(), MatchPatternNoCase(), ParsePatternNoCase(),
