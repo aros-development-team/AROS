@@ -81,9 +81,11 @@ int __getfdslot(int wanted_fd)
 
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
-    BPTR fh;
+    BPTR fh = NULL, lock = NULL;
+    fdesc *currdesc = NULL;
+    struct FileInfoBlock *fib = NULL;
+
     int  openmode;
-    fdesc *currdesc;
 
     /* filter out invalid modes */
     switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
@@ -117,58 +119,94 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     if (flags & O_CREAT) openmode |= FMF_CREATE;
 
     currdesc = malloc(sizeof(fdesc));
-    if (!currdesc) return -1;
+    if (!currdesc) goto err;
 
     wanted_fd = __getfdslot(wanted_fd);
+    if (wanted_fd == -1) goto err;
 
-    if (wanted_fd!=-1)
+    lock = Lock((char *)pathname, SHARED_LOCK);
+    if (!lock)
     {
-	BPTR fh2 = NULL;
-
-	/* See if the file exists and "lock" it. */
-	if (!(flags & O_CREAT) || (flags & O_EXCL))
+	if
+	(
+	    (IoErr() != ERROR_OBJECT_NOT_FOUND) ||
+	    /* if the file doesn't exist and the flag O_CREAT is not set return an error*/
+	    (IoErr() == ERROR_OBJECT_NOT_FOUND && !(flags & O_CREAT))
+        )
 	{
-	    fh2 = Open((char *)pathname, FMF_READ);
-	    /* if O_CREAT is not set and the file doesn't exist return an error */
-	    if (!fh2 && !(flags & O_CREAT))
-	    {
-	    	errno = ENOENT;
-		free(currdesc);
-	  	return -1;
-	    }
-	    /* if O_EXCL is set and the file already exist return an error */
-	    else if (fh2 && (flags & O_EXCL))
-	    {
-	    	errno = EEXIST;
-		free(currdesc);
-		Close(fh2);
-	  	return -1;
-            }
-	}
-
-	if (!(fh = Open ((char *)pathname, openmode)) )
-    	{
-	    errno = IoErr2errno (IoErr ());
-	    if (fh2) Close(fh2);
-	    free(currdesc);
-	    return -1;
+	    errno = IoErr2errno(IoErr());
+	    goto err;
         }
-
-	currdesc->fh        = fh;
-	currdesc->flags     = flags;
-	currdesc->opencount = 1;
-
-	__setfdesc(wanted_fd, currdesc);
-
-	/* Unlock the file */
-	if (fh2) Close(fh2);
     }
     else
     {
-        free(currdesc);
+	fib = AllocDosObject(DOS_FIB, NULL);
+	/*if the file exists, but O_EXCL is set, then return an error. */
+    	if (flags & O_EXCL)
+    	{
+	    errno = EEXIST;
+	    goto err;
+    	}
+
+        if (!fib)
+        {
+    	    errno = IoErr2errno(IoErr());
+	    goto err;
+        }
+
+	if (!Examine(lock, fib))
+    	{
+    	    errno = IoErr2errno(IoErr());
+	    goto err;
+	}
+
+	#warning implement softlink handling
+
+	/* Check if it's a directory or a softlink.
+	 Softlinks are not handled yet, though */
+	if (fib->fib_DirEntryType > 0)
+	{
+	    /* A directory cannot be opened for writing */
+	    if (openmode & FMF_WRITE)
+	    {
+	    	errno = EISDIR;
+	        goto err;
+            }
+
+	    fh = lock;
+            FreeDosObject(DOS_FIB, fib);
+
+	    goto success;
+        }
+        FreeDosObject(DOS_FIB, fib);
     }
 
+    /* the file exists and it's not a directory or the file doesn't exist */
+
+    if (!(fh = Open ((char *)pathname, openmode)) )
+    {
+	errno = IoErr2errno (IoErr ());
+	goto err;
+    }
+
+    if (lock) UnLock(lock);
+
+success:
+    currdesc->fh        = fh;
+    currdesc->flags     = flags;
+    currdesc->opencount = 1;
+
+    __setfdesc(wanted_fd, currdesc);
+
     return wanted_fd;
+
+err:
+    if (fib) FreeDosObject(DOS_FIB, fib);
+    if (currdesc) free(currdesc);
+    if (fh && fh != lock) Close(fh);
+    if (lock) UnLock(lock);
+
+    return -1;
 }
 
 
