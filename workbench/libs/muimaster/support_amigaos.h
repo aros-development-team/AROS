@@ -136,23 +136,23 @@ for                                            \
 
 /*** AROS library function macros *******************************************/
 #define AROS_LH0(rt, fn, bt, bn, lvo, p) \
-    ASM rt fn (void)
+    ASM rt LIB_##fn (void)
 #define AROS_LH1(rt, fn, a1, bt, bn, lvo, p) \
-    ASM rt fn (a1)
+    ASM rt LIB_##fn (a1)
 #define AROS_LH2(rt, fn, a1, a2, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2)
+    ASM rt LIB_##fn (a1, a2)
 #define AROS_LH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3)
+    ASM rt LIB_##fn (a1, a2, a3)
 #define AROS_LH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3, a4)
+    ASM rt LIB_##fn (a1, a2, a3, a4)
 #define AROS_LH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3, a4, a5)
+    ASM rt LIB_##fn (a1, a2, a3, a4, a5)
 #define AROS_LH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3, a4, a5, a6)
+    ASM rt LIB_##fn (a1, a2, a3, a4, a5, a6)
 #define AROS_LH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3, a4, a5, a6, a7)
+    ASM rt LIB_##fn (a1, a2, a3, a4, a5, a6, a7)
 #define AROS_LH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
-    ASM rt fn (a1, a2, a3, a4, a5, a6, a7, a8)
+    ASM rt LIB_##fn (a1, a2, a3, a4, a5, a6, a7, a8)
 
 #ifdef __SASC
 #   define AROS_LHA(type, name, reg) register __REG_##reg type name
