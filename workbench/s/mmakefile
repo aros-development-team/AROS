@@ -9,4 +9,6 @@ $(SDIR)/Startup-Sequence : Startup-Sequence
 
 #MM
 setup :
-	$(MKDIR) $(SDIR)
+	@$(IF) $(TEST) ! -d $(SDIR) ; then \
+	    $(MKDIR) $(SDIR) ; \
+	else $(NOP) ; fi
