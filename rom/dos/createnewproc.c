@@ -115,7 +115,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     /* C has no exceptions. This is a simple replacement. */
 #define ERROR_IF(a)  if(a) goto error  /* Throw a generic error. */
-#define ENOMEM_IF(a) if(a) goto enomem /* Throw out of memory. */
+#define ENOMEM_IF(a) if (a) goto enomem /* Throw out of memory. */
     /* Inherit the parent process' stacksize if possible */
     if (__is_process(me))
     {
@@ -571,9 +571,7 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    newVar = (struct LocalVar *)AllocVec(copyLength,
 						 MEMF_PUBLIC | MEMF_CLEAR);
 	    if (newVar == NULL)
-	    {
 		return FALSE;
-	    }
 
 	    CopyMem(varNode, newVar, copyLength);
 	    newVar->lv_Node.ln_Name = (char *)newVar +
@@ -581,17 +579,20 @@ BOOL copyVars(struct Process *fromProcess, struct Process *toProcess, struct Dos
 	    P(kprintf("Variable with name %s copied.\n", 
 		      newVar->lv_Node.ln_Name));
 	    
-	    newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
+            if (varNode->lv_Len)
+            {
+	        newVar->lv_Value = AllocMem(varNode->lv_Len, MEMF_PUBLIC);
 	    
-	    if (newVar->lv_Value == NULL)
-	    {
-		/* Free variable node before shutting down */
-		FreeVec(newVar);
+	        if (newVar->lv_Value == NULL)
+	        {
+		    /* Free variable node before shutting down */
+		    FreeVec(newVar);
 		
-		return FALSE;
-	    }
+		    return FALSE;
+	        }
 	    
-	    CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
+                CopyMem(varNode->lv_Value, newVar->lv_Value, varNode->lv_Len);
+	    }
 
 	    AddTail((struct List *)&toProcess->pr_LocalVars,
 		    (struct Node *)newVar);
