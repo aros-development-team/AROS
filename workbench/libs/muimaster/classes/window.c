@@ -2219,6 +2219,9 @@ static ULONG Window_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->wd_RootObject)
 	MUI_DisposeObject(data->wd_RootObject);
 
+    if (data->wd_ChildMenustrip)
+    	MUI_DisposeObject(data->wd_ChildMenustrip);
+	
     if (data->wd_Title)
 	FreeVec(data->wd_Title);
 
