@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    (C) 1995-98 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Delete CLI command
@@ -25,6 +25,7 @@ int main (int argc, char ** argv)
 
     if(rda!=NULL)
     {
+        /* FIXME: pattern matching */
 	if (!DeleteFile(args[0]))
 	    error = RETURN_ERROR;
 
