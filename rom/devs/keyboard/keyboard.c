@@ -582,8 +582,6 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	event->ie_Prev1DownQual 	= kbUn->kbu_LastQuals;
 	event->ie_Prev2DownCode 	= (UBYTE)(kbUn->kbu_LastLastCode & 0xff);
 	event->ie_Prev2DownQual 	= kbUn->kbu_LastLastQuals;
-	event->ie_X 			= 0;
-	event->ie_Y 			= 0;
 	event->ie_TimeStamp.tv_secs 	= 0;
 	event->ie_TimeStamp.tv_micro	= 0;
 	
