@@ -187,8 +187,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR na
             relative) path: that is, it must not contain any ':' or '/'.
         */
         
-        // FIXME: links in strpbrk from host libc?!?! -> crash
-        //if (strpbrk(name, '/:') == NULL)
+        if (strpbrk(name, "/:") == NULL)
         {
             struct CommandLineInterface *cli = Cli();
             if (cli != NULL)
