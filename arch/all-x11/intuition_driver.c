@@ -20,6 +20,7 @@ void UnlockX11();
 #include <sys/time.h>
 #undef timeval
 #include <exec/memory.h>
+#include <exec/alerts.h>
 #include <dos/dos.h>
 #include <utility/tagitem.h>
 #include <intuition/cghooks.h>
@@ -28,6 +29,7 @@ void UnlockX11();
 #include <intuition/screens.h>
 #include <intuition/sghooks.h>
 #include <devices/keymap.h>
+#include <devices/input.h>
 #include <hidd/unixio.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
@@ -53,7 +55,7 @@ extern Cursor sysCursor;
 extern struct SignalSemaphore * X11lock;
 #endif
 
-extern struct Task * inputDevice;
+struct Task * inputDevice;
 #define SIGID()      Signal (inputDevice, SIGBREAKF_CTRL_F)
 
 
@@ -84,6 +86,14 @@ static int MySysErrorHandler (Display *);
 #endif
 
 /* #define bug	    kprintf */
+
+
+/* The X11 event task properties */
+#define XETASK_STACKSIZE	8192
+#define XETASK_PRIORITY		10
+#define XETASK_NAME		"X11 event task"
+STATIC struct Task *CreateX11EventTask(struct IntuitionBase *IntuitionBase);
+
 
 struct IntWindow
 {
@@ -197,8 +207,11 @@ int intui_init (struct IntuitionBase * IntuitionBase)
     return True;
 }
 
+
 int intui_open (struct IntuitionBase * IntuitionBase)
 {
+    BOOL success = FALSE;
+    
     if (GetPrivIBase(IntuitionBase)->WorkBench)
     {
 	GetPrivIBase(IntuitionBase)->WorkBench->Width =
@@ -206,8 +219,29 @@ int intui_open (struct IntuitionBase * IntuitionBase)
 	GetPrivIBase(IntuitionBase)->WorkBench->Height =
 	    DisplayHeight (GetSysDisplay (), GetSysScreen ());
     }
+    
+    if (!GetPrivIBase(IntuitionBase)->DriverData) /* First time opened ? */
+    {
 
-    return True;
+    	
+        /* Create the X11 event task */
+    	GetPrivIBase(IntuitionBase)->DriverData = (APTR)CreateX11EventTask(IntuitionBase);
+    	if (GetPrivIBase(IntuitionBase)->DriverData)
+    	{
+    	    success = TRUE;
+    	}
+    	
+    	inputDevice = FindTask("input.device");
+
+    } /* if (first time opened) */
+    else
+    {
+        /* Already opened, no allocations necessary */
+        success = TRUE;
+    }
+
+
+    return (success);
 }
 
 void intui_close (struct IntuitionBase * IntuitionBase)
@@ -621,258 +655,337 @@ UX11
 } /* intui_EndRefresh */
 
 
-/**********************
-**  intui_WaitEvent  **
-**********************/
-VOID intui_WaitEvent(struct InputEvent          *ie,
-		struct Window			**wstorage)
+/********************
+**  XETaskEntry()  **
+********************/
+VOID XETaskEntry(struct IntuitionBase *IntuitionBase)
 {
-    static HIDD        unixio = NULL;
     XEvent	       event;
-    struct Window    * w = NULL;
+    struct Window    * w = NULL, *oldw = NULL;
     struct Screen    * screen;
     struct IntWindow * iw;
+    struct MsgPort   * inputmp;
+    struct IOStdReq  * inputio;
+    static const struct TagItem tags[] = {{ TAG_END, 0 }};
+    HIDD unixio;
+    
     ULONG	       lock;
     int 	       ret;
-    static const struct TagItem tags[] = {{ TAG_END, 0 }};
-
-    Dipxe(bug("intui_WaitEvent(ie=%p, wstorage=%p)\n", ie, wstorage));
-
-    ie->ie_Class = 0;
-
+    struct InputEvent stack_ie, *ie = &stack_ie;
+    
+    inputmp = CreateMsgPort();
+    if (!inputmp)
+    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    
+    inputio = (struct IOStdReq *)CreateIORequest(inputmp, sizeof (struct IOStdReq));
+    if (!inputio)
+    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    	
+    if ( 0 != OpenDevice("input.device", -1, (struct IORequest *)inputio, 0))
+    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    	
+    unixio = (HIDD)NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
     if (!unixio)
+    	Alert(AT_DeadEnd | AG_NoMemory | AN_Unknown);
+    	
+    
+    inputio->io_Command = IND_WRITEEVENT;
+    inputio->io_Data    = (APTR)ie;
+    inputio->io_Length  = sizeof (struct InputEvent);
+
+    D(bug("xe: Going into infinite loop\n"));
+    
+    for (;;)
     {
-	unixio = NewObjectA (NULL, UNIXIOCLASS, (struct TagItem *)tags);
+    	D(bug("xe: Inside infinite loop\n"));
+    
+	ie->ie_Class = 0;
 
-	Dipxe(bug("unixio=%ld\n",unixio));
+    	for (;!ie->ie_Class; )
+    	{
+    	
+	    Dipxe(bug("iWE: Waiting for input at %ld\n", ConnectionNumber (sysDisplay)));
 
-	if (!unixio)
-	{
-	    ReturnVoid ("intui_WaitEvent (No unixio.hidd)");
-	}
-    }
+	    /* Wait for input to arrive */
+	    ret = DoMethod ((Object *)unixio, HIDDM_WaitForIO,
+			ConnectionNumber (sysDisplay), HIDDV_UnixIO_Read);
+			
+	    D(bug("xe: Returned from domethod\n"));
 
-    for ( ; !ie->ie_Class; )
-    {
-	Dipxe(bug("iWE: Waiting for input at %ld\n", ConnectionNumber (sysDisplay)));
+	    Dipxe(bug("iWE: Got input %ld\n", ret));
 
-	/* Wait for input to arrive */
-	ret = DoMethod (unixio, HIDDM_WaitForIO,
-		ConnectionNumber (sysDisplay), HIDDV_UnixIO_Read);
+	    if (ret != 0)
+	    	continue;
 
-	Dipxe(bug("iWE: Got input %ld\n", ret));
-
-	if (ret != 0)
-	    continue;
-
-	while (XPending (sysDisplay))
-	{
-LX11
-	    XNextEvent (sysDisplay, &event);
-UX11
-	    Dipxe(bug("Got Event for X=%d\n", event.xany.window));
-
-	    if (event.type == MappingNotify)
+	    while (XPending (sysDisplay))
 	    {
 LX11
-		XRefreshKeyboardMapping ((XMappingEvent*)&event);
+	    	XNextEvent (sysDisplay, &event);
 UX11
-		continue;
-	    }
+	        Dipxe(bug("Got Event for X=%d\n", event.xany.window));
 
-	    lock = LockIBase (0L);
-
-	    /* Search window */
-	    for (screen=IntuitionBase->FirstScreen; screen; screen=screen->NextScreen)
-	    {
-		for (w=screen->FirstWindow; w; w=w->NextWindow)
-		{
-		    if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
-			break;
-		}
-
-		if (w)
-		    break;
-	    }
-
-
-	    if (w)
-	    {
-		/* Make sure that no one closes the window while we work on it */
-		w->MoreFlags |= EWFLG_DELAYCLOSE;
-
-		Dipxe(bug("X=%d is asocciated with Window %p\n",
-		    event.xany.window,
-		    w
-		));
-	    }
-	    else
-		Dipxe(bug("X=%d is not asocciated with a Window\n",
-		    event.xany.window));
-
-	    /* We unlock IBase now that we have assured that the window won't
-	    ** close while we are working on it. (IBase should be locked as little
-	    ** time as possible
-	    */
-	    UnlockIBase (lock);
-
-	    /* If this wasn't an event for AROS, then get next event in the queue */
-	    if (!w)
-		continue;
-
-	    iw = (struct IntWindow *)w;
-
-	    ie->ie_Class = 0;
-
-	    switch (event.type)
-	    {
-	    case GraphicsExpose:
-	    case Expose: {
-		XRectangle rect;
-		UWORD	   count;
-
-		if (event.type == Expose)
-		{
-		    rect.x	= event.xexpose.x;
-		    rect.y	= event.xexpose.y;
-		    rect.width	= event.xexpose.width;
-		    rect.height = event.xexpose.height;
-		    count	= event.xexpose.count;
-		}
-		else
-		{
-		    rect.x	= event.xgraphicsexpose.x;
-		    rect.y	= event.xgraphicsexpose.y;
-		    rect.width	= event.xgraphicsexpose.width;
-		    rect.height = event.xgraphicsexpose.height;
-		    count	= event.xgraphicsexpose.count;
-		}
+	        if (event.type == MappingNotify)
+	    	{
 LX11
-		XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
+		    XRefreshKeyboardMapping ((XMappingEvent*)&event);
 UX11
-		if (count == 0)
-		{
-		    ie->ie_Class = IECLASS_REFRESHWINDOW;
-		}
-		break; }
+		    continue;
+	    	}
 
-	    case ConfigureNotify:
-		if (w->Width != event.xconfigure.width ||
+	        lock = LockIBase (0L);
+
+  		/* Save old window, to see if active window has changed */
+  		oldw = w;
+
+	    	/* Search window */
+	    	for (screen=IntuitionBase->FirstScreen; screen; screen=screen->NextScreen)
+	    	{
+		    for (w=screen->FirstWindow; w; w=w->NextWindow)
+		    {
+		    	if (((struct IntWindow *)w)->iw_XWindow == event.xany.window)
+			    break;
+		    }
+
+		    if (w)
+		    	break;
+	    	}
+
+
+	    	if (w)
+	    	{
+		    /* Make sure that no one closes the window while we work on it */
+		    w->MoreFlags |= EWFLG_DELAYCLOSE;
+
+		    Dipxe(bug("X=%d is asocciated with Window %p\n",
+		    event.xany.window, w ));
+	    	}
+	    	else
+		    Dipxe(bug("X=%d is not asocciated with a Window\n",
+		    		event.xany.window));
+
+	    	/* We unlock IBase now that we have assured that the window won't
+	    	** close while we are working on it. (IBase should be locked as little
+	    	** time as possible
+	    	*/
+	    	UnlockIBase (lock);
+
+	    	/* If this wasn't an event for AROS, then get next event in the queue */
+	    	if (!w)
+		    continue;
+
+	    	iw = (struct IntWindow *)w;
+	    	
+	    	/* New window active ? */
+	    	if (w != oldw)
+	    	{
+	    	    ie->ie_Class = IECLASS_ACTIVEWINDOW;
+	    	    ie->ie_EventAddress  = (APTR)w;
+	    	    
+	    	    D(bug("Sending Active window event to id\n"));
+	    	    
+    		    /* Send the event to input device for processing */
+    		    DoIO((struct IORequest *)inputio);
+	    	}
+
+	    	ie->ie_Class = 0;
+
+	    	switch (event.type)
+	    	{
+	    	case GraphicsExpose:
+	    	case Expose: {
+		    XRectangle rect;
+		    UWORD	   count;
+
+		    if (event.type == Expose)
+		    {
+		    	rect.x	= event.xexpose.x;
+		    	rect.y	= event.xexpose.y;
+		    	rect.width	= event.xexpose.width;
+		    	rect.height = event.xexpose.height;
+		    	count	= event.xexpose.count;
+		    }
+		    else
+		    {
+		    	rect.x	= event.xgraphicsexpose.x;
+		    	rect.y	= event.xgraphicsexpose.y;
+		    	rect.width	= event.xgraphicsexpose.width;
+		    	rect.height = event.xgraphicsexpose.height;
+		    	count	= event.xgraphicsexpose.count;
+		    }
+LX11
+		    XUnionRectWithRegion (&rect, iw->iw_Region, iw->iw_Region);
+UX11
+		    if (count == 0)
+		    {
+		    	ie->ie_Class = IECLASS_REFRESHWINDOW;
+		    }
+		    break; }
+
+	        case ConfigureNotify:
+		    if (w->Width != event.xconfigure.width ||
 			w->Height != event.xconfigure.height)
-		{
-		    w->Width  = event.xconfigure.width;
-		    w->Height = event.xconfigure.height;
+		    {
+		    	w->Width  = event.xconfigure.width;
+		    	w->Height = event.xconfigure.height;
 
-		    ie->ie_Class = IECLASS_SIZEWINDOW;
-		}
-		break;
-
-	    case ButtonPress: {
-		XButtonEvent * xb = &event.xbutton;
-
-		ie->ie_Class	 = IECLASS_RAWMOUSE;
-		ie->ie_Qualifier = StateToQualifier (xb->state);
-		ie->ie_X	 = xb->x;
-		ie->ie_Y	 = xb->y;
-
-		switch (xb->button)
-		{
-		case Button1:
-		    ie->ie_Code = SELECTDOWN;
+		    	ie->ie_Class = IECLASS_SIZEWINDOW;
+		    }
 		    break;
 
-		case Button2:
-		    ie->ie_Code = MIDDLEDOWN;
+	    	case ButtonPress: {
+		    XButtonEvent * xb = &event.xbutton;
+
+		    ie->ie_Class	 = IECLASS_RAWMOUSE;
+		    ie->ie_Qualifier = StateToQualifier (xb->state);
+		    ie->ie_X	 = xb->x;
+		    ie->ie_Y	 = xb->y;
+
+		    switch (xb->button)
+		    {
+		    case Button1:
+		    	ie->ie_Code = SELECTDOWN;
+		    	break;
+
+		    case Button2:
+		    	ie->ie_Code = MIDDLEDOWN;
+		    	break;
+
+		    case Button3:
+		    	ie->ie_Code = MENUDOWN;
+		    	break;
+		    } /* switch (which button was clicked ?) */
+
+		    break; }
+		    
+	        case ButtonRelease: {
+		    XButtonEvent * xb = &event.xbutton;
+
+		    ie->ie_Class = IECLASS_RAWMOUSE;
+		    ie->ie_Qualifier = StateToQualifier (xb->state);
+
+		    switch (xb->button)
+		    {
+		    case Button1:
+		    	ie->ie_Code = SELECTUP;
+		    	break;
+
+		    case Button2:
+		    	ie->ie_Code = MIDDLEUP;
+		    	break;
+
+		    case Button3:
+		    	ie->ie_Code = MENUUP;
+		    	break;
+		    }
+		    break; }
+
+	    	case KeyPress: {
+		    XKeyEvent * xk = &event.xkey;
+		    ULONG result;
+
+		    ie->ie_Class = IECLASS_RAWKEY;
+		    result = XKeyToAmigaCode(xk);
+		    ie->ie_Code = xk->keycode;
+		    ie->ie_Qualifier = result >> 16;
+		    break; }
+
+	    	case KeyRelease: {
+		    XKeyEvent * xk = &event.xkey;
+		    ULONG result;
+
+		    ie->ie_Class = IECLASS_RAWKEY;
+		    result = XKeyToAmigaCode(xk);
+		    ie->ie_Code = xk->keycode | 0x8000;
+		    ie->ie_Qualifier = result >> 16;
+		    break; }
+
+	    	case MotionNotify: {
+		    XMotionEvent * xm = &event.xmotion;
+
+		    ie->ie_Code = IECODE_NOBUTTON;
+		    ie->ie_Class = IECLASS_RAWMOUSE;
+		    ie->ie_Qualifier = StateToQualifier (xm->state);
+		    ie->ie_X = xm->x;
+		    ie->ie_Y = xm->y;
+		    break; }
+
+	   	case EnterNotify: {
+		    XCrossingEvent * xc = &event.xcrossing;
+
+		    ie->ie_Class	= IECLASS_ACTIVEWINDOW;
+		    ie->ie_X	= xc->x;
+		    ie->ie_Y	= xc->y;
+		    break; }
+
+	    	case LeaveNotify: {
+		    XCrossingEvent * xc = &event.xcrossing;
+
+		    ie->ie_Class = IECLASS_INACTIVEWINDOW;
+		    ie->ie_X = xc->x;
+		    ie->ie_Y = xc->y;
+		    break; }
+
+
+	    	} /* switch (X11 event type) */
+
+
+	    	/* Got an event ? */
+	    	if (ie->ie_Class)
 		    break;
 
-		case Button3:
-		    ie->ie_Code = MENUDOWN;
-		    break;
-		} /* switch (which button was clicked ?) */
+	    } /* while there are events in the event queue */
+	    
+    	} /* Until there is an event for AROS  */
+    	
+    	/* Send the event to input device for processing */
+	D(bug("Sending event to id\n"));
+    	DoIO((struct IORequest *)inputio);
+    	
+    } /* Forever */
 
-		break; }
-	    case ButtonRelease: {
-		XButtonEvent * xb = &event.xbutton;
-
-		ie->ie_Class = IECLASS_RAWMOUSE;
-		ie->ie_Qualifier = StateToQualifier (xb->state);
-
-		switch (xb->button)
-		{
-		case Button1:
-		    ie->ie_Code = SELECTUP;
-		    break;
-
-		case Button2:
-		    ie->ie_Code = MIDDLEUP;
-		    break;
-
-		case Button3:
-		    ie->ie_Code = MENUUP;
-		    break;
-		}
-		break; }
-
-	    case KeyPress: {
-		XKeyEvent * xk = &event.xkey;
-		ULONG result;
-
-		ie->ie_Class = IECLASS_RAWKEY;
-		result = XKeyToAmigaCode(xk);
-		ie->ie_Code = xk->keycode;
-		ie->ie_Qualifier = result >> 16;
-		break; }
-
-	    case KeyRelease: {
-		XKeyEvent * xk = &event.xkey;
-		ULONG result;
-
-		ie->ie_Class = IECLASS_RAWKEY;
-		result = XKeyToAmigaCode(xk);
-		ie->ie_Code = xk->keycode | 0x8000;
-		ie->ie_Qualifier = result >> 16;
-		break; }
-
-	    case MotionNotify: {
-		XMotionEvent * xm = &event.xmotion;
-
-		ie->ie_Code = IECODE_NOBUTTON;
-		ie->ie_Class = IECLASS_RAWMOUSE;
-		ie->ie_Qualifier = StateToQualifier (xm->state);
-		ie->ie_X = xm->x;
-		ie->ie_Y = xm->y;
-		break; }
-
-	   case EnterNotify: {
-		XCrossingEvent * xc = &event.xcrossing;
-
-		ie->ie_Class	= IECLASS_ACTIVEWINDOW;
-		ie->ie_X	= xc->x;
-		ie->ie_Y	= xc->y;
-		break; }
-
-	    case LeaveNotify: {
-		XCrossingEvent * xc = &event.xcrossing;
-
-		ie->ie_Class = IECLASS_INACTIVEWINDOW;
-		ie->ie_X = xc->x;
-		ie->ie_Y = xc->y;
-		break; }
-
-
-	    } /* switch (X11 event type) */
-
-	    *wstorage = w;
-
-	    /* Got an event ? */
-	    if (ie->ie_Class)
-		break;
-
-	} /* while (there are events in the event queue) */
-    } /* Wait for event  */
-
-    ReturnVoid ("intui_WaitEvent");
 } /* intui_WaitEvent() */
 
+/***************************
+**  CreateX11EventTask()  **
+***************************/
+STATIC struct Task *CreateX11EventTask(struct IntuitionBase *IntuitionBase)
+{
+    struct Task *task;
+    APTR stack;
+    
+    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    if (task)
+    {
+    	NEWLIST(&task->tc_MemEntry);
+    	task->tc_Node.ln_Type=NT_TASK;
+    	task->tc_Node.ln_Name= XETASK_NAME;
+    	task->tc_Node.ln_Pri = XETASK_PRIORITY;
 
-#undef IntuitionBase
+    	stack=AllocMem(XETASK_STACKSIZE, MEMF_PUBLIC);
+    	if(stack != NULL)
+    	{
+	    task->tc_SPLower=stack;
+	    task->tc_SPUpper=(BYTE *)stack + XETASK_STACKSIZE;
+
+#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET-sizeof(APTR);
+	    ((APTR *)task->tc_SPUpper)[-1] = IntuitionBase;
+#else
+	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
+	    *(APTR *)task->tc_SPLower = IntuitionBase;
+#endif
+
+
+	    if(AddTask(task, XETaskEntry, NULL) != NULL)
+	    {
+	    	/* Everything went OK */
+	    	return (task);
+	    }	
+	    FreeMem(stack, XETASK_STACKSIZE);
+    	}
+        FreeMem(task,sizeof(struct Task));
+    }
+    return (NULL);
+
+}
+
