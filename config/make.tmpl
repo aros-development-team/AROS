@@ -1574,14 +1574,15 @@ setup ::
 %end
 
 #----------------------------------------------------------------------------------
-# Copy an entire directory hierarchy to another place
+# Copy a diretory recursively to another place, preserving the original 
+# hierarchical structure
 #
 # src: the source directory whose content will be copied
 # dst: the directory where to copy src's content. If not existing, it will be made.
 
-%define copy_dir_hier mmake=/A src=. dst=/A
+%define copy_dir_recursive mmake=/A src=. dst=/A
 
-%(mmake)_FILES := $(shell find %(src) -path '*/CVS' -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
+%(mmake)_FILES := $(shell find %(src) -path '*/CVS' -prune -o -name .cvsignore -prune -o -name mmakefile -prune -o -name mmakefile.src -prune -o -type f -print)
 %(mmake)_DIRS  := $(sort $(foreach f,$(%(mmake)_FILES),$(dir $(f))))
 
 define %(mmake)_mkdir
@@ -1590,15 +1591,15 @@ $(1):
 endef
 
 define %(mmake)_copy
-$(2)/$(1): $(1) | $(2)/$(dir $(1))
-	$(CP) $(1) $$@
+$(3)/$(1): $(2)/$(1) | $(dir $(3)/$(1))
+	$(CP) $$< $$@
 endef
 
 #MM
 %(mmake): $(addprefix %(dst)/,$(%(mmake)_FILES))
 
 $(foreach d,$(%(mmake)_DIRS),$(eval $(call %(mmake)_mkdir,%(dst)/$d)))
-$(foreach f,$(%(mmake)_FILES),$(eval $(call %(mmake)_copy,$f,%(dst))))
+$(foreach f,$(%(mmake)_FILES),$(eval $(call %(mmake)_copy,$f,%(src),%(dst))))
 
 %end
 
