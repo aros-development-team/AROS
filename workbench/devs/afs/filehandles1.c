@@ -652,13 +652,13 @@ void newFileExtensionBlock
 {
 UWORD i;
 
-	extension->buffer[BLK_PRIMARY_TYPE]=OS_LONG2BE(T_LIST);
-	extension->buffer[BLK_OWN_KEY]=OS_LONG2BE(extension->blocknum);
-	for (i=3;i<BLK_PARENT(volume);i++)
-		extension->buffer[i]=0;
-	extension->buffer[BLK_PARENT(volume)]=OS_LONG2BE(parent);
-	extension->buffer[BLK_EXTENSION(volume)]=0;
-	extension->buffer[BLK_SECONDARY_TYPE(volume)]=OS_LONG2BE(ST_FILE);
+	extension->buffer[BLK_PRIMARY_TYPE] = OS_LONG2BE(T_LIST);
+	extension->buffer[BLK_OWN_KEY ] =OS_LONG2BE(extension->blocknum);
+	for (i=2;i<BLK_PARENT(volume);i++)
+		extension->buffer[i] = 0;
+	extension->buffer[BLK_PARENT(volume)] = OS_LONG2BE(parent);
+	extension->buffer[BLK_EXTENSION(volume)] = 0;
+	extension->buffer[BLK_SECONDARY_TYPE(volume)] = OS_LONG2BE(ST_FILE);
 }
 
 void writeExtensionBlock
@@ -669,17 +669,15 @@ void writeExtensionBlock
 		ULONG filekey,
 		ULONG next)
 {
+ULONG newcount = BLK_TABLE_END(volume)-(filekey-1);
 
-	extension->buffer[BLK_BLOCK_COUNT]=
-		OS_LONG2BE(BLK_TABLE_END(volume)-(filekey-1));
-	if (next)
-		extension->buffer[BLK_EXTENSION(volume)]=OS_LONG2BE(next);
-	extension->buffer[BLK_CHECKSUM]=0;
-	extension->buffer[BLK_CHECKSUM]=
-		OS_LONG2BE
-			(
-				0-calcChkSum(volume->SizeBlock,extension->buffer)
-			);
+	if (OS_BE2LONG(extension->buffer[BLK_BLOCK_COUNT]) < newcount)
+		extension->buffer[BLK_BLOCK_COUNT] = OS_LONG2BE(newcount);
+	if (next != 0)
+		extension->buffer[BLK_EXTENSION(volume)] = OS_LONG2BE(next);
+	extension->buffer[BLK_CHECKSUM] = 0;
+	extension->buffer[BLK_CHECKSUM] =
+		OS_LONG2BE(0-calcChkSum(volume->SizeBlock, extension->buffer));
 	writeBlock(afsbase, volume, extension);
 }
 
@@ -699,7 +697,7 @@ LONG writtenbytes=0;
 char *destination;
 
 	D(bug("[afs]   writeData: offset=%ld\n", ah->current.offset));
-	extensionbuffer=getBlock(afsbase, ah->volume, ah->current.block);
+	extensionbuffer = getBlock(afsbase, ah->volume, ah->current.block);
 	if (extensionbuffer == NULL)
 	{
 		error = ERROR_UNKNOWN;
@@ -714,24 +712,21 @@ char *destination;
 				(ah->current.filekey!=BLK_TABLE_END(ah->volume)) // this is not the first block of the file
 			)
 		{
-			lastblock=OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey+1]);
+			lastblock = OS_BE2LONG(extensionbuffer->buffer[ah->current.filekey+1]);
 			D(bug
-				(
-					"[afs]   writeData: for OFS last datablock was %ld\n",
-					lastblock
-				));
+				("[afs]   writeData: for OFS last datablock was %ld\n", lastblock));
 		}
 		/*
 			block, filekey always point to the last block
 			so update them if we have read a whole block
 		*/
 		/* read next extension block ?*/
-		if (ah->current.filekey<BLK_TABLE_START)
+		if (ah->current.filekey < BLK_TABLE_START)
 		{
 			if (extensionbuffer->buffer[BLK_EXTENSION(ah->volume)] != 0)
 			{
 				extensionbuffer->flags &= ~BCF_USED;
-				extensionbuffer=getBlock
+				extensionbuffer = getBlock
 					(
 						afsbase,
 						ah->volume,
@@ -746,7 +741,7 @@ char *destination;
 			else
 			{
 				D(bug("[afs]   writeData: need new extensionblock\n"));
-				block=allocBlock(afsbase, ah->volume);
+				block = allocBlock(afsbase, ah->volume);
 				writeExtensionBlock
 					(
 						afsbase,
@@ -948,18 +943,18 @@ struct DateStamp ds;
 
 	D(bug("[afs] write(ah,buffer,%ld)\n",length));
 	invalidBitmap(afsbase, ah->volume);
-	writtenbytes=writeData(afsbase, ah, buffer, length);
+	writtenbytes = writeData(afsbase, ah, buffer, length);
 	if (writtenbytes != ENDSTREAMCH)
 	{
 		ah->current.offset += writtenbytes;
-		headerblock=getBlock(afsbase, ah->volume,ah->header_block);
-		if (headerblock)
+		headerblock = getBlock(afsbase, ah->volume,ah->header_block);
+		if (headerblock != NULL)
 		{
 			headerblock->buffer[BLK_FIRST_DATA]=
 				headerblock->buffer[BLK_TABLE_END(ah->volume)];
-			if (ah->current.offset>ah->filesize)
+			if (ah->current.offset > ah->filesize)
 			{
-				ah->filesize=ah->current.offset;
+				ah->filesize = ah->current.offset;
 				headerblock->buffer[BLK_BYTE_SIZE(ah->volume)]=
 					OS_LONG2BE(ah->filesize);
 			}
