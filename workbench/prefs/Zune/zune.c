@@ -156,7 +156,13 @@ struct page_entry main_page_entries[] =
 /****************************************************************
  Our standard hook function, for easy call backs
 *****************************************************************/
+#ifndef __AROS__
 __saveds static __asm void hook_func_standard(register __a0 struct Hook *h, register __a1 ULONG * funcptr)
+#else
+AROS_UFH2( void, hook_func_standard,
+    AROS_UFHA( struct Hook *, h,       A0 ),
+    AROS_UFHA( ULONG *,       funcptr, A1 ))
+#endif
 {
     void (*func) (ULONG *) = (void (*)(ULONG *)) (*funcptr);
     if (func) func(funcptr + 1);
@@ -165,7 +171,14 @@ __saveds static __asm void hook_func_standard(register __a0 struct Hook *h, regi
 /****************************************************************
  The display function for the page listview
 *****************************************************************/
+#ifndef __AROS__
 __saveds __asm void main_page_list_display(register __a0 struct Hook *h, register __a2 char **strings, register __a1 struct page_entry *entry)
+#else
+AROS_UFH3( void, main_page_list_display,
+    AROS_UFHA( struct Hook *,       h,       A0 ),
+    AROS_UFHA( char **,             strings, A2 ),
+    AROS_UFHA( struct page_entry *, entry,   A1 )) 
+#endif
 {
     if (entry)
     {
