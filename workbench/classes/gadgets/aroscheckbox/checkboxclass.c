@@ -163,7 +163,7 @@ Object *check_new(Class *cl, Class *rootcl, struct opSet *msg)
 	{TAG_DONE, 0L}
     };
 
-    EnterFunc(bug("CheckBox::New()\n"));
+    //EnterFunc(bug("CheckBox::New()\n"));
 
     obj = (Object *)DoSuperMethodA(cl, (Object *)rootcl, (Msg)msg);
     if (!obj)
