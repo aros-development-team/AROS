@@ -7,7 +7,7 @@ where new things can be done.</p>
 
 <idea title="All lists and public structures must be protected by semaphores"
 by="Nils Henrik Lorentzen">
-A system like the hierarchical semaphores in pOS would be best.
+<p>A system like the hierarchical semaphores in pOS would be best.</p>
 </idea>
 
 <idea title="Recursive lddaemon"
