@@ -24,35 +24,35 @@
 
 /* Disk environment array. The size of this structure is variable.
    de_TableSize contains the size of the structure. This structure may
-   look different for different handlers. */
+   look different for different handlers. Most of the entries are in fact
+   ULONGs or LONGs, but because every entry must have the same size, we have
+   to use IPTRs instead. */
 struct DosEnvec
 {
-    ULONG   de_TableSize;      /* Size of this structure. Must be at least
-                                  11 (DE_NUMBUFFERS). */
-    ULONG   de_SizeBlock;      /* Size in longwords of a block on the disk. */
-    ULONG   de_SegOrg;         /* Unused. Must be 0 for now. */
-    ULONG   de_Surfaces;       /* Number of heads/surfaces in drive. */
-    ULONG   de_SectorPerBlock; /* Unused. Must be 1 for now. */
-    ULONG   de_BlocksPerTrack; /* Number of blocks on a track. */
-    ULONG   de_Reserved;       /* Number of reserved blocks at beginning of
-                                  volume. */
-    ULONG   de_PreAlloc;       /* Number of reserved blocks at end of volume.
-                               */
-    ULONG   de_Interleave;
-    ULONG   de_LowCyl;         /* First cylinder. */
-    ULONG   de_HighCyl;        /* Last cylinder. */
-    ULONG   de_NumBuffers;     /* Number of buffers for drive. */
-    ULONG   de_BufMemTypes;    /* Type of memory for buffers. See
-                                  <exec/memory.h>. */
-    ULONG   de_MaxTransfer;    /* How many bytes may be transferred together?
-                               */
-    ULONG   de_Mask;           /* Memory address mask for DMA devices. */
-    LONG    de_BootPri;        /* Priority of Autoboot. */
-    ULONG   de_DosType;        /* Type of disk. See <dos/dos.h> for
-                                  definitions. */
-    ULONG   de_Baud;           /* Baud rate to use. */
-    ULONG   de_Control;        /* Control word. */
-    ULONG   de_BootBlocks;     /* Size of bootblock. */
+    IPTR de_TableSize;      /* Size of this structure. Must be at least
+                               11 (DE_NUMBUFFERS). */
+    IPTR de_SizeBlock;      /* Size in longwords of a block on the disk. */
+    IPTR de_SegOrg;         /* Unused. Must be 0 for now. */
+    IPTR de_Surfaces;       /* Number of heads/surfaces in drive. */
+    IPTR de_SectorPerBlock; /* Unused. Must be 1 for now. */
+    IPTR de_BlocksPerTrack; /* Number of blocks on a track. */
+    IPTR de_Reserved;       /* Number of reserved blocks at beginning of
+                               volume. */
+    IPTR de_PreAlloc;       /* Number of reserved blocks at end of volume. */
+    IPTR de_Interleave;
+    IPTR de_LowCyl;         /* First cylinder. */
+    IPTR de_HighCyl;        /* Last cylinder. */
+    IPTR de_NumBuffers;     /* Number of buffers for drive. */
+    IPTR de_BufMemTypes;    /* Type of memory for buffers. See <exec/memory.h>.
+                            */
+    IPTR de_MaxTransfer;    /* How many bytes may be transferred together? */
+    IPTR de_Mask;           /* Memory address mask for DMA devices. */
+    IPTR de_BootPri;        /* Priority of Autoboot. */
+    IPTR de_DosType;        /* Type of disk. See <dos/dos.h> for definitions.
+                            */
+    IPTR de_Baud;           /* Baud rate to use. */
+    IPTR de_Control;        /* Control word. */
+    IPTR de_BootBlocks;     /* Size of bootblock. */
 };
 
 /* The following constants are longword offsets, which point into a filehandler
