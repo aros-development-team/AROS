@@ -1343,6 +1343,7 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	case RECTFMT_RGB  : srcfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
 	case RECTFMT_RGBA : srcfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
 	case RECTFMT_ARGB : srcfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
+	case RECTFMT_RAW  : srcfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
     /* Compute the start of the array */
@@ -1356,7 +1357,15 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
+    if (srcfmt_hidd != vHidd_StdPixFmt_Native)
+    {
+    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
+    }
+    else
+    {
+    	OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    }
+
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
     start_offset = ((ULONG)srcy) * srcmod + srcx * bppix;
@@ -1418,6 +1427,7 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 	case RECTFMT_RGB  : dstfmt_hidd = vHidd_StdPixFmt_RGB24;  break;
 	case RECTFMT_RGBA : dstfmt_hidd = vHidd_StdPixFmt_RGBA32; break;
 	case RECTFMT_ARGB : dstfmt_hidd = vHidd_StdPixFmt_ARGB32; break;
+	case RECTFMT_RAW  : dstfmt_hidd = vHidd_StdPixFmt_Native; break;
     }
 
 #warning Get rid of the below code ?
@@ -1429,9 +1439,15 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
-    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
-    
+    if (dstfmt_hidd != vHidd_StdPixFmt_Native)
+    {
+    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
+    }
+    else
+    {
+    	OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
+    }
+       
     start_offset = ((ULONG)desty) * dstmod + destx * bppix;
         
     rpard.array	 = ((UBYTE *)dst) + start_offset;
