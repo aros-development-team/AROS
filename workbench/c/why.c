@@ -12,7 +12,7 @@
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 
-static const char version[] = "$VER: why 41.2 (2.3.97)\n";
+static const char version[] = "$VER: why 41.3 (26.8.98)\n";
 
 int main()
 {
@@ -28,7 +28,7 @@ int main()
         if ((cli = Cli()) != NULL)
         {
             lasterror = cli->cli_Result2;
-            if (lasterror == 0)
+	    if (cli->cli_ReturnCode == 0 || lasterror == 0)
                 VPrintf("The last command did not set a return-value\n", NULL);
             else
             {
