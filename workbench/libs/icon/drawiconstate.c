@@ -82,6 +82,7 @@
 				 nativeicon->iconPNG.width,
 				 nativeicon->iconPNG.height,
 				 0);
+	    return;
 	}
     	else if (nativeicon->icon35.img1.imagedata)
 	{
