@@ -1143,6 +1143,43 @@ BOOL _AndRectRegion
     struct GfxBase   *GfxBase
 )
 {
+    struct Region Res;
+    struct RegionRectangle rr;
+
+    InitRegion(&Res);
+
+    rr.bounds = *Rect;
+    rr.Next   = NULL;
+    rr.Prev   = NULL;
+
+    if
+    (
+        _DoOperationBandBand
+        (
+            _AndBandBand,
+            0,
+            MinX(Reg),
+            0,
+	    MinY(Reg),
+            &rr,
+            Reg->RegionRectangle,
+            &Res.RegionRectangle,
+            &Res.bounds,
+            GfxBase
+        )
+    )
+    {
+	ClearRegion(Reg);
+
+        *Reg = Res;
+
+        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+
+        return TRUE;
+    }
+
+    return FALSE;
+#if 0
     struct RegionRectangle *rr = Reg->RegionRectangle;
     struct Rectangle OldBounds = Reg->bounds;
 
@@ -1207,6 +1244,7 @@ BOOL _AndRectRegion
     _DisposeRegionRectangleList(rr, GfxBase);
 
     return TRUE;
+#endif
 }
 
 BOOL _AndRegionRegion
@@ -1377,27 +1415,25 @@ int main(void)
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 20; i++)
     {
         int l = i*20;
 
-	struct Rectangle r = {l, 0, l+11, 201};
+	struct Rectangle r = {l, 0, l+11, 401};
         _OrRectRegion(R1, &r, GfxBase);
     }
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 20; i++)
     {
         int u = i*20;
 
-	struct Rectangle r = {0, u, 201, u+11};
+	struct Rectangle r = {0, u, 401, u+11};
         _OrRectRegion(R2, &r, GfxBase);
     }
 
     for (i = 0; i<100000; i++)
     {
         _XorRegionRegion(R2, R1, GfxBase);
-        dumpregion(R1);
-        exit(0);
     }
 
     DisposeRegion(R2);
