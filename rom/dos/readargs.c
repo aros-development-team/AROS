@@ -237,8 +237,19 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 			ERROR(me->pr_Result2);
 
 		    if(c == EOF || c== '\n' || !c)
+		    {
+		    	/* stegerg: added this. Otherwise try "list ?" then enter only "l" + RETURN
+			   and you will get a broken wall in FreeMem reported. This happens in
+			   FreeArgs() during the FreeVec() of the StrBuf. Appending '\n' here fixes
+			   this, but maybe the real bug is somewhere else. */
+			
+		    	iline[isize++] = '\n';
+			
+			/* end stegerg: */
+			
 			break;
-
+    	    	    }
+		    
 		    iline[isize++] = c;
 		}
 
@@ -253,6 +264,7 @@ printf ("rdargs->RDA_ExtHelp=%p\n", rdargs->RDA_ExtHelp); */
 	Get enough space for string buffer.
 	It's always smaller than the size of the input line+1.
     */
+
     strbuf = (STRPTR)AllocVec(cs->CS_Length + 1 ,MEMF_ANY);
     if(strbuf == NULL)
 	ERROR(ERROR_NO_FREE_STORE);
