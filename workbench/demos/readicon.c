@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Read an icon from an .info file
@@ -11,6 +11,7 @@
 #include <graphics/gfxbase.h>
 #include <workbench/workbench.h>
 #include <workbench/icon.h>
+#include <devices/inputevent.h>
 
 #include <proto/icon.h>
 #include <proto/exec.h>
@@ -47,18 +48,18 @@ void DoWindow (struct DiskObject * dobj)
 	goto end;
     }
 
-    dobj->do_Gadget.LeftEdge = dobj->do_Gadget.Width * 2 + 30;
-    dobj->do_Gadget.TopEdge  = 10;
-
     win = OpenWindowTags (NULL
 	, WA_Title,	    (ULONG)"Show an icon"
+	, WA_DragBar,       TRUE
+	, WA_CloseGadget,   TRUE
+	, WA_DepthGadget,   TRUE
+	, WA_Activate,      TRUE
 	, WA_Left,	    100
 	, WA_Top,	    100
-	, WA_Width,	    dobj->do_Gadget.Width * 3 + 40
-	, WA_Height,	    dobj->do_Gadget.Height + 20
-	, WA_IDCMP,	    IDCMP_RAWKEY
+	, WA_InnerWidth,    dobj->do_Gadget.Width * 3 + 40
+	, WA_InnerHeight,   dobj->do_Gadget.Height + 20
+	, WA_IDCMP,	    IDCMP_RAWKEY | IDCMP_CLOSEWINDOW
 	, WA_SimpleRefresh, TRUE
-	, WA_Gadgets,	    (ULONG)&dobj->do_Gadget
 	, TAG_END
     );
 
@@ -67,8 +68,14 @@ void DoWindow (struct DiskObject * dobj)
 
     rp = win->RPort;
 
-    DrawImage (rp, dobj->do_Gadget.GadgetRender, 10, 10);
-    DrawImage (rp, dobj->do_Gadget.SelectRender, 20 + dobj->do_Gadget.Width, 10);
+    dobj->do_Gadget.LeftEdge = win->BorderLeft + dobj->do_Gadget.Width * 2 + 30;
+    dobj->do_Gadget.TopEdge  = win->BorderTop + 10;
+
+    AddGadget(win, &dobj->do_Gadget, -1);
+    RefreshGList(&dobj->do_Gadget, win, NULL, 1);
+    
+    DrawImage (rp, dobj->do_Gadget.GadgetRender, win->BorderLeft + 10, win->BorderTop + 10);
+    DrawImage (rp, dobj->do_Gadget.SelectRender, win->BorderLeft + 20 + dobj->do_Gadget.Width, win->BorderTop + 10);
 
     cont = 1;
 
@@ -79,10 +86,19 @@ void DoWindow (struct DiskObject * dobj)
 	if ((im = (struct IntuiMessage *)GetMsg (win->UserPort)))
 	{
 	    /* D("Got msg\n"); */
+	    printf("Got msg %x\n", im->Class);
+	    
 	    switch (im->Class)
 	    {
+	    case IDCMP_CLOSEWINDOW:
+	    	cont = FALSE;
+    	    	break;
+		
 	    case IDCMP_RAWKEY:
-		cont = FALSE;
+	    	if (!(im->Code & IECODE_UP_PREFIX))
+		{
+		    cont = FALSE;
+		}
 		break;
 
 	    }
