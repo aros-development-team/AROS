@@ -263,6 +263,9 @@ case "$1" in
     if [ -n "$TEST" ]; then
 	echo "TEST := $TEST" >> $2
     fi
+    if [ -n "$STRIP" ]; then
+	echo "STRIP := $STRIP" >> $2
+    fi
     ;;
 "-h" )
     echo "#ifndef AROS_CONFIG_H" > $2
