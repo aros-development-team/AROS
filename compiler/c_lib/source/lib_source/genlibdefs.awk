@@ -163,6 +163,16 @@ END {
 	print "#define NAME_STRING      \""libname".hidd\""
 	print "#define NT_TYPE          NT_HIDD"
     }
+    else if (type == "datatype")
+    {
+	print "#define NAME_STRING	\""libname".datatype\""
+	print "#define NT_TYPE		NT_LIBRARY"
+    }
+    else if (type == "gadget")
+    {
+	print "#define NAME_STRING	\""libname".gadget\""
+	print "#define NT_TYPE		NT_LIBRARY"
+    }
     else
     {
 	print "Unknown type "type > "/dev/stderr";
