@@ -20,14 +20,13 @@
 
 #include <utility/utility.h>
 
-#define CLID_Hidd_Gfx           "graphics.hidd"
-#define CLID_Hidd_BitMap        "bitmap.hidd"
-#define CLID_Hidd_GCQuick       "gcquick.hidd"
-#define CLID_Hidd_GCClip        "gcclip.hidd"
+#define CLID_Hidd_Gfx           "hidd.graphics.base.graphics"
+#define CLID_Hidd_BitMap        "hidd.graphics.base.bitmap"
+#define CLID_Hidd_GC		"hidd.graphics.base.gc"
 
-#define IID_Hidd_Gfx      "I_GfxHidd"
-#define IID_Hidd_BitMap   "I_HiddBitMap"
-#define IID_Hidd_GC       "I_HiddGC"
+#define IID_Hidd_Gfx      "hidd.graphics.graphics"
+#define IID_Hidd_BitMap   "hidd.graphics.bitmap"
+#define IID_Hidd_GC       "hidd.graphics.gc"
 
 typedef struct Object *HIDDT_BitMap;
 typedef struct Object *HIDDT_GC;
@@ -92,6 +91,7 @@ struct pHidd_Gfx_DisposeBitMap
 
 
 
+
 /**** BitMap definitions ******************************************************/
 
 
@@ -102,6 +102,7 @@ typedef struct
    UWORD	red;
    UWORD	green;
    UWORD	blue;
+   UWORD	aplha;
    
 } HIDDT_Color;
 
@@ -111,6 +112,23 @@ enum
     /* Methods for a bitmap */
 
     moHidd_BitMap_SetColors,
+    moHidd_BitMap_CopyBox,
+    moHidd_BitMap_PutPixel,
+    moHidd_BitMap_DrawPixel,
+    moHidd_BitMap_PutBox,
+    moHidd_BitMap_GetBox,
+    moHidd_BitMap_GetPixel,
+    moHidd_BitMap_DrawLine,
+    moHidd_BitMap_DrawRect,
+    moHidd_BitMap_FillRect,
+    moHidd_BitMap_DrawEllipse,
+    moHidd_BitMap_FillEllipse,
+    moHidd_BitMap_DrawPolygon,
+    moHidd_BitMap_FillPolygon,
+    moHidd_BitMap_DrawText,
+    moHidd_BitMap_FillText,
+    moHidd_BitMap_FillSpan,
+    moHidd_BitMap_Clear,
     moHidd_BitMap_PrivateSet
 };
 
@@ -133,6 +151,18 @@ enum {
     aoHidd_BitMap_ColorTab,      /* [ISG] Colormap of the bitmap               */
     aoHidd_BitMap_AllocBuffer,   /* [I..] BOOL allocate buffer (default: TRUE) */
     
+    aoHidd_BitMap_Foreground,          /* [.SG] Foreground color                   */
+    aoHidd_BitMap_Background,          /* [.SG] Background color                   */
+    aoHidd_BitMap_DrawMode,            /* [.SG] Draw mode                          */
+    aoHidd_BitMap_Font,                /* [.SG] Current font                       */
+    aoHidd_BitMap_ColorMask,           /* [.SG] Prevents some color bits from      */
+                                   /*       changing                           */
+    aoHidd_BitMap_LinePattern,         /* [.SG] Pattern for line drawing          */
+    aoHidd_BitMap_PlaneMask,           /* [.SG] Shape bitmap                       */
+
+    aoHidd_BitMap_GC,           /* [ISG]  bitmap's GC                       */
+
+    
     num_Hidd_BitMap_Attrs
 };    
 
@@ -152,6 +182,16 @@ enum {
 #define aHidd_BitMap_TopEdge       (HiddBitMapAttrBase + aoHidd_BitMap_TopEdge)
 #define aHidd_BitMap_ColorTab      (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
 #define aHidd_BitMap_AllocBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_AllocBuffer)
+
+#define aHidd_BitMap_Foreground  (HiddBitMapAttrBase + aoHidd_BitMap_Foreground)
+#define aHidd_BitMap_Background  (HiddBitMapAttrBase + aoHidd_BitMap_Background)
+#define aHidd_BitMap_DrawMode    (HiddBitMapAttrBase + aoHidd_BitMap_DrawMode)
+#define aHidd_BitMap_Font        (HiddBitMapAttrBase + aoHidd_BitMap_Font)
+#define aHidd_BitMap_ColorMask   (HiddBitMapAttrBase + aoHidd_BitMap_ColorMask)
+#define aHidd_BitMap_LinePattern (HiddBitMapAttrBase + aoHidd_BitMap_LinePattern)
+#define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
+#define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
+
 
 
 /* BitMap formats */
@@ -176,33 +216,103 @@ struct pHidd_BitMap_SetColors
     ULONG	numColors;
 };
 
+/* messages for a graphics context */
+
+struct pHidd_BitMap_PutPixel
+{
+    MethodID  mID;
+    WORD x, y;
+    ULONG val;
+};
+
+struct pHidd_BitMap_GetPixel
+{
+    MethodID  mID;
+    WORD x, y;
+};
+
+struct pHidd_BitMap_DrawPixel
+{
+    MethodID  mID;
+    WORD x, y;
+};
+
+struct pHidd_BitMap_DrawLine
+{
+    MethodID    mID;
+    WORD        x1 ,y1, x2, y2;
+};
+
+struct pHidd_BitMap_CopyBox
+{
+    MethodID    mID;
+    WORD        srcX, srcY;
+    Object      *dest;
+    WORD        destX, destY;
+    UWORD       width, height;
+};
+
+struct pHidd_BitMap_GetBox
+{
+    MethodID mID;
+    ULONG	*pixels;
+    WORD	x, y;
+    WORD	width, height;
+};
+
+struct pHidd_BitMap_PutBox
+{
+    MethodID mID;
+    ULONG 	*pixels;
+    WORD	x, y;
+    WORD	width, height;
+};
+
+
+struct pHidd_BitMap_DrawRect
+{
+    MethodID    mID;
+    WORD        minX, minY, maxX, maxY;
+};
+
+struct pHidd_BitMap_DrawEllipse
+{
+    MethodID    mID;
+    WORD        x, y;
+    UWORD       rx, ry;
+};
+
+struct pHidd_BitMap_DrawPolygon
+{
+    MethodID    mID;
+    WORD        n;         /* number of coordinates */
+    WORD        *coords;   /* size 2*n              */
+};
+
+struct pHidd_BitMap_DrawText
+{
+    MethodID    mID;
+    WORD        x, y;      /* Start position, see autodocs */
+    STRPTR      text;      /* Latin 1 string               */
+    UWORD       length;    /* Number of characters to draw */
+};
+
+struct pHidd_BitMap_Clear
+{
+    MethodID    mID;
+};
+
 
 
 /**** Graphics context definitions ********************************************/
-
+    /* Methods for a graphics context */
+/*    
 enum
 {
-    /* Methods for a graphics context */
 
-    moHidd_GC_CopyArea,
-    moHidd_GC_WritePixelDirect,
-    moHidd_GC_WritePixel,
-    moHidd_GC_ReadPixel,
-    moHidd_GC_DrawLine,
-    moHidd_GC_DrawRect,
-    moHidd_GC_FillRect,
-    moHidd_GC_DrawEllipse,
-    moHidd_GC_FillEllipse,
-    moHidd_GC_DrawPolygon,
-    moHidd_GC_FillPolygon,
-    moHidd_GC_DrawText,
-    moHidd_GC_FillText,
-    moHidd_GC_FillSpan,
-    moHidd_GC_Clear,
-    moHidd_GC_ReadPixelArray,
-    moHidd_GC_WritePixelArray
+
 };
-
+*/
 enum
 {
     /* Attributes for a graphics context */
@@ -242,91 +352,6 @@ enum
 #define HIDDV_GC_DrawMode_XOR  0x06 /* XOR                                  */
 
 
-/* messages for a graphics context */
-
-struct pHidd_GC_WritePixelDirect
-{
-    MethodID  mID;
-    WORD x, y;
-    ULONG val;
-};
-
-struct pHidd_GC_ReadPixel
-{
-    MethodID  mID;
-    WORD x, y;
-};
-
-struct pHidd_GC_WritePixel
-{
-    MethodID  mID;
-    WORD x, y;
-};
-
-struct pHidd_GC_DrawLine
-{
-    MethodID    mID;
-    WORD        x1 ,y1, x2, y2;
-};
-
-struct pHidd_GC_CopyArea
-{
-    MethodID    mID;
-    WORD        srcX, srcY;
-    Object      *dest;
-    WORD        destX, destY;
-    UWORD       width, height;
-};
-
-struct pHidd_GC_DrawRect
-{
-    MethodID    mID;
-    WORD        minX, minY, maxX, maxY;
-};
-
-struct pHidd_GC_DrawEllipse
-{
-    MethodID    mID;
-    WORD        x, y;
-    UWORD       rx, ry;
-};
-
-struct pHidd_GC_DrawPolygon
-{
-    MethodID    mID;
-    WORD        n;         /* number of coordinates */
-    WORD        *coords;   /* size 2*n              */
-};
-
-struct pHidd_GC_DrawText
-{
-    MethodID    mID;
-    WORD        x, y;      /* Start position, see autodocs */
-    STRPTR      text;      /* Latin 1 string               */
-    UWORD       length;    /* Number of characters to draw */
-};
-
-struct pHidd_GC_Clear
-{
-    MethodID    mID;
-};
-
-struct pHidd_GC_ReadPixelArray
-{
-    MethodID mID;
-    ULONG	*pixelArray;
-    WORD	x, y;
-    WORD	width, height;
-};
-
-struct pHidd_GC_WritePixelArray
-{
-    MethodID mID;
-    ULONG 	*pixelArray;
-    WORD	x, y;
-    WORD	width, height;
-};
-
 
 /* Predeclarations of stubs in libhiddgraphicsstubs.h */
 
@@ -342,25 +367,25 @@ VOID     HIDD_BM_Move        (Object obj, WORD x, WORD y);
 BOOL     HIDD_BM_DepthArrange(Object obj, Object bm);
 BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG numcolors);
 
-ULONG    HIDD_GC_WritePixelDirect(Object *obj, WORD x, WORD y, ULONG val);
-ULONG    HIDD_GC_ReadPixel       (Object *obj, WORD x, WORD y);
-ULONG    HIDD_GC_WritePixel      (Object *obj, WORD x, WORD y);
-VOID     HIDD_GC_CopyArea        (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
-VOID     HIDD_GC_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
-VOID     HIDD_GC_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_GC_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_GC_DrawEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_GC_FillEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_GC_DrawArc         (Object *obj);
-VOID     HIDD_GC_FillArc         (Object *obj);
-VOID     HIDD_GC_DrawPolygon     (Object *obj, UWORD n, WORD *coords);
-VOID     HIDD_GC_FillPolygon     (Object *obj, UWORD n, WORD *coords);
-VOID     HIDD_GC_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
-VOID     HIDD_GC_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
-VOID     HIDD_GC_FillSpan        (Object *obj);
-VOID     HIDD_GC_Clear           (Object *obj);
+ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, ULONG val);
+ULONG    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
+ULONG    HIDD_BM_DrawPixel      (Object *obj, WORD x, WORD y);
+VOID     HIDD_BM_CopyBox         (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
+VOID     HIDD_BM_GetBox	 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID	 HIDD_BM_PutBox 	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
+VOID     HIDD_BM_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
+VOID     HIDD_BM_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_DrawEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_FillEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_DrawArc         (Object *obj);
+VOID     HIDD_BM_FillArc         (Object *obj);
+VOID     HIDD_BM_DrawPolygon     (Object *obj, UWORD n, WORD *coords);
+VOID     HIDD_BM_FillPolygon     (Object *obj, UWORD n, WORD *coords);
+VOID     HIDD_BM_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_BM_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_BM_FillSpan        (Object *obj);
+VOID     HIDD_BM_Clear           (Object *obj);
 
-VOID     HIDD_GC_ReadPixelArray	 (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
-VOID	 HIDD_GC_WritePixelArray (Object *obj, ULONG *pixelArray, WORD x, WORD y, WORD width, WORD height);
 
 #endif /* HIDD_GRAPHICS_H */

@@ -63,11 +63,13 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR lh)
     if (!lh->gfxclass)
     	return 0;
     
+/* Use the standard base GC class 
+
     if (!lh->gcclass)
     	lh->gcclass = init_gcclass(lh);
     if (!lh->gcclass)
     	return 0;
-    	
+*/    	
     if (!lh->bitmapclass)
     	lh->bitmapclass = init_bitmapclass(lh);
     if (!lh->bitmapclass)
@@ -87,12 +89,13 @@ void  SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR lh)
 	lh->bitmapclass = NULL;
     }
 	    
+/* Use the standard base GC class 
     if (lh->gcclass)
     {
 	free_gcclass( lh );
 	lh->gcclass = NULL;
     }
-        
+*/        
     if (lh->gfxclass)
     {
 	free_gfxclass( lh );

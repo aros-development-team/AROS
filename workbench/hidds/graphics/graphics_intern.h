@@ -36,6 +36,19 @@ struct HIDDBitMapData
     APTR  colorTab;      /* color table of the bitmap     */
     APTR  buffer;        /* content of the bitmap         */
     HIDDT_Color *coltab;
+
+    ULONG fg;        /* foreground color                                 */
+    ULONG bg;        /* background color                                 */
+    ULONG drMode;    /* drawmode                                         */
+    /* WARNING: type of font could be change */
+    APTR  font;      /* current fonts                                    */
+    ULONG colMask;   /* ColorMask prevents some color bits from changing */
+    UWORD linePat;   /* LinePattern                                      */
+    APTR  planeMask; /* Pointer to a shape bitMap                        */
+    Object *gc;
+    Object *bitmap;
+    /* WARNING: structure could be extented in the future                */
+
 };
 
 
@@ -104,7 +117,7 @@ void   free_bitmapclass(struct class_static_data *csd);
 Class *init_gcclass(struct class_static_data *csd);
 void   free_gcclass(struct class_static_data *csd);
 
-VOID  gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDirect *msg);
-ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg);
+VOID  bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg);
+ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg);
 
 #endif /* GRAPHICS_HIDD_INTERN_H */

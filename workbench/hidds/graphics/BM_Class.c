@@ -15,6 +15,7 @@
 #include <exec/memory.h>
 #include <utility/tagitem.h>
 #include <oop/oop.h>
+#include <graphics/text.h>
 
 #include <hidd/graphics.h>
 
@@ -22,13 +23,14 @@
 
 #undef  SDEBUG
 #undef  DEBUG
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 
 static AttrBase HiddBitMapAttrBase = 0;
+static AttrBase HiddGCAttrBase = 0;
 
 /*** BitMap::New() ************************************************************/
 
@@ -41,13 +43,55 @@ static AttrBase HiddBitMapAttrBase = 0;
     will be initialized from memory by this baseclass.
     If displayable, then the subclass(es) *MUST* take
     care of initializing a bitmap. This may for example
-    be an X11 window for a x11gfx.hidd. Either way, this class
+    be an X11 window for a x11gfx.hidd. Either way, this baseclass
     will initialize and store the width/height etc attrs.
 */    
 
+# warning This may be too slow, could find better solution
+/* In the splution used below, subclasses should NOT
+   handle aHidd_GC_DrawMode themselves, as they
+   will receive a pRoot_Set message for the corresponing
+   aHidd_BitMap_xxx attr. Docs should state this.
+   
+   Alternative 1: Let each subclass get the needed info
+   frmom the GC themselves.
+   Alt 2.: Like the above, but make the GC a white-box object, and let
+         subclasses get the data directly. Possible caveat:
+	 GC may theoretically be in differen addresspace, or
+	 even on differen machine */
+	 
+static VOID update_from_gc(Class *cl, Object *me, Object *gc)
+{
+
+    	/* Update the subclasses */
+    struct HIDDBitMapData *data = INST_DATA(cl, me);
+    struct TagItem tags[] =
+    {
+	    { aHidd_BitMap_DrawMode,	0UL },
+	    { aHidd_BitMap_Foreground,	0UL },
+	    { aHidd_BitMap_Background,	0UL },
+	    { aHidd_BitMap_Font, 	0UL },
+	    { aHidd_BitMap_ColorMask,   0UL },
+	    { aHidd_BitMap_LinePattern, 0UL },
+	    { aHidd_BitMap_PlaneMask, 	0UL },
+	    { TAG_DONE, 0UL}
+    };
+
+
+    GetAttr(gc, aHidd_GC_DrawMode,	&(tags[0].ti_Data));
+    GetAttr(gc, aHidd_GC_Foreground,	&(tags[1].ti_Data));
+    GetAttr(gc, aHidd_GC_Background,	&(tags[2].ti_Data));
+    GetAttr(gc, aHidd_GC_Font,		&(tags[3].ti_Data));
+    GetAttr(gc, aHidd_GC_ColorMask,	&(tags[4].ti_Data));
+    GetAttr(gc,	aHidd_GC_LinePattern,	&(tags[5].ti_Data));
+    GetAttr(gc, aHidd_GC_PlaneMask, 	&(tags[6].ti_Data));
+
+    SetAttrs(me, tags);
     
+    data->gc = gc;
 
-
+    return;
+}
 
 static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
@@ -77,6 +121,13 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->depth       = 8;
         data->displayable = FALSE;
         data->format      = vHIDD_BitMap_Format_Planar;
+        data->fg        = 1;        /* foreground color                        */
+        data->bg        = 0;        /* background color                        */
+        data->drMode    = HIDDV_GC_DrawMode_Copy;    /* drawmode               */
+        data->font      = NULL;     /* current fonts                           */
+        data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
+        data->linePat   = ~0;       /* LinePattern                             */
+        data->planeMask = NULL;     /* Pointer to a shape bitMap               */
 
         tstate = msg->attrList;
         while((tag = NextTagItem(&tstate)))
@@ -93,6 +144,17 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
                     case aoHidd_BitMap_Displayable : data->displayable = (BOOL) tag->ti_Data; break;
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
                     case aoHidd_BitMap_AllocBuffer : allocBuffer       = (BOOL) tag->ti_Data; break;
+		    
+		    case aoHidd_BitMap_GC	   : update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
+		    
+		    case aoHidd_BitMap_Foreground  : data->fg		= tag->ti_Data; break;
+		    case aoHidd_BitMap_Background  : data->bg		= tag->ti_Data; break;
+		    case aoHidd_BitMap_DrawMode	   : data->drMode	= tag->ti_Data; break;
+		    case aoHidd_BitMap_LinePattern : data->linePat	= tag->ti_Data; break;
+		    case aoHidd_BitMap_ColorMask   : data->colMask	= tag->ti_Data; break;
+		    case aoHidd_BitMap_PlaneMask   : data->planeMask	= (APTR)tag->ti_Data; break;
+		    case aoHidd_BitMap_Font	   : data->font		= (APTR)tag->ti_Data; break;
+	    
 
                     default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
                 } /* switch tag */
@@ -223,9 +285,18 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_BitMap_Width       : *msg->storage = data->width; D(bug("  width: %i\n", data->width)); break;
             case aoHidd_BitMap_Height      : *msg->storage = data->height; break;
             case aoHidd_BitMap_Depth       : *msg->storage = data->depth; break;
-            case aoHidd_BitMap_Displayable : *msg->storage = (ULONG) data->displayable; break;
+            case aoHidd_BitMap_Displayable : *msg->storage = (IPTR) data->displayable; break;
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
-            case aoHidd_BitMap_BitMap      : *msg->storage = (ULONG) data->buffer; break;
+            case aoHidd_BitMap_BitMap      : *msg->storage = (IPTR) data->buffer; break;
+	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
+	    case aoHidd_BitMap_Foreground  : *msg->storage = data->fg; break;
+	    case aoHidd_BitMap_Background  : *msg->storage = data->bg; break;
+	    case aoHidd_BitMap_DrawMode	   : *msg->storage = data->drMode; break;
+	    case aoHidd_BitMap_LinePattern : *msg->storage = data->linePat; break;
+	    case aoHidd_BitMap_ColorMask   : *msg->storage = data->colMask; break;
+	    case aoHidd_BitMap_PlaneMask   : *msg->storage = (IPTR) data->planeMask; break;
+	    case aoHidd_BitMap_Font	   : *msg->storage = (IPTR) data->font; break;
+	    
     
             default: DoSuperMethod(cl, obj, (Msg) msg);
         }
@@ -277,6 +348,1053 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     ReturnBool("GfxHIDD.CM::SetColors", TRUE);
 }
 
+
+/*** BitMap::DrawPixel() ***************************************************
+
+    NAME
+        moHidd_BitMap_DrawPixel
+
+    SYNOPSIS
+        DoMethod(obj, WORD x, WORD y);
+
+
+    FUNCTION
+        Changes the pixel at (x,y). The color of the pixel depends on the
+        attributes of gc, eg. colors, drawmode, colormask etc.
+        This function does not the coordinates.
+
+    INPUTS
+        (x,y) - coordinates of the pixel in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Gfx_Pixel, GROUP=HIDD_Gfx_SetAttributes
+
+    INTERNALS
+
+    TODO
+        - Support for shapeplane.
+        - Optimize
+***************************************************************************/
+
+static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPixel *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+    ULONG src, dest, val, mode;
+    ULONG writeMask;
+
+    EnterFunc(bug("BitMap::PutPixel() x: %i, y: %i\n", msg->x, msg->y));
+
+    /*
+        Example: Pixels which bits are set to 0 in the colMask must be
+                 unchanged
+
+          data->colMask = 001111
+          dest          = 101100
+                          --
+
+          writeMask = ~data->colMask & dest
+                    =   110000       & 101100
+                    =   100000
+
+          dest = data->fg && dest = 010100
+                                    --
+
+          dest      = dest   & (writeMask | data->ColMask)
+                    = 010100 & (100000   | 001111)
+                    = 010100 & (101111)
+                    = 000100
+                      --
+
+          dest      = dest   | writeMask;
+                    = 000100   100000
+                    = 100100
+                      --
+    */
+
+    src       = data->fg;
+    dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
+    mode      = data->drMode;
+    writeMask = ~data->colMask & dest;
+
+    if(mode & 1) val = ( src &  dest);
+    if(mode & 2) val = ( src & ~dest) | val;
+    if(mode & 4) val = (~src &  dest) | val;
+    if(mode & 8) val = (~src & ~dest) | val;
+
+    val = (val & (writeMask | data->colMask)) | writeMask;
+
+    HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
+
+
+    ReturnInt("BitMap::PutPixel ", ULONG, 1); /* in quickmode return always 1 */
+}
+
+
+/*** BitMap::DrawLine() *****************************************************
+
+    NAME
+        DrawLine
+
+    SYNOPSIS
+        DoMethod(obj, WORD x1, WORD y1, WORD x2, WORD y2);
+
+   FUNCTION
+        Draws a line from (x1,y1) to (x2,y2) in the specified gc.
+        The function does not clip the line against the drawing area.
+
+        x1,y1 - start point of the line in hidd units
+        x2,y2 - end point of the line in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Pixel
+
+    INTERNALS
+        Uses midpoint line ("Bresenham") algorithm([FOL90] 3.2.2)
+
+    TODO Support for line pattern
+         Optimize remove if t == 1 ...
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+    WORD  dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
+    UWORD maskLine = 1 << 15;  /* for line pattern */
+    BYTE  maskCnt  = 16;
+    ULONG fg       = data->fg;   /* foreground pen   */
+
+    EnterFunc(bug("BitMap::DrawLinel() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
+
+    /* Calculate slope */
+    dx = abs(msg->x2 - msg->x1);
+    dy = abs(msg->y2 - msg->y1);
+
+    /* which direction? */
+    if((msg->x2 - msg->x1) > 0) s1 = 1; else s1 = - 1;
+    if((msg->y2 - msg->y1) > 0) s2 = 1; else s2 = - 1;
+
+    /* change axes if dx < dy */
+    if(dx < dy)
+    {
+        d = dx; dx = dy; dy = d; t = 0;
+    }
+    else
+    {
+       t = 1;
+    }
+
+    d  = 2 * dy - dx;        /* initial value of d */
+
+    incrE  = 2 * dy;         /* Increment use for move to E  */
+    incrNE = 2 * (dy - dx);  /* Increment use for move to NE */
+
+    x = msg->x1; y = msg->y1;
+
+    if(data->linePat & maskLine)
+    {
+        HIDD_BM_DrawPixel(obj, x, y); /* The start pixel */
+    }
+    else
+    {
+        data->fg = data->bg;
+        HIDD_BM_DrawPixel(obj, x, y); /* The start pixel */
+        data->fg = fg;
+    }
+
+
+    for(i = 0; i < dx; i++)
+    {
+        maskLine = maskLine >> 1;
+        if(--maskCnt == 0)
+        {
+            maskLine = 1 << 15;  /* for line pattern */
+            maskCnt  = 16;
+        }
+
+        if(d <= 0)
+        {
+            if(t == 1)
+            {
+                x = x + s1;
+            }
+            else
+            {
+                y = y + s2;
+            }
+
+            d = d + incrE;
+        }
+        else
+        {
+            if(t == 1)
+            {
+                x = x + s1;
+                y = y + s2;
+            }
+            else
+            {
+                x = x + s1;
+                y = y + s2;
+            }
+
+            d = d + incrNE;
+        }
+
+        if(data->linePat & maskLine)
+        {
+            HIDD_BM_DrawPixel(obj, x, y);
+        }
+        else
+        {
+            data->fg = data->bg;
+            HIDD_BM_DrawPixel(obj, x, y);
+            data->fg = fg;
+        }
+    }
+
+
+    ReturnVoid("BitMap::DrawLine ");
+}
+
+
+/*** BitMap::CopyBox() *****************************************************
+
+    NAME
+        CopyBox
+
+    SYNOPSIS
+        DoMethod(src, WORD srcX, WORD srcY,
+                      Object *dest, WORD destX, WORD destY,
+                      UWORD sizeX, UWORD sizeY);
+
+   FUNCTION
+        Copy a rectangular area from the drawing area src to the drawing
+        area stored in dest (which may be src). The source area is not
+        changed (except when both rectangles overlap). The mode of the GC
+        dest determines how the copy takes place.
+
+        In quick mode, the following restrictions are not checked: It's not
+        checked whether the source or destination rectangle is completely
+        inside the valid area or whether the areas overlap. If they
+        overlap, the results are unpredictable. Also drawing modes are
+        ignored. If the two bitmaps in the GCs have a different depth,
+        copying might be slow.
+
+        When copying bitmaps between two different HIDDs, the following
+        pseudo algorithm is executed: First the destination HIDD is queried
+        whether it does understand the format of the source HIDD. If it
+        does, then the destination HIDD does the copying. If it doesn't,
+        then the source is asked whether it understands the destination
+        HIDDs' format. If it does, then the source HIDD will do the
+        copying. If it doesn't, then the default CopyArea of the graphics
+        HIDD base class will be invoked which copies the bitmaps pixel by
+        pixel with BitMap::GetPixel() and BitMap::DrawPixel().
+
+    INPUTS
+        src           - source bitmap object
+        srcX, srcY    - upper, left corner of the area to copy in the source
+        dest          - destination bitmap object
+        destX, destY  - upper, left corner in the destination to copy the area
+        width, height - width and height of the area in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_BltBitMap
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *msg)
+{
+    UWORD x, y;
+    WORD  srcX = msg->srcX, destX = msg->destX;
+    WORD  memSrcX = srcX, memDestX = destX;
+    WORD  srcY = msg->srcY, destY = msg->destY;
+    ULONG memFG;
+
+    EnterFunc(bug("BitMap::CopyBox()"));
+
+    GetAttr(msg->dest, aHidd_BitMap_Foreground, &memFG);
+
+    for(y = 0; y < msg->height; y++)
+    {
+        srcX  = memSrcX;
+        destX = memDestX;
+
+        for(x = 0; x < msg->width; x++)
+        {
+            SetAttrsTags(msg->dest, aHidd_BitMap_Foreground,
+                               HIDD_BM_GetPixel(obj, srcX++, srcY),
+                               TAG_END
+                        );
+            HIDD_BM_DrawPixel(msg->dest, destX++, destY);
+        }
+
+        srcY++; destY++;
+    }
+
+    SetAttrsTags(msg->dest, aHidd_BitMap_Foreground, memFG, TAG_END);
+
+    ReturnVoid("BitMap::CopyBox");
+}
+
+
+
+/*** BitMap::DrawRect() *****************************************************
+
+    NAME
+        DrawRect
+
+    SYNOPSIS
+        DoMethod(obj,  WORD minX, WORD minY, WORD maxX, WORD maxY);
+
+    FUNCTION
+
+        Draws a hollow rectangle from. minX and minY specifies the upper
+        left corner of the rectangle. minY and maxY specifies the lower
+        right corner of the rectangle.
+        The function does not clip the rectangle against the drawing area.
+
+    INPUTS
+        minX, minY - upper left corner of the rectangle in hidd units
+        maxX, maxY - lower right corner of the rectangle in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Rectangle
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect *msg)
+{
+    WORD addX, addY;
+
+    EnterFunc(bug("BitMap::DrawRect()"));
+
+    if(msg->minX == msg->maxX) addX = 0; else addX = 1;
+    if(msg->minY == msg->maxY) addY = 0; else addY = 1;
+
+    HIDD_BM_DrawLine(obj, msg->minX, msg->minY       , msg->maxX, msg->minY);
+    HIDD_BM_DrawLine(obj, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
+    HIDD_BM_DrawLine(obj, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
+    HIDD_BM_DrawLine(obj, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
+
+    ReturnVoid("BitMap::DrawRect");
+}
+
+
+/*** BitMap::FillRect() *****************************************************
+
+    NAME
+        FillRect
+
+    SYNOPSIS
+        DoMethod(obj,  WORD minX, WORD minY, WORD maxX, WORD maxY);
+
+    FUNCTION
+
+        Draws a solid rectangle. minX and minY specifies the upper
+        left corner of the rectangle. minY and maxY specifies the lower
+        right corner of the rectangle.
+        The function does not clip the rectangle against the drawing area.
+
+    INPUTS
+        minX, minY - upper left corner of the rectangle in hidd units
+        maxX, maxY - lower right corner of the rectangle in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Rectangle
+
+    INTERNALS
+
+    TODO
+        Fill with pattern
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_fillrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect *msg)
+{
+    WORD y = msg->minY;
+
+    EnterFunc(bug("BitMap::FillRect()"));
+
+    for(; y <= msg->maxY; y++)
+    {
+        HIDD_BM_DrawLine(obj, msg->minX, y, msg->maxX, y);
+    }
+
+    ReturnVoid("BitMap::FillRect");
+}
+
+
+/*** BitMap::DrawEllipse() **************************************************
+
+    NAME
+        DrawEllipse
+
+    SYNOPSIS
+        DoMethod(obj, WORD x, WORD y, UWORD rx, UWORD ry);
+
+    FUNCTION
+        Draws a hollow ellipse from the center point (x/y) with the radii
+        rx and ry in the specified bitmap.
+        The function does not clip the ellipse against the drawing area.
+
+    INPUTS
+        x,y   - center point in hidd units
+        rx,ry - ry and ry radius in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+        Because of overflow the current code do not work with big
+        values of rx and ry.
+
+    SEE ALSO
+        GROUP=HIDD_Ellipse
+
+    INTERNALS
+
+    TODO
+        Bugfix
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
+{
+    WORD   x = msg->rx, y = 0;     /* ellipse points */
+
+    /* intermediate terms to speed up loop */
+    LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG d2 = (t1 >> 1) - t8 + t5;
+
+    EnterFunc(bug("BitMap::DrawEllipse()"));
+
+    while (d2 < 0)                  /* til slope = -1 */
+    {
+        /* draw 4 points using symmetry */
+        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y - y);
+    
+        y++;            /* always move up here */
+        t9 = t9 + t3;
+        if (d1 < 0)     /* move straight up */
+        {
+            d1 = d1 + t9 + t2;
+            d2 = d2 + t9;
+        }
+        else            /* move up and left */
+        {
+            x--;
+            t8 = t8 - t6;
+            d1 = d1 + t9 + t2 - t8;
+            d2 = d2 + t9 + t5 - t8;
+        }
+    }
+
+    do                              /* rest of top right quadrant */
+    {
+        /* draw 4 points using symmetry */
+        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y - y);
+    
+        x--;            /* always move left here */
+        t8 = t8 - t6;
+        if (d2 < 0)     /* move up and left */
+        {
+            y++;
+            t9 = t9 + t3;
+            d2 = d2 + t9 + t5 - t8;
+        }
+        else            /* move straight left */
+        {
+            d2 = d2 + t5 - t8;
+        }
+    } while (x >= 0);
+
+
+    ReturnVoid("BitMap::DrawEllipse");
+}
+
+
+/*** BitMap::FillEllipse() **************************************************
+
+    NAME
+        FillEllipse
+
+    SYNOPSIS
+        DoMethod(obj, WORD x, WORD y, UWORD rx, UWORD ry);
+
+    FUNCTION
+        Draws a solid ellipse from the center point (x/y) with the radii
+        rx and ry in the specified bitmap.
+        The function does not clip the ellipse against the drawing area.
+
+    INPUTS
+        x,y   - center point in hidd units
+        rx,ry - ry and ry radius in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+        Because of overflow the current code do not work with big
+        values of rx and ry.
+
+    SEE ALSO
+        GROUP=HIDD_Ellipse
+
+    INTERNALS
+
+    TODO
+        Bugfix
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_fillellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
+{
+    WORD x = msg->rx, y = 0;     /* ellipse points */
+
+    /* intermediate terms to speed up loop */
+    LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
+    LONG t4 = msg->ry * msg->ry, t5 = t4 << 1, t6 = t5 << 1;
+    LONG t7 = msg->rx * t5, t8 = t7 << 1, t9 = 0L;
+    LONG d1 = t2 - t7 + (t4 >> 1);    /* error terms */
+    LONG d2 = (t1 >> 1) - t8 + t5;
+
+    EnterFunc(bug("BitMap::FillEllipse()"));
+
+    while (d2 < 0)                  /* til slope = -1 */
+    {
+        /* draw 4 points using symmetry */
+        HIDD_BM_DrawLine(obj, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        HIDD_BM_DrawLine(obj, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+
+        y++;            /* always move up here */
+        t9 = t9 + t3;
+        if (d1 < 0)     /* move straight up */
+        {
+            d1 = d1 + t9 + t2;
+            d2 = d2 + t9;
+        }
+        else            /* move up and left */
+        {
+            x--;
+            t8 = t8 - t6;
+            d1 = d1 + t9 + t2 - t8;
+            d2 = d2 + t9 + t5 - t8;
+        }
+    }
+
+    do                              /* rest of top right quadrant */
+    {
+        /* draw 4 points using symmetry */
+        HIDD_BM_DrawLine(obj, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        HIDD_BM_DrawLine(obj, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+
+        x--;            /* always move left here */
+        t8 = t8 - t6;
+        if (d2 < 0)     /* move up and left */
+        {
+            y++;
+            t9 = t9 + t3;
+            d2 = d2 + t9 + t5 - t8;
+        }
+        else            /* move straight left */
+        {
+            d2 = d2 + t5 - t8;
+        }
+    } while (x >= 0);
+
+
+    ReturnVoid("BitMap::FillEllipse");
+}
+
+
+
+/*** BitMap::DrawPolygon() **************************************************
+
+    NAME
+        DrawPolygon
+
+    SYNOPSIS
+        DoMethod(obj, UWORD n, WORD coords[2*n]);
+
+    FUNCTION
+        Draws a hollow polygon from the list of coordinates in coords[].
+        The function does not clip the polygon against the drawing area.
+
+    INPUTS
+        n      - number of coordinate pairs
+        coords - array of n (x, y) coordinates in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Polygon
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
+{
+    WORD i;
+
+    EnterFunc(bug("BitMap::DrawPolygon()"));
+
+    for(i = 2; i < (2 * msg->n); i = i + 2)
+    {
+        HIDD_BM_DrawLine(obj, msg->coords[i - 2], msg->coords[i - 1],
+                              msg->coords[i    ], msg->coords[i + 1]
+                        );
+    }
+
+    ReturnVoid("BitMap::DrawPolygon");
+}
+
+
+
+/*** BitMap::FillPolygon() **************************************************
+
+    NAME
+        FillPolygon()
+
+    SYNOPSIS
+        DoMethod(obj, UWORD n, WORD coords[2*n]);
+
+    FUNCTION
+        Draws a solid polygon from the list of coordinates in coords[].
+        If the last point of the polygon is not equal to the first point
+        then the function closes the polygon.
+
+        The function does not clip the polygon against the drawing area.
+
+    INPUTS
+        n      - number of coordinate pairs
+        coords - array of n (x, y) coordinates in hidd units
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Polygon
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_fillpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+
+    EnterFunc(bug("BitMap::FillPolygon()"));
+
+    D(bug("Sorry, not implemented yet\n"));
+
+    ReturnVoid("BitMap::FillPolygon");
+}
+
+
+
+/*** BitMap::DrawText() *****************************************************
+
+    NAME
+        DrawText()
+
+    SYNOPSIS
+        DoMethod(obj, WORD x, WORD y, STRPTR text, UWORD length);
+
+    FUNCTION
+        Draws the first length characters of text at (x, y).
+        The function does not clip the text against the drawing area.
+
+    INPUTS
+        x, y   - Position to start drawing in hidd units. The x
+                 coordinate is relativ to the left side of the
+                 first character.
+                 The y coordinate is relative to the baseline of the font.
+        text   - Pointer to a Latin 1 string
+        length - Number of characters to draw
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Text
+
+    INTERNALS
+
+    TODO
+        - Color fonts
+        - Fontstyle
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawtext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+    struct TextFont *font  = data->font;
+    UBYTE  *charPatternPtr = font->tf_CharData;
+    UWORD  modulo          = font->tf_Modulo;
+    ULONG  charLog;
+    UBYTE  ch;              /* current character to print               */
+    WORD   fx, fx2, fy, fw; /* position and length of character in the  */
+                            /* character bitmap                         */
+    WORD   xMem = msg->x;   /* position in bitmap                       */
+    WORD   yMem = msg->y - font->tf_Baseline;
+    WORD   x, y, i;
+
+
+    ULONG GetPixel(WORD x, WORD y)
+    {
+        ULONG offset = x / 8 + y * modulo;
+        UBYTE pixel  = 128 >> (x % 8);
+    
+        if(*(charPatternPtr + offset) & pixel)
+        {
+            return(1);
+        }
+        else
+        {
+            return(0);
+        }
+    }
+
+    EnterFunc(bug("BitMap::DrawText()"));
+
+    for(i = 0; i < msg->length; i++)
+    {
+        ch = msg->text[i];
+    
+        if((ch < font->tf_LoChar) || (ch > font->tf_HiChar))
+        {
+            ch = font->tf_HiChar - font->tf_LoChar + 1;
+        }
+        else
+        {
+            ch = ch - font->tf_LoChar;
+        }
+    
+        if(font->tf_Flags & FPF_PROPORTIONAL)
+        {
+            xMem = xMem + ((UWORD *) font->tf_CharKern)[ch];
+        }
+    
+        charLog = ((ULONG *) font->tf_CharLoc)[ch];
+        fx2 = charLog >> 16;   /* x position of character pattern in character bitmap */
+        fw  = (UWORD) charLog; /* width of character pattern in character bitmap */
+    
+        y = yMem;
+    
+        for(fy = 0; fy < font->tf_YSize; fy ++)
+        {
+            x = xMem;
+    
+            for(fx = fx2; fx < fw + fx2; fx++)
+            {
+                if(GetPixel(fx, fy)) HIDD_BM_DrawPixel(obj, x, y);
+                x++;
+            }
+    
+            y++;
+        }
+    
+        if(font->tf_Flags & FPF_PROPORTIONAL)
+        {
+            xMem = xMem + ((UWORD *) font->tf_CharSpace)[ch];
+        }
+        else
+        {
+            xMem = xMem + font->tf_XSize;
+        }
+    }
+
+    ReturnVoid("BitMap::DrawText");
+}
+
+
+/*** BitMap::DrawFillText () ************************************************
+
+    NAME
+        DrawFillText()
+
+    SYNOPSIS
+        DoMethod(obj, WORD x, WORD y, STRPTR text, UWORD length);
+
+    FUNCTION
+        Fills the area of the text with the background color
+        and draws the first length characters of text at (x, y).
+        The function does not clip the text against the drawing area.
+
+    INPUTS
+        x, y   - Position to start drawing in hidd units. The x
+                 coordinate is relativ to the left side of the
+                 first character.
+                 The y coordinate is relative to the baseline of the font.
+        text   - Pointer to a Latin 1 string
+        length - Number of characters to draw
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+        GROUP=HIDD_Text
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_drawfilltext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+
+    EnterFunc(bug("BitMap::DrawFillText()\n"));
+
+    D(bug("Sorry, not implemented yet\n"));
+
+    ReturnVoid("BitMap::DrawFillText");
+}
+
+
+
+/*** BitMap::FillSpan() *****************************************************
+
+    NAME
+        FillSpan()
+
+    SYNOPSIS
+        DoMethod(obj, HIDDT_Span span);
+
+    FUNCTION
+        Draws a solid from a shape description in the specified bitmap. This
+        command is available in quick and normal mode. In normal mode,
+        the spans are clipped against the drawing area.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_fillspan(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
+{
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
+
+    EnterFunc(bug("BitMap::FillSpan()\n"));
+
+    D(bug("Sorry, not implemented yet\n"));
+
+    ReturnVoid("BitMap::FillSpan");
+}
+
+
+/*** BitMap::Clear() ********************************************************
+
+    NAME
+        Clear()
+
+    SYNOPSIS
+        DoMethod(obj);
+
+    FUNCTION
+        Sets all pixels of the drawing area to the background color.
+        This command is available in quick and normal mode and behaves
+        similar in both modes.
+
+    INPUTS
+
+    RESULT
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    TODO
+
+    HISTORY
+***************************************************************************/
+
+static VOID bitmap_clear(Class *cl, Object *obj, struct pHidd_BitMap_Clear *msg)
+{
+
+    WORD  x, y;
+    ULONG width, height;
+
+    EnterFunc(bug("BitMap::Clear()\n"));
+
+    GetAttr(obj, aHidd_BitMap_Width, &width);
+    GetAttr(obj, aHidd_BitMap_Height, &height);
+
+    for(y = 0; y < height; y++)
+    {
+        for(x = 0; x < width; x++)
+        {
+            HIDD_BM_PutPixel(obj, x, y, 0);
+        }
+    }
+
+    ReturnVoid("BitMap::Clear");
+}
+
+static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
+{
+    WORD x, y;
+    ULONG *pixarray = msg->pixels;
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+    	{
+	    *pixarray ++ = HIDD_BM_GetPixel(o, x + msg->x , y + msg->y);
+	}
+    }
+    return;
+}
+
+static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
+{
+    WORD x, y;
+    ULONG *pixarray = msg->pixels;
+    struct TagItem fg_tags[] =
+    {
+	{ aHidd_BitMap_Foreground,	0UL },
+	{ TAG_DONE, 0UL}
+    };
+    struct HIDDBitMapData *data = INST_DATA(cl, o);
+    
+    /* Preserver old fg pen */
+    GetAttr(o, aHidd_BitMap_Foreground, &(fg_tags[0].ti_Data) );
+    
+    
+    
+    for (y = 0; y < msg->height; y ++)
+    {
+    	for (x = 0; x < msg->width; x ++)
+    	{
+	    data->fg = *pixarray ++;
+	    HIDD_BM_DrawPixel(o, x + msg->x , y + msg->y);
+	}
+    }
+    SetAttrs(o, fg_tags);
+    return;
+}
+
 /*** BitMap::PrivateSet() *****************************************************/
 
 /*
@@ -287,13 +1405,13 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
 */
 
-static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_PrivateSet *msg)
+static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 {
     struct HIDDBitMapData *data = INST_DATA(cl, obj);
     struct TagItem *tag, *tstate;
     ULONG  idx;
 
-    EnterFunc(bug("BitMap::PrivateSet()\n"));
+    EnterFunc(bug("BitMap::Set()\n"));
 
     tstate = msg->attrList;
     while((tag = NextTagItem(&tstate)))
@@ -311,11 +1429,21 @@ static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_Priva
                 case aoHidd_BitMap_BytesPerPixel : data->bytesPerPixel = tag->ti_Data; break;
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
                 case aoHidd_BitMap_BaseAddress   : data->buffer        = (APTR) tag->ti_Data; break;
+		case aoHidd_BitMap_BitMap	 : data->bitmap	       = (Object *)tag->ti_Data;
+
+		case aoHidd_BitMap_GC  		: update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
+		case aoHidd_BitMap_Foreground  	: data->fg		= tag->ti_Data; break;
+		case aoHidd_BitMap_Background  	: data->bg		= tag->ti_Data; break;
+		case aoHidd_BitMap_DrawMode	: data->drMode		= tag->ti_Data; break;
+		case aoHidd_BitMap_LinePattern 	: data->linePat		= tag->ti_Data; break;
+		case aoHidd_BitMap_ColorMask   	: data->colMask		= tag->ti_Data; break;
+		case aoHidd_BitMap_PlaneMask	: (APTR)data->planeMask	= tag->ti_Data; break;
+		case aoHidd_BitMap_Font	   	: (APTR)data->font		= tag->ti_Data; break;
             }
         }
     }
 
-    ReturnVoid("BitMap::PrivateSet");
+    ReturnVoid("BitMap::Set");
 }
 
 
@@ -327,8 +1455,8 @@ static VOID bitmap_private_set(Class *cl, Object *obj, struct pHidd_BitMap_Priva
 #define OOPBase (csd->oopbase)
 #define SysBase (csd->sysbase)
 
-#define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 2
+#define NUM_ROOT_METHODS   4
+#define NUM_BITMAP_METHODS 18
 
 Class *init_bitmapclass(struct class_static_data *csd)
 {
@@ -337,13 +1465,30 @@ Class *init_bitmapclass(struct class_static_data *csd)
         {(IPTR (*)())bitmap_new    , moRoot_New    },
         {(IPTR (*)())bitmap_dispose, moRoot_Dispose},
         {(IPTR (*)())bitmap_get    , moRoot_Get    },
+        {(IPTR (*)())bitmap_set	   , moRoot_Set	},
         {NULL, 0UL}
     };
 
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-        {(IPTR (*)())bitmap_private_set, moHidd_BitMap_PrivateSet},
-        {(IPTR (*)())bitmap_setcolors, 	 moHidd_BitMap_SetColors},
+        {(IPTR (*)())bitmap_setcolors	  	, moHidd_BitMap_SetColors	},
+        {(IPTR (*)())bitmap_putpixel		, moHidd_BitMap_PutPixel	},
+        {(IPTR (*)())bitmap_drawpixel		, moHidd_BitMap_DrawPixel	},
+        {(IPTR (*)())bitmap_getpixel		, moHidd_BitMap_GetPixel	},
+        {(IPTR (*)())bitmap_drawline		, moHidd_BitMap_DrawLine	},
+        {(IPTR (*)())bitmap_copybox		, moHidd_BitMap_CopyBox		},
+        {(IPTR (*)())bitmap_drawrect		, moHidd_BitMap_DrawRect	},
+        {(IPTR (*)())bitmap_fillrect 		, moHidd_BitMap_FillRect	},
+        {(IPTR (*)())bitmap_drawellipse		, moHidd_BitMap_DrawEllipse	},
+        {(IPTR (*)())bitmap_fillellipse		, moHidd_BitMap_FillEllipse	},
+        {(IPTR (*)())bitmap_drawpolygon		, moHidd_BitMap_DrawPolygon	},
+        {(IPTR (*)())bitmap_fillpolygon		, moHidd_BitMap_FillPolygon	},
+        {(IPTR (*)())bitmap_drawtext		, moHidd_BitMap_DrawText	},
+        {(IPTR (*)())bitmap_drawfilltext	, moHidd_BitMap_FillText	},
+        {(IPTR (*)())bitmap_fillspan		, moHidd_BitMap_FillSpan	},
+        {(IPTR (*)())bitmap_clear		, moHidd_BitMap_Clear		},
+        {(IPTR (*)())bitmap_putbox		, moHidd_BitMap_GetBox		},
+        {(IPTR (*)())bitmap_getbox		, moHidd_BitMap_PutBox		},
         {NULL, 0UL}
     };
     
@@ -380,12 +1525,19 @@ Class *init_bitmapclass(struct class_static_data *csd)
             
             /* Get attrbase for the BitMap interface */
             HiddBitMapAttrBase = ObtainAttrBase(IID_Hidd_BitMap);
-            if(HiddBitMapAttrBase)
+	    HiddGCAttrBase = ObtainAttrBase(IID_Hidd_GC);
+            if(HiddBitMapAttrBase && HiddGCAttrBase)
             {
                 AddClass(cl);
             }
             else
             {
+	    	if (HiddGCAttrBase)
+			ReleaseAttrBase(IID_Hidd_GC);
+			
+	    	if (HiddBitMapAttrBase)
+			ReleaseAttrBase(IID_Hidd_BitMap);
+			
                 free_bitmapclass(csd);
                 cl = NULL;
             }
@@ -408,6 +1560,7 @@ void free_bitmapclass(struct class_static_data *csd)
         if(csd->bitmapclass) DisposeObject((Object *) csd->bitmapclass);
         csd->bitmapclass = NULL;
         if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
+	if (HiddGCAttrBase) ReleaseAttrBase(IID_Hidd_GC);
     }
 
     ReturnVoid("free_bitmapclass");

@@ -20,14 +20,14 @@
 #include <aros/debug.h>
 
 #undef  BM
-#define BM ((struct HIDDBitMapData *) gc->bitMap)
+#define BM data
 
 
-/*** GC::ReadPixel_Q() ****************************************************/
+/*** BitMap::GetPixel() ****************************************************/
 
-ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg)
+ULONG bitmap_getpixel(Class *cl, Object *obj, struct pHidd_BitMap_GetPixel *msg)
 {
-    struct HIDDGCData *gc = INST_DATA(cl, obj);
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
     UBYTE *src;
     UBYTE **plane;
@@ -35,8 +35,9 @@ ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg)
     UBYTE pixel;
     ULONG retVal;
     ULONG i;
+    
 
-    EnterFunc(bug("GC::ReadPixel_Q() x: %i y: %i\n", msg->x, msg->y));
+    EnterFunc(bug("BitMap::GetPixel() x: %i y: %i\n", msg->x, msg->y));
 
     if(BM->format & vHIDD_BitMap_Format_Chunky)
     {
@@ -76,6 +77,6 @@ ULONG gc_readpixel_q(Class *cl, Object *obj, struct pHidd_GC_ReadPixel *msg)
          }
     }
 
-    ReturnInt("GC::ReadPixel_Q", ULONG, retVal);
+    ReturnInt("BitMap::GetPixel", ULONG, retVal);
 }
 

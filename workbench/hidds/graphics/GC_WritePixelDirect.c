@@ -20,14 +20,14 @@
 #include <aros/debug.h>
 
 #undef  BM
-#define BM ((struct HIDDBitMapData *) gc->bitMap)
+#define BM data
 
 
-/*** GC::WritePixelDirect_Q() ********************************************/
+/*** BitMap::PutPixel() ********************************************/
 
-VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDirect *msg)
+VOID bitmap_putpixel(Class *cl, Object *obj, struct pHidd_BitMap_PutPixel *msg)
 {
-    struct HIDDGCData *gc = INST_DATA(cl, obj);
+    struct HIDDBitMapData *data = INST_DATA(cl, obj);
 
     UBYTE *dest;
     UBYTE **plane;
@@ -36,7 +36,7 @@ VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDir
     UBYTE pixel, notPixel;
     ULONG i;
 
-    EnterFunc(bug("GC::WritePixelDirect_Q()\n"));
+    EnterFunc(bug("BitMap::WritePixelDirect()\n"));
 
     if(BM->format & vHIDD_BitMap_Format_Chunky)
     /* bitmap in chunky-mode */
@@ -79,5 +79,5 @@ VOID gc_writepixeldirect_q(Class *cl, Object *obj, struct pHidd_GC_WritePixelDir
          }
     }
 
-    ReturnVoid("GC::WritePixelDirect_Q");
+    ReturnVoid("BitMap::WritePixelDirect");
 }

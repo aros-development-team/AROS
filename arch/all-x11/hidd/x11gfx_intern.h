@@ -25,14 +25,15 @@
 struct bitmap_data
 {
     Window 	xwindow;
-    Display   * sysdisplay;
-    int		sysscreen;
-    Cursor	syscursor;
+    Cursor	cursor;
     long 	maxpen;
     unsigned long sysplanemask;
     Colormap	colmap;
     int		depth;
     long	hidd2x11cmap[256];
+    GC 		gc;	/* !!! This is an X11 GC, NOT a HIDD gc */
+    Display	*display;
+    int		screen;
     
 };
 

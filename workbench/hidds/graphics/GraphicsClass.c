@@ -37,7 +37,7 @@ static Object *hiddgfx_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
     switch (msg->gcType)
     {
         case  vHIDD_Gfx_GCType_Quick:
-            gc = NewObject(NULL, CLID_Hidd_GCQuick, msg->attrList);
+            gc = NewObject(NULL, CLID_Hidd_GC, msg->attrList);
 
             break;
             

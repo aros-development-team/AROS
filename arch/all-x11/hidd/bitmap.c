@@ -16,6 +16,7 @@
 #include <string.h>
 
 #include <proto/oop.h>
+#include <proto/utility.h>
 
 #include <exec/memory.h>
 #include <graphics/rastport.h>
@@ -44,14 +45,17 @@
 #undef SysBase
 #define SysBase (X11GfxBase->sysbase)
 
+#undef UtilityBase
+#define UtilityBase (X11GfxBase->utilitybase)
+
 #define PEN_BITS    4
 #define NUM_COLORS  (1L << PEN_BITS)
 #define PEN_MASK    (NUM_COLORS - 1)
 
 
-#define GetSysDisplay() (data->sysdisplay)
-#define GetSysScreen()  (data->sysscreen)
-#define GetSysCursor()  (data->syscursor)
+#define GetSysDisplay() (data->display)
+#define GetSysScreen()  (data->screen)
+#define GetSysCursor()  (data->cursor)
 
 #define IS_BM_ATTR(attr, idx) ( ( (idx) = (attr) - HiddBitMapAttrBase) < num_Hidd_BitMap_Attrs)
 static AttrBase HiddBitMapAttrBase = 0;
@@ -71,12 +75,12 @@ static BOOL initx11stuff(struct bitmap_data *data)
 	displayname =":0.0";
 
 
-    data->sysdisplay = XOpenDisplay(displayname);
-    if (!data->sysdisplay)
+    data->display = XOpenDisplay(displayname);
+    if (!data->display)
     	ok = FALSE;
     else
     {
-    	data->sysscreen = DefaultScreen( GetSysDisplay() );
+    	data->screen = DefaultScreen( GetSysDisplay() );
 	
 	data->depth  = DisplayPlanes( GetSysDisplay(), GetSysScreen() );
 	data->colmap = DefaultColormap( GetSysDisplay(), GetSysScreen() );
@@ -99,6 +103,26 @@ static VOID cleanupx11stuff(struct bitmap_data *data)
     /* Do nothing for now */
     return;
 }
+
+static ULONG map_x11_to_hidd(struct bitmap_data *data, ULONG x11pixel)
+{
+    ULONG hidd_pen = 0;
+    BOOL pix_found = FALSE;
+    for (hidd_pen = 0; hidd_pen < 256; hidd_pen ++)
+    {
+    	if (x11pixel == data->hidd2x11cmap[hidd_pen])
+	{
+	    pix_found = TRUE;
+	    break;
+	}
+    }
+    if (!pix_found)
+    	hidd_pen = 0UL;
+	
+    return hidd_pen;	
+    
+}
+
 
 static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 {
@@ -180,6 +204,8 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 	    	D(bug("Xwindow : %p\n", data->xwindow));
 	   	if (data->xwindow)
 	    	{
+	 	    XGCValues gcval;
+		    
 	            D(bug("Calling XMapRaised\n"));
 	    	    XMapRaised (GetSysDisplay(), data->xwindow);
 
@@ -187,12 +213,29 @@ static Object *bitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		    for (;;)
 		    {
 		        XEvent e;
-			XNextEvent(data->sysdisplay, &e);
+			XNextEvent(data->display, &e);
 			if (e.type == MapNotify)
 			    break;
 		    }
-		    
 		
+		
+	 	    /* Create X11 GC */
+	 
+	 	    gcval.plane_mask = 0xFFFFFFFF; /*BlackPixel(data->display, data->screen); */ /* bm_data->sysplanemask; */
+	 	    gcval.graphics_exposures = True;
+	 
+	 	    data->gc = XCreateGC( data->display
+	 		, DefaultRootWindow( data->display )
+			, GCPlaneMask | GCGraphicsExposures
+			, &gcval
+		    );
+		    if (data->gc)
+		    {
+		    }
+		    else
+		    {
+			ok = FALSE;
+		    }
 	
 	    	}
 	    	else
@@ -230,6 +273,10 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
     EnterFunc(bug("X11Gfx.BitMap::Dispose()\n"));
+    if (data->gc)
+    {
+    	XFreeGC(data->display, data->gc);
+    }
     if (data->xwindow)
     {
     	XDestroyWindow( GetSysDisplay(), data->xwindow);
@@ -243,10 +290,40 @@ static VOID bitmap_dispose(Class *cl, Object *o, Msg msg)
     
     ReturnVoid("X11Gfx.BitMap::Dispose");
 }
-
+/**************  BitMap::Set()  *********************************/
+static VOID bitmap_set(Class *cl, Object *o, struct pRoot_Set *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    struct TagItem *tag, *tstate;
+    ULONG idx;
+    
+    tstate = msg->attrList;
+    while((tag = NextTagItem(&tstate)))
+    {
+        if(IS_BM_ATTR(tag->ti_Tag, idx))
+        {
+            switch(idx)
+            {
+                case aoHidd_BitMap_Foreground :
+		    /* Set X GC color */
+		    XSetForeground(data->display, data->gc, data->hidd2x11cmap[tag->ti_Data]);
+		    break;
+		    
+                case aoHidd_BitMap_Background :
+		    XSetBackground(data->display, data->gc, data->hidd2x11cmap[tag->ti_Data]);
+		    break;
+            }
+        }
+    }
+    
+    /* Let supermethod take care of other attrs */
+    DoSuperMethod(cl, o, (Msg)msg);
+    
+    return;
+}
 static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors *msg)
 {
-    /* FixMe: Doesn't deallocate previously set colors */
+#warning Does not deallocate previously allocated colors
     
     
     struct bitmap_data *data = INST_DATA(cl, o);
@@ -265,7 +342,7 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	xc.green = msg->colors[col_i].green;
 	xc.blue	 = msg->colors[col_i].blue;
 	
-	if (XAllocColor(data->sysdisplay, data->colmap, &xc))
+	if (XAllocColor(data->display, data->colmap, &xc))
 	{
 		D(bug("Successfully allocated color (%x, %x, %x)\n",
 			xc.red, xc.green, xc.blue));
@@ -280,6 +357,419 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     ReturnBool("X11Gfx.BitMap::SetColors",  TRUE);
 
 }
+/*********  BitMap::PutPixel()  ***************************/
+
+static VOID bitmap_putpixel(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
+{
+     struct bitmap_data *data = INST_DATA(cl, o);
+     ULONG old_fg;
+     
+     GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
+     
+     XSetForeground(data->display, data->gc, data->hidd2x11cmap[msg->val]);
+     XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+     
+     /* Reset GC to old value */
+     XSetForeground(data->display, data->gc, data->hidd2x11cmap[old_fg]);
+     
+     XFlush(data->display);
+     return;
+}
+
+/*********  BitMap::GetPixel()  *********************************/
+static ULONG bitmap_getpixel(Class *cl, Object *o, struct pHidd_BitMap_GetPixel *msg)
+{
+    ULONG pixel, i;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    
+    XImage *image;
+
+    
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, 1, 1
+	, AllPlanes
+	, ZPixmap);
+    
+    if (!image)
+    	return -1L;
+	
+    pixel = XGetPixel(image, 0, 0);
+    XFree(image);
+    
+    /* Get pen number from colortab */
+
+    for (i = 0; i < 256; i ++)
+    {
+        if (pixel == data->hidd2x11cmap[i])
+    	    return i;
+    }
+    
+    return -1L;
+    
+    
+}
+
+/*********  BitMap::DrawPixel() ************************************/
+static ULONG bitmap_drawpixel(Class *cl, Object *o, struct pHidd_BitMap_DrawPixel *msg)
+{
+
+    struct bitmap_data *data = INST_DATA(cl, o);
+    
+
+    /* Foreground pen allready set in X GC. Note, though, that a
+       call to WritePixelDirect may owerwrite th GC's pen  */
+    XDrawPoint(data->display, data->xwindow, data->gc, msg->x, msg->y);
+    XFlush(data->display);
+    
+    return 0;
+
+    
+}
+/*********  BitMap::FillRect()  *************************************/
+static VOID bitmap_fillrect(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
+{
+    struct bitmap_data *data = INST_DATA(cl, o);
+    ULONG mode;
+    EnterFunc(bug("X11Gfx.BitMap::FillRect(%d,%d,%d,%d)\n",
+    	msg->minX, msg->minY, msg->maxX, msg->maxY));
+	
+    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
+    
+    D(bug("Drawmode: %d\n", mode));
+    
+    
+    if (mode == vHIDD_GC_DrawMode_Copy)
+    {
+    	
+	XFillRectangle(data->display
+		, data->xwindow
+		, data->gc
+		, msg->minX
+		, msg->minY
+		, msg->maxX - msg->minX + 1
+		, msg->maxY - msg->minY + 1
+	);
+    }
+    else
+    {
+    	XImage *image;
+	WORD x, y, width, height;
+	ULONG src;
+	GetAttr(o, aHidd_BitMap_Foreground, &src);
+	
+	width  = msg->maxX - msg->minX + 1;
+	height = msg->maxY - msg->minY + 1;
+    	/* Special drawmode */
+	image = XGetImage(data->display
+		, data->xwindow
+		, msg->minX, msg->minY
+		, width, height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!image)
+	    ReturnVoid("X11Gfx.BitMap::FillRect(Couldn't get XImage)");
+	    
+	for (y = 0; y < width; y ++)
+	{
+	    for (x = 0; x < height; x ++)
+	    {
+	        ULONG dest;
+		ULONG val = 0UL;
+		
+		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		    
+		/* Apply drawmodes to pixel */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
+
+	    }
+	    
+	}  
+	D(bug("Putting image at (%d, %d), w=%d, h=%d\n",
+		msg->minX, msg->minY, width, height ));
+		
+	/* Put image back into display */
+	XPutImage(data->display
+    		, data->xwindow
+		, data->gc
+		, image
+		, 0, 0
+		, msg->minX, msg->minY
+		, width, height);
+	    
+	D(bug("image put\n"));
+
+	XFree(image);
+	D(bug("image destroyed\n"));
+    }
+   
+    D(bug("Flushing\n"));
+
+    XFlush(data->display);
+    ReturnVoid("X11Gfx.BitMap::FillRect");
+    
+
+}
+
+/*********  BitMap::CopyBox()  *************************************/
+static VOID bitmap_copybox(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *msg)
+{
+    ULONG mode;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
+    EnterFunc(bug("X11Gfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
+    	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
+
+#warning Does not handle copying between different windows.
+
+    if (mode == vHIDD_GC_DrawMode_Copy) /* Optimize this drawmode */
+    {
+    	XCopyArea(data->display
+    		, data->xwindow	/* src	*/
+		, data->xwindow /* dest */
+		, data->gc
+		, msg->srcX
+		, msg->srcY
+		, msg->width
+		, msg->height
+		, msg->destX
+		, msg->destY
+    	);
+    
+    }
+    else
+    {
+	XImage *src_image, *dst_image;
+	WORD x, y;
+	
+	src_image = XGetImage(data->display
+		, data->xwindow
+		, msg->srcX, msg->srcY
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!src_image)
+	    ReturnVoid("X11Gfx.BitMap::CopyBox(Couldn't get source XImage)");
+	    
+	dst_image = XGetImage(data->display
+		, data->xwindow
+		, msg->destX, msg->destY
+		, msg->width, msg->height
+		, AllPlanes
+		, ZPixmap);
+		
+	if (!dst_image)
+	{
+	    XDestroyImage(src_image);
+	    ReturnVoid("X11Gfx.BitMap::CopyBox(Couldn't get destination XImage)");
+	}
+     	   
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+    		/* Drawmodes make things more complicated */
+		ULONG src;
+		ULONG dest;
+		ULONG val = 0;
+		
+		src  = map_x11_to_hidd(data, XGetPixel(src_image, x, y));
+		dest = map_x11_to_hidd(data, XGetPixel(dst_image, x, y));
+		    
+		/* Apply drawmodes to pixel */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		XPutPixel(dst_image, x, y, data->hidd2x11cmap[val]);
+	    }
+	}
+	/* Put image back into display */
+	XPutImage(data->display
+    		, data->xwindow
+		, data->gc
+		, dst_image
+		, 0, 0
+		, msg->destX, msg->destY
+		, msg->width, msg->height);
+	
+
+	XFree(src_image);
+	XFree(dst_image);
+	
+    }
+    
+    
+    XFlush(data->display);
+    ReturnVoid("X11Gfx.BitMap::CopyBox");
+}
+/*********  BitMap::Clear()  *************************************/
+static VOID bitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
+{
+    ULONG width, height, bg;
+    struct bitmap_data *data = INST_DATA(cl, o);
+    
+    XSetWindowAttributes winattr;
+    
+    GetAttr(o, aHidd_BitMap_Background, &bg);
+    
+    
+    /* Get width & height from bitmap */
+  
+    GetAttr(o, aHidd_BitMap_Width,  &width);
+    GetAttr(o, aHidd_BitMap_Height, &height);
+    
+    /* Change background color of X window to bg color of HIDD bitmap  */
+    winattr.background_pixel = data->hidd2x11cmap[bg];
+    
+    XChangeWindowAttributes(data->display
+    		, data->xwindow
+		, CWBackPixel
+		, &winattr);
+    
+    XClearArea (data->display, data->xwindow,
+	    0, 0,
+	    width, height,
+	    FALSE);
+    
+    XFlush(data->display);
+    return;
+    
+}
+
+static VOID bitmap_getbox(Class *cl, Object *o, struct pHidd_BitMap_GetBox *msg)
+{
+    /* Read an X image from which we can faster get the pixels, since the
+       X image resides in the client.
+    */
+    WORD x, y;
+    ULONG *pixarray = msg->pixels;
+    struct bitmap_data *data;
+    XImage *image;
+    
+    EnterFunc(bug("X11Gfx.BitMap::GetBox(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
+	
+    data = INST_DATA(cl, o);
+
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, msg->width, msg->height
+	, AllPlanes
+	, ZPixmap);
+	
+    if (!image)
+    	ReturnVoid("X11Gfx.BitMap::GetBox(couldn't get XImage)");
+	
+    for (y = 0; y < msg->height; y ++)
+    {
+	for (x = 0; x < msg->width; x ++)
+	{
+	    *pixarray ++ = map_x11_to_hidd(data, XGetPixel(image, x, y));
+	}
+	
+    }
+    XFree(image);
+    
+    ReturnVoid("X11Gfx.BitMap::GetBox");
+    
+}
+
+static VOID bitmap_putbox(Class *cl, Object *o, struct pHidd_BitMap_PutBox *msg)
+{
+    ULONG mode;
+    WORD x, y;
+    ULONG *pixarray = msg->pixels;
+    struct bitmap_data *data;
+    XImage *image;
+
+    EnterFunc(bug("X11Gfx.BitMap::PutBox(pa=%p, x=%d, y=%d, w=%d, h=%d)\n",
+    	msg->pixels, msg->x, msg->y, msg->width, msg->height));
+	
+    data = INST_DATA(cl, o);
+    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
+    
+    image = XGetImage(data->display
+    	, data->xwindow
+	, msg->x, msg->y
+	, msg->width, msg->height
+	, AllPlanes
+	, ZPixmap
+    );
+    if (!image)
+    	ReturnVoid("X11Gfx.BitMap::PutBox(couldn't get XImage)");
+    	
+    D(bug("drawmode: %d\n", mode));
+    if (mode == vHIDD_GC_DrawMode_Copy)
+    {
+        D(bug("Drawmode COPY\n"));
+    	/* Do plain copy, optimized */
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[*pixarray ++]);
+		
+	    }
+	    
+	}
+	
+    }
+    else
+    {
+     	   
+	for (y = 0; y < msg->height; y ++)
+	{
+	    for (x = 0; x < msg->width; x ++)
+	    {
+    		/* Drawmodes make things more complicated */
+		ULONG src;
+		ULONG dest;
+		ULONG val = 0;
+
+		src  = *pixarray ++;
+		dest = map_x11_to_hidd(data, XGetPixel(image, x, y));
+		    
+		/* Apply drawmodes to hidd pen */
+	   	if(mode & 1) val = ( src &  dest);
+	   	if(mode & 2) val = ( src & ~dest) | val;
+	   	if(mode & 4) val = (~src &  dest) | val;
+	   	if(mode & 8) val = (~src & ~dest) | val;
+		
+		XPutPixel(image, x, y, data->hidd2x11cmap[val]);
+	    }
+	}
+    }
+    /* Put image back into display */
+    XPutImage(data->display
+    	, data->xwindow
+	, data->gc
+	, image
+	, 0, 0
+	, msg->x, msg->y
+	, msg->width, msg->height);
+	
+	
+   XFree(image);
+
+   XFlush(data->display);
+   ReturnVoid("X11Gfx.BitMap::PutBox");
+
+   
+}
+
 
 
 
@@ -289,7 +779,7 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 #undef X11GfxBase
 
 #define NUM_ROOT_METHODS   3
-#define NUM_BITMAP_METHODS 1
+#define NUM_BITMAP_METHODS 9
 
 
 Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
@@ -298,12 +788,21 @@ Class *init_bitmapclass(struct x11gfxbase *X11GfxBase)
     {
         {(IPTR (*)())bitmap_new    , moRoot_New    },
         {(IPTR (*)())bitmap_dispose, moRoot_Dispose},
+        {(IPTR (*)())bitmap_set	   , moRoot_Set},
         {NULL, 0UL}
     };
 
     struct MethodDescr bitMap_descr[NUM_BITMAP_METHODS + 1] =
     {
-        {(IPTR (*)())bitmap_setcolors, moHidd_BitMap_SetColors},
+        {(IPTR (*)())bitmap_setcolors,		moHidd_BitMap_SetColors},
+    	{(IPTR (*)())bitmap_putpixel,		moHidd_BitMap_PutPixel},
+    	{(IPTR (*)())bitmap_clear,		moHidd_BitMap_Clear},
+    	{(IPTR (*)())bitmap_getpixel,		moHidd_BitMap_GetPixel},
+    	{(IPTR (*)())bitmap_drawpixel,		moHidd_BitMap_DrawPixel},
+    	{(IPTR (*)())bitmap_fillrect,		moHidd_BitMap_FillRect},
+    	{(IPTR (*)())bitmap_copybox,		moHidd_BitMap_CopyBox},
+    	{(IPTR (*)())bitmap_getbox,		moHidd_BitMap_GetBox},
+    	{(IPTR (*)())bitmap_putbox,		moHidd_BitMap_PutBox},
         {NULL, 0UL}
     };
     

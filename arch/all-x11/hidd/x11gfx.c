@@ -96,8 +96,8 @@ static Object *gfx_new(Class *cl, Object *o, struct pRoot_New *msg)
     	if (o)
 	{
 	    /* Do GfxHidd initalization here */
-    XSetErrorHandler (MyErrorHandler);
-    XSetIOErrorHandler (MySysErrorHandler);
+	    XSetErrorHandler (MyErrorHandler);
+	    XSetIOErrorHandler (MySysErrorHandler);
 	
 	}
     }
@@ -122,7 +122,7 @@ static VOID gfxhidd_disposebitmap(Class *cl, Object *o, struct pHidd_Gfx_Dispose
 }
 */
 /**********  GfxHidd::CreateGC()  ****************************/
-
+/*
 static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 {
 
@@ -135,7 +135,6 @@ static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
 	    break;
 	    
 	default:
-	    /* Do not support the type, maybe superclass does ? */
 	    gc = (Object *)DoSuperMethod(cl, o, (Msg)msg);
 	    break;
 	
@@ -143,7 +142,7 @@ static Object *gfxhidd_newgc(Class *cl, Object *o, struct pHidd_Gfx_NewGC *msg)
     return gc;
 }
 
-
+*/
 #undef X11GfxBase
 
 /********************  init_gfxclass()  *********************************/
@@ -163,7 +162,6 @@ Class *init_gfxclass (struct x11gfxbase *X11GfxBase)
     
     struct MethodDescr gfxhidd_descr[NUM_GFXHIDD_METHODS + 1] = 
     {
-    	{(IPTR (*)())gfxhidd_newgc,	moHidd_Gfx_NewGC},
     	{(IPTR (*)())gfxhidd_newbitmap,	moHidd_Gfx_NewBitMap},
 	{NULL, 0UL}
     };
