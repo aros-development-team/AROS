@@ -93,7 +93,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 
 	    len = strlen (text);
 
-	    labelwidth = TextLength (window->RPort, text, len);
+	    labelwidth = LabelWidth (window->RPort, text, len, IntuitionBase);
 	    labelheight = window->RPort->Font->tf_YSize;
 
 	    SetAPen (window->RPort, 1);
@@ -104,7 +104,7 @@ void RefreshBoolGadget (struct Gadget * gadget, struct Window * window,
 		, bbox.Top + bbox.Height/2 - labelheight/2
 		    + window->RPort->Font->tf_Baseline
 	    );
-	    Text (window->RPort, text, len);
+	    RenderLabel (window->RPort, text, len, IntuitionBase);
 
 	    break; }
 
