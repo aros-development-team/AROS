@@ -46,6 +46,8 @@
 #				unique.
 #		    unique - Generate unique names for all external
 #				symbols.
+#		    nolibheader - We don't want to use the LibHeader prefixed
+#				functions in the function table.
 #
 #		You can specify more than one option in a config file and
 #		more than one option per option line. Separate options by
@@ -115,6 +117,8 @@ BEGIN {
 	    rom = 1;
 	else if ($t == "unique")
 	    unique = 1;
+	else if ($t == "nolibheader")
+	    nolibheader = 1;
 	else
 	{
 	    print "Unknown option \"" $t "\"" > "/dev/stderr";
@@ -168,6 +172,8 @@ END {
 	print "#define NOEXPUNGE"
     if (rom)
 	print "#define ROMBASED"
+    if (nolibheader)
+	print "#define NOLIBHEADER"
 
     if (rom || unique)
     {

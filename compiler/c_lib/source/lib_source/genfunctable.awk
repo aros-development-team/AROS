@@ -3,6 +3,7 @@ BEGIN {
     stderr="/dev/stderr";
 
     file = "libdefs.h";
+    libheader = 1;
 
     while ((getline < file) > 0)
     {
@@ -15,10 +16,14 @@ BEGIN {
 	{
 	    libbase = $3;
 	}
+	else if ($2 == "NOLIBHEADER")
+	{
+	    libheader = 0;
+	}
     }
 
     print "/*";
-    print "    (C) 1995-96 AROS - The Amiga Replacement OS";
+    print "    Copyright (C) 1995-1998 AROS - The Amiga Replacement OS";
     print "    *** Automatic generated file. Do not edit ***";
     print "    Desc: Function table for " lib;
     print "    Lang: english";
@@ -73,10 +78,21 @@ BEGIN {
     }
 }
 END {
-    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);";
-    print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);";
+    # Are we using the c_lib stuff to create our lib?
+    if (libheader == 1)
+    {
+	print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader) (void);";
+	print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader) (void);";
+	print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader) (void);";
+	print "extern void AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader) (void);";
+    }
+    else
+    {
+	print "extern void AROS_SLIB_ENTRY(open, BASENAME) (void);";
+	print "extern void AROS_SLIB_ENTRY(close, BASENAME) (void);";
+	print "extern void AROS_SLIB_ENTRY(expunge, BASENAME) (void);";
+	print "extern void AROS_SLIB_ENTRY(null, BASENAME) (void);";
+    }
 
     for (t=5; t<=maxlvo; t++)
     {
@@ -88,10 +104,20 @@ END {
 
     show=0;
 
-    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),";
-    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),";
-    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),";
-    print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),";
+    if ( libheader == 1 )
+    {
+	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(OpenLib),LibHeader),";
+	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(CloseLib),LibHeader),";
+	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExpungeLib),LibHeader),";
+	print "    AROS_SLIB_ENTRY(LC_BUILDNAME(ExtFuncLib),LibHeader),";
+    }
+    else
+    {
+	print "    AROS_SLIB_ENTRY(open, BASENAME),";
+	print "    AROS_SLIB_ENTRY(close, BASENAME),";
+	print "    AROS_SLIB_ENTRY(expunge, BASENAME),";
+	print "    AROS_SLIB_ENTRY(null, BASENAME),";
+    }
 
     if (maxlvo <= 4)
     {
