@@ -1,21 +1,44 @@
-#   $Id$
+# Copyright © The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
 ifeq ($(TARGET_ARCH),morphos)
-OS_INCLUDES 	:= -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
-MOSLIB			:= /ade/morphos/lib
-FORCE_DEPLIBS 	:=
-FORCE_LIBS 		:= $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a $(MOSLIB)/libstring.a \
-				  $(MOSLIB)/libmath.a $(MOSLIB)/libc.a $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
-USE_CPAK 		:= no
+OS_INCLUDES   := -I$(AROSDIR)/Include -I/ade/morphos/emulinclude/includegcc \
+                 -I/ade/morphos/emulinclude/includestd -I/ade/morphos/include
+MOSLIB        := /ade/morphos/lib
+FORCE_DEPLIBS :=
+FORCE_LIBS    := $(MOSLIB)/libaros.a $(MOSLIB)/libstringio.a \
+                 $(MOSLIB)/libstring.a $(MOSLIB)/libmath.a $(MOSLIB)/libc.a \
+                 $(MOSLIB)/libamiga.a $(MOSLIB)/libsyscall.a
+USE_CPAK      := no
 endif
 
-FILES	:=  basicfuncs diskobjio diskobj35io
+FILES := basicfuncs diskobjio diskobj35io
 
-FUNCS	:=  addfreelist bumprevision deletediskobject dupdiskobject drawiconstate findtooltype \
-	    freediskobject freefreelist getdefdiskobject getdiskobject \
-	    getdiskobjectnew geticonrectangle geticontaglist matchtoolvalue putdefdiskobject putdiskobject
-
+FUNCS := \
+    addfreelist \
+    bumprevision \
+    changetoselectediconcolor \
+    deletediskobject \
+    dupdiskobject \
+    drawiconstate \
+    findtooltype \
+    freediskobject \
+    freefreelist \
+    getdefdiskobject \
+    getdiskobject \
+    getdiskobjectnew \
+    geticonrectangle \
+    geticontaglist \
+    iconcontrol \
+    layouticon \
+    matchtoolvalue \
+    newdiskobject \
+    putdefdiskobject \
+    putdiskobject \
+    puticontaglist
+    
 #MM- workbench-libs-icon : setup includes linklibs
 
 %build_module_macro mmake=workbench-libs-icon modname=icon modtype=library \
