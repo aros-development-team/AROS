@@ -37,6 +37,9 @@
 #ifndef GRAPHICS_CLIP_H
 #   include <graphics/clip.h>
 #endif
+#ifndef GRAPHICS_TEXT_H
+#   include <graphics/text.h>
+#endif
 #ifndef INTUITION_INTUITION_H
 #   include <intuition/intuition.h>
 #endif
@@ -127,6 +130,7 @@ struct IntScreen
 
     /* Private fields */
     struct DrawInfo DInfo;
+    struct TextAttr textattr;
     UWORD  Pens[NUMDRIPENS];
     struct PubScreenNode *pubScrNode;
     UWORD  SpecialFlags;
