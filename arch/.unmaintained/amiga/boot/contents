@@ -10,9 +10,5 @@ ils.h - prototypes for InternalLoadSeg support routines
 
 main.c - Amiga bootloader main file
 
-registers.h - Quick SAS/C like register declarations for GCC. They will be
-	not be needed for long, because boot will start to utilise the
-	AROS_UFH macros soon.
-
 version.h - Some version and date strings for boot.
 
