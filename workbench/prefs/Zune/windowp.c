@@ -20,7 +20,7 @@
 #include <proto/intuition.h>
 #include <proto/muimaster.h>
 /*  #define DEBUG 1 */
-#include <aros/debug.h>
+/*  #include <aros/debug.h> */
 #endif
 
 #include "zunestuff.h"
@@ -41,16 +41,36 @@ struct MUI_WindowPData
     Object *spacing_bottom_slider;
 };
 
+static CONST_STRPTR positions_labels[] =
+{
+    "forget on exit",
+    "remember on exit",
+    "save on exit",
+    NULL,
+};
+
+static CONST_STRPTR refresh_labels[] =
+{
+    "smart",
+    "simple",
+    NULL,
+};
+
+static CONST_STRPTR redraw_labels[] =
+{
+    "without clear",
+    "with clear",
+    NULL,
+};
+
+
+
 static ULONG DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
 {
     return (DoSuperMethod(cl, obj, OM_NEW, &tag1, NULL));
 }
 
 #define FindConfig(id) (void*)DoMethod(msg->configdata,MUIM_Dataspace_Find,id)
-#define AddConfig(data,len,id) DoMethod(msg->configdata,MUIM_Dataspace_Add,data,len,id)
-#define AddConfigStr(str,id) if(str && *str){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
-#define AddConfigImgStr(str,id) if(str && *str && *str != '6'){DoMethod(msg->configdata,MUIM_Dataspace_Add,str,strlen(str)+1,id);}
-
 
 static Object*MakeSpacingSlider (void)
 {
@@ -61,17 +81,27 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_WindowPData *data;
     struct MUI_WindowPData d;
-    
+
     obj = (Object *)DoSuperNew(cl, obj,
 	Child, HGroup,
 	   Child, VGroup,
 	       Child, ColGroup(2),
                    GroupFrameT("Control"),
-			       Child, HVSpace,
-			       Child, HVSpace,
+                   Child, HVSpace,
+                   Child, HVSpace,
+		   Child, MakeLabel("Positions:"),
+		   Child, MUI_MakeObject(MUIO_Cycle, "Positions:", positions_labels),
+		   Child, MakeLabel("Refresh:"),
+		   Child, MUI_MakeObject(MUIO_Cycle, "Refresh:", refresh_labels),
+		   Child, MakeLabel("Redraw:"),
+		   Child, MUI_MakeObject(MUIO_Cycle, "Redraw:", redraw_labels),
+                   Child, HVSpace,
+                   Child, HVSpace,
 		   End,
    	       Child, ColGroup(2),
    		   GroupFrameT("Fonts"),
+	           Child, HVSpace,
+	           Child, HVSpace,
    		   Child, MakeLabel("Normal"),
    		   Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
@@ -92,6 +122,8 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
    		       MUIA_Popstring_String, d.font_big_string = StringObject, StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
+	           Child, HVSpace,
+	           Child, HVSpace,
    		   End,
 	        End,
 	     Child, VGroup,
@@ -118,12 +150,6 @@ static IPTR WindowP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 			       Child, d.spacing_bottom_slider = MakeSpacingSlider(),
 			       Child, MakeLabel("B"),
 			       End,
-	       Child, ColGroup(3),
-                   GroupFrameT("Frame Thickness"),
-			       Child, HVSpace,
-			       Child, HVSpace,
-			       Child, HVSpace,
-		   End,
 		End,
 	    End,
     	TAG_MORE, msg->ops_AttrList);
@@ -141,9 +167,12 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
     char *spec;
 
-    setstring(data->font_normal_string,FindConfig(MUICFG_Font_Normal));
-    setstring(data->font_tiny_string,FindConfig(MUICFG_Font_Tiny));
-    setstring(data->font_big_string,FindConfig(MUICFG_Font_Big));
+/* Fonts */
+    setstring(data->font_normal_string, FindConfig(MUICFG_Font_Normal));
+    setstring(data->font_tiny_string, FindConfig(MUICFG_Font_Tiny));
+    setstring(data->font_big_string, FindConfig(MUICFG_Font_Big));
+
+/* Backgrounds */
     spec = FindConfig(MUICFG_Background_Window);
     set(data->background_window_popimage,MUIA_Imagedisplay_Spec,
 	spec ? (IPTR)spec : MUII_WindowBack);
@@ -151,6 +180,7 @@ static IPTR WindowP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     set(data->background_requester_popimage,MUIA_Imagedisplay_Spec,
 	spec ? (IPTR)spec : MUII_RequesterBack);
 
+/* Spacing */
     setslider(data->spacing_left_slider,
 	      DoMethod(msg->configdata, MUIM_Configdata_GetULong,
 		       MUICFG_Window_Spacing_Left));
@@ -171,24 +201,36 @@ static IPTR WindowP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
 {
     struct MUI_WindowPData *data = INST_DATA(cl, obj);
     char *buf;
-    char *str = getstring(data->font_normal_string);
-    AddConfigStr(str,MUICFG_Font_Normal);
+    char *str;
+
+/* Fonts */
+    str = getstring(data->font_normal_string);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Normal, (IPTR)str);
 
     str = getstring(data->font_tiny_string);
-    AddConfigStr(str,MUICFG_Font_Tiny);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Tiny, (IPTR)str);
 
     str = getstring(data->font_big_string);
-    AddConfigStr(str,MUICFG_Font_Big);
+    DoMethod(msg->configdata, MUIM_Configdata_SetFont, MUICFG_Font_Big, (IPTR)str);
 
+/* Backgrounds */
     str = (char*)xget(data->background_window_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigImgStr(str,MUICFG_Background_Window);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Window,
+	     (IPTR)str);
 
     str = (char*)xget(data->background_requester_popimage,MUIA_Imagedisplay_Spec);
-    AddConfigImgStr(str,MUICFG_Background_Requester);
+    DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Background_Requester,
+	     (IPTR)str);
 
-    D(bug("slider left = %ld\n", xget(data->spacing_left_slider, MUIA_Numeric_Value)));
+/* Spacing */
     DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Left,
 	     xget(data->spacing_left_slider, MUIA_Numeric_Value));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Right,
+	     xget(data->spacing_right_slider, MUIA_Numeric_Value));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Top,
+	     xget(data->spacing_top_slider, MUIA_Numeric_Value));
+    DoMethod(msg->configdata, MUIM_Configdata_SetULong, MUICFG_Window_Spacing_Bottom,
+	     xget(data->spacing_bottom_slider, MUIA_Numeric_Value));
 
     return TRUE;
 }
