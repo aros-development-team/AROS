@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/09/11 16:54:24  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.2  1996/08/13 14:00:53  digulla
     Added calls to driver
     Init local SysBase
@@ -28,7 +33,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Graphics_functable[];
-struct GfxBase *Graphics_init();
+struct GfxBase * __AROS_SLIB_ENTRY(init,Graphics)();
 extern const char Graphics_end;
 
 extern int  driver_init (struct GfxBase *);
@@ -65,7 +70,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct GfxBase),
     (APTR)Graphics_functable,
     NULL,
-    &Graphics_init
+    &__AROS_SLIB_ENTRY(init,Graphics)
 };
 
 __AROS_LH2(struct GfxBase *, init,

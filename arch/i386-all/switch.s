@@ -1,15 +1,20 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.6  1996/09/11 14:41:17  digulla
+#    Revision 1.7  1996/09/11 16:54:30  digulla
+#    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+#    	some systems name an external symbol "x" as "_x" and others as "x".
+#    	(The problem arises with assembler symbols which might differ)
+#
+#    Revision 1.6  1996/09/11 14:41:17	digulla
 #    Removed tick which made problems with CPP
 #    Closed comment
 #
-#    Revision 1.5  1996/08/23 16:49:22  digulla
+#    Revision 1.5  1996/08/23 16:49:22	digulla
 #    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
-#    	I replaced it with .balign which does what we want.
+#	I replaced it with .balign which does what we want.
 #
-#    Revision 1.4  1996/08/13 14:03:20  digulla
+#    Revision 1.4  1996/08/13 14:03:20	digulla
 #    Added standard headers
 #
 #    Revision 1.3  1996/08/01 17:48:52	digulla
@@ -71,10 +76,10 @@
 	TF_EXCEPT   =	32
 
 	.text
-	.balign	16
-	.globl	Exec_Switch
-	.type	Exec_Switch,@function
-Exec_Switch:
+	.balign 16
+	.globl	_Exec_Switch
+	.type	_Exec_Switch,@function
+_Exec_Switch:
 	/* Make room for Dispatch() address. */
 	subl	$4,%esp
 

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/09/11 16:54:23  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.5  1996/08/16 14:05:12  digulla
     Added debug output
 
@@ -31,7 +36,7 @@
 #include <aros/debug.h>
 
 static void KillCurrentTask(void);
-void TrapHandler(void);
+void __AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 
 /*****************************************************************************
 
@@ -111,7 +116,7 @@ void TrapHandler(void);
 
     /* Currently only used for segmentation violation */
     if(task->tc_TrapCode==NULL)
-	task->tc_TrapCode=&TrapHandler;
+	task->tc_TrapCode=&__AROS_SLIB_ENTRY(TrapHandler,Exec);
 
     /* Get new stackpointer. */
     sp=task->tc_SPReg;

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1996/09/11 16:54:23  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.3  1996/08/13 13:52:53  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -27,7 +32,7 @@ static const char name[];
 static const char version[];
 static const APTR Dos_inittabl[4];
 static void *const Dos_functable[];
-struct DosLibrary *Dos_init();
+struct DosLibrary *__AROS_SLIB_ENTRY(init,Dos) ();
 extern const char Dos_end;
 
 int Dos_entry(void)
@@ -62,7 +67,7 @@ static const APTR Dos_inittabl[4]=
     (APTR)sizeof(struct DosLibrary),
     (APTR)Dos_functable,
     NULL,
-    &Dos_init
+    &__AROS_SLIB_ENTRY(init,Dos)
 };
 
 void LDDemon();

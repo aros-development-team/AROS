@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/11 16:54:19  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.1  1996/08/23 17:32:23  digulla
     Implementation of the console.device
 
@@ -23,18 +28,20 @@ static const char version[];
 static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
-struct consolebase *Console_init();
-void Console_open();
-BPTR Console_close();
-BPTR Console_expunge();
-int Console_null();
-void Console_beginio();
-LONG Console_abortio();
-extern struct InputEvent * Console_CDInputHandler ();
-extern LONG Console_RawKeyConvert ();
+
+struct consolebase *__AROS_SLIB_ENTRY(init,Console)();
+void __AROS_SLIB_ENTRY(open,Console)();
+BPTR __AROS_SLIB_ENTRY(close,Console)();
+BPTR __AROS_SLIB_ENTRY(expunge,Console)();
+int __AROS_SLIB_ENTRY(null,Console)();
+void __AROS_SLIB_ENTRY(beginio,Console)();
+LONG __AROS_SLIB_ENTRY(abortio,Console)();
+
+extern struct InputEvent * __AROS_SLIB_ENTRY(CDInputHandler,Console) ();
+extern LONG __AROS_SLIB_ENTRY(RawKeyConvert,Console) ();
 static const char end;
 
-int Console_entry(void)
+int __AROS_SLIB_ENTRY(entry,Console)(void)
 {
     /* If the device was executed by accident return error code. */
     return -1;
@@ -63,19 +70,19 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct consolebase),
     (APTR)functable,
     (APTR)&datatable,
-    &Console_init
+    &__AROS_SLIB_ENTRY(init,Console)
 };
 
 static void *const functable[]=
 {
-    &Console_open,
-    &Console_close,
-    &Console_expunge,
-    &Console_null,
-    &Console_beginio,
-    &Console_abortio,
-    &Console_CDInputHandler,
-    &Console_RawKeyConvert,
+    &__AROS_SLIB_ENTRY(open,Console),
+    &__AROS_SLIB_ENTRY(close,Console),
+    &__AROS_SLIB_ENTRY(expunge,Console),
+    &__AROS_SLIB_ENTRY(null,Console),
+    &__AROS_SLIB_ENTRY(beginio,Console),
+    &__AROS_SLIB_ENTRY(abortio,Console),
+    &__AROS_SLIB_ENTRY(CDInputHandler,Console),
+    &__AROS_SLIB_ENTRY(RawKeyConvert,Console),
     (void *)-1
 };
 

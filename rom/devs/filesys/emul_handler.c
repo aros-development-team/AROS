@@ -2,9 +2,14 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.8  1996/09/11 16:54:24  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.7  1996/09/11 14:40:10  digulla
     Integrated patch by I. Templeton: Under FreeBSD, there is a clash with
-    	struct timeval
+	struct timeval
 
     Revision 1.6  1996/09/11 13:05:34  digulla
     Own function to open a file (M. Fleischer)
@@ -14,7 +19,7 @@
 
     Revision 1.4  1996/08/30 17:02:06  digulla
     Fixed a bug which caused the shell to exit if the timer sent a signal. This
-    	fix is a very bad hack :(
+	fix is a very bad hack :(
 
     Revision 1.3  1996/08/13 15:35:07  digulla
     Replaced __AROS_LA by __AROS_LHA
@@ -59,13 +64,15 @@ static const char version[];
 static const APTR inittabl[4];
 static void *const functable[];
 static const UBYTE datatable;
-struct emulbase *emul_handler_init();
-void emul_handler_open();
-BPTR emul_handler_close();
-BPTR emul_handler_expunge();
-int emul_handler_null();
-void emul_handler_beginio();
-LONG emul_handler_abortio();
+
+struct emulbase * __AROS_SLIB_ENTRY(init,emul_handler) ();
+void __AROS_SLIB_ENTRY(open,emul_handler) ();
+BPTR __AROS_SLIB_ENTRY(close,emul_handler) ();
+BPTR __AROS_SLIB_ENTRY(expunge,emul_handler) ();
+int __AROS_SLIB_ENTRY(null,emul_handler) ();
+void __AROS_SLIB_ENTRY(beginio,emul_handler) ();
+LONG __AROS_SLIB_ENTRY(abortio,emul_handler) ();
+
 static const char end;
 
 struct filehandle
@@ -106,17 +113,17 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct emulbase),
     (APTR)functable,
     (APTR)&datatable,
-    &emul_handler_init
+    &__AROS_SLIB_ENTRY(init,emul_handler)
 };
 
 static void *const functable[]=
 {
-    &emul_handler_open,
-    &emul_handler_close,
-    &emul_handler_expunge,
-    &emul_handler_null,
-    &emul_handler_beginio,
-    &emul_handler_abortio,
+    &__AROS_SLIB_ENTRY(open,emul_handler),
+    &__AROS_SLIB_ENTRY(close,emul_handler),
+    &__AROS_SLIB_ENTRY(expunge,emul_handler),
+    &__AROS_SLIB_ENTRY(null,emul_handler),
+    &__AROS_SLIB_ENTRY(beginio,emul_handler),
+    &__AROS_SLIB_ENTRY(abortio,emul_handler),
     (void *)-1
 };
 
@@ -169,15 +176,15 @@ static LONG open_(struct filehandle **handle,STRPTR name,LONG mode)
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
-        if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-           (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
-        {
-            fh->type=FHD_FILE;
-            fh->fd=(*handle)->fd;
-            fh->name="";
-            *handle=fh;
-            return 0;
-        }
+	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
+	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+	{
+	    fh->type=FHD_FILE;
+	    fh->fd=(*handle)->fd;
+	    fh->name="";
+	    *handle=fh;
+	    return 0;
+	}
 	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
 	if(fh->name!=NULL)
 	{
@@ -230,15 +237,15 @@ static LONG open_file(struct filehandle **handle,STRPTR name,LONG mode,LONG prot
     fh=(struct filehandle *)malloc(sizeof(struct filehandle));
     if(fh!=NULL)
     {
-        if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
-           (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
-        {
-            fh->type=FHD_FILE;
-            fh->fd=(*handle)->fd;
-            fh->name="";
-            *handle=fh;
-            return 0;
-        }
+	if(!*name&&(*handle)->type==FHD_FILE&&((*handle)->fd==STDIN_FILENO||
+	   (*handle)->fd==STDOUT_FILENO||(*handle)->fd==STDERR_FILENO))
+	{
+	    fh->type=FHD_FILE;
+	    fh->fd=(*handle)->fd;
+	    fh->name="";
+	    *handle=fh;
+	    return 0;
+	}
 	fh->name=(char *)malloc(strlen((*handle)->name)+strlen(name)+2);
 	if(fh->name!=NULL)
 	{
@@ -246,23 +253,23 @@ static LONG open_file(struct filehandle **handle,STRPTR name,LONG mode,LONG prot
 	    strcat(fh->name,"/");
 	    strcat(fh->name,name);
 	    shrink(fh->name);
-            fh->type=FHD_FILE;
-            flags=(mode&FMF_CREATE?O_CREAT:0)|
-        	  (mode&FMF_CLEAR?O_TRUNC:0);
-            if(mode&FMF_WRITE)
-        	flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
-            else
-        	flags|=O_RDONLY;
-            fh->fd=open(fh->name,flags,0770);
-            if(fh->fd>=0)
-            {
-        	*handle=fh;
-        	return 0;
-            }
-            ret=err_u2a();
+	    fh->type=FHD_FILE;
+	    flags=(mode&FMF_CREATE?O_CREAT:0)|
+		  (mode&FMF_CLEAR?O_TRUNC:0);
+	    if(mode&FMF_WRITE)
+		flags|=mode&FMF_READ?O_RDWR:O_WRONLY;
+	    else
+		flags|=O_RDONLY;
+	    fh->fd=open(fh->name,flags,0770);
+	    if(fh->fd>=0)
+	    {
+		*handle=fh;
+		return 0;
+	    }
+	    ret=err_u2a();
 	    free(fh->name);
-        }
-        free(fh);
+	}
+	free(fh);
     }
     return ret;
 }
@@ -275,8 +282,8 @@ static LONG free_lock(struct filehandle *current)
 	    if(current->fd!=STDIN_FILENO&&current->fd!=STDOUT_FILENO&&
 	       current->fd!=STDERR_FILENO)
 	    {
-	        close(current->fd);
-	        free(current->name);
+		close(current->fd);
+		free(current->name);
 	    }
 	    break;
 	case FHD_DIRECTORY:
@@ -401,9 +408,9 @@ static LONG examine(struct filehandle *fh,struct ExAllData *ead,ULONG size,ULONG
 	    ead->ed_Ticks=(st.st_ctime%60)*TICKS_PER_SECOND;
 	case ED_PROTECTION:
 	    ead->ed_Prot=(st.st_mode&S_IRUSR?FIBF_READ:0)|
-	    		 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
-	    		 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
-	    		 FIBF_SCRIPT|FIBF_DELETE;
+			 (st.st_mode&S_IWUSR?FIBF_WRITE:0)|
+			 (st.st_mode&S_IXUSR?FIBF_EXECUTE:0)|
+			 FIBF_SCRIPT|FIBF_DELETE;
 	case ED_SIZE:
 	    ead->ed_Size=st.st_size;
 	case ED_TYPE:
@@ -457,7 +464,7 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
 	}
 	strcpy(name,fh->name);
 	if(*name)
-  	    strcat(name,"/");
+	    strcat(name,"/");
 	strcat(name,dir->d_name);
 	old=fh->name;
 	fh->name=name;
@@ -471,12 +478,12 @@ static LONG examine_all(struct filehandle *fh,struct ExAllData *ead,ULONG size,U
     }
     if((!error||error==ERROR_BUFFER_OVERFLOW)&&last!=NULL)
     {
-        last->ed_Next=NULL;
+	last->ed_Next=NULL;
 	seekdir((DIR *)fh->fd,oldpos);
 	return 0;
     }
     if(!error)
-        error=ERROR_NO_MORE_ENTRIES;
+	error=ERROR_NO_MORE_ENTRIES;
     rewinddir((DIR *)fh->fd);
     return error;
 }
@@ -589,18 +596,18 @@ __AROS_LH1(void, beginio,
 			 (char *)iofs->io_Args[0],
 			 iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
-		    
+
 	case FSA_CLOSE:
 	    error=free_lock((struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
-	    
+
 	case FSA_IS_INTERACTIVE:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
-	        iofs->io_Args[0]=isatty(fh->fd);
+		iofs->io_Args[0]=isatty(fh->fd);
 	    else
-	        iofs->io_Args[0]=0;
+		iofs->io_Args[0]=0;
 	    break;
 	}
 
@@ -609,8 +616,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-	        if(fh->fd==STDOUT_FILENO)
-	            fh->fd=STDIN_FILENO;
+		if(fh->fd==STDOUT_FILENO)
+		    fh->fd=STDIN_FILENO;
 		iofs->io_Args[1]=read(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -624,8 +631,8 @@ __AROS_LH1(void, beginio,
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
 	    if(fh->type==FHD_FILE)
 	    {
-	        if(fh->fd==STDIN_FILENO)
-	            fh->fd=STDOUT_FILENO;
+		if(fh->fd==STDIN_FILENO)
+		    fh->fd=STDOUT_FILENO;
 		iofs->io_Args[1]=write(fh->fd,(APTR)iofs->io_Args[0],iofs->io_Args[1]);
 		if(iofs->io_Args[1]<0)
 		    error=err_u2a();
@@ -633,7 +640,7 @@ __AROS_LH1(void, beginio,
 		error=ERROR_OBJECT_WRONG_TYPE;
 	    break;
 	}
-		    
+
 	case FSA_SEEK:
 	{
 	    struct filehandle *fh=(struct filehandle *)iofs->IOFS.io_Unit;
@@ -658,7 +665,7 @@ __AROS_LH1(void, beginio,
 	    break;
 
 	case FSA_EXAMINE_ALL:
-	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,	    
+	    error=examine_all((struct filehandle *)iofs->IOFS.io_Unit,
 			  (struct ExAllData *)iofs->io_Args[0],
 			  iofs->io_Args[1],iofs->io_Args[2]);
 	    break;
@@ -667,7 +674,7 @@ __AROS_LH1(void, beginio,
 	    error=ERROR_NOT_IMPLEMENTED;
 	    break;
     }
-    
+
     /* Set error code */
     iofs->io_DosError=error;
 
@@ -679,11 +686,11 @@ __AROS_LH1(void, beginio,
     if(SysBase->TaskReady.lh_Head->ln_Pri==SysBase->ThisTask->tc_Node.ln_Pri&&
        SysBase->TDNestCnt<0&&SysBase->IDNestCnt<0)
     {
-        SysBase->ThisTask->tc_State=TS_READY;
-        Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
-        Switch();
+	SysBase->ThisTask->tc_State=TS_READY;
+	Enqueue(&SysBase->TaskReady,&SysBase->ThisTask->tc_Node);
+	Switch();
     }
-    
+
     __AROS_FUNC_EXIT
 }
 

@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/11 16:54:31  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.4  1996/08/29 13:33:31  digulla
     Moved common code from driver to Intuition
     More docs
@@ -43,7 +48,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Intuition_functable[];
-struct IntuitionBase *Intuition_init();
+struct IntuitionBase *__AROS_SLIB_ENTRY(init,Intuition) ();
 extern const char Intuition_end;
 extern struct DosBase * DOSBase;
 
@@ -84,7 +89,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct IntIntuitionBase),
     (APTR)Intuition_functable,
     NULL,
-    &Intuition_init
+    &__AROS_SLIB_ENTRY(init,Intuition)
 };
 
 static Class rootclass =

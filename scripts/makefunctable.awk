@@ -9,6 +9,7 @@ BEGIN {
     print "        Desc: Funktion table for " lib >> oname
     print "        Lang: english" >> oname
     print "*/" >> oname;
+    print "#ifndef AROS_LIBCALL_H\n#   include <aros/libcall.h>\n#endif" >> oname;
     print "#ifndef NULL\n#define NULL ((void *)0)\n#endif\n" >> oname;
 
     f[1] = "open";
@@ -60,7 +61,7 @@ END {
     for (t=1; t<=maxlvo; t++)
     {
 	if (t in f && !(t in a))
-	    print "void " lib "_" f[t] " (void);" >> oname;
+	    print "void __AROS_SLIB_ENTRY(" f[t] "," lib ") (void);" >> oname;
     }
 
     print "\nvoid *const " lib "_functable[]=\n{" >> oname;
@@ -73,7 +74,7 @@ END {
 
 	if (t in f)
 	{
-	    line=line lib "_" f[t] ",";
+	    line=line "__AROS_SLIB_ENTRY(" f[t] "," lib "),";
 
 	    if (t in a)
 		line=line " /* " a[t] " " t " */";

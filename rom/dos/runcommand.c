@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/11 16:54:23  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.4  1996/08/13 13:52:51  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -19,8 +24,9 @@
 #include <clib/dos_protos.h>
 #include "dos_intern.h"
 
-LONG RunProcess(struct Process *proc, struct StackSwapStruct *sss,
-STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
+LONG __AROS_SLIB_ENTRY(RunProcess,Dos)(struct Process *proc,
+	struct StackSwapStruct *sss, STRPTR argptr, ULONG argsize,
+	LONG_FUNC entry, struct DosLibrary *DOSBase);
 
 /*****************************************************************************
 
@@ -91,7 +97,8 @@ STRPTR argptr, ULONG argsize, LONG_FUNC entry, struct DosLibrary *DOSBase);
 
     oldargs=me->pr_Arguments;
     me->pr_Arguments=argptr;
-    ret=RunProcess(me,&sss,argptr,argsize,(APTR)BADDR(segList+1),DOSBase);
+    ret=__AROS_SLIB_ENTRY(RunProcess,Dos)(me,&sss,argptr,argsize,
+		(APTR)BADDR(segList+1),DOSBase);
     me->pr_Arguments=oldargs;
 
     oldresult=me->pr_Result2;

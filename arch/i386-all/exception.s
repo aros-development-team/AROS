@@ -1,11 +1,16 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
-#    Revision 1.4  1996/08/23 16:49:21  digulla
-#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
-#    	I replaced it with .balign which does what we want.
+#    Revision 1.5  1996/09/11 16:54:27  digulla
+#    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+#    	some systems name an external symbol "x" as "_x" and others as "x".
+#    	(The problem arises with assembler symbols which might differ)
 #
-#    Revision 1.3  1996/08/13 14:03:19  digulla
+#    Revision 1.4  1996/08/23 16:49:21	digulla
+#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
+#	I replaced it with .balign which does what we want.
+#
+#    Revision 1.3  1996/08/13 14:03:19	digulla
 #    Added standard headers
 #
 #    Revision 1.2  1996/08/01 17:41:10	digulla
@@ -53,9 +58,9 @@
 	TF_EXCEPT   =	32
 	.text
 	.balign 16
-	.globl	Exec_Exception
-	.type	Exec_Exception,@function
-Exec_Exception:
+	.globl	_Exec_Exception
+	.type	_Exec_Exception,@function
+_Exec_Exception:
 	/* Get SysBase amd pointer to current task */
 	movl	4(%esp),%ebp
 	movl	ThisTask(%ebp),%edi

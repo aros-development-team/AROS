@@ -2,6 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/11 16:54:31  digulla
+    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
+    	some systems name an external symbol "x" as "_x" and others as "x".
+    	(The problem arises with assembler symbols which might differ)
+
     Revision 1.4  1996/09/11 14:03:56  digulla
     Quick hack to make it work again.
 
@@ -25,7 +30,7 @@ static const char name[];
 static const char version[];
 static const APTR inittabl[4];
 static void *const Utility_functable[];
-struct UtilityBase *Utility_init();
+struct UtilityBase *__AROS_SLIB_ENTRY(init,Utility) ();
 extern const char Utility_end;
 
 int Utility_entry(void)
@@ -57,7 +62,7 @@ static const APTR inittabl[4]=
     (APTR)sizeof(struct UtilityBase),
     (APTR)Utility_functable,
     NULL,
-    &Utility_init
+    &__AROS_SLIB_ENTRY(init,Utility)
 };
 
 #ifdef SysBase
