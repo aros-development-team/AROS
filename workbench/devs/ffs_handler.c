@@ -1592,23 +1592,6 @@ static LONG examine_all(struct ffsbase *ffsbase, struct fh *dir, struct ExAllDat
     return 0;
 }
 
-/****************************************************************************/
-
-
-/* Strip off a possible voulume name */
-STRPTR fixName(STRPTR name)
-{
-    STRPTR colon = strchr(name, ':');
-
-    if (colon != NULL)
-    {
-	return colon + 1;
-    }
-
-    return name;
-}
-
-
 /****************************************************************************************/
 
 void deventry(struct ffsbase *ffsbase)
@@ -1651,13 +1634,13 @@ void deventry(struct ffsbase *ffsbase)
 		
 	    case FSA_OPEN:
 		error = open(ffsbase,(struct fh **)&iofs->IOFS.io_Unit,
-			     fixName(iofs->io_Union.io_OPEN.io_Filename),
+			     iofs->io_Union.io_OPEN.io_Filename,
 			     iofs->io_Union.io_OPEN.io_FileMode);
 		break;
 		
 	    case FSA_OPEN_FILE:
 		error = open_file(ffsbase, (struct fh **)&iofs->IOFS.io_Unit,
-				  fixName(iofs->io_Union.io_OPEN_FILE.io_Filename),
+				  iofs->io_Union.io_OPEN_FILE.io_Filename,
 				  iofs->io_Union.io_OPEN_FILE.io_FileMode,
 				  iofs->io_Union.io_OPEN_FILE.io_Protection);
 		break;
@@ -1674,7 +1657,7 @@ void deventry(struct ffsbase *ffsbase)
 		
 	    case FSA_CREATE_DIR:
 		error = create_dir(ffsbase, (struct fh **)&iofs->IOFS.io_Unit,
-				   fixName(iofs->io_Union.io_CREATE_DIR.io_Filename),
+				   iofs->io_Union.io_CREATE_DIR.io_Filename,
 				   iofs->io_Union.io_CREATE_DIR.io_Protection);
 		break;
 		
