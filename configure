@@ -91,7 +91,7 @@ case "$type" in
 # It is up to the coder of these routines to keep track of their
 # instructions.
 	COMMON_AFLAGS="-m68060 -x assembler-with-cpp"
-	FLAVOURS="native"
+	FLAVOUR="native"
 	;;
 esac
 
