@@ -8,7 +8,7 @@ ICONS     := \
     def_Project def_Picture def_Text def_Document def_Tool def_Authors \
     def_CSS def_Font def_HTML def_Legal def_Movie def_Music def_PDF def_Patch \
     def_Postscript def_Presentation def_Printer def_ReadMe def_Spreadsheet \
-    def_XCF def_Sound def_Keymap
+    def_XCF def_Sound def_Keymap def_DVD
 
 ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
 ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
