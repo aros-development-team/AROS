@@ -3,3 +3,4 @@ autoconfig.h
 config.log
 config.status
 configure.lineno
+cxref-cpp
