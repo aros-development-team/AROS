@@ -1,8 +1,39 @@
 include $(TOP)/config/make.cfg
 
-FILES := support newhandler worker iconcontainerclass amiga_lib_functions iconcontainerobserver observer presentation iconobserver diskiconobserver drawericonobserver tooliconobserver projecticonobserver trashcaniconobserver iconclass diskiconclass drawericonclass tooliconclass projecticonclass trashcaniconclass desktopobserver operationclass internaliconopsclass desktopclass internalwindowopsclass internaldesktopopsclass containericonobserver
+FILES := \
+    support \
+    newhandler \
+    worker \
+    iconcontainerclass \
+    amiga_lib_functions \
+    iconcontainerobserver \
+    observer \
+    presentation \
+    iconobserver \
+    diskiconobserver \
+    drawericonobserver \
+    tooliconobserver \
+    projecticonobserver \
+    trashcaniconobserver \
+    iconclass \
+    diskiconclass \
+    drawericonclass \
+    tooliconclass \
+    projecticonclass \
+    trashcaniconclass \
+    desktopobserver \
+    operationclass \
+    internaliconopsclass \
+    desktopclass \
+    internalwindowopsclass \
+    internaldesktopopsclass \
+    containericonobserver
 
-FUNCS := createdesktopobjecta getmenuitemlist dodesktopoperation builddesktopmenus
+FUNCS := \
+    createdesktopobjecta \
+    getmenuitemlist \
+    dodesktopoperation \
+    builddesktopmenus
 
 #MM- workbench-libs-desktop : setup includes linklibs
 
