@@ -1,0 +1,42 @@
+#   $Id$
+#
+#
+#
+include $(TOP)/config/make.cfg
+
+LIB :=	png
+
+INCLUDE_FILES	:= png.h pngconf.h
+FILES := \
+    png \
+    pngerror \
+    pngget \
+    pngmem \
+    pngpread \
+    pngread \
+    pngrio \
+    pngrtran \
+    pngrutil \
+    pngset \
+    pngtrans \
+    pngwio \
+    pngwrite \
+    pngwtran \
+    pngwutil
+
+USER_INCLUDES	:= -Iinclude
+TARGET_CFLAGS	+= -DAROS -DNO_ERRNO_H
+
+#MM- linklibs : linklibs-png
+#MM linklibs-pnglib : linklibs-png
+#MM linklibs-png : includes
+#MM includes-copy
+
+%copy_includes_cwd path=.
+
+%make_linklib_setup mmake=linklibs-png
+%make_vpath
+%make_linklib
+
+%common
+%include_deps

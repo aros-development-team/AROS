@@ -1,0 +1,15 @@
+/* $Id$ */
+
+These are libpng's sources. They are taken from libpng-1.0.10.tar.gz
+available at http://www.libpng.org/pub/png/libpng.html
+
+This file (README) and mmakefile.src are not part of the original
+libpng distribution, but are added by hkiel@aros.org in order to
+build this library under AROS.
+
+Note that this is not the complete distribution of libpng, but a
+stripped down version, which only contains the (generic, ie.
+non-assembler) library's sources and the LICENSE.  For a complete
+version check the above link.
+
+Henning Kiel <hkiel@aros.org>, April 2001
