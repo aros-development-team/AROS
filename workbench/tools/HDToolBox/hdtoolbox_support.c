@@ -17,7 +17,6 @@
 #include "debug.h"
 
 #include "hdtoolbox_support.h"
-#include "gadgets.h"
 #include "platform.h"
 
 struct Node *getNumNode(struct List *list, int num) {
@@ -44,130 +43,20 @@ ULONG num = 0;
 	}
 }
 
-ULONG countNodes(struct List *list) {
+ULONG countNodes(struct List *list, UBYTE type) {
 ULONG count = 0;
 struct Node *node;
 
 	node = list->lh_Head;
 	while (node->ln_Succ)
 	{
-		count++;
+		if ((type == (UBYTE)-1) || (node->ln_Type == type))
+			count++;
 		node = node->ln_Succ;
 	}
 	return count;
 }
 
-
-extern APTR visual;
-extern struct Screen *scr;
-
-LONG RequestList(struct List *list, ULONG *result) {
-struct Window *win;
-struct Gadget *glist;
-struct TagItem donetags[] = {{TAG_DONE, NULL}};
-struct TagItem lvtags[] =
-{
-	{GTLV_Labels, (STACKIPTR)list},
-   {GTLV_MakeVisible, 0},
-   {GTLV_Selected, ~0},
-   {GTLV_ShowSelected, 0},
-   {TAG_DONE,NULL}
-};
-struct creategadget rqlgadgets[] =
-{
-	{
-		LISTVIEW_KIND,
-		{
-			5,20,200,100,
-			NULL, NULL,
-			0, NULL, NULL, NULL
-		},
-		lvtags
-	},
-	{
-		BUTTON_KIND,
-		{
-			5,130,80,20,
-			"Ok", NULL,
-			1, PLACETEXT_IN, NULL, NULL
-		},
-		donetags
-	},
-	{
-		BUTTON_KIND,
-		{
-			125,130,80,20,
-			"Cancel", NULL,
-			2, PLACETEXT_IN, NULL, NULL
-		},
-		donetags
-	}
-};
-LONG retval=-1;
-struct IntuiMessage *msg;
-
-	glist = createGadgets(rqlgadgets, 0, 3, visual);
-	if (glist)
-	{
-		win = OpenWindowTags
-			(
-				NULL,
-				WA_PubScreen, scr,
-				WA_Left, scr->Width/2-(220/2),
-				WA_Top, scr->Height/2-(160/2),
-				WA_Width, 220,
-				WA_Height, 160,
-				WA_Title, "Choose",
-				WA_IDCMP,
-					BUTTONIDCMP |
-					LISTVIEWIDCMP |
-					IDCMP_REFRESHWINDOW,
-				WA_Gadgets, glist,
-				WA_DragBar, TRUE,
-				WA_DepthGadget, TRUE,
-				WA_SizeGadget, TRUE,
-				TAG_DONE
-			);
-		if (win)
-		{
-			GT_RefreshWindow(win, NULL);
-			retval = 0;
-			*result = 0;
-			while (retval == 0)
-			{
-				WaitPort(win->UserPort);
-				while ((msg=GT_GetIMsg(win->UserPort)))
-				{
-					switch (msg->Class)
-					{
-					case IDCMP_REFRESHWINDOW:
-						GT_BeginRefresh(win);
-						GT_EndRefresh(win, TRUE);
-						break;
-					case IDCMP_GADGETUP:
-						switch (((struct Gadget *) msg->IAddress)->GadgetID)
-		            {
-						case 0:
-							*result = msg->Code;
-							break;
-						case 1:
-						case 2:
-							retval = ((struct Gadget *) msg->IAddress)->GadgetID;
-							break;
-						}
-						break;
-					}
-					GT_ReplyIMsg(msg);
-				}
-			}
-			if (retval == 2)
-				retval = 0;
-			CloseWindow(win);
-		}
-		freeGadgets(glist);
-	}
-	return retval;
-}
 
 void typestrncpy(STRPTR dst, STRPTR src, ULONG len) {
 
@@ -186,7 +75,7 @@ void typestrncpy(STRPTR dst, STRPTR src, ULONG len) {
 	}
 }
 
-UWORD ownsprintf(STRPTR dst, STRPTR fmt, ...) {
+UWORD strcpyESC(STRPTR dst, STRPTR fmt, ...) {
 UWORD count=0;
 
 	while (*fmt)
@@ -235,7 +124,50 @@ ULONG r;
 		size = size / 1024;
 	}
 	r = r*10/1024;
-	sprintf(str, "%ld,%ld%c",size,r,c);
+	sprintf(str, "%ld.%ld%c",size,r,c);
+}
+
+/* size in kB */
+ULONG sizeStrToUL(STRPTR str) {
+char *end;
+ULONG size;
+ULONG value=0;
+ULONG div;
+
+	size = strtoul(str, &end, 0);
+	if (*end == '.')
+	{
+		value = strtoul(end+1, &end, 0);
+	}
+	if (*end == 'M')
+	{
+		size *= 1024;
+		div = 1024;
+	}
+	else if (*end == 'G')
+	{
+		size *= 1024*1024;
+		div = 1024*1024;
+	}
+	else
+	{
+		/* assume bytes */
+		value = 0;
+		div = 0;
+		size /= 1024; /* we want it in kB */
+	}
+	if (div)
+	{
+	ULONG d=1;
+		do
+		{
+			d *= 10;
+		} while ((value/d)>=1);
+		value *= div;
+		value /= d;
+	}
+	size += value;
+	return size;
 }
 
 LONG GetPartitionAttrsA(struct PartitionHandle *ph, LONG tag, ...) {

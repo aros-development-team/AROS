@@ -1,0 +1,124 @@
+;
+WORD_Active (//)
+Active
+;
+WORD_AddEntry (//)
+Add Entry
+;
+WORD_All (//)
+All
+;
+WORD_Automount (//)
+Automount
+;
+WORD_Bootable (//)
+Bootable
+;
+WORD_BootPri (//)
+Boot Priority
+;
+WORD_Cancel (//)
+Cancel
+;
+WORD_Changed (//)
+Changed
+;
+WORD_Change_Type (//)
+Change Type
+;
+WORD_Create_Table (//)
+Create Table
+;
+WORD_Devices (//)
+Devices
+;
+WORD_DosEnvec (//)
+DosEnvec
+;
+WORD_Exit (//)
+Exit
+;
+WORD_Geometry (//)
+Geometry
+;
+WORD_Name (//)
+Name
+;
+WORD_Switches (//)
+Switches
+;
+WORD_Ok (//)
+Ok
+;
+WORD_Parent (//)
+Parent
+;
+WORD_Partitions (//)
+Partitions
+;
+WORD_Partition_Table (//)
+Partition Table
+;
+WORD_Partition_Table_Type (//)
+Partition Table Type
+;
+WORD_Partition_Type (//)
+Partition Type
+;
+WORD_RemoveEntry (//)
+Remove Entry
+;
+WORD_Rename (//)
+Rename
+;
+WORD_Resize_Move (//)
+Resize/Move
+;
+WORD_Save_Changes (//)
+Save Changes
+;
+WORD_Size (//)
+Size
+;
+WORD_Unit (//)
+Unit
+;
+WORD_Units (//)
+Units
+;
+WORD_Unknown (//)
+Unknown
+;
+WORD_MENU_Project (//)
+Project
+;
+WORD_MENU_About (//)
+About
+;
+WORD_MENU_Quit (//)
+Quit
+;
+MSG_ASK_SAVE (//)
+All Data on modified partitions will be destroyed!\nAre you sure to write changes of partition table '%s'?
+;
+MSG_NO_MEMORY (//)
+Not enough memory
+;
+MSG_PARTITION_TABLE_FULL (//)
+Partition table full
+;
+MSG_Select_Empty_Area (//)
+Select empty area
+;
+MSG_Select_Partition_Resize_Move (//)
+Select a partition and resize/move it
+;
+MSG_Welcome (//)
+Welcome to the partitioning tool
+;
+MSG_WriteTableError (//)
+Error while writing partition table
+;
+MSG_CreateTableError (//)
+Error while creating partition table
+;

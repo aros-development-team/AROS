@@ -1,6 +1,8 @@
 #ifndef AROSMACROS_H
 #define AROSMACROS_H
 
+#include "compilerspecific.h"
+
 #ifdef __AMIGAOS__
 #	define A0 a0
 #	define A1 a1
@@ -8,15 +10,17 @@
 #	define D1 d1
 /* lib macros */
 #	define AROS_LH1(r, n, arg1, bt, bn, bo, bnb) \
-		r ASM SAVEDS n(arg1, AROS_LHA(bt, bn, a6))
+		r SAVEDS n(arg1, AROS_LHA(bt, bn, a6))
 #	define AROS_LH2(r, n, arg1, arg2, bt, bn, bo, bnb) \
-		r ASM SAVEDS n(arg1, arg2, AROS_LHA(bt, bn, a6))
+		r SAVEDS n(arg1, arg2, AROS_LHA(bt, bn, a6))
 #	define AROS_LHA(t,n,r) REGPARAM(r,t,n)
 #	define AROS_LIBFUNC_INIT
 #	define AROS_LIBFUNC_EXIT
 /* user function macros */
 #	define AROS_UFH3S(r, n, arg1, arg2, arg3) \
-		r ASM SAVEDS n(arg1, arg2, arg3)
+		STATIC r SAVEDS n(arg1, arg2, arg3)
+#	define AROS_UFH3(r, n, arg1, arg2, arg3) \
+		r SAVEDS n(arg1, arg2, arg3)
 #	define AROS_UFHA(t, n, r) REGPARAM(r,t,n)
 #	define AROS_USERFUNC_INIT
 #	define AROS_USERFUNC_EXIT

@@ -1,0 +1,32 @@
+0.
+	gui.c is too big!
+
+1.
+	After changing/creating partitions, saving that changes, leaving
+	HDToolBox and rebooting AROS (soft reboot), the "Boot Shell" process
+	might crash
+
+2.
+	MUIA_Window_Sleep doesn't work yet.
+
+3.
+	ptclass (resize/move partitions) doesn't work correctly if you move a
+	partition over the beginning of the table. In that case it jumps back
+	to the last position.
+
+4.
+	ptclass (add, resize/move partitions) doesn't handle LMB clicks correctly.
+
+5.
+	filesystems are not supported yet.
+
+6.
+	Configuration must be edited by hand (maybe Prefs program?).
+
+7.
+	Not much error messages.
+
+8.
+	New partitions are not yet mounted, changed ones are not yet updated
+	if possible.
+
