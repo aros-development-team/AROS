@@ -38,11 +38,11 @@
 		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
-		true ; \
+		$(NOP) ; \
 	    fi ; \
 	else \
 	    $(ECHO) "Assemble failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    $(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
 %end
@@ -57,11 +57,11 @@
 		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
-		true ; \
+		$(NOP) ; \
 	    fi ; \
 	else \
 	    $(ECHO) "Compile failed: %(cmd) %(opt) -c %(from) -o %(to)" 1>&2 ; \
-	    $(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
 %end
@@ -74,11 +74,11 @@
 		$(ECHO) "%(to): %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" >> $(GENDIR)/errors ; \
 		$(CAT) $(GENDIR)/cerrors >> $(GENDIR)/errors ; \
 	    else \
-		true ; \
+		$(NOP) ; \
 	    fi ; \
 	else \
 	    $(ECHO) "Link failed: %(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)" 1>&2 ; \
-	    $(CAT) $(GENDIR)/cerrors 1>&2 ; \
+	    tee < $(GENDIR)/cerrors -a $(GENDIR)/errors 1>&2 ; \
 	    exit 1 ; \
 	fi
 %checkuds to=%(to) linkcmd="%(cmd) %(opt) %(startup) %(from) -o %(to) %(libs)"
@@ -90,9 +90,8 @@
 	@$(CHECKUDS) %(to) > %(us)
 	@$(IF) $(TEST) -s %(us); then \
 	    $(ECHO) "%(linkcmd)" >> %(err) ; \
-	    $(CAT) %(us) >> %(err); \
-	    $(ECHO) "There are undefined symbols in %(to):"; \
-	    $(CAT) %(us); \
+	    $(ECHO) "There are undefined symbols in %(to):" 1>&2 ; \
+	    tee < %(us) -a %(err) 1>&2 ; \
 	    exit 1 ; \
 	else $(NOP) ; fi
 %end
@@ -407,7 +406,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	@$(CC) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
 	@strip $@
 else
@@ -509,7 +508,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
 	@strip $@
 else
@@ -609,7 +608,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
 	@strip $@
 else
@@ -713,7 +712,7 @@ $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
 	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
 	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
 	    -o $@ 2>&1 | tee $(OSMODULE).err
-	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else $(NOP); fi
 ifeq ($(FLAVOUR),native)
 	@strip $@
 else
