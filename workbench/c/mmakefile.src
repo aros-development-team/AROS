@@ -6,7 +6,6 @@ include $(TOP)/config/make.cfg
 
 FILES	:= \
     AddDatatypes \
-    Alias \
     Beep \
     Break \
     ChangeTaskPri \
@@ -26,7 +25,6 @@ FILES	:= \
     SetDate \
     SetKeyboard \
     SetDefaultFont \
-    Unalias \
     Version \
     Which \
     addbuffers \
@@ -42,7 +40,6 @@ FILES	:= \
     makedir \
     mount \
     newshell \
-    path \
     reslist \
     screenpattern \
     setclock \
