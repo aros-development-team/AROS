@@ -1,3 +1,4 @@
+ARCH=linux
 KERNEL=i386-emul
 
 TOP=.
@@ -6,63 +7,59 @@ COMMON_CFLAGS=-Wall -g
 CFLAGS=$(COMMON_CFLAGS) -Dmain=submain -I $(TOP)/include -I $(TOP)/amiga/include
 CC=gcc
 RM=rm -rf
+MKDIR=mkdir
+TOUCH=touch
+
+BINDIR=bin/$(ARCH)
 
 LIBS=$(KERNEL)/libkernel.a exec/libexec.a $(KERNEL)/libkernel.a dos/libdos.a \
 filesys/emul_handler.o utility/libutility.a
 
-%.o: %.c
+TESTS = $(BINDIR)/test/tasktest \
+	$(BINDIR)/test/signaltest \
+	$(BINDIR)/test/exceptiontest \
+	$(BINDIR)/test/tasktest2 \
+	$(BINDIR)/test/messagetest \
+	$(BINDIR)/test/semaphoretest \
+	$(BINDIR)/test/initstructtest \
+	$(BINDIR)/test/devicetest \
+	$(BINDIR)/test/filetest
+
+
+obj/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-all: subdirs arosshell apps
+obj/test/%.o: test/%.c
+	$(CC) $(CFLAGS) $^ -c -o $@
 
-test: tasktest signaltest exceptiontest tasktest2 messagetest \
-    semaphoretest initstructtest devicetest filetest
+all : setup subdirs $(BINDIR)/arosshell apps
+
+setup :
+	@echo "Setting up"
+	-@$(MKDIR) bin
+	-@$(MKDIR) $(BINDIR)
+	-@$(MKDIR) $(BINDIR)/c
+	-@$(MKDIR) $(BINDIR)/lib
+	-@$(MKDIR) $(BINDIR)/test
+	-@$(MKDIR) obj
+	-@$(MKDIR) obj/test
+	@touch setup
+
+test : $(TESTS)
 
 clean:
-	$(RM) tasktest signaltest exceptiontest tasktest2 messagetest \
-		semaphoretest initstructtest devicetest filetest \
-		core *.o *.a
+	$(RM) $(TESTS) core
 	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
 	    ( cd $$dir ; \
 	    $(MAKE) clean ) ; \
 	done
 
-tasktest: tasktest.o $(LIBS)
-	$(CC) $(CFLAGS) tasktest.o $(LIBS) -o $@
-
-signaltest: signaltest.o $(LIBS)
-	$(CC) $(CFLAGS) signaltest.o $(LIBS) -o $@
-
-exceptiontest: exceptiontest.o $(LIBS)
-	$(CC) $(CFLAGS) exceptiontest.o $(LIBS) -o $@
-
-tasktest2: tasktest2.o $(LIBS)
-	$(CC) $(CFLAGS) tasktest2.o $(LIBS) -o $@
-
-messagetest: messagetest.o $(LIBS)
-	$(CC) $(CFLAGS) messagetest.o $(LIBS) -o $@
-
-initstructtest: initstructtest.o $(LIBS)
-	$(CC) $(CFLAGS) initstructtest.o $(LIBS) -o $@
-
-semaphoretest: semaphoretest.o $(LIBS)
-	$(CC) $(CFLAGS) semaphoretest.o $(LIBS) -o $@
-
-devicetest: devicetest.o dummydev.o $(LIBS)
-	$(CC) $(CFLAGS) devicetest.o dummydev.o $(LIBS) -o $@
-
-supertest: supertest.o $(LIBS)
-	$(CC) $(CFLAGS) supertest.o $(LIBS) -o $@
-
-filetest: filetest.o $(LIBS)
-	$(CC) $(CFLAGS) filetest.o $(LIBS) -o $@
-
-arosshell: arosshell.o $(LIBS)
-	$(CC) $(CFLAGS) arosshell.o $(LIBS) -o $@
+$(BINDIR)/arosshell: obj/arosshell.o $(LIBS)
+	$(CC) $(CFLAGS) $< $(LIBS) -o $@
 
 apps:
 	@cd c; make \
-	    TOP=".." CURDIR="$(CURDIR)/c" \
+	    TOP=".." CURDIR="$(CURDIR)/c" BINDIR="$(BINDIR)" \
 	    CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
 	    all
 
@@ -70,7 +67,7 @@ subdirs:
 	@for dir in $(KERNEL) exec dos utility filesys libs ; do \
 	    ( echo "Entering $$dir..." ; cd $$dir ; \
 	    $(MAKE) \
-		TOP=".." CURDIR="$(CURDIR)/$$dir" \
+		TOP=".." CURDIR="$(CURDIR)/c" BINDIR="$(BINDIR)" \
 		CC="$(CC)" COMMON_CFLAGS="$(COMMON_CFLAGS)" \
 		RM="$(RM)" \
 		all ) ; \
@@ -110,3 +107,7 @@ include/aros/config/gnuc/utility_defines.h: utility/*.c
 	echo "" >>$@
 	gawk -f gendef.awk $^ >>$@
 	echo "#endif" >>$@
+
+$(BINDIR)/test/% : obj/test/%.o
+	$(CC) $(CFLAGS) $< $(LIBS) -o $@
+

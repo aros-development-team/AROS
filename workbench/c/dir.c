@@ -277,6 +277,8 @@ static LONG tinymain(void)
     return error;
 }
 
+#if 0
 #include "strcpy.c"
 #include "strlen.c"
 #include "qsort.c"
+#endif
