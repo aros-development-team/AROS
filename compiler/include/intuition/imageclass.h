@@ -65,6 +65,14 @@
 						     of own code */
 #define IA_FrameType		(IA_Dummy + 0x1b) /* See FRAME_* */
 
+/* Private AROS sysiclass tags and defines*/
+
+#define SYSIA_WithBorder  IA_FGPen	/* default: TRUE */
+#define SYSIA_Style       IA_BGPen	/* default: SYSISTYLE_NORMAL */
+
+#define SYSISTYLE_NORMAL   0
+#define SYSISTYLE_GADTOOLS 1		/* to get arrow images in gadtools look */
+
 /* next attribute: (IA_Dummy + 0x1c) */
 
 /* Values for SYSIA_Size */
