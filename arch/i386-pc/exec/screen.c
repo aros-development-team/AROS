@@ -18,7 +18,7 @@
 #define __cli() 		__asm__ __volatile__("cli": : :"memory")
 #define __sti()			__asm__ __volatile__("sti": : :"memory")
 
-static int x,y;
+static int x,y, dead;
 
 struct scr
 {
@@ -36,7 +36,7 @@ void clr()
     __save_flags(flags);
     __cli();
 	
-    for (i=0; i<80*25; i++)
+    if (!dead) for (i=0; i<80*25; i++)
     {
 	view[i].sign = ' ';
 	view[i].attr = 7;
@@ -53,34 +53,42 @@ void Putc(char chr)
     
     __save_flags(flags);
     __cli();
-    if (chr)
-{
-	if (chr == 10)
+    if (chr == 3) /* die / CTRL-C / "signal" */
+    {
+    	dead = 1;
+    }
+    else if (!dead)
+    {
+    
+	if (chr)
 	{
-	    x = 0;
-	    y++;
-	}
-	else
-	{
-	    int i = 80*y+x;
-	    view[i].sign = chr;
-	    x++;
-	    if (x == 80)
+	    if (chr == 10)
 	    {
 		x = 0;
 		y++;
 	    }
+	    else
+	    {
+		int i = 80*y+x;
+		view[i].sign = chr;
+		x++;
+		if (x == 80)
+		{
+		    x = 0;
+		    y++;
+		}
+	    }
 	}
-    }
-    if (y>24)
-    {
-	int i;
-	y=24;
+	if (y>24)
+	{
+	    int i;
+	    y=24;
 
-	for (i=0; i<80*24; i++)
-	    view[i].sign = view[i+80].sign;
-	for (i=80*24; i<80*25; i++)
-	    view[i].sign = ' ';
+	    for (i=0; i<80*24; i++)
+		view[i].sign = view[i+80].sign;
+	    for (i=80*24; i<80*25; i++)
+		view[i].sign = ' ';
+	}
     }
     __restore_flags(flags);
 }
