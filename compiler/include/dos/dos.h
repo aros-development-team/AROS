@@ -210,9 +210,10 @@ struct InfoData
 #define ERROR_TOO_MANY_ARGS		118
   /* An odd number of quotation marks was supplied. */
 #define ERROR_UNMATCHED_QUOTES		119
-  /* The command line was longer than hardcoded line length limit. This can
-     also indicate that some argument was too long or the maximum number of
-     multiple arguments (flag '/M') was reached. */
+  /* Either the command-line was longer than hardcoded line length limit or the
+     maximum number of multiple arguments (flag '/M') was exceeded. This can
+     also indicate that some argument is too long or a supplied buffer is too
+     small. */
 #define ERROR_LINE_TOO_LONG		120
 
 /* Errors in files. */
@@ -285,7 +286,8 @@ struct InfoData
      indicate that the last entry of a list was reached. */
 #define ERROR_NO_MORE_ENTRIES		232
   /* Given action can not be performed on a given object, because it is a
-     soft-link. */
+     soft-link. This is usually only used by filesystem handlers and is catched
+     by dos. Applications should not see this. */
 #define ERROR_IS_SOFT_LINK		233
   /* Given action can not be performed on a given object, because it is a link.
   */
