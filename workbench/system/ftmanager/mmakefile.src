@@ -1,6 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+#MM- workbench-system : workbench-system-ftmanager
 #MM workbench-system-ftmanager : workbench-libs-freetype-module
 
 FILES  := ftmanager
