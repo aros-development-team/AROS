@@ -68,11 +68,13 @@ all developers but the coordinator are missing. The reason for this is that
 we want to protect the developers from junk mail. If you have something to
 ask or say, contact coordinator \email{digulla@aros.fh-konstanz.de}.
 
-\exec{gawk -f devitemfilt.gawk}
+\include{devlist.inc}
 
+\if{html}{
 \section{The current status}
 
-\execverb{gawk -f stathtml.gawk}
+\incverb{status.inc}
+}
 
 \section{Snapshots}
 

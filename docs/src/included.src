@@ -3,5 +3,5 @@
 There are a couple of files and directories below AROS and here is
 a short overview of what they are and what you can do with them.
 
-\exec{collectcontents.sh $(TOP)}
+\include{contents.inc}
 
