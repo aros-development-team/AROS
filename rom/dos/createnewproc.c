@@ -79,6 +79,8 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
     struct CommandLineInterface *cli = NULL;
     struct Process  	    	*me = (struct Process *)FindTask(NULL);
     STRPTR          	    	 s;
+    ULONG                        old_sig;
+    APTR                         old_userdata;
 
     /* TODO: NP_CommandName, NP_ConsoleTask, NP_NotifyOnDeath */
 
@@ -405,8 +407,11 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 
     process->pr_ShellPrivate = 0;
 
+    
+    old_sig                 = SetSignal(0L, SIGF_SINGLE) & SIGF_SINGLE; 
+    old_userdata            = me->pr_Task.tc_UserData;
 
-    SetSignal(0L, SIGF_SINGLE);
+    me->pr_Task.tc_UserData = (APTR)0;
     
     if
     (
@@ -428,7 +433,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase);
 	    P(kprintf("Returned from ChildWait()\n"));
 	}
 
-	return process;
+	goto end;
     }
 
     /* Fall through */
@@ -494,9 +499,16 @@ error:
     if (process != NULL)
     {
 	FreeMem(process, sizeof(struct Process));
+
+	process = NULL;
     }
 
-    return NULL;
+end:
+
+    SetSignal(SIGF_SINGLE, old_sig); 
+    me->pr_Task.tc_UserData = old_userdata;
+
+    return process;
 
     AROS_LIBFUNC_EXIT
 } /* CreateNewProc */
@@ -524,7 +536,7 @@ static void freeLocalVars(struct Process *process, struct DosLibrary *DOSBase)
 
 void internal_ChildWait(struct Task *task, struct DosLibrary * DOSBase)
 {
-    Wait(SIGF_SINGLE);
+    while (task->tc_UserData == (APTR)0) Wait(SIGF_SINGLE);
 }
 
 
@@ -535,6 +547,7 @@ void internal_ChildFree(APTR tid, struct DosLibrary * DOSBase)
 
     D(bug("Awakening the parent task %p (called %s)\n", parent, parent->tc_Node.ln_Name));
 
+    parent->tc_UserData = (APTR)1;
     Signal(parent, SIGF_SINGLE);
 }
 
