@@ -361,8 +361,6 @@ void driver_SetFont (struct RastPort * rp, struct ETextFont * font)
     rp->TxWidth    = font->etf_Font.tf_XSize;
     rp->TxHeight   = font->etf_Font.tf_YSize;
     rp->TxBaseline = font->etf_Font.tf_Baseline;
-
-    font->etf_Font.tf_Accessors ++;
 }
 
 struct TextFont * driver_OpenFont (struct TextAttr * ta,
@@ -376,8 +374,9 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
     xfs = XLoadQueryFont (sysDisplay, ta->ta_Name);
 
-    if (!xfs) {
-	free (tf);
+    if (!xfs)
+    {
+	FreeMem (tf, sizeof (struct ETextFont));
 	return (NULL);
     }
 
@@ -390,12 +389,12 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
     tf->etf_Font.tf_Baseline = tf->etf_XFS.ascent;
     tf->etf_Font.tf_LoChar = tf->etf_XFS.min_char_or_byte2;
     tf->etf_Font.tf_HiChar = tf->etf_XFS.max_char_or_byte2;
-    tf->etf_Font.tf_Accessors ++;
 
     if (!tf->etf_Font.tf_XSize || !tf->etf_Font.tf_YSize)
     {
-	fprintf (stderr, "Error: Fontsize");
-	exit (1);
+	XUnloadFont (sysDisplay, tf->etf_XFS.fid);
+	FreeMem (tf, sizeof (struct ETextFont));
+	return (NULL);
     }
 
     return (struct TextFont *)tf;
@@ -403,8 +402,6 @@ struct TextFont * driver_OpenFont (struct TextAttr * ta,
 
 void driver_CloseFont (struct ETextFont * tf, struct GfxBase * GfxBase)
 {
-    tf->etf_Font.tf_Accessors --;
-
     if (!tf->etf_Font.tf_Accessors)
     {
 	XUnloadFont (sysDisplay, tf->etf_XFS.fid);

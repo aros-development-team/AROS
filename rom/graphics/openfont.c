@@ -48,8 +48,15 @@ extern struct TextFont * driver_OpenFont (struct TextAttr *,
 {
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct GfxBase *,GfxBase)
+    struct Font * font;
 
-    return driver_OpenFont (textAttr, GfxBase);
+    font = driver_OpenFont (textAttr, GfxBase);
 
+    if (font)
+    {
+	font->tf_Accessors ++;
+    }
+
+    return font;
     __AROS_FUNC_EXIT
 } /* OpenFont */
