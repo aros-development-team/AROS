@@ -69,13 +69,13 @@
 	typedef   signed AROS_64BIT_TYPE	QUAD;	/* signed 64-bit value */
 	typedef unsigned AROS_64BIT_TYPE	UQUAD;	/* unsigned 64-bit-value */
 #   else
-#	ifdef __GNUC__
+#	if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	    typedef   signed long long		QUAD;	/* signed 64-bit value */
 	    typedef unsigned long long		UQUAD;	/* unsigned 64-bit-value */
 #	else
 	    typedef struct {  LONG high, low; }	QUAD;	/* signed 64-bit value */
 	    typedef struct { ULONG high, low; }	UQUAD;	/* unsigned 64-bit value */
-#	endif /* __GNUC__ */
+#	endif /* __GNUC__  || __INTEL_COMPILER */
 #   endif /* AROS_64BIT_TYPE */
 #endif
 
@@ -124,13 +124,13 @@
 	typedef   signed AROS_64BIT_STACKTYPE	STACKQUAD;   /* signed 64-bit value */
 	typedef unsigned AROS_64BIT_STACKTYPE	STACKUQUAD;  /* unsigned 64-bit-value */
 #   else
-#	ifdef __GNUC__
+#	if defined(__GNUC__) || defined(__INTEL_COMPILER)
 	    typedef   signed long long		STACKQUAD;   /* signed 64-bit value */
 	    typedef unsigned long long		STACKUQUAD;  /* unsigned 64-bit-value */
 #	else
 	    typedef struct {  LONG high, low; }	STACKQUAD;   /* signed 64-bit value */
 	    typedef struct { ULONG high, low; }	STACKUQUAD;  /* unsigned 64-bit value */
-#	endif /* __GNUC__ */
+#	endif /* __GNUC__  || __INTEL_COMPILER */
 #   endif /* AROS_64BIT_STACKTYPE */
 #endif
 
