@@ -33,12 +33,16 @@
 /* Don't initialize them with "= 0", otherwise they end up in the DATA segment! */
 
 static OOP_AttrBase HiddBitMapAttrBase;
+static OOP_AttrBase HiddPixFmtAttrBase;
+static OOP_AttrBase HiddGfxAttrBase;
 static OOP_AttrBase HiddVGAGfxAB;
 static OOP_AttrBase HiddVGABitMapAB;
 
 static struct OOP_ABDescr attrbases[] = 
 {
     { IID_Hidd_BitMap,		&HiddBitMapAttrBase },
+    { IID_Hidd_PixFmt,		&HiddPixFmtAttrBase },
+    { IID_Hidd_Gfx,		&HiddGfxAttrBase },
     /* Private bases */
     { IID_Hidd_VGAgfx,		&HiddVGAGfxAB	},
     { IID_Hidd_VGABitMap,	&HiddVGABitMapAB },
