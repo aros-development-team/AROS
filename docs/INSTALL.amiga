@@ -1,0 +1,331 @@
+$Id$
+
+                  Building AROS on the Amiga
+                  ==========================
+
+Here's some handy instructions to get started developing AROS
+on the Amiga. Please address any comments and questions to
+<bernardo.innocenti@usa.net> or port in the AROS mailing list.
+
+
+1. System requirements
+   -------------------
+
+   Please understand that AROS is a huge project, so developing
+   it requires a huge amount of resources. Minimum system
+   requirements:
+
+   a) A fast processor. Compiling AROS from scratch with a
+      25MHz 68040 will take 1-2 hours.
+
+   b) At least 40MB of free space to store the sources, the
+      intermediate files and the generated binaries. This will
+      probably increase in the future as the project grows.
+
+      Consider additional space (~15MB) for the GeekGadget
+      tools if you don't have them already.
+
+   c) At least 16MB of RAM. GCC, make, sh and friends are
+      memory hungry.
+
+
+
+2. Required Tools
+   --------------
+
+   Compiling AROS requires several GNU tools which have been
+   ported to AmigaOS in the GeekGadgets developer environment.
+
+   If you don't have a working GeekGadgets installation yet,
+   you will have to get several packages and install them before
+   you can build AROS. GeekGadgets tools are available from
+   ftp.ninemoons.com and its mirrors:
+
+      ftp://ftp.ninemoons.com/pub/geekgadgets/    (main site)
+      ftp://ftp.unina.it/pub/Amiga/geekgadgets/   (full mirror)
+
+   I recommend using ftp.unina.it because it's much faster
+   and it's always up to date.
+
+   Log into one of these ftp sites and cd to the subdirectory of
+   the latest GeekGadgets binary snapshot:
+
+      amiga/m68k/snapshots/current/bin
+
+
+   This is a (perhaps partial) list of what you may need:
+
+      GG-docs-0.7-bin.tgz      useful documentation
+      GG-misc-bin.tgz          miscellaneous files
+      ixemul-47.3-bin.tgz      the ixemul.library
+      ixemul-47.3-env-bin.tgz  additional ixemul.library stuff
+      ixemul-47.3-inc-bin.tgz  headers needed to compile programs
+      binutils-2.8.1-bin.tgz   assembler, linker and other stuff
+      make-3.76.1-bin.tgz      the GNU make utility
+      pdksh-4.9-bin.tgz        the UNIX korn shell, used by makefiles
+      fileutils-3.16-bin.tgz   miscellaneous shell commands
+      sh-utils-1.16-bin.tgz    miscellaneous shell commands
+      diffutils-2.7-bin.tgz    perhaps not needed but nice to have
+      grep-2.1-bin.tgz         grep, used by several makefiles
+      gawk-3.0.3-bin.tgz       awk, used by several makefiles
+      sed-2.05-bin.tgz         sed, used by several makefiles
+      cvs-1.9.26-bin.tgz       needed to access the AROS source repository
+      autoconf-2.12-bin.tgz    needed by AROS configure script
+      automake-1.2f-bin.tgz    needed by AROS configure script
+
+   Additionally, get egcs-1.1b-bin020.tar.gz (egcs is the successor
+   of gcc) from the amiga/m68k/alpha/misc/ subdirectory and install
+   it in the same way.
+
+   Install the packages by unpacking all archives in the same
+   directory, as explained in the GeekGadgets documentation.
+
+   If you don't have tar and gzip, you can get them from the
+   BOOT.lha archive located in the amiga/m68k/snapshots/current/
+   subdirectory.
+
+   Now you should have a full working GG environment to compile most
+   UNIX source code. Read the GeekGadgets documentation and try to
+   become familiar with the developer tools before you go on.
+   To check your installation, try compiling a small program with gcc.
+
+
+
+3. Getting the source code
+   -----------------------
+
+   The AROS source code is kept in a shared repository managed by
+   the Concurrent Version System (CVS). Read the CVS documentation
+   to learn more on shared developement issues.
+
+   Before you can get a copy of the latest source code, you need
+   an accout for yourself. The anonymous login is currently
+   disabled due to our status with Amiga Inc., which says that we
+   must have a licence.
+
+   Follow the instructions on http://www.aros.org to obtain your
+   personal CVS account.
+
+   Once you have a valid login and password, do the following to get
+   a local copy of the full source tree:
+
+      > set CVSROOT :pserver:<login>@aros.fh-konstanz.de:/home/AROS/CVS
+      > cvs login
+         [enter your password at the prompt]
+      > cvs update -d
+
+   You might want to save these commands in a script that you run
+   each time you want to update your source tree.
+
+   When run for the first time, the update will take a lot of time.
+   The good news is that you can safely break cvs at any time and
+   continue later.
+
+   The source tree lives in a dirctory called AROS/. Do not delete
+   the CVS/ and CVSROOT/ subdirectories: they contain information used
+   by cvs to keep your source tree in sync with the repository.
+
+
+
+4. Setting up your AROS developement environment
+   ---------------------------------------------
+
+   Before you begin, make sure your environment is set up correctly
+   to build AROS.
+
+
+   a) make sure that assigns required by the GeekGadgets are correct.
+      The following commands are absolutely required:
+
+         > assign gg:  <your_gg_dir>
+         > assign bin: gg:bin
+         > assign etc: gg:etc
+         > assign tmp: T:
+
+   b) make sure that the GeekGadgets utilities come in the shell path
+      before other AmigaDOS utilities with the same name, otherwise
+      you will spend hours trying to understand why sort does not work.
+
+         > Path C: REMOVE
+         > PATH BIN: ADD
+
+   c) Make some of the most frequently used GeekGadgets utilities
+      resident to improve speed when compiling AROS. WARNING: do not
+      make resident any executable which isn't really pure!
+
+         > Resident GG:bin/sh
+         > Resident GG:bin/make
+         > Resident GG:bin/true
+
+
+   d) Use a big stack. Most (but not all!) of the GeekGadgets tools
+      are compiled with automatic stack extension, but frequent stack
+      extension will reduce the performance.
+
+         > stack 262144
+
+   e) assign AROS: to the AROS directory created by CVS.
+
+         > assign AROS: <your_AROS_dir>
+
+   f) to improve overall performance, sfore the AROS source code
+      in a fast disk, perhaps using a good filesystem such as
+      SmartFileSytem or PFS2. You can safely make the partition
+      case sensitive: this way you'll catch upper/lower case
+      typos which would break AROS when compiling on a UNIX OS.
+
+
+
+5. Build all the tools used in the compilation process
+   ---------------------------------------------------
+
+
+   Make sure that the GeekGadgets
+
+
+   a) The MetaMake utility (mmake)
+
+			> cd AROS:tools/MetaMake
+			> sh ./configure -v --prefix=/gg
+			> make
+			> make install
+
+
+		If configure doesn't work, try this:
+
+			> copy Makefile.amiga Makefile
+			> copy config.h.amiga config.h
+			> make
+			> copy mmake gg:bin/
+
+		If this doesn't work either, your GeekGadgets
+		installation is probably broken, but you can
+		still try to compile mmake directly:
+
+			> gcc mmake.c -o mmake
+			> copy mmake gg:bin
+
+
+	b) The Makefile-Generation tool (genmf)
+
+			> cd AROS:tools/genmf
+			> make
+
+	c) The function-packer (cpak)
+
+		This one should not be needed to be compiled first,
+		because it will be generated "on the fly" (if needed),
+		but the automatic generation does not work on Amiga.
+
+			> cd AROS:tools/cpak
+			> make
+
+	d) The function archive utility (archtool)
+		Should be generated automatically, but there are
+		still problems with mixing system and AROS headers
+		when archtool is made on the fly.
+
+			> cd AROS:tools/archtools
+			> make
+
+
+
+6. Running configure
+   -----------------
+
+	Use "sh ./configure --help" for all possible options, then
+	type:
+
+		> sh ./configure <options>
+
+	The configure script will examine your system and create
+	the necessary files for the build. It is very likely that
+	configure will fail on your Amiga. Debugging configure is
+	not easy. If it doesn't work, you can try using
+	snoopdos and/or ixtrace to find out what is going wrong
+	and fix it. Use "sh -v ./configure" to see what commands are run by sh.
+
+
+
+7. Configuring mmake
+   -----------------
+
+	mmake reads its configuration file from one of these locations:
+
+		$MMAKE_CONFIG
+		$HOME/.mmake.config
+		<current_dir>/.mmake.config
+		<current_dir>/mmake.config
+
+	Copy AROS:mmake.config.in to your favourite location and either
+	set MMAKE_CONFIG to it, or put it in your HOME: directory.
+
+	Edit the mmake configuration file for your system.
+	My HOME:.mmake.config looks like this:
+
+		[AROS]
+		top /AROS
+		maketool make TOP=$(TOP) CURDIR=$(CURDIR) TARGET=$(TARGET)
+		defaultmakefilename mmakefile
+		defaulttarget AROS
+		genmakefilescript $(TOP)/tools/genmf/genmf $(TOP)/config/make.tmpl < mmakefile.src > mmakefile
+		genmakefiledeps $(TOP)/tools/genmf/genmf $(TOP)/config/make.tmpl
+		globalvarfile $(TOP)/config/host.cfg
+		genglobalvarfile sh $(TOP)/configure
+
+		ignoredir CVS
+		ignoredir bin
+		#add compiler/include/makefile
+		#add makefile
+
+
+
+8. Configuring make.opts
+   ---------------------
+
+	all mmakefiles will read AROS:make.opts to get some additional
+	configuration parameters. The contents of this file will override
+	anything in AROS:make.defaults. My AROS:mmake.opts file looks like this:
+
+		# Do we build the libraries shared (.so = yes) or static (.a = no)
+		SHARED_EXEC = no
+		SHARED_DOS = no
+		SHARED_UTILITY = no
+		SHARED_GRAPHICS = no
+		SHARED_INTUITION = no
+		SHARED_MATHFFP = no
+		SHARED_MATHIEEESINGBAS = no
+		SHARED_EXPANSION = no
+		SHARED_BOOPSI = no
+		SHARED_AROS = no
+		SHARED_TIMER = no
+		SHARED_BATTCLOCK = no
+		SHARED_BOOT = no
+
+		# Include debugging information (so you can use gdb or similar)
+		DEBUG = no
+
+
+
+9. Compiling the sources
+   ---------------------
+
+	to build all AROS stuff, just type:
+
+		> mmake
+
+	if you get any errors, try to fix the problem first,
+	and ask in the mailing list if you can't guess yourself.
+
+	- object files are placed in AROS:bin/amiga-m68k/gen/
+	- binary files are placed in AROS:bin/amiga-m68k/AROS/
+
+
+
+10. Joining the AROS mailing list
+    -----------------------------
+
+ Before you begin developing for AROS, you'd better join the mailing
+list. You'll find information on how to do it on the AROS main site:
+
+	http://www.aros.org/
