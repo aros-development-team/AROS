@@ -39,7 +39,6 @@ FILES	:= \
 	RequestChoice \
 	RequestFile \
 	ResList \
-	ScreenPattern \
 	Search \
 	SetClock \
 	SetDate \
