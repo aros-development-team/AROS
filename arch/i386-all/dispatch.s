@@ -1,29 +1,8 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
-#    $Log$
-#    Revision 1.7  1996/10/23 08:04:24  aros
-#    Use generated offsets which makes porting much easier
 #
-#    Revision 1.6  1996/10/10 13:24:47	digulla
-#    Make timer work (Fleischer)
-#
-#    Revision 1.5  1996/09/11 16:54:26	digulla
-#    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-#	some systems name an external symbol "x" as "_x" and others as "x".
-#	(The problem arises with assembler symbols which might differ)
-#
-#    Revision 1.4  1996/08/23 16:49:20	digulla
-#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
-#	I replaced it with .balign which does what we want.
-#
-#    Revision 1.3  1996/08/13 14:03:18	digulla
-#    Added standard headers
-#
-#    Revision 1.2  1996/08/01 17:41:25	digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+#    Desc: Exec function Dispatch()
+#    Lang: english
 
 #*****************************************************************************
 #
@@ -59,6 +38,7 @@
 	.balign 16
 	.globl	_Exec_Dispatch
 	.type	_Exec_Dispatch,@function
+
 _Exec_Dispatch:
 	/* Push all registers */
 	pushl	%eax
@@ -73,7 +53,7 @@ _Exec_Dispatch:
 	movl	32(%esp),%ecx
 
 	/* block all signals */
-	call	dis
+	call	disable
 
 	/* Store sp */
 	movl	ThisTask(%ecx),%edx
@@ -81,12 +61,13 @@ _Exec_Dispatch:
 
 	/* Switch bit set? */
 	testb	$TF_SWITCH,tc_Flags(%edx)
-	je	noswch
+	je	.noswch
 	movl	tc_Switch(%edx),%eax
 	call	*%eax
 
+.noswch:
 	/* Store IDNestCnt */
-noswch: movb	IDNestCnt(%ecx),%al
+	movb	IDNestCnt(%ecx),%al
 	movb	%al,tc_IDNestCnt(%edx)
 	movb	$-1,IDNestCnt(%ecx)
 
@@ -106,21 +87,46 @@ noswch: movb	IDNestCnt(%ecx),%al
 
 	/* Launch bit set? */
 	cmpb	$0,tc_Flags(%edx)
-	jge	nolnch
+	jge	.nolnch
 	movl	tc_Launch(%edx),%eax
 	call	*%eax
 
+.nolnch:
 	/* Get new sp */
-nolnch: movl	tc_SPReg(%edx),%esp
+	movl	tc_SPReg(%edx),%eax
+
+	/* Compare agains SPLower */
+	cmpl	%eax,tc_SPLower(%edx)
+	ja	.alert
+
+	/* Compare against SPUpper */
+	cmpl	%eax,tc_SPUpper(%edx)
+	ja	.ok
+
+.alert:
+	/* Call Alert() */
+	pushl	%ecx
+	pushl	$(AT_DeadEnd|AN_StackProbe)
+	leal	Alert(%ecx),%eax
+	call	*%eax
+	/* Function does not return */
+
+.called_alert:
+	nop
+
+.ok:
+	/* Put the SP into the correct register after checking */
+	movl	%eax,%esp
 
 	/* Unblock signals if necessary */
 	cmpb	$0,tc_IDNestCnt(%edx)
-	jge	noen
+	jge	.noen
 	call	en
 
-noen:	/* Except bit set? */
+.noen:
+	/* Except bit set? */
 	testb	$TF_EXCEPT,tc_Flags(%edx)
-	je	noexpt
+	je	.noexpt
 
 	/* Raise task exception in Disable()d state */
 	pushl	%ecx
@@ -134,7 +140,8 @@ noen:	/* Except bit set? */
 	addl	$4,%esp
 
 	/* Restore registers and return */
-noexpt: popl	%ebp
+.noexpt:
+	popl	%ebp
 	popl	%esi
 	popl	%edi
 	popl	%edx
