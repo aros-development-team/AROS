@@ -1218,7 +1218,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 		    if (!RectRegion)
 		        goto failexit;
 
-		    if (CR->lobs)
+ 		    if (CR->lobs)
 		    {
 			if (L->Flags & LAYERSUPER)
 		        {
@@ -1239,63 +1239,51 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
 		        srcbm     = rp->BitMap;
 		    }
 
-		    for
-		    (
-		        HiddCR = CR->_p1;
-			HiddCR &&
-			(
-			    (dy > 0 && CR->bounds.MaxY >= Rect.MinY) ||
-			    (dy < 0 && CR->bounds.MinY <= Rect.MaxY) ||
-			    (dx > 0 && CR->bounds.MaxX >= Rect.MinX) ||
-			    (dx < 0 && CR->bounds.MinX <= Rect.MaxX)
-			);
-			HiddCR = HiddCR->_p1
-		    )
+		    for (HiddCR = CR->_p1; HiddCR && RectRegion->RegionRectangle; HiddCR = HiddCR->_p1)
 		    {
-                        Tmp.MinX = MAX(Rect.MinX, HiddCR->bounds.MinX);
-                        Tmp.MinY = MAX(Rect.MinY, HiddCR->bounds.MinY);
-                        Tmp.MaxX = MIN(Rect.MaxX, HiddCR->bounds.MaxX);
-                        Tmp.MaxY = MIN(Rect.MaxY, HiddCR->bounds.MaxY);
-
-			if (!(L->Flags & LAYERSIMPLE))
+			if (AndRectRect(&RectRegion->bounds, &HiddCR->bounds, &Tmp))
 			{
-    			    WORD corrdstx, corrdsty;
-
-			    if (L->Flags & LAYERSUPER)
+			    if (!(L->Flags & LAYERSIMPLE))
 			    {
-	                        corrdstx =  - L->bounds.MinX - L->Scroll_X;
-                        	corrdsty =  - L->bounds.MinY - L->Scroll_Y;
+    			        WORD corrdstx, corrdsty;
+
+				if (L->Flags & LAYERSUPER)
+				{
+	                            corrdstx =  - L->bounds.MinX - L->Scroll_X;
+                        	    corrdsty =  - L->bounds.MinY - L->Scroll_Y;
+				}
+				else
+				{
+				    /* Smart layer */
+				    corrdstx =  - HiddCR->bounds.MinX + ALIGN_OFFSET(HiddCR->bounds.MinX);
+				    corrdsty =  - HiddCR->bounds.MinY;
+				}
+
+
+				BltBitMap(srcbm,
+				          Tmp.MinX + corrsrcx + dx,
+					  Tmp.MinY + corrsrcy + dy,
+					  HiddCR->BitMap,
+					  Tmp.MinX + corrdstx,
+					  Tmp.MinY + corrdsty,
+					  Tmp.MaxX - Tmp.MinX + 1,
+                	      	          Tmp.MaxY - Tmp.MinY + 1,
+			      	          0xc0, /* copy */
+         		      	          0xff,
+                 	   	          NULL );
 			    }
-			    else
+
+			    if (!ClearRectRegion(RectRegion, &Tmp))
 			    {
-				/* Smart layer */
-				corrdstx =  - HiddCR->bounds.MinX + ALIGN_OFFSET(HiddCR->bounds.MinX);
-				corrdsty =  - HiddCR->bounds.MinY;
+			        DisposeRegion(RectRegion);
+				goto failexit;
 			    }
-
-			    BltBitMap(srcbm,
-				      Tmp.MinX + corrsrcx + dx,
-				      Tmp.MinY + corrsrcy + dy,
-				      HiddCR->BitMap,
-				      Tmp.MinX + corrdstx,
-				      Tmp.MinY + corrdsty,
-				      Tmp.MaxX - Tmp.MinX + 1,
-            			      Tmp.MaxY - Tmp.MinY + 1,
-			      	      0xc0, /* copy */
-         		      	      0xff,
-                 	   	      NULL );
-			}
-
-			if (!ClearRectRegion(RectRegion, &Tmp))
-			{
-			    DisposeRegion(RectRegion);
-			    goto failexit;
 			}
 		    }
 
 		    if ((dosrcsrc = AndRectRect(&CR->bounds, &Rect, &Tmp)))
 		    {
- 			if (!ClearRectRegion(RectRegion, &Tmp))
+			if (!ClearRectRegion(RectRegion, &Tmp))
 			{
 			    DisposeRegion(RectRegion);
 			    goto failexit;
