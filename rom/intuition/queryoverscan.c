@@ -6,6 +6,8 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <graphics/displayinfo.h>
+#include <proto/graphics.h>
 
 /*****************************************************************************
 
@@ -45,10 +47,44 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/QueryOverscan()
-    aros_print_not_implemented ("QueryOverscan");
+    struct DimensionInfo diminfo;
+    LONG		 retval = FALSE;
+    
+    ASSERT_VALID_PTR(rect);
+    
+    if (GetDisplayInfoData(NULL, (UBYTE *)&diminfo, sizeof(diminfo), DTAG_DIMS, displayid) > 0)
+    {
+        retval = TRUE;
 
-    return 0L;
+        switch(oscantype)
+	{
+	    case OSCAN_TEXT:
+	        *rect = diminfo.TxtOScan;
+		break;
+		
+	    case OSCAN_STANDARD:
+	        *rect = diminfo.StdOScan;
+		break;
+		
+	    case OSCAN_MAX:
+	        *rect = diminfo.MaxOScan;
+		break;
+		
+	    case OSCAN_VIDEO:
+	        *rect = diminfo.VideoOScan;
+		break;
+		
+	    default:
+	        /* or should we assume OSCAN_TEXT? */
+	        retval = FALSE;
+		break;
+		
+	} /* switch(oscantype) */
+	
+    } /* if (GetDisplayInfoData(NULL, &diminfo, sizeof(diminfo), DTAG_DIMS, displayid) > 0) */
+
+    return retval;
 
     AROS_LIBFUNC_EXIT
+    
 } /* QueryOverscan */

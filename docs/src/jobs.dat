@@ -1066,7 +1066,7 @@ intuition00070;2;digulla;Write ActivateWindow
 intuition00071;2;nlorentz;Write RefreshWindowFrame
 intuition00072;2;nlorentz;Write ActivateGadget
 intuition00073;2;digulla;Write NewModifyProp
-intuition00074;0;digulla;Write QueryOverscan
+intuition00074;2;stegerg;Write QueryOverscan
 intuition00075;2;bergers;Write MoveWindowInFrontOf
 intuition00076;2;nlorentz;Write ChangeWindowBox
 intuition00077;2;nlorentz;Write SetEditHook
