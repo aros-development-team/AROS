@@ -149,7 +149,7 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
     				,msg->ifdescr
 				,&total_num_methods
 				,&total_num_ifs
-				,OOPBase);
+				,(struct IntOOPBase *)OOPBase);
 
     /* Set number of interfaces */
     MD(o)->numinterfaces = total_num_ifs;
@@ -283,7 +283,7 @@ static BOOL hiddmeta_allocdisptabs(OOP_Class *cl, OOP_Object *o, struct P_meta_a
 		    if (!init_methodbase( ifdescr->InterfaceID
 		    			 ,mtab_offset
 					 ,&mbase
-					 ,OOPBase))
+					 ,(struct IntOOPBase *)OOPBase))
 		    {
 		    	goto init_err;
 		    }

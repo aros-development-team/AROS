@@ -191,14 +191,14 @@ struct FileSysStartupMsg *fssm;
 			if (isRemovable(SysBase,pt->bd->ioreq))
 			{
 				/* don't check removable devices for partition tables */
-				Enqueue(&ExpansionBase->MountList, bn);
+				Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
 			}
 			else
 			{
 				if (!checkTables(ExpansionBase, PartitionBase, fssm, pt, SysBase))
 				{
 					/* no partition table found, so reinsert node */
-					Enqueue(&ExpansionBase->MountList, bn);
+					Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
 				}
 			}
 			CloseRootPartition(pt);
@@ -206,7 +206,7 @@ struct FileSysStartupMsg *fssm;
 		else
 		{
 			/* amicdrom fails here because of not initialized libraries */
-			Enqueue(&ExpansionBase->MountList, bn);
+			Enqueue(&ExpansionBase->MountList, (struct Node *)bn);
 		}
 		CloseLibrary((struct Library *)PartitionBase);
 	}
