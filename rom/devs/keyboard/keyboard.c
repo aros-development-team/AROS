@@ -124,6 +124,7 @@ AROS_UFP3(VOID, sendQueuedEvents,
     AROS_UFPA(struct KeyboardBase *, KBBase, A1),
     AROS_UFPA(APTR, thisfunc, A1),
     AROS_UFPA(struct ExecBase *, SysBase, A6));
+static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase);
     
 
 AROS_LH2(struct KeyboardBase *,  init,
@@ -310,13 +311,6 @@ AROS_LH1(void, beginio,
 	   struct KeyboardBase *, KBBase, 5, Keyboard)
 {
     AROS_LIBFUNC_INIT
-
-    UWORD  code;                     /* Value of current keycode */
-    UWORD  trueCode;                 /* Code without possible keypress addition */
-    int    i;			     /* Loop variable */
-    int    nEvents;                  /* Number of struct InputEvent that there is
-					room for in memory pointed to by io_Data */
-    struct InputEvent *event;        /* Temporary variable */
     
     BOOL request_queued = FALSE;
     
@@ -379,19 +373,6 @@ AROS_LH1(void, beginio,
 	    break;
 	}
 	
-	/* Number of InputEvents we can store in io_Data */
-	nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
-	if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
-	{
-	    ioreq->io_Error = IOERR_BADLENGTH;
-	    D(bug("kbd: Bad length\n"));
-	    break;
-	}
-	else
-	{
-	    nEvents = 1;
-	}
-	
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
 	{
 	    ioreq->io_Flags &= ~IOF_QUICK;
@@ -407,69 +388,8 @@ AROS_LH1(void, beginio,
 	}
 	D(bug("kbd: Events ready\n"));
 	
-	event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
-	
-	for(i = 0; i < nEvents; i++)
-	{
-	    code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
+	writeEvents(ioreq, KBBase);
 
-	    if(kbUn->kbu_readPos == KB_BUFFERSIZE)
-		kbUn->kbu_readPos = 0;
-
-	    if(isQualifier(code) == TRUE)
-	    {
-		trueCode = code & AMIGAKEYMASK;
-		
-		/* Key released ? ... */
-		if(code & KEYUPMASK)
-		{
-		    kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);
-		}
-		else  /* ... or pressed? */
-		{
-		    /* No CAPS_LOCK releases are reported */
-		    if(trueCode == AKC_CAPS_LOCK)
-		    {
-			kbUn->kbu_Qualifiers ^= IEQUALIFIER_CAPSLOCK;
-		    }
-		    else
-		    {
-			kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
-		    }
-		}
-	    }
-	    
-	    D(bug("kbd: Adding event of code %d\n", code));
-	    
-	    event->ie_Class = IECLASS_RAWKEY;
-	    event->ie_SubClass = 0;
-	    event->ie_Code = code;
-	    event->ie_Qualifier = kbUn->kbu_Qualifiers;
-	    event->ie_Qualifier |= isNumericPad(trueCode) ? IEQUALIFIER_NUMERICPAD : 0;
-	    event->ie_Prev1DownCode = (UBYTE)(kbUn->kbu_LastCode & 0xff);
-	    event->ie_Prev1DownQual = kbUn->kbu_LastQuals;
-	    event->ie_Prev2DownCode = (UBYTE)(kbUn->kbu_LastLastCode & 0xff);
-	    event->ie_Prev2DownQual = kbUn->kbu_LastLastQuals;
-	    event->ie_X = 0;
-	    event->ie_Y = 0;
-	    event->ie_TimeStamp.tv_secs = 0;
-	    event->ie_TimeStamp.tv_micro = 0;
-	    
-	    /* Update list of previous states for dead key handling */
-	    kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
-	    kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
-	    kbUn->kbu_LastCode      = code;
-	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
-	    
-	    /* No more keys in buffer? */
-	    if(kbUn->kbu_readPos == KBBase->kb_writePos)
-		break;
-	    
-	    event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
-				 + ALIGN(sizeof(struct InputEvent)));
-	}
-	event->ie_NextEvent = NULL;
-	
 	break;
 	
 /* nlorentz: This command lets the keyboard.device initialize
@@ -513,6 +433,101 @@ AROS_LH1(void, beginio,
     
     AROS_LIBFUNC_EXIT
 }
+
+
+static VOID writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
+{
+    int    nEvents;                  /* Number of struct InputEvent that there is
+					room for in memory pointed to by io_Data */
+    struct InputEvent *event;        /* Temporary variable */
+    UWORD  code;                     /* Value of current keycode */
+    UWORD  trueCode;                 /* Code without possible keypress addition */
+    int    i;			     /* Loop variable */
+
+
+    event = (struct InputEvent *)(ioStd(ioreq)->io_Data);
+
+    /* Number of InputEvents we can store in io_Data */
+    nEvents = (ioStd(ioreq)->io_Length)/ALIGN(sizeof(struct InputEvent));
+
+    if(nEvents == 0 && ioStd(ioreq)->io_Length < sizeof(struct InputEvent))
+    {
+	ioreq->io_Error = IOERR_BADLENGTH;
+	D(bug("kbd: Bad length\n"));
+	return;
+    }
+    else
+    {
+	nEvents = 1;
+    }    
+
+    D(bug("NEvents = %i", nEvents));
+    
+    for(i = 0; i < nEvents; i++)
+    {
+	code = KBBase->kb_keyBuffer[kbUn->kbu_readPos++];
+	
+	if(kbUn->kbu_readPos == KB_BUFFERSIZE)
+	    kbUn->kbu_readPos = 0;
+	
+	if(isQualifier(code) == TRUE)
+	{
+	    trueCode = code & AMIGAKEYMASK;
+	    
+	    /* Key released ? ... */
+	    if(code & KEYUPMASK)
+	    {
+		kbUn->kbu_Qualifiers |= 1 << (trueCode - AKC_QUALIFIERS_FIRST);
+	    }
+	    else  /* ... or pressed? */
+	    {
+		/* No CAPS_LOCK releases are reported */
+		if(trueCode == AKC_CAPS_LOCK)
+		{
+		    kbUn->kbu_Qualifiers ^= IEQUALIFIER_CAPSLOCK;
+		}
+		else
+		{
+		    kbUn->kbu_Qualifiers &= ~(1 << (trueCode - AKC_QUALIFIERS_FIRST));
+		}
+	    }
+	}
+	
+	D(bug("kbd: Adding event of code %d\n", code));
+	
+	event->ie_Class = IECLASS_RAWKEY;
+	event->ie_SubClass = 0;
+	event->ie_Code = code;
+	event->ie_Qualifier = kbUn->kbu_Qualifiers;
+	event->ie_Qualifier |= isNumericPad(trueCode) ? IEQUALIFIER_NUMERICPAD : 0;
+	event->ie_Prev1DownCode = (UBYTE)(kbUn->kbu_LastCode & 0xff);
+	event->ie_Prev1DownQual = kbUn->kbu_LastQuals;
+	event->ie_Prev2DownCode = (UBYTE)(kbUn->kbu_LastLastCode & 0xff);
+	event->ie_Prev2DownQual = kbUn->kbu_LastLastQuals;
+	event->ie_X = 0;
+	event->ie_Y = 0;
+	event->ie_TimeStamp.tv_secs = 0;
+	event->ie_TimeStamp.tv_micro = 0;
+	
+	/* Update list of previous states for dead key handling */
+	kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
+	kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
+	kbUn->kbu_LastCode      = code;
+	kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
+	
+	/* No more keys in buffer? */
+	if(kbUn->kbu_readPos == KBBase->kb_writePos)
+	    break;
+	
+	event->ie_NextEvent = (struct InputEvent *) ((UBYTE *)event
+			      + ALIGN(sizeof(struct InputEvent)));
+    }
+
+    D(bug("Done writing events!"));
+
+    event->ie_NextEvent = NULL;
+}
+
 
 
 AROS_LH1(LONG, abortio,
@@ -598,12 +613,18 @@ D(bug("Wrote to matrix\n"));
     {
 D(bug("doing software irq\n"));
     
-	Cause(&KBBase->kb_Interrupt);
+/*	Cause(&KBBase->kb_Interrupt); */
+ 
+        /* Temporary hack */
+        AROS_UFC3(void, sendQueuedEvents,
+		  AROS_UFCA(struct KeyboardBase *, KBBase, A1),
+		  AROS_UFCA(APTR, sendQueuedEvents, A5),
+		  AROS_UFCA(struct ExecBase *, SysBase, A6));
+
     }
 }
 
 
-     
 
 #undef  BVBITSET
 #undef  BVBITCLEAR
@@ -640,8 +661,10 @@ AROS_UFH3(VOID, sendQueuedEvents,
 
     ForeachNode(pendingList, ioreq)
     {
-        D(bug("Replying msg\n"));
+        D(bug("Replying msg: R: %i W: %i\n", kbUn->kbu_readPos, KBBase->kb_writePos));
+	writeEvents(ioreq, KBBase);
  	ReplyMsg((struct Message *)&ioreq->io_Message);
+	Remove((struct Node *)ioreq);
 	kbUn->kbu_flags &= ~KBUF_PENDING;
     }
 }
