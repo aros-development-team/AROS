@@ -25,6 +25,9 @@
 
 extern struct GfxBase * GfxBase;
 
+/* Forward declaration */
+struct ViewPort;
+
 #ifdef SysBase
 #undef SysBase
 #endif
