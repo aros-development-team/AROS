@@ -70,10 +70,7 @@ FILES = \
 	vsnprintf \
 	vsprintf
 
-INCLUDES = $(wildcard include/*.h include/*/*.h)
-DEST_INCLUDES = $(foreach f,$(INCLUDES),$(BINDIR)/$(f))
-
-all: setup $(OBJDIR)/c-include $(LIBDIR)/libarosc.a
+all: setup update-includes $(LIBDIR)/libarosc.a
 
 setup:
 	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
@@ -85,10 +82,9 @@ test: $(TESTDIR)/snprintf
 $(TESTDIR)/snprintf: snprintf.c $(LIBDIR)/startup.o $(DEPLIBS)
 	$(CC) -DTEST $(ILDFLAGS) $(LIBDIR)/startup.o $< -o $@ $(LIBS)
 
-$(OBJDIR)/c-include: $(DEST_INCLUDES)
-
-$(INCDIR)/%.h: include/%.h
-	$(CP) $< $@
+update-includes:
+	cd include ; \
+	$(MAKE) $(MFLAGS) TOP="../.." CURDIR="$(CURDIR)/include" all
 
 clean:
 	$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a
