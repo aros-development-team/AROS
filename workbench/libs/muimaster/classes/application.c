@@ -19,7 +19,7 @@
 #include <proto/muimaster.h>
 #endif
 
-/*#define MYDEBUG 1*/
+/*  #define MYDEBUG 1 */
 #include "debug.h"
 
 #include "muimaster_intern.h"
@@ -713,7 +713,8 @@ static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
     struct IntuiMessage *imsg;
 
     /* process all pushed methods */
-    application_do_pushed_method(data);
+    while (application_do_pushed_method(data))
+	;
 
     imsg = (struct IntuiMessage *)GetMsg(data->app_GlobalInfo.mgi_UserPort);
     if (imsg != NULL)
@@ -747,7 +748,8 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	return MUIV_Application_ReturnID_Quit;
 
     /* process all pushed methods */
-    while (application_do_pushed_method(data));
+    while (application_do_pushed_method(data))
+	;
 
     /* query the signal for the handlers */
     for (mn = data->app_IHList.mlh_Head; mn->mln_Succ; mn = mn->mln_Succ)
@@ -846,6 +848,9 @@ static ULONG Application_NewInput(struct IClass *cl, Object *obj, struct MUIP_Ap
 	    }
 	}
     }
+
+    /* process all pushed methods - again */
+    while (application_do_pushed_method(data));
 
     *msg->signal = signalmask | SIGBREAKF_CTRL_C;
 
