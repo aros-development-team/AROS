@@ -31,9 +31,9 @@ struct WriteLevel
 	BOOL WriteStruct (
 
 /*  SYNOPSIS */
-	BPTR   fh,
-	APTR   data,
-	IPTR * sd)
+	BPTR	     fh,
+	APTR	     data,
+	const IPTR * sd)
 
 /*  FUNCTION
 	Writes one big endian structure to a file.

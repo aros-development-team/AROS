@@ -32,8 +32,8 @@ struct FreeLevel
 	void FreeStruct (
 
 /*  SYNOPSIS */
-	APTR   data,
-	IPTR * sd)
+	APTR	     data,
+	const IPTR * sd)
 
 /*  FUNCTION
 	Free a structure which was created by ReadStruct().

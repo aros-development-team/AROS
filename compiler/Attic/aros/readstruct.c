@@ -31,9 +31,9 @@ struct ReadLevel
 	BOOL ReadStruct (
 
 /*  SYNOPSIS */
-	BPTR   fh,
-	APTR * dataptr,
-	IPTR * sd)
+	BPTR	     fh,
+	APTR	   * dataptr,
+	const IPTR * sd)
 
 /*  FUNCTION
 	Reads one big endian structure from a file.
