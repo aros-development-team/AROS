@@ -16,6 +16,6 @@ enum PurifyErrorCodes
 void Purify_PrePrintError (void);
 void Purify_PostPrintError (void);
 void Purify_PrintError (const char * fmt, ...);
-void Purify_PrintAccessError (const char * access, void * addr, int size);
+void Purify_PrintAccessError (const char * access, const void * addr, int size);
 
 #endif /* _ERROR */
