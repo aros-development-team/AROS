@@ -43,6 +43,7 @@
 #ifndef DEVICES_INPUTEVENT_H
 #   include <devices/inputevent.h>
 #endif
+#include <rexx/storage.h>
 
 struct MsgPort;
 struct IORequest;
@@ -175,5 +176,10 @@ AROS_UFP3(IPTR, HookEntry,
     struct TagItem * GetTagsFromStack  (ULONG firstTag, va_list args);
     void	     FreeTagsFromStack (struct TagItem * tags);
 #endif /* AROS_SLOWSTACKTAGS */
+
+/* Rexx support */
+BOOL CheckRexxMsg(struct RexxMsg *);
+LONG SetRexxVar(struct RexxMsg *, char *, char *, ULONG length);
+LONG GetRexxVar(struct RexxMsg *, char *, char **value);
 
 #endif /* CLIB_ALIB_PROTOS_H */

@@ -33,6 +33,7 @@ FILES	:= \
     buildeasyrequest \
     callhook \
     changeextsprite \
+    checkrexxmsg \
     coercemethod \
     closeworkbenchobject \
     createextio \
@@ -59,6 +60,7 @@ FILES	:= \
     fwritef \
     getdtattrs \
     getextsprite \
+    getrexxvar \
     getrpattrs \
     getvisualinfo \
     gt_getgadgetattrs \
@@ -100,6 +102,7 @@ FILES	:= \
     setdtattrs \
     setgadgetattrs \
     setinfo \
+    setrexxvar \
     setrpattrs \
     setsuperattrs \
     setwindowpointer \
