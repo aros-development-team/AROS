@@ -14,23 +14,27 @@
 
 /* The config items for MUIM_GetConfigItem */
 #define MUICFG_Invalid                  (-1L)
-#define MUICFG_Window_Spacing_Left      0x01  /* ULONG, horiz pixels (def.=4) */
-#define MUICFG_Window_Spacing_Right     0x02  /* ULONG, horiz pixels (def.=4) */
-#define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def.=3) */
-#define MUICFG_Window_Spacing_Bottom    0x04  /* ULONG, vert pixels (def.=3) */
-#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def.=4) */
-#define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def.=1) */
-#define MUICFG_Group_HSpacing           0x07  /* ULONG, horiz pixels (def.=6) */
-#define MUICFG_Group_VSpacing           0x08  /* ULONG, vertical pixels (def.=3) */
+#define MUICFG_Window_Spacing_Left      0x01  /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Window_Spacing_Right     0x02  /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Window_Spacing_Top       0x03  /* ULONG, vert pixels (def=3) */
+#define MUICFG_Window_Spacing_Bottom    0x04  /* ULONG, vert pixels (def=3) */
+#define MUICFG_Radio_HSpacing           0x05  /* ULONG, horiz pixels (def=4) */
+#define MUICFG_Radio_VSpacing           0x06  /* ULONG, vertical pixels (def=1) */
+#define MUICFG_Group_HSpacing           0x07  /* ULONG, horiz pixels (def=6) */
+#define MUICFG_Group_VSpacing           0x08  /* ULONG, vertical pixels (def=3) */
 #define MUICFG_Scrollbar_Arrangement    0x09  /* ULONG, top = 0 (def), middle, bottom */
-#define MUICFG_List_FontLeading         0x0b  /* ULONG, vertical pixels (def.=1) */
+#define MUICFG_Listview_Refresh         0x0a  /* ULONG, linear, mixed = 1 (def) */
+#define MUICFG_Listview_Font_Leading    0x0b  /* ULONG, vertical pixels (def=1) */
+#define MUICFG_Listview_SmoothVal       0x0c  /* ULONG, ? (def=0) */
+#define MUICFG_Listview_Multi           0x0d  /* ULONG, shifted = 0 (def), always */
 #define MUICFG_GroupTitle_Position      0x0f  /* ULONG, 1=centered */
 #define MUICFG_GroupTitle_Color         0x10  /* ULONG, 0=normal */
-#define MUICFG_Cycle_MenuCtrl_Level     0x11  /* ULONG, num of entries (def.=2) */
-#define MUICFG_Cycle_MenuCtrl_Position  0x12  /* ULONG, 1=on active (def.=below=0) */
+#define MUICFG_Cycle_MenuCtrl_Level     0x11  /* ULONG, num of entries (def=2) */
+#define MUICFG_Cycle_MenuCtrl_Position  0x12  /* ULONG, below = 0 (def), on active */
 #define MUICFG_Frame_Drag               0x18
-#define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, 1=true (def.=false=0) */
-#define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def.=0) */
+#define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, false = 0 (def), true */
+#define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def=0) */
+#define MUICFG_Listview_Smoothed        0x1b  /* ULONG, false = 0 (def), true */
 #define MUICFG_Font_Normal              0x1e
 #define MUICFG_Font_List                0x1f
 #define MUICFG_Font_Tiny                0x20
@@ -91,7 +95,7 @@
 #define MUICFG_Image_TapeUp             0x5d
 #define MUICFG_Image_TapeDown           0x5e
 #define MUICFG_Font_Button              0x80
-#define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (default), newlook, custom */
+#define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (def), newlook, custom */
 #define MUICFG_String_Background        0x84
 #define MUICFG_String_Text              0x85
 #define MUICFG_String_ActiveBackground  0x86
