@@ -31,16 +31,24 @@
 #define ICA_SelectedIcons ICA_BASE+6
 
 #define DA_BASE  TAG_USER+7500
-#define DA_ActiveWindows DA_BASE+1
+#define DA_ActiveWindow DA_BASE+1
 
 #define DOC_ICONOP   0x10000000
 #define DOC_WINDOWOP 0x20000000
 #define DOC_DESKTOPOP 0x40000000
 
+#define DOIF_CHECKED       (1<<1)
+#define DOIF_CHECKABLE     (1<<2)
+#define DOIF_MUTUALEXCLUDE (1<<3)
+
 struct DesktopOperationItem
 {
 	ULONG doi_Code;
+	ULONG doi_Number;
 	UBYTE *doi_Name;
+	ULONG doi_MutualExclude;
+	ULONG doi_Flags;
+	struct DesktopOperationItem *doi_SubItems;
 };
 
 // Tags for DoDesktopOperation()
