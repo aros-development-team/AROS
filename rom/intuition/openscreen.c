@@ -108,7 +108,7 @@ static const ULONG coltab[] = {
     UWORD	     *customdripens = NULL;
     ULONG	     *colors32 = NULL;
     UWORD	      numcolormapcols;
-    BOOL	      ok = TRUE, rp_inited = FALSE, sharepens = FALSE;
+    BOOL	      ok = TRUE, rp_inited = FALSE, li_inited = FALSE, sharepens = FALSE;
     BOOL	      frontbm_set = FALSE;
     struct BitMap    *old_front_bm = NULL;
     
@@ -473,7 +473,12 @@ static const ULONG coltab[] = {
 
 
 	InitLayers(&screen->Screen.LayerInfo);
+	li_inited = TRUE;
 
+#if 0
+    	/* Root layer now installed automatically by first call
+	   to CreateLayerTagList */
+	   
 #ifdef CreateLayerTagList
 	{
 		struct TagItem tags[4] = {{LA_Visible, FALSE},
@@ -490,6 +495,7 @@ static const ULONG coltab[] = {
 			                   0,
 			                   tags);
 	}
+#endif
 #endif
 
 	if (NULL != layer_info_hook)
@@ -729,7 +735,9 @@ static const ULONG coltab[] = {
 	    if (NULL != old_front_bm)
 	    	SetFrontBitMap(old_front_bm, FALSE);
 	}
-	    
+	
+	if (li_inited) ThinLayerInfo(&screen->Screen.LayerInfo);
+	
         if (screen->Screen.ViewPort.ColorMap) FreeColorMap(screen->Screen.ViewPort.ColorMap);
 
         if (screen->Screen.BarLayer) KillScreenBar(&screen->Screen, IntuitionBase);
