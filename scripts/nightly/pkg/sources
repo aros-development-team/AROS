@@ -13,6 +13,7 @@ ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 copy    $SOURCE_AROS $BUILD_BASE/$PACKAGE
 copy    $SOURCE_NECESSARY $BUILD_BASE/$PACKAGE/contrib
 cd      $BUILD_BASE
+execute find $PACKAGE -name CVS -prune -exec rm -rf "{}" ";"
 archive $ARCHIVE $PACKAGE
 cd      $ROOT
 delete  $BUILD_BASE/$PACKAGE
@@ -23,6 +24,7 @@ ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
 copy    $SOURCE_CONTRIB $BUILD_BASE/$PACKAGE
 cd      $BUILD_BASE
+execute find $PACKAGE -name CVS -prune -exec rm -rf "{}" ";"
 archive $ARCHIVE $PACKAGE
 cd      $ROOT
 delete  $BUILD_BASE/$PACKAGE
