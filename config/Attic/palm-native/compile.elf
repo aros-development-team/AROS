@@ -1,3 +1,0 @@
-mmake .AROS-palm-1
-sh copy.elf
-mmake .AROS-palm

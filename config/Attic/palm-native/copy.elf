@@ -1,2 +1,0 @@
-cp cfg/cfg.host.elf ../host.cfg
-cp cfg/config.h ../config.h
