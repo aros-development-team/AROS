@@ -71,7 +71,7 @@ setup-native :
 	%mkdirs_q $(BOOT_DEST_DIR)/boot/grub
 
 #MM
-workbench-s : Startup-Sequence
+workbench-s-native-i386 : Startup-Sequence
 	@$(CP) $< $(SDIR)
 	@$(NOP)
 
