@@ -589,6 +589,10 @@ case $basic_machine in
                 basic_machine=m68k-rom68k
                 os=-coff
                 ;;
+        morphos)
+				basic_machine=powerpc-unknown
+				os=-morphos
+				;;
         msdos)
                 basic_machine=i386-unknown
                 os=-msdos
@@ -998,7 +1002,7 @@ case $os in
         -gnu* | -bsd* | -mach* | -minix* | -genix* | -ultrix* | -irix* \
               | -*vms* | -sco* | -esix* | -isc* | -aix* | -sunos | -sunos[34]*\
               | -hpux* | -unos* | -osf* | -luna* | -dgux* | -solaris* | -sym* \
-              | -amigaos* | -amigados* | -msdos* | -newsos* | -unicos* | -aof* \
+              | -amigaos* | -amigados* | -morphos* | -msdos* | -newsos* | -unicos* | -aof* \
               | -aos* \
               | -nindy* | -vxsim* | -vxworks* | -ebmon* | -hms* | -mvs* \
               | -clix* | -riscos* | -uniplus* | -iris* | -rtu* | -xenix* \
