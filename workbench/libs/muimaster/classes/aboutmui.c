@@ -869,20 +869,20 @@ static const unsigned char body[] =
     0x00, 0x03, 0xD0, 0xFC, 0x03, 
 };
 
-#define IMAGE \
-    Child, BodychunkObject, \
-        MUIA_Bodychunk_Body, body, \
-        MUIA_Bodychunk_Compression, 1, \
-        MUIA_Bodychunk_Depth, 5,  \
-        MUIA_Bodychunk_Masking, 0, \
-        MUIA_Bitmap_SourceColors, colors, \
-        MUIA_Bitmap_Width, 100, \
-        MUIA_Bitmap_Height, 100, \
-        MUIA_Bitmap_UseFriend, TRUE, \
-        MUIA_FixWidth,100, \
-        MUIA_FixHeight,100, \
-        TextFrame, \
-        InnerSpacing(0,0), \
+#define IMAGE                                      \
+    Child, (IPTR) BodychunkObject,                 \
+        TextFrame,                                 \
+        InnerSpacing(0,0),                         \
+        MUIA_Bodychunk_Body,        (IPTR) body,   \
+        MUIA_Bodychunk_Compression,        1,      \
+        MUIA_Bodychunk_Depth,              5,      \
+        MUIA_Bodychunk_Masking,            0,      \
+        MUIA_Bitmap_SourceColors,   (IPTR) colors, \
+        MUIA_Bitmap_Width,                 100,    \
+        MUIA_Bitmap_Height,                100,    \
+        MUIA_Bitmap_UseFriend,             TRUE,   \
+        MUIA_FixWidth,                     100,    \
+        MUIA_FixHeight,                    100,    \
     End,
 #else /* USE_INTERNAL_IMAGE */
 #define IMAGE
@@ -913,17 +913,17 @@ IPTR Aboutmui__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     (
         cl, obj, NULL,
         
-        MUIA_Window_Title, "About Zune",
-        WindowContents, VGroup,
+        MUIA_Window_Title, (IPTR) "About Zune",
+        WindowContents,    (IPTR) VGroup,
             IMAGE
-            Child, TextObject,
-                MUIA_Text_PreParse, MUIX_C,
-                MUIA_Text_Contents, about_text,
+            Child, (IPTR) TextObject,
                 TextFrame,
+                MUIA_Text_PreParse, (IPTR) MUIX_C,
+                MUIA_Text_Contents, (IPTR) about_text,
             End,
         End,
         
-        TAG_MORE, msg->ops_AttrList
+        TAG_MORE, (IPTR) msg->ops_AttrList
     );
 
     if (!obj) return FALSE;
