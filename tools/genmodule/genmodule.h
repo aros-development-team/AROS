@@ -22,6 +22,7 @@ struct functionlist {
     char *type;
     unsigned int argcount;
     struct arglist *arguments;
+    unsigned int lvo;
 };
 
 struct forcelist {
@@ -57,12 +58,6 @@ extern char *modulename, *basename, *modulenameupper, *libbase, *libbasetype, *l
 extern unsigned int majorversion, minorversion, firstlvo;
 extern struct linelist *cdeflines, *protolines;
 
-/* global variables for reading lines from files */
-extern char *line; /* The current read file */
-extern unsigned int slen; /* The allocation length pointed to be line */
-extern unsigned int lineno; /* The line number, will be increased by one everytime a line is read */
-
-void readline(FILE *);
 void readconfig(void);
 void readref(void);
 void writeincproto(void);

@@ -8,12 +8,12 @@
 void writeincclib(void)
 {
     FILE *out;
+    char line[256];
     struct functionlist *funclistit;
     struct arglist *arglistit;
     struct linelist *linelistit;
-    unsigned int start;
     
-    snprintf(line, slen-1, "%s/clib/%s_protos.h", genincdir, modulename);
+    snprintf(line, 255, "%s/clib/%s_protos.h", genincdir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {
@@ -33,20 +33,16 @@ void writeincclib(void)
 	    modulenameupper, modulenameupper);
     for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
 	fprintf(out, "%s\n", linelistit->line);
-    for (funclistit = funclist, start = 5;
-	 funclistit!=NULL;
-	 funclistit = funclistit->next, start++)
+    for (funclistit = funclist; funclistit!=NULL; funclistit = funclistit->next)
     {
 	fprintf(out, "\nAROS_LP%d(%s, %s,\n", funclistit->argcount, funclistit->type, funclistit->name);
 
-	for (arglistit = funclistit->arguments;
-	     arglistit!=NULL;
-	     arglistit = arglistit->next)
+	for (arglistit = funclistit->arguments; arglistit!=NULL; arglistit = arglistit->next)
 	    fprintf(out, "        AROS_LPA(%s, %s, %s),\n",
 		    arglistit->type, arglistit->name, arglistit->reg);
 
-	fprintf(out, "        struct Library *, %sBase, %d, %s)\n",
-		basename, start, basename);
+	fprintf(out, "        struct Library *, %sBase, %u, %s)\n",
+		basename, funclistit->lvo, basename);
     }
     fprintf(out, "\n#endif /* CLIB_%s_PROTOS_H */\n", modulenameupper);
 }

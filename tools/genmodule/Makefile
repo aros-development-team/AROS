@@ -16,6 +16,7 @@ GENMODULE   ?= genmodule
 all : $(GENMODULE) $(GENLIBDEFS)
 
 SRCS := genmodule.c \
+     	fileread.c \
         readconfig.c \
 	readref.c \
 	writeincclib.c \
@@ -26,7 +27,7 @@ SRCS := genmodule.c \
 	writeautoinit.c \
 	writestubs.c
 	
-INCS := genmodule.h
+INCS := genmodule.h fileread.h
 
 
 $(GENMODULE) : $(SRCS) $(INCS)
@@ -35,6 +36,7 @@ $(GENMODULE) : $(SRCS) $(INCS)
 	@$(HOST_STRIP) $@
 
 SRCS2 := genlibdefs.c \
+      	 fileread.c \
          readconfig.c \
 	 writeinclibdefs.c
 	

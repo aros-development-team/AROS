@@ -8,9 +8,10 @@
 void writeincproto(void)
 {
     FILE *out;
+    char line[256];
     struct linelist *linelistit;
     
-    snprintf(line, slen-1, "%s/proto/%s.h", genincdir, modulename);
+    snprintf(line, 255, "%s/proto/%s.h", genincdir, modulename);
     out = fopen(line, "w");
     if (out==NULL)
     {

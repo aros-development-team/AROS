@@ -27,34 +27,6 @@ char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, *libbase = N
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *protolines = NULL;
 
-/* global variables for reading lines from files */
-char *line; /* The current read file */
-unsigned int slen; /* The allocation length pointed to be line */
-unsigned int lineno; /* The line number, will be increased by one everytime a line is read */
-
-void readline(FILE *f)
-{
-    char haseol;
-
-    if (fgets(line, slen, f))
-    {
-	haseol = line[strlen(line)-1]=='\n';
-	if (haseol) line[strlen(line)-1]='\0';
-	
-	while (!(haseol || feof(f)))
-	{
-	    slen += 256;
-	    line = realloc(line, slen);
-	    fgets(line+strlen(line), slen, f);
-	    haseol = line[strlen(line)-1]=='\n';
-	    if (haseol) line[strlen(line)-1]='\0';
-	}
-    }
-    else
-	line[0]='\0';
-    lineno++;
-}
-
 int main(int argc, char **argv)
 {
     char *s;
@@ -90,9 +62,6 @@ int main(int argc, char **argv)
     }
     if (argv[4][strlen(argv[4])-1]=='/') argv[2][strlen(argv[2])-1]='\0';
     gendir = argv[4];
-    
-    line = malloc(256);
-    slen = 256;
 
     readconfig();
     writeinclibdefs();

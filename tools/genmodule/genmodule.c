@@ -27,34 +27,6 @@ char *modulename = NULL, *basename = NULL, *modulenameupper = NULL, *libbase = N
 unsigned int majorversion = 0, minorversion = 0, firstlvo = 0;
 struct linelist *cdeflines = NULL, *protolines = NULL;
 
-/* global variables for reading lines from files */
-char *line; /* The current read file */
-unsigned int slen; /* The allocation length pointed to be line */
-unsigned int lineno; /* The line number, will be increased by one everytime a line is read */
-
-void readline(FILE *f)
-{
-    char haseol;
-
-    if (fgets(line, slen, f))
-    {
-	haseol = line[strlen(line)-1]=='\n';
-	if (haseol) line[strlen(line)-1]='\0';
-	
-	while (!(haseol || feof(f)))
-	{
-	    slen += 256;
-	    line = realloc(line, slen);
-	    fgets(line+strlen(line), slen, f);
-	    haseol = line[strlen(line)-1]=='\n';
-	    if (haseol) line[strlen(line)-1]='\0';
-	}
-    }
-    else
-	line[0]='\0';
-    lineno++;
-}
-
 int main(int argc, char **argv)
 {
     char *s;
@@ -100,9 +72,6 @@ int main(int argc, char **argv)
     genincdir = argv[5];
 
     reffile = argv[6];
-
-    line = malloc(256);
-    slen = 256;
 
     readconfig();
     readref();
