@@ -120,8 +120,11 @@ static VOID colormap_get(Class *cl, Object *o, struct pRoot_Get *msg)
 	    
 	    default:
 	    	kprintf("!!! Unknow colormap attr in ColorMap::Get()\n");
+		DoSuperMethod(cl, o, (Msg)msg);
 		break;
 	}
+    } else {
+	DoSuperMethod(cl, o, (Msg)msg);
     }
     return;
 }

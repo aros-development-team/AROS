@@ -196,12 +196,12 @@ kprintf("gfxmode::get()\n");
 		
 	     default:
 	     	kprintf("TRYING TO GET UNKNOWN ATTR FROM GFXMODE CLASS\n");
+    		DoSuperMethod(cl, o, (Msg)msg);
 		break;
 
 	}
     
     } else {
-    	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM GFXMODE OBJECTS\n");
     	DoSuperMethod(cl, o, (Msg)msg);
     }
     

@@ -135,7 +135,10 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_GC_LinePattern: *msg->storage = data->linePat; break;
             case aoHidd_GC_PlaneMask  : *msg->storage = (ULONG) data->planeMask; break;
             case aoHidd_GC_ColorExpansionMode : *msg->storage = data->colExp; break;
+	    default: DoSuperMethod(cl, obj, (Msg) msg); break;
         }
+    } else {
+        DoSuperMethod(cl, obj, (Msg) msg);
     }
 
 }

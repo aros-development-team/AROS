@@ -145,12 +145,12 @@ static VOID sync_get(Class *cl, Object *o, struct pRoot_Get *msg)
 		
 	     default:
 	     	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n");
+    		DoSuperMethod(cl, o, (Msg)msg);
 		break;
 
 	}
     
     } else {
-    	kprintf("!!! TRYING TO GET UNKNOWN ATTR FROM SYNC OBJECT !!!\n");
     	DoSuperMethod(cl, o, (Msg)msg);
     }
     

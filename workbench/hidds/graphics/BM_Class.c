@@ -304,7 +304,10 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 	    	kprintf("UNKNOWN ATTR IN BITMAP BASECLASS: %d\n", idx);
 	    	DoSuperMethod(cl, obj, (Msg) msg);
         }
+    } else {
+	DoSuperMethod(cl, obj, (Msg) msg);
     }
+    
 
     ReturnVoid("BitMap::Get");
 }
