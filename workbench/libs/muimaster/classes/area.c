@@ -22,8 +22,6 @@
 #include <proto/muimaster.h>
 #endif
 
-#include "debug.h"
-
 extern struct Library *MUIMasterBase;
 #include "muimaster_intern.h"
 
@@ -41,14 +39,20 @@ extern struct Library *MUIMasterBase;
 static struct TextFont *zune_font_get(Object *obj, LONG preset)
 {
     struct MUI_GlobalInfo *gi = muiGlobalInfo(obj);
+    struct MUI_RenderInfo *ri = muiRenderInfo(obj);
 
     if ((preset <= MUIV_Font_Inherit) && (preset >= MUIV_Font_NegCount))
     {
     	char *name;
 	if (preset > 0) return NULL;
         name = gi->mgi_Prefs->fonts[-preset];
+	D(bug("zune_font_get : preset=%d, name=%s\n", preset, name));
 
-	if (gi->mgi_Fonts[-preset]) return gi->mgi_Fonts[-preset];
+	if (ri->mri_Fonts[-preset])
+	{
+	    D(bug("zune_font_get : return mri_Fonts[-preset]=%lx\n", ri->mri_Fonts[-preset]));
+	    return ri->mri_Fonts[-preset];
+	}
 
 	if (name)
 	{
@@ -66,23 +70,24 @@ static struct TextFont *zune_font_get(Object *obj, LONG preset)
 
 		if ((p = PathPart(ta.ta_Name)))
 		    strcpy(p,".font");
-
-		gi->mgi_Fonts[-preset] = OpenDiskFont(&ta);
+		D(bug("zune_font_get : OpenDiskFont(%s)\n", ta.ta_Name));
+		ri->mri_Fonts[-preset] = OpenDiskFont(&ta);
 
 		FreeVec(ta.ta_Name);
 	    }
 	    
 	}
 
-	if (!gi->mgi_Fonts[-preset])
+	if (!ri->mri_Fonts[-preset])
 	{
 	    struct TextAttr scr_attr;
 	    scr_attr = *(_screen(obj)->Font);
 	    scr_attr.ta_Flags = 0;
-	    gi->mgi_Fonts[-preset] = OpenDiskFont(&scr_attr);
+	    D(bug("zune_font_get : OpenDiskFont(%s) (screen font)\n", scr_attr.ta_Name));
+	    ri->mri_Fonts[-preset] = OpenDiskFont(&scr_attr);
 	    
 	}
-	return gi->mgi_Fonts[-preset];
+	return ri->mri_Fonts[-preset];
     }
     return (struct TextFont *)preset;
 }
@@ -1177,8 +1182,8 @@ static ULONG Area_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *m
     zune_imspec_free(data->mad_Background);
     data->mad_Background = NULL;
 
- 
     muiRenderInfo(obj) = NULL;
+
     return TRUE;
 }
 

@@ -152,6 +152,8 @@ struct MUI_RenderInfo
     UWORD            mri_ScreenHeight;
     UWORD            mri_PensStorage[MPEN_COUNT]; /* storage for pens, mri_Pens point to here */
 
+    struct TextFont *mri_Fonts[-MUIV_Font_NegCount]; /* Opened text fonts, done by zune_get_font() */
+
     /* this is for AddClipping/AddClipRegion */
     struct Region   *mri_rArray[10];
     int              mri_rCount;
