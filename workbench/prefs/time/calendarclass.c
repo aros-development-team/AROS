@@ -30,8 +30,8 @@ struct CalendarData
     struct ClockData	    	clockdata;
     STRPTR  	    	    	*daylabels;
     STRPTR  	    	    	defdaylabels[12];
-    WORD    	    	    	cellwidth;
-    WORD    	    	    	cellheight;
+    WORD    	    	    	cellwidth, base_cellwidth;
+    WORD    	    	    	cellheight, base_cellheight;
     WORD    	    	    	mwday; /* weekday of 1st of month */
     WORD    	    	    	old_mday;
 };
@@ -57,7 +57,6 @@ static IPTR Calendar_New(Class *cl, Object *obj, struct opSet *msg)
     struct TagItem  	*ti, tags[] =
     {
     	{MUIA_Background, MUII_ButtonBack   	    },
-	{MUIA_Frame 	, MUIV_Frame_Button 	    },
 	{TAG_MORE   	, (IPTR)msg->ops_AttrList   }
     };
     
@@ -285,6 +284,10 @@ static IPTR Calendar_Setup(Class *cl, Object *obj, struct MUIP_Setup *msg)
     }
     
     data->cellwidth += CELL_EXTRAWIDTH;
+    
+    data->base_cellwidth = data->cellwidth;
+    data->base_cellheight = data->cellheight;
+    
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, &data->ehn);
     
     return TRUE;
@@ -330,6 +333,19 @@ static IPTR Calendar_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
     DoSuperMethodA(cl, obj, (Msg)msg);
     
     if (!(msg->flags & (MADF_DRAWOBJECT | MADF_DRAWUPDATE))) return 0;
+    
+    x = (_mwidth(obj) - 2) / 7;
+    y = x * data->base_cellheight / data->base_cellwidth;
+    
+    data->cellheight = (_mheight(obj) - 1) / 7;
+    data->cellwidth = data->cellheight * data->base_cellwidth / data->base_cellheight;
+    
+    if ((data->cellwidth > x) || (data->cellheight > y))
+    {
+    	data->cellwidth = x;
+	data->cellheight = y;
+    }
+    
     
     offx = _mleft(obj) + (_mwidth(obj) - data->cellwidth * 7 - 2) / 2 + 1;
     offy = _mtop(obj) + (_mheight(obj) - data->cellheight * 7 - 1) / 2;

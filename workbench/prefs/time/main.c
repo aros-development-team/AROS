@@ -11,6 +11,7 @@
 #include "global.h"
 #include "version.h"
 #include "calendarclass.h"
+#include "clockclass.h"
 
 #include <libraries/coolimages.h>
 
@@ -266,7 +267,10 @@ static void MakeGUI(void)
     
     Object *menu, *yearaddobj, *yearsubobj;
     
-    if (!MakeCalendarClass()) Cleanup(MSG(MSG_CANT_CREATE_APP));
+    if (!MakeCalendarClass() || !MakeClockClass())
+    {
+    	Cleanup(MSG(MSG_CANT_CREATE_APP));
+    }
     
     yearhook.h_Entry = HookEntry;
     yearhook.h_SubEntry = (HOOKFUNC)YearFunc;
@@ -291,10 +295,7 @@ static void MakeGUI(void)
     }
     
     menu = MUI_MakeObject(MUIO_MenustripNM, &nm, 0);
-        
-    cal = NewObject(calendarmcc->mcc_Class, NULL,
-    	TAG_DONE);
-	
+        	
     app = ApplicationObject,
 	MUIA_Application_Title, (IPTR)"Time",
 	MUIA_Application_Version, (IPTR)VERSIONSTR,
@@ -336,11 +337,11 @@ static void MakeGUI(void)
 				MUIA_FixWidthTxt, (IPTR)"-",
 				End,
 			    End,
-			Child, (IPTR)cal,
+    			Child, cal = NewObject(calendarmcc->mcc_Class, NULL, TAG_DONE),
 			End,
 		    Child, VGroup, /* Clock box */
 		    	GroupFrame,
-			Child, HVSpace,
+			Child, clock = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
 			Child, HGroup,
 			    Child, HVSpace,
 			    Child, StringObject, /* hour gadget */
@@ -397,6 +398,7 @@ static void KillGUI(void)
 {
     DisposeObject(app);
     KillCalendarClass();
+    KillClockClass();
 }
 
 /*********************************************************************************************/

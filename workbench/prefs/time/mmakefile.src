@@ -4,7 +4,7 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main vars locale misc prefs calendarclass
+FILES 	    := main vars locale misc prefs calendarclass clockclass
 EXEDIR      := $(AROSDIR)/Prefs
 EXE 	    := $(EXEDIR)/Time
 
