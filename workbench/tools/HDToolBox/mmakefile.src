@@ -5,12 +5,14 @@ include $(TOP)/config/make.cfg
 FILES = \
 		main \
 		gadgets \
+		details \
+		hdtoolbox_support \
 		layoutmain \
-		layoutpcp \
-		layoutap \
-		workmain \
-		workpcp \
-		listfunctions
+		layoutpartitions \
+		layoutdetails \
+		partitions \
+		partitiontables \
+		ptclass
 		
 
 EXEDIR = $(AROSDIR)/Tools

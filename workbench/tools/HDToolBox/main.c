@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2002, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -15,32 +15,38 @@
 #include <intuition/intuition.h>
 #include <libraries/gadtools.h>
 
+#include "details.h"
 #include "error.h"
 #include "gadgets.h"
+#include "hdtoolbox_support.h"
 #include "mainwin.h"
-#include "workmain.h"
-#include "workpcp.h"
+#include "partitions.h"
+#include "partitiontables.h"
+#include "ptclass.h"
 
+#define DEBUG 1
+#include <aros/debug.h>
 
 struct IntuitionBase *IntuitionBase=NULL;
 struct GfxBase *GfxBase=NULL;
 struct Library *GadToolsBase=NULL;
+struct PartitionBase *PartitionBase=NULL;
 
 APTR visual=NULL;
 struct Screen *scr=NULL;
 struct Window *mainwin=NULL;
 struct Gadget *mainglist=NULL;
 struct Gadget *pcpglist=NULL;
-struct Gadget *apglist=NULL;
+struct Gadget *dglist=NULL;
 
-extern struct creategadget maingadgets[],pcpgadgets[], apgadgets[];
+extern struct creategadget maingadgets[],pcpgadgets[], detailsgadgets[];
 extern struct TagItem sctdtags[];
-extern struct List hd_list, partition_list;
+extern struct List hd_list, pt_list;
 
 ULONG initEnv(char *device) {
 
 	NEWLIST(&hd_list);
-	NEWLIST(&partition_list);
+	NEWLIST(&pt_list);
 	IntuitionBase = (struct IntuitionBase *)OpenLibrary("intuition.library", 37);
 	if (!IntuitionBase)
 		return ERR_INTUI;
@@ -50,6 +56,9 @@ ULONG initEnv(char *device) {
 	GadToolsBase = OpenLibrary("gadtools.library", 0);
 	if (!GadToolsBase)
 		return ERR_GADTOOLS;
+	PartitionBase = (struct PartitionBase *)OpenLibrary("partition.library", 37);
+	if (!PartitionBase)
+		return ERR_PARTITION;
 	scr = LockPubScreen(NULL);
 	if (!scr)
 		return ERR_SCREEN;
@@ -62,9 +71,10 @@ ULONG initEnv(char *device) {
 	pcpglist=createGadgets(pcpgadgets,ID_PCP_FIRST_GADGET, ID_PCP_LAST_GADGET,visual);
 	if (!pcpglist)
 		return ERR_GADGETS;
-	apglist=createGadgets(apgadgets, ID_AP_FIRST_GADGET, ID_AP_LAST_GADGET, visual);
-	if (!apglist)
+	dglist=createGadgets(detailsgadgets, ID_DET_FIRST_GADGET, ID_DET_LAST_GADGET, visual);
+	if (!dglist)
 		return ERR_GADGETS;
+	allocPTGadget(scr, pcpglist);
 	mainwin = OpenWindowTags
 		(
 			NULL,
@@ -75,8 +85,13 @@ ULONG initEnv(char *device) {
 			WA_Height, 250,
 			WA_Title, "HDToolBox",
 			WA_IDCMP,
-				BUTTONIDCMP | CHECKBOXIDCMP | SLIDERIDCMP | SCROLLERIDCMP | ARROWIDCMP |
-				IDCMP_GADGETUP | IDCMP_REFRESHWINDOW,
+				BUTTONIDCMP |
+				CHECKBOXIDCMP |
+				SLIDERIDCMP |
+				SCROLLERIDCMP |
+				ARROWIDCMP |
+				IDCMP_GADGETUP |
+				IDCMP_REFRESHWINDOW,
 			WA_Gadgets, mainglist,
 			WA_DragBar, TRUE,
 			WA_DepthGadget, TRUE,
@@ -85,11 +100,11 @@ ULONG initEnv(char *device) {
 	if (!mainwin)
 		return ERR_WINDOW;
 	if (device)
-		findHDs(mainwin, device, 2);
+		findPartitionTables(mainwin, device, 2);
 	else
 	{
-		findHDs(mainwin, "ide.device", 4);
-		findHDs(mainwin, "scsi.device", 6);
+		findPartitionTables(mainwin, "ide.device", 4);
+		findPartitionTables(mainwin, "scsi.device", 6);
 	}
 	return ERR_NONE;
 }
@@ -101,10 +116,13 @@ void uninitEnv() {
 		freeGadgets(pcpglist);
 	if (mainglist)
 		freeGadgets(mainglist);
+	freePTGadget(scr);
 	if (visual)
 		FreeVisualInfo(visual);
 	if (scr)
 		UnlockPubScreen(NULL, scr);
+	if (PartitionBase)
+		CloseLibrary((struct Library *)PartitionBase);
 	if (GadToolsBase)
 		CloseLibrary(GadToolsBase);
 	if (GfxBase)
@@ -115,9 +133,9 @@ void uninitEnv() {
 
 void waitMessage(struct Window *win) {
 struct IntuiMessage *msg;
-struct HDUnitNode *current_hd=0;
+struct PartitionTableNode *current_pt=0;
 struct PartitionNode *current_partition=0;
-BOOL running=TRUE, changed;
+BOOL running=TRUE;
 
 	while (running)
 	{
@@ -134,126 +152,101 @@ BOOL running=TRUE, changed;
 				switch (((struct Gadget *) msg->IAddress)->GadgetID)
 				{
 				case ID_MAIN_HARDDISK :
-					current_hd = getHDUnit(mainwin, msg->Code);
+					current_pt = getPartitionTable(mainwin, msg->Code);
 					break;
 				case ID_MAIN_SAVE_CHANGES :
-					saveChanges(mainwin, current_hd);
+					saveChanges(mainwin, current_pt);
 					break;
 				case ID_MAIN_EXIT :
-					if (reallyExit(&hd_list))
+					if (reallyExit(&pt_list))
 					{
+						freePartitionTableList(&pt_list);
 						freeHDList(&hd_list);
 						running=FALSE;
 					}
 					break;
 				case ID_MAIN_PARTITION_DRIVE :
-					changed = FALSE;
-					setPCPGadgetAttrs(0);
-					findPartitions(0, current_hd);
+					par_Init(0, current_pt);
 					RemoveGList(win, mainglist, ~0);
 					clearGadgets((struct ExtGadget *)mainglist, win, -1);
 					AddGList(win, pcpglist, 0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_PARTITION :
-					current_partition = getPartition(mainwin, current_hd, msg->Code);
+					current_partition =(struct PartitionNode *)getNumNode(&current_pt->pl, msg->Code);
+					viewPartitionData(mainwin, current_pt, current_partition);
 					break;
 				case ID_PCP_ADD_PARTITION :
-					if ((current_partition = addPartition(mainwin, current_hd)))
-						changed = TRUE;
+					current_partition = addPartition
+						(
+							mainwin,
+							current_pt,
+							(struct DosEnvec *)current_partition
+						);
 					break;
 				case ID_PCP_DELETE_PARTITION :
 					deletePartition(mainwin, current_partition);
-					changed = TRUE;
 					current_partition = 0;
 					break;
 				case ID_PCP_EDIT_PARTITION :
+					det_Init(win, current_partition);
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
-					AddGList(win, apglist, 0, ~0, NULL);
+					AddGList(win, dglist, 0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_STARTCYL :
-					if (
-							changeStartCyl
-								(
-									mainwin,
-									current_hd,
-									current_partition,
+						changeStartCyl
+						(
+							mainwin,
+							current_pt,
+							current_partition,
+							(
+								(struct StringInfo *)
 									(
-										(struct StringInfo *)
-											(
-												(struct Gadget *) msg->IAddress
-											)->SpecialInfo
-									)->LongInt
-								)
-						)
-						changed = TRUE;
+										(struct Gadget *) msg->IAddress
+									)->SpecialInfo
+							)->LongInt
+						);
 					break;
 				case ID_PCP_ENDCYL :
-					if (
-							changeEndCyl
-								(
-									mainwin,
-									current_hd,
-									current_partition,
+						changeEndCyl
+						(
+							mainwin,
+							current_pt,
+							current_partition,
+							(
+								(struct StringInfo *)
 									(
-										(struct StringInfo *)
-											(
-												(struct Gadget *) msg->IAddress
-											)->SpecialInfo
-									)->LongInt
-								)
-						)
-						changed = TRUE;
+										(struct Gadget *) msg->IAddress
+									)->SpecialInfo
+							)->LongInt
+						);
 					break;
 				case ID_PCP_TOTALCYL :
-					if (
-							changeTotalCyl
-								(
-									mainwin,
-									current_hd,
-									current_partition,
-									(
-										(struct StringInfo *)
-											(
-												(struct Gadget *) msg->IAddress
-											)->SpecialInfo
-									)->LongInt
-								)
-						)
-						changed = TRUE;
-					break;
-				case ID_PCP_TYPELV :
-					if (changeType(mainwin, current_partition, msg->Code))
-						changed = TRUE;
-					break;
-				case ID_PCP_TYPEINTEGER :
-					if (
-							changeType
+						changeTotalCyl
+						(
+							mainwin,
+							current_pt,
+							current_partition,
 							(
-								mainwin, current_partition,
-								(
-									(struct StringInfo *)
-										(
-											(struct Gadget *) msg->IAddress
-										)->SpecialInfo
-								)->LongInt
-							)
-						)
-						changed = TRUE;
+								(struct StringInfo *)
+									(
+										(struct Gadget *) msg->IAddress
+									)->SpecialInfo
+							)->LongInt
+						);
 					break;
 				case ID_PCP_OK :
-					pcp_Ok(&hd_list);
-					if (changed)
+					if (pcp_Ok(current_pt))
 					{
 						sctdtags[0].ti_Data = FALSE;
 						SetGadgetAttrsA
-							(
-								maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
-								0, 0, sctdtags
-							);
-						current_hd->partition_changed = TRUE;
+						(
+							maingadgets[ID_MAIN_SAVE_CHANGES-ID_MAIN_FIRST_GADGET].gadget,
+							0, 0, sctdtags
+						);
+						current_pt->flags |= PNF_TABLE_CHANGED;
 					}
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
@@ -261,11 +254,73 @@ BOOL running=TRUE, changed;
 					RefreshGList(win->FirstGadget, win, NULL, -1);
 					break;
 				case ID_PCP_CANCEL :
-					pcp_Cancel();
+					pcp_Cancel(current_pt);
 					RemoveGList(win, pcpglist, ~0);
 					clearGadgets((struct ExtGadget *)pcpglist, win, -1);
 					AddGList(win, mainglist, 0, ~0, NULL);
 					RefreshGList(win->FirstGadget, win, NULL, -1);
+					break;
+				case ID_DET_TYPELV :
+					changeType(mainwin, current_partition, msg->Code);
+					break;
+				case ID_DET_TYPESTRING :
+					{
+					ULONG val;
+					STRPTR err;
+
+						val=typestrtol
+							(
+								(
+									(struct StringInfo *)
+										((struct Gadget *) msg->IAddress)->SpecialInfo
+								)->Buffer,
+								&err
+							);
+						if (err)
+						{
+							val = current_partition->type;
+						}
+						changeType
+						(
+							mainwin, current_partition, val
+						);
+					}
+					break;
+				case ID_DET_PARTITION_TABLE:
+					setPartitionTable(mainwin, current_partition, msg->Code);
+					break;
+				case ID_DET_OK:
+					det_Ok(current_partition);
+					RemoveGList(win, dglist, ~0);
+					clearGadgets((struct ExtGadget *)dglist, win, -1);
+					AddGList(win, pcpglist, 0, ~0, NULL);
+					RefreshGList(win->FirstGadget, win, NULL, -1);
+					viewPartitionData(mainwin, current_pt, current_partition);
+					break;
+				case ID_DET_CANCEL:
+					det_Cancel(current_partition);
+					RemoveGList(win, dglist, ~0);
+					clearGadgets((struct ExtGadget *)dglist, win, -1);
+					AddGList(win, pcpglist, 0, ~0, NULL);
+					RefreshGList(win->FirstGadget, win, NULL, -1);
+					viewPartitionData(mainwin, current_pt, current_partition);
+					break;
+				case ID_PCP_PARTITION_GUI:
+					current_partition =
+						((struct Gadget *) msg->IAddress)->SpecialInfo;
+					if (msg->Code == PTS_PARTITION)
+					{
+						viewPartitionData(mainwin, current_pt, current_partition);
+					}
+					else if (msg->Code == PTS_EMPTY_AREA)
+					{
+						viewDosEnvecData
+						(
+							mainwin,
+							current_pt,
+							(struct DosEnvec *)current_partition
+						);
+					}
 					break;
 				}
 			}
