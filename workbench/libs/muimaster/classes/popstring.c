@@ -109,7 +109,7 @@ IPTR Popstring__MUIM_Popstring_Open(struct IClass *cl, Object *obj, struct MUIP_
     {
 	if (data->open && data->toggle)
 	{
-	    DoMethod(obj,MUIM_Popstring_Close);
+	    DoMethod(obj,MUIM_Popstring_Close,FALSE);
 	    return 0;
 	}
 
