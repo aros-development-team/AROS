@@ -1,5 +1,5 @@
 # $Id$
-TOP=../..
+TOP=..
 
 include $(TOP)/config/make.cfg
 
@@ -8,20 +8,27 @@ SUBDIRS=include clib
 else
 SUBDIRS=include aros alib clib vcpp vbcc
 endif
+TARGET=all
 
-all:
-	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
-	    if ( cd $$dir ; \
-		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
-		all ) ; \
-	    then echo -n ; else exit 1 ; fi ; \
-	done
+all: subdirs
 
 clean:
 	@for dir in $(SUBDIRS) ; do \
-	    echo "Making all in $(CURDIR)/$$dir..." ; \
+	    echo "Cleaning in $(CURDIR)/$$dir..." ; \
+	    ( cd $$dir ; \
 	    $(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
 		clean ) ; \
+	done
+
+setup:
+	@$(MAKE) $(MFLAGS) subdirs TARGET=setup
+
+subdirs:
+	@for dir in $(SUBDIRS) ; do \
+	    echo "Making $(TARGET) in $(CURDIR)/$$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/$$dir" \
+		$(TARGET) ) ; \
+	    then true ; else exit 1 ; fi ; \
 	done
 

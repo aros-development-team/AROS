@@ -1,5 +1,5 @@
 # $Id$
-TOP=../../..
+TOP=../..
 
 USER_INCLUDES=-Iinclude
 
@@ -80,6 +80,7 @@ FILES = \
 	strtok \
 	strtol \
 	strtoul \
+	ungetc \
 	vfprintf \
 	vprintf \
 	vsnprintf \
@@ -90,9 +91,11 @@ ifneq ($(FLAVOUR),native)
 ASMFILES = setjmp longjmp
 endif
 
-all: setup update-includes $(LIBDIR)/libarosc.a
+all: setup $(LIBDIR)/libarosc.a
 
-setup:
+setup: make-dirs update-includes
+
+make-dirs:
 	@if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR) ; else true ; fi
 	@if [ ! -d $(INCDIR)/sys ]; then $(MKDIR) $(INCDIR)/sys ; else true ; fi
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
@@ -108,7 +111,7 @@ update-includes:
 	$(MAKE) $(MFLAGS) TOP="$(TOP)/.." CURDIR="$(CURDIR)/include" all
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a
+	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libc.a
 
 $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
@@ -120,10 +123,9 @@ $(LIBDIR)/libarosc.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@$(TOUCH) $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
+endif

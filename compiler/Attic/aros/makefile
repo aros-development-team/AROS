@@ -1,13 +1,27 @@
 # $Id$
-TOP=../../..
+TOP=../..
 
 include $(TOP)/config/make.cfg
 
 OBJDIR=$(GENDIR)/aros
 
 FILES = calcchecksum kprintf nastyfreemem \
-	    purify removeslist debugmem \
-	    _kprintf hexdump
+	purify removeslist debugmem \
+	_kprintf hexdump \
+	readbyte \
+	readdouble \
+	readfloat \
+	readlong \
+	readstring \
+	readstruct \
+	readword \
+	writebyte \
+	writedouble \
+	writefloat \
+	writelong \
+	writestring \
+	writestruct \
+	writeword
 
 all: setup $(LIBDIR)/libaros.a
 
@@ -15,7 +29,7 @@ setup :
 	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
 
 clean:
-	$(RM) $(OBJDIR) *.err $(LIBDIR)/libaros.a
+	-$(RM) $(OBJDIR) *.err $(LIBDIR)/libaros.a
 
 $(OBJDIR)/%.o: %.c
 	$(SYS_CC) $(CFLAGS) $< -c -o $@ 2>&1|tee $*.err
@@ -30,10 +44,9 @@ $(LIBDIR)/libaros.a: $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 	$(RANLIB) $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(CFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
-
+endif

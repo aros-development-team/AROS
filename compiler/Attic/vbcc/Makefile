@@ -3,9 +3,9 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES = -I. -I./machines/$(KERNEL) -I$(TOP)/apps/compiler/clib/include
+USER_INCLUDES = -I. -I./machines/$(KERNEL) -I$(TOP)/compiler/clib/include
 
-OBJDIR = $(GENDIR)/apps/compiler/vbcc
+OBJDIR = $(GENDIR)/compiler/vbcc
 LIBS = -L$(LIBDIR) -larosc -lamiga -laros
 DEPLIBS = $(LIBDIR)/startup.o $(LIBDIR)/libarosc.a \
 	$(LIBDIR)/libamiga.a $(LIBDIR)/libaros.a
@@ -51,15 +51,13 @@ $(OBJDIR)/opts.o: opt.c
 	$(CC) -DNO_OPTIMIZER $(APPCFLAGS) -c $< -o $@
 
 $(OBJDIR)/machine.d: ./machines/$(KERNEL)/machine.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(APPCFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
 $(OBJDIR)/%.d: %.c
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
-	@$(RM) $@
-	@touch $@
-	$(MKDEPEND) -f$@ -p$(OBJDIR)/ -- $(APPCFLAGS) -- $^
+	@if [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else true ; fi
+	$(MKDEPEND) -f- -p$(@D)/ -- $(APPCFLAGS) -- $^ > $@
 
+ifneq ($(TARGET),clean)
 include $(foreach f,$(BASIC_FILES) $(CC_FILES),$(OBJDIR)/$(f).d)
+endif
