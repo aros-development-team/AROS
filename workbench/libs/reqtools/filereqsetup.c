@@ -91,13 +91,13 @@ int REGARGS SetupReqWindow (GlobData *glob, int resized)
     int 			firsttime = TRUE;
     int 			isfilereq, isfontreq, isvolreq, isscreenmodereq, checkboxcount;
     int 			stdgadheight, defaultheight, dotinfowidth;
-    int 			gadlen[8] , gadpos[8], reqdefnum, maxpen;
-    int 			overscanstrlen, widthstrlen, heightstrlen, widthheightlen, dimgadwidth;
+    int 			gadlen[8] , gadpos[8], reqdefnum = 0, maxpen;
+    int 			overscanstrlen = 0, widthstrlen = 0, heightstrlen = 0, widthheightlen = 0, dimgadwidth = 0;
     int 			reqpos, check, led_off = 0, do_led;
     int 			checkw, checkh, checkskip, checktopoff;
     int 			leftoff, rightoff, totaloff;
     char 			**gadtxt = glob->gadtxt, *str, *dotinfostr;
-    char 			*overscanstr, *widthstr, *heightstr, *defaultstr;
+    char 			*overscanstr = NULL, *widthstr = NULL, *heightstr = NULL, *defaultstr = NULL;
     ULONG 			mask;
 
 
@@ -529,7 +529,7 @@ retryopenwindow:
 	InitNewGadget (&ng, leftoff, top, winwidth - totaloff, glob->fontheight + 4, NULL, 0);
 	/* Remove this one please. ;) */
 	gad = glob->modetxtgad = myCreateGadget (TEXT_KIND, gad, &ng,
-						 GTTX_Text, glob->nameinfo.Name,
+						 GTTX_Text, (IPTR) glob->nameinfo.Name,
 						 GTTX_Border, TRUE, TAG_END);
 	top += ng.ng_Height + spacing;
 
@@ -542,7 +542,7 @@ retryopenwindow:
 						    stdgadheight, NULL, OVERSCN);
 						    
 	    gad = glob->overscangad = myCreateGadget (CYCLE_KIND, gad, &ng,
-						      GTCY_Labels, glob->oscanlabs,
+						      GTCY_Labels, (IPTR) glob->oscanlabs,
 						      GTCY_Active, glob->overscantype,
 						      TAG_END);
 						      
@@ -628,7 +628,7 @@ retryopenwindow:
 						    glob->fontheight + 3, NULL, 0);
 	    BuildColStr (glob->currcolstr, glob->depth, glob->modeid);
 	    gad = glob->currcolgad = myCreateGadget (TEXT_KIND, gad, &ng,
-				    GTTX_Text, glob->currcolstr, GTTX_Clipped, TRUE,
+				    GTTX_Text, (IPTR) glob->currcolstr, GTTX_Clipped, TRUE,
 				    (GadToolsBase->lib_Version >= 40) ? GTTX_Justification : TAG_IGNORE, GTJ_RIGHT, TAG_END);
 	    ng.ng_LeftEdge += ng.ng_Width + 8;
 	    val = StrWidth_noloc (&glob->itxt, "0000 ");
@@ -649,7 +649,7 @@ retryopenwindow:
 	    ng.ng_Width = val;
 	    BuildColStr (glob->maxcolstr, glob->currmaxdepth, 0);
 	    gad = glob->maxcolgad = myCreateGadget (TEXT_KIND, gad, &ng,
-						    GTTX_Text, glob->maxcolstr, GTTX_Clipped, TRUE,
+						    GTTX_Text, (IPTR) glob->maxcolstr, GTTX_Clipped, TRUE,
 						    (GadToolsBase->lib_Version >= 40) ? GTTX_Justification : TAG_IGNORE, GTJ_RIGHT, TAG_END);
 
 	    top += ng.ng_Height + spacing;

@@ -530,7 +530,7 @@ SAVEDS ASM void RTFuncs_rtSetReqPosition(REGPARAM(d0, ULONG, reqpos),
 {
 #warning Taken from rtfuncs.asm where the C version was in comments. Might be out of date
 
-    int mx, my, val, leftedge, topedge;
+    int mx = 0, my = 0, val, leftedge, topedge;
     ULONG scrwidth, scrheight;
     int width, height, left, top;
 

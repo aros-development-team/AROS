@@ -75,7 +75,7 @@ int ASM SAVEDS GetVScreenSize (
     int 			ht;
 #ifndef USE_FORBID
     struct Screen		*pubscr;
-    ULONG			ilock;
+    ULONG			ilock = 0L;
     BOOL			isfirst;
 #endif
 
@@ -727,7 +727,7 @@ LONG BottomBorderHeight (struct Screen *scr)
 
     if ((dri = GetScreenDrawInfo (scr)))
     {
-	if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, dri,
+	if((obj = NewObject (NULL, "sysiclass", SYSIA_DrawInfo, (IPTR) dri,
 						// Must be SYSISIZE_MEDRES!
 						SYSIA_Size, SYSISIZE_MEDRES,
 						SYSIA_Which, SIZEIMAGE,

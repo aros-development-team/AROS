@@ -331,7 +331,7 @@ LONG ASM SAVEDS PaletteRequestA (
 
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
@@ -527,7 +527,7 @@ static LONG ASM SAVEDS PalReqHandler (
 
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
@@ -783,7 +783,7 @@ UpdateWheel( GlobData *glob, ULONG *cols )
 	glob->wheel_rgb.cw_Green = MakeColVal( cols[ 1 ], glob->greenbits );
 	glob->wheel_rgb.cw_Blue  = MakeColVal( cols[ 2 ], glob->bluebits );
 
-	SetGadgetAttrs( glob->wheel, glob->palwin, NULL, WHEEL_RGB, &glob->wheel_rgb,
+	SetGadgetAttrs( glob->wheel, glob->palwin, NULL, WHEEL_RGB, (IPTR) &glob->wheel_rgb,
 							 TAG_DONE );
 
 #ifdef GRADIENT
@@ -831,7 +831,7 @@ SetWheelColor( GlobData *glob, struct TagItem *tag )
 
 static void REGARGS SelectColor (GlobData *glob, int col)
 {
-    ULONG rgb[3], rgbcol;
+    ULONG rgb[3], rgbcol = 0;
     int i;
 
     if (!glob->os30) rgbcol = GetRGB4 (glob->cm, col);
@@ -929,7 +929,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
     int 		spacing, scrwidth, scrheight, maxwidth;
     int 		winwidth, width1, width2, reqpos, levelwidth;
 #ifdef COLORWHEEL
-    int 		wheelwidth, wheelheight, wheeltopoff;
+    int 		wheelwidth = 0, wheelheight = 0, wheeltopoff;
 #endif
     int 		wheeloff = 0;
     int 		leftoff, rightoff;
@@ -1106,7 +1106,7 @@ static int REGARGS SetupPalWindow (GlobData *glob, char *title)
 				glob->fontheight + 6, NULL, RED_ID + i);
 
 	glob->colgad[i] = gad = myCreateGadget (SLIDER_KIND, gad, &ng,
-		GTSL_LevelFormat, "%3ld",
+		GTSL_LevelFormat, (IPTR) "%3ld",
 		GTSL_LevelPlace, PLACETEXT_LEFT,
 		GTSL_MaxLevelLen, 3, GA_RelVerify, TRUE, GA_Immediate, TRUE,
 		GTSL_Level, glob->cols[i],

@@ -103,10 +103,10 @@ ULONG ASM SAVEDS PropReqHandler (
     REGPARAM(d0, ULONG, sigs),
     REGPARAM(a0, struct TagItem *, taglist))
 {
-    struct IntuiMessage 	*reqmsg, *imsg, im;
+    struct IntuiMessage 	*reqmsg = NULL, *imsg, im;
     struct Gadget 		*gad;
-    struct RealFileRequester 	*freq;
-    struct RealFontRequester 	*fontreq;
+    struct RealFileRequester 	*freq = NULL;
+    struct RealFontRequester 	*fontreq = NULL;
     struct BufferData 		*buff;
     struct DiskfontBase 	*DiskfontBase = glob->diskfontbase;
     struct TagItem 		*tag, *tstate;
@@ -118,7 +118,7 @@ ULONG ASM SAVEDS PropReqHandler (
     struct AssignList 		*assignlist, *fontslist, **prevassign;
     int 			clicked, ctype, sel, val, code, qual, doubleclick, checkbox;
     int 			i, step, start, stop, shortage, buffsize, mon, doactgad, lastpos;
-    UBYTE 			*fdir, *filename, *str, *str2, *str3, key;
+    UBYTE 			*fdir = NULL, *filename = NULL, *str, *str2, *str3, key;
     ULONG 			tagdata;
     BPTR 			parent;
     APTR 			winlock;
@@ -146,7 +146,7 @@ ULONG ASM SAVEDS PropReqHandler (
 
     /* parse tags */
     tstate = taglist;
-    while ((tag = NextTagItem ((const struct TagItem **)&tstate)))
+    while ((tag = NextTagItem (&tstate)))
     {
 	tagdata = tag->ti_Data;
 	if (tag->ti_Tag > RT_TagBase)
@@ -473,7 +473,7 @@ ULONG ASM SAVEDS PropReqHandler (
 			{
 			    glob->currmindepth = glob->currmaxdepth = glob->maxdepth = glob->mindepth = glob->depth = 0;
 			    UpdateDepthGad (glob);
-			    myGT_SetGadgetAttrs (glob->maxcolgad, glob->reqwin, NULL, GTTX_Text, "0", TAG_END);
+			    myGT_SetGadgetAttrs (glob->maxcolgad, glob->reqwin, NULL, GTTX_Text, (IPTR) "0", TAG_END);
 			}
 			
 			if (glob->flags & SCREQF_SIZEGADS)
