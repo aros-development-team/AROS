@@ -7,6 +7,9 @@
 */
 
 #define AROS_ALMOST_COMPATIBLE
+
+#include <string.h>
+
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
