@@ -21,6 +21,8 @@
 #include <aros/asmcall.h>
 #include <exec/ports.h>
 
+static BPTR DupFH(BPTR fh, LONG mode);
+
 /*****************************************************************************
 
     NAME */
@@ -132,16 +134,18 @@
 
 	cis_opened = TRUE;
     }
+    else
+    if (cis == (BPTR)SYS_DupStream)
+    {
+        cis = DupFH(Input(), FMF_READ);
+	cis_opened = TRUE;
+    }
 
     cos  = (BPTR)GetTagData(SYS_Output , (IPTR)Output(), tags);
     if (!cos)
     {
         if (IsInteractive(cis))
-	{
-	    BPTR olddir = CurrentDir(cis);
-	    cos = Open("", FMF_WRITE);
-	    CurrentDir(olddir);
-	}
+	    cos = DupFH(cis, FMF_WRITE);
 	else
 	    cos = Open("*", FMF_WRITE);
 ;
@@ -149,21 +153,29 @@
 
 	cos_opened = TRUE;
     }
+    else
+    if (cos == (BPTR)SYS_DupStream)
+    {
+        cos = DupFH(Output(), FMF_WRITE);
+	cos_opened = TRUE;
+    }
 
     ces  = (BPTR)GetTagData(SYS_Error , (IPTR)Error(), tags);
     if (!ces)
     {
         if (IsInteractive(cis))
-	{
-	    BPTR olddir = CurrentDir(cis);
-	    ces = Open("", FMF_WRITE);
-	    CurrentDir(olddir);
-	}
+	    ces = DupFH(cos, FMF_WRITE);
 	else
 	    ces = Open("*", FMF_WRITE);
 
         if (!ces) goto end;
 
+	ces_opened = TRUE;
+    }
+    else
+    if (ces == (BPTR)SYS_DupStream)
+    {
+        ces = DupFH(Output(), FMF_WRITE);
 	ces_opened = TRUE;
     }
 
@@ -287,3 +299,18 @@ end:
 
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
+
+static BPTR DupFH(BPTR fh, LONG mode)
+{
+    BPTR ret = NULL;
+
+    if (fh)
+    {
+        BPTR olddir = CurrentDir(fh);
+        ret    = Open("", mode);
+
+        CurrentDir(olddir);
+    }
+
+    return ret;
+}
