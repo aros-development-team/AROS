@@ -151,8 +151,8 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                         rc = OpenWorkbenchObject
                         (
                             icon->do_DefaultTool,
-                            WBOPENA_ArgLock, parent,
-                            WBOPENA_ArgName, FilePart(name), 
+                            WBOPENA_ArgLock, (IPTR) parent,
+                            WBOPENA_ArgName, (IPTR) FilePart(name), 
                             TAG_DONE
                         );
                     }
@@ -382,6 +382,83 @@ BOOL __WB_BuildArguments
     struct WorkbenchBase *WorkbenchBase
 )
 {
+    struct TagItem *tstate   = tags,
+                   *tag      = NULL;
+    BPTR            lastLock = NULL;
+    LONG            numArgs  = 0;
+    struct WBArg   *args;
+    
+    /*-- Calculate the number of arguments ---------------------------------*/
+    while ((tag = NextTagItem(&tstate)) != NULL)
+    {
+        switch (tag->ti_Tag)
+        {
+            case WBOPENA_ArgLock:
+                lastLock = (BPTR) tag->ti_Data;
+                break;
+                
+            case WBOPENA_ArgName:
+                if (lastLock != NULL) numArgs++;
+                break;
+        }
+    }
+    
+    /*-- Allocate memory for the arguments ---------------------------------*/
+    args = AllocMem(sizeof(struct WBArg) * numArgs, MEMF_ANY | MEMF_CLEAR);
+    if (args != NULL)
+    {
+        /*-- Build the argument list ---------------------------------------*/
+        LONG i     = 0;
+        BOOL error = FALSE;
+        
+        tstate = tags; lastLock = NULL;
+        while ((tag = NextTagItem(&tstate)) != NULL && !error)
+        {
+            switch (tag->ti_Tag)
+            {
+                case WBOPENA_ArgLock:
+                    lastLock = (BPTR) tag->ti_Data;
+                    break;
+                    
+                case WBOPENA_ArgName:
+                    if (lastLock != NULL)
+                    {
+                        STRPTR name = (STRPTR) tag->ti_Data;
+                        
+                        /* Duplicate the lock and the name */
+                        if
+                        (
+                               (args[i].wa_Lock = DupLock(lastLock)) == NULL
+                            || (args[i].wa_Name = StrDup(name))      == NULL
+                        )
+                        {
+                            error = TRUE;
+                            break;
+                        }
+                        i++;
+                    }
+                    break;
+            }
+        }
+        
+        if (error)
+        {
+            /* Free allocated resources */
+            for (i = 0; i < numArgs; i++)
+            {
+                if (args[i].wa_Lock != NULL) UnLock(args[i].wa_Lock);
+                if (args[i].wa_Name != NULL) FreeVec(args[i].wa_Name);
+            }
+            
+            return FALSE;
+        }
+        
+        startup->sm_NumArgs = numArgs;
+        startup->sm_ArgList = args;
+        
+        return TRUE;
+    }
+    
     return FALSE;
 }
 
@@ -391,5 +468,23 @@ BOOL __WB_LaunchProgram
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    return FALSE;
+    struct WBStartup *startup = AllocMem(sizeof(struct WBStartup), MEMF_ANY);
+    if (startup != NULL)
+    {
+        if (WB_BuildArguments(startup, tags))
+        {
+            // FIXME: send message to handler
+            return TRUE;
+        }
+        else
+        {
+            FreeMem(startup, sizeof(struct WBStartup));
+            return FALSE;
+        }
+    }
+    else
+    {
+        SetIoErr(ERROR_NO_FREE_STORE);
+        return FALSE;
+    }
 }
