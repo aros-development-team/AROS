@@ -397,7 +397,7 @@ enum
 #define SHIFT_UP_COL(col)   	    	((HIDDT_Pixel)((col) << MAP_SHIFT))
 
 #define MAP_COLCOMP(comp, val, pixfmt)	\
-	((SHIFT_UP_COL(val) >> (pixfmt)-> ## comp ## _shift) & (pixfmt)-> ## comp ## _mask)
+	((SHIFT_UP_COL(val) >> (pixfmt)->comp ## _shift) & (pixfmt)->comp ## _mask)
 	
 
 #define MAP_RGB(r, g, b, pixfmt) 	\
