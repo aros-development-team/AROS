@@ -163,4 +163,9 @@
 #endif /* !AROS_STACK_GROWS_DOWNWARDS */
 
 #   define AROS_64BIT_TYPE long long
+
+#ifndef AROS_ASMSYMNAME
+#   define AROS_ASMSYMNAME(n)     n
+#endif
+
 #endif /* AROS_SYSTEM_H */

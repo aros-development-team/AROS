@@ -71,10 +71,6 @@ typedef long (*LONG_FUNC)();
 typedef unsigned long (*ULONG_FUNC)();
 #endif
 
-#ifndef AROS_ASMSYMNAME
-#   define AROS_ASMSYMNAME(n)     n
-#endif
-
 #ifndef __AROS_MACHINE_H_DEFINES_ASMCALLS
 
 #if !(UseRegisterArgs && defined(AROS_COMPILER_NO_REGARGS)) /* Function headers for user functions */
