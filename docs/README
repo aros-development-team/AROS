@@ -8,7 +8,7 @@ Type:	  misc/emu
 
 New this time:
 - Bugfixes (as usual)
-- Some new functions
+- Many new functions and libs
 - We have the first game for AROS: Moria3D runs after minor changes
 - All necessary includes to compile AROS
 - Added conditional build (see make.defaults)
