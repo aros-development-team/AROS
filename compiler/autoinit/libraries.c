@@ -18,45 +18,45 @@
 
 DECLARESET(LIBS);
 
-int __includelibrarieshandling;
-
+int __includelibrarieshandling = 0;
+                             
 int set_open_libraries(void)
 {
     AROS_GET_SYSBASE_OK
-    struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
-    int n = 1;
-
-    while(set[n])
+    
+    int pos;
+    struct libraryset *set;
+    
+    ForeachElementInSet(SETNAME(LIBS), 1, pos, set)
     {
-	*(set[n]->baseptr) = OpenLibrary(set[n]->name, *set[n]->versionptr);
-	if (!*(set[n]->baseptr))
+        *set->baseptr = OpenLibrary(set->name, *set->versionptr);
+	if (!*set->baseptr)
 	{
 	    __showerror
 	    (
 	        "Couldn't open version %ld of library \"%s\".",
-		*set[n]->versionptr, set[n]->name
+		*set->versionptr, set->name
 	    );
 
-	    return 20;
+	    return 0;
 	}
-
-        n++;
     }
 
-    return 0;
+    return 1;
 }
 
 void set_close_libraries(void)
 {
     AROS_GET_SYSBASE_OK
-    struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
-    int	n = ((int *)set)[0];
-
-    while (n)
+    
+    int pos;
+    struct libraryset *set;
+    
+    ForeachElementInSet(SETNAME(LIBS), 1, pos, set)
     {
-	if (*(set[n]->baseptr))
-	    CloseLibrary(*(set[n]->baseptr));
-
-	n--;
+	if (*set->baseptr)
+	    CloseLibrary(*set->baseptr);
     }
 }
+
+

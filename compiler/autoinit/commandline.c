@@ -9,6 +9,7 @@
 #include <proto/dos.h>
 #include <aros/symbolsets.h>
 #include <aros/autoinit.h>
+#include <aros/debug.h>
 
 int __nocommandline __attribute__((weak)) = 0;
 
@@ -28,13 +29,13 @@ int __initcommandline(void)
     char *ptr    = NULL;
 
     if (WBenchMsg)
-        return 0;
+        return 1;
 
     if (__argsize)
     {
         /* Copy args into buffer */
     	if (!(__args = AllocMem(__argsize+1, MEMF_ANY)))
-	    return RETURN_FAIL;
+	    return 0;
 
     	ptr = __args;
     	while ((*ptr++ = *__argstr++)) {}
@@ -72,7 +73,7 @@ int __initcommandline(void)
 	}
 
 	if (!(__argv = AllocMem (sizeof (char *) * (__argmax+1), MEMF_ANY | MEMF_CLEAR)) )
-	    return RETURN_FAIL;
+	    return 0;
 
 	/* create argv */
 	for (__argc=1,ptr=__args; *ptr; )
@@ -116,7 +117,7 @@ int __initcommandline(void)
 	__argmax = 1;
 	__argc = 1;
 	if (!(__argv = AllocMem (sizeof (char *)*2, MEMF_CLEAR | MEMF_ANY)))
-	    return RETURN_FAIL;
+	    return 0;
     }
 
     /*
@@ -125,7 +126,7 @@ int __initcommandline(void)
      __argv[0] = __getprogramname();
 
      if (!__argv[0])
-         return RETURN_FAIL;
+         return 0;
 
 #if 0 /* Debug argument parsing */
 
@@ -138,14 +139,14 @@ int __initcommandline(void)
 
 #endif
 
-    return 0;
+    return 1;
 }
 
 void __exitcommandline(void)
 {
     AROS_GET_SYSBASE_OK
 
-    if (WBenchMsg)
+    if (WBenchMsg != NULL)
         return;
 
     if (__argv) {

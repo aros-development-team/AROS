@@ -18,13 +18,12 @@ int __forceerrorrequester __attribute__((weak)) = 0;
 void __showerror(char *format, ...)
 {
     AROS_GET_SYSBASE_OK
-    struct Process *me     = (struct Process *)FindTask(0);
-    char            *pname  = __getprogramname();
+    char *pname  = __getprogramname();
 
     va_list args;
     va_start(args, format);
 
-    if (me->pr_CLI && !__forceerrorrequester)
+    if (0 && Cli() != NULL && !__forceerrorrequester)
     {
         if (pname)
 	{

@@ -116,10 +116,10 @@ int __init_stdio(void)
     )
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-    	return 20;
+    	return 0;
     }
 
-    return 0;
+    return 1;
 }
 
 ADD2INIT(__init_stdio, 5);

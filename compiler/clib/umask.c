@@ -26,7 +26,7 @@ static int __umask_init(void)
     else
         privdata->acpd_umask = S_IWGRP|S_IWOTH;
 
-    return 0;
+    return 1;
 }
 
 ADD2INIT(__umask_init, 0);

@@ -245,7 +245,7 @@ int __init_stdfiles(void)
     )
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-    	return 20;
+    	return 0;
     }
 
     me = (struct Process *)FindTask (NULL);
@@ -263,7 +263,7 @@ int __init_stdfiles(void)
     __fd_array[STDOUT_FILENO] = outdesc;
     __fd_array[STDERR_FILENO] = errdesc;
 
-    return 0;
+    return 1;
 }
 
 

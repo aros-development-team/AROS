@@ -147,11 +147,11 @@ static int __init_timerbase(void)
     )
     {
         TimerBase = (struct Device *)__timereq.tr_node.io_Device;
-        return 0;
+        return 1;
     }
     else
     {
-        return 20;
+        return 0;
     }
 }
 

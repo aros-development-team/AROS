@@ -20,7 +20,7 @@ struct libraryset
     void   **baseptr;
 };
 
-extern int set_call_funcs(void *set[], int order);
+extern int set_call_funcs(const void *set[], int direction, int test_fail);
 extern int set_open_libraries(void);
 extern void set_close_libraries(void);
 extern
@@ -33,10 +33,10 @@ AROS_UFH3(int, set_call_libfuncs,
 #define SETNAME(set) __##set##_LIST__
 
 #define DECLARESET(set) \
-extern void * SETNAME(set)[] __attribute__((weak));
+extern const void * SETNAME(set)[] __attribute__((weak));
 
 #define DEFINESET(set) \
-void * SETNAME(set)[] __attribute__((weak))={0,0};
+const void * SETNAME(set)[] __attribute__((weak))={0,0};
 
 #define ADD2SET(symbol, _set, pri)\
 	static typeof(symbol) * __aros_set_##_set##_##symbol __attribute__((section(".aros.set." #_set "." #pri))) __unused = &symbol;
@@ -80,8 +80,8 @@ void * SETNAME(set)[] __attribute__((weak))={0,0};
     the first argument in the A6 register. To define a function for one of these
     sets the AROS_SET_LIBFUNC macro can be used.
     
-    The return argument is also an int but the opposite to the init and exit sets.
-    A zero value indicates an (de)initialization failure, a one indicates succes.
+    The return argument is also an int, and just like with the init/exit sets, 
+    a zero value indicates an (de)initialization failure, a one indicates succes.
     The calling of the functions in the initlib and the openlib sets stops when
     the first zero value is met. The functions in the expungelib and the
     closelib are always called.
@@ -118,5 +118,22 @@ ADD2SET(libraryset_##bname, libs, 0)
 
 #define ASKFORLIBVERSION(bname, ver) \
 const ULONG bname##_version = ver
+
+/* Traverse the set from the first element to the last one, or vice versa,
+   depending on the value of 'direction': >=0 means first -> last, <0 means
+   last -> first. 
+   
+   set       - the symbol set
+   direction - first->last | last->first
+   pos       - integer variable holding the current position in the set
+   elem      - variable of the same type of the elements in the set. holds the
+               current element.  */
+#define ForeachElementInSet(set, direction, pos, elem)                       \
+for                                                                          \
+(                                                                            \
+    pos = (direction >= 0) ? 1 : ((int *)(set))[0];                          \
+    elem = (void *)(set)[pos], (direction >= 0) ? elem != NULL : (pos) != 0; \
+    pos += (direction >= 0) ? 1 : -1                                         \
+) 
 
 #endif

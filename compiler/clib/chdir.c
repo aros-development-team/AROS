@@ -91,7 +91,7 @@ int __init_chdir(void)
 {
     __startup_cd_changed = FALSE;
 
-    return 0;
+    return 1;
 }
 
 void __exit_chdir(void)
