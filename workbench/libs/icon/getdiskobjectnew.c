@@ -86,22 +86,28 @@
 		    {
 			/* Do we have a directory ? */
 			if (fib->fib_DirEntryType > 0)
+                        {
 			    def_type = WBDRAWER;
-			else if (fib->fib_DirEntryType < 0) /* or a file ? */
+			}
+                        else if (fib->fib_DirEntryType < 0) /* or a file ? */
 			{
 			    /* executable ? */
-			    if (fib->fib_Protection & FIBF_EXECUTE)
-				def_type = WBTOOL;
-			    else
+			    if (~fib->fib_Protection & FIBF_EXECUTE)
+                            {
+                                def_type = WBTOOL;
+			    }
+                            else
+                            {
 				/* Project is default */
 				def_type = WBPROJECT;
-			}
+                            }
+                        }
 		    }
-
+                    
 		    FreeDosObject(DOS_FIB,fib);
 		}
 	    }
-
+            
 	    UnLock(lock);
 	}
 	else
