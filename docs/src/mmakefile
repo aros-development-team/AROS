@@ -248,7 +248,7 @@ $(DOCGENDIR)/status.inc : stat2html.gawk
 
 $(DOCGENDIR)/contents.inc : collectcontents.sh contents2html.gawk \
 		makefile2html.gawk
-	collectcontents.sh $(TOP) > $@
+	./collectcontents.sh $(TOP) > $@
 
 .PHONY : status.inc
 
