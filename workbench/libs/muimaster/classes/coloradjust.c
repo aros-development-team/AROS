@@ -99,9 +99,9 @@ static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
     struct Coloradjust_DATA *data = *(struct Coloradjust_DATA **)msg;
     IPTR   gun = ((IPTR *)msg)[1];
     
-    ULONG red = xget(data->rslider,MUIA_Numeric_Value);
-    ULONG green = xget(data->gslider,MUIA_Numeric_Value);
-    ULONG blue = xget(data->bslider,MUIA_Numeric_Value);
+    ULONG red = XGET(data->rslider,MUIA_Numeric_Value);
+    ULONG green = XGET(data->gslider,MUIA_Numeric_Value);
+    ULONG blue = XGET(data->bslider,MUIA_Numeric_Value);
 
     cw.cw_Red = (red<<24)|(red<<16)|(red<<8)|red;
     cw.cw_Green = (green<<24)|(green<<16)|(green<<8)|green;
@@ -140,9 +140,9 @@ static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
     struct ColorWheelHSB    	hsb;
     struct ColorWheelRGB    	cw;
     
-    hsb.cw_Hue        = xget(data->wheel, WHEEL_Hue);
-    hsb.cw_Saturation = xget(data->wheel, WHEEL_Saturation);
-    hsb.cw_Brightness = 0xFFFF - xget(data->grad, GRAD_CurVal);
+    hsb.cw_Hue        = XGET(data->wheel, WHEEL_Hue);
+    hsb.cw_Saturation = XGET(data->wheel, WHEEL_Saturation);
+    hsb.cw_Brightness = 0xFFFF - XGET(data->grad, GRAD_CurVal);
     hsb.cw_Brightness |= (hsb.cw_Brightness << 16) ;
 
     ConvertHSBToRGB(&hsb, &cw);
@@ -175,13 +175,13 @@ static void GradFunc(struct Hook *hook, Object *obj, APTR msg)
     struct ColorWheelHSB    	hsb;
     struct ColorWheelRGB    	cw;
     
-    ULONG bright = xget(data->grad, GRAD_CurVal);
+    ULONG bright = XGET(data->grad, GRAD_CurVal);
     
     bright = 0xFFFF - bright;
     bright |= (bright << 16);
 
-    hsb.cw_Hue        = xget(data->wheel, WHEEL_Hue);
-    hsb.cw_Saturation = xget(data->wheel, WHEEL_Saturation);
+    hsb.cw_Hue        = XGET(data->wheel, WHEEL_Hue);
+    hsb.cw_Saturation = XGET(data->wheel, WHEEL_Saturation);
     hsb.cw_Brightness = bright;
 
     ConvertHSBToRGB(&hsb, &cw);

@@ -58,7 +58,7 @@ ULONG ConvertKey(struct IntuiMessage *imsg)
  Implemented as a macro when compiling with GCC.
 **************************************************************************/
 #ifndef __GNUC__
-IPTR xget(Object *obj, Tag attr)
+IPTR XGET(Object *obj, Tag attr)
 {
   IPTR storage = 0;
   GetAttr(attr, obj, &storage);
