@@ -524,7 +524,7 @@ static LONG startup(struct emulbase *emulbase)
     				dlv->dn_Device = &emulbase->device;
     				dlv->dn_Handler = NULL;
     				dlv->dn_Startup = NULL;
-    				dlv->dn_OldName = s;
+    				dlv->dn_OldName = MKBADDR(s);
     				dlv->dn_NewName = &s[1];
     
     				AddBootNode( 0, 0, dlv, NULL);
