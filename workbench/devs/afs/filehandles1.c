@@ -875,7 +875,8 @@ struct DateStamp ds;
 	invalidBitmap(afsbase, ah->volume);
 	writtenbytes=writeData(afsbase, ah, buffer, length);
 	ah->current.offset += writtenbytes;
-	if ((headerblock=getBlock(afsbase, ah->volume,ah->header_block)))
+	headerblock=getBlock(afsbase, ah->volume,ah->header_block);
+	if (headerblock)
 	{
 		headerblock->buffer[BLK_FIRST_DATA]=headerblock->buffer[BLK_TABLE_END(ah->volume)];
 		if (ah->current.offset>ah->filesize)
