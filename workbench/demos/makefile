@@ -19,7 +19,7 @@ FILES = helloworld \
 	compleximage \
 	shadowborder
 
-IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight
+IMAGES = ArrowUp ArrowDown ArrowLeft ArrowRight ImageButton
 
 EXES = $(foreach f,$(FILES),$(EXEDIR)/$(f))
 
