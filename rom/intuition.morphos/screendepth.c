@@ -350,6 +350,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
 
 #define IW(x) ((struct IntWindow *)(x))
 
+#if 0 /* FIXME: backport, disabled */
     win = NULL;
     if (IntuitionBase->FirstScreen && GetPrivIBase(IntuitionBase)->IControlPrefs.ic_Flags & ICF_SCREENACTIVATION)
     {
@@ -372,6 +373,7 @@ static VOID int_screendepth(struct ScreenDepthActionMsg *msg,
         if (!win) win = IntuitionBase->FirstScreen->FirstWindow;
         if (IntuitionBase->ActiveWindow && IntuitionBase->ActiveWindow->WScreen == IntuitionBase->FirstScreen) win = NULL;
     }
+#endif
 
     /* now set the default pub screen */
     /* if the screen is not a public one we just ignore this */
