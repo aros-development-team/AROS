@@ -2,35 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.11  1997/01/27 00:36:15  ldp
-    Polish
+    Revision 1.12  1997/03/19 16:35:42  digulla
+    Removed log
 
-    Revision 1.10  1996/12/09 13:53:23  aros
-    Added empty templates for all missing functions
 
-    Moved #include's into first column
-
-    Revision 1.9  1996/10/24 15:50:25  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/23 14:22:23  aros
-    Use the systems' stacksize
-
-    Revision 1.7  1996/10/10 13:19:33  digulla
-    Several IPTR/BPTR-Casts (Fleischer)
-
-    Revision 1.6  1996/09/21 14:15:05  digulla
-    Number TagList
-    New tag: NP_UserData
-    Don't free non-allocated resources.
-
-    Revision 1.5  1996/09/13 17:50:05  digulla
-    Use IPTR
-
-    Revision 1.4  1996/09/11 12:56:39  digulla
-    Bugfix and a lot of new checks by M. Fleischer
-
-    Desc:
+    Desc: Create a new process
     Lang: english
 */
 #include <exec/memory.h>

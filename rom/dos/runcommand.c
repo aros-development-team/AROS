@@ -2,36 +2,11 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.10  1997/01/27 00:36:29  ldp
-    Polish
+    Revision 1.11  1997/03/19 16:35:42  digulla
+    Removed log
 
-    Revision 1.9  1996/12/09 13:53:40  aros
-    Added empty templates for all missing functions
 
-    Moved #include's into first column
-
-    Revision 1.8  1996/10/24 15:50:35  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.7  1996/10/10 13:22:20  digulla
-    Wrong cast (Fleischer)
-
-    Revision 1.6  1996/09/13 17:50:09  digulla
-    Use IPTR
-
-    Revision 1.5  1996/09/11 16:54:23  digulla
-    Always use AROS_SLIB_ENTRY() to access shared external symbols, because
-	some systems name an external symbol "x" as "_x" and others as "x".
-	(The problem arises with assembler symbols which might differ)
-
-    Revision 1.4  1996/08/13 13:52:51  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.3  1996/08/01 17:40:57  digulla
-    Added standard header for all files
-
-    Desc:
+    Desc: Execute a loaded command synchonously
     Lang: english
 */
 #include <exec/memory.h>

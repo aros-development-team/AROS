@@ -2,42 +2,12 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
-    Revision 1.12  1997/01/10 04:06:49  ldp
-    Added <aros/libcall.h>
+    Revision 1.13  1997/03/19 16:35:43  digulla
+    Removed log
 
-    Revision 1.11  1997/01/01 03:46:05  ldp
-    Committed Amiga native (support) code
 
-    Changed clib to proto
-
-    Revision 1.10  1996/12/10 13:51:37  aros
-    Moved all #include's in the first column so makedepend can see it.
-
-    Revision 1.9  1996/10/24 15:50:44  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.8  1996/10/19 17:07:24  aros
-    Include <aros/machine.h> instead of machine.h
-
-    Revision 1.7  1996/09/13 17:51:22  digulla
-    Use IPTR
-
-    Revision 1.6  1996/08/23 17:06:56  digulla
-    Began work on ressource tracking
-
-    Revision 1.5  1996/08/16 14:05:12  digulla
-    Added debug output
-
-    Revision 1.4  1996/08/13 13:55:57  digulla
-    Replaced AROS_LA by AROS_LHA
-    Replaced some AROS_LH*I by AROS_LH*
-    Sorted and added includes
-
-    Revision 1.3  1996/08/01 17:41:04  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
+    Desc: Allocate some memory
+    Lang: english
 */
 #include <exec/alerts.h>
 #include <exec/execbase.h>
