@@ -15,7 +15,7 @@
 	AROS_LH1(void, UnLockBitMap,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR, , A0),
+	AROS_LHA(APTR, Handle, A0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 29, Cybergraphics)
@@ -44,9 +44,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("UnLockBitMap");
+    
+    driver_UnLockBitMap(Handle, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMap */

@@ -737,7 +737,8 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
     
     
     /* Go through the displayinfo db looking for cgfx modes */
-	
+
+ObtainSemaphoreShared(&db->sema);	
     NEWLIST(cybermlist);
 	    
     for (gmno = 0; gmno < db->nummodes; gmno ++) {
@@ -810,9 +811,6 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	    if (NULL == cmnode)
 		goto failexit;
 		
-		    
-		
-		
 	    cmnode->Width	= width;
 	    cmnode->Height	= height;
 	    cmnode->Depth	= depth;
@@ -832,10 +830,12 @@ APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase *GfxBa
 	
     } /* for (gfxmodes in the dispinfo db) */
 
-    
+ReleaseSemaphore(&db->sema);    
     return cybermlist;
     
 failexit:
+
+ReleaseSemaphore(&db->sema);    
 
     if (NULL != cybermlist)
      	driver_FreeCModeList(cybermlist, GfxBase);
@@ -992,4 +992,38 @@ ObtainSemaphoreShared(&db->sema);
 exit:    
 ReleaseSemaphore(&db->sema);    
     return retval;
+}
+
+
+BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase)
+{
+    struct displayinfo_db *db;
+    ULONG majoridx, minoridx;
+    BOOL iscyber = FALSE;
+    
+    db = (struct displayinfo_db *)SDD(GfxBase)->dispinfo_db;
+    
+    /* Lookup the gfxmode and pixfmt */
+    majoridx = MAJORID2NUM(modeid);
+    minoridx = MINORID2NUM(modeid);
+    
+ObtainSemaphoreShared(&db->sema);    
+    if (majoridx < db->nummodes) {
+    	Object *pf;
+	
+	pf = HIDD_GM_LookupPixFmt(db->dispitems[majoridx].gfxmode, minoridx);
+	if (NULL != pf) {
+	    HIDDT_StdPixFmt stdpf;
+	    
+	    GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+	    if (((ULONG)-1) != hidd2cyber_pixfmt(stdpf, GfxBase)) {
+	    	iscyber = TRUE;
+	    }
+	    
+	}
+    }
+    
+ReleaseSemaphore(&db->sema);
+    return iscyber;
+    
 }

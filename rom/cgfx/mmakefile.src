@@ -52,9 +52,13 @@ FUNCTIONS := 	\
 	getcybermapattr		\
 	getcyberidattr		\
 	invertpixelarray	\
+	iscybermodeid		\
+	lockbitmaptaglist	\
 	movepixelarray		\
 	readpixelarray		\
 	readrgbpixel		\
+	unlockbitmap		\
+	unlockbitmaptaglist	\
 	writelutpixelarray	\
 	writepixelarray		\
 	writergbpixel		

@@ -15,8 +15,8 @@
 	AROS_LH2(void, UnLockBitMapTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , , A0),
-	AROS_LHA(struct TagItem *, , A1),
+	AROS_LHA(APTR            , Handle, A0),
+	AROS_LHA(struct TagItem *, Tags, A1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 30, Cybergraphics)
@@ -45,9 +45,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("UnLockBitMapTagList");
+    
+    driver_UnLockBitMapTagList(Handle, Tags, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* UnLockBitMapTagList */

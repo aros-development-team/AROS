@@ -2494,6 +2494,7 @@ kprintf("Pixtab allocated\n");
 				    HIDD_BM_PIXTAB(nbm)[i] = col.pixval;
 			        }
 			    }
+kprintf("EXIT FROM driver_AllocBitMap()\n");
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			    
@@ -2535,6 +2536,8 @@ for (i =0; i < 8; i ++)
 }
 #endif
 
+kprintf("EXIT FROM driver_AllocBitMap()\n");
+
 			    ReturnPtr("driver_AllocBitMap", struct BitMap *, nbm);
 			    
 			}
@@ -2552,6 +2555,8 @@ for (i =0; i < 8; i ++)
 	FreeMem(nbm, sizeof (struct BitMap));
 	
     }
+
+kprintf("EXIT FROM driver_AllocBitMap()\n");
 
     ReturnPtr("driver_AllocBitMap", struct BitMap *, NULL);
 }
@@ -4682,6 +4687,7 @@ struct dm_render_data {
     struct Hook *hook;
     struct RastPort *rp;
     HIDDT_StdPixFmt stdpf;
+    Object *gc;
 };
 
 
@@ -4696,41 +4702,98 @@ static ULONG dm_render(APTR dmr_data
     UBYTE *addr;
     struct dm_message *msg;
     ULONG bytesperpixel;
-    ULONG width, height;
+    ULONG width, height, fb_width, fb_height;
+    ULONG banksize, memsize;
     
     dmrd = (struct dm_render_data *)dmr_data;
-    
-    /* Get the baseadress from where to render */
-    
-    GetAttr(dstbm_obj, aHidd_BitMap_BaseAddress, (IPTR *)&addr);
-    if (NULL == addr) {
-#warning Fix this case with hidd2amiga_fast    
-    	kprintf("!!! BITMAP HIDD HAS NO BASEADRESS\n !!!");
-	return 0;
-    }
-    
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;;
-    
     msg = &dmrd->msg;
-    
-    msg->offsetx = x1;
-    msg->offsety = y1;
+#warning Not sure about this one . Set it to 0 since we adjust msg->memptr to x1/y1 lower down
+    msg->offsetx = 0; // x1;
+    msg->offsety = 0; // y1;
     msg->xsize = width;
     msg->ysize = height;
-#warning We should maybe use something else than the BytesPerLine method since we may have alignment
     
-    msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+    /* Get the baseadress from where to render */
+    if (HIDD_BM_ObtainDirectAccess(dstbm_obj
+    	, &addr
+	, &fb_height, &fb_width
+	, &banksize, &memsize)) {
+
+	GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+	msg->bytesperpix = (UWORD)bytesperpixel;
     
-    GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
-    msg->bytesperpix = (UWORD)bytesperpixel;
+	/* Colormodel allready set */
     
-    /* Colormodel allready set */
+	/* Compute the adress for the start pixel */
+	#warning We should maybe use something else than the BytesPerLine method since we may have alignment
+	msg->bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+	msg->memptr = addr + (msg->bytesperrow * y1) + (bytesperpixel * x1);
+	
+	HIDD_BM_ReleaseDirectAccess(dstbm_obj);
+	
+	CallHookPkt(dmrd->hook, dmrd->rp, msg);
+	
+    } else {
+    	/* We are unable to gain direct access to the framebuffer,
+	   so we have to emulate it
+	*/
+	ULONG bytesperrow;
+	ULONG tocopy_h, max_tocopy_h;
+	ULONG lines_todo;
     
-    /* Compute the adress for the start pixel */
-    msg->memptr = addr + (msg->bytesperrow * y1) + (bytesperpixel * x1);
+	lines_todo = height;
     
-    CallHookPkt(dmrd->hook, dmrd->rp, msg);
+	/* The HIDD bm does not have a base adress so we have to render into
+	   it using a temporary buffer
+	*/
+   	GetAttr(dmrd->pf, aHidd_PixFmt_BytesPerPixel, &bytesperpixel);
+	bytesperrow = HIDD_BM_BytesPerLine(dstbm_obj, dmrd->stdpf, width);
+    
+	if (PIXELBUF_SIZE < bytesperrow) {
+	    kprintf("!!! NOT ENOUGH SPACE IN TEMP BUFFER FOR A SINGLE LINE IN DoCDrawMethodTagList() !!!\n");
+	    return 0;
+    	}
+    
+    	/* Calculate number of lines we might copy */
+    	max_tocopy_h = PIXELBUF_SIZE / bytesperrow;
+    
+    	/* Get the maximum number of lines */
+    	while (lines_todo != 0) {
+	
+            struct TagItem gc_tags[] = {
+	    	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy },
+	    	{ TAG_DONE, 0UL }
+	    };
+	    
+	    HIDDT_DrawMode old_drmd;
+
+    	    tocopy_h = MIN(lines_todo, max_tocopy_h);
+    	    msg->memptr = pixel_buf;
+	    msg->bytesperrow = bytesperrow;
+    
+	    msg->bytesperpix = (UWORD)bytesperpixel;
+
+LOCK_PIXBUF
+	    /* Use the hook to set some pixels */
+	    CallHookPkt(dmrd->hook, dmrd->rp, msg);
+	
+	    GetAttr(dmrd->gc, aHidd_GC_DrawMode, &old_drmd);
+	    SetAttrs(dmrd->gc, gc_tags);
+	    HIDD_BM_PutImage(dstbm_obj, dmrd->gc
+		, (UBYTE *)pixel_buf
+		, bytesperrow
+		, x1, y1, width, height
+		, dmrd->stdpf
+	    );
+	    gc_tags[0].ti_Data = (IPTR)old_drmd;
+	    SetAttrs(dmrd->gc, gc_tags);
+	
+ULOCK_PIXBUF
+	}
+
+    }
     
     return width * height;
 }
@@ -4806,7 +4869,8 @@ LONG driver_WriteLUTPixelArray(APTR srcrect,
 	, destx, desty
 	, destx + sizex - 1, desty + sizey - 1
 	, &pixlut
-	, GfxBase);
+	, GfxBase
+    );
     
     
     /* Now blit the colors onto the screen */
@@ -5322,7 +5386,6 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     struct Rectangle rr;
     struct Layer *L;
     
-    
     if (!CorrectDriverData(rp, GfxBase))
     	return;
 	
@@ -5346,7 +5409,6 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     
     
     L = rp->Layer;
-    
 
     rr.MinX = 0;
     rr.MinY = 0;
@@ -5362,6 +5424,7 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
 	rr.MaxY = rr.MinY + (L->bounds.MaxY - L->bounds.MinY) - 1;
     }
     
+    dmrd.gc = GetDriverData(rp)->dd_GC;
     do_render_func(rp, NULL, &rr, dm_render, &dmrd, FALSE, GfxBase);
     
     if (NULL != L) {
@@ -5370,7 +5433,109 @@ VOID driver_DoCDrawMethodTagList(struct Hook *hook, struct RastPort *rp, struct 
     return;
 }
 
+APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CyberGfxBase)
+{
+    struct TagItem *tag;
+    UBYTE *baseaddress;
+    ULONG width, height, banksize, memsize;
+    Object *pf;
+    HIDDT_StdPixFmt stdpf;
+    UWORD cpf;
+    
+    if (!IS_HIDD_BM(bm)) {
+    	kprintf("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n");
+	return NULL;
+    }
 
+    pf = HIDD_BM_GetPixelFormat(HIDD_BM_OBJ(bm), vHidd_PixFmt_Native);
+    
+    GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
+    cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
+    if (((UWORD)-1) == cpf) {
+    	kprintf("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n");
+	return NULL;
+    }
+    
+    /* Get some info from the bitmap object */
+    if (!HIDD_BM_ObtainDirectAccess(HIDD_BM_OBJ(bm), &baseaddress, &width, &height, &banksize, &memsize))
+    	return NULL;
+    
+    
+    while ((tag = NextTagItem(&tags))) {
+    	switch (tag->ti_Tag) {
+	    case LBMI_BASEADDRESS:
+	    	*((ULONG **)tag->ti_Data) = (ULONG *)baseaddress;
+	    	break;
+		
+	    case LBMI_BYTESPERROW:
+	    	*((ULONG *)tag->ti_Data) = 
+			(ULONG)HIDD_BM_BytesPerLine(HIDD_BM_OBJ(bm), stdpf, width);
+	    	break;
+	    
+	    case LBMI_BYTESPERPIX:
+	    	GetAttr(pf, aHidd_PixFmt_BytesPerPixel, (IPTR *)tag->ti_Data);
+	    	break;
+	    
+	    case LBMI_PIXFMT: 
+		*((ULONG *)tag->ti_Data) = (ULONG)cpf;
+	    	break;
+		
+	    case LBMI_DEPTH:
+	    	GetAttr(pf, aHidd_PixFmt_Depth, (IPTR *)tag->ti_Data);
+		break;
+	    
+	    case LBMI_WIDTH:
+	    	GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Width, (IPTR *)tag->ti_Data);
+	    	break;
+	    
+	    case LBMI_HEIGHT:
+	    	GetAttr(HIDD_BM_OBJ(bm), aHidd_BitMap_Height, (IPTR *)tag->ti_Data);
+	    	break;
+		
+	    default:
+	    	kprintf("!!! UNKNOWN TAG PASSED TO LockBitMapTagList() !!!\n");
+		break;
+	}
+    }
+    
+    return HIDD_BM_OBJ(bm);
+}
+
+VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase)
+{
+    HIDD_BM_ReleaseDirectAccess((Object *)handle);
+}
+
+VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Library *CyberGfxBase)
+{
+    struct TagItem *tag;
+    BOOL reallyunlock = TRUE;
+    
+    while ((tag = NextTagItem((const struct TagItem **)&tags))) {
+    	switch (tag->ti_Tag) {
+	    case UBMI_REALLYUNLOCK:
+	    	reallyunlock = (BOOL)tag->ti_Data;
+		break;
+		
+	    case UBMI_UPDATERECTS: {
+	    	struct RectList *rl;
+		
+		rl = (struct RectList *)tag->ti_Data;
+		
+#warning Dunno what to do with this
+		
+	    	break; }
+	
+	    default:
+	    	kprintf("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n");
+		break;
+	}
+    }
+    
+    if (reallyunlock) {
+	HIDD_BM_ReleaseDirectAccess((Object *)handle);
+    }
+}
 /******************************************/
 /* Support stuff for cybergfx             */
 /******************************************/

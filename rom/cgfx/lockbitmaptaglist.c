@@ -15,8 +15,8 @@
 	AROS_LH2(APTR, LockBitMapTagList,
 
 /*  SYNOPSIS */
-	AROS_LHA(APTR            , , A0),
-	AROS_LHA(struct TagItem *, , A1),
+	AROS_LHA(APTR            , bitmap, A0),
+	AROS_LHA(struct TagItem *, tags, A1),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 28, Cybergraphics)
@@ -45,9 +45,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("LockBitMapTagList");
+    
+    return driver_LockBitMapTagList((struct BitMap *)bitmap, tags, CyberGfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* LockBitMapTagList */

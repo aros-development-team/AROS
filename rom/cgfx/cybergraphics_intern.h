@@ -44,6 +44,8 @@ extern APTR driver_AllocCModeListTagList(struct TagItem *taglist, struct GfxBase
 extern VOID driver_FreeCModeList(struct List *modeList, struct GfxBase *GfxBase);
 extern ULONG driver_BestCModeIDTagList(struct TagItem *tags, struct GfxBase *GfxBase);
 extern ULONG driver_GetCyberIDAttr(ULONG attr, ULONG id, struct GfxBase *GfxBase);
+extern BOOL driver_IsCyberModeID(ULONG modeid, struct GfxBase *GfxBase);
+
 #define GetCGFXBase(base) ((struct IntCGFXBase *)base)
 
 
@@ -69,5 +71,31 @@ extern LONG driver_WriteLUTPixelArray(APTR srcrect,
 
 extern ULONG driver_ExtractColor(struct RastPort *RastPort, struct BitMap *SingleMap, ULONG Colour, ULONG sX, ULONG sY, ULONG Width, ULONG Height, struct Library *CyberGfxBase);
 extern ULONG driver_MovePixelArray(UWORD SrcX, UWORD SrcY, struct RastPort *RastPort, UWORD DstX, UWORD DstY, UWORD SizeX, UWORD SizeY, struct Library *CyberGfxBase);
+extern LONG driver_FillPixelArray(struct RastPort *rp
+	, UWORD destx, UWORD desty, UWORD width, UWORD height
+	, ULONG pixel, struct Library *CyberGfxBase);
+
+extern LONG driver_InvertPixelArray(struct RastPort *rp
+	, UWORD destx, UWORD desty, UWORD width, UWORD height
+	, struct Library *CyberGfxBase);
+
+extern LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
+	, UWORD dstmod, struct RastPort *rp, UWORD srcx, UWORD srcy
+	, UWORD width, UWORD height, UBYTE dstformat, struct Library *CyberGfxBase);
+
+extern LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
+	, ULONG pixel, struct Library *CyberGfxBase);
+	
+extern ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
+	, struct Library *CyberGfxBase);
+
+extern LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
+	, UWORD srcmod, struct RastPort *rp, UWORD destx, UWORD desty
+	, UWORD width, UWORD height, UBYTE srcformat, struct Library *CyberGfxBase);
+
+extern VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Library *CyberGfxBase);
+extern VOID driver_UnLockBitMap(APTR handle, struct Library *CyberGfxBase);
+extern APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Library *CyberGfxBase);
+
 
 #endif /* CYBERGRAPHICS_INTERN_H */

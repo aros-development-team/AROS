@@ -15,7 +15,7 @@
 	AROS_LH1(BOOL, IsCyberModeID,
 
 /*  SYNOPSIS */
-	AROS_LHA(ULONG, , D0),
+	AROS_LHA(ULONG, modeID, D0),
 
 /*  LOCATION */
 	struct Library *, CyberGfxBase, 9, Cybergraphics)
@@ -44,9 +44,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,CyberGfxBase)
-    extern void aros_print_not_implemented (char *);
-
-    aros_print_not_implemented ("IsCyberModeID");
+    
+    return driver_IsCyberModeID(modeID, GfxBase);
 
     AROS_LIBFUNC_EXIT
 } /* IsCyberModeID */
