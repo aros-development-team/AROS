@@ -29,7 +29,7 @@
 	
 short DecompressInit(GifHandleType *gifhandle)
 {
-	return 0;
+	return TRUE;
 }
 
 short DecompressLine(GifHandleType *gifhandle)
@@ -37,18 +37,18 @@ short DecompressLine(GifHandleType *gifhandle)
 	UBYTE	b;
     while (1)
 	{
-			if ( !LoadGIF_FillBuf(gifhandle, 1) )
+			if ( !(gifhandle->filebufbytes--) && !LoadGIF_FillBuf(gifhandle, 1) )
 			{
-				D(bug("gif.datatype/LoadGIF() --- error in read code\n"));
+				D(bug("gif.datatype/DecompressLine() --- buffer underrun\n"));
 				return -1;
 			}
 			b = *(gifhandle->filebufpos)++;
-		if ( gifhandle->linebufpos - gifhandle->linebuf >= gifhandle->linebufsize)
+		if ( !(gifhandle->linebufbytes--) )
 		{
-			D(bug("gif.datatype/LoadGIF() --- line buffer full\n"));
-			return 0;
+			D(bug("gif.datatype/DecompressLine() --- line buffer full\n"));
+			return -2;
 		}
 		*(gifhandle->linebufpos)++ = b;
 	}
-return 0;
+return TRUE;
 }
