@@ -1,65 +1,94 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
-#    $Log$
-#    Revision 1.6  1996/10/23 08:04:25  aros
-#    Use generated offsets which makes porting much easier
 #
-#    Revision 1.5  1996/09/11 16:54:28	digulla
-#    Always use __AROS_SLIB_ENTRY() to access shared external symbols, because
-#	some systems name an external symbol "x" as "_x" and others as "x".
-#	(The problem arises with assembler symbols which might differ)
+#    Desc: DOS utility function RunProcess
+#    Lang: english
 #
-#    Revision 1.4  1996/08/23 16:49:21	digulla
-#    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
-#	I replaced it with .balign which does what we want.
-#
-#    Revision 1.3  1996/08/13 14:03:19	digulla
-#    Added standard headers
-#
-#    Revision 1.2  1996/08/01 17:40:57	digulla
-#    Added standard header for all files
-#
-#    Desc:
-#    Lang:
+# LONG RunProcess ( struct Process         * proc,
+#		    struct StackSwapStruct * sss,
+#		    STRPTR		     argptr,
+#		    ULONG		     argsize,
+#		    LONG_FUNC		     entry,
+#		    struct DosLibrary	   * DOSBase
 
 	.include "machine.i"
+
+	FirstArg = 4+(4*4)   /* Return-Adress + 4 Registers */
+	proc	 = FirstArg
+	sss	 = proc+4    /* 24 */
+	argptr	 = sss+4
+	argsize  = argptr+4
+	entry	 = argsize+4 /* 36 */
+	DOSBase  = entry+4
 
 	.text
 	.balign 16
 	.globl	_Dos_RunProcess
 	.type	_Dos_RunProcess,@function
+
 _Dos_RunProcess:
+	/* Save some registers */
 	pushl %edi
 	pushl %esi
 	pushl %ebx
 	pushl %ebp
-	movl 24(%esp),%ebx
-	movl 36(%esp),%edi
-	movl 4(%ebx),%eax
+
+	/* Fetch the arguments off the stack */
+	movl sss(%esp),%ebx
+	movl entry(%esp),%edi
+
+	/* Move upper bounds of the new stack into eax */
+	movl stk_Upper(%ebx),%eax
+	/* Make room for one pointer */
 	addl $-4,%eax
+	/* Push sss onto the new stack */
 	movl %ebx,(%eax)
+
+	/* Make room for another pointer */
 	addl $-4,%eax
-	movl 40(%esp),%edx
+	/* Get SysBase */
+	movl DOSBase(%esp),%edx
 	movl dl_SysBase(%edx),%edx
+	/* Push SysBase on the new stack */
 	movl %edx,(%eax)
-	movl %eax,8(%ebx)
-	pushl %edx
-	pushl %ebx
+
+	/* Store switch point in sss */
+	movl %eax,stk_Pointer(%ebx)
+
+	/* Push SysBase and sss on our stack */
+	pushl %edx /* SysBase */
+	pushl %ebx /* sss */
+	/* Switch stacks */
 	leal StackSwap(%edx),%edx
 	call *%edx
+	/* Clean (new) stack */
 	addl $8,%esp
+
+	/* Call the specified routine */
 	call *%edi
+
+	/* Store the result of the routine in esi */
 	movl %eax,%esi
-	popl %edx
-	popl %ebx
-	pushl %edx
-	pushl %ebx
+
+	/* Swap the upper two values on the stack */
+	popl %edx /* SysBase */
+	popl %ebx /* sss */
+	pushl %edx /* SysBase */
+	pushl %ebx /* sss */
+	/* Switch stacks back */
 	leal StackSwap(%edx),%edx
 	call *%edx
+	/* Clean our stack */
 	addl $8,%esp
+
+	/* Put the result in eax where our caller expects it */
 	movl %esi,%eax
+
+	/* Restore registers */
 	popl %ebp
 	popl %ebx
 	popl %esi
 	popl %edi
+
+	/* Done */
 	ret
