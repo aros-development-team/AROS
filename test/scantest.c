@@ -50,7 +50,6 @@ void ReadAll(BPTR lock)
 void main(int argc, char *argv[])
 {
   BPTR lock;
-  argv[1][strlen(argv[1])-1] = '\0';
 
   printf("Trying to scan %s \n",argv[1]);
   lock = Lock(argv[1],ACCESS_READ);

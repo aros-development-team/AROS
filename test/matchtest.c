@@ -34,7 +34,7 @@
 
 void main (void)
 {
-  //BPTR dirlock,oldlock;
+  BPTR dirlock,oldlock;
   BOOL error;
   BOOL success;
   int strlength=160;
@@ -48,13 +48,13 @@ void main (void)
   AP->ap_Flags  = 0;//APF_DODIR;
   AP->ap_Strlen = strlength;
 
-  //printf("Give me a pattern: ");
+  printf("Give me a pattern to serach for: ");
   /* the following line breaks AROS in MatchEnd() when calling FreeVec() 
      the second time the program is run. I have no idea why, though. */
-  //scanf("%s",Pattern);
-  //printf("Pattern to search for: %s\n",Pattern);
+  scanf("%s",Pattern);
+  printf("Pattern to search for: %s\n",Pattern);
 
-  for(error = MatchFirst("libs:#?/#?",AP); error == 0;
+  for(error = MatchFirst(Pattern,AP); error == 0;
       error = MatchNext(AP))
   {
     if (AP->ap_Flags & APF_DIDDIR)
@@ -78,7 +78,7 @@ void main (void)
       }
     }
   }
-  printf("error = %i \n",success);
+  printf("error = %i \n",error);
   MatchEnd(AP);
   FreeVec(AP);
   FreeVec(Pattern);
