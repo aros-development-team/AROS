@@ -26,7 +26,8 @@ FILES := amigademo \
 	randtest \
 	enqueue \
 	semtorture \
-	obtainpentest 
+	obtainpentest \
+	writepixelarray
 
 EXES := $(foreach f,$(FILES),$(EXEDIR)/$(f))
 DEPS := $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
