@@ -48,5 +48,5 @@ VOID Locale_Initialize(VOID)
 
 VOID Locale_Deinitialize(VOID)
 {
-    if(LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
+    if (LocaleBase != NULL && catalog != NULL) CloseCatalog(catalog);
 }
