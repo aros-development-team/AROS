@@ -144,6 +144,7 @@ struct ZunePrefsNew
     CONST_STRPTR string_text_active;
     CONST_STRPTR string_bg_inactive;
     CONST_STRPTR string_text_inactive;
+    CONST_STRPTR string_cursor;
 
     /* Lists */
     ListviewMulti   list_multi; /* yet unused, remove this comment when handled */
