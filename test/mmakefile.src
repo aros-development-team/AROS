@@ -15,6 +15,7 @@ FILES := amiga2date \
 	fileseek \
 	filetest \
 	fontinfo \
+	getcybermapattr \
 	gfx \
 	iffparsewrite \
 	ilbmtoc \
