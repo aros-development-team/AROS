@@ -2150,7 +2150,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
     */
     struct ClipRect * CR = L -> ClipRect;
     WORD YRel = L->bounds.MinY + L->Scroll_Y;
-    WORD XRel = L->bounds.MinX + L->Scroll_Y;
+    WORD XRel = L->bounds.MinX + L->Scroll_X;
 
     /* Is this pixel inside the layer ?? */
     if (x > (L->bounds.MaxX - XRel + 1) ||
