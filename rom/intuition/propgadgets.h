@@ -21,7 +21,7 @@
 int CalcKnobSize (struct Gadget * propGadget, struct BBox * knobbox);
 void RefreshPropGadget (struct Gadget * gadget, struct Window * window,
 	struct IntuitionBase * IntuitionBase);
-void RefreshPropGadgetKnob (UWORD flags, struct BBox * clear,
+void RefreshPropGadgetKnob (struct Gadget * gadget, struct BBox * clear,
 	struct BBox * knob, struct Window * window,
 	struct IntuitionBase * IntuitionBase);
 

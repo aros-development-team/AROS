@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1999/07/19 21:59:36  stegerg
+    prop gadgets now in amiga look
+
     Revision 1.6  1998/10/20 16:46:00  hkiel
     Amiga Research OS
 
@@ -136,7 +139,7 @@
     old.Width = right - old.Left; /* No +1 here; see above */
     old.Height = bottom - old.Top; /* No +1 here; see above */
 
-    RefreshPropGadgetKnob (flags, &old, &new, window, IntuitionBase);
+    RefreshPropGadgetKnob (gadget, &old, &new, window, IntuitionBase);
 
     if (numGad > 1 && gadget->NextGadget)
 	RefreshGList (gadget->NextGadget, window, requester, numGad-1);
