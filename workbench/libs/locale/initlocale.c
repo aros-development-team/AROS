@@ -92,7 +92,7 @@ void SetLocaleLanguage(struct IntLocale *il, struct LocaleBase *LocaleBase)
 		lang = OpenLibrary(fileBuf, 0);
 	    }
 	    
-    	    if(lang == NULL)
+    	    if((lang == NULL) && ((((struct Process *)FindTask(NULL))->pr_HomeDir) != NULL))
     	    {
 		/*
     		    Ok, so we are still NULL, lets then try for

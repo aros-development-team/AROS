@@ -57,26 +57,37 @@ struct IntLocale
     UBYTE   	    	LanguageName[30];
     
     UBYTE		PreferredLanguages[10][30];
+
+    /*
+    ** Don't change the order of the following field,
+    ** It's based on CountryPrefs structure in
+    ** <prefs/locale.h> and InitLocale() relies on this
+    ** as well!
+    */
+      
     UBYTE		DateTimeFormat[80];
     UBYTE		DateFormat[40];
     UBYTE		TimeFormat[40];
     UBYTE		ShortDateTimeFormat[80];
     UBYTE		ShortDateFormat[40];
     UBYTE		ShortTimeFormat[40];
+
     UBYTE		DecimalPoint[10];
-    UBYTE		Grouping[10];
-    UBYTE		FracGrouping[10];
     UBYTE		GroupSeparator[10];
     UBYTE		FracGroupSeparator[10];
+    UBYTE		Grouping[10];
+    UBYTE		FracGrouping[10];
     UBYTE		MonDecimalPoint[10];
     UBYTE		MonGroupSeparator[10];
+    UBYTE		MonFracGroupSeparator[10];
     UBYTE		MonGrouping[10];
     UBYTE		MonFracGrouping[10];
-    UBYTE		MonFracGroupSeparator[10];
+
     UBYTE		MonCS[10];
     UBYTE		MonSmallCS[10];
     UBYTE		MonIntCS[10];
     UBYTE		MonPositiveSign[10];
+
     UBYTE		MonNegativeSign[10];
 };
 
