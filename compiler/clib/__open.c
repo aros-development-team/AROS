@@ -116,7 +116,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     {
         /* On *nix "" is not really a valid file name.  */
         errno = ENOENT;
-	return -1;
+        return -1;
     }
 
     pathname = __path_u2a(pathname);
@@ -128,7 +128,7 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     {
         errno = EINVAL;
         D(bug( "__open: exiting with error EINVAL\n"));
-	return -1;
+        return -1;
     }
 
     currdesc = malloc(sizeof(fdesc));
