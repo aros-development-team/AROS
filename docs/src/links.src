@@ -47,9 +47,7 @@ and a
 \end{new}
 \item \link{AROS for Amiga}{http://www.xs4all.nl/~ldp/aros/index.html}
 \item \link{AROS AutoDocs}{adoc_index.html}
-\item \link{The Amiga OS Resurrection Project Info Pages}
-{http://colombo.telis-sc.fr/AmigOS/} - The roots of AROS (down ?)
-\item \link{UAE - The Un*x Amiga Emulator}
+\item \link{The UAE Amiga Emulator}
 {http://www.freiburg.linux.de/~uae/}
 - Another attempt
 \item \link{Memory Protection for AmigaOS}
@@ -57,8 +55,8 @@ and a
 (only in German) or
 \link{Memory Protection FAQ}{http://olis.north.de/~indy/Speicherschutz-FAQ.html}
 (also in German).
-\item \label{ADE}\link{ADE - Amiga Development Environment}
-{http://www.ninemoons.com/ADE/ADE.html} on
+\item \label{GG}\link{GG - Geek Gadgets}
+{http://www.ninemoons.com/GG/} on
 \link{Cronus}{http://www.ninemoons.com/}
 \item \link{Smaky 400}{http://lamicounter.epfl.ch/Smaky/sm400.html} -
 A m68k PCI card for PCs.
@@ -73,13 +71,11 @@ but they should be implemented in AmigaOS/AROS, too.
 \begin{itemize}
 \item \link{Aaron Digulla}{http://www.lake.de/home/lake/home/}
 \item \link{Harald Frank (VMC)}{http://www.vmc.de/}
-\item \link{Luke A. Guest}{http://www.student.comp.brad.ac.uk/~laguest/}
 \item \link{Lennard voor den Dag}{http://www.xs4all.nl/~ldp/}
 \item \link{Martin Steigerwald}{http://home.pages.de/~helios}
 \item \link{Sebastian Rittau}{http://www.in-berlin.de/User/jroger/index.html}
 \item \link{Johan Alfredsson}{http://www.dtek.chalmers.se/~d95duvan}
 \item \link{Wez Furlong}{http://www.twinklestar.demon.co.uk/}
-\item \link{Henning Kiel}{http://student.physik.uni-dortmund.de/homepages/kiel/}
 \end{itemize}
 
 \section{Less Related}
@@ -88,24 +84,11 @@ but they should be implemented in AmigaOS/AROS, too.
 \item \link{AmigaDOS Online Reference Manual}
 {http://www.mentasm.com/~mramiga/dos1.shtml}
 \smallpic{pics/ados1.gif}
-\item \label{ADN}\link{Amiga Developer Network}
-{http://www.amiga.org/developer/} on
-\link{World-Wide Amiga Online!}
-{http://www.amiga.org/}
+\item \link{Amiga.org}{http://www.amiga.org/} - "Your Gateway to the Amiga"
 \item \link{Amiga Web Directory}{http://www.cucug.org/amiga.html} -
 Various Amiga related informations: News, Links, Mags, Docs
-\item \link{Amiga Technologies}{http://www.amiga.de/}
-\item \link{Slim Binaries/Juice}
-{http://www.ics.uci.edu/~oberon/research.html} - Something similar to Java (from the
-user point of view), probably what has become of SDE (Semantic Dictionary
-Encoding).
-\item \link{Amiga Report Technical Journal}
-{http://www.warped.com/~artech/} - Amiga developer magazine
-\item \link{A new Amiga: A/Box by phase5}{http://www.phase5.de/}
-\item \link{Another new Amiga: PIOS ONE by PIOS}{http://www.pios.de/}
-\item \link{Another AmigaOS}{http://www.prodad.de/}
+\item \link{Amiga, Inc.}{http://www.amiga.com/}
 \item \link{AFC - Amiga Foundation Classes}{http://www.intercom.it/~fsoft/afc.html}
 A FreeWare and Public Domain library of Object Classes devoted to the
 software development on the Amiga and on future Amiga compatible machines.
 \end{itemize}
-
