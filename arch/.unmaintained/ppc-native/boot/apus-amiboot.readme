@@ -1,0 +1,45 @@
+[this readme last updated 990106]
+
+This version of amiboot takes two extra (optional) arguments:
+
+ --apus:     Use this when you want to boot a PPC kernel.
+ --checksum: Use this to perform checksums on the kernel image before and
+             after copying it to its final location. This will increase
+             startup time by 15 secs or so.
+
+I use this rune to boot my PPC kernel:
+
+ bootstrap --apus -k ram:vmlinux root=/dev/hda3 ip=off
+
+
+Whatever extra options you need, always make sure to put the bootstrap
+options first (the ones starting with '-') and the kernel options last.
+
+If you experience problems with the Linux/APUS port, please have a look at
+the Linux/APUS FAQ available via http (and ftp) from sunsite.auc.dk:
+http://sunsite.auc.dk:local/os/linux/apus/docs/faq.html
+
+The booter also stores a progress string in memory. You can use the tool
+bootmesg (included in the archive) to find this after rebooting. See the FAQ
+for details.
+
+
+If that does not help you, post a message to the Linux/APUS kernel list also
+hosted by sunsite. See the FAQ for details.
+
+
+Jesper
+
+
+Recompiling the apus booter:
+
+ o get Geek Gadgets
+ o get linux-2.1.42
+ o put the source files from this archive in the arch/m68k/boot/amiga
+   directory.
+ o edit include/linux/types.h: define #__KERNEL_STRICT_NAMES and out
+                               comment the ustat struct.
+        include/linux/posix-types.h: exchange the two first lines.
+ o try to compile (remember to cross your fingers :)
+
+ You can have a look in the script compile which I use to compile bootstrap.

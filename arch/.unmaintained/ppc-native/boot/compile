@@ -1,0 +1,14 @@
+; Requires phase5-gcc for compiling
+assign ade: dh2:gnu
+delete ppc_boot.s ppc_boot.o ppc_boot_elf.h
+ppc-amigaos-gcc -I/dh1/ade/include/ -I/empty/linux-2.1.57/include -Iinclude: -I/dh1/powerup/ppc-dev/include -O1 -fomit-frame-pointer -S ppc_boot.c
+ppc-amigaos-gas ppc_boot.s -o ppc_boot.o
+ppc-amigaos-ld -r -o ppc_boot ppc_boot.o
+; ppc-amigaos-objdump --section-headers --full-contents --all-headers --disassemble-all ppc_boot
+bin2c.exe ppc_boot ppcboot_elf.h myppc_boot
+delete ppc_boot ppc_boot.s ppc_boot.o
+
+; Requires geek-gadgets for compiling
+assign ade: dh1:gg
+assign gg: dh1:gg
+gcc -o bootstrap -I. -I/empty/linux-2.1.42/include -I/dh1/powerup/ppc-dev/include -Iinclude: -m68030 -noixemul bootstrap.c linuxboot.c
