@@ -6,7 +6,7 @@ $Id$
 
 Here's some handy instructions to get started developing AROS
 on the Amiga. Please address any comments and questions to
-<bernardo.innocenti@usa.net> or port in the AROS mailing list.
+<bernardo.innocenti@usa.net> or post in the AROS mailing list.
 
 
 1. System requirements
@@ -128,7 +128,7 @@ on the Amiga. Please address any comments and questions to
 
 
 
-4. Setting up your AROS developement environment
+4. Setting up your AROS development environment
    ---------------------------------------------
 
    Before you begin, make sure your environment is set up correctly
@@ -169,7 +169,7 @@ on the Amiga. Please address any comments and questions to
 
          > assign AROS: <your_AROS_dir>
 
-   f) to improve overall performance, sfore the AROS source code
+   f) to improve overall performance, store the AROS source code
       in a fast disk, perhaps using a good filesystem such as
       SmartFileSytem or PFS2. You can safely make the partition
       case sensitive: this way you'll catch upper/lower case
@@ -246,6 +246,8 @@ on the Amiga. Please address any comments and questions to
 	snoopdos and/or ixtrace to find out what is going wrong
 	and fix it. Use "sh -v ./configure" to see what commands are run by sh.
 
+	You can also look in the "config.log" file that configure will
+	generate to see what exactly went wrong.
 
 
 7. Configuring mmake
@@ -330,3 +332,4 @@ on the Amiga. Please address any comments and questions to
 list. You'll find information on how to do it on the AROS main site:
 
 	http://www.aros.org/
+
