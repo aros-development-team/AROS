@@ -18,8 +18,11 @@
 #ifndef	INTUITION_INTUITION_H
 #include <intuition/intuition.h>
 #endif
+#ifndef INTUITION_IMAGECLASS_H
+#include <intuition/imageclass.h>
+#endif
 
-#warning "No printer stuff yet"
+// #warning "No printer stuff yet"
 /*
 #ifndef	DEVICES_PRINTER_H
 #include <devices/printer.h>
@@ -331,11 +334,6 @@ struct dtFrameBox
     STACKULONG         dtf_SizeFrameInfo;
     STACKULONG         dtf_FrameFlags;
 };
-
-#ifndef  FRAMEF_SPECIFY
-#define  FRAMEF_SPECIFY  (1 << 0)
-#endif
-
 
 /* DTM_GOTO */
 struct dtGoto
