@@ -173,10 +173,10 @@ static void _zune_focus_destroy(Object *obj, int type)
 	width = x2 - x1 + 1;
     	height = y2 - y1 + 1;
     
-	DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, 0, 0, 0);
-	DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, 0, 0, 0);
-	DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, 0, 0, 0);
-	DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, 0, 0, 0);
+	DoMethod(parent, MUIM_DrawBackground, x1, y1, width, 1, x1, y1, 0);
+	DoMethod(parent, MUIM_DrawBackground, x2, y1, 1, height, x2, y1, 0);
+	DoMethod(parent, MUIM_DrawBackground, x1, y2, width, 1, x1, y2, 0);
+	DoMethod(parent, MUIM_DrawBackground, x1, y1, 1, height, x1, y1, 0);
     }
     else
     {
