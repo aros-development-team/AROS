@@ -7,7 +7,8 @@
 
 extern struct ExecBase *SysBase;
 
-const UBYTE ver[] = "$VER: printresmodules 41.1 (8.2.97)\n\r";
+const UBYTE ver[] = "$VER: printresmodules 41.2 (15.3.97)\n\r";
+const UBYTE nul[] = "(null)";
 
 void ResType(UBYTE);
 
@@ -18,11 +19,15 @@ int main(void)
 
     for(i = 1, ptr = SysBase->ResModules; *ptr; i++, ptr++)
     {
-	struct Resident *res = (struct Resident *)*ptr;
+	if(*ptr & 0x80000000) ptr = (ULONG *)(*ptr & 0x7fffffff);
 
-	Printf("%2lu: 0x%08lx %4ld ", i, *ptr, res->rt_Pri);
-	ResType(res->rt_Flags);
-	Printf("%s\n", (ULONG)res->rt_Name);
+	{
+	    struct Resident *res = (struct Resident *)*ptr;
+
+	    Printf("%2lu: 0x%08lx %4ld ", i, *ptr, res->rt_Pri);
+	    ResType(res->rt_Flags);
+	    Printf("%s\n", (ULONG)res->rt_Name ? (ULONG)res->rt_Name : (ULONG)&nul);
+	}
     }
 
     return 0;
