@@ -22,6 +22,8 @@
 #include <proto/muimaster.h>
 #endif
 
+#include "debug.h"
+
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -1030,7 +1032,7 @@ static ULONG Area_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     if (data->mad_Flags & MADF_OWNBG) data->mad_Background = zune_image_spec_to_structure((IPTR)data->mad_BackgroundSpec,obj);
     zune_imspec_setup(&data->mad_Background, muiRenderInfo(obj));
 
-    printf("%s\n",data->mad_BackgroundSpec);
+    D(bug("%s\n",data->mad_BackgroundSpec));
 
     if ((data->mad_Flags & MADF_SHOWSELSTATE) && (data->mad_InputMode != MUIV_InputMode_None))
     {
