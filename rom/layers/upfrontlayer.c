@@ -180,9 +180,26 @@
       }
       else
       {
+        struct Rectangle backfill_rect;
+	
         /* a simple layer */
         OrRectRegion(L->DamageList, &CR_old->bounds);
         L->Flags |= LAYERREFRESH;
+	
+	/* Georg Steger */
+	
+	backfill_rect.MinX = CR_old->bounds.MinX + L->bounds.MinX;	
+	backfill_rect.MinY = CR_old->bounds.MinY + L->bounds.MinY;
+	backfill_rect.MaxX = CR_old->bounds.MaxX + L->bounds.MinX;
+	backfill_rect.MaxY = CR_old->bounds.MaxY + L->bounds.MinY;
+
+	_CallLayerHook(L->BackFill,
+		       L->rp,
+		       L,
+		       &backfill_rect,
+		       0,	/* ?????????? */
+		       0	/* ?????????? */
+		       );
       }
     }
     _FreeClipRect(CR_old, L);
