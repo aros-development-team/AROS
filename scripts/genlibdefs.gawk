@@ -51,12 +51,14 @@ BEGIN {
     if (libbasetype=="")
 	libbasetype=basename"Base";
 }
-/libbase/ {
+/libbase[ \t]+/ {
     libbase=$2;
     if (libbasetype=="")
 	libbasetype=libbase;
 }
-/libbasetype/ { libbasetype=$2; }
+/libbasetype/ {
+    libbasetype=$2;
+}
 /version/ {
     str=$2;
     n=split(str,a,".");
