@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/17 18:05:45  digulla
+    Same names for same parameters
+
     Revision 1.1  1996/08/28 17:52:29  digulla
     First step to implement amiga.lib
     BOOPSI Utility functions
@@ -25,9 +28,9 @@ extern struct IntuitionBase * IntuitionBase;
 	ULONG SetAttrs (
 
 /*  SYNOPSIS */
-	APTR	      object,
-	unsigned long tag1,
-	...	      )
+	APTR  object,
+	ULONG tag1,
+	...)
 
 /*  FUNCTION
 	Changes several attributes of an object at the same time. How the

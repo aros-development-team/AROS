@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/17 18:05:45  digulla
+    Same names for same parameters
+
     Revision 1.1  1996/09/17 16:19:00  digulla
     New function: OpenWindowTags()
 
@@ -23,7 +26,7 @@ extern struct IntuitionBase * IntuitionBase;
 
 /*  SYNOPSIS */
 	struct NewWindow * newWindow,
-	unsigned long	   tag1Type,
+	ULONG		   tag1,
 	...		   )
 
 /*  FUNCTION
@@ -51,7 +54,7 @@ extern struct IntuitionBase * IntuitionBase;
     __AROS_FUNC_INIT
     __AROS_BASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    return OpenWindowTagList (newWindow, (struct TagItem *)&tag1Type);
+    return OpenWindowTagList (newWindow, (struct TagItem *)&tag1);
 
     __AROS_FUNC_EXIT
 } /* OpenWindowTags */

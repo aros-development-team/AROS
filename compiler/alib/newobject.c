@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/09/17 18:05:45  digulla
+    Same names for same parameters
+
     Revision 1.1  1996/08/28 17:52:29  digulla
     First step to implement amiga.lib
     BOOPSI Utility functions
@@ -27,7 +30,7 @@ extern struct IntuitionBase * IntuitionBase;
 /*  SYNOPSIS */
 	struct IClass * classPtr,
 	UBYTE	      * classID,
-	unsigned long	tag1,
+	ULONG		tag1,
 	...		)
 
 /*  FUNCTION
