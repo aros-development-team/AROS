@@ -1,0 +1,26 @@
+<html>
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+
+<head>
+<title>Enumeration correction</title>
+<meta name="generator" content="Namo WebEditor v5.0(Trial)">
+</head>
+
+<body bgcolor="white" text="black" link="blue" vlink="purple" alink="red">
+<h1><a name="enumerations">Enumeration correction
+	(unimplemented)</a></h1>
+    <p>Prevents overridden properties from being enumerated twice, by
+      creating a variable that registers the names of properties that
+      have already been used.  Unimplemented.</p>
+    <table frame="box">
+	<tbody><tr><th>Source</th><th>Transformation</th><th>Assembly
+	</th></tr><tr><td><pre>for (<i>var</i> in <i>expr</i>)<br>  <i>body</i></pre>
+	    </td><td><pre>var $props = {}<br>for (<i>var</i> in <i>expr</i>)<br>  if (not (<i>var</i> in $props))<br>    <i>body</i></pre>
+	  </td><td><pre>  push '$props', 0 <br>  newArray <br>  defineVariable <br>  &lt;<i>expr</i>&gt; <br>  enumerate<br>@0:<br>  dup<br>  push Undefined<br>  equal<br>  branchIfTrue @1<br>  dup<br>  push '$props'<br>  swap<br>  getMember<br>  push Undefined<br>  equal<br>  branchIfTrue @1<br>  pop<br>  branch @0<br>@1:<br>  push '$props'<br>  swap<br>  push True<br>  setMember<br>  &lt;<i>body</i>&gt;<br>  branch @0<br></pre></td></tr></tbody></table>
+
+</body>
+
+</html>

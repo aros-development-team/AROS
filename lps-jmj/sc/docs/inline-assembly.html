@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!-- * X_LZ_COPYRIGHT_BEGIN ***************************************************
+* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.              *
+* Use is subject to license terms.                                            *
+* X_LZ_COPYRIGHT_END ****************************************************** -->
+<html>
+  <head>
+    <title>Inline Assembly</title>
+  </head>
+
+  <body>
+    <h1>Inline Assembly</h1>
+
+    <p>Inline assembly is only enabled when the
+    flashCompilerCompatability option is set.  There are two syntaxes
+    for turning on inline assembly for a region of source code:
+    $flasm...$end, and if ($flasm) {...}.  The first is identical to
+    what the flasm tool recognizes; the second allows a JavaScript
+    equivalent to be listed in the optional else clause.</p>
+
+    <pre>function f() {
+  // some javascript
+  $flasm
+  "push 'a', 'b'"
+  "getVariable"
+  "swap"
+  "setVariable"
+  $end
+  // more javascript
+}</pre>
+
+    <pre>function f() {
+  // some javascript
+  if ($flasm) {
+    "push 'a', 'b'"
+    "getVariable"
+    "swap"
+    "setVariable"
+  } else {
+    a = b;
+  }
+  // more javascript
+}</pre>
+
+<p>Labels must be global within the assembly.</p>
+
+<p>More notes from Tucker:</p>
+
+<p>Within an instruction, whitespace or commas are ignored:</p>
+
+<pre>push a b c
+push a, b, c
+push a,b,c
+push a , b , c</pre>
+
+<p>are all the same.</p>
+
+<p>Javascript does not permit multi-line string literal, so you can't say:</p>
+
+<pre>"push 'sd'
+ getVariable"</pre>
+
+<p>but you could say:</p>
+
+<pre>"push 'sd'\ngetVariable"</pre>
+
+<p>Permitting the former would be nice, but would take parser work.  Oliver can comment further.</p>
+
+<p>Comments work as in Javascript (// to end of line, /* */ across lines), they can be inside or outside of the quotes.  My intent is that if we can come up with a way to have a multi-line string literal, you could write (for example, using Python string literal syntax):</p>
+
+<pre>"""
+  push 'sd'        // This is a comment
+  /*
+     This is a multi-line comment
+     perhaps commenting out some code
+   */
+  getVariable
+"""</pre>
+
+<p>But that's not implemented today.</p>
+
+<p>In general, you should be able to take flasm output, mung it by hand, add comments, then put it all in a string literal and change the line ends to \n, and it will work.  If we add the ability to have multiline string literals to our language, then you can just unconvert the \n's and have pretty flasm code in line.</p>
+
+    <hr>
+    <address><a href="mailto:osteele@laszlosystems.com">Oliver Steele</a></address>
+<!-- Created: Wed Dec 18 20:09:25 Eastern Standard Time 2002 -->
+<!-- hhmts start -->
+Last modified: Wed Dec 18 20:10:55 Eastern Standard Time 2002
+<!-- hhmts end -->
+  </body>
+</html>

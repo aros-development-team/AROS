@@ -1,0 +1,3239 @@
+movie 'regression.swf' // flash 5, total frames: 1, frame rate: 12 fps, 540x400 px
+
+//* A_LZ_COPYRIGHT_BEGIN ******************************************************
+//* Copyright 2001-2004 Laszlo Systems, Inc.  All Rights Reserved.            *
+//* Use is subject to license terms.                                          *
+//* A_LZ_COPYRIGHT_END ********************************************************
+
+  frame 0
+    constants '$lzsc$e', 'arguments', 'callInherited', 'callee', 'getMouse', 'obj2', 'q', 'B', 'Object', 'class', 'concat', 'e', 'extends', 'j', 'v', 'parent', 'onwidth', 'sendEvent', 'setters', 'prototype', 'width', 'dependencies', 'h', 'C', 'x', 'd', 'p', 'obj', 'g', 'this', 'f', 'c', '_root', 'i', 'b', 'a'  
+    function f ('a')
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'g'
+        getVariable
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'g', 1
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'v'
+        var
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'v', 1
+        varEquals
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 'a'
+        getVariable
+        increment
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 'a'
+        getVariable
+        increment
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 'a'
+        getVariable
+        push 'b', 'c'
+        getVariable
+        setRegister r:0
+        setVariable
+        push r:0
+        add
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 'a'
+        getVariable
+        push 'b', 'b'
+        getVariable
+        push 'c'
+        getVariable
+        add
+        setRegister r:0
+        setVariable
+        push r:0
+        add
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        pop
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 1
+        pop
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        function f ()
+          push '_root'
+          getVariable
+          with
+           label1:
+            push 'c', 'a', 'b'
+            getVariable
+            setVariable
+            getVariable
+            branchIfTrue label1
+          end
+        end // of function f
+
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 0, 'g'
+        callFunction
+        pop
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 1
+        return
+      end
+    end // of function f
+
+    function f ('a')
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 1, 'g'
+        callFunction
+        pop
+      end
+    end // of function f
+
+    function f ('a', 'b')
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 'b'
+        getVariable
+        add
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push UNDEF
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        not
+        branchIfTrue label2
+        push 0, 'f'
+        callFunction
+        pop
+       label2:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        not
+        branchIfTrue label3
+        push 0, 'f'
+        callFunction
+        pop
+        branch label4
+       label3:
+        push 0, 'g'
+        callFunction
+        pop
+       label4:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        not
+        branchIfTrue label5
+        branch label6
+       label5:
+        push 0, 'g'
+        callFunction
+        pop
+       label6:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 'b'
+        getVariable
+        lessThan
+        not
+        branchIfTrue label7
+        push 0, 'f'
+        callFunction
+        pop
+        branch label8
+       label7:
+        push 0, 'g'
+        callFunction
+        pop
+       label8:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'a'
+        getVariable
+        lessThan
+        not
+        branchIfTrue label9
+        push 0, 'f'
+        callFunction
+        pop
+        branch label10
+       label9:
+        push 0, 'g'
+        callFunction
+        pop
+       label10:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        with
+          push 0, 'g'
+          callFunction
+          pop
+        end
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 'b'
+        getVariable
+        add
+        with
+          push 0, 'h', 0, 'g'
+          callFunction
+          pop
+          callFunction
+          pop
+        end
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'i', 1
+        setVariable
+       label11:
+        push 'i'
+        getVariable
+        push 10
+        lessThan
+        not
+        branchIfTrue label12
+        push 0, 'g'
+        callFunction
+        pop
+        push 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        branch label11
+       label12:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'i', 1
+        varEquals
+       label13:
+        push 'i'
+        getVariable
+        push 10
+        lessThan
+        not
+        branchIfTrue label14
+        push 0, 'g'
+        callFunction
+        pop
+        push 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        branch label13
+       label14:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label15:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label16
+        push 0, 'g', 'i', r:0
+        setVariable
+        callFunction
+        pop
+        branch label15
+       label16:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label17:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label18
+        push 0, 'g', 'i', r:0
+        varEquals
+        callFunction
+        pop
+        branch label17
+       label18:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push '$lzsc$e', '$lzsc$e', 'a', 1, 'b', 2, 2
+        initObject
+        varEquals
+        enumerate
+       label19:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label20
+        push 0, 'g', 'i', r:0
+        setVariable
+        callFunction
+        pop
+        branch label19
+       label20:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label21:
+        push 'i'
+        getVariable
+        push 'j'
+        getVariable
+        lessThan
+        not
+        branchIfTrue label22
+        push 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        branch label21
+       label22:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label23:
+        push 'i', 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        getVariable
+        push 'j'
+        getVariable
+        lessThan
+        branchIfTrue label23
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        dup
+        push 1
+        equals
+        branchIfTrue label24
+        dup
+        push 2
+        equals
+        branchIfTrue label25
+        pop
+        branch label27
+       label24:
+        pop
+        push 0, 'f'
+        callFunction
+        pop
+        branch label26
+       label25:
+        pop
+       label26:
+        push 0, 'g'
+        callFunction
+        pop
+        branch label27
+       label27:
+        push 0, 'd'
+        callFunction
+        pop
+        branch label28
+       label28:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        dup
+        push 1
+        equals
+        branchIfTrue label29
+        pop
+        branch label30
+       label29:
+        pop
+        push 0, 'a'
+        callFunction
+        pop
+        branch label31
+       label30:
+        push 0, 'b'
+        callFunction
+        pop
+        branch label31
+       label31:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label32:
+        push 'i'
+        getVariable
+        push 'j'
+        getVariable
+        lessThan
+        not
+        branchIfTrue label34
+        push 'a'
+        getVariable
+        not
+        branchIfTrue label33
+        branch label34
+       label33:
+        push 0, 'f'
+        callFunction
+        pop
+        branch label32
+       label34:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label35:
+        push 'i'
+        getVariable
+        push 'j'
+        getVariable
+        lessThan
+        not
+        branchIfTrue label37
+        push 'a'
+        getVariable
+        not
+        branchIfTrue label36
+        branch label35
+       label36:
+        push 0, 'f'
+        callFunction
+        pop
+        branch label35
+       label37:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label38:
+        branch label39
+        push 'a', 0, 'f'
+        callFunction
+        pop
+        getVariable
+        branchIfTrue label38
+       label39:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label40:
+        branch label40
+        push 'a', 0, 'f'
+        callFunction
+        pop
+        getVariable
+        branchIfTrue label40
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'i', 1
+        setVariable
+       label41:
+        push 'i'
+        getVariable
+        push 10
+        lessThan
+        not
+        branchIfTrue label42
+        branch label42
+        push 0, 'f'
+        callFunction
+        pop
+        push 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        branch label41
+       label42:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'i', 1
+        setVariable
+       label43:
+        push 'i'
+        getVariable
+        push 10
+        lessThan
+        not
+        branchIfTrue label45
+        branch label44
+        push 0, 'f'
+        callFunction
+        pop
+       label44:
+        push 'i', 'i'
+        getVariable
+        increment
+        setVariable
+        branch label43
+       label45:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label46:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label48
+        push 'p', r:0
+        setVariable
+       label47:
+        push NULL
+        equals
+        not
+        branchIfTrue label47
+        branch label48
+        push 0, 'f'
+        callFunction
+        pop
+        branch label46
+       label48:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label49:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label50
+        push 'p', r:0
+        setVariable
+        branch label49
+        push 0, 'f'
+        callFunction
+        pop
+        branch label49
+       label50:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label51:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label54
+       label52:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label53
+        branch label53
+        push 0, 'h'
+        callFunction
+        pop
+        branch label52
+       label53:
+        branch label51
+       label54:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label55:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label58
+       label56:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label57
+        branch label57
+        push 0, 'h'
+        callFunction
+        pop
+        branch label56
+       label57:
+        branch label55
+       label58:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label59:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label62
+       label60:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label61
+        branch label62
+        push 0, 'h'
+        callFunction
+        pop
+        branch label60
+       label61:
+        branch label59
+       label62:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label63:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label67
+        push 'obj'
+        enumerate
+       label64:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label66
+        push 'p', r:0
+        setVariable
+       label65:
+        push NULL
+        equals
+        not
+        branchIfTrue label65
+        branch label66
+        push 0, 'h'
+        callFunction
+        pop
+        branch label64
+       label66:
+        branch label63
+       label67:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label68:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label72
+        push 'obj'
+        enumerate
+       label69:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label71
+        push 'p', r:0
+        setVariable
+       label70:
+        push NULL
+        equals
+        not
+        branchIfTrue label70
+        branch label71
+        push 0, 'h'
+        callFunction
+        pop
+        branch label69
+       label71:
+        branch label68
+       label72:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+       label73:
+        push 0, 'f'
+        callFunction
+        not
+        branchIfTrue label77
+        push 'obj'
+        enumerate
+       label74:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label76
+        push 'p', r:0
+        setVariable
+       label75:
+        push NULL
+        equals
+        not
+        branchIfTrue label75
+        branch label77
+        push 0, 'h'
+        callFunction
+        pop
+        branch label74
+       label76:
+        branch label73
+       label77:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label78:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label81
+        push 'p', r:0
+        setVariable
+       label79:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label80
+        branch label80
+        push 0, 'h'
+        callFunction
+        pop
+        branch label79
+       label80:
+        branch label78
+       label81:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label82:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label85
+        push 'p', r:0
+        setVariable
+       label83:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label84
+        branch label84
+        push 0, 'h'
+        callFunction
+        pop
+        branch label83
+       label84:
+        branch label82
+       label85:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label86:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label90
+        push 'p', r:0
+        setVariable
+       label87:
+        push 0, 'g'
+        callFunction
+        not
+        branchIfTrue label89
+       label88:
+        push NULL
+        equals
+        not
+        branchIfTrue label88
+        branch label90
+        push 0, 'h'
+        callFunction
+        pop
+        branch label87
+       label89:
+        branch label86
+       label90:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label91:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label95
+        push 'obj', 'p', r:0
+        setVariable
+        enumerate
+       label92:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label94
+        push 'p', r:0
+        setVariable
+       label93:
+        push NULL
+        equals
+        not
+        branchIfTrue label93
+        branch label94
+        push 0, 'h'
+        callFunction
+        pop
+        branch label92
+       label94:
+        branch label91
+       label95:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label96:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label100
+        push 'obj', 'p', r:0
+        setVariable
+        enumerate
+       label97:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label99
+        push 'p', r:0
+        setVariable
+       label98:
+        push NULL
+        equals
+        not
+        branchIfTrue label98
+        branch label99
+        push 0, 'h'
+        callFunction
+        pop
+        branch label97
+       label99:
+        branch label96
+       label100:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label101:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label106
+        push 'obj', 'p', r:0
+        setVariable
+        enumerate
+       label102:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label105
+        push 'p', r:0
+        setVariable
+       label103:
+        push NULL
+        equals
+        not
+        branchIfTrue label103
+       label104:
+        push NULL
+        equals
+        not
+        branchIfTrue label104
+        branch label106
+        push 0, 'h'
+        callFunction
+        pop
+        branch label102
+       label105:
+        branch label101
+       label106:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push UNDEF
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label107:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label109
+        push 'p', r:0
+        setVariable
+       label108:
+        push NULL
+        equals
+        not
+        branchIfTrue label108
+        push UNDEF
+        return
+        branch label107
+       label109:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label110:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label115
+        push 'obj2', 'p', r:0
+        setVariable
+        enumerate
+       label111:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label114
+        push 'q', r:0
+        setVariable
+       label112:
+        push NULL
+        equals
+        not
+        branchIfTrue label112
+       label113:
+        push NULL
+        equals
+        not
+        branchIfTrue label113
+        push UNDEF
+        return
+        branch label111
+       label114:
+        branch label110
+       label115:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 1
+        return
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label116:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label118
+        push 'p', r:0
+        setVariable
+       label117:
+        push NULL
+        equals
+        not
+        branchIfTrue label117
+        push 1
+        return
+        branch label116
+       label118:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'obj'
+        enumerate
+       label119:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label124
+        push 'obj2', 'p', r:0
+        setVariable
+        enumerate
+       label120:
+        setRegister r:0
+        push NULL
+        equals
+        branchIfTrue label123
+        push 'q', r:0
+        setVariable
+       label121:
+        push NULL
+        equals
+        not
+        branchIfTrue label121
+       label122:
+        push NULL
+        equals
+        not
+        branchIfTrue label122
+        push 1
+        return
+        branch label120
+       label123:
+        branch label119
+       label124:
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 'b', 'c'
+        getVariable
+        push 'd'
+        getMember
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'c', 'b'
+        getVariable
+        push 'c'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'c', 'b'
+        getVariable
+        push 'c'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'c'
+        getMember
+        push 'd', 'b'
+        getVariable
+        push 'c'
+        getMember
+        push 'd'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'c'
+        getMember
+        push 'd', 'b'
+        getVariable
+        push 'c'
+        getMember
+        push 'd'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        pop
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 0, 'f'
+        callFunction
+        push 'c', 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 0, 'f'
+        callFunction
+        push 'c', 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        increment
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 0, 'f'
+        callFunction
+        push 'c', 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        increment
+        setRegister r:0
+        setMember
+        push r:0
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a', 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        push 0, 'f'
+        callFunction
+        push 'c', 0, 'f'
+        callFunction
+        push 'c'
+        getMember
+        increment
+        setMember
+        setVariable
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 0, 1
+        setMember
+      end
+    end // of function f
+
+    function f ()
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        push 1
+        getMember
+        push 2, 1
+        setMember
+      end
+    end // of function f
+
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'B'
+    getVariable
+    push 2, 'Object'
+    getVariable
+    push 'class'
+    getMember
+    push 'extends'
+    callMethod
+    pop
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'prototype'
+    getMember
+    push 'a', UNDEF
+    setMember
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'prototype'
+    getMember
+    push 'a', 1
+    setMember
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C', 'C'
+    getVariable
+    push 'prototype'
+    getMember
+    push 'a', 1
+    setMember
+    getVariable
+    push 'prototype'
+    getMember
+    push 'b', 2
+    setMember
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C', 'C'
+    getVariable
+    push 'B'
+    getVariable
+    push 2, 'Object'
+    getVariable
+    push 'class'
+    getMember
+    push 'extends'
+    callMethod
+    pop
+    getVariable
+    push 'prototype'
+    getMember
+    push 'a', 1
+    setMember
+    function C ('x')
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        push 'x', 'x'
+        getVariable
+        setMember
+      end
+    end // of function C
+
+    function C ('x')
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        push 'x', 'x'
+        getVariable
+        setMember
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'B'
+    getVariable
+    push 2, 'Object'
+    getVariable
+    push 'class'
+    getMember
+    push 'extends'
+    callMethod
+    pop
+    function C ('x')
+      push '_root'
+      getVariable
+      with
+        push 'x'
+        getVariable
+        push 'arguments'
+        getVariable
+        push 'callee'
+        getMember
+        push 'constructor', 3, 'this'
+        getVariable
+        push 'callInherited'
+        callMethod
+        pop
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'B'
+    getVariable
+    push 2, 'Object'
+    getVariable
+    push 'class'
+    getMember
+    push 'extends'
+    callMethod
+    pop
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'prototype'
+    getMember
+    push 'f'
+    function  ('x')
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        push 'x', 'x'
+        getVariable
+        setMember
+      end
+    end // of function 
+
+    setMember
+    function C ()
+      push '_root'
+      getVariable
+      with
+      end
+    end // of function C
+
+    push 'C'
+    getVariable
+    push 'prototype'
+    getMember
+    push 'f'
+    function  ('x')
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'a'
+        getVariable
+        push 'arguments'
+        getVariable
+        push 'callee'
+        getMember
+        push 'f', 4, 'this'
+        getVariable
+        push 'callInherited'
+        callMethod
+        pop
+      end
+    end // of function 
+
+    setMember
+    function f ()
+      push 'x'
+      getVariable
+      removeClip
+      return
+    end // of function f
+
+    function f ()
+      push 0, 'removeMovieClip'
+      callFunction
+      return
+    end // of function f
+
+    function f ()
+      push 'x'
+      getVariable
+      ord
+      return
+    end // of function f
+
+    function f ()
+      push 0, 'ord'
+      callFunction
+      return
+    end // of function f
+
+    function f ()
+      push 'x'
+      getVariable
+      targetPath
+      return
+    end // of function f
+
+    function f ()
+      push 0, 'targetPath'
+      callFunction
+      return
+    end // of function f
+
+    function f ()
+      push 'x'
+      getVariable
+      push 1, 'getVersion'
+      callFunction
+      return
+    end // of function f
+
+    function f ()
+      push '/:$version'
+      getVariable
+      return
+    end // of function f
+
+    function f ()
+      push 'x'
+      getVariable
+      getVariable
+      return
+    end // of function f
+
+    function f ()
+      push 0, 'eval'
+      callFunction
+      return
+    end // of function f
+
+    function f ()
+    end // of function f
+
+    function f ()
+    end // of function f
+
+    function f ()
+    end // of function f
+
+    push 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'include', 'a', 'this', 'a', 'infinity', 'a', NULL, 'a', FALSE, 'a', TRUE, 'a', 's', 'a', 4294967295.0, 'a', 0, 'a', 0, 'a', 100, 'a', 1.5, 'a', 1, 'a', 1, 'a', 0, 'a', -1
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    setVariable
+    getVariable
+    setVariable
+    getVariable
+    setVariable
+    getVariable
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    add
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    subtract
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    multiply
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    divide
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    modulo
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    bitwiseAnd
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    bitwiseOr
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    bitwiseXor
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    shiftLeft
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    shiftRight
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    shiftRight2
+    setVariable
+    getVariable
+    dup
+    not
+    branchIfTrue label125
+    pop
+    push 'c'
+    getVariable
+   label125:
+    setVariable
+    push 'a', 'b'
+    getVariable
+    dup
+    branchIfTrue label126
+    pop
+    push 'c'
+    getVariable
+   label126:
+    setVariable
+    push 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'c', 'a', 'c', 'a', 'b'
+    getVariable
+    push 'c'
+    getVariable
+    lessThan
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    lessThan
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    lessThan
+    not
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    lessThan
+    not
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    equals
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    equals
+    not
+    setVariable
+    getVariable
+    setRegister r:0
+    push 'c'
+    getVariable
+    setRegister r:1
+    equals
+    dup
+    not
+    branchIfTrue label127
+    pop
+    push r:0
+    typeof
+    push r:1
+    typeof
+    equals
+   label127:
+    setVariable
+    push 'a', 'b'
+    getVariable
+    setRegister r:0
+    push 'c'
+    getVariable
+    setRegister r:1
+    equals
+    dup
+    not
+    branchIfTrue label128
+    pop
+    push r:0
+    typeof
+    push r:1
+    typeof
+    equals
+   label128:
+    not
+    setVariable
+    push 'a', 'b', 'a', 'b', 'a', UNDEF, 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'b', 'a', 'b', 'b'
+    getVariable
+    increment
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    decrement
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    setVariable
+    getVariable
+    push -1
+    multiply
+    setVariable
+    getVariable
+    push -1
+    bitwiseXor
+    setVariable
+    getVariable
+    not
+    setVariable
+    getVariable
+    push 'b', 'b'
+    getVariable
+    increment
+    setVariable
+    setVariable
+    getVariable
+    push 'b', 'b'
+    getVariable
+    decrement
+    setVariable
+    setVariable
+    delete2
+    setVariable
+    getVariable
+    pop
+    setVariable
+    getVariable
+    typeof
+    setVariable
+    getVariable
+    branchIfTrue label129
+    push 'd'
+    getVariable
+    branch label130
+   label129:
+    push 'c'
+    getVariable
+   label130:
+    setVariable
+    push 'a', 'a', 'a', 'b', 'b', 'a', 'b', 'c', 'a', 'a'
+    getVariable
+    push 'b'
+    getVariable
+    subtract
+    push 'c'
+    getVariable
+    subtract
+    setVariable
+    getVariable
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    add
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    dup
+    not
+    branchIfTrue label131
+    pop
+    push 'b'
+    getVariable
+   label131:
+    dup
+    not
+    branchIfTrue label132
+    pop
+    push 'c'
+    getVariable
+   label132:
+    setVariable
+    push 'a', 'a'
+    getVariable
+    dup
+    branchIfTrue label133
+    pop
+    push 'b'
+    getVariable
+   label133:
+    dup
+    branchIfTrue label134
+    pop
+    push 'c'
+    getVariable
+   label134:
+    setVariable
+    push 'b', 'a', 'a'
+    getVariable
+    setVariable
+    getVariable
+    push 'f', 'a', 'b', 'b', 'a', 'b', 'b', 'a', 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'b', 'c', 'a', 'b', 'a', 1, 'a', 'a', 1
+    setVariable
+    var
+    varEquals
+    getVariable
+    setVariable
+    getVariable
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    multiply
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    divide
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    modulo
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    add
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    subtract
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    shiftLeft
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    shiftRight
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    shiftRight2
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    bitwiseAnd
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    bitwiseXor
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    bitwiseOr
+    setVariable
+    getVariable
+    push 'b', 'b'
+    getVariable
+    increment
+    setVariable
+    setVariable
+    getVariable
+    increment
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    push 'c'
+    getVariable
+    add
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 1
+        return
+      end
+    end // of function 
+
+    setVariable
+    push 'f'
+    function  ('a')
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        return
+      end
+    end // of function 
+
+    setVariable
+    push 'f'
+    function  ('a', 'b')
+      push '_root'
+      getVariable
+      with
+        push 'a'
+        getVariable
+        return
+      end
+    end // of function 
+
+    setVariable
+    push 'f', 'v', 'b'
+    getVariable
+    push 'a'
+    getVariable
+    push 2, 'f'
+    callFunction
+    setVariable
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'b'
+        getVariable
+        push 'a'
+        getVariable
+        push 2, 'f'
+        callFunction
+        pop
+      end
+    end // of function 
+
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'v', 'b'
+        getVariable
+        push 'a'
+        getVariable
+        push 2, 'f'
+        callFunction
+        setVariable
+      end
+    end // of function 
+
+    setVariable
+    push 'f', 'a', 0, 'a', 'a', 0, 'a', 'a', 'a', 'a', 'a', 'a', 0, 'a', 'a', 0, 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 2, 1, 2, 'a', 'a', 'a', 'a', 'a', 'a', 3, UNDEF, UNDEF, 2, UNDEF, 5, 'a', 3, 2, 1, 3, 'a', UNDEF, UNDEF, 2, 'a', 0, 'a', 2, 1, 2, 'b', 'a', 0, 'b', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 'a', 2, 1, 2, 'C', 'a', 2, 1, 2, 'a', 'a', 0, 'C', 'a', 0, 'a', 'a', 0, 'C', 'a', 'a', 1, 'b', 2, 3, 3, 3, 'a', 'a', 'b', 'a', 'a', 1, 'b', 2, 'c', 3, 3, 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b'
+    getVariable
+    push 'c'
+    getMember
+    setVariable
+    getVariable
+    push 'c'
+    getMember
+    push 'b'
+    getVariable
+    push 'c', 'b'
+    getVariable
+    push 'c'
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 'c', 'b'
+    getVariable
+    push 'c'
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 'c'
+    getMember
+    push 'd'
+    getMember
+    push 'b'
+    getVariable
+    push 'c'
+    getMember
+    push 'd', 'b'
+    getVariable
+    push 'c'
+    getMember
+    push 'd'
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 'c'
+    getMember
+    push 'd', 'b'
+    getVariable
+    push 'c'
+    getMember
+    push 'd'
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    initObject
+    setVariable
+    getVariable
+    push 1
+    initObject
+    setVariable
+    initObject
+    setVariable
+    new
+    setVariable
+    getVariable
+    push 'b'
+    newMethod
+    setVariable
+    new
+    setVariable
+    getVariable
+    push 'b'
+    getMember
+    push 'C'
+    newMethod
+    setVariable
+    new
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    push 2, '$instanceof'
+    callFunction
+    setVariable
+    delete2
+    setVariable
+    getVariable
+    push 'b'
+    delete
+    setVariable
+    getVariable
+    typeof
+    setVariable
+    getVariable
+    push 'c'
+    callMethod
+    setVariable
+    getVariable
+    push 'c'
+    callMethod
+    setVariable
+    initArray
+    setVariable
+    initArray
+    setVariable
+    initArray
+    setVariable
+    initArray
+    setVariable
+    getVariable
+    push 0
+    getMember
+    setVariable
+    getVariable
+    push 1
+    getMember
+    push 2
+    getMember
+    setVariable
+    getVariable
+    push 0
+    callMethod
+    setVariable
+    getVariable
+    push 0
+    getMember
+    push 'a'
+    getVariable
+    push 0, 'a'
+    getVariable
+    push 0
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 0, 'a'
+    getVariable
+    push 0
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'a'
+    getVariable
+    push 'i'
+    getVariable
+    push 'a', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'a', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    getMember
+    push 'a'
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'a', 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    getMember
+    push 'a'
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0, 'a'
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'a', 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setMember
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0, 'a'
+    getVariable
+    push 'b'
+    getVariable
+    push 'i'
+    getVariable
+    push 'b', 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getVariable
+    push 'i'
+    getVariable
+    push 'i', 'i'
+    getVariable
+    increment
+    setVariable
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    increment
+    setMember
+    setVariable
+    getVariable
+    push 0, 'f'
+    callFunction
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setVariable
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    increment
+    setMember
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    push 0, 'f'
+    callFunction
+    push 'a'
+    getVariable
+    push 0, 'f'
+    callFunction
+    getMember
+    increment
+    setRegister r:0
+    setMember
+    push r:0
+    setRegister r:0
+    setVariable
+    push r:0
+    setVariable
+    getVariable
+    push 'b'
+    getMember
+    setVariable
+    getVariable
+    push 'b'
+    getMember
+    push 'c'
+    getMember
+    setVariable
+    getVariable
+    push 'b'
+    callMethod
+    setVariable
+    getVariable
+    push 'b'
+    getMember
+    push 'c'
+    callMethod
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    getMember
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    getMember
+    push 'c'
+    getVariable
+    getMember
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    callMethod
+    setVariable
+    getVariable
+    push 'b'
+    getVariable
+    getMember
+    push 'c'
+    getVariable
+    callMethod
+    setVariable
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 'a'
+          getVariable
+          push 'b'
+          getMember
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label135
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label136
+         label135:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label136:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'b', 'a'
+          getVariable
+          push 2
+          initArray
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 'parent'
+          getVariable
+          push 'width'
+          getMember
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label137
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label138
+         label137:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label138:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'width', 'parent'
+          getVariable
+          push 2
+          initArray
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 0, 'f'
+          callFunction
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label139
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label140
+         label139:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label140:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push UNDEF, 'this'
+          getVariable
+          push 2, 'f'
+          getVariable
+          push 'dependencies'
+          callMethod
+          dup
+          branchIfTrue label141
+          pop
+          push 0
+          initArray
+         label141:
+          push 1, 0
+          initArray
+          push 'concat'
+          callMethod
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 'e'
+          getVariable
+          push 'c'
+          getVariable
+          push 'd'
+          getMember
+          push 2, 'f'
+          callFunction
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label142
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label143
+         label142:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label143:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'e'
+          getVariable
+          push 'c'
+          getVariable
+          push 'd'
+          getMember
+          push UNDEF, 'this'
+          getVariable
+          push 4, 'f'
+          getVariable
+          push 'dependencies'
+          callMethod
+          dup
+          branchIfTrue label144
+          pop
+          push 0
+          initArray
+         label144:
+          push 1, 'd', 'c'
+          getVariable
+          push 2
+          initArray
+          push 'concat'
+          callMethod
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 'x', 1, 'parent'
+          getVariable
+          push 'getMouse'
+          callMethod
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label145
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label146
+         label145:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label146:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'x', 'parent'
+          getVariable
+          push 'this'
+          getVariable
+          push 3, 'parent'
+          getVariable
+          push 'getMouse'
+          getMember
+          push 'dependencies'
+          callMethod
+          dup
+          branchIfTrue label147
+          pop
+          push 0
+          initArray
+         label147:
+          push 1, 0
+          initArray
+          push 'concat'
+          callMethod
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'f'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'this'
+          getVariable
+          dup
+          push 'width', 'a'
+          getVariable
+          push 'b'
+          getMember
+          push 'e'
+          getVariable
+          push 'c'
+          getVariable
+          push 'd'
+          getMember
+          push 2, 'f'
+          callFunction
+          add
+          setRegister r:3
+          pop
+          setRegister r:1
+          swap
+          push 'setters'
+          getMember
+          swap
+          getMember
+          setRegister r:2
+          push NULL
+          equals
+          branchIfTrue label148
+          setRegister r:0
+          pop
+          push r:3, 1, r:0, r:2
+          branch label149
+         label148:
+          setRegister r:0
+          push r:1, r:3
+          setMember
+          push r:3, 1, r:0, 'onwidth'
+          getMember
+          push 'sendEvent'
+         label149:
+          callMethod
+          pop
+        end
+      end
+    end // of function 
+
+    dup
+    push 'dependencies'
+    function  ()
+      push '_root'
+      getVariable
+      with
+        push 'this'
+        getVariable
+        with
+          push 'e'
+          getVariable
+          push 'c'
+          getVariable
+          push 'd'
+          getMember
+          push UNDEF, 'this'
+          getVariable
+          push 4, 'f'
+          getVariable
+          push 'dependencies'
+          callMethod
+          dup
+          branchIfTrue label150
+          pop
+          push 0
+          initArray
+         label150:
+          push 1, 'd', 'c'
+          getVariable
+          push 'b', 'a'
+          getVariable
+          push 4
+          initArray
+          push 'concat'
+          callMethod
+          return
+        end
+      end
+    end // of function 
+
+    setMember
+    setVariable
+    push 'a'
+    getTimer
+    setVariable
+    push 'a', 'x'
+    getVariable
+    push 1, 'getTimer'
+    callFunction
+    setVariable
+  end // of frame 0
+end
