@@ -146,7 +146,6 @@
 	    if ((BOOL)tag->ti_Data)
 	    {
 		struct Conductor *conductor = player->pl_Source;
-		APTR   lock;
 
 		player->pl_Flags |= PLAYERF_READY;
 
