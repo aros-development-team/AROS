@@ -12,7 +12,7 @@
 
 /*void dt_init(void);*/
 /*void dt_cleanup(void);*/
-struct dt_node *dt_load_picture(char *filename, struct Screen *scr);
+struct dt_node *dt_load_picture(CONST_STRPTR filename, struct Screen *scr);
 void dt_dispose_picture(struct dt_node *node);
 
 int dt_width(struct dt_node *node);
