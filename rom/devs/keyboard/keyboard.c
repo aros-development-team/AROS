@@ -588,10 +588,14 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	event->ie_TimeStamp.tv_micro	= 0;
 	
 	/* Update list of previous states for dead key handling */
-	kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
-	kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
-	kbUn->kbu_LastCode      = code;
-	kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
+	
+	if (!(code & IECODE_UP_PREFIX) && !isQualifier(code))
+	{
+	    kbUn->kbu_LastLastCode  = kbUn->kbu_LastCode;
+	    kbUn->kbu_LastLastQuals = kbUn->kbu_LastQuals;
+	    kbUn->kbu_LastCode      = code;
+	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
+	}
 	
 	/* No more keys in buffer? */
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
