@@ -94,7 +94,7 @@
 	@$(RM) $(RMLIB)
 
 $(OBJDIR)/functions.o : functions.c
-	@$(ECHO) "Compiling $(CURDIR)/$@..."
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
 	@%(cmd) %(opt) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
@@ -204,6 +204,19 @@ endif
 %(dest) : %(conffile) %(script)
 	@$(ECHO) "Generating $@..."
 	@$(AWK) -f %(script) $< > $@
+%end
+
+# rule to generate asm files from c files (for debugging purposes)
+%define asm_rule opt=$(GENASM)
+.PHONY : asm
+asm : $(foreach f,%(opt),$(f).s) all
+%end
+
+# generate asm files from c files (for debugging purposes)
+%define ctoasm_q
+%.s : %.c
+	@$(ECHO) "Generating $(CURDIR)/$@..."
+	@$(CC) -S $(CFLAGS) $< -c -o $@
 %end
 
 %define genlib_old flags=$(CFLAGS) cc=$(CC)
@@ -427,7 +440,9 @@ SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
 ifndef DEPLIBS
 DEPLIBS :=
 endif
-
+ifndef DEPS
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+endif
 ALL_OBJS := $(SYS_OBJS) $(OBJS) $(ENDFUNC)
 
 $(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
@@ -453,7 +468,7 @@ show-flags :
 	@$(ECHO) "CFLAGS=$(CFLAGS)"
 
 setup :
-	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(SLIBDIR) $(DESTDIRS) ; do \
+	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS) ; do \
 	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
 	done
 
@@ -472,7 +487,7 @@ libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
 	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
 
 ifndef FUNCTABLE_SRCS
-FUNCTABLE_SRCS := $(foreach f,$(FUNCTIONS),$(f).c)
+FUNCTABLE_SRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
 endif
 
 functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
@@ -498,19 +513,140 @@ $(OBJDIR)/%.d : %.c
 	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
 %end
 
-# rule to generate asm files from c files (for debugging purposes)
-%define asm_rule opt=$(GENASM)
-.PHONY : asm
-asm : $(foreach f,%(opt),$(f).s) all
+# version of genromlib that allows you to use cpak
+%define genromlib_f flags=$(CFLAGS) cc=$(CC) files=$(FILES) functions=$(FUNCTIONS)
+ifndef INIT_FILE
+INIT_FILE := $(LIBNAME)_init
+endif
+ifndef END_FILE
+END_FILE := endtag
+endif
+ifndef OBJDIR
+OBJDIR := $(GENDIR)/$(CURDIR)
+endif
+ifndef GENLIBDEF_SCRIPT
+GENLIBDEF_SCRIPT := $(TOP)/scripts/genlibdefs.gawk
+endif
+ifndef INITFUNC
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+endif
+ifndef ENDFUNC
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
+endif
+ifndef OSMODULE
+OSMODULE := $(LIBNAME).library
+endif
+ifndef NO_FUNCTABLE
+SYS_FILES := $(SYS_FILES) $(INIT_FILE) functable
+else
+SYS_FILES := $(SYS_FILES) $(INIT_FILE)
+endif
+ifndef OBJS
+OBJS := $(foreach f,%(files) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+endif
+SYS_OBJS := $(foreach f,$(SYS_FILES),$(OBJDIR)/$(f).o)
+ifndef DEPLIBS
+DEPLIBS :=
+endif
+ifndef DEPS
+DEPS := $(foreach f,$(INIT_FILE) functions $(FILES) $(END_FILE),$(OBJDIR)/$(f).d)
+endif
+ALL_OBJS := $(SYS_OBJS) $(OBJS) $(OBJDIR)/functions.o $(ENDFUNC)
+
+$(OSMODDIR)/$(OSMODULE) : $(LIB) $(INITFUNC) \
+	    $(foreach f,$(DEPLIBS), $(LIBDIR)/lib$(f).a)
+	@echo "Building $(notdir $@) ..."
+	@%(cc) $(ILDFLAGS) $(GENMAP) $(OSMODULE).map -L$(LIBDIR) \
+	    $(INITFUNC) $(LIB) $(foreach f, $(DEPLIBS), -l$(f)) \
+	    -o $@ 2>&1 | tee $(OSMODULE).err
+	@if $(TEST) ! -s $(OSMODULE).err; then rm $(OSMODULE).err ; else true; fi
+ifeq ($(FLAVOUR),native)
+	@strip $@
+else
+	@strip -x $@
+endif
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+setup :
+	@$(FOR) dir in $(OBJDIR) $(LIBDIR) $(OSMODDIR) $(DESTDIRS) ; do \
+	    $(IF) $(TEST) ! -d $$dir ; then $(MKDIR) $$dir ; else $(NOP) ; fi ; \
+	done
+
+clean ::
+	$(RM) $(OBJDIR) *.err libdefs.h functable.c endtag.c $(EXTRA_CLEAN) \
+	    functions.c functions.h $(LIB) $(OSMODDIR)/$(OSMODULE)
+
+# Collect all functions in a linklib for fast linking
+$(LIB) : $(ALL_OBJS)
+	@$(ECHO) "Creating library $@..."
+	@$(AR) $@ $(ALL_OBJS)
+	@$(RANLIB) $@
+	@$(RM) $(RMLIB)
+
+$(OBJDIR)/functions.o : functions.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@%(cc) %(flags) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee functions.err
+	@$(IF) $(TEST) -s functions.err; then $(TOUCH) $(TOP)/errors ; else $(RM) functions.err ; fi
+
+functions.c : $(TOP)/tools/cpak/cpak $(foreach f,%(functions),$(f).c)
+	@$(TOP)/tools/cpak/cpak %(functions)
+
+$(OBJDIR)/%.o : %.c
+	@$(ECHO) "Compiling $(CURDIR)/$<..."
+	@%(cc) %(flags) -c $< -o $@ 2>&1|tee $*.err
+	@$(IF) $(TEST) -s $*.err ; then $(TOUCH) $(TOP)/errors ; else $(RM) $*.err ; fi
+
+# Rule to create a .library in the local dir
+libdefs.h : lib.conf $(BINDIR)/scripts/genlibdefs.awk
+	@$(ECHO) "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genlibdefs.awk $< > $@
+
+ifndef NO_FUNCTABLE
+ifndef FUNCTABLE_SRCS
+FUNCTABLE_SRCS := $(foreach f,$(ALL_FUNCTIONS),$(f).c)
+endif
+
+functable.c : $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfunctable.awk \
+	    libdefs.h
+	@$(ECHO) "Generating $@..."
+	@$(AWK) -f $(BINDIR)/scripts/genfunctable.awk $(FUNCTABLE_SRCS) > $@
+endif
+
+$(END_FILE).c :
+	@$(ECHO) "Generating $@..."
+	@$(ECHO) "#include <libcore/libtail.c>" > $@
+
+$(OBJDIR)/$(LIBNAME)_init.o : libdefs.h
+
+ifneq (,$(ADDITIONAL_OBJS))
+$(foreach f,$(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o) :
+	@$(ECHO) "Error: The precompiled object $@ did not exist."
+	@exit 1
+endif
+
+$(OBJDIR)/%.d : %.c
+	@$(IF) [ ! -d $(@D) ]; then $(MKDIR) $(@D) ; else $(NOP) ; fi
+	@$(ECHO) "Makedepend $(CURDIR)/$<..."
+	@$(MKDEPEND) -f- -p$(@D)/ $(MKDEPEND_FLAGS) -- $(CFLAGS) -- $< > $@
 %end
 
-# generate asm files from c files (for debugging purposes)
-%define ctoasm_q
-%.s : %.c
-	@$(ECHO) "Generating $(CURDIR)/$@..."
-	@$(CC) -S $(CFLAGS) $< -c -o $@
-%end
+%define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS) prefix=$(TOP)/compiler/include
+includes-generate : setup   %(prefix)/clib/%(name)_protos.h \
+			    %(prefix)/defines/%(name).h
 
+FSRCS := $(foreach f,%(functions),$(f).c)
+
+%(prefix)/clib/%(name)_protos.h : $(FSRCS) $(SCRIPTDIR)/genshared \
+				$(SCRIPTDIR)/genclib.awk
+	@$(SCRIPTDIR)/genshared -clib -prefix %(prefix) $(FSRCS)
+
+%(prefix)/defines/%(name).h : $(FSRCS) $(SCRIPTDIR)/genshared \
+				$(SCRIPTDIR)/gendefines.awk
+	@$(SCRIPTDIR)/genshared -defines -prefix %(prefix) $(FSRCS)
+%end
+		    
 # Used to help with the function replacement mechanism. Use like
 #
 #	%prepare_replace module=os/exec
