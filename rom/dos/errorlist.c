@@ -1,31 +1,6 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.8  2001/03/10 22:44:41  stegerg
-    update to make localized dos strings work.
-
-    Revision 1.7  2001/03/09 23:45:48  stegerg
-    catalog for dos.library strings. fixed most error strings
-    (the name of the ERROR_ defines is sometimes misleading).
-    removed ERROR_NUMBER_OF_ARGUMENTS #define (one must use
-    ERROR_TOO_MANY_ARGS for this -> the string for which is
-    "wrong number of arguments")
-
-    Revision 1.6  2001/01/30 18:05:36  stegerg
-    changed ERROR_BREAK string from "Break" to "***Break"
-
-    Revision 1.5  2000/05/21 08:47:46  SDuvan
-    Added script errors
-
-    Revision 1.4  1999/10/25 13:58:19  SDuvan
-    Added more strings -- not only errors anymore
-
-    Revision 1.3  1998/10/20 16:44:34  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1996/08/01 17:40:50  digulla
-    Added standard header for all files
 
     Desc:
     Lang:

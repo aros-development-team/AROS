@@ -1,21 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.4  1998/10/20 16:44:46  hkiel
-    Amiga Research OS
-
-    Revision 1.3  1997/01/27 00:36:26  ldp
-    Polish
-
-    Revision 1.2  1996/12/09 13:53:35  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.1  1996/12/05 15:42:23  aros
-    Initial revision
-
 
     Desc:
     Lang: english

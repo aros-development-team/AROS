@@ -1,40 +1,6 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.10  2000/03/12 23:34:36  bernie
-    Format string made const
-
-    Revision 1.9  1998/10/20 16:44:56  hkiel
-    Amiga Research OS
-
-    Revision 1.8  1997/01/27 00:36:33  ldp
-    Polish
-
-    Revision 1.7  1996/12/09 13:53:49  aros
-    Added empty templates for all missing functions
-
-    Moved #include's into first column
-
-    Revision 1.6  1996/11/18 13:20:14  aros
-    Compile assembler files with CPP
-
-    New macros: AROS_ASMSYMNAME() (replaces AROS_ASMFUNC_NAME()) and
-    AROS_CSYMNAME() which must be used to access assembler symbols from C and C
-    symbols from assembler.
-
-    Revision 1.5  1996/10/24 15:50:38  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.4  1996/09/13 17:50:09  digulla
-    Use IPTR
-
-    Revision 1.3  1996/08/13 13:52:52  digulla
-    Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:40:59  digulla
-    Added standard header for all files
 
     Desc:
     Lang: english

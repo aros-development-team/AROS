@@ -1,21 +1,6 @@
 /*
-    (C) 1995 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
-    $Log$
-    Revision 1.5  2000/11/23 19:59:37  SDuvan
-    Added SetIoErr(0) before operation
-
-    Revision 1.4  1999/05/10 19:10:21  hkiel
-    Always return the number of (complete) blocks read.
-
-    Revision 1.3  1998/10/20 16:44:38  hkiel
-    Amiga Research OS
-
-    Revision 1.2  1997/01/27 00:36:20  ldp
-    Polish
-
-    Revision 1.1  1996/11/25 15:50:57  aros
-    Two new functions
 
     Desc:
     Lang: english
