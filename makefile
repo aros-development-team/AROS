@@ -34,10 +34,16 @@ all : setup subdirs $(LIBDIR)/libAmigaOS.a $(BINDIR)/s/Startup-Sequence \
 crypt : crypt.c
 	$(CC) -o crypt crypt.c
 
-dist :
+dodist : dist-dir dist-bin dist-src
+
+dist-dir :
 	@if [ ! -d dist ]; then $(MKDIR) dist ; fi
+
+dist-bin :
 	cd bin/$(ARCH) ; tar cvvzf ../../AROS_$(ARCH)_bin-$(VERSION).tar.gz \
 		AROS
+
+dist-src :
 	tar cvvzf AROS-$(VERSION).tar.gz \
 		README.CVS aros arosshell.c c crypt.c \
 		devs dos dummy exec filesys gendef.awk \
