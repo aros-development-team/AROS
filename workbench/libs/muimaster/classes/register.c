@@ -24,9 +24,8 @@
 #include "muimaster_intern.h"
 #include "support.h"
 
-# undef DEBUG
-# define DEBUG 0
-# include <aros/debug.h>
+/*  #define MYDEBUG 1 */
+#include "debug.h"
 
 extern struct Library *MUIMasterBase;
 
@@ -413,6 +412,7 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
 {
     struct MUI_RegisterData *data = INST_DATA(cl, obj);
     WORD minwidth;
+
     DoSuperMethodA(cl, obj, (Msg)msg);
     
     data->total_hspacing = (data->numitems + 1) * INTERTAB - 2;
@@ -428,6 +428,10 @@ static ULONG Register_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskM
     if (minwidth > msg->MinMaxInfo->DefWidth)
     	msg->MinMaxInfo->DefWidth = minwidth;
 	
+    msg->MinMaxInfo->DefWidth += minwidth;
+      D(bug("Register_AskMinMax : spacings = %d, minw=%d, defw=%d\n",
+	    data->total_hspacing, msg->MinMaxInfo->MinWidth, msg->MinMaxInfo->DefWidth));
+
     msg->MinMaxInfo->MinHeight += data->tab_height;
     msg->MinMaxInfo->MaxHeight += data->tab_height;
     msg->MinMaxInfo->DefHeight += data->tab_height;
@@ -472,7 +476,8 @@ static ULONG Register_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg
 
     item_width = (_width(obj) - data->total_hspacing) / data->numitems;
     extra_space = (_width(obj) - data->total_hspacing) % data->numitems;
-/*      D(bug("Register_Show : width = %d, mwidth = %d, max item width = %d, remainder = %d\n", _width(obj), _mwidth(obj), item_width, extra_space)); */
+    D(bug("Register_Show : width = %d, mwidth = %d, max item width = %d, remainder = %d\n",
+	  _width(obj), _mwidth(obj), item_width, extra_space));
 
 /*      D(bug("Register_Show : left = %d, _left = %d, mleft = %d, \n", data->left, _left(obj), _mleft(obj))); */
     x = INTERTAB - 1;
