@@ -5,14 +5,14 @@
 
 #include <aros/debug.h>
 
-#include <unistd.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
-pid_t fork()
+int ioctl(int fd, int request, ...)
 {
-#   warning Implement fork()
+#   warning Implement ioctl()
     AROS_FUNCTION_NOT_IMPLEMENTED("arosc");
 
-    errno = EPERM;
+    errno = ENOSYS;
     return -1;
 }
