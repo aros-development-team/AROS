@@ -1,5 +1,5 @@
 #! @PYTHON@
-
+# -*- coding: iso-8859-1 -*-
 # Copyright © 2003-2004, The AROS Development Team. All rights reserved.
 
 import sys, re
