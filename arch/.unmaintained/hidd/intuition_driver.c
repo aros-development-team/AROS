@@ -174,7 +174,7 @@ int intui_OpenWindow (struct Window * w,
 		, w->LeftEdge + w->Width
 		, w->TopEdge  + w->Height
 		, layerflags
-		, LAYERS_NOBACKFILL
+		, LAYERS_BACKFILL
 		, SuperBitMap);
 
     D(bug("Layer created: %p\n", w->WLayer));
