@@ -10,12 +10,15 @@
 #include <proto/dos.h>
 #include <stdarg.h>
 
-void Printf(STRPTR fmt, LONG arg, ...)
+LONG Printf(STRPTR fmt, ...)
 {
+    LONG retval;
     va_list args;
-    va_start(args,arg);
 
-    VFPrintf(Output(), fmt, (LONG *)args);
+    va_start(args,fmt);
+
+    retval = VFPrintf(Output(), fmt, (LONG *)args);
 
     va_end(args);
+    return retval;
 }

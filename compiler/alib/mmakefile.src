@@ -4,6 +4,8 @@
 #
 include $(TOP)/config/make.cfg
 
+LIB	:= amiga
+
 FILES	:= \
     alib_util \
     allocaslrequesttags \

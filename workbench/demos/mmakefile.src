@@ -72,7 +72,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 USE_AROSLIB := yes
 
-#MM demos : includes linklibs
+#MM demos : includes linklibs demo-setup
 
 %make_prog_setup mmake=demos
 

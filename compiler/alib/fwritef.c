@@ -10,7 +10,7 @@
 #include <proto/dos.h>
 #include <stdarg.h>
 
-LONG FWritef(BPTR fh, CONST_STRPTR fmt, ...)
+LONG FWritef(BPTR fh, STRPTR fmt, ...)
 {
     LONG retval;
 
