@@ -1,5 +1,5 @@
 /*
-    (C) 1995-97 AROS - The Amiga Replacement OS
+    Copyright (C) 1995-1997 AROS - The Amiga Replacement OS
     $Id$
 
     Desc: Filesystem that accesses an underlying unix filesystem.
@@ -12,6 +12,7 @@
 #include <exec/resident.h>
 #include <exec/memory.h>
 #include <exec/types.h>
+#include <exec/alerts.h>
 #include <proto/exec.h>
 #include <utility/tagitem.h>
 #include <dos/dosextens.h>
@@ -19,6 +20,14 @@
 #include <dos/exall.h>
 #include <dos/dosasl.h>
 #include <proto/dos.h>
+#include <proto/expansion.h>
+#include <aros/libcall.h>
+#include <aros/asmcall.h>
+#include <libraries/expansion.h>
+#include <libraries/configvars.h>
+#include <libraries/expansionbase.h>
+#include <aros/debug.h>
+
 /* Unix includes */
 #include <unistd.h>
 #include <fcntl.h>
@@ -34,6 +43,7 @@
 #ifdef __GNUC__
 #   include "emul_handler_gcc.h"
 #endif
+#undef DOSBase
 
 static const char name[];
 static const char version[];
@@ -71,8 +81,8 @@ const struct Resident emul_handler_resident=
     RTC_MATCHWORD,
     (struct Resident *)&emul_handler_resident,
     (APTR)&end,
-    RTF_AUTOINIT,
-    1,
+    RTF_AUTOINIT | RTF_COLDSTART,
+    41,
     NT_DEVICE,
     0,
     (char *)name,
@@ -82,7 +92,7 @@ const struct Resident emul_handler_resident=
 
 static const char name[]="emul.handler";
 
-static const char version[]="$VER: emul_handler 1.0 (28.3.96)\n\015";
+static const char version[]="$VER: emul_handler 41.2 (14.7.1997)\n\015";
 
 static const APTR inittabl[4]=
 {
@@ -118,7 +128,7 @@ LONG u2a[][2]=
   { 0, ERROR_UNKNOWN }
 };
 
-LONG err_u2a (void)
+static LONG err_u2a(void)
 {
     ULONG i;
     for(i=0;i<sizeof(u2a)/sizeof(u2a[0]);i++)
@@ -447,82 +457,102 @@ static LONG free_lock(struct filehandle *current)
 
 static LONG startup(struct emulbase *emulbase)
 {
-    struct filehandle *fhi, *fho, *fhe, *fhv, *fhc, *fhs;
-    struct DosList *dlv, *dlc;
-    static struct filehandle sys={ "", FHD_DIRECTORY, 0 };
+    struct Library *ExpansionBase;
+    struct filehandle *fhi, *fho, *fhe, *fhv;
+    struct DeviceNode *dlv;
     LONG ret=ERROR_NO_FREE_STORE;
 
-    fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
-    if(fhi!=NULL)
+    ExpansionBase = OpenLibrary("expansion.library",0);
+    if(ExpansionBase != NULL)
     {
-	fho=(struct filehandle *)malloc(sizeof(struct filehandle));
-	if(fho!=NULL)
+    	fhi=(struct filehandle *)malloc(sizeof(struct filehandle));
+      	if(fhi!=NULL)
 	{
-	    fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
-	    if(fhe!=NULL)
-	    {
-		fhv=&sys;
-		ret=open_(emulbase, &fhv,"",0);
-		if(!ret)
-		{
-		    fhc=&sys;
-		    ret=open_(emulbase, &fhc,"",0);
-		    if(!ret)
-		    {
-			fhs=&sys;
-			ret=open_(emulbase, &fhs,"",0);
-			if(!ret)
-			{
-			    ret=ERROR_NO_FREE_STORE;
-			    dlv=MakeDosEntry("Workbench",DLT_VOLUME);
-			    if(dlv!=NULL)
-			    {
-				dlc=MakeDosEntry("EMUL",DLT_DEVICE);
-				if(dlc!=NULL)
-				{
-				    ret=ERROR_OBJECT_EXISTS;
-				    dlv->dol_Unit  =(struct Unit *)fhv;
-				    dlv->dol_Device=&emulbase->device;
-				    dlc->dol_Unit  =(struct Unit *)fhc;
-				    dlc->dol_Device=&emulbase->device;
-				    fhi->type=FHD_FILE;
-				    fhi->fd=STDIN_FILENO;
-				    fhi->name="";
-				    emulbase->stdin=(struct Unit *)fhi;
-				    fho->type=FHD_FILE;
-				    fho->fd=STDOUT_FILENO;
-				    fho->name="";
-				    emulbase->stdout=(struct Unit *)fho;
-				    fhe->type=FHD_FILE;
-				    fhe->fd=STDERR_FILENO;
-				    fhe->name="";
-				    emulbase->stderr=(struct Unit *)fhe;
-				    if(AddDosEntry(dlv))
-				    {
-					if(AddDosEntry(dlc))
-					{
-					    DOSBase->dl_NulHandler=&emulbase->device;
-					    DOSBase->dl_NulLock   =(struct Unit *)fhs;
-					    return 0;
-					}
-					RemDosEntry(dlv);
-				    }
-				    FreeDosEntry(dlc);
-				}
-				FreeDosEntry(dlv);
-			    }
-			    free_lock(fhs);
-			}
-			free_lock(fhc);
-		    }
-		    free_lock(fhv);
-		}
-		free(fhe);
-	    }
-	    free(fho);
-	}
-	free(fhi);
+    	    fho=(struct filehandle *)malloc(sizeof(struct filehandle));
+    	    if(fho!=NULL)
+    	    {
+    		fhe=(struct filehandle *)malloc(sizeof(struct filehandle));
+    		if(fhe!=NULL)
+    		{
+    		    fhv=(struct filehandle *)malloc(sizeof(struct filehandle));
+    		    if(fhv != NULL)
+    		    {
+    			struct stat st;
+    
+    			fhv->name = ".";
+    			fhv->type = FHD_DIRECTORY;
+    
+    			/* Make sure that the root directory is valid */
+    			if(!stat(fhv->name,&st) && S_ISDIR(st.st_mode))
+    			{
+    			    fhv->fd = (long)opendir(fhv->name);
+    
+    			    fhi->type = FHD_FILE;
+    			    fhi->fd   = STDIN_FILENO;
+    			    fhi->name = "";
+    			    fho->type = FHD_FILE;
+    			    fho->fd   = STDOUT_FILENO;
+    			    fho->name = "";
+    			    fhe->type = FHD_FILE;
+    			    fhe->fd   = STDERR_FILENO;
+    			    fhe->name = "";
+    
+    			    emulbase->stdin  = (struct Unit *)fhi;
+    			    emulbase->stdout = (struct Unit *)fho;
+    			    emulbase->stderr = (struct Unit *)fhe;
+    
+    			    /*
+    				Allocate space for the string from same mem
+    				"Workbench" total 11 bytes (9 + NULL + length)
+				Add an extra 4 for alignment purposes.
+    			    */
+    			    ret=ERROR_NO_FREE_STORE;
+    			    dlv = AllocMem(sizeof(struct DeviceNode) + 15, MEMF_CLEAR|MEMF_PUBLIC);
+    			    if(dlv!=NULL)
+    			    {
+    				STRPTR s;
+   
+				/*  We want s to point to the first 4-byte 
+				    aligned memory after the structure. 
+				*/
+				s = (STRPTR)(((IPTR)dlv + sizeof(struct DeviceNode) + 4) & ~3);
+    				CopyMem("Workbench", &s[1], 9);
+    				*s = 9;
+    
+    				dlv->dn_Type   = DLT_DEVICE;
+    				dlv->dn_Unit   = (struct Unit *)fhv;
+    				dlv->dn_Device = &emulbase->device;
+    				dlv->dn_Handler = NULL;
+    				dlv->dn_Startup = NULL;
+    				dlv->dn_OldName = s;
+    				dlv->dn_NewName = &s[1];
+    
+    				AddBootNode( 0, 0, dlv, NULL);
+    				return 0;
+    			    }
+    			} /* valid directory */
+    			else
+    			{
+    			    /* If this was under config/ I could
+    			       actually print out a message, but
+    			       alas I don't have that liberty...
+    
+    			       It'd be nice to be able to add some
+    			       extra alert definitions though...
+    			    */
+    			    Alert(AT_DeadEnd|AO_Unknown|AN_Unknown );
+    			}
+    			free_lock(fhv);
+    		    }
+    		    free(fhe);
+    		}
+    		free(fho);
+    	    }
+    	    free(fhi);
+    	}
     }
+    CloseLibrary(ExpansionBase);
+
     return ret;
 }
 
@@ -666,20 +696,8 @@ AROS_LH2(struct emulbase *, init,
 	return NULL;
     }
 
-    emulbase->dosbase=(struct DosLibrary *)OpenLibrary(DOSNAME,39);
-    if((emulbase->dosbase))
-    {
-	if(AttemptLockDosList(LDF_ALL|LDF_WRITE))
-	{
-	    if(!startup(emulbase))
-	    {
-		UnLockDosList(LDF_ALL|LDF_WRITE);
-		return emulbase;
-	    }
-	    UnLockDosList(LDF_ALL|LDF_WRITE);
-	}
-	CloseLibrary((struct Library *)emulbase->dosbase);
-    }
+    if(!startup(emulbase))
+	return emulbase;
 
     DisposeObject (emulbase->unixio);
     CloseLibrary (BOOPSIBase);
@@ -700,7 +718,17 @@ AROS_LH3(void, open,
     unitnum=0;
     flags=0;
 
-    /* I have one more opener. */
+    if(emulbase->dosbase == NULL)
+    {
+	emulbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
+	if( emulbase->dosbase == NULL )
+	{
+		iofs->IOFS.io_Error = -1;
+		return;
+	} 
+    }
+
+   /* I have one more opener. */
     emulbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
     /* Set returncode */
