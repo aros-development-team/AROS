@@ -30,8 +30,11 @@ warranties are made.  All use is at your own risk. No liability or
 responsibility is assumed.
 */
 
+#define AROS_ALMOST_COMPATIBLE
+
 #include <exec/types.h>
 #include <exec/libraries.h>
+#include <graphics/displayinfo.h>
 #include <libraries/asl.h>
 #ifndef _AROS
 #include <clib/exec_protos.h>
@@ -56,11 +59,38 @@ UBYTE *vers = "$VER: filereq 37.0";
 
 struct Library *AslBase = NULL;
 
+struct DisplayMode custommode =
+{
+    {},
+    {
+        {
+	    DTAG_DIMS,
+	    0xFFFF0000,
+	    TAG_SKIP,
+	    sizeof(struct DimensionInfo) / sizeof(struct TagItem),
+	},
+	8,
+	32,
+	32,
+	16000,
+	16000,
+	{0,0,319,199},
+	{-10,-10,329,209},
+	{-15,-15,334,214},
+	{0,0,319,199},
+	{-5,-5,324,204}
+	    
+    },
+    0
+};
+struct List customlist;
+
 struct TagItem smtags[] =
 {
     { ASLSM_TitleText,	        (IPTR)"Custom Positive and Negative text" },
     { ASLSM_PositiveText,       (IPTR)"Use Screenmode" },
     { ASLSM_NegativeText,       (IPTR)"Forget it" },
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -68,6 +98,7 @@ struct TagItem smtags2[] =
 {
     { ASLSM_TitleText,	        (IPTR)"DoOverscanType" },
     { ASLSM_DoOverscanType,     TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -75,6 +106,7 @@ struct TagItem smtags3[] =
 {
     { ASLSM_TitleText,	        (IPTR)"DoWidth" },
     { ASLSM_DoWidth,            TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -82,6 +114,7 @@ struct TagItem smtags4[] =
 {
     { ASLSM_TitleText,	        (IPTR)"DoHeight" },
     { ASLSM_DoHeight,		TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -89,6 +122,7 @@ struct TagItem smtags5[] =
 {
     { ASLSM_TitleText,	        (IPTR)"DoDepth" },
     { ASLSM_DoDepth,		TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -96,6 +130,7 @@ struct TagItem smtags6[] =
 {
     { ASLSM_TitleText,	        (IPTR)"DoAutoScroll" },
     { ASLSM_DoAutoScroll,	TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
@@ -108,12 +143,17 @@ struct TagItem smtags7[] =
     { ASLSM_DoHeight,		TRUE},
     { ASLSM_DoDepth,		TRUE},
     { ASLSM_DoAutoScroll,	TRUE},
+    { ASLSM_CustomSMList,	(IPTR)&customlist	},
     { TAG_DONE,       	        NULL }
 };
 
 static void showrequester(char *msg, struct TagItem *tags)
 {
     struct ScreenModeRequester *sm;
+
+    NEWLIST(&customlist);
+    custommode.dm_Node.ln_Name = "*** CUSTOM MODE ***";
+    AddTail(&customlist, &custommode.dm_Node);
 
     printf("\n%s:\n",msg ? msg : "");
     
@@ -138,7 +178,7 @@ static void showrequester(char *msg, struct TagItem *tags)
 }
 
 int main(int argc, char **argv)
-{
+{    
     if ((AslBase = OpenLibrary("asl.library", 37L)))
     {
 	showrequester("Default requester with no tags", NULL);
