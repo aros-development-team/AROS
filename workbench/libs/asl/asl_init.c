@@ -37,11 +37,34 @@ extern BPTR AROS_SLIB_ENTRY(expunge,Asl)();
 extern int AROS_SLIB_ENTRY(null,Asl)();
 extern const char LIBEND;
 
+/* FIXME: egcs 1.1b and possibly other incarnations of gcc have
+ * two nasty problems with entry() that prevents using the
+ * C version of this function on AROS 68k native.
+ *
+ * First of all, if inlining is active (-O3), the optimizer will decide
+ * that entry() is simple enough to be inlined, and it doesn't generate
+ * its code until all other functions have been compiled. Delaying asm
+ * output for a global (non static) function is probably silly because
+ * the optimizer can't eliminate its stand alone istance anyway.
+ *
+ * The second problem is that even without inlining, the code generator
+ * adds a nop instruction immediately after rts. This is probably done
+ * to help the 68040/60 pipelines, but it adds two more bytes before the
+ * library resident tag, which causes all kinds of problems on native
+ * AmigaOS.
+ *
+ * The workaround is to embed the required assembler instructions
+ * (moveq #-1,d0 ; rts) in a constant variable.
+ */
+#if (defined(__mc68000__) && (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE))
+const LONG entry = 0x70FF4E75;
+#else
 int entry(void)
 {
     /* If the library was executed by accident return error code. */
     return -1;
 }
+#endif
 
 static const struct Resident resident=
 {
@@ -51,7 +74,7 @@ static const struct Resident resident=
     RTF_AUTOINIT,
     VERSION_NUMBER,
     NT_LIBRARY,
-    -120,	/* priority */
+    0,	/* priority */
     (char *)name,
     (char *)&version[6],
     (ULONG *)inittabl
