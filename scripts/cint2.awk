@@ -218,11 +218,9 @@ print "Working on " part_name "..."
 		    }
 
 		    printf ("/*\n") > file;
-		    print "    (C) 1995 AROS - The Amiga Replacement OS" >> file
-		    printf ("    $Id$\n") >> file;
-		    printf ("    $Log$
-		    printf ("    Revision 1.1  1996/08/12 09:59:05  digulla
-		    printf ("    Some scripts
+		    print "    (C) 1995-96 AROS - The Amiga Replacement OS" >> file
+		    printf ("    %sId$\n", "$") >> file;
+		    printf ("    %sLog$\n", "$") >> file;
 		    printf ("\n") >> file;
 		    printf ("    Desc:\n") >> file;
 		    printf ("    Lang: english\n") >> file;
