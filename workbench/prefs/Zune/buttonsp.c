@@ -93,7 +93,8 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		Child, MakeLabel("Font:"),
 		Child, PopaslObject,
 		    MUIA_Popasl_Type, ASL_FontRequest,
-		    MUIA_Popstring_String, d.text_font_string = StringObject, StringFrame, End,
+		    MUIA_Popstring_String, d.text_font_string = StringObject,
+						   StringFrame, End,
 		    MUIA_Popstring_Button, PopButton(MUII_PopUp),
 		    End,
 
@@ -108,7 +109,8 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		      Child, HVSpace,
 		      End,
 	          Child, HGroup,
-		      Child, d.imagebutton_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+		      Child, d.imagebutton_popframe =
+			 NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			   MUIA_Draggable, TRUE, 
 		           MUIA_MaxWidth, 28,
 			       MUIA_Window_Title, "Adjust Frame",
@@ -154,7 +156,8 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		         End,
 		      Child, /*  HGroup, */
 /*  			  Child, HVSpace, */
-/*  			  Child, */ MUI_MakeObject(MUIO_Label, "Look", MUIO_Label_Centered),
+/*  			  Child, */ MUI_MakeObject(MUIO_Label, "Look",
+						   MUIO_Label_Centered),
 /*  			  Child, HVSpace, */
 /*  			  End, */
 		      End,
@@ -170,7 +173,8 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		      Child, HGroup,
 	                  MUIA_Group_HorizSpacing, 0,
 			  Child, HVSpace,
-			  Child, MUI_MakeObject(MUIO_Label, "Spacing", MUIO_Label_Centered),
+			  Child, MUI_MakeObject(MUIO_Label, "Spacing",
+						MUIO_Label_Centered),
 			  Child, HVSpace,
 			  End,
 		      End, /* ColGroup */
@@ -188,7 +192,9 @@ static IPTR ButtonsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+
+static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj,
+				     struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
     STRPTR spec;
@@ -232,7 +238,9 @@ static IPTR ButtonsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP
     return 1;
 }
 
-static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+
+static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj,
+				     struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_ButtonsPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -276,14 +284,8 @@ static IPTR ButtonsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP
     return TRUE;
 }
 
-#ifndef __AROS__
-__asm IPTR ButtonsP_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,ButtonsP_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, ButtonsP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -300,7 +302,7 @@ AROS_UFH3S(IPTR,ButtonsP_Dispatcher,
  */
 const struct __MUIBuiltinClass _MUIP_Buttons_desc = { 
     "Buttons",
-    MUIC_Settingsgroup, 
+    MUIC_Group, 
     sizeof(struct MUI_ButtonsPData),
     (void*)ButtonsP_Dispatcher 
 };

@@ -71,6 +71,7 @@ static Object*MakeSpacingSlider (void)
     return MUI_MakeObject(MUIO_Slider, "", 0, 9);
 }
 
+
 static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_GroupsPData *data;
@@ -79,19 +80,22 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNew(cl, obj,
 			       MUIA_Group_SameWidth, TRUE,
 			       MUIA_Group_Columns, 2,
-/*          Child, ColGroup(2), */
 	    Child, ColGroup(2),
 		GroupFrameT("Title"),
 		    Child, HVSpace,
 		    Child, HVSpace,
 		    Child, MakeLabel("Position:"),
-		    Child, d.title_position_cycle = MUI_MakeObject(MUIO_Cycle, "Position:", positions_labels),
+		    Child, d.title_position_cycle =
+			       MUI_MakeObject(MUIO_Cycle,
+					      "Position:", positions_labels),
 	            Child, MakeLabel("Color:"),
-	    	    Child, d.title_color_cycle = MUI_MakeObject(MUIO_Cycle, "Color:", color_labels),
+	    	    Child, d.title_color_cycle =
+			       MUI_MakeObject(MUIO_Cycle, "Color:", color_labels),
    		    Child, MakeLabel("Font:"),
    		    Child, PopaslObject,
    		       MUIA_Popasl_Type, ASL_FontRequest,
-   		       MUIA_Popstring_String, d.font_title_string = StringObject, StringFrame, End,
+   		       MUIA_Popstring_String, d.font_title_string = StringObject,
+			       StringFrame, End,
    		       MUIA_Popstring_Button, PopButton(MUII_PopUp),
    		       End,
 		    Child, HVSpace,
@@ -101,7 +105,8 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		GroupFrameT("Frame"),
 		Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
-		   Child, d.normal_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+		   Child, d.normal_popframe =
+			       NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			       MUIA_Draggable, TRUE,
 			       MUIA_Window_Title, "Adjust Frame",
 			       End,
@@ -109,7 +114,8 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	           End,
        	       Child, VGroup,
 		   MUIA_Group_VertSpacing, 1,
-		   Child, d.virtual_popframe = NewObject(CL_FrameClipboard->mcc_Class, NULL,
+		   Child, d.virtual_popframe =
+			       NewObject(CL_FrameClipboard->mcc_Class, NULL,
 			       MUIA_Draggable, TRUE,
 			       MUIA_Window_Title, "Adjust Frame",
 			       End,
@@ -157,7 +163,6 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    Child, MUI_MakeObject(MUIO_Label, "Register", MUIO_Label_Centered),
 		    End,
 		End, /* Background */
-/*  	    End, */
     	TAG_MORE, msg->ops_AttrList);
 
     if (!obj) return FALSE;
@@ -168,7 +173,9 @@ static IPTR GroupsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_ConfigToGadgets *msg)
+
+static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj,
+				    struct MUIP_Settingsgroup_ConfigToGadgets *msg)
 {
     struct MUI_GroupsPData *data = INST_DATA(cl, obj);
     STRPTR spec;
@@ -215,7 +222,9 @@ static IPTR GroupsP_ConfigToGadgets(struct IClass *cl, Object *obj, struct MUIP_
     return 1;    
 }
 
-static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_Settingsgroup_GadgetsToConfig *msg)
+
+static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj,
+				    struct MUIP_Settingsgroup_GadgetsToConfig *msg)
 {
     struct MUI_GroupsPData *data = INST_DATA(cl, obj);
     STRPTR str;
@@ -260,14 +269,8 @@ static IPTR GroupsP_GadgetsToConfig(struct IClass *cl, Object *obj, struct MUIP_
     return TRUE;
 }
 
-#ifndef __AROS__
-__asm IPTR GroupsP_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR,GroupsP_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
+
+BOOPSI_DISPATCHER(IPTR, GroupsP_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
@@ -284,7 +287,7 @@ AROS_UFH3S(IPTR,GroupsP_Dispatcher,
  */
 const struct __MUIBuiltinClass _MUIP_Groups_desc = { 
     "Groups",
-    MUIC_Settingsgroup, 
+    MUIC_Group, 
     sizeof(struct MUI_GroupsPData),
     (void*)GroupsP_Dispatcher 
 };
