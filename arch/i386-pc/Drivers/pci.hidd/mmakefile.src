@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	pcibios pci_init functable
+FILES	:=	pcihw pci_init functable
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 END_FILE :=	$(OBJDIR)/endtag
 ENDFUNC :=	$(END_FILE).o
