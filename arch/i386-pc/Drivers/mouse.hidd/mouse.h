@@ -83,7 +83,7 @@ struct mouse_data
 {
     VOID (*mouse_callback)(APTR, struct pHidd_Mouse_Event *);
     APTR callbackdata;
-	
+
     UWORD buttonstate;
 
     char *mouse_name;
@@ -94,11 +94,11 @@ struct mouse_data
     {
         struct
         {
-            OOP_Object	*usbhidd;
+            OOP_Object  *usbhidd;
         } usb;
         struct
         {
-            OOP_Object	*irqhidd;
+            OOP_Object  *irqhidd;
             
             UBYTE       mouse_data[4];
             UBYTE       mouse_collected_bytes;
@@ -108,10 +108,16 @@ struct mouse_data
         } ps2;
         struct
         {
-            OOP_Object	*serial;
-            OOP_Object	*unit;
+            OOP_Object  *serial;
+            OOP_Object  *unit;
 
-            struct Ring *rx;    /* Ring structure for mouse init */
+            UBYTE       mouse_data[4];
+            UBYTE       mouse_collected_bytes;
+            UBYTE       mouse_protocol;
+            UBYTE       mouse_inth_state;
+
+            struct      pHidd_Mouse_Event   event;
+            struct      Ring *rx;    /* Ring structure for mouse init */
         } com;
     } u;
 };

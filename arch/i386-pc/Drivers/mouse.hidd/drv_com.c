@@ -44,6 +44,8 @@ int     mouse_GetFromRing(struct mouse_data *, char *);
 int     mouse_Select(struct mouse_data *, ULONG);
 void    mouse_FlushInput(struct mouse_data *);
 int     mouse_DetectPNP(struct mouse_data *, OOP_Object *);
+void    handle_events(UBYTE proto, struct mouse_data *);
+
 /* Misc functions */
 
 #define inb(port) \
@@ -62,17 +64,17 @@ void mouse_usleep(ULONG usec)
     ULONG hz;
     int step;
     int latch;
-    
+
     while (usec)
     {
         /*
          * If we want to wait longer than 50000 usec, then we have to do it
          * in several steps
          */
-	
+
         step = (usec > 50000) ? 50000 : usec;
         hz = 1000000 / step;
-        
+
         latch = (1193180 + (hz >> 1)) / hz;
 
         /* Do the timer like cpu.c file */
@@ -81,10 +83,10 @@ void mouse_usleep(ULONG usec)
         outb(0xb0, 0x43);           /* binary, mode 0, LSB/MSB, Ch 2 */
         outb(latch & 0xff, 0x42); /* LSB of count */
         outb(latch >> 8, 0x42);   /* MSB of count */
-        
+
         /* Speaker counter will start now. Just wait till it finishes */
         do {} while ((inb(0x61) & 0x20) == 0);
-        
+
         /* Decrease wait counter */
 	    usec -= step;
     }
@@ -96,17 +98,17 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
 {
     OOP_Object      *serial;
     OOP_Object      *unit;
-    
+
     struct Library  *shidd;
-    
+
     int i=0;
-    
+
     if ((shidd = OpenLibrary("serial.hidd",0)))
     {
         if ((serial = OOP_NewObject(NULL, CLID_Hidd_Serial, NULL)))
         {
             struct mouse_data *data = OOP_INST_DATA(cl, o);
-        
+
             /*
                 As we got serial object, we go now through all units searching
                 for mouse.
@@ -119,6 +121,7 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
             /* Allocate ring buffer */
 
             data->u.com.rx = AllocMem(sizeof(struct Ring), MEMF_CLEAR);
+            data->u.com.mouse_inth_state = 0;  /* initialize to init state */
 
             if (data->u.com.rx)
             {
@@ -128,41 +131,54 @@ int test_mouse_com(OOP_Class *cl, OOP_Object *o)
                     if ((unit = HIDD_Serial_NewUnit(serial, i)))
                     {
                         int proto;
-                        
+
                         D(bug("Checking for mouse on serial port %d\n", i));
 
                         /* Install RingBuffer interrupt */
                         HIDD_SerialUnit_Init(unit, mouse_RingHandler, data, NULL, NULL);
-                        
+
                         /* Try to get mouse protocol in PnP way */
                         if ((proto = mouse_DetectPNP(data, unit)) >= 0)
                         {
                             /* We got protocol */
-
+                            data->u.com.mouse_protocol = proto;
                             switch (proto)
                             {
+                                case P_MS:
+                                    D(bug("Mouse: protocol: MicroSoft\n"));
+                                    break;
                                 case P_LOGI:
-
+                                    D(bug("Mouse: protocol: Logitech\n"));
+                                    break;
+                                case P_LOGIMAN:
+                                    D(bug("Mouse: protocol: Logitech MouseMan\n"));
+                                    break;
+                                default:
+                                    D(bug("Mouse: protocol: %d\n", proto));
                             }
+                            data->u.com.mouse_inth_state = 1;  /* initialize to event handling state */
+                            return 1; /* report the found mouse */
                         }
-                        
-                        /* No mouse? Dispose useless unit then */
-                        HIDD_Serial_DisposeUnit(serial, unit);
+                        else
+                        {
+                            D(bug("Mouse: no serial mouse detected!\n"));
+                            /* No mouse? Dispose useless unit then */
+                            HIDD_Serial_DisposeUnit(serial, unit);
+                        }
                     }
                 }
                 FreeMem(data->u.com.rx, sizeof(struct Ring));
             }
-            
+
             /* Found no serial mouse... Dispose serial object */
             OOP_DisposeObject(serial);
         }
         CloseLibrary(shidd);
-    }    
-
+    }
     return 0; /* Report no COM mouse */
 }
 
-/*****  *************************************************************/
+/******************************************************************/
 
 #undef SysBase
 #define SysBase (*(struct ExecBase **)4L)
@@ -230,8 +246,8 @@ static const __attribute__((section(".text"))) symtab_t pnpprod[] = {
 
 int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
 {
-    int     i;
-    char    c;
+    int     i,tmpavail;
+    char    c,tmp;
 
     struct TagItem stags[] = {
         { TAG_DATALENGTH,   7 },
@@ -243,12 +259,13 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
         { TAG_SET_MCR,      0 },
         { TAG_DONE,         0 }};
 
-    /* Try to detect mouse ton according to XF86 sources). */
+    /* Try to detect mouse according to XF86 sources. */
     HIDD_SerialUnit_SetBaudrate(unit, 1200);
     HIDD_SerialUnit_SetParameters(unit, stags);
     
-    /* Set DRT=1, RTS=0 */
-    mcr[0].ti_Data = 1;
+    /* Set DTR=1, RTS=0 */
+//    mcr[0].ti_Data = 1;
+    /* Set DTR=0, RTS=0 */
     HIDD_SerialUnit_SetParameters(unit, mcr);
     mouse_usleep(200000);
 
@@ -257,7 +274,8 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
     mcr[0].ti_Data = 3;     /* DTR=1, RTS=1 */
     HIDD_SerialUnit_SetParameters(unit, mcr);
     /* Try to read data. Mouse has to respond if PNP */
-    if (!mouse_Select(data, 200000))
+    tmpavail = mouse_Select(data, 200000);
+    if (!tmpavail)
         goto connect_idle;
 
     /* Collect PnP COM device ID */
@@ -265,16 +283,28 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
     mouse_usleep(200000);   /* the mouse must send `Begin ID' within 200msec */
     while (mouse_GetFromRing(data, &c))
     {
+        D(bug("Mouse: nopnp protocol detection %ld\n", c));
+
         /* we may see "M", or "M3..." before `Begin ID' */
+        if ((i == 0) && ((c == 77) || (c == 79)))
+        {
+            buf[0] = c;
+            break;
+        }
         if ((c == 0x08) || (c == 0x28))     /* Begin ID */
         {
+            D(bug("Mouse: yeah, we got a begin ID: %lx\n", c));
             buf[i++] = c;
             break;
         }
     }
-    if (i <= 0)
+
+    /* we haven't seen `Begin ID' in time... */
+    if(i <= 0)
     {
-        /* we haven't seen `Begin ID' in time... */
+        if(buf[0] != 0)
+            return 1;
+
         goto connect_idle;
     }
 
@@ -295,8 +325,9 @@ int mouse_pnpgets(struct mouse_data *data, OOP_Object *unit, char *buf)
         goto connect_idle;
 
     return i;
-    
+
 connect_idle:
+    D(bug("connect_idle\n"));
     return 0;
 }
 
@@ -330,7 +361,9 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
     sum += buf[len - 1];
     for (; i < len; ++i)
         buf[i] += offset;
-    D(bug("Mouse: PnP ID string: '%*.*s'\n", len, len, buf));
+//    D(bug("Mouse: PnP ID string: '%*.*s'\n", len, len, buf));
+
+    D(bug("Mouse: PnP ID string: '%s'\n", buf));
 
     /* revision */
     buf[1] -= offset;
@@ -341,6 +374,8 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
     /* EISA vender and product ID */
     id->eisaid = &buf[3];
     id->neisaid = 7;
+
+    D(bug("Mouse: EISA vendor/product ID: %07s\n", id->eisaid));
 
     /* option strings */
     i = 10;
@@ -398,6 +433,7 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
             id->compat = &buf[j];
             id->ncompat = i - j;
         }
+        D(bug("Mouse: compat: %d\n", id->compat));
     }
 
     if (buf[i] == '\\')
@@ -415,6 +451,7 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
             id->description = &buf[j];
             id->ndescription = i - j;
         }
+        D(bug("Mouse: product description: %s\n", id->description));
     }
 
     /* checksum exists if there are any optional fields */
@@ -422,10 +459,11 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
         || (id->ncompat > 0) || (id->ndescription > 0))
     {
         sprintf(s, "%02X", sum & 0x0ff);
+        D(bug("Mouse: optional fields ?: %s\n", s));
         if (strncmp(s, &buf[len - 3], 2) != 0)
         {
         }
-    }            
+    }
     return TRUE;
 }
 
@@ -434,11 +472,11 @@ static int mouse_pnpparse(pnpid_t *id, char *buf, int len)
 static symtab_t *gettoken(symtab_t *tab, char *s, int len)
 {
     int i;
-    
+
     for (i = 0; tab[i].name != NULL; ++i)
     {
-	    if (strncmp(tab[i].name, s, len) == 0)
-		    break;
+        if (strncmp(tab[i].name, s, len) == 0)
+            break;
     }
     return &tab[i];
 }
@@ -447,7 +485,7 @@ static symtab_t *mouse_pnpproto(pnpid_t *id)
 {
     symtab_t *t;
     int i, j;
-	
+
     if (id->nclass > 0)
     if (strncmp(id->class, "MOUSE", id->nclass) != 0)
         /* this is not a mouse! */
@@ -459,7 +497,7 @@ static symtab_t *mouse_pnpproto(pnpid_t *id)
         if (t->val != -1)
             return t;
     }
-    
+
     /*
      * The 'Compatible drivers' field may contain more than one
      * ID separated by ','.
@@ -478,10 +516,10 @@ static symtab_t *mouse_pnpproto(pnpid_t *id)
                 return t;
         }
     }
-    
+
     return NULL;
-}	
-	
+}
+
 int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
 {
     char buf[256];
@@ -489,10 +527,25 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
     pnpid_t pnpid;
     symtab_t *t;
 
-    if (((len = mouse_pnpgets(data, unit, buf)) <= 0) || !mouse_pnpparse(&pnpid, buf, len))
+    len = mouse_pnpgets(data, unit, buf);
+
+    if (len == 1)
+    {
+        if(buf[0] == 77)
+            return 0;
+        if(buf[0] == 79)
+            return 1;
+    }
+    else if(len > 1)
+    {
+        if(!mouse_pnpparse(&pnpid, buf, len))
+            return -1;
+        if ((t = mouse_pnpproto(&pnpid)) == NULL)
+            return -1;
+    }
+    else if(len < 1)
         return -1;
-    if ((t = mouse_pnpproto(&pnpid)) == NULL)
-        return -1;
+
     D(bug("Mouse: protocol: %d\n", t->val));
 
     return (t->val);
@@ -501,17 +554,113 @@ int mouse_DetectPNP(struct mouse_data *data, OOP_Object *unit)
 ULONG mouse_RingHandler(UBYTE *buf, ULONG len, ULONG unit, struct mouse_data *data)
 {
     struct Ring *r = data->u.com.rx;
+
     while (len--)
     {
         r->ring[r->top++] = *buf++;
 
         if (r->top >= RingSize) r->top = 0;
     }
-    
+
+    if(data->u.com.mouse_inth_state >= 1)
+        handle_events(data->u.com.mouse_protocol, data);
+
     return 0;
 }
 
-/* 
+void handle_events(UBYTE proto, struct mouse_data *data)
+{
+//    static UBYTE inbuf[3];
+    struct pHidd_Mouse_Event *e = &data->u.com.event;
+    UWORD buttonstate;
+    char c;
+
+    D(bug("Mouse: handling events, proto: %ld\n", proto));
+
+    while (mouse_GetFromRing(data, &c))
+    {
+        D(bug("Mouse: handling events, c: %d\n", c));
+
+        data->u.com.mouse_data[data->u.com.mouse_collected_bytes++] = c;
+
+        D(bug("mouse_data: %d, colb: %d\n", data->u.com.mouse_data[data->u.com.mouse_collected_bytes],data->u.com.mouse_collected_bytes));
+
+        if (data->u.com.mouse_collected_bytes == 3)
+        {
+            data->u.com.mouse_collected_bytes = 0;
+            while (!(data->u.com.mouse_data[0] & 0x40))
+            {
+                data->u.com.mouse_data[0] = data->u.com.mouse_data[1];
+                data->u.com.mouse_data[1] = data->u.com.mouse_data[2];
+
+#if 0
+                if (length)
+                {
+                    inbuf[2] = *data++;
+                    length--;
+                }
+                else return 0;
+#endif
+            }
+
+/*
+    microsoft serial mouse protocol:
+
+        D7      D6      D5      D4      D3      D2      D1      D0
+
+1.      X       1       LB      RB      Y7      Y6      X7      X6
+2.      X       0       X5      X4      X3      X2      X1      X0
+3.      X       0       Y5      Y4      Y3      Y2      Y1      Y0
+
+*/
+
+            //mousedata = (struct mouse_data *)userdata;
+
+            D(bug("event 1\n"));
+            e->x = (char)(((data->u.com.mouse_data[0] & 0x03) << 6) | (data->u.com.mouse_data[1] & 0x3f));
+            D(bug("subevent 1\n"));
+            e->y = (char)(((data->u.com.mouse_data[0] & 0x0c) << 4) | (data->u.com.mouse_data[2] & 0x3f));
+            D(bug("subevent 1\n"));
+            if (e->x || e->y)
+            {
+                D(bug("subevent 2\n"));
+                e->button = vHidd_Mouse_NoButton;
+                D(bug("subevent 3\n"));
+                e->type = vHidd_Mouse_Motion;
+
+                D(bug("subevent 4\n"));
+                data->mouse_callback(data->callbackdata, e);
+            }
+            D(bug("event 2\n"));
+
+            buttonstate  = ((data->u.com.mouse_data[0] & 0x20) >> 5); /* left  button bit goes to bit 0 in button state */
+            buttonstate |= ((data->u.com.mouse_data[0] & 0x10) >> 3); /* right button bit goes to bit 1 in button state */
+
+            if((buttonstate & LEFT_BUTTON) != (data->buttonstate & LEFT_BUTTON))
+            {
+                e->button = vHidd_Mouse_Button1;
+                e->type = (buttonstate & LEFT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
+
+                data->mouse_callback(data->callbackdata, e);
+            }
+            D(bug("event 3\n"));
+
+            if((buttonstate & RIGHT_BUTTON) != (data->buttonstate & RIGHT_BUTTON))
+            {
+                e->button = vHidd_Mouse_Button2;
+                e->type = (buttonstate & RIGHT_BUTTON) ? vHidd_Mouse_Press : vHidd_Mouse_Release;
+
+                data->mouse_callback(data->callbackdata, e);
+            }
+
+            D(bug("event 4\n"));
+
+            data->buttonstate = buttonstate;
+        }
+    }
+}
+
+/*
  * Check whether there is some data in ring. Return nozero value if there
  * is anything to get
  */
@@ -534,7 +683,7 @@ void mouse_FlushInput(struct mouse_data *data)
 int mouse_GetFromRing(struct mouse_data *data, char *c)
 {
     struct Ring *r = data->u.com.rx;
-    
+
     if (r->top != r->ptr)
     {
         *c = r->ring[r->ptr++];
@@ -561,17 +710,17 @@ int mouse_Select(struct mouse_data *data, ULONG usec)
     int latch;
     int avail = 0;
     struct Ring *r = data->u.com.rx;
-    
+
     while (usec && !avail)
     {
         /*
          * If we want to wait longer than 50000 usec, then we have to do it
          * in several steps
          */
-	
+
         step = (usec > 50000) ? 50000 : usec;
         hz = 1000000 / step;
-        
+
         latch = (1193180 + (hz >> 1)) / hz;
 
         /* Do the timer like cpu.c file */
@@ -580,16 +729,15 @@ int mouse_Select(struct mouse_data *data, ULONG usec)
         outb(0xb0, 0x43);           /* binary, mode 0, LSB/MSB, Ch 2 */
         outb(latch & 0xff, 0x42); /* LSB of count */
         outb(latch >> 8, 0x42);   /* MSB of count */
-        
+
         /* Speaker counter will start now. Just wait till it finishes */
         do {
             avail = r->top - r->ptr;
         } while (((inb(0x61) & 0x20) == 0) && !avail);
-        
-        /* Decrease wait counter */
-	    usec -= step;
-    }
 
+        /* Decrease wait counter */
+        usec -= step;
+    }
     return avail;
 }
 
