@@ -51,7 +51,8 @@
 # Compile the file %(from) to %(to) with %(cmd). Write any errors to %(err)
 # and use the options in %(opt).
 %define compile_q cmd=$(CC) opt=$(CFLAGS) from=$< to=$@ path=$(CURDIR)/
-	@$(ECHO) "Compiling %(path)$(patsubst %(path)/,,%(from))..."
+	@$(ECHO) "Compiling $(strip $(if $(filter /%,%(from)),%(from),\
+	%(path)$(patsubst %(path)/,,%(from))))..."
 	@$(IF) %(cmd) %(opt) -c %(from) -o %(to) > $(GENDIR)/cerrors 2>&1 ; then \
 	    $(IF) $(TEST) -s $(GENDIR)/cerrors ; then \
 		$(ECHO) "%(path)%(from): %(cmd) %(opt) -c %(from) -o %(to)" >> $(GENDIR)/errors ; \
@@ -1095,7 +1096,7 @@ endif
 # options:
 # - conffile (default: $(MODULE).conf): The name of the config file.
 # - cflags (default: $(CFLAGS)): The C options used during compilation
-%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref
+%define build_module mmake=\A modname=\A modtype=\A conffile=$(BD_MODNAME$(BDID)).conf files="$(basename $(wildcard *.c))" cflags=$(CFLAGS) dflags= objdir=$(OBJDIR) reffile=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID)).ref linklibname=$(BD_MODNAME$(BDID))
 
 %buildid
 
@@ -1125,21 +1126,31 @@ BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(notdir
 BD_REFFILE$(BDID)    := %(reffile)
 
 %rule_compile basename=% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
-%rule_compile basename=$(BD_OBJDIR$(BDID))/% objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+%rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end   objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+
 BD_MODDIR$(BDID)     := bollocks
 
 ifeq ($(BD_MODTYPE$(BDID)),library)
-  BD_MODDIR$(BDID)     := $(AROS_LIBS)
+  BD_MODDIR$(BDID)       := $(AROS_LIBS)
+  BD_EXTRAFILES$(BDID)   := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit.c $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs.c
+  BD_EXTRAGENFILES$(BDID):= $(LIBDIR)/lib%(linklibname).a
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_autoinit objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
+  %rule_compile basename=$(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_stubs    objdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) dflags=$(BD_DFLAGS$(BDID))
 endif
 
 ifeq ($(BD_MODDIR$(BDID)),bollocks)
 $(error unhandled MODTYPE %(modtype))
 endif
 
-BD_MODULE$(BDID)   := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
+BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
+BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID)) $(BD_EXTRAGENFILES$(BDID))
+BD_EXTRAOBJS$(BDID) := $(subst .c,.o,$(BD_EXTRAFILES$(BDID)))
+BD_EXTRADEPS$(BDID) := $(subst .c,.d,$(BD_EXTRAFILES$(BDID)))
+BD_DEPS$(BDID)      += $(BD_EXTRADEPS$(BDID))
 
 #MM
-%(mmake) : $(BD_MODULE$(BDID)) $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+%(mmake) : $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) $(BD_GENFILES$(BDID))
 
 #MM
 %(mmake)-clean :
@@ -1147,14 +1158,17 @@ BD_MODULE$(BDID)   := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDI
 	@$(RM) $(BD_OBJS$(BDID)) $(BD_DEPS$(BDID)) $(BD_REFFILE$(BDID))\
 	    $(addprefix $(BD_OBJDIR$(BDID))/,$(addsuffix .c,$(BD_GENFILES$(BDID)))) \
 	    $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) \
-	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID)))
+	    $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) \
+	    $(BD_EXTRAFILES$(BDID)) \
+	    $(BD_EXTRAOBJS$(BDID))
 
 $(BD_REFFILE$(BDID)) : $(BD_SRCS$(BDID)) $(CXREF)
 	@echo "Generating function reference file for module $(BD_MODNAME$(BDID))"
 	@$(CXREF) -raw -CPP "gcc $(strip $(BD_CFLAGS$(BDID))) -E -C -dD" $(subst $(CXREF),,$^) >$@
 
 $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_start.c $(BD_OBJDIR$(BDID))/libdefs.h $(subst .o,.c,$(BD_ENDOBJ$(BDID))) \
-$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) : $(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
+$(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID))) $(BD_EXTRAFILES$(BDID)) : \
+$(BD_CONFFILE$(BDID)) $(GENMODULE) $(BD_REFFILE$(BDID))
 	@echo "Generating functable and includes for module $(BD_MODNAME$(BDID))"
 	@$(GENMODULE) $(BD_MODNAME$(BDID)) $(BD_MODTYPE$(BDID)) $(BD_CONFFILE$(BDID)) $(BD_OBJDIR$(BDID)) $(GENINCDIR) $(BD_REFFILE$(BDID))
 
@@ -1162,7 +1176,16 @@ $(BD_MODULE$(BDID)) : $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))
 	%link_module_q err=$(BD_MODNAME$(BDID)).err endtag=$(BD_ENDOBJ$(BDID)) objs="$(subst $(BD_ENDOBJ$(BDID)),,$^)"
 
 $(addprefix $(AROS_INCLUDES)/,$(BD_GENINCS$(BDID))) : $(addprefix $(GENINCDIR)/,$(BD_GENINCS$(BDID)))
-	@cd $(GENINCDIR); $(CP) $(BD_GENINCS$(BDID)) $(AROS_INCLUDES)
+	@cd $(subst $(AROS_INCLUDES),$(GENINCDIR),$(dir $@)); \
+	    $(CP) $(notdir $@) $@
+
+ifeq ($(BD_MODTYPE$(BDID)),library)
+$(LIBDIR)/lib%(linklibname).a : $(BD_EXTRAOBJS$(BDID))
+	%mklib_q from=$^
+
+$(BD_EXTRAOBJS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
+$(BD_EXTRADEPS$(BDID)) : $(addprefix $(AROS_INCLUDES)/, $(BD_GENINCS$(BDID)))
+endif
 
 %include_deps deps=$(BD_DEPS$(BDID))
 %end
