@@ -1,5 +1,4 @@
 *.err
 mmakefile
-makefile
 geninc
 machine.i

@@ -3,5 +3,4 @@ endtag.c
 libdefs.h
 *.s
 *.map
-makefile
 mmakefile
