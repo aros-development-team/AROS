@@ -26,6 +26,7 @@ SHARED_LIB  :=	$(AROS_LIB)/libarosc_shared.a
 #   - Common always exist in the link library.
 
 COMMON	:= \
+	bcmp \
 	bcopy \
 	bzero \
 	longjmp \
