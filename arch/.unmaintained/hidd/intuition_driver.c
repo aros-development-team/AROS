@@ -639,13 +639,14 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
 	if (w->Flags & WFLG_SIZEGADGET)
 	{
 	    /* this code must not change the 'relright' variable */
-#warning The sizegadget size should depend on sysiclass depth image which itself depends on drawinfo
-
+	    WORD width  = ((struct IntWindow *)w)->sizeimage_width;
+	    WORD height = ((struct IntWindow *)w)->sizeimage_height;
+	    
 	    struct TagItem size_tags[] = {
-	            {GA_RelRight,	-16 + 1		},
-		    {GA_RelBottom,	-16 + 1 	},
-		    {GA_Width,		16		},
-		    {GA_Height,		16		},
+	            {GA_RelRight,	-width + 1	},
+		    {GA_RelBottom,	-height + 1 	},
+		    {GA_Width,		width		},
+		    {GA_Height,		height		},
 		    {GA_DrawInfo,	(IPTR)dri 	},	/* required	*/
 		    {GA_SysGadget,	TRUE		},
 		    {GA_SysGType,	GTYP_SIZING 	},
