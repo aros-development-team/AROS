@@ -37,11 +37,6 @@ LONG PKG_Read( APTR pkg, APTR buffer, LONG length )
     return BZ2_Read( pkg, buffer, length );
 }
 
-LONG PKG_Position( APTR pkg )
-{
-    return BZ2_Position( pkg );
-}
-
 /** High-level functions ****************************************************/
 
 UBYTE /* version */ PKG_ReadHeader( APTR pkg )

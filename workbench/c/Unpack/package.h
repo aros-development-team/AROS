@@ -17,7 +17,6 @@
 APTR PKG_Open( CONST_STRPTR filename, LONG mode );
 void PKG_Close( APTR package );
 LONG PKG_Read( APTR package, APTR buffer, LONG length );
-LONG PKG_Position( APTR package );
 
 /** High-level functions ****************************************************/
 
