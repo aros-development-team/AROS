@@ -619,7 +619,7 @@ endif
   conffile=$(BD_MODNAME$(BDID)).conf initfile=$(BD_MODNAME$(BDID))_init \
   funcs= files= linklibfiles= cflags=$(CFLAGS) dflags= \
   objdir=$(OBJDIR) linklibname=$(BD_MODNAME$(BDID)) uselibs= usecpak=$(USE_CPAK) \
-  genshlinklib=no
+  genshlinklib=no genfunctable= genincludes=
 
 %buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-includes %(mmake)-linklib"
 
@@ -632,6 +632,18 @@ ifeq (%(modtype),)
 $(error using %build_module: $(MODTYPE) has to be defined with the type of the module)
 endif
 
+#Support for the dirty old mf.inc file
+-include $(GENDIR)/$(CURDIR)/mf.inc
+ADD_OBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
+ADD_SOBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
+ifneq ($(ADDITIONAL_OBJS),)
+$(ADD_OBJS) :
+	@$(ECHO) Precompiled $@ does not exists
+	@exit 1
+$(ADD_SOBJS): %.so : %.o
+	@$(CP) $< $@
+endif
+
 # assign and generate the local variables used in this macro
 BD_MODNAME$(BDID)    := %(modname)
 BD_MODTYPE$(BDID)    := %(modtype)
@@ -640,8 +652,8 @@ OBJDIR               ?= $(GENDIR)/$(CURDIR)
 BD_OBJDIR$(BDID)     := %(objdir)
 
 BD_INITFILE$(BDID)   := %(initfile)
-BD_FUNCS$(BDID)      := %(funcs)
-BD_FILES$(BDID)      := %(files)
+BD_FUNCS$(BDID)      := $(filter-out $(SUPPRESS_FILES),%(funcs))
+BD_FILES$(BDID)      := $(filter-out $(SUPPRESS_FILES),%(files))
 BD_LIBFILES$(BDID)   := %(linklibfiles)
 ifneq ($(wildcard $(BD_CONFFILE$(BDID))),)
 BD_ENDFILE$(BDID)    := $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_end
@@ -656,22 +668,36 @@ USE_CPAK             ?= $(USE_CPAK_DEFAULT)
 
 TMP_FILES            := $(notdir $(BD_FILES$(BDID)))
 ifneq ($(BD_FUNCS$(BDID)),)
-  TMP_FILES          := functable $(TMP_FILES)
+  ifeq (%(genfunctable),)
+    ifneq ($(BD_MODTYPE$(BDID)),resource)
+      TMP_FILES          := functable $(TMP_FILES)
+    endif
+  else
+    ifneq (%(genfunctable),no)
+      TMP_FILES          := functable $(TMP_FILES)
+    endif
+  endif
   ifeq (%(usecpak), yes)
     TMP_FILES      += functions
   else
     TMP_FILES      += $(BD_FUNCS$(BDID))
   endif
 endif
-BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES)))
+BD_OBJS$(BDID)       := $(addsuffix .o,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES))) $(ADD_OBJS)
 BD_ENDOBJ$(BDID)     := $(addsuffix .o,$(BD_ENDFILE$(BDID)))
 
-BD_DEPS$(BDID)       := $(patsubst %.o,%.d,$(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID)))
+BD_DEPS$(BDID)       := $(addsuffix .d,$(addprefix $(BD_OBJDIR$(BDID))/,$(TMP_FILES)))
 
 BD_GENINCS$(BDID)    :=
-ifneq ($(BD_FUNCS$(BDID)),)
-  ifneq ($(findstring $(BD_MODTYPE$(BDID)),library gadget device),)
+ifneq (%(genincludes),)
+  ifeq (%(genincludes),yes)
     BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+  endif
+else
+  ifneq ($(BD_FUNCS$(BDID)),)
+    ifneq ($(findstring $(BD_MODTYPE$(BDID)),library gadget device),)
+      BD_GENINCS$(BDID):= clib/$(BD_MODNAME$(BDID))_protos.h defines/$(BD_MODNAME$(BDID)).h proto/$(BD_MODNAME$(BDID)).h
+    endif
   endif
 endif
 # Only generate libdefs.h if the config file exists
@@ -693,7 +719,7 @@ BD_DFLAGS$(BDID)     := %(dflags) -I$(BD_OBJDIR$(BDID)) -I. -I$(TOP)/workbench/l
 endif
 
 # Add additional files depending the module type
-ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device),)
+ifeq ($(findstring $(BD_MODTYPE$(BDID)),library gadget datatype handler device resource),)
     $(error unhandled MODTYPE %(modtype))
 endif
 ifeq ($(BD_MODTYPE$(BDID)),library)
@@ -711,25 +737,13 @@ endif
 ifeq ($(BD_MODTYPE$(BDID)),device)
   BD_MODDIR$(BDID)  := $(AROS_DEVS)
 endif
+ifeq ($(BD_MODTYPE$(BDID)),resource)
+  BD_MODDIR$(BDID)  := $(AROS_MODULES)
+endif
 
 BD_MODULE$(BDID)    := $(BD_MODDIR$(BDID))/$(BD_MODNAME$(BDID)).$(BD_MODTYPE$(BDID))
 BD_GENFILES$(BDID)  := $(BD_MODULE$(BDID))
 BD_DEPS$(BDID)      += $(BD_LINKLIBDEPS$(BDID))
-
-#Support for the dirty old mf.inc file
-
--include $(GENDIR)/$(CURDIR)/mf.inc
-TMP_OBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
-TMP_SOBJS := $(addprefix $(GENDIR)/$(CURDIR)/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
-ifneq ($TMP_OBJS,)
-$(TMP_OBJS) :
-	@$(ECHO) Precompiled $@ does not exists
-	@exit 1
-endif
-$(TMP_SOBJS): %.so : %.o
-	@$(CP) $< $@
-
-BD_OBJS$(BDID)       += $(TMP_OBJS)
 
 #MM %(mmake) : %(mmake)-setup
 #MM %(mmake)-includes : %(mmake)-setup
@@ -827,9 +841,9 @@ $(BD_OBJDIR$(BDID))/$(BD_MODNAME$(BDID))_includes.stamp : $(BD_HEADER_DEPS$(BDID
 	@$(TOUCH) $@
 
 # Generate includes the first time they are needed
-$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h :
-$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h :
-$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h :
+$(GENINCDIR)/clib/$(BD_MODNAME$(BDID))_protos.h \
+$(GENINCDIR)/defines/$(BD_MODNAME$(BDID)).h \
+$(GENINCDIR)/inline/$(BD_MODNAME$(BDID)).h \
 $(GENINCDIR)/proto/$(BD_MODNAME$(BDID)).h :
 	@$(SCRIPTDIR)/genshared -clib -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
 	@$(SCRIPTDIR)/genshared -defines -libdefsfile $(BD_LIBDEFSINC$(BDID)) -prefix $(GENINCDIR) $(BD_FUNCSRCS$(BDID))
@@ -877,7 +891,7 @@ endif
 %rule_link_linklib libname=$(BD_MODNAME$(BDID)) libdir=$(LIBDIR) \
   objs="$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))"
 
-BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))) $(TMP_SOBJS)
+BD_SHOBJS$(BDID) := $(patsubst %.o,%.so,$(BD_INITOBJ$(BDID)) $(BD_OBJS$(BDID)) $(BD_ENDOBJ$(BDID))) $(ADD_SOBJS)
 
 %rule_compile_shared basename=% targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID)) 
 %rule_compile_shared basename=$(BD_ENDFILE$(BDID)) targetdir=$(BD_OBJDIR$(BDID)) cflags=$(BD_CFLAGS$(BDID))
