@@ -155,6 +155,18 @@ static const ULONG coltab[] = {
 	return NULL;
     }
 
+    /* The RefreshLock semaphore is used for BeginRefresh/EndRefresh and
+    ** when executing deferred actions in Intuition's inputhandler.
+    **
+    ** Without this semaphore there can be refreshing trouble when app
+    ** and Intuition do their refreshing at the same time: apps
+    ** usually do EndRefresh(TRUE) and without this sem this could happen
+    ** before Intuition has finished its part of the refreshing --> updating
+    ** state is ended too early.
+    */
+     
+    InitSemaphore(&screen->RefreshLock);
+    
     if(tagList)
     {
 	while((tag = NextTagItem ((const struct TagItem **)&tagList)))
