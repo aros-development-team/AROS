@@ -11,6 +11,9 @@
 #ifndef EXEC_IO_H
 #   include <exec/io.h>
 #endif
+#ifndef DOS_DOS_H
+#   include <dos/dos.h>
+#endif
 #ifndef DOS_FILEHANDLER_H
 #   include <dos/filehandler.h>
 #endif
@@ -61,7 +64,7 @@
 struct IFS_OPEN
 {
     STRPTR io_Filename; /* File to open. */
-    IPTR   io_FileMode; /* see below */
+    ULONG  io_FileMode; /* see below */
 };
 
 /* Closes an opened filehandle. Takes no extra arguments. */
@@ -69,32 +72,29 @@ struct IFS_OPEN
 
 /* Reads from a filehandle into a buffer. */
 #define FSA_READ 3
-struct IFS_READ
+struct IFS_READ_WRITE
 {
-    char * io_Buffer; /* The buffer to read into. */
-    IPTR   io_Length; /* The length of the buffer. This is filled by the
-                         filehandler with the number of bytes actually read. */
+      /* The buffer for the data to read/to write. */
+    void * io_Buffer;
+      /* The length of the buffer. This is filled by the filesystem handler
+         with the number of bytes actually read/written. */
+    LONG   io_Length;
 };
 
-/* Writes the contents of a buffer into a filehandle. */
+/* Writes the contents of a buffer into a filehandle. Uses IFS_READ_WRITE. */
 #define FSA_WRITE 4
-struct IFS_WRITE
-{
-    char * io_Buffer; /* The buffer to write into the file. */
-      /* The number of bytes to write. This is filled by the filehandler with
-         the number of bytes actually written. */
-    IPTR   io_Length;
-};
 
 /* The action does exactly the same as the function Seek(). */
 #define FSA_SEEK 5
 struct IFS_SEEK
 {
-    IPTR io_Negative; /* TRUE, if offset is negative, otherwise FALSE. */
+      /* TRUE, if offset is negative, otherwise FALSE. */
+    LONG io_Negative;
       /* Offset from position, specified as mode. This is filled by the
          filehandler with the old position in the file. */
-    IPTR io_Offset;
-    IPTR io_SeekMode; /* Seek mode as defined in <dos/dos.h> (OFFSET_*). */
+    LONG io_Offset;
+      /* Seek mode as defined in <dos/dos.h> (OFFSET_#?). */
+    LONG io_SeekMode;
 };
 
 /* Sets the size of filehandle. Uses IFS_SEEK (see above) as argument array. */
@@ -108,9 +108,9 @@ struct IFS_WAIT_CHAR
 {
       /* Maximum time (in microseconds) to wait for a character. */
     LONG io_Timeout;
-      /* This is set to 0, if no character arrived in time. Otherwise it is set
-         to a different value. */
-    IPTR io_Success;
+      /* This is set to FALSE by the filehandler, if no character arrived in
+         time. Otherwise it is set to TRUE. */
+    BOOL io_Success;
 };
 
 /* Applies a new mode to a file. If you supply io_Mask with a value of 0,
@@ -120,9 +120,9 @@ struct IFS_FILE_MODE
 {
       /* The new mode to apply to the filehandle. See below for definitions.
          The filehandler fills this with the old mode bits. */
-    IPTR io_FileMode;
+    ULONG io_FileMode;
       /* This mask defines, which flags are to be changed. */
-    IPTR io_Mask;
+    ULONG io_Mask;
 };
 
 /* This action can be used to query if a filehandle is interactive, ie if it
@@ -132,7 +132,7 @@ struct IFS_IS_INTERACTIVE
 {
       /* This boolean is filled by the filehandler. It is set to TRUE, if the
          filehandle is interactive, otherwise it is set to FALSE. */
-    IPTR io_IsInteractive;
+    BOOL io_IsInteractive;
 };
 
 /* Compares two locks for equality. */
@@ -140,7 +140,7 @@ struct IFS_IS_INTERACTIVE
 struct IFS_SAME_LOCK
 {
     void * io_Lock[2]; /* The two locks to compare. */
-    IPTR   io_Same;    /* This set to one of LOCK_DIFFERENT or LOCK_SAME (see
+    LONG   io_Same;    /* This set to one of LOCK_DIFFERENT or LOCK_SAME (see
                           <dos/dos.h> by the filehandler. */
 };
 
@@ -150,10 +150,10 @@ struct IFS_EXAMINE
 {
       /* ExAllData structure buffer to be filled by the filehandler. */
     struct ExAllData * io_ead;
-    IPTR               io_Size; /* Size of the buffer. */
+    LONG               io_Size; /* Size of the buffer. */
       /* With which kind of information shall the buffer be filled with? See
          ED_* definitions in <dos/exall.h> for more information. */
-    IPTR               io_Mode;
+    LONG               io_Mode;
 };
 
 /* Works exactly like FSA_EXAMINE with the exeption that multiple files may be
@@ -171,8 +171,8 @@ struct IFS_EXAMINE
 struct IFS_OPEN_FILE
 {
     STRPTR io_Filename;   /* File to open. */
-    IPTR   io_FileMode;   /* see below */
-    IPTR   io_Protection; /* The protection bits. */
+    ULONG  io_FileMode;   /* see below */
+    ULONG  io_Protection; /* The protection bits. */
 };
 
 /* Creates a new directory. The filehandle of that new directory is returned.
@@ -181,7 +181,7 @@ struct IFS_OPEN_FILE
 struct IFS_CREATE_DIR
 {
     STRPTR io_Filename;   /* Name of directory to create. */
-    IPTR   io_Protection; /* The protection bits. */
+    ULONG  io_Protection; /* The protection bits. */
 };
 
 /* Creates a hard link (ie gives one file a second name). */
@@ -216,9 +216,9 @@ struct IFS_READ_SOFTLINK
 {
       /* The buffer to fill with the pathname. If this buffer is too small, the
          filesystem handler is supposed to return ERROR_LINE_TOO_LONG. */
-    char * io_Buffer;
+    STRPTR io_Buffer;
       /* The size of the buffer pointed to by io_Buffer. */
-    IPTR   io_Size;
+    ULONG  io_Size;
 };
 
 /* Deletes an object on the volume. */
@@ -242,7 +242,7 @@ struct IFS_SET_COMMENT
 struct IFS_SET_PROTECT
 {
     STRPTR io_Filename;   /* The file to change. */
-    IPTR   io_Protection; /* The new protection bits. */
+    ULONG  io_Protection; /* The new protection bits. */
 };
 
 /* Sets the ownership of a file. */
@@ -250,8 +250,8 @@ struct IFS_SET_PROTECT
 struct IFS_SET_OWNER
 {
     STRPTR io_Filename; /* The file to change. */
-    IPTR   io_UID;      /* The new owner. */
-    IPTR   io_GID;      /* The new group owner. */
+    UWORD  io_UID;      /* The new owner. */
+    UWORD  io_GID;      /* The new group owner. */
 };
 
 /* Sets the last modification date of the filename given as first argument.
@@ -260,14 +260,8 @@ struct IFS_SET_OWNER
 #define FSA_SET_DATE 24
 struct IFS_SET_DATE
 {
-    STRPTR io_Filename; /* The file to change. */
-    /* The following three fields are used to specify the date, the file should
-       get. They have the same meaning as the fields in struct DateStamp
-       (<dos/dos.h>), but note well that these fields are IPTRs, while the
-       fields in struct DateStamp are ULONGs! */
-    IPTR   io_Days;
-    IPTR   io_Minute;
-    IPTR   io_Ticks;
+    STRPTR           io_Filename; /* The file to change. */
+    struct DateStamp io_Date;     /* The new date. (see <dos/dosextens.h>) */
 };
 
 /* Check if a filesystem is in fact a FILEsystem, ie can contain different
@@ -277,7 +271,7 @@ struct IFS_IS_FILESYSTEM
 {
       /* This is set to TRUE by the filesystem handler, if it is a filesystem
          and set to FALSE if it is not. */
-    IPTR io_IsFilesystem;
+    BOOL io_IsFilesystem;
 };
 
 /* Changes the number of buffers for the filesystem. The current number of
@@ -287,7 +281,7 @@ struct IFS_MORE_CACHE
 {
       /* Number of buffers to add. May be negative to reduce number of buffers.
          This is to be set to the current number of buffers on success. */
-    IPTR io_NumBuffers;
+    LONG io_NumBuffers;
 };
 
 /* Formats a volume, ie erases all data on it. */
@@ -295,7 +289,7 @@ struct IFS_MORE_CACHE
 struct IFS_FORMAT
 {
     STRPTR io_VolumeName; /* New name for the volume. */
-    IPTR   io_DosType;    /* New type for the volume. Filesystem specific. */
+    ULONG  io_DosType;    /* New type for the volume. Filesystem specific. */
 };
 
 /* Resets/Reads the mount-mode of the volume passed in as io_Unit. The first
@@ -306,9 +300,9 @@ struct IFS_MOUNT_MODE
 {
       /* The new mode to apply to the volume. See below for definitions. The
          filehandler fills this with the old mode bits. */
-    IPTR   io_MountMode;
+    ULONG  io_MountMode;
       /* This mask defines, which flags are to be changed. */
-    IPTR   io_Mask;
+    ULONG  io_Mask;
       /* A passwort, which is needed, if MMF_LOCKED is set. */
     STRPTR io_Password;
 };
@@ -345,13 +339,16 @@ struct IFS_MOUNT_MODE
 #define MMF_WRITE	(1L<<1) /* Mounted for writing. */
 #define MMF_READ_CACHE	(1L<<2) /* Read cache enabled. */
 #define MMF_WRITE_CACHE (1L<<3) /* Write cache enabled. */
-#define MMF_OFFLINE	(1L<<4) /* Filesystem doesn't use the device currently.
-                                */
+#define MMF_OFFLINE	(1L<<4) /* Filesystem currently does not use the
+                                   device. */
 #define MMF_LOCKED	(1L<<5) /* Mount mode is password protected. */
 
 
-/* This structure is an extended IORequest. It is used for messages to
-   AROS filesystem handlers. */
+/* This structure is an extended IORequest (see <exec/io.h>). It is used for
+   requesting actions from AROS filesystem handlers.
+   Note that this structure may grow in the future. Do not depend on its size!
+   You may use sizeof(struct IOFileSys) nevertheless if you are reserving
+   memory for a struct IOFileSys as the size of it will never shrink. */
 struct IOFileSys
 {
     struct IORequest IOFS;	  /* Standard I/O request. */
@@ -360,20 +357,34 @@ struct IOFileSys
     /* This union contains all the data needed for the various actions. */
     union
     {
+/* Obsolete definition, included for backwards compatibility.*/
+#if 0
         IPTR io_ArgArray[4]; /* Generic argument space. */
+#endif
+
+        struct {
+            STRPTR io_DeviceName; /* Name of the device to open. */
+            ULONG  io_Unit;       /* Number of unit to open. */
+            IPTR * io_Environ;    /* Pointer to environment array. (see
+                                     <dos/filehandler.h> */
+        } io_OpenDevice;
+
 	struct {
 	    STRPTR io_Filename;
 	} io_NamedFile;
 
         struct IFS_OPEN            io_OPEN;           /* FSA_OPEN */
-        struct IFS_READ            io_READ;           /* FSA_READ */
-        struct IFS_WRITE           io_WRITE;          /* FSA_WRITE */
+        struct IFS_READ_WRITE      io_READ_WRITE;     /* FSA_READ, FSA_WRITE */
+#define io_READ  io_READ_WRITE
+#define io_WRITE io_READ_WRITE
         struct IFS_SEEK            io_SEEK;           /* FSA_SEEK */
+#define io_SET_FILE_SIZE io_SEEK
         struct IFS_WAIT_CHAR       io_WAIT_CHAR;      /* FSA_WAIT_CHAR */
         struct IFS_FILE_MODE       io_FILE_MODE;      /* FSA_FILE_MODE */
         struct IFS_IS_INTERACTIVE  io_IS_INTERACTIVE; /* FSA_IS_INTERACTIVE */
         struct IFS_SAME_LOCK       io_SAME_LOCK;      /* FSA_SAME_LOCK */
         struct IFS_EXAMINE         io_EXAMINE;        /* FSA_EXAMINE */
+#define io_EXAMINE_ALL io_EXAMINE
         struct IFS_OPEN_FILE       io_OPEN_FILE;      /* FSA_OPEN_FILE */
         struct IFS_CREATE_DIR      io_CREATE_DIR;     /* FSA_CREATE_DIR */
         struct IFS_CREATE_HARDLINK io_CREATE_HARDLINK;/* FSA_CREATE_HARDLINK */
@@ -391,6 +402,8 @@ struct IOFileSys
         struct IFS_MOUNT_MODE      io_MOUNT_MODE;     /* FSA_MOUNT_MODE */
     } io_Union;
 };
-#define io_Args io_Union.io_ArgArray
+#if 0
+    #define io_Args io_Union.io_ArgArray
+#endif
 
 #endif /* DOS_FILESYSTEM_H */
