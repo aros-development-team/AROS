@@ -24,7 +24,7 @@
 
 
 /* Remove all macros. They get new values each time this file is
-    included */
+   included */
 #undef D
 #undef DB2
 #undef ReturnVoid
@@ -35,6 +35,11 @@
 #undef ReturnFloat
 #undef ReturnSpecial
 #undef ReturnBool
+
+/* Sanity check macros */
+#undef ASSERT_VALID_PTR(x)
+#undef ASSERT_VALID_PTR_OR_NULL(x)
+#undef ASSERT(x)
 
 /*  Macros for "stair debugging" */
 #undef SDInit
@@ -105,6 +110,39 @@
 #   endif
 
 
+/* Sanity check macros
+ *
+ *	ASSERT(x)
+ *		Do nothing if the expression <x> evalutates to a
+ *		non-zero value, output a debug message otherwise.
+ *
+ *	ASSERT_VALID_PTR(x)
+ *		Checks that the expression <x> points to a valid
+ *		memory location, and outputs a debug message
+ *		otherwise. A NULL pointer is considered VALID.
+ *
+ *	ASSERT_VALID_PTR_OR_NULL(x)
+ *		Checks that the expression <x> points to a valid
+ *		memory location, and outputs a debug message
+ *		otherwise. A NULL pointer is considered NOT VALID.
+ */
+
+#define DBPRINTF kprintf
+
+#define ASSERT(x) ( (x) ? 0 :					\
+	( DBPRINTF("\x07%s:%ld: assertion failed: %s\n",	\
+	__FILE__, __LINE__, #x) ) );
+
+#define ASSERT_VALID_PTR_OR_NULL(x) ( ((((APTR)(x)) == NULL) ||	\
+	(((LONG)(x) > 1024) &&	TypeOfMem((APTR)(x)))) ? 0 :	\
+	( DBPRINTF("\x07%s:%ld: bad pointer: %s = $%lx\n",	\
+	__FILE__, __LINE__, #x, (APTR)(x)) ) );
+
+#define ASSERT_VALID_PTR(x) ( (((LONG)(x) > 1024) &&		\
+	TypeOfMem((APTR)(x))) ? 0 :				\
+	( DBPRINTF("\x07%s, %ld: bad pointer: %s = $%lx\n",	\
+	__FILE__, __LINE__, #x, (APTR)(x)) ) );
+
 
     /* return-macros. NOTE: I make a copy of the value in __aros_val, because
        the return-value might have side effects (like return x++;). */
@@ -134,6 +172,10 @@
 #else /* !DEBUG */
 #   define D(x)     /* eps */
 #   define DB2(x)     /* eps */
+
+#   define ASSERT_VALID_PTR(x)
+#   define ASSERT_VALID_PTR_OR_NULL(x)
+#   define ASSERT(x)
 
 #   define ReturnVoid(name)                 return
 #   define ReturnPtr(name,type,val)         return val
