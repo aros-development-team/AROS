@@ -8,6 +8,7 @@ USER_LIBS   := amiga arosc m mui
 
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \
+#MM     workbench-classes-zune-balance \
 #MM     workbench-classes-zune-boopsi \
 #MM     workbench-classes-zune-coloradjust \
 #MM     workbench-classes-zune-colorfield \
@@ -31,6 +32,7 @@ USER_LIBS   := amiga arosc m mui
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
+#MM     workbench-classes-zune-balance-clean \
 #MM     workbench-classes-zune-boopsi-clean \
 #MM     workbench-classes-zune-coloradjust-clean \
 #MM     workbench-classes-zune-colorfield-clean \
