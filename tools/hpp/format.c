@@ -289,7 +289,7 @@ rem_again:
 			}
 			else
 			{
-			    emit_html_char ('/', stdout);
+			    emit_html_char ('*', stdout);
 			    goto rem_again;
 			}
 		    }
