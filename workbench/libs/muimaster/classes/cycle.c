@@ -268,7 +268,7 @@ STATIC IPTR Cycle_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     data = INST_DATA(cl, obj);
 
-    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS;
+    data->ehn.ehn_Events   = IDCMP_MOUSEBUTTONS | IDCMP_RAWKEY;
     data->ehn.ehn_Priority = 1;
     data->ehn.ehn_Flags    = 0;
     data->ehn.ehn_Object   = obj;
@@ -574,6 +574,114 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
     struct MUI_CycleData *data = INST_DATA(cl, obj);
     BOOL    	    	  fallthroughtomousemove = FALSE;
     
+    if (msg->muikey != MUIKEY_NONE)
+    {
+    	int old_active = data->popwin ? data->activepopitem : data->entries_active;
+	int new_active = old_active;
+	BOOL eat = FALSE;
+	
+    	switch(msg->muikey)
+	{
+	    case MUIKEY_WINDOW_CLOSE:
+	    	if (data->popwin)
+		{
+		    KillPopupWin(obj, data);
+		    eat = TRUE;
+		}
+		break;
+		
+	    case MUIKEY_PRESS:
+	    	if (data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
+		{
+		    /* fall through to MUIKEY_DOWN */
+		}
+		else if (!data->popwin)
+		{
+		    if (MakePopupWin(obj, data))
+		    {
+    			DoMethod(_win(obj), MUIM_Window_RemEventHandler, (IPTR)&data->ehn);
+			data->ehn.ehn_Events |= IDCMP_MOUSEMOVE;
+			DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
+			eat = TRUE;
+			break;
+		    }
+		    else
+		    {
+		    	/* fall through to MUIKEY_DOWN */
+		    }
+		}
+		else if (data->popwin)
+		{
+		    KillPopupWin(obj, data);
+		    if (new_active != -1)
+		    {
+			set(obj, MUIA_Cycle_Active, new_active);
+		    }
+		    eat = TRUE;
+		    break;		    
+		}
+		/* no break here, because of fall-throughs above */
+		
+	    case MUIKEY_DOWN:
+	    	if (new_active < data->entries_num - 1)
+		{
+		    new_active++;
+		}
+		else if (!data->popwin)
+		{
+		    new_active = 0;
+		}
+		
+		eat = TRUE;
+		break;
+		
+	    case MUIKEY_UP:
+	    	if (new_active)
+		{
+		    new_active--;
+		}
+		else if (!data->popwin)
+		{
+		    new_active = data->entries_num - 1;
+		}
+		
+		eat = TRUE;
+		break;
+		
+	    case MUIKEY_PAGEUP:
+	    case MUIKEY_TOP:
+	    	new_active = 0;
+		eat = TRUE;
+		break;
+		
+	    case MUIKEY_PAGEDOWN:
+	    case MUIKEY_BOTTOM:
+	    	new_active = data->entries_num - 1;
+		eat = TRUE;
+		break;
+	}
+	
+	if (new_active != old_active)
+	{
+	    if (data->popwin)
+	    {
+		data->activepopitem = new_active;
+		    
+		if (old_active != -1) RenderPopupItem(obj, data, old_active);
+		if (new_active != -1) RenderPopupItem(obj, data, new_active);
+	    	
+	    }
+	    else
+	    {
+	    	set(obj, MUIA_Cycle_Active, new_active);
+	    }
+	    
+	}
+	
+	if (eat) return MUI_EventHandlerRC_Eat;
+
+    }
+    
     if (!msg->imsg ||
          data->entries_num < muiGlobalInfo(obj)->mgi_Prefs->cycle_menu_min_entries)
     {
@@ -599,8 +707,17 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 			    
     		    	    fallthroughtomousemove = TRUE;    	    	    	    
 		     	}
+			break;
 		    }
-		    break;
+		    else if (data->popwin)
+		    {
+		    	/* fall through to SELECTUP/MENUUP/MIDDLEUP */
+		    }
+		    else
+		    {
+		    	break;
+		    }
+		    /* no break here! */
 		   
 		case SELECTUP:
 		case MENUUP:
@@ -609,7 +726,8 @@ static IPTR Cycle_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handle
 		    if (data->popwin)
 		    {
 		    	KillPopupWin(obj, data);
-			if ((msg->imsg->Code == SELECTUP) && (data->activepopitem != -1))
+			if ((data->activepopitem != -1) &&
+			    ((msg->imsg->Code == SELECTUP) || (msg->imsg->Code == SELECTDOWN)))
 			{
 			    set(obj, MUIA_Cycle_Active, data->activepopitem);
 			}
