@@ -836,7 +836,7 @@ STATIC ULONG FRHandleEvents(struct LayoutData *ld, struct AslBase_intern *AslBas
     switch (imsg->Class)
     {
     case IDCMP_CLOSEWINDOW:
-	retval = GetSelectedFiles(udata, ld, ASLB(AslBase));
+	retval = FALSE;
 	break;
 	
     case IDCMP_GADGETUP:
