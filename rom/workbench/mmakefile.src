@@ -35,7 +35,7 @@ LIBNAME  := workbench
 ULIBNAME := Workbench
 
 OSMODULE  := workbench.library
-FILES     := handler
+FILES     := handler support
 FUNCTIONS := \
     addappicona \
     addappmenuitema \
@@ -50,7 +50,9 @@ FUNCTIONS := \
     addappwindowdropzonea \
     removeappwindowdropzone \
     changeworkbenchselectiona \
-    makeworkbenchobjectvisiblea
+    makeworkbenchobjectvisiblea \
+    registerworkbench \
+    unregisterworkbench
 
 # BEGIN_DESC{localmakevar}
 # \item{DEPLIBS} List of extra libraries that you want included during
