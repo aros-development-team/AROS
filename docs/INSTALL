@@ -106,9 +106,10 @@ Basic Installation of AROS-SOURCES
 
     Now your keyboard should behave like an American/English keyboard.
     If you have a different keyboard you have to load the AROS keymap,
-    using the 'setmap' program. If you have a Swedish keyboard, type
-    'setmap pc105_s' from the AROS Shell. If you have a German keyboard,
-    type 'setmap pc105_d' or for an Italian keyboard 'setmap pc105_i'.
-    Only English, German, Italian and Swedish keyboards are supported
-    at the moment.
+    using the 'SetKeyboard' program. If you have a Swedish keyboard, type
+    'SetKeyboard pc105_s' from the AROS Shell. If you have a German keyboard,
+    type 'SetKeyboard pc105_d', for an Italian keyboard 'SetKeyboard pc105_i'
+    or for a Norwegian keyboard 'SetKeyboard pc105_n'.
+    Only English, German, Italian, Swedish and Norwegian keyboards are
+    supported at the moment.
 
