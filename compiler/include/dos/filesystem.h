@@ -156,18 +156,26 @@ struct IFS_EXAMINE
     LONG               io_Mode;
 };
 
+#define FSA_EXAMINE_NEXT 12
+struct IFS_EXAMINE_NEXT
+{
+    /* FileInfoBlock structure buffer to be used and filled by the 
+       filehandler. */
+    struct FileInfoBlock * io_fib;
+};
+
 /* Works exactly like FSA_EXAMINE with the exeption that multiple files may be
    examined, ie the filehandle must be a directory. */
-#define FSA_EXAMINE_ALL 12
+#define FSA_EXAMINE_ALL 13
 
 /* This has to be called, if FSA_EXAMINE_ALL is stopped before all examined
    files were returned. It takes no arguments except the filehandle in
    io_Unit. */
-#define FSA_EXAMINE_ALL_END 13
+#define FSA_EXAMINE_ALL_END 14
 
 /* Works exactly like FSA_OPEN, but you can additionally specify protection
    bits to be applied to new files. */
-#define FSA_OPEN_FILE 14
+#define FSA_OPEN_FILE 15
 struct IFS_OPEN_FILE
 {
     STRPTR io_Filename;   /* File to open. */
@@ -177,7 +185,7 @@ struct IFS_OPEN_FILE
 
 /* Creates a new directory. The filehandle of that new directory is returned.
 */
-#define FSA_CREATE_DIR 15
+#define FSA_CREATE_DIR 16
 struct IFS_CREATE_DIR
 {
     STRPTR io_Filename;   /* Name of directory to create. */
@@ -185,7 +193,7 @@ struct IFS_CREATE_DIR
 };
 
 /* Creates a hard link (ie gives one file a second name). */
-#define FSA_CREATE_HARDLINK 16
+#define FSA_CREATE_HARDLINK 17
 struct IFS_CREATE_HARDLINK
 {
     STRPTR   io_Filename; /* The filename of the link to create. */
@@ -194,7 +202,7 @@ struct IFS_CREATE_HARDLINK
 
 /* Creates a soft link (ie a file is created, which references another by its
    name). */
-#define FSA_CREATE_SOFTLINK 17
+#define FSA_CREATE_SOFTLINK 18
 struct IFS_CREATE_SOFTLINK
 {
     STRPTR io_Filename;  /* The filename of the link to create. */
@@ -203,7 +211,7 @@ struct IFS_CREATE_SOFTLINK
 
 /* Renames a file. To the old and the new name, the current directory is
    applied to. */
-#define FSA_RENAME 18
+#define FSA_RENAME 19
 struct IFS_RENAME
 {
     STRPTR io_Filename; /* The old filename. */
@@ -211,7 +219,7 @@ struct IFS_RENAME
 };
 
 /* Resolves the full path name of the file a softlink filehandle points to. */
-#define FSA_READ_SOFTLINK 19
+#define FSA_READ_SOFTLINK 20
 struct IFS_READ_SOFTLINK
 {
       /* The buffer to fill with the pathname. If this buffer is too small, the
@@ -222,14 +230,14 @@ struct IFS_READ_SOFTLINK
 };
 
 /* Deletes an object on the volume. */
-#define FSA_DELETE_OBJECT 20
+#define FSA_DELETE_OBJECT 21
 struct IFS_DELETE_OBJECT
 {
     STRPTR io_Filename; /* The name of the file to delete. */
 };
 
 /* Sets a filecomment for a file. */
-#define FSA_SET_COMMENT 21
+#define FSA_SET_COMMENT 22
 struct IFS_SET_COMMENT
 {
     STRPTR io_Filename; /* The file of the file to be commented. */
@@ -238,7 +246,7 @@ struct IFS_SET_COMMENT
 };
 
 /* Sets the protection bits of a file. */
-#define FSA_SET_PROTECT 22
+#define FSA_SET_PROTECT 23
 struct IFS_SET_PROTECT
 {
     STRPTR io_Filename;   /* The file to change. */
@@ -246,7 +254,7 @@ struct IFS_SET_PROTECT
 };
 
 /* Sets the ownership of a file. */
-#define FSA_SET_OWNER 23
+#define FSA_SET_OWNER 24
 struct IFS_SET_OWNER
 {
     STRPTR io_Filename; /* The file to change. */
@@ -257,7 +265,7 @@ struct IFS_SET_OWNER
 /* Sets the last modification date of the filename given as first argument.
    The date is given as standard TimeStamp structure (see <dos/dos.h>) as
    second to fourth argument (ie as days, minutes and ticks). */
-#define FSA_SET_DATE 24
+#define FSA_SET_DATE 25
 struct IFS_SET_DATE
 {
     STRPTR           io_Filename; /* The file to change. */
@@ -266,7 +274,7 @@ struct IFS_SET_DATE
 
 /* Check if a filesystem is in fact a FILEsystem, ie can contain different
    files. */
-#define FSA_IS_FILESYSTEM 25
+#define FSA_IS_FILESYSTEM 26
 struct IFS_IS_FILESYSTEM
 {
       /* This is set to TRUE by the filesystem handler, if it is a filesystem
@@ -276,7 +284,7 @@ struct IFS_IS_FILESYSTEM
 
 /* Changes the number of buffers for the filesystem. The current number of
    buffers is returned. The size of the buffers is filesystem-dependend. */
-#define FSA_MORE_CACHE 26
+#define FSA_MORE_CACHE 27
 struct IFS_MORE_CACHE
 {
       /* Number of buffers to add. May be negative to reduce number of buffers.
@@ -285,7 +293,7 @@ struct IFS_MORE_CACHE
 };
 
 /* Formats a volume, ie erases all data on it. */
-#define FSA_FORMAT 27
+#define FSA_FORMAT 28
 struct IFS_FORMAT
 {
     STRPTR io_VolumeName; /* New name for the volume. */
@@ -295,7 +303,7 @@ struct IFS_FORMAT
 /* Resets/Reads the mount-mode of the volume passed in as io_Unit. The first
    and second argument work exactly like FSA_FILE_MODE, but the third
    argument can contain a password, if MMF_LOCKED is set. */
-#define FSA_MOUNT_MODE 28
+#define FSA_MOUNT_MODE 29
 struct IFS_MOUNT_MODE
 {
       /* The new mode to apply to the volume. See below for definitions. The
@@ -309,17 +317,17 @@ struct IFS_MOUNT_MODE
 
 /* The following actions are currently not supported. */
 #if 0
-#define FSA_SERIALIZE_DISK  29
-#define FSA_FLUSH	    30
-#define FSA_INHIBIT	    31
-#define FSA_WRITE_PROTECT   32
-#define FSA_DISK_CHANGE     33
-#define FSA_ADD_NOTIFY	    34
-#define FSA_REMOVE_NOTIFY   35
-#define FSA_DISK_INFO	    36
-#define FSA_CHANGE_SIGNAL   37
-#define FSA_LOCK_RECORD     38
-#define FSA_UNLOCK_RECORD   39
+#define FSA_SERIALIZE_DISK  30
+#define FSA_FLUSH	    31
+#define FSA_INHIBIT	    32
+#define FSA_WRITE_PROTECT   33
+#define FSA_DISK_CHANGE     34
+#define FSA_ADD_NOTIFY	    35
+#define FSA_REMOVE_NOTIFY   36
+#define FSA_DISK_INFO	    37
+#define FSA_CHANGE_SIGNAL   38
+#define FSA_LOCK_RECORD     39
+#define FSA_UNLOCK_RECORD   40
 #endif
 
 /* io_FileMode for FSA_OPEN, FSA_OPEN_FILE and FSA_FILE_MODE. These are flags
@@ -353,6 +361,7 @@ struct IOFileSys
 {
     struct IORequest IOFS;	  /* Standard I/O request. */
     LONG	     io_DosError; /* Dos error code. */
+    LONG             io_DirPos;   /* The result from telldir() is stored here */
 
     /* This union contains all the data needed for the various actions. */
     union
@@ -385,6 +394,7 @@ struct IOFileSys
         struct IFS_SAME_LOCK       io_SAME_LOCK;      /* FSA_SAME_LOCK */
         struct IFS_EXAMINE         io_EXAMINE;        /* FSA_EXAMINE */
 #define io_EXAMINE_ALL io_EXAMINE
+	struct IFS_EXAMINE_NEXT	   io_EXAMINE_NEXT;   /* FSA_EXAMINE_NEXT */
         struct IFS_OPEN_FILE       io_OPEN_FILE;      /* FSA_OPEN_FILE */
         struct IFS_CREATE_DIR      io_CREATE_DIR;     /* FSA_CREATE_DIR */
         struct IFS_CREATE_HARDLINK io_CREATE_HARDLINK;/* FSA_CREATE_HARDLINK */
