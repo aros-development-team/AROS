@@ -35,7 +35,7 @@
    coords, instead of relative ones as in case of MoveWindow. OTOH it has the
    disadvantage that it also generates IDCMP_NEWSIZE IntuiMessages. */
    
-#define USE_CHANGEWINDOWBOX 1
+#define USE_CHANGEWINDOWBOX 0
 
 #define CALL_WINDOWFUNCS_IN_INPUTHANDLER 0
 
