@@ -68,7 +68,7 @@ void Characterize(struct Menu *menu);
     /* If a menu is active for this task, we must wait until the
        user is done. We check the task rather than the window as
        semaphores is owned by tasks... */
-    struct Task *me = FindTask(NULL);
+    /* struct Task *me = FindTask(NULL); */
 
     /* This must be before CalculateDims(). */
     Characterize(menu);
