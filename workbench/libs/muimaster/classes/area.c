@@ -1022,10 +1022,15 @@ static ULONG Area_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_DrawBackground *msg)
 {
     struct MUI_AreaData *data = INST_DATA(cl, obj);
+    struct MUI_ImageSpec *bg;
+    
     if (!(data->mad_Flags & MADF_CANDRAW)) /* not between show/hide */
 	return FALSE;
 
-    if (!data->mad_Background)
+    bg = (!(data->mad_Flags & MADF_SELECTED) || !(data->mad_Flags & MADF_SHOWSELSTATE)) ? 
+    	 data->mad_Background : data->mad_SelBack;
+          
+    if (!bg)
     {
     	Object *parent;
     	get(obj,MUIA_Parent,&parent);
@@ -1034,7 +1039,7 @@ static ULONG Area_DrawBackground(struct IClass *cl, Object *obj, struct MUIP_Dra
     	return TRUE;
     }
 
-    zune_draw_image(data->mad_RenderInfo, data->mad_Background,
+    zune_draw_image(data->mad_RenderInfo, bg,
 		    msg->left, msg->top, msg->width, msg->height,
 		    msg->xoffset, msg->yoffset, 0);
 
