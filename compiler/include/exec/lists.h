@@ -99,7 +99,7 @@ do                                        \
     n->ln_Succ->ln_Pred = n->ln_Pred;     \
 } while (0)
 
-#ifdef __GNUC__
+#if defined(__GNUC__) || defined(__INTEL_COMPILER)
 #   define GetHead(_l)                                       \
     ({                                                       \
         struct List *l = (struct List *)(_l);                \
