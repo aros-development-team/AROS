@@ -207,8 +207,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		D(bug("Activating new window (title %s)\n", new_w->Title));
 		
-		IntuitionBase->ActiveWindow = new_w;
-			
 		D(bug("Window activated\n"));
 		w = new_w;
 		new_active_window = TRUE;
@@ -230,12 +228,9 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	
 	/* At this point w points to a valid active window */
 	
-	/* Now that we have locked this window (with EWFLG_DELAYCLOSE), and we can safely refresh it */
-	
 	if (new_active_window)
 	{
-	    kprintf("Refreshing new active window \"%s\"\n", FindTask(NULL)->tc_Node.ln_Name);
-	    RefreshWindowFrame(new_w);
+	    int_activatewindow(w, IntuitionBase);
 	}
 	
 	if (swallow_event)
@@ -957,8 +952,19 @@ D(bug("Window: %p\n", w));
 	    switch (im->Code)
 	    {
 		case IMCODE_CLOSEWINDOW:
-		    int_closewindow((struct Window *)im->IAddress);
+		    int_closewindow((struct Window *)im->IAddress, IntuitionBase);
 		    break;
+		    
+		case IMCODE_ACTIVATEWINDOW: {
+		    struct msgActivateWindow *msg;
+		    
+		    msg = (struct msgActivateWindow *)im;
+		    int_activatewindow(msg->Window, IntuitionBase);
+		    
+		    FreeMem(msg, sizeof (*msg));
+		    
+		    break; }
+			
 		
 		/* ActivateWindow + other stuff goes here */
 	    }
