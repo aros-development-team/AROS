@@ -19,10 +19,12 @@
 #include <stdlib.h>
 
 #include "executecommand.h"
+#include "locale.h"
 
 void cleanup(CONST_STRPTR message)
 {
     ExecuteCommand_Deinitialize();
+    Locale_Deinitialize();
     
     if (message != NULL)
     {
@@ -41,7 +43,8 @@ int main(int argc, char **argv)
     BPTR    parent  = NULL;
     STRPTR  initial = NULL;
     
-    if (!ExecuteCommand_Initialize()) cleanup("Initialization failed.");
+    if (!Locale_Initialize()) cleanup("Failed to initialize locale.");
+    if (!ExecuteCommand_Initialize()) cleanup("Failed to initialize classes.");
     
     if (argc == 0)
     {

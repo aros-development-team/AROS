@@ -21,7 +21,7 @@
 #include <proto/workbench.h>
 
 #include "executecommand.h"
-//#include "locale.h"
+#include "locale.h"
 
           
 /*** Private methods ********************************************************/
@@ -89,16 +89,17 @@ IPTR ExecuteCommand__OM_NEW
     (
         CLASS, self, NULL,
         
-        MUIA_Application_Title, (IPTR) "Execute Command",
+        MUIA_Application_Title, __(MSG_TITLE),
         
         SubWindow, (IPTR) window = WindowObject,
-            MUIA_Window_Title,       (IPTR) "Execute Command",
-            MUIA_Window_Activate,           TRUE,
-            MUIA_Window_CloseGadget,        FALSE,
+            MUIA_Window_Title,       __(MSG_TITLE),
+            MUIA_Window_Activate,    TRUE,
+            MUIA_Window_NoMenus,     TRUE,
+            MUIA_Window_CloseGadget, FALSE,
             
             WindowContents, (IPTR) VGroup,
                 Child, (IPTR) HGroup,
-                    GroupFrameT("Command and arguments"),
+                    GroupFrameT(_(MSG_LABEL_COMMANDLINE)),
                     Child, (IPTR) PopaslObject,
                         MUIA_Popstring_String, (IPTR) commandString = StringObject,
                             MUIA_String_Contents, (IPTR) initial,
@@ -118,8 +119,8 @@ IPTR ExecuteCommand__OM_NEW
                         
                         Child, (IPTR) HVSpace,
                         Child, (IPTR) HVSpace,
-                        Child, (IPTR) executeButton = SimpleButton("_Execute"),
-                        Child, (IPTR) cancelButton  = SimpleButton("_Cancel"),
+                        Child, (IPTR) executeButton = SimpleButton(_(MSG_BUTTON_EXECUTE)),
+                        Child, (IPTR) cancelButton  = SimpleButton(_(MSG_BUTTON_CANCEL)),
                     End,
                 End,
             End,
@@ -218,37 +219,42 @@ IPTR ExecuteCommand__MUIM_ExecuteCommand_ExecuteCommand
         
         GET(data->ecd_CommandString, MUIA_String_Contents, &command);
         
-        if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
-        
-        console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
-        if (console != NULL)
+        /* Make sure that the commandline isn't just whitespace or NULL */
+        if (command != NULL && command[strspn(command, " \t")] != '\0')
         {
-            if
-            (
-                SystemTags
-                (
-                    command,
-                    
-                    SYS_Asynch,	   TRUE,
-                    SYS_Input,  (IPTR) console,
-                    SYS_Output, (IPTR) NULL,
-                    SYS_Error,  (IPTR) NULL,
-                    
-                    TAG_DONE
-                ) == -1
-            )
+            if (data->ecd_Parent != NULL) cd = CurrentDir(data->ecd_Parent);
+            
+            console = Open("CON:////Output Window/CLOSE/AUTO/WAIT", MODE_OLDFILE);
+            if (console != NULL)
             {
-                /* An error occured, so we need to close the filehandle */
-                Close(console);
+                if
+                (
+                    SystemTags
+                    (
+                        command,
+                        
+                        SYS_Asynch,	   TRUE,
+                        SYS_Input,  (IPTR) console,
+                        SYS_Output, (IPTR) NULL,
+                        SYS_Error,  (IPTR) NULL,
+                        
+                        TAG_DONE
+                    ) == -1
+                )
+                {
+                    /* An error occured, so we need to close the filehandle */
+                    // FIXME: error dialog
+                    Close(console);
+                }
             }
+            else
+            {
+                // FIXME: error dialog
+            }
+            
+            if (cd != NULL) CurrentDir(cd);
         }
-        else
-        {
-            // FIXME: error dialog
-        }
-        
-        if (cd != NULL) CurrentDir(cd);
-        
+    
         DoMethod(self, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     }
     
