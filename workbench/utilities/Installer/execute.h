@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -19,6 +19,7 @@ extern char *collect_strings(ScriptArg *, char, int);
 extern long int getint(ScriptArg *);
 extern void traperr(char *, char *);
 extern void execute_script(ScriptArg *, int);
+extern char * DynNameFromLock(BPTR);
 
 /* Command symbols */
 struct CommandList

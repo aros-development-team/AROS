@@ -486,13 +486,31 @@ Execute an AmigaDOS script.
   Returns 1 on success and 0 on failure.
 
 
+( getassign <name> [<option>])
+  Returns the path of <name>. The default is to return the logical assignments.
+  <Option> can be one of:
+	'a': match logical assignments only (default)
+	'v': match volumes only
+	'd': match devices only
+
+  If <name> does not exist as the specified type, an empty string is returned.
+
+  Note that you must specify the device/volume/assign without the trailing
+  colon. The return value will be a true path, ie. with the colon.
+  If <option> is device and <name> is a device, its volume name is reported,
+  unless it doesn't exist in which case the device name is returned.
+
+
+( getdevice <path> )
+  Returns the volume name on which <path> exists or an empty string if
+  <path> does not exist.
+
+
 /* Unimplemented commands */
 ( copyfiles )
 ( copylib )
 ( expandpath )
 ( foreach )
-( getassign )
-( getdevice )
 ( getsum )
 ( getversion )
 ( patmatch )
