@@ -166,7 +166,7 @@ AROS_LH2(struct ideBase *,  init,
                                     (struct IORequest*)IBase->ide_TimerIO, 0))
                     {
                         int	cunit = 0;
-			
+
                     	D(bug("ide_init: Got timer.device\n"));
 
                     	/* Find all drives */
@@ -406,7 +406,7 @@ AROS_LH0(BPTR, Expunge, struct ideBase *, IBase, 3, ide)
 
     /* No expunge. Set delayed flag only */
     ((struct Library *)IBase)->lib_Flags |= LIBF_DELEXP;
-            
+
     return 0;
     AROS_LIBFUNC_EXIT
 }
@@ -452,10 +452,10 @@ AROS_LH1(void, BeginIO,
 
     /* Get ide_Unit structure */
     unit = (struct ide_Unit *)iorq->io_Unit;
-            
+
     ((struct Node *)iorq)->ln_Type = NT_MESSAGE;
     comm = iorq->io_Command;
-    
+
     /* Is this new command (NSCMD_)? */
     if (comm > APCMD_UNITPARAMS)
     {
@@ -476,10 +476,10 @@ AROS_LH1(void, BeginIO,
     }
 
     Disable();
-    
+
     /* Should this command be immediate? */
     if (!((1 << comm) & IMMEDIATES_CMD))
-    {   
+    {
         /* No, if it's ATAPI device or active device send command through ide.task */
         if ((unit->au_Flags & AF_AtapiDev) || (unit->au_Unit.unit_flags & UNITF_ACTIVE))
         {
@@ -553,19 +553,65 @@ inline ULONG WriteBlocks(ULONG block, ULONG count, APTR buffer, struct ide_Unit 
 
 void cmd_Read64(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
-    /* Not implemented yet */
+    ULONG   block;
+    ULONG   size;
+    APTR    buffer;
+    ULONG   cnt;
+
+    block  = ioStd(iorq)->io_Offset >> unit->au_SecShift;
+    block |= ioStd(iorq)->io_Actual << (32 - unit->au_SecShift);
+
+    size = ioStd(iorq)->io_Length >> unit->au_SecShift;
+    buffer = ioStd(iorq)->io_Data;
+
+    if (unit->au_Flags & AF_IntDisable)
+        Disable();
+    /* Add cache support */
+
+    iorq->io_Error = ReadBlocks(block, size, buffer, unit, &cnt);
+
+    if (unit->au_Flags & AF_IntDisable)
+        Enable();
+
+    ioStd(iorq)->io_Actual = cnt;
 }
 
 void cmd_Write64(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
-    /* Not implemented yet */
+    ULONG block;
+    ULONG size;
+    APTR  buffer;
+    ULONG cnt;
+
+    if (unit->au_DevType)
+    {
+        iorq->io_Error = TDERR_WriteProt;
+        ioStd(iorq)->io_Actual = 0;
+        return;
+    }
+
+    block  = ioStd(iorq)->io_Offset >> unit->au_SecShift;
+    block |= ioStd(iorq)->io_Actual << (32 - unit->au_SecShift);
+
+    size = ioStd(iorq)->io_Length >> unit->au_SecShift;
+    buffer = ioStd(iorq)->io_Data;
+
+    if (unit->au_Flags & AF_IntDisable)
+        Disable();
+
+    iorq->io_Error = WriteBlocks(block, size, buffer, unit, &cnt);
+
+    if (unit->au_Flags & AF_IntDisable)
+        Enable();
+
+    ioStd(iorq)->io_Actual = cnt;
 }
 
 void cmd_Seek64(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
     ULONG ptr;
 
-    ptr = ioStd(iorq)->io_Offset >> unit->au_SecShift;
+    ptr  = ioStd(iorq)->io_Offset >> unit->au_SecShift;
     ptr |= ioStd(iorq)->io_Actual << (32 - unit->au_SecShift);
 
     if (unit->au_Flags & AF_AtapiDev)
@@ -592,7 +638,7 @@ void cmd_Read32(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *
     ULONG   size;
     APTR    buffer;
     ULONG   cnt;
-    
+
     block = ioStd(iorq)->io_Offset >> unit->au_SecShift;
     size = ioStd(iorq)->io_Length >> unit->au_SecShift;
     buffer = ioStd(iorq)->io_Data;
@@ -600,12 +646,12 @@ void cmd_Read32(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *
     if (unit->au_Flags & AF_IntDisable)
         Disable();
     /* Add cache support */
-    
+
     iorq->io_Error = ReadBlocks(block, size, buffer, unit, &cnt);
 
     if (unit->au_Flags & AF_IntDisable)
         Enable();
-    
+
     ioStd(iorq)->io_Actual = cnt;
 }
 
@@ -645,7 +691,7 @@ void cmd_Update(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *
 void cmd_Flush(struct IORequest *iorq, struct ide_Unit *unit, struct TaskData *td)
 {
     struct Message *msg;
-    
+
     /* Flush waiting messages */
 
     Forbid();
