@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-FILES	:=	kbd_init functable kbdclass support endtag
+FILES	:=	kbd_init functable kbdclass support kbd_common endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native-kbd :

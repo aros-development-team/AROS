@@ -37,7 +37,7 @@
 
 /*#include "../../speaker.h" inb/outb defines in there cause trouble */
 
-#define DEBUG 1
+#define DEBUG 0
 #include <aros/debug.h>
 
 void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
@@ -45,11 +45,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 void kbd_updateleds();
 int kbd_reset(void);
 int poll_data(void);
-
-
-#ifdef MOUSE_ACTIVE
-int mouse_reset(void);
-#endif
 
 long pckey2hidd (ULONG event);
 
@@ -272,38 +267,6 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 
         }
         
-#if MOUSE_ACTIVE
-        if ((XSD(cl)->irqhidd_mouse = OOP_NewObject(NULL, CLID_Hidd_IRQ, NULL)))
-        {
-            /* install mouse irq handler */
-
-            HIDDT_IRQ_Handler   *irq_mouse;
-
-            irq_mouse = AllocMem(sizeof(HIDDT_IRQ_Handler), MEMF_CLEAR|MEMF_PUBLIC);
-
-            if (!irq_mouse)
-            {
-                kprintf("ERROR: Cannot install PS/2 Mouse\n");
-                Alert( AT_DeadEnd | AN_IntrMem );
-            }
-	        
-            irq_mouse->h_Node.ln_Pri  = 127;		/* Set the highest pri */
-            irq_mouse->h_Node.ln_Name = "Mouse class irq";
-#warning Uses same routine as keyboard for irq handling!
-            irq_mouse->h_Code         = kbd_keyint;     /* Use same routine since uses same hw! */
-            irq_mouse->h_Data         = (APTR)o;
-
-            HIDD_IRQ_AddHandler(XSD(cl)->irqhidd_mouse, irq_mouse, vHidd_IRQ_Mouse);
-
-            D(bug("Installed mouse irq handler!\n"));
-
-            Disable();
-            mouse_reset();
-            Enable();
-
-        }
-#endif
-
   /*
    * Please leave the following lines here.
    * It only works when they are here. I don't know why, but
@@ -437,6 +400,13 @@ VOID free_kbdclass(struct kbd_staticdata *xsd)
 
 /************************* Keyboard Interrupt ****************************/
 
+unsigned char handle_kbd_event(void);
+void kb_wait(void);
+void kbd_write_cmd(int cmd);
+void aux_write_ack(int val);
+void kbd_write_output_w(int data);
+void kbd_write_command_w(int data);
+
 #define WaitForInput        		\
     ({ int i = 0,dummy;     		\
        do                   		\
@@ -468,18 +438,15 @@ ULONG kbd_keystate;
 #define	LMETA	0x00000200
 #define RMETA	0x00000400
 
-
 #warning Old place of kbd_reset
 
 void kbd_updateleds()
 {
     UBYTE key,info;
-    WaitForOutput;
-    kbd_write_output(KBD_OUTCMD_SET_LEDS);
+    kbd_write_output_w(KBD_OUTCMD_SET_LEDS);
     WaitForInput;
     key=kbd_read_input();
-    WaitForOutput;
-    kbd_write_output(kbd_keystate & 0x07);
+    kbd_write_output_w(kbd_keystate & 0x07);
     WaitForInput;
     key=kbd_read_input();
 }
@@ -621,66 +588,6 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         if ((event & 0x7f7f)==(K_Scroll_Lock & 0x7f)) event|=0x4000;
         Hidd_Kbd_HandleEvent((OOP_Object *)irq->h_Data,(ULONG) event);
       }
-#if MOUSE_ACTIVE
-      else
-      {
-        UBYTE mousecode = kbd_read_input();
-        if (0xfa == mousecode) 
-        {
-          D(bug("                             Got a mouse ACK!\n"));
-          if (expected_mouse_acks) {
-            expected_mouse_acks--;
-          }
-        }
-        else
-        {
-          expected_mouse_acks = 0;
-          mouse_data[mouse_collected_bytes] = mousecode;
-          
-          if (0 == (mouse_data[0] & 8))
-            mouse_collected_bytes = 0;
-          else
-          {
-            mouse_collected_bytes++;
-            if (3 == mouse_collected_bytes) 
-            {
-              mouse_collected_bytes = 0;
-              /*
-               * Let's see whether these data can be right...
-               *
-               *  D7 D6 D5 D4 D3 D2 D1 D0
-               *  YV XV YS X2  1  M  R  L
-               *  X7 .  .  .  .  .  .  X1   (X, signed)
-               *  Y7 .  .  .  .  .  .  Y1   (Y, signed)
-               *
-               *  YV,XV : over flow in x/y direction
-               *  XS,YS : represents sign of X and Y
-               *  X,Y   : displacement in x and y direction.
-               *  X and Y are signed, XS, YS are there to double check the
-               *  sign and correctnes of the collected data (?).
-               *
-               *  http://www.hut.fi/~then/mytexts/mouse.htm
-               */
-              if ( (( (mouse_data[0] & 0x10) && (char)mouse_data[1] <  0) ||
-                    (!(mouse_data[0] & 0x10) && (char)mouse_data[1] >= 0)   ) &&
-                   (( (mouse_data[0] & 0x20) && (char)mouse_data[2] <  0) ||
-                    (!(mouse_data[0] & 0x20) && (char)mouse_data[2] >= 0    )))
-              {
-                D(bug("Got the following: 1. byte: 0x%x, dx=%d, dy=%d\n",
-                      mouse_data[0],
-                      mouse_data[1],
-                      mouse_data[2]));
-                /*
-                 * Pass them on to the handler!
-                 */
-              
-#warning The mouse data *seem* right at this point and can now be treated!
-              }
-            }
-          }
-        }
-      }
-#endif
       info = kbd_read_status();
     } /* while data can be read */
 
@@ -751,9 +658,6 @@ int kbd_reset(void)
 
     poll_data();		/* Empty keys queue */
 
-    WaitForOutput;		/* Disable mouse interface */
-    kbd_write_command(KBD_CTRLCMD_MOUSE_DISABLE);
-
     WaitForOutput;
     kbd_write_command(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard */
 
@@ -764,6 +668,7 @@ int kbd_reset(void)
       return FALSE;
     }
 
+    //kbd_write_output_w(KBD_CMD_RESET);
 
     WaitForOutput;
     kbd_write_command(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
@@ -782,141 +687,3 @@ int kbd_reset(void)
 
     return TRUE;
 }
-
-#ifdef MOUSE_ACTIVE
-
-/*
- * Please leave this routine as is for now.
- * It works and that is all that matters right now.
- */
-int mouse_reset(void)
-{
-    UBYTE info;
-    UBYTE retval;
-
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_WRITE_MODE); /* write mode */
-    WaitForOutput;
-    kbd_write_output(KBD_MODE_KCC |
-    		     KBD_MODE_DISABLE_KBD |
-		     KBD_MODE_DISABLE_MOUSE |
-		     KBD_MODE_SYS);
-    WaitForOutput;
-    WaitForInput;
-    retval = kbd_read_input();
-//    D(bug("Return from disabling all irqs: 0x%x\n",retval));
-    
-
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_MOUSE_ENABLE); /* enable mouse interface */
-
-
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_TEST_MOUSE); /* Initialize and test mouse interface */
-    retval = kbd_read_input();
-    if (retval != 0x00)
-    {
-      D(bug("Error! (1) Got return value %x from mouse interface test.\n",retval));
-//      return FALSE;
-    }
-
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_MOUSE_ENABLE);
-
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-    WaitForOutput;
-    kbd_write_output(KBD_OUTCMD_RESET); /* reset mouse */
-    WaitForOutput;
-    WaitForInput;
-    retval = kbd_read_input();
-//    D(bug("Return value from reset mouse: 0x%x\n",retval));
-    
-    WaitForOutput;
-    kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-    WaitForOutput;
-    kbd_write_output(KBD_OUTCMD_ENABLE); /* enable mouse device */
-    WaitForOutput;
-    WaitForInput;
-    retval = kbd_read_input();
-//    D(bug("Return value from enable mouse: 0x%x\n",retval));
-
-    do
-    {
-      WaitForOutput;
-      kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-      WaitForOutput;
-      kbd_write_output(KBD_OUTCMD_SET_RATE); /* set samples */
-      WaitForInput;
-      WaitForOutput;
-      kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-      WaitForOutput;
-      kbd_write_output(50); /* 50 samples/s */
-      WaitForOutput;
-      WaitForInput;
-      retval = kbd_read_input();
-//      D(bug("Return value from setting mouse samples: 0x%x\n",retval));
-    }
-    while (KBD_REPLY_RESEND == retval);
-
-    do
-    {
-      WaitForOutput;
-      kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE);/* write to mouse */
-      WaitForOutput;
-      kbd_write_output(0xe7);	/* set 2:1 scaling */
-      WaitForOutput;
-      WaitForInput;
-      retval = kbd_read_input();
-//      D(bug("Return value from setting mouse scaling 2:1: 0x%x\n",retval));
-    }
-    while (KBD_REPLY_RESEND == retval);
-
-
-    do
-    {
-      WaitForOutput;
-      kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-      WaitForOutput;
-      kbd_write_output(0xea); /* stream mode on mouse device */
-      WaitForOutput;
-      WaitForInput;
-      retval = kbd_read_input();
-//      D(bug("Return value from stream mode on mouse: 0x%x\n",retval));
-    }
-    while (KBD_REPLY_RESEND == retval);
-
-    do
-    {
-      WaitForOutput;
-      kbd_write_command(KBD_CTRLCMD_WRITE_MOUSE); /* write to mouse */
-      WaitForOutput;
-      kbd_write_output(KBD_OUTCMD_ENABLE);	  /* enable mouse device */
-      WaitForOutput;
-      WaitForInput;
-      retval = kbd_read_input();
-//      D(bug("Return value from enable mouse: 0x%x\n",retval));
-    }
-    while (KBD_REPLY_RESEND == retval);
-
-
-    WaitForOutput;
-#if 1
-    /* stegerg: this seems to be wrong!? */
-    outb(0x47, 0x64);     /* enable mouse,keyboard & irqs */
-#else
-    kbd_write_command(KBD_CTRLCMD_WRITE_MODE);
-    WaitForOutput;
-    kbd_write_output(KBD_MODE_KCC |
-    		     KBD_MODE_KBD_INT |
-		     KBD_MODE_MOUSE_INT |
-		     KBD_MODE_SYS);
-#endif
-    WaitForOutput;
-
-    expected_mouse_acks = 1;
-
-    D(bug("Initialized PS/2 mouse!\n"));
-}
-
-#endif

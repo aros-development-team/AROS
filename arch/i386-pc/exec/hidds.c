@@ -92,7 +92,7 @@ void hidd_demo()
 	{
 	    UBYTE *data;
 	    data = AllocMem(100, MEMF_PUBLIC);
-	    strcpy(data, "hidd.mouse.hw");
+	    strcpy(data, "hidd.bus.mouse");
 	    ioStd(io)->io_Command=32000;
 	    ioStd(io)->io_Data=data;
 	    ioStd(io)->io_Length=strlen(data);

@@ -266,6 +266,8 @@ int main()
     SysBase->ResModules=romtagList;
     InitCode(RTF_SINGLETASK, 0);
 
+    kprintf("Open mouse.hidd = %08.8lx\n", OpenLibrary("mouse.hidd", 0));
+
     kprintf("Starting SAD\n");
 
 	Debug(0);
