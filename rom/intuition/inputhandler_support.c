@@ -105,14 +105,7 @@ void send_intuimessage(struct IntuiMessage *imsg,
 		       struct Window *w,
 		       struct IntuitionBase *IntuitionBase)
 {
-    /* Mark the message as taken */    
-
-    /* Reply the message to intuition */
-    imsg->ExecMessage.mn_ReplyPort = w->WindowPort;
-
-    imsg->IDCMPWindow = w;
-    
-    PutMsg(w->UserPort, (struct Message *)imsg);
+    SendIntuiMessage(w, imsg);
 }
 
 /*********************************************************************/
@@ -120,7 +113,7 @@ void send_intuimessage(struct IntuiMessage *imsg,
 void free_intuimessage(struct IntuiMessage *imsg,
 		       struct IntuitionBase *IntuitionBase)
 {
-    FreeMem(imsg, sizeof (struct ExtIntuiMessage));
+    FreeIntuiMessage(imsg);
 }
 
 /*********************************************************************/
@@ -130,7 +123,7 @@ struct IntuiMessage *alloc_intuimessage(struct Window *w,
 {
     struct IntuiMessage	*imsg;
     
-    imsg = AllocMem(sizeof(struct ExtIntuiMessage), MEMF_CLEAR|MEMF_PUBLIC);
+    imsg = AllocIntuiMessage(w);
     if (imsg)
     {
         if (w)
@@ -145,8 +138,6 @@ struct IntuiMessage *alloc_intuimessage(struct Window *w,
 		imsg->MouseX = w->MouseX;
 		imsg->MouseY = w->MouseY;
 	    }
-	    
-	    imsg->IDCMPWindow = w;
 	}
     	CurrentTime(&imsg->Seconds, &imsg->Micros);
     }

@@ -6,6 +6,7 @@
 #include <proto/layers.h>
 #include <proto/graphics.h>
 #include <proto/keymap.h>
+#include <proto/utility.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/interrupts.h>
@@ -151,17 +152,27 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 		Permit();
 	    	break;
 	
+	    case IDCMP_IDCMPUPDATE:
+		if (im->IAddress)
+		{
+		    FreeTagItems((struct TagItem *)im->IAddress);
+		}
+		/* fall through */
+		
 	    case IDCMP_VANILLAKEY:
 	    case IDCMP_RAWKEY:
-	    case IDCMP_IDCMPUPDATE:
 	    	if (im->Qualifier & IEQUALIFIER_REPEAT)
 		{
+		    /* IDCMP_IDCMPUPDATE messages can also be sent from app task, therefore
+		       it would be better if there was an ATOMIC_DEC macro or something */
+		       
 		    IW(im->IDCMPWindow)->num_repeatevents--;
 		}
 	    	break;
 		
 	} /* switch(im->Class) */
-    	free_intuimessage(im, IntuitionBase);
+	
+    	FreeIntuiMessage(im);
 	
     } /* while ((im = (struct IntuiMessage *)GetMsg(iihdata->IntuiReplyPort))) */
 }
@@ -832,16 +843,12 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		} /* if (a gadget is currently active) */
 		else if (w)
-		{
-		    BOOL is_repeat_event;
-		    		  
+		{		    		  
 		    /* This is a regular RAWKEY event (no gadget taking care
 		       of it...). */
 
 		    if (iihdata->ActQualifier & IEQUALIFIER_REPEAT)
-		    {
-		        is_repeat_event = TRUE;
-			
+		    {			
 		        /* don't send repeat key events if repeatqueue is full */			
 		    	if (IW(w)->num_repeatevents >= IW(w)->repeatqueue) break;
 		    }
@@ -852,14 +859,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 			if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
 			{
-			    if (ih_fire_intuimessage(w,
-			    		      	     IDCMP_VANILLAKEY,
-					      	     keyBuffer,
-					      	     0,
-					      	     IntuitionBase))
-			    {
-			        if (is_repeat_event) IW(w)->num_repeatevents++;
-			    }
+			    ih_fire_intuimessage(w,
+			    		      	 IDCMP_VANILLAKEY,
+					      	 keyBuffer,
+					      	 ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machines!? */
+					      	 IntuitionBase);
 			    break;
 			} 
 
@@ -869,14 +873,11 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			       			    
 		    }
 		    
-		    if (ih_fire_intuimessage(w,
-		    		      	     IDCMP_RAWKEY,
-				      	     ie->ie_Code,
-				      	     0, /* TODO: Should be prevdownqode/qual */
-				      	     IntuitionBase))
-		    {
-		    	if (is_repeat_event) IW(w)->num_repeatevents++;
-		    }		 
+		    ih_fire_intuimessage(w,
+		    		      	 IDCMP_RAWKEY,
+				      	 ie->ie_Code,
+				      	 ie->ie_position.ie_addr, /* ie_dead.ie_prev[1|2]Down[Code|Qual]. 64 bit machine!? */
+				      	 IntuitionBase);
 				      
 		} /* regular RAWKEY */
 	    }
