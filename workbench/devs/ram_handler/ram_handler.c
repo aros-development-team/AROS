@@ -2718,7 +2718,13 @@ STRPTR getName(struct rambase *rambase, struct dnode *dn, STRPTR name)
 	}
     }
 
-    return fullName;
+    if (fullName != fullNameTemp)
+    {
+    	length = 0;
+    	while((fullNameTemp[length] = fullName[length])) length++;
+    }
+
+    return fullNameTemp;
 }
 
 
