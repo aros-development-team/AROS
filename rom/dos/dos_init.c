@@ -34,9 +34,6 @@ static void *const LIBFUNCTABLE[];
 LIBBASETYPEPTR INIT ();
 extern const char LIBEND;
 
-struct DosLibrary *DOSBase;
-struct DosLibrary **dosPtr = &DOSBase;
-
 extern void DOSBoot(struct ExecBase *, struct DosLibrary *);
 
 int Dos_entry(void)
@@ -70,8 +67,6 @@ static const APTR Dos_inittabl[4]=
     &INIT
 };
 
-static struct RootNode rootnode;
-
 #undef SysBase
 
 AROS_LH2(LIBBASETYPEPTR, init,
@@ -87,14 +82,15 @@ AROS_LH2(LIBBASETYPEPTR, init,
     LIBBASE->dl_SysBase = SysBase;
     LIBBASE->dl_SegList = segList;
     
-    LIBBASE->dl_Root = &rootnode;
+    LIBBASE->dl_Root = (struct RootNode *)AllocMem(sizeof(struct RootNode),
+                                                   MEMF_PUBLIC|MEMF_CLEAR);
 
     /* Init the RootNode structure */
     taskarray = (ULONG *)AllocMem(sizeof(ULONG) + sizeof(APTR), MEMF_CLEAR);
     taskarray[0] = 1;
-    rootnode.rn_TaskArray = MKBADDR(taskarray);
+    LIBBASE->dl_Root->rn_TaskArray = MKBADDR(taskarray);
 
-    NewList((struct List *)&LIBBASE->dl_Root->rn_CliList);
+    NEWLIST((struct List *)&LIBBASE->dl_Root->rn_CliList);
     InitSemaphore(&LIBBASE->dl_Root->rn_RootLock);
 
     InitSemaphore(&LIBBASE->dl_DosListLock);
@@ -142,6 +138,7 @@ AROS_LH2(LIBBASETYPEPTR, init,
 	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_ReplyPort    = &timermp;	
 	LIBBASE->dl_TimerIO.tr_node.io_Message.mn_Length       = sizeof(struct timerequest);
 
+
 	SetSignal(0, SIGF_SINGLE);
 	
 	if(OpenDevice("timer.device", UNIT_VBLANK, 
@@ -149,7 +146,6 @@ AROS_LH2(LIBBASETYPEPTR, init,
 	{
 	    LIBBASE->dl_TimerBase = LIBBASE->dl_TimerIO.tr_node.io_Device;
 
-	    *dosPtr = LIBBASE;
 	    AddLibrary((struct Library *)LIBBASE);
 
 	    /* This is where we start the RTC_AFTERDOS residents */
