@@ -19,6 +19,8 @@
 #include <clib/graphics_protos.h>
 #include <clib/aros_protos.h>
 #include "intuition_intern.h"
+#include "gadgets.h"
+#include "propgadgets.h"
 
 static struct IntuitionBase * IntuiBase;
 
@@ -32,9 +34,6 @@ int	  GetSysScreen (void);
 extern void SetGC (struct RastPort * rp, GC gc);
 extern GC GetGC (struct RastPort * rp);
 extern void SetXWindow (struct RastPort * rp, int win);
-
-extern int CalcKnobSize (struct Gadget * propGadget, long * knobleft,
-			long * knobtop, long * knobwidth, long * knobheight);
 
 static int MyErrorHandler (Display *, XErrorEvent *);
 static int MySysErrorHandler (Display *);
@@ -156,6 +155,9 @@ int intui_init (struct IntuitionBase * IntuitionBase)
 {
     int t;
 
+    if (!sysDisplay)
+	return False;
+
     for (t=0; keytable[t].amiga != -1; t++)
 	keytable[t].keycode = XKeysymToKeycode (sysDisplay,
 		keytable[t].keysym);
@@ -250,18 +252,20 @@ int intui_OpenWindow (struct IntWindow * iw,
 		| IDCMP_GADGETUP
 		| IDCMP_MENUPICK
 	    )
+	|| iw->iw_Window.FirstGadget
     )
 	winattr.event_mask |= ButtonPressMask | ButtonReleaseMask;
 
     if (iw->iw_Window.IDCMPFlags & IDCMP_REFRESHWINDOW)
 	winattr.event_mask |= ExposureMask;
 
-    if (iw->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE)
+    if (iw->iw_Window.IDCMPFlags & IDCMP_MOUSEMOVE
+	|| iw->iw_Window.FirstGadget
+    )
 	winattr.event_mask |= PointerMotionMask;
 
     if (iw->iw_Window.IDCMPFlags & (IDCMP_RAWKEY | IDCMP_VANILLAKEY))
 	winattr.event_mask |= KeyPressMask | KeyReleaseMask;
-
 
     if (iw->iw_Window.IDCMPFlags & IDCMP_ACTIVEWINDOW)
 	winattr.event_mask |= EnterWindowMask;
@@ -269,7 +273,7 @@ int intui_OpenWindow (struct IntWindow * iw,
     if (iw->iw_Window.IDCMPFlags & IDCMP_INACTIVEWINDOW)
 	winattr.event_mask |= LeaveWindowMask;
 
-    if (iw->iw_Window.IDCMPFlags & (IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW))
+/*    if (iw->iw_Window.IDCMPFlags & (IDCMP_NEWSIZE | IDCMP_CHANGEWINDOW)) */
 	winattr.event_mask |= StructureNotifyMask;
 
     /* TODO IDCMP_SIZEVERIFY IDCMP_DELTAMOVE */
@@ -791,78 +795,91 @@ void intui_ProcessEvents (void)
 			    else
 				gadget->Flags |= GFLG_SELECTED;
 
+			    RefreshGList (gadget, w, NULL, 1);
+
 			    break;
 
 			case GTYP_PROPGADGET: {
-			    long knobleft, knobtop, knobwidth, knobheight;
+			    struct BBox knob;
 			    struct PropInfo * pi;
+			    UWORD dx, dy, flags;
 
 			    pi = (struct PropInfo *)gadget->SpecialInfo;
 
 			    if (!pi)
 				break;
 
-			    knobleft   = GetLeft (gadget, w);
-			    knobtop    = GetTop (gadget, w);
-			    knobwidth  = GetWidth (gadget, w);
-			    knobheight = GetHeight (gadget, w);
+			    CalcBBox (w, gadget, &knob);
 
-			    if (!CalcKnobSize (gadget
-				, &knobleft, &knobtop, &knobwidth, &knobheight)
-			    )
+			    if (!CalcKnobSize (gadget, &knob))
 				break;
+
+			    dx = pi->HorizPot;
+			    dy = pi->VertPot;
 
 			    if (pi->Flags & FREEHORIZ)
 			    {
-				if (xb->x < knobleft)
+				if (xb->x < knob.Left)
 				{
-				    if (pi->HorizPot > pi->HPotRes)
-					pi->HorizPot -= pi->HPotRes;
+				    if (dx > pi->HPotRes)
+					dx -= pi->HPotRes;
 				    else
-					pi->HorizPot = 0;
+					dx = 0;
 				}
-				else if (xb->x >= knobleft + knobwidth)
+				else if (xb->x >= knob.Left + knob.Width)
 				{
-				    if (pi->HorizPot + pi->HPotRes < MAXPOT)
-					pi->HorizPot += pi->HPotRes;
+				    if (dx + pi->HPotRes < MAXPOT)
+					dx += pi->HPotRes;
 				    else
-					pi->HorizPot = MAXPOT;
+					dx = MAXPOT;
 				}
 			    }
 
 			    if (pi->Flags & FREEVERT)
 			    {
-				if (xb->y < knobtop)
+				if (xb->y < knob.Top)
 				{
-				    if (pi->VertPot > pi->VPotRes)
-					pi->VertPot -= pi->VPotRes;
+				    if (dy > pi->VPotRes)
+					dy -= pi->VPotRes;
 				    else
-					pi->VertPot = 0;
+					dy = 0;
 				}
-				else if (xb->y >= knobtop + knobheight)
+				else if (xb->y >= knob.Top + knob.Height)
 				{
-				    if (pi->VertPot + pi->VPotRes < MAXPOT)
-					pi->VertPot += pi->VPotRes;
+				    if (dy + pi->VPotRes < MAXPOT)
+					dy += pi->VPotRes;
 				    else
-					pi->VertPot = MAXPOT;
+					dy = MAXPOT;
 				}
 			    }
 
-			    if (xb->x >= knobleft
-				&& xb->y >= knobtop
-				&& xb->x < knobleft + knobwidth
-				&& xb->y < knobtop + knobheight
+			    flags = pi->Flags;
+
+			    if (xb->x >= knob.Left
+				&& xb->y >= knob.Top
+				&& xb->x < knob.Left + knob.Width
+				&& xb->y < knob.Top + knob.Height
 			    )
-				pi->Flags |= KNOBHIT;
+				flags |= KNOBHIT;
 			    else
-				pi->Flags &= ~KNOBHIT;
+				flags &= ~KNOBHIT;
 
 			    gadget->Flags |= GFLG_SELECTED;
+
+			    NewModifyProp (gadget
+				, w
+				, NULL
+				, flags
+				, dx
+				, dy
+				, pi->HorizBody
+				, pi->VertBody
+				, 1
+			    );
 
 			    break; }
 			}
 
-			RefreshGList (gadget, w, NULL, 1);
 		    }
 
 		    break;
@@ -921,12 +938,19 @@ void intui_ProcessEvents (void)
 
 			    pi = (struct PropInfo *)gadget->SpecialInfo;
 
-			    if (pi)
-				pi->Flags &= ~KNOBHIT;
-
 			    gadget->Flags &= ~GFLG_SELECTED;
 
-			    RefreshGList (gadget, w, NULL, 1);
+			    if (pi)
+				NewModifyProp (gadget
+				    , w
+				    , NULL
+				    , pi->Flags &= ~KNOBHIT
+				    , pi->HorizPot
+				    , pi->VertPot
+				    , pi->HorizBody
+				    , pi->VertBody
+				    , 1
+				);
 
 			    break; }
 
@@ -1000,7 +1024,7 @@ void intui_ProcessEvents (void)
 			break;
 
 		    case GTYP_PROPGADGET: {
-			long knobleft, knobtop, knobwidth, knobheight;
+			struct BBox knob;
 			long dx, dy;
 			struct PropInfo * pi;
 
@@ -1010,15 +1034,9 @@ void intui_ProcessEvents (void)
 			    knob */
 			if (pi && (pi->Flags & KNOBHIT))
 			{
-			    knobleft   = GetLeft (gadget, w);
-			    knobtop    = GetTop (gadget, w);
-			    knobwidth  = GetWidth (gadget, w);
-			    knobheight = GetHeight (gadget, w);
+			    CalcBBox (w, gadget, &knob);
 
-			    if (!CalcKnobSize (gadget
-				, &knobleft, &knobtop
-				, &knobwidth, &knobheight)
-			    )
+			    if (!CalcKnobSize (gadget, &knob))
 				break;
 
 			    /* Delta movement */
@@ -1026,70 +1044,79 @@ void intui_ProcessEvents (void)
 			    dy = xm->y - mpos_y;
 
 			    /* Move the knob the same amount, ie.
-				knobleft += dx; knobtop += dy;
+				knob.Left += dx; knob.Top += dy;
 
-				knobleft = knobleft
-				    + (pi->CWidth - knobwidth)
+				knob.Left = knob.Left
+				    + (pi->CWidth - knob.Width)
 				    * pi->HorizPot / MAXPOT;
 
-				ie. dx = (pi->CWidth - knobwidth)
+				ie. dx = (pi->CWidth - knob.Width)
 				    * pi->HorizPot / MAXPOT;
 
 				or
 
 				pi->HorizPot = (dx * MAXPOT) /
-				    (pi->CWidth - knobwidth);
+				    (pi->CWidth - knob.Width);
 			    */
 			    if (pi->Flags & FREEHORIZ
-				&& pi->CWidth != knobwidth)
+				&& pi->CWidth != knob.Width)
 			    {
 				dx = (dx * MAXPOT) /
-					(pi->CWidth - knobwidth);
+					(pi->CWidth - knob.Width);
 
 				if (dx < 0)
 				{
 				    dx = -dx;
 
 				    if (dx > pi->HorizPot)
-					pi->HorizPot = 0;
+					dx = 0;
 				    else
-					pi->HorizPot -= dx;
+					dx = pi->HorizPot - dx;
 				}
 				else
 				{
 				    if (dx + pi->HorizPot > MAXPOT)
-					pi->HorizPot = MAXPOT;
+					dx = MAXPOT;
 				    else
-					pi->HorizPot += dx;
+					dx = pi->HorizPot + dx;
 				}
 			    } /* FREEHORIZ */
 
 			    if (pi->Flags & FREEVERT
-				&& pi->CHeight != knobheight)
+				&& pi->CHeight != knob.Height)
 			    {
 				dy = (dy * MAXPOT) /
-					(pi->CHeight - knobheight);
+					(pi->CHeight - knob.Height);
 
 				if (dy < 0)
 				{
 				    dy = -dy;
 
 				    if (dy > pi->VertPot)
-					pi->VertPot = 0;
+					dy = 0;
 				    else
-					pi->VertPot -= dy;
+					dy = pi->VertPot - dy;
 				}
 				else
 				{
 				    if (dy + pi->VertPot > MAXPOT)
-					pi->VertPot = MAXPOT;
+					dy = MAXPOT;
 				    else
-					pi->VertPot += dy;
+					dy = pi->VertPot + dy;
 				}
 			    } /* FREEVERT */
 			} /* Has PropInfo and Mouse is over knob */
 
-			RefreshGList (gadget, w, NULL, 1);
+			NewModifyProp (gadget
+			    , w
+			    , NULL
+			    , pi->Flags
+			    , dx
+			    , dy
+			    , pi->HorizBody
+			    , pi->VertBody
+			    , 1
+			);
 
 			break; } /* PROPGADGET */
 
