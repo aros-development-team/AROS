@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Code for various operations on Regions and Rectangles
-    Lang: english
+    Lang: English
 */
 
 #define AROS_ALMOST_COMPATIBLE 1
@@ -28,7 +28,7 @@ void dumplist(struct GfxBase *GfxBase)
     struct ChunkPool *Pool;
     int n = 0;
 
-    Pool = GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
+    Pool = (struct ChunkPool *)GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
 
     while (Pool)
     {
@@ -45,7 +45,7 @@ void dumplist(struct GfxBase *GfxBase)
             ChunkE = GetSucc(ChunkE);
         }
 
-        Pool = GetSucc(Pool);
+        Pool = (struct ChunkPool *)GetSucc(Pool);
     }
 }
 #endif
@@ -60,7 +60,7 @@ inline struct RegionRectangleExtChunk *__NewRegionRectangleExtChunk
 
     ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
 
-    Pool = GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
+    Pool = (struct ChunkPool *)GetHead(&PrivGBase(GfxBase)->ChunkPoolList);
 
 tryagain:
 
@@ -73,6 +73,7 @@ tryagain:
         if (!Pool)
         {
 	    ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+
             return NULL;
         }
 
@@ -80,7 +81,7 @@ tryagain:
 
         Pool->NumChunkFree = SIZECHUNKBUF;
 
-        for (i=0; i<SIZECHUNKBUF; i++)
+        for (i = 0; i < SIZECHUNKBUF; i++)
         {
             ADDTAIL(&Pool->ChunkList, &Pool->Chunks[i]);
         }
@@ -88,7 +89,7 @@ tryagain:
         ADDHEAD(&PrivGBase(GfxBase)->ChunkPoolList, Pool);
     }
 
-    ChunkE = GetHead(&Pool->ChunkList);
+    ChunkE = (struct ChunkExt *)GetHead(&Pool->ChunkList);
 #warning Remove this check when the bug is surely gone away
     if (!ChunkE)
     {
@@ -126,6 +127,7 @@ tryagain:
     return &ChunkE->Chunk;
 }
 
+
 void __DisposeRegionRectangleExtChunk
 (
     struct RegionRectangleExtChunk *Chunk,
@@ -151,6 +153,7 @@ void __DisposeRegionRectangleExtChunk
     ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
 }
 
+
 inline struct RegionRectangle *_NewRegionRectangle
 (
     struct RegionRectangle **LastRectPtr,
@@ -166,7 +169,9 @@ inline struct RegionRectangle *_NewRegionRectangle
         Chunk = _NewRegionRectangleExtChunk();
 
         if (Chunk)
+	{
             RRE = Chunk->Rects;
+	}
 
         if (RRE)
         {
@@ -174,7 +179,7 @@ inline struct RegionRectangle *_NewRegionRectangle
             RRE->RR.Prev = NULL;
             RRE->RR.Next = NULL;
 
-            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+            RRE[SIZERECTBUF - 1].RR.Next = NULL; /* IMPORTANT !!! */
 
             Chunk->FirstChunk = Chunk;
         }
@@ -192,7 +197,9 @@ inline struct RegionRectangle *_NewRegionRectangle
             RRE = Chunk->Rects;
         }
         else
+	{
             RRE = NULL;
+	}
 
         if (RRE)
         {
@@ -201,7 +208,7 @@ inline struct RegionRectangle *_NewRegionRectangle
             RRE->RR.Next = NULL;
             (*LastRectPtr)->Next = &RRE->RR;
 
-            RRE[SIZERECTBUF-1].RR.Next = NULL; /* IMPORTANT !!! */
+            RRE[SIZERECTBUF - 1].RR.Next = NULL; /* IMPORTANT !!! */
         }
     }
     else
@@ -218,6 +225,7 @@ inline struct RegionRectangle *_NewRegionRectangle
     return *LastRectPtr = (struct RegionRectangle *)RRE;
 }
 
+
 void _DisposeRegionRectangleList
 (
     struct RegionRectangle *RR,
@@ -227,7 +235,9 @@ void _DisposeRegionRectangleList
     struct RegionRectangleExtChunk *NextChunk;
 
     if (!RR)
+    {
 	return;
+    }
 
     if (RR->Prev)
     {
@@ -248,7 +258,7 @@ void _DisposeRegionRectangleList
         RR->Next = NULL;
     }
 
-    while(NextChunk)
+    while (NextChunk)
     {
         struct RegionRectangleExtChunk *OldChunk = NextChunk;
 
@@ -282,7 +292,9 @@ BOOL _LinkRegionRectangleList
         if (!new)
         {
             if (prev)
+	    {
                 _DisposeRegionRectangleList(prev->Next, GfxBase);
+	    }
 
             return FALSE;
         }
@@ -418,6 +430,8 @@ void dumprect(struct Rectangle *rec)
     kprintf("(%d,%d)-(%d,%d)\n", (int)rec->MinX, (int)rec->MinY,
                                  (int)rec->MaxX, (int)rec->MaxY);
 }
+
+
 void dumpregion(struct Region *reg)
 {
     struct RegionRectangle *rr;
@@ -443,6 +457,7 @@ void dumpregion(struct Region *reg)
     }
 }
 
+
 void dumpregionrectangles(struct RegionRectangle *rr)
 {
 
@@ -453,6 +468,7 @@ void dumpregionrectangles(struct RegionRectangle *rr)
         rr = rr->Next;
     }
 }
+
 
 void dumpband(struct RegionRectangle *rr, LONG OffX, LONG MinY, LONG MaxY)
 {
@@ -474,6 +490,7 @@ void dumpband(struct RegionRectangle *rr, LONG OffX, LONG MinY, LONG MaxY)
         kprintf("\n");
 }
 #endif
+
 
 BOOL _OrBandBand
 (
@@ -520,6 +537,7 @@ BOOL _OrBandBand
 
     return TRUE;
 }
+
 
 BOOL _AndBandBand
 (
@@ -582,6 +600,7 @@ BOOL _AndBandBand
 
     return TRUE;
 }
+
 
 BOOL _ClearBandBand
 (
@@ -692,6 +711,7 @@ BOOL _ClearBandBand
     return TRUE;
 }
 
+
 BOOL _DoOperationBandBand
 (
     BandOperation           *Operation,
@@ -783,7 +803,6 @@ BOOL _DoOperationBandBand
         }
 
 	DOBANDCHECKS(FirstLastDst, LastDst, Dst);
-
     }
 
 
@@ -858,10 +877,12 @@ end:
     return res;
 }
 
+
 #if DOTEST
 
 #undef GfxBase
 #include <proto/graphics.h>
+
 
 int main(void)
 {
