@@ -76,7 +76,7 @@ const struct Resident Console_resident=
 
 static const char name[]="console.device";
 
-static const char version[]="$VER: console 41.0 (17.11.97)\r\n";
+static const char version[]="$VER: console 41.0 (17.11.1997)\r\n";
 
 static const APTR inittabl[4]=
 {

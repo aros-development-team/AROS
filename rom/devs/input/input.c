@@ -63,7 +63,7 @@ const struct Resident Input_resident=
 
 static const char name[]="input.device";
 
-static const char version[]="$VER: input 41.0 (3.4.97)\r\n";
+static const char version[]="$VER: input 41.0 (3.4.1997)\r\n";
 
 static const APTR inittabl[4]=
 {
