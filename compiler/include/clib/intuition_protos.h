@@ -156,6 +156,16 @@ __AROS_LP1(struct Window *, OpenWindow,
     __AROS_LCA(struct NewWindow *, newWindow, A0), \
     struct IntuitionBase *, IntuitionBase, 34, Intuition)
 
+__AROS_LP2(struct Window *, OpenWindowTagList,
+    __AROS_LPA(struct NewWindow *, newWindow, A0),
+    __AROS_LPA(struct TagItem   *, tagList, A1),
+    struct IntuitionBase *, IntuitionBase, 101, Intuition)
+#define OpenWindowTagList(newWindow, tagList) \
+    __AROS_LC2(struct Window *, OpenWindowTagList, \
+    __AROS_LCA(struct NewWindow *, newWindow, A0), \
+    __AROS_LCA(struct TagItem   *, tagList, A1), \
+    struct IntuitionBase *, IntuitionBase, 101, Intuition)
+
 __AROS_LP4(void, PrintIText,
     __AROS_LPA(struct RastPort  *, rp, A0),
     __AROS_LPA(struct IntuiText *, iText, A1),
