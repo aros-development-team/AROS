@@ -163,6 +163,7 @@ SHARED	:= \
 	setenv \
 	setlinebuf \
 	setvbuf \
+	sleep \
 	snprintf \
 	sprintf \
 	srand48 \
