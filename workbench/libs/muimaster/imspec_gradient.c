@@ -127,6 +127,8 @@ VOID zune_gradient_draw
     if (!(CyberGfxBase && (GetBitMapAttr(mri->mri_RastPort->BitMap, BMA_DEPTH) >= 15)))
         return;
 
+    xoff = yoff = 0;
+
     switch(spec->u.gradient.orientation)
     {
         case 'v':
