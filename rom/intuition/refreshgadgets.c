@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/29 13:57:38  digulla
+    Commented
+    Moved common code from driver to Intuition
+
     Revision 1.1  1996/08/28 17:55:35  digulla
     Proportional gadgets
     BOOPSI
@@ -28,18 +32,28 @@
 	struct IntuitionBase *, IntuitionBase, 37, Intuition)
 
 /*  FUNCTION
+	Refreshes all gadgets starting at the specified gadget.
 
     INPUTS
+	gadgets - The first gadget to be refreshed
+	window - The gadget must be in this window
+	requester - If any gadget has GTYP_REQGADGET set, this must
+		point to a valid Requester. Otherwise the value is
+		ignored.
 
     RESULT
+	None.
 
     NOTES
 
     EXAMPLE
+	// Refresh all gadgets of a window
+	RefreshGadgets (win->FirstGadget, win, NULL);
 
     BUGS
 
     SEE ALSO
+	RefreshGList()
 
     INTERNALS
 

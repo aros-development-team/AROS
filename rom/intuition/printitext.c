@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.2  1996/08/29 13:57:37  digulla
+    Commented
+    Moved common code from driver to Intuition
+
     Revision 1.1  1996/08/23 17:28:18  digulla
     Several new functions; some still empty.
 
@@ -30,10 +34,17 @@
 	struct IntuitionBase *, IntuitionBase, 36, Intuition)
 
 /*  FUNCTION
+	Render an IntuiText in the specified RastPort with the
+	specified offset.
 
     INPUTS
+	rp - Draw into this RastPort
+	iText - Render this text
+	left, top - Starting-Point. All coordinates in the IntuiText
+		structures are relative to this point.
 
     RESULT
+	None.
 
     NOTES
 

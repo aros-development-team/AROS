@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1996/08/29 13:57:38  digulla
+    Commented
+    Moved common code from driver to Intuition
+
     Revision 1.2  1996/08/29 07:50:49  digulla
     Fixed a small bug in PropGadgets. The jumpsize of the knob was too small.
 
@@ -100,14 +104,33 @@ int CalcKnobSize (struct Gadget * propGadget, long * knobleft, long * knobtop,
 	struct IntuitionBase *, IntuitionBase, 72, Intuition)
 
 /*  FUNCTION
+	Refresh (draw anew) the specified number of gadgets starting
+	at the specified gadget.
 
     INPUTS
+	gadgets - This is the first gadget which will be refreshed.
+	window - The window which contains the gadget
+	requester - If the gadget has GTYP_REQGADGET set, this must be
+		a pointer to a Requester; otherwise the value is
+		ignored.
+	numGad - How many gadgets should be refreshed. The value
+		may range from 0 to MAXLONG. If there are less gadgets
+		in the list than numGad, only the gadgets in the
+		list will be refreshed.
 
     RESULT
+	None.
 
     NOTES
+	This function *must not* be called inside a
+	BeginRefresh()/EndRefresh() pair.
 
     EXAMPLE
+	// Refresh one gadget
+	RefreshGList (&gadget, win, NULL, 1);
+
+	// Refresh all gadgets in the window
+	RefreshGList (win->FirstGadget, win, NULL, -1L);
 
     BUGS
 

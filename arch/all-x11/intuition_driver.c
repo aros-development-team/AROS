@@ -202,8 +202,15 @@ void intui_SetWindowTitles (struct Window * win, char * text, char * screen)
     hints.height = win->Height;
     hints.flags  = PPosition | PSize;
 
-    if (screen == (char *)-1)
+    if (screen == (char *)~0L)
 	screen = "Workbench 3.1";
+    else if (!screen)
+	screen = "";
+
+    if (text == (char *)~0LL)
+	text = win->Title;
+    else if (!text)
+	text = "";
 
     XSetStandardProperties (sysDisplay, w->iw_XWindow, text, screen,
 	    None, NULL, 0, &hints);
