@@ -12,7 +12,7 @@
 ; Copy System to RAM:
 RAM:
 
-SYS:contrib/aminet/untgz SYS:AROS.tgz GUI
+SYS:contrib/aminet/untgz SYS:AROS.tgz GUI CLOSEWB
 
 C/Assign SYS: RAM:
 C/Assign C: SYS:C
