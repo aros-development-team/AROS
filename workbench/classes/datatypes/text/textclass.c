@@ -1,4 +1,4 @@
-/********************************************************************** 
+/**********************************************************************
  text.datatype - (c) 2000 by Sebastian Bauer
 
  This text.datatype engine
@@ -44,6 +44,9 @@
 /* #define MYDEBUG */
 #include "debug.h"
 
+#ifdef _AROS
+extern struct Library *LayersBase;
+#endif
 
 #ifdef _AROS
 #define NO_PRINTER 1
