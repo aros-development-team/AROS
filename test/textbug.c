@@ -39,7 +39,7 @@ static void dotest(void)
     Text(win->RPort, "1234567890", 10);
 
     SetDrMd(win->RPort, JAM1);
-    Move(win->RPort, -30, 60);
+    Move(win->RPort, -20, 60);
     Text(win->RPort, "1234567890", 10);
     Move(win->RPort, 120, 60);
     Text(win->RPort, "1234567890", 10);
