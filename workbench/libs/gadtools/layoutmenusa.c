@@ -125,8 +125,13 @@
 
     menu->Width    = TextLength(&vinfo->vi_screen->RastPort,
                                 menu->MenuName, 
-                                strlen(menu->MenuName));
-                                
+                                strlen(menu->MenuName)) +
+		     vinfo->vi_screen->MenuHBorder * 2;
+
+#if 0     
+    /* stegerg: the Amiga just clips them away, and BTW:
+        dri->dri_Resolution.X is not screen width!! It's
+	aspect information */                           
     if (menu->Width + curX > vinfo->vi_dri->dri_Resolution.X)
     {
 #warning Proper layout of menu tiltes???
@@ -136,10 +141,12 @@
       menu->LeftEdge = curX;
       menu->TopEdge  = curY;
     }
+#endif
+
     menu->Height = textfont->tf_YSize;
     
     /* Proper layout??? */
-    curX += menu->Width;
+    curX += menu->Width + vinfo->vi_screen->BarHBorder * 2;
     
     menu = menu->NextMenu;
   }
