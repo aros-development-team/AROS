@@ -103,13 +103,9 @@ static Object *offbitmap_new(Class *cl, Object *o, struct pRoot_New *msg)
 		
 	
 	/* Get attr values */
-kprintf("Getting stuff\n");
 	GetAttr(o, aHidd_BitMap_Width,		&width);
 	GetAttr(o, aHidd_BitMap_Height, 	&height);
-	
-kprintf("Getting depth\n");
 	GetAttr(o, aHidd_BitMap_Depth,		&depth);
-kprintf("Got depth\n");
 	
 	/* Get the friend bitmap. This should be a displayable bitmap */
 	GetAttr(o, aHidd_BitMap_Friend,	(IPTR *)&friend);
@@ -188,8 +184,8 @@ UX11
 	    if (data->gc)
 	    {
 		/* Set the bitmap pixel format in the superclass */
-		kprintf("SETTING PIXEL FORMAT FOR PIXMAP\n");
-		if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
+/* kprintf("SETTING PIXEL FORMAT FOR PIXMAP\n");
+*/		if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
 		    ok = FALSE;
 		} else {
 	    
@@ -259,11 +255,8 @@ UX11
 /*********  BitMap::Clear()  *************************************/
 static VOID offbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 {
-    ULONG width, height, bg, old_fg;
+    ULONG width, height;
     struct bitmap_data *data = INST_DATA(cl, o);
-    
-    GetAttr(o, aHidd_BitMap_Background, &bg);
-    GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
     
     
     /* Get width & height from bitmap superclass */
@@ -273,13 +266,11 @@ static VOID offbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg
     
 
 LX11 
-    XSetForeground(data->display, data->gc, bg);
+    XSetForeground(data->display, data->gc, GC_BG(msg->gc));
     XFillRectangle(data->display, DRAWABLE(data), data->gc
     	, 0 , 0
 	, width, height
     );
-    
-    XSetForeground(data->display, data->gc, old_fg);
     
     XFlush(data->display);
 UX11
@@ -312,7 +303,9 @@ Class *init_offbmclass(struct x11_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(new), 	moRoot_New    },
         {(IPTR (*)())MNAME(dispose),	moRoot_Dispose},
+#if 0
         {(IPTR (*)())MNAME(set),	moRoot_Set},
+#endif
         {(IPTR (*)())MNAME(get),	moRoot_Get},
         {NULL, 0UL}
     };

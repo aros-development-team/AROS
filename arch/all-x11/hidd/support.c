@@ -51,6 +51,8 @@ BOOL set_pixelformat(Object *bm
 	{ aHidd_PixFmt_BytesPerPixel,	0			}, /* 10 */
 	{ aHidd_PixFmt_BitsPerPixel,	0			}, /* 11 */
 	{ aHidd_PixFmt_StdPixFmt,	0			}, /* 12 */
+	{ aHidd_PixFmt_CLUTShift,	xsd->clut_shift		}, /* 13 */
+	{ aHidd_PixFmt_CLUTMask,	xsd->clut_mask		}, /* 13 */
 	{ TAG_DONE, 0UL }
     };
     

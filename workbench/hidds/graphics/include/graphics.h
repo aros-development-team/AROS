@@ -335,7 +335,8 @@ enum {
     aoHidd_BitMap_TopEdge,       /* [I.G] Top edge position of the bitmap      */
     aoHidd_BitMap_ColorTab,      /* [ISG] Colormap of the bitmap               */
     aoHidd_BitMap_AllocBuffer,   /* [I..] BOOL allocate buffer (default: TRUE) */
-    
+
+#if 0    
     aoHidd_BitMap_Foreground,          /* [.SG] Foreground color                   */
     aoHidd_BitMap_Background,          /* [.SG] Background color                   */
     aoHidd_BitMap_DrawMode,            /* [.SG] Draw mode                          */
@@ -347,7 +348,7 @@ enum {
 
     aoHidd_BitMap_GC,           /* [ISG]  bitmaps GC                       */
     aoHidd_BitMap_ColorExpansionMode,	/* [ISG] Mode for color expansion operations */
-    
+#endif    
     
     aoHidd_BitMap_Friend,	/* [I.G] Friend bitmap. The bitmap will be allocated so that it
     				   is optimized for blitting to this bitmap */
@@ -377,6 +378,8 @@ enum {
 #define aHidd_BitMap_ColorTab      (HiddBitMapAttrBase + aoHidd_BitMap_ColorTab)
 #define aHidd_BitMap_AllocBuffer   (HiddBitMapAttrBase + aoHidd_BitMap_AllocBuffer)
 
+#if 0
+
 #define aHidd_BitMap_Foreground  (HiddBitMapAttrBase + aoHidd_BitMap_Foreground)
 #define aHidd_BitMap_Background  (HiddBitMapAttrBase + aoHidd_BitMap_Background)
 #define aHidd_BitMap_DrawMode    (HiddBitMapAttrBase + aoHidd_BitMap_DrawMode)
@@ -386,6 +389,9 @@ enum {
 #define aHidd_BitMap_PlaneMask   (HiddBitMapAttrBase + aoHidd_BitMap_PlaneMask)
 #define aHidd_BitMap_GC		 (HiddBitMapAttrBase + aoHidd_BitMap_GC)
 #define aHidd_BitMap_ColorExpansionMode	 (HiddBitMapAttrBase + aoHidd_BitMap_ColorExpansionMode)
+
+
+#endif
 
 #define aHidd_BitMap_Friend		 (HiddBitMapAttrBase + aoHidd_BitMap_Friend)
 
@@ -431,18 +437,21 @@ struct pHidd_BitMap_GetPixel
 struct pHidd_BitMap_DrawPixel
 {
     MethodID  mID;
+    Object	*gc;
     WORD x, y;
 };
 
 struct pHidd_BitMap_DrawLine
 {
     MethodID    mID;
+    Object	*gc;
     WORD        x1 ,y1, x2, y2;
 };
 
 struct pHidd_BitMap_CopyBox
 {
     MethodID    mID;
+    Object	*gc;
     WORD        srcX, srcY;
     Object      *dest;
     WORD        destX, destY;
@@ -462,6 +471,7 @@ struct pHidd_BitMap_GetImage
 struct pHidd_BitMap_PutImage
 {
     MethodID mID;
+    Object	*gc;
     UBYTE 	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -473,12 +483,14 @@ struct pHidd_BitMap_PutImage
 struct pHidd_BitMap_DrawRect
 {
     MethodID    mID;
+    Object *gc;
     WORD        minX, minY, maxX, maxY;
 };
 
 struct pHidd_BitMap_DrawEllipse
 {
     MethodID    mID;
+    Object *gc;
     WORD        x, y;
     UWORD       rx, ry;
 };
@@ -486,6 +498,7 @@ struct pHidd_BitMap_DrawEllipse
 struct pHidd_BitMap_DrawPolygon
 {
     MethodID    mID;
+    Object	*gc;
     WORD        n;         /* number of coordinates */
     WORD        *coords;   /* size 2*n              */
 };
@@ -493,6 +506,7 @@ struct pHidd_BitMap_DrawPolygon
 struct pHidd_BitMap_DrawText
 {
     MethodID    mID;
+    Object	*gc;
     WORD        x, y;      /* Start position, see autodocs */
     STRPTR      text;      /* Latin 1 string               */
     UWORD       length;    /* Number of characters to draw */
@@ -501,11 +515,13 @@ struct pHidd_BitMap_DrawText
 struct pHidd_BitMap_Clear
 {
     MethodID    mID;
+    Object	*gc;
 };
 
 struct pHidd_BitMap_BlitColorExpansion
 {
     MethodID mID;
+    Object	*gc;
     Object	*srcBitMap;
     WORD	srcX;
     WORD	srcY;
@@ -531,6 +547,7 @@ struct pHidd_BitMap_UnmapPixel
 struct pHidd_BitMap_PutImageLUT
 {
     MethodID mID;
+    Object	*gc;
     UBYTE 	*pixels;
     ULONG	modulo;
     WORD	x, y;
@@ -662,29 +679,29 @@ BOOL	 HIDD_BM_SetColors	(Object *obj, HIDDT_Color *tab, ULONG firstcolor, ULONG 
 
 ULONG    HIDD_BM_PutPixel(Object *obj, WORD x, WORD y, HIDDT_Pixel pixel);
 HIDDT_Pixel    HIDD_BM_GetPixel       (Object *obj, WORD x, WORD y);
-ULONG    HIDD_BM_DrawPixel      (Object *obj, WORD x, WORD y);
-VOID     HIDD_BM_CopyBox         (Object *obj, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
-VOID     HIDD_BM_GetImage	 	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
-VOID	 HIDD_BM_PutImage 	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
-VOID     HIDD_BM_DrawLine        (Object *obj, WORD x1, WORD y1, WORD x2, WORD y2);
-VOID     HIDD_BM_DrawRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_BM_FillRect        (Object *obj, WORD minX, WORD minY, WORD maxX, WORD maxY);
-VOID     HIDD_BM_DrawEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_BM_FillEllipse     (Object *obj, WORD x, WORD y, WORD ry, WORD rx);
-VOID     HIDD_BM_DrawArc         (Object *obj);
-VOID     HIDD_BM_FillArc         (Object *obj);
-VOID     HIDD_BM_DrawPolygon     (Object *obj, UWORD n, WORD *coords);
-VOID     HIDD_BM_FillPolygon     (Object *obj, UWORD n, WORD *coords);
-VOID     HIDD_BM_DrawText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
-VOID     HIDD_BM_FillText        (Object *obj, WORD x, WORD y, STRPTR text, UWORD length);
+ULONG    HIDD_BM_DrawPixel       (Object *obj, Object *gc, WORD x, WORD y);
+VOID     HIDD_BM_CopyBox         (Object *obj, Object *gc, WORD srcX, WORD srcY, Object *dest, WORD destX, WORD destY, UWORD width, UWORD height);
+VOID     HIDD_BM_GetImage	 (Object *obj, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+VOID	 HIDD_BM_PutImage 	 (Object *obj, Object *gc, UBYTE *pixelArray, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_StdPixFmt pixFmt);
+VOID     HIDD_BM_DrawLine        (Object *obj, Object *gc, WORD x1, WORD y1, WORD x2, WORD y2);
+VOID     HIDD_BM_DrawRect        (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_FillRect        (Object *obj, Object *gc, WORD minX, WORD minY, WORD maxX, WORD maxY);
+VOID     HIDD_BM_DrawEllipse     (Object *obj, Object *gc, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_FillEllipse     (Object *obj, Object *gc, WORD x, WORD y, WORD ry, WORD rx);
+VOID     HIDD_BM_DrawArc         (Object *obj, Object *gc);
+VOID     HIDD_BM_FillArc         (Object *obj, Object *gc);
+VOID     HIDD_BM_DrawPolygon     (Object *obj, Object *gc, UWORD n, WORD *coords);
+VOID     HIDD_BM_FillPolygon     (Object *obj, Object *gc, UWORD n, WORD *coords);
+VOID     HIDD_BM_DrawText        (Object *obj, Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
+VOID     HIDD_BM_FillText        (Object *obj, Object *gc, WORD x, WORD y, STRPTR text, UWORD length);
 VOID     HIDD_BM_FillSpan        (Object *obj);
-VOID     HIDD_BM_Clear           (Object *obj);
-VOID	 HIDD_BM_BlitColorExpansion	 (Object *destObj, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
+VOID     HIDD_BM_Clear           (Object *obj, Object *gc);
+VOID	 HIDD_BM_BlitColorExpansion	 (Object *destObj, Object *gc, Object *srcObj, WORD srcX, WORD srcY, WORD destX, WORD destY,  UWORD width, UWORD height);
 
 HIDDT_Pixel HIDD_BM_MapColor (Object *destObj, HIDDT_Color *color);
 VOID	 HIDD_BM_UnmapPixel(Object *destObj, HIDDT_Pixel pixel, HIDDT_Color *color);
 
-VOID	 HIDD_BM_PutImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
+VOID	 HIDD_BM_PutImageLUT 	 (Object *obj, Object *gc, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 VOID	 HIDD_BM_GetImageLUT 	 (Object *obj, UBYTE *pixels, ULONG modulo, WORD x, WORD y, WORD width, WORD height, HIDDT_PixelLUT *pixlut);
 
 ULONG HIDD_BM_BytesPerLine(Object *obj, HIDDT_StdPixFmt pixFmt, ULONG width);
@@ -717,8 +734,41 @@ struct _hidd_bitmap_protected
 	Object *pixfmt;
 };
 
+
 #define BM_PIXFMT(bm) (HIDDT_PixelFormat *)(((struct _hidd_bitmap_protected *)bm)->pixfmt)
 #define BM_DEPTH(bm)	BM_PIXFMT(bm)->depth
+
+
+/****** !!!! PROTECTED DATA !!!!
+	This typedef can be used to acces a GC object directly from within
+	a bitmap class, but NEVER EVER use it to access a GC object
+	from outside a bitmap class. And when accessing from inside a
+	bitmap class, use the macros below !
+*/
+
+typedef struct {
+
+    HIDDT_Pixel fg;        /* foreground color                                 */
+    HIDDT_Pixel bg;        /* background color                                 */
+    HIDDT_DrawMode drMode;    /* drawmode                                         */
+    /* WARNING: type of font could be change */
+    APTR  font;      /* current fonts                                    */
+    ULONG colMask;   /* ColorMask prevents some color bits from changing */
+    UWORD linePat;   /* LinePattern                                      */
+    APTR  planeMask; /* Pointer to a shape bitMap                        */
+    ULONG colExp;
+    
+} HIDDT_GC_Intern;
+
+#define GCINT(gc)	((HIDDT_GC_Intern *)gc)
+#define GC_FG(gc)	(GCINT(gc)->fg)
+#define GC_BG(gc)	(GCINT(gc)->bg)
+#define GC_DRMD(gc)	(GCINT(gc)->drMode)
+#define GC_FONT(gc)	(GCINT(gc)->font)
+#define GC_COLMASK(gc)	(GCINT(gc)->colMask)
+#define GC_LINEPAT(gc)	(GCINT(gc)->linePat)
+#define GC_PLANEMASK(gc) (GCINT(gc)->planeMask)
+#define GC_COLEXP(gc)	(GCINT(gc)->colExp)
 
 /******************** Gfx Mode definitions ********************/
 

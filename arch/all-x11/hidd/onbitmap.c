@@ -200,9 +200,7 @@ UX11
 		/* Wait for the reply, so we are sure that the x11 task
 		   has got it */
 
-kprintf("WAITING FOR CREATION REPLY\n");		   
 		WaitPort(port);
-kprintf("DONE WAITING FOR CREATION REPLY\n");
 		GetMsg(port);
 		
 		/* Send a message to the X11 task to ask when the window has been mapped */
@@ -214,10 +212,8 @@ kprintf("DONE WAITING FOR CREATION REPLY\n");
 		PutMsg(XSD(cl)->x11task_notify_port, (struct Message *)msg);
 
 		/* Wait for result */
-kprintf("WAITING FOR MAPWINDOW REPLY\n");
 		WaitPort(port);
 		
-kprintf("DONE WAITING FOR MAPWINDOW REPLY\n");
 		GetMsg(port);
 
 		
@@ -236,7 +232,6 @@ UX11
 		    	/* Set the bitmap pixel format in the superclass */
 		    
 		    	if (!set_pixelformat(o, XSD(cl), DRAWABLE(data))) {
-kprintf("!!! SETTING PIXELFORMAT FAILED\n");
 			    ok = FALSE;
 			}
 		    
@@ -335,12 +330,9 @@ UX11
 static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
 {
     ULONG width, height;
-    HIDDT_Pixel bg;
     struct bitmap_data *data = INST_DATA(cl, o);
     
     XSetWindowAttributes winattr;
-    
-    GetAttr(o, aHidd_BitMap_Background, &bg);
     
     
     /* Get width & height from bitmap */
@@ -348,9 +340,7 @@ static VOID onbitmap_clear(Class *cl, Object *o, struct pHidd_BitMap_Clear *msg)
     GetAttr(o, aHidd_BitMap_Width,  &width);
     GetAttr(o, aHidd_BitMap_Height, &height);
     
-    /* Change background color of X window to bg color of HIDD bitmap  */
-    winattr.background_pixel = bg;
-kprintf("BM_CLEAR: BG pixel: %p\n", bg);
+    winattr.background_pixel = GC_BG(msg->gc);
 LX11    
     XChangeWindowAttributes(data->display
     		, DRAWABLE(data)
@@ -386,7 +376,10 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
     {
         {(IPTR (*)())MNAME(new)    , moRoot_New    },
         {(IPTR (*)())MNAME(dispose), moRoot_Dispose},
+
+#if 0
         {(IPTR (*)())MNAME(set)	   , moRoot_Set},
+#endif
         {(IPTR (*)())MNAME(get)	   , moRoot_Get},
         {NULL, 0UL}
     };
@@ -455,6 +448,7 @@ Class *init_onbmclass(struct x11_staticdata *xsd)
             }
             else
             {
+#warning The failure handlilg code is buggy. How do we know if the class was successfully added before removing it in free_onbcmlass ?
                 free_onbmclass( xsd );
                 cl = NULL;
             }
@@ -476,8 +470,10 @@ void free_onbmclass(struct x11_staticdata *xsd)
 
     if(xsd)
     {
+    
         RemoveClass(xsd->onbmclass);
         if(xsd->onbmclass) DisposeObject((Object *) xsd->onbmclass);
+	
         xsd->onbmclass = NULL;
 	
 	ReleaseAttrBases(attrbases);

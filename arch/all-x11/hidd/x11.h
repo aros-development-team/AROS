@@ -181,6 +181,8 @@ struct x11_staticdata
     ULONG size; /* Size of pixel in bits */
     ULONG bytes_per_pixel;
     
+    ULONG clut_shift;
+    ULONG clut_mask;
     
     Atom delete_win_atom;
 };
@@ -222,6 +224,11 @@ VOID free_x11class	( struct x11_staticdata * );
 #define DosBase		(XSD(cl)->dosbase)
 
 
+/* This lock has two uses:
+- Making X calls threadsafe.
+- In the bitmap class, protecting the bimtap X GC from changes
+from other tasks
+*/
 #define LX11 ObtainSemaphore (&XSD(cl)->x11sema);
 #define UX11 ReleaseSemaphore(&XSD(cl)->x11sema);
 

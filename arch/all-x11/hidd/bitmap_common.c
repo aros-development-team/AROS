@@ -4,7 +4,7 @@
 #define DEBUG 0
 #include <aros/debug.h>
 
-
+#if 0 
 /**************  BitMap::Set()  *********************************/
 static VOID MNAME(set)(Class *cl, Object *o, struct pRoot_Set *msg)
 {
@@ -47,6 +47,8 @@ UX11
     return;
 }
 
+#endif
+
 static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_MapColor *msg)
 {
 
@@ -57,9 +59,6 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
     HIDDT_Pixel blue	= msg->color->blue;
     
     
-    
-    
-
     /* This code assumes that sizeof (HIDDT_Pixel is a multimple of sizeof(col->#?)
        which should be true for most (all ?) systems. (I have never heard
        of any system with for example 3 byte types.
@@ -74,6 +73,8 @@ static HIDDT_Pixel MNAME(mapcolor)(Class *cl, Object *o, struct pHidd_BitMap_Map
     pixel |= (green >> XSD(cl)->green_shift ) & XSD(cl)->vi.green_mask;
     pixel |= (blue  >> XSD(cl)->blue_shift  ) & XSD(cl)->vi.blue_mask;
 #endif    
+
+#warning This should be handled by the superclass
     msg->color->pixval = MAP_RGB(red, green, blue, pf);
 
     return msg->color->pixval;
@@ -99,6 +100,7 @@ static VOID MNAME(unmappixel)(Class *cl, Object *o, struct pHidd_BitMap_UnmapPix
     msg->color->blue  = blue  >> ((sizeof (HIDDT_Pixel) - sizeof (msg->color->red) * 8);
 #endif
 
+#warning This should be handled by the superclass
     msg->color->red	= RED_COMP( msg->pixel, pf);
     msg->color->green	= GREEN_COMP( msg->pixel, pf);
     msg->color->blue	= BLUE_COMP( msg->pixel, pf);
@@ -120,7 +122,8 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     XColor xc;
     
     /* We assume TruColor display */
-    pf = BM_PIXFMT(pf);
+    pf = BM_PIXFMT(o);
+    
     
     /* Setting the palette makes no sense for StaticPalette and TrueColor */
     
@@ -138,9 +141,6 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
     
     /* Ve have a vHidd_GT_Palette bitmap */    
     
-    EnterFunc(bug("X11Gfx.BitMap::SetColors(num=%d, first=%d)\n",
-    		msg->numColors, msg->firstColor));
-    
     for ( xc_i = msg->firstColor, col_i = 0;
     		col_i < msg->numColors; 
 		xc_i ++, col_i ++ )
@@ -150,9 +150,11 @@ static BOOL MNAME(setcolors)(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 	xc.green = msg->colors[col_i].green;
 	xc.blue	 = msg->colors[col_i].blue;
 	
+	
 LX11	
 	success = XAllocColor(data->display, data->colmap, &xc);
 UX11	
+
 	if (!success)
 	    return FALSE;
 	
@@ -167,16 +169,11 @@ UX11
 static VOID MNAME(putpixel)(Class *cl, Object *o, struct pHidd_BitMap_PutPixel *msg)
 {
      struct bitmap_data *data = INST_DATA(cl, o);
-     HIDDT_Pixel old_fg;
      
+LX11
      
-     GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
-LX11     
      XSetForeground(data->display, data->gc, msg->pixel);
      XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
-     
-     /* Reset GC to old value */
-     XSetForeground(data->display, data->gc, old_fg);
      
      XFlush(data->display);
 UX11     
@@ -204,9 +201,9 @@ UX11
     if (!image)
     	return -1L;
 	
+LX11    
     pixel = XGetPixel(image, 0, 0);
     
-LX11    
     XDestroyImage(image);
 UX11    
     /* Get pen number from colortab */
@@ -221,11 +218,19 @@ static ULONG MNAME(drawpixel)(Class *cl, Object *o, struct pHidd_BitMap_DrawPixe
 {
 
     struct bitmap_data *data = INST_DATA(cl, o);
+    XGCValues gcval;
     
+    gcval.function = GC_DRMD(msg->gc);
+    gcval.foreground = GC_FG(msg->gc);
+    gcval.background = GC_BG(msg->gc);
 
-    /* Foreground pen allready set in X GC. Note, though, that a
-       call to WritePixelDirect may owerwrite the GC's pen  */
-LX11       
+LX11
+    XChangeGC(data->display
+    	, data->gc
+	, GCFunction | GCForeground | GCBackground
+	, &gcval
+    );
+    
     XDrawPoint(data->display, DRAWABLE(data), data->gc, msg->x, msg->y);
 /*    XFlush(data->display); */
 UX11    
@@ -239,18 +244,26 @@ UX11
 static VOID MNAME(fillrect)(Class *cl, Object *o, struct pHidd_BitMap_DrawRect *msg)
 {
     struct bitmap_data *data = INST_DATA(cl, o);
-    ULONG mode;
+    XGCValues gcval;
     
     
     EnterFunc(bug("X11Gfx.BitMap::FillRect(%d,%d,%d,%d)\n",
     	msg->minX, msg->minY, msg->maxX, msg->maxY));
 	
-    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
     
     D(bug("Drawmode: %d\n", mode));
+    
+    gcval.function = GC_DRMD(msg->gc);
+    gcval.foreground = GC_FG(msg->gc);
+    gcval.background = GC_BG(msg->gc);
 
-
-LX11  
+LX11
+    XChangeGC(data->display
+    	, data->gc
+	, GCFunction | GCForeground | GCBackground
+	, &gcval
+    );
+    
     XFillRectangle(data->display
 	, DRAWABLE(data)
 	, data->gc
@@ -259,13 +272,7 @@ LX11
 	, msg->maxX - msg->minX + 1
 	, msg->maxY - msg->minY + 1
     );
-UX11	
 
-   
-    D(bug("Flushing\n"));
-
-
-LX11
     XFlush(data->display);
 UX11    
     ReturnVoid("X11Gfx.BitMap::FillRect");
@@ -806,7 +813,7 @@ static UBYTE *buf_to_ximage_lut(Class *cl, Object *bm
 
 
 #if USE_XSHM
-static void putimage_xshm(Class *cl, Object *o
+static void putimage_xshm(Class *cl, Object *o, Object *gc
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixarray
@@ -814,7 +821,7 @@ static void putimage_xshm(Class *cl, Object *o
 	, APTR toimage_data)
 {
 
-    ULONG mode, depth;
+    ULONG depth;
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
@@ -826,7 +833,6 @@ static void putimage_xshm(Class *cl, Object *o
 
 	
     data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
     GetAttr(o, aHidd_BitMap_Depth, &depth);
 
 
@@ -861,7 +867,6 @@ UX11
     current_y = 0;
     ysize = image->height;
     
-//    kprintf("Max lines: %d, ysize: %d\n", maxlines, ysize);
     
     ObtainSemaphore(&XSD(cl)->shm_sema);
 
@@ -877,6 +882,7 @@ UX11
 	pixarray = toimage_func(cl, o, pixarray, image, image->width, lines_to_copy, depth, toimage_data);
 	
 LX11	
+	XSetFunction(data->display, data->gc, GC_DRMD(gc));
 
 	put_xshm_ximage(data->display
 		, DRAWABLE(data)
@@ -888,13 +894,12 @@ LX11
 		, image->width, lines_to_copy
 		, FALSE
 	);
-	current_y += lines_to_copy;
 
 UX11
+	current_y += lines_to_copy;
 	
     } /* while (pixels left to copy) */
     
-// kprintf("Finished copying\n");    
     
     ReleaseSemaphore(&XSD(cl)->shm_sema);
 
@@ -907,7 +912,7 @@ UX11
 }
 
 #else
-static void putimage_xlib(Class *cl, Object *o
+static void putimage_xlib(Class *cl, Object *o, Object *gc
 	, LONG x, LONG y
 	, ULONG width, ULONG height
 	, APTR pixarray
@@ -915,14 +920,13 @@ static void putimage_xlib(Class *cl, Object *o
 	, APTR toimage_data)
 {
 
-    ULONG mode, depth;
+    ULONG depth;
     struct bitmap_data *data;
     XImage *image;
     ULONG  bperline;
 
 	
     data = INST_DATA(cl, o);
-    GetAttr(o, aHidd_BitMap_DrawMode, &mode);
     GetAttr(o, aHidd_BitMap_Depth, &depth);
 
 
@@ -956,7 +960,7 @@ UX11
     toimage_func(cl, o, pixarray, image, width, height, depth, toimage_data);
 	
 LX11
-   XSetFunction(data->display, data->gc, mode);
+   XSetFunction(data->display, data->gc, GC_DRMD(gc));
    XPutImage(data->display
     		, DRAWABLE(data)
 		, data->gc
@@ -985,7 +989,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
 #if USE_XSHM
-    putimage_xshm(cl, o
+    putimage_xshm(cl, o, msg->gc
     	, msg->x, msg->y
 	, msg->width, msg->height
 	, msg->pixels
@@ -995,7 +999,7 @@ static VOID MNAME(putimage)(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
 
 #else
 
-    putimage_xlib(cl, o
+    putimage_xlib(cl, o, msg->gc
     	, msg->x, msg->y
 	, msg->width, msg->height
 	, msg->pixels
@@ -1017,7 +1021,7 @@ static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImag
     	msg->pixels, msg->x, msg->y, msg->width, msg->height));
 	
 #if USE_XSHM
-    putimage_xshm(cl, o
+    putimage_xshm(cl, o, msg->gc
     	, msg->x, msg->y
 	, msg->width, msg->height
 	, msg->pixels
@@ -1027,7 +1031,7 @@ static VOID MNAME(putimagelut)(Class *cl, Object *o, struct pHidd_BitMap_PutImag
 
 #else
 
-    putimage_xlib(cl, o
+    putimage_xlib(cl, o, msg->gc
     	, msg->x, msg->y
 	, msg->width, msg->height
 	, msg->pixels
@@ -1068,26 +1072,36 @@ static VOID MNAME(blitcolorexpansion)(Class *cl, Object *o, struct pHidd_BitMap_
 	DoSuperMethod(cl, o, (Msg)msg);
 	return;
     }
+    
+    fg = GC_FG(msg->gc);
+    bg = GC_BG(msg->gc);
+    cemd = GC_COLEXP(msg->gc);
 
-    GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
-    GetAttr(o, aHidd_BitMap_Foreground, &fg);
-    GetAttr(o, aHidd_BitMap_Background, &bg);
-    
-    D(bug("fg: %d\n", fg));
-    D(bug("bg: %d\n", bg));
-    
+/*
+#define PF ((HIDDT_PixelFormat *)BM_PIXFMT(o))
+
+    kprintf("fg: (%x, %x, %x)\n"
+    	, RED_COMP(fg, PF)
+    	, GREEN_COMP(fg, PF)
+    	, BLUE_COMP(fg, PF)
+    );
+    kprintf("bg: (%x, %x, %x)\n", bg
+    	, RED_COMP(bg, PF)
+    	, GREEN_COMP(bg, PF)
+    	, BLUE_COMP(bg, PF)
+    );
+*/    
     if (0 != d)
     {
 
-// kprintf("D");
 LX11    
 	XSetForeground(data->display, data->gc, fg);
-UX11	
     	if (cemd & vHidd_GC_ColExp_Opaque)  
 	{
-//	    kprintf("XCP\n");
-LX11
-	    XSetBackground(data->display, data->gc, bg);
+
+/* kprintf("XCP, fg=%p, bg=%p\n", fg, bg);
+*/	    XSetBackground(data->display, data->gc, bg);
+	    XSetFunction(data->display, data->gc, GXcopy);
 	    
 	    XCopyPlane(data->display
 	    	, d, DRAWABLE(data)
@@ -1097,7 +1111,6 @@ LX11
 		, msg->destX, msg->destY
 		, 0x01
 	    );
-UX11	    
 	} else {
 	    /* Do transparent blit */
 	    
@@ -1109,9 +1122,8 @@ UX11
 	    
 
 
-//	    kprintf(" XSS\n");
-
-LX11
+/*	    kprintf(" XSS\n");
+*/
 	    XChangeGC(data->display
 	    	, data->gc
 		, GCStipple|GCTileStipXOrigin|GCTileStipYOrigin|GCFillStyle
@@ -1125,8 +1137,8 @@ LX11
 	    );
 	    XSetFillStyle(data->display, data->gc, FillSolid);
 
-UX11	
 	}
+UX11	
 
     }
     else
@@ -1175,7 +1187,7 @@ UX11
     
 	/* Put image back into display */
 LX11    
-
+	XSetFunction(data->display, data->gc, GC_DRMD(msg->gc));
 	XPutImage(data->display
     		, DRAWABLE(data)
 		, data->gc
@@ -1207,8 +1219,7 @@ static VOID MNAME(copybox)(Class *cl, Object *o, struct pHidd_BitMap_CopyBox *ms
     struct bitmap_data *data = INST_DATA(cl, o);
     
 
-    GetAttr(msg->dest, aHidd_BitMap_DrawMode, &mode);
-    
+    mode = GC_DRMD(msg->gc)
     EnterFunc(bug("X11Gfx.BitMap::CopyBox( %d,%d to %d,%d of dim %d,%d\n",
     	msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 	

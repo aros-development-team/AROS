@@ -447,16 +447,23 @@ LX11
 	visinfo = &xsd->vi;
 	
 	/* We only support TrueColor for now */
-	if (visinfo->class != TrueColor)
-	{
-	    kprintf("GFX HIDD only supports truecolor diplays for now\n");
-	    kill(getpid(), SIGSTOP);
-	}
 	
-	/* Get the pixel masks */
-	xsd->red_shift	 = mask_to_shift(xsd->vi.red_mask);
-	xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
-	xsd->blue_shift	 = mask_to_shift(xsd->vi.blue_mask);
+	switch (visinfo->class) {
+	    case TrueColor:
+		/* Get the pixel masks */
+		xsd->red_shift	 = mask_to_shift(xsd->vi.red_mask);
+		xsd->green_shift = mask_to_shift(xsd->vi.green_mask);
+		xsd->blue_shift	 = mask_to_shift(xsd->vi.blue_mask);
+	        break;
+		
+	    case PseudoColor:
+	    	/* Do nothing for now */
+	    	break;
+		
+	    default:
+	    	kprintf("GFX HIDD only supports truecolor and pseudocolor diplays for now\n");
+	    	kill(getpid(), SIGSTOP);
+	}
 
 	xsd->size = 0;
 
@@ -479,6 +486,11 @@ LX11
 	}
 	
 	xsd->bytes_per_pixel = (xsd->size + 7) >> 3;
+	
+	if (PseudoColor == xsd->vi.class) {
+	    xsd->clut_mask  = (1L << xsd->size) - 1;
+	    xsd->clut_shift = 0;
+	}
 
 #if 0	
 kprintf("Red:   mask: %p, shift: %d\n", xsd->vi.red_mask,   xsd->red_shift);

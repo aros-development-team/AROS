@@ -53,21 +53,12 @@
 #define PEN_MASK    (NUM_COLORS - 1)
 
 
-#define PRIV_GFXBASE(base) ((struct GfxBase_intern *)base)
-
-#define SDD(base)  ((struct shared_driverdata *)PRIV_GFXBASE(base)->shared_driverdata)
-
-#define OOPBase (SDD(GfxBase)->oopbase)
 
 /* Storage for bitmap object */
 #define BM_OBJ(bitmap)	  ((Object *)(bitmap)->Planes[0])
-/* Storage for bitmap object lock */
-#define BM_LOCK(bitmap)   ((struct SignalSemaphore *)(bitmap)->Planes[1])
+
 #define BM_PIXTAB(bitmap) ((HIDDT_Pixel *)(bitmap)->Planes[2])
 
-#define LOCK_HIDD(bm)	ObtainSemaphore(BM_LOCK(bm))
-
-#define ULOCK_HIDD(bm)	ReleaseSemaphore(BM_LOCK(bm))
 
 /* Rastport flag that tells whether or not the driver has been inited */
 
@@ -75,11 +66,6 @@
 
 #define AROS_PALETTE_SIZE 256
 #define AROS_PALETTE_MEMSIZE (sizeof (HIDDT_Pixel) * AROS_PALETTE_SIZE)
-struct shared_driverdata
-{
-    Object *gfxhidd;
-    struct Library *oopbase;
-};
 
 static VOID setbitmapfast(struct BitMap *bm, LONG x_start, LONG y_start, LONG xsize, LONG ysize, ULONG pen);
 static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase);
@@ -335,8 +321,19 @@ void driver_expunge (struct GfxBase * GfxBase)
     if ( SDD(GfxBase) )
     {
 	    
+	/* Try to free some other stuff */
+	if ( SDD(GfxBase)->planarbm_cache )
+	    delete_object_cache( SDD(GfxBase)->planarbm_cache, GfxBase );
+	    
+	if ( SDD(GfxBase)->gc_cache )
+	    delete_object_cache( SDD(GfxBase)->gc_cache, GfxBase );
+	    
+	if ( SDD(GfxBase)->gfxhidd )
+	    DisposeObject( SDD(GfxBase)->gfxhidd );
+	    
         if ( SDD(GfxBase)->oopbase )
 	     CloseLibrary( SDD(GfxBase)->oopbase );
+	     
 	     
 	FreeMem( SDD(GfxBase), sizeof (struct shared_driverdata) );
     }
@@ -350,20 +347,36 @@ BOOL driver_LateGfxInit (APTR data, struct GfxBase *GfxBase)
     /* Supplied data is really the librarybase of a HIDD */
     STRPTR gfxhiddname = (STRPTR)data;
     struct TagItem tags[] = { {TAG_DONE, 0UL} };    
-    Object *gfxhidd;
     
     EnterFunc(bug("driver_LateGfxInit(gfxhiddname=%s)\n", gfxhiddname));
     
     /* Create a new GfxHidd object */
 	
-    gfxhidd = NewObject(NULL, gfxhiddname, tags);
-    D(bug("driver_LateGfxInit: gfxhidd=%p\n", gfxhidd));
+    SDD(GfxBase)->gfxhidd = NewObject(NULL, gfxhiddname, tags);
+    D(bug("driver_LateGfxInit: gfxhidd=%p\n", SDD(GfxBase)->gfxhidd));
 	
-    if (gfxhidd)
-    {
-	    /* Store it in GfxBase so that we can find it later */
-	    SDD(GfxBase)->gfxhidd = (APTR)gfxhidd;
-	    ReturnBool("driver_LateGfxInit", TRUE);
+    if (NULL != SDD(GfxBase)->gfxhidd) {
+    
+    	struct TagItem gc_create_tags[] = { { TAG_DONE, 0UL } };
+	
+	/* Create a GC object cache */
+	SDD(GfxBase)->gc_cache = create_object_cache(NULL, IID_Hidd_GC, gc_create_tags, GfxBase);
+	if (NULL != SDD(GfxBase)->gc_cache) {
+
+#warning Update tags and class ID when we have the AmiBM class finished	
+	    struct TagItem bm_create_tags[] = { { TAG_DONE, 0UL } };
+	    
+	    SDD(GfxBase)->planarbm_cache
+	    	= create_object_cache(NULL, CLID_Hidd_PlanarBM, bm_create_tags, GfxBase);
+		
+	    if (NULL != SDD(GfxBase)->planarbm_cache) {
+
+	    	ReturnBool("driver_LateGfxInit", TRUE);
+	    }
+	    delete_object_cache(SDD(GfxBase)->gc_cache, GfxBase);
+	}
+	DisposeObject(SDD(GfxBase)->gfxhidd);
+	SDD(GfxBase)->gfxhidd = NULL;
 	    
     }
 	
@@ -801,17 +814,28 @@ static LONG fillrect_pendrmd(struct RastPort *rp
     ULONG width, height;
     
     LONG pixwritten = 0;
+    
+    HIDDT_DrawMode old_drmd;
+    HIDDT_Pixel old_fg;
+    Object *gc;
 
-    struct TagItem bm_tags[] =
+    struct TagItem gc_tags[] =
     {
-	{ aHidd_BitMap_DrawMode, drmd },
-	{ aHidd_BitMap_Foreground, pix },
+	{ aHidd_GC_DrawMode, drmd },
+	{ aHidd_GC_Foreground, pix },
 	{ TAG_DONE, 0}
     };
     
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
+	
+    gc = GetDriverData(rp)->dd_GC;
+	
+    GetAttr(gc, aHidd_GC_DrawMode,	(IPTR *)&old_drmd);
+    GetAttr(gc, aHidd_GC_Foreground,	(IPTR *)&old_fg);
+    
+    SetAttrs(gc, gc_tags);
 	
     width  = x2 - x1 + 1;
     height = y2 - y1 + 1;
@@ -822,16 +846,14 @@ static LONG fillrect_pendrmd(struct RastPort *rp
 	
 	/* Just put the pixelarray directly onto the HIDD */
 
-LOCK_HIDD(bm);	
-	SetAttrs(BM_OBJ(bm), bm_tags);
 	
 	HIDD_BM_FillRect(BM_OBJ(bm)
+		, gc
 		, x1, y1
 		, x2, y2
 	);
 		
 
-ULOCK_HIDD(bm);	
 	pixwritten = width * height;
 	
     }
@@ -864,17 +886,15 @@ ULOCK_HIDD(bm);
 		{
 		    
 /* Single thread the attribute setting  */
-LOCK_HIDD(bm);
-		    SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
 		    HIDD_BM_FillRect(BM_OBJ(bm)
+		    	, gc
 		    	, intersect.MinX
 			, intersect.MinY
 			, intersect.MaxX
 			, intersect.MaxY
 		    );
-ULOCK_HIDD(bm);
 		}
 		else
 		{
@@ -885,17 +905,15 @@ ULOCK_HIDD(bm);
 		    	kprintf("fillrect_pendrmd(): Superbitmap not handled yet\n");
 		    else
 		    {
-LOCK_HIDD(CR->BitMap);		    	
-			SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
 		    
 		    	/* Cliprect not obscured, so we may render directly into the display */
 		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
+				, gc
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX) 
 				, intersect.MaxY - CR->bounds.MinY
 		    	);
-ULOCK_HIDD(CR->BitMap);			
 		    }
 		    
 		}
@@ -904,6 +922,11 @@ ULOCK_HIDD(CR->BitMap);
 	
         UnlockLayerRom(L);
     }
+    
+    /* Restore old GC values */
+    gc_tags[0].ti_Data = (IPTR)old_drmd;
+    gc_tags[1].ti_Data = (IPTR)old_fg;
+    SetAttrs(gc, gc_tags);
     
 	
     return pixwritten;
@@ -957,7 +980,6 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
 	ULONG minterm, struct GfxBase *GfxBase
 )
 {
-    struct gfx_driverdata *dd;
     ULONG width, height;
     struct Layer *L = destRP->Layer;
     struct BitMap *bm = destRP->BitMap;
@@ -968,7 +990,6 @@ void driver_BltBitMapRastPort (struct BitMap   * srcBitMap,
     if (!CorrectDriverData(destRP, GfxBase))
     	return;
 	
-    dd = GetDriverData(destRP);
 
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
@@ -1647,15 +1668,11 @@ void driver_DrawEllipse (struct RastPort * rp, LONG center_x, LONG center_y, LON
 void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
 	, WORD destx, WORD desty, UWORD width, UWORD height)
 {
-    struct gfx_driverdata *dd;
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     
-    struct TagItem setgc_tags[] =
-    {
-    	{aHidd_BitMap_GC, 0UL},
-	{TAG_DONE, 0UL}
-    };
+    Object *gc;
+    
     
     EnterFunc(bug("blit_glyph_fast(%d, %d, %d, %d, %d)\n"
     	, xsrc, destx, desty, width, height));
@@ -1664,19 +1681,15 @@ void blit_glyph_fast(struct RastPort *rp, Object *fontbm, WORD xsrc
     if (!CorrectDriverData(rp, GfxBase))
     	ReturnVoid("blit_glyph_fast");
 	
-    dd = GetDriverData(rp);
+    gc = GetDriverData(rp)->dd_GC;
     
-    /* Prepare for setting bitmap GC */
-    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
-    /* Prepare for setting bitmap GC */
-LOCK_HIDD(bm);    
-    SetAttrs( BM_OBJ(bm), setgc_tags );
     
     
     if (NULL == L)
     {
         /* No layer, probably a screen */
 	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+		, gc
 		, fontbm
 		, xsrc, 0
 		, destx, desty
@@ -1722,6 +1735,7 @@ LOCK_HIDD(bm);
 		{
 		
 		    HIDD_BM_BlitColorExpansion(BM_OBJ(bm)
+		    	, gc
 		    	, fontbm
 			, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
 			, intersect.MinY - toblit.MinY		/* srcY		*/
@@ -1740,11 +1754,9 @@ LOCK_HIDD(bm);
 		    else
 		    {
 
-LOCK_HIDD(CR->BitMap);			
 
-			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
-			
 			HIDD_BM_BlitColorExpansion(BM_OBJ(CR->BitMap)
+				, gc
 				, fontbm
 				, intersect.MinX - toblit.MinX + xsrc	/* srcX		*/
 				, intersect.MinY - toblit.MinY		/* srcY		*/
@@ -1753,7 +1765,6 @@ LOCK_HIDD(CR->BitMap);
 				, intersect.MaxX - intersect.MinX + 1	/* width	*/
 				, intersect.MaxY - intersect.MinY + 1	/* height	*/
 			);
-ULOCK_HIDD(CR->BitMap);			
 			
 		    }
 
@@ -1767,7 +1778,6 @@ ULOCK_HIDD(CR->BitMap);
 	
     } /* if (not screen rastport) */
 
-ULOCK_HIDD(bm);
 
     ReturnVoid("blit_glyph_fast");
 }
@@ -2068,12 +2078,10 @@ ULONG driver_ReadPixel (struct RastPort * rp, LONG x, LONG y,
             Offset = ALIGN_OFFSET(CR->bounds.MinX);
 
 
-LOCK_HIDD(bm);
             val = get_pen_from_hidd(bm
 	    	, x - (CR->bounds.MinX - XRel) + Offset
 		, y - (CR->bounds.MinY - YRel)
 	    );
-ULOCK_HIDD(bm);
 	    return val;
 
 #if 0          
@@ -2109,9 +2117,7 @@ ULOCK_HIDD(bm);
     {
     	ULONG val;
         /* no need to unlock the layer!!!! */
-LOCK_HIDD(bm);	
         val = get_pen_from_hidd(bm, x, y);
-ULOCK_HIDD(bm);
 	return val;	
     }
     i = COORD_TO_BYTEIDX(x, y, Width);
@@ -2175,21 +2181,15 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
   ULONG Width, Height;
   ULONG i;
   BYTE * Plane; 
-  struct gfx_driverdata *dd;
   BOOL found_offscreen = FALSE;
-
-  struct TagItem bm_tags[] = 
-  {
-    	{aHidd_BitMap_GC,	0UL},
-	{TAG_DONE,	0UL}
-  };
+  
+  Object *gc;
   
 
   if(!CorrectDriverData (rp, GfxBase))
 	return  -1L;
 	
-  dd = GetDriverData(rp);
-  bm_tags[0].ti_Data = (IPTR) dd->dd_GC;
+  gc = GetDriverData(rp)->dd_GC;
 
   Width = GetBitMapAttr(bm, BMA_WIDTH);  
   Height = GetBitMapAttr(bm, BMA_HEIGHT);
@@ -2262,10 +2262,7 @@ LONG driver_WritePixel (struct RastPort * rp, LONG x, LONG y,
              but this Pixel has a relative position!! */
           if (bm->Flags & BMF_AROS_HIDD)
 	  {
-LOCK_HIDD(bm);	  
-	    SetAttrs( BM_OBJ(bm), bm_tags);
-            HIDD_BM_DrawPixel ( BM_OBJ(bm), x+XRel, y+YRel);
-ULOCK_HIDD(bm);
+            HIDD_BM_DrawPixel ( BM_OBJ(bm), gc, x+XRel, y+YRel);
 	   } 
         } 
         else
@@ -2294,13 +2291,11 @@ ULOCK_HIDD(bm);
 
             Offset = ALIGN_OFFSET(CR->bounds.MinX);
 	    
-LOCK_HIDD(bm);	  
-	    SetAttrs( BM_OBJ(bm), bm_tags);
 	    HIDD_BM_DrawPixel ( BM_OBJ(bm)
+	    	, gc
 	    	, x - (CR->bounds.MinX - XRel) + Offset
 		, y - (CR->bounds.MinY - YRel)
 	    );
-ULOCK_HIDD(bm);
 
 #if 0	    
             Offset = ALIGN_OFFSET(CR->bounds.MinX);
@@ -2340,10 +2335,7 @@ ULOCK_HIDD(bm);
     /* and let the driver set the pixel to the X-Window also */
     if (bm->Flags & BMF_AROS_HIDD)
     {
-LOCK_HIDD(bm);	  
-      SetAttrs( BM_OBJ(bm), bm_tags );
-      HIDD_BM_DrawPixel( BM_OBJ(bm), x, y);
-ULOCK_HIDD(bm);
+      HIDD_BM_DrawPixel( BM_OBJ(bm), gc, x, y);
     }
 
   }
@@ -2411,15 +2403,20 @@ void driver_PolyDraw (struct RastPort * rp, LONG count, WORD * coords,
 void driver_SetRast (struct RastPort * rp, ULONG color,
 		    struct GfxBase * GfxBase)
 {
-    struct gfx_driverdata *dd;
 
     
     /* We have to use layers to perform clipping */
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
-    struct TagItem bm_tags[] = {
-	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-	{ aHidd_BitMap_Foreground, 0 },
+    
+    HIDDT_DrawMode old_drmd;
+    HIDDT_Pixel old_fg;
+    
+    Object *gc;
+    
+    struct TagItem gc_tags[] = {
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ aHidd_GC_Foreground, 0 },
 	{ TAG_DONE, 0}
     };
 
@@ -2428,7 +2425,10 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
     if (!CorrectDriverData(rp, GfxBase))
     	return;
     
-    dd = GetDriverData(rp);
+    gc = GetDriverData(rp)->dd_GC;
+    
+    GetAttr(gc, aHidd_GC_DrawMode,	&old_drmd);
+    GetAttr(gc, aHidd_GC_Foreground ,	&old_fg);
     
     if (NULL != L)
     {
@@ -2457,15 +2457,14 @@ void driver_SetRast (struct RastPort * rp, ULONG color,
 		    
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
-		    bm_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
+		    gc_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
 
-		    SetAttrs(BM_OBJ(bm), bm_tags);
+		    SetAttrs(gc, gc_tags);
 		    HIDD_BM_FillRect(BM_OBJ(bm)
+		    	, gc
 		    	, intersect.MinX, intersect.MinY
 			, intersect.MaxX, intersect.MaxY
 		    );
-ULOCK_HIDD(bm);	
 	
 		}
 		else
@@ -2476,16 +2475,16 @@ ULOCK_HIDD(bm);
 		    	kprintf("driver_SetRast(): Superbitmap not handled yet\n");
 		    else
 		    {
-LOCK_HIDD(CR->BitMap);	
-			bm_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
-		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
+			gc_tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
+			
+		    	SetAttrs(gc, gc_tags);
 		    	HIDD_BM_FillRect(BM_OBJ(CR->BitMap)
+				, gc
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, intersect.MinY - CR->bounds.MinY
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 		    	);
-ULOCK_HIDD(CR->BitMap);	
 		    }
 		    
 		} /* if (intersecton inside hidden cliprect) */
@@ -2501,20 +2500,22 @@ ULOCK_HIDD(CR->BitMap);
     }
     else
     {
-    	struct TagItem tags[] = {
-	    { aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-	    { aHidd_BitMap_Background, 0 },
-	    { TAG_DONE, 0}
-	};
+    	ULONG width, height;
 	
-LOCK_HIDD(bm);	
-	tags[1].ti_Data = BM_PIXTAB(rp->BitMap)[color & PEN_MASK];
-	SetAttrs( BM_OBJ(bm), tags);
-	HIDD_BM_Clear( BM_OBJ(bm) );
-ULOCK_HIDD(bm);
-
+	GetAttr(BM_OBJ(bm), aHidd_BitMap_Width,  &width);
+	GetAttr(BM_OBJ(bm), aHidd_BitMap_Height, &height);
+	HIDD_BM_FillRect(BM_OBJ(bm)
+		, gc
+		, 0, 0
+		, width - 1, height - 1
+	);
 
     }
+    
+    gc_tags[0].ti_Data = (IPTR)old_drmd;
+    gc_tags[1].ti_Data = (IPTR)old_fg;
+    SetAttrs(gc, gc_tags);
+
     ReturnVoid("driver_SetRast");
 
 }
@@ -2813,10 +2814,6 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
     if (nbm)
     {
     	
-	/* This lock is used to ensure that only one task acesses a public HIDD BM at a time */
-	BM_LOCK(nbm) = AllocMem(sizeof (struct SignalSemaphore), MEMF_PUBLIC);
-	if (BM_LOCK(nbm))
-	{
 	    Object *bm_obj;
 	    Object *gfxhidd;
 	
@@ -2830,7 +2827,6 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		{ TAG_DONE, 0 }
 	    };
 	    
-	    InitSemaphore(BM_LOCK(nbm));
 	    
 	
 	    D(bug("BitMap struct allocated\n"));
@@ -2956,9 +2952,7 @@ struct BitMap * driver_AllocBitMap (ULONG sizex, ULONG sizey, ULONG depth,
 		
 	    } /* if (gfxhidd) */
 	    
-	    FreeMem(BM_LOCK(nbm), sizeof (struct SignalSemaphore));
 	    
-	} /* if (hidd lock) */
 	
 	FreeMem(nbm, sizeof (struct BitMap));
 	
@@ -3105,6 +3099,7 @@ static VOID buf_to_bitmap(APTR dest_info
   
 */	
 static VOID amiga2hidd_fast(APTR src_info
+	, Object *hidd_gc
 	, LONG x_src , LONG	y_src
 	, struct BitMap 	*hidd_bm
 	, LONG x_dest, LONG y_dest
@@ -3181,6 +3176,7 @@ LOCK_PIXBUF
 	D(bug("Putting box\n"));
 
 	HIDD_BM_PutImage(BM_OBJ(hidd_bm)
+		, hidd_gc
 		, (UBYTE*)pixel_buf
 		, tocopy_w * sizeof (HIDDT_Pixel)
 		, x_dest + current_x
@@ -3303,7 +3299,8 @@ LONG driver_BltBitMap (struct BitMap * srcBitMap, LONG xSrc,
     ULONG wSrc, wDest;
     ULONG x;
     ULONG depth;
-	
+    
+    Object *tmp_gc;
 
     EnterFunc(bug("driver_BltBitMap()\n"));
 	
@@ -3364,8 +3361,18 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
     /* If the size is illegal or we need not copy anything, return */
     if (ySize <= 0 || xSize <= 0 || !mask)
 	return 0;
+
+
+    /* Create a temproary GC to use for the bitmaps. Alternatively
+       we could share a precreated GC, but this could cause
+       deadlocks when locking it
+    */
+    tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+    if (NULL == tmp_gc)
+    	return 0;
     
     planecnt = depth;
+    
     
 
 /*    kprintf("driver_BltBitMap(%p, %d, %d, %p, %d, %d, %d, %d, %d, %d)\n",
@@ -3395,21 +3402,20 @@ kprintf("Amiga to Amiga, wSrc=%d, wDest=%d\n",
 	    	case 0x00:  { /* Clear dest */
  		    struct TagItem tags[] =
 		    {
-		    	{aHidd_BitMap_Foreground,	0UL},
-			{aHidd_BitMap_DrawMode,	vHidd_GC_DrawMode_Copy},
+		    	{aHidd_GC_Foreground,	0UL},
+			{aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy},
 			{TAG_DONE, 0UL}
 		    };
 
-LOCK_HIDD(destBitMap);	
 		    tags[0].ti_Data = BM_PIXTAB(destBitMap)[0];
 
-		    SetAttrs(dst_bm, tags);
+		    SetAttrs(tmp_gc, tags);
 		    HIDD_BM_FillRect(dst_bm
+		    	, tmp_gc
 		    	, xDest, yDest
 			, xDest + xSize - 1
 			, yDest + ySize - 1
 		    );
-ULOCK_HIDD(destBitMap);	
 			
 		    break; }
 		
@@ -3417,7 +3423,7 @@ ULOCK_HIDD(destBitMap);
 		default: {
 		    struct TagItem drmd_tags[] =
 		    {
-		    	{ aHidd_BitMap_DrawMode,	0UL},
+		    	{ aHidd_GC_DrawMode,	0UL},
 			{ TAG_DONE, 0UL}
 		    };
 		    
@@ -3428,19 +3434,18 @@ ULOCK_HIDD(destBitMap);
 
 kprintf("Locking BM\n");
 */
-LOCK_HIDD(destBitMap);	
 /* kprintf("Setting attrs\n");
 */
-		    SetAttrs(dst_bm, drmd_tags);
+		    SetAttrs(tmp_gc, drmd_tags);
 /* kprintf("copy HIDD to HIDD\n");
 */
 		    HIDD_BM_CopyBox( src_bm
+		    	, tmp_gc
 		    	, xSrc, ySrc
 			, dst_bm
 			, xDest, yDest
 			, xSize, ySize
 		    );
-ULOCK_HIDD(destBitMap);	
 		    break;  }
 		    
 	    } /* switch */
@@ -3460,6 +3465,11 @@ ULOCK_HIDD(destBitMap);
 		default: {
 
 		    struct blit_info bi;
+		    struct TagItem drmd_tags[] =
+		    {
+		    	{ aHidd_GC_DrawMode,	0UL},
+			{ TAG_DONE, 0UL}
+		    };
 		    bi.bitmap	 = destBitMap;
 		    bi.minterm	 = minterm;
 		    bi.planemask = mask;
@@ -3468,7 +3478,10 @@ ULOCK_HIDD(destBitMap);
 		    bi.bmwidth	= GetBitMapAttr(destBitMap, BMA_WIDTH);
 		    
 /* kprintf("copy HIDD to Amiga:\n");
-*/		    hidd2amiga_fast( srcBitMap
+
+*/
+		    SetAttrs(tmp_gc, drmd_tags);
+		    hidd2amiga_fast( srcBitMap
 		    	, xSrc, ySrc
 			, (APTR) &bi
 			, xDest, yDest
@@ -3495,25 +3508,24 @@ ULOCK_HIDD(destBitMap);
 
  		    struct TagItem tags[] =
 		    {
-		    	{aHidd_BitMap_Foreground,	0UL},
-			{aHidd_BitMap_DrawMode,	vHidd_GC_DrawMode_Copy},
+		    	{aHidd_GC_Foreground,	0UL},
+			{aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy},
 			{TAG_DONE, 0UL}
 		    };
 
-LOCK_HIDD(destBitMap);	
 #warning Handle offscreen bitmaps
 		    tags[0].ti_Data = BM_PIXTAB(destBitMap)[0];
 
-		    SetAttrs(dst_bm, tags);
+		    SetAttrs(tmp_gc, tags);
 
 /* kprintf("clear HIDD bitmap\n"); 
 */		    
 		HIDD_BM_FillRect(dst_bm
+		    , tmp_gc
 		    , xDest, yDest
 		    , xDest + xSize - 1
 		    , yDest + ySize - 1
 		);
-ULOCK_HIDD(destBitMap);	
 
 	    
 	    break; }
@@ -3522,15 +3534,14 @@ ULOCK_HIDD(destBitMap);
 	    default: {
 		struct TagItem drmd_tags[] =
 		{
-		    { aHidd_BitMap_DrawMode,	0UL},
+		    { aHidd_GC_DrawMode,	0UL},
 		    { TAG_DONE, 0UL}
 		};
 
 		struct blit_info bi;
 		drmd_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
-LOCK_HIDD(destBitMap);	
 		
-		SetAttrs(dst_bm, drmd_tags);
+		SetAttrs(tmp_gc, drmd_tags);
 
 /* kprintf("copy Amiga to HIDD\n"); 
 */
@@ -3542,6 +3553,7 @@ LOCK_HIDD(destBitMap);
 		bi.bmwidth	= GetBitMapAttr(srcBitMap, BMA_WIDTH);
 
 	    	amiga2hidd_fast( (APTR) &bi
+			, tmp_gc
 			, xSrc, ySrc
 			, destBitMap
 			, xDest, yDest
@@ -3549,13 +3561,14 @@ LOCK_HIDD(destBitMap);
 			, bitmap_to_buf
 			
 		);
-ULOCK_HIDD(destBitMap);	
 
 			
 	    break; }
 	}
     
     }
+    
+    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
 
     ReturnInt("driver_BltBitMap", LONG, planecnt);
 }
@@ -3570,7 +3583,6 @@ void driver_FreeBitMap (struct BitMap * bm, struct GfxBase * GfxBase)
     {
     	FreeMem(BM_PIXTAB(bm), AROS_PALETTE_MEMSIZE);
     }
-    FreeMem(BM_LOCK(bm), sizeof (struct SignalSemaphore));
     FreeMem(bm, sizeof (struct BitMap));
 }
 
@@ -3637,16 +3649,18 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
 
 {
 	
-    struct gfx_driverdata *dd;
     struct BitMap *bm = rp->BitMap;
     struct Layer *L = rp->Layer;
     ULONG array_width, array_height;
     
     LONG pixwritten = 0;
+    
+    Object *gc;
+    HIDDT_DrawMode old_drmd;
 
-    struct TagItem bm_tags[] =
+    struct TagItem gc_tags[] =
     {
-	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
 	{ TAG_DONE, 0}
     };
     
@@ -3654,7 +3668,10 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
 	
-    dd = GetDriverData(rp);
+    gc = GetDriverData(rp)->dd_GC;
+    
+    GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    SetAttrs(gc, gc_tags);
     
     array_width  = modulo;
     array_height = ystop - ystart + 1;
@@ -3666,10 +3683,9 @@ static LONG write_pixels_8(struct RastPort *rp, UBYTE *array
 	
 	/* Just put the pixelarray directly onto the HIDD */
 
-LOCK_HIDD(bm);	
-	SetAttrs(BM_OBJ(bm), bm_tags);
 	
 	HIDD_BM_PutImageLUT(BM_OBJ(bm)
+		, gc
 		, array
 		, array_width
 		, xstart, ystart
@@ -3677,7 +3693,6 @@ LOCK_HIDD(bm);
 		, pixlut
 	);
 
-ULOCK_HIDD(bm);	
 	pixwritten += array_width * array_height;
 	
     }
@@ -3719,10 +3734,9 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
-		    SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    HIDD_BM_PutImageLUT(BM_OBJ(bm)
+		    	, gc
 		    	, array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			, array_width
 			, intersect.MinX, intersect.MinY
@@ -3730,7 +3744,6 @@ LOCK_HIDD(bm);
 			, pixlut
 		    );
 			
-ULOCK_HIDD(bm);	
 		}
 		else
 		{
@@ -3745,12 +3758,10 @@ ULOCK_HIDD(bm);
 		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
 		    
-LOCK_HIDD(CR->BitMap);		    
 
-		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
-	
 
 			HIDD_BM_PutImageLUT(BM_OBJ(CR->BitMap)
+			    , gc
 			    , array + CHUNKY8_COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
 			    , array_width
 			    , cr_rel_x, cr_rel_y
@@ -3758,9 +3769,6 @@ LOCK_HIDD(CR->BitMap);
 			    , pixlut
 		        );
 			
-
-ULOCK_HIDD(CR->BitMap);		    
-
 		    } /* If (SMARTREFRESH cliprect) */
 		    
 		    
@@ -3776,6 +3784,11 @@ ULOCK_HIDD(CR->BitMap);
 	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
+    
+    /* Reset to preserved drawmode */
+    gc_tags[0].ti_Data = old_drmd;
+    SetAttrs(gc, gc_tags);
+    
     return pixwritten;
 }	
 
@@ -3832,7 +3845,6 @@ LONG driver_ReadPixelArray8 (struct RastPort * rp, ULONG xstart,
         /* No layer, probably a screen */
 	
 	/* Just get the pixelarray directly from the HIDD */
-LOCK_HIDD(bm);	
 	HIDD_BM_GetImageLUT(BM_OBJ(bm)
 		, array
 		, array_width
@@ -3841,16 +3853,6 @@ LOCK_HIDD(bm);
 		, &pixlut
 	);
 	
-#if 0	
-	hidd2amiga_fast(bm
-		, xstart, ystart
-		, (APTR)array
-		, 0, 0
-		, array_width, array_height
-		, buf_to_pixarray
-	);
-#endif	
-ULOCK_HIDD(bm);	
 	pixread += array_width * array_height;
 	
     }
@@ -3892,7 +3894,6 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Read from the HIDD */
-LOCK_HIDD(bm);		    
 
 		    HIDD_BM_GetImageLUT(BM_OBJ(bm)
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
@@ -3902,19 +3903,7 @@ LOCK_HIDD(bm);
 			, &pixlut
 		    );
 			
-#if 0
-		    hidd2amiga_fast(bm
-			, intersect.MinX, intersect.MinY
-			, (APTR)array
-			, array_rel_x
-			, array_rel_y
-			, inter_width, inter_height
-			, buf_to_pixarray
-			
-		    );
-#endif
 
-ULOCK_HIDD(bm);		    
 		}
 		else
 		{
@@ -3928,7 +3917,6 @@ ULOCK_HIDD(bm);
 		    	LONG cr_rel_x = intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y = intersect.MinY - CR->bounds.MinY;
 
-LOCK_HIDD(CR->BitMap);		    
 
 			HIDD_BM_GetImageLUT(BM_OBJ(CR->BitMap)
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, array_width)
@@ -3939,18 +3927,7 @@ LOCK_HIDD(CR->BitMap);
 		        );
 			
 
-#if 0
-		    	hidd2amiga_fast(CR->BitMap
-				, cr_rel_x, cr_rel_y
-				, (APTR)array
-				, array_rel_x
-				, array_rel_y
-				, inter_width, inter_height
-				, buf_to_pixarray
-		    	);
-#endif
 
-ULOCK_HIDD(CR->BitMap);
 
 
 		    } /* if (SMARTREFRESH cliprect) */
@@ -4043,20 +4020,14 @@ VOID template_to_buf(struct template_info *ti
 VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort * destRP,
 	LONG xDest, LONG yDest, LONG xSize, LONG ySize, struct GfxBase *GfxBase)
 {
-    struct gfx_driverdata *dd;
     struct Layer *L = destRP->Layer;
     struct BitMap *bm = destRP->BitMap;
     ULONG width, height;
-    Object *template_bm_obj;
+    Object *gc;
     struct BitMap template_bm;
     
     struct template_info ti;
     
-    struct TagItem setgc_tags[] =
-    {
-    	{aHidd_BitMap_GC, 0UL},
-	{TAG_DONE, 0UL}
-    };
     struct TagItem bm_tags[] = 
     {
     	{ aHidd_BitMap_Width,	xSize },
@@ -4065,21 +4036,25 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
 	{ aHidd_BitMap_Displayable, FALSE },
 	{ TAG_DONE, 0UL }
     };
+    
+    struct TagItem gc_tags[] = {
+    	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy },
+	{ TAG_DONE, 0UL }
+    };
+    HIDDT_DrawMode old_drmd;
 
-// kprintf("BltTemplate() !!\n");    
     EnterFunc(bug("driver_BltTemplate(%d, %d, %d, %d, %d, %d)\n"
     	, xSrc, srcMod, xDest, yDest, xSize, ySize));
 	
     if (!CorrectDriverData(destRP, GfxBase))
     	ReturnVoid("driver_BltTemplate");
 	
-    dd = GetDriverData(destRP);
+    gc = GetDriverData(destRP)->dd_GC;
     
 
     width  = GetBitMapAttr(bm, BMA_WIDTH);
     height = GetBitMapAttr(bm, BMA_HEIGHT);
     
-    BM_OBJ(&template_bm)	= template_bm_obj;
     BM_PIXTAB(&template_bm)	= NULL;
     template_bm.Rows		= height;
     template_bm.BytesPerRow	= WIDTH_TO_BYTES(width);
@@ -4097,21 +4072,27 @@ VOID driver_BltTemplate(PLANEPTR source, LONG xSrc, LONG srcMod, struct RastPort
     ti.modulo	 = srcMod;
     ti.invertsrc = ((GetDrMd(destRP) & INVERSVID) ? TRUE : FALSE);
 
-D(bug("Copying template to HIDD offscreen bitmap\n"));    
+D(bug("Copying template to HIDD offscreen bitmap\n"));
+
+
+    /* Preserve state */
+    GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    SetAttrs(gc, gc_tags);
 
     amiga2hidd_fast( (APTR)&ti
+    	, gc
     	, xSrc, 0
 	, &template_bm
 	, 0, 0
 	, xSize, ySize
 	, template_to_buf
     );
+    
+    /* Reset to preserved state */
+    gc_tags[0].ti_Data = old_drmd;
+    SetAttrs(gc, gc_tags);
 
 
-    /* Prepare for setting bitmap GC */
-    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
-LOCK_HIDD(bm);    
-    SetAttrs( BM_OBJ(bm), setgc_tags );
 
     if (NULL == L)
     {
@@ -4119,6 +4100,7 @@ LOCK_HIDD(bm);
 	
 	/* Blit with color expansion */
 	HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+		, gc
 		, BM_OBJ(&template_bm)
 		, 0, 0
 		, xDest, yDest
@@ -4164,6 +4146,7 @@ LOCK_HIDD(bm);
 		    
 		    
 		    HIDD_BM_BlitColorExpansion( BM_OBJ(bm)
+		    	, gc
 			, BM_OBJ(&template_bm)
 			, clipped_xsrc, clipped_ysrc
 			, intersect.MinX
@@ -4188,10 +4171,9 @@ LOCK_HIDD(bm);
 			clipped_xsrc = /* xsrc = 0 + */ intersect.MinX - toblit.MinX;
 			clipped_ysrc = /* ysrc = 0 + */ intersect.MinY - toblit.MinY;
 			
-LOCK_HIDD(CR->BitMap);			
-			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
 			
 		    	HIDD_BM_BlitColorExpansion( BM_OBJ(CR->BitMap)
+				, gc
 				, BM_OBJ(&template_bm)
 				, clipped_xsrc, clipped_ysrc
 				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
@@ -4199,27 +4181,7 @@ LOCK_HIDD(CR->BitMap);
 				, intersect.MaxX - intersect.MinX + 1
 				, intersect.MaxY - intersect.MinY + 1
 		    	);
-ULOCK_HIDD(CR->BitMap);			
 
-/*			
-		    	UBYTE *clipped_source;
-		    	LONG clipped_xsrc;
-		    
-		    	clipped_xsrc = xSrc + (intersect.MinX - toblit.MinX);
-		    	clipped_source = source + XCOORD_TO_BYTEIDX(clipped_xsrc);
-		    	clipped_xsrc &= 0x07;
-
-		    	blttemplate_amiga(clipped_source
-		    		, clipped_xsrc
-				, srcMod
-				, CR->BitMap
-				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, intersect.MinY - CR->bounds.MinY
-				, intersect.MaxX - intersect.MinX + 1
-				, intersect.MaxY - intersect.MinY + 1
-				, destRP, GfxBase
-		    	);
-*/		    
 		    }
 
 		}
@@ -4232,7 +4194,6 @@ ULOCK_HIDD(CR->BitMap);
 	
     } /* if (not screen rastport) */
     
-ULOCK_HIDD(bm);
     
     HIDD_Gfx_DisposeBitMap(SDD(GfxBase)->gfxhidd, BM_OBJ(&template_bm));
 	
@@ -4359,18 +4320,19 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
 		LONG xMax, LONG yMax, ULONG byteCnt, struct GfxBase *GfxBase)
 {
 
-    struct gfx_driverdata *dd;
     struct Layer *L = rp->Layer;
     struct BitMap *bm = rp->BitMap;
     ULONG width, height;
     
     struct pattern_info pi;
     
-    struct TagItem setgc_tags[] =
-    {
-    	{aHidd_BitMap_GC, 0UL},
-	{TAG_DONE, 0UL}
+    Object *gc;
+    HIDDT_DrawMode old_drmd;
+    struct TagItem gc_tags[] = {
+	{ aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy	},
+	{ TAG_DONE, 0UL }
     };
+    
     
     EnterFunc(bug("driver_BltPattern(%d, %d, %d, %d, %d)\n"
     	, xMin, yMin, xMax, yMax, byteCnt));
@@ -4387,16 +4349,13 @@ VOID driver_BltPattern(struct RastPort *rp, PLANEPTR mask, LONG xMin, LONG yMin,
     pi.dest_depth	= GetBitMapAttr(rp->BitMap, BMA_DEPTH);
     
 	
-    dd = GetDriverData(rp);
+    gc = GetDriverData(rp)->dd_GC;
+    
+    GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    SetAttrs(gc, gc_tags);
     
     width  = xMax - xMin + 1;
     height = yMax - yMin + 1;
-    
-    /* Prepare for setting bitmap GC */
-    setgc_tags[0].ti_Data = (IPTR)dd->dd_GC;
-    /* Prepare for setting bitmap GC */
-LOCK_HIDD(bm);    
-    SetAttrs( BM_OBJ(bm), setgc_tags );
     
     
     if (NULL == L)
@@ -4407,6 +4366,7 @@ LOCK_HIDD(bm);
 	pi.orig_ymin = yMin;
 	
 	amiga2hidd_fast( (APTR) &pi
+		, gc
 		, xMin, yMin
 		, bm
 		, xMin, yMin
@@ -4462,6 +4422,7 @@ kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
 kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);*/
 
 		    amiga2hidd_fast( (APTR) &pi
+		    	, gc
 		        , intersect.MinX - xrel
 		        , intersect.MinY - yrel
 			, bm
@@ -4481,9 +4442,7 @@ kprintf("source coords: %d/%d\n\n",intersect.MinX-xrel, intersect.MinY-yrel);*/
 		    else
 		    {
 
-LOCK_HIDD(CR->BitMap);		
 
-			SetAttrs( BM_OBJ(CR->BitMap), setgc_tags );
 
 /*kprintf("INVISIBLE! CR->BitMap = %x\n",CR->BitMap);
 kprintf("xMin: %d, yMin: %d, xMax: %d, yMax: %d\n",xMin,yMin,xMax,yMax);
@@ -4491,6 +4450,7 @@ kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
                                      intersect.MaxX, intersect.MaxY);*/
 
 		    	amiga2hidd_fast( (APTR) &pi
+				, gc
 				, intersect.MinX - xrel
 				, intersect.MinY - yrel
 				, CR->BitMap
@@ -4501,18 +4461,7 @@ kprintf("intersect: %d/%d - %d/%d\n",intersect.MinX, intersect.MinY,
 				, pattern_to_buf
 			);
 
-ULOCK_HIDD(CR->BitMap);			
 			
-/*		    	bltpattern_amiga( &pi
-		    		, CR->BitMap
-				, intersect.MinX, intersect.MinY
-				, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
-				, intersect.MinY - CR->bounds.MinY
-				, intersect.MaxX - intersect.MinX + 1
-				, intersect.MaxY - intersect.MinY + 1
-				, GfxBase
-		        );
-*/			
 		    }
 
 		}
@@ -4524,8 +4473,10 @@ ULOCK_HIDD(CR->BitMap);
 	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
+    
+    gc_tags[0].ti_Data = old_drmd;
+    SetAttrs(gc, gc_tags);
 
-ULOCK_HIDD(bm);
 
     ReturnVoid("driver_BltPattern");
 }
@@ -4592,6 +4543,15 @@ struct layerhookmsg
 VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg)
 {
     struct BitMap *bm = rp->BitMap;
+    Object *gc;
+    
+    if (!CorrectDriverData(rp, GfxBase)) 
+    	return;
+	
+	
+    gc = GetDriverData(rp)->dd_GC;
+    
+
 
     if(h == LAYERS_BACKFILL)
     {
@@ -4599,26 +4559,39 @@ VOID calllayerhook(struct Hook *h, struct RastPort *rp, struct layerhookmsg *msg
         /* Use default backfill */
 	if (bm->Flags & BMF_AROS_HIDD)
 	{
-	     struct TagItem bm_tags[] =
+	     HIDDT_DrawMode old_drmd;
+	     HIDDT_Pixel old_fg;
+	     
+	     struct TagItem gc_tags[] =
 	     {
-	     	{aHidd_BitMap_Foreground, 0UL},
-		{aHidd_BitMap_DrawMode,	  vHidd_GC_DrawMode_Copy},
+	     	{aHidd_GC_Foreground, 0UL},
+		{aHidd_GC_DrawMode,	  vHidd_GC_DrawMode_Copy},
 		{TAG_DONE, 0UL}
 	     };
+	     
+	     GetAttr(gc, aHidd_GC_DrawMode,   &old_drmd);
+	     GetAttr(gc, aHidd_GC_Foreground, &old_fg);
+	     
 
-LOCK_HIDD(bm);
-	     bm_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[0];
 
-	     SetAttrs(BM_OBJ(bm), bm_tags);
+	     gc_tags[0].ti_Data = BM_PIXTAB(rp->BitMap)[0];
+
+	     SetAttrs(gc, gc_tags);
 		    
-		    /* Cliprect not obscured, so we may render directly into the display */
+	     /* Cliprect not obscured, so we may render directly into the display */
 
 
 	     HIDD_BM_FillRect(BM_OBJ(bm)
+	     	, gc
 		, msg->MinX, msg->MinY
 		, msg->MaxX, msg->MaxY
 	     );
-ULOCK_HIDD(bm);	     
+	     
+	     gc_tags[0].ti_Data = old_fg;
+	     gc_tags[1].ti_Data = old_drmd;
+	     
+	     SetAttrs(gc, gc_tags);
+	     
 	}
 	else
 	{
@@ -4729,10 +4702,8 @@ void driver_EraseRect (struct RastPort * rp, LONG x1, LONG y1, LONG x2, LONG y2,
 		    msg.MaxX = intersect.MaxX;
 		    msg.MaxY = intersect.MaxY;
 
-LOCK_HIDD(bm);
 
 		    calllayerhook(L->BackFill, rp, &msg);
-ULOCK_HIDD(bm);
 		}
 		else
 		{
@@ -4754,10 +4725,8 @@ ULOCK_HIDD(bm);
 		    	msg.MaxX = msg.MinX + (intersect.MaxX - intersect.MinX);
 		    	msg.MaxY = msg.MinY + (intersect.MaxY - intersect.MinY);
 
-LOCK_HIDD(CR->BitMap);		    
 		    	calllayerhook(L->BackFill, fakeRP /* rp */, &msg);
 
-ULOCK_HIDD(CR->BitMap);			
 		    }
 
 		}
@@ -4879,9 +4848,12 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     struct BitMap *bm = destRP->BitMap;
     struct bltmask_info bmi;
     
-    struct TagItem bm_tags[] =
+    HIDDT_DrawMode old_drmd;
+    Object *gc;
+    
+    struct TagItem gc_tags[] =
     {
-	{ aHidd_BitMap_DrawMode, 0UL },
+	{ aHidd_GC_DrawMode, 0UL },
 	{ TAG_DONE, 0UL }
     };
     
@@ -4892,7 +4864,12 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     if (!CorrectDriverData(destRP, GfxBase))
     	ReturnVoid("driver_BltMaskBitMapRastPort");
     
-    bm_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+    gc = GetDriverData(destRP)->dd_GC;
+    
+    gc_tags[0].ti_Data = MINTERM_TO_GCDRMD(minterm);
+    
+    GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    SetAttrs(gc, gc_tags);
 
     bmi.mask	= bltMask;
     bmi.srcbm	= srcBitMap;
@@ -4901,8 +4878,6 @@ VOID driver_BltMaskBitMapRastPort(struct BitMap *srcBitMap
     bmi.mask_bpr = WIDTH_TO_WORDS(xSize);
     
     /* Set minterm bitmap object */
-LOCK_HIDD(bm);    
-    SetAttrs(BM_OBJ(bm), bm_tags);
     
     if (NULL == L)
     {
@@ -4912,6 +4887,7 @@ LOCK_HIDD(bm);
 	bmi.mask_ymin = 0;
 	
 	amiga2hidd_fast( (APTR) &bmi
+		, gc
 		, xSrc, ySrc
 		, bm
 		, xDest, yDest
@@ -4960,6 +4936,7 @@ LOCK_HIDD(bm);
 		    
 		    /* Cliprect not obscured, so we may render directly into the display */
 		    amiga2hidd_fast( (APTR) &bmi
+		    	, gc
 			, xSrc + xoffset, ySrc + yoffset
 			, bm
 			, intersect.MinX, intersect.MinY
@@ -4978,11 +4955,10 @@ LOCK_HIDD(bm);
 		    else
 		    {
 		    
-LOCK_HIDD(CR->BitMap);			
 		    
-		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
 		    
 		    	amiga2hidd_fast( (APTR) &bmi
+				, gc
 				, xSrc + xoffset, ySrc + yoffset
 				, CR->BitMap
 		    		, intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
@@ -4991,7 +4967,6 @@ LOCK_HIDD(CR->BitMap);
 				, height
 				, bltmask_to_buf
 		     	);
-ULOCK_HIDD(CR->BitMap);
 
 		    }
 		}
@@ -5000,7 +4975,10 @@ ULOCK_HIDD(CR->BitMap);
 	UnlockLayerRom( L );
 	
     }
-ULOCK_HIDD(bm);    
+    
+    /* Reset to told drawmode value */
+    gc_tags[0].ti_Data = (IPTR)old_drmd;
+    SetAttrs(gc, gc_tags);
 	
 
     ReturnVoid("driver_BltMaskBitMapRastPort");
@@ -5011,6 +4989,7 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 {
     ULONG width, height;
     Object *bm_obj;
+    Object *tmp_gc;
     /* Caclulate sizes for the font bitmap */
     struct TagItem bm_tags[] = {
 	{ aHidd_BitMap_Width,		0	},
@@ -5019,6 +4998,10 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	{ aHidd_BitMap_Depth,		1	},
 	{ TAG_DONE,	0UL }
     };
+    
+    tmp_gc = obtain_cache_object(SDD(GfxBase)->gc_cache, GfxBase);
+    if (NULL == tmp_gc)
+    	return NULL;
 
     width  = font->tf_Modulo * 8;
     height = font->tf_YSize;
@@ -5033,6 +5016,11 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
     {
     	struct template_info ti;
     	struct BitMap bm;
+	struct TagItem gc_tags[] = {
+	    { aHidd_GC_DrawMode,	vHidd_GC_DrawMode_Copy },
+	    { TAG_DONE, 0UL }
+	};
+	
 	BM_OBJ(&bm)	= bm_obj;
 	BM_PIXTAB(&bm)	= NULL;
 	bm.Rows		= height;
@@ -5046,7 +5034,10 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	ti.invertsrc	= FALSE;
 		
     	/* Copy the character data into the bitmap */
+	SetAttrs(tmp_gc, gc_tags);
+	
 	amiga2hidd_fast((APTR)&ti
+		, tmp_gc
 		, 0, 0
 		, &bm
 		, 0, 0
@@ -5055,6 +5046,8 @@ static Object *fontbm_to_hiddbm(struct TextFont *font, struct GfxBase *GfxBase)
 	);
 		
     }
+    
+    release_cache_object(SDD(GfxBase)->gc_cache, tmp_gc, GfxBase);
     
     return bm_obj;
 }
@@ -5158,12 +5151,8 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     UBYTE * array = (UBYTE *)src;
     
     LONG pixwritten = 0;
+    Object *gc;
 
-    struct TagItem bm_tags[] =
-    {
-	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
-	{ TAG_DONE, 0}
-    };
     
     start_offset = COORD_TO_BYTEIDX(srcx, srcy, srcmod);
     array += start_offset;
@@ -5171,6 +5160,8 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
+	
+    gc = GetDriverData(rp)->dd_GC;
 	
     if (RECTFMT_LUT8 == srcformat)
     {
@@ -5213,10 +5204,9 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
         /* No layer, probably a screen */
 	
 	/* Just put the pixelarray directly onto the HIDD */
-LOCK_HIDD(bm);	
-	SetAttrs(BM_OBJ(bm), bm_tags);
 	
 	HIDD_BM_PutImage(BM_OBJ(bm)
+		, gc
 		, array
 		, srcmod
 		, destx, desty
@@ -5224,7 +5214,6 @@ LOCK_HIDD(bm);
 		, srcfmt_hidd
 	);
 
-ULOCK_HIDD(bm);	
 	pixwritten += width * height;
     }
     else
@@ -5262,10 +5251,9 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
-		    SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    HIDD_BM_PutImage(BM_OBJ(bm)
+		    	, gc
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, srcmod)
 			, srcmod
 			, intersect.MinX, intersect.MinY
@@ -5273,7 +5261,6 @@ LOCK_HIDD(bm);
 			, srcfmt_hidd
 		    );
 			
-ULOCK_HIDD(bm);	
 		}
 		else
 		{
@@ -5287,12 +5274,10 @@ ULOCK_HIDD(bm);
 
 		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
-LOCK_HIDD(CR->BitMap);		    
-
-		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
 	
 
 			HIDD_BM_PutImage(BM_OBJ(CR->BitMap)
+			    , gc
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, srcmod)
 			    , srcmod
 			    , cr_rel_x, cr_rel_y
@@ -5301,7 +5286,6 @@ LOCK_HIDD(CR->BitMap);
 		        );
 			
 
-ULOCK_HIDD(CR->BitMap);		    
 		    } /* If (SMARTREFRESH cliprect) */
 		    
 		    
@@ -5334,12 +5318,15 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     UBYTE * array = (UBYTE *)dst;
     
     LONG pixread = 0;
+    HIDDT_DrawMode old_drmd;
+    Object *gc;
 
-    struct TagItem bm_tags[] =
+    struct TagItem gc_tags[] =
     {
-	{ aHidd_BitMap_DrawMode, vHidd_GC_DrawMode_Copy},
+	{ aHidd_GC_DrawMode, vHidd_GC_DrawMode_Copy},
 	{ TAG_DONE, 0}
     };
+    
     
     start_offset = COORD_TO_BYTEIDX(destx, desty, dstmod);
     array += start_offset;
@@ -5347,6 +5334,14 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     
     if (!CorrectDriverData (rp, GfxBase))
 	return 0;
+	
+    gc = GetDriverData(rp)->dd_GC;
+
+   /* Preserve old drawmode */
+    GetAttr(gc, aHidd_GC_DrawMode, &old_drmd);
+    
+    SetAttrs(gc, gc_tags);
+    
     
     switch (dstformat)
     {
@@ -5369,9 +5364,6 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     {
         /* No layer, probably a screen */
 	
-	/* Just put the pixelarray directly onto the HIDD */
-LOCK_HIDD(bm);	
-	SetAttrs(BM_OBJ(bm), bm_tags);
 	
 	HIDD_BM_GetImage(BM_OBJ(bm)
 		, array
@@ -5381,7 +5373,6 @@ LOCK_HIDD(bm);
 		, dstfmt_hidd
 	);
 
-ULOCK_HIDD(bm);	
 	pixread += width * height;
     }
     else
@@ -5419,8 +5410,6 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
-		    SetAttrs(BM_OBJ(bm), bm_tags);
 		    
 		    HIDD_BM_GetImage(BM_OBJ(bm)
 		    	, array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, dstmod)
@@ -5430,7 +5419,6 @@ LOCK_HIDD(bm);
 			, dstfmt_hidd
 		    );
 			
-ULOCK_HIDD(bm);	
 		}
 		else
 		{
@@ -5444,9 +5432,6 @@ ULOCK_HIDD(bm);
 
 		    	LONG cr_rel_x	= intersect.MinX - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX);
 		    	LONG cr_rel_y	= intersect.MinY - CR->bounds.MinY;
-LOCK_HIDD(CR->BitMap);		    
-
-		    	SetAttrs(BM_OBJ(CR->BitMap), bm_tags);
 
 			HIDD_BM_GetImage(BM_OBJ(CR->BitMap)
 			    , array + COORD_TO_BYTEIDX(array_rel_x, array_rel_y, dstmod)
@@ -5457,7 +5442,6 @@ LOCK_HIDD(CR->BitMap);
 		        );
 			
 
-ULOCK_HIDD(CR->BitMap);		    
 		    } /* If (SMARTREFRESH cliprect) */
 		    
 		    
@@ -5472,6 +5456,11 @@ ULOCK_HIDD(CR->BitMap);
 	UnlockLayerRom( L );
 	
     } /* if (not screen rastport) */
+    
+    /* restore old gc values */
+    gc_tags[0].ti_Data = (IPTR)old_drmd;
+    SetAttrs(gc, gc_tags);
+    
     return pixread;
 }
 
@@ -5546,9 +5535,7 @@ LONG driver_WriteRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     if (NULL == L)
     {
     	/* This is a screen */
-LOCK_HIDD(bm);	
 	HIDD_BM_PutPixel(BM_OBJ(bm), x, y, pix);
-ULOCK_HIDD(bm);	
 	error = 0;
     }
     else
@@ -5576,10 +5563,8 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
 		    HIDD_BM_PutPixel(BM_OBJ(bm), absx, absy, pix);
 			
-ULOCK_HIDD(bm);	
 		    
 
 		}
@@ -5593,14 +5578,12 @@ ULOCK_HIDD(bm);
 		    else
 		    {
 
-LOCK_HIDD(CR->BitMap);
 			HIDD_BM_PutPixel(BM_OBJ(CR->BitMap)
 				, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, absy - CR->bounds.MinY
 				, pix
 			); 
 
-ULOCK_HIDD(CR->BitMap);		    
 
 		    } /* If (SMARTREFRESH cliprect) */
 		    
@@ -5637,9 +5620,7 @@ ULONG driver_ReadRGBPixel(struct RastPort *rp, UWORD x, UWORD y
     if (NULL == L)
     {
     	/* This is a screen */
-LOCK_HIDD(bm);	
 	pix = HIDD_BM_GetPixel(BM_OBJ(bm), x, y);
-ULOCK_HIDD(bm);	
     }
     else
     {
@@ -5666,10 +5647,8 @@ ULOCK_HIDD(bm);
 		{
 		    
 		    /* Write to the HIDD */
-LOCK_HIDD(bm);	
 		    pix = HIDD_BM_GetPixel(BM_OBJ(bm), absx, absy);
 			
-ULOCK_HIDD(bm);	
 		}
 		else
 		{
@@ -5681,13 +5660,11 @@ ULOCK_HIDD(bm);
 		    else
 		    {
 
-LOCK_HIDD(CR->BitMap);
 			pix = HIDD_BM_GetPixel(BM_OBJ(CR->BitMap)
 				, absx - CR->bounds.MinX + ALIGN_OFFSET(CR->bounds.MinX)
 				, absy - CR->bounds.MinY
 			); 
 
-ULOCK_HIDD(CR->BitMap);		    
 
 		    } /* If (SMARTREFRESH cliprect) */
 		    

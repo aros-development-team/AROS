@@ -36,65 +36,12 @@ static AttrBase HiddPixFmtAttrBase = 0;
 /*** BitMap::New() ************************************************************/
 
 
-/* BitMap baseclass has the following behaviour:
-
-    It can allocate nondisplayable bitmaps, but not
-    displayable ones. (Determined by the aHidd_BitMap_Displayable (BOOL) attr).
-    If the bitmap is not displayable, then a suitable bitmap
-    will be initialized from memory by this baseclass.
-    If displayable, then the subclass(es) *MUST* take
-    care of initializing a bitmap. This may for example
-    be an X11 window for a x11gfx.hidd. Either way, this baseclass
-    will initialize and store the width/height etc attrs.
+/* BitMap baseclass is a in C++ terminology a pure virtual
+   baseclass. It will not allocate any bitmap data at all,
+   that is up to the subclass to do.
 */    
 
-# warning This may be too slow, could find better solution
-/* In the solution used below, subclasses should NOT
-   handle aHidd_GC_DrawMode themselves, as they
-   will receive a pRoot_Set message for the corresponing
-   aHidd_BitMap_xxx attr. Docs should state this.
-   
-   Alternative 1: Let each subclass get the needed info
-   frmom the GC themselves.
-   Alt 2.: Like the above, but make the GC a white-box object, and let
-         subclasses get the data directly. Possible caveat:
-	 GC may theoretically be in different addresspace, or
-	 even on differen machine */
 	 
-static VOID update_from_gc(Class *cl, Object *me, Object *gc)
-{
-
-    	/* Update the subclasses */
-    struct HIDDBitMapData *data = INST_DATA(cl, me);
-    struct TagItem tags[] =
-    {
-	    { aHidd_BitMap_DrawMode,	0UL },
-	    { aHidd_BitMap_Foreground,	0UL },
-	    { aHidd_BitMap_Background,	0UL },
-	    { aHidd_BitMap_Font, 	0UL },
-	    { aHidd_BitMap_ColorMask,   0UL },
-	    { aHidd_BitMap_LinePattern, 0UL },
-	    { aHidd_BitMap_PlaneMask, 	0UL },
-	    { aHidd_BitMap_ColorExpansionMode, 	0UL },
-	    { TAG_DONE, 0UL}
-    };
-
-
-    GetAttr(gc, aHidd_GC_DrawMode,	&(tags[0].ti_Data));
-    GetAttr(gc, aHidd_GC_Foreground,	&(tags[1].ti_Data));
-    GetAttr(gc, aHidd_GC_Background,	&(tags[2].ti_Data));
-    GetAttr(gc, aHidd_GC_Font,		&(tags[3].ti_Data));
-    GetAttr(gc, aHidd_GC_ColorMask,	&(tags[4].ti_Data));
-    GetAttr(gc,	aHidd_GC_LinePattern,	&(tags[5].ti_Data));
-    GetAttr(gc, aHidd_GC_PlaneMask, 	&(tags[6].ti_Data));
-    GetAttr(gc, aHidd_GC_ColorExpansionMode, 	&(tags[7].ti_Data));
-
-    SetAttrs(me, tags);
-    
-    data->gc = gc;
-
-    return;
-}
 
 static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
@@ -117,6 +64,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->height      = 200;
         data->reqdepth	  = 8;
         data->displayable = FALSE;
+#if 0	
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
         data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
@@ -124,7 +72,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
         data->colMask   = ~0;       /* ColorMask prevents some color bits from changing*/
         data->linePat   = ~0;       /* LinePattern                             */
         data->planeMask = NULL;     /* Pointer to a shape bitMap               */
-
+#endif
         tstate = msg->attrList;
         while((tag = NextTagItem(&tstate)))
         {
@@ -142,8 +90,10 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 #if 0		    
                     case aoHidd_BitMap_Format      : data->format      = tag->ti_Data; break;
 #endif		    
+
+
+#if 0		    
 		    case aoHidd_BitMap_GC	   : update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
-		    
 		    case aoHidd_BitMap_Foreground  : data->fg		= tag->ti_Data; break;
 		    case aoHidd_BitMap_Background  : data->bg		= tag->ti_Data; break;
 		    case aoHidd_BitMap_DrawMode	   : data->drMode	= tag->ti_Data; break;
@@ -151,6 +101,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 		    case aoHidd_BitMap_ColorMask   : data->colMask	= tag->ti_Data; break;
 		    case aoHidd_BitMap_PlaneMask   : data->planeMask	= (APTR)tag->ti_Data; break;
 		    case aoHidd_BitMap_Font	   : data->font		= (APTR)tag->ti_Data; break;
+#endif		    
 		    case aoHidd_BitMap_Friend	   : data->friend	= (Object *)tag->ti_Data; break;
 		    
 		    case aoHidd_BitMap_GfxHidd	   : 
@@ -232,6 +183,8 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 #if 0
             case aoHidd_BitMap_Format      : *msg->storage = data->format; break;
 #endif
+
+#if 0
 	    case aoHidd_BitMap_GC	   : *msg->storage = (IPTR) data->gc; break;
 	    case aoHidd_BitMap_Foreground  : *msg->storage = data->fg; break;
 	    case aoHidd_BitMap_Background  : *msg->storage = data->bg; break;
@@ -241,6 +194,8 @@ static VOID bitmap_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 	    case aoHidd_BitMap_PlaneMask   : *msg->storage = (IPTR) data->planeMask; break;
 	    case aoHidd_BitMap_Font	   : *msg->storage = (IPTR) data->font; break;
 	    case aoHidd_BitMap_ColorExpansionMode  : *msg->storage = data->colExp; break;
+#endif
+
 	    case aoHidd_BitMap_Friend	   : *msg->storage = (IPTR)data->friend; break;
 	    
             case aoHidd_BitMap_Depth:
@@ -350,9 +305,9 @@ static BOOL bitmap_setcolors(Class *cl, Object *o, struct pHidd_BitMap_SetColors
 
 static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPixel *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
     ULONG src, dest, val, mode;
     ULONG writeMask;
+    Object *gc;
 
 /*    EnterFunc(bug("BitMap::DrawPixel() x: %i, y: %i\n", msg->x, msg->y));
 */
@@ -382,18 +337,20 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
                     = 100100
                       --
     */
+    
+    gc = msg->gc;
 
-    src       = data->fg;
+    src       = GC_FG(gc);
     dest      = HIDD_BM_GetPixel(obj, msg->x, msg->y);
-    mode      = data->drMode;
-    writeMask = ~data->colMask & dest;
+    mode      = GC_DRMD(gc);
+    writeMask = ~GC_COLMASK(gc) & dest;
 
     if(mode & 1) val = ( src &  dest);
     if(mode & 2) val = ( src & ~dest) | val;
     if(mode & 4) val = (~src &  dest) | val;
     if(mode & 8) val = (~src & ~dest) | val;
 
-    val = (val & (writeMask | data->colMask)) | writeMask;
+    val = (val & (writeMask | GC_COLMASK(gc) )) | writeMask;
 
     HIDD_BM_PutPixel(obj, msg->x, msg->y, val);
 
@@ -440,13 +397,17 @@ static ULONG bitmap_drawpixel(Class *cl, Object *obj, struct pHidd_BitMap_DrawPi
 
 static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
     WORD  dx, dy, incrE, incrNE, d, x, y, s1, s2, t, i;
     UWORD maskLine = 1 << 15;  /* for line pattern */
     BYTE  maskCnt  = 16;
-    ULONG fg       = data->fg;   /* foreground pen   */
+    ULONG fg;   /* foreground pen   */
+    
+    Object *gc;
 
     EnterFunc(bug("BitMap::DrawLinel() x1: %i, y1: %i x2: %i, y2: %i\n", msg->x1, msg->y1, msg->x2, msg->y2));
+    
+    gc = msg->gc;
+    fg = GC_FG(gc);
 
     /* Calculate slope */
     dx = abs(msg->x2 - msg->x1);
@@ -473,15 +434,15 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
 
     x = msg->x1; y = msg->y1;
 
-    if(data->linePat & maskLine)
+    if(GC_LINEPAT(gc) & maskLine)
     {
-        HIDD_BM_DrawPixel(obj, x, y); /* The start pixel */
+        HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
     }
     else
     {
-        data->fg = data->bg;
-        HIDD_BM_DrawPixel(obj, x, y); /* The start pixel */
-        data->fg = fg;
+        GC_FG(gc) = GC_BG(gc);
+        HIDD_BM_DrawPixel(obj, gc, x, y); /* The start pixel */
+        GC_FG(gc) = fg;
     }
 
 
@@ -523,15 +484,15 @@ static VOID bitmap_drawline(Class *cl, Object *obj, struct pHidd_BitMap_DrawLine
             d = d + incrNE;
         }
 
-        if(data->linePat & maskLine)
+        if(GC_LINEPAT(gc) & maskLine)
         {
-            HIDD_BM_DrawPixel(obj, x, y);
+            HIDD_BM_DrawPixel(obj, gc, x, y);
         }
         else
         {
-            data->fg = data->bg;
-            HIDD_BM_DrawPixel(obj, x, y);
-            data->fg = fg;
+            GC_FG(gc) = GC_BG(gc);
+            HIDD_BM_DrawPixel(obj, gc, x, y);
+            GC_FG(gc) = fg;
         }
     }
 
@@ -605,10 +566,14 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
     WORD  memSrcX = srcX, memDestX = destX;
     WORD  srcY = msg->srcY, destY = msg->destY;
     ULONG memFG;
+    
+    Object *gc;
 
     EnterFunc(bug("BitMap::CopyBox()"));
-
-    GetAttr(msg->dest, aHidd_BitMap_Foreground, &memFG);
+    
+    gc = msg->gc;
+    
+    memFG = GC_FG(msg->gc);
 
     for(y = 0; y < msg->height; y++)
     {
@@ -617,17 +582,15 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
 
         for(x = 0; x < msg->width; x++)
         {
-            SetAttrsTags(msg->dest, aHidd_BitMap_Foreground,
-                               HIDD_BM_GetPixel(obj, srcX++, srcY),
-                               TAG_END
-                        );
-            HIDD_BM_DrawPixel(msg->dest, destX++, destY);
+	    GC_FG(gc) = HIDD_BM_GetPixel(obj, srcX++, srcY);
+	    
+            HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
         }
 
         srcY++; destY++;
     }
-
-    SetAttrsTags(msg->dest, aHidd_BitMap_Foreground, memFG, TAG_END);
+    
+    GC_FG(gc) = memFG;
 
     ReturnVoid("BitMap::CopyBox");
 }
@@ -674,16 +637,17 @@ static VOID bitmap_copybox(Class *cl, Object *obj, struct pHidd_BitMap_CopyBox *
 static VOID bitmap_drawrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect *msg)
 {
     WORD addX, addY;
+    Object *gc = msg->gc;
 
     EnterFunc(bug("BitMap::DrawRect()"));
 
     if(msg->minX == msg->maxX) addX = 0; else addX = 1;
     if(msg->minY == msg->maxY) addY = 0; else addY = 1;
 
-    HIDD_BM_DrawLine(obj, msg->minX, msg->minY       , msg->maxX, msg->minY);
-    HIDD_BM_DrawLine(obj, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
-    HIDD_BM_DrawLine(obj, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
-    HIDD_BM_DrawLine(obj, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
+    HIDD_BM_DrawLine(obj, gc, msg->minX, msg->minY       , msg->maxX, msg->minY);
+    HIDD_BM_DrawLine(obj, gc, msg->maxX, msg->minY + addY, msg->maxX, msg->maxY);
+    HIDD_BM_DrawLine(obj, gc, msg->maxX - addX, msg->maxY, msg->minX, msg->maxY);
+    HIDD_BM_DrawLine(obj, gc, msg->minX, msg->maxY - addY, msg->minX, msg->minY + addY);
 
     ReturnVoid("BitMap::DrawRect");
 }
@@ -730,12 +694,14 @@ static VOID bitmap_drawrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect
 static VOID bitmap_fillrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect *msg)
 {
     WORD y = msg->minY;
+    
+    Object *gc = msg->gc;
 
     EnterFunc(bug("BitMap::FillRect()"));
 
     for(; y <= msg->maxY; y++)
     {
-        HIDD_BM_DrawLine(obj, msg->minX, y, msg->maxX, y);
+        HIDD_BM_DrawLine(obj, gc, msg->minX, y, msg->maxX, y);
     }
 
     ReturnVoid("BitMap::FillRect");
@@ -783,6 +749,7 @@ static VOID bitmap_fillrect(Class *cl, Object *obj, struct pHidd_BitMap_DrawRect
 static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
 {
     WORD   x = msg->rx, y = 0;     /* ellipse points */
+    Object *gc = msg->gc;
 
     /* intermediate terms to speed up loop */
     LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
@@ -796,10 +763,10 @@ static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     while (d2 < 0)                  /* til slope = -1 */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y - y);
-        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
     
         y++;            /* always move up here */
         t9 = t9 + t3;
@@ -820,10 +787,10 @@ static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     do                              /* rest of top right quadrant */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, msg->x + x, msg->y - y);
-        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y + y);
-        HIDD_BM_DrawPixel(obj, msg->x - x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x + x, msg->y - y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y + y);
+        HIDD_BM_DrawPixel(obj, gc, msg->x - x, msg->y - y);
     
         x--;            /* always move left here */
         t8 = t8 - t6;
@@ -884,6 +851,7 @@ static VOID bitmap_drawellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
 static VOID bitmap_fillellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawEllipse *msg)
 {
     WORD x = msg->rx, y = 0;     /* ellipse points */
+    Object *gc = msg->gc;
 
     /* intermediate terms to speed up loop */
     LONG t1 = msg->rx * msg->rx, t2 = t1 << 1, t3 = t2 << 1;
@@ -897,8 +865,8 @@ static VOID bitmap_fillellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     while (d2 < 0)                  /* til slope = -1 */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawLine(obj, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
-        HIDD_BM_DrawLine(obj, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
 
         y++;            /* always move up here */
         t9 = t9 + t3;
@@ -919,8 +887,8 @@ static VOID bitmap_fillellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
     do                              /* rest of top right quadrant */
     {
         /* draw 4 points using symmetry */
-        HIDD_BM_DrawLine(obj, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
-        HIDD_BM_DrawLine(obj, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
+        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y + y, msg->x + x, msg->y + y);
+        HIDD_BM_DrawLine(obj, gc, msg->x - x, msg->y - y, msg->x + x, msg->y - y);
 
         x--;            /* always move left here */
         t8 = t8 - t6;
@@ -979,12 +947,14 @@ static VOID bitmap_fillellipse(Class *cl, Object *obj, struct pHidd_BitMap_DrawE
 static VOID bitmap_drawpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawPolygon *msg)
 {
     WORD i;
+    
+    Object *gc = msg->gc;
 
     EnterFunc(bug("BitMap::DrawPolygon()"));
 
     for(i = 2; i < (2 * msg->n); i = i + 2)
     {
-        HIDD_BM_DrawLine(obj, msg->coords[i - 2], msg->coords[i - 1],
+        HIDD_BM_DrawLine(obj, gc, msg->coords[i - 2], msg->coords[i - 1],
                               msg->coords[i    ], msg->coords[i + 1]
                         );
     }
@@ -1085,8 +1055,8 @@ static VOID bitmap_fillpolygon(Class *cl, Object *obj, struct pHidd_BitMap_DrawP
 
 static VOID bitmap_drawtext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText *msg)
 {
-    struct HIDDBitMapData *data = INST_DATA(cl, obj);
-    struct TextFont *font  = data->font;
+    Object *gc = msg->gc;
+    struct TextFont *font  = GC_FONT(gc);
     UBYTE  *charPatternPtr = font->tf_CharData;
     UWORD  modulo          = font->tf_Modulo;
     ULONG  charLog;
@@ -1145,7 +1115,7 @@ static VOID bitmap_drawtext(Class *cl, Object *obj, struct pHidd_BitMap_DrawText
     
             for(fx = fx2; fx < fw + fx2; fx++)
             {
-                if(GetPixel(fx, fy)) HIDD_BM_DrawPixel(obj, x, y);
+                if(GetPixel(fx, fy)) HIDD_BM_DrawPixel(obj, msg->gc, x, y);
                 x++;
             }
     
@@ -1334,33 +1304,29 @@ static VOID bitmap_putimage(Class *cl, Object *o, struct pHidd_BitMap_PutImage *
     WORD x, y;
     ULONG *pixarray = (ULONG *)msg->pixels;
     ULONG old_fg;
-    struct TagItem fg_tags[] =
-    {
-	{ aHidd_BitMap_Foreground,	0UL },
-	{ TAG_DONE, 0UL}
-    };
+    
+    Object *gc = msg->gc;
     
     EnterFunc(bug("BitMap::PutImage(x=%d, y=%d, width=%d, height=%d)\n"
     		, msg->x, msg->y, msg->width, msg->height));
     
     
     /* Preserve old fg pen */
-    GetAttr(o, aHidd_BitMap_Foreground, &old_fg);
+    old_fg = GC_FG(gc);
     
     
     for (y = 0; y < msg->height; y ++)
     {
     	for (x = 0; x < msg->width; x ++)
     	{
-	    fg_tags[0].ti_Data = *pixarray ++;
-	    SetAttrs(o, fg_tags);
+	   
+	    GC_FG(gc) = *pixarray ++;
 
-	    HIDD_BM_DrawPixel(o, x + msg->x , y + msg->y);
+	    HIDD_BM_DrawPixel(o, gc, x + msg->x , y + msg->y);
 	}
     }
-    fg_tags[0].ti_Data = old_fg;
     
-    SetAttrs(o, fg_tags);
+    GC_FG(gc) = old_fg;
     
     ReturnVoid("BitMap::PutImage");
 }
@@ -1372,19 +1338,16 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
     ULONG fg, bg;
     LONG x, y;
     
-    struct TagItem fg_tags[] =
-    {
-	{ aHidd_BitMap_Foreground, 0UL },
-	{ TAG_DONE, 0UL }
-    };
+    Object *gc = msg->gc;
+    
     
     EnterFunc(bug("BitMap::BlitColorExpansion(srcBM=%p, srcX=%d, srcY=%d, destX=%d, destY=%d, width=%d, height=%d)\n",
     		msg->srcBitMap, msg->srcX, msg->srcY, msg->destX, msg->destY, msg->width, msg->height));
 		
     
-    GetAttr(o, aHidd_BitMap_ColorExpansionMode, &cemd);
-    GetAttr(o, aHidd_BitMap_Foreground, &fg);
-    GetAttr(o, aHidd_BitMap_Background, &bg);
+    cemd = GC_COLEXP(gc);
+    fg	 = GC_FG(gc);
+    bg	 = GC_BG(gc);
     
     for (y = 0; y < msg->height; y ++)
     {
@@ -1400,7 +1363,7 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
 	    	/* Only use apen if pixel is set */
 		if (is_set)
 		{
-		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
 		}
 		    
 	    }
@@ -1408,16 +1371,14 @@ static VOID bitmap_blitcolexp(Class *cl, Object *o, struct pHidd_BitMap_BlitColo
 	    {
 	    	/* Use apen if pixel is et, bpen otherwise */
 		if (is_set)
-		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
 		else
 		{
 		    /* Write bixel with BG pen */
-		    fg_tags[0].ti_Data = bg;
-		    SetAttrs(o, fg_tags);
-		    HIDD_BM_DrawPixel(o, x + msg->destX, y + msg->destY);
+		    GC_FG(gc) = bg;
+		    HIDD_BM_DrawPixel(o, gc, x + msg->destX, y + msg->destY);
 		    /* Reset to FG pen */
-		    fg_tags[0].ti_Data = fg;
-		    SetAttrs(o, fg_tags);
+		    GC_FG(gc) = bg;
 		    
 		}   
 		
@@ -1519,6 +1480,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
                 case aoHidd_BitMap_ColorTab      : data->colorTab      = (APTR) tag->ti_Data; break;
 		case aoHidd_BitMap_BitMap	 : data->bitMap	       = (Object *)tag->ti_Data;
 
+#if 0
 		case aoHidd_BitMap_GC  		: update_from_gc(cl, obj, (Object *)tag->ti_Data); break;
 		case aoHidd_BitMap_Foreground  	: data->fg		= tag->ti_Data; break;
 		case aoHidd_BitMap_Background  	: data->bg		= tag->ti_Data; break;
@@ -1528,7 +1490,7 @@ static VOID bitmap_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 		case aoHidd_BitMap_PlaneMask	: (APTR)data->planeMask	= tag->ti_Data; break;
 		case aoHidd_BitMap_Font	   	: (APTR)data->font	= tag->ti_Data; break;
 		case aoHidd_BitMap_ColorExpansionMode	: data->colExp		= tag->ti_Data; break;
-
+#endif
                 case aoHidd_BitMap_Depth:
 		    if (NULL != data->prot.pixfmt) {
 			((HIDDT_PixelFormat *)data->prot.pixfmt)->depth  = tag->ti_Data;
@@ -1559,7 +1521,7 @@ static Object * bitmap_setpixelformat(Class *cl, Object *o, struct pHidd_BitMap_
      	return NULL;
     
     data->prot.pixfmt = pixfmt;
-
+    
     return pixfmt;
      
 }

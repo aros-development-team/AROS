@@ -11,6 +11,8 @@
 
 #include "graphics_intern.h"
 
+#include <string.h>
+
 #include <proto/exec.h>
 #include <proto/utility.h>
 #include <proto/oop.h>
@@ -168,7 +170,7 @@ static BOOL hiddgfx_registergfxmodes(Class *cl, Object *o, struct pHidd_Gfx_Regi
 
 	/* Try to create the object */
 	
-	gfxhidd_tags[1].ti_Data = *taglists;
+	gfxhidd_tags[1].ti_Data = (IPTR)*taglists;
 
 	node->gfxMode = NewObject(CSD(cl)->gfxmodeclass, NULL, gfxhidd_tags);
 	if (NULL == node->gfxMode)

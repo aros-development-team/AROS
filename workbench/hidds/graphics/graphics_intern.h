@@ -108,9 +108,7 @@ struct HIDDBitMapData
     ULONG bytesPerRow;   /* bytes per row                 */
     ULONG bytesPerPixel; /* bytes per pixel               */
 #endif
-    APTR  colorTab;      /* color table of the bitmap     */
-    HIDDT_Color *coltab;
-
+#if 0
     HIDDT_Pixel fg;        /* foreground color                                 */
     HIDDT_Pixel bg;        /* background color                                 */
     ULONG drMode;    /* drawmode                                         */
@@ -119,14 +117,22 @@ struct HIDDBitMapData
     ULONG colMask;   /* ColorMask prevents some color bits from changing */
     UWORD linePat;   /* LinePattern                                      */
     APTR  planeMask; /* Pointer to a shape bitMap                        */
+    
     Object *gc;
+
+    ULONG colExp;	/* Color expansion mode	*/
+#endif
     Object *bitMap;
     /* WARNING: structure could be extented in the future                */
-    ULONG colExp;	/* Color expansion mode	*/
     
     Object *friend;	/* Friend bitmap */
     
     Object *gfxhidd;
+
+
+#warning Both these are not necessary
+    APTR  colorTab;      /* color table of the bitmap     */
+    HIDDT_Color *coltab;
 
 };
 
@@ -142,9 +148,11 @@ enum {
 
 #define aHidd_BitMap_GfxHidd	(HiddBitMapAttrBase + aoHidd_BitMap_GfxHidd)
 
+#if 0
 struct HIDDGCData
 {
     APTR bitMap;     /* bitmap to which this gc is connected             */
+    APTR  userData;  /* pointer to own data                              */
     ULONG fg;        /* foreground color                                 */
     ULONG bg;        /* background color                                 */
     ULONG drMode;    /* drawmode                                         */
@@ -153,10 +161,10 @@ struct HIDDGCData
     ULONG colMask;   /* ColorMask prevents some color bits from changing */
     UWORD linePat;   /* LinePattern                                      */
     APTR  planeMask; /* Pointer to a shape bitMap                        */
-    APTR  userData;  /* pointer to own data                              */
     ULONG colExp;
     /* WARNING: structure could be extented in the future                */
 };
+#endif    
 
 
 struct class_static_data

@@ -34,23 +34,20 @@ static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg);
 static AttrBase HiddGCAttrBase = 0;
 static AttrBase HiddBitMapAttrBase = 0;
 
+struct ABDescr attrbases[] = {
+    { IID_Hidd_GC,	&HiddGCAttrBase		},
+    { IID_Hidd_BitMap,	&HiddBitMapAttrBase	},
+    { NULL, NULL }
+};
+
 /*** GC::New() ************************************************************/
 
 static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
 {
-    struct HIDDGCData *data;
+    HIDDT_GC_Intern *data;
 
-    struct pRoot_Set set_msg;
-    Object *bitMap;
 
     EnterFunc(bug("GC::New()\n"));
-
-    set_msg.mID = GetMethodID(IID_Root, moRoot_Set);
-
-    /* User MUST supply bitmap */
-
-    bitMap = (APTR) GetTagData(aHidd_GC_BitMap, NULL, msg->attrList);
-    if(!bitMap) return NULL;
 
     obj  = (Object *) DoSuperMethod(cl, obj, (Msg) msg);
 
@@ -60,8 +57,8 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
     
         /* clear all data and set some default values */
 
-        memset(data, 0, sizeof(struct HIDDGCData));
-        data->bitMap    = bitMap;   /* bitmap to which this gc is connected    */
+        memset(data, 0, sizeof (*data));
+
         data->fg        = 1;        /* foreground color                        */
         data->bg        = 0;        /* background color                        */
         data->drMode    = vHidd_GC_DrawMode_Copy;    /* drawmode               */
@@ -72,7 +69,7 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
 
         /* Override defaults with user suplied attrs */
 
-        set_msg.attrList = msg->attrList;
+	SetAttrs(obj, msg->attrList);
 /*        gc_set(cl, obj, &set_msg);*/
 
     } /* if(obj) */
@@ -81,25 +78,12 @@ static Object *gc_new(Class *cl, Object *obj, struct pRoot_New *msg)
 }
 
 
-/*** GC::Dispose() ********************************************************/
-
-static void gc_dispose(Class *cl, Object *obj, Msg *msg)
-{
-    /* struct HIDDGCData *data = INST_DATA(cl, obj); */
-
-    EnterFunc(bug("GC::Dispose()\n"));
-
-    DoSuperMethod(cl, obj, (Msg) msg);
-
-    ReturnVoid("GC::Dispose()");
-}
-
 
 /*** GC::Set() ************************************************************/
 
 static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 {
-    struct HIDDGCData *data = INST_DATA(cl, obj);
+    HIDDT_GC_Intern *data = INST_DATA(cl, obj);
     struct TagItem *tag, *tstate;
     ULONG  idx;
 
@@ -119,7 +103,7 @@ static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg)
                 case aoHidd_GC_ColorMask  : data->colMask   = tag->ti_Data; break;
                 case aoHidd_GC_LinePattern: data->linePat   = (UWORD) tag->ti_Data; break;
                 case aoHidd_GC_PlaneMask  : data->planeMask = (APTR) tag->ti_Data; break;
-                case aoHidd_GC_UserData   : data->userData  = (APTR) tag->ti_Data; break;
+
                 case aoHidd_GC_ColorExpansionMode : data->colExp    = tag->ti_Data; break;
             }
         }
@@ -133,7 +117,7 @@ static VOID gc_set(Class *cl, Object *obj, struct pRoot_Set *msg)
 
 static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 {
-    struct HIDDGCData *data = INST_DATA(cl, obj);
+    HIDDT_GC_Intern *data = INST_DATA(cl, obj);
     ULONG  idx;
 
     EnterFunc(bug("GC::Get() attrID: %i  storage: %p\n", msg->attrID, msg->storage));
@@ -142,7 +126,7 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
     {
         switch(idx)
         {
-            case aoHidd_GC_BitMap     : *msg->storage = (ULONG) data->bitMap; break;
+
             case aoHidd_GC_Foreground : *msg->storage = data->fg; break;
             case aoHidd_GC_Background : *msg->storage = data->bg; break;
             case aoHidd_GC_DrawMode   : *msg->storage = data->drMode; break;
@@ -150,7 +134,6 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
             case aoHidd_GC_ColorMask  : *msg->storage = data->colMask; break;
             case aoHidd_GC_LinePattern: *msg->storage = data->linePat; break;
             case aoHidd_GC_PlaneMask  : *msg->storage = (ULONG) data->planeMask; break;
-            case aoHidd_GC_UserData   : *msg->storage = (ULONG) data->userData; break;
             case aoHidd_GC_ColorExpansionMode : *msg->storage = data->colExp; break;
         }
     }
@@ -168,7 +151,7 @@ static VOID gc_get(Class *cl, Object *obj, struct pRoot_Get *msg)
 #define SysBase (csd->sysbase)
 #define UtilityBase (csd->utilitybase)
 
-#define NUM_ROOT_METHODS   4
+#define NUM_ROOT_METHODS   3
 #define NUM_GC_METHODS    0
 
 Class *init_gcclass(struct class_static_data *csd)
@@ -176,7 +159,6 @@ Class *init_gcclass(struct class_static_data *csd)
     struct MethodDescr root_descr[NUM_ROOT_METHODS + 1] =
     {
         {(IPTR (*)())gc_new         , moRoot_New    },
-        {(IPTR (*)())gc_dispose     , moRoot_Dispose},
         {(IPTR (*)())gc_set         , moRoot_Set    },
         {(IPTR (*)())gc_get         , moRoot_Get    },
         {NULL, 0UL}
@@ -201,7 +183,7 @@ Class *init_gcclass(struct class_static_data *csd)
         {aMeta_SuperID,        (IPTR) CLID_Root},
         {aMeta_InterfaceDescr, (IPTR) ifdescr},
         {aMeta_ID,             (IPTR) CLID_Hidd_GC},
-        {aMeta_InstSize,       (IPTR) sizeof(struct HIDDGCData)},
+        {aMeta_InstSize,       (IPTR) sizeof(HIDDT_GC_Intern)},
         {TAG_DONE, 0UL}
     };
     
@@ -211,8 +193,7 @@ Class *init_gcclass(struct class_static_data *csd)
 
     if(MetaAttrBase)
     {
-        HiddBitMapAttrBase = GetAttrBase(IID_Hidd_BitMap);
-        if(HiddBitMapAttrBase)
+        if(ObtainAttrBases(attrbases))
         {
             cl = NewObject(NULL, CLID_HiddMeta, tags);
             if(cl)
@@ -221,22 +202,18 @@ Class *init_gcclass(struct class_static_data *csd)
                 csd->gcclass = cl;
                 cl->UserData = (APTR) csd;
                 
-                /* Get attrbase for the GC interface */
-                HiddGCAttrBase = ObtainAttrBase(IID_Hidd_GC);
-                if(HiddGCAttrBase)
-                {
-                    AddClass(cl);
-                }
-                else
-                {
-                    free_gcclass(csd);
-                    cl = NULL;
-                }
+                AddClass(cl);
+		
+		return cl;
             }
-        } /* if(HiddBitMapAttrBase) */
+	    
+	    ReleaseAttrBases(attrbases);
+        }
+	
     } /* if(MetaAttrBase) */
+    
+    return NULL;
 
-    ReturnPtr("init_gcclass", Class *,  cl);
 }
 
 /*** free_gcclass *************************************************************/
@@ -247,20 +224,15 @@ void free_gcclass(struct class_static_data *csd)
 
     if(csd)
     {
-        D(bug("1\n"));
         RemoveClass(csd->gcclass);
-        D(bug("2\n"));
 
         if(csd->gcclass) DisposeObject((Object *) csd->gcclass);
-        D(bug("3\n"));
 
         csd->gcclass = NULL;
-        D(bug("4\n"));
 
-        if(HiddGCAttrBase)     ReleaseAttrBase(IID_Hidd_GC);
-        if(HiddBitMapAttrBase) ReleaseAttrBase(IID_Hidd_BitMap);
-        D(bug("5\n"));
     }
+    
+    ReleaseAttrBases(attrbases);
 
     ReturnVoid("free_gcclass");
 }
