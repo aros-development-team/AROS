@@ -138,12 +138,16 @@
 	w->WScreen = newWindow->Screen;
     else
 	w->WScreen = GetPrivIBase (IntuitionBase)->WorkBench;
+	
+
+    /* Copy flags */
+    w->Flags = newWindow->Flags;
 
     if (!intui_OpenWindow (w, IntuitionBase))
 	goto failexit;
 
 
-/* nlorentz: The driver has in some way or another allocated a rstport for us,
+/* nlorentz: The driver has in some way or another allocated a rastport for us,
    which now is ready for us to use. */
    driver_init_done = TRUE;
    rp = w->RPort;
