@@ -479,15 +479,11 @@ static LONG delete_object(struct emulbase *emulbase, struct filehandle* fh,
 	    {
 		if (rmdir(filename))
 		    ret = err_u2a();
-		else
-		    free_lock(fh);
 	    }
 	    else
 	    {
 		if (unlink(filename))
 		    ret = err_u2a();
-		else
-		    free_lock(fh);
 	    }
 	} else
 	    ret = err_u2a();
