@@ -4,11 +4,16 @@
 # $Id$
 default: all
 
+HOST_CPU    ?= @aros_host_cpu@
+HOST_ARCH   ?= @aros_host_arch@
+TARGET_CPU  ?= @aros_target_cpu@
+TARGET_ARCH ?= @aros_target_arch@
+
 TOP := $(shell pwd)
 include $(TOP)/config/make.cfg
 
 all: makedirs tools mmake
-	@$(MMAKE) AROS.AROS
+	@$(CALL) $(MMAKE) AROS.AROS
 
 makedirs:
 	@$(RM) $(TOP)/errors
@@ -29,40 +34,40 @@ tools : makedirs $(TOOLLIB) $(GENMF) $(CPAK) $(ARCHTOOL) \
 	$(MKFSAFFS)
 
 $(TOOLLIB) : $(wildcard $(TOP)/tools/toollib/*.[ch])
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib TOP=$(TOP)
 
 $(GENMF) : $(TOP)/tools/genmf/genmf.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf TOP=$(TOP)
 
 $(CPAK) : $(TOP)/tools/cpak/cpak.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/cpak TOP=$(TOP)
 
 $(ARCHTOOL) : $(TOP)/tools/archtools/archtool.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools TOP=$(TOP)
 
 $(FLEXCAT) : $(TOP)/tools/FlexCat/flexcat.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat TOP=$(TOP)
 
 $(GENSKELETON) : $(TOP)/tools/genskeleton/genskeleton.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton TOP=$(TOP)
 
 $(CREATEDTDESC) : $(wildcard $(TOP)/tools/dtdesc/*.[ch]) $(wildcard $(TOP)/tools/dtdesc/c_iff/*.[ch])
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros TOP=$(TOP)
 
 $(ADFLIB) : $(wildcard $(TOP)/tools/adflib/*.[ch])
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/adflib -f Makefile.aros TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/adflib -f Makefile.aros TOP=$(TOP)
 
 $(CREATEHDFILE) : $(TOP)/tools/disktool/createhdfile.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/disktool TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/disktool TOP=$(TOP)
 
 $(MKFSAFFS) : $(TOP)/tools/mkfsaffs/mkfsaffs.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/mkfsaffs TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/mkfsaffs TOP=$(TOP)
 
 $(ILBMTOC) : $(TOP)/tools/ilbmtoc/ilbmtoc.c
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/ilbmtoc TOP=$(TOP)
 
 $(COLLECT-AROS) : $(wildcard $(TOP)/tools/collect-aros/*.[hc])
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros TOP=$(TOP)
 
 $(SPECS) :
 	@echo "*linker:" > $(SPECS)
@@ -89,21 +94,21 @@ $(MMAKE): $(TOP)/tools/MetaMake/mmake.c $(GENMF)
 
 # Clean the sources
 clean:
-	@$(MMAKE) AROS.clean
+	@$(CALL) $(MMAKE) AROS.clean
 	-@$(RM) $(ARCHDIR) Makefile mmake.cache config.cache config.status \
 	    config.log
 
 # Clean the sources and tools
 arch-clean: clean
 	@$(MAKE) $(MKARGS) -C $(TOP)/tools/MetaMake clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/cpak clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean
-	@$(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/FlexCat clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/archtools clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/cpak clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genmf clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/toollib clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/genskeleton clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/dtdesc -f Makefile.aros clean
+	@$(CALL) $(MAKE) $(MKARGS) -C $(TOP)/tools/collect-aros clean
         
 # Really clean all - like a clean checkout
 dist-clean: arch-clean
@@ -112,13 +117,13 @@ dist-clean: arch-clean
 
 # Dependencies don't work with .DEFAULT :-(
 docs : makedirs tools mmake
-	@$(MMAKE) AROS.docs
+	@$(CALL) $(MMAKE) AROS.docs
 
 all-docs : makedirs tools mmake
-	@$(MMAKE) AROS.all-docs
+	@$(CALL) $(MMAKE) AROS.all-docs
 
 install : makedirs tools mmake
-	@$(MMAKE) AROS.install
+	@$(CALL) $(MMAKE) AROS.install
 
 # Don't try to generate $(TOP)/make.opts
 $(TOP)/make.opts:
@@ -133,5 +138,5 @@ $(TOP)/make.opts:
 # Calling standard main targets, but is usable as a shortcut for MetaMake
 # if it was not installed globally
 .DEFAULT :
-	@$(MMAKE) AROS.$@
+	@$(CALL) $(MMAKE) AROS.$@
 
