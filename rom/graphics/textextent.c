@@ -71,37 +71,44 @@
     	textExtent->te_Extent.MaxX = 0;
 	x = 0;
 	
-	while(count--)
+	if (count)
 	{
-	    c = *string++;
-	    
-	    if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
+	    while(count--)
 	    {
-		idx = defaultidx;
-	    }
-	    else
-	    {
-		idx = c - tf->tf_LoChar;
-	    }
+		c = *string++;
+
+		if ( c < tf->tf_LoChar || c > tf->tf_HiChar)
+		{
+		    idx = defaultidx;
+		}
+		else
+		{
+		    idx = c - tf->tf_LoChar;
+		}
+
+		#define CHECK_MINMAX(x) \
+	    	    if ((x) < textExtent->te_Extent.MinX) textExtent->te_Extent.MinX = (x); \
+		    if ((x) > textExtent->te_Extent.MaxX) textExtent->te_Extent.MaxX = (x);
+
+		x += ((WORD *)tf->tf_CharKern)[idx];
+		CHECK_MINMAX(x);
+
+		x2 = x + ( ( ((ULONG *)tf->tf_CharLoc)[idx] ) & 0xFFFF);
+		CHECK_MINMAX(x2);
+
+		x += ((WORD *)tf->tf_CharSpace)[idx];
+		CHECK_MINMAX(x);
+
+		x += rp->TxSpacing;
+		CHECK_MINMAX(x);
+		    	    	    
+	    } /* while(count--) */
 	    
-	    #define CHECK_MINMAX(x) \
-	    	if ((x) < textExtent->te_Extent.MinX) textExtent->te_Extent.MinX = (x); \
-		if ((x) > textExtent->te_Extent.MaxX) textExtent->te_Extent.MaxX = (x);
-		
-	    x += ((WORD *)tf->tf_CharKern)[idx];
-	    CHECK_MINMAX(x);
+	    textExtent->te_Extent.MaxX--;
 	    
-	    x2 = x + ( ( ((ULONG *)tf->tf_CharLoc)[idx] ) & 0xFFFF);
-	    CHECK_MINMAX(x2);
-	    
-	    x += ((WORD *)tf->tf_CharSpace)[idx];
-	    CHECK_MINMAX(x);
-	    
-	    x += rp->TxSpacing;
-	    CHECK_MINMAX(x);
-	    	    	    
-	}
-    }
+	} /* if (count) */
+	
+    } /* if ((tf->tf_Flags & FPF_PROPORTIONAL) || tf->tf_CharKern || tf->tf_CharSpace) */
     else
     {
     	/* Normal non-proportional Font */
