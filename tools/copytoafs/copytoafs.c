@@ -151,63 +151,66 @@ char *nrpath;
 		{
 			if ((strcmp(de->d_name, ".")!=0) && (strcmp(de->d_name, "..")!=0))
 			{
-				if (de->d_type == DT_DIR)
+				ndpath = malloc(strlen(path)+1+strlen(de->d_name)+1);
+				if (ndpath != NULL)
 				{
-					ndpath = malloc(strlen(path)+1+strlen(de->d_name)+1);
-					nrpath = malloc(strlen(path)+1+strlen(de->d_name)+1);
-					if ((ndpath != NULL) && (nrpath != NULL))
+					struct stat st;
+					sprintf(ndpath, "%s/%s", path, de->d_name);
+					if (stat(ndpath, &st) == 0)
 					{
-						sprintf(ndpath, "%s/%s", path, de->d_name);
-						if (*dstpath == 0)
-							strcpy(nrpath, de->d_name);
+						if (S_ISDIR(st.st_mode))
+						{
+							nrpath = malloc(strlen(path)+1+strlen(de->d_name)+1);
+							if (nrpath != NULL)
+							{
+								if (*dstpath == 0)
+									strcpy(nrpath, de->d_name);
+								else
+									sprintf(nrpath, "%s/%s", dstpath, de->d_name);
+								error = makeDir(nrpath, volume);
+								if (error == 0)
+									error = copyDir(ndpath, nrpath, volume);
+								free(nrpath);
+								if (error != 0)
+								{
+									retval = 2;
+									break;
+								}
+							}
+							else
+							{
+								printf("No memory!\n");
+								retval = 2;
+								break;
+							}
+						}
+						else if (S_ISREG(st.st_mode))
+						{
+							error = copyFile(ndpath, dstpath, volume);
+							if (error != 0)
+							{
+								retval = 2;
+								break;
+							}
+						}
 						else
-							sprintf(nrpath, "%s/%s", dstpath, de->d_name);
-						error = makeDir(nrpath, volume);
-						if (error == 0)
-							error = copyDir(ndpath, nrpath, volume);
-						free(nrpath);
-						free(ndpath);
-						if (error != 0)
 						{
+							printf("%s: Unknown file type\n", ndpath);
 							retval = 2;
 							break;
 						}
 					}
 					else
 					{
-						if (nrpath != NULL)
-							free(nrpath);
-						if (ndpath != NULL)
-							free(ndpath);
-						printf("No memory!\n");
+						perror(ndpath);
 						retval = 2;
 						break;
 					}
-				}
-				else if (de->d_type == DT_REG)
-				{
-					ndpath = malloc(strlen(path)+1+strlen(de->d_name)+1);
-					if (ndpath != NULL)
-					{
-						sprintf(ndpath, "%s/%s", path, de->d_name);
-						error = copyFile(ndpath, dstpath, volume);
-						free(ndpath);
-						if (error != 0)
-						{
-							retval = 2;
-							break;
-						}
-					}
-					else
-					{
-						printf("No memory!\n");
-						retval = 2;
-						break;
-					}
+					free(ndpath);
 				}
 				else
 				{
-					printf("%s/%s: Unkown filetype\n", path, de->d_name);
+					printf("No memory!\n");
 					retval = 2;
 					break;
 				}
