@@ -88,7 +88,7 @@
 	    	contextgad->activegadget = NULL;
 		
 	    	gad = (struct Gadget *)imsg->IAddress;
-
+		bug("GADGETDOWN: %d\n",imsg->Code);
 		if ((gad->GadgetType & GTYP_GADTOOLS) &&
 		    ((gad->GadgetType & GTYP_GTYPEMASK) == GTYP_CUSTOMGADGET))
 		{
@@ -174,6 +174,11 @@
 			    contextgad->getattrtag = GTSL_Level;
 			    GetAttr(GTSL_Level, (Object *)gad, &contextgad->gadget_value);
 			    rc->imsg.eim_IntuiMessage.Class = IDCMP_MOUSEMOVE;
+			    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
+			    break;
+			
+			case MX_KIND:
+			    GetAttr(GTMX_Active, (Object *)gad, &contextgad->gadget_value);
 			    rc->imsg.eim_IntuiMessage.Code = contextgad->gadget_value;
 			    break;
 			    
