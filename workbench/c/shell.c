@@ -1274,7 +1274,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 
 
     P(kprintf("Trying to load command: %s\n", commandName));
-    
+ 
     commandSeg = LoadSeg(commandName);
 
     /* The command was in the current directory */
@@ -1389,10 +1389,8 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     if(error != 0)
     {
 	IPTR pArgs[] = { (IPTR)cli->cli_CommandName };
-
 	cli->cli_Result2 = error;
-	VFWritef(Output(), "Couldn't run command '%T0'", pArgs);
-	PrintFault(error, "");
+	PrintFault(error, cli->cli_CommandName);
     }
     
     Flush(Output());
