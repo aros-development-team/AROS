@@ -2,6 +2,7 @@
 #define _SIGCORE_H
 
 #include <signal.h>
+#include "etask.h"
 
 /* Put a value of type SP_TYPE on the stack or get it off the stack. */
 #define _PUSH(sp,val)       (*--sp = (SP_TYPE)(val))
@@ -9,19 +10,19 @@
 
 #ifdef __linux__
 #   include <asm/sigcontext.h>
-#   include <linux/version.h> 
+#   include <linux/version.h>
     /* sigcontext_t is the type of the signals' context. Linux offers no way
 	to get this context in a legal way, so I have to use tricks. */
 #   ifdef i386
 #     if LINUX_VERSION_CODE > 131102
-        typedef struct sigcontext sigcontext_t;
-#     else     
-        typedef struct sigcontext_struct sigcontext_t;
+	typedef struct sigcontext sigcontext_t;
+#     else
+	typedef struct sigcontext_struct sigcontext_t;
 #     endif
-#   else  
+#   else
 	typedef struct sigcontext sigcontext_t;
 #   endif
- 
+
     /* name and type of the signal handler */
 #   define SIGHANDLER	    linux_sighandler
 #   define SIGHANDLER_T     SignalHandler
@@ -63,7 +64,20 @@
 
     /* How many general purpose registers are to be saved on the stack
 	when a task switch happens */
-#   define CPU_NUMREGS	    6
+#   define CPU_NUMREGS		    0
+
+    /* Use this structure to save/restore registers if the stack is too
+	small */
+    struct AROS_cpu_context
+    {
+	ULONG regs[6]; /* eax, ebx, ecx, edx, edi, esi */
+	struct _fpstate fpu; /* FPU registers */
+    };
+
+#   define SIZEOF_ALL_REGISTERS     (sizeof (struct AROS_cpu_context))
+#   define GetCpuContext(task)      ((struct AROS_cpu_context *)\
+				    (GetIntETask(task)->iet_Context))
+#   define GetSP(task)              ((SP_TYPE*)(task->tc_SPReg))
 
     /*
 	Macros to access the stack pointer, frame pointer and program
@@ -97,23 +111,22 @@
 #   define R5(sc)           (sc->esi)
 
     /*
-	Save and restore the CPU GPRs on/from the stack.
+	Save and restore the CPU GPRs in the CPU context
     */
-#   define SAVE_CPU(sp,sc) \
-	_PUSH(sp,R0(sc)), \
-	_PUSH(sp,R1(sc)), \
-	_PUSH(sp,R2(sc)), \
-	_PUSH(sp,R3(sc)), \
-	_PUSH(sp,R4(sc)), \
-	_PUSH(sp,R5(sc))
+#   define SAVE_CPU(task,sc) \
+	(GetCpuContext(task)->regs[0] = R0(sc)), \
+	(GetCpuContext(task)->regs[1] = R1(sc)), \
+	(GetCpuContext(task)->regs[2] = R2(sc)), \
+	(GetCpuContext(task)->regs[3] = R3(sc)), \
+	(GetCpuContext(task)->regs[4] = R4(sc)), \
+	(GetCpuContext(task)->regs[5] = R5(sc))
 
-#   define RESTORE_CPU(sp,sc) \
-	(R5(sc) = _POP(sp)), \
-	(R4(sc) = _POP(sp)), \
-	(R3(sc) = _POP(sp)), \
-	(R2(sc) = _POP(sp)), \
-	(R1(sc) = _POP(sp)), \
-	(R0(sc) = _POP(sp))
+#   define RESTORE_CPU(task,sc) \
+	(R0(sc) = GetCpuContext(task)->regs[0]), \
+	(R1(sc) = GetCpuContext(task)->regs[1]), \
+	(R2(sc) = GetCpuContext(task)->regs[2]), \
+	(R3(sc) = GetCpuContext(task)->regs[3]), \
+	(R4(sc) = GetCpuContext(task)->regs[4])
 
     /*
 	It's not possible to do save the FPU under linux because linux
@@ -135,8 +148,10 @@
 	As you can see, SP points to the empty space. Now this empty space
 	is not very big. It's big enough that one can save the CPU
 	registers but not big enough for the FPU. *sigh*.
+
+	Update: We store the registers now in out own structure
     */
-#   define NO_FPU
+/* #   define NO_FPU */
 
     /*
 	Size of the FPU stackframe in stack units (one stack unit is
@@ -160,20 +175,13 @@
     /*
 	Save and restore the FPU on/from the stack.
     */
-#   ifndef NO_FPU
-#	define SAVE_FPU(sp,sc) \
-	    (sp -= FPU_FRAMESIZE), \
-	    HAS_FPU(sc) && \
-		((*((struct _fpstate *)sp) = *(sc->fpstate)), 1)
+#   define SAVE_FPU(task,sc) \
+	HAS_FPU(sc) && \
+	    ((GetCpuContext(task)->fpu = *sc->fpstate), 1)
 
-#	define RESTORE_FPU(sp,sc) \
-	    HAS_FPU(sc) && \
-		((*(sc->fpstate) = *((struct _fpstate *)sp)), 1), \
-	    (sp += FPU_FRAMESIZE)
-#   else
-#	define SAVE_FPU(sp,sc)          (sp -= 0)
-#	define RESTORE_FPU(sp,sc)       (sp += 0)
-#   endif
+#   define RESTORE_FPU(task,sc) \
+	HAS_FPU(sc) && \
+	    ((*sc->fpstate = GetCpuContext(task)->fpu), 1)
 
     /*
 	Prepare the stack. This macro is used on the stack before a new
@@ -221,8 +229,12 @@
     */
 #   define PREPARE_INITIAL_FRAME(sp,pc) \
 	(_PUSH(sp,pc), \
-	_PUSH(sp,0), /* Frame pointer */ \
-	(sp -= (FPU_FRAMESIZE+CPU_NUMREGS)))
+	_PUSH(sp,0)) /* Frame pointer */
+
+    /*
+	Prepare the cpu context
+    */
+#   define PREPARE_INITIAL_CONTEXT(task)    /* nop */
 
     /*
 	This macro is similar to PREPARE_INITIAL_FRAME() but also saves
@@ -233,12 +245,12 @@
 	must store the value of "sp" after the macro and hand it to
 	RESTOREREGS() below to restore this context.
     */
-#   define SAVEREGS(sp,sc) \
-	((sp = (long *)SP(sc)), \
-	_PUSH(sp,PC(sc)), \
-	_PUSH(sp,FP(sc)), \
-	SAVE_FPU(sp,sc), \
-	SAVE_CPU(sp,sc))
+#   define SAVEREGS(task,sc) \
+	((GetSP(task) = (long *)SP(sc)), \
+	_PUSH(GetSP(task),PC(sc)), \
+	_PUSH(GetSP(task),FP(sc)), \
+	SAVE_FPU(task,sc), \
+	SAVE_CPU(task,sc))
 
     /*
 	This macro does the opposite to SAVEREGS(). It restores all
@@ -246,12 +258,12 @@
 	tasks' context. Both "sp" and "sc" must be initialized.
 	The macro will save the new SP into the sigcontext "sc".
     */
-#   define RESTOREREGS(sp,sc) \
-	(RESTORE_CPU(sp,sc), \
-	RESTORE_FPU(sp,sc), \
-	(FP(sc) = _POP(sp)), \
-	(PC(sc) = _POP(sp)), \
-	(SP(sc) = (long)sp))
+#   define RESTOREREGS(task,sc) \
+	(RESTORE_CPU(task,sc), \
+	RESTORE_FPU(task,sc), \
+	(FP(sc) = _POP(GetSP(task))), \
+	(PC(sc) = _POP(GetSP(task))), \
+	(SP(sc) = (long)(GetSP(task))))
 
     /* This macro prints the current signals' context */
 #   define PRINT_SC(sc) \
@@ -265,15 +277,19 @@
 	)
 
     /* This macro prints the current stack (after SAVEREGS()) */
-#   define PRINT_STACK(sp) \
+#   define PRINT_CPUCONTEXT(task) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx\n" \
-	    , (ULONG)(sp+(FPU_FRAMESIZE+CPU_NUMREGS+2)) \
-	    , sp[FPU_FRAMESIZE+CPU_NUMREGS] \
-	    , sp[FPU_FRAMESIZE+CPU_NUMREGS+1] \
-	    , sp[5], sp[4], sp[3], sp[2] \
-	    , sp[1], sp[0] \
+	    , (ULONG)(GetSP(task))) \
+	    , GetSP(task)[-1] \
+	    , GetSP(task)[-2] \
+	    , GetCpuContext(task)->regs[0] \
+	    , GetCpuContext(task)->regs[1] \
+	    , GetCpuContext(task)->regs[2] \
+	    , GetCpuContext(task)->regs[3] \
+	    , GetCpuContext(task)->regs[4] \
+	    , GetCpuContext(task)->regs[5] \
 	)
 
 #endif /* __linux__ */

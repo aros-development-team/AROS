@@ -26,7 +26,7 @@
 #include <exec_pdefs.h>
 
 /* Don't do any debugging. At 50Hz its far too quick to read anyway :-) */
-#define NOISY   0
+#define NOISY	0
 
 /* Try and emulate the Amiga hardware interrupts */
 static int sig2tab[NSIG];
@@ -46,7 +46,7 @@ GLOBAL_SIGNAL_INIT
 static void sighandler(int sig, sigcontext_t * sc)
 {
     struct IntVector *iv;
-    SP_TYPE *sp;
+    /* SP_TYPE *sp; */
 
     /* Hmm, interrupts are nesting, not a good idea... */
     if(supervisor)
@@ -95,16 +95,15 @@ static void sighandler(int sig, sigcontext_t * sc)
     {
 	SysBase->AttnResched &= ~0x8000;
 
-	SAVEREGS(sp, sc);
-	SysBase->ThisTask->tc_SPReg = sp;
+	/* Save registers for this task (if there is one...) */
+	if (SysBase->ThisTask)
+	    SAVEREGS(SysBase->ThisTask, sc);
 
 	/* Tell exec that we have actually switched tasks... */
-	Dispatch();
+	Dispatch ();
 
 	/* Get the registers of the old task */
-	sp = SysBase->ThisTask->tc_SPReg;
-
-	RESTOREREGS(sp,sc);
+	RESTOREREGS(SysBase->ThisTask,sc);
 
 	/* Make sure that the state of the interrupts is what the task
 	   expects.
@@ -124,7 +123,7 @@ static void sighandler(int sig, sigcontext_t * sc)
 	    Enable();
 	}
     }
-    
+
 
     /* Leave the interrupt. */
     supervisor--;
@@ -134,19 +133,19 @@ static void sighandler(int sig, sigcontext_t * sc)
 static void traphandler(int sig, sigcontext_t *sc)
 {
     int trapNum = sig2tab[sig];
-    struct Task *this;    
+    struct Task *this;
 
     if( supervisor )
     {
-    	fprintf(stderr,"Illegal Supervisor %d - Inside TRAP\n", supervisor);
-    	fflush(stderr);
+	fprintf(stderr,"Illegal Supervisor %d - Inside TRAP\n", supervisor);
+	fflush(stderr);
     }
-    
+
     /* This is the task that caused the trap... */
     this = SysBase->ThisTask;
     AROS_UFC1(void, this->tc_TrapCode,
-    	AROS_UFCA(ULONG, trapNum, D0));
-}    
+	AROS_UFCA(ULONG, trapNum, D0));
+}
 #endif
 
 /* Set up the kernel. */
@@ -161,10 +160,10 @@ void InitCore(void)
 #if 0
     static const int sig2trap[][2] =
     {
-    	{ SIGBUS,   2 },
-    	{ SIGSEGV,  3 },
-    	{ SIGILL,   4 },
-    	{ SIGEMT,   13 }
+	{ SIGBUS,   2 },
+	{ SIGSEGV,  3 },
+	{ SIGILL,   4 },
+	{ SIGEMT,   13 }
     };
 #endif
 
@@ -189,9 +188,9 @@ void InitCore(void)
     sa.sa_handler = (SIGHANDLER_T)TRAPHANDLER;
     for(i=0; i < (sizeof(sig2trap) / sizeof(sig2trap[0])); i++)
     {
-    	sig2tab[sig2trap[i][0]] = sig2trap[i][1];
-    	sigaction( sig2trap[i][0], &sa, NULL);
-    	sigdelset( &sig_int_mask, sig2trap[i][0] );
+	sig2tab[sig2trap[i][0]] = sig2trap[i][1];
+	sigaction( sig2trap[i][0], &sa, NULL);
+	sigdelset( &sig_int_mask, sig2trap[i][0] );
     }
 #endif
 
