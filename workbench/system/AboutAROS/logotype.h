@@ -6,7 +6,7 @@
     $Id$
 */
 
-#define LOGOTYPE_IMAGE "SYS:Images/AROS.png"
+#define LOGOTYPE_IMAGE "IMAGES:AROS.png"
 #define LOGOTYPE_ASCII                                 "\n"    \
 "        _______  t!           ___________             \n" \
 "   _____\\_     \\_  _________ _\\    __    \\ ________   \n" \
