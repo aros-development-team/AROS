@@ -9,7 +9,8 @@ FILES := \
 	chdir \
 	strchr \
 	stpblk \
-	spawnv
+	spawnv \
+	spawnvp
 
 EXEDIR := $(AROS_TESTS)/clib
 
