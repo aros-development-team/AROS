@@ -424,7 +424,6 @@ int init_gui(void)
 					     MUIA_Window_Title, (IPTR)"Image Clipboard",
 					     TAG_DONE),
 		        End, /* HGroup */
-	            Child, CLabel("D&D Clips"),
 	            End,
 		    Child, VGroup,
 	                TextFrame,
