@@ -7,12 +7,17 @@
 #define LIBRARIES_MUI_H
 
 #ifndef INTUITION_CLASSES_H
-#include <intuition/classes.h>
+#   include <intuition/classes.h>
+#endif
+#ifndef GRAPHICS_GRAPHICS_H
+#   include <graphics/gfx.h>
 #endif
 
-#ifndef GRAPHICS_GRAPHICS_H
-#include <graphics/gfx.h>
-#endif
+#ifdef __AROS__
+#   ifndef PROTO_MUIMASTER_H
+#       include <proto/muimaster.h>
+#   endif
+#endif /* __AROS__ */
 
 #include "mui_identifiers.h"
 
@@ -677,5 +682,4 @@ struct MUI_Command
 #include "macros.h"
 #endif
 
-#endif
-
+#endif /* LIBRARIES_MUI_H */
