@@ -6,10 +6,10 @@
     Lang: English.
 */
 
-#include "aroscheckbox_intern.h"
 #include <stddef.h>
 #include <proto/exec.h>
 #include <proto/intuition.h>
+#include "aroscheckbox_intern.h"
 
 
 /* Global IntuitionBase */
@@ -96,13 +96,13 @@ VOID SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 
     CloseLibrary(UtilityBase);
     UtilityBase = NULL;
-    
+
     CloseLibrary((struct Library *)GfxBase);
     GfxBase = NULL;
-    
+
     CloseLibrary((struct Library *)IntuitionBase);
     IntuitionBase = NULL;
-    
+
     CloseLibrary(DOSBase);
     DOSBase = NULL;
 
