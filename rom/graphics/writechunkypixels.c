@@ -51,9 +51,20 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
-    
-    #warning Do not use HIDD_BM_PIXTAB, because object might have no pixtab
-    HIDDT_PixelLUT pixlut = { AROS_PALETTE_SIZE, HIDD_BM_PIXTAB(rp->BitMap) };
+
+    HIDDT_PixelLUT pixlut;
+
+    pixlut.entries = AROS_PALETTE_SIZE;
+    pixlut.pixels  = IS_HIDD_BM(rp->BitMap) ? HIDD_BM_PIXTAB(rp->BitMap) : NULL;
+
+    if (!pixlut.pixels)
+    {
+    	if (GetBitMapAttr(rp->BitMap, BMA_DEPTH) > 8)
+	{
+	    D(bug("WriteChunkyPixels: can't work on hicolor/truecolor screen without LUT"));
+    	    return;
+	}
+    }
       
     write_pixels_8(rp, array
     	, bytesperrow
