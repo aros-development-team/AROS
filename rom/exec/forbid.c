@@ -13,7 +13,7 @@
 /*****************************************************************************/
 #ifndef UseExecstubs
 
-/*  NAME */ 
+/*  NAME */
 #include <proto/exec.h>
 
 	AROS_LH0(void, Forbid,
@@ -65,13 +65,15 @@
     HISTORY
 
 ******************************************************************************/
-#else
-void _Exec_Forbid(struct ExecBase * SysBase)
-#endif
 {
     AROS_LIBFUNC_INIT
-
+#else
+void _Exec_Forbid(struct ExecBase * SysBase)
+{
+#endif
     SysBase->TDNestCnt++;
 
+#ifndef UseExecstubs
     AROS_LIBFUNC_EXIT
+#endif
 } /* Forbid() */
