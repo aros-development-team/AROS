@@ -1,0 +1,46 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR := $(GENDIR)/workbench/devs
+
+%define_libs
+
+FILES	:= clipboard
+OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
+LIB	:= $(LIBDIR)/libclipboard.a
+DEVS    := $(DEVSDIR)/clipboard.device
+
+#MM
+workbench-devs-$(ARCH)-$(CPU) : $(LIB)
+	@$(NOP)
+
+$(LIB) : $(OBJS)
+	%mklib_q
+
+
+#MM workbench-devs : workbench-devs-$(ARCH)-$(CPU)
+workbench-devs : show-flags $(DEVS)
+
+#MM
+clean ::
+	$(RM) $(OBJS) $(LIB) $(OBJDIR)
+
+#MM
+setup :
+	%mkdirs_q $(OBJDIR)
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+$(DEVSDIR)/clipboard.device : $(OBJDIR)/clipboard.o
+	%link_q startup=
+
+$(OBJDIR)/%.o : %.c
+	%compile_q opt="$(CFLAGS)"
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+%common
+%include_deps $(foreach f,$(FILES),$(OBJDIR)/$(f).d)
+
