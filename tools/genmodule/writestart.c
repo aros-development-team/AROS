@@ -11,6 +11,7 @@ void writestart(void)
     char line[256];
     struct functionlist *funclistit;
     struct arglist *arglistit;
+    struct linelist *linelistit;
     unsigned int lvo;
     int i;
     
@@ -26,16 +27,10 @@ void writestart(void)
 	    "    *** Automatically generated file. Do not edit ***\n"
 	    "    Copyright © 1995-2002, The AROS Development Team. All rights reserved.\n"
 	    "*/\n"
-	    "#include <libcore/libheader.c>\n"
-	    "\n");
-    if (libcall==REGISTER)
-    {
-	fprintf(out,
-		"#define NOLIBDEFINES\n"
-		"#include <proto/%s.h>\n"
-		"\n",
-		modulename);
-    }
+	    "#include <libcore/libheader.c>\n");
+    
+    for (linelistit = cdeflines; linelistit!=NULL; linelistit = linelistit->next)
+	fprintf(out, "%s\n", linelistit->line);
     
     for (funclistit = funclist; funclistit != NULL; funclistit = funclistit->next)
     {
