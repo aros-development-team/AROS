@@ -106,6 +106,7 @@
 #define MUICFG_Frame_Knob               0x90
 #define MUICFG_Background_Page          0x95
 #define MUICFG_Background_ReadList      0x96
+#define MUICFG_String_Cursor            0x400
 
 
 /*** Methods ****************************************************************/
