@@ -6,15 +6,15 @@
 #MM- kernel-amiga : \
 #MM	kernel-hidd \
 #MM	kernel-aros \
-#MM	kernel-exec-module \
 #MM	kernel-alerthook-module \
 #MM	kernel-boopsi-module \
 #MM	kernel-utility-module \
-#MM	kernel-expansion-module \
-#MM	kernel-keymap-module \
 #MM	kernel-devs \
-#MM     kernel-oop-module
+#MM     kernel-oop-module 
 
+# kernel-keymap-module \ <- remove because of undefined reference to `kprintf'
+# kernel-expansion-module \ <- removed because of undefined references to errors
+# kernel-exec-module \
 # hidd-graphics-module <- missing files/includes?
 # hidd-graphics-amiga-intui-module <- missing files/includes?
 # kernel-dos-module <- removed due to spilled register bug in egcs
