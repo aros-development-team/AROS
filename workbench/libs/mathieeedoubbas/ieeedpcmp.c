@@ -64,7 +64,7 @@ AROS_LIBFUNC_INIT
     return 0;
   }
 
-  if (is_lessSC(y,0,0,0) /* y < 0 */ && is_lessSC(z,0,0, 0) /* z < 0 */)
+  if (is_lessSC(y,0,0,0ULL) /* y < 0 */ && is_lessSC(z,0,0, 0) /* z < 0 */)
   {
     NEG64(y);
     NEG64(z);
