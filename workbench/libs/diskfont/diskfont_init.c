@@ -16,6 +16,8 @@
 #include <aros/libcall.h>
 #include <proto/exec.h>
 
+#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+
 #include <aros/debug.h>
 
 struct inittable;

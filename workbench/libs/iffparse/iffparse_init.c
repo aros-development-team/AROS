@@ -16,6 +16,8 @@
 #include <aros/debug.h>
 #include "libdefs.h"
 
+#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+
 struct inittable;
 extern const char name[];
 extern const char version[];

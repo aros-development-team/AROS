@@ -18,6 +18,8 @@
 #include "icon_intern.h"
 #include "libdefs.h"
 
+#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+
 #include <aros/debug.h>
 #undef kprintf
 

@@ -15,6 +15,8 @@
 #include "gadtools_intern.h"
 #include "libdefs.h"
 
+#define INIT	AROS_SLIB_ENTRY(init,BASENAME)
+
 struct inittable;
 extern const char name[];
 extern const char version[];
@@ -128,14 +130,14 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     GadToolsBase->checkclass = NULL;
 
     if (!IntuitionBase)
-        IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 36);
+	IntuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 36);
     if (!IntuitionBase)
-        return(NULL);
+	return(NULL);
 
     if (!DOSBase)
-        DOSBase = OpenLibrary(DOSNAME, 37);
+	DOSBase = OpenLibrary(DOSNAME, 37);
     if (!DOSBase)
-        return NULL;
+	return NULL;
 
     if (!GfxBase)
 	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
@@ -168,10 +170,10 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
     /* I have one fewer opener. */
     if(!--LIBBASE->library.lib_OpenCnt)
       {
-        if (GadToolsBase->checkclass)
+	if (GadToolsBase->checkclass)
 	    FreeClass(GadToolsBase->checkclass);
-        if (GadToolsBase->buttonclass)
-            FreeClass(GadToolsBase->buttonclass);
+	if (GadToolsBase->buttonclass)
+	    FreeClass(GadToolsBase->buttonclass);
 	if (UtilityBase)
 	    CloseLibrary(UtilityBase);
 	if (GfxBase)
