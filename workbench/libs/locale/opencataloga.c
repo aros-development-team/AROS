@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
 
@@ -174,7 +171,7 @@ struct header
 
 	DEBUG_OPENCATALOG(dprintf("OpenCatalogA: search cached Catalog\n"));
 
-	ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, (struct Node *)catalog)
+	ForeachNode(&IntLB(LocaleBase)->lb_CatalogList, catalog)
 	{
 	    if (catalog->ic_Name &&
         	0 == strcmp(catalog->ic_Name, name) &&
