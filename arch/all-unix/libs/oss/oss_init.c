@@ -28,6 +28,8 @@ int audio_fd;
 
 AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+    
     SysBase = LIBBASE->lh.lh_SysBase;
  
     if (!(OOPBase = OpenLibrary("oop.library", 0)))
@@ -37,22 +39,32 @@ AROS_SET_LIBFUNC(InitData, LIBBASETYPE, LIBBASE)
     if (!unixio) return FALSE;
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_SET_LIBFUNC(OpenLib, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+    
     /* Allow only one opener */
 
     return ((struct Library *)LIBBASE)->lib_OpenCnt ? FALSE : TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
 AROS_SET_LIBFUNC(CleanUp, LIBBASETYPE, LIBBASE)
 {
+    AROS_SET_LIBFUNC_INIT
+    
     if (unixio) OOP_DisposeObject(unixio);
     
     CloseLibrary(OOPBase);
     
     return TRUE;
+    
+    AROS_SET_LIBFUNC_EXIT
 }
 
 ADD2INITLIB(InitData, 0);
