@@ -64,7 +64,9 @@ extern void idleTask(struct ExecBase *);
 
 #warning FIXME: This is public to allow PrepareExecBase() to work
 struct AROSSupportBase AROSSupportBase;
-struct ExecBase *SysBase;
+
+#warning FIXME: This global SysBase declaration does not seem to be used any more (remove it?)
+/* struct ExecBase *SysBase; */
 
 /*
     We temporarily redefine kprintf() so we use the real version in case
@@ -338,9 +340,9 @@ SysBase->VBlankFrequency = 50;
     /* We now start up the interrupts */
     Enable();
 
-#if DEBUG
+//#if DEBUG
     debugmem();
-#endif
+//#endif
 
     /* This will cause everything else to run. This call will not return.
 	This is because it eventually falls into strap, which will call
