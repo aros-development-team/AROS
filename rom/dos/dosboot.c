@@ -40,173 +40,207 @@ AROS_UFH3(void, intBoot,
     AROS_UFHA(struct ExecBase *,SysBase, A6)
 )
 {
-	struct ExpansionBase *ExpansionBase = NULL;
-	struct Library *DOSBase = NULL;
-	BPTR lock;
-	struct BootNode *bn;
-	STRPTR bootname, s1;
-	ULONG len;
+    struct ExpansionBase *ExpansionBase = NULL;
+    struct Library *DOSBase = NULL;
+    BPTR lock;
+    struct BootNode *bn;
+    STRPTR bootname, s1;
+    ULONG len;
+    
+    
+    DOSBase = OpenLibrary("dos.library", 0);
 
+    if (DOSBase == NULL)
+    {
+	Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
+    }
+    
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",
+							0);
 
-	DOSBase = OpenLibrary("dos.library", 0);
-	if( DOSBase == NULL)
-		Alert(AT_DeadEnd| AG_OpenLib | AN_DOSLib | AO_DOSLib);
+    if (ExpansionBase == NULL)
+    {
+	D(bug("Urk, no expansion.library, something's wrong!\n"));
+	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
+    }
+    
+    /* We have to do all the locking in this because we don't
+       have a Process in DOSBoot yet, and we need a process
+       to create locks etc.
+    */
+    bn = (struct BootNode *)ExpansionBase->MountList.lh_Head;
+    s1 = ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
 
-	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library", 0);
-	if( ExpansionBase == NULL )
-	{
-		D(bug("Urk, no expansion.library, something's wrong!\n"));
-		Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
-	}
+    while (*s1++)
+	;
 
-	/* We have to do all the locking in this because we don't
-	   have a Process in DOSBoot yet, and we need a process
-	   to create locks etc.
-	*/
-	bn = (struct BootNode *)ExpansionBase->MountList.lh_Head;
-	s1 = ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
-	while (*s1++)
-		;
+    len = s1 - ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
+    bootname = AllocMem(len + 2, MEMF_ANY);
 
-	len = s1 - ((struct DosList *)bn->bn_DeviceNode)->dol_DevName;
-	bootname = AllocMem(len + 2, MEMF_ANY);
-	if (bootname == NULL)
-		Alert( AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem );
-	CopyMem(((struct DosList *)bn->bn_DeviceNode)->dol_DevName,
-		bootname, len);
-	bootname[len-1] = ':';
-	bootname[len] = '\0';
+    if (bootname == NULL)
+    {
+	Alert(AT_DeadEnd | AG_NoMemory | AO_DOSLib | AN_StartMem);
+    }
 
-	CloseLibrary((struct Library *)ExpansionBase);
+    CopyMem(((struct DosList *)bn->bn_DeviceNode)->dol_DevName,
+	    bootname, len);
+    bootname[len - 1] = ':';
+    bootname[len] = '\0';
+    
+    CloseLibrary((struct Library *)ExpansionBase);
 
-	D(bug("Locking primary boot device %s\n", bootname));
+    D(bug("Locking primary boot device %s\n", bootname));
+    
+    lock = Lock(bootname, SHARED_LOCK);
+    
+    if (lock != NULL)
+    {
+	AssignLock("SYS", lock);
+    }
+    else
+    {
+	Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
+    }
+    
+    FreeMem(bootname, len + 2);
+    lock = Lock("SYS:", SHARED_LOCK);
 
-	lock = Lock(bootname, SHARED_LOCK);
+    if (lock != NULL)
+    {
+	CurrentDir(lock);
+    }
+    else
+    {
+	Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
+    }
+    
+    lock = Lock("SYS:C", SHARED_LOCK);
 
-	if(lock != NULL)
-	{
-	    AssignLock("SYS", lock);
-	}
-	else
-	{
-	    Alert(AT_DeadEnd | AG_BadParm | AN_DOSLib);
-	}
+    if (lock != NULL)
+    {
+	AssignLock("C", lock);
+    }
+    
+    lock = Lock("SYS:S", SHARED_LOCK);
 
-	FreeMem(bootname, len + 2);
-	lock = Lock("SYS:", SHARED_LOCK);
-	if ( lock )
-		CurrentDir(lock);
-	else
-		Alert( AT_DeadEnd | AG_BadParm | AN_DOSLib );
+    if (lock != NULL)
+    {
+	AssignLock("S", lock);
+    }
 
-	lock = Lock("SYS:C", SHARED_LOCK);
-	if( lock )
-		AssignLock("C", lock);
+    lock = Lock("SYS:Libs", SHARED_LOCK);
 
-	lock = Lock("SYS:S", SHARED_LOCK);
-	if( lock )
-		AssignLock("S", lock);
+    if (lock != NULL)
+    {
+	AssignLock("LIBS", lock);
+    }
+    
+    lock = Lock("SYS:Devs", SHARED_LOCK);
 
-	lock = Lock("SYS:Libs", SHARED_LOCK);
-	if( lock )
-		AssignLock("LIBS", lock);
-
-	lock = Lock("SYS:Devs", SHARED_LOCK);
-	if( lock )
-		AssignLock("DEVS", lock);
-
-	/* Late binding ENVARC: assign, only if used */
-	AssignLate("ENVARC", "SYS:Prefs/env-archive");
+    if (lock != NULL)
+    {
+	AssignLock("DEVS", lock);
+    }
+    
+    /* Late binding ENVARC: assign, only if used */
+    AssignLate("ENVARC", "SYS:Prefs/env-archive");
 	
-	/* Initialize HIDDs */
-	init_hidds(SysBase, (struct DosLibrary *)DOSBase);
+    /* Initialize HIDDs */
+    init_hidds(SysBase, (struct DosLibrary *)DOSBase);
 
-	/* We now call the system dependant boot - should never return. */
-	AROS_UFC3(void, boot, 
-		AROS_UFCA(STRPTR, argString, A0),
-		AROS_UFCA(ULONG, argSize, D0),
-		AROS_UFCA(struct ExecBase *, SysBase, A6));
+    /* We now call the system dependant boot - should never return. */
+    AROS_UFC3(void, boot, 
+	      AROS_UFCA(STRPTR, argString, A0),
+	      AROS_UFCA(ULONG, argSize, D0),
+	      AROS_UFCA(struct ExecBase *, SysBase, A6));
 }
 
 void DOSBoot(struct ExecBase *SysBase, struct DosLibrary *DOSBase)
 {
-	struct ExpansionBase *ExpansionBase;
-	struct BootNode *bn;
-	struct TagItem bootprocess[] = 
-	{
-		{ NP_Entry,	(IPTR)intBoot },
-		{ NP_Name,	(IPTR)"Boot Process" },
-		{ NP_Input,	(IPTR)NULL },
-		{ NP_Output,	(IPTR)NULL },
-		{ NP_CurrentDir,(IPTR)NULL },
-		{ NP_Cli,	1 },
-		{ TAG_END, }
-	};
+    struct ExpansionBase *ExpansionBase;
+    struct BootNode *bn;
+    struct TagItem bootprocess[] = 
+    {
+	{ NP_Entry,	(IPTR)intBoot },
+	{ NP_Name,	(IPTR)"Boot Process" },
+	{ NP_Input,	(IPTR)NULL },
+	{ NP_Output,	(IPTR)NULL },
+	{ NP_CurrentDir,(IPTR)NULL },
+	{ NP_Cli,	1 },
+	{ TAG_END, }
+    };
+    
+    ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",0);
 
-	ExpansionBase = (struct ExpansionBase *)OpenLibrary("expansion.library",0);
-	if( ExpansionBase == NULL )
-	{
-		D(bug("Urk, no expansion.library, something's wrong!\n"));
-		Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
-	}
-
-	D(bug("Examining MountList: \n"));
-
-	ForeachNode(&ExpansionBase->MountList, bn)
-	{
-		D(bug("Node: %p, DevNode: %p, Name = %s\n", bn,
-			bn->bn_DeviceNode,
-			((struct DosList *)bn->bn_DeviceNode)->dol_DevName
-			? ((struct DosList *)bn->bn_DeviceNode)->dol_DevName
-			: "(null)"
-		));
+    if (ExpansionBase == NULL)
+    {
+	D(bug("Urk, no expansion.library, something's wrong!\n"));
+	Alert(AT_DeadEnd | AG_OpenLib | AN_DOSLib | AO_ExpansionLib);
+    }
+    
+    D(bug("Examining MountList: \n"));
+    
+    ForeachNode(&ExpansionBase->MountList, bn)
+    {
+	D(bug("Node: %p, DevNode: %p, Name = %s\n", bn,
+	      bn->bn_DeviceNode,
+	      ((struct DosList *)bn->bn_DeviceNode)->dol_DevName
+	      ? ((struct DosList *)bn->bn_DeviceNode)->dol_DevName
+	      : "(null)"
+	      ));
 #if (AROS_FLAVOUR & AROS_FLAVOUR_EMULATION)
-		AddDosEntry((struct DosList *)bn->bn_DeviceNode);
+	AddDosEntry((struct DosList *)bn->bn_DeviceNode);
 #else
-		mount((struct DeviceNode *)bn->bn_DeviceNode);
+	mount((struct DeviceNode *)bn->bn_DeviceNode);
 #endif
-	}
-	if(CreateNewProc(bootprocess) == NULL)
-	{
-		D(bug("CreateNewProc() failed with %ld\n",
-			((struct Process *)FindTask(NULL))->pr_Result2));
-		Alert( AT_DeadEnd | AN_DOSLib | AG_ProcCreate );
-	}
-	CloseLibrary((struct Library*)ExpansionBase);
+    }
+
+    if (CreateNewProc(bootprocess) == NULL)
+    {
+	D(bug("CreateNewProc() failed with %ld\n",
+	      ((struct Process *)FindTask(NULL))->pr_Result2));
+	Alert( AT_DeadEnd | AN_DOSLib | AG_ProcCreate );
+    }
+
+    CloseLibrary((struct Library*)ExpansionBase);
 }
 
-void mount(struct DeviceNode *dn) {
-struct FileSysStartupMsg *fssm= BADDR(dn->dn_Startup);
-struct IOFileSys *iofs;
-struct MsgPort *mp=CreateMsgPort();
-
-	if (mp)
+void mount(struct DeviceNode *dn)
+{
+    struct FileSysStartupMsg *fssm = BADDR(dn->dn_Startup);
+    struct IOFileSys *iofs;
+    struct MsgPort *mp = CreateMsgPort();
+    
+    if (mp != NULL)
+    {
+	iofs = (struct IOFileSys *)CreateIORequest(mp, 
+						   sizeof(struct IOFileSys));
+	if (iofs != NULL)
 	{
-		iofs = (struct IOFileSys *)CreateIORequest(mp,sizeof(struct IOFileSys));
-		if (iofs)
+	    iofs->io_Union.io_OpenDevice.io_DeviceName = AROS_BSTR_ADDR(fssm->fssm_Device);
+	    iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
+	    iofs->io_Union.io_OpenDevice.io_Environ = BADDR(fssm->fssm_Environ);
+	    if (!OpenDevice(AROS_BSTR_ADDR(dn->dn_Handler), 0, &iofs->IOFS, 0))
+	    {
+		if (AddDosEntry(dn))
 		{
-			iofs->io_Union.io_OpenDevice.io_DeviceName=fssm->fssm_Device+1;
-			iofs->io_Union.io_OpenDevice.io_Unit = fssm->fssm_Unit;
-			iofs->io_Union.io_OpenDevice.io_Environ = BADDR(fssm->fssm_Environ);
-			if (!OpenDevice((STRPTR)((ULONG)BADDR(dn->dn_Handler)+1),0,&iofs->IOFS,0))
-			{
-				if (AddDosEntry(dn))
-				{
-					dn->dn_Unit = iofs->IOFS.io_Unit;
-					dn->dn_Device = iofs->IOFS.io_Device;
-					//do not close filesys !!!
-				}
-			}
-			DeleteIORequest((struct IORequest *)iofs);
+		    dn->dn_Unit = iofs->IOFS.io_Unit;
+		    dn->dn_Device = iofs->IOFS.io_Device;
+		    //do not close filesys !!!
 		}
-		else
-		{
-			Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
-		}
-		DeleteMsgPort(mp);
+	    }
+
+	    DeleteIORequest((struct IORequest *)iofs);
 	}
 	else
 	{
-		Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+	    Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
 	}
+
+	DeleteMsgPort(mp);
+    }
+    else
+    {
+	Alert(AT_DeadEnd | AG_NoMemory | AN_DOSLib);
+    }
 }
