@@ -75,11 +75,6 @@ struct AboutWindow_DATA
 #define IGNORE ((APTR)(1UL))
 
 /*** Utility ****************************************************************/
-IPTR DoSuperNew(struct IClass *cl, Object * obj, ULONG tag1,...)
-{
-  return DoSuperMethod(cl, obj, OM_NEW, (IPTR) &tag1, NULL);
-}
-
 STRPTR Section2Name(struct Catalog *catalog, ULONG section)
 {
     switch (section)
@@ -313,9 +308,9 @@ IPTR AboutWindow$OM_NEW
         nextPage++;
     }
     
-    self = (Object *) DoSuperNew
+    self = (Object *) DoSuperNewTags
     (
-        CLASS, self,
+        CLASS, self, NULL,
         
         MUIA_Window_Activate, TRUE,
         MUIA_Window_NoMenus,  TRUE,
