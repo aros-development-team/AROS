@@ -113,3 +113,32 @@ ULONG HIDD_ParallelUnit_Write (OOP_Object *obj, UBYTE * data, ULONG length)
 
     return ((ULONG) OOP_DoMethod(obj, (OOP_Msg) &p));
 }
+
+/***************************************************************/
+
+VOID HIDD_ParallelUnit_Start (OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_ParallelUnit_Start p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Start);
+        
+    p.mID	= mid;
+
+    ((VOID)OOP_DoMethod(obj, (OOP_Msg) &p));
+}
+
+/***************************************************************/
+
+VOID HIDD_ParallelUnit_Stop (OOP_Object *obj)
+{
+    STATIC_MID;
+    struct pHidd_ParallelUnit_Stop p;
+    
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_ParallelUnit, moHidd_ParallelUnit_Stop);
+        
+    p.mID	= mid;
+
+    ((VOID) OOP_DoMethod(obj, (OOP_Msg) &p));
+}
+
