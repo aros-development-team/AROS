@@ -1,6 +1,8 @@
 #ifndef DATATYPES_SOUNDCLASS_H
 #include <datatypes/soundclass.h>
 #endif
+#include <intuition/classes.h>
+#include <exec/execbase.h>
 
 /****************************************************************************/
 
@@ -10,12 +12,12 @@ struct ClassBase
 	struct Library			LibNode;
  	UWORD				pad_word;
  	BPTR				LibSegment;
+	struct ExecBase			*cb_SysBase;
  	struct SignalSemaphore	cb_LibLock;
  	/* library bases */
 #if !defined(__MAXON__) && !defined(__AROS__)
 	struct Library			*cb_IntuitionBase;
 	struct Library			*cb_GfxBase;
-	struct Library			*cb_SysBase;
 	struct Library			*cb_DOSBase;
 	struct Library			*cb_UtilityBase;
 	struct Library			*cb_DataTypesBase;
