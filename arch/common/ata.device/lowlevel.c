@@ -290,9 +290,23 @@ void ata_InitUnits(LIBBASETYPEPTR LIBBASE)
 
 		    if (!(unit->au_Flags & AF_ATAPI))
 		    {
-			unit->au_Cylinders = unit->au_Drive->id_LBASectors / (255*63);
-			unit->au_Heads = 255;
-			unit->au_Sectors = 63;
+			/*
+			    For drive capacities > 8.3GB assume maximal possible layout.
+			    It really doesn't matter here, as BIOS will not handle them in
+			    CHS way anyway :)
+			*/
+			if (unit->au_Drive->id_LBASectors > (63*256*1024))
+			{
+			    unit->au_Cylinders = unit->au_Drive->id_LBASectors / (255*63);
+			    unit->au_Heads = 255;
+			    unit->au_Sectors = 63;
+			}
+			else
+			{
+			    unit->au_Cylinders = unit->au_Drive->id_OldLCylinders;
+			    unit->au_Heads = unit->au_Drive->id_OldLHeads;
+			    unit->au_Sectors = unit->au_Drive->id_OldLSectors;
+			}
 
 			unit->au_Capacity = unit->au_Drive->id_LBASectors;
 		    }
