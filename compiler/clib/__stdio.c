@@ -1,9 +1,9 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: stdio internals
-    Lang: english
+    Lang: English
 */
 #define AROS_ALMOST_COMPATIBLE
 
@@ -28,7 +28,7 @@ struct MinList __stdio_files;
 
 #endif
 
-int __smode2oflags(char *mode)
+int __smode2oflags(const char *mode)
 {
     GETUSER;
 
