@@ -1,5 +1,7 @@
 TOP=..
 
+SPECIAL_CFLAGS=-I/usr/include
+
 include $(TOP)/make.cfg
 
 OBJDIR=$(GENDIR)/aros

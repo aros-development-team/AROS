@@ -1,5 +1,7 @@
 TOP=..
 
+SPECIAL_CFLAGS=-I/usr/include
+
 include $(TOP)/make.cfg
 
 FILES = graphics_init graphics_functable driver_x11
