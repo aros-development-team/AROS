@@ -9,10 +9,13 @@
 
 
 /* Must always be a multiple of 3 since one event consists of code, x and y */
-#define GP_NUMELEMENTS (100 * 3)
-#define GP_BUFFERSIZE  (sizeof (UWORD) * GP_NUMELEMENTS) 
+#define  GP_NUMELEMENTS (100 * 3)
+#define  GP_BUFFERSIZE  (sizeof (UWORD) * GP_NUMELEMENTS) 
 
-#define GP_MAXUNIT 1                   /* Highest possible gameport unit */
+#define  GP_NUNITS        2	/* Number of units supported by
+				   gameport.device */
+
+#define  GP_MAXUNIT 1                   /* Highest possible gameport unit */
 
 struct GameportBase
 {
@@ -22,8 +25,10 @@ struct GameportBase
 
     BPTR               gp_seglist;
     
-    struct MinList          gp_PendingQueue;  /* IOrequests (GPD_READEVENT) not done quick */
+    struct MinList          gp_PendingQueue;  /* IOrequests (GPD_READEVENT)
+						 not done quick */
     struct SignalSemaphore  gp_QueueLock;
+    struct SignalSemaphore  gp_Lock;
 
     struct Interrupt  gp_Interrupt;     /* Interrupt to invoke in case of
 					   keypress (or releases) and there
@@ -38,6 +43,7 @@ struct GameportBase
     Object	   *gp_Hidd;	/* Hidd object to use */
     struct Library *gp_OOPBase;
     
+    UBYTE   gp_cTypes[GP_NUNITS];
 };
 
 
@@ -46,11 +52,12 @@ typedef struct GPUnit
     UWORD  gpu_readPos;		/* Position in the key buffer */
     UWORD  gpu_Qualifiers;      /* Known qualifiers at this moment */
 
+    UWORD  gpu_unitNum;
     UBYTE  gpu_flags;           /* For unit flags definitions, see below */
 } GPUnit;
 
-#define GBUB_PENDING 0		/* Unit has pending request for gameport events */
-
+#define GBUB_PENDING 0		/* Unit has pending request for gameport
+				   events */
 #define GBUF_PENDING 0x01
 
 
@@ -69,4 +76,3 @@ AROS_LC0(BPTR, expunge, struct GameportBase *, GPBase, 3, Gameport)
 #define OOPBase GPBase->gp_OOPBase
 
 #endif /* GAMEPORT_INTERN_H */
-
