@@ -11,6 +11,8 @@
 #include <proto/layers.h>
 #include <proto/alib.h>
 
+#include <exec/alerts.h>
+
 static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBase);
 
 /*****************************************************************************
@@ -76,6 +78,7 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
 	struct Screen *screen;
 
 	screen = OpenScreenTagList (NULL, screenTags);
+	kprintf("WB SCREEN: %p\n");
 
 	if(screen)
 	{
@@ -577,18 +580,53 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
     };
     WORD i;
     
+    
+    
     InitBitMap(&bm, PATTERN_DEPTH, PATTERN_WIDTH, PATTERN_HEIGHT);
     for(i = 0; i < PATTERN_DEPTH; i++)
     {
     	bm.Planes[i] = (((UBYTE *)patterndata) + (i * PATTERN_PLANESIZE));
     }
-    patternbm = &bm;
     
     LoadRGB32(&scr->ViewPort, patterncoltab);
-    
-    InitBackfillHook(IntuitionBase);  
-    InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
 
-    tempwin = OpenWindowTagList(0,wintags);
-    if (tempwin) CloseWindow(tempwin);
+    
+    /* nlorentz: Allocate a bitmap with the screen bitmap as friend. This
+       way the HIDD knows how to blit from this bitmap onto the screen.
+       
+    */
+    patternbm = AllocBitMap(PATTERN_WIDTH
+    	, PATTERN_HEIGHT
+	, PATTERN_DEPTH
+	, 0
+	, scr->RastPort.BitMap
+    );
+    
+    if (NULL != patternbm) 
+    {
+        /* Blit the pattern into the allocated bitmap */
+	BltBitMap(&bm
+	    , 0, 0
+	    , patternbm
+	    , 0, 0
+	    , PATTERN_WIDTH, PATTERN_HEIGHT
+	    , 0xC0
+	    , 0xFF
+	    , NULL
+	);
+    
+    
+    	InitBackfillHook(IntuitionBase);  
+    	InstallLayerInfoHook(&scr->LayerInfo, &backfillhook);
+
+    	tempwin = OpenWindowTagList(0,wintags);
+    	if (tempwin) CloseWindow(tempwin);
+
+    }
+    else
+    {
+	/* If this doesn't succeed, then ther is someting seriously wrong */
+    	kprintf("COULD NOT CREATE PATTERN BITMAP in rom/intuition/lateintuiinit.c\n");
+	Alert(AT_DeadEnd);
+    }
 }
