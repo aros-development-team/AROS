@@ -23,19 +23,22 @@ printx() {
 cd() {
     printx "cd" $*
     chdir $*
+    if [ $? != 0 ]; then
+        printe "Command 'cd $*' returned error. ABORTING BUILD!"
+        exit 5
+    fi
 }
 
 execute() {
     printx $*
-    export RC=0
     (
         $*
         if [ $? != 0 ]; then
-            printe "Command '$*' returned error. ABORTING BUILD!"
             touch /tmp/_aros_build_fail
         fi
-    ) | tee -a $LOG_ALL | tee -a $LOG_THIS
+    ) 2>&1 | tee -a $LOG_ALL | tee -a $LOG_THIS
     if [ -f /tmp/_aros_build_fail ]; then
+        printe "Command '$*' returned error. ABORTING BUILD!"
         rm -f /tmp/_aros_build_fail
         exit 5
     fi
