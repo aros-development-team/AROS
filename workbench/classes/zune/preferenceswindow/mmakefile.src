@@ -5,7 +5,7 @@ FILES         := preferenceswindow
 INCLUDE_FILES := preferenceswindow.h
 
 #MM- workbench-classes-zune : workbench-classes-zune-preferenceswindow
-#MM workbench-classes-zune-preferenceswindow : includes
+#MM workbench-classes-zune-preferenceswindow : includes setup-classes-zune-preferenceswindow-catalogs
 %build_module \
     mmake=workbench-classes-zune-preferenceswindow \
     modname=PreferencesWindow modtype=mcc \
