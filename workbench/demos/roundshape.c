@@ -10,6 +10,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define INSTALL_NULL_SHAPE_FIRST 0
 
@@ -168,7 +169,6 @@ static void renderwin(void)
 	rect.MaxY = cy + y;
 
 	OrRectRegion(shape, &rect);
-
     }
 
     oldshape = ChangeWindowShape(win, shape, NULL);
@@ -193,7 +193,7 @@ static void action(void)
 
 	while ((msg = (struct IntuiMessage *)GetMsg(win->UserPort)))
 	{
-            switch(msg->Class)
+            switch (msg->Class)
 	    {
 		case IDCMP_CLOSEWINDOW:
 	            Keys[KC_ESC] = 1;
@@ -206,6 +206,7 @@ static void action(void)
 			Keys[code] = (code == msg->Code) ? 1 : 0;
 
 		    }
+
 	            break;
 
     		case IDCMP_NEWSIZE:
@@ -220,7 +221,7 @@ static void action(void)
 
 /***********************************************************************************/
 
-void main(void)
+int main(void)
 {
     openlibs();
     getvisual();
@@ -228,6 +229,8 @@ void main(void)
     renderwin();
     action();
     cleanup(0);
+
+    return 0;
 }
 
 /***********************************************************************************/
