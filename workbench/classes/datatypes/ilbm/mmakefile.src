@@ -1,22 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-USER_CFLAGS   := -DMYDEBUG
-
-MODNAME := ilbm
-MODTYPE := datatype
-
 FILES := ilbmclass libfunc
 FUNCS := obtainengine
 
-USE_AMIGALIB := yes
-
 #MM workbench-datatypes-ilbm : setup includes linklibs
-workbench-datatypes-ilbm : workbench-datatypes-ilbm-module
 
-%make_module_setup mmake=workbench-datatypes-ilbm
-%make_module mmake=workbench-datatypes-ilbm
+USER_CFLAGS   := -DMYDEBUG
+
+%build_module_macro mmake=workbench-datatypes-ilbm modname=ilbm \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs=amiga
 
 %common
-%include_deps

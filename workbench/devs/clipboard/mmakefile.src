@@ -1,18 +1,10 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := clipboard
-MODTYPE := device
-
-USE_AMIGALIB := yes
-
 #MM- workbench-devs-complete : workbench-devs-clipboard
 #MM workbench-devs-clipboard : setup includes linklibs
 
-workbench-devs-clipboard : $(AROS_DEVS)/clipboard.device
-
-%make_module_setup mmake=workbench-devs-clipboard
-%make_module_single mmake=workbench-devs-clipboard
+%build_module_macro mmake=workbench-devs-clipboard modname=clipboard \
+  modtype=device initfile=clipboard funcs= files= uselibs=amiga
 
 %common
-%include_deps

@@ -1,22 +1,13 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := ram
-MODTYPE := handler
+#MM- workbench-fs-complete : workbench-fs-ram
+#MM- workbench-fs-ram : setup includes linklibs
 
-INIT_FILE := ram_handler
-FILES :=
-FUNCS :=
-
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
-USE_LIBDEFS := no
 USER_CFLAGS := -DDEBUG=0
 
-#MM- workbench-fs-complete : workbench-fs-ram
-#MM- workbench-fs-ram : setup includes linklibs workbench-fs-ram-module
-%make_module_setup mmake=workbench-fs-ram
-%make_module mmake=workbench-fs-ram
+%build_module_macro mmake=workbench-fs-ram modname=ram \
+  modtype=handler initfile=ram_handler funcs= files= \
+  uselibs="amiga rom"
 
 %common
-%include_deps

@@ -1,22 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := aroscheckbox
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := checkboxclass support
 
-FUNCS := 
-USE_AMIGALIB := yes
-USE_ROMLIB := yes
-
 #MM workbench-gadgets-aroscheckbox : includes linklibs
-workbench-gadgets-aroscheckbox : workbench-gadgets-aroscheckbox-module
 
-%make_module_setup mmake=workbench-gadgets-aroscheckbox
-%make_module mmake=workbench-gadgets-aroscheckbox
+%build_module_macro mmake=workbench-gadgets-aroscheckbox \
+  modname=aroscheckbox modtype=gadget files=$(FILES) \
+  conffile=lib.conf uselibs="amiga rom"
 
 %common
-%include_deps

@@ -1,20 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := parallel
-MODTYPE := device
-
 FILES := parallel_support parallel_interrupthandlers
-FUNCS :=
-
-USE_LIBDEFS := no
-USE_ROMLIB := yes
-USE_HIDDSTUBS := yes
 
 #MM- workbench-devs-complete : workbench-devs-parallel
-#MM- workbench-devs-parallel : setup includes linklibs workbench-devs-parallel-module
-%make_module_setup mmake=workbench-devs-parallel
-%make_module mmake=workbench-devs-parallel
+#MM- workbench-devs-parallel : setup includes linklibs
+
+%build_module_macro mmake=workbench-devs-parallel modname=parallel \
+  modtype=device funcs= files=$(FILES) uselibs="hiddstubs rom"
 
 %common
-%include_deps

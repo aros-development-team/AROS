@@ -1,27 +1,16 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := colorwheel
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := colorwheelclass support fixmathtrans
 
 FUNCS := \
 	converthsbtorgb \
 	convertrgbtohsb
 
-USE_AMIGALIB := yes
-USE_MLIB := yes
-
 #MM workbench-gadgets-colorwheel : includes linklibs
-workbench-gadgets-colorwheel : workbench-gadgets-colorwheel-module
 
-%make_module_setup mmake=workbench-gadgets-colorwheel
-%make_module mmake=workbench-gadgets-colorwheel
-
-%make_lib_includes
+%build_module_macro mmake=workbench-gadgets-colorwheel modname=colorwheel \
+  modtype=gadget funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="amiga m"
 
 %common
-%include_deps

@@ -1,22 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := aroslistview
-MODTYPE := gadget
-
-USER_INCLUDES := -I.
-
 FILES := listviewclass helpfuncs
-FUNCS := 
-
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
 
 #MM workbench-gadgets-aroslistview : includes linklibs
-workbench-gadgets-aroslistview : workbench-gadgets-aroslistview-module
 
-%make_module_setup mmake=workbench-gadgets-aroslistview
-%make_module mmake=workbench-gadgets-aroslistview
+%build_module_macro mmake=workbench-gadgets-aroslistview \
+  modname=aroslistview modtype=gadget files=$(FILES) \
+  conffile=lib.conf uselibs="amiga rom"
 
 %common
-%include_deps

@@ -1,20 +1,12 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-MODNAME := serial
-MODTYPE := device
-
 FILES := serial_support serial_interrupthandlers
-FUNCS := 
-
-USE_LIBDEFS := no
-USE_ROMLIB := yes
-USE_HIDDSTUBS := yes
 
 #MM- workbench-devs-complete : workbench-devs-serial
 #MM- workbench-devs-serial : setup include linklibs workbench-devs-serial-module
-%make_module_setup mmake=workbench-devs-serial
-%make_module mmake=workbench-devs-serial
+
+%build_module_macro mmake=workbench-devs-serial modname=serial \
+  modtype=device funcs= files=$(FILES) uselibs="hiddstubs rom"
 
 %common
-%include_deps

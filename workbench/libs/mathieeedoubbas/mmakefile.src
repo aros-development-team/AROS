@@ -1,22 +1,10 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.
+#MM- workbench-libs-mathieeedoubbas : setup includes
 
-MODNAME	    := mathieeedoubbas
-MODTYPE	    := library
-
-FILES	    := ieeedpbas_fpu
-ARCHIVE	    := mathieeedoubbas.arch
-
-USE_CLIB_STATIC := yes
-
-#MM- workbench-libs-mathieeedoubbas : setup includes \
-#MM	workbench-libs-mathieeedoubbas-module
-%make_module_setup mmake=workbench-libs-mathieeedoubbas
-%make_module_archtool
-%make_module mmake=workbench-libs-mathieeedoubbas
-%make_lib_incl_arch
+%build_module_macro mmake=workbench-libs-mathieeedoubbas \
+  modname=mathieeedoubbas modtype=library uselibs=arosc \
+  conffile=lib.conf files=ieeedpbas_fpu archfile=mathieeedoubbas.arch
 
 %common
-%include_deps

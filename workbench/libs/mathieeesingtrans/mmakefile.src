@@ -1,25 +1,15 @@
 #    $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I.
-
-MODNAME	    :=	mathieeesingtrans
-MODTYPE	    :=	library
-
 FILES	:= \
 	intern_ieeespisodd \
 	intern_ieeespld
 
-ARCHIVE	:= mathieeesingtrans.arch
+#MM- workbench-libs-mathieeesingtrans : setup includes
 
-USE_CLIB_STATIC := yes
-
-#MM- workbench-libs-mathieeesingtrans : setup includes \
-#MM	workbench-libs-mathieeesingtrans-module
-%make_module_setup mmake=workbench-libs-mathieeesingtrans
-%make_module_archtool
-%make_module mmake=workbench-libs-mathieeesingtrans
-%make_lib_incl_arch
+%build_module_macro mmake=workbench-libs-mathieeesingtrans \
+  modname=mathieeesingtrans modtype=library \
+  files=$(FILES) archfile=mathieeesingtrans.arch \
+  conffile=lib.conf uselibs=arosc
 
 %common
-%include_deps

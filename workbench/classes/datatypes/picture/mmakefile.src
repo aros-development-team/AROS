@@ -1,23 +1,15 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I.
-USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
-
-MODNAME := picture
-MODTYPE := datatype
-
 FILES := pictureclass libfunc colorhandling prefs
 FUNCS := obtainengine
 
-USE_ROMLIB := yes
-USE_AMIGALIB := yes
-
 #MM workbench-datatypes-picture : setup includes linklibs
-workbench-datatypes-picture : workbench-datatypes-picture-module
 
-%make_module_setup mmake=workbench-datatypes-picture
-%make_module mmake=workbench-datatypes-picture
+USER_CFLAGS   := -DCOMPILE_DATATYPE -DMYDEBUG
+
+%build_module_macro mmake=workbench-datatypes-picture modname=picture \
+  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
+  uselibs="amiga rom"
 
 %common
-%include_deps
