@@ -17,7 +17,9 @@
 #include <exec/execbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <proto/exec.h>
+#include <proto/dos.h>
 #include <proto/arossupport.h>
 
 
@@ -30,6 +32,13 @@ typedef struct
     ULONG	   Line;
 }
 RTNode;
+
+typedef struct
+{
+    RTNode Node;
+    APTR   Resource;
+}
+Resource;
 
 typedef struct
 {
@@ -49,12 +58,22 @@ typedef struct
 }
 LibraryResource;
 
+typedef struct
+{
+    RTNode Node;
+    BPTR   FH;
+    STRPTR Path;
+    ULONG  Mode;
+}
+FileResource;
+
 typedef struct __RTDesc RTDesc;
 
 typedef IPTR (* RT_AllocFunc) (RTNode *, va_list, BOOL * success);
 typedef IPTR (* RT_FreeFunc) (RTNode *);
 typedef IPTR (* RT_SearchFunc) (RTDesc *, RTNode **, va_list);
 typedef IPTR (* RT_ShowError) (RTDesc *, RTNode *, IPTR, int, const char * file, ULONG line, va_list);
+typedef IPTR (* RT_CheckFunc) (RTDesc *, const char * file, ULONG line, ULONG op, va_list);
 
 struct __RTDesc
 {
@@ -63,8 +82,11 @@ struct __RTDesc
     RT_FreeFunc    FreeFunc;
     RT_SearchFunc  SearchFunc;
     RT_ShowError   ShowError;
+    RT_CheckFunc   CheckFunc;
     struct MinList ResList;
 };
+
+static IPTR RT_Search (RTDesc *, RTNode **, va_list);
 
 static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeMem (MemoryResource * rt);
@@ -73,13 +95,16 @@ static IPTR RT_ShowErrorMem (RTDesc *, MemoryResource *, IPTR, int, const char *
 
 static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success);
 static IPTR RT_FreeVec (MemoryResource * rt);
-static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr, va_list args);
 static IPTR RT_ShowErrorVec (RTDesc *, MemoryResource *, IPTR, int, const char * file, ULONG line, va_list);
 
 static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success);
 static IPTR RT_CloseLibrary (LibraryResource * rt);
-static IPTR RT_SearchLib (RTDesc * desc, LibraryResource ** rtptr, va_list args);
 static IPTR RT_ShowErrorLib (RTDesc *, LibraryResource *, IPTR, int, const char * file, ULONG line, va_list);
+
+static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success);
+static IPTR RT_Close (FileResource * rt);
+static IPTR RT_ShowErrorFile (RTDesc *, FileResource *, IPTR, int, const char * file, ULONG line, va_list);
+static IPTR RT_CheckFile (RTDesc * desc, const char * file, ULONG line, ULONG op, va_list args);
 
 /* Return values of SearchFunc */
 #define RT_SEARCH_FOUND 	    0
@@ -98,20 +123,31 @@ RTDesc RT_Resources[RTT_MAX] =
 	(RT_FreeFunc)  RT_FreeMem,
 	(RT_SearchFunc)RT_SearchMem,
 	(RT_ShowError) RT_ShowErrorMem,
+	NULL, /* Check */
     },
     { /* RTT_ALLOCVEC */
 	sizeof (MemoryResource),
 	(RT_AllocFunc) RT_AllocVec,
 	(RT_FreeFunc)  RT_FreeVec,
-	(RT_SearchFunc)RT_SearchVec,
+	RT_Search,
 	(RT_ShowError) RT_ShowErrorVec,
+	NULL, /* Check */
     },
     { /* RTT_LIBRARY */
 	sizeof (LibraryResource),
 	(RT_AllocFunc) RT_OpenLibrary,
 	(RT_FreeFunc)  RT_CloseLibrary,
-	(RT_SearchFunc)RT_SearchLib,
+	RT_Search,
 	(RT_ShowError) RT_ShowErrorLib,
+	NULL, /* Check */
+    },
+    { /* RTT_FILE */
+	sizeof (FileResource),
+	(RT_AllocFunc) RT_Open,
+	(RT_FreeFunc)  RT_Close,
+	RT_Search,
+	(RT_ShowError) RT_ShowErrorFile,
+	(RT_CheckFunc) RT_CheckFile,
     },
 };
 
@@ -204,6 +240,9 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     SEE ALSO
 
     INTERNALS
+	Free the resources from back to front. This allows to sort the
+	resources (ie. windows on a screen are closed before the screen,
+	etc).
 
     HISTORY
 	24-12-95    digulla created
@@ -216,7 +255,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     if (!InitWasCalled)
 	return;
 
-    for (t=0; t<RTT_MAX; t++)
+    for (t=RTT_MAX-1; t>=0; t--)
     {
 	for (next=GetHead(&RT_Resources[t].ResList); (rt=next); )
 	{
@@ -292,6 +331,8 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 
     va_start (args, line);
 
+    success = FALSE;
+
     ret = (*(RT_Resources[rtt].AllocFunc))
     (
 	rtnew,
@@ -326,6 +367,7 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
 	int	     rtt,
 	const char * file,
 	int	     line,
+	int	     op,
 	...)
 
 /*  FUNCTION
@@ -371,27 +413,41 @@ static void RT_FreeResource (int rtt, RTNode * rtnode);
     if (!InitWasCalled)
 	return FALSE;
 
-    va_start (args, line);
+    va_start (args, op);
 
-    ret = (*(RT_Resources[rtt].SearchFunc))
-    (
-	&RT_Resources[rtt],
-	&rt,
-	args
-    );
-
-    if (ret != RT_SEARCH_FOUND)
+    if (RT_Resources[rtt].CheckFunc)
     {
-	ret = (*(RT_Resources[rtt].ShowError))
+	ret = (*(RT_Resources[rtt].CheckFunc))
 	(
 	    &RT_Resources[rtt],
-	    rt,
-	    ret,
-	    RT_CHECK,
 	    file,
 	    line,
+	    op,
 	    args
 	);
+    }
+    else
+    {
+	ret = (*(RT_Resources[rtt].SearchFunc))
+	(
+	    &RT_Resources[rtt],
+	    &rt,
+	    args
+	);
+
+	if (ret != RT_SEARCH_FOUND)
+	{
+	    ret = (*(RT_Resources[rtt].ShowError))
+	    (
+		&RT_Resources[rtt],
+		rt,
+		ret,
+		RT_CHECK,
+		file,
+		line,
+		args
+	    );
+	}
     }
 
     va_end (args);
@@ -761,8 +817,8 @@ static IPTR RT_AllocMem (MemoryResource * rt, va_list args, BOOL * success)
 
     rt->Memory = AllocMem (rt->Size, rt->Flags);
 
-    if (!rt->Memory)
-	*success = FALSE;
+    if (rt->Memory)
+	*success = TRUE;
 
     return (IPTR)(rt->Memory);
 } /* RT_AllocMem */
@@ -864,8 +920,8 @@ static IPTR RT_AllocVec (MemoryResource * rt, va_list args, BOOL * success)
 
     rt->Memory = AllocVec (rt->Size, rt->Flags);
 
-    if (!rt->Memory)
-	*success = FALSE;
+    if (rt->Memory)
+	*success = TRUE;
 
     return (IPTR)(rt->Memory);
 } /* RT_AllocVec */
@@ -876,27 +932,6 @@ static IPTR RT_FreeVec (MemoryResource * rt)
 
     return TRUE;
 } /* RT_FreeVec */
-
-static IPTR RT_SearchVec (RTDesc * desc, MemoryResource ** rtptr,
-	va_list args)
-{
-    MemoryResource * rt;
-    APTR    memory;
-
-    memory = va_arg (args, APTR);
-
-    ForeachNode (&desc->ResList, rt)
-    {
-	if (rt->Memory == memory)
-	{
-	    *rtptr = rt;
-
-	    return RT_SEARCH_FOUND;
-	}
-    }
-
-    return RT_SEARCH_NOT_FOUND;
-} /* RT_SearchVec */
 
 static IPTR RT_ShowErrorVec (RTDesc * desc, MemoryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
@@ -948,8 +983,8 @@ static IPTR RT_OpenLibrary (LibraryResource * rt, va_list args, BOOL * success)
 
     rt->Lib = OpenLibrary (rt->Name, rt->Version);
 
-    if (!rt->Lib)
-	*success = FALSE;
+    if (rt->Lib)
+	*success = TRUE;
 
     return (IPTR)(rt->Lib);
 } /* RT_OpenLibrary */
@@ -960,27 +995,6 @@ static IPTR RT_CloseLibrary (LibraryResource * rt)
 
     return TRUE;
 } /* RT_CloseLibrary */
-
-static IPTR RT_SearchLib (RTDesc * desc, LibraryResource ** rtptr,
-	va_list args)
-{
-    LibraryResource * rt;
-    struct Library  * lib;
-
-    lib = va_arg (args, struct Library *);
-
-    ForeachNode (&desc->ResList, rt)
-    {
-	if (rt->Lib == lib)
-	{
-	    *rtptr = rt;
-
-	    return RT_SEARCH_FOUND;
-	}
-    }
-
-    return RT_SEARCH_NOT_FOUND;
-} /* RT_SearchLib */
 
 static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
 	IPTR ret, int mode, const char * file, ULONG line, va_list args)
@@ -1015,7 +1029,7 @@ static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
     {
 	kprintf ("RTExit: Library was not closed\n"
 		"    Opened at %s:%d\n"
-		"    Base=%p Name=%s Version=%08lx\n"
+		"    Base=%p Name=%s Version=%ld\n"
 	    , rt->Node.File, rt->Node.Line
 	    , rt->Lib, rt->Name, rt->Version
 	);
@@ -1024,4 +1038,303 @@ static IPTR RT_ShowErrorLib (RTDesc * desc, LibraryResource * rt,
     return ret;
 } /* RT_ShowErrorLib */
 
+static char * StrDup (const char * str)
+{
+    char * copy;
+
+    if ((copy = AllocVec (strlen (str)+1, MEMF_ANY)))
+	strcpy (copy, str);
+
+    return copy;
+}
+
+#define ALIGNED_PTR	0x00000001	/* Must be aligned */
+#define NULL_PTR	0x00000002	/* May be NULL */
+
+static BOOL CheckPtr (APTR ptr, ULONG flags)
+{
+    if
+    (
+	(!ptr && !(flags & NULL_PTR))
+	|| (((IPTR)ptr & 3) && (flags & ALIGNED_PTR))
+    )
+    {
+	return FALSE;
+    }
+
+
+    return TRUE;
+}
+
+static BOOL CheckArea (APTR ptr, ULONG size, ULONG flags)
+{
+    if
+    (
+	(size & 0x8000000)
+	|| !CheckPtr (ptr+size-1, flags)
+    )
+	return FALSE;
+
+    return TRUE;
+}
+
+static IPTR RT_Open (FileResource * rt, va_list args, BOOL * success)
+{
+    STRPTR path;
+
+    path = va_arg (args, STRPTR);
+
+    if (!CheckPtr (path, 0))
+    {
+	kprintf ("Open(): Illegal path\n"
+		"    path=%p at %s:%d\n"
+	    , path
+	    , rt->Node.File, rt->Node.Line
+	);
+	return 0ul;
+    }
+
+    rt->Mode = va_arg (args, LONG);
+
+    rt->FH = NULL;
+
+    if
+    (
+	rt->Mode != MODE_OLDFILE
+	&& rt->Mode != MODE_NEWFILE
+	&& rt->Mode != MODE_READWRITE
+    )
+    {
+	kprintf ("Open(): Illegal mode %d at %s:%d\n"
+	    , rt->Mode
+	    , rt->Node.File, rt->Node.Line
+	);
+    }
+    else
+    {
+	rt->Path = StrDup (path);
+
+	if (!rt->Path)
+	{
+	    kprintf ("Open(): RT: Out of memory\n");
+	}
+	else
+	{
+	    rt->FH = Open (rt->Path, rt->Mode);
+
+	    if (!rt->FH)
+		FreeVec (rt->Path);
+	}
+    }
+
+    if (rt->FH)
+	*success = TRUE;
+
+    return (IPTR)(rt->FH);
+} /* RT_Open */
+
+static IPTR RT_Close (FileResource * rt)
+{
+    Close (rt->FH);
+    FreeVec (rt->Path);
+
+    return TRUE;
+} /* RT_Close */
+
+static const STRPTR GetFileMode (LONG mode)
+{
+    static char buffer[64];
+
+    switch (mode)
+    {
+    case MODE_OLDFILE: return "MODE_OLDFILE";
+    case MODE_NEWFILE: return "MODE_NEWFILE";
+    case MODE_READWRITE: return "MODE_READWRITE";
+    }
+
+    sprintf (buffer, "<illegal mode %ld>", mode);
+
+    return buffer;
+} /* GetFileMode */
+
+static IPTR RT_ShowErrorFile (RTDesc * desc, FileResource * rt,
+	IPTR ret, int mode, const char * file, ULONG line, va_list args)
+{
+    if (mode != RT_EXIT)
+    {
+	const char * modestr = (mode == RT_FREE) ? "Close" : "Check";
+	BPTR	     fh;
+
+	fh = va_arg (args, BPTR);
+
+	switch (ret)
+	{
+	case RT_SEARCH_FOUND:
+	    break;
+
+	case RT_SEARCH_NOT_FOUND:
+	    kprintf ("RT%s: File not found\n"
+		    "    %s at %s:%d\n"
+		    "    FH=%p\n"
+		, modestr
+		, modestr
+		, file, line
+		, fh
+	    );
+	    break;
+
+	} /* switch */
+    }
+    else
+    {
+	kprintf ("RTExit: File was not closed\n"
+		"    Opened at %s:%d\n"
+		"    FH=%p Path=%s Mode=%s\n"
+	    , rt->Node.File, rt->Node.Line
+	    , rt->FH, rt->Path, GetFileMode (rt->Mode)
+	);
+    }
+
+    return ret;
+} /* RT_ShowErrorFile */
+
+static IPTR RT_CheckFile (RTDesc * desc,
+			const char * file, ULONG line,
+			ULONG op, va_list args)
+{
+    FileResource * rt;
+
+    if (RT_Search (desc, (RTNode **)&rt, args) != RT_SEARCH_FOUND)
+	rt = NULL;
+
+    switch (op)
+    {
+    case RTTO_Read:
+	{
+	    BPTR  fh;
+	    APTR  buffer;
+	    ULONG length;
+
+	    fh	   = va_arg (args, BPTR);
+	    buffer = va_arg (args, APTR);
+	    length = va_arg (args, ULONG);
+
+	    if (!rt)
+	    {
+		kprintf ("Read(): Illegal filehandle\n"
+			"    fh=%p at %s:%d\n"
+		    , fh
+		    , file, line
+		);
+
+		return -1;
+	    }
+	    else if (!CheckPtr (buffer, 0))
+	    {
+		kprintf ("Read(): Illegal buffer\n"
+			"    buffer=%p at %s:%d\n"
+			"    FH=%p Path=%s Mode=%s\n"
+			"    opened at %s:%d\n"
+		    , buffer
+		    , file, line
+		    , rt->FH, rt->Path, GetFileMode (rt->Mode)
+		    , rt->Node.File, rt->Node.Line
+		);
+
+		return -1;
+	    }
+	    else if (!CheckArea (buffer, length, 0))
+	    {
+		kprintf ("Read(): Illegal buffer\n"
+			"    buffer=%p, size=%d at %s:%d\n"
+			"    FH=%p Path=%s Mode=%s\n"
+			"    opened at %s:%d\n"
+		    , buffer, length
+		    , file, line
+		    , rt->FH, rt->Path, GetFileMode (rt->Mode)
+		    , rt->Node.File, rt->Node.Line
+		);
+
+		return -1;
+	    }
+
+	    return Read (fh, buffer, length);
+	}
+
+    case RTTO_Write:
+	{
+	    BPTR  fh;
+	    APTR  buffer;
+	    ULONG length;
+
+	    fh	   = va_arg (args, BPTR);
+	    buffer = va_arg (args, APTR);
+	    length = va_arg (args, ULONG);
+
+	    if (!rt)
+	    {
+		kprintf ("Write(): Illegal filehandle\n"
+			"    fh=%p at %s:%d\n"
+		    , fh
+		    , file, line
+		);
+
+		return -1;
+	    }
+	    else if (!CheckPtr (buffer, 0))
+	    {
+		kprintf ("Write(): Illegal buffer\n"
+			"    buffer=%p at %s:%d\n"
+			"    FH=%p Path=%s Mode=%s\n"
+			"    opened at %s:%d\n"
+		    , buffer
+		    , file, line
+		    , rt->FH, rt->Path, GetFileMode (rt->Mode)
+		    , rt->Node.File, rt->Node.Line
+		);
+
+		return -1;
+	    }
+	    else if (!CheckArea (buffer, length, 0))
+	    {
+		kprintf ("Write(): Illegal buffer\n"
+			"    buffer=%p, size=%d at %s:%d\n"
+			"    FH=%p Path=%s Mode=%s\n"
+			"    opened at %s:%d\n"
+		    , buffer, length
+		    , file, line
+		    , rt->FH, rt->Path, GetFileMode (rt->Mode)
+		    , rt->Node.File, rt->Node.Line
+		);
+
+		return -1;
+	    }
+
+	    return Write (fh, buffer, length);
+	}
+
+    }
+
+    return 0L;
+} /* RT_CheckFile */
+
+static IPTR RT_Search (RTDesc * desc, RTNode ** rtptr, va_list args)
+{
+    Resource * rt;
+    APTR     * res;
+
+    res = va_arg (args, APTR);
+
+    ForeachNode (&desc->ResList, rt)
+    {
+	if (rt->Resource == res)
+	{
+	    *rtptr = (RTNode *)rt;
+
+	    return RT_SEARCH_FOUND;
+	}
+    }
+
+    return RT_SEARCH_NOT_FOUND;
+}
 
