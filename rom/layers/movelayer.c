@@ -238,9 +238,11 @@
         if (_CR->lobs == l)
 	{
           _CR->lobs = l_tmp;
+          OrRectRegion(l_behind->DamageList, &_CR->bounds);
 	}
         _CR = _CR->Next;
       } /* while */
+      
       l_behind = l_behind ->back;
     } /* while */
 
@@ -318,6 +320,7 @@
          were in(!)visible. If a part was not visible then add it to the 
          new layers damagelist 
       */
+      DisposeRegion(l->DamageList);
       _CR = l_tmp->ClipRect;
       while (NULL != _CR)
       {
@@ -355,16 +358,40 @@
       AndRegionRegion(R, l->DamageList);
       DisposeRegion(R);
 
-      /* If I was certain that the damasglist in the old layer is correct
+      /* If I was certain that the damagelist in the old layer is correct
       ** I wouldn't have to do all of the above!! This just be tried later.
       */
     }
+
 
     /* 
       The layer that was moved is totally visible now at its new position
       and also at its old position. I delete it now from its old position.
     */
     DeleteLayer(0, l_tmp);
+
+    /* One more thing to do: Walk through all layers behind the layer and
+       check for simple refresh layers and clear that region of this layer 
+       out of their damage list
+     */
+
+    l_behind = l->back;
+    while (NULL != l_behind)
+    {
+      if (0 != (l_behind->Flags & LAYERSIMPLE)
+          && !(l_behind->bounds.MinX > l->bounds.MaxX ||
+               l_behind->bounds.MaxX < l->bounds.MinX ||
+               l_behind->bounds.MinY > l->bounds.MaxY ||
+               l_behind->bounds.MaxY < l->bounds.MinY) )
+      {
+        /* That is a simple refresh layer that the current layer l is
+           actually overlapping with. So I will erase the layer l's rectangle
+           from that layer l_behind's damagelist so no mess happens on the
+           screen */
+        ClearRectRegion(l_behind->DamageList, &l->bounds);
+      }      
+      l_behind = l_behind ->back;
+    } /* while */
 
     /* That's it folks! */
     CleanupLayers(LI);

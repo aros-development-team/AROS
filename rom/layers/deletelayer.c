@@ -277,7 +277,7 @@
                   0x0c0, /* copy */
                   0xff,
                   NULL);
-//                CR->BitMap = NULL; /* as this part is visible now. */              
+
 	      }
 	    }
 	    else

@@ -285,6 +285,30 @@
       with less calls to BltBitMap than when calling DeleteLayer().
     */
     DeleteLayer(0, l_tmp);
+
+    /* One more thing to do: Walk through all layers behind the layer and
+       check for simple refresh layers and clear that region of this layer 
+       out of their damage list
+     */
+
+    l_behind = l->back;
+    while (NULL != l_behind)
+    {
+      if (0 != (l_behind->Flags & LAYERSIMPLE)
+          && !(l_behind->bounds.MinX > l->bounds.MaxX ||
+               l_behind->bounds.MaxX < l->bounds.MinX ||
+               l_behind->bounds.MinY > l->bounds.MaxY ||
+               l_behind->bounds.MaxY < l->bounds.MinY) )
+      {
+        /* That is a simple refresh layer that the current layer l is
+           actually overlapping with. So I will erase the layer l's rectangle
+           from that layer l_behind's damagelist so no mess happens on the
+           screen */
+        ClearRectRegion(l_behind->DamageList, &l->bounds);
+      }      
+      l_behind = l_behind ->back;
+    } /* while */
+
     /*
        The new layer might be larger than the previously shown layer,
        so I clear those areas of the new layer that are outside the
