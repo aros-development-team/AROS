@@ -56,6 +56,7 @@ int main (int argc, char ** argv)
 		if(out)
 		{
 		    /* Clone output filehandle */
+/*		    
 		    lock=DupLockFromFH(out);
 		    if(lock)
 		    {
@@ -64,6 +65,10 @@ int main (int argc, char ** argv)
 			    UnLock(lock);
 		    }else
 			in=0;
+
+*/			
+		    in = out;
+		    
 		    if(in)
 		    {
 			struct TagItem tags[]=
@@ -86,8 +91,9 @@ int main (int argc, char ** argv)
 			    out=in=shell=0;
 			    error=0;
 			}
+/*			
 			Close(in);
-		    }
+*/		    }
 		    Close(out);
 		}
 		UnLoadSeg(shell);
