@@ -1,6 +1,11 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include "afshandler.h"
 
 enum {

@@ -1,6 +1,11 @@
 #ifndef FILEHANDLES_H
 #define FILEHANDLES_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 struct Position
 {
 	ULONG block;		// current extensionblock

@@ -1,6 +1,11 @@
 #ifndef BASEREDEF_H
 #define BASEREDEF_H
 
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #ifdef SysBase
 #	undef SysBase
 #endif
