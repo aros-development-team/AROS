@@ -12,7 +12,6 @@ APTR AllocVecPooled(APTR pool, ULONG size)
 {
     IPTR *memory;
     
-    bug("exec/AllocVecPooled: %p, %d\n", pool, size);
     if (pool == NULL) return NULL;
     
     size   += sizeof(IPTR);
