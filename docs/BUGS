@@ -317,12 +317,16 @@ bergers@aros.org
 When starting more than one "mxgads" by "run mxgads" and when letting the
 windows stack on top of each other the new window looses its display.
 
-BUG000047
+BUG000047 fixed
 bergers@aros.org
 The window in "window" sometimes jumps when calling ChangeWindowBox() for
 the first time. When it doesn't jump you cannot close the window with the
 gadget. The gadget is assumed to be at the place where it would be if the
 window had "jumped".
+
+The problem was that ChangeWindowBox() was not deffered, so there
+was a race condition between the app and input.device.
+
 
 BUG000048
 bergers@aros.org
@@ -333,4 +337,12 @@ BUG000049
 bergers@aros.org
 Running multiple "window"s at the same time leads to flickering on the
 whole screen.
+
+BUG000050
+nlorentz@online.no
+Running "window" several times after each other causes a severe
+memory leak, not inside AROS itself, but in Linux
+(Ie. "ps aux"). This is most probably a memoryleak
+in x11gfx.hidd: Somewhere XGetImage() is called,
+but XFreeImage() or similar is not called.
 
