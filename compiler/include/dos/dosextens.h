@@ -75,8 +75,7 @@ struct DosLibrary
     struct Device	 * dl_NulHandler;
     struct Unit 	 * dl_NulLock;
 
-    struct SignalSemaphore dl_LSigSem;
-    struct SignalSemaphore dl_DSigSem;
+    struct SignalSemaphore dl_LDSigSem;
     struct Interrupt	   dl_LDHandler;
     struct MsgPort	 * dl_LDDemonPort;
     struct Process	 * dl_LDDemonTask;

@@ -20,7 +20,7 @@
 #include <dos/dosextens.h>
 #include <dos/dostags.h>
 #include <aros/asmcall.h>
-/* #define DEBUG 1 */
+#define DEBUG 0
 #include <aros/debug.h>
 
 #include <proto/exec.h>
@@ -69,7 +69,7 @@ const struct Resident LDDemon_resident =
 };
 
 static const char name[] = "LDDemon";
-static const char version[] = "$VER: LDDemon 41.1 (26.12.1997)\r\n";
+static const char version[] = "$VER: LDDemon 41.2 (17.3.2001)\r\n";
 static const char ldDemonName[] = "Lib & Dev Loader Daemon";
 
 /*
@@ -78,7 +78,8 @@ static const char ldDemonName[] = "Lib & Dev Loader Daemon";
     to directory <basedir>. Will also try <caller>'s current and home
     directories.
 */
-static BPTR LDLoad(
+static BPTR
+LDLoad(
     struct Process *caller, 
     STRPTR name,
     STRPTR basedir,	
@@ -96,7 +97,11 @@ static BPTR LDLoad(
 	or from the PROGDIR: assign. These could both be the same
 	though.
     */
-    D(bug("LDLoad(caller=%P, name=%s, basedir=%s)\n", caller, name, basedir));
+    D(bug(
+	"LDLoad(caller=(%p) %s, name=%s, basedir=%s)\n",
+	caller, caller->pr_Task.tc_Node.ln_Name, name, basedir
+    ));
+
     if( caller->pr_Task.tc_Node.ln_Type == NT_PROCESS )
     {		
     	/* Try the current directory of the caller */
@@ -138,7 +143,8 @@ static BPTR LDLoad(
   Library *LDInit(seglist, DOSBase)
     Initialise the library.
 */
-static struct Library *LDInit(BPTR seglist, struct DosLibrary *DOSBase)
+static struct Library *
+LDInit(BPTR seglist, struct DosLibrary *DOSBase)
 {
     struct ExecBase *SysBase = DOSBase->dl_SysBase;
     BPTR seg = seglist;
@@ -186,7 +192,6 @@ AROS_LH2(struct Library *, OpenLibrary,
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct ExecBase *,SysBase)
 
-
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library, *tmplib;
     STRPTR stripped_libname;
@@ -204,24 +209,18 @@ AROS_LH2(struct Library *, OpenLibrary,
 	all the other OpenLibrary() callers have returned. That way, 
 	task #2 won't ask for foobar.library until task #1 has got its
 	response back from the LDDemon process.
-
     */
 
 
-   /* We use FilePart() because the liblist is built from resident IDs,
-      and contain no path. Eg. The user can request gadgets/foo.gadget,
-      but the resident only contains foo.gadget
-   */    
-   stripped_libname = FilePart(libname);
-
-    ObtainSemaphore(&DOSBase->dl_LSigSem);
+    /*  We use FilePart() because the liblist is built from resident IDs,
+	and contain no path. Eg. The user can request gadgets/foo.gadget,
+	but the resident only contains foo.gadget
+    */    
+    stripped_libname = FilePart(libname);
+    ObtainSemaphore(&DOSBase->dl_LDSigSem);
 
     /* See if the library is in the library list */
     Forbid();
-   /* We use FilePart() because the liblist is built from resident IDs,
-      and contain no path. Eg. The user can request gadgets/foo.gadget,
-      but the resident only contains foo.gadget
-   */    
     library = (struct Library *)FindName(&SysBase->LibList, stripped_libname); 
     Permit();
 
@@ -249,8 +248,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 	D(bug("LDCaller: Sending request for %s v%ld\n", libname, version));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
-/*	D(bug("Returned from LDDemon\n"));
-*/
+	D(bug("LDCaller: Returned\n"));
+
 	library = LDInit(ldd.ldd_Return, DOSBase);
     }
 
@@ -267,7 +266,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	if( tmplib != NULL )
 	    library = tmplib;
 
-	if( library && library->lib_Version >= version)
+	if(library->lib_Version >= version)
 	{
 	    D(bug("LDCaller: Calling libOpen() of %s\n",
     		    library->lib_Node.ln_Name));
@@ -276,6 +275,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 		AROS_LCA(ULONG, version, D0),
 		struct Library *, library, 1,
 	    );
+
+	    D(bug("LDCaller: libOpen() returned\n"));
 	}
 	else
 	    library = NULL;
@@ -289,7 +290,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 	and recursive OpenLibrary calls (Semaphores nest when obtained
 	several times in a row by the same task).
     */
-    ReleaseSemaphore(&DOSBase->dl_LSigSem);
+    ReleaseSemaphore(&DOSBase->dl_LDSigSem);
 
     return library;
 
@@ -309,15 +310,15 @@ AROS_LH4(BYTE, OpenDevice,
     struct Device *device, *tmpdev;
     UBYTE ret = IOERR_OPENFAIL;
     STRPTR stripped_devname;
-    
 
-    /* We use FilePart() because the liblist is built from resident IDs,
-      and contain no path. Eg. The user can request gadgets/foo.gadget,
-      but the resident only contains foo.gadget
+    /*	We use FilePart() because the liblist is built from resident IDs,
+	and contain no path. Eg. The user can request gadgets/foo.gadget,
+	but the resident only contains foo.gadget
     */    
     stripped_devname = FilePart(devname);
+
     /* Read the discussion in Dos_OpenLibrary() above for why we lock here */
-    ObtainSemaphore(&DOSBase->dl_DSigSem);
+    ObtainSemaphore(&DOSBase->dl_LDSigSem);
 
     /* See if the device is in the device list */
     Forbid();
@@ -349,8 +350,6 @@ AROS_LH4(BYTE, OpenDevice,
 
 	device = (struct Device *)LDInit(ldd.ldd_Return, DOSBase);
     }
-
-    ReleaseSemaphore(&DOSBase->dl_DSigSem);
     
     if( device != NULL )
     {
@@ -373,13 +372,16 @@ AROS_LH4(BYTE, OpenDevice,
 	    AROS_LCA(ULONG, flags, D1),
 	    struct Device *, device, 1,
 	);
+
+	D(bug("LDCaller: devOpen() returned\n"));
 	Permit();
 
 	ret = iORequest->io_Error;
 	if( ret )
 	    iORequest->io_Device = NULL;
-
     }
+
+    ReleaseSemaphore(&DOSBase->dl_LDSigSem);
     return ret;
 
     AROS_LIBFUNC_EXIT
@@ -457,12 +459,16 @@ AROS_LH1(void, RemLibrary,
     AROS_LIBFUNC_EXIT
 }
 
-LONG LDFlush(void)
+AROS_UFH3(LONG, LDFlush,
+    AROS_UFHA(struct MemHandlerData *, lmhd, A0),
+    AROS_UFHA(APTR, data, A1),
+    AROS_UFHA(struct ExecBase *, SysBase, A6)
+)
 {
-    extern struct ExecBase *SysBase;
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library;
     
+    bug("LDDemon: Flush called\n");
     DOSBase->dl_LDReturn = MEM_DID_NOTHING;
 
     /* Forbid() is already done, but I don't want to rely on it. */
@@ -523,58 +529,13 @@ AROS_UFH3(void, LDDemon,
     AROS_UFHA(struct ExecBase *, SysBase, A6)
 )
 {
-    struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
-    BYTE AROS_SLIB_ENTRY(OpenDevice,Dos)();
-    void AROS_SLIB_ENTRY(CloseLibrary,Dos)();
-    void AROS_SLIB_ENTRY(CloseDevice,Dos)();
-    void AROS_SLIB_ENTRY(RemLibrary,Dos)();
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct LDDMsg *ldd;
-    
-    struct Task *bootproc;
 
-    /* Complete the initialisation. */
-    if( (DOSBase->dl_LDDemonPort = CreateMsgPort()) == NULL )
-    {
-	Alert( AN_RAMLib | AG_NoMemory | AT_DeadEnd );
-    }
+    /* Fix up the MsgPort, this isn't really a race. */
+    DOSBase->dl_LDDemonPort->mp_SigBit = AllocSignal(-1);
+    DOSBase->dl_LDDemonPort->mp_Flags = PA_SIGNAL;
 
-#define SetFunc(offs,ptr) \
-    (void)SetFunction(&SysBase->LibNode, (offs)*LIB_VECTSIZE, \
-    			AROS_SLIB_ENTRY(ptr,Dos))
-
-    SetFunc(-92, OpenLibrary);
-    SetFunc(-74, OpenDevice);
-    SetFunc(-69, CloseLibrary);
-    SetFunc(-75, CloseDevice);
-    SetFunc(-67, RemLibrary);
-    SetFunc(-73, RemLibrary);
-
-    DOSBase->dl_LDHandler.is_Node.ln_Name = (STRPTR)ldDemonName;
-    DOSBase->dl_LDHandler.is_Node.ln_Pri = 0;
-    DOSBase->dl_LDHandler.is_Code = (void (*)())LDFlush;
-
-    InitSemaphore(&DOSBase->dl_LSigSem);
-    InitSemaphore(&DOSBase->dl_DSigSem);
-    AddMemHandler(&DOSBase->dl_LDHandler);
-    
-    /* Do syncronization with boot process (./dosboot.c):
-       assure that LDDemon is initialize before the boot
-       process, as the boot process might want to open
-       disk-based libraries or devices.
-    */
-    
-#if 0
-    Forbid(); /* To assure that if bootprocess is still not added to the system, it won't start here */
-    bootproc = FindTask("Boot Process");
-    if (bootproc)
-    {
-	Signal(bootproc, SIGBREAKF_CTRL_F);
-    }
-    else
-    	kprintf("lddemon.c: LDDemon process scheduled after Boot process\nor name of Boot Process changed\nwhich causes Boot process to halt\n");
-    Permit();
-#endif
     for(;;)
     {
 	WaitPort(DOSBase->dl_LDDemonPort);
@@ -583,14 +544,6 @@ AROS_UFH3(void, LDDemon,
 	    D(bug("LDDemon: Got a request for %s in %s\n",
 		    ldd->ldd_Name, ldd->ldd_BaseDir));
 
-#if 0
-	    seglist = LDLoad(
-		ldd->ldd_ReplyPort.mp_SigTask,
-		ldd->ldd_Name,
-		ldd->ldd_BaseDir,
-		DOSBase);
-	    ldd->ldd_Return = LDInit(seglist, DOSBase);
-#endif
 	    ldd->ldd_Return = LDLoad(
 		ldd->ldd_ReplyPort.mp_SigTask,
 		ldd->ldd_Name,
@@ -609,6 +562,12 @@ AROS_LH2(ULONG, Init,
     struct ExecBase *, SysBase, 0, LDDemon)
 {
     AROS_LIBFUNC_INIT
+
+    struct Library *AROS_SLIB_ENTRY(OpenLibrary,Dos)();
+    BYTE AROS_SLIB_ENTRY(OpenDevice,Dos)();
+    void AROS_SLIB_ENTRY(CloseLibrary,Dos)();
+    void AROS_SLIB_ENTRY(CloseDevice,Dos)();
+    void AROS_SLIB_ENTRY(RemLibrary,Dos)();
 
     struct DosLibrary *DOSBase;
     struct TagItem tags[] =
@@ -629,10 +588,50 @@ AROS_LH2(ULONG, Init,
 
     SysBase->ex_RamLibPrivate = DOSBase;
 
+    if( (DOSBase->dl_LDDemonPort = CreateMsgPort()) == NULL )
+    {
+	Alert( AN_RAMLib | AG_NoMemory | AT_DeadEnd );
+    }
+
+    DOSBase->dl_LDHandler.is_Node.ln_Name = (STRPTR)ldDemonName;
+    DOSBase->dl_LDHandler.is_Node.ln_Pri = 0;
+    DOSBase->dl_LDHandler.is_Code = (void (*)())LDFlush;
+    DOSBase->dl_LDHandler.is_Data = NULL;
+
+    InitSemaphore(&DOSBase->dl_LDSigSem);
+    AddMemHandler(&DOSBase->dl_LDHandler);
+
+    /*
+     *	Grab the semaphore ourself. The reason for this is that it will
+     *	cause all other tasks to wait until we have finished initialising
+     *	before they try and open something.
+     */
+    ObtainSemaphore(&DOSBase->dl_LDSigSem);
+
+#define SetFunc(offs,ptr) \
+    (void)SetFunction(&SysBase->LibNode, (offs)*LIB_VECTSIZE, \
+    			AROS_SLIB_ENTRY(ptr,Dos))
+
+    /* Do not set the vectors until you have initialised everything else. */
+    SetFunc(-92, OpenLibrary);
+    SetFunc(-74, OpenDevice);
+    SetFunc(-69, CloseLibrary);
+    SetFunc(-75, CloseDevice);
+    SetFunc(-67, RemLibrary);
+    SetFunc(-73, RemLibrary);
+
     if( !(DOSBase->dl_LDDemonTask = CreateNewProc((struct TagItem *)tags)) )
     {
 	Alert( AT_DeadEnd | AN_RAMLib | AG_ProcCreate );
     }
+
+    /* Fix up the MsgPort */
+    DOSBase->dl_LDDemonPort->mp_Flags = 0;
+    DOSBase->dl_LDDemonPort->mp_SigTask = DOSBase->dl_LDDemonTask;
+    FreeSignal(DOSBase->dl_LDDemonPort->mp_SigBit);    
+
+    /* Then unlock the semaphore to allow other processes to run. */
+    ReleaseSemaphore(&DOSBase->dl_LDSigSem);
 
     return NULL;
 
