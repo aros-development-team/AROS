@@ -71,7 +71,7 @@
     struct MemChunk *p1, *p2, *p3;
     UBYTE *p4;
 #if AROS_MUNGWALL_DEBUG
-    ULONG origsize = byteSize
+    ULONG origsize = byteSize;
 #endif
 
     D(bug("Call FreeMem (%08lx, %ld)\n", memoryBlock, byteSize));
