@@ -91,6 +91,8 @@ static ULONG mask_to_shift(ULONG mask)
 		{ aHidd_Sync_VTotal,		vtotal	},	\
 		{ TAG_DONE, 0UL }}
 
+void free_nvclass(struct nv_staticdata *nsd);
+
 static OOP_Object *gfx_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
 {
 	struct TagItem pftags[] = {
