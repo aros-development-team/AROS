@@ -23,6 +23,7 @@
 #include "muimaster_intern.h"
 #include "support.h"
 #include "textengine.h"
+#include "prefs.h"
 
 //#define MYDEBUG 1
 #include "debug.h"
