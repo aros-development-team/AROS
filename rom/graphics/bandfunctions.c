@@ -1,3 +1,11 @@
+/*
+    (C) 1995-97 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: Functions for YXBanded regions handling. 
+    Lang: english
+*/
+
 #include <proto/graphics.h>
 
 #include <clib/macros.h>
@@ -47,7 +55,7 @@
         first = rr;                        \
 }
 
-#define ADDRECT(first, prev, minx, maxx) \
+#define ADDREG(first, prev, minx, maxx) \
 {                                       \
    struct RegionRectangle *rr;          \
    NEWREG((first), rr);                 \
@@ -60,21 +68,21 @@
    LINK((prev), rr);                    \
 }
 
-#define ADDRECTMERGE(first, prev, minx, maxx)     \
-{                                                 \
-    if                                            \
-    (                                             \
-        !(prev) ||                                \
-        ((minx-1) > MaxX(prev))                   \
-    )                                             \
-    {                                             \
-	ADDRECT((first), (prev), (minx), (maxx)); \
-    }                                             \
-    else                                          \
-    if (MaxX(prev) < maxx)                        \
-    {                                             \
-        MaxX(prev) = maxx;                        \
-    }                                             \
+#define ADDREGMERGE(first, prev, minx, maxx)     \
+{                                                \
+    if                                           \
+    (                                            \
+        !(prev) ||                               \
+        ((minx-1) > MaxX(prev))                  \
+    )                                            \
+    {                                            \
+	ADDREG((first), (prev), (minx), (maxx)); \
+    }                                            \
+    else                                         \
+    if (MaxX(prev) < maxx)                       \
+    {                                            \
+        MaxX(prev) = maxx;                       \
+    }                                            \
 }
 
 /*
@@ -240,28 +248,25 @@ BOOL _OrBandBand
     {
         if (MinX(Src1) + OffX1 < MinX(Src2) + OffX2)
         {
-	    ADDRECTMERGE(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+	    ADDREGMERGE(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
             ADVANCE(NextSrc1Ptr, Src1);
         }
         else
         {
-	    ADDRECTMERGE(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+	    ADDREGMERGE(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
             ADVANCE(NextSrc2Ptr, Src2);
         }
     }
 
-    if (Src1)
+    while (Src1)
     {
-        do
-        {
-            ADDRECTMERGE(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
-            ADVANCE(NextSrc1Ptr, Src1);
-        } while (Src1);
+        ADDREGMERGE(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+        ADVANCE(NextSrc1Ptr, Src1);
     }
-    else
+
     while (Src2)
     {
-	ADDRECTMERGE(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+	ADDREGMERGE(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
         ADVANCE(NextSrc2Ptr, Src2);
     }
 
@@ -296,14 +301,14 @@ BOOL _AndBandBand
 	    if (MaxX(Src1) + OffX1 >= MaxX(Src2) + OffX2)
             {
             	/* Src1 totally covers Src2 */
-                ADDRECT(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
+                ADDREG(first, last, MinX(Src2) + OffX2, MaxX(Src2) + OffX2);
  	        ADVANCE(NextSrc2Ptr, Src2);
             }
             else
             {
                 if (MaxX(Src1) + OffX1 >= MinX(Src2) + OffX2)
             	    /* Src1 partially covers Src2 */
-                    ADDRECT(first, last, MinX(Src2) + OffX2, MaxX(Src1) + OffX1);
+                    ADDREG(first, last, MinX(Src2) + OffX2, MaxX(Src1) + OffX1);
 
                 ADVANCE(NextSrc1Ptr, Src1);
             }
@@ -313,25 +318,21 @@ BOOL _AndBandBand
 	    if (MaxX(Src2) + OffX2 >= MaxX(Src1) + OffX1)
             {
             	/* Src2 totally covers Src1 */
-                ADDRECT(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
+                ADDREG(first, last, MinX(Src1) + OffX1, MaxX(Src1) + OffX1);
  	        ADVANCE(NextSrc1Ptr, Src1);
             }
             else
             {
                 if (MaxX(Src2) + OffX2 >= MinX(Src1) + OffX1)
             	    /* Src2 partially covers Src1 */
-                    ADDRECT(first, last, MinX(Src1) + OffX1, MaxX(Src2) + OffX2);
+                    ADDREG(first, last, MinX(Src1) + OffX1, MaxX(Src2) + OffX2);
 
                 ADVANCE(NextSrc2Ptr, Src2);
             }
         }
     }
 
-    if (Src1)
-    {
-        do ADVANCE(NextSrc1Ptr, Src1) while (Src1);
-    }
-    else
+    while (Src1) ADVANCE(NextSrc1Ptr, Src1);
     while (Src2) ADVANCE(NextSrc2Ptr, Src2);
 
     if (first)
@@ -400,7 +401,7 @@ BOOL _ClearBandBand
                subtrahend
      	    */
 
-            ADDRECT(first, last, MinX, MinX(Src1) + OffX1 - 1);
+            ADDREG(first, last, MinX, MinX(Src1) + OffX1 - 1);
 
             MinX = MaxX(Src1) + OffX1 + 1;
 
@@ -425,7 +426,7 @@ BOOL _ClearBandBand
 
              if (MaxX(Src2) + OffX2 >= MinX)
              {
-                 ADDRECT(first, last, MinX, MaxX(Src2) + OffX2);
+                 ADDREG(first, last, MinX, MaxX(Src2) + OffX2);
              }
 
              ADVANCE(NextSrc2Ptr, Src2);
@@ -434,14 +435,10 @@ BOOL _ClearBandBand
         }
     }
 
-    if (Src1)
-    {
-        do ADVANCE(NextSrc1Ptr, Src1) while (Src1);
-    }
-    else
+    while (Src1) ADVANCE(NextSrc1Ptr, Src1);
     while (Src2)
     {
-	ADDRECT(first, last, MinX, MaxX(Src2) + OffX2);
+	ADDREG(first, last, MinX, MaxX(Src2) + OffX2);
         ADVANCE(NextSrc2Ptr, Src2);
         if (Src2)
         {
@@ -482,7 +479,15 @@ BOOL _XorBandBand
              res = _ClearBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
         }
     }
-
+/*
+    if (_ClearBandBand(OffX1, OffX2, MinY, MaxY, Src1, Src2, &Diff1, NULL, NULL, GfxBase))
+    {
+        if (_ClearBandBand(OffX2, OffX1, MinY, MaxY, Src2, Src1, &Diff2, NextSrc2Ptr, NextSrc1Ptr, GfxBase))
+	{
+             res = _OrBandBand(0, 0, MinY, MaxY, Diff1, Diff2, DstPtr, NULL, NULL, GfxBase);
+        }
+    }
+*/
     DisposeRegionRectangleList(Diff1);
     DisposeRegionRectangleList(Diff2);
 
@@ -814,84 +819,6 @@ BOOL _ClearRectRegion
     return FALSE;
 }
 
-#define DisposeBand(_Band, NextBandPtr)       \
-{                                             \
-    struct RegionRectangle *Band = _Band;     \
-                                              \
-    while (Band)                              \
-    {                                         \
-        struct RegionRectangle *OldRR = Band; \
-        ADVANCE(NextBandPtr, Band);           \
-        DisposeRegionRectangle(OldRR);        \
-    }                                         \
-}
-
-static void __inline__ ShrinkBand
-(
-    struct RegionRectangle  *Band,
-    LONG MinX,
-    LONG MinY,
-    LONG MaxX,
-    LONG MaxY,
-    struct RegionRectangle **NextBandPtr
-)
-{
-    while (Band)
-    {
-        if (MinX >= MaxX(Band))
-        {
-            struct RegionRectangle *OldRect = Band;
-            ADVANCE(NextBandPtr, Band);
-
-            if (OldRect->Prev)
-		OldRect->Prev->Next = Band;
-
-  	    if (Band)
-                Band->Prev = OldRect->Prev;
-
-            DisposeRegionRectangle(OldRect);
-
-
-            continue;
-	}
-
-        if (MinX > MinX(Band))
-        {
-            MinX(Band) = MinX;
-        }
-	else
-        if (MaxX < MinX(Band))
-        {
-            struct RegionRectangle *LastRect = Band->Prev;
-
-            DisposeBand(Band, NextBandPtr);
-
-            if (LastRect)
-                LastRect->Next = *NextBandPtr;
-
-            if (*NextBandPtr)
-                (*NextBandPtr)->Prev = LastRect;
-
-            break;
-        }
-
-        if (MaxX < MaxX(Band))
-        {
-            MaxX(Band) = MaxX;
-        }
-
-        MinY(Band) = MinY;
-        MaxY(Band) = MaxY;
-
-        ADVANCE(NextBandPtr, Band);
-    }
-}
-
-
-
-
-
-
 BOOL _AndRectRegion
 (
     struct Region    *Reg,
@@ -899,67 +826,39 @@ BOOL _AndRectRegion
     struct GfxBase   *GfxBase
 )
 {
-    struct RegionRectangle *rr = Reg->RegionRectangle;
-    struct Rectangle OldBounds = Reg->bounds;
+    struct Region Res;
+    struct RegionRectangle rr;
 
-    if (!(Rect && _AndRectRect(Rect, &OldBounds, &Reg->bounds)))
-        Rect = NULL;
+    rr.bounds = *Rect;
+    rr.Next   = NULL;
 
-    while (rr && Rect)
-    {
-	if
+    if
+    (
+        _DoOperationBandBand
         (
-            Rect->MinY > MinY(rr) + OldBounds.MinY &&
-	    Rect->MinY > MaxY(rr) + OldBounds.MinY
-	)
-        {
-            /* Teh current band is over the rectangle, so delete it */
-            DisposeBand(rr, &rr);
-
-            Reg->RegionRectangle = rr;
-
-            if (rr)
-            {
-                if (rr->Prev)
-                   rr->Prev->Next = NULL;
-
-                rr->Prev = NULL;
-            }
-        }
-        else
-	if (overlapY(*Rect, *Bounds(rr)))
-        {
-            ShrinkBand
-            (
-                rr,
-                Rect->MinX - OldBounds.MinX,
-                MAX(Rect->MinY - OldBounds.MinY, MinY(rr)),
-                Rect->MaxX - OldBounds.MinX,
-                MIN(Rect->MaxY - OldBounds.MinY, MaxY(rr)),
-                &rr
-	    );
-        }
-        else
-        {
-            Rect = NULL;
-        }
-    }
-
-    if (rr)
+            _AndBandBand,
+            MinX(Reg),
+            0,
+	    MinY(Reg),
+            0,
+            Reg->RegionRectangle,
+            &rr,
+            &Res.RegionRectangle,
+            &Res.bounds,
+            GfxBase
+        )
+    )
     {
-        if (rr->Prev)
-            rr->Prev->Next = NULL;
-        else
-            Reg->RegionRectangle = NULL;
+        DisposeRegionRectangleList(Reg->RegionRectangle);
 
-        DisposeRegionRectangleList(rr);
+        *Reg = Res;
+
+        _TranslateRegionRectangles(Res.RegionRectangle, -MinX(&Res), -MinY(&Res));
+
+        return TRUE;
     }
 
-    if (Rect)
-        _TranslateRegionRectangles(Reg->RegionRectangle, -MinX(Reg), -MinY(Reg));
-
-    return TRUE;
-
+    return FALSE;
 }
 
 BOOL _AndRegionRegion
@@ -1087,10 +986,18 @@ int main(void)
     struct Region *R1 = NewRegion();
     struct Region *R2 = NewRegion();
 
+//    _OrRectRegion(R1, &(struct Rectangle){30, 2, 34, 20}, GfxBase);
+    _OrRectRegion(R1, &(struct Rectangle){10, 2, 34, 30}, GfxBase);
+      dumpregion(R1);
+
     _OrRectRegion(R2, &(struct Rectangle){0, 0, 20, 20}, GfxBase);
     _OrRectRegion(R2, &(struct Rectangle){22, 20, 40, 40}, GfxBase);
+    dumpregion(R2);
 
-    _AndRectRegion(R2, &(struct Rectangle){10, 10, 30, 30}, GfxBase);
+
+    _XorRegionRegion(R1, R2, GfxBase);
+    dumpregion(R2);
+
     DisposeRegion(R2);
     DisposeRegion(R1);
     return 0;
