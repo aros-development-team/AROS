@@ -1,0 +1,22 @@
+#   $Id$
+include $(TOP)/config/make.cfg
+
+USER_INCLUDES := -I.
+USER_CFLAGS   := -DMYDEBUG
+
+MODNAME := gif
+MODTYPE := datatype
+
+FILES := gifclass codec libfunc
+FUNCS := obtainengine
+
+USE_AMIGALIB := yes
+
+#MM workbench-datatypes-gif : setup includes linklibs
+workbench-datatypes-gif : workbench-datatypes-gif-module
+
+%make_module_setup mmake=workbench-datatypes-gif
+%make_module mmake=workbench-datatypes-gif
+
+%common
+%include_deps
