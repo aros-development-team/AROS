@@ -4,7 +4,7 @@ TOP=../..
 include $(TOP)/config/make.cfg
 
 ifeq ($(FLAVOUR),native)
-SUBDIRS=
+SUBDIRS=     iffparse
 else
 SUBDIRS=icon iffparse
 endif
