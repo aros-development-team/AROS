@@ -67,7 +67,7 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q
 	
 $(OBJDIR)/xshm.o	: xshm.c
-	$(CC) $(COMMON_CFLAGS)  -c $(XSHM_INCLUDES) xshm.c -o $(OBJDIR)/xshm.o
+	$(CC) $(COMMON_CFLAGS)  -c -I$(GENDIR)/include $(XSHM_INCLUDES) xshm.c -o $(OBJDIR)/xshm.o
 	
 libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
