@@ -9,6 +9,7 @@
 #include <exec/memory.h>
 #include <aros/libcall.h>
 #include <aros/machine.h>
+#include <aros/config.h>
 #include <proto/exec.h>
 #include "exec_pdefs.h"
 #include "etask.h"
@@ -23,9 +24,6 @@
 #   define DEBUG 1
 #endif
 #include <aros/debug.h>
-
-/* if #define fills the unused stack with 0xE1 */
-#define STACKSNOOP
 
 /*****************************************************************************
 
@@ -195,7 +193,7 @@
 	task->tc_SPReg = (UBYTE *)(task->tc_SPLower) - SP_OFFSET;
 #endif
 
-#ifdef STACKSNOOP
+#if AROS_STACK_DEBUG
     {
         UBYTE *startfill, *endfill;
 
