@@ -182,7 +182,12 @@ Class *ZUNE_GetBuiltinClass(ClassID classid, struct Library *mb)
         cl = ZUNE_MakeBuiltinClass(classid, mb);
 
 	if (cl)
+	{
 	    ZUNE_AddBuiltinClass(cl, mb);
+
+	    /* Increase the reference counter */
+	    cl->cl_Dispatcher.h_Data++;
+	}
     }
 
     ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -236,7 +241,8 @@ Class *ZUNE_MakeBuiltinClass(ClassID classid, struct Library *MUIMasterBase)
                 cl->cl_Dispatcher.h_Entry    = (HOOKFUNC)metaDispatcher;
                 cl->cl_Dispatcher.h_SubEntry = builtins[i]->dispatcher;
 #endif
-                cl->cl_Dispatcher.h_Data     = mb;
+                /* Use this as a reference counter */
+                cl->cl_Dispatcher.h_Data     = 0;
 	    }
 
 	    break;

@@ -56,17 +56,25 @@
     {
         Class *super = cl->cl_Super;
 
-	ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
-
-        if (FreeClass(cl))
+	if (--cl->cl_Dispatcher.h_Data == 0)
 	{
-            CloseLibrary(MUIMasterBase);
-	    if (strcmp(super->cl_ID, ROOTCLASS) != 0)
-	        MUI_FreeClass(super);
+  	    ZUNE_RemoveBuiltinClass(cl, MUIMasterBase);
+
+	    if (FreeClass(cl))
+	    {
+                CloseLibrary(MUIMasterBase);
+	        if (strcmp(super->cl_ID, ROOTCLASS) != 0)
+	            MUI_FreeClass(super);
+	    }
+            else
+	    {
+	        /* Re-add the class to the list since freeing it failed */
+                ZUNE_AddBuiltinClass(cl, MUIMasterBase);
+
+		/* And also increase the reference counter again */
+		cl->cl_Dispatcher.h_Data++;
+	    }
 	}
-        else
-	    /* Re-add the class to the list since freeing it failed */
-            ZUNE_AddBuiltinClass(cl, MUIMasterBase);
 
         ReleaseSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
     }
