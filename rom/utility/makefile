@@ -67,13 +67,13 @@ all: setup \
 	$(foreach f,$(FUNCTIONS) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
 	$(OSMODDIR)/utility.library
 
-$(OSMODDIR)/utility.library: $(foreach f,$(FILES) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-			     $(foreach f,$(FUNCTIONS) $(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-			     $(foreach f,$(ASM_FILES),$(OSGENDIR)/$(f).o)
+$(OSMODDIR)/utility.library: $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+			     $(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
+			     $(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o)
 	$(CC) $(ILDFLAGS) \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
 	$(foreach f,$(FUNCTIONS),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(ASM_FILES),$(OSGENDIR)/$(f).o) \
+	$(foreach f,$(ASM_FILES_EXIST),$(OSGENDIR)/$(f).o) \
 	$(LIBS) -o $@ 2>&1|tee utilitylib.err
 	@if test ! -s utilitylib.err; then rm utilitylib.err ; else true ; fi
 	@strip $@
