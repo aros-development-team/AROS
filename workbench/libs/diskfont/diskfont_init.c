@@ -87,6 +87,7 @@ const struct inittable datatable=
   I_END ()
 };
 
+
 #undef O
 #undef SysBase
 
@@ -122,7 +123,16 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
     */
-
+    
+    /* Hook descriptions */
+    struct AFHookDescr hdescrdef[] =
+    {
+    	{AFF_MEMORY, 	{{0L, 0L}, (void*)MemoryFontFunc, 0L, 0L}},
+    	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc,	0L,	0L}},  	
+    };
+    
+	UWORD idx;
+	
     /* Keep compiler happy */
     version=0;
 
@@ -134,15 +144,22 @@ AROS_LH1(struct DiskfontBase_intern *, open,
         return(NULL);
 
     if (!GfxBase)
-	GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+    GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
     if (!GfxBase)
 	return(NULL);
 
     if (!UtilityBase)
 	UtilityBase = OpenLibrary("utility.library", 37);
     if (!UtilityBase)
-	return(NULL);
+		return(NULL);
 
+	/* Insert the fonthooks into the DiskfontBase */
+
+	for (idx = 0; idx < NUMFONTHOOKS; idx ++)
+	{
+		LIBBASE->hdescr[idx] = hdescrdef[idx];
+	}
+	
     LIBBASE->dsh.h_Entry = (void *)dosstreamhook;
     LIBBASE->dsh.h_Data = DOSBase;
 

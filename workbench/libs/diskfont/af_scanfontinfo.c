@@ -31,20 +31,22 @@ BOOL ScanFontInfo
     
     WORD  retval;
 
+	UWORD idx;
+	
     struct AFHookDescr      *afhd;
     struct FontInfoNode     *finode;
     
     struct FontHookCommand  fhc;
 
-    /* Initialize the hook pointer */
-    afhd = hdescr;
-    
     fhc.fhc_Flags = userflags;
 
     /* Execute all fitting hooks.*/
     
-    while (afhd->ahd_Hook && success)
+    
+    for (idx = 0; idx < NUMFONTHOOKS; idx ++)
     {
+    	afhd = &DFB(DiskfontBase)->hdescr[idx];
+    	
         /* Call this hook only if it has the flags input by the user */
         if (afhd->ahd_Flags == ( afhd->ahd_Flags & userflags ) )
         {
@@ -56,7 +58,7 @@ BOOL ScanFontInfo
             (
                 CallHookPkt
                 (
-                    afhd->ahd_Hook,
+                    &afhd->ahd_Hook,
                     &fhc,
                     DFB(DiskfontBase)
                 )
@@ -111,7 +113,7 @@ BOOL ScanFontInfo
                             /* Read the font description */
                             retval = CallHookPkt
                             (
-                                afhd->ahd_Hook,
+                                &afhd->ahd_Hook,
                                 &fhc,
                                 DFB(DiskfontBase)
                             );
@@ -211,16 +213,13 @@ BOOL ScanFontInfo
       
                 CallHookPkt
                 (
-                    afhd->ahd_Hook,
+                    &afhd->ahd_Hook,
                     &fhc,
                     DFB(DiskfontBase)
                 );
             }
         }
-        
-        /* Execute next hook */
-        afhd ++;
-    }
+	}  /* for (idx = 0; idx < NUMFONTHOOKS; idx ++) */
     
     return (success);
 }

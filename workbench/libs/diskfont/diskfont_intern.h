@@ -6,55 +6,46 @@
 #endif
 
 #ifndef   PROTO_EXEC_H
-#include  <proto/exec.h>
+#	include  <proto/exec.h>
 #endif
-
 #ifndef   PROTO_GRAPHICS_H
-#include  <proto/graphics.h>
+#	include  <proto/graphics.h>
 #endif
-
 #ifndef   PROTO_UTILITY_H
-#include  <proto/utility.h>
+#	include  <proto/utility.h>
 #endif
-
 #ifndef   PROTO_DOS_H
-#include  <proto/dos.h>
+#	include  <proto/dos.h>
 #endif
-
 #ifndef   PROTO_ALIB_H
-#include  <proto/alib.h>
+#	include  <proto/alib.h>
 #endif
-
 #ifndef		PROTO_AROSSUPPORT_H
-#include	<proto/arossupport.h>
+#	include	<proto/arossupport.h>
 #endif
-
 #ifndef   GRAPHICS_TEXT_H
-#include  <graphics/text.h>
+#	include  <graphics/text.h>
 #endif
-
 #ifndef   GRAPHICS_GFXBASE_H
-#include  <graphics/gfxbase.h>
+#	include  <graphics/gfxbase.h>
 #endif
-
 #ifndef   DISKFONT_DISKFONT_H
-#include  <diskfont/diskfont.h>
+#	include  <diskfont/diskfont.h>
 #endif
-
 #ifndef   EXEC_MEMORY_H
-#include  <exec/memory.h>
+#	include  <exec/memory.h>
 #endif
-
 #ifndef   DOS_DOS_H
-#include  <dos/dos.h>
+#	include  <dos/dos.h>
 #endif
-
 #ifndef   STRING_H
-#include  <string.h>
+#	include  <string.h>
 #endif
-
 #ifndef		AROS_LIBCALL_H
-#include	<aros/libcall.h>
+#	include	<aros/libcall.h>
+#endif
+#ifndef		AROS_ASMCALL_H
+#	include	<aros/asmcall.h>
 #endif
 
 
@@ -70,6 +61,8 @@
 /* Constants  */
 /**************/
 
+/* Number of font hooks used */
+#define NUMFONTHOOKS 2
 
 /* Flags for the FontInfoNode->Flags field */
 
@@ -156,7 +149,7 @@ struct AFHookDescr
     */
     
     ULONG         ahd_Flags;
-    struct Hook   *ahd_Hook;
+    struct Hook   ahd_Hook;
 };
 
 
@@ -265,6 +258,17 @@ struct AF_Lists
 
 struct DiskfontBase_intern; /* prerefrence */
 
+AROS_UFP3(LONG, MemoryFontFunc,
+    AROS_UFPA(struct Hook *,				h, 				A0),
+    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
+    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+);
+
+AROS_UFP3(LONG, DiskFontFunc,
+    AROS_UFPA(struct Hook *,				h, 				A0),
+    AROS_UFPA(struct FontHookCommand *,		fhc,			A2),
+    AROS_UFPA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
+);
 
 BOOL  ScanFontInfo(ULONG, struct MinList *, struct MinList *, struct MinList *, struct DiskfontBase_intern *);
 
@@ -279,11 +283,6 @@ VOID  UpdatePointers    (UBYTE *, ULONG, struct AF_Lists *, struct DiskfontBase_
 
 struct FontDescrHeader *ReadFontDescr(BPTR,		struct DiskfontBase_intern *);
 VOID FreeFontDescr(struct FontDescrHeader *,	struct DiskfontBase_intern *);
-
-
-IPTR MemoryFontFunc ( struct Hook *,struct FontHookCommand *, struct DiskfontBase_intern *);
-IPTR DiskFontFunc   ( struct Hook *,struct FontHookCommand *, struct DiskfontBase_intern *);
-
 
 ULONG NumTags(struct TagItem *, struct DiskfontBase_intern *);
 ULONG CopyTagItems(struct TagItem *, struct TagItem *, struct DiskfontBase_intern *);
@@ -352,6 +351,7 @@ struct DiskfontBase_intern
     
     /* dosstreamhandler hook neede for endian io funcs */
     struct Hook		dsh;
+    struct AFHookDescr hdescr[NUMFONTHOOKS];
 };
 
 /* The following typedefs are necessary, because the names of the global

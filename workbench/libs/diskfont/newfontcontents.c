@@ -45,9 +45,8 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,DiskfontBase)
-    extern void aros_print_not_implemented (char *);
 
-    aros_print_not_implemented ("NewFontContents");
 	return (0L);
+
     AROS_LIBFUNC_EXIT
 } /* NewFontContents */

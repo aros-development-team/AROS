@@ -11,11 +11,10 @@
 
 /* Hook for reading fonts from memory */
 
-IPTR MemoryFontFunc
-(
-    struct Hook             *h,
-    struct FontHookCommand  *fhc,
-    struct DiskfontBase_intern *DiskfontBase
+AROS_UFH3(LONG, MemoryFontFunc,
+    AROS_UFHA(struct Hook *,				h, 				A0),
+    AROS_UFHA(struct FontHookCommand *,		fhc,			A2),
+    AROS_UFHA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
 )
 {
     /* Note: FALSE is default */

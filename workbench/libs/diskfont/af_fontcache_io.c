@@ -454,7 +454,9 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
     
     struct AFHookDescr      *afhd;
     struct FontHookCommand  fhc;
-    
+
+   	UWORD idx;
+   
     /* Last time a font source was updated */
     struct DateStamp fontsourcedate;
     
@@ -471,24 +473,22 @@ BOOL OKToReadCache(struct DiskfontBase_intern *DiskfontBase)
                     /* All initalisation went well */
                     retval = TRUE;
                     
-                    afhd = hdescr;
-
                     fhc.fhc_Command   = FHC_GETDATE;
                     fhc.fhc_UserData  = (APTR)&fontsourcedate;
-                
-                    while (afhd->ahd_Hook)
+         	
+                    for (idx = 0; idx < NUMFONTHOOKS; idx ++)
                     {
+                    	afhd = &DFB(DiskfontBase)->hdescr[idx];
+                    	
                         /* Only check for hooks reading from disk */
                         if (afhd->ahd_Flags & AFF_DISK)
                         {
-                            CallHookPkt(afhd->ahd_Hook, &fhc, DFB(DiskfontBase) );
+                            CallHookPkt(&afhd->ahd_Hook, &fhc, DFB(DiskfontBase) );
                       
                             /* Is cache older than fontsource ? */
                             if (CompareDates(&cachedate, &fontsourcedate) > 0)
                                 cacheok = FALSE;
                         }
-                        
-                        afhd ++;
                     }
                 }
             }

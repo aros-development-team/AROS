@@ -126,11 +126,10 @@ STATIC struct DiskFontHook_Data *AllocResources(struct DiskfontBase_intern *Disk
 
 
 
-IPTR DiskFontFunc
-(
-    struct Hook             *h,
-    struct FontHookCommand  *fhc,
-    struct DiskfontBase_intern *DiskfontBase
+AROS_UFH3(LONG, DiskFontFunc,
+    AROS_UFHA(struct Hook *,				h, 				A0),
+    AROS_UFHA(struct FontHookCommand *,		fhc,			A2),
+    AROS_UFHA(struct DiskfontBase_intern *,	DiskfontBase,	A1)
 )
 {
     /* Note: TRUE is default */
