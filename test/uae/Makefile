@@ -1,7 +1,14 @@
 
+CXX = g++
+CXXFLAGS = -Wall -g -DDEBUG
+
 all :
-	g++ -Wall -g test.cc -o t
+	$(CXX) $(CXXFLAGS) -S test.c -o test.S
+	$(CXX) $(CXXFLAGS) -c test.c -o test.o
+	$(CXX) $(CXXFLAGS) -O6 -S test.c -o test6.S
+	$(CXX) $(CXXFLAGS) -O6 -c test.c -o test6.o
+	$(CXX) $(CXXFLAGS) -O0 test.c -o t
 	./t
 
 clean :
-	-rm t
+	-rm t test.S test.o test6.S test6.o
