@@ -9,6 +9,7 @@ if [ -z "$1" ]; then
 fi
 
 type=`uname`
+proc=`uname -m`
 
 # Reasonable defaults
 CC="cc"
@@ -39,9 +40,14 @@ case "$type" in
 	COMMON_CFLAGS="-Wall -g -O0"
 	ILDFLAGS="-nostartfiles -nostdlib -Xlinker -i"
 	ARCH="linux"
-	KERNEL="i386-emul"
+	if [ "$proc" = "m68k" ]; then
+	    KERNEL="m68k-emul"
+	    MKDEPEND="makedepend -D__GNUC__ -D__mc68000__"
+	else
+	    KERNEL="i386-emul"
+	    MKDEPEND="makedepend -D__GNUC__ -Di386"
+        fi
 	X11LIBDIR="/usr/X11R6/lib"
-	MKDEPEND="makedepend -D__GNUC__ -Di386"
 	COMMON_AFLAGS="-x assembler-with-cpp"
 	;;
 "HP-UX" )
