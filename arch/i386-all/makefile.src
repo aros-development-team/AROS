@@ -37,7 +37,7 @@ CLIBFILES = \
 CFILES = $(wildcard $(foreach f,$(FILES),$(f).c))
 DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
-TESTS = stackswap runprocess
+TESTS = stackswap runprocess coretest
 
 all: setup $(MACHINE_H) machine.i \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
@@ -63,6 +63,9 @@ check : test
 test : $(TESTS)
 
 % : %.c
+	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+
+coretest : core.c
 	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
 
 runprocess : runprocess.c stackswap.c
