@@ -128,7 +128,8 @@ AROS_LH1(float, SPSqrt,
             X = (Res+Delta)^2 =
               = Res^2      + 2*Res*Delta + Delta^2
         */
-        X = ResSquared + (Res >> z)  + (Delta >> ++z);
+        X = ResSquared + (Res >> z)  + (Delta >> (z+1));
+        z++;
         if (X <= TargetMantisse)
         {
             Res += Delta;
