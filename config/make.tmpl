@@ -1359,6 +1359,39 @@ endif
 
 #-----------------------------------------------------------------------------
 
+#-----------------------------------------------------------------------------
+# Build icons.
+# - mmake is the mmaketarget
+# - icons is a list of icon base names (ie. without the .info suffix)
+# - dir is the destination directory
+#-----------------------------------------------------------------------------
+
+%define build_icons mmake=/A icons=/A dir=/A
+
+%buildid targets="%(mmake) %(mmake)-setup %(mmake)-clean"
+
+BD_OBJS$(BDID) := $(foreach icon, %(icons), %(dir)/$(icon).info)
+
+#MM %(mmake) : %(mmake)-setup
+
+%(mmake) : $(BD_OBJS$(BDID))
+
+%(dir)/%.info : %.info.src %.png
+	@$(ECHO) Creating $(notdir $@)...
+	@$(ILBMTOICON) $+ $@
+
+#MM %(mmake)-setup
+%rule_makedirs dirs=%(dir) setuptarget=%(mmake)-setup
+
+#MM
+%(mmake)-clean ::
+	@$(RM) $(BD_OBJS$(BDID))
+
+.PHONY: %(mmake)
+
+%end
+
+#-----------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------
 # Compile files for a arch specific replacement of code for a module
