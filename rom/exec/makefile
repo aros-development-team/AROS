@@ -13,7 +13,7 @@ LIBS = -L$(LIBDIR) -larosc
 FILES = execstrap_res execstrap_init execstrap_end
 
 FUNCTIONS = \
-	initstruct makelibrary makefunctions findresident initresident \
+	initcode initstruct makelibrary makefunctions findresident initresident \
 	setintvector addintserver remintserver \
 	allocmem freemem availmem allocentry freeentry typeofmem \
 	addmemlist addmemhandler remmemhandler \
