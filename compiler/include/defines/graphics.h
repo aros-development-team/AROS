@@ -74,6 +74,11 @@
 	AROS_LCA(struct TextAttr *, textAttr, A0), \
 	struct GfxBase *, GfxBase, 79, Graphics)
 
+#define BitMapScale(bitScaleArgs) \
+	AROS_LC1(void, BitMapScale, \
+	AROS_LCA(struct BitScaleArgs *, bitScaleArgs, A0), \
+	struct GfxBase *, GfxBase, 113, Graphics)
+
 #define BltBitMap(srcBitMap, xSrc, ySrc, destBitMap, xDest, yDest, xSize, ySize, minterm, mask, tempA) \
 	AROS_LC11(LONG, BltBitMap, \
 	AROS_LCA(struct BitMap *, srcBitMap, A0), \
@@ -88,6 +93,13 @@
 	AROS_LCA(ULONG          , mask, D7), \
 	AROS_LCA(PLANEPTR       , tempA, A2), \
 	struct GfxBase *, GfxBase, 5, Graphics)
+
+#define BltClear(memBlock, bytecount, flags) \
+	AROS_LC3(void, BltClear, \
+	AROS_LCA(void *, memBlock, A1), \
+	AROS_LCA(ULONG , bytecount, D0), \
+	AROS_LCA(ULONG , flags, D1), \
+	struct GfxBase *, GfxBase, 50, Graphics)
 
 #define ClearRectRegion(region, rectangle) \
 	AROS_LC2(BOOL, ClearRectRegion, \
@@ -110,9 +122,28 @@
 	AROS_LCA(struct TextFont *, textFont, A1), \
 	struct GfxBase *, GfxBase, 13, Graphics)
 
+#define CBump(ucl) \
+	AROS_LC1(void, CBump, \
+	AROS_LCA(struct UCopList *, ucl, A1), \
+	struct GfxBase *, GfxBase, 61, Graphics)
+
+#define CMove(ucl, reg, value) \
+	AROS_LC3(void, CMove, \
+	AROS_LCA(struct UCopList *, ucl,   A1), \
+	AROS_LCA(void *           , reg,   D0), \
+	AROS_LCA(WORD             , value, D1), \
+	struct GfxBase *, GfxBase, 62, Graphics)
+
 #define CreateRastPort() \
 	AROS_LC0(struct RastPort *, CreateRastPort, \
 	struct GfxBase *, GfxBase, 177, Graphics)
+
+#define CWait(ucl, v, h) \
+	AROS_LC3(void, CWait, \
+	AROS_LCA(struct UCopList *, ucl, A1), \
+	AROS_LCA(WORD             , v,   D0), \
+	AROS_LCA(WORD             , h,   D1), \
+	struct GfxBase *, GfxBase, 63, Graphics)
 
 #define DeinitRastPort(rp) \
 	AROS_LC1(void, DeinitRastPort, \
@@ -160,6 +191,16 @@
 	AROS_LCA(struct BitMap *, bm, A0), \
 	struct GfxBase *, GfxBase, 154, Graphics)
 
+#define FreeCopList(coplist) \
+	AROS_LC1(void, FreeCopList, \
+	AROS_LCA(struct CopList *, coplist, A0), \
+	struct GfxBase *, GfxBase, 91, Graphics)
+
+#define FreeCprList(cprList) \
+	AROS_LC1(void, FreeCprList, \
+	AROS_LCA(struct cprlist *, cprList, A0), \
+	struct GfxBase *, GfxBase, 94, Graphics)
+
 #define FreeGBuffers(anOb, rp, db) \
 	AROS_LC3(void, FreeGBuffers, \
 	AROS_LCA(struct AnimOb *, anOb, A0), \
@@ -178,6 +219,11 @@
 	AROS_LC1(void, FreeRastPort, \
 	AROS_LCA(struct RastPort *, rp, A1), \
 	struct GfxBase *, GfxBase, 180, Graphics)
+
+#define FreeVPortCopLists(vp) \
+	AROS_LC1(void, FreeVPortCopLists, \
+	AROS_LCA(struct ViewPort *, vp, A0), \
+	struct GfxBase *, GfxBase, 90, Graphics)
 
 #define GetAPen(rp) \
 	AROS_LC1(ULONG, GetAPen, \
@@ -335,8 +381,8 @@
 
 #define ScalerDiv(factor, numerator, denominator) \
 	AROS_LC3(UWORD, ScalerDiv, \
-	AROS_LCA(UWORD, factor     , D0), \
-	AROS_LCA(UWORD, numerator  , D1), \
+	AROS_LCA(UWORD, factor, D0), \
+	AROS_LCA(UWORD, numerator, D1), \
 	AROS_LCA(UWORD, denominator, D2), \
 	struct GfxBase *, GfxBase, 114, Graphics)
 
@@ -466,6 +512,12 @@
 	AROS_LCA(STRPTR           , string, A0), \
 	AROS_LCA(ULONG            , count, D0), \
 	struct GfxBase *, GfxBase, 9, Graphics)
+
+#define UCopperListInit(ucl, n) \
+	AROS_LC2(struct CopList *, UCopperListInit, \
+	AROS_LCA(struct UCopList *, ucl, A0), \
+	AROS_LCA(WORD             , n  , D0), \
+	struct GfxBase *, GfxBase, 99, Graphics)
 
 #define WaitTOF() \
 	AROS_LC0(void, WaitTOF, \
