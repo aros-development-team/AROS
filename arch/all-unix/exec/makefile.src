@@ -3,6 +3,8 @@ TOP=../../..
 
 include $(TOP)/config/make.cfg
 
+SUBDIRS = $(CPU)
+
 FILES = cause disable enable kernel preparecontext stackswap switch\
 	rawioinit rawputchar rawmaygetchar
 
@@ -29,6 +31,7 @@ print-flags:
 	@echo "CFLAGS2=$(CFLAGS2)"
 
 setup:
+	%subdirs_q "Setting up" setup
 	%mkdirs_q $(OSGENDIR) $(OSGENDIR)/exec
 	%add_objects $(ADD_OBJS)
 	%exclude_files	$(foreach f,$(REP_FILES),rom/exec/$(f))
