@@ -58,6 +58,7 @@ IPTR Levelmeter__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
     obj = (Object *)DoSuperNewTags
     (
         cl, obj, NULL,
+	MUIA_FillArea, FALSE,
         TAG_MORE, (IPTR) msg->ops_AttrList
     );
     
@@ -211,6 +212,20 @@ IPTR Levelmeter__MUIM_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg
     
     if (msg->flags & MADF_DRAWOBJECT)
     {
+    	/* Transparent edges */
+	
+	DoMethod(obj, MUIM_DrawParentBackground, x1, y1, 2, 1, x1, y1, 0);
+	DoMethod(obj, MUIM_DrawParentBackground, x1, y1 + 1, 1, 1, x1, y1 + 1, 0);
+	
+	DoMethod(obj, MUIM_DrawParentBackground, x2 - 1, y1, 2, 1, x2 - 1, y1, 0);
+    	DoMethod(obj, MUIM_DrawParentBackground, x2, y1 + 1, 1, 1, x2, y1 + 1, 0);
+
+	DoMethod(obj, MUIM_DrawParentBackground, x1, y2, 2, 1, x1, y2, 0);
+	DoMethod(obj, MUIM_DrawParentBackground, x1, y2 - 1, 1, 1, x1, y2 - 1, 0);
+	
+	DoMethod(obj, MUIM_DrawParentBackground, x2 - 1, y2, 2, 1, x2 - 1, y2, 0);
+	DoMethod(obj, MUIM_DrawParentBackground, x2, y2 - 1, 1, 1, x2, y2 - 1, 0);
+	
     	/* Outer frame */
 	
 	SetABPenDrMd(rp, _pens(obj)[MPEN_SHINE], 0, JAM1);
