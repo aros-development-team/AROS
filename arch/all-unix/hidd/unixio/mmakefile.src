@@ -1,0 +1,95 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+OBJDIR	:= $(GENDIR)/$(CURDIR)
+LIB	:= $(LIBDIR)/libunixiocl.a
+
+MY_INCLS := $(wildcard include/*.h)
+DEST_INC := $(foreach f,$(MY_INCLS), $(INCDIR)/hidd/$(notdir $f))
+GEN_INC	 := $(foreach f,$(MY_INCLS), $(GENINCDIR)/hidd/$(notdir $f))
+
+INIT_FILE := unixio_class
+END_FILE  := unixio_end
+
+# FILES	  := unixio_select
+
+# Replacement is probably of limited use in this directory, but I'll
+# support it nonetheless.
+ALL_FILES := $(FILES)
+%prepare_replace rom/hidd
+%filter_replace FILES
+
+%prepare_shlib unixiocl $(SHARED_HIDDCLASS)
+
+# ***** NATIVE SECTION *****
+ifeq ($(FLAVOUR),native)
+
+# Note this bit hasn't been written yet...
+
+LIBS := -L$(LIBDIR) -lunixiocl
+LIBLIST := unixiocl hiddcl amiga
+LIBDEPS := $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+OBJS := $(foreach f,$(FILES) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+$(OSMODDIR)/unixio.class: $(OBJS)
+	@$(ECHO) "Building $(notdir $@)..."
+	@$(CC) $(ILDFLAGS) -Xlinker -M $(INITFUNC) $(ENDFUNC) $(LIBS) \
+	    -o $@ 2>&1 |tee unixiocl.map
+	@$(IF) $(TEST) ! -s unixiocl.map; then $(RM) unixiocl.map; else true; fi
+	@$(STRIP) $@
+
+else
+
+OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+
+# ****** END Not-Native
+endif
+
+#MM kernel-hidd : setup includes kernel-hidd-$(ARCH)-$(CPU)
+kernel-hidd:
+	@$(NOP)
+
+#MM
+kernel-hidd-linklib : show-flags $(LIB)
+
+DEPS := $(foreach f, $(INIT_FILE) $(FILES) $(END_FILE), $(OBJDIR)/$(f).d)
+
+$(LIB): $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
+#MM
+includes-copy : $(DEST_INC) $(GEN_INC)
+
+$(INCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+$(GENINCDIR)/hidd/%.h : include/%.h
+	$(CP) include/$(notdir $<) $@
+
+#MM
+setup-includes :
+	%mkdirs_q $(GENINCDIR) $(INCDIR) $(GENINCDIR)/hidd $(INCDIR)/hidd
+
+#MM
+clean ::
+	-$(RM) $(OBJDIR) *.err $(LIB) *.s
+
+$(OBJDIR)/%.o : %.c
+	%compile_q 
+
+%asm_rule "$(FILES) $(INIT_FILE) $(END_FILE)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+$(OBJDIR)/%.d : %.c
+	%mkdepend_q
+
+show-flags :
+	@$(ECHO) "CFLAGS=$(CFLAGS)"
+
+%common
+%include_deps
