@@ -52,7 +52,8 @@ if [ $hitoffset -lt 0 ]; then
     exit 1;
 fi
 
-objdump --source --line-numbers "$module" | gawk 'BEGIN { \
+objdump --source --line-numbers "$module" | \
+gawk 'BEGIN { \
     lastoff=0; \
     hitoffset='$hitoffset'; \
     found=0; \
@@ -67,15 +68,9 @@ objdump --source --line-numbers "$module" | gawk 'BEGIN { \
     split($0,a,":"); \
     file=a[1]; \
     line=int(a[2]); \
+    next \
 } \
-/^[ \t]+/ { \
-    cline[0]=cline[1]; \
-    cline[1]=cline[2]; \
-    cline[2]=cline[3]; \
-    cline[3]=$0; \
-    line ++; \
-} \
-/^[0-9a-f]+ / { \
+/^[ \t]*[0-9a-f]+:?/ { \
     asmline[0]=asmline[1]; \
     asmline[1]=asmline[2]; \
     asmline[2]=asmline[3]; \
@@ -99,10 +94,19 @@ objdump --source --line-numbers "$module" | gawk 'BEGIN { \
 	    print; \
 	} \
 	found=1; \
-	exit (0); \
+	while (getline > 0); \
+	nextfile; \
     } \
     symbol=$2; \
     lastoff=off; \
+    next; \
+} \
+ { \
+    cline[0]=cline[1]; \
+    cline[1]=cline[2]; \
+    cline[2]=cline[3]; \
+    cline[3]=$0; \
+    line ++; \
 } \
 END { \
     if (!found) \
@@ -117,7 +121,9 @@ function hex2int(str    ,x,n) { \
     n=0; \
     while(x!="") \
     { \
-	n=n*16 + index("0123456789abcdef",tolower(substr(x,1,1)))-1; \
+	d=index("0123456789abcdef",tolower(substr(x,1,1)))-1; \
+	if (d < 0) break; \
+	n=n*16 + d;
 	x=substr(x,2); \
     } \
     #print "str="str"  n="n; \
