@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: List the contents of a directory
-    Lang: English
+    List the contents of a directory.
 */
 /*****************************************************************************
 
@@ -101,15 +100,6 @@
         Dir
 
     INTERNALS
-
-    HISTORY
-
-    Dec 2000  SDuvan  --  Added options KEYS, SINCE, UPTO, SUB, and TO.
-                          Reworked and corrected the behaviour of LFORMAT and
-			  restructured most of the code.
-
-    Feb 2001  stegerg --  Added support for the ALL option. Now List should
-                          be 100% finished.
 
 ******************************************************************************/
 
@@ -779,22 +769,26 @@ int __nocommandline;
 
 int main(void)
 {
-    IPTR args[NOOFARGS] = { NULL,          // ARG_DIR
-			    NULL,          // ARG_PAT
-			    (IPTR)FALSE,   // ARG_KEYS
-			    (IPTR)FALSE,   // ARG_DATES
-			    (IPTR)FALSE,   // ARG_NODATES
-			    NULL,          // ARG_TO
-			    NULL,          // ARG_SUB
-			    NULL,          // ARG_SINCE
-			    NULL,          // ARG_UPTO
-			    (IPTR)FALSE,   // ARG_QUICK
-			    (IPTR)FALSE,   // ARG_BLOCK
-			    (IPTR)FALSE,   // ARG_NOHEAD
-			    (IPTR)FALSE,   // ARG_FILES
-			    (IPTR)FALSE,   // ARG_DIRS
-			    (IPTR)FALSE,   // ARG_LFORMAT
-                            (IPTR)FALSE }; // ARG_ALL
+    IPTR args[NOOFARGS] =
+    {
+        (IPTR) NULL,    // ARG_DIR
+        (IPTR) NULL,    // ARG_PAT
+               FALSE,   // ARG_KEYS
+               FALSE,   // ARG_DATES
+               FALSE,   // ARG_NODATES
+        (IPTR) NULL,    // ARG_TO
+        (IPTR) NULL,    // ARG_SUB
+        (IPTR) NULL,    // ARG_SINCE
+        (IPTR) NULL,    // ARG_UPTO
+               FALSE,   // ARG_QUICK
+               FALSE,   // ARG_BLOCK
+               FALSE,   // ARG_NOHEAD
+               FALSE,   // ARG_FILES
+               FALSE,   // ARG_DIRS
+               FALSE,   // ARG_LFORMAT
+               FALSE    // ARG_ALL
+    };
+        
     struct RDArgs *rda;		       
 
     LONG     error = RETURN_OK;

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: English
 */
 
 /******************************************************************************
@@ -42,10 +39,6 @@
 
     INTERNALS
 
-    HISTORY
-
-    01.05.2000  SDuvan  implemented
-
 ******************************************************************************/
 
 #include <dos/dos.h>
@@ -65,7 +58,7 @@ int __nocommandline;
 int main(void)
 {
     int  retval = RETURN_OK;
-    IPTR args[] = { NULL, NULL };
+    IPTR args[] = { (IPTR) NULL, (IPTR) NULL };
     struct RDArgs *rda;
     
     rda = ReadArgs("DRIVE/A,NAME/A", args, NULL);
