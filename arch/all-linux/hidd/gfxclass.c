@@ -214,13 +214,16 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 {
 
     BOOL displayable;
+    BOOL framebuffer;
     
     struct TagItem tags[2];
     struct pHidd_Gfx_NewBitMap p;
     
 
     displayable = GetTagData(aHidd_BitMap_Displayable, FALSE, msg->attrList);
-    if (displayable) {
+    framebuffer = GetTagData(aHidd_BitMap_FrameBuffer, FALSE, msg->attrList);
+    if (framebuffer)
+    {
 	tags[0].ti_Tag	= aHidd_BitMap_ClassPtr;
 	tags[0].ti_Data = (IPTR)LSD(cl)->bmclass;
 	
@@ -232,6 +235,20 @@ static OOP_Object *gfxhidd_newbitmap(OOP_Class *cl, OOP_Object *o, struct pHidd_
 	
 	msg = &p;
     }
+    else if (displayable)
+    {
+    	tags[0].ti_Tag = aHidd_BitMap_ClassID;
+	tags[0].ti_Data = CLID_Hidd_ChunkyBM;
+
+	tags[1].ti_Tag	= TAG_MORE;
+	tags[1].ti_Data = (IPTR)msg->attrList;
+
+	p.mID = msg->mID;
+	p.attrList = tags;
+	
+	msg = &p;	
+    }
+    
     return (OOP_Object *)OOP_DoSuperMethod(cl, o, (OOP_Msg)msg);
 }
 
@@ -444,6 +461,7 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd)
     
     switch (fsi->visual) {
     	case FB_VISUAL_TRUECOLOR:
+    	case FB_VISUAL_DIRECTCOLOR:
 	    pf->red_mask	= bitfield2mask(&vsi->red);
 	    pf->green_mask	= bitfield2mask(&vsi->green);
 	    pf->blue_mask	= bitfield2mask(&vsi->blue);
@@ -493,7 +511,6 @@ static BOOL get_pixfmt(HIDDT_PixelFormat *pf, struct linux_staticdata *fsd)
     
     	case FB_VISUAL_MONO01:
     	case FB_VISUAL_MONO10:
-    	case FB_VISUAL_DIRECTCOLOR:
 	    kprintf("!!! FB: UNHANDLED GRAPHTYPE :%d !!!\n", fsi->visual);
 	    success = FALSE;
 	    break;
