@@ -80,17 +80,19 @@ VOID HIDD_Serial_DisposeUnit(Object *obj, Object *unit)
 
 /********************** Stubs for serial unit **********************/
 
-BOOL HIDD_SerialUnit_Init(Object *obj, VOID * DataReceived, VOID * WriteData)
+BOOL HIDD_SerialUnit_Init(Object *obj, VOID * DataReceived, VOID * DataReceivedUserData, VOID * WriteData, VOID * WriteDataUserData)
 {
     static MethodID mid = 0;
     struct pHidd_SerialUnit_Init p;
     
     if(!mid) mid = GetMethodID(IID_Hidd_SerialUnit, moHidd_SerialUnit_Init);
         
-    p.mID      = mid;
-    p.DataReceived = DataReceived;
-    p.WriteData    = WriteData;
-
+    p.mID      			= mid;
+    p.DataReceived 		= DataReceived;
+    p.DataReceivedUserData 	= DataReceivedUserData;
+    p.WriteData    		= WriteData;
+    p.WriteDataUserData 	= WriteDataUserData;
+    
     return((BOOL) DoMethod(obj, (Msg) &p));
 }
 /***************************************************************/

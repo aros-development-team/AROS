@@ -62,13 +62,13 @@ char * unitname[] =
 /*************************** Classes *****************************/
 
 /******* SerialUnit::New() ***********************************/
-static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
+static Object *serialunit_new(Class *cl, Object *obj, struct pHidd_Serial_NewUnit *msg)
 {
   struct HIDDSerialUnitData * data;
   static const struct TagItem tags[] = {{ TAG_END, 0}};
   
   EnterFunc(bug("SerialUnit::New()\n"));
-  D(bug("!!!!Request for unit number %d\n",*msg));
+  D(bug("!!!!Request for unit number %d\n",msg->unitnum));
 
   obj = (Object *)DoSuperMethod(cl, obj, (Msg)msg);
 
@@ -78,7 +78,7 @@ static Object *serialunit_new(Class *cl, Object *obj, ULONG *msg)
     
     data = INST_DATA(cl, obj);
     
-    data->unitnum = *msg;
+    data->unitnum = msg->unitnum;
 
     D(bug("Opening %s.\n",unitname[data->unitnum]));
 
@@ -223,9 +223,12 @@ BOOL serialunit_init(Class *cl, Object *o, struct pHidd_SerialUnit_Init *msg)
   struct HIDDSerialUnitData * data = INST_DATA(cl, o);
   
   EnterFunc(bug("SerialUnit::Init()\n"));
+  
   data->DataReceivedCallBack = msg->DataReceived;
+  data->DataReceivedUserData = msg->DataReceivedUserData;
   data->DataWriteCallBack    = msg->WriteData;
-
+  data->DataWriteUserData    = msg->WriteDataUserData;
+  
   ReturnBool("SerialUnit::Init()", TRUE);
 }
 
@@ -502,7 +505,7 @@ AROS_UFH3(void, serialunit_receive_data,
   */
 
   if (NULL != data->DataReceivedCallBack)
-    data->DataReceivedCallBack(buffer, len, data->unitnum);
+    data->DataReceivedCallBack(buffer, len, data->unitnum, data->DataReceivedUserData);
 
   /*
   ** I want to be notified when the next data are coming in.
@@ -534,7 +537,7 @@ AROS_UFH3(void, serialunit_write_more_data,
   D(bug("Asking for more data to be written to unit %d\n",data->unitnum));
 
   if (NULL != data->DataWriteCallBack)
-    data->DataWriteCallBack(data->unitnum);
+    data->DataWriteCallBack(data->unitnum, data->DataWriteUserData);
 }
 
 
