@@ -5,15 +5,15 @@
     Desc: Diskfont initialization code.
     Lang: English.
 */
+#include "initstruct.h"
+#include "diskfont_intern.h"
+#include "libdefs.h"
 #include <stddef.h>
-#include <proto/exec.h>
 #include <exec/libraries.h>
 #include <exec/types.h>
 #include <exec/resident.h>
 #include <aros/libcall.h>
-#include "initstruct.h"
-#include "diskfont_intern.h"
-#include "libdefs.h"
+#include <proto/exec.h>
 
 #define DEBUG 1
 #include <aros/debug.h>
@@ -92,17 +92,17 @@ const struct inittable datatable=
 #undef SysBase
 
 AROS_LH2(struct DiskfontBase_intern *, init,
- AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
- AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, sysBase, 0, BASENAME)
+    AROS_LHA(struct DiskfontBase_intern *, LIBBASE, D0),
+    AROS_LHA(BPTR,               segList,   A0),
+    struct ExecBase *, SysBase, 0, BASENAME)
 {
-	D(bug("Inside initfunc"));
-	
     AROS_LIBFUNC_INIT
+    D(bug("Inside initfunc"));
+
     /* This function is single-threaded by exec by calling Forbid. */
 
     /* Store arguments */
-    LIBBASE->sysbase=sysBase;
+    LIBBASE->sysbase=SysBase;
     LIBBASE->seglist=segList;
 
     /* You would return NULL here if the init failed. */
@@ -123,25 +123,25 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	If you break the Forbid() another task may enter this function
 	at the same time. Take care.
     */
-    
+
     /* Hook descriptions */
     struct AFHookDescr hdescrdef[] =
     {
-    	{AFF_MEMORY, 	{{0L, 0L}, (void*)MemoryFontFunc, 0L, 0L}},
-    	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc,	0L,	0L}},  	
+	{AFF_MEMORY,	{{0L, 0L}, (void*)MemoryFontFunc, 0L, 0L}},
+	{AFF_DISK,		{{0L, 0L}, (void*)DiskFontFunc, 0L,     0L}},
     };
-    
+
 	UWORD idx;
-	
+
     /* Keep compiler happy */
     version=0;
 
 	D(bug("Inside openfunc"));
 
     if (!DOSBase)
-        DOSBase = OpenLibrary("dos.library", 37);
+	DOSBase = OpenLibrary("dos.library", 37);
     if (!DOSBase)
-        return(NULL);
+	return(NULL);
 
     if (!GfxBase)
     GfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
@@ -159,7 +159,7 @@ AROS_LH1(struct DiskfontBase_intern *, open,
 	{
 		LIBBASE->hdescr[idx] = hdescrdef[idx];
 	}
-	
+
     LIBBASE->dsh.h_Entry = (void *)dosstreamhook;
     LIBBASE->dsh.h_Data = DOSBase;
 
