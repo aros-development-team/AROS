@@ -20,7 +20,7 @@ setup-clib-linux-i386 :
 
 #MM
 clean ::
-	$(RM) $(TESTS)
+	-$(RM) $(TESTS)
 
 $(CLIBDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)

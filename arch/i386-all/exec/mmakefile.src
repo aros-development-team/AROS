@@ -23,7 +23,7 @@ setup-exec-linux-i386 :
 
 #MM
 clean ::
-	$(RM) $(TESTS)
+	-$(RM) $(TESTS)
 
 $(OBJDIR)/%.o : %.c
 	%compile_q opt=$(CFLAGS2)
