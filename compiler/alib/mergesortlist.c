@@ -172,18 +172,24 @@
     l2 = l1->mln_Succ;
     do
     {
-	if (compare(l1, l2, data) < 0)
-	{
-	    /* The 2 nodes are already in the right order, just 
-	       make a circular list out of them.  */
-	    l1->mln_Pred = l2;
-	}
-	else
+        /* It can happen that the 2 nodes are already in the right,
+           order and thus we only need to make a circular list out
+	   of them, or their order needs to be reversed, but
+	   in either case, the below line is necessary, because:
+	   
+	       1) In the first case, it serves to build the 
+	          circular list.
+		  
+	       2) In the 2nd case, it does hald the job of
+	          reversing the order of the nodes (the 
+		  other half is done inside the if block).  */
+        l1->mln_Pred = l2;
+	
+	if (compare(l1, l2, data) >= 0)
 	{
 	    /* l2 comes before l1, so rearrange them and
 	       make a circular list out of them.  */
 	    l1->mln_Succ = l2->mln_Succ;
-	    l1->mln_Pred = l2;
 	    l2->mln_Succ = l1;
 	    l2->mln_Pred = l1;
 	    
