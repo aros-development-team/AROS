@@ -39,6 +39,7 @@ extern const struct Resident
     Keymap_resident,
     Input_resident,
     Intuition_resident,
+    X11Hidd_resident,
     Console_resident,
     Mathffp_resident,
     Dos_resident,
@@ -67,6 +68,7 @@ static const struct Resident *romtagList[] =
     &Keymap_resident,			    /* ColdStart,   40   */
     &Input_resident,			    /* ColdStart,   30   */
     &Intuition_resident,                    /* ColdStart,   10   */
+    &X11Hidd_resident,			    /* ColdStart,   9	 */
     &Console_resident,                      /* ColdStart,   5    */
     &emul_handler_resident,                 /* ColdStart,   0    */
     &boot_resident,			    /* ColdStart,  -50   */
