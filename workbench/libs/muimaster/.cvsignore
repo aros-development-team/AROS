@@ -17,3 +17,5 @@ include
 wb
 *.map
 objs
+zunemaster.library
+zunemaster.library*
