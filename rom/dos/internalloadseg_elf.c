@@ -21,16 +21,6 @@
 #include <string.h>
 #include <stddef.h>
 
-/* Debugging */
-#define PRINT_SECTION_NAMES     0
-#define PRINT_STRINGTAB         0
-#define PRINT_SYMBOLTABLE       0
-#define PRINT_SYMBOLS           0
-#define LOAD_DEBUG_HUNKS        0
-#define PRINT_SECTIONS          0
-#define PRINT_HUNKS             0
-#define DEBUG_HUNKS             0
-
 #define SHT_PROGBITS    1
 #define SHT_SYMTAB      2
 #define SHT_STRTAB      3
@@ -116,7 +106,7 @@ struct symbol
     ULONG size;     /* How much memory does the symbol occupy */
     UBYTE info;     /* What kind of symbol is this ? (global, variable, etc) */
     UBYTE other;    /* undefined */
-    UWORD  shindex;  /* In which section is the symbol defined ? */
+    UWORD shindex;  /* In which section is the symbol defined ? */
 };
 
 struct relo
@@ -241,6 +231,7 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         eh->ident[3] != 'F'
     )
     {
+        kprintf("[ELF Loader] Not an elf object\n");
         SetIoErr(ERROR_NOT_EXECUTABLE);
         return 0;
     }
@@ -266,6 +257,25 @@ static int check_header(struct elfheader *eh, struct DosLibrary *DOSBase)
         #endif
     )
     {
+        kprintf("[ELF Loader] Object is of wrong type\n");
+        kprintf("[ELF Loader] EI_CLASS   is %d - should be %d\n", eh->ident[EI_CLASS],   ELFCLASS32);
+        kprintf("[ELF Loader] EI_VERSION is %d - should be %d\n", eh->ident[EI_VERSION], EV_CURRENT);
+        kprintf("[ELF Loader] type       is %d - should be %d\n", eh->type,              ET_REL);
+
+        kprintf("[ELF Loader] EI_DATA    is %d - should be %d\n", eh->ident[EI_DATA],
+        #if defined (__i386__)
+            ELFDATA2LSB);
+        #elif defined(__mc68000__)
+            ELFDATA2MSB);
+        #endif
+
+        kprintf("[ELF Loader] machine    is %d - should be %d\n", eh->machine,
+        #if defined (__i386__)
+            EM_386);
+        #elif defined(__mc68000__)
+            EM_68K);
+        #endif
+
         SetIoErr(ERROR_OBJECT_WRONG_TYPE);
         return 0;
     }
@@ -282,7 +292,6 @@ static int load_hunk
     struct DosLibrary  *DOSBase
 )
 {
-
     struct hunk *hunk;
 
     if (!sh->size)
@@ -310,7 +319,7 @@ static int load_hunk
     }
 
     SetIoErr(ERROR_NO_FREE_STORE);
-    
+
     return 0;
 }
 
@@ -332,31 +341,20 @@ static int relocate
     ULONG numrel = shrel->size / shrel->entsize;
     ULONG i;
 
-    //kprintf("Section %d has %d relocation entries\n", shrel_idx, numrel);
     for (i=0; i<numrel; i++, rel++)
     {
         struct symbol *sym = &symtab[ELF32_R_SYM(rel->info)];
         ULONG *p = (ULONG *)&section[rel->offset];
 	ULONG  s;
 
-        #if 0
-        kprintf("Processing relocation %d\n", i);
-        kprintf("rel->offset = 0x%08x - %d\n", rel->offset, rel->offset);
-	kprintf("rel->info   = 0x%08x - Type = %d - Sym = %d\n", rel->info, ELF32_R_TYPE(rel->info), ELF32_R_SYM(rel->info));
-        kprintf("sym->value  = 0x%08x - %d\n", sym->value, sym->value);
-        kprintf("sym->index  = %d\n", sym->shindex);
-        kprintf("dest section base   = %p\n", toreloc->addr);
-        kprintf("source section base = %p\n", sh[sym->shindex].addr);
-        #endif
-
         switch (sym->shindex)
         {
             case SHN_UNDEF:
-                kprintf("There are undefined symbols\n");
+                kprintf("[ELF Loader] There are undefined symbols\n");
                 return 0;
 
             case SHN_COMMON:
-                kprintf("There are COMMON symbols. This should't happen\n");
+                kprintf("[ELF Loader] There are COMMON symbols. This should't happen\n");
                 return 0;
 
             case SHN_ABS:
@@ -400,7 +398,7 @@ static int relocate
             #endif
 
             default:
-                kprintf("\007 Unrecognized relocation type %d\n", i, ELF32_R_TYPE(rel->info));
+                kprintf("[ELF Loader] Unrecognized relocation type %d\n", i, ELF32_R_TYPE(rel->info));
                 SetIoErr(ERROR_BAD_HUNK);
 		return 0;
         }
@@ -446,7 +444,6 @@ BPTR InternalLoadSeg_ELF
                 that only one symbol table per file is allowed. However, it
                 also states that this may change in future... we already handle it.
     */
-
     for (i = 0; i < eh.shnum; i++)
     {
         if (sh[i].type == SHT_SYMTAB)
@@ -473,7 +470,6 @@ BPTR InternalLoadSeg_ELF
                     offset += sym->size;
                 }
             }
-
         }
     }
 
@@ -487,7 +483,7 @@ BPTR InternalLoadSeg_ELF
         }
     }
 
-    /* Create a hunk for the COMMON symbols, it necessary */
+    /* Create a hunk for the COMMON symbols, if necessary */
     sh[eh.shnum].size  = offset;
     sh[eh.shnum].type  = SHT_NOBITS;
     sh[eh.shnum].addr  = NULL;
