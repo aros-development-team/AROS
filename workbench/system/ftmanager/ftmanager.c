@@ -1792,7 +1792,7 @@ ULONG flNew(Class *cl, Object *o, struct opSet *msg)
 	if (o)
 	{
 		FontListData *dat = INST_DATA(cl, o);
-		NewList(&dat->ScanDirTasks);
+		NewList((struct List *) &dat->ScanDirTasks);
 	}
 
 	DEBUG_FONTWINDOW(dprintf("FontList: created object 0x%lx.\n", o));
