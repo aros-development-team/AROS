@@ -29,7 +29,7 @@ extern void set_close_libraries(void);
 #define SETNAME(set) __##set##_SET__
 
 #define DECLARESET(set) \
-extern void * SETNAME(set)[];
+extern void * SETNAME(set)[] __attribute__((weak));
 
 #define DEFINESET(set) \
 void * SETNAME(set)[] __attribute__((weak))={0,0};
