@@ -911,8 +911,6 @@ readcache (Project * prj)
 
     if (!fh)
     {
-	struct stat st;
-
 	prj->topdir = (DirNode *) xmalloc (sizeof (DirNode));
 	NewList(&prj->topdir->subdirs);
 	prj->topdir->node.name = xstrdup ("");
