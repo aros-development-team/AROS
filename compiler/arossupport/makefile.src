@@ -6,7 +6,7 @@ include $(TOP)/config/make.cfg
 OBJDIR=$(GENDIR)/compiler/arossupport
 
 FILES = calcchecksum kprintf nastyfreemem \
-	purify removeslist debugmem \
+	purify removeslist debugmem rt \
 	_kprintf hexdump \
 	freestruct \
 	readbyte \

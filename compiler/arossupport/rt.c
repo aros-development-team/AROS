@@ -6,11 +6,9 @@
     Lang: english
 */
 #define AROS_ALMOST_COMPATIBLE
-
 #define ENABLE_RT 0	/* no RT inside this file */
+#define RT_INTERNAL 1
 #include <aros/rt.h>
-#undef RT_Init
-#undef RT_Leave
 
 #include <exec/lists.h>
 #include <aros/system.h>
@@ -22,47 +20,47 @@
 #include <proto/exec.h>
 #include <proto/arossupport.h>
 
-extern struct ExecBase * SysBase;
+static BOOL InitWasCalled;
 
-struct CallStack
+typedef struct
 {
-    char * Function;
-    char * File;
-    int    Line;
+    struct MinNode Node;
+    const char	 * File;
+    ULONG	   Line;
+}
+RTNode;
+
+typedef struct
+{
+    RTNode Node;
+    APTR   Memory;
+    ULONG  Size;
+    ULONG  Flags;
+}
+MemoryResource;
+
+static ULONG RT_Sizes[] =
+{
+    sizeof (MemoryResource),
 };
 
-#define KEEPDEPTH   6
-#define RT_STACKDEPTH	256
 
-struct RTNode
+typedef struct
 {
-    struct Node      Node;
-    const char	   * File;
-    int 	     Line;
-};
+    const char * Function;
+    const char * File;
+    ULONG	 Line;
+}
+RTStack;
 
-struct CallStack RT_CallStack[RT_STACKDEPTH];
-int		 RT_StackPtr;
+#define STACKDEPTH  256
 
-struct MemoryResource
-{
-    struct RTNode Node;
-    void	* Memory;
-    ULONG	  Size;
-};
+ULONG RT_StackPtr = STACKDEPTH;
+static RTStack RT_CallStack[STACKDEPTH];
 
-static struct List RT_Resources[RT_MAX];
-static int RT_Sizes[RT_MAX] =
-{
-    sizeof (struct MemoryResource),
-};
+struct MinList rtMemList;
 
-static void RT_ShowStack (struct RTNode *);
-static void RT_FreeResource (int rtt, struct RTNode *);
-static int InitWasCalled;
-
-/* Silently global functions */
-void RT_ShowRTStack (void);
+static void RT_FreeResource (int rtt, RTNode * rtnode);
 
 /*****************************************************************************
 
@@ -98,14 +96,12 @@ void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    int t;
-
-    for (t=0; t<RT_MAX; t++)
-	NEWLIST (&RT_Resources[t]);
+    if (InitWasCalled)
+	return;
 
     InitWasCalled = 1;
 
-    FindTask(NULL)->tc_UserData = RT_ShowRTStack;
+    NEWLIST(&rtMemList);
 } /* RT_Init */
 
 /*****************************************************************************
@@ -143,22 +139,21 @@ void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
-    int t;
+    RTNode * rt;
 
-    for (t=0; t<RT_MAX; t++)
-	NEWLIST (&RT_Resources[t]);
+    if (!InitWasCalled)
+	return;
 
-    InitWasCalled = 1;
-
-    FindTask(NULL)->tc_UserData = RT_ShowRTStack;
-} /* RT_Init */
+    ForeachNode (&rtMemList, rt)
+	RT_FreeResource (RTT_MEMORY, rt);
+} /* RT_Exit */
 
 /*****************************************************************************
 
     NAME */
 #include <aros/rt.h>
 
-	void RT_IntAdd (
+	IPTR RT_IntAdd (
 
 /*  SYNOPSIS */
 	int    rtt,
@@ -200,56 +195,48 @@ void RT_ShowRTStack (void);
 ******************************************************************************/
 {
     va_list args;
-    struct RTNode * rtnew;
-    int t;
+    RTNode * rtnew;
 
     if (!InitWasCalled)
-	return;
+	return FALSE;
 
     if (!(rtnew = AllocMem (RT_Sizes[rtt], MEMF_ANY)) )
     {
 	kprintf ("RT_IntAdd: Out of memory\n");
-	return;
+	return FALSE;
     }
 
     rtnew->File = file;
     rtnew->Line = line;
 
-#if 0
-    if (RT_StackPtr < KEEPDEPTH)
-    {
-	for (t=0; t<=RT_StackPtr; t++)
-	{
-	    rtnew->Stack[t] = RT_CallStack[t];
-	}
-
-	for ( ; t < KEEPDEPTH; t++)
-	    rtnew->Stack[t].Function = NULL;
-    }
-    else
-    {
-	for (t=0; t<KEEPDEPTH; t++)
-	{
-	    rtnew->Stack[t] = RT_CallStack[RT_StackPtr - (KEEPDEPTH-1) + t];
-	}
-    }
-#endif
-
     va_start (args, line);
 
     switch (rtt)
     {
-    case RTT_MEMORY: {
-	struct MemoryResource * rt = (struct MemoryResource *) rtnew;
+	case RTT_MEMORY:
+	{
+	    MemoryResource * rt = (MemoryResource *)rtnew;
 
-	rt->Memory = va_arg (args, APTR);
-	rt->Size = va_arg (args, ULONG);
+	    rt->Size = va_arg (args, ULONG);
+	    rt->Flags = va_arg (args, ULONG);
 
-	break; }
+	    rt->Memory = AllocMem (rt->Size, rt->Flags);
 
-    }
+	    if (!rt->Memory)
+	    {
+		FreeMem (rtnew, RT_Sizes[rtt]);
+		return NULL;
+	    }
+kprintf ("Allocated mem at %s:%d (%s:%d)\n", file, line, rt->Node.File, rt->Node.Line);
+	    AddTail ((struct List *)&rtMemList, (struct Node *)rtnew);
+
+	    return (IPTR)(rt->Memory);
+	}
+    } /* switch */
 
     va_end (args);
+
+    return 0;
 } /* RT_IntAdd */
 
 /*****************************************************************************
@@ -257,7 +244,7 @@ void RT_ShowRTStack (void);
     NAME */
 #include <aros/rt.h>
 
-	void RT_IntCheck (
+	IPTR RT_IntCheck (
 
 /*  SYNOPSIS */
 	int    rtt,
@@ -304,44 +291,56 @@ void RT_ShowRTStack (void);
     va_list args;
 
     if (!InitWasCalled)
-	return;
+	return FALSE;
 
     va_start (args, line);
 
     switch (rtt)
     {
-    case RTT_MEMORY: {
-	struct MemoryResource * rt;
-	APTR memory;
-	ULONG size;
-
-	memory = va_arg (args, APTR);
-	size = va_arg (args, ULONG);
-
-	ForeachNode (&RT_Resources[rtt], rt)
+	case RTT_MEMORY:
 	{
-	    if (rt->Memory == memory)
+	    MemoryResource * rt;
+	    APTR memory;
+	    ULONG size;
+
+	    memory = va_arg (args, APTR);
+	    size = va_arg (args, ULONG);
+
+	    ForeachNode (&rtMemList, rt)
 	    {
-		if (rt->Size == size)
-		    return;
+		if (rt->Memory == memory)
+		{
+		    if (rt->Size == size)
+			return TRUE;
 
-		kprintf ("RT: Size mismatch (%ld)\n", size);
-		kprintf ("    MemPtr=%p Size=%ld\n", rt->Memory, rt->Size);
-		/* RT_ShowStack (&rt->Node); */
+		    kprintf ("RTCheck: Size mismatch (Allocated=%ld, Check=%ld)\n"
+			    "    Check at %s:%d\n"
+			    "    Allocated at %s:%d\n"
+			    "    MemPtr=%p Size=%ld Flags=%08lx\n"
+			, rt->Size, size
+			, file, line
+			, rt->Node.File, rt->Node.Line
+			, rt->Memory, rt->Size, rt->Flags
+		    );
 
-		return;
+		    return FALSE;
+		}
 	    }
+
+	    kprintf ("RTCheck: Memory not found\n"
+		    "    Check at %s:%d\n"
+		    "    MemPtr=%p Size=%ld\n"
+		, file, line
+		, memory, size
+	    );
+
+	    return FALSE;
 	}
-
-	kprintf ("RT: Memory not found %p, Size=%ld\n", memory, size);
-	kprintf ("    %s:%d\n", file, line);
-	/* RT_ShowRTStack (); */
-
-	break; }
-
     }
 
     va_end (args);
+
+    return FALSE;
 } /* RT_IntCheck */
 
 /*****************************************************************************
@@ -349,7 +348,7 @@ void RT_ShowRTStack (void);
     NAME */
 #include <aros/rt.h>
 
-	void RT_IntFree (
+	IPTR RT_IntFree (
 
 /*  SYNOPSIS */
 	int    rtt,
@@ -394,50 +393,61 @@ void RT_ShowRTStack (void);
     va_list args;
 
     if (!InitWasCalled)
-	return;
+	return FALSE;
 
     va_start (args, line);
 
     switch (rtt)
     {
-    case RTT_MEMORY: {
-	struct MemoryResource * rt;
-	APTR memory;
-	ULONG size;
-
-	memory = va_arg (args, APTR);
-	size = va_arg (args, ULONG);
-
-	ForeachNode (&RT_Resources[rtt], rt)
+	case RTT_MEMORY:
 	{
-	    if (rt->Memory == memory)
+	    MemoryResource * rt;
+	    APTR memory;
+	    ULONG size;
+
+	    memory = va_arg (args, APTR);
+	    size = va_arg (args, ULONG);
+
+	    ForeachNode (&rtMemList, rt)
 	    {
-		if (rt->Size == size)
+		if (rt->Memory == memory)
 		{
-		    Remove ((struct Node *)rt);
-		    FreeMem (rt, RT_Sizes[rtt]);
-		    FreeMem (memory, size);
+		    if (rt->Size == size)
+		    {
+			Remove ((struct Node *)rt);
+			FreeMem (rt, RT_Sizes[rtt]);
+			FreeMem (memory, size);
+			return TRUE;
+		    }
 
-		    return;
+		    kprintf ("RTFree: Size mismatch (Allocated=%ld, Check=%ld)\n"
+			    "    Free at %s:%d\n"
+			    "    Allocated at %s:%d\n"
+			    "    MemPtr=%p Size=%ld Flags=%08lx\n"
+			, rt->Size, size
+			, file, line
+			, rt->Node.File, rt->Node.Line
+			, rt->Memory, rt->Size, rt->Flags
+		    );
+
+		    return FALSE;
 		}
-
-		kprintf ("RT: Size mismatch (%ld)\n", size);
-		kprintf ("    MemPtr=%p Size=%ld\n", rt->Memory, rt->Size);
-		/* RT_ShowStack (&rt->Node); */
-
-		return;
 	    }
+
+	    kprintf ("RTFree: Memory not found\n"
+		    "    Free at %s:%d\n"
+		    "    MemPtr=%p Size=%ld\n"
+		, file, line
+		, memory, size
+	    );
+
+	    return FALSE;
 	}
-
-	kprintf ("RT: Memory not found %p, Size=%ld\n", memory, size);
-	kprintf ("    %s:%d\n", file, line);
-	/* RT_ShowRTStack (); */
-
-	break; }
-
-    }
+    } /* switch */
 
     va_end (args);
+
+    return FALSE;
 } /* RT_IntFree */
 
 
@@ -484,14 +494,14 @@ void RT_ShowRTStack (void);
     if (!InitWasCalled)
 	return;
 
-    if (RT_StackPtr == RT_STACKDEPTH)
+    if (RT_StackPtr == 0)
 	return;
+
+    -- RT_StackPtr;
 
     RT_CallStack[RT_StackPtr].Function = function;
     RT_CallStack[RT_StackPtr].File     = file;
     RT_CallStack[RT_StackPtr].Line     = line;
-
-    RT_StackPtr ++;
 } /* RT_IntEnter */
 
 
@@ -532,14 +542,14 @@ void RT_ShowRTStack (void);
     if (!InitWasCalled)
 	return;
 
-    if (!RT_StackPtr)
+    if (RT_StackPtr == STACKDEPTH)
 	return;
-
-    RT_StackPtr --;
 
     RT_CallStack[RT_StackPtr].Function = NULL;
     RT_CallStack[RT_StackPtr].File     = NULL;
     RT_CallStack[RT_StackPtr].Line     = 0;
+
+    RT_StackPtr ++;
 } /* RT_IntLeave */
 
 
@@ -551,7 +561,7 @@ void RT_ShowRTStack (void);
 	void RT_ShowStack (
 
 /*  SYNOPSIS */
-	struct RTNode * node)
+	RTNode * node)
 
 /*  FUNCTION
 	Prints the contents of the callstack stored in the node.
@@ -577,6 +587,7 @@ void RT_ShowRTStack (void);
 
 ******************************************************************************/
 {
+#if 0
     int t;
 
     if (!InitWasCalled)
@@ -588,6 +599,7 @@ void RT_ShowRTStack (void);
 	    , node->Stack[t].File
 	    , node->Stack[t].Line
 	);
+#endif
 } /* RT_ShowStack */
 
 
@@ -651,7 +663,7 @@ void RT_ShowRTStack (void);
 
 /*  SYNOPSIS */
 	int rtt,
-	struct RTNode * rtnode)
+	RTNode * rtnode)
 
 /*  FUNCTION
 	Free a resource after the task that allocated it, died. Also
@@ -685,21 +697,23 @@ void RT_ShowRTStack (void);
 
     switch (rtt)
     {
-    case RTT_MEMORY: {
-	struct MemoryResource * rt = (struct MemoryResource *)rtnode;
+	case RTT_MEMORY:
+	{
+	    MemoryResource * rt = (MemoryResource *)rtnode;
 
-	/* Show the problem */
-	kprintf ("RT: Freeing memory %p, Size=%ld, allocated at\n"
-	    , rt->Memory
-	    , rt->Size
-	);
-	/* RT_ShowStack (rtnode); */
+	    /* Show the problem */
+	    kprintf ("RTExit: Freeing memory\n"
+		    "    Allocated at %s:%d\n"
+		    "    MemPtr=%p Size=%ld Flags=%08lx\n"
+		, rt->Node.File, rt->Node.Line
+		, rt->Memory, rt->Size, rt->Flags
+	    );
 
-	/* free the resource */
-	FreeMem (rt->Memory, rt->Size);
+	    /* free the resource */
+	    FreeMem (rt->Memory, rt->Size);
 
-	break; }
-
+	    break;
+	}
     }
 
 } /* RT_FreeResource */

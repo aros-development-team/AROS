@@ -10,27 +10,44 @@
 #   define ENABLE_RT	0
 #endif
 
-#define RTT_MEMORY	0
-#define RTT_MAX 	1
+#if ENABLE_RT || defined(RT_INTERNAL)
+#   ifndef EXEC_TYPES_H
+#	include <exec/types.h>
+#   endif
+
+#   define RTT_MEMORY	   0
+#   define RTT_MAX	   1
 
 void RT_Init (void);
 void RT_Exit (void);
-void RT_IntAdd (int rtt, char * file, int line, ...); /* Add a resource for tracking */
-void RT_IntCheck (int rtt, char * file, int line, ...); /* Check a resource before use */
-void RT_IntFree (int rtt, char * file, int line, ...); /* Stop tracking of a resource */
+IPTR RT_IntAdd (int rtt, char * file, int line, ...); /* Add a resource for tracking */
+IPTR RT_IntCheck (int rtt, char * file, int line, ...); /* Check a resource before use */
+IPTR RT_IntFree (int rtt, char * file, int line, ...); /* Stop tracking of a resource */
 void RT_IntEnter (char * functionname, char * filename, int line);
 void RT_Leave (void);
 
-#if ENABLE_RT
-#   define RT_Add(rtt, args...)    RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
-#   define RT_Check(rtt, args...)  RT_IntCheck (rtt, __FILE__, __LINE__, ##args)
-#   define RT_Free(rtt, args...)   RT_IntFree (rtt, __FILE__, __LINE__, ##args)
-#   define RT_Enter(fn)            RT_IntEnter (fn,__FILE__, __LINE__)
+#   if ENABLE_RT
+#	define RT_Add(rtt, args...)    RT_IntAdd (rtt, __FILE__, __LINE__, ##args)
+#	define RT_Check(rtt, args...)  RT_IntCheck (rtt, __FILE__, __LINE__, ##args)
+#	define RT_Free(rtt, args...)   RT_IntFree (rtt, __FILE__, __LINE__, ##args)
+#	define RT_Enter(fn)            RT_IntEnter (fn,__FILE__, __LINE__)
+
+#	ifndef PROTO_EXEC_H
+#	    include <proto/exec.h>
+#	endif
+#	undef AllocMem
+#	define AllocMem(size,flags)     (APTR)RT_Add(RTT_MEMORY,(ULONG)size,(ULONG)flags)
+#	undef FreeMem
+#	define FreeMem(ptr,size)        (void)RT_Free(RTT_MEMORY,(APTR)ptr,(ULONG)size)
+#   endif
 #else
-#   define RT_Add(rtt, args...)    /* eps */
-#   define RT_Check(rtt, args...)  /* eps */
-#   define RT_Free(rtt, args...)   /* eps */
-#   define RT_Enter()              /* eps */
+#   define RT_Init()                /* eps */
+#   define RT_Exit()                /* eps */
+#   define RT_Add(rtt, args...)     /* eps */
+#   define RT_Check(rtt, args...)   /* eps */
+#   define RT_Free(rtt, args...)    /* eps */
+#   define RT_Enter()               /* eps */
+#   define RT_Leave()               /* eps */
 #endif
 
 #endif /* AROS_RT_H */
