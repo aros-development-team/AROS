@@ -1,0 +1,136 @@
+<?xml version="1.0"?>
+<project>
+  <pomVersion>3</pomVersion>
+  <name>JGenerator</name>
+  <id>jgenerator</id>
+  <currentVersion>2.2p1</currentVersion>
+  <organization>
+    <name>SourceForge</name>
+    <url>http://sourceforge.net/projects/jgen/</url>
+  </organization>
+  <inceptionYear>2001</inceptionYear>
+  <package>org.openlaszlo.iv.flash</package>
+  
+  <shortDescription>JGenerator</shortDescription>
+  <description>
+    This is a modified version of the standard JGenerator
+    distribution.
+  </description>
+  
+  <url>http://sourceforge.net/projects/jgen/</url>
+  
+  <!--issueTrackingUrl>TDB-->
+  <siteAddress>http://sourceforge.net/projects/jgen/</siteAddress>
+  
+  <versions>
+    <version>
+      <id>2.2p1</id>
+      <name>2.2p1</name>
+      <tag>JGenerator_2_2p1</tag>
+    </version>
+  </versions>
+  
+  <developers>
+
+    <developer>
+      <name>Dmitry Skavish</name>
+      <id>skavish</id>
+    </developer>
+
+  </developers>
+
+  <contributors>
+    <contributor>
+      <name>Eric Bloch</name>
+      <organization>Laszlo Systems, Inc.</organization>
+    </contributor>
+
+    <contributor>
+      <name>Pablo Kang</name>
+      <organization>Laszlo Systems, Inc.</organization>
+    </contributor>
+    
+    <contributor>
+      <name>Henry Minsky</name>
+      <organization>Laszlo Systems, Inc.</organization>
+    </contributor>
+  </contributors>
+
+  <licenses>
+    <license>
+      <name>JGenerator Software License</name>
+      <url>http://www.flashgap.com/license.txt</url>
+    </license>
+  </licenses>
+
+  <dependencies>
+    
+    <dependency>
+      <groupId>batik</groupId>
+      <artifactId>batik-svggen</artifactId>
+      <version>1.5</version>
+    </dependency>
+
+    <dependency>
+      <id>commons-jexl</id>
+      <version>1.0</version>
+    </dependency>
+    
+    <dependency>
+      <id>log4j</id>
+      <version>1.2.5</version>
+    </dependency>
+    
+    <dependency>
+      <id>rhino</id>
+      <version>1.5R4.1</version>
+    </dependency>      
+
+    <dependency>
+      <id>fop</id>
+      <version>0.20.4</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>servletapi</groupId>
+      <artifactId>servletapi</artifactId>
+      <version>2.3</version>
+    </dependency>
+
+    <dependency>
+      <id>commons-jxpath</id>
+      <version>1.1</version>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+
+    <nagEmailAddress>
+      build-reports@laszlosystems.com
+    </nagEmailAddress>
+    
+    <sourceDirectory>src</sourceDirectory>
+    <sourceModifications>
+      <sourceModification>
+        <className>fakeClass</className>
+        <excludes>
+          <exclude>org/openlaszlo/iv/flash/commands/FOPCommand</exclude>
+          <exclude>org/openlaszlo/iv/flash/xml/**</exclude>
+          <exclude>org/openlaszlo/iv/flash/js/**</exclude>
+          <exclude>org/openlaszlo/iv/flash/url/JSUrl.*</exclude>
+          <exclude>org/openlaszlo/iv/flash/**/*Test.*</exclude>
+          <exclude>org/openlaszlo/iv/flash/context/**</exclude>
+          <exclude>org/openlaszlo/iv/flash/fop/SWFRenderer.*</exclude>
+        </excludes>
+      </sourceModification>
+      <sourceModification>
+        <className>com.enterprisedt.net.ftp</className>
+        <excludes>
+          <exclude>org/openlaszlo/iv/flash/url/FTPUrl.*</exclude>
+        </excludes>
+      </sourceModification>
+    </sourceModifications>
+
+  </build>
+</project>
