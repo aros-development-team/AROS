@@ -127,6 +127,9 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     {
 	cli=(struct CommandLineInterface *)AllocDosObject(DOS_CLI,NULL);
 	ENOMEM_IF(cli==NULL);
+	Forbid();
+	process->pr_TaskNum=DOSBase->dl_ProcCnt++;
+	Permit();
 	oldpath=NULL;
 	cli->cli_DefaultStack=defaults[9].ti_Data>>2;
 	if(me->pr_Task.tc_Node.ln_Type==NT_PROCESS)
@@ -197,9 +200,6 @@ ULONG argSize, APTR initialPC, APTR finalPC, struct DosLibrary *DOSBase);
     process->pr_SegList=(BPTR)defaults[0].ti_Data;
     process->pr_StackSize=defaults[9].ti_Data;
     process->pr_GlobVec=NULL;
-    Forbid();
-    process->pr_TaskNum=DOSBase->dl_ProcCnt++;
-    Permit();
     process->pr_StackBase=MKBADDR(process->pr_Task.tc_SPUpper);
     process->pr_Result2=0;
     process->pr_CurrentDir=(BPTR)defaults[8].ti_Data;
