@@ -1,5 +1,6 @@
 *.s
 *.map
 makefile
+libdefs.h
 aros_functable.c
 aros_endtag.c
