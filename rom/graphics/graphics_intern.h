@@ -30,7 +30,7 @@ struct GfxBase_intern
 {
     struct GfxBase 	 gfxbase;
     
-    /* Driver data shared betwwe all rastports (allocated once) */
+    /* Driver data shared between all rastports (allocated once) */
     APTR		*shared_driverdata;
 };
 
@@ -66,6 +66,8 @@ struct ViewPort;
 extern ULONG CalcHashIndex(ULONG n);
 
 /* Driver prototypes */
+extern BOOL driver_LateGfxInit(APTR, struct GfxBase *GfxBase);
+
 extern struct BitMap * driver_AllocBitMap (ULONG, ULONG, ULONG, ULONG,
 			struct BitMap *, struct GfxBase *);
 extern void driver_BltClear (void * memBlock, ULONG bytecount, ULONG flags,

@@ -16,9 +16,9 @@
 #define GFX_BASE_NAME GfxBase
 #endif
 
-#define InitGfxHidd(hiddBase) \
-    LP1( , BOOL, InitGfxHidd, \
-	struct Library *, (hiddBase), a0, \
+#define LateGfxInit(data) \
+    LP1( , BOOL, LateGfxInit, \
+	APTR, data, a0, \
 	GFX_BASE_NAME )
 
 #endif _GFX_PINLINES_H

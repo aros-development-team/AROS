@@ -28,8 +28,8 @@
     Prototypes
 */
 
-AROS_LP1(BOOL, InitGfxHidd,
-    AROS_LPA(struct Library *, hiddBase, A0),
+AROS_LP1(BOOL, LateGfxInit,
+    AROS_LPA(APTR, data, A0),
     struct GfxBase *, GfxBase, 181, Dos)
 
 #endif /* _GRAPHICS_PRIVATE_H */

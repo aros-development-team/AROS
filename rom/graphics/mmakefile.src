@@ -93,12 +93,12 @@ FUNCTIONS := \
 	gfxnew \
 	initarea \
 	initgels \
-	initgfxhidd \
 	initgmasks \
 	initmasks \
 	initview \
 	initvport \
 	initrastport \
+	lategfxinit \
 	loadrgb32 \
 	loadrgb4 \
 	move \
@@ -154,9 +154,9 @@ FUNCTIONS := \
 # END_DESC{localmakevar}
 
 ifeq ("$(FLAVOUR)","native")
-DEPLIBS :=
+DEPLIBS := $(LIBDIR)/libhiddgraphicsstubs.a
 else
-DEPLIBS :=
+DEPLIBS := $(LIBDIR)/libhiddgraphicsstubs.a
 endif
 
 # BEGIN_DESC{localmakevar}
@@ -189,11 +189,11 @@ endif
 # NO_FUNCTABLE := 1
 %genromlib_f
 
-#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)-$(CPU)
+#MM kernel-graphics-linklib : setup includes kernel-graphics-$(ARCH)
 kernel-graphics-linklib : show-flags $(LIB)
 	@$(NOP)
 
-#MM kernel-graphics-module : setup includes kernel-graphics-$(ARCH)-$(CPU)
+#MM kernel-graphics-module : setup includes kernel-graphics-$(ARCH)
 kernel-graphics-module : show-flags $(LIB) $(OSMODDIR)/$(OSMODULE)
 	@$(NOP)
 

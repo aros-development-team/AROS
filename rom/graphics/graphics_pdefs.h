@@ -19,9 +19,9 @@
     Defines
 */
 
-#define InitGfxHidd(hiddBase) \
-    AROS_LC1(BOOL, InitGfxHidd, \
-    AROS_LCA(struct Library *, hiddBase, A0), \
+#define LateGfxInit(data) \
+    AROS_LC1(BOOL, LateGfxInit, \
+    AROS_LCA(APTR, data, A0), \
     struct GfxBase *, GfxBase, 181, Graphics)
 
 #endif /* _GFX_PDEFS_H */
