@@ -19,19 +19,22 @@
 
 #define REGISTERTAB_IDCMP   	    IDCMP_MOUSEBUTTONS
 
-#define REGISTERTAB_EXTRA_HEIGHT    4
-#define REGISTERTABITEM_EXTRA_WIDTH 8
-#define REGISTERTAB_SPACE_LEFT 	    8
-#define REGISTERTAB_SPACE_RIGHT     8
+#define REGISTERTAB_EXTRA_HEIGHT     4
+#define REGISTERTAB_IMEXTRA_HEIGHT   2
+#define REGISTERTABITEM_EXTRA_WIDTH  8
+#define REGISTERTAB_SPACE_LEFT 	     8
+#define REGISTERTAB_SPACE_RIGHT      8
+#define REGISTERTAB_IMAGE_TEXT_SPACE 4
 
 /****************************************************************************************/
 
 struct RegisterTabItem
 {
     STRPTR  	    	    text;
+    Object  	    	    *image;
     WORD    	    	    textlen;
     WORD    	    	    x1, y1, x2, y2, w, h;
-    WORD    	    	    tx, ty;
+    WORD    	    	    tx, ty, ix, iy;
 };
 
 struct RegisterTab

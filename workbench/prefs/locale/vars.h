@@ -36,6 +36,7 @@ VAR struct List     	    	country_list, language_list, pref_language_list;
 VAR struct LocalePrefs	    	localeprefs;
 VAR WORD    	    	    	pages_left, pages_top, pages_width, pages_height;
 VAR WORD    	    	    	winwidth, winheight, buttonwidth, buttonheight;
+VAR BOOL    	    	    	truecolor;
 VAR UBYTE   	    	    	s[256];
 
 VAR LONG    	    	    	prog_exitcode;
