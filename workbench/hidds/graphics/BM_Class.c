@@ -2262,13 +2262,14 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 {
     WORD    	    	    x, y;
     UBYTE   	    	    *pixarray = msg->alpha;
-    ULONG    	    	    *buf;
+    ULONG    	    	    *buf, *xbuf;
     OOP_Object	    	    *gc = msg->gc;
     struct HIDDBitMapData   *data;
     HIDDT_Color     	     color;
     LONG 	    	     a_red, a_green, a_blue;
     LONG	    	     b_red, b_green, b_blue;
     WORD    	    	     type = 0;
+    PIXBUF_DECLARE_VARS
     
     data = OOP_INST_DATA(cl, o);
 
@@ -2304,23 +2305,28 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
     
     if (msg->invertalpha) type++;
     
-    buf = AllocVec(msg->width * sizeof(ULONG), MEMF_PUBLIC);    
+    PIXBUF_ALLOC(buf, msg->width * sizeof(ULONG), msg->height);
+    
     if (buf)
     {
     	HIDDT_DrawMode old_drmd = GC_DRMD(msg->gc);	
 	GC_DRMD(msg->gc) = vHidd_GC_DrawMode_Copy;
 
+    	xbuf = buf;
+	
     	for(y = msg->y; y < msg->y + msg->height; y++)
 	{
-	    if (type < 4)
+	    if ((type < 4) && PIXBUF_TIME_TO_START_PROCESS)
 	    {
+	    	WORD height = PIXBUF_LINES_TO_PROCESS;
+		
 		HIDD_BM_GetImage(o,
 	    	    		 (UBYTE *)buf,
-				 0,
+				 msg->width * sizeof(ULONG),
 				 msg->x,
 				 y,
 				 msg->width,
-				 1,
+				 height,
 				 vHidd_StdPixFmt_ARGB32);
 	    }
 	    
@@ -2334,7 +2340,7 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 
     	    		alpha = *pixarray++;
 
-    	    	    	destpix = buf[x];
+    	    	    	destpix = xbuf[x];
 			
     		    #if AROS_BIG_ENDIAN		
 			dst_red   = (destpix & 0x00FF0000) >> 16;
@@ -2356,7 +2362,7 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
 		    #endif
 
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
@@ -2369,7 +2375,7 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 
     	    		alpha = (*pixarray++) ^ 255;
 
-    	    	    	destpix = buf[x];
+    	    	    	destpix = xbuf[x];
 			
     		    #if AROS_BIG_ENDIAN		
 			dst_red   = (destpix & 0x00FF0000) >> 16;
@@ -2391,7 +2397,7 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
 		    #endif
 
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
@@ -2404,9 +2410,9 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 
     	    		alpha = *pixarray++;
 
-    	    	    	destpix = buf[x];
+    	    	    	destpix = xbuf[x];
     	    	    	if (alpha >= 0x80) destpix = ~destpix;
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
@@ -2419,9 +2425,9 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 
     	    		alpha = *pixarray++;
 
-    	    	    	destpix = buf[x];
+    	    	    	destpix = xbuf[x];
     	    	    	if (alpha < 0x80) destpix = ~destpix;
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
@@ -2444,7 +2450,7 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
 		    #endif
 
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
@@ -2467,30 +2473,43 @@ static VOID bitmap_putalphatemplate(OOP_Class *cl, OOP_Object *o,
 			destpix = (dst_blue << 24) + (dst_green << 16) + (dst_red << 8);
 		    #endif
 
-			buf[x] = destpix;
+			xbuf[x] = destpix;
 
 		    } /* for(x = 0; x < msg->width; x++) */
 		    break;
     	
 	    } /* switch(type) */
 	    
-	    HIDD_BM_PutImage(o,
-	    	    	     msg->gc,
-			     (UBYTE *)buf,
-			     0,
-			     msg->x,
-			     y,
-			     msg->width,
-			     1,
-			     vHidd_StdPixFmt_ARGB32);
-			     
+	    if (PIXBUF_TIME_TO_END_PROCESS)
+	    {
+	    	LONG height = PIXBUF_LINES_TO_PROCESS;
+		
+		HIDD_BM_PutImage(o,
+	    	    		 msg->gc,
+				 (UBYTE *)buf,
+				 msg->width * sizeof(ULONG),
+				 msg->x,
+				 y - height + 1,
+				 msg->width,
+				 height,
+				 vHidd_StdPixFmt_ARGB32);
+				 
+		xbuf = buf;
+	    }
+	    else
+	    {
+	    	xbuf += msg->width;
+	    }
+	    
 	    pixarray += msg->modulo - msg->width;
+
+    	    PIXBUF_NEXT_LINE
 
 	} /* for(y = msg->y; y < msg->y + msg->height; y++) */
 	
 	GC_DRMD(msg->gc) = old_drmd;
 	
-    	FreeVec(buf);
+    	PIXBUF_FREE(buf);
 	
     } /* if (buf) */
     else
