@@ -1,5 +1,5 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc:
@@ -63,32 +63,33 @@
     AROS_LIBBASE_EXT_DECL(struct Library *,LocaleBase)
 
     STRPTR str = defaultString;
+
     if(catalog != NULL)
     {
-	struct CatStr *cs = IntCat(catalog)->ic_First;
-
-	while(cs != NULL)
+	struct CatStr *cs = IntCat(catalog)->ic_CatStrings;
+	ULONG	      numstrings = IntCat(catalog)->ic_NumStrings;
+    	ULONG 	      i = 0;
+	
+	for(i = 0; i < numstrings; i++, cs++)
 	{
 	    if(cs->cs_Id == stringNum)
 	    {
-		str = &cs->cs_Data[0];
-		cs = NULL;
+		str = cs->cs_String;
+		break;
 	    }
 	    else
 	    {
-		if(	IntCat(catalog)->ic_Flags & ICF_INORDER
-		    &&  cs->cs_Id > stringNum
-		  )
+		if((IntCat(catalog)->ic_Flags & ICF_INORDER) && 
+		   (cs->cs_Id > stringNum))
 		{
-		    /* We are guaranteed not to find a match, so lets quit */
-		    cs = NULL;
+		    break;
 		}
-		else
-		    cs = cs->cs_Next;
 	    }
 	}
     }
+    
     return str;
 
     AROS_LIBFUNC_EXIT
+    
 } /* GetCatalogStr */

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1997-1998 AROS - The Amiga Research OS
+    Copyright (C) 1997-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Close a message catalog.
@@ -57,21 +57,23 @@
 
     if(catalog != NULL)
     {
+        ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
+
 	/* Decrement the use counter. */
 	IntCat(catalog)->ic_UseCount--;
 
         if (0 == IntCat(catalog)->ic_UseCount)
         {
-          ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
-          Remove(&catalog->cat_Link);
-          ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+            Remove(&catalog->cat_Link);
 
-          dispose_catalog((struct IntCatalog *)catalog, LocaleBase);
-          FreeVec(IntCat(catalog)->ic_Name);
-          FreeVec(catalog->cat_Language);
-          FreeMem(catalog, sizeof(struct IntCatalog));
+            dispose_catalog((struct IntCatalog *)catalog, LocaleBase);
+            FreeVec(catalog);
         }
+
+        ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+
     }
 
     AROS_LIBFUNC_EXIT
+    
 } /* CloseCatalog */

@@ -73,11 +73,13 @@ struct header
     ULONG   	    	  version;
     WORD    	    	  pref_language;
 
-    if (NULL == locale)
-	def_locale = OpenLocale(NULL);
-    else
-	def_locale = locale;
-
+    if (!locale)
+    {
+	locale = def_locale = OpenLocale(NULL);
+    }
+    
+    if (!locale) return NULL;
+    
     specific_language = (char *)GetTagData(OC_Language, (IPTR)0, tags);
 
     if (specific_language)
@@ -87,11 +89,15 @@ struct header
     }
     else
     {
-	language = def_locale->loc_PrefLanguages[0];
+	language = locale->loc_PrefLanguages[0];
 	pref_language = 0;
     }
 
-    if (language == NULL) return NULL; /* loc_PrefLanguages did not contain a single preferred language */
+    if (language == NULL)
+    {
+    	if (def_locale) CloseLocale(def_locale);
+    	return NULL;
+    }
 
     /*
     ** Check whether the built in language of the application matches
@@ -103,8 +109,11 @@ struct header
                                       tags);
 
     if (NULL != app_language && 0 == strcmp(app_language, language))
+    {
+    	if (def_locale) CloseLocale(def_locale);
 	return NULL;
-
+    }
+    
     version = GetTagData(OC_Version,
                 	 0,
                 	 tags);
@@ -126,8 +135,10 @@ struct header
         	catalog->ic_Catalog.cat_Language &&
         	0 == strcmp(catalog->ic_Catalog.cat_Language, language))
 	    {
-        	ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
         	catalog->ic_UseCount++;
+        	ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
+		
+		if (def_locale) CloseLocale(def_locale);
 		
         	return (struct Catalog *)catalog;
 	    }
@@ -142,6 +153,7 @@ struct header
 	iff = AllocIFF();
 	if (NULL == iff)
 	{
+	    if (def_locale) CloseLocale(def_locale);
 	    SetIoErr(ERROR_NO_FREE_STORE);
 	    
 	    return NULL;
@@ -164,9 +176,17 @@ struct header
 	    if (iff->iff_Stream) break;
 
 	    pref_language++;
-	    language = def_locale->loc_PrefLanguages[++pref_language];
+	    language = locale->loc_PrefLanguages[pref_language];
 	}
 
+    	/* I no longer need the locale. So close it if we opened it */
+	
+    	if (def_locale)
+	{
+	    CloseLocale(def_locale);
+	    def_locale = NULL;
+	}
+	
 #undef FILENAMESIZE
 
 	if (NULL == iff->iff_Stream)
@@ -177,9 +197,10 @@ struct header
 	    return NULL;
 	}
 
-	catalog = AllocMem(sizeof(struct IntCatalog), MEMF_CLEAR|MEMF_PUBLIC);
+	catalog = AllocVec(sizeof(struct IntCatalog) + strlen(name) + 1, MEMF_CLEAR | MEMF_PUBLIC);
 	if (NULL == catalog)
 	{
+	    Close((BPTR)iff->iff_Stream);
 	    FreeIFF(iff);
 	    SetIoErr(ERROR_NO_FREE_STORE);
 
@@ -187,30 +208,42 @@ struct header
 	}
 
 	catalog->ic_UseCount = 1;
-
+    	catalog->ic_Catalog.cat_Language = catalog->ic_LanguageName;
+	strcpy(catalog->ic_Name, name);
+	
 	InitIFFasDOS(iff);
 	
 	if (!OpenIFF(iff, IFFF_READ))
 	{
 	    while (1)
 	    {
-        	ULONG error = ParseIFF(iff, IFFPARSE_STEP);
+        	LONG error = ParseIFF(iff, IFFPARSE_STEP);
 
         	if (IFFERR_EOF == error)
         	{
         	    /* Did everything go fine? */
-        	    catalog->ic_Name = AllocVec(strlen(name)+1, MEMF_ANY);
-        	    strcpy(catalog->ic_Name, name);
 
-        	    catalog->ic_Catalog.cat_Language = AllocVec(strlen(language)+1,MEMF_ANY);
-        	    strcpy(catalog->ic_Catalog.cat_Language, language);
-
+    	    	    if (!(catalog->ic_LanguageName[0]))
+		    {
+		    	/* No ID_LANG chunk found. So setup languagename ourselves.
+			   Hmm ... maybe this should be done anyway always. Because
+			   if the catalog file *does* contain an ID_LANG chunk then
+			   this should be the same as "language" anyway. And if it
+			   is not, then maybe OpenCatalogA() should fail :-\ */
+			   
+        	    	strcpy(catalog->ic_LanguageName, language);
+    	    	    }
+		    
         	    /* Connect this catalog to the list of catalogs */
         	    ObtainSemaphore (&IntLB(LocaleBase)->lb_CatalogLock);
         	    AddHead((struct List *)&IntLB(LocaleBase)->lb_CatalogList, 
                 	    &catalog->ic_Catalog.cat_Link);
         	    ReleaseSemaphore(&IntLB(LocaleBase)->lb_CatalogLock);
 
+    	    	    CloseIFF(iff);
+	    	    Close((BPTR)iff->iff_Stream);		    
+		    FreeIFF(iff);
+		    
         	    return &catalog->ic_Catalog;
         	}
 
@@ -230,126 +263,124 @@ struct header
         		    break;
 
         		case ID_LANG:
-        		    catalog->ic_Catalog.cat_Language = AllocVec(top->cn_Size, MEMF_PUBLIC);
-        		    if (top->cn_Size != ReadChunkBytes(iff,
-                                                	       catalog->ic_Catalog.cat_Language,
-                                                	       top->cn_Size))
-        		    {
-                		/* an error occurred */
-                		dispose_catalog(catalog, LocaleBase);
-                		break;
-        		    }
+			    /* The IntCatalog structure has only 30 bytes reserved for
+			       the language name. So make sure the chunk is not bigger. */
+			       
+        		    if (top->cn_Size > 30) break; 
+			    
+			    error = ReadChunkBytes(iff, catalog->ic_LanguageName, top->cn_Size);
+			    if (error == top->cn_Size)
+			    {
+			    	error = 0;
+			    }
         		    break;
 
         		case ID_CSET:
-        		    /* what am I supposed to do with this ? */
+        		    if (top->cn_Size != sizeof(struct CodeSet)) break;
+			    if (top->cn_Size == ReadChunkBytes(iff,
+			    	    	    	    	       &catalog->ic_CodeSet,
+							       top->cn_Size))
+			    {
+			    	/* Who cares: codeset is not used at the moment */
+			    }
      			    break;
 
         		case ID_STRS:
-        		{
-        		    ULONG c = 0;
+    	    	    	    if (!(catalog->ic_StringChunk = AllocVec(top->cn_Size, MEMF_PUBLIC | MEMF_CLEAR)))
+			    {
+    	    	    	    	error = ERROR_NO_FREE_STORE;
+			    	SetIoErr(error);			    
+			    	break;
+			    }
 
-        		    while (c < top->cn_Size)
-        		    {
-                   		struct CatStr 	* catstr;
-                		struct header 	  _header;
-                		ULONG 	    	  id, len;
-                		ULONG 	    	  read;
- 
-                		/* first read the id and the length of the string */
-                		read = ReadChunkBytes(iff,
-                                		      &_header,
-                                		      8);
-
-                		if (8 != read)
-                		{
-                		    /* an error happened while reading */
-                		    dispose_catalog(catalog, LocaleBase);
-                		    break;
-                		}
-
-
-    	    	    	    #if (AROS_BIG_ENDIAN == 0)
-                		len = ((_header.len[3]      ) & 0x000000ff) |
-                		      ((_header.len[2] << 8 ) & 0x0000ff00) |
-                		      ((_header.len[1] << 16) & 0x00ff0000) |
-                		      ((_header.len[0] << 24) & 0xff000000) ;
-
-                		id = ((_header.id[3]      ) & 0x000000ff) |
-                		     ((_header.id[2] << 8 ) & 0x0000ff00) |
-                		     ((_header.id[1] << 16) & 0x00ff0000) |
-                		     ((_header.id[0] << 24) & 0xff000000) ;
-    	    	    	    #else
-                		len = *(ULONG *)&_header.len[0];
-                		id  = *(ULONG *)&_header.id[0];
-    	    	    	    #endif
-
-                		c += read;
-                		catstr = (struct CatStr* ) AllocVec(sizeof(struct CatStr)+len+(len&1), 
-                                        		    	    MEMF_PUBLIC | MEMF_CLEAR);
-
-                		if (NULL == catstr)
-                		{
-                		    SetIoErr(ERROR_NO_FREE_STORE);
-                		    dispose_catalog(catalog, LocaleBase);
-                		}
-
-                		read = ReadChunkBytes(iff, 
-                                		      &catstr->cs_Data[0], 
-                                		      len+(len&1));
-
-                		if (read != len+(len&1))
-                		{
-                		    /* An error happened */
-                		    dispose_catalog(catalog, LocaleBase);
-                		    break;
-                		}
-
-                		/* 
-                		** Initialize the CatStr structure
-                		*/
-                		catstr->cs_Id = id;
-    	    	    	    #if 0
-    	    			/* stegerg: ??? this here for some strings kills their last char
-		                		"something" --> "somethin" */
-
-                		catstr->cs_Data[len+(len&1)-1] = '\0';
-    	    	    	    #endif
-
-                		catstr->cs_Next = catalog->ic_First;
-                		catalog->ic_First = catstr;
-
-                		//kprintf("id of string:  %d\n",id);
-                		//kprintf("string length: %d\n",len);
-                		//kprintf("string: %s\n",catstr->cs_Data);
-
-                		c += read;
-
-                		/* Align it to 4 byte boundaries, if necessary */
-                		if (0 != (c & 3))
+			    error = ReadChunkBytes(iff, catalog->ic_StringChunk, top->cn_Size);
+			    if (error == top->cn_Size)
+			    {
+			    	error = 0;
+			    }
+			    else
+			    {
+			    	break;
+			    }
+			    
+			    /* Count the number of strings */
+			    
+			    {
+			    	UBYTE *buffer = catalog->ic_StringChunk;
+				LONG   c = 0, strlen;
+				
+			    	catalog->ic_NumStrings = 0;
+				
+				while(c < top->cn_Size)
 				{
-                		    read = ReadChunkBytes(iff, &_header, 4-( c&3 ));
-
-                		    if (read < 0)
-                		    {
-                			/* an error occurred! */
-                			dispose_catalog(catalog, LocaleBase);
-                			break;
-                		    }
-
-                		    c += read;
+				    catalog->ic_NumStrings++;
+				    
+				    strlen = (buffer[4] << 24) +
+				    	     (buffer[5] << 16) +
+					     (buffer[6] << 8) +
+					     (buffer[7]);
+					       
+				    strlen  = 8 + strlen + (strlen & 1);
+				    if (strlen & 3) strlen += 4 - (strlen & 3);
+				    
+				    c += strlen; buffer += strlen;
 				}
 				
-        		    } /* while (c < top->cn_Size) */
+			    }
 			    
-        		}  
-        		break;
+    	    	    	    if (catalog->ic_NumStrings == 0) break; /* Paranoia? */
+			    
+    	    	    	    if (!(catalog->ic_CatStrings = AllocVec(catalog->ic_NumStrings * sizeof(struct CatStr), MEMF_PUBLIC | MEMF_CLEAR)))
+			    {
+    	    	    	    	error = ERROR_NO_FREE_STORE;
+			    	SetIoErr(error);			    
+				break;
+			    }
+			    
+			    /* Fill out catalog->ic_CatStrings array */
+			    
+			    {
+			    	UBYTE *buffer = catalog->ic_StringChunk;
+				ULONG i, strlen, id, previd = 0;
+				BOOL  inorder = TRUE;
+				
+				for(i = 0; i < catalog->ic_NumStrings; i++)
+				{
+				    id = (buffer[0] << 24) +
+				    	 (buffer[1] << 16) +
+					 (buffer[2] << 8) +
+					 (buffer[3]);
+					 
+				    strlen = (buffer[4] << 24) +
+				    	     (buffer[5] << 16) +
+					     (buffer[6] << 8) +
+					     (buffer[7]);
+
+				    catalog->ic_CatStrings[i].cs_String = &buffer[8];
+				    catalog->ic_CatStrings[i].cs_Id = id;
+
+    	    	    	    	    kprintf("Catalog String #%d id=%d string=\"%s\"\n", i, id, catalog->ic_CatStrings[i].cs_String);
+
+				    strlen  = 8 + strlen + (strlen & 1);
+				    if (strlen & 3) strlen += 4 - (strlen & 3);
+				    
+				    if (id < previd) inorder = FALSE;
+				    
+				    buffer += strlen;
+				    previd = id;
+				}
+				
+				if (inorder) catalog->ic_Flags |= ICF_INORDER;
+			    }
+			    break;	    			    
 		      
         	    } /* switch (top->cn_ID) */
 		  
         	} /* if (0 == error) */ 
-        	else
+        	
+		if (error)
         	{
+		    dispose_catalog(catalog, LocaleBase);
         	    /*
         	    ** An error with the file occurred 
         	    */
@@ -365,12 +396,11 @@ struct header
 
 	Close((BPTR)iff->iff_Stream);
 	FreeIFF(iff);
-	FreeMem(catalog, sizeof(struct IntCatalog));
+	FreeVec(catalog);
       
     } /* if (NULL != name) */  
 
-    if (def_locale)
-	CloseLocale(def_locale);
+    if (def_locale) CloseLocale(def_locale);
 
     return NULL;
 
