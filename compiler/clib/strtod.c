@@ -55,35 +55,42 @@
 
 ******************************************************************************/
 {
-    double        val = 0;
-    int           tail, exp = 0;
+    double        val = 0, precision;
+    int           exp = 0;
     char          c = 0, c2 = 0;
 
+    /* skip all leading spaces */
     while (isspace (*str))
 	str ++;
 
+    /* start with scanning the floting point number */
     if (*str)
     {
+        /* Is there a sign? */
 	if (*str == '+' || *str == '-')
 	    c = *str ++;
 
+        /* scan numbers before the dot */
 	while (isdigit(*str))
 	{
 	    val = val * 10 + (*str - '0');
 	    str ++;
 	}
 
-	if(*str == '.')
+        /* see if there is the dot */
+	if(*str++ == '.')
 	{
-	    tail = -1;
+	    /* scan the numbers behind the dot */
+            precision = 0.1;
 	    while (isdigit (*str))
 	    {
-		val += (*str - '0') * pow (10, tail);
+		val += ((*str - '0') * precision) ;
 		str ++;
-		tail --;
+		precision = precision * 0.1;
 	    }
 	}
 
+        /* look for a sequence like "E+10" or "e-22" */
 	if(tolower(*str ++) == 'e')
 	{
 	    if (*str == '+' || *str == '-')
