@@ -122,6 +122,5 @@
     
     return ExecCommand(type, command, shell, input, output, tags, DOSBase);
 
-    return RETURN_FAIL;
     AROS_LIBFUNC_EXIT
 } /* SystemTagList */
