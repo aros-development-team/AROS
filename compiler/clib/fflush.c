@@ -2,46 +2,106 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
 
-    Desc:
+    Desc: ANSI C function fflush()
     Lang: english
 */
-#include <stdio.h>
+#include <errno.h>
 #include <exec/types.h>
 #include <dos/dosextens.h>
 #include <clib/exec_protos.h>
 #include <clib/dos_protos.h>
 
-int fflush (FILE * stream)
+/*****************************************************************************
+
+    NAME */
+#include <stdio.h>
+
+	int fflush (
+
+/*  SYNOPSIS */
+	FILE * stream)
+
+/*  FUNCTION
+	Flush a stream. If the stream is an input stream, then the stream
+	is synchronised for unbuffered I/O. If the stream is an output
+	stream, then any buffered data is written.
+
+    INPUTS
+	stream - Flush this stream. May be NULL. In this case, all
+		output streams are flushed.
+
+    RESULT
+	0 on success or EOF on error.
+
+    NOTES
+
+    EXAMPLE
+
+    BUGS
+
+    SEE ALSO
+
+    INTERNALS
+
+    HISTORY
+	10.12.1996 digulla created
+
+******************************************************************************/
 {
+    BPTR fh;
+
     switch ((IPTR)stream)
     {
-    case 0:
     case 1:
-	if (Flush (Input ()))
-	    return EOF;
+	fh = Input ();
 
 	break;
 
+    case 0: /* TODO flush all output streams */
     case 2:
-	if (Flush (Output ()))
-	    return EOF;
+	fh = Output ();
 
 	break;
 
     case 3: {
 	struct Process *me=(struct Process *)FindTask(NULL);
 
-	if (Flush (me->pr_CES ? me->pr_CES : me->pr_COS))
-	    return EOF;
+	fh = me->pr_CES ? me->pr_CES : me->pr_COS;
 
 	break; }
 
     default:
-	if (Flush (stream->fh))
-	    return EOF;
+	fh = stream->fh;
 	break;
     }
 
-    return 0;
+    if (fh && Flush (fh))
+	return 0;
+
+    if (!fh)
+	errno = EINVAL;
+    else
+    {
+	switch (IoErr())
+	{
+	case ERROR_OBJECT_WRONG_TYPE:
+	    errno = EINVAL;
+	    break;
+
+	case ERROR_NO_FREE_STORE:
+	    errno = ENOMEM;
+	    break;
+
+	case ERROR_OBJECT_NOT_FOUND:
+	    errno = ENOENT;
+	    break;
+
+	default:
+	    errno = ENOSYS;
+	    break;
+	}
+    }
+
+    return EOF;
 } /* fflush */
 
