@@ -8,8 +8,9 @@
 #include "intuition_intern.h"
 #include <proto/graphics.h>
 
+#undef DEBUG
 #define DEBUG 1
-#include <aros/debug.h>
+#	include <aros/debug.h>
 #include <proto/arossupport.h>
 
 /*****************************************************************************

@@ -19,8 +19,9 @@
 #include "intuition_intern.h"
 #include "strgadgets.h"
 
+#undef DEBUG
 #define DEBUG 0
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 
 #define CURSORPEN	0

@@ -14,8 +14,9 @@
 
 
 #include "intuition_intern.h"
+#undef DEBUG
 #define DEBUG 1
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 VOID DoGMLayout(struct Gadget		*glist,
 		struct Window		*win,

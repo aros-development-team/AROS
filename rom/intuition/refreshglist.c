@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.13  1997/12/25 23:20:03  hkiel
+    Keep compiler happy ;-)
+
     Revision 1.12  1997/09/25 11:13:36  nlorentz
     Added refreshing of stringgadgets
 
@@ -54,9 +57,9 @@
 #include "propgadgets.h"
 #include "strgadgets.h"
 
-
+#undef DEBUG
 #define DEBUG 0
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 #include <intuition/classes.h>
 

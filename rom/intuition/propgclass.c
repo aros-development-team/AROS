@@ -23,6 +23,7 @@
 #include "intuition_intern.h"
 #include "propgadgets.h"
 
+#undef DEBUG
 #define DEBUG 0
 
 #include <aros/debug.h>

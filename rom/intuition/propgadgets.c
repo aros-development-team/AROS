@@ -11,8 +11,9 @@
 #include "propgadgets.h"
 #include "gadgets.h"
 
+#undef DEBUG
 #define DEBUG 0
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 
 VOID HandlePropSelectDown

@@ -14,8 +14,9 @@
 #include <proto/intuition.h>
 #include "boopsigadgets.h"
 
+#undef DEBUG
 #define DEBUG 0
-#include <aros/debug.h>
+#	include <aros/debug.h>
 
 	AROS_LH5(UWORD, AddGList,
 
