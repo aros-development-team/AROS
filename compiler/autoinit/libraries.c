@@ -8,6 +8,7 @@
 
 #include <intuition/intuition.h>
 #include <dos/dosextens.h>
+#include <dos/dos.h>
 #include <proto/intuition.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -33,10 +34,10 @@ static void showerror(char *title, char *format, ...)
     {
     	if (DOSBase)
 	{
-	    VPrintf(title, NULL);
-	    VPrintf(": ", NULL);
+	    PutStr(title);
+	    PutStr(": ");
 	    VPrintf(format, args);
-	    VPrintf("\n", NULL);
+	    PutStr("\n");
 	}
     }
     else
@@ -72,6 +73,7 @@ int set_open_libraries(struct libraryset *set[])
 	    showerror("Library error",
 	              "Couldn't open version %ld of library \"%s\".",
 		       *set[n]->versionptr, set[n]->name);
+            SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
 	    return 20;
 	}
 
@@ -83,6 +85,7 @@ int set_open_libraries(struct libraryset *set[])
 	    	showerror("Library error",
 	                  "Couldn't initialize library \"%s\".",
 		           set[n]->name);
+                if (!IoErr()) SetIoErr(ERROR_INVALID_RESIDENT_LIBRARY);
 	        return ret;
 	    }
         }
