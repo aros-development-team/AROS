@@ -11,7 +11,7 @@
 
     NAME */
 #include <utility/tagitem.h>
-#include <proto/utility_protos.h>
+#include <proto/utility.h>
 
         AROS_LH2(void, RefreshTagItemClones,
 

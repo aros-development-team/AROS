@@ -12,7 +12,7 @@
     NAME */
 #include <utility/tagitem.h>
 #include <utility/pack.h>
-#include <proto/utility_protos.h>
+#include <proto/utility.h>
 
         AROS_LH3(ULONG, UnpackStructureTags,
 

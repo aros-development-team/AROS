@@ -13,8 +13,8 @@
 #include <exec/resident.h>
 #include <exec/execbase.h>
 #include <dos/dos.h>
-#include <proto/exec_protos.h>
-#include <proto/utility_protos.h>
+#include <proto/exec.h>
+#include <proto/utility.h>
 
 #include "utility_intern.h"
 
@@ -54,7 +54,7 @@ const struct Resident Utility_resident=
 
 const UBYTE name[]="utility.library";
 
-const UBYTE version[]="$VER: utility 41.9 (2.2.97)\r\n";
+const UBYTE version[]="$VER: AROS utility 41.9 (2.2.97)";
 
 const APTR inittabl[4]=
 {

@@ -11,7 +11,7 @@
 
     NAME */
 #include <utility/date.h>
-#include <proto/utility_protos.h>
+#include <proto/utility.h>
 
         AROS_LH1(ULONG, CheckDate,
 
