@@ -16,7 +16,6 @@ New this time:
 - A Copyright
 - ***Developers: If you update from 1.7, you *MUST* call "make clean"
   because some headers have changed.
-- New target: make depend
 
 This project's goal is to provide a public available AmigaOS which
 is compatible with AmigaOS 3.1 (Kickstart 40.70) able to run on
