@@ -8,7 +8,7 @@ USER_LIBS   := amiga arosc m mui
 
 #MM- workbench-libs-muimaster : \
 #MM     workbench-classes-zune-aboutmui \
-#MM     workbench-classes-zune-coloradjust \
+#MM     workbench-classes-zune-boopsi \
 #MM     workbench-classes-zune-colorfield \
 #MM     workbench-classes-zune-imageadjust \
 #MM     workbench-classes-zune-pendisplay \
@@ -22,7 +22,7 @@ USER_LIBS   := amiga arosc m mui
 
 #MM- workbench-libs-muimaster-clean : \
 #MM     workbench-classes-zune-aboutmui-clean \
-#MM     workbench-classes-zune-coloradjust-clean \
+#MM     workbench-classes-zune-boopsi-clean \
 #MM     workbench-classes-zune-colorfield-clean \
 #MM     workbench-classes-zune-imageadjust-clean \
 #MM     workbench-classes-zune-pendisplay-clean \
@@ -40,6 +40,14 @@ USER_LIBS   := amiga arosc m mui
     modname=Aboutmui modtype=mui files=aboutmui \
     conffile=aboutmui.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_ABOUTMUI=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-boopsi : includes
+%build_module \
+    mmake=workbench-classes-zune-boopsi \
+    modname=Boopsi modtype=mui files=boopsi \
+    conffile=boopsi.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_BOOPSI=0" \
     uselibs=$(USER_LIBS)
 
 #MM workbench-classes-zune-coloradjust : includes
