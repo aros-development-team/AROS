@@ -1,3 +1,11 @@
+/* 
+    Copyright © 1999, David Le Corfec.
+    Copyright © 2002, The AROS Development Team.
+    All rights reserved.
+
+    $Id$
+*/
+
 #ifndef __IMSPEC_H__
 #define __IMSPEC_H__
 
