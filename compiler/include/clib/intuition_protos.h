@@ -114,6 +114,24 @@ __AROS_LP4(void, DrawImage,
     __AROS_LCA(long             , topOffset, D1), \
     struct IntuitionBase *, IntuitionBase, 19, Intuition)
 
+__AROS_LP6(void, DrawImageState,
+    __AROS_LPA(struct RastPort *, rp,         A0),
+    __AROS_LPA(struct Image    *, image,      A1),
+    __AROS_LPA(long             , leftOffset, D0),
+    __AROS_LPA(long             , topOffset,  D1),
+    __AROS_LPA(ULONG            , state,      D2),
+    __AROS_LPA(struct DrawInfo *, drawInfo,   A2),
+    struct IntuitionBase *, IntuitionBase, 103, Intuition)
+#define DrawImageState(rp, image, leftOffset, topOffset, state, drawInfo) \
+    __AROS_LC6(void, DrawImageState, \
+    __AROS_LCA(struct RastPort *, rp,         A0), \
+    __AROS_LCA(struct Image    *, image,      A1), \
+    __AROS_LCA(long             , leftOffset, D0), \
+    __AROS_LCA(long             , topOffset,  D1), \
+    __AROS_LCA(ULONG            , state,      D2), \
+    __AROS_LCA(struct DrawInfo *, drawInfo,   A2), \
+    struct IntuitionBase *, IntuitionBase, 103, Intuition)
+
 __AROS_LP2(void, EndRefresh,
     __AROS_LPA(struct Window *, window, A0),
     __AROS_LPA(BOOL           , complete, D0),
@@ -123,6 +141,20 @@ __AROS_LP2(void, EndRefresh,
     __AROS_LCA(struct Window *, window, A0), \
     __AROS_LCA(BOOL           , complete, D0), \
     struct IntuitionBase *, IntuitionBase, 61, Intuition)
+
+__AROS_LP4(void, EraseImage,
+    __AROS_LPA(struct RastPort *, rp, A0),
+    __AROS_LPA(struct Image    *, image, A1),
+    __AROS_LPA(long             , leftOffset, D0),
+    __AROS_LPA(long             , topOffset, D1),
+    struct IntuitionBase *, IntuitionBase, 105, Intuition)
+#define EraseImage(rp, image, leftOffset, topOffset) \
+    __AROS_LC4(void, EraseImage, \
+    __AROS_LCA(struct RastPort *, rp, A0), \
+    __AROS_LCA(struct Image    *, image, A1), \
+    __AROS_LCA(long             , leftOffset, D0), \
+    __AROS_LCA(long             , topOffset, D1), \
+    struct IntuitionBase *, IntuitionBase, 105, Intuition)
 
 __AROS_LP1(BOOL, FreeClass,
     __AROS_LPA(struct IClass *, classPtr, A0),
@@ -327,6 +359,16 @@ __AROS_LP2(struct Window *, OpenWindowTagList,
     __AROS_LCA(struct NewWindow *, newWindow, A0), \
     __AROS_LCA(struct TagItem   *, tagList, A1), \
     struct IntuitionBase *, IntuitionBase, 101, Intuition)
+
+__AROS_LP2(BOOL, PointInImage,
+    __AROS_LPA(ULONG,          point, D0),
+    __AROS_LPA(struct Image *, image, A0),
+    struct IntuitionBase *, IntuitionBase, 104, Intuition)
+#define PointInImage(point, image) \
+    __AROS_LC2(BOOL, PointInImage, \
+    __AROS_LCA(ULONG,          point, D0), \
+    __AROS_LCA(struct Image *, image, A0), \
+    struct IntuitionBase *, IntuitionBase, 104, Intuition)
 
 __AROS_LP4(void, PrintIText,
     __AROS_LPA(struct RastPort  *, rp, A0),
