@@ -1,14 +1,14 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
-	     gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
-	     requesters strgadgets strgclass  pointerclass windowclasses \
-	     intuition_misc inputhandler_support inputhandler_actions \
-	     menus  barlabelclass fillrectclass groupgclass wbtasktalk \
-	     rootclass icclass modelclass itexticlass misc sysiclass menutask
+FILES := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
+         gadgetclass gadgets imageclass inputhandler propgadgets propgclass \
+         requesters strgadgets strgclass  pointerclass windowclasses \
+         intuition_misc inputhandler_support inputhandler_actions \
+         menus barlabelclass fillrectclass groupgclass wbtasktalk \
+         rootclass icclass modelclass itexticlass misc sysiclass menutask
 
-FUNCTIONS := \
+FUNCS := \
 	activategadget \
 	activatewindow \
 	addclass \
@@ -146,9 +146,13 @@ FUNCTIONS := \
 	zipwindow
 
 USER_INCLUDES := -I$(TOP)/rom/dos
+
+#MM kernel-intuition : kernel-intuition-$(ARCH)-$(CPU)
+#MM kernel-intuition-linklib : kernel-intuition-$(ARCH)-$(CPU)
+
 %build_module_macro mmake=kernel-intuition \
   modname=intuition modtype=library \
-  funcs=$(FUNCTIONS) files=$(FILES) \
+  funcs=$(FUNCS) files=$(FILES) \
   conffile=lib.conf
 
 %common
