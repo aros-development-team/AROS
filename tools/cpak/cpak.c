@@ -155,7 +155,7 @@ char filename[50];
 			}
 			else
 			{
-#warning this is buggy: incname doesn't contain any proper null terminated string
+#warning "this is buggy: incname doesn't contain any proper null terminated string"
 			    fprintf ( fdo, "#include %s", &incname[0] );
 			}
 		    }
