@@ -184,8 +184,8 @@ struct GfxBase_intern
 
 #define OOPBase     	    	(PrivGBase(GfxBase)->oopbase)
 
-#define WIDTH_TO_BYTES(width) 	((( (width) - 1) >> 3) + 1)
-#define WIDTH_TO_WORDS(width) 	((( (width) - 1) >> 4) + 1)
+#define WIDTH_TO_BYTES(width) 	((( (width) + 15) & ~15) >> 3)
+#define WIDTH_TO_WORDS(width) 	((( (width) + 15) & ~15) >> 4)
 
 #define XCOORD_TO_BYTEIDX( x ) 	(( x ) >> 3)
 #define XCOORD_TO_WORDIDX( x ) 	(( x ) >> 4)
