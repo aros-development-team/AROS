@@ -326,13 +326,16 @@ struct IFS_INHIBIT
 };
 
 
-#define FSA_DISK_INFO       37
-
 #if 0
 #define FSA_WRITE_PROTECT   33
 #define FSA_DISK_CHANGE     34
 #define FSA_ADD_NOTIFY	    35
 #define FSA_REMOVE_NOTIFY   36
+#endif
+
+#define FSA_DISK_INFO	    37
+
+#if 0
 #define FSA_CHANGE_SIGNAL   38
 #define FSA_LOCK_RECORD     39
 #define FSA_UNLOCK_RECORD   40
