@@ -472,11 +472,10 @@ static const ULONG coltab[] = {
         */
 	screen->Screen.BitMap = *screen->Screen.RastPort.BitMap;
 
-	screen->Screen.WBorTop    = 6;  /* Amiga default is 2 */
+	screen->Screen.WBorTop    = 3;  /* Amiga default is 2 */
 	screen->Screen.WBorLeft   = 4;
 	screen->Screen.WBorRight  = 4;
-	screen->Screen.WBorBottom = 4;  /* Amiga default is 2 */
-
+	screen->Screen.WBorBottom = 2;  /* Amiga default is 2 */
 
 	screen->Screen.Title = ns.DefaultTitle;
 
