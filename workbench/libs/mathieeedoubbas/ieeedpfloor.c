@@ -110,7 +110,7 @@ AROS_LIBFUNC_INIT
       y = IEEEDPAdd(y, minusone);
       Set_Value64C(Mask, 0x80000000,
                          0x00000000,
-                         0x8000000000000000);
+                         0x8000000000000000ULL);
       SHRU32(shift, y_tmp, 52);
       SHRS64(Mask, Mask, (shift-0x3ff+11)); /* leave the () there! StormC 1.1 needs 'em! */
     }
