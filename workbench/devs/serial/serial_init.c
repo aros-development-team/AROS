@@ -34,7 +34,7 @@
 #    include "serial_intern.h"
 #endif
 
-/*  # define DEBUG 1 */
+# define DEBUG 1
 # include <aros/debug.h>
 
 /****************************************************************************************/
@@ -140,6 +140,8 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
 {
   AROS_USERFUNC_INIT
 
+  SysBase = sysBase;
+
   D(bug("serial device: init\n"));
 
   pubSerialBase = SerialDevice;
@@ -147,8 +149,6 @@ AROS_UFH3(struct serialbase *, AROS_SLIB_ENTRY(init,Serial),
   /* Store arguments */
   SerialDevice->sysBase = sysBase;
   SerialDevice->seglist = segList;
-
-  SysBase = sysBase;
     
   /* open the serial hidd */
   if (NULL == SerialDevice->SerialHidd)
@@ -552,8 +552,6 @@ AROS_LH1(void, beginio,
   
       SU->su_Status |= STATUS_READS_PENDING;
 
-      Enable();
-
       D(bug("The read request (%p) could not be satisfied! Queuing it.\n",ioreq));
       /*
       **  Everything that falls down here could not be completely
@@ -565,6 +563,8 @@ AROS_LH1(void, beginio,
         PutMsg(&SU->su_QReadCommandPort,
                (struct Message *)ioreq);
       }
+
+      Enable();
      
       /*
       ** As I am returning immediately I will tell that this
