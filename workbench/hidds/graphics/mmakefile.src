@@ -25,7 +25,7 @@ STUB_OBJS   := $(foreach f,$(STUBS), $(OBJDIR)/$(f).o)
 #MM workbench-hidd-setup :
 workbench-hidd-setup : setup
 
-#MM
+#MM workbench-graphics-hidd-stubs : workbench-graphics-hidd-setup
 workbench-graphics-hidd-stubs : $(STUB_FILE)
 
 $(STUB_FILE) : $(STUB_OBJS) $(MY_INCLS)
