@@ -21,8 +21,8 @@
 
 
 enum {
-    HIDDMIDX_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
-    HIDDMIDX_UnixIO_Select,	/* for async IO, unused		*/
+    HIDDMO_UnixIO_Wait = 0,	/* LONG M ( uioMsg *)		*/
+    HIDDMO_UnixIO_Select,	/* for async IO, unused		*/
     
     NUM_M_UnixIO
     

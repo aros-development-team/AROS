@@ -34,28 +34,28 @@
     See the HIDD documentation for information on their use.
  */
 enum {
-    HIDDAIDX_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
-    HIDDAIDX_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
-    HIDDAIDX_Producer,		/* [..G] (ULONG) Product Developer */
-    HIDDAIDX_Name, 		/* [..G] (STRPTR) Name of HIDD */
-    HIDDAIDX_HardwareName, 	/* [..G] (STRPTR) Hardware description */
-    HIDDAIDX_Active,		/* [ISG] (BOOL) Current active status */
-    HIDDAIDX_Status,		/* [..G] (ULONG) Status change */
-    HIDDAIDX_ErrorCode,		/* [..G] (ULONG) Error code */
-    HIDDAIDX_Locking,		/* [..G] (UBYTE) Type of locking supported */
+    HIDDAO_Type = 0, 		/* [..G] (UWORD) Major type of HIDD */
+    HIDDAO_SubType,		/* [..G] (UWORD) Sub-type of HIDD */
+    HIDDAO_Producer,		/* [..G] (ULONG) Product Developer */
+    HIDDAO_Name, 		/* [..G] (STRPTR) Name of HIDD */
+    HIDDAO_HardwareName, 	/* [..G] (STRPTR) Hardware description */
+    HIDDAO_Active,		/* [ISG] (BOOL) Current active status */
+    HIDDAO_Status,		/* [..G] (ULONG) Status change */
+    HIDDAO_ErrorCode,		/* [..G] (ULONG) Error code */
+    HIDDAO_Locking,		/* [..G] (UBYTE) Type of locking supported */
     
     NUM_A_HIDD
 };
 
-#define HIDDA_Type		(__HIDD_AttrBase + HIDDAIDX_Type	)
-#define HIDDA_SubType		(__HIDD_AttrBase + HIDDAIDX_SubType	)
-#define HIDDA_Producer		(__HIDD_AttrBase + HIDDAIDX_Producer	)
-#define HIDDA_Name		(__HIDD_AttrBase + HIDDAIDX_Name	)
-#define HIDDA_HardwareName	(__HIDD_AttrBase + HIDDAIDX_HardwareName)
-#define HIDDA_Active		(__HIDD_AttrBase + HIDDAIDX_Active	)
-#define HIDDA_Status		(__HIDD_AttrBase + HIDDAIDX_Status	)
-#define HIDDA_ErrorCode		(__HIDD_AttrBase + HIDDAIDX_ErrorCode	)
-#define HIDDA_Locking		(__HIDD_AttrBase + HIDDAIDX_Locking	)
+#define HIDDA_Type		(__HIDD_AttrBase + HIDDAO_Type	)
+#define HIDDA_SubType		(__HIDD_AttrBase + HIDDAO_SubType	)
+#define HIDDA_Producer		(__HIDD_AttrBase + HIDDAO_Producer	)
+#define HIDDA_Name		(__HIDD_AttrBase + HIDDAO_Name	)
+#define HIDDA_HardwareName	(__HIDD_AttrBase + HIDDAO_HardwareName)
+#define HIDDA_Active		(__HIDD_AttrBase + HIDDAO_Active	)
+#define HIDDA_Status		(__HIDD_AttrBase + HIDDAO_Status	)
+#define HIDDA_ErrorCode		(__HIDD_AttrBase + HIDDAO_ErrorCode	)
+#define HIDDA_Locking		(__HIDD_AttrBase + HIDDAO_Locking	)
 
 
 /* Values for the HIDD_Type Tag */
@@ -83,17 +83,17 @@ enum {
 };
 
 enum {
-    HIDDMIDX_Class_Get,		/* Get a value from a Class */
-    HIDDMIDX_Class_MGet,		/* Get a number of values from a Class */
-    HIDDMIDX_BeginIO,		/* Send a device like command */
-    HIDDMIDX_AbortIO,		/* Abort a device like command */
+    HIDDMO_Class_Get,		/* Get a value from a Class */
+    HIDDMO_Class_MGet,		/* Get a number of values from a Class */
+    HIDDMO_BeginIO,		/* Send a device like command */
+    HIDDMO_AbortIO,		/* Abort a device like command */
 
-    HIDDMIDX_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
-    HIDDMIDX_Lock, 		/* Lock a HIDD */
-    HIDDMIDX_Unlock,		/* UnLock a HIDD */
-    HIDDMIDX_AddHIDD,		/* Add a subclass HIDD */
-    HIDDMIDX_RemoveHIDD,	/* Remove a subclass HIDD */
-    HIDDMIDX_FindHIDD		/* Find a suitable HIDD */
+    HIDDMO_LoadConfigPlugin,	/* HIDDT_Config M ( hmPlugin *) */
+    HIDDMO_Lock, 		/* Lock a HIDD */
+    HIDDMO_Unlock,		/* UnLock a HIDD */
+    HIDDMO_AddHIDD,		/* Add a subclass HIDD */
+    HIDDMO_RemoveHIDD,	/* Remove a subclass HIDD */
+    HIDDMO_FindHIDD		/* Find a suitable HIDD */
 };
 
 /*

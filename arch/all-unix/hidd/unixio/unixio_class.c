@@ -293,7 +293,7 @@ static Object *unixio_new(Class *cl, Object *o, struct P_Root_New *msg)
 	    D(bug("Port created\n"));
 	    ReturnPtr("UnixIO::New", Object *, o);
     	}
-	dispose_mid = GetMethodID(IID_Root, MIDX_Root_Dispose);
+	dispose_mid = GetMethodID(IID_Root, MO_Root_Dispose);
 	CoerceMethod(cl, o, (Msg)&dispose_mid);
     }
     ReturnPtr("UnixIO::New", Object *, NULL);
@@ -376,14 +376,14 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
     
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())unixio_new,	MIDX_Root_New		},
-    	{ (IPTR (*)())unixio_dispose,	MIDX_Root_Dispose	},
+    	{ (IPTR (*)())unixio_new,	MO_Root_New		},
+    	{ (IPTR (*)())unixio_dispose,	MO_Root_Dispose	},
     	{ NULL, 0UL }
     };
 
     struct MethodDescr unixio_mdescr[NUM_UNIXIO_METHODS + 1] =
     {
-    	{ (IPTR (*)())unixio_wait,	HIDDMIDX_UnixIO_Wait		},
+    	{ (IPTR (*)())unixio_wait,	HIDDMO_UnixIO_Wait		},
     	{ NULL, 0UL }
     };
     
@@ -500,14 +500,14 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
 	
         struct TagItem tags[] =
     	{
-            {A_Class_SuperID,		(IPTR)CLID_Hidd},
-	    {A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	    {A_Class_ID,		(IPTR)CLID_UnixIO_Hidd},
-	    {A_Class_InstSize,		(IPTR)sizeof (struct UnixIOData) },
+            {A_Meta_SuperID,		(IPTR)CLID_Hidd},
+	    {A_Meta_InterfaceDescr,	(IPTR)ifdescr},
+	    {A_Meta_ID,			(IPTR)CLID_UnixIO_Hidd},
+	    {A_Meta_InstSize,		(IPTR)sizeof (struct UnixIOData) },
 	    {TAG_DONE, 0UL}
     	};
 
-    	cl = NewObjectA(NULL, CLID_HIDDMeta, tags);
+    	cl = NewObject(NULL, CLID_HIDDMeta, tags);
     
     	if(cl)
     	{
@@ -533,7 +533,7 @@ IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
      struct uioMsg p;
      
      if (!mid)
-     	mid = GetMethodID(IID_UnixIO, HIDDMIDX_UnixIO_Wait);
+     	mid = GetMethodID(IID_UnixIO, HIDDMO_UnixIO_Wait);
      p.um_MethodID = mid;
      p.um_Filedesc = fd;
      p.um_Mode	   = mode;
@@ -550,5 +550,5 @@ IPTR HIDD_UnixIO_Wait(HIDD *o, ULONG fd, ULONG mode)
 HIDD *New_UnixIO(struct Library *OOPBase)
 {
    struct TagItem tags[] = {{ TAG_END, 0 }};
-   return (HIDD)NewObjectA (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
+   return (HIDD)NewObject (NULL, CLID_UnixIO_Hidd, (struct TagItem *)tags);
 }

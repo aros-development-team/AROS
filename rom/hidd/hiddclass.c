@@ -170,7 +170,7 @@ static VOID hidd_set(Class *cl, Object *o, struct P_Root_Set *msg)
 	{
 	    switch(idx)
 	    {
-		case HIDDAIDX_Active:
+		case HIDDAO_Active:
 	    	    hd->hd_Active = tag->ti_Data;
 	    	    break;
 		    
@@ -193,39 +193,39 @@ static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
     {
     	switch (idx)
 	{
-	case HIDDAIDX_Type:
+	case HIDDAO_Type:
 	    *msg->Storage = hd->hd_Type;
 	    break;
 
-	case HIDDAIDX_SubType:
+	case HIDDAO_SubType:
 	    *msg->Storage = hd->hd_SubType;
 	    break;
 
-	case HIDDAIDX_Producer:
+	case HIDDAO_Producer:
 	    *msg->Storage = hd->hd_Producer;
 	    break;
 
-	case HIDDAIDX_Name:
+	case HIDDAO_Name:
 	    *msg->Storage = (IPTR)hd->hd_Name;
 	    break;
 
-	case HIDDAIDX_HardwareName:
+	case HIDDAO_HardwareName:
 	    *msg->Storage = (IPTR)hd->hd_HWName;
 	    break;
 
-	case HIDDAIDX_Active:
+	case HIDDAO_Active:
 	    *msg->Storage = hd->hd_Active;
 	    break;
 
-	case HIDDAIDX_Status:
+	case HIDDAO_Status:
 	    *msg->Storage = hd->hd_Status;
 	    break;
 
-	case HIDDAIDX_ErrorCode:
+	case HIDDAO_ErrorCode:
 	    *msg->Storage = hd->hd_ErrorCode;
 	    break;
 
-	case HIDDAIDX_Locking:
+	case HIDDAO_Locking:
 	    *msg->Storage = hd->hd_Locking;
 	    break;
 	
@@ -339,8 +339,8 @@ static VOID hidd_get(Class *cl, Object *o, struct P_Root_Get *msg)
 	get the information for these methods is from an object, but
 	we don't have any objects if this method is called.
     */
-/*    case HIDDM_Class_Get:
-    case HIDDM_Class_MGet:
+/*    case HIDDM_Meta_Get:
+    case HIDDM_Meta_MGet:
 	retval = 0;
 	break;
 */
@@ -421,9 +421,9 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
     
     struct MethodDescr root_mdescr[NUM_ROOT_METHODS + 1] =
     {
-    	{ (IPTR (*)())hidd_new,		MIDX_Root_New		},
-    	{ (IPTR (*)())hidd_set,		MIDX_Root_Set		},
-    	{ (IPTR (*)())hidd_get,		MIDX_Root_Get		},
+    	{ (IPTR (*)())hidd_new,		MO_Root_New		},
+    	{ (IPTR (*)())hidd_set,		MO_Root_Set		},
+    	{ (IPTR (*)())hidd_get,		MO_Root_Get		},
     	{ NULL, 0UL }
     };
 
@@ -482,14 +482,14 @@ AROS_UFH3(static ULONG, AROS_SLIB_ENTRY(init, HIDD),
         ULONG __OOPI_Meta = GetAttrBase(IID_Meta);
         struct TagItem tags[] =
     	{
-            {A_Class_SuperID,		(IPTR)CLID_Root},
-	    {A_Class_InterfaceDescr,	(IPTR)ifdescr},
-	    {A_Class_ID,		(IPTR)CLID_Hidd},
-	    {A_Class_InstSize,		(IPTR)sizeof (struct HIDDData) },
+            {A_Meta_SuperID,		(IPTR)CLID_Root},
+	    {A_Meta_InterfaceDescr,	(IPTR)ifdescr},
+	    {A_Meta_ID,			(IPTR)CLID_Hidd},
+	    {A_Meta_InstSize,		(IPTR)sizeof (struct HIDDData) },
 	    {TAG_DONE, 0UL}
     	};
     
-	cl = NewObjectA(NULL, CLID_HIDDMeta, tags);
+	cl = NewObject(NULL, CLID_HIDDMeta, tags);
 	if (cl == NULL)
 	{
 	    CloseLibrary(hcd->UtilityBase);
