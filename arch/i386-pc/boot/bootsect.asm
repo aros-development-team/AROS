@@ -34,6 +34,8 @@
 ! read errors will result in a unbreakable loop. Reboot by hand. It
 ! loads pretty fast by getting whole tracks at a time whenever possible.
 
+#define __BIG_KERNEL__
+
 #include <aros/boot.h>
 
 .text

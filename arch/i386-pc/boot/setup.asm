@@ -23,6 +23,8 @@
     This section keeps compatibility with linux kernel
 ****************************************************************************/
 
+#define __BIG_KERNEL__
+
 ! Signature words to ensure LILO loaded us right
 #define SIG1	0xAA55
 #define SIG2	0x5A5A
