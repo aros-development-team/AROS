@@ -53,7 +53,10 @@ char usage[] =
     " -c -- force to chipmem\n"
     " -f -- force to fastmem\n"
     " -k -- force to kickmem\n"
+    " -x -- clear reset vectors before installing new modules\n"
+    " -X -- only clear reset vectors\n"
     " -d -- output debug information\n"
+    " Options can not be concatenated!\n\n"
 };
 
 int main(int argc, char **argv)
@@ -108,8 +111,24 @@ int main(int argc, char **argv)
 	    case 'k':
 		memtype = MEMF_KICK;
 		break;
+	    case 'x':
+		PutStr("Clearing reset vectors.\n");
+		SysBase->KickMemPtr = NULL;
+		SysBase->KickTagPtr = NULL;
+		SysBase->KickCheckSum = NULL;
+		break;
+	    case 'X':
+		PutStr("Clearing reset vectors.\n");
+		SysBase->KickMemPtr = NULL;
+		SysBase->KickTagPtr = NULL;
+		SysBase->KickCheckSum = NULL;
+		exit(RETURN_OK);
+		break;
 	    case 'd':
 		debug = TRUE;
+	    default:
+		Printf("Unknown option: %c\n", argv[0][1]);
+		break;
 	}
     }
 
