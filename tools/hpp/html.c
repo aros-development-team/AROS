@@ -11,6 +11,7 @@
 #include "var.h"
 #include "html.h"
 #include "expr.h"
+#include "main.h"
 
 typedef struct
 {
@@ -72,6 +73,59 @@ static int HTML_DEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD 
 static int HTML_BDEF	 PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
 static int HTML_EDEF	 PARAMS ((HTMLTag * tag));
 static int HTML_OtherTag PARAMS ((HTMLTag * tag, MyStream * in, MyStream * out, CBD data));
+
+static String
+HTML_GetArg (List * args, const char * tagname, const char * argname)
+{
+    HTMLTagArg * arg;
+    String	 value;
+
+    arg = (HTMLTagArg *) FindNodeNC (args, argname);
+
+    if (!arg)
+    {
+	PushError ("Missing argument %s in %s", argname, tagname);
+	return NULL;
+    }
+
+    if (!arg->value)
+    {
+	PushError ("Missing value for argument %s in %s", argname, tagname);
+	return NULL;
+    }
+
+    value = Var_Subst (arg->value);
+
+    if (!value)
+    {
+	PushError ("Can't expand value {%s} for argument %s in %s", arg->value, argname, tagname);
+	return NULL;
+    }
+
+    return value;
+}
+
+static const char *
+HTML_GetArgNX (List * args, const char * tagname, const char * argname)
+{
+    HTMLTagArg * arg;
+
+    arg = (HTMLTagArg *) FindNodeNC (args, argname);
+
+    if (!arg)
+    {
+	PushError ("Missing argument %s in %s", argname, tagname);
+	return NULL;
+    }
+
+    if (!arg->value)
+    {
+	PushError ("Missing value for argument %s in %s", argname, tagname);
+	return NULL;
+    }
+
+    return arg->value;
+}
 
 static int
 FillOptions (const char * name, List * args, List * options)
@@ -302,7 +356,7 @@ static int
 HTML_ENV (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLEnv    * env;
-    HTMLTagArg * name;
+    String	 name;
     const char * str = NULL;
     int 	 endtag;
 
@@ -310,31 +364,27 @@ HTML_ENV (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 
     if (!endtag)
     {
-	name = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
+	name = HTML_GetArg (&tag->args, "ENV", "NAME");
 
 	if (!name)
 	{
-	    Str_PushError (in, "Missing argument NAME in ENV");
+	    Str_PushError (in, "Error in argument");
 	    return T_ERROR;
 	}
 
-	if (!name->value)
-	{
-	    Str_PushError (in, "Missing value for argument NAME in ENV");
-	    return T_ERROR;
-	}
-
-	env = (HTMLEnv *) FindNodeNC (&EDefs, name->value);
+	env = (HTMLEnv *) FindNodeNC (&EDefs, name->buffer);
 
 	if (!env)
 	{
-	    Str_PushError (in, "Unknown environment %s", name->value);
+	    Str_PushError (in, "Unknown environment %s", name->buffer);
 	    return T_ERROR;
 	}
 
 #if 0
-    fprintf (stderr, "PUSH %s/%s\n", name->value, env->end);
+    fprintf (stderr, "PUSH %s/%s\n", name->buffer, env->end);
 #endif
+
+	VS_Delete (name);
 
 	if (!ENVEndSP)
 	{
@@ -401,7 +451,7 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLMacro  * old,
 	       * macro;
-    HTMLTagArg * name;
+    String	 name;
 
     if (FindNode (&BDefs, tag->node.name))
     {
@@ -419,27 +469,23 @@ HTML_DEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	HTML_FreeMacro (old);
     }
 
-    name = (HTMLTagArg *) FindNode (&tag->args, "NAME");
+    name = HTML_GetArg (&tag->args, "DEF", "NAME");
 
     if (!name)
     {
-	Str_PushError (in, "HTML tag DEF: Missing argument NAME");
-	return 0;
-    }
-
-    if (!name->value)
-    {
-	Str_PushError (in, "HTML tag DEF: Missing value for argument NAME");
+	Str_PushError (in, "Error in argument");
 	return 0;
     }
 
     macro = new (HTMLMacro);
 
-    macro->node.name = xstrdup (name->value);
+    macro->node.name = xstrdup (name->buffer);
     strupper (macro->node.name);
     NewList (&macro->args);
     macro->expanding = 0;
     macro->body = NULL;
+
+    VS_Delete (name);
 
     if (!FillOptions ("DEF", &macro->args, &tag->args))
     {
@@ -487,7 +533,7 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     HTMLBlock  * old,
 	       * block;
-    HTMLTagArg * name;
+    String	 name;
 
     /* Blocks and macros must have different names */
     if (FindNode (&Defs, tag->node.name))
@@ -506,27 +552,23 @@ HTML_BDEF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	HTML_FreeBlock (old);
     }
 
-    name = (HTMLTagArg *) FindNode (&tag->args, "NAME");
+    name = HTML_GetArg (&tag->args, "BDEF", "NAME");
 
     if (!name)
     {
-	Str_PushError (in, "HTML tag BDEF: Missing argument NAME");
-	return 0;
-    }
-
-    if (!name->value)
-    {
-	Str_PushError (in, "HTML tag BDEF: Missing value for argument NAME");
+	Str_PushError (in, "Error in argument");
 	return 0;
     }
 
     block = new (HTMLBlock);
 
-    block->node.name = xstrdup (name->value);
+    block->node.name = xstrdup (name->buffer);
     strupper (block->node.name);
     NewList (&block->args);
     block->expanding = 0;
     block->body = NULL;
+
+    VS_Delete (name);
 
     if (!FillOptions ("BDEF", &block->args, &tag->args))
     {
@@ -562,9 +604,9 @@ static int
 HTML_EDEF (HTMLTag * tag)
 {
     HTMLEnv    * old;
-    HTMLTagArg * name,
-	       * begin,
-	       * end;
+    String	 name;
+    const char * begin;
+    const char * end;
     HTMLEnv    * env;
 
     old = (HTMLEnv *) FindNode (&EDefs, tag->node.name);
@@ -577,40 +619,27 @@ HTML_EDEF (HTMLTag * tag)
 	HTML_FreeEnv (old);
     }
 
-    name  = (HTMLTagArg *) FindNode (&tag->args, "NAME");
-    begin = (HTMLTagArg *) FindNode (&tag->args, "BEGIN");
-    end   = (HTMLTagArg *) FindNode (&tag->args, "END");
+    name  = HTML_GetArg (&tag->args, "EDEF", "NAME");
+    begin = HTML_GetArgNX (&tag->args, "EDEF", "BEGIN");
+    end   = HTML_GetArgNX (&tag->args, "EDEF", "END");
 
     if (!name)
     {
-	PushError ("HTML tag EDEF: Missing argument NAME");
+	PushError ("Error in argument");
 	return 0;
     }
 
-    if (!name->value)
-    {
-	PushError ("HTML tag EDEF: Missing value for argument NAME");
+    if (!begin || !end)
 	return 0;
-    }
-
-    if (!begin)
-    {
-	PushError ("HTML tag EDEF: Missing argument BEGIN");
-	return 0;
-    }
-
-    if (!end)
-    {
-	PushError ("HTML tag EDEF: Missing argument END");
-	return 0;
-    }
 
     env = new (HTMLEnv);
 
-    env->node.name = xstrdup (name->value);
+    env->node.name = xstrdup (name->buffer);
     NewList (&env->args);
-    env->begin	   = begin->value ? xstrdup (begin->value) : NULL;
-    env->end	   = end->value   ? xstrdup (end->value) : NULL;
+    env->begin	   = begin ? xstrdup (begin) : NULL;
+    env->end	   = end   ? xstrdup (end) : NULL;
+
+    VS_Delete (name);
 
     if (!FillOptions ("EDEF", &env->args, &tag->args))
     {
@@ -620,8 +649,8 @@ HTML_EDEF (HTMLTag * tag)
 
 #if 0
     printf ("New ENV %s begin={%s} end={%s}\n",
-	env->node.name, begin->value ? begin->value : "",
-	end->value ? end->value : ""
+	env->node.name, begin ? begin->buffer : "",
+	end ? end->buffer : ""
     );
 #endif
 
@@ -840,6 +869,7 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
     int    line;
     int    token;
     String str;
+    int    rc;
 
     str = VS_New (NULL);
 
@@ -970,36 +1000,18 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		else if (!strcmp (tag->node.name, "EXPAND"))
 		{
 		    StringStream * strstr;
-		    HTMLTagArg	 * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
-		    String	   text1, text2;
-		    int 	   rc;
+		    String	   text;
 
-		    if (!textarg)
+		    text = HTML_GetArg (&tag->args, "EXPAND", "TEXT");
+
+		    if (!text)
 		    {
 			Str_SetLine (in, line);
-			Str_PushError (in, "Missing argument TEXT for EXPAND");
+			Str_PushError (in, "Error in argument");
 			return T_ERROR;
 		    }
 
-		    text1 = Var_Subst (textarg->value);
-
-		    if (!text1)
-		    {
-			Str_SetLine (in, line);
-			Str_PushError (in, "Can't expand TEXT {%s}", textarg->value);
-			return T_ERROR;
-		    }
-
-		    text2 = Var_Subst (text1->buffer);
-
-		    if (!text1)
-		    {
-			Str_SetLine (in, line);
-			Str_PushError (in, "Can't expand TEXT {%s}", text1->buffer);
-			return T_ERROR;
-		    }
-
-		    strstr = StrStr_New (text2->buffer);
+		    strstr = StrStr_New (text->buffer);
 
 		    if (!strstr)
 		    {
@@ -1017,13 +1029,14 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 			return T_ERROR;
 		    }
 
-		    VS_Delete (text1);
-		    VS_Delete (text2);
+		    VS_Delete (text);
 		}
 		else if (!strcmp (tag->node.name, "VERB"))
 		{
-		    HTMLTagArg * textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
+		    HTMLTagArg * textarg;
 		    const char * ptr;
+
+		    textarg = (HTMLTagArg *) FindNodeNC (&tag->args, "TEXT");
 
 		    if (!textarg)
 		    {
@@ -1045,44 +1058,112 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 		    }
 		    Str_Puts (out, "</TT>", data);
 		}
+		else if (!strcmp (tag->node.name, "WRITE"))
+		{
+		    String text = HTML_GetArg (&tag->args, "WRITE", "TEXT");
+		    String file = HTML_GetArg (&tag->args, "WRITE", "FILE");
+		    int    ProcessOutput = (FindNodeNC (&tag->args, "PROCESSOUTPUT") != NULL);
+
+		    if (!text || !file)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error in argument");
+			return T_ERROR;
+		    }
+
+		    if (ProcessOutput)
+		    {
+			StringStream * sin;
+			StdioStream  * sout;
+
+			sin = StrStr_New (text->buffer);
+
+			if (!sin)
+			{
+			    Str_SetLine (in, line);
+			    Str_PushError (in, "Out of memory");
+			    return T_ERROR;
+			}
+
+			sout = StdStr_New (file->buffer, "a");
+
+			if (!sout)
+			{
+			    StrStr_Delete (sin);
+			    Str_SetLine (in, line);
+			    Str_PushError (in, "Out of memory");
+			    return T_ERROR;
+			}
+
+			rc = HTML_Parse ((MyStream *)sin, (MyStream *)sout, data);
+
+			StdStr_Delete (sout);
+			StrStr_Delete (sin);
+
+			if (rc != T_OK)
+			{
+			    Str_SetLine (in, line);
+			    Str_PushError (in, "Error writing text to file");
+			    return T_ERROR;
+			}
+		    }
+		    else
+		    {
+			FILE * out = fopen (file->buffer, "a");
+
+			if (!out)
+			{
+			    PushStdError ("Can't append to %s", file->buffer);
+			    Str_SetLine (in, line);
+			    Str_PushError (in, "Error writing to file");
+			    return T_ERROR;
+			}
+
+			fputs (text->buffer, out);
+			fclose (out);
+		    }
+
+		    VS_Delete (text);
+		    VS_Delete (file);
+		}
+		else if (!strcmp (tag->node.name, "OUTPUT"))
+		{
+		    String file = HTML_GetArg (&tag->args, "OUTPUT", "FILE");
+
+		    if (!file)
+		    {
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error in argument");
+			return T_ERROR;
+		    }
+
+		    WriteTo (file->buffer);
+
+		    VS_Delete (file);
+		}
 		else if (!strcmp (tag->node.name, "PRINTVARS"))
 		{
 		    Var_PrintAll ();
 		}
 		else if (!strcmp (tag->node.name, "INCLUDE"))
 		{
-		    HTMLTagArg	* file;
 		    StdioStream * ss;
-		    int 	  rc;
-		    String	  name;
+		    String	  filename;
 
-		    file = (HTMLTagArg *) FindNodeNC (&tag->args, "FILE");
+		    filename = HTML_GetArg (&tag->args, "INCLUDE", "FILE");
 
-		    if (!file)
+		    if (!filename)
 		    {
-			Str_PushError (in, "Missing argument FILE in INCLUDE");
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error in argument");
 			return T_ERROR;
 		    }
 
-		    if (!file->value)
-		    {
-			Str_PushError (in, "Missing value for argument FILE in INCLUDE");
-			return T_ERROR;
-		    }
-
-		    name = Var_Subst (file->value);
-
-		    if (!name)
-		    {
-			Str_PushError (in, "Can't expand value {%s} for argument FILE in INCLUDE", file->value);
-			return T_ERROR;
-		    }
-
-		    ss = StdStr_New (name->buffer, "r");
+		    ss = StdStr_New (filename->buffer, "r");
 
 		    if (!ss)
 		    {
-			Str_PushError (in, "Unable to open %s", name->buffer);
+			Str_PushError (in, "Unable to open %s", filename->buffer);
 			return T_ERROR;
 		    }
 
@@ -1092,40 +1173,25 @@ HTML_Parse (MyStream * in, MyStream * out, CBD data)
 
 		    if (rc != T_OK)
 		    {
-			Str_PushError (in, "Error parsing %s", name->buffer);
+			Str_PushError (in, "Error parsing %s", filename->buffer);
 			return T_ERROR;
 		    }
 
-		    VS_Delete (name);
+		    VS_Delete (filename);
 		}
 		else if (!strcmp (tag->node.name, "TEMPLATE"))
 		{
-		    HTMLTagArg	 * namearg;
 		    StringStream * strstr;
 		    StdioStream  * stdstr;
-		    int 	   rc;
 		    String	   name;
 		    String	   body;
 
-		    namearg = (HTMLTagArg *) FindNodeNC (&tag->args, "NAME");
-
-		    if (!namearg)
-		    {
-			Str_PushError (in, "Missing argument NAME in TEMPLATE");
-			return T_ERROR;
-		    }
-
-		    if (!namearg->value)
-		    {
-			Str_PushError (in, "Missing value for argument NAME in TEMPLATE");
-			return T_ERROR;
-		    }
-
-		    name = Var_Subst (namearg->value);
+		    name = HTML_GetArg (&tag->args, "TEMPLATE", "NAME");
 
 		    if (!name)
 		    {
-			Str_PushError (in, "Can't expand value {%s} for argument NAME in TEMPLATE", namearg->value);
+			Str_SetLine (in, line);
+			Str_PushError (in, "Error in argument");
 			return T_ERROR;
 		    }
 
