@@ -683,6 +683,7 @@ aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
+aros_target_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/scripts"
 
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
@@ -1053,6 +1054,9 @@ fi
 if test ! -d ${aros_tools_dir} ; then
     ${MKDIR} ${aros_tools_dir}
 fi
+if test ! -d ${aros_target_scripts_dir} ; then
+    ${MKDIR} ${aros_target_scripts_dir}
+fi
 
 cp config/config.h.in ${aros_inc_dir}
 cp config/config.h.in ${aros_geninc_dir}
@@ -1062,6 +1066,7 @@ cp config/target.cfg.in ${aros_targetcfg_dir}
 cp config/make.defaults.in ${aros_targetcfg_dir}
 cp config/specs.in ${aros_targetcfg_dir}
 cp scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
+cp compiler/c_lib/source/lib_source/genshared.in ${aros_target_scripts_dir}
 
 # HACK: You will need to uncomment this line to run autoheader
 #AC_CONFIG_HEADERS(config/host-conf.h)
@@ -1070,9 +1075,11 @@ AC_CONFIG_HEADERS(${aros_geninc_dir}/host-conf.h)
 AC_OUTPUT(Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h
 	${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg
 	mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs
-        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc)
+        ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
+        ${aros_target_scripts_dir}/genshared)
 
 chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
+chmod a+x ${aros_target_scripts_dir}/genshared
 
 dnl This is in order to not defined SHARED_CFLAGS sometimes
 dnl We don't always do aros_shared_ar, aros_shared_cflags

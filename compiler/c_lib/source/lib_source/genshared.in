@@ -1,6 +1,6 @@
 #!/bin/sh
 
-AWK=awk
+AWK=@AWK@
 
 case $1 in
     -libdefs )

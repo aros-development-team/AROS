@@ -6386,6 +6386,7 @@ aros_targetcfg_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/config"
 aros_inc_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/Include/aros"
 aros_geninc_dir="bin/${aros_target_arch}-${aros_target_cpu}/gen/include/aros"
 aros_tools_dir="bin/${aros_host_arch}-${aros_host_cpu}/tools"
+aros_target_scripts_dir="bin/${aros_target_arch}-${aros_target_cpu}/AROS/scripts"
 
 # Find the tools that we need for the target - this could be quite
 # expensive, but we shall try it anyway.
@@ -7299,6 +7300,9 @@ fi
 if test ! -d ${aros_tools_dir} ; then
     ${MKDIR} ${aros_tools_dir}
 fi
+if test ! -d ${aros_target_scripts_dir} ; then
+    ${MKDIR} ${aros_target_scripts_dir}
+fi
 
 cp config/config.h.in ${aros_inc_dir}
 cp config/config.h.in ${aros_geninc_dir}
@@ -7308,13 +7312,14 @@ cp config/target.cfg.in ${aros_targetcfg_dir}
 cp config/make.defaults.in ${aros_targetcfg_dir}
 cp config/specs.in ${aros_targetcfg_dir}
 cp scripts/aros-gcc.in ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc.in
+cp compiler/c_lib/source/lib_source/genshared.in ${aros_target_scripts_dir}
 
 # HACK: You will need to uncomment this line to run autoheader
 #AC_CONFIG_HEADERS(config/host-conf.h)
           ac_config_headers="$ac_config_headers ${aros_geninc_dir}/host-conf.h"
 
 
-                                                                                          ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h ${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc"
+                                                                                                    ac_config_files="$ac_config_files Makefile ${aros_inc_dir}/config.h ${aros_geninc_dir}/config.h ${aros_hostcfg_dir}/host.cfg ${aros_targetcfg_dir}/target.cfg mmake.config ${aros_targetcfg_dir}/make.defaults ${aros_targetcfg_dir}/specs ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc ${aros_target_scripts_dir}/genshared"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -7847,6 +7852,7 @@ do
   "${aros_targetcfg_dir}/make.defaults" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/make.defaults" ;;
   "${aros_targetcfg_dir}/specs" ) CONFIG_FILES="$CONFIG_FILES ${aros_targetcfg_dir}/specs" ;;
   "${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ) CONFIG_FILES="$CONFIG_FILES ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc" ;;
+  "${aros_target_scripts_dir}/genshared" ) CONFIG_FILES="$CONFIG_FILES ${aros_target_scripts_dir}/genshared" ;;
   "${aros_geninc_dir}/host-conf.h" ) CONFIG_HEADERS="$CONFIG_HEADERS ${aros_geninc_dir}/host-conf.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -8504,6 +8510,7 @@ fi
 
 
 chmod a+x ${aros_tools_dir}/${aros_target_cpu}-${aros_target_arch}-aros-gcc
+chmod a+x ${aros_target_scripts_dir}/genshared
 
 
 #XXX compatability...
