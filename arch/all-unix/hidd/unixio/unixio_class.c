@@ -154,6 +154,7 @@ static void WaitForIO (void)
     struct uioMessage * msg, * nextmsg;
     ULONG rmask;
     int flags;
+    pid_t my_pid = getpid();
 
     NEWLIST (&waitList);
 
@@ -205,7 +206,7 @@ static void WaitForIO (void)
 	      D(bug("wfio: Got msg fd=%ld mode=%ld\n", msg->fd, msg->mode));
 	      AddTail (&waitList, (struct Node *)msg);
 
-	      fcntl (msg->fd, F_SETOWN, getpid());
+	      fcntl (msg->fd, F_SETOWN, my_pid);
 	      flags = fcntl (msg->fd, F_GETFL);
 	      fcntl (msg->fd, F_SETFL, flags | FASYNC);
 	    }
@@ -285,7 +286,8 @@ static void WaitForIO (void)
 		    msg->result = err;
 		    goto reply;
 		}
-		else if (FD_ISSET (msg->fd, &rfds))
+		else if ((vHidd_UnixIO_Read & msg->mode) &&
+		         FD_ISSET (msg->fd, &rfds))
 		{
 		    if (msg->callback)
 		    {
@@ -301,7 +303,8 @@ static void WaitForIO (void)
 			goto reply;
 		    }
 		}
-		else if (FD_ISSET (msg->fd, &wfds))
+		else if ((vHidd_UnixIO_Write & msg->mode) &&
+		         FD_ISSET (msg->fd, &wfds))
 		{
 		    msg->result = 0;
 reply:
@@ -313,8 +316,41 @@ kprintf("\tUnixIO task: Replying a message from task %s (%x) to port %x (flags :
 			Remove ((struct Node *)msg);
 			flags = fcntl (msg->fd, F_GETFL);
 			fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
+		        ReplyMsg ((struct Message *)msg);
+		    } else {
+		        /*
+		         * Since I am supposed to keep the message
+		         * I cannot use ReplyMsg() on it, because that
+		         * would put it on the reply port's message port.
+g		         * So I am doing things 'manually' here what
+		         * ReplyMsg() does internally, except for putting
+		         * the message onto the message port.
+		         */
+			struct MsgPort *port;
+			Disable();
+                        port=((struct Message *)msg)->mn_ReplyPort;
+			if(port->mp_SigTask)
+			{
+			    /* And trigger the arrival action. */
+			    switch(port->mp_Flags&PF_ACTION)
+			    {
+				case PA_SIGNAL:
+				    /* Send a signal */
+				    Signal((struct Task *)port->mp_SigTask,1<<port->mp_SigBit);
+				    break;
+
+				case PA_SOFTINT:
+				    /* Raise a software interrupt */
+				    Cause((struct Interrupt *)port->mp_SoftInt);
+				    break;
+
+				case PA_IGNORE:
+				    /* Do nothing */
+				    break;
+			    }
+			}
+			Enable();
 		    }
-		    ReplyMsg ((struct Message *)msg);
 		}
 	    }
 	}
