@@ -34,10 +34,11 @@ struct MUI_StringsPData
     Object *popup_popimage;
     Object *popfile_popimage;
     Object *popdrawer_popimage;
-    Object *inactive_bg_poppen;
+    Object *inactive_bg_popimage;
     Object *inactive_text_poppen;
-    Object *active_bg_poppen;
+    Object *active_bg_popimage;
     Object *active_text_poppen;
+    Object *cursor_poppen;
 };
 
 Object *MakePopupPopimage(CONST_STRPTR title)
@@ -65,7 +66,8 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
     (
         cl, obj, NULL,
 	MUIA_Group_Horiz, FALSE,
-	Child, (IPTR) ColGroup(2),
+	Child, (IPTR) HGroup,
+	Child, (IPTR) VGroup,
 	Child, (IPTR) HGroup,
 	GroupFrameT("String Frame"),
 	Child, (IPTR) (d.string_popframe = MakePopframe()),
@@ -89,12 +91,14 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR) CLabel("Drawer"),
             End,
 	End, // Special Popup Buttons
+	End, // VGroup Left
+	Child, VGroup,
 	Child, HGroup,
 	GroupFrameT("Inactive String Colors"),
         MUIA_Group_SameWidth, TRUE,
 	Child, (IPTR) VGroup,
                 MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.inactive_bg_poppen = MakePoppen(),
+                Child, (IPTR) d.inactive_bg_popimage = MakeBackgroundPopimage(),
                 Child, (IPTR) CLabel("Background"),
             End,
             Child, (IPTR) VGroup,
@@ -108,7 +112,7 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
         MUIA_Group_SameWidth, TRUE,
 	Child, (IPTR) VGroup,
                 MUIA_Group_VertSpacing, 1,
-                Child, (IPTR) d.active_bg_poppen = MakePoppen(),
+                Child, (IPTR) d.active_bg_popimage = MakeBackgroundPopimage(),
                 Child, (IPTR) CLabel("Background"),
             End,
             Child, (IPTR) VGroup,
@@ -117,9 +121,17 @@ static IPTR StringsP_New(struct IClass *cl, Object *obj, struct opSet *msg)
                 Child, (IPTR) CLabel("Text"),
             End,
 	End, // Inactive String Colors
-	End, // ColGroup(2)
+	Child, HGroup,
+	GroupFrameT("Cursor"),
+        MUIA_VertWeight, 80,
+            Child, (IPTR) d.cursor_poppen = MakePoppen(),
+	End, // Cursor
+
+	End,
+        End,
 	Child, (IPTR) StringObject,
 	StringFrame,
+	MUIA_CycleChain, 1,
 	MUIA_String_Contents, "Example String Gadget",
 	MUIA_String_Format, MUIV_String_Format_Center,
 	End,
@@ -159,20 +171,24 @@ static IPTR StringsP_ConfigToGadgets(struct IClass *cl, Object *obj,
 			    MUICFG_Image_PopDrawer);
     set(data->popdrawer_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
 
-/* pens */
+/* pens & images */
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
 			    MUICFG_String_Background);
-    set(data->inactive_bg_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
+    set(data->inactive_bg_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
 			    MUICFG_String_Text);
     set(data->inactive_text_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
 
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
 			    MUICFG_String_ActiveBackground);
-    set(data->active_bg_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
+    set(data->active_bg_popimage, MUIA_Imagedisplay_Spec, (IPTR)spec);
     spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
 			    MUICFG_String_ActiveText);
     set(data->active_text_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
+
+    spec = (STRPTR)DoMethod(msg->configdata, MUIM_Configdata_GetString,
+			    MUICFG_String_Cursor);
+    set(data->cursor_poppen, MUIA_Pendisplay_Spec, (IPTR)spec);
 
     return 1;    
 }
@@ -203,20 +219,24 @@ static IPTR StringsP_GadgetsToConfig(struct IClass *cl, Object *obj,
     DoMethod(msg->configdata, MUIM_Configdata_SetImspec, MUICFG_Image_PopDrawer,
 	     (IPTR)str);
 
-/* pens */
-    str = (STRPTR)XGET(data->inactive_bg_poppen, MUIA_Pendisplay_Spec);
+/* pens & images */
+    str = (STRPTR)XGET(data->inactive_bg_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
 	     MUICFG_String_Background, (IPTR)str);
     str = (STRPTR)XGET(data->inactive_text_poppen, MUIA_Pendisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
 	     MUICFG_String_Text, (IPTR)str);
 
-    str = (STRPTR)XGET(data->active_bg_poppen, MUIA_Pendisplay_Spec);
+    str = (STRPTR)XGET(data->active_bg_popimage, MUIA_Imagedisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
 	     MUICFG_String_ActiveBackground, (IPTR)str);
     str = (STRPTR)XGET(data->active_text_poppen, MUIA_Pendisplay_Spec);
     DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
 	     MUICFG_String_ActiveText, (IPTR)str);
+
+    str = (STRPTR)XGET(data->cursor_poppen, MUIA_Pendisplay_Spec);
+    DoMethod(msg->configdata, MUIM_Configdata_SetPenspec,
+	     MUICFG_String_Cursor, (IPTR)str);
 
     return TRUE;
 }
