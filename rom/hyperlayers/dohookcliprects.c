@@ -88,6 +88,9 @@
 	   layer's rastport. This makes more sense than if it was relative to the rastport of
 	   the screen where this layer is to be found in
 	*/
+
+	LockLayer(0, L);
+
 	boundrect.MinX = rect->MinX + L->bounds.MinX - L->Scroll_X;
 	boundrect.MinY = rect->MinY + L->bounds.MinY - L->Scroll_Y;
 	boundrect.MaxX = rect->MaxX + L->bounds.MinX - L->Scroll_X;
@@ -102,7 +105,6 @@
 	    /* yes, that's a layer to be considered */
 	    /* I want nobody else to interrupt me while I call the hook for this layer */
 	    struct ClipRect * CR;
-	    LockLayer(0, L);
 
     	    CR = L->ClipRect; /* must not read this before LockLayer!! */
 	    /*
@@ -201,9 +203,9 @@
 	    
 	    rport->Layer = L;
 	    
-	    UnlockLayer(L);
-
 	} /* if (rect in screen coords interesects layer coords) */
+
+	UnlockLayer(L);
 	
     } /* if (layered rastport) */
     
