@@ -34,7 +34,7 @@
 #endif
 #include <utility/utility.h>
 #include <aros/asmcall.h>
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "intuition_intern.h"
 #include "strgadgets.h" /* To get GlobalEditFunc prototype */
 #include "inputhandler.h"

@@ -1,41 +1,8 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-# BEGIN_DESC{makefile}
-# This is the mmakefile for dos.library. Use it if you want to compile
-# only this part of AROS.
-# END_DESC{makefile}
+USER_INCLUDES := -I$(TOP)/rom/devs
 
-USER_INCLUDES := -I. -I$(TOP)/rom/devs
-OS_INCLUDES := -I$(INCDIR)
-
-# BEGIN_DESC{localmakevar}
-# \item{LIBNAME} The lowercase name of the library (without the extension).
-#	This is used to help derive some filenames.
-#
-# \item{ULIBNAME} This also contains the library name, but with the correct
-#	case (the same as found in the library base name).
-#
-# \item{OSMODULE} The name of the file which is created when compiling to
-#	a target with module files. In this library it is expansion.library.
-#
-# \item{FILES} This is a list of all files (without the .c) that
-#	contain internal functions of the library. You do not need to include
-#	the library init, function-table or end files.
-#
-# \item{FUNCTIONS} This is a list of all the functions that make
-#	up the library. The mmakefile will strip all the files in
-#	this list for which a special CPU dependant version exists.
-#	This list is concatenated into the file functions.c before
-#	compilation for a speed boost.
-# END_DESC{localmakevar}
-
-OBJDIR	 := $(GENDIR)/$(CURDIR)
-TESTOBJDIR := $(GENDIR)/$(CURDIR)
-LIBNAME  := dos
-ULIBNAME := Dos
-
-OSMODULE  := dos.library
 IMAGE_TYPES := aos aout elf elf_aros
 FILES	  := devname doname dosboot errorlist inithidds lddemon runprocess \
 	     filesystem_support match_misc newcliproc rootnode dosdoio\
@@ -70,45 +37,20 @@ FUNCTIONS := abortpkt addbuffers adddosentry addpart addprocess addsegment \
 	     unlockdoslist unlockrecord unlockrecords vfprintf vfwritef \
 	     vprintf waitforchar waitpkt write writechars
 
-# BEGIN_DESC{localmakevar}
-# \item{DEPLIBS} List of extra libraries that you want included during
-#	the linking process. You should not include the paths in this
-#	list, as it will be added later. You do not need to include your
-#	own lib here.
-# END_DESC{localmakevar}
-
-ifeq ("$(FLAVOUR)","native")
-DEPLIBS :=
-else
-DEPLIBS :=
+-include $(GENDIR)/rom/dos/mf.inc
+TMP_OBJS := $(addprefix $(GENDIR)/rom/dos/,$(addsuffix .o,$(ADDITIONAL_OBJS)))
+TMP_SOBJS := $(addprefix $(GENDIR)/rom/dos/,$(addsuffix .so,$(ADDITIONAL_OBJS)))
+ifneq ($TMP_OBJS,)
+$(TMP_OBJS) :
+	@$(ECHO) Precompiled $@ does not exists
+	@exit 1
 endif
+$(TMP_SOBJS): %.so : %.o
+	@$(CP) $< $@
 
-# BEGIN_DESC{localmakevar}
-# This is where the machine dependant magic comes in. The directories under the
-# $(TOP)/config subtree will create lists of files which they wish to be used.
-# These lists are used to add files to the link, and to prevent the compilation
-# of other files.
-#
-# We create versions of the file lists for use with creating the function
-# table, which needs all of the files listed.
-#
-# We also set up the $(OBJDIR) variable, and do some test to see whether we
-# are compiling a shared library.
-# END_DESC{localmakevar}
-
-ALL_FILES := $(FILES)
-ALL_FUNCTIONS := $(FUNCTIONS)
-%prepare_replace rom/dos
-%filter_replace FILES
-%filter_replace FUNCTIONS
-
-# Set up for shared library creation.
-ifeq ("$(SHARED_DOS)"),"yes")
-SPECIAL_CFLAGS := $(SPECIAL_CFLAGS) $(SHARED_CFLAGS)
-endif
-%prepare_shlib dos $(SHARED_DOS)
-
-%genromlib_finline hasrt=-hasrt
+%build_module_macro mmake=kernel-dos \
+  modname=dos modtype=library \
+  funcs=$(FUNCTIONS) files="$(FILES) $(ADDITIONAL_OBJS)" conffile=lib.conf genshlinklib=$(SHARED_DOS)
 
 TESTS := datetostr runprocess strtodate splitname readargs
 TEST_DEPLIBS := arossupport arosc amiga
@@ -130,18 +72,4 @@ $(TESTDIR)/runprocess : runprocess.c ../../config/unix/exec/stackswap.c
 	$(CC) -DTEST $(CFLAGS) $< $(TESTOBJDIR)/ss.o -o $@
 	$(RM) $(TESTOBJDIR)/ss.o
 
-#MM kernel-dos-linklib : setup includes kernel-dos-$(ARCH)-$(CPU)
-kernel-dos-linklib : $(LIB)
-	@$(NOP)
-
-#MM kernel-dos-module : setup includes kernel-dos-$(ARCH)-$(CPU)
-kernel-dos-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
-	@$(NOP)
-
-#MM clean setup
-
-%asm_rule "$(ALL_FUNCTIONS) $(INIT_FILE) $(ALL_FILES) $(END_FILE)"
-%ctoasm_q
-
 %common
-%include_deps
