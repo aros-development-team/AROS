@@ -1580,6 +1580,16 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     else
 	state->bitsPerPixel = 32;
 
+    if (sd->Card.FlatPanel)
+    {
+	VSyncStart = VTotal - 3;
+	VSyncEnd = VTotal - 2;
+	VBlankStart = VSyncStart;
+	HSyncStart = HTotal - 5;
+	HSyncEnd = HTotal - 2;
+	HBlankEnd = HTotal + 4;
+    }
+
     state->Regs.crtc[0x00] = Set8Bits(HTotal);
     state->Regs.crtc[0x01] = Set8Bits(HDisplay);
     state->Regs.crtc[0x02] = Set8Bits(HBlankStart);
@@ -1636,6 +1646,17 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     NVCalcStateExt(sd, &sd->Card, state, bpp, width, OrgHDisplay, height, pixelc, 0);
 
     state->scale = sd->Card.PRAMDAC[0x0848/4] & 0xfff000ff; 
+    if (sd->Card.FlatPanel)
+    {
+	state->pixel |= (1 << 7);
+	if (!sd->Card.fpScaler 	|| (sd->Card.fpWidth <= mode.HDisplay)
+				|| (sd->Card.fpHeight <= mode.VDisplay))
+	{
+	    state->scale |= (1 << 8);
+	}
+    }
+    
+    
     state->cursorConfig = 0x00000100;
     if (sd->Card.alphaCursor)
     {

@@ -147,6 +147,8 @@ typedef struct Card {
     ULONG	    flatPanel;
     ULONG	    CRTCnumber;
     ULONG	    Television;
+    ULONG	    fpWidth;
+    ULONG	    fpHeight;
     BOOL	    twoHeads;
     BOOL	    twoStagePLL;
     BOOL	    fpScaler;
