@@ -24,11 +24,8 @@
 #define SWAP(x) x
 #endif
 
-#if defined(__linux__) 
-//&& defined(__mc68000__)
 #include <sys/mman.h>
 #include <unistd.h>
-#endif
 
 #include <memory.h>	/* From $(TOP)/rom/exec */
 
