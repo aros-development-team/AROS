@@ -134,7 +134,7 @@ int driver_init (struct GfxBase * GfxBase)
 	sysPlaneMask |= sysCMap[t];
     }
 
-    sysCursor = XCreateFontCursor (sysDisplay, XC_xterm);
+    sysCursor = XCreateFontCursor (sysDisplay, XC_top_left_arrow);
     XRecolorCursor (sysDisplay, sysCursor, &fg, &bg);
 
     return True;
