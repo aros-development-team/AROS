@@ -13,6 +13,7 @@
 #include <proto/layers.h>
 #include <proto/graphics.h>
 #include <proto/keymap.h>
+#include <proto/input.h>
 #include <exec/memory.h>
 #include <exec/alerts.h>
 #include <exec/interrupts.h>
@@ -530,18 +531,21 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
     }
     else
     {
+    #ifdef __MORPHOS__
         struct IOStdReq req;
         struct MsgPort port;
         struct InputEvent ie;
+    #endif
 
         msg->handler = func;
         msg->task = me;
         msg->done = FALSE;
-
+    
         ObtainSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
         AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)msg);
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
+    #ifdef __MORPHOS__
         port.mp_Flags = PA_SIGNAL;
         port.mp_SigTask = me;
         port.mp_SigBit = SIGB_INTUITION;
@@ -555,11 +559,15 @@ void DoSyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *),
         req.io_Data = &ie;
 
         ie.ie_Class = IECLASS_NULL;
-
+    #endif
+    
         if (!msg->done)
         {
+    #ifdef __MORPHOS__
             DoIO((APTR)&req);
-
+    #else
+    	    AddNullEvent();
+    #endif
             while (!msg->done)
             {
                 Wait(SIGF_INTUITION);
@@ -596,6 +604,9 @@ BOOL DoASyncAction(void (*func)(struct IntuiActionMsg *, struct IntuitionBase *)
         AddTail((struct List *)GetPrivIBase(IntuitionBase)->IntuiActionQueue, (struct Node *)new_msg);
         ReleaseSemaphore(&GetPrivIBase(IntuitionBase)->IntuiActionLock);
 
+    #ifndef __MORPHOS__
+    	AddNullEvent();
+    #endif
         return TRUE;
     }
     else
