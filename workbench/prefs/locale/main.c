@@ -186,6 +186,8 @@ static void GetArguments(void)
 	Fault(IoErr(), 0, s, 256);
 	Cleanup(s);
     }
+    
+    if (!args[ARG_FROM]) args[ARG_FROM] = (IPTR)CONFIGNAME_ENV;
 }
 
 /*********************************************************************************************/
@@ -604,11 +606,11 @@ static void HandleAll(void)
 		    switch(gad->GadgetID)
 		    {
 		    	case MSG_GAD_SAVE:
-			    if (!SavePrefs("ENVARC:Sys/locale.prefs")) break;
+			    if (!SavePrefs(CONFIGNAME_ENVARC)) break;
 			    /* fall through */
 			    
 			case MSG_GAD_USE:
-			    if (!SavePrefs("ENV:Sys/locale.prefs")) break;
+			    if (!SavePrefs(CONFIGNAME_ENV)) break;
 			    /* fall through */
 			    
 			case MSG_GAD_CANCEL:
@@ -651,7 +653,7 @@ static void HandleAll(void)
 				    break;
 				
 				case MSG_MEN_EDIT_LASTSAVED:
-				    LoadPrefs("ENVARC:Sys/locale.prefs");
+				    LoadPrefs(CONFIGNAME_ENVARC);
 				    break;
 				    
 				case MSG_MEN_EDIT_RESTORE:
@@ -688,7 +690,7 @@ int main(void)
     InitMenus();
     OpenLibs();
     GetArguments();
-    InitPrefs();
+    InitPrefs((STRPTR)args[ARG_FROM], (args[ARG_USE] ? TRUE : FALSE), (args[ARG_SAVE] ? TRUE : FALSE));
     GetVisual();
     MakeMenus();
     MakePages();

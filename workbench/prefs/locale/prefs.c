@@ -92,7 +92,7 @@ static BOOL GetCountryFromDefLocale(struct CountryPrefs *country)
 
 /*********************************************************************************************/
 
-void InitPrefs(void)
+void InitPrefs(STRPTR filename, BOOL use, BOOL save)
 {
     struct LanguageEntry *entry;
            
@@ -116,7 +116,7 @@ void InitPrefs(void)
 	SortInNode(&language_list, &entry->lve.node);
     }
     
-    if (!LoadPrefs("ENV:Sys/locale.prefs"))
+    if (!LoadPrefs(filename))
     {
     	if (!DefaultPrefs())
 	{
@@ -128,6 +128,18 @@ void InitPrefs(void)
     }
     
     restore_prefs = localeprefs;
+    
+    if (use || save)
+    {
+    	SavePrefs(CONFIGNAME_ENV);
+    }
+    
+    if (save)
+    {
+    	SavePrefs(CONFIGNAME_ENVARC);
+    }
+    
+    if (use || save) Cleanup(NULL);
 }
 
 /*********************************************************************************************/
@@ -441,7 +453,7 @@ BOOL DefaultPrefs(void)
     {
     	memset(localeprefs.lp_PreferredLanguages[i], 0, sizeof(localeprefs.lp_PreferredLanguages[i]));
     }
-    localeprefs.lp_GMTOffset = 0;
+    localeprefs.lp_GMTOffset = 5 * 60;
     localeprefs.lp_Flags = 0;
     
     if (LoadCountry("united_states", &localeprefs.lp_CountryData))
