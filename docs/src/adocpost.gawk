@@ -1,4 +1,5 @@
 BEGIN {
+    cols=3;
     if (mode=="pre_bylib")
     {
     }
@@ -16,6 +17,7 @@ BEGIN {
 	first=1;
 	print "<DL>"
 	dl=1;
+	table=0;
     }
 }
  {
@@ -37,15 +39,19 @@ BEGIN {
 	{
 	    if (first)
 	    {
-		print "<A NAME=\"bylib\"></A><DT><FONT SIZE=7><B>Reference by library</B></FONT><DD><DL>"
+		print "<A NAME=\"bylib\"></A><DT><FONT SIZE=7><B>A.2 Reference by library</B></FONT><DD><DL>"
 		dl++;
 		first=0;
+		cnt=1;
 	    }
 
 	    if ($2=="Utility functions")
-		print "<A HREF=\"#util\"><FONT SIZE=6><B>Utility functions</B></FONT></A> "
+		print "<A HREF=\"#util\">"
 	    else
-		print "<A HREF=\"#lib"$2"\"><FONT SIZE=6><B>"$2"</B></FONT></A> "
+		print "<A HREF=\"#lib"$2"\">"
+
+	    print "<FONT SIZE=6><B>A.2."cnt" "$2"</B></FONT></A><BR>"
+	    cnt ++;
 
 	    lib="";
 	    char="";
@@ -54,22 +60,39 @@ BEGIN {
 	{
 	    if (lib != $1)
 	    {
+		if (table)
+		{
+		    while (horiz && horiz < cols)
+		    {
+			print "<TD WIDTH=25%> </TD>"
+			horiz++;
+		    }
+		    print "</TR></TABLE>"
+		    table=0;
+		}
+
 		if (lib != "")
 		{
 		    print "</DL><P>"
 		    dl--;
 		}
 		else
+		{
 		    print "<P>"
+		    cnt=1;
+		}
 
 		lib = $1;
 
-		print "<DT>"
+		print "<P><DT>"
 
 		if (lib=="Utility functions")
-		    print "<A NAME=\"util\"></A><FONT SIZE=6><B>Utility functions</B></FONT>"
+		    print "<A NAME=\"util\"></A>"
 		else
-		    print "<A NAME=\"lib"lib"\"></A><FONT SIZE=6><B>"$1"</B></FONT>"
+		    print "<A NAME=\"lib"lib"\"></A>"
+
+		print "<FONT SIZE=6><B>A.2."cnt " " $1"</B></FONT>"
+		cnt ++;
 
 		print "<DD><DL>"
 		dl++;
@@ -77,10 +100,40 @@ BEGIN {
 	    if (char != $2)
 	    {
 		char=$2;
+
+		if (table)
+		{
+		    while (horiz && horiz < cols)
+		    {
+			print "<TD WIDTH=25%> </TD>"
+			horiz++;
+		    }
+		    print "</TR></TABLE>"
+		    table=0;
+		}
+
 		print "<DT><FONT SIZE=5><B>"char"</B></FONT><DD>"
+
+		print "<TABLE WIDTH=80%>"
+		table=1;
+		horiz=0;
 	    }
 
-	    print "<A HREF=\""$4"\">"$3" ()</A> "
+	    if (horiz==0)
+	    {
+		print "<TR>"
+	    }
+
+	    print "<TD WIDTH=25%>"
+	    print "<A HREF=\""$4"\">"$3"()</A> "
+	    print "</TD>"
+	    horiz++;
+
+	    if (horiz==cols)
+	    {
+		print "</TR>"
+		horiz=0;
+	    }
 	}
     }
     if (mode=="pre_byname")
@@ -95,7 +148,7 @@ BEGIN {
     {
 	if ($1=="-")
 	{
-	    print "<DT><A NAME=\"byname\"></A><FONT SIZE=7><B>Reference by name</B></FONT><DD>"
+	    print "<DT><A NAME=\"byname\"></A><FONT SIZE=7><B>A.3 Reference by name</B></FONT><DD>"
 
 	    for (t=1; t<length($2); t++)
 	    {
@@ -112,6 +165,17 @@ BEGIN {
 	{
 	    if (char!=$1)
 	    {
+		if (table)
+		{
+		    while (horiz && horiz < cols)
+		    {
+			print "<TD WIDTH=25%> </TD>"
+			horiz++;
+		    }
+		    print "</TR></TABLE>"
+		    table=0;
+		}
+
 		if (char != "-")
 		{
 		    print "</DL><P>"
@@ -125,9 +189,28 @@ BEGIN {
 		print "<DT><A NAME=\"name"char"\"></A><FONT SIZE=5><B>"char"</B></FONT><DD>"
 		print "<DL>"
 		dl++;
+
+		print "<TABLE WIDTH=80%>"
+		table=1;
+		horiz=0;
 	    }
 
-	    print "<A HREF=\"" $3 "\">" $2 " ()</A>"
+	    if (horiz==0)
+	    {
+		print "<TR>"
+	    }
+
+	    print "<TD WIDTH=25%>"
+	    print "<A HREF=\"" $3 "\">" $2 "()</A>"
+	    print "</TD>"
+
+	    horiz++;
+
+	    if (horiz==cols)
+	    {
+		print "</TR>"
+		horiz=0;
+	    }
 	}
     }
 }
@@ -137,6 +220,15 @@ END {
     }
     else if (mode=="post_bylib")
     {
+	if (table)
+	{
+	    while (horiz && horiz < cols)
+	    {
+		print "<TD WIDTH=25%> </TD>"
+		horiz++;
+	    }
+	    print "</TABLE>"
+	}
 	while (dl--)
 	    print "</DL>"
     }
@@ -153,6 +245,15 @@ END {
     }
     else if (mode=="post_byname")
     {
+	if (table)
+	{
+	    while (horiz && horiz < cols)
+	    {
+		print "<TD WIDTH=25%> </TD>"
+		horiz++;
+	    }
+	    print "</TABLE>"
+	}
 	while (dl--)
 	    print "</DL>"
     }
