@@ -39,9 +39,10 @@ Basic Installation of AROS-SOURCES
 		make install
 		cd ../..
 		cp mmake.config.in $HOME/.mmake.config
-		  (to install it global or if you only intend to start
-		  mmake in the AROS directory)
-		cp mmake.config.in mmake.config
+		  ( This installs it for global use or if you only intend
+		    to start mmake in the AROS directory:
+		  cp mmake.config.in mmake.config
+		  )
 		Now edit your mmake.config file to your needs:
 		- uncomment and adjust "top /home/digulla/AROS", if you
 		  want to compile from anywhere else than the top dir.
@@ -49,9 +50,10 @@ Basic Installation of AROS-SOURCES
 	b) The Makefile-Generation tool, short genmf.
 		cd AROS/tools/genmf
 		make
-		  (to install the binary, or to use the old gawk script,
-		  edit mmake.config and comment out the other
-		  "genmakefilescript"-line)
+		  ( to use the binary, or to use the old gawk script,
+		    edit mmake.config and comment out the other
+		    "genmakefilescript"-line
+		  )
 
 	c) The function-packer, cpak.
 		This one should not be needed to be compiled first,
@@ -61,18 +63,18 @@ Basic Installation of AROS-SOURCES
 		make
 
 4. Run ./configure in the source root.
-	Use ./configure --help for all possible options.
+	Use "./configure --help" for all possible options.
 	This will examine your system and create the necessary
 	files for the build.
 
 	That's it. And now for the most important step:
 
-4. Compile your sources.
+5. Compile your sources.
 	If you have the .mmake.config in your $HOME dir, and adjusted
 	the "top" variable in it, just call mmake, or if you haven't,
 	call mmake in the topdir of AROS (e.g: /usr/src/AROS)
 
-Now everything should compile well, and you binaries are placed in
+Now everything should compile well, and your binaries are placed in
 AROS/bin/(os)-(cpu-type)/AROS.
 If you have compiled AROS as an emulation, cd into this dir, start
 arosshell and enjoy!

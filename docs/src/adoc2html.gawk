@@ -240,8 +240,6 @@ BEGIN {
 
 		    if (line=="" && !first)
 			 inputs=inputs prefix "<P>\n";
-		    else
-			 inputs=inputs prefix line;
 
 		    first=0;
 		}
