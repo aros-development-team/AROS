@@ -446,7 +446,7 @@ AROS_UFH3(static void *, AROS_SLIB_ENTRY(init, UnixIO),
 	newtask = ml->ml_ME[0].me_Addr;
 
 	newtask->tc_Node.ln_Type = NT_TASK;
-	newtask->tc_Node.ln_Pri  = -10;
+	newtask->tc_Node.ln_Pri  = 30;
 	newtask->tc_Node.ln_Name = "UnixIO.task";
 
 	newtask->tc_SPReg   = (APTR)((ULONG)ml->ml_ME[1].me_Addr + STACKSIZE);
