@@ -54,16 +54,17 @@
     AROS_LIBFUNC_INIT
 
     ASSERT_VALID_PTR(region);
+
+    ClearRegion(region);
     
-    DisposeRegionRectangleList(region->RegionRectangle);
 #if REGIONS_USE_MEMPOOL
     ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
     FreePooled(PrivGBase(GfxBase)->regionpool, region, sizeof(struct Region));
     ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
-#else    
+#else
     FreeMem(region, sizeof(struct Region));
 #endif
 
     AROS_LIBFUNC_EXIT
-    
+
 } /* DisposeRegion */

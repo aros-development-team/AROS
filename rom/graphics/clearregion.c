@@ -53,12 +53,53 @@
     AROS_LIBFUNC_INIT
 
     ASSERT_VALID_PTR(region);
-    
+
+#if REGIONS_HAVE_RRPOOL
+    struct RegionRectanglePool *Pool;
+
+    if (region->RectPoolList)
+    {
+        while ((Pool = RemHead(region->RectPoolList)))
+        {
+
+            ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+            FreePooled
+            (
+                PrivGBase(GfxBase)->regionpool,
+                Pool->RectArray,
+                SIZERECTBUF * sizeof(struct RegionRectangleExt)
+            );
+
+            FreePooled
+            (
+                PrivGBase(GfxBase)->regionpool,
+                Pool,
+                sizeof(struct RegionRectanglePool)
+            );
+
+            ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+        }
+
+        ObtainSemaphore(&PrivGBase(GfxBase)->regionsem);
+
+        FreePooled
+        (
+            PrivGBase(GfxBase)->regionpool,
+            region->RectPoolList,
+            sizeof(struct MinList)
+        );
+
+        ReleaseSemaphore(&PrivGBase(GfxBase)->regionsem);
+    }
+
+#else
     DisposeRegionRectangleList(region->RegionRectangle);
+#endif
+
     InitRegion(region);
 
     AROS_LIBFUNC_EXIT
-    
 } /* ClearRegion */
 
 

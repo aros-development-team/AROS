@@ -56,7 +56,11 @@
     {
 	nreg->bounds = region->bounds;
 
+#if REGIONS_HAVE_RRPOOL
+        if (!CopyRegionRectangleList(region->RegionRectangle, &nreg->RegionRectangle, &nreg->RectPoolList))
+#else
 	if (!CopyRegionRectangleList(region->RegionRectangle, &nreg->RegionRectangle))
+#endif
 	{
             DisposeRegion(nreg);
 	    nreg = NULL;
