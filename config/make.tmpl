@@ -247,6 +247,7 @@ $(OBJDIR)/functable.c : mmakefile.src $(FUNCTABLE_SRCS) $(BINDIR)/scripts/genfun
 # Generate endskip variable
 %define mkendtag_q
 $(END_FILE).c :
+	%mkdir_q $(OBJDIR)
 	@$(ECHO) "Generating $@..."
 	@$(ECHO) "#include <libcore/libtail.c>" > $@
 
