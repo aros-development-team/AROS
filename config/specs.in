@@ -1,5 +1,8 @@
 *cpp:
-%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} -nostdinc %{!nostdinc:-isystem @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include -isystem @aros_target_cc_includes@}
+%(cpp_cpu) %{fPIC:-D__PIC__ -D__pic__} %{fpic:-D__PIC__ -D__pic__} %{posix:-D_POSIX_SOURCE} %{pthread:-D_REENTRANT} %(aros_include)
+
+*aros_include:
+-nostdinc %{!nostdinc:-isystem @TOPDIR@/bin/@aros_target_arch@-@aros_target_cpu@/AROS/Include -isystem @aros_target_cc_includes@}
 
 *endfile:
 -lautoinit
@@ -18,6 +21,9 @@
 
 *cross_compile:
 1
+
+.cd:
+@TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/gcccatcomp.sh %i @TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools %g.c %w%g%O %(aros_include) 
 
 *linker:
 @TOPDIR@/bin/@aros_host_arch@-@aros_host_cpu@/tools/collect-aros @ignore_undefined_symbols@
