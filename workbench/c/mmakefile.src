@@ -1,3 +1,4 @@
+
 # $Id$
 include $(TOP)/config/make.cfg
 
@@ -57,6 +58,8 @@ FILES	    := \
 	Setenv \
 	Stack \
 	Unalias \
+	Unset \
+	Unsetenv \
 	Version \
 	Which
 
