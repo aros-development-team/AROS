@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.15  1999/03/24 20:06:38  nlorentz
+    Minor fix
+
     Revision 1.14  1999/03/19 20:21:35  nlorentz
     Fixed race condition bug between CloseWindow()/inputhandler by doing most of window closing on inputhandlers context. Also Closewindow() was called direcly from inputhandler, that would cause FreeSignal() in DeleteMsgPort() to be called on the wrong task context
 
@@ -159,7 +162,7 @@
 
 
 /* This is called from the intuition input handler */
-VOID int_closewindow(struct Window *window)
+VOID int_closewindow(struct Window *window, struct IntuitionBase *IntuitionBase)
 {
 #define IW(x) ((struct IntWindow *)x)    
 
