@@ -60,7 +60,7 @@
       msg->Window      = window;
       msg->BehindWindow= behindwindow;
       
-      PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
+      SendDeferedActionMsg(msg, IntuitionBase); 
     }   
 
     AROS_LIBFUNC_EXIT

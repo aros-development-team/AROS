@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.11  2000/02/04 21:56:51  stegerg
+    use SendDeferedActionMsg instead of PutMsg
+
     Revision 1.10  1999/10/13 21:08:53  stegerg
     action message goes to deferedactionport now
 
@@ -101,7 +104,7 @@
 	  msg->dx          = dx;
 	  msg->dy          = dy;
 
-	  PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
+	  SendDeferedActionMsg(msg, IntuitionBase); 
 	}   
     }
 

@@ -58,7 +58,7 @@
       msg->Code        = AMCODE_WINDOWTOBACK;
       msg->Window      = window;
       
-      PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
+      SendDeferedActionMsg(msg, IntuitionBase); 
     }   
 
     AROS_LIBFUNC_EXIT

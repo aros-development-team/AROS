@@ -65,7 +65,7 @@
 	msg->width	= width;
 	msg->height	= height;
 	
-	PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+	SendDeferedActionMsg(msg, IntuitionBase);
     }
 
     AROS_LIBFUNC_EXIT

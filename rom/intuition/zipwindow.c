@@ -61,7 +61,7 @@
       msg->Code        = AMCODE_ZIPWINDOW;
       msg->Window      = window;
       
-      PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
+      SendDeferedActionMsg(msg, IntuitionBase);  
     }   
     
 

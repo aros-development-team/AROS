@@ -70,7 +70,7 @@
 	    msg->Task        = FindTask(NULL);
 
 	    SetSignal(0,SIGF_INTUITION);
-	    PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+	    SendDeferedActionMsg(msg, IntuitionBase);
 	    Wait(SIGF_INTUITION);
 
 	    success = (BOOL)msg->Code;

@@ -63,7 +63,7 @@
 	  msg->dx          = dx;
 	  msg->dy          = dy;
 
-	  PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
+	  SendDeferedActionMsg(msg, IntuitionBase);
 	}   
     }
     

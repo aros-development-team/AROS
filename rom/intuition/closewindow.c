@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.22  2000/02/04 21:56:17  stegerg
+    use SendDeferedActionMsg instead of PutMsg
+
     Revision 1.21  2000/01/21 23:09:14  stegerg
     screen windowlist (scr->FirstWindow, win->NextWindow) was
     not always correct. Maybe (!) it is now.
@@ -134,7 +137,7 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
 #define IW(x) ((struct IntWindow *)x)    
-    struct closeMessage *msg;
+    struct DeferedActionMessage *msg;
     
     
     
@@ -155,17 +158,16 @@
 
     msg = IW(window)->closeMessage;
     
-    msg->Code     	= AMCODE_CLOSEWINDOW;
-    msg->Window	  	= window;
-    msg->closeTask	= FindTask(NULL);
+    msg->Code   = AMCODE_CLOSEWINDOW;
+    msg->Window	= window;
+    msg->Task	= FindTask(NULL);
     
     /* We must save this here, because after we have returned from
        the Wait() the window is gone  */
     userport = window->UserPort;
 
-    PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+    SendDeferedActionMsg(msg, IntuitionBase);
     
-
     /* Obviously this should be done on the application's context.
        (DeleteMsgPort() calls FreeSignal()
     */
@@ -203,7 +205,7 @@
 
 
 /* This is called from the intuition input handler */
-VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBase)
+VOID int_closewindow(struct DeferedActionMessage *msg, struct IntuitionBase *IntuitionBase)
 {
 #define IW(x) ((struct IntWindow *)x)    
 
@@ -264,14 +266,14 @@ VOID int_closewindow(struct closeMessage *msg, struct IntuitionBase *IntuitionBa
     intui_CloseWindow (window, IntuitionBase);
 
     if (IW(window)->closeMessage)
-	FreeMem(IW(window)->closeMessage, sizeof (struct closeMessage));
+	FreeMem(IW(window)->closeMessage, sizeof (struct DeferedActionMessage));
 
     
     /* Free memory for the window */
     FreeMem (window, sizeof(struct IntWindow));
     
     /* All done. signal caller task that it may proceed */
-    Signal(msg->closeTask, SIGF_INTUITION);
+    Signal(msg->Task, SIGF_INTUITION);
     
     return;
     

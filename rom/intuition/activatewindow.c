@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.14  2000/02/04 21:56:01  stegerg
+    use SendDeferedActionMsg instead of PutMsg
+
     Revision 1.13  2000/01/19 19:04:28  stegerg
     don't call intui_activatewindow
 
@@ -109,7 +112,7 @@
 	msg->Code  	= AMCODE_ACTIVATEWINDOW;
 	msg->Window	= window;
 
-        PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+	SendDeferedActionMsg(msg, IntuitionBase);
 	
     }
     

@@ -72,7 +72,7 @@
     {
       msg->Code = AMCODE_NEWPREFS;
       
-      PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+      SendDeferedActionMsg(msg, IntuitionBase);
     }
   }
 
