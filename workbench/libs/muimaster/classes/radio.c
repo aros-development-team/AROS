@@ -1,7 +1,5 @@
 /*
-    Copyright © 2002, The AROS Development Team.
-    All rights reserved.
-
+    Copyright © 2002-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -17,26 +15,17 @@
 #include "debug.h"
 
 #include "mui.h"
-#include "imspec.h"
 #include "muimaster_intern.h"
-#include "support.h"
 #include "prefs.h"
+#include "support.h"
+#include "support_classes.h"
+#include "radio_private.h"
 
 extern struct Library *MUIMasterBase;
 
-struct MUI_RadioData
+IPTR Radio__OM_NEW(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    int entries_active;
-    int entries_num;
-    Object **buttons;
-};
-
-/**************************************************************************
- OM_NEW
-**************************************************************************/
-static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
-{
-    struct MUI_RadioData   *data;
+    struct Radio_DATA   *data;
     struct TagItem  	    *tag, *tags;
     int i;
     const char **entries = NULL;
@@ -137,22 +126,16 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     return (IPTR)obj;
 }
 
-/**************************************************************************
- OM_DISPOSE
-**************************************************************************/
-static IPTR Radio_Dispose(struct IClass *cl, Object *obj, Msg msg)
+IPTR Radio__OM_DISPOSE(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_RadioData   *data = INST_DATA(cl,obj);
+    struct Radio_DATA   *data = INST_DATA(cl,obj);
     if (data->buttons) FreeVec(data->buttons);
     return DoSuperMethodA(cl,obj,msg);
 }
 
-/**************************************************************************
- OM_SET
-**************************************************************************/
-static IPTR Radio_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+IPTR Radio__OM_SET(struct IClass *cl, Object *obj, struct opSet *msg)
 {
-    struct MUI_RadioData *data;
+    struct Radio_DATA *data;
     struct TagItem  	    *tag, *tags;
 
     data = INST_DATA(cl, obj);
@@ -179,12 +162,9 @@ static IPTR Radio_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-/**************************************************************************
- OM_GET
-**************************************************************************/
-static IPTR Radio_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+IPTR Radio__OM_GET(struct IClass *cl, Object *obj, struct opGet *msg)
 {
-    struct MUI_RadioData *data = INST_DATA(cl, obj);
+    struct Radio_DATA *data = INST_DATA(cl, obj);
 #define STORE *(msg->opg_Storage)
 
     switch(msg->opg_AttrID)
@@ -197,7 +177,7 @@ static IPTR Radio_Get(struct IClass *cl, Object *obj, struct opGet *msg)
     return DoSuperMethodA(cl,obj,(Msg)msg);
 }
 
-static IPTR Radio_Setup(struct IClass *cl, Object *obj, Msg msg)
+IPTR Radio__MUIM_Setup(struct IClass *cl, Object *obj, Msg msg)
 {
     if (!DoSuperMethodA(cl, obj, msg))
 	return FALSE;
@@ -208,30 +188,24 @@ static IPTR Radio_Setup(struct IClass *cl, Object *obj, Msg msg)
     return TRUE;
 }
 
+#if ZUNE_BUILTIN_RADIO
 BOOPSI_DISPATCHER(IPTR, Radio_Dispatcher, cl, obj, msg)
 {
     switch (msg->MethodID)
     {
-	case OM_NEW: return Radio_New(cl, obj, (struct opSet *)msg);
-	case OM_DISPOSE: return Radio_Dispose(cl, obj, (Msg)msg);
-	case OM_SET: return Radio_Set(cl, obj, (struct opSet *)msg);
-	case OM_GET: return Radio_Get(cl, obj, (struct opGet *)msg);
-	case MUIM_Setup: return Radio_Setup(cl, obj, msg);
-	case MUIM_Draw:
-	    D(bug("Radio_Dispatcher: MUIM_Draw 0x%08lx\n",
-		  ((struct MUIP_Draw *)msg)->flags));
-	    break;
+        case OM_NEW:     return Radio__OM_NEW(cl, obj, (struct opSet *) msg);
+        case OM_DISPOSE: return Radio__OM_DISPOSE(cl, obj, (Msg) msg);
+        case OM_SET:     return Radio__OM_SET(cl, obj, (struct opSet *) msg);
+        case OM_GET:     return Radio__OM_GET(cl, obj, (struct opGet *) msg);
+        case MUIM_Setup: return Radio__MUIM_Setup(cl, obj, msg);
+        default:         return DoSuperMethodA(cl, obj, msg);
     }
-
-    return DoSuperMethodA(cl, obj, msg);
 }
 
-/*
- * Class descriptor.
- */
 const struct __MUIBuiltinClass _MUI_Radio_desc = {
     MUIC_Radio,
     MUIC_Group, 
-    sizeof(struct MUI_RadioData), 
+    sizeof(struct Radio_DATA), 
     (void*)Radio_Dispatcher 
 };
+#endif /* ZUNE_BUILTIN_RADIO */

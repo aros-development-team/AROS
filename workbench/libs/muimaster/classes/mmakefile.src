@@ -11,13 +11,20 @@ USER_LIBS   := amiga arosc m mui
 #MM     workbench-classes-zune-boopsi \
 #MM     workbench-classes-zune-coloradjust \
 #MM     workbench-classes-zune-colorfield \
+##MM     workbench-classes-zune-frameadjust \
+##MM     workbench-classes-zune-framedisplay \
+##MM     workbench-classes-zune-gauge \
 #MM     workbench-classes-zune-iconlistview \
 ##MM     workbench-classes-zune-imageadjust \
+##MM     workbench-classes-zune-imagedisplay \
+##MM     workbench-classes-zune-penadjust \
 ##MM     workbench-classes-zune-pendisplay \
 #MM     workbench-classes-zune-popasl \
 #MM     workbench-classes-zune-popframe \
 #MM     workbench-classes-zune-popimage \
 #MM     workbench-classes-zune-poppen \
+#MM     workbench-classes-zune-radio \
+##MM     workbench-classes-zune-scale \
 #MM     workbench-classes-zune-scrollgroup \
 #MM     workbench-classes-zune-settingsgroup \
 #MM     workbench-classes-zune-virtgroup
@@ -27,13 +34,20 @@ USER_LIBS   := amiga arosc m mui
 #MM     workbench-classes-zune-boopsi-clean \
 #MM     workbench-classes-zune-coloradjust-clean \
 #MM     workbench-classes-zune-colorfield-clean \
+#MM     workbench-classes-zune-frameadjust-clean \
+#MM     workbench-classes-zune-framedisplay-clean \
+#MM     workbench-classes-zune-gauge-clean \
 #MM     workbench-classes-zune-iconlistview-clean \
 #MM     workbench-classes-zune-imageadjust-clean \
+#MM     workbench-classes-zune-imagedisplay-clean \
+#MM     workbench-classes-zune-penadjust-clean \
 #MM     workbench-classes-zune-pendisplay-clean \
 #MM     workbench-classes-zune-popasl-clean \
 #MM     workbench-classes-zune-popframe-clean \
 #MM     workbench-classes-zune-popimage-clean \
 #MM     workbench-classes-zune-poppen-clean \
+#MM     workbench-classes-zune-radion-clean \
+#MM     workbench-classes-zune-scale-clean \
 #MM     workbench-classes-zune-scrollgroup-clean \
 #MM     workbench-classes-zune-settingsgroup-clean \
 #MM     workbench-classes-zune-virtgroup-clean
@@ -164,6 +178,14 @@ USER_LIBS   := amiga arosc m mui
     modname=Poppen modtype=mui files=poppen \
     conffile=poppen.conf \
     cflags="$(CFLAGS) -DZUNE_BUILTIN_POPPEN=0" \
+    uselibs=$(USER_LIBS)
+
+#MM workbench-classes-zune-radio : includes
+%build_module \
+    mmake=workbench-classes-zune-radio \
+    modname=Radio modtype=mui files=radio \
+    conffile=radio.conf \
+    cflags="$(CFLAGS) -DZUNE_BUILTIN_RADIO=0" \
     uselibs=$(USER_LIBS)
     
 #MM workbench-classes-zune-scale : includes

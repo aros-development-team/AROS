@@ -118,6 +118,12 @@
 #   define ZUNE_POPPEN_DESC
 #endif
 
+#if ZUNE_BUILTIN_RADIO
+#   define ZUNE_RADIO_DESC (&_MUI_Radio_desc),
+#else
+#   define ZUNE_RADIO_DESC
+#endif
+
 #if ZUNE_BUILTIN_SCALE
 #   define ZUNE_SCALE_DESC (&_MUI_Scale_desc),
 #else
