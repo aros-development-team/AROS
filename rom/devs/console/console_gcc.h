@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.4  1998/10/03 12:02:33  nlorentz
+    Bugfixes, but still buggy
+
     Revision 1.3  1998/08/24 13:32:43  nlorentz
     Update, now demowin works again
 
@@ -46,8 +49,31 @@ struct ConsoleBase;
 
 
 /* Minimum x & y char positions */
-#define XMIN 0
-#define YMIN 0
+
+#define DEF_CHAR_XMIN 0
+#define DEF_CHAR_YMIN 0
+
+
+#define CHAR_XMIN(o) DEF_CHAR_XMIN
+#define CHAR_YMIN(o) DEF_CHAR_YMIN
+
+#define CHAR_XMAX(o) (CU(o)->cu_XMax)
+#define CHAR_YMAX(o) (CU(o)->cu_YMax)
+
+
+#define CP_X(o) (GFX_X(o, CU(o)->cu_XCCP))
+#define CP_Y(o) (GFX_Y(o, CU(o)->cu_YCCP))
+
+/* Macros that convert from char to gfx coords */
+#define GFX_X(o, x) (CU(o)->cu_XROrigin + ((x) * CU(o)->cu_XRSize))
+#define GFX_Y(o, y) (CU(o)->cu_YROrigin + ((y) * CU(o)->cu_YRSize))
+
+#define GFX_XMIN(o) (GFX_X((o), CHAR_XMIN(o)))
+#define GFX_YMIN(o) (GFX_Y((o), CHAR_YMIN(o)))
+
+#define GFX_XMAX(o) (GFX_X((o), CHAR_XMAX(o) + 1))
+#define GFX_YMAX(o) (GFX_Y((o), CHAR_YMAX(o) + 1))
+
 
 
 #define CONSOLECLASSPTR		(ConsoleDevice->consoleClass)
@@ -189,7 +215,7 @@ BOOL  LastChar     (APTR map, UBYTE *char_ptr);
 BOOL  InsertChar   (APTR map, UBYTE c, struct ConsoleBase *ConsoleDevice);
 
 /* Prototypes */
-VOID writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
+ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
 
 Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
 Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);

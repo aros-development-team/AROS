@@ -33,6 +33,8 @@ $(LIB) : $(OBJS)
 
 #MM- kernel-devs : setup includes linklibs kernel-devs-$(ARCH)-$(CPU)
 
+#MM kernel-devs-quick : kernel-devs-$(ARCH)-$(CPU)
+
 #MM
 clean ::
 	$(RM) $(OBJS) $(LIB) $(OBJDIR)

@@ -53,14 +53,14 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, 
 
 #define PARAM_BUF_SIZE 10
 
-VOID writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
+ULONG writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
 {
     UBYTE param_tab[PARAM_BUF_SIZE];
     BYTE command;
     UBYTE *write_str_end;
     struct ConUnit *unit = (struct ConUnit *)ioreq->io_Unit;
     UBYTE *write_str = (UBYTE *)ioreq->io_Data;
-    LONG towrite = ioreq->io_Length;
+    ULONG towrite = ioreq->io_Length;
     
     EnterFunc(bug("WriteToConsole(ioreq=%p)\n"));
     
@@ -82,7 +82,7 @@ VOID writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
     	
     } /* while (characters left to interpret) */
     
-    ReturnVoid("WriteToConsole");
+    ReturnInt("WriteToConsole", LONG, towrite);
 }
 
 

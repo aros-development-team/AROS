@@ -26,9 +26,14 @@
 #include <proto/dos.h>
 #include <proto/intuition.h>
 #include <devices/conunit.h>
+
+#define SDEBUG 1
+#define DEBUG 1
 #include <aros/debug.h>
 
 #include "con_handler_intern.h"
+
+
 
 static const char name[];
 static const char version[];
@@ -112,29 +117,39 @@ static const struct TagItem win_tags[] =
 
 static LONG open_con(struct conbase 	*conbase
 	,struct filehandle 		**fh_ptr
-	,STRPTR				filname
+	,STRPTR				filename
 	,LONG				mode)
 {
     LONG err = 0;
     struct filehandle *fh;
+    
+    EnterFunc(bug("open_conh(fhptr=%p, filename=%s, mode=%d)\n",
+    	fh_ptr, filename, mode));
 
     fh = AllocMem(sizeof (struct filehandle), MEMF_ANY);
     if (fh)
     {
+    	D(bug("fh allocated\n"));
     	/* Create msgport for console.device communication */
 	fh->conmp = CreateMsgPort();
 	if (fh->conmp)
 	{
+    	    D(bug("conmp created\n"));
 	    fh->conio = (struct IOStdReq *)CreateIORequest(fh->conmp, sizeof (struct IOStdReq));
 	    if (fh->conio)
 	    {
-	    	fh->window = OpenWindowTagList(NULL, (struct TagItem *)win_tags);
+    	    	D(bug("conio created\n"));
+		fh->window = OpenWindowTagList(NULL, (struct TagItem *)win_tags);
 		if (fh->window)
 		{
+    	    	    D(bug("window opened\n"));
+		    fh->conio->io_Data	 = (APTR)fh->window;
+		    fh->conio->io_Length = sizeof (struct Window);
 	    	    if (0 == OpenDevice("console.device", CONU_STANDARD, ioReq(fh->conio), 0))
 		    {
+    	    	    	D(bug("device opend\n"));
 		    	*fh_ptr = fh;
-		    	return 0;
+		    	ReturnInt("open_conh", LONG, 0);
 		    
 		    }
 		    else
@@ -168,11 +183,12 @@ static LONG open_con(struct conbase 	*conbase
     else
     	err = ERROR_NO_FREE_STORE;
 	
-    return err;
+    ReturnInt("open_conh", LONG, err);
 }
 
 static LONG close_con(struct conbase *conbase, struct filehandle *fh)
 {
+    EnterFunc(bug("close_conh(fh=%p)\n", fh));
     /* Abort all pending requests */
     if (!CheckIO( ioReq(fh->conio) ))
     	AbortIO( ioReq(fh->conio) );
@@ -188,7 +204,7 @@ static LONG close_con(struct conbase *conbase, struct filehandle *fh)
     
     FreeMem(fh, sizeof (struct filehandle));
     
-    return 0;
+    ReturnInt("close_conh", LONG, 0);
 }
 
 static LONG con_read(struct conbase *conbase, struct filehandle *fh, UBYTE *buffer, LONG *length_ptr)
@@ -237,45 +253,54 @@ AROS_LH2(struct conbase *, init,
     /* Store arguments */
     conbase->sysbase=sysBase;
     conbase->seglist=segList;
-    conbase->device.dd_Library.lib_OpenCnt=1;
+    conbase->device.dd_Library.lib_OpenCnt=1;    
+
     
-    /* Install CON: handler into device list */
     conbase->dosbase = (struct DosLibrary *)OpenLibrary("dos.library", 0);
     if (conbase->dosbase)
     {
-    	dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
-    	if (dn)
-    	{
-    	    STRPTR s;
-	    s = AllocVec(5, MEMF_PUBLIC);
-    	    if (s)
-	    {
-	    	CopyMem("CON", &s[1], 3);
-	    	s[4] = 0;
-	    	*s = 3;
-	    	dn->dn_Type		= DLT_DEVICE;
-	    	dn->dn_Unit		= NULL;
-	    	dn->dn_Device	= &conbase->device;
-	    	dn->dn_Handler	= NULL;
-	    	dn->dn_Startup	= NULL;
-	    	dn->dn_OldName	= MKBADDR(s);
-	    	dn->dn_NewName	= &s[1];
+    	conbase->intuibase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+	if (conbase->intuibase)
+	{
+	    /* Install CON: handler into device list */
+    	    dn = AllocMem(sizeof (struct DeviceNode), MEMF_CLEAR|MEMF_PUBLIC);
+    	    if (dn)
+    	    {
+    	    	STRPTR s;
+	    	s = AllocVec(5, MEMF_PUBLIC);
+    	    	if (s)
+	    	{
+	    	    CopyMem("CON", &s[1], 3);
+	    	    s[4] = 0;
+	    	    *s = 3;
+	    	    dn->dn_Type		= DLT_DEVICE;
+	    	    dn->dn_Unit		= NULL;
+	    	    dn->dn_Device	= &conbase->device;
+	    	    dn->dn_Handler	= NULL;
+	    	    dn->dn_Startup	= NULL;
+	    	    dn->dn_OldName	= MKBADDR(s);
+	    	    dn->dn_NewName	= &s[1];
 	    
-	    	if (AddDosEntry((struct DosList *)dn))
-		{
-	    	    return conbase;
+	    	    if (AddDosEntry((struct DosList *)dn))
+		    {
+
+	    	    	return conbase;
+	    	    }
+	    	    FreeVec(s);
+	    
 	    	}
-	    	FreeVec(s);
-	    
+	
+	   	FreeMem(dn, sizeof (struct DeviceNode));
 	    }
-	
-	    FreeMem(dn, sizeof (struct DeviceNode));
+	    
+	    CloseLibrary((struct Library *)conbase->intuibase);
  	
-	    /* Alert(AT_DeadEnd|AG_NoMemory|AN_Unknown); */
-    	}
-	CloseLibrary((struct Library *)conbase->dosbase);
+    	} /* if (intuition opened) */
 	
-    }
+	CloseLibrary((struct Library *)conbase->dosbase);
+   	/* Alert(AT_DeadEnd|AG_NoMemory|AN_Unknown); */
+	
+    } /* if (dos opened) */
 
     return NULL;
 
@@ -308,18 +333,8 @@ AROS_LH3(void, open,
 	}
     }
 
-*/
-    if(conbase->intuibase == NULL)
-    {
-	conbase->intuibase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-	if( conbase->intuibase == NULL )
-	{
-	    iofs->IOFS.io_Error = IOERR_OPENFAIL;
-	    return;
-	}
-    }
     
-
+*/
    /* I have one more opener. */
     conbase->device.dd_Library.lib_Flags&=~LIBF_DELEXP;
 
@@ -378,6 +393,8 @@ AROS_LH1(void, beginio,
 {
     AROS_LIBFUNC_INIT
     LONG error=0;
+    
+    EnterFunc(bug("conhandler_BeginIO(iofs=%p)\n", iofs));
 
     /* WaitIO will look into this */
     iofs->IOFS.io_Message.mn_Node.ln_Type=NT_MESSAGE;
@@ -387,20 +404,22 @@ AROS_LH1(void, beginio,
 	because I never need to Wait().
     */
     
+    D(bug("Doing command %d\n", iofs->IOFS.io_Command));
+    
     switch(iofs->IOFS.io_Command)
     {
-	case FSA_OPEN:	/* Doesn't make sence to Lock() a CON file */
+	case FSA_OPEN_FILE:
+	case FSA_OPEN:
 	    error = open_con(conbase,
 			    (struct filehandle **)&iofs->IOFS.io_Unit,
 			    iofs->io_Union.io_OPEN.io_Filename,
 			    iofs->io_Union.io_OPEN.io_FileMode);
+	    break;
+	    
 	case FSA_CLOSE:	
 	    error = close_con(conbase, (struct filehandle *)iofs->IOFS.io_Unit);
 	    break;
 	    
-	case FSA_OPEN_FILE:	/* CON: doesn't support protection bits */
-	    error = ERROR_NOT_IMPLEMENTED;
-	    break;
 	
 
 	case FSA_READ:
@@ -424,7 +443,6 @@ AROS_LH1(void, beginio,
 	    break;
 	    
 	case FSA_WAIT_CHAR:
-#warning FIXME:
 	    /* We could manually wait for a character to arrive, but this is
 	       currently not implemented. FIXME */
 	case FSA_FILE_MODE:
@@ -473,6 +491,8 @@ AROS_LH1(void, beginio,
     /* If the quick bit is not set send the message to the port */
     if(!(iofs->IOFS.io_Flags&IOF_QUICK))
 	ReplyMsg(&iofs->IOFS.io_Message);
+	
+    ReturnVoid("conhandler_beginio");
 
     AROS_LIBFUNC_EXIT
 }

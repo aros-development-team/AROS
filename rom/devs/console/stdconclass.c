@@ -16,13 +16,9 @@
 #include "console_gcc.h"
 #include "consoleif.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
-
-#define CP_X(o) (CU(o)->cu_XROrigin + (CU(o)->cu_XCP * CU(o)->cu_XRSize))
-#define CP_Y(o) (CU(o)->cu_YROrigin + (CU(o)->cu_YCP * CU(o)->cu_YRSize))
-
 
 struct stdcondata
 {
@@ -145,7 +141,7 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 */
     case C_CARRIAGE_RETURN:
     	/* Goto start of line */
-    	CU(o)->cu_XCP = XMIN;
+    	CU(o)->cu_XCP = CHAR_XMIN(o);
     	Console_Down(o, 1);
     	break;
 
@@ -155,8 +151,8 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     	break;
 
     case C_NEXT_LINE:
-    	D(bug("Got NET LINE cmd\n"));
-    	CU(o)->cu_XCP = XMIN;
+    	D(bug("Got NEXT LINE cmd\n"));
+    	CU(o)->cu_XCP = CHAR_XMIN(o);
     	Console_Down(o, 1);
     	break;
 
@@ -195,6 +191,21 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     	/* Scroll lines up */
 //    	Scroll(unit, unit->cu_YCP, unit->cu_YMax, 1, ConsoleDevice);
     	break;
+	
+    case C_SCROLL_UP: {
+    	D(bug("C_SCROLL_UP area (%d, %d) to (%d, %d), %d\n",
+		GFX_XMIN(o), GFX_YMIN(o), GFX_XMAX(o), GFX_YMAX(o), - rp->Font->tf_YSize));
+
+#warning LockLayers problem here ?    
+    	ScrollRaster(rp
+		, 0
+		, rp->Font->tf_YSize
+		, GFX_XMIN(o)
+		, GFX_YMIN(o)
+		, GFX_XMAX(o)
+		, GFX_YMAX(o) );
+		
+	break; }
 
 /*    case C_:
     	break;

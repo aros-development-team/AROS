@@ -19,6 +19,12 @@ show-flags :
 kernel-filesys :
 	@$(NOP)
 
+# HACK TO AVOID DEPENDENCY CHECKING
+
+#MM kernel-filesys-quick : kernel-filesys-$(ARCH)-$(CPU)
+kernel-filesys-quick :
+	@$(NOP) 
+	
 #MM
 setup :
 	%mkdirs_q $(OBJDIR)

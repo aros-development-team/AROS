@@ -357,7 +357,7 @@ AROS_LH1(void, beginio,
     	case CMD_WRITE:
     	    D(bug("CMD_WRITE\n"));
 
-    	    writeToConsole(ioreq, ConsoleDevice);
+    	    ioreq->io_Actual = writeToConsole(ioreq, ConsoleDevice);
     	    break;
     	    
     default:
