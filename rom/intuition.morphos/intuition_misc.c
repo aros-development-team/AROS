@@ -345,7 +345,11 @@ BOOL CreateWinSysGadgets(struct Window *w, struct IntuitionBase *IntuitionBase)
 
         }
 
-        if (w->Flags & WFLG_HASZOOM)
+    	/* RKRMs: window gets zoom gadget if WA_Zoom tag was used,
+	   or if window has both a sizegadget and a depthgadget */
+	
+        if ((w->Flags & WFLG_HASZOOM) ||
+	    ((w->Flags & WFLG_SIZEGADGET) && (w->Flags & WFLG_DEPTHGADGET)))
         {
             struct TagItem zoom_tags[] =
                 {
