@@ -35,14 +35,21 @@
 #include <proto/iffparse.h>
 #include <proto/datatypes.h>
 
+#ifdef __AROS__
+#include <aros/symbolsets.h>
+
+ADD2LIBS("datatypes/picture.datatype", 0, struct Library *, PictureBase);
+#else
 #include "compilerspecific.h"
+#endif
+
 #include "debug.h"
 
 #include "methods.h"
 
 /**************************************************************************************************/
 
-static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
+IPTR PPM_OM_NEW(Class *cl, Object *o, struct opSet *msg)
 {
  IPTR RetVal;
  char *Title;
@@ -279,14 +286,14 @@ static IPTR PPM_New(Class *cl, Object *o, struct opSet *msg)
    return(0);
   }
   if(!DoSuperMethod(cl, (Object *) RetVal,
-		PDTM_WRITEPIXELARRAY,	// Method_ID
-		(IPTR) RGBBuffer,	// PixelData
-		PBPAFMT_RGB,		// PixelFormat
-		Width*3,		// PixelArrayMod (number of bytes per row)
-		0,			// Left edge
-		i,			// Top edge
-		Width,			// Width
-		1))			// Height (here: one line)
+		PDTM_WRITEPIXELARRAY,	/* Method_ID */
+		(IPTR) RGBBuffer,	/* PixelData */
+		PBPAFMT_RGB,		/* PixelFormat */
+		Width*3,		/* PixelArrayMod (number of bytes per row) */
+		0,			/* Left edge */
+		i,			/* Top edge */
+		Width,			/* Width */
+		1))			/* Height (here: one line) */
    {
 	D(bug("ppm.datatype/OM_NEW: WRITEPIXELARRAY failed\n"));
 	FreeVec(RGBBuffer);
@@ -547,14 +554,14 @@ static BOOL PPM_Save(struct IClass *cl, Object *o, struct dtWrite *dtw )
     for (y=0; y<height; y++)
     {
 	if(!DoSuperMethod(cl, o,
-			PDTM_READPIXELARRAY,	// Method_ID
-			(IPTR)linebuf,		// PixelData
-			PBPAFMT_RGB,		// PixelFormat
-			width,			// PixelArrayMod (number of bytes per row)
-			0,			// Left edge
-			y,			// Top edge
-			width,			// Width
-			1))			// Height
+			PDTM_READPIXELARRAY,	/* Method_ID */
+			(IPTR)linebuf,		/* PixelData */
+			PBPAFMT_RGB,		/* PixelFormat */
+			width,			/* PixelArrayMod (number of bytes per row) */
+			0,			/* Left edge */
+			y,			/* Top edge */
+			width,			/* Width */
+			1))			/* Height */
 	{
 	    D(bug("ppm.datatype/PPM_Save() --- READPIXELARRAY line %d failed !\n", y));
 	    FreeVec(linebuf);
@@ -575,6 +582,22 @@ static BOOL PPM_Save(struct IClass *cl, Object *o, struct dtWrite *dtw )
     return TRUE;
 }
 #endif /* PICDTV43_SUPPORT */
+
+/**************************************************************************************************/
+
+IPTR PPM_DTM_WRITE(struct IClass *cl, Object *o, struct dtWrite *dtw)
+{
+    if( (dtw -> dtw_Mode) == DTWM_RAW )
+    {
+	/* Local data format requested */
+	return PPM_Save(cl, o, dtw );
+    }
+    else
+    {
+	/* Pass msg to superclass (which writes an IFF ILBM picture)... */
+	return DoSuperMethodA( cl, o, (Msg)dtw );
+    }
+}
 
 /**************************************************************************************************/
 
@@ -999,19 +1022,9 @@ else
 /**************************************************************************************************/
 /**************************************************************************************************/
 
-#ifdef __AROS__
-AROS_UFH3S(IPTR, DT_Dispatcher,
-	   AROS_UFHA(Class *, cl, A0),
-	   AROS_UFHA(Object *, o, A2),
-	   AROS_UFHA(Msg, msg, A1))
-#else
+#ifndef __AROS__
 ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o, register __a1 Msg msg)
-#endif
 {
-#ifdef __AROS__
-    AROS_USERFUNC_INIT
-#endif
-
     IPTR retval;
     struct dtWrite *dtw;
 
@@ -1031,7 +1044,7 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 	case OM_NEW:
 	{
 	    D(bug("ppm.datatype/DT_Dispatcher: Method OM_NEW\n"));
-	    retval = PPM_New(cl, o, (struct opSet *)msg);
+	    retval = PPM__OM_NEW(cl, o, (struct opSet *)msg);
 	    break;
 	}
 
@@ -1132,9 +1145,6 @@ ASM IPTR DT_Dispatcher(register __a0 struct IClass *cl, register __a2 Object * o
 //    D(bug("ppm.datatype/DT_Dispatcher: Leaving\n"));
 
     return retval;
-#ifdef __AROS__
-    AROS_USERFUNC_EXIT
-#endif
 }
 
 /**************************************************************************************************/
@@ -1147,17 +1157,14 @@ struct IClass *DT_MakeClass(struct Library *ppmbase)
 
     if (cl)
     {
-#ifdef __AROS__
-	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) AROS_ASMSYMNAME(DT_Dispatcher);
-#else
 	cl->cl_Dispatcher.h_Entry = (HOOKFUNC) DT_Dispatcher;
-#endif
 	cl->cl_Dispatcher.h_SubEntry = (HOOKFUNC) getreg(REG_A4);
 	cl->cl_UserData = (IPTR)ppmbase; /* Required by datatypes (see disposedtobject) */
     }
 
     return cl;
 }
+#endif /* !__AROS__ */
 
 /**************************************************************************************************/
 

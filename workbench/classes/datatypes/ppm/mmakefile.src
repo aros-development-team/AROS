@@ -1,15 +1,12 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := ppmclass libfunc
-FUNCS := obtainengine
+FILES := ppmclass
 
 #MM workbench-datatypes-ppm : includes linklibs
 
 USER_CFLAGS   := -DMYDEBUG
 
-%build_module_macro mmake=workbench-datatypes-ppm modname=ppm \
-  modtype=datatype funcs=$(FUNCS) files=$(FILES) conffile=lib.conf \
-  uselibs="amiga rom"
-
-%common
+%build_module mmake=workbench-datatypes-ppm \
+    modname=ppm modtype=datatype \
+    files=$(FILES) uselibs="amiga rom"
