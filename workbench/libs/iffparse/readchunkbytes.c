@@ -60,6 +60,8 @@
     LONG   lefttoread,
 	  bytesread;
 
+    DEBUG_READCHUNKBYTES(dprintf("ReadChunkBytes: iff %p buf %p bytes %ld\n",
+				 iff, buf, numBytes));
 
     /* Get pointer to current contextnode */
     cn = TopChunk(iff);
@@ -69,6 +71,9 @@
     /* If numBytes > lefttoread then we must truncate the readoperation */
     if (numBytes > lefttoread)
 	numBytes = lefttoread;
+
+    DEBUG_READCHUNKBYTES(dprintf("ReadChunkBytes: cn %p cn_Size %ld cn_Scan %ld numBytes %ld\n",
+				 cn, cn->cn_Size, cn->cn_Scan, numBytes));
 
     bytesread = ReadStream
     (
@@ -81,6 +86,8 @@
     /* No error */
     if (bytesread > 0)
 	cn->cn_Scan += bytesread;
+
+    DEBUG_READCHUNKBYTES(dprintf("ReadChunkBytes: return %ld\n", bytesread));
 
     /* Return number of bytes actually read  (or error )*/
     return (bytesread);

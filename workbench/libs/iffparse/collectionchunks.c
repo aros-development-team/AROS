@@ -59,6 +59,9 @@
     LONG count;
     LONG err;
 
+    DEBUG_COLLECTIONCHUNKS(dprintf("CollectionChunks: iff 0x%lx array 0x%lx num %d\n",
+			    iff, propArray, numPairs));
+
 #if DEBUG
     LONG * lptr = propArray;
     bug ("CollectionChunks (iff=%p, [\n", iff);

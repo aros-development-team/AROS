@@ -59,13 +59,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-#if DEBUG
-    bug ("PropChunk (iff=%p, type=%c%c%c%c, id=%c%c%c%c)\n",
-	iff,
-	type>>24, type>>16, type>>8, type,
-	id>>24, id>>16, id>>8, id
-    );
-#endif
+    DEBUG_PROPCHUNK(dprintf("PropChunk: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
+			    iff, type, &type, id, &id));
 
     ReturnInt
     (
@@ -76,8 +71,8 @@
 	    iff,
 	    type,
 	    id,
-	    IFFSLI_PROP,
-	    &IPB(IFFParseBase)->prophook,
+	    IFFSLI_TOP,
+	    &(IPB(IFFParseBase)->prophook),
 	    iff
 	)
     );

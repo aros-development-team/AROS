@@ -296,4 +296,22 @@ struct IFFParseBase_intern
 #define expunge() \
 AROS_LC0(BPTR, expunge, struct IFFParseBase_intern *, IFFParseBase, 3, IFFParse)
 
+
+#define DEBUG_COLLECTIONCHUNK(x)	;
+#define DEBUG_COLLECTIONCHUNKS(x)	;
+#define DEBUG_FINDCOLLECTION(x)		;
+#define DEBUG_FINDLOCALITEM(x)		;
+#define DEBUG_FINDPROP(x)		;
+#define DEBUG_POPCHUNK(x)		;
+#define DEBUG_PROPCHUNK(x)		;
+#define DEBUG_PROPCHUNKS(x)		;
+#define DEBUG_PUSHCHUNK(x)		;
+#define DEBUG_READCHUNKBYTES(x)		;
+#define DEBUG_STOPCHUNK(x)		;
+#define DEBUG_STOPCHUNKS(x)		;
+#define DEBUG_STOPONEXIT(x)		;
+#define DEBUG_STOREITEMINCONTEXT(x)	;
+#define DEBUG_STORELOCALITEM(x)		;
+#define DEBUG_WRITECHUNKBYTES(x)	;
+
 #endif /* IFFPARSE_INTERN_H */

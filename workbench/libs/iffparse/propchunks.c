@@ -58,6 +58,9 @@
     LONG count;
     LONG err;
 
+    DEBUG_PROPCHUNKS(dprintf("PropChunks: iff 0x%lx array 0x%lx num %d\n",
+			    iff, propArray, numPairs));
+
 #if DEBUG
     LONG * lptr = propArray;
     bug ("PropChunks (iff=%p, [\n", iff);

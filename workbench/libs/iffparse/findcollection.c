@@ -58,6 +58,9 @@
 
     struct LocalContextItem *lci;
 
+    DEBUG_FINDCOLLECTION(dprintf("FindCollection: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
+			    iff, type, &type, id, &id));
+
     if
     (
 	!(lci = FindLocalItem

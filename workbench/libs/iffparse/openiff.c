@@ -59,6 +59,11 @@
     struct IFFStreamCmd cmd;
     struct ContextNode *cn;
 
+    if (iff == NULL)
+    {
+	return (IFFERR_NOMEM);
+    }
+
     /* Check that a valid StreamHandler Hook has been supplied */
     if (!( GetIntIH(iff)->iff_StreamHandler) )
     {
@@ -73,7 +78,6 @@
 
     if (!err)
     {
-
 	/* If we are opend in read mode we should test if we have a valid IFF-File */
 	if (rwMode == IFFF_READ)
 	{
@@ -120,7 +124,6 @@
 		
 		/* Fail. We should send CLEANUP to the stream */
 		cmd.sc_Command = IFFCMD_CLEANUP;
-
 		err = CallHookPkt
 		(
 		    GetIntIH(iff)->iff_StreamHandler,

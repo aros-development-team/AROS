@@ -49,17 +49,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    /* If the LCI has supplied userdata, then free it */
-    if ( GetIntLCI(localItem)->lci_UserData )
-	FreeMem
-	(
-	    GetIntLCI(localItem)->lci_UserData,
-	    GetIntLCI(localItem)->lci_UserDataSize
-	);
+    if (localItem != NULL)
+    {
+	/* If the LCI has supplied userdata, then free it */
+	if ( GetIntLCI(localItem)->lci_UserData )
+	    FreeMem
+	    (
+		GetIntLCI(localItem)->lci_UserData,
+		GetIntLCI(localItem)->lci_UserDataSize
+	    );
 
 
-    /* Free the LCI itself */
-    FreeMem(localItem, sizeof (struct IntLocalContextItem));
-
+	/* Free the LCI itself */
+	FreeMem(localItem, sizeof (struct IntLocalContextItem));
+    }
+    
     AROS_LIBFUNC_EXIT
 } /* FreeLocalItem */

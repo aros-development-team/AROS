@@ -60,40 +60,45 @@
 
     struct IFFStreamCmd    cmd;
 
-    /* clear the IFFF_OPEN bit to mark IFF stream closed */
-    if (!(iff->iff_Flags & IFFF_OPEN) )
-	return;
-
-    iff->iff_Flags &= ~IFFF_OPEN;
-
-    /* Pop of all contextnodes so that only the default one is remaining */
-
-    for (count = iff->iff_Depth; count; count -- )
-	PopContextNode(iff, IPB(IFFParseBase));
-
-    /* This is for safety:
-      It might be in PopChunk that seeking or writing to streams failed.
-      In that case the memory for eventual buffered setreams
-      were not freed, so we should free it here.
-
-      (Yes, it is is a kludge !)
-    */
-    if ( GetIntIH(iff)->iff_BufferStartDepth)
+    if (iff != NULL)
     {
-	FreeBuffer((struct BufferList*)iff->iff_Stream, IPB(IFFParseBase));
+	/* clear the IFFF_OPEN bit to mark IFF stream closed */
+	if (!(iff->iff_Flags & IFFF_OPEN) )
+	    return;
 
-	GetIntIH(iff)->iff_BufferStartDepth = 0;
+	iff->iff_Flags &= ~IFFF_OPEN;
+
+	/* Pop of all contextnodes so that only the default one is remaining */
+
+	/*for (count = iff->iff_Depth; count; count -- )
+	    PopContextNode(iff, IPB(IFFParseBase));*/
+	while (iff->iff_Depth)
+	    PopChunk(iff);
+
+	/* This is for safety:
+	  It might be in PopChunk that seeking or writing to streams failed.
+	  In that case the memory for eventual buffered setreams
+	  were not freed, so we should free it here.
+
+	  (Yes, it is is a kludge !)
+	*/
+	if ( GetIntIH(iff)->iff_BufferStartDepth)
+	{
+	    FreeBuffer((struct BufferList*)iff->iff_Stream, IPB(IFFParseBase));
+
+	    GetIntIH(iff)->iff_BufferStartDepth = 0;
+	}
+
+	/* Tell the custom stream to cleanup */
+	cmd.sc_Command = IFFCMD_CLEANUP;
+	CallHookPkt
+	(
+	    GetIntIH(iff)->iff_StreamHandler,
+	    iff,
+	    &cmd
+	);
     }
-
-    /* Tell the custom stream to cleanup */
-    cmd.sc_Command = IFFCMD_CLEANUP;
-    CallHookPkt
-    (
-	GetIntIH(iff)->iff_StreamHandler,
-	iff,
-	&cmd
-    );
-
+    
     return;
     AROS_LIBFUNC_EXIT
 } /* CloseIFF */

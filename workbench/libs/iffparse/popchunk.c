@@ -74,6 +74,8 @@
 
     UBYTE nullbyte = 0;
 
+    DEBUG_POPCHUNK(dprintf("PopChunk: iff 0x%lx\n", iff));
+
     /* Get current chunk */
     cn = TopChunk(iff);
 

@@ -60,13 +60,8 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-#if DEBUG
-    bug ("CollectionChunk (iff=%p, type=%c%c%c%c, id=%c%c%c%c)\n",
-	iff,
-	type>>24, type>>16, type>>8, type,
-	id>>24, id>>16, id>>8, id
-    );
-#endif
+    DEBUG_COLLECTIONCHUNK(dprintf("CollectionChunk: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
+			    iff, type, &type, id, &id));
 
     return
     (
@@ -75,7 +70,7 @@
 	    iff,
 	    type,
 	    id,
-	    IFFSLI_PROP,
+	    IFFSLI_TOP,
 	    &(IPB(IFFParseBase)->collectionhook),
 	    iff
 	)

@@ -54,6 +54,9 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
+    DEBUG_STOPCHUNK(dprintf("StopChunk: iff 0x%lx type 0x%08lx (%.4s) id 0x%08lx (%.4s)\n",
+			    iff, type, &type, id, &id));
+
     /* Install an EntryHandler */
     return
     (
@@ -63,8 +66,8 @@
 	    type,
 	    id,
 	    IFFSLI_TOP,
-	    &IPB(IFFParseBase)->stophook,
-	    NULL
+	    &(IPB(IFFParseBase)->stophook),
+	    iff
 	)
     );
 
