@@ -539,7 +539,8 @@ static ULONG Application_New(struct IClass *cl, Object *obj, struct opSet *msg)
 static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
     struct MUI_ApplicationData *data = INST_DATA(cl, obj);
-
+    struct RIDNode *rid;
+    
     if (data->app_is_TNode_in_list)
     {
 	ObtainSemaphore(&MUIMB(MUIMasterBase)->ZuneSemaphore);
@@ -629,6 +630,13 @@ static ULONG Application_Dispose(struct IClass *cl, Object *obj, Msg msg)
     if (data->app_Base)
 	FreeVec(data->app_Base);
 
+    /* free returnid stuff */
+    
+    while ((rid = (struct RIDNode *)RemHead((struct List *)&data->app_ReturnIDQueue)))
+    {
+	DeleteRIDNode(data, rid);
+    }
+    
     return DoSuperMethodA(cl, obj, msg);
 }
 
@@ -898,8 +906,6 @@ static ULONG Application_InputBuffered(struct IClass *cl, Object *obj,
     {
         /* Let window object process message */
         _zune_window_message(imsg); /* will reply the message */
-
-        ReplyMsg((struct Message *)imsg);
     }
     return TRUE;
 }
