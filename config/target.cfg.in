@@ -39,3 +39,17 @@ DETACH_LDFLAGS    := @DETACH_LDFLAGS@
 NOSTDLIB_LDFLAGS  := @NOSTDLIB_LDFLAGS@
 
 COMPILER_LIBS   := @aros_compiler_libs@
+
+AR		:= @AR@
+RANLIB		:= @RANLIB@
+NM		:= @NM@
+NM_PLAIN	:= @NM_PLAIN@
+
+ifeq "$(DEBUG)" "yes"
+    STRIP		:= $(NOP)
+else
+    STRIP		:= @STRIP@ --strip-unneeded -R.comment
+endif
+
+OBJCOPY		:= @OBJCOPY@
+OBJDUMP		:= @OBJDUMP@

@@ -50,20 +50,6 @@ GUI_LIBFLAGS	:= @aros_gui_libflags@
 GUI_INCDIR	:= @aros_gui_incdir@
 GUI_CFLAGS	:= @aros_gui_ccflags@
 
-AR		:= @AR@
-RANLIB		:= @RANLIB@
-NM		:= @NM@
-NM_PLAIN	:= @NM_PLAIN@
-
-ifeq "$(DEBUG)" "yes"
-    STRIP		:= $(NOP)
-else
-    STRIP		:= @STRIP@ --strip-unneeded -R.comment
-endif
-
-OBJCOPY		:= @OBJCOPY@
-OBJDUMP		:= @OBJDUMP@
-
 # --------------------------------------------------------------------------
 # MAGIC: This is needed here for MetaMake to work. mmake will read the
 # configured version of this file to find out a number of variables.
@@ -74,8 +60,9 @@ GENMF           := $(TOOLDIR)/genmf.py
 
 # -------------------------------------------------------------------------- 
 # COMPATABILITY SECTION - WILL BE REMOVED IN THE FUTURE
+# This is a hack. Keep it here so mmake will find these variables although
+# the target values are not known yet here.
 # --------------------------------------------------------------------------
-
 ARCH            := $(AROS_TARGET_ARCH)
 CPU             := $(AROS_TARGET_CPU)
 GFXSYSTEM	:= gfxhidd
@@ -84,3 +71,4 @@ AS		:= $(TARGET_AS)
 COMMON_CFLAGS	:= $(TARGET_CFLAGS)
 COMMON_AFLAGS	:= $(TARGET_AFLAGS)
 ILDFLAGS	= $(TARGET_LDFLAGS)
+# --------------------------------------------------------------------------
