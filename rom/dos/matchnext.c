@@ -60,134 +60,90 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
+  /* If the user says I am supposed to enter the directory then I first check
+     whether it is a directory... */
+  struct AChain * AC = AP->ap_Current;
   BOOL success;
-  /*  if the last call to MatchNext detected that there's no more
-      memory in the system then we just exit */
-  if (AP->ap_Flags & APF_NOMEMERR)
-    return ERROR_NO_FREE_STORE;
-
-  AP->ap_Flags &=~APF_DirChanged;
-
-  /* if the last FileInfoBlock passed to the user was a directory and
-   * the user tells me to enter the directory I should do so.
-   */
-  if ((AP->ap_Flags & APF_DODIR)  &&
-      (ST_USERDIR == AP->ap_Info.fib_DirEntryType  ))
+  if (0 != (AP->ap_Flags & APF_DODIR ))
   {
-    /* ok let's enter that dir and get some memory for the new AChain
-       first  */
-    struct AChain * AC = AllocVec(sizeof(struct AChain)+5, MEMF_CLEAR|MEMF_PUBLIC);
-    if (NULL != AC)
-    {
-      char * dirname;
-      int i;
-      /* let's connet it to the AnchorPath */
-      AC->an_Parent = AP->ap_Last;
-      AP->ap_Last   = AC;
-      if (NULL != AC->an_Parent)
-        AC->an_Parent->an_Child  = AC;
-
-      if (NULL == AP->ap_Base) /* this should never happen */
-        AP->ap_Base = AC;
-
-      /* let's write the token for any to the pattern */
-      /* The following line seems to be the reason why this program throws an exception,
-         so I simply replace it with the direct pattern */
-      //success = ParsePattern("#?",(char *)&AC->an_String,(ULONG)3);
-      AC->an_String[0] = P_ANY;
-      AC->an_String[1] = '\0';
-      AC->an_Flags  = APF_DOWILD|APF_ITSWILD;
-      AP->ap_Flags |= APF_DirChanged;
-      AP->ap_Flags &= ~APF_DODIR;
-      /* now we need to create a lock to the specified directory in
-         AP->ap_Info where we have the name of that thing and the
-         lock to it's directory is in AP->ap_Base->an_Parent */
-      /* first we need some space for the name, only temporary space */
-
-      i=1;
-      for (;;)
+    if (AC->an_Info.fib_DirEntryType >= 0 /* &&
+        AC->an_Info.fib_DirEntryType != ST_SOFTLINK */)
+    { 
+      /* Ok, it seems to be a directory so I will enter it. */
+      /* See whether there's a AnchorChain for that dir... */
+      if (NULL != AC->an_Child)
       {
-        dirname = AllocMem(256*i, MEMF_PUBLIC );
-        if (dirname)
-        {
-          success = NameFromLock(AP->ap_Last->an_Parent->an_Lock, dirname, 256*i);
-          success = AddPart(dirname, AP->ap_Info.fib_FileName ,256*i);
-          if (0 == success )
-          {
-            /* stringlength is too long, try again!  */
-            FreeMem(dirname, 256*i);
-            i++;
-          }
-          else
-          { /* everything went alright, let's create the Lock then*/
-            AC->an_Lock = Lock(dirname, ACCESS_READ);
-            /* dispose the dirname */
-            FreeMem(dirname, 256*i);
-            /* the very first examine in this directory would give
-               me the directoryname again. We don't want that, so let's
-               skip it! */
-            Examine(AC->an_Lock, &AC->an_Info);
-            break;
-          }
-        }
-        else
-        {
-          AP->ap_Flags |= APF_NOMEMERR;
-          return ERROR_NO_FREE_STORE;
-        }
-      } /* for */
-    }
-    else
-    { /* no memory */
-      AP->ap_Flags |= APF_NOMEMERR;
-      return ERROR_NO_FREE_STORE;
+        /* Ok, we're all set. */
+        /* Lock the director by it's name. */
+        AP->ap_Current = AC->an_Child;
+        AC->an_Child->an_Lock = Lock(AC->an_Info.fib_FileName, ACCESS_READ);
+        AC = AC->an_Child;
+        Examine(AC->an_Lock, &AC->an_Info);
+      }
     }
   }
+  AP->ap_Flags &= ~(BYTE)(APF_DODIR|APF_DIDDIR);
 
-  AP->ap_Flags &= ~APF_DODIR;
-
-  /* let's look for the next matching entry as long as there are entries in the
-     directory or until we found a match. */
-  for(;;)
+  /* AC points to the current AnchorChain */
+  while (TRUE)
   {
-    success = ExNext(AP->ap_Current->an_Lock, &AP->ap_Current->an_Info);
+    success = ExNext (AC->an_Lock, &AC->an_Info);
+    while (DOSTRUE == success &&
+           DOSFALSE == MatchPatternNoCase(AC->an_String,
+                                          AC->an_Info.fib_FileName))
+    {
+      success = ExNext(AC->an_Lock, &AC->an_Info);
+    }
+
     if (DOSFALSE == success)
     {
-      struct AChain * AC = AP->ap_Current;
-      /* tell the user that we did the directory */
-      AP->ap_Flags |= (APF_DIDDIR|APF_DirChanged);
+      /* No more entries in this dir that match. So I might have to
+         step back one directory. Unlock the current dir first, 
+         !!!!!???? but only if it is not the one from where I started
+         Otherwise AROS crashes... 
+      */
 
-      /* remove the current AChain and free the lock. */
-      UnLock(AC->an_Lock);
-      AP->ap_Current = AC->an_Parent;
-      /* now dispose the AChain. */
-      FreeVec(AC);
-      if (NULL == AP->ap_Current)
+      if (NULL != AC->an_Parent)
+        UnLock(AC->an_Lock);
+
+
+      AC->an_Lock = NULL;
+      /* Are there any previous directories??? */
+      if (NULL != AC->an_Parent)
       {
-        AP->ap_Base = NULL;
+        /* Step back to this directory and go on searching here */
+        AC = AC->an_Parent;
+        AP->ap_Current = AC;
+        CurrentDir(AC->an_Lock);
+        /* I show this dir again as I come back from searching it */
+        CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
+        AP->ap_Flags |= APF_DIDDIR;
+        if (0 != AP->ap_Strlen)
+        {
+          if (FALSE == writeFullPath(AP))
+            return ERROR_BUFFER_OVERFLOW;
+        }
+        return 0;      
+      }
+      else
+      {
+        /* No previous directory, so I am done here... */
         return ERROR_NO_MORE_ENTRIES;
       }
-      /* give the user the previous entry */
-      CopyMem(&AP->ap_Current->an_Info, &AP->ap_Info , sizeof(struct FileInfoBlock));
-      if (0 != AP->ap_Strlen)
-      {
-        AP->ap_Buf[0] = '\0';
-        strncpy(AP->ap_Buf, AP->ap_Info.fib_FileName, AP->ap_Strlen);
-      }
-      return 0;
     }
-    if (MatchPatternNoCase(AP->ap_Current->an_String,AP->ap_Current->an_Info.fib_FileName))
+    else
     {
-      CopyMem(&AP->ap_Current->an_Info, &AP->ap_Info , sizeof(struct FileInfoBlock));
+      /* Alright, I found a match... */
+      CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
       if (0 != AP->ap_Strlen)
       {
-        strncpy(AP->ap_Buf, AP->ap_Info.fib_FileName, AP->ap_Strlen);
+        if (FALSE == writeFullPath(AP))
+          return ERROR_BUFFER_OVERFLOW;
       }
       return 0;
     }
-  }
-
-  return 0; /* no error detected */
+  } /* while (TRUE) */
+  return 0;
 
   AROS_LIBFUNC_EXIT
 } /* MatchNext */

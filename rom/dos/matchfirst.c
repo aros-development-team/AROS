@@ -71,63 +71,195 @@
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
   struct AChain * AC;
-  LONG IsWild;
+  struct AChain * AC_Prev = NULL;
+  LONG PatLength;
+  STRPTR ParsedPattern;
+  BPTR firstlock; 
+  
   if (!pat)
     return FALSE;
-  /* Get some buffer for the first AChain including some bits for
-     the preparsed pattern */
-  AC = AllocVec(sizeof(struct AChain) + 2 * strlen(pat) + 2, MEMF_CLEAR);
-  if (NULL != AC)
+  
+  PatLength = 2*strlen(pat)+2;
+  
+  ParsedPattern = AllocMem(PatLength, MEMF_ANY);
+  if (NULL != ParsedPattern)
   {
-    BOOL success;
-    /* put the preparsed string to the end of the AChain */
-    IsWild = ParsePatternNoCase(pat, AC->an_String ,2 * strlen(pat) + 2);
-    /* if there are any wildcards then leave info */
-    if (1 == IsWild)
-  	  AP->ap_Flags = (BYTE)APF_ITSWILD;
+    LONG PatStart = 0;
+    LONG PatEnd   = 0;
+    BOOL AllDone  = FALSE;
+    LONG index;
+    BOOL success = FALSE;
+    /* put the preparsed string to some memory */
+    /* If there are any wildcards then leave info */
+    if (1 == ParsePatternNoCase(pat, ParsedPattern, PatLength))
+      AP->ap_Flags = (BYTE)APF_ITSWILD;
 
-    /* create a lock to the current directory */
-    AC->an_Lock = CurrentDir(NULL);
-    /* if there's no lock for whatsoever reason exit*/
-    if (NULL == AC->an_Lock)
+    /* First I search for the very first ':'. If a '/' comes along
+       before that I quit. The string before and including the ':' 
+       is assumed to be an assigned director, for example 'libs:'.
+       So I will start looking for the pattern in that directory.
+     */
+    while (TRUE)
     {
-      FreeVec(AC);
-      return ERROR_DIR_NOT_FOUND;
+      if (ParsedPattern[PatEnd] == ':')
+      {
+        success = TRUE;
+        break;
+      }
+      else
+      {
+        if ( ParsedPattern[PatEnd]         == '/'  ||
+             ParsedPattern[PatEnd]         == '\0' ||
+            (ParsedPattern[PatEnd] & 0x80) != 0 
+                           /* a token or nonprintable letter */)
+        {
+          PatEnd = 0;
+          break;
+        }
+      } 
+      PatEnd++;
     }
-    (void)CurrentDir(AC->an_Lock);
 
-    /* connect the AChain to the AnchorPath  */
-    AP->ap_First = AC;
-    AP->ap_Last  = AC;
-    AC->an_Flags = (AP->ap_Flags & APF_ITSWILD);
-    AP->ap_Flags |= APF_DirChanged;
+    /* Only if success == TRUE an assigned dir was found. */
+    if (TRUE == success)
+    {
+      /* try to create a lock to that assigned dir. */
+      char Remember = ParsedPattern[PatEnd+1];
+      PatEnd++;
+      ParsedPattern[PatEnd] = '\0';
+      firstlock = Lock(ParsedPattern, ACCESS_READ);
+      /* check whether an error occurred */
+      if (NULL == firstlock)
+      {
+kprintf("Coudln't lock dir!\n");
+        FreeMem(ParsedPattern, PatLength);
+        return ERROR_DIR_NOT_FOUND; /* hope that's the right one... */
+      }
+      
+      /* I have the correct lock. */
+      ParsedPattern[PatEnd] = Remember;
+      PatStart=PatEnd;
+    }
+    else
+    {
+      /* Create a lock to the current dir. */
+      firstlock = CurrentDir(NULL);
+      firstlock = DupLock(firstlock);
+      (void)CurrentDir(firstlock);
+    }
+    
+    /* Build the Anchor Chain. For every subdirector I allocate
+       a AChain structure and link them all together */   
+    while (FALSE == AllDone)
+    {
+
+
+      /* 
+         Search for the next '/' in the pattern and everything behind
+         the previous '/' and before this '/' will go to an_String 
+       */
+      while (TRUE)
+      {
+        if (ParsedPattern[PatEnd] == '\0')
+        {
+          AllDone = TRUE;
+          PatEnd--;
+          break;
+        }
+        if (ParsedPattern[PatEnd] == '/')
+        {
+          PatEnd--;
+          break;
+        }
+        PatEnd++;
+      }
+      
+      AC = AllocMem(sizeof(struct AChain)+(PatEnd-PatStart+2), MEMF_CLEAR);
+      if (NULL == AC)
+      {
+        /* not so bad if this was not the very first AC. */
+        if (NULL == AP->ap_Base)
+        {
+          /* oops, it was the very first one. I really cannot do anything for 
+             you. - sorry */
+          FreeMem(ParsedPattern, PatLength);
+          return ERROR_NO_FREE_STORE;
+        }
+        
+        /* let me out of here. I will at least try to do something for you.
+           I can check the first few subdirs but that's gonna be it. 
+         */
+        AP->ap_Flags |= APF_NOMEMERR;
+        break;
+      }
+      
+      if (NULL == AP->ap_Base)
+      {
+        AP->ap_Base = AC;
+        AP->ap_Current = AC;
+      }
+      
+      if (NULL != AC_Prev)
+      {
+        AC_Prev->an_Child = AC;
+      }
+      AC->an_Parent = AC_Prev;
+      AC_Prev       = AC;
+      
+      /* copy the part of the pattern to the end of the AChain. */
+      index = 0;
+      while (PatStart <= PatEnd)
+      {
+        AC->an_String[index] = ParsedPattern[PatStart];
+        index++;
+        PatStart++;
+      }
+      /* Put PatStart and PetEnd behind the '/' that was found. */
+      PatStart   = PatEnd + 2;
+      PatEnd    += 2;
+      /* 
+         the trailing '\0' is there automatically as I allocated enough store
+         with MEMF_CLEAR
+      */
+
+    } /* while () */
+
+    /* The AnchorChain to work with is the very first one. */
+    AC = AP->ap_Base;
+    AC->an_Lock = firstlock;
+    
     /* look for the first file that matches the given pattern */
     success = Examine(AC->an_Lock, &AC->an_Info);
-    success = ExNext(AC->an_Lock,&AC->an_Info);
+    success = ExNext (AC->an_Lock, &AC->an_Info);
     while (DOSTRUE == success &&
-           DOSFALSE== MatchPatternNoCase(AC->an_String,AC->an_Info.fib_FileName))
+           DOSFALSE == MatchPatternNoCase(AC->an_String,
+                                          AC->an_Info.fib_FileName))
     {
-      success = ExNext(AC->an_Lock,&AC->an_Info);
-    }
-
-    /* if no matching file was found return */
+      /* I still haven't found what I've been looking for ... */
+      success = ExNext(AC->an_Lock, &AC->an_Info); 
+    }  
+    
     if (DOSFALSE == success)
+    {
       return ERROR_NO_MORE_ENTRIES;
-    /* a matching file was found! */
+    }
+    
+    /* Hooray! A matching file was found. Also show the data in AP */
     CopyMem(&AC->an_Info, &AP->ap_Info, sizeof(struct FileInfoBlock));
-    /* if there's a buffer allocated fill it w/ the appropriate data */
     if (0 != AP->ap_Strlen)
     {
-      AP->ap_Buf[0] = '\0';
-      strncpy(AP->ap_Buf, AP->ap_Info.fib_FileName, AP->ap_Strlen);
+       if (FALSE == writeFullPath(AP))
+          return ERROR_BUFFER_OVERFLOW;
     }
     return 0;
+     
   }
   else
+  {
     return ERROR_NO_FREE_STORE;
+  }
 
   return 0;
-
 
   AROS_LIBFUNC_EXIT
 } /* MatchFirst */

@@ -53,18 +53,33 @@
   AROS_LIBFUNC_INIT
   AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  struct AChain * AC = AP->ap_Base, * AC_tmp;
+  /* Free the AChain and unlock all locks that are still there */
+  struct AChain * AC = AP->ap_Current;
+  struct AChain * AC_tmp;
+
+  /* Unlock everything */
+  if (NULL == AC)
+    return;
+       
+  while (AC != AP->ap_Base)
+  {
+    UnLock(AC->an_Lock);
+    AC = AC->an_Parent;
+  }
+  
+  UnLock(AC->an_Lock);
+  
+  /* AC points to the very first AChain obj. in the list */
+  /* Free the AChain List */
   while (NULL != AC)
   {
-    if (AC->an_Lock)
-      UnLock(AC->an_Lock);
     AC_tmp = AC->an_Child;
     FreeVec(AC);
     AC = AC_tmp;
   }
+  /* Cleanup AP */
   AP->ap_Base = NULL;
-  AP->ap_Last = NULL;
-
+  AP->ap_Current = NULL;
 
   AROS_LIBFUNC_EXIT
 } /* MatchEnd */
