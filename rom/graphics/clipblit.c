@@ -113,9 +113,6 @@
     if (NULL == R)
       return;
 
-    if (NULL != srcRP->Layer)
-      LockLayerRom(srcRP->Layer);
-
     /* define the rectangle of the destination */
     Rect.MinX = xDest;
     Rect.MaxX = xDest+xSize;
