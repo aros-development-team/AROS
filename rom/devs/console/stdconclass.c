@@ -95,15 +95,15 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     {
     case C_ASCII:
     	
-    	D(bug("Writing char %c in win %s at (%d, %d)\n",
-    		params[0], w->Title, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
+    	D(bug("Writing char %c at (%d, %d)\n",
+    		params[0], CP_X(o), CP_Y(o) + rp->Font->tf_Baseline));
     		
     	SetAPen(rp, data->dri->dri_Pens[TEXTPEN]);
     	SetDrMd(rp, JAM1);
     	Move(rp, CP_X(o), CP_Y(o) + rp->Font->tf_Baseline);
     	Text(rp, &params[0], 1);
     	
-    	Console_Right(o, COORD_WRITEPOS, 1);
+    	Console_Right(o, 1);
 
     	break;
 
@@ -129,14 +129,15 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
     	break;
 
     case C_BACKSPACE:
-    	Console_Left(o, COORD_WRITEPOS, 1);
+    	Console_Left(o, 1);
     	break;
 
     case C_HTAB:
     	break;
 	
     case C_LINEFEED:
-    	Console_Down(o, COORD_WRITEPOS, 1);
+    	D(bug("Got linefeed command\n"));
+    	Console_Down(o, 1);
     	break;
 
 /*    case C_VTAB:
@@ -144,22 +145,23 @@ VOID stdcon_docommand(Class *cl, Object *o, struct P_Console_DoCommand *msg)
 */
     case C_CARRIAGE_RETURN:
     	/* Goto start of line */
-    	CU(o)->cu_XCP = MIN_XCP;
-    	Console_Down(o, COORD_WRITEPOS, 1);
+    	CU(o)->cu_XCP = XMIN;
+    	Console_Down(o, 1);
     	break;
 
 
     case C_INDEX:
-    	Console_Down(o, COORD_WRITEPOS, 1);
+    	Console_Down(o, 1);
     	break;
 
     case C_NEXT_LINE:
-    	CU(o)->cu_XCP = MIN_XCP;
-    	Console_Down(o, COORD_WRITEPOS, 1);
+    	D(bug("Got NET LINE cmd\n"));
+    	CU(o)->cu_XCP = XMIN;
+    	Console_Down(o, 1);
     	break;
 
     case C_REVERSE_IDX:
-    	Console_Up(o, COORD_WRITEPOS, 1);
+    	Console_Up(o, 1);
     	break;
 
     case C_CURSOR_POS:
@@ -245,7 +247,7 @@ AROS_UFH3(static IPTR, dispatch_stdconclass,
 
 #undef ConsoleDevice
 
-Class *makestdconclass(struct ConsoleBase *ConsoleDevice)
+Class *makeStdConClass(struct ConsoleBase *ConsoleDevice)
 {
     
    Class *cl;

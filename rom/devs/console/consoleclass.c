@@ -15,8 +15,12 @@
 #include "consoleif.h"
 #include "console_gcc.h"
 
+#define SDEBUG 1
 #define DEBUG 1
 #include <aros/debug.h>
+
+VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr);
+
 /*
    Base class for the classes handling standard, charmap and snipmap
    consoles. This is a whitebox base class (like GADGETCLASS), which means subclasses
@@ -25,10 +29,8 @@
 
 struct consoledata
 {
-    struct ConUnit unit;
+    struct intConUnit intunit;
 };
-
-static VOID getcoordptrs(Object *con, WORD **x_ptr, WORD **y_ptr, UWORD cp_type);
 
 
 #undef ConsoleDevice
@@ -62,7 +64,7 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	unit->cu_Window = win;
     	    	
 
-	/* For now one should use only proportional fonts */
+	/* For now one should use only non-proportional fonts */
     	unit->cu_XRSize	= rp->Font->tf_XSize;
     	unit->cu_YRSize	= rp->Font->tf_YSize;
     	    	
@@ -82,8 +84,13 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
     	unit->cu_XRExtant = win->BorderLeft + (unit->cu_XRSize * unit->cu_XMax);
     	unit->cu_YRExtant = win->BorderTop  + (unit->cu_YRSize * unit->cu_YMax);
 	
-	unit->cu_XCP = MIN_XCP;
-	unit->cu_YCP = MIN_YCP;
+	unit->cu_XCP = XMIN;
+	unit->cu_YCP = YMIN;
+
+	unit->cu_XCCP = XMIN;
+	unit->cu_YCCP = YMIN;
+	
+	ICU(o)->conFlags = 0UL;
 	    
 	
     }
@@ -92,23 +99,21 @@ static Object *console_new(Class *cl, Object *o, struct opSet *msg)
 }
  
 
+#define XCP (CU(o)->cu_XCP) /* Character X pos */
+#define YCP (CU(o)->cu_YCP) /* Character Y pos */
 
+#define XCCP (CU(o)->cu_XCCP) /* Cursor X pos */
+#define YCCP (CU(o)->cu_YCCP) /* Cusror U pos */
 
 /**********************
 **  Console::Left()  **
 **********************/
 static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 {
-    WORD *x_ptr = NULL, *y_ptr = NULL; /* Keep compiler happy */
-    
-    getcoordptrs(o, &x_ptr, &y_ptr, msg->Type);
-    *x_ptr -= msg->Num;
-    if (*x_ptr < 0)
-    {
-    	*x_ptr = CU(o)->cu_XMax;
-	
-	Console_Up(o, msg->Type, 1); 
-    }
+    XCP -= msg->Num;
+    XCCP -= msg->Num;
+    normalizecoords(o, &XCP, &YCP); /* normalize character pos */
+    normalizecoords(o, &XCCP, &YCCP); /* normalize cursor pos */
     
     return;
 }
@@ -118,17 +123,12 @@ static VOID console_left(Class *cl, Object *o, struct P_Console_Left *msg)
 ***********************/
 static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 {
-    WORD *x_ptr = NULL, *y_ptr = NULL; /* Keep compiler happy */
-    
-    getcoordptrs(o, &x_ptr, &y_ptr, msg->Type);
 
-    *x_ptr += msg->Num;
-    if (*x_ptr > CU(o)->cu_XMax)
-    {
-    	*x_ptr = 0;
-    	
-	Console_Down(o, msg->Type, 1);
-    }
+    XCP  += msg->Num;
+    XCCP += msg->Num;
+
+    normalizecoords(o, &XCP,  &YCP); 	/* normalize character pos */
+    normalizecoords(o, &XCCP, &YCCP); 	/* normalize cursor pos */
     
     return;
 }
@@ -138,18 +138,13 @@ static VOID console_right(Class *cl, Object *o, struct P_Console_Right *msg)
 ********************/
 static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 {
-    WORD *x_ptr = NULL, *y_ptr = NULL; /* Keep compiler happy */
-    
-    getcoordptrs(o, &x_ptr, &y_ptr, msg->Type);
-    *y_ptr -= msg->Num;
-    if (*y_ptr < 0)
-    {
-    	UBYTE scroll_param = msg->Num;
-	
-    	Console_DoCommand(o, C_SCROLL_DOWN, &scroll_param);
 
-    	*y_ptr = 0;
-    }
+    YCP  -= msg->Num;
+    YCCP -= msg->Num;
+
+    normalizecoords(o, &XCP,  &YCP); 	/* normalize character pos */
+    normalizecoords(o, &XCCP, &YCCP); 	/* normalize cursor pos */
+
     return;
 }
 
@@ -158,19 +153,13 @@ static VOID console_up(Class *cl, Object *o, struct P_Console_Up *msg)
 **********************/
 static VOID console_down(Class *cl, Object *o, struct P_Console_Down *msg)
 {
-    WORD *x_ptr = NULL, *y_ptr = NULL; /* Keep compiler happy */
     
-    getcoordptrs(o, &x_ptr, &y_ptr, msg->Type);
+    YCP += msg->Num;
+    YCCP -= msg->Num;
+
+    normalizecoords(o, &XCP,  &YCP); 	/* normalize character pos */
+    normalizecoords(o, &XCCP, &YCCP); 	/* normalize cursor pos */
     
-    *y_ptr += msg->Num;
-    
-    if (*y_ptr > CU(o)->cu_YMax)
-    {
-    	UBYTE scroll_param = msg->Num;
-    	Console_DoCommand(o, C_SCROLL_UP, &scroll_param);     
-	
-    	*y_ptr = CU(o)->cu_YMax;
-    }
     return;
 }
 
@@ -216,36 +205,74 @@ AROS_UFH3(static IPTR, dispatch_consoleclass,
 **  Support functions  **
 ************************/
 
-/*********************
-**  getcoordptrs()  **
-*********************/
+/************************
+**  normalizecoords()  **
+************************/
 
-static VOID getcoordptrs(Object *con, WORD **x_ptr, WORD **y_ptr, UWORD cp)
+/* Normalizes "out of window" coords, so that they
+   fit into the window
+*/
+
+#define ABS(a) (((a) < 0) ? -(a) : (a))
+
+#define XMAX (CU(o)->cu_XMax)
+#define YMAX (CU(o)->cu_YMax)
+VOID normalizecoords(Object *o, WORD *x_ptr, WORD *y_ptr)
 {
-    switch (cp)
+/*    EnterFunc(Bug("normalizecoords(o=%p, x=%d, y=%d)\n",
+    	o, *x_ptr, *y_ptr));
+*/
+    if (*x_ptr > CU(o)->cu_XMax) /* charpost too far to the right */
     {
-        case COORD_WRITEPOS:
-	    *x_ptr = &(CU(con)->cu_XCP);
-	    *y_ptr = &(CU(con)->cu_YCP);
-	    break;
+/*	D(bug("Pos right of window\n"));
+*/    	/* Increase y */
+	Console_Down(o, *x_ptr / XMAX );
 	
-	case COORD_CURSOR:
-	    *x_ptr = &(CU(con)->cu_XCP);
-	    *y_ptr = &(CU(con)->cu_YCP);
-	    break;
-	    
-	default:
-//	    kprintf("Invalid value of coordpairtype in getcoordptrs: %d\n", cp);
-	    break;
+	/* Normalize x */
+    	*x_ptr = *x_ptr % (XMAX - XMIN);
+    }
+    else if (*x_ptr < XMIN)
+    {
+/*	D(bug("Pos left of window\n"));
+*/	    	
+	/* Decrease y */
+	Console_Up(o, ABS(*x_ptr) / (XMAX - XMIN));
+	
+	/* Normalize Z */
+	*x_ptr = *x_ptr % (XMAX - XMIN);
+    
+    }
+    
+    if (*y_ptr > YMAX)	/* pos below window bounds */
+    {
+    	UBYTE scroll_param = *y_ptr - YMIN;
+/*	D(bug("Pos below window\n"));
+*/	
+	Console_DoCommand(o, C_SCROLL_UP, &scroll_param);     
+	
+    	*y_ptr = YMAX;
+    }
+    else if (*y_ptr < YMIN)
+    {
+    	UBYTE scroll_param = YMIN - *y_ptr;	/* pos above window bounds */
+	
+/*	D(bug("Pos above window\n"));
+*/	
+    	Console_DoCommand(o, C_SCROLL_DOWN, &scroll_param);
+
+    	*y_ptr = YMIN;
+    
     }
     return;
-    
+/*
+    ReturnVoid("normalizecoords");
+*/
 }
 
 
 #undef ConsoleDevice
 
-Class *makeconsoleclass(struct ConsoleBase *ConsoleDevice)
+Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice)
 {
     
    Class *cl;

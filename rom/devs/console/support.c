@@ -48,12 +48,12 @@ static BOOL string2command(BYTE *cmd_ptr, UBYTE **writestr_ptr, UBYTE *str_end, 
 #define FIRST_CSI_CMD 0x40
 
 /***********************
-**  write2Console()  **
+**  writeToConsole()  **
 ***********************/
 
 #define PARAM_BUF_SIZE 10
 
-VOID write2console(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
+VOID writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
 {
     UBYTE param_tab[PARAM_BUF_SIZE];
     BYTE command;
@@ -94,7 +94,7 @@ VOID write2console(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice)
 #define STR_RNM "\0x32\0x30\0x6C" /* Set reset mode 	  */
 #define STR_DSR "\0x36\0x6E"	  /* device status report */
 
-static const struct SpecialCmdDescr
+static const struct special_cmd_descr
 {
     BYTE	Command;
     STRPTR	CommandStr;
@@ -143,7 +143,7 @@ static BOOL string2command( BYTE 	*cmd_ptr
     
     if (csi)
     {
-	/* A parameter command ? */
+	/* A parameter command ? (Ie. one of the commands that takes parameters) */
 	found = getparamcommand(cmd_ptr, &write_str, str_end, p_tab);
 	    
 	if (!found)
@@ -152,9 +152,11 @@ static BOOL string2command( BYTE 	*cmd_ptr
 	    /* Look for some special commands */
 	    for (i = sizeof (scd_tab) - 1; ((i >= 0) && (!found)) ; i -- )
 	    {
+	    	/* Check whether command sequence is longer than input */
 	    	if (str_end < csi_str + scd_tab[i].Length)
-	    	    continue;
+	    	    continue; /* if so, check next command sequence */
 	    	    
+		/* Coomand match ? */    
 	    	if (0 == strncmp(csi_str, scd_tab[i].CommandStr, scd_tab[i].Length))
 		{
 	    	    csi_str += scd_tab[i].Length;
@@ -247,6 +249,12 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	    break;
 
     	} /* (switch) */
+
+    	if (found)
+    	{
+    	    /* Found special char. Increase pointer */
+	    write_str ++;
+    	}
     	
     }
     
@@ -257,6 +265,8 @@ static BOOL string2command( BYTE 	*cmd_ptr
     	
     	found = TRUE;
     }
+    
+    	
     
     /* Return pointer to first character AFTER last interpreted char */
     *writestr_ptr = write_str;
@@ -307,7 +317,7 @@ static const struct Command
 };
 
 
-STATIC BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end, UBYTE *p_tab)
+static BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end, UBYTE *p_tab)
 {
     /* This function checks for a command with parameters in
     ** the string. The problem is that the parameters come
@@ -404,8 +414,7 @@ STATIC BOOL getparamcommand(BYTE *cmd_ptr, UBYTE ** writestr_ptr, UBYTE *str_end
 /**************************
 **  CreateConsoleTask()  **
 **************************/
-/*
-struct Task *CreateConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice)
+struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice)
 {
     struct Task *task;
     APTR stack;
@@ -432,7 +441,7 @@ struct Task *CreateConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevic
 	    *(APTR *)task->tc_SPLower = taskparams;
 #endif
 
-	    if(AddTask(task, ConsoleTaskEntry, NULL) != NULL)
+	    if(AddTask(task, consoleTaskEntry, NULL) != NULL)
 	    {
 	    	return (task);
 	    }	
@@ -444,5 +453,5 @@ struct Task *CreateConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevic
 
 }
 
-*/
+
 

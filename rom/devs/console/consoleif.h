@@ -12,7 +12,6 @@
 #   include <utility/tagitem.h>
 #endif
 
-enum  { COORD_WRITEPOS, COORD_CURSOR };
 
 enum
 {
@@ -27,7 +26,7 @@ enum
     M_Console_Left,
     M_Console_Right,
     M_Console_Up,
-    M_Console_Down
+    M_Console_Down,
     
 };
 
@@ -62,28 +61,25 @@ struct P_Console_DoCommand
 struct P_Console_Left
 {
     ULONG MethodID;
-    UWORD Type;
     UWORD Num;
 };
 struct P_Console_Right
 {
     ULONG MethodID;
-    UWORD Type;
     UWORD Num;
 };
 struct P_Console_Up
 {
     ULONG MethodID;
-    UWORD Type;
     UWORD Num;
 };
 
 struct P_Console_Down
 {
     ULONG MethodID;
-    UWORD Type;
     UWORD Num;
 };
+
 
 #define Console_DoCommand(o, cmd, params)	\
 ({						\
@@ -94,42 +90,40 @@ struct P_Console_Down
 	DoMethodA((o), (Msg)&p);		\
 })
 
-#define Console_Left(o, type, num)	\
+#define Console_Left(o, num)		\
 ({					\
     struct P_Console_Left p;		\
     p.MethodID	= M_Console_Left;	\
-    p.Type	= type;			\
     p.Num	= num;			\
     DoMethodA((o), (Msg)&p);		\
 })
 
 
-#define Console_Right(o, type, num)	\
+#define Console_Right(o, num)		\
 ({					\
     struct P_Console_Right p;		\
     p.MethodID	= M_Console_Right;	\
-    p.Type	= type;			\
     p.Num	= num;			\
     DoMethodA((o), (Msg)&p);		\
 })
 
-#define Console_Up(o, type, num)	\
+#define Console_Up(o, num)		\
 ({					\
     struct P_Console_Up p;		\
     p.MethodID	= M_Console_Up;		\
-    p.Type	= type;			\
     p.Num	= num;			\
     DoMethodA((o), (Msg)&p);		\
 })
 
-#define Console_Down(o, type, num)	\
+#define Console_Down(o, num)		\
 ({					\
     struct P_Console_Down p;		\
     p.MethodID	= M_Console_Down;	\
-    p.Type	= type;			\
     p.Num	= num;			\
     DoMethodA((o), (Msg)&p);		\
 })
+
+
 
 
 #endif /* CONSOLEIF_H */

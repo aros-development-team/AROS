@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <proto/exec.h>
 #include <proto/console.h>
 #include <proto/boopsi.h>
@@ -17,6 +19,7 @@
 #include <devices/conunit.h>
 #include <intuition/intuition.h>
 #include <intuition/screens.h>
+#include <intuition/classusr.h>
 #include <graphics/rastport.h>
 #include <aros/libcall.h>
 
@@ -28,8 +31,8 @@
 
 #include "consoleif.h"
 
-#define SDEBUG 1
-#define DEBUG 1
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
 
 
@@ -110,6 +113,9 @@ AROS_LH2(struct ConsoleBase *, init,
     ConsoleDevice->sysBase = sysBase;
     ConsoleDevice->seglist = segList;
     
+    NEWLIST(&ConsoleDevice->unitList);
+    InitSemaphore(&ConsoleDevice->unitListLock);
+    
     ConsoleDevice->device.dd_Library.lib_OpenCnt=1;
 
     return ConsoleDevice;
@@ -128,58 +134,97 @@ AROS_LH3(void, open,
     
     BOOL success = FALSE;
     
+    
     /* Keep compiler happy */
     flags=0;
     
     EnterFunc(bug("OpenConsole()\n"));
     
-    if (!ConsoleDevice->gfxbase)
+    if (!ConsoleDevice->gfxBase)
     {
-    	ConsoleDevice->gfxbase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
-    	if (!ConsoleDevice->gfxbase)
+    	ConsoleDevice->gfxBase = (GraphicsBase *)OpenLibrary("graphics.library", 37);
+    	if (!ConsoleDevice->gfxBase)
 	    goto open_fail;
     }
     
-    if (!ConsoleDevice->intuitionbase)
+    if (!ConsoleDevice->intuitionBase)
     {
-    	ConsoleDevice->intuitionbase = (IntuiBase *)OpenLibrary("intuition.library", 37);
-    	if (!ConsoleDevice->intuitionbase)
+    	ConsoleDevice->intuitionBase = (IntuiBase *)OpenLibrary("intuition.library", 37);
+    	if (!ConsoleDevice->intuitionBase)
 	    goto open_fail;
     }
     
-    if (!ConsoleDevice->boopsibase)
+    if (!ConsoleDevice->boopsiBase)
     {
-    	ConsoleDevice->boopsibase = OpenLibrary(BOOPSINAME, 37);
-    	if (!ConsoleDevice->boopsibase)
+    	ConsoleDevice->boopsiBase = OpenLibrary(BOOPSINAME, 37);
+    	if (!ConsoleDevice->boopsiBase)
 	    goto open_fail;
     }
 
-    if (!ConsoleDevice->utilitybase)
+    if (!ConsoleDevice->utilityBase)
     {
-    	ConsoleDevice->utilitybase = OpenLibrary("utility.library", 37);
-    	if (!ConsoleDevice->utilitybase)
+    	ConsoleDevice->utilityBase = OpenLibrary("utility.library", 37);
+    	if (!ConsoleDevice->utilityBase)
 	    goto open_fail;
     }
     
     /* Create the console classes */
     if (!CONSOLECLASSPTR)
     {
-    	CONSOLECLASSPTR = makeconsoleclass(ConsoleDevice);
+    	CONSOLECLASSPTR = makeConsoleClass(ConsoleDevice);
     	if (!CONSOLECLASSPTR)
 	    goto open_fail;
     }	    
     
     if (!STDCONCLASSPTR)
     {
-    	STDCONCLASSPTR = makestdconclass(ConsoleDevice);
+    	STDCONCLASSPTR = makeStdConClass(ConsoleDevice);
     	if (!STDCONCLASSPTR)
 	    goto open_fail;
-    }	    
+    }
+    
+    /* Create the console device task */
+    if (!ConsoleDevice->consoleTask)
+    {
+    	struct coTaskParams ctp;
+	BYTE sigbit;
+	
+	/* Initialize task parameters */
+	ctp.consoleDevice = ConsoleDevice;
+	ctp.parentTask = FindTask(NULL);
+	
+	sigbit = AllocSignal(-1L);
+	if (sigbit != -1)
+	{
+	    ctp.initSignal = 1 << sigbit;
+	    
+	    
+    	    ConsoleDevice->consoleTask = createConsoleTask(&ctp, ConsoleDevice);
+	    if (ConsoleDevice->consoleTask)
+	    {
+	    	/* Wait for the console.device task to initialize itself
+		*/
+		
+		Wait (1 << sigbit);
+		
+		/* OK. we can now go on */
+		
+	    }
+	    /* Free the allocated signal, we don't need it anymore */
+	    FreeSignal(sigbit);
+	    
+	} /* if (signal allocated) */
+
+    } /* if (console.device task hasn't been initialized earlier) */
+    
     
     if (((LONG)unitnum) == CONU_LIBRARY) /* unitnum is ULONG while CONU_LIBRARY is -1 :-(   */
     {
     	D(bug("Opening CONU_LIBRARY unit\n"));
     	ioreq->io_Device = (struct Device *)ConsoleDevice;
+	
+	/* Set io_Unit to NULL, so that CloseDevice knows this is a CONU_LIBRARY unit */
+	ioreq->io_Unit = NULL;
 	success = TRUE;
     }
     else
@@ -222,8 +267,17 @@ AROS_LH3(void, open,
     	ioreq->io_Unit = (struct Unit *)NewObjectA(classptr, NULL, conunit_tags);
     	if (ioreq->io_Unit)
     	{
+	    struct opAddTail add_msg;
     	    success = TRUE;
 	    
+	    /* Add the newly created unit to console's list of units */
+	    ObtainSemaphore(&ConsoleDevice->unitListLock);
+
+	    add_msg.MethodID = OM_ADDTAIL;
+	    add_msg.opat_List = (struct List *)&ConsoleDevice->unitList;
+	    DoMethodA((Object *)ioreq->io_Unit, (Msg)&add_msg);
+	    
+	    ReleaseSemaphore(&ConsoleDevice->unitListLock);
     	} /* if (console unit created) */
     	
     } /* if (not CONU_LIBRARY) */
@@ -252,8 +306,11 @@ AROS_LH1(BPTR, close,
 	   struct ConsoleBase *, ConsoleDevice, 2, Console)
 {
     AROS_LIBFUNC_INIT
-
-    DisposeObject((Object *)ioreq->io_Unit);
+    
+    if (ioreq->io_Unit)
+    {
+    	DisposeObject((Object *)ioreq->io_Unit);
+    }
     
     return 0;
     AROS_LIBFUNC_EXIT
@@ -300,7 +357,7 @@ AROS_LH1(void, beginio,
     	case CMD_WRITE:
     	    D(bug("CMD_WRITE\n"));
 
-    	    write2console(ioreq, ConsoleDevice);
+    	    writeToConsole(ioreq, ConsoleDevice);
     	    break;
     	    
     default:

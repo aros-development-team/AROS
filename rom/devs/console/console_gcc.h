@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.3  1998/08/24 13:32:43  nlorentz
+    Update, now demowin works again
+
     Revision 1.2  1998/08/01 17:53:39  nlorentz
     Now able to text to the console
 
@@ -30,6 +33,9 @@
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
+#endif
 
 /* Predeclaration */
 struct ConsoleBase;
@@ -40,16 +46,18 @@ struct ConsoleBase;
 
 
 /* Minimum x & y char positions */
-#define MIN_XCP 0
-#define MIN_YCP 0
+#define XMIN 0
+#define YMIN 0
 
 
-#define CONSOLECLASSPTR		(ConsoleDevice->consoleclass)
-#define STDCONCLASSPTR		(ConsoleDevice->stdconclass)
-#define CHARMAPCLASSPTR		(ConsoleDevice->charmapclass)
-#define SNIPMAPCLASSPTR		(ConsoleDevice->snipmapclass)
+#define CONSOLECLASSPTR		(ConsoleDevice->consoleClass)
+#define STDCONCLASSPTR		(ConsoleDevice->stdConClass)
+#define CHARMAPCLASSPTR		(ConsoleDevice->charMapClass)
+#define SNIPMAPCLASSPTR		(ConsoleDevice->snipMapClass)
 
 #define CU(x) ((struct ConUnit *)x)
+
+#define ICU(x) ((struct intConUnit *)x)
 
 /* Console write commands */
 enum 
@@ -95,16 +103,81 @@ enum
     C_CURSOR_BACKTAB
 };
 
-
-/* structs */
-struct CoTaskParams
+/**************
+**  structs  **
+**************/
+struct coTaskParams
 {
-    struct ConsoleBase *ConsoleDevice;
-    struct Task	*Caller;
-    ULONG Signal;
+    struct ConsoleBase *consoleDevice;
+    struct Task	*parentTask;
+    ULONG initSignal;
+};
+
+#define CON_INPUTBUF_SIZE 512
+struct intConUnit
+{
+    struct ConUnit unit;
+    ULONG conFlags;
+    UBYTE inputBuf[CON_INPUTBUF_SIZE];
+        
+};
+
+/* The conFlags */
+#define CF_DELAYEDDISPOSE	(1L << 0)
+#define CF_DISPOSE		(1L << 1)
+
+/* Message passed from console input handler to console device task */
+#define MSGBUFSIZE 200
+
+struct cdihMessage
+{
+    struct Message msg;
+    
+    /* The unit that the user input should go to */
+    Object	*unit;
+    
+    /* The input to pass to the user */
+    UBYTE 	inputBuf[MSGBUFSIZE];
+    
+    /* Number of bytes in the input buffer */
+    ULONG	numBytes;
+    
+};
+
+/* Data passed to the console device input handler */
+
+struct cdihData 
+{
+    struct ConsoleBase	*consoleDevice;
+    /* Port to which we send input to the console device
+       from the console device input handler.
+    */
+    struct MsgPort	*inputPort;
+    
+    /* The port the console.device task replies to telling
+       the console.device input handler that it is finished
+       with the output.
+    */
+    struct MsgPort	*cdihReplyPort;
+    
+    /* The message struct used to pass user input to the console device */
+    struct cdihMessage	*cdihMsg;
+    
+    
 };
 
 
+
+/*****************
+**  Prototypes  **
+*****************/
+
+struct Interrupt *initCDIH(struct ConsoleBase *ConsoleDevice);
+VOID cleanupCDIH(struct Interrupt *cdihandler, struct ConsoleBase *ConsoleDevice);
+
+VOID consoleTaskEntry(struct coTaskParams *param);
+
+struct Task *createConsoleTask(APTR taskparams, struct ConsoleBase *ConsoleDevice);
 
 APTR  CreateCharMap(ULONG numchars, struct ConsoleBase *ConsoleDevice);
 VOID  FreeCharMap  (APTR map, struct ConsoleBase *ConsoleDevice);
@@ -116,25 +189,31 @@ BOOL  LastChar     (APTR map, UBYTE *char_ptr);
 BOOL  InsertChar   (APTR map, UBYTE c, struct ConsoleBase *ConsoleDevice);
 
 /* Prototypes */
-VOID write2console(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
+VOID writeToConsole(struct IOStdReq *ioreq, struct ConsoleBase *ConsoleDevice);
 
-Class *makeconsoleclass(struct ConsoleBase *ConsoleDevice);
-Class *makestdconclass(struct ConsoleBase *ConsoleDevice);
+Class *makeConsoleClass(struct ConsoleBase *ConsoleDevice);
+Class *makeStdConClass(struct ConsoleBase *ConsoleDevice);
 
 struct ConsoleBase
 {
     struct Device device;
     struct ExecBase * sysBase;
     BPTR seglist;
-    struct GfxBase *gfxbase;
-    struct IntuitionBase *intuitionbase;
-    struct Library *boopsibase;
-    struct Library *utilitybase;
+    struct GfxBase *gfxBase;
+    struct IntuitionBase *intuitionBase;
+    struct Library *boopsiBase;
+    struct Library *utilityBase;
     
-    Class *consoleclass;
-    Class *stdconclass;
-    Class *charmapclass;
-    Class *snipmapclass;
+    struct MinList unitList;
+    struct SignalSemaphore unitListLock;
+    
+    struct Interrupt *inputHandler;
+    struct Task *consoleTask;
+    
+    Class *consoleClass;
+    Class *stdConClass;
+    Class *charMapClass;
+    Class *snipMapClass;
 };
 
 /* The following typedefs are necessary, because the names of the global
@@ -145,7 +224,7 @@ typedef struct GfxBase GraphicsBase;
 typedef struct IntuitionBase IntuiBase;
 
 #define expunge() \
-__AROS_LC0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
+__AROS_LC0(BPTR, expunge, struct ConsoleBase *, ConsoleDevice, 3, Console)
 
 #ifdef SysBase
 #   undef SysBase
@@ -155,22 +234,22 @@ __AROS_LC0(BPTR, expunge, struct emulbase *, emulbase, 3, emul_handler)
 #ifdef GfxBase
 #   undef GfxBase
 #endif
-#define GfxBase ConsoleDevice->gfxbase
+#define GfxBase ConsoleDevice->gfxBase
 
 #ifdef IntuitionBase
 #   undef IntuitionBase
 #endif
-#define IntuitionBase ConsoleDevice->intuitionbase
+#define IntuitionBase ConsoleDevice->intuitionBase
 
 #ifdef BOOPSIBase
 #   undef BOOPSIBase
 #endif
-#define BOOPSIBase ConsoleDevice->boopsibase
+#define BOOPSIBase ConsoleDevice->boopsiBase
 
 #ifdef UtilityBase
 #   undef UtilityBase
 #endif
-#define UtilityBase ConsoleDevice->utilitybase
+#define UtilityBase ConsoleDevice->utilityBase
 
 #endif /* CONSOLE_GCC_H */
 
