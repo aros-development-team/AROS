@@ -1,0 +1,27 @@
+## version $VER: ScreenMode.catalog 1.0 (27.01.2005)
+## language français
+## codeset 0
+;
+;
+MSG_NAME
+Préférences de l'écran
+; ScreenMode Preferences
+;
+MSG_WIDTH
+\33lLargeur :
+;
+MSG_DEFAULT
+\33l_défaut
+;
+MSG_HEIGHT
+\33lHauteur :
+;
+MSG_DEPTH
+\33lProfondeur :
+;
+MSG_AUTOSCROLL
+\33lDéfilement Auto.
+;
+MSG_SELECT
+Choisissez un mode
+;

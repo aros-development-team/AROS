@@ -3,11 +3,12 @@
 
 include $(TOP)/config/make.cfg
 
-FILES 	    := main smeditor smproperties smselector
+FILES 	    := locale main smeditor smproperties smselector
 EXEDIR      := $(AROS_PREFS)
 
 #MM- workbench-prefs : workbench-prefs-screenmode
-#MM workbench-prefs-screenmode : includes linklibs 
+#MM workbench-prefs-screenmode : includes linklibs \
+#MM workbench-prefs-screenmode-catalogs
 
 %build_prog mmake=workbench-prefs-screenmode \
     progname=ScreenMode targetdir=$(EXEDIR) \

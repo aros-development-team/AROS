@@ -19,6 +19,8 @@
 
 #include <stdio.h>
 
+#include "locale.h"
+
 #include "smeditor.h"
 #include "smselector.h"
 #include "smproperties.h"
@@ -39,7 +41,7 @@ Object *SMEditor__OM_NEW(Class *CLASS, Object *self, struct opSet *message)
     (
         CLASS, self, NULL,
         
-        MUIA_PrefsEditor_Name, (IPTR)"Screen Mode Preferences",
+        MUIA_PrefsEditor_Name, (IPTR) __(MSG_NAME),
         MUIA_PrefsEditor_Path, (IPTR)"SYS/screenmode.prefs",
         
 	Child, (IPTR)VGroup,

@@ -1,0 +1,22 @@
+;
+MSG_NAME (//)
+ScreenMode Preferences
+; 
+MSG_WIDTH (//)
+\33lWidth:
+;
+MSG_DEFAULT (//)
+\33l_default
+;
+MSG_HEIGHT (//)
+\33lHeight:
+;
+MSG_DEPTH (//)
+\33lDepth:
+;
+MSG_AUTOSCROLL (//)
+\33lAutoscroll
+;
+MSG_SELECT (//)
+Select a Screen Mode
+;
