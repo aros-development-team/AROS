@@ -105,7 +105,7 @@
 #define HELP_ON_ASKNUMBER "Help on AskNumber"
 #define ASKNUMBER_HELP					\
 " Fill in the number gadget and press \"Proceed\"\n"	\
-" to Proceed or abort the installation with\n"		\
+" to proceed or abort the installation with\n"		\
 " \"Abort\"."
 
 
