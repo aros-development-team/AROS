@@ -8,7 +8,7 @@ JOBDEST := $(ARCHDIR)jobserver/
 MIC	:= $(TOP)/scripts/moveifchanged
 LITE	:= /usr/local/Hughes/bin/lite
 GNUPLOT := gnuplot
-CONVERT := convert
+CONVERT := /usr/bin/X11/convert
 DOCGENDIR := $(GENDIR)/docs
 
 FILES := main.src background.src faq.src differences.src cvs.src missing.src \
