@@ -36,14 +36,14 @@ include $(TOP)/config/make.cfg
   files=ramdrive_device \
   uselibs="arossupport amiga rom"
 
-%build_module_macro mmake=workbench-fs-pipefs \
-  modname=pipefs modtype=handler \
-  initfile=pipefs_handler \
+%build_module mmake=workbench-fs-pipefs \
+  modname=pipefs modtype=device modsuffix=handler \
+  files=pipefs_handler \
   uselibs="arossupport amiga rom"
 
-%build_module_macro mmake=workbench-fs-zero \
-  modname=zero modtype=handler \
-  initfile=zero_handler \
+%build_module mmake=workbench-fs-zero \
+  modname=zero modtype=device modsuffix=handler \
+  files=zero_handler \
   uselibs="arossupport amiga rom"
 
 #MM
@@ -51,5 +51,3 @@ workbench-devs-mountlist : $(AROS_DEVS)/Mountlist
 
 $(AROS_DEVS)/Mountlist : Mountlist
 	@$(CP) $< $@
-
-%common
