@@ -645,11 +645,19 @@ $(OBJDIR)/%.d : %.c
 
 #------------------------------------------------------------------------------
 %define genlibincludes name=$(LIBNAME) functions=$(ALL_FUNCTIONS)
-#MM includes-generate : setup-clib
-includes-generate : setup $(OBJDIR)/headers.stamp \
+#MM includes-generate :
+includes-generate :: includes-setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h
 	@$(NOP)
+
+_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
+                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
+
+includes-setup : $(_MOD_INCL_DIRS)
+
+$(_MOD_INCL_DIRS) :
+	%mkdir_q $@
 
 FSRCS := $(foreach f,%(functions),$(f).c)
 
@@ -670,14 +678,22 @@ $(INCDIR)/defines/%(name).h : $(GENINCDIR)/defines/%(name).h
 
 #------------------------------------------------------------------------------
 %define genlibincludes_arch name=$(LIBNAME) archive=$(ARCHIVE)
-#MM includes-generate : setup-clib
-includes-generate : setup $(OBJDIR)/headers.stamp \
+#MM includes-generate :
+includes-generate :: includes-setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/pragmas/%(name)_pragmas.h \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h \
             $(INCDIR)/inline/%(name).h \
             $(INCDIR)/proto/%(name).h
 	@$(NOP)
+
+_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
+                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
+
+includes-setup : $(_MOD_INCL_DIRS)
+
+$(_MOD_INCL_DIRS) :
+	%mkdir_q $@
 
 _HEADER_DEPS := mmakefile.src $(wildcard headers.tmpl) libdefs.h %(archive)
 $(OBJDIR)/headers.stamp : $(GENINCDIR)/pragmas/%(name)_pragmas.h \
@@ -715,7 +731,7 @@ $(INCDIR)/proto/%(name).h : $(GENINCDIR)/proto/%(name).h
 #------------------------------------------------------------------------------
 %define genlibincludesinline name=$(LIBNAME) functions=$(ALL_FUNCTIONS) hasrt=
 #MM includes-generate : setup-clib
-includes-generate : setup $(OBJDIR)/headers.stamp \
+includes-generate :: setup $(OBJDIR)/headers.stamp \
             $(INCDIR)/clib/%(name)_protos.h \
             $(INCDIR)/defines/%(name).h \
             $(INCDIR)/inline/%(name).h \
@@ -1326,9 +1342,10 @@ endif
 
 ifneq (%(mmake),)
 #MM
-%(mmake) : setup $(INCL_FILES_1) $(INC_FILES_2)
+%(mmake) : includes-setup $(INCL_FILES_1) $(INC_FILES_2)
 else
-includes-copy : setup $(INCL_FILES_1) $(INCL_FILES_2)
+#MM
+includes-copy : includes-setup $(INCL_FILES_1) $(INCL_FILES_2)
 endif
 
 $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
@@ -1337,8 +1354,10 @@ $(AROS_INCLUDES)/%(path)/%.h : $(_INC_PATH)%.h
 $(GENINCDIR)/%(path)/%.h : $(_INC_PATH)%.h
 	@$(CP) $< $@
 
-setup ::
-	%mkdirs_q $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+includes-setup : $(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path)
+
+$(AROS_INCLUDES)/%(path) $(GENINCDIR)/%(path) :
+	%mkdir_q dir=$@
 
 %end
 
@@ -1494,11 +1513,13 @@ clean ::
 %(libs)       := -L$(LIBDIR) %(prelibs)
 %(deps)       :=
 %(lib_cflags) :=
-STARTUP := %(startup)
-ifdef USE_DETACH
-STARTUP := $(LIBDIR)/detach.o $(STARTUP)
+ifndef MODNAME
+    STARTUP := %(startup)
+    ifdef USE_DETACH
+        STARTUP := $(LIBDIR)/detach.o $(STARTUP)
+    endif
+    %(deps) := $(STARTUP)
 endif
-%(deps) := $(STARTUP)
 ifdef USE_AROSLIB
 %(libs) := $(%(libs)) -larossupport
 %(deps) := $(%(deps)) $(LIBDIR)/libarossupport.a
@@ -1780,8 +1801,8 @@ FUNC_SOBJ := $(OBJDIR)/functable.so
 # I want to get rid of this. Either use the new archtool, or the scripts
 #
 %define make_lib_incl_arch name=$(MODNAME) hasrt=
-#MM includes-generate : setup-includes
-includes-generate : setup \
+#MM includes-generate :
+includes-generate :: includes-setup \
 	    $(INCDIR)/clib/%(name)_protos.h \
 	    $(INCDIR)/defines/%(name).h \
 	    $(INCDIR)/inline/%(name).h \
@@ -1791,6 +1812,14 @@ includes-generate : setup \
 	    $(GENINCDIR)/inline/%(name).h \
 	    $(GENINCDIR)/proto/%(name).h
 	@$(NOP)
+
+_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
+                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
+
+includes-setup : $(_MOD_INCL_DIRS)
+
+$(_MOD_INCL_DIRS) :
+	%mkdir_q $@
 
 clean ::
 	@$(RM) \
@@ -1949,8 +1978,8 @@ DEPS := $(DEPS) $(OBJDIR)/$(MODNAME).d
 %end
 
 %define make_lib_includes name=$(MODNAME) hasrt= id=
-#MM includes-generate : setup-includes
-includes-generate : setup \
+#MM includes-generate :
+includes-generate :: includes-setup \
 	    $(INCDIR)/clib/%(name)_protos.h \
 	    $(INCDIR)/defines/%(name).h \
 	    $(INCDIR)/inline/%(name).h \
@@ -1960,6 +1989,14 @@ includes-generate : setup \
 	    $(GENINCDIR)/inline/%(name).h \
 	    $(GENINCDIR)/proto/%(name).h
 	@$(NOP)
+
+_MOD_INCL_DIRS :=   $(foreach i,clib defines inline pragmas proto,$(INCDIR)/$(i)) \
+                    $(foreach i,clib defines inline pragmas proto,$(GENINCDIR)/$(i))
+
+includes-setup : $(_MOD_INCL_DIRS)
+
+$(_MOD_INCL_DIRS) :
+	%mkdir_q $@
 
 clean ::
 	@$(RM) \
@@ -2031,6 +2068,11 @@ clean ::
 
 DEPS := $(DEPS) $(STUBS_DEP)
 
+%end
+
+%define add_kernel_module id=/A
+AROS_BUILTIN_LIBS := $(AROS_BUILTIN_LIBS) $(AROS_LIB)/lib%(id).mo
+AROS_BUILTIN_DEPS := $(AROS_BUILTIN_DEPS) $(AROS_LIB)/lib%(id).mo
 %end
 
 #------------------------------------------------------------------------------

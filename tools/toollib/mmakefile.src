@@ -32,15 +32,11 @@ FILES := \
 %make_linklib_setup mmake=linklibs-toollib
 %make_linklib
 
-#MM- setup : setup-includes includes-copy
-
 #MM
-includes-copy : $(TOOLLIBINCS)
-	@$(NOP)
+includes-copy : $(INCDIR)/toollib $(TOOLLIBINCS)
 
-#MM
-setup-includes :
-	@$(MKDIR) $(INCDIR)/toollib
+$(INCDIR)/toollib : 
+	@$(MKDIR) $@
 
 $(INCDIR)/toollib/%.h : %.h
 	$(CP) $< $(INCDIR)/toollib

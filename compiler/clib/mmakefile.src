@@ -329,13 +329,13 @@ DEP_LIBS := arosm autoinit
 %make_linklib_setup mmake=linklibs-clib
 
 #MM- linklibs : linklibs-clib
-#MM linklibs-clib : setup includes linklibs-mlib linklibs-autoinit \
+#MM linklibs-clib : setup-clib includes linklibs-mlib linklibs-autoinit \
 #MM			clib-$(ARCH)-$(CPU) clib-stubs
 
 #MM
 linklibs-clib-quick : linklibs-clib
 
-linklibs-clib : $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
+linklibs-clib : setup-clib $(STATIC_LIB) $(SHARED_LIB) $(ROM_LIB) $(AROS_LIBS)/$(MODULE)
 
 $(STATIC_LIB) : $(STATIC_OBJ)
 	%mklib_q from=$^
@@ -379,9 +379,10 @@ $(OBJDIR)/%.d : %.c
 	%mkdepend_q flags=$(CFLAGS)
 
 #MM
-setup :
+setup-clib :
 	%mkdirs_q $(AROS_INCLUDES)/sys $(OBJDIR) 
 	%mkdirs_q $(OBJDIR)/static $(OBJDIR)/shared $(OBJDIR)/rom
+	%mkdirs_q $(AROS_LIB) $(AROS_LIBS)
 
 #MM
 check : $(TESTDIR)/snprint

@@ -29,10 +29,12 @@ INCLUDES      := $(foreach d,$(INCSUBDIRS),$(wildcard $(d)/*.h))
 INCLUDES      := $(filter-out rexx/rexxcall-%.h,$(INCLUDES))
 DEST_INCLUDES := $(foreach f,$(INCLUDES),$(AROS_INCLUDES)/$(f))
 GEN_INCLUDES  := $(foreach f,$(INCLUDES),$(GENINCDIR)/$(f))
+INCL_DIRS     := $(foreach dir,$(INCSUBDIRS),$(AROS_INCLUDES)/$(dir)) \
+                 $(foreach dir,$(INCSUBDIRS),$(GENINCDIR)/$(dir))
 
-#MM- includes : setup-includes includes-$(ARCH)-$(CPU)
+#MM- includes : includes-$(ARCH)-$(CPU)
 #MM includes-copy : includes-copy-$(ARCH)-$(CPU) includes-generate
-includes-copy : $(DEST_INCLUDES) $(GEN_INCLUDES)
+includes-copy : setup $(DEST_INCLUDES) $(GEN_INCLUDES)
 
 ifeq ($(TARGET_CPU),m68k)
 $(INCDIR)/rexx/rexxcall.h : rexx/rexxcall-m68k.h
@@ -48,15 +50,10 @@ $(INCDIR)/%.h : %.h
 $(GENINCDIR)/%.h : %.h
 	@$(CP) $< $@
 
-#MM
-setup-includes :
-	@$(FOR) dir in $(AROS_INCLUDES)         \
-		$(foreach f,$(INCSUBDIRS),$(AROS_INCLUDES)/$(f)) \
-		$(GENINCDIR) \
-		$(foreach f,$(INCSUBDIRS),$(GENINCDIR)/$(f)) \
-	; do \
-	   $(IF) $(TEST) ! -d "$$dir" ; then $(MKDIR) "$$dir" ; else true ; fi ;\
-	done
+setup : $(INCL_DIRS)
+
+$(INCL_DIRS) :
+	@$(MKDIR) $@
 
 #MM
 clean :
