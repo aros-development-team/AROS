@@ -218,7 +218,6 @@ BOOL InitCoolImageClass(struct Library *CyberGfxBase)
 
 void CleanupCoolImageClass(void)
 {
-    AROS_GET_SYSBASE
     if (cool_imageclass)
     {
     	FreeClass(cool_imageclass);

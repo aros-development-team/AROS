@@ -159,7 +159,6 @@ static IPTR coolbutton_hittest(Class *cl, Object *o, struct gpHitTest *msg)
 
 static IPTR coolbutton_render(Class *cl, Object *o, struct gpRender *msg)
 {
-    AROS_GET_SYSBASE
     struct CoolButtonData   *data;
     STRPTR  	    	    text = (STRPTR)G(o)->GadgetText;
     struct TagItem  	    im_tags[] =
@@ -348,7 +347,6 @@ BOOL InitCoolButtonClass(struct Library *CyberGfxBase)
 
 void CleanupCoolButtonClass(void)
 {
-    AROS_GET_SYSBASE
     if (cool_buttonclass)
     {
     	FreeClass(cool_buttonclass);
