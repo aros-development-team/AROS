@@ -20,9 +20,6 @@ include $(TOP)/config/make.cfg
 #
 # END_DESC{localmakevar}
 
-# ***** Native ***************
-ifeq ($(FLAVOUR),native)
-
 # Main function for exec.strap. Need this apart as an anchor for the link:
 INIT_FILE = utility_init
 
@@ -30,14 +27,6 @@ FILES = utility_functable getnamespace intfindnamedobj
 
 # Guarantee that this will go at the end of the file:
 END_FILE = utility_endtag
-
-# ***** Not Native ***************
-else
-
-FILES = utility_init utility_functable getnamespace intfindnamedobj
-
-# ***** END ***************
-endif
 
 FUNCTIONS := \
 	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
@@ -135,7 +124,9 @@ endif
 
 %prepare_shlib utility $(SHARED_UTILITY)
 
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS),$(OBJDIR)/$(f).o)
+ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
+
+OBJS = $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
@@ -172,4 +163,4 @@ $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
+%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)
