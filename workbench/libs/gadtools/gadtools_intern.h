@@ -213,6 +213,7 @@ struct GadToolsBase_intern
     struct IntuitionBase 	* intuibase;
     struct Library	 	* dosbase;
     struct GfxBase	 	* gfxbase;
+    struct Library		* layersbase;
     struct Library	 	* utilitybase;
     struct Library	 	* boopsibase;
 
@@ -285,6 +286,8 @@ extern struct ExecBase * SysBase;
 #define DOSBase (GTB(GadToolsBase)->dosbase)
 #undef GfxBase
 #define GfxBase (GTB(GadToolsBase)->gfxbase)
+#undef LayersBase
+#define LayersBase (GTB(GadToolsBase)->layersbase)
 #undef UtilityBase
 #define UtilityBase (GTB(GadToolsBase)->utilitybase)
 #undef BOOPSIBase

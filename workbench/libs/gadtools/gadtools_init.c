@@ -185,6 +185,11 @@ AROS_LH1(struct GadToolsBase_intern *, open,
     if (!GfxBase)
 	return NULL;
 
+    if (!LayersBase)
+	LayersBase = OpenLibrary("layers.library", 37);
+    if (!LayersBase)
+	return NULL;
+
     if (!UtilityBase)
 	UtilityBase = OpenLibrary(UTILITYNAME, 37);
     if (!UtilityBase)
@@ -294,6 +299,10 @@ AROS_LH0(BPTR, close, struct GadToolsBase_intern *, LIBBASE, 2, BASENAME)
 	    CloseLibrary(UtilityBase);
         UtilityBase = NULL;
 
+	if (LayersBase)
+	    CloseLibrary(LayersBase);
+	LayersBase = NULL;
+	
 	if (GfxBase)
 	    CloseLibrary((struct Library *)GfxBase);
         GfxBase = NULL;

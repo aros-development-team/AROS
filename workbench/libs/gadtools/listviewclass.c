@@ -25,6 +25,7 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 #include <proto/gadtools.h>
+#include <proto/layers.h>
 
 #include <string.h> /* memset() */
 
@@ -960,6 +961,7 @@ STATIC IPTR listview_goinactive(Class *cl, Object *o, struct gpGoInactive *msg)
 STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 {
     struct LVData *data = INST_DATA(cl, o);
+    BOOL   	  mustrefresh = FALSE;
     
     EnterFunc(bug("Listview::Render()\n"));
 
@@ -1037,6 +1039,8 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 			G(o)->LeftEdge + G(o)->Width  - 1 - LV_BORDER_X,
 			G(o)->TopEdge  + LV_BORDER_Y + NumItemsFit(o, data) * TotalItemHeight(data) - 1);
 
+		mustrefresh = (msg->gpr_GInfo->gi_Layer->Flags & LAYERREFRESH) != 0;
+
 		data->ld_FirstDamaged = ((data->ld_ScrollEntries > 0) ?
 				visible - abs_steps : 0);
 
@@ -1060,6 +1064,25 @@ STATIC IPTR listview_render(Class *cl, Object *o, struct gpRender *msg)
 			
 		data->ld_FirstDamaged = -1;
 
+	    }
+
+	    /* the LAYERUPDATING check should not be necessary,
+	       as then we should always have a GREDRAW_REDRAW,
+	       while here we are in GREDRAW_UPDATE. But just
+	       to be sure ... */
+
+	    if (mustrefresh && !(msg->gpr_GInfo->gi_Layer->Flags & LAYERUPDATING))
+	    {
+	        BOOL update;
+		
+	    	if(!(update = BeginUpdate(msg->gpr_GInfo->gi_Layer)))
+		{
+		    EndUpdate(msg->gpr_GInfo->gi_Layer, FALSE);
+		}
+
+		RenderEntries(cl, o, msg, 0, ShownEntries(o, data), GadToolsBase);
+
+	    	if(update) EndUpdate(msg->gpr_GInfo->gi_Layer, TRUE);
 	    }
 
 	    break; /* GREDRAW_UPDATE */
