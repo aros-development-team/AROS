@@ -33,6 +33,7 @@ FILES := amiga2date \
         serialtest \
         unixio \
         librarytest \
+	partition \
 	scantest \
 	semaphoretest \
 	showvisregion \
