@@ -862,6 +862,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-x                use the X Window System
+  --with-optimization=N   Use optimization level N default=2
   --with-sdl              Use SDL library default=no
   --with-resolution=XRESxYRESxDEPTH        Default resolution of the initial WorkbenchScreen
   --with-serial-debug   Enable serial debug output in native default=no
@@ -6103,7 +6104,7 @@ aros_kernel_ldflags="-Wl,-rpath,./lib"
 aros_compiler_libs=
 
 # These are the flags to pass when compiling debugged programs
-aros_debug_cflags="-g -O0 -DADEBUG=1 -DMDEBUG=1"
+aros_debug_cflags="-g -DADEBUG=1 -DMDEBUG=1"
 aros_debug_aflags=""
 aros_debug_ldflags="-g"
 aros_target_genmap="-Wl,-Map -Xlinker"
@@ -6126,8 +6127,27 @@ aros_modules_debug="1"
 # X11 Xshm
 DO_XSHM_SUPPORT="1"
 
-# This is the target configuration switch.
+#-----------------------------------------------------------------------------
+echo "$as_me:$LINENO: checking what optimization level to use" >&5
+echo $ECHO_N "checking what optimization level to use... $ECHO_C" >&6
 
+# Check whether --with-optimization or --without-optimization was given.
+if test "${with_optimization+set}" = set; then
+  withval="$with_optimization"
+  optimization=$withval
+else
+  optimization=unknown
+fi;
+if test "$optimization" = "unknown"; then
+        aros_target_cflags="$aros_target_cflags -O2"
+    aros_debug_cflags="$aros_debug_cflags -O0
+else
+    aros_target_cflags="$aros_target_cflags -O$optimization"
+    aros_debug_cflags="$aros_debug_cflags -O$optimization"
+fi
+#-----------------------------------------------------------------------------
+
+# This is the target configuration switch.
 case "$target_os" in
     linux*)
 	aros_target_arch="linux"
@@ -6167,7 +6187,7 @@ echo "$as_me: error: \"Unknown CPU for Linux -- $target_cpu\"" >&2;}
 
     pc)
 	aros_target_arch="pc"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -DADEBUG=1 -DMDEBUG=1"
+	aros_target_cflags="$aros_target_cflags -DADEBUG=1 -DMDEBUG=1"
 	aros_shared_default="no"
 	case "$target_cpu" in
 	    *i?86*)
@@ -6190,7 +6210,7 @@ echo "$as_me: error: \"Unknown native CPU -- $target_cpu\"" >&2;}
 
     prep)
 	aros_target_arch="prep"
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
+	aros_target_cflags="$aros_target_cflags -mregnames -mcpu=604e -mno-toc -mprototype -mno-sdata -DADEBUG=0 -DMDEBUG=0"
 	aros_shared_default="no"
 	aros_target_cpu="ppc"
 	aros_object_format="elf32ppc"
@@ -6316,7 +6336,7 @@ echo "$as_me: error: \"Unknown CPU for Solaris -- $target_cpu\"" >&2;}
 	aros_target_mkdep="$aros_target_mkdep -D__GNUC__ -D_AMIGA -DAMIGA"
 	aros_shared_default="no"
 
-	aros_target_cflags="-Wall -Werror-implicit-function-declaration -O2 -fomit-frame-pointer -fbuiltin -ffreestanding"
+	aros_target_cflags="$aros_target_cflags -fomit-frame-pointer -fbuiltin -ffreestanding"
 
 	case "$target_cpu" in
 	    *m68k*)
@@ -6387,7 +6407,7 @@ echo "$as_me: error: \"Unknown CPU for CygWin -- $target_cpu\"" >&2;}
 		aros_target_nm="m68k-elf-nm"
 		aros_target_objcopy="m68k-elf-objcopy"
 		aros_target_objdump="m68k-elf-objdump"
-		aros_target_cflags="-Wall -Werror-implicit-function-declaration -fno-builtin -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
+		aros_target_cflags="$aros_target_cflags -fno-builtin -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -DHAS_OWN_DISPATCHER -D__DONT_UNDERSTAND__ASM__ -DAROS_CREATE_ROM -DAROS_CREATE_ROM_BUG -DAROS_NOFPU -DAROS_NO_LIMITS_H -DNEEDS___MAIN -Dlinux"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib"
 		aros_compiler_libs="-lgcc1"
