@@ -34,7 +34,7 @@ if [ "x$dest" = x ]; then
     exit 1
 fi
 
-CMD="gcc -MM $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
+CMD="gcc -M $args $files | sed 's#^.*\.o:#`dirname $dest`/&#'"
 #echo $CMD
 
 eval $CMD > $dest
