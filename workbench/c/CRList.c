@@ -1,3 +1,4 @@
+
 #include <exec/exec.h>
 #include <dos/dos.h>
 #include <intuition/intuition.h>
@@ -11,6 +12,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define ARG_TEMPLATE "FAST=F/S,NUMBERS=N/S"
 

@@ -14,7 +14,9 @@
 #include <dos/dos.h>
 #include <dos/datetime.h>
 #include <devices/timer.h>
+
 #include <string.h>
+#include <stdlib.h>
 
 static const char version[] = "$VER: Date 41.4 (5.3.2000)\n";
 
