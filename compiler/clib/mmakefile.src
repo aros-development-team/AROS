@@ -146,7 +146,8 @@ SHARED	:= \
 	fopen \
 	fprintf \
 	fscanf \
-	fputc \
+	fsync \
+        fputc \
 	fputs \
 	fread \
 	free \
