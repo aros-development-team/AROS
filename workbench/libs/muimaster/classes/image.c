@@ -159,7 +159,7 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 			zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
 			zune_imspec_free(data->img);
 			    
-			data->img = zune_image_spec_to_structure((IPTR)data->spec);
+			data->img = zune_image_spec_to_structure((IPTR)data->spec,obj);
 			zune_imspec_setup(&data->img, muiRenderInfo(obj));
 		    }
 
@@ -202,7 +202,7 @@ static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
     struct MUI_ImageData *data = INST_DATA(cl, obj);
     if (!DoSuperMethodA(cl,obj,(Msg)msg)) return NULL;
 
-    data->img = zune_image_spec_to_structure((IPTR)data->spec);
+    data->img = zune_image_spec_to_structure((IPTR)data->spec,obj);
     zune_imspec_setup(&data->img, muiRenderInfo(obj));
     return 1;
 }

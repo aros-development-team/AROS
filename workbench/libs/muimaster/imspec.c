@@ -7,6 +7,7 @@
 */
 
 #include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include <exec/types.h>
@@ -21,6 +22,9 @@
 #ifdef _AROS
 #include <proto/muimaster.h>
 #endif
+
+#define MYDEBUG 1
+#include "debug.h"
 
 #include "mui.h"
 
@@ -1731,7 +1735,18 @@ const static MPenCouple patternPens[] = {
 
 #define PATTERN_COUNT (MUII_LASTPAT - MUII_BACKGROUND + 1)
 
-static struct MUI_ImageSpec *get_pattern_image_spec(LONG in)
+static struct MUI_ImageSpec *get_config_imspec(LONG in, Object *obj)
+{
+    if (!obj) return NULL;
+
+    if (in >= MUII_WindowBack && in <= MUII_ReadListBack)
+    {
+	return zune_image_spec_to_structure((IPTR)muiGlobalInfo(obj)->mgi_Prefs->imagespecs[in],NULL);
+    }
+    return NULL;
+}
+
+static struct MUI_ImageSpec *get_pattern_imspec(LONG in)
 {
     struct MUI_ImageSpec *spec;
 
@@ -1763,7 +1778,7 @@ static struct MUI_ImageSpec *get_pattern_image_spec(LONG in)
     return NULL;
 }
 
-static struct MUI_ImageSpec *get_color_image_spec(ULONG r, ULONG g, ULONG b)
+static struct MUI_ImageSpec *get_color_imspec(ULONG r, ULONG g, ULONG b)
 {
     struct MUI_ImageSpec *spec;
     if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
@@ -1778,7 +1793,7 @@ static struct MUI_ImageSpec *get_color_image_spec(ULONG r, ULONG g, ULONG b)
     return NULL;
 }
 
-static struct MUI_ImageSpec *get_bitmap_image_spec(char *filename)
+static struct MUI_ImageSpec *get_bitmap_imspec(char *filename)
 {
     struct MUI_ImageSpec *spec;
     if ((spec = mui_alloc_struct(struct MUI_ImageSpec)))
@@ -1790,15 +1805,58 @@ static struct MUI_ImageSpec *get_bitmap_image_spec(char *filename)
     return NULL;
 }
 
-struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
+/**************************************************************************
+ Duplicates a image spec. In in may be one of the MUII_#? identifiers
+ (but it will always return a string).
+ The returned string must be freed with zune_image_spec_free() because
+ in the future it might be that the MUII_#? stuff is not converted to
+ a string
+**************************************************************************/
+char *zune_image_spec_duplicate(IPTR in)
+{
+    char *spec;
+    char spec_buf[20];
+
+    if (in >= MUII_WindowBack && in < MUII_BACKGROUND)
+    {
+	sprintf(spec_buf,"6:%ld",in);
+	spec = spec_buf;
+    } else
+    {
+	if (in >= MUII_BACKGROUND && in < MUII_LASTPAT)
+	{
+	    sprintf(spec_buf,"O:%ld",in);
+	    spec = spec_buf;
+	} else spec = (char*)in;
+    }
+
+    return StrDup(spec);
+}
+
+/**************************************************************************
+ Use this function to free the zune_image_spec_duplicate() result
+**************************************************************************/
+void zune_image_spec_free(char *spec)
+{
+    if (spec) FreeVec(spec);
+}
+
+/**************************************************************************
+ Create a image spec. obj is a AreaObject. It is used to access the config
+ data.
+
+ TODO: merge this with zune_imspec_setup() because this function should
+ be called in MUIM_Setup (configdata)
+**************************************************************************/
+struct MUI_ImageSpec *zune_image_spec_to_structure(IPTR in, Object *obj)
 {
     char *s;
 
     if (in >= MUII_WindowBack && in <= MUII_ReadListBack)
-	return zune_imspec_copy(__zprefs.images[in]);
+	return get_config_imspec(in,obj);
 
     if (in >= MUII_BACKGROUND && in <= MUII_MARKBACKGROUND)
-	return get_pattern_image_spec(in);
+	return get_pattern_imspec(in);
 
     s = (char*)in;
 
@@ -1808,7 +1866,7 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 		{
 		    LONG pat;
              	    StrToLong(s+2,&pat);
-             	    return get_pattern_image_spec(pat);
+             	    return get_pattern_imspec(pat);
 		}
 
 	case	'2':
@@ -1820,11 +1878,11 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
 		    g = strtoul(s,&s, 16);
 		    s++;
 		    b = strtoul(s,&s, 16);
-		    return get_color_image_spec(r,g,b);
+		    return get_color_imspec(r,g,b);
 		}
 
 	case	'5':
-		return get_bitmap_image_spec(s+2);
+		return get_bitmap_imspec(s+2);
 
 	case    '6':
 		{
@@ -1832,7 +1890,7 @@ struct MUI_ImageSpec *zune_image_spec_to_structure (IPTR in)
              	    StrToLong(s+2,&img);
 
 		    if (img >= MUII_WindowBack && img <= MUII_ReadListBack)
-			return zune_imspec_copy(__zprefs.images[img]);
+			return get_config_imspec(img,obj);
 	        }
 	        break;
     }

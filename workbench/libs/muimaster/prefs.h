@@ -166,6 +166,7 @@ int __zune_prefs_write(struct ZunePrefs *prefs, STRPTR path);
 struct ZunePrefsNew
 {
     char *fonts[-MUIV_Font_NegCount];
+    char *imagespecs[MUII_Count];
 };
 
 #endif

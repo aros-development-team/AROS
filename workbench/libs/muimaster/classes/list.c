@@ -684,9 +684,9 @@ static ULONG List_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 
     DoMethod(_win(obj),MUIM_Window_AddEventHandler, &data->ehn);
 
-    data->list_cursor = zune_image_spec_to_structure(MUII_ListCursor);
-    data->list_select = zune_image_spec_to_structure(MUII_ListSelect);
-    data->list_selcur = zune_image_spec_to_structure(MUII_ListSelCur);
+    data->list_cursor = zune_image_spec_to_structure(MUII_ListCursor,obj);
+    data->list_select = zune_image_spec_to_structure(MUII_ListSelect,obj);
+    data->list_selcur = zune_image_spec_to_structure(MUII_ListSelCur,obj);
 
     zune_imspec_setup(&data->list_cursor, muiRenderInfo(obj));
     zune_imspec_setup(&data->list_select, muiRenderInfo(obj));

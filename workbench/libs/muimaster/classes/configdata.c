@@ -32,6 +32,13 @@ struct MUI_ConfigdataData
     struct ZunePrefsNew prefs;
 };
 
+static void *GetConfigData(Object *obj, ULONG id, void *def)
+{
+    void *f = (void*)DoMethod(obj,MUIM_Dataspace_Find,id);
+    if (!f) return def;
+    return f;
+}
+
 static void LoadPrefs(STRPTR filename, Object *obj)
 {
     struct IFFHandle *iff;
@@ -68,6 +75,7 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_ConfigdataData *data;
     struct TagItem *tags,*tag;
     APTR cdata;
+    int i;
 
     obj = (Object *)DoSuperMethodA(cl, obj, (Msg)msg);
     if (!obj) return NULL;
@@ -89,6 +97,50 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->prefs.fonts[-MUIV_Font_Normal] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Normal);
     data->prefs.fonts[-MUIV_Font_Big] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Big);
     data->prefs.fonts[-MUIV_Font_Tiny] = (char*)DoMethod(obj,MUIM_Dataspace_Find,MUICFG_Font_Tiny);
+
+    data->prefs.imagespecs[MUII_WindowBack] = (char*)GetConfigData(obj,MUICFG_Background_Window,"0:128"); /* MUII_BACKGROUND */
+    data->prefs.imagespecs[MUII_RequesterBack] = (char*)GetConfigData(obj,MUICFG_Background_Requester,"0:137"); /* MUII_SHINEBACK */
+    data->prefs.imagespecs[MUII_ButtonBack] = (char*)GetConfigData(obj,MUICFG_Buttons_Background,"0:128");
+    data->prefs.imagespecs[MUII_ListBack] = "0:128";
+    data->prefs.imagespecs[MUII_TextBack] = "0:128";
+    data->prefs.imagespecs[MUII_PropBack] = "0:128";
+    data->prefs.imagespecs[MUII_PopupBack] = "0:128";
+    data->prefs.imagespecs[MUII_SelectedBack] = (char*)GetConfigData(obj,MUICFG_Buttons_SelBackground,"0:131");
+    data->prefs.imagespecs[MUII_ListCursor] = "0:131";
+    data->prefs.imagespecs[MUII_ListSelect] = "0:135";
+    data->prefs.imagespecs[MUII_ListSelCur] = "0:138";
+    data->prefs.imagespecs[MUII_ArrowUp] = "0:128";
+    data->prefs.imagespecs[MUII_ArrowDown] = "0:128";
+    data->prefs.imagespecs[MUII_ArrowLeft] = "0:128";
+    data->prefs.imagespecs[MUII_ArrowRight] = "0:128";
+    data->prefs.imagespecs[MUII_CheckMark] = "0:128";
+    data->prefs.imagespecs[MUII_RadioButton] = "0:128";
+    data->prefs.imagespecs[MUII_Cycle] = "0:128";
+    data->prefs.imagespecs[MUII_PopUp] = "0:128";
+    data->prefs.imagespecs[MUII_PopFile] = "0:128";
+    data->prefs.imagespecs[MUII_PopDrawer] = "0:128";
+    data->prefs.imagespecs[MUII_PropKnob] = "0:128";
+    data->prefs.imagespecs[MUII_Drawer] = "0:128";
+    data->prefs.imagespecs[MUII_HardDisk] = "0:128";
+    data->prefs.imagespecs[MUII_Disk] = "0:128";
+    data->prefs.imagespecs[MUII_Chip] = "0:128";
+    data->prefs.imagespecs[MUII_Volume] = "0:128";
+    data->prefs.imagespecs[MUII_RegisterBack] = "0:128";
+    data->prefs.imagespecs[MUII_Network] = "0:128";
+    data->prefs.imagespecs[MUII_Assign] = "0:128";
+    data->prefs.imagespecs[MUII_TapePlay] = "0:128";
+    data->prefs.imagespecs[MUII_TapePlayBack] = "0:128";
+    data->prefs.imagespecs[MUII_TapePause] = "0:128";
+    data->prefs.imagespecs[MUII_TapeStop] = "0:128";
+    data->prefs.imagespecs[MUII_TapeRecord] = "0:128";
+    data->prefs.imagespecs[MUII_GroupBack] = "0:128";
+    data->prefs.imagespecs[MUII_SliderBack] = "0:128";
+    data->prefs.imagespecs[MUII_SliderKnob] = "0:128";
+    data->prefs.imagespecs[MUII_TapeUp] = "0:128";
+    data->prefs.imagespecs[MUII_TapeDown] = "0:128";
+    data->prefs.imagespecs[MUII_PageBack] = "0:128";
+    data->prefs.imagespecs[MUII_ReadListBack] = "0:128";
+
 
     return (ULONG)obj;
 }
