@@ -15,9 +15,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_FreeAslRequest(register __a0 APTR requester)
-#else
 	AROS_LH1(VOID, MUI_FreeAslRequest,
 
 /*  SYNOPSIS */
@@ -25,7 +22,7 @@ __asm VOID MUI_FreeAslRequest(register __a0 APTR requester)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 10, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

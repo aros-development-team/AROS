@@ -21,9 +21,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1 struct MUI_PenSpec *spec, register __d0 ULONG flags)
-#else
 	AROS_LH3(LONG, MUI_ObtainPen,
 
 /*  SYNOPSIS */
@@ -33,7 +30,7 @@ __asm LONG MUI_ObtainPen(register __a0 struct MUI_RenderInfo *mri, register __a1
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 22, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

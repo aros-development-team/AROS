@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags)
-#else
 	AROS_LH2(VOID, MUI_RequestIDCMP,
 
 /*  SYNOPSIS */
@@ -29,7 +26,7 @@ __asm VOID MUI_RequestIDCMP(register __a0 Object *obj, register __d0 ULONG flags
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 15, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     For custom class implementors. Valid between MUIM_Setup/MUIM_Cleanup.

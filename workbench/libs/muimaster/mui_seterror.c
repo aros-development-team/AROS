@@ -14,9 +14,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm LONG MUI_SetError(register __d0 LONG num)
-#else
 	AROS_LH1(LONG, MUI_SetError,
 
 /*  SYNOPSIS */
@@ -24,7 +21,7 @@ __asm LONG MUI_SetError(register __d0 LONG num)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 12, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

@@ -15,9 +15,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_DisposeObject(register __a0 Object *obj)
-#else
 	AROS_LH1(VOID, MUI_DisposeObject,
 
 /*  SYNOPSIS */
@@ -25,7 +22,7 @@ __asm VOID MUI_DisposeObject(register __a0 Object *obj)
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 6, MUIMaster)
-#endif
+
 /*  FUNCTION
 
     INPUTS

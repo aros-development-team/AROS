@@ -18,9 +18,6 @@
 /*****************************************************************************
 
     NAME */
-#ifndef __AROS__
-__asm VOID MUI_EndRefresh(register __a0 struct MUI_RenderInfo *mri, register __d0 ULONG flags)
-#else
 	AROS_LH2(VOID, MUI_EndRefresh,
 
 /*  SYNOPSIS */
@@ -29,7 +26,6 @@ __asm VOID MUI_EndRefresh(register __a0 struct MUI_RenderInfo *mri, register __d
 
 /*  LOCATION */
 	struct Library *, MUIMasterBase, 29, MUIMaster)
-#endif
 /*  FUNCTION
 
     INPUTS
