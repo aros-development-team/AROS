@@ -9,7 +9,8 @@ include $(TOP)/config/make.cfg
 
 FILES :=        \
 	startup \
-	detach
+	detach  \
+	nixmain
 
 OBJS  := $(FILES:%=$(LIBDIR)/%.o)
 
