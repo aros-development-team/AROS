@@ -278,12 +278,12 @@ void LayerSplitsLayer(struct Layer * L_active,
  */
  
 struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
-                                       struct ClipRect * CR,
-                                       struct Region * ClipRegion)
+                                        struct ClipRect * CR,
+                                        struct Region * ClipRegion)
 {
   struct ClipRect * CR_new = NULL, * _CR;
   BOOL isSmart;
-  
+
   if (LAYERSMART == (L->Flags & (LAYERSMART | LAYERSUPER)))
     isSmart = TRUE;
   else
@@ -292,18 +292,24 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
   /* walk through all ClipRects */
   while (NULL != CR)
   {
-    /* if this is a simple layer and the cliprect is hidden then I
-       don't even bother with that cliprect 
+    /* 
+    ** if this is a simple layer and the cliprect is hidden then I
+    ** don't even bother with that cliprect 
     */
     if (!(   (0 != (L ->Flags & LAYERSIMPLE)) && NULL != CR->lobs))
     { 
       struct RegionRectangle * RR = ClipRegion->RegionRectangle;
       struct Rectangle Rect = CR->bounds;
       int area;
-      Rect.MinX -= L->bounds.MinX;
-      Rect.MinY -= L->bounds.MinY;
-      Rect.MaxX -= L->bounds.MinX;
-      Rect.MaxY -= L->bounds.MinY;
+      /*
+      ** Usually I would have to add the ClipRegion's coordinate
+      ** to all its RegionRectangles. To prevent this I subtract it
+      ** from the Rect's coordinates. 
+      */
+      Rect.MinX -= (L->bounds.MinX + ClipRegion->bounds.MinX);
+      Rect.MinY -= (L->bounds.MinY + ClipRegion->bounds.MinY);
+      Rect.MaxX -= (L->bounds.MinX + ClipRegion->bounds.MinX);
+      Rect.MaxY -= (L->bounds.MinY + ClipRegion->bounds.MinY);
       area = (Rect.MaxX - Rect.MinX + 1) *
              (Rect.MaxY - Rect.MinY + 1);
     
@@ -328,25 +334,31 @@ struct ClipRect * CopyClipRectsInRegion(struct Layer * L,
             _CR        = _CR->Next; 
           }
 
+          /* That's what we need in any case */
+          _CR->bounds.MinX = ClipRegion->bounds.MinX;
+          _CR->bounds.MinY = ClipRegion->bounds.MinY;
+          _CR->bounds.MaxX = ClipRegion->bounds.MinX;
+          _CR->bounds.MaxY = ClipRegion->bounds.MinY;
+
           if (RR->bounds.MinX > Rect.MinX)
-            _CR->bounds.MinX = RR->bounds.MinX + L->bounds.MinX;
+            _CR->bounds.MinX += RR->bounds.MinX + L->bounds.MinX;
           else
-            _CR->bounds.MinX =       Rect.MinX + L->bounds.MinX;
+            _CR->bounds.MinX +=       Rect.MinX + L->bounds.MinX;
 
           if (RR->bounds.MinY > Rect.MinY)
-            _CR->bounds.MinY = RR->bounds.MinY + L->bounds.MinY;
+            _CR->bounds.MinY += RR->bounds.MinY + L->bounds.MinY;
           else
-            _CR->bounds.MinY =       Rect.MinY + L->bounds.MinY;
+            _CR->bounds.MinY +=       Rect.MinY + L->bounds.MinY;
 
           if (RR->bounds.MaxX < Rect.MaxX)
-            _CR->bounds.MaxX = RR->bounds.MaxX + L->bounds.MinX;
+            _CR->bounds.MaxX += RR->bounds.MaxX + L->bounds.MinX;
           else
-            _CR->bounds.MaxX =       Rect.MaxX + L->bounds.MinX;
+            _CR->bounds.MaxX +=       Rect.MaxX + L->bounds.MinX;
 
           if (RR->bounds.MaxY < Rect.MaxY)
-            _CR->bounds.MaxY = RR->bounds.MaxY + L->bounds.MinY;
+            _CR->bounds.MaxY += RR->bounds.MaxY + L->bounds.MinY;
           else
-            _CR->bounds.MaxY =       Rect.MaxY + L->bounds.MinY;
+            _CR->bounds.MaxY +=       Rect.MaxY + L->bounds.MinY;
 
           area -= (_CR->bounds.MaxX - _CR->bounds.MinX + 1) *
                   (_CR->bounds.MaxY - _CR->bounds.MinY + 1);

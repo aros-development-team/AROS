@@ -67,24 +67,35 @@
   struct RegionRectangle * RR;
 
   LockLayer(0, l);
-  
+
+  if (l->_cliprects)
+    AndRegionRegion(l->ClipRect, l->DamageList);
+
   if (NULL != R)
   {
+
+kprintf("BeginUpdate: NULL!=R \n");
     RR = R->RegionRectangle;
     /* process all region rectangles */
     while (NULL != RR)
     {
       CR = _AllocClipRect(l);
+
+kprintf("CR: %p\n",CR);
       /* was allocation successful? */
       if (NULL != CR)
       {
         /* init. ClipRect */
         CR->Next = FirstCR;
         FirstCR  = CR;
-        CR->bounds.MinX = R->bounds.MinX + RR->bounds.MinX + l->bounds.MinX;
-        CR->bounds.MinY = R->bounds.MinY + RR->bounds.MinY + l->bounds.MinY;
-        CR->bounds.MaxX = R->bounds.MinX + RR->bounds.MaxX + l->bounds.MinX;
-        CR->bounds.MaxY = R->bounds.MinY + RR->bounds.MaxY + l->bounds.MinY;
+        /* That's what we need in any case */
+        CR->bounds = RR->bounds;
+        
+        CR->bounds.MinX += R->bounds.MinX + l->bounds.MinX;
+        CR->bounds.MinY += R->bounds.MinY + l->bounds.MinY;
+        CR->bounds.MaxX += R->bounds.MinX + l->bounds.MinX;
+        CR->bounds.MaxY += R->bounds.MinY + l->bounds.MinY;
+        
         /* anything else? */
       }
       else
@@ -93,6 +104,8 @@
         CR = FirstCR;
         while (NULL != CR)
 	{
+kprintf("Error 1!\n");
+
           FirstCR = CR->Next;
           _FreeClipRect(CR, l);
           CR = FirstCR;
