@@ -35,7 +35,7 @@
 #define MUICFG_Cycle_Menu_Recessed      0x19  /* ULONG, false = 0 (def), true */
 #define MUICFG_Cycle_MenuCtrl_Speed     0x1a  /* ULONG, num of ticks (0..50) (def=0) */
 #define MUICFG_Listview_Smoothed        0x1b  /* ULONG, false = 0 (def), true */
-#define MUICFG_Window_Redraw            0x1d  /* ULONG, without clear, with clear = 1 (def) */
+#define MUICFG_Window_Redraw            0x1d  /* ULONG, no clear, clear = 1 (def) */
 #define MUICFG_Font_Normal              0x1e
 #define MUICFG_Font_List                0x1f
 #define MUICFG_Font_Tiny                0x20
@@ -95,7 +95,30 @@
 #define MUICFG_Background_SliderKnob    0x5c
 #define MUICFG_Image_TapeUp             0x5d
 #define MUICFG_Image_TapeDown           0x5e
+#define MUICFG_Keyboard_Press           0x5f
+#define MUICFG_Keyboard_Toggle          0x60
+#define MUICFG_Keyboard_Up              0x61
+#define MUICFG_Keyboard_Down            0x62
+#define MUICFG_Keyboard_PageUp          0x63
+#define MUICFG_Keyboard_PageDown        0x64
+#define MUICFG_Keyboard_Top             0x65
+#define MUICFG_Keyboard_Bottom          0x66
+#define MUICFG_Keyboard_Left            0x67
+#define MUICFG_Keyboard_Right           0x68
+#define MUICFG_Keyboard_WordLeft        0x69
+#define MUICFG_Keyboard_WordRight       0x6a
+#define MUICFG_Keyboard_LineStart       0x6b
+#define MUICFG_Keyboard_LineEnd         0x6c
+#define MUICFG_Keyboard_NextGadget      0x6d
+#define MUICFG_Keyboard_PrevGadget      0x6e
+#define MUICFG_Keyboard_GadgetOff       0x6f
+#define MUICFG_Keyboard_CloseWindow     0x70
+#define MUICFG_Keyboard_NextWindow      0x71
+#define MUICFG_Keyboard_PrevWindow      0x72
+#define MUICFG_Keyboard_Help            0x73
+#define MUICFG_Keyboard_Popup           0x74
 #define MUICFG_Window_Positions         0x7a
+#define MUICFG_Balance_Look             0x7b /* ULONG, frame = 0 (def), object */
 #define MUICFG_Font_Button              0x80
 #define MUICFG_Scrollbar_Type           0x83 /* ULONG, standard = 0 (def), newlook, custom */
 #define MUICFG_String_Background        0x84
@@ -103,7 +126,15 @@
 #define MUICFG_String_ActiveBackground  0x86
 #define MUICFG_String_ActiveText        0x87
 #define MUICFG_Font_Knob                0x88
+#define MUICFG_Drag_LeftButton          0x89 /* ULONG, false, true (def) */
+#define MUICFG_Drag_MiddleButton        0x8a /* ULONG, false (def), true */
+#define MUICFG_Drag_LMBModifier         0x8b /* key desc (def = control) */
+#define MUICFG_Drag_MMBModifier         0x8c /* key desc */
+#define MUICFG_Drag_Autostart           0x8d /* ULONG, false = 0, true (def) */
+#define MUICFG_Drag_Autostart_Length    0x8e /* ULONG, pixels (def = 3) */
+#define MUICFG_ActiveObject_Color       0x8f /* penspec */
 #define MUICFG_Frame_Knob               0x90
+#define MUICFG_Dragndrop_Look           0x94 /* ULONG, solid, ghosted on obj (def), ... */
 #define MUICFG_Background_Page          0x95
 #define MUICFG_Background_ReadList      0x96
 #define MUICFG_String_Cursor            0x400
@@ -119,6 +150,7 @@
 #define MUIM_Configdata_Save           (MUIB_Configdata | 0x00000006) /* Zune 20030320 */
 #define MUIM_Configdata_Load           (MUIB_Configdata | 0x00000007) /* Zune 20030320 */
 #define MUIM_Configdata_SetPenspec     (MUIB_Configdata | 0x00000008) /* Zune 20030714 */
+#define MUIM_Configdata_SetString      (MUIB_Configdata | 0x00000009) /* Zune 20030808 */
 struct MUIP_Configdata_GetString       {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_GetULong        {ULONG MethodID; ULONG id; };
 struct MUIP_Configdata_SetULong        {ULONG MethodID; ULONG id; ULONG val; };
@@ -128,6 +160,7 @@ struct MUIP_Configdata_SetFont         {ULONG MethodID; ULONG id; CONST_STRPTR f
 struct MUIP_Configdata_Save            {ULONG MethodID; CONST_STRPTR filename; };
 struct MUIP_Configdata_Load            {ULONG MethodID; CONST_STRPTR filename; };
 struct MUIP_Configdata_SetPenspec      {ULONG MethodID; ULONG id; CONST_STRPTR penspec; };
+struct MUIP_Configdata_SetString       {ULONG MethodID; ULONG id; CONST_STRPTR string; };
 
 /*** Attributes *************************************************************/
 #define MUIA_Configdata_Application     (MUIB_Configdata | 0x00000000) /* ZV1: i..  Object * */

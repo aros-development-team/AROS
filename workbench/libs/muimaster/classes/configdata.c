@@ -202,6 +202,12 @@ static struct def_ulval DefULValues[] =
     { MUICFG_GroupTitle_Color,        GROUP_TITLE_COLOR_HILITE },
     { MUICFG_Scrollbar_Type,          SCROLLBAR_TYPE_STANDARD },
     { MUICFG_Scrollbar_Arrangement,   SCROLLBAR_ARRANGEMENT_TOP },
+    { MUICFG_Balance_Look,            BALANCING_SHOW_FRAMES },
+    { MUICFG_Dragndrop_Look,          DND_LOOK_GHOSTED_ON_BOX },
+    { MUICFG_Drag_Autostart,          TRUE },
+    { MUICFG_Drag_Autostart_Length,   3 },
+    { MUICFG_Drag_LeftButton,         TRUE },
+    { MUICFG_Drag_MiddleButton,       TRUE },
     { 0, 0 },
 };
 
@@ -214,21 +220,47 @@ struct def_strval {
     CONST_STRPTR val;
 };
 
+/* NULL values not allowed */
 static struct def_strval DefStrValues[] =
 {
-    { MUICFG_Font_Normal,   NULL },
-    { MUICFG_Font_List,     NULL },
-    { MUICFG_Font_Tiny,     NULL },
-    { MUICFG_Font_Fixed,    NULL },
-    { MUICFG_Font_Title,    NULL },
-    { MUICFG_Font_Big,      NULL },
-    { MUICFG_Font_Button,   NULL },
-    { MUICFG_Font_Knob,     NULL },
+    { MUICFG_Font_Normal,   "" },
+    { MUICFG_Font_List,     "" },
+    { MUICFG_Font_Tiny,     "" },
+    { MUICFG_Font_Fixed,    "" },
+    { MUICFG_Font_Title,    "" },
+    { MUICFG_Font_Big,      "" },
+    { MUICFG_Font_Button,   "" },
+    { MUICFG_Font_Knob,     "" },
     { MUICFG_String_Background,         "2:m2" },
     { MUICFG_String_Text,               "m5" },
     { MUICFG_String_ActiveBackground,   "2:m1" },
     { MUICFG_String_ActiveText,         "m5" },
     { MUICFG_String_Cursor,             "m7" },
+    { MUICFG_ActiveObject_Color,        "m0" },
+    { MUICFG_Keyboard_Press,            "-upstroke return" },
+    { MUICFG_Keyboard_Toggle,           "-repeat space" },
+    { MUICFG_Keyboard_Up,               "-repeat up" },
+    { MUICFG_Keyboard_Down,             "-repeat down" },
+    { MUICFG_Keyboard_PageUp,           "-repeat shift up" },
+    { MUICFG_Keyboard_PageDown,         "-repeat shift down" },
+    { MUICFG_Keyboard_Top,              "control up" },
+    { MUICFG_Keyboard_Bottom,           "control down" },
+    { MUICFG_Keyboard_Left,             "-repeat left" },
+    { MUICFG_Keyboard_Right,            "-repeat right" },
+    { MUICFG_Keyboard_WordLeft,         "-repeat control left" },
+    { MUICFG_Keyboard_WordRight,        "-repeat control right" },
+    { MUICFG_Keyboard_LineStart,        "shift left" },
+    { MUICFG_Keyboard_LineEnd,          "shift right" },
+    { MUICFG_Keyboard_NextGadget,       "-repeat tab" },
+    { MUICFG_Keyboard_PrevGadget,       "-repeat shift tab" },
+    { MUICFG_Keyboard_GadgetOff,        "control tab" },
+    { MUICFG_Keyboard_CloseWindow,      "esc" },
+    { MUICFG_Keyboard_NextWindow,       "-repeat alt tab" },
+    { MUICFG_Keyboard_PrevWindow,       "-repeat alt shift tab" },
+    { MUICFG_Keyboard_Help,             "help" },
+    { MUICFG_Keyboard_Popup,            "control p" },
+    { MUICFG_Drag_LMBModifier,          "control" },
+    { MUICFG_Drag_MMBModifier,          "" },
     { 0, 0 },
 };
 
@@ -363,52 +395,54 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 
     /*---------- Navigation ----------*/
 
-    data->prefs.dragndrop_left_button = FALSE;
-    data->prefs.dragndrop_left_modifier.readable_hotkey = StrDup("control");
-    data->prefs.dragndrop_middle_button = FALSE;
-    data->prefs.dragndrop_middle_modifier.readable_hotkey = StrDup("control");
-    data->prefs.dragndrop_autostart = -1;
-    data->prefs.dragndrop_look = DND_LOOK_GHOSTED_ON_BOX;
-    data->prefs.balancing_look = BALANCING_SHOW_FRAMES;
+    data->prefs.drag_left_button = GetConfigULong(obj, MUICFG_Drag_LeftButton);
+    data->prefs.drag_left_modifier.readable_hotkey = GetConfigString(obj, MUICFG_Drag_LMBModifier);
+    data->prefs.drag_middle_button = GetConfigULong(obj, MUICFG_Drag_MiddleButton);
+    data->prefs.drag_middle_modifier.readable_hotkey = GetConfigString(obj, MUICFG_Drag_MMBModifier);
+    data->prefs.drag_autostart = GetConfigULong(obj, MUICFG_Drag_Autostart);
+    data->prefs.drag_autostart_length = GetConfigULong(obj, MUICFG_Drag_Autostart_Length);
+    data->prefs.drag_look = GetConfigULong(obj, MUICFG_Dragndrop_Look);
+    data->prefs.balancing_look = GetConfigULong(obj, MUICFG_Balance_Look);
 
-    if (data->prefs.dragndrop_left_modifier.readable_hotkey)
-	data->prefs.dragndrop_left_modifier.ix_well = 
-	    !ParseIX(data->prefs.dragndrop_left_modifier.readable_hotkey,
-		     &data->prefs.dragndrop_left_modifier.ix);
+    if (data->prefs.drag_left_modifier.readable_hotkey != NULL)
+	data->prefs.drag_left_modifier.ix_well = 
+	    !ParseIX(data->prefs.drag_left_modifier.readable_hotkey,
+		     &data->prefs.drag_left_modifier.ix);
     else
-	data->prefs.dragndrop_left_modifier.ix_well = 0;
+	data->prefs.drag_left_modifier.ix_well = 0;
 
-    if (data->prefs.dragndrop_middle_modifier.readable_hotkey)
-	data->prefs.dragndrop_middle_modifier.ix_well = 
-	    !ParseIX(data->prefs.dragndrop_middle_modifier.readable_hotkey,
-		     &data->prefs.dragndrop_middle_modifier.ix);
+    if (data->prefs.drag_middle_modifier.readable_hotkey != NULL)
+	data->prefs.drag_middle_modifier.ix_well = 
+	    !ParseIX(data->prefs.drag_middle_modifier.readable_hotkey,
+		     &data->prefs.drag_middle_modifier.ix);
     else
-	data->prefs.dragndrop_middle_modifier.ix_well = 0;
+	data->prefs.drag_middle_modifier.ix_well = 0;
 
+    data->prefs.active_object_color = GetConfigString(obj, MUICFG_ActiveObject_Color);
     /*---------- mui keys ----------*/
 
-    data->prefs.muikeys[MUIKEY_PRESS].readable_hotkey = StrDup("-upstroke return");
-    data->prefs.muikeys[MUIKEY_TOGGLE].readable_hotkey = StrDup("-repeat space");
-    data->prefs.muikeys[MUIKEY_UP].readable_hotkey = StrDup("-repeat up");
-    data->prefs.muikeys[MUIKEY_DOWN].readable_hotkey = StrDup("-repeat down");
-    data->prefs.muikeys[MUIKEY_PAGEUP].readable_hotkey = StrDup("-repeat shift up");
-    data->prefs.muikeys[MUIKEY_PAGEDOWN].readable_hotkey = StrDup("-repeat shift down");
-    data->prefs.muikeys[MUIKEY_TOP].readable_hotkey = StrDup("control up");
-    data->prefs.muikeys[MUIKEY_BOTTOM].readable_hotkey = StrDup("control down");
-    data->prefs.muikeys[MUIKEY_LEFT].readable_hotkey = StrDup("-repeat left");
-    data->prefs.muikeys[MUIKEY_RIGHT].readable_hotkey = StrDup("-repeat right");
-    data->prefs.muikeys[MUIKEY_WORDLEFT].readable_hotkey = StrDup("-repeat control left");
-    data->prefs.muikeys[MUIKEY_WORDRIGHT].readable_hotkey = StrDup("-repeat control right");
-    data->prefs.muikeys[MUIKEY_LINESTART].readable_hotkey = StrDup("shift left");
-    data->prefs.muikeys[MUIKEY_LINEEND].readable_hotkey = StrDup("shift right");
-    data->prefs.muikeys[MUIKEY_GADGET_NEXT].readable_hotkey = StrDup("-repeat tab");
-    data->prefs.muikeys[MUIKEY_GADGET_PREV].readable_hotkey = StrDup("-repeat shift tab");
-    data->prefs.muikeys[MUIKEY_GADGET_OFF].readable_hotkey = StrDup("control tab");
-    data->prefs.muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey = StrDup("esc");
-    data->prefs.muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey = StrDup("-repeat alt tab");
-    data->prefs.muikeys[MUIKEY_WINDOW_PREV].readable_hotkey = StrDup("-repeat alt shift tab");
-    data->prefs.muikeys[MUIKEY_HELP].readable_hotkey = StrDup("help");
-    data->prefs.muikeys[MUIKEY_POPUP].readable_hotkey = StrDup("control p");
+    data->prefs.muikeys[MUIKEY_PRESS].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Press);
+    data->prefs.muikeys[MUIKEY_TOGGLE].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Toggle);
+    data->prefs.muikeys[MUIKEY_UP].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Up);
+    data->prefs.muikeys[MUIKEY_DOWN].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Down);
+    data->prefs.muikeys[MUIKEY_PAGEUP].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_PageUp);
+    data->prefs.muikeys[MUIKEY_PAGEDOWN].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_PageDown);
+    data->prefs.muikeys[MUIKEY_TOP].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Top);
+    data->prefs.muikeys[MUIKEY_BOTTOM].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Bottom);
+    data->prefs.muikeys[MUIKEY_LEFT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Left);
+    data->prefs.muikeys[MUIKEY_RIGHT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Right);
+    data->prefs.muikeys[MUIKEY_WORDLEFT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_WordLeft);
+    data->prefs.muikeys[MUIKEY_WORDRIGHT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_WordRight);
+    data->prefs.muikeys[MUIKEY_LINESTART].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_LineStart);
+    data->prefs.muikeys[MUIKEY_LINEEND].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_LineEnd);
+    data->prefs.muikeys[MUIKEY_GADGET_NEXT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_NextGadget);
+    data->prefs.muikeys[MUIKEY_GADGET_PREV].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_PrevGadget);
+    data->prefs.muikeys[MUIKEY_GADGET_OFF].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_GadgetOff);
+    data->prefs.muikeys[MUIKEY_WINDOW_CLOSE].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_CloseWindow);
+    data->prefs.muikeys[MUIKEY_WINDOW_NEXT].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_NextWindow);
+    data->prefs.muikeys[MUIKEY_WINDOW_PREV].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_PrevWindow);
+    data->prefs.muikeys[MUIKEY_HELP].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Help);
+    data->prefs.muikeys[MUIKEY_POPUP].readable_hotkey = GetConfigString(obj, MUICFG_Keyboard_Popup);
 
     for (i = 0; i < MUIKEY_COUNT; i++)
     {
@@ -428,21 +462,8 @@ static ULONG Configdata_New(struct IClass *cl, Object *obj, struct opSet *msg)
 **************************************************************************/
 static ULONG Configdata_Dispose(struct IClass *cl, Object *obj, Msg msg)
 {
-    struct MUI_ConfigdataData *data = INST_DATA(cl, obj);
-    int i;
-
-/*      D(bug("Configdata_Dispose(%p)\n", obj)); */
-
-    if (data->prefs.dragndrop_left_modifier.readable_hotkey)
-	FreeVec(data->prefs.dragndrop_left_modifier.readable_hotkey);
-    if (data->prefs.dragndrop_middle_modifier.readable_hotkey)
-	FreeVec(data->prefs.dragndrop_middle_modifier.readable_hotkey);
-
-    for (i = 0; i < MUIKEY_COUNT; i++)
-    {
-    	if (data->prefs.muikeys[i].readable_hotkey)
-	    FreeVec(data->prefs.muikeys[i].readable_hotkey);
-    }
+/*      struct MUI_ConfigdataData *data = INST_DATA(cl, obj); */
+/*      int i; */
 
     return DoSuperMethodA(cl,obj,msg);
 }
@@ -621,6 +642,28 @@ static IPTR Configdata_SetFont(struct IClass *cl, Object * obj,
     }
 
     DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->font, strlen(msg->font) + 1, msg->id);
+    return 0;
+}
+
+/**************************************************************************
+ MUIM_Configdata_SetString
+**************************************************************************/
+static IPTR Configdata_SetString(struct IClass *cl, Object * obj,
+				 struct MUIP_Configdata_SetString *msg)
+{
+    int i;
+
+    for (i = 0; DefStrValues[i].id; i++)
+    {
+	if (DefStrValues[i].id == msg->id)
+	    if (!strcmp(DefStrValues[i].val, msg->string))
+	    {
+		DoMethod(obj, MUIM_Dataspace_Remove, msg->id);		
+		return 0;
+	    }
+    }
+
+    DoMethod(obj, MUIM_Dataspace_Add, (IPTR)msg->string, strlen(msg->string) + 1, msg->id);
     return 0;
 }
 
@@ -824,6 +867,7 @@ BOOPSI_DISPATCHER(IPTR, Configdata_Dispatcher, cl, obj, msg)
 	case MUIM_Configdata_SetFramespec: return Configdata_SetFramespec(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetPenspec: return Configdata_SetPenspec(cl, obj, (APTR)msg);
 	case MUIM_Configdata_SetFont: return Configdata_SetFont(cl, obj, (APTR)msg);
+	case MUIM_Configdata_SetString: return Configdata_SetString(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Save: return Configdata_Save(cl, obj, (APTR)msg);
 	case MUIM_Configdata_Load: return Configdata_Load(cl, obj, (APTR)msg);
     }
