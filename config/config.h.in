@@ -24,6 +24,8 @@
 
 #define AROS_PALM_DEBUG_HACK	    	@aros_palm_debug_hack@
 
+#define AROS_NESTING_SUPERVISOR     	@aros_nesting_supervisor@
+
 #define AROS_MUNGWALL_DEBUG 	    	@aros_mungwall_debug@
 #define AROS_STACK_DEBUG    	    	@aros_stack_debug@
 #define AROS_MODULES_DEBUG		@aros_modules_debug@
