@@ -146,6 +146,7 @@ extern void _aros_not_implemented (char *X);
 #define __AROS_UFPA(type,name,reg)    type
 #define __AROS_UFCA(type,name,reg)    name
 #define __AROS_UFDA(type,name,reg)    type
+#define __AROS_LHAQUAD(type,name,reg1,reg2)	type name
 
 /* Prefix for library function in header, prototype and call */
 #define __AROS_LH_PREFIX    /* eps */
@@ -183,6 +184,11 @@ extern void _aros_not_implemented (char *X);
 #define __ASM_ARG(type, name, reg) \
 	"move.l "## reg ##",-(%sp)\n\t"
 
+#define __ASM_ARGQUAD1(type, name, reg1, reg2) \
+	"move.l "## reg1 ##",-(%sp)\n\t"
+#define __ASM_ARGQUAD2(type, name, reg1, reg2) \
+	"move.l "## reg2 ##",-(%sp)\n\t"
+
 #ifdef __PIC__
 #define __ASM_POSTFIX(type,name,system,argc) \
 	"bsr.l _"## AROS_SLIB_ENTRY_S(name,system) ##"@PLTPC\n\t"\
@@ -218,6 +224,25 @@ extern void _aros_not_implemented (char *X);
 	## AROS_SLIB_ENTRY_S(name,system) );\
     __AROS_LH_PREFIX type AROS_SLIB_ENTRY(name,_##system)(
 #endif
+
+#define AROS_LHQUAD1(t,n,a1,bt,bn,o,s) \
+    __ASM_PREFIX(n,s)\
+    __ASM_ARGQUAD1(a1)\
+    __ASM_ARGQUAD2(a1)\
+    __ASM_POSTFIX(t,n,s,1)\
+    __AROS_LHAQUAD(a1),\
+    __AROS_LH_BASE(bt,bn))
+
+#define AROS_LHQUAD2(t,n,a1,a2,bt,bn,o,s) \
+    __ASM_PREFIX(n,s)\
+    __ASM_ARGQUAD1(a2)\
+    __ASM_ARGQUAD2(a2)\
+    __ASM_ARGQUAD1(a1)\
+    __ASM_ARGQUAD2(a1)\
+    __ASM_POSTFIX(t,n,s,2)\
+    __AROS_LHAQUAD(a1),\
+    __AROS_LHAQUAD(a2),\
+    __AROS_LH_BASE(bt,bn))
 
 #define AROS_LH0(t,n,bt,bn,o,s) \
     __ASM_PREFIX(n,s)\
@@ -1126,7 +1151,48 @@ extern void _aros_not_implemented (char *X);
 })
 /****************************************************/
 
+#define __LCQUAD1(t,n,t1,n1,r11,r12,bt,bn,o,s)      \
+({                                                  \
+    t1 _##n##_n1 = (n1);                            \
+    {						    \
+	long _##n##_re;                             \
+	register t1 _n1 __asm(r11) = _##n##_n1;     \
+	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
+	    "move.l %2,%%a6\n\t"		    \
+	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
+	    "move.l (%%sp)+,%%a6\n\t"		    \
+	    "move.l %%d0,%0"			    \
+	    :"=g"(_##n##_re)                        \
+	    :"r"(_n1),"g"(bn)			    \
+	    :A0,A1,D0,D1,"memory","cc");            \
+	(t)_##n##_re;				    \
+    }						    \
+})
+
+#define __LCQUAD2(t,name,t1,n1,r11,r12,t2,n2,r21,r22,bt,bn,o,s)   \
+({                                                  \
+    t1 _##name##_n1 = (n1);                         \
+    t2 _##name##_n2 = (n2);                         \
+    {						    \
+	long _##name##_re;                          \
+	register t1 _n1 __asm(r11) = _##name##_n1;  \
+	register t2 _n2 __asm(r21) = _##name##_n2;  \
+	__asm __volatile("move.l %%a6,-(%%sp)\n\t"  \
+	    "move.l %1,%%a6\n\t"		    \
+	    "jsr %%a6@(-6*"#o":W)\n\t"		    \
+	    "move.l (%%sp)+,%%a6\n\t"		    \
+	    "move.l %%d0,%0"			    \
+	    :"=g"(_##name##_re)                     \
+	    :"g"(bn),"r"(_n1),"r"(_n2)		    \
+	    :D0,D1,A0,A1,"memory","cc");            \
+        (t)_##name##_re;                            \
+    }						    \
+})
+
 /****************************************************/
+#define AROS_LCQUAD1(t,n,a1,bt,bn,o,s)          __LCQUAD1(t,n,a1,bt,bn,o,s)
+#define AROS_LCQUAD2(t,n,a1,a2,bt,bn,o,s)       __LCQUAD2(t,n,a1,a2,bt,bn,o,s)
+
 #define AROS_LC0(t,n,bt,bn,o,s)                 __LC0(t,n,bt,bn,o,s)
 #define AROS_LC0I(t,n,bt,bn,o,s)                __LC0(t,n,bt,bn,o,s)
 #define AROS_LC1(t,n,a1,bt,bn,o,s)              __LC1(t,n,a1,bt,bn,o,s)
