@@ -30,6 +30,14 @@ AROS_LP0(struct RastPort *, CreateRastPort,
     AROS_LC0(struct RastPort *, CreateRastPort, \
     struct GfxBase *, GfxBase, 177, Graphics)
 
+AROS_LP1(void, DeinitRastPort,
+    AROS_LPA(struct RastPort *, rp, A1),
+    struct GfxBase *, GfxBase, 179, Graphics)
+#define DeinitRastPort(rp) \
+    AROS_LC1(void, DeinitRastPort, \
+    AROS_LCA(struct RastPort *, rp, A1), \
+    struct GfxBase *, GfxBase, 179, Graphics)
+
 AROS_LP3(void, Draw,
     AROS_LPA(struct RastPort *, rp, A1),
     AROS_LPA(long             , x, D0),
@@ -76,11 +84,11 @@ AROS_LP5(void, EraseRect,
 
 AROS_LP1(void, FreeRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
-    struct GfxBase *, GfxBase, 179, Graphics)
+    struct GfxBase *, GfxBase, 180, Graphics)
 #define FreeRastPort(rp) \
     AROS_LC1(void, FreeRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
-    struct GfxBase *, GfxBase, 179, Graphics)
+    struct GfxBase *, GfxBase, 180, Graphics)
 
 AROS_LP1(ULONG, GetAPen,
     AROS_LPA(struct RastPort *, rp, A0),
@@ -114,11 +122,11 @@ AROS_LP1(ULONG, GetOutlinePen,
     AROS_LCA(struct RastPort *, rp, A0), \
     struct GfxBase *, GfxBase, 146, Graphics)
 
-AROS_LP1(void, InitRastPort,
+AROS_LP1(BOOL, InitRastPort,
     AROS_LPA(struct RastPort *, rp, A1),
     struct GfxBase *, GfxBase, 33, Graphics)
 #define InitRastPort(rp) \
-    AROS_LC1(void, InitRastPort, \
+    AROS_LC1(BOOL, InitRastPort, \
     AROS_LCA(struct RastPort *, rp, A1), \
     struct GfxBase *, GfxBase, 33, Graphics)
 
