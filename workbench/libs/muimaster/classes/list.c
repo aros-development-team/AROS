@@ -172,7 +172,7 @@ static void FreeListFormat(struct MUI_ListData *data)
     }
     if (data->strings)
     {
-    	FreeVec(data->strings);
+    	FreeVec(data->strings-1);
     	data->strings = 0;
     }
     data->columns = 0;
@@ -193,15 +193,34 @@ static int ParseListFormat(struct MUI_ListData *data, char *format)
     if (!(data->preparses = (char**)AllocVec(new_columns*sizeof(char*),0)))
 	return 0;
 
-    if (!(data->strings = (char**)AllocVec((new_columns+1)*sizeof(char*),0))) /* the entry pos is stored in the first elment (MUI) */
+    if (!(data->strings = (char**)AllocVec((new_columns+1)*sizeof(char*),0))) /* hold enough space also for the entry pos, used by orginal MUI */
 	return 0;
 
     if (!(data->ci = (struct ColumnInfo *)AllocVec(new_columns*sizeof(struct ColumnInfo),0)))
 	return 0;
 
     data->columns = new_columns;
+    data->strings++; /* Skip entry pos */
 
     return 1;
+}
+
+/**************************************************************************
+ Determine the widths of the entries
+**************************************************************************/
+static void CalcWidths(struct IClass *cl, Object *obj)
+{
+    int i;
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+
+    if (!(_flags(obj) & MADF_SETUP)) return;
+
+    for (i=0;i<data->entries_num;i++)
+    {
+    	struct ListEntry *entry = data->entries[i];
+    	if (!entry) break;
+    	DoMethod(obj,MUIM_Display,entry->data,i,data->strings,data->preparses);
+    }
 }
 
 /**************************************************************************
@@ -366,6 +385,15 @@ static ULONG List_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 #undef STORE
 }
 
+/**************************************************************************
+ MUIM_Setup
+**************************************************************************/
+static ULONG List_Setup(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_ListData *data = INST_DATA(cl, obj);
+    if (!DoSuperMethodA(cl, obj, (Msg) msg)) return 0:
+    return 1;
+}
 
 /**************************************************************************
  MUIM_List_Insert
@@ -513,7 +541,20 @@ STATIC ULONG List_Compare(struct IClass *cl, Object *obj, struct MUIP_List_Compa
 STATIC ULONG List_Display(struct IClass *cl, Object *obj, struct MUIP_List_Display *msg)
 {
     struct MUI_ListData *data = INST_DATA(cl, obj);
-    return NULL;
+    if (!data->display_hook)
+    {
+    	if (msg->entry)
+    	{
+	    *msg->strings = msg->entry;
+	} else
+	{
+	    *msg->strings = 0;
+	}
+    	return 1;
+    }
+
+    *((ULONG*)(msg->strings-1)) = msg->entry_pos;
+    return CallHookPkt(data->display_hook,msg->strings,msg->entry);
 }
 
 
@@ -532,6 +573,7 @@ AROS_UFH3S(IPTR,List_Dispatcher,
 	case OM_DISPOSE: return List_Dispose(cl,obj, msg);
 	case OM_SET: return List_Set(cl,obj,(struct opSet *)msg);
 	case OM_GET: return List_Get(cl,obj,(struct opGet *)msg);
+	case MUIM_Setup: return List_Setup(cl,obj,(struct MUIP_Setup *)msg);
 	case MUIM_List_Insert: return List_Insert(cl,obj,(APTR)msg);
 	case MUIM_List_InsertSingle: return List_InsertSingle(cl,obj,(APTR)msg);
 	case MUIM_List_Construct: return List_Construct(cl,obj,(APTR)msg);
