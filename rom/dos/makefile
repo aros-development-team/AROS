@@ -10,7 +10,7 @@ FILES = adddosentry addprocess allocdosobject assignlock attemptlockdoslist \
 	openfromlock output printfault putstr read readargs readitem	    \
 	remdosentry runcommand seek selectinput selectoutput setioerr	    \
 	setowner strtolong ungetc unloadseg unlockdoslist vfprintf	    \
-	vprintf write
+	vprintf write filepart
 
 all: setup $(OSGENDIR)/dos_init.o $(OSGENDIR)/dos_functable.o \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
