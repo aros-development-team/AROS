@@ -101,9 +101,9 @@ ULONG	strcmp(char*,char*);
     
 	/* Reboot command */
 	if (strcmp(comm,"RE")==0 && strcmp(dat,"AAAAAAAA")==0) ColdReboot();
-	/* Restart command */
+	/* Restart command, pulse reset signal */
 	else if (strcmp(comm,"RS")==0 && strcmp(dat,"FFFFFFFF")==0)
-		asm("ljmp 0");
+		asm("movb $0xfe,%%al;outb %%al,$0x64":::"eax");
 	/* Forbid command */
 	else if (strcmp(comm,"FO")==0)
 		Forbid();

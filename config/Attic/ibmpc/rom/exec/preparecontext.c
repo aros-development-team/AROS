@@ -15,6 +15,8 @@
 
 #include <aros/libcall.h>
 
+void StoreFPU(APTR);
+
 AROS_LH3(BOOL, PrepareContext,
     AROS_LHA(struct Task *, task, A0),
     AROS_LHA(APTR, entryPoint, A1),
