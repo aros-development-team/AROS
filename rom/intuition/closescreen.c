@@ -117,6 +117,13 @@
 		    IntuitionBase->ActiveScreen = NULL;
 	    }
 	    
+	    /* kill screen bar */	    
+	    KillScreenBar(screen, IntuitionBase);
+	    
+	    /* kill depth gadget */
+	    if (((struct IntScreen *)screen)->depthgadget)
+	    	DisposeObject(((struct IntScreen *)screen)->depthgadget);
+		
 	    /* Free the RasInfo of the viewport */
 	    FreeMem(screen->ViewPort.RasInfo, sizeof (struct RasInfo));
 	    
@@ -126,6 +133,9 @@
 	    /* Free the RastPort's contents */
 	    DeinitRastPort(&screen->RastPort);
 
+	    /* Close the font */
+	    CloseFont(((struct IntScreen *)screen)->DInfo.dri_Font);
+	    
 	    /* Free the memory */
 	    FreeMem(screen, sizeof (struct IntScreen));
 
