@@ -1,0 +1,21 @@
+# Copyright © 2004, The AROS Development Team. All rights reserved.
+# $Id$
+
+include $(TOP)/config/make.cfg
+
+ICONS     := \
+    def_Disk def_RAM def_Harddisk def_CDROM def_Drawer def_Trashcan \
+    def_Project def_Picture def_Text def_Document def_Tool
+
+ICONDIR   := $(AROSDIR)/Prefs/Env-Archive/SYS
+ICONFILES := $(foreach f, $(ICONS), $(ICONDIR)/$(f).info)
+
+#MM
+gorilla-icons : setup $(ICONFILES)
+	@$(NOP)
+
+$(ICONDIR)/%.info : %.info.src %.png
+	@$(ILBMTOICON) $+ $@
+
+setup :
+	%mkdirs_q $(ICONDIR)
