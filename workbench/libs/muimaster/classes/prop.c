@@ -275,8 +275,8 @@ IPTR Prop__MUIM_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 			(_mbottom(obj) > _mbottom(parent)))
 		    {
 			completely_visible = FALSE;
-			kprintf("=== prop object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
-		    		 obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj));
+			D(bug("=== prop object: completely visible FALSE for obj %x at %d,%d - %d,%d\n",
+		    		 obj, _mleft(obj), _mtop(obj), _mright(obj), _mbottom(obj)));
 			break;
 		    }
 		}
