@@ -897,7 +897,7 @@ void FreeVecPooled(APTR mem)
     if (mem)
     {
         IPTR size = *--imem;
-        APTR pool = *--imem;
+        APTR pool = (APTR)*--imem;
 	
 	FreePooled(pool, imem, size);
     }

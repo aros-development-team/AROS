@@ -47,7 +47,7 @@ int main(int argc, char **argv)
     
     if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", 0))) 
     {
-	if ((GfxBase = OpenLibrary("graphics.library", 0))) 
+	if ((GfxBase = (struct GfxBase *)OpenLibrary("graphics.library", 0))) 
         {
 	    if ((DOSBase = (struct DosLibrary *) OpenLibrary("dos.library",0)))
 	    {
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	      }
               CloseLibrary((struct Library *)DOSBase);
 	  }
-	  CloseLibrary(GfxBase);
+	  CloseLibrary((struct Library *)GfxBase);
 	}
 	CloseLibrary((struct Library *) IntuitionBase);
     }
