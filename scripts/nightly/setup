@@ -1,6 +1,6 @@
 # Import configuration
-source $SP/cfg/common
 source $SP/cfg/defaults
+source $SP/cfg/common
 source $SP/cfg/$CFG_NAME
 
 # Determine version
