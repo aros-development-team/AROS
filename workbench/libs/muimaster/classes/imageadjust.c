@@ -921,7 +921,9 @@ IPTR Imageadjust__MUIM_Imageadjust_ReadExternal(struct IClass *cl, Object *obj, 
     struct Imageadjust_DATA *data = INST_DATA(cl, obj);
 
     DoMethod(data->external_list, MUIM_List_Clear);
+    set(data->external_list, MUIA_List_Quiet, TRUE);
     AddDirectory(data->external_list, IMSPEC_EXTERNAL_PREFIX, -1);
+    set(data->external_list, MUIA_List_Quiet, FALSE);
     return 0;
 }
 
