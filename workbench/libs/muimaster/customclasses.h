@@ -50,7 +50,7 @@ int name ## _Initialize(void)                                         \
 void name ## _Deinitialize(void);                                     \
 void name ## _Deinitialize(void)                                      \
 {                                                                     \
-    MUI_DeleteCustomClass(name ## _CLASS);                            \
+    if (name ## _CLASS) MUI_DeleteCustomClass(name ## _CLASS);        \
 }                                                                     \
                                                                       \
 ADD2INIT(name ## _Initialize,   100);                                 \
