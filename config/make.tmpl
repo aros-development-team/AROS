@@ -1679,18 +1679,25 @@ endif
 
 %(mmake)-volfunc = $(%(mmake)-volpfx)$(notdir $1)$(%(mmake)-volsfx)
 
+%(mmake)-install_opts := prefix=$(%(mmake)-prefix) exec_prefix=$(%(mmake)-prefix)
+
 ifeq ($(filter yes, $(%(mmake)-nix_dir_layout) %(host)),yes)
     %(mmake)-PROGDIR      := $(%(mmake)-aros_prefix)/bin
-    %(mmake)-install_opts :=   
+    %(mmake)-config_opts  := --prefix=$(%(mmake)-aros_prefix)
 else
+    ifeq (%(nix),yes)
+        %(mmake)-config_opts := --prefix=/PROGDIR  --bindir=/PROGDIR --sbindir=/PROGDIR \
+        --libdir=/LIB --includedir=/INCLUDE --oldincludedir=/INCLUDE   
+    else
+        %(mmake)-config_opts  := --prefix=$(%(mmake)-aros_prefix)
+    endif
+
     %(mmake)-PROGDIR := $(%(mmake)-aros_prefix)
     
     %(mmake)-install_opts := bindir=$(%(mmake)-PROGDIR) sbindir=$(%(mmake)-PROGDIR) \
     libdir=$(AROS_LIB) includedir=$(AROS_INCLUDES) oldincludedir=$(AROS_INCLUDES)
 endif
 
-%(mmake)-config_opts  := --prefix=$(%(mmake)-aros_prefix)
-%(mmake)-install_opts += prefix=$(%(mmake)-prefix) exec_prefix=$(%(mmake)-prefix)
 
 .PHONY : %(mmake) %(mmake)-setup %(mmake)-clean %(mmake)-build_and_install-quick
 
