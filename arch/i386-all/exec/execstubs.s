@@ -86,16 +86,16 @@ cname:				    ; \
 	STUB_ARG0(name)
 
 #define STUB1(cname,name)             \
-	.globl	AROS_CDEFNAME(name)	    ; \
-	_FUNCTION(AROS_CDEFNAME(cname))     ; \
-cname:					    ; \
+	.globl	cname		    ; \
+	_FUNCTION(cname)	    ; \
+cname:				    ; \
 	STUB_ARG1(name)
 
 
 #define STUB2(cname,name)             \
-	.globl	AROS_CDEFNAME(name)	    ; \
-	_FUNCTION(AROS_CDEFNAME(cname))     ; \
-cname:					    ; \
+	.globl	cname		    ; \
+	_FUNCTION(cname)	    ; \
+cname:				    ; \
 	STUB_ARG2(name)
 
 	.text
