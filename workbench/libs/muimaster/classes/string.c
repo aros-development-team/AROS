@@ -792,6 +792,18 @@ int String_HandleVanillakey(struct IClass *cl, Object * obj,
 	return 1;
     }
 
+    if (code == 1) // ctrl-a, linestart
+    {
+	data->BufferPos = 0;
+	return 1;
+    }
+
+    if (code == 26) // ctrl-z, lineend
+    {
+	data->BufferPos = data->NumChars;
+	return 1;
+    }
+
     if (data->msd_Accept != NULL)
     {
     	/* Check if character is accepted */
