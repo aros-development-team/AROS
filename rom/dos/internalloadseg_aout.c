@@ -222,8 +222,8 @@ BPTR InternalLoadSeg_AOUT(BPTR file,
   jumphunk->next = MKBADDR(texthunk + sizeof(ULONG));
   texthunk += sizeof(ULONG) + sizeof(BPTR);
 
-#if (!(AROS_FLAVOUR & AROS_FLAVOUR_STANDALONE))
-  jumphunk->vec.jmp = __AROS_ASMJMP;
+#ifdef __AROS_SET_JMP
+  __AROS_SET_JMP(&jumphunk->vec);
 #endif
   __AROS_SET_VEC(&jumphunk->vec, texthunk + header.a_entry);
 

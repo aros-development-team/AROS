@@ -1,7 +1,7 @@
 #ifndef AROS_MACHINE_H
 #define AROS_MACHINE_H
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     NOTE: This file must compile *without* any other header !
@@ -32,21 +32,18 @@
 */
 struct JumpVec
 {
-    unsigned char jmp;
     unsigned char vec[4];
 };
 /* Internal macros */
-#define __AROS_ASMJMP			0xE9
-#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a)-(ULONG)(v)-5)
-#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec+(ULONG)(v)+5))
+#define __AROS_SET_VEC(v,a)             (*(ULONG*)(v)->vec=(ULONG)(a))
+#define __AROS_GET_VEC(v)               ((APTR)(*(ULONG*)(v)->vec))
 
 /* Use these to acces a vector table */
 #define LIB_VECTSIZE			(sizeof (struct JumpVec))
 #define __AROS_GETJUMPVEC(lib,n)        ((struct JumpVec *)(((UBYTE *)lib)-((n)*LIB_VECTSIZE)))
 #define __AROS_GETVECADDR(lib,n)        (__AROS_GET_VEC(__AROS_GETJUMPVEC(lib,n)))
 #define __AROS_SETVECADDR(lib,n,addr)   (__AROS_SET_VEC(__AROS_GETJUMPVEC(lib,n),(APTR)(addr)))
-#define __AROS_INITVEC(lib,n)           __AROS_GETJUMPVEC(lib,n)->jmp = __AROS_ASMJMP, \
-					__AROS_SETVECADDR(lib,n,_aros_not_implemented)
+#define __AROS_INITVEC(lib,n)		__AROS_SETVECADDR(lib,n,_aros_not_implemented)
 
 /*
    We want to activate the execstubs and preserve all registers
