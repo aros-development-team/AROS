@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include <aros/macros.h>
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <exec/execbase.h>
@@ -42,7 +43,7 @@ struct DataTypesList *CreateDTList(struct StackVars *sv);
 struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
 					 struct List *list,
 					 struct List *globallist, STRPTR name,
-					 UWORD Flags, ULONG GroupID, ULONG ID);
+					 UWORD Flags, ULONG ID, ULONG GroupID);
 void LoadDatatype(struct StackVars *sv, STRPTR name);
 struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 					struct IFFHandle *iff);
@@ -544,7 +545,7 @@ struct DataTypesList *CreateDTList(struct StackVars *sv)
 struct CompoundDatatype *CreateBasicType(struct StackVars *sv, 
 					 struct List *list, 
 					 struct List *globallist, STRPTR name,
-					 UWORD Flags, ULONG GroupID, ULONG ID)
+					 UWORD Flags, ULONG ID, ULONG GroupID)
 {
     struct CompoundDatatype *cdt;
     ULONG AllocLen = sizeof(struct CompoundDatatype) + strlen(name) + 1;
@@ -603,7 +604,7 @@ struct CompoundDatatype *CreateBasicType(struct StackVars *sv,
 void LoadDatatype(struct StackVars *sv, STRPTR name)
 {
     struct IFFHandle *iff;
-    
+
     if((iff = AllocIFF()))
     {
 	if((iff->iff_Stream = (IPTR)Open(name, MODE_OLDFILE))) /* Why IPTR? */
@@ -618,9 +619,13 @@ void LoadDatatype(struct StackVars *sv, STRPTR name)
 		    {
 			if(!StopOnExit(iff, ID_DTYP, ID_FORM))
 			{
-			    while(ParseIFF(iff, IFFPARSE_SCAN) == IFFERR_EOC)
+			    LONG error;
+			    
+			    while((error = ParseIFF(iff, IFFPARSE_SCAN)) != IFFERR_EOC) 
 			    {
 				CreateDatatype(sv, iff);
+#warning The while ParseIFF loop here crashes the 2nd time inside the loop, therefore the break below as temp fix
+				break;
 			    }
 			}
 		    }
@@ -670,9 +675,9 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
     struct StoredProperty *prop;
     ULONG  AllocLen;
     UBYTE *func;
-    LONG   DefaultStack = 4096;
+    LONG   DefaultStack = AROS_STACKSIZE, i;
     BPTR   SegList;
-    
+ 
     if((prop = FindProp(iff, ID_DTYP, ID_DTHD)))
     {
 	AllocLen = sizeof(struct CompoundDatatype) - 
@@ -688,21 +693,49 @@ struct CompoundDatatype *CreateDatatype(struct StackVars *sv,
 	    
 	    CopyMem(prop->sp_Data, &cdt->DTH, prop->sp_Size);
 	    
+	    cdt->DTH.dth_GroupID = AROS_BE2LONG(cdt->DTH.dth_GroupID);
+	    cdt->DTH.dth_ID = AROS_BE2LONG(cdt->DTH.dth_ID);
+	    cdt->DTH.dth_MaskLen = AROS_BE2WORD(cdt->DTH.dth_MaskLen);
+	    cdt->DTH.dth_Flags = AROS_BE2WORD(cdt->DTH.dth_Flags);
+	    cdt->DTH.dth_Priority = AROS_BE2WORD(cdt->DTH.dth_Priority);
+	    
 	    cdt->DTH.dth_Name = (STRPTR)
-		((ULONG)cdt->DTH.dth_Name    +(ULONG)&cdt->DTH);
+		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Name)    +(ULONG)&cdt->DTH);
 
 	    cdt->DTH.dth_BaseName = (STRPTR)
-		((ULONG)cdt->DTH.dth_BaseName+(ULONG)&cdt->DTH);
+		(AROS_BE2LONG((ULONG)cdt->DTH.dth_BaseName)+(ULONG)&cdt->DTH);
 
 	    cdt->DTH.dth_Pattern = (STRPTR)
-		((ULONG)cdt->DTH.dth_Pattern +(ULONG)&cdt->DTH);
+		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Pattern) +(ULONG)&cdt->DTH);
 
 	    cdt->DTH.dth_Mask = (WORD*)
-		((ULONG)cdt->DTH.dth_Mask    +(ULONG)&cdt->DTH);
+		(AROS_BE2LONG((ULONG)cdt->DTH.dth_Mask)    +(ULONG)&cdt->DTH);
 	    
 	    cdt->DT.dtn_Node1.ln_Name =
 		cdt->DT.dtn_Node2.ln_Name = cdt->DTH.dth_Name;
-			
+
+	    for(i = 0; i < cdt->DTH.dth_MaskLen; i++)
+	    {
+	        cdt->DTH.dth_Mask[i] = AROS_BE2WORD(cdt->DTH.dth_Mask[i]);
+	    }
+
+#if 0	    
+kprintf("groupid = %c%c%c%c\n", cdt->DTH.dth_GroupID >> 24,
+				cdt->DTH.dth_GroupID >> 16,
+				cdt->DTH.dth_GroupID >> 8,
+				cdt->DTH.dth_GroupID);
+kprintf("     id = %c%c%c%c\n", cdt->DTH.dth_ID >> 24,
+				cdt->DTH.dth_ID >> 16,
+				cdt->DTH.dth_ID >> 8,
+				cdt->DTH.dth_ID);
+kprintf("flags   = %x\n",	cdt->DTH.dth_Flags);
+kprintf("pri     = %d\n",	cdt->DTH.dth_Priority);
+kprintf("name = %s\n",		cdt->DTH.dth_Name);
+kprintf("basename = %s\n",	cdt->DTH.dth_BaseName);
+kprintf("pattern = %s\n",	cdt->DTH.dth_Pattern);
+kprintf("masklen = %d\n",	cdt->DTH.dth_MaskLen);
+#endif
+					
 	    NewList(&cdt->DT.dtn_ToolList);
 	    
 	    cdt->DT.dtn_Length = AllocLen;
@@ -784,9 +817,9 @@ struct CompoundDatatype *AddDatatype(struct StackVars *sv,
     switch(cdt->DTH.dth_Flags & DTF_TYPE_MASK)
     {
     case DTF_BINARY: typelist= &DTList->dtl_BinaryList; break;
-    case DTF_ASCII:  typelist= &DTList->dtl_ASCIIList;  break;
-    case DTF_IFF:    typelist= &DTList->dtl_IFFList;    break;
-    case DTF_MISC:   typelist= &DTList->dtl_MiscList;   break;
+    case DTF_ASCII:  typelist= &DTList->dtl_ASCIIList; break;
+    case DTF_IFF:    typelist= &DTList->dtl_IFFList; break;
+    case DTF_MISC:   typelist= &DTList->dtl_MiscList; break;
     default:         typelist= NULL;
     }
     
