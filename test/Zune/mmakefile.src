@@ -10,7 +10,8 @@ FILES  := test      	    \
 	  volumelist	    \
 	  dirlist   	    \
 	  numericbutton     \
-	  poplist
+	  poplist   	    \
+	  crawling
 
 EXEDIR := $(AROSDIR)/test/Zune
 
