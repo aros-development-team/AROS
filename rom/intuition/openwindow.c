@@ -227,12 +227,7 @@
 
 	    case WA_PubScreen:
 		if(tag->ti_Data == NULL)
-		{
-		    nw.Screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
-		    /* We may do this as the user must already have an
-		       exclusive lock on the public screen. */
-		    GetPrivScreen(GetPrivIBase(IntuitionBase)->DefaultPubScreen)->pubScrNode->psn_VisitorCount++;
-		}
+		    nw.Screen = LockPubScreen(NULL);
 		else
 		    nw.Screen = (struct Screen *)tag->ti_Data;
 
@@ -316,8 +311,6 @@
     IW(w)->closeMessage = AllocMem(sizeof (struct closeMessage), MEMF_PUBLIC);
     if (NULL == IW(w)->closeMessage)
     	goto failexit;
-
-    D(bug("modified IDCMP\n"));
 
 /*    w->RPort	   = rp; */
 
@@ -497,11 +490,10 @@
 
 
     UnlockIBase (lock);
-kprintf("%s: Calling DoGMLayout!\n",__FUNCTION__);
+
     /* Send all GA_RelSpecial BOOPSI gadgets in the list the GM_LAYOUT msg */
     DoGMLayout(w->FirstGadget, w, NULL, -1, TRUE, IntuitionBase);
 
-kprintf("%s: Calling RefreshGadgets!\n",__FUNCTION__);
     if (NULL != w->FirstGadget)
       RefreshGadgets (w->FirstGadget, w, NULL);
     
