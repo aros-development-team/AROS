@@ -1,0 +1,17 @@
+# $Id$
+include $(TOP)/config/make.cfg
+
+FILES         := calendar
+INCLUDE_FILES := calendar.h
+
+#MM workbench-classes-zune-calendar : includes
+%build_module \
+    mmake=workbench-classes-zune-calendar \
+    modname=Calendar modtype=mcc \
+    conffile=calendar.conf \
+    uselibs="amiga arosc m"
+    
+%copy_includes path=zune dir=
+    
+%common
+%include_deps
