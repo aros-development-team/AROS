@@ -79,6 +79,7 @@ static const struct __MUIBuiltinClass * const builtins[] =
     ZUNE_FRAMEDISPLAY_DESC
     ZUNE_POPFRAME_DESC
     ZUNE_FRAMEADJUST_DESC
+    ZUNE_VOLUMELIST_DESC
 };
 
 Class *ZUNE_GetExternalClass(ClassID classname, struct Library *MUIMasterBase)

@@ -152,6 +152,12 @@
 #   define ZUNE_VIRTGROUP_DESC
 #endif
 
+#if ZUNE_BUILTIN_VOLUMELIST
+#   define ZUNE_VOLUMELIST_DESC (&_MUI_Volumelist_desc),
+#else
+#   define ZUNE_VOLUMELIST_DESC
+#endif
+
 Class *ZUNE_GetBuiltinClass(ClassID className, struct Library *mb);
 Class *ZUNE_GetExternalClass(ClassID className, struct Library *mb);
 Class *ZUNE_FindBuiltinClass(ClassID className, struct Library *mb);

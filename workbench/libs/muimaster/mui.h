@@ -565,6 +565,10 @@ struct MUI_RGBcolor
 #include "classes/popframe.h"
 #endif
 
+#ifndef _MUI_CLASSES_VOLUMELIST_H
+#include "classes/volumelist.h"
+#endif
+
 /**************************************************************************
  Zune/MUI Image and Background definition
 **************************************************************************/
