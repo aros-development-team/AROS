@@ -41,6 +41,7 @@ FILES := amiga2date \
 	signaltest \
 	strtodate \
 	systemtags \
+	systemtagsslave \
 	tasktest \
 	tasktest2 \
 	ExNext \
