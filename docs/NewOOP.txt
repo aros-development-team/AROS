@@ -1,0 +1,488 @@
+[name] - Draft v0.1
+
+Index
+
+1 ................ Preface
+2 ................ Authors
+3 ................ Introduction
+4 ................ Description
+4.1 .............. Interfaces
+4.2 .............. Classes
+4.3 .............. Objects
+5 ................ Implementation
+5.1 .............. Interfaces
+5.2 .............. Classes
+5.3 .............. Objects
+5.4 .............. VTables
+5.5 .............. Methods invocation
+5.6 .............. Casting
+
+Appendices
+
+A ................ TODO
+B ................ Contributors
+
+
+1 - Preface
+
+The purpouse of this document is to describe the ideas behind a new Object
+Oriented programming framework, that is meant to be language independent, fast
+and extendible.
+
+At the moment not everything is defined and so this document is subject to heavy
+changes in future. When the ideas and the implementation details will be enough
+clear to be able to actually write something, this document will reflect such a
+situation by turning version 1.0. Until then, everything stated here has to be
+considered as highly questionable.
+
+
+
+
+2 - Authors
+
+This document is being written by Fabio Alemagna, and  his are the ideas inside
+of it. Where necessary credits will be given to other people and references to
+their work will be made. Contributors are welcome, and they'll be mentioned at
+the end of this document.
+
+
+
+
+3 - Introduction
+
+I won't explain here what OO is and why is it useful, I'll instead assume that
+the reader is aware of such things and he/she knows what are their implications.
+
+This document is the answer to the need of AROS (http://www.aros.org/) for a new
+OO system that would keep the functionalities of the current one and would
+improve its speed and usability. The system here described is, of course, not
+tied to AROS, though.
+
+[name] is meant to be
+
+1) Language independent
+
+   [name] is not tied to any particular language. Programmers can write programs
+   that use [name] in any language, even assembly. Preferring one language over
+   another one will give, though, particular advantages and/or disadvantages.
+
+   This document describes the C interface of [name] that will be probably the
+   most used and is the only one that is currently supported.
+
+2) Extendible
+
+   Say a program P uses a class A. Later on the class A extends its interface.
+   In such a situation the program P must NOT have to be recompiled, unlike it
+   would happen in languages like C++.
+
+   Moreover, a program must be able to use classes that it wasn't aware of at
+   compile-time.
+
+3) Fast
+
+   Usually, characteristics like (1) and (2) imply a slow implementation. This
+   document will explain how is it possible to keep (1) and (2) while being
+   really fast, as fast as C++ can be, or maybe a little bit slower.
+
+
+
+
+4 - Description
+
+In this section I'll explain the fundamental characteristics of [name].
+
+
+4.1 Interfaces
+
+Usually OO systems are explained in terms of classes and objects, the latters
+being an "instantiation" of the formers. This stands correct also here, but
+addictional terms are defined and a stronger meaning is given to the normally
+used ones.
+
+You can, infact, imagine a class being divided in two parts: its "interface" and
+its "implementation". The interface merely describes what the class CAN DO and
+what are its attributes, whilst the implementation actually DOES those things,
+in a way that is unknown to the class' user.
+
+Well, in [name] interfaces are entities of their own. They are really separated
+from classes. The latters, infact, are an "implementation" of given
+interfaces.
+
+Interfaces are not forced to have an implementation, that is there must not be
+by force a 1:1 mapping between classes and interfaces.
+
+Interfaces can, moreover, "extend" other interfaces, that is they can include
+all the characteristics of the interfaces that they extend, plus adding some of
+their own.
+
+4.2 Classes
+
+As said, classes are implementation of interfaces. Actually, a class might be
+better defined as a couple consisting of an interface and its implementation,
+but to stick with the common naming convention I'll use the term "class" to
+indicate the implementation, otherwise I'd have to not use the term "class"
+altogether.
+
+A class can implement as many interfaces as it wishes, but it can only "extend"
+ONE other class, no more than ONE. When a class "extends" another class it
+automatically implements the interfaces that the extended class implements and
+gets their implementation. A class can override the implementation of a specific
+characteristic provided by the class being extended and is required to implement
+all the characteristics that the class being extended doesn't implement.
+
+4.3 Objects
+
+Objects are, as in the usual naming convention, instances of classes. You can
+imagine a class like being a "blueprint" and the object like being what comes
+out of it.
+
+Classes are actually objects themselves, and so are interfaces [this has to be
+better checked, I still have some doubts about the chicken&egg problem...].
+
+[add something else?]
+
+
+
+
+5 Implementation
+
+In this section I'll explain how do I intend to implement the above
+characteristics.
+
+
+5.1 Interfaces
+
+Interfaces are a collection of methods and attributes *names*, the interface
+itself having a name. An interface can be queried to get the attributes or
+methods ids that one wishes to use, by issuing a request on that interface
+providing the name of desired attribute or method. A method or attribute ID is
+basically an index into an array. The content of this array is analized in 5.4.
+
+[explain how names are handled and stored into the interfaces]
+
+
+5.2 Classes
+
+As we know, classes are implementation of interfaces. Classes are required to
+implement the methods that the interfaces describe and are required to implement
+a way to get/change attributes.
+
+Implementation wise, a class can implement only ONE interface. This interface
+can, however, extend more than one other interface, so pratically the class DOES
+implement more than one interface. This is so because every class is referenced
+thru its interface, that is the methods and attributes names.
+
+[hmm... not very well explained. Write more and explain better]
+
+
+5.3 Objects
+
+Objects are instances of classes, that is they can be considered like couples of
+datas and the methods which work on these datas.
+
+[add more stuff...]
+
+
+5.4 VTables
+
+The main goal of [name] is to allow for a FAST mathod invocation. In most of the
+cases, with the system I'm gonna explain, this goal is achieved.
+
+From 5.1 we know that a method ID is an index into an array. This array is what
+in C++ is called "VTable", that is an array of pointer to method functions.
+Thus a method ID unanbiguously identifies a method into a given array and, given
+an ID, to invoke the method something like this is enough:
+
+    (*vtable[methodid])(args...)
+
+IDs are assigned sequentially to the methods of a given interface. For example:
+
+    interface I1
+    {
+        methodI1_1();
+        methodI1_2();
+        methodI1_3();
+    };
+
+methodI1_1 has ID 0, methodI1_2 has ID 1, methodI1_3 has ID 2.
+
+Now say we have an interface that extends the interface I1:
+
+    interface I2 extends I1
+    {
+        methodI2_1();
+        methodI2_2();
+        methodI3_3();
+    }
+
+In this case the methods IDs do not start at 0, but rather at 3, that is:
+
+methodI2_1 has ID 3, methodI2_2 has ID 4, methodI2_3 has ID 5.
+
+This way we can store the pointers to their implementation sequentially into one
+single vtable:
+
+    Method vtable[]=
+    {
+        methodI1_1;
+        methodI1_2;
+        methodI1_3;
+        methodI2_1;
+        methodI2_2;
+        methodI3_3;
+    };
+
+It's then possible to use one single vtable thru both the interfaces I1 and
+I2.
+
+This is basically what happens with Classes and their interfaces, where there's
+only one thread of inheritance, but what happens when one interface extends MORE
+than one other interface?
+
+For example:
+
+    interface I2
+    {
+        methodI2_1();
+        methodI2_2();
+        methodI3_3();
+    }
+
+    interface I3 extends I1, I2
+    {
+        methodI3_1();
+        methodI3_2();
+        methodI3_3();
+    }
+
+How does the vtable for I3 look like? Here the rule applies that the method IDs
+are assigned starting from the leftmost extended interface to the rightmost one,
+and then the assignment continues with the extending interface itself.
+
+Thus:
+
+    Method vtable[]=
+    {
+        methodI1_1;
+        methodI1_2;
+        methodI1_3;
+        methodI2_1;
+        methodI2_2;
+        methodI3_3;
+        methodI3_1;
+        methodI3_2;
+        methodI3_3;
+    };
+
+But the multiple inheritance of interfaces is a characteristic that comes in
+hand when we need to utilize only ONE of the multiple interfaces that a given
+interface extends or that a given class implements, thus there must be a way of
+getting only the methods of the interface I2 inside the interface I3, for
+example. This is, infact, the argument of the  paragraph 5.6.
+
+
+5.5 Methods invocation
+
+Think of the interface I3. What happens to its method IDs if the interface
+I2 grows? The method IDs simply adapt themselves to the new situation, thus they
+are not fixed. We can generalize this by saying that
+
+    5.5.a) an interface that extends another interface has not fixed IDs
+           for its methods.
+
+So, if these ids are not fixed, how can we get to know about their values?
+
+In 5.1 we learnt that an interface is a collection of methods names. This means
+that we have to query an interface for the methods we want to get the id of,
+passing it their names.
+
+Once we have the method ID we need a vtable, so how do we get it?
+
+Classes hold informations about which interfaces they implement. They also
+can give us the vtable we're asking for, given they implement the
+related interface.
+
+Once we have a vtable and a method ID we can invoke the method on a given
+Object.
+
+Thus, summarizing:
+
+1) First we need the method ID of a method of a given interface
+2) Then we need the interface's vtable
+3) Now we can invoke the method on a given object
+
+Once created, an interface doesn't change during all of its life, that is until
+there's a class in the system that uses it, that is until there is an object
+that uses that class. This pratically means that method IDs are actually FIXED
+during the life cycle of a given program, although they are not fixed in
+general, thus we can get at startup-time all the method ID's that the program is
+gonna use and consequently not waste cpu cycles every time a method has to be
+invoked. This can be somehow automated by the means of a special linker that
+recognize the IDs names and automatically writed the needed code to get their
+values.
+
+Another way might be that the method IDs are still gotten at runtime,
+but only once, that is lazy binding. This might be achieved by building stub
+functions that use some static variables to store the IDs in, but also by
+writing some self modifying code.
+
+All that might be avoided altogether in a system with dynamic linking.
+
+One thing must be borne in mind: method IDs are NOT necessarily unique, that is
+different methods in different interfaces can have equal method IDs. This might
+lead to crashes and/or unexpected behaviours in case one method is invoked on an
+object that belongs to a class that doesn't implement the interface to which the
+method we are invoking belongs. How can we avoid that?
+
+Solving this problem actually means being able to use this system at all,
+because otherwise the system would be too fragile.
+
+Well, the solution is quite simple, actually, and consists in giving the
+compiler the job of checking types so that it's not possible invoking a method
+on the wrong object.
+
+Observe this type definition in C
+
+    typedef struct Object
+    {
+        IPTR (*)() vtable;
+        APTR       data;
+    } Object;
+
+This type describes a "reference" to an object of the class Object, that would
+be the root class of the OO framework. Call it Root, if you wish.
+
+Each interface would define such a type, perfectly equaly to the above one, with
+the only difference that the name would be different, thus casting among
+different types like thos would result in a compile time error. This is, infact,
+where the compiler's job lies.
+
+To invoke a method on an object first we need to instantiate an object. This can
+be done with this code [not definitive]:
+
+    Object obj = NewObject(Object, tags);
+
+The above code would instantiate an object of the class "Object".
+
+Then to invoke a method we use the macro
+
+    DoMethod
+    (
+        Obj,       // The object to invoke the method on
+        Interface, // The interface's name to which the Method belongs. It must
+                   // be the same interface to wich Obj belongs
+    	Method,    // The method's name
+        Args...    // The method's arguments
+    )
+
+
+    #define DoMethod(Obj, Interface, Method, Args...) \
+        (((Interface ## _ ## Method ## _ ## type)((Interface)(Obj)).Vtable[Interface ## _ ## Method ## _ ## id])(Args))
+
+With a wise use of the preprocessor and of the type casting it's IMPOSSIBLE
+invoking a method on the wrong object.
+
+[needs further explanation].
+
+If the compiler supplied a pseudo function like "nameoftype(type)" à la typeof()
+it would be possible to not pass the interface's name to the DoMethod() macro,
+thus making more natural and readable the code. The macro could infact look like
+this:
+
+    #define DoMethod(Obj, Method, Args...) \
+        (((nameoftype(typeof(Obj)) ## _ ## Method ## _ ## type)(Obj)).Vtable[nameoftype(typeof(Obj)) ## _ ## Method ## _ ## id])(Args))
+
+So this is definitely something that must be looked for.
+
+5.6 Casting
+
+Now say that I have this class hierarchy:
+
+          Object
+            ||
+            ||
+            \/
+          Shape
+            ||
+            ||
+            \/
+  Circle, Square, Triangle
+
+And I have these objects references:
+
+    Circle   c;
+    Square   s;
+    Triangle t;
+
+I want to be able to store them into an array, so that I can act on them looking
+at them just as "shapes". Thus I need an array of shapes:
+
+    Shape    shapes[3];
+
+The problem, here, is that I cannot just do something like
+
+    5.6.a) shapes[0] = c; //wrong!
+
+because this is not C++ and the C compiler doesn't know how to cast a circle to
+a shape. This basically means that the casting cannot be implicit.
+
+A macro StaticCast() will come in hand, in this case:
+
+    #define StaticCast(Interface, Obj) ((Interface){Obj.vtable, Obj.data})
+
+This macros accept as input the interface to which the object has to be casted
+and the object itself.
+
+Thus, whilst 5.6.a is wrong, this is correct:
+
+    5.6.b) shapes[0] = StaticCast(Shape, c);
+
+The attentive reader will have noticed something important in the above macro:
+there's checking to see whether the Object's class really implements the
+requested interface!
+
+That is, infact, an unsafe casting, that because of this is also very fast. It
+must be used only when one really knows what he/she's doing, and it can always
+be used to cast one class to one of its parents.
+
+It can NEVER be used, instead, to cast from an interface to one of the
+interfaces that it extends and that is not the leftmost one. This is because the
+vtable, in that case, will not start at the same address as the old one, but
+will instead be shifted by some places.
+
+In all those cases that it's not possible using StaticCast() then DynamicCast()
+must be used [not definitive]:
+
+    #define DynamicCast(Interface, Obj)((Interface){GetVTable(Obj, Interface ## _id), Obj.data})
+
+GetVTable is a function/macro [still to be defined] that gets an object
+reference and an interface ID and gives back the related vtable for the given
+object. In case the interface is not implemented in the object's class then an
+*exception* is arisen [write the chapter about exceptions].
+
+This is the safest way of casting, but is also the slowest one, thus when
+possible must be avoided.
+
+[ TO BE CONTINUED ]
+
+
+
+Appendices
+
+A - TODO
+
+1) Give a proper name, preferably and acronym, to this OO framework. It has to
+   be something easy to remember and with a strong meaning. BOOPSI(tm) is a good
+   example of such an acronym, but of course it's not appropriate to this
+   context.
+
+2) Replace all the [name] occurrencies in this text with the chosen name
+
+3) Write anything that has not been written until now and that needs to :)
+
+
+
+
+B - Contributors
+
+Fabio Alemagna <falemagn@studenti.unina.it> - The ideator
