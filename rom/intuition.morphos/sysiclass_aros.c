@@ -1545,7 +1545,6 @@ void sysi_draw(Class *cl, Object *obj, struct impDraw *msg)
         }
 #endif
     } /* switch (image type) */
-exit:
 
     return;
 }
