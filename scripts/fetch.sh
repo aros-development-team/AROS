@@ -9,12 +9,21 @@ usage()
     error "Usage: $1 -a archive [-as archive_suffixes] [-ao archive_origins...] [-d destination] [-po patches_origins...] [-p patch[:subdir][:patch options]...]"
 }
 
+fetch_sf()
+{
+    local origin="$1" file="$2" destination="$3"
+    
+    fetch "http://prdownloads.sourceforge.net/$origin" "${file}?use_mirror=mesh" "$destination"
+}
+
 fetch()
 {
     local origin="$1" file="$2" destination="$3"
     
+    local protocol
+    
     if echo $origin | grep ":" >/dev/null; then
-        local protocol=`echo $origin | cut -d':' -f1`
+        protocol=`echo $origin | cut -d':' -f1`
     fi
 
     local ret=true
@@ -30,6 +39,9 @@ fetch()
 	    fi
             rm -f "$destination/$file".tmp
 	    ;;
+        sf | sourceforge)
+            ! fetch_sf "${origin:${#protocol}+3}" "$file" "$destination" && ret=false
+            ;;
 	"")
 	    if test "$origin" = "$destination";  then
 	        ! test -f "$origin/$file" && ret=false
@@ -54,7 +66,6 @@ fetch()
 fetch_multiple()
 {
     local origins="$1" file="$2" destination="$3"
-    
     for origin in $origins; do
         echo "Trying $origin/$file..."
         fetch "$origin" "$file" "$destination" && return  0
