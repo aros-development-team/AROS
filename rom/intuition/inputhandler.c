@@ -1276,8 +1276,6 @@ D(bug("Window: %p\n", w));
                     
                 case IMCODE_SIZEWINDOW: {
 		
-kprintf("Sizing layer\n");
-                     
                      /* First erase the old frame on the right side and 
                         on the lower side if necessary, but only do this
                         for not GZZ windows 
@@ -1289,15 +1287,15 @@ kprintf("Sizing layer\n");
                        {
                          struct RastPort * rp = targetwindow->BorderRPort;
                          SetAPen(rp, 0);
-                         Move(rp, 0, targetwindow->Height-1);
-                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                         Move(rp, 0, targetwindow->Height-targetwindow->BorderBottom);
+                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
                        }
                        if (msg->dx > 0)
                        {
                          struct RastPort * rp = targetwindow->BorderRPort;
                          SetAPen(rp, 0);
-                         Move(rp, targetwindow->Width-1, 0);
-                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                         Move(rp, targetwindow->Width-targetwindow->BorderRight, 0);
+                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
                        }
                      }
                      
@@ -1363,7 +1361,6 @@ kprintf("Sizing layer\n");
                      }
 
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
-kprintf("Sizing done\n");		
                 break; }
                          
                 case IMCODE_ZIPWINDOW: {
@@ -1435,15 +1432,15 @@ kprintf("Sizing done\n");
                        {
                          struct RastPort * rp = targetwindow->BorderRPort;
                          SetAPen(rp, 0);
-                         Move(rp, 0, targetwindow->Height-1);
-                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                         Move(rp, 0, targetwindow->Height-targetwindow->BorderBottom);
+                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
                        }
                        if (msg->width > targetwindow->Width)
                        {
                          struct RastPort * rp = targetwindow->BorderRPort;
                          SetAPen(rp, 0);
-                         Move(rp, targetwindow->Width-1, 0);
-                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                         Move(rp, targetwindow->Width-targetwindow->BorderRight, 0);
+                         Draw(rp, targetwindow->Width-targetwindow->BorderRight, targetwindow->Height-targetwindow->BorderBottom);
                        }
                      }
 
