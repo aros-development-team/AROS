@@ -1073,7 +1073,7 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
           } /* if .. else  .. */
         } /* if .. else .. */
       } /* if (ClipRect is to be considered at all) */  
-      
+
       CR = CR->Next;
     } /* while */
 
@@ -1085,10 +1085,14 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
         TRUE == UpdateDamageList)
     {
       struct Rectangle blank;
+      /* the following could possibly lead to problems when the region
+         R is moved to negative coordinates. Maybe and maybe not.
+      */
       R->bounds.MinX -= dx;
       R->bounds.MinY -= dy;
       R->bounds.MaxX -= dx;
       R->bounds.MaxY -= dy;
+
       /* make this region valid again */
       AndRectRegion(R, &ScrollRect);
 
@@ -1281,10 +1285,12 @@ BOOL driver_MoveRaster (struct RastPort * rp, LONG dx, LONG dy,
     {
       /* Add the damagelist to the layer's damage list and set the
          LAYERREFRESH flag, but of course only if it's necessary */
+
+      /* first clear the damage lists of the scrolled area */
+      ClearRectRegion(L->DamageList, &ScrollRect);
+
       if (NULL != R->RegionRectangle)
       {
-        /* first clear the damage lists of the scrolled area */
-        ClearRectRegion(L->DamageList, &ScrollRect);
         OrRegionRegion(R, L->DamageList);
         L->Flags |= LAYERREFRESH;
       }
