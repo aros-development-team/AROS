@@ -16,12 +16,10 @@
 #include <proto/arossupport.h>
 #undef kprintf
 #include <unistd.h>
+#include <exec/execbase.h>
 #include "exec_private.h"
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
-#if (AROS_FLAVOUR & AROS_FLAVOUR_NATIVE)
-#   define SysBase 	*(void **)4
-#endif
 
 /* Can't use ctypt.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
@@ -80,15 +78,14 @@
 
 int vkprintf (const UBYTE * fmt, va_list args)
 {
+    AROS_GET_SYSBASE
     int 	 ret;
     static const char uhex[] = "0123456789ABCDEF";
     static const char lhex[] = "0123456789abcdef";
     char       * fill;
     ULONG	 val;
     LONG	 lval;
-#ifdef CREATE_ROM
-    struct ExecBase * SysBase = *(struct ExecBase **)0x04;
-#endif
+
     if (!fmt)
     {
 	RawPutChars ("(null)", 6);
