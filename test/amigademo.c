@@ -129,7 +129,7 @@ void delta(struct timer *,struct timer *);
 
 /******************************************************
 * Alright already, here's the stuff                   */
-void main()
+int main()
 {
 struct IntuiMessage *imsg;
 
@@ -170,6 +170,8 @@ FOREVER {
       ReplyMsg((struct Message *)imsg);
       }
    }
+
+    return 0;
 }
 
 
