@@ -7,6 +7,8 @@
 /* External variables */
 extern InstallerPrefs preferences;
 extern IPTR args[TOTAL_ARGS];
+extern UBYTE **tooltypes;
+extern struct IconBase *IconBase;
 
 /* External function prototypes */
 extern void request_userlevel( char * );
@@ -17,7 +19,7 @@ void *get_variable( char * );
 char *get_var_arg( char * );
 long int get_var_int( char * );
 void set_variable( char *, char *, long int );
-void set_preset_variables();
+void set_preset_variables( int );
 #ifdef DEBUG
 void dump_varlist();
 #endif /* DEBUG */
@@ -153,30 +155,48 @@ int i;
 /*
  * Set initial variables at INIT stage
  */
-void set_preset_variables( )
+void set_preset_variables( int argc )
 {
-#warning FIXME: Use real APPNAME, LANGUAGE from RDArgs()
+char *ttemp;
 
+  if( argc )
+  { /* Started from Shell */
 #ifdef DEBUG
-  if( args[ARG_APPNAME] )
-  {
-    set_variable( "@app-name", (STRPTR)args[ARG_APPNAME], 0 );
-  }
-  else
-  {
-    set_variable( "@app-name", "DemoApp", 0 );
-  }
-#else /* DEBUG */
-  set_variable( "@app-name", (char *)args[ARG_APPNAME], 0 );
+    if( args[ARG_APPNAME] )
+    {
+#endif /* DEBUG */
+      set_variable( "@app-name", (STRPTR)args[ARG_APPNAME], 0 );
+#ifdef DEBUG
+    }
+    else
+    {
+      set_variable( "@app-name", "DemoApp", 0 );
+    }
 #endif /* DEBUG */
 
-  if( args[ARG_LANGUAGE] )
-  {
-    set_variable( "@language", (char *)args[ARG_LANGUAGE], 0 );
+    if( args[ARG_LANGUAGE] )
+    {
+      set_variable( "@language", (char *)args[ARG_LANGUAGE], 0 );
+    }
+    else
+    {
+      set_variable( "@language", "english", 0 );
+    }
   }
   else
-  {
-    set_variable( "@language", "english", 0 );
+  { /* Started from Workbench */
+      ttemp = ArgString( tooltypes, "APPNAME", NULL );
+      if( !ttemp )
+      {
+#ifdef DEBUG
+       fprintf( stderr, "No ToolType APPNAME in Icon!\n" );
+       ArgArrayDone();
+       CloseLibrary( (struct Library *)IconBase );
+       exit(-1);
+#endif /* DEBUG */
+      }
+      set_variable( "@app-name", ttemp, 0 );
+      set_variable( "@language", ArgString( tooltypes, "LANGUAGE", "english" ), 0 );
   }
 
   set_variable( "@abort-button", ABORT_BUTTON, 0 );
@@ -187,6 +207,8 @@ void set_preset_variables( )
   {
     request_userlevel( NULL );
   }
+
+  set_variable( "@pretend",		NULL,	preferences.pretend );
 
   /* Set other variables to (NULL|0) */
   set_variable( "@askchoice-help",	NULL,	0 );
@@ -205,7 +227,6 @@ void set_preset_variables( )
   set_variable( "@icon",		NULL,	0 );
   set_variable( "@ioerr",		NULL,	0 );
   set_variable( "@makedir-help",	NULL,	0 );
-  set_variable( "@pretend",		NULL,	0 );
   set_variable( "@special-msg",		NULL,	0 );
   set_variable( "@startup-help",	NULL,	0 );
 }

@@ -37,6 +37,7 @@ extern int request_confirm( struct ParameterList *, long int );
 extern void traperr( char *, char * );
 extern void outofmem( void * );
 extern void link_function( char *, long int );
+extern char *addquotes( char * );
 
 /* Internal function prototypes */
 int eval_cmd( char * );
@@ -221,17 +222,7 @@ void *params;
 
       case _CAT		: /* Return concatenated strings */
                           string = collect_strings( current->next, 0, level );
-                          /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          current->parent->arg = malloc( slen + 3 );
-                          outofmem( current->parent->arg );
-                          (current->parent->arg)[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( (current->parent->arg) + 1, string );
-                          }
-                          (current->parent->arg)[slen+1] = DQUOTE;
-                          (current->parent->arg)[slen+2] = 0;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           break;
 
@@ -260,18 +251,7 @@ void *params;
                             printf( "%s\n", string );
                           }
                           /* Set return value */
-                          /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( clip + 1, string );
-                          }
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
-                          current->parent->arg = clip;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           break;
 
@@ -526,13 +506,7 @@ void *params;
                               if( clip )
                               {
                                 /* Add surrounding quotes to string */
-                                slen = strlen( clip );
-                                dummy->parent->arg = malloc( slen + 3 );
-                                outofmem( dummy->parent->arg );
-                                (dummy->parent->arg)[0] = DQUOTE;
-                                strcpy( (dummy->parent->arg) + 1, clip );
-                                (dummy->parent->arg)[slen+1] = DQUOTE;
-                                (dummy->parent->arg)[slen+2] = 0;
+                                dummy->parent->arg = addquotes( clip );
                               }
                               dummy->parent->intval = get_var_int( dummy->next->arg );
                             }
@@ -649,13 +623,7 @@ void *params;
                               if( clip )
                               {
                                 /* Add surrounding quotes to string */
-                                slen = strlen( clip );
-                                dummy->parent->arg = malloc( slen + 3 );
-                                outofmem( dummy->parent->arg );
-                                (dummy->parent->arg)[0] = DQUOTE;
-                                strcpy( (dummy->parent->arg) + 1, clip );
-                                (dummy->parent->arg)[slen+1] = DQUOTE;
-                                (dummy->parent->arg)[slen+2] = 0;
+                                dummy->parent->arg = addquotes( clip );
                               }
                               dummy->parent->intval = get_var_int( dummy->next->arg );
                             }
@@ -752,15 +720,8 @@ void *params;
                             free( mclip );
                           }
                           /* Add surrounding quotes to string */
-                          slen = strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          strcpy( clip + 1, string );
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
+                          current->parent->arg = addquotes( string );
                           free( string );
-                          current->parent->arg = clip;
                           break;
 
       case _SUBSTR	: /* Return the substring of arg1 starting with arg2+1 character up to arg3 or end if !arg3 */
@@ -871,17 +832,7 @@ void *params;
                             Write( preferences.transcriptstream, "\n", 1 );
                           }
                           /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( clip + 1, string );
-                          }
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
-                          current->parent->arg = clip;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           break;
 
@@ -995,17 +946,7 @@ void *params;
 
                           /* Set return value */
                           /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( clip + 1, string );
-                          }
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
-                          current->parent->arg = clip;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           break;
 
@@ -1061,17 +1002,7 @@ void *params;
 
                           /* Set return value */
                           /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( clip + 1, string );
-                          }
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
-                          current->parent->arg = clip;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           free_parameterlist( parameter );
                           break;
@@ -1082,17 +1013,7 @@ void *params;
 
                           /* Set return value */
                           /* Add surrounding quotes to string */
-                          slen = ( string == NULL ) ? 0 : strlen( string );
-                          clip = malloc( slen + 3 );
-                          outofmem( clip );
-                          clip[0] = DQUOTE;
-                          if( string != NULL )
-                          {
-                            strcpy( clip + 1, string );
-                          }
-                          clip[slen+1] = DQUOTE;
-                          clip[slen+2] = 0;
-                          current->parent->arg = clip;
+                          current->parent->arg = addquotes( string );
                           free( string );
                           break;
 
@@ -1271,7 +1192,7 @@ void *params;
                                 clip = NULL;
                                 j = 0;
                               }
-                              if( request_confirm( parameter, _EXPERT ) )
+                              if( get_var_int("@user-level") >= GetPL( parameter, _CONFIRM ).intval )
                               {
                                 if( ( seg = LoadSeg( string ) ) == NULL )
                                 {
@@ -1316,7 +1237,7 @@ void *params;
                           {
                             string = strip_quotes( current->next->arg );
                             parameter = get_parameters( current->next, level );
-                            if( request_confirm( parameter, _EXPERT ) )
+                            if( request_confirm( parameter, _AVERAGE ) )
                             {
                               modify_userstartup( string, parameter );
                             }

@@ -4,6 +4,10 @@
 #define INSTALLER_VERSION 43
 #define INSTALLER_REVISION 3
 
+/*
+   This flag is not only for internal verbosity, but embraces outputs
+   where Intuition GUI is still missing (mostly errors), too.
+*/
 #define DEBUG 1
 
 #ifdef ADE
@@ -20,6 +24,7 @@
 #include <exec/execbase.h>
 #include <proto/dos.h>
 #include <proto/exec.h>
+#include <proto/alib.h>
 
 extern struct ExecBase *SysBase;
 
@@ -50,12 +55,12 @@ typedef struct InstallerPrefs
 {
   char * transcriptfile;
   BPTR transcriptstream;
-  int debug, pretend, nopretend, novicelog;
+  int debug, pretend, nopretend, novicelog, noprint;
   int welcome;
   int copyfail, copyflags;
   ScriptArg onerror, *onerrorparent;
   ScriptArg trap[NUMERRORS], *trapparent[NUMERRORS];
-  int defusrlevel;
+  int minusrlevel, defusrlevel;
 } InstallerPrefs;
 
 #define COPY_FAIL	1

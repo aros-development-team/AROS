@@ -333,15 +333,16 @@ Arguments in [...] are optional.
  /* Ask user to choose multiple items */
 
 
-(database )
+( database <feature> )
  /* Return information on the hardware Installer is running on */
+ <feature> is one of:
  "vblank"
- "cpu"
+ "cpu" -> "68000" "68010" "68020" "68030" "68040" "68060" "80386" "80486"
  "graphics-mem"
  "total-mem"
- "fpu"
- "chiprev"
-
+ "fpu" -> "68881" "68882" "FPU40" "80387" "80486" "NOFPU"
+ "chiprev" -> "AA" "ECS" "AGNUS" "VGA"
+ Return-type is always a string.
 
 ( onerror (...) )
  Use this function to define code to be executed after an error occurred.
@@ -365,6 +366,7 @@ Arguments in [...] are optional.
 ( startup <name-string>
       [(prompt <string>... )]
       [(help <string>... )]
+      [(confirm)]
       (command <string>... )
 )
 Inserts a section

@@ -19,7 +19,7 @@ extern int line;
 extern void parse_file( ScriptArg * );
 extern void execute_script( ScriptArg * , int );
 extern void cleanup();
-extern void set_preset_variables();
+extern void set_preset_variables( int );
 extern void *get_variable( char *name );
 extern long int get_var_int( char *name );
 extern void set_variable( char *name, char *text, long int intval );
@@ -35,6 +35,8 @@ extern void init_gui();
 int main( int, char ** );
 
 
+struct IconBase *IconBase = NULL;
+
 char *filename = NULL;
 BPTR inputfile;
 char buffer[MAXARGSIZE];
@@ -44,6 +46,7 @@ InstallerPrefs preferences;
 ScriptArg script;
 
 IPTR * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+UBYTE **tooltypes;
 
 /*
  * MAIN
@@ -51,16 +54,30 @@ IPTR * args[TOTAL_ARGS] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
 int main( int argc, char *argv[] )
 {
 struct RDArgs *rda;
+char *ttemp, *tstring;
 
 ScriptArg *currentarg, *dummy;
 int nextarg, endoffile, count;
 
-  /* evaluate args with RDArgs(); */
-  rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
-  if( rda == NULL )
-  {
-    PrintFault( IoErr(), "Installer" );
-    exit(-1);
+  if(argc!=0)
+  { /* Invoked form Shell */
+    /* evaluate args with RDArgs(); */
+    rda = ReadArgs( ARG_TEMPLATE, (LONG *)args, NULL );
+    if( rda == NULL )
+    {
+      PrintFault( IoErr(), "Installer" );
+      exit(-1);
+    }
+  }
+  else
+  { /* Invoked from Workbench */
+    IconBase = (struct IconBase *)OpenLibrary( "icon.library", 0 );
+    if( !IconBase )
+    {
+      fprintf( stderr, "Could not open icon.library!\n" );
+      exit(-1);
+    }
+    tooltypes = ArgArrayInit( argc, (UBYTE **)argv );
   }
 
   /* open script file */
@@ -76,56 +93,155 @@ int nextarg, endoffile, count;
     filename = strdup( "SYS:Utilities/test.script" );
   }
 #else /* DEBUG */
-  filename = strdup( (STRPTR)args[ARG_SCRIPT] );
+  if(argc)
+  {
+    filename = strdup( (STRPTR)args[ARG_SCRIPT] );
+  }
+  else
+  {
+    ttemp = ArgString( tooltypes, "SCRIPT", NULL );
+    if(ttemp == NULL)
+    {
+#ifdef DEBUG
+      fprintf( stderr, "No SCRIPT ToolType in Icon!\n" );
+#endif /* DEBUG */
+      ArgArrayDone();
+      CloseLibrary( (struct Library *)IconBase);
+      exit(-1);
+    }
+    filename = strdup( ttemp );
+  }
 #endif /* DEBUG */
 
   inputfile = Open( filename, MODE_OLDFILE );
   if( inputfile == NULL )
   {
+#ifdef DEBUG
     PrintFault( IoErr(), "Installer" );
     exit(-1);
+#endif /* DEBUG */
   }
 
   preferences.welcome = FALSE;
-  if( args[ARG_NOLOG] )
-  {
-    preferences.novicelog = FALSE;
-  }
-  else
-  {
-    preferences.novicelog = TRUE;
-  }
-  preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
   preferences.transcriptstream = NULL;
-  preferences.nopretend = (int)args[ARG_NOPRETEND];
   preferences.pretend = 0;
-
-#ifdef DEBUG
-  preferences.debug = TRUE;
-#else /* DEBUG */
-  preferences.debug = FALSE;
-#endif /* DEBUG */
-
-  if( args[ARG_DEFUSER] )
+  if(argc)
   {
-    preferences.defusrlevel = _NOVICE;
-    if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
+  preferences.debug = TRUE;
+    if( args[ARG_NOLOG] )
     {
-      preferences.defusrlevel = _AVERAGE;
+      preferences.novicelog = FALSE;
     }
-    else if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
+    else
     {
-      preferences.defusrlevel = _EXPERT;
+      preferences.novicelog = TRUE;
+    }
+    preferences.transcriptfile = strdup( ( args[ARG_LOGFILE] ) ? (char *)args[ARG_LOGFILE] : "install_log_file" );
+    preferences.nopretend = (int)args[ARG_NOPRETEND];
+    if( args[ARG_MINUSER] )
+    {
+      preferences.minusrlevel = _NOVICE;
+      if( strcasecmp( "average", (char *)args[ARG_MINUSER] ) == 0 )
+      {
+        preferences.minusrlevel = _AVERAGE;
+      }
+      else if( strcasecmp( "expert", (char *)args[ARG_MINUSER] ) == 0 )
+      {
+        preferences.minusrlevel = _EXPERT;
+      }
+      else
+      {
+        preferences.minusrlevel = _NOVICE;
+      }
+    }
+    else
+    {
+      preferences.minusrlevel = _NOVICE;
+    }
+    if( args[ARG_DEFUSER] )
+    {
+      preferences.defusrlevel = preferences.minusrlevel;
+      if( strcasecmp( "average", (char *)args[ARG_DEFUSER] ) == 0 )
+      {
+        preferences.defusrlevel = _AVERAGE;
+      }
+      else if( strcasecmp( "expert", (char *)args[ARG_DEFUSER] ) == 0 )
+      {
+        preferences.defusrlevel = _EXPERT;
+      }
+      else
+      {
+        preferences.defusrlevel = _NOVICE;
+      }
     }
     else
     {
       preferences.defusrlevel = _NOVICE;
     }
+    if( preferences.defusrlevel < preferences.minusrlevel )
+    {
+      preferences.defusrlevel = preferences.minusrlevel;
+    }
   }
   else
   {
-    preferences.defusrlevel = _NOVICE;
+  preferences.debug = FALSE;
+
+    /* Create a log file in Novice mode? (TRUE) */
+    if( strcmp( "TRUE", ArgString(tooltypes, "LOG", "TRUE") ) == 0 )
+    {
+      preferences.novicelog = TRUE;
+    }
+    else
+    {
+      preferences.novicelog = FALSE;
+    }
+
+    /* Is PRETEND possible? */
+    if( strcmp( "TRUE", ArgString(tooltypes, "PRETEND", "TRUE") ) == 0 )
+    {
+      preferences.nopretend = FALSE;
+    }
+    else
+    {
+      preferences.nopretend = TRUE;
+    }
+    preferences.transcriptfile = strdup( ArgString( tooltypes, "LOGFILE", "install_log_file" ) );
+    ttemp = ArgString( tooltypes, "DEFUSER", "NOVICE" );
+    tstring = NULL;
+    preferences.minusrlevel = _NOVICE;
+    if( strcasecmp( "average", ttemp ) == 0 )
+    {
+      preferences.minusrlevel = _AVERAGE;
+      tstring = strdup( "AVERAGE" );
+    }
+    else if( strcasecmp( "expert", ttemp ) == 0 )
+    {
+      preferences.minusrlevel = _EXPERT;
+      tstring = strdup( "EXPERT" );
+    }
+    if( tstring == NULL )
+    {
+      tstring = strdup( "NOVICE" );
+    }
+
+    ttemp = ArgString( tooltypes, "DEFUSER", tstring );
+    preferences.defusrlevel = preferences.minusrlevel;
+    if( strcasecmp( "average", ttemp ) == 0 )
+    {
+      preferences.defusrlevel = _AVERAGE;
+    }
+    else if( strcasecmp( "expert", ttemp ) == 0 )
+    {
+      preferences.defusrlevel = _EXPERT;
+    }
+    if( preferences.defusrlevel < preferences.minusrlevel )
+    {
+      preferences.defusrlevel = preferences.minusrlevel;
+    }
+    free( tstring );
   }
+
   preferences.copyfail = COPY_FAIL;
   preferences.copyflags = 0;
 
@@ -273,10 +389,19 @@ int nextarg, endoffile, count;
   }
 
   /* Set variables which are not constant */
-  set_preset_variables();
+  set_preset_variables( argc );
 
-  /* Finally free ReadArgs struct (set_preset_variables() needed them) */
-  FreeArgs(rda);
+  /* NOTE: Now everything from commandline(ReadArgs)/ToolTypes(Workbench)
+           will become invalid!
+  */
+  if( argc!=0 )
+  { /* Finally free ReadArgs struct (set_preset_variables() needed them) */
+    FreeArgs(rda);
+  }
+  else
+  { /* Or free tooltypes array if started from WB */
+    ArgArrayDone();
+  }
 
   if( get_var_int( "@user-level" ) == _NOVICE )
   {

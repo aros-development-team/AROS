@@ -27,10 +27,11 @@ extern void dump_varlist();
 #endif /* DEBUG */
 extern void end_malloc();
 extern void outofmem( void * );
+extern int strtostrs ( char *, char *** );
+extern char *addquotes( char * );
 
 /* Internal function prototypes */
 struct Border * genborder( int, int );
-void remborder( struct Border * );
 void init_gui();
 void deinit_gui();
 void clear_gui();
@@ -41,6 +42,7 @@ void show_parseerror( char *, int );
 void show_working( char * );
 void show_message( char * ,struct ParameterList * );
 void show_help_userlevel();
+void show_help_pretend();
 void show_help_logfile();
 void show_help_installer();
 void request_userlevel();
@@ -56,7 +58,6 @@ int request_confirm( struct ParameterList *, long int );
 void abort_install();
 void final_report();
 void traperr( char *, char * );
-int strtostrs ( char *, char *** );
 
 
 #include <proto/intuition.h>
@@ -66,11 +67,15 @@ int strtostrs ( char *, char *** );
 #include <graphics/gfxbase.h>
 #include <proto/gadtools.h>
 #include <libraries/gadtools.h>
+#include <proto/asl.h>
+#include <libraries/asl.h>
 
 
 struct IntuitionBase *IntuitionBase = NULL;
 struct Library *GadToolsBase = NULL;
 struct GfxBase * GfxBase = NULL;
+struct Library *AslBase = NULL;
+
 struct Window *GuiWin;
 struct RastPort *rp;
 struct IntuiMessage *imsg;
@@ -81,7 +86,11 @@ const char GuiWinTitle[] ="AROS - Installer V43.3";
 
 APTR vi;
 struct Screen *scr;
-struct Gadget *glist = NULL, *gad = NULL;
+struct Gadget *glist = NULL,
+	      *stringglist = NULL,
+	      *mxglist = NULL,
+	      *stdglist = NULL,
+	      *gad = NULL;
 
 struct IntuiText itext = {
     1,		/* FrontPen */
@@ -96,34 +105,62 @@ struct IntuiText itext = {
 
 #define ID_BOOLGADFALSE 0
 struct NewGadget gt_boolgadfalse = {
-  15,92, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
-  NULL, /* ng_GadgetText */
-  NULL, /* ng_TextAttr */
+  15,92, 30,30, /* ng_LeftEdge, ng_TopEdge, ng_Width, ng_Height */
+  NULL,		/* ng_GadgetText */
+  NULL,		/* ng_TextAttr */
   ID_BOOLGADFALSE, /* ng_GadgetID */
   PLACETEXT_IN, /* ng_Flags */
-  NULL, /* ng_VisualInfo */
-  NULL  /* ng_UserData */
+  NULL,		/* ng_VisualInfo */
+  NULL		/* ng_UserData */
 };
 
 #define ID_BOOLGADTRUE 1
 struct NewGadget gt_boolgadtrue = {
-  15,132, 30,30, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
-  NULL, /* ng_GadgetText */
-  NULL, /* ng_TextAttr */
-  ID_BOOLGADTRUE, /* ng_GadgetID */
-  PLACETEXT_IN, /* ng_Flags */
-  NULL, /* ng_VisualInfo */
-  NULL  /* ng_UserData */
+  15,132, 30,30,
+  NULL, NULL,
+  ID_BOOLGADTRUE, PLACETEXT_IN, NULL, NULL
 };
 
 struct NewGadget gt_textgad = {
-  15,90, 100,70, /* ng_LeftEdge ng_TopEdge ng_Width ng_Height */
-  NULL, /* ng_GadgetText */
-  NULL, /* ng_TextAttr */
-  0, /* ng_GadgetID */
-  0, /* ng_Flags */
-  NULL, /* ng_VisualInfo */
-  NULL  /* ng_UserData */
+  15,90, 100,70,
+  NULL, NULL,
+  0, 0, NULL, NULL
+};
+
+#define ID_STRINGGAD 2
+struct NewGadget gt_stringgad = {
+  15,132, 100,30,
+  "Input", NULL,
+  ID_STRINGGAD, PLACETEXT_ABOVE, NULL, NULL
+};
+
+#define ID_MXGAD 3
+struct NewGadget gt_mxgad = {
+  15,90, MX_WIDTH, MX_HEIGHT,
+  NULL, NULL,
+  ID_MXGAD, PLACETEXT_RIGHT, NULL, NULL
+};
+STRPTR *mxlabels;
+
+#define ID_ABORTGAD 100
+struct NewGadget gt_abortgad = {
+  15,200, 74,25,
+  "Abort", NULL,
+  ID_ABORTGAD, PLACETEXT_IN, NULL, NULL
+};
+
+#define ID_SKIPGAD 101
+struct NewGadget gt_skipgad = {
+  90,200, 74,25,
+  "Skip", NULL,
+  ID_SKIPGAD, PLACETEXT_IN, NULL, NULL
+};
+
+#define ID_HELPGAD 102
+struct NewGadget gt_helpgad = {
+  165,200, 74,30,
+  "Help", NULL,
+  ID_HELPGAD, PLACETEXT_IN, NULL, NULL
 };
 
 struct TagItem bevel_tag[] = {
@@ -138,14 +175,17 @@ struct TagItem bevel_tag[] = {
  */
 void init_gui( )
 {
-struct TagItem tags[] =
+struct TagItem windowtags[] =
 {
   { WA_Width	, 400 },
-  { WA_Height	, 200 },
+  { WA_Height	, 250 },
   { WA_Title	, (ULONG)GuiWinTitle },
   { WA_IDCMP	, IDCMP_MOUSEMOVE
 		  | IDCMP_GADGETUP
-		  | IDCMP_GADGETDOWN },
+		  | IDCMP_GADGETDOWN
+		  | MXIDCMP
+		  | BUTTONIDCMP
+		  | CHECKBOXIDCMP },
   { WA_Flags	,   WFLG_ACTIVATE
 		  | WFLG_DEPTHGADGET
 		  | WFLG_DRAGBAR
@@ -153,41 +193,58 @@ struct TagItem tags[] =
 
   { TAG_DONE }
 };
+
 struct TagItem ti1[] = {
   { GA_Immediate, TRUE },
   { TAG_DONE }
 };
+
+STRPTR defstring = "Blah";
+struct TagItem stringti[] = {
+  { GTST_String, (ULONG)defstring },
+  { GTST_MaxChars, 8 },
+  { GTTX_Border, TRUE },
+  { GA_Immediate, TRUE },
+  { TAG_DONE }
+};
 /*
-    struct TagItem ti2[] = {
-	{ GTTX_Text, (ULONG)"dummystring" },
-	{ GTTX_CopyText, TRUE },
-	{ GTTX_Border, TRUE },
-	{ GTTX_Justification, GTJ_LEFT },
-	{ TAG_DONE } };
+struct TagItem ti2[] = {
+  { GTTX_Text, (ULONG)"dummystring" },
+  { GTTX_CopyText, TRUE },
+  { GTTX_Border, TRUE },
+  { GTTX_Justification, GTJ_LEFT },
+  { TAG_DONE } };
 */
 
-  IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37 );
+  IntuitionBase = (struct IntuitionBase *)OpenLibrary( "intuition.library", 37L );
   if (IntuitionBase == NULL)
   {
     cleanup();
     exit(-1);
   }
 
-  GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 37 );
+  GfxBase = (struct GfxBase *)OpenLibrary( "graphics.library", 37L );
   if (GfxBase == NULL)
   {
     cleanup();
     exit(-1);
   }
 
-  GadToolsBase = OpenLibrary( "gadtools.library", 0 );
+  GadToolsBase = OpenLibrary( "gadtools.library", 0L );
   if (GadToolsBase == NULL)
   {
     cleanup();
     exit(-1);
   }
 
-  if( NULL == ( GuiWin = OpenWindowTagList( NULL, tags ) ) )
+  AslBase = OpenLibrary( "asl.library", 37L );
+  if (AslBase == NULL)
+  {
+    cleanup();
+    exit(-1);
+  }
+
+  if( NULL == ( GuiWin = OpenWindowTagList( NULL, windowtags ) ) )
   {
     cleanup();
     CloseLibrary( (struct Library *)IntuitionBase );
@@ -199,17 +256,35 @@ struct TagItem ti1[] = {
   vi = GetVisualInfoA( scr, NULL );
   bevel_tag[0].ti_Data = (ULONG)vi;
 
-  gad = CreateContext( &glist );
-  if(gad==NULL)
-    printf("CreateContext() failed\n");
   gt_boolgadtrue.ng_VisualInfo = vi;
   gt_boolgadfalse.ng_VisualInfo = vi;
   gt_textgad.ng_VisualInfo = vi;
+  gt_stringgad.ng_VisualInfo = vi;
+  gt_mxgad.ng_VisualInfo = vi;
+  gt_abortgad.ng_VisualInfo = vi;
+  gt_skipgad.ng_VisualInfo = vi;
+
+  gad = CreateContext( &glist );
+  if(gad==NULL)
+    printf("CreateContext() failed\n");
 
   gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadtrue, ti1 );
   gad = CreateGadgetA( BUTTON_KIND, gad, &gt_boolgadfalse, ti1 );
 //  gad = CreateGadgetA( TEXT_KIND, gad, &gt_textgad, ti2 );
 
+  gad = CreateContext( &stringglist );
+  if(gad==NULL)
+    printf("CreateContext() failed\n");
+
+  gad = CreateGadgetA( STRING_KIND, gad, &gt_stringgad, stringti );
+
+  gad = CreateContext( &stdglist );
+  if(gad==NULL)
+    printf("CreateContext() failed\n");
+
+  gad = CreateGadgetA( BUTTON_KIND, gad, &gt_abortgad, ti1 );
+  gad = CreateGadgetA( BUTTON_KIND, gad, &gt_skipgad, ti1 );
+  gad = CreateGadgetA( BUTTON_KIND, gad, &gt_helpgad, ti1 );
 }
 
 
@@ -219,12 +294,14 @@ struct TagItem ti1[] = {
 void deinit_gui( )
 {
   FreeGadgets( glist );
+  FreeGadgets( stringglist );
   FreeVisualInfo( vi );
   UnlockPubScreen( NULL, scr );
   CloseWindow( GuiWin );
-  CloseLibrary( (struct Library *)IntuitionBase );
+  CloseLibrary( (struct Library *)AslBase );
   CloseLibrary( (struct Library *)GadToolsBase );
   CloseLibrary( (struct Library *)GfxBase );
+  CloseLibrary( (struct Library *)IntuitionBase );
 }
 
 
@@ -490,6 +567,18 @@ void show_help_logfile()
 
 
 /*
+ * Show the help-window for topic: Pretend to install
+ */
+void show_help_pretend()
+{
+#warning TODO: help for pretend-requester
+#ifdef DEBUG
+  printf( "\n \"Pretend to Install\" will not install the application for real\n on your Disk, instead it will log all the actions to the log-file.\n However if the \"(safe)\" flag is set for functions in the script\n these will bedone even if in pretend mode.\n" );
+#endif /* DEBUG */
+}
+
+
+/*
  * Show the help-window for topic: Installer
  */
 void show_help_installer( )
@@ -523,7 +612,7 @@ char c;
 
   do
   {
-    printf( "Which user-level do you want?\n 0 - Novice\n 1 - Average\n 2 - Expert\n P - Proceed\n A - Abort\n H - Help\n O - About Installer\n\nDefault is %d\n", usrlevel );
+    printf( "Which user-level do you want?\n 0 - Novice\n 1 - Average\n 2 - Expert\n P - Proceed\n A - Abort\n H - Help\n O - About Installer\n\nMinimum user-level is %d\nDefault is %d\n", preferences.minusrlevel, usrlevel );
     scanf( "%c", &c );
     switch( tolower( c ) )
     {
@@ -550,11 +639,17 @@ char c;
                   break;
       default	: break;
     }
+    if( usrlevel < preferences.minusrlevel )
+    {
+      printf("Sorry, but minimum user-level is %d\n", preferences.minusrlevel );
+      usrlevel = preferences.defusrlevel;
+    }
   } while( finish == FALSE );
 #endif /* DEBUG */
 
   set_variable( "@user-level", NULL, usrlevel );
 
+  finish = FALSE;
   if( usrlevel > 0 )
   {
     /* Ask for logfile-creation */
@@ -572,18 +667,20 @@ char c;
                   show_help_logfile();
                   break;
         case 'f': /* log-file */
+#if 0
+                  /* fopen() log file */
+#endif /* 0 */
                   finish = TRUE;
                   break;
         case 'p': /* printer-log */
-#ifdef 0
-/* fopen() log file */
+#if 0
                   free( preferences.transcriptfile );
                   preferences.transcriptfile = strdup ("PRT:");
 #endif /* 0 */
                   finish = TRUE;
                   break;
         case 'n': /* no log */
-#ifdef 0
+#if 0
 /* fopen() printer log-"file" */
                   free( preferences.transcriptfile );
                   preferences.transcriptfile = NULL;
@@ -593,6 +690,34 @@ char c;
         default	: break;
       }
     } while( finish == FALSE );
+
+    if(!preferences.nopretend)
+    {
+      finish = FALSE;
+      do
+      {
+        printf( "Installer can pretend to install\n I - really Install\n P - Pretend to install\n H - Help\n A - Abort installation ?\n" );
+        scanf( "%c", &c );
+        switch( tolower( c ) )
+        {
+          case 'a': /* abort */
+                    abort_install();
+                    break;
+          case 'h': /* help */
+                    show_help_pretend();
+                    break;
+          case 'i': /* Really Install */
+                    preferences.pretend = FALSE;
+                    finish = TRUE;
+                    break;
+          case 'p': /* Only pretend to install */
+                    preferences.pretend = TRUE;
+                    finish = TRUE;
+                    break;
+          default : break;
+        }
+      } while( finish == FALSE );
+    }
   }
 #endif /* DEBUG */
 }
@@ -641,9 +766,11 @@ char c;
 
     AddGList(GuiWin,glist,-1,-1,NULL);
     RefreshGList(glist,GuiWin,NULL,-1);
+    AddGList(GuiWin,stdglist,-1,-1,NULL);
+    RefreshGList(stdglist,GuiWin,NULL,-1);
     GT_RefreshWindow(GuiWin,NULL);
-    DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-15-GuiWin->BorderTop,bevel_tag);
-    DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-110-GuiWin->BorderTop,bevel_tag);
+    DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
+    DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
         
 #if 1
 
@@ -683,18 +810,18 @@ char c;
           case IDCMP_GADGETUP:
         	switch( ( (struct Gadget *)(imsg->IAddress) )->GadgetID )
         	{
-                  case 0:
+                  case ID_BOOLGADFALSE:
                     retval = 0;
                     finish = TRUE;
                     break;
-                  case 1:
+                  case ID_BOOLGADTRUE:
                     retval = 1;
                     finish = TRUE;
                     break;
-                  case 2:
+                  case ID_ABORTGAD:
                     abort_install();
                     break;
-                  case 3:
+                  case ID_HELPGAD:
                     for( i = 0 ; i < GetPL( pl, _HELP ).intval ; i ++ )
                     {
                       printf( "%s\n", GetPL( pl, _HELP ).arg[i] );
@@ -718,6 +845,7 @@ char c;
       
     } while( !finish );
     RemoveGList(GuiWin,glist,-1);
+    RemoveGList(GuiWin,stdglist,-1);
     GT_RefreshWindow(GuiWin,NULL);
 #else
     Delay( 100 );
@@ -906,6 +1034,16 @@ char c;
       Write( preferences.transcriptstream, tmpbuffer, strlen( tmpbuffer ) );
     }
   }
+
+  clear_gui();
+
+  AddGList(GuiWin,stringglist,-1,-1,NULL);
+
+  RefreshGList(stringglist,GuiWin,NULL,-1);
+
+  GT_RefreshWindow(GuiWin,NULL);
+  DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
+  DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
   if( get_var_int( "@user-level" ) > _NOVICE )
   do
   {
@@ -942,16 +1080,13 @@ char c;
       default	: break;
     }
   } while( !finish );
+
+  RemoveGList(GuiWin,stringglist,-1);
+  GT_RefreshWindow(GuiWin,NULL);
+
 #endif /* DEBUG */
 
-  /* Add surrounding quotes */
-  i = strlen( string );
-  retval = malloc( i + 3 );
-  outofmem( retval );
-  retval[0] = DQUOTE;
-  strcpy( retval + 1, string );
-  retval[i+1] = DQUOTE;
-  retval[i+2] = 0;
+  retval = addquotes( string );
   free( string );
   if( preferences.transcriptstream != NULL )
   {
@@ -990,6 +1125,36 @@ char c;
     error = SCRIPTERROR;
     traperr( "More than 32 choices given!\n", NULL );
   }
+  else if( max < 1 )
+  {
+    error = SCRIPTERROR;
+    traperr( "No choices given!\n", NULL );
+  }
+
+  clear_gui();
+
+  mxlabels = malloc( (max+1)*sizeof(STRPTR) );
+  for( i = 0 ; i < max ; i ++ )
+  {
+    mxlabels[i] = strdup(GetPL( pl, _CHOICES ).arg[i] );
+  }
+  mxlabels[i] = NULL;
+
+  gad = CreateContext( &mxglist );
+  if(gad==NULL)
+    printf("CreateContext() failed\n");
+
+  gad = CreateGadget( MX_KIND, gad, &gt_mxgad,
+			GTMX_Labels, mxlabels,
+			GTMX_Scaled, TRUE,
+			GTMX_TitlePlace, PLACETEXT_ABOVE,
+			TAG_DONE );
+
+  AddGList(GuiWin,mxglist,-1,-1,NULL);
+  RefreshGList(mxglist,GuiWin,NULL,-1);
+  GT_RefreshWindow(GuiWin,NULL);
+  DrawBevelBoxA(rp, 5,5,GuiWin->Width-15-GuiWin->BorderLeft,GuiWin->Height-65-GuiWin->BorderTop,bevel_tag);
+  DrawBevelBoxA(rp, 15,12,GuiWin->Width-35-GuiWin->BorderLeft,GuiWin->Height-160-GuiWin->BorderTop,bevel_tag);
   if( get_var_int( "@user-level" ) > _NOVICE )
   do
   {
@@ -997,17 +1162,9 @@ char c;
     {
       printf( "%s\n", GetPL( pl, _PROMPT ).arg[i] );
     }
-    if( GetPL( pl, _CHOICES ).intval > 1 )
+    for( i = 0 ; i < max ; i ++)
     {
-      for( i = 0 ; i < max ; i ++)
-      {
-        printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
-      }
-    }
-    else
-    {
-      error = SCRIPTERROR;
-      traperr( "No choices given!\n", NULL );
+      printf( "%2d: (%c) %s\n", ( i + 1 ), ( retval==(i+1) ? '*' : ' ' ), GetPL( pl, _CHOICES ).arg[i]);
     }
     printf( " V - Change Value\n P - Proceed\n A - Abort\n H - Help\n" );
     scanf( "%c", &c );
@@ -1042,6 +1199,10 @@ char c;
   } while( !finish );
 
 #endif /* DEBUG */
+  RemoveGList(GuiWin,mxglist,-1);
+  GT_RefreshWindow(GuiWin,NULL);
+  FreeGadgets( mxglist );
+
   if( preferences.transcriptstream != NULL )
   {
   char tmpbuffer[MAXARGSIZE];
@@ -1060,7 +1221,6 @@ return retval;
 char *request_dir( struct ParameterList *pl )
 {
 char *retval, *string;
-int c;
 
   if( GetPL( pl, _DEFAULT ).used == 0 )
   {
@@ -1069,14 +1229,7 @@ int c;
   }
 
   string = GetPL( pl, _DEFAULT ).arg[0];
-  /* Add surrounding quotes */
-  c = ( string == NULL ) ? 0 : strlen( string );
-  retval = malloc( c + 3 );
-  outofmem( retval );
-  retval[0] = DQUOTE;
-  strcpy( retval + 1, string );
-  retval[c+1] = DQUOTE;
-  retval[c+2] = 0;
+  retval = addquotes( string );
 
 return retval;
 }
@@ -1090,7 +1243,6 @@ return retval;
 char *request_disk( struct ParameterList *pl )
 {
 char *retval, *string;
-int c;
 
   if( GetPL( pl, _DEST ).used == 0 )
   {
@@ -1099,14 +1251,7 @@ int c;
   }
 
   string = GetPL( pl, _DEST ).arg[0];
-  /* Add surrounding quotes */
-  c = ( string == NULL ) ? 0 : strlen( string );
-  retval = malloc( c + 3 );
-  outofmem( retval );
-  retval[0] = DQUOTE;
-  strcpy( retval + 1, string );
-  retval[c+1] = DQUOTE;
-  retval[c+2] = 0;
+  retval = addquotes( string );
 
 return retval;
 }
@@ -1119,7 +1264,22 @@ return retval;
 char *request_file( struct ParameterList *pl )
 {
 char *retval, *string;
-int c;
+struct TagItem frtags[] =
+{
+    { ASL_Hail,	      (ULONG)"Choose a file:" },
+    { ASL_Height,     0 },
+    { ASL_Width,      0 },
+    { ASL_LeftEdge,   320 },
+    { ASL_TopEdge,    40 },
+    { ASL_OKText,     (ULONG)"Okay" },
+    { ASL_CancelText, (ULONG)"Cancel" },
+    { ASL_File,	      (ULONG)"asl.library" },
+    { ASL_Dir,	      (ULONG)"libs:" },
+    { TAG_DONE }
+};
+
+struct FileRequester *fr;
+
 
   if( GetPL( pl, _DEFAULT ).used == 0 )
   {
@@ -1127,15 +1287,24 @@ int c;
     traperr( "No default specified!", NULL );
   }
 
+#if 0
+  if ((fr = (struct FileRequester *) AllocAslRequest(ASL_FileRequest, frtags)))
+  {
+    if (AslRequest(fr, NULL))
+    {
+      printf("PATH=%s  FILE=%s\n", fr->rf_Dir, fr->rf_File);
+/*
+	To combine the path and filename, copy the path to a buffer,
+	add the filename with Dos AddPart().
+*/
+    }
+    FreeAslRequest(fr);
+  }
+  else printf("User Cancelled\n");
+#endif
+
   string = GetPL( pl, _DEFAULT ).arg[0];
-  /* Add surrounding quotes */
-  c = ( string == NULL ) ? 0 : strlen( string );
-  retval = malloc( c + 3 );
-  outofmem( retval );
-  retval[0] = DQUOTE;
-  strcpy( retval + 1, string );
-  retval[c+1] = DQUOTE;
-  retval[c+2] = 0;
+  retval = addquotes( string );
 
 return retval;
 }
@@ -1164,7 +1333,7 @@ int n, m, finish = FALSE;
 int retval = 1;
 char c;
 
-  if( get_var_int( "@user-level" ) >= minuser )
+  if( ( get_var_int( "@user-level" ) >= minuser ) || ( get_var_int( "@user-level" ) >= GetPL( pl, _CONFIRM).intval ) )
   {
     clear_gui();
 
@@ -1229,29 +1398,19 @@ return retval;
 /*
  * Ask user if he really wants to abort
  */
+struct IntuiText p = {1,0,JAM1,10,30,NULL,(UBYTE *)"OK",NULL };
+struct IntuiText n = {1,0,JAM1,70,30,NULL,(UBYTE *)"Cancel",NULL };
+struct IntuiText abortq_body = {1,0,JAM1,0,0,NULL,(UBYTE *)"Do you really want to quit Installer?",NULL };
+
 void abort_install( )
 {
-#ifdef DEBUG
-int abort = -1;
-char c;
-
-  do
+  if( AutoRequest(GuiWin,&abortq_body,&p,&n,0L,0L,200,75) != 0 )
   {
-    printf( "Do you really want to abort Installer? [y/n]" );
-    scanf( "%c", &c );
-    switch( tolower( c ) )
-    {
-      case 'y'	: error = USERABORT;
-                  grace_exit = TRUE;
-                  /* Execute trap(1) */
-                  traperr( "User aborted!\n", NULL );
-                  break;
-      case 'n'	: abort = 0;
-                  break;
-      default	: break;
-    }
-  } while( abort == -1 );
-#endif /* DEBUG */
+    error = USERABORT;
+    grace_exit = TRUE;
+    /* Execute trap(1) */
+    traperr( "User aborted!\n", NULL );
+  }
 }
 
 
@@ -1311,46 +1470,4 @@ int i, j;
   }
 }
 
-
-/*
- * Break string into array of strings at LINEFEEDs
- */
-int strtostrs ( char * in, char ***outarr )
-{
-int i = 0, j = 0;
-char **out = *outarr;
-
-  if( *in )
-  {
-    i++;
-  }
-  while( *in )
-  {
-    out[i-1] = realloc( out[i-1], ( j + 1 ) * sizeof( char ) );
-    outofmem( out[i-1] );
-    if( *in == LINEFEED )
-    {
-      /* NULL-terminate string and malloc space for next string */
-      out[i-1][j] = 0;
-      out = realloc( out, ( i + 1 ) * sizeof( char *) );
-      out[i] = NULL;
-      j = 0;
-      i++;
-    }
-    else
-    {
-      /* save char to string */
-      out[i-1][j] = *in;
-      j++;
-    }
-    in++;
-  }
-  /* NULL-terminate last string */
-  out[i-1] = realloc( out[i-1], ( j + 1 ) * sizeof( char ) );
-  outofmem( out[i-1] );
-  out[i-1][j] = 0;
-  *outarr = out;
-
-return i;
-}
 

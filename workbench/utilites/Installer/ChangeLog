@@ -250,4 +250,14 @@
 0040 INTERMEDIATE VERSION ONLY
 - more intuition gui tries
 
+0041
+- some first Workbench init code
+- yet more intuition gui
+- preparation for pretend-to-install
+- added funtion for adding quotes to a string
+- added misc.c for useful functions (like adding or stripping quotes)
+- added MXGadget for askchoice
+- added code for Asl FileRequester
+- added Abort,Help,Skip gadgets in some places
+
 
