@@ -77,6 +77,9 @@ unsigned long availBytes,curPos,bufSize;
 #include "2View.h"
 /* #include "arexx.h" */
 
+#include <stdlib.h>
+#include <string.h>
+
 /*Libraries we'll need*/
 struct Library *IFFParseBase=NULL;
 struct IntuitionBase *IntuitionBase=NULL;
