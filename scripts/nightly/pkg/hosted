@@ -9,7 +9,6 @@ printi "Creating AROS/"$HOST_CPU-$HOST_OS" system package..."
 PACKAGE=$BASENAME-$HOST_CPU-$HOST_OS-system
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
-setl    $ARCHIVE_BASE/$PACKAGE.log
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
 copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
@@ -25,14 +24,12 @@ archive $ARCHIVE $PACKAGE
 
 cd      $ROOT
 delete  $BUILD_BASE/AROS
-resetl
 
 if [[ $CFG_CONTRIB_TYPE == "hosted" ]]; then
     printi "Creating AROS/"$HOST_CPU"-all contrib package..."
     PACKAGE=$BASENAME-$HOST_CPU-all-contrib
     ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
     
-    setl    $ARCHIVE_BASE/$PACKAGE.log
     copy    $SOURCE_AROS    $BUILD_BASE/AROS
     copy    $SOURCE_CONTRIB $BUILD_BASE/Contrib
     
@@ -47,7 +44,6 @@ if [[ $CFG_CONTRIB_TYPE == "hosted" ]]; then
     
     cd      $ROOT
     delete  $BUILD_BASE/AROS
-    resetl
 fi
 
 cd      $ROOT
