@@ -38,7 +38,7 @@ char filename[50];
 /*	printf("Opening %s\n",argv[filecount]);*/
 	strcpy(filename,argv[filecount]);
 	strcat(filename,".c");
-	fd=fopen(filename,"r");
+	fd=fopen(filename,"rb");
 	if(!fd)
 	    fprintf(stderr,"\n%s - No such file !\n",argv[filecount]),exit(-1);
 
@@ -69,7 +69,11 @@ char filename[50];
 		    }
 		    else
 		    {
-			fseek(fd,-count,SEEK_CUR);
+			if (fseek(fd,-count,SEEK_CUR))
+			{
+			    perror("fseek");
+			    exit(-1);
+			}
 			putc (fbuf[0],fdo);
 		    }
 		    break;
@@ -110,7 +114,11 @@ char filename[50];
 		    }
 		    else
 		    {
-			fseek(fd,-count,SEEK_CUR);
+			if (fseek(fd,-count,SEEK_CUR))
+			{
+			    perror("fseek");
+			    exit(-1);
+			}
 			putc (fbuf[0],fdo);
 		    }
 		    if(count>0)
