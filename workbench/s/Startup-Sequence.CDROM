@@ -1,0 +1,77 @@
+; $Id$
+;
+; $VER: AROS Startup-Sequence 1.39
+
+;SetPatch QUIET
+
+;SetClock LOAD
+
+Mount PIPEFS:
+
+Version >NIL:
+FailAt 21
+
+MakeDir RAM:T RAM:Clipboards RAM:ENV RAM:ENV/Sys RAM:Fonts
+
+Assign ENV:     RAM:ENV
+Assign T:       RAM:T
+Assign CLIPS:   RAM:Clipboards
+Assign FONTS:   RAM:Fonts
+Assign KEYMAPS: DEVS:Keymaps
+Assign LOCALE:  SYS:Locale
+Assign LIBS:    SYS:Classes ADD
+Assign HELP:    LOCALE:Help DEFER
+;Assign PRINTERS: DEVS:Printers
+
+Touch PIPEFS:systempipe
+Assign PIPE:    PIPEFS:systempipe
+
+Copy >NIL: ENVARC:   ENV:   ALL CLONE NOREQ
+Copy >NIL: SYS:Fonts FONTS: ALL CLONE NOREQ
+
+;Mount DEVS:DOSDrivers/~(#?.info)
+
+SetEnv Workbench $Workbench
+SetEnv Kickstart $Kickstart
+
+AddDatatypes REFRESH QUIET
+IPrefs
+Run <NIL: >NIL: ConClip
+
+Path RAM: C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+
+
+; -- BEGIN "AROS under construction" section -------------------------
+
+SetClock LOAD
+
+FixFonts
+
+; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
+; to /dev/fd0 (you'll need access rights on the device later -
+; on most systems this will work only if you are root) then uncomment
+; the last two lines below.
+;
+; Ordinary users can use fdsk.device both on their Amiga and their
+; linux box to mount disc images.
+
+Assign FDSK: SYS:DiskImages
+;Mount FDSK0:
+
+; Install a Workbench screen background pattern.
+Run <NIL: >NIL: ScreenPattern
+
+PATH SYS:Demos ADD QUIET
+
+; -- END "AROS under construction" section ---------------------------
+
+
+If EXISTS S:User-Startup
+  Execute S:User-Startup
+EndIf
+
+;LoadWB
+
+Execute S:Shell-Startup
+
+;EndCLI
