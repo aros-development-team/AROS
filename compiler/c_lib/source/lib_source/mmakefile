@@ -41,7 +41,7 @@ $(LIB) : $(OBJS) $(DEPLIBS)
 	@echo "Creating $@..."
 	@$(CC) $(ILDFLAGS) -o $@ $(OBJS) $(LIBS)
 	@echo "Checking $@..."
-	@$(CHECKUDS) $@
+	@$(NM) $@
 
 libheader.o : $(LIBHEADER_SRC) libdefs.h
 	@echo "Compiling $< with -DLC_NO_OPENLIB..."
