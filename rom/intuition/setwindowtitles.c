@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.9  2000/01/19 19:06:07  stegerg
+    don't call intui_SetWindowTitles
+
     Revision 1.8  1999/12/19 19:27:16  nlorentz
     Now calls RefreshWindowFrame()
 
@@ -88,10 +91,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-
-    /* Call driver before changing the window to allow it to examine
-	the old values. */
-    intui_SetWindowTitles (window, windowTitle, screenTitle);
 
     /* Change window's title */
     if (!windowTitle)
