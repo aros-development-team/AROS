@@ -107,27 +107,11 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
             return -1;
     }
 
-    switch (flags & O_ACCMODE)
-    {
-        case O_RDONLY:
-	    openmode = FMF_READ;
-	    break;
-
-        case O_WRONLY:
-    	    openmode = FMF_WRITE;
-	    break;
-
-    	case O_RDWR:
-	    openmode = FMF_WRITE | FMF_READ;
-	    break;
-
-     	default:
-	    errno = EINVAL;
-	    return -1;
-    }
-
-    if (flags & O_TRUNC) openmode |= FMF_CLEAR;
-    if (flags & O_CREAT) openmode |= FMF_CREATE;
+    if (flags & O_WRITE)  openmode |= FMF_WRITE;
+    if (flags & O_READ)   openmode |= FMF_READ;
+    if (flags & O_EXEC)   openmode |= FMF_EXECUTE;
+    if (flags & O_TRUNC)  openmode |= FMF_CLEAR;
+    if (flags & O_CREAT)  openmode |= FMF_CREATE;
 
     currdesc = malloc(sizeof(fdesc));
     if (!currdesc) goto err;
