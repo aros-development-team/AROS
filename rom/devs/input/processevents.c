@@ -177,6 +177,8 @@ void ProcessEvents (struct IDTaskParams *taskparams)
 	    GetMsg(timermp);
 
 	    timer_ie.ie_Class = IECLASS_TIMER;
+	    timer_ie.ie_NextEvent = NULL;
+	    
 	    /* Add a timestamp to the event */
 	    GetSysTime( &(timer_ie.ie_TimeStamp ));
 	    
