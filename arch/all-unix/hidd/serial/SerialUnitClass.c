@@ -627,7 +627,7 @@ AROS_UFH3(void, serialunit_write_more_data,
   /*
   ** Get the unixio message from my port and free it
   */
-  msg = GetMsg(data->replyport_read);
+  msg = GetMsg(data->replyport_write);
   FreeMem(msg, sizeof(struct uioMessage));
 
   /*
