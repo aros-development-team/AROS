@@ -35,8 +35,18 @@ typedef union
 	long  *ptr32;
 }	PTR;
 
+#ifdef _AROS
+
+#include <aros/macros.h>
+#define WriteLONG(Buf,Val)		*(Buf.ptr32)++=AROS_LONG2BE(Val)
+#define	ReadLONG(Buf,n)			(AROS_BE2LONG(((ULONG *)Buf)[n]))
+
+#else
+
 #define	WriteLONG(Buf,Val)		*(Buf.ptr32)++=Val
 #define	ReadLONG(Buf,n)			((ULONG *)Buf)[n]
+
+#endif
 
 /* Global error messages */
 STRPTR Errors[] = {
