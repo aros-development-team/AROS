@@ -40,7 +40,7 @@
 
     EXAMPLE
 
-        Shell FROM S:Startup-Sequence
+        shell FROM S:Startup-Sequence
 
         Starts a shell and executes the startup script.
 
@@ -77,9 +77,9 @@
 
 /* This is 1, because it is at the moment handled here in the Shell itself.
    Should it turn out that the correct place to do the CHANGE_SIGNAL is
-   NewShell.c instead, change this define to 0 and in NewShell.c set the
+   newshell.c instead, change this define to 0 and in newshell.c set the
    same define to 1. */
- 
+
 #define DO_CHANGE_SIGNAL 1
 
 #define  DEBUG  1
@@ -102,17 +102,18 @@
 #include <string.h>
 #include <aros/asmcall.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 #include <aros/debug.h>
 
 extern struct UtilityBase *UtilityBase;
 
-static const char version[] = "$VER: Shell 41.5 (9.1.2000)\n";
+static const char version[] = "$VER: shell 41.5 (9.1.2000)\n";
 
 #define SET_HOMEDIR 1
 
-#define  P(x)	x	/* Debug macro */
-#define  P2(x) 	x	/* Debug macro */
+#define  P(x)		/* Debug macro */
+#define  P2(x) 		/* Debug macro */
 
 
 #define  min(a,b)  ((a) < (b)) ? (a) : (b)
@@ -303,12 +304,11 @@ BOOL appendString(struct CSource *cs, STRPTR from, LONG size);
  * Action:   Do a formatted print that will instantly be displayed.
  *
  * Input:    STRPTR   fmt   --  format string
- *           IPTR    *args  --  array of arguments
+ *           ...    ...     --  varagrs
  *
  * Output:   BOOL  --  success/failure indicator
  */
-void printFlush(STRPTR fmt, IPTR *args);
-
+#define printFlush(format...) {PrintF(format); Flush(Output());}
 
 /* Function: interact
  *
@@ -409,28 +409,6 @@ static void printPath(void);
 static void printPrompt(void);
 
 
-/* Function: printResult
- *
- * Action:   Write the result code of the last command to Output().
- *
- * Input:    --
- *
- * Output:   --
- */
-static void printResult(void);
-
-
-/* Function: printResult
- *
- * Action:   Write the CLI number of our shell to Output().
- *
- * Input:    --
- *
- * Output:   --
- */
-static void printCliNum(void);
-
-
 /*****************************************************************************/
 
 
@@ -496,19 +474,14 @@ static void setPath(BPTR lock)
 
 #define PROCESS(x) ((struct Process *)(x))
 
-static void printCliNum(void)
+static void PrintF(char *format, ...)
 {
-    IPTR   args[1] = { (IPTR)(PROCESS(FindTask(NULL))->pr_TaskNum) };
+    va_list args;
+    va_start(args, format);
 
-    VFPrintf(Output(), "%ld", args);
-}
+    VPrintf(format, args);
 
-
-static void printResult(void)
-{
-    IPTR args[1] = { (IPTR)(Cli()->cli_ReturnCode) };
-    
-    VFPrintf(Output(), "%ld", args);
+    va_end(args);
 }
 
 
@@ -531,11 +504,11 @@ static void printPrompt(void)
 	    {
 	    case 'N':
 	    case 'n':
-		printCliNum();
+		PrintF("%ld", PROCESS(FindTask(NULL))->pr_TaskNum);
 		break;
 	    case 'R':
 	    case 'r':
-		printResult();
+		PrintF("%ld", Cli()->cli_ReturnCode);
 		break;
 	    case 'S':
 	    case 's':
@@ -560,7 +533,7 @@ static void changeSignalTo(BPTR filehandle, struct Task *task)
 {
     struct FileHandle *fh;
     struct IOFileSys  iofs;
-    
+
     if (filehandle)
     {
     	fh = (struct FileHandle *)BADDR(filehandle);
@@ -577,7 +550,7 @@ static void changeSignalTo(BPTR filehandle, struct Task *task)
 
 	DoIO(&iofs.IOFS);
 
-    }    
+    }
 }
 
 #endif
@@ -588,13 +561,16 @@ struct RDArgs *rda;
 
 int __nocommandline = 1;
 
+void setupResidentCommands(void);
+
 int main(void)
 {
     STRPTR         args[NOOFARGS] = { "S:Shell-Startup", NULL };
     LONG           error          = RETURN_OK;
 
-    P(kprintf("USERDATA 1 = %p\n", FindTask(0)->tc_UserData));
     P(kprintf("Executing shell\n"));
+
+    setupResidentCommands();
 
     cli = Cli();
     cli->cli_StandardInput  = cli->cli_CurrentInput  = Input();
@@ -649,16 +625,23 @@ int main(void)
 }
 
 
+void setupResidentCommands(void)
+{
+
+
+}
+
+
 /* First we execute the script, then we interact with the user */
 LONG interact(STRPTR script)
 {
     ULONG cliNumber = PROCESS(FindTask(NULL))->pr_TaskNum;
     LONG  error = 0;
     BOOL  moreLeft = FALSE;
-    
+
     if (stricmp(script, "S:Startup-Sequence") != 0)
-    	printFlush("New Shell process %ld\n", &cliNumber);
-    
+    	printFlush("New Shell process %ld\n", cliNumber);
+
     cli->cli_Interactive = DOSTRUE;
     cli->cli_Background  = DOSFALSE;
 
@@ -684,19 +667,19 @@ LONG interact(STRPTR script)
 	struct Redirection rd;
 
 	if(Redirection_init(&rd))
-	{     
+	{
 	    printPrompt();
 
-	    moreLeft = readLine(&cl, Input());	    
+	    moreLeft = readLine(&cl, Input());
 	    error = checkLine(&rd, &cl);
 
 	    Redirection_release(&rd);
 	    FreeVec(cl.line);
 	}
-	
+
     } while(moreLeft);
 
-    printFlush("Process %ld ending\n", &cliNumber);
+    printFlush("Process %ld ending\n", cliNumber);
 
     return error;
 }
@@ -718,7 +701,7 @@ void releaseFiles(struct Redirection *rd)
     {
     	SelectOutput(rd->oldOut);
 	if (rd->newOut) Close(rd->newOut);
-	
+
 	rd->oldOut = rd->newOut = NULL;
     }
 #else
@@ -735,14 +718,6 @@ void releaseFiles(struct Redirection *rd)
     }
 #endif
 }
-
-
-void printFlush(STRPTR fmt, IPTR *args)
-{
-    VPrintf(fmt, args);
-    Flush(Output());
-}
-
 
 char avBuffer[256];
 char varBuffer[256];
@@ -879,9 +854,9 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 #define item       cs->CS_Buffer[cs->CS_CurChr]
 #define from       cs->CS_Buffer
 #define advance(x) cs->CS_CurChr += x;
-    
+
     LONG result;
-    
+
     while(TRUE)
     {
 	P(kprintf("Str: %s\n", cs->CS_Buffer+cs->CS_CurChr));
@@ -936,7 +911,7 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 
 		advance(1);
 		result = ReadItem(rd->outFileName, FILENAME_LEN, cs);
-		
+
 		P(kprintf("Found append redirection\n"));
 
 		if(result == ITEM_ERROR || result == ITEM_NOTHING)
@@ -1066,18 +1041,18 @@ BOOL convertLine(struct CSource *filtered, struct CSource *cs,
 	    if(!rd->haveCommand)
 	    {
 		P(kprintf("Found possible command\n"));
-		
+
     		getCommand(filtered, cs, rd);
 	    }
 	    else
 	    {
 		/* Copy argument */
 		LONG size = cs->CS_CurChr;
-		
+
 		// P(kprintf("Checking argument\n"));
 
 		result = ReadItem(argBuffer, sizeof(argBuffer), cs);
-		
+
 		// P(kprintf("Found possible argument\n"));
 
 		if(result == ITEM_ERROR || ITEM_NOTHING)
@@ -1155,7 +1130,7 @@ BOOL getCommand(struct CSource *filtered, struct CSource *cs,
     rd->haveCommand = TRUE;
 
     P(kprintf("Command found!\n"));
-		
+
     result = ReadItem(rd->commandStr, COMMANDSTR_LEN, cs);
     
     if(result == ITEM_ERROR || result == ITEM_NOTHING)
@@ -1302,7 +1277,7 @@ LONG executeFile(STRPTR fileName)
 	    Redirection_release(&rd);
 
     	    breakD = CheckSignal(SIGBREAKF_CTRL_D);
-	    
+
 	} while(moreLeft && !breakD && (cli->cli_ReturnCode < cli->cli_FailLevel));
 	
 	/* Was there an error encountered in the script file that had a
@@ -1356,17 +1331,18 @@ void unloadCommand(BPTR commandSeg, struct ShellState *ss)
 BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 {
     BPTR   oldCurDir;
-    BPTR   commandSeg;
+    BPTR   commandSeg = NULL;
     BPTR  *paths;
     struct Segment *residentSeg;
     BOOL   absolutePath = strpbrk(commandName, "/:") != NULL;
+    BPTR   file;
 
     /* We check the resident lists only if we do not have an absolute path */
     if(!absolutePath)
     {
 	/* Before checking the resident list, we check if we should we shut
 	   down this Shell */
-	if(Stricmp("EndCli"  , commandName) == 0 || 
+	if(Stricmp("EndCli"  , commandName) == 0 ||
 	   Stricmp("EndShell", commandName) == 0)
 	{
 	    FreeArgs(rda);
@@ -1389,7 +1365,7 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 	    /* ... then the system list */
 	    residentSeg = FindSegment(commandName, NULL, TRUE);
 	}
-	
+
 	if(residentSeg != NULL)
 	{
 	    /* Can we use this command? */
@@ -1410,95 +1386,66 @@ BPTR loadCommand(STRPTR commandName, struct ShellState *ss)
 
 
     P(kprintf("Trying to load command1: %s\n", commandName));
- 
-    commandSeg = LoadSeg(commandName);
 
-    if (commandSeg != NULL)
+    oldCurDir = CurrentDir(NULL);
+    CurrentDir(oldCurDir);
+
+    file = Open(commandName, MODE_OLDFILE);
+
+    if (!file)
     {
-        /* command loading succeeded */
+	if
+	(
+	    absolutePath ||                 /* If this was an absolute path, we don't check the paths set by
+	                                       'path' or the C: multiassign */
+	    IoErr() == ERROR_OBJECT_IN_USE  /* The object might be exclusively locked */
+	)
+	return NULL;
 
-#if SET_HOMEDIR
-	BPTR fh, lock;
-	
-	if ((fh = Open(commandName, MODE_OLDFILE)))
+        /* Search the command in the path */
+
+	for
+	(
+	    paths = (BPTR *)BADDR(cli->cli_CommandDir);
+	    file == NULL && paths != NULL;
+ 	    paths = (BPTR *)BADDR(paths[0])    /* Go on with the next path */
+	)
 	{
-	    if ((lock = ParentOfFH(fh)))
+	    CurrentDir(paths[1]);
+	    file = Open(commandName, MODE_OLDFILE);
+	}
+
+	/* The last resort -- the C: multiassign */
+	if (!file)
+	{
+	    commandName-=2;
+	    file = Open(commandName, MODE_OLDFILE);
+	}
+    }
+
+    if (file)
+    {
+        commandSeg = LoadSeg(commandName);
+
+	#if SET_HOMEDIR
+	if (commandSeg)
+	{
+	    BPTR lock = ParentOfFH(file);
+
+            if (lock)
 	    {
 	        ss->oldHomeDir = SetProgramDir(lock);
 	        ss->homeDirChanged = TRUE;
 	    }
-	    Close(fh);
 	}
-#endif	
+        #endif
+
+	Close(file);
     }
-    else
-    {
 
-	/* If this was an absolute path, we don't check the paths set by
-	   'path' or the C: multiassign */
+    CurrentDir(oldCurDir);
 
-	if(absolutePath)
-	    return FALSE;
-    
-	oldCurDir = CurrentDir(NULL);
-
-	paths = (BPTR *)BADDR(cli->cli_CommandDir);
-
-	while(paths != NULL)
-	{
-	    P(char test[512]);
-	    P(NameFromLock(paths[1], test, sizeof(test)));
-
-	    CurrentDir(paths[1]);
-
-	    P2(kprintf("Checking path %s\n", test));
-
-	    commandSeg = LoadSeg(commandName);
-
-#if SET_HOMEDIR
-	    if(commandSeg != NULL)
-	    {
-	        BPTR lock = DupLock(paths[1]);
-
-		if (lock)
-		{
-		    ss->oldHomeDir = SetProgramDir(lock);
-		    ss->homeDirChanged = TRUE;
-		}
-		break;
-	    }
-#endif	    
-	    paths = (BPTR *)BADDR(paths[0]);    /* Go on with the next path */
-	}
-
-	/* The last resort -- the C: multiassign */
-	if(commandSeg == NULL)
-	{
-	    /* commandName has "C:" just before it */
-	    commandSeg = LoadSeg(commandName - 2);
-
-#if SET_HOMEDIR	    
-	    if (commandSeg != NULL)
-	    {
-	        BPTR lock;
-		
-		if ((lock = Lock("C:", SHARED_LOCK)))
-		{
-		    ss->oldHomeDir = SetProgramDir(lock);
-		    ss->homeDirChanged = TRUE;
-		}
-	    }
-#endif
-	}
-
-	/* Reset our current dir */
-	CurrentDir(oldCurDir);
-
-    } /* if(commandSeg != NULL) else ... */
-    
     return commandSeg;
-    
-
 }
 
 
@@ -1508,15 +1455,15 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     BPTR              seglist;
     LONG              error = 0;
     struct ShellState ss = {FALSE};
-/* 
-  if ss->residentCommand isn't initialized as FALSE, it's value is rather 
-  random ( loadCommand doesn't change it ) so unloadCommand almost always 
+/*
+  if ss->residentCommand isn't initialized as FALSE, it's value is rather
+  random ( loadCommand doesn't change it ) so unloadCommand almost always
   thinks that last Command was resident, and doesn't do an UnloadSeg...
 */
 
     P(kprintf("Trying to load command: %s\nArguments: %s\n", command,
 	     commandArgs));
-    
+
     seglist = loadCommand(command, &ss);
 
     /* Set command name even if we couldn't load the command to be able to
@@ -1524,32 +1471,32 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     SetProgramName(command);
 
     if(seglist != NULL)
-    {	
+    {
 	P(kprintf("Command loaded!\n"));
 
 	SetIoErr(0);        	    	 /* Clear error before we execute this command */
 	SetSignal(0, SIGBREAKF_CTRL_C);
-	
+
 	cli->cli_Module = seglist;
 	cli->cli_ReturnCode = RunCommand(seglist, cli->cli_DefaultStack * CLI_DEFAULTSTACK_UNIT,
 					 commandArgs, strlen(commandArgs));
-	
+
 	P(kprintf("Returned from command %s\n", command));
 	unloadCommand(cli->cli_Module, &ss);
-	
+
 	cli->cli_Result2 = IoErr();
     }
     else
     {
 	/* Implicit cd? */
-	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD))
+	if(!(rd->haveInRD || rd->haveOutRD || rd->haveAppRD) && IoErr() == ERROR_OBJECT_WRONG_TYPE || IoErr() == ERROR_OBJECT_NOT_FOUND )
 	{
 	    BPTR lock = Lock(command, SHARED_LOCK);
-	    
+
 	    if(lock != NULL)
 	    {
 		struct FileInfoBlock *fib = AllocDosObject(DOS_FIB, NULL);
-		
+
 		if(fib != NULL)
 		{
 		    if(Examine(lock, fib))
@@ -1560,24 +1507,22 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
 			    lock = CurrentDir(lock);
 			}
 			else
-			    SetIoErr(error = ERROR_OBJECT_WRONG_TYPE);
+			    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 		    }
-		    
+
 		    FreeDosObject(DOS_FIB, fib);
 		}
-		
+
 		/* UnLock the old currentdir */
 		UnLock(lock);
 	    }
-	    else
-		error = IoErr();
 	}
-    }
-    
-    if(error != 0)
-    {
-	cli->cli_Result2 = error;
-	PrintFault(error, cli->cli_CommandName);
+
+        if(IoErr())
+        {
+	    cli->cli_Result2 = IoErr();
+	    PrintFault(IoErr(), cli->cli_CommandName);
+        }
     }
 
     //    Flush(Output());
@@ -1585,7 +1530,7 @@ LONG executeLine(STRPTR command, STRPTR commandArgs, struct Redirection *rd)
     // P(Delay(1*8));
 
     P(kprintf("Done with the command...\n"));
-        
+
     return error;
 }
 
@@ -1599,14 +1544,14 @@ BOOL copyEmbedResult(struct CSource *filtered, struct Redirection *embedRd)
 
     while((a = FGetC(embedRd->newOut)) != '\n')
 	appendString(filtered, &a, 1);
-	
+
     return TRUE;
 }
 
 
 BOOL Redirection_init(struct Redirection *rd)
 {
-    memset(rd, 0, sizeof(struct Redirection));
+    bzero(rd, sizeof(struct Redirection));
 
     rd->commandStr  = AllocVec(COMMANDSTR_LEN, MEMF_CLEAR);
 
