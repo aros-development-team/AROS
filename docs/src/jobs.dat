@@ -124,7 +124,7 @@ BOOPSI/ITextIClass;0;;Implement BOOPSI ITextIClass
 BOOPSI/ImageClass;2;caldi;Implement BOOPSI ImageClass
 BOOPSI/ModelClass;0;;Implement BOOPSI ModelClass
 BOOPSI/PointerClass;0;digulla;Implement BOOPSI PointerClass
-BOOPSI/PropGClass;2;;Implement BOOPSI PropGClass
+BOOPSI/PropGClass;2;nlorentz;Implement BOOPSI PropGClass
 BOOPSI/propgadgets;2;digulla;Implement PROP Gadgets
 BOOPSI/RootClass;2;digulla;Implement BOOPSI RootClass
 BOOPSI/StrGClass;2;nlorentz;Implement BOOPSI StrGClass
@@ -154,9 +154,9 @@ cia00000;0;digulla;Write AddICRVector
 cia00001;0;digulla;Write RemICRVector
 cia00002;0;digulla;Write AbleICR
 cia00003;0;digulla;Write SetICR
-c/addbuffers;2;;Write C:AddBuffers
+c/addbuffers;2;srittau;Write C:AddBuffers
 c/alias;2;laguest;Write C:Alias
-c/ask;2;;Write C:Ask
+c/ask;2;srittau;Write C:Ask
 c/assign;1;;Write C:Assign
 c/avail;2;matthias;Write C:Avail
 c/break;2;iaint;Write C:Break
@@ -183,8 +183,8 @@ c/lab;2;SDuvan;Write C:Lab
 c/librarytest;1;matthias;librarytest
 c/list;1;matthias,bergers;Write C:List
 c/makelink;0;srittau;Write C:MakeLink
-c/makedir;2;;Write C:MakeDir
-c/mount;2;;Write C:Mount
+c/makedir;2;matthias;Write C:MakeDir
+c/mount;2;matthias;Write C:Mount
 c/newshell;1;matthias;Write C:NewShell
 c/path;2;matthias;Write C:Path
 c/prompt;2;SDuvan;Write C:Prompt
@@ -212,7 +212,7 @@ c/unsetenv;2;laguest;Write C:UnSetEnv
 c/version;1;srittau;Write C:Version
 c/wait;0;digulla;Write C:Wait
 c/which;1;SDuvan;Write C:Which
-c/why;2;;Write C:Why
+c/why;2;srittau;Write C:Why
 colorwheel00000;0;digulla;Write ConvertHSBToRGB
 colorwheel00001;0;digulla;Write ConvertRGBToHSB
 commodities00000;2;SDuvan;Write CreateCxObj
@@ -523,7 +523,7 @@ dos00094;2;matthias;Write AssignLock
 dos00095;2;turrican;Write AssignLate
 dos00096;2;turrican;Write AssignPath
 dos00097;2;turrican;Write AssignAdd
-dos00098;2;;Write RemAssignList
+dos00098;2;iaint;Write RemAssignList
 dos00099;2;iaint;Write GetDeviceProc
 dos00100;2;iaint;Write FreeDeviceProc
 dos00101;2;matthias;Write LockDosList
