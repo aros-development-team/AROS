@@ -224,12 +224,15 @@ struct TableTypeNode *ttn;
 			pn = (struct HDTBPartition *)table->listnode.list.lh_Head;
 			while (pn->listnode.ln.ln_Succ)
 			{
-				if (count!=pn->pos)
+				if (pn->listnode.ln.ln_Type != LNT_Parent)
 				{
-					partition->pos = count;
-					break;
+					if (count!=pn->pos)
+					{
+						partition->pos = count;
+						break;
+					}
+					count++;
 				}
-				count++;
 				pn = (struct HDTBPartition *)pn->listnode.ln.ln_Succ;
 			}
 			if (pn->listnode.ln.ln_Succ == NULL)
