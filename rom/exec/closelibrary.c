@@ -5,6 +5,7 @@
     Desc:
     Lang: english
 */
+#include <aros/config.h>
 #include <exec/execbase.h>
 #include <dos/dos.h>
 #include <aros/libcall.h>
@@ -66,6 +67,22 @@
 	/* All done. */
 	Permit();
     }
+
+
+#if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
+    /*
+	Kludge to force the library base to register d0. Ramlib patches this
+	vector for seglist expunge capability and expects the library base in
+	d0 after it has called the original (this) function.
+    */
+    {
+	/* Put the library base in register d0 */
+	register struct Library *ret __asm("d0") = library;
+
+	/* Make sure the above assignment isn't optimized away */
+	asm volatile("": : "r" (ret));
+    }
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* CloseLibrary */
