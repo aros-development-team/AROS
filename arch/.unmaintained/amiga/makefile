@@ -4,9 +4,18 @@ USER_INCLUDES=-I$(TOP)/graphics -I$(TOP)/intuition
 
 include $(TOP)/config/make.cfg
 
-FILES = graphics_driver intuition_driver
+ifeq ($(FLAVOUR),native)
+SUBDIRS = boot
 
-all: setup \
+FILES = 
+
+else
+SUBDIRS = 
+
+FILES = graphics_driver intuition_driver
+endif
+
+all: setup subdirs \
 	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o)
 
 setup :
@@ -27,6 +36,15 @@ $(OSGENDIR)/%.d: %.c
 	@$(RM) $@
 	@touch $@
 	$(MKDEPEND) -f$@ -p$(OSGENDIR)/ -- $(CFLAGS) -- $^
+
+subdirs:
+	@for dir in $(SUBDIRS) ; do \
+	    echo "Making all in $$dir..." ; \
+	    if ( cd $$dir ; \
+		$(MAKE) $(MFLAGS) TOP="../../.." CURDIR="$(CURDIR)/$$dir"\
+		all ) ; \
+	    then echo -n ; else exit 1 ; fi ; \
+	done
 
 include $(foreach f,$(FILES),$(OSGENDIR)/$(f).d)
 
