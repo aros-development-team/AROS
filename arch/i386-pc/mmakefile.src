@@ -16,7 +16,7 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 		   $(INCDIR)/sigcore.h
 	   
 #MM- AROS-native : setup setup-native includes compiler kernel boot-native \
-#MM	    Drivers-native-vga kernel-link-native binary-native-i386
+#MM	    Drivers-native kernel-link-native binary-native-i386
 
 # Kernel
 #MM- kernel-native : kernel-exec-native \
