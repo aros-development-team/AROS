@@ -39,7 +39,7 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 {
     SysBase = lh->wb_SysBase;
 
-    if (lh->wb_AppReplyPort = CreateMsgPort())
+    if ((lh->wb_AppReplyPort = CreateMsgPort()))
     {
 	return TRUE;
     }

@@ -93,7 +93,7 @@ int main (int argc, char ** argv)
 
 	    if ((timermp = CreateMsgPort()))
 	    {
-	        if (timerio = (struct timerequest *)CreateIORequest(timermp, sizeof(struct timerequest)))
+	        if ((timerio = (struct timerequest *)CreateIORequest(timermp, sizeof(struct timerequest))))
 		{
 		    memok = TRUE;
 		    if (OpenDevice("timer.device", UNIT_VBLANK, &timerio->tr_node, 0) == 0)
