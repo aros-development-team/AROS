@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Check if a device is a filesystem.
@@ -11,7 +11,8 @@
 #include "dos_intern.h"
 #include <string.h>
 
-#include <aros/debug.h>
+# define  DEBUG 0
+# include <aros/debug.h>
 
 /*****************************************************************************
 
@@ -40,7 +41,7 @@
 	CON:, PIPE:, AUX:, ... are not
 
         In AmigaOS if devicename contains no ":" then result
-	is always TRUE (-1). Also volume and assign names return
+	is always TRUE. Also volume and assign names return
 	TRUE.
 	
     EXAMPLE
@@ -52,8 +53,6 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -73,7 +72,7 @@
 
     if (colon != NULL)
     {
-	UWORD stringlen = (UWORD)(colon - devicename);
+	UWORD stringlen = (UWORD)(colon - devicename + 1);
 	
 	devicename_copy = AllocVec(stringlen + 1, MEMF_PUBLIC | MEMF_CLEAR);
 
@@ -110,11 +109,16 @@
 			    success = iofs.io_Union.io_IS_FILESYSTEM.io_IsFilesystem;
 			}
 		    }
+
+		    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
+				  LDF_READ);
 		    break;
 		    
 		case DLT_VOLUME:
 		case DLT_DIRECTORY:	/* normal assign */
 		    success = TRUE;
+		    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
+				  LDF_READ);
 		    break;
 		    
 		case DLT_LATE:
@@ -122,7 +126,13 @@
 		    {
 			APTR old_windowptr = me->pr_WindowPtr;
 			BPTR lock;
+
+			D(bug("Found late assign %s, trying to lock it\n",
+				devicename_copy));
 			
+			UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS |
+				      LDF_READ);
+	    
 			me->pr_WindowPtr = (APTR)-1;
 			
 			if ((lock = Lock(devicename_copy, ACCESS_READ)))
@@ -138,10 +148,6 @@
 		} /* switch (dl->dol_Type) */
 		
 	    } /* if (dl != NULL) */
-	    
-	    /* All Done. */
-	    
-	    UnLockDosList(LDF_DEVICES | LDF_VOLUMES | LDF_ASSIGNS | LDF_READ);
 	    
 	    FreeVec(devicename_copy);
 	    
