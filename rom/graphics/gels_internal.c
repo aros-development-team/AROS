@@ -65,12 +65,7 @@ BOOL _ValidateIntVSprite(struct IntVSprite * ivs,
 	if (vs->ImageData != ivs->OrigImageData ||
 	    TRUE == force_change) {
 		struct BitMap bm;
-//		struct RastPort rp_bm;
-		ULONG i;
-		UBYTE * imagedata;
 
-//		InitRastPort(&rp_bm);
-//		rp_bm.BitMap = &bm;
 #if 1
 kprintf("%s: Imagedata has changed (old:%p-new:%p)!\n",
         __FUNCTION__,
@@ -98,13 +93,13 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 			ivs->ImageData = AllocBitMap(vs->Width<<4,
 			                             vs->Height,
 			                             vs->Depth,
-			                             BMF_DISPLAYABLE,
+			                             0,
 			                             rp->BitMap); //!!!
 
 			ivs->SaveBuffer = AllocBitMap(vs->Width<<4,
 			                              vs->Height,
 			                              vs->Depth,
-			                              BMF_DISPLAYABLE,
+			                              0,
 			                              rp->BitMap); //!!!
 			ivs->Width  = vs->Width;
 			ivs->Height = vs->Height;
@@ -122,11 +117,23 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		           ivs->Width<<4,
 		           ivs->Height);
 
-		i = 0;
-		imagedata = vs->ImageData;
-		while (i < bm.Depth && i < 8) {
-			bm.Planes[i++] = imagedata;
-			imagedata += (bm.Rows * bm.BytesPerRow);
+    	    	{
+		    UBYTE *imagedata = (UBYTE *)vs->ImageData;
+		    WORD  d, shift;
+		    
+		    for (d = 0, shift = 1; d < 8; d++, shift *= 2)
+		    {
+		    	if (vs->PlanePick & shift)
+			{
+			    bm.Planes[d] = imagedata;
+			    imagedata += (bm.Rows * bm.BytesPerRow);
+			}
+			else
+			{
+			    bm.Planes[d] = (vs->PlaneOnOff & shift) ? (PLANEPTR)-1 : NULL;
+			}
+		    }
+		    
 		}
 		
 		BltBitMap(&bm,
@@ -140,7 +147,7 @@ kprintf("PlanePick: %02x, rp->BitMap:%p\n",vs->PlanePick,rp->BitMap);
 		          0x0c0,
 		          vs->PlanePick,
 		          NULL);
-		
+			  
 	}
 	
 	return TRUE;
