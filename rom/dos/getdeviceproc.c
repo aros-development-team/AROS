@@ -98,7 +98,7 @@
 	    
 	/* We'll start from there. */
 	
-        /* Match UnlockDosList at end of func */
+        /* Matches UnlockDosList at end of func */
     	LockDosList(LDF_ALL|LDF_READ);
 	
 	dl = dp->dvp_DevNode;
@@ -145,7 +145,11 @@
     		}
     	    }
     	}
-    
+
+/* kprintf("Volume name: %p\n", volname);
+if (volname)
+	kprintf("volname: %s\n", volname);
+*/    
 	/* Allocate a DevProc */
 	dp = AllocMem(sizeof(struct DevProc), MEMF_ANY|MEMF_CLEAR);
 	if( dp == NULL )
@@ -163,7 +167,8 @@
     	    dl = FindDosEntry(dl, volname, LDF_ALL);
     	    if( dl == NULL )
     	    {
-    		UnLockDosList(LDF_ALL|LDF_READ);
+/* kprintf("Found logical device\n");
+*/    		UnLockDosList(LDF_ALL|LDF_READ);
     		FreeMem(volname, s1-name);
 		FreeMem(dp, sizeof(struct DevProc));
     		SetIoErr(ERROR_DEVICE_NOT_MOUNTED);
@@ -173,7 +178,8 @@
 	else
 	{
 	    /* We have the lock in cur */
-	    fh = BADDR(cur);
+/* kprintf("lock in cur\n");
+*/	    fh = BADDR(cur);
 	    dp->dvp_Port = (struct MsgPort *)fh->fh_Device;
 	    dp->dvp_Lock = cur;
 	    dp->dvp_Flags = 0;
@@ -187,7 +193,8 @@
     /* We now look at the type of the DosList entry */
     if( dl->dol_Type == DLT_LATE )
     {
-	UnLockDosList(LDF_ALL|LDF_READ);
+/* kprintf("Late assign\n");
+*/	UnLockDosList(LDF_ALL|LDF_READ);
 	
 	lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 	if( lock )
@@ -217,7 +224,8 @@
     } /* late binding assign */
     else if(dl->dol_Type == DLT_NONBINDING)
     {
-	lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
+/* kprintf("nonbinding assign\n");    
+*/	lock = Lock(dl->dol_misc.dol_assign.dol_AssignName, SHARED_LOCK);
 	fh = (struct FileHandle *)BADDR(lock);
 	if( fh != NULL )
 	{
@@ -236,7 +244,8 @@
     }
     else
     {
-	/* Generic case, a volume, a device, or a multi-assign */
+/* kprintf("generic case\n");    
+*/	/* Generic case, a volume, a device, or a multi-assign */
 	dp->dvp_Port = (struct MsgPort *)dl->dol_Device;
 	dp->dvp_DevNode = dl;
 	if( dl->dol_Type == DLT_DIRECTORY )
@@ -244,41 +253,58 @@
 	    /* If called before, this will be set */
 	    if( dp->dvp_Flags == DVPF_ASSIGN )
 	    {
-		
-		/* First iteration of list ? */
+/*		kprintf("DBPF_ASSIGN flag found\n");
+*/		/* First iteration of list ? */
 		if (dp->dvp_Lock == dl->dol_Lock)
 		{
 		    /* If so, set to first item in assignlist.
 		       (The set DVPF_ASSIGN flag tells that a assignlist
 		       does exist
 		    */
-		    dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
+/*		    kprintf("First time multiple assign\n");
+*/		    dp->dvp_Lock = dl->dol_misc.dol_assign.dol_List->al_Lock;
 		}
 		else
 		{
 
 		    struct AssignList *al = dl->dol_misc.dol_assign.dol_List;
 		
-		    UBYTE buf[100];
-		    /*  
+/*		    UBYTE buf[100];
+		    
+		    kprintf("Do assign list\n");
+*/		    /*  
 		    	Go through until we have found the last one returned.
 		    */
 		    while( al && (al->al_Lock != dp->dvp_Lock) )
 		    {
-		    	NameFromLock(al->al_Lock, buf, 100);
+/*		    	NameFromLock(al->al_Lock, buf, 100);
 		    	kprintf("gdp: trying assigndir %s\n", buf);
-		    	al = al->al_Next;
+*/		    	al = al->al_Next;
 		    }
 
 		    if( al != NULL )
 		    {
-		    	if( al->al_Next != NULL )
+/*		        kprintf("al != NULL\n");
+*/		    	if( al->al_Next != NULL )
 		    	{
     			    dp->dvp_Lock = al->al_Next->al_Lock;
 			
-		    	    NameFromLock(dp->dvp_Lock, buf, 100);
-		    	    kprintf("gdp: returning assigndir %s\n", buf);
-		    	}
+/*		    	    NameFromLock(dp->dvp_Lock, buf, 100);
+		    	    kprintf("gdp: returning assigndir %s\n", buf); 
+*/		    	}
+			else
+			{
+			    /* We have reached the end of the list - just return NULL */
+			    UnLockDosList(LDF_ALL|LDF_READ);
+			    SetIoErr(ERROR_NO_MORE_ENTRIES);
+		    
+			    if (volname)
+				FreeMem(volname, s1-name);
+				
+			    return NULL;
+
+			}
+			
 		    }
 		    else
 		    {
