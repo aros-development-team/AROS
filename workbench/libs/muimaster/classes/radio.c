@@ -38,7 +38,6 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     struct MUI_RadioData   *data;
     struct TagItem  	    *tag, *tags;
     int i;
-    int j;
     const char **entries = NULL;
     int entries_active = 0;
     int entries_num;
@@ -76,7 +75,7 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     if ((entries_active < 0) || (entries_active > entries_num - 1))
 	entries_active = 0;
 
-    grouptags = AllocateTagItems(2*i+1);
+    grouptags = AllocateTagItems(entries_num + 1);
     if (!grouptags)
 	return FALSE;
     buttons = AllocVec(i * sizeof(Object *), MEMF_PUBLIC);
@@ -85,34 +84,34 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	FreeVec(grouptags);
 	return FALSE;
     }
-    for (j=0,i=0;entries[i];i++)
+    for (i=0;entries[i];i++)
     {
 	state = (entries_active == i) ? TRUE : FALSE;
-	grouptags[j].ti_Tag = MUIA_Group_Child;
-	buttons[i] = ImageObject,
-	    MUIA_Image_Spec, MUII_RadioButton,
-	    MUIA_ShowSelState, FALSE,
-	    MUIA_Frame, MUIV_Frame_None,
-	    MUIA_InputMode, MUIV_InputMode_Immediate,
-	    MUIA_Selected, state,
-	    End;
-        grouptags[j].ti_Data = (ULONG)buttons[i];
 
-	j++;
-	grouptags[j].ti_Tag = MUIA_Group_Child;
-	grouptags[j].ti_Data = (IPTR)TextObject,
-	    MUIA_Text_Contents, entries[i],
-	    MUIA_FramePhantomHoriz, TRUE,
-	    MUIA_Text_PreParse, (IPTR)"\33l",
+	buttons[i] = HGroup,
+            MUIA_InputMode, MUIV_InputMode_Immediate,
+    	    MUIA_Selected, state,
+            MUIA_ShowSelState, FALSE,
+	    Child, (IPTR)ImageObject,
+	        MUIA_Image_Spec, MUII_RadioButton,
+    		MUIA_Frame, MUIV_Frame_None,
+   	        End,
+	    Child, (IPTR)TextObject,
+                MUIA_ShowSelState, FALSE,
+	        MUIA_Text_Contents, entries[i],
+	        MUIA_Frame, MUIV_Frame_None,
+	        MUIA_Text_PreParse, (IPTR)"\33l",
+	        End,
 	    End;
-	j++;
+
+	grouptags[i].ti_Tag = MUIA_Group_Child;
+        grouptags[i].ti_Data = (IPTR)buttons[i];
     }
 
-    grouptags[j].ti_Tag = TAG_MORE;
-    grouptags[j].ti_Data = (IPTR)msg->ops_AttrList;
+    grouptags[i].ti_Tag = TAG_MORE;
+    grouptags[i].ti_Data = (IPTR)msg->ops_AttrList;
 
     obj = (Object *)DoSuperNew(cl, obj,
-			       MUIA_Group_Columns, 2,
 			       TAG_MORE, grouptags);
     FreeTagItems(grouptags);
     if (!obj)
@@ -126,9 +125,10 @@ static IPTR Radio_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data->entries_num = entries_num;
     data->buttons = buttons;
 
-    for (i = 0; i < entries_num; i++)
+    
+    for (i=0;entries[i];i++)
     {
-	DoMethod(data->buttons[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
+	DoMethod(buttons[i], MUIM_Notify, MUIA_Selected, MUIV_EveryTime,
 		 (IPTR)obj, 3, MUIM_Set, MUIA_Radio_Active, i);
     }
 
@@ -200,6 +200,7 @@ static IPTR Radio_Setup(struct IClass *cl, Object *obj, Msg msg)
 
     set(obj, MUIA_Group_HorizSpacing, muiGlobalInfo(obj)->mgi_Prefs->radiobutton_hspacing);
     set(obj, MUIA_Group_VertSpacing, muiGlobalInfo(obj)->mgi_Prefs->radiobutton_vspacing);
+
     return TRUE;
 }
 
