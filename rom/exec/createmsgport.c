@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.7  1997/01/08 04:07:58  ldp
+    Set port type
+
     Revision 1.6  1997/01/01 03:46:08  ldp
     Committed Amiga native (support) code
 
@@ -83,6 +86,9 @@
 
 	    /* Set port to type 'signalling' */
 	    ret->mp_Flags=PA_SIGNAL;
+
+	    /* Set port to type MsgPort */
+	    ret->mp_Node.ln_Type = NT_MSGPORT;
 
 	    /* Finally set task to send the signal to. */
 	    ret->mp_SigTask=SysBase->ThisTask;
