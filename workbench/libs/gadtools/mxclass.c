@@ -176,7 +176,8 @@ STATIC IPTR mx_dispose(Class *cl, Object *o, Msg msg)
     IPTR    	    retval;
     
     if (data->font) CloseFont(data->font);
-    
+    if (data->mximage) DisposeObject(data->mximage);
+        
     retval = DoSuperMethodA(cl, o, msg);
     
     return retval;
