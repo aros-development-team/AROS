@@ -209,7 +209,7 @@ static ULONG Text_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    {
 			char buf[20];
 			sprintf(buf,"%ld",tag->ti_Data);
-			set(obj, MUIA_String_Contents, buf);
+			set(obj, MUIA_String_Contents, (IPTR) buf);
 		    }
 		    break;
 
@@ -611,7 +611,7 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    get(obj,MUIA_String_Contents, &buf);
 	    if (data->mtd_Flags & MTDF_ADVANCEONCR) set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
 	    else set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_None);
-	    set(obj,MUIA_String_Acknowledge,buf);
+	    set(obj,MUIA_String_Acknowledge, (IPTR) buf);
 	    return 0;
 	} else
 	{
@@ -677,7 +677,7 @@ int Text_HandleVanillakey(struct IClass *cl, Object * obj, unsigned char code)
 	    UBYTE *buf = NULL;
 	    get(obj,MUIA_String_Contents, &buf);
 	    set(_win(obj),MUIA_Window_ActiveObject,MUIV_Window_ActiveObject_Next);
-	    set(obj,MUIA_String_Acknowledge,buf);
+	    set(obj,MUIA_String_Acknowledge,(IPTR)buf);
 	    
             DeinitRastPort(&rp);
 	    
@@ -795,7 +795,7 @@ static ULONG Text_HandleEvent(struct IClass *cl, Object * obj, struct MUIP_Handl
 
 			if (_isinobject(x, y))
 			{
-			    if (act != obj) set(_win(obj), MUIA_Window_ActiveObject, obj);
+			    if (act != obj) set(_win(obj), MUIA_Window_ActiveObject, (IPTR) obj);
 			    retval = MUI_EventHandlerRC_Eat;
 			}   else
 			{

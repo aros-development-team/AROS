@@ -23,11 +23,11 @@ static CONST_STRPTR searchpaths[] = {
 
 static struct IClass *load_external_class(CONST_STRPTR classname, struct Library *MUIMasterBase)
 {
-    struct Library *mcclib;
-    struct MUI_CustomClass *mcc;
-    struct IClass *cl;
-    CONST_STRPTR *pathptr;
-    UBYTE s[255];
+    struct Library         *mcclib = NULL;
+    struct MUI_CustomClass *mcc    = NULL ;
+    Class                  *cl     = NULL;
+    CONST_STRPTR           *pathptr;
+    TEXT                    s[255];
 
     for (pathptr = searchpaths; *pathptr; pathptr++)
     {
