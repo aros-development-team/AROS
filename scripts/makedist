@@ -18,16 +18,23 @@
 rel=${rel-`date '+%Y%m%d'`}
 fail=0
 
-if [ ! -f AROS-source-$rel.tgz ]; then
+if [ -z "$dstdir" ]; then
+    dstdir=snapshots
+fi
+if [ ! -d "$dstdir" ]; then
+    mkdir -p "$dstdir" || exit 1
+fi
+
+if [ ! -f "$dstdir/AROS-source-$rel.tgz" ]; then
     # Create source dist
     rm -rf AROS
     cp -a AROS.source AROS
     find AROS -name CVS -prune -print0 | xargs -0 rm -r
-    tar cz --exclude="AROS/contrib*" -f AROS-source-$rel.tgz AROS
-    tar cz -f AROS-contrib-$rel.tgz AROS/contrib
+    tar cz --exclude="AROS/contrib*" -f "$dstdir/AROS-source-$rel.tgz" AROS
+    tar cz -f "$dstdir/AROS-contrib-$rel.tgz" AROS/contrib
 fi
 
-if [ ! -f AROS-lx86-bin-$rel.tgz ]; then
+if [ ! -f "$dstdir/AROS-lx86-bin-$rel.tgz" ]; then
     # Build Linux/i386
     rm -rf AROS
     cp -a AROS.source AROS
@@ -36,23 +43,23 @@ if [ ! -f AROS-lx86-bin-$rel.tgz ]; then
 	autoconf && \
 	./configure --enable-gfxhidd && \
 	make
-    ) > AROS-lx86-bin-$rel.log 2>&1
+    ) > "$dstdir/AROS-lx86-bin-$rel.log" 2>&1
     if [ $? -ne 0 ]; then
 	( 
 	    echo "Building Linux/i386 failed. See the complete log at"
 	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-lx86-bin-$rel.log"
 	    echo "..."
-	    tail -50 AROS-lx86-bin-$rel.log
+	    tail -50 "$dstdir/AROS-lx86-bin-$rel.log"
 	    echo
 	    echo
 	) 1>&2
 	fail=1
     else
-	tar czf AROS-lx86-bin-$rel.tgz AROS/bin/linux-i386/AROS
+	tar czf "$dstdir/AROS-lx86-bin-$rel.tgz" AROS/bin/linux-i386/AROS
     fi
 fi
 
-if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
+if [ ! -f "$dstdir/AROS-ibmpc-bin-$rel.tgz" ]; then
     # Build Native/i386
     rm -rf AROS
     cp -a AROS.source AROS
@@ -63,13 +70,13 @@ if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
 	autoconf && \
 	./configure --enable-gfxhidd --target=native-i386 && \
 	make || make
-    ) > AROS-ibmpc-bin-$rel.log 2>&1
+    ) > "$dstdir/AROS-ibmpc-bin-$rel.log" 2>&1
     if [ $? -ne 0 ]; then
 	( 
 	    echo "Building Native/i386 failed. See the complete log at"
 	    echo "ftp://www.aros.org/pub/aros/snapshots/AROS-ibmpc-bin-$rel.log"
 	    echo "..."
-	    tail -50 AROS-ibmpc-bin-$rel.log
+	    tail -50 "$dstdir/AROS-ibmpc-bin-$rel.log"
 	    echo
 	    echo
 	) 1>&2
@@ -79,7 +86,7 @@ if [ ! -f AROS-ibmpc-bin-$rel.tgz ]; then
 	mkdir -p AROS/bin/native-i386/AROS
 	cp AROS/bin/native-i386/gen/rom/boot/aros.bin AROS/bin/native-i386/AROS/Image
 	cp README.native-i386 AROS/bin/native-i386/AROS/
-		tar czf AROS-ibmpc-bin-$rel.tgz AROS/bin/native-i386/AROS
+	tar czf "$dstdir/AROS-ibmpc-bin-$rel.tgz" AROS/bin/native-i386/AROS
     fi
 fi
 
