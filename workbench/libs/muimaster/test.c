@@ -193,7 +193,7 @@ void volume_doubleclicked(void)
     DoMethod(volume_iconlist, MUIM_IconList_NextSelected, &ent);
     if ((int)ent == MUIV_IconList_NextSelected_End) return;
 
-    strcpy(buf,ent->name);
+    strcpy(buf,ent->label);
     strcat(buf,":");
     set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
 }
@@ -202,13 +202,10 @@ void drawer_doubleclicked(void)
 {
     static char buf[1024];
     struct IconList_Entry *ent = (void*)MUIV_IconList_NextSelected_Start;
-    char *drw = (char*)xget(drawer_iconlist,MUIA_IconDrawerList_Drawer);
+
     DoMethod(drawer_iconlist, MUIM_IconList_NextSelected, &ent);
     if ((int)ent == MUIV_IconList_NextSelected_End) return;
-
-    strcpy(buf,drw);
-    AddPart(buf,ent->name,sizeof(buf));
-    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,buf);
+    set(drawer_iconlist,MUIA_IconDrawerList_Drawer,ent->filename);
 }
 
 /* The custom class */
