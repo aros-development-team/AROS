@@ -617,7 +617,9 @@ static void KillWin(void)
     if (win)
     {
     	RemoveGList(win, buttontable[0].gad, NUM_BUTTONS);
+	ClearMenuStrip(win);
     	CloseWindow(win);
+	win = NULL;
     }
 }
 
