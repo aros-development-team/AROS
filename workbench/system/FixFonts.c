@@ -163,7 +163,7 @@ ULONG bufsize=4096L;
 			WORD t;
 
 			tags = (ULONG *)(&tfc->tfc_FileName[MAXFONTPATH-(tfc->tfc_TagCount*8)]);
-			for (t = 0; t < tfc->tfc_TagCount * 2; t++)
+			for (t = 0; t < tfc->tfc_TagCount * 2 - 1; t++)
 			{
 			 tags[t] = AROS_LONG2BE(tags[t]);
 			}
