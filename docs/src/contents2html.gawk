@@ -42,6 +42,26 @@ function proccontents(file,top  ,t,dir,tmp_dir,text,desc) {
 
 	    print indent"\\item{"dir"} "text
 	}
+	else if (match ($0,/^[ \t]*\\filtermakefile{.*}/))
+	{
+	    args=substr($0,RSTART,RLENGTH);
+	    pos=index(args,"{");
+	    args=substr(args,pos+1,length(args)-pos-1);
+
+	    narg=split(args,arg,",");
+
+	    filename=arg[1];
+	    gsub(/\$[(]TOP[)]/,TOP,filename);
+
+	    cmd = "gawk -f makefile2html.gawk --assign secfilt=\""arg[2]"\" \""filename"\"";
+
+	    #print "cmd=" cmd;
+
+	    while ((cmd | getline) > 0)
+		print;
+
+	    close (cmd);
+	}
 	else
 	    print
     }
