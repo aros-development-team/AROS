@@ -378,6 +378,7 @@ static int relocate
         kprintf("dest section base   = %p\n", toreloc->addr);
         kprintf("source section base = %p\n", sh[sym->shindex].addr);
         #endif
+        
         switch (sym->shindex)
         {
             case SHN_UNDEF:
@@ -402,29 +403,28 @@ static int relocate
 
             case R_386_32: /* 32bit absolute */
                 *p += s;
-                //kprintf("R_32: dest is %p\n\n", *p - (ULONG)sh[sym->shindex].addr);
                 break;
 
             case R_386_PC32: /* 32bit PC relative */
                 *p += s - (ULONG)p;
-                //kprintf("R_PC32: dest is %p\n\n", *p - (ULONG)sh[sym->shindex].addr + (ULONG)p);
                 break;
 
             case R_386_NONE:
                 break;
 
             #elif defined(__mc68000__)
+
             case R_68K_32:
-                *(ULONG *)&loaded[reltab[i].addr] =
-                (ULONG)hunks[symbol->shindex].memory + symbol->value +
-                reltab[i].addend;
+                *p = s + rel->addend;
                 break;
 
             case R_68K_PC32:
-                *(ULONG *)&loaded[reltab[i].addr] =
-                ((ULONG)hunks[symbol->shindex].memory+ symbol->value +
-                reltab[i].addend - (ULONG)&loaded[reltab[i].addr]);
+                *p = s + rel->addend - (ULONG)p;
                 break;
+
+            case R_68k_NONE:
+                break;
+                
             #else
             #    error Your architecture is not supported
             #endif
