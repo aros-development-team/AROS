@@ -47,10 +47,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct GfxBase *,GfxBase)
 
-#warning TODO: Write graphics/FreeSpriteData()
-    aros_print_not_implemented ("FreeSpriteData");
-
-    if (extsp) FreeVec(extsp);
+    if (NULL != extsp) {
+        if (NULL != extsp->es_BitMap) {
+            FreeBitMap(extsp->es_BitMap);
+        }
+        FreeVec(extsp);
+    }
     
     AROS_LIBFUNC_EXIT
 } /* FreeSpriteData */
