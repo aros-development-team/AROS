@@ -386,44 +386,47 @@ static ULONG Group_RemMember(struct IClass *cl, Object *obj, struct opMember *ms
     return TRUE;
 }
 
+
 /**************************************************************************
- 
+ MUIM_ConnectParent
 **************************************************************************/
 static ULONG Group_ConnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
-    Object                *cstate;
-    Object                *child;
-    struct MinList        *ChildList;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
-
-    DoSuperMethodA(cl,obj,(Msg)msg);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
-	DoMethod(child, MUIM_ConnectParent, (IPTR)obj);
-
-    return 1;
+    {
+	DoMethodA(child, (Msg)msg);
+	if ((_flags(obj) & MADF_INVIRTUALGROUP) && (data->flags & GROUP_VIRTUAL))
+	    _flags(obj) |= MADF_INVIRTUALGROUP;
+    }
+    return TRUE;
 }
 
 /**************************************************************************
- 
+ MUIM_DisconnectParent
 **************************************************************************/
-static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_DisconnectParent *msg)
+static ULONG Group_DisconnectParent(struct IClass *cl, Object *obj, struct MUIP_ConnectParent *msg)
 {
-    Object                *cstate;
-    Object                *child;
-    struct MinList        *ChildList;
     struct MUI_GroupData *data = INST_DATA(cl, obj);
+    Object               *cstate;
+    Object               *child;
+    struct MinList       *ChildList;
 
     get(data->family, MUIA_Family_List, (ULONG *)&(ChildList));
     cstate = (Object *)ChildList->mlh_Head;
     while ((child = NextObject(&cstate)))
-	DoMethod(child, MUIM_DisconnectParent, (IPTR)obj);
-
-    return DoSuperMethodA(cl,obj,(msg));
+    {
+	DoMethodA(child, (Msg)msg);
+	_flags(obj) &= ~MADF_INVIRTUALGROUP;
+    }
+    return TRUE;
 }
-
 
 /*
  * Put group in exchange state
@@ -1880,6 +1883,7 @@ static ULONG Group_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_Handl
     return 0;
 }
 
+
 #ifndef _AROS
 __asm IPTR Group_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
 #else
@@ -1910,6 +1914,7 @@ AROS_UFH3S(IPTR, Group_Dispatcher,
     case MUIM_Setup: return Group_Setup(cl, obj, (APTR)msg);
     case MUIM_Cleanup: return Group_Cleanup(cl, obj, (APTR)msg);
     case MUIM_Draw: return Group_Draw(cl, obj, (APTR)msg);
+
 //    case MUIM_Group_FindObject :
 //	return mFindObject(cl, obj, (APTR)msg);
     case MUIM_Export :
