@@ -36,6 +36,7 @@ struct Volume {
 	ULONG usedblockscount;
 	ULONG rootblock;
 	ULONG startblock;
+	ULONG lastblock;
 	ULONG dostype;
 	ULONG bitmapblockpointers[25];
 	ULONG bitmapextensionblock;
