@@ -43,12 +43,15 @@
 	using malloc() and the specified size "size". If size is
 	0, too, the buffer is allocated to hold the whole path.
 	It is possible and recommended to free() this buffer yourself!
+        The path returned does not have to be literally the same as the
+        one given to chdir. See NOTES from chdir for more explanation.
 
     EXAMPLE
 
     BUGS
 
     SEE ALSO
+        chdir
 
     INTERNALS
 
