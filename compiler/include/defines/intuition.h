@@ -168,9 +168,9 @@
     AROS_LCA(struct DrawInfo *, drawInfo,   A2), \
     struct IntuitionBase *, IntuitionBase, 103, Intuition)
 
-#define EasyRequestArgs(Window, easyStruct, IDCMP_ptr, ArgList) \
+#define EasyRequestArgs(window, easyStruct, IDCMP_ptr, ArgList) \
     AROS_LC4(LONG, EasyRequestArgs, \
-    AROS_LCA(struct Window     *, Window, A0), \
+    AROS_LCA(struct Window     *, window, A0), \
     AROS_LCA(struct EasyStruct *, easyStruct, A1), \
     AROS_LCA(ULONG             *, IDCMP_ptr, A2), \
     AROS_LCA(APTR               , ArgList, A3), \
@@ -207,9 +207,9 @@
     AROS_LCA(struct DrawInfo *, drawInfo, A1), \
     struct IntuitionBase *, IntuitionBase, 116, Intuition)
 
-#define FreeSysRequest(Window) \
+#define FreeSysRequest(window) \
     AROS_LC1(void, FreeSysRequest, \
-    AROS_LCA(struct Window *, Window, A0), \
+    AROS_LCA(struct Window *, window, A0), \
     struct IntuitionBase *, IntuitionBase, 62, Intuition)
 
 #define oldGetAttr(attrID, object, storagePtr) \
@@ -475,9 +475,9 @@
     AROS_LCA(LONG           , dy, D1), \
     struct IntuitionBase *, IntuitionBase, 48, Intuition)
 
-#define SysReqHandler(Window, IDCMPFlagsPtr, WaitInput) \
+#define SysReqHandler(window, IDCMPFlagsPtr, WaitInput) \
     AROS_LC3(LONG, SysReqHandler, \
-    AROS_LCA(struct Window  *, Window, A0), \
+    AROS_LCA(struct Window  *, window, A0), \
     AROS_LCA(ULONG   *,        IDCMPFlagsPtr, A1), \
     AROS_LCA(BOOL            , WaitInput, D0), \
     struct IntuitionBase *, IntuitionBase, 100, Intuition)
@@ -493,9 +493,9 @@
     AROS_LCA(struct Screen *, screen, A1), \
     struct IntuitionBase *, IntuitionBase, 86, Intuition)
 
-#define WindowLimits(Window, MinWidth, MinHeight, MaxWidth, MaxHeight) \
+#define WindowLimits(window, MinWidth, MinHeight, MaxWidth, MaxHeight) \
     AROS_LC5(BOOL, WindowLimits, \
-    AROS_LCA(struct Window *, Window, A0), \
+    AROS_LCA(struct Window *, window, A0), \
     AROS_LCA(WORD,            MinWidth, D0), \
     AROS_LCA(WORD,            MinHeight, D1), \
     AROS_LCA(UWORD,           MaxWidth, D2), \
