@@ -243,43 +243,6 @@ void intui_RefreshWindowFrame(struct Window *w)
     ReturnVoid("intui_RefreshWindowFrame");
 }
 
-void intui_WindowToFront (struct Window * window,
-                          struct IntuitionBase * IntuitionBase)
-{
-  /* Depth arrange only non backdrop windows */
-  if (0 == (window->Flags & WFLG_BACKDROP))
-    UpfrontLayer(0, window->WLayer);
-}
-
-void intui_WindowToBack (struct Window * window,
-                         struct IntuitionBase * IntuitionBase)
-{
-  /* Depth arrange only non backdrop windows */
-  if (0 == (window->Flags & WFLG_BACKDROP))
-    BehindLayer(0, window->WLayer);
-}
-
-void intui_MoveWindowInFrontOf(struct Window * window, 
-                               struct Window * behindwindow,
-                               struct IntuitionBase * IntuitionBase)
-{
-  /* Depth arrange only non backdrop windows */
-  if (0 == (window->Flags & WFLG_BACKDROP) &&
-      0 == (behindwindow->Flags & WFLG_BACKDROP))
-    MoveLayerInFrontOf(window      ->WLayer, 
-                       behindwindow->WLayer);
-}                            
-
-void intui_MoveWindow (struct Window * window, WORD dx, WORD dy)
-{
-    MoveLayer(0L, window->WLayer, (LONG)dx, (LONG)dy);
-    window->LeftEdge += dx;
-    window->TopEdge += dy;
-
-// Output looks OK w/o Refresh
-//  RefreshWindowFrame(window);
-}
-
 void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
@@ -296,16 +259,6 @@ void intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     RefreshWindowFrame(window);
 }
 
-
-void intui_SizeWindow (struct Window * window, long dx, long dy)
-{
-    SizeLayer(0L, window->WLayer, dx, dy);
-// The next lines would move the window 2*dx, 2*dy (in contrast to intui_MoveWindow)
-//    window->Width += dx;
-//    window->Height += dy;
-
-    RefreshWindowFrame(window);
-}
 
 void intui_WindowLimits (struct Window * win,
     WORD MinWidth, WORD MinHeight, UWORD MaxWidth, UWORD MaxHeight)
