@@ -58,6 +58,8 @@ struct HIDDSerialUnitData
     UBYTE		paritytype;
     UBYTE		stopbits;
     BOOL		breakcontrol;
+
+    BOOL		stopped;
     
     struct MsgPort	*replyport_read;
     struct Interrupt 	*softint_read;
