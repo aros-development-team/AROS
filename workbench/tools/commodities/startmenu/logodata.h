@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #define LOGO1_WIDTH  45
 #define LOGO1_HEIGHT 16
 #define LOGO1_MODULO 48
