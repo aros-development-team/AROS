@@ -130,9 +130,39 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 	    }
 	    
 	    if (i != 7)
-	    {
-	    	days = curr.ds_Days;
+	    {		
+	    #if 1
+	    	LONG diffdays;
 		
+		days = curr.ds_Days;
+		
+		diffdays = i - (days % 7);
+		
+		if (datetime->dat_Flags & DTF_FUTURE)
+		{
+		    if (diffdays > 0)
+		    {
+		    	days += diffdays;
+		    }
+		    else
+		    {
+		    	days += 7 + diffdays;
+		    }
+		}
+		else
+		{
+		    if (diffdays < 0)
+		    {
+		    	days += diffdays;
+		    }
+		    else
+		    {
+		    	days += diffdays - 7;
+		    }
+		}		
+	    #else
+	    	days = curr.ds_Days;
+
 		if ((days %7) == 0)
 		    days -= 7;
 		else
@@ -142,7 +172,8 @@ AROS_UFH3(ULONG, LocStrToDateGetCharFunc,
 		
 		if (datetime->dat_Flags & DTF_FUTURE)
 		    days += 7;
-		    
+	    #endif
+	       
 		datetime->dat_Stamp.ds_Days = days;
 		    
 	    }
