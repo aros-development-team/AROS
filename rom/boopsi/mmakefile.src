@@ -3,7 +3,7 @@ include $(TOP)/config/make.cfg
 
 USER_INCLUDES := -I.
 
-LIBNAME	 := boopsi
+LIBNAME  := boopsi
 ULIBNAME := BOOPSI
 
 FILES := functable rootclass icclass
@@ -11,17 +11,17 @@ FUNCTIONS := addclass disposeobject donotify findclass freeclass freeicdata \
 	     getattr makeclass newobjecta nextobject removeclass setattrsa
 
 EXTRA_LIBS := -L$(LIBDIR) -l$(LIBNAME)
-EXTRA_DEPLIBS := 
+EXTRA_DEPLIBS :=
 
 %prepare_shlib boopsi $(SHARED_BOOPSI)
 
 %genromlib
 
 #MM kernel-boopsi : setup includes kernel-boopsi-$(ARCH)-$(CPU)
-kernel-boopsi:
+kernel-boopsi :
 	@$(NOP)
 
-#MM
+#MM kernel-boopsi-linklib : setup
 kernel-boopsi-linklib : show-flags $(LIB)
 
 #MM setup
