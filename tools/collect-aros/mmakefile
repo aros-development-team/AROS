@@ -11,3 +11,4 @@ development-collect-aros-quick :
 	$(MAKE) HOST_CC=$(TARGET_CC) COLLECT-AROS=$(AROS_DEVELOPMENT)/bin/collect-aros \
 	COLLECT-AROS-BACKEND=backend-bfd.c COLLECT-AROS-DOCOMMAND=docommand-spawn.c \
 	HOST_CFLAGS="-nix -O2  -D_HAVE_LIBIBERTY_" HOST_LDFLAGS="-lbfd -liberty"
+	$(STRIP) $(AROS_DEVELOPMENT)/bin/collect-aros
