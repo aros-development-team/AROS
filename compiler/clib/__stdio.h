@@ -9,7 +9,7 @@
     Lang: english
 */
 #include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <exec/lists.h>
 
 typedef struct __FILENODE
