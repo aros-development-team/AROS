@@ -526,9 +526,9 @@ AROS_UFH2(void, putchr,
     AROS_UFHA(STRPTR *, p, A3)
 )
 {
-    AROS_LIBFUNC_INIT
+    AROS_USERFUNC_INIT
     *(*p)++ = chr;
-    AROS_LIBFUNC_EXIT
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
@@ -544,6 +544,8 @@ AROS_UFH3(LONG, unitentry,
  AROS_UFHA(ULONG, arglen, D0),
  AROS_UFHA(struct ExecBase *, SysBase, A6))
 {
+    AROS_USERFUNC_INIT
+    
     UBYTE 		buf[10 + sizeof(LONG) * 8 * 301 / 1000 + 1];
     STRPTR 		ptr = buf;
     struct Process 	*me;
@@ -630,6 +632,7 @@ AROS_UFH3(LONG, unitentry,
 	WaitPort(&unit->port);
 	
     } /* for(;;) */
+    AROS_USERFUNC_EXIT
 }
 
 /****************************************************************************************/
