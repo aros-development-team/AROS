@@ -42,4 +42,10 @@
 #define INTB_SETCLR       15
 #define INTF_SETCLR  (1L<<15)
 
+/* AROS extensions */
+
+/* Virtual 100 Hz vblank timer */
+#define INTB_VERTB100 	INTB_COPER
+#define INTF_VERTB100	INTF_COPER
+
 #endif /* HARDWARE_INTBITS_H */
