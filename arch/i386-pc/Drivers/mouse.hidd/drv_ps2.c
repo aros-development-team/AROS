@@ -206,11 +206,12 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                         {
                             UWORD buttonstate;
                             
+			#if 0
                             D(bug("Got the following: 1. byte: 0x%x, dx=%d, dy=%d\n",
                                   mouse_data[0],
                                   mouse_data[1],
                                   mouse_data[2]));
-                            
+                        #endif    
                             e->x = (char)mouse_data[1];
                             e->y = -(char)mouse_data[2];	/* dy is reversed! */
 
@@ -254,7 +255,7 @@ void mouse_ps2int(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
                     }
                 }
             }                                       
-        }
+        } else break;
         info = kbd_read_status();
 
       /* Protect as from forever loop */
