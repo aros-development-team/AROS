@@ -56,5 +56,5 @@ ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR lh)
 
 void SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR lh)
 {
-    CloseLibrary(RexxSysBase);
+    CloseLibrary((struct Library *) RexxSysBase);
 }
