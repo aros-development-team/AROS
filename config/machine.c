@@ -2,6 +2,12 @@
 #include <stddef.h>
 #include <exec/types.h>
 
+#ifndef _AMIGA
+#   if defined(AMIGA) || defined(__AMIGA__)
+#	define _AMIGA
+#   endif
+#endif
+
 struct __aros_longalign
 {
     char dummy;
@@ -98,6 +104,10 @@ int main (void)
     if (worstalign < ptralign)    worstalign = ptralign;
     if (worstalign < iptralign)   worstalign = iptralign;
     if (worstalign < doublealign) worstalign = doublealign;
+
+#ifdef _AMIGA
+    if (worstalign < 8) worstalign = 8;
+#endif
 
     printf ("#define AROS_STACK_GROWS_DOWNWARDS %d /* Stack direction */\n", (adr2 < adr1));
     printf ("#define AROS_BIG_ENDIAN            %d /* Big or little endian */\n", (*first_byte == 0x11));
