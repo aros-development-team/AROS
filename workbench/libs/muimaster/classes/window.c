@@ -57,6 +57,7 @@ static void handle_event(Object *win, struct IntuiMessage *event);
 static char *StrDup(char *x)
 {
     char *dup;
+    if (!x) return NULL;
     dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
     if (dup) CopyMem((x), dup, strlen(x) + 1);
     return dup;
@@ -162,7 +163,7 @@ struct __dummyXFC3__
 /** Public functions                                                       **/
 /****************************************************************************/
 
-static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
+static BOOL SetupRenderInfo(Object *obj, struct MUI_WindowData *data, struct MUI_RenderInfo *mri)
 {
     int i;
     struct ZunePrefsNew *prefs = muiGlobalInfo(obj)->mgi_Prefs;
@@ -199,18 +200,29 @@ static BOOL SetupRenderInfo(Object *obj, struct MUI_RenderInfo *mri)
     mri->mri_DownImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,DOWNIMAGE,TAG_DONE);
     mri->mri_SizeImage = NewObject(NULL,"sysiclass",SYSIA_DrawInfo,mri->mri_DrawInfo,SYSIA_Which,SIZEIMAGE,TAG_DONE);
 
-    mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
-    mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
-    temp_obj = NewObject(NULL,"sysiclass",
-    	SYSIA_DrawInfo, mri->mri_DrawInfo,
-    	SYSIA_Which, SIZEIMAGE,
-    	TAG_DONE);
-    if (temp_obj)
+    if (data->wd_CrtFlags & WFLG_BORDERLESS)
     {
-	GetAttr(IA_Height,temp_obj,&val);
-    	DisposeObject(temp_obj);
-    	mri->mri_BorderBottom = val;
-    } else mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
+    	/* Infact borderless windows could also have borders (if they have a window title e.g. but
+    	   since they look ugly anywhy we ignore it for now */
+	mri->mri_BorderLeft = 0;
+	mri->mri_BorderRight = 0;
+	mri->mri_BorderTop = 0;
+	mri->mri_BorderBottom = 0;
+    }   else
+    {
+	mri->mri_BorderLeft = mri->mri_Screen->WBorLeft;
+	mri->mri_BorderTop = mri->mri_Screen->WBorTop + mri->mri_Screen->Font->ta_YSize+ 1;
+	temp_obj = NewObject(NULL,"sysiclass",
+    	    SYSIA_DrawInfo, mri->mri_DrawInfo,
+    	    SYSIA_Which, SIZEIMAGE,
+    	    TAG_DONE);
+	if (temp_obj)
+	{
+	    GetAttr(IA_Height,temp_obj,&val);
+    	    DisposeObject(temp_obj);
+    	    mri->mri_BorderBottom = val;
+        } else mri->mri_BorderBottom = mri->mri_Screen->WBorBottom;
+    }
 
     return TRUE;
 }
@@ -828,6 +840,9 @@ void _zune_window_message(struct IntuiMessage *imsg)
 			    {
 			    	Object *app;
 			    	ULONG udata;
+
+				if (item->Flags & CHECKIT)
+				    set(item_obj, MUIA_Menuitem_Checked, !!(item->Flags & CHECKED));
 
 				set(item_obj, MUIA_Menuitem_Trigger, item);
 
@@ -1510,10 +1525,14 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Window_Width:
 		    data->wd_ReqWidth = (LONG)tag->ti_Data;
+		    /* Note: Not clean */
+		    data->wd_Width = 0;
 		    break;
 
 	    case    MUIA_Window_Height:
 		    data->wd_ReqHeight = (LONG)tag->ti_Data;
+		    /* Note: Not clean */
+		    data->wd_Width = 0;
 		    break;
 
 	    case    MUIA_Window_LeftEdge:
@@ -1565,6 +1584,49 @@ static ULONG Window_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		    data->wd_ScreenTitle = StrDup((STRPTR)tag->ti_Data);
 		    if (data->wd_RenderInfo.mri_Window)
 			SetWindowTitles(data->wd_RenderInfo.mri_Window, (CONST_STRPTR)~0, data->wd_ScreenTitle);
+		    break;
+
+	    case    MUIA_Window_CloseGadget:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_CLOSEGADGET);
+		    break;
+
+	    case    MUIA_Window_SizeGadget:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEGADGET);
+		    break;
+
+	    case    MUIA_Window_Backdrop:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BACKDROP);
+		    break;
+
+	    case     MUIA_Window_Borderless:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_BORDERLESS);
+		    break;
+
+	    case    MUIA_Window_DepthGadget:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DEPTHGADGET);
+		    break;
+
+	    case    MUIA_Window_DragBar:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_DRAGBAR);
+		    break;
+
+	    case    MUIA_Window_SizeRight:
+		    if (!(data->wd_Flags & MUIWF_OPENED))
+			_handle_bool_tag(data->wd_CrtFlags, tag->ti_Data, WFLG_SIZEBRIGHT);
+		    break;
+
+	    case    MUIA_Window_UseBottomBorderScroller:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USEBOTTOMSCROLLER);
+		    break;
+
+	    case    MUIA_Window_UseRightBorderScroller:
+		    _handle_bool_tag(data->wd_Flags, tag->ti_Data, MUIWF_USERIGHTSCROLLER);
 		    break;
 	}
     }
@@ -1884,7 +1946,7 @@ static ULONG Window_Setup(struct IClass *cl, Object *obj, Msg msg)
     char *background_spec;
     struct MUI_WindowData *data = INST_DATA(cl, obj);
 
-    if (!SetupRenderInfo(obj, &data->wd_RenderInfo))
+    if (!SetupRenderInfo(obj, data, &data->wd_RenderInfo))
 	return FALSE;
 
     DoMethod(obj,MUIM_GetConfigItem, MUICFG_Background_Window, &background_spec);

@@ -202,6 +202,10 @@ struct MUI_EventHandlerNode
 
 
 /* The folloing stuff is new for Zune, Private stuff might be changed in the future */
+
+
+#define MUIA_Window_NoBorder							 (TAG_USER|0x10429b79)
+
 #define MUIM_Window_AddControlCharHandler  (METHOD_USER|0x1042c34d) /* Zune: V1, PRIV don't use it! */
 #define MUIM_Window_AllocGadgetID          (METHOD_USER|0x1042c350) /* Zune: V1 - allocate a GadgetID for BOOPSI gadgets */
 #define MUIM_Window_DrawBackground         (METHOD_USER|0x1042c352) /* Zune: V1 - like MUIM_DrawBackground but PRIV */
