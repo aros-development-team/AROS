@@ -168,6 +168,12 @@ int main(int argc,char *argv[])
     space = malloc (4096);
 #ifndef STATIC_MEMORY
     memory = malloc (MEMSIZE+MEMCHUNK_TOTAL);
+
+    if (!memory)
+    {
+	fprintf (stderr, "Can't allocate RAM\n");
+	exit (20);
+    }
 #endif
 
     { /* erase space */
