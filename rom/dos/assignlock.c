@@ -1,9 +1,9 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    (C) 1995-2000 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create an assign.
-    Lang: english
+    Lang: English
 */
 #include <exec/memory.h>
 #include <proto/exec.h>
@@ -57,53 +57,59 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-    BOOL success=DOSTRUE;
-    struct DosList *dl, *newdl=NULL;
-    struct Process *me=(struct Process *)FindTask(NULL);
-    struct FileHandle *fh=(struct FileHandle *)BADDR(lock);
+    BOOL success = DOSTRUE;
 
-    if(lock)
+    struct DosList    *dl, *newdl = NULL;
+    struct Process    *me = (struct Process *)FindTask(NULL);
+    struct FileHandle *fh = (struct FileHandle *)BADDR(lock);
+
+    if(lock != NULL)
     {
-	newdl=MakeDosEntry(name,DLT_DIRECTORY);
-	if(newdl==NULL)
+	newdl = MakeDosEntry(name, DLT_DIRECTORY);
+
+	if(newdl == NULL)
 	{
 	    return DOSFALSE;
 	}
-	newdl->dol_Unit  =fh->fh_Unit;
-	newdl->dol_Device=fh->fh_Device;
-	newdl->dol_Lock = lock;
+
+	newdl->dol_Unit   = fh->fh_Unit;
+	newdl->dol_Device = fh->fh_Device;
+	newdl->dol_Lock   = lock;
     }
 
-    dl=LockDosList(LDF_ALL|LDF_WRITE);
+    dl = LockDosList(LDF_ALL | LDF_WRITE);
+    dl = FindDosEntry(dl, name, LDF_ALL);
 
-    dl=FindDosEntry(dl,name,LDF_ALL);
-    if(dl==NULL)
+    if(dl == NULL)
     {
-	if(newdl!=NULL)
+	if(newdl != NULL)
 	    AddDosEntry(newdl);
-    }else if(dl->dol_Type==DLT_DEVICE || dl->dol_Type==DLT_VOLUME)
+    }
+    else if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
     {
-	dl=NULL;
+	dl = NULL;
 	FreeDosEntry(newdl);
-	me->pr_Result2=ERROR_OBJECT_EXISTS;
-	success=DOSFALSE;
-    }else
+	SetIoErr(ERROR_OBJECT_EXISTS);
+	success = DOSFALSE;
+    }
+    else
     {
 	RemDosEntry(dl);
-	if(newdl!=NULL)
+
+	if(newdl != NULL)
 	    AddDosEntry(newdl);
     }
-
-    if(dl!=NULL)
+    
+    if(dl != NULL)
     {
-	if (dl->dol_Lock);
+	if(dl->dol_Lock)
 	    UnLock(dl->dol_Lock);
 
-	if (dl->dol_misc.dol_assign.dol_List!=NULL)
+	if(dl->dol_misc.dol_assign.dol_List != NULL)
 	{
 	    struct AssignList *al, *oal;
 
-	    for (al = dl->dol_misc.dol_assign.dol_List; al; )
+	    for(al = dl->dol_misc.dol_assign.dol_List; al; )
 	    {
 		UnLock(al->al_Lock);
 		oal = al;
@@ -111,13 +117,14 @@
 		FreeVec(oal);
 	    }
 	}
-
+	
 	FreeVec(dl->dol_misc.dol_assign.dol_AssignName);
 	FreeDosEntry(dl);
     }
 
-    UnLockDosList(LDF_ALL|LDF_WRITE);
+    UnLockDosList(LDF_ALL | LDF_WRITE);
 
     return success;
+
     AROS_LIBFUNC_EXIT
 } /* AssignLock */
