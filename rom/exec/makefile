@@ -20,9 +20,10 @@ FUNCTIONS = \
 	deleteiorequest addresource remresource openresource addlibrary     \
 	remlibrary oldopenlibrary closelibrary setfunction sumlibrary       \
 	openlibrary taggedopenlibrary adddevice remdevice opendevice        \
-	findtask rawdofmt allocvec freevec initsemaphore attemptsemaphore   \
-	findsemaphore addsemaphore remsemaphore obtainsemaphoreshared       \
-	attemptsemaphoreshared
+	closedevice findtask rawdofmt allocvec freevec initsemaphore        \
+	attemptsemaphore findsemaphore addsemaphore remsemaphore            \
+	obtainsemaphoreshared attemptsemaphoreshared createpool deletepool  \
+	allocpooled freepooled
 
 # Functions that are written in asm and need to be linked into exec.strap.
 # These are in config/$(KERNEL).
