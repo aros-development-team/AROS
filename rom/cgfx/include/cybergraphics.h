@@ -85,7 +85,7 @@ struct CyberModeNode {
 #define RECTFMT_ARGB	2UL
 #define RECTFMT_LUT8	3UL
 #define RECTFMT_GREY8	4UL
-
+#define RECTFMT_RAW 	5UL
 
 #define SETVC_DPMSLevel		0x88002001
 
