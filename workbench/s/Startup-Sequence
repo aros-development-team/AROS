@@ -31,7 +31,12 @@ EndIf
 Touch PIPEFS:systempipe
 Assign PIPE:    PIPEFS:systempipe
 
-Path C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools SYS:Tools/Commodities QUIET
+Path C: SYS:Utilities SYS:System S: SYS:Prefs SYS:Tools QUIET
+
+If EXISTS SYS:Tools/Commodities
+    Path SYS:Tools/Commodities QUIET ADD
+EndIf
+
 If EXISTS SYS:Demos
     Path SYS:Demos ADD QUIET
 EndIf
@@ -80,4 +85,6 @@ EndIf
 
 WANDERER:Wanderer
 
-EndCLI
+If NOT ERROR
+    EndCLI
+EndIf
