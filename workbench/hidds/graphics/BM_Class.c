@@ -147,6 +147,7 @@ static Object *bitmap_new(Class *cl, Object *obj, struct pRoot_New *msg)
 		    case aoHidd_BitMap_ColorMask   : data->colMask	= tag->ti_Data; break;
 		    case aoHidd_BitMap_PlaneMask   : data->planeMask	= (APTR)tag->ti_Data; break;
 		    case aoHidd_BitMap_Font	   : data->font		= (APTR)tag->ti_Data; break;
+		    case aoHidd_BitMap_Friend	   : data->friend	= (Object *)tag->ti_Data; break;
 	    
 
                     default: D(bug("  unknown attribute %li\n", tag->ti_Data)); break;
