@@ -37,7 +37,7 @@ static void Cleanup(char *msg)
 
     if (msg)
     {
-    	printf("crlist: %s\n",msg);
+    	Printf("crlist: %s\n",msg);
 	rc = RETURN_WARN;
     } else {
     	rc = RETURN_OK;
@@ -85,7 +85,7 @@ static void Action(void)
     cr = lay->ClipRect;
     while(cr)
     {
-    	printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d  %s%s\n",
+    	Printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d  %s%s\n",
 		++count,
 		cr->bounds.MinX,
 		cr->bounds.MinY,

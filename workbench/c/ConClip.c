@@ -24,7 +24,6 @@
 #include <proto/alib.h>
 #include <proto/utility.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -70,7 +69,7 @@ static UBYTE 		s[256];
 
 static void cleanup(STRPTR msg)
 {
-    if (msg) printf("ConClip: %s\n", msg);
+    if (msg) Printf("ConClip: %s\n", msg);
 
     if (oldedithook) SetEditHook(oldedithook);
     if (progport) DeletePort(progport);

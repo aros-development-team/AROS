@@ -60,7 +60,6 @@
 #include <utility/tagitem.h>
 #include <workbench/startup.h>
 
-#include <stdio.h>
 #include <string.h>
 
 #define ARG_TEMPLATE    "DRAWER,FILE/K,PATTERN/K,TITLE/K,POSITIVE/K," \

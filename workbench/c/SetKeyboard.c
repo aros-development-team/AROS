@@ -61,7 +61,6 @@
 #include <proto/dos.h>
 #include <proto/keymap.h>
 
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -89,7 +88,7 @@ static void Cleanup(char *msg, WORD rc)
 {
     if (msg)
     {
-    	printf("SetKeyboard: %s\n",msg);
+    	Printf("SetKeyboard: %s\n",msg);
     }
     
     if (seg)

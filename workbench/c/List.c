@@ -195,7 +195,7 @@ int printDirHeader(STRPTR dirname, BOOL noHead)
 	dt.dat_StrTime = NULL;
 	DateToStr(&dt);
 	
-	printf("Directory \"%s\" on %s %s:\n", dirname, dow, datestr);
+	Printf("Directory \"%s\" on %s %s:\n", dirname, dow, datestr);
     }
 
     return RETURN_OK;
@@ -247,24 +247,24 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 	    {
 		/* File comment */
 	    case 'C':
-		printf(lf->comment);
+		Printf(lf->comment);
 		break;
 		
 		/* Creation date */
 	    case 'D':
-		printf(lf->date);
+		Printf(lf->date);
 		break;
 		
 		/* Creation time */
 	    case 'T':
-		printf(lf->time);
+		Printf(lf->time);
 		break;
 		
 		/* File size in blocks of BLOCKSIZE bytes */
 	    case 'B':
 		if (lf->isdir)
 		{
-		    printf("Dir");
+		    Printf("Dir");
 		}
 		else
 		{
@@ -273,11 +273,11 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 		    /* File is 0 bytes? */
 		    if (tmp == 0)
 		    {
-			printf("empty");
+			Printf("empty");
 		    }
 		    else
 		    {
-			printf("%lu", tmp);
+			Printf("%lu", tmp);
 		    }		    
 		}
 
@@ -292,7 +292,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 		    token = pEnd[0];
 		    pEnd[0] = 0;
 		    
-		    printf(lf->filename);
+		    Printf(lf->filename);
 
 		    /* Restore filename */
 		    pEnd[0] = token;
@@ -303,29 +303,29 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		/* File attributes (flags) */
 	    case 'A':
-		printf(lf->flags);
+		Printf(lf->flags);
 		break;
 
 		/* Disk block key */
 	    case 'K':
-		printf("[%ld]", lf->key);
+		Printf("[%ld]", lf->key);
 		break;
 		
 		/* File size */
 	    case 'L':
 		if (lf->isdir)
 		{
-		    printf("Dir");
+		    Printf("Dir");
 		}
 		else
 		{
 		    if (lf->size == 0)
 		    {
-			printf("empty");
+			Printf("empty");
 		    }
 		    else
 		    {
-			printf("%lu", lf->size);
+			Printf("%lu", lf->size);
 		    }
 		}
 
@@ -341,7 +341,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 			*lastPoint = 0;
 		    }
 		    
-		    printf(filename);
+		    Printf(filename);
 
 		    /* Resurrect filename in case we should print it once
 		       more */
@@ -357,7 +357,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 	    case 'S':
 		/* Fall through */
 	    case 'N':
-		printf(filename);
+		Printf(filename);
 		break;
 		
 		/* File extension */
@@ -367,7 +367,7 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		    if (extension != NULL)
 		    {
-			printf(extension);
+			Printf(extension);
 		    }
 		}
 
@@ -384,11 +384,11 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 
 		    if (start == NULL)
 		    {
-			printf(lf->filename);
+			Printf(lf->filename);
 		    }
 		    else
 		    {
-			printf(start + 1);
+			Printf(start + 1);
 		    }
 		    
 		    /* Restore pathname */
@@ -402,13 +402,13 @@ int printLformat(STRPTR format, struct lfstruct *lf)
 		break;
 		
 	    default:
-		printf("%%%c", *format);
+		Printf("%%%c", *format);
 		break;
 	    }
 	}
 	else
 	{
-	    printf("%c", c);
+	    Printf("%c", c);
 	}
     }
     
@@ -486,7 +486,7 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 				       filenote, size, diskKey};
 
 		printLformat(lFormat, &lf);
-		printf("\n");
+		Printf("\n");
 		
 		*dirs += 1;
 	    }
@@ -494,20 +494,20 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 	    {
 		D(bug("Found file %s\n", filename));
 
-		printf("%-25s ", FilePart(filename));
+		Printf("%-25s ", FilePart(filename));
 
 		if (!quick)
 		{
-		    printf("  <Dir> %7s ", flags);
+		    Printf("  <Dir> %7s ", flags);
 		}
 		
 		if (dates || 
 		    (!quick && !noDates))
 		{
-		    printf("%-11s %s", date, time);
+		    Printf("%-11s %s", date, time);
 		}
 			
-		printf("\n");
+		Printf("\n");
 		
 		*dirs += 1;
 	    }
@@ -521,14 +521,14 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 				   filenote, size, diskKey };
 
 	    printLformat(lFormat, &lf);
-	    printf("\n");
+	    Printf("\n");
 	    
 	    *files += 1;
 	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
         else
         {
-	    printf("%-25s ", FilePart(filename));
+	    Printf("%-25s ", FilePart(filename));
 
 	    if (!quick)
 	    {
@@ -543,38 +543,38 @@ int printFileData(STRPTR filename, BOOL isDir, struct DateStamp *ds,
 
 		    for (i = 0; i < fill; i++)
 		    {
-			printf(" ");
+			Printf(" ");
 		    }
 
-		    printf("[%ld] ", diskKey);
+		    Printf("[%ld] ", diskKey);
 		}
 		else
 		{
 		    if (0 != size)
 		    {
-			printf("%7ld ", 
+			Printf("%7ld ", 
 			       block ? roundUp(size, BLOCKSIZE) : size);
 		    }
 		    else
 		    {
-			printf("  empty ");
+			Printf("  empty ");
 		    }
 		}
 		
-		printf("%7s ", flags);
+		Printf("%7s ", flags);
 	    }
 	    
 	    if (dates || (!quick && !noDates))
 	    {
-		printf("%-11s %s", date, time);
+		Printf("%-11s %s", date, time);
 	    }
 
 	    if (!quick && (*filenote != 0))
 	    {
-		printf("\n: %s", filenote);
+		Printf("\n: %s", filenote);
 	    }
 	    
-	    printf("\n");
+	    Printf("\n");
 	    *files  += 1;
 	    *nBlocks += roundUp(size, BLOCKSIZE);
         }
@@ -594,21 +594,21 @@ void printSummary(int files, int dirs, int nBlocks, BOOL noHead)
 
     if ((files == 0) && (dirs == 0))
     {
-	printf("Directory is empty\n");
+	Printf("Directory is empty\n");
     }
     else
     {
 	if (files != 0)
 	{
-	    printf("%d files - ", files);
+	    Printf("%d files - ", files);
 	}
 	
 	if (dirs != 0)
 	{
-	    printf("%d directories - ", dirs);
+	    Printf("%d directories - ", dirs);
 	}
 	
-	printf("%d bytes used\n", nBlocks);
+	Printf("%d bytes used\n", nBlocks);
     }
 }
 
@@ -842,7 +842,7 @@ int main(void)
 	    if (StrToDate(&sinceDatetime) == DOSFALSE)
 	    {
 		FreeArgs(rda);
-		printf("*** Illegal 'SINCE' parameter\n");
+		Printf("*** Illegal 'SINCE' parameter\n");
 
 		return RETURN_FAIL;
 	    }
@@ -858,7 +858,7 @@ int main(void)
 	    if (StrToDate(&uptoDatetime) == DOSFALSE)
 	    {
 		FreeArgs(rda);
-		printf("*** Illegal 'UPTO' parameter\n");
+		Printf("*** Illegal 'UPTO' parameter\n");
 
 		return RETURN_FAIL;
 	    }
@@ -969,7 +969,7 @@ int main(void)
 		    break;
 		}
 		    
-		printf("\n");
+		Printf("\n");
 	    } 
 	}
 	
@@ -982,7 +982,7 @@ int main(void)
 
     if ((BOOL)args[ARG_ALL])
     {
-	printf("TOTAL: %ld files - %ld directories - %ld blocks used\n",
+	Printf("TOTAL: %ld files - %ld directories - %ld blocks used\n",
 	       stats.nFiles, stats.nDirs, stats.nBlocks);
     }
 

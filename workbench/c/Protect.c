@@ -86,7 +86,6 @@
 #include <utility/utility.h>
 
 #include <ctype.h>
-#include <stdio.h>
 
 #define Bit_Mask(bit)           (1L << bit)
 #define Bit_Clear(name, bit)    name &= ~Bit_Mask(bit)
@@ -199,7 +198,7 @@ int main(void)
 			    break;
 
 			default:
-			    printf("Invalid flags - must be one of SPARWED\n");
+			    Printf("Invalid flags - must be one of SPARWED\n");
 			    retval = RETURN_FAIL;
 		    }
 
@@ -211,7 +210,7 @@ int main(void)
 	    {
 		if (!all &&IsDosEntryA(file, LDF_VOLUMES | LDF_DEVICES))
 		{
-		    printf("Can't set protection for %s - ", file);
+		    Printf("Can't set protection for %s - ", file);
 		    SetIoErr(ERROR_OBJECT_WRONG_TYPE);
 		    PrintFault(IoErr(), NULL);
 
@@ -291,19 +290,19 @@ int doProtect(struct AnchorPath *ap, STRPTR file, LONG flags, BOOL flagsSet,
 	/* Fix indentation level */
 	for (i = 0; i < indent; i++)
 	{
-	    printf("  ");
+	    Printf("  ");
 	}
 
 	if (!quiet || error)
 	{
-	    printf(FilePart(ap->ap_Buf));
+	    Printf(FilePart(ap->ap_Buf));
 
 	    if (isDir(&ap->ap_Info))
 	    {
-		printf(" (dir)");
+		Printf(" (dir)");
 	    }
 
-	    printf("...Done\n");
+	    Printf("...Done\n");
 	}
     }
 

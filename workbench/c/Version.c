@@ -14,7 +14,6 @@
 #define ENABLE_RT 1
 #include <aros/rt.h>
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
