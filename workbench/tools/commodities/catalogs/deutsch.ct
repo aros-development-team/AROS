@@ -1,0 +1,164 @@
+## version $VER: Commodities.catalog 1.0 (14.10.2001)
+## language deutsch
+## codeset 0
+;
+;
+MSG_CANT_OPEN_LIB
+Kann %s V%ld nicht öffnen!\n
+; Can't open %s V%ld!\n
+;
+MSG_CANT_LOCK_SCR
+Kann public Screen nicht locken!\n
+; Can't lock public screen!\n
+;
+MSG_CANT_GET_VI
+Kann VisualInfo nicht ermitteln!\n
+; Can't get VisualInfo!\n
+;
+MSG_CANT_CREATE_GADGET
+Kann Gadgets nicht erzeugen!\n
+; Can't create gadgets!\n
+;
+MSG_CANT_CREATE_MENUS
+Kann Menus nicht erzeugen!\n
+; Can't create menus!\n
+;
+MSG_CANT_LAYOUT_MENUS
+Kann Menus nicht layouten!\n
+; Can't layout menus!\n
+;
+MSG_CANT_CREATE_WIN
+Kann Fenster nicht erzeugen!\n
+; Can't create window!\n
+;
+MSG_CANT_ALLOCATE_MEM
+Kann Speicher nicht allozieren\n
+; Can't allocate application memory!\n
+;
+MSG_CANT_CREATE_MSGPORT
+Kann MessagePort nicht erzeugen!\n
+; Can't create message port!\n
+;
+MSG_CANT_CREATE_BROKER
+Kann CxBroker-Objekt nicht erzeugen!\n
+; Can't create CxBroker object!\n
+;
+MSG_CANT_CREATE_CUSTOM
+Kann CxCustom-Objekt nicht erzeugen!\n
+; Can't create CxCustom object!\n
+;
+MSG_OK
+OK
+; Ok
+;
+MSG_MEN_PROJECT
+Projekt
+; Project
+;
+MSG_MEN_PROJECT_QUIT
+Q\0Beenden
+; Q\0Quit
+;
+MSG_EXCHANGE_CXNAME
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_CXTITLE
+Commodities Exchange
+; Commodities Exchange
+;
+MSG_EXCHANGE_CXDESCR
+Kontrolliert System Commodities
+; Controls system commodities
+;
+MSG_EXCHANGE_WINTITLE
+Exchange
+; Exchange
+;
+MSG_EXCHANGE_LISTVIEW
+Verfügbare Commodities
+; Available commodities
+;
+MSG_EXCHANGE_INFO
+Information
+; Information
+;
+MSG_EXCHANGE_GAD_SHOW
+Zeige
+; Show
+;
+MSG_EXCHANGE_GAD_HIDE
+Verstecke
+; Hide
+;
+MSG_EXCHANGE_GAD_REMOVE
+Entferne
+; Remove
+;
+MSG_EXCHANGE_CYCLE_ACTIVE
+aktiv
+; Active
+;
+MSG_EXCHANGE_CYCLE_INACTIVE
+inaktiv
+; Inactive
+;
+MSG_BLANKER_CXNAME
+Blanker
+; Blanker
+;
+MSG_BLANKER_CXTITLE
+System Bildschirmschoner
+; System Screen Blanker
+;
+MSG_BLANKER_CXDESCR
+Schwärzt Bildschirm wenn System inaktiv
+; Blanks screen when system inactive
+;
+MSG_CLICK2FNT_CXNAME
+ClickToFront
+; ClickToFront
+;
+MSG_CLICK2FNT_CXTITLE
+ClickToFront
+; Click To Front Utility
+;
+MSG_CLICK2FNT_CXDESCR
+Per Mausklick Fenster in den Vordergrund holen
+; Click windows to front
+;
+MSG_OPAQUE_CXNAME
+Opaque
+; Opaque
+;
+MSG_OPAQUE_CXTITLE
+Opaque Fenster
+; Opaque windows
+;
+MSG_OPAQUE_CXDESCR
+Echtzeit Verschieben von Fenstern
+; Realtime moving of windows
+;
+MSG_AUTOPOINT_CXNAME
+AutoPoint
+; AutoPoint
+;
+MSG_AUTOPOINT_CXTITLE
+Autofokus
+; Automatic window activator
+;
+MSG_AUTOPOINT_CXDESCR
+Aktiviert Fenstert unter Mauszeiger
+; Activates the window under the mouse
+;
+MSG_STARTMENU_CXNAME
+StartMenu
+; StartMenu
+;
+MSG_STARTMENU_CXTITLE
+System Programm Starter
+; System Program Starter
+;
+MSG_STARTMENU_CXDESCR
+Startet Programme von Menü
+; Program launch commodity
