@@ -67,6 +67,11 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
+#if 1
+
+    return TRUE;
+    
+#else
     struct Screen *screen;
 
     /* Let LockPubScreen() open the Workbench screen for us. */
@@ -82,6 +87,7 @@ static void MakeWBPattern(struct Screen *scr, struct IntuitionBase *IntuitionBas
     }
 
     return FALSE;
+#endif
 
     AROS_LIBFUNC_EXIT
 } /* LateIntuiInit */
