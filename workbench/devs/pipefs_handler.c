@@ -2,7 +2,7 @@
     (C) 1995-98 AROS - The Amiga Research OS
     $Id$
     $Log$
-    Revision 1.1  2001/07/15 20:11:48  falemagn
+    Revision 1.2  2001/07/15 20:16:38  falemagn
     Implemented named pipes. Actually there are ONLY named pipes. The standard AmigaOS PIPE: can be implemented assigning PIPE: to PIPEFS:namedpipe. pipe() support is about to come
 
 
