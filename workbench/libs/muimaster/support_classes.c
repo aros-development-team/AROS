@@ -127,7 +127,6 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Gauge_desc,
     &_MUI_Aboutmui_desc,
     &_MUI_Settingsgroup_desc,
-    &_MUI_Settings_desc,
     &_MUI_Imageadjust_desc,
     &_MUI_Popimage_desc,
     &_MUI_Scale_desc,
