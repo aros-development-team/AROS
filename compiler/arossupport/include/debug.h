@@ -273,7 +273,7 @@
 #else
 
 #    define MUNGE_BLOCK(ptr, size, fill)
-#    define CHECK_WALL(ptr, size)
+#    define CHECK_WALL(ptr, fill, size)
 
 #endif /* MDEBUG */
 
