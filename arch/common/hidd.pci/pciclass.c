@@ -111,6 +111,8 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 	    int dev;
 	    int sub;
 	    int type;
+	    IPTR subbus, bridge;
+
 	    OOP_Object *drv;
 	    struct TagItem devtags[] = {
 		{ aHidd_PCIDevice_Bus, 0 },
@@ -159,6 +161,14 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 				sizeof(struct Device));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
+
+			    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+			    if (bridge)
+			    {
+				OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+				if (subbus > dn->highBus)
+				    dn->highBus = subbus;
+			    }
 			    AddTail(&dn->devices, (struct Node *)pcidev);
 			    break;
 			/* Cool! Multifunction device, search subfunctions then */
@@ -167,7 +177,16 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 				sizeof(struct Device));
 			    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 						(struct TagItem *)&devtags);
+	
+			    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+			    if (bridge)
+			    {
+				OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+				if (subbus > dn->highBus)
+				    dn->highBus = subbus;
+			    }
 			    AddTail(&dn->devices, (struct Node *)pcidev);
+			    
 			    for (sub=1; sub < 8; sub++)
 			    {
 				devtags[2].ti_Data = sub;
@@ -177,6 +196,13 @@ static void _PCI_AddHwDrv(OOP_Class *cl, OOP_Object *o,
 					sizeof(struct Device));
 				    pcidev->device = OOP_NewObject(NULL, CLID_Hidd_PCIDevice, 
 							(struct TagItem *)&devtags);
+				    OOP_GetAttr(pcidev->device, aHidd_PCIDevice_isBridge, &bridge);
+				    if (bridge)
+				    {
+					OOP_GetAttr(pcidev->device, aHidd_PCIDevice_SubBus, &subbus);
+					if (subbus > dn->highBus)
+					    dn->highBus = subbus;
+				    }
 				    AddTail(&dn->devices, (struct Node *)pcidev);
 				}
 			    }
