@@ -235,7 +235,7 @@
     /*
 	Prepare the cpu context
     */
-#   define PREPARE_INITIAL_CONTEXT(task,pc)    /* nop */
+#   define PREPARE_INITIAL_CONTEXT(task)    /* nop */
 
     /*
 	This macro is similar to PREPARE_INITIAL_FRAME() but also saves
@@ -301,7 +301,7 @@ typedef struct sigcontext sigcontext_t;
 #   define SIGHANDLER_T    __sighandler_t *
 
 #   define SP_TYPE	long
-#   define CPU_NUMREGS	7
+#   define CPU_NUMREGS	0
 
 #   define SC_DISABLE(sc)   (sc->sc_mask = ~0L)
 #   define SC_ENABLE(sc)    (sc->sc_mask = 0L)
@@ -318,6 +318,17 @@ typedef struct sigcontext sigcontext_t;
 #   define R5(sc)           (sc->sc_esi)
 #   define R6(sc)           (sc->sc_isp)
 
+    struct AROS_cpu_context
+    {
+	ULONG regs[7]; /* eax, ebx, ecx, edx, edi, esi, isp */
+	ULONG pc,fp;	/* store these on the stack to avoid sighandlers */
+    };
+
+#   define SIZEOF_ALL_REGISTERS	(sizeof(struct AROS_cpu_context))
+#   define GetCpuContext(task)	((struct AROS_cpu_context *)\
+				(GetIntETask(task)->iet_Context))
+#   define GetSP(task)		((SP_TYPE*)(task->tc_SPReg))
+
 #   define GLOBAL_SIGNAL_INIT \
 	static void sighandler (int sig, sigcontext_t * sc); \
 							     \
@@ -326,77 +337,47 @@ typedef struct sigcontext sigcontext_t;
 	    sighandler( sig, (sigcontext_t*)sc);       \
 	}
 
-#   define PREPARE_INITIAL_FRAME(sp,pc) \
-	sp -= 128, \
-	_PUSH(sp,pc), \
-	_PUSH(sp,sp), \
-	sp -= CPU_NUMREGS
+#   define SAVE_CPU(task, sc) \
+	(GetCpuContext(task)->regs[0] = R0(sc)), \
+	(GetCpuContext(task)->regs[1] = R1(sc)), \
+	(GetCpuContext(task)->regs[2] = R2(sc)), \
+	(GetCpuContext(task)->regs[3] = R3(sc)), \
+	(GetCpuContext(task)->regs[4] = R4(sc)), \
+	(GetCpuContext(task)->regs[5] = R5(sc)), \
+	(GetCpuContext(task)->regs[6] = R6(sc))
 
-#   define SAVEREGS(sp,sc) \
-	sp = (SP_TYPE *)SP(sc), \
-	sp -= 128, \
-	_PUSH(sp,PC(sc)), \
-	_PUSH(sp,FP(sc)), \
-	_PUSH(sp,R0(sc)), \
-	_PUSH(sp,R1(sc)), \
-	_PUSH(sp,R2(sc)), \
-	_PUSH(sp,R3(sc)), \
-	_PUSH(sp,R4(sc)), \
-	_PUSH(sp,R5(sc)), \
-	_PUSH(sp,R6(sc))
+#   define RESTORE_CPU(task,sc) \
+	((R0(sc) = GetCpuContext(task)->regs[0]), \
+	(R1(sc) = GetCpuContext(task)->regs[1]), \
+	(R2(sc) = GetCpuContext(task)->regs[2]), \
+	(R3(sc) = GetCpuContext(task)->regs[3]), \
+	(R4(sc) = GetCpuContext(task)->regs[4]), \
+	(R5(sc) = GetCpuContext(task)->regs[5]), \
+	(R6(sc) = GetCpuContext(task)->regs[6]))
 
-#   define RESTOREREGS(sp,sc) \
-	R6(sc) = _POP(sp), \
-	R5(sc) = _POP(sp), \
-	R4(sc) = _POP(sp), \
-	R3(sc) = _POP(sp), \
-	R2(sc) = _POP(sp), \
-	R1(sc) = _POP(sp), \
-	R0(sc) = _POP(sp), \
-	FP(sc) = _POP(sp), \
-	PC(sc) = _POP(sp), \
-	sp += 128, \
-	SP(sc) = (int)sp
+#   define HAS_FPU		0
+#   define SAVE_FPU(task,sc)	/* nop */
+#   define RESTORE_FPU(task,sc) /* nop */
 
-#   define NO_FPU
+#   define PREPARE_INITIAL_FRAME(sp,pc) 	/* nop */
 
-    /*
-	Size of the FPU stackframe in stack units (one stack unit is
-	sizeof(SP_TYPE) bytes).
-    */
-#   ifndef NO_FPU
-#	define FPU_FRAMESIZE	(sizeof (struct _fpstate) / sizeof (SP_TYPE))
-#   else
-#	define FPU_FRAMESIZE	0
-#   endif
+#   define PREPARE_INITIAL_CONTEXT(task,startpc) \
+	( GetCpuContext(task)->pc = (ULONG)startpc, \
+	  GetCpuContext(task)->fp = 0 )
 
-    /*
-	This macro return 1 if a FPU is available.
-    */
-#   ifndef NO_FPU
-#	define HAS_FPU(sc)      (sc->fpstate)
-#   else
-#	define HAS_FPU(sc)      0
-#   endif
+#   define SAVEREGS(task,sc) \
+	((GetSP(task) = (long *)SP(sc)), \
+	(GetCpuContext(task)->pc = PC(sc)), \
+	(GetCpuContext(task)->fp = FP(sc)), \
+	/* SAVE_FPU(task, sc), */ \
+	SAVE_CPU(task, sc))
 
-    /*
-	Save and restore the FPU on/from the stack.
-    */
-#   ifndef NO_FPU
-#	define SAVE_FPU(sp,sc) \
-	    (sp -= FPU_FRAMESIZE), \
-	    HAS_FPU(sc) && \
-		((*((struct _fpstate *)sp) = *(sc->fpstate)), 1)
-
-#	define RESTORE_FPU(sp,sc) \
-	    HAS_FPU(sc) && \
-		((*(sc->fpstate) = *((struct _fpstate *)sp)), 1), \
-	    (sp += FPU_FRAMESIZE)
-#   else
-#	define SAVE_FPU(sp,sc)          (sp -= 0)
-#	define RESTORE_FPU(sp,sc)       (sp += 0)
-#   endif
-
+#   define RESTOREREGS(task,sc) \
+	(RESTORE_CPU(task,sc), \
+	/* RESTORE_FPU(task, sc), */ \
+	(FP(sc) = GetCpuContext(task)->fp), \
+	(PC(sc) = GetCpuContext(task)->pc)), \
+	(SP(sc) = (long)GetSP(task))
 
 #   define PRINT_SC(sc) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx  FPU=%s\n" \
@@ -408,15 +389,19 @@ typedef struct sigcontext sigcontext_t;
 	    , R4(sc), R5(sc), R6(sc) \
 	)
 
-#   define PRINT_STACK(sp) \
+#   define PRINT_CPUCONTEXT(task) \
 	printf ("    SP=%08lx  FP=%08lx  PC=%08lx\n" \
 		"    R0=%08lx  R1=%08lx  R2=%08lx  R3=%08lx\n" \
 		"    R4=%08lx  R5=%08lx  R6=%08lx\n" \
-	    , (ULONG)(sp+(FPU_FRAMESIZE+CPU_NUMREGS+2)) \
-	    , sp[FPU_FRAMESIZE+CPU_NUMREGS] \
-	    , sp[FPU_FRAMESIZE+CPU_NUMREGS+1] \
-	    , sp[6], sp[5], sp[4], sp[3] \
-	    , sp[2], sp[1], sp[0] \
+	    , (ULONG)(GetSP(task)) \
+	    , GetCpuContext(task)->fp, GetCpuContext(task)->pc, \
+	    , GetCpuContext(task)->regs[0] \
+	    , GetCpuContext(task)->regs[1] \
+	    , GetCpuContext(task)->regs[2] \
+	    , GetCpuContext(task)->regs[3] \
+	    , GetCpuContext(task)->regs[4] \
+	    , GetCpuContext(task)->regs[5] \
+	    , GetCpuContext(task)->regs[6] \
 	)
 
 #endif /* __FreeBSD__ */
