@@ -1,6 +1,10 @@
 #    (C) 1995-96 AROS - The Amiga Replacement OS
 #    $Id$
 #    $Log$
+#    Revision 1.6  1996/09/11 14:41:17  digulla
+#    Removed tick which made problems with CPP
+#    Closed comment
+#
 #    Revision 1.5  1996/08/23 16:49:22  digulla
 #    With some systems, .align 16 aligns to 64K instead of 16bytes. Therefore
 #    	I replaced it with .balign which does what we want.
@@ -30,7 +34,7 @@
 #	Tries to switch to the first task in the ready list. This
 #	function works almost like Dispatch() with the slight difference
 #	that it may be called at any time and as often as you want and
-#	that it doesn't lose the current task if it is of type TS_RUN.
+#	that it does not lose the current task if it is of type TS_RUN.
 #
 #   INPUTS
 #
@@ -71,7 +75,7 @@
 	.globl	Exec_Switch
 	.type	Exec_Switch,@function
 Exec_Switch:
-	/* Make room for Dispatch() address.
+	/* Make room for Dispatch() address. */
 	subl	$4,%esp
 
 	/* Preserve registers */
