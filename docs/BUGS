@@ -261,7 +261,7 @@ BUG000038 (fixed for layers.library)
 bergers@aros.org
 We seem to have a serious memory leak problem with just about all programs.
 
-BUG000039
+BUG000039 fixed
 nlorentz@online.no
 Some events are lost, especially when there is rendering going
 on.
@@ -276,10 +276,15 @@ nlorentz@online.no
 Cause() does not work from inside keyboard.device, so input.device
 never gets keyboard events.
 
-BUD000042
+BUD000042 fixed
 nlorentz@online.no
 There are race conditions between the intuition input handler
 and CloseWindow(). When the closebutton is hit many times
 fast, it segfaults. This has been "solved" using some flags
 (EWFLG_DELAYCLOSE and EWFLG_CLOSEWINDOW), but it should be
 redone using semaphores
+
+Fixed: CloseWindow() now sends a message to intuition, that does
+the actual closing of the window, thus no race conditions occur.
+Downside is that it will slow down the inputhandler, but I think
+it is not a big problem.
