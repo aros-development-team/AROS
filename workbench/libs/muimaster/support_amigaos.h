@@ -3,14 +3,71 @@
     $Id$
 */
 
-#include <dos.h>
+#ifndef _MUIMASTER_SUPPORT_AMIGAOS_H_
+#define _MUIMASTER_SUPPORT_AMIGAOS_H_
 
-#ifndef _COMPILER_H
-#   include "compiler.h"
-#endif
+#include <dos.h>
 
 #define AROS_LONG2BE(x) (x)
 
 char *StrDup(char *x);
 int snprintf(char *buf, int size, const char *fmt, ...);
 int strlcat(char *buf, char *src, int len);
+
+/*** Miscellanous compiler supprot ******************************************/
+#ifdef __MAXON__
+#   define __asm
+#   define __inline
+#   define __saveds
+#   define const
+#endif /* __MAXON__ */
+
+/*** AROS types *************************************************************/
+#ifndef __AROS_TYPES_DEFINED__
+#   define __AROS_TYPES_DEFINED__
+    typedef unsigned long IPTR;
+    typedef long          STACKLONG;
+    typedef unsigned long STACKULONG;
+#endif /* __AROS_TYPES_DEFINED__ */
+
+/*** AROS register definitions **********************************************/
+#define D0 __d0
+#define D1 __d1
+#define D2 __d2
+#define D3 __d3
+#define D4 __d4
+#define D5 __d5
+#define D6 __d6
+#define D7 __d7
+#define A0 __a0
+#define A1 __a1
+#define A2 __a2
+#define A3 __a3
+#define A4 __a4
+#define A5 __a5
+#define A6 __a6
+#define A7 __a7
+
+/*** AROS library function macros *******************************************/
+#define AROS_LH0(rt, fn, bt, bn, lvo, p) \
+    __asm rt fn()
+#define AROS_LH1(rt, fn, a1, bt, bn, lvo, p) \
+    __asm rt fn(a1)
+#define AROS_LH2(rt, fn, a1, a2, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2)
+#define AROS_LH3(rt, fn, a1, a2, a3, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3)
+#define AROS_LH4(rt, fn, a1, a2, a3, a4, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4)
+#define AROS_LH5(rt, fn, a1, a2, a3, a4, a5, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5)
+#define AROS_LH6(rt, fn, a1, a2, a3, a4, a5, a6, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6)
+#define AROS_LH7(rt, fn, a1, a2, a3, a4, a5, a6, a7, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6, a7)
+#define AROS_LH8(rt, fn, a1, a2, a3, a4, a5, a6, a7, a8, bt, bn, lvo, p) \
+    __asm rt fn(a1, a2, a3, a4, a5, a6, a7, a8)
+
+#define AROS_LHA(type, name, reg) register reg type name
+
+#endif /* _MUIMASTER_SUPPORT_AMIGAOS_H_ */
