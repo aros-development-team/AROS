@@ -106,4 +106,6 @@ cleanup:
     }
     if (port!=NULL) DeletePort(port);
     if (RexxSysBase!=NULL) CloseLibrary(RexxSysBase);
+
+    return retval;
 } /* SetRexxVar */
