@@ -19,12 +19,14 @@ EXEDIR := $(AROSDIR)/Utilities
     files=$(FILES) uselibs="arossupport amiga arosc m autoinit mui"
 
 
-SCRIPT := test.script
+SCRIPT    := test.script
+SCRIPTDIR := $(AROS_TESTS)/Installer
 
 #MM
-workbench-utilities-installer-script : $(AROS_TESTS)/$(SCRIPT)
+workbench-utilities-installer-script : $(SCRIPTDIR)/$(SCRIPT)
 
-$(AROS_TESTS)/$(SCRIPT) : $(SCRIPT)
+$(SCRIPTDIR)/$(SCRIPT) : $(SCRIPT)
+	@$(MKDIR) $(SCRIPTDIR)
 	@$(CP) $? $@
 
 %common
