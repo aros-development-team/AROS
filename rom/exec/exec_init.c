@@ -133,6 +133,8 @@ AROS_UFH4(int, Dispatcher,
 void idleTask(struct ExecBase *SysBase)
 {
     struct Task *inputDevice = NULL;
+    struct Task *idle = FindTask (NULL);
+
     while(1)
     {
 	/* If the input device exists, we should signal it */
@@ -152,7 +154,11 @@ void idleTask(struct ExecBase *SysBase)
 	/* Test if there are any other tasks in the ready queue */
 	if( !IsListEmpty(&SysBase->TaskReady) )
 	{
-	    Reschedule(FindTask(NULL));
+	    /* TODO Doesn't work, yet Reschedule(FindTask(NULL)); */
+	    Forbid ();
+	    idle->tc_State = TS_READY;
+	    AddTail (&SysBase->TaskReady, &idle->tc_Node);
+	    Permit ();
 	    Switch();
 	}
     }
