@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-FILES := handler support
+FILES := support handler handler_support
 FUNCS := \
     addappicona \
     addappmenuitema \
@@ -23,10 +23,9 @@ FUNCS := \
 #MM- kernel-workbench : includes linklibs
 
 %build_module_macro mmake=kernel-workbench \
-  modname=workbench modtype=library \
-  conffile=lib.conf \
+  modname=workbench modtype=library conffile=lib.conf \
   funcs=$(FUNCS) files=$(FILES) \
-  uselibs="amiga rom" \
+  uselibs="amiga rom" usecpak=no \
   genshlinklib=$(SHARED_WORKBENCH)
 
 %common

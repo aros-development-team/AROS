@@ -5,6 +5,9 @@
     Open a drawer or launch a program.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include <exec/types.h>
 #include <exec/ports.h>
 #include <utility/tagitem.h>
@@ -14,20 +17,22 @@
 
 #include <string.h>
 
-#define DEBUG 1
 #include "workbench_intern.h"
+#include "support.h"
+#include "handler.h"
+#include "handler_support.h"
 
 /*** Prototypes *************************************************************/
 BOOL   __CLI_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 STRPTR __CLI_BuildCommandLine(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-BOOL   __WB_LaunchProgram(CONST_STRPTR command, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
-BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+BOOL   __WB_LaunchProgram(BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
+BOOL   __WB_BuildArguments(struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, struct WorkbenchBase *WorkbenchBase);
 
 /*** Macros *****************************************************************/
 #define CLI_LaunchProgram(name, tags) (__CLI_LaunchProgram((name), (tags), WorkbenchBase))
 #define CLI_BuildCommandLine(name, tags) (__CLI_BuildCommandLine((name), (tags), WorkbenchBase))
-#define WB_LaunchProgram(name, tags) (__WB_LaunchProgram((name), (tags), WorkbenchBase))
-#define WB_BuildArguments(startup, tags) (__WB_BuildArguments((startup), (tags), WorkbenchBase))
+#define WB_LaunchProgram(lock, name, tags) (__WB_LaunchProgram((lock), (name), (tags), WorkbenchBase))
+#define WB_BuildArguments(startup, lock, name, tags) (__WB_BuildArguments((startup), (lock), (name), (tags), WorkbenchBase))
 
 /*****************************************************************************
 
@@ -65,10 +70,10 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct WorkbenchBase *, WorkbenchBase)
 
-    BOOL                  rc     = FALSE;
-    struct FileInfoBlock  fib    = { 0 };
-    BPTR                  lock   = NULL;
-    struct DiskObject    *icon   = NULL;
+    BOOL                  success = FALSE;
+    struct FileInfoBlock  fib     = { 0 };
+    BPTR                  lock    = NULL;
+    struct DiskObject    *icon    = NULL;
     
     /* Test whether the named path exist, as-is. */
     if ((lock = Lock(name, ACCESS_READ)))
@@ -90,26 +95,26 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     It's an executable. Before I launch it, I must check
                     whether it is a Workbench program or a CLI program.
                 */
-                #if 0 /* [ach] disabled since not implemented */
                 icon = GetIconTags(name, TAG_DONE);
                 if (icon != NULL)
                 {
-                    /*
-                        It's a Workbench program. Build an WBArg array and 
-                        WBStartup message and launch it.
-                    */
-                    //FIXME
-                    // WB_LaunchProgram(name, tags); // more args?
+                    /* It's a Workbench program */
+                    success = WB_LaunchProgram(ParentDir(lock), FilePart(name), tags);
+                    if (!success)
+                    {
+                        /*
+                            Fallback to launching it as a CLI program. Most 
+                            likely it will also fail, but we might get lucky.
+                        */
+                        success = CLI_LaunchProgram(name, tags);
+                    }
+                    
                     FreeDiskObject(icon);
                 } 
                 else
-                #endif
                 {
-                    /* 
-                        It's a CLI program. Build the arguments as an valid 
-                        argument string and launch the program.
-                    */
-                    rc = CLI_LaunchProgram(name, tags);
+                    /* It's a CLI program */
+                    success = CLI_LaunchProgram(name, tags);
                 }
             }
             #if 0 /* [ach] script bit not handled properly in AROS */
@@ -148,7 +153,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     {
                         BPTR parent = ParentDir(lock);
                         
-                        rc = OpenWorkbenchObject
+                        success = OpenWorkbenchObject
                         (
                             icon->do_DefaultTool,
                             WBOPENA_ArgLock, (IPTR) parent,
@@ -217,7 +222,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
                     STRPTR path = AllocateNameFromLock(lock);
                     if (path != NULL)
                     {
-                        rc = OpenWorkbenchObjectA(path, tags);
+                        success = OpenWorkbenchObjectA(path, tags);
                         FreeVec(path);
                     }
                     
@@ -227,7 +232,7 @@ BOOL   __WB_BuildArguments(struct WBStartup *startup, struct TagItem *tags, stru
         }
     }
     
-    return rc;
+    return success;
 
     AROS_LIBFUNC_EXIT
 } /* OpenWorkbenchObjectA() */
@@ -378,14 +383,14 @@ error:
 
 BOOL __WB_BuildArguments
 (
-    struct WBStartup *startup, struct TagItem *tags, 
+    struct WBStartup *startup, BPTR lock, CONST_STRPTR name, struct TagItem *tags, 
     struct WorkbenchBase *WorkbenchBase
 )
 {
     struct TagItem *tstate   = tags,
                    *tag      = NULL;
     BPTR            lastLock = NULL;
-    LONG            numArgs  = 0;
+    LONG            numArgs  = 1;
     struct WBArg   *args;
     
     /*-- Calculate the number of arguments ---------------------------------*/
@@ -408,8 +413,18 @@ BOOL __WB_BuildArguments
     if (args != NULL)
     {
         /*-- Build the argument list ---------------------------------------*/
-        LONG i     = 0;
-        BOOL error = FALSE;
+        LONG i      = 0;
+        BOOL error  = FALSE;
+        
+        if
+        (
+               (args[i].wa_Lock = lock)         == NULL
+            || (args[i].wa_Name = StrDup(name)) == NULL
+        )
+        {
+            goto error;
+        }
+        i++;
         
         tstate = tags; lastLock = NULL;
         while ((tag = NextTagItem(&tstate)) != NULL && !error)
@@ -432,6 +447,7 @@ BOOL __WB_BuildArguments
                             || (args[i].wa_Name = StrDup(name))      == NULL
                         )
                         {
+                            D(bug("workbench.library: WB_BuildArguments: Failed to duplicate lock or string\n"));
                             error = TRUE;
                             break;
                         }
@@ -441,8 +457,10 @@ BOOL __WB_BuildArguments
             }
         }
         
+error:
         if (error)
         {
+            D(bug("workbench.library: WB_BuildArguments: Freeing resources after error...\n"));
             /* Free allocated resources */
             for (i = 0; i < numArgs; i++)
             {
@@ -459,32 +477,74 @@ BOOL __WB_BuildArguments
         return TRUE;
     }
     
+    D(bug("workbench.library: WB_BuildArguments: Failed to allocate memory for argument array\n"));
+    
     return FALSE;
 }
 
 BOOL __WB_LaunchProgram
 (
-    CONST_STRPTR command, struct TagItem *tags,
+    BPTR lock, CONST_STRPTR name, struct TagItem *tags,
     struct WorkbenchBase *WorkbenchBase
 )
 {
-    struct WBStartup *startup = AllocMem(sizeof(struct WBStartup), MEMF_ANY);
-    if (startup != NULL)
+    struct WBStartup     *startup = NULL;
+    struct LaunchMessage *message = NULL;
+       
+    /*-- Start the handler, if necessary -----------------------------------*/
+    if (WorkbenchBase->wb_HandlerPort == NULL)
     {
-        if (WB_BuildArguments(startup, tags))
+        if (!StartHandler())
         {
-            // FIXME: send message to handler
-            return TRUE;
-        }
-        else
-        {
-            FreeMem(startup, sizeof(struct WBStartup));
+            D(bug("workbench.library: WB_LaunchProgram: Failed to start handler\n"));
             return FALSE;
         }
     }
-    else
+    
+    /*-- Allocate memory for messages --------------------------------------*/
+    startup = AllocMem(sizeof(struct WBStartup), MEMF_PUBLIC | MEMF_CLEAR);
+    if (startup == NULL) 
     {
-        SetIoErr(ERROR_NO_FREE_STORE);
-        return FALSE;
+        D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for startup message\n"));
+        SetIoErr(ERROR_NO_FREE_STORE); 
+        goto error;
     }
+    MESSAGE(startup)->mn_Length = sizeof(struct WBStartup);
+    
+    message = AllocMem(sizeof(struct LaunchMessage), MEMF_PUBLIC | MEMF_CLEAR);
+    if (message == NULL)
+    {
+        D(bug("workbench.library: WB_LaunchProgram: Failed to allocate memory for launch message\n"));
+        SetIoErr(ERROR_NO_FREE_STORE);
+        goto error;
+    }
+    MESSAGE(message)->mn_Length = sizeof(struct LaunchMessage);
+    
+    /*-- Build the arguments array -----------------------------------------*/
+    if (!WB_BuildArguments(startup, lock, name, tags))
+    {
+        D(bug("workbench.library: WB_LaunchProgram: Failed to build arguments\n"));
+        goto error;
+    }
+
+    /*-- Send message to handler -------------------------------------------*/
+    D(bug("workbench.library: WB_LaunchProgram: Setting up message\n"));
+    message->lm_HandlerMessage.hm_Type = HM_TYPE_LAUNCH;
+    message->lm_StartupMessage         = startup; 
+    
+    /* The handler will deallocate the memory! */
+    D(bug("workbench.library: WB_LaunchProgram: Sending message\n"));
+    PutMsg(WorkbenchBase->wb_HandlerPort, MESSAGE(message));
+    
+    D(bug("workbench.library: WB_LaunchProgram: Success\n"));
+    
+    return TRUE;
+
+error:
+    if (startup != NULL) FreeMem(startup, sizeof(struct WBStartup));
+    if (message != NULL) FreeMem(message, sizeof(struct LaunchMessage));
+    
+    D(bug("workbench.library: WB_LaunchProgram: Failure\n"));
+    
+    return FALSE;
 }

@@ -5,6 +5,9 @@
     Initialization of workbench.library.
 */
 
+#define DEBUG 1
+#include <aros/debug.h>
+
 #include "workbench_intern.h"
 #include LC_LIBDEFS_FILE
 #include "handler.h"
@@ -47,6 +50,12 @@ ULONG SAVEDS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR WorkbenchBase)
     /* Initialize our semaphore. */
     InitSemaphore(&(WorkbenchBase->wb_InitializationSemaphore));
     InitSemaphore(&(WorkbenchBase->wb_BaseSemaphore));
+    InitSemaphore(&(WorkbenchBase->wb_HandlerSemaphore));
+    
+    WorkbenchBase->wb_HandlerPort  = NULL;
+    WorkbenchBase->wb_HandlerError = 0;
+
+    WorkbenchBase->wb_DefaultStackSize = 1024 * 32; /* 32kB */ // FIXME: also read from preferences */
     
     return TRUE;
 } /* L_InitLib */
