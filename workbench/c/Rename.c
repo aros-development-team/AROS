@@ -196,14 +196,18 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
     {
 	if(!destExists)
 	{
-	    printf("Destination directory \"%s\" does not exist.\n", to);
+	    PutStr("Destination directory \"");
+	    PutStr(to);
+	    PutStr("\" does not exist.\n");
 	    
 	    return RETURN_FAIL;
 	}	
 
 	if(!destIsDir)
 	{
-	    printf("Destination \"%s\" is not a directory.\n", to);
+	    PutStr("Destination \"");
+	    PutStr(to);
+	    PutStr("\" is not a directory.\n");
 
 	    return RETURN_FAIL;
 	}
@@ -212,7 +216,11 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
     {
 	if(destExists)
 	{
-	    printf("Can't rename %s as %s because", from[0], to);
+	    PutStr("Can't rename ");
+	    PutStr(from[0]);
+	    PutStr(" as ");
+	    PutStr(to);
+	    PutStr(" because");
 	    PrintFault(ERROR_OBJECT_EXISTS, "");
 
 	    return RETURN_FAIL;
@@ -256,7 +264,11 @@ int doRename(STRPTR *from, STRPTR to, BOOL quiet)
 	    
 	    if(!quiet)
 	    {
-		printf("Renaming %s as %s\n", ap->ap_Info.fib_FileName, pathName);
+		PutStr("Renaming ");
+		PutStr(ap->ap_Info.fib_FileName);
+		PutStr(" as ");
+		PutStr(pathName);
+		PutStr("\n");
 	    }
 	    
 	    olddir = CurrentDir(ap->ap_Current->an_Lock);	    
