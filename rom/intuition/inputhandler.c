@@ -798,7 +798,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 	    iihdata->ActQualifier |= (ie->ie_Qualifier & KEY_QUALIFIERS);
 				      
 	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
-	         (!gadget && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
+	         (!gadget && w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
 	    {
 		ptr = "RAWKEY PRESSED";
 
@@ -916,7 +916,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    }		 
 				      
 		} /* regular RAWKEY */
-		
 	    }
 	    break; /* case IECLASS_RAWKEY */
 	    
