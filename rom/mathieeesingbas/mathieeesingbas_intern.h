@@ -37,6 +37,10 @@
 #   include <dos/dos.h>
 #endif
 
+#include <libraries/mathieeesp.h>
+#include <aros/libcall.h>
+#include <proto/mathieeesingbas.h>
+#include <proto/exec.h>
 
 /*
     This is the MathIEEESPBasBase structure. It is documented here because 
