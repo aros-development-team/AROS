@@ -277,7 +277,7 @@ static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
 
     zune_draw_image(muiRenderInfo(obj), data->img,
 		    _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
-		    _mleft(obj),_mtop(obj), 0);
+		    0, 0, 0);
     return 1;
 }
 

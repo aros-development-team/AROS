@@ -1957,7 +1957,9 @@ void zune_draw_image (struct MUI_RenderInfo *mri, struct MUI_ImageSpec *img,
 
 	case	IST_BITMAP:
 		if (img->dt)
-		    dt_put_on_rastport_tiled(img->dt, mri->mri_RastPort, left, top, right, bottom, xoffset, yoffset);
+		{
+		    dt_put_on_rastport_tiled(img->dt, mri->mri_RastPort, left, top, right, bottom, xoffset - left, yoffset - top);
+		}
 		break;
     }
 }
