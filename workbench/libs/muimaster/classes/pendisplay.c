@@ -21,6 +21,7 @@
 
 #include "mui.h"
 #include "muimaster_intern.h"
+#include "penspec.h"
 #include "textengine.h"
 #include "support.h"
 #include "support_classes.h"
@@ -177,8 +178,23 @@ IPTR Pendisplay__OM_GET(struct IClass *cl, Object * obj, struct opGet *msg)
 	    break;
 	    
 	case MUIA_Pendisplay_RGBcolor:
-	    #warning "FIXME: MUIA_Pendisplay_RGBcolor"
-	    *store = (IPTR)&data->rgb;
+	    {
+		#warning FIXME: MUIA_Pendisplay_RGBColor (only works for RGB pen specs)
+		struct MUI_PenSpec_intern intpenspec;
+		zune_pen_spec_to_intern(&data->penspec, &intpenspec);
+
+		switch(intpenspec.p_type)
+    		{
+   		    case    PST_MUI:
+    		    case    PST_CMAP:
+	   		    break;
+    		    case    PST_RGB:
+			    data->rgb = intpenspec.p_rgb;
+			    break;
+		}
+
+		*store = (IPTR)&data->rgb;
+            }
 	    break;
 	    
 	case MUIA_Pendisplay_Spec:
