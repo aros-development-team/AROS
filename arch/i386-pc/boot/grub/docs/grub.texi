@@ -1831,6 +1831,7 @@ These commands can only be used in the menu:
 * default::                     Set the default entry
 * fallback::                    Set the fallback entry
 * hiddenmenu::                  Hide the menu interface
+* gfxmenu::                     Use graphical menu interface
 * timeout::                     Set the timeout
 * title::                       Start a menu entry
 @end menu
@@ -1859,6 +1860,15 @@ instead of waiting for the user to do anything, immediately start
 over using the @var{num} entry (same numbering as the @code{default}
 command (@pxref{default})). This obviously won't help if the machine was
 rebooted by a kernel that GRUB loaded.
+@end deffn
+
+
+@node gfxmenu
+@subsection gfxmenu
+
+@deffn Command gfxmenu file
+Use the graphical menu interface. The graphics data are taken from
+@var{file} and must be created using 'mkbootmsg' from the gfxboot package.
 @end deffn
 
 

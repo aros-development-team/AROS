@@ -382,6 +382,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
      probing devices.  */
   char buf[1024];		/* XXX */
   int line_number = 0;
+  int retval = 0;		/* default to failure */
   
   while (fgets (buf, sizeof (buf), fp))
     {
@@ -408,14 +409,14 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (*ptr != '(')
 	{
 	  show_error (line_number, "No open parenthesis found");
-	  return 0;
+	  continue;
 	}
       
       ptr++;
       if ((*ptr != 'f' && *ptr != 'h') || *(ptr + 1) != 'd')
 	{
 	  show_error (line_number, "Bad drive name");
-	  return 0;
+	  continue;
 	}
       
       if (*ptr == 'f')
@@ -426,7 +427,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (drive < 0 || drive > 8)
 	{
 	  show_error (line_number, "Bad device number");
-	  return 0;
+	  continue;
 	}
       
       if (! is_floppy)
@@ -435,7 +436,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (*ptr != ')')
 	{
 	  show_error (line_number, "No close parenthesis found");
-	  return 0;
+	  continue;
 	}
       
       ptr++;
@@ -446,7 +447,7 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       if (! *ptr)
 	{
 	  show_error (line_number, "No filename found");
-	  return 0;
+	  continue;
 	}
       
       /* Terminate the filename.  */
@@ -464,9 +465,11 @@ read_device_map (FILE *fp, char **map, const char *map_file)
       
       map[drive] = strdup (ptr);
       assert (map[drive]);
+
+      retval = 1;	/* at least 1 drive configured successfully */
     }
   
-  return 1;
+  return retval;
 }
 
 /* Initialize the device map MAP. *MAP will be allocated from the heap
