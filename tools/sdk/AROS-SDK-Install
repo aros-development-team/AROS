@@ -2,30 +2,70 @@
 
 export LC_ALL=C
 
-echo Searching for a suitable compiler...
-cc=${CC:=gcc}
+CLR="\\0033[2J\\0033[01;01H"
+B="\\033[1m"
+N="\\033[0;39m"
+R="\\033[1;31m"
+G="\\033[1;32m"
+OK="${G}OK.${N}"
+FAILED="${R}FAILED.${N}"
+
+echo -en \
+"${CLR}Welcome to the ${B}AROS SDK${N} installation script!\n\n"
+
+echo -en \
+"You are about to be asked a few ${B}questions${N}, each with a ${B}default${N} answer. This answer is written in ${B}bold${N} characters and put inside square brakets; in order to select it just press <${B}ENTER${N}>, whilst to override it write your own answer and then press <${B}ENTER${N}>.\n\n"
+
+echo -en \
+"Remember that in order for the installation to be successful you need a ${B}gcc${N} compiler, and related ${B}binutils${N}, able to produce ${B}i386-elf${N} executables. If you are running an x86 version of Linux, or an x86 version of any of the *BSD operating system, or an x86 version of BeOS, chances are you already have the compiler installed.\n\n"
+
+echo -en \
+"You can even install the SDK on a non-x86 architecture, provided that the proper crosscompiler is installed in the system.\n\n"
+
+echo -en \
+"If you're ready to start the installation, press <${B}ENTER${N}>\n\n"
+
+read
+
+cc=`which gcc 2>/dev/null`
 
 while true; do
-    echo -en "Trying \\033[1m$cc\\033[0;39m... "
-    cc=`which $cc 2>/dev/null`
+    echo -en "Name of the gcc compiler to use, or path to it [${B}${cc}${N}]: "
+    read cc_tmp
 
-    if test "$cc" != ""; then
-        cc_cpu=`$cc -dumpmachine 2>/dev/null | cut -f1 -d-`
+    if test "$cc_tmp" != ""; then
+        cc_path=$cc_tmp
+    else
+        cc_path=$cc
+    fi
+
+    echo -en "Trying ${B}$cc_path${N}... "
+    cc_path=`which $cc_path 2>/dev/null`
+
+    if test "$cc_path" != ""; then
+        cc_cpu=`$cc_path -dumpmachine 2>/dev/null | cut -f1 -d-`
     else
         cc_cpu=
     fi
 
     case $cc_cpu in
         i?86)
-	    echo -e "\\033[1;32mOK.\\033[0;39m"
+	    echo -e "$OK"
 	    cc_cpu=i386
 	    break
 	    ;;
 	*)
-	    echo -e "\\033[1;31mFAILED.\\033[0;39m"
-	    read -p "Provide the path to a suitable compiler: " cc
+	    echo -e "$FAILED"
+
+            if test "$cc_path" == ""; then
+                echo -e "The compiler you specified doesn't seem to exist.\n"
+	    else
+	        echo -e "The compiler you specified has been configured for the" \
+		        "${B}$cc_cpu${N} cpu which is not supported by this SDK.\n"
+	    fi
     esac
 done
+cc=$cc_path
 
 echo Checking where the compiler stores its own include files...
 cc_os=`$cc -dumpmachine 2>/dev/null | cut -f2- -d-`
@@ -34,70 +74,51 @@ if echo $cc_os | grep freebsd >/dev/null; then
 else
     cc_include=`dirname \`$cc -print-libgcc-file-name\``/include
 fi
-echo -e "\\033[1m$cc_include\\033[0;39m"
+echo -e "${B}$cc_include${N}"
 
-echo Searching for a suitable linker...
-ld=ld
+tools_list="ld nm ar objcopy objdump objcopy strip"
 
-while true; do
-    echo -en "Trying \\033[1m$ld\\033[0;39m... "
-    ld=`which $ld 2>/dev/null`
+for tool in $tools_list; do
+    echo -en "Checking ${B}$tool${N}... "
 
-    if test "$ld" != ""; then
-        ld_emu_all=`$ld -V 2>/dev/null`
+    tool1=`which \`$cc -print-prog-name=$tool\` 2>/dev/null`
+
+    if test "$tool1" != ""; then
+        echo -e $OK
+        export $tool=$tool1
     else
-        ld_emu_all=
+        echo -e $FAILED
+        echo -e "The compiler cannot access ${B}$tool${N}, or there's no ${B}$tool${N}" \
+	        "installed. Make sure you have the correct binutils installed properly."
+        exit 1
     fi
-
-    for ld_emu in $ld_emu_all; do
-        case $ld_emu in
-            elf_i386)
-	        echo -e "\\033[1;32mOK.\\033[0;39m"
-		break 2
-	        ;;
-        esac
-    done
-
-    echo -e "\\033[1;31mFAILED.\\033[0;39m"
-    read -p "Provide the path to a suitable linker: " ld
 done
 
-tools_list="nm ar objcopy objdump objcopy strip"
+echo -en "Checking whether ${B}ld${N} supports the ELF format... "
 
-for tool1 in $tools_list; do
-    echo Searching for a suitable "'$tool1'"...
-    tool=$tool1
-    while true; do
-        echo -en "Trying \\033[1m$tool\\033[0;39m... "
-        tool=`which $tool 2>/dev/null`
+ld_emu_all="`$ld -V 2>/dev/null` none"
 
-        if test "$tool" != ""; then
-            tool_targets_list=`$tool --help 2>&1 | grep "$tool: supported targets:"`
-        else
-            tool_targets_list=
-        fi
-
-        for tool_target in $tool_targets_list; do
-            case $tool_target in
-                elf32-i386)
-	            echo -e "\\033[1;32mOK.\\033[0;39m"
-
-		    export $tool1=$tool
-		    export ${tool1}_target=$tool_target
-		    break 2
-	        ;;
-            esac
-        done
-
-        echo -e "\\033[1;31mFAILED.\\033[0;39m"
-        read -p "Provide the path to a suitable '$tool1': " tool
-    done
+for ld_emu in $ld_emu_all; do
+    case $ld_emu in
+        elf_${cc_cpu})
+            break
+	    ;;
+    esac
 done
+
+if test "$ld_emu" != "none"; then
+    echo -e $OK
+else
+    echo -e $FAILED
+    echo -e "Ld doesnt support the ELF executable format." \
+            "You need to configure the binutils so that they can work on ELF objects."
+    exit 1
+fi
 
 aros_sdk_path=/usr/local/aros-sdk
 
 while true; do
-    echo -en "Directory in which to install the AROS SDK [\\033[1m${aros_sdk_path}\\033[0;39m]: "
+    echo -en "Directory in which to install the AROS SDK [${B}${aros_sdk_path}${N}]: "
     read aros_sdk_path_tmp
 
     if test "$aros_sdk_path_tmp" != ""; then
@@ -106,8 +127,8 @@ while true; do
 
     while true; do
         if ! test -a $aros_sdk_path; then
-            echo -en "The directory \\033[1m$aros_sdk_path\\033[0;39m does not exist, "
-	    echo -en "create it [\\033[1myes\\033[0;39m]? "
+            echo -en "The directory ${B}$aros_sdk_path${N} does not exist, "
+	    echo -en "create it [${B}yes${N}]? "
             read answer
 
             if test "$answer" = "yes" -o "$answer" = ""; then
@@ -119,8 +140,8 @@ while true; do
             fi
 	else
 	    if ! test -d $aros_sdk_path; then
-	        echo -e "\\033[1m$aros_sdk_path\\033[0;39m already exists but it's not a directory."
-	        echo -e "Chose a new name or delete the existing \\033[1m$aros_sdk_path\\033[0;39m"
+	        echo -e "${B}$aros_sdk_path${N} already exists but it's not a directory."
+	        echo -e "Chose a new name or delete the existing ${B}$aros_sdk_path${N}"
 	        break 1
 	    else
 	        break 2
@@ -157,10 +178,10 @@ chmod a+x $aros_sdk_path/${cc_cpu}-aros/bin/strip
 
 cat <<EOF > AROS-SDK-Uninstall
 #!/bin/sh
-echo -e "\\033[1;31mATTENTION!\\033[0;39m The AROS SDK is about to be uninstalled."
+echo -e "${R}ATTENTION!${N} The AROS SDK is about to be uninstalled."
 
 while true; do
-    echo -en "Do you really want to proceed [\\033[1mno\\033[0;39m]? "
+    echo -en "Do you really want to proceed [${B}no${N}]? "
     read answer
 
     if test "\$answer" = "yes"; then
@@ -195,4 +216,4 @@ ln -sf $aros_sdk_path/${cc_cpu}-aros/bin/strip   $aros_sdk_path/bin/${cc_cpu}-ar
 cp -a $cc_cpu/lib/*     $aros_sdk_path/${cc_cpu}-aros/lib/
 cp -a $cc_cpu/include/* $aros_sdk_path/${cc_cpu}-aros/include/
 
-echo -e "\nEverything done. Remember to add \\033[1m$aros_sdk_path/bin\\033[0;39m to your \\033[1mPATH\\033[0;39m environment variable before using the AROS SDK."
+echo -e "\nEverything done. Remember to add ${B}$aros_sdk_path/bin${N} to your ${B}PATH${N} environment variable before using the AROS SDK."
