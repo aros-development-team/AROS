@@ -25,7 +25,7 @@ extern const IPTR IconDesc[];
 	AROS_LH1(struct DiskObject *, GetDiskObject,
 
 /*  SYNOPSIS */
-	AROS_LHA(UBYTE *, name, A0),
+	AROS_LHA(CONST_STRPTR, name, A0),
 
 /*  LOCATION */
 	struct Library *, IconBase, 13, Icon)
