@@ -149,7 +149,7 @@ int gensets(FILE *in, FILE *out)
         if (idx)
             *idx = '\0';
 
-	pri = strtoul(&idx[1], NULL, 10);
+	pri = idx ? strtoul(&idx[1], NULL, 10) : 0;
 
 	get_node(&setlist, sec, off, pri);
     }
