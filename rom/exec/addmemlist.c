@@ -1,3 +1,13 @@
+/*
+    (C) 1995-96 AROS - The Amiga Replacement OS
+    $Id$
+    $Log$
+    Revision 1.2  1996/08/01 17:27:02  digulla
+    Added copyright notics and made headers conform
+
+    Desc:
+    Lang:
+*/
 #include <exec/execbase.h>
 #include "machine.h"
 #include "memory.h"
