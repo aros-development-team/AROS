@@ -33,13 +33,30 @@ HOW TO DO IT
 	    which simply ignores all parameters and doesn't return an
 	    error code).
 
-3. Make a copy of i386-emul to $(KERNEL) and convert all assembler sources
+4. Type "make". It will abort because there is no $(KERNEL) yet, but setup
+    some important files and directory trees.
+
+5. Make a copy of i386-emul to $(KERNEL) and convert all assembler sources
     from x86 to your CPU.
 
-4. Type make. If there any errors, write them down, then fix them and
-    continue with step 4.
+6. Populate $(KERNEL)/. It is recommended that you make a copy of i386-emul,
+    because that is the most uptodate version of the kernel.
 
-5. Go to bin/$(ARCH)/AROS and start "arosshell". Now you can type
+7. Type "make machine". It will compile a programm and run it. The output
+    can be used to modify $(KERNEL)/machine.h.
+
+8. Run "make machine.i" in $(KERNEL). It will generate a file "machine.i"
+    which you need to compile the assembler files. "machine.i" contains the
+    values if numerous system constants (function vector offsets, structure
+    field offsets and system flags).
+
+9. Edit all *.s files in $(KERNEL) and generate the appropriate machine code
+    for your CPU. To compile the files, type "make".
+
+10. Go to the main directory and type make. If there any errors, write them
+    down, then fix them and continue with step 10.
+
+11. Go to bin/$(ARCH)/AROS and start "arosshell". Now you can type
     some commands (eg. "dir all", "list" or "demowin"). If all works well,
     you get a list of directories and files with "dir all" and "demowin"
     opens a window with some gadgets and renderings with which you can
@@ -47,6 +64,6 @@ HOW TO DO IT
     arosshell, you must press ^C (Ctrl-C) since as a real OS there is
     no way to stop nicely.
 
-6. If you had any problems, send me a list so future versions of AROS can
-    fix them.
+12. If you had any problems, send me a list or patches, so future versions
+    of AROS don't have them.
 
