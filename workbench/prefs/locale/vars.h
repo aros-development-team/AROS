@@ -26,6 +26,9 @@ VAR struct Library              *GadToolsBase;
 VAR struct Library  	    	*IFFParseBase;
 VAR struct Library  	    	*CyberGfxBase;
 VAR struct Library  	    	*DataTypesBase;
+#if USE_SHARED_COOLIMAGES
+VAR struct Library  	    	*CoolImagesBase;
+#endif
 
 VAR struct Screen               *scr;
 VAR struct Window               *win;

@@ -181,6 +181,10 @@
 
 /*********************************************************************************************/
 
+#define USE_SHARED_COOLIMAGES 1
+
+/*********************************************************************************************/
+
 #define CONFIGNAME_ENV	    	"ENV:Sys/locale.prefs"
 #define CONFIGNAME_ENVARC   	"ENVARC:Sys/locale.prefs"
 

@@ -11,7 +11,12 @@
 #include "global.h"
 #include "registertab.h"
 
+#if USE_SHARED_COOLIMAGES
+#include <libraries/coolimages.h>
+#include <proto/coolimages.h>
+#else
 #include <linklibs/coolimages.h>
+#endif
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -48,6 +53,9 @@ libtable[] =
     {&IFFParseBase      , "iffparse.library" 	 , 39, TRUE  },
     {&CyberGfxBase  	, "cybergraphics.library", 39, FALSE },
     {&DataTypesBase  	, "datatypes.library"	 , 39, FALSE },
+#if USE_SHARED_COOLIMAGES
+    {&CoolImagesBase  	, "coolimages.library"	 ,  1, TRUE  },
+#endif
     {NULL                                            	     }
 };
 
@@ -81,9 +89,15 @@ static struct button
 }
 buttontable[NUM_BUTTONS] =
 {
+#if USE_SHARED_COOLIMAGES
+    {MSG_GAD_SAVE  , (const struct CoolImage *)COOL_SAVEIMAGE_ID  },
+    {MSG_GAD_USE   , (const struct CoolImage *)COOL_DOTIMAGE_ID   },
+    {MSG_GAD_CANCEL, (const struct CoolImage *)COOL_CANCELIMAGE_ID}
+#else
     {MSG_GAD_SAVE  , &cool_saveimage  },
     {MSG_GAD_USE   , &cool_dotimage   },
     {MSG_GAD_CANCEL, &cool_cancelimage}
+#endif
 };
 
 /*********************************************************************************************/
@@ -231,9 +245,15 @@ static void MakePages(void)
 {
     static const struct CoolImage *tabimages[] =
     {
+#if USE_SHARED_COOLIMAGES
+    	(const struct CoolImage *)COOL_HEADIMAGE_ID,
+    	(const struct CoolImage *)COOL_FLAGIMAGE_ID,
+    	(const struct CoolImage *)COOL_CLOCKIMAGE_ID
+#else
     	&cool_headimage,
 	&cool_flagimage,
 	&cool_clockimage
+#endif
     };
     ULONG bgcol = 0;
     WORD i;
@@ -241,7 +261,11 @@ static void MakePages(void)
     
     if (truecolor)
     {
+    #if USE_SHARED_COOLIMAGES
+    	cool_imageclass_ok = (CoolImagesBase != NULL);
+    #else
     	cool_imageclass_ok = InitCoolImageClass(CyberGfxBase);
+    #endif
     	if (cool_imageclass_ok)
 	{
 	    ULONG col[3];
@@ -263,12 +287,21 @@ static void MakePages(void)
     	regitems[i].text = MSG(pagetable[i].nameid);
 	if (cool_imageclass_ok)
 	{
+	#if USE_SHARED_COOLIMAGES
+	    tabimages[i] = (const struct CoolImage *)COOL_ObtainImageA((ULONG)tabimages[i], NULL);
+	    
+	    regitems[i].image = NewObject(NULL, COOLIMAGECLASS, IA_Width   	 , tabimages[i]->width ,
+	    	    	    	    	    	    		IA_Height  	 , tabimages[i]->height,
+								COOLIM_CoolImage , (IPTR)tabimages[i]  ,
+								COOLIM_BgColor   , bgcol    	       ,
+								TAG_DONE);
+	#else
 	    regitems[i].image = NewObject(cool_imageclass, NULL, IA_Width   	 , tabimages[i]->width ,
 	    	    	    	    	    	    	         IA_Height  	 , tabimages[i]->height,
 								 COOLIM_CoolImage, (IPTR)tabimages[i]  ,
 								 COOLIM_BgColor  , bgcol    	       ,
 								 TAG_DONE);
-								 
+    	#endif								 
 	}
 	if (!(pagetable[i].handler(PAGECMD_INIT, 0)))
 	{
@@ -291,8 +324,10 @@ static void KillPages(void)
  	pagetable[i].handler(PAGECMD_CLEANUP, 0);
 	if (regitems[i].image) DisposeObject(regitems[i].image);
     }
-    
+
+#if !USE_SHARED_COOLIMAGES    
     CleanupCoolImageClass();
+#endif
 }
 
 /*********************************************************************************************/
@@ -307,6 +342,11 @@ static void LayoutButtons(void)
     
     for(i = 0; i < 3; i++)
     {
+    #if USE_SHARED_COOLIMAGES
+    	buttontable[i].image = (const struct CoolImage *)COOL_ObtainImageA((ULONG)buttontable[i].image, NULL);
+	
+    #endif
+    
     	w = TextLength(&temprp, MSG(buttontable[i].nameid), strlen(MSG(buttontable[i].nameid)));
 	if (truecolor)
 	{
@@ -406,10 +446,15 @@ static void MakeGadgets(void)
 	{GA_RelVerify	    , TRUE  	    },
 	{TAG_DONE   	    	    	    }
     };
-    
+
+#if USE_SHARED_COOLIMAGES
+    if (!CoolImagesBase)
+    	Cleanup(MSG(MSG_CANT_CREATE_GADGET));  
+#else
     if (!InitCoolButtonClass(CyberGfxBase))
     	Cleanup(MSG(MSG_CANT_CREATE_GADGET));
-	
+#endif
+
     spacex = (pages_width + TABBORDER_X * 2 - buttonwidth * NUM_BUTTONS) * 16 / (NUM_BUTTONS - 1);
     
     for(i = 0; i < NUM_BUTTONS; i++)
@@ -426,10 +471,15 @@ static void MakeGadgets(void)
 	tags[4].ti_Data = (IPTR)MSG(buttontable[i].nameid);
 	tags[5].ti_Data = buttontable[i].nameid;
 	tags[7].ti_Data = (IPTR)buttontable[i].image;
-
+	
 	if (i > 0) tags[6].ti_Data = (IPTR)buttontable[i - 1].gad;
 	
+    #if USE_SHARED_COOLIMAGES
+	buttontable[i].gad = NewObjectA(NULL, COOLBUTTONGCLASS, tags);
+    #else
 	buttontable[i].gad = NewObjectA(cool_buttonclass, NULL, tags);
+    #endif
+   
 	if (!buttontable[i].gad) Cleanup(MSG(MSG_CANT_CREATE_GADGET));
 	
     }
@@ -452,7 +502,9 @@ static void KillGadgets(void)
     	if (buttontable[i].gad) DisposeObject((Object *)buttontable[i].gad);
     }
     
+#if !USE_SHARED_COOLIMAGES
     CleanupCoolButtonClass();
+#endif
 }
 
 /*********************************************************************************************/
