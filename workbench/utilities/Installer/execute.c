@@ -1114,7 +1114,7 @@ void *params;
 		    }
 		    else
 		    {
-			error = SCRIPTERROR;
+			error = BADPARAMETER;
 			traperr("<%s> requires two strings as arguments!\n", current->parent->cmd->arg);
 		    }
 		    if (current->next->next)
@@ -1182,11 +1182,11 @@ void *params;
 
 		    if (current->arg != NULL)
 		    {
-			string = strip_quotes(current->arg);
+			GetString(current->arg);
 		    }
 		    else
 		    {
-			error = SCRIPTERROR;
+			error = BADPARAMETER;
 			traperr("<%s> requires a file string as argument!\n", current->parent->cmd->arg);
 		    }
 		    if (current->next)
@@ -1228,7 +1228,7 @@ void *params;
 		else
 		{
 		    error = SCRIPTERROR;
-		    traperr("<%s> requires a string argument!\n", current->arg);
+		    traperr("<%s> requires one argument!\n", current->arg);
 		}
 		break;
 
@@ -1324,7 +1324,7 @@ void *params;
 
 		    if (current->arg != NULL)
 		    {
-			string = strip_quotes(current->arg);
+			GetString(current->arg);
 		    }
 		    else
 		    {
@@ -1382,7 +1382,7 @@ void *params;
 
 		    if (current->arg != NULL)
 		    {
-			string = strip_quotes(current->arg);
+			GetString(current->arg);
 		    }
 		    else
 		    {
@@ -2059,10 +2059,53 @@ DMSG("   %s\n",ret);
 		}
 		break;
 
+	    case _EXPANDPATH:
+		if (current->next != NULL)
+		{
+		    char *ret = NULL;
+		    BPTR lockdev;
+
+		    current = current->next;
+		    ExecuteCommand();
+
+		    if (current->arg != NULL)
+		    {
+			GetString(current->arg);
+		    }
+		    else
+		    {
+			error = BADPARAMETER;
+			traperr("<%s> requires a path name as argument!\n", current->parent->cmd->arg);
+		    }
+
+		    lockdev = Lock(string, SHARED_LOCK);
+		    FreeVec(string);
+		    if (lockdev)
+		    {
+		        ret = DynNameFromLock(lockdev);
+		        UnLock(lockdev);
+		    }
+		    if (ret)
+		    {
+			current->parent->arg = addquotes(ret);
+			FreeVec(ret);
+		    }
+		    else
+		    {
+			current->parent->arg = addquotes("");
+		    }
+
+		}
+		else
+		{
+		    error = SCRIPTERROR;
+		    traperr("<%s> requires one argument!\n", current->arg);
+		}
+		break;
+
       /* Here are all unimplemented commands */
 	    case _COPYFILES	:
 	    case _COPYLIB	:
-	    case _EXPANDPATH	:
 	    case _FOREACH	:
 	    case _GETSUM	:
 	    case _GETVERSION	:
