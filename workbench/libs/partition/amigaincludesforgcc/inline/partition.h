@@ -99,4 +99,8 @@
         LP1(0x6c, ULONG *, QueryPartitionAttrs, struct PartitionHandle *, table, a1, \
         , PARTITION_BASE_NAME)
 
+#define DestroyPartitionTable(root) \
+        LP1(0x72, LONG, DestroyPartitionTable, struct PartitionHandle *, root, a1, \
+        , PARTITION_BASE_NAME)
+
 #endif /* _INLINE_PARTITION_H */

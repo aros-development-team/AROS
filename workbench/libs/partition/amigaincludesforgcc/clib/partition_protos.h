@@ -31,5 +31,6 @@ LONG GetPartitionAttrs(struct PartitionHandle *, struct TagItem *);
 LONG SetPartitionAttrs(struct PartitionHandle *, struct TagItem *);
 ULONG *QueryPartitionTableAttrs(struct PartitionHandle *);
 ULONG *QueryPartitionAttrs(struct PartitionHandle *);
+ULONG DestroyPartitionTable(struct PartitionHandle *);
 
 #endif /* CLIB_PARTITION_PROTOS_H */

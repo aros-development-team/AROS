@@ -60,7 +60,7 @@ struct PartitionType {
 /* partition types */
 //nothing defined here ...
 
-/* commands fpr DoPartition() */
+/* commands for DoPartition() */
 
 /* Tags for partition tables */
 #define PTT_DOSENVEC         (1)
