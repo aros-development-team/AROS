@@ -736,9 +736,34 @@ static void KillWindow(void)
 static void ScrollTo(UWORD dir, UWORD quali)
 {
     IPTR val;
-    LONG oldtop, top, total, visible;
+    LONG oldtop, top, total, visible, delta = 1;
     BOOL horiz;
     BOOL inc;
+
+#ifdef _AROS    
+    switch(dir)
+    {
+    	case RAWKEY_NM_WHEEL_UP:
+	    dir = CURSORUP;
+	    delta = 3;
+	    break;
+	    
+	case RAWKEY_NM_WHEEL_DOWN:
+	    dir = CURSORDOWN;
+	    delta = 3;
+	    break;
+	    
+	case RAWKEY_NM_WHEEL_LEFT:
+	    dir = CURSORLEFT;
+	    delta = 3;
+	    break;
+	    
+	case RAWKEY_NM_WHEEL_RIGHT:
+	    dir = CURSORRIGHT;
+	    delta = 3;
+	    break;
+    }
+#endif
     
     if ((dir == CURSORUP) || (dir == CURSORDOWN))
     {
@@ -772,7 +797,7 @@ static void ScrollTo(UWORD dir, UWORD quali)
     }
     else
     {
-	if (inc) top++; else top--;
+	if (inc) top += delta; else top -= delta;
     }
 
     if (top + visible > total) top = total - visible;
@@ -850,6 +875,12 @@ static void HandleAll(void)
 		case IDCMP_RAWKEY:
 		    switch(msg->Code)
 		    {
+		    #ifdef _AROS
+		    	case RAWKEY_NM_WHEEL_UP:
+		    	case RAWKEY_NM_WHEEL_DOWN:
+		    	case RAWKEY_NM_WHEEL_LEFT:
+		    	case RAWKEY_NM_WHEEL_RIGHT:
+		    #endif
 			case CURSORUP:
 			case CURSORDOWN:
 			case CURSORRIGHT:
@@ -857,22 +888,24 @@ static void HandleAll(void)
 			    ScrollTo(msg->Code, msg->Qualifier);
 			    break;
 			
-			case 0x70: /* HOME */
+		    #ifdef _AROS
+			case RAWKEY_HOME: /* HOME */
 			    ScrollTo(CURSORUP, IEQUALIFIER_LALT);
 			    break;
 			    
-			case 0x71: /* END */
+			case RAWKEY_END: /* END */
 			    ScrollTo(CURSORDOWN, IEQUALIFIER_LALT);
 			    break;
 			    
-			case 0x48: /* PAGE UP */
+			case RAWKEY_PAGEUP: /* PAGE UP */
 			    ScrollTo(CURSORUP, IEQUALIFIER_LSHIFT);
 			    break;
 			    
-			case 0x49: /* PAGE DOWN */
+			case RAWKEY_PAGEDOWN: /* PAGE DOWN */
 			    ScrollTo(CURSORDOWN, IEQUALIFIER_LSHIFT);
 			    break;
-			    
+		    #endif
+		      
 			case 0x42: /* SHIFT TAB? */
 			    if (msg->Qualifier & (IEQUALIFIER_LSHIFT | IEQUALIFIER_RSHIFT))
 			    {
