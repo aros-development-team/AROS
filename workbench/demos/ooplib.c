@@ -6,21 +6,40 @@
     Lang: english
 */
 
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <proto/oop.h>
 #include <proto/exec.h>
 #include <exec/libraries.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <unistd.h>
+#include <exec/memory.h>
 #include <oop/oop.h>
 #include <utility/tagitem.h>
 #include <oop/meta.h>
 #include <oop/root.h>
 #include <oop/method.h>
 
-#define SDEBUG 1
-#define DEBUG 1
+#include <stdio.h>
+#include <sys/time.h>
+#include <unistd.h>
+
+#include <oop/server.h>
+
+#define SDEBUG 0
+#define DEBUG 0
 #include <aros/debug.h>
+
+#define MYSERVERID "demoserver"
+#define MYTIMERID "timer"
+
+#define SERVERTASK_STACKSIZE 20000
+
+struct ServerParam
+{
+    struct Task *Caller;
+    ULONG SigBit;
+};
+struct Task *CreateServerTask(APTR taskparams);
+
 
 /* --------------------- */
 /* Defines below would typically go into the includefile for the class */
@@ -52,6 +71,11 @@ VOID FreeTimerClass(Class *cl);
 ULONG __OOPI_Meta;
 ULONG __OOPI_Timer;
 ULONG __OOPI_Method;
+ULONG __OOPI_Server;
+
+Class *timercl;
+
+struct ServerParam sp;
 
 int main (int argc, char **argv)
 {
@@ -65,60 +89,67 @@ int main (int argc, char **argv)
 	       ( __OOPI_Meta   = GetID(GUID_Meta	))
 	    && ( __OOPI_Timer  = GetID(GUID_Timer	)) 
 	    && ( __OOPI_Method = GetID(GUID_Method	)) 
+	    && ( __OOPI_Server = GetID(GUID_Server	)) 
 	    
 	    )
 	{
-            Class *timercl;
 	    
-	    Object *timer;
 	    
-	    printf("__OOPI_Meta=%ld\n", __OOPI_Meta);
 	
 	    timercl = MakeTimerClass();
 	    printf("Timercl: %p\n", timercl);
 	    if (timercl)
 	    {
-	    	struct TagItem timer_tags[] =
-	    	{
-	    	    { TAG_DONE, 0UL}
-	    	};
+	        /* Create the server task */
+		struct Task *servertask;
 		
-		timer = NewObjectA(timercl, NULL, timer_tags);
-		if (timer)
+		sp.Caller = FindTask(NULL);
+		/* This will succeed since no signals have been allocated earlier */
+		sp.SigBit = AllocSignal(-1L);
+		
+		D(bug("Creating server task\n"));
+		
+		servertask = CreateServerTask(&sp);
+		if (servertask)
 		{
-		    ULONG test_mid = M_Timer_TestMethod;
-		    
-		    struct TagItem mobj_tags[] = 
-		    {
-		    	{A_Method_TargetObject,	(IPTR)timer },
-			{A_Method_Message,	(IPTR)&test_mid},
-			{A_Method_MethodID,	M_Timer_TestMethod},
-			{TAG_DONE,	0UL}
-			
-		    };
-		    
-		    Method *test_m;
-		    printf("Doing test method\n");
-		    
-		    printf ("Result: %ld\n", DoMethodA(timer, (Msg)&test_mid));
-		    
-		    test_m = (Method *)NewObjectA(NULL, METHODCLASS, mobj_tags);
-		    printf("test method obj: %p\n", test_m);
-		    if (test_m)
-		    {
-		        printf ("TestMethod result: %ld\n", CallMethod(test_m));
-			
-			DisposeObject((Object *)test_m);
 
+		    Object *server;
+		    
+		    D(bug("server task created: %p\n", servertask));
+		    
+		    Wait(1L << sp.SigBit);
+		    D(bug("server task has initialized itself: %p\n", servertask));
+
+
+		    if ( (server = FindServer(MYSERVERID)) )
+		    {
+		        Object *timer;
+			
+			D(bug("Server found: %p\n", server));
+			
+		        if ( (timer = Server_FindObject(server, MYTIMERID)) )
+			{
+			    ULONG test_mid = M_Timer_TestMethod;
+			
+			    D(bug("timer found: %p\n", timer));
+		    	
+
+			    printf("Doing test method\n");
+		    
+			    printf ("Result: %ld\n", DoMethod(timer, (Msg)&test_mid));
+			    
+			}
+		    
 		    }
 		    
-		    DisposeObject(timer);
 		}
+		    
 		FreeTimerClass(timercl);
 	    }
+
         }
+	CloseLibrary(OOPBase);
 	
-//	DebugOOP();
     }
     return (0);
 }
@@ -204,7 +235,9 @@ Class *MakeTimerClass()
 	{(IPTR (*)())_Timer_Start,		MIDX_Timer_Start},
 	{(IPTR (*)())_Timer_Stop,		MIDX_Timer_Stop},
 	{(IPTR (*)())_Timer_PrintElapsed,	MIDX_Timer_PrintElapsed},
-	{(IPTR (*)())_Timer_TestMethod,		MIDX_Timer_TestMethod}
+	{(IPTR (*)())_Timer_TestMethod,		MIDX_Timer_TestMethod},
+	{NULL, 0UL}
+	
     };
     
     struct InterfaceDescr ifdescr[] =
@@ -239,6 +272,108 @@ VOID FreeTimerClass(Class *cl)
     DisposeObject((Object *)cl);
     
     return;
+
+}
+
+VOID TaskEntryPoint(struct ServerParam *p)
+{
+    Object *server;
+    
+    BOOL success = FALSE;
+    
+    
+    struct TagItem server_tags[] =
+    {
+	{ TAG_DONE, 0UL}
+    };
+    
+    
+    D(bug("Entering servertask...\n"));
+    
+    server = NewObjectA(NULL, SERVERCLASS, server_tags);
+    if (server)
+    {
+    	if (AddServer(server, MYSERVERID))
+	{
+
+    	    Object *timer;
+    
+    	    struct TagItem timer_tags[] =
+    	    {
+		{ TAG_DONE, 0UL}
+    	    };
+		
+	    timer = NewObjectA(timercl, NULL, timer_tags);
+	    if (timer)
+	    {
+		if (Server_AddObject(server, timer, MYTIMERID))
+		{
+		     Signal(p->Caller, 1L << p->SigBit);
+		     
+		     Server_Run(server);
+		     
+		     Server_RemoveObject(server, MYTIMERID);
+		     success = TRUE;
+		     
+		}    
+		DisposeObject(timer);
+	     
+	    }
+	    RemoveServer(MYSERVERID);
+	}
+	DisposeObject(server);
+	
+	
+    }
+
+
+    /* Just in case */
+    if (!success)
+    {
+    	D(bug("st: No success\n"));
+	Signal(p->Caller, 1L << p->SigBit);
+    }
+    return;
+
+}
+
+struct Task *CreateServerTask(APTR taskparams)
+{
+    struct Task *task;
+    APTR stack;
+    
+    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
+    if (task)
+    {
+    	NEWLIST(&task->tc_MemEntry);
+    	task->tc_Node.ln_Type=NT_TASK;
+    	task->tc_Node.ln_Name="demoserver";
+    	task->tc_Node.ln_Pri = 0;
+
+    	stack=AllocMem(SERVERTASK_STACKSIZE, MEMF_PUBLIC);
+    	if(stack != NULL)
+    	{
+	    task->tc_SPLower=stack;
+	    task->tc_SPUpper=(BYTE *)stack + SERVERTASK_STACKSIZE;
+
+#if AROS_STACK_GROWS_DOWNWARDS
+	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
+	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
+#else
+	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
+	    *(APTR *)task->tc_SPLower = taskparams;
+#endif
+
+	    if(AddTask(task, TaskEntryPoint, NULL) != NULL)
+	    {
+	    	/* Everything went OK */
+	    	return (task);
+	    }	
+	    FreeMem(stack, SERVERTASK_STACKSIZE);
+    	}
+        FreeMem(task,sizeof(struct Task));
+    }
+    return (NULL);
 
 }
 
