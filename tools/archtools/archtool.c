@@ -910,7 +910,7 @@ int has_arch = 1;
   if(parse_libconf(NULL,lc))
     return(-1);
 
-  if (lc->type==t_hidd || lc->type==t_gadget)
+  if (lc->type == t_hidd || lc->type == t_gadget || lc->type == t_class)
     has_arch = 0;
 
   if(has_arch)
