@@ -105,7 +105,7 @@ static VOID x11_dispose(Class *cl, Object *o, Msg msg)
 
 static VOID x11_get(Class *cl, Object *o, struct pRoot_Get *msg)
 {
-    return;
+    DoSuperMethod(cl, o, (Msg)msg);
 }
 
 
