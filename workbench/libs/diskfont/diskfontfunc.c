@@ -8,10 +8,11 @@
 
 /****************************************************************************************/
 
+#include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <proto/graphics.h>
 #include <proto/arossupport.h>
-#include <dos/exall.h>
+#include <proto/alib.h>
 #include <string.h>
 
 #include "diskfont_intern.h"  
@@ -32,6 +33,13 @@ struct FileEntry
     UBYTE 		FileName[1];
 };	
 
+struct DirEntry
+{
+    struct MinNode  	Node;
+    struct FileEntry	*FileList;
+    BPTR    	    	DirLock;
+};
+
 struct DFHData /*DiskFontHookData */
 {
     BPTR                    	DirLock;
@@ -41,8 +49,10 @@ struct DFHData /*DiskFontHookData */
     /* Index into the current TTextAttr-array */
     UWORD                   	TTextAttrIndex;
 	
-    struct FileEntry	    	*FileList;
+    struct MinList  	    	DirList;
+    struct DirEntry 	    	*CurrentDirEntry;
     struct FileEntry		*CurrentFileEntry;
+    STRPTR  	    	    	CurrentFontDescrName;
 };
 
 /****************************************************************************************/
@@ -123,7 +133,7 @@ STATIC struct FileEntry *GetFileList(BPTR fontslock, struct DiskfontBase_intern 
 		    {
 		    	felist = fe;
 		    }
-		    
+		   		 
 		    prevfe = fe;
 		    
 		} /* while(ExNext(lock, fib)) */
@@ -169,20 +179,44 @@ STATIC BOOL LoadNext(struct DFHData *dfhd, struct DiskfontBase_intern *DiskfontB
     D(bug("LoadNext(dfhdt=%p)\n", dfhd));
         
     curfile = dfhd->CurrentFileEntry;
-
-    if (!curfile)
-	ReturnInt ("LoadNext", ULONG, FALSE);
-
-    while (curfile && !done)
+    
+    do
     {
-     	if ((dfhd->CurrentFDH = ReadFontDescr(curfile->FileName, DFB(DiskfontBase))) != 0 )
-       	{
-       	    done    = TRUE;
-            retval  = TRUE;
-       	}
+    	if (curfile)
+	{
+	    CurrentDir(dfhd->CurrentDirEntry->DirLock);
+	    	    
+     	    if ((dfhd->CurrentFDH = ReadFontDescr(curfile->FileName, DFB(DiskfontBase))) != 0 )
+       	    {
+	    	dfhd->CurrentFontDescrName = curfile->FileName;
+		
+       		done    = TRUE;
+        	retval  = TRUE;
+       	    }
         
-        curfile = curfile->Next;
-    }
+            curfile = curfile->Next;
+	}
+
+	if (!done) while (!curfile)
+	{
+    	    dfhd->CurrentDirEntry = (struct DirEntry *)dfhd->CurrentDirEntry->Node.mln_Succ;
+
+	    /* Paranoia check */
+	    if (!dfhd->CurrentDirEntry)
+	    {
+		ReturnInt ("LoadNext", ULONG, FALSE);
+	    }
+
+	    /* Needed check */
+	    if (!dfhd->CurrentDirEntry->Node.mln_Succ)
+	    {
+		ReturnInt ("LoadNext", ULONG, FALSE);	
+	    }
+
+    	    curfile  = dfhd->CurrentDirEntry->FileList;
+	}
+	
+    } while (curfile && !done);
     
     dfhd->CurrentFileEntry = curfile;
     
@@ -199,11 +233,18 @@ STATIC BOOL LoadNext(struct DFHData *dfhd, struct DiskfontBase_intern *DiskfontB
 
 STATIC VOID FreeResources(struct DFHData *dfhd, struct DiskfontBase_intern *DiskfontBase )
 {
+    struct DirEntry *direntry, *direntry2;
+    
     D(bug("FreeResources(dfhd=%p)\n", dfhd));
 
-    if ( dfhd->DirLock	) CurrentDir	( dfhd->OldDirLock  	    	    );
-    if ( dfhd->FileList ) FreeFileList	( dfhd->FileList, DFB(DiskfontBase) );		
-    if ( dfhd->DirLock	) UnLock        ( dfhd->DirLock    		    );
+    CurrentDir(dfhd->OldDirLock);
+    
+    ForeachNodeSafe(&dfhd->DirList, direntry, direntry2)
+    {
+    	FreeFileList(direntry->FileList, DFB(DiskfontBase));
+	UnLock(direntry->DirLock);
+	FreeVec(direntry);
+    }
     
     FreeMem(dfhd, sizeof (struct DFHData));
   
@@ -225,17 +266,53 @@ STATIC struct DFHData *AllocResources(struct DiskfontBase_intern *DiskfontBase)
     D(bug("AllocResources(void)\n"));
           
     /* Allocate user data */
-    if ((dfhd = AllocMem( sizeof (struct DFHData), MEMF_ANY|MEMF_CLEAR)) != 0  )
+    if ((dfhd = AllocMem( sizeof (struct DFHData), MEMF_ANY | MEMF_CLEAR)))
     {
-    	/* Create a lock on the fonts directory */
-        if ((dfhd->DirLock = Lock(FONTSDIR, ACCESS_READ)) != 0)
+    	struct DevProc *dp = NULL;
+	
+    	NewList((struct List *)&dfhd->DirList);
+	
+	dfhd->OldDirLock = CurrentDir(0);
+	CurrentDir(dfhd->OldDirLock);
+	
+	for(;;)
+	{
+	    dp = GetDeviceProc(FONTSDIR, dp);
+	    if (dp)
+	    {
+	    	struct DirEntry *direntry;
+		
+		direntry = AllocVec(sizeof(struct DirEntry), MEMF_ANY | MEMF_CLEAR);
+		if (!direntry) break;
+		
+		if (!(direntry->DirLock = DupLock(dp->dvp_Lock)))
+		{
+		    FreeVec(direntry);
+		    break;
+		}
+		
+		if (!(direntry->FileList = GetFileList(direntry->DirLock, DFB(DiskfontBase))))
+		{
+		    UnLock(direntry->DirLock);
+		    FreeVec(direntry);
+		    break;
+		}
+		
+		AddTail((struct List *)&dfhd->DirList, (struct Node *)direntry);
+		
+	    } /* if (dp) */
+	    else
+	    {
+	    	break;
+	    }
+	    
+	} /* for(;;) */
+	
+	if (dp) FreeDeviceProc(dp);
+	
+        if (!(IsListEmpty((struct List *)&dfhd->DirList)))
         {
-         	/* Change the current directory */
-             dfhd->OldDirLock = CurrentDir(dfhd->DirLock);
-        	
-	     /* Get a list of the .font files */
-	     if ((dfhd->FileList = GetFileList(dfhd->DirLock, DFB(DiskfontBase) )) != 0)
-		 ReturnPtr("AllocResources", struct DFHData *, dfhd); 
+	    ReturnPtr("AllocResources", struct DFHData *, dfhd); 
         }
           
         /* Failure. Free the allocated resources. */
@@ -274,13 +351,16 @@ AROS_UFH3(IPTR, DiskFontFunc,
         case FHC_AF_INIT:
             
             if (!(fhc->fhc_UserData = dfhd = AllocResources( DFB(DiskfontBase) )))
+	    {
             	retval = FALSE;
+	    }
             else
-              	dfhd->CurrentFileEntry = dfhd->FileList;
-
+	    {
+	    	dfhd->CurrentDirEntry = (struct DirEntry *)dfhd->DirList.mlh_Head;
+		dfhd->CurrentFileEntry = dfhd->CurrentDirEntry->FileList;
+    	    }
             break;
-
-            
+        
         case FHC_AF_READFONTINFO:
             
             dfhd = fhc->fhc_UserData;
@@ -321,6 +401,8 @@ AROS_UFH3(IPTR, DiskFontFunc,
             	&(fdh->TAttrArray[ index ]),
             	sizeof (struct TTextAttr) );
             
+	    fhc->fhc_DestTAttr.tta_Name = dfhd->CurrentFontDescrName;
+	    
             /* 
             	Since the fontname is the same for all entries in a .font file,
              	we can reuse it
