@@ -799,7 +799,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 				      
 	    if ( (!(ie->ie_Code & IECODE_UP_PREFIX)) ||
 	         gadget ||
-	         ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0) )
+	         (w && ((w->IDCMPFlags & IDCMP_VANILLAKEY) == 0)) )
 	    {
 
 		if (gadget)
