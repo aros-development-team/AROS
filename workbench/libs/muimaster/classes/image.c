@@ -19,15 +19,29 @@
 #include "mui.h"
 #include "muimaster_intern.h"
 #include "support.h"
+#include "imspec.h"
 
 extern struct Library *MUIMasterBase;
 
-/********** Image ***********/
+#define MIF_FREEVERT   (1<<0)
+#define MIF_FREEHORIZ  (1<<1)
 
 struct MUI_ImageData
 {
-    int dummy;
+    char *spec;
+    ULONG flags;
+    struct MUI_ImageSpec *img;
 };
+
+static char *StrDup(char *x)
+{
+    char *dup;
+    if (!x) return NULL;
+    dup = AllocVec(strlen(x) + 1, MEMF_PUBLIC);
+    if (dup) CopyMem((x), dup, strlen(x) + 1);
+    return dup;
+}
+
 
 /**************************************************************************
  OM_NEW
@@ -48,11 +62,169 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
     {
 	switch (tag->ti_Tag)
 	{
+	    case    MUIA_Image_FreeHoriz:
+		    _handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEHORIZ);
+		    break;
+
+	    case    MUIA_Image_FreeVert:
+		    _handle_bool_tag(data->flags, tag->ti_Data, MIF_FREEVERT);
+		    break;
+
+	    case    MUIA_Image_Spec:
+		    data->spec = StrDup((char*)tag->ti_Data);
+		    break;
     	}
     }
     
     return (IPTR)obj;
 }
+
+/**************************************************************************
+ OM_DISPOSE
+**************************************************************************/
+static IPTR Image_Dispose(struct IClass *cl, Object *obj, Msg msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    if (data->spec) FreeVec(data->spec);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+    return 0;
+}
+
+/**************************************************************************
+ OM_SET
+**************************************************************************/
+static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    struct TagItem  	    *tag, *tags;
+
+    for (tags = msg->ops_AttrList; (tag = NextTagItem(&tags)); )
+    {
+	switch (tag->ti_Tag)
+	{
+	    case    MUIA_Image_Spec:
+		    if (data->spec) FreeVec(data->spec);
+		    data->spec = StrDup((char*)tag->ti_Data);
+
+		    if (_flags(obj)&MADF_CANDRAW)
+		    {
+			zune_imspec_hide(data->img);
+
+		    	if (_flags(obj)&MADF_SETUP)
+		    	{
+			    zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
+			    zune_imspec_free(data->img);
+			    
+			    data->img = zune_image_spec_to_structure((IPTR)data->spec);
+			    zune_imspec_setup(&data->img, muiRenderInfo(obj));
+			}
+
+			zune_imspec_show(data->img,obj);
+			MUI_Redraw(obj,MADF_DRAWUPDATE);
+		    }
+		    break;
+    	}
+    }
+    
+    return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ OM_GET
+**************************************************************************/
+static IPTR Image_Get(struct IClass *cl, Object *obj, struct opGet *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    return (IPTR)DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_Setup
+**************************************************************************/
+static IPTR Image_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    if (!DoSuperMethodA(cl,obj,(Msg)msg)) return NULL;
+
+    data->img = zune_image_spec_to_structure((IPTR)data->spec);
+    zune_imspec_setup(&data->img, muiRenderInfo(obj));
+    return 1;
+}
+
+/**************************************************************************
+ MUIM_Cleanup
+**************************************************************************/
+static IPTR Image_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    zune_imspec_cleanup(&data->img, muiRenderInfo(obj));
+    zune_imspec_free(data->img);
+    data->img = NULL;
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_AskMinMax
+**************************************************************************/
+static IPTR Image_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    
+//    msg->MinMaxInfo->MinWidth;
+//    msg->MinMaxInfo->MinHeight;
+
+
+   
+    msg->MinMaxInfo->DefWidth = msg->MinMaxInfo->MinWidth;
+    msg->MinMaxInfo->DefHeight = msg->MinMaxInfo->MinHeight;
+
+    if (data->flags & MIF_FREEHORIZ) msg->MinMaxInfo->MaxWidth = MUI_MAXMAX;
+    else  msg->MinMaxInfo->MaxWidth = msg->MinMaxInfo->MinWidth;
+
+    if (data->flags & MIF_FREEVERT) msg->MinMaxInfo->MaxHeight = MUI_MAXMAX;
+    else msg->MinMaxInfo->MaxHeight = msg->MinMaxInfo->MinHeight;
+
+    return 1;
+}
+
+/**************************************************************************
+ MUIM_Show
+**************************************************************************/
+static IPTR Image_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    zune_imspec_show(data->img,obj);
+    return 1;
+}
+
+/**************************************************************************
+ MUIM_Hide
+**************************************************************************/
+static IPTR Image_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    zune_imspec_hide(data->img);
+    return DoSuperMethodA(cl,obj,(Msg)msg);
+}
+
+/**************************************************************************
+ MUIM_Draw
+**************************************************************************/
+static IPTR Image_Draw(struct IClass *cl, Object *obj,struct MUIP_Draw *msg)
+{
+    struct MUI_ImageData *data = INST_DATA(cl, obj);
+    DoSuperMethodA(cl,obj,(Msg)msg);
+
+    zune_draw_image(muiRenderInfo(obj), data->img,
+		    _mleft(obj),_mtop(obj),_mwidth(obj),_mheight(obj),
+		    0, 0, 0);
+    return 1;
+}
+
 
 #ifndef _AROS
 __asm IPTR Image_Dispatcher( register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
@@ -65,9 +237,16 @@ AROS_UFH3S(IPTR,Image_Dispatcher,
 {
     switch (msg->MethodID)
     {
-	case OM_NEW:
-	    return Image_New(cl, obj, (struct opSet *)msg);
-	    
+	case OM_NEW: return Image_New(cl, obj, (struct opSet *)msg);
+	case OM_DISPOSE: return Image_Dispose(cl, obj, msg);
+	case OM_SET: return Image_Set(cl, obj, (APTR)msg);
+	case OM_GET: return Image_Get(cl, obj, (APTR)msg);
+	case MUIM_AskMinMax: return Image_AskMinMax(cl,obj,(APTR)msg);
+	case MUIM_Setup: return Image_Setup(cl,obj,(APTR)msg);
+	case MUIM_Cleanup: return Image_Cleanup(cl,obj,(APTR)msg);
+	case MUIM_Show: return Image_Show(cl,obj,(APTR)msg);
+	case MUIM_Hide: return Image_Hide(cl,obj,(APTR)msg);
+	case MUIM_Draw: return Image_Draw(cl,obj,(APTR)msg);
     }
     
     return DoSuperMethodA(cl, obj, msg);
