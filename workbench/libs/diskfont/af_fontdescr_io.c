@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Functions for readin .font files
@@ -99,7 +99,7 @@ struct FontDescrHeader *ReadFontDescr(STRPTR filename, struct DiskfontBase_inter
        	strptr = strpbrk(strbuf, "/");
 
        	/* End string at '/' */
-       	*strptr = 0;
+       	if (strptr) *strptr = 0;
        	
        	
        	/* Allocate space for fontname */
