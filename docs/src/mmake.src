@@ -21,6 +21,9 @@ Comments are completely ignored my mmake (as are empty lines).
 \item{[name]} This begins a config section for the project \shell{name}.
 You can build targets for this project by saying \shell{name.target}.
 
+\item{maketool} Specifies the name of the tool to build a target. The
+default is \shell{make "TOP=$(TOP)" "CURDIR=$(CURDIR)"}
+
 \item{top <dir>} Specifies the root directory for a project. You
 will later find this config option in the variable \shell{$(TOP)}.
 The default is the current directory.
