@@ -67,6 +67,14 @@ won't notice. This could be avoided it we copy method objects.
 - the DoMethod() stub must do an add for each method invokation but
 no hashing.
 
+Interfaces can be implemented like this:
+
+- One hash table which contains tables of methods/method IDs and the
+key is the interface ID.
+
+- One hash table which contains method objects and the key is the
+computed interface+method ID.
+
 2) Noncentralized ID allocation.
 -------------------------------
 To allow for this, we avoid fixed integer
@@ -131,7 +139,6 @@ check if an attribute is part of the class:
 	... handle own attributes
     else
 	... handle attributes of other classes
-
 
 3) + 4)
 
