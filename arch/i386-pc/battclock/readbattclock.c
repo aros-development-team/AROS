@@ -68,17 +68,21 @@
     AROS_LIBFUNC_INIT
 
     struct ClockData date;        
-    UWORD  year;
+#warning HACK: asm statements do not work with a single variable
+    struct __myyear { UWORD year; } myyear;
+//    UWORD  year;
     ULONG  secs;
 
-    ReadRTC(0,date.sec);
-    ReadRTC(2,date.min);
-    ReadRTC(4,date.hour);
-    ReadRTC(7,date.mday);
-    ReadRTC(8,date.month);
+//    ReadRTC(50,year);
+    ReadRTC(50,myyear.year);
     ReadRTC(9,date.year);
-    ReadRTC(50,year);
-    date.year+=100*year;
+    ReadRTC(8,date.month);
+    ReadRTC(7,date.mday);
+    ReadRTC(4,date.hour);
+    ReadRTC(2,date.min);
+    ReadRTC(0,date.sec);
+//    date.year+=100*year;
+    date.year+=100*myyear.year;
 
     secs=Date2Amiga(&date);
 
