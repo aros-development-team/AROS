@@ -407,7 +407,14 @@ Object *text_new(Class * cl, Object * o, struct opSet *msg)
     	    }
     	    else
     	    	goto error;
-    	}
+    	} else {
+	    STRPTR text;
+	    
+	    if ((text = GetTagData(GTTX_Text, NULL, msg->ops_AttrList)))
+	    {
+	        data->toprint = (IPTR)text;
+	    }
+	}
 
     	D(bug("calling text_set\n"));
     	text_set(cl, o, msg);
@@ -2160,10 +2167,13 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 
     struct TagItem *tag, *tstate;
     struct LVData *data = INST_DATA(cl, o);
+    struct RastPort *rp;
     
     BOOL labels_set = FALSE;
     BOOL update_scroller = FALSE;
     BOOL scroll_entries = FALSE;
+    BOOL refresh_all = FALSE;
+    
     WORD new_top, old_top;
     
     EnterFunc(bug("Listview::Set()\n"));
@@ -2197,6 +2207,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	retval = 1UL;
 	    	labels_set = TRUE;
     		update_scroller = TRUE;
+		refresh_all = TRUE;
 	    	break;
 	    	
 	    case GTLV_ReadOnly:	/* [I] */
@@ -2211,6 +2222,10 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
 	    	
 	    case GTLV_Selected:	/* [IS] */
 	    	data->ld_Selected = (UWORD)tidata;
+		
+		#warning changing GTLV_Selected should not rerender everything
+		
+		refresh_all = TRUE;
 	    	retval = 1UL;
 	    	break;
 	    	
@@ -2260,11 +2275,20 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     	    UpdateScroller(o, data, msg->ops_GInfo, GadToolsBase);
     }
     
-    if (scroll_entries)
+    if (scroll_entries && !refresh_all)
     {
     	ScrollEntries(o, data, old_top, new_top, msg->ops_GInfo, GadToolsBase);
     }
     
+    if (refresh_all && msg->ops_GInfo)
+    {
+    	if ((rp = ObtainGIRPort(msg->ops_GInfo)))
+	{
+   	    DoMethod(o, GM_RENDER, msg->ops_GInfo, rp, GREDRAW_REDRAW);
+ 
+	    ReleaseGIRPort(rp);
+	}
+    }
 
     ReturnInt ("Listview::Set", IPTR, retval);
 }
