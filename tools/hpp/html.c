@@ -10,6 +10,7 @@
 #include "parse_html.h"
 #include "var.h"
 #include "html.h"
+#include "expr.h"
 
 typedef struct
 {
@@ -75,7 +76,6 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 {
     String	   body;
     HTMLTagArg	 * condarg;
-    String	   condstr;
     int 	   condvalue;
     char	 * elseptr;
     char	 * str;
@@ -103,25 +103,18 @@ HTML_IF (HTMLTag * tag, MyStream * in, MyStream * out, CBD data)
 	condvalue = 0;
     else
     {
-	char * ptr;
+	int rc;
 
-	condstr = Var_Subst (condarg->value);
+	rc = Expr_Parse (condarg->value, &condvalue);
 
-	if (!condstr)
+	if (rc != T_OK)
 	{
 	    Str_SetLine (in, line);
-	    Str_PushError (in, "Can't expand condition for IF");
+	    Str_PushError (in, "Error parsing condition for IF");
 	    return 0;
 	}
 
-	ptr = condstr->buffer;
-
-	while (isspace (*ptr)) ptr ++;
-
-	if (isdigit (*ptr))
-	    condvalue = (atoi (ptr) != 0);
-	else
-	    condvalue = (*ptr != 0);
+	condvalue = (condvalue != 0);
     }
 
     elseptr = body->buffer;
