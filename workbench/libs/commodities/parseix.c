@@ -6,21 +6,18 @@
     Lang: English
 */
 
-/*****************************************************************************
-
-    NAME */
+#ifndef  DEBUG
+#define  DEBUG 0
+#endif
 
 #include "cxintern.h"
+
+#include <aros/debug.h>
+
 #include <libraries/commodities.h>
 #include <proto/commodities.h>
-#ifdef __MORPHOS__
-#define __NOLIBBASE__
-#endif
 #include <proto/utility.h>
 #include <proto/keymap.h>
-#ifdef __MORPHOS__
-#undef __NOLIBBASE__
-#endif
 #include <devices/inputevent.h>
 #include <devices/keymap.h>
 #include <string.h>
@@ -30,6 +27,10 @@
 BOOL pMatch(pix_S[], STRPTR, LONG *, BOOL *, struct Library *CxBase);
 VOID GetNext(STRPTR *);
 BOOL IsSeparator(char);
+
+/*****************************************************************************
+
+    NAME */
 
     AROS_LH2(LONG, ParseIX,
 
@@ -107,6 +108,8 @@ BOOL IsSeparator(char);
 
 	return -2;
     }
+
+    D(bug("ParseIX: ix = %p, desc = \"%s\"\n", ix, desc));
     
     while (IsSeparator(*desc))
     {
@@ -229,6 +232,15 @@ BOOL IsSeparator(char);
     {
 	desc++;
     }
+
+    D(bug("ParseIX: Class %p Code 0x%x CodeMask 0x%x\n"
+	  "ParseIX: Qualifier 0x%x QualMask 0x%x QualSame 0x%x\n",
+	  ix->ix_Class,
+	  ix->ix_Code,
+	  ix->ix_CodeMask,
+	  ix->ix_Qualifier,
+	  ix->ix_QualMask,
+	  ix->ix_QualSame));
     
     if (*desc == '\0')
     {
@@ -236,6 +248,7 @@ BOOL IsSeparator(char);
     }
     else
     {
+	D(bug("ParseIX: fail, desc %p *desc %p\n", desc, *desc));
 	return -1;
     }
     
@@ -248,6 +261,9 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
 {
     STRPTR nstr = string;
     int    i;
+
+    D(bug("pMatch: words[0] = \"%s\" string \"%s\" dash %d\n",
+	  words[0].name, string, *dash));
     
     if (*dash)
     {
@@ -267,11 +283,12 @@ BOOL pMatch(pix_S words[], STRPTR string, LONG *v, BOOL *dash,
 	if (Strnicmp(nstr, words[i].name, strlen(words[i].name)) == 0)
 	{
 	    *v = words[i].value;
-
+	    D(bug("pMatch: value 0x%lx\n", *v));
 	    return TRUE;
 	}
     }
 
+    D(bug("pMatch: not found\n"));
     return FALSE;
 }
 
