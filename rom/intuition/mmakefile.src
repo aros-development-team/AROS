@@ -40,6 +40,7 @@ FILES	  := boolgadgets boopsigadgets buttongclass frameiclass frbuttonclass \
 	     requesters strgadgets strgclass sysiclass windowclasses
 
 FUNCTIONS := \
+	activategadget \
 	activatewindow \
 	addclass \
 	addgadget \
@@ -48,11 +49,16 @@ FUNCTIONS := \
 	autorequest \
 	beginrefresh \
 	buildeasyrequestargs \
+	buildsysrequest \
 	changewindowbox \
+	cleardmrequest \
 	clearmenustrip \
+	clearpointer \
 	closescreen \
 	closewindow \
+	closeworkbench \
 	currenttime \
+	displaybeep \
 	disposeobject \
 	dogadgetmethoda \
 	doubleclick \
