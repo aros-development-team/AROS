@@ -15,11 +15,13 @@
 BOOL clearrectrect(struct Rectangle* clearrect, struct Rectangle* rect,
 		   struct RegionRectangle** erg);
 
-#define Bounds(x) (&(x)->bounds)
-#define MinX(rr)  (Bounds(rr)->MinX)
-#define MaxX(rr)  (Bounds(rr)->MaxX)
-#define MinY(rr)  (Bounds(rr)->MinY)
-#define MaxY(rr)  (Bounds(rr)->MaxY)
+#define Bounds(x)  (&(x)->bounds)
+#define MinX(rr)   (Bounds(rr)->MinX)
+#define MaxX(rr)   (Bounds(rr)->MaxX)
+#define MinY(rr)   (Bounds(rr)->MinY)
+#define MaxY(rr)   (Bounds(rr)->MaxY)
+#define Width(rr)  (MaxX(rr) - MinX(rr) + 1)
+#define Height(rr) (MaxY(rr) - MinY(rr) + 1)
 
 #define _DoRectsOverlap(Rect, x1, y1, x2, y2) \
 (                                             \
