@@ -63,9 +63,9 @@
 #include "include/machine.i"
 
 	.text
-	.balign 16
-	.global	AROS_CDEFNAME(longjmp)
-	.type AROS_CDEFNAME(longjmp),@function
+	_ALIGNMENT
+	.globl AROS_CDEFNAME(longjmp)
+	_FUNCTION(longjmp)
 AROS_CDEFNAME(longjmp):
 	cmpi 0,1,%r4,0
 	bne okret
