@@ -13,7 +13,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/exec_protos.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH3(void, InitStruct,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.9  1996/12/10 13:51:48  aros
+    Moved all #include's in the first column so makedepend can see it.
+
     Revision 1.8  1996/12/03 08:43:12  aros
     Ooops :-) Wrong address
 
@@ -32,7 +35,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/exec_protos.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH3(ULONG, MakeFunctions,
 

@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/12/10 13:51:44  aros
+    Moved all #include's in the first column so makedepend can see it.
+
     Revision 1.9  1996/10/24 15:50:48  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -34,8 +37,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <exec/lists.h>
-	#include <clib/exec_protos.h>
+#include <exec/lists.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH2I(struct Node *, FindName,
 

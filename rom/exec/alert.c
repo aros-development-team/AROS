@@ -13,8 +13,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <exec/alerts.h>
-	#include <clib/exec_protos.h>
+#include <exec/alerts.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH1(void, Alert,
 

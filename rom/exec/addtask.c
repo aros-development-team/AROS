@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.10  1996/12/10 13:51:36  aros
+    Moved all #include's in the first column so makedepend can see it.
+
     Revision 1.9  1996/10/24 15:50:42  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -51,7 +54,7 @@ void AROS_SLIB_ENTRY(TrapHandler,Exec)(void);
 /*****************************************************************************
 
     NAME */
-	#include <clib/exec_protos.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH3(APTR, AddTask,
 

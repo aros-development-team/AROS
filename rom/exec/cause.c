@@ -9,8 +9,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <exec/interrupts.h>
-	#include <clib/exec_protos.h>
+#include <exec/interrupts.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH1(void, Cause,
 

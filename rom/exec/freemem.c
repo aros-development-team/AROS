@@ -30,8 +30,8 @@ extern void PurgeChunk (ULONG *, ULONG);
 /*****************************************************************************
 
     NAME */
-	#include <exec/memory.h>
-	#include <clib/exec_protos.h>
+#include <exec/memory.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH2(void, FreeMem,
 

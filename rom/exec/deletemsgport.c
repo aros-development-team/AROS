@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/12/10 13:51:43  aros
+    Moved all #include's in the first column so makedepend can see it.
+
     Revision 1.5  1996/10/24 15:50:47  aros
     Use the official AROS macros over the __AROS versions.
 
@@ -23,7 +26,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <clib/exec_protos.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH1(void, DeleteMsgPort,
 

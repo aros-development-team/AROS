@@ -10,8 +10,8 @@
 /*****************************************************************************
 
     NAME */
-	#include <exec/lists.h>
-	#include <clib/exec_protos.h>
+#include <exec/lists.h>
+#include <clib/exec_protos.h>
 
 	AROS_LH2I(void, AddHead,
 
