@@ -1,10 +1,11 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
+USER_INCLUDES	:= -I$(TOP)/rom/boopsi
 ifeq ("$(SHARED_INTUITION)","yes")
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/boopsi
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS)
 else
-SPECIAL_CFLAGS	:= -I$(TOP)/rom/boopsi
+SPECIAL_CFLAGS	:=
 endif
 
 OBJDIR		:= $(OSGENDIR)/intuition
@@ -101,7 +102,7 @@ ALL_FILES := $(INIT_FILE) $(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS) $(END_FILE)
 DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(PRE_FUNCS) $(END_FILE),$(OBJDIR)/$(f).d)
 OBJS := $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
-#MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)
+#MM kernel-intuition-linklib : setup includes kernel-intuition-$(ARCH)-$(CPU)
 kernel-intuition-linklib : show-flags $(LIB)
 	@$(NOP)
 
@@ -112,8 +113,8 @@ show-flags :
 	@echo "CFLAGS=$(CFLAGS)"
 
 # MetaMake targets
-#MM kernel-intuition : setup includes kernel-intuition-$(ARCH)
-kernel-intuition : $(SLIB)
+#MM kernel-intuition-module : setup includes kernel-intuition-$(ARCH)-$(CPU)
+kernel-intuition-module : $(SLIB)
 	@$(NOP)
 
 #MM
