@@ -648,6 +648,7 @@ char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, len, i;
 char **name = NULL, **type = NULL, **reg = NULL, *header = NULL, *code = NULL;
+int numregs = 1;
 char *macro[2];
 int numparams=0;
 
@@ -712,11 +713,13 @@ int numparams=0;
         {
           macro[0] = strdup("LHQUAD");
           macro[1] = strdup("LHAQUAD");
+          numregs = 2;
         }
         else
         {
           macro[0] = strdup("LH");
           macro[1] = strdup("LHA");
+          numregs = 1;
         }
         numparams = 0;
         if(fdo)
@@ -769,20 +772,28 @@ int numparams=0;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1)*sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1)*sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
         reg = realloc( reg, (numparams+1)*sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
       }
       else if( strcmp(word,"LibOffset")==0 && in_function && !in_autodoc && !in_code )
       {
@@ -993,6 +1004,7 @@ char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+int numregs = 1;
 char *macro[2];
 int numparams=0;
 
@@ -1071,11 +1083,13 @@ int numparams=0;
         {
           macro[0] = strdup("LHQUAD");
           macro[1] = strdup("LHAQUAD");
+          numregs = 2;
         }
         else
         {
           macro[0] = strdup("LH");
           macro[1] = strdup("LHA");
+          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -1116,20 +1130,28 @@ int numparams=0;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1) * sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
       }
     }
     else if(in_header || in_code )
@@ -1153,6 +1175,7 @@ char *word, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_afunc, in_code ;
 int num, i, len;
 char **name = NULL, **type = NULL;
+int numregs = 1;
 int numparams = 0;
 
   if(argc != 3)
@@ -1233,6 +1256,14 @@ int numparams = 0;
             strcat( type[0], " " );
             strcat( type[0], words[i] );
           }
+          if(strcmp(words[1],"LHAQUAD")==0)
+          {
+            numregs = 2;
+          }
+          else
+          {
+            numregs = 1;
+          }
         }
         else if( in_autodoc && !in_afunc )
         {
@@ -1265,7 +1296,7 @@ int numparams = 0;
         numparams++;
         num = get_words(line,&words);
         name = realloc( name, (numparams+1)*sizeof(char *) );
-        name[numparams] = strdup(words[num-2]);
+        name[numparams] = strdup(words[num-1-numregs]);
         type = realloc( type, (numparams+1)*sizeof(char *) );
         len = 0;
         for( i=1 ; i < num-2 ; i++ )
@@ -1611,6 +1642,7 @@ char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+int numregs = 1;
 char *macro[2];
 int numparams=0;
 int firstlvo;
@@ -1750,11 +1782,13 @@ int firstlvo;
         {
           macro[0] = strdup("LCQUAD");
           macro[1] = strdup("LCAQUAD");
+          numregs = 2;
         }
         else
         {
           macro[0] = strdup("LC");
           macro[1] = strdup("LCA");
+          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -1806,20 +1840,28 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1) * sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
       }
     }
 
@@ -1847,6 +1889,7 @@ char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+int numregs = 1;
 char *macro[2];
 int numparams=0;
 int firstlvo;
@@ -1983,11 +2026,13 @@ int firstlvo;
         {
           macro[0] = strdup("LPQUAD");
           macro[1] = strdup("LPAQUAD");
+          numregs = 2;
         }
         else
         {
           macro[0] = strdup("LP");
           macro[1] = strdup("LPA");
+          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -2034,20 +2079,28 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1) * sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
       }
     }
 
@@ -2176,6 +2229,7 @@ char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+int numregs = 1;
 int numparams=0;
 int firstlvo;
 
@@ -2310,6 +2364,14 @@ int firstlvo;
           strcat( type[0], " " );
           strcat( type[0], words[i] );
         }
+        if(strcmp(words[1],"LHAQUAD")==0)
+        {
+          numregs = 2;
+        }
+        else
+        {
+          numregs = 1;
+        }
         numparams = 0;
         in_function = 1;
       }
@@ -2389,20 +2451,28 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1) * sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
         strlower(reg[numparams]);
       }
     }
@@ -2433,6 +2503,7 @@ char *word = NULL, **words = NULL;
 int in_archive, in_header, in_function, in_autodoc, in_code;
 int num, i, len;
 char **name = NULL, **type = NULL, **reg = NULL;
+int numregs = 1;
 char *macro[4];
 int numparams=0;
 int firstlvo;
@@ -2670,6 +2741,7 @@ int firstlvo;
           macro[1] = strdup("LPAQUAD");
           macro[2] = strdup("LCQUAD");
           macro[3] = strdup("LCAQUAD");
+          numregs = 2;
         }
         else
         {
@@ -2677,6 +2749,7 @@ int firstlvo;
           macro[1] = strdup("LPA");
           macro[2] = strdup("LC");
           macro[3] = strdup("LCA");
+          numregs = 1;
         }
         numparams = 0;
         in_function = 1;
@@ -2774,20 +2847,28 @@ int firstlvo;
         numparams++;
         num = get_words( line, &words );
         name = realloc( name, (numparams+1) * sizeof(char *) );
-        name[numparams] = strdup( words[num-2] );
+        name[numparams] = strdup( words[num-1-numregs] );
         type = realloc( type, (numparams+1) * sizeof(char *) );
         len = 0;
-        for( i=1 ; i < num-2 ; i++ )
+        for( i=1 ; i < num-1-numregs ; i++ )
           len += strlen(words[i]);
-        type[numparams] = malloc( (len+num-3) * sizeof(char) );
+        type[numparams] = malloc( (len+num-2-numregs) * sizeof(char) );
         strcpy( type[numparams], words[1]);
-        for( i=2 ; i < num-2 ; i++ )
+        for( i=2 ; i < num-1-numregs ; i++ )
         {
           strcat( type[numparams], " " );
           strcat( type[numparams], words[i] );
         }
-        reg = realloc( reg, (numparams+1) * sizeof(char *) );
-        reg[numparams] = strdup( words[num-1] );
+        reg = realloc( reg, (numparams+1)*sizeof(char *) );
+        reg[numparams] = strdup( words[num-numregs] );
+        len = strlen( words[num-numregs] );
+        for( i = numregs-1 ; i > 0 ; i-- )
+        {
+          len += strlen( words[num-i] ) + 2;
+          reg[numparams] = realloc( reg[numparams], (len+1) * sizeof(char) );
+          strcat( reg[numparams], ", " );
+          strcat( reg[numparams], words[num-i] );
+        }
       }
     }
 

@@ -57,9 +57,7 @@ Here we have to specify:
 ...
 #/AutoDoc
 #Code
-{
 ...
-}
 #/Code
 #/Function
 
