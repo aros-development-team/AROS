@@ -93,7 +93,7 @@ USE_MLIB := yes
 USE_AROSLIB := yes
 USE_COOLIMAGESLIB := yes
 
-#MM demos : includes linklibs demo-setup
+#MM demos : includes linklibs
 
 %make_prog_setup mmake=demos
 
