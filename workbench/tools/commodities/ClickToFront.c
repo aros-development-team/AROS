@@ -104,7 +104,7 @@ struct IntuitionBase  *IntuitionBase = NULL;
 struct Library        *LayersBase = NULL;
 struct Library        *CxBase = NULL;
 struct Library        *IconBase = NULL;
-struct Library        *InputBase = NULL;
+struct Device         *InputBase = NULL;
 
 struct Catalog        *catalogPtr;
 
