@@ -36,6 +36,7 @@ struct MUI_ClockData
     APTR    	    	    	clockraster;
     WORD    	    	    	areabuf[30];
     WORD    	    	    	clockbmr, clockbmw, clockbmh;
+    BOOL    	    	    	frozen;
 };
 
 
@@ -61,6 +62,7 @@ static IPTR Clock_New(Class *cl, Object *obj, struct opSet *msg)
     if (!obj) return 0;
     
     data = INST_DATA(cl, obj);
+    data->frozen = GetTagData(MUIA_Clock_Frozen, FALSE, msg->ops_AttrList) ? TRUE : FALSE;
     
     if ((ti = FindTagItem(MUIA_Clock_Time, msg->ops_AttrList)))
     {
@@ -127,6 +129,10 @@ static IPTR Clock_Set(Class *cl, Object *obj, struct opSet *msg)
 		redraw = TRUE;
 		break;
 
+    	    case MUIA_Clock_Frozen:
+	    	data->frozen = tag->ti_Data ? TRUE : FALSE;
+		break;
+		
 	} /* switch(tag->ti_Tag) */
 	
     } /* while ((tag = NextTagItem(&tags)) != NULL) */
@@ -164,6 +170,10 @@ static IPTR Clock_Get(Class *cl, Object *obj, struct opGet *msg)
 	    *msg->opg_Storage = data->clockdata.sec;
 	    break;
 
+    	case MUIA_Clock_Frozen:
+	    *msg->opg_Storage = data->frozen;
+	    break;
+	    
     	default:
 	    retval = DoSuperMethodA(cl, obj, (Msg)msg);
 	    break;
@@ -222,7 +232,7 @@ static IPTR Clock_AskMinMax(Class *cl, Object *obj, struct MUIP_AskMinMax *msg)
 
 /*********************************************************************************************/
 
-#define MY_PI 3.14159265358979
+#define MY_PI 3.14159265358979323846
 
 /*********************************************************************************************/
 
@@ -425,14 +435,20 @@ static IPTR Clock_Draw(Class *cl, Object *obj, struct MUIP_Draw *msg)
 
 IPTR Clock_Timer(Class *cl, Object *obj, Msg msg)
 {
-    struct ClockData 	cd;
-    struct timeval  	tv;
+    struct MUI_ClockData *data;
+    struct ClockData 	  cd;
+    struct timeval  	  tv;
     
-    GetSysTime(&tv);
-    Amiga2Date(tv.tv_secs, &cd);
+    data = INST_DATA(cl, obj);
+    
+    if (!data->frozen)
+    {
+	GetSysTime(&tv);
+	Amiga2Date(tv.tv_secs, &cd);
 
-    set(obj, MUIA_Clock_Time, &cd);
-    set(obj, MUIA_Clock_Ticked, TRUE);
+	set(obj, MUIA_Clock_Time, &cd);
+	set(obj, MUIA_Clock_Ticked, TRUE);
+    }
     
     return 0;
 }

@@ -14,6 +14,7 @@
 #include "clockclass.h"
 
 #include <libraries/coolimages.h>
+#include <aros/debug.h>
 
 #include <stdlib.h> /* for exit() */
 #include <stdio.h>
@@ -54,8 +55,9 @@ libtable[] =
 
 /*********************************************************************************************/
 
-static struct Hook  	    	yearhook, clockhook;	    	
+static struct Hook  	    	yearhook, clockhook, activehook;	    	
 static struct RDArgs        	*myargs;
+static Object	    	    	*activetimestrobj;
 static IPTR                 	args[NUM_ARGS];
 
 static STRPTR monthlabels[] =
@@ -261,21 +263,95 @@ static void YearFunc(struct Hook *hook, Object *obj, IPTR *param)
 
 /*********************************************************************************************/
 
+static void ActiveFunc(struct Hook *hook, Object *obj, IPTR *param)
+{
+    Object *active;
+
+    active = *(Object **)param;
+    
+    if ((active == hourobj) || (active == minobj) || (active == secobj))
+    {
+    	activetimestrobj = active;
+    }
+
+}
+
+/*********************************************************************************************/
+
 static void ClockFunc(struct Hook *hook, Object *obj, IPTR *param)
 {
     struct ClockData *cd;
     UBYTE s[3];
-    
+
     get(obj, MUIA_Clock_Time, (IPTR *)&cd);
+
+    if (*param == 0)
+    {
+	sprintf(s, "%02d", cd->hour);
+	nnset(hourobj, MUIA_String_Contents, s);
+
+	sprintf(s, "%02d", cd->min);  
+	nnset(minobj, MUIA_String_Contents, s);
+
+	sprintf(s, "%02d", cd->sec);      
+	nnset(secobj, MUIA_String_Contents, s);
+    }
+    else
+    {
+    	struct ClockData  cd2;	
+    	LONG 	    	  diff = (LONG)*param;
+	LONG 	    	  max = 0;
+	UWORD 	    	 *cd2_member = NULL;
+
+    	if (diff == 100) diff = 0; /* 100 means string gadget acknowledge */
+	
+	if (activetimestrobj == hourobj)
+	{
+	    max = 23;
+	    cd2_member = &cd2.hour;
+	}
+	else if (activetimestrobj == minobj)
+	{
+	    max = 59;
+	    cd2_member = &cd2.min;
+	}
+	else if (activetimestrobj == secobj)
+	{
+	    max = 59;
+	    cd2_member = &cd2.sec;
+	}    
+	
+	if (max)
+	{
+	    IPTR number = 0;
+	    
+	    set(obj, MUIA_Clock_Frozen, TRUE);
+	    get(obj, MUIA_Clock_Time, (IPTR)&cd);
+	    
+	    cd2 = *cd;
+	    
+	    get(activetimestrobj, MUIA_String_Integer, &number);
+	    
+	    number += diff;
+	    
+	    if ((LONG)number < 0)
+	    {
+	    	number = max;
+	    }
+	    else if ((LONG)number > max)
+	    {
+	    	number = 0;
+	    }
+	    *cd2_member = number;
+	  
+	    sprintf(s, "%02d", number);
+  
+	    nnset(activetimestrobj, MUIA_String_Contents, s);
+	   
+	    set(obj, MUIA_Clock_Time, (IPTR)&cd2); 
+	}
+    }
     
-    sprintf(s, "%02d", cd->hour);
-    nnset(hourobj, MUIA_String_Contents, s);
- 
-    sprintf(s, "%02d", cd->min);  
-    nnset(minobj, MUIA_String_Contents, s);
-    
-    sprintf(s, "%02d", cd->sec);      
-    nnset(secobj, MUIA_String_Contents, s);
 }
 
 /*********************************************************************************************/
@@ -284,7 +360,7 @@ static void MakeGUI(void)
 {
     extern struct NewMenu nm;
     
-    Object *menu, *yearaddobj, *yearsubobj;
+    Object *menu, *yearaddobj, *yearsubobj, *timeaddobj, *timesubobj;
     
     if (!MakeCalendarClass() || !MakeClockClass())
     {
@@ -296,6 +372,9 @@ static void MakeGUI(void)
     
     clockhook.h_Entry = HookEntry;
     clockhook.h_SubEntry = (HOOKFUNC)ClockFunc;
+    
+    activehook.h_Entry = HookEntry;
+    activehook.h_SubEntry = (HOOKFUNC)ActiveFunc;
     
     if (LocaleBase)
     {
@@ -366,6 +445,28 @@ static void MakeGUI(void)
 			Child, clockobj = NewObject(clockmcc->mcc_Class, NULL, TAG_DONE),
 			Child, HGroup,
 			    Child, HVSpace,
+			    Child, PageGroup,
+			    	Child, HVSpace,
+				Child, HGroup,
+				    MUIA_Group_Spacing, 0,
+				    Child,  TextObject, /* phantom time [-] gadget */
+			    		ButtonFrame,
+					MUIA_Background, MUII_ButtonBack,
+					MUIA_Font, MUIV_Font_Button,
+					MUIA_InputMode, MUIV_InputMode_RelVerify,
+					MUIA_Text_Contents, "\033c-",
+					MUIA_FixWidthTxt, (IPTR)"+",
+					End,
+				    Child,  TextObject, /* phantom time [+] gadget */
+			    		ButtonFrame,
+					MUIA_Background, MUII_ButtonBack,
+					MUIA_Font, MUIV_Font_Button,
+					MUIA_InputMode, MUIV_InputMode_RelVerify,
+					MUIA_Text_Contents, "\033c+",
+					MUIA_FixWidthTxt, (IPTR)"-",
+					End,			    
+			    	    End,
+				End,
 			    Child, hourobj = StringObject, /* hour gadget */
 			    	StringFrame,
 				MUIA_String_Accept, (IPTR)"0123456789",
@@ -383,6 +484,25 @@ static void MakeGUI(void)
 				MUIA_String_Accept, (IPTR)"0123456789",
 				MUIA_FixWidthTxt, (IPTR)"555",
 				End,
+			    Child, HGroup,
+			    	MUIA_Group_Spacing, 0,
+				Child,  timesubobj = TextObject, /* time [-] gadget */
+			    	    ButtonFrame,
+				    MUIA_Background, MUII_ButtonBack,
+				    MUIA_Font, MUIV_Font_Button,
+				    MUIA_InputMode, MUIV_InputMode_RelVerify,
+				    MUIA_Text_Contents, "\033c-",
+				    MUIA_FixWidthTxt, (IPTR)"+",
+				    End,
+				Child,  timeaddobj = TextObject, /* time [+] gadget */
+			    	    ButtonFrame,
+				    MUIA_Background, MUII_ButtonBack,
+				    MUIA_Font, MUIV_Font_Button,
+				    MUIA_InputMode, MUIV_InputMode_RelVerify,
+				    MUIA_Text_Contents, "\033c+",
+				    MUIA_FixWidthTxt, (IPTR)"-",
+				    End,
+				End,		    
 			    Child, HVSpace,
 			    End,
 		    	End,
@@ -402,19 +522,23 @@ static void MakeGUI(void)
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_ActiveObject, MUIV_EveryTime, app, 3, MUIM_CallHook, (IPTR)&activehook, MUIV_TriggerValue);
     DoMethod(monthobj, MUIM_Notify, MUIA_Cycle_Active, MUIV_EveryTime, calobj, 3, MUIM_NoNotifySet, MUIA_Calendar_Month0, MUIV_TriggerValue);
     DoMethod(yearobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 0);
     DoMethod(yearaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, 1);
     DoMethod(yearsubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, yearobj, 3, MUIM_CallHook, (IPTR)&yearhook, -1);
-    
-    DoMethod(clockobj, MUIM_Notify, MUIA_Clock_Ticked, TRUE, clockobj, 2, MUIM_CallHook, (IPTR)&clockhook);
+    DoMethod(timeaddobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 1);
+    DoMethod(timesubobj, MUIM_Notify, MUIA_Timer, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, -1);
+    DoMethod(clockobj, MUIM_Notify, MUIA_Clock_Ticked, TRUE, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 0);
+    DoMethod(hourobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
+    DoMethod(minobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
+    DoMethod(secobj, MUIM_Notify, MUIA_String_Acknowledge, MUIV_EveryTime, clockobj, 3, MUIM_CallHook, (IPTR)&clockhook, 100);
     
     set(calobj, MUIA_Calendar_Date, &clockdata);
     set(monthobj, MUIA_Cycle_Active, clockdata.month - 1);
     set(yearobj, MUIA_String_Integer, clockdata.year);
     
-    CallHookPkt(&clockhook, clockobj, 0);
+    CallHook(&clockhook, clockobj, 0);
 }
 
 /*********************************************************************************************/
