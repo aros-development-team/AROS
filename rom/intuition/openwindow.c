@@ -72,16 +72,17 @@
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
     struct NewWindow nw;
-    struct Window * w;
+    struct Window * w = NULL;
     struct TagItem *tag, *tagList;
     struct RastPort *rp;
     struct Hook *backfillhook = LAYERS_BACKFILL;
-    struct Rectangle *zoomrectangle = NULL;
+    struct IBox *zoombox = NULL;
     struct Image *AmigaKey = NULL;
     struct Image *Checkmark = NULL;
     
+    STRPTR  pubScreenName = NULL;
     UBYTE * screenTitle = NULL;
-    BOOL    autoAdjust	= FALSE;
+    BOOL    autoAdjust	= FALSE, pubScreenFallBack = FALSE;
     ULONG   innerWidth	= ~0L;
     ULONG   innerHeight = ~0L;
     WORD    mousequeue = DEFAULTMOUSEQUEUE;
@@ -103,7 +104,13 @@
     ));
 
     nw = *newWindow;
-    
+
+#define WFLG_PRIVATEFLAGS (WFLG_WINDOWREFRESH | WFLG_WBENCHWINDOW  | \
+			   WFLG_WINDOWTICKED  | WFLG_VISITOR       | \
+			   WFLG_ZOOMED        | WFLG_HASZOOM       )
+
+    nw.Flags &= ~WFLG_PRIVATEFLAGS;
+        
     if (newWindow->Flags & WFLG_NW_EXTENDED)
     {
     	tagList = ((struct ExtNewWindow *)newWindow)->Extension;
@@ -112,7 +119,7 @@
     {
     	tagList = NULL;
     }
-    
+
     if (tagList)
     {
 	while ((tag = NextTagItem (&tagList)))
@@ -126,7 +133,8 @@
 	    case WA_Width:	nw.Width	= tag->ti_Data; break;
 	    case WA_Height:     nw.Height	= tag->ti_Data; break;
 	    case WA_IDCMP:	nw.IDCMPFlags   = tag->ti_Data; break;
-	    case WA_Flags:	nw.Flags	= tag->ti_Data; break;
+	    case WA_Flags:	nw.Flags	= (nw.Flags & WFLG_PRIVATEFLAGS) |
+	    					  (tag->ti_Data & ~WFLG_PRIVATEFLAGS); break;
 	    case WA_MinWidth:   nw.MinWidth     = tag->ti_Data; break;
 	    case WA_MinHeight:  nw.MinHeight    = tag->ti_Data; break;
 	    case WA_MaxWidth:   nw.MaxWidth     = tag->ti_Data; break;
@@ -161,7 +169,7 @@
 	    case WA_GimmeZeroZero:  MODIFY_FLAG(WFLG_GIMMEZEROZERO);   break;
 	    case WA_NewLookMenus:   MODIFY_FLAG(WFLG_NEWLOOKMENUS);    break;
 	    case WA_Zoom:
-	    	zoomrectangle = (struct Rectangle *)tag->ti_Data;
+	    	zoombox = (struct IBox *)tag->ti_Data;
 		MODIFY_FLAG(WFLG_HASZOOM);
 		break;
 
@@ -195,44 +203,18 @@
 		    nw.Flags |= WFLG_SMART_REFRESH;
 		break;
 
+	    case WA_PubScreenFallBack:
+	    	pubScreenFallBack = (tag->ti_Data ? TRUE : FALSE);
+		break;
+
 	    case WA_PubScreenName:
-		{
-		    char buffer[MAXPUBSCREENNAME + 1];
+	    	nw.Type = PUBLICSCREEN;
+	        pubScreenName = (STRPTR)tag->ti_Data;
+		break;
 		    
-		    if(tag->ti_Data == NULL)
-		    {
-			GetDefaultPubScreen(buffer);
-			nw.Screen = LockPubScreen(buffer);
-		    }
-		    else
-			nw.Screen = LockPubScreen((UBYTE *)tag->ti_Data);
-		    
-		    if(nw.Screen == NULL)
-		    {
-			BOOL fallback = (BOOL)GetTagData(WA_PubScreenFallBack,
-							 FALSE, tagList);
-			
-			if(fallback)
-			{
-			    nw.Screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
-
-			    if(nw.Screen != NULL)
-			    {
-				GetDefaultPubScreen(buffer);
-				nw.Screen = LockPubScreen(buffer);
-			    }
-			}
-		    }
-		    
-		    break;
-		}
-
 	    case WA_PubScreen:
-		if(tag->ti_Data == NULL)
-		    nw.Screen = LockPubScreen(NULL);
-		else
-		    nw.Screen = (struct Screen *)tag->ti_Data;
-
+	    	nw.Type = PUBLICSCREEN;
+		nw.Screen = (struct Screen *)tag->ti_Data;
 		break;
 
 	    case WA_BackFill:
@@ -287,6 +269,61 @@
 	}
     }
     
+    /* Find out on which Screen the window must open */
+    
+    switch(nw.Type)
+    {
+        case CUSTOMSCREEN:
+	    break;
+	
+	case WBENCHSCREEN:
+	    nw.Screen = LockPubScreen("Workbench");
+	    if (nw.Screen)
+	    {
+	        nw.Flags |= WFLG_VISITOR;
+	        moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
+	    }
+	    break;
+	
+	case PUBLICSCREEN:
+	    moreFlags |= WMFLG_DO_UNLOCKPUBSCREEN;
+	    if (pubScreenName)
+	    {
+	        nw.Screen = LockPubScreen(pubScreenName);
+		if (!nw.Screen && pubScreenFallBack)
+		{
+		    char buffer[MAXPUBSCREENNAME + 1];
+		    
+		    LockPubScreenList();
+		    
+		    GetDefaultPubScreen(buffer);
+		    nw.Screen = LockPubScreen(buffer);
+		    
+		    UnlockPubScreenList();
+		}
+	    }
+	    else
+	    {
+	    	if (nw.Screen)
+		{
+		    /* case: {WA_PubScreen, something != NULL} */
+		    
+		    moreFlags &= ~WMFLG_DO_UNLOCKPUBSCREEN;
+		}
+		else
+		{
+		    nw.Screen = LockPubScreen(NULL);
+		}
+	    }
+	    
+	    if (nw.Screen) nw.Flags |= WFLG_VISITOR;
+	    break;
+	    
+    } /* switch(nw.Type) */
+    
+    if (nw.Screen == NULL)
+        goto failexit;
+    
 #define IW(x) ((struct IntWindow *)x)
 
     w  = AllocMem (sizeof(struct IntWindow), MEMF_CLEAR);
@@ -309,6 +346,8 @@
     if (NULL == w)
     	goto failexit;
 
+    w->WScreen = nw.Screen;
+    
     w->UserPort = CreateMsgPort();
     if (NULL == w->UserPort)
 	goto failexit;
@@ -327,13 +366,6 @@
 
     if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
     if (nw.BlockPen  == 0xFF) nw.BlockPen = 0;
-
-    if (nw.Type == PUBLICSCREEN)
-	w->WScreen = IntuitionBase->ActiveScreen;
-    else if (nw.Type == CUSTOMSCREEN)
-	w->WScreen = nw.Screen;
-    else
-	w->WScreen = GetPrivIBase(IntuitionBase)->WorkBench;
 
     /* Copy flags */
     w->Flags = nw.Flags;
@@ -429,12 +461,12 @@
     w->MaxWidth  = (nw.MaxWidth  != 0) ? nw.MaxWidth  : w->Width;
     w->MaxHeight = (nw.MaxHeight != 0) ? nw.MaxHeight : w->Height;
 
-    if (zoomrectangle)
+    if (zoombox)
     {
-	((struct IntWindow *)w)->ZipLeftEdge = zoomrectangle->MinX;
-	((struct IntWindow *)w)->ZipTopEdge  = zoomrectangle->MinY;
-	((struct IntWindow *)w)->ZipWidth    = zoomrectangle->MaxX - zoomrectangle->MinX + 1;
-	((struct IntWindow *)w)->ZipHeight   = zoomrectangle->MaxY - zoomrectangle->MinY + 1;    	
+	((struct IntWindow *)w)->ZipLeftEdge = zoombox->Left;
+	((struct IntWindow *)w)->ZipTopEdge  = zoombox->Top;
+	((struct IntWindow *)w)->ZipWidth    = zoombox->Width;
+	((struct IntWindow *)w)->ZipHeight   = zoombox->Height;    	
     }
     else
     {
@@ -542,7 +574,7 @@
 
 failexit:
     D(bug("fail\n"));
-    
+        
     if (w)
     {
 	ModifyIDCMP (w, 0L);
@@ -567,6 +599,11 @@ failexit:
 	FreeMem (w, intui_GetWindowSize ());
 	
 	w = NULL;
+    }
+
+    if (nw.Screen && (moreFlags & WMFLG_DO_UNLOCKPUBSCREEN))
+    {
+        UnlockPubScreen(NULL, nw.Screen);
     }
     
 exit:
