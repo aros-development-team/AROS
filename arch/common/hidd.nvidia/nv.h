@@ -22,6 +22,7 @@
 #include <hidd/pci.h>
 #include <hidd/graphics.h>
 
+#include "nv_local.h"
 #include "riva_hw.h"
 
 #define IID_Hidd_Gfx_nVidia	"hidd.gfx.nv"
@@ -144,6 +145,8 @@ typedef struct Card {
     ULONG	    FifoEmptyCount;
     ULONG	    CursorStart;
     ULONG	    flatPanel;
+    ULONG	    CRTCnumber;
+    ULONG	    Television;
     BOOL	    twoHeads;
     BOOL	    twoStagePLL;
     BOOL	    fpScaler;
@@ -313,6 +316,8 @@ void NVSync(struct staticdata *);
 void NVDMAKickoffCallback(struct staticdata *);
 void NVSetPattern(struct staticdata *, ULONG, ULONG, ULONG, ULONG);
 void NVSetRopSolid(struct staticdata *, ULONG, ULONG);
+void NVSelectHead(struct staticdata *sd, UBYTE head);
+BOOL NVIsConnected (struct staticdata *sd, UBYTE output);
 
 void nv4GetConfig(struct staticdata *);
 void nv10GetConfig(struct staticdata *);

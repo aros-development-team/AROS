@@ -1323,11 +1323,48 @@ static VOID bm__getimage(OOP_Class *cl, OOP_Object *o, struct pHidd_BitMap_GetIm
 	    
 }
 
+static BOOL bm__obtaindirectaccess(OOP_Class *cl, OOP_Object *o,
+		struct pHidd_BitMap_ObtainDirectAccess *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+    LOCK_BITMAP
+
+    IPTR VideoData = bm->framebuffer;
+
+    if (bm->fbgfx)
+    {
+	VideoData += (IPTR)sd->Card.FrameBuffer;
+	if (sd->gpu_busy)
+	{
+	    LOCK_HW
+	    NVSync(sd);
+	    UNLOCK_HW
+	}
+    }	
+
+    *msg->addressReturn = (UBYTE*)VideoData;
+    *msg->widthReturn = bm->pitch / bm->bpp;
+    *msg->heightReturn = bm->height;
+    *msg->bankSizeReturn = *msg->memSizeReturn = bm->pitch * bm->height;
+
+    return TRUE;
+}
+
+static VOID bm__releasedirectaccess(OOP_Class *cl, OOP_Object *o,
+		struct pHidd_BitMap_ReleaseDirectAccess *msg)
+{
+    nvBitMap *bm = OOP_INST_DATA(cl, o);
+
+
+
+    UNLOCK_BITMAP
+}
+
 #undef sd
 /* Class related functions */
 
 #define NUM_ROOT_METHODS    3
-#define	NUM_BM_METHODS	    12
+#define	NUM_BM_METHODS	    14
 
 OOP_Class *init_onbitmapclass(struct staticdata *sd)
 {
@@ -1353,6 +1390,8 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
 	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
+	{ OOP_METHODDEF(bm__obtaindirectaccess), moHidd_BitMap_ObtainDirectAccess },
+	{ OOP_METHODDEF(bm__releasedirectaccess), moHidd_BitMap_ReleaseDirectAccess },
 	{ NULL, 0 }
     };
 
@@ -1402,7 +1441,7 @@ OOP_Class *init_onbitmapclass(struct staticdata *sd)
 }
 
 #define NUM_OFFROOT_METHODS	3
-#define	NUM_OFFBM_METHODS	12
+#define	NUM_OFFBM_METHODS	14
 
 OOP_Class *init_offbitmapclass(struct staticdata *sd)
 {
@@ -1428,6 +1467,8 @@ OOP_Class *init_offbitmapclass(struct staticdata *sd)
 	{ OOP_METHODDEF(bm__drawpoly),	moHidd_BitMap_DrawPolygon },
 	{ OOP_METHODDEF(bm__putimage),	moHidd_BitMap_PutImage },
 	{ OOP_METHODDEF(bm__getimage),	moHidd_BitMap_GetImage },
+	{ OOP_METHODDEF(bm__obtaindirectaccess), moHidd_BitMap_ObtainDirectAccess },
+	{ OOP_METHODDEF(bm__releasedirectaccess), moHidd_BitMap_ReleaseDirectAccess },
 	{ NULL, 0 }
     };
 

@@ -1678,6 +1678,24 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     state->vpll2 = state->pll;
     state->vpllB = state->pllB;
     state->vpll2B = state->pllB;
+
+    if(sd->Card.CRTCnumber) {
+       state->head  = sd->Card.PCRTC0[0x00000860/4] & ~0x00001000;
+       state->head2 = sd->Card.PCRTC0[0x00002860/4] | 0x00001000;
+       state->crtcOwner = 3;
+       state->pllsel |= 0x20000800;
+       state->vpll = sd->Card.PRAMDAC0[0x0508/4];
+       if(sd->Card.twoStagePLL)
+          state->vpllB = sd->Card.PRAMDAC0[0x0578/4];
+    } else
+    if(sd->Card.twoHeads) {
+       state->head  =  sd->Card.PCRTC0[0x00000860/4] | 0x00001000;
+       state->head2 =  sd->Card.PCRTC0[0x00002860/4] & ~0x00001000;
+       state->crtcOwner = 0;
+       state->vpll2 = sd->Card.PRAMDAC0[0x0520/4];
+       if(sd->Card.twoStagePLL)
+          state->vpll2B = sd->Card.PRAMDAC0[0x057C/4];
+    }
     
     state->timingH = 0;
     state->timingV = 0;
@@ -1992,5 +2010,65 @@ void NVDMAKickoffCallback(struct staticdata *sd)
 
    NVDmaKickoff(pNv);
    pNv->DMAKickoffCallback = NULL;
+}
+
+void NVSelectHead(struct staticdata *sd, UBYTE head)
+{
+    if (head)
+    {
+        sd->Card.PCIO = sd->Card.PCIO0 + 0x2000;
+	sd->Card.PCRTC = sd->Card.PCRTC0 + 0x800;
+	sd->Card.PRAMDAC = sd->Card.PRAMDAC0 + 0x800;
+	sd->Card.PDIO = sd->Card.PDIO0 + 0x2000;
+    }
+    else
+    {
+        sd->Card.PCIO = sd->Card.PCIO0;
+	sd->Card.PCRTC = sd->Card.PCRTC0;
+	sd->Card.PRAMDAC = sd->Card.PRAMDAC0;
+	sd->Card.PDIO = sd->Card.PDIO0;
+    }
+}
+
+BOOL NVIsConnected (struct staticdata *sd, UBYTE output)
+{
+    NVPtr pNv = &sd->Card;
+    volatile ULONG *PRAMDAC = pNv->PRAMDAC0;
+    ULONG reg52C, reg608;
+    BOOL present;
+    int i;
+
+    if(output) PRAMDAC += 0x800;
+
+    reg52C = PRAMDAC[0x052C/4];
+    reg608 = PRAMDAC[0x0608/4];
+
+    PRAMDAC[0x0608/4] = reg608 & ~0x00010000;
+
+    PRAMDAC[0x052C/4] = reg52C & 0x0000FEEE;
+    
+    //usleep(1000);
+    for (i=0; i < 800000000; i++)
+    {
+    }
+    
+    PRAMDAC[0x052C/4] |= 1;
+
+    pNv->PRAMDAC0[0x0610/4] = 0x94050140;
+    pNv->PRAMDAC0[0x0608/4] |= 0x00001000;
+
+    //usleep(1000);
+    for (i=0; i < 800000000; i++)
+    {
+    }
+ 
+    present = (PRAMDAC[0x0608/4] & (1 << 28)) ? TRUE : FALSE;
+
+    pNv->PRAMDAC0[0x0608/4] &= 0x0000EFFF;
+
+    PRAMDAC[0x052C/4] = reg52C;
+    PRAMDAC[0x0608/4] = reg608;
+
+    return present;
 }
 
