@@ -36,6 +36,7 @@
 #include <workbench/handler.h>
 #else
 #include "mui.h"
+#include <proto/wb.h>
 ULONG XGET(Object *obj, Tag attr);
 #endif
 
