@@ -4,10 +4,9 @@
 */
 
 #include <proto/arossupport.h>
-#include <proto/dos.h>
-#include "icon_intern.h"
 
-extern const IPTR IconDesc[];
+#include "icon_intern.h"
+#include "support.h"
 
 /*****************************************************************************
 
@@ -18,7 +17,7 @@ extern const IPTR IconDesc[];
 
 /*  SYNOPSIS */
 	AROS_LHA(UBYTE             *, name, A0),
-	AROS_LHA(struct DiskObject *, diskobj, A1),
+	AROS_LHA(struct DiskObject *, icon, A1),
 
 /*  LOCATION */
 	struct Library *, IconBase, 14, Icon)
@@ -42,61 +41,18 @@ extern const IPTR IconDesc[];
 *****************************************************************************/
 {
     AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct Library *,IconBase)
+    AROS_LIBBASE_EXT_DECL(struct Library *, IconBase)
     
-    ULONG nameLength = strlen(name);
-    BPTR  icon       = NULL;
-    BOOL  success    = FALSE;
-
-    /* Name with correct extension ? */
-    if (name[nameLength - 1] == ':')
+    BOOL  success = FALSE;
+    BPTR  file;
+    
+    if ((file = OpenIcon(name, MODE_NEWFILE)) != NULL)
     {
-        ULONG  length = nameLength + 9 /* strlen("Disk.info") */ + 1;
-        STRPTR volume = AllocVec(length, MEMF_ANY);
-        
-        if (volume != NULL)
-        {
-            strlcpy(volume, name, length);
-            strlcat(volume, "Disk.info", length);
-            
-            icon = Open(volume, MODE_NEWFILE);
-            
-            FreeVec(volume);
-        }
-        else
-        {
-            SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
-        }
-    }
-    else
-    {
-	ULONG  length = nameLength + 5 /* strlen(".info") */ + 1;
-        STRPTR file   = AllocVec(length, MEMF_ANY);
-        
-        if (file != NULL)
-        {
-            strlcpy(file, name, length);
-            strlcpy(file, ".info", length);
-            
-            icon = Open(file, MODE_NEWFILE);
-            
-            FreeVec(file);
-        }
-        else
-        {
-            SetIoErr(ERROR_NO_FREE_STORE);
-            return NULL;
-        }
+        success = WriteStruct(&LB(IconBase)->dsh, (APTR) icon, file, IconDesc);
+        CloseIcon(icon);
     }
     
-    if (icon == NULL) return FALSE;
-
-    success = WriteStruct(&LB(IconBase)->dsh, (APTR) diskobj, icon, IconDesc);
-
-    Close(icon);
-
     return success;
     
     AROS_LIBFUNC_EXIT
-} /* PutDiskObject */
+} /* PutDiskObject() */
