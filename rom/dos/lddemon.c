@@ -96,10 +96,14 @@ static BPTR LDLoad(
 	or from the PROGDIR: assign. These could both be the same
 	though.
     */
+    D(bug("LDLoad(caller=%P, name=%s, basedir=%s)\n", caller, name, basedir));
     if( caller->pr_Task.tc_Node.ln_Type == NT_PROCESS )
     {		
     	/* Try the current directory of the caller */
+	
+	D(bug("Process\n"));
 	me->pr_CurrentDir = caller->pr_CurrentDir;
+	D(bug("Trying currentdir\n"));
 	seglist = LoadSeg(name);
 	if( seglist )
 	    return seglist;
@@ -107,6 +111,7 @@ static BPTR LDLoad(
 	/* The the program directory of the caller */
 	if( caller->pr_HomeDir != NULL )
 	{
+	    D(bug("Trying homedir\n"));
 	    me->pr_CurrentDir = caller->pr_HomeDir;
 	    seglist = LoadSeg(name);
 	    if( seglist )
@@ -119,6 +124,7 @@ static BPTR LDLoad(
 	   && (dp = GetDeviceProc( basedir, dp )) != NULL 
     )
     {
+    	D(bug("Trying default dir, dp=%p\n", dp));
 	/* XXX: There is something bad here if dvp_Lock == NULL */
 	me->pr_CurrentDir = dp->dvp_Lock;
 	seglist = LoadSeg(name);
@@ -183,6 +189,7 @@ AROS_LH2(struct Library *, OpenLibrary,
 
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Library *library, *tmplib;
+    STRPTR stripped_libname;
 
     /*
 	We get the DOS semaphore to prevent the following:
@@ -200,11 +207,22 @@ AROS_LH2(struct Library *, OpenLibrary,
 
     */
 
+
+   /* We use FilePart() because the liblist is built from resident IDs,
+      and contain no path. Eg. The user can request gadgets/foo.gadget,
+      but the resident only contains foo.gadget
+   */    
+   stripped_libname = FilePart(libname);
+
     ObtainSemaphore(&DOSBase->dl_LSigSem);
 
     /* See if the library is in the library list */
     Forbid();
-    library = (struct Library *)FindName(&SysBase->LibList, libname);
+   /* We use FilePart() because the liblist is built from resident IDs,
+      and contain no path. Eg. The user can request gadgets/foo.gadget,
+      but the resident only contains foo.gadget
+   */    
+    library = (struct Library *)FindName(&SysBase->LibList, stripped_libname); 
     Permit();
 
     if( library == NULL )
@@ -230,7 +248,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 	D(bug("LDCaller: Sending request for %s v%ld\n", libname, version));
 	PutMsg(DOSBase->dl_LDDemonPort, (struct Message *)&ldd);
 	WaitPort(&ldd.ldd_ReplyPort);
-
+/*	D(bug("Returned from LDDemon\n"));
+*/
 	library = LDInit(ldd.ldd_Return, DOSBase);
     }
 
@@ -243,7 +262,8 @@ AROS_LH2(struct Library *, OpenLibrary,
 	    under a Forbidden state.
 	*/
 	Forbid();
-	tmplib = (struct Library *)FindName(&SysBase->LibList, libname);		if( tmplib != NULL )
+	tmplib = (struct Library *)FindName(&SysBase->LibList, stripped_libname);
+	if( tmplib != NULL )
 	    library = tmplib;
 
 	if( library && library->lib_Version >= version)
@@ -287,13 +307,20 @@ AROS_LH4(BYTE, OpenDevice,
     struct DosLibrary *DOSBase = SysBase->ex_RamLibPrivate;
     struct Device *device, *tmpdev;
     UBYTE ret = IOERR_OPENFAIL;
+    STRPTR stripped_devname;
+    
 
+    /* We use FilePart() because the liblist is built from resident IDs,
+      and contain no path. Eg. The user can request gadgets/foo.gadget,
+      but the resident only contains foo.gadget
+    */    
+    stripped_devname = FilePart(devname);
     /* Read the discussion in Dos_OpenLibrary() above for why we lock here */
     ObtainSemaphore(&DOSBase->dl_DSigSem);
 
     /* See if the device is in the device list */
     Forbid();
-    device = (struct Device *)FindName(&SysBase->DeviceList, devname);
+    device = (struct Device *)FindName(&SysBase->DeviceList, stripped_devname);
     Permit();
 
     if( device == NULL )
@@ -327,7 +354,7 @@ AROS_LH4(BYTE, OpenDevice,
     {
 	Forbid();
 
-	tmpdev = (struct Device *)FindName(&SysBase->DeviceList, devname);
+	tmpdev = (struct Device *)FindName(&SysBase->DeviceList, stripped_devname);
 	if(tmpdev != NULL)
 	    device = tmpdev;
 
@@ -351,14 +378,6 @@ AROS_LH4(BYTE, OpenDevice,
 	    iORequest->io_Device = NULL;
 
     }
-    /*
-	Release the semaphore here, after calling Open vector. This
-	means that decvice open is singlethreaded by the semaphore.
-	It also handles circular dependant devices. (Won't deadlock),
-	and recursive OpenDevice calls (Semaphores nest when obtained
-	several times in a row by the same task).
-    */
-    
     return ret;
 
     AROS_LIBFUNC_EXIT
