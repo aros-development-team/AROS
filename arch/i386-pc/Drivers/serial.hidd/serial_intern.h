@@ -8,7 +8,7 @@
 
 /* Include files */
 
-#include <sys/termios.h>
+// #include <sys/termios.h>
 
 #ifndef EXEC_LIBRARIES_H
 #   include <exec/libraries.h>
