@@ -48,6 +48,8 @@ struct MUI_ColoradjustData
     Object  	   *rslider, *gslider, *bslider, *colfield, *wheel, *grad;       
     ULONG   	    rgb[3];
     UWORD    	    gradpenarray[3];
+    LONG    	    gradpen;
+    BOOL    	    truecolor;
 };
 
 #define ColorWheelBase data->colorwheelbase
@@ -123,6 +125,15 @@ static void SliderFunc(struct Hook *hook, Object *obj, APTR msg)
 	ConvertRGBToHSB(&cw, &hsb);
     	nnset(data->wheel, WHEEL_HSB, &hsb);
 	nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));	
+
+	if (data->gradpen != -1)
+	{
+    	    hsb.cw_Brightness = 0xFFFFFFFF;
+    	    ConvertHSBToRGB(&hsb, &cw);
+
+	    SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
+	    if (data->truecolor) MUI_Redraw(data->grad, MADF_DRAWOBJECT);
+	}
     }
     
     NotifyGun(obj, data, gun);
@@ -151,6 +162,15 @@ static void WheelFunc(struct Hook *hook, Object *obj, APTR msg)
     
     nnset(data->colfield, MUIA_Colorfield_RGB, data->rgb);
 
+    if (data->gradpen != -1)
+    {
+    	hsb.cw_Brightness = 0xFFFFFFFF;
+    	ConvertHSBToRGB(&hsb, &cw);
+	
+	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
+	if (data->truecolor) MUI_Redraw(data->grad, MADF_DRAWOBJECT);
+    }
+    
     NotifyAll(obj, data);    
 }
 
@@ -425,6 +445,16 @@ static IPTR Coloradjust_Set(struct IClass *cl, Object *obj, struct opSet *msg)
     	    ConvertRGBToHSB(&cw, &hsb);
     	    nnset(data->wheel, WHEEL_HSB, (IPTR)&hsb);
 	    nnset(data->grad, GRAD_CurVal, 0xFFFF - (hsb.cw_Brightness >> 16));
+	    
+	    if ((_flags(obj) & MADF_SETUP) && (data->gradpen != -1))
+	    {
+   	    	hsb.cw_Brightness = 0xFFFFFFFF;
+    	    	ConvertHSBToRGB(&hsb, &cw);
+	
+	    	SetRGB32(&_screen(obj)->ViewPort, data->gradpen, cw.cw_Red, cw.cw_Green, cw.cw_Blue);
+	    	if (data->truecolor) MUI_Redraw(data->grad, MADF_DRAWOBJECT);
+	    }
+	    
     	}
 	
 	if (_flags(obj) & MADF_SETUP)
@@ -478,42 +508,36 @@ static IPTR Coloradjust_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup 
 
     if (!(DoSuperMethodA(cl, obj, (Msg)msg))) return 0;
 
-    data->gradpenarray[0] = _pens(obj)[MPEN_SHINE];
-    data->gradpenarray[1] = _pens(obj)[MPEN_SHADOW];
-    data->gradpenarray[2] = (UWORD)~0;
-    
-/*
-    if (data->flags & FLAG_FIXED_PEN)
-    {
-    	SetRGB32(&_screen(obj)->ViewPort,
-	    	 data->pen,
-		 data->rgb[0],
-		 data->rgb[1],
-		 data->rgb[2]);
-    }
-    else
-    {
-    	LONG pen;
+    if (data->wheel)
+    {  
+    	struct ColorWheelHSB hsb;
+	struct ColorWheelRGB rgb;
 	
-	pen = ObtainPen(_screen(obj)->ViewPort.ColorMap,
-	    	    	(ULONG)-1,
-			data->rgb[0],
-			data->rgb[1],
-			data->rgb[2],
-			PENF_EXCLUSIVE);
-			
-	if (pen == -1)
+	hsb.cw_Hue        = xget(data->wheel, WHEEL_Hue);
+	hsb.cw_Saturation = xget(data->wheel, WHEEL_Saturation);
+	hsb.cw_Brightness = 0xFFFFFFFF;
+
+    	ConvertHSBToRGB(&hsb, &rgb);
+	
+	data->gradpenarray[0] = _pens(obj)[MPEN_SHINE];
+	data->gradpenarray[1] = _pens(obj)[MPEN_SHADOW];
+	data->gradpenarray[2] = (UWORD)~0;
+
+	data->gradpen = ObtainPen(_screen(obj)->ViewPort.ColorMap,
+	    	    	    (ULONG)-1,
+			    rgb.cw_Red,
+			    rgb.cw_Green,
+			    rgb.cw_Blue,
+			    PENF_EXCLUSIVE);
+
+	if (data->gradpen != -1)
 	{
-	    data->flags |= FLAG_NO_PEN;
-	    data->pen = 0;
+    	    data->gradpenarray[0] = data->gradpen;
 	}
-	else
-	{
-    	    data->pen = (UBYTE)pen;
-	    data->flags |= FLAG_PEN_ALLOCATED;
-	}
+	
+	data->truecolor = GetBitMapAttr(_screen(obj)->RastPort.BitMap, BMA_DEPTH) >= 15;
+	
     }
-*/
     
     return 1;
 }
@@ -525,15 +549,11 @@ static IPTR Coloradjust_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Clea
 {
     struct MUI_ColoradjustData *data = INST_DATA(cl,obj);
 
-/*
-    if (data->flags & FLAG_PEN_ALLOCATED)
+    if (data->gradpen != -1)
     {
-    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->pen);
-	data->flags &= ~FLAG_PEN_ALLOCATED;
-	data->pen = 0;
+    	ReleasePen(_screen(obj)->ViewPort.ColorMap, data->gradpen);
+	data->gradpen = -1;
     }
-    data->flags &= ~FLAG_NO_PEN;
-*/
     
     return DoSuperMethodA(cl, obj, (Msg)msg);
 }
