@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 DTDIR 		:= $(DEVSDIR)/DataTypes
-FILES 		:= FTXT PPM PPM_ASCII ILBM BMP
+FILES 		:= FTXT PPM PPM_ASCII ILBM GIF BMP
 DTFILES		:= $(foreach f, $(FILES), $(DTDIR)/$(f))
 
 #MM- workbench-devs-complete : workbench-devs-datatypes
