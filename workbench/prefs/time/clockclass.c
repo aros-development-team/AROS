@@ -49,7 +49,6 @@ static IPTR Clock_New(Class *cl, Object *obj, struct opSet *msg)
     struct MUI_ClockData *data;
     struct TagItem  	*ti, tags[] =
     {
-    	{MUIA_Background    , MUII_ButtonBack   	},
 	{MUIA_InnerLeft     , 4 	    	    	},
 	{MUIA_InnerTop	    , 4 	    	    	},
 	{MUIA_InnerRight    , 4 	    	    	},

@@ -56,7 +56,6 @@ static IPTR Calendar_New(Class *cl, Object *obj, struct opSet *msg)
     struct CalendarData *data;
     struct TagItem  	*ti, tags[] =
     {
-    	{MUIA_Background, MUII_ButtonBack   	    },
 	{TAG_MORE   	, (IPTR)msg->ops_AttrList   }
     };
     
