@@ -50,7 +50,7 @@
 {
     char * ptr = dest;
 
-    while (n && *ptr)
+    while (n && *src)
     {
         *ptr = *src;
 	ptr ++;
