@@ -5,15 +5,26 @@
     Desc: DOS function LoadSeg()
     Lang: english
 */
+#define AROS_ALMOST_COMPATIBLE 1
+
 #include <dos/dos.h>
 #include <dos/dosextens.h>
 #include <proto/dos.h>
 #include <aros/debug.h>
 #include "dos_intern.h"
 
-extern LONG Dos_Read();
-extern void * Exec_AllocMem();
-extern void Exec_FreeMem();
+#if AROS_MODULES_DEBUG
+#include <exec/nodes.h>
+#include <exec/lists.h>
+#include <exec/memory.h>
+#include <string.h>
+struct MinList debug_seglist =
+{
+    (struct MinNode *)&debug_seglist.mlh_Tail,
+    NULL,
+    (struct MinNode *)&debug_seglist
+};
+#endif
 
 /*****************************************************************************
 
@@ -38,7 +49,7 @@ extern void Exec_FreeMem();
 
     RESULT
         Handle to the loaded executable or 0 if the load failed.
-        IoErr() gives additional information in that case.
+q        IoErr() gives additional information in that case.
 
     NOTES
         This function is built on top of InternalLoadSeg()
@@ -58,37 +69,53 @@ extern void Exec_FreeMem();
 
 *****************************************************************************/
 {
-  AROS_LIBFUNC_INIT
-  AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
+    AROS_LIBFUNC_INIT
+    AROS_LIBBASE_EXT_DECL(struct DosLibrary *,DOSBase)
 
-  void (* FunctionArray[3])();
+    void (* FunctionArray[3])();
+    BPTR file, segs=0;
 
-  BPTR file, segs=0;
+    FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);
+    FunctionArray[1] = __AROS_GETVECADDR(SysBase,33);
+    FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
 
-  FunctionArray[0] = __AROS_GETVECADDR(DOSBase,7);
-  FunctionArray[1] = __AROS_GETVECADDR(SysBase,33);
-  FunctionArray[2] = __AROS_GETVECADDR(SysBase,35);
+    /* Open the file */
+    file = Open (name,MODE_OLDFILE);
 
-  /* Open the file */
-  file = Open (name,MODE_OLDFILE);
+    if (file)
+    {
+	D(bug("Loading \"%s\"...\n", name));
 
-  if (file)
-  {
-    D(bug("Loading \"%s\"...\n", name));
+	segs = InternalLoadSeg (file, NULL, (void *)FunctionArray, NULL);
 
-    segs = InternalLoadSeg (file, NULL, (void *)FunctionArray, NULL);
+	if (segs)
+        {
+#if AROS_MODULES_DEBUG
+            struct debug_segnode *segnode;
 
-    if (segs)
-      SetIoErr (0);
-#if DEBUG > 1
-    else
-      bug ("Loading failed\n");
+            segnode = AllocMem(sizeof(struct debug_segnode), MEMF_ANY);
+
+            if (segnode)
+            {
+                NameFromFH(file, segnode->name, sizeof(segnode->name));
+
+                segnode->seglist = segs;
+
+                ADDTAIL(&debug_seglist, segnode);
+            }
 #endif
-    Close(file);
-  }
 
-  /* And return */
-  return segs;
+            SetIoErr (0);
+        }
+#if DEBUG > 1
+	else
+ 	    bug ("Loading failed\n");
+#endif
+        Close(file);
+    }
 
-  AROS_LIBFUNC_EXIT
+    /* And return */
+    return segs;
+
+    AROS_LIBFUNC_EXIT
 } /* LoadSeg */

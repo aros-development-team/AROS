@@ -210,4 +210,11 @@ struct markerarray
 #define  __is_task(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_TASK)
 #define  __is_process(task)  (((struct Task *)task)->tc_Node.ln_Type == NT_PROCESS)
 
+struct debug_segnode
+{
+    struct MinNode node;
+    UBYTE          name[200];
+    BPTR           seglist;
+};
+
 #endif /* DOS_INTERN_H */
