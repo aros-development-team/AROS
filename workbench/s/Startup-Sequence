@@ -17,6 +17,13 @@ AddDatatypes REFRESH
 
 Path SYS:Utilities SYS:System SYS:Prefs SYS:Tools SYS:Tools/Commodities SYS:Demos ADD QUIET
 
+; Call FixFonts if it was never called before
+If NOT EXISTS SYS:Fonts/_fixfonts_called
+  echo "Executing FixFonts"
+  FixFonts
+  echo "blah" >SYS:Fonts/_fixfonts_called
+EndIf
+
 ; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
 
 ;Prompt "%N.%S> "
