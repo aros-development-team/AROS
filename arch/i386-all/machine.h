@@ -1,7 +1,7 @@
 #ifndef AROS_MACHINE_H
 #define AROS_MACHINE_H
 /*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     NOTE: This file must compile *without* any other header !

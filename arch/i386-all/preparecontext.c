@@ -1,34 +1,8 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.7  1998/10/20 16:43:19  hkiel
-    Amiga Research OS
-
-    Revision 1.6  1996/12/06 11:07:54  aros
-    Vector shuffle
-
-    Revision 1.5  1996/11/21 10:49:42  aros
-    Created macros AROS_SLIB_ENTRY() for assembler files, too, to solve naming
-    problems.
-
-    The #includes in the header *must* begin in the first column. Otherwise
-    makedepend will ignore them (GCC works, though).
-
-    Removed a couple of Logs
-
-    Revision 1.4  1996/10/24 15:51:12  aros
-    Use the official AROS macros over the __AROS versions.
-
-    Revision 1.3  1996/08/13 14:04:57  digulla
-    Replaced AROS_LA by AROS_LHA
-
-    Revision 1.2  1996/08/01 17:41:26  digulla
-    Added standard header for all files
-
-    Desc:
-    Lang:
 */
+
 #include <exec/types.h>
 #include <aros/libcall.h>
 
