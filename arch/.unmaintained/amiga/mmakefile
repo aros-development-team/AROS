@@ -1,6 +1,8 @@
 # $Id$
 
-#MM- AROS-amiga : setup includes compiler arosboot kernel workbench demos games utilities
+# removed targets "setup" and "includes" because they are already listed
+# in compiler/mmakefile
+#MM- AROS-amiga : compiler arosboot kernel workbench utilities demos games
 
 # The "kernel" dependency in "AROS-amiga" wraps back onto this target:
 #MM- kernel-amiga : \
@@ -8,9 +10,10 @@
 #MM	kernel-aros \
 #MM	kernel-alerthook-module \
 #MM	kernel-boopsi-module \
+#MM	kernel-oop-module \
 #MM	kernel-utility-module \
 #MM	kernel-devs \
-#MM     kernel-oop-module 
+#MM     kernel-oop-module
 
 # kernel-keymap-module \ <- remove because of undefined reference to `kprintf'
 # kernel-expansion-module \ <- removed because of undefined references to errors
@@ -72,4 +75,3 @@
 #	@$(NOP)
 
 #MM- includes-amiga : includes-copy includes-amiga-$(CPU)
-
