@@ -1,0 +1,66 @@
+# FreeType 2 Demos JamRules (c) 2001 David Turner
+#
+# This file contains the Jam rules needed to build the FreeType 2 Demos.
+# It is shared by all Jamfiles and is included only once in the build
+# process.
+#
+
+
+# Determine prefix of library file.  We must use "libxxxxx" on Unix systems,
+# while all other simply use the real name.
+#
+if $(UNIX)
+{
+  LIBPREFIX ?= lib ;
+}
+else
+{
+  LIBPREFIX ?= "" ;
+}
+
+
+FT2_TOP ?= [ FDirName $(DOTDOT) freetype2 ] ;
+
+# FT2_INCLUDE contains the location of the public FreeType 2 header files
+# it is ../freetype2/include by default
+#
+FT2_INCLUDE ?= [ FDirName $(FT2_TOP) include ] ;
+
+
+# FT2_LIB contains the path to the FreeType 2 library object
+#
+FT2_LIB ?= [ FDirName $(FT2_TOP) objs $(LIBPREFIX)freetype$(SUFLIB) ] ;
+
+# X11_LINKLIBS is only used when compiling the X11 graphics back-end
+# this should be generated from a "configure" script on Unix
+#
+X11_LINKLIBS = -lX11 -L/usr/X11R6/lib ;
+
+
+# FT2DEMO_TOP contains the location of the FreeType demos directory.
+#
+FT2DEMO_TOP ?= $(DOT) ;
+
+
+# Define a new rule used to declare a sub directory of the Nirvana source
+# tree.
+#
+rule FT2DEMO_SubDir
+{
+  if $(FT2DEMO_TOP) = $(DOT)
+  {
+    return [ FDirName  $(<) ] ;
+  }
+  else
+  {
+    return [ FDirName  $(FT2DEMO_TOP) $(<) ] ;
+  }
+}
+
+# We also set ALL_LOCATE_TARGET in order to place all object and library
+# files in "objs".
+#
+ALL_LOCATE_TARGET ?= [ FT2DEMO_SubDir  objs ] ;
+
+
+# end of Jamrules
