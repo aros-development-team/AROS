@@ -78,11 +78,11 @@
 	IPB(IFFParseBase)
     );
 
-    if (bytesread < 0)
-	/* No error */
+    /* No error */
+    if (bytesread > 0)
 	cn->cn_Scan += bytesread;
-    /* Return number of bytes actually read  (or error )*/
 
+    /* Return number of bytes actually read  (or error )*/
     return (bytesread);
 
     AROS_LIBFUNC_EXIT

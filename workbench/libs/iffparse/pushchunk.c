@@ -108,9 +108,6 @@
 	    if (err) return (err);
 	}
 
-	/* The ID must be big endian when written */
-	id = SwitchIfLittleEndian(id);
-
 	byteswritten = WriteStreamLong
 	(
 	    iff,
@@ -137,14 +134,11 @@
 	if
 	( id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP )
 	{
-	    /* The type MUST be big endian when written */
-	    type = SwitchIfLittleEndian(type);
-
 	    byteswritten = WriteStreamLong
 	    (
 		iff,
 		&type,
-	    IPB(IFFParseBase)
+		IPB(IFFParseBase)
 	    );
 
 	    if (byteswritten < 0) return (byteswritten);

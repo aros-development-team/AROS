@@ -5,6 +5,8 @@
     Desc: Basic help functions needed by iffparse.
     Lang: English.
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 LONG PushContextNode
@@ -19,11 +21,16 @@ LONG PushContextNode
 {
     /* Allocates and puts a new context-node into the top of the context-stack
      Also does GoodType and GoodID checking  */
-
     struct ContextNode	 *cn;
-
     BOOL composite;
 
+    D(bug("PushContextNode(iff=%p, type=%c%c%c%c, id=%c%c%c%c, size=%d, scan=%d)\n",
+	iff,
+	type>>24,type>>16,type>>8,type,
+	id>>24,id>>16,id>>8,id,
+	size,
+	scan
+    ));
 
     /* Set the composite flag if we have a composite contextnnode */
     if (id == ID_FORM || id == ID_LIST || id == ID_CAT || id == ID_PROP)
@@ -41,27 +48,14 @@ LONG PushContextNode
 
       /* Check if type and ids are valid */
     if (!(GoodType(type) && GoodID(id)) )
-	return (IFFERR_MANGLED);
+	ReturnInt ("PushContextNode",LONG,IFFERR_MANGLED);
 
     /* Allocate a new context node */
-    if
-    (
-	!(cn = AllocMem
-	    (
-	    sizeof (struct IntContextNode),
-	    MEMF_ANY
-	    )
-	)
-    )
-	return (IFFERR_NOMEM);
+    if ( !(cn = AllocMem ( sizeof (struct IntContextNode), MEMF_ANY ) ) )
+	ReturnInt ("PushContextNode",LONG,IFFERR_NOMEM);
 
     /* Put the context node at top of the stack */
-    AddHead
-    (
-	(struct List*)&( GetIntIH(iff)->iff_CNStack ),
-	(struct Node*)cn
-    );
-
+    AddHead ( (struct List*)&( GetIntIH(iff)->iff_CNStack ), (struct Node*)cn );
 
     /* Set the contextnode attrs */
     cn->cn_Type  =  type;
@@ -76,7 +70,7 @@ LONG PushContextNode
     /* Deeper stack */
     iff->iff_Depth ++;
 
-    return (NULL);
+    ReturnInt ("PushContextNode",LONG,0L);
 }
 
 VOID PopContextNode(struct IFFHandle* iff,
@@ -87,7 +81,21 @@ VOID PopContextNode(struct IFFHandle* iff,
 
     struct IntContextNode *cn;
 
+    D(bug("PopContextNode(iff=%p)"));
+
     cn = GetIntCN( TopChunk( iff ) );
+
+    if (cn)
+    {
+	D(bug("(%c%c%c%c, %c%c%c%c)\n",
+	    cn->CN.cn_Type>>24,cn->CN.cn_Type>>16,cn->CN.cn_Type>>8,cn->CN.cn_Type,
+	    cn->CN.cn_ID>>24,cn->CN.cn_ID>>16,cn->CN.cn_ID>>8,cn->CN.cn_ID
+	));
+    }
+    else
+    {
+	D(bug("\n"));
+    }
 
     /* Free all localcontextitems */
     node = (struct LocalContextItem*)cn->cn_LCIList.mlh_Head;
@@ -159,64 +167,57 @@ LONG GetChunkHeader(struct IFFHandle *iff,
     LONG type,
 	 id,
 	 size;
-
     LONG scan = 0;
-
     LONG bytesread;
+
+    D(bug("GetChunkHeader (iff=%p)\n", iff));
 
     /* Reads in the appropriate stuff from a chunk and makes a contextnode of it */
 
 	/* Read chunk ID */
-    bytesread = ReadStreamLong
-    (
-	iff,
-	&id,
-	IFFParseBase
-    );
+    bytesread = ReadStreamLong ( iff, &id, IFFParseBase );
 
     /* We may have an IFF Error */
-    if ( bytesread < 0) return (bytesread);
+    if (bytesread < 0)
+	ReturnInt ("GetChunkHeader",LONG,bytesread);
 
     /* Read chunk size */
-    bytesread = ReadStreamLong
-    (
-	iff,
-	&size,
-	IFFParseBase
-    );
+    bytesread = ReadStreamLong ( iff, &size, IFFParseBase );
 
-    if ( bytesread < 0) return (bytesread);
+    if (bytesread < 0)
+	ReturnInt ("GetChunkHeader",LONG,bytesread);
 
     /* We must see if we have a IFF header ("FORM", "CAT" or "LIST" */
-    if
-    (
-	id == ID_FORM
-    ||
-	id == ID_CAT
-    ||
-	id == ID_LIST
-    ||
-	id == ID_PROP
-    )
+    if ( id == ID_FORM || id == ID_CAT || id == ID_LIST || id == ID_PROP )
     {
 	/* Read chunk size */
-	bytesread = ReadStreamLong
-	(
-	    iff,
-	    &type,
-	    IFFParseBase
-	);
+	bytesread = ReadStreamLong ( iff, &type, IFFParseBase );
 
-	if ( bytesread < 0) return (bytesread);
+	if (bytesread < 0)
+	    ReturnInt ("GetChunkHeader",LONG,bytesread);
+
+	D2(bug("  Found Chunk %c%c%c%c size=%d\n",
+	    id>>24,id>>16,id>>8,id,
+	    size,
+	    type>>24,type>>16,type>>8,type
+	));
 
 	/* Type is inside chunk so we had to add its size to the scancount. */
 	scan = sizeof (LONG);
-
+    }
+    else
+    {
+	type = 0L;
+	D2(bug("  Found Chunk %c%c%c%c size=%d\n",
+	    id>>24,id>>16,id>>8,id,
+	    size
+	));
     }
 
-
-    return
+    ReturnInt
     (
+	"GetChunkHeader",
+	LONG,
 	PushContextNode
 	(
 	    iff,
@@ -241,11 +242,13 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
     struct LocalContextItem *lci;
 
     LONG err;
-
     /* Either RETURN_2CLIENT or IFFERR_EOC */
     LONG stepping_retval;
-
     ULONG param;
+
+    D(bug("InvokeHandlers (Iff=%p, mode=%d, ident=%d\n",
+	iff, mode, ident
+    ));
 
     if (ident == IFFLCI_ENTRYHANDLER)
 	stepping_retval = IFF_RETURN2CLIENT;
@@ -254,21 +257,13 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
 
     /* Check for IFFPARSE_RAWSTEP *before* calling evt entryhandlers */
     if (mode == IFFPARSE_RAWSTEP)
-	return (stepping_retval);
-
+	ReturnInt ("InvokeHandlers(1)",LONG,stepping_retval);
 
     /* Get top of contextstack */
     cn = TopChunk(iff);
 
     /* Scan downwards to find a contextnode with a matching LCI */
-
-    lci = FindLocalItem
-    (
-	iff,
-	cn->cn_Type,
-	cn->cn_ID,
-	ident
-    );
+    lci = FindLocalItem ( iff, cn->cn_Type, cn->cn_ID, ident );
 
     if (lci)
     {
@@ -278,7 +273,7 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
 
 	/* First check if a hook really is present */
 	if (! hi->hi_Hook)
-	    return (IFFERR_NOHOOK);
+	    ReturnInt ("InvokeHandlers",LONG,IFFERR_NOHOOK);
 
 	/* What kind off command shall the hook receive */
 
@@ -290,14 +285,14 @@ LONG InvokeHandlers(struct IFFHandle *iff, LONG mode, LONG ident,
 
 	/* Call the handler */
 	if ( (err = CallHookPkt (  hi->hi_Hook, hi->hi_Object, (APTR)param)) )
-	    return (err);
+	    ReturnInt ("InvokeHandlers(2)",LONG,err);
     }
 
     /* Check for IFFPARSE_STEP. (stepping through file WITH handlers enabled */
     if (mode == IFFPARSE_STEP)
-	return (stepping_retval);
+	ReturnInt ("InvokeHandlers(3)",LONG,stepping_retval);
 
-    return (NULL);
+    ReturnInt ("InvokeHandlers",LONG,0L);
 }
 
 /******************/
@@ -334,7 +329,7 @@ VOID PurgeLCI(struct LocalContextItem *lci,
 
 /* Reads from the current StreamHandler */
 
-/* returns one of the standar IFF errors */
+/* returns one of the standard IFF errors */
 LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
     struct IFFParseBase_intern *IFFParseBase)
 {
@@ -347,7 +342,7 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
     /* Now we can do the actual reading of the stream */
     cmd.sc_Command  = IFFCMD_READ;
     cmd.sc_Buf	    = buf;
-    cmd.sc_NBytes    = bytestoread;
+    cmd.sc_NBytes   = bytestoread;
 
     err = CallHookPkt
     (
@@ -355,10 +350,11 @@ LONG ReadStream(struct IFFHandle *iff, APTR buf, LONG bytestoread,
 	iff,
 	&cmd
     );
+
     if (err)
-	    retval = IFFERR_READ;
-	else
-	    retval = bytestoread;
+	retval = IFFERR_READ;
+    else
+	retval = bytestoread;
 
     return (retval);
 }
@@ -503,28 +499,3 @@ LONG SeekStream(struct IFFHandle *iff,LONG offset,
 /********************/
 
 
-
-
-/************************/
-/* Endian conversions	 */
-/************************/
-
-/* If the CPU is little endian, the id will be switched to the opposite
-endianess of what it is now.
-
-Have tried to put this into a macro, but only got heaps of errors.
-
-*/
-
-LONG SwitchIfLittleEndian(LONG id)
-{
-
-#if (AROS_BIG_ENDIAN == 0)
-    id = ((id & 0xFF000000) >> 24)
-      | ((id & 0x00FF0000) >> 8)
-      | ((id & 0x0000FF00) << 8)
-      | ((id & 0x000000FF) << 24);
-#endif
-
-  return (id);
-}

@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -58,25 +60,26 @@
 
     struct ContextNode	 *node;
 
+    D(bug ("FindPropContext (iff=%p)\n", iff));
+
     node = TopChunk(iff);
 
     /* Start at the parent of the top node */
-    while ((node = ParentChunk(node) ))
+    do
     {
+	D2(bug("   node=%p (%c%c%c%c)\n",
+	    node,
+	    node->cn_ID>>24, node->cn_ID>>16, node->cn_ID>>8, node->cn_ID
+	));
+
 	/* If this node is a FORM or a LIST, then we have acorrect property */
-	if
-	(
-	    (node->cn_ID == ID_FORM)
-	&&
-	    (node->cn_ID == ID_LIST)
-	)
-	    return(node);
+	if ( (node->cn_ID == ID_FORM) || (node->cn_ID == ID_LIST) )
+	    ReturnPtr ("FindPropContext",struct ContextNode *,node);
 
     }
+    while ((node = ParentChunk(node) ));
 
     /* No proper context found */
-    return (NULL);
-
-
+    ReturnPtr ("FindPropContext",struct ContextNode *,NULL);
     AROS_LIBFUNC_EXIT
 } /* FindPropContext */

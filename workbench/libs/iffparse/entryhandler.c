@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -69,6 +71,13 @@
     struct LocalContextItem *lci;
     struct HandlerInfo *hi;
 
+    D(bug ("EntryHandler (iff=%p, type=%c%c%c%c, id=%c%c%c%c, position=%d, handler=%p, object=%p)\n",
+	iff,
+	type>>24,type>>16,type>>8,type,
+	id>>24,id>>16,id>>8,id,
+	position, handler, object
+    ));
+
     if
     (
 	!(lci = AllocLocalItem
@@ -80,7 +89,7 @@
 	    )
 	)
     )
-	return (IFFERR_NOMEM);
+	ReturnInt ("EntryHandler",LONG,IFFERR_NOMEM);
 
     /* Get pointer to the user data */
     hi = LocalItemData(lci);
@@ -89,8 +98,10 @@
 
     hi->hi_Object  = object;
 
-    return
+    ReturnInt
     (
+	"EntryHandler",
+	LONG,
 	StoreLocalItem
 	(
 	    iff,

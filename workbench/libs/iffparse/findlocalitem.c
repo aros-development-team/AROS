@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -57,32 +59,82 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
-
     struct IntContextNode   *cn_node,
 			    *cn_nextnode;
-
     struct LocalContextItem *lci_node,
 			    *lci_nextnode;
+
+    D(bug("FindLocalItem (iff=%p, type=%c%c%c%c, id=%c%c%c%c, ident=%c%c%c%c)\n",
+	iff,
+	type>>24, type>>16, type>>8, type,
+	id>>24, id>>16, id>>8, id,
+	ident>>24,ident>>16,ident>>8,ident
+    ));
+
     /* Get contextnode at top */
     cn_node = (struct IntContextNode*)TopChunk(iff);
 
     while ((cn_nextnode = (struct IntContextNode*)cn_node->CN.cn_Node.mln_Succ))
     {
+#if DEBUG
+	if (cn_node)
+	{
+	    D2(bug("    node=%p (%c%c%c%c)\n",
+		cn_node,
+		cn_node->CN.cn_Type>>24,
+		cn_node->CN.cn_Type>>16,
+		cn_node->CN.cn_Type>>8,
+		cn_node->CN.cn_Type
+	    ));
+	}
+	else
+	{
+	    D2(bug("    node=%p (----)\n", cn_node));
+	}
+#endif
+
 	/* Get LCI at top inside contextnode */
 	lci_node = (struct LocalContextItem*)cn_node->cn_LCIList.mlh_Head;
 
 	while ((lci_nextnode = (struct LocalContextItem*)lci_node->lci_Node.mln_Succ))
 	{
+#if DEBUG
+	    if (lci_node)
+	    {
+		D2(bug("        lci_node=%p (%c%c%c%c, %c%c%c%c, %c%c%c%c)\n",
+		    lci_node,
+		    lci_node->lci_Type>>24,
+		    lci_node->lci_Type>>16,
+		    lci_node->lci_Type>>8,
+		    lci_node->lci_Type,
+		    lci_node->lci_ID>>24,
+		    lci_node->lci_ID>>16,
+		    lci_node->lci_ID>>8,
+		    lci_node->lci_ID,
+		    lci_node->lci_Ident>>24,
+		    lci_node->lci_Ident>>16,
+		    lci_node->lci_Ident>>8,
+		    lci_node->lci_Ident
+		));
+	    }
+	    else
+	    {
+		D2(bug("        lci_node=%p (----, ----, ----)\n",
+		    lci_node
+		));
+	    }
+#endif
+
 	    /* Do we have a match ? */
 	    if
 	    (
-		(lci_node->lci_Type   == type   )
+		(lci_node->lci_Type   == type )
 	    &&
-		(lci_node->lci_ID      == id    )
+		(lci_node->lci_ID     == id   )
 	    &&
-		(lci_node->lci_Ident  == ident )
+		(lci_node->lci_Ident  == ident)
 	    )
-		return (lci_node);
+		ReturnPtr ("FindLocalItem",struct LocalContextItem *,lci_node);
 
 	    lci_node = lci_nextnode;
 	}
@@ -90,7 +142,6 @@
 	cn_node = cn_nextnode;
     }
 
-    return (NULL);
-
+    ReturnPtr ("FindLocalItem",struct LocalContextItem *,NULL);
     AROS_LIBFUNC_EXIT
 } /* FindLocalItem */

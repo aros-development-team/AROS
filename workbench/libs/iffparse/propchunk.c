@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -57,8 +59,18 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    return
+#if DEBUG
+    bug ("PropChunk (iff=%p, type=%c%c%c%c, id=%c%c%c%c)\n",
+	iff,
+	type>>24, type>>16, type>>8, type,
+	id>>24, id>>16, id>>8, id
+    );
+#endif
+
+    ReturnInt
     (
+	"PropChunk",
+	LONG,
 	EntryHandler
 	(
 	    iff,

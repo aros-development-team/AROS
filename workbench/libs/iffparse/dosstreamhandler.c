@@ -5,6 +5,7 @@
     Desc: DOS stream handler. Used in InitIFFasDOS.
     Lang: English.
 */
+#define DEBUG 0
 #include "iffparse_intern.h"
 
 /********************/
@@ -26,60 +27,69 @@ ULONG DOSStreamHandler
 
     switch (cmd->sc_Command)
     {
-	case IFFCMD_READ:
+    case IFFCMD_READ:
+#if DEBUG
+	VPrintf ("   Reading %ld bytes\n", &cmd->sc_NBytes);
+	Flush (Output ());
+#endif
 
-	    error =
+	error =
+	(
+	    Read
 	    (
-		Read
-		(
-		    (BPTR)iff->iff_Stream,
-		    cmd->sc_Buf,
-		    cmd->sc_NBytes
-		)
-	    !=
+		(BPTR)iff->iff_Stream,
+		cmd->sc_Buf,
 		cmd->sc_NBytes
-	    );
+	    )
+	!=
+	    cmd->sc_NBytes
+	);
 
-	    break;
+	break;
 
-	case IFFCMD_WRITE:
+    case IFFCMD_WRITE:
 
-	    error =
+	error =
+	(
+	    Write
 	    (
-		Write
-		(
-		    (BPTR)iff->iff_Stream,
-		    cmd->sc_Buf,
-		    cmd->sc_NBytes
-		)
-	    !=
+		(BPTR)iff->iff_Stream,
+		cmd->sc_Buf,
 		cmd->sc_NBytes
-	    );
+	    )
+	!=
+	    cmd->sc_NBytes
+	);
 
-	    break;
+	break;
 
-	case IFFCMD_SEEK:
-	    error =
+    case IFFCMD_SEEK:
+#if DEBUG
+	VPrintf ("   Seeking %ld bytes\n", &cmd->sc_NBytes);
+	Flush (Output ());
+#endif
+
+	error =
+	(
+	    Seek
 	    (
-		Seek
-		(
-		    (BPTR)iff->iff_Stream,
-		    cmd->sc_NBytes,
-		    OFFSET_CURRENT
-		)
+		(BPTR)iff->iff_Stream,
+		cmd->sc_NBytes,
+		OFFSET_CURRENT
+	    )
 
-	    ==
-		-1
-	    );
+	==
+	    -1
+	);
 
-	    break;
+	break;
 
-	case IFFCMD_INIT:
-	case IFFCMD_CLEANUP:
-	    /* Don't need these for dos streams
-	    */
-	    error = NULL;
-	    break;
+    case IFFCMD_INIT:
+    case IFFCMD_CLEANUP:
+	/* Don't need these for dos streams
+	*/
+	error = NULL;
+	break;
     }
 
     return (error);

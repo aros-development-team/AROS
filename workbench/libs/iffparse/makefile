@@ -10,7 +10,8 @@ DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
 
 FILES = iffparse_init iffparse_functable basicfuncs bufferingfuncs \
-	clipboardfuncs collectionhooks prophooks stophook
+	clipboardfuncs collectionhooks prophooks stophook \
+	dosstreamhandler
 
 FUNCTIONS = \
 	allociff \
@@ -20,7 +21,6 @@ FUNCTIONS = \
 	collectionchunk \
 	collectionchunks \
 	currentchunk \
-	dosstreamhandler \
 	entryhandler \
 	exithandler \
 	findcollection \

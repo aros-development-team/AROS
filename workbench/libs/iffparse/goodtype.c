@@ -51,28 +51,29 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    UBYTE *theId = (UBYTE *)&type;
-    BYTE i;
+    UBYTE theId[4];
+    WORD  i;
 
    /* How can it be a valid type if its not a valid ID */
     if(!GoodID(type))
 	return (FALSE);
 
-    /* Assure Big endianess */
-    type = SwitchIfLittleEndian(type);
+    theId[0] = type >> 24;
+    theId[1] = type >> 16;
+    theId[2] = type >> 8;
+    theId[3] = type;
 
-
-    for(i=0; i < 4; i++, theId++)
+    for(i=0; i < 4; i++)
     {
 	/* Greater than Z, not a type */
-	if(*theId > 'Z')
+	if(theId[i] > 'Z')
 	    return (FALSE);
 
 	/*  If its less than 'A', and not in '0'..'9',
 	    then if its not a space its not valid. */
-	if(    (*theId < 'A')
-	    && ((*theId < '0') || (*theId > '9'))
-	    && (*theId != ' ')
+	if(    (theId[i] < 'A')
+	    && ((theId[i] < '0') || (theId[i] > '9'))
+	    && (theId[i] != ' ')
 	  )
 	    return (FALSE);
 

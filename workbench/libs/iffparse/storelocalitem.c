@@ -5,6 +5,8 @@
     Desc:
     Lang: english
 */
+#define DEBUG 0
+#include <aros/debug.h>
 #include "iffparse_intern.h"
 
 /*****************************************************************************
@@ -24,7 +26,7 @@
 
 /*  FUNCTION
 	Stores the given local context item in a context node.
-	Which context node this is depends on the valu of the position
+	Which context node this is depends on the value of the position
 	argument:
 	    IFFSLI_ROOT - insert into the default contextnode.
 	    IFFSLI_PROP  -  insert into the node returned by FindPropContext().
@@ -34,7 +36,7 @@
     INPUTS
 	iff	   - pointer to IFFHandle struct.
 	localItem  -  pointer to local context item.
-	position  -  IFFSLI_ROOT, IFFSLI_PROP os IFFSLI_TOP.
+	position  -  IFFSLI_ROOT, IFFSLI_PROP or IFFSLI_TOP.
 
     RESULT
 	error	  -  0 if succesfull, IFFERR_#? otherwise.
@@ -59,9 +61,14 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-
-    LONG err = NULL;
+    LONG err = 0;
     struct ContextNode *cn;
+
+#if DEBUG
+    bug ("StoreLocalItem (iff=%p, localItem=%p, position=%d)\n",
+	iff, localItem, position
+    );
+#endif
 
     switch (position)
     {
@@ -92,7 +99,6 @@
 
 	    if (!cn)
 		err = IFFERR_NOSCOPE;
-
 	    else
 	    {
 		StoreItemInContext
@@ -107,8 +113,6 @@
 
     }	 /* End of switch */
 
-    return (err);
-
-
+    ReturnInt ("StoreLocalItem",LONG,err);
     AROS_LIBFUNC_EXIT
 } /* StoreLocalItem */

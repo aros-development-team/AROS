@@ -50,13 +50,12 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct Library *,IFFParseBase)
 
-    UBYTE *theId;
+    UBYTE theId[4];
 
-  /* Assure big endian before checking */
-    id = SwitchIfLittleEndian(id);
-
-    theId = (UBYTE *)&id;
-
+    theId[0] = id >> 24;
+    theId[1] = id >> 16;
+    theId[2] = id >> 8;
+    theId[3] = id;
 
     /* If the ID starts with a space, but is not all spaces, then invalid */
     if((theId[0] == 0x20) && (id != 0x20202020))
