@@ -63,8 +63,8 @@ If EXISTS S:User-Startup
   Execute S:User-Startup
 EndIf
 
-Echo "Starting file manager..."
-Run >NIL: LoadWB
+;Echo "Starting file manager..."
+LoadWB
 
 Execute S:Shell-Startup
 
