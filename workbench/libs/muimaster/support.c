@@ -97,7 +97,7 @@ static const struct __MUIBuiltinClass *builtins[] =
     &_MUI_Application_desc,
     &_MUI_Window_desc,
     &_MUI_Area_desc,
-//    &_MUI_Rectangle_desc,
+    &_MUI_Rectangle_desc,
     &_MUI_Group_desc,
 //    &_MUI_Image_desc,
 //    &_MUI_Dataspace_desc,

@@ -5,6 +5,16 @@
 #include <proto/intuition.h>
 #include <proto/dos.h>
 
+/* define this if this should be compiled with mui */
+#ifdef COMPILE_WITH_MUI
+
+#include <libraries/mui.h>
+#include <proto/muimaster.h>
+
+typedef unsigned long IPTR;
+
+#else
+
 /* the following should go in a single include file which then only
 ** constits of the public constants and members. Actually this is easiey
 */
@@ -20,8 +30,13 @@ Object *MUI_NewObject(char *classname, int tag,...)
 /* muimaster.library is not yet a library */
 #include "muimaster_intern.h"
 
-struct Library *MUIMasterBase;
 struct MUIMasterBase_intern MUIMasterBase_instance;
+
+#endif
+
+struct Library *MUIMasterBase;
+
+
 
 __saveds void repeat_function(void)
 {
@@ -76,6 +91,7 @@ void main(void)
 
     struct Hook hook;
 
+#ifndef COMPILE_WITH_MUI
     MUIMasterBase = (struct Library*)&MUIMasterBase_instance;
 
     MUIMasterBase_instance.sysbase = *((struct ExecBase **)4);
@@ -88,6 +104,9 @@ void main(void)
     MUIMasterBase_instance.cxbase = OpenLibrary("commodities.library",37);
     MUIMasterBase_instance.keymapbase = OpenLibrary("keymap.library",37);
     __zune_prefs_init(&__zprefs);
+#else
+    MUIMasterBase = (struct Library*)OpenLibrary("muimaster.library",0);
+#endif
 
     hook.h_Entry = (HOOKFUNC)repeat_function;
 
@@ -110,7 +129,7 @@ void main(void)
 			Child, open_button = TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Open Window", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button4", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button5", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
-			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
+			Child, HVSpace, //TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button6", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    Child, VGroup,
 			GroupFrameT("A vertical group"),
@@ -118,6 +137,13 @@ void main(void)
 			Child, TextObject, MUIA_CycleChain, 1, ButtonFrame, MUIA_Background, MUII_ButtonBack, MUIA_Text_PreParse, "\33c", MUIA_Text_Contents, "Button8", MUIA_InputMode, MUIV_InputMode_RelVerify, End,
 			End,
 		    End,
+
+		Child, RectangleObject,
+		    MUIA_VertWeight,0, /* Seems to be not supported properly as orginal MUI doesn't allow to alter the height of the window */
+		    MUIA_Rectangle_HBar, TRUE,
+		    MUIA_Rectangle_BarTitle,"Enter a string",
+		    End,
+
 		Child, StringObject,
 		    StringFrame,
 		    MUIA_CycleChain,1,
@@ -176,6 +202,10 @@ void main(void)
 	MUI_DisposeObject(app);
     }
     MUI_DeleteCustomClass(CL_DropText);
+
+#ifdef COMPILE_WITH_MUI
+    CloseLibrary(MUIMasterBase);
+#endif
 }
 
 // ---- old test -------
