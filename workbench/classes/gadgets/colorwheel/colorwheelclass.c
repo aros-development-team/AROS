@@ -153,7 +153,7 @@ STATIC IPTR colorwheel_set(Class *cl, Object *o, struct opSet *msg)
     }
     
     tstate = msg->ops_AttrList; 
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	

@@ -122,7 +122,7 @@ STATIC IPTR gradientslider_set(Class *cl, Object *o, struct opSet *msg)
     if (msg->MethodID != OM_NEW) retval = DoSuperMethodA(cl, o, (Msg)msg);
     
     tstate = msg->ops_AttrList;
-    while((tag = NextTagItem((const struct TagItem **)&tstate)))
+    while((tag = NextTagItem(&tstate)))
     {
     	IPTR tidata = tag->ti_Data;
     	   	

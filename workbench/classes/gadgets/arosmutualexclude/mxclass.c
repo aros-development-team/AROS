@@ -48,7 +48,7 @@ void mx_setnew(Class * cl, Object * obj, struct opSet *msg)
     struct MXData  *data = INST_DATA(cl, obj);
     struct TagItem *tag, *taglist = msg->ops_AttrList;
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{
@@ -157,7 +157,7 @@ IPTR mx_set(Class *cl, Object *obj, struct opSet *msg)
     if (msg->MethodID != OM_NEW)
         retval = DoSuperMethodA(cl, obj, (Msg)msg);
 
-    while ((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while ((tag = NextTagItem(&taglist)))
     {
 	switch (tag->ti_Tag)
 	{

@@ -43,7 +43,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
         
     EnterFunc(bug("Palette::Set()\n"));
     
-    for (tstate = msg->ops_AttrList; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    for (tstate = msg->ops_AttrList; (tag = NextTagItem(&tstate)); )
     {
     	IPTR tidata = tag->ti_Data;
     	
@@ -155,7 +155,7 @@ STATIC IPTR palette_set(Class *cl, Object *o, struct opSet *msg)
     	}
 
     	/* Relayout the gadget */
-    	DoMethod(o, GM_LAYOUT, msg->ops_GInfo, FALSE);
+    	DoMethod(o, GM_LAYOUT, (IPTR)msg->ops_GInfo, FALSE);
     }
     
     ReturnPtr ("Palette::Set", IPTR, retval);
@@ -385,7 +385,7 @@ STATIC IPTR palette_goactive(Class *cl, Object *o, struct gpInput *msg)
     	
     	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	{
-	    	    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
 	    
 	    	    ReleaseGIRPort(rp);
 	    	}
@@ -488,7 +488,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
     	    	    	data->pd_Color = over_color;
     	    	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	    	{
-	    	    	    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+	    	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
 	    
 	    	    	    ReleaseGIRPort(rp);
 	    	    	}
@@ -512,7 +512,7 @@ STATIC IPTR palette_handleinput(Class *cl, Object *o, struct gpInput *msg)
 
     	    	if ((rp = ObtainGIRPort(msg->gpi_GInfo)))
     	    	{
-    	    	    DoMethod(o, GM_RENDER, msg->gpi_GInfo, rp, GREDRAW_UPDATE);
+    	    	    DoMethod(o, GM_RENDER, (IPTR)msg->gpi_GInfo, (IPTR)rp, GREDRAW_UPDATE);
     	    	     	    
     	    	    ReleaseGIRPort(rp);
     	    	}
@@ -743,8 +743,8 @@ AROS_UFH3S(IPTR, dispatch_paletteclass,
 		    {		        
 		        DoMethod(o, 
 				 GM_RENDER,
-				 gi,
-				 rp,
+				 (IPTR)gi,
+				 (IPTR)rp,
 				 FindTagItem(GA_Disabled, ((struct opSet *)msg)->ops_AttrList) ? GREDRAW_REDRAW : GREDRAW_UPDATE
 				 );
 				 

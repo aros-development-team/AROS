@@ -148,7 +148,7 @@ IPTR cycle_set(Class *cl, Object *o, struct opSet *msg)
 
     result = DoSuperMethodA(cl, o, (Msg)msg);
 
-    while((tag = NextTagItem((const struct TagItem **)&taglist)))
+    while((tag = NextTagItem(&taglist)))
     {
         switch(tag->ti_Tag)
         {

@@ -66,7 +66,7 @@ STATIC IPTR listview_set(Class *cl, Object *o,struct opSet *msg)
     tstate = msg->ops_AttrList;
 
     /* Set to 1 to signal visual changes */
-    while ((tag = NextTagItem((const struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
 	switch (tag->ti_Tag)
 	{
