@@ -1,15 +1,36 @@
-#    $Id$
+# Copyright © 2003, The AROS Development Team. All rights reserved.
+# $Id$
+
 include $(TOP)/config/make.cfg
 
-FILES	:= \
-	intern_ieeedpisodd \
-	intern_ieeedpld
+FILES := \
+    intern_ieeedpisodd \
+    intern_ieeedpld
+
+FUNCS := \
+    ieeedpacos \
+    ieeedpasin \
+    ieeedpatan \
+    ieeedpcos \
+    ieeedpcosh \
+    ieeedpexp \
+    ieeedpfieee \
+    ieeedplog10 \
+    ieeedplog \
+    ieeedppow \
+    ieeedpsin \
+    ieeedpsincos \
+    ieeedpsinh \
+    ieeedpsqrt \
+    ieeedptanh \
+    ieeedptieee
+
 
 #MM- workbench-libs-mathieeedoubtrans : setup includes
 
 %build_module_macro mmake=workbench-libs-mathieeedoubtrans \
-  modname=mathieeedoubtrans modtype=library \
-  files=$(FILES) archfile=mathieeedoubtrans.arch \
-  conffile=lib.conf uselibs=arosc
+ modname=mathieeedoubtrans modtype=library \
+ files=$(FILES) funcs=$(FUNCS) \
+ conffile=lib.conf uselibs=arosc
 
 %common
