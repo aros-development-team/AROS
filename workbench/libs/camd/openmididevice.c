@@ -11,6 +11,10 @@
 
 #include "camd_intern.h"
 
+#  undef DEBUG
+#  define DEBUG 1
+#  include <aros/debug.h>
+
 BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 
 /*****************************************************************************
@@ -61,12 +65,16 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 
 	seg=seglist=LoadSeg(name);
 
+	D(bug("seglist loaded okey? %lx\n",seg));
+
 	if(seglist==NULL) return NULL;
+
+	D(bug("seglist loaded okey\n"));
 
 // The code here is partly taken from AROS/rom/dos/lddemon.c - LDInit()
 
 	while(seg!=NULL){
-
+	  D(bug("checking a new seglist\n"));
 		addr=(STRPTR)((LONG)BADDR(seg)-sizeof(ULONG));
 		size=*(ULONG *)addr;
 
@@ -81,7 +89,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 				/* Do some tests to check that we have got a correct mididevicedata.
 				   Its not failproof, but the chance for this to fail should be small.
 				*/
-				mididevicedata->Magic==MDD_Magic &&		//Hopefully, this one should only succeed once.
+				mididevicedata->Magic==MDD_Magic /*		//Hopefully, this one should only succeed once.
 				mididevicedata->Name!=NULL &&
 				mididevicedata->Init!=NULL &&
 				mididevicedata->Expunge!=NULL &&
@@ -101,6 +109,7 @@ BOOL isPointerInSeglist(APTR pointer,BPTR seglist);
 					mididevicedata->IDString==NULL ||
 					isPointerInSeglist(mididevicedata->Name,seglist)
 				)
+				*/
 			){
 				driver=AllocMem(sizeof(struct Drivers),MEMF_ANY | MEMF_CLEAR | MEMF_PUBLIC);
 				if(driver==NULL){

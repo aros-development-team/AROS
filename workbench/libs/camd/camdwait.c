@@ -8,6 +8,10 @@
 #undef SysBase
 #undef DOSBase
 
+#  undef DEBUG
+#  define DEBUG 1
+#  include <aros/debug.h>
+
 struct SignalSemaphore camdwaitsemaphore={{0}};
 struct SignalSemaphore camdwaitsemaphore2={{0}};
 
@@ -22,7 +26,9 @@ SAVEDS void CamdTimerProc(void){
 	struct timerequest *TimerIO;
 	struct MsgPort  *TimerMP;
 	ULONG sig;
+	int error;
 
+	D(bug("camdtimerproc_start\n"));
 	camdwaitsig=AllocSignal(-1);
 	if(camdwaitsig==-1){
 		camdwaitprocstatus=2;
@@ -35,7 +41,10 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
+	D(bug("camdtimerproc2\n"));
+
 	TimerMP=CreateMsgPort();
+	D(bug("camdtimerproc4\n"));
 	if(TimerMP==NULL){
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
@@ -43,8 +52,10 @@ SAVEDS void CamdTimerProc(void){
 		return;
 	}
 
+	D(bug("camdtimerproc6\n"));
 	TimerIO=(struct timerequest *)AllocMem(sizeof(struct timerequest),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
+	D(bug("camdtimerproc8\n"));
 	if(TimerIO==NULL){
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
@@ -57,9 +68,18 @@ SAVEDS void CamdTimerProc(void){
 	TimerIO->tr_node.io_Message.mn_ReplyPort=TimerMP;
 	TimerIO->tr_node.io_Message.mn_Length=sizeof(struct timerequest);
 
-	if(OpenDevice(
+	D(bug("camdtimerproc11\n"));
+
+	/* No support for eclock in AROS. */
+#ifndef _AROS
+	if((error=OpenDevice(
 			TIMERNAME,UNIT_ECLOCK,(struct IORequest *)TimerIO,0L
-	)!=0){
+	))!=0){
+#else
+	if((error=OpenDevice(
+			TIMERNAME,UNIT_VBLANK,(struct IORequest *)TimerIO,0L
+	))!=0){
+#endif
 		FreeSignal(1L<<camdwaitsig2);
 		FreeSignal(1L<<camdwaitsig);
 		TimerIO->tr_node.io_Message.mn_Node.ln_Type=(UBYTE)-1;
@@ -67,10 +87,12 @@ SAVEDS void CamdTimerProc(void){
 		TimerIO->tr_node.io_Unit=(struct Unit *)-1L;
 		FreeMem(TimerIO,sizeof(struct timerequest));
 		DeleteMsgPort(TimerMP);
+		D(bug("failed camdtimerproc11, error: %ld\n",error));
 		camdwaitprocstatus=2;
 		return;
 	}
 
+	D(bug("camdtimerproc\n"));
 	ObtainSemaphore(&camdwaitsemaphore);
 
 	camdwaittask=FindTask(0L);
@@ -142,8 +164,11 @@ BOOL InitCamdTimer(void){
 }
 
 void UninitCamdTimer(void){
-	Signal(camdwaittask,SIGBREAKF_CTRL_C);
-	while(camdwaitprocstatus!=3) Delay(1);
+
+  if(camdwaitprocstatus==2) return;
+
+  Signal(camdwaittask,SIGBREAKF_CTRL_C);
+  while(camdwaitprocstatus!=3) Delay(1);
 }
 
 

@@ -17,8 +17,6 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	BPTR lock;
 	char temp[256];
 
-	if(InitCamdTimer()==FALSE) return FALSE;
-
 	CB(CamdBase)->CLSemaphore=AllocMem(sizeof(struct SignalSemaphore),MEMF_ANY|MEMF_CLEAR|MEMF_PUBLIC);
 
 	if(CB(CamdBase)->CLSemaphore==NULL){
@@ -29,8 +27,9 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	NEWLIST(&CB(CamdBase)->mymidinodes);
 	NEWLIST(&CB(CamdBase)->midiclusters);
 
+	if(InitCamdTimer()==FALSE) return FALSE;
 
-	lock=Lock("devs:minimidi",ACCESS_READ);
+	lock=Lock("devs:Midi",ACCESS_READ);
 
 	if(lock==NULL){
 		return TRUE;
@@ -42,7 +41,7 @@ BOOL InitCamd(struct CamdBase *CamdBase){
 	}
 
 	while(ExNext(lock,&fib)!=FALSE){
-		mysprintf(CamdBase,temp,"devs:minimidi/%s",fib.fib_FileName);
+		mysprintf(CamdBase,temp,"devs:Midi/%s",fib.fib_FileName);
 		LoadDriver(temp,CamdBase);
 	}
 
@@ -91,7 +90,8 @@ void UninitCamd(struct CamdBase *CamdBase){
 		driver=temp2;
 	}
 
-	FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
+	if(CB(CamdBase)->CLSemaphore!=NULL)
+	  FreeMem(CB(CamdBase)->CLSemaphore,sizeof(struct SignalSemaphore));
 
 	UninitCamdTimer();
 }

@@ -11,6 +11,9 @@
 
 #include "camd_intern.h"
 
+#  undef DEBUG
+#  define DEBUG 1
+#  include <aros/debug.h>
 
 BOOL OpenDriver(struct DriverData *driverdata,ULONG *ErrorCode,struct CamdBase *CamdBase){
 	if(
@@ -218,7 +221,7 @@ void LoadDriver(char *name,
 #else
 	mididevicedata=OpenMidiDevice(name,CamdBase);
 #endif
-	D(bug("It was a %s..\n",mididevicedata==NULL?"not success":"success"));
+	D(bug("It was%s a success..\n",mididevicedata==NULL?" not":""));
 
 	if(mididevicedata==NULL) return;
 
