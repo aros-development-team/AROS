@@ -1,3 +1,8 @@
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
+
 #include <exec/types.h>
 #include <exec/memory.h>
 #include <proto/exec.h>

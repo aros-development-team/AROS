@@ -1,9 +1,6 @@
 /*
-    (C) 1995-97 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Include for AROS GTYP_STRGADGET.
-    Lang: english
 */
 
 #ifndef INTUITION_INTUITION_H

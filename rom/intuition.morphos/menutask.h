@@ -1,13 +1,10 @@
-/*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
-    $Id$
- 
-    Desc: 
-    Lang: english
-*/
-
 #ifndef MENUTASK_H
 #define MENUTASK_H
+
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #define MENUTASK_NAME "« Menu Handler »"
 #define MENUTASK_STACKSIZE AROS_STACKSIZE

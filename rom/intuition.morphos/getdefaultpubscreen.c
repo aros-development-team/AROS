@@ -1,10 +1,8 @@
 /*
-    (C) 1995-99 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function GetDefaultPubScreen()
-    Lang: english
 */
+
 #include "intuition_intern.h"
 
 /*****************************************************************************
@@ -56,7 +54,7 @@ AROS_LH1(struct Screen *, GetDefaultPubScreen,
     STRPTR name;
     struct Screen *defscreen;
 
-    DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen(%s)\n",nameBuffer));
+   DEBUG_GETDEFAULTPUBSCREEN(dprintf("GetDefaultPubScreen(%s)\n",nameBuffer));
 
     LockPubScreenList();
 

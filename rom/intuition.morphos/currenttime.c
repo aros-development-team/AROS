@@ -1,10 +1,10 @@
 /*
-    (C) 1995-98 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Get the current time
-    Lang: english
+    Get the current time.
 */
+
 #include <devices/timer.h>
 #include <proto/timer.h>
 #include "intuition_intern.h"

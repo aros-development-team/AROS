@@ -1,12 +1,11 @@
 #ifndef _GADGETS_H_
 #define _GADGETS_H_
+
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Macros and stuff for Gadgets
-    Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

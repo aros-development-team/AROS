@@ -1,10 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Change position and size of a window
-    Lang: english
+    Change position and size of a window.
 */
+
 #include "intuition_intern.h"
 #include "inputhandler_actions.h"
 

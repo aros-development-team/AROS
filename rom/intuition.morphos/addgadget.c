@@ -1,10 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Add a single gadget to a window.
-    Lang: english
+    Add a single gadget to a window.
 */
+
 #include <proto/layers.h>
 #include "intuition_intern.h"
 

@@ -1,7 +1,12 @@
-/* Message structure the MenuHandler gets from Intuition */
-
 #ifndef MENUS_H
 #define MENUS_H
+
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+
+    Message structure the MenuHandler gets from Intuition.
+*/
 
 struct MenuMessage
 {
@@ -34,4 +39,5 @@ void GetMenuBox(struct Window *win, struct MenuItem *item,
 UWORD FindMenuShortCut(struct Menu *menu, UBYTE key, BOOL do_click_op,
                        struct IntuitionBase *IntuitionBase);
 void CheckMenuItemWasClicked(struct MenuItem *item, UWORD itemnum, struct MenuItem *parentitem);
-#endif
+
+#endif /* MENUS_H */

@@ -1,10 +1,9 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Responsible for executing deferred Intuition actions like
-          MoveWindow, SizeWindow, ActivateWindow, etc.
-    Lang: english
+    Responsible for executing deferred Intuition actions like MoveWindow, 
+    SizeWindow, ActivateWindow, etc.
 */
 
 #include <proto/exec.h>

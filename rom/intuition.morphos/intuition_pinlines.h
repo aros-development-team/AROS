@@ -1,11 +1,11 @@
 #ifndef _INTUITION_PINLINES_H
 #define _INTUITION_PINLINES_H
+
 /*
-    Copyright (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Private inlines for intuition.library
-    Lang: english
+    Private inlines for intuition.library.
 */
 
 #ifndef __INLINE_MACROS_H

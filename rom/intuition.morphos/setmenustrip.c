@@ -1,10 +1,8 @@
 /*
-    (C) 1999 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function SetMenuStrip()
-    Lang: English
 */
+
 #include "intuition_intern.h"
 #include "menus.h"
 

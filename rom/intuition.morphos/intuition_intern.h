@@ -1,12 +1,11 @@
 #ifndef INTUITION_INTERN_H
 #define INTUITION_INTERN_H
-/*
-    Copyright (C) 1995-2001 AROS - The Amiga Research OS
-    $Id$
 
-    Desc: Intuitions internal structure
-    Lang: english
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
 */
+
 #ifndef AROS_LIBCALL_H
 #   include <aros/libcall.h>
 #endif

@@ -1,10 +1,10 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Remove a single gadget from a window.
-    Lang: english
+    Remove a single gadget from a window.
 */
+
 #include "intuition_intern.h"
 
 /*****************************************************************************

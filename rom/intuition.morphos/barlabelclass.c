@@ -1,10 +1,8 @@
 /*
-    (C) 1997-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: AROS menubarlabelclass implementation (does not exist in AmigaOS)
-    Lang: english
- 
+    AROS menubarlabelclass implementation (does not exist in AmigaOS)
 */
 
 #include <exec/types.h>

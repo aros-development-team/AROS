@@ -1,9 +1,8 @@
 /*
-    (C) Copyright 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
  
-    Desc: Find a BOOPSI Class in the class list.
-    Lang: english
+    Find a BOOPSI Class in the class list.
 */
 
 #include <exec/lists.h>

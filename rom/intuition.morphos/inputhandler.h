@@ -1,13 +1,10 @@
-/*
-    (C) 1995-2001 AROS - The Amiga Research OS
-    $Id$
- 
-    Desc: Header for Intuition's InputHandler
-    Lang: english
-*/
-
 #ifndef INPUTHANDLER_H
 #define INPUTHANDLER_H
+
+/*
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
+    $Id$
+*/
 
 #ifndef AROS_ASMCALL_H
 #   include <aros/asmcall.h>

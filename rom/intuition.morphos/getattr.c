@@ -1,10 +1,8 @@
 /*
-    (C) 1995-2001 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: GetAttr() get an attribute from an object.
-    Lang: english
 */
+
 #include <proto/alib.h>
 #include "intuition_intern.h"
 

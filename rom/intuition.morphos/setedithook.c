@@ -1,10 +1,8 @@
 /*
-    (C) 1997 AROS - The Amiga Research OS
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
- 
-    Desc: Intuition function SetEditHook
-    Lang: english
 */
+
 #include "intuition_intern.h"
 
 /*****************************************************************************
