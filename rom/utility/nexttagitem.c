@@ -81,9 +81,9 @@
 	    continue;
 
 	default:
-	    (*tagListPtr) ++;
-
-	    return (*tagListPtr);
+	    /* Use post-increment (return will return the current value and
+		then tagListPtr will be incremented) */
+	    return (*tagListPtr) ++;
 	}
 
 	(*tagListPtr) ++;
