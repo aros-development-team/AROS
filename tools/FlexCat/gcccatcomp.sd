@@ -8,9 +8,55 @@
 
    Do NOT edit by hand!
 ****************************************************************/
-#include <aros/locale.h> 
+#include <proto/locale.h>
+#include <aros/symbolsets.h>
 
-CATALOG_BEGIN(%b, %v)
-    CATALOG_STR(%b, %i, %s, %e)
-CATALOG_END(%b)
+static struct Catalog *catalog; 
 
+const char *%i_STR;
+
+static const struct
+{
+    ULONG msg_ID;
+    const char  *msg_DEFSTR;
+    const char **msg_STR;
+} msg_ARRAY[] = 
+{
+    { %e, %s, &%i_STR },
+};
+
+static int OpenCatalog_%b(void)        
+{
+    ULONG count;
+
+    if (LocaleBase != NULL)
+    {
+        catalog = OpenCatalog
+	(
+	    NULL, "%b.catalog",
+	    OC_Version, %v,
+	    TAG_DONE
+	);
+    }
+
+    for (count = 0; count < sizeof(msg_ARRAY)/sizeof(msg_ARRAY[0]); count++)
+    {
+	*msg_ARRAY[count].msg_STR = LocaleBase != NULL
+	    ? GetCatalogStr
+	      (
+	          catalog, msg_ARRAY[count].msg_ID, msg_ARRAY[count].msg_DEFSTR
+	      )
+	    : (CONST_STRPTR)msg_ARRAY[count].msg_DEFSTR;
+    }
+
+    return 1;
+}
+
+static void CloseCatalog_%b(void)
+{
+    if (LocaleBase != NULL)
+        CloseCatalog(catalog);
+}
+
+ADD2INIT(OpenCatalog_%b, 0);
+ADD2EXIT(CloseCatalog_%b, 0);
