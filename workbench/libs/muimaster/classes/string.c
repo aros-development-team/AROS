@@ -49,6 +49,7 @@ struct MUI_StringData {
     struct Hook *msd_EditHook;
     Object      *msd_AttachedList;
     LONG         msd_RedrawReason;
+    LONG         msd_MaxLen;
 
     /* Fields mostly ripped from rom/intuition/strgadgets.c */
     STRPTR Buffer;      /* char container                   */
@@ -90,7 +91,8 @@ enum {
     DO_BACKSPACE,
     DO_ADDCHAR = 7,
     NEW_CONTENTS,
-    DO_UNKNOWN = 9,
+    MOVE_CURSOR,
+    DO_UNKNOWN,
 };
 
 /**************************************************************************
@@ -118,7 +120,7 @@ static void Buffer_SetNewContents (struct MUI_StringData *data, CONST_STRPTR str
 	strcpy(data->Buffer, str);
     }
     data->BufferPos = data->NumChars;
-    data->BufferPos = 0;
+    data->DispPos = 0;
 }
 
 /**************************************************************************
@@ -129,6 +131,9 @@ static BOOL Buffer_AddChar (struct MUI_StringData *data, unsigned char code)
 {
     STRPTR new_buf = NULL;
     STRPTR dst;
+
+    if (data->Buffer == NULL)
+	return FALSE;
 
     // buffer realloc needed ?
     if (data->NumChars + 2 > data->BufferSize)
@@ -328,6 +333,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 {
     struct MUI_StringData *data;
     struct TagItem *tags,*tag;
+    CONST_STRPTR str = NULL;
 
     obj = (Object *)DoSuperNewTags(cl, obj, NULL,
 				   /*  MUIA_FillArea, TRUE, */
@@ -338,6 +344,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
     data = INST_DATA(cl, obj);
 
     data->msd_Align = MUIV_String_Format_Left;
+    data->msd_MaxLen = 80;
     Buffer_SetNewContents(data, "");
 
     /* parse initial taglist */
@@ -358,8 +365,7 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		break;
 
 	    case MUIA_String_Contents:
-		if (tag->ti_Data)
-		    Buffer_SetNewContents(data, (STRPTR)tag->ti_Data);
+		str = (CONST_STRPTR)tag->ti_Data;
 		break;
 
             case MUIA_String_EditHook:
@@ -377,8 +383,17 @@ static IPTR String_New(struct IClass *cl, Object *obj, struct opSet *msg)
 	    case MUIA_String_LonelyEditHook:
 		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_LONELYEDITHOOK);
 		break;
+
+	    case MUIA_String_MaxLen:
+		data->msd_MaxLen = (LONG)tag->ti_Data;
+		if (data->msd_MaxLen < 1)
+		    data->msd_MaxLen = 1;
+		break;
 	}
     }
+
+    if (str != NULL)
+	Buffer_SetNewContents(data, str);
 
     if (NULL == data->Buffer)
     {
@@ -448,7 +463,25 @@ static IPTR String_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		set(obj, MUIA_String_Contents, buf);
 	    }
 	    break;
+	    
+	    case MUIA_String_AdvanceOnCR:
+		_handle_bool_tag(data->msd_Flags, tag->ti_Data, MSDF_ADVANCEONCR);
+		break;
 
+	    case MUIA_String_BufferPos:
+		data->BufferPos = (ULONG)tag->ti_Data;
+		data->msd_Flags &= ~MSDF_MARKING;
+		data->msd_RedrawReason = MOVE_CURSOR;
+	    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+		break;
+
+	    case MUIA_String_DisplayPos:
+		data->BufferPos = (ULONG)tag->ti_Data;
+		data->DispPos = data->BufferPos; // move both pos
+		data->msd_Flags &= ~MSDF_MARKING;
+		data->msd_RedrawReason = MOVE_CURSOR;
+	    	MUI_Redraw(obj, MADF_DRAWUPDATE);
+		break;
 	}
     }
 
@@ -476,7 +509,7 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
         
         case MUIA_String_AttachedList:
             STORE = (IPTR) data->msd_AttachedList;
-            break;
+            return 1;
 
 	case MUIA_String_Integer:
 	{
@@ -492,6 +525,21 @@ static IPTR String_Get(struct IClass *cl, Object *obj, struct opGet *msg)
 	    return 1;
 	}
 	
+	case MUIA_String_MaxLen:
+	    STORE = (IPTR) data->msd_MaxLen;
+	    return 1;
+
+	case MUIA_String_AdvanceOnCR:
+	    STORE = data->msd_Flags & MSDF_ADVANCEONCR;
+	    return 1;
+
+	case MUIA_String_BufferPos:
+	    STORE = data->BufferPos;
+	    return 1;
+
+	case MUIA_String_DisplayPos:
+	    STORE = data->DispPos;
+	    return 1;
     }
     return DoSuperMethodA(cl, obj, (Msg) msg);
 #undef STORE
