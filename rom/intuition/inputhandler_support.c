@@ -858,10 +858,10 @@ struct Window *FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event,
     UnlockIBase(lock);
     
     /* What layer ? */
-    D(bug("Click at (%d,%d)\n",ie->ie_X,ie->ie_Y));
+    D(bug("Click at (%d,%d)\n",scr->MouseX,scr->MouseY));
     LockLayerInfo(&scr->LayerInfo);
 
-    l = WhichLayer(&scr->LayerInfo, ie->ie_X, ie->ie_Y);
+    l = WhichLayer(&scr->LayerInfo, scr->MouseX, scr->MouseY);
 
     UnlockLayerInfo(&scr->LayerInfo);
 

@@ -110,17 +110,13 @@
 	    
 	    /* Fake an inputevent to the gadget */
 	    ie.ie_Class	= IECLASS_RAWMOUSE;
+	    ie.ie_SubClass = 0;
 	    ie.ie_Code	= SELECTDOWN;
-	
-	     /*
-	    ie.ie_X	= GetLeft (gadget, window) + window->LeftEdge;
-	    ie.ie_Y	= GetTop  (gadget, window) + window->TopEdge;
-	    */
+	    ie.ie_Qualifier = 0;
 	    
-	    /* stegerg: really screen coords ?? */
-	    GetScrGadgetIBox(gadget, window, requester,&box);	    
-	    ie.ie_X = box.Left;
-	    ie.ie_Y = box.Top;
+	    ie.ie_X = 0;
+	    ie.ie_Y = 0;
+	    ie.ie_NextEvent = 0;
 	    
 	    gi.gi_Screen = window->WScreen;
 	    gi.gi_Window = window;

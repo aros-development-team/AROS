@@ -365,7 +365,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		
 		if (!gadget)
 		{
-  		    gadget = FindGadget (IntuitionBase->ActiveScreen, w, ie->ie_X, ie->ie_Y, gi, IntuitionBase);
+  		    gadget = FindGadget (IntuitionBase->ActiveScreen,
+		    			 w,
+					 IntuitionBase->ActiveScreen->MouseX,
+					 IntuitionBase->ActiveScreen->MouseY, gi, IntuitionBase);
 		    if (gadget)
 		    {
 		        /* Whenever the active gadget changes the gi must be updated
@@ -422,7 +425,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			** else deactivate stringadget and reuse event.
 			*/
 
-			if (InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y))
+			if (InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY))
 			{
 			    UWORD imsgcode;
 
@@ -477,7 +480,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (gadget)
 		{
-		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
+		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
+		    
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 
 
@@ -635,7 +639,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (gadget)
 		{
-		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, ie->ie_X, ie->ie_Y);
+		    int inside = InsideGadget(gi->gi_Screen, gi->gi_Window, gadget, gi->gi_Screen->MouseX, gi->gi_Screen->MouseY);
 		    int selected = (gadget->Flags & GFLG_SELECTED) != 0;
 		    
 		    orig_ie->ie_Class = IECLASS_NULL;

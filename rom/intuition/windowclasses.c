@@ -270,8 +270,8 @@ static IPTR dragbar_goactive(Class *cl, Object *o, struct gpInput *msg)
 	data->curleft = w->LeftEdge;
 	data->curtop  = w->TopEdge;
     
-	data->mousex = ie->ie_X - data->curleft;
-	data->mousey = ie->ie_Y - data->curtop;
+	data->mousex = w->WScreen->MouseX - data->curleft;
+	data->mousey = w->WScreen->MouseY - data->curtop;
 	
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
@@ -331,8 +331,8 @@ static IPTR dragbar_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		
 	    
 	    	/* Can we move to the new position, or is window at edge of display ? */
-		new_left = ie->ie_X - data->mousex;
-		new_top  = ie->ie_Y - data->mousey;
+		new_left = scr->MouseX - data->mousex;
+		new_top  = scr->MouseY - data->mousey;
 		
 		if (new_left < 0)
 		{
@@ -648,8 +648,8 @@ static IPTR sizebutton_goactive(Class *cl, Object *o, struct gpInput *msg)
 	data->height = w->Height;
 	data->width  = w->Width;
         
-        data->mouseoffsetx = w->Width  - (ie->ie_X - w->LeftEdge);
-        data->mouseoffsety = w->Height - (ie->ie_Y - w->TopEdge);
+        data->mouseoffsetx = w->Width  - (w->WScreen->MouseX - w->LeftEdge);
+        data->mouseoffsety = w->Height - (w->WScreen->MouseY - w->TopEdge);
 
 	data->rp = CloneRastPort(&w->WScreen->RastPort);
 	if (data->rp)
@@ -709,8 +709,8 @@ static IPTR sizebutton_handleinput(Class *cl, Object *o, struct gpInput *msg)
 		
 	    
 	    	/* Can we move to the new position, or is window at edge of display ? */
-		new_width   = ie->ie_X - w->LeftEdge + data->mouseoffsetx;
-		new_height  = ie->ie_Y - w->TopEdge  + data->mouseoffsety;
+		new_width   = scr->MouseX - w->LeftEdge + data->mouseoffsetx;
+		new_height  = scr->MouseY - w->TopEdge  + data->mouseoffsety;
 		
 		if (new_width < 0)
 		  new_width = 1;
