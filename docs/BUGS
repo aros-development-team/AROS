@@ -1,0 +1,6 @@
+BUG000001
+digulla@wi-pc44.fh-konstanz.de
+assign DEVS: devs -> ok
+list devs: -> ok
+list devs:nil.handler -> "List: Object is of wrong type"
+
