@@ -4356,19 +4356,9 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
     OOP_Object *fb;
     BOOL ok = FALSE;
     ULONG showflags = 0;
-    if (NULL == bm) {
-    	/* we display no screen */
-	Forbid();
-	SDD(GfxBase)->frontbm		= NULL;
-	SDD(GfxBase)->bm_bak		= NULL;
-	SDD(GfxBase)->colmod_bak	= 0;
-	SDD(GfxBase)->colmap_bak	= NULL;
-	Permit();
-	
-	return TRUE;
-    }
-    
-    if ( BMF_DISPLAYABLE != (bm->Flags & BMF_DISPLAYABLE)) {
+
+    if (bm && (BMF_DISPLAYABLE != (bm->Flags & BMF_DISPLAYABLE)))
+    {
     	D(bug("!!! SetFrontBitMap: TRYING TO SET NON-DISPLAYABLE BITMAP !!!\n"));
 	return FALSE;
     }
@@ -4377,16 +4367,23 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
 	return TRUE;
     }
     
-    if (copyback) {
+    if (copyback)
+    {
     	showflags |= fHidd_Gfx_Show_CopyBack;
     }
-    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, HIDD_BM_OBJ(bm), showflags);
-    if (NULL == fb) {
+    
+    fb = HIDD_Gfx_Show(SDD(GfxBase)->gfxhidd, (bm ? HIDD_BM_OBJ(bm) : NULL), showflags);
+    
+    if (NULL == fb)
+    {
     	D(bug("!!! SetFrontBitMap: HIDD_Gfx_Show() FAILED !!!\n"));
-    } else {
+    }
+    else
+    {
 	Forbid();
 	 /* Set this as the active screen */
-    	if (NULL != SDD(GfxBase)->frontbm) {
+    	if (NULL != SDD(GfxBase)->frontbm)
+	{
     	    struct BitMap *oldbm;
     	    /* Put back the old values into the old bitmap */
 	    oldbm = SDD(GfxBase)->frontbm;
@@ -4397,19 +4394,21 @@ BOOL driver_SetFrontBitMap(struct BitMap *bm, BOOL copyback, struct GfxBase *Gfx
 	
     
 	SDD(GfxBase)->frontbm		= bm;
-	SDD(GfxBase)->bm_bak		= HIDD_BM_OBJ(bm);
-	SDD(GfxBase)->colmod_bak	= HIDD_BM_COLMOD(bm);
-	SDD(GfxBase)->colmap_bak	= HIDD_BM_COLMAP(bm);
+	SDD(GfxBase)->bm_bak		= bm ? HIDD_BM_OBJ(bm) : NULL;
+	SDD(GfxBase)->colmod_bak	= bm ? HIDD_BM_COLMOD(bm) : NULL;
+	SDD(GfxBase)->colmap_bak	= bm ? HIDD_BM_COLMAP(bm) : NULL;
     
-	    
-	/* Insert the framebuffer in its place */
-	OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
-	OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
-	OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
-	
-	HIDD_BM_OBJ(bm)		= fb;
-	HIDD_BM_COLMOD(bm)	= colmod;
-	HIDD_BM_COLMAP(bm)	= cmap;
+	if (bm)
+	{
+	    /* Insert the framebuffer in its place */
+	    OOP_GetAttr(fb, aHidd_BitMap_ColorMap, (IPTR *)&cmap);
+	    OOP_GetAttr(fb, aHidd_BitMap_PixFmt, (IPTR *)&pf);
+	    OOP_GetAttr(pf, aHidd_PixFmt_ColorModel, &colmod);
+
+	    HIDD_BM_OBJ(bm)	= fb;
+	    HIDD_BM_COLMOD(bm)	= colmod;
+	    HIDD_BM_COLMAP(bm)	= cmap;
+	}
 	Permit();
 	
 	ok = TRUE;
