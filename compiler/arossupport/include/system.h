@@ -42,14 +42,14 @@
 #   define EXTERN extern "C"
 #   define BEGIN_EXTERN     extern "C" {
 #   define END_EXTERN	    };
-#   define __BEGIN_CDEFS    extern "C" {
-#   define __END_CDEFS	    };
+#   define __BEGIN_DECLS    extern "C" {
+#   define __END_DECLS	    };
 #else
 #   define EXTERN extern
 #   define BEGIN_EXTERN
 #   define END_EXTERN
-#   define __BEGIN_CDEFS
-#   define __END_CDEFS
+#   define __BEGIN_DECLS
+#   define __END_DECLS
 #endif
 
 #if defined(__STDC__) || defined(__cplusplus)
@@ -97,10 +97,14 @@
 #endif
 
 /* 4. Makros for debugging and development */
-#if !defined(TEST) && !defined(DEBUG)
-#   define NDEBUG
+#if defined(__GNUC__) && defined(__ELF__)
+#   define __IDSTRING(name,str)	    __asm__(".ident\t\"" str "\"")
+#else
+#   define __IDSTRING(name,str)	    static const char name[] __unused = str
 #endif
-#include <assert.h>
+
+#define __RCSID(id)	__IDSTRING(rcsid,id)
+
 /* __CONCAT is defined on Linux in cdefs.h */
 #if !defined(__CONCAT)
 #   if defined(__STDC__) || defined(__cplusplus)
@@ -110,7 +114,6 @@
 #	define	    __CONCAT(a,b)	a/**/b
 #   endif
 #endif
-
 
 /* 5. Sytem-specific files */
 #ifdef _AMIGA
