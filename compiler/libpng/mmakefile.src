@@ -4,9 +4,15 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB :=	png
+#MM- linklibs : linklibs-png
+#MM linklibs-pnglib : linklibs-png
+#MM linklibs-png : includes
+#MM includes-copy
 
 INCLUDE_FILES	:= png.h pngconf.h
+
+%copy_includes_cwd path=.
+
 FILES := \
     png \
     pngerror \
@@ -27,15 +33,6 @@ FILES := \
 USER_INCLUDES	:= -Iinclude
 TARGET_CFLAGS	+= -DAROS -DNO_ERRNO_H
 
-#MM- linklibs : linklibs-png
-#MM linklibs-pnglib : linklibs-png
-#MM linklibs-png : includes
-#MM includes-copy
-
-%copy_includes_cwd path=.
-
-%make_linklib_setup mmake=linklibs-png
-%make_linklib
+%build_linklib mmake=linklibs-png libname=png files=$(FILES)
 
 %common
-%include_deps

@@ -1,7 +1,5 @@
 include $(TOP)/config/make.cfg
 
-LIB :=	toollib
-
 HFILES := \
 	callback.h \
 	error.h \
@@ -29,8 +27,7 @@ FILES := \
 
 #MM- linklibs : linklibs-toollib
 
-%make_linklib_setup mmake=linklibs-toollib
-%make_linklib
+%build_linklib mmake=linklibs-toollib libname=toollib files=$(FILES)
 
 #MM
 includes-copy : $(INCDIR)/toollib $(TOOLLIBINCS)
@@ -42,4 +39,3 @@ $(INCDIR)/toollib/%.h : %.h
 	$(CP) $< $(INCDIR)/toollib
 
 %common
-%include_deps

@@ -1,12 +1,12 @@
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES := -I. -IGeneric
-
-LIB :=	adf
+#MM- linklibs : linklibs-adf
 
 ifeq ($(FLAVOUR),palmnative)
 
-FILES := 
+#MM
+linklibs-adf :
+	@$(NOP)
 
 else
 
@@ -25,14 +25,11 @@ FILES := \
 	adf_util \
 	Generic/adf_nativ
 
+USER_INCLUDES := -I. -IGeneric
+
+%build_linklib mmake=linklibs-adf libname=adf files=$(FILES)
+
 endif
-
-#MM- linklibs : linklibs-adf
-#MM
-linklibs-adf :
-
-%make_linklib_setup mmake=linklibs-adf
-%make_linklib
 
 #MM
 includes-copy : $(INCDIR)/adflib.h \
@@ -50,4 +47,3 @@ $(INCDIR)/defendian.h : myconf.aros
 	@./myconf.aros >> $@
 
 %common
-%include_deps

@@ -4,8 +4,6 @@
 #
 include $(TOP)/config/make.cfg
 
-LIB :=	reqtoolsstubs
-
 FILES := \
 	rtallocrequest \
 	rtchangereqattr \
@@ -22,8 +20,6 @@ FILES := \
 #MM- linklibs : linklibs-reqtoolsstubs
 #MM linklibs-reqtoolsstubs : includes
 
-%make_linklib_setup mmake=linklibs-reqtoolsstubs
-%make_linklib
+%build_linklib mmake=linklibs-reqtoolsstubs libname=reqtoolsstubs files=$(FILES)
 
 %common
-%include_deps

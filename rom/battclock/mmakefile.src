@@ -97,4 +97,4 @@ kernel-battclock-module : $(LIB) $(OSMODDIR)/$(OSMODULE)
 %ctoasm_q
 
 %common
-%include_deps $(foreach f, $(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)
+%include_deps deps="$(foreach f, $(INIT_FILE) $(notdir $(END_FILE)) $(FILES) functions,$(OBJDIR)/$(f).d)"
