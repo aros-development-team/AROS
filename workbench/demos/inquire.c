@@ -3,7 +3,7 @@
     $Id$
 
     Desc: Use of aros.library/ArosInquire()
-    Lang:
+    Lang: english
 */
 
 #include <aros/inquire.h>
@@ -31,43 +31,42 @@ int main(int argc, char **argv)
 
     if(!(ArosBase = OpenLibrary(AROSLIBNAME, AROSLIBVERSION)))
     {
-	FPrintf((BPTR)stderr, "Couldn't open "AROSLIBNAME"\n");
+	printf ("Couldn't open "AROSLIBNAME"\n");
 	return RETURN_FAIL;
     }
 
     if(AROSLIBREVISION < ArosBase->lib_Revision)
     {
 	CloseLibrary(ArosBase);
-	FPrintf((BPTR)stderr,
-	    AROSLIBNAME" is too old! Need at least version %ld.%ld\n",
-		(ULONG)AROSLIBVERSION, (ULONG)AROSLIBREVISION);
+	printf (AROSLIBNAME" is too old! Need at least version %d.%d\n",
+		AROSLIBVERSION, AROSLIBREVISION);
 	return RETURN_FAIL;
     }
 
-    ArosInquire(
-	AI_ArosVersion, 	(IPTR)&vers,
-	AI_ArosReleaseMajor,	(IPTR)&relMajor,
-	AI_ArosReleaseMinor,	(IPTR)&relMinor,
-	AI_KickstartBase,	(IPTR)&kickbase,
-	AI_KickstartSize,	(IPTR)&kicksize,
-	AI_KickstartVersion,	(IPTR)&kickver,
-	AI_KickstartRevision,	(IPTR)&kickrev,
+    ArosInquire (
+	AI_ArosVersion, 	&vers,
+	AI_ArosReleaseMajor,	&relMajor,
+	AI_ArosReleaseMinor,	&relMinor,
+	AI_KickstartBase,	&kickbase,
+	AI_KickstartSize,	&kicksize,
+	AI_KickstartVersion,	&kickver,
+	AI_KickstartRevision,	&kickrev,
 	TAG_DONE);
 
-    Printf("AROS release = %ld.%ld\n", relMajor, relMinor);
-    Printf("AROS module major version = V%ld\n", vers);
+    printf ("AROS release = %ld.%ld\n", relMajor, relMinor);
+    printf ("AROS module major version = V%ld\n", vers);
 
-    if (kickbase)
+    if (kicksize)
     {
-	Printf("Kickstart base address = $%lx\n", kickbase);
+	printf("Kickstart base address = $%lx\n", kickbase);
 
-	Printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
+	printf("Kickstart size = $%lx (%ld kB)\n", kicksize, kicksize/1024);
 
-	Printf("Kickstart version = %d.%d\n", kickver, kickrev);
+	printf("Kickstart version = %d.%d\n", kickver, kickrev);
     }
     else
     {
-	Printf("This machine has no Kickstart ROM.\n");
+	printf("This machine has no Kickstart ROM.\n");
     }
 
     CloseLibrary(ArosBase);

@@ -37,13 +37,13 @@ void DoWindow (struct DiskObject * dobj)
 
     if (!GfxBase)
     {
-	FPrintf ((BPTR)stderr, "Couldn't open %s\n", (LONG)GRAPHICSNAME);
+	printf ("Couldn't open %s\n", (LONG)GRAPHICSNAME);
 	goto end;
     }
 
     if (!IntuitionBase)
     {
-	FPrintf ((BPTR)stderr, "Couldn't open intuition.library\n");
+	printf ("Couldn't open intuition.library\n");
 	goto end;
     }
 
@@ -72,7 +72,7 @@ void DoWindow (struct DiskObject * dobj)
 
     cont = 1;
 
-    Printf ("Press a key to exit\n");
+    printf ("Press a key to exit\n");
 
     while (cont)
     {
@@ -124,7 +124,7 @@ int main (int argc, char ** argv)
 
     if (!IconBase)
     {
-	FPrintf ((BPTR)stderr, "Couldn't open %s\n", (LONG)ICONNAME);
+	printf ("Couldn't open %s\n", (LONG)ICONNAME);
 	return RETURN_FAIL;
     }
 
@@ -134,7 +134,7 @@ int main (int argc, char ** argv)
     {
 	if (!(dobj = GetDiskObject (arg)) )
 	{
-	    FPrintf ((BPTR)stderr, "Cannot open icon for %s: ", (LONG)arg);
+	    printf ("Cannot open icon for %s: ", (LONG)arg);
 	    PrintFault (IoErr(), "");
 	    rc = 10;
 	}
@@ -142,7 +142,7 @@ int main (int argc, char ** argv)
 	{
 	    /* hexdump (dobj, 0L, sizeof (struct DiskObject)); */
 
-	    Printf ("Some information about the icon:\n"
+	    printf ("Some information about the icon:\n"
 		"Magic = %d\n"
 		"Version = %d\n"
 		"Type = %d\n"
@@ -163,7 +163,7 @@ int main (int argc, char ** argv)
 
 	    if (dobj->do_Gadget.GadgetRender)
 	    {
-		Printf ("GImage: %dx%d+%d+%d\n"
+		printf ("GImage: %dx%d+%d+%d\n"
 		    , IM(dobj->do_Gadget.GadgetRender)->Width
 		    , IM(dobj->do_Gadget.GadgetRender)->Height
 		    , IM(dobj->do_Gadget.GadgetRender)->LeftEdge
@@ -177,12 +177,12 @@ int main (int argc, char ** argv)
 	    }
 	    else
 	    {
-		Printf ("GImage: none\n");
+		printf ("GImage: none\n");
 	    }
 
 	    if (dobj->do_Gadget.SelectRender)
 	    {
-		Printf ("SImage: %dx%d+%d+%d\n"
+		printf ("SImage: %dx%d+%d+%d\n"
 		    , IM(dobj->do_Gadget.SelectRender)->Width
 		    , IM(dobj->do_Gadget.SelectRender)->Height
 		    , IM(dobj->do_Gadget.SelectRender)->LeftEdge
@@ -196,18 +196,18 @@ int main (int argc, char ** argv)
 	    }
 	    else
 	    {
-		Printf ("SImage: none\n");
+		printf ("SImage: none\n");
 	    }
 
-	    Printf ("DefaultTool: %s\n", (LONG)dobj->do_DefaultTool);
+	    printf ("DefaultTool: %s\n", (LONG)dobj->do_DefaultTool);
 
-	    Printf ("ToolTypes:\n");
+	    printf ("ToolTypes:\n");
 
 	    if (dobj->do_ToolTypes)
 		for (t=0; dobj->do_ToolTypes[t]; t++)
-		    Printf ("TT %d: %s\n", t, (ULONG)dobj->do_ToolTypes[t]);
+		    printf ("TT %d: %s\n", t, (ULONG)dobj->do_ToolTypes[t]);
 	    else
-		Printf ("--- none ---\n");
+		printf ("--- none ---\n");
 
 	    if (!PutDiskObject ("readicon", dobj))
 		PrintFault (IoErr(), "Writing of icon to readicon.info failed");

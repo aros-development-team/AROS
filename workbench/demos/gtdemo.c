@@ -35,7 +35,7 @@
 struct IntuitionBase *IntuitionBase;
 struct Library *GadToolsBase;
 
-APTR            vi;
+APTR		vi;
 struct Screen * scr;
 struct Window * win;
 struct Gadget * glist;
@@ -66,13 +66,13 @@ BOOL openlibs()
     GadToolsBase = OpenLibrary("gadtools.library", 0);
     if (!IntuitionBase)
     {
-        VPrintf("GTDemo: Error opening intuition.library\n", NULL);
-        return FALSE;
+	printf("GTDemo: Error opening intuition.library\n");
+	return FALSE;
     }
     if (!GadToolsBase)
     {
-        Printf("GTDemo: Error opening gadtools.library\n", NULL);
-        return FALSE;
+	printf("GTDemo: Error opening gadtools.library\n");
+	return FALSE;
     }
     return TRUE;
 }
@@ -107,28 +107,28 @@ void gt_end()
 BOOL openwin()
 {
     win = OpenWindowTags(NULL,
-                         WA_PubScreen, scr,
-                         WA_Left, 0,
-                         WA_Top, 0,
-                         WA_Width, 400,
-                         WA_Height, 300,
-                         WA_Title, "GTDemo",
-                         WA_IDCMP,
-                             BUTTONIDCMP |
+			 WA_PubScreen, scr,
+			 WA_Left, 0,
+			 WA_Top, 0,
+			 WA_Width, 400,
+			 WA_Height, 300,
+			 WA_Title, "GTDemo",
+			 WA_IDCMP,
+			     BUTTONIDCMP |
 			     CHECKBOXIDCMP |
 			     IDCMP_GADGETUP |
-                             IDCMP_RAWKEY |
-                             IDCMP_CLOSEWINDOW |
-                             IDCMP_REFRESHWINDOW,
-                         WA_SimpleRefresh, TRUE,
-                         WA_Gadgets, glist,
-                         WA_DragBar, TRUE,
-                         WA_CloseGadget, TRUE,
-                         TAG_DONE);
+			     IDCMP_RAWKEY |
+			     IDCMP_CLOSEWINDOW |
+			     IDCMP_REFRESHWINDOW,
+			 WA_SimpleRefresh, TRUE,
+			 WA_Gadgets, glist,
+			 WA_DragBar, TRUE,
+			 WA_CloseGadget, TRUE,
+			 TAG_DONE);
     if (!win)
     {
-        Printf("GTDemo: Error opening window\n", NULL);
-        return FALSE;
+	printf("GTDemo: Error opening window\n");
+	return FALSE;
     }
     return TRUE;
 }
@@ -149,8 +149,8 @@ struct Gadget * makegadgets(struct Gadget *gad)
 		       GTCB_Scaled, TRUE, TAG_DONE);
     if (!gad)
     {
-        FreeGadgets(glist);
-        Printf("GTDemo: Error creating gadgets\n", NULL);
+	FreeGadgets(glist);
+	printf("GTDemo: Error creating gadgets\n");
     }
     return gad;
 }
@@ -183,26 +183,26 @@ void handlewin()
 
     while (ready == FALSE)
     {
-        WaitPort(win->UserPort);
-        msg = GT_GetIMsg(win->UserPort);
-        if (msg != NULL)
+	WaitPort(win->UserPort);
+	msg = GT_GetIMsg(win->UserPort);
+	if (msg != NULL)
 	{
-            switch(msg->Class)
+	    switch(msg->Class)
 	    {
-            case IDCMP_REFRESHWINDOW:
-                GT_BeginRefresh(win);
-                draw_bevels(win,vi);
-                GT_EndRefresh(win,TRUE);
-                break;
-            case IDCMP_CLOSEWINDOW:
-            case IDCMP_RAWKEY:
-                ready = TRUE;
-                break;
+	    case IDCMP_REFRESHWINDOW:
+		GT_BeginRefresh(win);
+		draw_bevels(win,vi);
+		GT_EndRefresh(win,TRUE);
+		break;
+	    case IDCMP_CLOSEWINDOW:
+	    case IDCMP_RAWKEY:
+		ready = TRUE;
+		break;
 	    case IDCMP_GADGETDOWN:
-	        printf("Gadget %d pressed",
+		printf("Gadget %d pressed",
 		       ((struct Gadget *)msg->IAddress)->GadgetID);
 	    case IDCMP_GADGETUP:
-	        printf("Gadget %d released",
+		printf("Gadget %d released",
 		       ((struct Gadget *)msg->IAddress)->GadgetID);
 		switch (((struct Gadget *)msg->IAddress)->GadgetID)
 		{
@@ -218,18 +218,18 @@ void handlewin()
 				      win, NULL,
 				      GTCB_Checked, (IPTR)&checked, TAG_DONE));
 		    if (checked)
-		        printf(" (checked)");
+			printf(" (checked)");
 		    else
-		        printf(" (not checked)");
+			printf(" (not checked)");
 		    GT_SetGadgetAttrs(button, win, NULL,
-                                      GA_Disabled, checked, TAG_DONE);
+				      GA_Disabled, checked, TAG_DONE);
 		    break; }
 		}
 		printf("\n");
-	        break;
-            }
-            GT_ReplyIMsg(msg);
-        }
+		break;
+	    }
+	    GT_ReplyIMsg(msg);
+	}
     }
 }
 
@@ -242,24 +242,24 @@ int main()
 
     if (openlibs() != FALSE)
     {
-        struct Gadget *gad;
+	struct Gadget *gad;
 
-        gad = gt_init();
+	gad = gt_init();
 	gad = makegadgets(gad);
-        if (gad != NULL)
-        {
-            if (openwin() != FALSE)
+	if (gad != NULL)
+	{
+	    if (openwin() != FALSE)
 	    {
-                draw_bevels(win,vi);
-                handlewin();
-                CloseWindow(win);
-            } else
-                error = RETURN_FAIL;
-        } else
-            error = RETURN_FAIL;
-        gt_end();
+		draw_bevels(win,vi);
+		handlewin();
+		CloseWindow(win);
+	    } else
+		error = RETURN_FAIL;
+	} else
+	    error = RETURN_FAIL;
+	gt_end();
     } else
-        error = RETURN_FAIL;
+	error = RETURN_FAIL;
     closelibs();
 
     RT_Exit();

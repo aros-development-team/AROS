@@ -5,12 +5,12 @@
     Desc: most simple demo for AROS
     Lang: english
 */
-#include <proto/dos.h>
+#include <stdio.h>
 
 static const char version[] = "$VER: helloworld 41.1 (14.3.1997)\n";
 
 int main (int argc, char ** argv)
 {
-    Write (Output (), "hello, world\n", 13);
+    printf ("Hello, world\n");
     return 0;
 }

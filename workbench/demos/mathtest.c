@@ -18,7 +18,7 @@ int main(int argc, char ** argv)
 
     if (!(MathBase = OpenLibrary("mathffp.library", 0L)))
     {
-	FPrintf((BPTR)stderr, "Couldn't open mathffp.library\n");
+	printf ("Couldn't open mathffp.library\n");
 	return (0);
     }
 
@@ -26,9 +26,9 @@ int main(int argc, char ** argv)
 
     /* this should set the zero-bit*/
     if ( 0 != SPAbs(0))
-	Printf("Error with the SPAbs-function!\n");
+	printf("Error with the SPAbs-function!\n");
     else
-	Printf("SPAbs-function seems ok!\n");
+	printf("SPAbs-function seems ok!\n");
 
     FFPOne = SPFlt(1);
     FFPTwo = SPAdd(FFPOne, FFPOne);
@@ -36,25 +36,25 @@ int main(int argc, char ** argv)
 	/* 0.5 = 1/2 ;the call to SPDiv is correct even if it seems wrong!*/
 
     if ( 0x80000041 != FFPOne)
-	Printf("Error with the SPlt-function!\n");
+	printf("Error with the SPlt-function!\n");
     else
-	Printf("SPFlt-function seems ok!\n");
+	printf("SPFlt-function seems ok!\n");
 
     if ( 0x80000042 != FFPTwo)
     {
-	Printf("Error with the SPAdd-function!\n Exiting!\n");
+	printf("Error with the SPAdd-function!\n Exiting!\n");
 	return -1;
     }
     else
-	Printf("SPAdd-function seems ok!\n");
+	printf("SPAdd-function seems ok!\n");
 
     if ( 0x80000040 != FFPOnehalf)
     {
-	Printf("Error with the SPDiv-function!\n Exiting!\n");
+	printf("Error with the SPDiv-function!\n Exiting!\n");
 	return -1;
     }
     else
-	Printf("SPDiv-function seems ok!\n");
+	printf("SPDiv-function seems ok!\n");
 
 
     CloseLibrary(MathBase);
@@ -70,9 +70,9 @@ int main(int argc, char ** argv)
 #define CHECK(func,args,cres) \
     res = func args; \
     if (res != cres) \
-	Printf ("Error with the " #func "-function (got=0x%08lx expected=" #cres ")\n", res); \
+	printf ("Error with the " #func "-function (got=0x%08lx expected=" #cres ")\n", res); \
     else \
-	Printf (#func "-function ok!\n");
+	printf (#func "-function ok!\n");
 
     CHECK (SPLog, (FFPTwo), 0xb1721840);
     CHECK (SPLog10, (FFPTwo), 0x9a209b3f);

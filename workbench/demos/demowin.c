@@ -547,7 +547,8 @@ int main (int argc, char ** argv)
 
     OpenDevice ("console.device", -1, (struct IORequest *)&cioreq, 0);
     ConsoleDevice = (struct Library *)cioreq.io_Device;
-    /* printf ("Opening console.device=%p\n", ConsoleDevice); */
+    printf ("Opening console.device=%p (%s)\n", ConsoleDevice,
+	ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
 
     if (!ConsoleDevice)
     {
@@ -627,6 +628,9 @@ int main (int argc, char ** argv)
 
 		ievent.ie_Code	    = im->Code;
 		ievent.ie_Qualifier = im->Qualifier;
+
+bug ("Opening console.device=%p (%s)\n", ConsoleDevice,
+    ConsoleDevice->lib_Node.ln_Name ? ConsoleDevice->lib_Node.ln_Name : "(NULL)");
 
 		len = RawKeyConvert (&ievent, buf, sizeof (buf), NULL);
 
@@ -961,6 +965,9 @@ end:
 
     if (IntuitionBase)
 	CloseLibrary ((struct Library *)IntuitionBase);
+
+    if (ConsoleDevice)
+	CloseDevice ((struct IORequest *)&cioreq);
 
     RT_Exit ();
 
