@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read a big endian structure from a streamhook
     Lang: english
 */
+
 #define AROS_ALMOST_COMPATIBLE
 #include <string.h>
 #include <exec/memory.h>

@@ -2,25 +2,13 @@
 #define AROS_64BIT_H
 
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
-    $Log$
-    Revision 1.2  1998/10/20 16:40:37  hkiel
-    Amiga Research OS
-
-    Revision 1.1  1997/03/27 01:13:51  ldp
-    libaros.a -> libarossupport.a
-
-    Revision 1.1  1997/01/09 18:21:14  digulla
-    Accidentially deleted :-( Shouldn't work when it's getting late
-
-    Revision 1.1  1996/09/13 17:54:34  digulla
-    Overworked the way systems are recognised and added three sample systems
-
 
     Desc: Work on 64bit data types
     Lang: english
 */
+
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif

@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Erase contents of memory before freeing it.
     Lang: english
 */
+
 #include <aros/system.h>
 #include <aros/debug.h>
 #include <exec/execbase.h>

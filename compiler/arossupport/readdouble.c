@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read a big endian double floating point (64bit) from a streamhook
     Lang: english
 */
+
 #include <proto/dos.h>
 
 /******************************************************************************

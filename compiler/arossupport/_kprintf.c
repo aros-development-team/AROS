@@ -1,9 +1,10 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Low-level debugging support.
 */
+
 #include <exec/execbase.h>
 #include <proto/exec.h>
 #include <aros/asmcall.h>

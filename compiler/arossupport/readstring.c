@@ -1,10 +1,11 @@
 /*
-    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
     $Id$
 
     Desc: Read one C string from a streamhook
     Lang: english
 */
+
 #include <proto/dos.h>
 #include <exec/memory.h>
 #include <proto/exec.h>
