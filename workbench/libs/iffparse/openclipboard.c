@@ -81,6 +81,7 @@
 		Basically CreateIORequest without memory allocation.
 		*/
 		req->io_Message.mn_ReplyPort = &(ch->cbh_CBport);
+		req->io_Message.mn_Length = sizeof(struct IOClipReq);
 
 		if
 		(!OpenDevice
