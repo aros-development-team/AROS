@@ -13,6 +13,7 @@ PACKAGE=$BASENAME-$HOST_CPU-$HOST_OS-system
 ARCHIVE=$ARCHIVE_BASE/$PACKAGE.tar.bz2
 
 copy    $SOURCE_AROS      $BUILD_BASE/AROS
+copy    $SOURCE_NECESSARY $BUILD_BASE/AROS/contrib
 
 cd      $BUILD_BASE/AROS
 execute ./configure --enable-build-type=nightly
