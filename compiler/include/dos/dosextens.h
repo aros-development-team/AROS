@@ -70,15 +70,12 @@ struct DosLibrary
     struct Device	 * dl_NulHandler;
     struct Unit 	 * dl_NulLock;
 
-    struct SignalSemaphore dl_LDSigSem;
+    struct SignalSemaphore dl_LSigSem;
+    struct SignalSemaphore dl_DSigSem;
     struct Interrupt	   dl_LDHandler;
-    APTR		   dl_LDOpenLibrary;
-    APTR		   dl_LDOpenDevice;
-    struct Process	 * dl_LDDemon;
-    STRPTR		   dl_LDName;
-    struct Process	 * dl_LDCaller;
-    APTR		   dl_LDPtr;
-    LONG		   dl_LDReturn;
+    struct MsgPort	 * dl_LDDemonPort;
+    struct Process	 * dl_LDDemonTask;
+    ULONG		   dl_LDReturn;
 
     ULONG		   dl_ProcCnt;
       /* The flags are the same, as they were in RootNode->rn_Flags. See below
