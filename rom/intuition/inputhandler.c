@@ -144,6 +144,15 @@ static void HandleIntuiReplyPort(struct IIHData *iihdata, struct IntuitionBase *
 		im->IDCMPWindow->Flags &= ~WFLG_WINDOWTICKED;
 		Permit();
 	    	break;
+	
+	    case IDCMP_VANILLAKEY:
+	    case IDCMP_RAWKEY:
+	    case IDCMP_IDCMPUPDATE:
+	    	if (im->Qualifier & IEQUALIFIER_REPEAT)
+		{
+		    IW(im->IDCMPWindow)->num_repeatevents--;
+		}
+	    	break;
 		
 	} /* switch(im->Class) */
     	free_intuimessage(im, IntuitionBase);
@@ -165,7 +174,6 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
     struct IntuitionBase *IntuitionBase = iihdata->IntuitionBase;
     ULONG  lock;
     char *ptr = NULL;
-    WORD win_mousex, win_mousey;
     struct GadgetInfo *gi = &iihdata->GadgetInfo;
     BOOL reuse_event = FALSE;
     struct Window *w;
@@ -322,16 +330,7 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
         /* If there is no active window, nothing to do */
         if (w == NULL)
 	    continue;
-	         
-	win_mousex = ie->ie_X - w->LeftEdge;
-	win_mousey = ie->ie_Y - w->TopEdge;
- 
-	if (w->IDCMPFlags & IDCMP_DELTAMOVE)
-	{
-	  win_mousex -= w->MouseX;
-	  win_mousey -= w->MouseY;
-	}
-		
+	         		
  	/* 
 	**  IntuiMessages get the mouse coordinates relative to
 	**  the upper left corner of the window no matter if
@@ -417,8 +416,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			HandlePropSelectDown(gadget,
 					     w,
 					     NULL,
-					     win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL),
-					     win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL),
+					     w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL),
+					     w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL),
 					     IntuitionBase);
 
 
@@ -465,8 +464,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+			gpi.gpi_Mouse.X = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
 
 
@@ -553,8 +552,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+			gpi.gpi_Mouse.X = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData	= NULL;
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
@@ -595,8 +594,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
@@ -619,7 +618,10 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		break; /* case MENUDOWN */
 
 	    case IECODE_NOBUTTON: { /* MOUSEMOVE */
-
+	    
+		iihdata->DeltaMouseX = ie->ie_X - iihdata->LastMouseX;
+		iihdata->DeltaMouseY = ie->ie_Y - iihdata->LastMouseY;
+		
 		iihdata->LastMouseX = ie->ie_X;
 		iihdata->LastMouseY = ie->ie_Y;
 
@@ -648,8 +650,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			HandlePropMouseMove(gadget
 				,w
 				,NULL
-				,win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL)
-				,win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL)
+				,w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL)
+				,w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL)
 				,IntuitionBase);
 
 			break;
@@ -663,8 +665,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	= gi;
 			gpi.gpi_IEvent	= ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = Locked_DoMethodA ((Object *)gadget, (Msg)&gpi, IntuitionBase);
@@ -695,23 +697,71 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 
 		if (IW(w)->num_mouseevents >= IW(w)->mousequeue)
 		{
-		    /* Mouse Queue is full, so don't send any more IDCMP_MOUSEMOVE
-		       messages */
-		    continue;
+		    BOOL old_msg_found = FALSE;
+		    
+		    /* Mouse Queue is full, so try looking for a not
+		       yet GetMsg()ed IntuiMessage in w->UserPort
+		       trying to modify that. */
+		    
+		    Forbid();   
+		    if (w->UserPort)
+		    {
+		        struct IntuiMessage *im;
+
+			for (im = (struct IntuiMessage *)w->UserPort->mp_MsgList.lh_TailPred;
+			     im->ExecMessage.mn_Node.ln_Pred;
+			     im = (struct IntuiMessage *)im->ExecMessage.mn_Node.ln_Pred)			
+			{
+			    if ((im->Class == IDCMP_MOUSEMOVE) &&
+			        (im->IDCMPWindow == w))
+			    {
+			        im->Qualifier = iihdata->ActQualifier;
+				
+			        if (w->IDCMPFlags & IDCMP_DELTAMOVE)
+				{
+				    im->MouseX = iihdata->DeltaMouseX;
+				    im->MouseY = iihdata->DeltaMouseY;
+				} else {
+				    im->MouseX = w->MouseX;
+				    im->MouseY = w->MouseY;
+				}   
+			        CurrentTime(&im->Seconds, &im->Micros);
+
+			        old_msg_found = TRUE;
+				break;
+			    }
+			}
+		    } /* if (w->UserPort) */
+		    Permit();
+		    
+		    /* no need to send a new message if we modified
+		       an existing one ... */
+		       
+		    if (old_msg_found) continue;
+		    
+		    /* ... otherwise we are in a strange situation. The mouse
+		       queue is full, but we did not find an existing MOUSEMOVE
+		       imsg in w->UserPort. So the app probably has removed
+		       an imsg from the UserPort with GetMsg but we did not get
+		       the ReplyMsg, yet. In this case we do send a new message */
+		       
+		    HandleIntuiReplyPort(iihdata, IntuitionBase);
+		    
 		}
 		
 		/* MouseQueue is not full, so we can send a message. We increase
 		   IntWindow->num_mouseevents which will later be decreased after
 		   the Intuition InputHandler gets the ReplyMessage from the app
 		   and handles it in HandleIntuiReplyPort() */
-		
-		IW(w)->num_mouseevents++;
-		
-		fire_intuimessage(w,
-				  IDCMP_MOUSEMOVE,
-				  IECODE_NOBUTTON,
-				  w,
-				  IntuitionBase);
+				
+		if (fire_intuimessage(w,
+				      IDCMP_MOUSEMOVE,
+				      IECODE_NOBUTTON,
+				      w,
+				      IntuitionBase))
+		{
+		    IW(w)->num_mouseevents++;
+		}
 				  
 	        break; } /* case IECODE_NOBUTTON */
 
@@ -763,8 +813,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			gpi.gpi_GInfo	    = gi;
 			gpi.gpi_IEvent	    = ie;
 			gpi.gpi_Termination = &termination;
-			gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-			gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+			gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+			gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 			gpi.gpi_TabletData  = NULL;
 
 			retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
@@ -780,20 +830,33 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		} /* if (a gadget is currently active) */
 		else
 		{
+		    BOOL is_repeat_event;
+		    		  
 		    /* This is a regular RAWKEY event (no gadget taking care
 		       of it...). */
 
-		    if(w->IDCMPFlags & IDCMP_VANILLAKEY)
+		    if (iihdata->ActQualifier & IEQUALIFIER_REPEAT)
+		    {
+		        is_repeat_event = TRUE;
+			
+		        /* don't send repeat key events if repeatqueue is full */			
+		    	if (IW(w)->num_repeatevents >= IW(w)->repeatqueue) break;
+		    }
+		    
+		    if (w->IDCMPFlags & IDCMP_VANILLAKEY)
 		    {
 			UBYTE keyBuffer;
 
-			if(MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
+			if (MapRawKey(ie, &keyBuffer, 1, NULL) == 1)
 			{
-			    fire_intuimessage(w,
-			    		      IDCMP_VANILLAKEY,
-					      keyBuffer,
-					      0,
-					      IntuitionBase);
+			    if (fire_intuimessage(w,
+			    		      	  IDCMP_VANILLAKEY,
+					      	  keyBuffer,
+					      	  0,
+					      	  IntuitionBase))
+			    {
+			        if (is_repeat_event) IW(w)->num_repeatevents++;
+			    }
 			    break;
 			} 
 
@@ -803,11 +866,14 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 			       			    
 		    }
 		    
-		    fire_intuimessage(w,
-		    		      IDCMP_RAWKEY,
-				      ie->ie_Code,
-				      0, /* TODO: Should be prevdownqode/qual */
-				      IntuitionBase);
+		    if (fire_intuimessage(w,
+		    		      	  IDCMP_RAWKEY,
+				      	  ie->ie_Code,
+				      	  0, /* TODO: Should be prevdownqode/qual */
+				      	  IntuitionBase))
+		    {
+		    	if (is_repeat_event) IW(w)->num_repeatevents++;
+		    }		 
 				      
 		} /* regular RAWKEY */
 		
@@ -828,8 +894,8 @@ AROS_UFH2(struct InputEvent *, IntuiInputHandler,
 		    gpi.gpi_GInfo	= gi;
 		    gpi.gpi_IEvent	= ie;
 		    gpi.gpi_Termination = &termination;
-		    gpi.gpi_Mouse.X     = win_mousex - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
-		    gpi.gpi_Mouse.Y     = win_mousey - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
+		    gpi.gpi_Mouse.X     = w->MouseX - gi->gi_Domain.Left - GetGadgetLeft(gadget, w, NULL);
+		    gpi.gpi_Mouse.Y     = w->MouseY - gi->gi_Domain.Top  - GetGadgetTop(gadget, w, NULL);
 		    gpi.gpi_TabletData  = NULL;
 
 		    retval = Locked_DoMethodA((Object *)gadget, (Msg)&gpi, IntuitionBase);
