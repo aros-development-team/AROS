@@ -765,6 +765,18 @@ void _zune_window_message(struct IntuiMessage *imsg)
     		break;
 
 	case	IDCMP_NEWSIZE:
+	    	{
+		    int hborders = iWin->BorderLeft + iWin->BorderRight;
+    	    	    int vborders = iWin->BorderTop  + iWin->BorderBottom;
+
+	             /* set window limits according to window contents */
+            	     WindowLimits(iWin,
+		    		  data->wd_MinMax.MinWidth  + hborders,
+                        	  data->wd_MinMax.MinHeight + vborders,
+                        	  data->wd_MinMax.MaxWidth  + hborders,
+                        	  data->wd_MinMax.MaxHeight + vborders);
+    	    	}
+		
 		if ((iWin->GZZWidth  != data->wd_Width) || (iWin->GZZHeight != data->wd_Height))
 		{
 		    data->wd_Width  = iWin->GZZWidth;
