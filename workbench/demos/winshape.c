@@ -170,7 +170,7 @@ static void handleall(void)
 	    	
 		case IDCMP_VANILLAKEY:
 		    actshape = 1 - actshape;
-		    ChangeLayerShape(win->WLayer, (actshape ? NULL : shape), NULL);
+		    ChangeWindowShape(win, (actshape ? NULL : shape), NULL);
 		    break;
 	    }
 	    ReplyMsg((struct Message *)imsg);
