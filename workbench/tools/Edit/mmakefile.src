@@ -1,6 +1,6 @@
-#   $Id$
+# $Id$
 #
-#   Makefile to make JanoEditor.
+# Makefile to make JanoEditor.
 
 include $(TOP)/config/make.cfg
 
@@ -8,19 +8,20 @@ FILES := ClipLoc Cursor DiskIO Edit Events Gui Jed \
     	 Macros Memory Prefs Project Search UndoRedo \
 	 Utility
 
-EXEDIR := $(CONTRIBDIR)/aminet
-EXE := $(EXEDIR)/JanoEditor
+EXEDIR := $(AROS_TOOLS)
+EXE    := $(EXEDIR)/Editor
 
-USE_AROSLIB := yes
+USE_AROSLIB     := yes
 USE_CLIB_SHARED := yes
-USE_AMIGALIB := yes
-USE_MLIB := yes
+USE_AMIGALIB    := yes
+USE_MLIB        := yes
 
-#MM aminet-text-edit-janoeditor : includes linklibs setup-janoeditor-catalogs
+#MM- workbench-tools : workbench-tools-editor
+#MM workbench-tools-editor : includes linklibs setup-janoeditor-catalogs
 
-%make_prog_setup mmake=aminet-text-edit-janoeditor
+%make_prog_setup mmake=workbench-tools-editor
 
-aminet-text-edit-janoeditor : setup $(EXE)
+workbench-tools-editor : setup $(EXE)
 
 %make_prog_multi dir=$(EXEDIR) target=$(EXE)
 
