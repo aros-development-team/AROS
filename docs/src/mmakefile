@@ -119,7 +119,7 @@ $(HTMLDIR)/contrib.png : size2plot.in $(SIZEDIR)/contrib.size
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $@
 	$(CONVERT) $(DOCGENDIR)/plot.pbm $(basename $@).jpg
 
-$(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/CVSROOT/passwd.txt
+$(DOCGENDIR)/devlist.inc : devitemfilt.gawk $(TOP)/../CVSROOT/passwd.txt
 	gawk -f $< --assign TOP="$(TOP)" > $@
 	@touch $(DOCGENDIR)/run-src2html
 
