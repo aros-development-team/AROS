@@ -38,7 +38,7 @@ AROS_LH0(ULONG, ReadBattClock, APTR, BattClockBase, 2, Battclock)
 #ifdef __FreeBSD__
     return (t - 252460800 + tm->tm_gmtoff);
 #else
-    return (t - 252460800);
+    return (t - 252460800 + tm->tm_gmtoff);
 #endif
     AROS_LIBFUNC_EXIT
 } /* ReadBattClock */
