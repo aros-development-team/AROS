@@ -374,7 +374,9 @@ EIP:            .long   0           /* EIP */
 
                 .globl	GetMemSize
 GetMemSize:     pushl   %edi                /* Save temp used reg */
-                movl    $0x00100000,%edi    /* start address */
+                movl    $_end,%edi    /* start address */
+		addl	$15,%edi
+		andl	$-16,%edi
 .lmm1:          movl    (%edi),%eax         /* Save, write, test and restore... */
                 movl    $0xdeadbeef,(%edi)
                 cmpl    $0xdeadbeef,(%edi)

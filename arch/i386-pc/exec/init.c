@@ -54,6 +54,8 @@ void Handler(HIDDT_IRQ_Handler *, HIDDT_IRQ_HwInfo *);
 
 void hidd_demo();
 
+extern _end;
+
 unsigned long Memory;	/* Size of whole memory */
 unsigned long Memory24; /* Size of DMA memory (24 bit) */
 
@@ -189,6 +191,8 @@ int main()
 
     OOP_Object *o;
 
+    void *ptr = (&_end + 15) & ~15;
+
 /* Get memory size. This code works even with 4GB of memory
    BIOS would have some troubles if you have more than 64MB */
 
@@ -215,7 +219,7 @@ int main()
         1MB is reserved for kernel use only. DO NOT use it please.
     */
 
-    mh=(struct MemHeader*)0x00100000;
+    mh=(struct MemHeader*)ptr;
     mh->mh_Node.ln_Type = NT_MEMORY;
     mh->mh_Node.ln_Name = "chip memory";
     mh->mh_Node.ln_Pri = -5;
@@ -223,7 +227,7 @@ int main()
 			MEMF_KICK;
     mh->mh_First = (struct MemChunk *)((UBYTE*)mh+MEMHEADER_TOTAL);
     mh->mh_First->mc_Next = NULL;
-    mh->mh_First->mc_Bytes = Memory24 - 0x00100000 - MEMHEADER_TOTAL;
+    mh->mh_First->mc_Bytes = Memory24 - (int)ptr - MEMHEADER_TOTAL;
     mh->mh_Lower = mh->mh_First;
     mh->mh_Upper = (APTR)Memory24;
     mh->mh_Free = mh->mh_First->mc_Bytes;
