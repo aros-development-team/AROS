@@ -73,19 +73,19 @@
 	@%(ranlib) %(to)
 %end
 
-%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from=functions.o cmd=$(CC) opt=$(CFLAGS) err=$*.err
+%define mklib_f ar=$(AR) ranlib=$(RANLIB) to=$@ from=$(OBJDIR)/functions.o cmd=$(CC) opt=$(CFLAGS) err=$*.err
 	@$(ECHO) "Creating library %(to)..."
 	@%(ar) %(to) %(from)
 	@%(ranlib) %(to)
 
-functions.o : functions.c
-	@$(ECHO) "Compiling $(CURDIR)/%(from)..."
-	@%(cmd) %(opt) -c functions.c -o functions.o 2>&1|tee %(err)
+$(OBJDIR)/functions.o : functions.c
+	@$(ECHO) "Compiling $(CURDIR)/$@..."
+	@%(cmd) %(opt) -c functions.c -o $(OBJDIR)/functions.o 2>&1|tee %(err)
 	@$(IF) $(TEST) -s %(err); then $(TOUCH) $(TOP)/errors ; else $(RM) %(err) ; fi
 
 
 functions.c :
-	$(TOP)/tools/cpak/cpak $(FUNCTIONS)
+	@$(TOP)/tools/cpak/cpak $(FUNCTIONS)
 
 %end
 

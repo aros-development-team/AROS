@@ -94,6 +94,7 @@ char filename[50];
     if(fdo==-1)
         printf("Could not open functions.h out-file!\n"),
         exit(-1);
+    write(fdo,"#define AROS_ALMOST_COMPATIBLE\n",31);
     search=first.next;
     
     while(search->next!=NULL)

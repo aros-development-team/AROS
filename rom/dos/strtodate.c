@@ -9,14 +9,14 @@
 #include "dos_intern.h"
 
 #ifdef TEST
-#include <proto/dos.h>
-#include <stdio.h>
-#undef AROS_LH1
-#undef StrToDate
-#undef AROS_LHA
-#define AROS_LH1(ret,name,arg,type,base,offset,libname) \
-    ret name (arg)
-#define AROS_LHA(type,name,reg) type name
+#    include <proto/dos.h>
+#    include <stdio.h>
+#    undef AROS_LH1
+#    undef StrToDate
+#    undef AROS_LHA
+#    define AROS_LH1(ret,name,arg,type,base,offset,libname) \
+        ret name (arg)
+#    define AROS_LHA(type,name,reg) type name
 
 const ULONG Dos_DayTable[]=
 {
@@ -40,7 +40,7 @@ const char *const Dos_SubstDateTable[]=
     "Tomorrow", "Today", "Yesterday"
 };
 #else
-#include "date.h"
+#    include "date.h"
 #endif
 
 /*****************************************************************************
@@ -333,7 +333,7 @@ const char *const Dos_SubstDateTable[]=
 } /* StrToDate */
 
 #ifdef TEST
-#include <stdio.h>
+#    include <stdio.h>
 
 int main (int argc, char ** argv)
 {

@@ -7,15 +7,15 @@
     Lang: english
 */
 #ifndef TEST
-#include "dos_intern.h"
+#    include "dos_intern.h"
 #else
-#define AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
-#define AROS_LHA(t,n,r)                   t n
-#define AROS_LIBFUNC_INIT
-#define AROS_LIBBASE_EXT_DECL(bt,bn)
-#define AROS_LIBFUNC_EXIT
-#include <exec/types.h>
-#define CLIB_DOS_PROTOS_H
+#    define AROS_LH1(t,fn,a1,bt,bn,o,lib)     t fn (a1)
+#    define AROS_LHA(t,n,r)                   t n
+#    define AROS_LIBFUNC_INIT
+#    define AROS_LIBBASE_EXT_DECL(bt,bn)
+#    define AROS_LIBFUNC_EXIT
+#    include <exec/types.h>
+#    define CLIB_DOS_PROTOS_H
 #endif
 
 
@@ -124,7 +124,7 @@
 
 #ifdef TEST
 
-#include <stdio.h>
+#    include <stdio.h>
 
 int main (int argc, char ** argv)
 {

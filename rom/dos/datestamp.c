@@ -6,10 +6,10 @@
     Lang: english
 */
 #define timeval sys_timeval
-#include <sys/time.h>
+#	include <sys/time.h>
 #undef timeval
-#include <unistd.h>
-#include "dos_intern.h"
+#	include <unistd.h>
+#	include "dos_intern.h"
 
 /*****************************************************************************
 

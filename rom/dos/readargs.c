@@ -12,19 +12,19 @@
 #include "dos_intern.h"
 
 #ifdef TEST
-#include <stdio.h>
-#include <proto/dos.h>
-#undef ReadArgs
-#undef AROS_LH3
-#define AROS_LH3(t,fn,a1,a2,a3,bt,bn,o,lib)     t fn (a1,a2,a3)
-#undef AROS_LHA
-#define AROS_LHA(t,n,r)                   t n
-#undef AROS_LIBFUNC_INIT
-#define AROS_LIBFUNC_INIT
-#undef AROS_LIBBASE_EXT_DECL
-#define AROS_LIBBASE_EXT_DECL(bt,bn)
-#undef AROS_LIBFUNC_EXIT
-#define AROS_LIBFUNC_EXIT
+#    include <stdio.h>
+#    include <proto/dos.h>
+#    undef ReadArgs
+#    undef AROS_LH3
+#    define AROS_LH3(t,fn,a1,a2,a3,bt,bn,o,lib)     t fn (a1,a2,a3)
+#    undef AROS_LHA
+#    define AROS_LHA(t,n,r)                   t n
+#    undef AROS_LIBFUNC_INIT
+#    define AROS_LIBFUNC_INIT
+#    undef AROS_LIBBASE_EXT_DECL
+#    define AROS_LIBBASE_EXT_DECL(bt,bn)
+#    undef AROS_LIBFUNC_EXIT
+#    define AROS_LIBFUNC_EXIT
 #endif
 
 /*****************************************************************************
@@ -492,11 +492,11 @@ end:
 } /* ReadArgs */
 
 #ifdef TEST
-#include <dos/dos.h>
-#include <dos/rdargs.h>
-#include <utility/tagitem.h>
+#    include <dos/dos.h>
+#    include <dos/rdargs.h>
+#    include <utility/tagitem.h>
 
-#include <proto/dos.h>
+#    include <proto/dos.h>
 
 char cmlargs[] = "TEST/A";
 
