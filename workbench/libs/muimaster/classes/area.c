@@ -856,7 +856,6 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     if (!data->mad_TitleText)
     {
 	zframe->draw(muiRenderInfo(obj), _left(obj), _top(obj), _width(obj), _height(obj));
-	area_update_innersizes(obj, data, frame, zframe);
 	return;
     }
 
@@ -945,7 +944,6 @@ static void Area_Draw__handle_frame(Object *obj, struct MUI_AreaData *data)
     MUI_RemoveClipping(muiRenderInfo(obj), textdrawclip);
 
     _font(obj) = obj_font;
-    area_update_innersizes(obj, data, frame, zframe);
 }
 
 /**************************************************************************
