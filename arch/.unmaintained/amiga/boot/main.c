@@ -94,7 +94,9 @@ int main(int argc, char **argv)
     {
 	if (**argv != '-')
 	{
-	    continue;
+	    Printf("Unknown option: %s\n", argv[0]);
+	    exit(RETURN_FAIL);
+	    break;
 	}
 	switch(argv[0][1])
 	{
@@ -129,6 +131,7 @@ int main(int argc, char **argv)
 		break;
 	    default:
 		Printf("Unknown option: %c\n", argv[0][1]);
+		exit(RETURN_FAIL);
 		break;
 	}
     }
