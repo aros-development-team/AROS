@@ -364,7 +364,7 @@
      
    */
 
-  FreeMem(LD->rp, sizeof(struct RastPort));
+  FreeRastPort(LD->rp);
   DisposeRegion(LD->DamageList);
 
   /* 

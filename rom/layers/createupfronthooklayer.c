@@ -103,8 +103,8 @@
     return NULL;
 
   L  = (struct Layer    *) AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
-  CR = AllocMem(sizeof(struct ClipRect), MEMF_CLEAR);
-  RP = (struct RastPort *) AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
+  CR = (struct ClipRect *) AllocMem(sizeof(struct ClipRect), MEMF_CLEAR|MEMF_PUBLIC);
+  RP = CreateRastPort();
 
   /* is everything there that I need?  */
   if (NULL != L && NULL != CR && NULL != RP)
@@ -140,8 +140,7 @@
     CR->bounds.MaxX = x1;
     CR->bounds.MaxY = y1;
 
-    /* and now init the RastPort structure */
-    InitRastPort(RP);
+    /* and now further init the RastPort structure */
 
     RP->Layer  = L;
     RP->BitMap = bm;
@@ -265,7 +264,7 @@
   else /* not enough memory */
   {
     if (NULL != L ) FreeMem(L , sizeof(struct Layer));
-    if (NULL != RP) FreeMem(RP, sizeof(struct RastPort));
+    if (NULL != RP) FreeRastPort(RP);
     if (NULL != CR) FreeMem(CR, sizeof(struct ClipRect));
     L = NULL;
   }

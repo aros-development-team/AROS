@@ -99,7 +99,7 @@
   
   l_tmp = (struct Layer *)AllocMem(sizeof(struct Layer)   , MEMF_CLEAR|MEMF_PUBLIC);
   CR = _AllocClipRect(l);
-  RP = (struct RastPort *)AllocMem(sizeof(struct RastPort), MEMF_CLEAR|MEMF_PUBLIC);
+  RP = CreateRastPort();
 
   if (NULL != l_tmp && NULL != CR && NULL != RP)
   {
@@ -129,8 +129,7 @@
     l_tmp->Scroll_X   = l->Scroll_X;
     l_tmp->Scroll_Y   = l->Scroll_Y;
 
-    /* init the rastport structure of the temporary layer */
-    InitRastPort(RP);
+    /* further init the rastport structure of the temporary layer */
     RP -> Layer  = l_tmp;
     RP -> BitMap = l->rp->BitMap;
 
@@ -318,6 +317,8 @@
 	      bounds.MinY = CR->bounds.MinY;
 	      bounds.MaxX = CR->bounds.MaxX;
 	      bounds.MaxY = CR->bounds.MaxY;
+
+              /* no superbitmap */
           
               /* clearing the visible area with the backfill hook */
               _CallLayerHook(l->BackFill,
@@ -327,23 +328,7 @@
                              bounds.MinX,
                              bounds.MinY);
 	    
-              /* no superbitmap */
-/*
-              BltBitMap(
-                bm,// Source Bitmap - we don't need one for clearing, but this
-                   // one will also do :-) 
-                0,
-                0,
-                bm, // Destination Bitmap - 
-                DestX,
-                CR->bounds.MinY,
-                CR->bounds.MaxX - DestX           + 1,
-                CR->bounds.MaxY - CR->bounds.MinY + 1,
-                0x000, // supposed to clear the destination
-                0xff,
-                NULL
-              );
-*/
+
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -388,22 +373,7 @@
                              bounds.MinX,
                              bounds.MinY);
               /* no superbitmap */
-/*
-              BltBitMap(
-                bm, // Source Bitmap - we don't need one for clearing, but this
-                    // one will also do :-) 
-                0,
-                0,
-                bm, // Destination Bitmap
-                CR->bounds.MinX,
-                DestY,
-                CR->bounds.MaxX-CR->bounds.MinX+1,
-                CR->bounds.MaxY-DestY+1,
-                0x000, // supposed to clear the destination
-                0xff,
-                NULL
-              );
-*/
+
               OrRectRegion(l->DamageList, &CR->bounds);
               l->Flags |= LAYERREFRESH;
 	    }
@@ -470,7 +440,7 @@
   else /* not enough memory */
   {
     if (NULL != CR   ) _FreeClipRect(CR, l);
-    if (NULL != RP   ) FreeMem(RP, sizeof(struct RastPort));
+    if (NULL != RP   ) FreeRastPort(RP);
     if (NULL != l_tmp) FreeMem(l_tmp, sizeof(struct Layer));
   }
 
