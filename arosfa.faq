@@ -1,4 +1,4 @@
-AROSfA FAQ 1.0
+AROSfA FAQ 1.1
 
 This document gives answers to some (frequently) asked questions, and other
 things to note when running AROSfA (AROS for Amiga).
@@ -19,6 +19,18 @@ things to note when running AROSfA (AROS for Amiga).
     has started (blue stripes), and that is has patched exec.library (green
     stripes). It is a quick indication that AROS survived the reboot and is
     installing itself.
+
+|Q. What should I expect to see if AROSfA works?
+|A. Nothing out of the ordinary. If you install AROS, you should still be
+|   able to use your system as if AROS hadn't been installed. The goal of
+|   AROSfA is to be as transparently to the programs as possible. This
+|   binary compatibility makes it possible to run all of your old
+|   programs.
+|
+|   If you have installed AROSfA, and some program of yours suddenly won't
+|   work anymore, then either that program is misbehaving and depending on
+|   quirks in the original OS, or there is something wrong in AROSfA. We
+|   would sure like to know about this.
 
  Q. I get lots of enforcer hits from alert.hook and/or utility.library.
  A. Yes, we have had the same reports. We are looking into it. These enforcer
@@ -61,11 +73,10 @@ things to note when running AROSfA (AROS for Amiga).
     - Kickstart 39.106, Workbench 40.42
     - setpatch 40.16 (14-02-1994)
     - KingCON-handler (68020+) 1.3 (31-05-1994) (completely replaces CON:/RAW:)
-    - CycleToMenu 37.6 ( 6-06-1994)
     - PowerSnap 37.326 (10-02-1994)
     - ToolManager_Starter 2.1 (16-05-1993)
-    - MCP 1.10ß wildstar/borderblank/noclick/formatprotect/rtpatch/assignprefs/
-                promotor
+    - MCP 1.22 wildstar/borderblank/noclick/formatprotect/rtpatch/assignprefs/
+               promotor/cycletomenu
 
  Q. I have just run "boot", and now I use "printresmodules", but I can't spot
     the modules I have just loaded. Is something wrong?
