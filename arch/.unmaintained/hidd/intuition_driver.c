@@ -148,6 +148,7 @@ int intui_OpenWindow (struct Window * w,
     
     EnterFunc(bug("intui_OpenWindow(w=%p)\n", w));
     
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
     D(bug("screen: %p\n", w->WScreen));
     D(bug("bitmap: %p\n", w->WScreen->RastPort.BitMap));
     
@@ -297,6 +298,7 @@ int intui_OpenWindow (struct Window * w,
 void intui_CloseWindow (struct Window * w,
 	                struct IntuitionBase * IntuitionBase)
 {
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
     disposesysgads(w, IntuitionBase);
     if (0 == (w->Flags & WFLG_GIMMEZEROZERO))
     {
@@ -331,6 +333,7 @@ void intui_RefreshWindowFrame(struct Window *w)
     
     EnterFunc(bug("intui_RefreshWindowFrame(w=%p)\n", w));
     
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
     if (!(w->Flags & WFLG_BORDERLESS))
     {
 	dri = GetScreenDrawInfo(w->WScreen);
@@ -411,6 +414,9 @@ BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
     WORD width, WORD height)
 {
     BOOL success;
+
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
+    
     if (0 != (window->Flags & WFLG_GIMMEZEROZERO))
     {
       success = MoveSizeLayer(window->BorderRPort->Layer,
@@ -421,6 +427,9 @@ BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
       if (FALSE == success)
         return FALSE;
      
+#warning Why is this necessary ? There is another RWF() below !
+      RefreshWindowFrame(window);
+
       window->GZZWidth  += (width - window->Width);
       window->GZZHeight += (height - window->Height);                
     }
@@ -431,7 +440,7 @@ BOOL intui_ChangeWindowBox (struct Window * window, WORD x, WORD y,
                             height - window->Height );
     if (FALSE == success)
     {
-#warn FIXME: If this fails, then the MoveSizeLayer() above must be undone.
+#warning FIXME: If this fails, then the MoveSizeLayer() above must be undone.
         return FALSE;
     }
 
@@ -467,6 +476,7 @@ struct Window *intui_FindActiveWindow(struct InputEvent *ie, BOOL *swallow_event
     
     *swallow_event = FALSE;
 
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
 #warning Fixme: Find out what screen the click was in.
 
     lock = LockIBase(0UL);
@@ -512,6 +522,7 @@ LONG intui_RawKeyConvert (struct InputEvent * ie, STRPTR buf,
 void intui_BeginRefresh (struct Window * win,
 	struct IntuitionBase * IntuitionBase)
 {
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
   /* lock all necessary layers */
   LockLayerRom(win->WLayer);
   /* Find out whether it's a GimmeZeroZero window with an extra layer to lock */
@@ -529,6 +540,7 @@ void intui_BeginRefresh (struct Window * win,
 void intui_EndRefresh (struct Window * win, BOOL free,
 	struct IntuitionBase * IntuitionBase)
 {
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
   EndUpdate(win->WLayer, free);
   
   /* reset all bits indicating a necessary or ongoing refresh */
@@ -554,6 +566,7 @@ static BOOL createsysgads(struct Window *w, struct IntuitionBase *IntuitionBase)
     struct DrawInfo *dri;
     EnterFunc(bug("createsysgads(w=%p)\n", w));
 	
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
     dri = GetScreenDrawInfo(w->WScreen);
     if (dri)
     {
@@ -734,6 +747,7 @@ static VOID disposesysgads(struct Window *w, struct IntuitionBase *IntuitionBase
     /* Free system gadges */
     UWORD i;
     
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
     for (i = 0; i < NUM_SYSGADS; i ++)
     {
         if (SYSGAD(w, i))
@@ -753,6 +767,7 @@ void intui_ScrollWindowRaster(struct Window * win,
                               WORD ymax,
                               struct IntuitionBase * IntuitionBase)
 {
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
   ScrollRasterBF(win->RPort,
                  dx,
                  dy,
@@ -781,6 +796,7 @@ void windowneedsrefresh(struct Window * w,
   struct IntuiMessage * IM;
   BOOL found = FALSE;
 
+#warning this code should be moved inside intuition (it doesn't contain any hardware specific code)
   if (NULL == w->UserPort)
     return;
   
