@@ -322,6 +322,7 @@ STATIC VOID strg_dispose(Class *cl, Object *o, Msg msg)
     if ((data->StrExtend.WorkBuffer) && (data->Flags & SFLG_WORKBUF_ALLOCATED))
 	FreeVec(data->StrExtend.WorkBuffer);
 
+    DoSuperMethodA(cl, o, msg);
     return;
 }
 /*********************
