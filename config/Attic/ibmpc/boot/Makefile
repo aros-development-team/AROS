@@ -28,13 +28,13 @@ $(SETUP): setup.S $(IPATH)/aros/config.h Makefile
 	@echo Done!
 
 init.o:	init.c
-	@$(CC) -c init.c
+	$(CC) -c init.c
 
 logo.o:	logo.c
-	@$(CC) -c logo.c
+	$(CC) -c logo.c
 
 text.o:	text.c
-	@$(CC) -c text.c
+	$(CC) -c text.c
 
 head.o:	head.S
 	@$(CC) -traditional -c head.S

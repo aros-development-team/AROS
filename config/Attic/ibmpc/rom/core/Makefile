@@ -13,7 +13,7 @@ machine.i: geninc
 	@./geninc > machine.i
 
 geninc: geninc.c
-	@gcc -I$(IPATH) -I$(INCLUDE) geninc.c -o geninc
+	gcc -I$(IPATH) -I$(INCLUDE) geninc.c -o geninc
 
 %.o: %.S
 	@$(CC) -c $<
