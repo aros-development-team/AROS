@@ -10,10 +10,9 @@
     MAXPENS /N/K: maximum number of pens to alloc (colormapped dest only)
     DITHERQ /N/K: Dither quality for display (colormapped dest only), 0 (worst) to 4 (best),
                   1 to 4 have same speed and are slower than 0
+		  1 is more "blocky" and 4 is more "noisy"
     FREESRC /S:   Change the default for FreeSourceBitMap to TRUE, to save memory;
                   might bring compatibility problems
-    USEBM /S:     Use BitMap instead of Chunky Buffer for planar destinations
-                  (ECS, AGA) or for debugging
     USECM /S:     Forces the destination to be colormapped, for debugging
 */
 
@@ -42,13 +41,12 @@
 /**************************************************************************************************/
 
 #define FILENAME "ENV:datatypes/picture.prefs"
-#define PREFSTEMPLATE "MAXPENS/N/K,DITHERQ/N/K,FREESRC/S,USEBM/S,USECM/S"
+#define PREFSTEMPLATE "MAXPENS/N/K,DITHERQ/N/K,FREESRC/S,USECM/S"
 enum
 {
 	ARG_MAXPENS,
 	ARG_DITHERQ,
 	ARG_FREESRC,
-	ARG_USEBM,
 	ARG_USECM,
 	ARG_MAX
 };
@@ -70,7 +68,7 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 		D(bug("picture.datatype/ReadPrefs: File %s opened\n",FILENAME));
 		while(FGets(fh,buf,sizeof(buf)))
 		{
-			D(bug("picture.datatype/ReadPrefs: Line: %s",buf));
+			// D(bug("picture.datatype/ReadPrefs: Line: %s",buf));
 			i=strlen(buf);
 			if( i>1 && (buf[i-1]=='\n' && (rdargs=(struct RDArgs *)AllocDosObject(DOS_RDARGS,NULL))) )
 			{
@@ -88,8 +86,6 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 						pd->DitherQuality = *((LONG *) para[ARG_DITHERQ]);
 					if(para[ARG_FREESRC])
 						pd->FreeSource = para[ARG_FREESRC];
-					if(para[ARG_USEBM])
-						pd->UseBM = para[ARG_USEBM];
 					if(para[ARG_USECM])
 						pd->UseCM = para[ARG_USECM];
 				}
@@ -97,9 +93,9 @@ BOOL ReadPrefs(struct Picture_Data *pd)
 			}
 		}
 		Close(fh);
-		D(bug("picture.datatype/ReadPrefs: MaxPens %d DitherQ %d FreeSrc %d UseBM %d UseCM %d\n",
+		D(bug("picture.datatype/ReadPrefs: MaxPens %d DitherQ %d FreeSrc %d UseCM %d\n",
 			(int)pd->MaxDitherPens, (int)pd->DitherQuality,
-			(int)pd->FreeSource, (int)pd->UseBM, (int)pd->UseCM));
+			(int)pd->FreeSource, (int)pd->UseCM));
 	}
 
 	return((BOOL) (fh == NULL));

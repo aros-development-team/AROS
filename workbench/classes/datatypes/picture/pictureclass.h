@@ -32,6 +32,7 @@ struct Picture_Data
  BOOL                  FreeSource;
  BOOL                  Remap;
  BOOL                  UseFriendBM;
+ BOOL                  DestMode;
  /*
   *  private entries
   */
@@ -41,21 +42,16 @@ struct Picture_Data
  ULONG                 SrcHeight;
  LONG                  SrcPixelFormat;
  UWORD                 SrcPixelBytes;
-        
- UWORD                 DestDepth;
- UBYTE                 *DestBuffer;
+ UWORD                 SrcDepth;
+ 
  ULONG                 DestWidth;
- ULONG                 DestWidthBytes;
  ULONG                 DestHeight;
- LONG                  DestPixelFormat;
- UWORD                 DestPixelBytes;
-        
  ULONG                 ColTableXRGB[256];
+ UWORD                 DestDepth;
         
  BOOL                  TrueColorSrc;
  BOOL                  TrueColorDest;
  BOOL                  Layouted;
  BOOL                  KeepSrcBM;
- BOOL                  UseBM;
  BOOL                  UseCM;
 };
