@@ -288,16 +288,6 @@
 
     D(bug("modified IDCMP\n"));
 
-    w->LeftEdge    = nw.LeftEdge;
-    w->TopEdge	   = nw.TopEdge;
-    w->Width	   = nw.Width;
-    w->Height	   = nw.Height;
-
-    ((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
-    ((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
-    ((struct IntWindow *)w)->ZipWidth    = w->Width;
-    ((struct IntWindow *)w)->ZipHeight   = w->Height;
-
 /*    w->RPort	   = rp; */
 
     w->FirstGadget = nw.FirstGadget;
@@ -358,6 +348,19 @@
     {
     	if (w->BorderBottom < 16) w->BorderBottom = 16;
     }
+
+    if (innerWidth != ~0L) nw.Width = innerWidth + w->BorderLeft + w->BorderRight;
+    if (innerHeight != ~0L) nw.Height = innerHeight + w->BorderTop + w->BorderBottom;
+    
+    w->LeftEdge    = nw.LeftEdge;
+    w->TopEdge	   = nw.TopEdge;
+    w->Width	   = nw.Width;
+    w->Height	   = nw.Height;
+
+    ((struct IntWindow *)w)->ZipLeftEdge = w->LeftEdge;
+    ((struct IntWindow *)w)->ZipTopEdge  = w->TopEdge;
+    ((struct IntWindow *)w)->ZipWidth    = w->Width;
+    ((struct IntWindow *)w)->ZipHeight   = w->Height;
     
     if (!intui_OpenWindow (w, IntuitionBase, nw.BitMap))
 	goto failexit;
