@@ -88,7 +88,7 @@ struct ExecBase * SysBase; /* global variable */
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
  AROS_LHA(BPTR,               segList,   A0),
-     struct ExecBase *, sysBase, 0, _LIBnAME)
+     struct ExecBase *, sysBase, 0, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /* This function is single-threaded by exec by calling Forbid. */
@@ -104,7 +104,7 @@ AROS_LH2(struct LIBBASETYPE *, init,
 
 AROS_LH1(struct LIBBASETYPE *, open,
  AROS_LHA(ULONG, version, D0),
-     struct LIBBASETYPE *, LIBBASE, 1, _LIBnAME)
+     struct LIBBASETYPE *, LIBBASE, 1, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -140,7 +140,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, close, struct LIBBASETYPE *, LIBBASE, 2, _LIBnAME)
+AROS_LH0(BPTR, close, struct LIBBASETYPE *, LIBBASE, 2, BASENAME)
 {
     AROS_LIBFUNC_INIT
     /*
@@ -167,7 +167,7 @@ AROS_LH0(BPTR, close, struct LIBBASETYPE *, LIBBASE, 2, _LIBnAME)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, _LIBnAME)
+AROS_LH0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, BASENAME)
 {
     AROS_LIBFUNC_INIT
 
@@ -199,7 +199,7 @@ AROS_LH0(BPTR, expunge, struct LIBBASETYPE *, LIBBASE, 3, _LIBnAME)
     AROS_LIBFUNC_EXIT
 }
 
-AROS_LH0I(int, null, struct LIBBASETYPE *, LIBBASE, 4, _LIBnAME)
+AROS_LH0I(int, null, struct LIBBASETYPE *, LIBBASE, 4, BASENAME)
 {
     AROS_LIBFUNC_INIT
     return 0;
