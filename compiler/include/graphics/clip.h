@@ -130,6 +130,20 @@ cliprects */
 #define LA_Visible	WA_Visible
 #define LA_Shape	WA_Shape
 
+
+/*
+ * Tags for scale layer
+ */
+#define LA_SRCX	      0x4000
+#define LA_SRCY       0x4001
+#define LA_DESTX      0x4002
+#define LA_DESTY      0x4003
+#define LA_SRCWIDTH   0x4004
+#define LA_SRCHEIGHT  0x4005
+#define LA_DESTWIDTH  0x4006
+#define LA_DESTHEIGHT 0x4007
+
+
 #define ROOTPRIORITY		0
 #define BACKDROPPRIORITY	10
 #define UPFRONTPRIORITY		20
