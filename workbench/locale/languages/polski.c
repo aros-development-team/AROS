@@ -272,17 +272,17 @@ static const STRPTR __polish_strings[] =
         In English this would be Sunday, this depends upon the settings
         of Locale->CalendarType.
     */
-    "Poniedzia³ek", "Wtorek", "“roda", "Czwartek", "Pi±tek",
+    "Poniedzia³ek", "Wtorek", "¦roda", "Czwartek", "Pi±tek",
     "Sobota", "Niedziala",
 
     /* Abbreviated days of the week */
-    "Po", "Wt", "“r", "Cz", "Pi", "So", "Ni",
+    "Po", "Wt", "¦r", "Cz", "Pi", "So", "Ni",
 
     /* Months of the year */
     "Styczeñ", "Luty", "Marzec",
     "Kwiecieñ", "Maj", "Czerwiec",
     "Lipiec", "Sierpieñ", "Wrzesieñ",
-    "Pa˜dziernik", "Listopad", "Grudzieñ",
+    "Pa¼dziernik", "Listopad", "Grudzieñ",
 
     /* Abbreviated months of the year */
     "I", "II", "III", "IV", "V", "VI",
@@ -306,7 +306,7 @@ static const STRPTR __polish_strings[] =
        Tomorrow - the next day
        Future.
     */
-    "Wczoraj", "Dzi“", "Jutro", "Przysz³o“ƒ"
+    "Wczoraj", "Dzi¶", "Jutro", "Przysz³o¶æ"
 };
 
 /* This is the end of ROMtag marker. */
