@@ -2469,7 +2469,7 @@ void Notify_notifyTasks(struct rambase *rambase, struct MinList *notifications)
 
     // kprintf("Inside notifytasks, not = %p\n", notifications);
 
-    ForeachNode((struct List *)notifications, (struct Node *)rr)
+    ForeachNode((struct List *)notifications, rr)
     {
 	struct NotifyRequest *nr = rr->nr;
 
@@ -2607,8 +2607,7 @@ void Notify_removeNotification(struct rambase *rambase,
     }
 
 
-    ForeachNodeSafe((struct List *)&receivers, (struct Node *)rr,
-		    (struct Node *)rrTemp)
+    ForeachNodeSafe(&receivers, rr, rrTemp)
     {
 	if (rr->nr == nr)
 	{
@@ -2850,7 +2849,7 @@ void HashTable_remove(struct rambase *rambase, HashTable *ht, void *key)
     pos = ht->hash(rambase, key) % ht->size;
     list = &ht->array[pos];
 
-    ForeachNodeSafe(list, (struct Node *)hn, tempNode)
+    ForeachNodeSafe(list, hn, tempNode)
     {
 	if (ht->compare(rambase, key, hn->key) == 0)
 	{
@@ -2869,7 +2868,7 @@ HashNode *find(
 {
     HashNode *hn;		/* Loop variable */
 
-    ForeachNode(list, (struct Node *)hn)
+    ForeachNode(list, hn)
     {
 	if (ht->compare(rambase, key, hn->key) == 0)
 	{

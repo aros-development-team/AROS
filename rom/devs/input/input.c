@@ -157,7 +157,7 @@ AROS_UFH3(struct inputbase *, AROS_SLIB_ENTRY(init,Input),
     InputDevice->KeyRepeatInterval.tv_micro
 	= (DEFAULT_KEY_REPEAT_INTERVAL % 50) * 1000000 / 50;
 
-    (struct Library *)GfxBase = OpenLibrary("graphics.library", 0);
+    GfxBase = (void *)OpenLibrary("graphics.library", 0);
     
     /* Initialise the input.device task. */
     InputDevice->InputTask = AllocMem(sizeof(struct Task), MEMF_PUBLIC | MEMF_CLEAR);
