@@ -40,17 +40,16 @@ If you are not involved with developing AROS but want to try it out or
 (even better) want to write apps for AROS, get the binary archive. It
 contains a ready-to-use copy of all binaries for AROS (not that there
 were many, yet ... :-). Unpack the archive, cd into AROS and run
-the arosshell (NOTE: For some systeme, there are shared versions of the
+the command 'aros' (NOTE: For some systems, there are shared versions of the
 libs to save disk space. On these systems, you must tell the loader to
 look into AROS/lib for additional libs. On most systems, do "export
 LD_LIBRARY_PATH=lib:$LD_LIBRARY_PATH" (without the "")).
 
-Now you will get a prompt reading "Workbench:> ". Now type "dir all" and
-press return and doesn't it look familiar (There will be lots of debugging
-output which you can safely ignore. It will go away in the next versions) ?
+Now the Workbench screen will open, leaving you in the boot shell.
+Now type "dir all" and press return and doesn't it look familiar?
 Try "demowin" to see what our intuition.library and graphics.library can
 do. Have you tried "sift" ? This is the AROS version of sift.c which is in
-the RKRMs. We just copied and compiled it and it works ! If you want to try
+the RKRMs. We just copied and compiled it and it works! If you want to try
 it, copy any IFF file into the AROS directory and call sift with the
 name of that file. It will print you the contents of the file using
 iffparse.library !
