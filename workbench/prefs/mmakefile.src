@@ -16,7 +16,7 @@ setup :
 
 #MM
 copyfiles : setup
-	@$(CP) $(TOP)/$(CURDIR)/env-archive/sys/* $(PREFSDIR)/Env-Archive/Sys/
+	@$(CP) $(TOP)/$(CURDIR)/env-archive/sys/nv_location $(PREFSDIR)/Env-Archive/Sys/
 
 #MM
 clean ::
