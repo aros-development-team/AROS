@@ -19,6 +19,8 @@ FUNCS := createplayera \
 	 setplayerattrsa \
 	 unlockrealtime
 
+USE_AMIGALIB := yes
+
 #MM- workbench-libs-realtime : setup includes linklibs
 %make_module_setup mmake=workbench-libs-realtime
 %make_module_cpak
