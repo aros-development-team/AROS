@@ -13,6 +13,9 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 #MM	compiler-arossupport-includes
 
 #MM
+includes-copy-linux-ppc : $(INCFILES)
+
+#MM
 includes-linux-ppc : $(INCFILES) machine.i
 	@$(NOP)
 
