@@ -10,6 +10,7 @@
 
 #include <exec/resident.h>
 #include <exec/interrupts.h>
+#include <exec/semaphores.h>
 #include <devices/serial.h>
 #include <proto/exec.h>
 #include <proto/dos.h>
@@ -122,59 +123,10 @@ AROS_LH3(void, open,
   /* Keep compiler happy */
     
   ioreq->io_Message.mn_Node.ln_Type = NT_REPLYMSG;
-    
-  /* If the Serial task does not exist yet, then this is our
-     first customer...
-  */
-  if (NULL == SerialDevice->SerialTask)
-  {
-    /* Since the serial device task will use this before this function
-    ** has exited, we can put the following structure on the stack
-    */
-    struct IDTaskParams idtask_params;
-    idtask_params.SerialDevice = SerialDevice;
-    idtask_params.Caller = FindTask(NULL);
-        
-    /* We don't use a OS signel (like SIGBREAKF_CTRL_D), because
-    ** we might get it from elsewere.
-    */
-    idtask_params.Signal = 1 << ioreq->io_Message.mn_ReplyPort->mp_SigBit;
-   	
-    kprintf("serial device: Creating serial task\n");
-    	    
-    SerialDevice->SerialTask = CreateSerialTask(&idtask_params, SerialDevice);
-    	    
-    kprintf("serial device: serial task created: %p\n", SerialDevice->SerialTask);
-    	
-    if (SerialDevice->SerialTask)
-    {
-      /* Here we wait for the serial task to initialize it's
-      ** command msgport etc. (see processevents.c). This
-      ** is to prevent race conditions.
-      ** Say that we exited succesfully now and did
-      ** an asynchronous IO request to the device, while
-      ** the serial.device yet not had created it's command port.
-      ** It would most certainly crash the machine
-      */
-      kprintf("serial device: Waiting for serial task to initialize itself\n");
-      Wait (idtask_params.Signal);
-      kprintf("serial device: Got signal from serial task\n");
-    	    	
-      ioreq->io_Error = NULL;
 
-      /* I have one more opener. */
-      SerialDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
-      SerialDevice->device.dd_Library.lib_OpenCnt ++;
-    } /* if (input task created) */
-    else
-    {
-      /* no serial task could be created */
-      /* It seems like nothing could go wrong on real Amigas as all
-         the necessary Errors are deactivated in serial.h. Oh, well
-         the user just will learn that the device is busy */
-      ioreq->io_Error = SerErr_DevBusy;  
-    }
-  } /* if (first time opened) */
+  /* I have one more opener. */
+  SerialDevice->device.dd_Library.lib_Flags &= ~LIBF_DELEXP;
+  SerialDevice->device.dd_Library.lib_OpenCnt ++;
 
   /* In the list of available units look for the one with the same 
      UnitNumber as the given one  */
@@ -206,6 +158,7 @@ AROS_LH3(void, open,
           SU -> su_UnitNum = unitnum;
           SU -> su_Unit.unit_OpenCnt = 1;
    
+          InitSemaphore(&SU->su_Lock);
           /* do further initilization here. Like getting the HIDD etc. */
 
           /*
@@ -293,24 +246,98 @@ AROS_LH1(void, beginio,
   
   BOOL success;
   struct SerialUnit * SU = (struct SerialUnit *)ioreq->IOSer.io_Unit;
-    
+
   kprintf("serial device: beginio(ioreq=%p)\n", ioreq);
 
   /* WaitIO will look into this */
   ioreq->IOSer.io_Message.mn_Node.ln_Type=NT_MESSAGE;
 
+  /* 
+  ** As a lot of "public" data can be modified in the following lines
+  ** I protect it from other tasks by this semaphore 
+  */  
+  ObtainSemaphore(&SU->su_Lock);
+
   switch (ioreq->IOSer.io_Command)
   {
     case CMD_READ:
-      PutMsg((struct MsgPort *)&SerialDevice->CommandPort, 
+      /*
+      **  Let me see whether I can copy any data at all and
+      **  whether nobody else is using this device now
+       */
+      if (SU->su_InputFirst != SU->su_InputNextPos &&
+          0 == (SU->su_Status & STATUS_READS_PENDING)    )
+      {
+        /* 
+           No matter how many bytes are in the input buffer,
+           I will copy them into the IORequest buffer immediately.
+           This way I can satisfy requests that are larger than
+           the input buffer, because the Interrupt will have
+           to put its bytes directly into the buffer of the
+           request from now on.
+         */
+        if (-1 == ioreq->IOSer.io_Length)
+	{
+          if (TRUE == copyInDataUntilZero(SU, (struct IOStdReq *)ioreq))
+	  {
+            /* it could be satisfied completely */
+            ioreq->IOSer.io_Flags |= IOF_QUICK;
+            break;
+	  }
+        }
+        else
+	{
+          if (TRUE == copyInData(SU, (struct IOStdReq *)ioreq))
+	  {
+            /* it could be satisfied completely */
+            ioreq->IOSer.io_Flags |= IOF_QUICK;
+            break;
+	  } 
+	}
+      }
+      /*
+      **  Everything that falls down here could not be completely
+      **  satisfied
+      */
+
+      PutMsg((struct MsgPort *)&SU->su_ReadCommandPort,
              (struct Message *)ioreq);
-      /* pretending there were not enough data immediately */
+      SU->su_Status |= STATUS_READS_PENDING;
+      /*
+      ** As I am returning immediately I will tell that this
+      ** could not be done QUICK   
+       */
       ioreq->IOSer.io_Flags &= ~IOF_QUICK;
     break;
-   
+
+    case CMD_WRITE:
+      /* Write data to the UART */
+      
+      /* Check whether I can write some data immediately */
+      if (0 == (SU->su_Status & STATUS_WRITES_PENDING))
+      {
+        /* I can write the first (few) byte(s) immediately */
+        SU->su_Status |= STATUS_WRITES_PENDING;
+        /* Writing the first few bytes to the UART has to have the
+           effect that whenever the UART can receive new data
+           a HW interrupt must happen. So this writing to the
+           UART should get the sequence of HW-interrupts going
+           until there is no more data to write 
+	*/
+        // HIDD_WRITE_BYTE(SU->su_Hidd, (struct IOStdReq *)ioreq);
+        break;
+      }    
+      /* I could not write the data immediately so I will make this
+         the responsibility of the interrupt handler
+      */
+      PutMsg((struct MsgPort *)&SU->su_WriteCommandPort,
+             (struct Message *)ioreq);
+    break;
+
     case CMD_CLEAR:
       /* Simply reset the input buffer pointer no matter what */
-      SU->su_InputCurPos = 0;
+      SU->su_InputNextPos = 0;
+      SU->su_InputFirst = 0;
       ioreq->IOSer.io_Error = 0;      
     break;
   
@@ -341,7 +368,8 @@ AROS_LH1(void, beginio,
                the input buffer, tell it that it cannot do this right
                now as I am changing the buffer */
             SU->su_Status     |= STATUS_CHANGING_IN_BUFFER;
-            SU->su_InputCurPos = 0;
+            SU->su_InputNextPos = 0;
+            SU->su_InputFirst   = 0;
             SU->su_InputBuffer = NewInBuf;
             SU->su_InBufLength = ioreq->io_RBufLen;
             SU->su_Status     &= ~STATUS_CHANGING_IN_BUFFER;
@@ -351,7 +379,7 @@ AROS_LH1(void, beginio,
           }
           else
           {
-            ioreq->io_Error = SerErr_BufErr;
+            ioreq->IOSer.io_Error = SerErr_BufErr;
             return;
           }
           /* end of buffer changing buiseness */
@@ -428,8 +456,12 @@ AROS_LH1(void, beginio,
 	}
       }        
     break;
-  } /* switch () */
+
     
+  } /* switch () */
+
+  ReleaseSemaphore(&SU->su_Lock);  
+  
   //kprinf("id: Return from BeginIO()\n");
 
   AROS_LIBFUNC_EXIT

@@ -7,45 +7,93 @@
 
 #include "serial_intern.h"
 
-/*************************
-**  CreateSerialTask()  **
-*************************/
-struct Task *CreateSerialTask(APTR taskparams, struct serialbase *SerialDevice)
+
+/**************************************************************************
+  Copy data from the buffer where it is collected to the destination buffer
+  in the IORequest structure
+  The return value indicates whether the request could be satisfied 
+  completely or not.
+**************************************************************************/
+
+BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * ioreq)
 {
-    struct Task *task;
-    APTR stack;
-    
-    task = AllocMem(sizeof (struct Task), MEMF_PUBLIC|MEMF_CLEAR);
-    if (task)
+  UWORD count = 0;
+  UWORD index = SU->su_InputFirst;
+  BYTE * Buffer = ioreq->io_Data;
+  
+  while (count < ioreq->io_Length &&
+         SU->su_InputNextPos != index)
+  {
+    /* copy one byte */
+    Buffer[count] = SU->su_InputBuffer[index];
+
+    count++;
+    index++;
+    /*  
+    **  The buffer is organized in a circular fashion with
+    **  length SU->su_InBufLength 
+     */
+    if (index == SU->su_InBufLength)
+      index = 0;
+  }
+  /* move the index of the first valid byte for the next read */
+  SU->su_InputFirst = index;
+  ioreq->io_Actual = count;
+  if (count == ioreq->io_Length)
+    return TRUE;
+  
+  /* The request could not be satisfied completely */ 
+  return FALSE;
+}
+
+/**************************************************************************
+  Copy data from the buffer where it is collected to the destination buffer
+  in the IORequest structure
+  The return value indicates whether the request could be satisfied 
+  completely or not.
+**************************************************************************/
+
+BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * ioreq)
+{
+  UWORD count = 0;
+  UWORD index = SU->su_InputFirst;
+  BYTE * Buffer = ioreq->io_Data;
+  BOOL end = FALSE;
+  
+  while (SU->su_InputNextPos != index)
+  {
+    /* copy one byte */
+    Buffer[count] = SU->su_InputBuffer[index];
+
+    /* was that the terminating zero? */
+    if (0 == Buffer[count])
     {
-    	NEWLIST(&task->tc_MemEntry);
-    	task->tc_Node.ln_Type=NT_TASK;
-    	task->tc_Node.ln_Name="serial.device";
-    	task->tc_Node.ln_Pri = IDTASK_PRIORITY;
+      end = TRUE;
+      break;
+    } 
 
-    	stack=AllocMem(IDTASK_STACKSIZE, MEMF_PUBLIC);
-    	if(stack != NULL)
-    	{
-	    task->tc_SPLower=stack;
-	    task->tc_SPUpper=(BYTE *)stack + IDTASK_STACKSIZE;
+    count++;
+    index++;
+    /*  
+    **  The buffer is organized in a circular fashion with
+    **  length SU->su_InBufLength 
+     */
+    if (index == SU->su_InBufLength)
+      index = 0;
+  }
+  /* move the index of the first valid byte for the next read */
+  SU->su_InputFirst = index;
 
-#if AROS_STACK_GROWS_DOWNWARDS
-	    task->tc_SPReg = (BYTE *)task->tc_SPUpper-SP_OFFSET - sizeof(APTR);
-	    ((APTR *)task->tc_SPUpper)[-1] = taskparams;
-#else
-	    task->tc_SPReg=(BYTE *)task->tc_SPLower-SP_OFFSET + sizeof(APTR);
-	    *(APTR *)task->tc_SPLower = taskparams;
-#endif
+  /* whatever is in end represents "satisfied request"(TRUE) or
+     "unsatisfied request" (FALSE) */
 
-	    if(AddTask(task, ProcessEvents, NULL) != NULL)
-	    {
-	    	/* Everything went OK */
-	    	return (task);
-	    }	
-	    FreeMem(stack, IDTASK_STACKSIZE);
-    	}
-        FreeMem(task,sizeof(struct Task));
-    }
-    return (NULL);
+  if (TRUE == end)
+  {
+    ioreq->io_Actual = count;
+    return TRUE;
+  }
 
+  /* make io_Actual point to the next index in the buffer */
+  ioreq->io_Actual = count+1;
+  return FALSE;
 }

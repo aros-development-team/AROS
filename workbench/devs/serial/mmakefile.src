@@ -7,7 +7,7 @@ OBJDIR := $(GENDIR)/$(CURDIR)
 
 DEVS    := $(DEVSDIR)/serial.device
 INIT    := serial_init
-FILES	:= serial_support processevents
+FILES	:= serial_support serial_interrupthandlers
 OBJS	:= $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 %define_libs
 

@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.2  1999/03/05 13:29:29  bergers
+    Update.
+
     Revision 1.1  1999/03/03 04:33:31  bergers
     Very preliminary version. Doesn't do anything useful yet. (Mainly just to prevent that I erase my harddrive)
 
@@ -20,6 +23,9 @@
 #endif
 #ifndef EXEC_DEVICES_H
 #   include <exec/devices.h>
+#endif
+#ifndef EXEC_SEMAPHORES_H
+#   include <exec/semaphores.h>
 #endif
 #ifndef DOS_DOS_H
 #   include <dos/dos.h>
@@ -40,24 +46,18 @@
 struct serialbase;
 
 
-/* Structure passed to the input.device task when it's initialized */
-struct IDTaskParams
-{
-    struct serialbase 	*SerialDevice;
-    struct Task		*Caller; /* Signal this task.. */
-    ULONG		Signal; /* Using this sigs, that the ID task */
-    				/* has been initialized and is ready to handle IO requests */
-};
+struct SerialUnit;
+
 
 /* Prototypes */
-VOID ProcessEvents(struct IDTaskParams *taskparams);
 struct Task *CreateSerialTask(APTR taskparams, struct serialbase *SerialDevice);
+BOOL copyInData(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
+BOOL copyInDataUntilZero(struct SerialUnit * SU, struct IOStdReq * IOStdReq);
 
 
 extern struct ExecBase * SysBase;
 
 
-struct SerialUnit;
 
 
 #define MINBUFSIZE 512
@@ -68,8 +68,6 @@ struct serialbase
     struct ExecBase *  sysBase;
     BPTR               seglist;
     
-    struct Task       *SerialTask;
-    struct MsgPort     CommandPort;
     struct SerialUnit *FirstUnit;
     ULONG              Status;
 };
@@ -80,6 +78,11 @@ struct SerialUnit
   struct Unit         su_Unit;
 
   struct SerialUnit * su_Next;
+  
+  struct SignalSemaphore su_Lock;
+
+  struct MsgPort      su_ReadCommandPort;
+  struct MsgPort      su_WriteCommandPort;
 
   ULONG               su_UnitNum;
   ULONG               su_Flags;    // copy of IOExtSer->io_SerFlags;
@@ -95,8 +98,10 @@ struct SerialUnit
   
 
   BYTE *              su_InputBuffer;
-  UWORD               su_InputCurPos; // InputCurPos may never "overtake" InputFirst
+  UWORD               su_InputNextPos; // InputCurPos may never "overtake" InputFirst
   UWORD               su_InputFirst;  // the input buffer is organized as a "circle"
+                                      // Next Pos is the Position in the buffer
+                                      // where the NEXT byte will go into.
   UWORD               su_InBufLength;
   // Pointer to the HIDD
   APTR                su_HIDD;
@@ -114,7 +119,13 @@ struct SerialUnit
                                        to the input buffer.
                                      */
 #define STATUS_READS_PENDING  2 
-#define STATUS_WRITES_PENDING 4
+#define STATUS_WRITES_PENDING 4    /* When the task write the first byte into the UART
+                                      it has to set this flag. 
+                                      When the HW-interrupt happens and there is
+                                      no more byte to write to the UART this
+                                      flag has to be cleared immediately
+                                    */
+#define STATUS_BUFFEROVERFLOW 8
 
 #ifdef SysBase
     #undef SysBase
