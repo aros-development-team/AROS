@@ -15,7 +15,7 @@ BOOT_C := \
 	Avail Copy Date Delete Dir Info Install List MakeDir Mount NewShell \
 	Protect Relabel Rename Shell Type
 BOOT_C_SHELL := \
-	Alias Assign CD Echo Execute FailAt Path Prompt Run Set Setenv Stack
+	Alias Assign CD Echo Execute FailAt Path Prompt Resident Run Set Setenv Stack
 BOOT_Gadgets := \
 	aroscheckbox.gadget aroscycle.gadget aroslist.class aroslistview.gadget \
 	arosmutualexclude.gadget arospalette.gadget colorwheel.gadget gradientslider.gadget
