@@ -9,7 +9,7 @@
 /*
     AROS MemoryMap:
      
-    First 4KB of RAM (page 0x0000-0x1000) are READ ONLY!
+    First 4KB of RAM (page 0x0000-0x0FFF) are READ ONLY!
           
     +------------+-----------+-------------------------------------------------+
     |    address |    length |                                     description |
@@ -26,7 +26,8 @@
     | 0x00000940 | 0x0000001 | INT server!                           softblock |
     | 0x00000a00 | 0x0000200 | INT server!                          irq_desc[] |
     +------------+-----------+-------------------------------------------------+
-    | 0x00001000 | ......... |                                      System RAM |
+    | 0x00001000 | 0x0001000 |                           MultiBoot information |
+    | 0x00002000 | ......... |                                      System RAM |
     | .......... | ......... |        Temporary stack frame for bootup process |
     | 0x000a0000 | 0x0060000 | Data reserved for BIOS, VGA and some MMIO cards |
     | 0x00100000 | ......... |                                     AROS KERNEL |
@@ -72,6 +73,7 @@
 #include "etask.h"
 #include "exec_util.h"
 #include "traps.h"
+#include "multiboot.h"
 
 /* As long as we don't have CPU detection routine, assume FPU to be present */
 
@@ -150,7 +152,10 @@ void scr_RawPutChars(char *, int);
 
 char tab[127];
 
-#define rkprintf(x...)	scr_RawPutChars(tab, sprintf(tab, x))
+#ifdef rkprintf
+# undef rkprintf
+#endif
+#define rkprintf(x...)	scr_RawPutChars(tab, snprintf(tab,126, x))
 
 #else
 
@@ -182,7 +187,7 @@ asm(        ".globl SysBase     \n\t"
  */
 
 #define MB_MAGIC    0x1BADB002  /* Magic value */
-#define MB_FLAGS    0x00000001  /* Need 4KB alignment for modules */
+#define MB_FLAGS    0x00000003  /* Need 4KB alignment for modules */
 
 const struct
 {
@@ -259,12 +264,15 @@ void IdleTask()
  * We have to use asm creature because there is no stack at the moment
  */
 asm("\nexec_init:                \n\t"
+	    "movl    $0x93000,%esp\n\t"     /* Start with setting up a temporary stack */
+	    "pushl   %ebx        \n\t"      /* Then store the MultiBoot info pointer   */
+	    "pushl   %eax        \n\t"      /* Store multiboot magic cookie            */
+	    "pushl   $0x0        \n\t"      /* And fake a C code call                  */
             "cld                 \n\t"      /* At the startup it's very important   */
             "cli                 \n\t"      /* to lock all interrupts. Both on the  */
             "movb    $-1,%al     \n\t"      /* CPU side and hardwre side. We don't  */
             "outb    %al,$0x21   \n\t"      /* have proper structures in RAM yet.   */
             "outb    %al,$0xa1 \n\n\t"
-            "movl    $0x93000,%esp\n\t"     /* Temporary stack frame. */
             "jmp     exec_cinit");          /* Jump to C function :))) */
 
 /*
@@ -393,9 +401,11 @@ const char exec_fastname[] __text = "Fast Memory";
 /*
  * C/ASM mixed initialization routine. Here the real game begins...
  */
-void exec_cinit()
+void exec_cinit(unsigned long magic, unsigned long addr)
 {
     struct ExecBase *ExecBase;
+    struct multiboot *mbinfo;
+    struct arosmb *arosmb;
 
     ULONG locmem, extmem;
 
@@ -418,22 +428,61 @@ void exec_cinit()
          * is clearing it. GRUB have done it already but we have to repeat that
          * (it may NEED that as it might be ColdReboot())
          */
-
-#if 0
-	asm("rep\n\tstosb"
-            :
-            :"eax"(0),                          /* FIll with 0 */
-             "D"(&_edata),                      /* Start of .bss */
-             "ecx"((int)&_end-(int)&_edata));   /* Till end of the file */
-
-#else
 	bzero(&_edata,(int)&_end-(int)&_edata);
-#endif
-
     }
 
     clr();
     rkprintf("AROS - The Amiga Research OS\nCompiled %s\n\n",__DATE__);
+
+    /* MultiBoot
+     * This messy bit here will store away useful information we receive from
+     * the boorloader. It will happen when we are loaded, and not on when we
+     * are here from ColdReboot().
+     */
+    arosmb = (struct arosmb *)0x1000;
+    if (arosmb->magic != MBRAM_VALID)
+    {
+	if (magic == 0x2badb002)
+	{
+	    rkprintf("Copying multiboot information into storage\n");
+	    arosmb->magic = MBRAM_VALID;
+	    arosmb->flags = 0L;
+	    mbinfo = (struct multiboot *)addr;
+	    if (mbinfo->flags && MB_FLAGS_MEM)
+	    {
+		arosmb->flags |= MB_FLAGS_MEM;
+		arosmb->mem_lower = mbinfo->mem_lower;
+		arosmb->mem_upper = mbinfo->mem_upper;
+	    }
+	    if (mbinfo->flags && MB_FLAGS_LDRNAME)
+	    {
+		arosmb->flags |= MB_FLAGS_LDRNAME;
+		snprintf(arosmb->ldrname,29,"%s",mbinfo->loader_name);
+	    }
+	    if (mbinfo->flags && MB_FLAGS_CMDLINE)
+	    {
+		arosmb->flags |= MB_FLAGS_CMDLINE;
+		snprintf(arosmb->cmdline,199,"%s",mbinfo->cmdline);
+	    }
+	    if (mbinfo->flags && MB_FLAGS_MMAP)
+	    {
+		arosmb->flags |= MB_FLAGS_MMAP;
+		arosmb->mmap_addr = (struct mb_mmap *)((ULONG)(0x1000 + sizeof(struct arosmb)));
+		arosmb->mmap_len = mbinfo->mmap_length;
+		memcpy((void *)arosmb->mmap_addr,(void *)mbinfo->mmap_addr,mbinfo->mmap_length);
+	    }
+	    if (mbinfo->flags && MB_FLAGS_DRIVES)
+	    {
+		if (mbinfo->drives_length > 0)
+		{
+		    arosmb->flags |= MB_FLAGS_DRIVES;
+		    arosmb->drives_addr = ((ULONG)(arosmb->mmap_addr + arosmb->mmap_len));
+		    arosmb->drives_len = mbinfo->drives_length;
+		    memcpy((void *)arosmb->drives_addr,(void *)mbinfo->drives_addr,mbinfo->drives_length);
+		}
+	    }
+	}
+    }
 
     rkprintf("Clearing system area...");
 
@@ -444,16 +493,7 @@ void exec_cinit()
      * destroy it's private stuff (which is really needed to make CPU operate
      * propertly)
      */
-
-#if 0
-    asm("rep\n\tstosl"
-        :
-        :"eax"(0),              /* Fill with 0 */
-         "D"(8),                /* Start at ptr 8 - SKIP ExecBase! */
-         "ecx"((4096-8)/4));    /* Do untill end of page */
-#else
     bzero((void *)8, 4096-8);
-#endif
 
     /*
      * Feel better? Now! Quick. We will have to build new tables for our CPU to
@@ -478,15 +518,7 @@ void exec_cinit()
      * Fix Global Descriptor Table. Because I'm too lazy I'll just copy one from
      * here. I've already prepared such a nice one :)
      */
-#if 0
-    asm("rep\n\tmovsl"
-        :
-        :"S"(&GDT_Table),   /* Copy from ROM table */
-         "D"(0x900),        /* To RAM @ 0x00000900 */
-         "c"(64/4));        /* 64 bytes */
-#else
     memcpy((void *)0x900, &GDT_Table, 64);
-#endif
 
     /*
      * As we prepared all necessary stuff, we can hopefully load GDT and LDT
@@ -548,7 +580,7 @@ void exec_cinit()
          * Will be placed in the lowes address possible with fitting all functions :)
          */
 
-        ExecBase=(struct ExecBase *)0x00001000; /* Got ExecBase at the lowest possible addr */
+        ExecBase=(struct ExecBase *)0x00002000; /* Got ExecBase at the lowest possible addr */
         (ULONG)ExecBase+= 137 * LIB_VECTSIZE;   /* Substract lowest vector so jumpable would fit */
 
         /* Check whether we have some FAST memory,
@@ -560,14 +592,8 @@ void exec_cinit()
             (ULONG)ExecBase+= 137 * LIB_VECTSIZE;
 
             /* Now we will clear FAST memory. */
+	    /* Disabled due to taking to much time on P4 machines */
 #if 0
-	    asm("rep\n\tstosl"
-                :
-                : "D"(0x01000000),                  /* Start at 0x01000000 */
-                  "eax"(0),                         /* Fill with 0 */
-                  "c"((extmem - 0x01000000)/4));    /* Change to count number and scale to longwords */
-#else
-
 	    bzero((void *)0x01000000, extmem - 0x01000000);
 #endif
         }
@@ -588,21 +614,8 @@ void exec_cinit()
          * We will leave area 0x90000 - 0xa0000 uncleared as there is
          * temporary system stack!
          */
-
 #if 0
-	asm("rep\n\tstosl"
-            :
-            : "D"(0x1000),              /* Firstly clear 1st MB of ram */
-              "eax"(0),
-              "c"((0x90000-0x1000)/4));
-
-        asm("rep\n\tstosl"
-            :
-            : "D"(&_end),               /* Then everything AFTER kernel 'till */
-              "eax"(0),                 /* end of the CHIP area */
-              "c"((locmem - (ULONG)&_end)/4));
-#else
-	bzero((void *)0x1000, 0x90000-0x1000);
+	bzero((void *)0x2000, 0x90000-0x2000);
 	bzero(&_end, locmem -(ULONG)&_end);
 #endif
     }
@@ -630,15 +643,7 @@ void exec_cinit()
     rkprintf("Clearing ExecBase\n");
 
     /* How about clearing most of ExecBase structure? */
-#if 0
-    asm("rep\n\tstosl"
-        :
-        : "D"(&ExecBase->IntVects[0]),      /* Start clearing at IntVects */
-          "eax"(0),
-          "c"((sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]))/4));
-#else
     bzero(&ExecBase->IntVects[0], sizeof(struct ExecBase) - offsetof(struct ExecBase, IntVects[0]));
-#endif
 
     ExecBase->KickMemPtr = KickMemPtr;
     ExecBase->KickTagPtr = KickTagPtr;
@@ -742,10 +747,10 @@ void exec_cinit()
             (APTR)base,
             (STRPTR)exec_fastname);
 
-        AddMemList(locmem - 0x1000,
+        AddMemList(locmem - 0x2000,
             MEMF_CHIP | MEMF_PUBLIC | MEMF_KICK | MEMF_LOCAL | MEMF_24BITDMA,
             -10,
-            (APTR)0x1000,
+            (APTR)0x2000,
             (STRPTR)exec_chipname);
 
         rkprintf("Chip Memory : %luMB\nFast Memory : %luMB\n",
@@ -979,45 +984,74 @@ void exec_cinit()
         (*p)();
     }
 
-#if 0
+    /* Print multiboot information */
+    if (arosmb->magic == MBRAM_VALID)
     {
-	/* Add idle task */
-	struct Task *t;
-	struct MemList *ml;
-	UBYTE *s;
-
-	/* Allocate MemEntry for this task and stack */
-	ml = (struct MemList *)AllocMem(sizeof(struct MemList)+sizeof(struct MemEntry),
-					MEMF_PUBLIC|MEMF_CLEAR);
-	t = (struct Task *)    AllocMem(sizeof(struct Task), MEMF_CLEAR|MEMF_PUBLIC);
-	s = (UBYTE *)          AllocMem(AROS_STACKSIZE,      MEMF_CLEAR|MEMF_PUBLIC);
-
-	if( !ml || !t || !s )
+	kprintf("Multiboot information found:\n");
+	if (arosmb->flags && MB_FLAGS_LDRNAME)
 	{
-	    kprintf("ERROR: Cannot create Idle Task!\n");
+	    kprintf(" Bootloader: %s\n",arosmb->ldrname);
 	}
+	if (arosmb->flags && MB_FLAGS_CMDLINE)
+	{
+	    kprintf(" Commandline: %s\n",arosmb->cmdline);
+	}
+	if (arosmb->flags && MB_FLAGS_MEM)
+	{
+	    kprintf(" Amount of memory: %d kB lower, %d kB upper\n",arosmb->mem_lower,arosmb->mem_upper);
+	}
+	if (arosmb->flags && MB_FLAGS_MMAP)
+	{
+	    struct mb_mmap *curr;
 
-	ml->ml_NumEntries = 2;
-	ml->ml_ME[0].me_Addr = t;
-	ml->ml_ME[0].me_Length = sizeof(struct Task);
-	ml->ml_ME[1].me_Addr = s;
-	ml->ml_ME[1].me_Length = AROS_STACKSIZE;
+	    kprintf(" Memory map info at: 0x%08x length 0x%08x\n",arosmb->mmap_addr,arosmb->mmap_len);
 
-	NEWLIST(&t->tc_MemEntry);
-	AddHead(&t->tc_MemEntry, &ml->ml_Node);
-	t->tc_SPLower = s;
-	t->tc_SPUpper = s + AROS_STACKSIZE;
-
-	/* Pass SysBase in on the stack */
-	t->tc_SPReg = &(((struct ExecBase *)(s + AROS_STACKSIZE))[-1]);
-	*((struct ExecBase **)t->tc_SPReg) = SysBase;
-
-	t->tc_Node.ln_Name = "Idle Task";
-	t->tc_Node.ln_Pri = 0;
-	t->tc_Flags = 0;
-	AddTask(t, &IdleTask, NULL);
+	    for (curr = (struct mb_mmap *) arosmb->mmap_addr;
+		    (unsigned long) curr < arosmb->mmap_addr + arosmb->mmap_len;
+		    curr = (struct mb_mmap *) ((unsigned long) curr + curr->size + sizeof (curr->size)))
+	    {
+		kprintf("  Memory: Addr: 0x%08x%08x, Length: 0x%08x%08x, Type: ",
+			curr->addr_high,curr->addr_low,
+			curr->len_high,curr->len_low);
+		switch(curr->type)
+		{
+		    case 1:
+			kprintf("Usable RAM\n");
+			break;
+		    case 2:
+			kprintf("Reserved\n");
+			break;
+		    case 3:
+			kprintf("ACPI Data\n");
+			break;
+		    case 4:
+			kprintf("ACPI NVS\n");
+			break;
+		    default:
+			kprintf("Unknown type\n");
+		}
+	    }
+	}
+	if (arosmb->flags && MB_FLAGS_DRIVES)
+	{
+	    struct mb_drive *curr;
+	    
+	    kprintf(" Drive info at: 0x%08x length 0x%08x\n",arosmb->drives_addr,arosmb->drives_len);
+	    for (curr = (struct mb_drive *) arosmb->drives_addr;
+		    (unsigned long) curr < arosmb->drives_addr + arosmb->drives_len;
+		    curr = (struct mb_drive *) ((unsigned long) curr + curr->size))
+	    {
+		kprintf("  Drive %02x, CHS (%d/%d/%d) mode %s\n",
+			curr->number,
+			curr->cyls,curr->heads,curr->secs,
+			curr->mode?"CHS":"LBA");
+	    }
+	}
     }
-#endif
+    else
+    {
+	kprintf("No Multiboot information discovered\n");
+    }
 
     InitCode(RTF_SINGLETASK, 0);
     InitCode(RTF_COLDSTART, 0);
@@ -1034,7 +1068,6 @@ void exec_cinit()
         void (*p)() = ExecBase->WarmCapture;
         (*p)();
     }
-
 
     Debug(0);
 
@@ -1055,6 +1088,7 @@ asm("\nexec_DefaultTrap:\n\t"
     "pushl  $0\n\t"
     "jmp    Exec_Alert");
 
+#warning TODO: We should use info from BIOS here.
 int exec_RamCheck_dma()
 {
     ULONG   volatile *ptr,tmp;
