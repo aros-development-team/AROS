@@ -94,7 +94,6 @@ AROS_UFH2(void, IntServer,
     AROS_LHA(struct ExecBase *,SysBase,A6)
 )
 {
-    AROS_LIBFUNC_INIT
     while(first!=NULL)
     {
 	if(AROS_UFC2(int,first->is_Code,AROS_UFCA(APTR,first->is_Data,A1),
@@ -102,7 +101,6 @@ AROS_UFH2(void, IntServer,
 	    break;
 	first=(struct Interrupt *)first->is_Node.ln_Succ;
     }
-    AROS_LIBFUNC_EXIT
 }
 
 AROS_UFH2(int, Dispatcher,
@@ -110,7 +108,6 @@ AROS_UFH2(int, Dispatcher,
     AROS_LHA(struct ExecBase *,SysBase,A6)
 )
 {
-    AROS_LIBFUNC_INIT
     Disable();
     /* Check if a task switch is necessary */
     if(SysBase->TaskReady.lh_Head->ln_Succ!=NULL&&
@@ -132,18 +129,21 @@ AROS_UFH2(int, Dispatcher,
     Enable();
     /* Wasn't explicitly for me */
     return 0;
-    AROS_LIBFUNC_EXIT
 }
 
 static APTR allocmem(ULONG size)
 {
     UBYTE *ret;
 
-    size=(size+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1);
-    ret=(UBYTE *)mh.mh_First;
-    mh.mh_First=(struct MemChunk *)(ret+size);
-    mh.mh_First->mc_Next=NULL;
-    mh.mh_Free=mh.mh_First->mc_Bytes=((struct MemChunk *)ret)->mc_Bytes-size;
+    size = (size + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1);
+
+    ret = (UBYTE *)mh.mh_First;
+
+    mh.mh_First = (struct MemChunk *)(ret + size);
+    mh.mh_First->mc_Next = NULL;
+    mh.mh_Free =
+	mh.mh_First->mc_Bytes = ((struct MemChunk *)ret)->mc_Bytes - size;
+
     return ret;
 }
 
@@ -182,78 +182,79 @@ int main(int argc,char *argv[])
 	Prepare first MemHeader. I cannot use exec functions
 	here because exec is not yet up.
     */
-    mh.mh_Node.ln_Name="chip memory"; /* Amiga has always chip, but maybe no fast */
-    mh.mh_Node.ln_Pri =0;
-    mh.mh_Attributes  =MEMF_CHIP|MEMF_PUBLIC; /* Public to my emulation */
-    mh.mh_First=(struct MemChunk *)
-		(((IPTR)memory+MEMCHUNK_TOTAL-1)&~(MEMCHUNK_TOTAL-1));
-    mh.mh_First->mc_Next=NULL;
-    mh.mh_First->mc_Bytes=MEMSIZE;
-    mh.mh_Lower=mh.mh_First;
-    mh.mh_Upper=(UBYTE *)mh.mh_Lower+MEMSIZE;
-    mh.mh_Free =MEMSIZE;
+    mh.mh_Node.ln_Name = "chip memory"; /* Amiga has always chip, but maybe no fast */
+    mh.mh_Node.ln_Pri  = 0;
+    mh.mh_Attributes   = MEMF_CHIP|MEMF_PUBLIC; /* Public to my emulation */
+    mh.mh_First = (struct MemChunk *)
+		(((IPTR)memory + MEMCHUNK_TOTAL-1) & ~(MEMCHUNK_TOTAL-1));
+    mh.mh_First->mc_Next  = NULL;
+    mh.mh_First->mc_Bytes = MEMSIZE;
+
+    mh.mh_Lower = mh.mh_First;
+    mh.mh_Upper = (UBYTE *)mh.mh_Lower+MEMSIZE;
+    mh.mh_Free	= MEMSIZE;
 
     /* The following allocations cannot and must not fail. */
     {
 	/* Prepare exec.library */
-	ULONG neg,i;
-	neg=AROS_ALIGN(LIB_VECTSIZE*NUMVECT);
-	SysBase=(struct ExecBase *)
-		((UBYTE *)allocmem(neg+sizeof(struct ExecBase))+neg);
-	for(i=1;i<=NUMVECT;i++)
-	{
-	    __AROS_INITVEC(SysBase,i);
-	    __AROS_SETVECADDR(SysBase,i,ExecFunctions[i-1]);
-	}
-#if 0
-	/* Build GetCC vector (68000 version) */
-	((UWORD *)(__AROS_GETJUMPVEC(SysBase,34))[0]=0x40c0; /* movew sr,d0 */
-	((UWORD *)(__AROS_GETJUMPVEC(SysBase,34))[1]=0x4e75; /* rts         */
-#endif
+	ULONG neg, i;
 
-	SysBase->LibNode.lib_Node.ln_Name="exec.library";
-	SysBase->LibNode.lib_Version = 41;
-	SysBase->LibNode.lib_Revision = 9;
+	neg = AROS_ALIGN(LIB_VECTSIZE*NUMVECT);
+
+	SysBase = (struct ExecBase *)
+		((UBYTE *)allocmem (neg + sizeof (struct ExecBase)) + neg);
+
+	for (i=1; i<=NUMVECT; i++)
+	{
+	    __AROS_INITVEC (SysBase, i);
+	    __AROS_SETVECADDR (SysBase, i, ExecFunctions[i-1]);
+	}
+
+	SysBase->LibNode.lib_Node.ln_Name = "exec.library";
+	SysBase->LibNode.lib_Version	  = 41;
+	SysBase->LibNode.lib_Revision	  = 10;
 
 	SysBase->DebugData = &AROSBase;
 
 	AROSBase.kprintf = (void *)kprintf;
 
-	NEWLIST(&SysBase->MemList);
-	AddHead(&SysBase->MemList,&mh.mh_Node);
-	NEWLIST(&SysBase->ResourceList);
-	NEWLIST(&SysBase->DeviceList);
-	NEWLIST(&SysBase->IntrList);
-	NEWLIST(&SysBase->LibList);
-	NEWLIST(&SysBase->PortList);
-	NEWLIST(&SysBase->TaskReady);
-	NEWLIST(&SysBase->TaskWait);
+	NEWLIST (&SysBase->MemList);
+	AddHead (&SysBase->MemList, &mh.mh_Node);
+	NEWLIST (&SysBase->ResourceList);
+	NEWLIST (&SysBase->DeviceList);
+	NEWLIST (&SysBase->IntrList);
+	NEWLIST (&SysBase->LibList);
+	NEWLIST (&SysBase->PortList);
+	NEWLIST (&SysBase->TaskReady);
+	NEWLIST (&SysBase->TaskWait);
 
-	for(i=0;i<5;i++)
+	for (i=0; i<5; i++)
 	{
-	    NEWLIST(&SysBase->SoftInts[i].sh_List);
-	}
-	for(i=0;i<16;i++)
-	{
-	    SysBase->IntVects[i].iv_Code=NULL;
-	    SysBase->IntVects[i].iv_Data=NULL;
-	    SysBase->IntVects[i].iv_Node=NULL;
+	    NEWLIST (&SysBase->SoftInts[i].sh_List);
 	}
 
-	NEWLIST(&SysBase->SemaphoreList);
+	for (i=0; i<16; i++)
+	{
+	    SysBase->IntVects[i].iv_Code = NULL;
+	    SysBase->IntVects[i].iv_Data = NULL;
+	    SysBase->IntVects[i].iv_Node = NULL;
+	}
+
+	NEWLIST (&SysBase->SemaphoreList);
 
 	/* There are no memhandlers yet.
 	 * (not even the library flushing one which is part of ram/dos.library) */
-	NEWLIST((struct List *)&SysBase->ex_MemHandlers);
-	SysBase->IDNestCnt=0;
-	SysBase->TDNestCnt=0;
-	SysBase->AttnResched=0;
+	NEWLIST ((struct List *)&SysBase->ex_MemHandlers);
+
+	SysBase->IDNestCnt = 0;
+	SysBase->TDNestCnt = 0;
+	SysBase->AttnResched = 0;
     }
 
     {
 	/* Add boot task */
-	struct Task *t;
-	struct MemList *ml;
+	struct Task    * t;
+	struct MemList * ml;
 
 	ml=(struct MemList *)AllocMem(sizeof(struct MemList),MEMF_PUBLIC|MEMF_CLEAR);
 	t =(struct Task *)   AllocMem(sizeof(struct Task),   MEMF_PUBLIC|MEMF_CLEAR);
