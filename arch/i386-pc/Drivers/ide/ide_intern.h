@@ -8,6 +8,7 @@
 #include <exec/devices.h>
 #include <exec/tasks.h>
 #include <devices/timer.h>
+#include <devices/newstyle.h>
 #include <string.h>
 
 /* Stack size - 4096 longwords should be enough */
@@ -204,14 +205,8 @@ struct ideBase
 #define ide_out(value, offset, port)    outb(value, offset + port)
 #define ide_in(offset, port)            inb(offset + port)
 
-#define NSCMD_TD_READ64     0xc000
-#define NSCMD_TD_WRITE64    0xc001
-#define NSCMD_TD_SEEK64     0xc002
-#define NSCMD_TD_FORMAT64   0xc003
-
 #define APCMD_TESTCHANGED   0x001d
 #define APCMD_UNITPARAMS    0x001e
-#define NSCMD_DEVICEQUERY   0x4000
 
 /**** ATAPI packets ***********************************************************/
 
