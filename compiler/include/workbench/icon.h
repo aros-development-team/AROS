@@ -31,11 +31,11 @@
 
 /*** Icon library name ******************************************************/
 
-const char[] ICONNAME = "icon.library";
+const STRPTR ICONNAME = "icon.library";
 
 /*** Start of icon.library tags *********************************************/
 
-const Tag ICONA_Dummy                         = TAG_USER + 0x9000;
+#define ICONA_Dummy (TAG_USER+0x9000)
 
 /*** Error reporting ********************************************************/
 
