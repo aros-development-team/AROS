@@ -157,7 +157,10 @@ void readref(void)
 		    }
 
 		    if (strcasecmp(begin, "void")==0)
-			free(name);
+		    {
+			if (libcall != STACK)
+			    free(name);
+		    }
 		    else
 		    {
 			if (parseinfo.newarg)
