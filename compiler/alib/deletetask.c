@@ -11,7 +11,7 @@
 
     NAME */
 #include <exec/tasks.h>
-#include <proto/aros.h>
+#include <proto/alib.h>
 
 	void DeleteTask (
 
