@@ -470,8 +470,8 @@ case "$target_os" in
                 aros_default_wbheight=160
 		aros_default_wbdepth=1
                 aros_target_cc="m68k-linux-gcc -pipe"
-                aros_target_ld="m68k-linux-gcc -pipe"
-		aros_target_as="m68k-linux-gcc"
+                aros_target_ld="m68k-linux-gcc"
+		aros_target_as="m68k-linux-gcc -pipe"
 		aros_static_ld="m68k-linux-gcc"
 		aros_shared_ld="m68k-linux-gcc"
 		aros_kernel_ld="m68k-linux-gcc"
@@ -480,7 +480,7 @@ case "$target_os" in
 		aros_target_nm="m68k-linux-nm"
 		aros_target_objcopy="m68k-linux-objcopy"
 		aros_target_objdump="m68k-linux-objdump"
-		aros_target_cflags="-Wall -O2 -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -fomit-frame-pointer -DCREATE_ROM -DAROS_NOFPU -DAROS_NO_LIMITS_H"
+		aros_target_cflags="-Wall -O2 -fomit-frame-pointer -mc68000 -Wa,-mc68000 -DADEBUG=1 -DMDEBUG=1 -D__DONT_USE_DEBUGMEM__ -D__DONT_UNDERSTAND__ASM__ -DCREATE_ROM -DAROS_NOFPU -DAROS_NO_LIMITS_H"
 		aros_target_aflags="-Wall -x assembler-with-cpp -mc68000 --short-branchs"
 		aros_target_ldflags="-nostartfiles -nostdlib -Wl,-r"
 		aros_shared_default=no
@@ -494,6 +494,7 @@ case "$target_os" in
 		aros_debug_cflags="-Wall -g -O2 -DADEBUG=1 -DMDEBUG=1 -D__EXECTEST__ -D__DONT_USE_DEBUGMEM__ -mc68000 -Wa,-mc68000"
 		aros_debug_aflags=""
 		aros_debug_ldflags="-g"
+		aros_mungwall_debug="0"
 		;;
 	   *)
 		AC_MSG_ERROR("Unknown CPU for PalmPilot -- $target_cpu")
@@ -724,7 +725,7 @@ nativecompat)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
 		aros_flavour="native" ;;
 linklib)	aros_flavour_uc="AROS_FLAVOUR_LINKLIB"
 		aros_flavour="linklib" ;;
-palmnative)	aros_flavour_uc="(AROS_FLAVOUR_NATIVE|AROS_FLAVOUR_BINCOMPAT)"
+palmnative)	aros_flavour_uc="AROS_FLAVOUR_STANDALONE"
 		aros_flavour="palmnative" ;;
 esac
 
