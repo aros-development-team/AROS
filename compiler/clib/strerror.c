@@ -5,6 +5,8 @@
     ANSI C function strerror().
 */
 
+#include "__arosc_privdata.h"
+
 #include <proto/dos.h>
 #include <errno.h>
 #include <stdio.h>

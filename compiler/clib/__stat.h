@@ -12,6 +12,8 @@
 #include <sys/stat.h>
 #include <exec/types.h>
 
+#include <dos/dos.h>
+
 int    __stat(BPTR lock, struct stat *sb);
 
 #endif

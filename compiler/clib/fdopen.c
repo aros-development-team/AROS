@@ -5,6 +5,8 @@
     POSIX function fdopen().
 */
 
+#include "__arosc_privdata.h"
+
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>

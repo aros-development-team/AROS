@@ -5,6 +5,8 @@
     File descriptors handling internals.
 */
 
+#include "__arosc_privdata.h"
+
 #include <string.h>
 #include <fcntl.h>
 #include <stdlib.h>

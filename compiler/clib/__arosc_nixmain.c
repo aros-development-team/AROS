@@ -10,6 +10,8 @@
     Lang: english
 */
 
+#include "__arosc_privdata.h"
+
 #include <proto/exec.h>
 #include <proto/dos.h>
 #include <exec/lists.h>

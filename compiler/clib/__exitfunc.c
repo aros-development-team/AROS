@@ -3,6 +3,8 @@
     $Id$
 */
 
+#include "__arosc_privdata.h"
+
 #include <aros/symbolsets.h>
 #include <aros/startup.h>
 #include <exec/lists.h>

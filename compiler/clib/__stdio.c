@@ -6,6 +6,7 @@
     Lang: English
 */
 
+#include "__arosc_privdata.h"
 
 #include <stdio.h>
 #include <stdlib.h>

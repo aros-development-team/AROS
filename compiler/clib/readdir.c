@@ -5,6 +5,8 @@
     POSIX function readdir().
 */
 
+#include "__arosc_privdata.h"
+
 #include <dos/dos.h>
 #include <proto/dos.h>
 

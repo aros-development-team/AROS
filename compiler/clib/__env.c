@@ -5,6 +5,8 @@
     Internal functions for environment variables handling.
 */
 
+#include "__arosc_privdata.h"
+
 #include <stdlib.h>
 #include <strings.h>
 #include <proto/exec.h>

@@ -5,6 +5,8 @@
     ANSI C function close().
 */
 
+#include "__arosc_privdata.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <proto/exec.h>
