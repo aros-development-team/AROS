@@ -74,6 +74,8 @@
 
     if(ret != NULL)
     {
+        LONG doappend = 0;
+
 	/* Get pointer to I/O request. Use stackspace for now. */
 	struct IOFileSys iofs;
 
@@ -101,6 +103,12 @@
 	    break;
 
 	default:
+	    /* See if the user requested append mode */
+	    doappend   = accessMode & FMF_APPEND;
+
+	    /* The append mode is all taken care by dos.library */
+	    accessMode &= ~FMF_APPEND;
+
 	    iofs.io_Union.io_OPEN_FILE.io_FileMode = accessMode;
 	    ast = con = me->pr_CIS;
 	    break;
@@ -159,6 +167,15 @@
 	{
 	    ret->fh_Device = iofs.IOFS.io_Device;
 	    ret->fh_Unit   = iofs.IOFS.io_Unit;
+	    if (doappend)
+	    {
+		 /* See if the handler supports FSA_SEEK */
+		 if (Seek(MKBADDR(ret), 0, OFFSET_END) != -1)
+		 {
+		     /* if so then set the proper flag in the FileHandle struct */
+		     ret->fh_Flags |= FHF_APPEND;
+		 }
+	    }
 	    return MKBADDR(ret);
 	}
 

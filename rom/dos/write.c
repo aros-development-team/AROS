@@ -69,9 +69,15 @@
     ASSERT_VALID_PTR(fh->fh_Unit);
     ASSERT_VALID_PTR(buffer);
 
+    /*Handle append mode */
+    if (fh->fh_Flags & FHF_APPEND)
+    {
+	Seek(MKBADDR(fh), 0, OFFSET_END);
+    }
+
     /* Prepare I/O request. */
     InitIOFS(&iofs, FSA_WRITE, DOSBase);
-    
+
     iofs.IOFS.io_Device = fh->fh_Device;
     iofs.IOFS.io_Unit   = fh->fh_Unit;
 
