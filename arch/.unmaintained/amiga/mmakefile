@@ -2,15 +2,17 @@
 
 #Not working yet: demos (chip keyword problems etc)
 
-#MM AROS-amiga : setup includes compiler arosboot kernel apps workbench
+#MM AROS-amiga : setup includes compiler arosboot kernel workbench demos games
 AROS-amiga :
 	@$(NOP)
 
-#MM kernel-amiga : hidd-graphics kernel-hidd kernel-exec kernel-aros kernel-utility kernel-alerthook-module
+# (bernie) hidd-graphics metatarget removed from below line because of missing lib.conf file
+#MM kernel-amiga : kernel-hidd kernel-exec kernel-aros kernel-utility kernel-alerthook-module
 kernel-amiga :
 	@$(NOP)
 
-#MM workbench-amiga : workbench-c workbench-libs workbench-classes workbench-s workbench-locale
+# (bernie) replaced workbench-c workbench-libs workbench-classes workbench-s workbench-locale
+#MM workbench-amiga : workbench-complete
 workbench-amiga :
 	@$(NOP)
 
@@ -23,11 +25,11 @@ workbench-libs-amiga :
 workbench-classes-amiga :
 	@$(NOP)
 
-#MM apps-amiga : 
+#MM apps-amiga :
 apps-amiga :
 	@$(NOP)
 
-#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga 
+#MM setup-amiga : setup-clib-amiga setup-exec-amiga setup-utility-amiga
 #MM setup-amiga : setup-layers-amiga setup-hidd-graphics-amiga
 setup-amiga :
 	@$(NOP)
