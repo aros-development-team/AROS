@@ -21,7 +21,7 @@ FILES = intuition_functable \
 	imageclass frameiclass sysiclass \
 	icclass \
 	gadgetclass buttongclass frbuttonclass propgclass \
-	notify requesters
+	notify requesters strgadgets
 
 END_FILE = intuition_endtag
 
