@@ -1,5 +1,5 @@
 /*
-    (C) 1995-2000 AROS - The Amiga Research OS
+    (C) 1995-2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Create an assign.
@@ -31,11 +31,11 @@
 	the assign and will be freed by the system if the assign is removed.
 
     INPUTS
-	name - NUL terminated name of the assign.
-	lock - Lock to assigned directory.
+	name -- NUL terminated name of the assign.
+	lock -- Lock to assigned directory.
 
     RESULT
-	!=0 success, 0 on failure. IoErr() gives additional information
+	!= 0 success, 0 on failure. IoErr() gives additional information
 	in that case. The lock is not freed on failure.
 
     NOTES
@@ -49,8 +49,6 @@
     INTERNALS
 
     HISTORY
-	29-10-95    digulla automatically created from
-			    dos_lib.fd and clib/dos_protos.h
 
 *****************************************************************************/
 {
@@ -66,7 +64,7 @@
     {
 	newdl = MakeDosEntry(name, DLT_DIRECTORY);
 
-	if(newdl == NULL)
+	if (newdl == NULL)
 	{
 	    return DOSFALSE;
 	}
@@ -79,12 +77,11 @@
     dl = LockDosList(LDF_ALL | LDF_WRITE);
     dl = FindDosEntry(dl, name, LDF_ALL);
 
-    if(dl == NULL)
+    if (dl == NULL)
     {
-	if(newdl != NULL)
-	    AddDosEntry(newdl);
+	AddDosEntry(newdl);
     }
-    else if(dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
+    else if (dl->dol_Type == DLT_DEVICE || dl->dol_Type == DLT_VOLUME)
     {
 	dl = NULL;
 	FreeDosEntry(newdl);
@@ -95,20 +92,21 @@
     {
 	RemDosEntry(dl);
 
-	if(newdl != NULL)
-	    AddDosEntry(newdl);
+	AddDosEntry(newdl);
     }
     
-    if(dl != NULL)
+    if (dl != NULL)
     {
-	if(dl->dol_Lock)
+	if (dl->dol_Lock)
+	{
 	    UnLock(dl->dol_Lock);
+	}
 
-	if(dl->dol_misc.dol_assign.dol_List != NULL)
+	if (dl->dol_misc.dol_assign.dol_List != NULL)
 	{
 	    struct AssignList *al, *oal;
 
-	    for(al = dl->dol_misc.dol_assign.dol_List; al; )
+	    for (al = dl->dol_misc.dol_assign.dol_List; al; )
 	    {
 		UnLock(al->al_Lock);
 		oal = al;
@@ -120,10 +118,10 @@
 	FreeVec(dl->dol_misc.dol_assign.dol_AssignName);
 	FreeDosEntry(dl);
     }
-
+    
     UnLockDosList(LDF_ALL | LDF_WRITE);
-
+    
     return success;
-
+    
     AROS_LIBFUNC_EXIT
 } /* AssignLock */
