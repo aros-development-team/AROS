@@ -447,15 +447,6 @@ void GenerateLayers1(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
   
   i = unusedlayer();
@@ -469,15 +460,6 @@ void GenerateLayers1(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
   
   i = unusedlayer();
@@ -491,15 +473,6 @@ void GenerateLayers1(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 }
 
@@ -568,15 +541,6 @@ void GenerateLayers3(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = unusedlayer();
@@ -589,15 +553,6 @@ void GenerateLayers3(void)
                                  LAYERSMART,
                                  NULL);
 
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = unusedlayer();
@@ -609,15 +564,6 @@ void GenerateLayers3(void)
                                  190,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = unusedlayer();
@@ -630,15 +576,6 @@ void GenerateLayers3(void)
                                  LAYERSMART,
                                  NULL);
 
-  /*
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 }
 
@@ -670,15 +607,6 @@ void DemoA(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -691,15 +619,6 @@ void DemoA(void)
                                  150,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -712,15 +631,6 @@ void DemoA(void)
                                  70,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   printf("Creating layer %i.\n",++i);
@@ -733,15 +643,6 @@ void DemoA(void)
                                  200,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]); 
    
   i = 0;
@@ -831,15 +732,6 @@ void DemoB(void)
                                  LAYERSMART,
                                  NULL);
   
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   printf("Creating behind-layer %i.\n",++i);
@@ -853,15 +745,6 @@ void DemoB(void)
                                  LAYERSMART,
                                  NULL);
 
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif  
   frame(layers[i]);
 
   printf("Creating behind-layer %i.\n",++i);
@@ -874,15 +757,6 @@ void DemoB(void)
                                  90,
                                  LAYERSMART,
                                  NULL);
-  /* 
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
 
@@ -897,15 +771,6 @@ void DemoB(void)
                                  LAYERSMART,
                                  NULL);
 
-  /*
-    CHEAT!!!
-    Still have to copy the X-Window info manually. It is found
-    in longreserved[0] of the RastPort of a window (should be found
-    in a screen anyway)
-  */
-#if 0
-  layers[i]->rp->longreserved[0] = window->RPort->longreserved[0];
-#endif
   frame(layers[i]);
 
   i = 2;
@@ -1200,6 +1065,46 @@ void DemoD()
   }  
 }
 
+void DumpCliprects(void)
+{
+  int i;
+  struct ClipRect * CR;
+  int c;
+  
+  printf("Dump ClipRects of which layer? ");
+  scanf("%i",&i);
+  if (i < 0 || i > 10 || NULL == layers[i])
+  {
+    printf("No such layer!\n");
+    return;
+  }
+  
+  printf("Layer at %x is a ",layers[i]);
+  if (0 != (layers[i]->Flags & LAYERSIMPLE))
+    printf("simple layer\n");
+  else if (0 != (layers[i]->Flags & LAYERSUPER))
+    printf("superbitmap layer\n");
+  else
+    printf("smart layer\n");
+  
+  c = 1;
+  CR = layers[i]->ClipRect;
+  while (NULL != CR)
+  {
+    printf("CR #%i\n",c);
+    
+    printf("Bounds: (%i,%i)-(%i,%i)\n",CR->bounds.MinX,CR->bounds.MinY,CR->bounds.MaxX,CR->bounds.MaxY);
+    if (NULL != CR->lobs)
+      printf("This cliprect is hidden by layer %x !\n",CR->lobs);
+    else
+      printf("This cliprect is visible!\n");
+    c++;
+    CR=CR->Next;
+  }  
+
+  printf("-------------------------------------\n");  
+}
+
 void doall(void)
 {
   char buf[80];
@@ -1223,7 +1128,7 @@ void doall(void)
         printf("quit help createupfrontlayer [cul] createbehindlayer [cbl] deletelayer [dl]\n");
         printf("behindlayerupfrontlayer [ul] movelayerinfrontof [mlio]\n");
         printf("movelayer [ml] movesizelayer [msl] sizelayer [sl] scrollayer [scl]\n");
-        printf("motion [mot] \n");
+        printf("motion [mot] DumpCliprects [dc] \n");
         printf("Frame [F]  DemoA DemoB DemoC DemoD\n");
     } 
     else if (!strcmp(buf, "createupfrontlayer") || !strcmp(buf, "cul")) 
@@ -1297,6 +1202,10 @@ void doall(void)
     else if (!strcmp(buf, "gl2")) 
     {
       GenerateLayers2();
+    } 
+    else if (!strcmp(buf, "dc")) 
+    {
+      DumpCliprects();
     } 
     else
       printf("Unknown command. Try 'help'.\n");
