@@ -2,11 +2,10 @@
 #define EXEC_RESIDENT_H
 
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2004, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Resident modules
-    Lang: english
+    Resident modules.
 */
 
 #ifndef EXEC_TYPES_H
@@ -22,19 +21,19 @@ struct Resident
     UBYTE             rt_Version;
     UBYTE             rt_Type;
     BYTE              rt_Pri;
-    char            * rt_Name;
-    char            * rt_IdString;
+    CONST_STRPTR      rt_Name;
+    CONST_STRPTR      rt_IdString;
     APTR              rt_Init;
 };
 
-#define RTC_MATCHWORD 0x4AFC
+#define RTC_MATCHWORD  (0x4AFC)
 
 #define RTF_COLDSTART  (1<<0)
 #define RTF_SINGLETASK (1<<1)
 #define RTF_AFTERDOS   (1<<2)
 #define RTF_AUTOINIT   (1<<7)
 
-#define RTW_NEVER     0
-#define RTW_COLDSTART 1
+#define RTW_NEVER      (0)
+#define RTW_COLDSTART  (1)
 
 #endif /* EXEC_RESIDENT_H */
