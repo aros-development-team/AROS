@@ -16,6 +16,12 @@
 #ifndef EXEC_SEMAPHORES_H
 #   include <exec/semaphores.h>
 #endif
+#ifndef EXEC_PORTS_H
+#   include <exec/ports.h>
+#endif
+#ifndef EXEC_IO_H
+#   include <exec/io.h>
+#endif
 #ifndef EXEC_TYPES_H
 #   include <exec/types.h>
 #endif
@@ -45,7 +51,11 @@ struct IntIntuitionBase
 
     struct Screen	   * WorkBench;
     struct SignalSemaphore * IBaseLock;
-
+    
+    struct IOStdReq	   * InputIO;
+    struct MsgPort	   * InputMP;
+    BOOL		     InputDeviceOpen;
+    
     APTR		     DriverData; /* Pointer which the driver may use */
 
 /*

@@ -23,6 +23,7 @@
 #include <dos/dostags.h>
 #include <proto/dos.h>
 #include <proto/arossupport.h>
+#include <devices/input.h>
 #ifndef INTUITION_CLASSES_H
 #   include <intuition/classes.h>
 #endif
@@ -87,7 +88,7 @@ static const APTR inittabl[4]=
 
 void intui_ProcessEvents (void);
 
-struct Process * inputDevice;
+struct Task * inputDevice;
 
 AROS_LH2(struct LIBBASETYPE *, init,
  AROS_LHA(struct LIBBASETYPE *, LIBBASE, D0),
@@ -146,35 +147,48 @@ AROS_LH1(struct LIBBASETYPE *, open,
 	{ SA_Title, (IPTR)"Workbench"   },
 	{ TAG_END, 0 }
     };
-    struct TagItem inputTask[]=
-    {
-	{ NP_UserData,	0L },
-	{ NP_Entry,	(IPTR)intui_ProcessEvents },
-	{ NP_Input,	0L },
-	{ NP_Output,	0L },
-	{ NP_Name,	(IPTR)"input.device" },
-	{ NP_Priority,	50 },
-	{ TAG_END, 0 }
-    };
 
     /* Keep compiler happy */
     version=0;
-
-    /* TODO Create input.device. This is a bad hack. */
-    if (!inputDevice)
+    
+    /* Open the input device */
+    
+    if (!GetPrivIBase(LIBBASE)->InputMP)
     {
-	struct Task *idleT;
-	inputTask[0].ti_Data = (IPTR)LIBBASE;
-
-	inputDevice = CreateNewProc (inputTask);
-
-	if (!inputDevice)
-	    return NULL;
-
-	idleT = FindTask("Idle Task");
-	if( idleT )
-		Signal(idleT, SIGBREAKF_CTRL_F);
+    	if (!(GetPrivIBase(LIBBASE)->InputMP = CreateMsgPort()))
+	    return (NULL);
     }
+    
+    if (!GetPrivIBase(LIBBASE)->InputIO)
+    {
+	if (!(GetPrivIBase(LIBBASE)->InputIO = (struct IOStdReq *)
+		CreateIORequest(GetPrivIBase(LIBBASE)->InputMP, sizeof (struct IOStdReq))) )
+    	    return (NULL);
+    }
+    
+    if (!GetPrivIBase(LIBBASE)->InputDeviceOpen)
+    {
+    	if (!OpenDevice("input.device", -1, (struct IORequest *)GetPrivIBase(LIBBASE)->InputIO, NULL))
+    	    GetPrivIBase(LIBBASE)->InputDeviceOpen = TRUE;
+    	else
+    	    return (NULL);
+    	
+    }
+    
+    /* intuition_driver needs to know about the input.device task */
+    inputDevice = FindTask("input.device");
+    
+    /* Now one might think that here comes the initialization
+    ** of the intuition inputhandler, but this is instead done
+    ** by the input.device task. This has a good reason:
+    ** The inputhandler uses a message port for getting replies
+    ** from IntuitMessages sent to the application.
+    ** Since this port is used in input.device task's
+    ** context, the port's mp_SigBit must be allocated in the
+    ** same context. The OpenDevice() call above is there
+    ** merely to make sure the input.device task is up & running
+    */
+    
 
     if (!GfxBase)
     {
@@ -208,7 +222,7 @@ AROS_LH1(struct LIBBASETYPE *, open,
     /* I have one more opener. */
     LIBBASE->LibNode.lib_OpenCnt++;
     LIBBASE->LibNode.lib_Flags&=~LIBF_DELEXP;
-
+    
     /* You would return NULL if the open failed. */
     return LIBBASE;
     AROS_LIBFUNC_EXIT
@@ -246,15 +260,27 @@ AROS_LH0(BPTR, expunge,
 	return 0;
     }
 
+
     /* Free unecessary memory */
     if (GetPrivIBase(LIBBASE)->WorkBench)
 	CloseScreen (GetPrivIBase(LIBBASE)->WorkBench);
+    
 
     if (UtilityBase)
 	CloseLibrary ((struct Library *)UtilityBase);
 
     if (GfxBase)
 	CloseLibrary ((struct Library *)GfxBase);
+
+    if (GetPrivIBase(LIBBASE)->InputDeviceOpen)
+    	CloseDevice((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
+
+    if (GetPrivIBase(LIBBASE)->InputIO)
+    	DeleteIORequest((struct IORequest *)GetPrivIBase(LIBBASE)->InputIO);
+    	
+    if (GetPrivIBase(LIBBASE)->InputMP)
+    	DeleteMsgPort(GetPrivIBase(LIBBASE)->InputMP);
+
 
     /* Let the driver do the same */
     intui_expunge (LIBBASE);
