@@ -4,6 +4,15 @@ CURDIR=rom/utility
 
 include $(TOP)/config/make.cfg
 
+OBJDIR=$(OSGENDIR)/utility
+
+# Use OS's own includes over the ones from AROS
+ifeq ("$(SHARED_UTILITY)","yes")
+SPECIAL_CFLAGS := $(SHARED_CFLAGS) -I/usr/include
+else
+SPECIAL_CFLAGS := -I/usr/include
+endif
+
 # BEGIN_DESC{makefile}
 # This is the makefile for utility.library. Use it if you want to compile
 # only this part of AROS.
@@ -22,12 +31,11 @@ include $(TOP)/config/make.cfg
 # END_DESC{localmakevar}
 
 # Main function for exec.strap. Need this apart as an anchor for the link:
-INIT_FILE = utility_init
-
-FILES = utility_functable getnamespace intfindnamedobj
-
+INIT_FILE := utility_init
 # Guarantee that this will go at the end of the file:
-END_FILE = utility_endtag
+END_FILE := utility_endtag
+
+FILES := utility_functable getnamespace intfindnamedobj
 
 FUNCTIONS := \
 	applytagchanges callhookpkt findtagitem nexttagitem stricmp strnicmp\
@@ -39,67 +47,37 @@ FUNCTIONS := \
 	unpackstructuretags checkdate filtertagitems filtertagchanges	    \
 	smult32 umult32 smult64 umult64 sdivmod32 udivmod32
 
-# BEGIN_DESC{localmakevar}
-# \item{ASM_PATH} The path to the assembler sources
-#
-# \item{ASM_FILES_TRY} Create a list with all files that might be
-#	found as special CPU versions in $(ASM_PATH) with full
-#	path.
-#
-# \item{ASM_FILES_EXIST} Create a list of all files from $(ASM_FILES_TRY)
-#	which do really exist in $(ASM_PATH).
-#
-# END_DESC{localmakevar}
+# Do the magic required for function replacement.
+# Keep this value for later
+ALL_FILES := $(FILES)
+ALL_FUNCTIONS := $(FUNCTIONS)
 
-ifeq ($(FLAVOUR),native)
-ASM_PATH := $(TOP)/config/$(KERNEL)/utility
-else
-ASM_PATH := $(TOP)/config/$(KERNEL)
-endif
-ARCH_PATH := $(TOP)/config/$(ARCH)
+%prepare_replace rom/utility
+%filter_replace FUNCTIONS
+%filter_replace FILES
 
-ASM_FILES_TRY := $(foreach f,$(FUNCTIONS),$(ASM_PATH)/$(f).[cs] $(ARCH_PATH)/$(f).[cs])
-ASM_FILES_EXIST := $(wildcard $(ASM_FILES_TRY))
-ASM_FILES_EXIST := $(basename $(notdir $(ASM_FILES_EXIST)))
+DEPS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE),$(OBJDIR)/$(f).d)
 
-# Black magic: First create a negative list of the files (ie. only the
-# ones which do *not* have a special assembler version for this CPU
-# and then strip the path and extensions from all files in this list.
-# Now the list contains the basenames of all files which must be taken
-# from the local directory.
-FUNCTIONS := $(filter-out $(ASM_FILES_EXIST),$(FUNCTIONS))
-
-OBJDIR=$(OSGENDIR)/utility
+# The filename of the linklib or shared Linux lib
+%prepare_shlib utility $(SHARED_UTILITY)
 
 # ***** Native ***************
 ifeq ($(FLAVOUR),native)
 
-# The options for the linker
-LIBS = -L$(LIBDIR) -lutility -larosc
-
-# The filename of the linklib
-LIB=$(LIBDIR)/libutility.a
-
-# The names of the linklibs this depends on
-LIBLIST = utility arosc
-
-# The filenames of the linklibs this depends on
-LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
-
-# All source files to make dependencies for
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
-
-# The object filenames
-OBJS = $(foreach f,$(FILES) $(FUNCTIONS) $(ASM_FILES_EXIST),$(OBJDIR)/$(f).o)
-
-# The init and endskip object filenames
-INITFUNC = $(OBJDIR)/$(INIT_FILE).o
-ENDFUNC = $(OBJDIR)/$(END_FILE).o
-
 all: setup $(OSMODDIR)/utility.library
 
-.PHONY: asm
-asm: $(foreach f,$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES),$(f).s) all
+# The options for the linker
+LIBS := -L$(LIBDIR) -lutility -larosc
+
+# The names of the linklibs utility.library depends on
+LIBLIST := utility arosc
+
+# The filenames of the linklibs utility.library depends on
+LIBDEPS = $(foreach f,$(LIBLIST),$(LIBDIR)/lib$(f).a)
+
+OBJS := $(foreach f,$(FILES) $(FUNCTIONS) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
+INITFUNC := $(OBJDIR)/$(INIT_FILE).o
+ENDFUNC := $(OBJDIR)/$(END_FILE).o
 
 $(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
 	@echo "Building $(notdir $@) ..."
@@ -107,43 +85,22 @@ $(OSMODDIR)/utility.library: $(INITFUNC) $(ENDFUNC) $(LIBDEPS)
 	@if test ! -s utilitylib.map; then rm utilitylib.map ; else true ; fi
 	@strip $@
 
-%.s: %.c
-	@echo "Generating $@ ..."
-	@$(CC) -S $(CFLAGS) $< -c -o $@
-
-# Collect all (asm-)functions in a linklib for fast linking:
-$(LIB): $(OBJS)
-	@echo "Adding functions to $(notdir $@) ..."
-	@$(AR) $@ $?
-	@$(RANLIB) $@
-
 # ***** Not Native ***************
 else
-# Use OS's own includes over the ones from AROS
-ifeq ("$(SHARED_UTILITY)","yes")
-SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
-else
-SPECIAL_CFLAGS=-I/usr/include
-endif
-
-%prepare_shlib utility $(SHARED_UTILITY)
-
-ALL_FILES = $(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE)
-
-OBJS = $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).o)
 
 all: setup $(LIB)
 
-$(LIB) : $(OBJS)
-	%mklib_q
-	@$(RM) $(RMLIB)
+OBJS := $(foreach f,$(INIT_FILE) $(FILES) $(FUNCTIONS) $(END_FILE) $(ADDITIONAL_OBJS),$(OBJDIR)/$(f).o)
 
 # ***** END ***************
 endif
 
+$(LIB): $(OBJS)
+	%mklib_q
+	@$(RM) $(RMLIB)
+
 setup :
-	@if [ ! -d $(OSGENDIR) ]; then $(MKDIR) $(OSGENDIR) ; else true ; fi
-	@if [ ! -d $(OBJDIR) ]; then $(MKDIR) $(OBJDIR) ; else true ; fi
+	%mkdirs_q $(OSGENDIR) $(OBJDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
 clean::
@@ -152,11 +109,16 @@ clean::
 $(OBJDIR)/%.o: %.c
 	%compile_q
 
-utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) \
-	    $(TOP)/scripts/makefunctable.awk
+%asm_rule "$(FUNCTIONS) $(INIT_FILE) $(END_FILE) $(FILES)"
+
+%ctoasm_q
+
+%additional_objs_rule
+
+utility_functable.c: $(foreach f,$(FUNCTIONS),$(f).c) $(TOP)/scripts/makefunctable.awk
 	%mkfunctable_q Utility
 
-utility_endtag.c: $(TOP)/scripts/makeendtag.awk
+$(END_FILE).c: $(TOP)/scripts/makeendtag.awk
 	%mkendtag_q Utility
 
 $(OBJDIR)/utility_init.o: libdefs.h
@@ -167,4 +129,4 @@ $(OBJDIR)/%.d: %.c
 	%mkdepend_q
 
 %common
-%include_deps $(foreach f,$(ALL_FILES),$(OBJDIR)/$(f).d)
+%include_deps
