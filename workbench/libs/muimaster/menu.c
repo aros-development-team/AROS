@@ -179,8 +179,10 @@ static void RenderCheckMark(struct MenuItem *item, WORD itemtype, struct MenuHan
 static void RenderAmigaKey(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd);
 static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
 				  struct MenuHandlerData *mhd);
+#if 0
 static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD state,
 			struct MenuHandlerData *mhd);
+#endif
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd);
 static WORD CalcMaxCommKeyWidth(struct Window *win, struct MenuHandlerData *mhd);
 static void AddToSelection(struct MenuHandlerData *mhd);
@@ -1213,7 +1215,7 @@ static void RenderDisabledPattern(struct RastPort *rp, WORD x1, WORD y1, WORD x2
 }
 
 /**************************************************************************************************/
-
+#if 0
 static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WORD state,
 			struct MenuHandlerData *mhd)
 {
@@ -1226,6 +1228,7 @@ static void RenderFrame(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     RectFill(rp, x2, y1 + 1, x2, y2);
     RectFill(rp, x1 + 1, y2, x2 - 1, y2);
 }
+#endif
 /**************************************************************************************************/
 
 static void HighlightItem(struct MenuItem *item, WORD itemtype, struct MenuHandlerData *mhd)
