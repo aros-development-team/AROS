@@ -60,11 +60,6 @@
 
     if (!(_flags(obj) & MADF_CANDRAW)) return;
 
-    /* protect against recursive calls */
-/*      if (_flags(obj) & MADF_DRAWING) */
-/*  	return; */
-    _flags(obj) |= MADF_DRAWING;
-
     if (_flags(obj) & MADF_INVIRTUALGROUP)
     {
 	Object *wnd;
@@ -142,6 +137,7 @@
 	}
     }
     
+    //_flags(obj) |= flags;
     DoMethod(obj, MUIM_Draw, flags);
 
     if (get(obj, MUIA_Disabled, &disabled))
@@ -242,8 +238,6 @@
 	/* This call actually also frees the region */
 	MUI_RemoveClipRegion(muiRenderInfo(obj), clip);
     }
-
-    _flags(obj) &= ~MADF_DRAWING;
 
     AROS_LIBFUNC_EXIT
 
