@@ -294,7 +294,7 @@ static IPTR set_propgclass(Class *cl, Object *o, struct opSet *msg)
     newtop = data->top; /* !! */
 
     /* Set to 1 to signal visual changes */
-    while ((tag = NextTagItem((struct TagItem **)&tstate)) != NULL)
+    while ((tag = NextTagItem(&tstate)) != NULL)
     {
         switch (tag->ti_Tag)
         {
