@@ -360,3 +360,19 @@ MSG_FONTREQ_MEN_CONTROL_CANCEL
 C\0Abbrechen
 ; C\0Cancel
 ;
+MSG_FONTREQ_MODE_LABEL
+Modus
+; Mode
+;
+MSG_FONTREQ_MODE_TEXT
+Text
+; Text
+;
+MSG_FONTREQ_MODE_TEXTANDFIELD
+Text+Hintergrund
+; Text+Field
+;
+MSG_FONTREQ_MODE_COMPLEMENT
+Invers
+; Complement
+;

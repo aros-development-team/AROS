@@ -143,16 +143,12 @@ struct IntFontReq
     STRPTR		*ifo_ModeList;
     UBYTE		*ifo_FrontPens;
     UBYTE		*ifo_BackPens;
-    
-    /* Some GUI strings specific for the file requester */
 
-    STRPTR		ifo_Menu_Control;
-    STRPTR		ifo_Item_Control_LastFont;
-    STRPTR		ifo_Item_Control_NextFont;
-    STRPTR		ifo_Item_Control_Restore;
-    STRPTR		ifo_Item_Control_Rescan;
-    STRPTR		ifo_Item_Control_OK;
-    STRPTR		ifo_Item_Control_Cancel;
+    STRPTR		ifo_DrawModeJAM1Text;
+    STRPTR		ifo_DrawModeJAM2Text;
+    STRPTR  	    	ifo_DrawModeCOMPText;
+    STRPTR		ifo_DrawMode0Text;
+    
 };
 
 /*****************************************************************************************/
