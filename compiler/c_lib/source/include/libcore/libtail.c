@@ -20,11 +20,11 @@
 
 /* If the file with the #defines for this library is not "libdefs.h",
     then you can redefine it. */
-#ifndef LIBDEFS_FILE
-#   define LIBDEFS_FILE "libdefs.h"
+#ifndef LC_LIBDEFS_FILE
+#   define LC_LIBDEFS_FILE "libdefs.h"
 #endif
 
 /* Include the file with the #defines for this library */
-#include LIBDEFS_FILE
+#include LC_LIBDEFS_FILE
 
 const int LIBEND = 1;	       /* The end of the library */
