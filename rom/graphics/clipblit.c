@@ -115,9 +115,9 @@
 
     /* define the rectangle of the destination */
     Rect.MinX = xDest;
-    Rect.MaxX = xDest+xSize;
+    Rect.MaxX = xDest+xSize-1;
     Rect.MinY = yDest;
-    Rect.MaxY = yDest+ySize;
+    Rect.MaxY = yDest+ySize-1;
     /* define the region with this rectangle */
     /* check whether operation succeeds = enough memory available*/
     if (FALSE == OrRectRegion(R,&Rect))
@@ -128,9 +128,9 @@
 
     /* define the rectangle of the source */
     Rect.MinX = xSrc;
-    Rect.MaxX = xSrc+xSize;
+    Rect.MaxX = xSrc+xSize-1;
     Rect.MinY = ySrc;
-    Rect.MaxY = ySrc+ySize;
+    Rect.MaxY = ySrc+ySize-1;
     /* combine them to check for overlapping areas */
     AndRectRegion(R,&Rect); /* this call cannot fail! */
 
@@ -436,14 +436,17 @@ void internal_ClipBlit(struct RastPort * srcRP,
       destRect.MaxX = xDest+xSize-1;
       destRect.MaxY = yDest+ySize-1;
       
+      bltSrcX = xSrc;
+      bltSrcY = ySrc;
+      
       useminterm = minterm;
     }
 
-    destCR = destLayer -> ClipRect;
 
     /* Does the destination have layers */
     if (NULL != destLayer)
     {
+      destCR = destLayer -> ClipRect;
       /* search for the first/next BitMap that is to be filled  */
       /* destRect contains the area that we want to copy to */
       while (NULL != destCR)
