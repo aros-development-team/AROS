@@ -13,7 +13,7 @@ INCFILES	:= $(GENINCDIR)/aros/machine.h \
 setup: $(INCFILES) machine.i
 
 #MM
-includes-i386 : $(INCFILES) machine.i
+includes-linux-i386 : $(INCFILES) machine.i
 
 #MM
 clean::
