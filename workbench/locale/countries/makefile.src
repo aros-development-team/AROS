@@ -8,12 +8,13 @@ LOCALEDIR=$(BINDIR)/Locale
 COUNTRYDIR=$(LOCALEDIR)/Countries
 DEPLIBS=$(LIBDIR)/libamiga.a $(LIBDIR)/libarosc.a
 LIBS=-L$(LIBDIR) -lamiga -larosc
+MAKECOUNTRY=$(OBJDIR)/makecountry
 
 COUNTRIES=australia deutschland great_britain nederland
 
 COUNTIFF=$(foreach f, $(COUNTRIES), $(COUNTRYDIR)/$(f).country)
 
-all: setup makecountry $(COUNTIFF)
+all: setup $(MAKECOUNTRY) $(COUNTIFF)
 
 setup:
 	%mkdirs_q $(OBJDIR) $(LOCALEDIR) $(COUNTRYDIR)
@@ -22,9 +23,10 @@ clean::
 	$(RM)   $(OBJDIR) *.err
 
 $(COUNTIFF): $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
-	./makecountry $(COUNTRYDIR)/ $(foreach f, $@, $(notdir $(basename $(f))))
+	@echo Making $(notdir $@)...
+	@$(MAKECOUNTRY) $(COUNTRYDIR)/ $(foreach f, $@, $(notdir $(basename $(f))))
 
-makecountry: $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES), $(OBJDIR)/$(f).o)
+$(MAKECOUNTRY): $(OBJDIR)/makecountry.o $(foreach f, $(COUNTRIES),$(OBJDIR)/$(f).o)
 	$(CC) $(CFLAGS) $^ -o $@
 
 $(OBJDIR)/%.o: %.c
