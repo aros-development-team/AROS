@@ -248,6 +248,8 @@ static void WaitForIO (void)
 reply:
 		    D(bug("wfio: Reply: fd=%ld res=%ld\n", msg->fd, msg->result));		    
 		    Remove ((struct Node *)msg);
+		    flags = fcntl (msg->fd, F_GETFL);
+		    fcntl (msg->fd, F_SETFL, flags & ~FASYNC);
 		    ReplyMsg ((struct Message *)msg);
 		}
 	    }
@@ -296,7 +298,7 @@ AROS_UFH3(static IPTR, dispatch_unixioclass,
 	}
 	break;
 
-    case HIDDM_WaitForIO:
+    case HIDDM_UnixIO_Wait:
 	{
 	    struct uioMessage * umsg = AllocMem (sizeof (struct uioMessage), MEMF_CLEAR|MEMF_PUBLIC);
 	    struct MsgPort * port = id -> uio_ReplyPort;
