@@ -642,10 +642,10 @@ ifneq (%(libdir),)
 endif
 ifneq (%(prefix),)
     %(mmake)-prefix      := --prefix=%(prefix)
-    %(mmake)-exec-prefix := --prefix=%(prefix)
+    %(mmake)-exec-prefix := --exec-prefix=%(prefix)
 else
     %(mmake)-prefix      := --prefix=$(CONTRIBDIR)
-    %(mmake)-exec-prefix := --prefix=$(CONTRIBDIR)
+    %(mmake)-exec-prefix := --exec-prefix=$(CONTRIBDIR)
     
     ifeq ($(%(mmake)-bindir),)
         %(mmake)-bindir  := --bindir=$(CONTRIBDIR)
