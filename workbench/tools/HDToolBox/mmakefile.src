@@ -16,7 +16,7 @@ FILES = \
 EXEDIR = $(AROSDIR)/Tools
 EXE = $(EXEDIR)/HDToolBox
 
-USE_CLIB := yes
+USE_CLIB_SHARED := yes
 USE_MLIB := yes
 USE_AMIGALIB := yes
 
