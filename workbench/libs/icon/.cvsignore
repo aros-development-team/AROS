@@ -2,3 +2,4 @@ libdefs.h
 makefile
 icon_functable.c
 icon_endtag.c
+*.map
