@@ -28,7 +28,7 @@ filenames=/tmp/fn.$$
 
 # Empty list
 rm -f $filenames
-touch $filenames
+find $cdn -name contents -print > $filenames
 
 # For each file with a list of files...
 for dist in $distfiles ; do
@@ -46,7 +46,7 @@ for dist in $distfiles ; do
 done
 
 # Sort the names
-sort $filenames > $filenames.srt
+sort $filenames | uniq > $filenames.srt
 
 # Create compressed tar archive
 rm -f $archive.tgz
