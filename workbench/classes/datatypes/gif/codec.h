@@ -3,5 +3,5 @@
     $Id$
 */
 
-extern short DecompressInit(GifHandleType *gifhandle);
-extern short DecompressLine(GifHandleType *gifhandle);
+short DecompressInit(GifHandleType *gifhandle);
+short DecompressLine(GifHandleType *gifhandle);

@@ -10,11 +10,12 @@ typedef struct {
 	UBYTE					*filebufpos;
 	long					filebufbytes;
 	long					filebufsize;
-
 	UBYTE					*linebuf;
 	UBYTE					*linebufpos;
 	long					linebufbytes;
 	long					linebufsize;
+	
+	APTR					lzwdecode;
 } GifHandleType;
 
-extern BOOL LoadGIF_FillBuf(GifHandleType *gifhandle, long minbytes);
+BOOL LoadGIF_FillBuf(GifHandleType *gifhandle, long minbytes);
