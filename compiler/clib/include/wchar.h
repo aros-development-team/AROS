@@ -19,6 +19,11 @@
 
 #include <stdint.h>
 
+/* FreeBSD 5.x headers do not define wchar_t */
+#ifndef wint_t
+typedef unsigned int wint_t;
+#endif
+
 __BEGIN_DECLS
 
 /* Users are not allowed to access this type. */
