@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.8  1998/10/20 20:08:03  nlorentz
+    Fixed lots of errors due to aros_not_implemented()
+
     Revision 1.7  1998/10/20 16:45:51  hkiel
     Amiga Research OS
 
@@ -76,7 +79,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    extern void aros_print_not_implemented (char *);
 
 #warning TODO: Write intuition/AutoRequest()
     aros_print_not_implemented ("AutoRequest");

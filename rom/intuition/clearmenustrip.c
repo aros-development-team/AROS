@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.7  1998/10/20 20:08:04  nlorentz
+    Fixed lots of errors due to aros_not_implemented()
+
     Revision 1.6  1998/10/20 16:45:53  hkiel
     Amiga Research OS
 
@@ -63,7 +66,6 @@
 {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
-    extern void aros_print_not_implemented (char *);
 
 #warning TODO: Write intuition/ClearMenuStrip()
     aros_print_not_implemented ("ClearMenuStrip");
