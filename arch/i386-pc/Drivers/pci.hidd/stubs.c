@@ -19,7 +19,7 @@
 #include <utility/tagitem.h>
 
 #include <oop/oop.h>
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 
 #include "pci.h"
 
@@ -40,7 +40,7 @@ HIDDT_PCI_Device **HIDD_PCI_FindDevice(OOP_Object *obj, struct TagItem *tags)
     STATIC_MID;
     struct pHidd_PCI_FindDevice p;
     
-    if(!mid) mid = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_FindDevice);
+    if(!mid) mid = OOP_GetMethodID(IID_Hidd_PCIBus, moHidd_PCI_FindDevice);
         
     p.mID           = mid;
     p.deviceTags    = tags;
@@ -55,7 +55,7 @@ VOID HIDD_PCI_FreeQuery(OOP_Object *obj, HIDDT_PCI_Device **devices)
     STATIC_MID;
     struct pHidd_PCI_FreeQuery p;
 
-    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCI, moHidd_PCI_FreeQuery);
+    if (!mid) mid = OOP_GetMethodID(IID_Hidd_PCIBus, moHidd_PCI_FreeQuery);
 
     p.mID           = mid;
     p.devices       = devices;

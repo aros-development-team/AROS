@@ -9,7 +9,7 @@
     Lang: English.
 */
 
-#include <hidd/pci.h>
+#include <hidd/pcibus.h>
 #include <exec/lists.h>
 
 #ifndef EXEC_LIBRARIES_H
@@ -159,8 +159,8 @@
 /***** PCI system HIDD *******************/
 
 /* IDs */
-#define IID_Hidd_PCI        "hidd.bus.pci"
-#define CLID_Hidd_PCI       "hidd.bus.pci"
+#define IID_Hidd_PCIBus        "hidd.bus.pci"
+#define CLID_Hidd_PCIBus       "hidd.bus.pci"
 
 /* misc */
 
