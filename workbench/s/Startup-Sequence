@@ -1,34 +1,34 @@
-setclock LOAD
-path SYS:Demos ADD QUIET
-mount RAM:
-mount NIL:
-makedir RAM:T
-assign T: RAM:T
-makedir RAM:Clipboards
-assign CLIPS: RAM:Clipboards
-assign LOCALE: SYS:Locale
+SetClock LOAD
 
-makedir RAM:ENV
-assign ENV: RAM:ENV
-assign LIBS: SYS:Classes ADD
-assign FONTS: SYS:Fonts
+Mount RAM:
+Mount NIL:
 
-adddatatypes refresh
+Makedir RAM:T RAM:ENV RAM:Clipboards
 
-path SYS:Utilities SYS:System SYS:Prefs SYS:Tools SYS:Tools/Commodities ADD QUIET 
+Assign T: RAM:T
+Assign ENV: RAM:ENV
+Assign CLIPS: RAM:Clipboards
+Assign LOCALE: SYS:Locale
+Assign LIBS: SYS:Classes ADD
+Assign FONTS: SYS:Fonts
+Assign HELP: SYS:Help
+
+AddDatatypes REFRESH
+
+Path SYS:Utilities SYS:System SYS:Prefs SYS:Tools SYS:Tools/Commodities SYS:Demos ADD QUIET
+
+; Setup prompt for the Boot Shell (it doesn't use Shell-Startup).
+
 ;Prompt "%N.%S> "
-prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
+Prompt "*E[42m*E[31m%N.*E[44m*E[32m%s*E[42m*E[31m>*E[40m*E[31m "
 
-; Prompt is there to get a correct prompt for arosshell (it doesn't
-; use Shell-Startup).
+; To mount unit /dev/fd0 as drive FDSK: make a link from fdsk/Unit0
+; to /dev/fd0 (you'll need access rights on the device later -
+; on most systems this will work only if you are root) then uncomment
+; the last two lines below.
 ;
-; To mount unit /dev/fd0 as drive FDSK: make a link from
-; fdsk/Unit0 to /dev/fd0 (you'll need access rights on the device
-; later - on most systems this will work only if you are root)
-; then uncomment the last two lines below.
-;
-; Ordinary users can use fdsk.device both on their amiga and their
+; Ordinary users can use fdsk.device both on their Amiga and their
 ; linux box to mount disc images.
-;
-assign FDSK: SYS:DiskImages
-;mount FDSK0:
+
+Assign FDSK: SYS:DiskImages
+;Mount FDSK0:
