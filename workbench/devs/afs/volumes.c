@@ -36,10 +36,10 @@ LONG initDeviceList
 		struct BlockCache *rootblock
 	)
 {
-char *name;
+STRPTR name;
 UBYTE i;
 
-	name=(char *)((ULONG)rootblock->buffer+(BLK_DISKNAME_START(volume)*4));
+	name=(STRPTR)((ULONG)rootblock->buffer+(BLK_DISKNAME_START(volume)*4));
 	volume->devicelist.dl_Next=0;
 	volume->devicelist.dl_Type=DLT_VOLUME;
 	volume->devicelist.dl_Device=volume->device;
@@ -270,7 +270,7 @@ UWORD *cmdcheck;
 		volume->iorequest->iotd_Req.io_Command=NSCMD_DEVICEQUERY;
 		volume->iorequest->iotd_Req.io_Data=&nsdq;
 		volume->iorequest->iotd_Req.io_Length=sizeof(struct NSDeviceQueryResult);
-		if (DoIO(&volume->iorequest->iotd_Req)==IOERR_NOCMD)
+		if (DoIO((struct IORequest *)volume->iorequest)==IOERR_NOCMD)
 		{
 			D(bug("afs.handler: initVolume-NSD: device doesn't understand NSD-Query\n"));
 		}
@@ -405,7 +405,7 @@ struct Volume *volume;
 					{
 						showError(afsbase, ERR_DEVICE);
 					}
-					DeleteIORequest(&volume->iorequest->iotd_Req);
+					DeleteIORequest((struct IORequest *)volume->iorequest);
 				}
 				else
 				{
