@@ -369,9 +369,9 @@
 	{
 	    struct TagItem imtags[] =
 	    {
-		SYSIA_DrawInfo, dri,
-		SYSIA_Which, SIZEIMAGE,
-		TAG_DONE 
+		{SYSIA_DrawInfo, dri},
+		{SYSIA_Which, SIZEIMAGE},
+		{TAG_DONE,0} 
 	    };
 	
 	    if ((im = NewObjectA(NULL, SYSICLASS, imtags)))

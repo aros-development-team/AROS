@@ -6,6 +6,7 @@
     Lang: english
 */
 #include "intuition_intern.h"
+#include <intuition/preferences.h>
 
 /*****************************************************************************
 
@@ -50,13 +51,34 @@
 
 *****************************************************************************/
 {
-    AROS_LIBFUNC_INIT
-    AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
+  AROS_LIBFUNC_INIT
+  AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-#warning TODO: Write intuition/SetPrefs()
-    aros_print_not_implemented ("SetPrefs");
+  if (size > 0 && NULL != prefbuffer)
+  {
+    struct DeferedActionMessage * msg;
 
-    return NULL;
+    memcpy(GetPrivIBase(IntuitionBase)->ActivePreferences,
+           prefbuffer,
+           size <= sizeof(struct Preferences) ? size : sizeof(struct Preferences));
+  
+    /*
+    ** If inform == TRUE then notify all windows that want to know about 
+    ** an update on the preferences.
+    */
+    msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
+    
+    if (NULL != msg)
+    {
+      msg->Code = AMCODE_NEWPREFS;
+      
+      PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
+    }
+  }
 
-    AROS_LIBFUNC_EXIT
+#warning Is there any further immediate action to be taken when the prefences are update?
+
+  return (struct Preferences *) prefbuffer;
+
+  AROS_LIBFUNC_EXIT
 } /* SetPrefs */
