@@ -1225,7 +1225,7 @@ struct dm_render_data {
     OOP_Object *pf;
     struct Hook *hook;
     struct RastPort *rp;
-    HIDDT_StdPixFmt stdpf;
+    IPTR stdpf;
     OOP_Object *gc;
 };
 
@@ -1240,7 +1240,7 @@ static ULONG dm_render(APTR dmr_data
     struct dm_render_data *dmrd;
     UBYTE *addr;
     struct dm_message *msg;
-    ULONG bytesperpixel;
+    IPTR bytesperpixel;
     ULONG width, height, fb_width, fb_height;
     ULONG banksize, memsize;
     
@@ -1306,7 +1306,7 @@ static ULONG dm_render(APTR dmr_data
 	    	{ TAG_DONE, 0UL }
 	    };
 	    
-	    HIDDT_DrawMode old_drmd;
+	    IPTR old_drmd;
 
     	    tocopy_h = MIN(lines_todo, max_tocopy_h);
     	    msg->memptr = PrivGBase(GfxBase)->pixel_buf;
@@ -1422,9 +1422,10 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
 	, UWORD width, UWORD height, UBYTE srcformat, struct Library *CyberGfxBase)
 {
      
-    OOP_Object *pf;
-    HIDDT_StdPixFmt srcfmt_hidd = 0;
-    ULONG start_offset, bppix;
+    OOP_Object *pf = 0;
+    HIDDT_StdPixFmt srcfmt_hidd = 0, morphfmt_hidd = 0;
+    ULONG start_offset;
+    IPTR bppix;
     
     LONG pixwritten = 0;
     
@@ -1507,10 +1508,10 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
     	case RECTFMT_BGR16PC: srcfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
 	case RECTFMT_RGB24  : srcfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
     	case RECTFMT_BGR24  : srcfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
-	case RECTFMT_ARGB32 : srcfmt_hidd = vHidd_StdPixFmt_ARGB32  ; break;
-    	case RECTFMT_BGRA32 : srcfmt_hidd = vHidd_StdPixFmt_BGRA32  ; break;
-	case RECTFMT_RGBA32 : srcfmt_hidd = vHidd_StdPixFmt_RGBA32  ; break;
-	case RECTFMT_ABGR32 : srcfmt_hidd = vHidd_StdPixFmt_ABGR32  ; break;
+	case RECTFMT_ARGB32 : srcfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
+    	case RECTFMT_BGRA32 : srcfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
+	case RECTFMT_RGBA32 : srcfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
+	case RECTFMT_ABGR32 : srcfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
 	case RECTFMT_RAW    : srcfmt_hidd = vHidd_StdPixFmt_Native  ; break;
     }
 
@@ -1525,15 +1526,29 @@ LONG driver_WritePixelArray(APTR src, UWORD srcx, UWORD srcy
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    if (srcfmt_hidd != vHidd_StdPixFmt_Native)
-    {
-    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
-    }
-    else
+    if ((srcfmt_hidd == vHidd_StdPixFmt_Native) || (morphfmt_hidd != 0))
     {
     	OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     }
+    
+    if (srcfmt_hidd != vHidd_StdPixFmt_Native)
+    {
+    	/* RECTFMT_ARGB32 on vHidd_StdPixFmt_0RGB32 bitmap ==> use vHidd_StdPixFmt_0RGB32 */
+    	/* RECTFMT_BGRA32 on vHidd_StdPixFmt_BGR032 bitmap ==> use vHidd_StdPixFmt_BGR032 */
+    	/* RECTFMT_RGBA32 on vHidd_StdPixFmt_RGB032 bitmap ==> use vHidd_StdPixFmt_RGB032 */
+    	/* RECTFMT_ABGR32 on vHidd_StdPixFmt_0BGR32 bitmap ==> use vHidd_StdPixFmt_0BGR32 */
+	
+    	if (morphfmt_hidd != 0)
+	{
+	    IPTR stdpf;
 
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
+	    if (stdpf == morphfmt_hidd) srcfmt_hidd = morphfmt_hidd;
+	}
+	
+    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, srcfmt_hidd);
+    }
+        
     OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
     
     start_offset = ((ULONG)srcy) * srcmod + srcx * bppix;
@@ -1598,13 +1613,14 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
 	, UWORD width, UWORD height, UBYTE dstformat, struct Library *CyberGfxBase)
 {
      
-    OOP_Object *pf;    
-    HIDDT_StdPixFmt dstfmt_hidd = 0;
+    OOP_Object *pf = 0;    
+    HIDDT_StdPixFmt dstfmt_hidd = 0, morphfmt_hidd = 0;
     
-    ULONG start_offset, bppix;
+    ULONG start_offset;
+    IPTR bppix;
     
     LONG pixread = 0;
-    HIDDT_DrawMode old_drmd;
+    IPTR old_drmd;
     OOP_Object *gc;
     
     struct Rectangle rr;
@@ -1645,10 +1661,10 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
     	case RECTFMT_BGR16PC: dstfmt_hidd = vHidd_StdPixFmt_BGR16_LE; break;
 	case RECTFMT_RGB24  : dstfmt_hidd = vHidd_StdPixFmt_RGB24   ; break;
     	case RECTFMT_BGR24  : dstfmt_hidd = vHidd_StdPixFmt_BGR24   ; break;
-	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; break;
-    	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; break;
-	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; break;
-	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; break;
+	case RECTFMT_ARGB32 : dstfmt_hidd = vHidd_StdPixFmt_ARGB32  ; morphfmt_hidd = vHidd_StdPixFmt_0RGB32; break;
+    	case RECTFMT_BGRA32 : dstfmt_hidd = vHidd_StdPixFmt_BGRA32  ; morphfmt_hidd = vHidd_StdPixFmt_BGR032; break;
+	case RECTFMT_RGBA32 : dstfmt_hidd = vHidd_StdPixFmt_RGBA32  ; morphfmt_hidd = vHidd_StdPixFmt_RGB032; break;
+	case RECTFMT_ABGR32 : dstfmt_hidd = vHidd_StdPixFmt_ABGR32  ; morphfmt_hidd = vHidd_StdPixFmt_0BGR32; break;
 	case RECTFMT_RAW    : dstfmt_hidd = vHidd_StdPixFmt_Native  ; break;
     }
 
@@ -1661,15 +1677,31 @@ LONG driver_ReadPixelArray(APTR dst, UWORD destx, UWORD desty
    Compromise: convert from *CyberGfx* pixfmt to bppix using a table lookup.
    This is faster
 */
-    if (dstfmt_hidd != vHidd_StdPixFmt_Native)
-    {
-    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
-    }
-    else
+    if ((dstfmt_hidd == vHidd_StdPixFmt_Native) || (morphfmt_hidd != 0))
     {
     	OOP_GetAttr(HIDD_BM_OBJ(rp->BitMap), aHidd_BitMap_PixFmt, (IPTR *)&pf);
     }
-       
+    
+    if (dstfmt_hidd != vHidd_StdPixFmt_Native)
+    {
+    	/* RECTFMT_ARGB32 on vHidd_StdPixFmt_0RGB32 bitmap ==> use vHidd_StdPixFmt_0RGB32 */
+    	/* RECTFMT_BGRA32 on vHidd_StdPixFmt_BGR032 bitmap ==> use vHidd_StdPixFmt_BGR032 */
+    	/* RECTFMT_RGBA32 on vHidd_StdPixFmt_RGB032 bitmap ==> use vHidd_StdPixFmt_RGB032 */
+    	/* RECTFMT_ABGR32 on vHidd_StdPixFmt_0BGR32 bitmap ==> use vHidd_StdPixFmt_0BGR32 */
+	
+	if (morphfmt_hidd != 0)
+	{
+	    IPTR stdpf;
+
+	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);	    
+	    if (stdpf == morphfmt_hidd) dstfmt_hidd = morphfmt_hidd;
+    	}
+	
+    	pf = HIDD_Gfx_GetPixFmt(SDD(GfxBase)->gfxhidd, dstfmt_hidd);
+    }
+    
+    OOP_GetAttr(pf, aHidd_PixFmt_BytesPerPixel, &bppix);
+    
     start_offset = ((ULONG)desty) * dstmod + destx * bppix;
         
     rpard.array	 = ((UBYTE *)dst) + start_offset;
@@ -1857,7 +1889,7 @@ ULONG driver_GetCyberMapAttr(struct BitMap *bitMap, ULONG attribute, struct Libr
 	    break;
 	
    	case CYBRMATTR_PIXFMT: {
-	    HIDDT_StdPixFmt stdpf;
+	    IPTR stdpf;
 	    UWORD cpf;
 	    OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, (IPTR *)&stdpf);
 	    
@@ -1930,7 +1962,8 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     struct TagItem *tag, *tstate;
     ULONG dpmslevel = 0;
     
-    struct TagItem htags[] = {
+    struct TagItem htags[] =
+    {
 	{ aHidd_Gfx_DPMSLevel,	0UL	},
 	{ TAG_DONE, 0UL }    
     };
@@ -1939,8 +1972,10 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     
     HIDDT_DPMSLevel hdpms = 0;
     
-    for (tstate = tags; (tag = NextTagItem(&tstate)); ) {
-    	switch (tag->ti_Tag) {
+    for (tstate = tags; (tag = NextTagItem((const struct TagItem **)&tstate)); )
+    {
+    	switch (tag->ti_Tag)
+	{
 	    case SETVC_DPMSLevel:
 	    	dpmslevel = tag->ti_Data;
 		dpms_found = TRUE;
@@ -1956,10 +1991,12 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
     } /* for (each tagitem) */
     
    
-    if (dpms_found) {  
+    if (dpms_found)
+    {  
     
 	/* Convert to hidd dpms level */
-	switch (dpmslevel) {
+	switch (dpmslevel)
+	{
 	    case DPMS_ON:
 	    	hdpms = vHidd_Gfx_DPMSLevel_On;
 	    	break;
@@ -1986,9 +2023,12 @@ VOID driver_CVideoCtrlTagList(struct ViewPort *vp, struct TagItem *tags, struct 
 	}
     }
     
-    if (dpms_found) {
+    if (dpms_found)
+    {
 	htags[0].ti_Data = hdpms;
-    } else {
+    }
+    else
+    {
     	htags[0].ti_Tag = TAG_IGNORE;
     }
     
@@ -2006,7 +2046,7 @@ ULONG driver_ExtractColor(struct RastPort *rp, struct BitMap *bm
     LONG pixread = 0;
     struct extcol_render_data ecrd;
     OOP_Object *pf;
-    HIDDT_ColorModel colmod;
+    IPTR colmod;
     
     if (!IS_HIDD_BM(rp->BitMap))
     {
@@ -2125,10 +2165,11 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     UBYTE *baseaddress;
     ULONG width, height, banksize, memsize;
     OOP_Object *pf;
-    HIDDT_StdPixFmt stdpf;
+    IPTR stdpf;
     UWORD cpf;
     
-    if (!IS_HIDD_BM(bm)) {
+    if (!IS_HIDD_BM(bm))
+    {
     	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-HIDD BM !!!\n"));
 	return NULL;
     }
@@ -2137,7 +2178,8 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     
     OOP_GetAttr(pf, aHidd_PixFmt_StdPixFmt, &stdpf);
     cpf = hidd2cyber_pixfmt(stdpf, GfxBase);
-    if (((UWORD)-1) == cpf) {
+    if (((UWORD)-1) == cpf)
+    {
     	D(bug("!!! TRYING TO CALL LockBitMapTagList() ON NON-CYBER PIXFMT BITMAP !!!\n"));
 	return NULL;
     }
@@ -2147,14 +2189,16 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
     	return NULL;
     
     
-    while ((tag = NextTagItem(&tags))) {
-    	switch (tag->ti_Tag) {
+    while ((tag = NextTagItem((const struct TagItem **)&tags)))
+    {
+    	switch (tag->ti_Tag)
+	{
 	    case LBMI_BASEADDRESS:
-	    	*((ULONG **)tag->ti_Data) = (ULONG *)baseaddress;
+	    	*((IPTR **)tag->ti_Data) = (IPTR *)baseaddress;
 	    	break;
 		
 	    case LBMI_BYTESPERROW:
-	    	*((ULONG *)tag->ti_Data) = 
+	    	*((IPTR *)tag->ti_Data) = 
 			(ULONG)HIDD_BM_BytesPerLine(HIDD_BM_OBJ(bm), stdpf, width);
 	    	break;
 	    
@@ -2163,7 +2207,7 @@ APTR driver_LockBitMapTagList(struct BitMap *bm, struct TagItem *tags, struct Li
 	    	break;
 	    
 	    case LBMI_PIXFMT: 
-		*((ULONG *)tag->ti_Data) = (ULONG)cpf;
+		*((IPTR *)tag->ti_Data) = (IPTR)cpf;
 	    	break;
 		
 	    case LBMI_DEPTH:
@@ -2197,20 +2241,24 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
     struct TagItem *tag;
     BOOL reallyunlock = TRUE;
     
-    while ((tag = NextTagItem(&tags))) {
-    	switch (tag->ti_Tag) {
+    while ((tag = NextTagItem((const struct TagItem **)&tags)))
+    {
+    	switch (tag->ti_Tag)
+	{
 	    case UBMI_REALLYUNLOCK:
 	    	reallyunlock = (BOOL)tag->ti_Data;
 		break;
 		
-	    case UBMI_UPDATERECTS: {
+	    case UBMI_UPDATERECTS:
+	    {
 	    	struct RectList *rl;
 		
 		rl = (struct RectList *)tag->ti_Data;
 		
 #warning Dunno what to do with this
 		
-	    	break; }
+	    	break;
+	    }
 	
 	    default:
 	    	D(bug("!!! UNKNOWN TAG PASSED TO UnLockBitMapTagList() !!!\n"));
@@ -2218,7 +2266,8 @@ VOID driver_UnLockBitMapTagList(APTR handle, struct TagItem *tags, struct Librar
 	}
     }
     
-    if (reallyunlock) {
+    if (reallyunlock)
+    {
 	HIDD_BM_ReleaseDirectAccess((OOP_Object *)handle);
     }
 }
