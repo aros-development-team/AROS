@@ -43,5 +43,6 @@
 
 *****************************************************************************/
 {
-	CreatePool(MemFlags, PuddleSize, ThreshSize);	
+    return CreatePool(MemFlags, PuddleSize, ThreshSize);	
+    
 } /* AsmCreatePool */

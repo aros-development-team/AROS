@@ -42,5 +42,6 @@
 
 *****************************************************************************/
 {
-	AllocPooled(poolHeader,memSize);	
+    return AllocPooled(poolHeader,memSize);	
+    
 } /* AsmAllocPooled */
