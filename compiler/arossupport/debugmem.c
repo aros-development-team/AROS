@@ -16,7 +16,7 @@
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 	void debugmem (
 

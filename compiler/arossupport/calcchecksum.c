@@ -1,28 +1,16 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1997/03/27 01:10:57  ldp
-    libaros.a -> libarossupport.a
 
-    Revision 1.3  1997/01/27 00:17:40  ldp
-    Include proto instead of clib
-
-    Revision 1.2  1996/12/10 13:59:44  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.1  1996/08/01 18:46:46  digulla
-    Calculate simple checksum for a block of memory
-
-    Desc:
-    Lang:
+    Desc: Calculate a checksum for a given area of memory
+    Lang: english
 */
 #include <aros/system.h>
 
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 	ULONG CalcChecksum (
 

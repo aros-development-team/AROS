@@ -1,38 +1,17 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1997/03/27 01:10:59  ldp
-    libaros.a -> libarossupport.a
 
-    Revision 1.5  1997/03/07 21:55:16  ldp
-    Fix makedepend warnings
-
-    Revision 1.4  1997/01/27 00:17:41  ldp
-    Include proto instead of clib
-
-    Revision 1.3  1996/12/10 13:59:45  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.2  1996/10/02 16:36:06  digulla
-    Fixed a couple of typos in TEST
-
-    Revision 1.1  1996/10/02 16:32:58  digulla
-    Remove a node from a single linked list
-
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
-
-    Desc:
-    Lang:
+    Desc: Remove a node from a single linked list
+    Lang: english
 */
 #include <aros/system.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 /*****************************************************************************
 
     NAME */
-	#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 	APTR RemoveSList (
 

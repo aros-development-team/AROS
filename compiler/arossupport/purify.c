@@ -1,28 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1997/03/27 01:10:58  ldp
-    libaros.a -> libarossupport.a
 
-    Revision 1.5  1997/03/07 21:55:16  ldp
-    Fix makedepend warnings
-
-    Revision 1.4  1997/01/28 13:41:55  digulla
-    Use string.h instead of memory.h
-
-    Revision 1.3  1997/01/27 00:17:41  ldp
-    Include proto instead of clib
-
-    Revision 1.2  1996/12/10 13:59:45  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.1  1996/08/23 17:26:45  digulla
-    Files with functions for RT and Purify
-
-
-    Desc:
-    Lang:
+    Desc: Support files for purify (incomplete)
+    Lang: english
 */
 /* Local prototypes */
 #define AROS_ALMOST_COMPATIBLE
@@ -30,7 +11,7 @@
 #include <exec/execbase.h>
 #include <string.h>
 #include <stdlib.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #include <proto/exec.h>
 #include <aros/purify.h>
 #include <aros/rt.h>

@@ -6,20 +6,20 @@
     Lang: english
 */
 #include <aros/config.h>
-#include <aros/arosbase.h>
+#include <aros/arossupportbase.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <aros/system.h>
 #include <proto/exec.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 #undef kprintf
 #include <unistd.h>
 #include "exec_private.h"
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 #if (AROS_FLAVOUR == AROS_FLAVOUR_NATIVE)
-#define SysBase		*(void **)4
+#define SysBase 	*(void **)4
 #endif
 
 /* Can't use ctypt.h *sigh* */
@@ -29,7 +29,7 @@
 /*****************************************************************************
 
     NAME */
-	#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 	int kprintf (
 

@@ -1,37 +1,9 @@
 /*
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
-    $Log$
-    Revision 1.1  1997/03/27 01:10:58  ldp
-    libaros.a -> libarossupport.a
 
-    Revision 1.6  1997/01/27 00:17:41  ldp
-    Include proto instead of clib
-
-    Revision 1.5  1996/12/10 13:59:44  aros
-    Moved #include into first column to allow makedepend to see it.
-
-    Revision 1.4  1996/09/21 15:47:33  digulla
-    Use Amiga types
-
-    Revision 1.3  1996/09/11 16:50:52  digulla
-    Moved PurgeChunk() to here to avoid problems during link
-
-    Revision 1.2  1996/08/16 14:03:26  digulla
-    NastyFreeMem() should itself call FreeMem, no matter what :)
-
-    Revision 1.1  1996/08/15 14:39:42  digulla
-    Delete contents of memory before freeing it
-
-    Revision 1.1  1996/08/15 13:24:20  digulla
-    New function: kprintf() allows to print a text which is always shown to the
-    user no matter what.
-
-    Revision 1.1  1996/08/01 18:46:31  digulla
-    Simple string compare function
-
-    Desc:
-    Lang:
+    Desc: Erase contents of memory before freeing it.
+    Lang: english
 */
 #include <aros/system.h>
 #include <exec/execbase.h>
@@ -44,7 +16,7 @@ extern void PurgeChunk (ULONG *, ULONG);
 /*****************************************************************************
 
     NAME */
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 	void NastyFreeMem (
 

@@ -5,7 +5,7 @@
     This include file can be included several times !
 */
 #ifndef CLIB_AROS_PROTOS_H
-#   include <clib/aros_protos.h>
+#   include <proto/arossupport.h>
 #endif
 
 #ifndef DEBUG

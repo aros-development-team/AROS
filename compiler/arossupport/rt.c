@@ -20,7 +20,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <proto/exec.h>
-#include <proto/aros.h>
+#include <proto/arossupport.h>
 
 extern struct ExecBase * SysBase;
 
