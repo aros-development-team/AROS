@@ -8,10 +8,12 @@ SPECIAL_CFLAGS =$(SHARED_CFLAGS) -I/usr/include -I$(TOP)/exec
 CLIBDIR = $(GENDIR)/compiler/clib
 CFLAGS2 = $(SHARED_CFLAGS) $(CFLAGS)
 
+SUBDIRS = exec
+
 MACHINE_H = $(INCDIR)/aros/machine.h
 
+
 FILES = \
-	execstubs \
 	sdivmod32 \
 	smult32 \
 	smult64 \
@@ -28,11 +30,13 @@ DEPS = $(patsubst %.c,$(OSGENDIR)/%.d,$(CFILES))
 
 TESTS =
 
-all: $(MACHINE_H) machine.i \
-	$(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
-	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
+all: machine.i subdirs
+	
+#       $(foreach f,$(FILES),$(OSGENDIR)/$(f).o) \
+#	$(foreach f,$(CLIBFILES),$(CLIBDIR)/$(f).o)
 
-setup :
+setup : $(MACHINE_H)
+	%subdirs_q "Setting up" setup
 	%mkdirs_q $(OSGENDIR) $(CLIBDIR)
 	@echo "CFLAGS=$(CFLAGS)"
 
@@ -40,12 +44,17 @@ $(MACHINE_H): machine.h
 	cp $< $@
 
 clean::
+	%subdirs_q "Cleaning" clean
 	$(RM) $(MACHINE_H) machine.i geninc $(TESTS)
 
-machine.i: geninc.c
+machine.i: geninc.c $(MACHINE_H)
+	@echo "CFLAGS=$(CFLAGS)"
 	@echo "Creating geninc..."
 	@$(CC) $(CFLAGS) -o geninc $<
 	./geninc > machine.i
+
+subdirs:
+	%subdirs_q target=all
 
 check : test
 
