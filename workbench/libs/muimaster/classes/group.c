@@ -1,4 +1,4 @@
-/* 
+/*
     Copyright © 1999, David Le Corfec.
     Copyright © 2002, The AROS Development Team.
     All rights reserved.
@@ -105,7 +105,7 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
 	    break;
         case MUIV_Group_ActivePage_Next:
         case MUIV_Group_ActivePage_Advance:
-	    newpage = (data->active_page + 1) % data->num_childs;	    
+	    newpage = (data->active_page + 1) % data->num_childs;
 	    break;
 	default:
 	    newpage = page;
@@ -125,6 +125,26 @@ static void change_active_page (struct IClass *cl, Object *obj, LONG page)
     }
 }
 
+/**************************************************************************
+ Returns the number of visible children. Visible children are all children
+ with have MADF_SHOWME and not MADF_BORDERGADGET set.
+**************************************************************************/
+static int Group_GetNumVisibleChildren(struct MUI_GroupData *data, struct MinList *children)
+{
+    int num_visible_children = data->num_childs;
+    Object *cstate;
+    Object *child;
+
+    /* As there can be unvisible children we have subtract those from the total
+     * number of children */
+    cstate = (Object *)children->mlh_Head;
+    while ((child = NextObject(&cstate)))
+    {
+	if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
+		num_visible_children--;
+    }
+    return num_visible_children;
+}
 
 /**************************************************************************
  OM_NEW - Constructor
@@ -302,12 +322,12 @@ static ULONG Group_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 		data->vert_spacing = tag->ti_Data;
 		break;
 	    case MUIA_Virtgroup_Left:
-	    	virt_offx = tag->ti_Data;
-	    	break;
+		virt_offx = tag->ti_Data;
+		break;
 
 	    case MUIA_Virtgroup_Top:
-	    	virt_offy = tag->ti_Data;
-	    	break;
+		virt_offy = tag->ti_Data;
+		break;
 	}
     }
 
@@ -696,7 +716,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	    right = MIN(_mright(obj),clip_rect->MaxX);
 	    bottom = MIN(_mbottom(obj),clip_rect->MaxY);
 
-	    /* old code was 
+	    /* old code was
 	    ** ScrollRasterBF(_rp(obj), diff_virt_offx, diff_virt_offy, _mleft(obj), _mtop(obj), _mright(obj),_mbottom(obj));
 	    */
 
@@ -779,7 +799,7 @@ static ULONG Group_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 	{
 	    continue;
 	}
-	
+
 //	msg->flags |= MADF_DRAWOBJECT; /* yup, do not forget */
 
 //	child_rect.MinX = _left(child);
@@ -882,10 +902,11 @@ static void group_minmax_horiz(struct IClass *cl, Object *obj,
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminwidth = 0;
+    int num_visible_children = Group_GetNumVisibleChildren(data, children);
 
     tmp.MinHeight = 0;
     tmp.MaxHeight = MUI_MAXMAX;
-    tmp.MinWidth = tmp.MaxWidth = (data->num_childs - 1) * data->horiz_spacing;
+    tmp.MinWidth = tmp.MaxWidth = (num_visible_children - 1) * data->horiz_spacing;
 
     if (data->flags & GROUP_SAME_WIDTH) {
 	cstate = (Object *)children->mlh_Head;
@@ -920,14 +941,14 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
     Object *child;
     struct MUI_MinMax tmp;
     WORD maxminheight = 0;
+    int num_visible_children = Group_GetNumVisibleChildren(data, children);
 
     tmp.MinWidth = 0;
     tmp.MaxWidth = MUI_MAXMAX;
-    tmp.MinHeight = tmp.MaxHeight =  (data->num_childs - 1) * data->vert_spacing;
+    tmp.MinHeight = tmp.MaxHeight = (num_visible_children - 1) * data->vert_spacing;
 
-#warning FIXME: (data->num_childs - 1) is not really true as there can be MADF_SHOWME less gadgets (and MADF_BORDERGADGET)
-
-    if (data->flags & GROUP_SAME_HEIGHT) {
+    if (data->flags & GROUP_SAME_HEIGHT)
+    {
 	cstate = (Object *)children->mlh_Head;
 	while ((child = NextObject(&cstate))) {
 	    if (! (_flags(child) & MADF_SHOWME)  || (_flags(child) & MADF_BORDERGADGET))
@@ -935,8 +956,10 @@ static void group_minmax_vert(struct IClass *cl, Object *obj,
 	    maxminheight = MAX(maxminheight, _minheight(child));
 	}
     }
+
     cstate = (Object *)children->mlh_Head;
-    while ((child = NextObject(&cstate))) {
+    while ((child = NextObject(&cstate)))
+    {
 	if (! (_flags(child) & MADF_SHOWME) || (_flags(child) & MADF_BORDERGADGET))
 	    continue;
 	if (data->flags & GROUP_SAME_HEIGHT)
@@ -1197,7 +1220,10 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
     LONG width;
     LONG height;
     LONG bonus = 0;
-    LONG totalBonus = _mwidth(obj) - (data->num_childs - 1) * data->horiz_spacing;
+    LONG totalBonus;
+    int num_visible_children = Group_GetNumVisibleChildren(data, children);
+
+    totalBonus = _mwidth(obj) - (num_visible_children - 1) * data->horiz_spacing;
 
     data->horiz_weight_sum = 0;
     /*
@@ -1295,7 +1321,7 @@ static void group_layout_horiz(struct IClass *cl, Object *obj, struct MinList *c
 	{
 	    data->horiz_weight_sum -= _hweight(child);
 	    totalBonus -= bonus;
-	}	
+	}
     }
 
     if (data->flags & GROUP_VIRTUAL)
@@ -1316,7 +1342,11 @@ static void group_layout_vert(struct IClass *cl, Object *obj, struct MinList *ch
     LONG width;
     LONG height;
     LONG bonus = 0;
-    LONG totalBonus = _mheight(obj) - (data->num_childs - 1) * data->vert_spacing;
+    LONG totalBonus;
+
+    int num_visible_children = Group_GetNumVisibleChildren(data, children);
+
+    totalBonus = _mheight(obj) - (num_visible_children - 1) * data->vert_spacing;
 
     data->vert_weight_sum = 0;
     /*
@@ -1695,9 +1725,11 @@ static void group_layout_pagemode (struct IClass *cl, Object *obj, struct MinLis
     }
 }
 
-/*
- * Either use a given layout hook, or the builtin method.
- */
+
+/**************************************************************************
+ MUIM_Layout
+ Either use a given layout hook, or the builtin method.
+**************************************************************************/
 static ULONG Group_Layout(struct IClass *cl, Object *obj, struct MUIP_Layout *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1756,6 +1788,9 @@ static ULONG IsObjectVisible(Object *child, struct Library *MUIMasterBase)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Show
+**************************************************************************/
 static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1802,6 +1837,9 @@ static ULONG Group_Show(struct IClass *cl, Object *obj, struct MUIP_Show *msg)
     return TRUE;
 }
 
+/**************************************************************************
+ MUIM_Hide
+**************************************************************************/
 static ULONG Group_Hide(struct IClass *cl, Object *obj, struct MUIP_Hide *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -1943,7 +1981,7 @@ mSetUData(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
  * contains the given <udata> and sets <attr> to <val> for itself in this case.
  * Stop after the first udata found.
  */
-static ULONG 
+static ULONG
 mSetUDataOnce(struct IClass *cl, Object *obj, struct MUIP_SetUData *msg)
 {
     struct MUI_GroupData *data = INST_DATA(cl, obj);
@@ -2094,16 +2132,6 @@ STATIC IPTR Group_Notify(struct IClass *cl, Object *obj, struct MUIP_Notify *msg
     }
     return 0;
 }
-
-#ifndef _AROS
-__asm IPTR Group_Dispatcher(register __a0 struct IClass *cl, register __a2 Object *obj, register __a1 Msg msg)
-#else
-AROS_UFH3S(IPTR, Group_Dispatcher,
-	AROS_UFHA(Class  *, cl,  A0),
-	AROS_UFHA(Object *, obj, A2),
-	AROS_UFHA(Msg     , msg, A1))
-#endif
-
 #endif
 
 BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
@@ -2156,7 +2184,7 @@ BOOPSI_DISPATCHER(IPTR, Group_Dispatcher, cl, obj, msg)
  
     case MUIM_DragBegin:
     case MUIM_DragDrop: 
-    case MUIM_DragQuery: 
+    case MUIM_DragQuery:
     case MUIM_DragFinish: 
     case MUIM_DoDrag:
     case MUIM_CreateDragImage:
