@@ -5,6 +5,7 @@ MODNAME := afs
 MODTYPE := handler
 
 INIT_FILE := arosdevice
+ifneq ($(FLAVOUR),palmnative)
 FILES := main \
 	volumes \
 	filehandles1 \
@@ -17,6 +18,7 @@ FILES := main \
 	error \
 	checksums \
 	misc
+endif
 FUNCS :=
 
 USE_LIBDEFS := no
