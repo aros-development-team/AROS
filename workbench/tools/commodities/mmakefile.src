@@ -20,7 +20,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 
 #MM- workbench : workbench-tools
-#MM workbench-tools : setup-cx includes linklibs setup-commodities-catalogs
+#MM workbench-tools : setup-cx includes linklibs workbench-tools-commodities-catalogs
 
 %make_prog_setup mmake=workbench-tools
 

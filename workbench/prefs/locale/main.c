@@ -739,7 +739,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("Sys/localeprefs.catalog", 1);
+    InitLocale("System/Preferences/Locale.catalog", 1);
     InitMenus();
     OpenLibs();
     GetArguments();

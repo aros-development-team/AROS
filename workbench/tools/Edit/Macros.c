@@ -21,7 +21,7 @@
 #include "ProtoTypes.h"
 
 #define	CATCOMP_NUMBERS
-#include "Jed_Strings.h"
+#include "strings.h"
 
 extern STRPTR  InfoTmpl;
 extern UBYTE   record;

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #include <exec/memory.h>
@@ -26,7 +23,7 @@
 #include "req.h"
 
 #define CATCOMP_NUMBERS
-#include "more_strings.h"
+#include "strings.h"
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -18,7 +18,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS   /* String ID for ErrMsg() */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 static struct InputEvent   ie = {0,IECLASS_RAWKEY}; /* Keyboard translation map */
 extern struct IntuiMessage msgbuf;

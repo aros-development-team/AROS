@@ -13,7 +13,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS		/* Strings id for err. msg */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 /*** Copy selected text up to `Max' chars into buffer ***/
 LONG copy_mark_to_buf(Project p, UBYTE *Buf, LONG Max)

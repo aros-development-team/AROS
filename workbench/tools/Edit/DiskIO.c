@@ -15,7 +15,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS			/* Error msg use strings id */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 #define	MEM_CHUNK		8192		/* To save file */
 

@@ -18,7 +18,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS
-#include "Jed_Strings.h"
+#include "strings.h"
 
 extern struct IntuitionBase *IntuitionBase;
 extern ULONG  err_time;

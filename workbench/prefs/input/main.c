@@ -767,7 +767,7 @@ static void HandleAll(void)
 
 int main(void)
 {
-    InitLocale("Sys/inputprefs.catalog", 1);
+    InitLocale("System/Preferences/Input.catalog", 1);
     InitMenus();
     OpenLibs();
     OpenInputDev();

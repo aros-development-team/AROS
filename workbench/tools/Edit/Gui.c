@@ -22,7 +22,7 @@
 
 #define  CATCOMP_NUMBERS
 #define  CATCOMP_STRINGS
-#include "Jed_Strings.h"
+#include "strings.h"
 
 struct Screen    *Scr  = NULL;
 void             *Vi   = NULL;

@@ -12,7 +12,7 @@
 #include "ProtoTypes.h"
 
 #define  CATCOMP_NUMBERS		/* Strings id for err. msg */
-#include "Jed_Strings.h"
+#include "strings.h"
 
 
 /*** Convert num chars to real column number: ***/

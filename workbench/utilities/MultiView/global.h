@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 #ifndef GLOBAL_H
@@ -191,7 +188,7 @@ enum
 
 #define CATCOMP_NUMBERS
 
-#include "multiview_strings.h"
+#include "strings.h"
 
 /*********************************************************************************************/
 

@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc: 
-    Lang: english
 */
 
 /*******************************************************************************************/
@@ -17,7 +14,7 @@
 #include "asl_intern.h"
 
 #define CATCOMP_ARRAY
-#include "asl_strings.h"
+#include "strings.h"
 
 /*******************************************************************************************/
 

@@ -15,7 +15,7 @@ USE_AMIGALIB := yes
 USE_MLIB := yes
 
 #MM- workbench-utilities : workbench-utilities-more 
-#MM workbench-utilities-more : includes linklibs setup-more-catalogs
+#MM workbench-utilities-more : includes linklibs workbench-utilities-more-catalogs
 
 %make_prog_setup mmake=workbench-utilities-more
 

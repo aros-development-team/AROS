@@ -1,9 +1,8 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 
-    Desc: Font requester specific code.
-    Lang: english
+    Font requester specific code.
 */
 
 
@@ -38,7 +37,7 @@
 #endif
 
 #define CATCOMP_NUMBERS
-#include "asl_strings.h"
+#include "strings.h"
 
 #define SDEBUG 0
 #define DEBUG 0

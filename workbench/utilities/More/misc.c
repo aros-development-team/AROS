@@ -1,9 +1,6 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
-
-    Desc:
-    Lang: English
 */
 
 /*********************************************************************************************/
@@ -18,7 +15,7 @@
 #include <proto/asl.h>
 
 #define CATCOMP_NUMBERS
-#include "more_strings.h"
+#include "strings.h"
 
 #include "global.h"
 

@@ -1,5 +1,5 @@
 /*
-    Copyright © 1995-2001, The AROS Development Team. All rights reserved.
+    Copyright © 1995-2003, The AROS Development Team. All rights reserved.
     $Id$
 */
 
@@ -42,7 +42,7 @@ UBYTE version[] = "$VER: Blanker 0.9 (02.10.2002)";
 #define CATCOMP_STRINGS
 #define CATCOMP_ARRAY
 
-#include "commodities_strings.h"
+#include "strings.h"
 
 static struct NewBroker nb =
 {
@@ -219,7 +219,7 @@ static void OpenLibs(void)
 
     if((LocaleBase = (struct LocaleBase *)OpenLibrary("locale.library", 40)))
     {
-	catalogPtr = OpenCatalog(NULL, "Sys/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
+	catalogPtr = OpenCatalog(NULL, "System/Tools/Commodities.catalog", OC_BuiltInLanguage, "english", TAG_DONE);
     }
     else
 	kprintf("Warning: Can't open locale.library V40!\n");

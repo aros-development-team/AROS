@@ -1,38 +1,40 @@
 #   $Id$
 include $(TOP)/config/make.cfg
 
-FILES := filereqalloc mem filereqextra req misc rtlocale \
-	 general filereq boopsigads filereqsetup filereqmain boopsi \
-	 palettereq rtfuncs
+FILES := \
+     filereqalloc mem filereqextra req misc rtlocale \
+     general filereq boopsigads filereqsetup filereqmain boopsi \
+     palettereq rtfuncs
 
-FUNCS :=	rtallocrequesta \
-		rtchangereqattra \
-		rtclosewindowsafely \
-		rtezrequesta \
-		rtfilerequesta \
-		rtfontrequesta \
-		rtfreefilelist \
-		rtfreerequest \
-		rtfreereqbuffer \
-		rtgetlonga \
-		rtgetstringa \
-		rtgetvscreensize \
-		rtinternalenterpassword \
-		rtinternalgetpassword \
-		rtlockwindow \
-		rtlockprefs \
-		rtpaletterequesta \
-		rtreqhandlera \
-		rtscreenmoderequesta \
-		rtscreentofrontsafely \
-		rtsetreqposition \
-		rtsetwaitpointer \
-		rtspread \
-		rtunlockprefs \
-		rtunlockwindow 
+FUNCS := \
+    rtallocrequesta \
+    rtchangereqattra \
+    rtclosewindowsafely \
+    rtezrequesta \
+    rtfilerequesta \
+    rtfontrequesta \
+    rtfreefilelist \
+    rtfreerequest \
+    rtfreereqbuffer \
+    rtgetlonga \
+    rtgetstringa \
+    rtgetvscreensize \
+    rtinternalenterpassword \
+    rtinternalgetpassword \
+    rtlockwindow \
+    rtlockprefs \
+    rtpaletterequesta \
+    rtreqhandlera \
+    rtscreenmoderequesta \
+    rtscreentofrontsafely \
+    rtsetreqposition \
+    rtsetwaitpointer \
+    rtspread \
+    rtunlockprefs \
+    rtunlockwindow 
 
 #MM- workbench-libs-reqtools : setup includes linklibs
-#MM- workbench-libs-reqtools : setup-libs-reqtools-catalogs
+#MM- workbench-libs-reqtools : workbench-libs-reqtools-catalogs
 
 %build_module_macro mmake=workbench-libs-reqtools modname=reqtools \
   modtype=library funcs=$(FUNCS) files=$(FILES) uselibs="amiga rom" \

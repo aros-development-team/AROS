@@ -40,7 +40,7 @@ void LocalePrefs_Handler(STRPTR filename)
     }
     
     oldcat = (struct Catalog *)DOSBase->dl_Errors;
-    newcat = OpenCatalogA(NULL, "Sys/dos.catalog", tags);
+    newcat = OpenCatalogA(NULL, "System/Libs/dos.catalog", tags);
     DOSBase->dl_Errors = (struct ErrorString *)newcat;
     
     /* Never close old dos.catalog */
