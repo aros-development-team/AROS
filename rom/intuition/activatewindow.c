@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.12  1999/10/13 21:08:13  stegerg
+    action message goes to deferedactionport now
+
     Revision 1.11  1999/10/06 19:55:27  stegerg
     int_activatewindow may have window = NULL.
     protect window->Flags modification with Forbid(), Permit()
@@ -95,16 +98,15 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct shortIntuiMessage *msg;
+    struct DeferedActionMessage *msg;
     
-    msg = AllocMem( sizeof (struct shortIntuiMessage), MEMF_PUBLIC);
+    msg = AllocMem( sizeof (struct DeferedActionMessage), MEMF_PUBLIC);
     if (msg)
     {
-        msg->Class 	= IDCMP_WBENCHMESSAGE;
-	msg->Code  	= IMCODE_ACTIVATEWINDOW;
+	msg->Code  	= AMCODE_ACTIVATEWINDOW;
 	msg->Window	= window;
 
-        PutMsg(window->WindowPort, (struct Message *)msg);
+        PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg);
 	
     }
     

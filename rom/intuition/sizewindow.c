@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  1999/10/13 21:08:53  stegerg
+    action message goes to deferedactionport now
+
     Revision 1.9  1999/10/12 21:05:59  stegerg
     noop if dx and dy = 0
 
@@ -85,21 +88,20 @@
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
 
-    struct shortIntuiMessage * msg;
+    struct DeferedActionMessage * msg;
  
     if (dx || dy)
     {   
-	msg = AllocMem(sizeof(struct shortIntuiMessage), MEMF_CLEAR);
+	msg = AllocMem(sizeof(struct DeferedActionMessage), MEMF_CLEAR);
 
 	if (NULL != msg)
 	{
-	  msg->Class       = IDCMP_WBENCHMESSAGE;
-	  msg->Code        = IMCODE_SIZEWINDOW;
+	  msg->Code        = AMCODE_SIZEWINDOW;
 	  msg->Window      = window;
 	  msg->dx          = dx;
 	  msg->dy          = dy;
 
-	  PutMsg(window->WindowPort, (struct Message *)msg); 
+	  PutMsg(GetPrivIBase(IntuitionBase)->IntuiDeferedActionPort, (struct Message *)msg); 
 	}   
     }
 
