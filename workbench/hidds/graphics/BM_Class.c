@@ -593,8 +593,8 @@ static VOID bitmap_drawline
     UWORD   	maskLine;  /* for line pattern */
     ULONG   	fg;   /* foreground pen   */
     BOOL    	doclip;
-
-    OOP_Object *gc;
+    BOOL    	opaque;
+    OOP_Object  *gc;
 
 
 /* bug("BitMap::DrawLine()\n");
@@ -602,6 +602,7 @@ static VOID bitmap_drawline
 
     gc = msg->gc;
     doclip = GC_DOCLIP(gc);
+    opaque = (GC_COLEXP(gc) & vHidd_GC_ColExp_Opaque) ? TRUE : FALSE;
     fg = GC_FG(gc);
 
     maskLine = 1 << GC_LINEPATCNT(gc);
@@ -675,7 +676,7 @@ static VOID bitmap_drawline
                 {
                     HIDD_BM_DrawPixel(obj, gc, i, y);
                 }
-                else
+                else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
                     HIDD_BM_DrawPixel(obj, gc, i, y);
@@ -716,7 +717,7 @@ static VOID bitmap_drawline
                 {
                     HIDD_BM_DrawPixel(obj, gc, x, i);
                 }
-                else
+                else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
                     HIDD_BM_DrawPixel(obj, gc, x, i);
@@ -771,7 +772,7 @@ static VOID bitmap_drawline
                 {
                     HIDD_BM_DrawPixel(obj, gc, x, y);
                 }
-                else
+                else if (opaque)
                 {
                     GC_FG(gc) = GC_BG(gc);
                     HIDD_BM_DrawPixel(obj, gc, x, y);
