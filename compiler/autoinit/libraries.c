@@ -22,10 +22,6 @@ int __forceerrorrequester __attribute__((weak)) = 0;
 
 int __includelibrarieshandling;
 
-#ifdef SysBase
-#undef SysBase
-#endif
-
 static void __showerror(char *title, char *format, ...)
 {
     AROS_GET_SYSBASE_OK
@@ -63,10 +59,9 @@ static void __showerror(char *title, char *format, ...)
     va_end(args);
 }
 
-extern AROS_UFH1(int, set_open_libraries,
-		 AROS_UFHA(struct ExecBase *, SysBase, A6)
-		)
+int set_open_libraries(void)
 {
+    AROS_GET_SYSBASE_OK
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int n = 1;
 
@@ -107,10 +102,9 @@ extern AROS_UFH1(int, set_open_libraries,
     return 0;
 }
 
-extern AROS_UFH1(void, set_close_libraries,
-		 AROS_UFHA(struct ExecBase *, SysBase, A6)
-		)
+void set_close_libraries(void)
 {
+    AROS_GET_SYSBASE_OK
     struct libraryset **set = (struct libraryset **)SETNAME(LIBS);
     int	n = ((int *)set)[0];
 
