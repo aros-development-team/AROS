@@ -16,6 +16,10 @@ FILES = \
 	__assert \
 	__getfilenode4fd \
 	__ioerr2errno \
+	__log \
+	__log10 \
+	__kernel_standard \
+	__pow \
 	__stdio \
 	__vcformat \
 	__vcscan \
@@ -32,6 +36,7 @@ FILES = \
 	ctime \
 	ctype \
 	close \
+	copysign \
 	creat \
 	errno \
 	exit \
@@ -41,6 +46,7 @@ FILES = \
 	fflush \
 	fgetc \
 	fgets \
+	finite \
 	fopen \
 	fprintf \
 	fscanf \
@@ -50,25 +56,33 @@ FILES = \
 	free \
 	fseek \
 	fwrite \
+	gettimeofday \
 	gmtime \
+	isnan \
 	labs \
 	localtime \
+	log10 \
 	malloc \
+	matherr \
 	memchr \
 	memcmp \
 	memcpy \
 	memmove \
 	memset \
 	open \
+	pow \
 	printf \
 	puts \
 	qsort \
 	rand \
 	read \
 	realloc \
+	rint \
+	scalbn \
 	scanf \
 	snprintf \
 	sprintf \
+	sqrt \
 	sscanf \
 	strcasecmp \
 	strcat \
