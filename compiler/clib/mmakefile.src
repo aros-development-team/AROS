@@ -219,7 +219,7 @@ DEP_LIBS := arosm autoinit
 
 #MM- linklibs : linklibs-clib
 #MM linklibs-clib : includes linklibs-mlib linklibs-autoinit \
-#MM			clib-$(ARCH) clib-stubs
+#MM			clib-$(ARCH)-$(CPU) clib-stubs
 
 linklibs-clib : setup $(STATIC_LIB) $(SHARED_LIB) $(AROS_LIBS)/$(MODULE)
 
