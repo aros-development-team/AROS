@@ -4,6 +4,9 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.5  1996/09/21 14:18:59  digulla
+    Use intuition_debug.h
+
     Revision 1.4  1996/09/17 16:14:06  digulla
     OpenWindowTagList() needs Utility.library
 
@@ -33,6 +36,7 @@
 #ifndef INTUITION_INTUITIONBASE_H
 #   include <intuition/intuitionbase.h>
 #endif
+#include "intuition_debug.h"
 
 struct IntIntuitionBase
 {
