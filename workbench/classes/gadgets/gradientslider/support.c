@@ -237,24 +237,24 @@ STATIC VOID DitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2, WOR
 
 /***************************************************************************************************/
 
-STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, LONG *pen1_rgb, LONG *pen2_rgb, 
+STATIC VOID CalcRGB(struct ColorMap *cm, WORD pen1, WORD pen2, ULONG *pen1_rgb, ULONG *pen2_rgb, 
 		    LONG *delta_r, LONG *delta_g, LONG *delta_b,
 		    struct GradientSliderBase_intern *GradientSliderBase)
 {
     GetRGB32(cm, pen1, 1, (ULONG *)pen1_rgb);
     GetRGB32(cm, pen2, 1, (ULONG *)pen2_rgb);
     
-    ((ULONG)pen1_rgb[0]) >>= 24;
-    ((ULONG)pen1_rgb[1]) >>= 24;
-    ((ULONG)pen1_rgb[2]) >>= 24;
+    pen1_rgb[0] >>= 24;
+    pen1_rgb[1] >>= 24;
+    pen1_rgb[2] >>= 24;
 
-    ((ULONG)pen2_rgb[0]) >>= 24;
-    ((ULONG)pen2_rgb[1]) >>= 24;
-    ((ULONG)pen2_rgb[2]) >>= 24;
+    pen2_rgb[0] >>= 24;
+    pen2_rgb[1] >>= 24;
+    pen2_rgb[2] >>= 24;
     
-    *delta_r = pen2_rgb[0] - pen1_rgb[0];
-    *delta_g = pen2_rgb[1] - pen1_rgb[1];
-    *delta_b = pen2_rgb[2] - pen1_rgb[2];
+    *delta_r = (LONG)(pen2_rgb[0] - pen1_rgb[0]);
+    *delta_g = (LONG)(pen2_rgb[1] - pen1_rgb[1]);
+    *delta_b = (LONG)(pen2_rgb[2] - pen1_rgb[2]);
 }
 
 /***************************************************************************************************/
@@ -265,7 +265,7 @@ STATIC VOID TrueDitherV(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
     LONG y;
-    LONG pen1_rgb[3], pen2_rgb[3];
+    ULONG pen1_rgb[3], pen2_rgb[3];
     LONG delta_r, delta_g, delta_b;
 
     if (height <= 2)
@@ -302,7 +302,7 @@ STATIC VOID TrueDitherH(struct RastPort *rp, WORD x1, WORD y1, WORD x2, WORD y2,
     LONG width = x2 - x1 + 1;
     LONG height = y2 - y1 + 1;
     LONG x;
-    LONG pen1_rgb[3], pen2_rgb[3];
+    ULONG pen1_rgb[3], pen2_rgb[3];
     LONG delta_r, delta_g, delta_b;
 
     if (width <= 2)
