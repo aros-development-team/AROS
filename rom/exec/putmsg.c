@@ -56,6 +56,9 @@
 {
     AROS_LIBFUNC_INIT
 
+    ASSERT_VALID_PTR(message);
+    ASSERT_VALID_PTR(port);
+
     /*
 	Messages may be sent from interrupts. Therefore the message list
 	of the message port must be protected with Disable().

@@ -52,6 +52,8 @@
 
     struct Message *msg;
 
+    ASSERT_VALID_PTR(port);
+
     /* Protect the message list. */
     Disable();
 
@@ -60,6 +62,8 @@
 
     /* All done. */
     Enable();
+
+    ASSERT_VALID_PTR_OR_NULL(msg);
     return msg;
     AROS_LIBFUNC_EXIT
 }

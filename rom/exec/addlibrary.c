@@ -52,6 +52,8 @@
 {
     AROS_LIBFUNC_INIT
 
+    ASSERT_VALID_PTR(library);
+
     /* Just in case the user forgot them */
     library->lib_Node.ln_Type=NT_LIBRARY;
     library->lib_Flags|=LIBF_CHANGED;

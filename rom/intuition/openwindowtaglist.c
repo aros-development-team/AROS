@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.10  2000/01/07 18:07:31  bernie
+    added debug ASSERT()s
+
     Revision 1.9  1999/08/16 21:06:55  stegerg
     taglist is now handled in openwindow
 
@@ -97,11 +100,15 @@
     struct Window * window;
 
     if (newWindow)
+    {
+	ASSERT_VALID_PTR(newWindow);
 	CopyMem (newWindow, &nw, (newWindow->Flags & WFLG_NW_EXTENDED) ? sizeof (struct ExtNewWindow) :
 									 sizeof (struct NewWindow));
+    }
 
     if (tagList)
     {
+	ASSERT_VALID_PTR(tagList);
     	nw.Extension = tagList;
     	nw.Flags |= WFLG_NW_EXTENDED;
     }
