@@ -75,3 +75,9 @@
 #	@$(NOP)
 
 #MM- includes-amiga : includes-copy includes-amiga-$(CPU)
+
+# 'Re'target the serial and parallel hidds currently into the void since no hidd exists
+#MM- hidd-serial-module
+#: hidd-serial-amiga-module
+#MM- hidd-parallel-module
+#: hidd-parallel-amiga-module
