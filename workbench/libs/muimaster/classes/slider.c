@@ -53,7 +53,14 @@ enum slider_flags {
     SLIDER_QUIET = (1<<1),
 };
 
-
+#define longget(obj,attr,var) 	    \
+    do      	    	    	    \
+    {	    	    	    	    \
+    	IPTR _iptr_var = *(var);    \
+	get(obj,attr,&_iptr_var);   \
+	*var = (LONG)_iptr_var;     \
+    } while(0)
+		
 /*
 Slider.mui/MUIA_Slider_Horiz
 Slider.mui/MUIA_Slider_Level
@@ -66,7 +73,7 @@ Slider.mui/MUIA_Slider_Reverse      d
 /**************************************************************************
  OM_NEW
 **************************************************************************/
-static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
+static IPTR Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
 {
     struct MUI_SliderData *data;
     struct TagItem *tags, *tag;
@@ -111,7 +118,7 @@ static ULONG Slider_New(struct IClass *cl, Object * obj, struct opSet *msg)
     data->ehn.ehn_Object   = obj;
     data->ehn.ehn_Class    = cl;
 
-    return (ULONG)obj;
+    return (IPTR)obj;
 }
 
 /**************************************************************************
@@ -141,7 +148,7 @@ static IPTR Slider_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 /**************************************************************************
  MUIM_Setup
 **************************************************************************/
-static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
+static IPTR Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
@@ -162,8 +169,8 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 
     width = 0;
 
-    get(obj,MUIA_Numeric_Min,&min);
-    get(obj,MUIA_Numeric_Max,&max);
+    longget(obj,MUIA_Numeric_Min,&min);
+    longget(obj,MUIA_Numeric_Max,&max);
 
     if ((max - min) > MUI_MAXMAX)
     {
@@ -182,8 +189,17 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 	if (nw > width) width = nw;
     }
     data->max_text_width = width;
-    data->knob_width  = width + knob_frame->ileft + knob_frame->iright + 4;
-    data->knob_height = _font(obj)->tf_YSize + knob_frame->itop + knob_frame->ibottom + 1;
+    data->knob_width  = width +
+    	    	    	knob_frame->ileft +
+			knob_frame->iright +
+			muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
+			muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerRight;
+			
+    data->knob_height = _font(obj)->tf_YSize +
+    	    	    	knob_frame->itop +
+			knob_frame->ibottom +
+			muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop +
+			muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerBottom;
 
     DoMethod(_win(obj), MUIM_Window_AddEventHandler, (IPTR)&data->ehn);
     
@@ -195,7 +211,7 @@ static ULONG Slider_Setup(struct IClass *cl, Object *obj, struct MUIP_Setup *msg
 /**************************************************************************
  MUIM_Cleanup
 **************************************************************************/
-static ULONG Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
+static IPTR Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
@@ -211,15 +227,15 @@ static ULONG Slider_Cleanup(struct IClass *cl, Object *obj, struct MUIP_Cleanup 
 /**************************************************************************
  MUIM_AskMinMax
 **************************************************************************/
-static ULONG Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
+static IPTR Slider_AskMinMax(struct IClass *cl, Object *obj, struct MUIP_AskMinMax *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     LONG min,max;
 
     DoSuperMethodA(cl, obj, (Msg)msg);
 
-    get(obj,MUIA_Numeric_Min,&min);
-    get(obj,MUIA_Numeric_Max,&max);
+    longget(obj,MUIA_Numeric_Min,&min);
+    longget(obj,MUIA_Numeric_Max,&max);
 
     if (data->flags & SLIDER_HORIZ)
     {
@@ -277,7 +293,7 @@ static IPTR Slider_Hide(struct IClass *cl, Object *obj,struct MUIP_Hide *msg)
 /**************************************************************************
  MUIM_Draw
 **************************************************************************/
-static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
+static IPTR Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
     const struct ZuneFrameGfx *knob_frame;
@@ -332,12 +348,16 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 
     SetFont(_rp(obj),_font(obj));
     SetABPenDrMd(_rp(obj),_pens(obj)[MPEN_TEXT],_pens(obj)[MPEN_BACKGROUND],JAM1);
-    get(obj, MUIA_Numeric_Value, &val);
+    longget(obj, MUIA_Numeric_Value, &val);
     buf = (char*)DoMethod(obj,MUIM_Numeric_Stringify,val);
     width = TextLength(_rp(obj),buf,strlen(buf));
     
-    Move(_rp(obj), data->knob_left + knob_frame->ileft + 2 + (data->max_text_width - width)/2,
-	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 1);
+    Move(_rp(obj),
+    	 data->knob_left + knob_frame->ileft + 
+    	 muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerLeft +
+	 (data->max_text_width - width) / 2,	 
+	 data->knob_top + _font(obj)->tf_Baseline + knob_frame->itop + 
+	 muiGlobalInfo(obj)->mgi_Prefs->frames[MUIV_Frame_Knob].innerTop);
     Text(_rp(obj), buf, strlen(buf));
 
     data->same_knop_value = 0;
@@ -347,7 +367,7 @@ static ULONG Slider_Draw(struct IClass *cl, Object *obj, struct MUIP_Draw *msg)
 /**************************************************************************
  MUIM_HandleEvent
 **************************************************************************/
-static ULONG Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
+static IPTR Slider_HandleEvent(struct IClass *cl, Object *obj, struct MUIP_HandleEvent *msg)
 {
     struct MUI_SliderData *data = INST_DATA(cl, obj);
 
