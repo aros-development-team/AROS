@@ -22,9 +22,8 @@
 #endif
 
 typedef enum CycleMenuPosition {
-    CYCLE_MENU_POSITION_CENTERED,
-    CYCLE_MENU_POSITION_TOP,
-    CYCLE_MENU_POSITION_BOTTOM,
+    CYCLE_MENU_POSITION_BELOW,
+    CYCLE_MENU_POSITION_ONACTIVE,
 } CycleMenuPosition;
 
 typedef enum GroupTitlePosition {
