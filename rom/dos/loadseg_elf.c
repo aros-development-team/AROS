@@ -2,6 +2,10 @@
     (C) 1995-96 AROS - The Amiga Replacement OS
     $Id$
     $Log$
+    Revision 1.6  1996/08/15 13:18:21  digulla
+    First attempt to allow debugging in shared code but the strings are not
+    loaded correctly yet
+
     Revision 1.5  1996/08/13 13:52:48  digulla
     Replaced <dos/dosextens.h> by "dos_intern.h" or added "dos_intern.h"
     Replaced __AROS_LA by __AROS_LHA
@@ -19,12 +23,14 @@
 #include <clib/exec_protos.h>
 #include <dos/dosasl.h>
 #include <clib/dos_protos.h>
+#include <clib/aros_protos.h>
 #include "dos_intern.h"
 
 extern struct DosLibrary * DOSBase;
 
 #define SHT_PROGBITS	1
 #define SHT_SYMTAB	2
+#define SHT_STRTAB	3
 #define SHT_NOBITS	8
 #define SHT_REL 	9
 
@@ -110,6 +116,7 @@ int read_block(BPTR file, ULONG offset, APTR buffer, ULONG size)
 BPTR LoadSeg_ELF(BPTR file)
 {
     UBYTE *shtab=NULL;
+    UBYTE *strtab=NULL;
     struct symbol *symtab=NULL;
     struct hunk *hunks=NULL;
     struct relo *reltab=NULL;
@@ -127,28 +134,40 @@ BPTR LoadSeg_ELF(BPTR file)
 
     if(read_block(file,0,&eh,sizeof(eh)))
 	goto end;
+
     if(eh.ident[0]!=0x7f||eh.ident[1]!='E'||eh.ident[2]!='L'||eh.ident[3]!='F')
 	ERROR(ERROR_NOT_EXECUTABLE);
+
     if(eh.type!=1||eh.machine!=3)
 	ERROR(ERROR_OBJECT_WRONG_TYPE);
+
     shtab=(UBYTE *)AllocVec(eh.shentsize*eh.shnum,MEMF_ANY);
+
     if(shtab==NULL)
 	ERROR(ERROR_NO_FREE_STORE);
+
     if(read_block(file,eh.shoff,shtab,eh.shentsize*eh.shnum))
 	goto end;
+
     for(t=0;;t++)
     {
 	if(t==eh.shnum)
 	    ERROR(ERROR_OBJECT_WRONG_TYPE);
+
 	sh=(struct sheader *)(shtab+t*eh.shentsize);
+
 	if(sh->type==SHT_SYMTAB)
 	    break;
     }
+
     symtab=(struct symbol *)AllocVec(sh->size,MEMF_ANY);
+
     if(symtab==NULL)
 	ERROR(ERROR_NO_FREE_STORE);
+
     if(read_block(file,sh->offset,symtab,sh->size))
 	goto end;
+
     numsym=sh->size/sizeof(struct symbol);
     mint=maxt=symtab[0].shindex;
     for(i=1;i<numsym;i++)
@@ -168,11 +187,32 @@ BPTR LoadSeg_ELF(BPTR file)
 	if(sh->type==SHT_PROGBITS||sh->type==SHT_NOBITS)
 	    hunks[t].size=sh->size;
     }
+
+#if 0 /* doesn't work :( */
+    if (eh.shstrndx)
+    {
+	sh = (struct sheader *)(shtab + eh.shstrndx*eh.shentsize);
+
+kprintf ("StrTab-Section: name=%d type=%d flags=%d\n",
+    sh->name, sh->type,sh->flags);
+
+	strtab=AllocVec(sh->size,MEMF_ANY);
+	if(symtab==NULL)
+	    ERROR(ERROR_NO_FREE_STORE);
+	kprintf ("Reading StrTab at %d (offset=%ld, size=%ld)\n", eh.shstrndx, sh->offset, sh->size);
+	if(read_block(file,sh->offset,strtab,sh->size))
+	    goto end;
+    }
+#endif
+
     for(i=0;i<numsym;i++)
 	if(symtab[i].shindex<0)
 	{
 	    symtab[i].value=hunks[symtab[i].shindex].size;
 	    hunks[symtab[i].shindex].size+=symtab[i].size;
+
+	    if (strtab && symtab[i].name)
+		kprintf ("sym %s: %ld\n", &strtab[symtab[i].name], symtab[i].value);
 	}
     for(t=mint;t<=maxt;t++)
 	if(hunks[t].size)
@@ -188,43 +228,43 @@ BPTR LoadSeg_ELF(BPTR file)
 	sh=(struct sheader *)(shtab+t*eh.shentsize);
 	switch(sh->type)
 	{
-	    case SHT_PROGBITS:
-		if(read_block(file,sh->offset,hunks[t].memory,sh->size))
-		    goto end;
-		loaded=hunks[t].memory;
-		/* VPrintf ("Loaded PROGBITS at %08lx\n", (ULONG*)&loaded); */
-		break;
-	    case SHT_REL:
-		if(loaded==NULL)
-		    ERROR(ERROR_OBJECT_WRONG_TYPE);
-		reltab=AllocVec(sh->size,MEMF_ANY);
-		if(reltab==NULL)
-		    ERROR(ERROR_NO_FREE_STORE);
-		if(read_block(file,sh->offset,reltab,sh->size))
-		    goto end;
-		numrel=sh->size/sizeof(struct relo);
-		for(i=0;i<numrel;i++)
+	case SHT_PROGBITS:
+	    if(read_block(file,sh->offset,hunks[t].memory,sh->size))
+		goto end;
+	    loaded=hunks[t].memory;
+	    /* VPrintf ("Loaded PROGBITS at %08lx\n", (ULONG*)&loaded); */
+	    break;
+	case SHT_REL:
+	    if(loaded==NULL)
+		ERROR(ERROR_OBJECT_WRONG_TYPE);
+	    reltab=AllocVec(sh->size,MEMF_ANY);
+	    if(reltab==NULL)
+		ERROR(ERROR_NO_FREE_STORE);
+	    if(read_block(file,sh->offset,reltab,sh->size))
+		goto end;
+	    numrel=sh->size/sizeof(struct relo);
+	    for(i=0;i<numrel;i++)
+	    {
+		symbol=&symtab[reltab[i].info>>8];
+		switch(reltab[i].info&0xff)
 		{
-		    symbol=&symtab[reltab[i].info>>8];
-		    switch(reltab[i].info&0xff)
-		    {
-			case RELO_32:
-			    *(ULONG *)&loaded[reltab[i].addr]+=
-				(ULONG)hunks[symbol->shindex].memory+symbol->value;
-			    break;
-			case RELO_PC32:
-			    *(ULONG *)&loaded[reltab[i].addr]+=
-				(ULONG)hunks[symbol->shindex].memory +
-				symbol->value - (ULONG)&loaded[reltab[i].addr];
-			    break;
-			default:
-			    ERROR(ERROR_BAD_HUNK);
-		    }
+		case RELO_32:
+		    *(ULONG *)&loaded[reltab[i].addr]+=
+			(ULONG)hunks[symbol->shindex].memory+symbol->value;
+		    break;
+		case RELO_PC32:
+		    *(ULONG *)&loaded[reltab[i].addr]+=
+			(ULONG)hunks[symbol->shindex].memory +
+			symbol->value - (ULONG)&loaded[reltab[i].addr];
+		    break;
+		default:
+		    ERROR(ERROR_BAD_HUNK);
 		}
-		FreeVec(reltab);
-		reltab=NULL;
-		loaded=NULL;
-		break;
+	    }
+	    FreeVec(reltab);
+	    reltab=NULL;
+	    loaded=NULL;
+	    break;
 	}
     }
     for(t=mint;t<0;t++)
@@ -251,6 +291,8 @@ end:
 		FreeVec(hunks[t].memory-sizeof(BPTR));
 	FreeVec(hunks+mint);
     }
+    if (strtab)
+	FreeVec (strtab);
     FreeVec(symtab);
     FreeVec(shtab);
     return last;
