@@ -11,7 +11,7 @@
 #include <aros/systypes.h>
 
 #ifdef	_AROS_WINT_T_
-#define _AROS_WINT_T_	    wint_t;
+typedef _AROS_WINT_T_ wint_t;
 #undef	_AROS_WINT_T_
 #endif
 
