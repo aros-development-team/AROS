@@ -10,6 +10,12 @@
 */
 #include <sys/types.h>
 
+/*
+  Posix standars says we have to define this if we're posix compatible.
+  I don't think we really are, but we're trying to, at least :)
+*/
+#define _POSIX_VERSION
+
 /* Prototypes */
 int access (const char *path, int mode);
 int close (int fd);
@@ -18,6 +24,13 @@ int dup2(int oldfd, int newfd);
 char *getcwd(char *buf, size_t size);
 int isatty(int fd);
 int lseek(int fildes, off_t offset, int whence);
+
+/* Create a one-way communication channel (pipe).
+   If successful, two file descriptors are stored in PIPEDES;
+   bytes written on PIPEDES[1] can be read from PIPEDES[0].
+   Returns 0 if successful, -1 if not.  */
+int pipe(int pipedes[2]);
+
 ssize_t read (int fd, void * buf, size_t count);
 #define rmdir unlink
 int truncate(const char *path, off_t length);

@@ -20,8 +20,6 @@
 #include <aros/symbolsets.h>
 
 #include "__errno.h"
-
-
 #include "__open.h"
 
 #ifndef _CLIB_KERNEL_
@@ -88,6 +86,28 @@ int __getfdslot(int wanted_fd)
     return wanted_fd;
 }
 
+LONG __oflags2amode(int flags)
+{
+    LONG openmode = 0;
+
+    /* filter out invalid modes */
+    switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
+    {
+    	case O_EXCL:
+    	case O_EXCL|O_TRUNC:
+            return -1;
+    }
+
+    if (flags & O_WRITE)    openmode |= FMF_WRITE;
+    if (flags & O_READ)     openmode |= FMF_READ;
+    if (flags & O_EXEC)     openmode |= FMF_EXECUTE;
+    if (flags & O_TRUNC)    openmode |= FMF_CLEAR;
+    if (flags & O_CREAT)    openmode |= FMF_CREATE;
+    if (flags & O_NONBLOCK) openmode |= FMF_NONBLOCK;
+
+    return openmode;
+}
+
 int __open(int wanted_fd, const char *pathname, int flags, int mode)
 {
     GETUSER;
@@ -95,23 +115,13 @@ int __open(int wanted_fd, const char *pathname, int flags, int mode)
     BPTR fh = NULL, lock = NULL;
     fdesc *currdesc = NULL;
     struct FileInfoBlock *fib = NULL;
+    LONG  openmode = __oflags2amode(flags);
 
-    int  openmode;
-
-    /* filter out invalid modes */
-    switch (flags & (O_CREAT|O_TRUNC|O_EXCL))
+    if (openmode == -1)
     {
-    	case O_EXCL:
-    	case O_EXCL|O_TRUNC:
-            errno = EINVAL;
-            return -1;
+        errno = EINVAL;
+	return -1;
     }
-
-    if (flags & O_WRITE)  openmode |= FMF_WRITE;
-    if (flags & O_READ)   openmode |= FMF_READ;
-    if (flags & O_EXEC)   openmode |= FMF_EXECUTE;
-    if (flags & O_TRUNC)  openmode |= FMF_CLEAR;
-    if (flags & O_CREAT)  openmode |= FMF_CREATE;
 
     currdesc = malloc(sizeof(fdesc));
     if (!currdesc) goto err;
