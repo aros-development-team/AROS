@@ -75,3 +75,49 @@ void kbd_write_command_w(int data)
     kbd_write_command(data);
 }
 
+#define KBD_NO_DATA	(-1)
+#define KBD_BAD_DATA	(-2)
+
+int kbd_read_data(void)
+{
+    LONG	retval = KBD_NO_DATA;
+    UBYTE	status;
+    
+    status = kbd_read_status();
+    if (status & KBD_STATUS_OBF)
+    {
+        UBYTE	data = kbd_read_input();
+	
+        retval = data;
+        if (status & (KBD_STATUS_GTO | KBD_STATUS_PERR))
+            retval = KBD_BAD_DATA;
+    }
+    
+    return retval;
+}
+
+void kbd_clear_input(void)
+{
+    int maxread = 100;
+
+    do
+    {
+        if (kbd_read_data() == KBD_NO_DATA)
+            break;
+    } while (--maxread);
+}
+
+int kbd_wait_for_input(void)
+{
+    ULONG timeout = 1000;
+
+    do
+    {
+        int retval = kbd_read_data();
+        if (retval >= 0)
+            return retval;
+        mouse_usleep(1000);
+    } while(--timeout);
+    return -1;
+}
+

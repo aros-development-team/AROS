@@ -7,7 +7,7 @@ FILES	:=	kbd_init functable kbdclass kbd_common endtag
 OBJDIR	:=	$(GENDIR)/$(CURDIR)
 
 #MM Drivers-native-kbd :
-Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s
+Drivers-native-kbd : libdefs.h $(foreach f,$(FILES),$(OBJDIR)/$(f).o) kbdclass.s kbd_common.s
 	%add_objects rom/boot/kbd_driver
 	@ld -r $(foreach f,$(FILES),$(OBJDIR)/$(f).o) \
 	    -o $(OSGENDIR)/boot/kbd_driver.o
@@ -33,6 +33,9 @@ $(OBJDIR)/%.d : %.c
 kbdclass.s : kbdclass.c
 	%ctoasm_q	
 
+kbd_common.s : kbd_common.c
+        %ctoasm_q
+	
 libdefs.h : lib.conf
 	@$(ECHO) "Generating $@..."
 	@$(ARCHTOOL) -c

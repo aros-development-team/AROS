@@ -86,26 +86,6 @@ int test_mouse_ps2(OOP_Class *cl, OOP_Object *o)
 
 /*****  *************************************************************/
 
-#define WaitForInput                    \
-    ({ int i = 0,dummy;                 \
-       do                               \
-       {                                \
-        info = kbd_read_status();       \
-       } while((info & KBD_STATUS_OBF));\
-       while (i < 100000000)              \
-       {                \
-         dummy = i*i;   \
-         i++;           \
-       }})
-
-#define WaitForOutput                   \
-    ({  do                              \
-        {                               \
-            info=kbd_read_status();     \
-        } while(info & KBD_STATUS_IBF); \
-        kbd_read_input();               \
-        })
-
 #undef SysBase
 #define SysBase (hw->sysBase)
 
@@ -302,7 +282,7 @@ int mouse_ps2reset(struct mouse_data *data)
     aux_write(200);
     aux_write(KBD_OUTCMD_SET_RES);
     aux_write(3);
-    aux_write(KBD_OUTCMD_SET_SCALE11);
+    aux_write(KBD_OUTCMD_SET_SCALE21);
     kbd_write_command(KBD_CTRLCMD_MOUSE_DISABLE);
     kbd_write_cmd(AUX_INTS_OFF);
     
@@ -312,8 +292,6 @@ int mouse_ps2reset(struct mouse_data *data)
     aux_write(KBD_OUTCMD_ENABLE);
     kbd_write_cmd(AUX_INTS_ON);
     
-    data->u.ps2.expected_mouse_acks = 6; /* for each aux_write_ack */
-
     D(bug("Initialized PS/2 mouse!\n"));
 
     return 1;

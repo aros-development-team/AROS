@@ -26,6 +26,8 @@
 
 #include <devices/inputevent.h>
 
+#include <linux/pc_keyb.h>
+
 #include "kbd.h"
 #include "keys.h"
 
@@ -47,6 +49,9 @@ void aux_write_ack(int val);
 void kbd_write_output_w(int data);
 void kbd_write_command_w(int data);
 void mouse_usleep(ULONG);
+void kbd_clear_input(void);
+int  kbd_wait_for_input(void);
+int  kbd_read_data(void);
 
 /* End of predefinitions */
 
@@ -263,12 +268,13 @@ static OOP_Object * kbd_new(OOP_Class *cl, OOP_Object *o, struct pRoot_New *msg)
             irq->h_Code         = kbd_keyint;
             irq->h_Data         = (APTR)data;
 
-            HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
-
             Disable();
-            kbd_reset();		/* Reset the keyboard */
+	    kbd_clear_input();
+	    kbd_reset();		/* Reset the keyboard */
             Enable();
             
+            HIDD_IRQ_AddHandler(XSD(cl)->irqhidd, irq, vHidd_IRQ_Keyboard);
+
             kbd_updateleds(0);
             ObtainSemaphore(&XSD(cl)->sema);
             XSD(cl)->kbdhidd = o;
@@ -449,16 +455,19 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         /* Ignore errors and messages for mouse */
         if (!(info & (KBD_STATUS_GTO | KBD_STATUS_PERR | KBD_STATUS_MOUSE_OBF)))
         {
-          keycode=poll_data();
-//            keycode = kbd_read_input();
+//          keycode=poll_data();
+            keycode = kbd_read_input();
 	
           if (keycode==0xe0)              /* Special key */
           {
-            keycode=poll_data();
+	    keycode = kbd_wait_for_input();
+//            keycode=poll_data();
             if (keycode==0x2a)          /* Shift modifier - we can skip it */
             {
-                keycode=poll_data();
-                keycode=poll_data();
+		keycode = kbd_wait_for_input();
+		keycode = kbd_wait_for_input();
+//                keycode=poll_data();
+//                keycode=poll_data();
             }
             event=0x4000|keycode;   /* set event to send */
             if (event==0x40aa)      /* If you get something like this... */
@@ -470,11 +479,17 @@ void kbd_keyint(HIDDT_IRQ_Handler *irq, HIDDT_IRQ_HwInfo *hw)
         }
         else if (keycode==0xe1)     /* Pause key */
         {
-            keycode=poll_data();    /* Read next 5 bytes from keyboard */
-            keycode=poll_data();    /* This is hack, but I know there is */
-            keycode=poll_data();    /* Only one key which starts with */
-            keycode=poll_data();    /* 0xe1 code */
-            keycode=poll_data();
+	    keycode = kbd_wait_for_input();
+	    keycode = kbd_wait_for_input();
+	    keycode = kbd_wait_for_input();
+	    keycode = kbd_wait_for_input();
+	    keycode = kbd_wait_for_input();
+	    
+//            keycode=poll_data();    /* Read next 5 bytes from keyboard */
+//            keycode=poll_data();    /* This is hack, but I know there is */
+//            keycode=poll_data();    /* Only one key which starts with */
+//            keycode=poll_data();    /* 0xe1 code */
+//            keycode=poll_data();
             event=K_Pause;
         }
         else if (keycode==KBD_REPLY_ACK)
@@ -651,35 +666,60 @@ int poll_data(void)
  */
 int kbd_reset(void)
 {
-    UBYTE retval;
+    UBYTE status;
 
-    poll_data();		/* Empty keys queue */
+    kbd_write_command_w(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard */
 
-    kb_wait();
-    kbd_write_command(KBD_CTRLCMD_SELF_TEST); /* Initialize and test keyboard */
-
-    retval = (UBYTE)poll_data();
-    if (retval != 0x55)
+    if (kbd_wait_for_input() != 0x55)
     {
       D(bug("Error! Got reset return value %x.\n",retval));
       return FALSE;
     }
 
-    //kbd_write_output_w(KBD_CMD_RESET);
-
-    kb_wait();
-    kbd_write_command(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
+    kbd_write_command_w(KBD_CTRLCMD_KBD_TEST);
+    if (kbd_wait_for_input() != 0)
+    {
+        return FALSE;
+    }
+    
+    kbd_write_command_w(KBD_CTRLCMD_KBD_ENABLE);  /* enable keyboard */
 
     D(bug("Keyboard enabled!\n"));
 
-    kb_wait();
-    kbd_write_command(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
-    kb_wait();
-    kbd_write_output(KBD_MODE_KCC 	| // set paramters: scan code to pc conversion, 
-    		     KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
-		     KBD_MODE_MOUSE_INT | //                enable IRQ 1 & 12.
+    do
+    {
+        kbd_write_output_w(KBD_CMD_RESET);
+        status = kbd_wait_for_input();
+        if (status == KBD_REPLY_ACK)
+            break;
+        if (status != KBD_REPLY_RESEND)
+            return FALSE;
+    } while(1);
+
+    if (kbd_wait_for_input() != KBD_REPLY_POR)
+        return FALSE;
+    
+    do
+    {
+        kbd_write_output_w(KBD_CMD_DISABLE);
+        status = kbd_wait_for_input();
+        if (status == KBD_REPLY_ACK)
+            break;
+        if (status != KBD_REPLY_RESEND)
+            return FALSE;
+    } while (1);
+
+    kbd_write_command_w(KBD_CTRLCMD_WRITE_MODE);  /* Write mode */
+    kbd_write_output_w( KBD_MODE_KCC 	| // set paramters: scan code to pc conversion, 
+    		            KBD_MODE_KBD_INT 	| //                enable mouse and keyboard,
+		     KBD_MODE_DISABLE_MOUSE | //                enable IRQ 1 & 12.
 		     KBD_MODE_SYS);
 
+    kbd_write_output_w(KBD_CMD_ENABLE);
+    
+    if (kbd_wait_for_input() != KBD_REPLY_ACK)
+        return FALSE;
+    
     D(bug("Successfully reset keyboard!\n"));
 
     return TRUE;
