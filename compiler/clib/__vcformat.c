@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <ctype.h>
+#include "__math.h"
 #include <math.h>
 #include <float.h>
 
