@@ -51,7 +51,8 @@ BOOT_TAR_FILES := \
     Tools/calculator Tools/HDToolBox Tools/HDToolBox.info \
     Tools/Commodities Tools/Commodities.info Tools.info \
     Utilities/MultiView Utilities/Multiview.info Utilities.info \
-    contrib/aminet/Format64
+    contrib/aminet/Format64 \
+    test/printnativekeytable
 
 BOOT_SRC_DIR    := $(AROSDIR)
 BOOT_DEST_DIR   := $(OSGENDIR)/bootdisk
@@ -87,7 +88,7 @@ workbench-boot-pc-i386:
 $(BINDIR)/boot/grub/% : %
 	@$(CP) $< $@
 
-#MM bootdisk-pc-i386 : software-pc-i386
+#MM bootdisk-pc-i386 : software-pc-i386 test
 bootdisk-pc-i386: \
 	$(BOOT_DEST_FILES) $(BOOT_DEST_DIR)/AROS.pkg \
 	$(BINDIR)/boot/aros-pc-i386 install
