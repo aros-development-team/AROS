@@ -296,10 +296,9 @@ void driver_ScrollRaster (struct RastPort * rp, long dx, long dy,
     SetAPen (rp, apen);
 }
 
-void driver_Text (struct RastPort * rp, char * string, long len)
+void driver_Text (struct RastPort * rp, char * string, long len,
+		struct GfxBase * GfxBase)
 {
-    struct ETextFont * etf;
-
     if (rp->DrawMode & JAM2)
 	XDrawImageString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
 	    rp->cp_y, string, len);
@@ -307,9 +306,16 @@ void driver_Text (struct RastPort * rp, char * string, long len)
 	XDrawString (sysDisplay, GetXWindow(rp), GetGC(rp), rp->cp_x,
 	    rp->cp_y, string, len);
 
+    rp->cp_x += TextLength (rp, string, len);
+}
+
+WORD driver_TextLength (struct RastPort * rp, char * string, long len)
+{
+    struct ETextFont * etf;
+
     etf = (struct ETextFont *)rp->Font;
 
-    rp->cp_x += XTextWidth (&etf->etf_XFS, string, len);
+    return XTextWidth (&etf->etf_XFS, string, len);
 }
 
 void driver_Move (struct RastPort * rp, long x, long y)
