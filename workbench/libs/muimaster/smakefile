@@ -82,6 +82,7 @@ CLASSESOBJS= \
   objs/classes/popasl.o \
   objs/classes/popframe.o \
   objs/classes/popimage.o \
+  objs/classes/poplist.o \
   objs/classes/popobject.o \
   objs/classes/popstring.o \
   objs/classes/prop.o \
@@ -385,6 +386,9 @@ objs/classes/popasl.o: classes/popasl.c
 
 objs/classes/popimage.o: classes/popimage.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popimage.c objname=$@
+
+objs/classes/poplist.o: classes/poplist.c
+  sc $(CFLAGS) $(CLASSESDIRS) classes/poplist.c objname=$@
 
 objs/classes/popobject.o: classes/popobject.c
   sc $(CFLAGS) $(CLASSESDIRS) classes/popobject.c objname=$@
