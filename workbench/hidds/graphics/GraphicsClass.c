@@ -1111,8 +1111,8 @@ static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
 {
     UWORD x, y;
     WORD  srcX = msg->srcX, destX = msg->destX;
-    WORD  memSrcX = srcX, memDestX = destX;
     WORD  srcY = msg->srcY, destY = msg->destY;
+    WORD  startX, endX, deltaX, startY, endY, deltaY;
     ULONG memFG;
     
     HIDDT_PixelFormat *srcpf, *dstpf;
@@ -1137,40 +1137,71 @@ static VOID hiddgfx_copybox(OOP_Class *cl, OOP_Object *obj, struct pHidd_Gfx_Cop
     dest = msg->dest;
     src  = msg->src;
 
+    /* If source/dest overlap, direction of operation is important */
+    
+    if (srcX < destX)
+    {
+    	startX = msg->width - 1;  endX = 0; deltaX = -1;
+    }
+    else
+    {
+    	startX = 0; endX = msg->width - 1;  deltaX = 1;
+    }
+ 
+    if (srcY < destY)
+    {
+	startY = msg->height - 1; endY = 0; deltaY = -1;
+    }
+    else
+    {
+	startY = 0; endY = msg->height - 1; deltaY = 1;
+    }
+    
     /* Get the source pixel format */
     srcpf = (HIDDT_PixelFormat *)HBM(src)->prot.pixfmt;
     
-/* bug("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OOP_OCLASS: %s\n", srcpf, obj
-	, cl->ClassNode.ln_Name, OOP_OCLASS(obj)->ClassNode.ln_Name);
-*/
-#if 0
-{
-ULONG sw, sh, dw, dh;
-D(bug("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
-    , obj, msg->dest, msg->width, msg->height));
+    /* bug("COPYBOX: SRC PF: %p, obj=%p, cl=%s, OOP_OCLASS: %s\n", srcpf, obj
+	    , cl->ClassNode.ln_Name, OOP_OCLASS(obj)->ClassNode.ln_Name);
+    */
     
-OOP_GetAttr(obj, aHidd_BitMap_Width, &sw);
-OOP_GetAttr(obj, aHidd_BitMap_Height, &sh);
-OOP_GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
-OOP_GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
-D(bug("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh));
-}
+#if 0
+    {
+	ULONG sw, sh, dw, dh;
+	D(bug("COPYBOX: src=%p, dst=%p, width=%d, height=%d\n"
+	    , obj, msg->dest, msg->width, msg->height));
+
+	OOP_GetAttr(obj, aHidd_BitMap_Width, &sw);
+	OOP_GetAttr(obj, aHidd_BitMap_Height, &sh);
+	OOP_GetAttr(msg->dest, aHidd_BitMap_Width, &dw);
+	OOP_GetAttr(msg->dest, aHidd_BitMap_Height, &dh);
+	D(bug("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh));
+    }
 #endif
 
     dstpf = (HIDDT_PixelFormat *)HBM(dest)->prot.pixfmt;
     
     /* Compare graphtypes */
-    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf))
+    {
     	/* It is ok to do a direct copy */
-    } else {
+    }
+    else
+    {
     	/* Find out the gfx formats */
-	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf)) {
+	if (  IS_PALETTIZED(srcpf) && IS_TRUECOLOR(dstpf))
+	{
 	
-	} else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf)) {
+	}
+	else if (IS_TRUECOLOR(srcpf) && IS_PALETTIZED(dstpf))
+	{
 	
-	} else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) {
+	}
+	else if (IS_PALETTE(srcpf) && IS_STATICPALETTE(dstpf)) 
+	{
 	
-	} else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf)) {
+	}
+	else if (IS_STATICPALETTE(srcpf) && IS_PALETTE(dstpf))
+	{
 	
 	}
     }
@@ -1182,116 +1213,123 @@ D(bug("src dims: %d, %d  dest dims: %d, %d\n", sw, sh, dw, dh));
     /* All else have failed, copy pixel by pixel */
 
 
-    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) {
-    	if (IS_TRUECOLOR(srcpf)) {
+    if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf))
+    {
+    	if (IS_TRUECOLOR(srcpf))
+	{
 // bug("COPY FROM TRUECOLOR TO TRUECOLOR\n");
-	    for(y = 0; y < msg->height; y++) {
+	    for(y = startY; y != endY; y += deltaY)
+	    {
 		HIDDT_Color col;
 		
-		srcX  = memSrcX;
-		destX = memDestX;
-
 /* if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
     bug("[%d,%d] ", memSrcX, memDestX);
 */    
-		for(x = 0; x < msg->width; x++) {
+		for(x = startX; x != endX; x += deltaX)
+		{
 		    HIDDT_Pixel pix;
 		    
-#if USE_FAST_GETPIXEL
-		    get_p.x = srcX ++;
-		    get_p.y = srcY;
+    	    	#if USE_FAST_GETPIXEL
+		    get_p.x = srcX + x;
+		    get_p.y = srcY + y;
 		    pix = GETPIXEL(src, &get_p);
-#else
-		    pix = HIDD_BM_GetPixel(obj, srcX++, srcY);
-#endif
+    	    	#else
+		    pix = HIDD_BM_GetPixel(obj, srcX + x, srcY + y);
+    	    	#endif
 
-#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
-		    if (srcpf == dstpf) {
+    	    	#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+		    if (srcpf == dstpf)
+		    {
 			GC_FG(gc) = pix;
-		    } else {
-#endif
+		    } 
+		    else 
+		    {
+    	    	#endif
 		    HIDD_BM_UnmapPixel(src, pix, &col);
 		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, &col);
-#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
+    	    	#if COPYBOX_CHECK_FOR_ALIKE_PIXFMT
 		    }
-#endif
+    	    	#endif
 
-// #if 0
+    	    // #if 0
 
-#if USE_FAST_DRAWPIXEL
-		    draw_p.x = destX ++;
-		    draw_p.y = destY;
+    	    	#if USE_FAST_DRAWPIXEL
+		    draw_p.x = destX + x;
+		    draw_p.y = destY + y;
 		    DRAWPIXEL(dest, &draw_p);
-#else
+    	    	#else
 		    
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
-#endif
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX + x, destY + y);
+    	    	#endif
 
-// #endif
+    	    // #endif
 		}
-/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
-    bug("[%d,%d] ", srcY, destY);
-*/            	srcY++; destY++;
+		/*if (0 == strcmp("CON: Window", FindTask(NULL)->tc_Node.ln_Name))
+		    bug("[%d,%d] ", srcY, destY);
+		*/
 	    }
 	    
-        } else {
+        } /* if (IS_TRUECOLOR(srcpf)) */
+	else
+	{
 	     /* Two palette bitmaps.
 	        For this case we do NOT convert through RGB,
 		but copy the pixel indexes directly
 	     */
-// bug("COPY FROM PALETTE TO PALETTE\n");
-#warning This might not work very well with two StaticPalette bitmaps
-	    for(y = 0; y < msg->height; y++) {
-		srcX  = memSrcX;
-		destX = memDestX;
-		
-		for(x = 0; x < msg->width; x++) {
-		    GC_FG(gc) = HIDD_BM_GetPixel(src, srcX++, srcY);
+    	    // bug("COPY FROM PALETTE TO PALETTE\n");
+
+    	    #warning This might not work very well with two StaticPalette bitmaps
+
+	    for(y = startY; y != endY; y += deltaY)
+	    {
+		for(x = startX; x != endX; x += deltaX)
+		{
+		    GC_FG(gc) = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
 		    
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX + x, destY + y);
 		    
 		}
-            	srcY++; destY++;
-	    }
+ 	    }
 	     
-	}
+	} /* if (IS_TRUECOLOR(srcpf)) else ... */
 
-    } else {
+    } /* if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) */
+    else
+    {
     	/* Two unlike bitmaps */
-	if (IS_TRUECOLOR(srcpf)) {
-#warning Implement this
+	if (IS_TRUECOLOR(srcpf))
+	{
+    	    #warning Implement this
 	     D(bug("!! DEFAULT COPYING FROM TRUECOLOR TO PALETTIZED NOT IMPLEMENTED IN BitMap::CopyBox\n"));
-	} else if (IS_TRUECOLOR(dstpf)) {
+	}
+	else if (IS_TRUECOLOR(dstpf))
+	{
 	    /* Get the colortab */
 	    HIDDT_Color *ctab = ((HIDDT_ColorLUT *)HBM(src)->colmap)->colors;
-// bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
 
+    	    // bug("COPY FROM PALETTE TO TRUECOLOR, DRAWMODE %d, CTAB %p\n", GC_DRMD(gc), ctab);
 	    
-	    for(y = 0; y < msg->height; y++) {
-		
-		srcX  = memSrcX;
-		destX = memDestX;
-		for(x = 0; x < msg->width; x++) {
+	    for(y = startY; y != endY; y += deltaY)
+	    {		
+		for(x = startX; x != endX; x += deltaX)
+		{
 		    register HIDDT_Pixel pix;
 		    register HIDDT_Color *col;
 		    
-		    pix = HIDD_BM_GetPixel(src, srcX++, srcY);
+		    pix = HIDD_BM_GetPixel(src, srcX + x, srcY + y);
 		    col = &ctab[pix];
 	
 		    GC_FG(gc) = HIDD_BM_MapColor(msg->dest, col);
-		    HIDD_BM_DrawPixel(msg->dest, gc, destX++, destY);
+		    HIDD_BM_DrawPixel(msg->dest, gc, destX + x, destY + y);
 		    
 		}
-            	srcY++; destY++;
-	    }
-	
+	    }	
 	}
 	
-    }
+    } /* if (HIDD_PF_COLMODEL(srcpf) == HIDD_PF_COLMODEL(dstpf)) else ... */
     
     GC_FG(gc) = memFG;
 }
-
 
 /*** HIDDGfx::RegisterPixFmt() ********************************************/
 
