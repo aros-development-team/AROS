@@ -14,7 +14,7 @@ ifeq ($(FLAVOUR),native)
 FILES	:= \
     font2c gtdemo helloworld inquire intuitext librarytest listfonts \
     keymap mxgads oopdemo readicon regiontest shadowborder sift strtest \
-    ooplib consoledemo x11gfxhidd serialtest window test_text \
+    ooplib consoledemo serialtest window test_text \
     clippingtest
 
 else
@@ -62,7 +62,6 @@ FILES	:= \
     unixio \
     winbackfill \
     window \
-    x11gfxhidd
 endif
 
 EXEDIR := $(AROSDIR)/Demos
