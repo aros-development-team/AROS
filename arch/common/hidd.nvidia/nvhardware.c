@@ -136,10 +136,10 @@ void nv10GetConfig (struct staticdata *sd)
     }
 #endif
 
-    if((pNv->Chipset & 0xffff) == 0x01a0) {
+    if(implementation == 0x01a0) {
         int amt = pciReadLong(sd, 0, 0, 1, 0x7C);
         pNv->RamAmountKBytes = (((amt >> 6) & 31) + 1) * 1024;
-    } else if((pNv->Chipset & 0xffff) == 0x01f0) {
+    } else if(implementation == 0x01f0) {
         int amt = pciReadLong(sd, 0, 0, 1, 0x84);
         pNv->RamAmountKBytes = (((amt >> 4) & 127) + 1) * 1024;
     } else {
@@ -326,6 +326,26 @@ static void nvGetClocks(NVPtr pNv, ULONG *MClk, ULONG *NVClk)
 {
     unsigned int pll, N, M, MB, NB, P;
 
+    if(pNv->Architecture >= NV_ARCH_40) {
+       pll = pNv->PMC[0x4020/4];
+       P = (pll >> 16) & 0x03;
+       pll = pNv->PMC[0x4024/4];
+       M = pll & 0xFF;
+       N = (pll >> 8) & 0xFF;
+       MB = (pll >> 16) & 0xFF;
+       NB = (pll >> 24) & 0xFF;
+       *MClk = ((N * NB * pNv->CrystalFreqKHz) / (M * MB)) >> P;
+
+       pll = pNv->PMC[0x4000/4];
+       P = (pll >> 16) & 0x03;  
+       pll = pNv->PMC[0x4004/4];
+       M = pll & 0xFF;
+       N = (pll >> 8) & 0xFF;
+       MB = (pll >> 16) & 0xFF;
+       NB = (pll >> 24) & 0xFF;
+
+       *NVClk = ((N * NB * pNv->CrystalFreqKHz) / (M * MB)) >> P;
+    } else
     if(pNv->twoStagePLL) {
        pll = pNv->PRAMDAC0[0x0504/4];
        M = pll & 0xFF; 
@@ -827,12 +847,17 @@ static void nForceUpdateArbitrationSettings (
 {
     nv10_fifo_info fifo_data;
     nv10_sim_state sim_data;
-    unsigned int M, N, P, pll, MClk, NVClk;
-    unsigned int uMClkPostDiv, memctrl;
+    unsigned int M, N, P, pll, MClk, NVClk, memctrl;
 
-    uMClkPostDiv = (pciReadLong(sd, 0, 0, 3, 0x6C) >> 8) & 0xf;
-    if(!uMClkPostDiv) uMClkPostDiv = 4; 
-    MClk = 400000 / uMClkPostDiv;
+    if((pNv->Chipset & 0x0FF0) == 0x01A0) {
+       unsigned int uMClkPostDiv;
+
+       uMClkPostDiv = (pciReadLong(sd, 0, 0, 3, 0x6C) >> 8) & 0xf;
+       if(!uMClkPostDiv) uMClkPostDiv = 4; 
+       MClk = 400000 / uMClkPostDiv;
+    } else {
+       MClk = pciReadLong(sd, 0, 0, 5, 0x4C) / 1000;
+    }
 
     pll = pNv->PRAMDAC0[0x0500/4];
     M = (pll >> 0)  & 0xFF; N = (pll >> 8)  & 0xFF; P = (pll >> 16) & 0x0F;
@@ -1060,6 +1085,14 @@ void NVCalcStateExt (
     state->pixel    = (pixelDepth > 2) ? 3 : pixelDepth;
 }
 
+/*
+** stegerg: Status NVLoadStateExt(): should "match" xfree nv NVLoadStateExt()
+** in xc/programs/Xserver/hw/xfree86/drivers/nv/nv_hw.c version:
+** 1.8 2004/03/20 01:52:16 mvojkovi
+** 
+** Exception: some waitvsyncpossible stuff commented out
+*/
+     
 void NVLoadStateExt (
     NVPtr pNv,
     RIVA_HW_STATE *state
@@ -1096,81 +1129,172 @@ void NVLoadStateExt (
         pNv->PFB[0x02B0/4] = 0;
         pNv->PFB[0x02B4/4] = pNv->FrameBufferSize - 1;
     }
-
-    pNv->PRAMIN[0x0000] = 0x80000010;
-    pNv->PRAMIN[0x0001] = 0x80011201;  
-    pNv->PRAMIN[0x0002] = 0x80000011;
-    pNv->PRAMIN[0x0003] = 0x80011202; 
-    pNv->PRAMIN[0x0004] = 0x80000012;
-    pNv->PRAMIN[0x0005] = 0x80011203;
-    pNv->PRAMIN[0x0006] = 0x80000013;
-    pNv->PRAMIN[0x0007] = 0x80011204;
-    pNv->PRAMIN[0x0008] = 0x80000014;
-    pNv->PRAMIN[0x0009] = 0x80011205;
-    pNv->PRAMIN[0x000A] = 0x80000015;
-    pNv->PRAMIN[0x000B] = 0x80011206;
-    pNv->PRAMIN[0x000C] = 0x80000016;
-    pNv->PRAMIN[0x000D] = 0x80011207;
-    pNv->PRAMIN[0x000E] = 0x80000017;
-    pNv->PRAMIN[0x000F] = 0x80011208;
-    pNv->PRAMIN[0x0800] = 0x00003000;
-    pNv->PRAMIN[0x0801] = pNv->FrameBufferSize - 1;
-    pNv->PRAMIN[0x0802] = 0x00000002;
-    pNv->PRAMIN[0x0803] = 0x00000002;
-    if(pNv->Architecture >= NV_ARCH_10)
-       pNv->PRAMIN[0x0804] = 0x01008062;
-    else
-       pNv->PRAMIN[0x0804] = 0x01008042;
-    pNv->PRAMIN[0x0805] = 0x00000000;
-    pNv->PRAMIN[0x0806] = 0x12001200;
-    pNv->PRAMIN[0x0807] = 0x00000000;
-    pNv->PRAMIN[0x0808] = 0x01008043;
-    pNv->PRAMIN[0x0809] = 0x00000000;
-    pNv->PRAMIN[0x080A] = 0x00000000;
-    pNv->PRAMIN[0x080B] = 0x00000000;
-    pNv->PRAMIN[0x080C] = 0x01008044;
-    pNv->PRAMIN[0x080D] = 0x00000002;
-    pNv->PRAMIN[0x080E] = 0x00000000;
-    pNv->PRAMIN[0x080F] = 0x00000000;
-    pNv->PRAMIN[0x0810] = 0x01008019;
-    pNv->PRAMIN[0x0811] = 0x00000000;
-    pNv->PRAMIN[0x0812] = 0x00000000;
-    pNv->PRAMIN[0x0813] = 0x00000000;
-    pNv->PRAMIN[0x0814] = 0x0100A05C;
-    pNv->PRAMIN[0x0815] = 0x00000000;
-    pNv->PRAMIN[0x0816] = 0x00000000;
-    pNv->PRAMIN[0x0817] = 0x00000000;
-    pNv->PRAMIN[0x0818] = 0x0100805F;
-    pNv->PRAMIN[0x0819] = 0x00000000;
-    pNv->PRAMIN[0x081A] = 0x12001200;
-    pNv->PRAMIN[0x081B] = 0x00000000;
-    pNv->PRAMIN[0x081C] = 0x0100804A;
-    pNv->PRAMIN[0x081D] = 0x00000002;
-    pNv->PRAMIN[0x081E] = 0x00000000;
-    pNv->PRAMIN[0x081F] = 0x00000000;
-    pNv->PRAMIN[0x0820] = 0x01018077;
-    pNv->PRAMIN[0x0821] = 0x00000000;
-    pNv->PRAMIN[0x0822] = 0x01201200;
-    pNv->PRAMIN[0x0823] = 0x00000000;
-    pNv->PRAMIN[0x0824] = 0x00003002;
-    pNv->PRAMIN[0x0825] = 0x00007FFF;
-    pNv->PRAMIN[0x0826] = pNv->FbUsableSize | 0x00000002;
-    pNv->PRAMIN[0x0827] = 0x00000002;
+ 
+    if(pNv->Architecture >= NV_ARCH_40) {
+       pNv->PRAMIN[0x0000] = 0x80000010;
+       pNv->PRAMIN[0x0001] = 0x00101202;
+       pNv->PRAMIN[0x0002] = 0x80000011;
+       pNv->PRAMIN[0x0003] = 0x00101204;
+       pNv->PRAMIN[0x0004] = 0x80000012;
+       pNv->PRAMIN[0x0005] = 0x00101206;
+       pNv->PRAMIN[0x0006] = 0x80000013;
+       pNv->PRAMIN[0x0007] = 0x00101208;
+       pNv->PRAMIN[0x0008] = 0x80000014;
+       pNv->PRAMIN[0x0009] = 0x0010120A;
+       pNv->PRAMIN[0x000A] = 0x80000015;
+       pNv->PRAMIN[0x000B] = 0x0010120C;
+       pNv->PRAMIN[0x000C] = 0x80000016;
+       pNv->PRAMIN[0x000D] = 0x0010120E;
+       pNv->PRAMIN[0x000E] = 0x80000017;
+       pNv->PRAMIN[0x000F] = 0x00101210;
+       pNv->PRAMIN[0x0800] = 0x00003000;
+       pNv->PRAMIN[0x0801] = pNv->FrameBufferSize - 1;
+       pNv->PRAMIN[0x0802] = 0x00000002;
+       pNv->PRAMIN[0x0808] = 0x02080062;
+       pNv->PRAMIN[0x0809] = 0x00000000;
+       pNv->PRAMIN[0x080A] = 0x00001200;
+       pNv->PRAMIN[0x080B] = 0x00001200;
+       pNv->PRAMIN[0x080C] = 0x00000000;
+       pNv->PRAMIN[0x080D] = 0x00000000;
+       pNv->PRAMIN[0x0810] = 0x02080043;
+       pNv->PRAMIN[0x0811] = 0x00000000;
+       pNv->PRAMIN[0x0812] = 0x00000000;
+       pNv->PRAMIN[0x0813] = 0x00000000;
+       pNv->PRAMIN[0x0814] = 0x00000000;
+       pNv->PRAMIN[0x0815] = 0x00000000;
+       pNv->PRAMIN[0x0818] = 0x02080044;
+       pNv->PRAMIN[0x0819] = 0x02000000;
+       pNv->PRAMIN[0x081A] = 0x00000000;
+       pNv->PRAMIN[0x081B] = 0x00000000;
+       pNv->PRAMIN[0x081C] = 0x00000000;
+       pNv->PRAMIN[0x081D] = 0x00000000;
+       pNv->PRAMIN[0x0820] = 0x02080019;
+       pNv->PRAMIN[0x0821] = 0x00000000;
+       pNv->PRAMIN[0x0822] = 0x00000000;
+       pNv->PRAMIN[0x0823] = 0x00000000;
+       pNv->PRAMIN[0x0824] = 0x00000000;
+       pNv->PRAMIN[0x0825] = 0x00000000;
+       pNv->PRAMIN[0x0828] = 0x020A005C;
+       pNv->PRAMIN[0x0829] = 0x00000000;
+       pNv->PRAMIN[0x082A] = 0x00000000;
+       pNv->PRAMIN[0x082B] = 0x00000000;
+       pNv->PRAMIN[0x082C] = 0x00000000;
+       pNv->PRAMIN[0x082D] = 0x00000000;
+       pNv->PRAMIN[0x0830] = 0x0208009F;
+       pNv->PRAMIN[0x0831] = 0x00000000;
+       pNv->PRAMIN[0x0832] = 0x00001200;
+       pNv->PRAMIN[0x0833] = 0x00001200;
+       pNv->PRAMIN[0x0834] = 0x00000000;
+       pNv->PRAMIN[0x0835] = 0x00000000;
+       pNv->PRAMIN[0x0838] = 0x0208004A;
+       pNv->PRAMIN[0x0839] = 0x02000000;
+       pNv->PRAMIN[0x083A] = 0x00000000;
+       pNv->PRAMIN[0x083B] = 0x00000000;
+       pNv->PRAMIN[0x083C] = 0x00000000;
+       pNv->PRAMIN[0x083D] = 0x00000000;
+       pNv->PRAMIN[0x0840] = 0x02080077;
+       pNv->PRAMIN[0x0841] = 0x00000000;
+       pNv->PRAMIN[0x0842] = 0x00001200;
+       pNv->PRAMIN[0x0843] = 0x00001200;
+       pNv->PRAMIN[0x0844] = 0x00000000;
+       pNv->PRAMIN[0x0845] = 0x00000000;
+       pNv->PRAMIN[0x084C] = 0x00003002;
+       pNv->PRAMIN[0x084D] = 0x00007FFF;
+       pNv->PRAMIN[0x084E] = pNv->FbUsableSize | 0x00000002;
 
 #if AROS_BIG_ENDIAN
-    pNv->PRAMIN[0x0804] |= 0x00080000;
-    pNv->PRAMIN[0x0808] |= 0x00080000;
-    pNv->PRAMIN[0x080C] |= 0x00080000;
-    pNv->PRAMIN[0x0810] |= 0x00080000;
-    pNv->PRAMIN[0x0814] |= 0x00080000;
-    pNv->PRAMIN[0x0818] |= 0x00080000;
-    pNv->PRAMIN[0x081C] |= 0x00080000;
-    pNv->PRAMIN[0x0820] |= 0x00080000;
-
-    pNv->PRAMIN[0x080D] = 0x00000001;
-    pNv->PRAMIN[0x081D] = 0x00000001;
+       pNv->PRAMIN[0x080A] |= 0x01000000;
+       pNv->PRAMIN[0x0812] |= 0x01000000;
+       pNv->PRAMIN[0x081A] |= 0x01000000;
+       pNv->PRAMIN[0x0822] |= 0x01000000;
+       pNv->PRAMIN[0x082A] |= 0x01000000;
+       pNv->PRAMIN[0x0832] |= 0x01000000;
+       pNv->PRAMIN[0x083A] |= 0x01000000;
+       pNv->PRAMIN[0x0842] |= 0x01000000;  
+       pNv->PRAMIN[0x0819] = 0x01000000;
+       pNv->PRAMIN[0x0839] = 0x01000000;
 #endif
+    } else {
 
+	pNv->PRAMIN[0x0000] = 0x80000010;
+	pNv->PRAMIN[0x0001] = 0x80011201;  
+	pNv->PRAMIN[0x0002] = 0x80000011;
+	pNv->PRAMIN[0x0003] = 0x80011202; 
+	pNv->PRAMIN[0x0004] = 0x80000012;
+	pNv->PRAMIN[0x0005] = 0x80011203;
+	pNv->PRAMIN[0x0006] = 0x80000013;
+	pNv->PRAMIN[0x0007] = 0x80011204;
+	pNv->PRAMIN[0x0008] = 0x80000014;
+	pNv->PRAMIN[0x0009] = 0x80011205;
+	pNv->PRAMIN[0x000A] = 0x80000015;
+	pNv->PRAMIN[0x000B] = 0x80011206;
+	pNv->PRAMIN[0x000C] = 0x80000016;
+	pNv->PRAMIN[0x000D] = 0x80011207;
+	pNv->PRAMIN[0x000E] = 0x80000017;
+	pNv->PRAMIN[0x000F] = 0x80011208;
+	pNv->PRAMIN[0x0800] = 0x00003000;
+	pNv->PRAMIN[0x0801] = pNv->FrameBufferSize - 1;
+	pNv->PRAMIN[0x0802] = 0x00000002;
+	pNv->PRAMIN[0x0803] = 0x00000002;
+	if(pNv->Architecture >= NV_ARCH_10)
+	   pNv->PRAMIN[0x0804] = 0x01008062;
+	else
+	   pNv->PRAMIN[0x0804] = 0x01008042;
+	pNv->PRAMIN[0x0805] = 0x00000000;
+	pNv->PRAMIN[0x0806] = 0x12001200;
+	pNv->PRAMIN[0x0807] = 0x00000000;
+	pNv->PRAMIN[0x0808] = 0x01008043;
+	pNv->PRAMIN[0x0809] = 0x00000000;
+	pNv->PRAMIN[0x080A] = 0x00000000;
+	pNv->PRAMIN[0x080B] = 0x00000000;
+	pNv->PRAMIN[0x080C] = 0x01008044;
+	pNv->PRAMIN[0x080D] = 0x00000002;
+	pNv->PRAMIN[0x080E] = 0x00000000;
+	pNv->PRAMIN[0x080F] = 0x00000000;
+	pNv->PRAMIN[0x0810] = 0x01008019;
+	pNv->PRAMIN[0x0811] = 0x00000000;
+	pNv->PRAMIN[0x0812] = 0x00000000;
+	pNv->PRAMIN[0x0813] = 0x00000000;
+	pNv->PRAMIN[0x0814] = 0x0100A05C;
+	pNv->PRAMIN[0x0815] = 0x00000000;
+	pNv->PRAMIN[0x0816] = 0x00000000;
+	pNv->PRAMIN[0x0817] = 0x00000000;
+// aros: commented out for now
+//        if(pNv->WaitVSyncPossible)
+//            pNv->PRAMIN[0x0818] = 0x0100809F;
+//        else
+	    pNv->PRAMIN[0x0818] = 0x0100805F;
+	pNv->PRAMIN[0x0819] = 0x00000000;
+	pNv->PRAMIN[0x081A] = 0x12001200;
+	pNv->PRAMIN[0x081B] = 0x00000000;
+	pNv->PRAMIN[0x081C] = 0x0100804A;
+	pNv->PRAMIN[0x081D] = 0x00000002;
+	pNv->PRAMIN[0x081E] = 0x00000000;
+	pNv->PRAMIN[0x081F] = 0x00000000;
+	pNv->PRAMIN[0x0820] = 0x01018077;
+	pNv->PRAMIN[0x0821] = 0x00000000;
+	pNv->PRAMIN[0x0822] = 0x12001200;
+	pNv->PRAMIN[0x0823] = 0x00000000;
+	pNv->PRAMIN[0x0824] = 0x00003002;
+	pNv->PRAMIN[0x0825] = 0x00007FFF;
+	pNv->PRAMIN[0x0826] = pNv->FbUsableSize | 0x00000002;
+	pNv->PRAMIN[0x0827] = 0x00000002;
+
+#if AROS_BIG_ENDIAN
+	pNv->PRAMIN[0x0804] |= 0x00080000;
+	pNv->PRAMIN[0x0808] |= 0x00080000;
+	pNv->PRAMIN[0x080C] |= 0x00080000;
+	pNv->PRAMIN[0x0810] |= 0x00080000;
+	pNv->PRAMIN[0x0814] |= 0x00080000;
+	pNv->PRAMIN[0x0818] |= 0x00080000;
+	pNv->PRAMIN[0x081C] |= 0x00080000;
+	pNv->PRAMIN[0x0820] |= 0x00080000;
+
+	pNv->PRAMIN[0x080D] = 0x00000001;
+	pNv->PRAMIN[0x081D] = 0x00000001;
+#endif
+    }
+    
     if(pNv->Architecture < NV_ARCH_10) {
        if((pNv->Chipset & 0x0fff) == 0x0020) {
            pNv->PRAMIN[0x0824] |= 0x00020000;
@@ -1180,7 +1304,8 @@ void NVLoadStateExt (
        pNv->PGRAPH[0x0080/4] = 0x1230C000;
        pNv->PGRAPH[0x0084/4] = 0x72111101;
        pNv->PGRAPH[0x0088/4] = 0x11D5F071;
-       pNv->PGRAPH[0x008C/4] = 0x0004FF31;
+       pNv->PGRAPH[0x008C/4] = 0x0004FF31; /* stegerg: strange but that's so in xfree nv driver sources */
+       pNv->PGRAPH[0x008C/4] = 0x4004FF31; /* stegerg: strange but that's so in xfree nv driver sources */
 
        pNv->PGRAPH[0x0140/4] = 0x00000000;
        pNv->PGRAPH[0x0100/4] = 0xFFFFFFFF;
@@ -1189,6 +1314,7 @@ void NVLoadStateExt (
        pNv->PGRAPH[0x0720/4] = 0x00000001;
 
        pNv->PGRAPH[0x0810/4] = 0x00000000;
+       pNv->PGRAPH[0x0608/4] = 0xFFFFFFFF;
     } else {
        pNv->PGRAPH[0x0080/4] = 0xFFFFFFFF;
        pNv->PGRAPH[0x0080/4] = 0x00000000;
@@ -1198,6 +1324,8 @@ void NVLoadStateExt (
        pNv->PGRAPH[0x0144/4] = 0x10010100;
        pNv->PGRAPH[0x0714/4] = 0xFFFFFFFF;
        pNv->PGRAPH[0x0720/4] = 0x00000001;
+       pNv->PGRAPH[0x0710/4] &= 0x0007ff00;
+       pNv->PGRAPH[0x0710/4] |= 0x00020100;
 
        if(pNv->Architecture == NV_ARCH_10) {
            pNv->PGRAPH[0x0084/4] = 0x00118700;
@@ -1213,8 +1341,23 @@ void NVLoadStateExt (
            pNv->PGRAPH[0x688/4] = pNv->FrameBufferSize - 1;
 
            pNv->PGRAPH[0x0810/4] = 0x00000000;
+           pNv->PGRAPH[0x0608/4] = 0xFFFFFFFF;
        } else {
-           if(pNv->Architecture >= NV_ARCH_30) {
+         if(pNv->Architecture >= NV_ARCH_40) {
+              pNv->PGRAPH[0x0084/4] = 0x401287c0;
+              pNv->PGRAPH[0x008C/4] = 0x60de8051; 
+              pNv->PGRAPH[0x0090/4] = 0x00008000;
+              pNv->PGRAPH[0x0610/4] = 0x00be3c5f;
+              pNv->PGRAPH[0x09b0/4] = 0x83280fff;
+              pNv->PGRAPH[0x09b4/4] = 0x000000a0;
+              pNv->PGRAPH[0x09b8/4] = 0x0078e366;
+              pNv->PGRAPH[0x09bc/4] = 0x0000014c;
+              pNv->PGRAPH[0x0b38/4] = 0x2ffff800;
+              pNv->PGRAPH[0x0b3c/4] = 0x00006000;
+              pNv->PGRAPH[0x032C/4] = 0x01000000; 
+              pNv->PGRAPH[0x0220/4] = 0x00001200;
+           } else
+           if(pNv->Architecture == NV_ARCH_30) {
               pNv->PGRAPH[0x0084/4] = 0x40108700;
               pNv->PGRAPH[0x0890/4] = 0x00140000;
               pNv->PGRAPH[0x008C/4] = 0xf00e0431;
@@ -1253,17 +1396,24 @@ void NVLoadStateExt (
 
            pNv->PGRAPH[0x09A4/4] = pNv->PFB[0x0200/4];
            pNv->PGRAPH[0x09A8/4] = pNv->PFB[0x0204/4];
-           pNv->PGRAPH[0x0750/4] = 0x00EA0000;
-           pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0200/4];
-           pNv->PGRAPH[0x0750/4] = 0x00EA0004;
-           pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0204/4];
 
+           if(pNv->Architecture >= NV_ARCH_40) {
+              pNv->PGRAPH[0x69A4/4] = pNv->PFB[0x0200/4];
+              pNv->PGRAPH[0x69A8/4] = pNv->PFB[0x0204/4];
+           } else {
+              pNv->PGRAPH[0x0750/4] = 0x00EA0000;
+              pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0200/4];
+              pNv->PGRAPH[0x0750/4] = 0x00EA0004;
+              pNv->PGRAPH[0x0754/4] = pNv->PFB[0x0204/4];
+    	   }
+	   
            pNv->PGRAPH[0x0820/4] = 0;
            pNv->PGRAPH[0x0824/4] = 0;
            pNv->PGRAPH[0x0864/4] = pNv->FrameBufferSize - 1;
            pNv->PGRAPH[0x0868/4] = pNv->FrameBufferSize - 1;
 
            pNv->PGRAPH[0x0B20/4] = 0x00000000;
+           pNv->PGRAPH[0x0B04/4] = 0xFFFFFFFF;
        }
     }
     pNv->PGRAPH[0x053C/4] = 0;
@@ -1275,10 +1425,16 @@ void NVLoadStateExt (
     pNv->PFIFO[0x0141] = 0x00000001;
     pNv->PFIFO[0x0480] = 0x00000000;
     pNv->PFIFO[0x0494] = 0x00000000;
-    pNv->PFIFO[0x0481] = 0x00000100;
+    if(pNv->Architecture >= NV_ARCH_40)
+       pNv->PFIFO[0x0481] = 0x00010000;
+    else
+       pNv->PFIFO[0x0481] = 0x00000100;
     pNv->PFIFO[0x0490] = 0x00000000;
     pNv->PFIFO[0x0491] = 0x00000000;
-    pNv->PFIFO[0x048B] = 0x00001209;
+    if(pNv->Architecture >= NV_ARCH_40)
+       pNv->PFIFO[0x048B] = 0x00001213;
+    else
+       pNv->PFIFO[0x048B] = 0x00001209;
     pNv->PFIFO[0x0400] = 0x00000000;
     pNv->PFIFO[0x0414] = 0x00000000;
     pNv->PFIFO[0x0084] = 0x03000100;
@@ -1318,12 +1474,14 @@ void NVLoadStateExt (
         pNv->PMC[0x1588/4] = 0;
 
         pNv->PCRTC[0x0810/4] = state->cursorConfig;
+        pNv->PCRTC[0x0830/4] = state->displayV - 3;
+        pNv->PCRTC[0x0834/4] = state->displayV - 1;
     
         if(pNv->FlatPanel) {
            if((pNv->Chipset & 0x0ff0) == 0x0110) {
                pNv->PRAMDAC[0x0528/4] = state->dither;
            } else 
-           if((pNv->Chipset & 0x0ff0) >= 0x0170) {
+           if(pNv->twoHeads) {
                pNv->PRAMDAC[0x083C/4] = state->dither;
            }
     
@@ -1382,6 +1540,12 @@ void NVLoadStateExt (
     pNv->CurrentState = state;
 }
 
+/*
+** stegerg: Status NVUnloadStateExt(): should "match" xfree nv NVUnloadStateExt()
+** in xc/programs/Xserver/hw/xfree86/drivers/nv/nv_hw.c version:
+** 1.8 2004/03/20 01:52:16 mvojkovi
+*/
+
 void NVUnloadStateExt
 (
     NVPtr pNv,
@@ -1436,7 +1600,7 @@ void NVUnloadStateExt
         if((pNv->Chipset & 0x0ff0) == 0x0110) {
            state->dither = pNv->PRAMDAC[0x0528/4];
         } else 
-        if((pNv->Chipset & 0x0ff0) >= 0x0170) {
+        if(pNv->twoHeads) {
             state->dither = pNv->PRAMDAC[0x083C/4];
         }
 
@@ -1720,6 +1884,7 @@ void InitMode(struct staticdata *sd, struct CardState *state,
     
     state->timingH = 0;
     state->timingV = 0;
+    state->displayV = VDisplay;
 }
 
 void acc_reset(struct staticdata *);
