@@ -1,3 +1,11 @@
+/*
+    Copyright (C) 1995-2000 AROS - The Amiga Research OS
+    $Id$
+
+    Desc: autoinit library - functions sets handling
+    Lang: english
+*/
+
 typedef int (*fptr)(void);
 
 int set_call_funcs(fptr list[], int order)
