@@ -5,6 +5,8 @@
     $Id$
 */
 
+#include <stdio.h>
+
 #include <graphics/gfx.h>
 #include <graphics/view.h>
 #include <clib/alib_protos.h>
@@ -71,7 +73,24 @@ static IPTR Image_New(struct IClass *cl, Object *obj, struct opSet *msg)
 		    break;
 
 	    case    MUIA_Image_Spec:
-		    data->spec = StrDup((char*)tag->ti_Data);
+		    {
+		    	char *spec;
+		    	char spec_buf[20];
+
+		    	if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
+		    	{
+			    sprintf(spec_buf,"6:%ld",tag->ti_Data);
+			    spec = spec_buf;
+		    	} else
+		    	{
+			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
+			    {
+				sprintf(spec_buf,"O:%ld",tag->ti_Data);
+				spec = spec_buf;
+			    } else spec = (char*)tag->ti_Data;
+		    	}
+			data->spec = StrDup(spec);
+		    }
 		    break;
     	}
     }
@@ -111,8 +130,26 @@ static IPTR Image_Set(struct IClass *cl, Object *obj, struct opSet *msg)
 	{
 	    case    MUIA_Imagedisplay_Spec:
 	    case    MUIA_Image_Spec:
-		    if (data->spec) FreeVec(data->spec);
-		    data->spec = StrDup((char*)tag->ti_Data);
+		    {
+		    	char *spec;
+		    	char spec_buf[20];
+
+		    	if (tag->ti_Data >= MUII_WindowBack && tag->ti_Data < MUII_BACKGROUND)
+		    	{
+			    sprintf(spec_buf,"6:%ld",tag->ti_Data);
+			    spec = spec_buf;
+		    	} else
+		    	{
+			    if (tag->ti_Data >= MUII_BACKGROUND && tag->ti_Data < MUII_LASTPAT)
+			    {
+				sprintf(spec_buf,"O:%ld",tag->ti_Data);
+				spec = spec_buf;
+			    } else spec = (char*)tag->ti_Data;
+		    	}
+
+		        if (data->spec) FreeVec(data->spec);
+		        data->spec = StrDup(spec);
+		    }
 
 		    if (_flags(obj)&MADF_CANDRAW)
 			zune_imspec_hide(data->img);
