@@ -369,15 +369,15 @@
 	{
 	    struct TagItem imtags[] =
 	    {
-		{SYSIA_DrawInfo, dri},
+		{SYSIA_DrawInfo, (STACKIPTR)dri},
 		{SYSIA_Which, SIZEIMAGE},
 		{TAG_DONE,0} 
 	    };
 	
 	    if ((im = NewObjectA(NULL, SYSICLASS, imtags)))
 	    {
-	    	GetAttr(IA_Width, im, &sizewidth);
-		GetAttr(IA_Height, im, &sizeheight);
+	    	GetAttr(IA_Width, (Object *)im, &sizewidth);
+		GetAttr(IA_Height, (Object *)im, &sizeheight);
 		 
 	    	DisposeObject(im);
 	    }
