@@ -1,5 +1,5 @@
 /*
-    (C) 2000 AROS - The Amiga Research OS
+    (C) 2001 AROS - The Amiga Research OS
     $Id$
 
     Desc: Tool to create the skeleton files for a library,
@@ -63,6 +63,7 @@ static char lowername[300];
 static char uppername[300];
 static char shortname[300];
 static char basetype[300];
+static char basename[300];
 static char includesdir[300];
 static int  includes, type, i;
 static long l;
@@ -114,6 +115,9 @@ static void getarguments(void)
     printf("Lib Base Type (e.g. IntuitionBase, Library, Device)     : ");
     getstring(basetype, typeinfo[type].defbasetype);
 
+    printf("Lib Base Name (e.g. Intuition, GadTools, Asl)           : ");
+    getstring(basename, name);
+
     printf("Destination directory                                   : ");
     getstring(destdir, "");
     if (destdir[0])
@@ -153,6 +157,7 @@ static void showarguments(void)
     printf("Type                 : %s\n", typeinfo[type].typestring);
     printf("Name                 : %s\n", name);
     printf("Lib Base Type        : %s\n", basetype);
+    printf("Lib Base Name        : %s\n", basename);
     printf("Destination directory: %s\n", destdir);
     if (includes)
     {
@@ -162,6 +167,11 @@ static void showarguments(void)
     {
 	printf("No includes.\n");
     }
+    puts("");
+    printf("--> struct %s *%sBase. Library Filename = %s.%s\n", basetype,
+    	    	    	    	    	    	    	    	basename,
+								lowername,
+								typeinfo[type].lowertypestring);
     puts("");
     printf("Are you sure you want to continue (yes/no)? ");
     getstring(s, "");
@@ -259,8 +269,8 @@ static void make_libconf(void)
     }
 
     fprintf(f, "name %s\n", lowername);    
-    fprintf(f, "basename %s\n", name);
-    fprintf(f, "libbase %sBase\n", name);
+    fprintf(f, "basename %s\n", basename);
+    fprintf(f, "libbase %sBase\n", basename);
     fprintf(f, "libbasetype %s\n", basetype);
     fprintf(f, "version 41.0\n");
     fprintf(f, "type %s\n", typeinfo[type].lowertypestring);
@@ -327,6 +337,10 @@ static void make_mmakefilesrc(void)
     fprintf(f, "%s%s : $(SLIB)\n", typeinfo[type].metatarget, lowername);
     fprintf(f, "\t@$(NOP)\n\n");
 
+    fprintf(f, "#MM %s%s-quick :\n", typeinfo[type].metatarget, lowername);
+    fprintf(f, "%s%s-quick : $(SLIB)\n", typeinfo[type].metatarget, lowername);
+    fprintf(f, "\t@$(NOP)\n\n");
+
     fprintf(f, "#MM\n"
     	       "setup :\n"
 	       "\t%%mkdirs_q $(OBJDIR) $(LIBDIR) %s\n\n", typeinfo[type].destdir);
@@ -361,7 +375,7 @@ static void make_internh(void)
     fprintf(f, "#define %s_INTERN_H\n", uppername);
     fprintf(f, "\n");
     fprintf(f, "/*\n");
-    fprintf(f, "    (C) 2000 AROS - The Amiga Research OS\n");
+    fprintf(f, "    (C) 2001 AROS - The Amiga Research OS\n");
     fprintf(f, "    "VERSION TAG"\n");
     fprintf(f, "\n");
     fprintf(f, "    Desc: Internal definitions for %s.%s\n", lowername, typeinfo[type].lowertypestring);
@@ -386,9 +400,9 @@ static void make_internh(void)
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
-    fprintf(f, "struct %sBase_intern\n", name);
+    fprintf(f, "struct %sBase_intern\n", basename);
     fprintf(f, "{\n");
-    fprintf(f, "    struct Library\t\tlibrary;\n");
+    fprintf(f, "    struct %s\t\tlibrary;\n", basetype);
     fprintf(f, "    struct ExecBase\t\t*sysbase;\n");
     fprintf(f, "    BPTR\t\t\tseglist;\n");
     fprintf(f, "\n");
@@ -398,13 +412,13 @@ static void make_internh(void)
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
     fprintf(f, "#undef %s\n", shortname);
-    fprintf(f, "#define %s(b)\t\t((struct %sBase_intern *)b)\n", shortname, name);
+    fprintf(f, "#define %s(b)\t\t((struct %sBase_intern *)b)\n", shortname, basename);
     fprintf(f, "\n");
     fprintf(f, "#undef SysBase\n");
-    fprintf(f, "#define SysBase\t\t(%s(%sBase)->sysbase)\n", shortname, name);
+    fprintf(f, "#define SysBase\t\t(%s(%sBase)->sysbase)\n", shortname, basename);
     fprintf(f, "\n");
     fprintf(f, "#undef UtilityBase\n");
-    fprintf(f, "#define UtilityBase\t(%s(%sBase)->utilitybase)\n", shortname, name);
+    fprintf(f, "#define UtilityBase\t(%s(%sBase)->utilitybase)\n", shortname, basename);
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
@@ -431,7 +445,7 @@ static void make_initc()
     }
 
     fprintf(f, "/*\n");
-    fprintf(f, "    (C) 2000 AROS - The Amiga Research OS\n");
+    fprintf(f, "    (C) 2001 AROS - The Amiga Research OS\n");
     fprintf(f, "    "VERSION TAG"\n");
     fprintf(f, "\n");
     fprintf(f, "    Desc: %s initialization code.\n", name);
@@ -455,7 +469,7 @@ static void make_initc()
     fprintf(f, "/* Customize libheader.c */\n");
     fprintf(f, "#define LC_SYSBASE_FIELD(lib)   (%s(lib)->sysbase)\n", shortname);
     fprintf(f, "#define LC_SEGLIST_FIELD(lib)   (%s(lib)->seglist)\n", shortname);
-    fprintf(f, "#define LC_LIBBASESIZE		sizeof(struct %sBase_intern)\n", name);
+    fprintf(f, "#define LC_LIBBASESIZE		sizeof(struct %sBase_intern)\n", basename);
     fprintf(f, "#define LC_LIBHEADERTYPEPTR	LIBBASETYPEPTR\n");
     fprintf(f, "#define LC_LIB_FIELD(lib)	(%s(lib)->library)\n", shortname);
     fprintf(f, "\n");
@@ -470,11 +484,11 @@ static void make_initc()
     fprintf(f, "#define DEBUG 1\n");
     fprintf(f, "#include <aros/debug.h>\n");
     fprintf(f, "\n");
-    fprintf(f, "#define SysBase\t\t\t(LC_SYSBASE_FIELD(%sBase))\n", name);
+    fprintf(f, "#define SysBase\t\t\t(LC_SYSBASE_FIELD(%sBase))\n", basename);
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
-    fprintf(f, "ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR %sBase)\n", name);
+    fprintf(f, "ULONG SAVEDS STDARGS LC_BUILDNAME(L_InitLib) (LC_LIBHEADERTYPEPTR %sBase)\n", basename);
     fprintf(f, "{\n");
     fprintf(f, "    D(bug(\"Inside Init func of %s.%s\\n\"));\n", lowername, typeinfo[type].lowertypestring);
     fprintf(f, "\n");
@@ -488,7 +502,7 @@ static void make_initc()
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
-    fprintf(f, "ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR %sBase)\n", name);
+    fprintf(f, "ULONG SAVEDS STDARGS LC_BUILDNAME(L_OpenLib) (LC_LIBHEADERTYPEPTR %sBase)\n", basename);
     fprintf(f, "{\n");
     fprintf(f, "    D(bug(\"Inside Open func of %s.%s\\n\"));\n", lowername, typeinfo[type].lowertypestring);
     fprintf(f, "\n");
@@ -497,14 +511,14 @@ static void make_initc()
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
-    fprintf(f, "void  SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR %sBase)\n", name);
+    fprintf(f, "void  SAVEDS STDARGS LC_BUILDNAME(L_CloseLib) (LC_LIBHEADERTYPEPTR %sBase)\n", basename);
     fprintf(f, "{\n");
     fprintf(f, "    D(bug(\"Inside Close func of %s.%s\\n\"));\n", lowername, typeinfo[type].lowertypestring);
     fprintf(f, "}\n");
     fprintf(f, "\n");
     fprintf(f, "/****************************************************************************************/\n");
     fprintf(f, "\n");
-    fprintf(f, "void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR %sBase)\n", name);
+    fprintf(f, "void  SAVEDS STDARGS LC_BUILDNAME(L_ExpungeLib) (LC_LIBHEADERTYPEPTR %sBase)\n", basename);
     fprintf(f, "{\n");
     fprintf(f, "    D(bug(\"Inside Expunge func of %s.%s\\n\"));\n", lowername, typeinfo[type].lowertypestring);
     fprintf(f, "\n");
@@ -537,7 +551,7 @@ static void make_dummyfunction(void)
     }
 
     fprintf(f, "/*\n");
-    fprintf(f, "    (C) 2000 AROS - The Amiga Research OS\n");
+    fprintf(f, "    (C) 2001 AROS - The Amiga Research OS\n");
     fprintf(f, "    "VERSION TAG"\n");
     fprintf(f, "\n");
     fprintf(f, "    Desc: %s function DummyFunction()\n", name);
@@ -557,7 +571,7 @@ static void make_dummyfunction(void)
     fprintf(f, "\tAROS_LHA(ULONG, two, D1),\n"),
     fprintf(f, "\n");
     fprintf(f, "/*  LOCATION */\n");
-    fprintf(f, "\tstruct %s *, %sBase, 1000, %s)\n", basetype, name, name);
+    fprintf(f, "\tstruct %s *, %sBase, 1000, %s)\n", basetype, basename, basename);
     fprintf(f, "\n");
     fprintf(f, "/*  FUNCTION\n");
     fprintf(f, "\tReturns the sum of one + two.\n");
@@ -585,7 +599,7 @@ static void make_dummyfunction(void)
     fprintf(f, "*****************************************************************************/\n");
     fprintf(f, "{\n");
     fprintf(f, "    AROS_LIBFUNC_INIT\n");
-    fprintf(f, "    AROS_LIBBASE_EXT_DECL(struct %s *,%sBase)\n", basetype, name);
+    fprintf(f, "    AROS_LIBBASE_EXT_DECL(struct %s *,%sBase)\n", basetype, basename);
     fprintf(f, "\n");
     fprintf(f, "    return one + two;\n");
     fprintf(f, "\n");
