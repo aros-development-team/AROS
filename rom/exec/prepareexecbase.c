@@ -19,7 +19,7 @@
 
 #include <proto/exec.h>
 
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 #include "memory.h"
 #include "exec_intern.h"
 

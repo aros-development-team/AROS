@@ -39,7 +39,7 @@
 #include "exec_private.h"
 #include "exec_util.h"
 #include "etask.h"
-#include "libdefs.h"
+#include LC_LIBDEFS_FILE
 
 static const UBYTE name[];
 static const UBYTE version[];
