@@ -117,6 +117,28 @@ BOOL Gadgets2Prefs
     struct IControlPrefs *prefs, struct IPWindow_DATA *data
 )
 {
+    IPTR active;
+    
+    get(data->menutypeobj, MUIA_Cycle_Active, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_POPUPMENUS;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_POPUPMENUS;
+    }
+    
+    get(data->menulookobj, MUIA_Cycle_Active, &active);
+    if (active == 0)
+    {
+    	prefs->ic_Flags &= ~ICF_3DMENUS;
+    }
+    else
+    {
+    	prefs->ic_Flags |= ICF_3DMENUS;
+    }
+    
     return TRUE;
 }
 
@@ -127,6 +149,9 @@ BOOL Prefs2Gadgets
     struct IPWindow_DATA *data, struct IControlPrefs *prefs
 )
 {
+    set(data->menutypeobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_POPUPMENUS) ? 1 : 0);
+    set(data->menulookobj, MUIA_Cycle_Active, (prefs->ic_Flags & ICF_3DMENUS) ? 1 : 0);
+    
     return TRUE;
 }
 
@@ -561,12 +586,12 @@ void MakeGUI(void)
 
     DoMethod(wnd, MUIM_Notify, MUIA_Window_CloseRequest, TRUE, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
 
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_OPEN, (IPTR) wnd, 2, MUIM_IPWindow_Open);    
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_SAVEAS, (IPTR) wnd, 2, MUIM_IPWindow_SaveAs);    
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_OPEN, (IPTR) wnd, 1, MUIM_IPWindow_Open);    
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_SAVEAS, (IPTR) wnd, 1, MUIM_IPWindow_SaveAs);    
     DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_PROJECT_QUIT, (IPTR) app, 2, MUIM_Application_ReturnID, MUIV_Application_ReturnID_Quit);
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_DEFAULT, (IPTR) wnd, 2, MUIM_IPWindow_Default);    
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_LASTSAVED, (IPTR) wnd, 2, MUIM_IPWindow_LastSaved);    
-    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, (IPTR) wnd, 2, MUIM_PreferencesWindow_Revert);
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_DEFAULT, (IPTR) wnd, 1, MUIM_IPWindow_Default);    
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_LASTSAVED, (IPTR) wnd, 1, MUIM_IPWindow_LastSaved);    
+    DoMethod(wnd, MUIM_Notify, MUIA_Window_MenuAction, MSG_MEN_EDIT_RESTORE, (IPTR) wnd, 1, MUIM_PreferencesWindow_Revert);
 
 }
 
