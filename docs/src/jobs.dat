@@ -1474,17 +1474,17 @@ reqtools00019;2;SDuvan;rtCloseWindowSafely
 reqtools00020;2;SDuvan;rtLockWindow
 reqtools00021;2;SDuvan;rtUnlockWindow
 rexxmast00001;1;verhaegs;Write RexxMast with the "REXX" port
-rexxsupport;2;verhaegs;Write ALLOCMEM
-rexxsupport;2;verhaegs;Write CLOSEPORT
-rexxsupport;2;verhaegs;Write FREEMEM
-rexxsupport;2;verhaegs;Write GETARG
-rexxsupport;2;verhaegs;Write GETPKT
-rexxsupport;2;verhaegs;Write OPENPORT
-rexxsupport;2;verhaegs;Write REPLY
-rexxsupport;2;verhaegs;Write SHOWDIR
-rexxsupport;2;verhaegs;Write SHOWLIST
-rexxsupport;0;verhaegs;Write STATEF
-rexxsupport;2;verhaegs;Write WAITPKT
+rexxsupport00000;2;verhaegs;Write ALLOCMEM
+rexxsupport00001;2;verhaegs;Write CLOSEPORT
+rexxsupport00002;2;verhaegs;Write FREEMEM
+rexxsupport00003;2;verhaegs;Write GETARG
+rexxsupport00004;2;verhaegs;Write GETPKT
+rexxsupport00005;2;verhaegs;Write OPENPORT
+rexxsupport00006;2;verhaegs;Write REPLY
+rexxsupport00007;2;verhaegs;Write SHOWDIR
+rexxsupport00008;2;verhaegs;Write SHOWLIST
+rexxsupport00009;1;verhaegs;Write STATEF
+rexxsupport00010;2;verhaegs;Write WAITPKT
 rexxsyslib00000;2;verhaegs;Write CreateArgstring
 rexxsyslib00001;2;verhaegs;Write DeleteArgstring
 rexxsyslib00002;2;verhaegs;Write LengthArgstring
