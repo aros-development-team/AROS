@@ -211,9 +211,12 @@ endif
 # the libraries in use_libs
 %define rule_linkmodule module=/A objs=/A endobj=/A err=/A extradeps= uselibs=
 
-%(module) : %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
+%(module) : $(dir %(module)) %(objs) %(endobj) $(addprefix $(LIBDIR)/lib,$(addsuffix .a,%(uselibs) libinit autoinit))
 	%link_module_q err="%(err)" endtag="%(endobj)" objs="%(objs)" \
 		       libs="$(addprefix -l,%(uselibs)) -llibinit -lautoinit"
+
+%rule_makedirs dirs="$(dir %(module))"
+
 %end
 #------------------------------------------------------------------------------
 
