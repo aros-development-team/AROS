@@ -16,7 +16,9 @@
 
 #define AROSBase	((struct AROSBase *)(SysBase->DebugData))
 
+/* Can't use ctypt.h *sigh* */
 #define isdigit(x)      ((x) >= '0' && (x) <= '9')
+#define isprint(x)      (((x) >= ' ' && (x) <= 128) || (x) >= 160)
 
 /*****************************************************************************
 
@@ -152,11 +154,19 @@
 		break; }
 
 	    case 'c': {
-		char c;
+		UBYTE c;
 
 		c = va_arg (args, char);
 
-		RawPutChar (c);
+		if (isprint (c))
+		    RawPutChar (c);
+		else
+		{
+		    RawPutChars ("'\\0x", 4);
+		    RawPutChar (lhex[c / 16]);
+		    RawPutChar (lhex[c & 15]);
+		    RawPutChar ('\'');
+		}
 
 		break; }
 
@@ -204,7 +214,7 @@ print_int:
 
 		if (*fmt == 'd' || *fmt == 'u')
 		{
-		    if (*fmt == 'u')
+		    if (*fmt == 'd')
 		    {
 			if (lval < 0)
 			{
