@@ -52,7 +52,6 @@ IPTR DoGadgetMethod (struct Gadget * gad, struct Window * win,
 ULONG SetGadgetAttrs (struct Gadget * gad, struct Window * win,
                     struct Requester * req, Tag tag1, ...);
 
-#ifndef AROS_USE_OOP
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 ULONG SetAttrs (APTR obj, Tag tag1, ...);
 ULONG SetSuperAttrs (Class * cl, Object * obj, Tag tag1, ...);
@@ -66,7 +65,6 @@ IPTR CoerceMethodA (Class * cl, Object * obj, Msg message);
 IPTR CoerceMethod (Class * cl, Object * obj, ULONG MethodID, ...);
 #endif /* !USE_BOOPSI_STUBS */
 #endif
-#endif
 
 #ifndef CLIB_BOOPSI_PROTOS_H /* Prevent name clashes */
 IPTR CallHookA (struct Hook * hook, APTR obj, APTR param);
@@ -79,14 +77,6 @@ struct Screen * OpenScreenTags (struct NewScreen * newScreen, Tag tag1, ...);
 LONG EasyRequest (struct Window * window, struct EasyStruct * easyStruct, ULONG * idcmpPtr, ...);
 
 ##end clib
-
-##begin insert_fct
-PRE #ifndef AROS_USE_OOP
-POST #endif
-FCT AddClass
-FCT RemoveClass
-FCT GetAttr
-##end insert_fct
 
 ##begin proto
 #ifndef IntuitionBase
