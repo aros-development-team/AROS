@@ -8,6 +8,7 @@
 
 
 #include "diskfont_intern.h"
+#include <string.h>
 
 #ifndef TURN_OFF_DEBUG
 #ifdef DEBUG
