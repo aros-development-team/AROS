@@ -1,7 +1,7 @@
 # $Id$
 include $(TOP)/config/make.cfg
 
-USER_INCLUDES	:= -I/usr/include
+OS_INCLUDES	:= -I$(GENINCDIR)
 OBJDIR		:= $(GENDIR)/filesys
 
 #MM kernel : setup includes

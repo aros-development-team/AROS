@@ -6,7 +6,8 @@ FILES := runprocess
 # You don't need to change anything after here unless you add new
 # directories to the above.
 
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/dos -I..
+OS_INCLUDES	:= -I$(GENINCDIR)
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/dos -I..
 CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
 CFILES		:= $(foreach f,$(FILES),$(f).c)
 DEPS		:= $(patsubst %.c,$(OSGENDIR)/dos/%.d,$(CFILES))
@@ -27,8 +28,8 @@ clean::
 check : $(TESTS)
 
 runprocess : runprocess.c ../exec/stackswap.c
-	$(CC) -DTEST -DNO_MAIN -I/usr/include $(CFLAGS) -c ../exec/stackswap.c -o ss.o
-	$(CC) -DTEST -I/usr/include $(CFLAGS) $< ss.o -o $@
+	$(CC) -DTEST -DNO_MAIN $(CFLAGS) -c ../exec/stackswap.c -o ss.o
+	$(CC) -DTEST $(CFLAGS) $< ss.o -o $@
 	$(RM) ss.o
 
 $(OSGENDIR)/dos/%.o : %.c

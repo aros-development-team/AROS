@@ -3,7 +3,8 @@ include $(TOP)/config/make.cfg
 
 FILES		:= execstubs
 OBJDIR		:= $(OSGENDIR)/exec
-SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
+OS_INCLUDES	:= -I$(OSINCDIR)
+SPECIAL_CFLAGS	:= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
 CFLAGS2 	:= $(SHARED_CFLAGS) $(CFLAGS)
 AFLAGS2 	:= $(AFLAGS) -I..
 TESTS		:=

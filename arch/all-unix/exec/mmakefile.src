@@ -11,7 +11,8 @@ OBJS	    := $(foreach f,$(FILES),$(OBJDIR)/$(f).o)
 # You don't need to change anything after here unless you add new
 # directories to the above.
 
-SPECIAL_CFLAGS	= $(SHARED_CFLAGS) -I/usr/include -I$(TOP)/rom/exec -I..
+OS_INCLUDES	:= -I$(GENINCDIR)
+SPECIAL_CFLAGS	= $(SHARED_CFLAGS) -I$(TOP)/rom/exec -I..
 CFLAGS2 	= $(SHARED_CFLAGS) $(CFLAGS)
 CFILES		:= $(foreach f,$(FILES),$(f).c)
 DEPS		:= $(patsubst %.c,$(OBJDIR)/%.d,$(CFILES))
@@ -38,7 +39,7 @@ clean ::
 check-exec-unix : $(TESTS)
 
 % : %.c
-	$(CC) -DTEST -I/usr/include $(CFLAGS) $< -o $@
+	$(CC) -DTEST $(CFLAGS) $< -o $@
 
 $(OBJDIR)/%.o : %.s
 	%assemble_q

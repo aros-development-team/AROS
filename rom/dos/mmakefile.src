@@ -2,10 +2,9 @@
 include $(TOP)/config/make.cfg
 
 # Use OS's own includes over the ones from AROS
+OS_INCLUDES := -I$(GENINCDIR)
 ifeq ("$(SHARED_DOS)","yes")
-SPECIAL_CFLAGS := $(SHARED_CFLAGS) -I/usr/include
-else
-SPECIAL_CFLAGS := -I/usr/include
+SPECIAL_CFLAGS := $(SHARED_CFLAGS)
 endif
 
 LIBNAME     := dos
