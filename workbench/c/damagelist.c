@@ -105,10 +105,10 @@ static void Action(void)
     
     while(rr)
     {
-    	x1 = dr->bounds.MinX + rr->bounds.MinX;
-	y1 = dr->bounds.MinY + rr->bounds.MinY;
-	x2 = dr->bounds.MinX + rr->bounds.MaxX;
-	y2 = dr->bounds.MinY + rr->bounds.MaxY;
+    	x1 = lay->bounds.MinX + dr->bounds.MinX + rr->bounds.MinX;
+	y1 = lay->bounds.MinY + dr->bounds.MinY + rr->bounds.MinY;
+	x2 = lay->bounds.MinX + dr->bounds.MinX + rr->bounds.MaxX;
+	y2 = lay->bounds.MinY + dr->bounds.MinY + rr->bounds.MaxY;
 
     	printf("#%04d (%4d,%4d) - (%4d, %4d)  Size: %4d x %4d\n",
 		++count,
