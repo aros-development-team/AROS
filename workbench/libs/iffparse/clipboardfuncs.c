@@ -113,12 +113,18 @@ ULONG ClipStreamHandler
 	    req->io_Length  =  CLIPSCANBUFSIZE;
 
 
-	    if (iff->iff_Flags & IFFF_READ)
+	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_READ)
 	    {
 		/* Read until there is not more left */
 		while (req->io_Actual)
 		    DoIO((struct IORequest*)req);
 
+	    }
+	    
+	    if ((iff->iff_Flags & IFFF_RWBITS) == IFFF_WRITE)
+	    {
+	        req->io_Command = CMD_UPDATE;
+		DoIO((struct IORequest*)req);
 	    }
 	    break;
 
