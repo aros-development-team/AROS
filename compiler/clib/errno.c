@@ -6,4 +6,8 @@
     Lang: english
 */
 
-int errno = 0;
+#ifndef  _CLIB_KERNEL_
+
+int errno;
+
+#endif

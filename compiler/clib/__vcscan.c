@@ -5,6 +5,9 @@
     Desc: Function to scan a string like scanf().
     Lang: english
 */
+
+#define __vcscan __vcscan
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -32,6 +35,9 @@ static unsigned char undef[3][sizeof(double)]= /* Undefined numeric values, IEEE
   { 0x7f,0xf1,0x00,0x00,0x00,0x00,0x00,0x00 }  /*  NaN */
 };
 #endif
+
+#undef getc
+#undef ungetc
 
 /*****************************************************************************
 

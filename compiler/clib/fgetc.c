@@ -5,6 +5,7 @@
     Desc: ANSI C function fgetc()
     Lang: english
 */
+
 #include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -50,6 +51,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     int c;
     fdesc *fdesc = __getfdesc(stream->fd);
 

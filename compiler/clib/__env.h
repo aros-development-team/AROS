@@ -16,7 +16,9 @@ typedef struct __env_item
 	char *value;
 } __env_item;
 
+#ifndef _CLIB_KERNEL_
 extern __env_item *__env_list;
+#endif
 
 __env_item *__env_getvar(char *varname, int valuesize);
 void __env_delvar(char *varname);

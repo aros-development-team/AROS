@@ -5,6 +5,7 @@
     Desc: ANSI C function fscanf()
     Lang: english
 */
+
 #include <stdarg.h>
 
 /*****************************************************************************

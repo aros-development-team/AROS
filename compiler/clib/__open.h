@@ -16,7 +16,9 @@ typedef struct
     unsigned int opencount;
 } fdesc;
 
+#ifndef _CLIB_KERNEL_
 extern void *__stdfiles[3];
+#endif
 
 fdesc *__getfdesc(register int fd);
 void __setfdesc(register int fd, fdesc *fdesc);

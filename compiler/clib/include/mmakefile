@@ -2,7 +2,7 @@
 include $(TOP)/config/make.cfg
 
 INCDIR		:= $(AROSDIR)/Include
-INCLUDES	:= $(wildcard *.h sys/*.h)
+INCLUDES	:= $(wildcard *.h sys/*.h sys/*.def)
 DEST_INCLUDES	:= $(foreach f,$(INCLUDES),$(INCDIR)/$(f))
 
 #MM includes-copy :
@@ -16,6 +16,9 @@ setup :
 	done
 
 $(INCDIR)/%.h : %.h
+	@$(CP) $< $@
+
+$(INCDIR)/%.def : %.def
 	@$(CP) $< $@
 
 #MM

@@ -6,6 +6,9 @@
     Lang: english
 */
 
+#define _LIBC_KERNEL_
+#define sprintf sprintf
+
 /*****************************************************************************
 
     NAME */

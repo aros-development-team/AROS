@@ -11,6 +11,8 @@
 
 int __stat(BPTR lock, struct stat *sb)
 {
+    GETUSER;
+
     struct FileInfoBlock *fib;
 
     fib = AllocDosObject(DOS_FIB, NULL);

@@ -5,6 +5,7 @@
     Desc: ANSI C function fputc()
     Lang: english
 */
+
 #include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -48,6 +49,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     fdesc *fdesc = __getfdesc(stream->fd);
 
     if (!fdesc)

@@ -5,8 +5,10 @@
     Desc: Get the position in a stream
     Lang: english
 */
+
+#define fgetpos fgetpos
+
 #include <errno.h>
-#include <stdio.h>
 
 /*****************************************************************************
 
@@ -48,6 +50,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     if ( pos == NULL )
     {
 	errno = EINVAL;

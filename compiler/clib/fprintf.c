@@ -5,6 +5,7 @@
     Desc: ANSI C function fprintf()
     Lang: english
 */
+
 #include <stdarg.h>
 
 /*****************************************************************************

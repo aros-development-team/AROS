@@ -6,6 +6,8 @@
     Lang: english
 */
 
+#define remove remove
+
 #include <proto/dos.h>
 #include "__errno.h"
 
@@ -46,6 +48,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     if (!DeleteFile ((STRPTR)pathname))
     {
 	errno = IoErr2errno (IoErr());

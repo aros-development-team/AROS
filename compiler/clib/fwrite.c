@@ -5,6 +5,7 @@
     Desc: ANSI C function fwrite()
     Lang: english
 */
+
 #include <errno.h>
 #include <dos/dos.h>
 #include <dos/dosextens.h>
@@ -56,6 +57,8 @@
 
 ******************************************************************************/
 {
+    GETUSER;
+
     size_t cnt;
 
     fdesc *fdesc = __getfdesc(stream->fd);

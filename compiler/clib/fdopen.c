@@ -6,7 +6,6 @@
     Lang: english
 */
 
-
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -70,6 +69,8 @@
     int oflags, tmp;
     fdesc *fdesc;
     FILENODE *fn;
+
+    GETUSER;
 
     if (!(fdesc = __getfdesc(filedes)))
     {

@@ -11,6 +11,8 @@
 
 int stat(const char *path, struct stat *sb)
 {
+    GETUSER;
+
     int res = 0;
     BPTR lock;
 

@@ -21,20 +21,17 @@
 #include "__open.h"
 #include "__stdio.h"
 
-FILE * stdin;
-FILE * stdout;
-FILE * stderr;
+#ifndef _CLIB_KERNEL_
 
-struct MinList __stdio_files =
-{
-    (struct MinNode *)&__stdio_files.mlh_Tail,
-    NULL,
-    (struct MinNode *)&__stdio_files
-};
+FILE *stdin, *stdout, *stderr;
+struct MinList __stdio_files;
 
+#endif
 
 int __smode2oflags(char *mode)
 {
+    GETUSER;
+
     int ret = -1;
     int theresb = 0;
 
@@ -85,6 +82,8 @@ int __smode2oflags(char *mode)
 
 int __oflags2sflags(int omode)
 {
+    GETUSER;
+
     int ret;
 
     switch (omode & O_ACCMODE)
@@ -112,8 +111,12 @@ int __oflags2sflags(int omode)
     return ret;
 }
 
-void __init_stdio(void)
+int __init_stdio(void)
 {
+    GETUSER;
+
+    NEWLIST(&__stdio_files);
+
     if
     (
         !(stdin  = fdopen(STDIN_FILENO, NULL))  ||
@@ -122,8 +125,10 @@ void __init_stdio(void)
     )
     {
     	SetIoErr(ERROR_NO_FREE_STORE);
-    	exit(20);
+    	return 20;
     }
+      
+    return 0;
 }
 
 ADD2INIT(__init_stdio, 5);

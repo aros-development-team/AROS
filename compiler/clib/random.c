@@ -58,8 +58,6 @@
  * predicted by this formula.
  */
 
-
-
 /*
  * For each of the currently supported random number generators, we have a
  * break value on the amount of state information (you need at least this
@@ -181,6 +179,10 @@ static  long		*end_ptr		= &randtbl[ DEG_3 + 1 ];
  * Note that the initialization of randtbl[] for default usage relies on
  * values produced by this routine.
  */
+
+#ifdef srandom
+#error ciaooo
+#endif
 
 void srandom(unsigned x)
 {
