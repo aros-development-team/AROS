@@ -68,5 +68,5 @@
     	str++;
     }
     
-    return str;
+    return (char *)str;
 } /* stpblk */
