@@ -163,7 +163,7 @@ int intui_OpenWindow (struct Window * w,
 	
 	if (createsysgads(w, IntuitionBase))
 	{
-	
+
 	    RefreshWindowFrame(w);
 
     	    ReturnBool("intui_OpenWindow", TRUE);
