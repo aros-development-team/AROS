@@ -39,6 +39,7 @@ extern jmp_buf __startup_jmp_buf;
 	    abort ();
 
     BUGS
+	Signal handling is not implemented yet.
 
     SEE ALSO
 	signal(), exit()
