@@ -2,6 +2,9 @@
     (C) 1995-96 AROS - The Amiga Research OS
     $Id$
     $Log$
+    Revision 1.18  1999/08/20 16:26:21  SDuvan
+    Added public screen capabilities
+
     Revision 1.17  1999/04/02 19:29:32  nlorentz
     CloseWindow() now waits for intuition to close window before it returns
 
@@ -128,7 +131,12 @@
     
 
     D(bug("CloseWindow (%p)\n", window));
-    
+
+    if(GetPrivScreen(window->WScreen)->pubScrNode != NULL)
+    {
+	UnlockPubScreen(NULL, window->WScreen);
+    }
+
     /* We take a very simple approach to avoid race conditions with the
        intuition input handler running one input.device 's task:
        We just send it a msg about closing the window
@@ -154,7 +162,7 @@
     
     
     /* We must use a bit hacky way to wait for intuition
-      to close thw window. Since there may be no userport
+      to close the window. Since there may be no userport
       at this point, we can't wait for a message so we must wait for a
       system signal instead
     */

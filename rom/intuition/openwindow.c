@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Intuition function OpenWindow()
@@ -19,7 +19,7 @@
 #   define DEBUG_OpenWindow 0
 #endif
 #undef DEBUG
-#if DEBUG_OpenWindow
+#ifdef DEBUG_OpenWindow
 #   define DEBUG 1
 #endif
 #	include <aros/debug.h>
@@ -178,8 +178,50 @@
 		break;
 
 	    case WA_PubScreenName:
+		{
+		    char buffer[MAXPUBSCREENNAME + 1];
+		    
+		    if(tag->ti_Data == NULL)
+		    {
+			GetDefaultPubScreen(buffer);
+			nw.Screen = LockPubScreen(buffer);
+		    }
+		    else
+			nw.Screen = LockPubScreen((UBYTE *)tag->ti_Data);
+		    
+		    if(nw.Screen == NULL)
+		    {
+			BOOL fallback = (BOOL)GetTagData(WA_PubScreenFallBack,
+							 FALSE, tagList);
+			
+			if(fallback)
+			{
+			    nw.Screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
+
+			    if(nw.Screen != NULL)
+			    {
+				GetDefaultPubScreen(buffer);
+				nw.Screen = LockPubScreen(buffer);
+			    }
+			}
+		    }
+		    
+		    break;
+		}
+
 	    case WA_PubScreen:
-	    case WA_PubScreenFallBack:
+		if(tag->ti_Data == NULL)
+		{
+		    nw.Screen = GetPrivIBase(IntuitionBase)->DefaultPubScreen;
+		    /* We may do this as the user must already have an
+		       exclusive lock on the public screen. */
+		    GetPrivScreen(GetPrivIBase(IntuitionBase)->DefaultPubScreen)->pubScrNode->psn_VisitorCount++;
+		}
+		else
+		    nw.Screen = (struct Screen *)tag->ti_Data;
+
+		break;
+
 	    case WA_WindowName:
 	    case WA_Colors:
 	    case WA_MouseQueue:
@@ -215,7 +257,7 @@
 
     w  = AllocMem (intui_GetWindowSize (), MEMF_CLEAR);
     
-/* nlorentz: For now, creating a rastport becomes the responiibility of
+/* nlorentz: For now, creating a rastport becomes the responsibility of
    intui_OpenWindow(). This is because intui_OpenWindow() in
    config/hidd/intuition_driver.c must call CreateUpfrontLayer(),
    and that will create a rastport for the layer/window, and we don't
@@ -261,8 +303,8 @@
     w->FirstGadget = nw.FirstGadget;
 
 
-    D(bug("Window dims: (%d, %d, %d, %d)\n"
-    	, w->LeftEdge, w->TopEdge, w->Width, w->Height));
+    D(bug("Window dims: (%d, %d, %d, %d)\n",
+	  w->LeftEdge, w->TopEdge, w->Width, w->Height));
 	
 
     if (nw.DetailPen == 0xFF) nw.DetailPen = 1;
@@ -278,7 +320,7 @@
     else if (nw.Type == CUSTOMSCREEN)
 	w->WScreen = nw.Screen;
     else
-	w->WScreen = GetPrivIBase (IntuitionBase)->WorkBench;
+	w->WScreen = GetPrivIBase(IntuitionBase)->WorkBench;
 
 
     /* Copy flags */
@@ -322,8 +364,8 @@
 
 /* nlorentz: The driver has in some way or another allocated a rastport for us,
    which now is ready for us to use. */
-   driver_init_done = TRUE;
-   rp = w->RPort;
+    driver_init_done = TRUE;
+    rp = w->RPort;
 
     D(bug("called driver, rp=%p\n", rp));
     if (w->WScreen->Font)
@@ -393,32 +435,30 @@ failexit:
     
     if (w)
     {
-
 	ModifyIDCMP (w, 0L);
+	
+	/* nlorentz: Freeing the rasport is now intui_CloseWindow()'s task.
 
-
-/* nlorentz: Freeing the rasport is now intui_CloseWindow()'s task.
-
-    if (rp)
-    {
-	FreeRastPort (rp);
-    }
-*/
-
+	   if (rp)
+	   {
+	       FreeRastPort (rp);
+	   }
+	*/
+	
 	if (IW(w)->closeMessage)
 	    FreeMem(IW(w)->closeMessage, sizeof (struct closeMessage));
-
+	
 	if (driver_init_done)
 	    intui_CloseWindow(w, IntuitionBase);
-
+	
 	if (w->UserPort)
 	    DeleteMsgPort(w->UserPort);
-	    
+	
 	FreeMem (w, intui_GetWindowSize ());
-
+	
 	w = NULL;
     }
-
+    
 exit:
     ReturnPtr ("OpenWindow", struct Window *, w);
     AROS_LIBFUNC_EXIT

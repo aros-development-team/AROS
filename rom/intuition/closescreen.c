@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Close a screen opened via OpenScreen and the like
@@ -34,9 +34,16 @@
 
 /*  FUNCTION
 
+    Release all resources held by a screen and close it down visually.
+
     INPUTS
 
+    screen  --  pointer to the screen to be closed
+
     RESULT
+
+    TRUE if the screen is successfully closed, FALSE if there were still
+    windows left on the screen (which means the screen is not closed).
 
     NOTES
 
@@ -59,6 +66,31 @@
     struct Screen * parent;
 
     D(bug("CloseScreen (%p)\n", screen));
+
+
+    /* If this is a public screen, free related information if there are
+       no windows left on the screen */
+    if(GetPrivScreen(screen)->pubScrNode != NULL)
+    {
+	LockPubScreenList();
+
+	if(GetPrivScreen(screen)->pubScrNode->psn_VisitorCount != 0)
+	{
+	    UnlockPubScreenList();
+	    return FALSE;
+	}
+
+	Remove((struct Node *)GetPrivScreen(screen)->pubScrNode);
+
+	if(GetPrivScreen(screen)->pubScrNode->psn_Node.ln_Name != NULL)
+	    FreeVec(GetPrivScreen(screen)->pubScrNode->psn_Node.ln_Name);
+	
+	FreeMem(GetPrivScreen(screen)->pubScrNode,
+		sizeof(struct PubScreenNode));
+
+	UnlockPubScreenList();
+    }
+    
 
     /* Trick: Since NextScreen is the first field of the structure,
 	we can use the pointer in the IntuitionBase as a screen with
@@ -92,10 +124,10 @@
 	    FreeBitMap(screen->RastPort.BitMap);
 
 	    /* Free the RastPort's contents */
-	    DeinitRastPort (&screen->RastPort);
+	    DeinitRastPort(&screen->RastPort);
 
 	    /* Free the memory */
-	    FreeMem (screen, sizeof (struct IntScreen));
+	    FreeMem(screen, sizeof (struct IntScreen));
 
 	    ReturnBool("CloseScreen",TRUE);
 	}

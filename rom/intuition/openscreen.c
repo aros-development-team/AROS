@@ -1,5 +1,5 @@
 /*
-    (C) 1995-96 AROS - The Amiga Research OS
+    (C) 1995-99 AROS - The Amiga Research OS
     $Id$
 
     Desc: Open a new screen
@@ -89,10 +89,14 @@ static const ULONG coltab[] = {
     AROS_LIBFUNC_INIT
     AROS_LIBBASE_EXT_DECL(struct IntuitionBase *,IntuitionBase)
     
-    struct NewScreen ns;
-    struct TagItem *tag, *tagList;
-    struct IntScreen * screen;
+    struct NewScreen  ns;
+    struct TagItem   *tag, *tagList;
+    struct IntScreen *screen;
+    int               success;
+    ULONG            *errorPtr;	  /* Store error at user specified location */
+
 #define COPY(x)     screen->Screen.x = ns.x
+#define SetError(x) if(errorPtr != NULL) *errorPtr = x;
 
     D(bug("OpenScreen (%p = { Left=%d Top=%d Width=%d Height=%d Depth=%d })\n"
 	, newScreen
@@ -113,12 +117,23 @@ static const ULONG coltab[] = {
     {
     	tagList = NULL;
     }
-    
-    if (tagList)
+
+    screen = AllocMem(sizeof (struct IntScreen), MEMF_ANY | MEMF_CLEAR);
+
+    /* Do this really early to be able to report errors */
+    errorPtr = (ULONG *)GetTagData(SA_ErrorCode, NULL, tagList);
+       
+    if(screen == NULL)
     {
-	while ((tag = NextTagItem (&tagList)))
+	SetError(OSERR_NOMEM);
+	return NULL;
+    }
+
+    if(tagList)
+    {
+	while((tag = NextTagItem (&tagList)))
 	{
-	    switch (tag->ti_Tag)
+	    switch(tag->ti_Tag)
 	    {
 	    case SA_Left:	ns.LeftEdge  = tag->ti_Data; break;
 	    case SA_Top:	ns.TopEdge   = tag->ti_Data; break;
@@ -138,12 +153,79 @@ static const ULONG coltab[] = {
 		break;
 
 	    case SA_Colors:
-	    case SA_ErrorCode:
 	    case SA_SysFont:
 	    case SA_BitMap:
+		break;
+
+
+		/* Name of this public screen. */
 	    case SA_PubName:
+		if(tag->ti_Data == NULL)
+		    break;
+
+		{
+		    struct Screen *old;
+		    
+		    LockPubScreenList();
+		    
+		    old = LockPubScreen((STRPTR)tag->ti_Data);
+		    
+		    if(old != NULL)
+		    {
+			UnlockPubScreen(NULL, old);
+			SetError(OSERR_PUBNOTUNIQUE);
+			UnlockPubScreenList();
+			return NULL;
+		    }
+		    
+		    UnlockPubScreenList();
+		}			
+		
+		screen->pubScrNode = AllocMem(sizeof(struct PubScreenNode), MEMF_CLEAR);
+		
+		if(screen->pubScrNode == NULL)
+		{
+		    SetError(OSERR_NOMEM);
+		    return NULL;
+		}		
+		
+		screen->pubScrNode->psn_Node.ln_Name = AllocVec(MAXPUBSCREENNAME + 1,
+								MEMF_ANY);
+		
+		if(screen->pubScrNode->psn_Node.ln_Name == NULL)
+		{
+		    SetError(OSERR_NOMEM);
+		    FreeMem(screen->pubScrNode, sizeof(struct PubScreenNode));
+		    return NULL;
+		}
+		
+		/* Always open public screens in private mode. */
+		screen->pubScrNode->psn_Flags |= PSNF_PRIVATE;
+		strcpy(screen->pubScrNode->psn_Node.ln_Name, (STRPTR)tag->ti_Data);
+		break;
+		
+		/* Signal bit number to use when signalling public screen
+		   signal task. */
 	    case SA_PubSig:
+		if(screen->pubScrNode == NULL)
+		    return NULL;
+		
+		/* If no PubTask is set, we set the calling task as default */
+		if(screen->pubScrNode->psn_SigTask == NULL)
+		    screen->pubScrNode->psn_SigTask = FindTask(NULL);
+		
+		screen->pubScrNode->psn_SigBit = (UBYTE)tag->ti_Data;
+		break;
+		
+		/* Task that should be signalled when the public screen loses
+		   its last visitor window. */
 	    case SA_PubTask:
+		if(screen->pubScrNode == NULL)
+		    return NULL;
+		
+		screen->pubScrNode->psn_SigTask = (struct Task *)tag->ti_Data;
+		break;
+		
 	    case SA_DisplayID:
 	    case SA_DClip:
 	    case SA_Overscan:
@@ -174,54 +256,47 @@ static const ULONG coltab[] = {
 	} /* while ((tag = NextTagItem (&tagList))) */
 
     } /* if (tagList) */
+
+    /* First Init the RastPort then get the BitPlanes!! */
+    success = InitRastPort (&screen->Screen.RastPort);      
+    screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, 
+						 ns.Height, 
+						 ns.Depth, 
+						 BMF_CLEAR | BMF_DISPLAYABLE , 
+						 NULL);
+    D(bug("got bitmap\n"));	    
     
-    screen = AllocMem (sizeof (struct IntScreen), MEMF_ANY | MEMF_CLEAR);
-
-    if (screen)
+    /* Init screens viewport (probably not necessary, but I'll do it anyway */
+    InitVPort(&screen->Screen.ViewPort);
+    
+    /* Allocate a RasInfo struct in which we have  a pointer
+       to the struct BitMap, into which the driver can
+       store its stuff. (Eg. pointer to a BitMap HIDD object) 
+    */
+    screen->Screen.ViewPort.RasInfo = AllocMem(sizeof(struct RasInfo), MEMF_ANY | MEMF_CLEAR);
+    
+    
+    if(!success || (NULL == screen->Screen.RastPort.BitMap) || (NULL == screen->Screen.ViewPort.RasInfo))
     {
-      /* First Init the RastPort then get the BitPlanes!! */
-        int success = InitRastPort (&screen->Screen.RastPort);      
-        screen->Screen.RastPort.BitMap = AllocBitMap(ns.Width, 
-                                                     ns.Height, 
-                                                     ns.Depth, 
-                                                     BMF_CLEAR |BMF_DISPLAYABLE , 
-
-                                                     NULL);
-        D(bug("got bitmap\n"));	    
-						     
-	/* Init screens viewport (probably not necessary, but I'll do it anyway */
-	InitVPort(&screen->Screen.ViewPort);
-	
-	/* Allocate a RasInfo struct in which we have  a pointer
-	   to the struct BitMap, into which the driver can
-	   store its stuff. (Eg. pointer to a BitMap HIDD object) 
-	*/
-	screen->Screen.ViewPort.RasInfo = AllocMem( sizeof (struct RasInfo), MEMF_ANY|MEMF_CLEAR);
-	
-	   
-	if (!success  || (NULL == screen->Screen.RastPort.BitMap) || (NULL == screen->Screen.ViewPort.RasInfo) )
-	{
-          if (screen->Screen.RastPort.BitMap)
+	if (screen->Screen.RastPort.BitMap)
             FreeBitMap(screen->Screen.RastPort.BitMap);
-	    
-	  if (screen->Screen.ViewPort.RasInfo)
-	      FreeMem(screen->Screen.ViewPort.RasInfo, sizeof (struct RasInfo));
-
-	  FreeMem (screen, sizeof (struct IntScreen));
-	  screen = NULL;
-          return NULL;
-	}
-	else
-	{
-	    /* Store pointer to bitmap, so we can get hold of it
-	       from withing LoadRGBxx() functions
-	    */
-        D(bug("got allocated stuff\n"));	    
-	    screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
-	}
 	
+	if (screen->Screen.ViewPort.RasInfo)
+	    FreeMem(screen->Screen.ViewPort.RasInfo, sizeof (struct RasInfo));
+	
+	FreeMem (screen, sizeof (struct IntScreen));
+	screen = NULL;
+	return NULL;
     }
-
+    else
+    {
+	/* Store pointer to bitmap, so we can get hold of it
+	   from withing LoadRGBxx() functions
+	*/
+        D(bug("got allocated stuff\n"));	    
+	screen->Screen.ViewPort.RasInfo->BitMap = screen->Screen.RastPort.BitMap;
+    }
+    
     if (screen)
     {
         D(bug("Loading colors\n"));
@@ -280,7 +355,7 @@ static const ULONG coltab[] = {
 	screen->DInfo.dri_Flags = 0;
 
 	if (screen->Screen.Font)
-	    screen->DInfo.dri_Font = OpenFont (screen->Screen.Font);
+	    screen->DInfo.dri_Font = OpenFont(screen->Screen.Font);
 
 	if (!screen->DInfo.dri_Font)
 	    screen->DInfo.dri_Font = GfxBase->DefaultFont;
@@ -308,6 +383,14 @@ static const ULONG coltab[] = {
 	SetRast(&screen->Screen.RastPort, screen->Pens[BACKGROUNDPEN]);
 
         D(bug("SetRast() called\n"));	    
+
+	/* If this is a public screen, we link it into the intuition global
+	   public screen list */
+	if(screen->pubScrNode != NULL)
+	{
+	    AddTail((struct List *)&GetPrivIBase(IntuitionBase)->PubScreenList,
+		    (struct Node *)GetPrivScreen(screen)->pubScrNode);
+	}
 
     }
 
