@@ -2,6 +2,14 @@
 hpp
 *.o
 *.src
-*.html
+html
+tex
 format
 pics
+*.ps
+*.dvi
+*.html
+*.aux
+*.tex
+*.cb
+*.log
