@@ -8,3 +8,18 @@ I\0Import...
 MSG_MENU_PREFS_EXPORT (//)
 E\0Export...
 ;
+MSG_MENU_PREFS_TEST (//)
+T\0Test
+;
+MSG_MENU_PREFS_REVERT (//)
+R\0Revert
+;
+MSG_MENU_PREFS_SAVE (//)
+S\0Save
+;
+MSG_MENU_PREFS_USE (//)
+U\0Use
+;
+MSG_MENU_PREFS_CANCEL (//)
+C\0Cancel
+;
