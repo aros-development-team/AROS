@@ -984,6 +984,8 @@ D(bug("Window: %p\n", w));
 	    struct shortIntuiMessage * msg = (struct shortIntuiMessage *)im;
             BOOL CheckLayersBehind = FALSE;
             BOOL CheckLayersInFront = FALSE;
+            struct Window * targetwindow = msg->Window;
+            struct Layer  * targetlayer  = targetwindow->WLayer;
             struct Layer * L;
 	    
 	    switch (im->Code)
@@ -998,20 +1000,27 @@ D(bug("Window: %p\n", w));
 		break; }
 		 
 		case IMCODE_WINDOWTOFRONT: {
-		    L = msg->Window->WLayer;
-		    if (0 == (L->Flags & LAYERBACKDROP))
+		    if (0 == (targetlayer->Flags & LAYERBACKDROP))
 		    {
-		      UpfrontLayer(NULL, L);
+		      /* GZZ or regular window? */
+		      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		      {
+		        /* bring outer window to front first!! */
+		        UpfrontLayer(NULL, targetwindow->BorderRPort->Layer);
+		        RefreshWindowFrame(targetwindow);
+		      }
 		      
-		      /* only this layer needs to be updated */
-		      if (0 != (L->Flags & LAYERREFRESH))
+		      UpfrontLayer(NULL, targetlayer);
+		      
+		      /* only this layer (inner window) needs to be updated */
+		      if (0 != (targetlayer->Flags & LAYERREFRESH))
 		      {
 		        struct IntuiMessage * IM = alloc_intuimessage(IntuitionBase);
-		        L->Flags &= ~LAYERREFRESH;
+		        targetlayer->Flags &= ~LAYERREFRESH;
 		        if (NULL != IM)
 		        {
 		          IM->Class = IDCMP_REFRESHWINDOW;
-		          send_intuimessage(IM, msg->Window, IntuitionBase);
+		          send_intuimessage(IM, targetwindow, IntuitionBase);
 		        }
 		      }
 		    } 
@@ -1020,14 +1029,35 @@ D(bug("Window: %p\n", w));
 
 		case IMCODE_WINDOWTOBACK: {
 		    /* I don't move backdrop layers! */
-		    L = msg->Window->WLayer;
-		    if (0 == (L->Flags & LAYERBACKDROP))
+		    if (0 == (targetlayer->Flags & LAYERBACKDROP))
 		    {
-		      /* The layer behind the one to move will be the 
-		         first one to check for damage */
-		       
-		      BehindLayer(NULL, L);
-		      L = msg->Window->WLayer->back;
+		      /* 
+		         The layer behind the one to move will be the 
+		         first one to check for damage, different for
+		         GZZ window and regular windows, though! 
+		      */
+      		      if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		      {
+		        /* for a regular window */
+		        L = targetlayer->back;
+		      }
+		      else
+		      {
+		        /* for a GZZ window */
+		        L = targetlayer->back->back;
+		      }
+		      
+		      BehindLayer(0, targetlayer);
+		      
+		      /* GZZ window or regular window? */
+		      if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+		      {
+		        /* move outer window behind! */
+		        /* attention: targetlayer->back would not be valid as
+		                      targetlayer already moved!! 
+		        */
+		        BehindLayer(0, targetwindow->BorderRPort->Layer);
+		      } 
 		      CheckLayersBehind = TRUE;
 		    }
 		    
@@ -1035,149 +1065,208 @@ D(bug("Window: %p\n", w));
 		break; }
 		    
 		case IMCODE_ACTIVATEWINDOW: {
-		    int_activatewindow(msg->Window, IntuitionBase);
+		    int_activatewindow(targetwindow, IntuitionBase);
 		    
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
 		break; }
 
 
                 case IMCODE_MOVEWINDOW: { 
-
-                     MoveLayer(NULL,
-                               msg->Window->WLayer,
+                     
+                     MoveLayer(0,
+                               targetlayer,
                                msg->dx,
                                msg->dy);
 
-                     msg->Window->LeftEdge += msg->dx;
-                     msg->Window->TopEdge  += msg->dy;
+                     /* in case of GZZ windows also move outer window */
+                     if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                     {
+                       MoveLayer(NULL,
+                                 targetwindow->BorderRPort->Layer,
+                                 msg->dx,
+                                 msg->dy);
+                       RefreshWindowFrame(targetwindow);
+                     }
+
+                     
+                     ((struct IntWindow *)targetwindow)->ZipLeftEdge = targetwindow->LeftEdge;
+                     ((struct IntWindow *)targetwindow)->ZipTopEdge  = targetwindow->TopEdge;
+
+                     targetwindow->LeftEdge += msg->dx;
+                     targetwindow->TopEdge  += msg->dy;
 
                      CheckLayersBehind = TRUE;
-                     L = msg->Window->WLayer;
-                    
+                     L = targetlayer;
+                     
+
+                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
 
                 case IMCODE_MOVEWINDOWINFRONTOF: { 
-                     MoveLayerInFrontOf(msg->      Window->WLayer,
+                     
+
+                     /* If GZZ window then also move outer window */
+                     if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                     {
+                       MoveLayerInFrontOf(targetwindow->BorderRPort->Layer,
+                                          msg->BehindWindow->WLayer);
+                       RefreshWindowFrame(targetwindow);
+                     }
+                     MoveLayerInFrontOf(     targetwindow->WLayer,
                                         msg->BehindWindow->WLayer);
+                     
                      CheckLayersBehind = TRUE;
                      CheckLayersInFront = TRUE;
-                     L = msg->Window->WLayer;
+                     L = targetlayer;
                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
                     
                 case IMCODE_SIZEWINDOW: {
+                     
                      /* First erase the old frame on the right side and 
-                        on the lower side if necessary */
-
-                     if (msg->dy > 0)
+                        on the lower side if necessary, but only do this
+                        for not GZZ windows 
+                     */
+                     
+                     if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
-                       struct RastPort * rp = msg->Window->RPort;
-                       WORD Oldcp_x = rp->cp_x;
-                       WORD Oldcp_y = rp->cp_y;
-                       ULONG OldAPen = GetAPen(rp);
-                       SetAPen(rp, 0);
-                       Move(rp, 0, msg->Window->Height-1);
-                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
-                       SetAPen(rp, OldAPen);
-                       rp->cp_x = Oldcp_x;
-                       rp->cp_y = Oldcp_y;
+                       if (msg->dy > 0)
+                       {
+                         struct RastPort * rp = targetwindow->BorderRPort;
+                         SetAPen(rp, 0);
+                         Move(rp, 0, targetwindow->Height-1);
+                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                       }
+                       if (msg->dx > 0)
+                       {
+                         struct RastPort * rp = targetwindow->BorderRPort;
+                         SetAPen(rp, 0);
+                         Move(rp, targetwindow->Width-1, 0);
+                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                       }
                      }
-                     if (msg->dx > 0)
+                     
+                     /* I first resize the outer window if a GZZ window */
+                     if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
                      {
-                       struct RastPort * rp = msg->Window->RPort;
-                       WORD Oldcp_x = rp->cp_x;
-                       WORD Oldcp_y = rp->cp_y;
-                       ULONG OldAPen = GetAPen(rp);
-                       SetAPen(rp, 0);
-                       Move(rp, msg->Window->Width-1, 0);
-                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
-                       SetAPen(rp, OldAPen);
-                       rp->cp_x = Oldcp_x;
-                       rp->cp_y = Oldcp_y;
+                       SizeLayer(NULL,
+                                 targetwindow->BorderRPort->Layer,
+                                 msg->dx,
+                                 msg->dy);
+                                 
                      }
+                     
                      SizeLayer(NULL, 
-                               msg->Window->WLayer,
+                               targetlayer,
                                msg->dx,
                                msg->dy);
 
-                     msg->Window->Width += msg->dx;
-                     msg->Window->Height+= msg->dy;
+                     
+                     ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
+                     ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
 
-                     CheckLayersBehind = TRUE;
-                     L = msg->Window->WLayer;
+                     targetwindow->Width += msg->dx;
+                     targetwindow->Height+= msg->dy;
+
+                     /* 
+                        Only if the window is smaller now there can be damage
+                        to report to layers further behind
+                     */
+                     if (msg->dx < 0 || msg->dy < 0)
+                     {
+                       CheckLayersBehind = TRUE;
+                       if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                       {
+                         L = targetlayer;
+                       }
+                       else
+                       {
+                         L = targetlayer->back;
+                       }
+                     }
                      /* and redraw the window frame */
-                     RefreshWindowFrame(msg->Window);
+                     RefreshWindowFrame(targetwindow);
 
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
                          
                 case IMCODE_ZIPWINDOW: {
                      struct IntWindow * w = (struct IntWindow *)msg->Window;
-                     UWORD OldLeftEdge  = w->window.LeftEdge;
-                     UWORD OldTopEdge   = w->window.TopEdge;
-                     UWORD OldWidth     = w->window.Width;
-                     UWORD OldHeight    = w->window.Height;
+                     UWORD OldLeftEdge  = targetwindow->LeftEdge;
+                     UWORD OldTopEdge   = targetwindow->TopEdge;
+                     UWORD OldWidth     = targetwindow->Width;
+                     UWORD OldHeight    = targetwindow->Height;
                     
-                     MoveSizeLayer(w->window.WLayer,
+                     /* check for GZZ window */
+                     if (0 != (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                     {
+                       /* move outer window first */
+                       MoveSizeLayer(targetwindow->BorderRPort->Layer,
+                                     w->ZipLeftEdge - OldLeftEdge,
+                                     w->ZipTopEdge  - OldTopEdge,
+                                     w->ZipWidth    - OldWidth,
+                                     w->ZipHeight   - OldHeight);
+
+                     }
+
+                     L = targetlayer;
+                     CheckLayersBehind = TRUE;
+
+                     MoveSizeLayer(targetlayer,
                                    w->ZipLeftEdge - OldLeftEdge,
                                    w->ZipTopEdge  - OldTopEdge,
                                    w->ZipWidth    - OldWidth,
                                    w->ZipHeight   - OldHeight);
 
-                     w->window.LeftEdge = w->ZipLeftEdge;
-                     w->window.TopEdge  = w->ZipTopEdge;
-                     w->window.Width    = w->ZipWidth;
-                     w->window.Height   = w->ZipHeight; 
+                     targetwindow->LeftEdge = w->ZipLeftEdge;
+                     targetwindow->TopEdge  = w->ZipTopEdge;
+                     targetwindow->Width    = w->ZipWidth;
+                     targetwindow->Height   = w->ZipHeight; 
                     
                      w->ZipLeftEdge = OldLeftEdge;
                      w->ZipTopEdge  = OldTopEdge;
                      w->ZipWidth    = OldWidth;
                      w->ZipHeight   = OldHeight;
                     
-                     CheckLayersBehind = TRUE;
-                     L = msg->Window->WLayer;
                     
                      FreeMem(msg, sizeof(struct shortIntuiMessage));
                 break; }
 		
-		case IMCODE_CHANGEWINDOWBOX:
-                     if (msg->height > msg->Window->Height)
-                     {
-                       struct RastPort * rp = msg->Window->RPort;
-                       WORD Oldcp_x = rp->cp_x;
-                       WORD Oldcp_y = rp->cp_y;
-                       ULONG OldAPen = GetAPen(rp);
-                       SetAPen(rp, 0);
-                       Move(rp, 0, msg->Window->Height-1);
-                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
-                       SetAPen(rp, OldAPen);
-                       rp->cp_x = Oldcp_x;
-                       rp->cp_y = Oldcp_y;
-                     }
-                     if (msg->width > msg->Window->Width)
-                     {
-                       struct RastPort * rp = msg->Window->RPort;
-                       WORD Oldcp_x = rp->cp_x;
-                       WORD Oldcp_y = rp->cp_y;
-                       ULONG OldAPen = GetAPen(rp);
-                       SetAPen(rp, 0);
-                       Move(rp, msg->Window->Width-1, 0);
-                       Draw(rp, msg->Window->Width-1, msg->Window->Height-1);
-                       SetAPen(rp, OldAPen);
-                       rp->cp_x = Oldcp_x;
-                       rp->cp_y = Oldcp_y;
+		case IMCODE_CHANGEWINDOWBOX: {
+
+                     if (0 == (targetwindow->Flags & WFLG_GIMMEZEROZERO))
+                     {		 
+                       if (msg->height > targetwindow->Height)
+                       {
+                         struct RastPort * rp = targetwindow->BorderRPort;
+                         SetAPen(rp, 0);
+                         Move(rp, 0, targetwindow->Height-1);
+                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                       }
+                       if (msg->width > targetwindow->Width)
+                       {
+                         struct RastPort * rp = targetwindow->BorderRPort;
+                         SetAPen(rp, 0);
+                         Move(rp, targetwindow->Width-1, 0);
+                         Draw(rp, targetwindow->Width-1, targetwindow->Height-1);
+                       }
                      }
 
- 		     intui_ChangeWindowBox(msg->Window
+                     ((struct IntWindow *)targetwindow)->ZipLeftEdge = targetwindow->LeftEdge; 
+                     ((struct IntWindow *)targetwindow)->ZipTopEdge  = targetwindow->TopEdge;
+                     ((struct IntWindow *)targetwindow)->ZipWidth  = targetwindow->Width;
+                     ((struct IntWindow *)targetwindow)->ZipHeight = targetwindow->Height;
+                     
+ 		     intui_ChangeWindowBox(targetwindow
 		     	, msg->left, msg->top
 			, msg->width, msg->height
 		     );
 		    
 		    FreeMem(msg, sizeof (struct shortIntuiMessage));
 		    
-		    break;
+		    break; }
 		
 	    }
 	    
