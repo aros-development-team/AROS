@@ -17,15 +17,16 @@
 #include <oop/meta.h>
 #include <oop/root.h>
 #include <oop/method.h>
+#include <oop/interface.h>
+#include <oop/server.h>
 
 #include <stdio.h>
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <oop/server.h>
 
 #define SDEBUG 0
-#define DEBUG 0
+#define DEBUG 1
 #include <aros/debug.h>
 
 #define MYSERVERID "demoserver"
@@ -58,6 +59,7 @@ struct Task *CreateServerTask(APTR taskparams);
 #define M_Timer_TestMethod	(TimerBase + MIDX_Timer_TestMethod)
 
 
+// #define GLOBAL_CLASS 
 
 extern ULONG __OOPI_Timer;
 
@@ -72,10 +74,14 @@ ULONG __OOPI_Meta;
 ULONG __OOPI_Timer;
 ULONG __OOPI_Method;
 ULONG __OOPI_Server;
+ULONG __OOPI_Interface;
 
 Class *timercl;
 
 struct ServerParam sp;
+
+#define NUM_INVOCATIONS 10000L
+#define NUM_IF_INVOCATIONS 10000000L
 
 int main (int argc, char **argv)
 {
@@ -86,10 +92,11 @@ int main (int argc, char **argv)
     if (OOPBase)
     {
     	if ( 
-	       ( __OOPI_Meta   = GetID(GUID_Meta	))
-	    && ( __OOPI_Timer  = GetID(GUID_Timer	)) 
-	    && ( __OOPI_Method = GetID(GUID_Method	)) 
-	    && ( __OOPI_Server = GetID(GUID_Server	)) 
+	       ( __OOPI_Meta   	  = GetID( GUID_Meta		))
+	    && ( __OOPI_Timer  	  = GetID( GUID_Timer		)) 
+	    && ( __OOPI_Method 	  = GetID( GUID_Method		)) 
+	    && ( __OOPI_Server 	  = GetID( GUID_Server		)) 
+	    && ( __OOPI_Interface = GetID( GUID_Interface	)) 
 	    
 	    )
 	{
@@ -102,12 +109,73 @@ int main (int argc, char **argv)
 	    {
 	        /* Create the server task */
 		struct Task *servertask;
+		Object *timer;
+		struct TagItem tags[] = {{TAG_DONE, 0UL}};
+		
+		timer = NewObjectA(timercl, NULL, tags);
+		if (timer)
+		{
+		    register Interface *iftimer;
+		    struct TagItem iftags[] =
+		    {
+		    	{ A_Interface_TargetObject,	(IPTR)timer},
+			{ A_Interface_InterfaceID,	(IPTR)TimerBase},
+			{ TAG_DONE, 0UL }
+		    };
+		    
+		    D(bug("Local timer obj created\n"));
+		    
+		    iftimer = (Interface *)NewObjectA(NULL, INTERFACECLASS, iftags);
+		    if (iftimer)
+		    {
+			ULONG test_mid;
+			
+			register Msg msg = (Msg)&test_mid;
+			    
+			ULONG i;
+			
+			D(bug("iftimer objects created\n"));
+			    
+			printf("Doing %ld invocations using interface objects\n",
+			    		NUM_IF_INVOCATIONS);
+			    
+			test_mid = M_Timer_Start;
+			iftimer->Call(iftimer, (Msg)&test_mid);
+			    
+			test_mid = M_Timer_TestMethod;
+			    
+			for (i = 0; i < NUM_IF_INVOCATIONS; i ++)
+			{
+			    iftimer->Call(iftimer, msg);
+			}
+			    
+			test_mid = M_Timer_Stop;
+			iftimer->Call(iftimer, (Msg)&test_mid);
+			    
+			printf("Time elapsed: ");
+			
+			test_mid = M_Timer_PrintElapsed;
+		    	iftimer->Call(iftimer, (Msg)&test_mid);
+
+			test_mid = M_Timer_TestMethod;
+			printf ("Result of testmethod: %ld\n", iftimer->Call(iftimer, (Msg)&test_mid));
+
+		    	
+		    	DisposeObject((Object *)iftimer);
+		    }
+		    
+		    DisposeObject(timer);
+		}
+		
 		
 		sp.Caller = FindTask(NULL);
 		/* This will succeed since no signals have been allocated earlier */
 		sp.SigBit = AllocSignal(-1L);
 		
+		
+		
 		D(bug("Creating server task\n"));
+				
 		
 		servertask = CreateServerTask(&sp);
 		if (servertask)
@@ -129,15 +197,35 @@ int main (int argc, char **argv)
 			
 		        if ( (timer = Server_FindObject(server, MYTIMERID)) )
 			{
-			    ULONG test_mid = M_Timer_TestMethod;
-			
-			    D(bug("timer found: %p\n", timer));
-		    	
-
-			    printf("Doing test method\n");
-		    
-			    printf ("Result: %ld\n", DoMethod(timer, (Msg)&test_mid));
+			    ULONG test_mid;
 			    
+			    ULONG i;
+			    
+			    printf("Doing %ld invocations using IPC\n",
+			    		NUM_INVOCATIONS);
+			    
+			    test_mid = M_Timer_Start;
+			    DoMethod(timer, (Msg)&test_mid);
+			    
+			    test_mid = M_Timer_TestMethod;
+			    
+			    for (i = 0; i < NUM_INVOCATIONS; i ++)
+			    {
+			    	DoMethod(timer, (Msg)&test_mid);
+			    }
+			    
+			    test_mid = M_Timer_Stop;
+			    DoMethod(timer, (Msg)&test_mid);
+			    
+			    printf("Time elapsed: ");
+			
+			    test_mid = M_Timer_PrintElapsed;
+		    	    DoMethod(timer, (Msg)&test_mid);
+
+			    test_mid = M_Timer_TestMethod;
+			    printf ("Result of testmethod: %ld\n", DoMethod(timer, (Msg)&test_mid));
+
+		    
 			}
 		    
 		    }
@@ -187,13 +275,20 @@ VOID SubTime(struct timeval *dest, struct timeval *src)
     return;
 }
 
-VOID _Timer_Start(Class *cl, Object *o, Msg msg)
+#ifdef GLOBAL_CLASS
+Class *tcl;
+#endif
+
+VOID _Timer_Start(
+#ifndef GLOBAL_CLASS
+Class *tcl,
+#endif
+Object *o, Msg msg)
 {
     struct TimerData *data;
-    EnterFunc(bug("Timer::Start(cl=%p, o=%p)\n", cl, o));
-    D(bug("data=%p\n", data));
+    EnterFunc(bug("Timer::Start(o=%p)\n", o));
     
-    data = INST_DATA(cl, o);
+    data = INST_DATA(tcl, o);
     D(bug("data=%p\n", data));
 
     gettimeofday(&(data->start_time), NULL);
@@ -201,9 +296,13 @@ VOID _Timer_Start(Class *cl, Object *o, Msg msg)
     ReturnVoid("Timer::Start");
 }
 
-VOID _Timer_Stop(Class *cl, Object *o, Msg msg)
+VOID _Timer_Stop(
+#ifndef GLOBAL_CLASS
+Class *tcl,
+#endif
+Object *o, Msg msg)
 {
-    struct TimerData *data = INST_DATA(cl, o);
+    struct TimerData *data = INST_DATA(tcl, o);
     gettimeofday(&(data->elapsed_time), NULL);
     
     SubTime(&(data->elapsed_time), &(data->start_time));
@@ -211,17 +310,25 @@ VOID _Timer_Stop(Class *cl, Object *o, Msg msg)
     return;
 }
 
-VOID _Timer_PrintElapsed(Class *cl, Object *o, Msg msg)
+VOID _Timer_PrintElapsed(
+#ifndef GLOBAL_CLASS
+Class *tcl,
+#endif
+Object *o, Msg msg)
 {
-    struct TimerData *data = INST_DATA(cl, o);
+    struct TimerData *data = INST_DATA(tcl, o);
     
-    printf("%ld secs and %ld micros\n"
+    kprintf("%ld secs and %ld micros\n"
     	,data->elapsed_time.tv_sec
     	,data->elapsed_time.tv_usec);
 	
 }
 
-IPTR _Timer_TestMethod(Class *cl, Msg msg)
+IPTR _Timer_TestMethod(
+#ifndef GLOBAL_CLASS
+Class *tcl,
+#endif
+Object *o, Msg msg)
 {
     return (12345678);
 }
@@ -254,17 +361,19 @@ Class *MakeTimerClass()
 	{A_Class_InstSize,		(IPTR)sizeof (struct TimerData)},
 	{TAG_DONE, 0UL}
     };
+#ifndef GLOBAL_CLASS
+Class *tcl;
+#endif
 
     
-    Class *cl;
     
-    cl = (Class *)NewObjectA(NULL, METACLASS, tags);
-    if (cl)
+    tcl = (Class *)NewObjectA(NULL, METACLASS, tags);
+    if (tcl)
     {
-//    	AddClass(cl);
+//    	AddClass(tcl);
     }
     
-    return (cl);
+    return (tcl);
 }
 
 VOID FreeTimerClass(Class *cl)
