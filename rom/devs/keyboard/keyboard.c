@@ -418,12 +418,14 @@ AROS_LH1(void, beginio,
 	    Disable();
 	    Enqueue((struct List *)(&KBBase->kb_ResetHandlerList),
 		    (struct Node *)(ioStd(ioreq)->io_Data));
+	    KBBase->kb_nHandlers++;
 	    Enable();
 	    break;
 
 	case KBD_REMRESETHANDLER:
 	    Disable();
 	    Remove((struct Node *)(ioStd(ioreq)->io_Data));
+	    KBBase->kb_nHandlers--;
 	    Enable();
 	    break;
 
@@ -432,7 +434,7 @@ AROS_LH1(void, beginio,
 	    
 	    if(KBBase->kb_ResetPhase == TRUE)
 	    {
-		if(--(KBBase->kb_nHandlers) == 0)
+		if(--(KBBase->kb_nHandlers) <= 0)
 		    ColdReboot();	/* Shut down system */
 	    }
 	    else
@@ -624,6 +626,9 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	    kbUn->kbu_LastCode      = code;
 	    kbUn->kbu_LastQuals     = (UBYTE)(kbUn->kbu_Qualifiers & 0xff);
 	}
+
+	if(code == 0x78)
+	    KBBase->kb_ResetPhase = TRUE;
 	
 	/* No more keys in buffer? */
 	if(kbUn->kbu_readPos == KBBase->kb_writePos)
@@ -634,8 +639,6 @@ static BOOL writeEvents(struct IORequest *ioreq, struct KeyboardBase *KBBase)
 	
     	event->ie_NextEvent = NEXT_INPUTEVENT(event);
 	
-	if(code == 0x78)
-	    KBBase->kb_ResetPhase = TRUE;
     }
 
     D(bug("Done writing events!"));
