@@ -62,7 +62,7 @@
 		{ TAG_DONE	    	}
 	    };
 
-	    col_tags[0].ti_Data = BM_PIXEL(rp->BitMap, pen & PEN_MASK);
+	    col_tags[0].ti_Data = rp->BitMap ? BM_PIXEL(rp->BitMap, pen & PEN_MASK) : pen;
 	    OOP_SetAttrs( dd->dd_GC, col_tags );
 
 	}
