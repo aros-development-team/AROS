@@ -6,6 +6,9 @@
     Lang: English
 */
 
+# define  DEBUG 1
+# include <aros/debug.h>
+
 #include "dos_intern.h"
 #include <utility/tagitem.h>
 #include <dos/dostags.h>
@@ -115,7 +118,7 @@
 	shell = cShell;
 
     type = (command == NULL) ? RUN_EXECUTE : isAsynchronous ? 
-	RUN_SYSTEM : RUN_SYSTEM_ASYNCH;
+	RUN_SYSTEM_ASYNCH : RUN_SYSTEM;
     
     return ExecCommand(type, command, shell, input, output, tags, DOSBase);
 
