@@ -152,8 +152,9 @@ case "$host_os" in
 	aros_target_cc_includes="/usr/include"
 
 	dnl FreeBSD 5.x has changed the default object format.
+        dnl The double [[]] is necessary to get around m4's quoting rules.
 	case $host_os in
-	    freebsd5*)
+	    freebsd[[56]]*)
 		aros_object_format="elf_i386_fbsd"
 		;;
 
