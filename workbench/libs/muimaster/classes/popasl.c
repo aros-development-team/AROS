@@ -50,6 +50,7 @@ struct Asl_Startup
     struct TagItem *tags;
     Object *app; /* the application */
     Object *pop;
+    STRPTR  buf; /* asl_entry must FreeVec() this before exiting!!! */
 };
 
 SAVEDS static LONG Asl_Entry(void)
@@ -61,7 +62,8 @@ SAVEDS static LONG Asl_Entry(void)
     struct TagItem *tags;
     Object *app;
     Object *pop;
-
+    STRPTR buf;
+    
     proc = (struct Process *) FindTask(NULL);
     WaitPort(&proc->pr_MsgPort); /* Wait for the startup message */
     msg = (struct Asl_Startup*)GetMsg(&proc->pr_MsgPort);
@@ -70,12 +72,15 @@ SAVEDS static LONG Asl_Entry(void)
     tags = msg->tags;
     app = msg->app;
     pop = msg->pop;
-
+    buf = msg->buf;
+    
     ReplyMsg(&msg->msg);
 
     if (AslRequest(asl_req, tags))
 	DoMethod(app,MUIM_Application_PushMethod, (IPTR)pop, 2, MUIM_Popstring_Close, TRUE);
     else DoMethod(app,MUIM_Application_PushMethod, (IPTR)pop, 2, MUIM_Popstring_Close, FALSE);
+
+    if (buf != NULL) FreeVec(buf);
 
     return 0;
 }
@@ -185,12 +190,12 @@ static ULONG Popasl_Open_Function(struct Hook *hook, Object *obj, void **msg)
     startup->app = _app(obj);
     startup->asl_req = data->asl_req;
     startup->pop = obj;
+    startup->buf = buf;
     PutMsg(&data->asl_proc->pr_MsgPort,&startup->msg);
     WaitPort(msg_port);
 
     FreeVec(startup);
     DeleteMsgPort(msg_port);
-    if (buf) FreeVec(buf);
 
     return 1;
 }
