@@ -17,7 +17,7 @@
 		
     TEMPLATE
 
-        DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S
+        DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/S
 
     LOCATION
 
@@ -82,9 +82,11 @@
 #include <proto/dos.h>
 #include <utility/tagitem.h>
 
+#include <stdio.h>
+
 static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 
-#define TEMPLATE "DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S"
+#define TEMPLATE "DIR/M,DATES/S,NODATES/S,QUICK/S,NOHEAD/S,FILES/S,DIRS/S,LFORMAT/K"
 
 #define ARG_DIR		0
 #define ARG_DATES	1
@@ -93,8 +95,10 @@ static const char version[] = "$VER: list 41.4 (11.10.1997)\n";
 #define ARG_NOHEAD	4
 #define ARG_FILES	5
 #define ARG_DIRS	6
+#define ARG_LFORMAT     7
 
-#define ARG_NUM 	7
+#define ARG_NUM 	8
+
 
 int printdirheader(STRPTR dirname, IPTR * mainargs)
 {
@@ -116,6 +120,215 @@ int printdirheader(STRPTR dirname, IPTR * mainargs)
          return RETURN_ERROR;
     }
     return RETURN_OK;
+}
+
+/*
+ Formatted output.
+ This function knows:
+    %d: Date
+    %t: Time
+    %b: Blocks
+    %f: label of device
+    %a: flags
+    %k: keys
+    %l: size
+    %m: name  (.-names are suppressed; x.info isprinted as x)
+    %s: name
+    %n: name
+*/
+
+struct lfstruct
+{
+  BOOL isdir;
+  STRPTR date;
+  STRPTR time;
+  STRPTR flags;
+  STRPTR filename;
+  ULONG size;
+};
+
+
+int print_lformat(STRPTR format,
+                  struct lfstruct * lf)
+{
+  char c;
+  while ('\0' != (c = *format++))
+  {
+    if ('%' == c)
+    {
+      ULONG pos;
+      BOOL right = TRUE;
+      char buf[80];
+      char * buf_ptr = &buf[80];
+      ULONG width = 0, size;
+      ULONG tmp;
+      
+      buf[80] = '\0';
+      
+      if ('-' == *format)
+      {
+        right = FALSE;
+        format++;
+      }
+      
+      while (*format >= '0' && *format <= '9')
+        width = width * 10 + (*format++) - '0';
+      
+      switch (*format++)
+      {
+        case 'D':
+        case 'd':  buf_ptr = lf->date;
+        break;
+        
+        case 'T':
+        case 't':  buf_ptr = lf->time;
+        break;
+        
+        case 'B':
+        case 'b':  if (TRUE == lf->isdir)
+                   {
+                     buf_ptr = "Dir";
+                     break;
+                   }
+                   
+                   tmp = lf->size / 1024;
+                   if (lf->size % 1024)
+                     tmp++;
+                  
+                   if (0 == tmp)
+                     buf_ptr = "empty";
+                   else
+                     do
+                     {
+                       *--buf_ptr = (tmp % 10) + '0';
+                       tmp /= 10;
+                     }
+                     while(tmp);
+        break;
+        
+        case 'F':
+        case 'f':
+        break;
+        
+        case 'A':
+        case 'a':  buf_ptr = lf->flags;
+        break;
+        
+        case 'K':
+        case 'k':
+        break;
+        
+        case 'L':
+        case 'l':  if (TRUE == lf->isdir)
+                   {
+                     buf_ptr = "Dir";
+                     break;
+                   }
+                   
+                   tmp = lf->size;
+                  
+                   if (0 == tmp)
+                     buf_ptr = "empty";
+                   else
+                     do
+                     {
+                       *--buf_ptr = (tmp % 10) + '0';
+                       tmp /= 10;
+                     }
+                     while(tmp);
+        break;
+        
+        case 'M':
+        case 'm':  if (!(*lf->filename == '.'))
+                   {
+                     buf_ptr = &buf[0];
+                     size = strlen(lf->filename);
+                     CopyMem(lf->filename, buf_ptr, size+1);
+                     
+                     while (size > 0)
+                     {
+                       if ('.' == buf[size])
+                       {
+                         buf[size] = '\0';
+                         break;
+                       }
+                       size --;
+                     }
+                     
+                   }
+        break;
+        
+        case 'S':
+        case 's':  buf_ptr = lf->filename;
+        break;
+        
+        case 'N':
+        case 'n':  buf_ptr = lf->filename;
+        break;
+        
+        case 'E':
+        case 'e': size = strlen(lf->filename);
+                  pos = size;
+                  while (pos > 0)
+                  {
+                    if ('.' == lf->filename[pos])
+                    {
+                      if (size != pos)
+                      {
+                        buf_ptr = &buf[0];
+                        CopyMem(&lf->filename[pos+1], buf_ptr, size-pos);
+                        break;
+                      }
+                    }
+                    pos--;
+                  }
+        break;
+        
+        case '\0':
+          return 0;
+        break;
+        
+        default:
+          *--buf_ptr = *(format-1);
+          *--buf_ptr = '%';
+      }
+      
+      
+      size = strlen(buf_ptr);
+      
+      /* print the string */
+      
+      pos = 0;
+      
+        /* right aligned ? */
+      if (TRUE == right && width > size)
+      {
+        while (pos < (width - size))
+        { 
+          pos++;
+          printf(" ");
+        }
+      }
+      
+      /* the string itself */
+      while (*buf_ptr)
+      {
+        pos++;
+        printf("%c",*buf_ptr++);
+      }
+      
+      /* left aligned? */
+      if (FALSE == right || pos < width)
+        while(pos++ < width)
+          printf(" ");
+    }
+    else
+    {
+      printf("%c",c);
+    }
+  }
+
+  return 0;
 }
 
 
@@ -155,49 +368,68 @@ int printfiledata(STRPTR filename,
 
     if (dir) {
       if (show_dirs) {
-        
-        if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
-          error = RETURN_ERROR;
-        
-        if (!args[ARG_QUICK])
+      
+        if (args[ARG_LFORMAT])
         {
-          IPTR argv[1];
-          argv[0] = (IPTR)flags;
-          VPrintf("  <Dir> %7.s ",argv); // don't try &flags!!
+          struct lfstruct lf = {dir, date, time, flags, filename, size};
+          print_lformat((STRPTR)args[ARG_LFORMAT], &lf);
+          VPrintf("\n", NULL);
         }
-
-        if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+        else
         {
           IPTR argv[2];
-          argv[0] = (IPTR)date;
-          argv[1] = (IPTR)time;
-          VPrintf("%-11.s %s",argv);
-        }
+          
+          if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
+            error = RETURN_ERROR;
+        
+          if (!args[ARG_QUICK])
+          {
+            argv[0] = (IPTR)flags;
+            VPrintf("  <Dir> %7.s ",argv); // don't try &flags!!
+          }
 
-        VPrintf("\n",NULL);
+          if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+          {
+            argv[0] = (IPTR)date;
+            argv[1] = (IPTR)time;
+            VPrintf("%-11.s %s",argv);
+          }
+
+          VPrintf("\n",NULL);
+        }
       }
     } else if (show_files) {
 
-        if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
-          error = RETURN_ERROR;
-        
-        if (!args[ARG_QUICK])
+        if (args[ARG_LFORMAT])
         {
-          IPTR argv[2];
-          argv[0] = (IPTR)size;
-          argv[1] = (IPTR)flags;
-          VPrintf("%7.ld %7.s ",argv);
+          struct lfstruct lf = {dir, date, time, flags, filename, size};
+          print_lformat((STRPTR)args[ARG_LFORMAT], &lf);
+          VPrintf("\n", NULL);
         }
-        
-        if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+        else
         {
-          IPTR argv[2];
-          argv[0] = (IPTR)date;
-          argv[1] = (IPTR)time;
-          VPrintf("%-11.s %s",argv);
-        }
 
-        VPrintf("\n",NULL);
+          IPTR argv[2];
+        
+          if (VPrintf("%-25.s ",(IPTR *)&filename) < 0)
+            error = RETURN_ERROR;
+        
+          if (!args[ARG_QUICK])
+          {
+            argv[0] = (IPTR)size;
+            argv[1] = (IPTR)flags;
+            VPrintf("%7.ld %7.s ",argv);
+          }
+        
+          if (args[ARG_DATES] || (!args[ARG_QUICK] && !args[ARG_NODATES]))
+          {
+            argv[0] = (IPTR)date;
+            argv[1] = (IPTR)time;
+            VPrintf("%-11.s %s",argv);
+          }
+
+          VPrintf("\n",NULL);
+        }
     }
     if ((!error) && (filenote) && (filenote[0]))
         error = VPrintf(": %s\n", (IPTR *)&filenote);
@@ -356,7 +588,7 @@ int listfile(STRPTR filename, IPTR * args, BOOL show_files, BOOL show_dirs)
 
 int main (int argc, char **argv)
 {
-    IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+    IPTR args[ARG_NUM] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
     struct RDArgs *rda;
     LONG error = RETURN_OK;
     STRPTR *filelist;
