@@ -1,13 +1,13 @@
 # $Id$
 TOP=../..
 
+include $(TOP)/config/make.cfg
+
 ifeq ("$(SHARED_INTUITION)","yes")
 SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
 else
 SPECIAL_CFLAGS=-I/usr/include
 endif
-
-include $(TOP)/config/make.cfg
 
 OBJDIR=$(OSGENDIR)/intuition
 

@@ -1,14 +1,14 @@
 # $Id$
 TOP=../..
 
+include $(TOP)/config/make.cfg
+
 # Use OS's own includes over the ones from AROS
 ifeq ("$(SHARED_GRAPHICS)","yes")
 SPECIAL_CFLAGS=$(SHARED_CFLAGS) -I/usr/include
 else
 SPECIAL_CFLAGS=-I/usr/include
 endif
-
-include $(TOP)/config/make.cfg
 
 LIBNAME = graphics
 
