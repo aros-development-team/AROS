@@ -472,6 +472,7 @@ AROS_LH1(void, beginio,
             if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
               ReplyMsg(&ioreq->IOSer.io_Message);
 
+            Enable();
             break;
 	  }
         }
@@ -486,17 +487,17 @@ AROS_LH1(void, beginio,
             */
             if (0 == (ioreq->IOSer.io_Flags & IOF_QUICK))
               ReplyMsg(&ioreq->IOSer.io_Message);
-            
+
+            Enable();
             break;
 	  } 
 	}
 
         if (NULL != SU->su_ActiveRead)
         {
-          D(bug("READ: error in datastructure!"));
+          kprintf("READ: error in datastructure!");
         }
 
-        SU->su_ActiveRead = (struct Message *)ioreq;
         
       }
 
@@ -506,14 +507,18 @@ AROS_LH1(void, beginio,
 
       Enable();
 
-      D(bug("The read request could not be satisfied! Queuing it.\n"));
+      D(bug("The read request (%p) could not be satisfied! Queuing it.\n",ioreq));
       /*
       **  Everything that falls down here could not be completely
       **  satisfied
       */
-      PutMsg(&SU->su_QReadCommandPort,
-             (struct Message *)ioreq);
-      
+      if (NULL != SU->su_ActiveRead) {
+        SU->su_ActiveRead = (struct Message *)ioreq;
+      } else {
+        PutMsg(&SU->su_QReadCommandPort,
+               (struct Message *)ioreq);
+      }
+     
       /*
       ** As I am returning immediately I will tell that this
       ** could not be done QUICK   
@@ -860,16 +865,15 @@ AROS_LH1(void, beginio,
           SU->su_WriteLen != ioreq->io_WriteLen ||
           SU->su_StopBits != ioreq->io_StopBits)
       {
-        success = TRUE; // for now
-#if 0
-        success = HIDD_SerialUnit_SetParameters(SU->su_Hidd, 
-                                                ioreq->io_ReadLen,
-                                                ioreq->io_WriteLen,
-                                                ioreq->io_StopBits);
-#endif
-        if (FALSE == success)
-	{
+        struct TagItem tags[] = 
+          {{TAG_DATALENGTH, ioreq->io_ReadLen},
+           {TAG_STOP_BITS , ioreq->io_StopBits},
+           {TAG_END       , 0}};
+        success = HIDD_SerialUnit_SetParameters(SU->su_Unit,
+                                                tags);
+        if (FALSE == success) {
           ioreq->IOSer.io_Error = SerErr_InvParam;
+          kprintf("HIDD_SerialUnit_SetParameters() failed.\n");
           return;   
 	} 
         SU->su_ReadLen  = ioreq->io_ReadLen;
@@ -948,6 +952,8 @@ AROS_LH1(LONG, abortio,
   /*
   ** is it the active request?
   */
+
+  Disable();
   if ((struct Message *)ioreq == SU->su_ActiveRead)
   {
     /*
@@ -966,6 +972,7 @@ AROS_LH1(LONG, abortio,
     Remove(&ioreq->io_Message.mn_Node);
     ReplyMsg(&ioreq->io_Message);
   }
+  Enable();
 
   return 0;
   AROS_LIBFUNC_EXIT

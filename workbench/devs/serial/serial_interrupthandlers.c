@@ -31,7 +31,9 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
 
       if (NULL == ioreq)
       {
+        D(bug("\t\tpre  lh_Head: %p\n",SU->su_QReadCommandPort.mp_MsgList.lh_Head));
         ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+        D(bug("\t\tpost lh_Head: %p\n",SU->su_QReadCommandPort.mp_MsgList.lh_Head));
         SU->su_ActiveRead = (struct Message *)ioreq;
       }
       
@@ -43,7 +45,7 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
         */
         UBYTE * destBuf;
         UWORD indexDestBuf;
-        D(bug("Have a IORequest for Serial device!\n"));
+        D(bug("Have a IORequest (%p) for Serial device!\n",ioreq));
         
         destBuf = ioreq->io_Data;
         indexDestBuf = ioreq->io_Actual;
@@ -60,7 +62,7 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
           D(bug("io_Length %d:  io_Actual: %d\n",ioreq->io_Length,indexDestBuf));
 
           if ((-1 == ioreq->io_Length && 0 == destBuf[indexDestBuf-1]) ||
-              (indexDestBuf == ioreq->io_Length))
+              (indexDestBuf >= ioreq->io_Length))
           {
             /*
             ** this request is done, I answer the message
@@ -71,7 +73,10 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
             /*
             ** Get the next request ...
             */
+            D(bug("\t\tpre  lh_Head: %p\n",SU->su_QReadCommandPort.mp_MsgList.lh_Head));
             ioreq = (struct IOStdReq *)GetMsg(&SU->su_QReadCommandPort);
+            D(bug("\t\tpost lh_Head: %p\n",SU->su_QReadCommandPort.mp_MsgList.lh_Head));
+            D(bug("\t\tGot new ioreq (%p) from queue\n",ioreq));
             SU->su_ActiveRead = (struct Message *)ioreq;
             break;    
           }
@@ -106,13 +111,14 @@ ULONG RBF_InterruptHandler(UBYTE * data, ULONG length, ULONG unitnum, APTR userd
         UWORD tmp = (SU->su_InputNextPos + 1) % SU->su_InBufLength;
         SU->su_InputBuffer[SU->su_InputNextPos] = data[index];
         index++;
-            
+
         /*
         ** I am advancing the circular index su_InputNextPos
         */
         if (tmp != SU->su_InputFirst)
         {  
           SU->su_InputNextPos = tmp;
+D(bug("%d %d %d\n",SU->su_InputNextPos,SU->su_InBufLength,tmp));
         }
         else
         {
